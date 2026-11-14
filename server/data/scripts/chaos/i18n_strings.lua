@@ -3613,6 +3613,8 @@ return {
 			"Mais %d nós da build precisam de mais pontos.",
 		["Too fast: wait a moment and apply again."] =
 			"Rápido demais: espere um momento e aplique de novo.",
+		["Too fast: wait a moment and try again."] =
+			"Rápido demais: espere um momento e tente de novo.",
 		["Too fast: wait a moment and pick the build again."] =
 			"Rápido demais: espere um momento e escolha a build de novo.",
 		["The preview could not be made. Try another build or try again later."] =
@@ -9050,12 +9052,6 @@ return {
 			"Founder Pack, uma venda limitada, em breve",
 		["%s is no longer on sale."] =
 			"%s não está mais à venda.",
-		-- Victory emote lines (O318, cosmetics_config.lua emote say; Chaos.yell sends each viewer the line in own language)
-		["Victory!"] = "Vitória!",
-		["For the fallen!"] = "Pelos caídos!",
-		["Burn bright!"] = "Brilhe em chamas!",
-		["Glory!"] = "Glória!",
-		["Until next time."] = "Até a próxima.",
 		-- Old stash tabs worth 4 expansions (O316 follow-up, stash_config.lua messages.tabsRaised)
 		["Your old stash tabs are now worth %d slots each (%d Stash Slot Expansions). Your stash has %d slots."] =
 			"Suas abas antigas do stash agora valem %d espaços cada (%d Stash Slot Expansions). Seu stash tem %d espaços.",
@@ -9236,5 +9232,41 @@ return {
 			"Atenção: no nível %d todas as suas resistências caem %d pontos. Aumente-as antes de chegar lá.",
 		["Your resistances now carry a penalty of %d points (level %d). Raise them with gear and the passive tree."] =
 			"Suas resistências agora têm uma penalidade de %d pontos (nível %d). Aumente-as com equipamentos e a árvore passiva.",
+		["The monster you finish blows away as sand in the wind, top first"] =
+			"O monstro que você abate se desfaz em areia levada pelo vento, de cima para baixo",
+		["The monster you finish comes apart into its own pixels that drift and fade"] =
+			"O monstro que você abate se desfaz nos próprios pixels, que vão à deriva e somem",
+		["The monster you finish crumbles to grey ash and falls"] =
+			"O monstro que você abate se esfarela em cinza e cai",
+		["The monster you finish freezes, shatters into shards and melts away"] =
+			"O monstro que você abate congela, se estilhaça em cacos e derrete",
+		["Witchfire Bolt, Falling Pyre and Doomtide burn in a ring of banked embers"] =
+			"Witchfire Bolt, Falling Pyre e Doomtide queimam em um anel de brasas",
+		["Rime Bloom and Frozen Crypt burst in tall spikes of ice"] =
+			"Rime Bloom e Frozen Crypt explodem em longas lanças de gelo",
+		["Crimson Covenant spreads a ring of shadow instead of blood"] =
+			"Crimson Covenant espalha um anel de sombra em vez de sangue",
+		["Forked Storm throws arcane orbs and violet lightning"] =
+			"Forked Storm lança orbes arcanos e raios violeta",
+		["Blightswarm, Briar Prison and Primordial Squall burst in a cloud of shadow instead of spores"] =
+			"Blightswarm, Briar Prison e Primordial Squall explodem em uma nuvem de sombra em vez de esporos",
+		["Martyr's Pyre and Pyre of Absolution burn in a flaring ring of fire"] =
+			"Martyr's Pyre e Pyre of Absolution queimam em um anel de fogo rugindo",
+		["Bell of Reckoning, Rampart Quake and Pyre of Absolution strike in a violet dome"] =
+			"Bell of Reckoning, Rampart Quake e Pyre of Absolution atingem em uma cúpula violeta",
+		["Sanctum Verdict, Zealot's Wrath and Hammer of Ember Dawn flare in red"] =
+			"Sanctum Verdict, Zealot's Wrath e Hammer of Ember Dawn brilham em vermelho",
+		["Judgment of Iron and Red Frenzy burst in gold instead of red"] =
+			"Judgment of Iron e Red Frenzy explodem em dourado em vez de vermelho",
+		["Thousand-Echo Palm and Tidal Palm strike in cold blue"] =
+			"Thousand-Echo Palm e Tidal Palm atingem em azul frio",
+		["Chi Lance and Mistborne Strike strike in gold"] =
+			"Chi Lance e Mistborne Strike atingem em dourado",
+		["Hollow Knuckle strikes in red, Chi Lance and Thousand-Echo Palm send a wave of blood"] =
+			"Hollow Knuckle atinge em vermelho; Chi Lance e Thousand-Echo Palm enviam uma onda de sangue",
+		["Blightbrand burns with grave-light, not venom"] =
+			"Blightbrand queima com luz de sepulcro, não com veneno",
+		["Soulrend Beam opens a rift of arcane light"] =
+			"Soulrend Beam abre uma fenda de luz arcana",
 	},
 }

@@ -158,6 +158,31 @@ for _, look in ipairs({ { type = 1221, addons = 3 }, { type = 1213, addons = 3 }
   local cy = Lb.y + ((bx.top + bx.bottom) / 2 + 32) * Lb.scale
   eq(math.abs(cx - 100) <= 1 and math.abs(cy - 150) <= 1, true, 'the drawn box centred: ' .. look.type .. ' ' .. cx .. ',' .. cy)
 end
+-- the figure stays put (O564, owner: "some effects in the preview lift the character", Gale Ring, a wide gust ring): an aura,
+-- wings or a cape never move the figure, only the figure's own box (body with its mount) is centred; the stage clips the rest
+DAT[2490] = { w = 4, h = 4, dx = 0, dy = 0, layers = 1, px = 1, py = 1, pz = 1, phases = 1 } -- a wide ring
+for _, look in ipairs({ { type = 128 }, { type = 1221, addons = 3 }, { type = 128, mount = 1338 }, { type = 2163 } }) do
+  local alone = P.lookBox(look, anchors, info, 6)
+  local ringed = P.lookBox({ type = look.type, addons = look.addons, mount = look.mount, aura = 2490 }, anchors, info, 6)
+  eq(ringed.right > alone.right or ringed.bottom > alone.bottom or ringed.left < alone.left or ringed.top < alone.top, true,
+    'the ring is part of the whole box: ' .. look.type)
+  local A, B = P.layout(alone, 200, 300), P.layout(ringed, 200, 300)
+  eq(A.x .. ',' .. A.y .. ',' .. A.feetX .. ',' .. A.feetY, B.x .. ',' .. B.y .. ',' .. B.feetX .. ',' .. B.feetY,
+    'an aura does not move the figure: ' .. look.type)
+  local sa, sb = P.shadowRect(A, alone), P.shadowRect(B, ringed)
+  eq(sa, sb, 'nor its shadow: ' .. look.type)
+  local wingsOn = P.lookBox({ type = look.type, addons = look.addons, mount = look.mount, wings = 937 }, anchors, info, 6)
+  local C2 = P.layout(wingsOn, 200, 300)
+  local cb = wingsOn.core
+  eq(math.abs(C2.x + ((cb.left + cb.right) / 2 + 32) * C2.scale - 100) <= 1 and math.abs(C2.y + ((cb.top + cb.bottom) / 2 + 32) * C2.scale - 150) <= 1,
+    true, 'wings: the figure is what is centred: ' .. look.type)
+  -- a taller stage / a short one: still the figure's centre, never the ring's
+  local S1 = P.layout(ringed, 120, 90)
+  eq(S1.x + ((ringed.core.left + ringed.core.right) / 2 + 32) * S1.scale, 60, 'a small stage: the figure centred, the ring clipped: ' .. look.type)
+end
+-- a box without a core (an older table, the fallback) is centred whole, as before
+local nc = P.layout({ left = 0, top = 0, right = 32, bottom = 32, fx = 16, fy = 30 }, 200, 300)
+eq(nc.x + (16 + 32) * 2, 100, 'no core: the whole box')
 -- Astral Fire (1213): its anchors (wide: a torch held out left)
 local ab = P.lookBox({ type = 1213, addons = 3 }, anchors, info, 6)
 eq(ab.left .. ',' .. ab.right, '-35,23', 'Astral Fire box')
@@ -201,6 +226,13 @@ eq(wb.left, math.min(w937.left, -8 - 6), 'wings reach left') eq(wb.fx, anchors(1
 local ws = P.lookBox({ type = 128, wings = 937 }, anchors, info, 6, 5)
 eq(ws.left, math.min(w937.left + 5, -8 - 6), 'wings shifted: their box moves') eq(ws.fx, wb.fx, 'wings shifted: feet stay')
 eq(P.lookBox({ type = 128, wings = 937 }, anchors, info, 6, 0).left, wb.left, 'no shift: as before')
+-- base patch 0200 (O564): the head piece shifted onto this body's head moves its own box only (the body and the feet stay)
+local hs0 = P.lookBox({ type = 128, aura = 2477 }, function(id) return id == 2477 and { fx = 0, fy = 0, top = -20,
+  left = -20, right = -10 } or anchors(id) end, function(id) return id == 2477 and head or info(id) end, 0)
+local hs1 = P.lookBox({ type = 128, aura = 2477 }, function(id) return id == 2477 and { fx = 0, fy = 0, top = -20,
+  left = -20, right = -10 } or anchors(id) end, function(id) return id == 2477 and head or info(id) end, 0, 0, { x = -9, y = 7 })
+eq(hs1.left, math.min(hs0.left - 9, hs0.left), 'a head piece shifted left') eq(hs1.bottom >= hs0.bottom, true, 'and down')
+eq(hs1.fx, hs0.fx, 'the feet stay') eq(hs1.core.left, hs0.core.left, 'the figure stays')
 -- a mount: its own box and the rider seated on it
 local mb = P.lookBox({ type = 128, mount = 1338 }, anchors, info, 0)
 local m1338 = anchors(1338)
@@ -402,9 +434,24 @@ eq(steps[1].opacity > steps[4].opacity, true, 'older prints fade')
 eq(steps[2].x < steps[1].x, true, 'behind the walker')
 eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).killfx, true, 'kill effect row')
 eq(P.fromPlayRow({ kind = 'spellskin', play = {} }), nil, 'nothing to play')
-eq(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } }).killfx, true, 'rare-loot effect row: on a dying troll')
+eq(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } }).killfx, nil, 'rare-loot effect row: not the kill animation (O564)')
+eq(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } }).lootfx, true, 'rare-loot effect row: over a loot bag')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).lootfx, nil, 'a kill effect has no bag')
 eq(P.fromPlayRow({ kind = 'levelfx', play = { { b = { id = 468 } } } }).killfx, nil, 'level-up effect row: on the figure')
-eq(P.fromPlayRow({ kind = 'emote', play = { { b = { id = 468 } } } }).killfx, nil, 'emote row: on the figure')
+-- the rare-loot scene (O564): the figure stands, a loot bag lies beside it, every step plays on the bag's tile
+local lo = P.sceneOf(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468, n = 'vfx_aura_burst_gold' } } } }))
+eq(lo.loot, true, 'a loot scene') eq(lo.kill, false, 'no dying troll') eq(lo.caster.x, 0, 'the figure on (0, 0)')
+eq(lo.target.x, P.LOOT_AT, 'the bag beside it') eq(lo.target.y, 0, 'on its row')
+eq(P.landsOn({ id = 1, n = 'vfx_war_cry' }, false, lo), 'target', 'even a nova plays on the bag')
+local ltl = P.timeline({ { b = { id = 468, ms = 600 } } }, 'b', nil, lo)
+eq(ltl.lead, 0, 'no lead: the effect plays at once') eq(ltl.items[1].at, 'target', 'on the bag') eq(ltl.total > 600, true, 'it loops after a pause')
+eq(P.hasWearer(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } })), true, 'the figure is worn')
+local lx, ly = P.itemPlace({ item = ltl.items[1], frac = 0 }, lo)
+eq(lx .. ',' .. ly, P.LOOT_AT .. ',0', 'the effect on the bag tile')
+local fx0, fy0, fx1, fy1 = P.fxExtent({ { b = { id = 468 } } }, nil, lo, { target = P.LOOT_BOX, caster = P.FALLBACK_BOX })
+eq(fx1 >= P.LOOT_AT + 1, true, 'the scene covers the bag')
+local sk = P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } }, lootfx = true })
+eq(sk.lootfx, true, 'a store offer carries lootfx') eq(sk.killfx, nil, 'and no kill animation')
 eq(P.showable({ kind = 'effects' }), true, 'effects are shown')
 
 -- store offers carry their own look (server shop_core.lua K.lookOf): every kind becomes an option
@@ -663,5 +710,60 @@ eq(P.linePlace(sml, winged, 318, 100, 200, 16, true).zone == 'over' or P.linePla
 local FXL = P.fxLayout(318, 130, -3, -0.5, 1.5, 1)
 local fp = P.labelPlace(FXL, plain, 318, 130, 80, 18)
 eq(inside({ x = fp.label.x, y = fp.label.y, w = 80, h = 18 }, 318, 130), true, 'effects layout: label inside')
+
+-- capes are drawn from the back (O562)
+eq(P.isCape(2569), true, 'first cape') eq(P.isCape(2657), true, 'last cape')
+eq(P.isCape(2568), false, 'the last head accessory is no cape') eq(P.isCape(2658), false, 'a kit look is no cape')
+eq(P.isCape(0), false, 'no aura') eq(P.isCape(nil), false, 'nil aura') eq(P.isCape('2600'), true, 'a number as text')
+-- the range is the server's capes of pair 33
+do
+  local f = io.open('server/data/lib/chaos_pack33_cosmetics.lua', 'r')
+  eq(f ~= nil, true, 'pack33 cosmetics file (run from the repo root)')
+  local text = f:read('*a')
+  f:close()
+  local capes = text:match('M%.capes = (%b{})')
+  local lo, hi, count = 1e9, 0, 0
+  for look in capes:gmatch('look = (%d+)') do
+    look = tonumber(look)
+    lo, hi, count = math.min(lo, look), math.max(hi, look), count + 1
+  end
+  eq(lo, P.CAPE_FIRST, 'cape range starts at the server table') eq(hi, P.CAPE_LAST, 'cape range ends at the server table')
+  eq(count, P.CAPE_LAST - P.CAPE_FIRST + 1, 'no gap in the capes')
+  local heads = text:match('M%.heads = (%b{})')
+  local hmax = 0
+  for look in heads:gmatch('look = (%d+)') do hmax = math.max(hmax, tonumber(look)) end
+  eq(hmax < P.CAPE_FIRST, true, 'heads stay below the capes')
+end
+eq(P.shownDirection({ aura = 2600 }, P.SOUTH, false), P.NORTH, 'a cape faces north')
+eq(P.shownDirection({ aura = 2600 }, P.EAST, nil), P.NORTH, 'a cape faces north whatever dir')
+eq(P.shownDirection({ aura = 2600 }, P.EAST, true), P.EAST, 'turned by hand: the hand wins')
+eq(P.shownDirection({ aura = 1511 }, P.SOUTH, false), P.SOUTH, 'a head aura keeps the direction')
+eq(P.shownDirection({ aura = 0 }, P.WEST, false), P.WEST, 'no aura keeps the direction')
+eq(P.shownDirection(nil, P.EAST, false), P.EAST, 'no outfit keeps the direction')
+local st = { dir = P.SOUTH }
+local cape, plain = { aura = 2600 }, { aura = 0 }
+eq(P.face(st, plain), P.SOUTH, 'plain: south') eq(P.face(st, cape), P.NORTH, 'cape: north')
+eq(P.face(st, plain), P.SOUTH, 'plain again: south')
+-- a turn button on a cape: from the north shown, one step clockwise = east, and it stays
+P.face(st, cape)
+eq(P.turnBy(st, cape, 1), P.EAST, 'turn from the back goes east') eq(st.manual, true, 'manual')
+eq(P.face(st, cape), P.EAST, 'the hand turn stays on the cape')
+eq(P.face(st, { aura = 2601 }), P.EAST, 'another cape keeps the hand turn')
+eq(P.face(st, plain), P.EAST, 'leaving the cape keeps the direction turned to')
+eq(st.manual, false, 'the manual turn ends when the cape goes')
+eq(P.face(st, cape), P.NORTH, 'a cape again: the back')
+-- a turn on a plain look is the old turn
+local st2 = { dir = P.SOUTH }
+P.face(st2, plain)
+eq(P.turnBy(st2, plain, 1), P.WEST, 'plain turn: south -> west')
+-- a dissolve kill effect (O563): the row's mode and tint reach the option; the plain effect stays in `play`
+local dv = P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'sand', tint = 4 })
+eq(dv.dissolve.m, 'sand', 'dissolve mode') eq(dv.dissolve.t, 4, 'dissolve tint') eq(dv.killfx, true, 'dissolve row is a kill scene')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).dissolve, nil, 'a plain kill effect has no dissolve')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'Sand!' }).dissolve, nil, 'a bad mode name is dropped')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'ash', tint = 99 }).dissolve.t, 7, 'tint capped')
+eq(P.dissolveOf(nil), nil, 'no row')
+local sd = P.fromStoreLook({ kind = 'effects', killfx = true, play = { { b = { id = 468 } } }, dissolve = 'burn', tint = 2 })
+eq(sd.dissolve.m, 'burn', 'a store offer carries the dissolve') eq(sd.dissolve.t, 2, 'store tint')
 
 print('lookpreview_core_test: ' .. n .. ' checks OK')

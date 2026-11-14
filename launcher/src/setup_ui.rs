@@ -373,16 +373,16 @@ impl SetupApp {
                 Color32::from_rgba_unmultiplied(235, 80, 20, if resp.hovered() { 150 } else { 100 }),
                 cv.px(22.0),
             );
-            theme::nine(
-                &p,
-                &self.art.btn_red,
-                play,
-                14.0,
-                cv.px(1.0),
-                Color32::from_rgb(255, 190, 160),
-            );
+            let look = if resp.is_pointer_button_down_on() {
+                theme::BigBtn::Pressed
+            } else if resp.hovered() {
+                theme::BigBtn::Hover
+            } else {
+                theme::BigBtn::Ready
+            };
+            theme::big_button(&p, play, cv.px(1.0), look);
         } else {
-            theme::nine(&p, &self.art.btn_off, play, 14.0, cv.px(1.0), Color32::WHITE);
+            theme::big_button(&p, play, cv.px(1.0), theme::BigBtn::Off);
         }
         let label = if self.working {
             i18n::setup_text(SetupText::Installing, lang)

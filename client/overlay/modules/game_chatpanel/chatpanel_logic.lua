@@ -76,6 +76,14 @@ L.ORB_BOTTOM = 4      -- orbs over the group's bottom edge (the chat reaches it)
 L.SNAP = 8            -- a move that ends this close to the centre (or the bottom edge) snaps back there
 L.SPLITTER = 6        -- the height splitter above the action bars (bottomSplitter)
 L.HANDLE_HEIGHT = 14  -- the move handle above the splitter
+L.HANDLE_WIDTH = 64   -- its art (images/chatpanel_handle.png: three states side by side, tools/gen_hotbar_art.py)
+
+-- The grips and the handle exist for the classic layout only. In the action bar layout the floating chat and the
+-- hotbar own the bottom edge and the splitter is collapsed: a grip made there floated at the bottom-left, anchored to
+-- the collapsed splitter, labelled "Chat" and moving nothing (O558). Phones have none either.
+function L.gripsShown(action, mobile)
+  return action ~= true and mobile ~= true
+end
 
 -- margins of the orbs from the chat panel (bottomSplitter) edges: life orb's right margin from its left edge, mana
 -- orb's left margin from its right edge, and the bottom margin of both (lift: the group's distance from the bottom)

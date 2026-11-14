@@ -299,6 +299,23 @@ ChaosHotbar.init()
 login()
 expectWorking('first login')
 
+-- O558: the Q and E sockets have a ring drawn over the base button (a square), above the bar and below the key box and the
+-- cooldown number; the other slots have none
+do
+  local frame = frameOf()
+  local kids, barAt, rings = frame._children, nil, {}
+  for i, c in ipairs(kids) do
+    if c == bars[1] then barAt = i end
+    if c._image == '/modules/game_hotbar/images/hotbar_ring' then rings[#rings + 1] = i end
+  end
+  check(#rings == 2, 'O558: two rings (Q and E), not ' .. #rings)
+  check(barAt ~= nil and rings[1] ~= nil and rings[1] > barAt, 'O558: the ring is drawn over the base bar')
+  check(rings[2] ~= nil and rings[2] > rings[1], 'O558: both rings over the bar')
+  local lastKey = 0
+  for i, c in ipairs(kids) do if c._class == nil and c._children[1] and c._children[1]._id == 'text' then lastKey = math.max(lastKey, i) end end
+  check(lastKey > rings[1], 'O558: the key boxes are over the ring')
+end
+
 -- O498: a press on a header button never begins a window drag; a drag whose release nobody heard ends at the next move
 -- with the left button up; hiding and logout end a drag
 do

@@ -239,5 +239,141 @@ end
 eq(LB.filterKey(L.defaults()) ~= LB.filterKey(strict), true, 'a filter change is seen')
 eq(LB.filterKey(nil), '', 'no filter')
 
+-- ---------------------------------------------------------------- the beam pictures (O569)
+-- style: a | b | c, a is the default, anything else folds to it
+eq(LB.defaults().style, 'a', 'style a by default')
+eq(LB.normalize({ style = 'B' }).style, 'b', 'a style is read in any case')
+eq(LB.normalize({ style = 'c' }).style, 'c', 'style c')
+eq(LB.normalize({ style = 'zzz' }).style, 'a', 'an unknown style folds to a')
+eq(LB.normalize({ style = 5 }).style, 'a', 'a number is no style')
+eq(LB.normalize(nil).style, 'a', 'nil: style a')
+eq(#LB.STYLE_ORDER, 3, 'three styles')
+for _, st in ipairs(LB.STYLE_ORDER) do eq(LB.STYLES[st], true, 'style ' .. st .. ' is known') end
+
+-- paths and clips
+eq(LB.artPath('a', 'orange'), '/modules/game_lootbeams/images/a_orange.png', 'art path')
+eq(LB.artPath('C', 'unique'), '/modules/game_lootbeams/images/c_unique.png', 'art path of style c')
+eq(LB.artPath('x', 'white'), '/modules/game_lootbeams/images/a_white.png', 'an unknown style draws style a')
+eq(LB.artPath('a', 'purple'), nil, 'no strip for an unknown group')
+eq(LB.clip(0), '0 0 64 128', 'clip of frame 0')
+eq(LB.clip(7), '448 0 64 128', 'clip of frame 7')
+
+-- the strips the generator wrote are the size the logic assumes, in every style and group; the colours of the generator are
+-- the rarity colours of this module
+local function pngSize(path)
+  local f = io.open(path, 'rb')
+  if not f then return nil end
+  local h = f:read(24)
+  f:close()
+  if not h or #h < 24 or h:sub(2, 4) ~= 'PNG' then return nil end
+  local function u32(str) local a, b, c, d2 = str:byte(1, 4); return ((a * 256 + b) * 256 + c) * 256 + d2 end
+  return u32(h:sub(17, 20)), u32(h:sub(21, 24))
+end
+local A = LB.ART
+local frames = A.burst + A.loop
+for _, st in ipairs(LB.STYLE_ORDER) do
+  for _, g in ipairs(LB.GROUP_ORDER) do
+    local w, h = pngSize(dir .. LB.artPath(st, g):gsub('^/modules/game_lootbeams/', ''))
+    eq(w, frames * A.w, st .. '_' .. g .. ': strip width is 18 frames of 64 px')
+    eq(h, A.h, st .. '_' .. g .. ': strip height is 128 px')
+  end
+end
+do
+  local gf = io.open(dir .. '../../../tools/gen_lootbeam_art.py', 'r')
+  if gf then
+    local src = gf:read('*a')
+    gf:close()
+    for _, g in ipairs(LB.GROUP_ORDER) do
+      local color = src:match("\n    '" .. g .. "': +dict%(color='(#%x+)'")
+      eq(color, LB.GROUPS[g].color, 'the generator draws ' .. g .. ' in the rarity colour')
+    end
+    eq(tonumber(src:match('\nBURST, LOOP = (%d+), %d+')), A.burst, 'the generator has the burst frames of LB.ART')
+    eq(tonumber(src:match('\nBURST, LOOP = %d+, (%d+)')), A.loop, 'the generator has the loop frames of LB.ART')
+    eq(tonumber(src:match('\nW, H = (%d+), %d+')), A.w, 'the generator frame width')
+    eq(tonumber(src:match('\nW, H = %d+, (%d+)')), A.h, 'the generator frame height')
+    eq(tonumber(src:match('\nFOOT_X, FOOT_Y = [%d.]+, ([%d.]+)')), A.footY, 'the generator foot row')
+  end
+end
+
+-- the frame to show: the burst once, then the loop; a standing beam stays on one loop frame
+eq(LB.frame(0, true), 0, 'the burst starts at frame 0')
+eq(LB.frame(A.burstMs - 1, true), 0, 'still frame 0')
+eq(LB.frame(A.burstMs, true), 1, 'frame 1')
+eq(LB.frame(LB.ART_MS - 1, true), A.burst - 1, 'the last burst frame')
+eq(LB.frame(LB.ART_MS, true), A.burst, 'the loop starts after the burst')
+eq(LB.frame(LB.ART_MS + A.loop * A.loopMs, true), A.burst, 'the loop comes round')
+eq(LB.frame(LB.ART_MS + 5 * A.loopMs + 3, true), A.burst + 5, 'a frame of the loop')
+eq(LB.frame(-50, true), 0, 'a clock step back is frame 0')
+eq(LB.frame(nil, true), 0, 'no age is frame 0')
+for age = 0, 20000, 37 do
+  local f = LB.frame(age, true)
+  eq(f >= 0 and f < frames, true, 'a frame is in the strip (' .. age .. ')')
+  local still = LB.frame(age, false)
+  eq(still, A.burst + A.simple, 'a standing beam never moves (' .. age .. ')')
+end
+eq(A.simple >= 0 and A.simple < A.loop, true, 'the still frame is a loop frame')
+
+-- size and margins: the foot of the picture lies on the item's tile, whatever the zoom
+local w64, h64, ml64, mt64 = LB.box(64, 64, 'normal')
+eq(w64, 128, 'a 64 px tile: the picture is twice as wide')
+eq(h64, 256, 'a 64 px tile: and twice as high')
+eq(ml64, 0, 'a 64 px tile is centred by a zero margin')
+for _, tile in ipairs({ 24, 32, 48, 64, 96 }) do
+  local w, h, ml, mt = LB.box(tile, tile, 'normal')
+  local centreX = 32 + ml -- the engine puts the widget centre at tile corner + 32 + margin
+  local centreY = 32 + mt                 -- the widget's centre, from the tile's corner
+  local footY = centreY - h / 2 + A.footY * (h / A.h) -- the picture's foot row on the screen
+  local wantY = tile / 2 + A.footDrop * tile / A.tile -- the tile's centre plus the drop
+  eq(math.abs(footY - wantY) <= 1.5, true, 'the foot of the beam is on the tile at ' .. tile .. ' px (' .. footY .. ' vs ' .. wantY .. ')')
+  eq(math.abs(centreX - (tile / 2)) <= 1.5, true, 'the beam is centred on the tile at ' .. tile .. ' px')
+  eq(math.abs(w / h - A.w / A.h) < 0.02, true, 'the picture keeps its shape at ' .. tile .. ' px')
+end
+local ws, hs = LB.box(64, 64, 'short')
+local wt, ht = LB.box(64, 64, 'tall')
+eq(hs < h64 and h64 < ht, true, 'the height setting scales the picture')
+eq(ws < w64 and w64 < wt, true, 'and its width with it (the ring keeps its shape)')
+local wu = LB.box(64, 64, 'enormous')
+eq(wu, w64, 'an unknown height is normal')
+local w0 = LB.box(0, nil, 'normal')
+eq(w0, w64, 'no tile size: 64 px tiles')
+eq(LB.OPACITY.soft < LB.OPACITY.normal and LB.OPACITY.normal < LB.OPACITY.bright, true, 'intensity is the opacity')
+eq(LB.OPACITY.bright, 1.0, 'bright is full opacity')
+for _, k in ipairs(LB.INTENSITY_ORDER) do eq(LB.OPACITY[k] ~= nil, true, 'opacity of ' .. k) end
+for _, k in ipairs(LB.HEIGHT_ORDER) do eq(LB.HEIGHT_SCALE[k] ~= nil, true, 'scale of ' .. k) end
+
+-- the cap: the best RICH_CAP beams animate, the others stand still (the same order as the choice of the beams)
+do
+  local want = {}
+  for i = 1, 20 do
+    local key = 'k' .. string.format('%02d', i)
+    want[key] = { group = (i <= 3) and 'orange' or 'white', dist = i, key = key }
+  end
+  want.kU = { group = 'unique', dist = 30, key = 'kU' }
+  local rich = LB.richKeys(want, LB.RICH_CAP)
+  local n = 0
+  for _ in pairs(rich) do n = n + 1 end
+  eq(n, LB.RICH_CAP, 'RICH_CAP beams animate')
+  eq(rich.kU, true, 'a Unique beam animates however far')
+  eq(rich.k01 and rich.k02 and rich.k03, true, 'then the Legendary ones')
+  eq(rich.k04, true, 'then the nearest of the rest')
+  eq(rich.k09, nil, 'a far common beam stands still')
+  eq(rich.k20, nil, 'the farthest stands still')
+  local all = LB.richKeys(want, 100)
+  n = 0
+  for _ in pairs(all) do n = n + 1 end
+  eq(n, 21, 'a cap above the count animates them all')
+  eq(next(LB.richKeys({}, 8)), nil, 'no beams, none animate')
+  eq(LB.RICH_CAP < LB.MAX_BEAMS, true, 'more beams stand than animate')
+  eq(LB.RICH_CAP, 8, 'eight animated beams')
+  -- a real resolve with 30 corpses: at most MAX_BEAMS drawn, RICH_CAP of them animate
+  local st2 = LB.newState()
+  for i = 1, 30 do
+    LB.onBeam(st2, { k = 500 + i, p = { 100 + i % 7, 200 + math.floor(i / 7), 7 }, i = { gear(5) } })
+  end
+  local res = LB.resolve(st2, filter, d, player, LB.MAX_BEAMS)
+  eq(count(res), LB.MAX_BEAMS, 'a big pull draws MAX_BEAMS beams')
+  eq(count(LB.richKeys(res, LB.RICH_CAP)), LB.RICH_CAP, 'and animates RICH_CAP of them')
+end
+
 print(string.format('lootbeams: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

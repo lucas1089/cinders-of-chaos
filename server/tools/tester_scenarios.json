@@ -10077,6 +10077,7 @@
   },
   "passivetree": {
    "actions": [
+    "autobuildPreview",
     "requestNodesUnlocked",
     "requestPoints",
     "refund",

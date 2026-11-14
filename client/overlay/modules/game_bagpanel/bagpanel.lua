@@ -253,11 +253,15 @@ local function drawGrid(c)
     return
   end
   local cap = c:getCapacity()
-  local key = c:getId() .. ':' .. cap
+  -- only the slots in use and a spare row (O557): a rift bag or a pouch has 36 slots and more, a wall of empty cells
+  local cols = C.columns(grid:getWidth(), C.CELL, 2)
+  local used = C.usedSlots(cap, function(i) return c:getItem(i) end)
+  local vis = C.visibleSlots(cap, used, cols)
+  local key = c:getId() .. ':' .. vis
   if cellsFor ~= key then
     grid:destroyChildren()
     cells = {}
-    for i = 0, cap - 1 do
+    for i = 0, vis - 1 do
       local w = g_ui.createWidget('BagPanelCell', grid)
       w:setId('slot' .. i)
       w.position = slotPosition(c, i)
@@ -265,25 +269,22 @@ local function drawGrid(c)
     end
     cellsFor = key
   end
-  local any = false
-  for i = 0, cap - 1 do
+  for i = 0, vis - 1 do
     local w = cells[i + 1]
-    local item = c:getItem(i)
-    if item then any = true end
     if alive(w) then
+      local item = c:getItem(i)
       w:setItem(item)
       decorate(w, item)
     end
   end
-  local cols = C.columns(grid:getWidth(), C.CELL, 2)
-  local height = C.gridHeight(cap, cols, C.CELL, 2)
+  local height = C.gridHeight(vis, cols, C.CELL, 2)
   if grid:getHeight() ~= height then grid:setHeight(height) end
-  if empty then empty:setVisible(not any) end
+  if empty then empty:setVisible(used == 0) end
 end
 
 -- the Loot Bag section (O516): a header (name and items, arrows, hide) and a grid of at most C.LOOT_SLOTS slots under the grid
 -- of the page shown. The cells carry the slot position inside the engine page, as the main grid's do.
-local LOOT_HEADER = 18
+local LOOT_HEADER = 40
 
 local function clearLoot()
   local lg = child('lootGrid')
@@ -336,11 +337,15 @@ local function drawLoot()
     pcall(g_game.seekInContainer, c:getId(), want.seek)
   end
   local view = C.lootView(C.lootPageFor(lootWant, first, size, cap), size, cap)
-  local key = c:getId() .. ':' .. first .. ':' .. view.first .. ':' .. view.count
+  -- the slots of the page in use and a spare row, not twenty empty cells under a bag with three items (O557)
+  local lcols = C.columns(lg:getWidth(), C.CELL, 2)
+  local onPage = math.max(math.min(size - first - view.first, view.count), 0)
+  local shown = C.visibleSlots(view.count, onPage, lcols, 1)
+  local key = c:getId() .. ':' .. first .. ':' .. view.first .. ':' .. shown
   if lootCellsFor ~= key then
     lg:destroyChildren()
     lootCells = {}
-    for j = 0, view.count - 1 do
+    for j = 0, shown - 1 do
       local w = g_ui.createWidget('BagPanelCell', lg)
       w:setId('lslot' .. j)
       w.position = slotPosition(c, view.first + j)
@@ -348,7 +353,7 @@ local function drawLoot()
     end
     lootCellsFor = key
   end
-  for j = 0, view.count - 1 do
+  for j = 0, shown - 1 do
     local w = lootCells[j + 1]
     if alive(w) then
       local item = c:getItem(view.first + j)
@@ -356,12 +361,24 @@ local function drawLoot()
       decorate(w, item)
     end
   end
-  local cols = C.columns(lg:getWidth(), C.CELL, 2)
-  local gh = C.gridHeight(view.count, cols, C.CELL, 2)
+  local gh = C.gridHeight(shown, lcols, C.CELL, 2)
   if lg:getHeight() ~= gh then lg:setHeight(gh) end
   local title, pageLabel = child('lootTitle'), child('lootPage')
-  if title then title:setText(tr('Loot Bag: %d items', size)) end
-  if pageLabel then pageLabel:setText(tr('Page %d of %d', view.page + 1, view.pages)) end
+  if title then
+    -- the title has its own row: the whole text, or cut with "..." when the panel is narrower than it needs (O557)
+    local full = tr('Loot Bag: %d items', size)
+    local font = g_fonts and g_fonts.getFont and g_fonts.getFont('verdana-11px-antialised') or nil
+    local room = title:getWidth()
+    if font and font.calculateTextRectSize and room > 0 then
+      full = C.elide(full, room, function(t) return font:calculateTextRectSize(t).width end)
+    end
+    title:setText(full)
+    title:setTooltip(tr('Loot Bag: %d items', size))
+  end
+  if pageLabel then
+    pageLabel:setText(C.pageText(view.page + 1, view.pages))
+    pageLabel:setTooltip(tr('Page %d of %d', view.page + 1, view.pages))
+  end
   local prev, nxt = child('lootPrev'), child('lootNext')
   if prev then prev:setEnabled(view.page > 0) end
   if nxt then nxt:setEnabled(view.page < view.pages - 1) end
@@ -373,16 +390,149 @@ end
 -- the border of the page buttons of the purse family: a brown frame, so they read as another place than the backpack's
 local PURSE_BORDER = '#7a5a3a'
 
--- the tooltip of a page button: the backpack, the purse, a bag of the purse by its own name (the Loot Bag, a pouch),
--- else "Bag N" by its place in its container
-local function pageTip(p, num, item)
-  if p.key == 'main' then return tr('Backpack') end
-  if p.key == 'purse' then return tr('Purse') end
-  if p.fam == 'purse' and item and item.getName then
-    local ok, name = pcall(item.getName, item)
-    if ok and type(name) == 'string' and name ~= '' then return name end
+local function restoring()
+  local layout = ChaosLayout
+  return layout and layout.Containers and layout.Containers.busy == true
+end
+
+-- ---------------------------------------------------------------- pinned bags (O557)
+-- A pinned bag stays open: no other bag takes its place (C.previousFor and C.superseded skip it) and it opens again after
+-- a login. Remembered per character in g_settings "chaosBagPins_<name>" as the keys of C.pinKey (the bag's item id and its
+-- number among the bags of that id: it does not move when items come in front). At most C.MAX_PINS; the backpack itself is
+-- always open and cannot be pinned. The Pin button pins the page shown, a right click on a bag button pins that bag.
+local pins = {}
+local pinPhase = false      -- the login reopen of the pins is running: what it opens is no page change
+local pinEvent = nil
+local pinAsked = {}         -- pin key -> the tick it was asked for
+
+local function charName()
+  local ok, name = pcall(function()
+    if g_game and g_game.isOnline and g_game.isOnline() then return g_game.getCharacterName() end
+    return ''
+  end)
+  return ok and type(name) == 'string' and name or ''
+end
+
+local function pinSettingKey()
+  return 'chaosBagPins_' .. charName()
+end
+
+local function loadPins()
+  local ok, v = pcall(g_settings.getString, pinSettingKey())
+  pins = C.decodePins(ok and v or '')
+end
+
+local function savePins()
+  pcall(g_settings.set, pinSettingKey(), C.encodePins(pins))
+  if g_settings.save then pcall(g_settings.save) end
+end
+
+-- the pin key of a bag of family `fam` at `slot`, from the parent container as it is now
+local function pinKeyOf(fam, slot)
+  local parent = fam == 'purse' and purseContainer() or mainContainer()
+  if not parent or not slot then return nil end
+  return C.pinKey(fam, slot, containerItems(parent))
+end
+
+-- the pin key of a page: nil for the backpack
+local function pinKeyOfPage(key)
+  local kind, slot = C.parseKey(key)
+  if kind == 'purse' then return 'purse' end
+  if kind == 'bag' or kind == 'pbag' then return pinKeyOf(C.family(kind), slot) end
+  return nil
+end
+
+local function refreshPinned()
+  for _, m in pairs(bagMemo) do
+    m.pinned = C.pinned(pins, pinKeyOf(m.fam, m.slot)) or nil
   end
-  return tr('Bag %d', num)
+end
+
+function M.togglePin(key)
+  local pk = pinKeyOfPage(key or selected)
+  if not pk then return message(tr('The backpack is always open. Pin a bag or the purse.')) end
+  local list, on, why = C.togglePin(pins, pk)
+  if why == 'full' then return message(tr('You can pin up to %d bags.', C.MAX_PINS)) end
+  pins = list
+  savePins()
+  if on then pinAsked[pk] = nil end
+  M.refresh()
+end
+
+-- the login reopen: every few seconds, once the layout restore is done and the backpack is open, the next pinned bag that is
+-- not open is opened (the purse first: its bags need it). Stops when nothing is left to open for a few ticks.
+local function stopPins()
+  if pinEvent then removeEvent(pinEvent) pinEvent = nil end
+  pinPhase = false
+end
+
+local function startPins()
+  stopPins()
+  if #pins == 0 then return end
+  pinPhase, pinAsked = true, {}
+  local tick, idle = 0, 0
+  pinEvent = cycleEvent(safe('pins', function()
+    tick = tick + 1
+    if not alive(window) or not g_game.isOnline() then return stopPins() end
+    if restoring() then return end
+    local main, purseC = mainContainer(), purseContainer()
+    if not main then return end
+    local open = {}
+    for _, m in pairs(bagMemo) do
+      local k = pinKeyOf(m.fam, m.slot)
+      if k and C.pinned(pins, k) then open[k] = true end
+    end
+    for k, t in pairs(pinAsked) do
+      if tick - t < 4 then open[k] = true end
+    end
+    local askedPurse = pinAsked.purse and tick - pinAsked.purse < 4
+    local act = C.nextPinOpen(pins, { mainItems = containerItems(main),
+      purseItems = purseC and containerItems(purseC) or nil, purseOpen = purseC ~= nil or askedPurse == true, open = open })
+    if not act then
+      idle = idle + 1
+      if idle >= 4 or tick > 40 then stopPins() end
+      return
+    end
+    idle = 0
+    pinAsked[act.kind == 'purse' and 'purse' or act.key] = tick
+    if act.kind == 'purse' then
+      local item = purseItem()
+      if item then g_game.use(item) end
+    else
+      local parent = act.kind == 'pbag' and purseC or main
+      local item = parent and parent:getItem(act.slot)
+      if item then g_game.open(item) end
+    end
+  end), 1500)
+end
+
+-- the tooltip of a page button: the backpack, the purse, a bag by its own name (the item's name the client has, O557), else
+-- "Bag N" by its place in its container
+local function itemNames(item)
+  local names = {}
+  if item then
+    local ok, name = pcall(function() return item:getName() end)
+    if ok then names[#names + 1] = name end
+    local okM, market = pcall(function() local m = item:getMarketData() return m and m.name end)
+    if okM then names[#names + 1] = market end
+  end
+  return names
+end
+
+local function pageTip(p, num, items, pinned)
+  local tip
+  if p.key == 'main' then tip = tr('Backpack')
+  elseif p.key == 'purse' then tip = tr('Purse')
+  else
+    local name
+    for _, item in ipairs(items) do
+      name = C.bagName(itemNames(item))
+      if name then break end
+    end
+    tip = name and tr(name) or tr('Bag %d', num)
+  end
+  if pinned then tip = tr('%s (pinned)', tip) end
+  return tip
 end
 
 local function drawPages(pages, main)
@@ -392,6 +542,7 @@ local function drawPages(pages, main)
   local n = 0
   local nums = { main = 0, purse = 0 }
   local pitem = purseItem()
+  local purseC = purseContainer()
   for _, p in ipairs(pages) do
     n = n + 1
     local w = g_ui.createWidget('BagPanelPage', row)
@@ -402,12 +553,24 @@ local function drawPages(pages, main)
     if not id and p.key == 'main' then id = main and bagItemId(main) end
     if id then w:setItemId(id) end
     if p.slot then nums[p.fam] = nums[p.fam] + 1 end
-    w:setTooltip(pageTip(p, p.slot and nums[p.fam] or 0, w:getItem()))
+    local parent = p.slot and (p.fam == 'purse' and purseC or main) or nil
+    local real = parent and parent:getItem(p.slot) or nil
+    local pk = pinKeyOfPage(p.key)
+    local isPinned = pk ~= nil and C.pinned(pins, pk)
+    w:setTooltip(pageTip(p, p.slot and nums[p.fam] or 0, { real, w:getItem() }, isPinned))
+    if isPinned then
+      local mark = g_ui.createWidget('BagPanelPinMark', w)
+      mark:addAnchor(AnchorTop, 'parent', AnchorTop)
+      mark:addAnchor(AnchorRight, 'parent', AnchorRight)
+      mark:setMarginTop(1)
+      mark:setMarginRight(1)
+    end
     local border = p.fam == 'purse' and PURSE_BORDER or '#00000000'
     -- the Loot Bag button is lit while its section shows; it is never "the page"
     local lit = p.loot and (lootShown and lootContainer() ~= nil) or (not p.loot and p.key == selected)
     w:setBorderColor(lit and '#f6cf72' or border)
     w.onMouseRelease = function(widget, pos, button)
+      if button == MouseRightButton then M.togglePin(widget.pageKey) return true end
       if button ~= MouseLeftButton then return false end
       if widget.pageLoot then M.toggleLoot() else M.selectPage(widget.pageKey) end
       return true
@@ -421,6 +584,14 @@ local function drawPages(pages, main)
   local cols = C.columns(row:getWidth(), 26, 2)
   local height = C.gridHeight(n, cols, 26, 2)
   if row:getHeight() ~= height then row:setHeight(height) end
+end
+
+function M.drawPinButton()
+  local b = child('pinButton')
+  if not b then return end
+  local pk = pinKeyOfPage(selected)
+  b:setEnabled(pk ~= nil)
+  b:setColor((pk and C.pinned(pins, pk)) and '#f6cf72' or '#d6c9ae')
 end
 
 local function pageContainer(main, pages)
@@ -464,9 +635,11 @@ function M.draw()
   local c = pageContainer(main, pages)
   drawGrid(c)
   drawLoot()
+  refreshPinned()
   drawPages(pages, main)
   drawMoney()
   M.drawSortButton()
+  M.drawPinButton()
   -- the window grows to show the whole layout: the side panel's fitting shrank it when a stock window opened beside it
   -- and the pages and Sort went under the edge (seen in a client)
   addEvent(safe('fit', function()
@@ -485,6 +658,8 @@ function M.draw()
       room = parent:getHeight() - parent:getPaddingTop() - parent:getPaddingBottom() - used
     end
     local h = C.fitHeight(window:getHeight(), need, room)
+    -- and the window is no taller than its content: no empty framed area under the buttons (O557)
+    if not h and window:getHeight() > need + 2 then h = need end
     if h then window:setHeight(h) end
   end))
 end
@@ -537,11 +712,6 @@ local function showAllHidden()
 end
 
 -- ---------------------------------------------------------------- container signals
-local function restoring()
-  local layout = ChaosLayout
-  return layout and layout.Containers and layout.Containers.busy == true
-end
-
 local function onOpen(c, previous)
   if not c then return end
   local kind, slot = C.classify(keyOf(c))
@@ -550,6 +720,7 @@ local function onOpen(c, previous)
   local cid = c:getId()
   if kind == 'purse' then purseCid = cid end
   local loot = false
+  local quiet = false    -- opened by the login reopen of a pinned bag: no page change, no Loot Bag section
   if kind == 'bag' or kind == 'pbag' then
     local fam = C.family(kind)
     local id = bagItemId(c)
@@ -557,19 +728,22 @@ local function onOpen(c, previous)
     -- a bag opened with an id of its own (a double click on it in the grid) takes the place of the one open before:
     -- one bag stays open per family, so the server's limit of open containers is not eaten (the login restore keeps
     -- what it opens). The Loot Bag (O516) is a section of its own: it neither closes the other bag nor is closed by it
-    if not restoring() and not loot then
+    local pin = not loot and C.pinned(pins, pinKeyOf(fam, slot)) or false
+    if not restoring() and not loot and not pin then
       for _, old in ipairs(C.superseded(bagMemo, cid, fam)) do
         local oc = g_game.getContainer(old)
         bagMemo[old] = nil
         if oc then pcall(g_game.close, oc) end
       end
     end
-    bagMemo[cid] = { fam = fam, slot = slot, id = id, loot = loot or nil }
+    bagMemo[cid] = { fam = fam, slot = slot, id = id, loot = loot or nil, pinned = pin or nil }
+    if loot and C.pinned(pins, pinKeyOf(fam, slot)) then bagMemo[cid].pinned = true end
+    if bagMemo[cid].pinned and pinPhase then quiet = true end
   end
   -- (the server answers a seek with a new open of the same bag: the page asked for, lootWant, stays)
-  if loot then lootShown = C.lootShownOnOpen(lootShown, restoring()) end
+  if loot then lootShown = C.lootShownOnOpen(lootShown, restoring() or quiet) end
   -- what the player opened is the page shown; the ones the login restore opens are not; the Loot Bag is no page
-  selected = C.selectOnOpen(selected, kind, slot, restoring(), loot)
+  selected = C.selectOnOpen(selected, kind, slot, restoring() or quiet, loot)
   M.refresh()
 end
 
@@ -908,6 +1082,8 @@ local function createWindow()
   if closeButton then closeButton:hide() end
   local grid = child('grid')
   if grid then connect(grid, { onGeometryChange = function() M.refresh() end }) end
+  local lt = child('lootTitle')
+  if lt then connect(lt, { onGeometryChange = function() M.refresh() end }) end
   buildEquip()
   buildTabs()
 end
@@ -921,6 +1097,7 @@ end
 
 local function onGameStart()
   bagMemo, hiddenWindows, selected, sorting, purseCid = {}, {}, 'main', nil, nil
+  stopPins()
   lootShown, lootWant, lootSeek = false, 0, nil
   createWindow()
   if not alive(window) then return end
@@ -934,6 +1111,8 @@ local function onGameStart()
   -- the login restore (game_chaoslayout) opens the containers of the last session first; the main backpack opens here
   -- when it did not
   scheduleEvent(safe('ensure', function() ensureMain() hideAllInPanel() M.refresh() end), 2500)
+  loadPins()
+  scheduleEvent(safe('pins', startPins), 3500)
   if cycle then removeEvent(cycle) end
   ensureTries = 0
   cycle = cycleEvent(safe('money', function()
@@ -950,6 +1129,7 @@ end
 
 local function onGameEnd()
   sorting = nil
+  stopPins()
   if cycle then removeEvent(cycle) cycle = nil end
   bagMemo, hiddenWindows, purseCid = {}, {}, nil
   lootShown, lootWant, lootSeek = false, 0, nil
@@ -999,4 +1179,5 @@ function openPurse() M.openPurse() end
 function getPurseButton() return M.purseButton() end
 function selectPage(key) M.selectPage(key) end
 function toggleLoot() M.toggleLoot() end
+function togglePin() M.togglePin() end
 function lootArrow(delta) M.lootArrow(delta) end

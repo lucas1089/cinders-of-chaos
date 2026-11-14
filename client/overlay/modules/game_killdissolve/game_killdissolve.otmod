@@ -1,0 +1,12 @@
+Module
+  name: game_killdissolve
+  description: Dissolve kill effects - the dying monster's own sprite blows away as sand, comes apart in pixels, crumbles to ash, burns from the edges, collapses into the void, shatters and melts or rises as gold dust (outfit shaders chaos_outfit_kd_*, base patch 0201; server cosmetics.lua sends it on extended opcode 225, game_cosmetics hands it over); at most 6 at once, then the plain effect
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ killdissolve_core, killdissolve ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1005
+  @onLoad: init()
+  @onUnload: terminate()

@@ -584,10 +584,9 @@ local cfg = {
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("footprint")),
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("outline")),
 		-- <<< Footprints and outlines
-		-- >>> Combat cosmetics others see (O318; cosmetics_config.lua kinds levelfx / rarefx / emote; 150-250 coins)
+		-- >>> Combat cosmetics others see (O318; cosmetics_config.lua kinds levelfx / rarefx; 150-250 coins)
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("levelfx")),
 		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("rarefx")),
-		under(P_COSMETICS, dofile("data/scripts/chaos/cosmetics_store.lua")("emote")),
 		-- <<< Combat cosmetics
 		-- >>> Cosmetics (cosmetics.lua): spell effect skins, kill effects, loot label accents, chat name colours; offers,
 		-- prices and texts live in cosmetics_config.lua (cosmetics_store.lua builds each category). Account-wide.

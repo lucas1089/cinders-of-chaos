@@ -3,10 +3,13 @@
 -- carries cost, oldCost (struck through), tags (Sale / New / Featured / Bundle), gift (can be bought for another
 -- character) and owned; buying echoes title and cost back, so a price that changed is refused, never charged.
 -- The Donate button opens the donation window (pay.lua: Pix / PayPal, Chaos Coins as a thank-you).
--- The categories are a tree (2026-10-21, the layout of the base server's store window; shoptree.lua): top categories
--- and parents (Cosmetics, Consumables, Premium & Services) that open to their subcategories, one at a time, with the
--- number of offers; the path of the shown category sits over the offers. The search box asks the server (`search`),
--- which answers with offers that carry where they are (`at`), so buying from the results works as from a page.
+-- The layout (O556, 2026-11-14): a header (balance with its coin, Donate, search), a short side rail with Home and one entry
+-- per top group (Cosmetics, Consumables, Premium & Services and the top categories; shoptree.lua builds the tree, the rule
+-- of the rail and the home page is shopview.lua), the subcategories of a group as chips inside the page, the offers as
+-- cards, and a details pane (description, price, Buy with a confirmation, Gift, Try on) for the picked card. The window
+-- opens on the home page: the weekly offers with their timer, the starter packs and the bundles, read from the pages of
+-- those categories (no protocol change). The search box asks the server (`search`), which answers with offers that
+-- carry where they are (`at`), so buying from the results works as from a page.
 -- private variables
 local SHOP_EXTENTED_OPCODE = 218
 local currentCategoryPage = {}
@@ -20,18 +23,32 @@ local transferValue = 0
 local CATEGORIES = {}
 local GROUPS = {} -- the parents of the tree ("category_groups"; none from a server without the tree)
 local TREE = {} -- ShopTree.build(CATEGORIES, GROUPS)
-local expanded = {} -- {[parent name] = true}: the open parent
+local RAIL = {} -- ShopView.rail(TREE, has a home page)
+local HOME = {} -- ShopView.homeSections(TREE)
+local view = 'category' -- what the page shows: 'home', 'category', 'search' or 'history'
+local railKey = nil -- the rail entry that is open (ShopView.HOME, 'g:Cosmetics', 'c:3'), nil in a search or the history
 local selectedCategory = nil -- the index of the shown category
 local pendingCategory = nil -- a category to show once the list comes (openCategory)
+local wantHome = false -- the window was just opened: the home page once the list comes
 local searching = nil -- the search text whose results are shown
+local searchOffers = nil -- the offers of the last results, searchGroup the chip that filters them
+local searchGroup = nil
 local searchEvent = nil
-local rendering = false -- the category list is being built: focus changes are not clicks
 local HISTORY = {}
 local STATUS = {}
 local AD = {}
 local selectedOffer = {}
+local selectedCard = nil -- the card whose details the pane shows
 local giftWindow = nil
 local lookPreview = nil -- the shared look preview (game_lookpreview), nil without it or on mobile
+local ui = {} -- the widgets of the window by id (nested ones are not fields of the window)
+local pathEndsAt = nil -- the weekly rotation's end while its category is shown (the path's timer)
+
+local CARD_W, CARD_H, CARD_GAP = 168, 68, 6
+local LOOK_HEIGHT = 190 -- the look preview's room in the details pane (offers that have a look)
+local CHIP_W, CHIP_H, CHIP_GAP, CHIP_CHARS = 108, 22, 3, 19
+local NAME_CHARS = 34 -- two lines of a card's name
+local ONE_LINE_CHARS = 16 -- what fits on one line of it
 
 local function sendAction(action, data)
   if not g_game.getFeature(GameExtendedOpcode) then
@@ -44,7 +61,7 @@ local function sendAction(action, data)
   end
   if protocolGame then
     protocolGame:sendExtendedJSONOpcode(SHOP_EXTENTED_OPCODE, {action = action, data = data})
-  end 
+  end
 end
 
 function requestPage(categoryId, page)
@@ -84,10 +101,11 @@ function terminate()
   if searchEvent then removeEvent(searchEvent) end
   searchEvent = nil
   if shop then
-    disconnect(shop.categories, { onChildFocusChange = changeCategory })
     shop:destroy()
     shop = nil
   end
+  ui = {}
+  selectedCard = nil
   if msgWindow then
     msgWindow:destroy()
   end
@@ -151,6 +169,7 @@ function toggle()
   if shop:isVisible() then
     return hide()
   end
+  wantHome = true -- opened: the home page once the list comes (an openCategory asked for wins)
   show()
   check()
 end
@@ -165,14 +184,31 @@ local function createPreview()
   local lp = modules.game_lookpreview
   local mobile = g_app and type(g_app.isMobile) == 'function' and g_app.isMobile()
   if mobile or not lp or type(lp.create) ~= 'function' then
-    shop.lookPreview:setWidth(0)
-    shop.adPanel:setMarginRight(0)
+    ui.lookPreview:setHeight(0)
+    ui.lookPreview:setVisible(false)
     return
   end
-  lookPreview = lp.create(shop.lookPreview)
-  connect(shop.offers, { onChildFocusChange = function(_, focused)
-    if lookPreview then lookPreview:setOption(focused and focused.lookOption or nil) end
-  end })
+  lookPreview = lp.create(ui.lookPreview)
+  -- the store's preview is compact: the figure and the turn buttons only. The other controls (slow turn, walk, simple
+  -- figure, compare) stay in the Outfit window and keep their saved settings; they are clipped away here (the figure gets
+  -- the room: 144 px of stage in the 190 px column instead of 76)
+  pcall(function()
+    local controls = lookPreview and lookPreview.widget and lookPreview.widget.controls
+    if not controls then return end
+    controls:setHeight(28)
+    controls:setClipping(true)
+    for _, id in ipairs({ 'autoTurn', 'walk', 'simple', 'compare' }) do
+      if controls[id] then controls[id]:setVisible(false) end
+    end
+  end)
+end
+
+-- the preview column opens (the preview's own height) for an offer that has a look, and folds away for the others
+local function setLookRoom(open)
+  if not ui.lookPreview then return end
+  open = open and lookPreview ~= nil
+  ui.lookPreview:setHeight(open and LOOK_HEIGHT or 0)
+  ui.lookPreview:setVisible(open)
 end
 
 -- The cosmetic itself as the icon (shopicon.lua; the server's `look` of the offer or category): a creature with the
@@ -222,36 +258,36 @@ local function applyArt(widget, data, size)
   if not ok then g_logger.warning('[shop] icon: ' .. tostring(err)) end
 end
 
+-- the widgets of the window that the code reaches by id (a nested widget is no field of the window)
+local IDS = { 'infoPanel', 'points', 'buy', 'searchText', 'rail', 'detailPanel', 'lookPreview', 'dTitle', 'dTags', 'dCoin',
+  'dPrice', 'dOld', 'dDesc', 'dNote', 'tryButton', 'giftButton', 'buyButton', 'mainPanel', 'adPanel', 'ad', 'pathLabel',
+  'pathCount', 'chips', 'offers', 'offersScrollBar', 'home', 'homeScrollBar', 'emptyLabel', 'pageControls', 'pageLabel',
+  'prevPage', 'nextPage' }
+
 function createShop()
   if shop then return end
   shop = g_ui.displayUI('shop')
   pcall(function() modules.game_howitworks.attach(shop, 'shop') end) -- game_howitworks: the ? button
   shop:hide()
+  for _, id in ipairs(IDS) do ui[id] = shop:recursiveGetChildById(id) end
   createPreview()
 
-  shop.prevPage     = shop:recursiveGetChildById('prevPage')
-  shop.nextPage     = shop:recursiveGetChildById('nextPage')
-  shop.pageControls = shop:recursiveGetChildById('pageControls')
-  shop.pageControls:show()
-  shop.prevPage:show()
-  shop.nextPage:show()
-  if shop.prevPage and shop.nextPage then
-    shop.nextPage.onClick = function()
-      local id = selectedCategory
-      if not id or searching or browsingHistory then return end
-      requestPage(id, (currentCategoryPage[id] or 1) + 1)
-    end
-    shop.prevPage.onClick = function()
-      local id = selectedCategory
-      if not id or searching or browsingHistory then return end
-      requestPage(id, math.max(1, (currentCategoryPage[id] or 1) - 1))
-    end
+  ui.pageControls:show()
+  ui.nextPage.onClick = function()
+    local id = selectedCategory
+    if not id or searching or browsingHistory or view ~= 'category' then return end
+    requestPage(id, (currentCategoryPage[id] or 1) + 1)
+  end
+  ui.prevPage.onClick = function()
+    local id = selectedCategory
+    if not id or searching or browsingHistory or view ~= 'category' then return end
+    requestPage(id, math.max(1, (currentCategoryPage[id] or 1) - 1))
   end
   shopButton = modules.client_topmenu.addRightGameToggleButton(
     'shopButton', tr('Shop'),
     '/images/topbuttons/shop', toggle, false, 8
   )
-  connect(shop.categories, { onChildFocusChange = changeCategory })
+  showDetails(nil)
 end
 
 function createTransferWindow()
@@ -274,6 +310,14 @@ function transferCoins()
   transferWindow.coinsAmount:setValue(0)
 end
 
+-- is category `catId` one the home page shows
+local function onHome(catId)
+  for _, s in ipairs(HOME) do
+    if s.index == catId then return true end
+  end
+  return false
+end
+
 function onExtendedJSONOpcode(protocol, code, json_data)
   createShop()
   createTransferWindow()
@@ -292,7 +336,7 @@ function onExtendedJSONOpcode(protocol, code, json_data)
     end
     return
   end
-  
+
   otcv8shop = true
   if action == 'category_groups' then
     -- the parents of the tree, sent right before "categories"
@@ -321,13 +365,10 @@ function onExtendedJSONOpcode(protocol, code, json_data)
     if searching then
       -- a page after a purchase from the search results: the results again, so "Owned" shows there
       sendAction("search", { text = searching })
-    elseif not browsingHistory and catId == selectedCategory then
-      clearOffers()
-      for row, offerData in ipairs(data.offers) do
-        addOffer(catId, offerData, { category = catId, page = page, offer = row })
-      end
-      shop.prevPage:setEnabled(page > 1)
-      shop.nextPage:setEnabled(page < total)
+    elseif view == 'home' then
+      if page == 1 and onHome(catId) then renderHome() end
+    elseif view == 'category' and not browsingHistory and catId == selectedCategory then
+      renderCategoryPage(catId, page, data.offers)
     end
   elseif action == 'search_results' then
     processSearch(data)
@@ -340,24 +381,42 @@ function onExtendedJSONOpcode(protocol, code, json_data)
   end
 end
 
-function clearOffers()
-  if lookPreview then lookPreview:setOption(nil) end
-  while shop.offers:getChildCount() > 0 do
-    local child = shop.offers:getLastChild()
-    shop.offers:destroyChildren(child)
+-- ---------------------------------------------------------------- clearing
+local function destroyChildrenOf(widget)
+  if not widget then return end
+  while widget:getChildCount() > 0 do
+    widget:destroyChildren(widget:getLastChild())
   end
+end
+
+function clearOffers()
+  selectedCard = nil
+  if lookPreview then lookPreview:setOption(nil) end
+  destroyChildrenOf(ui.offers)
+  showDetails(nil)
+end
+
+local function clearHome()
+  selectedCard = nil
+  if lookPreview then lookPreview:setOption(nil) end
+  destroyChildrenOf(ui.home)
+  showDetails(nil)
+end
+
+local function clearChips()
+  destroyChildrenOf(ui.chips)
+  ui.chips:setHeight(0)
 end
 
 function clearCategories()
   CATEGORIES = {}
   TREE = {}
+  RAIL = {}
+  HOME = {}
   clearOffers()
-  rendering = true
-  while shop.categories:getChildCount() > 0 do
-    local child = shop.categories:getLastChild()
-    shop.categories:destroyChildren(child)
-  end
-  rendering = false
+  clearHome()
+  clearChips()
+  destroyChildrenOf(ui.rail)
 end
 
 function clearHistory()
@@ -367,131 +426,322 @@ function clearHistory()
   end
 end
 
--- the list from the server: the tree again, the shown category kept by name (its index may have moved: a starter
--- pack bought, a category emptied), else the first one
+-- which page the window shows: the cards (a category, the search, the history) or the home page
+local function showPage(which)
+  local home = which == 'home'
+  ui.home:setVisible(home)
+  ui.homeScrollBar:setVisible(home)
+  ui.offers:setVisible(not home)
+  ui.offersScrollBar:setVisible(not home)
+  ui.emptyLabel:setVisible(false)
+end
+
+-- the empty page says why
+local function showEmpty(text)
+  ui.emptyLabel:setText(text or '')
+  ui.emptyLabel:setVisible(text ~= nil)
+end
+
+-- ---------------------------------------------------------------- the list from the server
+-- the list from the server: the rail again, the shown category kept by name (its index may have moved: a starter
+-- pack bought, a category emptied), else the home page (the window was opened) or the first category
 function processCategories(data)
-  local keepName = pendingCategory
-  if not keepName and selectedCategory and CATEGORIES[selectedCategory] then
+  local pend = pendingCategory
+  local keepName = pend
+  if not keepName and view == 'category' and selectedCategory and CATEGORIES[selectedCategory] then
     keepName = CATEGORIES[selectedCategory].name
   end
   pendingCategory = nil
+  local opened = wantHome
+  wantHome = false
+  if opened and not pend then
+    -- opened again: not the old search or history
+    searching = nil
+    browsingHistory = false
+    if ui.searchText and ui.searchText:getText() ~= '' then ui.searchText:setText('') end
+  end
   clearCategories()
   CATEGORIES = data
   TREE = ShopTree.build(CATEGORIES, GROUPS)
-  local leaf = keepName and ShopTree.find(TREE, keepName) or ShopTree.firstLeaf(TREE)
-  selectedCategory = leaf and leaf.index or nil
-  expanded = selectedCategory and ShopTree.reveal(TREE, selectedCategory) or {}
-  renderCategories()
-  if searching then
+  HOME = ShopView.homeSections(TREE)
+  RAIL = ShopView.rail(TREE, #HOME > 0)
+  renderRail()
+  local leaf = pend and ShopTree.find(TREE, pend)
+  if leaf then
+    selectCategory(leaf.index)
+  elseif searching then
     sendAction("search", { text = searching }) -- the results again (a purchase changed the list)
-  elseif selectedCategory and not browsingHistory then
-    selectCategory(selectedCategory)
+  elseif browsingHistory then
+    showHistory(true)
+  elseif (opened or view == 'home') and #HOME > 0 then
+    showHome()
+  else
+    leaf = keepName and ShopTree.find(TREE, keepName) or ShopTree.firstLeaf(TREE)
+    if leaf then
+      selectCategory(leaf.index)
+    elseif #HOME > 0 then
+      showHome()
+    end
   end
 end
 
--- the category rows: top categories, the parents (+ / -) and the subcategories of the open one
-function renderCategories()
-  if not shop then return end
-  rendering = true
-  while shop.categories:getChildCount() > 0 do
-    shop.categories:destroyChildren(shop.categories:getLastChild())
-  end
-  local focusWidget
-  for _, row in ipairs(ShopTree.rows(TREE, expanded)) do
-    local node = row.node
-    if node.kind == 'group' then
-      local w = addCategory(node.data, 'ShopGroup', node.name, node.size)
-      if w then
-        w:setId('group_' .. node.name)
-        w.groupName = node.name
-        if w.arrow then w.arrow:setText(row.expanded and '-' or '+') end
-        -- on press (a row is a phantom panel: a click lands on its icon or label, the press reaches the row)
-        w.onMousePress = function(_, _, button)
-          if button == MouseLeftButton then onGroupClick(node.name) end
-          return true
-        end
-      end
-    else
-      local w = addCategory(node.data, row.depth > 0 and 'ShopSubCategory' or 'ShopCategory', node.name, node.size)
-      if w then
-        w:setId('category_' .. node.index)
-        if node.index == selectedCategory then focusWidget = w end
-      end
+-- ---------------------------------------------------------------- the rail
+-- a rail entry: style 'ShopRail' + Item, Creature or Image after the icon the server sends; the name (a run-time tr()
+-- key, client_chaos_locale/pt_br.lua) and the subtle count
+local function addRailEntry(entry)
+  local data = entry.data or {}
+  local w
+  if entry.kind == 'home' then
+    w = g_ui.createWidget('ShopRailImage', ui.rail)
+    w.image:setImageSource('/images/chaos/small/topbutton_market')
+  elseif data["type"] == "item" then
+    w = g_ui.createWidget('ShopRailItem', ui.rail)
+    w.item:setItemId(data["item"])
+    w.item:setItemCount(data["count"])
+    w.item:setShowCount(false)
+    applyArt(w, data, 26)
+  elseif data["type"] == "outfit" then
+    w = g_ui.createWidget('ShopRailCreature', ui.rail)
+    w.creature:setOutfit(data["outfit"])
+    if data["outfit"] and data["outfit"]["rotating"] then
+      w.creature:setAutoRotating(true)
     end
+    applyArt(w, data, 26)
+  elseif data["type"] == "image" then
+    w = g_ui.createWidget('ShopRailImage', ui.rail)
+    if data["image"] and data["image"]:sub(1, 4):lower() == "http" then
+      HTTP.downloadImage(data['image'], function(path, err)
+        if err then g_logger.warning("HTTP error: " .. err .. " - " .. data["image"]) return end
+        if w.image then w.image:setImageSource(path) end
+      end)
+    else
+      w.image:setImageSource(data["image"])
+    end
+  else
+    g_logger.error("Invalid shop category type: " .. tostring(data["type"]))
+    return nil
   end
-  if focusWidget and not browsingHistory and not searching then
-    shop.categories:focusChild(focusWidget)
-    shop.categories:ensureChildVisible(focusWidget)
+  w.railKey = entry.key
+  local label = entry.kind == 'home' and tr('Home') or tr(entry.name)
+  w.name:setText(label)
+  w:setTooltip(label)
+  if entry.size then w.count:setText(tostring(entry.size)) end
+  -- the weekly rotation ("This week"): the timer replaces the count (refreshed every 30 s while the store is open)
+  if entry.endsIn then
+    w.rotationEndsAt = g_clock.seconds() + entry.endsIn
+    w:setTooltip(label .. '\n' .. tr('A new choice of offers every Monday at 06:00 server time.'))
   end
-  rendering = false
+  -- on press (a row is a phantom panel: a click lands on its icon or label, the press reaches the row)
+  w.onMousePress = function(_, _, button)
+    if button == MouseLeftButton then onRailClick(entry.key) end
+    return true
+  end
+  return w
+end
+
+function renderRail()
+  if not ui.rail then return end
+  destroyChildrenOf(ui.rail)
+  for _, entry in ipairs(RAIL) do addRailEntry(entry) end
+  markRail()
   updateRotationLabels()
 end
 
--- a click on a parent: open it (and show its first subcategory) or close it (ShopTree.toggle)
-function onGroupClick(name)
-  local sel
-  expanded, sel = ShopTree.toggle(TREE, expanded, name, selectedCategory)
-  -- built again after this click returns (the clicked row is replaced)
-  addEvent(function()
-    if sel then
-      selectCategory(sel)
-    end
-    renderCategories()
-  end)
+-- the open entry: checked, its name gold, the bar on its edge
+function markRail()
+  if not ui.rail then return end
+  for _, w in ipairs(ui.rail:getChildren()) do
+    local on = w.railKey ~= nil and w.railKey == railKey
+    w:setChecked(on)
+    if w.bar then w.bar:setVisible(on) end
+    if w.name then w.name:setColor(on and '#f6cf72' or '#d6c9ae') end
+  end
 end
 
--- show category `index`: its first page, its path over the offers; leaves a search or the history
+function onRailClick(key)
+  if key == ShopView.HOME then
+    if view == 'home' and not searching and not browsingHistory then return end
+    return showHome()
+  end
+  local entry = ShopView.entry(RAIL, key)
+  local index = ShopView.indexFor(TREE, entry, selectedCategory)
+  if not index then return end
+  if view == 'category' and index == selectedCategory and not searching and not browsingHistory then return end
+  selectCategory(index)
+end
+
+-- ---------------------------------------------------------------- the path and the pager
+-- the path over the offers: "Cosmetics > Wings", the search, the history; the subtle count beside it
+function updatePath(text, count)
+  if not ui.pathLabel then return end
+  ui.pathLabel:setText(text or '')
+  ui.pathCount:setText(count or '')
+end
+
+local function updatePager(page, pages)
+  local text = ShopView.pageText(page, pages)
+  ui.pageControls:setVisible(text ~= '')
+  ui.pageLabel:setText(text)
+  ui.prevPage:setEnabled(page > 1)
+  ui.nextPage:setEnabled(page < (pages or 1))
+end
+
+local function categoryPath(index)
+  local parts = {}
+  for _, p in ipairs(index and ShopTree.path(TREE, index) or {}) do
+    parts[#parts + 1] = tr(p)
+  end
+  return table.concat(parts, ' > ')
+end
+
+-- the count beside the path of a category: how many offers, or the weekly rotation's timer
+local function updateCategoryCount(index)
+  local cat = CATEGORIES[index]
+  pathEndsAt = nil
+  if not cat then return updatePath(categoryPath(index), '') end
+  if tonumber(cat.endsIn) then
+    pathEndsAt = g_clock.seconds() + tonumber(cat.endsIn)
+    return updatePath(categoryPath(index), tr('Ends in %s', RotationView.left(cat.endsIn)))
+  end
+  updatePath(categoryPath(index), cat.size and tr('%d offers', tonumber(cat.size)) or '')
+end
+
+-- ---------------------------------------------------------------- the home page
+function showHome()
+  if #HOME == 0 then return end
+  view = 'home'
+  browsingHistory = false
+  selectedCategory = nil
+  pathEndsAt = nil
+  if searching then
+    searching = nil
+    if ui.searchText and ui.searchText:getText() ~= '' then ui.searchText:setText('') end
+  end
+  railKey = ShopView.HOME
+  markRail()
+  clearChips()
+  clearOffers()
+  updatePath('', '')
+  updatePager(1, 1)
+  showPage('home')
+  renderHome()
+  for _, s in ipairs(HOME) do requestPage(s.index, 1) end
+end
+
+-- the sections from the pages that came (the first page of each category; a page not here yet leaves its strip short)
+function renderHome()
+  if not ui.home or view ~= 'home' then return end
+  clearHome()
+  local width = ui.home:getWidth() - 15 - 12 -- the scrollbar room and the section's padding
+  local cols = width > 0 and ShopView.columns(width, CARD_W, CARD_GAP) or 3
+  for _, s in ipairs(HOME) do
+    local cat = CATEGORIES[s.index]
+    local pageOffers = cat and cat.offers and cat.offers[1] or {}
+    local pick, more = ShopView.homePick(pageOffers, ShopView.homeLimit(s.key, cols), s.size)
+    local section = g_ui.createWidget('ShopSection', ui.home)
+    section.title:setText(tr(s.name))
+    if s.endsIn then
+      -- the weekly strip, highlighted, with the time left
+      section:setImageSource('/images/chaos/panel_highlight')
+      section.rotationEndsAt = g_clock.seconds() + s.endsIn
+      section.note:setText(tr('Ends in %s', RotationView.left(s.endsIn)))
+    end
+    if more > 0 or (s.size and s.size > #pick) then
+      section.seeAll:setText(tr('See all (%d)', tonumber(s.size) or #pick + more))
+      section.seeAll:setVisible(true)
+      section.seeAll.onClick = function() selectCategory(s.index) end
+    end
+    for i, offerData in ipairs(pick) do
+      addOffer(s.index, offerData, { category = s.index, page = 1, offer = i }, section.grid)
+    end
+    local gridHeight = ShopView.gridHeight(#pick, cols, CARD_H, CARD_GAP)
+    section.grid:setHeight(gridHeight)
+    section:setHeight(34 + gridHeight)
+  end
+  updateRotationLabels()
+end
+
+-- ---------------------------------------------------------------- a category
+-- show category `index`: its first page, its path over the offers, the chips of its group; leaves a search, the history
+-- or the home page
 function selectCategory(index)
   if not CATEGORIES[index] then return end
   selectedCategory = index
+  view = 'category'
   browsingHistory = false
   if searching then
     searching = nil
-    if shop.searchText and shop.searchText:getText() ~= '' then shop.searchText:setText('') end
+    if ui.searchText and ui.searchText:getText() ~= '' then ui.searchText:setText('') end
   end
+  railKey = ShopView.railKeyOf(TREE, index)
+  markRail()
   currentCategoryPage[index] = 1
-  updatePath()
+  showPage('cards')
+  clearOffers()
+  renderChips()
+  updateCategoryCount(index)
+  updatePager(1, CATEGORIES[index].pages or 1)
   sendAction("get_page", { category = index, page = 1 })
 end
 
--- the path over the offers: "Cosmetics > Wings", the search, the history
-function updatePath(text)
-  if not shop or not shop.pathLabel then return end
-  if text then
-    shop.pathLabel:setText(text)
-    return
+-- the offers of a page of the shown category as cards
+function renderCategoryPage(catId, page, offers)
+  clearOffers()
+  showPage('cards')
+  for row, offerData in ipairs(offers) do
+    addOffer(catId, offerData, { category = catId, page = page, offer = row }, ui.offers)
   end
-  local parts = {}
-  for _, p in ipairs(selectedCategory and ShopTree.path(TREE, selectedCategory) or {}) do
-    parts[#parts + 1] = tr(p)
+  updatePager(page, CATEGORIES[catId] and CATEGORIES[catId].pages or 1)
+  showEmpty(#offers == 0 and tr('Nothing here yet.') or nil)
+end
+
+-- the chips under the path: the subcategories of the open group (none for a top category)
+function renderChips()
+  clearChips()
+  local group = railKey and railKey:match('^g:(.+)$')
+  if not group then return end
+  local chips = ShopView.chips(TREE, group, CHIP_CHARS)
+  if #chips < 2 then return end
+  for _, c in ipairs(chips) do
+    local chip = g_ui.createWidget('ShopChip', ui.chips)
+    chip:setText(c.text)
+    chip:setTooltip(tr(c.name))
+    chip:setChecked(c.index == selectedCategory)
+    chip.onClick = function() if c.index ~= selectedCategory or view ~= 'category' then selectCategory(c.index) end end
   end
-  shop.pathLabel:setText(table.concat(parts, ' > '))
+  setChipsHeight(#chips)
+end
+
+function setChipsHeight(count)
+  local width = ui.chips:getWidth()
+  local cols = width > 0 and ShopView.columns(width, CHIP_W, CHIP_GAP) or 5
+  ui.chips:setHeight(ShopView.gridHeight(count, cols, CHIP_H, CHIP_GAP))
 end
 
 -- for other modules: open the store at a category (by its name, as the server sends it)
 function openCategory(name)
   if not shop then return end
-  if not shop:isVisible() then toggle() end
+  local opening = not shop:isVisible()
+  if opening then toggle() end
   local leaf = ShopTree.find(TREE, name)
-  if not leaf then
-    pendingCategory = name -- the list is on its way (toggle asked for it)
-    return
+  if opening then
+    -- the list is on its way (toggle asked for it): it keeps this category, not the home page
+    pendingCategory = name
+    wantHome = false
   end
-  expanded = ShopTree.reveal(TREE, leaf.index)
-  selectCategory(leaf.index)
-  renderCategories()
+  if leaf then selectCategory(leaf.index) end
 end
 
 -- ---------------------------------------------------------------- search (the server looks, shop.lua Shop.search)
 function onSearchChange()
   if searchEvent then removeEvent(searchEvent) searchEvent = nil end
-  if not shop or not shop.searchText then return end
-  local text = shop.searchText:getText():gsub('^%s+', ''):gsub('%s+$', '')
+  if not shop or not ui.searchText then return end
+  local text = ui.searchText:getText():gsub('^%s+', ''):gsub('%s+$', '')
   if #text < 2 then
     if searching then
       searching = nil
-      if selectedCategory then selectCategory(selectedCategory) end
-      renderCategories()
+      searchOffers, searchGroup = nil, nil
+      if selectedCategory then selectCategory(selectedCategory) else showHome() end
     end
     return
   end
@@ -503,26 +753,65 @@ function onSearchChange()
   end, 400)
 end
 
-function processSearch(data)
-  if not shop or not searching or type(data) ~= 'table' or data.text ~= searching then return end
+-- the cards of the results of the chip that is on (all, or one group)
+local function renderSearchCards()
   clearOffers()
-  shop.categories:focusChild(nil)
-  local offers = type(data.offers) == 'table' and data.offers or {}
-  for _, offerData in ipairs(offers) do
+  showPage('cards')
+  local shown = ShopView.filterResults(searchOffers, searchGroup)
+  for _, offerData in ipairs(shown) do
     local at = type(offerData.at) == 'table' and offerData.at or nil
     if at then
-      local where = {}
-      for _, p in ipairs(type(offerData.path) == 'table' and offerData.path or {}) do where[#where + 1] = tr(p) end
-      if #where > 0 then
-        offerData.description = table.concat(where, ' > ') .. ': ' .. tostring(offerData.description or '')
-      end
       addOffer(tonumber(at.category) or 0, offerData,
-        { category = tonumber(at.category), page = tonumber(at.page), offer = tonumber(at.offer) })
+        { category = tonumber(at.category), page = tonumber(at.page), offer = tonumber(at.offer) }, ui.offers)
     end
   end
-  shop.prevPage:setEnabled(false)
-  shop.nextPage:setEnabled(false)
-  updatePath(#offers > 0 and tr('Search "%s": %d offers', searching, #offers) or tr('Search "%s": nothing found', searching))
+  showEmpty(#shown == 0 and tr('Nothing found. Try another word.') or nil)
+end
+
+-- the chips over the results: All and one per group (when the results come from more than one)
+local function renderResultChips()
+  clearChips()
+  local groups = ShopView.resultGroups(searchOffers)
+  for _, g in ipairs(groups) do
+    local chip = g_ui.createWidget('ShopChip', ui.chips)
+    local label = g.name == nil and tr('All') or tr(g.name == '' and 'Other' or g.name)
+    chip:setText(ShopView.chipText(label, g.count, CHIP_CHARS))
+    chip:setTooltip(label)
+    chip:setChecked(g.name == searchGroup)
+    chip.onClick = function()
+      searchGroup = g.name
+      renderResultChips()
+      renderSearchCards()
+    end
+  end
+  if #groups > 0 then setChipsHeight(#groups) end
+end
+
+function processSearch(data)
+  if not shop or not searching or type(data) ~= 'table' or data.text ~= searching then return end
+  view = 'search'
+  railKey = nil
+  markRail()
+  pathEndsAt = nil
+  local offers = type(data.offers) == 'table' and data.offers or {}
+  for _, offerData in ipairs(offers) do
+    local where = {}
+    for _, p in ipairs(type(offerData.path) == 'table' and offerData.path or {}) do where[#where + 1] = tr(p) end
+    if #where > 0 and type(offerData.at) == 'table' then
+      offerData.description = table.concat(where, ' > ') .. ': ' .. tostring(offerData.description or '')
+    end
+  end
+  searchOffers = offers
+  -- a chip of the last results that is no longer there: all
+  local keep = false
+  for _, g in ipairs(ShopView.resultGroups(offers)) do
+    if g.name == searchGroup then keep = true end
+  end
+  if not keep then searchGroup = nil end
+  renderResultChips()
+  renderSearchCards()
+  updatePager(1, 1)
+  updatePath(#offers > 0 and tr('Search "%s": %d offers', searching, #offers) or tr('Search "%s": nothing found', searching), '')
 end
 
 function processHistory(data)
@@ -553,27 +842,43 @@ function processMessage(data)
   msgWindow:focus()
 end
 
+-- the balance changed: the cards and the details pane show what the coins buy (poor / affordable)
+local function refreshStates()
+  local function each(container)
+    if not container then return end
+    for _, child in ipairs(container:getChildren()) do
+      if child.offerData then applyCardState(child) end
+    end
+  end
+  each(ui.offers)
+  if ui.home then
+    for _, section in ipairs(ui.home:getChildren()) do each(section.grid) end
+  end
+  if selectedCard and not selectedCard:isDestroyed() then showDetails(selectedCard, true) end
+end
+
 function processStatus(data)
   if table.equal(STATUS,data) then
     return
   end
   STATUS = data
 
-  if data['ad'] then 
+  if data['ad'] then
     processAd(data['ad'])
   end
   if data['points'] then
     -- the balance is shown short (15.3k), exact in the tooltip
-    shop.infoPanel.points:setText(tr("Chaos Coins:") .. " " .. formatShortNumber(tonumber(data['points']) or data['points']))
-    shop.infoPanel.points:setTooltip(tr("Chaos Coins:") .. " " .. comma_value(data['points']))
+    ui.points:setText(formatShortNumber(tonumber(data['points']) or data['points']))
+    ui.points:setTooltip(tr("Chaos Coins:") .. " " .. comma_value(data['points']))
+    refreshStates()
   end
   if data['buyUrl'] and data['buyUrl']:sub(1, 4):lower() == "http" then
-    shop.infoPanel.buy:show()
-    shop.infoPanel.buy.onMouseRelease = function() 
+    ui.buy:show()
+    ui.buy.onMouseRelease = function()
       scheduleEvent(function() g_platform.openUrl(data['buyUrl']) end, 50)
     end
   else
-    shop.infoPanel.buy:hide()
+    ui.buy:hide()
   end
 end
 
@@ -587,88 +892,59 @@ function processAd(data)
     return
   end
   AD = data
+  local height = ui.infoPanel:getHeight()
 
   if data['image'] and data['image']:sub(1, 4):lower() == "http" then
-    HTTP.downloadImage(data['image'], function(path, err) 
+    HTTP.downloadImage(data['image'], function(path, err)
       if err then g_logger.warning("HTTP error: " .. err .. " - " .. data['image']) return end
-      shop.adPanel:setHeight(shop.infoPanel:getHeight())
-      shop.adPanel.ad:setText("")
-      shop.adPanel.ad:setImageSource(path)
-      shop.adPanel.ad:setImageFixedRatio(true)
-      shop.adPanel.ad:setImageAutoResize(true)
-      shop.adPanel.ad:setHeight(shop.infoPanel:getHeight())
+      ui.adPanel:setHeight(height)
+      ui.ad:setText("")
+      ui.ad:setImageSource(path)
+      ui.ad:setImageFixedRatio(true)
+      ui.ad:setImageAutoResize(true)
+      ui.ad:setHeight(height)
     end)
   elseif data['text'] and data['text']:len() > 0 then
-      shop.adPanel:setHeight(shop.infoPanel:getHeight())
-      shop.adPanel.ad:setText(data['text'])
-      shop.adPanel.ad:setHeight(shop.infoPanel:getHeight())
+      ui.adPanel:setHeight(height)
+      ui.ad:setText(data['text'])
+      ui.ad:setHeight(height)
   else
-      shop.adPanel:setHeight(0)
+      ui.adPanel:setHeight(0)
   end
   if data['url'] and data['url']:sub(1, 4):lower() == "http" then
-    shop.adPanel.ad.onMouseRelease = function() 
+    ui.ad.onMouseRelease = function()
       scheduleEvent(function() g_platform.openUrl(data['url']) end, 50)
     end
   else
-    shop.adPanel.ad.onMouseRelease = nil
+    ui.ad.onMouseRelease = nil
   end
 end
 
--- a row of the category list: style 'ShopCategory' (a top category), 'ShopSubCategory' (indented) or 'ShopGroup' (a
--- parent, with + / -), each as Item, Creature or Image after the icon the server sends; name and count as the label
--- (category names are run-time tr() keys, client_chaos_locale/pt_br.lua)
-function addCategory(data, style, name, size)
-  local category
-  style = style or 'ShopCategory'
-  if data["type"] == "item" then
-    category = g_ui.createWidget(style .. 'Item', shop.categories)
-    category.item:setItemId(data["item"])
-    category.item:setItemCount(data["count"])
-    category.item:setShowCount(false)
-    applyArt(category, data, 32)
-  elseif data["type"] == "outfit" then
-    category = g_ui.createWidget(style .. 'Creature', shop.categories)
-    category.creature:setOutfit(data["outfit"])
-    if data["outfit"]["rotating"] then
-      category.creature:setAutoRotating(true)
-    end
-    applyArt(category, data, 32)
-  elseif data["type"] == "image" then
-    category = g_ui.createWidget(style .. 'Image', shop.categories)
-    if data["image"] and data["image"]:sub(1, 4):lower() == "http" then
-       HTTP.downloadImage(data['image'], function(path, err)
-        if err then g_logger.warning("HTTP error: " .. err .. " - " .. data["image"]) return end
-        if category.image then category.image:setImageSource(path) end
-      end)
-    else
-      category.image:setImageSource(data["image"])
-    end
-  else
-    g_logger.error("Invalid shop category type: " .. tostring(data["type"]))
-    return nil
-  end
-  name = name or data["name"]
-  category.name:setText(ShopTree.label(tr(name), size))
-  -- the weekly rotation ("This week"): a countdown to the Monday change (rotation.lua)
-  if style ~= 'ShopGroup' and tonumber(data["endsIn"]) then
-    category.rotationName = tr(name)
-    category.rotationEndsAt = g_clock.seconds() + tonumber(data["endsIn"])
-    category:setTooltip(tr('A new choice of offers every Monday at 06:00 server time.'))
-  end
-  return category
-end
-
--- the countdown on the rotation's category, refreshed every 30 s while the store is open
+-- the countdowns of the weekly rotation (its rail entry, the home strip, the path), refreshed every 30 s while the
+-- store is open (rotation.lua)
 local rotationEvent
 function updateRotationLabels()
   if rotationEvent then removeEvent(rotationEvent) rotationEvent = nil end
-  if not shop or (shop.isDestroyed and shop:isDestroyed()) or not shop.categories then return end
+  if not shop or (shop.isDestroyed and shop:isDestroyed()) or not ui.rail then return end
   local any = false
-  for _, child in ipairs(shop.categories:getChildren()) do
+  local now = g_clock.seconds()
+  for _, child in ipairs(ui.rail:getChildren()) do
     if child.rotationEndsAt then
       any = true
-      child.name:setText(RotationView.label(child.rotationName, child.rotationEndsAt, g_clock.seconds()))
+      child.count:setText(RotationView.left(child.rotationEndsAt - now))
     end
+  end
+  if ui.home then
+    for _, section in ipairs(ui.home:getChildren()) do
+      if section.rotationEndsAt then
+        any = true
+        section.note:setText(tr('Ends in %s', RotationView.left(section.rotationEndsAt - now)))
+      end
+    end
+  end
+  if pathEndsAt and view == 'category' then
+    any = true
+    ui.pathCount:setText(tr('Ends in %s', RotationView.left(pathEndsAt - now)))
   end
   if any then rotationEvent = scheduleEvent(updateRotationLabels, 30000) end
 end
@@ -679,125 +955,158 @@ function showHistory(force)
     sendAction("history")
   end
   browsingHistory = true
+  view = 'history'
+  railKey = nil
+  pathEndsAt = nil
+  markRail()
   if searching then
     searching = nil
-    if shop.searchText then shop.searchText:setText('') end
+    if ui.searchText then ui.searchText:setText('') end
   end
+  clearChips()
   clearOffers()
-  rendering = true
-  shop.categories:focusChild(nil)
-  rendering = false
+  showPage('cards')
   for i, transaction in ipairs(HISTORY) do
-    addOffer(0, transaction)
+    addOffer(0, transaction, nil, ui.offers)
   end
-  shop.prevPage:setEnabled(false)
-  shop.nextPage:setEnabled(false)
-  updatePath(tr('Transaction history'))
+  updatePager(1, 1)
+  updatePath(tr('Transaction history'), '')
+  showEmpty(#HISTORY == 0 and tr('No purchases yet.') or nil)
 end
 
--- an offer row; sel = where the server has it ({category, page, offer}: what buy, gift and preview send), nil for a
--- line of the history
-function addOffer(category, data, sel)
-  local offer
+-- ---------------------------------------------------------------- the cards
+local BADGE_COLORS = { owned = '#8fcf7a', sale = '#ff9a5a', new = '#ffd24a', featured = '#f6cf72', other = '#d6c9ae' }
+local PRICE_COLORS = { owned = '#8c8070', poor = '#e03a1e', sale = '#f6cf72', normal = '#f6cf72' }
+
+-- owned, poor, sale and the new / featured tags of a card from the offer and the balance (again when the balance changes)
+function applyCardState(card)
+  local data = card.offerData
+  if not data then return end
+  local st = ShopView.cardState(data, getCoins())
+  card.state = st
+  card.price:setColor(PRICE_COLORS[st.priceKind] or PRICE_COLORS.normal)
+  card.title:setColor(st.owned and '#8c8070' or '#d6c9ae')
+  if card.sel == nil then
+    -- a line of the history: the date as the sub line, "Bought" as the badge
+    card.badge:setText(tr('Bought'))
+    card.badge:setColor('#d6c9ae')
+    card.badge:setVisible(true)
+  elseif st.badge then
+    local text
+    if st.badge == 'owned' then text = tr('Owned')
+    elseif st.badge == 'sale' then text = st.badgeText or tr('Sale')
+    elseif st.badge == 'new' then text = tr('New')
+    elseif st.badge == 'featured' then text = tr('Featured')
+    else text = ShopView.clip(ShopView.tagLabel(st.badgeText or '', function(k) return tr(k) end), 9) end
+    card.badge:setText(text)
+    card.badge:setColor(BADGE_COLORS[st.badge] or BADGE_COLORS.other)
+    card.badge:setVisible(true)
+  else
+    card.badge:setVisible(false)
+  end
+  if card.accent then card.title:setColor(card.accent) end
+end
+
+-- an offer card in `parent`; sel = where the server has it ({category, page, offer}: what buy, gift and preview
+-- send), nil for a line of the history
+function addOffer(category, data, sel, parent)
+  parent = parent or ui.offers
+  local card
   if data["type"] == "item" then
-    offer = g_ui.createWidget('ShopOfferItem', shop.offers)  
-    offer.item:setItemId(data["item"])
-    offer.item:setItemCount(data["count"])
-    offer.item:setShowCount(false)
-    applyArt(offer, data, 48)
+    card = g_ui.createWidget('ShopCardItem', parent)
+    card.item:setItemId(data["item"])
+    card.item:setItemCount(data["count"])
+    card.item:setShowCount(false)
+    applyArt(card, data, 40)
   elseif data["type"] == "outfit" then
-    offer = g_ui.createWidget('ShopOfferCreature', shop.offers)
-    offer.creature:setOutfit(data["outfit"])
+    card = g_ui.createWidget('ShopCardCreature', parent)
+    card.creature:setOutfit(data["outfit"])
     if data["outfit"]["rotating"] then
-      offer.creature:setAutoRotating(true)
+      card.creature:setAutoRotating(true)
     end
-    applyArt(offer, data, 48)
+    applyArt(card, data, 40)
   elseif data["type"] == "image" then
-    offer = g_ui.createWidget('ShopOfferImage', shop.offers)
+    card = g_ui.createWidget('ShopCardImage', parent)
     if data["image"] and data["image"]:sub(1, 4):lower() == "http" then
-      HTTP.downloadImage(data['image'], function(path, err) 
+      HTTP.downloadImage(data['image'], function(path, err)
         if err then g_logger.warning("HTTP error: " .. err .. " - " .. data['image']) return end
-        if not offer.image then return end
-        offer.image:setImageSource(path)
+        if not card.image then return end
+        card.image:setImageSource(path)
       end)
     elseif data["image"] and data["image"]:len() > 1 then
-      offer.image:setImageSource(data["image"])
+      card.image:setImageSource(data["image"])
     end
   else
     g_logger.error("Invalid shop offer type: " .. tostring(data["type"]))
     return
   end
-  local newIndex = shop.offers:getChildCount() + 1
-  offer:setId("offer_" .. category .. "_" .. newIndex)
-  offer.sel = sel
-  offer.offerData = data
+  card:setId("offer_" .. category .. "_" .. (parent:getChildCount()))
+  card.sel = sel
+  card.offerData = data
+  card.offerId = data["id"]
   -- a look offer (outfit, addons, mount, wings, aura, shader, pet) in the look preview: on hover, and kept once picked
   local LP = lookCore()
-  offer.lookOption = LP and LP.fromShopOffer(data) or nil
-  if offer.lookOption then
-    offer.onHoverChange = function(_, hovered)
-      if not lookPreview then return end
-      if hovered then lookPreview:setHover(offer.lookOption) else lookPreview:clearHover() end
-    end
+  card.lookOption = LP and LP.fromShopOffer(data) or nil
+  card.onHoverChange = function(_, hovered)
+    if not lookPreview or not card.lookOption then return end
+    if hovered then lookPreview:setHover(card.lookOption) else lookPreview:clearHover() end
   end
-  -- the price in the list is short (15.3k), exact in the tooltip and in the buy confirmation
+  -- the name (two lines; the whole of it in the tooltip with the exact price)
+  local title = tostring(data["title"] or '')
+  card.title:setText(ShopView.clip(title, NAME_CHARS))
+  card.title:setMarginTop(#title <= ONE_LINE_CHARS and 13 or 7) -- a one line name sits lower, between the icon's top and the price
   local cost = tonumber(data["cost"])
-  offer.title:setText(tr('%s (%s coins)', data["title"], (cost and formatShortNumber(cost) or tostring(data["cost"]))))
-  if cost and (cost >= 1000 or cost <= -1000) then
-    offer.title:setTooltip(tr('%s (%s coins)', data["title"], comma_value(cost)))
-  end
+  card.price:setText(cost and formatShortNumber(cost) or tostring(data["cost"]))
   local oldCost = tonumber(data["oldCost"])
-  if offer.oldPrice and oldCost and cost and oldCost > cost then
-    offer.oldPrice:setText(formatShortNumber(oldCost))
-    offer.oldPrice:setVisible(true)
+  if oldCost and cost and oldCost > cost then
+    card.oldPrice:setText(formatShortNumber(oldCost))
+    card.oldPrice:setVisible(true)
   end
-  if offer.tags and type(data["tags"]) == "table" then
-    local parts = {}
-    for _, t in ipairs(data["tags"]) do
-      if type(t) == "string" then parts[#parts + 1] = t end
-    end
-    offer.tags:setText(table.concat(parts, "  "))
-  end
-  offer.description:setText(data["description"])  
-  offer.offerId = data["id"]
-  if sel then
-    offer.onDoubleClick = buyOffer
-    offer.buyButton.onClick = function() buyOffer(offer) end
-    if data["owned"] then
-      offer.buyButton:setEnabled(false)
-    end
-    if offer.giftButton and data["gift"] then
-      offer.giftButton:setVisible(true)
-      offer.giftButton.onClick = function() giftOffer(offer) end
-    else
-      offer.description:setMarginRight(60) -- no gift button: more room for the text
-    end
+  if cost then
+    card:setTooltip(tr('%s (%s coins)', title, comma_value(cost)))
   else
-    offer.buyButton:hide()
+    card:setTooltip(title)
   end
-  -- TRY ON (tryon.lua): the offer on the player's own character for ten seconds, nothing bought. A look goes into the
-  -- look preview beside the list; a cosmetic with an effect also plays it round the character on the map (server
-  -- cosmetics.lua, this player only).
+  if sel then
+    card.sub:setText(ShopView.subLine(data))
+  else
+    card.sub:setText(ShopView.historyDate(data["description"]) or '')
+  end
+  -- a chat colour tints the name, a loot label accent sits behind it
   local preview = type(data["preview"]) == "table" and data["preview"] or nil
-  if sel and offer.previewButton then
-    local plan = TryOn.plan(data, offer.lookOption, lookPreview ~= nil, plateTryable())
-    if plan.show then
-      local m = TryOn.margins(data["gift"] == true)
-      offer.previewButton:setVisible(true)
-      offer.previewButton:setMarginRight(m.button)
-      offer.previewButton.onClick = function() tryOffer(offer) end
-      offer.description:setMarginRight(m.description)
-    end
-  end
-  -- a chat colour tints the title, a loot label accent sits behind it
+  card.accent = nil
   if preview and sel then
     if type(preview.color) == "string" and preview.color:match("^#%x%x%x%x%x%x$") then
-      offer.title:setColor(preview.color)
+      card.accent = preview.color
     end
     if type(preview.accent) == "string" and preview.accent:match("^#%x%x%x%x%x%x%x?%x?$") then
-      offer.title:setBackgroundColor(preview.accent)
+      card.title:setBackgroundColor(preview.accent)
     end
   end
+  applyCardState(card)
+  -- a click picks the card (its details open on the right); a double click asks to buy it
+  card.onMousePress = function(_, _, button)
+    if button == MouseLeftButton then selectCard(card) end
+    return true
+  end
+  card.onDoubleClick = function()
+    selectCard(card)
+    if card.sel then buyOffer(card) end
+    return true
+  end
+  return card
+end
+
+-- ---------------------------------------------------------------- the details pane
+local function stillAlive(widget)
+  return widget ~= nil and not widget:isDestroyed()
+end
+
+function selectCard(card)
+  if selectedCard and stillAlive(selectedCard) then selectedCard:setChecked(false) end
+  selectedCard = card
+  if card then card:setChecked(true) end
+  showDetails(card)
 end
 
 -- game_nameplate can draw a tried frame on the own plate (O318)
@@ -806,12 +1115,85 @@ function plateTryable()
   return np ~= nil and type(np.previewFrame) == 'function'
 end
 
+-- the details of a card: its look in the preview column (look offers), the name, tags, price, text, the note (owned,
+-- coins short) and the Buy / Gift / Try on buttons; nothing picked: a hint. `keepTry` leaves the Try on countdown alone.
+function showDetails(card, keepTry)
+  if not ui.dTitle then return end
+  if not card or not stillAlive(card) then
+    setLookRoom(false)
+    if lookPreview then lookPreview:setOption(nil) end
+    ui.dTitle:setText('')
+    ui.dTags:setText('')
+    ui.dCoin:setVisible(false)
+    ui.dPrice:setText('')
+    ui.dOld:setVisible(false)
+    ui.dDesc:setText(tr('Pick an offer to see its details.'))
+    ui.dDesc:setTooltip('')
+    ui.dNote:setText('')
+    ui.buyButton:setVisible(false)
+    ui.giftButton:setVisible(false)
+    ui.tryButton:setVisible(false)
+    return
+  end
+  local data = card.offerData
+  local tryPlan = card.sel and TryOn.plan(data, card.lookOption, lookPreview ~= nil, plateTryable()) or nil
+  local plan = ShopView.detailPlan(data, getCoins(), card.sel, card.lookOption ~= nil and lookPreview ~= nil, tryPlan)
+  local st = plan.state
+  -- the look
+  setLookRoom(plan.hasLook)
+  if lookPreview then lookPreview:setOption(card.lookOption) end
+  ui.dTitle:setText(tostring(data["title"] or ''))
+  -- the tags and the text
+  local tags = {}
+  for _, t in ipairs(type(data["tags"]) == "table" and data["tags"] or {}) do
+    if type(t) == "string" then tags[#tags + 1] = ShopView.tagLabel(t, function(k) return tr(k) end) end
+  end
+  ui.dTags:setText(table.concat(tags, '  '))
+  ui.dDesc:setText(tostring(data["description"] or ''))
+  ui.dDesc:setTooltip(tostring(data["description"] or ''))
+  -- the price with its coin, the old price struck through
+  local cost = tonumber(data["cost"])
+  ui.dCoin:setVisible(cost ~= nil)
+  ui.dPrice:setText(cost and formatShortNumber(cost) or tostring(data["cost"] or ''))
+  ui.dPrice:setTooltip(cost and comma_value(cost) or '')
+  ui.dPrice:setColor(PRICE_COLORS[st.priceKind] or PRICE_COLORS.normal)
+  local oldCost = tonumber(data["oldCost"])
+  if oldCost and cost and oldCost > cost then
+    ui.dOld:setText(formatShortNumber(oldCost))
+    ui.dOld:setVisible(true)
+  else
+    ui.dOld:setVisible(false)
+  end
+  -- the note: owned, or the coins short
+  if plan.note == 'owned' then
+    ui.dNote:setText(tr('You already own this.'))
+    ui.dNote:setColor('#8fcf7a')
+  elseif plan.note == 'poor' then
+    ui.dNote:setText(tr('Not enough Chaos Coins. You need %s more.', formatShortNumber(plan.missing)))
+    ui.dNote:setColor('#e03a1e')
+  else
+    ui.dNote:setText('')
+  end
+  -- the buttons
+  ui.buyButton:setVisible(plan.showBuy)
+  ui.buyButton:setEnabled(plan.buy)
+  ui.buyButton.onClick = function() buyOffer(card) end
+  ui.giftButton:setVisible(plan.gift)
+  ui.giftButton:setEnabled(plan.giftEnabled)
+  ui.giftButton.onClick = function() giftOffer(card) end
+  ui.tryButton:setVisible(plan.try)
+  if plan.try then
+    if not keepTry then ui.tryButton:setText(tr('TRY ON')) end
+    ui.tryButton.onClick = function() tryOffer(card) end
+  end
+end
+
 -- the countdown on the button while a try runs
 local function tickTry(widget, untilMs, token)
   if not widget or widget.tryToken ~= token or widget:isDestroyed() then return end
   local left = TryOn.secondsLeft(untilMs, g_clock.millis())
   local text = TryOn.countdown(left)
-  widget.previewButton:setText(text or tr('TRY ON'))
+  if selectedCard == widget and ui.tryButton then ui.tryButton:setText(text or tr('TRY ON')) end
   if text then scheduleEvent(function() tickTry(widget, untilMs, token) end, 500) end
 end
 
@@ -837,17 +1219,6 @@ function previewOffer(widget)
   sendAction("preview", { category = sel.category, page = sel.page, offer = sel.offer })
 end
 
--- a click on a category row (the list's focus moved to it); the parents are no focus rows (onGroupClick)
-function changeCategory(widget, newCategory)
-  if rendering or not newCategory then
-    return
-  end
-  local id = tonumber((newCategory:getId() or ''):match("^category_(%d+)$"))
-  if not id then return end
-  if id == selectedCategory and not browsingHistory and not searching then return end
-  selectCategory(id)
-end
-
 function findWidgetIndex(widget)
   local parent = widget:getParent()
   local count  = parent:getChildCount()
@@ -859,7 +1230,7 @@ function findWidgetIndex(widget)
   return nil
 end
 
--- what buy and gift send for an offer row (a page's or a search result's), or nil: where the server has it, and the
+-- what buy and gift send for an offer card (a page's or a search result's), or nil: where the server has it, and the
 -- title and price shown (the server refuses when either changed)
 local function offerOf(widget)
   local sel, item = widget and widget.sel, widget and widget.offerData
@@ -912,10 +1283,14 @@ function confirmGiftOffer()
   end, 50)
 end
 
+-- the Buy button (or a double click): a confirmation first, the server checks the price again
 function buyOffer(widget)
   if not widget then return end
   local sel = offerOf(widget)
   if not sel then return end
+  -- an owned offer or one the coins do not reach is not asked about (the server would refuse it)
+  local st = widget.state or ShopView.cardState(widget.offerData, getCoins())
+  if st.owned or not st.affordable then return end
   selectedOffer = sel
 
   scheduleEvent(function()

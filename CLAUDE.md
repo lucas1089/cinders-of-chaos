@@ -34,7 +34,7 @@ for t in client/overlay/modules/*/*_test.lua; do luajit "$t" && lua5.3 "$t"; don
 
 python3 -I tools/ci/check_modules.py   # client .otmod names and scripts
 python3 -I tools/ci/check_topbar_widgets.py && python3 -I tools/ci/check_topbar_widgets_test.py   # hub menu widgets (O550): every widget id and style client_chaos_topbar/topbar_hub.lua looks up or creates is in topbar_hub.otui, anchors name ids of the file, window / card / badge have a $mobile rule; topbar_hub_test.lua (client loop) runs the widget code on a fake engine built from the real .otui ids
-python3 -I tools/ci/check_topbar_tree.py && python3 -I tools/ci/check_topbar_tree_test.py   # hub menu (O550): every window a module registers has a card on a tab of client_chaos_topbar/topbar_tree.lua (or is named dropped / shared / text-only), hotkey windows on the first tab, 6 hubs, at most 6 cards a tab, glyph and pt-BR text of every card; client_chaos_topbar/topbarhublogic_test.lua runs in the client loop
+python3 -I tools/ci/check_topbar_tree.py && python3 -I tools/ci/check_topbar_tree_test.py   # hub menu (O550): every window a module registers has a card on a tab of client_chaos_topbar/topbar_tree.lua (or is named dropped / shared / text-only / pin-only), hotkey windows on the first tab, 6 hubs, at most 6 cards a tab, glyph and pt-BR text of every card; client_chaos_topbar/topbarhublogic_test.lua runs in the client loop
 python3 -I client/tools/gen_topbar_icons.py --check && python3 -I client/tools/gen_topbar_icons_test.py   # glyph atlases (white, tinted by the skin) and topbar_glyph_index.lua of the hub menu (O550; shapes: client/tools/topbar_glyphs.py; CI uses the fx venv)
 python3 -I tools/ci/check_content.py   # server XML, spells, items, monsters
 python3 -I tools/ci/check_names.py     # no other server/game/client names anywhere
@@ -120,8 +120,11 @@ python3 -I client/tools/gen_music.py --check       # region music of game_chaosm
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)
+python3 -I client/tools/gen_lootbeam_art.py --check && python3 -I client/tools/gen_lootbeam_art_test.py   # loot beam strips of game_lootbeams (O569): 3 styles x 6 tier groups, 6 burst + 12 loop frames of 64 x 128 soft light (no hard edge, the loop closes, the rarity colours, no tier louder); `--preview DIR` writes beams_styles.mp4 and beams_tiers.mp4 (ffmpeg, never committed); lootbeams_test.lua reads the strip sizes in the client loop (CI uses the fx venv)
 python3 -I client/tools/gen_pyre_art.py --check     # Pyre Oath ember ring and burn strips of game_chestaura (O518; CI uses the fx venv; --combo DIR draws a preview GIF, never committed)
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
+python3 -I client/tools/gen_dungeon_card_art.py --check    # card frames and dark fade of the Dungeons window, game_dungeons (O555; CI uses the fx venv)
+python3 -I client/tools/gen_kill_dissolve.py --check   # dissolve kill effects (O563, base patch 0201): the seven chaos_outfit_kd_*.frag shaders and the 10 tile pictures of game_killdissolve, drawn by one template and a numpy emulation of it (the previews: `video OUT_DIR`, `sheet OUT.png`, never committed); also holds the tint / mode of server cosmetics_config.lua `dissolve` to its ICONS list; killdissolve_core_test.lua runs in the client loop, the server side in tests/cosmetics_test.lua (CI uses the fx venv)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
 python3 -I server/tools/patch_base_armor_percent_test.py   # engine armour off for players: config.lua armorPercentMax = 0 (O464, install_all step armourlayer)
 python3 -I server/tools/patch_base_absorb_player_test.py   # the base absorb event leaves a player to the player defence layer, run in Lua on a mock (O464, install_all step absorbplayer)

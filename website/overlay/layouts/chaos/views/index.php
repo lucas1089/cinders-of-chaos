@@ -35,7 +35,7 @@ $features = array(
 	chaos_t('Crafting orbs') => array(chaos_t('Awakening and Gilding make magic items'), chaos_t('Grafting adds a modifier, Unmaking removes one'), chaos_t('Upheaval and Fate reroll; Erasure starts over'), chaos_t('All at the Crafting Bench (Alt+C)')),
 	chaos_t('Endgame') => array(chaos_t('Five colossal world bosses with phases'), chaos_t('Rifts: keys with tiers 1-15 and modifiers'), chaos_t('Infinity Tower, dungeons and the bounty board'), chaos_t('17 level-scaled monsters in the deepest grounds')),
 	chaos_t('Seasons and PvP') => array(chaos_t('Fresh season characters with their own ladder'), chaos_t('Season uniques and an account-wide reward track'), chaos_t('Ranked arena 1v1 and 2v2 with Elo ratings'), chaos_t('Weekly Guild Siege for the Chaos Obelisk')),
-	chaos_t('Quality of life') => array(chaos_t('Tutorial island and a starter kit per class'), chaos_t('Hunt tracker: experience and profit per hour'), chaos_t('Daily rewards with login streaks and titles'), chaos_t('Patch notes right in the client')),
+	chaos_t('Quality of life') => array(chaos_t('One-click Auto setup and a starter kit per class'), chaos_t('Hunt tracker: experience and profit per hour'), chaos_t('Daily rewards with login streaks and titles'), chaos_t('Patch notes right in the client')),
 );
 $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0] ?? null) : null;
 ?>

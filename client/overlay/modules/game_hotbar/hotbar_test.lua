@@ -296,5 +296,26 @@ do
   eq(L.barLost(true, {}, f), true, 'bar taken back by the base'); eq(L.barLost(false, f, f), true, 'dead bar')
 end
 
+-- O558: the ring over a side slot hides the base button's square: its window is no wider than the button and the ring's
+-- square holds the button, at every scale and count of the options and in a fitted bar
+for scale = 75, 125, 5 do
+  for _, count in ipairs({ 6, 8, 10, 12 }) do
+    local mm = L.metrics({ count = count, scale = scale, globes = true })
+    for _, x in ipairs({ mm.socketLX, mm.socketRX }) do
+      local r = L.ring(mm, x)
+      eq(r.covers, true, 'ring covers the button at ' .. scale .. '% / ' .. count)
+      eq(r.size, mm.socket, 'ring is the socket size')
+      eq(r.x, x, 'ring on its socket')
+      eq(r.y, mm.slotY, 'ring on the slot row')
+    end
+  end
+end
+for width = 450, 2000, 50 do
+  local _, _, fm = L.fit({ count = 12, scale = 125, globes = true }, width)
+  eq(L.ring(fm, fm.socketLX).covers, true, 'ring covers the button in a fitted bar of ' .. width)
+end
+eq(L.SOCKET_WINDOW < L.BUTTON, true, 'ring window under the button')
+eq(L.SOCKET_WINDOW % 2, 0, 'ring window even: it centres on whole pixels')
+
 if fails == 0 then print('hotbar_test: ok') end
 os.exit(fails == 0 and 0 or 1)
