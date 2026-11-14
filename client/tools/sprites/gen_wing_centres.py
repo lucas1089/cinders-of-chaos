@@ -10,7 +10,9 @@ wings sat off its back: facing south a median 3.4 px right of a class look's tor
   bodies[look]  x of the body's torso, sprite px at 1x from the creature's place, the look's own displacement taken out.
                 Idle group, phase 0, base layer, the union of the base and every addon pattern (a character may wear
                 any). The torso is the band of rows from 30% to 70% of the opaque box's height (no head or hat above,
-                no legs below, a weapon stays in); x is the alpha-weighted mean of that band.
+                no legs below) of the body CORE (O576): the visible pixels with their thin parts opened away (TORSO_OPEN, a
+                staff, torch or spear up to four wide) and only the biggest part kept, so a weapon does not pull the centre
+                (it pulled a staff look's torso 4 to 6 px); x is the median column of the core's pixels in that band.
   wings[look]   x of the wings' pair centre, same frame. Every phase and layer, alpha-weighted, WITHOUT the baked ground
                 shadow (below). Two masses (a gap of 2 or more empty columns between used columns of the union of all
                 phases, the widest one splits it) that each hold 25% or more of the art: the midpoint of the two masses'
@@ -53,6 +55,7 @@ PACK33 = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_pack33_cosmetics.lua
 # the wings looks of wings.xml: base 1-15, Chaos 16-29 (fix_pair_warnings.py WINGS_LOOKS), then the pair 33 wings
 BASE_WINGS = '937-941,1177-1186,1486,2140-2142,2187,2225-2233'
 TORSO_LO, TORSO_HI = 0.30, 0.70
+TORSO_OPEN = 2          # the opening that drops a staff, a torch or a spear from the torso core (gen_outfit_anchors.solid)
 SHADOW_ALPHA = 200      # a baked shadow pixel: alpha under this and luminance under SHADOW_LUM
 SHADOW_LUM = 150
 GAP_MIN = 2             # empty columns that split the wings into a left and a right mass
@@ -98,21 +101,27 @@ def rnd(v):
 
 # ------------------------------------------------------------------------------------------------ pure measures
 def torso_x(alpha):
-    """x (canvas px) of the torso of a body: the alpha-weighted mean of the rows from TORSO_LO to TORSO_HI of the opaque
-    box; None when nothing is visible. alpha: 2-D array."""
+    """x (canvas px) of the torso of a body, the body core's: the visible pixels (alpha from anchors.ALPHA) without their thin
+    parts (an opening of TORSO_OPEN, a staff, a torch or a spear up to four wide goes) and with only the biggest part kept
+    (a weapon held apart falls away); the rows from TORSO_LO to TORSO_HI of that core's own box (no head or hat above, no
+    legs below, a staff raised over the head does not stretch the box); x is the MEDIAN column of its pixels, so a broad
+    weapon that is attached still moves it only by half of its width. None when nothing is visible. alpha: 2-D array.
+    (O576: the whole figure's alpha mean pulled a staff look's torso 4 to 6 px towards the staff and the wings sat off.)"""
     a = np.asarray(alpha, np.float64)
-    ys, xs = np.nonzero(a > 0)
-    if not len(ys):
+    m = a >= anchors.ALPHA
+    if not m.any():
+        m = a > 0                      # only faint pixels: they are the figure
+    if not m.any():
         return None
+    core = anchors.largest_part(anchors.solid(m, TORSO_OPEN))
+    ys, xs = np.nonzero(core)
     top, bot = ys.min(), ys.max() + 1
     r0 = top + TORSO_LO * (bot - top)
     r1 = top + TORSO_HI * (bot - top)
-    yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]
-    wt = a * ((yy >= r0) & (yy < r1))
-    n = wt.sum()
-    if n <= 0:
-        return None
-    return float((wt * xx).sum() / n)
+    sel = (ys >= r0) & (ys < r1)
+    if not sel.any():
+        sel = np.ones(len(ys), bool)
+    return float(np.median(xs[sel]))
 
 
 def shadow_mask(rgba):

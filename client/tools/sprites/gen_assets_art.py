@@ -22,9 +22,15 @@ Only files the Drive connector saves to disk could be taken (about 38 KB and up;
 are not transcribed). That leaves one monster (the headless rider, idle in four directions, walk north and west) and
 four animated mechanics strips. The rest of the kit is listed in client/MANIFEST.md as pending.
 
-Conversion: alpha under 12 cleared, nothing else changes the pixels.
+Conversion: alpha under 12 cleared; the rider is then stood on its tile (below); nothing else changes the pixels.
   * hollow_rider (outfit 2234, 5x5 = 160 px cells, layers 1): idle group 4 phases (idle strips), walk group 4 phases
     (walk strips north and west; east and south take the idle strips, the kit has no walk strip we could fetch);
+    stood on its tile (`stand`, O576, owner 2026-11-14 "hollow rider fora de prumo"): the kit draws the rider in the middle of
+    its 160 px cell, but the client draws a creature with the bottom-right 32 px of its outfit on the creature's tile, so the
+    figure hung 40 to 70 px up and left of it (facing east and south the lowest pixel was 27 and 37 px above the cell's
+    bottom). Per direction, one whole-pixel shift for all its idle and walk frames: the lowest opaque pixel on the last row
+    of the cell, the middle of the box on the middle of the creature's own tile, moved left when the widest direction's box
+    would pass the cell's right edge (the rule of gen_wst_outfits.py "Place"; the 4x4 bosses stand at the corner too);
   * items (from 33986): cells cut from the strips, animated rows with all frames, static rows one frame;
     portal_open is a 160 px cell whose art fits a 96 px square at (64, 62): cut to 3x3.
 Not in any published pair. Trial: appended to pair 27 (effects 674-758, missiles 154-160) with import_art_things.py;
@@ -35,6 +41,7 @@ import argparse
 import csv
 import hashlib
 import io
+import math
 import os
 import sys
 
@@ -149,6 +156,48 @@ def item_frames(strip, row):
     return cut if frames == 'all' else [cut[frames]]
 
 
+def box_of(frames):
+    """(x0, x1, y0, y1) of the visible pixels of all frames (x1, y1 exclusive); None when empty"""
+    x0 = y0 = 10 ** 9
+    x1 = y1 = -1
+    for f in frames:
+        ys, xs = np.nonzero(f[..., 3])
+        if len(ys):
+            x0, x1 = min(x0, int(xs.min())), max(x1, int(xs.max()) + 1)
+            y0, y1 = min(y0, int(ys.min())), max(y1, int(ys.max()) + 1)
+    return (x0, x1, y0, y1) if x1 >= 0 else None
+
+
+def shifted(f, dx, dy):
+    """a frame moved by whole pixels (right dx, down dy); nothing may fall off the canvas"""
+    out = np.zeros_like(f)
+    h, w = f.shape[:2]
+    assert not f[..., 3][max(0, h - dy):, :].any() if dy > 0 else True, 'art would fall off the bottom'
+    assert not f[..., 3][:, max(0, w - dx):].any() if dx > 0 else True, 'art would fall off the right'
+    assert not f[..., 3][:max(0, -dy), :].any() if dy < 0 else True, 'art would fall off the top'
+    assert not f[..., 3][:, :max(0, -dx)].any() if dx < 0 else True, 'art would fall off the left'
+    ys, xs = slice(max(dy, 0), h + min(dy, 0)), slice(max(dx, 0), w + min(dx, 0))
+    ys0, xs0 = slice(max(-dy, 0), h + min(-dy, 0)), slice(max(-dx, 0), w + min(-dx, 0))
+    out[ys, xs] = f[ys0, xs0]
+    return out
+
+
+def stand(idle, walk, cell=None):
+    """idle, walk: [direction][phase] frames of one cell -> the same, stood on the creature's tile (O576). Per direction one
+    shift for all its idle and walk frames: the lowest opaque pixel on the cell's last row, the middle of the box on column
+    `centre`: the middle of the creature's own tile (cell - 16), moved left so that the widest direction's box ends at the
+    cell's right edge. Returns (idle, walk, [(dx, dy)] per direction)."""
+    cell = cell or idle[0][0].shape[0]
+    boxes = [box_of(list(idle[d]) + list(walk[d])) for d in range(4)]
+    assert all(boxes), 'a direction has no art'
+    half = max((b[1] - b[0]) / 2.0 for b in boxes)
+    centre = min(cell - 16.0, cell - half)
+    moves = [(int(math.floor(centre - (b[0] + b[1]) / 2.0 + 0.5)), cell - b[3]) for b in boxes]
+    idle2 = [[shifted(f, *moves[d]) for f in idle[d]] for d in range(4)]
+    walk2 = [[shifted(f, *moves[d]) for f in walk[d]] for d in range(4)]
+    return idle2, walk2, moves
+
+
 def look_sheet(idle, walk):
     """rows: the idle phases then the walk phases; columns: n, e, s, w"""
     rows = [[idle[d][p] for d in range(4)] for p in range(len(idle[0]))]
@@ -162,6 +211,7 @@ def build_sheets(src):
     idle = [strip_frames(load(src, s), c, c) for s in idle_src]
     walk = [strip_frames(load(src, s), c, c) for s in walk_src]
     assert all(len(x) == nf for x in idle + walk)
+    idle, walk, _moves = stand(idle, walk)
     out[key] = look_sheet(idle, walk)
     cache = {}
     for row in ITEMS:

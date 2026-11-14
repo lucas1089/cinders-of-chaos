@@ -19,7 +19,7 @@ LB.GROUPS = {
   white  = { color = '#eef3f8', height = 0.75, order = 1 },
   blue   = { color = '#3d8bff', height = 0.85, order = 2 },
   orange = { color = '#ff8c1a', height = 1.00, order = 3 },
-  divine = { color = '#7fe3ff', height = 1.10, order = 4 },
+  divine = { color = '#7fe3ff', height = 1.20, order = 4 },
   unique = { color = '#2bff7a', height = 1.15, order = 5 },
   orb    = { color = '#39e0c8', height = 0.80, order = 0 },
 }

@@ -273,6 +273,17 @@ Owner request 2026-10-29, looks approved from preview pictures. Module `game_che
 Owner 2026-11-14 (pt-BR): "o loot beam parece que está em baixa qualidade. tente fazer novos pra ver se ficam melhores", with a picture of a
 Legendary drop on an ice floor: the beam was a flat orange bar about 8 px wide with a hard edge, a few square yellow pixels and an orange oval
 at the base (the pair 65 effect, 64 x 128 art of the purchased pack). Roadmap id O569. Not run in a client.
+- **Divine is the loudest (O576, owner 2026-11-14: "o divine precisa ser o mais chamativo deles").** Until then Divine and the uniques had the same
+  parameters, so Divine did not stand out. `GROUPS['divine']` of `gen_lootbeam_art.py` now has the tallest column (112 px, fading out later:
+  `fade` 0.95 against 1.35), a hotter and wider body (`burn` 1.3, halo 16 px / 0.30), a second wide aura layer pulsing against the first (`aura`),
+  a faster and deeper pulse (`pulse` = 2 cycles a loop, depth 0.38 against 1 and 0.22) with two bright rings seen from the side travelling up the
+  column (`rings`), 18 motes and 6 twinkles (12 and 3 before), and an outer ground ring turning against the inner one (`outer`). The keys are
+  optional, so no other tier changed except the uniques, whose column went from 112 to 110 px so that Divine is the tallest (the others keep their
+  order: Common < Magic < Legendary < Unique). Measured per style: Divine gives out about 1.5x the light of a unique (1948 against 1226 alpha sum,
+  style A), its body is the brightest and burns higher up, it moves 1.4 to 1.7x more from frame to frame; `gen_lootbeam_art_test.py` holds all of it
+  (the old rule "no tier is louder" is now "Divine is the loudest by 30%, the others in order"). The engine-pillar fallback height of Divine is 1.20
+  (was 1.10, under the uniques' 1.15). The strips `a|b|c_divine.png` and `a|b|c_unique.png` were redrawn; `--preview DIR` still writes
+  `beams_tiers.mp4` (all tiers, style A) and `beams_styles.mp4`.
 - **How it is drawn.** ONE widget per beam, over the tile of the corpse or item (`Tile:addOverlayWidget`, base patch 0041: centred on the tile,
   moved by its margins, drawn in the foreground pass in SCREEN pixels, so size and margins are recomputed from the map panel's tile size at every
   300 ms check, which follows zoom and window size: `LootBeamsLogic.box`). The picture is a strip `images/<style>_<group>.png` of 18 frames of
@@ -2187,6 +2198,22 @@ themselves; no machine-learning training. The source files and the cut sheets st
 - Outfit 2234 `hollow_rider` (5x5, 160 px, layers 1): idle group 4 phases, walk group 4 phases, 140 ms. Walk east and
   south use the idle strips of those directions. Monster: the Hollow Rider (server/README.md "Catacomb kit (pair 27
   trial)").
+- **The rider stands on its tile (O576, owner 2026-11-14: "hollow rider fora de prumo").** The kit draws the rider in the middle of its 160 px
+  cell, but the client draws an outfit with its bottom-right 32 px on the creature's tile, so the figure hung 13 to 37 px up and left of the tile
+  and, facing east and south, floated 32 to 37 px above the cell's bottom (box in px from the cell's bottom-right corner: north x -150..-37, y
+  -138..-10; east x -122..-32, y -114..-37; south x -114..-37, y -122..-32; west x -138..-10, y -150..-37). A 4x4 boss stands in the corner (box
+  to 0). `gen_assets_art.py` `stand` now moves each direction's idle and walk frames by one whole-pixel shift: the lowest opaque pixel on the cell's
+  last row, the middle of the box on the middle of the creature's own tile (cell - 16), moved left so that the widest direction ends at the cell
+  edge (the rule of `gen_wst_outfits.py` "Place"). Shifts (dx, dy): north (30, 10), east (13, 37), south (12, 32), west (10, 37); the figure
+  then spans x -119..-7 / -109..-19 / -102..-25 / -128..0 and ends at y 0 in every direction. Nothing is cut (asserted). `assets_art.sums` has the
+  new digest of the sheet (`7f156cce...`); it was computed from the sheet read back from the pair (the old digest came out of the pair's frames
+  too, so the check is exact), not from the kit files, which are not on every machine. **Needs the next pair build** to take effect: outfit 2234
+  is in pair 27, so a `replace` row for it (as `owner_wings_fix.csv` does for wings) goes into the next pair; nothing of windows-assets was touched.
+  The same fault and the same cure for the Hollow King (outfit 2661, pair 33 kit): `gen_pack33.py` `KIT_STAND = ('hollow_king',)` calls the same
+  `stand`, `pack33_kit.sums` has the new digest (`d68d6a36...`). Audit of every 3x3-and-larger outfit of the pair (446) for a figure that hangs
+  from its tile, counted with the dat displacement: other monster looks that hang 18 px or more in every direction are Reliquary Urn 3209 (27 px),
+  Gravewarden Ulthar 2127 (20 to 29), Slagborer Reaver 3237 (20 to 29), Jungle Warrior / Bellhelm Zealot 1499 (18 to 27); Saga 2119 hangs 71 px in
+  one direction. They come from other imports (pair 50 looks, donor picks), not from this kit, and are left alone (listed for the owner).
 - Items 33986-33994 (server 36986-36994, `server/data/items/assets_decor.csv`): crypt portal (3x3, 8 phases, purple
   light), collapsing portal (4x4, 8 phases), burnt-out portal ring (4x4), sealed crypt hatch (3x3, blocks), breaking
   seal (3x3, 8 phases), open hatch (3x3), sarcophagus closed / opening (8 phases) / open (2x3, block). Each draws up and
@@ -2619,8 +2646,18 @@ Owner report: "all the wings are out of plumb. I think the flying effect is not 
 - **Audit** (the patched `Outfit::draw`, `GameWingOffset`): the wings draw at the creature's place, the body 6 px up and left of it, and the bob (0 to 4 px) and the walk move both together; a winged character keeps its idle pose while walking. So the lift is compensated and the bob and walk are not the cause. Measured on pair 63 (42 class looks, 74 stock looks, 121 wings, four directions, standing; renderer and tables outside the repo): facing south the wings' pair centre sat a median 3.4 px right of a class look's torso (p10 -2.9, p90 +10.6; Warrior 12.4, Monk -4.1). Two causes. The class looks stand about 6.4 px further left in their tile than look 128, the body the wings were fitted to (torso centre -0.1 px against 6.3 px from the tile's left, no lift). And the wings differ among themselves: variance facing south splits into body sd 4.1 px and wings sd 5.7 px. Facing east, north and west the relation is another drawing each (median -9, -4, +4 px).
 - **What the old fit measured.** `fix_pair_warnings.py` `wing_offset` and `gen_pack33.py` `wingx` take the alpha-weighted mean of all the wings' pixels. 100 of the 121 wings carry the vendor's soft ground shadow in their sprites (a dark core and a ring, alpha 26 to 191; about 295 px per frame at the median, 24 px right of and 30 px below the wings' centre), and its weight pulled the mean right and down. `WING_X_FIX` (38 wings, -6 to +7 px) was tuned to that centre and to look 128 only, so the wings ended 3.4 px left of look 128 and 3.4 px right of the median class look. Those two tools keep their rule (they build pairs 31 to 33 and are not changed).
 - **The fix, in the engine.** `Outfit::draw` adds an x shift to the wings' destination in both draw orders: `bodyCentre - wingsCentre - 6` (the 6 px lift; 0 without the feature), so the wings' pair centre lands on the torso of the body drawn, per direction. The tables (`client_chaos_wingfit/wing_centres.lua`, generated, 2,507 bodies and 121 wings, integer px at 1x from the creature's place with the look's displacement out) are handed to the engine by the module through `setOutfitBodyCentre`, `setOutfitWingsCentre`, `clearOutfitWingCentres` (base patch 0193). A look or wings with no row gets no shift; wings and body that both carry Bones keep the Bones placement; the bob, walk, mount rules and the lift are untouched. A client without the patch has no such function and draws as before. y is not touched: the wings stand above the torso by 4 to 20 px by design (sd 5.3 px across looks and wings), there is no single right value.
-- **Measure** (`gen_wing_centres.py`; rules in its docstring). Body: idle group, phase 0, base layer, the union of the base and every addon pattern, the torso = rows 30% to 70% of the opaque box, alpha-weighted x. Wings: every phase and layer, alpha-weighted, the baked shadow left out (alpha under 200 and mean luminance under 150), two masses (the widest gap of 2 or more empty columns of the union of all phases) that each hold 25% or more of the art: the midpoint of their means; otherwise the mean of all the art (a fan, one mass, or a thin streak beside a main wing: wings 2441 first had a 3 x 2 px crumb 55 px left of the wing as its "left wing", 0.0% of the art, which put its centre 28 px left; the 25% rule fixed it). Limits: a pale shadow ring or a dark glow can be classed the wrong way (16 wings carry partial alpha that is wing art; their centre moves a pixel or two; the rainbow ring of wings 2445 is not taken for shadow); a body's centre depends on the addons worn (all counted; no addons moves it a median 1 px, up to 4 px at p90).
+- **Measure** (`gen_wing_centres.py`; rules in its docstring). Body: idle group, phase 0, base layer, the union of the base and every addon pattern, the torso = rows 30% to 70% of the body CORE's box and x its median column (O576, below; it was the alpha mean of the whole figure's rows). Wings: every phase and layer, alpha-weighted, the baked shadow left out (alpha under 200 and mean luminance under 150), two masses (the widest gap of 2 or more empty columns of the union of all phases) that each hold 25% or more of the art: the midpoint of their means; otherwise the mean of all the art (a fan, one mass, or a thin streak beside a main wing: wings 2441 first had a 3 x 2 px crumb 55 px left of the wing as its "left wing", 0.0% of the art, which put its centre 28 px left; the 25% rule fixed it). Limits: a pale shadow ring or a dark glow can be classed the wrong way (16 wings carry partial alpha that is wing art; their centre moves a pixel or two; the rainbow ring of wings 2445 is not taken for shadow); a body's centre depends on the addons worn (all counted; no addons moves it a median 1 px, up to 4 px at p90).
 - **Result** (the integer rule, all 42 class looks x 121 wings x 4 directions, floats re-measured): wings centre minus torso at most 0.99 px (p95 0.77, mean 0.33). Sheets: scratchpad `sheet_B_final.png`, `sheet_directions_final.png`. 16 wings need a median shift over 12 px in some direction (940, 1178, 1179, 1185, 2141, 2187, 2226-2230, 2233, 2402, 2422, 2426, 2451; mostly the east and west drawings, for example 2226-2230 west +21 px); `sheet_outliers.png`.
+- **Staff looks (O576, owner 2026-11-14: "Angelic Wings off-centre on some outfits").** `torso_x` measured the alpha mean of the whole figure's rows, weapon
+  included, so a staff held out to one side pulled the torso 4 to 6 px that way and the wings sat off the back. Now it measures the body core:
+  the visible pixels (alpha 64 and up) with the thin parts opened away (`TORSO_OPEN` 2: a staff, torch or spear up to 4 px wide, any length), only
+  the biggest part kept (a weapon held apart falls away), the rows 30% to 70% of that core's own box (a staff raised over the head no longer
+  stretches the box), x = the median column of those pixels (a broad shield that stays attached moves it by half its width at most).
+  `gen_wing_centres_test.py` has a staff held against the body (3 px wide, taller than the figure), a spear raised beside it, a broad shield, a faint
+  figure. `wing_centres.lua` was regenerated by the tool from the pair it names (dat md5 `f21ef3e3...`, the file's own header), not edited: of the 2646
+  bodies 2429 moved, median 2 px, 543 by 4 px or more; of the 82 class look ids of `class_looks_core.lua` 21 moved 4 to 7 px (mostly the staff and weapon looks, e.g.
+  1205 facing south -4 -> 3, 925 facing west 2 -> 9), the rest 0 to 3 px. The wings table and `head_centres.lua` are unchanged.
+  The CI job "Live sprite pair" (`gen_wing_centres.py --check`) holds the file to the pair.
 - **Overlay copies of the draw rule** (box maths only; the pictures are drawn by the engine): `game_lookpreview/lookpreview_core.lua` `lookBox(..., wingShift)` and `client_chaos_charselect/charselect_core.lua` `figure(..., wingShift)` move the wings' box by the shift, `lookpreview.lua` and `charselect.lua` ask `WingFit.shift`. Not changed: the website images (`gen_sprite_images.py` and the promo tools draw no wings), `compose_outfit.py` (a build-time composer with its own wings role), Unity (frozen).
 - **Not done.** (The baked shadow was cleaned later by pair 64, O508, section "Pair 64": the numbers below are the plan before it.) The baked shadow stays in the sprites (a real clean-up edits 24,449 of the 42,974 sprites of the 121 wings, 3,444 of them shadow only, and needs a new spr part); heads (median 6.8 to 8.6 px left of the class torso, sd 5) and capes (5 to 13 px right, sd 5) are fitted to look 128 too and are not shifted (numbers only). Ship: a new client package (the patch needs a build), then `gen_wing_centres.py --check` with every new pair (CI "Live sprite pair").
 
@@ -6274,6 +6311,18 @@ One test window in HTML and RCSS, to measure what RmlUi costs. Report and recomm
   "Classic" sends one window back and is kept by window id (setting `chaosRmlClassic`; Ctrl+Alt+M twice clears it).
   A window with more than 40 icons stays in OTUI; `client_chaos_login` and `game_passivetree` mark theirs `chaosNoMirror`. Tab bars draw as tabs and
   widget tooltips show on hover (`#tip` in each document). Test: `rmlmirror_test.lua`.
+
+- **Open drop-down lists over the next controls (O576, owner 2026-11-14, pt-BR: "lista de spells do helper está com vários retangulos").** The Helper
+  window is mirrored in RmlUi (`rml_window_audit.py`: `mirror helperWindow`), so its spell lists are RmlUi `select` elements. A Shooter slot is a row
+  of a spell select, a percent select, a monsters select and the Force and Self check boxes; the list of the spell select opens over the next
+  controls of its row and the rows below. Most likely those (grey combo and check box pictures, empty beside the spell names) painted over its
+  right side as the columns of empty grey cells. Only the list's own `z-index: 100` was set, which does not lift it above later siblings that sit in their
+  own flex cells. `skin.rcss` now gives the open select (`select:checked`, the state the skin already uses for the open picture) `position:
+  relative; z-index: 300`, which lifts the whole select with its list above whatever follows it. `client_chaos_rmlform/rmlform_skin_test.lua` reads the
+  stylesheet and holds that rule. **Not checked in a client** (none could be run here, and the owner's screenshot was not in the scratch folder): the
+  cause is read from the code (the OTUI popup of the same combo, `ChaosComboBoxPopupMenu`, has no picture of cells at all, and the Support and
+  Timer spell lists use the stock combo with the same RmlUi mirror); if the cells are still there in the next test build, the screenshot of the open
+  list is the next thing to look at.
 
 ## Movable HUD panels (new, `game_hudmove`, 2026-11-02)
 
