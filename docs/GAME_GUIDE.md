@@ -174,7 +174,8 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   Bows*. Quivers drop like any gear, can be crafted with a rarity and turn up at the Gambler for bow classes.
 - **The badge slot.** Where the ammunition slot was, you wear a badge now: nine lines of badges with armour,
   absorbs, skills, health, mana, leech or critical hits, upgraded tier by tier with amplifier catalysts. It replaced
-  the second ring slot (2026-10-21): one ring again, and a ring worn in the old slot moved to your Purse.
+  the second ring slot (2026-10-21): one ring again, and a ring worn in the old slot moved to your Purse. The slot
+  opens with the main quest step "Open the Badge slot" (chapter 1, level 13).
 
 ## Passive tree, Vocation Trials and Paragon
 

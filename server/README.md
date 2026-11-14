@@ -10675,9 +10675,10 @@ server or in a client.
   character opens the window: the client sends `open`, the server emits the flag (`ChaosMainQuest.emit`) and sends the state again
   a moment later. `data/lib/chaos_mqgate.lua` `passed(player, "deck")` reads the quest's storages from any Lua state: the quest is
   done, skipped or quiet, or the stored step is after `deck`; a character the quest has not seen yet (state -1) is not past. So a
-  character past the step has both unlocks with nothing stored, and the existing characters the quest passes silently
-  (`silentGap`: 40 levels below their own) get them without opening anything. The **Badge slot** opens with the same step: 
-  `ChaosBadges.onMoveItem` refuses a badge into slot 13 before it ("The Badge slot opens with the main quest step ..."); a badge
+  character past the step has the unlock with nothing stored, and the existing characters the quest passes silently
+  (`silentGap`: 40 levels below their own) get it without opening anything. The **Badge slot** opens with its own step `badge`
+  (chapter 1, level 13, "Open the Badge slot"; split from the Deck step, owner 2026-11-14; the Open button opens the inventory and
+  marks the step): `ChaosBadges.onMoveItem` refuses a badge into slot 13 before it ("The Badge slot opens with the main quest step ..."); a badge
   already worn stays. Not verified: whether the engine's right-click equip and the base badge movement script go through
   `onMoveItem`; if they do not, they still wear a badge before the step.
 - **Cards looted before the unlock are never lost.** Counted and marked new all the same; the window lists them (locked banner with

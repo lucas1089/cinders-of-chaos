@@ -143,10 +143,10 @@ function K.refusesMove(id, pos)
 	return slot == K.BADGE_SLOT and K.retiredKind(id) ~= nil
 end
 
--- O570 (owner 2026-11-14): the Badge slot opens with a main quest step, the same one that opens the Deck of Cards (mainquest_config.lua
--- key `deck`; tests/badges_test.lua holds it to cards_config.lua deck.unlock.step). A character past the step (data/lib/chaos_mqgate.lua)
+-- O570 (owner 2026-11-14): the Badge slot opens with its own main quest step (mainquest_config.lua key `badge`, chapter 1, level 13;
+-- split from the Deck of Cards step, owner 2026-11-14). A character past the step (data/lib/chaos_mqgate.lua)
 -- can wear a badge; before it a badge is refused with the text below. A badge already worn stays.
-K.BADGE_UNLOCK_STEP = "deck"
+K.BADGE_UNLOCK_STEP = "badge"
 K.TEXT_BADGE_LOCKED = "The Badge slot opens with the main quest step \"%s\" (Adventure > Main Quest)."
 
 -- true when a move of item id to pos puts a badge into the badge slot of a character that has not opened it

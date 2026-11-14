@@ -151,15 +151,17 @@ eq(B.onMoveItem(ann, deck, inv(13)), RETURNVALUE_NOTPOSSIBLE, "a deck into the b
 eq(#sent, n + 1, "with a message") eq(sent[#sent].text, K.TEXT_RETIRED, "it can't be worn")
 eq(B.onMoveItem(ann, badge, inv(12)), RETURNVALUE_NOTPOSSIBLE, "a badge into the deck slot is refused")
 eq(sent[#sent].text, K.TEXT_EQUIP, "the slot is retired")
--- O570: the Badge slot opens with the main quest step "deck" (data/lib/chaos_mqgate.lua)
+-- O570: the Badge slot opens with its own main quest step "badge" (data/lib/chaos_mqgate.lua), not the Deck step
 local MQ = dofile("data/scripts/chaos/mainquest_config.lua")
 local mqState, mqStep = MQ.storage.base + MQ.storage.state, MQ.storage.base + MQ.storage.step
 local deckIdx
 for i, st in ipairs(MQ.steps) do if st.key == K.BADGE_UNLOCK_STEP then deckIdx = i end end
 ok(deckIdx ~= nil, "the main quest has the step the badge slot waits for")
-eq(K.BADGE_UNLOCK_STEP, dofile("data/scripts/chaos/cards_config.lua").deck.unlock.step, "the badge slot and the Deck of Cards share one step")
+eq(K.BADGE_UNLOCK_STEP, "badge", "the badge slot has its own step")
+ok(K.BADGE_UNLOCK_STEP ~= dofile("data/scripts/chaos/cards_config.lua").deck.unlock.step, "not the Deck of Cards step")
+eq(MQ.steps[deckIdx].ch, 1, "chapter 1") eq(MQ.steps[deckIdx].level, 13, "level 13")
 eq(B.onMoveItem(ann, badge, inv(13)), RETURNVALUE_NOTPOSSIBLE, "a badge into the badge slot: refused before the step")
-ok(sent[#sent].text:find("main quest step", 1, true) and sent[#sent].text:find("Open the Deck of Cards", 1, true), "it names the step: " .. sent[#sent].text)
+ok(sent[#sent].text:find("main quest step", 1, true) and sent[#sent].text:find("Open the Badge slot", 1, true), "it names the step: " .. sent[#sent].text)
 eq(B.onMoveItem(ann, badge, inv(12)), RETURNVALUE_NOTPOSSIBLE, "a badge into a retired slot says the slot is retired") eq(sent[#sent].text, K.TEXT_EQUIP, "retired text")
 eq(B.onMoveItem(ann, badge, {x = 0xFFFF, y = 0x41, z = 0}), nil, "a badge into a bag is never refused")
 ann.storage[mqState], ann.storage[mqStep] = 0, deckIdx

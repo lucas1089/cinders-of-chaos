@@ -7,7 +7,7 @@ Trechos entre chaves, como {m1} ou {p1}, são preenchidos em tempo de execução
 
 As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.
 
-São 104 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
+São 105 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
 
 ## Itens de quest e grupo
 
@@ -111,7 +111,13 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 - Dica: O nível 12 dá o primeiro ponto. Personagem > Árvore Passiva: escolha um nó perto do centro e clique em Aplicar Plano.
 - Conclusão (Ysolde): Primeira raiz plantada. A árvore cresce com você.
 
-### 1.16 Abra o Passe da Temporada (nível 13)
+### 1.16 Abra o slot de Badge (nível 13)
+
+- Objetivo: Abra o slot de Badge
+- Dica: Seu inventário tem um slot de Badge. Um badge dá um bônus enquanto você o usa, e só um por vez. Clique em Abrir para abrir o slot.
+- Conclusão (Ysolde): Um brasão no peito. Escolha o que ele diz sobre você.
+
+### 1.17 Abra o Passe da Temporada (nível 13)
 
 - Objetivo: Abra o Passe da Temporada
 - Dica: O passe paga desafios diários e semanais. As temporadas têm modos próprios (Hardcore, Self-Found).
@@ -468,8 +474,8 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 ### 4.19 Abra o Deck of Cards (nível 150)
 
 - Objetivo: Abra o Deck of Cards
-- Dica: As cartas caem das hunts a partir do nível 150. Herói > Build > Deck of Cards: toda carta que você pega vai para ele sozinha. Abri-lo também abre o slot de Badge do seu inventário.
-- Conclusão (Ysolde): Agora as cartas têm casa, e os brasões têm lugar. Guarde bem os dois.
+- Dica: As cartas caem das hunts a partir do nível 150. Herói > Build > Deck of Cards: toda carta que você pega vai para ele sozinha.
+- Conclusão (Ysolde): Agora as cartas têm casa. Guarde bem cada uma.
 
 ### 4.20 Mate 30 Ironhorn Brutes (nível 155)
 
