@@ -756,5 +756,14 @@ eq(P.face(st, cape), P.NORTH, 'a cape again: the back')
 local st2 = { dir = P.SOUTH }
 P.face(st2, plain)
 eq(P.turnBy(st2, plain, 1), P.WEST, 'plain turn: south -> west')
+-- a dissolve kill effect (O563): the row's mode and tint reach the option; the plain effect stays in `play`
+local dv = P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'sand', tint = 4 })
+eq(dv.dissolve.m, 'sand', 'dissolve mode') eq(dv.dissolve.t, 4, 'dissolve tint') eq(dv.killfx, true, 'dissolve row is a kill scene')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).dissolve, nil, 'a plain kill effect has no dissolve')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'Sand!' }).dissolve, nil, 'a bad mode name is dropped')
+eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 'ash', tint = 99 }).dissolve.t, 7, 'tint capped')
+eq(P.dissolveOf(nil), nil, 'no row')
+local sd = P.fromStoreLook({ kind = 'effects', killfx = true, play = { { b = { id = 468 } } }, dissolve = 'burn', tint = 2 })
+eq(sd.dissolve.m, 'burn', 'a store offer carries the dissolve') eq(sd.dissolve.t, 2, 'store tint')
 
 print('lookpreview_core_test: ' .. n .. ' checks OK')

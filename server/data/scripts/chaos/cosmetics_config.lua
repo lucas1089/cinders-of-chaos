@@ -22,7 +22,11 @@
 --              effect of the client pair): fx (chaos_fx.lua Fx names), missile (chaos_fx.lua FxMissile names), vfx
 --              (chaos_vfx.lua Vfx names), vmissile (chaos_vfx.lua VfxShoot names). Only those spells and only those
 --              effects change; a variant the server does not know falls back to the default effect.
---   killfx     vfx = a chaos_vfx.lua effect played on the monster's tile when the character lands the killing blow
+--   killfx     vfx = a chaos_vfx.lua effect played on the monster's tile when the character lands the killing blow;
+--              dissolve = a mode of `dissolve.modes` (O563), tint = 0 .. 7 (the shader's palette, 0 = the mode's own
+--              colour): instead of the effect the monster's own sprite comes apart (client game_killdissolve); the
+--              `vfx` stays as the plain effect when the cap is over, the client has no shader for it or an old client
+--              plays it. The Customise window's preview plays the same shader on its dummy monster.
 --   lootbeam   accent = background of the character's own highlighted ground loot labels (client game_groundlabels);
 --              the text and the border keep the rarity colour, the corpse loot rays keep their rarity colours
 --   chatcolor  color = the colour of the character's own name in chat (every viewer); readable on the console
@@ -54,6 +58,20 @@ return {
 		levelfx = 7102002, rarefx = 7102003},
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
+	-- the dissolve kill effects (O563, cosmetics.lua `dissolve`): the server sends {action = "kdis"} on the cosmetics opcode
+	-- to the players near the kill (their clients draw the monster's sprite dissolving, game_killdissolve); at most
+	-- `perSec` dissolves per killer and second, `maxViewers` players per kill, the rest see the plain effect (`vfx`)
+	-- played by the server. The client has its own cap too (6 at once, 3 on a phone). Modes (client/tools/gen_kill_dissolve.py,
+	-- data/shaders/chaos_outfit_kd_<mode>.frag): sand (blown away top first), pixels (the sprite's pixels drift apart),
+	-- ash (crumbles and falls), burn (burns from the edges inward), void (collapses to a point), frost (shatters and melts),
+	-- gold (rises as dust).
+	dissolve = {
+		modes = {"sand", "pixels", "ash", "burn", "void", "frost", "gold"},
+		tints = 8,
+		perSec = 4,
+		maxViewers = 12,
+		range = {x = 9, y = 7}
+	},
 	consoleBackground = "#1c1a18", -- chat colours must stay readable on this (contrast 4.5 or more)
 	labelRarityColors = { -- the rarity colours of the ground labels (client game_lootfilter): Common, Uncommon, Magic, Rare,
 		-- Legendary, Divine, Unique (data/lib/chaos_rarity.lua); accents keep them readable
@@ -133,14 +151,15 @@ return {
 		}
 	},
 
-	-- class lines (spell skins): slot = storage offset (skinBase + slot); the Necromancer line has no skins yet
+	-- class lines (spell skins): slot = storage offset (skinBase + slot, 0 .. 6)
 	lines = {
 		{key = "warrior", slot = 0, name = "Warrior line", vocations = {"Warrior", "Juggernaut", "Berserker"}},
 		{key = "ranger", slot = 1, name = "Ranger line", vocations = {"Ranger", "Deadeye", "Beastmaster"}},
 		{key = "mystic", slot = 2, name = "Mystic line", vocations = {"Mystic", "Elementalist", "Illusionist"}},
 		{key = "thief", slot = 3, name = "Thief line", vocations = {"Thief", "Ninja", "Samurai"}},
 		{key = "monk", slot = 4, name = "Monk line", vocations = {"Monk", "Shadowfist", "Iron Sage"}},
-		{key = "templar", slot = 5, name = "Templar line", vocations = {"Templar", "Inquisitor", "Sentinel"}}
+		{key = "templar", slot = 5, name = "Templar line", vocations = {"Templar", "Inquisitor", "Sentinel"}},
+		{key = "necromancer", slot = 6, name = "Necromancer line", vocations = {"Necromancer", "Lich", "Bone Lord"}}
 	},
 
 	-- recolour families: the same picture in other colours, all in the client pair (effects_catalog.csv style, or the
@@ -155,7 +174,8 @@ return {
 			swirl = {"holy_spiral", "void_eye", "summon_portal", "summon_vortex"},
 			burst = {"fire_explosion", "inferno_burst"},
 			impact = {"fire_burst", "arcane_burst"},
-			flame = {"shadow_flame", "poison_flame"}
+			flame = {"shadow_flame", "poison_flame"},
+			shards = {"frost_burst", "ice_spikes"}
 		},
 		missile = {
 			orb = {"fire_bolt", "arcane_orb", "lightning_orb", "skull_orb"},
@@ -278,7 +298,8 @@ return {
 			vfx = "dome_blast_violet", name = "Sovereign's Pyre", desc = "A pyre of violet ash rises from your kills. Achievement: The Last Door."},
 		-- PvP (battleground.lua, arena_season.lua; source "pvp", pvp = how): the honor vendor and the season rewards
 		{id = 110, key = "kill_honorbrand", kind = "killfx", icon = 2400, source = "pvp", pvp = "Battleground vendor (honor)",
-			vfx = "px448_crimson", name = "Honor Brand", desc = "A crimson brand burns where your killing blow lands."},
+			vfx = "px448_crimson", dissolve = "ash", tint = 2, name = "Honor Brand",
+			desc = "The monster you finish crumbles to crimson ash and falls away."},
 		{id = 111, key = "kill_cinderthrone", kind = "killfx", icon = 2343, source = "pvp", pvp = "PvP season reward: Cinder Sovereign",
 			vfx = "aura_burst_god", name = "Cinder Throne", desc = "A storm of light crowns your kills. PvP season: Cinder Sovereign."},
 		{id = 206, key = "loot_warbanner", kind = "lootbeam", icon = 1436, source = "pvp", pvp = "Battleground vendor (honor)",
@@ -313,7 +334,8 @@ return {
 		{id = 208, key = "loot_chronicle", kind = "lootbeam", icon = 18415, source = "achievement", points = 250,
 			accent = "#0b2626f0", name = "Chronicle Labels", desc = "Your highlighted loot labels sit on deep teal. Reward track: 250 points."},
 		{id = 112, key = "kill_verdigris", kind = "killfx", icon = 2229, source = "achievement", points = 500,
-			vfx = "px448_green", name = "Verdigris Splash", desc = "A green splash marks your kills. Reward track: 500 points."},
+			vfx = "px448_green", dissolve = "pixels", tint = 1, name = "Verdigris Splash",
+			desc = "The monster you finish comes apart into green pixels that drift and fade. Reward track: 500 points."},
 		{id = 310, key = "chat_chronicler", kind = "chatcolor", icon = 13531, source = "achievement", points = 1000,
 			color = "#5cc8c0", name = "Chronicler's Teal", desc = "Your name in chat shows chronicle teal for everyone. Reward track: 1000 points."},
 		{id = 113, key = "kill_vortex", kind = "killfx", icon = 2153, source = "achievement", points = 1750,
@@ -459,7 +481,8 @@ return {
 		{id = 315, key = "chat_pactbound", kind = "chatcolor", icon = 16101, source = "pact", pact = "While the Chaos Pact is active",
 			color = "#e0664a", name = "Pactbound Name", desc = "Your name in chat burns Pact red for everyone while your Chaos Pact lasts."},
 		{id = 130, key = "kill_pact_ember", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, November 2026",
-			vfx = "px448_crimson", name = "Pact Ember", desc = "A crimson seal flares where your killing blow lands."},
+			vfx = "px448_crimson", dissolve = "burn", tint = 2, name = "Pact Ember",
+			desc = "The monster you finish burns from its edges inward in crimson embers."},
 		{id = 220, key = "loot_pact_frost", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, December 2026",
 			accent = "#0a2028f0", name = "Pact Frost Labels", desc = "Your highlighted loot labels sit on frozen teal. Rarity colours stay."},
 		{id = 131, key = "kill_pact_venom", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, January 2027",
@@ -469,6 +492,78 @@ return {
 		{id = 132, key = "kill_pact_frost", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, March 2027",
 			vfx = "px195_ice", name = "Pact Frost", desc = "An icy rune bursts where your killing blow lands."},
 		{id = 222, key = "loot_pact_gold", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, April 2027",
-			accent = "#2a2006f0", name = "Pact Gold Labels", desc = "Your highlighted loot labels sit on old gold. Rarity colours stay."}
+			accent = "#2a2006f0", name = "Pact Gold Labels", desc = "Your highlighted loot labels sit on old gold. Rarity colours stay."},
+
+		-- ------------------------------------------------------------------ O563 (appended: the list positions the tests use stay)
+		-- Dissolve kill effects (client game_killdissolve): the monster's own sprite blows away, comes apart, crumbles,
+		-- burns, collapses, shatters or rises as dust. Store 200 like the other kill effects; three from achievements.
+		{id = 122, key = "kill_windswept", kind = "killfx", icon = 2147, source = "store", price = 200, vfx = "px586_white",
+			dissolve = "sand", name = "Windswept", desc = "The monster you finish blows away as sand in the wind, top first."},
+		{id = 123, key = "kill_unravel", kind = "killfx", icon = 2150, source = "store", price = 200, vfx = "px03_arcane",
+			dissolve = "pixels", name = "Unravelling", desc = "The monster you finish comes apart into its own pixels that drift and fade."},
+		{id = 124, key = "kill_ashfall", kind = "killfx", icon = 2147, source = "store", price = 200, vfx = "necro_seal",
+			dissolve = "ash", name = "Ashfall", desc = "The monster you finish crumbles to grey ash and falls."},
+		{id = 125, key = "kill_frostmelt", kind = "killfx", icon = 2146, source = "store", price = 200, vfx = "px195_ice",
+			dissolve = "frost", name = "Frostmelt", desc = "The monster you finish freezes, shatters into shards and melts away."},
+		{id = 126, key = "kill_emberfade", kind = "killfx", icon = 2353, source = "achievement", achievement = "cinder_10", vfx = "ember_crown",
+			dissolve = "burn", tint = 7, name = "Emberfade",
+			desc = "The monster you finish burns from its edges inward and the embers rise. Achievement: Keeper of the Ashes."},
+		{id = 127, key = "kill_voidcollapse", kind = "killfx", icon = 2153, source = "achievement", achievement = "omen_10", vfx = "void_rift",
+			dissolve = "void", name = "Void Collapse",
+			desc = "The monster you finish is pulled into a point and swallowed. Achievement: Herald of Omens."},
+		{id = 128, key = "kill_gildeddust", kind = "killfx", icon = 2148, source = "achievement", achievement = "goblin_50", vfx = "aura_burst_gold",
+			dissolve = "gold", tint = 4, name = "Gilded Dust",
+			desc = "The monster you finish turns to gold and rises as dust. Achievement: Hoardbreaker."},
+
+		-- Spell effect skins for the spells the starter builds lean on (O563; store 250 like the others). Each keeps the
+		-- element readable: a fire spell stays fire (ember), ice stays ice, a war cry or a strike only changes colour.
+		{id = 13, key = "skin_mystic_ember", kind = "spellskin", icon = 2187, line = "mystic", source = "store", price = 250,
+			name = "Emberwreath", desc = "Witchfire Bolt, Falling Pyre and Doomtide burn in a ring of banked embers.",
+			spells = {201, 204, 206}, fx = {fire_nova = "fire_ring"}},
+		{id = 14, key = "skin_mystic_rime", kind = "spellskin", icon = 2146, line = "mystic", source = "store", price = 250,
+			name = "Glacial Spikes", desc = "Rime Bloom and Frozen Crypt burst in tall spikes of ice.",
+			spells = {200, 205}, fx = {frost_burst = "ice_spikes"}},
+		{id = 15, key = "skin_mystic_umbral", kind = "spellskin", icon = 2153, line = "mystic", source = "store", price = 250,
+			name = "Umbral Covenant", desc = "Crimson Covenant spreads a ring of shadow instead of blood.",
+			spells = {203}, fx = {blood_nova = "shadow_ring"}},
+		{id = 16, key = "skin_mystic_aether", kind = "spellskin", icon = 2150, line = "mystic", source = "store", price = 250,
+			name = "Aether Storm", desc = "Forked Storm throws arcane orbs and violet lightning.",
+			spells = {202}, missile = {lightning_orb = "arcane_orb"}, fx = {chain_lightning = "lightning_violet"}},
+		{id = 17, key = "skin_ranger_gloom", kind = "spellskin", icon = 7761, line = "ranger", source = "store", price = 250,
+			name = "Gloom Darts", desc = "Packhunter's Dart bursts in a cloud of shadow instead of spores.",
+			spells = {23}, fx = {poison_burst = "shadow_smoke"}},
+		{id = 28, key = "skin_mystic_gloom", kind = "spellskin", icon = 7761, line = "mystic", source = "store", price = 250,
+			name = "Gloomswarm", desc = "Blightswarm, Briar Prison and Primordial Squall burst in a cloud of shadow instead of spores.",
+			spells = {207, 210, 213}, fx = {poison_burst = "shadow_smoke"}},
+		{id = 18, key = "skin_templar_wildfire", kind = "spellskin", icon = 18420, line = "templar", source = "store", price = 250,
+			name = "Wildfire Pyre", desc = "Martyr's Pyre and Pyre of Absolution burn in a flaring ring of fire.",
+			spells = {127, 177}, fx = {fire_ring = "fire_nova"}},
+		{id = 19, key = "skin_templar_violet", kind = "spellskin", icon = 18414, line = "templar", source = "store", price = 250,
+			name = "Violet Verdict", desc = "Bell of Reckoning, Rampart Quake and Pyre of Absolution strike in a violet dome.",
+			spells = {128, 141, 177}, vfx = {dome_blast_holy = "dome_blast_violet"}},
+		{id = 20, key = "skin_templar_crimson", kind = "spellskin", icon = 7760, line = "templar", source = "store", price = 250,
+			name = "Crimson Verdict", desc = "Sanctum Verdict, Zealot's Wrath and Hammer of Ember Dawn flare in red.",
+			spells = {131, 139, 237}, vfx = {aura_burst_gold = "aura_burst_red"}},
+		{id = 21, key = "skin_warrior_gilded", kind = "spellskin", icon = 2154, line = "warrior", source = "store", price = 250,
+			name = "Gilded Verdict", desc = "Judgment of Iron and Red Frenzy burst in gold instead of red.",
+			spells = {148, 222}, vfx = {aura_burst_red = "aura_burst_gold"}},
+		{id = 22, key = "skin_monk_azure", kind = "spellskin", icon = 2145, line = "monk", source = "store", price = 250,
+			name = "Azure Palms", desc = "Thousand-Echo Palm and Tidal Palm strike in cold blue.",
+			spells = {172, 89}, vfx = {ki_hit_gold = "ki_hit_blue"}},
+		{id = 23, key = "skin_monk_golden", kind = "spellskin", icon = 2154, line = "monk", source = "store", price = 250,
+			name = "Golden Lance", desc = "Chi Lance and Mistborne Strike strike in gold.",
+			spells = {87, 67}, vfx = {ki_hit_blue = "ki_hit_gold"}},
+		{id = 24, key = "skin_monk_bloodied", kind = "spellskin", icon = 2156, line = "monk", source = "store", price = 250,
+			name = "Bloodied Knuckles", desc = "Hollow Knuckle strikes in red, Chi Lance and Thousand-Echo Palm send a wave of blood.",
+			spells = {82, 87, 172}, vfx = {punch_hit_violet = "punch_hit_red"}, fx = {shockwave = "blood_nova"}},
+		{id = 25, key = "skin_necro_gravefire", kind = "spellskin", icon = 7762, line = "necromancer", source = "store", price = 250,
+			name = "Gravefire", desc = "Blightbrand burns with grave-light, not venom.",
+			spells = {113}, fx = {poison_flame = "shadow_flame"}},
+		{id = 26, key = "skin_necro_rift", kind = "spellskin", icon = 2153, line = "necromancer", source = "store", price = 250,
+			name = "Wail of the Rift", desc = "Soulrend Beam opens a rift of arcane light.",
+			spells = {118}, fx = {void_eye = "summon_portal"}},
+		{id = 27, key = "skin_necro_pale", kind = "spellskin", icon = 2147, line = "necromancer", source = "store", price = 250,
+			name = "Pale Wail", desc = "Gravewail sends a ring of shadow instead of blood.",
+			spells = {112}, fx = {blood_nova = "shadow_ring"}}
 	}
 }

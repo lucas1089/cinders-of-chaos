@@ -168,7 +168,8 @@ function P.fromStoreLook(l, depth)
     return name(l.art) and { kind = 'footprint', art = l.art } or nil
   elseif k == 'effects' then
     return type(l.play) == 'table' and #l.play > 0
-      and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil, lootfx = l.lootfx == true or nil } or nil
+      and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil, lootfx = l.lootfx == true or nil,
+        dissolve = P.dissolveOf(l) } or nil
   elseif k == 'nameplate' then
     return name(l.frame) and { kind = 'nameplate', frame = l.frame } or nil
   elseif k == 'swatch' then
@@ -185,6 +186,13 @@ function P.fromStoreLook(l, depth)
     return #parts > 0 and { kind = 'bundle', parts = parts } or nil
   end
   return nil
+end
+
+-- the dissolve of a kill effect row or offer look (O563, game_killdissolve): {m = mode, t = tint} when it has one. The row's
+-- `play` is its plain effect, the fallback; with a dissolve the stage dissolves the troll itself.
+function P.dissolveOf(r)
+  if type(r) ~= 'table' or type(r.dissolve) ~= 'string' or not r.dissolve:match('^%l+$') then return nil end
+  return { m = r.dissolve, t = math.max(0, math.min(7, math.floor(tonumber(r.tint) or 0))) }
 end
 
 -- the effects option inside an option (a spell skin itself, or a bundle's part), for the stage; nil when none
@@ -1170,7 +1178,8 @@ function P.fromPlayRow(r)
   if type(r) ~= 'table' or type(r.play) ~= 'table' or #r.play == 0 then return nil end
   -- a kill effect plays on a troll that dies, a rare-loot effect over a loot bag beside the figure (O564: it showed the
   -- kill animation before); the others on the figure itself
-  return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, lootfx = r.kind == 'rarefx' or nil }
+  return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, lootfx = r.kind == 'rarefx' or nil,
+    dissolve = P.dissolveOf(r) }
 end
 
 return P

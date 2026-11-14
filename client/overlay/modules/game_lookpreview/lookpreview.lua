@@ -441,6 +441,31 @@ function Preview:startFx(opt)
     tw:setOpacity(1)
     tw:setVisible(true)
   end
+  -- a dissolve kill effect (O563): the troll itself comes apart (game_killdissolve); its plain effect stays the fallback
+  local kd = modules.game_killdissolve
+  local d = type(opt.dissolve) == 'table' and opt.dissolve or nil
+  if d and kd and type(kd.canPreview) == 'function' and kd.canPreview(d.m) and kd.KillDissolveCore then
+    self.fx.dissolve = d
+    self.fx.timeline = { items = {}, total = kd.KillDissolveCore.loopMs(d.m), lead = 0 }
+  end
+end
+
+-- one frame of a dissolve loop on the troll: stands, dissolves through the shader, is gone, fades back in. The outfit is
+-- set only while it changes (the dissolve frames; the plain troll once per phase).
+function Preview:dissolveTick(now)
+  local kd = modules.game_killdissolve
+  local tw = targetWidget(self)
+  if not kd or not tw then return end
+  local d = self.fx.dissolve
+  local o, st = kd.previewOutfit({ type = P.TROLL }, d.m, d.t, now)
+  if st.phase == 'dissolve' and o then
+    pcall(tw.setOutfit, tw, o)
+    tw:setOpacity(1)
+  else
+    if self.fx.dphase ~= st.phase and st.phase ~= 'gone' then pcall(tw.setOutfit, tw, { type = P.TROLL }) end
+    tw:setOpacity(st.phase == 'gone' and 0 or (st.phase == 'appear' and st.alpha or 1))
+  end
+  self.fx.dphase = st.phase
 end
 
 -- the scene's extent (in tiles) with the boxes of its creatures
@@ -566,6 +591,7 @@ function Preview:fxTick()
   if not self.fx or not alive(self.widget) or not self.layout or not self.layout.T then return end
   local L = self.layout
   local now = g_clock.millis() - self.fx.started
+  if self.fx.dissolve then return self:dissolveTick(now) end
   local playing = {}
   local label
   for _, a in ipairs(P.activeAt(self.fx.timeline, now)) do

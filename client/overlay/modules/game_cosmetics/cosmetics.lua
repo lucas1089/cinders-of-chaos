@@ -512,6 +512,10 @@ local function onMessage(protocol, opcode, msg)
   elseif msg.action == 'tryfx' then
     local m = fx()
     if m and (data.kind == 'footprint' or data.kind == 'outline') then m.showPreview(data.kind, data.art, data.p or data.pulse) end
+  elseif msg.action == 'kdis' then
+    -- a dissolve kill effect near you (server cosmetics.lua, O563): game_killdissolve draws the monster's own sprite coming apart
+    local m = modules.game_killdissolve
+    if m and type(m.onKill) == 'function' then m.onKill(data) end
   elseif msg.action == 'wardrobe' then
     -- the full appearance catalogue (server wardrobe.lua) for the Customise Character window
     local u = unlocks()

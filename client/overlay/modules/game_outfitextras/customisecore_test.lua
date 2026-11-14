@@ -301,5 +301,18 @@ for _, c in ipairs(sdata.cosmetics) do
 end
 eq(nLoot >= 5 and nChat >= 6, true, 'the server has loot label and chat colour rows: ' .. nLoot .. ' ' .. nChat)
 
+-- dissolve kill effects (O563): the row's mode and tint reach the hover option and the tile picture
+local drow = { id = 61, kind = 'killfx', name = 'Windswept', owned = true, play = { { n = 'puff' } }, dissolve = 'sand', tint = 4 }
+local dh = C.hoverOption(temp, layers, 'killfx', { value = 61, text = 'Windswept', row = drow }, nil)
+eq(dh.kind, 'effects', 'a dissolve kill effect plays as effects') eq(dh.killfx, true, 'on a dying monster')
+eq(dh.dissolve.m, 'sand', 'hover option: mode') eq(dh.dissolve.t, 4, 'hover option: tint')
+eq(C.dissolveIcon(drow), '/modules/game_killdissolve/images/sand_4', 'tile picture path')
+eq(C.dissolveIcon({ kind = 'killfx', play = { { n = 'x' } } }), nil, 'a plain kill effect has no dissolve picture')
+eq(C.dissolveIcon({ kind = 'spellskin', dissolve = 'sand' }), nil, 'only kill effects dissolve')
+eq(C.dissolveIcon({ kind = 'killfx', dissolve = '../x' }), nil, 'a bad mode name is no path')
+eq(C.dissolveOf({ kind = 'killfx', dissolve = 'ash', tint = 99 }).t, 7, 'tint capped')
+eq(C.dissolveOf({ kind = 'killfx', dissolve = 'ash', tint = -2 }).t, 0, 'tint floor')
+eq(C.hoverOption(temp, layers, 'killfx', { value = 51, text = 'Soul Burst', row = cosmetics.rows[7] }, nil).dissolve, nil, 'a plain kill effect hovers without a dissolve')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('customise tests OK (' .. checks .. ' checks)')

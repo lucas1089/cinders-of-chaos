@@ -1,7 +1,9 @@
 -- cosmetics.lua: cosmetic kinds of the store and the achievements (cosmetic only, never power):
 --   spell effect skins  a class line's spells show a recoloured variant of their effects; every viewer sees it
 --                       (data/spells/scripts/chaos/_common.lua asks ChaosCosmetics.swapFor during a cast)
---   kill effects        an effect on the monster's tile when the character lands the killing blow
+--   kill effects        an effect on the monster's tile when the character lands the killing blow; a dissolve kill effect
+--                       (cfg.dissolve, O563) instead tells the clients near the kill to draw the monster's own sprite
+--                       coming apart (action "kdis" below), the plain effect when over the rate or the viewer cap
 --   loot label accents  the background of the character's own highlighted ground loot labels (client game_groundlabels);
 --                       the rarity colours stay
 --   chat name colours   the character's name in chat, for every viewer (client game_cosmetics colours the name only)
@@ -36,6 +38,9 @@
 --                     tryfx {kind, art, pulse}  (a preview the asking player's client draws on its own character)
 --                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded,
 --                     and score = the collection score (collection.lua K.view: score, groups, next, milestones), when loaded
+--                     kdis {i = creature id, x, y, z, m = dissolve mode, t = tint (absent 0), o = {l = look type, h, b, g, f = colours,
+--                     a = addons}, d = direction, v = {id, dx, dy} the plain effect}  (a dissolve kill near the player, O563;
+--                     client game_killdissolve; an old client ignores it)
 --                     result {ok, text}
 -- Staff: /cosmetic <character>, <key | all>[, revoke]   /cosmetic <character>, sync   (achievement cosmetics and the
 -- reward track of achievements.lua: granted at login, when the window opens and after new achievement unlocks)
@@ -213,6 +218,12 @@ local function refresh(player, announce)
 	local a = {lines = {}}
 	local kill = chosen.killfx > 0 and owned(player, chosen.killfx)
 	a.killfx = kill and kill.kind == "killfx" and kill.vfx or nil
+	-- a dissolve kill effect (O563): the client draws the monster's sprite coming apart; `killfx` stays its plain effect
+	local dmode, dtint = nil, 0
+	if kill and kill.kind == "killfx" then
+		dmode, dtint = K.dissolveOf(kill)
+	end
+	a.killdis = dmode and {mode = dmode, tint = dtint} or nil
 	-- combat cosmetics others see (O318): the effect of the chosen one
 	for _, kind in ipairs({"levelfx", "rarefx"}) do
 		local cc = chosen[kind] > 0 and owned(player, chosen[kind])
@@ -688,6 +699,44 @@ if EventCallback then
 	rare:register(2.5) -- after the loot layer (1) and the achievements scan (2.4), before the autoloot takes items out
 end
 
+-- the dissolve of a kill (O563): the killer's own client and the players near it draw the monster's sprite coming apart
+-- (client game_killdissolve, {action = "kdis"} on the cosmetics opcode). At most cfg.dissolve.perSec per killer and second,
+-- cfg.dissolve.maxViewers viewers; false (the caller plays the plain effect) when over those, when the monster has no
+-- creature look or when nobody can be told.
+local dissolveRate = {} -- killer id -> {sec, n}
+function M.dissolve(creature, killer, a)
+	local dis = a and a.killdis
+	local d = cfg.dissolve
+	if not dis or not d or not creature or not killer then
+		return false
+	end
+	local pos = creature:getPosition()
+	local okOutfit, outfit = pcall(function() return creature:getOutfit() end)
+	local entry = ChaosVfx and a.killfx and ChaosVfx[a.killfx] or nil
+	local msg = okOutfit and K.dissolvePayload(cfg, creature:getId(), pos, dis.mode, dis.tint, outfit,
+		creature.getDirection and creature:getDirection() or 2, entry)
+	if not msg then
+		return false
+	end
+	if not K.dissolveAllowed(cfg, dissolveRate, killer:getId(), os.time()) then
+		return false
+	end
+	local near = {}
+	local list = Game.getSpectators and Game.getSpectators(pos, false, true, d.range.x, d.range.x, d.range.y, d.range.y) or {killer}
+	for _, p in ipairs(list) do
+		if p.isPlayer and p:isPlayer() then
+			near[#near + 1] = {id = p:getId(), player = p}
+		end
+	end
+	local sent = 0
+	local payload = json.encode(msg)
+	for _, v in ipairs(K.dissolveViewers(cfg, near, killer:getId())) do
+		v.player:sendExtendedOpcode(OPCODE, payload)
+		sent = sent + 1
+	end
+	return sent > 0
+end
+
 -- kill effects: the killing blow (the engine's last hit) of a character on a monster that is nobody's summon
 local death = CreatureEvent("ChaosCosmeticsDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjustified, mostDamageUnjustified)
@@ -700,7 +749,13 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	end
 	local a = M.active[killer:getId()]
 	if a and a.killfx and Vfx then
-		Vfx(creature:getPosition(), a.killfx)
+		local okD, sentD = pcall(M.dissolve, creature, killer, a)
+		if not okD then
+			print("[Chaos cosmetics] dissolve failed: " .. tostring(sentD))
+		end
+		if not (okD and sentD) then
+			Vfx(creature:getPosition(), a.killfx)
+		end
 	end
 	return true
 end

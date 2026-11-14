@@ -124,6 +124,7 @@ python3 -I client/tools/gen_lootbeam_art.py --check && python3 -I client/tools/g
 python3 -I client/tools/gen_pyre_art.py --check     # Pyre Oath ember ring and burn strips of game_chestaura (O518; CI uses the fx venv; --combo DIR draws a preview GIF, never committed)
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
 python3 -I client/tools/gen_dungeon_card_art.py --check    # card frames and dark fade of the Dungeons window, game_dungeons (O555; CI uses the fx venv)
+python3 -I client/tools/gen_kill_dissolve.py --check   # dissolve kill effects (O563, base patch 0201): the seven chaos_outfit_kd_*.frag shaders and the 10 tile pictures of game_killdissolve, drawn by one template and a numpy emulation of it (the previews: `video OUT_DIR`, `sheet OUT.png`, never committed); also holds the tint / mode of server cosmetics_config.lua `dissolve` to its ICONS list; killdissolve_core_test.lua runs in the client loop, the server side in tests/cosmetics_test.lua (CI uses the fx venv)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
 python3 -I server/tools/patch_base_armor_percent_test.py   # engine armour off for players: config.lua armorPercentMax = 0 (O464, install_all step armourlayer)
 python3 -I server/tools/patch_base_absorb_player_test.py   # the base absorb event leaves a player to the player defence layer, run in Lua on a mock (O464, install_all step absorbplayer)

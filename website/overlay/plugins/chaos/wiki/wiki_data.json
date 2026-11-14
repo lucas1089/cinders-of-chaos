@@ -395,8 +395,8 @@
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 172,
 		"store.categories": 40,
-		"store.cosmetic": 632,
-		"store.offers": 774,
+		"store.cosmetic": 652,
+		"store.offers": 794,
 		"store.service": 40,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -49046,8 +49046,8 @@
 								["Outlines", "9", "250", "Cosmetic"],
 								["Level-up Effects", "5", "150-250", "Cosmetic"],
 								["Rare Loot Effects", "5", "150-250", "Cosmetic"],
-								["Kill Effects", "5", "200", "Cosmetic"],
-								["Spell Effects", "12", "250", "Cosmetic"],
+								["Kill Effects", "9", "200", "Cosmetic"],
+								["Spell Effects", "28", "250", "Cosmetic"],
 								["Loot Labels", "4", "150", "Cosmetic"],
 								["Chat Colours", "5", "200", "Cosmetic"],
 								["Name Plates", "13", "200", "Cosmetic"],
@@ -49106,7 +49106,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "632"],
+								["Cosmetic", "652"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "9"],
 								["Service", "16"],
@@ -51803,11 +51803,11 @@
 				{
 					"id": "store:31",
 					"name": "Kill Effects",
-					"sub": "5 offers, 200 coins. Cosmetic.",
+					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["5 offers, 200 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["9 offers, 200 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -51842,9 +51842,43 @@
 									"200",
 									"Cosmetic",
 									"A white sun ring shines over your kills. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Windswept",
+									"200",
+									"Cosmetic",
+									"The monster you finish blows away as sand in the wind, top first. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Unravelling",
+									"200",
+									"Cosmetic",
+									"The monster you finish comes apart into its own pixels that drift and fade. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Ashfall",
+									"200",
+									"Cosmetic",
+									"The monster you finish crumbles to grey ash and falls. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Frostmelt",
+									"200",
+									"Cosmetic",
+									"The monster you finish freezes, shatters into shards and melts away. Seen by all. Character > Cosmetics."
 								]
 							],
-							"sprites": [{"item": 5944}, {"item": 2304}, {"item": 2274}, {"item": 9020}, {"item": 10305}]
+							"sprites": [
+								{"item": 5944},
+								{"item": 2304},
+								{"item": 2274},
+								{"item": 9020},
+								{"item": 10305},
+								{"item": 2147},
+								{"item": 2150},
+								{"item": 2147},
+								{"item": 2146}
+							]
 						}
 					],
 					"icon": "wiki/i/k-blood-skull.png"
@@ -51852,11 +51886,11 @@
 				{
 					"id": "store:32",
 					"name": "Spell Effects",
-					"sub": "12 offers, 250 coins. Cosmetic.",
+					"sub": "28 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["12 offers, 250 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["28 offers, 250 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -51933,6 +51967,102 @@
 									"250",
 									"Cosmetic",
 									"Zealotry and Purging Nova burn in red and fire. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Emberwreath",
+									"250",
+									"Cosmetic",
+									"Witchfire Bolt, Falling Pyre and Doomtide burn in a ring of banked embers. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Glacial Spikes",
+									"250",
+									"Cosmetic",
+									"Rime Bloom and Frozen Crypt burst in tall spikes of ice. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Umbral Covenant",
+									"250",
+									"Cosmetic",
+									"Crimson Covenant spreads a ring of shadow instead of blood. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Aether Storm",
+									"250",
+									"Cosmetic",
+									"Forked Storm throws arcane orbs and violet lightning. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gloom Darts",
+									"250",
+									"Cosmetic",
+									"Packhunter's Dart bursts in a cloud of shadow instead of spores. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gloomswarm",
+									"250",
+									"Cosmetic",
+									"Blightswarm, Briar Prison and Primordial Squall burst in a cloud of shadow instead of spores. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Wildfire Pyre",
+									"250",
+									"Cosmetic",
+									"Martyr's Pyre and Pyre of Absolution burn in a flaring ring of fire. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Violet Verdict",
+									"250",
+									"Cosmetic",
+									"Bell of Reckoning, Rampart Quake and Pyre of Absolution strike in a violet dome. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Crimson Verdict",
+									"250",
+									"Cosmetic",
+									"Sanctum Verdict, Zealot's Wrath and Hammer of Ember Dawn flare in red. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gilded Verdict",
+									"250",
+									"Cosmetic",
+									"Judgment of Iron and Red Frenzy burst in gold instead of red. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Azure Palms",
+									"250",
+									"Cosmetic",
+									"Thousand-Echo Palm and Tidal Palm strike in cold blue. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Golden Lance",
+									"250",
+									"Cosmetic",
+									"Chi Lance and Mistborne Strike strike in gold. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Bloodied Knuckles",
+									"250",
+									"Cosmetic",
+									"Hollow Knuckle strikes in red, Chi Lance and Thousand-Echo Palm send a wave of blood. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gravefire",
+									"250",
+									"Cosmetic",
+									"Blightbrand burns with grave-light, not venom. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Wail of the Rift",
+									"250",
+									"Cosmetic",
+									"Soulrend Beam opens a rift of arcane light. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Pale Wail",
+									"250",
+									"Cosmetic",
+									"Gravewail sends a ring of shadow instead of blood. Seen by all. Character > Cosmetics."
 								]
 							],
 							"sprites": [
@@ -51947,7 +52077,23 @@
 								{"item": 2150},
 								{"item": 2154},
 								{"item": 18414},
-								{"item": 18420}
+								{"item": 18420},
+								{"item": 2187},
+								{"item": 2146},
+								{"item": 2153},
+								{"item": 2150},
+								{"item": 7761},
+								{"item": 7761},
+								{"item": 18420},
+								{"item": 18414},
+								{"item": 7760},
+								{"item": 2154},
+								{"item": 2145},
+								{"item": 2154},
+								{"item": 2156},
+								{"item": 7762},
+								{"item": 2153},
+								{"item": 2147}
 							]
 						}
 					],

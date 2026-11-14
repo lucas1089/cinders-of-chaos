@@ -5932,8 +5932,8 @@ sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); s
 
 | Kind | What | Store (coins) | Achievement |
 |---|---|---|---|
-| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 12 skins, 250 each: Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
-| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
+| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 28 skins, 250 each (16 added in O563 for the spells the starter builds use most: Mystic Emberwreath, Glacial Spikes, Umbral Covenant, Aether Storm, Gloomswarm; Ranger Gloom Darts; Templar Wildfire Pyre, Violet Verdict, Crimson Verdict; Warrior Gilded Verdict; Monk Azure Palms, Golden Lance, Bloodied Knuckles; Necromancer Gravefire, Wail of the Rift, Pale Wail; the Necromancer line is slot 6): Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's); 10 of them dissolve the monster's own sprite instead (O563, "Dissolve kill effects") | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, and the dissolves Windswept, Unravelling, Ashfall, Frostmelt, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
 | Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
 | Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
 
@@ -5945,7 +5945,13 @@ also inside the cast's `addEvent` callbacks); `_common.lua` asks `ChaosCosmetics
 `ChaosSpell.fx` / `vfx` / `vshoot` and in the global `Fx` / `FxMissile` (wrapped once), so heal and area effects of the cast
 change too. A variant the server does not know sends the default effect. Effects set at load time (a combat's
 `COMBAT_PARAM_EFFECT`) stay the default. A spell belongs to one line; the skin chosen for that line is per character
-(storage 7100943 + line slot). The Necromancer line has no skins yet (its effects were being redrawn).
+(storage 7100943 + line slot). The Necromancer line has three since O563 (slot 6, the last storage of the block). A skin is
+1 to 3 spells of one line; one spell may be in several skins of its line (the player picks one per line). The 16 skins of O563 were
+chosen from the spells of `server/tools/starter_builds_config.lua` (the Recommended builds) and kept to the recolour families: a fire
+spell stays fire (`fire_nova` to the ember `fire_ring`), ice stays ice (`frost_burst` to `ice_spikes`, a new `shards` family), the
+war cries, palms and domes only change colour; the effect each spell sends before a skin is read from the real scripts
+(a recording run of `tools/ci/spell_fx_probe.lua` with a mock `ChaosCosmetics.swapFor`). The hot Ranger arrow spells (Gale Volley,
+Moonshard Rain, Arrowstorm) and the Warrior slams (Colossus Fall, Anvil Fall) send effects that have no recolour in the pair, so they have no skin yet.
 
 **Choosing and previews.** Character > Cosmetics: one tab per kind, a Default row, Use, Preview, Open the Store. Preview (and
 the store's SHOW button on a skin or kill effect) plays the effects at the player's tile for that player only
@@ -33708,3 +33714,28 @@ Client side: client/MANIFEST.md "Pair 71" (77 outfits 3434-3510, `gen_wst_outfit
   at most 2 monsters on a look, the old look is the pool's (and the file's for ours), no monster in the recolour map, and a monster of the donor map has the same old look in both. `tests/hunt_teleports_test.lua` reads the map: no showcase cell repeats a look at pair 71 (cells that changed look: the plans of Quicksilver Wraith, Bonepicker, Azure Guard, Distorted Phantom and Nightfang Widow and base hunts with Talon Knight, Wyrm, Crab, Carrion Worm, Rustheap Golem, Ghoul, Usurper Warlock and the lost souls).
   `client/tools/gen_dungeon_banners.py` draws a monster of the map at its purchased look (no banner monster is in it: no banner changed).
 - **Tests.** `install_monster_wst_looks_test.py` (the map, the guard end to end, XML ours and base, Lua, pool, a monster that wears its donor look, idempotence, refusals), `audit_idle_looks_test.py`, `audit_shared_looks_test.py`, `client_pair_test.py`, `gen_wst_outfits_test.py` (CI). Not verified: in a running client.
+
+### Dissolve kill effects (O563)
+
+A kill effect with `dissolve = "<mode>"` (and `tint = 0..7`, 0 = the mode's own colour) in `cosmetics_config.lua` does not play a tile
+effect: the monster's own sprite comes apart on the clients near the kill (client `game_killdissolve`, base patch `0200`, "Kill dissolve (O563)"
+in client/MANIFEST.md). Modes (`cfg.dissolve.modes`): `sand` (blown away, top first), `pixels` (its pixels drift apart), `ash` (crumbles and falls),
+`burn` (burns from the edges inward), `void` (collapses to a point), `frost` (shatters and melts), `gold` (rises as dust). The cosmetic keeps `vfx`:
+the plain effect that plays when the dissolve cannot.
+
+- **The message.** `cosmetics.lua` `M.dissolve` (called by the death handler `ChaosCosmeticsDeath` after the killing blow of a character that wears one):
+  `{action = "kdis", data = {i, x, y, z, m, t, o = {l, h, b, g, f, a}, d, v = {id, dx, dy}}}` on the cosmetics opcode 225 (no new opcode, an old client
+  ignores the action) to the killer first and the other players within `cfg.dissolve.range` (9 x 7 tiles), at most `maxViewers` (12). The rules are in
+  `cosmetics_core.lua` (`dissolvePayload`, `dissolveAllowed`, `dissolveViewers`) and tested in `tests/cosmetics_test.lua`.
+- **The caps.** At most `cfg.dissolve.perSec` (4) dissolves per killer and second: the next kill of that second plays the plain effect (`Vfx`) on the
+  server, as does a monster that has no creature look (an item look, an invisible one) or a kill with nobody to tell. The client caps again (6 at once, 3 on a
+  phone). One message per viewer per kill, about 120 bytes; a pack of 4 kills a second to 12 viewers is 48 messages a second at the very worst.
+- **The window.** `rows` carry `dissolve` and `tint` (tint 0 left out); the store offer's `look` the same (`offerLook`), so the Customise window and the store
+  preview play the dissolve on their dummy monster.
+- **Config rules** (`validate`): `dissolve` must be one of the modes, `tint` a whole number below `cfg.dissolve.tints`, only a kill effect has either.
+- **The effects.** Replaced in place (same id, same owner rule): Verdigris Splash (112, reward track 500 points: green `pixels`), Pact Ember (130, Chaos Pact
+  November 2026: crimson `burn`), Honor Brand (110, Battleground honor vendor: crimson `ash`). New: Windswept (122, `sand`), Unravelling (123, `pixels`),
+  Ashfall (124, `ash`), Frostmelt (125, `frost`), all four in the store at 200 (the kill effect price: one price per kind, `docs/PRICES.md`); Emberfade (126,
+  ember `burn`, achievement Keeper of the Ashes), Void Collapse (127, `void`, Herald of Omens), Gilded Dust (128, gold `gold`, Hoardbreaker). Names stay
+  English like every cosmetic name (`i18n_strings.lua`: proper names stay in English); the texts the client adds are in pt-BR.
+- **Never power.** A dissolve changes a picture only (no damage, drop, timing or area); the cosmetics test still refuses any field that is not cosmetic.

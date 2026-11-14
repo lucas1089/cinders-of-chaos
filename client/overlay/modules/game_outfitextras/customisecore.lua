@@ -377,6 +377,18 @@ local function rowOption(row, value)
   return nil
 end
 
+-- a kill effect row's dissolve (O563, game_killdissolve): {m = mode, t = tint 0 .. 7}; nil for the plain kill effects
+function C.dissolveOf(r)
+  if type(r) ~= 'table' or r.kind ~= 'killfx' or type(r.dissolve) ~= 'string' or not r.dissolve:match('^%l+$') then return nil end
+  return { m = r.dissolve, t = math.max(0, math.min(7, math.floor(tonumber(r.tint) or 0))) }
+end
+
+-- the tile picture of a dissolve kill effect (generated, client/tools/gen_kill_dissolve.py), without the extension; nil for the others
+function C.dissolveIcon(r)
+  local d = C.dissolveOf(r)
+  return d and ('/modules/game_killdissolve/images/' .. d.m .. '_' .. d.t) or nil
+end
+
 -- the option for the cosmetic row of a card (a cosmetics state row): the outline, the prints, the effects played
 local function cosmeticOption(r)
   if type(r) ~= 'table' then return nil end
@@ -385,7 +397,7 @@ local function cosmeticOption(r)
   elseif r.kind == 'footprint' then
     return num(r.id) ~= 0 and type(r.art) == 'string' and r.art ~= '' and { kind = 'footprint', art = r.art } or nil
   elseif (r.kind == 'spellskin' or r.kind == 'killfx') and type(r.play) == 'table' and #r.play > 0 then
-    return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil }
+    return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, dissolve = C.dissolveOf(r) }
   end
   return nil
 end
