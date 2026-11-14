@@ -575,6 +575,10 @@ server/
    exalted core leave every loot list, Iletrya's step asks for no cores, the exalted core recipe and the dust and sliver
    drop go, the 39 descriptions say "No longer used.". The items players own go in the step `sql`
    (`server/sql/chaos_zz_soulpit_removal.sql`). See "Soul pit removed". Run the server stopped, as for any `sql` file.
+7c4. Decks removed (O570): `python3 -I server/tools/patch_remove_decks.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `removedecks`, after `soulpit`, before `sql`): the Bronze, Silver and Golden Deck leave every monster loot list, NPC trade list and
+   whole-line reward entry of the base scripts. No `sql` file: a deck a character still has is emptied into its Deck of Cards at
+   login (the cards inside would be lost by a row delete). See "Deck of Cards (O570)".
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -714,7 +718,7 @@ collision check") and be added here.
 | 160 | `groupQueue` | `groupqueue.lua` (the gate called by `arena.lua`, `battleground.lua`, `dungeons.lua`) | `game_groupqueue` | client -> server `open` / `query` / `join {arena?, bg?, role?, dungeon? {id, difficulty}}` / `leave` / `accept` / `decline` / `raid`, server -> client `state`, `check {key, label, left, accepted, total, mine}`, `checkEnd`, `msg {text}` (see "Group Queue (O407)") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
-| 172 | `cardState` | `cards.lua` | `game_cardborder` | server -> client `state {on, cards, decks}` (the cards that are on); client -> server `sync` (see "Cards and decks") |
+| 173 | `cardDeck` | `cards.lua` | `game_carddeck` | server -> client `cards {cards, max, needSet}` (the 76 cards, once per sync), `state {unlocked, own, new, on, ...}`; client -> server `sync`, `toggle {id}`, `seen {ids}` or `{all}`, `open` (see "Deck of Cards (O570)"). 172 (`cardState`, game_cardborder) is retired and stays reserved |
 | 174 | `emberCache` | `embercache.lua` | `game_embercache` | client -> server `open` / `close` / `get`, server -> client `state` (see "Ember Cache, Daily Spark and the day book") |
 | 176 | `candlemarks` | `candlemarks.lua`, Osric the Chandler's NPC script | `game_candlemarks` | client -> server `open` / `buy {k}`; server -> client `hud` (every minute), `state` through `Chaos.sendChunked`, `result`, `npc` (see "Candlemarks") |
 | 178 | `goals` | `goals.lua` | `game_goals` | client -> server `open` / `close` / `tracker`; server -> client `goals` through `Chaos.sendChunked`, `tracker`, `done` (see "Next Goals") |
@@ -876,6 +880,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
+| 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
@@ -1284,7 +1289,7 @@ Texts: the base `!exp` line "You didn't have any current Double EXP enhancement.
 | `!build export/import/confirm/cancel` | Character > Passive Tree (Alt+P), Build Code panel |
 | `!achievements`, `!title [name]` | Character > Achievements (title selector: every title held, over the opcode) |
 | `!pet [summon/dismiss/rename]` | Character > Pets |
-| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: every card with what it gives, the decks; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
+| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: the Deck of Cards, the cards on with what they give and the set line; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
 | `!changename`, `!changevocation`, `!ascend` (free switch), `!skiptutorial`, `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` (web shop items) | Character > Services |
 | `!rift` | Adventure > Rifts |
 | `!tower [start/leave]` | Adventure > Infinity Tower (Enter / Leave Tower buttons); leaving also: the arena's exit portal, the floor panel's Leave button |
@@ -10403,6 +10408,8 @@ Not seen in a client or on a live server: her stall, the trade window, the level
 
 ## Cards and decks (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `tools/patch_badges.py`, `tools/gen_card_descriptions.lua`)
 
+**O570 (2026-11-14): the deck items and everything below about carrying, using and moving a card into a deck are retired.** Every card now goes into the Deck of Cards by itself ("Deck of Cards (O570)"); the card lines, texts, tiers, legendary rules and the "Card sets (O453)" part below are unchanged. What the deck sections below say about decks, `scan`, `decide` with deck sizes, the card borders (opcode 172, `game_cardborder`) and Veyra selling decks is history.
+
 Owner 2026-10-23 (pt-BR): "como alguém pega um deck pra colocar as cartas? usar elas não funciona e no character info só diz
 se ela está ativada ou desativada", then "as cartas ainda referenciam as magias antigas" (a card said "convert Exori Mas
 Spell to Earth damage"). The base deck system (76 cards, 3 decks) stays; Chaos fixes how it is reached, read and named.
@@ -10627,6 +10634,96 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
   cannot cast, the lower card of a line, a second copy, a card in a deck that is off, a loose card, a card that left the decks,
   swapping a card, two sets only with six slots, the texts in both languages, the hit event for each bonus, PvP, login and logout),
   `tools/card_set_model_test.py`.
+
+## Deck of Cards (O570) (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `data/lib/chaos_carddeck.lua`, `data/lib/chaos_mqgate.lua`, `tools/patch_remove_decks.py`, client `game_carddeck`)
+
+Owner 2026-11-14 (pt-BR): "faça um 'deck of cards', um lugar que as cartas vão automaticamente, e que o player possa ver e filtrar
+todas as cartas que ele tem. quando ele lootear uma nova, mostre algo do tipo 'new card' no menu. o player tem acesso a qualquer
+momento e ela funciona como os decks que temos hoje. tire os decks", then "coloque o unlock do badge na quest principal. o mesmo com o
+deck of cards". The three deck items (27632-27634) are gone; every card a character loots is kept in its **Deck of Cards**, a record
+on the server, not an item. Deploy: `files` (revscripts, `data/lib`, the NPC script), `badges` (card texts of `items.xml`),
+`removedecks` (new) installer steps and a server restart; the client needs the update (a new module, opcode 173). Admin app: tab
+Painel > card Atualizar servidor > button Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was run on a live
+server or in a client.
+
+- **Where the cards are.** Player storages, block **7104400 - 7104619** ("Storage keys"; `cards_config.lua` `deck.storage`): +0 .. +80
+  the copies of the card whose own storage is 37000 + n (the index is the card's own offset, so no table of positions), +100 .. +180
+  1 while the card is "new" (looted, not seen in the window), +200 the migration version done, +201 the stored "open for good" mark
+  (decks, below), +203 the number of decks the migration found, +202 free. The card's own on / off storage stays 37000-37080 (1 =
+  on): the base bonus scripts, the spell scripts, `tautstring.lua` and the set code read it exactly as before. No DB table, no
+  item, no capacity. A count is capped at 9,999.
+- **Taking cards in** (`ChaosCards.absorb`, `takeIn`). A card item that reaches a player is removed and counted: when it is moved
+  (`EventCallback onItemMoved`, taken in a moment later), when it is used (the base card action asks `ChaosCards.use` first, as
+  before), by a sweep every `absorbMs` 4 s over the carried bags (slots 1-10, 12, 13, any depth, at most `carriedLimit` 600 items) and
+  the inbox, and at login. Loot from a corpse, a reward, auto loot, the market and the mail all end in a bag or the inbox, so all are
+  caught; a card in a depot or the store inbox is taken in by the login migration. A new card (first copy) is marked "new", gets the
+  chat line "X went into your Deck of Cards." and the toast **New card: NAME** (`ChaosNotify.send`, kind `newcard`, client
+  `game_chaosnotify` type `NEW_CARD`, at most `toastMax` 3 named per sweep, more are told in one line). A second copy only counts.
+- **The rules kept from the decks.** At most **5 cards on** at once (`maxActive`, the base's `maxActivatedCards`, whatever the
+  decks); one copy of a card counts however many copies are owned; the set bonuses (`sets`, O453) read the cards that are on, one per
+  convert line the class casts, exactly as before; the legendary cards keep the base's one-time flag (`110017 + id - 27547`) when
+  first turned on and their weapon rule. The deck capacity (5 / 10 / 20 cards inside a deck item) has no counterpart: the Deck holds
+  every card. Turning on needs a copy in the Deck, the Deck open and fewer than five on (`K.decide`: locked, none, off, max, on).
+  `card_set_model.py --check` and its test pass unchanged: no number moved.
+- **State stays true.** `ChaosCards.reconcile` (login, every 60 s, every toggle, the `deck` command): a card whose storage is 1 but
+  that has no copy, or while the Deck is locked, or beyond five, is turned off (the highest ids first) with a message.
+- **Unlock = a main quest step** (`mainquest_config.lua`, step `deck`, chapter 1, level 14, "Open the Deck of Cards", flag `deck`,
+  also an `ack` so the tracker's Go button marks it; `docs/ROTEIRO_QUEST_PRINCIPAL.md` regenerated). The step is done when the
+  character opens the window: the client sends `open`, the server emits the flag (`ChaosMainQuest.emit`) and sends the state again
+  a moment later. `data/lib/chaos_mqgate.lua` `passed(player, "deck")` reads the quest's storages from any Lua state: the quest is
+  done, skipped or quiet, or the stored step is after `deck`; a character the quest has not seen yet (state -1) is not past. So a
+  character past the step has both unlocks with nothing stored, and the existing characters the quest passes silently
+  (`silentGap`: 40 levels below their own) get them without opening anything. The **Badge slot** opens with the same step: 
+  `ChaosBadges.onMoveItem` refuses a badge into slot 13 before it ("The Badge slot opens with the main quest step ..."); a badge
+  already worn stays. Not verified: whether the engine's right-click equip and the base badge movement script go through
+  `onMoveItem`; if they do not, they still wear a badge before the step.
+- **Cards looted before the unlock are never lost.** Counted and marked new all the same; the window lists them (locked banner with
+  the step name), no card can be turned on, the sweep clears any on storage. They work once the Deck is open.
+- **Migration** (`ChaosCards.migrate`, at login, marker +200 = `migrationVersion`): one walk over the carried bags, the inbox, the
+  store inbox and every depot chest (at most `migrateLimit` 30,000 items): every card item goes into the Deck, every deck item is
+  emptied (its cards in, any other item to the bag it sat in) and removed; a deck that cannot be emptied stays (nothing is lost) and
+  the next sweep tries again. A deck item found later (picked up from a house floor, returned by the market) is taken in by the sweep.
+  A character that held a deck has the Deck **open** (`grandfather`, the stored mark): decks were bought from Veyra for gold, never
+  for coins, so there is nothing to refund (the store's deck rows: none; the roulettes had retired them). Their cards on stay on. The
+  login tells how many cards moved. Not walked: items on house tiles (inert: picked up, the sweep takes them), the guild stash and
+  open market offers (they come back to a bag or the inbox and are taken in then).
+- **Out of the game** (`tools/patch_remove_decks.py`, step `removedecks`, after `soulpit`; test `patch_remove_decks_test.py`):
+  a deck is cut out of every monster loot list, NPC trade list (XML `shop_buyable` / `shop_sellable`, Lua `addBuyableItem`) and
+  whole-line reward / list entry of `scripts/` and `lib/`; what else names a deck id is listed as a warning. Veyra the Apothecary's
+  list and `apothecary_config.lua` no longer have the decks (`tests/apothecary_test.lua`), her "cards" answer points to the main
+  quest. `patch_badges.py` words the deck items "No longer used" and the card texts "It goes into your Deck of Cards by itself.
+  Open the Deck from the menu to turn it on." (`OLD_CARD_HINTS` migrates the earlier hints; `card_descriptions.csv` regenerated).
+  The deck ids stay in `badges_core.lua` (a deck can not be worn) and `cards_config.lua` `retiredDecks`.
+- **Protocol: one opcode, 173** (`ChaosOpcodes.cardDeck`, free in the reference server, the base client and every Chaos module;
+  "Opcode collision check"; 172, the card borders, is retired and stays reserved; `tests/opcode_fuzz_test.lua` and the README table
+  row hold it). JSON `{action, data}`. Server -> client: `cards {cards, max, needSet}` (the 76 cards once per `sync`, in the player's
+  language: server id `i`, client id `c`, name, tier, rarity, line, element, kind, set element, text, classes; about 17 KB, so
+  `Chaos.send` splits it, the client listens with `registerExtendedJSONOpcode`), `state {unlocked, own, new, on, distinct, copies, max,
+  class, set, quest}` (about 1 KB, sent only when it changed, `lastSent` per player). Client -> server: `sync`, `toggle {id}`, `seen
+  {ids}` or `{all}`, `open`; each limited (`cards.sync` 500 ms, `cards.toggle` / `cards.seen` 250 ms). Unity (paused): allowlisted
+  with the reason "not ported yet" (`tools/ci/unity_opcodes_allowlist.txt`).
+- **The window** (client `game_carddeck`, "Deck of Cards" in `client/MANIFEST.md`): a grid of all 76 cards with the card art (the item
+  sprite), copies (x2), rarity colour, a red "New" mark until seen (clicking or pointing a card, or "Mark all seen"); filters set,
+  rarity, element, owned or missing, "my class" and a text search (name, spell, element, text); sort by number, name, rarity, copies,
+  new first, element; the panel of the five slots with the set line, the card under the cursor (text, copies) and the Turn on / off
+  button; the summary line; a locked banner. **Hub menu**: card "Deck of Cards" on Hero > Build (the Character tab is full at six
+  cards and has the hotkey windows; the Deck has no hotkey), glyph `cards` (Loadouts moved to `dividers` for it), square badge with
+  the number of new cards (`CARD_POINTS`, the Passive Tree pattern), refreshed on every state. Toast on loot.
+- **Install / VPS steps for the owner.** Admin app first: tab Painel > card Atualizar servidor > button Aplicar e reiniciar (runs
+  `update-apply`: files, `badges` and `removedecks` steps, restart). Shell fallback: `chaos-ctl.sh update-apply`. By hand on the
+  VPS: `python3 -I server/tools/install_all.py SERVER_DIR --only badges,removedecks,files`. The migration needs no step: it runs
+  at each character's first login. The client: publish the client update (admin app: tab Comandos > card "Site e update do client" > field "Release do client" >
+  button "Publicar update"; shell fallback `chaos-ctl.sh publish-update TAG`). Staff check: `luajit tests/cards_test.lua`, and a test character past level 14 on the main quest: open the Deck
+  from Hero > Build, it opens; loot or drop a card item in the backpack: the toast "New card".
+- **Beta caveat.** The new step sits inside chapter 1, so the stored step index of a character on the main quest shifts by one from
+  that point on (the quest file says never to insert on a live server). The beta characters are the only ones; a character that
+  stood on a later step is shown the step before it again, which its facts pass at once, and is paid once more for it (a small
+  reward). Wipe or accept.
+- **Tests.** `tests/cards_test.lua` (config and keys, `decide`, `reconcile`, payloads, the gate over every quest state, absorb of
+  loose, nested and inbox cards, toasts, migration of carried, nested and depot decks, the stuck deck, sync / toggle / seen / open,
+  the set rules over the Deck, Character Info in both languages), `tests/badges_test.lua` (the badge gate), `tests/mainquest_test.lua`,
+  `tools/patch_remove_decks_test.py`, client `game_carddeck/carddecklogic_test.lua`, `game_chaosnotify/notifyview_test.lua`,
+  `client_chaos_topbar` tests, `tools/ci/check_topbar_tree.py`.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 

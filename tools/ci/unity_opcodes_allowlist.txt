@@ -5,3 +5,4 @@
 
 111 | retired by O316: the depot tabs window is gone, nothing sends or reads opcode 111, the number stays reserved
 164 | effect owner marks (O567): the Options > Effects opacity of my effects is a main client option (base patch 0202); the Unity client never sends the hello, so the server sends it nothing
+173 | not ported yet: Deck of Cards window (O570, client game_carddeck). Unity work is paused by the owner (2026-11); port it with the other card screens when Unity resumes. The old card border handler (172) is dead code: nothing sends 172 any more

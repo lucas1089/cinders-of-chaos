@@ -42,7 +42,7 @@ for _, hub in ipairs(T.HUBS) do
   end
 end
 eq(tabs, 26, '26 tabs')
-eq(cards, 104, '104 cards (the Store is a pin, on no tab)')
+eq(cards, 105, '105 cards (the Store is a pin, on no tab)')
 for text in pairs(C.CARDS) do eq(seen[text] or T.PIN_ONLY[text], true, 'a card line for a text the tree does not hold: ' .. text) end
 -- the hotkey windows are on the first tab of their hub (two clicks)
 local first = {}

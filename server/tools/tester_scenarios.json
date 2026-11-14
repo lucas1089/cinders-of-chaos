@@ -8672,22 +8672,28 @@
     "candlemarks"
    ]
   },
-  "cardState": {
+  "cardDeck": {
    "actions": [
-    "sync"
+    "seen",
+    "toggle",
+    "sync",
+    "open"
    ],
    "client": [
-    "game_cardborder"
+    "game_carddeck"
    ],
    "dataKeys": [
-    "cards",
-    "size",
-    "used"
+    "copies",
+    "distinct",
+    "new",
+    "on",
+    "set",
+    "unlocked"
    ],
    "files": [
     "cards.lua"
    ],
-   "opcode": 172,
+   "opcode": 173,
    "out": false,
    "skip": [],
    "systems": [
@@ -8907,7 +8913,8 @@
     "id",
     "kind",
     "line",
-    "list"
+    "list",
+    "range"
    ],
    "files": [
     "cosmetics.lua"
@@ -11115,7 +11122,7 @@
    ],
    "kind": "opcode",
    "opcodes": [
-    "cardState"
+    "cardDeck"
    ],
    "talkactions": []
   },
@@ -11343,7 +11350,8 @@
   },
   "corpse": {
    "files": [
-    "corpse_bag.lua"
+    "corpse_bag.lua",
+    "corpse_empty.lua"
    ],
    "kind": "passive",
    "opcodes": [],

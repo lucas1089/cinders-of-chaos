@@ -3734,8 +3734,6 @@ return {
 			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
 		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
 			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
-		["A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."] =
-			"Um baralho guarda suas cartas: cinco no de Bronze, dez no de Prata, vinte no de Ouro. Carregue-o e use uma carta para guardá-la nele e ativá-la. Peça uma {trade}.",
 		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
 			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
 		["No potion leaves a flask now. Old empty ones I still buy, five gold each. An Everfull flask I can {upgrade}."] =
@@ -3815,47 +3813,24 @@ return {
 		["This item can't be worn. The Loot Buyer buys it."] = "Este item não pode ser equipado. O Loot Buyer compra ele.",
 		["These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."] =
 			"Estes slots foram aposentados: decks, navios, cintos e luvas não podem ser equipados. Movidos: %s.",
+		-- the Badge slot opens with a main quest step (badges_core.lua, O570)
+		["The Badge slot opens with the main quest step \"%s\" (Adventure > Main Quest)."] =
+			"O slot de Badge abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal).",
 		-- Cards and decks (cards_core.lua, cards.lua)
 		["You turned on %s: %s"] =
 			"Você ativou %s: %s",
 		["You turned off %s."] =
 			"Você desativou %s.",
-		["%s went into your %s."] =
-			"%s foi para o seu %s.",
-		["%s is already on with another copy of it. Only one copy counts."] =
-			"%s já está ativa com outra cópia dela. Só uma cópia conta.",
 		["You already have %d cards on, the most there can be. Turn one off first."] =
 			"Você já tem %d cartas ativas, o máximo possível. Desative uma primeiro.",
-		["Your decks are full. Take a card out of a deck that is off, or buy a bigger deck from %s."] =
-			"Seus decks estão cheios. Tire uma carta desativada de um deck, ou compre um deck maior de %s.",
-		["You need a deck to use cards. Buy one from %s in the hub: Bronze Deck for %d gold (5 cards), Silver Deck for %d (10 cards, level %d), Golden Deck for %d (20 cards, level %d). Carry it, then use the card again."] =
-			"Você precisa de um deck para usar cartas. Compre um de %s no hub: Bronze Deck por %d de ouro (5 cartas), Silver Deck por %d (10 cartas, nível %d), Golden Deck por %d (20 cartas, nível %d). Carregue-o na mochila e use a carta de novo.",
-		["The card %s is no longer in a deck you carry: turned off."] =
-			"A carta %s não está mais em um deck que você carrega: desativada.",
-		["Carry the card in your backpack to use it: not in the depot or the Purse."] =
-			"Carregue a carta na mochila para usá-la: não no depot nem na Purse.",
-		["The card could not be moved into your deck."] =
-			"Não foi possível colocar a carta no seu deck.",
-		["Decks carried: %s"] =
-			"Decks que você carrega: %s",
-		["You carry no deck."] =
-			"Você não carrega nenhum deck.",
 		["Cards on (%d of %d):"] =
 			"Cartas ativas (%d de %d):",
-		["Cards in your decks, off:"] =
-			"Cartas nos seus decks, desativadas:",
-		["Cards carried outside a deck (use one to put it in a deck):"] =
-			"Cartas fora de um deck (use uma para colocá-la em um deck):",
 		["No card is on."] =
 			"Nenhuma carta está ativa.",
 		["... and %d more."] =
 			"... e mais %d.",
-		["%s %d of %d"] =
-			"%s %d de %d",
 		["Cards"] =
 			"Cartas",
-		["Use a card you carry: it goes into a deck and turns on. Use it again to turn it off. At most %d cards are on at once."] =
-			"Use uma carta que você carrega: ela vai para um deck e é ativada. Use de novo para desativar. No máximo %d cartas ficam ativas ao mesmo tempo.",
 		["Drown"] =
 			"Afogamento",
 		["Minor"] =
@@ -3880,8 +3855,36 @@ return {
 			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill de distância.",
 		["Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
 			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
-		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
-			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
+		["You have no copy of %s in your Deck of Cards."] =
+			"Você não tem nenhuma cópia de %s no seu Deck of Cards.",
+		["The card %s is no longer in your Deck of Cards: turned off."] =
+			"A carta %s não está mais no seu Deck of Cards: desativada.",
+		["%s went into your Deck of Cards."] =
+			"%s foi para o seu Deck of Cards.",
+		["%d new cards went into your Deck of Cards."] =
+			"%d cartas novas foram para o seu Deck of Cards.",
+		["Your decks are gone. %d cards went into your Deck of Cards."] =
+			"Seus decks acabaram. %d cartas foram para o seu Deck of Cards.",
+		["Your decks are gone. %d cards went into your Deck of Cards, which is open for you: open it from the menu."] =
+			"Seus decks acabaram. %d cartas foram para o seu Deck of Cards, que já está aberto para você: abra pelo menu.",
+		["Deck of Cards: %d of %d cards, %d copies."] =
+			"Deck of Cards: %d de %d cartas, %d cópias.",
+		["Open the Deck of Cards from the menu (Hero, Build) to turn cards on and off. At most %d cards are on at once."] =
+			"Abra o Deck of Cards pelo menu (Herói, Build) para ativar e desativar cartas. No máximo %d cartas ficam ativas ao mesmo tempo.",
+		["New card"] =
+			"Nova carta",
+		["Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest): your cards are kept, they work once it is open."] =
+			"Seu Deck of Cards está trancado. Ele abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal): suas cartas ficam guardadas e funcionam quando ele abrir.",
+		["Your Deck of Cards is locked, so your cards are off. It opens with the main quest step \"%s\"."] =
+			"Seu Deck of Cards está trancado, então suas cartas estão desativadas. Ele abre com a etapa \"%s\" da quest principal.",
+		["%s went into your Deck of Cards. It is kept, but the Deck is locked: it opens with the main quest step \"%s\"."] =
+			"%s foi para o seu Deck of Cards. Ela fica guardada, mas o Deck está trancado: ele abre com a etapa \"%s\" da quest principal.",
+		["Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest). Your cards are kept in the Deck meanwhile (%d of %d)."] =
+			"Seu Deck of Cards está trancado. Ele abre com a etapa \"%s\" da quest principal (Aventura > Quest Principal). Suas cartas ficam guardadas no Deck enquanto isso (%d de %d).",
+		["It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on."] =
+			"Ela vai para o seu Deck of Cards sozinha. Abra o Deck pelo menu para ativá-la.",
+		["Cards keep themselves now. The Deck of Cards is part of the Oath: it opens in the main quest, and every card you loot goes in by itself. Open it from the menu."] =
+			"As cartas se guardam sozinhas agora. O Deck of Cards faz parte do Juramento: ele abre na quest principal, e toda carta que você pegar entra nele sozinha. Abra pelo menu.",
 		-- Card sets (O453; cards_core.lua)
 		["Card set %s is on with %s cards: %s"] =
 			"Conjunto de cartas %s ativo com %s cartas: %s",

@@ -143,6 +143,21 @@ function K.refusesMove(id, pos)
 	return slot == K.BADGE_SLOT and K.retiredKind(id) ~= nil
 end
 
+-- O570 (owner 2026-11-14): the Badge slot opens with a main quest step, the same one that opens the Deck of Cards (mainquest_config.lua
+-- key `deck`; tests/badges_test.lua holds it to cards_config.lua deck.unlock.step). A character past the step (data/lib/chaos_mqgate.lua)
+-- can wear a badge; before it a badge is refused with the text below. A badge already worn stays.
+K.BADGE_UNLOCK_STEP = "deck"
+K.TEXT_BADGE_LOCKED = "The Badge slot opens with the main quest step \"%s\" (Adventure > Main Quest)."
+
+-- true when a move of item id to pos puts a badge into the badge slot of a character that has not opened it
+function K.badgeLocked(id, pos, unlocked)
+	return not unlocked and slotOf(pos) == K.BADGE_SLOT and K.isBadge(id)
+end
+
+function K.badgeLockedText(lang, stepTitle)
+	return T(lang, K.TEXT_BADGE_LOCKED, stepTitle or "")
+end
+
 -- the base's "one badge at a time" storage (data/movements/scripts/equipments/badges.lua and the special skill scripts:
 -- set to the badge's id on equip, cleared on de-equip; a value above 0 refuses every other badge). A value left over
 -- with no such badge worn (a badge that left slot 13 without its de-equip event) would lock the slot for good.

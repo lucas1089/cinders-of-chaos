@@ -275,7 +275,8 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 
 ## Cards and card sets
 
-Cards go into a deck you carry. Veyra the Apothecary sells decks. Use a card to turn it on, use it again to turn it off.
+Every card you loot goes into your **Deck of Cards** by itself: no bag, no weight. The Deck opens with the main quest step "Open the Deck of Cards" (level 14);
+until then your cards are kept. Open it from the menu (Hero, Build) to see, filter and sort your cards and to turn them on or off.
 At most five cards are on. Most cards change the element of one spell. Three cards of one element, one for each spell line
 your class casts, make a **card set** with a small bonus: more Fire damage, poison for Earth, a leech for Death, a heal for
 Holy, a short slow for Energy. Four or five cards give the same bonus as three. Character > Character Info names your set and
