@@ -107,7 +107,7 @@ local function auraShift(outfit)
   if type(fn) ~= 'function' then return nil end
   local ok, x, y = pcall(fn, outfit)
   if not ok then return nil end
-  if type(x) == 'table' then return { x = tonumber(x.x) or 0, y = tonumber(x.y) or 0 } end
+  if type(x) == 'table' then return { x = tonumber(x.x or x[1]) or 0, y = tonumber(x.y or x[2]) or 0 } end
   if tonumber(x) then return { x = tonumber(x), y = tonumber(y) or 0 } end
   return nil
 end
