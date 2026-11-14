@@ -181,9 +181,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
   corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
   lootbag      tools/patch_monster_corpses.py    item 6068 becomes the loot bag every monster leaves instead of its body: name, slots,
-               lasts seconds then nothing (items.xml; the rule is engine src-patch 0089 and scripts/chaos/corpse_bag.lua, the
-               numbers scripts/chaos/corpse_config.lua; README "Loot bag instead of corpses"; after corpses); also turns the stock
-               skinning script (obsidian knife) off, the professions' Flaying hook in it still runs
+               lasts seconds then nothing (items.xml), and the items.otb node of 6068 draws client item 19202, a plain leather
+               pouch, instead of the stock dark horned lump (O565; one client id attribute, items.otb.bak keeps the original; the
+               rule is engine src-patch 0089 and scripts/chaos/corpse_bag.lua, an EMPTY bag goes in `emptySeconds` through
+               scripts/chaos/corpse_empty.lua, the numbers scripts/chaos/corpse_config.lua; README "Loot bag instead of corpses";
+               after corpses); also turns the stock skinning script (obsidian knife) off, the professions' Flaying hook in it
+               still runs
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
