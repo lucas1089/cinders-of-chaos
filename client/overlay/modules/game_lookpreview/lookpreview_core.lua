@@ -1009,7 +1009,7 @@ end
 -- panel shows a SAMPLE of each, built from the data the real thing uses:
 --   lootlabel  the label over a loot bag: a ground label of game_groundlabels (font verdana-11px-rounded, one pixel border and
 --              the text in the rarity colour, the background the cosmetic's accent, GL.style) beside the feet, over the
---              loot bag item every monster leaves (GL.CORPSE_BAG_ID). Stock: GL.HIGHLIGHT_BACKGROUND.
+--              loot bag item every monster leaves (GL.LOOT_BAG_LOOK, O565). Stock: GL.HIGHLIGHT_BACKGROUND.
 --   chatcolor  a console line "Name: text": only the name takes the colour (game_cosmetics CL.colorLine), the text keeps the
 --              spoken colour (#f0f000). Stock: the name in the spoken colour. Near the head, else along the stage's bottom.
 --   nameplate  the name in gold on the 9-slice frame of game_nameplate (images/plate_<frame>.png, border 6, the plate
@@ -1018,7 +1018,7 @@ end
 P.LABEL_BG = '#100c0ef0'
 P.LABEL_RARITY = '#ffd040'
 P.LABEL_FONT = 'verdana-11px-rounded'
-P.LOOT_BAG = 6068
+P.LOOT_BAG = 19202   -- the plain leather pouch the bag shows (O565, GL.LOOT_BAG_LOOK)
 P.CHAT_TEXT = '#f0f000'
 P.CHAT_BG = '#1c1a18'
 P.PLATE_NAME = '#e8c372'

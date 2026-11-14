@@ -578,7 +578,7 @@ end
 local function slurp(path) local fh = assert(io.open(path, 'rb')) local t = fh:read('*a') fh:close() return t end
 local gl = slurp('client/overlay/modules/game_groundlabels/groundlabelslogic.lua')
 eq(gl:find("GL.HIGHLIGHT_BACKGROUND = '" .. P.LABEL_BG .. "'", 1, true) ~= nil, true, 'the stock label background is the ground label\'s')
-eq(gl:find("GL.CORPSE_BAG_ID = " .. P.LOOT_BAG, 1, true) ~= nil, true, 'the loot bag is the one monsters leave')
+eq(gl:find("GL.LOOT_BAG_LOOK = " .. P.LOOT_BAG, 1, true) ~= nil, true, 'the loot bag is the one monsters leave')
 eq(gl:find("normal = { font = '" .. P.LABEL_FONT .. "'", 1, true) ~= nil, true, 'the label font')
 local cl = slurp('client/overlay/modules/game_cosmetics/cosmeticslogic.lua')
 eq(cl:find("{ name = 'Legendary', color = '" .. P.LABEL_RARITY .. "' }", 1, true) ~= nil, true, 'the sample rarity colour is the Cosmetics window\'s')
