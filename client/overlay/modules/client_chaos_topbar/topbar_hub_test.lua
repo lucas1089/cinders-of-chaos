@@ -118,6 +118,7 @@ local Hub = ChaosTopBarHub
 local ran, lockedSeen, failed, relayouts, lastWidth = {}, {}, {}, 0, nil
 local items = {
   { text = 'Store', category = 'economy', icon = 'market', status = 'open' },
+  { text = 'Market', category = 'economy', icon = 'market', status = 'open' },
   { text = 'Inventory', category = 'character', icon = 'inventory', status = 'open' },
   { text = 'Hunt Tracker', category = 'hunt', icon = 'ranking', key = 'Alt+H', status = 'open' },
   { text = 'Battle List', category = 'hunt', icon = 'battlelist', status = 'open' },
@@ -143,10 +144,10 @@ Hub.testPanel = panel
 
 -- ---------------------------------------------------------------- the bar
 local width = Hub.layoutBar(panel)
-eq(width, 16 + 4 * 32 + 5 + 4 * 4, 'width: Hero, Hunt, Trade, a divider and System (32 px badges, no default pin)')
+eq(width, 16 + 5 * 32 + 2 * 5 + 6 * 4, 'width: Hero, Hunt, Trade, a divider, the Store pin, a divider and System (32 px badges)')
 local ids = {}
 for _, k in ipairs(panel.kids) do ids[#ids + 1] = k.id or k.style end
-eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,ChaosHubDivider,chaosHub_system', 'System alone at the right end, Store among the Trade cards')
+eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,ChaosHubDivider,chaosPin_1,ChaosHubDivider,chaosHub_system', 'System at the right end, the Store as its own button (a default pin, on no tab)')
 eq(panel.kids[2].byId.glyph.width, 32, 'the bar glyph is as big as its 32 px cell')
 eq(panel.kids[2].byId.glyph.clip ~= nil, true, 'a badge glyph got its atlas cell')
 eq(panel.kids[2].tooltip, 'Hunt', 'tooltip is the hub name')
@@ -214,12 +215,12 @@ for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' th
 eq(inv.byId.pinMark.visible, false, 'no pin mark before')
 local rel0 = relayouts
 eq(click(inv, MouseRightButton), true, 'the right click is taken')
-eq(settings['chaosHubPins'], 'v1:Inventory', 'the pin is saved')
+eq(settings['chaosHubPins'], 'v1:Store|Inventory', 'the pin is saved after the default Store pin')
 eq(relayouts > rel0, true, 'the host measured the bar again (a bar kept at its old width squeezes the new badge)')
-eq(lastWidth, 16 + 5 * 32 + 2 * 5 + 6 * 4, 'the bar is wide enough for the pin and its divider')
+eq(lastWidth, 16 + 6 * 32 + 2 * 5 + 7 * 4, 'the bar is wide enough for both pins and their dividers')
 local order = {}
 for _, k in ipairs(panel.kids) do order[#order + 1] = k.id or 'div' end
-eq(table.concat(order, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,div,chaosPin_1,div,chaosHub_system', 'the pin sits between the hubs and System')
+eq(table.concat(order, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,div,chaosPin_1,chaosPin_2,div,chaosHub_system', 'the pins sit between the hubs and System')
 eq(win.byId.hint.text, 'Pinned to the bar.', 'the hint says so')
 local inv2
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv2 = c end end
@@ -235,7 +236,7 @@ local inv3
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv3 = c end end
 eq(inv3.byId.pinMark.visible, true, 'the mark is drawn from the saved pins after a reload')
 click(inv3, MouseRightButton)
-eq(settings['chaosHubPins'], 'v1:', 'a second right click unpins')
+eq(settings['chaosHubPins'], 'v1:Store', 'a second right click unpins')
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv3 = c end end
 eq(inv3.byId.pinMark.visible, false, 'the mark is gone')
 -- the bar holds three pins at most

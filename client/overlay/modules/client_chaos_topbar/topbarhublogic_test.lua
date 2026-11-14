@@ -42,8 +42,8 @@ for _, hub in ipairs(T.HUBS) do
   end
 end
 eq(tabs, 26, '26 tabs')
-eq(cards, 105, '105 cards')
-for text in pairs(C.CARDS) do eq(seen[text], true, 'a card line for a text the tree does not hold: ' .. text) end
+eq(cards, 104, '104 cards (the Store is a pin, on no tab)')
+for text in pairs(C.CARDS) do eq(seen[text] or T.PIN_ONLY[text], true, 'a card line for a text the tree does not hold: ' .. text) end
 -- the hotkey windows are on the first tab of their hub (two clicks)
 local first = {}
 for _, hub in ipairs(T.HUBS) do for _, text in ipairs(hub.tabs[1].cards) do first[text] = true end end
@@ -130,7 +130,7 @@ eq(H.pickTab(h2, 'c'), 3, 'saved tab'); eq(H.pickTab(h2, 'gone'), 1, 'a tab that
 eq(H.parsePins(''), nil, 'never set'); eq(H.parsePins(nil), nil, 'nil')
 eq(#H.parsePins('v1:'), 0, 'cleared'); eq(table.concat(H.parsePins('v1:Store|Market'), ','), 'Store,Market', 'two pins')
 eq(#H.parsePins('v1:a|b|c|d|e'), 3, 'at most three')
-eq(#H.pinsOrDefault(''), 0, 'no default pin: the Store is among the Trade cards'); eq(#H.pinsOrDefault('v1:'), 0, 'cleared stays cleared')
+eq(table.concat(H.pinsOrDefault(''), ','), 'Store', 'the Store is the default pin (its own button, on no tab)'); eq(#H.pinsOrDefault('v1:'), 0, 'cleared stays cleared')
 eq(H.serializePins({ 'Store', 'Bank' }), 'v1:Store|Bank', 'serialize')
 local pins, changed, why = H.togglePin({ 'Store' }, 'Market')
 eq(changed, true, 'pinned'); eq(table.concat(pins, ','), 'Store,Market', 'added last')

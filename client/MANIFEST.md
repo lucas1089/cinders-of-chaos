@@ -6476,7 +6476,7 @@ text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com
   window mirror would otherwise take it). (5) "Layout options" (`game_hotbar/hotbar_options.lua`): the left menu panel of the
   Options window is a plain panel whose entries are anchor-chained, so the unanchored button sat at its top left on Controls and
   its sub-entries; it is now anchored to the panel's bottom (`hotbar_options_test.lua`). (6) System is the badge at the right end
-  of the bar, where the pinned Store was; the Store is no default pin (a saved pin list is kept). (7) The stock top strip of
+  of the bar, where the pinned Store was; the Store is no default pin (a saved pin list is kept). Later the same day the owner asked for the Store off the Trade hub ("ela já tem o próprio botão"): it is on no tab now, `ChaosTopBarTree.PIN_ONLY` keeps it as a pin only, and it is the default pin again (its own button on the bar); `check_topbar_tree.py` accepts a PIN_ONLY card. (7) The stock top strip of
   `client_topmenu` (a dark band with a red border and clipped red text) peeked out above the hub bar: it is now hidden, phantom and
   0 high, and every `ChaosTopBar.refresh` does it again when the base shows or grows it (both looks; `terminate` gives it back;
   `chaos_topbar_test.lua`). The text menu keeps its own bar.

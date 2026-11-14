@@ -10,7 +10,7 @@ ChaosTopBarHubLogic = {}
 local H = ChaosTopBarHubLogic
 
 H.MAX_PINS = 3
-H.DEFAULT_PINS = {}
+H.DEFAULT_PINS = { 'Store' }
 H.RIGHT_HUB = 'system'     -- the hub that sits alone at the right end of the bar (owner 2026-11-14: where the Store pin was)
 H.CARDS_PER_ROW = 4
 H.STYLES = { hubs = true, text = true }
@@ -67,6 +67,7 @@ function H.build(tree, cards, items, opts)
   local byText = H.index(tree)
   local placed = {}          -- hub id -> tab id -> list of { slot, card }
   local extras = {}          -- hub id -> list of cards
+  local pinOnly = {}         -- cards on no tab, shown only as a pin (tree.PIN_ONLY)
   local function put(hub, tab, slot, card)
     placed[hub.id] = placed[hub.id] or {}
     placed[hub.id][tab.id] = placed[hub.id][tab.id] or {}
@@ -91,7 +92,11 @@ function H.build(tree, cards, items, opts)
         points = item.status == 'open' and (item.points == '!' and '!'
           or ((tonumber(item.points) or 0) > 0 and math.floor(tonumber(item.points)) or nil)) or nil,
       }
-      if at then
+      if (tree.PIN_ONLY or {})[base] then
+        local def = cards.CARDS[base] or {}
+        c.glyph, c.desc = def[1] or cards.FALLBACK_GLYPH, def[2] or ''
+        pinOnly[#pinOnly + 1] = c
+      elseif at then
         local def = cards.CARDS[slotText] or {}
         c.glyph, c.desc = def[1] or cards.FALLBACK_GLYPH, def[2] or ''
         put(at.hub, at.tab, at.slot, c)
@@ -105,7 +110,7 @@ function H.build(tree, cards, items, opts)
       end
     end
   end
-  local model = { hubs = {} }
+  local model = { hubs = {}, pinOnly = pinOnly }
   for _, hub in ipairs(tree.HUBS) do
     local out = { id = hub.id, name = hub.name, glyph = hub.glyph, new = false, count = 0, tabs = {} }
     for _, tab in ipairs(hub.tabs) do
@@ -146,6 +151,9 @@ function H.findCard(model, text)
         if c.text == text then return c, hub, tab end
       end
     end
+  end
+  for _, c in ipairs(model.pinOnly or {}) do
+    if c.text == text then return c end
   end
   return nil
 end
