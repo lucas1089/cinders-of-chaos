@@ -7,7 +7,7 @@ Trechos entre chaves, como {m1} ou {p1}, são preenchidos em tempo de execução
 
 As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.
 
-São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
+São 104 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
 
 ## Itens de quest e grupo
 
@@ -116,6 +116,12 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 - Objetivo: Abra o Passe da Temporada
 - Dica: O passe paga desafios diários e semanais. As temporadas têm modos próprios (Hardcore, Self-Found).
 - Conclusão (Ysolde): Capítulo fechado. O primeiro voto foi o mais fácil.
+
+### 1.17 Abra o Deck of Cards (nível 14)
+
+- Objetivo: Abra o Deck of Cards
+- Dica: Herói > Build > Deck of Cards. Toda carta que você pega vai para ele sozinha. Abri-lo também abre o slot de Badge do seu inventário.
+- Conclusão (Ysolde): Agora as cartas têm casa, e os brasões têm lugar. Guarde bem os dois.
 
 ## Capítulo 2: O Juramento da Forja (níveis 15 a 29)
 

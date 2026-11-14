@@ -46,29 +46,21 @@ K.TEXT = {
 	off = "You turned off %s.",
 	max = "You already have %d cards on, the most there can be. Turn one off first.",
 	none = "You have no copy of %s in your Deck of Cards.",
-	locked = "Your Deck of Cards is locked. Talk to %s in the hub and ask her about cards: your cards are kept, they work once she has bound the Deck.",
+	locked = "Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest): your cards are kept, they work once it is open.",
 	lostoff = "The card %s is no longer in your Deck of Cards: turned off.",
-	lockedoff = "Your Deck of Cards is locked, so your cards are off. Talk to %s about cards.",
+	lockedoff = "Your Deck of Cards is locked, so your cards are off. It opens with the main quest step \"%s\".",
 	stored = "%s went into your Deck of Cards.",
-	storedlocked = "%s went into your Deck of Cards. It is kept, but the Deck is locked: talk to %s about cards.",
+	storedlocked = "%s went into your Deck of Cards. It is kept, but the Deck is locked: it opens with the main quest step \"%s\".",
 	newcards = "%d new cards went into your Deck of Cards.",
 	migrated = "Your decks are gone. %d cards went into your Deck of Cards.",
 	migratedopen = "Your decks are gone. %d cards went into your Deck of Cards, which is open for you: open it from the menu.",
 	-- Character Info
 	hdr_deck = "Deck of Cards: %d of %d cards, %d copies.",
-	hdr_locked = "Your Deck of Cards is locked. Talk to %s in the hub and ask her about cards. Your cards are kept in the Deck meanwhile (%d of %d).",
+	hdr_locked = "Your Deck of Cards is locked. It opens with the main quest step \"%s\" (Adventure > Main Quest). Your cards are kept in the Deck meanwhile (%d of %d).",
 	hdr_on = "Cards on (%d of %d):",
 	none_on = "No card is on.",
 	more = "... and %d more.",
 	howto = "Open the Deck of Cards from the menu (Hero, Build) to turn cards on and off. At most %d cards are on at once.",
-	-- Veyra's quest
-	q_low = "Come back at level %d. The Deck is not for the green.",
-	q_offer = "The Cinders keep taking the leather decks I sold. I make a better one: the Deck of Cards, sewn into your own name. It keeps every card you loot, with no bag and no weight. For the binding I need to see %d different cards in your Deck, and %d gold for the thread and the wax. Say {bind} when you have them.",
-	q_missing_cards = "I count %d different cards in your Deck, and I need %d. Loot more, then say {bind} again.",
-	q_missing_gold = "The thread and the wax cost %d gold, and you carry %d. Bring the rest and say {bind}.",
-	q_done = "There. The Deck of Cards is yours: every card you loot goes in by itself. Open it from the menu and turn on up to %d.",
-	q_again = "Your Deck is bound already. Open it from the menu.",
-	q_none = "Your cards are kept in the Deck even now. I bind it once you ask me about {cards}.",
 	-- bonus texts: one per kind of card (the item description is this plus HINT)
 	convert = "While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts.",
 	convert2 = "While on, %s deal %s damage instead. With several cards of these spells on, the highest one counts.",
@@ -91,7 +83,7 @@ K.TEXT = {
 }
 
 -- the hint every card description ends with (tools/patch_badges.py CARD_HINT is the same text; tests compare them)
-K.HINT = "It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on. Veyra the Apothecary binds the Deck."
+K.HINT = "It goes into your Deck of Cards by itself. Open the Deck from the menu to turn it on."
 
 -- the vocabulary the bonus texts put in (each is a key in i18n_strings.lua)
 local function word(lang, w)
@@ -570,21 +562,6 @@ function K.classesOf(id)
 	return nil
 end
 
--- the Veyra quest: "low" (level), "cards" (fewer different cards in the Deck than asked), "gold" or "ok"
-function K.questCheck(level, distinct, gold)
-	local q = DK.quest
-	if (tonumber(level) or 0) < q.level then
-		return "low"
-	end
-	if (tonumber(distinct) or 0) < q.cards then
-		return "cards"
-	end
-	if (tonumber(gold) or 0) < q.gold then
-		return "gold"
-	end
-	return "ok"
-end
-
 -- the static list of the window (action "cards", sent once per session and language): one row per card. clientId(serverId) -> the
 -- id the client draws; nameOf(serverId) -> the item name
 --   i server id, c client id, n name, t tier (1-4, 5 = legendary), r rarity, l the spell of the line (legendary: the class),
@@ -647,7 +624,7 @@ function K.statusText(lang, st)
 		add(T(lang, K.TEXT.hdr_deck, distinct, total, copies))
 		add(T(lang, K.TEXT.howto, C.maxActive))
 	else
-		add(T(lang, K.TEXT.hdr_locked, C.seller, distinct, total))
+		add(T(lang, K.TEXT.hdr_locked, st.stepTitle or "", distinct, total))
 	end
 	add("")
 	add(T(lang, K.TEXT.hdr_on, K.activeCount(plan), C.maxActive))

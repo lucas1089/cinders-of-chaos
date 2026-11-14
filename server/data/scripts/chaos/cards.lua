@@ -1,12 +1,18 @@
--- cards.lua: the cards and decks in the game (rules: cards_core.lua, numbers: cards_config.lua; server/README.md "Cards and
--- decks"). The glue the base deck system calls after tools/patch_badges.py:
---   ChaosCards.use(player, item)   the base card action asks this first: a card carried anywhere in the bags (any depth,
---        closed bags too) goes into a carried deck with room and turns on; used again it turns off. Returns true when the
---        card is handled (always, for a card), nil for anything else so the base code runs.
---   ChaosCommands "deck"           Character > Character Info: every card on and off with what it gives, the deck
---        capacity used and total, and how to get a deck when none is carried (replaces the base !deck dialog)
---   login and every cfg.reconcileMs   a card that is on but left the decks (dropped on death, a bag put away) is turned off,
---        and a stray action id goes, so nothing stays on without its card and nothing stays stuck
+-- cards.lua: the cards and the Deck of Cards (rules: cards_core.lua, numbers: cards_config.lua; server/README.md "Cards and decks",
+-- "Deck of Cards (O570)"). Since O570 there is no deck item: every card a character loots is counted in its Deck of Cards (storages
+-- of cards_config.lua `deck`, helpers in data/lib/chaos_carddeck.lua). The glue:
+--   ChaosCards.absorb(player, deep, only)   a card item (or an old deck item) a player carries is removed and counted in the Deck: on
+--        every move of a card (EventCallback onItemMoved), on use (ChaosCards.use, which the base card action asks first), by a
+--        sweep every cfg.deck.absorbMs, at login; deep (ChaosCards.migrate, once, marker storage) also walks the depot chests and
+--        the store inbox and empties every deck item. A new card gets the chat line and the toast "New card: NAME".
+--   ChaosCards.toggle(player, id)   the window turns a card on or off (the card's own storage 37000-37080 = 1, which the base bonus
+--        scripts read): the Deck must be open (a main quest step, data/lib/chaos_mqgate.lua), a copy owned, at most five on
+--   ChaosCommands "deck"           Character > Character Info: the Deck of Cards, the cards on with what each gives and the set line
+--        (replaces the base !deck dialog)
+--   login and every cfg.reconcileMs   a card that is on but has no copy, or while the Deck is locked, or beyond five, is turned off
+--   ChaosCards.push(player, plan, force)   the window (client game_carddeck, extended opcode 173 ChaosOpcodes.cardDeck): `cards` (the
+--        list, on sync) and `state` (copies, new marks, cards on, set line; sent when it changed). Client -> server: sync, toggle,
+--        seen, open (the main quest step "deck" is done by opening the window).
 --   ChaosCardsHit (onHealthChange)  the cards of a spell whose stock script was retired act on its Chaos replacement
 --        (cards_config.lua families, how = "hit"): the hit of that spell changes its element (convert cards) or a heal of
 --        the spell heals more (heal cards). The spell is told by the cast context the spells state writes into the
@@ -21,14 +27,11 @@
 --   summon release   the base keeps "one summon at a time" in a storage it clears only when the summon times out alive: a
 --        summon killed first left the storage at 1 for good, so no card fired again. Cleared at login and every few seconds
 --        while the player has no summon.
---   ChaosCards.push(player, plan, force)   card borders: the card ids that are on go to the client (extended opcode 172
---        ChaosOpcodes.cardState, action "state", client game_cardborder) at login, when the client asks ("sync") and whenever
---        the set changes (a card turned on or off, a reconcile that turned one off); an unchanged set is not sent again.
 --   card sets (O453)   three cards of one element (one per convert line the class casts) give a small set bonus: the cache
 --        of each player's set is refreshed with every reconcile (ChaosCards.refreshSet, called by push), the bonus is applied by
 --        the same ChaosCardsHit event (ChaosCards.applySet, for the hits a player deals); the player is told when the set
 --        changes (use) and in Character Info. cards_core.lua has the rules.
--- No storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866. One opcode, 172.
+-- Storage: the base's card storages (37000-37059, 37065-37080) and the Deck block 7104400 - 7104619. One opcode, 173.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): Player:getSlotItem, Container:getSize/getItem, Item:getId/getActionId/
 -- setActionId/moveTo/isContainer/getName.
 
@@ -151,7 +154,7 @@ function M.reconcile(player, quiet)
 	end
 	if not quiet and #plan.off > 0 then
 		if plan.lockedOff then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lockedoff, C.seller))
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lockedoff, Deck.stepTitle(langOf(player))))
 		else
 			for _, id in ipairs(plan.off) do
 				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lostoff, nameOf(id)))
@@ -367,7 +370,7 @@ local function stateView(player, plan)
 	local unlocked = Deck.unlocked(player)
 	local hint = ""
 	if not unlocked then
-		hint = Chaos.t(player, K.TEXT.locked, C.seller)
+		hint = Chaos.t(player, K.TEXT.locked, Deck.stepTitle(langOf(player)))
 	end
 	return {unlocked = unlocked, owned = function(id) return Deck.owned(player, id) end,
 		fresh = function(id) return Deck.isFresh(player, id) end, plan = plan, className = className,
@@ -486,7 +489,7 @@ local function announceTaken(player, taken, newIds, firstId)
 	local unlocked = Deck.unlocked(player)
 	if taken == 1 and firstId then
 		local text = unlocked and Chaos.t(player, K.TEXT.stored, nameOf(firstId))
-			or Chaos.t(player, K.TEXT.storedlocked, nameOf(firstId), C.seller)
+			or Chaos.t(player, K.TEXT.storedlocked, nameOf(firstId), Deck.stepTitle(langOf(player)))
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.newcards, taken))
@@ -567,7 +570,7 @@ function M.toggle(player, id)
 	end
 	local name = nameOf(id)
 	if action == "locked" then
-		msg(K.TEXT.locked, C.seller)
+		msg(K.TEXT.locked, Deck.stepTitle(langOf(player)))
 	elseif action == "none" then
 		msg(K.TEXT.none, name)
 	elseif action == "max" then
@@ -598,7 +601,7 @@ ChaosCommands.register("deck", function(player)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, K.statusText(langOf(player), {unlocked = Deck.unlocked(player),
 		owned = function(id) return Deck.owned(player, id) end,
 		storage = function(id) return tonumber(player:getStorageValue(C.cards[id].storage)) or -1 end,
-		nameOf = nameOf, vocId = vocationId(player)}))
+		nameOf = nameOf, vocId = vocationId(player), stepTitle = Deck.stepTitle(langOf(player))}))
 end)
 
 -- one sweep: loose cards in, the on / off storages true, the window told
@@ -827,6 +830,19 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			return
 		end
 		M.toggle(player, msg.id)
+	elseif action == "open" then
+		-- the window was opened: the main quest step "deck" is done by it (the flag is the quest's), then the state is sent again
+		-- a moment later in case the step opened the Deck
+		local MQ = rawget(_G, "ChaosMainQuest")
+		if MQ and MQ.emit then
+			pcall(MQ.emit, player, "deck")
+		end
+		later(function(pid)
+			local p = creatureById(pid, player)
+			if p then
+				M.push(p, nil, false)
+			end
+		end, player:getId())
 	elseif action == "seen" then
 		if Chaos.limited and Chaos.limited(player, "cards.seen", 250) then
 			return

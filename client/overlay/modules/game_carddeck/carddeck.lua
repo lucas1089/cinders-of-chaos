@@ -53,7 +53,7 @@ local function showSide()
   if not window then return end
   local p = window.sidePanel
   local on = L.activeRows(rows)
-  local max = state and tonumber(state.max) or L.MAX_ON
+  local max = L.maxOn(state)
   p.activeTitle:setText(tr('Cards on (%d of %d)', #on, max))
   p.activeList:destroyChildren()
   for i = 1, max do
@@ -133,7 +133,7 @@ local function showGrid()
     cells[id] = cell
   end
   window.gridFrame.emptyLabel:setVisible(#shown == 0)
-  window.statusLabel:setText(L.summary(rows, state and tonumber(state.max) or L.MAX_ON))
+  window.statusLabel:setText(L.summary(rows, L.maxOn(state)))
   window.markButton:setEnabled(L.newCount(state) > 0)
   if state and state.unlocked ~= true then
     window.hintLabel:setText(tostring(state.quest or ''))

@@ -211,6 +211,7 @@ local CATEGORIES = {
     entry('Spell List',      'spells',      { modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' },
                                               unless = has('game_spellbook') }),
     entry('Spell Supports',  'spells',      { modules = { 'game_spellsupports' }, fns = { 'toggle' } }),
+    entry('Deck of Cards',   'inventory',   { modules = { 'game_carddeck' }, fns = { 'toggle' } }),
     entry('Passive Tree',    'passivetree', { modules = { 'game_passivetree' }, fns = { 'toggle' }, key = 'Alt+P' }),
     entry('Achievements',    'ranking',     { modules = { 'game_achievements' }, fns = { 'toggle' } }),
     entry('Pets',            'vip',         { modules = { 'game_pets' },      fns = { 'toggle' } }),
@@ -726,6 +727,8 @@ end
 local CARD_POINTS = {
   -- a trial open (O559, trialsAvailableCount) shows "!" when no point is waiting
   ['Passive Tree'] = { module = 'game_passivetree', fn = 'getTreeFreePoints', flag = 'trialsAvailableCount' },
+  -- O570: the cards looted and not seen yet in the Deck of Cards (game_carddeck keeps the server's list of new cards)
+  ['Deck of Cards'] = { module = 'game_carddeck', fn = 'getNewCount' },
 }
 
 local function cardPoints(text)

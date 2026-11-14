@@ -14,9 +14,10 @@ C.CARDS = {
   ['Achievements'] = { 'trophy', 'Goals done and points' },
   -- Hero > Build
   ['Spell Supports'] = { 'star', 'Support effects for spells' },
-  ['Loadouts'] = { 'cards', 'Save tree and gear as a build' },
+  ['Loadouts'] = { 'dividers', 'Save tree and gear as a build' },
   ['Charms'] = { 'gem', 'Place charms for small bonuses' },
   ['Chaos Pact'] = { 'swirl', 'Pact marks and saved builds' },
+  ['Deck of Cards'] = { 'cards', 'Every card you loot, in one place' },
   -- Hero > Style
   ['Outfit'] = { 'shirt', 'Change your look' },
   ['Transmog'] = { 'dividers', 'Gear with another look' },

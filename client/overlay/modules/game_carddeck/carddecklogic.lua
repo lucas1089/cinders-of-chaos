@@ -27,10 +27,20 @@ end
 local function num(x) return tonumber(x) or 0 end
 local function str(x) return type(x) == 'string' and x or '' end
 
--- the server's static list, a row that is not a table with an id left out (opcode_fuzz_test.lua)
+-- the number of slots, from the server's `max`: a whole number from 1 to 10, five when it is anything else (opcode_fuzz_test.lua)
+function L.maxOn(state)
+  local m = type(state) == 'table' and tonumber(state.max) or nil
+  if not m or m ~= m or m < 1 or m > 10 then return L.MAX_ON end
+  return math.floor(m)
+end
+
+L.MAX_CARDS = 200
+
+-- the server's static list, a row that is not a table with an id left out, at most MAX_CARDS rows (opcode_fuzz_test.lua)
 function L.cleanCards(data)
   local out = {}
   for _, c in ipairs(list(type(data) == 'table' and data.cards)) do
+    if #out >= L.MAX_CARDS then break end
     if type(c) == 'table' and tonumber(c.i) then
       out[#out + 1] = {
         id = num(c.i), cid = num(c.c), name = str(c.n), tier = num(c.t), rarity = str(c.r), line = str(c.l),
@@ -54,7 +64,7 @@ function L.rows(cards, state)
   for i, c in ipairs(cards or {}) do
     out[#out + 1] = {
       id = c.id, cid = c.cid, name = c.name, tier = c.tier, rarity = c.rarity, line = c.line, element = c.element, kind = c.kind,
-      set = c.set, text = c.text, classes = c.classes, order = i, count = own[c.id] or 0, owned = (own[c.id] or 0) > 0,
+      set = c.set, text = c.text, classes = c.classes, order = i, count = math.floor(own[c.id] or 0), owned = (own[c.id] or 0) > 0,
       on = on[c.id] == true, new = new[c.id] == true and (own[c.id] or 0) > 0,
     }
   end
@@ -155,9 +165,10 @@ end
 -- the numbers of the summary line
 function L.counts(rows)
   local c = { total = #rows, owned = 0, copies = 0, on = 0, new = 0 }
+  -- copies are summed as whole numbers (a server value that is no integer is floored)
   for _, r in ipairs(rows) do
     if r.owned then c.owned = c.owned + 1 end
-    c.copies = c.copies + r.count
+    c.copies = c.copies + math.floor(r.count)
     if r.on then c.on = c.on + 1 end
     if r.new then c.new = c.new + 1 end
   end
@@ -166,7 +177,7 @@ end
 
 function L.summary(rows, max)
   local c = L.counts(rows)
-  return tr('Cards: %d of %d  -  copies: %d  -  on: %d of %d', c.owned, c.total, c.copies, c.on, max or L.MAX_ON)
+  return tr('Cards: %d of %d  -  copies: %d  -  on: %d of %d', c.owned, c.total, math.floor(c.copies), c.on, L.maxOn({ max = max }))
 end
 
 -- the number the hub menu card shows: cards looted and not seen yet
@@ -205,7 +216,7 @@ function L.toggleButton(row, state)
   if state.unlocked ~= true then return { label = tr('Locked'), enabled = false, why = str(state.quest) } end
   if row.on then return { label = tr('Turn off'), enabled = true } end
   if not row.owned then return { label = tr('Turn on'), enabled = false, why = tr('You have no copy of this card.') } end
-  if #list(state.on) >= (tonumber(state.max) or L.MAX_ON) then
+  if #list(state.on) >= L.maxOn(state) then
     return { label = tr('Turn on'), enabled = false, why = tr('Five cards are on. Turn one off first.') }
   end
   return { label = tr('Turn on'), enabled = true }

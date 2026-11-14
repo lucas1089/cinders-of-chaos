@@ -1,10 +1,14 @@
 -- The Deck of Cards, engine helpers with no event registration (O570, server/README.md "Deck of Cards (O570)"): the copies a
--- character owns, the "new" marks, the unlock and Veyra's quest state, in the player storages of cards_config.lua `deck`. Loaded by
--- data/scripts/chaos/cards.lua and by Veyra's NPC script (another Lua state, so it cannot see revscript globals).
+-- character owns, the "new" marks and the unlock, in the player storages of cards_config.lua `deck`. Loaded by
+-- data/scripts/chaos/cards.lua and by any NPC script that needs it (another Lua state, so it cannot see revscript globals).
 -- Rules: data/scripts/chaos/cards_core.lua; numbers: cards_config.lua. Lua 5.1 / LuaJIT and 5.3.
 
 if not ChaosCardsCore or not ChaosCardsCore.cardIds then
 	dofile("data/scripts/chaos/cards_core.lua")
+end
+
+if not ChaosMQGate then
+	pcall(dofile, "data/lib/chaos_mqgate.lua")
 end
 
 ChaosCardDeck = ChaosCardDeck or {}
@@ -90,24 +94,22 @@ function D.totals(player)
 	return distinct, copies
 end
 
+-- open: the character is past the main quest step (data/lib/chaos_mqgate.lua) or held an old deck (the stored mark)
 function D.unlocked(player)
-	return get(player, ST.base + ST.unlocked) == 1
+	if get(player, ST.base + ST.unlocked) == 1 then
+		return true
+	end
+	return ChaosMQGate ~= nil and ChaosMQGate.passed(player, C.deck.unlock.step) == true
 end
 
+-- the stored mark (a character that held an old deck)
 function D.unlock(player)
 	player:setStorageValue(ST.base + ST.unlocked, 1)
-	if D.questState(player) < 2 then
-		player:setStorageValue(ST.base + ST.quest, 2)
-	end
 end
 
--- Veyra's quest: 0 not started, 1 she made her offer, 2 done
-function D.questState(player)
-	return get(player, ST.base + ST.quest)
-end
-
-function D.setQuestState(player, v)
-	player:setStorageValue(ST.base + ST.quest, v)
+-- the title of the step that opens the Deck, in the player's language
+function D.stepTitle(lang)
+	return ChaosMQGate and ChaosMQGate.title(C.deck.unlock.step, lang) or C.deck.unlock.step
 end
 
 function D.migrated(player)
@@ -122,42 +124,6 @@ end
 function D.plan(player)
 	return K.reconcile(function(id) return D.owned(player, id) end,
 		function(id) return tonumber(player:getStorageValue(C.cards[id].storage)) or -1 end, D.unlocked(player))
-end
-
--- Veyra's quest step (her NPC script calls this): what the player said and the state decide the answer. Returns the text key
--- of cards_core.lua K.TEXT and its arguments, and true when the Deck was bound just now.
---   words "offer" (the player asked about cards or the deck), "bind" (the player says it is time)
-function D.quest(player, word, goldOf, takeGold)
-	local Q = C.deck.quest
-	if D.unlocked(player) then
-		return "q_again", {}, false
-	end
-	local level = player:getLevel()
-	local distinct = D.totals(player)
-	if word == "offer" and D.questState(player) == 0 then
-		if level < Q.level then
-			return "q_low", {Q.level}, false
-		end
-		D.setQuestState(player, 1)
-		return "q_offer", {Q.cards, Q.gold}, false
-	end
-	if word == "offer" then
-		return "q_offer", {Q.cards, Q.gold}, false
-	end
-	local gold = goldOf(player)
-	local verdict = K.questCheck(level, distinct, gold)
-	if verdict == "low" then
-		return "q_low", {Q.level}, false
-	elseif verdict == "cards" then
-		return "q_missing_cards", {distinct, Q.cards}, false
-	elseif verdict == "gold" then
-		return "q_missing_gold", {Q.gold, gold}, false
-	end
-	if not takeGold(player, Q.gold) then
-		return "q_missing_gold", {Q.gold, goldOf(player)}, false
-	end
-	D.unlock(player)
-	return "q_done", {C.maxActive}, true
 end
 
 return D

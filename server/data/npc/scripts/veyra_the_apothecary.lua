@@ -39,12 +39,6 @@ for _, p in ipairs(cfg.potions or {}) do
 	end
 end
 
--- the Deck of Cards quest (O570, data/lib/chaos_carddeck.lua, cards_core.lua K.TEXT q_*): she binds the Deck for a few different
--- cards and gold. The lines are the K.TEXT keys, English here and pt-BR in i18n_strings.lua.
-if not ChaosCardsCore then pcall(dofile, "data/scripts/chaos/cards_core.lua") end
-if not ChaosCardDeck then pcall(dofile, "data/lib/chaos_carddeck.lua") end
-if not ChaosPay then pcall(dofile, "data/lib/chaos_pay.lua") end
-
 -- the Everfull flask upgrade task and the lost flask (data/lib/chaos_potions.lua, README "Potions", "Higher tiers"): the
 -- same swap the store sells. All checks are the library's, run again when the player says yes.
 if not ChaosPotions then pcall(dofile, "data/lib/chaos_potions.lua") end
@@ -173,23 +167,8 @@ local function creatureSayCallback(cid, type, msg)
 	elseif has(text, "potion", "pack", "bulk") then
 		npcHandler:say(t(cid, "Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}, or an {upgrade} for your Everfull flask."), cid)
 		return true
-	elseif has(text, "deck", "card", "carta", "baralho") or word(text, "bind", "binding", "amarrar", "costurar") then
-		-- the Deck of Cards quest: "cards" (or "deck") is her offer, "bind" the step that checks the Deck and takes the gold
-		local player = Player(cid)
-		if player and ChaosCardDeck and ChaosCardsCore then
-			local say = has(text, "bind", "amarrar", "costurar") and "bind" or "offer"
-			local key, args = ChaosCardDeck.quest(player, say, function(p)
-				return ChaosPay and ChaosPay.total(p) or p:getMoney()
-			end, function(p, amount)
-				if ChaosPay and ChaosPay.pay then
-					return ChaosPay.pay(p, amount) == true
-				end
-				return p:removeMoney(amount)
-			end)
-			npcHandler:say(t(cid, ChaosCardsCore.TEXT[key], unpack(args or {})), cid)
-			return true
-		end
-		npcHandler:say(t(cid, "Your cards are kept in the Deck even now. I bind it once you ask me about {cards}."), cid)
+	elseif has(text, "deck", "card", "carta", "baralho") then
+		npcHandler:say(t(cid, "Cards keep themselves now. The Deck of Cards is part of the Oath: it opens in the main quest, and every card you loot goes in by itself. Open it from the menu."), cid)
 		return true
 	elseif has(text, "flask", "vial", "empty") then
 		npcHandler:say(t(cid, "No potion leaves a flask now. Old empty ones I still buy, five gold each. An Everfull flask I can {upgrade}."), cid)

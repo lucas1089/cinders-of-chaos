@@ -198,11 +198,6 @@ do
 	eq(K.activeCount(plan), 5, "never more than five") eq(table.concat(plan.off, ","), "27487,27488", "the highest ids go first")
 end
 
--- Veyra's quest check
-eq(K.questCheck(5, 9, 99999), "low", "level") eq(K.questCheck(10, 2, 99999), "cards", "cards")
-eq(K.questCheck(10, 3, DK.quest.gold - 1), "gold", "gold") eq(K.questCheck(10, 3, DK.quest.gold), "ok", "ready")
-eq(DK.quest.cards, 3, "three different cards") eq(DK.quest.gold, 2000, "two thousand gold") eq(DK.quest.level, 10, "level 10")
-
 -- payloads
 do
 	local cards = K.cardsPayload("en", function(id) return "Card " .. id end, function(id) return id + 1000 end)
@@ -259,7 +254,7 @@ eq(D.owned(p, 27482), 1, "one copy in the Deck") eq(#p.backpack.kids, 0, "the it
 eq(D.isFresh(p, 27482), true, "marked new") eq(D.freshCount(p), 1, "one new card")
 eq(#toasts, 1, "a toast for a new card") eq(toasts[1].kind, "newcard", "kind newcard") eq(toasts[1].text, "Common One Card", "names the card")
 eq(toasts[1].title, "New card", "title")
-ok(lastMsg(p):find("went into your Deck of Cards", 1, true) and lastMsg(p):find("locked", 1, true) and lastMsg(p):find("Veyra the Apothecary", 1, true),
+ok(lastMsg(p):find("went into your Deck of Cards", 1, true) and lastMsg(p):find("locked", 1, true) and lastMsg(p):find("main quest step", 1, true),
 	"locked: kept, and where to go: " .. tostring(lastMsg(p)))
 eq(p.storage[37000], nil, "nothing turned on") eq(D.unlocked(p), false, "locked")
 -- a second copy: counts, no new toast
@@ -288,42 +283,44 @@ put(inbox, newItem(27491))
 M.sweep(p)
 eq(D.owned(p, 27491), 1, "a card in the inbox is taken in")
 
--- unlock: Veyra's quest steps through the lib (her NPC script calls ChaosCardDeck.quest)
-local function gold(pl) return pl.gold end
-local function take(pl, n) return pl:removeMoney(n) end
-local q = mkPlayer("Quest")
-q.level = 5
-local key, args = D.quest(q, "offer", gold, take)
-eq(key, "q_low", "too low a level") eq(args[1], 10, "level 10") eq(D.questState(q), 0, "not started")
-q.level = 20
-key, args = D.quest(q, "offer", gold, take)
-eq(key, "q_offer", "her offer") eq(args[1], 3, "three cards") eq(args[2], 2000, "two thousand gold") eq(D.questState(q), 1, "offered")
-key, args = D.quest(q, "bind", gold, take)
-eq(key, "q_missing_cards", "no cards yet") eq(args[1], 0, "she counts none") eq(D.unlocked(q), false, "still locked")
-D.add(q, 27482, 5) D.add(q, 27483, 1)
-key = D.quest(q, "bind", gold, take)
-eq(key, "q_missing_cards", "two different cards are not three: copies do not count")
-D.add(q, 27484, 1)
-q.gold = 1999
-key, args = D.quest(q, "bind", gold, take)
-eq(key, "q_missing_gold", "gold short") eq(args[2], 1999, "she says what you carry") eq(D.unlocked(q), false, "still locked")
-q.gold = 5000
-local done
-key, args, done = D.quest(q, "bind", gold, take)
-eq(key, "q_done", "done") eq(done, true, "bound now") eq(D.unlocked(q), true, "unlocked") eq(q.gold, 3000, "the gold was taken once")
-eq(D.questState(q), 2, "quest done") eq(args[1], 5, "five can be on")
-eq((D.quest(q, "offer", gold, take)), "q_again", "asking again") eq(q.gold, 3000, "no second charge")
--- cards of the quest are still all in the Deck (nothing was taken but gold)
-eq(D.owned(q, 27482), 5, "the cards stay")
--- an NPC that bound it without the gold: a failing take does not unlock
-local q2 = mkPlayer("Quest2")
-D.add(q2, 27482, 1) D.add(q2, 27483, 1) D.add(q2, 27484, 1)
-key = D.quest(q2, "bind", gold, function() return false end)
-eq(key, "q_missing_gold", "a failed payment") eq(D.unlocked(q2), false, "stays locked")
--- the texts exist in both languages
-for _, k in ipairs({"q_low", "q_offer", "q_missing_cards", "q_missing_gold", "q_done", "q_again", "q_none"}) do
-	ok(K.TEXT[k] ~= nil, "text " .. k)
-	ok(K.T("pt-BR", K.TEXT[k], 1, 2, 3, 4) ~= K.T("en", K.TEXT[k], 1, 2, 3, 4), "pt-BR text " .. k)
+-- the unlock: the main quest step "deck" opens the Deck (data/lib/chaos_mqgate.lua); a stored mark opens it for a character that held a deck
+do
+	local MQ = dofile("data/scripts/chaos/mainquest_config.lua")
+	local mqState, mqStep = MQ.storage.base + MQ.storage.state, MQ.storage.base + MQ.storage.step
+	local idx
+	for i, st in ipairs(MQ.steps) do if st.key == DK.unlock.step then idx = i end end
+	ok(idx ~= nil, "the main quest has the step " .. DK.unlock.step)
+	local st = MQ.steps[idx]
+	eq(st.conds[1].c, "flag", "the step is done by a flag") eq(st.conds[1].key, "deck", "the flag deck")
+	local inFlags, inAcks = false, false
+	for _, f in ipairs(MQ.flags) do if f == "deck" then inFlags = true end end
+	for _, f in ipairs(MQ.acks) do if f == "deck" then inAcks = true end end
+	ok(inFlags and inAcks, "the flag deck is one the quest knows and the Go button marks")
+	eq(st.where.m, "game_carddeck", "the step opens the window")
+	eq(ChaosMQGate.title("deck", "en"), "Open the Deck of Cards", "the step title") eq(ChaosMQGate.title("deck", "pt-BR"), "Abra o Deck of Cards", "in pt-BR")
+	local g = mkPlayer("Gate")
+	eq(D.unlocked(g), false, "a character the quest has not seen: locked")
+	g.storage[mqState], g.storage[mqStep] = 0, idx
+	eq(D.unlocked(g), false, "on the step: locked")
+	g.storage[mqStep] = idx + 1
+	eq(D.unlocked(g), true, "past the step: open, with nothing stored")
+	eq(g.storage[7104400 + 201], nil, "no mark is needed")
+	g.storage[mqState] = MQ.states.skipped
+	eq(D.unlocked(g), true, "a skipped quest: open") g.storage[mqState] = MQ.states.quiet eq(D.unlocked(g), true, "a quiet character: open")
+	g.storage[mqState] = MQ.states.done g.storage[mqStep] = 0
+	eq(D.unlocked(g), true, "a finished quest: open")
+	local h = mkPlayer("Mark")
+	Deck.unlock(h)
+	eq(D.unlocked(h), true, "the stored mark opens it")
+	-- opening the window emits the flag of the step (the quest's own hook) and sends the state again
+	local emitted = {}
+	ChaosMainQuest = {emit = function(pl, flag) emitted[#emitted + 1] = flag return true end}
+	local before = #h.ext
+	TEST_MSG = nil
+	registered.ChaosCardsExtended.onExtendedOpcode(h, 173, "open")
+	eq(emitted[1], "deck", "the window opened: flag deck") eq(emitted[2], nil, "once")
+	ChaosMainQuest = nil
+	registered.ChaosCardsExtended.onExtendedOpcode(h, 173, "open")
 end
 
 -- turn on and off (unlocked): the rules of five, copies, storage and the legendary flag
@@ -453,7 +450,7 @@ eq(#w.ext, sent + 1, "login after logout sends the state")
 -- a locked Deck says so in the state
 local lk = mkPlayer("Lock")
 send(lk, "sync")
-eq(lastExt(lk).buf.data.unlocked, false, "locked state") ok(lastExt(lk).buf.data.quest:find("Veyra the Apothecary", 1, true), "with the hint")
+eq(lastExt(lk).buf.data.unlocked, false, "locked state") ok(lastExt(lk).buf.data.quest:find("main quest step", 1, true), "with the hint")
 -- the card list is in the player's language
 Chaos.setLang(lk, "pt-BR")
 send(lk, "sync")
@@ -507,12 +504,12 @@ ok(text:find("Cards on (5 of 5):", 1, true), "cards on count: " .. text)
 ok(text:find("Reaping Gyre", 1, true) ~= nil, "an on card with its bonus")
 ok(#text < C.maxTextBytes, "under the size cap")
 local lockedText = status(mkPlayer("Gus2"), "en")
-ok(lockedText:find("Deck of Cards is locked", 1, true) and lockedText:find("Veyra the Apothecary", 1, true) and lockedText:find("No card is on.", 1, true),
+ok(lockedText:find("Deck of Cards is locked", 1, true) and lockedText:find("main quest step", 1, true) and lockedText:find("No card is on.", 1, true),
 	"locked: how to open it")
 local ptText = status(u, "pt-BR")
 ok(ptText:find("Cartas ativas", 1, true) or ptText:find("ativas", 1, true), "pt-BR status: " .. ptText)
 local ptLocked = status(mkPlayer("Hal2"), "pt-BR")
-ok(ptLocked:find("trancado", 1, true) and ptLocked:find("Veyra the Apothecary", 1, true), "pt-BR locked")
+ok(ptLocked:find("trancado", 1, true) and ptLocked:find("quest principal", 1, true), "pt-BR locked")
 
 
 -- ---------------------------------------------------------------- the spells the cards name are current spells
@@ -564,7 +561,7 @@ ok(#oldNames > 100, "spell_names.csv read")
 for _, lang in ipairs({"en", "pt-BR"}) do
 	for id, c in pairs(C.cards) do
 		local d = K.description(lang, id)
-		ok(d:sub(-#"Veyra the Apothecary binds the Deck.") == "Veyra the Apothecary binds the Deck." or lang ~= "en", "ends with the hint " .. id)
+		ok(d:sub(-#"Open the Deck from the menu to turn it on.") == "Open the Deck from the menu to turn it on." or lang ~= "en", "ends with the hint " .. id)
 		for _, old in ipairs(oldNames) do
 			-- an old stock name is fine only when it is a current name too
 			if not newNames[old:lower()] then
@@ -591,7 +588,7 @@ for f, fam in ipairs(C.families) do
 	end
 end
 -- the hint is the install tool's hint (tools/patch_badges.py CARD_HINT)
-ok(py:find(K.HINT:sub(1, 60), 1, true) ~= nil and py:find("Veyra the Apothecary binds the Deck.", 1, true) ~= nil, "the hint matches the tool")
+ok(py:find(K.HINT:sub(1, 60), 1, true) ~= nil and py:find("Open the Deck from the menu to turn it on.", 1, true) ~= nil, "the hint matches the tool")
 -- the screenshot of 2026-10-23: the line that named the old spell now names its replacement
 ok(not K.description("en", 27482):find("Exori", 1, true), "no stock words")
 eq(K.description("en", 27482):find("Reaping Gyre deals Earth damage instead", 1, true) ~= nil, true, "Reaping Gyre line")

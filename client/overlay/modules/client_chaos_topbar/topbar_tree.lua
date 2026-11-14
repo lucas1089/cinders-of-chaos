@@ -10,7 +10,7 @@ local T = ChaosTopBarTree
 T.HUBS = {
   { id = 'hero', name = 'Hero', glyph = 'helm', tabs = {
     { id = 'character', name = 'Character', cards = { 'Inventory', 'Skills', 'Spellbook', 'Passive Tree', 'Character Info', 'Achievements' } },
-    { id = 'build', name = 'Build', cards = { 'Spell Supports', 'Loadouts', 'Charms', 'Chaos Pact' } },
+    { id = 'build', name = 'Build', cards = { 'Spell Supports', 'Loadouts', 'Charms', 'Chaos Pact', 'Deck of Cards' } },
     { id = 'style', name = 'Style', cards = { 'Outfit', 'Transmog', 'Cosmetics', 'Pets' } },
     { id = 'home', name = 'Home', cards = { 'Hideout', 'Town Portal', 'Portal Style', 'House' } },
   } },

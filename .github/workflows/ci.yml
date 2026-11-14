@@ -1489,6 +1489,9 @@ jobs:
       - name: "Soul pit and its items removed: the tool on synthetic base files, the SQL file, the price tables and the install step (O488)"
         run: python3 -I server/tools/patch_remove_soulpit_test.py
 
+      - name: "Deck items out of the base data: loot, trade and reward lines, CRLF, idempotence (O570)"
+        run: python3 -I server/tools/patch_remove_decks_test.py
+
       - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
         run: python3 -I server/tools/audit_equip_tooltips_test.py
 

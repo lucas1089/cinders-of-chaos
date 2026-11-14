@@ -36,9 +36,9 @@ return {
 		items = 10, last = 7101139},
 	states = {fresh = -1, active = 0, done = 1, skipped = 2, quiet = 3},
 	flagBits = {talk = 1}, -- bit 1 of +3 is the talk flag; the keys of `flags` below take the next bits (29 in +3, then +4)
-	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door"},
+	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door", "deck"},
 	-- flags the client's Go button marks (a window to see, an info page to read): ChaosMainQuest.go; every other flag comes from a hook
-	acks = {"charms", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "nemesis", "chronicle", "siege", "marches", "seasonpass", "charinfo1", "charinfo2"},
+	acks = {"charms", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "nemesis", "chronicle", "siege", "marches", "seasonpass", "charinfo1", "charinfo2", "deck"},
 	staffGroup = 4,
 	quietAbove = 500, -- first seen above this level: no tracker, only the door of the last page (state quiet)
 	startLevel = 8,
@@ -186,6 +186,12 @@ return {
 			hint = T("The pass pays for daily and weekly challenges. Seasons have their own modes (Hardcore, Self-Found).", "O passe paga desafios diários e semanais. As temporadas têm modos próprios (Hardcore, Self-Found)."),
 			done = T("Step done.", "Capítulo fechado. O primeiro voto foi o mais fácil."),
 			where = {k = "window", m = "game_battlepass", f = "toggle"}},
+		{key = "deck", ch = 1, level = 14, mins = 2, items = {},
+			conds = {{c = "flag", key = "deck"}},
+			title = T("Open the Deck of Cards", "Abra o Deck of Cards"),
+			hint = T("Hero > Build > Deck of Cards. Every card you loot goes into it by itself. Opening it also opens the Badge slot of your inventory.", "Herói > Build > Deck of Cards. Toda carta que você pega vai para ele sozinha. Abri-lo também abre o slot de Badge do seu inventário."),
+			done = T("Step done.", "Agora as cartas têm casa, e os brasões têm lugar. Guarde bem os dois."),
+			where = {k = "window", m = "game_carddeck", f = "toggle"}},
 		{key = "loadouts", ch = 2, level = 15, mins = 2, items = {},
 			conds = {{c = "flag", key = "loadout"}, {c = "flag", key = "charms"}},
 			title = T("Save a loadout and open Charms", "Salve um loadout e abra os Amuletos"),
