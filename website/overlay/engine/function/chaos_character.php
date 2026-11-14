@@ -32,7 +32,7 @@ function chaos_reserved_character_names(): array {
 		'queststatus', 'recovery', 'register', 'serverinfo', 'settings', 'shop', 'spells', 'sub', 'success', 'support',
 		'team', 'topguilds', 'toponline', 'twofa', 'twtrnews', 'voting',
 		'admin', 'api', 'assets', 'cache', 'docker', 'engine', 'install', 'landing', 'layouts', 'locale', 'lua', 'plugins',
-		'special', 'sql', 'tests', 'tools', 'updates', 'vendor', 'clientservices',
+		'special', 'sql', 'tests', 'tools', 'updates', 'vendor', 'clientservices', 'download',
 	);
 }
 

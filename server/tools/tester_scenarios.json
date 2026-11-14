@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 71,
   "out": 39,
-  "passive": 109,
+  "passive": 110,
   "place": 15,
   "staff": 17
  },
@@ -12026,6 +12026,13 @@
     "mainquest.lua",
     "mainquest_boss.lua"
    ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "mainquest_boss_attacks": {
+   "files": [],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],

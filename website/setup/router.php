@@ -14,6 +14,11 @@ if (preg_match('#(^|/)(\.[^/]*|SQL|Lua|tests|docker|tools|special|backups|cache|
 	http_response_code(404);
 	exit('not found');
 }
+// the launcher setup folder (overlay/download/.htaccess): files are downloaded, a script there is never run
+if (preg_match('#^/download/#', $uri) && preg_match('#\.(php|phtml|phar|cgi|pl|py|sh)$#i', $uri)) {
+	http_response_code(404);
+	exit('not found');
+}
 // clean addresses, as the .htaccess: a GET / HEAD of /page.php goes to /page (301, query kept; never the machine
 // endpoints), and /page runs page.php
 $method = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET');

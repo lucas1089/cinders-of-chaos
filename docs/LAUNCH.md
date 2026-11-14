@@ -1295,7 +1295,7 @@ update signing key offline: it now also decides which programs the launchers run
 launcher itself: `publish_client_update.sh` (admin app: tab Comandos, card "Site e update do client", button "Publicar update"; shell fallback `chaos-ctl.sh
 publish-update winpkg-N`) copies it to `$CHAOS_SITE_DIR/download/` with its `.sha256` whenever it publishes a package that holds the launcher. Run from any
 folder it shows the setup screen (per-user folder under `%LOCALAPPDATA%`, no admin rights, shortcuts, an entry in Windows' app list), then downloads the whole
-client. Point the site's download button at that file. The big files also carry chunk hashes now (resume, repair and parallel download). Client base patch 0198 makes
+client. The site's download page points its Windows button at that file by itself, over any configured Windows link (no manual step; it needs the file and its valid `.sha256`). The big files also carry chunk hashes now (resume, repair and parallel download). Client base patch 0198 makes
 the game exe refuse to start without a ticket from the launcher; it is on in the Windows workflows only, so **the first release with it needs a new `client_build`**
 (old exes keep starting by hand until the launcher replaces them, which is the point). Steps: raise `client_build` (workflow "Windows package"; it needs the
 secret `CHAOS_CLIENT_KEY`, and the inputs `update_manifest` and `update_public_key` so the launcher can install itself), publish the update, check one Windows PC:

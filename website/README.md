@@ -164,6 +164,14 @@ no Discord button), the admin account names. The Rules page is a first draft to 
 With the client links pointing at the site's own `dl/` folder (`https://SITE/dl/CindersOfChaos-Client-Windows.zip`,
 `.../CindersOfChaos-Client-Linux.tar.gz`), the admin app's server update replaces those files with each new release and
 writes `dl/downloads.json`; the downloads page then shows the release, date, size and SHA-256 under each button.
+**Launcher setup (O552):** the Windows card links to the launcher setup by itself. When `download/Cinders-of-Chaos-Setup.exe` exists in the site folder
+and `download/Cinders-of-Chaos-Setup.exe.sha256` holds a valid `<64 hex>  Cinders-of-Chaos-Setup.exe` line (both written by `server/deploy/publish_client_update.sh`
+into `$CHAOS_SITE_DIR/download/` whenever it publishes the launcher, so no manual step on the VPS), the button is that file (a site-relative link), with its size
+and SHA-256, the card says it is the installer and launcher (own folder, no administrator rights, keeps the game updated) and the "How to start" step says to run
+the setup and start the game from the launcher. It wins over `CHAOS_CLIENT_WINDOWS_URL` / Admin Panel > Downloads; without the file or with a bad sum line the page is
+as before (the configured link or "Coming soon"). `download/` is served as static files: `overlay/download/.htaccess` and the nginx block below deny scripts there
+and serve the `.exe` and `.sha256`; a character named `download` is refused (reserved list). The texts are `chaos_t()` keys with pt-BR entries;
+`tests/chaos_downloads_page_test.php` covers good, bad and missing sum, missing file, setup over the configured link, the web server rules and pt-BR.
 **Unity client (beta, O433 phase 16):** the downloads page always has a "Unity client (beta)" card (pt-BR: "Cliente Unity (beta)") next to the
 Windows and Linux ones. It says that the Unity client is a second client of the same game on the same server and account, still a beta,
 and that the launcher of the Windows client installs it ("choose Unity client (beta) next to Client"), so it has no download button of its own.
@@ -280,6 +288,14 @@ server {
         location ~ /manifest\.json$ { add_header Cache-Control "no-cache"; default_type application/json; }
         location ~ "/files/[0-9a-f]{2}/[0-9a-f]{64}$" { add_header Cache-Control "public, max-age=31536000, immutable";
                                                         default_type application/octet-stream; }
+        autoindex off;
+    }
+
+    # the launcher setup (ROADMAP O552, the downloads paragraph above): Cinders-of-Chaos-Setup.exe and its .sha256 are downloaded, nothing here runs
+    location ^~ /download/ {
+        location ~ \.(php|phtml|phar)$ { deny all; }
+        location ~ \.exe$ { default_type application/octet-stream; add_header Content-Disposition attachment; add_header Cache-Control "no-cache"; }
+        location ~ \.sha256$ { default_type text/plain; add_header Cache-Control "no-cache"; }
         autoindex off;
     }
 
