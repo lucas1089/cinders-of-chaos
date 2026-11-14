@@ -1070,9 +1070,12 @@ Chaos.storage.nemesis = 7102300
 ChaosOpcodes.goals = 178
 Chaos.tables.goals = "chaos_goals"
 
--- Card borders: the cards that are ON, server -> client (client game_cardborder; cards.lua, cards_core.lua K.state; server/README.md
--- "Cards and decks"). 172 is free in the reference server, the base client and every Chaos module. No storage, no table.
-ChaosOpcodes.cardState = 172
+-- The Deck of Cards window (O570, client game_carddeck; cards.lua, cards_core.lua; server/README.md "Deck of Cards (O570)").
+-- 173 is free in the reference server, the base client and every Chaos module. Server -> client `cards` (the list), `state`;
+-- client -> server `sync`, `toggle`, `seen`, `open`. Storage block 7104400 (cards_config.lua `deck.storage`), no table.
+-- 172 (the card borders of the deck items, game_cardborder) is retired with the deck items: nothing sends or reads it, the
+-- number stays reserved (Unity still has the old handler, frozen).
+ChaosOpcodes.cardDeck = 173
 
 -- Ember Cache, Daily Spark and the day book: points from every activity, a daily Spark, three weekly milestones, what
 -- the character did today (client game_embercache; embercache.lua, embercache_core.lua, daybook_core.lua,

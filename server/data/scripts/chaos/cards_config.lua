@@ -16,15 +16,49 @@ C.scanLimit = 600 -- items looked at per scan of the backpack tree (a guard, a b
 C.reconcileMs = 60000 -- a card that left the deck (death, a bag put away) is turned off at most this late
 C.maxTextBytes = 6000 -- the status text stays under the extended opcode's 8192 bytes with its JSON around it
 
--- deck item id -> cards it holds (the base items.xml containerSize)
-C.decks = {
-	{id = 27632, size = 5, name = "Bronze Deck"},
-	{id = 27633, size = 10, name = "Silver Deck"},
-	{id = 27634, size = 20, name = "Golden Deck"},
+-- O570 (owner 2026-11-14): the three deck items are gone. Every card a character loots goes into its Deck of Cards, kept on the
+-- server (the storages below), and the Deck is unlocked by a quest of Veyra the Apothecary. The old decks are only known here
+-- so that the one-time migration (cards.lua) can empty one that is still carried or lying in a depot (tools/patch_remove_decks.py
+-- takes them out of loot, shops and tasks). `price` is what Veyra asked, for the text of the refund note.
+C.retiredDecks = {
+	{id = 27632, name = "Bronze Deck", price = 1000},
+	{id = 27633, name = "Silver Deck", price = 6000},
+	{id = 27634, name = "Golden Deck", price = 30000},
 }
 
--- Where a deck comes from: Veyra the Apothecary (apothecary_config.lua `decks`; her prices are read from there)
+-- Who unlocks the Deck of Cards: Veyra the Apothecary (apothecary_config.lua `npc`)
 C.seller = "Veyra the Apothecary"
+
+-- The Deck of Cards (O570, server/README.md "Deck of Cards (O570)"). Storage block 7104400 - 7104619 (README "Storage keys"):
+--   +0 .. +80     copies owned of the card whose base storage is 37000 + n (the card's own on / off storage stays 37000-37080:
+--                 the base bonus scripts read it, 1 = on)
+--   +100 .. +180  1 while the card was looted and not seen in the window yet (the "New" mark; the hub badge counts them)
+--   +200  the version of the migration this character had (decks and loose cards moved into the Deck, once)
+--   +201  1 = the Deck of Cards is unlocked (the quest is done, or the character held an old deck: `grandfather`)
+--   +202  Veyra's quest: 0 not started, 1 she made her offer, 2 done
+--   +203  the number of decks found by the migration (a note for staff)
+-- Cards looted before the quest are counted all the same and kept; until the Deck is unlocked the window shows them (locked)
+-- and no card can be turned on (the bonus storages are cleared by the sweep), nothing is ever lost.
+C.deck = {
+	name = "Deck of Cards",
+	storage = {base = 7104400, counts = 0, fresh = 100, migrated = 200, unlocked = 201, quest = 202, decksFound = 203,
+		last = 7104619, offset = 37000},
+	maxCopies = 9999, -- a count never goes above this
+	migrationVersion = 1,
+	absorbMs = 4000, -- loose cards of the carried bags and the inbox are taken in at most this late (also on every move of a card)
+	carriedLimit = 600, -- items looked at per sweep of the carried bags (a guard)
+	migrateLimit = 30000, -- items looked at once in a depot, the inbox and the store inbox
+	-- a character that held a deck item (carried or in the depot) when the migration ran has the Deck of Cards open at once: it
+	-- paid for a deck (Veyra sold them for gold, never for store coins: nothing to refund), and its cards stay on
+	grandfather = true,
+	-- the rarity words of the four tiers, the legendary cards are "Legendary" (the item names carry the same words)
+	rarities = {"Common", "Rare", "Epic", "Mythic"},
+	legendaryRarity = "Legendary",
+	-- Veyra's quest (her talk: data/npc/scripts/veyra_the_apothecary.lua). Level to start, different cards the Deck must already
+	-- hold (nothing is taken), gold she takes at the end
+	quest = {level = 10, cards = 3, gold = 2000},
+	toastMax = 3, -- new cards named one by one in one sweep; more are told in one line
+}
 
 C.tiers = {"Minor", "Major", "Intense", "Powerful"}
 
