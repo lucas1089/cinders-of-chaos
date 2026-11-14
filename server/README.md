@@ -28545,7 +28545,7 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
   items first), `stat` (an achievement counter or a Next Goals own
   stat: rifts, dungeons, trials, bosses, party kills, arena, ...), `flag` (a hook: below), `storage` (the Ember Spark), `spell`, `gear` (the welcome path's probes),
   `resist` (the defence layer), `boss`. 42 steps are kill, drop, explore or deliver, 28 more are clears and kills of the other systems (the test holds half of them).
-- **Quest items and party credit (O553).** Follow-up A of the owner's list after O551 ("real quest items and party kill credit"). Nothing here ran on a live server.
+- **Quest items and party credit (O553).** Follow-up A of the owner's list after O551 ("real quest items and party kill credit"). Tried on a copy of the local test server (the last bullet of this item); party credit and the inbox fallback only in the tests.
   * *The item.* Each drop step (`count` with `item`) names a stock item of 10.98 in `itemId` (`mainquest_config.lua`): Troll Tusk = 8614 (orc tusk), Grave Ash 5905 (vampire dust),
     Stone Heart 2178 (mind stone), Warbanner Scrap 11330 (warbound flag), Wyrm Cinder 5906 (demon dust), Hymn Shard 10531 (midnight shard), Ironhorn Cog 9690 (gear wheel), Last
     Light 12508 (magic crystal), Mould Spore 7251 (mushroom spores); all in `data/items/base_item_values.csv` or the base `items.xml`, none a weapon or armour, none an item a
@@ -28556,7 +28556,7 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
     draws it in its own colours; the item menu cannot unlock it). It never stacks with a plain copy: it is created first, marked, then placed with `addItemEx`, and an item
     with its own name and custom attributes is not `equals` a plain one. A copy of another character, or a plain copy of the stock id, counts for nothing.
   * *Where it falls.* `ChaosMainQuest.giveQuestItem`: the loot bag of the kill (item 6068, O435) when the character owns the corpse (`getCorpseOwner()`), else the backpack,
-    else the inbox; the line says which ("Troll Tusk (3/6), in the loot bag" / "in your backpack" / "your backpack is full: it is in your inbox"). The bag decays after 180 s
+    else the inbox; the line says which ("Troll Tusk is in the loot bag: take it (you hold 3/6)." / "Troll Tusk (4/6), in your backpack" / "..., your backpack is full: it is in your inbox"). The bag decays after 180 s
     with whatever is left in it: that item is lost and falls again (below). The kill is handled in the death event of the monster (`ChaosMainQuestDeath`, registered at spawn
     for the monsters named by the count steps, like the bounty board and the spell quests), not the player's kill event: only there the loot bag exists, and a death is seen once
     however many killers it has. A husk of a dense rift gives no credit.
@@ -28577,6 +28577,15 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
     the step (and at its level), the kill counts for a kill step, and a drop step rolls the drop **for that member** with its own pity counter, the item going to that member (the
     loot bag only for the corpse's owner, the backpack for the rest). Two killers of one party are two members, one roll each. Tested in `tests/mainquest_test.lua`: a table of
     cases of `credited` (range edge 30 / 31, floor, share on and off, damage, no party, two killers) and the engine path with two to eight members.
+  * *Live try (2026-11-14, a copy of the local test server with the repo's scripts and Ysolde's script, a level 96 test character, a test-only talkaction that set the step and killed
+    monsters; the copy was removed afterwards).* A kill step counted (3 Trolls = 3). A drop step: "Troll Tusk is in the loot bag: take it (you hold 3/6)." with the item in the bag of the
+    kill, carrying `chaos_mq`, `chaos_mq_owner` and `chaos_locked` 2, the looted ones stacking (8614 stacks: x3, x7); a plain orc tusk added after was taken by `player:removeItem(8614)`
+    while the quest tusks stayed (the lock). The bring step: with the tusks short Ysolde said "I count 0 of 6 Troll Tusk..." and took nothing; at the bring step the tusks fell again
+    (refill, 4 drops in 8 kills); with 7 held she took 6 and the step moved on ("Let me see.", the reward). A character with the old counter 4 got 4 real items once. The Stone Hearts
+    were taken by the Vigil when the fourth was held ("The Vigil takes the 6 Stone Heart.": the extras go too). Seen: the dialogue of this base takes a line said to a focused NPC only
+    through the NPC channel (a plain "say" does not reach `creatureSayCallback`); the corpse owner read 0 right after the death on the copy (an older base: the corpse was the stock
+    troll corpse, not the loot bag of O435), yet the item went into the bag, so the owner was right at the death. Not tried live: a party of two characters, the inbox, the Chaos items of
+    the base the repo's install steps change (only the `files` step was run on the copy).
   * *Model.* The drop numbers did not change, so the solo pace stays 0.5 to 2.2 times the minutes a step pays for. `tools/mainquest_model.lua --check` also holds the party:
     members roll at the solo chance per kill, a party of 5 kills at most 5 times as fast, so a kill or drop step takes at least 10% of its paid minutes (the quickest is 16%).
 - **Flags** (`ChaosMainQuest.emit(player, key)`, one guarded line in: `potions.lua` drink, `daily.lua` claim, `market.lua` list and buy order, `loadouts.lua` save, `bank.lua`

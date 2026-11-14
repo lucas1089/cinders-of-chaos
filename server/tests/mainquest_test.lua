@@ -553,7 +553,7 @@ while held(p, "tusks") < 6 and tries < 400 do
 end
 eq(held(p, "tusks"), 6, "6 tusks held"); eq(bagDrops, 6, "6 drops")
 check(tries >= 6 and tries < 400, "the drops took a number of kills: " .. tries)
-check(said(p, "Troll Tusk (1/6), in the loot bag"), "a loot line")
+check(said(p, "Troll Tusk is in the loot bag: take it (you hold 0/6)."), "a loot line says to take it")
 check(p.store[key("count")] == 6, "the counter of the drops earned")
 die("Troll", p)
 eq(held(p, "tusks"), 6, "no drop above the target")

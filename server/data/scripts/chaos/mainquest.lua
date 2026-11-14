@@ -514,8 +514,9 @@ function W.creditKill(player, name, corpse)
 	end
 	set(player, "count", math.min(target, math.max(0, get(player, "count")) + 1))
 	local key = where == "bag" and "drop" or (where == "pack" and "inPack" or "inInbox")
+	local shown = where == "bag" and held or math.min(target, held + 1) -- in the bag it is not held yet
 	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
-		string.format(K.text(c.texts[key], lang), K.text(cond.item, lang), math.min(target, held + 1), target))
+		string.format(K.text(c.texts[key], lang), K.text(cond.item, lang), shown, target))
 	return true
 end
 

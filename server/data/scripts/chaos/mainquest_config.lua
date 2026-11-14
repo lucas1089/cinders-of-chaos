@@ -761,8 +761,9 @@ return {
 		items = T("%d %s", "%d %s"),
 		potions = T("potions", "poções"),
 		none = T("nothing", "nada"),
-		-- the quest drop (O553): where the item fell. %s = the step's `item`, then what is held and the target
-		drop = T("%s (%d/%d), in the loot bag", "%s (%d/%d), no saco de saque"),
+		-- the quest drop (O553): where the item fell. %s = the step's `item`, then what is held and the target (a drop in the loot
+		-- bag is not held yet: the line says to take it, and what is held now)
+		drop = T("%s is in the loot bag: take it (you hold %d/%d).", "%s está no saco de saque: pegue (você tem %d/%d)."),
 		inPack = T("%s (%d/%d), in your backpack", "%s (%d/%d), na sua mochila"),
 		inInbox = T("%s (%d/%d), your backpack is full: it is in your inbox", "%s (%d/%d), sua mochila está cheia: está na sua caixa de correio"),
 		-- the quest item (name is the step's `item`; the description is its `lore` and this)
