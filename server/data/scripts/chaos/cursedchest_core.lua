@@ -316,7 +316,7 @@ function K.newEvent(cfg, info, nowMs)
 end
 
 -- snap = {alive = event monsters alive, inside = participants inside the radius (online, alive, same floor)}
--- Returns a list of actions in order: {"spawn", n}, {"warn"}, {"unwarn"}, {"fail", reason}, {"win"}.
+-- Returns a list of actions in order: {"timeleft", sec}, {"spawn", n}, {"warn"}, {"unwarn"}, {"fail", reason}, {"win"}.
 -- The caller applies them and calls K.spawned(ev, n, nowMs) after a spawn. A finished event returns nothing.
 function K.step(cfg, ev, snap, nowMs)
 	local e = cfg.event
@@ -327,6 +327,21 @@ function K.step(cfg, ev, snap, nowMs)
 	if nowMs - ev.startedAt >= e.totalSec * 1000 then
 		out[#out + 1] = {"fail", "time"}
 		return out
+	end
+	-- the time left, told once per mark of timeLeftSec (the lowest mark reached when several pass in one step)
+	local left = e.totalSec - (nowMs - ev.startedAt) / 1000
+	ev.told = ev.told or {}
+	local mark
+	for _, m in ipairs(e.timeLeftSec or {}) do
+		if left <= m and not ev.told[m] then
+			ev.told[m] = true
+			if not mark or m < mark then
+				mark = m
+			end
+		end
+	end
+	if mark then
+		out[#out + 1] = {"timeleft", mark}
 	end
 	if (snap.inside or 0) <= 0 then
 		ev.emptySince = ev.emptySince or nowMs

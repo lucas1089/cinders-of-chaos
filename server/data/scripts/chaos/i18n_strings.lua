@@ -4600,8 +4600,10 @@ return {
 		["A cursed chest rises where the %s fell! Use it within %d seconds if you dare: five hordes guard its loot."] =
 			"Um baú amaldiçoado surge onde o %s caiu! Use-o em %d segundos, se tiver coragem: cinco hordas guardam o tesouro.",
 		["CURSED CHEST"] = "BAÚ AMALDIÇOADO",
-		["%s opens the cursed chest! Five hordes will come, one after another."] =
-			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra.",
+		["%s opens the cursed chest! Five hordes will come, one after another. Kill them all within %d minutes."] =
+			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra. Mate todas em até %d minutos.",
+		["The curse grows stronger: %d seconds left to kill the hordes."] =
+			"A maldição se fortalece: restam %d segundos para matar as hordas.",
 		["Horde %d/%d!"] = "Horda %d/%d!",
 		["Horde %d/%d: a rare leader leads it!"] = "Horda %d/%d: um líder raro a comanda!",
 		["Horde %d/%d: a legendary leader leads it!"] = "Horda %d/%d: um líder lendário a comanda!",
