@@ -2,7 +2,7 @@
  "about": "the catacomb kit decoration of the client pair 27 trial (server/data/items/assets_decor.csv, install_assets_decor.py). area_plan_decor.kits() merges it after the owner's overlay only while ChaosAssetsArt.PAIR27 (server/data/lib/chaos_assets_art.lua) is on: new groups, a kit 'hollow_crypt' (the crypt kit plus the kit's sarcophagi) and the catacomb biome pointed at it. The crypt hatches and the portal ring are groups for set pieces only (3x3 / 4x4, put on the south-east tile of their square), in no kit. Flipping the switch changes the decoration of every catacomb plan already placed (bonechoir_catacomb, hollow_crypt): install on a restored map (install_content_areas.py refuses a changed plan).",
  "biome_kit": {
   "catacomb": "hollow_crypt",
-  "catacomb_slate": "hollow_crypt_clean"
+  "catacomb_earth": "hollow_crypt_clean"
  },
  "groups": {
   "kit_crypt_hatch": {

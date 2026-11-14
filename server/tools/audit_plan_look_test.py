@@ -95,7 +95,7 @@ try:
     got = L.audit_plan(os.path.join(L.PLANS, 'hollow_crypt.json'))
     ok(got is not None and got[1] == [], 'hollow_crypt.json compiles with no look finding: %s' % (got[1][:3] if got else None))
     plan = json.load(open(os.path.join(L.PLANS, 'hollow_crypt.json')))
-    ok(plan['biome'] == 'catacomb_slate', 'hollow_crypt uses the biome catacomb_slate (one room floor)')
+    ok(plan['biome'] == 'catacomb_earth', 'hollow_crypt uses the biome catacomb_earth (one dirt floor)')
 except FileNotFoundError:
     ok(False, 'luajit missing')
 
