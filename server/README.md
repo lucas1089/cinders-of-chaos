@@ -1588,6 +1588,43 @@ of the corpse again (`ChaosLoot.gateWaystones`, matched by item name, `waystone.
 
 `tests/loot_caps_test.lua` loads `loot.lua` against a mocked engine (also the level gates).
 
+## Legendary monsters always drop good loot (O575; `loot.lua` `L.guaranteeGear`, `L.guaranteeRaise`, `loot_config.lua` `gear.guarantee`, `tests/loot_guarantee_test.lua`)
+
+Owner 2026-11-14 (pt-BR): "faça os monstros lendários droparem loot bom garantidamente".
+
+- **Which monsters.** The Legendary tier of `monster_tiers.lua` (spawn chance 25 of 10000, 3-4 modifiers, `hp` x7.98), the top
+  non-boss tier. Not taken: Rare (a 150 of 10000 tier, the owner's 2026-10-17 note says rare and magic drop too much), and
+  bosses (their own loot tables and the Legendary floor 5 already). The word "legendary" on an item is a rarity, not a
+  monster. Another tier is one line in `gear.guarantee.tiers`.
+- **What was missing.** The tier already lifted every gear drop to at least Rare (`gear.minRarity.legendary` 4,
+  `ensureChance` 100, "Gear quality" in `LOOT.md`), and gave 1 guaranteed currency draw. But a corpse with no gear at all
+  (the stock roll, the extra rolls and the level thinning can all come up empty) had nothing to lift: a Legendary kill could
+  leave only coins and potions.
+- **The rule** (`gear.guarantee = {enabled = true, tiers = {legendary = {pieces = 1, minRarity = 4}}}`):
+  1. Step 1a' (before the smart loot step, so a piece nobody near can wear still becomes one they can): the gear the corpse
+     already holds counts. When fewer than `pieces`, `L.guaranteeGear` adds one base of the monster's own loot table (equal
+     weights, no ammo, no `extraSkipItems`, so the level fits the monster); a table without gear gives a base of the
+     killer's class near the monster's level (`chaos_class_loot.lua` `L.eligible`). The piece then goes through the
+     normal rarity, item level, socket and modifier steps.
+  2. Step 2a (after the rarity step): `L.guaranteeRaise` checks that at least `pieces` gear items reach `minRarity`; a
+     shortfall raises the best lower piece to Rare. This holds the floor when `ensureChance` is ever lowered. A piece the
+     engine rolled already is never touched.
+  3. The chance of better is the tier's own: `bonusChance` 35% for a step up (60 / 30 / 10 for 1 / 2 / 3 steps, capped at
+     Legendary), `divineChance` 0.3% Divine, the hunting level roll, the pity of O260. Nothing there changed.
+- **Numbers.** 1 piece, floor Rare. A Legendary kill spawns 25 times in 10000 (0.25%) and pays about 3 loot passes already
+  (`extraRolls` 2), so the added piece changes only the kills that had no gear: the guarantee adds at most one gear item to a
+  kill of a 0.25% tier. `unique_pace_model.lua`,
+  `roulette_model.lua`, `store_model.lua`, `progression_model.lua`, `skill_model.lua`, `mainquest_model.lua`,
+  `gear_coverage.lua`, `weapon_coverage.lua` and `check_content.py` all pass unchanged (no price, no unique chance and no
+  token value reads this).
+- **Shared kills.** The guarantee lives inside `processKill`, which bails out without a corpse owner player: the piece goes
+  to the corpse the engine owns (the first hitter, or the party's shared corpse), like every other bonus of the layer, and
+  the smart loot and loot line steps see it. Low stamina (`catchup.lootMult`) cuts the chances of the tier, not the guarantee;
+  `lootMult` 0 or `RATE_LOOT` 0 still means no loot at all.
+- **Client.** Nothing changed: the rarity of the piece is the corpse item's own attribute, so the loot beam, the ground label and
+  the loot line show it as for any drop.
+- **Off switch.** `gear.guarantee.enabled = false` is the rule of before.
+
 ## Time-friendly progression (catchup) (`catchup.lua`, `catchup_core.lua`, `catchup_config.lua`, `sql/chaos_catchup.sql`)
 
 Owner goal (2026-10-15): the game respects the players' time. An adult with little time progresses fluidly, a heavy

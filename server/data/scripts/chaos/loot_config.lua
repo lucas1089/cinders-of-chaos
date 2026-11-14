@@ -89,6 +89,14 @@ return {
 		-- Measured with the core (server/README.md "Level 500+ rarity"), rare+ gear per hour at 30 kills a minute: level
 		-- 540 7.0 -> 8.9, level 1180 6.1 -> 11.7 with the stock roll; without it (the beta's zero) 1.4 -> 3.1 and 1.1 -> 6.0.
 		levelRarity = {points = {{450, 0}, {500, 4}, {1000, 6}, {2000, 8}}, legendaryShare = 30},
+		-- O575 (owner 2026-11-14: "make legendary monsters always drop good loot"): a kill of a monster of a tier listed
+		-- here always leaves `pieces` gear drops of at least `minRarity` (a stored id, 4 Rare) in the corpse, a bag is never
+		-- empty of gear. The kill's own gear counts first; a corpse short of pieces gets one of the monster's own loot table
+		-- (equal weights, so the level fits the monster), else a base of the killer's class near the monster's level
+		-- (chaos_class_loot.lua). The floor above (minRarity, ensureChance) already lifts every gear drop of the tier; this
+		-- holds it when ensureChance is lowered. The chance of better stays bonusChance / divineChance of the tier (35% a
+		-- step up, 0.3% Divine for legendary). Boss and rare are not listed on purpose. enabled = false: the old rules.
+		guarantee = {enabled = true, tiers = {legendary = {pieces = 1, minRarity = 4}}},
 		-- ids that are never touched (boats etc., same as customs/rarity/reroll_rarity_stats.lua)
 		excludedItems = {
 			[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true
