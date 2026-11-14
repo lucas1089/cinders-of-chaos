@@ -556,6 +556,62 @@ engineHit(golem, dragon, COMBAT_PHYSICALDAMAGE, 33, ORIGIN_MELEE)
 r = heroRows(DMG)
 eq(r["Bone Golem"].total, 33, "summon")
 
+-- a training monster (O573): the combat log hands the whole hit to trainer_meter.lua with its source and element; the
+-- hit is not cut at the trainer's health (it never dies); a dragon is no trainer. Own characters, so the numbers of
+-- the rest of this test stay what they are.
+do
+	dofile("data/scripts/chaos/trainer_meter.lua")
+	local TM = ChaosTrainerMeter
+	ok(CL.isTrainer ~= nil and CL.trainerHook ~= nil, "the trainer hooks are set on the combat log")
+	local t1 = login(creature({kind = "player", name = "Trainee", guid = 91, hp = 1000, maxHp = 1000, mana = 500,
+		slots = {[CONST_SLOT_RIGHT] = 2431}}))
+	local t2 = login(creature({kind = "player", name = "Trainee Two", guid = 92, hp = 1000, maxHp = 1000, mana = 500}))
+	local tgolem = creature({kind = "monster", name = "Trainee Golem", hp = 500, maxHp = 500, master = t1})
+	local dummyT = creature({kind = "monster", name = "Training Dummy", hp = 100, maxHp = 100})
+	local dragonT = creature({kind = "monster", name = "Dragon Two", hp = 100000, maxHp = 100000})
+	callbacks.onTargetCombat(t1, dummyT)
+	callbacks.onTargetCombat(t1, dragonT)
+	TM.reg.sess = {}
+	engineHit(t1, dummyT, COMBAT_PHYSICALDAMAGE, 250, ORIGIN_MELEE, true)
+	local ts = TM.reg.sess[t1.id]
+	ok(ts ~= nil, "a hit on a trainer begins a session")
+	eq(ts.total, 250, "the whole hit counts, not the 100 health the trainer had")
+	eq(ts.crits, 1, "the engine's critical flag")
+	eq(ts.rows["w:Axe attacks"].total, 250, "the combat log's source (the weapon in hand)")
+	eq(ts.el.physical, 250, "the element")
+	engineHit(tgolem, dummyT, COMBAT_PHYSICALDAMAGE, 33, ORIGIN_MELEE)
+	eq(ts.rows["m:Trainee Golem"].total, 33, "a summon counts for its owner, under its own name")
+	eq(ts.total, 283, "total")
+	engineHit(t1, dummyT, COMBAT_EARTHDAMAGE, 7, ORIGIN_CONDITION)
+	eq(ts.rows["d:Poison"].total, 7, "a damage over time tick")
+	engineHit(t2, dummyT, COMBAT_FIREDAMAGE, 90, ORIGIN_SPELL)
+	eq(TM.reg.sess[t2.id].total, 90, "another player on the same trainer: its own session")
+	eq(ts.total, 290, "the first player's numbers are untouched")
+	-- the combat log's own rows count the same hits
+	local a1 = CL.actors[t1.guid]
+	CL.flush(a1)
+	eq(CL.find(a1, "s").tabs[DMG].total, 290, "the combat log counts the trainer's hits too")
+	-- a monster is no trainer
+	local n = 0
+	for _ in pairs(TM.reg.sess) do n = n + 1 end
+	engineHit(t1, dragonT, COMBAT_PHYSICALDAMAGE, 40, ORIGIN_MELEE)
+	local m = 0
+	for _ in pairs(TM.reg.sess) do m = m + 1 end
+	eq(m, n, "a dragon starts no session")
+	eq(TM.reg.sess[t1.id].tid, dummyT.id, "the session is still the trainer's")
+	eq(TM.reg.sess[t1.id].total, 290, "and untouched")
+	-- a normal monster is still cut at its health (the combat log's rule)
+	local rat = creature({kind = "monster", name = "Rat Two", hp = 20, maxHp = 20})
+	callbacks.onTargetCombat(t1, rat)
+	CL.flush(a1)
+	local was = CL.find(a1, "s").tabs[DMG].total
+	engineHit(t1, rat, COMBAT_PHYSICALDAMAGE, 500, ORIGIN_MELEE)
+	CL.flush(a1)
+	eq(CL.find(a1, "s").tabs[DMG].total - was, 20, "a normal monster: no overkill counted")
+	TM.reg.sess = {}
+	ChaosCombatLog.isTrainer, ChaosCombatLog.trainerHook = nil, nil
+end
+
 -- a spell through the engine's precast / cast events (synchronous part), then outside it
 ChaosSpellEvents.onSpellPreCast(hero, "Witchfire Bolt", 201, 1, true, 70, 0)
 engineHit(hero, dragon, COMBAT_FIREDAMAGE, 300, ORIGIN_SPELL)

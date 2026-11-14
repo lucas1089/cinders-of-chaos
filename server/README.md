@@ -664,6 +664,7 @@ working directory, as with the rest of the base server libs).
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_chronicle | `chronicle.lua`, `chronicle_core.lua`, `chronicle_config.lua`, `chronicle_text.lua`, `memorial.lua`, `memorial_core.lua`, `memorial_config.lua`, `sql/chaos_chronicle.sql`, `sql/chaos_memorial.sql` (hooks by wrapping: `ChaosRecords.submit`, `ChaosAchievements.progress`, `ChaosInvasion.deliver`, `ChaosSeason.modesFall`) | **171**, Adventure > Chronicle, the Memorial plaza in the capital, `/chronicle`, `/memorial` | The Ashen Chronicle: a server-wide story per season, chapters with realm goals that change the world when written (areas open, the capital scarred and rebuilt, NPC flags, broadcast, Discord), the record of the top contributors; the Capital Memorial: realm firsts, records and Hardcore falls on statues and stones, by consent, with a website archive (see "The Ashen Chronicle", "The Capital Memorial"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
+| game_trainerdps | `trainer_meter.lua`, `trainer_meter_core.lua`, `trainer_meter_config.lua` (one hook in `combatlog.lua`, one in `monster_defence.lua`, `DS.trainerState` in `display_scale_core.lua`) | **147**, Hunt > DPS Meter > menu > Trainer DPS panel | Trainer DPS panel (O573): what a player deals to a training monster (DPS now over 5 s, average, total, time, biggest hit, by skill and element, the party on the same trainer), a session that ends 10 s after the last hit, Reset, Copy, To chat, a target profile for the trainer's armour (see "Trainers as DPS meters (O573)"). Unit, mocked-engine tests; not run in a client. |
 | game_chaosscale | `display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037` (hooks in the combat log, death recap, party frames, hunt, leaderboard, season boards, battleground, guild war, bestiary, spellbook, item tooltip, inspect, item link, ground loot, market and pets scripts) | **157** (server -> client `scale`, client -> server `hello`) | Display scale: every combat number a player sees x the factor of its level (x1 to level 100, x1000 at 1000, x10000 cap from 1500); internal numbers unchanged (see "Display scale"). Unit, mocked-engine, C++ header and patch guard tests; checked live at levels 100, 300, 700 and 1000. |
 | game_deathrecap | `deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql` (one hook in `combatlog.lua`) | **154**, Hunt > Death Recap | Death recap: after a death (or a mode defeat) every attacker of the last 20 s with its look, damage, share, health / mana part and element split, the killing blow, the last hits, the experience and levels lost; the last 5 deaths per character; ghost staff hidden (see "Death recap"). Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
@@ -736,6 +737,7 @@ collision check") and be added here.
 | 202 | none (base server) | the base waystone script (`tools/patch_waystone_hideout.py`) | `game_waystone` | the base server's own waystone opcode, its own JSON without `{action, data}`: `show {tiers, pick}` (tiers and pick: the patch's part 2), `teleport {clientId}`, `choice`, `choice_apply {choiceId}` and their answers; see "Hideouts", Waystone device |
 | 203 | `community` | `community.lua` | `game_community` | |
 | 204 | `combatLog` | `combatlog.lua` | `game_dpsmeter` | |
+| 147 | `trainerMeter` | `trainer_meter.lua` (fed by `combatlog.lua`) | `game_trainerdps` | client -> server `watch {on}` / `open` / `reset`; server -> client `state {...}` or `{none = 1}` once a second while a session runs, never per hit (see "Trainers as DPS meters (O573)") |
 | 205 | `descent` | `descent.lua` | `game_descent` | |
 | 206 | `loadouts` | `loadouts.lua` | `game_loadouts` | |
 | 207 | `daily` | `daily.lua` | `game_daily` | |
@@ -852,7 +854,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The trainer DPS panel (O573) took **147**, free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module (`tests/trainer_meter_test.lua` checks it, and that no two `ChaosOpcodes` share a number); it could not share 204 with the DPS meter because a client module that registers an opcode replaces the earlier one. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -17845,6 +17847,86 @@ fist attacks. A spell on a fire-immune Dragon Lord counted nothing, as it dealt 
 in Healing and Received. Taken by Dragon / Pyrevorn / Environment (fire fields). Party mode showed both members. The
 Combat Log window, the dropdown, To chat (the line in the chat input) and the Hunt Tracker's Meter button were checked.
 Not in game: summons, support, keystone and item-power procs, pets, and a season realm split in a party.
+
+## Trainers as DPS meters (O573) (`trainer_meter.lua`, `trainer_meter_core.lua`, `trainer_meter_config.lua`, client `game_trainerdps`)
+
+Owner 2026-11-14 (pt-BR): "faça os trainers também serem dps meters". Every training monster measures the damage that the
+players who hit it deal, and the player sees it in a small panel. Extended opcode **147** (`ChaosOpcodes.trainerMeter`),
+settings `trainer_meter_config.lua` (`Chaos.trainerMeterConfig`), pure logic `trainer_meter_core.lua`, tests
+`tests/trainer_meter_test.lua` (core, the engine file on a mocked engine, the opcode), `tests/combatlog_test.lua` (the
+hook on the combat log), `tests/monster_defence_test.lua` (the target profile), `tests/display_scale_test.lua`. No DB
+table, no storage, no engine patch, no change to the training.
+
+**Which monsters are trainers.** A monster whose name (lower case) contains `train` or `dummy` (the rule of
+`monster_tiers.lua`, which gives such a monster no tier), or is listed in `names`, unless it is in `exclude`. The training
+monsters of the temples and towns, the Idle Hall's and the guild hall's "Chaos Dummy" / "Training Dummy" all match. The
+exercise weapons' dummies (items: `exercise_training.lua`) are not monsters and take no damage, so they have no meter: the
+meter is for the monsters that players hit with their own attacks. The trainer stays a trainer: its health, its behaviour
+and the skill training are untouched (`skill_model.lua --check` does not change).
+
+**How damage is attributed.** It is the combat log's (`combatlog.lua` `dealt`, "DPS meter and combat log"): every hit that
+reaches a monster, as the engine's health event sees it, is attributed to the character that dealt it (a summon, minion,
+wolf or pet counts for its owner, under its own name) with the combat log's source (spell, rune, weapon attack, damage over
+time by element, proc, keystone, summon) and element, and the engine's critical flag. `combatlog.lua` hands such a hit on a
+trainer to `ChaosCombatLog.trainerHook` (set by `trainer_meter.lua`); nothing else listens. The whole hit counts: the combat
+log's usual cap at the target's health (no overkill) is lifted for a trainer, which never dies. The meter therefore reads
+exactly the numbers the DPS Meter reads, after every multiplier of the damage chain that runs before the combat log's event.
+(`combatlog_config.lua` `enabled = false` switches the trainer meter off as well.)
+
+**The session.** One player's hits on one trainer (`trainer_meter_core.lua`), kept per player; each player sees only their
+own numbers, also several on the same trainer and several on different ones. Rules:
+- It begins with the first hit and ends `endAfterMs` (10 s) after the last one. The result stays (on the server until the next
+  session, a logout or a reset) and is sent once when it ends. A hit after the end, or on another trainer, begins a new one.
+- DPS now is what the last `windowMs` (5 s) summed to, per second, over `min(window, time so far)`, never over less than
+  `minSpanMs` (1 s: one lone hit is not "infinite"); the window is kept in 250 ms buckets. 0 once the session ended.
+- The average is the total over the time from the first hit, to now while it runs and to the last hit once it ended (never
+  over less than 1 s). Also: total, hits, crits, biggest hit and the source of it, rows by source (top 10, the rest as one
+  "Others" row; at most `maxRows` = 40 sources are kept, a source beyond that counts under "Other"), by element (top 10).
+- The Reset button starts the session over (an empty session on the same trainer; nothing counts until the next hit).
+- A trainer that disappears ends the sessions on it.
+- Party: the members that are hitting the same trainer are listed with their total and DPS now (the Party tab), each
+  member still sees their own numbers on top.
+
+**The target profile.** So that a number means what it would against a monster, the trainer defends with a profile
+(`profile` in the config; `monster_defence.lua` asks `ChaosMonsterDefence.trainerProfile`): the armour of a **normal**
+monster **of the level of the player that hits it** (default `class = "normal"`, `level = "player"`). The armour is the
+monster defence's own (`defence_config.lua`, `monster_defence_config.lua`, "Monster defence (O462)"): a normal monster's
+armour removes 25% of the median class hit of the level (40% an elite, 50% a boss; a weapon hit is measured against the
+median weapon hit and loses at most `weaponShareCap`), and an elite also gets `rankResistBonus` on its element resistance.
+Level "player" keeps the reading comparable: the same character reads the same DPS at any level, and two players compare by
+how far above or below the median class they are. A fixed `level` (1 to `maxLevel` 2500) or another `class` ("elite",
+"boss") makes the trainer one monster for everybody; `byName` gives one trainer its own profile; `enabled = false` leaves
+the trainer with the armour and resistances of its monster file (how it behaved before O573). The trainer's element
+resistances are its monster file's (no extra element profile).
+
+**Protocol** (JSON `{action, data}`, `Chaos.send`):
+- client -> server `watch {on}` (the panel is shown, or opens by itself: only then does the server send), `open` (the last
+  result now, `{none = 1}` when there is none), `reset`. One request per `requestMs` (250 ms, `ChaosRateLimit`); a refused
+  watch is answered by the next tick.
+- server -> client `state {tn, tid, sid, act, end, empty, cur, avg, tot, hits, crits, max, mxn, dur, w, e, rows [{n, t, i, v,
+  h, c, m}], el [[element, amount]], prof {c, l}, party? [{n, cur, tot, me?}]}` or `{none = 1}`.
+- Cost: no packet per hit. A summary once a second while a session is active, one when it begins, ends or is reset, nothing
+  to a client that did not ask. A watching player on a trainer: one small packet a second. The display scale
+  (`DS.trainerState`) is applied like the combat log's.
+- 147 is free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module; not 204,
+  because a client module that registers an opcode replaces the earlier one and `game_dpsmeter` owns 204
+  ("Opcode collision check"; `tests/trainer_meter_test.lua`). Unity: `tools/ci/unity_opcodes_allowlist.txt` (not ported yet,
+  Unity is paused).
+
+**Client** `game_trainerdps` (client/MANIFEST.md): a small movable panel (Chaos skin, `game_hudmove`, a `$mobile` rule) that
+opens by itself when a session begins (option "Open by itself"), shows DPS now, average, total, time, biggest hit, hits and
+crit share, the target profile, the tabs Skills / Elements / Party, and Reset, Copy, To chat (one line into the chat input,
+never sent by itself); when the session ends it shows the final result and hides after 15 s (settable) unless "Keep open"
+is on. It reuses the DPS meter's bar rows, number formats, icons and colours. Menu: Hunt > DPS Meter > menu > Trainer DPS
+panel.
+
+**Owner steps (VPS).** Server: Painel > Atualizar servidor > "Aplicar e reiniciar" in the Android admin app (desktop app:
+Atualizações > Atualizar servidor > Aplicar e reiniciar); shell fallback `chaos-ctl.sh update-apply`. No SQL, no install
+step, no config edit. Client: the new module reaches players with the next client release (Atualizações > Site e update do
+client > Publicar update do client with the release tag; shell fallback `chaos-ctl.sh publish-update TAG`). To check:
+hit a "Training Dummy" with a spell, a weapon and a summon; the panel opens by itself, 10 s after the last hit it shows
+"Finished", Reset empties it. To change the target profile, edit `profile` in `trainer_meter_config.lua` and restart (or
+`/reload scripts`).
 
 ## Death recap (`deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql`, client `game_deathrecap`)
 

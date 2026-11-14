@@ -4,3 +4,4 @@
 # Remove a line in the same commit that ports its module (and say so in docs/UNITY_PARITY.md).
 
 111 | retired by O316: the depot tabs window is gone, nothing sends or reads opcode 111, the number stays reserved
+147 | not ported yet: Unity is paused (O433), so the trainer DPS panel of the main client (O573, game_trainerdps) has no Unity window; the server sends only to a client that asked (`watch`), so Unity players get nothing

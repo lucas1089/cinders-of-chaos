@@ -114,6 +114,12 @@ ChaosOpcodes.riftAtlas = 210
 ChaosOpcodes.waystoneAtlas = 159
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
+-- Trainer DPS panel (O573; client game_trainerdps; trainer_meter*.lua): the damage a player deals to a training monster,
+-- server -> client `state` once a second while the session is active, client -> server `watch` / `reset` / `open`. 147 is
+-- free in the reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode
+-- collision check"; tests/trainer_meter_test.lua). Not 204: a client module that registers an opcode replaces the earlier
+-- one, and game_dpsmeter owns 204.
+ChaosOpcodes.trainerMeter = 147
 -- Display scale: the viewer's level and factor, server -> client (client game_chaosscale; display_scale*.lua)
 ChaosOpcodes.displayScale = 157
 -- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
