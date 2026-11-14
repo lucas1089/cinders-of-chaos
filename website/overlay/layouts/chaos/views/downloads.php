@@ -5,6 +5,9 @@
  * and can also be edited in Admin Panel > Downloads.
  * The Unity client (beta, ROADMAP O433 phase 16) is installed by the launcher of the Windows client ("Client: Unity client
  * (beta)"), so its card always explains that; an entry `unity_client` (CHAOS_CLIENT_UNITY_URL) adds a direct link.
+ * The Windows card links to the launcher setup by itself (ROADMAP O552): when download/Cinders-of-Chaos-Setup.exe exists in the
+ * site folder and its .sha256 (both written by server/deploy/publish_client_update.sh) holds a valid sum for that name, the
+ * button is that file, with its size and SHA-256, and it wins over the configured windows_client link.
  */
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
 // the page's language for the Unity client card (plugins/chaos/i18n_lib.php, README "Languages"); English without the plugin
@@ -44,6 +47,19 @@ $fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
 		'sha' => (string)$f['sha256'],
 	);
 };
+// The launcher setup of download/ (publish_client_update.sh): shown only with the file and a valid "<64 hex>  <name>" line.
+// $GLOBALS['chaos_download_dir'] moves the folder (tests).
+$setup = null;
+$setupDir = (string)($GLOBALS['chaos_download_dir'] ?? (dirname(__DIR__, 3) . '/download'));
+$setupName = 'Cinders-of-Chaos-Setup.exe';
+if (is_file($setupDir . '/' . $setupName) && is_file($setupDir . '/' . $setupName . '.sha256')) {
+	$parts = preg_split('/\s+/', trim((string)strtok((string)file_get_contents($setupDir . '/' . $setupName . '.sha256'), "\n")));
+	$size = (int)filesize($setupDir . '/' . $setupName);
+	if (is_array($parts) && count($parts) === 2 && preg_match('/^[0-9a-f]{64}$/i', $parts[0]) && ltrim($parts[1], '*') === $setupName && $size > 0) {
+		$mb = $size / 1048576;
+		$setup = array('url' => 'download/' . $setupName, 'sha' => strtolower($parts[0]), 'mb' => number_format($mb, $mb >= 100 ? 0 : 1));
+	}
+}
 ?>
 <div class="chaos-page">
 <div class="chaos-box">
@@ -57,6 +73,16 @@ $fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
 				$unityUrl = ($u !== '' && $u[0] !== '#') ? $u : '';
 				continue; // drawn below, with the launcher note
 			}
+			if (($e['key'] ?? '') === 'windows_client' && $setup !== null): ?>
+			<div class="chaos-dl__card chaos-dl__card--setup">
+				<i class="fa fa-windows"></i>
+				<h3><?= $h($about['windows_client'][0]) ?></h3>
+				<p><?= $h(chaos_t('The installer and launcher for Windows 10 and 11 (64-bit). It installs the game into your own folder, needs no administrator rights and keeps the game up to date.')) ?></p>
+				<p class="chaos-dl__meta"><?= $h(chaos_t('Cinders-of-Chaos-Setup.exe · %s MB', $setup['mb'])) ?></p>
+				<p class="chaos-dl__sum">SHA-256 <code><?= $h($setup['sha']) ?></code></p>
+				<a class="chaos-btn" href="<?= $h($setup['url']) ?>" rel="noopener"><?= $h(chaos_t('Download')) ?></a>
+			</div>
+			<?php continue; endif;
 			$url = (string)$e['url'];
 			$soon = ($url === '' || $url[0] === '#'); ?>
 			<div class="chaos-dl__card">
@@ -90,7 +116,11 @@ $fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
 	<h2 class="chaos-heading">How to start</h2>
 	<ol class="chaos-steps">
 		<li><a href="register">Create an account</a>, then <a href="createcharacter">create a character</a>: Warrior, Ranger, Mystic or Thief.</li>
+		<?php if ($setup !== null): ?>
+		<li><?= $h(chaos_t('On Windows, download the setup, run it and start the game from the launcher. On Linux, download the client and unpack it into a folder of your choice.')) ?></li>
+		<?php else: ?>
 		<li>Download the client for your system and unpack it into a folder of your choice.</li>
+		<?php endif; ?>
 		<li>Start the client and log in with your account<?php if ($host !== ''): ?> (server <code><?= $h($host) ?></code>, port <code><?= (int)$port ?></code>; already set in the client)<?php endif; ?>.</li>
 		<li>Your character wakes up on the tutorial island. Five stations teach you to fight, cast, spend a passive point and craft. Character > Services > Leave Tutorial leaves at any time.</li>
 		<?php if ($discord !== ''): ?>

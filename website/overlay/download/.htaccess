@@ -1,0 +1,32 @@
+# The launcher setup (ROADMAP O552): server/deploy/publish_client_update.sh writes Cinders-of-Chaos-Setup.exe and its
+# .sha256 here; the downloads page links to them. Files are only downloaded: nothing in this folder is run, listed
+# or rewritten to PHP. An .exe and a .sha256 are served (the site's other deny rules do not name them).
+Options -Indexes -ExecCGI -Includes
+DirectoryIndex disabled
+<IfModule mod_rewrite.c>
+  RewriteEngine Off
+</IfModule>
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .phar .cgi .pl .py
+RemoveType .php .phtml .phar
+<FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.exe$">
+  ForceType application/octet-stream
+  <IfModule mod_headers.c>
+    Header set Content-Disposition "attachment"
+    Header set Cache-Control "no-cache"
+  </IfModule>
+</FilesMatch>
+<FilesMatch "\.sha256$">
+  ForceType text/plain
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache"
+  </IfModule>
+</FilesMatch>

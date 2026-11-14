@@ -60,7 +60,7 @@ What phase B added around that (`src/chunked.rs`, `src/install.rs`, `src/manifes
 
 Owner 2026-11-13: the launcher installs itself, no admin rights, `%LOCALAPPDATA%\CindersOfChaos`, shortcuts, an uninstall entry. There is no
 separate installer program: the website's download is the launcher exe itself, published as `Cinders-of-Chaos-Setup.exe` (+ `.sha256`) by
-`publish_client_update.sh` (`$CHAOS_SITE_DIR/download/`, `CHAOS_SETUP_DIR`) whenever it publishes the launcher's native files.
+`publish_client_update.sh` (`$CHAOS_SITE_DIR/download/`, `CHAOS_SETUP_DIR`) whenever it publishes the launcher's native files. The website's downloads page links its Windows button to that file by itself (size, SHA-256 and the setup text shown; `website/README.md` "Launcher setup (O552)").
 
 - **Facts built in.** `launcher/embedded.json` (gitignored) is the text of a `launcher.json`; `build.rs` compiles it in (`setup::EMBEDDED`, empty when the
   file is missing). `windows-package.yml` writes it before `cargo build` from the workflow inputs `update_manifest` and `update_public_key`

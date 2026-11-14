@@ -424,6 +424,10 @@ return array(
 	'Unity client (beta)' => 'Cliente Unity (beta)',
 	'A second client of the same game, made with Unity, for Windows 10 and 11 (64-bit). It plays on the same server with the same account as the main client. It is a beta: some windows and effects are not finished.' => 'Um segundo cliente do mesmo jogo, feito com Unity, para Windows 10 e 11 (64 bits). Joga no mesmo servidor, com a mesma conta do cliente principal. É um beta: algumas janelas e efeitos ainda não estão prontos.',
 	'Install the Windows client, open its launcher and choose "Unity client (beta)" next to Client. The launcher downloads it and keeps it up to date.' => 'Instale o cliente para Windows, abra o launcher dele e escolha "Cliente Unity (beta)" ao lado de Cliente. O launcher baixa o cliente e o mantém atualizado.',
+	// the downloads page: the launcher setup of the Windows card and its "How to start" step
+	'The installer and launcher for Windows 10 and 11 (64-bit). It installs the game into your own folder, needs no administrator rights and keeps the game up to date.' => 'O instalador e launcher para Windows 10 e 11 (64 bits). Instala o jogo na sua própria pasta, não pede direitos de administrador e mantém o jogo atualizado.',
+	'Cinders-of-Chaos-Setup.exe · %s MB' => 'Cinders-of-Chaos-Setup.exe · %s MB',
+	'On Windows, download the setup, run it and start the game from the launcher. On Linux, download the client and unpack it into a folder of your choice.' => 'No Windows, baixe o instalador, execute-o e inicie o jogo pelo launcher. No Linux, baixe o cliente e descompacte-o em uma pasta à sua escolha.',
 	'Create a character' => 'Criar um personagem',
 	'Create an account' => 'Criar uma conta',
 	'Passive nodes' => 'Nós passivos',
