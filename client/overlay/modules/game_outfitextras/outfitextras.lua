@@ -219,6 +219,14 @@ local function paint(w, spec, boxW, boxH, iconSize)
     if not ok then return end
     local lp = lookModule()
     if lp and type(lp.fitCard) == 'function' then lp.fitCard(cr, spec.outfit, boxW, boxH) end
+    -- the outline of an Outline card is drawn on the tile's own creature, as the stage does (O562: the tile had no
+    -- outline, the stage's creature did)
+    local c = cr:getCreature()
+    if c and type(c.clearOutline) == 'function' then pcall(c.clearOutline, c) end
+    if c and type(spec.outline) == 'table' then
+      local fx = modules.game_cosmeticfx
+      if fx and type(fx.applyOutline) == 'function' then pcall(fx.applyOutline, c, spec.outline.art, spec.outline.pulse) end
+    end
     cr:setVisible(true)
   elseif spec.kind == 'play' then
     local lp = lookModule()
@@ -232,7 +240,7 @@ end
 
 local function specOf(key, card)
   local look = C.cardLook(key, card, temp)
-  if look then return { kind = 'outfit', outfit = look } end
+  if look then return { kind = 'outfit', outfit = look, outline = C.cardOutline(key, card) } end
   if card.row and (key == 'spellskin' or key == 'killfx') then return { kind = 'play', row = card.row } end
   if card.row and key == 'footprint' and not card.none and type(card.row.art) == 'string' then
     return { kind = 'print', art = card.row.art }

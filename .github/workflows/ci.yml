@@ -104,6 +104,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/gen_aura_art.py --check   # chest and Templar aura strips of game_chestaura (O315)
           /tmp/fxenv/bin/python -I client/tools/gen_pyre_art.py --check   # Pyre Oath ember ring and burn strips of game_chestaura (O518)
+          /tmp/fxenv/bin/python -I client/tools/gen_lootlabel_art.py --check   # loot label plates and labelplates.lua (O562)
           /tmp/fxenv/bin/python -I client/tools/gen_toast_art.py --check  # toast icons of game_chaosnotify, Pact hourglass included (O317)
           /tmp/fxenv/bin/python -I client/tools/gen_dungeon_card_art.py --check  # card frames and the dark fade of the Dungeons window (O555)
           /tmp/fxenv/bin/python -I client/tools/gen_topbar_icons.py --check  # glyph atlases and index of the hub menu (O550)

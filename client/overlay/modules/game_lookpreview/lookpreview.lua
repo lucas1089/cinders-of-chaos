@@ -157,7 +157,8 @@ function fitCard(creatureWidget, outfit, w, h)
   creatureWidget:setMarginBottom(0)
   creatureWidget:setMarginRight(0)
   creatureWidget:setSize({ width = L.size, height = L.size })
-  creatureWidget:setDirection(P.SOUTH)
+  -- a cape is drawn from the back (O562)
+  creatureWidget:setDirection(P.shownDirection(outfit, P.SOUTH, false))
   return true
 end
 
@@ -267,18 +268,83 @@ end
 
 -- the widget of a LookPreviewCore.sampleSpec inside `parent`, sized by its text (text-auto-resize); nil when the art of a
 -- plate frame is not in this client
+-- A label's size comes from its text, now: a UILabel with text-auto-resize reports its old size until the next layout
+-- pass, so the centring that read getWidth() / getHeight() right after setText put the text off-centre in the box
+-- (O562). The size is set from the measured text and the padding, the text is centred in it.
+local function fitLabel(l, padX, padY, minW)
+  pcall(l.setTextAutoResize, l, false)
+  local ts = l:getTextSize()
+  local w = math.max(minW or 0, ts.width + 2 * padX)
+  local h = ts.height + 2 * padY
+  l:setSize({ width = w, height = h })
+  pcall(l.setTextAlign, l, AlignCenter)
+  return l
+end
+
+-- Animated chat colours on the samples (O562): the name of a chat sample takes the look of its colour
+-- (game_cosmetics ChatColorFx, the same look the console draws) and a timer repaints the live ones. Without the module,
+-- or an engine that refuses, the flat colour stays.
+local chatLive, chatEvent = {}, nil
+
+local function chatFx()
+  local m = modules.game_cosmetics
+  return m and m.ChatColorFx or nil
+end
+
+local function chatTick()
+  local F = chatFx()
+  local now = (g_clock and g_clock.millis and g_clock.millis() or 0) / 1000
+  local n = 0
+  for w, e in pairs(chatLive) do
+    local ok, dead = pcall(function() return w:isDestroyed() end)
+    if not ok or dead then
+      chatLive[w] = nil
+    else
+      n = n + 1
+      if F and w:isVisible() then
+        local parts = F.recolor(e.parts, e.first, e.last, e.style, now)
+        if not pcall(w.setColoredText, w, parts) then chatLive[w] = nil end
+      end
+    end
+  end
+  if n == 0 and chatEvent then
+    removeEvent(chatEvent)
+    chatEvent = nil
+  end
+end
+
+local function animateChat(l, spec)
+  local F = chatFx()
+  local first = spec.parts[1]
+  local style = F and type(spec.parts[2]) == 'string' and F.styleOf(spec.parts[2]) or nil
+  if not style or type(first) ~= 'string' or first == '' or type(cycleEvent) ~= 'function' then return end
+  chatLive[l] = { parts = spec.parts, first = 1, last = #first, style = style }
+  if not chatEvent then chatEvent = cycleEvent(chatTick, F.FRAME_MS) end
+end
+
 local function buildSampleWidget(parent, spec)
   if spec.kind == 'lootlabel' then
     local l = g_ui.createWidget('LookPreviewGroundLabel', parent)
     l:setText(spec.text)
     l:setColor(spec.color)
+    local GLL = modules.game_groundlabels and modules.game_groundlabels.GroundLabelsLogic
+    local plate = GLL and type(GLL.plateFor) == 'function' and GLL.plateFor(spec.bg) or nil
+    if plate and g_resources.fileExists(plate.path .. '.png') then
+      l:setBorderWidth(0)
+      l:setImageSource(plate.path)
+      l:setImageBorder(plate.border)
+      l:setBackgroundColor('#00000000')
+      return fitLabel(l, 8, 5, 40)
+    end
     l:setBorderColor(spec.border)
     l:setBackgroundColor(spec.bg)
-    return l
+    return fitLabel(l, 6, 4, 40)
   elseif spec.kind == 'chatcolor' then
     local l = g_ui.createWidget('LookPreviewChatLine', parent)
     l:setColoredText(spec.parts)
     l:setBackgroundColor(spec.bg)
+    fitLabel(l, 6, 3, 0)
+    animateChat(l, spec)
     return l
   elseif spec.kind == 'plate' then
     if not g_resources.fileExists(spec.path .. '.png') then return nil end
@@ -287,7 +353,7 @@ local function buildSampleWidget(parent, spec)
     l:setImageBorder(spec.border)
     l:setText(spec.text)
     l:setColor(spec.color)
-    return l
+    return fitLabel(l, 9, 4, 0)
   end
   return nil
 end
@@ -614,7 +680,7 @@ function Preview:refresh()
     g_logger.warning('[lookpreview] setOutfit refused the look ' .. tostring(outfit.type))
     pcall(cw.setOutfit, cw, { type = outfit.type, mount = outfit.mount })
   end
-  cw:setDirection(self.dir)
+  cw:setDirection(self:face(outfit))
   self:animate()
   -- the outline: on the preview's own creature (an engine without 0038 has none: say so, no picture in its place)
   local c = cw:getCreature()
@@ -642,7 +708,7 @@ function Preview:refresh()
       if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell scene
       self:stopFx()
     end
-    cw:setDirection(self.dir)
+    cw:setDirection(self:face(outfit))
   end
   self.sample = P.sampleOf(opt)
   local steps = P.footprintArt(opt)
@@ -650,7 +716,7 @@ function Preview:refresh()
     self.steps = steps
     if not steps then self.widget.stage.fxUnder:destroyChildren() end
     self.dir = steps and 1 or P.SOUTH -- walking east, the prints behind
-    cw:setDirection(self.dir)
+    cw:setDirection(self:face(outfit))
     self:animate()
   end
   self.outfit = outfit
@@ -705,8 +771,15 @@ function Preview:setOwnOutfit(o)
   self:refresh()
 end
 
+-- the direction to draw `outfit` facing: a cape is shown from the back (O562, LookPreviewCore.face), but a spell scene
+-- or footprints keep the direction they set
+function Preview:face(outfit)
+  if self.fxPlay or self.steps then return self.dir end
+  return P.face(self, outfit)
+end
+
 function Preview:turn(step)
-  self.dir = P.turn(self.dir, step)
+  P.turnBy(self, self.outfit, step)
   if alive(self.widget) then self.widget.stage.creature:setDirection(self.dir) end
 end
 
@@ -922,6 +995,8 @@ function terminate()
   autoEvent = nil
   if fxEvent then removeEvent(fxEvent) end
   fxEvent = nil
+  if chatEvent then removeEvent(chatEvent) end
+  chatEvent, chatLive = nil, {}
   things = {}
   creatureThings = {}
   stopOutfitWindow()

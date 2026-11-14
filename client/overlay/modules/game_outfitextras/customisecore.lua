@@ -233,7 +233,8 @@ end
 -- the look a card of the grid or the strip draws (nil: no picture, a text card): outfit cards the look with the
 -- addons owned, mounts the mount alone, wings / aura / shader the outfit being edited with that part, pets alone
 function C.cardLook(key, card, temp)
-  if type(card) ~= 'table' or card.none then return nil end
+  if type(card) ~= 'table' then return nil end
+  if card.none and key ~= 'outline' then return nil end
   temp = type(temp) == 'table' and temp or {}
   if key == 'outfit' then
     local o = { type = num(card.value), head = num(temp.head), body = num(temp.body), legs = num(temp.legs),
@@ -248,6 +249,11 @@ function C.cardLook(key, card, temp)
     return o
   elseif key == 'pet' then
     return num(card.look) > 0 and { type = num(card.look) } or nil
+  elseif key == 'outline' then
+    -- the outfit being edited, bare: the outline is drawn round it by the tile's creature (C.cardOutline). The Default
+    -- card shows the same figure without one
+    return { type = num(temp.type), head = num(temp.head), body = num(temp.body), legs = num(temp.legs),
+      feet = num(temp.feet), addons = num(temp.addons), mount = 0, wings = 0, aura = 0, shader = '' }
   end
   return nil
 end
@@ -382,6 +388,14 @@ local function cosmeticOption(r)
     return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil }
   end
   return nil
+end
+
+-- the outline a card of the Outline tab draws round its figure: {art, pulse} or nil (the Default card, a row with no
+-- art). The same option the stage reads (cosmeticOption), so a tile shows what the preview shows (O562)
+function C.cardOutline(key, card)
+  if key ~= 'outline' or type(card) ~= 'table' or card.none then return nil end
+  local o = type(card.row) == 'table' and cosmeticOption(card.row) or nil
+  return o and o.kind == 'outline' and { art = o.art, pulse = o.pulse == true } or nil
 end
 
 -- the outline the preview draws for what is in use (the outline layer on, a chosen or worn outline with art)
@@ -523,7 +537,7 @@ function C.stripRows(ctx)
       row.name, row.empty = card.text, false
       local look = C.cardLook(key, card, temp)
       if look then
-        row.icon = { kind = 'outfit', outfit = look }
+        row.icon = { kind = 'outfit', outfit = look, outline = C.cardOutline(key, card) }
       elseif card.row and (key == 'spellskin' or key == 'killfx') and type(card.row.play) == 'table' then
         row.icon = { kind = 'play', row = card.row }
       elseif card.row and key == 'footprint' and type(card.row.art) == 'string' then

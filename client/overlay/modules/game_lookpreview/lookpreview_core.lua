@@ -309,6 +309,38 @@ function P.turn(dir, step)
 end
 P.AUTO_MS = 1600   -- one direction per 1.6 s while the slow turn is on
 
+-- capes (O562): the pair 33 capes are auras (client looks 2569-2657, auras.xml 125-213, server
+-- data/lib/chaos_pack33_cosmetics.lua `capes`; lookpreview_core_test.lua holds the range to that file). A cape hangs on
+-- the back, so a look that wears one is shown facing north (back to the viewer), until the player turns it by hand.
+P.NORTH = 0
+P.CAPE_FIRST, P.CAPE_LAST = 2569, 2657
+function P.isCape(look)
+  look = num(look)
+  return look >= P.CAPE_FIRST and look <= P.CAPE_LAST
+end
+
+-- the direction a look is drawn facing: north for a cape unless the player turned it (manual), else `dir`
+function P.shownDirection(outfit, dir, manual)
+  if manual ~= true and type(outfit) == 'table' and P.isCape(outfit.aura) then return P.NORTH end
+  return num(dir)
+end
+
+-- the facing state of a preview: st = {dir, manual, cape}. Call at every redraw with the outfit drawn: a cape arriving
+-- or leaving drops the manual turn (the new look is shown by the rule again); returns the direction to draw
+function P.face(st, outfit)
+  local cape = type(outfit) == 'table' and P.isCape(outfit.aura) or false
+  if st.cape ~= nil and st.cape ~= cape then st.manual = false end
+  st.cape = cape
+  return P.shownDirection(outfit, st.dir, st.manual)
+end
+
+-- a click on a turn button: from the direction shown, by hand
+function P.turnBy(st, outfit, step)
+  st.dir = P.turn(P.shownDirection(outfit, st.dir, st.manual), step)
+  st.manual = true
+  return st.dir
+end
+
 -- ---------------------------------------------------------------- zoom and placement
 -- A UICreature of size 2T draws the creature at T / 32 px per sprite pixel, its own tile the rect's lower right
 -- quarter (client_chaos_charselect/charselect_core.lua, "UICreature draws a creature ..."). The list cards place a

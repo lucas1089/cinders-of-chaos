@@ -1,4 +1,4 @@
-// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Void Flicker: the body sinks into violet dark, its edge flickers, now and then a band of it drops out.
+// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Void Flicker: the outfit is eaten from its edges by the void, a ragged violet-white front crawling slowly in and out (no flicker); what is left is drained dark.
 // Vertex stage chaos_outfit_vertex.frag.
 uniform mat4 u_Color;
 uniform sampler2D u_Tex0;
@@ -8,11 +8,12 @@ varying vec2 v_TexCoord2;
 varying vec2 v_Px;
 varying vec2 v_Texel;
 
-// the outfit with its four colours (head, body, legs, feet) from the template layer
-vec4 dressed()
+// the outfit with its four colours (head, body, legs, feet) from the template layer, read at a shift in texture
+// coordinates (a shader that wobbles the picture passes one)
+vec4 dressedAt(vec2 sh)
 {
-    vec4 c = texture2D(u_Tex0, v_TexCoord);
-    vec4 m = texture2D(u_Tex0, v_TexCoord2);
+    vec4 c = texture2D(u_Tex0, v_TexCoord + sh);
+    vec4 m = texture2D(u_Tex0, v_TexCoord2 + sh);
     if (m.r > 0.9) {
         c *= m.g > 0.9 ? u_Color[0] : u_Color[1];
     } else if (m.g > 0.9) {
@@ -23,11 +24,12 @@ vec4 dressed()
     return c;
 }
 
-// 1 at the silhouette's inner edge (a neighbour is transparent), 0 deeper inside
-float rim()
+// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside
+float rimAt(float r)
 {
-    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(v_Texel.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(v_Texel.x, 0.0)).a),
-                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, v_Texel.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, v_Texel.y)).a));
+    vec2 d = v_Texel * r;
+    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a),
+                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a));
     return 1.0 - n;
 }
 
@@ -52,22 +54,29 @@ float luma(vec3 c)
     return dot(c, vec3(0.30, 0.58, 0.12));
 }
 
+// the row (0 top .. 31 bottom) of this pixel in its 32 px cell
+float rowOf()
+{
+    return floor(fract(v_Px.y / 32.0) * 32.0);
+}
+
 void main()
 {
-    vec4 c = dressed();
+    vec4 c = dressedAt(vec2(0.0));
     if (c.a < 0.01)
         discard;
     float t = u_Time;
+    float depth = 1.0 - 0.55 * rimAt(1.0) - 0.45 * rimAt(2.0);
+    float n = valueNoise(v_Px * 0.24 + vec2(t * 0.18, -t * 0.11));
+    float n2 = valueNoise(v_Px * 0.6 - vec2(t * 0.1, 0.0));
+    float q = 0.65 * n + 0.35 * n2 + 0.55 * depth;
+    float thr = 0.42 + 0.17 * sin(t * 0.8);
+    if (q < thr)
+        discard;
+    float band = 1.0 - smoothstep(0.0, 0.09, q - thr);
     float l = luma(c.rgb);
-    vec3 col = mix(vec3(0.03, 0.0, 0.06), vec3(0.42, 0.18, 0.62), l * 0.9) + c.rgb * 0.18;
-    float flick = step(0.35, valueNoise(vec2(t * 9.0, 3.1)));
-    float e = rim();
-    col = mix(col, vec3(0.72, 0.38, 1.0), e * (0.35 + 0.65 * flick));
-    // a horizontal band that thins out for a moment (a few times a second, at a random height)
-    float slot = floor(t * 3.0);
-    float bandY = cellHash(vec2(slot, 7.0)) * 64.0;
-    float band = smoothstep(2.5, 0.0, abs(mod(v_Px.y, 64.0) - bandY)) * step(0.6, cellHash(vec2(slot, 1.0)));
-    float specks = step(0.9, valueNoise(v_Px * 0.6 + vec2(t * 4.0, -t * 3.0)));
-    float a = c.a * (1.0 - 0.75 * band) * (1.0 - 0.5 * specks);
-    gl_FragColor = vec4(col, a);
+    vec3 col = mix(vec3(0.04, 0.0, 0.08), vec3(0.50, 0.24, 0.72), l * 0.9) + c.rgb * 0.12;
+    col = mix(col, vec3(0.62, 0.30, 0.95), band * 0.85);
+    col = mix(col, vec3(0.95, 0.85, 1.0), band * band * 0.8);
+    gl_FragColor = vec4(min(col, vec3(1.0)), c.a);
 }

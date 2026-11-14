@@ -664,4 +664,50 @@ local FXL = P.fxLayout(318, 130, -3, -0.5, 1.5, 1)
 local fp = P.labelPlace(FXL, plain, 318, 130, 80, 18)
 eq(inside({ x = fp.label.x, y = fp.label.y, w = 80, h = 18 }, 318, 130), true, 'effects layout: label inside')
 
+-- capes are drawn from the back (O562)
+eq(P.isCape(2569), true, 'first cape') eq(P.isCape(2657), true, 'last cape')
+eq(P.isCape(2568), false, 'the last head accessory is no cape') eq(P.isCape(2658), false, 'a kit look is no cape')
+eq(P.isCape(0), false, 'no aura') eq(P.isCape(nil), false, 'nil aura') eq(P.isCape('2600'), true, 'a number as text')
+-- the range is the server's capes of pair 33
+do
+  local f = io.open('server/data/lib/chaos_pack33_cosmetics.lua', 'r')
+  eq(f ~= nil, true, 'pack33 cosmetics file (run from the repo root)')
+  local text = f:read('*a')
+  f:close()
+  local capes = text:match('M%.capes = (%b{})')
+  local lo, hi, count = 1e9, 0, 0
+  for look in capes:gmatch('look = (%d+)') do
+    look = tonumber(look)
+    lo, hi, count = math.min(lo, look), math.max(hi, look), count + 1
+  end
+  eq(lo, P.CAPE_FIRST, 'cape range starts at the server table') eq(hi, P.CAPE_LAST, 'cape range ends at the server table')
+  eq(count, P.CAPE_LAST - P.CAPE_FIRST + 1, 'no gap in the capes')
+  local heads = text:match('M%.heads = (%b{})')
+  local hmax = 0
+  for look in heads:gmatch('look = (%d+)') do hmax = math.max(hmax, tonumber(look)) end
+  eq(hmax < P.CAPE_FIRST, true, 'heads stay below the capes')
+end
+eq(P.shownDirection({ aura = 2600 }, P.SOUTH, false), P.NORTH, 'a cape faces north')
+eq(P.shownDirection({ aura = 2600 }, P.EAST, nil), P.NORTH, 'a cape faces north whatever dir')
+eq(P.shownDirection({ aura = 2600 }, P.EAST, true), P.EAST, 'turned by hand: the hand wins')
+eq(P.shownDirection({ aura = 1511 }, P.SOUTH, false), P.SOUTH, 'a head aura keeps the direction')
+eq(P.shownDirection({ aura = 0 }, P.WEST, false), P.WEST, 'no aura keeps the direction')
+eq(P.shownDirection(nil, P.EAST, false), P.EAST, 'no outfit keeps the direction')
+local st = { dir = P.SOUTH }
+local cape, plain = { aura = 2600 }, { aura = 0 }
+eq(P.face(st, plain), P.SOUTH, 'plain: south') eq(P.face(st, cape), P.NORTH, 'cape: north')
+eq(P.face(st, plain), P.SOUTH, 'plain again: south')
+-- a turn button on a cape: from the north shown, one step clockwise = east, and it stays
+P.face(st, cape)
+eq(P.turnBy(st, cape, 1), P.EAST, 'turn from the back goes east') eq(st.manual, true, 'manual')
+eq(P.face(st, cape), P.EAST, 'the hand turn stays on the cape')
+eq(P.face(st, { aura = 2601 }), P.EAST, 'another cape keeps the hand turn')
+eq(P.face(st, plain), P.EAST, 'leaving the cape keeps the direction turned to')
+eq(st.manual, false, 'the manual turn ends when the cape goes')
+eq(P.face(st, cape), P.NORTH, 'a cape again: the back')
+-- a turn on a plain look is the old turn
+local st2 = { dir = P.SOUTH }
+P.face(st2, plain)
+eq(P.turnBy(st2, plain, 1), P.WEST, 'plain turn: south -> west')
+
 print('lookpreview_core_test: ' .. n .. ' checks OK')

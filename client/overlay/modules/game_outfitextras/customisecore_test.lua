@@ -85,7 +85,11 @@ eq(#C.cards('outline', { src = src, onlyMine = true }), 3, 'only mine, outlines'
 local pc = C.cards('pet', { src = src })
 eq(#pc, 3, 'none, owned and locked pet'); eq(pc[2].look, 400, 'pet look'); eq(pc[3].look, 401, 'locked pet look'); eq(pc[1].value, '', 'pet none is empty text')
 eq(C.cards('pet', { src = {} }), nil, 'no pet data yet')
-eq(#C.cards('frame', { src = src }), 2, 'title frame and one frame')
+eq(#C.cards('frame', { src = src }), 1 + #E.FRAME_CATALOG, 'title frame, the owned frame and the rest of the catalogue')
+local fc = C.cards('frame', { src = src })
+eq(fc[3].locked, true, 'a frame not owned is a locked card') eq(fc[3].how ~= nil, true, 'with how to get it')
+local have, all = C.count(fc)
+eq(all > 1, true, 'the title counts more than 0 of 0')
 local have, all = C.count(sc); eq(have, 1, 'one owned shader'); eq(all, 2, 'two shaders, None not counted')
 
 -- what a card draws
@@ -94,7 +98,17 @@ eq(look.type, 129, 'outfit card look'); eq(look.addons, 1, 'owned addons'); eq(l
 eq(C.cardLook('mount', mc[2], temp).type, 368, 'mount card is the mount alone'); eq(C.cardLook('mount', mc[2], temp).head, nil, 'no colours')
 local wl = C.cardLook('wings', wc[2], temp); eq(wl.wings, 5, 'wings card'); eq(wl.type, 128, 'on the current outfit'); eq(wl.mount, 0, 'no mount on it')
 eq(C.cardLook('aura', ac[2], temp).aura, 7, 'aura card'); eq(C.cardLook('shader', sc[2], temp).shader, 'chaos_ember_glow', 'shader card')
-eq(C.cardLook('pet', pc[2], temp).type, 400, 'pet card'); eq(C.cardLook('outline', oc2[2], temp), nil, 'a text card has no look')
+eq(C.cardLook('pet', pc[2], temp).type, 400, 'pet card'); 
+-- an Outline card draws the bare figure with its outline on the tile's creature (O562: the tiles were empty squares)
+local ol2 = C.cardLook('outline', oc2[2], temp)
+eq(ol2.type, 128, 'outline card: the outfit being edited') eq(ol2.head, 10, 'its colours') eq(ol2.mount, 0, 'no mount') eq(ol2.wings, 0, 'no wings')
+eq(ol2.aura, 0, 'no aura') eq(ol2.shader, '', 'no shader')
+eq(C.cardOutline('outline', oc2[2]).art, 'gold', 'the outline art of the card') eq(C.cardOutline('outline', oc2[2]).pulse, true, 'pulse')
+eq(C.cardOutline('outline', oc2[3]).art, 'void', 'second card') eq(C.cardOutline('outline', oc2[3]).pulse, false, 'no pulse')
+eq(C.cardLook('outline', oc2[1], temp).type, 128, 'Default: the same figure') eq(C.cardOutline('outline', oc2[1]), nil, 'Default: no outline')
+eq(C.cardOutline('footprint', oc2[2]), nil, 'other categories draw none') eq(C.cardOutline('outline', nil), nil, 'no card')
+eq(C.cardOutline('outline', { value = 5, text = 'x', row = { kind = 'outline', id = 5 } }), nil, 'a row without art draws none')
+eq(C.cardLook('mount', { none = true, value = 0 }, temp), nil, 'None of the others draws nothing')
 eq(C.cardLook('mount', mc[1], temp), nil, 'None draws nothing')
 
 -- applying a card
@@ -175,7 +189,7 @@ eq(by.outfit.name, 'Citizen', 'outfit name'); eq(by.outfit.icon.kind, 'outfit', 
 eq(by.mount.name, 'Widow Queen', 'mount name'); eq(by.mount.icon.outfit.type, 368, 'mount icon is the mount')
 eq(by.wings.name, 'Ash Wings', 'wings name'); eq(by.wings.icon.outfit.wings, 6, 'wings icon')
 eq(by.aura.name, '-', 'no aura'); eq(by.aura.empty, true, 'aura is empty'); eq(by.aura.icon, nil, 'no icon')
-eq(by.shader.name, 'Ember Glow', 'shader label'); eq(by.outline.name, 'Gold Outline', 'outline name'); eq(by.outline.icon, nil, 'a text card')
+eq(by.shader.name, 'Ember Glow', 'shader label'); eq(by.outline.name, 'Gold Outline', 'outline name'); eq(by.outline.icon.kind, 'outfit', 'outline strip card: the figure') eq(by.outline.icon.outline.art, 'gold', 'with the outline')
 eq(by.spellskin.name, 'Red Flame', 'skin name'); eq(by.spellskin.icon.kind, 'play', 'skin icon is its effect'); eq(by.killfx.name, '-', 'no kill effect')
 eq(by.footprint.name, '-', 'no footprints'); eq(by.frame.name, 'Frost', 'frame name'); eq(by.pet.name, 'Fang (level 4)', 'pet name'); eq(by.pet.icon.outfit.type, 400, 'pet icon')
 eq(by.outfit.label, 'Outfit', 'label'); eq(by.frame.label, 'Plate frame', 'frame label')

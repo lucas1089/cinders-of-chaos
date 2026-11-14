@@ -6481,3 +6481,31 @@ text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com
   0 high, and every `ChaosTopBar.refresh` does it again when the base shows or grows it (both looks; `terminate` gives it back;
   `chaos_topbar_test.lua`). The text menu keeps its own bar.
 
+
+## Customise Character fixes (O562, owner 2026-11-14)
+- **Capes from the back.** The pair 33 capes are auras (client looks 2569-2657, auras.xml 125-213; `LookPreviewCore.CAPE_FIRST / CAPE_LAST`, `isCape`;
+  `lookpreview_core_test.lua` holds the range to server `chaos_pack33_cosmetics.lua`). `LookPreviewCore.face` / `turnBy` / `shownDirection`: a look that
+  wears a cape is drawn facing north until the player presses a turn button (the turn then holds, and ends when a cape arrives or leaves); the tiles
+  (`fitCard`) draw a cape card north; a spell scene or footprints keep the direction they set. Other categories keep south.
+- **Outline tiles.** Cause: `CustomiseCore.cardLook` had no look for the `outline` key, so a tile had no figure (an empty square with a name); the
+  stage draws the outline with `game_cosmeticfx.applyOutline` on its creature, a tile never did. Now `cardLook('outline')` is the bare outfit being edited,
+  `CustomiseCore.cardOutline` the `{art, pulse}` of the card and `outfitextras.lua paint()` applies it to the tile's own creature (also on the Equipped
+  now strip). Shader tiles already went through the same `setOutfit` as the stage (the card's value is the shader name); nothing was found to change.
+- **Plate frame "(0 of 0)".** Cause: the tab listed only the frames a character owns and `lockedOf('frame')` had no catalogue. `OutfitExtrasCore.FRAME_CATALOG`
+  lists the 22 frames (`game_nameplate` plate_*.png) with how each is got; the unowned ones are locked cards with the frame sample. The test holds the list
+  to `NameplateMath.FRAMES` and the server's `nameplate_core.lua`.
+- **Outfit shaders (ids 19-26, names kept).** `chaos_outfit_*.frag` redrawn, one idea each, alpha respected, smooth in time: Ember Glow (rising spark pixels with tails,
+  coals from the feet), Frost Rime (a faceted rime that creeps up from the feet and melts back), Void Flicker (the void eats the edges, slow ragged front; no flicker),
+  Holy Radiance (gold filigree on highlights, a glint sweeping across), Heartblood (double heartbeat, wave from the chest, veins), Spectral Ghost (swaying hem,
+  fade to the feet, a scanning rune line), Ash Drift (ash grey, falling flecks, dull coals), Cinder Crown (lava cracks, heat shimmer, ember crown). The base store shaders
+  (ids 1-18) are untouched. `client/tools/render_outfit_shaders.py` runs them headless (EGL surfaceless, Mesa llvmpipe, ctypes): `check`, `sheet`, `video`.
+- **Loot label plates.** `client/tools/gen_lootlabel_art.py` (CI `--check`): one 9-slice plate per loot label set (gradient fill, metal frame, a corner ornament that
+  differs by set) and `game_groundlabels/labelplates.lua`; `GL.plateFor(accent)`. The ground labels and the samples draw highlighted labels on the plate, the rarity
+  colour stays on the text. The samples size their label from the measured text (`fitLabel`): the old auto-resized label reported a stale width, which put the
+  text off-centre.
+- **Animated chat colours.** `game_cosmetics/chatcolorfx.lua` (`chatcolorfx_test.lua`): 17 looks (flow, shimmer, pulse, wave, chase, sparkle) from the server colour,
+  per letter of the name, smooth. The console repaints the newest 24 animated lines every 100 ms (`cosmetics.lua`), the samples on the tiles and the stage too
+  (`lookpreview.lua`). The flat colour is the fallback (no `cycleEvent`, `setColoredText` refused).
+- **Open.** Rune Seal (look 2186) is a 3x3 ring 60 x 39 px, 1.53:1, where the other ground auras measure 0.9-1.07:1; its centre sits 3 px up-left of the tile centre like
+  the stock ones, so the art is the problem, not the placement. Every aura look of the pair is already an aura of the store, and `install_auras.py` refuses a client id that
+  auras.xml already holds, so a swap needs new art (a redrawn round ring in a new pair). Dusk Moth is the stock butterfly (look 213); more frames need new art too.

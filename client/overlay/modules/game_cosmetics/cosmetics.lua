@@ -37,6 +37,7 @@ local names = {} -- chat name colours: character name -> '#rrggbb'
 local settingBox = false -- the window sets the checkbox itself (not the player)
 local accent -- the character's own label accent
 local original = {}
+local watchLine -- forward: defined with the animated chat colours below
 local preview -- the shared look preview (game_lookpreview), nil without that module
 
 local function safe(name, fn)
@@ -403,6 +404,53 @@ local function console()
   return modules.game_console
 end
 
+-- ---------------------------------------------------------------- animated chat colours (O562, ChatColorFx)
+-- The newest MAX_LIVE console lines with an animated name are repainted by one timer; a line that was destroyed or
+-- hidden drops out. Where the engine cannot animate (no cycleEvent, setColoredText refusing) or the setting is off the
+-- name keeps the flat colour the line was drawn with.
+local F = ChatColorFx
+local chatFxOn = true
+local liveLines, fxEvent = {}, nil
+
+local function clockSeconds()
+  return (g_clock and g_clock.millis and g_clock.millis() or 0) / 1000
+end
+
+local function chatFxTick()
+  local now = clockSeconds()
+  local keep = {}
+  for _, e in ipairs(liveLines) do
+    local l = e.label
+    local ok, dead = pcall(function() return l:isDestroyed() end)
+    if ok and not dead then
+      local shown = pcall(function() return l:isVisible() end) and l:isVisible()
+      if shown then
+        if not pcall(l.setColoredText, l, F.recolor(e.parts, e.first, e.last, e.style, now)) then
+          chatFxOn = false -- the engine refuses: flat colours from now on
+          return
+        end
+      end
+      keep[#keep + 1] = e
+    end
+  end
+  liveLines = keep
+end
+
+watchLine = function(label, parts, first, last, style)
+  if type(cycleEvent) ~= 'function' then return end
+  for i, e in ipairs(liveLines) do
+    if e.label == label then table.remove(liveLines, i) break end
+  end
+  liveLines[#liveLines + 1] = { label = label, parts = parts, first = first, last = last, style = style }
+  while #liveLines > F.MAX_LIVE do table.remove(liveLines, 1) end
+  if not fxEvent then fxEvent = cycleEvent(safe('chatfx', chatFxTick), F.FRAME_MS) end
+end
+
+local function stopChatFx()
+  if fxEvent then removeEvent(fxEvent) end
+  fxEvent, liveLines = nil, {}
+end
+
 local function wrappedUpdateLabel(self, label, tab)
   original.updateLabel(self, label, tab)
   if type(self.text) ~= 'string' or not self.name or self.name == '' or not names[self.name] then return end
@@ -412,8 +460,15 @@ local function wrappedUpdateLabel(self, label, tab)
   local parts = label.chatParts or { self:format(), mt.color or 'white' }
   local t = {}
   for i = 1, #parts - 1, 2 do t[#t + 1] = parts[i] end
-  local colored = CL.colorLine(parts, table.concat(t), { name = self.name, level = self.level }, names)
+  local line = table.concat(t)
+  local colored = CL.colorLine(parts, line, { name = self.name, level = self.level }, names)
   if colored then label:setColoredText(colored) end
+  -- an animated look (ChatColorFx) repaints the name every FRAME_MS; the static line above is the fallback
+  local style = colored and chatFxOn and F.styleOf(names[self.name]) or nil
+  if style then
+    local first, last = CL.nameRange(line, self.name)
+    if first then watchLine(label, parts, first, last, style) end
+  end
 end
 
 local function hookConsole()
@@ -511,6 +566,7 @@ function terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   unhookConsole()
+  stopChatFx()
   accent = nil
   pushAccent()
   if preview then preview:destroy() end

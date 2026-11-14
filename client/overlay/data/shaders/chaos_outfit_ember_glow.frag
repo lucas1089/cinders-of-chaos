@@ -1,4 +1,4 @@
-// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Ember Glow: a smouldering orange rim that flickers, warm light from below and sparks drifting up.
+// Cinders of Chaos outfit shader (game_chaosshaders, written for this server). Ember Glow: coals glow from the feet up and sparks rise through the outfit, each a bright pixel with a short tail.
 // Vertex stage chaos_outfit_vertex.frag.
 uniform mat4 u_Color;
 uniform sampler2D u_Tex0;
@@ -8,11 +8,12 @@ varying vec2 v_TexCoord2;
 varying vec2 v_Px;
 varying vec2 v_Texel;
 
-// the outfit with its four colours (head, body, legs, feet) from the template layer
-vec4 dressed()
+// the outfit with its four colours (head, body, legs, feet) from the template layer, read at a shift in texture
+// coordinates (a shader that wobbles the picture passes one)
+vec4 dressedAt(vec2 sh)
 {
-    vec4 c = texture2D(u_Tex0, v_TexCoord);
-    vec4 m = texture2D(u_Tex0, v_TexCoord2);
+    vec4 c = texture2D(u_Tex0, v_TexCoord + sh);
+    vec4 m = texture2D(u_Tex0, v_TexCoord2 + sh);
     if (m.r > 0.9) {
         c *= m.g > 0.9 ? u_Color[0] : u_Color[1];
     } else if (m.g > 0.9) {
@@ -23,11 +24,12 @@ vec4 dressed()
     return c;
 }
 
-// 1 at the silhouette's inner edge (a neighbour is transparent), 0 deeper inside
-float rim()
+// 1 at the silhouette's inner edge (a neighbour `r` texels away is transparent), 0 deeper inside
+float rimAt(float r)
 {
-    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(v_Texel.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(v_Texel.x, 0.0)).a),
-                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, v_Texel.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, v_Texel.y)).a));
+    vec2 d = v_Texel * r;
+    float n = min(min(texture2D(u_Tex0, v_TexCoord + vec2(d.x, 0.0)).a, texture2D(u_Tex0, v_TexCoord - vec2(d.x, 0.0)).a),
+                  min(texture2D(u_Tex0, v_TexCoord + vec2(0.0, d.y)).a, texture2D(u_Tex0, v_TexCoord - vec2(0.0, d.y)).a));
     return 1.0 - n;
 }
 
@@ -52,20 +54,40 @@ float luma(vec3 c)
     return dot(c, vec3(0.30, 0.58, 0.12));
 }
 
+// the row (0 top .. 31 bottom) of this pixel in its 32 px cell
+float rowOf()
+{
+    return floor(fract(v_Px.y / 32.0) * 32.0);
+}
+
 void main()
 {
-    vec4 c = dressed();
+    vec4 c = dressedAt(vec2(0.0));
     if (c.a < 0.01)
         discard;
     float t = u_Time;
-    float flick = valueNoise(v_Px * 0.18 + vec2(0.0, t * 2.4));
-    float e = rim();
-    vec3 ember = mix(vec3(1.0, 0.32, 0.05), vec3(1.0, 0.78, 0.25), flick);
-    // warm from the feet up (texture y grows downwards inside the frame; the noise breaks the gradient)
-    float warm = 0.18 + 0.22 * valueNoise(v_Px * 0.07 + vec2(t * 0.3, t * 0.9));
-    vec3 col = c.rgb * (1.0 + warm * vec3(0.55, 0.22, 0.0));
-    col = mix(col, ember, e * (0.55 + 0.45 * flick));
-    float spark = valueNoise(vec2(v_Px.x * 0.9, v_Px.y * 0.35 + t * 6.0));
-    col += vec3(1.0, 0.65, 0.2) * smoothstep(0.93, 0.99, spark) * 0.9;
+    float row = rowOf();
+    float vy = row / 31.0;
+    float e = rimAt(1.0);
+    float heat = smoothstep(0.30, 1.0, vy + 0.22 * (valueNoise(v_Px * 0.14 + vec2(0.0, -t * 0.5)) - 0.5));
+    vec3 col = c.rgb * (1.0 + heat * vec3(0.75, 0.30, 0.0));
+    col = mix(col, vec3(1.0, 0.45, 0.10), e * (0.45 + 0.25 * sin(t * 1.6 + v_Px.x * 0.4)));
+    float px = floor(v_Px.x);
+    float sp = 0.0;
+    for (int k = 0; k < 3; k++) {
+        float kk = float(k);
+        float w = 3.0 + kk;
+        float cell = floor(px / w);
+        float h = cellHash(vec2(cell, kk * 17.0));
+        float tx = floor(cellHash(vec2(cell, kk * 17.0 + 5.0)) * w);
+        float onCol = step(abs(px - cell * w - tx), 0.5) * step(0.30, h);
+        float life = fract(t * (0.20 + 0.14 * h) + h * 9.0 + kk * 0.31);
+        float yy = floor(31.0 * (1.0 - life));
+        float d = row - yy;
+        float head = step(abs(d), 0.5);
+        float tail = step(0.5, d) * step(d, 2.5) * 0.45;
+        sp = max(sp, onCol * (head + tail) * (1.0 - life * 0.7));
+    }
+    col = mix(col, vec3(1.0, 0.82, 0.30), clamp(sp, 0.0, 1.0));
     gl_FragColor = vec4(min(col, vec3(1.0)), c.a);
 }

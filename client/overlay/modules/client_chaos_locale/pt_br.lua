@@ -3121,6 +3121,12 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_townportal/townportal.lua
   ["Store - owned"] = "Loja - seu",
   ["Store"] = "Loja",
+  ["Achievement"] = "Conquista",
+  ["Boss drop"] = "Drop de chefe",
+  ["Staff title"] = "Título da equipe",
+  ["Siege Champion title"] = "Título de Campeão do Cerco",
+  ["Season pass"] = "Passe de temporada",
+  ["Founder Pack"] = "Pacote Fundador",
   ["Achievement - unlocked"] = "Conquista - desbloqueado",
   ["Achievement - locked"] = "Conquista - bloqueado",
   ["Season pass - unlocked"] = "Season Pass - desbloqueado",
