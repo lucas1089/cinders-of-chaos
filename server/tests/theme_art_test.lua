@@ -74,7 +74,7 @@ do
 	local shippedExcl = dofile("data/scripts/chaos/exclusives_config.lua")
 	local nLook = 0
 	for _, e in ipairs(shippedExcl.exclusives) do
-		if e.look and e.look >= 2185 and e.look < 2213 then -- pair 26's wings (2213 on) are chaos_owner_art.lua's
+		if e.look and ((e.look >= 2185 and e.look < 2213) or e.look == 3524) then -- pair 26's wings (2213 on) are chaos_owner_art.lua's; 3524 is the round Rune Seal of pair 72 (chaos_fun_costumes.lua, config.lua chaosClientPair >= 72)
 			nLook = nLook + 1
 		end
 	end
@@ -193,7 +193,7 @@ problems = ChaosExclusivesCore.validate(excl, opts)
 eq(#problems, 0, "exclusives with the auras and wings validate: " .. table.concat(problems, "; "))
 local found = 0
 for _, e in ipairs(excl.exclusives) do
-	if e.look and e.look >= 2185 and e.look < 2213 then -- pair 26's wings (2213 on) are chaos_owner_art.lua's
+	if e.look and ((e.look >= 2185 and e.look < 2213) or e.look == 3524) then -- pair 26's wings (2213 on) are chaos_owner_art.lua's; 3524 is the round Rune Seal of pair 72 (chaos_fun_costumes.lua, config.lua chaosClientPair >= 72)
 		found = found + 1
 	end
 end

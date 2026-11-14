@@ -206,6 +206,11 @@ jobs:
           # packs and pairs, the table, the sums and the monster map against the outfits and the committed pool (no art is committed)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits.py check
+          # the twelve fun costumes, the new Dusk Moth and the round Rune Seal ring of pair 72 (O566; PixelLab art of ours, committed as sheets):
+          # table, sums and sheets agree, the ring is drawn by script, placement, build / live on a synthetic pair (the live pair step
+          # comes with the push of pair 72 to windows-assets)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes.py check
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
@@ -1551,6 +1556,9 @@ jobs:
 
       - name: Purchased looks move 79 monsters at pair 71 (install_monster_wst_looks.py, monsterwstlooks step, O540)
         run: python3 -I server/tools/install_monster_wst_looks_test.py
+
+      - name: Fun costumes, the new Dusk Moth and the round Rune Seal appear at pair 72 (install_fun_looks.py, install_auras.py, O566)
+        run: python3 -I server/tools/install_fun_looks_test.py
 
       - name: Hunt monsters move while they stand (audit_idle_looks.py, O533)
         run: python3 -I server/tools/audit_idle_looks_test.py

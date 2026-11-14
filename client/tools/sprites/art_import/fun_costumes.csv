@@ -1,0 +1,15 @@
+new,key,name,kind,tiles,dirs,idle,walk,flags,ms,src
+3511,energy_can,Volt Fizz Can,costume,2,4,2,9,,110,1ecaa07ea517
+3512,smoke_pack,Puff Pack,costume,2,4,2,9,,110,e6e315accee7
+3513,toaster,Wandering Toaster,costume,2,4,2,9,,110,aa59d410971c
+3514,rubber_duck,Rubber Duck,costume,2,4,2,9,,110,7cf30921b8e7
+3515,eye_box,Peeking Box,costume,2,4,2,9,,110,144a61a0d04b
+3516,pizza,Pizza Slice,costume,2,4,2,9,,110,a19c8fde40bb
+3517,road_cone,Road Cone,costume,2,4,2,9,,110,b321077c6a38
+3518,gnome,Garden Gnome,costume,2,4,2,6,,110,315bdfa54dd6
+3519,snowman,Living Snowman,costume,2,4,2,6,,110,e3bd0007b6ac
+3520,mushroom,Mushroom Folk,costume,2,4,2,6,,110,5774cddeb664
+3521,bone_jester,Bone Jester,costume,2,4,2,6,,110,1c730a1087cb
+3522,chicken,Chicken Suit,costume,2,4,2,6,,110,e2311249c775
+3523,dusk_moth,Dusk Moth,pet,1,4,0,13,moth,90,64a1d8145a09
+3524,rune_seal,Rune Seal,aura,3,1,0,24,,100,script
