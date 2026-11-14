@@ -3613,6 +3613,8 @@ return {
 			"Mais %d nós da build precisam de mais pontos.",
 		["Too fast: wait a moment and apply again."] =
 			"Rápido demais: espere um momento e aplique de novo.",
+		["Too fast: wait a moment and try again."] =
+			"Rápido demais: espere um momento e tente de novo.",
 		["Too fast: wait a moment and pick the build again."] =
 			"Rápido demais: espere um momento e escolha a build de novo.",
 		["The preview could not be made. Try another build or try again later."] =

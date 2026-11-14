@@ -4525,8 +4525,11 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
   nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
   chosen one; the price shown in the preview is the one sent back. Rate limited: Apply `passivetree.autobuild` (1 s),
-  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 500 ms). Every preview request is answered: a
-  refused one with `autobuildError {message, build, retry}` (retry: too fast), a Lua error with `autobuildError` too.
+  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 150 ms since O560; the generic 200 ms per-action limit of
+  the opcode skips it). Every preview request is answered: a refused one with `autobuildError {message, build, retry, wait, seq}`
+  (retry: too fast, wait: ms), a Lua error with `autobuildError` too; `seq`, the request number the client sent, comes back in
+  every answer so the client drops an answer to a pick it replaced (O560: quick switching was slow and sometimes did not
+  switch). Another autobuild action refused by the generic limit gets `autobuildError`, never silence.
   Fix 2026-10-20 (owner report: stuck at "Asking the server for a preview..."): the client asked for a preview only on
   its first list, so after an Apply or on reopening the window it waited for an answer to a request it never sent. It
   now asks whenever no preview is shown, asks again after 4 s (3 tries) and then shows an error. The skipped count of

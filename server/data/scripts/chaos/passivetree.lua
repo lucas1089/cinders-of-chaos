@@ -684,8 +684,13 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	-- nearly every request loads the presets from the database, the extra actions too (respec.lua resetPreset and
 	-- refundNode, buildshare.lua buildExport), which run before the limits below: per action (ratelimit.lua), so
 	-- opening the window (requestPoints + requestNodesUnlocked) passes; planApply keeps its own "Too fast" answer
-	if action ~= "planApply" and ChaosRateLimit
+	-- autobuildPreview has its own limit that always answers (passive_builds.lua, O560); another autobuild action refused here
+	-- is answered too, never dropped without a word
+	if action ~= "planApply" and action ~= "autobuildPreview" and ChaosRateLimit
 		and not ChaosRateLimit.allow(player, "passivetree.req." .. action, action == "resetPreset" and 1000 or 200) then
+		if action:sub(1, 9) == "autobuild" then
+			Chaos.send(player, OPCODE, "autobuildError", {message = Chaos.t(player, "Too fast: wait a moment and try again.")})
+		end
 		return
 	end
 	local extra = ChaosPassiveTree.extraActions[action]
