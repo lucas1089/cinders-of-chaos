@@ -45,8 +45,8 @@ PAIR_FUN = 72       # the 12 fun costumes 3511-3522, the new Dusk Moth 3523 and 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 71
-PAIR_ASSETS_DAT_MD5 = 'f21ef3e3890bc0a7e4a292feea47d572'
+PAIR_ASSETS = 72
+PAIR_ASSETS_DAT_MD5 = 'dd4b6ac4165fb810d1c9d8fd26b8c080'
 
 
 def parse(text):

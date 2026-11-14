@@ -1954,6 +1954,16 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wst_outfits.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
+      - name: Fun costumes, Dusk Moth and Rune Seal sit at their ids (gen_fun_costumes.py live, pair 72, O566 / O578)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_fun_costumes.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Golden Ki and Crimson Blaze ground auras sit at their ids (gen_ki_auras.py live, pair 72, O577)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_ki_auras.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/clean_wing_shadows.py check-clean \

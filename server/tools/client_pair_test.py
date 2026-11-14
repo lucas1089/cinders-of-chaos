@@ -202,8 +202,8 @@ check(not ok and msg.startswith('WARNING: monsterwstlooks skipped') and 'client-
 check(C.allows(os.path.join(server('chaosClientPair = 71\n'), 'data'), C.PAIR_PURCHASED, 'monsterwstlooks')[0], 'monsterwstlooks, pair 71: runs')
 
 # the fun costumes, the new Dusk Moth and the round Rune Seal (pair 72, O566): the guard number; the end-to-end guards are in
-# install_outfits_test.py (outfits.xml) and install_fun_looks_test.py (the moth file and the aura); pair 72 is not on windows-assets yet
-# (pending the owner's approval), so PAIR_ASSETS below does not cover it until the archive is pushed
+# install_outfits_test.py (outfits.xml) and install_fun_looks_test.py (the moth file and the aura); pair 72 is on windows-assets since
+# 2026-11-14 (owner approved), so PAIR_ASSETS below covers it
 check(C.PAIR_FUN == 72 and C.PAIR_FUN > C.PAIR_PURCHASED, 'the fun costumes need pair 72')
 ok, msg = C.allows(os.path.join(server('chaosClientPair = 71\n'), 'data'), C.PAIR_FUN, 'funlooks')
 check(not ok and msg.startswith('WARNING: funlooks skipped') and 'client-pair set 72' in msg, 'funlooks, pair 71: skipped with how to set it')
@@ -211,7 +211,7 @@ check(C.allows(os.path.join(server('chaosClientPair = 72\n'), 'data'), C.PAIR_FU
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
-check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED), 'PAIR_ASSETS covers every guarded pair')
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN), 'PAIR_ASSETS covers every guarded pair')
 mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:
