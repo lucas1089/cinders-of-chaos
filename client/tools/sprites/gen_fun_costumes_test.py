@@ -121,6 +121,22 @@ def main():
         assert abs((x0 + x1) / 2.0 - G.MID_COL) <= 1.0, (x0, x1)
         assert not np.array_equal(fr[('idle', 2, 0)], fr[('idle', 2, 1)]), 'the idle pair differs'
         assert np.array_equal(fr[('idle', 2, 1)][:-1], fr[('idle', 2, 0)][1:]), 'the second idle picture is the first one pixel up'
+        # an idle folder (O578): 2 to 4 phases of its own, the same count in every direction, not the standing picture one pixel up
+        downloads(src, 'breath')
+        for d in G.DIR_NAMES:
+            for ph in range(3):
+                png(os.path.join(src, 'breath', 'idle', d, 'frame_%03d.png' % ph), figure(56, 8 + ph % 2, 20, 40, 16, ph + 1))
+        bf, bn = G.place_costume(src, 'breath')
+        assert bn == 6 and len([k for k in bf if k[0] == 'idle' and k[1] == 2]) == 3 and len(bf) == 4 * (3 + 6)
+        assert not np.array_equal(bf[('idle', 2, 0)], bf[('idle', 2, 1)])
+        png(os.path.join(src, 'breath', 'idle', 'east', 'frame_003.png'), figure(56, 8, 20, 40, 16, 9))
+        try:
+            G.place_costume(src, 'breath')
+        except ValueError as e:
+            assert 'idle phases per direction' in str(e), e
+        else:
+            raise AssertionError('place_costume did not refuse uneven idle folders')
+        assert len(G.source_files(src, 'breath')) == 4 + 4 * 3 + 1 + 4 * 6, 'the idle pictures are summed too'
         # no west pictures: the east ones mirrored
         downloads(src, 'nowest')
         import shutil

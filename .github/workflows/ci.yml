@@ -216,6 +216,10 @@ jobs:
           # comes with the push of pair 72 to windows-assets)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes.py check
+          # O578: the hop, breath and palette lock that move the costumes (fun_costume_motion.py) and the Dusk Moth drawn by script
+          # (gen_dusk_moth.py: 28 phases, no frame skips, the same pictures every run)
+          /tmp/fxenv/bin/python -I client/tools/sprites/fun_costume_motion_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_dusk_moth.py check
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
