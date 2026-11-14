@@ -133,3 +133,175 @@ function V.bannerFor(title, exists)
   end
   return '/images/dungeons/' .. V.BANNER_FALLBACK
 end
+
+-- ------------------------------------------------------------------------------------------------ the card rail (O555)
+-- The window shows one picture card per dungeon in a row, grouped. The server sends no dungeon type, so the client
+-- derives the group from what the "list" and "dungeon" payloads carry: a `weekly` field makes the Weekly Challenge
+-- group, every other dungeon falls into a level band by its required level.
+local function short(n)
+  local f = rawget(_G, 'formatShortNumber')
+  if type(f) == 'function' then return f(n) end
+  return tostring(n)
+end
+
+V.BAND_EDGES = { 500, 1000 } -- first level of the second and third band
+V.GROUPS = { 'low', 'mid', 'high', 'weekly' } -- the order of the groups on the rail
+
+-- the group key of a dungeon: `weekly` is the "dungeon" payload's field (a table), `level` the "list" entry's
+function V.groupOf(level, weekly)
+  if type(weekly) == 'table' then return 'weekly' end
+  level = tonumber(level) or 1
+  if level >= V.BAND_EDGES[2] then return 'high' end
+  if level >= V.BAND_EDGES[1] then return 'mid' end
+  return 'low'
+end
+
+-- heading of a group and the text of its filter chip
+function V.groupTitle(key)
+  if key == 'weekly' then return tr('Weekly') end
+  if key == 'high' then return tr('Levels %d+', V.BAND_EDGES[2]) end
+  if key == 'mid' then return tr('Levels %d-%d', V.BAND_EDGES[1], V.BAND_EDGES[2] - 1) end
+  return tr('Levels 1-%d', V.BAND_EDGES[1] - 1)
+end
+
+-- the short tag on a card's picture
+function V.groupTag(key)
+  if key == 'weekly' then return tr('Weekly') end
+  if key == 'high' then return tr('Late') end
+  if key == 'mid' then return tr('Mid') end
+  return tr('Early')
+end
+
+local function byLevel(a, b)
+  local la, lb = tonumber(a.level) or 0, tonumber(b.level) or 0
+  if la ~= lb then return la < lb end
+  return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+end
+
+-- entries = the "list" payload ({id, title, level, boss, queue}); infoOf(id) = the "dungeon" payload or nil.
+-- -> the groups to draw, in rail order: { {key, title, items = {entries by level}}, ... }. filter = a group key, or
+-- nil / 'all' / a key nobody has (then everything shows). Groups without a card are left out.
+function V.arrange(entries, infoOf, filter)
+  local byGroup = {}
+  for _, e in ipairs(entries or {}) do
+    local info = infoOf and infoOf(e.id) or nil
+    local key = V.groupOf(e.level, info and info.weekly or nil)
+    byGroup[key] = byGroup[key] or {}
+    table.insert(byGroup[key], e)
+  end
+  if filter ~= nil and filter ~= 'all' and not byGroup[filter] then filter = nil end
+  local out = {}
+  for _, key in ipairs(V.GROUPS) do
+    local items = byGroup[key]
+    if items and (filter == nil or filter == 'all' or filter == key) then
+      table.sort(items, byLevel)
+      out[#out + 1] = { key = key, title = V.groupTitle(key), items = items }
+    end
+  end
+  return out
+end
+
+-- the filter chips: All first, then every group that has a card, with its count
+function V.filters(entries, infoOf)
+  local groups = V.arrange(entries, infoOf, nil)
+  local out = { { key = 'all', title = tr('All'), count = #(entries or {}) } }
+  for _, g in ipairs(groups) do
+    out[#out + 1] = { key = g.key, title = g.title, count = #g.items }
+  end
+  return out
+end
+
+-- the dungeon id the rail selects after a rebuild: the one that was chosen when it is still shown, else the first card
+function V.pick(groups, wanted)
+  local first
+  for _, g in ipairs(groups or {}) do
+    for _, e in ipairs(g.items) do
+      if e.id == wanted then return e.id end
+      first = first or e.id
+    end
+  end
+  return first
+end
+
+-- ids in rail order
+function V.railIds(groups)
+  local ids = {}
+  for _, g in ipairs(groups or {}) do
+    for _, e in ipairs(g.items) do ids[#ids + 1] = e.id end
+  end
+  return ids
+end
+
+-- width of a group's container on the rail: every card carries its right margin (the gap), the last one too
+function V.groupWidth(count, cardWidth, gap)
+  count = math.max(0, math.floor(tonumber(count) or 0))
+  return count * (cardWidth + gap)
+end
+
+-- the queue: the "list" sends a number, the "dungeon" payload { players, estimated }
+function V.queuePlayers(q)
+  if type(q) == 'table' then return tonumber(q.players) or 0 end
+  return tonumber(q) or 0
+end
+
+function V.queueShort(players)
+  players = V.queuePlayers(players)
+  return players == 0 and tr('Open') or tr('%s Players', players)
+end
+
+function V.queueText(players)
+  return tr('Queue: %s', V.queueShort(players))
+end
+
+-- 'red' from 6 players, 'orange' from 3, else 'green'
+function V.queueTone(players)
+  players = V.queuePlayers(players)
+  if players >= 6 then return 'red' end
+  if players >= 3 then return 'orange' end
+  return 'green'
+end
+
+function V.levelText(level)
+  return tr('%s+ Level', short(tonumber(level) or 1))
+end
+
+-- the text over a card the character cannot enter yet, nil when it can (or a level is not known)
+function V.lockText(level, playerLevel)
+  level, playerLevel = tonumber(level), tonumber(playerLevel)
+  if not level or not playerLevel or playerLevel >= level then return nil end
+  return tr('Needs level %s', short(level))
+end
+
+V.DIFFICULTY_NAMES = { 'Normal', 'Hard', 'Expert', 'Master', 'Torment', 'Hell' }
+
+function V.difficultyName(d)
+  return tr(V.DIFFICULTY_NAMES[clampDifficulty(d)])
+end
+
+-- the hardest difficulty the character has unlocked ("Best: Hard"); nil for the first one (nothing to say yet)
+function V.bestText(d)
+  d = clampDifficulty(d)
+  if d <= 1 then return nil end
+  return tr('Best: %s', V.difficultyName(d))
+end
+
+-- the chips of the chosen dungeon's header: level, queue and best difficulty (nil where there is nothing to say)
+function V.headerChips(entry, dungeon, playerLevel)
+  entry = entry or {}
+  local req = dungeon and dungeon.req or {}
+  local level = req.level or entry.level
+  local players = V.queuePlayers(dungeon and dungeon.queue or entry.queue)
+  local chips = {
+    level = V.levelText(level),
+    levelTone = V.lockText(level, playerLevel) and 'red' or 'plain',
+    queue = V.queueText(players),
+    queueTone = V.queueTone(players),
+  }
+  if dungeon then chips.best = V.bestText(dungeon.difficulty) end
+  return chips
+end
+
+-- the status field of the bottom bar: the level the dungeon asks while the character is below it, else the queue
+function V.statusText(level, playerLevel, players)
+  return V.lockText(level, playerLevel) or V.queueShort(players)
+end

@@ -122,6 +122,7 @@ python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaoswe
 python3 -I client/tools/gen_aura_art.py --check     # chest and Templar aura strips of game_chestaura (O315; CI uses the fx venv)
 python3 -I client/tools/gen_pyre_art.py --check     # Pyre Oath ember ring and burn strips of game_chestaura (O518; CI uses the fx venv; --combo DIR draws a preview GIF, never committed)
 python3 -I client/tools/gen_toast_art.py --check    # toast icons of game_chaosnotify (O317; CI uses the fx venv)
+python3 -I client/tools/gen_dungeon_card_art.py --check    # card frames and dark fade of the Dungeons window, game_dungeons (O555; CI uses the fx venv)
 python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
 python3 -I server/tools/patch_base_armor_percent_test.py   # engine armour off for players: config.lua armorPercentMax = 0 (O464, install_all step armourlayer)
 python3 -I server/tools/patch_base_absorb_player_test.py   # the base absorb event leaves a player to the player defence layer, run in Lua on a mock (O464, install_all step absorbplayer)
