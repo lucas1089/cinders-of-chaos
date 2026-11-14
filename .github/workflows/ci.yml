@@ -926,6 +926,8 @@ jobs:
           python3 -I tools/ci/check_topbar_tree_test.py
           python3 -I tools/ci/check_topbar_widgets.py  # hub menu (O550): every widget id and style topbar_hub.lua uses is in topbar_hub.otui, anchors, $mobile rules
           python3 -I tools/ci/check_topbar_widgets_test.py
+          python3 -I tools/ci/check_window_close.py  # hub menu windows (O572): every window a module of the menu opens has a close control (ChaosCloseX, a Close or Cancel button), named exceptions in ALLOWED
+          python3 -I tools/ci/check_window_close_test.py
 
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py

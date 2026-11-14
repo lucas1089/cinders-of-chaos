@@ -122,5 +122,13 @@ local p = login('w/Alice', { panel1 = 'right', rightPanel2 = 'right', leftPanel1
 eq(p.panel1[#p.panel1].id, 'skillWindow', 'after relogin the moved window is back in its place')
 eq(p.rightPanel2[1].id, 'vipWindow', 'and the second panel too')
 
+-- O572: a saved (0,0) is not restored (the old top left bug), a real place is
+eq(L.usableRect({ x = 0, y = 0, width = 600, height = 400 }), false, 'saved origin dropped')
+eq(L.usableRect({ x = 1, y = 2, width = 600, height = 400 }), false, 'saved near origin dropped')
+eq(L.usableRect({ x = 0, y = 120, width = 600, height = 400 }), true, 'a window moved to the left edge is kept')
+eq(L.usableRect({ x = 320, y = 140 }), true, 'a plain position is kept')
+eq(L.usableRect({ x = 'a', y = 5 }), false, 'garbage dropped')
+eq(L.usableRect(nil), false, 'no rect')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('layout_test: OK')

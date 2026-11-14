@@ -31440,11 +31440,40 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   ordinary corpse container. Rules: corpse 0 stays nothing (22 Chaos monsters, summons, pets, Necromancer minions); a monster whose own
   corpse id is in `keepIds` keeps it; bag id 0 is the old behaviour. `corpse_bag.lua` calls the function at every load, so
   `enabled = false` and a `/reload` give the bodies back. An engine without the patch logs one line and nothing changes.
+* **The look (O565).** Owner 2026-11-14 (pt-BR): "os corpos dos monstros estao assim. deveriam ser aquelas bags basicas mais
+  genericas". Root cause: the server sent the stock client item of server 6068, which in the dat is the dark, horned lump of a demon
+  corpse (the first stage of 6068 -> 5527 -> 5528, drawn with four black sparkles), so on a hunt every kill left a dark blob that
+  read as the monster's own body, with the client's warm glint ring (`bag_glint`) on top and, with the loot label's highlight, an
+  orange or red patch; the bag table (engine patch 0089) was right (one id for every monster), the id's *look* was wrong. Fix, no
+  new sprite and no new pair: `corpse_config.lua` `look = 19202`, the client item id of a plain brown leather loot pouch of the
+  current pair (a container the dat does not let a player pick up; the stock "reward container" look); step `lootbag`
+  (`tools/patch_monster_corpses.py`) rewrites only the client id attribute of the items.otb node of server 6068 (`items.otb.bak`
+  keeps the original, the file is parsed again and the node checked), so the server sends 19202 for the bag of every monster,
+  the same one look. Server ids and every script are unchanged (the bag is still 6068, the 191 import monsters still name it).
+  Client: `GroundLabelsLogic.LOOT_BAG_LOOK` (19202, next to the stock `CORPSE_BAG_ID`; a pouch has no corpse flag in the dat either)
+  and the glint of `game_chestaura` are keyed on the new id (both keep 6068 for a server that has not run the step; the test
+  compares them with the config). There is no rarity colouring of the bag itself: the label over it carries the rarity colour.
+  Stock bag colours exist in the pair (client 2857-2863: green, yellow, red, purple, blue, grey, gold) for a later rarity tint,
+  which would need the bag to change id after the loot is known: not done.
+* **Empty bags go fast (O565).** Owner 2026-11-14 (pt-BR): "faca tambem eles desaparecem mais rapido quando estiverem vazias". A bag
+  with items keeps its `seconds` (180). Once it holds nothing (looted by hand, quick loot, auto loot, a monster with no loot) its
+  remaining time is cut to `emptySeconds` (config, 5): `scripts/chaos/corpse_empty.lua`. There is no engine event for "the last
+  item left this container" (hand moves, quick loot, auto loot and scripts all go through different paths), so: an
+  `EventCallback onDropLoot` (priority 9, after the loot layer, autoloot and globes) remembers the *tile* of every new bag; one
+  timer, running only while a tile is remembered, looks at those tiles every second (`ChaosCorpse.sweep`, pure, tested) and for
+  each bag there with `getSize() == 0` and more than `emptySeconds` left calls `item:setAttribute(ITEM_ATTRIBUTE_DURATION, ms)`,
+  which moves a decaying item to its new time (decay.h). The time is never made longer, a bag with loot is left alone, a tile is
+  forgotten when it has no bag, only emptied bags, or when the bag could not live any more. A bag goes `emptySeconds` plus at most
+  one second after its last item left. No items.xml change (the decay is the item's own, the step only sets the full time),
+  nothing to install for it: the file loads with the other scripts. State is in memory; after a restart bags already on the
+  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer:** Raise Dead and
+  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside), so they now have those
+  5 seconds after the last item leaves a bag instead of up to 3 minutes; raise `emptySeconds` if that is too short.
 * **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
   Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
   fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),
   and the C++ header test has no player path.
-* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`): item 6068 gets the name
+* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`; also the items.otb look above): item 6068 gets the name
   "sack of loot", the config's slots (the biggest stock corpse holds 60, bonus loot and orbs come on top), `decayTo 0` and
   `duration` 180 s. No remains stage: the stock chain left a pile (5527, 5528) after the loot. `corpseType` stays, so
   `ItemType:isCorpse()` is true. 180 s is the loot stage the 5 minute decay scaling (`patch_corpse_decay.py`) left before.

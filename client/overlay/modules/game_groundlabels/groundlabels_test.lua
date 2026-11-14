@@ -36,6 +36,8 @@ eq(GL.isCandidate({ top = true, pickupable = true }), false, 'on top (doors, arc
 eq(GL.isCandidate({ container = true, corpse = true }), true, 'a corpse')
 eq(GL.isCandidate({ container = true, pickupable = false }), false, 'a chest on the floor')
 eq(GL.isCorpseThing(false, false, 6068), true, 'the loot bag has no corpse flag in the dat but is a corpse')
+eq(GL.isCorpseThing(false, false, 19202), true, 'the loot bag is the plain pouch (client 19202, O565) and is a corpse')
+eq(GL.isCorpseThing(false, false, GL.LOOT_BAG_LOOK), true, 'the loot bag look of the server config')
 eq(GL.isCorpseThing(false, true, 6069), true, 'a lying corpse')
 eq(GL.isCorpseThing(true, false, 6069), true, 'a corpse')
 eq(GL.isCorpseThing(false, false, 1740), false, 'a chest is none')

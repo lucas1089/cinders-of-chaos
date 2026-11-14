@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The loot bag item in items.xml (idempotent): server/README.md "Loot bag instead of corpses" (O435).
+"""The loot bag item in items.xml and items.otb (idempotent): server/README.md "Loot bag instead of corpses" (O435, O565).
 
 usage: python3 -I patch_monster_corpses.py DATA_DIR [--dry-run] [--config FILE] [--check]
 
@@ -9,7 +9,12 @@ Its stock entry is the first stage of a three stage chain (6068 -> 5527 -> 5528,
 the loot), so this tool gives the entry the bag's own life: the name, the slots of the config (the biggest stock corpse
 holds 60), `decayTo 0` (the bag vanishes with what is left in it, no body remains) and `duration` seconds. The
 corpseType attribute stays (every script that asks ItemType:isCorpse keeps working); other attributes of the entry
-stay. Nothing else in items.xml and no monster file is touched: the rule that picks the bag is in the engine, so the
+stay. The look (O565, owner 2026-11-14: "deveriam ser aquelas bags basicas mais genericas"): the stock client item of
+server 6068 is the dark horned lump of a demon corpse, which read as a blob of the monster's own body. items.otb: the node
+of the bag gets the client id `look` of the config (client 19202, a plain leather loot pouch of the current pair, a
+container the dat does not let a player pick up; no new sprite). Only the client id attribute of that one node changes,
+every other byte stays (flags, group, server id); items.otb.bak keeps the original the first time; the written file is
+parsed again and the node checked. Nothing else in items.xml and no monster file is touched: the rule that picks the bag is in the engine, so the
 base monsters need no rewrite. A second run changes nothing. --check only compares (exit 1 when the file differs).
 
 Stock skinning off (owner 2026-11-08: "o esfolar nem é usado. pode remover"): the stock skinning script (the one
@@ -21,16 +26,20 @@ such script or no onUse: reported, nothing written. The file keeps its line ends
 """
 import os
 import re
+import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from install_gems import scan, escape, attr, START, END, A_CLIENTID, FLAG_ANIMATION  # noqa: E402
+
 CONFIG = os.path.join(HERE, '..', 'data', 'scripts', 'chaos', 'corpse_config.lua')
 
 
 def read_config(text):
     """bagId, name, article, slots, seconds from corpse_config.lua (plain `key = value` lines)"""
     out = {}
-    for key in ('bagId', 'slots', 'seconds'):
+    for key in ('bagId', 'look', 'slots', 'seconds'):
         m = re.search(r'^\s*%s\s*=\s*(\d+)' % key, text, re.M)
         if not m:
             raise ValueError('corpse_config.lua has no %s' % key)
@@ -68,6 +77,41 @@ def patch_text(text, conf):
     new = '<item id="%d"%s>%s</item>' % (conf['bagId'], new_head, body)
     out = text[:m.start()] + new + text[m.end():]
     return out, out != text
+
+
+def bag_node(stock, look):
+    """the stock node of the bag with the client id `look` (every other byte as it was; no animation flag: one phase)"""
+    _s, _e, _sid, _cid, group, flags, attrs = stock
+    body = struct.pack('<I', flags & ~FLAG_ANIMATION)
+    for k, v in attrs:
+        if k == A_CLIENTID:
+            v = struct.pack('<H', look)
+        body += attr(k, v)
+    return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
+
+
+def patch_otb(data, conf):
+    """(new bytes, changed); ValueError when the bag has no node"""
+    kids, _ = scan(data)
+    by_sid = {k[2]: k for k in kids}
+    stock = by_sid.get(conf['bagId'])
+    if stock is None:
+        raise ValueError('items.otb has no node for server id %d' % conf['bagId'])
+    want = bag_node(stock, conf['look'])
+    if data[stock[0]:stock[1]] == want:
+        return bytes(data), False
+    return bytes(data[:stock[0]]) + want + bytes(data[stock[1]:]), True
+
+
+def verify_otb(data, conf):
+    """the bag node carries the look, the other nodes are as many as before; raises AssertionError"""
+    kids, _ = scan(data)
+    by_sid = {k[2]: k for k in kids}
+    k = by_sid.get(conf['bagId'])
+    assert k and k[3] == conf['look'], 'bag node %d has client id %s' % (conf['bagId'], k and k[3])
+    assert not k[5] & FLAG_ANIMATION, 'bag node is animated'
+    assert len(by_sid) == len(kids), 'duplicate server ids in items.otb'
+    return len(kids)
 
 
 SKIN_MARK = '-- Chaos: stock skinning off, monsters leave the loot bag (patch_monster_corpses.py)'
@@ -135,24 +179,37 @@ def main(argv):
         print(__doc__)
         return 2
     path = os.path.join(args[0], 'items', 'items.xml')
-    if not os.path.isfile(path):
-        print('no items.xml: %s' % path)
-        return 1
+    otb = os.path.join(args[0], 'items', 'items.otb')
+    for p in (path, otb):
+        if not os.path.isfile(p):
+            print('no %s: %s' % (os.path.basename(p), p))
+            return 1
     try:
         conf = read_config(open(cfg_path, encoding='utf-8').read())
         text = open(path, encoding='latin-1').read()
         new, changed = patch_text(text, conf)
-    except ValueError as e:
+        raw = open(otb, 'rb').read()
+        new_otb, otb_changed = patch_otb(raw, conf)
+        verify_otb(new_otb, conf)
+    except (ValueError, AssertionError) as e:
         print('loot bag: %s' % e)
         return 1
     if check:
-        print('loot bag: items.xml %s' % ('differs' if changed else 'matches'))
-        return 1 if changed else 0
+        print('loot bag: items.xml %s, items.otb %s' % ('differs' if changed else 'matches',
+                                                        'differs' if otb_changed else 'matches'))
+        return 1 if changed or otb_changed else 0
     if changed and not dry:
         open(path, 'w', encoding='latin-1', newline='').write(new)
+    if otb_changed and not dry:
+        if not os.path.exists(otb + '.bak'):
+            open(otb + '.bak', 'wb').write(raw)
+        open(otb, 'wb').write(new_otb)
     print('loot bag: item %d is "%s", %d slots, lasts %d s, no remains%s'
           % (conf['bagId'], conf['name'], conf['slots'], conf['seconds'],
              ' (changed)' if changed else ' (already set)') + (' (dry run)' if dry and changed else ''))
+    print('loot bag look: items.otb node %d draws client item %d%s'
+          % (conf['bagId'], conf['look'], ' (changed)' if otb_changed else ' (already set)')
+          + (' (dry run)' if dry and otb_changed else ''))
     print(skinning_off(args[0], dry))
     return 0
 

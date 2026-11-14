@@ -17,8 +17,11 @@ end
 GL.MAX_LABELS = 40
 -- the loot bag every monster leaves instead of its body (server corpse_config.lua bagId, O435): the item has no corpse
 -- flag in the dat (the stock demon corpse stage), so the corpse rule below also takes this id. Same number as the
--- server's config (server/tests/corpse_bag_test.lua compares them).
+-- server's config (server/tests/corpse_bag_test.lua compares them). Since O565 the server draws that item as a plain
+-- leather pouch, client item LOOT_BAG_LOOK (server config `look`; no corpse flag either): the rule takes both, the stock
+-- id for a server that has not run the install step yet.
 GL.CORPSE_BAG_ID = 6068
+GL.LOOT_BAG_LOOK = 19202
 GL.RARE = 3 -- "Magic+" = rarity 3 (Magic) or better, uniques, orbs and legendary powers (the setting key stays rarePlus)
 GL.TEXT_COLOR = '#d8cfbf' -- items without a rarity colour
 GL.DIM_COLOR = '#8c8478'
@@ -118,7 +121,7 @@ end
 
 -- a container lying on the ground is a corpse: the dat says so (corpse, lying corpse) or it is the loot bag
 function GL.isCorpseThing(datCorpse, datLyingCorpse, id)
-  return (datCorpse == true) or (datLyingCorpse == true) or id == GL.CORPSE_BAG_ID
+  return (datCorpse == true) or (datLyingCorpse == true) or id == GL.CORPSE_BAG_ID or id == GL.LOOT_BAG_LOOK
 end
 
 -- f = {ground, border, bottom, top, pickupable, container, corpse}: the things the labels are about
