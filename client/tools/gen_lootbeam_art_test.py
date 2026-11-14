@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Tests of client/tools/gen_lootbeam_art.py (O569): the loot beam pictures are soft, loop, keep the rarity colours and are not
-louder in the higher tiers.
+"""Tests of client/tools/gen_lootbeam_art.py (O569): the loot beam pictures are soft, loop, keep the rarity colours, and Divine is the
+loudest tier (O576) while the others keep their order.
 
 python3 -I client/tools/gen_lootbeam_art_test.py       (numpy and Pillow; the fx venv in CI)
 """
@@ -121,7 +121,7 @@ for key, arr in strips.items():
     h = [np.nonzero(alpha(b)[:, 28:36].max(axis=1) > 0.2)[0] for b in burst]
     ok(len(h[0]) < len(h[-1]), '%s: the column rises in the burst' % (key,))
 
-# ---------------------------------------------------------------- the rarity colours, and not louder in the higher tiers
+# ---------------------------------------------------------------- the rarity colours; Divine the loudest, the others in order
 peaks = {}
 for g in G.GROUP_ORDER:
     arr = strips[('a', g)]
@@ -135,19 +135,51 @@ for g in G.GROUP_ORDER:
     px = fr[mid, 32 + 4].astype(np.float32)[:3]
     cos = float(px @ want / (np.linalg.norm(px) * np.linalg.norm(want) + 1e-6))
     ok(cos > 0.97, '%s: the body of the beam is in the rarity colour (cos %.3f)' % (g, cos))
-ok(max(peaks.values()) - min(peaks.values()) < 0.12, 'no tier is brighter than the others at its peak: %s' % peaks)
+others = [g for g in G.GROUP_ORDER if g != 'divine']
+ok(max(peaks[g] for g in others) - min(peaks[g] for g in others) < 0.12, 'the tiers but Divine peak alike: %s' % peaks)
+ok(peaks['divine'] >= max(peaks[g] for g in others), 'Divine is at least as bright as any tier at its peak: %s' % peaks)
+
+
+def band_light(arr, lo, hi):
+    """mean alpha of the body of the column (x 22..42, rows lo..hi above the foot) per loop frame"""
+    y0, y1 = int(G.FOOT_Y - hi), int(G.FOOT_Y - lo)
+    return [float(alpha(f)[y0:y1, 22:42].mean()) for f in frames_of(arr)[G.BURST:]]
+
+
 for st in G.STYLES:
-    # total light a frame gives out: a higher tier is richer, but never more than 2x the plainest (it is not louder)
+    # total light a frame gives out: the tiers grow richer up to Legendary, Divine is the loudest of all by a clear margin
     tot = {g: float(np.mean([alpha(f).sum() for f in frames_of(strips[(st, g)])[G.BURST:]])) for g in G.GROUP_ORDER}
-    ok(tot['divine'] > tot['white'], '%s: Divine is richer than Common' % st)
     ok(tot['orange'] > tot['white'] * 0.95, '%s: Legendary is not poorer than Common' % st)
-    ok(tot['unique'] < tot['white'] * 3.2, '%s: the richest tier is not several times louder (%s)' % (st, tot))
+    ok(tot['white'] < tot['blue'] < tot['orange'] < tot['unique'], '%s: the other tiers keep their order (%s)' % (st, tot))
+    ok(tot['orb'] < tot['blue'], '%s: Orbs stay calm' % st)
+    ok(tot['divine'] > max(tot[g] for g in others) * 1.3, '%s: Divine gives out 30%% more light than any other tier (%s)' % (st, tot))
+    ok(tot['divine'] < tot['white'] * 5, '%s: and is still not a wall of light (%s)' % (st, tot))
+    # the body of the column is brighter along its height, and it reaches higher
+    body = {g: float(np.mean(band_light(strips[(st, g)], 10, 90))) for g in G.GROUP_ORDER}
+    ok(body['divine'] > max(body[g] for g in others), '%s: the column of Divine is the brightest (%s)' % (st, body))
+    upper = {g: float(np.mean(band_light(strips[(st, g)], 70, 100))) for g in G.GROUP_ORDER}
+    ok(upper['divine'] > max(upper[g] for g in others) * 1.15, '%s: it still burns high up where the others have faded (%s)' % (st, upper))
+    # a pulse of its own: the light of the column moves more from frame to frame than that of any other tier (travelling rings,
+    # a faster and deeper swell)
+    move = {}
+    for g in G.GROUP_ORDER:
+        fs = [alpha(f)[:, 20:44] for f in frames_of(strips[(st, g)])[G.BURST:]]
+        move[g] = float(np.mean([np.abs(fs[i] - fs[(i + 1) % G.LOOP]).mean() for i in range(G.LOOP)]))
+    ok(move['divine'] > max(move[g] for g in others) * 1.25, '%s: Divine has its own, livelier pulse (%s)' % (st, move))
 
 # more motes in the higher tiers
 ok(G.GROUPS['white']['motes'] < G.GROUPS['blue']['motes'] < G.GROUPS['orange']['motes'] < G.GROUPS['divine']['motes'], 'motes grow with the tier')
 ok(G.GROUPS['white']['col'] < G.GROUPS['orange']['col'] <= G.GROUPS['unique']['col'], 'the column grows with the tier')
-ok(G.GROUPS['unique']['col'] <= G.FOOT_Y, 'the column fits in the frame')
-ok(G.GROUPS['divine']['inner'] and not G.GROUPS['orange']['inner'], 'only Divine and Uniques have an inner ring')
+ok(G.GROUPS['divine']['col'] <= G.FOOT_Y, 'the column fits in the frame')
+ok(G.GROUPS['divine']['col'] > max(G.GROUPS[g]['col'] for g in others), 'Divine is the tallest')
+ok(G.GROUPS['divine']['motes'] > max(G.GROUPS[g]['motes'] for g in others), 'Divine has the most motes')
+ok(G.GROUPS['divine']['stars'] > max(G.GROUPS[g]['stars'] for g in others), 'Divine has the most twinkles')
+ok(G.GROUPS['divine']['halo'][0] > max(G.GROUPS[g]['halo'][0] for g in others), 'Divine has the widest halo')
+ok(G.GROUPS['divine']['fade'] < G.DEFAULT_FADE, 'the column of Divine fades out later')
+ok(G.GROUPS['divine']['pulse'][0] > G.DEFAULT_PULSE[0] and G.GROUPS['divine']['pulse'][1] > G.DEFAULT_PULSE[1], 'Divine pulses faster and deeper')
+for key in ('aura', 'rings', 'outer'):
+    ok(key in G.GROUPS['divine'] and not any(key in G.GROUPS[g] for g in others), 'only Divine has %s' % key)
+ok(G.GROUPS['divine']['inner'] and G.GROUPS['unique']['inner'] and not G.GROUPS['orange']['inner'], 'only Divine and Uniques have an inner ring')
 
 # ---------------------------------------------------------------- the styles are what they say
 # b: two strands: at a row where they are apart there are two bright columns

@@ -23,9 +23,11 @@ in Loot Beams > Style; A is the default):
   b  twisted twin strands  two strands winding round each other, the front one brighter, glints where they cross
   c  rune column         a slim column with small glyphs rising beside it, tick marks round the ground ring
 
-The tiers are richer upwards, not brighter (the peak is the same): Common / Uncommon stand low with a plain ring and three motes;
-Magic / Rare add a travelling glint on the ring; Legendary has the full set; Divine and Uniques stand tallest with a pillar halo,
-an inner ring and twinkles; Orbs are short and calm. The module draws the strip as ONE widget over the tile (Tile:addOverlayWidget,
+The tiers are richer upwards, not brighter (the peak is the same) up to Legendary: Common / Uncommon stand low with a plain ring and
+three motes; Magic / Rare add a travelling glint on the ring; Legendary has the full set; Uniques stand tall with a pillar halo,
+an inner ring and twinkles; Orbs are short and calm. Divine is the loudest of all (O576, owner: it must be the most striking): the
+tallest and widest column, hotter, with a second aura layer, a faster double pulse with two bright rings travelling up, 18 motes,
+6 twinkles and an outer ground ring. The module draws the strip as ONE widget over the tile (Tile:addOverlayWidget,
 base patch 0041) scaled with the map, so the ring and the column are one picture.
 
 python3 -I client/tools/gen_lootbeam_art.py                    # write the strips into the module (overlay/modules/game_lootbeams/images)
@@ -65,11 +67,17 @@ GROUPS = {
     'white':  dict(color='#eef3f8', col=75, motes=3, halo=(9.0, 0.17), ring=0.55, glint=False, inner=False, stars=0, glyphs=2, amp=4.5),
     'blue':   dict(color='#3d8bff', col=85, motes=5, halo=(10.0, 0.20), ring=0.70, glint=True, inner=False, stars=0, glyphs=3, amp=5.5),
     'orange': dict(color='#ff8c1a', col=100, motes=8, halo=(11.0, 0.24), ring=0.80, glint=True, inner=False, stars=1, glyphs=4, amp=6.5),
-    'divine': dict(color='#7fe3ff', col=110, motes=12, halo=(15.0, 0.25), ring=0.85, glint=True, inner=True, stars=3, glyphs=5, amp=7.0),
-    'unique': dict(color='#2bff7a', col=112, motes=12, halo=(15.0, 0.25), ring=0.85, glint=True, inner=True, stars=3, glyphs=5, amp=7.0),
+    'unique': dict(color='#2bff7a', col=110, motes=12, halo=(15.0, 0.25), ring=0.85, glint=True, inner=True, stars=3, glyphs=5, amp=7.0),
+    # Divine is the most striking beam of all (owner 2026-11-14: "o divine precisa ser o mais chamativo deles"): the tallest column,
+    # which fades out later (fade), a hotter and wider body (burn), a second wider aura layer, a faster and deeper pulse (pulse =
+    # cycles per loop, depth) with two bright rings travelling up the column (rings), the most motes and twinkles, and an outer
+    # ground ring turning against the inner one (outer). The keys are optional: a group without them is drawn as before.
+    'divine': dict(color='#7fe3ff', col=112, motes=18, halo=(16.0, 0.30), ring=1.0, glint=True, inner=True, stars=6, glyphs=6, amp=8.0,
+                   fade=0.95, burn=1.3, aura=(21.0, 0.07), pulse=(2, 0.38), rings=2, outer=True),
     'orb':    dict(color='#39e0c8', col=80, motes=4, halo=(9.0, 0.17), ring=0.60, glint=False, inner=False, stars=0, glyphs=3, amp=5.0),
 }
 GROUP_ORDER = ('white', 'blue', 'orange', 'divine', 'unique', 'orb')
+DEFAULT_FADE, DEFAULT_PULSE = 1.35, (1, 0.22)
 
 # ---------------------------------------------------------------- the light kit (float energy, RGB)
 Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -136,10 +144,10 @@ def finish(E):
 
 
 # ---------------------------------------------------------------- the parts of a beam
-def column_env(t, grow):
+def column_env(t, grow, fade=DEFAULT_FADE):
     """vertical envelope of the column: t = 0 at the foot, 1 at the top; it fades out with height, rises softly out of the floor, and
     during the burst only reaches up to `grow` (a soft front)"""
-    env = np.clip(1 - t, 0, 1) ** 1.35 * smooth(0.0, 0.06, t + 0.02)
+    env = np.clip(1 - t, 0, 1) ** fade * smooth(0.0, 0.06, t + 0.02)
     env = np.where(t < 0, 0.0, env)
     if grow < 1.0:
         env = env * smooth(0.0, 0.14, grow - t)
@@ -155,9 +163,12 @@ def pillar(E, g, p, grow, core_sigma, core_gain, line_gain):
     C = rgb(g['color'])
     hot = mix(C, np.ones(3, np.float32), 0.65)
     t = tparam(g)
-    env = column_env(t, grow)
+    env = column_env(t, grow, g.get('fade', DEFAULT_FADE))
     widen = 1 + 0.4 * np.clip(t, 0, 1)
-    shimmer = 1 + 0.22 * np.sin(2 * math.pi * (1.6 * t - p))
+    cycles, depth = g.get('pulse', DEFAULT_PULSE)
+    shimmer = 1 + depth * np.sin(2 * math.pi * (1.6 * t - cycles * p))
+    burn = g.get('burn', 1.0)
+    core_gain, line_gain = core_gain * burn, line_gain * burn
     xs = X - FOOT_X
     core = gauss(xs, core_sigma * widen)
     line = gauss(xs, 0.8 * widen)
@@ -166,6 +177,11 @@ def pillar(E, g, p, grow, core_sigma, core_gain, line_gain):
     add(E, env * shimmer * core * core_gain, C)
     add(E, env * shimmer * halo * he, C)
     add(E, env * shimmer * line * line_gain, hot)
+    if 'aura' in g:
+        # a second, wider layer that pulses against the first
+        asg, aen = g['aura']
+        counter = 1 + 0.3 * np.sin(2 * math.pi * (1.6 * t - cycles * p) + math.pi)
+        add(E, env * counter * gauss(xs, asg * widen) * aen, C)
 
 
 def strands(E, g, p, grow):
@@ -173,7 +189,7 @@ def strands(E, g, p, grow):
     C = rgb(g['color'])
     hot = mix(C, np.ones(3, np.float32), 0.65)
     t = tparam(g)
-    env = column_env(t, grow)
+    env = column_env(t, grow, g.get('fade', DEFAULT_FADE))
     tt = np.clip(t, 0, 1)
     phi = 2 * math.pi * (2.0 * tt - p)
     grow_amp = g['amp'] * (1 + 0.3 * tt) * np.clip(tt / 0.14, 0, 1)
@@ -234,6 +250,20 @@ def glyphs(E, g, p, style_seed):
         add(E, f * a * 0.95, mix(C, hot, 0.5))
 
 
+def pulse_rings(E, g, p):
+    """Divine: bright rings seen from the side travel up the column, two a half loop apart, twice a loop"""
+    n = g.get('rings', 0)
+    if not n:
+        return
+    C = rgb(g['color'])
+    hot = mix(C, np.ones(3, np.float32), 0.8)
+    for k in range(n):
+        life = (2 * p + k / float(n)) % 1.0
+        y = FOOT_Y - 6 - life * g['col'] * 0.92
+        a = math.sin(math.pi * life) ** 0.8
+        add(E, ring_field(FOOT_X, y, 9.0 + 2.5 * life, 3.2, width=0.9, glow=1.9) * a * 0.85, hot)
+
+
 def motes(E, g, p, style_seed):
     """soft sparks drifting up, a blob each with a hot centre; the count grows with the tier"""
     C = rgb(g['color'])
@@ -283,6 +313,9 @@ def ground(E, g, style, p, scale=1.0):
     if g['inner']:
         arc2 = (-2 * math.pi * p + 1.5, 0.8, 0.8)
         add(E, ring_field(FOOT_X, FOOT_Y, rx * 0.56, ry * 0.56, width=0.8, glow=2.2, arc=arc2) * 0.55 * gain, hot)
+    if g.get('outer'):
+        arc3 = (2 * math.pi * p * 2 + 3.0, 0.6, 1.0)
+        add(E, ring_field(FOOT_X, FOOT_Y, rx * 1.12, ry * 1.12, width=0.9, glow=2.4, arc=arc3) * 0.6 * gain, mix(C, hot, 0.5))
     if style == 'c':
         # tick marks round the ring, turning once a loop
         r1 = ellipse_r(FOOT_X, FOOT_Y, rx * 1.2, ry * 1.2)
@@ -329,6 +362,7 @@ def frame(style, name, k):
         if k >= BURST:
             glyphs(E, g, p, seed + 5)
     if k >= BURST:
+        pulse_rings(E, g, p)
         motes(E, g, p, seed + 11)
         twinkles(E, g, p, seed)
     return finish(E)
