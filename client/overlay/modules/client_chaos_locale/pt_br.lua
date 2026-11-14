@@ -6859,6 +6859,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Hides the Loot Bag. It stays open: its button shows it again."] = "Esconde a Loot Bag. Ela continua aberta: o botão dela a mostra de novo.",
   ["Puts the items of this page in order: by item, then the bigger stack first."] = "Põe os itens desta página em ordem: por item, depois a pilha maior primeiro.",
   ["Sort"] = "Ordenar",
+  ["Pin"] = "Fixar",
+  ["Pins the bag shown: it stays open, no other bag replaces it, and it opens again when you log in. Right click a bag button to pin it too."] = "Fixa a bolsa mostrada: ela continua aberta, nenhuma outra bolsa toma o lugar dela e ela abre de novo quando você entra. Clique com o botão direito em uma bolsa para fixá-la também.",
+  ["The backpack is always open. Pin a bag or the purse."] = "A mochila fica sempre aberta. Fixe uma bolsa ou a bolsa de compras.",
+  ["You can pin up to %d bags."] = "Você pode fixar até %d bolsas.",
+  ["%s (pinned)"] = "%s (fixada)",
   ["Ammunition"] = "Munição",
   -- game_outfitextras: the one-window Customise Character (O421)
   ["Customise Character"] = "Personalizar personagem",
