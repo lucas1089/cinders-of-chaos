@@ -322,7 +322,7 @@
      // (arrows, bolts, spears, stones; the overlay module game_visualfx sends it). Off in the engine: the draw is then the
 --- a/src/client/missile.cpp
 +++ b/src/client/missile.cpp
-@@ -82,11 +82,13 @@
+@@ -107,11 +107,13 @@
      }
  
      float fraction = m_animationTimer.ticksElapsed() / m_duration;
@@ -338,9 +338,9 @@
 +    if (alphaByte <= 0)
 +        return;
 +    Color color(255, 255, 255, alphaByte);
-     if (!s_trails || !chaos::missile::wantsEffect(m_tiles)) {
-         rawGetThingType()->draw(dest + m_delta * fraction, 0, xPattern, yPattern, 0, 0, color, lightView);
-         return;
+     // Chaos (base patch 0194): the phase cycles with the flight; before this the draw always passed phase 0
+     ThingType* animType = rawGetThingType();
+     const long elapsed = (long)m_animationTimer.ticksElapsed();
 --- a/src/client/client.h
 +++ b/src/client/client.h
 @@ -52,11 +52,17 @@
