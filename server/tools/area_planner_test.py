@@ -709,9 +709,11 @@ for pid in ('hollow_crypt', 'bonechoir_catacomb', 'bonewright_galleries', 'grave
     for t_ in tl.values():
         g = t_['ground'] if isinstance(t_, dict) else t_[0]
         seen[g] = seen.get(g, 0) + 1
-    if STAIN_PATCH & set(seen) or not seen.get(13189):
+    # hollow_crypt has plain dirt corridors since owner 2026-11-14 ("tipo de terra", biome catacomb_earth)
+    want = 103 if pid == 'hollow_crypt' else 13189
+    if STAIN_PATCH & set(seen) or not seen.get(want):
         crypt_bad.append('%s %s' % (pid, sorted(STAIN_PATCH & set(seen))))
-ok(not crypt_bad, 'catacomb hunts: crypt corridors are 13189 only, no stain patch tile: %s' % crypt_bad)
+ok(not crypt_bad, 'catacomb hunts: crypt corridors are 13189 (hollow_crypt dirt 103), no stain patch tile: %s' % crypt_bad)
 
 
 # ------------------------------------------------------------------------------------------------ asymmetric areas
