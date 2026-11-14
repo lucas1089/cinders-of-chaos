@@ -39,12 +39,14 @@ PAIR_ORBS = 63      # the ten orbs that get their own client item (install_orbs.
 PAIR_RECOLOUR = 69  # the 35 hue shifted monster outfits 3371-3405 (install_monster_recolour.py, step `monsterrecolour`)
 PAIR_DONOR = 70     # the 28 polished creature outfits 3406-3433 of the donor client (install_monster_donor_looks.py, step `monsterdonorlooks`)
 PAIR_PURCHASED = 71 # the 77 purchased creature outfits 3434-3510 (install_monster_wst_looks.py, step `monsterwstlooks`)
+PAIR_FUN = 72       # the 12 fun costumes 3511-3522, the new Dusk Moth 3523 and the round Rune Seal 3524 (install_outfits.py, install_fun_looks.py,
+                    # install_auras.py; data/lib/chaos_fun_costumes.lua reads the same record, O566)
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 71
-PAIR_ASSETS_DAT_MD5 = 'f21ef3e3890bc0a7e4a292feea47d572'
+PAIR_ASSETS = 72
+PAIR_ASSETS_DAT_MD5 = 'dd4b6ac4165fb810d1c9d8fd26b8c080'
 
 
 def parse(text):

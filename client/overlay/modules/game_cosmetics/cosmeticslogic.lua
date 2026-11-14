@@ -16,7 +16,6 @@ CL.KINDS = {
   { key = 'outline', name = 'Outlines' },
   { key = 'levelfx', name = 'Level-ups' },
   { key = 'rarefx', name = 'Rare Loot' },
-  { key = 'emote', name = 'Emotes' },
   { key = 'collection', name = 'Collection' },
 }
 -- footprints and outlines: drawn by game_cosmeticfx on every client; the window's settings hide other players' ones
@@ -30,7 +29,6 @@ CL.DEFAULT_TEXT = {
   outline = 'No outline around you.',
   levelfx = 'No effect when you gain a level.',
   rarefx = 'No effect when a kill drops a rare item.',
-  emote = 'No emote after a boss kill.',
 }
 CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Magic', color = '#4a90ff' },
   { name = 'Divine', color = '#c8e8ff' } }
@@ -186,7 +184,7 @@ function CL.groupLine(view)
 end
 CL.GROUP_NAMES = { outfit = 'Outfits', mount = 'Mounts', wings = 'Wings', aura = 'Auras', shader = 'Shaders', frame = 'Plate frames',
   spellskin = 'Spell skins', killfx = 'Kill effects', levelfx = 'Level-up effects', rarefx = 'Rare loot effects',
-  emote = 'Emotes', lootbeam = 'Loot labels', chatcolor = 'Chat colours', footprint = 'Footprints', outline = 'Outlines',
+  lootbeam = 'Loot labels', chatcolor = 'Chat colours', footprint = 'Footprints', outline = 'Outlines',
   title = 'Titles' }
 
 -- the first row of the Collection tab: the score, its next reward and all rewards in the detail (nil without a score)

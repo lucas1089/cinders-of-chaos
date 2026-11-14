@@ -1,0 +1,518 @@
+# Chaos: effect opacity of my own effects and of the others' (O567, owner 2026-11-14; client/BASE.md "0202"; src/client/chaosfxowner.h
+# (new, pure), effect.h/.cpp, missile.h/.cpp, client.h, luafunctions_client.cpp, mods/client_settings/classes/dataset.lua,
+# options/effects.otui; after 0001-0201).
+# The engine already keeps one alpha per effect source (Client::m_effectAlphas: own, other players, monsters, boss area) and
+# Effect / Missile pick one by their source, but the 10.98 server sends no source byte (GameEffectSource off), so the stock draw
+# used the "own" alpha for every effect and 0049 left one slider. A hunt where a big earth spell fills the screen with opaque rock
+# and dust could not be thinned for the other players' spells without thinning your own.
+#  * Source: an Effect or a Missile keeps the source it was marked with; one that was never marked counts as "other" (stock: own).
+#    Marks come from the server through the overlay module game_effectopacity (extended opcode 164, client/MANIFEST.md): Lua calls
+#    g_client.markEffectSources(source, x, y, z, flat) with {kind, dx, dy, id, ...} (kind 0 effect, 1 missile; at most 400 groups).
+#    Each group takes the nearest effect of that id with no source yet on the tile or up to 3 tiles around it (an engine that
+#    shifts a big effect, src-patch 0060, sends it a tile or two off the tile a script named), or the best fitting unmarked missile
+#    that starts there (the same id first, then the nearest; another id only on the tile or next to it, because src-patch 0045
+#    swaps the id of a stock missile). Without marks (an older server, a module that is off) every effect is "other".
+#  * Alpha: Effect::draw and Missile::draw use pickSource() and alphaByte(). Effects at 0% are not drawn. A missile's alpha is its
+#    source's times Client::m_missileAlpha, the slider "Opacity Missiles" of Options > Effects whose apply called
+#    g_client.setMissileAlpha, a function that was never bound (it raised an error), now bound.
+#  * Warnings: g_client.setEffectAlphaExempt(id, on) / clearEffectAlphaExempt() name effect ids that always use alpha slot 0 (1.0,
+#    never set): the boss warning circles and fills. game_effectopacity hands the list over. Floor telegraphs (game_telegraph) are floor
+#    widgets, not effects, and were never touched.
+#  * Options > Effects: "Opacity of my effects" (the base key opacityEffects, kept; sets the own alpha) and a new slider "Opacity of
+#    other players' effects" (opacityOtherEffects, sets the other alpha), both 0-100% in steps of 5, default 100 (0049 had a floor of
+#    25% so warnings never vanished; warnings are exempt now). Each apply tells game_effectopacity (onOption), which asks the server
+#    for marks only while the two values differ. The monster and boss alphas stay 1.0: the server cannot tell the engine which
+#    effect is a monster's, so monsters' effects follow the "other players" slider.
+# Applies after 0001-0201 (the hunks are in files 0049, 0055, 0147, 0152, 0194 and 0199 touch, at lines none of them or 0200 changes).
+# Not run in a client; goes live with the next client build.
+--- /dev/null
++++ b/src/client/chaosfxowner.h
+@@ -0,0 +1,152 @@
++// Cinders of Chaos (base patch 0202): who an effect belongs to and how opaque it is drawn, pure and header-only so
++// client/tools/chaosfxowner_test.cpp can run it without the engine. The engine already keeps one alpha per effect source
++// (Client::m_effectAlphas: own, other players, monsters, boss area) and Effect / Missile pick one with their source, but the
++// 10.98 server sends no source byte, so the stock draw used the "own" alpha for everything. Here an effect or missile carries
++// the source the server marked it with (the Lua call g_map.markEffectSources, fed by the extended opcode of game_effectopacity),
++// and one that was never marked counts as "other". Warning effects of an id list (boss telegraphs) always use the slot 0 alpha,
++// which nothing changes (1.0). All numbers are the engine's Otc::MagicEffectSources.
++#ifndef CHAOSFXOWNER_H
++#define CHAOSFXOWNER_H
++
++#include <algorithm>
++#include <cmath>
++#include <cstddef>
++#include <cstdlib>
++#include <unordered_set>
++#include <vector>
++
++namespace chaos {
++namespace fxowner {
++
++constexpr int kSourceDefault = 0;   // not marked; its alpha slot is never set, so 1.0
++constexpr int kSourceOwn = 1;
++constexpr int kSourceOther = 2;
++constexpr int kSourceMonster = 3;
++constexpr int kSourceBoss = 4;
++
++constexpr int kKindEffect = 0;      // a mark is {kind, dx, dy, id}
++constexpr int kKindMissile = 1;     // a missile: dx, dy name the tile it starts on
++constexpr int kMatchRadius = 3;     // an engine that shifts a big effect moves it by a tile or two: look this far around the mark
++constexpr int kMaxMarks = 400;      // marks read from one message; the rest stay "other"
++constexpr int kMaxOffset = 127;     // |dx|, |dy| of a mark
++constexpr int kMaxId = 65535;       // effect and missile ids are 16 bit
++
++// a source number from a script: 1..4 as is, anything else is "not marked"
++inline int sanitizeSource(int source)
++{
++    return (source >= kSourceOwn && source <= kSourceBoss) ? source : kSourceDefault;
++}
++
++// the alpha slot of an effect. exempt (a warning): slot 0. A marked effect keeps its mark. An unmarked effect: slot 0 when the
++// server sends the source itself (the stock path), else "other" (the stock draw used "own" here).
++inline int pickSource(int tagged, bool serverSendsSource, bool exempt)
++{
++    if (exempt)
++        return kSourceDefault;
++    if (tagged != kSourceDefault)
++        return tagged;
++    return serverSendsSource ? kSourceDefault : kSourceOther;
++}
++
++inline float clamp01(float v)
++{
++    if (!std::isfinite(v))
++        return 1.0f;
++    return std::max(0.0f, std::min(1.0f, v));
++}
++
++// the colour alpha byte of an alpha; a missile has its own slider on top of its source's
++inline int alphaByte(float sourceAlpha, float missileAlpha = 1.0f)
++{
++    return static_cast<int>(clamp01(sourceAlpha) * clamp01(missileAlpha) * 255.0f);
++}
++
++struct Mark
++{
++    int kind;
++    int dx;
++    int dy;
++    int id;
++};
++
++// flat {kind, dx, dy, id, kind, dx, dy, id, ...} -> marks. A group with a bad kind, a far offset or an id out of 1..65535 is
++// skipped, a partial group at the end too, and at most kMaxMarks groups are read. true when at least one mark is left.
++inline bool decode(const std::vector<int>& flat, std::vector<Mark>& out)
++{
++    out.clear();
++    size_t groups = flat.size() / 4;
++    if (groups > static_cast<size_t>(kMaxMarks))
++        groups = static_cast<size_t>(kMaxMarks);
++    for (size_t i = 0; i < groups; ++i) {
++        const Mark m{ flat[4 * i], flat[4 * i + 1], flat[4 * i + 2], flat[4 * i + 3] };
++        if (m.kind != kKindEffect && m.kind != kKindMissile)
++            continue;
++        if (std::abs(m.dx) > kMaxOffset || std::abs(m.dy) > kMaxOffset)
++            continue;
++        if (m.id < 1 || m.id > kMaxId)
++            continue;
++        out.push_back(m);
++    }
++    return !out.empty();
++}
++
++inline int distance(int dx, int dy)
++{
++    return std::max(std::abs(dx), std::abs(dy));
++}
++
++// tries the offsets around a mark nearest first: the mark's own tile, then the ring at 1, 2 ... radius (rows top to bottom, left
++// to right inside a ring). take(dx, dy) -> true when it used that tile; the walk stops there. true when something was taken.
++template <class F>
++inline bool findNearest(int radius, F take)
++{
++    for (int ring = 0; ring <= radius; ++ring) {
++        for (int dy = -ring; dy <= ring; ++dy) {
++            for (int dx = -ring; dx <= ring; ++dx) {
++                if (distance(dx, dy) != ring)
++                    continue;
++                if (take(dx, dy))
++                    return true;
++            }
++        }
++    }
++    return false;
++}
++
++// how well a flying missile fits a mark (distance = tiles between the missile's start and the marked tile): -1 not at all, else
++// lower is better. The same id within kMatchRadius; another id only on the tile or next to it, because the server swaps the id
++// of a stock missile when a script sends one (src-patch 0045), so the id a script named is not always the id that flies.
++inline int missileScore(bool sameId, int distance)
++{
++    if (distance < 0)
++        return -1;
++    if (sameId && distance <= kMatchRadius)
++        return distance;
++    if (!sameId && distance <= 1)
++        return 100 + distance;
++    return -1;
++}
++
++// effect ids that ignore the opacity (warnings): Lua g_client.setEffectAlphaExempt(id, on)
++class ExemptIds
++{
++public:
++    void set(int id, bool on)
++    {
++        if (on)
++            m_ids.insert(id);
++        else
++            m_ids.erase(id);
++    }
++    bool has(int id) const { return !m_ids.empty() && m_ids.count(id) > 0; }
++    void clear() { m_ids.clear(); }
++    size_t size() const { return m_ids.size(); }
++
++private:
++    std::unordered_set<int> m_ids;
++};
++
++} // namespace fxowner
++} // namespace chaos
++
++#endif
+--- a/src/client/effect.h
++++ b/src/client/effect.h
+@@ -26,6 +26,7 @@
+ #include <framework/global.h>
+ #include <framework/core/timer.h>
+ #include "thing.h"
++#include "chaosfxowner.h"
+ 
+ // @bindclass
+ class Effect : public Thing
+@@ -49,11 +50,19 @@
+     ThingType *rawGetThingType() override;
+ 
+     void setSource(Otc::MagicEffectSources source) { m_source = source; }
++    Otc::MagicEffectSources getSource() const { return m_source; } // Chaos (base patch 0202)
++
++    // Chaos (base patch 0202, chaosfxowner.h): the effects and missiles the server marked as the player's own (Lua
++    // g_client.markEffectSources), and the ids that ignore the opacity (warnings, g_client.setEffectAlphaExempt)
++    static int markSources(int source, int baseX, int baseY, int baseZ, const std::vector<int>& flat);
++    static void setAlphaExempt(int id, bool on) { s_exempt.set(id, on); }
++    static void clearAlphaExempt() { s_exempt.clear(); }
+ 
+ protected:
+     void onAppear() override;
+ 
+ private:
++    static chaos::fxowner::ExemptIds s_exempt;
+     uint16 m_id;
+     Timer m_animationTimer;
+     int m_animationPhase = 0;
+--- a/src/client/effect.cpp
++++ b/src/client/effect.cpp
+@@ -24,10 +24,14 @@
+ #include "map.h"
+ #include "game.h"
+ #include "client.h"
++#include "tile.h"
++#include "missile.h"
+ #include <framework/core/eventdispatcher.h>
+ #include <framework/util/extras.h>
+ #include <framework/stdext/fastrand.h>
+ 
++chaos::fxowner::ExemptIds Effect::s_exempt;
++
+ void Effect::draw(const Point& dest, int offsetX, int offsetY, bool animate, LightView* lightView)
+ {
+     if(m_id == 0)
+@@ -63,12 +67,14 @@
+             yPattern += getNumPatternY();
+     }
+ 
+-    // Use OWN source alpha when no explicit source (server doesn't send GameEffectSource)
+-    auto source = m_source;
+-    if (!g_game.getFeature(Otc::GameEffectSource))
+-        source = Otc::ME_SOURCE_OWN;
+-    float alpha = g_client.getEffectAlpha(source);
+-    Color color(255, 255, 255, (int)(alpha * 255));
++    // Chaos (base patch 0202): the alpha of the effect's source. The server marked it as the player's own (own alpha), or it was
++    // never marked (other alpha; the stock code used the own alpha for all of them), a warning ignores the opacity. At 0 nothing
++    // is drawn.
++    const int source = chaos::fxowner::pickSource(m_source, g_game.getFeature(Otc::GameEffectSource), s_exempt.has(m_id));
++    const float alpha = g_client.getEffectAlpha(static_cast<uint8_t>(source));
++    if (alpha <= 0.0f)
++        return;
++    Color color(255, 255, 255, chaos::fxowner::alphaByte(alpha));
+     rawGetThingType()->draw(dest, 0, xPattern, yPattern, 0, m_animationPhase, color, lightView);
+ }
+ 
+@@ -128,3 +134,61 @@
+ {
+     return g_things.rawGetThingType(m_id, ThingCategoryEffect);
+ }
++
++// Chaos (base patch 0202): `flat` is {kind, dx, dy, id, ...} (chaosfxowner.h) around the tile (baseX, baseY, baseZ). Each mark takes
++// the nearest effect of that id that has no source yet (the mark's own tile first, then up to kMatchRadius tiles around it: an
++// engine that shifts a big effect sends it a tile or two off the tile the script named), or the best fitting missile that starts
++// there (missileScore: the same id first, then the nearest), and gives it `source`. Returns how many marks found their effect or missile.
++int Effect::markSources(int source, int baseX, int baseY, int baseZ, const std::vector<int>& flat)
++{
++    namespace fx = chaos::fxowner;
++    source = fx::sanitizeSource(source);
++    if (source == fx::kSourceDefault || baseZ < 0 || baseZ > 15)
++        return 0;
++    std::vector<fx::Mark> marks;
++    if (!fx::decode(flat, marks))
++        return 0;
++    int marked = 0;
++    for (const fx::Mark& m : marks) {
++        const int x = baseX + m.dx;
++        const int y = baseY + m.dy;
++        if (m.kind == fx::kKindEffect) {
++            const bool took = fx::findNearest(fx::kMatchRadius, [&](int dx, int dy) {
++                const int tx = x + dx, ty = y + dy;
++                if (tx < 0 || ty < 0 || tx > 65534 || ty > 65534)
++                    return false;
++                const TilePtr tile = g_map.getTile(Position(static_cast<uint16>(tx), static_cast<uint16>(ty), static_cast<uint8>(baseZ)));
++                if (!tile)
++                    return false;
++                for (const EffectPtr& effect : tile->getEffects()) {
++                    if (effect->getId() == static_cast<uint32>(m.id) && effect->getSource() == Otc::ME_SOURCE_DEFAULT) {
++                        effect->setSource(static_cast<Otc::MagicEffectSources>(source));
++                        return true;
++                    }
++                }
++                return false;
++            });
++            if (took)
++                ++marked;
++        } else {
++            MissilePtr best;
++            int bestScore = -1;
++            for (const MissilePtr& missile : g_map.getFloorMissiles(baseZ)) {
++                if (missile->getEffectSource() != Otc::ME_SOURCE_DEFAULT)
++                    continue;
++                const Position from = missile->getSource();
++                const int score = fx::missileScore(missile->getId() == static_cast<uint32>(m.id),
++                                                   fx::distance(static_cast<int>(from.x) - x, static_cast<int>(from.y) - y));
++                if (score >= 0 && (bestScore < 0 || score < bestScore)) {
++                    bestScore = score;
++                    best = missile;
++                }
++            }
++            if (best) {
++                best->setEffectSource(static_cast<Otc::MagicEffectSources>(source));
++                ++marked;
++            }
++        }
++    }
++    return marked;
++}
+--- a/src/client/missile.h
++++ b/src/client/missile.h
+@@ -52,6 +52,7 @@
+     Position getDestination() { return m_destination; }
+ 
+     void setEffectSource(Otc::MagicEffectSources source) { m_effectSource = source; }
++    Otc::MagicEffectSources getEffectSource() const { return m_effectSource; } // Chaos (base patch 0202)
+ 
+     // Chaos (base patch 0147): a short fading trail behind every missile and a slight arc for the ids in a list
+     // (arrows, bolts, spears, stones; the overlay module game_visualfx sends it). Off in the engine: the draw is then the
+--- a/src/client/missile.cpp
++++ b/src/client/missile.cpp
+@@ -107,11 +107,13 @@
+     }
+ 
+     float fraction = m_animationTimer.ticksElapsed() / m_duration;
+-    auto source = m_effectSource;
+-    if (!g_game.getFeature(Otc::GameEffectSource))
+-        source = Otc::ME_SOURCE_OWN;
+-    float alpha = g_client.getEffectAlpha(source);
+-    Color color(255, 255, 255, (int)(alpha * 255));
++    // Chaos (base patch 0202): the alpha of the missile's source (marked own, or other) times the missile slider; at 0 nothing is drawn
++    const int source = chaos::fxowner::pickSource(m_effectSource, g_game.getFeature(Otc::GameEffectSource), false);
++    const float alpha = g_client.getEffectAlpha(static_cast<uint8_t>(source));
++    const int alphaByte = chaos::fxowner::alphaByte(alpha, g_client.getMissileAlpha());
++    if (alphaByte <= 0)
++        return;
++    Color color(255, 255, 255, alphaByte);
+     // Chaos (base patch 0194): the phase cycles with the flight; before this the draw always passed phase 0
+     ThingType* animType = rawGetThingType();
+     const long elapsed = (long)m_animationTimer.ticksElapsed();
+--- a/src/client/client.h
++++ b/src/client/client.h
+@@ -52,11 +52,17 @@
+     float getBossAreaCreatureEffectAlpha() const { return m_effectAlphas[Otc::ME_SOURCE_BOSS]; }
+     void setBossAreaCreatureEffectAlpha(float v) { setEffectAlpha(Otc::ME_SOURCE_BOSS, v); }
+ 
++    // Chaos (base patch 0202): the Options > Effects slider "Opacity Missiles" (its apply called g_client.setMissileAlpha, which
++    // was never bound); multiplied with the alpha of the missile's source
++    float getMissileAlpha() const { return m_missileAlpha; }
++    void setMissileAlpha(float v) { m_missileAlpha = std::isfinite(v) ? std::max(0.0f, std::min(1.0f, v)) : 1.0f; }
++
+     bool shouldShowLootHighlightEffect() const { return m_showLootHighlightEffect; }
+     void setShowLootHighlightEffect(bool enabled) { m_showLootHighlightEffect = enabled; }
+ 
+ private:
+     std::array<float, 5> m_effectAlphas{ 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
++    float m_missileAlpha = 1.0f;
+     bool m_showLootHighlightEffect = true;
+ };
+ 
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -1334,6 +1334,19 @@
+     g_lua.bindSingletonFunction("g_client", "setBossAreaCreatureEffectAlpha", [](double value) {
+         g_client.setBossAreaCreatureEffectAlpha((float)value);
+     });
++    // Chaos (base patch 0202): the missile slider, the warning ids that ignore the opacity, and the marks of the player's own effects
++    g_lua.bindSingletonFunction("g_client", "setMissileAlpha", [](double value) {
++        g_client.setMissileAlpha((float)value);
++    });
++    g_lua.bindSingletonFunction("g_client", "setEffectAlphaExempt", [](int id, bool on) {
++        Effect::setAlphaExempt(id, on);
++    });
++    g_lua.bindSingletonFunction("g_client", "clearEffectAlphaExempt", []() {
++        Effect::clearAlphaExempt();
++    });
++    g_lua.bindSingletonFunction("g_client", "markEffectSources", [](int source, int x, int y, int z, const std::vector<int>& flat) {
++        return Effect::markSources(source, x, y, z, flat);
++    });
+     g_lua.bindSingletonFunction("g_client", "setShowLootHighlightEffect", [](bool enabled) {
+         g_client.setShowLootHighlightEffect(enabled);
+     });
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1226,29 +1226,48 @@
+         end,
+ 	},
+ 
+-	-- Chaos (base patch 0049): the ONE spell effect opacity, 25-100% (boss warning circles never vanish). On 10.98 the
+-	-- server sends no effect source, so every magic effect is drawn with the "own" alpha; it is set for every source
+-	-- anyway. The per-source sliders (own, other players, creatures, boss area) are gone; game_effectopacity (overlay)
+-	-- moves an old lower value of theirs here once and clamps an old saved value to 25..100.
++	-- Chaos (base patch 0049, changed by 0202): two effect opacity sliders, 0-100% in steps of 5. opacityEffects (the base key, kept)
++	-- is "Opacity of my effects": the spell and area effects the server marked as the player's own (extended opcode of
++	-- game_effectopacity, g_client.markEffectSources). opacityOtherEffects is "Opacity of other players' effects": every effect that
++	-- was not marked, other players' and monsters' (the engine cannot tell those two apart). Boss warning circles ignore both
++	-- (g_client.setEffectAlphaExempt, game_effectopacity), missiles also have their own slider (opacityMissile). The overlay module
++	-- game_effectopacity moves the old values over once and asks the server for marks only while the two values differ.
+ 	opacityEffects = {
+ 		value = 100,
+-        apply = function(value)
+-            local v = math.max(25, math.min(100, math.floor((tonumber(value) or 100) / 5 + 0.5) * 5))
+-            g_client.setEffectAlpha(v / 100)
+-            for _, set in ipairs({g_client.setOtherPlayerSpellEffectAlpha, g_client.setCreatureSpellEffectAlpha,
+-                                  g_client.setBossAreaCreatureEffectAlpha}) do
+-                if set then set(v / 100) end
+-            end
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Spell effects opacity: %s%%', v))
+-            return true
+-        end,
+-        tempApply = function(value)
+-            local v = math.max(25, math.min(100, tonumber(value) or 100))
+-            local effects = GameOptions:getLoadedWindow("effects")
+-            effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Spell effects opacity: %s%%', v))
+-            return true
+-        end,
++		apply = function(value)
++			local v = math.max(0, math.min(100, math.floor((tonumber(value) or 100) / 5 + 0.5) * 5))
++			g_client.setEffectAlpha(v / 100)
++			local effects = GameOptions:getLoadedWindow("effects")
++			effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity of my effects: %s%%', v))
++			local m = modules.game_effectopacity
++			if m and m.onOption then m.onOption('opacityEffects', v) end
++			return true
++		end,
++		tempApply = function(value)
++			local v = math.max(0, math.min(100, tonumber(value) or 100))
++			local effects = GameOptions:getLoadedWindow("effects")
++			effects:recursiveGetChildById('opacityEffectLimitLabel'):setText(tr('Opacity of my effects: %s%%', v))
++			return true
++		end,
++	},
++
++	opacityOtherEffects = {
++		value = 100,
++		apply = function(value)
++			local v = math.max(0, math.min(100, math.floor((tonumber(value) or 100) / 5 + 0.5) * 5))
++			g_client.setOtherPlayerSpellEffectAlpha(v / 100)
++			local effects = GameOptions:getLoadedWindow("effects")
++			effects:recursiveGetChildById('opacityOtherEffectLimitLabel'):setText(tr('Opacity of other players\' effects: %s%%', v))
++			local m = modules.game_effectopacity
++			if m and m.onOption then m.onOption('opacityOtherEffects', v) end
++			return true
++		end,
++		tempApply = function(value)
++			local v = math.max(0, math.min(100, tonumber(value) or 100))
++			local effects = GameOptions:getLoadedWindow("effects")
++			effects:recursiveGetChildById('opacityOtherEffectLimitLabel'):setText(tr('Opacity of other players\' effects: %s%%', v))
++			return true
++		end,
+ 	},
+ 
+   ignoreSpecialEffects = {
+--- a/mods/client_settings/options/effects.otui
++++ b/mods/client_settings/options/effects.otui
+@@ -121,7 +121,7 @@
+       !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Cinders of Chaos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
+ 
+   FlatPanel
+-    size: 505 137
++    size: 505 154
+     anchors.top: prev.bottom
+     anchors.left: parent.left
+     margin-top: 5
+@@ -227,9 +227,9 @@
+       anchors.top: prev.bottom
+       margin-top: 5
+       margin-left: 30
+-      !tooltip: tr('How strongly spell and area effects are drawn, boss warning circles included (not missiles).\n25%% is the faintest, so warnings never vanish.')
++      !tooltip: tr('How strongly the spell and area effects you cast yourself are drawn (not missiles, they have their own slider).\n0%% hides them. Boss warning circles are never faded.')
+       @onSetup: |
+-        self:setText(tr('Spell effects opacity: 100%%'))
++        self:setText(tr('Opacity of my effects: 100%%'))
+ 
+     HorizontalScrollBar
+       id: opacityEffects
+@@ -241,7 +241,36 @@
+       margin-top: 1
+       pixels-scroll: true
+       @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-      minimum: 25
++      minimum: 0
++      maximum: 100
++      default-scroll: true
++      $!on:
++        width: 0
++
++    Label
++      id: opacityOtherEffectLimitLabel
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      anchors.left: parent.left
++      anchors.top: prev.bottom
++      margin-top: 5
++      margin-left: 30
++      !tooltip: tr('How strongly the effects of other players and of monsters are drawn.\n0%% hides them. Boss warning circles are never faded.')
++      @onSetup: |
++        self:setText(tr('Opacity of other players\' effects: 100%%'))
++
++    HorizontalScrollBar
++      id: opacityOtherEffects
++      width: 175
++      anchors.top: prev.top
++      anchors.right: parent.right
++      step: 5
++      margin-right: 20
++      margin-top: 1
++      pixels-scroll: true
++      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
++      minimum: 0
+       maximum: 100
+       default-scroll: true
+       $!on:

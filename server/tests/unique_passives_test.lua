@@ -183,7 +183,7 @@ do
 	local s, warn = C.fitText(C.explain(CFG, {}, "warrior", a.id, false), t, nameOf)
 	eq(s, "Works for your class.", "line: works"); eq(warn, false, "line: works is no warning")
 	s, warn = C.fitText(C.explain(CFG, {}, "ranger", a.id, false), t, nameOf)
-	eq(s, "Asleep: your class is not in its list.", "line: class asleep"); eq(warn, true, "line: asleep warns")
+	eq(s, "Cannot use: not for your class.", "line: class asleep"); eq(warn, true, "line: asleep warns")
 	s = C.fitText(C.explain(CFG, {a.id, b.id}, "warrior", b.id, true), t, nameOf)
 	eq(s, "Works for your class. Active.", "line: worn and active")
 	s, warn = C.fitText(C.explain(CFG, {a.id, b.id}, "warrior", a.id, true), t, nameOf)

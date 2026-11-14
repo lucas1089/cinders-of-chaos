@@ -10,7 +10,9 @@ wings sat off its back: facing south a median 3.4 px right of a class look's tor
   bodies[look]  x of the body's torso, sprite px at 1x from the creature's place, the look's own displacement taken out.
                 Idle group, phase 0, base layer, the union of the base and every addon pattern (a character may wear
                 any). The torso is the band of rows from 30% to 70% of the opaque box's height (no head or hat above,
-                no legs below, a weapon stays in); x is the alpha-weighted mean of that band.
+                no legs below) of the body CORE (O576): the visible pixels with their thin parts opened away (TORSO_OPEN, a
+                staff, torch or spear up to four wide) and only the biggest part kept, so a weapon does not pull the centre
+                (it pulled a staff look's torso 4 to 6 px); x is the median column of the core's pixels in that band.
   wings[look]   x of the wings' pair centre, same frame. Every phase and layer, alpha-weighted, WITHOUT the baked ground
                 shadow (below). Two masses (a gap of 2 or more empty columns between used columns of the union of all
                 phases, the widest one splits it) that each hold 25% or more of the art: the midpoint of the two masses'
@@ -21,6 +23,10 @@ luminance (mean of r, g, b) under 150. Limits: a pale shadow ring or a dark glow
 way or the other (16 wings carry partial alpha that is wing art; their centre moves by at most a pixel or two); faint
 pixels (alpha under about 40) weigh little either way. The older measures (fix_pair_warnings.py wing_offset,
 gen_pack33.py wingx) counted the shadow in the alpha mean, which is why WING_X_FIX was tuned to the wrong centre.
+
+Heads (O561, base patch 0200): the same run writes client_chaos_wingfit/head_centres.lua, per body look the x and y of the
+head (the solid body, thin parts opened away, the top HEAD_BAND rows) and the same for look 128; the engine moves a head
+piece (aura looks 2477 to 2568) by head(body) - head(128). Details: client/MANIFEST.md "Head accessories on the head".
 
 Output (default): client/overlay/modules/client_chaos_wingfit/wing_centres.lua (`ChaosWingCentres`: dat md5, bodies,
 wings; integer px). The module hands the rows to the engine (setOutfitBodyCentre, setOutfitWingsCentre; base patch
@@ -40,18 +46,27 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from datspr import Dat, Spr, sprite_index  # noqa: E402
+import gen_outfit_anchors as anchors  # noqa: E402
 
 REPO = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
 OUT = os.path.join(REPO, 'client', 'overlay', 'modules', 'client_chaos_wingfit', 'wing_centres.lua')
+OUT_HEADS = os.path.join(REPO, 'client', 'overlay', 'modules', 'client_chaos_wingfit', 'head_centres.lua')
 PACK33 = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_pack33_cosmetics.lua')
 # the wings looks of wings.xml: base 1-15, Chaos 16-29 (fix_pair_warnings.py WINGS_LOOKS), then the pair 33 wings
 BASE_WINGS = '937-941,1177-1186,1486,2140-2142,2187,2225-2233'
 TORSO_LO, TORSO_HI = 0.30, 0.70
+TORSO_OPEN = 2          # the opening that drops a staff, a torch or a spear from the torso core (gen_outfit_anchors.solid)
 SHADOW_ALPHA = 200      # a baked shadow pixel: alpha under this and luminance under SHADOW_LUM
 SHADOW_LUM = 150
 GAP_MIN = 2             # empty columns that split the wings into a left and a right mass
 MASS_MIN = 0.25         # each mass holds at least this share of the art, else one mass
 DIRS = 4
+# head accessories (O561, base patch 0200): the pair 33 head pieces are the aura looks 2477 to 2568 (capes follow from 2569);
+# the pieces were placed against the stock look 128, so a body's head is measured against 128's
+HEAD_PIECES = (2477, 2568)
+HEAD_REF = 128
+HEAD_BAND = 10          # rows from the top of the body's solid mass that make the head (px)
+HEAD_OPEN = 2           # the opening that drops a staff, a torch or a spear above the head (gen_outfit_anchors.solid)
 
 
 def ids(spec):
@@ -86,21 +101,27 @@ def rnd(v):
 
 # ------------------------------------------------------------------------------------------------ pure measures
 def torso_x(alpha):
-    """x (canvas px) of the torso of a body: the alpha-weighted mean of the rows from TORSO_LO to TORSO_HI of the opaque
-    box; None when nothing is visible. alpha: 2-D array."""
+    """x (canvas px) of the torso of a body, the body core's: the visible pixels (alpha from anchors.ALPHA) without their thin
+    parts (an opening of TORSO_OPEN, a staff, a torch or a spear up to four wide goes) and with only the biggest part kept
+    (a weapon held apart falls away); the rows from TORSO_LO to TORSO_HI of that core's own box (no head or hat above, no
+    legs below, a staff raised over the head does not stretch the box); x is the MEDIAN column of its pixels, so a broad
+    weapon that is attached still moves it only by half of its width. None when nothing is visible. alpha: 2-D array.
+    (O576: the whole figure's alpha mean pulled a staff look's torso 4 to 6 px towards the staff and the wings sat off.)"""
     a = np.asarray(alpha, np.float64)
-    ys, xs = np.nonzero(a > 0)
-    if not len(ys):
+    m = a >= anchors.ALPHA
+    if not m.any():
+        m = a > 0                      # only faint pixels: they are the figure
+    if not m.any():
         return None
+    core = anchors.largest_part(anchors.solid(m, TORSO_OPEN))
+    ys, xs = np.nonzero(core)
     top, bot = ys.min(), ys.max() + 1
     r0 = top + TORSO_LO * (bot - top)
     r1 = top + TORSO_HI * (bot - top)
-    yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]
-    wt = a * ((yy >= r0) & (yy < r1))
-    n = wt.sum()
-    if n <= 0:
-        return None
-    return float((wt * xx).sum() / n)
+    sel = (ys >= r0) & (ys < r1)
+    if not sel.any():
+        sel = np.ones(len(ys), bool)
+    return float(np.median(xs[sel]))
 
 
 def shadow_mask(rgba):
@@ -193,6 +214,33 @@ def wings_row(t, spr):
     return row
 
 
+def head_xy(alpha):
+    """(x, y) in canvas px of a body's head: the solid body (thin parts opened away, only the biggest part kept) from its
+    top row down HEAD_BAND rows; x the mean of those pixels, y the middle of the band; None when nothing is visible"""
+    m = np.asarray(alpha) >= anchors.ALPHA
+    if not m.any():
+        return None
+    core = anchors.largest_part(anchors.solid(m, HEAD_OPEN))
+    ys, xs = np.nonzero(core)
+    top = ys.min()
+    sel = ys < top + HEAD_BAND
+    return float(xs[sel].mean()), float(top + HEAD_BAND / 2.0)
+
+
+def head_row(t, spr):
+    """[x north, y north, x east, y east, ...] of a body's head, px from the creature's place; None without art"""
+    if not t.sprites or t.px < DIRS:
+        return None
+    row = []
+    for d in range(DIRS):
+        h = head_xy(frame_alpha_union(t, spr, d))
+        if h is None:
+            return None
+        row.append(rnd(to_place(h[0], t)))
+        row.append(rnd(h[1] - displacement(t)[1] - (t.h - 1) * 32))
+    return row
+
+
 def wing_ids():
     return sorted(set(ids(BASE_WINGS)) | set(pack33_wings()))
 
@@ -229,25 +277,59 @@ def build(dat_path, spr_path):
     return '\n'.join(lines) + '\n', len(body_rows), len(wing_rows)
 
 
+def build_heads(dat_path, spr_path):
+    """the text of head_centres.lua and the number of bodies: the head of every body look (the wings looks left out, as in
+    wing_centres.lua) and of the reference look"""
+    dat = Dat(dat_path)
+    spr = Spr(spr_path)
+    md5 = hashlib.md5(open(dat_path, 'rb').read()).hexdigest()
+    ws = set(wing_ids())
+    ref = head_row(dat.outfits[HEAD_REF - 1], spr)
+    rows = []
+    for i, t in enumerate(dat.outfits, 1):
+        if i in ws:
+            continue
+        r = head_row(t, spr)
+        if r:
+            rows.append('[%d]={%s}' % (i, ','.join(map(str, r))))
+    lines = ['-- Generated by client/tools/sprites/gen_wing_centres.py from the pair with dat md5 %s.' % md5,
+             '-- Do not edit: regenerate with the tool for every new pair. Per look the x and y of the body\'s head (north, east,',
+             '-- south, west), sprite px at 1x from the creature\'s place, the look\'s displacement out; ref = look %d. The head' % HEAD_REF,
+             '-- pieces (aura looks first..last) are shifted by head(body) - ref (base patch 0200).',
+             'ChaosHeadCentres = {', '  dat = "%s",' % md5, '  first = %d,' % HEAD_PIECES[0], '  last = %d,' % HEAD_PIECES[1],
+             '  ref = {%s},' % ','.join(map(str, ref)), '  bodies = {']
+    for k in range(0, len(rows), 4):
+        lines.append('    ' + ','.join(rows[k:k + 4]) + ',')
+    lines += ['  },', '}', 'return ChaosHeadCentres']
+    return '\n'.join(lines) + '\n', len(rows)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('dat')
     ap.add_argument('spr')
     ap.add_argument('--out', default=OUT)
+    ap.add_argument('--out-heads', default=OUT_HEADS)
     ap.add_argument('--check', action='store_true')
     a = ap.parse_args(argv)
     text, nb, nw = build(a.dat, a.spr)
+    htext, nh = build_heads(a.dat, a.spr)
     if a.check:
-        have = open(a.out, encoding='utf-8').read() if os.path.exists(a.out) else ''
-        if have != text:
-            print('%s is not what the pair gives: run %s' % (a.out, os.path.basename(__file__)))
+        bad = 0
+        for path, want in ((a.out, text), (a.out_heads, htext)):
+            have = open(path, encoding='utf-8').read() if os.path.exists(path) else ''
+            if have != want:
+                print('%s is not what the pair gives: run %s' % (path, os.path.basename(__file__)))
+                bad = 1
+        if bad:
             return 1
-        print('wing centres up to date (%d bodies, %d wings)' % (nb, nw))
+        print('wing centres up to date (%d bodies, %d wings), head centres up to date (%d bodies)' % (nb, nw, nh))
         return 0
-    os.makedirs(os.path.dirname(a.out), exist_ok=True)
-    with open(a.out, 'w', encoding='utf-8', newline='\n') as f:
-        f.write(text)
-    print('wrote %s (%d bodies, %d wings)' % (os.path.relpath(a.out, REPO), nb, nw))
+    for path, want in ((a.out, text), (a.out_heads, htext)):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(want)
+    print('wrote %s (%d bodies, %d wings) and %s (%d bodies)' % (os.path.relpath(a.out, REPO), nb, nw, os.path.relpath(a.out_heads, REPO), nh))
     return 0
 
 

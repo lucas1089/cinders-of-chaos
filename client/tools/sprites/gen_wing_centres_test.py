@@ -32,9 +32,29 @@ body[20:50, 20:30] = 255            # the trunk at x 20..29
 body[50:60, 24:28] = 255            # legs
 # box rows 10..59 (50 rows): band rows 25..44 -> only the trunk, x mean 24.5
 check(near(gw.torso_x(body), 24.5), 'torso is the trunk, not the head or the legs: %s' % gw.torso_x(body))
+# a staff held beside the body (O576): thin, in the torso rows, attached by a hand; it must not move the torso
 staff = body.copy()
-staff[25:45, 2:4] = 255             # a staff in the torso rows pulls the centre left
-check(gw.torso_x(staff) < 22.0, 'a weapon in the torso rows stays in: %s' % gw.torso_x(staff))
+staff[25:45, 2:4] = 255             # a staff far to the left (apart)
+check(near(gw.torso_x(staff), 24.5), 'a weapon held apart does not pull the torso: %s' % gw.torso_x(staff))
+held = body.copy()
+held[28:32, 12:20] = 255            # the hand: joins the staff to the trunk
+held[2:58, 12:15] = 255             # a staff 3 px wide, taller than the figure, held at the left of the trunk (x 12..14)
+check(near(gw.torso_x(held), 24.5, 0.6), 'a staff 3 px wide held against the body does not pull it: %s' % gw.torso_x(held))
+yy, xx = np.mgrid[0:64, 0:64]
+r0, r1 = 2 + 0.3 * 56, 2 + 0.7 * 56
+wt = held.astype(float) * ((yy >= r0) & (yy < r1))
+old_mean = (wt * xx).sum() / wt.sum()
+check(old_mean < 23.0, 'the old mean was pulled by the same staff (%.1f), the core is not' % old_mean)
+spear = body.copy()
+spear[0:30, 31:33] = 255            # a spear raised at the right of the head and trunk, 2 px wide
+spear[24:28, 29:31] = 255
+check(near(gw.torso_x(spear), 24.5, 0.6), 'a raised spear does not stretch the box or pull the torso: %s' % gw.torso_x(spear))
+shield = body.copy()
+shield[26:40, 30:36] = 255          # a broad shield attached at the right (6 wide): moves it by about half its share only
+check(24.5 <= gw.torso_x(shield) <= 27.5, 'a broad attached shield moves the torso by half its width at most: %s' % gw.torso_x(shield))
+faint = np.zeros((64, 64), np.uint8)
+faint[10:50, 20:30] = 30            # only faint pixels (under the visible alpha): still measured
+check(near(gw.torso_x(faint), 24.5), 'faint figure measured: %s' % gw.torso_x(faint))
 check(gw.torso_x(np.zeros((64, 64), np.uint8)) is None, 'nothing visible')
 shifted = np.roll(body, 7, axis=1)
 check(near(gw.torso_x(shifted) - gw.torso_x(body), 7.0, 0.01), 'moves with the figure')
@@ -99,6 +119,22 @@ check(gw.ids('1-3,7') == [1, 2, 3, 7], 'ids')
 w = gw.wing_ids()
 check(len(w) == len(set(w)) and 937 in w and 2231 in w and 2414 in w and 2385 in w, 'wing ids: %d' % len(w))
 check(len(w) == 29 + len(gw.pack33_wings()), 'base 29 plus the pack wings: %d' % len(w))
+
+# ---- heads (O561, base patch 0200)
+fig = np.zeros((64, 64), np.uint8)
+fig[10:22, 26:34] = 255             # a head, x 26..33 (centre 29.5), rows 10..21
+fig[22:50, 22:36] = 255             # the body below
+hx, hy = gw.head_xy(fig)
+check(near(hx, 29.5 - 0.0, 2.6) and near(hy, 15.0, 0.01), 'head: the top band of the solid body: %s %s' % (hx, hy))
+staff = fig.copy()
+staff[0:40, 8:10] = 255             # a thin staff held up beside the head: opened away, the head stays
+hx2, hy2 = gw.head_xy(staff)
+check(near(hx2, hx, 0.01) and near(hy2, hy, 0.01), 'a staff above the head does not move it: %s %s' % (hx2, hy2))
+check(gw.head_xy(np.zeros((64, 64), np.uint8)) is None, 'head: nothing visible')
+moved = np.roll(np.roll(fig, 5, axis=1), 3, axis=0)
+mx, my = gw.head_xy(moved)
+check(near(mx - hx, 5.0, 0.01) and near(my - hy, 3.0, 0.01), 'head moves with the figure: %s %s' % (mx - hx, my - hy))
+check(gw.HEAD_PIECES == (2477, 2568) and gw.HEAD_REF == 128, 'head piece range and reference look')
 
 if fails:
     print('%d failure(s)' % fails)

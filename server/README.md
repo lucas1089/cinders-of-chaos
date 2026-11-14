@@ -575,6 +575,10 @@ server/
    exalted core leave every loot list, Iletrya's step asks for no cores, the exalted core recipe and the dust and sliver
    drop go, the 39 descriptions say "No longer used.". The items players own go in the step `sql`
    (`server/sql/chaos_zz_soulpit_removal.sql`). See "Soul pit removed". Run the server stopped, as for any `sql` file.
+7c4. Decks removed (O570): `python3 -I server/tools/patch_remove_decks.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `removedecks`, after `soulpit`, before `sql`): the Bronze, Silver and Golden Deck leave every monster loot list, NPC trade list and
+   whole-line reward entry of the base scripts. No `sql` file: a deck a character still has is emptied into its Deck of Cards at
+   login (the cards inside would be lost by a row delete). See "Deck of Cards (O570)".
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -664,6 +668,7 @@ working directory, as with the rest of the base server libs).
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_chronicle | `chronicle.lua`, `chronicle_core.lua`, `chronicle_config.lua`, `chronicle_text.lua`, `memorial.lua`, `memorial_core.lua`, `memorial_config.lua`, `sql/chaos_chronicle.sql`, `sql/chaos_memorial.sql` (hooks by wrapping: `ChaosRecords.submit`, `ChaosAchievements.progress`, `ChaosInvasion.deliver`, `ChaosSeason.modesFall`) | **171**, Adventure > Chronicle, the Memorial plaza in the capital, `/chronicle`, `/memorial` | The Ashen Chronicle: a server-wide story per season, chapters with realm goals that change the world when written (areas open, the capital scarred and rebuilt, NPC flags, broadcast, Discord), the record of the top contributors; the Capital Memorial: realm firsts, records and Hardcore falls on statues and stones, by consent, with a website archive (see "The Ashen Chronicle", "The Capital Memorial"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
+| game_trainerdps | `trainer_meter.lua`, `trainer_meter_core.lua`, `trainer_meter_config.lua` (one hook in `combatlog.lua`, one in `monster_defence.lua`, `DS.trainerState` in `display_scale_core.lua`) | **147**, Hunt > DPS Meter > menu > Trainer DPS panel | Trainer DPS panel (O573): what a player deals to a training monster (DPS now over 5 s, average, total, time, biggest hit, by skill and element, the party on the same trainer), a session that ends 10 s after the last hit, Reset, Copy, To chat, a target profile for the trainer's armour (see "Trainers as DPS meters (O573)"). Unit, mocked-engine tests; not run in a client. |
 | game_chaosscale | `display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037` (hooks in the combat log, death recap, party frames, hunt, leaderboard, season boards, battleground, guild war, bestiary, spellbook, item tooltip, inspect, item link, ground loot, market and pets scripts) | **157** (server -> client `scale`, client -> server `hello`) | Display scale: every combat number a player sees x the factor of its level (x1 to level 100, x1000 at 1000, x10000 cap from 1500); internal numbers unchanged (see "Display scale"). Unit, mocked-engine, C++ header and patch guard tests; checked live at levels 100, 300, 700 and 1000. |
 | game_deathrecap | `deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql` (one hook in `combatlog.lua`) | **154**, Hunt > Death Recap | Death recap: after a death (or a mode defeat) every attacker of the last 20 s with its look, damage, share, health / mana part and element split, the killing blow, the last hits, the experience and levels lost; the last 5 deaths per character; ghost staff hidden (see "Death recap"). Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
@@ -705,7 +710,7 @@ collision check") and be added here.
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua`, `telegraph.lua` | `game_monsterbar`, `game_telegraph` | server -> client `info` / `mech`; O549 (no new opcode): server -> client `floor {id, z, x0, y0, t = [[dx, dy]], c, ms}` and `floorclear {id}`, client -> server `floorhello {v = 1}` (floor telegraphs, see "Floor telegraphs (O549)"; `game_monsterbar` owns the opcode and hands these two actions to `game_telegraph`) |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
-| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`) |
+| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`); O568: `poi.lua` action `huntports` (the hall's hunt teleports, sent only to a client whose hello says `huntports`) |
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
@@ -714,11 +719,12 @@ collision check") and be added here.
 | 160 | `groupQueue` | `groupqueue.lua` (the gate called by `arena.lua`, `battleground.lua`, `dungeons.lua`) | `game_groupqueue` | client -> server `open` / `query` / `join {arena?, bg?, role?, dungeon? {id, difficulty}}` / `leave` / `accept` / `decline` / `raid`, server -> client `state`, `check {key, label, left, accepted, total, mine}`, `checkEnd`, `msg {text}` (see "Group Queue (O407)") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
-| 172 | `cardState` | `cards.lua` | `game_cardborder` | server -> client `state {on, cards, decks}` (the cards that are on); client -> server `sync` (see "Cards and decks") |
+| 173 | `cardDeck` | `cards.lua` | `game_carddeck` | server -> client `cards {cards, max, needSet}` (the 76 cards, once per sync), `state {unlocked, own, new, on, ...}`; client -> server `sync`, `toggle {id}`, `seen {ids}` or `{all}`, `open` (see "Deck of Cards (O570)"). 172 (`cardState`, game_cardborder) is retired and stays reserved |
 | 174 | `emberCache` | `embercache.lua` | `game_embercache` | client -> server `open` / `close` / `get`, server -> client `state` (see "Ember Cache, Daily Spark and the day book") |
 | 176 | `candlemarks` | `candlemarks.lua`, Osric the Chandler's NPC script | `game_candlemarks` | client -> server `open` / `buy {k}`; server -> client `hud` (every minute), `state` through `Chaos.sendChunked`, `result`, `npc` (see "Candlemarks") |
 | 178 | `goals` | `goals.lua` | `game_goals` | client -> server `open` / `close` / `tracker`; server -> client `goals` through `Chaos.sendChunked`, `tracker`, `done` (see "Next Goals") |
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
+| 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -736,6 +742,7 @@ collision check") and be added here.
 | 202 | none (base server) | the base waystone script (`tools/patch_waystone_hideout.py`) | `game_waystone` | the base server's own waystone opcode, its own JSON without `{action, data}`: `show {tiers, pick}` (tiers and pick: the patch's part 2), `teleport {clientId}`, `choice`, `choice_apply {choiceId}` and their answers; see "Hideouts", Waystone device |
 | 203 | `community` | `community.lua` | `game_community` | |
 | 204 | `combatLog` | `combatlog.lua` | `game_dpsmeter` | |
+| 147 | `trainerMeter` | `trainer_meter.lua` (fed by `combatlog.lua`) | `game_trainerdps` | client -> server `watch {on}` / `open` / `reset`; server -> client `state {...}` or `{none = 1}` once a second while a session runs, never per hit (see "Trainers as DPS meters (O573)") |
 | 205 | `descent` | `descent.lua` | `game_descent` | |
 | 206 | `loadouts` | `loadouts.lua` | `game_loadouts` | |
 | 207 | `daily` | `daily.lua` | `game_daily` | |
@@ -852,7 +859,8 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The effect owner marks (O567) took **164**, a number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/fx_owner_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The trainer DPS panel (O573) took **147**, free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module (`tests/trainer_meter_test.lua` checks it, and that no two `ChaosOpcodes` share a number); it could not share 204 with the DPS meter because a client module that registers an opcode replaces the earlier one. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -875,6 +883,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
+| 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
@@ -893,7 +902,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
-| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (`cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (removed, O564: reserved, never reused; `cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
@@ -923,6 +932,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
 | 7103090 - 7103099 | the first unique line (`unique_intro_config.lua` `storage`, O467): +0 is 1 once the character read what a unique is; +1..9 free |
 | 7103110 | the damage over time tick flag (`dot_config.lua storage`, O474): the id of the creature a scripted tick hits, -1 outside a tick; written by the spells (`ChaosDot.run`), read by the damage events |
+| 7103120 - 7103129 | effect owner marks (`Chaos.storage.fxOwner`, `data/lib/chaos_fx_owner.lua`, O567): +0 is 1 while the player's client wants the marks of its own effects (set at the client's `hello`, -1 at login and logout); +1..+9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -1282,7 +1292,7 @@ Texts: the base `!exp` line "You didn't have any current Double EXP enhancement.
 | `!build export/import/confirm/cancel` | Character > Passive Tree (Alt+P), Build Code panel |
 | `!achievements`, `!title [name]` | Character > Achievements (title selector: every title held, over the opcode) |
 | `!pet [summon/dismiss/rename]` | Character > Pets |
-| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: every card with what it gives, the decks; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
+| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: the Deck of Cards, the cards on with what they give and the set line; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
 | `!changename`, `!changevocation`, `!ascend` (free switch), `!skiptutorial`, `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` (web shop items) | Character > Services |
 | `!rift` | Adventure > Rifts |
 | `!tower [start/leave]` | Adventure > Infinity Tower (Enter / Leave Tower buttons); leaving also: the arena's exit portal, the floor panel's Leave button |
@@ -1585,6 +1595,43 @@ of the corpse again (`ChaosLoot.gateWaystones`, matched by item name, `waystone.
 (`ChaosLootRoll`) have no monster and are not gated.
 
 `tests/loot_caps_test.lua` loads `loot.lua` against a mocked engine (also the level gates).
+
+## Legendary monsters always drop good loot (O575; `loot.lua` `L.guaranteeGear`, `L.guaranteeRaise`, `loot_config.lua` `gear.guarantee`, `tests/loot_guarantee_test.lua`)
+
+Owner 2026-11-14 (pt-BR): "faça os monstros lendários droparem loot bom garantidamente".
+
+- **Which monsters.** The Legendary tier of `monster_tiers.lua` (spawn chance 25 of 10000, 3-4 modifiers, `hp` x7.98), the top
+  non-boss tier. Not taken: Rare (a 150 of 10000 tier, the owner's 2026-10-17 note says rare and magic drop too much), and
+  bosses (their own loot tables and the Legendary floor 5 already). The word "legendary" on an item is a rarity, not a
+  monster. Another tier is one line in `gear.guarantee.tiers`.
+- **What was missing.** The tier already lifted every gear drop to at least Rare (`gear.minRarity.legendary` 4,
+  `ensureChance` 100, "Gear quality" in `LOOT.md`), and gave 1 guaranteed currency draw. But a corpse with no gear at all
+  (the stock roll, the extra rolls and the level thinning can all come up empty) had nothing to lift: a Legendary kill could
+  leave only coins and potions.
+- **The rule** (`gear.guarantee = {enabled = true, tiers = {legendary = {pieces = 1, minRarity = 4}}}`):
+  1. Step 1a' (before the smart loot step, so a piece nobody near can wear still becomes one they can): the gear the corpse
+     already holds counts. When fewer than `pieces`, `L.guaranteeGear` adds one base of the monster's own loot table (equal
+     weights, no ammo, no `extraSkipItems`, so the level fits the monster); a table without gear gives a base of the
+     killer's class near the monster's level (`chaos_class_loot.lua` `L.eligible`). The piece then goes through the
+     normal rarity, item level, socket and modifier steps.
+  2. Step 2a (after the rarity step): `L.guaranteeRaise` checks that at least `pieces` gear items reach `minRarity`; a
+     shortfall raises the best lower piece to Rare. This holds the floor when `ensureChance` is ever lowered. A piece the
+     engine rolled already is never touched.
+  3. The chance of better is the tier's own: `bonusChance` 35% for a step up (60 / 30 / 10 for 1 / 2 / 3 steps, capped at
+     Legendary), `divineChance` 0.3% Divine, the hunting level roll, the pity of O260. Nothing there changed.
+- **Numbers.** 1 piece, floor Rare. A Legendary kill spawns 25 times in 10000 (0.25%) and pays about 3 loot passes already
+  (`extraRolls` 2), so the added piece changes only the kills that had no gear: the guarantee adds at most one gear item to a
+  kill of a 0.25% tier. `unique_pace_model.lua`,
+  `roulette_model.lua`, `store_model.lua`, `progression_model.lua`, `skill_model.lua`, `mainquest_model.lua`,
+  `gear_coverage.lua`, `weapon_coverage.lua` and `check_content.py` all pass unchanged (no price, no unique chance and no
+  token value reads this).
+- **Shared kills.** The guarantee lives inside `processKill`, which bails out without a corpse owner player: the piece goes
+  to the corpse the engine owns (the first hitter, or the party's shared corpse), like every other bonus of the layer, and
+  the smart loot and loot line steps see it. Low stamina (`catchup.lootMult`) cuts the chances of the tier, not the guarantee;
+  `lootMult` 0 or `RATE_LOOT` 0 still means no loot at all.
+- **Client.** Nothing changed: the rarity of the piece is the corpse item's own attribute, so the loot beam, the ground label and
+  the loot line show it as for any drop.
+- **Off switch.** `gear.guarantee.enabled = false` is the rule of before.
 
 ## Time-friendly progression (catchup) (`catchup.lua`, `catchup_core.lua`, `catchup_config.lua`, `sql/chaos_catchup.sql`)
 
@@ -4328,7 +4375,7 @@ A player on the test server held 14 uniques and could not tell what they were. B
 whether its power worked for the viewer, nothing led from the item to its Codex page, the Codex did not explain the
 power, the class lines or the limit of active powers, and the Item Finder did not know a unique by its own name.
 - **Tooltip line.** `item_tooltip.lua` adds `tip.passive.fit` (and `warn` when the power sleeps) under the passive block:
-  "Works for your class." / "Works for every class." (normal text) or "Asleep: your class is not in its list." (warning
+  "Works for your class." / "Works for every class." (normal text) or "Cannot use: not for your class." (warning
   colour). For a unique the viewer WEARS it adds the state of the limit: "Active.", "Asleep: <unique> is stronger." (the
   worn unique that wins the family) or "Asleep: only 5 unique powers work at once." The rule is not copied:
   `ChaosUniquePassivesCore.activeSet` (the function the passives use) returns the reason per item as a second result
@@ -4525,8 +4572,11 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
   nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
   chosen one; the price shown in the preview is the one sent back. Rate limited: Apply `passivetree.autobuild` (1 s),
-  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 500 ms). Every preview request is answered: a
-  refused one with `autobuildError {message, build, retry}` (retry: too fast), a Lua error with `autobuildError` too.
+  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 150 ms since O560; the generic 200 ms per-action limit of
+  the opcode skips it). Every preview request is answered: a refused one with `autobuildError {message, build, retry, wait, seq}`
+  (retry: too fast, wait: ms), a Lua error with `autobuildError` too; `seq`, the request number the client sent, comes back in
+  every answer so the client drops an answer to a pick it replaced (O560: quick switching was slow and sometimes did not
+  switch). Another autobuild action refused by the generic limit gets `autobuildError`, never silence.
   Fix 2026-10-20 (owner report: stuck at "Asking the server for a preview..."): the client asked for a preview only on
   its first list, so after an Apply or on reopening the window it waited for an answer to a request it never sent. It
   now asks whenever no preview is shown, asks again after 4 s (3 tries) and then shows an error. The skipped count of
@@ -5250,6 +5300,17 @@ Owner 2026-11-12, translated: build our own versions of the ideas seen in three 
 - **Not verified.** Nothing ran on the live map or its `items.otb`. `WALL_MISMATCH` and `ORPHAN_BORDER` are our generator's rules. `A.wallPiece` was measured on the live map for stone and ruin walls, and the winning piece has a share under 100 %, so stock walls that do not follow it will be listed. Expect many `WALL_MISMATCH` and some `ORPHAN_BORDER` on the live map. Put the ones that are meant in the known list, or tune the rule after the first run. `DUP_ITEM`, `ROOF_NO_SUPPORT` and the roof name rule are first guesses at what is wrong on a map of mixed origin.
 - **Tests.** `tools/audit_map_tiles_test.py`: the shared rules, the two Lua ports against the Lua originals, the table reader, a synthetic map with exactly one fault per code and a clean area that stays silent, `--box`, `--floor`, `--summary`, `--csv`, `--known`, `--check` exit codes, refusals, `SERVER_DIR` by `config.lua`, the map file never written. `tools/area_planner_test.py`: the planner's two rules on synthetic tiles. Both run in CI (`checks` job), with `audit_map_plans.py --check`.
 
+## Hollow Crypt look (O574) (`tools/audit_plan_look.py`, biome `catacomb_earth`, kit `hollow_crypt_clean`)
+
+Owner 2026-11-14 (pt-BR): "o mapa dessa hunt precisa ser corrigido. muitas coisas quebradas e chao errado". The hunt is the Hollow Crypt (planned area, `plans/hollow_crypt.json`, z10, levels 300-400, 22 Sopping Carcass spawns); the tile lint says 0 findings there. Measured on the installed map: it equals the plan's compile tile for tile (3484 tiles), and floors z9 and z11 hold no tile in the box, so nothing is hidden above or below. The faults are in what the planner draws:
+
+- **Floors.** The `catacomb` biome gives rooms slate, flagstone, slate in turn, so two of the five rooms (east ossuary, sexton nave) were light grey among dark ones. New biome `catacomb_earth` (`areaplan_build.lua`, theme `rift_crypt`, `roomFloors` and `mixedFloors` one floor, the boss room stays marble). `hollow_crypt.json` uses it. The other five catacomb plans keep `catacomb`. Second owner note the same day ("tire esses floors e coloque uns normais. tipo de terra", a picture of the round crypt cobbles): the biome is `catacomb_earth` now, plain stock dirt (`st_dirt`, ground 103) for corridors (`floor`) and rooms (`roomFloors`, `mixedFloors`), the boss room stays marble.
+- **Wooden lid on a stone slab.** The kit put the stock sarcophagi (7361, 7362) and the wooden coffins (1742-1744) free in the room centre. Kit `hollow_crypt_clean` (`decor_assets_art.json`, base `crypt`, `replace`) lists for `centre` and `wall_side` only the pair 27 sarcophagi, stone coffins, gargoyles, broken pillars, altars, the bone pillar and the usual wall fillers. `biome_kit` maps `catacomb_earth` to it (to `crypt` while the pair 27 switch is off).
+- **Lone centre piece.** In `LONE_KITS` (`area_plan_decor.py`) a `centre` piece that got fewer than 2 `around` details is taken back (`Dresser.withdraw`). Other kits keep their bytes.
+- **Measured and left.** Wall corners: the SW and NE corner of a room use the straight pieces, as `A.wallPiece` and the stock rooms do (`ruin` brush; the tile lint's WALL_MISMATCH agrees). Tapestries and banners: all 22 stand on a straight wall run. Both are held by `HANGING_CUT` now.
+- **Audit.** `python3 -I server/tools/audit_plan_look.py [PLAN.json] [--check]` compiles each plan and reports ROOM_FLOOR_MIX (two ground families in one room), PLAN_FLOOR_SPLIT (the rooms of a plan on different families), LONE_PROP (a blocking, unlit piece with no wall within 1 tile and no other decoration within 2), WOOD_PROP (ids 7361, 7362, 1742-1744) and HANGING_CUT (a tapestry or banner whose neighbours along the wall are not wall). Plans in `LOOK_PLANS` (hollow_crypt) must be clean (`--check`); other plans are only listed (their decoration was placed before the rules; caves mix grounds on purpose). Test: `audit_plan_look_test.py` (one case per code on synthetic tiles, then the real plan; CI `checks`). Result 2026-11-14: hollow_crypt 0 findings; before (biome `catacomb`): PLAN_FLOOR_SPLIT 1, WOOD_PROP 13. The tile lint and `audit_map_plans.py --check` stay at 0.
+- **Install.** Same footprint (3484 tiles) so `install_content_areas.py` calls it `update` ("placed before, the plan changed: written again"; dry run on the test server: 38 spawn blocks replaced by 38, the teleport unchanged) and the map write guard (O512) checks that only these tiles differ. No `.otbm.restore` marker is needed. VPS: admin app, tab Painel > card Atualizar servidor > button Aplicar e reiniciar (shell fallback: `chaos-ctl.sh update-apply`); the server restarts to load the map. The decoration is re-rolled, so the room fill changes everywhere in the crypt.
+
 ## House audit (O513) (`tools/audit_houses.py`, `tools/house_audit_known.csv`)
 
 Owner 2026-11-12, translated: build our own versions of the map editor ideas, all of them. This reads `houses.xml` and the map and lists the houses that break a rule. The live map has about 1,057 houses of mixed origin, so it is report only. There is no fixer, and `docs/MAP_GUIDE.md` keeps houses out of every tool that edits the map.
@@ -5929,8 +5990,8 @@ sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); s
 
 | Kind | What | Store (coins) | Achievement |
 |---|---|---|---|
-| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 12 skins, 250 each: Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
-| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
+| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 26 skins, 250 each (14 added in O563 for the spells the starter builds use most: Mystic Emberwreath, Glacial Spikes, Umbral Covenant, Aether Storm, Gloomswarm; Templar Wildfire Pyre, Violet Verdict, Crimson Verdict; Warrior Gilded Verdict; Monk Azure Palms, Golden Lance, Bloodied Knuckles; Necromancer Gravefire, Wail of the Rift; the Necromancer line is slot 6): Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's); 10 of them dissolve the monster's own sprite instead (O563, "Dissolve kill effects") | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, and the dissolves Windswept, Unravelling, Ashfall, Frostmelt, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
 | Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
 | Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
 
@@ -5942,7 +6003,13 @@ also inside the cast's `addEvent` callbacks); `_common.lua` asks `ChaosCosmetics
 `ChaosSpell.fx` / `vfx` / `vshoot` and in the global `Fx` / `FxMissile` (wrapped once), so heal and area effects of the cast
 change too. A variant the server does not know sends the default effect. Effects set at load time (a combat's
 `COMBAT_PARAM_EFFECT`) stay the default. A spell belongs to one line; the skin chosen for that line is per character
-(storage 7100943 + line slot). The Necromancer line has no skins yet (its effects were being redrawn).
+(storage 7100943 + line slot). The Necromancer line has two since O563 (slot 6, the last storage of the block). A skin is
+1 to 3 spells of one line; one spell may be in several skins of its line (the player picks one per line). The 14 skins of O563 were
+chosen from the spells of `server/tools/starter_builds_config.lua` (the Recommended builds) and kept to the recolour families: a fire
+spell stays fire (`fire_nova` to the ember `fire_ring`), ice stays ice (`frost_burst` to `ice_spikes`, a new `shards` family), the
+war cries, palms and domes only change colour; the effect each spell sends before a skin is read from the real scripts
+(a recording run of `tools/ci/spell_fx_probe.lua` with a mock `ChaosCosmetics.swapFor`). The hot Ranger arrow spells (Gale Volley,
+Moonshard Rain, Arrowstorm) and the Warrior slams (Colossus Fall, Anvil Fall) send effects that have no recolour in the pair, so they have no skin yet.
 
 **Choosing and previews.** Character > Cosmetics: one tab per kind, a Default row, Use, Preview, Open the Store. Preview (and
 the store's SHOW button on a skin or kill effect) plays the effects at the player's tile for that player only
@@ -6125,7 +6192,7 @@ the score are never counted.
 
 | Counted | Read from |
 |---|---|
-| spell skins, kill / level-up / rare-loot effects, emotes, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
+| spell skins, kill / level-up / rare-loot effects, loot labels, chat colours, footprints, outlines, Chaos outfit shaders | the account's `chaos_cosmetics` rows, live (`ChaosCosmetics.ownedOf`) |
 | outfits and addons, mounts, wings, auras, shaders | `ChaosWardrobe.list` of the character (`o` set); prices by client look from the store offers, mounts by `clientid`, wings and auras by XML id through the wardrobe catalogue |
 | name plate frames | the store's frame storages (`ChaosShopCore.frameStorage`) |
 | titles | `ChaosTitles.of` (the "collection" titles and staff are left out) |
@@ -6170,7 +6237,7 @@ go as `tryfx`). Nobody else sees any of it and nothing is granted.
 | Offer kind | Try on |
 |---|---|
 | outfits, addons, mounts, wings, auras, shaders, Chaos shaders, outlines, footprints | in the look preview on the own character; footprints and outlines also on the map (`tryfx`) |
-| spell skins, kill effects, level-up effects, rare-loot effects, victory emotes | the effect in the look preview and round the character on the map (server `preview`) |
+| spell skins, kill effects, level-up effects, rare-loot effects | the effect in the look preview and round the character on the map (server `preview`); a rare-loot effect plays over a loot bag beside the figure (O564) |
 | bundles | in the look preview when a part is worn |
 | name plate frames | on the player's own name plate on the map for 10 s, this client only (client `game_nameplate` `previewFrame`, nothing is sent), then the real plate is back; a bundle with a plate part too. Without `game_nameplate` the offer keeps its icon and the preview prints a note |
 | chat colours, loot label accents | no: the row's title shows the colour or the accent |
@@ -6190,25 +6257,46 @@ the walking trail, so no second trail was added. New, in the Cosmetics group of 
 |---|---|---|---|
 | Level-up effects (5) | a chaos_vfx effect on the character when it gains a level | 150 to 250 | once per 4 s per character |
 | Rare loot effects (5) | an effect on the corpse when the character's kill drops a Legendary item or better (the corpse owner) | 150 to 250 | once per 3 s per character |
-| Victory emotes (5) | an effect on the character and a line over its head after a boss kill (the killer, the most damage dealer and their party members within 12 tiles, at most 5) | 200 to 250 | once per 30 s per character |
 
 Prices: Dawn / Ember / Frost Ascent 200, Verdant Ascent 150, Void Ascent 250; Gilded Glint, Crimson Gleam 200, Starfall
-Find, Royal Pyre 250, Holy Seal Find 150; Victory Roar, Warrior's Salute, Shadow Bow 200, Ember Flourish, Halo of Triumph 250.
+Find, Royal Pyre 250, Holy Seal Find 150. (The five Victory Emotes of 200 to 250 were removed on 2026-11-14, O564: see "Victory emotes removed" below.)
 The effects are existing `chaos_vfx.lua` effects sent to every spectator of the tile (`Vfx`), so players nearby see them.
-The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot), 7102004 (emote) in
-the wardrobe block. Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
+The server sends no number and does no work per step. Storages 7102002 (level-up), 7102003 (rare loot) in
+the wardrobe block (7102004 was the emote: reserved, never reused). Hooks: a `CreatureEvent` `onAdvance` (`ChaosCosmeticsAdvance`), an `EventCallback.onDropLoot` at index 2.5
 (after the loot layer and the achievements scan, before the autoloot) and the monster death event cosmetics.lua already
-registers on every monster. The window has three more tabs (Level-ups, Rare Loot, Emotes) with the same Preview button.
-The emote line is translated per viewer (2026-10-29): `Chaos.yell(player, line, TALKTYPE_MONSTER_SAY)` lists the players in speech range and
-sends each one `Creature:say(text, type, false, viewer, position)` in that viewer's language (`ChaosI18n`, `i18n_strings.lua`: the five lines have
-pt-BR texts, `tests/cosmetics_test.lua` checks it). While every viewer reads English it is the plain `say` of before.
+registers on every monster. The window has two more tabs (Level-ups, Rare Loot) with the same Preview button.
 
 **Tests.** `tests/collection_test.lua` (points from prices and sources, the score with the title cap, the catalogue maps,
 milestones due and next, the view, the validator refusals, `collection.lua` on a mocked engine: login sweep, claiming once,
 the cosmetic reward, staff, two characters of one account, rows read back, the title source, the hooks), `tests/cosmetics_test.lua`
-(the new kinds: throttle, rarity check, emote wearers, the level-up, rare-drop and victory paths, prices 150-250), client
+(the new kinds: throttle, rarity check, the level-up, rare-drop and victory paths, prices 150-250), client
 `game_shop/tryon_test.lua`, `game_cosmetics/cosmeticslogic_test.lua`, `game_lookpreview/lookpreview_core_test.lua`.
 **Not run in game.**
+
+### Victory emotes removed (O564)
+Owner, 2026-11-14 (pt-BR, translated): "the victory emotes make no sense, you can take them out". The five emote cosmetics (Victory
+Roar 801, Warrior's Salute 802, Ember Flourish 803, Halo of Triumph 804, Shadow Bow 805; 200 to 250 coins) and the kind itself are gone from
+the store (`cosmetics_store.lua` / `shop_config.lua`), `cosmetics_config.lua` (`kinds`, `storage.emote`, `combat.emoteMs` / `range` /
+`maxPerKill`), `cosmetics_core.lua` (`emoteWearers`, `EMOTE_MAX`, the `say` rules), `cosmetics.lua` (the boss-death hook `M.victory`, the
+`emote` choice and cache), the collection groups, the five lines of `i18n_strings.lua`, the Pact's monthly shelf and the client tabs.
+- **Reserved, never reused.** `cosmetics_config.lua` `retired` keeps id, key and list price of the five; `K.validate` refuses a live
+  cosmetic with one of those ids or keys. Storage 7102004 (the chosen emote) stays reserved in the wardrobe block, nothing reads or
+  writes it.
+- **The Pact shelf.** `pact_config.lua` `marks.monthly` named two emotes: February is now Frost Ascent (`lvl_frost`, 200 Marks) and
+  November Ember Ascent (`lvl_ember`, 200 Marks), both store cosmetics of the same price.
+- **The refund** is `server/sql/chaos_zz_emote_removal.sql` (run by the install step `sql`, last of the files, like the soul pit's):
+  one transaction that pays and deletes together, so a failure pays nothing and a second run finds no row. Per owned row of the five keys
+  in `chaos_cosmetics`: `source` `store` gets the Chaos Coins back (the price of the last `chaos_shop_purchases` row of the offer
+  `unlock:cosmetic_<key>`, a sale price counts, else the list price) into `chaos_shop_coins`, with a refund row (`offer_key`
+  `refund:cosmetic_<key>`, negative price) in the purchase log so the sales dashboard shows the net and every refund can be found;
+  `source` `marks` gets the Marks back (balance + 200, at most the 100000 cap, `spent` - 200, a `chaos_pact_log` row `refund`); any other
+  source (a staff grant) pays nothing. Then the rows are deleted from `chaos_cosmetics` and storage 7102004 from `player_storage`.
+  Nothing runs unless all five tables exist (a fresh install is a no-op, the next run does the work). Run it with the server stopped
+  (the install does): a running server holds an account's cosmetics in memory. Tested on a private MariaDB (store, Marks and staff
+  rows, a sale price, the cap, a second run); `tests/cosmetics_removal_test.lua` holds the file to the `retired` list.
+  The collection score of an account that owned one drops by its points (the cosmetics are read live); milestones already claimed stay.
+- A rare-loot effect no longer shows the kill animation in the preview (the offer's look carries `lootfx`, not `killfx`; client
+  `game_lookpreview` plays it over a loot bag beside the figure, client/MANIFEST.md "Store cosmetics fixes (O564)").
 
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
@@ -10323,6 +10411,8 @@ Not seen in a client or on a live server: her stall, the trade window, the level
 
 ## Cards and decks (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `tools/patch_badges.py`, `tools/gen_card_descriptions.lua`)
 
+**O570 (2026-11-14): the deck items and everything below about carrying, using and moving a card into a deck are retired.** Every card now goes into the Deck of Cards by itself ("Deck of Cards (O570)"); the card lines, texts, tiers, legendary rules and the "Card sets (O453)" part below are unchanged. What the deck sections below say about decks, `scan`, `decide` with deck sizes, the card borders (opcode 172, `game_cardborder`) and Veyra selling decks is history.
+
 Owner 2026-10-23 (pt-BR): "como alguém pega um deck pra colocar as cartas? usar elas não funciona e no character info só diz
 se ela está ativada ou desativada", then "as cartas ainda referenciam as magias antigas" (a card said "convert Exori Mas
 Spell to Earth damage"). The base deck system (76 cards, 3 decks) stays; Chaos fixes how it is reached, read and named.
@@ -10547,6 +10637,96 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
   cannot cast, the lower card of a line, a second copy, a card in a deck that is off, a loose card, a card that left the decks,
   swapping a card, two sets only with six slots, the texts in both languages, the hit event for each bonus, PvP, login and logout),
   `tools/card_set_model_test.py`.
+
+## Deck of Cards (O570) (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `data/lib/chaos_carddeck.lua`, `data/lib/chaos_mqgate.lua`, `tools/patch_remove_decks.py`, client `game_carddeck`)
+
+Owner 2026-11-14 (pt-BR): "faça um 'deck of cards', um lugar que as cartas vão automaticamente, e que o player possa ver e filtrar
+todas as cartas que ele tem. quando ele lootear uma nova, mostre algo do tipo 'new card' no menu. o player tem acesso a qualquer
+momento e ela funciona como os decks que temos hoje. tire os decks", then "coloque o unlock do badge na quest principal. o mesmo com o
+deck of cards". The three deck items (27632-27634) are gone; every card a character loots is kept in its **Deck of Cards**, a record
+on the server, not an item. Deploy: `files` (revscripts, `data/lib`, the NPC script), `badges` (card texts of `items.xml`),
+`removedecks` (new) installer steps and a server restart; the client needs the update (a new module, opcode 173). Admin app: tab
+Painel > card Atualizar servidor > button Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was run on a live
+server or in a client.
+
+- **Where the cards are.** Player storages, block **7104400 - 7104619** ("Storage keys"; `cards_config.lua` `deck.storage`): +0 .. +80
+  the copies of the card whose own storage is 37000 + n (the index is the card's own offset, so no table of positions), +100 .. +180
+  1 while the card is "new" (looted, not seen in the window), +200 the migration version done, +201 the stored "open for good" mark
+  (decks, below), +203 the number of decks the migration found, +202 free. The card's own on / off storage stays 37000-37080 (1 =
+  on): the base bonus scripts, the spell scripts, `tautstring.lua` and the set code read it exactly as before. No DB table, no
+  item, no capacity. A count is capped at 9,999.
+- **Taking cards in** (`ChaosCards.absorb`, `takeIn`). A card item that reaches a player is removed and counted: when it is moved
+  (`EventCallback onItemMoved`, taken in a moment later), when it is used (the base card action asks `ChaosCards.use` first, as
+  before), by a sweep every `absorbMs` 4 s over the carried bags (slots 1-10, 12, 13, any depth, at most `carriedLimit` 600 items) and
+  the inbox, and at login. Loot from a corpse, a reward, auto loot, the market and the mail all end in a bag or the inbox, so all are
+  caught; a card in a depot or the store inbox is taken in by the login migration. A new card (first copy) is marked "new", gets the
+  chat line "X went into your Deck of Cards." and the toast **New card: NAME** (`ChaosNotify.send`, kind `newcard`, client
+  `game_chaosnotify` type `NEW_CARD`, at most `toastMax` 3 named per sweep, more are told in one line). A second copy only counts.
+- **The rules kept from the decks.** At most **5 cards on** at once (`maxActive`, the base's `maxActivatedCards`, whatever the
+  decks); one copy of a card counts however many copies are owned; the set bonuses (`sets`, O453) read the cards that are on, one per
+  convert line the class casts, exactly as before; the legendary cards keep the base's one-time flag (`110017 + id - 27547`) when
+  first turned on and their weapon rule. The deck capacity (5 / 10 / 20 cards inside a deck item) has no counterpart: the Deck holds
+  every card. Turning on needs a copy in the Deck, the Deck open and fewer than five on (`K.decide`: locked, none, off, max, on).
+  `card_set_model.py --check` and its test pass unchanged: no number moved.
+- **State stays true.** `ChaosCards.reconcile` (login, every 60 s, every toggle, the `deck` command): a card whose storage is 1 but
+  that has no copy, or while the Deck is locked, or beyond five, is turned off (the highest ids first) with a message.
+- **Unlock = a main quest step** (`mainquest_config.lua`, step `deck`, chapter 4, level 150 (owner 2026-11-14: level 14 was too early; the first cards drop from level 150 hunts such as Fleshrend and Mauler), "Open the Deck of Cards", flag `deck`,
+  also an `ack` so the tracker's Go button marks it; `docs/ROTEIRO_QUEST_PRINCIPAL.md` regenerated). The step is done when the
+  character opens the window: the client sends `open`, the server emits the flag (`ChaosMainQuest.emit`) and sends the state again
+  a moment later. `data/lib/chaos_mqgate.lua` `passed(player, "deck")` reads the quest's storages from any Lua state: the quest is
+  done, skipped or quiet, or the stored step is after `deck`; a character the quest has not seen yet (state -1) is not past. So a
+  character past the step has both unlocks with nothing stored, and the existing characters the quest passes silently
+  (`silentGap`: 40 levels below their own) get them without opening anything. The **Badge slot** opens with the same step: 
+  `ChaosBadges.onMoveItem` refuses a badge into slot 13 before it ("The Badge slot opens with the main quest step ..."); a badge
+  already worn stays. Not verified: whether the engine's right-click equip and the base badge movement script go through
+  `onMoveItem`; if they do not, they still wear a badge before the step.
+- **Cards looted before the unlock are never lost.** Counted and marked new all the same; the window lists them (locked banner with
+  the step name), no card can be turned on, the sweep clears any on storage. They work once the Deck is open.
+- **Migration** (`ChaosCards.migrate`, at login, marker +200 = `migrationVersion`): one walk over the carried bags, the inbox, the
+  store inbox and every depot chest (at most `migrateLimit` 30,000 items): every card item goes into the Deck, every deck item is
+  emptied (its cards in, any other item to the bag it sat in) and removed; a deck that cannot be emptied stays (nothing is lost) and
+  the next sweep tries again. A deck item found later (picked up from a house floor, returned by the market) is taken in by the sweep.
+  A character that held a deck has the Deck **open** (`grandfather`, the stored mark): decks were bought from Veyra for gold, never
+  for coins, so there is nothing to refund (the store's deck rows: none; the roulettes had retired them). Their cards on stay on. The
+  login tells how many cards moved. Not walked: items on house tiles (inert: picked up, the sweep takes them), the guild stash and
+  open market offers (they come back to a bag or the inbox and are taken in then).
+- **Out of the game** (`tools/patch_remove_decks.py`, step `removedecks`, after `soulpit`; test `patch_remove_decks_test.py`):
+  a deck is cut out of every monster loot list, NPC trade list (XML `shop_buyable` / `shop_sellable`, Lua `addBuyableItem`) and
+  whole-line reward / list entry of `scripts/` and `lib/`; what else names a deck id is listed as a warning. Veyra the Apothecary's
+  list and `apothecary_config.lua` no longer have the decks (`tests/apothecary_test.lua`), her "cards" answer points to the main
+  quest. `patch_badges.py` words the deck items "No longer used" and the card texts "It goes into your Deck of Cards by itself.
+  Open the Deck from the menu to turn it on." (`OLD_CARD_HINTS` migrates the earlier hints; `card_descriptions.csv` regenerated).
+  The deck ids stay in `badges_core.lua` (a deck can not be worn) and `cards_config.lua` `retiredDecks`.
+- **Protocol: one opcode, 173** (`ChaosOpcodes.cardDeck`, free in the reference server, the base client and every Chaos module;
+  "Opcode collision check"; 172, the card borders, is retired and stays reserved; `tests/opcode_fuzz_test.lua` and the README table
+  row hold it). JSON `{action, data}`. Server -> client: `cards {cards, max, needSet}` (the 76 cards once per `sync`, in the player's
+  language: server id `i`, client id `c`, name, tier, rarity, line, element, kind, set element, text, classes; about 17 KB, so
+  `Chaos.send` splits it, the client listens with `registerExtendedJSONOpcode`), `state {unlocked, own, new, on, distinct, copies, max,
+  class, set, quest}` (about 1 KB, sent only when it changed, `lastSent` per player). Client -> server: `sync`, `toggle {id}`, `seen
+  {ids}` or `{all}`, `open`; each limited (`cards.sync` 500 ms, `cards.toggle` / `cards.seen` 250 ms). Unity (paused): allowlisted
+  with the reason "not ported yet" (`tools/ci/unity_opcodes_allowlist.txt`).
+- **The window** (client `game_carddeck`, "Deck of Cards" in `client/MANIFEST.md`): a grid of all 76 cards with the card art (the item
+  sprite), copies (x2), rarity colour, a red "New" mark until seen (clicking or pointing a card, or "Mark all seen"); filters set,
+  rarity, element, owned or missing, "my class" and a text search (name, spell, element, text); sort by number, name, rarity, copies,
+  new first, element; the panel of the five slots with the set line, the card under the cursor (text, copies) and the Turn on / off
+  button; the summary line; a locked banner. **Hub menu**: card "Deck of Cards" on Hero > Build (the Character tab is full at six
+  cards and has the hotkey windows; the Deck has no hotkey), glyph `cards` (Loadouts moved to `dividers` for it), square badge with
+  the number of new cards (`CARD_POINTS`, the Passive Tree pattern), refreshed on every state. Toast on loot.
+- **Install / VPS steps for the owner.** Admin app first: tab Painel > card Atualizar servidor > button Aplicar e reiniciar (runs
+  `update-apply`: files, `badges` and `removedecks` steps, restart). Shell fallback: `chaos-ctl.sh update-apply`. By hand on the
+  VPS: `python3 -I server/tools/install_all.py SERVER_DIR --only badges,removedecks,files`. The migration needs no step: it runs
+  at each character's first login. The client: publish the client update (admin app: tab Comandos > card "Site e update do client" > field "Release do client" >
+  button "Publicar update"; shell fallback `chaos-ctl.sh publish-update TAG`). Staff check: `luajit tests/cards_test.lua`, and a test character past level 150 on the main quest: open the Deck
+  from Hero > Build, it opens; loot or drop a card item in the backpack: the toast "New card".
+- **Beta caveat.** The new step sits inside chapter 1, so the stored step index of a character on the main quest shifts by one from
+  that point on (the quest file says never to insert on a live server). The beta characters are the only ones; a character that
+  stood on a later step is shown the step before it again, which its facts pass at once, and is paid once more for it (a small
+  reward). Wipe or accept.
+- **Tests.** `tests/cards_test.lua` (config and keys, `decide`, `reconcile`, payloads, the gate over every quest state, absorb of
+  loose, nested and inbox cards, toasts, migration of carried, nested and depot decks, the stuck deck, sync / toggle / seen / open,
+  the set rules over the Deck, Character Info in both languages), `tests/badges_test.lua` (the badge gate), `tests/mainquest_test.lua`,
+  `tools/patch_remove_decks_test.py`, client `game_carddeck/carddecklogic_test.lua`, `game_chaosnotify/notifyview_test.lua`,
+  `client_chaos_topbar` tests, `tools/ci/check_topbar_tree.py`.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -17845,6 +18025,86 @@ fist attacks. A spell on a fire-immune Dragon Lord counted nothing, as it dealt 
 in Healing and Received. Taken by Dragon / Pyrevorn / Environment (fire fields). Party mode showed both members. The
 Combat Log window, the dropdown, To chat (the line in the chat input) and the Hunt Tracker's Meter button were checked.
 Not in game: summons, support, keystone and item-power procs, pets, and a season realm split in a party.
+
+## Trainers as DPS meters (O573) (`trainer_meter.lua`, `trainer_meter_core.lua`, `trainer_meter_config.lua`, client `game_trainerdps`)
+
+Owner 2026-11-14 (pt-BR): "faça os trainers também serem dps meters". Every training monster measures the damage that the
+players who hit it deal, and the player sees it in a small panel. Extended opcode **147** (`ChaosOpcodes.trainerMeter`),
+settings `trainer_meter_config.lua` (`Chaos.trainerMeterConfig`), pure logic `trainer_meter_core.lua`, tests
+`tests/trainer_meter_test.lua` (core, the engine file on a mocked engine, the opcode), `tests/combatlog_test.lua` (the
+hook on the combat log), `tests/monster_defence_test.lua` (the target profile), `tests/display_scale_test.lua`. No DB
+table, no storage, no engine patch, no change to the training.
+
+**Which monsters are trainers.** A monster whose name (lower case) contains `train` or `dummy` (the rule of
+`monster_tiers.lua`, which gives such a monster no tier), or is listed in `names`, unless it is in `exclude`. The training
+monsters of the temples and towns, the Idle Hall's and the guild hall's "Chaos Dummy" / "Training Dummy" all match. The
+exercise weapons' dummies (items: `exercise_training.lua`) are not monsters and take no damage, so they have no meter: the
+meter is for the monsters that players hit with their own attacks. The trainer stays a trainer: its health, its behaviour
+and the skill training are untouched (`skill_model.lua --check` does not change).
+
+**How damage is attributed.** It is the combat log's (`combatlog.lua` `dealt`, "DPS meter and combat log"): every hit that
+reaches a monster, as the engine's health event sees it, is attributed to the character that dealt it (a summon, minion,
+wolf or pet counts for its owner, under its own name) with the combat log's source (spell, rune, weapon attack, damage over
+time by element, proc, keystone, summon) and element, and the engine's critical flag. `combatlog.lua` hands such a hit on a
+trainer to `ChaosCombatLog.trainerHook` (set by `trainer_meter.lua`); nothing else listens. The whole hit counts: the combat
+log's usual cap at the target's health (no overkill) is lifted for a trainer, which never dies. The meter therefore reads
+exactly the numbers the DPS Meter reads, after every multiplier of the damage chain that runs before the combat log's event.
+(`combatlog_config.lua` `enabled = false` switches the trainer meter off as well.)
+
+**The session.** One player's hits on one trainer (`trainer_meter_core.lua`), kept per player; each player sees only their
+own numbers, also several on the same trainer and several on different ones. Rules:
+- It begins with the first hit and ends `endAfterMs` (10 s) after the last one. The result stays (on the server until the next
+  session, a logout or a reset) and is sent once when it ends. A hit after the end, or on another trainer, begins a new one.
+- DPS now is what the last `windowMs` (5 s) summed to, per second, over `min(window, time so far)`, never over less than
+  `minSpanMs` (1 s: one lone hit is not "infinite"); the window is kept in 250 ms buckets. 0 once the session ended.
+- The average is the total over the time from the first hit, to now while it runs and to the last hit once it ended (never
+  over less than 1 s). Also: total, hits, crits, biggest hit and the source of it, rows by source (top 10, the rest as one
+  "Others" row; at most `maxRows` = 40 sources are kept, a source beyond that counts under "Other"), by element (top 10).
+- The Reset button starts the session over (an empty session on the same trainer; nothing counts until the next hit).
+- A trainer that disappears ends the sessions on it.
+- Party: the members that are hitting the same trainer are listed with their total and DPS now (the Party tab), each
+  member still sees their own numbers on top.
+
+**The target profile.** So that a number means what it would against a monster, the trainer defends with a profile
+(`profile` in the config; `monster_defence.lua` asks `ChaosMonsterDefence.trainerProfile`): the armour of a **normal**
+monster **of the level of the player that hits it** (default `class = "normal"`, `level = "player"`). The armour is the
+monster defence's own (`defence_config.lua`, `monster_defence_config.lua`, "Monster defence (O462)"): a normal monster's
+armour removes 25% of the median class hit of the level (40% an elite, 50% a boss; a weapon hit is measured against the
+median weapon hit and loses at most `weaponShareCap`), and an elite also gets `rankResistBonus` on its element resistance.
+Level "player" keeps the reading comparable: the same character reads the same DPS at any level, and two players compare by
+how far above or below the median class they are. A fixed `level` (1 to `maxLevel` 2500) or another `class` ("elite",
+"boss") makes the trainer one monster for everybody; `byName` gives one trainer its own profile; `enabled = false` leaves
+the trainer with the armour and resistances of its monster file (how it behaved before O573). The trainer's element
+resistances are its monster file's (no extra element profile).
+
+**Protocol** (JSON `{action, data}`, `Chaos.send`):
+- client -> server `watch {on}` (the panel is shown, or opens by itself: only then does the server send), `open` (the last
+  result now, `{none = 1}` when there is none), `reset`. One request per `requestMs` (250 ms, `ChaosRateLimit`); a refused
+  watch is answered by the next tick.
+- server -> client `state {tn, tid, sid, act, end, empty, cur, avg, tot, hits, crits, max, mxn, dur, w, e, rows [{n, t, i, v,
+  h, c, m}], el [[element, amount]], prof {c, l}, party? [{n, cur, tot, me?}]}` or `{none = 1}`.
+- Cost: no packet per hit. A summary once a second while a session is active, one when it begins, ends or is reset, nothing
+  to a client that did not ask. A watching player on a trainer: one small packet a second. The display scale
+  (`DS.trainerState`) is applied like the combat log's.
+- 147 is free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module; not 204,
+  because a client module that registers an opcode replaces the earlier one and `game_dpsmeter` owns 204
+  ("Opcode collision check"; `tests/trainer_meter_test.lua`). Unity: `tools/ci/unity_opcodes_allowlist.txt` (not ported yet,
+  Unity is paused).
+
+**Client** `game_trainerdps` (client/MANIFEST.md): a small movable panel (Chaos skin, `game_hudmove`, a `$mobile` rule) that
+opens by itself when a session begins (option "Open by itself"), shows DPS now, average, total, time, biggest hit, hits and
+crit share, the target profile, the tabs Skills / Elements / Party, and Reset, Copy, To chat (one line into the chat input,
+never sent by itself); when the session ends it shows the final result and hides after 15 s (settable) unless "Keep open"
+is on. It reuses the DPS meter's bar rows, number formats, icons and colours. Menu: Hunt > DPS Meter > menu > Trainer DPS
+panel.
+
+**Owner steps (VPS).** Server: Painel > Atualizar servidor > "Aplicar e reiniciar" in the Android admin app (desktop app:
+Atualizações > Atualizar servidor > Aplicar e reiniciar); shell fallback `chaos-ctl.sh update-apply`. No SQL, no install
+step, no config edit. Client: the new module reaches players with the next client release (Atualizações > Site e update do
+client > Publicar update do client with the release tag; shell fallback `chaos-ctl.sh publish-update TAG`). To check:
+hit a "Training Dummy" with a spell, a weapon and a summon; the panel opens by itself, 10 s after the last hit it shows
+"Finished", Reset empties it. To change the target profile, edit `profile` in `trainer_meter_config.lua` and restart (or
+`/reload scripts`).
 
 ## Death recap (`deathrecap.lua`, `deathrecap_core.lua`, `deathrecap_config.lua`, `sql/chaos_death_recaps.sql`, client `game_deathrecap`)
 
@@ -25326,6 +25586,31 @@ when a quest is ready to turn in".
   `tests/poi_test.lua` (merge, diff), `tests/npcmarks_test.lua` (`poi.lua` on a mocked engine), `tests/spellquest_test.lua`,
   `tests/ascension_quest_test.lua`, client `game_mapmarkers/npcmarkmath_test.lua`. Not run on a live server or in a client.
 
+### Hunt teleports on the map (O568) (`poi.lua` action `huntports`, `hunt_teleports_core.lua` `H.ports`, client `game_mapmarkers` `huntports.lua`)
+Owner, 2026-11-14 (pt-BR): "coloque um marcador no mapa onde estão os teleports das hunts. pra saber onde voltar".
+- **Where the list comes from.** The hall's slots (which hunt stands on which tile, on which floor) are decided at install
+  from the live map and the level order ("Hall order"), so no file of the repository holds them and no generator can
+  write a static client list. The server has them at runtime: `ChaosHuntTeleportsCore.ports(cfg, idx)` turns the index
+  of `data/lib/chaos_hunt_places.lua` into one row per hunt, placed plans and base hunts, sorted by id:
+  `{i = id, n = name, l = {lo, hi}, t = the hall teleport, f = the tile in front of it, a = the hunt's arrival,
+  b = the way out}`, every place as `{x, y, z}`. `b` is a plan's camp portal (`exit`) or a base hunt's added way back
+  (`cfg.returns`, the tile placed at startup); a base hunt whose way back is the map's own has none. `f`, `a` and `b` are
+  left out when unknown. `ChaosHuntTeleports.ports()` is the engine side.
+- **Protocol.** Extended opcode 153. The client's `hello` and `set` carry `huntports = true | false` (its own switch). On
+  `true` `poi.lua` sends `huntports {ports = [...]}` once, through `Chaos.sendChunked` (about 150 rows, over 8 KB); the
+  encoded message is kept until the hunt teleports are loaded again (`HT.idx` changes). A `set` is rate limited
+  (`poi.set` window, `cfg.setMs`), the hello is not. Only a client that sends `huntports = true` gets it: the Unity
+  client's hello does not carry the key, so it never receives the action (`tools/ci/check_unity_opcodes.py` counts
+  opcodes, not actions).
+- **What the client does.** A gate on the map for every hall teleport; the one the character last used or came out of
+  gold and pulsing (where to go back); a door for the way out of each hunt the character has entered, the one of the hunt
+  it stands in blue and pulsing. Which teleport was last used is decided on the client from the character's own steps (no
+  server message): a step of more than 3 tiles from a tile next to a hall teleport is a use of it, a step to a tile in
+  front of a hall teleport (the camp portal sends the character there, `ChaosHuntTeleports.backFor`) is a coming out of it.
+  The state is kept per character in the client's settings. Client rules: `client/MANIFEST.md` game_mapmarkers.
+- **Tests.** `tests/huntports_test.lua` (the list, the hello, once per ask, the reload, the rate limit, a hello without the
+  key), client `game_mapmarkers/huntportmath_test.lua`. Not run on a live server or in a client.
+
 ## Minimap radar (O543) (`radar.lua`, `radar_core.lua`, `radar_config.lua`, client `game_minimapdots`)
 
 Owner decision 2026-11-13: monster dots on the minimap by "a radius of 30 sent by the server": red dots for monsters, a bigger dot with a gold ring for a
@@ -30120,7 +30405,7 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Looks (pair 43).** Each chest wears one of three own looks at random, server items **32281-32283** (client 38642-38644, art from PixelLab, client/MANIFEST.md "Cursed Chest looks"; `chest.itemIds`): A idles in 5 phases, B is a still, C chews in 8. Installed by `tools/install_cursed_chest.py` (step `cursedchest`, test `tools/install_cursed_chest_test.py`): items.otb copies of node 12664 (container, blocks, not moveable; A and C with FLAG_ANIMATION) and items.xml entries "cursed chest". An id the server does not have (`ItemType(id):getId() == 0`) is left out of the draw; with none installed the chest is 12664 as before. All four ids count as a cursed chest (`K.isChestId`); the use is found by action id and tile. **Item id block 32281-32299 is reserved for this set** (32251-32270 are orbs and potions; 32271-32280 stay free; 32284-32299 free). Ship pair 43 before the install step: older clients draw nothing for the new ids.
 - **Chest.** The Sealed Coffer's item (12664, the fallback look, not moveable) with action id **47730** (free: 47720-47729 are the Harvest Portals), placed on the corpse's tile or the nearest free one. A dark loop (`CONST_ME_MORTAREA`, every third `CONST_ME_PURPLEENERGY`, 1.5 s) plays over it. The owner gets a text, a toast (kind `cursedchest`, header CURSED CHEST; every toast of the event uses it) and a floating "CURSED CHEST" label (en and pt-BR). Only the owner and the owner's party may use it.
 - **Event.** The use locks the chest. The opener and the party members within 9 tiles take part. The hordes (all in `event.hordes`) are 4, 5, 6, 7 and 8 monsters (+35% per extra player, at most x2), health x1.0 / 1.1 / 1.2 / 1.35 / 1.5, damage x1.0 / 1.05 / 1.1 / 1.2 / 1.3; the share of magic and rare monsters grows from 0% to 70%, and horde 5 has a rare (70%) or legendary (30%) leader. The next horde comes 3 s after one is dead, or 45 s after the last came (not while 30 live). Progress "Horde 3/5" shows as a message, a toast and a label over the chest. Monsters are the killed monster and the non-boss monsters within 10 tiles (up to 4 kinds), padded from a themed list by level band; they are scaled to 90% of the opener's level (areagen's `levelScale`: health, damage; capped x3 / x2), paced like a hunt (`ChaosPace.apply`: experience as normal) and appear 2-5 tiles from the chest.
-- **Fail.** 270 s total; or nobody who took part is alive, online and within 16 tiles for 10 s (warning after 4 s). The chest crumbles with no loot and the event's monsters are removed.
+- **Fail.** 300 s total (`event.totalSec`, 270 before; owner 2026-11-14: a 5 minute limit). The start line names the limit and the party is told the time left at 120, 60, 30 and 10 s (`event.timeLeftSec`); or nobody who took part is alive, online and within 16 tiles for 10 s (warning after 4 s). The chest crumbles with no loot and the event's monsters are removed.
 - **Win and loot.** After horde 5 the chest unseals for 120 s. Each participant (by creature id, recorded at the use) takes one roll, delivered to the backpack (inbox when full): gold = 3 minutes of hunting gold at the chest's level (the Respec table, same numbers as `gamble_config.lua`, checked by the test), 1 Orb of Upheaval (+1 per 400 levels, at most 4), 3% Orb of Fate, Rune Shards (4 + level/25, at most 30), 1 crafting orb, 1-2 gear pieces rolled at rarity floors Magic / Rare / Legendary (30 / 50 / 20) with the hunting level's rarity roll and item find x1.5, and the unique roll as a rare kill. A party's rolls are x1.0 / 0.75 / 0.6 / 0.5 / 0.45 by size.
 - **Economy.** About 4-5 chests an hour of hunting (the cooldown caps 10). The gold is about 22% of an hour's, and the fights (about 3 minutes, monsters are husks) cost the same in lost corpse loot, so gold is neutral; orbs are about 5 an hour, against 24-33 from tier 15 rifts. No model config was changed; `store_model`, `roulette_model`, `progression_model`, `skill_model`, `pack_model` pass.
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
@@ -31410,11 +31695,40 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   ordinary corpse container. Rules: corpse 0 stays nothing (22 Chaos monsters, summons, pets, Necromancer minions); a monster whose own
   corpse id is in `keepIds` keeps it; bag id 0 is the old behaviour. `corpse_bag.lua` calls the function at every load, so
   `enabled = false` and a `/reload` give the bodies back. An engine without the patch logs one line and nothing changes.
+* **The look (O565).** Owner 2026-11-14 (pt-BR): "os corpos dos monstros estao assim. deveriam ser aquelas bags basicas mais
+  genericas". Root cause: the server sent the stock client item of server 6068, which in the dat is the dark, horned lump of a demon
+  corpse (the first stage of 6068 -> 5527 -> 5528, drawn with four black sparkles), so on a hunt every kill left a dark blob that
+  read as the monster's own body, with the client's warm glint ring (`bag_glint`) on top and, with the loot label's highlight, an
+  orange or red patch; the bag table (engine patch 0089) was right (one id for every monster), the id's *look* was wrong. Fix, no
+  new sprite and no new pair: `corpse_config.lua` `look = 19202`, the client item id of a plain brown leather loot pouch of the
+  current pair (a container the dat does not let a player pick up; the stock "reward container" look); step `lootbag`
+  (`tools/patch_monster_corpses.py`) rewrites only the client id attribute of the items.otb node of server 6068 (`items.otb.bak`
+  keeps the original, the file is parsed again and the node checked), so the server sends 19202 for the bag of every monster,
+  the same one look. Server ids and every script are unchanged (the bag is still 6068, the 191 import monsters still name it).
+  Client: `GroundLabelsLogic.LOOT_BAG_LOOK` (19202, next to the stock `CORPSE_BAG_ID`; a pouch has no corpse flag in the dat either)
+  and the glint of `game_chestaura` are keyed on the new id (both keep 6068 for a server that has not run the step; the test
+  compares them with the config). There is no rarity colouring of the bag itself: the label over it carries the rarity colour.
+  Stock bag colours exist in the pair (client 2857-2863: green, yellow, red, purple, blue, grey, gold) for a later rarity tint,
+  which would need the bag to change id after the loot is known: not done.
+* **Empty bags go fast (O565).** Owner 2026-11-14 (pt-BR): "faca tambem eles desaparecem mais rapido quando estiverem vazias". A bag
+  with items keeps its `seconds` (180). Once it holds nothing (looted by hand, quick loot, auto loot, a monster with no loot) its
+  remaining time is cut to `emptySeconds` (config, 5): `scripts/chaos/corpse_empty.lua`. There is no engine event for "the last
+  item left this container" (hand moves, quick loot, auto loot and scripts all go through different paths), so: an
+  `EventCallback onDropLoot` (priority 9, after the loot layer, autoloot and globes) remembers the *tile* of every new bag; one
+  timer, running only while a tile is remembered, looks at those tiles every second (`ChaosCorpse.sweep`, pure, tested) and for
+  each bag there with `getSize() == 0` and more than `emptySeconds` left calls `item:setAttribute(ITEM_ATTRIBUTE_DURATION, ms)`,
+  which moves a decaying item to its new time (decay.h). The time is never made longer, a bag with loot is left alone, a tile is
+  forgotten when it has no bag, only emptied bags, or when the bag could not live any more. A bag goes `emptySeconds` plus at most
+  one second after its last item left. No items.xml change (the decay is the item's own, the step only sets the full time),
+  nothing to install for it: the file loads with the other scripts. State is in memory; after a restart bags already on the
+  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer:** Raise Dead and
+  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside), so they now have those
+  5 seconds after the last item leaves a bag instead of up to 3 minutes; raise `emptySeconds` if that is too short.
 * **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
   Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
   fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),
   and the C++ header test has no player path.
-* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`): item 6068 gets the name
+* **items.xml.** Install step `lootbag` (`tools/patch_monster_corpses.py`, idempotent, after `corpses`; also the items.otb look above): item 6068 gets the name
   "sack of loot", the config's slots (the biggest stock corpse holds 60, bonus loot and orbs come on top), `decayTo 0` and
   `duration` 180 s. No remains stage: the stock chain left a pile (5527, 5528) after the loot. `corpseType` stays, so
   `ItemType:isCorpse()` is true. 180 s is the loot stage the 5 minute decay scaling (`patch_corpse_decay.py`) left before.
@@ -33684,3 +33998,52 @@ Client side: client/MANIFEST.md "Pair 71" (77 outfits 3434-3510, `gen_wst_outfit
   at most 2 monsters on a look, the old look is the pool's (and the file's for ours), no monster in the recolour map, and a monster of the donor map has the same old look in both. `tests/hunt_teleports_test.lua` reads the map: no showcase cell repeats a look at pair 71 (cells that changed look: the plans of Quicksilver Wraith, Bonepicker, Azure Guard, Distorted Phantom and Nightfang Widow and base hunts with Talon Knight, Wyrm, Crab, Carrion Worm, Rustheap Golem, Ghoul, Usurper Warlock and the lost souls).
   `client/tools/gen_dungeon_banners.py` draws a monster of the map at its purchased look (no banner monster is in it: no banner changed).
 - **Tests.** `install_monster_wst_looks_test.py` (the map, the guard end to end, XML ours and base, Lua, pool, a monster that wears its donor look, idempotence, refusals), `audit_idle_looks_test.py`, `audit_shared_looks_test.py`, `client_pair_test.py`, `gen_wst_outfits_test.py` (CI). Not verified: in a running client.
+
+## Effect owner marks (O567; `data/lib/chaos_fx_owner.lua`, `data/scripts/chaos/fxowner.lua`, `data/spells/chaos/_supports.lua`, opcode 164, client `game_effectopacity`, client base patch `0202`)
+Owner 2026-11-14 (pt-BR): "adicione uma opção para transparência de efeitos. tanto do próprio player quanto dos outros." The picture: in a hunt a big earth spell covers the screen with opaque rock and dust, and the player sees neither monsters, floor nor their own character. The client has two sliders now, Options > Effects "Opacity of my effects" and "Opacity of other players' effects" (client/MANIFEST.md "game_effectopacity", client/BASE.md `0202`). The client cannot tell whose spell drew an effect (the 10.98 effect packet has no source), so the server says which ones are the caster's own.
+- **How mine is decided.** While a player's spell runs, the cast context of `ChaosSupportsSpell` (`W.cast()`: the spell script and every `addEvent` callback it started, so the later waves of a big spell too) names the caster. The wrappers of `Position:sendMagicEffect` and `Position:sendDistanceEffect` (installed once at the end of `_supports.lua`, outside any cast) pass every call on unchanged and, inside a cast, note `(kind, tile, id)` in the caster's buffer. One dispatcher tick later (`addEvent(flush, 0)`, the engine's own `addEvent`) the buffer goes to that player alone as one message on `ChaosOpcodes.fxOwner` (164): `marks {b = {x, y, z}, m = {kind, dx, dy, id, ...}}`, kind 0 effect, 1 missile, dx / dy from the base tile `b` (the first tile noted). The client gives those effects (found by tile and id, up to 3 tiles around it: the engine's send offsets of src-patch `0060` move a big effect by up to 2) and missiles the own alpha. Everything the client never gets a mark for counts as "other": other players', monsters', the engine's own sends (hit splashes, engine area effects) and what a revscript sends outside a cast. A script that sends a player's effects outside a cast can wrap them in `ChaosFxOwner.as(player, function() ... end)`. The engine cannot tell a monster's effect from another player's, so there is no third slider. Warnings (boss circles, fills, danger pings) are exempt in the client, the floor telegraphs of O549 are widgets and were never effects.
+- **Cost.** Only for a client that said `hello {need = 1}` (client -> server, handled by `fxowner.lua`; the client says it only while its two sliders differ, so the default 100 / 100 sends nothing and a cast costs a context lookup and a table lookup per effect). The wish lives in player storage `Chaos.storage.fxOwner` (7103120: 1 while wanted, else -1; set at the hello, cleared at login and logout) so it is read in the spell state whichever Lua state the spell runs in, and the module reads it at most once a second per player. At most 300 marks per message (the client reads 400), a repeated `(kind, offset, id)` is sent once, a tile of another floor or farther than 127 tiles from the base is dropped; a 300 mark message is about 4 KB, under the 8192 byte string limit. The Unity client never says hello, so it is never sent anything (`tools/ci/unity_opcodes_allowlist.txt`).
+- **Opcode and storage.** 164 is the next free number in the 100-187 range that the reference server, the base client's `ExtendedIds`, every Chaos script and every client module leave unused (`tests/fx_owner_test.lua` checks all four and that no two `ChaosOpcodes` share it). Storage 7103120 - 7103129 (7103121 - 7103129 free). No table.
+- **Tests.** `tests/fx_owner_test.lua` (opcode, storage, the pure buffer, the glue on a mocked engine: pass-through of every call, only a cast is noted, only for a client that wants it, one message a tick, the wish read once a second, hello on and off, a forced owner and a nest, a player who left; and that the client's `WARNING_IDS` holds every telegraph, warning and danger effect of the `ChaosVfx` tables). Client `effectopacitylogic_test.lua`, `effectopacity_glue_test.lua`; C++ `chaosfxowner_test.cpp` from patch `0202` (CI). Not verified: on a running server and client. In a hunt: with "others" at 30% and "mine" at 100%, cast a big earth spell yourself (solid) while a second player casts one (thin).
+- **Limits.** An effect the engine sends for a damage part (the hit splash on a target, an engine area effect of `COMBAT_PARAM_EFFECT`) has no Lua call to wrap, so it counts as the others' even when your spell caused it. A delayed burst that runs outside the cast context (a scheduler that does not start from the cast; the snares and mines of `_snares.lua` raise the context of the spell that placed them with `W.run`, so those are marked) would count as the others' too. If an effect of yours shows at the other opacity, find the script that sends it and wrap it in `ChaosFxOwner.as`.
+### Dissolve kill effects (O563)
+
+A kill effect with `dissolve = "<mode>"` (and `tint = 0..7`, 0 = the mode's own colour) in `cosmetics_config.lua` does not play a tile
+effect: the monster's own sprite comes apart on the clients near the kill (client `game_killdissolve`, base patch `0200`, "Kill dissolve (O563)"
+in client/MANIFEST.md). Modes (`cfg.dissolve.modes`): `sand` (blown away, top first), `pixels` (its pixels drift apart), `ash` (crumbles and falls),
+`burn` (burns from the edges inward), `void` (collapses to a point), `frost` (shatters and melts), `gold` (rises as dust). The cosmetic keeps `vfx`:
+the plain effect that plays when the dissolve cannot.
+
+- **The message.** `cosmetics.lua` `M.dissolve` (called by the death handler `ChaosCosmeticsDeath` after the killing blow of a character that wears one):
+  `{action = "kdis", data = {i, x, y, z, m, t, o = {l, h, b, g, f, a}, d, v = {id, dx, dy}}}` on the cosmetics opcode 225 (no new opcode, an old client
+  ignores the action) to the killer first and the other players within `cfg.dissolve.range` (9 x 7 tiles), at most `maxViewers` (12). The rules are in
+  `cosmetics_core.lua` (`dissolvePayload`, `dissolveAllowed`, `dissolveViewers`) and tested in `tests/cosmetics_test.lua`.
+- **The caps.** At most `cfg.dissolve.perSec` (4) dissolves per killer and second: the next kill of that second plays the plain effect (`Vfx`) on the
+  server, as does a monster that has no creature look (an item look, an invisible one) or a kill with nobody to tell. The client caps again (6 at once, 3 on a
+  phone). One message per viewer per kill, about 120 bytes; a pack of 4 kills a second to 12 viewers is 48 messages a second at the very worst.
+- **The window.** `rows` carry `dissolve` and `tint` (tint 0 left out); the store offer's `look` the same (`offerLook`), so the Customise window and the store
+  preview play the dissolve on their dummy monster.
+- **Config rules** (`validate`): `dissolve` must be one of the modes, `tint` a whole number below `cfg.dissolve.tints`, only a kill effect has either.
+- **The effects.** Replaced in place (same id, same owner rule): Verdigris Splash (112, reward track 500 points: green `pixels`), Pact Ember (130, Chaos Pact
+  November 2026: crimson `burn`), Honor Brand (110, Battleground honor vendor: crimson `ash`). New: Windswept (122, `sand`), Unravelling (123, `pixels`),
+  Ashfall (124, `ash`), Frostmelt (125, `frost`), all four in the store at 200 (the kill effect price: one price per kind, `docs/PRICES.md`); Emberfade (126,
+  ember `burn`, achievement Keeper of the Ashes), Void Collapse (127, `void`, Herald of Omens), Gilded Dust (128, gold `gold`, Hoardbreaker). Names stay
+  English like every cosmetic name (`i18n_strings.lua`: proper names stay in English); the texts the client adds are in pt-BR.
+- **Never power.** A dissolve changes a picture only (no damage, drop, timing or area); the cosmetics test still refuses any field that is not cosmetic.
+## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)
+Owner, 2026-11-14 (pt-BR): "coloque mais costumes divertidas. como personagens, coisas inusitadas (como lata de energético, maço de cigarro e coisas diferentes assim)", and two more items for the same client pair: the Rune Seal aura as a round ring, and a Dusk Moth pet with a stronger animation.
+Client side: client/MANIFEST.md "Pair 72 (pending owner approval)" (14 outfits 3511-3524, `gen_fun_costumes.py`, the art). This is the server side.
+- **How a costume works** (the pair 37 pattern, `chaos_pack37_looks.lua`): an outfit of the client pair, one `outfits.xml` line per sex written by `install_outfits.py` (locked: `unlocked="no"`), and a store offer (`kind = "outfit"`, key `outfit:LOOK`, `looktype = lookfemale`, 300 coins) in Cosmetics > Costumes; buying it unlocks the outfit. "One look for both sexes", no colours, no addons.
+  `chaos_fun_costumes.lua` holds `M.looks` (the 14 client looks in id order, held to `client/tools/sprites/art_import/fun_costumes.csv` by `tests/fun_costumes_test.lua`) and `M.outfits` (the 12 costumes, one per line: key, name, male = female look, cost, category, description). The 12: 3511 Volt Fizz Can, 3512 Puff Pack, 3513 Wandering Toaster, 3514 Rubber Duck, 3515 Peeking Box, 3516 Pizza Slice,
+  3517 Road Cone, 3518 Garden Gnome, 3519 Living Snowman, 3520 Mushroom Folk, 3521 Bone Jester, 3522 Chicken Suit. Price 300 like the six pair 37 costumes (the store's lowest outfit price; `store_model.lua` and docs/PRICES.md price no costume, so nothing there changes). Names and descriptions are English in the files; the descriptions are one sentence each
+  and `i18n_strings.lua` has their pt-BR texts (the store translates a description sentence by sentence; an offer's title stays as written, as for every outfit).
+- **The gate** is `config.lua` `chaosClientPair` >= 72 (`client_pair.PAIR_FUN`; "Client pair guard"), read two ways: the install steps through `client_pair.allows`, the Lua through `ChaosFunCostumes.PAIR72` (the same record read from `config.lua` at load: `recordedPair`, `parsePair`). Below it, or with no `config.lua` (the unit tests): no outfits lines, no store offers, the Dusk Moth keeps the stock look 213, the Rune Seal keeps 2186, so a client on pair 71 or older is never
+  offered an outfit it cannot draw. The Lua gate is read when the server starts, so raise the record and restart (the update does).
+- **Outfits.** `install_outfits.py` writes the 12 lines per sex into their own block "Chaos pair 72 outfits" (rewritten when the list changed, gone again when the record is lowered, a look type that already has a line outside the block stops the step). The store: `shop_config.lua` calls `ChaosFunCostumes.addStore(cfg)` after the pair 37 hook, which appends the 12 offers to the end of the "Costumes" subcategory
+  (18 offers in all). `tests/season_test.lua` and the other store tests are unchanged: the category was already decided for seasons (looks only).
+- **Dusk Moth** (pet id, owners, store unlock `petDuskMoth`, price 400 stay). `install_fun_looks.py` (step `funlooks`, after `monsterwstlooks`) turns `<look type="213">` of every installed monster file named Dusk Moth (`data/monster/monsters/chaos/pets/dusk_moth.xml`) into 3523 only at pair 72; the repository file keeps 213. `pets_config.lua` (species `dusk_moth`, shown in the pets window) and the store offer in `shop_config.lua` read `ChaosFunCostumes.mothLook()`. A file with another look stops the step.
+- **Rune Seal** (aura id 32, name, owners, the Skaldra boss drop stay). `data/XML/chaos_auras_pair72.csv` (`32,3524,Rune Seal`) is read by `install_auras.py` after the other manifests, only at pair 72, and replaces the row of the same aura id (the theme manifest's 2186); lowering the record puts 2186 back. `chaos_theme_art.lua` gives the exclusive's `look` the same id through `ChaosFunCostumes.sealLook()` (the exclusives window previews it).
+  The old ring (outfit 2186) stays in the pair.
+- **Golden Ki and Crimson Blaze (O577)** (aura ids 6 and 7, names, owners and store offers stay). The old looks 1511 and 1512 are one flame drawn straight up (owner 2026-11-14: "nao estao obliquos, troque por outros"); pair 72 holds two oblique ground auras, outfits 3525 and 3526 (client/MANIFEST.md "Pair 72", Ki auras; `gen_ki_auras.py`). `data/XML/chaos_auras_pair72.csv` gets the rows `6,3525,Golden Ki` and `7,3526,Crimson Blaze` next to `32,3524,Rune Seal`: `install_auras.py` (same gate, same replace-by-aura-id rule, same rollback: lowering the record puts 1511 and 1512 back; `chaos_auras.csv` is unchanged) and `ChaosFunCostumes.ki` / `ChaosFunCostumes.auraLook(aura)` (the new look once the gate is on, else the old one; the Rune Seal answers too, nil for any other aura). `ChaosVfxAura` in `chaos_vfx.lua` is generated and keeps 1511 and 1512 (the `tests/fun_costumes_test.lua` rows hold `ki.old` to it). The base server finds an aura by its client look, so each aura id keeps exactly one look at a time: the new look replaces the old one in the same `auras.xml` line, nothing is offered twice. Tests: `tests/fun_costumes_test.lua` (the rows against `ki_auras.csv`, the manifests, `auraLook` off and on), `install_fun_looks_test.py` (auras 6 and 7 at pair 71 / 72 / 71 again).
+- **Not touched:** the Codex, the wiki and the website lists read the store config, so they list the costumes the day the gate is on (their generated files are unchanged while it is off); `docs/CREDITS.md` lists the art (PixelLab, ours).
+- **Tests.** `tests/fun_costumes_test.lua` (looks in order, the same rows as the art table, pt-BR texts, the pair record reading, gate off and on: the store, the pet, the store offer, the aura exclusive), `install_outfits_test.py` (the block at 71 / 72 / 75, lowered, a clash), `install_fun_looks_test.py` (the moth file and the aura at 71 / 72, a rollback, refusals, dry run), `client_pair_test.py`, `gen_fun_costumes_test.py` (CI). Not verified: a client, a server with the pair on.

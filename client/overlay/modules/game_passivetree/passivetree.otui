@@ -565,6 +565,29 @@ UIWindow
     !tooltip: tr('Vocation Trials: clear your vocation trial to open pairs of special nodes (choose one of each pair)')
     @onClick: modules.game_passivetree.toggleTrials()
 
+    // O559: the badge of an open trial (trials.lua); the button itself glows
+    Label
+      id: trialsBadge
+      visible: false
+      phantom: true
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-top: -5
+      margin-right: -5
+      size: 16 16
+      text-auto-resize: false
+      text-align: center
+      font: verdana-11px-rounded
+      color: #fff2c8
+      background-color: #b8160f
+      border-width: 1
+      border-color: #f6cf72
+
+      $mobile:
+        size: 24 24
+        margin-top: -8
+        margin-right: -8
+
   UIWidget
     id: presets
     anchors.top: toolbar.bottom

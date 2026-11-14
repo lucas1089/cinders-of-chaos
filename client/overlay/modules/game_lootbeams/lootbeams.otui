@@ -33,7 +33,7 @@ LootBeamsLegendRow < UIWidget
 
 LootBeamsWindow < ChaosMainWindow
   id: lootBeamsWindow
-  size: 420 452
+  size: 420 490
   !text: tr('Loot Beams')
   @onEscape: modules.game_lootbeams.hideSettings()
 
@@ -68,7 +68,7 @@ LootBeamsWindow < ChaosMainWindow
     anchors.top: orbs.bottom
     anchors.left: parent.left
     margin-top: 14
-    width: 80
+    width: 150
     !text: tr('Height')
 
   ChaosComboBox
@@ -83,7 +83,7 @@ LootBeamsWindow < ChaosMainWindow
     anchors.top: heightLabel.bottom
     anchors.left: parent.left
     margin-top: 16
-    width: 80
+    width: 150
     !text: tr('Intensity')
 
   ChaosComboBox
@@ -93,9 +93,25 @@ LootBeamsWindow < ChaosMainWindow
     margin-left: 8
     size: 110 22
 
+  ChaosLabel
+    id: styleLabel
+    anchors.top: intensityLabel.bottom
+    anchors.left: parent.left
+    margin-top: 16
+    width: 150
+    !text: tr('Loot beam style')
+    !tooltip: tr('The look of every loot beam: A a soft light pillar, B two strands winding round each other, C a slim column with runes rising beside it.')
+
+  ChaosComboBox
+    id: styleCombo
+    anchors.verticalCenter: styleLabel.verticalCenter
+    anchors.left: styleLabel.right
+    margin-left: 8
+    size: 190 22
+
   ChaosLabelDim
     id: legendHeader
-    anchors.top: intensityLabel.bottom
+    anchors.top: styleLabel.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 16

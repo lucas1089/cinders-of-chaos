@@ -29,8 +29,17 @@ BagPanelPage < ChaosItemSlot
   cursor: pointer
 
 BagPanelButton < ChaosButton
-  size: 64 20
+  size: 52 20
+  padding: 2
   font: verdana-11px-antialised
+
+// the pin mark on a page button of a pinned bag (O557): a gold stud in the top right corner
+BagPanelPinMark < UIWidget
+  size: 7 7
+  background-color: #f6cf72
+  border-width: 1
+  border-color: #1a1410
+  phantom: true
 
 // the arrows and the hide button of the Loot Bag section (O516)
 BagPanelMini < ChaosButton
@@ -42,7 +51,7 @@ BagPanelMini < ChaosButton
 MiniWindow
   id: bagPanelWindow
   !text: tr('Inventory')
-  height: 520
+  height: 340
   // the phone interface is 960 x 540: shorter, the grid scrolls by page
   $mobile:
     height: 420
@@ -152,12 +161,13 @@ MiniWindow
       height: 0
       visible: false
 
+      // two rows (O557): the title and the hide button, then the arrows round the page text, so neither is squeezed
       Panel
         id: lootHeader
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 18
+        height: 40
 
         BagPanelMini
           id: lootHide
@@ -167,21 +177,23 @@ MiniWindow
           !tooltip: tr('Hides the Loot Bag. It stays open: its button shows it again.')
           @onClick: modules.game_bagpanel.toggleLoot()
 
-        BagPanelMini
-          id: lootNext
+        ChaosLabelDim
+          id: lootTitle
           anchors.top: parent.top
+          anchors.left: parent.left
           anchors.right: lootHide.left
-          margin-right: 2
-          text: >
-          !tooltip: tr('Next 20 slots of the Loot Bag')
-          @onClick: modules.game_bagpanel.lootArrow(1)
+          margin-right: 3
+          height: 18
+          text-auto-resize: false
+          color: #f6cf72
+          font: verdana-11px-antialised
 
         ChaosLabelDim
           id: lootPage
           anchors.top: parent.top
-          anchors.right: lootNext.left
-          margin-right: 3
-          width: 62
+          anchors.horizontalCenter: parent.horizontalCenter
+          margin-top: 22
+          width: 48
           height: 18
           text-auto-resize: false
           text-align: center
@@ -192,21 +204,21 @@ MiniWindow
           id: lootPrev
           anchors.top: parent.top
           anchors.right: lootPage.left
+          margin-top: 22
           margin-right: 3
           text: <
           !tooltip: tr('Previous 20 slots of the Loot Bag')
           @onClick: modules.game_bagpanel.lootArrow(-1)
 
-        ChaosLabelDim
-          id: lootTitle
+        BagPanelMini
+          id: lootNext
           anchors.top: parent.top
-          anchors.left: parent.left
-          anchors.right: lootPrev.left
-          margin-right: 3
-          height: 18
-          text-auto-resize: false
-          color: #f6cf72
-          font: verdana-11px-antialised
+          anchors.left: lootPage.right
+          margin-top: 22
+          margin-left: 3
+          text: >
+          !tooltip: tr('Next 20 slots of the Loot Bag')
+          @onClick: modules.game_bagpanel.lootArrow(1)
 
       Panel
         id: lootGrid
@@ -246,6 +258,7 @@ MiniWindow
         id: sortButton
         anchors.top: parent.top
         anchors.left: parent.left
+        width: 60
         !text: tr('Sort')
         !tooltip: tr('Puts the items of this page in order: by item, then the bigger stack first.')
         @onClick: modules.game_bagpanel.sort()
@@ -254,8 +267,18 @@ MiniWindow
         id: purseButton
         anchors.top: parent.top
         anchors.left: sortButton.right
-        margin-left: 6
-        width: 72
+        margin-left: 4
+        width: 50
         !text: tr('Purse')
         !tooltip: tr('Shows your purse in this panel. What you buy in the store is delivered there.')
         @onClick: modules.game_bagpanel.openPurse()
+
+      BagPanelButton
+        id: pinButton
+        anchors.top: parent.top
+        anchors.left: purseButton.right
+        margin-left: 4
+        width: 42
+        !text: tr('Pin')
+        !tooltip: tr('Pins the bag shown: it stays open, no other bag replaces it, and it opens again when you log in. Right click a bag button to pin it too.')
+        @onClick: modules.game_bagpanel.togglePin()

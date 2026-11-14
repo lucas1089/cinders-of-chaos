@@ -18078,7 +18078,7 @@ CodexData = {
 					sections = {
 						{
 							h = "What a unique is",
-							p = {"A unique is a named item with fixed stats. No orb changes it.", "Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.", "The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.", "Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.", "The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""}
+							p = {"A unique is a named item with fixed stats. No orb changes it.", "Every unique has one power of its own, the orange block under its text. It is not a stat: it changes how you play.", "The power works only for the classes listed after \"For:\" in its text. A unique with no \"For:\" works for every class. A class line includes its ascended classes.", "Every class its class row allows can wear the item. When your class is not on the power's list, the power sleeps and only the stats count.", "The tooltip tells which it is: \"Works for your class.\" or \"Cannot use: not for your class.\""}
 						},
 						{
 							h = "How many powers work at once",

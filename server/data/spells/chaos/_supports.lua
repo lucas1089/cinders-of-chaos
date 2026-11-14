@@ -307,3 +307,17 @@ function W.install(G)
 end
 
 W.install()
+
+-- O567: the effects a player's spell sends are noted as the caster's own and told to the caster's client in one message a tick
+-- later (data/lib/chaos_fx_owner.lua, only for a client that asked; the Options > Effects "my effects" opacity). The owner is
+-- W.cast(): the cast context above, addEvent callbacks of the spell included. Loaded here, outside any cast, so the module keeps
+-- the engine's own addEvent.
+if not ChaosFxOwner or not ChaosFxOwner.install then
+	local okFx, errFx = pcall(dofile, "data/lib/chaos_fx_owner.lua")
+	if not okFx then
+		print("[Chaos fx owner] " .. tostring(errFx))
+	end
+end
+if ChaosFxOwner and ChaosFxOwner.install then
+	pcall(ChaosFxOwner.install)
+end

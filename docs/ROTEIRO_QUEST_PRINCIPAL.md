@@ -7,7 +7,7 @@ Trechos entre chaves, como {m1} ou {p1}, são preenchidos em tempo de execução
 
 As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.
 
-São 103 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
+São 104 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
 
 ## Itens de quest e grupo
 
@@ -465,19 +465,25 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 - Dica: Guildas disputam fortalezas (nível 100). As Marches são PvP com saque arriscado (nível 150): só entre se quiser.
 - Conclusão (Ysolde): Saber onde não entrar também é saber.
 
-### 4.19 Mate 30 Ironhorn Brutes (nível 155)
+### 4.19 Abra o Deck of Cards (nível 150)
+
+- Objetivo: Abra o Deck of Cards
+- Dica: As cartas caem das hunts a partir do nível 150. Herói > Build > Deck of Cards: toda carta que você pega vai para ele sozinha. Abri-lo também abre o slot de Badge do seu inventário.
+- Conclusão (Ysolde): Agora as cartas têm casa, e os brasões têm lugar. Guarde bem os dois.
+
+### 4.20 Mate 30 Ironhorn Brutes (nível 155)
 
 - Objetivo: Mate 30 Ironhorn Brutes (monstros: Ironhorn Brute).
 - Dica: A forja Ironhorn é guardada por brutos que ignoram flechas. Use magias.
 - Conclusão (Ysolde): A forja ficou desprotegida. Interessante.
 
-### 4.20 Colete 6 Engrenagens Ironhorn (nível 155)
+### 4.21 Colete 6 Engrenagens Ironhorn (nível 155)
 
 - Objetivo: Colete 6 Engrenagens Ironhorn (monstros: Ironhorn Brute, Ironhorn Alchemist). Item de quest: Engrenagem Ironhorn, o stock item 9690 com nome, descrição e marca próprios. A Guardiã Ysolde recolhe os itens no passo seguinte.
 - Dica: As Engrenagens caem dos monstros Ironhorn enquanto esta etapa estiver aberta.
 - Conclusão (Ysolde): Engrenagens de uma máquina que não devia existir.
 
-### 4.21 Leve as Engrenagens à Ysolde (nível 155)
+### 4.22 Leve as Engrenagens à Ysolde (nível 155)
 
 - Objetivo: Leve os itens de quest à Guardiã Ysolde e diga "juramento": ela recolhe a quantia exata. Se faltar algum (perdido, ou o saco de saque sumiu antes de você pegar o item), ela avisa e eles caem de novo dos mesmos monstros enquanto a etapa estiver aberta.
 - Dica: Diga "juramento" à Guardiã Ysolde.

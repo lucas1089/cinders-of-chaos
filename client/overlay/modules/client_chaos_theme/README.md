@@ -64,9 +64,8 @@ updating the base client; files not in that list are our own art and are never o
 
 ## Menu bar (client_chaos_topbar)
 
-By default (O550) the menu is six small hub badges (Hero, Hunt, Adventure, Trade, Social, System) and a pinned Store; a badge
-opens one window with tabs and cards (client/MANIFEST.md "Menu hubs (O550)"). Options > Graphics "Menu in hubs", the footer
-link "Text menu" of the hub window and the text menu's "Menu Style" entry switch to the text menu described next, which is also the
+By default (O550) the menu is six small hub badges (Hero, Hunt, Adventure, Trade, Social, System; System at the right end) and the player's pins; a badge
+opens one window with tabs and cards (client/MANIFEST.md "Menu hubs (O550)"). Options > Graphics "Menu in hubs" and the text menu's "Menu Style" entry switch to the text menu described next, which is also the
 fallback when the hub code fails. A module's `addEntry` call is the same for both: its `text` must have a card in
 `client_chaos_topbar/topbar_tree.lua` and `topbar_cards.lua` (`tools/ci/check_topbar_tree.py` fails the build for one that has not).
 

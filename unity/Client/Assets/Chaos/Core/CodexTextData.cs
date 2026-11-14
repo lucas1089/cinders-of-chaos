@@ -770,7 +770,7 @@ namespace Chaos.Core
             ["The story"] = "A história",
             ["The tier follows from the value; keys of tier %s-%s roll I-III, keys of tier %s-%s roll I-IV, keys of tier %s-%s roll II-V."] = "O tier vem do valor; chaves de tier %s-%s rolam I-III, chaves de tier %s-%s rolam I-IV, chaves de tier %s-%s rolam II-V.",
             ["The tooltip of a unique you wear says \"Active.\" or tells why its power sleeps."] = "O tooltip de um único que você veste diz \"Ativo.\" ou explica por que o poder está inativo.",
-            ["The tooltip tells which it is: \"Works for your class.\" or \"Asleep: your class is not in its list.\""] = "O tooltip mostra qual é: \"Funciona para a sua classe.\" ou \"Inativo: a sua classe não está na lista.\"",
+            ["The tooltip tells which it is: \"Works for your class.\" or \"Cannot use: not for your class.\""] = "O tooltip mostra qual é: \"Funciona para a sua classe.\" ou \"Não pode usar: não é para a sua classe.\"",
             ["The veiled pool"] = "O pool velado",
             ["The weapon deals this much extra damage as arcane damage."] = "A arma causa essa quantidade de dano extra como dano arcano.",
             ["The weapon deals this much extra damage as death damage."] = "A arma causa essa quantidade de dano extra como dano de morte.",

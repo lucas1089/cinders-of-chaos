@@ -460,4 +460,88 @@ eq(C.lootPageFor(3, 0, 500, EP), 3, 'inside the open engine page: the asked page
 eq(C.lootPageFor(3, 250, 500, EP), 13, 'the engine page moved under it: the page of its first slot')
 eq(C.lootPageFor(30, 250, 500, EP), 25, 'beyond the end: the last page')
 
+-- ---- O557: no wall of empty slots
+eq(C.visibleSlots(36, 10, 4), 12, 'a rift bag with 10 items: 3 rows (the spare slot is in the third)')
+eq(C.visibleSlots(36, 12, 4), 16, 'a full third row opens a fourth')
+eq(C.visibleSlots(36, 0, 4), 8, 'an empty bag shows two rows')
+eq(C.visibleSlots(6, 0, 4), 6, 'never more than the capacity')
+eq(C.visibleSlots(36, 36, 4), 36, 'a full bag shows all')
+eq(C.visibleSlots(36, 3, 0), 4, 'columns 0 count as 1')
+eq(C.visibleSlots(20, 5, 5), 10, 'five columns: two rows')
+eq(C.usedSlots(10, function(i) return i == 2 or i == 6 end), 7, 'highest occupied + 1')
+eq(C.usedSlots(10, function() return false end), 0, 'empty')
+eq(C.usedSlots(0, function() return true end), 0, 'no slots')
+
+-- ---- O557: bag names
+eq(C.bagName({ 'Rift Key Pouch' }), 'Rift Key Pouch', 'a name')
+eq(C.bagName({ '', '  Gem Pouch ' }), 'Gem Pouch', 'the first usable, trimmed')
+eq(C.bagName({ 'item of type 1987', 'Backpack' }), 'Backpack', 'the engine placeholder is no name')
+eq(C.bagName({ 'Item' }), nil, 'item is no name')
+eq(C.bagName({ 5, false }), nil, 'not strings')
+eq(C.bagName(nil), nil, 'nothing')
+
+-- ---- O557: the loot header
+eq(C.pageText(1, 3), '1/3', 'page text')
+eq(C.pageText(13, 13), '13/13', 'widest page text')
+eq(C.pageText(0, 0), '1/1', 'clamped')
+local function w(t) return #t * 6 end
+eq(C.elide('Loot Bag: 12 items', 200, w), 'Loot Bag: 12 items', 'fits: unchanged')
+eq(C.elide('Loot Bag: 12 items', 60, w), 'Loot Ba...', 'cut with an ellipsis, no trailing space')
+eq(w(C.elide('Loot Bag: 12 items', 60, w)) <= 60, true, 'the cut text fits')
+eq(C.elide('Loot Bag', 10, w), '', 'no room even for the dots')
+eq(C.elide('Loot Bag', 18, w), '...', 'room for the dots only')
+
+-- ---- O557: pinned bags
+local items = { { id = 1987, container = true }, { id = 3031 }, { id = 1987, container = true }, { id = 2854, container = true } }
+eq(C.pinKey('main', 0, items), 'bag:1987#1', 'first bag 1987')
+eq(C.pinKey('main', 2, items), 'bag:1987#2', 'second bag 1987')
+eq(C.pinKey('purse', 3, items), 'pbag:2854#1', 'a bag of the purse')
+eq(C.pinKey('main', 1, items), nil, 'not a container')
+eq(C.pinKey('main', 9, items), nil, 'no such slot')
+-- an item came in front: the key does not move
+local moved = { { id = 3035 }, items[1], items[2], items[3], items[4] }
+eq(C.pinKey('main', 3, moved), 'bag:1987#2', 'same key after an item came in front')
+eq(C.pinSlot('bag:1987#2', moved), 3, 'the slot follows')
+eq(C.pinSlot('bag:1987#3', items), nil, 'gone')
+eq(C.pinSlot('junk', items), nil, 'invalid')
+eq(C.parsePin('purse'), 'purse', 'purse key')
+local k, id, n = C.parsePin('pbag:38608#2')
+eq(k .. id .. n, 'pbag386082', 'parse')
+eq(C.parsePin('bag:x#1'), nil, 'bad key')
+local pins = C.decodePins('bag:1987#1;junk;bag:1987#1;purse;pbag:38608#1;bag:5#1')
+eq(C.encodePins(pins), 'bag:1987#1;purse;pbag:38608#1', 'decode: valid, no duplicates, at most 3')
+eq(#C.decodePins(nil), 0, 'nothing saved')
+local l, on, why = C.togglePin({}, 'bag:1987#1')
+eq(on, true, 'pinned'); eq(#l, 1, 'one pin')
+l, on = C.togglePin(l, 'bag:1987#1')
+eq(on, false, 'unpinned'); eq(#l, 0, 'none')
+l = { 'a:1' }
+l = C.decodePins('bag:1#1;bag:2#1;bag:3#1')
+l, on, why = C.togglePin(l, 'bag:4#1')
+eq(why, 'full', 'a fourth pin is refused'); eq(#l, 3, 'still three')
+l, on = C.togglePin(l, 'bag:2#1')
+eq(on, false, 'a pin of a full list can still be removed'); eq(#l, 2, 'two')
+l, on, why = C.togglePin({}, 'x')
+eq(why, 'invalid', 'invalid key')
+eq(C.pinned({ 'bag:1#1' }, 'bag:1#1'), true, 'pinned?'); eq(C.pinned({}, 'bag:1#1'), false, 'not pinned')
+-- what opens after a login
+local st = { mainItems = items, purseItems = nil, purseOpen = false, open = {} }
+local a = C.nextPinOpen({ 'pbag:2854#1', 'bag:1987#2', 'purse' }, st)
+eq(a.kind, 'purse', 'the purse first')
+st.purseOpen, st.purseItems = true, items
+a = C.nextPinOpen({ 'pbag:2854#1', 'bag:1987#2', 'purse' }, st)
+eq(a.kind .. a.slot, 'bag2', 'then the bags of the backpack')
+st.open['bag:1987#2'] = true
+a = C.nextPinOpen({ 'pbag:2854#1', 'bag:1987#2', 'purse' }, st)
+eq(a.kind .. a.slot, 'pbag3', 'then the bags of the purse')
+st.open['pbag:2854#1'] = true
+eq(C.nextPinOpen({ 'pbag:2854#1', 'bag:1987#2', 'purse' }, st), nil, 'all open: nothing')
+eq(C.nextPinOpen({ 'bag:9999#1' }, st), nil, 'a gone bag is skipped')
+eq(C.nextPinOpen({ 'pbag:2854#1' }, { mainItems = items, purseOpen = false, open = {} }), nil, 'a purse bag waits for the purse')
+-- a pinned bag is neither reused nor closed by the others
+local memo = { [1] = { fam = 'main', slot = 0, pinned = true }, [2] = { fam = 'main', slot = 2 } }
+eq(C.previousFor(memo, 'main'), 2, 'previousFor skips a pinned bag')
+eq(#C.superseded(memo, 5, 'main'), 1, 'superseded skips a pinned bag')
+eq(C.superseded(memo, 5, 'main')[1], 2, 'only the unpinned one')
+
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end

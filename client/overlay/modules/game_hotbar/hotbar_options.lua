@@ -132,11 +132,13 @@ function M.destroy()
   window = nil
 end
 
--- A "Layout options" entry at the end of the Options window's left menu (Controls, Interface, Graphics, Misc.), under the
--- last entry. The menu (optionsWindow.options) is a vertical box that stacks its entries, so the button takes its own
--- row and never covers another one. Before (owner screenshot 2026-11-09) the button was made inside a panel found by
--- a guessed id with no anchors, which put it at that panel's top left, over the Controls and Graphics entries. The
--- label is the short one, 85 px in pt-BR at most (client/tools/check_text_fit.py checks it against the 115 px entry).
+-- A "Layout options" button at the bottom of the Options window's left menu panel (Controls, Interface, Graphics, Misc.).
+-- The panel (optionsWindow.options) is a plain FlatPanel, not a box: its entries are OptionButton widgets chained by anchors
+-- (the first to the panel's top, each next one under the previous), so a child with no anchors lands at the panel's top
+-- left, on top of Controls and its sub-entries. That was the owner's screenshot of 2026-11-09 and again of 2026-11-14 (the
+-- first fix wrongly assumed a vertical box). The button is now anchored to the panel's own bottom edge, where the longest
+-- open menu (about 215 of the panel's 442 px) never reaches. The label is the short one, 85 px in pt-BR at most
+-- (client/tools/check_text_fit.py checks it against the 115 px entry). Phones have no hotbar and no button.
 function M.addOptionsButton()
   local cs = modules.client_settings
   local w = cs and cs.optionsWindow
@@ -148,8 +150,12 @@ function M.addOptionsButton()
   b:setId('chaosLayoutButton')
   b:setText(tr('Layout options'))
   pcall(b.setFont, b, 'verdana-9px-bold')
+  b:setWidth(115)
   b:setHeight(22)
-  b:setMarginTop(6)
+  b:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+  b:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  b:setMarginBottom(7)
+  b:setMarginLeft(7)
   b.onClick = function() M.open() end
   w.chaosLayoutButton = b
 end

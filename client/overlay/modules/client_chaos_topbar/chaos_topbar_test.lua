@@ -79,7 +79,19 @@ g_logger = { warning = function(m) logged[#logged + 1] = m end, error = function
 g_keyboard = { isShiftPressed = function() return false end, bindKeyDown = function() end, unbindKeyDown = function() end }
 local artExists = true
 g_resources = { fileExists = function() return artExists end }
-modules = { client_settings = nil }
+-- the stock top strip of client_topmenu (the old menu panel): a widget the module hands out; the engine keeps its frame while it is hidden
+local stock = setmetatable({ kids = {}, byId = {}, visible = true, h = 22, phantom = false, destroyed = false }, {
+  __index = function(t, k)
+    if k:match('^set') then return function() end end
+  end })
+function stock:isDestroyed() return self.destroyed end
+function stock:isVisible() return self.visible end
+function stock:show() self.visible = true if self.onVisibilityChange then self.onVisibilityChange(self, true) end end
+function stock:hide() self.visible = false end
+function stock:getHeight() return self.h end
+function stock:setHeight(v) self.h = v end
+function stock:setPhantom(v) self.phantom = v end
+modules = { client_settings = nil, client_topmenu = { getTopMenu = function() return stock end } }
 function connect() end
 function disconnect() end
 function scheduleEvent(fn) events[#events + 1] = fn return #events end
@@ -106,12 +118,21 @@ local function badgeIds()
   return table.concat(out, ',')
 end
 
+-- the old top menu strip is gone in hub mode: hidden, no mouse, no height (it peeked out above the hub bar, owner 2026-11-14)
+eq(stock.visible, false, 'the stock top strip is hidden'); eq(stock.h, 0, 'sized to nothing'); eq(stock.phantom, true, 'and out of the mouse way')
+stock.visible, stock.h = true, 22   -- something showed it again (a logout, a relayout of the base)
+ChaosTopBar.refresh()
+eq(stock.visible, false, 'a refresh hides it again'); eq(stock.h, 0, 'and sizes it to nothing again')
+stock.h = 22; stock.visible = false -- grown while hidden
+ChaosTopBar.refresh()
+eq(stock.h, 0, 'a refresh takes the height away again')
+
 -- the login screen in the hub look: the System hub only (Join Discord, Exit, Options... whatever the offline entries give)
 eq(ChaosTopBar.getStyle(), 'hubs', 'the default look is the hubs')
 eq(badgeIds(), 'chaosHub_system', 'the login screen shows the System hub only')
-eq(bar.h, 38, 'the hub bar is 38 high'); eq(panel.marginTop, 5, 'badge margins')
+eq(bar.h, 42, 'the hub bar is 42 high'); eq(panel.marginTop, 5, 'badge margins')
 local hubWidth = bar.width
-eq(hubWidth, ChaosTopBarHubLogic.barWidth(1, 0, 28), 'the bar is as wide as its badge')
+eq(hubWidth, ChaosTopBarHubLogic.barWidth({ { kind = 'hub' } }, 32), 'the bar is as wide as its badge')
 for _, k in ipairs(panel.kids) do if k.style == 'ChaosMenuButton' then eq(k.visible, false, 'the category buttons are hidden in the hub look') end end
 
 -- the kept API
@@ -129,6 +150,7 @@ local shownButtons = 0
 for _, k in ipairs(panel.kids) do if k.style == 'ChaosMenuButton' and k.visible then shownButtons = shownButtons + 1 end end
 eq(shownButtons >= 1, true, 'the category buttons are back')
 eq(ChaosTopBarHub.isOpen(), false, 'no hub window in the text look')
+eq(stock.visible, false, 'the stock strip stays hidden in the text look too (its buttons are in the text menu)'); eq(stock.h, 0, 'with no height')
 ChaosTopBar.setStyle('hubs')
 eq(ChaosTopBar.getStyle(), 'hubs', 'back to the hubs'); eq(badgeIds(), 'chaosHub_system', 'the badge is back')
 
@@ -175,4 +197,5 @@ ChaosTopBarHub.layoutBar(panel)
 eq(#logged > failedBefore, true, 'the hub error is logged')
 
 terminate()
+eq(stock.h, 22, 'terminate gives the stock strip its height back'); eq(stock.phantom, false, 'and the mouse'); eq(stock.visible, true, 'and shows it')
 print('chaos_topbar_test: ' .. n .. ' checks ok')

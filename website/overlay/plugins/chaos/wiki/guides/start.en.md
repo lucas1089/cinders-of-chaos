@@ -11,14 +11,15 @@ Cinders of Chaos is a dark fantasy online RPG with its own client. You hunt, col
 => @account | Account | Create it on the website and accept the Terms of Use.
 => @download | Client | Download it and log in with your account.
 => @create | Character | Pick one of the free classes.
-=> @tutorial | Tutorial island | Fighting, spells, the passive tree and orbs.
+=> @note | Auto setup | One click sets heals, potions and attacks.
 => @temple | Cinderhold | The main city: your temple, with your class kit.
 
-## The tutorial island
+## Your first login
 
-At your first login you arrive on a small island. Each station teaches one thing: fighting, spells, the passive tree and orbs. You get a passive point and an Orb of Upheaval to practise with. Nobody dies on the island. When you leave, you go to the temple of Cinderhold with your class kit.
+You start at level 8 in the temple of Cinderhold, wearing your class kit. There is no tutorial island: you go straight into town.
 
-> [tip] Already know the game? Skip the tutorial at the goblin statue.
+- Open **System > Helper**: the **Auto setup** button blinks. One click sets heals, potions, food, haste and the attack rotation.
+- Open **Adventure > Main Quest**: the story leads you through the world step by step. The **Next Goals** card shows what to do next.
 
 ## Cinderhold, the main city
 

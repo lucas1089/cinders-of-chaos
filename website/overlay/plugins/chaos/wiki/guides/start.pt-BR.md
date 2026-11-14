@@ -11,14 +11,15 @@ Cinders of Chaos é um RPG online de fantasia sombria, com cliente próprio. Voc
 => @account | Conta | Crie no site e aceite os Termos de Uso.
 => @download | Cliente | Baixe e entre com sua conta.
 => @create | Personagem | Escolha uma das classes livres.
-=> @tutorial | Ilha do tutorial | Luta, magias, a árvore passiva e os orbes.
+=> @note | Configuração automática | Um clique ajusta curas, poções e ataques.
 => @temple | Cinderhold | A cidade principal: seu templo, com o kit da sua classe.
 
-## A ilha do tutorial
+## Seu primeiro login
 
-No primeiro login você chega a uma pequena ilha. Cada estação ensina uma coisa: lutar, usar magias, a árvore passiva e os orbes. Você ganha um ponto passivo e um Orb of Upheaval para treinar. Ninguém morre na ilha. Ao sair, você vai para o templo de Cinderhold com o kit da sua classe.
+Você começa no nível 8, no templo de Cinderhold, já com o kit da sua classe. Não existe ilha do tutorial: você vai direto para a cidade.
 
-> [tip] Já conhece o jogo? Pule o tutorial na estátua do goblin.
+- Abra **Sistema > Helper**: o botão **Configuração automática** pisca. Um clique ajusta curas, poções, comida, haste e a rotação de ataques.
+- Abra **Aventura > Quest Principal**: a história guia você pelo mundo passo a passo. O card **Próximos objetivos** mostra o que fazer a seguir.
 
 ## Cinderhold, a cidade principal
 

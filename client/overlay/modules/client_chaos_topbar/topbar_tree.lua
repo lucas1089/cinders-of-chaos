@@ -10,7 +10,7 @@ local T = ChaosTopBarTree
 T.HUBS = {
   { id = 'hero', name = 'Hero', glyph = 'helm', tabs = {
     { id = 'character', name = 'Character', cards = { 'Inventory', 'Skills', 'Spellbook', 'Passive Tree', 'Character Info', 'Achievements' } },
-    { id = 'build', name = 'Build', cards = { 'Spell Supports', 'Loadouts', 'Charms', 'Chaos Pact' } },
+    { id = 'build', name = 'Build', cards = { 'Spell Supports', 'Loadouts', 'Charms', 'Chaos Pact', 'Deck of Cards' } },
     { id = 'style', name = 'Style', cards = { 'Outfit', 'Transmog', 'Cosmetics', 'Pets' } },
     { id = 'home', name = 'Home', cards = { 'Hideout', 'Town Portal', 'Portal Style', 'House' } },
   } },
@@ -30,7 +30,7 @@ T.HUBS = {
     { id = 'war', name = 'War', cards = { 'Arena', 'Battleground', 'Scorched Marches', 'Guild Siege', 'Guild Wars' } },
   } },
   { id = 'trade', name = 'Trade', glyph = 'coins', tabs = {
-    { id = 'shop', name = 'Shop', cards = { 'Store', 'Market', 'Bank', 'Supply Stash', 'Crafting Bench' } },
+    { id = 'shop', name = 'Shop', cards = { 'Market', 'Bank', 'Supply Stash', 'Crafting Bench' } },
     { id = 'craft', name = 'Craft', cards = { 'Salvage', 'Professions', 'Orb Exchange' } },
     { id = 'finder', name = 'Finder', cards = { 'Item Finder', 'Ancestral Store', 'Character Bazaar' } },
   } },
@@ -57,6 +57,9 @@ T.DROPPED = { ['Unjustified Points'] = true, ['Crafting Tables'] = true }
 
 -- entries that sit in the slot of another one, shown only where the other window is missing (CATEGORIES `unless`)
 T.SHARED = { ['Spell List'] = 'Spellbook', ['Hunt Analyser'] = 'Hunt Tracker' }
+
+-- entries on no tab that still work as a pin on the bar (the Store has its own button there, owner 2026-11-14)
+T.PIN_ONLY = { ['Store'] = true }
 
 -- entries only the text menu shows (the way back from the text menu to the hubs)
 T.TEXT_ONLY = { ['Menu Style'] = true }

@@ -1,12 +1,18 @@
--- cards.lua: the cards and decks in the game (rules: cards_core.lua, numbers: cards_config.lua; server/README.md "Cards and
--- decks"). The glue the base deck system calls after tools/patch_badges.py:
---   ChaosCards.use(player, item)   the base card action asks this first: a card carried anywhere in the bags (any depth,
---        closed bags too) goes into a carried deck with room and turns on; used again it turns off. Returns true when the
---        card is handled (always, for a card), nil for anything else so the base code runs.
---   ChaosCommands "deck"           Character > Character Info: every card on and off with what it gives, the deck
---        capacity used and total, and how to get a deck when none is carried (replaces the base !deck dialog)
---   login and every cfg.reconcileMs   a card that is on but left the decks (dropped on death, a bag put away) is turned off,
---        and a stray action id goes, so nothing stays on without its card and nothing stays stuck
+-- cards.lua: the cards and the Deck of Cards (rules: cards_core.lua, numbers: cards_config.lua; server/README.md "Cards and decks",
+-- "Deck of Cards (O570)"). Since O570 there is no deck item: every card a character loots is counted in its Deck of Cards (storages
+-- of cards_config.lua `deck`, helpers in data/lib/chaos_carddeck.lua). The glue:
+--   ChaosCards.absorb(player, deep, only)   a card item (or an old deck item) a player carries is removed and counted in the Deck: on
+--        every move of a card (EventCallback onItemMoved), on use (ChaosCards.use, which the base card action asks first), by a
+--        sweep every cfg.deck.absorbMs, at login; deep (ChaosCards.migrate, once, marker storage) also walks the depot chests and
+--        the store inbox and empties every deck item. A new card gets the chat line and the toast "New card: NAME".
+--   ChaosCards.toggle(player, id)   the window turns a card on or off (the card's own storage 37000-37080 = 1, which the base bonus
+--        scripts read): the Deck must be open (a main quest step, data/lib/chaos_mqgate.lua), a copy owned, at most five on
+--   ChaosCommands "deck"           Character > Character Info: the Deck of Cards, the cards on with what each gives and the set line
+--        (replaces the base !deck dialog)
+--   login and every cfg.reconcileMs   a card that is on but has no copy, or while the Deck is locked, or beyond five, is turned off
+--   ChaosCards.push(player, plan, force)   the window (client game_carddeck, extended opcode 173 ChaosOpcodes.cardDeck): `cards` (the
+--        list, on sync) and `state` (copies, new marks, cards on, set line; sent when it changed). Client -> server: sync, toggle,
+--        seen, open (the main quest step "deck" is done by opening the window).
 --   ChaosCardsHit (onHealthChange)  the cards of a spell whose stock script was retired act on its Chaos replacement
 --        (cards_config.lua families, how = "hit"): the hit of that spell changes its element (convert cards) or a heal of
 --        the spell heals more (heal cards). The spell is told by the cast context the spells state writes into the
@@ -21,14 +27,11 @@
 --   summon release   the base keeps "one summon at a time" in a storage it clears only when the summon times out alive: a
 --        summon killed first left the storage at 1 for good, so no card fired again. Cleared at login and every few seconds
 --        while the player has no summon.
---   ChaosCards.push(player, plan, force)   card borders: the card ids that are on go to the client (extended opcode 172
---        ChaosOpcodes.cardState, action "state", client game_cardborder) at login, when the client asks ("sync") and whenever
---        the set changes (a card turned on or off, a reconcile that turned one off); an unchanged set is not sent again.
 --   card sets (O453)   three cards of one element (one per convert line the class casts) give a small set bonus: the cache
 --        of each player's set is refreshed with every reconcile (ChaosCards.refreshSet, called by push), the bonus is applied by
 --        the same ChaosCardsHit event (ChaosCards.applySet, for the hits a player deals); the player is told when the set
 --        changes (use) and in Character Info. cards_core.lua has the rules.
--- No storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866. One opcode, 172.
+-- Storage: the base's card storages (37000-37059, 37065-37080) and the Deck block 7104400 - 7104619. One opcode, 173.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): Player:getSlotItem, Container:getSize/getItem, Item:getId/getActionId/
 -- setActionId/moveTo/isContainer/getName.
 
@@ -45,8 +48,13 @@ if not ChaosCardsCore or not ChaosCardsCore.decide then
 	dofile("data/scripts/chaos/cards_core.lua")
 end
 
+if not ChaosCardDeck then
+	dofile("data/lib/chaos_carddeck.lua")
+end
+
 ChaosCards = ChaosCards or {}
 local M = ChaosCards
+local Deck = ChaosCardDeck
 local K = ChaosCardsCore
 local C = K.config
 
@@ -66,60 +74,95 @@ local function nameOf(id)
 	return tostring(id)
 end
 
--- the slots a player carries bags in: 1-10 and the badge slot 13 (a badge may be the Eternal Moon bag); 12 held the deck
--- before the slot was retired. Never 11 (the store inbox).
+-- ---------------------------------------------------------------- the Deck of Cards (O570)
+-- Where cards are taken in: the slots a player carries bags in (1-10, 12 and 13: the old deck slot and the badge slot, a badge may
+-- be a bag) and, for the one-time migration, the depot chests, the inbox and the store inbox.
 local SLOTS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13}
+local DK = C.deck
 
--- the carried decks (biggest first) and cards outside a deck, in every bag at any depth
-function M.scan(player)
-	local decks, loose, seen = {}, {}, 0
-	local function handle(item, deck, depth)
-		if not item or seen >= C.scanLimit then
-			return
-		end
+-- Walks the roots breadth first (containers opened) and lists what the Deck takes in:
+--   cards  {item, id}   decks  {item, parent, id} (a retired deck item)   seen  items looked at
+-- Never more than `limit` items. parent is the container (or nil for a slot) the deck sits in.
+local function collect(roots, limit)
+	local cards, decks, queue, i, seen = {}, {}, {}, 1, 0
+	for _, r in ipairs(roots) do
+		queue[#queue + 1] = {item = r, parent = nil}
+	end
+	while i <= #queue and seen < limit do
+		local e = queue[i]
+		i = i + 1
 		seen = seen + 1
+		local item = e.item
 		local id = item:getId()
 		if K.isCard(id) then
-			local entry = {id = id, aid = item:getActionId() == C.activeActionId, ref = item}
-			local list = deck and deck.cards or loose
-			list[#list + 1] = entry
-		elseif K.isDeck(id) and not deck and item:isContainer() then
-			local d = {id = id, item = item, used = item:getSize(), size = K.deckInfo[id].size, cards = {}}
-			decks[#decks + 1] = d
-			for i = 0, item:getSize() - 1 do
-				handle(item:getItem(i), d, depth + 1)
-			end
-		elseif not deck and depth < 10 and item:isContainer() then
-			for i = 0, item:getSize() - 1 do
-				handle(item:getItem(i), nil, depth + 1)
+			cards[#cards + 1] = {item = item, id = id}
+		elseif K.isRetiredDeck(id) then
+			decks[#decks + 1] = {item = item, parent = e.parent, id = id}
+		end
+		if item:isContainer() then
+			for _, inner in ipairs(item:getItems() or {}) do
+				queue[#queue + 1] = {item = inner, parent = item}
 			end
 		end
 	end
+	return cards, decks, seen
+end
+M.collect = collect
+
+local function carriedRoots(player)
+	local roots = {}
 	for _, slot in ipairs(SLOTS) do
-		handle(player:getSlotItem(slot), nil, 0)
-	end
-	table.sort(decks, function(a, b)
-		if a.size ~= b.size then
-			return a.size > b.size
+		local it = player:getSlotItem(slot)
+		if it then
+			roots[#roots + 1] = it
 		end
-		return a.used < b.used
-	end)
-	return {decks = decks, loose = loose, nameOf = nameOf,
-		storage = function(id) return player:getStorageValue(C.cards[id].storage) end}
+	end
+	local ok, inbox = pcall(function() return player:getInbox() end)
+	if ok and inbox then
+		roots[#roots + 1] = inbox
+	end
+	return roots
 end
 
--- repair what disagrees (K.reconcile); returns the plan
-function M.reconcile(player, st, quiet)
-	local plan = K.reconcile(st.decks, st.loose, st.storage)
+-- everything the migration reads: carried bags, the inbox, the store inbox and every depot chest
+local function deepRoots(player)
+	local roots = carriedRoots(player)
+	local ok, store = pcall(function() return player:getStoreInbox() end)
+	if ok and store then
+		roots[#roots + 1] = store
+	end
+	for depotId = 0, 30 do
+		local okD, chest = pcall(function() return player:getDepotChest(depotId, false) end)
+		if okD and chest then
+			roots[#roots + 1] = chest
+		end
+	end
+	return roots
+end
+
+-- the plan of the on / off storages as they are now (K.reconcile over the Deck)
+function M.plan(player)
+	return Deck.plan(player)
+end
+
+-- repair what disagrees (the plan's `off` cards go to storage 0) and tell the player; returns the plan
+function M.reconcile(player, quiet)
+	local plan = Deck.plan(player)
 	for _, id in ipairs(plan.off) do
 		player:setStorageValue(C.cards[id].storage, 0)
-		if not quiet then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lostoff, nameOf(id)))
-		end
-		log(player:getName() .. ": card " .. id .. " is no longer in a carried deck: turned off")
+		log(player:getName() .. ": card " .. id .. " is off (locked Deck, no copy, or more than " .. C.maxActive .. " on)")
 	end
-	for _, card in ipairs(plan.clear) do
-		card.ref:setActionId(0)
+	if not quiet and #plan.off > 0 then
+		if plan.lockedOff then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lockedoff, Deck.stepTitle(langOf(player))))
+		else
+			for _, id in ipairs(plan.off) do
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.lostoff, nameOf(id)))
+			end
+		end
+	end
+	if #plan.off > 0 then
+		plan = Deck.plan(player)
 	end
 	return plan
 end
@@ -310,9 +353,9 @@ local function announceSet(player, before, after)
 	end
 end
 
--- ---------------------------------------------------------------- card borders (client game_cardborder)
-local OPCODE = ChaosOpcodes.cardState
-local lastSent = {} -- player id -> K.stateKey of the set the client was last told
+-- ---------------------------------------------------------------- the window (client game_carddeck, opcode 172)
+local OPCODE = ChaosOpcodes.cardDeck
+local lastSent = {} -- player id -> the key of the state the client was last told
 
 -- the id the client draws for an item (the item type's client id; the server id when it is unknown)
 local function clientIdOf(id)
@@ -320,19 +363,48 @@ local function clientIdOf(id)
 	return ok and tonumber(cid) and cid > 0 and cid or id
 end
 
--- tell the client which cards are on; only when the set changed since the last message (or force). true when sent.
+local function stateView(player, plan)
+	local className = K.classNameOf(vocationId(player))
+	local lang = langOf(player)
+	local state = M.sets[player:getId()]
+	local unlocked = Deck.unlocked(player)
+	local hint = ""
+	if not unlocked then
+		hint = Chaos.t(player, K.TEXT.locked, Deck.stepTitle(langOf(player)))
+	end
+	return {unlocked = unlocked, owned = function(id) return Deck.owned(player, id) end,
+		fresh = function(id) return Deck.isFresh(player, id) end, plan = plan, className = className,
+		setLine = className and K.setLine(lang, state) or "", questHint = hint}
+end
+
+-- the live state: copies, new marks, cards on, the set line. Only when it changed since the last message (or force). true when sent.
 function M.push(player, plan, force)
+	plan = plan or Deck.plan(player)
 	M.refreshSet(player, plan)
-	local ids = K.activeIds(plan)
-	local key = K.stateKey(ids)
+	local payload = K.statePayload(stateView(player, plan))
+	local parts = {K.stateKey(payload.on), tostring(payload.copies), tostring(payload.distinct), #payload.new, tostring(payload.unlocked),
+		payload.set}
+	for _, id in ipairs(payload.new) do
+		parts[#parts + 1] = id
+	end
+	local key = table.concat(parts, "|")
 	local pid = player:getId()
 	if not force and lastSent[pid] == key then
 		return false
 	end
 	lastSent[pid] = key
-	local ok, err = pcall(Chaos.send, player, OPCODE, "state", K.statePayload(plan, clientIdOf))
+	local ok, err = pcall(Chaos.send, player, OPCODE, "state", payload)
 	if not ok then
 		log("card state " .. tostring(player:getName()) .. ": " .. tostring(err))
+	end
+	return ok
+end
+
+-- the static list of the 76 cards (names, rarity, text in the player's language), once per sync
+function M.pushCards(player)
+	local ok, err = pcall(Chaos.send, player, OPCODE, "cards", K.cardsPayload(langOf(player), nameOf, clientIdOf))
+	if not ok then
+		log("card list " .. tostring(player:getName()) .. ": " .. tostring(err))
 	end
 	return ok
 end
@@ -343,10 +415,9 @@ local function sound(player)
 	end
 end
 
-local function turnOn(player, id, ref)
+local function turnOn(player, id)
 	local c = C.cards[id]
 	player:setStorageValue(c.storage, 1)
-	ref:setActionId(C.activeActionId)
 	if c.legendary then
 		local flag = C.legendaryFlagBase + (id - C.legendaryFlagFrom)
 		local v = player:getStorageValue(flag)
@@ -356,100 +427,208 @@ local function turnOn(player, id, ref)
 	end
 end
 
--- the base card action asks this first. true: handled; nil: not a card.
+-- the toast "New card: NAME" of game_chaosnotify (server notifications.lua, kind newcard)
+local function toastNew(player, id)
+	local N = rawget(_G, "ChaosNotify")
+	if N and N.send then
+		pcall(N.send, player, Chaos.t(player, "New card"), nameOf(id), "newcard")
+	end
+end
+
+-- Takes the listed cards and decks into the Deck: one copy per card item (its stack), the item is removed. A deck item is
+-- emptied (its cards go in, anything else it holds goes to the bag it sat in) and removed; a character that held one gets the
+-- Deck open when cfg.grandfather. Returns the number of cards taken in and the new card ids.
+local function takeIn(player, cards, decks)
+	local taken, newIds, foundDecks = 0, {}, 0
+	local function absorbItem(entry)
+		local n = 1
+		local okC, count = pcall(function() return entry.item:getCount() end)
+		if okC and tonumber(count) and count > 1 then
+			n = count
+		end
+		local okR = pcall(function() return entry.item:remove() end)
+		if okR then
+			if Deck.add(player, entry.id, n) then
+				newIds[#newIds + 1] = entry.id
+			end
+			taken = taken + n
+		end
+	end
+	for _, entry in ipairs(cards) do
+		absorbItem(entry)
+	end
+	for _, deck in ipairs(decks) do
+		local okKids, kids = pcall(function() return deck.item:getItems() or {} end)
+		local clear = true
+		if okKids then
+			for _, kid in ipairs(kids) do
+				if K.isCard(kid:getId()) then
+					-- a card inside a deck that was not in `cards` (the walk reaches it, so this is a guard)
+					absorbItem({item = kid, id = kid:getId()})
+				else
+					local dest = deck.parent or player:getSlotItem(CONST_SLOT_BACKPACK)
+					local okM, moved = pcall(function() return kid:moveTo(dest) end)
+					if not (okM and moved ~= false) then
+						clear = false
+					end
+				end
+			end
+		end
+		if clear and pcall(function() return deck.item:remove() end) then
+			foundDecks = foundDecks + 1
+		end
+	end
+	return taken, newIds, foundDecks
+end
+
+-- tell the player what went into the Deck and show a toast for each new card
+local function announceTaken(player, taken, newIds, firstId)
+	if taken <= 0 then
+		return
+	end
+	local unlocked = Deck.unlocked(player)
+	if taken == 1 and firstId then
+		local text = unlocked and Chaos.t(player, K.TEXT.stored, nameOf(firstId))
+			or Chaos.t(player, K.TEXT.storedlocked, nameOf(firstId), Deck.stepTitle(langOf(player)))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+	else
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, K.TEXT.newcards, taken))
+	end
+	for i, id in ipairs(newIds) do
+		if i > DK.toastMax then
+			break
+		end
+		toastNew(player, id)
+	end
+	if #newIds > 0 then
+		sound(player)
+	end
+end
+
+-- Takes the cards the player carries (bags, inbox) into the Deck. deep = the one-time migration (also the depot chests, the store
+-- inbox). Returns the number of cards taken in.
+function M.absorb(player, deep, only)
+	local roots = deep and deepRoots(player) or carriedRoots(player)
+	local cards, decks
+	if only then
+		cards, decks = {{item = only, id = only:getId()}}, {}
+	else
+		cards, decks = collect(roots, deep and DK.migrateLimit or DK.carriedLimit)
+	end
+	if #cards == 0 and #decks == 0 then
+		return 0
+	end
+	local taken, newIds, foundDecks = takeIn(player, cards, decks)
+	if foundDecks > 0 then
+		player:setStorageValue(DK.storage.base + DK.storage.decksFound,
+			math.max(0, tonumber(player:getStorageValue(DK.storage.base + DK.storage.decksFound)) or 0) + foundDecks)
+		if DK.grandfather and not Deck.unlocked(player) then
+			Deck.unlock(player)
+		end
+	end
+	if deep and (taken > 0 or foundDecks > 0) then
+		local key = Deck.unlocked(player) and K.TEXT.migratedopen or K.TEXT.migrated
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, key, taken))
+		for i, id in ipairs(newIds) do
+			if i > DK.toastMax then
+				break
+			end
+			toastNew(player, id)
+		end
+	elseif taken > 0 then
+		announceTaken(player, taken, newIds, cards[1] and cards[1].id)
+	end
+	if taken > 0 or foundDecks > 0 then
+		M.push(player, M.reconcile(player, true), true)
+	end
+	return taken
+end
+
+-- the base card action asks this first. true: handled; nil: not a card. A card used goes into the Deck at once.
 function M.use(player, item)
 	if not (player and item) then
 		return nil
 	end
-	local id = item:getId()
-	if not K.isCard(id) then
+	if not K.isCard(item:getId()) then
 		return nil
 	end
+	M.absorb(player, false, item)
+	return true
+end
+
+-- the window asks to turn a card on or off
+function M.toggle(player, id)
+	id = tonumber(id)
+	if not (player and id and K.isCard(id)) then
+		return false
+	end
+	local plan = M.reconcile(player, true)
+	local action = K.decide({id = id, owned = Deck.owned(player, id), isOn = plan.active[id] == true,
+		count = K.activeCount(plan), unlocked = Deck.unlocked(player)})
 	local msg = function(key, ...)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, key, ...))
 	end
-	local st = M.scan(player)
-	local plan = M.reconcile(player, st, false)
-	-- the copy that was used, in a deck or loose
-	local found, inDeck
-	for _, d in ipairs(st.decks) do
-		for _, card in ipairs(d.cards) do
-			if card.ref == item then
-				found, inDeck = card, true
-			end
-		end
-	end
-	for _, card in ipairs(st.loose) do
-		if card.ref == item then
-			found = card
-		end
-	end
-	if not found then
-		msg(K.TEXT.notcarried)
-		return true
-	end
-	local decksForUse = {}
-	for _, d in ipairs(st.decks) do
-		decksForUse[#decksForUse + 1] = {used = d.used, size = d.size}
-	end
-	local action, index = K.decide({id = id, inDeck = inDeck, isOn = plan.active[id] == found,
-		storageOn = plan.active[id] ~= nil, count = K.activeCount(plan), decks = decksForUse})
-	local name = item:getName()
-	if action == "off" then
-		player:setStorageValue(C.cards[id].storage, 0)
-		item:setActionId(0)
-		msg(K.TEXT.off, name)
-		sound(player)
-	elseif action == "dupe" then
-		msg(K.TEXT.dupe, name)
+	local name = nameOf(id)
+	if action == "locked" then
+		msg(K.TEXT.locked, Deck.stepTitle(langOf(player)))
+	elseif action == "none" then
+		msg(K.TEXT.none, name)
 	elseif action == "max" then
 		msg(K.TEXT.max, C.maxActive)
 		sound(player)
-	elseif action == "nodeck" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, K.noDeckText(langOf(player)))
-	elseif action == "full" then
-		msg(K.TEXT.full, C.seller)
-	elseif action == "on" or action == "move" then
-		if action == "move" then
-			local deck = st.decks[index]
-			local ok, moved = pcall(function() return item:moveTo(deck.item) end)
-			if not (ok and moved) then
-				msg(K.TEXT.failed)
-				return true
-			end
-			msg(K.TEXT.moved, name, deck.item:getName())
-		end
-		turnOn(player, id, item)
+	elseif action == "off" then
+		player:setStorageValue(C.cards[id].storage, 0)
+		msg(K.TEXT.off, name)
+		sound(player)
+	elseif action == "on" then
+		turnOn(player, id)
 		msg(K.TEXT.on, name, K.bonusText(langOf(player), id))
 		sound(player)
 	end
-	-- the set of cards on may have changed: the client redraws its borders
-	if action == "on" or action == "move" or action == "off" then
+	if action == "on" or action == "off" then
 		local before = M.sets[player:getId()]
-		M.push(player, M.reconcile(player, M.scan(player), true))
+		M.push(player, M.reconcile(player, true), true)
 		announceSet(player, before, M.sets[player:getId()])
+	else
+		M.push(player, plan, true)
 	end
-	return true
+	return action == "on" or action == "off"
 end
 
 -- Character > Character Info: the `deck` command
 ChaosCommands.register("deck", function(player)
-	local st = M.scan(player)
-	M.push(player, M.reconcile(player, st, true))
-	st.sellers = nil
-	st.vocId = vocationId(player)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, K.statusText(langOf(player), st))
+	M.push(player, M.reconcile(player, true))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, K.statusText(langOf(player), {unlocked = Deck.unlocked(player),
+		owned = function(id) return Deck.owned(player, id) end,
+		storage = function(id) return tonumber(player:getStorageValue(C.cards[id].storage)) or -1 end,
+		nameOf = nameOf, vocId = vocationId(player), stepTitle = Deck.stepTitle(langOf(player))}))
 end)
 
+-- one sweep: loose cards in, the on / off storages true, the window told
 local function sweep(player, force)
 	local ok, err = pcall(function()
-		M.push(player, M.reconcile(player, M.scan(player), false), force)
+		M.absorb(player, false)
+		M.push(player, M.reconcile(player, false), force)
 	end)
 	if not ok then
-		log("reconcile " .. tostring(player:getName()) .. ": " .. tostring(err))
+		log("sweep " .. tostring(player:getName()) .. ": " .. tostring(err))
 	end
 end
 M.sweep = sweep
+
+-- the one-time move of the old decks and loose cards, depots included (marker storage; a failure leaves it unmarked: it runs again)
+function M.migrate(player)
+	if Deck.migrated(player) then
+		return false
+	end
+	local ok, err = pcall(function() M.absorb(player, true) end)
+	if ok then
+		Deck.setMigrated(player)
+	else
+		log("migration " .. tostring(player:getName()) .. ": " .. tostring(err))
+	end
+	return ok
+end
 
 -- ---------------------------------------------------------------- legendary cards: the weapon and the summon
 local KIND_OF_TYPE = {}
@@ -606,6 +785,8 @@ function login.onLogin(player)
 	player:registerEvent("ChaosCardsHit")
 	player:registerEvent("ChaosCardsExtended")
 	player:registerEvent("ChaosCardsLogout")
+	-- O570: the decks and loose cards of before the Deck of Cards move in once (marker storage), then the usual sweep
+	M.migrate(player)
 	sweep(player, true)
 	-- the summon of an earlier session is gone (its timer died with the server or the logout)
 	local D = rawget(_G, "DeckSystem")
@@ -627,23 +808,81 @@ end
 logout:type("logout")
 logout:register()
 
--- the client asks for the set when it starts (it may have loaded after the login message)
+-- the window talks to the server: sync (the list and the state), toggle {id}, seen {ids} or {all = true}
 local ext = CreatureEvent("ChaosCardsExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
 		return
 	end
 	local msg = Chaos.decode(buffer)
-	if type(msg) ~= "table" or msg.action ~= "sync" then
+	if type(msg) ~= "table" then
 		return
 	end
-	if Chaos.limited and Chaos.limited(player, "cards.sync", 500) then
-		return
+	local action = msg.action
+	if action == "sync" then
+		if Chaos.limited and Chaos.limited(player, "cards.sync", 500) then
+			return
+		end
+		M.pushCards(player)
+		sweep(player, true)
+	elseif action == "toggle" then
+		if Chaos.limited and Chaos.limited(player, "cards.toggle", 250) then
+			return
+		end
+		M.toggle(player, msg.id)
+	elseif action == "open" then
+		-- the window was opened: the main quest step "deck" is done by it (the flag is the quest's), then the state is sent again
+		-- a moment later in case the step opened the Deck
+		local MQ = rawget(_G, "ChaosMainQuest")
+		if MQ and MQ.emit then
+			pcall(MQ.emit, player, "deck")
+		end
+		later(function(pid)
+			local p = creatureById(pid, player)
+			if p then
+				M.push(p, nil, false)
+			end
+		end, player:getId())
+	elseif action == "seen" then
+		if Chaos.limited and Chaos.limited(player, "cards.seen", 250) then
+			return
+		end
+		local ids
+		if type(msg.ids) == "table" then
+			ids = {}
+			for _, id in ipairs(msg.ids) do
+				id = tonumber(id)
+				if id and K.isCard(id) and #ids < 100 then
+					ids[#ids + 1] = id
+				end
+			end
+		end
+		if ids or msg.all then
+			if Deck.markSeen(player, ids) > 0 then
+				M.push(player, nil, true)
+			end
+		end
 	end
-	sweep(player, true)
 end
 ext:type("extendedopcode")
 ext:register()
+
+-- a card or an old deck that lands in a bag is taken in a moment later (the engine moves it first)
+local movedCb = EventCallback
+movedCb.onItemMoved = function(player, item, count, fromPosition, toPosition)
+	if player and item and player.isPlayer and player:isPlayer() then
+		local ok, id = pcall(function() return item:getId() end)
+		if ok and (K.isCard(id) or K.isRetiredDeck(id)) then
+			later(function(pid)
+				local p = creatureById(pid, player)
+				if p then
+					sweep(p, false)
+				end
+			end, player:getId())
+		end
+	end
+end
+movedCb:register(14)
 
 local summonThink = GlobalEvent("ChaosCardsSummonRelease")
 function summonThink.onThink(interval)
@@ -664,3 +903,17 @@ function think.onThink(interval)
 end
 think:interval(C.reconcileMs)
 think:register()
+
+-- cards that reach a bag without a move (a reward, auto loot) are taken in at most absorbMs later
+local absorbThink = GlobalEvent("ChaosCardsAbsorb")
+function absorbThink.onThink(interval)
+	for _, player in ipairs(Game.getPlayers()) do
+		local ok, err = pcall(M.absorb, player, false)
+		if not ok then
+			log("absorb " .. tostring(player:getName()) .. ": " .. tostring(err))
+		end
+	end
+	return true
+end
+absorbThink:interval(DK.absorbMs)
+absorbThink:register()

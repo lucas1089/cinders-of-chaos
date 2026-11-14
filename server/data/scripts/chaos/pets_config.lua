@@ -7,6 +7,11 @@
 -- two small abilities (one from level 1, one from level `secondAt`). It cannot be attacked, takes no damage, never
 -- attacks, and does not count against the class companions (Beastmaster wolves, Necromancer minions keep their own caps).
 
+-- the Dusk Moth's look: the stock butterfly 213, or the new moth outfit 3523 of client pair 72 once config.lua chaosClientPair is 72 or
+-- more (data/lib/chaos_fun_costumes.lua, O566; install_fun_looks.py gives the pet's monster file the same id)
+local okFun, FUN = pcall(dofile, "data/lib/chaos_fun_costumes.lua")
+local duskMothLook = okFun and type(FUN) == "table" and FUN.mothLook and FUN.mothLook() or 213
+
 return {
 	-- ------------------------------------------------------------------ levels
 	maxLevel = 50,
@@ -138,7 +143,7 @@ return {
 			abilities = {"goldFind", "itemFind"},
 			source = {store = "petBogFrog"},
 			how = "Store (Pets): 400 Chaos Coins."},
-		{key = "dusk_moth", name = "Dusk Moth", monster = "Dusk Moth", look = 213, element = "death",
+		{key = "dusk_moth", name = "Dusk Moth", monster = "Dusk Moth", look = duskMothLook, element = "death",
 			abilities = {"mend", "ward"},
 			source = {store = "petDuskMoth"},
 			how = "Store (Pets): 400 Chaos Coins."},

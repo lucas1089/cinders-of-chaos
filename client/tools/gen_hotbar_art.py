@@ -4,7 +4,8 @@ Drawn here from plain geometry and seeded noise (no source images, nothing third
 rivets, a green frame for a ready slot. Every piece is drawn at 4x and reduced with a Lanczos filter, so the output is
 the same on every run.
 
-Writes into client/overlay/modules/game_hotbar/images/ (hotbar_*.png) and game_floatchat/images/ (chat_*.png).
+Writes into client/overlay/modules/game_hotbar/images/ (hotbar_*.png), game_floatchat/images/ (chat_*.png) and
+game_chatpanel/images/ (chatpanel_*.png).
 Nine-slice pieces keep their border in whole pixels (the border sizes are the constants below; the otui files use the
 same numbers as image-border).
 
@@ -26,8 +27,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MODULES = os.path.join(os.path.dirname(HERE), 'overlay', 'modules')
 BAR_DIR = os.path.join(MODULES, 'game_hotbar', 'images')
 CHAT_DIR = os.path.join(MODULES, 'game_floatchat', 'images')
+PANEL_DIR = os.path.join(MODULES, 'game_chatpanel', 'images')
 BAR_LOGIC = os.path.join(MODULES, 'game_hotbar', 'hotbar_logic.lua')
 CHAT_LOGIC = os.path.join(MODULES, 'game_floatchat', 'floatchat_logic.lua')
+PANEL_LOGIC = os.path.join(MODULES, 'game_chatpanel', 'chatpanel_logic.lua')
 SS = 4  # supersampling
 
 # palette: charred iron, ember gold, a green for ready, ink for outlines
@@ -50,6 +53,8 @@ BODY_W, BODY_H, BODY_BORDER = 96, 84, 20
 SLOT_FRAME = 44
 KEY_W, KEY_H, KEY_BORDER = 30, 14, 4
 SOCKET = 44
+SOCKET_WINDOW = 34  # the round window of the ring over a side slot: smaller than the 36 px base button, so its frame stays behind the ring
+HANDLE_W, HANDLE_H = 64, 14  # the grip tab of the classic chat (game_chatpanel)
 CAP_CLOSED_W, CAP_OPEN_W = 26, 22
 CHAT_BORDER_SIZE, CHAT_BORDER = 48, 10
 ICON = 20
@@ -162,6 +167,48 @@ def socket():
     d.ellipse((4 * SS, 4 * SS, S - 4 * SS - 1, S - 4 * SS - 1), fill=rgba((10, 8, 10)))
     d.arc((2 * SS, 2 * SS, S - 2 * SS - 1, S - 2 * SS - 1), 200, 290, fill=rgba(GOLD_L), width=SS)
     return down(img, s, s)
+
+
+def ring():
+    """the ring over a side slot (Q, E): drawn OVER the base button, which is a square, so the square's corners and its own
+    frame are hidden. Opaque in the corners (the bar's iron), a gold ring, a round window in the middle that shows the
+    item and the cooldown fill. O558: the squares used to stand in front of the circles."""
+    s = SOCKET
+    img, d = canvas(s, s)
+    S = s * SS
+    d.rectangle((0, 0, S - 1, S - 1), fill=rgba(IRON_D))
+    img = grain(img, 31, 9)
+    d = ImageDraw.Draw(img)
+    c = S / 2.0
+    w = SOCKET_WINDOW * SS / 2.0
+
+    def disc(r, fill):
+        d.ellipse((c - r, c - r, c + r - 1, c + r - 1), fill=fill)
+    disc(c, rgba(INK))                       # outer outline, r 22
+    disc(c - SS, rgba(GOLD_D))               # r 21
+    disc(c - 2 * SS, rgba(GOLD))             # r 20
+    disc(c - 3 * SS, rgba(IRON_D))           # r 19, the lip between the gold and the window
+    disc(w + SS // 2, rgba(INK))             # a thin dark edge round the window
+    disc(w, (0, 0, 0, 0))                    # the window itself: clear
+    d.arc((2 * SS, 2 * SS, S - 2 * SS - 1, S - 2 * SS - 1), 200, 290, fill=rgba(GOLD_L), width=SS)
+    return down(img, s, s)
+
+
+def chat_handle():
+    """the grip tab of the classic chat, three states side by side (normal, hover, pressed): dots, no text, so it
+    reads as a grip and not as a button that opens or closes the chat (O558)"""
+    w, h = HANDLE_W, HANDLE_H
+    sheet = Image.new('RGBA', (w * 3, h), (0, 0, 0, 0))
+    for i, (edge, fill, dot_c) in enumerate(((GOLD_D, IRON_D, GOLD_D), (GOLD, IRON, GOLD), (GOLD_L, EMBER_D, GOLD_L))):
+        img, d = canvas(w, h)
+        rr(d, (0, 0, w * SS - 1, h * SS - 1), 5 * SS, fill=rgba(INK))
+        rr(d, (SS, SS, w * SS - SS - 1, h * SS - SS - 1), 4 * SS, fill=rgba(edge))
+        rr(d, (2 * SS, 2 * SS, w * SS - 2 * SS - 1, h * SS - 2 * SS - 1), 3 * SS, fill=rgba(fill))
+        for k in range(7):
+            x = (w // 2 + (k - 3) * 6) * SS
+            d.ellipse((x - SS, (h // 2 - 1) * SS, x + SS, (h // 2 + 1) * SS), fill=rgba(dot_c))
+        sheet.alpha_composite(down(img, w, h), (i * w, 0))
+    return sheet
 
 
 def cap(left, closed):
@@ -316,6 +363,7 @@ def art():
     out[('bar', 'hotbar_slot_ready.png')] = slot(True)
     out[('bar', 'hotbar_key.png')] = keybox()
     out[('bar', 'hotbar_socket.png')] = socket()
+    out[('bar', 'hotbar_ring.png')] = ring()
     for left, name in ((True, 'l'), (False, 'r')):
         out[('bar', 'hotbar_cap_closed_%s.png' % name)] = cap(left, True)
         out[('bar', 'hotbar_cap_open_%s.png' % name)] = cap(left, False)
@@ -324,6 +372,7 @@ def art():
     out[('bar', 'hotbar_dot.png')] = dot()
     out[('bar', 'hotbar_btn_chat.png')] = button_sheet(lambda st: icon_chat(st))
     out[('bar', 'hotbar_btn_gear.png')] = button_sheet(lambda st: icon_gear(st))
+    out[('panel', 'chatpanel_handle.png')] = chat_handle()
     out[('chat', 'chat_border.png')] = chat_border()
     for kind in ('channels', 'private', 'close', 'caret', 'gear', 'grip'):
         out[('chat', 'chat_%s.png' % kind)] = chat_icon(kind)
@@ -331,7 +380,7 @@ def art():
 
 
 def path_of(key):
-    return os.path.join(BAR_DIR if key[0] == 'bar' else CHAT_DIR, key[1])
+    return os.path.join({'bar': BAR_DIR, 'chat': CHAT_DIR, 'panel': PANEL_DIR}[key[0]], key[1])
 
 
 # ------------------------------------------------------------------ checks
@@ -352,18 +401,22 @@ def check(images):
         if have.size != img.size or have.tobytes() != img.tobytes():
             bad.append('%s differs from the generator' % os.path.relpath(p))
     wanted = {path_of(k) for k in images}
-    for d in (BAR_DIR, CHAT_DIR):
+    for d in (BAR_DIR, CHAT_DIR, PANEL_DIR):
         if os.path.isdir(d):
             for f in sorted(os.listdir(d)):
                 if f.endswith('.png') and os.path.join(d, f) not in wanted:
                     bad.append('stray image %s' % os.path.relpath(os.path.join(d, f)))
     pairs = (('SLOT_FRAME', SLOT_FRAME), ('KEY_W', KEY_W), ('KEY_H', KEY_H), ('KEY_BORDER', KEY_BORDER),
-             ('SOCKET', SOCKET), ('BODY_H', BODY_H), ('BODY_BORDER', BODY_BORDER),
+             ('SOCKET', SOCKET), ('SOCKET_WINDOW', SOCKET_WINDOW), ('BODY_H', BODY_H), ('BODY_BORDER', BODY_BORDER),
              ('CAP_CLOSED_W', CAP_CLOSED_W), ('CAP_OPEN_W', CAP_OPEN_W))
     for name, value in pairs:
         got = lua_const(BAR_LOGIC, name)
         if got != value:
             bad.append('hotbar_logic.lua L.%s = %s, the art is %d' % (name, got, value))
+    for name, value in (('HANDLE_WIDTH', HANDLE_W), ('HANDLE_HEIGHT', HANDLE_H)):
+        got = lua_const(PANEL_LOGIC, name)
+        if got != value:
+            bad.append('chatpanel_logic.lua L.%s = %s, the art is %d' % (name, got, value))
     for name, value in (('BORDER', CHAT_BORDER),):
         got = lua_const(CHAT_LOGIC, name)
         if got != value:
@@ -430,8 +483,11 @@ def preview(images, out_path, slots=6, scale=2):
             img.alpha_composite(cr, (total - cr.width, y0))
         x = capw + 14 + SOCKET + 8
         sy = y0 + 10
-        img.alpha_composite(bar['hotbar_socket.png'], (capw + 14, sy + 6))
-        img.alpha_composite(bar['hotbar_socket.png'], (total - capw - 14 - SOCKET, sy + 6))
+        for sx in (capw + 14, total - capw - 14 - SOCKET):
+            img.alpha_composite(bar['hotbar_socket.png'], (sx, sy))
+            # a stand-in for the base button (a 36 px square with a gold frame), then the ring over it (O558)
+            ImageDraw.Draw(img).rectangle((sx + 4, sy + 4, sx + 39, sy + 39), fill=(40, 30, 40, 255), outline=(222, 168, 72, 255))
+            img.alpha_composite(bar['hotbar_ring.png'], (sx, sy))
         for i in range(slots):
             ready = i in (0, 2)
             img.alpha_composite(bar['hotbar_slot_ready.png' if ready else 'hotbar_slot.png'], (x + i * pitch, sy))
@@ -500,7 +556,7 @@ def main(argv):
         preview(images, out)
         print('wrote', out)
         return 0
-    for d in (BAR_DIR, CHAT_DIR):
+    for d in (BAR_DIR, CHAT_DIR, PANEL_DIR):
         os.makedirs(d, exist_ok=True)
     for key, img in images.items():
         img.save(path_of(key))

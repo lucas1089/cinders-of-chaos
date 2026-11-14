@@ -165,16 +165,26 @@ end
 -- ------------------------------------------------------------------------------------------------ preview
 -- Every request gets an answer (autobuildPreview or autobuildError {message, build, retry}): the client waits for one
 -- and showed "Asking the server for a preview..." for good when a request was dropped.
+-- O560: the request number the client sent (a small integer) comes back in the answer, so the client drops the answer to a
+-- pick it has already replaced; a refusal of the limit says how long to wait (wait, ms) and the client asks again by itself
+local function seqOf(data)
+	local n = type(data) == "table" and tonumber(data.seq) or nil
+	return n and n >= 0 and n <= 2000000000 and math.floor(n) or nil
+end
+P.seqOf = seqOf
+
 local function preview(player, data)
 	local asked = type(data) == "table" and type(data.build) == "string" and #data.build <= 60 and data.build or nil
-	if limited(player, "passivetree.autobuildPreview", cfg.previewRateMs or 500) then
-		fail(player, Chaos.t(player, "Too fast: wait a moment and pick the build again."), {build = asked, retry = true})
+	local seq = seqOf(data)
+	if limited(player, "passivetree.autobuildPreview", cfg.previewRateMs or 150) then
+		fail(player, Chaos.t(player, "Too fast: wait a moment and pick the build again."),
+			{build = asked, retry = true, wait = cfg.previewRateMs or 150, seq = seq})
 		return
 	end
 	local st = state(player)
 	local build, err = pick(player, st, type(data) == "table" and data.build or nil)
 	if not build then
-		fail(player, err, {build = asked})
+		fail(player, err, {build = asked, seq = seq})
 		return
 	end
 	local add, reset = planFor(st, build, false), planFor(st, build, true)
@@ -199,7 +209,7 @@ local function preview(player, data)
 		masteries = st.T.core.toList(reset.masteries)})
 	Chaos.send(player, OPCODE, "autobuildPreview", {
 		build = build.id, name = entry and Chaos.t(player, entry.name) or build.id, owned = st.points, held = #st.current,
-		wanted = #build.order, add = side(add, {masteries = masteries}), reset = resetSide
+		wanted = #build.order, add = side(add, {masteries = masteries}), reset = resetSide, seq = seq
 	})
 end
 
@@ -208,7 +218,7 @@ ChaosPassiveTree.extraActions.autobuildPreview = function(player, data)
 	if not ok then
 		print("[Chaos] autobuildPreview failed for player " .. tostring(player:getGuid()) .. ": " .. tostring(err))
 		local asked = type(data) == "table" and type(data.build) == "string" and #data.build <= 60 and data.build or nil
-		fail(player, Chaos.t(player, "The preview could not be made. Try another build or try again later."), {build = asked})
+		fail(player, Chaos.t(player, "The preview could not be made. Try another build or try again later."), {build = asked, seq = seqOf(data)})
 	end
 	return true
 end

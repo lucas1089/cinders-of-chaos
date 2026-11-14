@@ -2,7 +2,7 @@
 -- (server/tests/collection_test.lua reads it with plain Lua). See server/README.md "Collection score".
 --
 -- Every cosmetic an account owns gives collection points: outfits and addons, mounts, wings, auras, shaders, name plate
--- frames, chat colours, kill / level-up / rare-loot effects, emotes, footprints, outlines, loot label accents, spell
+-- frames, chat colours, kill / level-up / rare-loot effects, footprints, outlines, loot label accents, spell
 -- skins and titles. Nothing is listed by hand: a store item is worth its price (one point per `pricePerPoint` coins,
 -- from shop_config.lua), an item no offer sells is worth the points of its rarity (`sourcePoints`, `exclusivePoints`).
 -- Milestones grant purely visual rewards, once, and keep them: a title (ChaosTitles, the name plate), a name plate frame

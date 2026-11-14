@@ -452,6 +452,11 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now, m
 		if dh and isMonster then
 			pcall(dh, owner, amount)
 		end
+		-- a training monster measures the damage of the player (trainer_meter.lua, O573): the same source and element
+		local ith, th = CL.isTrainer, CL.trainerHook
+		if th and isMonster and ith and ith(creature) then
+			pcall(th, owner, creature, src, amount, el, critical, now)
+		end
 	end
 	if creature:isPlayer() then
 		local a = actorOf(creature)
@@ -511,7 +516,13 @@ local function onHealth(creature, attacker, pd, pt, sd, st, origin, critical)
 	end
 	local total = abs(pd or 0) + abs(sd or 0)
 	if total > 0 then
-		dealt(creature, attacker, min(total, creature:getHealth()), pt, origin, critical, nowMs())
+		-- a trainer counts the whole hit: it never dies, and a cap at its health would cut a big hit (O573)
+		local ith = CL.isTrainer
+		local counted = total
+		if not (ith and creature:isMonster() and ith(creature)) then
+			counted = min(total, creature:getHealth())
+		end
+		dealt(creature, attacker, counted, pt, origin, critical, nowMs())
 	end
 end
 CL.onHealth = onHealth

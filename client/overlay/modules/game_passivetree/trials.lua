@@ -13,6 +13,129 @@ function getTrialsState()
   return trialsState
 end
 
+-- ------------------------------------------------------------------------------------------------ a trial is open (O559)
+-- The Trials button of the passive tree glows and wears a "!" badge while a trial is open (rule: TrialsMath.openTier), with
+-- the trial and the reason in its tooltip; a toast tells it once for every new availability. The state is asked for at login
+-- and when the level reaches the next difficulty, so the button is right without opening the window.
+-- Hooks for other modules (the hub menu card), through modules.game_passivetree:
+--   trialsAvailableCount()  -> 0 / 1 (trials open now)         trialsPendingPicks() -> pairs of nodes waiting for a choice
+--   trialsAvailableText()   -> the sentence for a tooltip ('' when none)
+--   trialsSubscribe(fn)     -> fn(count, pendingPicks) is called whenever one of them changes; trialsUnsubscribe(fn)
+local BASE_TIP = 'Vocation Trials: clear your vocation trial to open pairs of special nodes (choose one of each pair)'
+local TOAST_SETTING = 'chaosTrialToast'
+local REQUEST_DELAY_MS, LEVEL_DELAY_MS = 4000, 1500
+local listeners = {}
+local lastCount, lastPicks = 0, 0
+local pulseEvent, requestEvent = nil, nil
+
+function trialsAvailableCount()
+  return TrialsMath.availableCount(trialsState)
+end
+
+function trialsPendingPicks()
+  return TrialsMath.pendingPicks(trialsState)
+end
+
+function trialsAvailableText()
+  return TrialsMath.availableText(trialsState)
+end
+
+function trialsSubscribe(fn)
+  if type(fn) == 'function' then
+    listeners[fn] = true
+  end
+end
+
+function trialsUnsubscribe(fn)
+  listeners[fn] = nil
+end
+
+local function trialsButton()
+  local tree = getTreeWindow()
+  if not tree or (tree.isDestroyed and tree:isDestroyed()) then
+    return nil
+  end
+  return tree:getChildById('trialsButton')
+end
+
+local function stopPulse()
+  if pulseEvent then
+    removeEvent(pulseEvent)
+    pulseEvent = nil
+  end
+  local button = trialsButton()
+  if button then
+    button:setImageColor('#ffffff')
+    button:setColor('#dfdfdf')
+  end
+end
+
+local function pulse()
+  pulseEvent = nil
+  local button = trialsButton()
+  if not button or trialsAvailableCount() == 0 then
+    return
+  end
+  button:setImageColor(TrialsMath.pulseColor(g_clock.millis()))
+  button:setColor('#f6cf72')
+  pulseEvent = scheduleEvent(pulse, 100)
+end
+
+local function lastToastKey()
+  local ok, v = pcall(g_settings.getString, TOAST_SETTING)
+  return ok and v ~= '' and v or nil
+end
+
+local function toastOnce()
+  local name = g_game.getCharacterName and g_game.getCharacterName() or ''
+  local key = TrialsMath.toastKey(name, trialsState)
+  if not TrialsMath.shouldToast(lastToastKey(), key) then
+    return
+  end
+  pcall(g_settings.set, TOAST_SETTING, key)
+  local tree = getTreeWindow()
+  if tree and tree:isVisible() then
+    return -- the player is looking at the tree already
+  end
+  local notify = modules.game_chaosnotify
+  if notify and notify.addNotification then
+    pcall(notify.addNotification, 'TRIAL', TrialsMath.toastText(trialsState))
+  end
+end
+
+-- the button, the toast and the listeners follow the state
+local function updateAvailability()
+  local count, picks = trialsAvailableCount(), trialsPendingPicks()
+  local button = trialsButton()
+  if button then
+    local badge = button:getChildById('trialsBadge')
+    if badge then
+      badge:setText(TrialsMath.badgeText(trialsState))
+      badge:setVisible(count > 0)
+    end
+    button:setTooltip(TrialsMath.buttonTooltip(trialsState, tr(BASE_TIP)))
+    if count > 0 and not pulseEvent then
+      pulse()
+    elseif count == 0 then
+      stopPulse()
+    end
+  end
+  if count > 0 and count ~= lastCount then
+    toastOnce()
+  end
+  if count ~= lastCount or picks ~= lastPicks then
+    lastCount, lastPicks = count, picks
+    for fn in pairs(listeners) do
+      pcall(fn, count, picks)
+    end
+    -- the Passive Tree card of the hub menu shows "!" while a trial is open
+    local top = modules and modules.client_chaos_topbar
+    if top and top.ChaosTopBar and top.ChaosTopBar.refresh then
+      pcall(top.ChaosTopBar.refresh)
+    end
+  end
+end
+
 local function closeConfirm()
   if confirmBox then
     confirmBox:destroy()
@@ -96,6 +219,7 @@ ChaosTreeHandlers.trialState = function(data)
   end
   trialsState = data
   refreshTrials()
+  updateAvailability()
 end
 
 function chooseTrialNode(pair, side)
@@ -206,4 +330,47 @@ function destroyTrials()
     trialsWindow = nil
   end
   trialsState = nil
+  if requestEvent then
+    removeEvent(requestEvent)
+    requestEvent = nil
+  end
+  stopPulse()
+  updateAvailability()
+end
+
+-- asks for the state without the window (login, the level of the next difficulty)
+local function requestSoon(ms)
+  if requestEvent then
+    return
+  end
+  requestEvent = scheduleEvent(function()
+    requestEvent = nil
+    if g_game.isOnline() then
+      sendAction('trialRequest')
+    end
+  end, ms)
+end
+
+local function onTrialsLevel(player, level)
+  if TrialsMath.needsRefresh(trialsState, level) then
+    requestSoon(LEVEL_DELAY_MS)
+  end
+end
+
+local function onTrialsGameStart()
+  requestSoon(REQUEST_DELAY_MS)
+end
+
+function initTrials()
+  connect(g_game, {onGameStart = onTrialsGameStart})
+  connect(LocalPlayer, {onLevelChange = onTrialsLevel})
+  if g_game.isOnline() then
+    onTrialsGameStart()
+  end
+end
+
+function terminateTrials()
+  disconnect(g_game, {onGameStart = onTrialsGameStart})
+  disconnect(LocalPlayer, {onLevelChange = onTrialsLevel})
+  listeners = {}
 end

@@ -95,8 +95,10 @@ def main():
         K.fault_check(check, IC, lambda p: open(p, 'wb').write(otbm_file(base_tiles())),
                       lambda d, p: T.run(d, map_path=p, rects=RECTS, log=lambda s: None), root, 'crypt floors')
         ids = {r[0] for r in T.crypt_rects()}
-        check({'hollow_crypt', 'bonechoir_catacomb', 'bonewright_galleries', 'graveknell_catacombs',
+        check({'bonechoir_catacomb', 'bonewright_galleries', 'graveknell_catacombs',
                'lanternless_catacombs'} <= ids, 'the real catacomb plans are found: %s' % sorted(ids))
+        # hollow_crypt left the catacomb biome (O574: catacomb_earth, plain dirt, owner 2026-11-14): no crypt sand there
+        check('hollow_crypt' not in ids, 'hollow_crypt keeps its dirt floor')
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('patch_crypt_floors_test: %s' % ('OK' if not failed else '%d FAILED' % failed))

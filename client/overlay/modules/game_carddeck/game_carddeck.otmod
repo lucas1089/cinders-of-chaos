@@ -1,0 +1,13 @@
+Module
+  name: game_carddeck
+  description: Deck of Cards window (every card looted, filters, sort, the cards on and the set bonus, "New" marks; extended opcode 173)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ carddecklogic, carddeck ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()
