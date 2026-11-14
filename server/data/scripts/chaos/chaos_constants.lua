@@ -2315,6 +2315,14 @@ ChaosOpcodes.npcTravel = 121
 ChaosOpcodes.survey = 122
 Chaos.tables.survey = "chaos_survey"
 Chaos.storage.survey = 7103060
+-- Effect owner marks (O567; data/lib/chaos_fx_owner.lua, fxowner.lua; client game_effectopacity, base patch 0201): which map
+-- effects and missiles of a player's own spells to draw at the "my effects" opacity. client -> server `hello {need}` (1 while the
+-- client's two opacity sliders differ), server -> client `marks {b, m}` (one small message per tick of a cast, only to a player
+-- whose client said need = 1). 164 is free in the reference server, the base client's ExtendedIds, every Chaos script and every
+-- client module (README "Opcode collision check"; tests/fx_owner_test.lua). Storage 7103120: 1 while the client wants marks, else
+-- -1 (set at the hello, cleared at login and logout; 7103121 - 7103129 free). No table.
+ChaosOpcodes.fxOwner = 164
+Chaos.storage.fxOwner = 7103120
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

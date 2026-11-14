@@ -7041,6 +7041,13 @@ ChaosLocaleStrings['pt-BR'] = {
   -- base patch 0199: Options > Graphics, the menu style
   ["Menu in hubs"] = "Menu em hubs",
   ["On: six small badges at the top, each opens a window with tabs and cards.\nOff: the text menu with drop-down lists. The hub window also has a link back to the text menu."] = "Ligado: seis ícones pequenos no topo, cada um abre uma janela com abas e cards.\nDesligado: o menu em texto com listas. A janela dos hubs também tem um link para voltar ao menu em texto.",
+  -- base patch 0202: Options > Effects, the opacity of my effects and of the others' (O567)
+  ["Opacity of my effects: %s%%"] = "Opacidade dos meus efeitos: %s%%",
+  ["Opacity of my effects: 100%%"] = "Opacidade dos meus efeitos: 100%%",
+  ["Opacity of other players' effects: %s%%"] = "Opacidade dos efeitos dos outros: %s%%",
+  ["Opacity of other players' effects: 100%%"] = "Opacidade dos efeitos dos outros: 100%%",
+  ["How strongly the spell and area effects you cast yourself are drawn (not missiles, they have their own slider).\n0%% hides them. Boss warning circles are never faded."] = "Com que força os efeitos de magia e de área que você mesmo lança são desenhados (não os projéteis, eles têm o próprio controle).\n0%% os esconde. Os círculos de aviso dos chefes nunca desbotam.",
+  ["How strongly the effects of other players and of monsters are drawn.\n0%% hides them. Boss warning circles are never faded."] = "Com que força os efeitos de outros jogadores e de monstros são desenhados.\n0%% os esconde. Os círculos de aviso dos chefes nunca desbotam.",
   ["Tiered rifts and their keys"] = "Fendas por nível e suas chaves",
   ["Points that make rifts richer"] = "Pontos que enriquecem as fendas",
   ["Points for waystone maps"] = "Pontos para mapas de pedra-guia",
