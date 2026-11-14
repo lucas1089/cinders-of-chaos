@@ -395,8 +395,8 @@
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 172,
 		"store.categories": 40,
-		"store.cosmetic": 652,
-		"store.offers": 794,
+		"store.cosmetic": 650,
+		"store.offers": 792,
 		"store.service": 40,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -49047,7 +49047,7 @@
 								["Level-up Effects", "5", "150-250", "Cosmetic"],
 								["Rare Loot Effects", "5", "150-250", "Cosmetic"],
 								["Kill Effects", "9", "200", "Cosmetic"],
-								["Spell Effects", "28", "250", "Cosmetic"],
+								["Spell Effects", "26", "250", "Cosmetic"],
 								["Loot Labels", "4", "150", "Cosmetic"],
 								["Chat Colours", "5", "200", "Cosmetic"],
 								["Name Plates", "13", "200", "Cosmetic"],
@@ -49106,7 +49106,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "652"],
+								["Cosmetic", "650"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "9"],
 								["Service", "16"],
@@ -51886,11 +51886,11 @@
 				{
 					"id": "store:32",
 					"name": "Spell Effects",
-					"sub": "28 offers, 250 coins. Cosmetic.",
+					"sub": "26 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["28 offers, 250 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["26 offers, 250 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -51993,12 +51993,6 @@
 									"Forked Storm throws arcane orbs and violet lightning. Seen by all. Character > Cosmetics."
 								],
 								[
-									"Gloom Darts",
-									"250",
-									"Cosmetic",
-									"Packhunter's Dart bursts in a cloud of shadow instead of spores. Seen by all. Character > Cosmetics."
-								],
-								[
 									"Gloomswarm",
 									"250",
 									"Cosmetic",
@@ -52057,12 +52051,6 @@
 									"250",
 									"Cosmetic",
 									"Soulrend Beam opens a rift of arcane light. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Pale Wail",
-									"250",
-									"Cosmetic",
-									"Gravewail sends a ring of shadow instead of blood. Seen by all. Character > Cosmetics."
 								]
 							],
 							"sprites": [
@@ -52083,7 +52071,6 @@
 								{"item": 2153},
 								{"item": 2150},
 								{"item": 7761},
-								{"item": 7761},
 								{"item": 18420},
 								{"item": 18414},
 								{"item": 7760},
@@ -52092,8 +52079,7 @@
 								{"item": 2154},
 								{"item": 2156},
 								{"item": 7762},
-								{"item": 2153},
-								{"item": 2147}
+								{"item": 2153}
 							]
 						}
 					],

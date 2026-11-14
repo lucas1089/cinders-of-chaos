@@ -529,9 +529,6 @@ return {
 		{id = 16, key = "skin_mystic_aether", kind = "spellskin", icon = 2150, line = "mystic", source = "store", price = 250,
 			name = "Aether Storm", desc = "Forked Storm throws arcane orbs and violet lightning.",
 			spells = {202}, missile = {lightning_orb = "arcane_orb"}, fx = {chain_lightning = "lightning_violet"}},
-		{id = 17, key = "skin_ranger_gloom", kind = "spellskin", icon = 7761, line = "ranger", source = "store", price = 250,
-			name = "Gloom Darts", desc = "Packhunter's Dart bursts in a cloud of shadow instead of spores.",
-			spells = {23}, fx = {poison_burst = "shadow_smoke"}},
 		{id = 28, key = "skin_mystic_gloom", kind = "spellskin", icon = 7761, line = "mystic", source = "store", price = 250,
 			name = "Gloomswarm", desc = "Blightswarm, Briar Prison and Primordial Squall burst in a cloud of shadow instead of spores.",
 			spells = {207, 210, 213}, fx = {poison_burst = "shadow_smoke"}},
@@ -561,9 +558,6 @@ return {
 			spells = {113}, fx = {poison_flame = "shadow_flame"}},
 		{id = 26, key = "skin_necro_rift", kind = "spellskin", icon = 2153, line = "necromancer", source = "store", price = 250,
 			name = "Wail of the Rift", desc = "Soulrend Beam opens a rift of arcane light.",
-			spells = {118}, fx = {void_eye = "summon_portal"}},
-		{id = 27, key = "skin_necro_pale", kind = "spellskin", icon = 2147, line = "necromancer", source = "store", price = 250,
-			name = "Pale Wail", desc = "Gravewail sends a ring of shadow instead of blood.",
-			spells = {112}, fx = {blood_nova = "shadow_ring"}}
+			spells = {118}, fx = {void_eye = "summon_portal"}}
 	}
 }

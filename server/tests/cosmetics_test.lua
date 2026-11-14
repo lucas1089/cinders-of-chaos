@@ -150,7 +150,7 @@ for _, c in ipairs(cfg.cosmetics) do
 		eq(c.price, store[c.kind], "one price per kind: " .. c.key)
 	end
 end
-eq(count.spellskin, 28, "28 spell skins (12 first, 16 for the spells of the starter builds, O563)")
+eq(count.spellskin, 26, "26 spell skins (12 first, 14 for the spells of the starter builds, O563)")
 eq(count.killfx, 32, "32 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks, 7 dissolve effects of O563: 4 store, 3 achievements)")
 eq(count.lootbeam, 17, "17 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks, the 7-day streak)")
 eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
@@ -174,7 +174,7 @@ eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colo
 eq(count.footprint, 14, "14 footprints (9 store, an achievement, the reward track, two boss drops, the collection reward)")
 eq(count.outline, 13, "13 outlines (9 store, an achievement, the reward track, two boss drops)")
 eq(store.footprint, 200, "footprints 200") eq(store.outline, 250, "outlines 250")
--- every line has 1 to 8 skins (O563: the Necromancer line has three, the Mystic line seven)
+-- every line has 1 to 8 skins (O563: the Necromancer line has two, the Mystic line seven)
 for _, l in ipairs(cfg.lines) do
 	local skins = K.index(cfg).skinsOfLine[l.key]
 	eq(skins ~= nil and #skins >= 1 and #skins <= 8, true, l.key .. ": skins")
