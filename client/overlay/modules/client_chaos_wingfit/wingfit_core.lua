@@ -7,6 +7,7 @@ local M = WingFitCore
 
 M.LIFT = 6        -- GameWingOffset: the body is drawn this many px up and left of the wings
 M.MAX_SHIFT = 64  -- the engine ignores a larger shift
+M.MAX_HEAD_SHIFT = 32 -- the engine ignores a larger head shift (chaosheadfit.h)
 M.SOUTH = 2       -- direction index: 0 north, 1 east, 2 south, 3 west
 
 local function validRow(row)
@@ -37,6 +38,51 @@ function M.apply(data, setBody, setWings)
   for _, e in ipairs(b) do setBody(e[1], e[2], e[3]) end
   for _, e in ipairs(w) do setWings(e[1], e[2], e[3]) end
   return #b / 4, #w / 4
+end
+
+-- Head accessories on the head (O561, base patch 0200): head_centres.lua (ChaosHeadCentres) lists per body look the x and y
+-- of its head (north, east, south, west), and the same for the reference look (ref); the engine moves a head piece (an aura
+-- look from first to last) by head(body) - ref.
+local function validHeadRow(row)
+  if type(row) ~= 'table' then return false end
+  for i = 1, 8 do
+    if type(row[i]) ~= 'number' then return false end
+  end
+  return true
+end
+
+-- hand the reference, the piece range and every body row to the engine: setRef(dir, x, y), setPieces(first, last),
+-- setBody(look, dir, x, y); returns the number of bodies handed over (0 when the data has no valid reference or range)
+function M.applyHeads(data, setRef, setPieces, setBody)
+  if type(data) ~= 'table' or not validHeadRow(data.ref) then return 0 end
+  if type(data.first) ~= 'number' or type(data.last) ~= 'number' or data.last < data.first then return 0 end
+  setPieces(data.first, data.last)
+  for d = 0, 3 do setRef(d, math.floor(data.ref[d * 2 + 1]), math.floor(data.ref[d * 2 + 2])) end
+  local ids = {}
+  for id, row in pairs(data.bodies or {}) do
+    if type(id) == 'number' and id >= 1 and id == math.floor(id) and validHeadRow(row) then ids[#ids + 1] = id end
+  end
+  table.sort(ids)
+  for _, id in ipairs(ids) do
+    local row = data.bodies[id]
+    for d = 0, 3 do setBody(id, d, math.floor(row[d * 2 + 1]), math.floor(row[d * 2 + 2])) end
+  end
+  return #ids
+end
+
+-- the {x, y} shift the engine adds to the head piece `aura` worn with body look `look` facing dir; {0, 0} without the
+-- rows or outside the piece range. The same maths as chaosheadfit.h shift.
+function M.headShiftOf(data, look, aura, dir)
+  if type(data) ~= 'table' or not validHeadRow(data.ref) or type(data.first) ~= 'number' then return { 0, 0 } end
+  aura = tonumber(aura)
+  if not aura or aura < data.first or aura > data.last then return { 0, 0 } end
+  dir = dir or M.SOUTH
+  local row = type(data.bodies) == 'table' and data.bodies[tonumber(look)]
+  if not validHeadRow(row) then return { 0, 0 } end
+  local sx = math.floor(row[dir * 2 + 1]) - math.floor(data.ref[dir * 2 + 1])
+  local sy = math.floor(row[dir * 2 + 2]) - math.floor(data.ref[dir * 2 + 2])
+  if sx < -M.MAX_HEAD_SHIFT or sx > M.MAX_HEAD_SHIFT or sy < -M.MAX_HEAD_SHIFT or sy > M.MAX_HEAD_SHIFT then return { 0, 0 } end
+  return { sx, sy }
 end
 
 local function centre(map, id, dir)

@@ -1,0 +1,193 @@
+# Chaos: head accessories sit on the head of the body they are drawn with (O561; client/BASE.md "0200"; src/client/chaosheadfit.h
+# (new, pure), outfit.cpp, luafunctions_client.cpp; after 0001-0199).
+# Owner report 2026-11-14: "most helmets are off plumb too". A head accessory (the pair 33 head pieces, auras 2477-2568) is an
+# aura look, drawn at the creature's place, and its art was placed against one body, the stock look 128. A class look has its
+# head elsewhere (median 2 px left of and 4 px above look 128's facing south, p10 to p90 -5.5 to +1.1 and -12 to -1), so the piece
+# sat beside the head. Now Outfit::draw adds head(body) - head(look 128) to the piece's destination, both layers, per direction,
+# from one table the module client_chaos_wingfit hands in (setOutfitHeadCentre, setOutfitHeadRef, setOutfitHeadPieces,
+# clearOutfitHeadCentres; made from the pair by client/tools/sprites/gen_wing_centres.py). No row, an aura outside the piece
+# range, or a mounted rider: no shift (the draw as before).
+diff -ru a/src/client/chaosheadfit.h b/src/client/chaosheadfit.h
+--- /dev/null
++++ b/src/client/chaosheadfit.h
+@@ -0,0 +1,127 @@
++// Cinders of Chaos (base patch 0200): head accessories sit on the head of the body they are drawn with. Pure and
++// header-only so client/tools/chaosheadfit_test.cpp can run it without the engine.
++// A head accessory (the pair 33 head pieces, horns, ears, halos, crowns, charms) is an aura look: Outfit::draw draws it
++// at the creature's place, and its art was placed against one body, the stock look 128. A class look has its head
++// elsewhere (median 2 px left of and 4 px above look 128's, up to 5 px left and 12 px above), so the piece sat beside
++// the head. client_chaos_wingfit hands the engine one small table made from the pair (gen_wing_centres.py): per look
++// and direction the x and y of the body's head, in sprite pixels at 1x from the creature's place, the look's own
++// displacement taken out, and the same for the reference look 128. The shift is
++//   head(body) - head(reference)
++// per direction: the piece keeps the place it has on look 128's head and moves with the wearer's head. A look without a
++// row, an aura outside the head piece range, or a table with no reference gets no shift (the draw as before).
++#ifndef CHAOSHEADFIT_H
++#define CHAOSHEADFIT_H
++
++#include <array>
++#include <climits>
++#include <unordered_map>
++
++namespace chaos {
++namespace headfit {
++
++constexpr int kMaxShiftPx = 32;  // a larger shift is a bad table row: ignored
++constexpr int kMaxCentrePx = 256;
++constexpr int kUnset = INT_MIN;
++
++struct Point2 {
++    int x = 0;
++    int y = 0;
++};
++
++typedef std::array<int, 8> Row;  // x and y of north, east, south, west
++
++struct Tables {
++    std::unordered_map<int, Row> bodies;
++    Row ref;
++    bool hasRef[4] = { false, false, false, false };
++    int firstPiece = 0;  // the head pieces are the aura looks firstPiece..lastPiece; 0 = none set
++    int lastPiece = 0;
++    Tables() { ref.fill(kUnset); }
++};
++
++inline Tables& tables()
++{
++    static Tables t;
++    return t;
++}
++
++inline Row emptyRow()
++{
++    Row r;
++    r.fill(kUnset);
++    return r;
++}
++
++inline bool validCentre(int direction, int x, int y)
++{
++    return direction >= 0 && direction <= 3 && x >= -kMaxCentrePx && x <= kMaxCentrePx && y >= -kMaxCentrePx && y <= kMaxCentrePx;
++}
++
++inline bool setBodyHead(int look, int direction, int x, int y)
++{
++    if (look <= 0 || !validCentre(direction, x, y))
++        return false;
++    auto it = tables().bodies.find(look);
++    if (it == tables().bodies.end())
++        it = tables().bodies.emplace(look, emptyRow()).first;
++    it->second[direction * 2] = x;
++    it->second[direction * 2 + 1] = y;
++    return true;
++}
++
++inline bool setHeadRef(int direction, int x, int y)
++{
++    if (!validCentre(direction, x, y))
++        return false;
++    tables().ref[direction * 2] = x;
++    tables().ref[direction * 2 + 1] = y;
++    tables().hasRef[direction] = true;
++    return true;
++}
++
++inline bool setHeadPieces(int first, int last)
++{
++    if (first <= 0 || last < first)
++        return false;
++    tables().firstPiece = first;
++    tables().lastPiece = last;
++    return true;
++}
++
++inline void clearHeads()
++{
++    Tables& t = tables();
++    t.bodies.clear();
++    t.ref.fill(kUnset);
++    for (bool& h : t.hasRef)
++        h = false;
++    t.firstPiece = t.lastPiece = 0;
++}
++
++inline bool isHeadPiece(int aura)
++{
++    return tables().firstPiece > 0 && aura >= tables().firstPiece && aura <= tables().lastPiece;
++}
++
++// the shift, in sprite pixels at 1x, to add to the piece's destination (both its layers); 0, 0 without the rows
++inline Point2 shift(int bodyLook, int aura, int direction)
++{
++    Point2 none;
++    const Tables& t = tables();
++    if (direction < 0 || direction > 3 || !isHeadPiece(aura) || !t.hasRef[direction])
++        return none;
++    auto it = t.bodies.find(bodyLook);
++    if (it == t.bodies.end() || it->second[direction * 2] == kUnset || it->second[direction * 2 + 1] == kUnset)
++        return none;
++    Point2 s;
++    s.x = it->second[direction * 2] - t.ref[direction * 2];
++    s.y = it->second[direction * 2 + 1] - t.ref[direction * 2 + 1];
++    if (s.x < -kMaxShiftPx || s.x > kMaxShiftPx || s.y < -kMaxShiftPx || s.y > kMaxShiftPx)
++        return none;
++    return s;
++}
++
++}  // namespace headfit
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -53,6 +53,7 @@
+ #include "uisprite.h"
+ #include "outfit.h"
+ #include "chaoswingfit.h"
++#include "chaosheadfit.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -507,6 +508,11 @@
+     g_lua.bindGlobalFunction("setOutfitBodyCentre", chaos::wingfit::setBodyCentre);
+     g_lua.bindGlobalFunction("setOutfitWingsCentre", chaos::wingfit::setWingsCentre);
+     g_lua.bindGlobalFunction("clearOutfitWingCentres", chaos::wingfit::clearCentres);
++    // Chaos (base patch 0200): the tables of the head accessories' placing (client_chaos_wingfit)
++    g_lua.bindGlobalFunction("setOutfitHeadCentre", chaos::headfit::setBodyHead);
++    g_lua.bindGlobalFunction("setOutfitHeadRef", chaos::headfit::setHeadRef);
++    g_lua.bindGlobalFunction("setOutfitHeadPieces", chaos::headfit::setHeadPieces);
++    g_lua.bindGlobalFunction("clearOutfitHeadCentres", chaos::headfit::clearHeads);
+     g_lua.bindGlobalFunction("getAngleFromPos", Position::getAngleFromPositions);
+     g_lua.bindGlobalFunction("getDirectionFromPos", Position::getDirectionFromPositions);
+ 
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -27,6 +27,7 @@
+ #include "spritemanager.h"
+ #include "chaosfacing.h"
+ #include "chaoswingfit.h"
++#include "chaosheadfit.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -383,6 +384,18 @@
+         }
+     }
+ 
++    // Cinders of Chaos (base patch 0200): a head accessory (an aura look in the head piece range) keeps the place it has
++    // on the reference look's head and moves with the head of the body drawn (chaosheadfit.h; 0 without a row, and
++    // never on a mount, which has its own seat offsets)
++    if (m_aura && m_mount == 0 && m_category == ThingCategoryCreature) {
++        const chaos::headfit::Point2 headShift = chaos::headfit::shift(m_id, m_aura, direction);
++        if (headShift.x != 0 || headShift.y != 0) {
++            const Point headPx = Point(headShift.x, headShift.y) * g_sprites.getOffsetFactor();
++            topAuraDest += headPx;
++            auraDest += headPx;
++        }
++    }
++
+     if (!mountOnly && m_aura && (!g_game.getFeature(Otc::GameDrawAuraOnTop) or g_game.getFeature(Otc::GameAuraFrontAndBack)) ) {
+         drawAura();
+     }

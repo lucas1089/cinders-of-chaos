@@ -687,6 +687,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoswingfit_test.cpp -o "$d/chaoswingfit_asan"
           "$d/chaoswingfit_asan"
 
+      - name: Head accessories on the head (C++; header from base patch 0200, O561)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosheadfit\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0200-head-accessories-on-the-head.patch > "$d/chaosheadfit.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosheadfit_test.cpp -o "$d/chaosheadfit_test"
+          "$d/chaosheadfit_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosheadfit_test.cpp -o "$d/chaosheadfit_asan"
+          "$d/chaosheadfit_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
