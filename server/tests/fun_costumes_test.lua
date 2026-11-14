@@ -77,6 +77,56 @@ for i, r in ipairs(rows) do
 	eq(r.name, M.looks[i].name, r.key .. ": name")
 end
 
+-- O577: the two Ki auras, the same rows as client/tools/sprites/art_import/ki_auras.csv (new,key,name,...), the manifests, the gate
+local function lines(path)
+	local h = io.open(path, "r")
+	eq(h ~= nil, true, path .. " is there")
+	local t = {}
+	for line in h:lines() do
+		t[#t + 1] = line
+	end
+	h:close()
+	return t
+end
+eq(#M.ki, 2, "two Ki auras")
+local kiRows = {}
+for _, line in ipairs(lines("../client/tools/sprites/art_import/ki_auras.csv")) do
+	local id, key, name = line:match("^(%d+),([%w_]+),([^,]+),")
+	if id then kiRows[#kiRows + 1] = {look = tonumber(id), key = key, name = name} end
+end
+eq(#kiRows, #M.ki, "the Ki art table has the same number of rows")
+local vfxAura = {}
+for _, line in ipairs(lines("data/lib/chaos_vfx.lua")) do
+	local key, look, aura = line:match("^%s*(ki_%w+) = {look = (%d+), aura = (%d+),")
+	if key then vfxAura[tonumber(aura)] = {key = key, look = tonumber(look)} end
+end
+local manifest, manifest72 = {}, {}
+for _, line in ipairs(lines("data/XML/chaos_auras.csv")) do
+	local a, c = line:match("^(%d+),(%d+),")
+	if a then manifest[tonumber(a)] = tonumber(c) end
+end
+for _, line in ipairs(lines("data/XML/chaos_auras_pair72.csv")) do
+	local a, c, nm = line:match("^(%d+),(%d+),(.+)$")
+	if a then manifest72[tonumber(a)] = {look = tonumber(c), name = nm} end
+end
+local viaKey = {ki_gold = "ki_ki", ki_blaze = "ki_blaze"}
+for i, k in ipairs(M.ki) do
+	eq(kiRows[i].look, k.look, k.key .. ": look of the art table")
+	eq(kiRows[i].key, k.key, k.key .. ": key of the art table")
+	eq(kiRows[i].name, k.name, k.key .. ": name of the art table")
+	eq(k.look, 3524 + i, k.key .. ": after the 14 outfits 3511-3524, in order")
+	eq(byLook[k.look], nil, k.key .. ": not one of the 14 costume looks")
+	eq(k.old, vfxAura[k.aura].look, k.key .. ": the old look is the one of ChaosVfxAura")
+	eq(vfxAura[k.aura].key, viaKey[k.key], k.key .. ": ChaosVfxAura row of the aura id")
+	eq(manifest[k.aura], k.old, k.key .. ": chaos_auras.csv keeps the old look (the pair 71 and older server)")
+	eq(manifest72[k.aura] ~= nil and manifest72[k.aura].look, k.look, k.key .. ": chaos_auras_pair72.csv gives the new look")
+	eq(manifest72[k.aura].name, k.name, k.key .. ": the name stays")
+end
+eq(manifest72[32].look, M.seal.look, "the Rune Seal row of the pair 72 manifest")
+local nrows = 0
+for _ in pairs(manifest72) do nrows = nrows + 1 end
+eq(nrows, 3, "the pair 72 manifest holds the ring and the two Ki auras and nothing else")
+
 -- every sentence of every description has a pt-BR text
 local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
 for _, o in ipairs(M.outfits) do
@@ -145,6 +195,10 @@ for _, c in ipairs(off.categories) do
 end
 eq(mothOffer(off).look, 213, "the store offer shows look 213 while off")
 eq(species(petsWith(false), "dusk_moth").look, 213, "the pet shows look 213 while off")
+eq(M.auraLook(6), 1511, "Golden Ki keeps the flame 1511 while off")
+eq(M.auraLook(7), 1512, "Crimson Blaze keeps the flame 1512 while off")
+eq(M.auraLook(32), 2186, "auraLook of the Rune Seal while off")
+eq(M.auraLook(8), nil, "no other aura is this file's")
 local sealOff = sealWith(false)
 eq(sealOff.look, 2186, "the Rune Seal exclusive keeps 2186 while off")
 eq(sealOff.id, 32, "aura id 32")
@@ -180,6 +234,11 @@ eq(species(pets, "dusk_moth").look, 3523, "the pet shows the new moth")
 eq(species(pets, "dusk_moth").source.store, "petDuskMoth", "the pet id and store unlock stay")
 eq(sealWith(true).look, 3524, "the Rune Seal exclusive shows the round ring")
 eq(sealWith(true).id, 32, "the aura id stays 32")
+eq(M.auraLook(6), 3525, "Golden Ki takes the oblique look 3525 while on")
+eq(M.auraLook(7), 3526, "Crimson Blaze takes the oblique look 3526 while on")
+eq(M.auraLook(32), 3524, "auraLook of the Rune Seal while on")
+eq(M.auraLook(8), nil, "no other aura is this file's, on")
 M.PAIR72 = false
+eq(M.auraLook(6), 1511, "off again: the flame is back")
 
 print("fun_costumes_test: " .. n .. " checks, OK")
