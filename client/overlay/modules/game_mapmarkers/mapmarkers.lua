@@ -14,6 +14,10 @@
 --   tile, out of view the edge arrow, both with the gold floor triangle and the floors in the text (+1 up, -2 down). Refreshed on a party update and on the player's step, every 150 ms at most.
 -- * NPC marks (O415, npcmarks.lua): a gold "!" over an NPC with a quest you can start, a gold "?" over one you have a step to
 --   turn in to, drawn over its head (server action npcmarks); a check box "Quest marks over NPCs" (`npcmarks`).
+-- * Hunt teleports (O568, huntports.lua, huntportmath.lua): a gate on the map for every teleport of the hall into a hunt, the
+--   one you last used or came out of gold and pulsing (where to go back), a door for the way out of each hunt you have
+--   entered, the one of the hunt you stand in blue and pulsing (server action huntports, once after the hello); a check
+--   box "Hunt teleports on the map" (`huntports`).
 -- * Settings (g_settings node 'mapMarkers'; window from the top menu, "Map Markers"): party members on / off, arrows on the game view on / off, points of
 --   interest on / off, one check box per category, the NPC quest marks on / off. Turning a kind off on the client also tells the server, which then
 --   stops sending it.
@@ -180,6 +184,8 @@ local function place()
   for i = shown + 1, #poiPool do
     poiPool[i]:hide()
   end
+  -- O568: the hunt teleports, over the points of interest, under the party members
+  HuntPorts.draw({ minimap = minimap, layer = layer, cam = cam, rect = rect, scale = scale, hits = hitList })
   -- party members last: drawn over the points of interest and first in the hover test
   placeParty(cam, rect, scale)
 end
@@ -467,6 +473,12 @@ local function onMessage(protocol, opcode, msg)
     if settings.poi then onReveal(d) end
   elseif msg.action == 'quests' then
     if settings.poi then onQuests(d) end
+  elseif msg.action == 'huntports' then
+    -- O568: the hall's hunt teleports, every hunt's arrival and way out (huntports.lua)
+    if settings.huntports then
+      HuntPorts.onMessage(d)
+      place()
+    end
   elseif msg.action == 'npcmarks' then
     -- O415: the gold ! and ? over NPC heads (npcmarks.lua)
     if settings.npcmarks then NpcMarks.onMessage(d) end
@@ -487,15 +499,23 @@ end
 local function onGameStart()
   ensureAttached()
   attachGame()
-  send('hello', { party = settings.party, poi = settings.poi, npcmarks = settings.npcmarks })
+  HuntPorts.onGameStart()
+  send('hello', { party = settings.party, poi = settings.poi, npcmarks = settings.npcmarks, huntports = settings.huntports })
 end
 
 local function onGameEnd()
   clearParty()
   detachGame()
   NpcMarks.reset()
+  HuntPorts.onGameEnd()
   pois, floors, goals = {}, {}, {}
   place()
+end
+
+-- the character's step: the game view arrows, and the hunt teleport state (a teleport used, a way out taken, O568)
+local function onMove(self, newPos, oldPos)
+  requestGame()
+  if settings.huntports and HuntPorts.onMove(oldPos, newPos) then place() end
 end
 
 -- ---------------------------------------------------------------- settings window and API
@@ -506,6 +526,7 @@ local function updateSettingsWindow()
   settingsWindow.gameBox:setChecked(settings.game, true)
   settingsWindow.gameBox:setEnabled(settings.party)
   settingsWindow.npcMarksBox:setChecked(settings.npcmarks, true)
+  settingsWindow.huntPortsBox:setChecked(settings.huntports, true)
   for _, c in ipairs(M.CATEGORIES) do
     local box = settingsWindow.categories:getChildById(c)
     if box then
@@ -555,6 +576,22 @@ function setNpcMarks(on)
   saveSettings()
   NpcMarks.setEnabled(on)
   send('set', { npcmarks = on })
+  updateSettingsWindow()
+end
+
+-- O568: the hunt teleports on the map (apart from the points of interest: its own switch; the server sends the list
+-- when it is turned on)
+function setHuntPorts(on)
+  on = on == true
+  if settings.huntports == on then return end
+  settings.huntports = on
+  saveSettings()
+  HuntPorts.setEnabled(on)
+  if on then
+    HuntPorts.onGameStart()
+    send('set', { huntports = true })
+  end
+  place()
   updateSettingsWindow()
 end
 
@@ -612,10 +649,11 @@ end
 function init()
   loadSettings()
   NpcMarks.init(settings.npcmarks)
+  HuntPorts.init(settings.huntports)
   g_ui.importStyle('mapmarkers')
   handlers.opcode = safe('opcode', onMessage)
   handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
-  handlers.player = { onPositionChange = safe('move', requestGame) }
+  handlers.player = { onPositionChange = safe('move', onMove) }
   ProtocolGame.registerExtendedJSONOpcode(M.OPCODE, handlers.opcode)
   connect(g_game, handlers.game)
   connect(LocalPlayer, handlers.player)
@@ -632,6 +670,7 @@ function terminate()
   detach()
   detachGame()
   NpcMarks.terminate()
+  HuntPorts.terminate()
   if settingsWindow then settingsWindow:destroy() settingsWindow = nil end
   pois, floors = {}, {}
   handlers = {}

@@ -705,7 +705,7 @@ collision check") and be added here.
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua`, `telegraph.lua` | `game_monsterbar`, `game_telegraph` | server -> client `info` / `mech`; O549 (no new opcode): server -> client `floor {id, z, x0, y0, t = [[dx, dy]], c, ms}` and `floorclear {id}`, client -> server `floorhello {v = 1}` (floor telegraphs, see "Floor telegraphs (O549)"; `game_monsterbar` owns the opcode and hands these two actions to `game_telegraph`) |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
-| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`) |
+| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua`, `radar.lua` | `game_mapmarkers`, `game_minimapdots` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked`; O415: `poi.lua` action `npcmarks` (the marks over NPC heads); O543: `radar.lua` action `radar` (the monsters within 30 tiles; `game_mapmarkers` owns the client handler and passes it to `game_minimapdots`); O568: `poi.lua` action `huntports` (the hall's hunt teleports, sent only to a client whose hello says `huntports`) |
 | 155 | `itemFinder` | `itemfinder.lua` | `game_itemfinder` | answers through `Chaos.sendChunked` |
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
@@ -25355,6 +25355,31 @@ when a quest is ready to turn in".
 - **Tests.** `tests/tales_test.lua` (O415 blocks: the story, the marks, the introduction through the engine),
   `tests/poi_test.lua` (merge, diff), `tests/npcmarks_test.lua` (`poi.lua` on a mocked engine), `tests/spellquest_test.lua`,
   `tests/ascension_quest_test.lua`, client `game_mapmarkers/npcmarkmath_test.lua`. Not run on a live server or in a client.
+
+### Hunt teleports on the map (O568) (`poi.lua` action `huntports`, `hunt_teleports_core.lua` `H.ports`, client `game_mapmarkers` `huntports.lua`)
+Owner, 2026-11-14 (pt-BR): "coloque um marcador no mapa onde estão os teleports das hunts. pra saber onde voltar".
+- **Where the list comes from.** The hall's slots (which hunt stands on which tile, on which floor) are decided at install
+  from the live map and the level order ("Hall order"), so no file of the repository holds them and no generator can
+  write a static client list. The server has them at runtime: `ChaosHuntTeleportsCore.ports(cfg, idx)` turns the index
+  of `data/lib/chaos_hunt_places.lua` into one row per hunt, placed plans and base hunts, sorted by id:
+  `{i = id, n = name, l = {lo, hi}, t = the hall teleport, f = the tile in front of it, a = the hunt's arrival,
+  b = the way out}`, every place as `{x, y, z}`. `b` is a plan's camp portal (`exit`) or a base hunt's added way back
+  (`cfg.returns`, the tile placed at startup); a base hunt whose way back is the map's own has none. `f`, `a` and `b` are
+  left out when unknown. `ChaosHuntTeleports.ports()` is the engine side.
+- **Protocol.** Extended opcode 153. The client's `hello` and `set` carry `huntports = true | false` (its own switch). On
+  `true` `poi.lua` sends `huntports {ports = [...]}` once, through `Chaos.sendChunked` (about 150 rows, over 8 KB); the
+  encoded message is kept until the hunt teleports are loaded again (`HT.idx` changes). A `set` is rate limited
+  (`poi.set` window, `cfg.setMs`), the hello is not. Only a client that sends `huntports = true` gets it: the Unity
+  client's hello does not carry the key, so it never receives the action (`tools/ci/check_unity_opcodes.py` counts
+  opcodes, not actions).
+- **What the client does.** A gate on the map for every hall teleport; the one the character last used or came out of
+  gold and pulsing (where to go back); a door for the way out of each hunt the character has entered, the one of the hunt
+  it stands in blue and pulsing. Which teleport was last used is decided on the client from the character's own steps (no
+  server message): a step of more than 3 tiles from a tile next to a hall teleport is a use of it, a step to a tile in
+  front of a hall teleport (the camp portal sends the character there, `ChaosHuntTeleports.backFor`) is a coming out of it.
+  The state is kept per character in the client's settings. Client rules: `client/MANIFEST.md` game_mapmarkers.
+- **Tests.** `tests/huntports_test.lua` (the list, the hello, once per ask, the reload, the rate limit, a hello without the
+  key), client `game_mapmarkers/huntportmath_test.lua`. Not run on a live server or in a client.
 
 ## Minimap radar (O543) (`radar.lua`, `radar_core.lua`, `radar_config.lua`, client `game_minimapdots`)
 
