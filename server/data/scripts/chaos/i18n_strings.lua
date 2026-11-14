@@ -6041,7 +6041,7 @@ return {
 		-- tooltip; unique_intro_config.lua: the one-time line at the first unique)
 		["Works for your class."] = "Funciona para a sua classe.",
 		["Works for every class."] = "Funciona para todas as classes.",
-		["Asleep: your class is not in its list."] = "Inativo: a sua classe não está na lista.",
+		["Cannot use: not for your class."] = "Não pode usar: não é para a sua classe.",
 		["Active."] = "Ativo.",
 		["Asleep: %s is stronger."] = "Inativo: %s é mais forte.",
 		["Asleep: only %d unique powers work at once."] = "Inativo: só %d poderes únicos funcionam ao mesmo tempo.",

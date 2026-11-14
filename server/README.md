@@ -4375,7 +4375,7 @@ A player on the test server held 14 uniques and could not tell what they were. B
 whether its power worked for the viewer, nothing led from the item to its Codex page, the Codex did not explain the
 power, the class lines or the limit of active powers, and the Item Finder did not know a unique by its own name.
 - **Tooltip line.** `item_tooltip.lua` adds `tip.passive.fit` (and `warn` when the power sleeps) under the passive block:
-  "Works for your class." / "Works for every class." (normal text) or "Asleep: your class is not in its list." (warning
+  "Works for your class." / "Works for every class." (normal text) or "Cannot use: not for your class." (warning
   colour). For a unique the viewer WEARS it adds the state of the limit: "Active.", "Asleep: <unique> is stronger." (the
   worn unique that wins the family) or "Asleep: only 5 unique powers work at once." The rule is not copied:
   `ChaosUniquePassivesCore.activeSet` (the function the passives use) returns the reason per item as a second result
