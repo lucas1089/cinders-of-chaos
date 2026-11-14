@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 71,
+  "opcode": 72,
   "out": 39,
   "passive": 110,
   "place": 15,
@@ -9169,6 +9169,22 @@
     "factions"
    ]
   },
+  "fxOwner": {
+   "actions": [
+    "hello"
+   ],
+   "client": [
+    "game_effectopacity"
+   ],
+   "dataKeys": [],
+   "files": [
+    "fxowner.lua"
+   ],
+   "opcode": 164,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
   "gamble": {
    "actions": [
     "buy",
@@ -9725,6 +9741,7 @@
     "game_minimapdots"
    ],
    "dataKeys": [
+    "huntports",
     "npcmarks",
     "on",
     "party",
@@ -10673,6 +10690,29 @@
    "skip": [],
    "systems": [
     "townportal"
+   ]
+  },
+  "trainerMeter": {
+   "actions": [
+    "watch"
+   ],
+   "client": [
+    "game_trainerdps"
+   ],
+   "dataKeys": [
+    "on",
+    "party"
+   ],
+   "files": [
+    "trainer_meter.lua"
+   ],
+   "opcode": 147,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "trainer_meter"
    ]
   },
   "transmog": {
@@ -13148,6 +13188,16 @@
     "townPortal"
    ],
    "place": "temple",
+   "talkactions": []
+  },
+  "trainer_meter": {
+   "files": [
+    "trainer_meter.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "trainerMeter"
+   ],
    "talkactions": []
   },
   "transmog": {
