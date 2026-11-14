@@ -53,7 +53,7 @@ M.OTHER = 'other'
 local BY_MARKET = {}
 for _, c in ipairs(M.CATEGORIES) do for _, m in ipairs(c.market) do BY_MARKET[m] = c.id end end
 
--- the cloth slots (OTClient ClothSlot): 1 head, 2 necklace, 4 armor, 5 and 6 the hands, 7 legs, 8 feet, 9 ring, 10 ammo
+-- the cloth slots (the engine's ClothSlot): 1 head, 2 necklace, 4 armor, 5 and 6 the hands, 7 legs, 8 feet, 9 ring, 10 ammo
 local BY_SLOT = { [1] = 'armor', [2] = 'jewelry', [4] = 'armor', [5] = 'weapons', [6] = 'weapons', [7] = 'armor',
   [8] = 'armor', [9] = 'jewelry', [10] = 'ammo' }
 
