@@ -147,6 +147,7 @@ function init()
 		onGameEnd = destroy
 	})
 	ProtocolGame.registerExtendedOpcode(CODE_SKILLTREE, onExtendedOpcode)
+	initTrials() -- trials.lua: the Trials button shows an open trial
 
 	if g_game.isOnline() then
 		create()
@@ -187,6 +188,7 @@ function terminate()
 		onGameEnd = destroy
 	})
 	ProtocolGame.unregisterExtendedOpcode(CODE_SKILLTREE, onExtendedOpcode)
+	terminateTrials() -- trials.lua
 
 	if passiveButton then
 		passiveButton:destroy()

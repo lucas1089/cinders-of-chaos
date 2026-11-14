@@ -94,6 +94,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 10000,
     },
+    -- a Vocation Trial is open to the player (client game_passivetree/trials.lua, O559): once for every new availability
+    TRIAL = {
+        icon = "images/toast/ascension.png",
+        title = "TRIAL OPEN",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 10000,
+    },
     -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
     -- the market (server data/scripts/chaos/market.lua): a sale, a purchase, items and gold delivered
     MARKET = {
