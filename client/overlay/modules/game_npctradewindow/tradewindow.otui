@@ -259,8 +259,9 @@ TradeWindow < ChaosWindow
 
     ChaosScrollBar
       id: listScrollBar
-      anchors.top: list.top
-      anchors.bottom: list.bottom
+      anchors.top: chips.bottom
+      anchors.bottom: parent.bottom
+      margin-top: 6
       anchors.right: parent.right
       step: 30
       pixels-scroll: true
@@ -694,8 +695,10 @@ TradeSellAllWindow < ChaosWindow
 
   ChaosScrollBar
     id: rowsScrollBar
-    anchors.top: rows.top
-    anchors.bottom: rows.bottom
+    anchors.top: tabs.bottom
+    anchors.bottom: totalLabel.top
+    margin-top: 6
+    margin-bottom: 8
     anchors.right: parent.right
     step: 34
     pixels-scroll: true
