@@ -148,7 +148,7 @@ end
 
 function init()
   for _, mode in ipairs(K.ORDER) do
-    local ok, err = pcall(g_shaders.createOutfitShader, K.shaderName(mode), K.VERTEX, K.FILE_PREFIX .. mode)
+    local ok, err = pcall(g_shaders.createOutfitShader, K.shaderName(mode), K.VERTEX, string.format(K.FILE_PATTERN, mode))
     ready[mode] = ok == true
     if not ok then g_logger.warning('[killdissolve] ' .. mode .. ': ' .. tostring(err)) end
   end
