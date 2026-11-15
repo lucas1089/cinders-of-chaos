@@ -16,7 +16,7 @@ K.MODES = {
   frost = { ms = 1100 }, gold = { ms = 1100 },
 }
 K.SHADER_PREFIX = 'chaos_kd_'                   -- the registered outfit shader name: chaos_kd_<mode>
-K.FILE_PREFIX = '/shaders/chaos_outfit_kd_'      -- the fragment stage file: <prefix><mode>
+K.FILE_PATTERN = '/shaders/chaos_outfit_kd_%s'   -- the fragment stage file: string.format(FILE_PATTERN, mode)
 K.VERTEX = '/shaders/chaos_outfit_vertex'
 K.FRAME_MS = 33                                  -- one outfit update every 33 ms (30 per second)
 K.MAX_ACTIVE = 6                                 -- dissolves running at once on a desktop; more kills play the plain effect
