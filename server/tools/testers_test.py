@@ -888,6 +888,69 @@ fb.on_death()
 eq(rf.d['behaviours']['flee'].get('failed'), 1, 'a death before the look fails the flee')
 ok(any(k.startswith('flee: died') for k in rf.d['failures']), 'with its reason')
 
+# the raid in closed test mode (O588): no flight to the temple inside it, the walk steps of a person, the loot, the party's level
+class _W:
+    async def drain(self):
+        pass
+
+
+class _CW(C):
+    def __init__(self):
+        super().__init__()
+        self.w = _W()
+
+
+rr = T.Results(1)
+ri = T.TesterBot(8, dict(bot, name='Tester Rra'), A(), 1, rr, {'rotation': [], 'heal': None})
+ri.conn, ri.alive, ri.died, ri.cid, ri.level = _CW(), True, False, 777, 900
+said_r = []
+ri.say = lambda text, kind=1: said_r.append(text)
+ri.health, ri.heal = 20, None
+ri.ready = {'heal': 9e9, 'potion': 9e9}
+eq(ri.in_raid, False, 'a bot is not in the raid at first')
+ri.in_raid = True
+ri.keep_alive(1000.0)
+ok('!tester town' not in said_r and ri.flee_check is None, 'inside the raid a bot does not flee to the temple (the engine catches a lethal hit)')
+ri.in_raid = False
+ri.keep_alive(1000.0)
+ok('!tester town' in said_r, 'outside it, the flee at 20 percent is as before')
+T.ONLINE.clear()
+T.ONLINE[777] = ri
+rio = T.CheckIO(ri, {'stop': False})
+for step, byte in (((0, -1), 0x65), ((1, 0), 0x66), ((0, 1), 0x67), ((-1, 0), 0x68)):
+    eq(asyncio.run(rio.step(*step)), True, 'step %s is sent' % (step,))
+    eq(ri.conn.sent[-1], bytes([byte]), 'step %s is the client walk packet %#x' % (step, byte))
+n_sent = len(ri.conn.sent)
+eq(asyncio.run(rio.step(1, 1)), False, 'a diagonal is no step of ours')
+eq(asyncio.run(rio.step_of('Tester Nobody', 1, 0)), False, 'a bot that is not in game takes no step')
+eq(len(ri.conn.sent), n_sent, 'and nothing was sent')
+ok(ri.walk_until > _time.monotonic(), 'a step marks the walk, so "not possible" is a blocked step and not a failure')
+rio.raid_mode(['Tester Rra', 'Tester Nobody'], True)
+eq((ri.in_raid, ri.stay), (True, True), 'raid_mode on: no flight, stays out of the walk back to the hunt')
+rio.raid_mode(['Tester Rra'], False)
+eq((ri.in_raid, ri.stay), (False, False), 'raid_mode off')
+ri.kills = [{'k': 3, 'items': [{'n': 1, 'id': 2160}]}]
+ri.args.ops = {'lootfilter': 41}
+ri.args.backpack_client_id = 0
+asyncio.run(rio.loot())
+ok(any(m[:2] == b'\x32\x29' for m in ri.conn.sent), 'the loot step takes the items of the last kill through the loot filter window')
+T.ONLINE.clear()
+_lo, _hi = _PB(31, 'Tester Lo1'), _PB(32, 'Tester Hi1')
+_lo.level, _hi.level = 30, 900
+_me = _PB(30, 'Tester Me1')
+T.ONLINE.update({b.cid: b for b in (_me, _lo, _hi)})
+_pio = T.CheckIO.__new__(T.CheckIO)
+_pio.bot, _pio.clock = _me, {'stop': False}
+_wait2, T.PARTNER_WAIT_S = T.PARTNER_WAIT_S, 0.0
+T.PARTY_BUSY.clear()
+eq(asyncio.run(_pio.partner(min_level=800)), 'Tester Hi1', 'partner(min_level): a bot of the level, not the first free one')
+T.PARTY_BUSY.clear()
+eq(asyncio.run(_pio.partner(min_level=1500)), None, 'partner(min_level): nobody of that level, no partner')
+T.PARTY_BUSY.clear()
+eq(asyncio.run(_pio.partner()), 'Tester Lo1', 'partner(): the old rule, the first free bot')
+T.PARTNER_WAIT_S = _wait2
+T.ONLINE.clear(); T.PARTY_BUSY.clear()
+
 # the proof table and the diff against the previous run
 cov = {'bank': {'tried': 5, 'ok': 4, 'errors': 0, 'real': 2, 'ans': 2, 'help': 0, 'failed': 0, 'refused': 0},
        'rift': {'tried': 3, 'ok': 3, 'errors': 0, 'real': 0, 'ans': 0, 'help': 3, 'failed': 0, 'refused': 0},

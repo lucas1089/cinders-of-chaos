@@ -18,7 +18,8 @@ gen_wing_centres.py would measure the art's mass instead, so pair 73 must write 
 Until a pair has these looks nothing reads this.
 
 Drawing rules (the kit, top of the file):
-  whole pixels only: alpha is 0 or 255, plus GLOW_ALPHA for the arms of a spark and the last dots of a trail;
+  whole pixels only: alpha is 0 or 255, plus GLOW_ALPHA for the arms of a spark, the last dots of a trail and a
+  haze (smoke, mist, a glow round a cloud: Canvas.haze, O587);
   a ramp of 5 shades per material and one dark outline colour per design; light from the top left;
   every piece gets a 1 px ring, then every opaque pixel that touches transparency becomes the outline colour;
   two layers a frame: `back` (behind the body) and `front`; a piece goes by its depth after the turn.
@@ -35,7 +36,10 @@ with this kit. Their commands, handed over from here:
   table [--check]              the table rules, drawn_wings/designs.sums, client_chaos_wingfit/wing_anchors.lua
   sheets OUT_DIR               a contact sheet a family, 1x and 3x
   compare OUT_DIR DAT SPR      an MP4 a family: old art of the pair left, the drawn wing right, four directions
-  fit OUT_DIR DAT SPR LOOKS [WINGS]   one wing on several looks (LOOK or LOOK:MOUNT): engine anchor left, old table right
+  fit OUT_DIR DAT SPR LOOKS [WINGS]   one wing on several player looks (LOOK, LOOK+ADDONS, LOOK:MOUNT; rows of
+                               player_looks.csv only, O587): engine anchor left, old table right
+  measure DAT SPR [--write] [--colours]   read outline, core, tips and beat of the old wings into designs.csv (O587)
+  score DAT SPR [OUT.tsv]      likeness of every row to the old art: shape, colour, layout, motion, 0 is the same
   apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
   live DAT SPR                 a built pair holds them
 """
@@ -101,13 +105,14 @@ def vdot(a, b):
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 
-def project(p, d, pivot=0.0):
+def project(p, d, pivot=0.0, depth=DEPTH):
     """model point -> (screen x, screen y, depth); depth > 0 is nearer than the body. `pivot` is the height at
-    which the art sits on the leaning body: it leans with the body up to there and by LEAN_ART about it"""
+    which the art sits on the leaning body: it leans with the body up to there and by LEAN_ART about it. `depth`:
+    px down per px towards the viewer (a higher camera shows more of what lies towards and away from it)"""
     a = rad(DIR_ANGLE[d] + VIEW_YAW[d])
     xr = p[0] * math.cos(a) + p[2] * math.sin(a)
     zr = -p[0] * math.sin(a) + p[2] * math.cos(a)
-    return (ANCHOR[0] + xr + LEAN * pivot + LEAN_ART * (p[1] - pivot), ANCHOR[1] - p[1] + DEPTH * zr, zr)
+    return (ANCHOR[0] + xr + LEAN * pivot + LEAN_ART * (p[1] - pivot), ANCHOR[1] - p[1] + depth * zr, zr)
 
 
 # ------------------------------------------------------------------------------------------------ the kit: masks
@@ -227,6 +232,7 @@ class Canvas:
         self.op = np.zeros((SIZE, SIZE), bool)
         self.outline = outline
         self.sparks = []
+        self.hazes = []
 
     def piece(self, mask, idx, ramp, line=None, ring=True):
         if not mask.any():
@@ -243,6 +249,10 @@ class Canvas:
         """size 0: one glow pixel; 1: a bright core with four glow arms; 2: the arms two long"""
         self.sparks.append((int(math.floor(x)), int(math.floor(y)), colour, size))
 
+    def haze(self, mask, colour):
+        """a soft field at the glow level (smoke, mist, light): only where the layer is clear"""
+        self.hazes.append((mask, colour))
+
     def finish(self):
         op = self.op
         edge = op & ~(nb(op, 1, 0) & nb(op, -1, 0) & nb(op, 0, 1) & nb(op, 0, -1))
@@ -250,6 +260,12 @@ class Canvas:
         self.rgb[edge] = self.outline
         alpha = np.where(op, 255, 0).astype(np.uint8)
         rgb = self.rgb.copy()
+        inner = np.zeros((SIZE, SIZE), bool)
+        inner[2:SIZE - 2, 2:SIZE - 2] = True
+        for mask, colour in self.hazes:
+            sel = mask & inner & (alpha == 0)
+            rgb[sel] = colour
+            alpha[sel] = GLOW_ALPHA
         for x, y, colour, size in self.sparks:
             if not (2 <= x < SIZE - 2 and 2 <= y < SIZE - 2):
                 continue
@@ -274,8 +290,9 @@ class Canvas:
 class Scene:
     """the two layers of a frame"""
 
-    def __init__(self, outline, d, f, pivot=0.0):
+    def __init__(self, outline, d, f, pivot=0.0, side_depth=None):
         self.pivot = pivot
+        self.depth = side_depth if side_depth is not None and d in ('east', 'west') else DEPTH
         self.back = Canvas(outline)
         self.front = Canvas(outline)
         self.d = d
@@ -286,9 +303,9 @@ class Scene:
         return self.front if depth >= 0 else self.back
 
     def P(self, p):
-        return project(p, self.d, self.pivot)
+        return project(p, self.d, self.pivot, self.depth)
 
-    def leaf3(self, canvas, base, tip, wdir, hw, knots, shader, ramp, bend=0.0, minw=1.2, dim=0):
+    def leaf3(self, canvas, base, tip, wdir, hw, knots, shader, ramp, bend=0.0, minw=1.2, dim=0, line=None):
         """a long piece between two model points; wdir is the model direction of its width"""
         b = self.P(base)
         t = self.P(tip)
@@ -301,7 +318,7 @@ class Scene:
         hw2 = max(minw, hw * across)
         mask, tt, ss, lit = leaf(b, t, hw2, knots, bend)
         idx = shader(tt, ss, lit, hw2) - dim
-        canvas.piece(mask, idx.astype(np.int8), ramp)
+        canvas.piece(mask, idx.astype(np.int8), ramp, line=line)
         return b, t
 
     def result(self):
@@ -908,7 +925,7 @@ def preview(out_dir, dat=None, spr=None, look=2050, loops=6):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
-    if argv and argv[0] in ('table', 'sheets', 'compare', 'fit', 'apply', 'live'):
+    if argv and argv[0] in ('table', 'sheets', 'compare', 'fit', 'apply', 'live', 'measure', 'score'):
         sys.path.insert(0, HERE)
         import gen_drawn_wings_families as fam        # the 121 looks of the pair (O583)
         return fam.main(argv)

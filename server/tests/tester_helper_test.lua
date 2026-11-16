@@ -1426,6 +1426,92 @@ do
 	check(w.arena.mixed == false and w.arena.off == false, "rules that let a tester meet a player are reported as not guarding")
 end
 
+-- the raid in closed test mode (O588): `!tester raid [state | portal | close]`
+do
+	check(H.COMMANDS.raid and H.parseCommand("raid portal") == "raid", "raid is a registered command (O588)")
+	eq(H.parseRaid(nil), "state", "raid: no word is state")
+	eq(H.parseRaid("Portal"), "portal", "raid: portal (any case)")
+	eq(H.parseRaid("close"), "close", "raid: close")
+	local w, usage = H.parseRaid("start")
+	check(w == nil and usage:find("usage: raid", 1, true), "raid: start is no helper word: the bot opens the raid from its own window")
+	local a = H.raidAnswer({inside = true, level = 900, minLevel = 800, pos = {x = 1, y = 2, z = 7, junk = 1}, on = true, junk = 1,
+		portal = {x = 5, y = 6, z = 7}, run = {id = 3, slot = 3, side = "tester", players = 2, killed = 1, trash = 2, kills = 4,
+			fight = 2, phase = 1, trashLeft = 3, monsters = 9, bossHp = 80, fallen = false, final = {x = 8, y = 8, z = 7}, junk = 1},
+		guide = {mode = "walk", goal = {x = 9, y = 9, z = 7, junk = 1}, why = ("x"):rep(100), idx = 2, where = "hall", area = "trash",
+			junk = 1}}, {closed = true})
+	check(a.inside and a.on and a.pos.x == 1 and a.pos.junk == nil and a.junk == nil, "raid answer: cut down to what the bot reads")
+	check(a.run.side == "tester" and a.run.slot == 3 and a.run.final.x == 8 and a.run.junk == nil and a.run.fallen == false, "raid answer: the run")
+	check(a.guide.mode == "walk" and a.guide.goal.x == 9 and #a.guide.why == 60 and a.guide.junk == nil, "raid answer: the guide")
+	eq(a.closed, true, "raid answer: extra merged in")
+	check(H.raidAnswer(nil).inside == false and H.raidAnswer(nil).run == nil, "raid answer: nothing known")
+	check(H.json(H.raidAnswer({inside = false, level = 50, pos = {x = 1, y = 2, z = 7}})):find('"inside":false', 1, true), "raid answer: encodes")
+
+	local t5 = creature(268435499, "Tester Abz", {store = {[ST] = 1}})
+	local realRaid, realTile3 = ChaosRaid, Tile
+	local closedCalls = 0
+	ChaosRaid = {probe = function(p)
+		return {inside = p.inRaid == true, level = 900, minLevel = 800, minPlayers = 1, maxPlayers = 15, on = true, pz = true,
+			pos = p:getPosition(), portal = {x = 70, y = 71, z = 7}, bosses = 5}
+	end, testerClose = function(p) closedCalls = closedCalls + 1 return true end}
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return nil end} end
+	talks["!tester"].onSay(t5, "!tester", "raid #40")
+	check(last(t5):find('"portal":{"x":70', 1, true) and last(t5):find('"seq":40', 1, true) and last(t5):find('"minLevel":800', 1, true),
+		"raid state: the entrance, the level rule and the number of the command")
+	t5.pos = {x = 100, y = 100, z = 7}
+	talks["!tester"].onSay(t5, "!tester", "raid portal #41")
+	check(math.max(math.abs(t5.pos.x - 70), math.abs(t5.pos.y - 71)) == 1, "raid portal: next to the entrance, not on it")
+	check(not (t5.pos.x == 70 and t5.pos.y == 71), "raid portal: never on the portal tile")
+	check(last(t5):find('"seq":41', 1, true) and not last(t5):find('"err"', 1, true), "raid portal: answered")
+	-- the path on foot: the engine's own pathfinding, cut to the directions 0-7
+	eq(H.parseRaid("path"), "path", "raid: path")
+	local dirs = H.pathDirections({1, 1, 2, "x", 9, 3, -1, 1.5, 7})
+	eq(table.concat(dirs, ","), "1,1,2,3,7", "path: only the directions 0-7 stay")
+	eq(#H.pathDirections(nil), 0, "path: nothing is no path")
+	local long = {}
+	for i = 1, 200 do long[i] = 1 end
+	eq(#H.pathDirections(long), H.RAID_PATH_MAX, "path: at most RAID_PATH_MAX steps")
+	t5.getPathTo = function(self, pos, minD, maxD, full, clear, dist)
+		t5.pathAsked = {pos = pos, maxD = maxD}
+		return {1, 1, 2, 3}
+	end
+	talks["!tester"].onSay(t5, "!tester", "raid path #47")
+	check(last(t5):find('"path":[1,1,2,3]', 1, true) and last(t5):find('"seq":47', 1, true), "raid path: the directions of the path")
+	check(t5.pathAsked.pos.x == 70 and t5.pathAsked.pos.y == 71 and t5.pathAsked.maxD == 1, "raid path: to the portal, a tile next to it")
+	t5.getPathTo = function() return false end
+	talks["!tester"].onSay(t5, "!tester", "raid path #48")
+	check(last(t5):find("no path to the raid portal", 1, true), "raid path: no path, the reason")
+	t5.getPathTo = nil
+	talks["!tester"].onSay(t5, "!tester", "raid path #49")
+	check(last(t5):find("no path to the raid portal", 1, true), "raid path: an engine without the call, the reason")
+	t5.inRaid = true
+	talks["!tester"].onSay(t5, "!tester", "raid path #50")
+	check(last(t5):find("already inside the raid", 1, true), "raid path: inside, no path")
+	t5.inRaid = nil
+	talks["!tester"].onSay(t5, "!tester", "raid close #42")
+	check(last(t5):find('"closed":true', 1, true) and closedCalls == 1, "raid close: the testers' own raid is closed")
+	talks["!tester"].onSay(t5, "!tester", "raid bogus #43")
+	check(last(t5):find("usage: raid", 1, true), "raid: an unknown word is the usage")
+	t5.inRaid = true
+	local before = t5.pos
+	talks["!tester"].onSay(t5, "!tester", "raid portal #44")
+	check(last(t5):find("already inside the raid", 1, true) and t5.pos == before, "raid portal: inside, no teleport")
+	t5.inRaid = nil
+	Tile = function() return {getGround = function() return false end, hasFlag = function() return false end,
+		getTopCreature = function() return nil end} end
+	talks["!tester"].onSay(t5, "!tester", "raid portal #45")
+	check(last(t5):find("no free tile next to the raid portal", 1, true), "raid portal: no free tile, the reason")
+	ChaosRaid = nil
+	talks["!tester"].onSay(t5, "!tester", "raid #46")
+	check(last(t5):find("no raid system", 1, true), "raid: no raid system, the reason")
+	ChaosRaid, Tile = realRaid, realTile3
+	-- a player is never answered
+	local civ = creature(990, "Ana Raider", {store = {}})
+	local nBefore = #civ.log.msgs
+	local passed = talks["!tester"].onSay(civ, "!tester", "raid close #1")
+	check(passed == true and #civ.log.msgs == nBefore, "raid: a player's words go on and get no answer")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

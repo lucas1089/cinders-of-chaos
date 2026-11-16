@@ -42,7 +42,8 @@ the Beastmaster's wolf (O86: no summon takes its owner or a party member for a t
 atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
 --closed (O582, tester_closed.py; the switch data/chaos_testers_closed must be on): closed test mode. Two tester guilds are made
 before the bots log in; the bots then run the closed checks (arena, battleground, the Marches, guild war, market, the bazaar
-lock, the guards the server runs) among themselves, never with a player. The guilds, wars, tester market book and arena records
+lock, the guards the server runs) among themselves, never with a player, and play the raid like a party of people (walk, fight, loot,
+leave: closed_raid, O588). The guilds, wars, tester market book, arena records and raid rows
 of the run are removed when it ends, and by cleanup.
 """
 import asyncio
@@ -746,7 +747,7 @@ class CheckIO(KeyIO):
             self.bot.say(text)
             await self.bot.conn.w.drain()
 
-    async def partner(self):
+    async def partner(self, min_level=0):
         # a bot that is in no other party check: the checks of all bots start together, and when every bot picked the
         # same partner (the lowest id) only one party formed and the others read 0 members (local run 2026-10-31)
         # Every bot also starts its party checks at about the same time: wait up to PARTNER_WAIT_S for a free one
@@ -756,7 +757,7 @@ class CheckIO(KeyIO):
             if self.bot.name not in PARTY_BUSY:
                 for cid, other in sorted(ONLINE.items()):
                     if cid != self.bot.cid and other is not self.bot and other.alive and not other.died \
-                            and other.name not in PARTY_BUSY:
+                            and other.name not in PARTY_BUSY and (getattr(other, 'level', 0) or 0) >= min_level:
                         PARTY_BUSY.update((self.bot.name, other.name))
                         return other.name
             if time.monotonic() >= end or not self.alive():
@@ -836,6 +837,32 @@ class CheckIO(KeyIO):
     async def request_of(self, other, opname, action, data, expect, timeout):
         b = self._bot(other)
         return await KeyIO(b, self.clock).request(opname, action, data, expect, timeout) if b is not None else None
+
+    # the raid in closed test mode (O588): the walk steps of a person, the loot, and no flight to the temple inside
+    STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68}   # north, east, south, west
+
+    async def step_of(self, other, dx, dy):
+        b = self._bot(other)
+        if b is None or not b.alive or b.died or (dx, dy) not in self.STEP_BYTES:
+            return False
+        b.walk_until = time.monotonic() + 3.0  # a "not possible" in this time is a blocked step, not a bug
+        b.conn.send(bytes([self.STEP_BYTES[(dx, dy)]]))
+        await b.conn.w.drain()
+        return True
+
+    async def step(self, dx, dy):
+        return await self.step_of(self.bot.name, dx, dy)
+
+    async def loot(self):
+        if self.alive():
+            await self.bot.do_loot(self.clock)
+
+    def raid_mode(self, names, on):
+        for name in names or []:
+            b = self._bot(name)
+            if b is not None:
+                b.in_raid = bool(on)
+                b.stay = bool(on)
 
     def sql(self, statements):
         try:
@@ -978,6 +1005,7 @@ class TesterBot(LT.Bot):
         self.checks = None  # the CheckRun of this bot (O110): it goes on after a death and a new login
         self.checks_done = False
         self.checks_flushed = False
+        self.in_raid = False  # inside the testers' raid (O588): the engine catches a lethal hit there, no flight to the temple
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -1448,7 +1476,7 @@ class TesterBot(LT.Bot):
                 self.ready['potion'] = now + 1.1
                 self.results.behaviour('potion', 'tried')
                 self.pending.setdefault('potion', now + HEAL_SEEN)
-        if self.health <= FLEE_AT and not self.back_at and self.ready.get('flee', 0) <= now \
+        if self.health <= FLEE_AT and not self.in_raid and not self.back_at and self.ready.get('flee', 0) <= now \
                 and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
             self.helper.pop('town', None)
             self.say('!tester town')

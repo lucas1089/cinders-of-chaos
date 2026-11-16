@@ -54,6 +54,9 @@ if not ChaosArenaLook then
 	dofile("data/scripts/chaos/arenalook_core.lua")
 end
 
+-- Closed test mode (O588, server/README.md "Closed test mode (O582)"): with the switch on, a party of testers only can open and play a
+-- raid, in the slot of its own (raid_config.lua testerSlot); a tester and a player are never in the same raid; with the switch off
+-- testers stay refused. A tester raid never broadcasts, never enters a board and never feeds a guild's trophies.
 ChaosRaid = ChaosRaid or {}
 local X = ChaosRaid
 local K = ChaosRaidCore
@@ -158,6 +161,35 @@ local function insideOther(player)
 		or (ChaosArena and ChaosArena.isInside and ChaosArena.isInside(player))
 		or (ChaosDescent and ChaosDescent.isInside and ChaosDescent.isInside(player))
 end
+
+-- ---------------------------------------------------------------- closed test mode (O588)
+local TXT_OFF = "Closed test mode is off: the testers do not play this."
+local TXT_MIXED = "Testers and players are never mixed."
+
+local function testerOn()
+	local R = ChaosTestersCore
+	return R ~= nil and R.closedOn() == true
+end
+
+local function sideOfPlayer(player)
+	return Chaos.isTester(player) and "tester" or "player"
+end
+
+-- the refusal text of a tester (the raid is a closed system) or nil: the mode must be on and the rules loaded
+local function testerRefusal(player)
+	if not Chaos.isTester(player) then
+		return nil
+	end
+	local R = ChaosTestersCore
+	local _, why = K.sideOfGroup(R, R and R.closedOn() or false, {true})
+	if why == "closed-off" then
+		return TXT_OFF
+	elseif why then
+		return TXT_MIXED
+	end
+	return nil
+end
+X.testerRefusal = testerRefusal
 
 local function giveStack(player, id, count)
 	if count <= 0 then
@@ -546,10 +578,10 @@ local function buildSlot(slot)
 	return L
 end
 
-local function takeSlot()
+local function takeSlot(side)
 	local cfg = C()
 	while true do
-		local slot = ChaosRiftCore.allocSlot(cfg, X.runs, X.bad)
+		local slot = K.allocSlot(cfg, side or "player", testerOn(), X.runs, X.bad)
 		if not slot then
 			return nil
 		end
@@ -1349,7 +1381,9 @@ function X.deliver(player, b, idx)
 				pcall(ChaosUniqueIntro.found, player)
 			end
 			lines[#lines + 1] = "{" .. u.name .. "}"
-			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s in %s!", player:getName(), u.name, cfg.name)
+			if not Chaos.isTester(player) then -- a tester's find is never announced (O588)
+				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s in %s!", player:getName(), u.name, cfg.name)
+			end
 		end
 	end
 	-- item sets (itemsets.lua): the raid set's chase roll of this boss
@@ -1465,7 +1499,7 @@ local function bossKilled(run, i)
 			end
 		end
 		if secs then
-			if ChaosLeaderboard and ChaosLeaderboard.record then
+			if run.side ~= "tester" and ChaosLeaderboard and ChaosLeaderboard.record then
 				pcall(ChaosLeaderboard.record, cfg.board, p, secs)
 			end
 			local row = X.row(p:getGuid())
@@ -1475,7 +1509,9 @@ local function bossKilled(run, i)
 			end
 		end
 	end
-	if b.final then
+	if b.final and run.side == "tester" then
+		log(string.format("raid %d: the testers' raid is cleared (no board, no trophy, no broadcast)", run.inst.id))
+	elseif b.final then
 		guildTrophies(run, eligible)
 		local names = {}
 		for _, p in ipairs(present) do
@@ -1716,6 +1752,11 @@ function X.open(player, id, force)
 	if why then
 		return false, ChaosI18n.msg("You %s.", ChaosI18n.you(why))
 	end
+	local side = sideOfPlayer(player)
+	local closedWhy = testerRefusal(player)
+	if closedWhy then
+		return false, closedWhy
+	end
 	local w = week()
 	local inst
 	if id then
@@ -1731,7 +1772,10 @@ function X.open(player, id, force)
 	end
 	local group = {player}
 	for k, m in ipairs(groupOf(player)) do
-		if k > 1 then
+		if k > 1 and sideOfPlayer(m) ~= side then
+			-- a tester and a player never share a raid, even in one party (O588)
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, TXT_MIXED))
+		elseif k > 1 then
 			local mwhy = memberProblem(m)
 			if mwhy then
 				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s stays behind: %s.", m:getName(), mwhy))
@@ -1750,10 +1794,13 @@ function X.open(player, id, force)
 		running = running + 1
 	end
 	local slot, L
-	if not (IL and IL.capped("raid", running, cfg.limits)) then
-		slot, L = takeSlot()
+	if side == "tester" or not (IL and IL.capped("raid", running, cfg.limits)) then
+		slot, L = takeSlot(side)
 	end
 	if not slot then
+		if side == "tester" then
+			return false, "Every wing of the Sepulchre is taken right now. Try again in a moment." -- no waiting list of the players
+		end
 		if IL then
 			local lefts, t = {}, os.time()
 			for _, r in pairs(X.runs) do
@@ -1771,7 +1818,7 @@ function X.open(player, id, force)
 		inst = K.newInstance(newId, w, player:getGuid(), player:getName())
 		X.inst[newId] = inst
 	end
-	local run = {inst = inst, slot = slot, L = L, players = {}, mons = {}, bossId = {}, bossBase = {}, trashLeft = {},
+	local run = {inst = inst, slot = slot, L = L, side = side, players = {}, mons = {}, bossId = {}, bossBase = {}, trashLeft = {},
 		trashUp = {}, alerts = {}, lastActive = os.time(), openedAt = os.time(),
 		endsAt = (cfg.sessionMinutes or 0) > 0 and os.time() + cfg.sessionMinutes * 60 or nil,
 		session = {startKilled = K.bitCount(inst.killed, #cfg.bosses), kills = 0}}
@@ -1794,7 +1841,7 @@ function X.open(player, id, force)
 	say(run, ChaosI18n.msg("%s, raid #%d: %d of %d bosses slain this week. %s", cfg.name, inst.id,
 		K.bitCount(inst.killed, #cfg.bosses), #cfg.bosses, nb and ChaosI18n.msg("Next: %s.", cfg.bosses[nb].name) or ""))
 	sendHud(run)
-	log(string.format("%s opened raid %d (slot %d, %d player(s), killed %d)", player:getName(), inst.id, slot, #group,
+	log(string.format("%s opened raid %d (slot %d, %s, %d player(s), killed %d)", player:getName(), inst.id, slot, side, #group,
 		inst.killed))
 	addEvent(X.tick, cfg.tickMs, slot, inst.id)
 	return true
@@ -1814,6 +1861,13 @@ function X.join(player, id)
 			return false, "Only its members (or the party of one inside) may join this raid."
 		end
 	end
+	if sideOfPlayer(player) ~= (run.side or "player") then
+		return false, TXT_MIXED -- a tester and a player never share a raid (O588)
+	end
+	local closedWhy = testerRefusal(player)
+	if closedWhy then
+		return false, closedWhy
+	end
 	if players(run) >= cfg.maxPlayers then
 		return false, "The raid is full."
 	end
@@ -1827,6 +1881,76 @@ function X.join(player, id)
 	enter(run, player)
 	say(run, ChaosI18n.msg("%s joins the raid.", player:getName()))
 	sendHud(run)
+	return true
+end
+
+-- ======================================================================== the bots' eyes (O588)
+-- What a person sees of the raid, for the tester bots' `!tester raid` (tools/tester_helper.lua checks that the asker is a tester):
+-- outside, the entrance and the level rule; inside, the layout facts that K.guide turns into the next goal. Reads only.
+local function plain(p)
+	return {x = p.x, y = p.y, z = p.z}
+end
+
+function X.probe(player)
+	local cfg = C()
+	local pid = player:getId()
+	local run = X.runOf[pid]
+	local pos = player:getPosition()
+	local out = {inside = run ~= nil, level = player:getLevel(), minLevel = cfg.minLevel, minPlayers = cfg.minPlayers,
+		maxPlayers = cfg.maxPlayers, pos = plain(pos), pz = inProtectionZone(player), bosses = #cfg.bosses, on = testerOn(),
+		enabled = cfg.enabled ~= false, slot = cfg.testerSlot}
+	local fixed = cfg.portal.positions and cfg.portal.positions[1]
+	if fixed then
+		out.portal = {x = fixed.x, y = fixed.y, z = fixed.z}
+	end
+	if not run then
+		return out
+	end
+	local e = run.players[pid]
+	local f = run.fight
+	local nb = K.nextBoss(cfg, run.inst)
+	out.run = {id = run.inst.id, slot = run.slot, side = run.side, players = players(run),
+		killed = K.bitCount(run.inst.killed, #cfg.bosses), trash = K.bitCount(run.inst.trash, #cfg.bosses),
+		cleared = run.inst.cleared and true or false, kills = run.session and run.session.kills or 0,
+		endsIn = run.endsAt and math.max(0, run.endsAt - os.time()) or nil, fight = f and f.idx or nil, phase = f and f.phase or nil,
+		trashLeft = nb and run.trashLeft[nb] or nil, final = run.finalExit and plain(run.finalExit) or nil}
+	local monster, best, alive = nil, nil, 0
+	for mid, info in pairs(run.mons) do
+		local m = Monster(mid)
+		if m then
+			alive = alive + 1
+			if info.kind ~= "boss" then
+				local mp = m:getPosition()
+				local d = math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y))
+				if mp.z == pos.z and (best == nil or d < best) then
+					monster, best = {pos = plain(mp)}, d
+				end
+			end
+		end
+	end
+	out.run.monsters = alive
+	local boss = nb and bossOf(run, nb)
+	local bossPos = boss and plain(boss:getPosition()) or nil
+	if boss then
+		out.run.bossHp = math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth()))
+	end
+	out.run.fallen = e ~= nil and e.fallen ~= nil
+	out.guide = K.guide(cfg, run.L, run.inst, {pos = plain(pos), fallen = out.run.fallen, fight = f and f.idx or nil,
+		monster = monster, bossPos = bossPos, finalExit = run.finalExit and plain(run.finalExit) or nil})
+	return out
+end
+
+-- TEST ONLY (tools/tester_helper.lua `raid close`): ends the testers' own raid when it is empty or the asker is inside it, so its
+-- slot is free for the next run (the idle close does the same after idleMinutes). Progress stays saved. Never a player's raid.
+function X.testerClose(player)
+	local run = X.runs[C().testerSlot]
+	if not run or run.side ~= "tester" then
+		return false
+	end
+	if players(run) > 0 and not run.players[player:getId()] then
+		return false
+	end
+	closeRun(run, "temple")
 	return true
 end
 
@@ -1952,6 +2076,12 @@ function X.tick(slot, id)
 	end
 	local cfg = C()
 	local now = mnow()
+	if run.side == "tester" and not testerOn() then
+		-- the switch went off: the testers' raid ends, its progress stays saved (nothing is lost or broadcast)
+		say(run, TXT_OFF)
+		closeRun(run, "temple")
+		return
+	end
 	for pid in pairs(run.players) do
 		local p = Player(pid)
 		if not p then
@@ -2465,8 +2595,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if rate(player, "journal", 1000) then
 			X.sendJournal(player)
 		end
-	elseif (a == "start" or a == "continue" or a == "join") and Chaos.isTester(player) then
-		send(player, "msg", {ok = false, text = Chaos.t(player, "Testers do not use this queue: it matches players.")}) -- testers never share a run with players (O582)
+	elseif (a == "start" or a == "continue" or a == "join") and testerRefusal(player) then
+		-- a tester plays the raid only among testers and only with closed test mode on (O588); X.open / X.join check it again
+		send(player, "msg", {ok = false, text = Chaos.t(player, testerRefusal(player))})
 	elseif a == "start" or a == "continue" or a == "join" then
 		if rate(player, "start", 2000) then
 			local id = tonumber(d.id)

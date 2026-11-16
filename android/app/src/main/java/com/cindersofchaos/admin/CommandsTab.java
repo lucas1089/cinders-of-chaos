@@ -979,7 +979,7 @@ final class CommandsTab {
         b.addView(ui.hint("Cada rodada grava sozinha o log de tudo o que os testers fizeram e os erros que receberam, e "
                 + "o relatório no fim. Ficam as 20 últimas rodadas na VPS. Log das ações traz até 5000 linhas: em Ver detalhes, "
                 + "Compartilhar manda o log como arquivo .txt."), ui.gap(4));
-        // closed test mode (O582): the bots play PvP, arena, battleground, guild, guild war, market and the bazaar lock only among
+        // closed test mode (O582): the bots play PvP, arena, battleground, guild, guild war, market, the bazaar lock and the raid only among
         // themselves, never with players (chaos-ctl.sh testers closed, server/README.md "Closed test mode")
         TextView closedNow = ui.text("Modo fechado (bots entre si): toque em Status.");
         b.addView(closedNow, ui.gap(12));

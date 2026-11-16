@@ -42,6 +42,10 @@ return {
 	-- east: the entry hall, then for each boss a corridor (its trash) and the boss room. Doors (walls) close a corridor
 	-- until the boss before it is slain and its trash is cleared; a boss fight seals the room.
 	grid = {origin = {x = 10400, y = 10000, z = 7}, cols = 2, rows = 2, spacing = 256},
+	-- closed test mode (O588, server/README.md "Closed test mode (O582)"): while the switch is on, this slot of the grid is the
+	-- testers' own: a tester raid takes only it, a player raid never does; with the switch off no tester raids and the slot is
+	-- a player's like the others. The last slot, so the players' first slots stay as they were.
+	testerSlot = 3,
 	hall = {half = 5}, -- the entry hall: 11 x 11
 	corridor = {length = 10, half = 2}, -- 10 long, 5 wide
 	room = {half = 11}, -- a boss room: 23 x 23

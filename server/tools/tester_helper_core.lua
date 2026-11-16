@@ -27,6 +27,10 @@
 --                                       snapshot {who, ownerTarget, summons = {{name, id, target}}}, once per 30 s per rule
 --   H.closedGuards(rules)              O582: what the deployed testers_core.lua rules answer for a tester against a player and for
 --                                       testers with the mode off, per closed system: {system = {mixed = refused, off = refused, together = allowed}}
+--   H.parseRaid(arg)                   O588: "raid [state | path | portal | close]" -> the word (state when empty), or nil and the usage
+--   H.pathDirections(path)             O588: a path of Creature:getPathTo cut to the directions 0-7 the bot can walk (at most H.RAID_PATH_MAX)
+--   H.raidAnswer(probe, extra)         O588: the answer of `raid`: ChaosRaid.probe of the tester, cut down to what the bot reads (the
+--                                       position, the entrance, the guide's goal and mode, the run's counts), `extra` merged in
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
 --                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
@@ -37,7 +41,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -122,6 +126,67 @@ function H.parseRiftRun(arg)
 		return nil, "usage: riftrun <layout | loot>"
 	end
 	return what
+end
+
+-- !tester raid [state | path | portal | close] (O588, closed test mode): the facts of the raid a tester sees, the path on foot to
+-- the entrance, the step next to the portal when no path is found (the bot takes the last step itself) and the close of the
+-- testers' own raid
+function H.parseRaid(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if what ~= "state" and what ~= "path" and what ~= "portal" and what ~= "close" then
+		return nil, "usage: raid [state | path | portal | close]"
+	end
+	return what
+end
+
+local function xyz(p)
+	if type(p) ~= "table" then
+		return nil
+	end
+	return {x = p.x, y = p.y, z = p.z}
+end
+
+-- the engine directions of a path (Creature:getPathTo) as the list the bot walks: numbers 0-7 only, at most H.RAID_PATH_MAX of them
+H.RAID_PATH_MAX = 80
+function H.pathDirections(path)
+	local out = {}
+	if type(path) ~= "table" then
+		return out
+	end
+	for i = 1, math.min(#path, H.RAID_PATH_MAX) do
+		local d = tonumber(path[i])
+		if d and d >= 0 and d <= 7 and d == math.floor(d) then
+			out[#out + 1] = d
+		end
+	end
+	return out
+end
+
+function H.raidAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, minPlayers = probe.minPlayers,
+		maxPlayers = probe.maxPlayers, pos = xyz(probe.pos), pz = probe.pz and true or false, on = probe.on and true or false,
+		enabled = probe.enabled ~= false, bosses = probe.bosses, portal = xyz(probe.portal)}
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, slot = r.slot, side = r.side, players = r.players, killed = r.killed, trash = r.trash,
+			cleared = r.cleared and true or false, kills = r.kills, endsIn = r.endsIn, fight = r.fight, phase = r.phase,
+			trashLeft = r.trashLeft, monsters = r.monsters, bossHp = r.bossHp, fallen = r.fallen and true or false,
+			final = xyz(r.final)}
+	end
+	local g = probe.guide
+	if type(g) == "table" then
+		out.guide = {mode = g.mode, goal = xyz(g.goal), why = g.why and tostring(g.why):sub(1, 60) or nil, idx = g.idx,
+			where = g.where, wi = g.wi, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
 end
 
 -- the highest rift tier (1..maxTier) a character of `level` may open; tierMin(t) is the minLevel of tier t; nil: none
