@@ -2348,8 +2348,8 @@ class DungeonClosed(unittest.TestCase):
     def test_the_closed_systems_are_the_servers(self):
         with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'testers_core.lua'), encoding='utf-8') as f:
             text = f.read()
-        line = [ln for ln in text.splitlines() if ln.startswith('K.CLOSED_SYSTEMS')][0]
-        keys = sorted(re.findall(r'(\w+) = true', line))
+        block = re.search(r'K\.CLOSED_SYSTEMS = \{(.*?)\}', text, re.S).group(1)
+        keys = sorted(re.findall(r'(\w+) = true', block))
         self.assertEqual(keys, sorted(TX.CLOSED_SYSTEMS), 'testers_core.lua K.CLOSED_SYSTEMS and tester_checks.py CLOSED_SYSTEMS agree')
 
     # -------------------------------------------------------------------------------- walking like a person
@@ -2558,6 +2558,281 @@ class DungeonClosed(unittest.TestCase):
         r = run(TX.check_closed_dungeon(io, 'Tester Aaa', 'Warrior', 900))
         self.assertEqual(r.status, TX.FAIL, r.detail)
         self.assertIn('still inside the dungeon after the close', r.detail)
+
+
+# ---------------------------------------------------------------------------------------------------- the group queue and the party finder (O589)
+class QueueWorld:
+    """two windows on one tiny world: the Group Queue (join of a party of two, a ready check, a run of the testers) and the Party Finder
+    (a listing, the other bot's list, an application, the leader's accept). It answers `!tester dungeon` / `party` as the helper does."""
+    LIST = [{'id': 1, 'title': 'Bones Dungeon', 'level': 150, 'size': 2, 'max': 1},
+            {'id': 4, 'title': 'Rootmaw', 'level': 600, 'size': 1, 'max': 1},
+            {'id': 3, 'title': 'Forbidden Chevalier', 'level': 500, 'size': 2, 'max': 1}]
+
+    def __init__(self, level=900, on=True, refuse=None, no_check=False, never_runs=False, side='tester', members=2, levels=None,
+                 pf_refuse=None, hidden=False, no_apply=False, no_join=False, roles=('tank', 'healer')):
+        self.level, self.on, self.refuse, self.no_check, self.never_runs = level, on, refuse, no_check, never_runs
+        self.side, self.members, self.levels = side, members, levels or {}
+        self.pf_refuse, self.hidden, self.no_apply, self.no_join, self.roles = pf_refuse, hidden, no_apply, no_join, roles
+        self.joined, self.accepted, self.inside, self.checks_seen = None, set(), set(), 0
+        self.listing, self.apps, self.party_size, self.closed, self.unlisted = None, [], 1, 0, 0
+        self.asked = []
+
+    def lvl(self, name):
+        return self.levels.get(name, self.level)
+
+    def dungeon_state(self, name):
+        out = {'inside': name in self.inside, 'level': self.lvl(name), 'on': self.on, 'queued': 1 if self.joined and name not in self.inside else None,
+               'pos': {'x': 5, 'y': 5, 'z': 8}}
+        if name in self.inside:
+            out['run'] = {'side': self.side, 'members': self.members, 'percent': 0, 'left': 10, 'dungeon': self.joined}
+        elif not out['queued']:
+            out['list'] = self.LIST
+        return out
+
+    def answer(self, name, command):
+        if command == 'dungeon state':
+            if self.joined and not self.never_runs and len(self.accepted) >= 2 and name not in self.inside:
+                self.inside = {'Tester Aaa', 'Tester Bbb'}      # both accepted: the dungeon's next tick starts the run
+            return self.dungeon_state(name)
+        if command == 'dungeon close':
+            self.closed += 1
+            self.inside.clear()
+            self.joined = None
+            return dict(self.dungeon_state(name), closed=True)
+        if command == 'party':
+            return {'size': self.party_size}
+        return None
+
+    def request(self, name, opname, action, data=None):
+        self.asked.append((name, opname, action, data))
+        if opname == 'groupQueue':
+            if action == 'open':
+                return {'action': 'state', 'data': {}}
+            if action == 'join':
+                if self.refuse:
+                    return {'action': 'msg', 'data': {'text': self.refuse}}
+                self.joined = data['dungeon']['id']
+                return {'action': 'state', 'data': {'group': {'picks': [data['dungeon']]}}}
+            if action == 'query':
+                if self.joined and not self.no_check and len(self.accepted) < 2:
+                    self.checks_seen += 1
+                    return {'action': 'state', 'data': {'group': {'check': {'key': 'dungeon', 'accepted': len(self.accepted), 'total': 2}}}}
+                return {'action': 'state', 'data': {'group': {} if not self.joined else {'picks': []}}}
+            if action == 'accept':
+                self.accepted.add(name)
+                return {'action': 'state', 'data': {}}
+            if action == 'leave':
+                self.joined = None
+                return {'action': 'state', 'data': {}}
+        if opname == 'partyFinder':
+            if action == 'open':
+                return {'action': 'init', 'data': {'acts': [{'k': 'dungeon', 'n': 'Dungeon', 'targets': ['Bones'], 'max': 5},
+                                                          {'k': 'rift', 'n': 'Rift', 'range': {'min': 2, 'max': 9}}],
+                                                   'my': list(self.roles) if name == 'Tester Aaa' else ['healer', 'dps'], 'defExp': 30}}
+            if action == 'post':
+                if self.pf_refuse:
+                    return {'action': 'notice', 'data': {'text': self.pf_refuse, 'kind': 'error'}}
+                self.listing = {'id': 7, 'data': data}
+                return {'action': 'list', 'data': {'rows': [], 'mine': {'id': 7, 'apps': []}}}
+            if action == 'refresh':
+                if name == 'Tester Bbb':
+                    rows = [] if self.hidden or not self.listing else [{'id': 7, 'ld': 'Tester Aaa'}]
+                    return {'action': 'list', 'data': {'rows': rows}}
+                apps = [{'n': 'Tester Bbb', 'g': 43}] if self.apps else []
+                return {'action': 'list', 'data': {'rows': [], 'mine': {'id': 7, 'apps': apps}}}
+            if action == 'apply':
+                if not self.no_apply:
+                    self.apps.append(name)
+                return {'action': 'notice', 'data': {'text': 'You applied', 'kind': 'info'}}
+            if action == 'accept':
+                self.accepted_g = data['g']
+                return {'action': 'list', 'data': {'rows': []}}
+            if action == 'unlist':
+                self.unlisted += 1
+                return {'action': 'list', 'data': {'rows': []}}
+        return None
+
+
+class QueueIO(ClosedIO):
+    def __init__(self, world, me='Tester Aaa', **kw):
+        super().__init__(**kw)
+        self.w, self.me, self.partner_levels, self.cmds = world, me, [], []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append((self.me, command))
+        return self.w.answer(self.me, command)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        self.cmds.append((other, command))
+        return self.w.answer(other, command)
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(self.me, opname, action, data)
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        self.other_asked.append((opname, action, data))
+        return self.w.request(other, opname, action, data)
+
+    async def partner(self, min_level=0):
+        self.partner_levels.append(min_level)
+        return self.partner_name if self.partner_name and self.w.lvl(self.partner_name) >= min_level else None
+
+    async def party(self, action, other):
+        self.partied.append((action, other))
+        if action in ('form', 'join') and not self.w.no_join:
+            self.w.party_size = 2
+        elif action == 'leave':
+            self.w.party_size = 1
+        return not (action == 'join' and self.w.no_join)
+
+
+class GroupQueueClosed(unittest.TestCase):
+    def setUp(self):
+        TX.reset_dungeon_turn()
+
+    def tearDown(self):
+        TX.reset_dungeon_turn()
+
+    def play(self, world, **kw):
+        io = QueueIO(world, **kw)
+        return run(TX.check_closed_groupqueue(io, 'Tester Aaa', 'Warrior', world.level)), io
+
+    def test_pick_and_refusal(self):
+        lst = QueueWorld.LIST
+        self.assertEqual(TX.groupqueue_pick(lst, 900, set())['id'], 3)          # the highest of two that both may enter (size 2)
+        self.assertEqual(TX.groupqueue_pick(lst, 300, set())['id'], 1)
+        self.assertEqual(TX.groupqueue_pick(lst, 900, {3})['id'], 1)
+        self.assertIsNone(TX.groupqueue_pick(lst, 100, set()))
+        self.assertIsNone(TX.groupqueue_pick(lst, 900, {1, 3}))
+        self.assertIsNone(TX.groupqueue_pick(None, 900, set()))
+        self.assertEqual(TX.groupqueue_refusal('Closed test mode is off: the testers do not play this.')[0], TX.FAIL)
+        self.assertEqual(TX.groupqueue_refusal('Testers and players are never mixed.')[0], TX.FAIL)
+        self.assertEqual(TX.groupqueue_refusal('You are in cooldown for dungeons.')[0], TX.SKIP)
+        self.assertEqual(TX.groupqueue_refusal('')[0], TX.SKIP)
+        self.assertIn('closed_groupqueue', TX.CLOSED_KEYS)
+        self.assertIn('closed_party_finder', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_groupqueue', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_groupqueue'), TX.CLOSED_KEYS.index('closed_dungeon'))
+
+    def test_a_party_of_two_is_started_after_the_ready_check(self):
+        world = QueueWorld()
+        r, io = self.play(world)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('ready check accepted by both', r.detail)
+        self.assertIn('Forbidden Chevalier', r.detail)                           # the highest dungeon for two of level 900
+        self.assertEqual(world.joined, None)                                     # the run was closed
+        self.assertEqual(world.closed, 1)
+        self.assertEqual(world.accepted, {'Tester Aaa', 'Tester Bbb'})
+        self.assertGreaterEqual(world.checks_seen, 1)
+        self.assertEqual(io.partied[0], ('form', 'Tester Bbb'))
+        self.assertIn(('leave', 'Tester Bbb'), io.partied)
+        self.assertEqual(io.partner_levels, [150])
+        self.assertIn(('groupQueue', 'join', {'dungeon': {'id': 3, 'difficulty': 1}}), io.asked)
+        self.assertEqual(TX.DUNGEON_BUSY, {})
+        self.assertLess(io.moves.index('town'), 1)
+
+    def test_skips(self):
+        for over, word in ((dict(on=False), 'switch'), (dict(level=100), 'level 100')):
+            r, io = self.play(QueueWorld(**over))
+            self.assertEqual(r.status, TX.SKIP)
+            self.assertIn(word, r.detail)
+        r, io = self.play(QueueWorld(), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no free bot of level 150', r.detail)
+        r, io = self.play(QueueWorld(levels={'Tester Bbb': 400}))                # the partner is below dungeon 3: dungeon 1 for two
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Bones Dungeon', r.detail)
+        TX.DUNGEON_BUSY.update({1: 'x', 3: 'y'})
+        r, io = self.play(QueueWorld())
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no dungeon for two', r.detail)
+        TX.reset_dungeon_turn()
+        r, io = self.play(QueueWorld(never_runs=True))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no run in', r.detail)
+
+    def test_the_join_refused(self):
+        r, io = self.play(QueueWorld(refuse='Closed test mode is off: the testers do not play this.'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_groupqueue', r.bug_line())
+        self.assertEqual(TX.DUNGEON_BUSY, {})
+        r, io = self.play(QueueWorld(refuse='You are in cooldown for dungeons.'))
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_a_party_started_without_a_ready_check_or_in_a_players_run_fails(self):
+        r, io = self.play(QueueWorld(no_check=True))
+        self.assertEqual(r.status, TX.SKIP, r.detail)                            # nobody accepted: no run
+        w = QueueWorld(side='player')
+        r, io = self.play(w)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('player dungeon run', r.detail)
+        w = QueueWorld(members=1)
+        r, io = self.play(w)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('1 member(s) inside', r.detail)
+
+
+class PartyFinderClosed(unittest.TestCase):
+    def play(self, world, **kw):
+        io = QueueIO(world, **kw)
+        return run(TX.check_closed_party_finder(io, 'Tester Aaa', 'Warrior', 900)), io
+
+    def test_the_helpers(self):
+        init = {'acts': [{'k': 'rift', 'range': {'min': 2}, 'title': True}, {'k': 'dungeon', 'targets': ['A']}], 'defExp': 45, 'my': ['dps', 'x', 'tank']}
+        act, why = TX.pf_pick_activity(init)
+        self.assertEqual(act['k'], 'dungeon')                                     # the first one that needs no title
+        self.assertIsNone(TX.pf_pick_activity({'acts': []})[0])
+        self.assertIsNone(TX.pf_pick_activity(None)[0])
+        d = TX.pf_listing(act, 'tank', 'healer', init)
+        self.assertEqual((d['a'], d['want'], d['role'], d['exp'], d['t']), ('dungeon', {'healer': 1}, 'tank', 45, 1))
+        d = TX.pf_listing({'k': 'rift', 'range': {'min': 2}, 'title': True}, 'tank', 'dps', init)
+        self.assertEqual((d['lo'], d['hi'], d['title']), (2, 2, 'Tester group'))
+        self.assertEqual(TX.pf_roles(init), ['dps', 'tank'])
+        self.assertEqual(TX.pf_roles(None), [])
+
+    def test_listed_found_applied_accepted_joined(self):
+        world = QueueWorld()
+        r, io = self.play(world)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Tester Bbb', r.detail)
+        self.assertIn('party of 2', r.detail)
+        self.assertEqual(world.accepted_g, 43)                                    # the leader accepted the applicant by its guid
+        self.assertEqual(world.listing['data']['want'], {'healer': 1})            # the first role the partner fills
+        self.assertEqual(world.listing['data']['role'], 'tank')
+        self.assertEqual(world.unlisted, 1)                                       # the listing is taken down again
+        self.assertIn(('join', 'Tester Bbb'), io.partied)
+        self.assertIn(('leave', 'Tester Bbb'), io.partied)
+        self.assertEqual(world.party_size, 1)
+
+    def test_refusals_and_failures(self):
+        r, _ = self.play(QueueWorld(), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        r, io = self.play(QueueWorld(pf_refuse='Closed test mode is off: the testers do not play this.'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_party_finder', r.bug_line())
+        self.assertEqual(io.partied[-1], ('leave', 'Tester Bbb'))
+        r, _ = self.play(QueueWorld(pf_refuse='Wait a moment before posting again.'))
+        self.assertEqual(r.status, TX.SKIP)
+        r, _ = self.play(QueueWorld(hidden=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('not in another tester', r.detail)
+        r, io = self.play(QueueWorld(no_apply=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('leader sees 0 application', r.detail)
+        r, _ = self.play(QueueWorld(no_join=True))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('could not join', r.detail)
+        r, _ = self.play(QueueWorld(roles=()))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no role', r.detail)
+
+    def test_no_answer_from_the_window(self):
+        io = QueueIO(QueueWorld())
+        io.w.request = lambda *a, **k: None
+        r = run(TX.check_closed_party_finder(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('not installed', r.detail)
 
 
 if __name__ == '__main__':

@@ -54,10 +54,13 @@ shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
 for o in ('market', 'guild', 'antibot'):
     ok(table['opcodes'].get(o, {}).get('out'), o + ': an out-of-scope opcode')
-for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar', 'raid'):
+for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar', 'raid',
+          'groupqueue', 'party_finder'):
     ok(table['systems'][n]['kind'] == 'closed', n + ': reached only in closed test mode (O582)')
-for n in ('groupqueue', 'party_finder'):
-    ok(table['systems'][n]['kind'] == 'out', n + ': a queue that matches players, testers refused (O582)')
+ok('groupqueue' not in G.OUT_OF_SCOPE and 'party_finder' not in G.OUT_OF_SCOPE, 'the group queue and the party finder are closed-mode systems (O589)')
+for o in ('groupQueue', 'partyFinder'):
+    ok(table['opcodes'][o]['actions'] == [] and table['opcodes'][o]['skip'] and table['opcodes'][o]['out'],
+       o + ': never sent by the random request behaviour, only by its closed check (O589)')
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})

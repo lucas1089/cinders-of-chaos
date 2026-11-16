@@ -782,6 +782,10 @@ class CheckIO(KeyIO):
             await asyncio.sleep(1.0)
             other.conn.send(b'\xA4' + struct.pack('<I', bot.cid))       # join the leader
             await other.conn.w.drain()
+        elif action == 'join':
+            # the leader's invite came from the Party Finder (the server made it): the other bot only joins (0xA4)
+            other.conn.send(b'\xA4' + struct.pack('<I', bot.cid))
+            await other.conn.w.drain()
         elif action in ('share', 'unshare'):
             bot.conn.send(b'\xA8' + (b'\x01' if action == 'share' else b'\x00'))   # the leader's shared experience switch
             await bot.conn.w.drain()

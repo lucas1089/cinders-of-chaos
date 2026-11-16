@@ -123,10 +123,16 @@ local function realmOf(player)
 	return ok and tonumber(realm) or 0
 end
 
+-- closed test mode (O589): the switch of the testers (testers_core.lua); with it off a tester lists and applies for nothing
+local function testerOn()
+	local R = ChaosTestersCore
+	return R ~= nil and R.closedOn() == true
+end
+
 local function plain(player)
 	local voc = player:getVocation()
 	local w = {guid = player:getGuid(), cid = player:getId(), name = player:getName(), level = player:getLevel(),
-		voc = voc and voc:getId() or 0, vocName = voc and voc:getName() or ""}
+		voc = voc and voc:getId() or 0, vocName = voc and voc:getName() or "", tester = Chaos.isTester(player) and true or false}
 	-- the mentor tag of the character ("mentor" / "seeking"; mentor.lua), shown on listings and applications
 	if ChaosMentor and ChaosMentor.tagOf then
 		local ok, tag = pcall(ChaosMentor.tagOf, player)
@@ -307,6 +313,30 @@ end
 
 function PF.tick()
 	local state, now = PF.state, os.time()
+	if not testerOn() then
+		-- the switch went off: the listings and queue entries of testers end (O589)
+		local gone = {}
+		for _, id in ipairs(state.order) do
+			local L = state.listings[id]
+			if L and L.tester then
+				gone[#gone + 1] = id
+			end
+		end
+		for _, id in ipairs(gone) do
+			local closed = K.close(state, id, "closed")
+			if closed then
+				PF.notifyClosed(closed)
+				PF.dirty = true
+			end
+		end
+		for i = #state.queueOrder, 1, -1 do
+			local guid = state.queueOrder[i]
+			if state.queue[guid] and state.queue[guid].tester then
+				K.queueLeave(state, guid)
+				PF.dirty = true
+			end
+		end
+	end
 	local ids = {}
 	for _, id in ipairs(state.order) do
 		ids[#ids + 1] = id
@@ -384,8 +414,8 @@ local function handle(player, action, d)
 	elseif action == "refresh" then
 		return PF.pushList(player)
 	end
-	if Chaos.isTester(player) then
-		return refuse(player, "Testers do not use this queue: it matches players.") -- testers never list, apply or queue where players are matched (O582)
+	if Chaos.isTester(player) and not testerOn() then
+		return refuse(player, "closedOff") -- a tester lists, applies and queues only among testers, and only in closed test mode (O589)
 	end
 	local who = PF.who(player)
 	if action == "post" then

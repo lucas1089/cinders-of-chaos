@@ -9694,9 +9694,10 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
   - `place`: the helper's `enter` argument.
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
-  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
-    sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
-  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, and the raid (O588); the dungeons (O589) are
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, anti-bot (and, until the O589 steps
+    are done, the siege and the guild boss). The list is `OUT_OF_SCOPE` in the generator.
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588), the group queue and the party
+    finder (O589); the dungeons (O589) are
     reached at random by `fetch` only, their `queue` only by the closed check. Only a `--closed` run reaches
     them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
@@ -9793,8 +9794,8 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
     With the switch off a tester cannot buy, list, post or fill.
   - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
     refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
-  - queues that match players (group queue, party finder): testers are refused, switch on or off (O589 changes this next, see below).
-    The dungeons are a closed system since O589 ("The rest of the closed audit (O589)").
+  - queues that match players: the dungeons, the group queue and the party finder are closed systems since O589: a queue entry, a group
+    or a listing has a side, testers only among testers and only with the switch on ("The rest of the closed audit (O589)").
   - the raid (`raid.lua`, O588): a party of testers only, in the slot `testerSlot` of its own, only with the switch on; a tester and
     a player are never in the same raid; no broadcast, board, trophy or Discord event ("The raid in closed mode" below).
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
@@ -9870,8 +9871,7 @@ raid on a lane that answers like the helper: the way on foot, the fallback, the 
 Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could do like a person, with a plan each:
 - `patchnotes`: done now, read and mark-seen requests of the window (no engine work): moved out of `OUT_OF_SCOPE`.
 - dungeons: done in O589 (step 1 below).
-- `groupqueue` and `party_finder` (match players): a queue per side like the arena (a tester entry only meets testers, a listing
-  carries its side); then the bots can form parties of testers from the finder, and dungeons can be queued.
+- `groupqueue` and `party_finder`: done in O589 (step 2 below).
 - `mentor`, `guildboss`, `siege`, `orbexchange`, `community` (pair, guild or market content of real players): each needs its own
   side rule like the market realm (a tester book for the exchange, tester guilds for the siege and the guild boss, a tester mentor
   list); the tester guilds of closed mode exist already, so siege and guild boss come first.
@@ -9932,6 +9932,40 @@ Proven by tests: the rules, the queue by side, the probe and guide on a mocked e
 (`tester_helper_test.lua`), the whole check on a lane world with a party of two, the fallback and each refusal (`tester_checks_test.py`
 `DungeonClosed`). Needs a live run: the engine's `getPathTo` over a long way (the search is bounded: the walk asks again, up to 8 rounds of
 80 steps, else the helper's teleport is the counted fallback), the real monsters and their placement, the exit teleport.
+
+##### 2. Group queue and party finder (`groupqueue.lua`, `party_finder.lua`, `closed_groupqueue`, `closed_party_finder`)
+
+Server rules (`groupqueue` and `partyfinder` are in `K.CLOSED_SYSTEMS`; the blanket refusal of O582 is gone from both files):
+- Group Queue (tests: `groupqueue_test.lua` section 11): a group is the player alone or the party. `sideOfGroup` asks the same rule as every closed
+  system (`K.joinRefusal("groupqueue", closedOn, flags)`): all members testers or none; a mixed party is refused ("Testers and players are
+  never mixed."), a tester group with the switch off is refused ("Closed test mode is off ..."). The group keeps its side (`g.side`).
+  The queues themselves are the modes' own (arena, battleground, dungeons), which pair by side already; `K.gate` is the second look: a found
+  match whose groups are of two sides gets the verdict `mixed` and is never started (`G.gate` returns false). A tester group is dropped by
+  the next tick when the switch goes off (every queue left, the member told).
+- Party Finder (tests: `party_finder_test.lua`, the last block): the listing, the application and the quick-join queue entry carry a side
+  (`L.tester`, `q.tester`, from `PF.who`). `K.visibleTo` is the one door every read and match goes through (the browse list, `apply`, the
+  quick-join match, the Group Nudge's count): a listing of a tester is seen and filled by testers only, and a staff listing is not open to a
+  tester (nor a tester's to staff: the finder never shows it to them). A party of a tester and a player cannot list (`mixed`). With the
+  switch off a tester cannot list, apply or queue ("closedOff"); the tick closes the tester listings and queue entries when the switch goes
+  off. The invite of an accepted application is the engine's own party invite between the two testers.
+- Neither keeps a table: the listings and groups are in memory, so there is nothing to clean up.
+
+How the bots play them (two closed checks before `closed_dungeon`, the windows' own requests):
+- `closed_groupqueue`: two bots (the partner of the level of the lowest dungeon for two, 150) go to the temple, form a party, open the window,
+  `join` a dungeon of two (`groupqueue_pick`: the highest both may enter that no bot plays now), poll `query`, and every bot that sees the ready
+  check accepts it; then the run of the testers starts with both inside (`dungeon state`), and the check closes it (`dungeon close`) and leaves
+  the party. PASS: both were inside a run of side `tester` after a ready check. FAIL: the join refused with the mode on, a run of the
+  `player` side, one bot inside, a party started with no ready check, a bot still inside after the close. SKIP with the reason: level, no partner,
+  no free dungeon, another refusal, no run in 45 s (a player's run ahead).
+- `closed_party_finder`: the bot lists a group (the first activity that needs no title; it wants a role the partner fills), the partner refreshes
+  its list, finds the listing, applies, the leader sees the application and accepts it by its guid, the partner joins the engine's invite
+  (`io.party('join')`, the 0xA4 packet) and the helper counts a party of 2; the listing is taken down and the party left. FAIL: refused with the
+  mode on, the listing missing from the other tester's list, an application the leader never sees, a party that did not form.
+
+Proven by tests: the rules and every refusal (Lua), the two checks against lane worlds with each failure (`GroupQueueClosed`,
+`PartyFinderClosed`). That a player never sees a tester listing is proven on the core (`visibleTo`, the nudge, the quick-join match), not
+by a live run with a player on. Needs a live run: the window answers of the real server (the check reads `state.group.check`, `list.rows`,
+`mine.apps`), and the dungeon start after the ready check.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

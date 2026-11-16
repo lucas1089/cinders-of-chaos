@@ -9,7 +9,9 @@ player can do with it, and how the bots reach it.
   * talkactions: the words of TalkAction("...") in its engine files. Every one is a staff command (Chaos.staffCommand),
     so a system with nothing else is kind 'staff': never reached, testers are never staff
   * places: the systems the TEST ONLY helper can bring a tester to (`!tester enter ...`), with the argument
-  * closed: arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588): only a --closed run reaches them (O582)
+  * closed: arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588), the group queue and the party finder
+    (O589): only a --closed run reaches them (O582). The dungeons (O589) are both: their window is fetched at random, only the closed
+    check queues (CLOSED_ONLY)
   * out of scope: what bots truly cannot do (staff only, real money, needs real players, a website flow), with the
     reason; the bots never send these
   * passive: everything else is reached by play (combat, loot, login, death): only server log errors name it
@@ -55,12 +57,9 @@ OUT_OF_SCOPE = {
     'guildboss': 'guild content of real players',
     'community': 'posts real players read',
     'orbexchange': 'an order book matched against real players\' orders',
-    'party_finder': 'listings and applications real players see and answer',
     'legal_notice': 'a text the client shows; nothing to do',
     'beta': 'beta sign-up of real accounts',
     'siege': 'needs guilds of real players',
-    'groupqueue': 'a queue that matches players: the server refuses testers (O582)',
-    'party_finder': 'a list and a queue that match players: the server refuses testers (O582)',
     'testers': 'the tester rules themselves (tests/testers_test.lua)',
     'i18n': 'translations; every bot text passes through it',
     'item_codec': 'the item encoding library; used by every item system',
@@ -82,6 +81,8 @@ CLOSED_MODE = {
     'market_notify': 'the testers\' own book, gold only (closed test mode)',
     'bazaar': 'the character lock of a listing of a tester; the site never shows or sells it (closed test mode)',
     'raid': 'the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)',
+    'groupqueue': 'groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue',
+    'party_finder': 'listings, applications and the quick-join queue of the testers\' own side (closed test mode, O589); sent only by the closed check closed_party_finder',
 }
 
 # requests the server answers with nothing, by design: {opcode name: {action: why}}. The bots count them as sent and fine

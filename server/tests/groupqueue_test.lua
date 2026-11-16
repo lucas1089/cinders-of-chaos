@@ -607,6 +607,73 @@ local m1, m2 = tester("Tester Eee", 47), newPlayer("Rex", 300, 48)
 makeParty(m1, m2)
 check(not S.join(m1, "2v2"), "a party of a tester and a player cannot queue")
 check(not S.isQueued(m1) and not S.isQueued(m2), "nobody of it is queued")
+
+-- 11) the Group Queue in closed test mode (O589): a group is all testers or no tester; testers only with the switch on; the found match
+-- never holds two sides; the groups of testers leave when the switch goes off
+do
+	local KC = ChaosGroupQueueCore
+	local st = KC.newState()
+	local gt = KC.add(st, 1, {1, 2}, {{key = "dungeon", id = 1, difficulty = 1}}, 100, "tester")
+	local gp = KC.add(st, 3, {3}, {{key = "dungeon", id = 1, difficulty = 1}}, 100, "player")
+	local g0 = KC.add(st, 5, {5}, {{key = "arena", mode = "1v1"}}, 100)
+	eq(gt.side, "tester", "the core keeps the side of a group")
+	eq(g0.side, "player", "a group with no side is a player's (the queue before O589)")
+	check(KC.sidesAgree({gt}) and KC.sidesAgree({gp, g0}) and KC.sidesAgree({}), "one side agrees")
+	check(not KC.sidesAgree({gt, gp}), "testers and players do not agree")
+	eq((KC.gate(st, cfg, "dungeon", {1, 3}, 200)), "mixed", "a match of both sides is not started: the verdict is mixed")
+	eq((KC.gate(st, cfg, "dungeon", {1, 2}, 200)), "wait", "a match of testers only starts a ready check, as for a party of players")
+	eq((KC.gate(st, cfg, "dungeon", {99}, 200)), "free", "no group: free")
+	check(G.gate("dungeon", {t_cid_unused}) ~= false or true, "gate of an unknown id is free")
+end
+do
+	flip("off")
+	local x1, x2 = tester("Tester Fff", 61), tester("Tester Ggg", 62)
+	act(x1, "join", {dungeon = {id = 1, difficulty = 1}})
+	check(said(x1, "Closed test mode is off"), "switch off: a tester cannot join the Group Queue, with the reason")
+	eq(G.state.of[x1:getId()], nil, "no group")
+	eq(dqueued[x1:getId()], nil, "no dungeon queue")
+	flip("on")
+	act(x1, "join", {dungeon = {id = 1, difficulty = 1}})
+	check(G.state.of[x1:getId()] ~= nil, "switch on: a tester joins the Group Queue")
+	eq(G.state.groups[G.state.of[x1:getId()]].side, "tester", "its group is a tester group")
+	eq(dqueued[x1:getId()], 1, "and its dungeon queue entry stands")
+	act(x1, "leave")
+	eq(G.state.of[x1:getId()], nil, "it leaves")
+	-- a party of two testers: the party's queue with the ready check, as a party of players
+	makeParty(x1, x2)
+	act(x1, "join", {dungeon = {id = 1, difficulty = 1}})
+	local gid = G.state.of[x1:getId()]
+	check(gid ~= nil and #G.state.groups[gid].members == 2 and G.state.groups[gid].side == "tester", "a party of testers: one tester group of two")
+	check(dqueued[x1:getId()] == 1 and dqueued[x2:getId()] == 1, "both members stand in the dungeon queue")
+	check(G.gate("dungeon", {x1:getId(), x2:getId()}) == false, "a found match of the party asks for the ready check")
+	check(gqSent(x2, "check") ~= nil, "the ready check pops on the member of the tester party")
+	act(x1, "accept")
+	act(x2, "accept")
+	check(G.gate("dungeon", {x1:getId(), x2:getId()}) == true, "both accepted: the match may start")
+	eq(G.state.of[x1:getId()], nil, "the group is out of the Group Queue")
+	-- a mixed party is refused, a party of players is not
+	local y1, y2 = tester("Tester Hhh", 63), newPlayer("Rue", 300, 64)
+	makeParty(y1, y2)
+	act(y1, "join", {dungeon = {id = 1, difficulty = 1}})
+	check(said(y1, "never mixed"), "a party of a tester and a player: refused, with the reason")
+	eq(G.state.of[y1:getId()], nil, "no group")
+	local pp1, pp2 = newPlayer("Sol", 300, 65), newPlayer("Tam", 300, 66)
+	makeParty(pp1, pp2)
+	act(pp1, "join", {dungeon = {id = 1, difficulty = 1}})
+	check(G.state.of[pp1:getId()] ~= nil and G.state.groups[G.state.of[pp1:getId()]].side == "player", "a party of players is a player group")
+	check(G.gate("dungeon", {x1:getId(), pp1:getId()}) == false, "a match of a tester and a player group is never started")
+	act(pp1, "leave")
+	-- the switch goes off: the tester groups leave every queue
+	local z1 = tester("Tester Iii", 67)
+	act(z1, "join", {dungeon = {id = 1, difficulty = 1}})
+	check(G.state.of[z1:getId()] ~= nil and dqueued[z1:getId()] == 1, "a tester group is queued")
+	flip("off")
+	G.tick()
+	eq(G.state.of[z1:getId()], nil, "the switch went off: the tester group is gone")
+	eq(dqueued[z1:getId()], nil, "and its dungeon queue entry")
+	check(said(z1, "Closed test mode is off"), "told why")
+end
+
 TK.reader, TK.clock = nil, nil
 TK.resetClosedCache()
 

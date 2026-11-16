@@ -1397,7 +1397,7 @@ async def check_craft_cards(io, name, cls, level):
 # the bazaar lock and the raid (O588, below) among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
 # 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
 # another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
-CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'dungeon', 'guild', 'guildwar', 'market', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'dungeon', 'groupqueue', 'guild', 'guildwar', 'market', 'partyfinder', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
 ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
 FEE_GOLD = 100      # the gold price of the market check's offer
 
@@ -2381,6 +2381,207 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
+# ------------------------------------------------------------------------------------------------ the group queue and the party finder (O589)
+# Two checks of closed mode, both with two bots that form a group the way people do: through the windows. The server keeps them apart
+# from the players (a group or a listing has a side, the modes pair by side); the live rules are asked by closed_guards.
+GQ_WAIT = 45.0     # seconds from the join to a run of the group (a ready check and the dungeon's next tick)
+GQ_LOOK = 1.0      # seconds between two looks
+PF_ROLES = ('tank', 'healer', 'dps', 'support')
+
+
+def groupqueue_pick(listing, have, taken):
+    """the dungeon of a group of two: the highest one both bots may enter that no bot plays now. -> dict or None"""
+    sized = [d for d in listing or [] if isinstance(d, dict) and isinstance(d.get('id'), int) and int(d.get('size') or 1) >= 2
+             and int(d.get('level') or 0) <= have and d['id'] not in taken]
+    return max(sized, key=lambda d: (int(d.get('level') or 0), -d['id'])) if sized else None
+
+
+def groupqueue_text(reply):
+    return str(((reply or {}).get('data') or {}).get('text') or '')[:90]
+
+
+def groupqueue_refusal(text):
+    """(status, text) of a join the Group Queue refused: a closed-mode text with the mode on is a bug, the rest is the state of the world"""
+    if 'Closed test mode is off' in text or 'never mixed' in text:
+        return FAIL, 'the Group Queue refused a party of testers with the mode on: %s' % text
+    return SKIP, 'the Group Queue did not take the party: %s' % (text or 'no reason')
+
+
+async def check_closed_groupqueue(io, name, cls, level):
+    """two testers form a party, join a dungeon through the Group Queue, both accept the ready check, and the run of the testers starts"""
+    key = 'closed_groupqueue'
+    a = await io.helper('dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    two = [int(d.get('level') or 0) for d in a['list'] if isinstance(d, dict) and int(d.get('size') or 1) >= 2]
+    if not two:
+        return Result(key, name, cls, SKIP, 'no dungeon takes a group of two')
+    if int(a.get('level') or level or 0) < min(two):
+        return Result(key, name, cls, SKIP, 'level %d: the lowest dungeon for two needs level %d' % (int(a.get('level') or level or 0), min(two)))
+    other = await io.partner(min_level=min(two))
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot of level %d in game' % min(two))
+    try:
+        return await groupqueue_play(io, name, cls, a, other)
+    finally:
+        await io.party('leave', other)
+
+
+async def groupqueue_play(io, name, cls, a, other):
+    key = 'closed_groupqueue'
+    b = await io.helper_of(other, 'dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(b, 0)
+    if no:
+        return Result(key, name, cls, SKIP, 'the partner %s: %s' % (other, no[1]))
+    have = min(int(a.get('level') or 0), int(b.get('level') or 0))
+    dg = groupqueue_pick(a['list'], have, set(DUNGEON_BUSY))
+    if dg is None:
+        return Result(key, name, cls, SKIP, 'no dungeon for two at level %d that no bot plays now' % have)
+    DUNGEON_BUSY[dg['id']] = name
+    try:
+        if not await io.go('town') or not await io.go_of(other, 'town'):
+            return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple')
+        await io.sleep(SETTLE)
+        if not await io.party('form', other):
+            return Result(key, name, cls, SKIP, 'the invite could not be sent')
+        await io.sleep(SETTLE)
+        window = await io.request('groupQueue', 'open', {}, ['state'], ANSWER)
+        if window is None:
+            return Result(key, name, cls, SKIP, 'no answer from the Group Queue window (not installed)')
+        join = await io.request('groupQueue', 'join', {'dungeon': {'id': dg['id'], 'difficulty': 1}}, ['state', 'msg'], ANSWER)
+        if join is not None and join.get('action') == 'msg':
+            no = groupqueue_refusal(groupqueue_text(join))
+            return Result(key, name, cls, no[0], no[1])
+        saw_check, answered, run, waited = False, set(), None, 0.0
+        while waited <= GQ_WAIT and io.alive():
+            st = await io.request('groupQueue', 'query', {}, ['state'], ANSWER)
+            group = ((st or {}).get('data') or {}).get('group') or {}
+            check = group.get('check')
+            if isinstance(check, dict):
+                saw_check = True
+                for who in (name, other):
+                    if who in answered:
+                        continue
+                    answered.add(who)
+                    await (io.request('groupQueue', 'accept', {}, ['state', 'checkEnd'], ANSWER) if who == name
+                           else io.request_of(other, 'groupQueue', 'accept', {}, ['state', 'checkEnd'], ANSWER))
+            la = await io.helper('dungeon state', 'dungeon', ANSWER)
+            if isinstance(la, dict) and la.get('inside'):
+                run = la
+                break
+            await io.sleep(GQ_LOOK)
+            waited += GQ_LOOK
+        if run is None:
+            await io.request('groupQueue', 'leave', {}, ['state', 'msg'], ANSWER)
+            why = 'the ready check was accepted by both' if len(answered) == 2 else 'no ready check came'
+            return Result(key, name, cls, SKIP, 'no run in %d s (%s; a run of players ahead of the testers?)' % (int(GQ_WAIT), why))
+        lb = await io.helper_of(other, 'dungeon state', 'dungeon', ANSWER)
+        r = (run.get('run') or {})
+        problems = dungeon_problems(run, 2)
+        if int(r.get('members') or 0) < 2 or not (isinstance(lb, dict) and lb.get('inside')):
+            problems.append('the party of two started with %s member(s) inside' % r.get('members'))
+        if not saw_check:
+            problems.append('the party was started without a ready check')
+        await io.helper('dungeon close', 'dungeon', ANSWER)
+        after = await io.helper('dungeon state', 'dungeon', ANSWER)
+        if isinstance(after, dict) and after.get('inside'):
+            problems.append('the bot is still inside the dungeon after the close')
+        if problems:
+            return Result(key, name, cls, FAIL, '; '.join(problems[:3]))
+        return Result(key, name, cls, PASS, 'party of 2 in the Group Queue for %s: ready check accepted by both, a run of the testers started (%d s)'
+                      % (dg.get('title') or dg['id'], int(waited)))
+    finally:
+        DUNGEON_BUSY.pop(dg['id'], None)
+
+
+def pf_pick_activity(init):
+    """(activity dict, None) the listing is made for: the first activity that needs no title; else the first. (None, text) when none"""
+    acts = [x for x in ((init or {}).get('acts') or []) if isinstance(x, dict) and x.get('k')]
+    if not acts:
+        return None, 'the window lists no activity'
+    plain = [x for x in acts if not x.get('title')]
+    return (plain or acts)[0], None
+
+
+def pf_listing(act, role, want, init):
+    """the data of a `post` request for one wanted slot of `want`"""
+    d = {'a': act['k'], 'want': {want: 1}, 'minLevel': 1, 'role': role, 'exp': int((init or {}).get('defExp') or 30), 'nk': 0}
+    if isinstance(act.get('range'), dict):
+        d['lo'] = d['hi'] = int(act['range'].get('min') or 1)
+    if act.get('targets'):
+        d['t'] = 1
+    if act.get('title'):
+        d['title'] = 'Tester group'
+    return d
+
+
+def pf_roles(init):
+    return [r for r in ((init or {}).get('my') or []) if r in PF_ROLES]
+
+
+async def check_closed_party_finder(io, name, cls, level):
+    """a tester lists a group in the Party Finder, another tester finds it, applies, is accepted by the leader and joins the party"""
+    key = 'closed_party_finder'
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    listed = None
+    try:
+        init = await io.request('partyFinder', 'open', {}, ['init'], ANSWER)
+        init_b = await io.request_of(other, 'partyFinder', 'open', {}, ['init'], ANSWER)
+        if init is None or init_b is None:
+            return Result(key, name, cls, SKIP, 'no answer from the Party Finder window (not installed)')
+        a_init, b_init = init.get('data') or {}, init_b.get('data') or {}
+        mine, theirs = pf_roles(a_init), pf_roles(b_init)
+        if not mine or not theirs:
+            return Result(key, name, cls, SKIP, 'no role either bot can fill')
+        act, why = pf_pick_activity(a_init)
+        if act is None:
+            return Result(key, name, cls, SKIP, why)
+        post = await io.request('partyFinder', 'post', pf_listing(act, mine[0], theirs[0], a_init), ['list', 'notice'], ANSWER)
+        text = str(((post or {}).get('data') or {}).get('text') or '')
+        if post is None:
+            return Result(key, name, cls, SKIP, 'no answer to the listing')
+        if post.get('action') == 'notice':
+            if 'Closed test mode is off' in text or 'never mixed' in text:
+                return Result(key, name, cls, FAIL, 'the Party Finder refused a tester with the mode on: %s' % text[:80])
+            return Result(key, name, cls, SKIP, 'the listing was refused: %s' % text[:80])
+        mine_row = (post.get('data') or {}).get('mine') or {}
+        listed = mine_row.get('id')
+        if listed is None:
+            return Result(key, name, cls, SKIP, 'the answer to the listing holds no listing of the bot')
+        seen = await io.request_of(other, 'partyFinder', 'refresh', {}, ['list'], ANSWER)
+        rows = ((seen or {}).get('data') or {}).get('rows') or []
+        row = next((r for r in rows if isinstance(r, dict) and r.get('id') == listed), None)
+        if row is None:
+            return Result(key, name, cls, FAIL, 'a tester\'s listing is not in another tester\'s Party Finder (%d rows)' % len(rows))
+        await io.request_of(other, 'partyFinder', 'apply', {'id': listed, 'role': theirs[0]}, ['notice', 'list'], ANSWER)
+        look = await io.request('partyFinder', 'refresh', {}, ['list'], ANSWER)
+        apps = (((look or {}).get('data') or {}).get('mine') or {}).get('apps') or []
+        app = next((x for x in apps if isinstance(x, dict) and x.get('n') == other), None)
+        if app is None:
+            return Result(key, name, cls, FAIL, '%s applied to the listing, the leader sees %d application(s) and not it' % (other, len(apps)))
+        await io.request('partyFinder', 'accept', {'id': listed, 'g': app.get('g')}, ['list', 'notice'], ANSWER)
+        await io.sleep(SETTLE)
+        if not await io.party('join', other):
+            return Result(key, name, cls, SKIP, 'the bots could not join the party of the invite')
+        await io.sleep(SETTLE)
+        p = await io.helper('party', 'party', ANSWER)
+        if not p or p.get('err'):
+            return Result(key, name, cls, SKIP, 'no answer to !tester party')
+        if int(p.get('size') or 0) < 2:
+            if not partner_kept(io, other):
+                return Result(key, name, cls, SKIP, PARTNER_GONE)
+            return Result(key, name, cls, FAIL, 'the leader accepted %s through the finder, the party has %s member(s)' % (other, p.get('size')))
+        return Result(key, name, cls, PASS, 'listed (%s), found by %s, applied, accepted, joined: party of %s among testers' % (
+            act.get('n') or act['k'], other, p.get('size')))
+    finally:
+        if listed is not None:
+            await io.request('partyFinder', 'unlist', {'id': listed}, ['list', 'notice'], ANSWER)
+        await io.party('leave', other)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -2390,6 +2591,8 @@ CLOSED_CHECKS = [
     ('closed_guild_war', check_closed_guild, lambda c: True),
     ('closed_market', check_closed_market, lambda c: True),
     ('closed_bazaar', check_closed_bazaar, lambda c: True),
+    ('closed_groupqueue', check_closed_groupqueue, lambda c: True),   # O589
+    ('closed_party_finder', check_closed_party_finder, lambda c: True),   # O589
     ('closed_dungeon', check_closed_dungeon, lambda c: True),   # O589
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]

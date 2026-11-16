@@ -428,10 +428,16 @@ do
 	check(not t:find("Testers do not use this queue", 1, true), "dungeons.lua no longer refuses every tester")
 	check(t:find('run.side ~= "tester"', 1, true), "dungeons.lua never ranks or records a tester run")
 end
-for _, file in ipairs({"groupqueue", "party_finder"}) do
-	local t = source("data/scripts/chaos/" .. file .. ".lua")
-	check(t:find("Chaos.isTester(player)", 1, true) and t:find("Testers do not use this queue", 1, true),
-		file .. ".lua refuses a tester: a queue that matches players")
+-- the group queue and the party finder (O589) are closed systems: a group or a listing has a side, no blanket refusal left
+do
+	local t = source("data/scripts/chaos/groupqueue.lua")
+	check(t:find("O589", 1, true) and t:find("sideOfGroup", 1, true) and t:find("K.sidesAgree", 1, true) == nil, "groupqueue.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "groupqueue.lua no longer refuses every tester")
+	check(source("data/scripts/chaos/groupqueue_core.lua"):find("sidesAgree", 1, true), "groupqueue_core.lua: a match of two sides is never started")
+	t = source("data/scripts/chaos/party_finder.lua")
+	check(t:find("O589", 1, true) and t:find("testerOn", 1, true), "party_finder.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "party_finder.lua no longer refuses every tester")
+	check(source("data/scripts/chaos/party_finder_core.lua"):find("L.tester and true or false", 1, true), "party_finder_core.lua: a listing has a side")
 end
 
 print = origPrint
