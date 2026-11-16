@@ -7,7 +7,7 @@
 --                                       "Tester Xxx" name. Anything else (every real player) is never touched.
 --   H.nearest(origin, list, range)     the nearest live, unowned monster on the same floor within range
 --   H.directionTo(from, to)            the direction to face a target (0 north, 1 east, 2 south, 3 west)
---   H.parseCommand(param)              "!tester <command> [arg]" -> command, arg (unknown -> nil)
+--   H.parseCommand(param)              "!tester <command> [arg] [#N]" -> command, arg, N (unknown -> nil; N: the bot's command number, O579)
 --   H.encode(kind, data)               one helper line: "[tester-helper] <kind> <json>" (the bot reads it)
 --   H.hitAnomaly(hit)                  a hit taken or dealt far out of range for the level, or a one-shot from full
 --   H.pushHit(list, now, hit)          remember a hit a tester took (the last 10 seconds)
@@ -81,12 +81,19 @@ function H.parseCommand(param)
 	if type(param) ~= "string" then
 		return nil
 	end
+	-- O579: the bots end a command with " #N" (N counts their commands): every answer of that command carries "seq": N, so an
+	-- answer that arrives after its wait (a busy server) is never taken for the answer of the next command of the same kind
+	local seq
+	local body, n = param:match("^(.-)%s*#(%d+)%s*$")
+	if body then
+		param, seq = body, tonumber(n)
+	end
 	local cmd, arg = param:match("^%s*(%a+)%s*(.-)%s*$")
 	cmd = cmd and cmd:lower()
 	if not cmd or not H.COMMANDS[cmd] then
-		return nil
+		return nil, nil, seq -- the answer "unknown command" still carries the number
 	end
-	return cmd, arg ~= "" and arg or nil
+	return cmd, arg ~= "" and arg or nil, seq
 end
 
 -- !tester waystone <tier 1-15> [loot]: a waystone run of that tier on the game's own code; riftrun <layout | loot>

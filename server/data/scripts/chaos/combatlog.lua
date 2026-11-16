@@ -156,6 +156,9 @@ end
 
 -- the spell running now between the engine's onSpellPreCast and onSpellCast (patch 0008)
 local precast = {} -- player id -> source
+if not ChaosTimerGuard then -- O579: the guarded addEvent (data/lib/chaos_timer_guard.lua) is the one kept below
+	pcall(dofile, "data/lib/chaos_timer_guard.lua")
+end
 local rawAddEvent = addEvent
 local function clearPrecast(pid, s)
 	if precast[pid] == s then

@@ -426,6 +426,27 @@ class Others(unittest.TestCase):
         self.assertEqual(run(TX.check_cursed_chest(FakeIO(), 'a', 'Ninja', 100)).status, TX.SKIP)
         io = FakeIO({'chest spawn': {'err': 'no cursed chest system'}})
         self.assertEqual(run(TX.check_cursed_chest(io, 'a', 'Ninja', 100)).status, TX.SKIP)
+        # no tile for the chest near the bot: the helper says why, the check is a skip (it read state "none" and failed before)
+        io = FakeIO({'chest spawn': {'err': 'no tile for a chest near the tester (the game\'s own rule)'}})
+        r = run(TX.check_cursed_chest(io, 'a', 'Ninja', 100))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no tile for a chest', r.detail)
+
+    def test_cursed_chest_no_answer_to_use_is_a_skip(self):
+        # live run 2026-11-15: "after use the chest is None": the answer to `chest use` never came (a busy server)
+        seen = []
+
+        class NoUse(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                seen.append(command)
+                if command == 'chest use':
+                    return None
+                return {'state': 'idle', 'left': 1, 'monsters': 0}
+
+        r = run(TX.check_cursed_chest(NoUse(), 'Tester Aaa', 'Mystic', 100))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('no answer to !tester chest use', r.detail)
+        self.assertEqual(seen[-1], 'chest abort', 'the chest is taken away again')
 
     def test_cursed_chest_horde_counts(self):
         def io_with(running):
@@ -981,6 +1002,77 @@ class SpellQuest(unittest.TestCase):
             'counted': 45, 'kills': 48, 'fragments': 2}, 'spellquest kill boss': {'weight': 25, 'kills': 73},
             'spellquest set 1 2': {'step': 2, 'kills': 400, 'fragments': 20}})).status, TX.SKIP,
             'no answer to the NPC walk is a skip, not a bug')
+
+    def test_a_missing_answer_is_a_skip_not_a_bug(self):
+        # live run 2026-11-15: 33 of 60 spell quest checks failed "no answer to !tester spellquest ..." (a busy server answered
+        # about 4 % of the commands late or not at all; 25 commands a check): not a fault of the quest
+        for dropped in ('state', 'set 1 1 0 0', 'kill 3', 'kill 45', 'kill boss', 'set 1 2', 'trial', 'leave', 'complete'):
+            class Dropping(QuestIO):
+                async def helper(self, command, kind, wait=4.0):
+                    if command == 'spellquest ' + dropped:
+                        self.cmds.append(command)
+                        return None
+                    return await QuestIO.helper(self, command, kind, wait)
+
+            io = Dropping(table=quest_table(), spells=KEEPFALL)
+            r = self.go(io)
+            self.assertEqual(r.status, TX.SKIP, '%s: %s' % (dropped, r.detail))
+            self.assertIn('no answer to !tester spellquest %s' % dropped, r.detail)
+            self.assertIn('no fault of the quest', r.detail)
+            self.assertEqual(io.cmds[-1], 'spellquest reset', 'the quest is reset after it')
+
+    def test_the_helper_error_is_a_bug_not_a_skip(self):
+        class Erring(QuestIO):
+            async def helper(self, command, kind, wait=4.0):
+                if command == 'spellquest kill 3':
+                    return {'err': 'data/scripts/chaos/spellquest.lua:1: boom', 'cmd': 'spellquest'}
+                return await QuestIO.helper(self, command, kind, wait)
+
+        r = self.go(Erring(table=quest_table(), spells=KEEPFALL))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('boom', r.detail)
+
+    def test_the_quest_waits_longer_for_each_answer(self):
+        waits = []
+
+        class Waits(QuestIO):
+            async def helper(self, command, kind, wait=4.0):
+                if command.startswith('spellquest'):
+                    waits.append(wait)
+                return await QuestIO.helper(self, command, kind, wait)
+
+        self.go(Waits(table=quest_table(), spells=KEEPFALL))
+        self.assertTrue(waits and min(waits) >= TX.QUEST_WAIT > TX.ANSWER, waits)
+
+    def test_a_crowd_round_odrenna_is_asked_again_then_a_skip(self):
+        # live run 2026-11-15: "Archivist Odrenna is not in the game (no free tile)": she stood there, the testers stood round her
+        class Crowd(QuestIO):
+            def __init__(self, full, **kw):
+                QuestIO.__init__(self, **kw)
+                self.full = full
+
+            async def helper(self, command, kind, wait=4.0):
+                if command == 'enter npc Archivist Odrenna':
+                    self.cmds.append(command)
+                    self.full -= 1
+                    if self.full >= 0:
+                        return {'kind': 'npc', 'err': 'no free tile', 'name': 'Archivist Odrenna', 'crowd': True}
+                    self.near = True
+                    return {'kind': 'npc', 'npc': 'Archivist Odrenna'}
+                return await QuestIO.helper(self, command, kind, wait)
+
+        io = Crowd(2, table=quest_table(), spells=KEEPFALL)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.cmds.count('enter npc Archivist Odrenna'), 3, 'asked again after each crowded answer')
+        self.assertGreaterEqual(io.t, 2 * TX.CROWD_WAIT, 'with a pause between the asks')
+        io = Crowd(99, table=quest_table(), spells=KEEPFALL)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('crowd her stall', r.detail)
+        self.assertEqual(io.cmds.count('enter npc Archivist Odrenna'), TX.CROWD_TRIES)
+        # no such NPC stays a bug
+        self.assertEqual(self.go(QuestIO(odrenna=False)).status, TX.FAIL)
 
     def test_trial_that_does_not_open(self):
         r = self.go(QuestIO(faults=['notrial']))

@@ -33,6 +33,9 @@ local S = ChaosSupports
 local cfg = S.config
 
 local SCRIPTS = "data/spells/scripts/"
+if not ChaosTimerGuard then -- O579: the guarded addEvent (data/lib/chaos_timer_guard.lua) is the one kept below
+	pcall(dofile, "data/lib/chaos_timer_guard.lua")
+end
 local rawAddEvent = addEvent
 -- the engine's addEvent without the cast context: for schedulers that outlive a cast (the snares, _snares.lua)
 W.rawAddEvent = rawAddEvent

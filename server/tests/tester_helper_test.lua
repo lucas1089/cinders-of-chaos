@@ -1156,6 +1156,118 @@ do
 	ChaosRift, ChaosRiftConfig = saved.RF, saved.RFC
 end
 
+-- ------------------------------------------------------------------ O579: numbered commands, a loop that never throws, a crowd, no chest tile
+do
+	local c1, a1, n1 = H.parseCommand("spellquest kill 3 #12")
+	check(c1 == "spellquest" and a1 == "kill 3" and n1 == 12, "parseCommand: the number after the argument")
+	local c2, a2, n2 = H.parseCommand("town #5")
+	check(c2 == "town" and a2 == nil and n2 == 5, "parseCommand: a number and no argument")
+	eq(select(3, H.parseCommand("town")), nil, "parseCommand: no number")
+	eq(select(3, H.parseCommand("enter npc Archivist Odrenna")), nil, "parseCommand: a name is no number")
+	check(H.parseCommand("nonsense #3") == nil, "parseCommand: an unknown command stays unknown")
+	check(H.parseSpellQuest((select(2, H.parseCommand("spellquest set 1 1 0 0 #8")))).quest == 1, "the argument of a numbered command parses")
+
+	local t5 = creature(268435490, "Tester Abq", {store = {[ST] = 1}})
+	talks["!tester"].onSay(t5, "!tester", "info #7")
+	check(last(t5):find('"seq":7', 1, true) ~= nil, "a numbered command: its answer carries the number")
+	talks["!tester"].onSay(t5, "!tester", "nonsense #9")
+	check(last(t5):find('error {', 1, true) and last(t5):find('"seq":9', 1, true), "an unknown command answers with its number too")
+	talks["!tester"].onSay(t5, "!tester", "info")
+	check(last(t5):find('"seq"', 1, true) == nil, "a command with no number: an answer with none")
+	talks["!tester"].onSay(t5, "!tester", "info #11")
+	events.TesterHelperLogout.onLogout(t5)
+	eq(T.seq[t5:getId()], nil, "a logout forgets the number")
+
+	-- the loop is a timer: a round that errors must not throw into the engine nor end the loop (live run 2026-11-15: 54 timer errors)
+	T.ids[t5:getId()] = true
+	local realSpectators = Game.getSpectators
+	Game.getSpectators = function() error("stale creature") end
+	local nt, nprinted = #timers, #printed
+	local threw = false
+	for _ = 1, 8 do
+		if not pcall(function() lastStep().fn() end) then
+			threw = true
+		end
+	end
+	check(not threw, "a failing round of the loop does not throw")
+	eq(#timers, nt + 8, "and every round schedules the next")
+	local errors = 0
+	for i = nprinted + 1, #printed do
+		if printed[i]:find("[tester-helper] error in the loop", 1, true) and printed[i]:find("stale creature", 1, true) then
+			errors = errors + 1
+		end
+	end
+	eq(errors, 1, "the error is printed once a minute, not at every round")
+	Game.getSpectators = realSpectators
+	T.ids[t5:getId()] = nil
+	T.present = function() return false end
+	T.lastStepError, T.ids = nil, {}
+	local nt2, nprinted2 = #timers, #printed
+	for _ = 1, 20 do lastStep().fn() end
+	T.present = function() return true end
+	check(#timers <= nt2 + 20, "a removed helper file still ends the loop")
+	local stopped = false
+	for i = nprinted2 + 1, #printed do
+		if printed[i]:find("stopped:", 1, true) then stopped = true end
+	end
+	check(stopped, "the loop says it stopped")
+	T.started = true
+	addEvent(T.step_fn, 500) -- the loop goes on for the tests below
+
+	-- a crowd round an NPC: no tile within four, the answer says so (the check asks again instead of "not in the game")
+	local realTile2 = Tile
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return {} end} end
+	talks["!tester"].onSay(t5, "!tester", "enter npc Keeper of Trials #20")
+	check(last(t5):find('"crowd":true', 1, true) and last(t5):find('"err":"no free tile"', 1, true) and last(t5):find('"seq":20', 1, true),
+		"enter npc in a crowd: no free tile, crowd true")
+	-- a free tile only at four tiles: found now (two was the reach before)
+	Tile = function(p) return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() if math.max(math.abs(p.x - 70), math.abs(p.y - 70)) < 4 then return {} end end} end
+	talks["!tester"].onSay(t5, "!tester", "enter npc Keeper of Trials #21")
+	check(last(t5):find('"npc":"Keeper of Trials"', 1, true) ~= nil, "enter npc: a free tile four away is taken")
+	check(math.max(math.abs(t5.pos.x - 70), math.abs(t5.pos.y - 70)) == 4, "the tile is four from the NPC")
+	check(T.RINGS[1][2] == -1 and #T.RINGS == 8 + 16 + 24 + 32, "the rings: 8 neighbours first, then 2, 3 and 4 out")
+	Tile = realTile2
+
+	-- no tile for a cursed chest near the tester: an answer with the reason, not state "none"
+	local realGuid2 = t5.getGuid
+	t5.getGuid = function() return 91 end
+	local spawned = {}
+	ChaosCursedChestConfig = {}
+	ChaosCursedChestCore = {areaLevel = function() return 50 end, buildPool = function() return {} end}
+	ChaosCursedChest = {chests = {}, tagged = {}, spawnChest = function(_, center)
+		spawned[#spawned + 1] = center
+		return nil
+	end}
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end} end
+	talks["!tester"].onSay(t5, "!tester", "chest spawn #30")
+	check(last(t5):find('"err":"no tile for a chest near the tester', 1, true) and last(t5):find('"seq":30', 1, true),
+		"chest spawn with no tile: an error answer with its reason")
+	check(last(t5):find('"state"', 1, true) == nil, "and no state \"none\"")
+	check(#spawned > 2, "other centres up to four tiles out were tried first (" .. #spawned .. ")")
+	local far = false
+	for _, c in ipairs(spawned) do
+		if math.max(math.abs(c.x - t5.pos.x), math.abs(c.y - t5.pos.y)) >= 3 then far = true end
+	end
+	check(far, "a centre three or four tiles out")
+	-- the first centre that takes a chest wins
+	local made
+	ChaosCursedChest.spawnChest = function(owner, center)
+		spawned[#spawned + 1] = center
+		if math.abs(center.x - t5.pos.x) >= 3 and not made then
+			made = {key = "k9", ownerId = 91, state = "idle", itemId = 1, pos = {x = center.x, y = center.y, z = 7}, ev = nil}
+			ChaosCursedChest.chests.k9 = made
+			return made
+		end
+	end
+	talks["!tester"].onSay(t5, "!tester", "chest spawn #31")
+	check(last(t5):find('"state":"idle"', 1, true) ~= nil and made and made.level == 50, "a chest made at a farther centre: idle, level set")
+	ChaosCursedChest, ChaosCursedChestConfig, ChaosCursedChestCore = nil, nil, nil
+	t5.getGuid = realGuid2
+	Tile = realTile2
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)
