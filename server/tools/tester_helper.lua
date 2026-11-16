@@ -51,7 +51,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 10
+HELPER_VERSION = 11
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -315,8 +315,17 @@ local function findTrader(origin)
 	return findNpc(origin)
 end
 
-function commands.shop(player)
-	local npc = findTrader(temple(player))
+function commands.shop(player, arg)
+	local want = H.parseShop(arg) -- `shop Loot Buyer`: that trader (the sell trip of the bag keeping, O584)
+	local npc = want and Creature(want)
+	if not (npc and npc:isNpc() and freeNear(npc:getPosition(), npc)) then
+		if want then
+			tell(player, "shop", {err = "no free tile next to " .. want})
+			return
+		end
+		npc = nil
+	end
+	npc = npc or findTrader(temple(player))
 	local spot = npc and freeNear(npc:getPosition(), npc)
 	if not spot then
 		tell(player, "shop", {err = "no NPC near the temple"})
@@ -563,6 +572,11 @@ for _, s in ipairs(SUPPLIES) do
 	WANT[s[1]] = s[2]
 end
 
+local WANT_SUPPLY = {}
+for id in pairs(WANT) do
+	WANT_SUPPLY[id] = true
+end
+
 -- potions topped up to their number when under half of it (a tester dies about thirty times an hour and loses some)
 local function topUp(player)
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
@@ -580,26 +594,114 @@ local function topUp(player)
 	return #add
 end
 
--- TEST ONLY: empties the backpack of loot (every slot of it that is not a supply; a bag goes with what it holds) and
--- tops up the potions. Only this tester's own backpack. The bots loot and never sell, so the bag fills and every
--- pickup says "There is not enough room."
-function commands.bag(player)
+-- O584: `!tester bag` keeps the drops. It tops the potions up and REPORTS the backpack (the slots, what each is worth to the Loot
+-- Buyer, a piece better than the worn one, the junk to drop); the bot sells, wears and drops by the game's own packets.
+-- `!tester bag wipe` is the old emptying of the loot, the last resort when the bot could not keep the bag open (a counted failure).
+local BAG_SLOTS = { -- ItemType:getSlotPosition() bit -> CONST_SLOT_*; the hands stay as they are (the tester's weapon)
+	{1, CONST_SLOT_HEAD}, {2, CONST_SLOT_NECKLACE}, {8, CONST_SLOT_ARMOR}, {64, CONST_SLOT_LEGS},
+	{128, CONST_SLOT_FEET}, {256, CONST_SLOT_RING},
+}
+local COINS = {[2148] = true, [2152] = true, [2160] = true}
+
+local function bagSlotOf(itemType)
+	local bits = itemType:getSlotPosition() or 0
+	for _, e in ipairs(BAG_SLOTS) do
+		if math.floor(bits / e[1]) % 2 == 1 then
+			return e[2]
+		end
+	end
+	return nil
+end
+
+local function pieceScore(item, itemType)
+	local function num(f)
+		local ok, v = pcall(f)
+		return ok and tonumber(v) or 0
+	end
+	local ilvl = 0
+	if ChaosCrafting and ChaosCrafting.levelOf then
+		ilvl = num(function() return ChaosCrafting.levelOf(item) end)
+	end
+	return num(function() return itemType:getArmor() end) * 10 + num(function() return itemType:getDefense() end) * 4
+		+ num(function() return itemType:getAttack() end) * 2 + ilvl
+end
+
+local function priceInfo(item)
+	local P = ChaosItemPrices
+	if not (P and P.basePrice) then
+		return 0, false
+	end
+	local okP, price = pcall(P.basePrice, item:getId())
+	local blocked = false
+	if P.saleBlock then
+		local okB, why = pcall(P.saleBlock, item)
+		blocked = okB and why and true or false
+	end
+	return okP and tonumber(price) or 0, blocked
+end
+
+local function bagRows(player, bag)
+	local rows = {}
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local it = ItemType(item:getId())
+			local price, blocked = priceInfo(item)
+			local slot = bagSlotOf(it)
+			rows[#rows + 1] = {i = i, id = item:getId(), clientId = it:getClientId(), count = item:getCount(),
+				price = price, blocked = blocked, container = item:isContainer(), slot = slot,
+				score = slot and pieceScore(item, it) or 0}
+		end
+	end
+	local ctx = {want = WANT_SUPPLY, currency = COINS}
+	for _, r in ipairs(rows) do
+		r.kind = H.itemKind(r, ctx)
+	end
+	return rows
+end
+
+local function wornScores(player)
+	local worn = {}
+	for _, e in ipairs(BAG_SLOTS) do
+		local item = player:getSlotItem(e[2])
+		worn[e[2]] = item and pieceScore(item, ItemType(item:getId())) or 0
+	end
+	return worn
+end
+
+function commands.bag(player, arg)
+	local mode = H.parseBag(arg)
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not mode then
+		tell(player, "bag", {err = "bag takes nothing or wipe"})
+		return
+	end
 	if not bag then
 		tell(player, "bag", {err = "no backpack"})
 		return
 	end
-	local list, rows = {}, {}
-	for _, item in ipairs(bag:getItems() or {}) do
-		list[#list + 1] = {id = item:getId(), count = item:getCount()}
-		rows[#rows + 1] = item
-	end
-	local remove = H.bagPlan(list, WANT, {})
-	for _, i in ipairs(remove) do
-		rows[i]:remove()
+	if mode == "wipe" then
+		local list, rows = {}, {}
+		for _, item in ipairs(bag:getItems() or {}) do
+			list[#list + 1] = {id = item:getId(), count = item:getCount()}
+			rows[#rows + 1] = item
+		end
+		local remove = H.bagPlan(list, WANT, {})
+		for _, i in ipairs(remove) do
+			rows[i]:remove()
+		end
+		local ok, added = pcall(topUp, player)
+		tell(player, "bag", {wiped = #remove, topped = ok and added or 0})
+		return
 	end
 	local ok, added = pcall(topUp, player)
-	tell(player, "bag", {removed = #remove, topped = ok and added or 0})
+	local rows = bagRows(player, bag)
+	local report = H.bagReport(rows, wornScores(player), bag:getCapacity(), nil)
+	report.topped = ok and added or 0
+	report.pos = posOf(player:getPosition())
+	report.bagClientId = ItemType(bag:getId()):getClientId()
+	report.gold = player:getMoney()
+	tell(player, "bag", report)
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

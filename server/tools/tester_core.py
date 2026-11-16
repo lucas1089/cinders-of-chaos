@@ -7,6 +7,7 @@ messages, the server log parsing (the same grouping as chaos-ctl.sh errors) and 
 import json
 import random
 import re
+import struct
 
 TESTER_STORAGE = 7102900          # Chaos.storage.tester (chaos_constants.lua), src-patch 0059 CHAOS_TESTER_STORAGE
 NAME_RE = re.compile(r'^Tester [A-Z][a-z][a-z]$')
@@ -31,6 +32,7 @@ BEHAVIOURS = {
     'opcodes':  (10, 20),    # a client module request (a scenario step, --opcodes)
     'loot':     (8, 30),     # loot filter take, open the backpack
     'relog':    (2, 600),    # log out and in again
+    'keep':     (6, 150),    # the bag the way a player keeps it: wear a better piece, sell at the Loot Buyer, drop junk (O584)
 }
 
 
@@ -94,6 +96,7 @@ LUA_ERROR = re.compile(r'Lua Script Error|stack traceback|attempt to (index|call
 XP_RE = re.compile(r'You gained (-?\d+) experience points?\.')
 LOOT_RE = re.compile(r'^Loot of (?:an? )?([^:]+): (.*)$')
 GOLD_RE = re.compile(r'(\d+) (gold|platinum|crystal) coins?')
+SOLD_RE = re.compile(r'^Sold (?:(\d+)x )?(.+) for ([\d,]+) gold\.$')  # loot_buyer.lua onSell: "Sold 3x item for 120 gold."
 ADVANCE_RE = re.compile(r'You advanced from Level (\d+) to Level (\d+)\.')
 DEATH_RE = re.compile(r'You are dead\.')
 HELPER_RE = re.compile(r'^\[tester-helper\] ([a-z]+) (\{.*\})$')
@@ -140,6 +143,9 @@ def classify(text):
         for n, kind in GOLD_RE.findall(m.group(2)):
             gold += int(n) * {'gold': 1, 'platinum': 100, 'crystal': 10000}[kind]
         return 'loot', (m.group(1), gold)
+    m = SOLD_RE.match(text)
+    if m:
+        return 'sold', (int(m.group(1) or 1), int(m.group(3).replace(',', '')))
     m = ADVANCE_RE.search(text)
     if m:
         return 'advance', (int(m.group(1)), int(m.group(2)))
@@ -312,6 +318,66 @@ def flee_outcome(health_at_flee, health_now, died, helper_answer):
     if health_now < health_at_flee:
         return 'failed', 'health fell from %d to %d after the flee' % (health_at_flee, health_now)
     return 'ok', ''
+
+
+# ------------------------------------------------------------------------------------------------ keeping the bag (O584)
+BAG_FULL = 0.7     # tester_helper_core.lua H.BAG_FULL: the share of the slots that sends a bot to sell
+BAG_JAM = 0.9      # H.BAG_JAM: the share that makes it drop junk
+MAX_DROPS = 3      # a player drops a few things, not the whole bag in one go
+MAX_JAMS = 3       # rounds a bag stays jammed with what cannot be sold or dropped before the helper wipes it (a counted failure)
+SELL_AMOUNT = 100  # the u8 amount of a sale packet: the Loot Buyer sells at most what the bot carries
+SELL_ITEMS = 12    # kinds sold in one visit
+
+
+def move_packet(src, sprite, stackpos, dst, count=1):
+    """the client's move item packet (0x78): u16 x, u16 y, u8 z of the item, u16 sprite id, u8 stack position, the target
+    position, u8 count. A backpack slot is (0xFFFF, 0x40 + container id, slot), an equipment slot (0xFFFF, slot, 0), the floor
+    a map position"""
+    return (b'\x78' + struct.pack('<HHB', *src) + struct.pack('<HB', sprite, stackpos) + struct.pack('<HHB', *dst)
+            + struct.pack('<B', max(1, min(255, count))))
+
+
+def use_packet(pos, sprite, stackpos=0, index=0):
+    """use an item (0x82); index: the container id the item opens as"""
+    return b'\x82' + struct.pack('<HHB', *pos) + struct.pack('<HBB', sprite, stackpos, index)
+
+
+def sale_packet(item_id, sub, amount):
+    """sell to the NPC of the open trade window (0x7b): u16 id, u8 sub type, u8 amount, u8 ignore equipped"""
+    return b'\x7b' + struct.pack('<HBBB', item_id, sub, max(1, min(255, amount)), 1)
+
+
+def bag_fill(report):
+    return (report.get('used') or 0) / max(1, report.get('size') or 1)
+
+
+def row_at(report, index):
+    for r in report.get('rows') or []:
+        if r.get('i') == index:
+            return r
+    return None
+
+
+def keep_plan(report, refused=(), room_fails=0):
+    """what a bot does with the `!tester bag` report: {'equip': row or None, 'sell': bool}. Equip a piece the helper found
+    better than the worn one (never one the server refused before); sell when the bag is BAG_FULL full, when pickups said
+    there is no room, or when there is enough to make the trip worth it, and the Loot Buyer buys something"""
+    better = row_at(report, report.get('better')) if report.get('better') is not None else None
+    if better and better.get('id') in refused:
+        better = None
+    sells = report.get('sell') or 0
+    sell = sells > 0 and (bag_fill(report) >= BAG_FULL or room_fails > 0 or sells >= 4)
+    return {'equip': better, 'sell': sell}
+
+
+def drop_rows(report):
+    """the junk rows to drop from a report (the helper listed their container indexes: only at BAG_JAM or more), at most MAX_DROPS"""
+    out = []
+    for i in report.get('junk') or []:
+        r = row_at(report, i)
+        if r:
+            out.append(r)
+    return out[:MAX_DROPS]
 
 
 DIFF_MIN = 10     # a counter must move by this many ...

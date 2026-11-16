@@ -611,6 +611,11 @@ class Results:
             h['slow'][i] += 1
             h['max_s'] = round(max(h['max_s'], seconds), 1)
 
+    def keep(self, key, n=1):
+        """the bag keeping counters of the report's "Bag keeping" line (O584)"""
+        k = self.d.setdefault('keep', {})
+        k[key] = k.get(key, 0) + n
+
     def behaviour(self, name, outcome, bot=None):
         b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0, 'expected': 0})
         b[outcome] = b.get(outcome, 0) + 1
@@ -865,6 +870,8 @@ class TesterBot(LT.Bot):
         self.fails = 0
         self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
         self.back_at = None  # after a flee: when to go back to the hunt
+        self.equip_refused = set()  # item ids the server refused to wear (a class or level rule): not tried again (O584)
+        self.jams = 0  # keep rounds in a row that ended with a jammed bag
         self.hunt_since = None  # when the bot came to its hunt spot (login, `!tester hunt`); None: away from it (O584)
         self.last_progress = None  # the last experience or loot message (TC.hunt_outcome)
         self.flee_check = None  # (when to judge it, health at the flee) of the flee under way (TC.flee_outcome)
@@ -872,7 +879,8 @@ class TesterBot(LT.Bot):
         self.nothing_to_sell = False
         self.walk_until = 0.0  # until when a blind walk is the likely cause of a "not possible"
         self.room_fails = 0  # "not enough room" since the bag was last emptied (helper "bag")
-        self.bag_at = -999.0  # when the bag was last emptied
+        self.bag_at = -999.0  # when the bag was last looked at
+        self.bag_report = {}  # the newest `!tester bag` answer
         self.waiters = []  # (opcode, {actions}, future): requests of the keystone scenario waiting for their answer
         self.class_index = 0  # this bot's place among the bots of its class (the keystone scenario starts there)
         self.keytest_done = False
@@ -1069,6 +1077,10 @@ class TesterBot(LT.Bot):
                     del self.pending[kind_]
                     self.results.behaviour(kind_, 'expected', self)
             self.results.count('failures', detail, self)
+        elif kind == 'sold':
+            self.results.keep('sold_units', detail[0])
+            self.results.keep('sold_gold', detail[1])
+            self.results.log(self, 'keep', 'sold %d for %d gold' % detail)
         elif kind == 'xp':
             self.last_progress = time.monotonic()
             rule = TC.xp_anomaly(self.level, detail)
@@ -1116,18 +1128,134 @@ class TesterBot(LT.Bot):
 
     # ---------------------------------------------------------------- what the bot does
     async def tidy_bag(self):
-        """the helper empties the backpack of loot and tops up the potions (`!tester bag`): the bots loot and never sell,
-        so the bag fills and every pickup says "There is not enough room." (1225 times in the first live run); the
-        supplies were given once, a potion count of 100 does not last 29 deaths"""
+        """the potion top-up and a look at the backpack (`!tester bag`, O584): the helper tops the potions up (a count of 100 does
+        not last 29 deaths) and reports the slots; it removes nothing any more. What to do with the drops is `do_keep`: sell,
+        wear a better piece, drop junk. The report also tells the bot how full the bag is"""
         self.results.behaviour('bag', 'tried')
-        r = await self.helper_says('bag', 'bag')
-        self.bag_at, self.room_fails = time.monotonic(), 0
+        r = await self.helper_says('bag', 'bag', 6.0)
+        self.bag_at = time.monotonic()
         if not r or r.get('err'):
             if self.died or not self.alive:
                 self.results.behaviour('bag', 'expected', self)
                 return False
             return self.failed('bag', r)
+        self.bag_report = r
         self.results.behaviour('bag', 'ok', self)
+        return True
+
+    async def keep_report(self):
+        """a fresh `!tester bag` report, None when the helper did not answer"""
+        r = await self.helper_says('bag', 'bag', 6.0)
+        if not r or r.get('err'):
+            return None
+        self.bag_report = r
+        return r
+
+    async def open_bag(self, report):
+        """the own backpack as container 0, so a slot has a position the move packet can name"""
+        cid = report.get('bagClientId')
+        if cid:
+            self.conn.send(TC.use_packet((0xFFFF, 3, 0), int(cid)))
+            await asyncio.sleep(1.0)
+
+    async def sell_trip(self):
+        """to the Loot Buyer by the helper, the NPC trade window, every kind it lists sold, back (O584: the trade path a player
+        takes). True when it sold at least once"""
+        self.results.keep('sell_visits')
+        self.hunt_since = None
+        r = await self.helper_says('shop Loot Buyer', 'shop')
+        if not r or r.get('err') or not r.get('npc'):
+            self.failed('keep: sell trip', r)
+            await self.helper_says('hunt', 'hunt')
+            return False
+        before = self.results.d.get('keep', {}).get('sold_units', 0)
+        self.shop_npc, self.shop, self.npc_spoke, self.nothing_to_sell = r['npc'], None, False, False
+        self.say('hi')
+        await asyncio.sleep(1.5)
+        self.say('trade', NPC_CHANNEL)
+        await asyncio.sleep(1.5)
+        if self.shop:
+            sell = [i for i in self.shop if i['sell'] > 0][:TC.SELL_ITEMS]
+            for item in sell:
+                self.conn.send(TC.sale_packet(item['id'], item['sub'], TC.SELL_AMOUNT))
+                await self.conn.w.drain()
+                await asyncio.sleep(0.7)
+            await asyncio.sleep(1)
+            self.conn.send(b'\x7c')
+        elif self.nothing_to_sell:
+            self.results.keep('nothing')
+        else:
+            self.results.count('failures', 'keep: no trade window from %s (%s)' % (
+                r['npc'], 'it answered' if self.npc_spoke else 'no answer to hi'), self)
+        self.say('bye', NPC_CHANNEL)
+        self.shop_npc = None
+        await self.helper_says('hunt', 'hunt')
+        return self.results.d.get('keep', {}).get('sold_units', 0) > before
+
+    async def do_keep(self, clock):
+        """keep the bag like a player (O584): look at it (`!tester bag`), wear a piece that beats the worn one (the move packet
+        to the equipment slot), sell at the Loot Buyer when it is full, drop junk when it is still jammed (the move packet to the
+        floor). The helper only reports. A bag that stays jammed with what can be neither sold nor dropped is wiped by the helper
+        after MAX_JAMS rounds, as a counted failure"""
+        r = await self.keep_report()
+        if r is None:
+            return self.failed('keep', self.helper.get('bag'))
+        plan = TC.keep_plan(r, self.equip_refused, self.room_fails)
+        self.room_fails = 0
+        await self.open_bag(r)
+        if plan['equip']:
+            await self.equip(plan['equip'], r)
+            r = await self.keep_report() or r
+        if plan['sell']:
+            await self.sell_trip()
+            r = await self.keep_report() or r
+        dropped = 0
+        for row in TC.drop_rows(r):
+            await self.drop(row, r)
+            dropped += 1
+        if dropped:
+            r = await self.keep_report() or r
+        if TC.bag_fill(r) >= TC.BAG_JAM and not dropped:
+            self.jams += 1
+            if self.jams >= TC.MAX_JAMS:
+                self.jams = 0
+                self.results.keep('wiped')
+                self.results.count('failures', 'keep: the bag stayed jammed with items that are neither sold nor dropped: wiped by the helper', self)
+                await self.helper_says('bag wipe', 'bag', 6.0)
+        else:
+            self.jams = 0
+        return True
+
+    async def equip(self, row, report):
+        """wear the piece: move it from its backpack slot to its equipment slot; ok when the slot of the backpack holds another
+        thing afterwards. The server's refusal (a class or level rule) is remembered, not retried"""
+        slot = row.get('s')
+        if not slot:
+            return False
+        self.conn.send(TC.move_packet((0xFFFF, 0x40, row['i']), int(row['cid']), row['i'], (0xFFFF, slot, 0), 1))
+        await self.conn.w.drain()
+        await asyncio.sleep(1.5)
+        after = await self.keep_report()
+        left = TC.row_at(after, row['i']) if after else None
+        if after is not None and not (left and left.get('id') == row['id']):
+            self.results.keep('equipped')
+            self.results.log(self, 'keep', 'wore item %s (score %s)' % (row['id'], row.get('sc')))
+            return True
+        self.equip_refused.add(row['id'])
+        self.results.keep('equip_refused')
+        return False
+
+    async def drop(self, row, report):
+        """throw a junk item on the floor of the bot's own tile, as a player clears a bag"""
+        pos = report.get('pos') or {}
+        if not all(isinstance(pos.get(k), int) for k in 'xyz'):
+            return False
+        self.conn.send(TC.move_packet((0xFFFF, 0x40, row['i']), int(row['cid']), row['i'], (pos['x'], pos['y'], pos['z']),
+                                      int(row.get('n') or 1)))
+        await self.conn.w.drain()
+        await asyncio.sleep(1.0)
+        self.results.keep('dropped')
+        self.results.log(self, 'keep', 'dropped item %s' % row['id'])
         return True
 
     async def act(self, clock):
@@ -1141,7 +1269,13 @@ class TesterBot(LT.Bot):
             if (self.room_fails >= ROOM_FAILS_BAG or now >= next_bag) and self.cid:
                 next_bag = now + BAG_EVERY
                 try:
-                    await self.tidy_bag()
+                    if self.room_fails >= ROOM_FAILS_BAG:
+                        self.last = 'keep'
+                        self.results.behaviour('keep', 'tried')  # no room for a pickup: keep the bag now
+                        ok = await self.do_keep(clock)
+                        self.results.behaviour('keep', 'ok' if ok else 'failed', self)
+                    else:
+                        await self.tidy_bag()
                 except (ConnectionError, OSError, asyncio.IncompleteReadError):
                     break
             if now >= next_pick:

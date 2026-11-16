@@ -466,7 +466,7 @@ async def _says_q(command, kind, wait=4.0):
 q.helper_says = _says_q
 q.room_fails = 5
 eq(asyncio.run(q.tidy_bag()), True, 'the clean-up worked')
-eq((q.room_fails, r5.d['behaviours']['bag']['ok']), (0, 1), 'and the count starts again')
+eq((q.room_fails, r5.d['behaviours']['bag']['ok']), (5, 1), 'the look does not clear the count of missing room: only a keep round does (O584)')
 q.helper = {}
 q.died = True
 eq(asyncio.run(q.tidy_bag()), False, 'the helper did not answer a dead bot')
@@ -934,6 +934,138 @@ for st_, txt in (('20261101-000000', 'old'), ('20261110-000000', 'newer'), ('202
 eq(T.previous_report(_d, '/x/runs/run-20261115-120000.log'), ('newer', ' of 20261110-000000'), 'the newest report older than the run')
 eq(T.previous_report(_d, '/x/runs/run-20261101-000000.log'), ('', ''), 'no older report: none')
 shutil.rmtree(_d)
+
+# ---------------------------------------------------------------- keeping the drops (O584 item 2)
+eq(TC.classify('Sold 3x item 5 for 1,200 gold.'), ('sold', (3, 1200)), 'the Loot Buyer sale text')
+eq(TC.classify('Sold item 5 for 40 gold.'), ('sold', (1, 40)), 'a single copy')
+eq(TC.move_packet((0xFFFF, 0x40, 2), 0x1234, 2, (0xFFFF, 1, 0), 1),
+   b'\x78' + struct.pack('<HHB', 0xFFFF, 0x40, 2) + struct.pack('<HB', 0x1234, 2) + struct.pack('<HHB', 0xFFFF, 1, 0) + b'\x01',
+   'the move packet: from the backpack slot to the equipment slot')
+eq(len(TC.move_packet((1, 2, 3), 4, 5, (6, 7, 8), 300)), 1 + 5 + 3 + 5 + 1, 'the move packet is 15 bytes')
+eq(TC.move_packet((1, 2, 3), 4, 5, (6, 7, 8), 300)[-1], 255, 'a count is one byte')
+eq(TC.sale_packet(2400, 0, 100), b'\x7b' + struct.pack('<HBBB', 2400, 0, 100, 1), 'the sale packet')
+eq(TC.use_packet((0xFFFF, 3, 0), 1988), b'\x82' + struct.pack('<HHB', 0xFFFF, 3, 0) + struct.pack('<HBB', 1988, 0, 0), 'the use packet')
+rep0 = {'used': 16, 'size': 20, 'sell': 2, 'better': 3, 'junk': [5, 9, 11, 12, 13],
+        'rows': [{'i': 3, 'id': 3001, 'cid': 13001, 'n': 1, 'k': 'sell', 's': 1, 'sc': 90},
+                 {'i': 5, 'id': 3003, 'cid': 13003, 'n': 4, 'k': 'junk'}, {'i': 9, 'id': 3004, 'cid': 13004, 'n': 1, 'k': 'junk'},
+                 {'i': 11, 'id': 3005, 'cid': 13005, 'n': 1, 'k': 'junk'}, {'i': 12, 'id': 3006, 'cid': 13006, 'n': 1, 'k': 'junk'}]}
+pl = TC.keep_plan(rep0)
+eq((pl['equip']['id'], pl['sell']), (3001, True), 'plan: a better piece to wear, a full bag to sell')
+eq(TC.keep_plan(rep0, refused={3001})['equip'], None, 'plan: a refused piece is not tried again')
+eq(TC.keep_plan(dict(rep0, used=5))['sell'], False, 'plan: an empty bag and two things to sell: no trip')
+eq(TC.keep_plan(dict(rep0, used=5), room_fails=1)['sell'], True, 'plan: pickups with no room: sell')
+eq(TC.keep_plan(dict(rep0, sell=0))['sell'], False, 'plan: nothing the Loot Buyer buys: no trip')
+eq([r['i'] for r in TC.drop_rows(rep0)], [5, 9, 11], 'drop: at most three junk rows')
+eq(TC.drop_rows({'rows': [], 'junk': [4]}), [], 'drop: a junk index with no row')
+
+class KC:
+    def __init__(self):
+        self.out = []
+
+        class W:
+            async def drain(self):
+                return None
+        self.w = W()
+
+    def send(self, b):
+        self.out.append(b)
+
+
+# a bot keeps its bag: scripted reports, real packets
+rk = T.Results(1)
+kb = T.TesterBot(8, dict(bot), A(), 1, rk, {'rotation': [], 'heal': None})
+kb.conn, kb.cid, kb.alive, kb.died = KC(), 0x10000008, True, False
+kb.say = lambda text, kind=1: None
+jam = {'used': 19, 'size': 20, 'sell': 0, 'better': 3, 'junk': [5], 'pos': {'x': 10, 'y': 20, 'z': 7}, 'bagClientId': 1988,
+       'rows': [{'i': 3, 'id': 3001, 'cid': 13001, 'n': 1, 'k': 'sell', 's': 1, 'sc': 90},
+                {'i': 5, 'id': 3003, 'cid': 13003, 'n': 4, 'k': 'junk'}]}
+calm = {'used': 17, 'size': 20, 'sell': 0, 'better': None, 'junk': [], 'pos': jam['pos'], 'bagClientId': 1988, 'rows': []}
+script = [jam, jam, calm]  # first look, after the wear (the piece is gone but one junk is left), after the drop
+said_k = []
+
+
+async def _says_k(command, kind, wait=4.0):
+    said_k.append(command)
+    if command.startswith('bag'):
+        return script.pop(0) if script else calm
+    return {'pos': {}}
+kb.helper_says = _says_k
+_sleep = asyncio.sleep
+
+
+async def _fast(_s, *a, **k):
+    return None
+asyncio.sleep = _fast
+try:
+    jam['rows'][0]['i'] = 3
+    after_wear = dict(jam, rows=[jam['rows'][1]], better=None)
+    script[:] = [jam, after_wear, after_wear, calm]  # look, check of the wear, look after it, look after the drop
+    eq(asyncio.run(kb.do_keep(None)), True, 'a keep round ends ok')
+finally:
+    asyncio.sleep = _sleep
+sent_k = kb.conn.out
+moves = [b for b in sent_k if b[:1] == b'\x78']
+eq(moves[0], TC.move_packet((0xFFFF, 0x40, 3), 13001, 3, (0xFFFF, 1, 0), 1), 'the better piece is moved to its equipment slot')
+eq(moves[1], TC.move_packet((0xFFFF, 0x40, 5), 13003, 5, (10, 20, 7), 4), 'the junk is moved to the floor of the own tile')
+ok(sent_k[0][:1] == b'\x82', 'the backpack is opened first (use packet)')
+eq((rk.d['keep'].get('equipped'), rk.d['keep'].get('dropped')), (1, 1), 'counted: one worn, one dropped')
+ok(not any(c.startswith('bag wipe') for c in said_k), 'the helper did not wipe')
+# a piece the server will not let it wear: remembered
+rk2 = T.Results(1)
+kc = T.TesterBot(9, dict(bot), A(), 1, rk2, {'rotation': [], 'heal': None})
+kc.conn, kc.cid, kc.alive, kc.died = KC(), 0x10000009, True, False
+kc.say = lambda text, kind=1: None
+same = dict(jam, junk=[])
+script2 = [same, same]
+
+
+async def _says_c(command, kind, wait=4.0):
+    return script2.pop(0) if script2 else same
+kc.helper_says = _says_c
+asyncio.sleep = _fast
+try:
+    asyncio.run(kc.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+ok(3001 in kc.equip_refused and rk2.d['keep'].get('equip_refused') == 1, 'a piece still in its slot after the move is refused, and remembered')
+# a bag jammed with what cannot go: three rounds, then the helper wipes it, as a counted failure
+rk3 = T.Results(1)
+kd = T.TesterBot(10, dict(bot), A(), 1, rk3, {'rotation': [], 'heal': None})
+kd.conn, kd.cid, kd.alive, kd.died = KC(), 0x1000000a, True, False
+kd.say = lambda text, kind=1: None
+stuck = {'used': 19, 'size': 20, 'sell': 0, 'better': None, 'junk': [], 'pos': jam['pos'], 'bagClientId': 1988, 'rows': []}
+cmds = []
+
+
+async def _says_d(command, kind, wait=4.0):
+    cmds.append(command)
+    return stuck
+kd.helper_says = _says_d
+asyncio.sleep = _fast
+try:
+    for _ in range(3):
+        asyncio.run(kd.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+ok('bag wipe' in cmds and rk3.d['keep'].get('wiped') == 1, 'a bag jammed three rounds in a row is wiped by the helper')
+ok(any(k.startswith('keep: the bag stayed jammed') for k in rk3.d['failures']), 'and the wipe is a counted failure')
+# a calm bag does not touch anything
+rk4 = T.Results(1)
+ke = T.TesterBot(11, dict(bot), A(), 1, rk4, {'rotation': [], 'heal': None})
+ke.conn, ke.cid, ke.alive, ke.died = KC(), 0x1000000b, True, False
+ke.say = lambda text, kind=1: None
+
+
+async def _says_e(command, kind, wait=4.0):
+    return calm
+ke.helper_says = _says_e
+asyncio.sleep = _fast
+try:
+    asyncio.run(ke.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+eq([b for b in ke.conn.out if b[:1] in (b'\x78', b'\x7b')], [], 'a calm bag: no move, no sale')
+ok('keep' in TC.BEHAVIOURS, 'keep is a behaviour of the scheduler')
 
 for f in FAILS:
     print('FAIL ' + f)
