@@ -390,6 +390,97 @@ function H.hotSpot(level, monsters)
 	return worst
 end
 
+-- the level band of a hunt mark ("Hunting: Penguin, Mammoth (level 1-20)" -> 1, 20), or nil
+function H.huntBand(name)
+	local lo, hi = tostring(name or ""):match("%(level (%d+)%-(%d+)%)")
+	if lo then
+		return tonumber(lo), tonumber(hi)
+	end
+	return nil
+end
+
+-- the hunt marks a tester of this level may be moved to when its own spot is too high (O580), best first: the ones whose
+-- whole band is at or under the level (the rule of tester_core.safe_hunts: the highest tops, at least 0.8 x the highest
+-- top, first, then the lower ones), else the lowest bands. `seed` turns the order of the equal ones, so a hundred bots
+-- do not all stand on the first mark. marks = ChaosPoi.all rows {k, x, y, z, n}.
+function H.huntCandidates(marks, level, seed)
+	level = tonumber(level) or 0
+	local fit, all = {}, {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == "hunt" and m.x and m.y and m.z then
+			local lo, hi = H.huntBand(m.n)
+			if lo then
+				all[#all + 1] = {mark = m, lo = lo, hi = hi}
+				if hi <= level then
+					fit[#fit + 1] = all[#all]
+				end
+			end
+		end
+	end
+	local list = #fit > 0 and fit or all
+	if #list == 0 then
+		return {}
+	end
+	table.sort(list, function(a, b)
+		if #fit > 0 then
+			if a.hi ~= b.hi then
+				return a.hi > b.hi
+			end
+		elseif a.hi ~= b.hi then
+			return a.hi < b.hi
+		end
+		if a.mark.x ~= b.mark.x then
+			return a.mark.x < b.mark.x
+		end
+		return a.mark.y < b.mark.y
+	end)
+	-- the best group (>= 0.8 x the highest top, or the lowest top) turned by the seed, then the rest in order
+	local first = list[1].hi
+	local group, rest = {}, {}
+	for _, e in ipairs(list) do
+		if (#fit > 0 and e.hi >= first * 0.8) or (#fit == 0 and e.hi == first) then
+			group[#group + 1] = e.mark
+		else
+			rest[#rest + 1] = e.mark
+		end
+	end
+	local out, n = {}, #group
+	local turn = n > 0 and ((tonumber(seed) or 0) % n) or 0
+	for i = 1, n do
+		out[#out + 1] = group[(i - 1 + turn) % n + 1]
+	end
+	for _, m in ipairs(rest) do
+		out[#out + 1] = m
+	end
+	return out
+end
+
+-- the two fist weapons a `!tester fists` probe wears (O580). A fist weapon has a level (items.xml: 8, 60, 150, 300 ...) and
+-- the engine refuses it below that with RETURNVALUE_NOTENOUGHLEVEL (code 33): the live run of 2026-11-15 read "weapon hand
+-- code 33, shield hand code 33" for the level 30 to 100 Monks and "0 / 33" for the ones between 150 and 299, because the
+-- probe always took the level 150 and level 300 pair. items = ChaosFistWeapons.items ({[id] = {level, unique}}), fallback =
+-- {id, id} when the table is missing. Returns {weapon hand id, shield hand id}: the highest plain (not unique) fist weapons
+-- the level may wield, the same one twice when only one fits, the fallback when none does.
+function H.fistPair(level, items, fallback)
+	level = tonumber(level) or 0
+	local fit = {}
+	for id, it in pairs(items or {}) do
+		if type(it) == "table" and not it.unique and (tonumber(it.level) or 0) <= level then
+			fit[#fit + 1] = {id = id, level = tonumber(it.level) or 0}
+		end
+	end
+	table.sort(fit, function(a, b)
+		if a.level ~= b.level then
+			return a.level > b.level
+		end
+		return a.id < b.id
+	end)
+	if #fit == 0 then
+		return {fallback and fallback[1], fallback and fallback[2]}
+	end
+	return {fit[1].id, (fit[2] or fit[1]).id}
+end
+
 function H.xpAnomaly(level, gained)
 	gained = tonumber(gained)
 	if not gained or gained ~= gained then

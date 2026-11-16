@@ -317,6 +317,17 @@ def party_share_problems(p):
     return out
 
 
+def party_gone(p, name):
+    """True when a `!tester party` answer shows no party of two or more with this bot as the leader"""
+    return int(p.get('size') or 0) < 2 or p.get('leader') != name
+
+
+def party_state(p):
+    """the facts behind a party_xp verdict, for the failure text: size, leader, where the leader stood"""
+    return 'party of %s, leader %s, leader in a fight outside a protection zone: %s, in a protection zone: %s' % (
+        p.get('size', 0), p.get('leader'), bool(p.get('leaderBlocked')), bool(p.get('leaderPz')))
+
+
 KILL_TOLERANCE = 0.05
 
 
@@ -403,8 +414,16 @@ async def check_party_xp(io, name, cls, level):
         bad = [x for x in a if x in b]    # the engine's own update lags a tick: only what both looks saw
         if bad and not partner_kept(io, other):
             return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
+        # O580 (live run 2026-11-15: 1 "the party says it is off" in 68): the engine drops the switch of a leader with no
+        # party (Game::playerEnableSharedPartyExperience) and a party that broke up and formed again starts with the
+        # switch off. Nobody died or logged in (partner_kept), but a random invite, a join or a leave of either bot, or the
+        # hold of PARTY_BUSY running out, can still end the party between the first look and the switch: no party of two
+        # with this bot as the leader in a look is no verdict on the shared experience
+        if bad and (party_gone(first, name) or party_gone(second, name)):
+            return Result('party_xp', name, cls, SKIP, 'the party broke up before the switch could be read (%s)' % party_state(
+                second if party_gone(second, name) else first))
         if bad:
-            return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]))
+            return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]) + ' (%s)' % party_state(second))
         verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
             ', '.join('%s %s' % (x.get('name'), x.get('kind')) for x in second.get('problems') or [])[:60] or 'none')
         pays = second.get('shareOf1000')
@@ -919,8 +938,15 @@ def dual_problems(f, kind):
     if off == 0:
         out.append('%d melee hits with a %s in each hand and no off-hand strike' % (melee, what))
         return out
-    if off < melee - 1 or off > melee:
-        out.append('%d melee hits but %d off-hand strikes (one each)' % (melee, off))
+    # a hit may bring no strike by rule (O580, live run 2026-11-15: "14 melee hits but 11 off-hand strikes"): the one that
+    # landed in the last 150 ms of the watch (the strike follows after delayMs), the strikes the attack rate gate refused
+    # (ChaosAttackRate limits offhand / fistOffhand, 1.5 a second a player: the helper counts them) and the hits too small
+    # for a strike of at least 1 (the helper counts those too). Anything beyond that is a hit without its strike.
+    gated, small = int(f.get('gated') or 0), int(f.get('small') or 0)
+    if off < melee - 1 - gated - small or off > melee:
+        out.append('%d melee hits but %d off-hand strikes (one each%s)' % (
+            melee, off, '; %d refused by the attack rate gate, %d hits too small' % (gated, small) if gated or small
+            else ''))
     return out
 
 

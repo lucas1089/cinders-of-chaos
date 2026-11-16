@@ -173,6 +173,23 @@ class DualBlades(unittest.TestCase):
     def check(self, cls='Thief', **f):
         return run(TX.check_dual_blades(FakeIO({'blades': f}), 'Tester Aaa', cls, 600))
 
+    def test_strikes_the_rules_hold_back_are_no_bug(self):
+        # live run 2026-11-15 (O580): 14 melee hits, 11 strikes, Tester Aah. The strike follows after 150 ms, the attack rate
+        # gate (1.5 a second) refuses some and a hit under a few points rounds its strike to 0: the helper counts both
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=14, off=11, gated=2, small=0).status, TX.PASS)
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=14, off=11, gated=0, small=2).status, TX.PASS)
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=14, off=11, gated=1, small=1).status, TX.PASS)
+        # not explained by what the helper counted: still a bug, with the numbers in the text
+        r = self.check(able=True, left=0, right=0, melee=14, off=11, gated=1, small=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('14 melee hits but 11 off-hand strikes (one each; 1 refused by the attack rate gate, 0 hits too small)',
+                      r.detail)
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=14, off=11).status, TX.FAIL, 'old helper: strict')
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=4, off=0, gated=1, small=1).status, TX.FAIL,
+                         'no strike at all with only two excused hits')
+        self.assertEqual(self.check(able=True, left=0, right=0, melee=4, off=5, gated=3).status, TX.FAIL,
+                         'more strikes than hits is never excused')
+
     def test_a_thief_strikes_with_the_off_hand(self):
         r = self.check(able=True, left=0, right=0, melee=4, off=4, offSum=900)
         self.assertEqual(r.status, TX.PASS, r.detail)
@@ -634,6 +651,34 @@ class PartyXp(unittest.TestCase):
         io, r = self.run_check(shareActive=False, leaderBlocked=False, leaderPz=True)
         self.assertEqual(r.status, TX.FAIL, r.detail)
         self.assertEqual([a for a in io.partied if a[0] == 'share'], [('share', 'Tester Bbb')] * 2, 'one more switch, then a bug')
+
+    def test_a_party_that_broke_up_before_the_switch_is_a_skip(self):
+        # O580 (live run 2026-11-15, Tester Acu, Lich): the party had two members when the check began and none when the
+        # switch was read (a join or a leave of a bot): the engine drops the switch of a leader with no party
+        calls = []
+
+        def answer(io):
+            calls.append(1)
+            if len(calls) == 1:
+                return self.party(io)
+            return {'size': 0, 'members': []}
+        r = run(TX.check_party_xp(FakeIO({'party': answer}), 'Tester Aaa', 'Lich', 100))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('the party broke up before the switch could be read (party of 0, leader None', r.detail)
+        # the leader changed: also no verdict on this bot's switch
+        calls.clear()
+
+        def other_leader(io):
+            calls.append(1)
+            return self.party(io) if len(calls) == 1 else self.party(io, leader='Tester Bbb', shareActive=False)
+        r = run(TX.check_party_xp(FakeIO({'party': other_leader}), 'Tester Aaa', 'Lich', 100))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+
+    def test_a_refused_switch_names_the_party_in_the_failure(self):
+        _, r = self.run_check(shareActive=False, leaderBlocked=False, leaderPz=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('(party of 2, leader Tester Aaa, leader in a fight outside a protection zone: False, '
+                      'in a protection zone: True)', r.detail)
 
     def test_a_wrong_share_is_a_bug(self):
         _, r = self.run_check(shareOf1000=500)
