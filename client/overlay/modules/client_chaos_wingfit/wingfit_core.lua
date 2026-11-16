@@ -102,4 +102,30 @@ function M.shiftOf(data, look, wings, dir, lift)
   return s
 end
 
+-- Code-drawn wings (O583, base patch 0204): wing_anchors.lua (ChaosWingAnchors) lists the wings looks that are drawn by
+-- code, the one point of their picture that belongs on the torso, and hand rows {look, direction, x, y} for a body the
+-- engine measures wrong. setWings(look, x, y), setBody(look, dir, x, y); returns the number of wings and of hand rows.
+function M.applyAnchors(data, setWings, setBody)
+  if type(data) ~= 'table' or type(data.anchor) ~= 'table' or type(data.wings) ~= 'table' then return 0, 0 end
+  local ax, ay = data.anchor[1], data.anchor[2]
+  if type(ax) ~= 'number' or type(ay) ~= 'number' then return 0, 0 end
+  local ids = {}
+  for _, id in ipairs(data.wings) do
+    if type(id) == 'number' and id >= 1 and id == math.floor(id) then ids[#ids + 1] = id end
+  end
+  table.sort(ids)
+  for _, id in ipairs(ids) do setWings(id, math.floor(ax), math.floor(ay)) end
+  local rows = 0
+  if type(data.bodies) == 'table' then
+    for _, row in ipairs(data.bodies) do
+      if type(row) == 'table' and type(row[1]) == 'number' and row[1] >= 1 and type(row[2]) == 'number' and row[2] >= 0
+        and row[2] <= 3 and type(row[3]) == 'number' and type(row[4]) == 'number' then
+        setBody(math.floor(row[1]), math.floor(row[2]), math.floor(row[3]), math.floor(row[4]))
+        rows = rows + 1
+      end
+    end
+  end
+  return #ids, rows
+end
+
 return M
