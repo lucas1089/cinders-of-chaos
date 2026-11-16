@@ -6784,3 +6784,21 @@ Owner 2026-11-14: a place where looted cards go by themselves, filtered and seen
   `client_chaos_topbar` tests, `tools/ci/check_topbar_tree.py`, `check_locales.py`, `check_window_close.py`, `check_unity_opcodes.py`. Not run in a client;
   the Pillow mock of the window was drawn from the .otui sizes.
 
+
+## Code-drawn wings (O581, `tools/sprites/gen_drawn_wings.py`; owner 2026-11-16)
+Prototype. Six back cosmetics drawn by code, no art file read. Not in a pair, no look ids, not seen in a client. Waits for the owner's pick, then pair 73.
+- **Designs**: `ember_pinions` (feathered wings, charcoal to ember tips, a flap, sparks rise), `ossuary_wings` (bone arm, four curled ribs, a slow flap, pale motes sink),
+  `void_orbit` (five dark violet orbs on a tilted ellipse, a faint dotted trail), `bladefan` (seven steel blades behind the back, the fan opens and closes, a red gem hub),
+  `rimeshard` (five ice shards a side, they pulse, a glint walks over them), `grave_lanterns` (three skulls with a green flame, they orbit and bob).
+- **Format**: 96 x 96 px (3 x 3 tiles), 16 frames, rows north east south west. Per design `KEY_sheet.png` (both layers merged), `KEY_back.png`, `KEY_front.png`.
+  Two layers a frame: the body sits between them. A piece goes to a layer by its depth after the turn.
+- **Model**: each design is a few pieces in 3D round the body (x right, y up, z to the viewer). A direction turns the model about the vertical axis, then projects it.
+  Motion reads the frame phase only, so frame 15 runs into frame 0. Orbits turn one orb spacing in 16 frames.
+- **Drawing rules** (the test holds them): alpha 0 or 255, plus `GLOW_ALPHA` 144 for spark arms and trail dots. A 5 shade ramp per material, one outline colour per design.
+  Light from the top left. Every piece gets a 1 px ring. Every opaque pixel that touches transparency is the outline colour. No art on the cell border.
+- **Anchor**: `ANCHOR` (48, 64) is the body's torso centre on the canvas. y 64 is the median torso of the class looks with wings displacement 0 (measured on pair 71: 63.5; stock look 128: 66).
+  Bodies lean 0.55 px left per px up (measured), so the wing roots sit up and left of the torso. The art itself leans 0.2 (`LEAN_ART`): a full lean flattens one wing.
+- **Pair 73 to do**: write the wings row of `wing_centres.lua` from `anchor_row()`. `gen_wing_centres.py` measures the art's mass, which is wrong for an orbit or a side view.
+  The engine draws one wings layer today (behind or in front by direction). The two layers need either a second look drawn after the body or a merged sheet per direction. Not decided.
+- **Preview**: `gen_drawn_wings.py preview OUT_DIR --dat Tibia.dat --spr Tibia.spr` writes one MP4 per design at 4x, `all_designs.mp4`, `scale_1x.png`. Class look 2050, tinted. No pair: a drawn silhouette. Never committed.
+- **Test**: `gen_drawn_wings_test.py`: the loop closes, no frame equals the next, binary alpha plus the glow level, outline on every open edge, same bytes twice, sizes, four directions differ.
