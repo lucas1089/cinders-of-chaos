@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Tests of gen_drawn_wings.py (O581): the drawing rules hold on every frame of every design (numpy, Pillow; no pair).
+And of the table of the existing wings (O583, gen_drawn_wings_families.py): every row of drawn_wings/designs.csv is
+drawn and holds the same bar (docs/SPRITE_STYLE.md "Wings"), no two rows give the same pictures, the generated files
+are current, the pair step on a synthetic pair, the torso rule against the fixtures the C++ header reads.
 
 python3 -I client/tools/sprites/gen_drawn_wings_test.py
 """
@@ -12,6 +15,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gen_drawn_wings as gd  # noqa: E402
+import gen_drawn_wings_families as fm  # noqa: E402
 
 fails = 0
 
@@ -147,6 +151,187 @@ for d in gd.DIRS:
 frames = {d: [gd.render_frame('void_orbit', d, 0)] for d in gd.DIRS}
 strip = gd.strip(frames, {d: gd.silhouette(d) for d in gd.DIRS}, 0)
 check(strip.shape == (S, S * 4, 3), 'preview strip: four directions side by side')
+
+# ---- O583: the table of the existing wings
+if __name__ == '__main__':
+    import copy
+    import struct
+    import check_pair_test as t
+    from datspr import Dat, Spr
+    from gen_effects import encode_sprite
+    from import_outfits import parse_body
+
+    specs = fm.load()
+    check(len(specs) == 121 and len({sp.wings for sp in specs}) == 121 and len({sp.look for sp in specs}) == 121,
+          'one row a wings look: %d' % len(specs))
+    check(fm.problems(specs) == [], 'the table rules: %s' % fm.problems(specs)[:3])
+    fams = fm.by_family(specs)
+    check(sorted(fams) == sorted(fm.FAMILIES) and len(fams) == 9, 'nine families, every one used')
+    check(all(len(v) >= 2 for v in fams.values()), 'no family of one')
+    check(all(sp.name and sp.old and sp.key == sp.key.lower() for sp in specs), 'every row names its wing and what it was')
+
+    # every row is drawn once: its pictures are those of designs.sums, and it holds the bar of the six wings of O581
+    reports = fm.all_reports(specs)
+    sums = fm.read_sums()
+    check(sorted(reports) == sorted(sums) == sorted(sp.wings for sp in specs), 'a digest for every row')
+    stale = [w for w in sorted(reports) if reports[w][0] != sums.get(w)]
+    check(not stale, 'designs.sums is stale for %s: run gen_drawn_wings.py table' % stale[:8])
+    check(len({h for h, _ in reports.values()}) == len(reports), 'no two rows draw the same pictures')
+    for sp in specs:
+        bad = reports[sp.wings][1]
+        check(not bad, 'the bar, %d %s (%s/%s): %s' % (sp.wings, sp.key, sp.family, sp.var, bad[:4]))
+    # the bar itself catches a broken wing: a frozen loop, a missing outline, a half-clear pixel
+    sp = specs[0]
+    one = fm.render(sp)
+    frozen = {d: [one[d][0]] * gd.FRAMES for d in gd.DIRS}
+    check(any('equals the next' in b for b in fm.bar_problems(sp, frozen)), 'the bar sees a frozen loop')
+    short = {d: one[d][:8] for d in gd.DIRS}
+    check(any('16 frames' in b for b in fm.bar_problems(sp, short)), 'the bar sees a short loop')
+    hurt = {d: [(bk.copy(), fr.copy()) for bk, fr in one[d]] for d in gd.DIRS}
+    bk = hurt['south'][3][0]
+    ys, xs = np.nonzero(bk[..., 3] == 255)
+    bk[ys[0], xs[0]] = (250, 250, 250, 255)
+    check(any('outline' in b for b in fm.bar_problems(sp, hurt)), 'the bar sees an edge without the outline')
+    bk[ys[0], xs[0]] = (250, 250, 250, 77)
+    check(any('alpha' in b for b in fm.bar_problems(sp, hurt)), 'the bar sees a half-clear pixel')
+
+    # the generated files are current
+    for path, text in ((fm.ANCHORS, fm.anchors_text(specs)), (fm.FIXTURES, fm.fixtures_text()), (fm.SUMS, fm.sums_text(sums))):
+        with open(path, encoding='utf-8') as fh:
+            check(fh.read() == text, '%s is stale: run gen_drawn_wings.py table' % os.path.basename(path))
+    check(fm.anchor_rel() == (gd.ANCHOR[0] - 64, gd.ANCHOR[1] - 64) == (-16, 0), 'the wings anchor from the creature place')
+
+    # the patterns of the pair: y0 the whole wing without the front glow, y1 the front
+    pats = fm.patterns(sp)
+    check(len(pats) == 2 * 4 * gd.FRAMES, 'two y patterns, four directions, 16 frames')
+    bk, fr = fm.render_frame(sp, 'south', 5)
+    y0, y1 = pats[(0, 2, 5)], pats[(1, 2, 5)]
+    solid = fr[..., 3] == 255
+    check(np.array_equal(y1, fr) and np.array_equal(y0[solid], fr[solid]) and np.array_equal(y0[~solid], bk[~solid]),
+          'y0 is the back with the solid front on it, y1 the front')
+
+    # ---- the torso rule: the Python twin gives the numbers of the fixtures file (the C++ test reads the same file)
+    fixtures = fm.read_fixtures()
+    check(len(fixtures) >= 10, 'fixtures: %d' % len(fixtures))
+    for name, alpha, want in fixtures:
+        check(fm.torso_anchor(alpha) == want, 'fixture %s: %s, the file says %s' % (name, fm.torso_anchor(alpha), want))
+    by_name = {name: (alpha, want) for name, alpha, want in fixtures}
+    check(by_name['thin_staff'][1] == by_name['plain'][1], 'a thin staff does not move the torso')
+    check(by_name['empty'][1] is None, 'an empty picture has no torso')
+    check(0 < by_name['wide_cape'][1][0] - 59 <= 21, 'a wide cape moves it by less than half its width')
+    check(abs(by_name['shadow_blob'][1][0] - 59) <= 1, 'a ground shadow does not pull the torso: %s' % (by_name['shadow_blob'][1],))
+    plain = by_name['plain'][0]
+    rel = fm.body_rel(plain)
+    check(rel == (34 - 32, (by_name['plain'][1][1] + 1) // 2 - 32), 'the torso from the creature place: %s' % (rel,))
+    check(fm.body_rel(plain, (8, 8)) == (rel[0] - 8, rel[1] - 8), 'the displacement moves the torso as drawn')
+    check(fm.body_rel(by_name['empty'][0]) is None, 'nothing to measure')
+    ax, ay = fm.anchor_rel()
+    sh = fm.wing_shift(rel, lift=6)
+    check(sh == (rel[0] - 6 - ax, rel[1] - 6 - ay), 'the anchor lands on the torso of the lifted body')
+    check(fm.wing_shift((400, 0)) == (0, 0), 'a shift out of range is refused')
+    # walking does not move the wings: the rule reads the standing picture only (one measure a look, column, z)
+    moved = plain.copy()
+    moved[50:58, 20:26] = 255                                  # a leg swung out, as a walking frame has
+    check(fm.torso_anchor(moved) is not None, 'a walking frame can be measured, the engine does not')
+
+    # ---- the pair step on a synthetic pair: two old wings looks redrawn in place, the rest byte for byte
+    def cut(img, ids, recs, w, h):
+        out = []
+        for hh in range(h):
+            for ww in range(w):
+                tile = np.ascontiguousarray(img[(h - 1 - hh) * 32:(h - hh) * 32, (w - 1 - ww) * 32:(w - ww) * 32])
+                rec = encode_sprite(tile)
+                if rec is None:
+                    out.append(0)
+                    continue
+                rec = bytes(rec)
+                if rec not in ids:
+                    recs.append(rec)
+                    ids[rec] = len(recs)
+                out.append(ids[rec])
+        return out
+
+    def old_wing(seed, d, p, z=0):
+        img = np.zeros((64, 64, 4), np.uint8)
+        x = 4 + 5 * d + p + 3 * z
+        img[6 + seed:22 + seed, x:x + 9] = (200, 180 - 20 * seed, 90, 255)
+        return img
+
+    ids, recs = {}, []
+    body = np.zeros((32, 32, 4), np.uint8)
+    body[4:30, 10:22] = (90, 60, 40, 255)
+    b = cut(body, ids, recs, 1, 1)
+    wing_a = []                                               # look 2: 2 x 2 tiles, 3 phases, two groups (idle, walk)
+    for p in range(3):
+        for d in range(4):
+            wing_a += cut(old_wing(0, d, p), ids, recs, 2, 2)
+    wing_b = []                                               # look 3: one group, two z patterns
+    for p in range(2):
+        for z in range(2):
+            for d in range(4):
+                wing_b += cut(old_wing(2, d, p, z), ids, recs, 2, 2)
+    always, disp = bytes([28]), bytes([25]) + struct.pack('<hh', 8, 8)
+    outfits = [t.entry(disp, [t.group(b * 4, px=4, gtype=0)], outfit=True),
+               t.entry(disp + always, [t.group(wing_a, w=2, h=2, px=4, phases=3, gtype=0),
+                                       t.group(wing_a, w=2, h=2, px=4, phases=3, gtype=1)], outfit=True),
+               t.entry(always, [t.group(wing_b, w=2, h=2, px=4, pz=2, phases=2, gtype=0)], outfit=True),
+               t.entry(disp, [t.group(b * 4, px=4, gtype=0)], outfit=True)]
+    items = [t.entry(bytes([17]), [t.group(b)])]
+    effects = [t.entry(b'', [t.group(b)])]
+    missiles = [t.entry(b'', [t.group(b * 9, px=3, py=3)])]
+    case = t.Case()
+    dat_p, spr_p = case.pair(recs, items, outfits, effects, missiles)
+    rows = [copy.copy(specs[0]), copy.copy(specs[40])]
+    rows[0].look, rows[1].look = 2, 3
+    row_sums = {r.wings: reports[r.wings][0] for r in rows}
+    quiet = lambda *a: None  # noqa: E731
+    check(len(fm.check_pair(dat_p, spr_p, rows, row_sums, log=quiet)) == 2, 'the old pair does not hold the drawn wings')
+    out_dir = os.path.join(case.dir, 'out')
+    done = fm.apply(dat_p, spr_p, out_dir, rows, log=quiet)
+    check(done == [2, 3], 'apply redraws the looks of the rows: %s' % done)
+    ndat_p, nspr_p = os.path.join(out_dir, 'Tibia.dat'), os.path.join(out_dir, 'Tibia.spr')
+    check(fm.check_pair(ndat_p, nspr_p, rows, row_sums, log=quiet) == [], 'the built pair holds the drawn wings')
+    od, nd, ospr, nspr = Dat(dat_p), Dat(ndat_p), Spr(spr_p), Spr(nspr_p)
+    check(nd.counts == od.counts and nspr.count > ospr.count, 'no id added to the dat, sprites appended')
+    for sid in range(1, ospr.count + 1):
+        x, y = ospr.sprite(sid), nspr.sprite(sid)
+        check((x is None) == (y is None) and (x is None or np.array_equal(x, y)), 'old sprite %d unchanged' % sid)
+    for look in (1, 4):
+        ta, tb = od.outfit(look), nd.outfit(look)
+        check(od.data[ta.raw[0]:ta.raw[1]] == nd.data[tb.raw[0]:tb.raw[1]], 'outfit %d byte for byte' % look)
+    for look, groups, pz in ((2, 2, 1), (3, 1, 2)):
+        tt = nd.outfit(look)
+        check('displacement' not in tt.flags and 'animateAlways' in tt.flags, 'look %d: flags' % look)
+        got_groups = list(parse_body(nd, tt))
+        check(len(got_groups) == groups, 'look %d keeps its frame groups: %d' % (look, len(got_groups)))
+        for g in got_groups:
+            check((g.w, g.h, g.layers, g.px, g.py, g.pz, g.phases) == (3, 3, 1, 4, 2, pz, gd.FRAMES), 'look %d: shape' % look)
+    check([g.gtype for g in parse_body(nd, nd.outfit(2))] == [0, 1], 'idle and walk group types kept')
+    got = fm.pair_patterns(nd, nspr, 2)
+    want = fm.patterns(rows[0])
+    check(not isinstance(got, str) and all(np.array_equal(want[key], got[key]) for key in want), 'the pictures read back')
+    for bad_call, what in ((lambda: fm.apply(dat_p, spr_p, out_dir, rows, log=quiet), 'an existing folder'),
+                           (lambda: fm.apply(dat_p, spr_p, out_dir + '2', [rows[0], copy.copy(specs[1])], log=quiet), 'a missing look')):
+        try:
+            bad_call()
+            check(False, 'apply refuses ' + what)
+        except SystemExit:
+            pass
+    not_wing = copy.copy(specs[2])
+    not_wing.look = 1
+    try:
+        fm.apply(dat_p, spr_p, out_dir + '3', [not_wing], log=quiet)
+        check(False, 'apply refuses a look that is not a wings look')
+    except SystemExit:
+        pass
+    check(not os.path.exists(out_dir + '2') and not os.path.exists(out_dir + '3'), 'a refused run leaves no folder')
+    again = os.path.join(case.dir, 'again')
+    fm.apply(dat_p, spr_p, again, rows, log=quiet)
+    for name in ('Tibia.dat', 'Tibia.spr'):
+        with open(os.path.join(out_dir, name), 'rb') as fa, open(os.path.join(again, name), 'rb') as fb:
+            check(fa.read() == fb.read(), 'the same pair twice: ' + name)
+    import shutil
+    shutil.rmtree(case.dir)
 
 if fails:
     print('%d FAILED' % fails)

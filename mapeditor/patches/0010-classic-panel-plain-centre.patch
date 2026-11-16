@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Mon, 16 Nov 2026 15:40:00 +0000
+Subject: [PATCH] Theme: classic panels without tiled grain (seams every 99 px)
+
+The classic theme draws every panel (palette side panel, top bar, minimap
+window, dialogs' cards) with ClassicPanel: a BorderImage of panel_flat.png
+(68 x 68, a 1 px bevel ring around a 66 px grain) with border 1 and the
+centre in Repeat mode. At 150% scale (66 px = 99 device px) every join of
+two tiles showed the dark bevel column of the image: vertical seams every
+99 px over the whole palette and bar (owner screenshot, O586).
+
+The centre is not tiled any more: the 1 px bevel stays (Stretch slices) and
+the centre is a flat rectangle in the colour the grain averages (71 of 255),
+times the colorize tint like UiTheme::texture does. The Windows classic
+texture is flat already and keeps its stretched centre. Only the grain of
+the panels is gone; no other theme uses this file.
+---
+ 1 files changed
+
+diff --git a/editor/qml/themes/classic/controls/ClassicPanel.qml b/editor/qml/themes/classic/controls/ClassicPanel.qml
+--- a/editor/qml/themes/classic/controls/ClassicPanel.qml
++++ b/editor/qml/themes/classic/controls/ClassicPanel.qml
+@@ -1,10 +1,27 @@
+ import QtQuick
+ import Tibia 1.0
+ 
++// The 1 px bevel of panel_flat.png and a plain centre (O586). The 66 px grain
++// centre used to be tiled (Repeat): at 150% scale every join of the tiles drew
++// the dark bevel column of the image as a vertical seam every 99 px.
+ BorderImage {
++    id: panel
+     source: Backend.uiTheme.tex + "panel_flat.png"
+     smooth: false
+     border { left: 1; right: 1; top: 1; bottom: 1 }
+-    horizontalTileMode: BorderImage.Repeat
+-    verticalTileMode: BorderImage.Repeat
++    horizontalTileMode: BorderImage.Stretch
++    verticalTileMode: BorderImage.Stretch
++
++    // Flat centre in the colour the grain averages (71 of 255), colorize tint
++    // included (UiTheme::texture multiplies the grey by the tint). The Windows
++    // classic texture is flat already: its stretched centre stays.
++    Rectangle {
++        x: 1; y: 1
++        width: Math.max(0, panel.width - 2)
++        height: Math.max(0, panel.height - 2)
++        visible: Backend.uiTheme.style === "classic"
++        color: Qt.rgba(Backend.uiTheme.tint.r * 0.279,
++                       Backend.uiTheme.tint.g * 0.279,
++                       Backend.uiTheme.tint.b * 0.279, 1)
++    }
+ }

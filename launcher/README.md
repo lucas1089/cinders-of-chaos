@@ -191,6 +191,7 @@ pouco o visual pra não ficar igual": the layout is our own, built from the game
   where "Tentar de novo" / "Jogar assim mesmo" / "Usar o cliente principal" take the progress place by the same `choice::buttons` rule).
 - **Settings (gear).** Game folder with "Abrir pasta", "Fechar o launcher ao jogar" (on by default, else it minimizes), language, version.
   Saved in `.cinders_launcher/settings.json` (`config::Settings`: `client`, `lang`, `close_on_play`).
+- **Exe icon** is the brand icon too: `assets/app.ico` (9 sizes, `tools/gen_launcher_art.py`), linked as a resource by `build.rs` on Windows (MSVC). The setup program, the installed launcher and its shortcuts show it.
 - **Window icon** is the brand icon. No icon pack and no SVG: the icons are painter shapes (`theme.rs`).
 - Look at it without Windows: build with the default features and run under `xvfb-run` (needs `libxkbcommon-x11-0` and Mesa), then take the
   root window with ImageMagick `import -window root shot.png`.

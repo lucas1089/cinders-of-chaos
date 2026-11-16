@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cinders of Chaos <noreply@cindersofchaos.com>
+Date: Mon, 16 Nov 2026 15:40:00 +0000
+Subject: [PATCH] Minimap: bitmap window around the view centre on wide floors
+
+MapMinimapService::rebuild() makes one Indexed8 bitmap of the whole floor,
+cut at 8192 x 8192 tiles from the smallest x and y of the floor. Our floor 7
+holds the base world near x 32000 and hunt areas near x 14400 (areagen_config.lua
+origins), a span of about 20000 tiles. The bitmap started at x 14400 and ended
+at 22591: the world the owner looks at was outside it, MinimapView::paint drew
+only the dark background and the white view rectangle (owner screenshot, O586).
+
+The bitmap is now a window of at most 8192 tiles around the focus tile, the
+tile the minimap is centred on (the view centre; the town / preview centre
+tile). It is rebuilt when the focus gets within 512 tiles of a side that has
+more map behind it, or leaves it. A floor that fits keeps the old bitmap and
+never rebuilds. A tile edited outside the window but inside the floor is
+skipped instead of invalidating the bitmap.
+---
+ 5 files changed
+
+diff --git a/editor/map/mapminimapservice.h b/editor/map/mapminimapservice.h
+--- a/editor/map/mapminimapservice.h
++++ b/editor/map/mapminimapservice.h
+@@ -4,6 +4,7 @@
+ #include "maptypes.h"
+ 
+ #include <QImage>
++#include <climits>
+ 
+ class DatReader;
+ class OtbReader;
+@@ -11,8 +12,13 @@
+ class MapMinimapService
+ {
+ public:
++    // The bitmap is at most kMaxSide tiles wide and high. On a floor that is
++    // larger it is a window around the focus tile (the tile the minimap is
++    // centred on) and is rebuilt when the focus gets near its edge.
++    static constexpr int kNoFocus = INT_MIN;
+     const QImage &image(int floor, const MapFloorTileIndex &tiles,
+-                        const OtbReader *otb, const DatReader *dat);
++                        const OtbReader *otb, const DatReader *dat,
++                        int focusX = kNoFocus, int focusY = kNoFocus);
+     void updateTile(int x, int y, int z, const OtbmTile *tile,
+                     const OtbReader *otb, const DatReader *dat);
+     void invalidate();
+@@ -25,8 +31,14 @@
+ 
+ private:
+     void rebuild(int floor, const MapFloorTileIndex &tiles,
+-                 const OtbReader *otb, const DatReader *dat);
++                 const OtbReader *otb, const DatReader *dat,
++                 int focusX, int focusY);
++    bool windowMissesFocus(int focusX, int focusY) const;
++    static constexpr int kMaxSide = 8192;
++    static constexpr int kEdgeMargin = 512;
+     QImage m_image;
++    // Bounds of all tiles of the floor (the bitmap may cover only a part).
++    int m_fullMinX = 0, m_fullMinY = 0, m_fullMaxX = -1, m_fullMaxY = -1;
+     int m_floor = -1;
+     int m_originX = 0;
+     int m_originY = 0;
+diff --git a/editor/map/mapservices.cpp b/editor/map/mapservices.cpp
+--- a/editor/map/mapservices.cpp
++++ b/editor/map/mapservices.cpp
+@@ -545,12 +545,15 @@
+ }
+ 
+ void MapMinimapService::rebuild(int floor, const MapFloorTileIndex &tiles,
+-                                const OtbReader *otb, const DatReader *dat)
++                                const OtbReader *otb, const DatReader *dat,
++                                int focusX, int focusY)
+ {
+     LoadProfile::Scope timing(QStringLiteral("minimap"));
+     m_image = QImage();
+     m_floor = floor;
+     m_originX = m_originY = 0;
++    m_fullMinX = m_fullMinY = 0;
++    m_fullMaxX = m_fullMaxY = -1;
+     ++m_version;
+ 
+     const auto floorIt = tiles.constFind(floor);
+@@ -566,11 +569,21 @@
+         }
+     }
+     if (minX > maxX) return;
++    m_fullMinX = minX; m_fullMinY = minY;
++    m_fullMaxX = maxX; m_fullMaxY = maxY;
+ 
+-    const int width = std::min(maxX - minX + 1, 8192);
+-    const int height = std::min(maxY - minY + 1, 8192);
+-    m_originX = minX;
+-    m_originY = minY;
++    const int width = std::min(maxX - minX + 1, kMaxSide);
++    const int height = std::min(maxY - minY + 1, kMaxSide);
++    // A floor wider than the bitmap (our map: the base world near x 32000 and
++    // hunt areas near x 14400 on the same floor) is cut as a window around the
++    // focus tile. Without a focus the window starts at the first tile.
++    int originX = minX, originY = minY;
++    if (focusX != kNoFocus && maxX - minX + 1 > width)
++        originX = std::clamp(focusX - width / 2, minX, maxX - width + 1);
++    if (focusY != kNoFocus && maxY - minY + 1 > height)
++        originY = std::clamp(focusY - height / 2, minY, maxY - height + 1);
++    m_originX = originX;
++    m_originY = originY;
+     m_image = QImage(width, height, QImage::Format_Indexed8);
+     if (m_image.isNull()) return;
+     m_image.setColorTable(runtimeMinimapColorTable());
+@@ -578,8 +591,8 @@
+ 
+     for (auto chunkIt = floorIt->cbegin(); chunkIt != floorIt->cend(); ++chunkIt) {
+         for (const OtbmTile *tile : chunkIt.value()) {
+-            const int px = tile->x - minX;
+-            const int py = tile->y - minY;
++            const int px = tile->x - originX;
++            const int py = tile->y - originY;
+             if (px < 0 || px >= width || py < 0 || py >= height) continue;
+             const int colorIndex = colorIndexForTile(tile, otb, dat);
+             if (colorIndex > 0 && colorIndex < 256)
+@@ -588,10 +601,28 @@
+     }
+ }
+ 
++bool MapMinimapService::windowMissesFocus(int focusX, int focusY) const
++{
++    if (m_image.isNull()) return false;
++    // True when the bitmap is a cut of the floor on that axis and the focus is
++    // outside it or within the edge margin of a side that has more map behind it.
++    const auto misses = [](int focus, int origin, int size, int lo, int hi) {
++        const int margin = std::min(kEdgeMargin, size / 4);
++        if (focus < origin + margin && origin > lo) return true;
++        if (focus >= origin + size - margin && origin + size <= hi) return true;
++        return false;
++    };
++    return misses(focusX, m_originX, m_image.width(), m_fullMinX, m_fullMaxX)
++        || misses(focusY, m_originY, m_image.height(), m_fullMinY, m_fullMaxY);
++}
++
+ const QImage &MapMinimapService::image(int floor, const MapFloorTileIndex &tiles,
+-                                       const OtbReader *otb, const DatReader *dat)
++                                       const OtbReader *otb, const DatReader *dat,
++                                       int focusX, int focusY)
+ {
+-    if (m_floor != floor) rebuild(floor, tiles, otb, dat);
++    if (m_floor != floor
++        || (focusX != kNoFocus && focusY != kNoFocus && windowMissesFocus(focusX, focusY)))
++        rebuild(floor, tiles, otb, dat, focusX, focusY);
+     return m_image;
+ }
+ 
+@@ -602,6 +633,8 @@
+     const int px = x - m_originX;
+     const int py = y - m_originY;
+     if (px < 0 || px >= m_image.width() || py < 0 || py >= m_image.height()) {
++        // Inside the bounds of the floor: only outside the bitmap window, nothing to draw.
++        if (x >= m_fullMinX && x <= m_fullMaxX && y >= m_fullMinY && y <= m_fullMaxY) return;
+         invalidate();
+         return;
+     }
+diff --git a/editor/map/mapview.cpp b/editor/map/mapview.cpp
+--- a/editor/map/mapview.cpp
++++ b/editor/map/mapview.cpp
+@@ -106,9 +106,10 @@
+     return true;
+ }
+ 
+-const QImage &MapView::minimapImage()
++const QImage &MapView::minimapImage(int focusX, int focusY)
+ {
+-    return m_minimapService.image(m_navigationController.floor(), m_chunkStore.tiles(), m_otb, m_dat);
++    return m_minimapService.image(m_navigationController.floor(), m_chunkStore.tiles(), m_otb, m_dat,
++                                  focusX, focusY);
+ }
+ 
+ void MapView::minimapUpdateTile(int x, int y, int z)
+diff --git a/editor/map/mapview.h b/editor/map/mapview.h
+--- a/editor/map/mapview.h
++++ b/editor/map/mapview.h
+@@ -481,8 +481,10 @@
+         return m_brushController.covers(dx, dy);
+     }
+ 
+-    const QImage &minimapImage();
+-    const QImage &minimapImageForFloor(int z, MapMinimapService &cache) { return cache.image(z,m_chunkStore.tiles(),m_otb,m_dat); }
++    // The focus tile is the one the minimap is centred on: a floor wider than the
++    // minimap bitmap is cut as a window around it (MapMinimapService::image).
++    const QImage &minimapImage(int focusX = MapMinimapService::kNoFocus, int focusY = MapMinimapService::kNoFocus);
++    const QImage &minimapImageForFloor(int z, MapMinimapService &cache, int focusX = MapMinimapService::kNoFocus, int focusY = MapMinimapService::kNoFocus) { return cache.image(z,m_chunkStore.tiles(),m_otb,m_dat,focusX,focusY); }
+     int minimapOriginX() const { return m_minimapService.originX(); }
+     int minimapOriginY() const { return m_minimapService.originY(); }
+     quint32 minimapVersion() const { return m_minimapService.version(); }
+diff --git a/editor/map/minimapview.cpp b/editor/map/minimapview.cpp
+--- a/editor/map/minimapview.cpp
++++ b/editor/map/minimapview.cpp
+@@ -66,13 +66,16 @@
+     if(m_focusFloor>=0 && m_previewSourceVersion!=m_source->minimapVersion()) {
+         m_previewMinimap.invalidate(); m_previewSourceVersion=m_source->minimapVersion();
+     }
+-    const QImage &img = m_focusFloor>=0 ? m_source->minimapImageForFloor(m_focusFloor,m_previewMinimap) : m_source->minimapImage();
+-    m_paintedVer = m_source->minimapVersion();
+-    if (img.isNull()) return;
+-
+     const double ts = std::max(1, m_source->tileSize());
+     const double cx = m_centerTile.x()>=0 ? m_centerTile.x() : m_source->renderOriginX() + m_source->width() / (2.0 * ts);
+     const double cy = m_centerTile.y()>=0 ? m_centerTile.y() : m_source->renderOriginY() + m_source->height() / (2.0 * ts);
++    // The bitmap is a window of the floor around this tile when the floor is wider than 8192 tiles.
++    const int focusX = static_cast<int>(std::floor(cx));
++    const int focusY = static_cast<int>(std::floor(cy));
++
++    const QImage &img = m_focusFloor>=0 ? m_source->minimapImageForFloor(m_focusFloor,m_previewMinimap,focusX,focusY) : m_source->minimapImage(focusX,focusY);
++    m_paintedVer = m_source->minimapVersion();
++    if (img.isNull()) return;
+ 
+     const double tilesW = width() / double(m_pxPerTile);
+     const double tilesH = height() / double(m_pxPerTile);

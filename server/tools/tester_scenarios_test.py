@@ -35,7 +35,7 @@ def ok(cond, what):
 table = G.build()
 eq(G.render(table), G.read(G.OUT), 'tester_scenarios.json is up to date (run gen_tester_scenarios.py)')
 kinds = {s['kind'] for s in table['systems'].values()}
-ok(kinds <= {'opcode', 'out', 'passive', 'place', 'staff'}, 'known kinds: %s' % sorted(kinds))
+ok(kinds <= {'closed', 'opcode', 'out', 'passive', 'place', 'staff'}, 'known kinds: %s' % sorted(kinds))
 for name, s in table['systems'].items():
     if s['kind'] in ('out', 'staff', 'passive'):
         ok(s.get('why'), name + ': a reason why the bots do not send it')
@@ -47,16 +47,57 @@ sendable = TS.Scenarios(table)
 for num, (name, e) in sendable.opcodes.items():
     ok(not e['out'], name + ': no out-of-scope opcode is sent')
     for act in e['actions']:
-        ok(act not in G.ADMIN and not G.DENY_RE.search(act), '%s: %s is never sent' % (name, act))
+        ok(not G.DENY_RE.search(act), '%s: %s is never sent' % (name, act))
+        ok(act not in G.ADMIN or act in G.ADMIN_ALLOW.get(name, {}), '%s: %s is a staff word, never sent (O584)' % (name, act))
     ok(not set(e['actions']) & set(e.get('skip', [])), name + ': skipped actions are not offered')
 shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
 for o in ('market', 'guild', 'antibot'):
     ok(table['opcodes'].get(o, {}).get('out'), o + ': an out-of-scope opcode')
+for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar'):
+    ok(table['systems'][n]['kind'] == 'closed', n + ': reached only in closed test mode (O582)')
+for n in ('groupqueue', 'party_finder', 'raid'):
+    ok(table['systems'][n]['kind'] == 'out', n + ': a queue that matches players, testers refused (O582)')
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})
 ok(inv and 'start' not in inv['actions'], 'a bot never starts an invasion')
+# O584 item 1: the player's own start of a run, the reset of the filters and meters; conquest is a solo vendor
+for o, acts in (('descent', ['start']), ('raid', ['start']), ('combatLog', ['reset']), ('hunt', ['reset']),
+                ('lootfilter', ['reset']), ('trainerMeter', ['reset'])):
+    for a in acts:
+        if not table['opcodes'][o]['out']:  # the raid is out of scope since O582 (the server refuses testers): allowed by name only
+            ok(a in table['opcodes'][o]['actions'] and a not in table['opcodes'][o]['skip'], '%s: %s is sent (ADMIN_ALLOW)' % (o, a))
+        ok(a in G.ADMIN and a in G.ADMIN_ALLOW[o], '%s: %s is allowed by name, not by dropping it from ADMIN' % (o, a))
+for o in ('invasion', 'riftAtlas', 'waystoneAtlas', 'daily'):  # the same word on another opcode stays a staff word
+    ok(not set(table['opcodes'][o]['actions']) & {'start', 'reset', 'shift', 'grant'}, o + ': no staff word is sent')
+ok('conquest' not in G.OUT_OF_SCOPE and table['systems']['conquest']['kind'] == 'opcode', 'conquest is a solo token vendor, not out of scope')
+eq(sorted(table['opcodes']['conquest']['actions']), ['buy', 'close', 'open'], 'conquest: the vendor window actions are sent')
+# every skipped action with its reason: nothing is skipped without one, and the reason names the rule that skipped it
+rows = G.skipped(table)
+ok(rows, 'there are skipped actions')
+for o, a, why in rows:
+    ok(why, '%s %s: a reason why the bots never send it' % (o, a))
+    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope')),
+       '%s %s: a known reason: %s' % (o, a, why))
+    if a in G.ADMIN and not why.startswith('out of scope'):
+        ok(a not in G.ADMIN_ALLOW.get(o, {}), '%s %s: an allowed word is not skipped' % (o, a))
+eq(sum(len(t['skip']) for t in table['opcodes'].values()), len(rows), 'the list holds every skipped action')
+eq(sorted(len(t['skip']) for t in table['opcodes'].values()), sorted(len(t['skipWhy']) for t in table['opcodes'].values()),
+   'a reason for each skipped action of each opcode')
+ok(any(why.startswith('money, report') for _, _, why in rows) or any(why.startswith('staff') for _, _, why in rows),
+   'staff and money words are in the list')
+# a run the bot starts is left again
+rs = TS.Scenarios(table, {}, random.Random(5))
+for o in ('descent',):  # the raid would do the same, but O582 keeps it out of scope
+    num = table['opcodes'][o]['opcode']
+    seen_start = 0
+    for _ in range(300):
+        st = [a for _, _, a in rs.opcode_steps(num)]
+        if 'start' in st:
+            seen_start += 1
+            ok(st[-1] == 'leave' and st.index('start') < st.index('leave') and st.count('leave') == 1, o + ': a start is followed by a leave: %s' % st)
+    ok(seen_start > 0, o + ': a start comes up')
 # only what the client really sends: the item tooltip asks with "get" (its `kind == "slot"` is no action)
 eq(table['opcodes']['itemTooltip']['actions'], ['get'], 'the item tooltip: the action the client sends')
 eq(table['opcodes']['nemesis']['actions'], ['get'], 'nemesis: its guard `action ~= "get"` is read')
@@ -275,6 +316,138 @@ cap.run_step(b2, ('op', ops_['veiled']['opcode'], 'choose'), {}, snd, None, None
 cap.on_answer(b2, ops_['veiled']['opcode'], {'action': 'result', 'data': {'ok': False, 'text': 'The item moved'}})
 eq(b2.results.d['coverage']['veiled']['refused'], 0, 'veiled: the expected refusal is not counted refused')
 eq(b2.results.d['coverage']['veiled']['ok'], 1, 'veiled: it counts ok')
+
+# ---------------------------------------------------------------- effects (O584 item 4): an answer without its effect is a FAIL
+EF = TS.Scenarios(table, {}, random.Random(9))
+eq(sorted(EF.effects), sorted(e['name'] for e in table['effects']), 'every effect of the table runs')
+for e in table['effects']:
+    ok(e['system'] in table['systems'], e['name'] + ': a system of the table')
+    ok(any(st.get('expect') for st in e['steps']), e['name'] + ': at least one step states an effect')
+
+
+class FxRes(Res):
+    def log(self, bot, kind, text):
+        self.d.setdefault('log', []).append((kind, text))
+
+
+class FxBot(Bot):
+    def __init__(self, name, cid):
+        Bot.__init__(self, name, cid)
+        self.results = FxRes()
+
+
+def play(effect, answers, bot=None):
+    """runs the steps of an effect; answers[i] is the answer message(s) to step i (None: no answer). -> (bot, sent)"""
+    bot = bot or FxBot('Tester Fxa', 0x10000009)
+    sent_ = []
+    op = table['opcodes'][next(e for e in table['effects'] if e['name'] == effect)['opcode']]['opcode']
+    snd = (lambda o, p: sent_.append(json.loads(p)))
+    n = len(next(e for e in table['effects'] if e['name'] == effect)['steps'])
+    for i in range(n):
+        EF.run_step(bot, ('fx', effect, i), {}, snd, None, None)
+        for m in (answers[i] if i < len(answers) and answers[i] else []):
+            EF.on_answer(bot, op, m)
+    return bot, sent_
+
+
+def bank_msg(money, bank):
+    return {'action': 'open', 'data': [money, bank, 0, 0]}
+
+
+b, s_ = play('bank_gold_moves', [[bank_msg(100, 20000)], [bank_msg(600, 19500)], [bank_msg(100, 20000)]])
+eq([x['action'] for x in s_], ['openBank', 'withdraw', 'deposit'], 'the bank effect sends its three steps')
+eq(s_[1]['data'], ['gold', 500], 'the withdraw amount')
+c = b.results.d['coverage']['bank']
+eq((c['real'], c.get('failed', 0), c['tried']), (2, 0, 3), 'bank: two effects seen, none failed')
+eq(c['ans'], 1, 'the opening answer is an answer only')
+# the bank answers but the gold did not move: FAIL, not ok
+b, s_ = play('bank_gold_moves', [[bank_msg(100, 20000)], [bank_msg(100, 20000)], None])
+c = b.results.d['coverage']['bank']
+eq((c.get('real', 0), c['failed']), (0, 1), 'bank: an answer with no effect is a failure')
+ok(b.results.d['effects'][0]['effect'] == 'bank_gold_moves' and 'moved by 0' in b.results.d['effects'][0]['why'], 'with its reason')
+ok(any(k == 'EFFECT' for k, _ in b.results.d['log']), 'and a log line')
+eq(len(s_), 2, 'a failed effect ends the chain')
+# a balance under 500: nothing to show, skipped
+b, s_ = play('bank_gold_moves', [[bank_msg(0, 100)]])
+c = b.results.d['coverage']['bank']
+eq((c.get('skipped'), c.get('failed', 0), len(s_)), (1, 0, 1), 'bank: too little gold is a skip')
+# a refusal ends it as refused
+b, _ = play('bank_gold_moves', [[bank_msg(10, 900)], [{'action': 'error', 'data': {'error': 'no'}}]])
+eq(b.results.d['coverage']['bank']['refused'], 1, 'a refusal is counted refused')
+
+# the daily claim: the value of the client's map comes from the day of the window
+day = {'action': 'OpenDailyWindow', 'data': {'Day': 1, 'TakenReward': 0}}
+done = {'action': 'OpenDailyWindow', 'data': {'Day': 1, 'TakenReward': 1}}
+b, s_ = play('daily_claim_sets_day', [[day], [done]])
+eq(s_[1], {'action': 'calim', 'data': 1}, 'Day 1 is slot 3, the client sends map[3] = 1')
+eq(b.results.d['coverage']['daily']['real'], 1, 'daily: the day is taken')
+b, s_ = play('daily_claim_sets_day', [[day], [day]])
+eq(b.results.d['coverage']['daily']['failed'], 1, 'daily: a claim that leaves the day open fails')
+b, s_ = play('daily_claim_sets_day', [[done]])
+eq(b.results.d['coverage']['daily'].get('skipped'), 1, 'daily: already taken is a skip')
+
+# the hunt meter: a push of the watcher may come first; the second answer decides
+hz = {'action': 'state', 'data': {'xp': 0, 'kc': 0, 'dmg': 0, 'heal': 0, 'lv': 0, 'sv': 0}}
+hs = {'action': 'state', 'data': {'xp': 5, 'kc': 1, 'dmg': 40, 'heal': 0, 'lv': 3, 'sv': 0}}
+b, _ = play('hunt_session_reset', [[hs], [hs, hz]])
+eq((b.results.d['coverage']['hunt'].get('real'), b.results.d['coverage']['hunt'].get('failed', 0)), (1, 0), 'hunt: the second state shows the reset')
+b, _ = play('hunt_session_reset', [[hs], [hs, hs]])
+eq(b.results.d['coverage']['hunt']['failed'], 1, 'hunt: a meter that keeps its numbers fails')
+b, _ = play('hunt_session_reset', [[hz]])
+eq(b.results.d['coverage']['hunt'].get('skipped'), 1, 'hunt: nothing to reset is a skip')
+
+# the filter counters, the loadout slot, the tooltip
+lf = {'action': 'counts', 'data': {'session': {'a': 0}, 'total': {'a': 0, 'b': 0}}}
+b, _ = play('lootfilter_counts_reset', [[lf]])
+eq(b.results.d['coverage']['lootfilter']['real'], 1, 'lootfilter: counters at 0')
+b, _ = play('lootfilter_counts_reset', [[{'action': 'counts', 'data': {'session': {'a': 2}, 'total': {}}}]])
+eq(b.results.d['coverage']['lootfilter']['failed'], 1, 'lootfilter: a counter left')
+
+
+def slots(**kw):
+    return {'action': 'state', 'data': {'slots': [dict({'slot': 1, 'locked': False}, **kw)]}}
+
+
+b, s_ = play('loadout_save_delete', [[slots(empty=True)], [slots(name='Bot build')], [slots(empty=True)]])
+eq(b.results.d['coverage']['loadouts']['real'], 2, 'loadouts: saved, then deleted')
+b, s_ = play('loadout_save_delete', [[slots(empty=True)], [slots(empty=True)]])
+eq(b.results.d['coverage']['loadouts']['failed'], 1, 'loadouts: a save that left the slot empty fails')
+b, s_ = play('loadout_save_delete', [[slots(name='Mine')]])
+eq((b.results.d['coverage']['loadouts'].get('skipped'), len(s_)), (1, 1), 'loadouts: a used slot 1 is never touched')
+b, _ = play('tooltip_of_backpack', [[{'action': 'tips', 'data': {'items': [{'tip': {'name': 'backpack'}}]}}]])
+eq(b.results.d['coverage']['item_tooltip']['real'], 1, 'tooltip: names the item')
+b, _ = play('tooltip_of_backpack', [[{'action': 'tips', 'data': {'items': [{'gone': True}]}}]])
+eq(b.results.d['coverage']['item_tooltip']['failed'], 1, 'tooltip: gone is a failure')
+# no answer: the next chain finds the old one waiting and counts it silent, judges nothing
+b = FxBot('Tester Fxb', 0x1000000a)
+EF.run_step(b, ('fx', 'bank_gold_moves', 0), {}, lambda o, p: None, None, None)
+EF.run_step(b, ('fx', 'bank_gold_moves', 1), {}, lambda o, p: None, None, None)
+eq((b.results.d['coverage']['bank'].get('silent'), b.results.d['coverage']['bank'].get('failed', 0)), (1, 0), 'no answer: silent, not failed')
+
+# the condition language
+M = TS.MISSING
+eq(TS.path_get({'data': [1, {'a': 2}]}, ['data', 1, 'a']), 2, 'path: list index and key')
+ok(TS.path_get({'data': []}, ['data', 0]) is M, 'path: missing')
+ok(TS.cond_holds(['zero', ['d']], {'d': {'x': 0, 'y': [0, 0]}})[0], 'zero walks tables')
+ok(not TS.cond_holds(['zero', ['d']], {'d': {'x': 0, 'y': [0, 1]}})[0], 'zero finds a number')
+ok(not TS.cond_holds(['delta', ['d'], 1], {'d': 5})[0], 'delta needs a before')
+ok(TS.cond_holds(['delta', ['d'], 1], {'d': 5}, {'d': 4})[0], 'delta 1')
+eq(TS.resolve_data({'$answer': ['d'], 'plus': 2, 'table': [6, 7, 1]}, {'x': {'d': 0}}), (7, True), 'a value from a table, 1-based')
+eq(TS.resolve_data({'$answer': ['d']}, {}), (None, False), 'no answer, no value')
+
+# the report merge: REAL / ANS / HELP per system, and the system checks
+syn_cov = {'bank': {'tried': 5, 'ok': 4, 'refused': 0, 'real': 2, 'ans': 2, 'failed': 1, 'actions': {}},
+           'place:rift': {'tried': 2, 'ok': 2, 'refused': 0, 'actions': {}, 'help': 2}}
+real_table = {'systems': {'bank': {'kind': 'opcode', 'files': ['bank.lua']}, 'rift': {'kind': 'place', 'files': ['rift.lua']},
+                          'pets': {'kind': 'opcode', 'files': []}}}
+mm = TS.merge(real_table, syn_cov, {'errors': {}}, [{'check': 'pets', 'status': 'pass'}, {'check': 'dual_fists', 'status': 'fail'},
+                                                    {'check': 'rift', 'status': 'skip'}])
+eq((mm['bank']['real'], mm['bank']['ans'], mm['bank']['failed']), (2, 2, 1), 'merge: real, ans, failed')
+eq((mm['rift']['help'], mm['rift']['real']), (2, 0), 'merge: a helper teleport is HELP')
+eq((mm['pets']['real'], mm['pets']['help'], mm['pets']['ok']), (1, 1, 1), 'merge: a passed check is REAL and HELP')
+eq((mm['check:dual_fists']['failed'], mm['check:dual_fists']['real']), (1, 0), 'merge: a failed check is failed')
+for k in TS.CHECK_SYSTEMS.values():
+    ok(k.startswith('check:') or k in table['systems'], 'CHECK_SYSTEMS names a system of the table: ' + k)
 
 for f in FAILS:
     print('FAIL ' + f)

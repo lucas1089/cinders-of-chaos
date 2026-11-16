@@ -1,0 +1,467 @@
+# Chaos: wings fit any body, measured by the engine (O583; client/BASE.md "0204"; src/client/chaoswinganchor.h (new, pure),
+# outfit.cpp, thingtype.h/.cpp, luafunctions_client.cpp; after 0001-0203).
+# Owner 2026-11-16: "podemos fazer um patch na engine também para fazer as asas encaixarem em qualquer outfit que o player
+# utilizar, assim a gente não precisa ficar ajustando pixel por pixel para cada outfit". 0193 moved the wings by a table made
+# offline from the pair, one row a look, x only. Now, for a wings look that has an anchor (setOutfitWingsAnchor, from
+# client_chaos_wingfit/wing_anchors.lua: the point of its picture that belongs on the torso), Outfit::draw measures the torso of the
+# body it is about to draw from the alpha of its standing picture (layer 0, y pattern 0, phase 0, the column and z pattern drawn),
+# once a look, column and z pattern, and puts the anchor on it, x and y: wingDest = dest + torso - displacement - anchor. `dest` is
+# the body's own place there (lift, bounce, the mount's moves, an unseated rider's shift), so the wings follow the body as drawn;
+# walking frames use the standing torso. The rule is the torso rule of gen_wing_centres.py with a y (chaoswinganchor.h). A body it
+# gets wrong can be given by hand (setOutfitBodyAnchor). Only a layered wings look (two y patterns, 0203) is
+# anchored, so a pair that still has the old art under a listed id draws as before. A wings look without an anchor, a picture with nothing to measure or a
+# move over 160 px: the draw as before (the table of 0193). clearOutfitWingAnchors empties the tables and the measures.
+diff -ruN a/src/client/chaoswinganchor.h b/src/client/chaoswinganchor.h
+--- /dev/null
++++ b/src/client/chaoswinganchor.h
+@@ -0,0 +1,299 @@
++// Cinders of Chaos (base patch 0204): wings that fit any body. Pure and header-only so
++// client/tools/chaoswinganchor_test.cpp can run it without the engine.
++// Base patch 0193 moved the wings by a table made offline from the pair, one row a look. A new or changed look had no
++// row until the table was made again. Here the engine measures the body itself, from the alpha of the picture it is
++// about to draw, the first time it draws that look in that direction, and keeps the result:
++//   the visible pixels (alpha from kAlpha; all pixels above 0 when none reaches it),
++//   without their thin parts (an opening by kOpen: a staff, a torch or a spear up to four wide goes),
++//   only the biggest 8-connected part of what is left (a weapon held apart, a ground shadow blob go),
++//   of that part the rows from kLoPct to kHiPct of its own height (no head or hat above, no legs below):
++//   x = the median column of those pixels, y = the middle of those rows.
++// It is the torso rule of client/tools/sprites/gen_wing_centres.py with a y added; the Python twin is
++// gen_drawn_wings_families.torso_anchor and the two are held equal on shared masks.
++// A wings look that has an anchor (client_chaos_wingfit/wing_anchors.lua: the point of its picture that belongs on the
++// torso) is then drawn with that point on the measured torso, x and y, whatever the look, its displacement or its
++// mount. A wings look without an anchor is drawn as before (the table of 0193). A body the rule gets wrong can be
++// given by hand (setOutfitBodyAnchor), which wins over the measure.
++// All points are sprite pixels at 1x from the creature's place (the top left of its tile): a canvas pixel (cx, cy) of
++// a picture of w x h pixels is (cx - (w - 32), cy - (h - 32)); the caller takes the look's displacement out.
++#ifndef CHAOSWINGANCHOR_H
++#define CHAOSWINGANCHOR_H
++
++#include <cstdint>
++#include <unordered_map>
++#include <vector>
++
++namespace chaos {
++namespace winganchor {
++
++constexpr int kAlpha = 64;       // a pixel counts as visible from this alpha on
++constexpr int kOpen = 2;         // the opening that drops thin parts
++constexpr int kLoPct = 30;       // the torso band, percent of the core's height
++constexpr int kHiPct = 70;
++constexpr int kTile = 32;
++constexpr int kMaxSide = 512;    // a larger picture is not measured
++constexpr int kMaxShiftPx = 160; // a larger move of the wings is a bad anchor: ignored
++constexpr int kMaxPointPx = 512;
++
++struct Point2 {
++    int x;
++    int y;
++};
++
++// 3 x 3 erosion, pixels outside the picture count as unset
++inline void erode(const std::vector<uint8_t>& src, std::vector<uint8_t>& dst, int w, int h)
++{
++    dst.assign(src.size(), 0);
++    for (int y = 1; y < h - 1; ++y) {
++        for (int x = 1; x < w - 1; ++x) {
++            bool all = true;
++            for (int dy = -1; dy <= 1 && all; ++dy)
++                for (int dx = -1; dx <= 1; ++dx)
++                    if (!src[(y + dy) * w + x + dx]) {
++                        all = false;
++                        break;
++                    }
++            dst[y * w + x] = all ? 1 : 0;
++        }
++    }
++}
++
++// twice the torso point of a body picture in canvas pixels (twice, so a median between two columns stays whole);
++// false when the picture is empty or its size is out of range. alpha: w * h bytes, row by row.
++inline bool torso2(const uint8_t* alpha, int w, int h, int& x2, int& y2)
++{
++    if (!alpha || w <= 0 || h <= 0 || w > kMaxSide || h > kMaxSide)
++        return false;
++    const size_t n = static_cast<size_t>(w) * h;
++    std::vector<uint8_t> mask(n, 0);
++    bool any = false;
++    for (size_t i = 0; i < n; ++i)
++        if (alpha[i] >= kAlpha) {
++            mask[i] = 1;
++            any = true;
++        }
++    if (!any) {
++        for (size_t i = 0; i < n; ++i)
++            if (alpha[i] > 0) {
++                mask[i] = 1;
++                any = true;
++            }
++    }
++    if (!any)
++        return false;
++
++    // the opening: erode kOpen times, then dilate kOpen times (a dilation is the erosion of the inverse), kept
++    // inside the mask; the mask itself when nothing is left
++    std::vector<uint8_t> core(mask), tmp;
++    for (int i = 0; i < kOpen; ++i) {
++        erode(core, tmp, w, h);
++        core.swap(tmp);
++    }
++    for (int i = 0; i < kOpen; ++i) {
++        for (size_t j = 0; j < n; ++j)
++            core[j] = core[j] ? 0 : 1;
++        erode(core, tmp, w, h);
++        for (size_t j = 0; j < n; ++j)
++            core[j] = tmp[j] ? 0 : 1;
++    }
++    bool left = false;
++    for (size_t j = 0; j < n; ++j) {
++        core[j] = (core[j] && mask[j]) ? 1 : 0;
++        left = left || core[j];
++    }
++    if (!left)
++        core = mask;
++
++    // the biggest 8-connected part; of equal parts the one met first, row by row
++    std::vector<int> label(n, 0);
++    std::vector<int> stack;
++    int best = 0, bestCount = 0, parts = 0;
++    for (int y0 = 0; y0 < h; ++y0) {
++        for (int x0 = 0; x0 < w; ++x0) {
++            const int start = y0 * w + x0;
++            if (!core[start] || label[start])
++                continue;
++            ++parts;
++            label[start] = parts;
++            stack.clear();
++            stack.push_back(start);
++            int count = 0;
++            while (!stack.empty()) {
++                const int at = stack.back();
++                stack.pop_back();
++                ++count;
++                const int y = at / w, x = at % w;
++                for (int yy = (y > 0 ? y - 1 : 0); yy <= y + 1 && yy < h; ++yy)
++                    for (int xx = (x > 0 ? x - 1 : 0); xx <= x + 1 && xx < w; ++xx) {
++                        const int to = yy * w + xx;
++                        if (core[to] && !label[to]) {
++                            label[to] = parts;
++                            stack.push_back(to);
++                        }
++                    }
++            }
++            if (count > bestCount) {
++                best = parts;
++                bestCount = count;
++            }
++        }
++    }
++
++    int top = h, bot = 0;
++    for (int y = 0; y < h; ++y)
++        for (int x = 0; x < w; ++x)
++            if (label[y * w + x] == best) {
++                if (y < top)
++                    top = y;
++                if (y + 1 > bot)
++                    bot = y + 1;
++            }
++    const int r0 = top * 100 + kLoPct * (bot - top);  // hundredths of a row
++    const int r1 = top * 100 + kHiPct * (bot - top);
++
++    for (int pass = 0; pass < 2; ++pass) {
++        std::vector<int> columns(w, 0);
++        int count = 0, ymin = h, ymax = -1;
++        for (int y = 0; y < h; ++y) {
++            if (pass == 0 && (y * 100 < r0 || y * 100 >= r1))
++                continue;
++            for (int x = 0; x < w; ++x)
++                if (label[y * w + x] == best) {
++                    ++columns[x];
++                    ++count;
++                    if (y < ymin)
++                        ymin = y;
++                    ymax = y;
++                }
++        }
++        if (count == 0)
++            continue;  // no row in the band: the whole part
++        const int lo = (count - 1) / 2, hi = count / 2;
++        int seen = 0, xlo = -1, xhi = -1;
++        for (int x = 0; x < w; ++x) {
++            seen += columns[x];
++            if (xlo < 0 && seen > lo)
++                xlo = x;
++            if (xhi < 0 && seen > hi) {
++                xhi = x;
++                break;
++            }
++        }
++        x2 = xlo + xhi;
++        y2 = ymin + ymax;
++        return true;
++    }
++    return false;
++}
++
++// the torso from the creature's place (halves round up), the displacement not yet taken out
++inline bool torso(const uint8_t* alpha, int w, int h, Point2& out)
++{
++    int x2 = 0, y2 = 0;
++    if (!torso2(alpha, w, h, x2, y2))
++        return false;
++    out.x = (x2 + 1) / 2 - (w - kTile);
++    out.y = (y2 + 1) / 2 - (h - kTile);
++    return true;
++}
++
++struct Tables {
++    std::unordered_map<int, Point2> wings;       // wings look -> its anchor
++    std::unordered_map<int, Point2> bodies;      // look * 4 + direction -> a torso given by hand
++    std::unordered_map<uint64_t, Point2> cache;  // key() -> the measured torso
++    std::unordered_map<uint64_t, bool> empty;    // key() -> the picture had nothing to measure
++};
++
++inline Tables& tables()
++{
++    static Tables t;
++    return t;
++}
++
++inline bool validPoint(int x, int y) { return x >= -kMaxPointPx && x <= kMaxPointPx && y >= -kMaxPointPx && y <= kMaxPointPx; }
++
++inline bool setWingsAnchor(int wings, int x, int y)
++{
++    if (wings <= 0 || !validPoint(x, y))
++        return false;
++    tables().wings[wings] = Point2{ x, y };
++    return true;
++}
++
++inline bool setBodyAnchor(int look, int direction, int x, int y)
++{
++    if (look <= 0 || direction < 0 || direction > 3 || !validPoint(x, y))
++        return false;
++    tables().bodies[look * 4 + direction] = Point2{ x, y };
++    return true;
++}
++
++inline void clearAnchors()
++{
++    tables().wings.clear();
++    tables().bodies.clear();
++    tables().cache.clear();
++    tables().empty.clear();
++}
++
++inline bool wingsAnchor(int wings, Point2& out)
++{
++    auto it = tables().wings.find(wings);
++    if (it == tables().wings.end())
++        return false;
++    out = it->second;
++    return true;
++}
++
++inline bool bodyOverride(int look, int direction, Point2& out)
++{
++    if (direction < 0 || direction > 3)
++        return false;
++    auto it = tables().bodies.find(look * 4 + direction);
++    if (it == tables().bodies.end())
++        return false;
++    out = it->second;
++    return true;
++}
++
++// one measure a look, pattern column (the direction drawn) and z pattern (1 = the riding picture)
++inline uint64_t key(int look, int column, int zPattern)
++{
++    return (static_cast<uint64_t>(static_cast<uint32_t>(look)) << 16) | (static_cast<uint64_t>(column & 0xff) << 8) |
++           static_cast<uint64_t>(zPattern & 0xff);
++}
++
++// 1: found (out set), 0: known to be empty, -1: not measured yet
++inline int cached(uint64_t k, Point2& out)
++{
++    auto it = tables().cache.find(k);
++    if (it != tables().cache.end()) {
++        out = it->second;
++        return 1;
++    }
++    return tables().empty.count(k) ? 0 : -1;
++}
++
++inline bool remember(uint64_t k, const uint8_t* alpha, int w, int h, Point2& out)
++{
++    if (torso(alpha, w, h, out)) {
++        tables().cache[k] = out;
++        return true;
++    }
++    tables().empty[k] = true;
++    return false;
++}
++
++// where the wings go, from the place the body is drawn at: body (torso, its displacement taken out) - anchor.
++// false when the move is out of range (the draw as before).
++inline bool place(const Point2& body, const Point2& anchor, Point2& out)
++{
++    out.x = body.x - anchor.x;
++    out.y = body.y - anchor.y;
++    return out.x >= -kMaxShiftPx && out.x <= kMaxShiftPx && out.y >= -kMaxShiftPx && out.y <= kMaxShiftPx;
++}
++
++}  // namespace winganchor
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -53,6 +53,7 @@
+ #include "uisprite.h"
+ #include "outfit.h"
+ #include "chaoswingfit.h"
++#include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+@@ -508,6 +509,10 @@
+     g_lua.bindGlobalFunction("setOutfitBodyCentre", chaos::wingfit::setBodyCentre);
+     g_lua.bindGlobalFunction("setOutfitWingsCentre", chaos::wingfit::setWingsCentre);
+     g_lua.bindGlobalFunction("clearOutfitWingCentres", chaos::wingfit::clearCentres);
++    // Chaos (base patch 0204): wings on the torso the engine measures (client_chaos_wingfit, wing_anchors.lua)
++    g_lua.bindGlobalFunction("setOutfitWingsAnchor", chaos::winganchor::setWingsAnchor);
++    g_lua.bindGlobalFunction("setOutfitBodyAnchor", chaos::winganchor::setBodyAnchor);
++    g_lua.bindGlobalFunction("clearOutfitWingAnchors", chaos::winganchor::clearAnchors);
+     // Chaos (base patch 0200): the tables of the head accessories' placing (client_chaos_wingfit)
+     g_lua.bindGlobalFunction("setOutfitHeadCentre", chaos::headfit::setBodyHead);
+     g_lua.bindGlobalFunction("setOutfitHeadRef", chaos::headfit::setHeadRef);
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -28,6 +28,7 @@
+ #include "chaosfacing.h"
+ #include "chaoswingfit.h"
+ #include "chaoswinglayers.h"
++#include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
+ 
+ #include <framework/graphics/painter.h>
+@@ -458,8 +459,46 @@
+         return chaos::winglayers::plan(wingsType ? wingsType->getNumPatternY() : 1, direction);
+     }();
+ 
++    // Cinders of Chaos (base patch 0204): a wings look with an anchor goes with that point on the torso of the body
++    // as it is drawn here: the torso is measured once from the body's picture (chaoswinganchor.h), `dest` already
++    // holds the lift, the bounce and the mount's moves, and ThingType::draw takes the look's displacement out. Only a
++    // layered wings look (two y patterns, base patch 0203) is a drawn one: a pair that still has the old art under
++    // that id keeps the table of 0193
++    bool wingsAnchored = false;
++    if (m_wings && m_category == ThingCategoryCreature && wingPlan.after == chaos::winglayers::kFront) {
++        chaos::winganchor::Point2 anchor, body, move;
++        if (chaos::winganchor::wingsAnchor(m_wings, anchor)) {
++            bool found = chaos::winganchor::bodyOverride(m_id, direction, body);
++            if (!found) {
++                const uint64_t key = chaos::winganchor::key(m_id, bodyColumn, zPattern);
++                const int state = chaos::winganchor::cached(key, body);
++                if (state > 0) {
++                    found = true;
++                } else if (state < 0) {
++                    std::vector<uint8_t> alpha;
++                    int width = 0, height = 0;
++                    if (type->chaosBodyAlpha(bodyColumn, zPattern, alpha, width, height))
++                        found = chaos::winganchor::remember(key, alpha.data(), width, height, body);
++                    else
++                        chaos::winganchor::remember(key, nullptr, 0, 0, body);
++                }
++            }
++            if (found) {
++                const Point displacement = type->getDisplacement();
++                body.x -= displacement.x;
++                body.y -= displacement.y;
++                if (chaos::winganchor::place(body, anchor, move)) {
++                    wingDest = dest + Point(move.x, move.y) * g_sprites.getOffsetFactor();
++                    wingsAnchored = true;
++                }
++            }
++        }
++    }
++
+     if (m_wings && wingPlan.before != chaos::winglayers::kNone) {
+-        if (direction == Otc::South || direction == Otc::East) {
++        if (wingsAnchored) {
++            // placed above
++        } else if (direction == Otc::South || direction == Otc::East) {
+             auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+             if (wingsType) {
+                 if (type->hasBones() && wingsType->hasBones()) {
+@@ -549,7 +588,7 @@
+     }
+ 
+     if (m_wings && wingPlan.after != chaos::winglayers::kNone) {
+-        if (wingPlan.before == chaos::winglayers::kNone)
++        if (!wingsAnchored && wingPlan.before == chaos::winglayers::kNone)
+             placeWingsBehindViewer();
+         drawWings(wingPlan.after);
+     }
+diff -ruN a/src/client/thingtype.cpp b/src/client/thingtype.cpp
+--- a/src/client/thingtype.cpp
++++ b/src/client/thingtype.cpp
+@@ -977,6 +977,44 @@
+     return bestDimension;
+ }
+ 
++bool ThingType::chaosBodyAlpha(int xPattern, int zPattern, std::vector<uint8>& alpha, int& width, int& height)
++{
++    const int tile = 32;
++    if (m_null || m_spritesIndex.empty() || m_animationPhases < 1 || m_layers < 1 || m_numPatternY < 1 ||
++        m_size.width() < 1 || m_size.height() < 1 || m_size.width() > 16 || m_size.height() > 16 ||
++        xPattern < 0 || xPattern >= m_numPatternX || zPattern < 0 || zPattern >= m_numPatternZ)
++        return false;
++    width = m_size.width() * tile;
++    height = m_size.height() * tile;
++    alpha.assign(static_cast<size_t>(width) * height, 0);
++    bool any = false;
++    for (int h = 0; h < m_size.height(); ++h) {
++        for (int w = 0; w < m_size.width(); ++w) {
++            const size_t index = ((((((static_cast<size_t>(0) * m_numPatternZ + zPattern) * m_numPatternY) * m_numPatternX + xPattern) *
++                                    m_layers) * m_size.height() + h) * m_size.width()) + w;
++            if (index >= m_spritesIndex.size() || m_spritesIndex[index] <= 0)
++                continue;
++            ImagePtr image = g_sprites.getSpriteImage(m_spritesIndex[index]);
++            if (!image || image->getBpp() != 4 || image->getWidth() < tile || image->getHeight() < tile)
++                continue;
++            // a sprite stored larger than a tile (an upscaled set) is read every `step` pixels
++            const int step = image->getWidth() / tile;
++            const std::vector<uint8>& pixels = image->getPixels();
++            const int ox = (m_size.width() - 1 - w) * tile, oy = (m_size.height() - 1 - h) * tile;
++            for (int y = 0; y < tile; ++y) {
++                for (int x = 0; x < tile; ++x) {
++                    const size_t at = (static_cast<size_t>(y) * step * image->getWidth() + static_cast<size_t>(x) * step) * 4 + 3;
++                    if (at < pixels.size() && pixels[at]) {
++                        alpha[static_cast<size_t>(oy + y) * width + ox + x] = pixels[at];
++                        any = true;
++                    }
++                }
++            }
++        }
++    }
++    return any;
++}
++
+ uint ThingType::getSpriteIndex(int w, int h, int l, int x, int y, int z, int a) {
+     uint index =
+         ((((((a % m_animationPhases)
+diff -ruN a/src/client/thingtype.h b/src/client/thingtype.h
+--- a/src/client/thingtype.h
++++ b/src/client/thingtype.h
+@@ -351,6 +351,9 @@
+     bool hasBones() { return m_attribs.has(ThingAttrBones); }
+ 
+     std::vector<int> getSprites() { return m_spritesIndex; }
++    // Chaos (base patch 0204): the alpha of the standing body picture (layer 0, y pattern 0, phase 0) at 1x, row by
++    // row, for the torso measure of chaoswinganchor.h; false when the thing has no such picture
++    bool chaosBodyAlpha(int xPattern, int zPattern, std::vector<uint8>& alpha, int& width, int& height);
+ 
+     // additional
+     float getOpacity() { return m_opacity; }

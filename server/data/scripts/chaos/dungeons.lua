@@ -1586,6 +1586,10 @@ end
 
 -- The Group Queue (groupqueue.lua, O407) joins and leaves this queue without the window. true, or false + the reason.
 function ChaosDungeons.queueJoin(player, id, difficulty)
+	-- testers never enter a queue that matches players (O582: only arena, battleground and the Marches have a closed mode)
+	if Chaos.isTester(player) then
+		return false, Chaos.t(player, "Testers do not use this queue: it matches players.")
+	end
 	local dg = baseDungeons()[id]
 	if not dg then
 		return false, Chaos.t(player, "That dungeon does not exist.")

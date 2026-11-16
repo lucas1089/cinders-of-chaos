@@ -185,6 +185,11 @@ end
 
 -- ======================================================================== season realm and modes
 local function realmOf(player)
+	-- closed test mode (O582): the testers have a zone instance of their own; two testers meet in it only while the
+	-- mode is on, never a player (the entry below and the target rules compare instance slots)
+	if Chaos.isTester(player) then
+		return ChaosTestersCore and ChaosTestersCore.REALM or 900000001
+	end
 	local S = ChaosSeason
 	if not S or not S.current or not S.realmOf then
 		return 0
@@ -701,7 +706,8 @@ local function entryFacts(player, data)
 		inPz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE),
 		inCombat = player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT),
 		elsewhere = insideOther(player), multiClient = Chaos.isMultiClient and Chaos.isMultiClient(player) or false,
-		cooldown = cooldownLeft(player:getGuid())
+		cooldown = cooldownLeft(player:getGuid()),
+		testerClosedOff = Chaos.isTester(player) and not (ChaosTestersCore and ChaosTestersCore.closedOn()) or nil
 	}
 	if cfg.mode == "map" then
 		facts.realmOk = realm == ((cfg.area and cfg.area.realm) or 0)

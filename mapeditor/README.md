@@ -124,8 +124,10 @@ Gains are judged from the code. "Not yet measured": the CI profile run will tell
 | 0007 english-ui | The Polish texts in English (O388, below). | None (texts) | n/a |
 | 0008 cinders-map-editor-name | The name Cinders Map Editor, the exe names, our settings key, the AGPL notice in About (below). | None (name) | n/a |
 | 0009 updater-our-releases | The self-updater reads our releases; the version counts up; `update-keep.txt` (below). | None (updates) | n/a |
+| 0010 classic-panel-plain-centre | Classic theme panels: flat centre instead of the tiled grain (seams every 99 px, below). | None (looks) | n/a |
+| 0011 minimap-window-around-focus | The minimap bitmap is a window around the view centre on a floor wider than 8192 tiles (below). | None (fix) | n/a |
 
-All nine apply on the pin (`check_patches.sh`). None is compiled yet: the first CI run builds them.
+All eleven apply on the pin (`check_patches.sh`). None is compiled yet: the first CI run builds them.
 
 ## English and the name (O388)
 
@@ -202,6 +204,42 @@ there is no patch: `tools/merge_brushes.py DATA_DIR` merges our entries into tho
   patch on stock grass, then "cinders loam" next to it; the border pieces must appear on the lower tiles.
 - On a move of the pin: re-read `brushstore.cpp` (schema, slot order, `getBrushTo`) and `terrainborderalignment.h`; the test
   holds the rule as `editor_pieces`.
+
+## Panel seams and minimap (O586)
+
+Owner 2026-11-16, two screenshots: vertical seams over the palette and the top bar, and a black Minimap window.
+Found by reading the pinned code; **not run**: there is no Qt and no editor on the dev box. Check on the next build.
+
+**Seams, patch 0010.** The default theme is `classic` (`core/uitheme.cpp`, key `ui/style`). Its panels are
+`qml/themes/classic/controls/ClassicPanel.qml`: a `BorderImage` of `ui/panel_flat.png` (68 x 68: a 1 px bevel,
+dark on the left and top, light on the right and bottom, around a 66 px grain) with border 1 and
+`horizontalTileMode` / `verticalTileMode` Repeat. The screenshots are at 150% scale: 66 px x 1.5 = 99 px, the
+spacing of the seams, and the seam pixels (39, then 60) are the dark bevel column of the image (38 to 43).
+The top bar, the palette and the minimap window all use it through `DmePanel`. Why only the vertical joins show
+is not clear from the code. The fix does not tile: Stretch slices for the 1 px bevel and a flat rectangle for
+the centre (the grain averages 71 of 255; times `Backend.uiTheme.tint` like `UiTheme::texture`; the Windows
+classic style keeps its own flat texture). The grain of the panels is gone. Other tiled frames (dialog
+background `popupwindow.png`, menus, the Tibia-UI theme) were not in the screenshots and are not touched; if
+the same seams show there, the same cure applies.
+
+**Minimap, patch 0011.** `MapMinimapService::rebuild` (`editor/map/mapservices.cpp`) builds one Indexed8 bitmap
+of the floor, from the smallest tile x and y, and cuts it at 8192 x 8192. Floor 7 of our map holds the base
+world (x about 31700 to 34500) and hunt areas on the same floor (`areagen_config.lua` origins from x 14400), a
+span of about 20000 tiles. The bitmap started at the hunt areas and ended near x 22591; the base world was
+outside it. `MinimapView::paint` (`editor/map/minimapview.cpp`) then drew only its dark fill and the white view
+rectangle, which is what the screenshot shows (the rectangle is drawn after the `img.isNull()` return, so the
+bitmap existed). The fix: the bitmap is a window of at most 8192 tiles around the focus tile (the view centre;
+the centre tile of the town and preview minimaps), rebuilt when the focus comes within 512 tiles of a side that
+has more map behind it. A floor of 8192 tiles or less behaves as before. A tile edited outside the window but
+inside the floor is skipped.
+What was read and ruled out: patches 0001-0006 do not touch the minimap (no patch mentions it); the colour
+path is sound for our client files (`datattributes.h`: for client 1010 and up the wire code 29 of our dat is the
+minimap colour, `datreader.cpp` reads its u16; `colorIndexForTile` takes the top item with a colour); the
+bitmap is rebuilt on every `setDat` / `setOtb` / `setOtbm`. If the minimap is still black after the fix, the
+next suspect is a floor-7 tile whose items carry no minimap colour: open the item properties of a grass tile
+("Minimap color" row).
+Test: open the map, press M, the window must show the world around the view; pan 600 tiles east, the window
+follows; go to a hunt area at x 14400, the window rebuilds there (one pause, the "minimap" stage of the load profile).
 
 ## Findings without a patch yet
 

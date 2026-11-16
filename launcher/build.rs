@@ -11,6 +11,10 @@
 //!    The sub key is written shuffled and XOR-masked into `OUT_DIR/ticket_key.rs` (obfuscation, not protection: whoever has
 //!    the exe can recover it). Without the variable the public DEVELOPMENT key of the client's CMake is used, which is what a
 //!    client built without the secret holds too, so a development launcher and a development client still agree.
+//! 3. The icon of the exe (Windows, MSVC): `assets/app.ico` (written by `tools/gen_launcher_art.py`) turned into a
+//!    resource file `OUT_DIR/app.res` (one RT_ICON per frame, one RT_GROUP_ICON with id 1) and handed to link.exe. It is the
+//!    icon of the setup program, the installed launcher and the shortcuts the setup makes (they point at the exe). No
+//!    resource compiler is needed. Other targets (the Linux tests, the GNU type check) skip it.
 use cinders_selfupdate::hash::{hkdf_sha256_32, hmac_sha256};
 use std::path::PathBuf;
 
@@ -24,6 +28,73 @@ fn unhex(s: &str) -> Option<Vec<u8>> {
     (0..s.len() / 2)
         .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).ok())
         .collect()
+}
+
+fn le16(v: &mut Vec<u8>, x: u16) {
+    v.extend_from_slice(&x.to_le_bytes());
+}
+
+fn le32(v: &mut Vec<u8>, x: u32) {
+    v.extend_from_slice(&x.to_le_bytes());
+}
+
+/// One entry of a .res file: header (numeric type and name), the data, padded to 4 bytes.
+fn res_entry(out: &mut Vec<u8>, kind: u16, id: u16, flags: u16, data: &[u8]) {
+    le32(out, data.len() as u32);
+    le32(out, 32);
+    le16(out, 0xFFFF);
+    le16(out, kind);
+    le16(out, 0xFFFF);
+    le16(out, id);
+    le32(out, 0); // data version
+    le16(out, flags);
+    le16(out, 0x0409); // language: en-US, the neutral choice of the resource compilers
+    le32(out, 0); // version
+    le32(out, 0); // characteristics
+    out.extend_from_slice(data);
+    while !out.len().is_multiple_of(4) {
+        out.push(0);
+    }
+}
+
+/// The .res text of an .ico file: every frame as RT_ICON (ids 1..), the group as RT_GROUP_ICON 1.
+fn ico_to_res(ico: &[u8]) -> Result<Vec<u8>, String> {
+    let u16at = |o: usize| -> Result<u16, String> {
+        ico.get(o..o + 2)
+            .map(|b| u16::from_le_bytes([b[0], b[1]]))
+            .ok_or_else(|| "ico: short".to_string())
+    };
+    let u32at = |o: usize| -> Result<u32, String> {
+        ico.get(o..o + 4)
+            .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+            .ok_or_else(|| "ico: short".to_string())
+    };
+    if u16at(0)? != 0 || u16at(2)? != 1 {
+        return Err("ico: not an icon file".into());
+    }
+    let n = u16at(4)? as usize;
+    if n == 0 {
+        return Err("ico: no frames".into());
+    }
+    let mut res = Vec::new();
+    res_entry(&mut res, 0, 0, 0, &[]); // the empty first entry every .res file starts with
+    let mut group = Vec::new();
+    le16(&mut group, 0);
+    le16(&mut group, 1);
+    le16(&mut group, n as u16);
+    for i in 0..n {
+        let e = 6 + 16 * i;
+        let head = ico.get(e..e + 8).ok_or("ico: short")?;
+        let size = u32at(e + 8)? as usize;
+        let off = u32at(e + 12)? as usize;
+        let data = ico.get(off..off + size).ok_or("ico: frame out of the file")?;
+        res_entry(&mut res, 3, (i + 1) as u16, 0x1010, data); // RT_ICON, moveable | discardable
+        group.extend_from_slice(head); // width, height, colours, reserved, planes, bit count
+        le32(&mut group, size as u32);
+        le16(&mut group, (i + 1) as u16);
+    }
+    res_entry(&mut res, 14, 1, 0x1030, &group); // RT_GROUP_ICON 1, moveable | pure | discardable
+    Ok(res)
 }
 
 fn main() {
@@ -68,4 +139,16 @@ fn main() {
         arr(&p)
     );
     std::fs::write(out.join("ticket_key.rs"), code).expect("write ticket_key.rs");
+
+    // 3. the icon of the exe
+    println!("cargo:rerun-if-changed=assets/app.ico");
+    let os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    if os == "windows" && env == "msvc" {
+        let ico = std::fs::read("assets/app.ico").expect("read assets/app.ico");
+        let res = ico_to_res(&ico).expect("assets/app.ico");
+        let path = out.join("app.res");
+        std::fs::write(&path, res).expect("write app.res");
+        println!("cargo:rustc-link-arg-bins={}", path.display());
+    }
 }

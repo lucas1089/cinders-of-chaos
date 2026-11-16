@@ -1020,6 +1020,599 @@ async def check_dual_blades(io, name, cls, level):
     return await check_dual(io, name, cls, level, 'blades')
 
 
+# ------------------------------------------------------------------------------------------------ crafting and upgrades (O584 item 3)
+# The bots held no orb, gem, rune, charm or card, so the crafting window got ANS at best and no modifier change was ever seen.
+# The helper's `!tester give` puts one of each into the backpack (a plain kit weapon with no rarity for the orbs); the checks use
+# them the way a player does (the crafting window's requests, the use-with packet) and read the item's modifiers from its TOOLTIP
+# before and after, next to the bench's own view of the item: the two must agree, and the change must be the one the orb promises.
+RARITY_RANK = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 10: 6}
+BACKPACK_POS = 0x40  # the y of a position inside container 0 (the backpack the check opened)
+
+
+class Held:
+    """where the things the helper gave sit in the backpack: a new stack goes in front and moves the others one slot back
+    (Container:addItem). The answer of a give names the slot at that moment; the index here follows the later ones"""
+
+    def __init__(self):
+        self.items = {}   # name -> {'index', 'id', 'clientId', 'path', 'bagClientId', ...}
+
+    def add(self, name, ans):
+        merged = any(i['id'] == ans.get('id') and i['index'] == 0 for i in self.items.values())  # into a stack that was in front
+        if int(ans.get('index', 0)) == 0 and not merged:
+            for it in self.items.values():
+                it['index'] += 1
+        item = dict(ans)
+        self.items[name] = item
+        return item
+
+    def __getitem__(self, name):
+        return self.items[name]
+
+
+def rarity_rank(r):
+    return RARITY_RANK.get(int(r or 0), int(r or 0))
+
+
+def item_view(tip, state_item):
+    """what a check compares: the rarity and modifier keys of the tooltip (tip.rarity, tip.mods[].k), the bench's own view of
+    the same item (state item: mods[].key, quality, sockets.count and list)"""
+    tip = tip if isinstance(tip, dict) else {}
+    st = state_item if isinstance(state_item, dict) else {}
+    socks = st.get('sockets') if isinstance(st.get('sockets'), dict) else {}
+    return {
+        'rarity': int(tip.get('rarity') if tip.get('rarity') is not None else st.get('rarity') or 0),
+        'mods': [str(m.get('k')) for m in (tip.get('mods') or []) if isinstance(m, dict)],
+        'bench_mods': [str(m.get('key') or m.get('group')) for m in (st.get('mods') or []) if isinstance(m, dict)],
+        'quality': int(st.get('quality') or 0),
+        'sockets': int(socks.get('count') or 0),
+        'sockets_max': int(socks.get('max') or 0),
+        'socketed': len(socks.get('list') or []),
+        'tip': json.dumps(tip, sort_keys=True),
+    }
+
+
+def orb_problems(orb, b, a):
+    """[text] for one orb applied to an item: the effect the orb's text promises, read from the views before and after, and
+    the agreement of the tooltip with the bench"""
+    out = []
+    nb, na = len(b['mods']), len(a['mods'])
+    if orb == 'transmutation':
+        if a['rarity'] not in (1, 2) or na < 1:
+            out.append('a normal item became rarity %s with %d modifiers, expected Common or Uncommon with at least 1' % (a['rarity'], na))
+    elif orb == 'alchemy':
+        if a['rarity'] not in (3, 4, 5) or na < 1:
+            out.append('a normal item became rarity %s with %d modifiers, expected Magic, Rare or Legendary with modifiers' % (a['rarity'], na))
+    elif orb == 'exalted':
+        if na != nb + 1 or a['rarity'] != b['rarity']:
+            out.append('modifiers %d -> %d, rarity %s -> %s: expected one more and the same rarity' % (nb, na, b['rarity'], a['rarity']))
+    elif orb == 'annulment':
+        if na != nb - 1:
+            out.append('modifiers %d -> %d: expected one less' % (nb, na))
+    elif orb == 'scouring':
+        if a['rarity'] != 0 or na != 0:
+            out.append('rarity %s with %d modifiers after the Orb of Erasure: expected a normal item' % (a['rarity'], na))
+    elif orb == 'chaos':
+        if a['rarity'] != b['rarity'] or na != nb:
+            out.append('rarity %s -> %s, modifiers %d -> %d: a reroll keeps both' % (b['rarity'], a['rarity'], nb, na))
+    elif orb == 'divine':
+        if rarity_rank(a['rarity']) <= rarity_rank(b['rarity']) or na < 1:
+            out.append('rarity %s -> %s with %d modifiers: expected one step up' % (b['rarity'], a['rarity'], na))
+    elif orb == 'whetstone':
+        if a['quality'] != b['quality'] + 1:
+            out.append('quality %d -> %d: expected +1' % (b['quality'], a['quality']))
+    elif orb == 'sockets':
+        if a['sockets'] > a['sockets_max'] or a['sockets'] < 0:
+            out.append('%d sockets of a maximum of %d' % (a['sockets'], a['sockets_max']))
+    if a['mods'] and a['bench_mods'] and len(a['mods']) != len(a['bench_mods']):
+        out.append('the tooltip lists %d modifiers, the bench %d' % (len(a['mods']), len(a['bench_mods'])))
+    return out
+
+
+class Bench:
+    """the crafting window and the tooltip, as a check uses them"""
+
+    def __init__(self, io, name, cls, check):
+        self.io, self.name, self.cls, self.check = io, name, cls, check
+        self.held = Held()
+        self.counts = {}
+
+    def skip(self, why):
+        return Result(self.check, self.name, self.cls, SKIP, why)
+
+    def fail(self, why):
+        return Result(self.check, self.name, self.cls, FAIL, why)
+
+    async def give(self, name, what):
+        """`!tester give <what>`; the helper's answer, or None with self.err set"""
+        ans = await self.io.helper('give ' + what, 'give', ANSWER)
+        self.err = None
+        if not isinstance(ans, dict) or ans.get('err'):
+            self.err = (ans or {}).get('err') if isinstance(ans, dict) else 'no answer to !tester give'
+            return None
+        return self.held.add(name, ans)
+
+    async def tooltip(self, item):
+        ans = await self.io.request('itemTooltip', 'get', {'items': [{'pos': {'x': 0xFFFF, 'y': BACKPACK_POS, 'z': item['index']},
+                                                                      'cid': item['clientId']}]}, ('tips',), ANSWER)
+        rows = ((ans or {}).get('data') or {}).get('items') or []
+        return rows[0].get('tip') if rows and isinstance(rows[0], dict) else None
+
+    async def select(self, item):
+        ans = await self.io.request('crafting', 'select', {'path': str(item['index']), 'id': item['id']}, ('state',), ANSWER)
+        data = (ans or {}).get('data') or {}
+        if isinstance(data.get('counts'), dict):
+            self.counts = data['counts']
+        return data.get('item') if isinstance(data.get('item'), dict) else None
+
+    async def view(self, item):
+        """(view, the bench's item) or (None, None) when the tooltip or the bench did not answer"""
+        st = await self.select(item)
+        tip = await self.tooltip(item)
+        if st is None or tip is None:
+            return None, st
+        return item_view(tip, st), st
+
+    async def apply(self, orb, item, st):
+        """the orb on the item; the result message or None"""
+        ans = await self.io.request('crafting', 'apply', {'orb': orb, 'path': str(item['index']), 'id': item['id'],
+                                                         'sig': (st or {}).get('sig')}, ('result',), ANSWER)
+        await self.io.sleep(0.5)
+        return (ans or {}).get('data') if isinstance(ans, dict) else None
+
+
+async def bench_with_item(io, name, cls, check, orbs):
+    """a Bench with the orbs given first and a plain item last (so it sits in slot 0), the backpack open as container 0;
+    (bench, item) or (None, a SKIP Result)"""
+    bench = Bench(io, name, cls, check)
+    if not await io.go('hunt'):
+        return None, bench.skip(not_at_hunt(io))
+    for orb, n in orbs:
+        if not await bench.give('orb:' + orb, 'orb %s %d' % (orb, n)):
+            return None, bench.skip('no %s orb from the helper (%s)' % (orb, bench.err))
+    item = await bench.give('item', 'item')
+    if not item:
+        return None, bench.skip('no plain item from the helper (%s)' % bench.err)
+    await io.open_bag(item.get('bagClientId'))
+    await io.sleep(1.0)
+    return bench, item
+
+
+async def orb_chain(io, name, cls, check, steps, start_rarity_zero=True):
+    """apply each orb of steps in order on one plain item and check what it did; steps = [(orb key, label)]"""
+    bench, item = await bench_with_item(io, name, cls, check, [(o, 1) for o, _ in steps])
+    if bench is None:
+        return item
+    before, st = await bench.view(item)
+    if before is None:
+        return bench.skip('no tooltip or bench answer for the given item')
+    if start_rarity_zero and (before['rarity'] != 0 or before['mods']):
+        return bench.skip('the given item is not a normal one (rarity %s, %d modifiers)' % (before['rarity'], len(before['mods'])))
+    done, notes = [], []
+    for orb, label in steps:
+        res = await bench.apply(orb, item, st)
+        if res is None:
+            return bench.skip('no answer to the %s' % label)
+        if not res.get('ok'):
+            notes.append('%s refused: %s' % (label, str(res.get('text'))[:50]))
+            continue
+        after, st2 = await bench.view(item)
+        if after is None:
+            return bench.skip('no tooltip or bench answer after the %s' % label)
+        problems = orb_problems(orb, before, after)
+        if orb != 'sockets' and after['tip'] == before['tip']:
+            problems.append('the tooltip did not change')
+        if problems:
+            return bench.fail('%s: %s' % (label, '; '.join(problems[:3])))
+        done.append(label)
+        before, st = after, st2
+    if not done:
+        return bench.skip('every orb was refused (%s)' % '; '.join(notes[:2]))
+    return Result(check, name, cls, PASS, '%s changed the item as promised, tooltip and bench agree%s' % (
+        ', '.join(done), ' (%s)' % '; '.join(notes[:2]) if notes else ''))
+
+
+async def check_craft_orbs(io, name, cls, level):
+    """Awakening, Grafting, Upheaval, Unmaking, Fate, Erasure, Gilding on one plain item"""
+    steps = [('transmutation', 'Orb of Awakening'), ('exalted', 'Orb of Grafting'), ('chaos', 'Orb of Upheaval'),
+             ('annulment', 'Orb of Unmaking'), ('divine', 'Orb of Fate'), ('scouring', 'Orb of Erasure'),
+             ('alchemy', 'Orb of Gilding')]
+    return await orb_chain(io, name, cls, 'craft_orbs', steps)
+
+
+async def check_craft_whetstone(io, name, cls, level):
+    """a rarity from Gilding, then the Whetstone: +1 quality, and the tooltip shows it"""
+    return await orb_chain(io, name, cls, 'craft_whetstone', [('alchemy', 'Orb of Gilding'), ('whetstone', 'Whetstone')])
+
+
+async def check_craft_sockets(io, name, cls, level):
+    """the Orb of Sockets rolls sockets for a plain piece (never more than its maximum); up to five tries"""
+    bench, item = await bench_with_item(io, name, cls, 'craft_sockets', [('sockets', 5)])
+    if bench is None:
+        return item
+    before, st = await bench.view(item)
+    if before is None:
+        return bench.skip('no tooltip or bench answer for the given item')
+    if before['sockets_max'] < 1:
+        return bench.skip('this item cannot have sockets (maximum %d)' % before['sockets_max'])
+    for n in range(1, 6):
+        res = await bench.apply('sockets', item, st)
+        if res is None:
+            return bench.skip('no answer to the Orb of Sockets')
+        if not res.get('ok'):
+            return bench.skip('the Orb of Sockets was refused: %s' % str(res.get('text'))[:60])
+        after, st = await bench.view(item)
+        if after is None:
+            return bench.skip('no tooltip or bench answer after the Orb of Sockets')
+        problems = orb_problems('sockets', before, after)
+        if problems:
+            return bench.fail('; '.join(problems))
+        if after['sockets'] >= 1:
+            return Result('craft_sockets', name, cls, PASS, '%d socket(s) of %d after %d orb(s)' % (
+                after['sockets'], after['sockets_max'], n))
+        before = after
+    return bench.fail('five Orbs of Sockets and no socket on an item that may have %d' % before['sockets_max'])
+
+
+async def check_craft_gems(io, name, cls, level):
+    """sockets, a gem, the use-with packet: the gem sits in the socket (the bench's list), the tooltip changed"""
+    bench, item = await bench_with_item(io, name, cls, 'craft_gems', [('sockets', 5)])
+    if bench is None:
+        return item
+    # the gem goes in after the sockets orbs and the item: it sits in front, the item one slot back
+    gem = await bench.give('gem', 'gem')
+    if not gem:
+        return bench.skip('no gem from the helper (%s)' % bench.err)
+    item = bench.held['item']
+    await io.open_bag(item.get('bagClientId'))
+    before, st = await bench.view(item)
+    if before is None:
+        return bench.skip('no tooltip or bench answer for the given item')
+    for _ in range(5):
+        if before['sockets'] >= 1:
+            break
+        res = await bench.apply('sockets', item, st)
+        if not res or not res.get('ok'):
+            return bench.skip('no socket: %s' % (str((res or {}).get('text'))[:60] if res else 'no answer to the Orb of Sockets'))
+        before, st = await bench.view(item)
+        if before is None:
+            return bench.skip('no tooltip or bench answer after the Orb of Sockets')
+    if before['sockets'] < 1:
+        return bench.fail('five Orbs of Sockets and no socket')
+    await io.use_with(gem['index'], gem['clientId'], item['index'], item['clientId'])
+    await io.sleep(1.5)
+    after, st2 = await bench.view(item)
+    if after is None:
+        return bench.skip('no tooltip or bench answer after the gem')
+    if after['socketed'] != before['socketed'] + 1:
+        return bench.fail('gems in the sockets %d -> %d after the use-with: expected one more' % (before['socketed'], after['socketed']))
+    if after['tip'] == before['tip']:
+        return bench.fail('the gem sits in the socket but the tooltip did not change')
+    return Result('craft_gems', name, cls, PASS, 'a gem socketed by use-with (%d of %d sockets), the tooltip shows it' % (
+        after['socketed'], after['sockets']))
+
+
+async def check_craft_supports(io, name, cls, level):
+    """a support rune into a spell of the class through the support window: the spell lists it afterwards"""
+    bench = Bench(io, name, cls, 'craft_supports')
+    if not await io.go('hunt'):
+        return bench.skip(not_at_hunt(io))
+    ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
+    spells = [s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict)]
+    if not spells:
+        return bench.skip('no state or no spell in the support window')
+    spell = next((s for s in spells if int(s.get('count') or 0) < int(s.get('max') or 0)), None)
+    if spell is None:
+        return bench.skip('every spell has its sockets full')
+    rune = await bench.give('rune', 'rune')
+    if not rune:
+        return bench.skip('no rune from the helper (%s)' % bench.err)
+    res = await io.request('supports', 'socket', {'spell': spell['id'], 'rune': rune['id']}, ('result',), ANSWER)
+    data = (res or {}).get('data') or {}
+    if res is None:
+        return bench.skip('no answer to the rune')
+    if not data.get('ok'):
+        return bench.skip('the rune was refused: %s' % str(data.get('text'))[:60])
+    ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
+    now = next((s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict) and s.get('id') == spell['id']), None)
+    if now is None:
+        return bench.skip('no state after the rune')
+    if int(now.get('count') or 0) != int(spell.get('count') or 0) + 1:
+        return bench.fail('spell %s holds %s runes after the socket, expected %d' % (
+            spell.get('name') or spell['id'], now.get('count'), int(spell.get('count') or 0) + 1))
+    return Result('craft_supports', name, cls, PASS, 'a rune socketed into %s: %s runes now' % (spell.get('name') or spell['id'], now.get('count')))
+
+
+async def check_craft_charms(io, name, cls, level):
+    """a charm into the grid and out again: the bag, the grid and the totals move one by one"""
+    bench = Bench(io, name, cls, 'craft_charms')
+    if not await io.go('hunt'):
+        return bench.skip(not_at_hunt(io))
+    charm = await bench.give('charm', 'charm')
+    if not charm:
+        return bench.skip('no charm from the helper (%s)' % bench.err)
+    ans = await io.request('charms', 'open', {}, ('state',), ANSWER)
+    st = (ans or {}).get('data') or {}
+    if not st:
+        return bench.skip('no state in the charm window')
+    bag, cells = st.get('bag') or [], [c for c in (st.get('cells') or []) if c.get('open')]
+    if not bag:
+        return bench.skip('the given charm is not in the charm bag list')
+    if not cells:
+        return bench.skip('no open cell in the grid')
+    b0 = bag[0]
+    placed_before = len(st.get('placed') or [])
+    for cell in cells:
+        res = await io.request('charms', 'place', {'ref': b0.get('ref'), 'sid': b0.get('sid'), 'iid': b0.get('iid'),
+                                                   'x': cell['x'], 'y': cell['y']}, ('result',), ANSWER)
+        data = (res or {}).get('data') or {}
+        if res is None:
+            return bench.skip('no answer to the charm')
+        if data.get('ok'):
+            break
+    else:
+        return bench.skip('no cell took the charm: %s' % str(data.get('text'))[:60])
+    ans = await io.request('charms', 'open', {}, ('state',), ANSWER)
+    st2 = (ans or {}).get('data') or {}
+    if len(st2.get('placed') or []) != placed_before + 1 or len(st2.get('bag') or []) != len(bag) - 1:
+        return bench.fail('placed %d -> %d, bag %d -> %d after the charm was placed: expected one more and one less' % (
+            placed_before, len(st2.get('placed') or []), len(bag), len(st2.get('bag') or [])))
+    mine = (st2.get('placed') or [])[-1]
+    res = await io.request('charms', 'take', {'id': mine.get('id')}, ('result',), ANSWER)
+    if res is None or not ((res.get('data') or {}).get('ok')):
+        return bench.fail('the charm could not be taken out again: %s' % str(((res or {}).get('data') or {}).get('text'))[:60])
+    ans = await io.request('charms', 'open', {}, ('state',), ANSWER)
+    st3 = (ans or {}).get('data') or {}
+    if len(st3.get('placed') or []) != placed_before or len(st3.get('bag') or []) != len(bag):
+        return bench.fail('after taking it out the grid holds %d and the bag %d, expected %d and %d' % (
+            len(st3.get('placed') or []), len(st3.get('bag') or []), placed_before, len(bag)))
+    return Result('craft_charms', name, cls, PASS, 'a charm placed (grid %d -> %d, bag %d -> %d) and taken out again' % (
+        placed_before, placed_before + 1, len(bag), len(bag) - 1))
+
+
+async def check_craft_cards(io, name, cls, level):
+    """a card in the backpack: its tooltip names it and carries its description (what it gives, the set, how to use it)"""
+    bench = Bench(io, name, cls, 'craft_cards')
+    if not await io.go('hunt'):
+        return bench.skip(not_at_hunt(io))
+    card = await bench.give('card', 'card')
+    if not card:
+        return bench.skip('no card from the helper (%s)' % bench.err)
+    await io.open_bag(card.get('bagClientId'))
+    await io.sleep(1.0)
+    tip = await bench.tooltip(card)
+    if tip is None:
+        return bench.skip('no tooltip answer for the card')
+    if not tip.get('name'):
+        return bench.fail('the card tooltip has no name')
+    if not str(tip.get('desc') or '').strip():
+        return bench.fail('the tooltip of the card %s has no description' % tip.get('name'))
+    return Result('craft_cards', name, cls, PASS, 'the tooltip of %s carries its description' % tip.get('name'))
+
+# ------------------------------------------------------------------------------------------------ closed test mode (O582)
+# testers.py run --closed (switch: chaos-ctl.sh testers closed on): arena, battleground, the Marches, guild and guild war, market
+# and the bazaar lock among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
+# 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
+# another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'guild', 'guildwar', 'market', 'pvp')  # testers_core.lua K.CLOSED_SYSTEMS
+ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
+FEE_GOLD = 100      # the gold price of the market check's offer
+
+
+def closed_problems(c):
+    """[text] for one `!tester closed` answer: whatever says a tester could meet a player, or the mode is not what the run needs"""
+    if not isinstance(c, dict):
+        return ['no answer']
+    out = []
+    if not c.get('loaded'):
+        return ['the server has no testers_core.lua rules']
+    if not c.get('on'):
+        out.append('the switch reads off while the bots run in closed mode (data/chaos_testers_closed)')
+    guards = c.get('guards') or {}
+    for system in CLOSED_SYSTEMS:
+        g = guards.get(system)
+        if not isinstance(g, dict):
+            out.append('%s: no guard reported (an old rules file)' % system)
+            continue
+        if not g.get('mixed'):
+            out.append('%s: the rules let a tester meet a player' % system)
+        if not g.get('off'):
+            out.append('%s: testers are matched with the mode off' % system)
+        if not g.get('together'):
+            out.append('%s: testers are refused with the mode on' % system)
+    guild = c.get('guild')
+    if isinstance(guild, dict) and guild.get('side') != 'tester':
+        out.append('guild %s is not a tester guild (side %s)' % (guild.get('name'), guild.get('side')))
+    return out
+
+
+async def check_closed_guards(io, name, cls, level):
+    """the rules the server runs: a tester against a player is refused in every closed system, the mode off refuses testers"""
+    c = await io.helper('closed', 'closed', ANSWER)
+    if not c or c.get('err'):
+        return Result('closed_guards', name, cls, SKIP, 'no answer to !tester closed (old helper file)')
+    problems = closed_problems(c)
+    if problems:
+        return Result('closed_guards', name, cls, FAIL, '; '.join(problems[:4]))
+    return Result('closed_guards', name, cls, PASS, 'every closed system refuses a tester against a player; guild %s' % (
+        (c.get('guild') or {}).get('name') or 'none'))
+
+
+async def check_closed_arena(io, name, cls, level):
+    """two testers queue for a 1v1 in the arena and are matched with each other"""
+    other = await io.partner()
+    if not other:
+        return Result('closed_arena', name, cls, SKIP, 'no free bot in game')
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result('closed_arena', name, cls, SKIP, 'the helper did not bring both bots to the temple')
+    await io.sleep(SETTLE)
+    a = await io.request('arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    b = await io.request_of(other, 'arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    if a is None or b is None:
+        return Result('closed_arena', name, cls, SKIP, 'no answer from the arena window (not installed)')
+    waited = 0.0
+    while waited <= ARENA_WAIT and io.alive():
+        ca = await io.helper('closed', 'closed', ANSWER)
+        cb = await io.helper_of(other, 'closed', 'closed', ANSWER)
+        sa, sb = (ca or {}).get('arena') or {}, (cb or {}).get('arena') or {}
+        if sa.get('inMatch') and sb.get('inMatch'):
+            return Result('closed_arena', name, cls, PASS, 'matched with %s, both inside' % other)
+        if waited >= 6 and not (sa.get('queued') or sa.get('inMatch')) and not (sb.get('queued') or sb.get('inMatch')):
+            return Result('closed_arena', name, cls, SKIP, 'neither bot is in the queue after the request (level, zone or cooldown)')
+        await io.sleep(LOOK * 2)
+        waited += LOOK * 2
+    await io.request('arena', 'leave', {}, ['state'], ANSWER)
+    await io.request_of(other, 'arena', 'leave', {}, ['state'], ANSWER)
+    return Result('closed_arena', name, cls, FAIL, 'two queued testers were not matched in %d seconds' % int(ARENA_WAIT))
+
+
+async def check_closed_battleground(io, name, cls, level):
+    """a tester queues for the battleground (its own realm) and leaves the queue; the match needs the whole roster"""
+    await io.go('town')
+    await io.sleep(SETTLE)
+    q = await io.request('battleground', 'queue', {}, ['state'], ANSWER)
+    if q is None:
+        return Result('closed_battleground', name, cls, SKIP, 'no answer from the battleground window (not installed)')
+    await io.sleep(SETTLE)
+    c = await io.helper('closed', 'closed', ANSWER)
+    queued = bool(((c or {}).get('battleground') or {}).get('queued'))
+    inside = bool(((c or {}).get('battleground') or {}).get('inMatch'))
+    await io.request('battleground', 'leave', {}, ['state'], ANSWER)
+    if not queued and not inside:
+        return Result('closed_battleground', name, cls, SKIP, 'the queue refused the bot (level, zone, deserter)')
+    return Result('closed_battleground', name, cls, PASS, 'queued among testers, then left (a match needs a full roster)')
+
+
+async def check_closed_pvp(io, name, cls, level):
+    """a tester enters the Marches: its own instance, never a player's"""
+    await io.go('town')
+    await io.sleep(SETTLE)
+    r = await io.request('pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+    if r is None:
+        return Result('closed_pvp', name, cls, SKIP, 'no answer from the Marches window (not installed)')
+    await io.sleep(SETTLE)
+    c = await io.helper('closed', 'closed', ANSWER)
+    inside = bool(((c or {}).get('pvp') or {}).get('inside'))
+    if not inside:
+        return Result('closed_pvp', name, cls, SKIP, 'the Marches refused the bot: %s' % str(((r or {}).get('data') or {}).get('text', ''))[:80])
+    return Result('closed_pvp', name, cls, PASS, 'inside the testers\' own Marches instance')
+
+
+async def check_closed_guild(io, name, cls, level):
+    """the leader of a tester guild declares a war on the other tester guild, its leader accepts, the war is active, the
+    declarer surrenders"""
+    plan = io.closed_plan()
+    if not plan:
+        return Result('closed_guild_war', name, cls, SKIP, 'this bot has no tester guild (too few bots for two guilds)')
+    if not plan.get('leader'):
+        return Result('closed_guild_war', name, cls, SKIP, 'not the leader of its guild')
+    rival = io.online(plan.get('rival_leader'))
+    if not rival:
+        return Result('closed_guild_war', name, cls, SKIP, 'the leader of %s is not in game' % plan.get('rival'))
+    c = await io.helper('closed', 'closed', ANSWER)
+    g = (c or {}).get('guild') or {}
+    if g.get('name') != plan.get('guild') or g.get('side') != 'tester':
+        return Result('closed_guild_war', name, cls, FAIL, 'the bot has guild %s (side %s), expected %s as a tester guild' % (
+            g.get('name'), g.get('side'), plan.get('guild')))
+    d = await io.request('guildWar', 'declare', {'target': plan['rival'], 'fragLimit': 10, 'hours': 6, 'stake': 0}, ['message'], ANSWER)
+    if d is None:
+        return Result('closed_guild_war', name, cls, SKIP, 'no answer from the guild war window (not installed)')
+    data = d.get('data') or {}
+    if not data.get('ok'):
+        return Result('closed_guild_war', name, cls, SKIP, 'declare refused: %s' % str(data.get('text', ''))[:90])
+    await io.sleep(SETTLE)
+    state = await io.request_of(rival, 'guildWar', 'refresh', {'tab': 'wars'}, ['state'], ANSWER)
+    pending = (((state or {}).get('data') or {}).get('wars') or {}).get('pending') or []
+    offer = next((w for w in pending if w.get('id')), None)
+    if not offer:
+        return Result('closed_guild_war', name, cls, FAIL, 'the other tester guild sees no war offer')
+    acc = await io.request_of(rival, 'guildWar', 'accept', {'id': offer['id']}, ['message'], ANSWER)
+    if acc is None or not (acc.get('data') or {}).get('ok'):
+        return Result('closed_guild_war', name, cls, FAIL, 'accept refused: %s' % str(((acc or {}).get('data') or {}).get('text', ''))[:90])
+    await io.sleep(SETTLE)
+    mine = await io.request('guildWar', 'refresh', {'tab': 'wars'}, ['state'], ANSWER)
+    active = (((mine or {}).get('data') or {}).get('wars') or {}).get('active') or []
+    await io.request('guildWar', 'surrender', {'id': offer['id']}, ['message'], ANSWER)
+    if not any(w.get('id') == offer['id'] for w in active):
+        return Result('closed_guild_war', name, cls, FAIL, 'the accepted war %s is not active' % offer['id'])
+    return Result('closed_guild_war', name, cls, PASS, 'war %s between %s and %s: declared, accepted, active, surrendered' % (
+        offer['id'], plan.get('guild'), plan.get('rival')))
+
+
+async def check_closed_market(io, name, cls, level):
+    """a tester lists an item for gold, another tester sees it in the tester book and buys it"""
+    other = await io.partner()
+    if not other:
+        return Result('closed_market', name, cls, SKIP, 'no free bot in game')
+    s = await io.request('market', 'sellable', {}, ['sellable'], ANSWER)
+    if s is None:
+        return Result('closed_market', name, cls, SKIP, 'no answer from the market (not installed)')
+    items = [i for i in ((s.get('data') or {}).get('items') or []) if i.get('ref') and not i.get('why')]
+    if not items:
+        return Result('closed_market', name, cls, SKIP, 'nothing sellable in the backpack')
+    item = items[0]
+    r = await io.request('market', 'list', {'ref': item['ref'], 'count': 1, 'gold': FEE_GOLD, 'coins': 0, 'days': 1}, ['done', 'error'], ANSWER)
+    if r is None or r.get('action') == 'error' or (r.get('data') or {}).get('what') != 'list':
+        return Result('closed_market', name, cls, SKIP, 'the offer was not listed: %s' % str(((r or {}).get('data') or {}).get('text', ''))[:90])
+    offer_id = (r.get('data') or {}).get('id')
+    page = await io.request_of(other, 'market', 'browse', {}, ['page'], ANSWER)
+    rows = ((page or {}).get('data') or {}).get('rows') or []
+    seen = any(row.get('id') == offer_id for row in rows)
+    b = await io.request_of(other, 'market', 'buy', {'id': offer_id, 'cur': 'gold'}, ['done', 'error'], ANSWER)
+    bought = b is not None and b.get('action') != 'error' and (b.get('data') or {}).get('what') == 'buy'
+    if not bought:
+        await io.request('market', 'cancel', {'id': offer_id}, ['done', 'error'], ANSWER)
+        return Result('closed_market', name, cls, FAIL, 'offer %s: %s could not buy it (%s); seen in browse: %s' % (
+            offer_id, other, str(((b or {}).get('data') or {}).get('text', ''))[:70], seen))
+    return Result('closed_market', name, cls, PASS, 'offer %s listed for %d gold, bought by %s%s' % (
+        offer_id, FEE_GOLD, other, '' if seen else ' (not in its first browse page)'))
+
+
+def bazaar_problem(before, during, after):
+    """the three `!tester closed` bazaar facts (locked before listing, while listed, after release) -> text or None"""
+    if before:
+        return 'locked before it was listed'
+    if not during:
+        return 'a listed tester is not locked: it could log in during its own sale'
+    if after:
+        return 'still locked after the listing was cancelled'
+    return None
+
+
+async def check_closed_bazaar(io, name, cls, level):
+    """a listing of a tester locks the character like any listing (login refused); the website never shows or sells it"""
+    import tester_closed as TCL
+    c0 = await io.helper('closed', 'closed', ANSWER)
+    if not c0 or c0.get('err') or 'bazaar' not in c0:
+        return Result('closed_bazaar', name, cls, SKIP, 'the helper does not report the bazaar lock (old helper file)')
+    if not io.sql(TCL.bazaar_statements(name)):
+        return Result('closed_bazaar', name, cls, SKIP, 'the listing could not be written (no database access)')
+    try:
+        await io.sleep(1.0)
+        c1 = await io.helper('closed', 'closed', ANSWER)
+    finally:
+        io.sql(TCL.bazaar_release_statements(name))
+    await io.sleep(1.0)
+    c2 = await io.helper('closed', 'closed', ANSWER)
+    problem = bazaar_problem(bool((c0.get('bazaar') or {}).get('locked')), bool(((c1 or {}).get('bazaar') or {}).get('locked')),
+                             bool(((c2 or {}).get('bazaar') or {}).get('locked')))
+    if problem:
+        return Result('closed_bazaar', name, cls, FAIL, problem)
+    return Result('closed_bazaar', name, cls, PASS, 'listed: locked; cancelled: free (no Chaos Coins, no bid, not on the site)')
+
+
+# the checks of closed mode, run only with --closed: (key, function, applies to the class)
+CLOSED_CHECKS = [
+    ('closed_guards', check_closed_guards, lambda c: True),
+    ('closed_arena', check_closed_arena, lambda c: True),
+    ('closed_battleground', check_closed_battleground, lambda c: True),
+    ('closed_pvp', check_closed_pvp, lambda c: True),
+    ('closed_guild_war', check_closed_guild, lambda c: True),
+    ('closed_market', check_closed_market, lambda c: True),
+    ('closed_bazaar', check_closed_bazaar, lambda c: True),
+]
+CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
+
+
 CHECKS = [
     ('beastmaster_wolf', check_summons, lambda c: c == 'Beastmaster'),
     ('necro_minions', check_summons, lambda c: c in ('Necromancer', 'Lich', 'Bone Lord')),
@@ -1038,6 +1631,13 @@ CHECKS = [
     ('cursed_chest', check_cursed_chest, lambda c: True),
     ('auto_setup', check_auto_setup, lambda c: True),
     ('spell_quest', check_spell_quest, lambda c: True),
+    ('craft_orbs', check_craft_orbs, lambda c: True),
+    ('craft_whetstone', check_craft_whetstone, lambda c: True),
+    ('craft_sockets', check_craft_sockets, lambda c: True),
+    ('craft_gems', check_craft_gems, lambda c: True),
+    ('craft_supports', check_craft_supports, lambda c: True),
+    ('craft_charms', check_craft_charms, lambda c: True),
+    ('craft_cards', check_craft_cards, lambda c: True),
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)
 
@@ -1045,19 +1645,20 @@ KEYS = tuple(k for k, _, _ in CHECKS)
 class CheckRun:
     """the checks of one bot; results go on after a death (a check cut off by it is done again) like the keystone scenario"""
 
-    def __init__(self, name, cls, level, only=None):
+    def __init__(self, name, cls, level, only=None, closed=False):
         self.name, self.cls, self.level = name, cls, level
         self.only = set(only) if only else None
+        self.table = CHECKS + (CLOSED_CHECKS if closed else [])   # the closed-mode checks only in a --closed run (O582)
         self.done = set()
         self.results = []
         self.resets = []
 
     def todo(self):
-        return [k for k, _, ok in CHECKS if ok(self.cls) and k not in self.done and (not self.only or k in self.only)]
+        return [k for k, _, ok in self.table if ok(self.cls) and k not in self.done and (not self.only or k in self.only)]
 
     async def run(self, io):
         """True when no check failed; stops early when the bot is gone"""
-        for key, fn, ok in CHECKS:
+        for key, fn, ok in self.table:
             if key in self.done or not ok(self.cls) or (self.only and key not in self.only):
                 continue
             if not io.alive():

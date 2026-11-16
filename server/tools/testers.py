@@ -40,6 +40,10 @@ totals of the tree window, the keystone's own row of the combat log) or says it 
 --checks: each bot then runs the system checks of its class once (tester_checks.py, O110): pets, the Necromancer's minions,
 the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play and its shared experience, a rift and its layout, waystone runs by tier and modifiers, the content rewards, the waystone
 atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
+--closed (O582, tester_closed.py; the switch data/chaos_testers_closed must be on): closed test mode. Two tester guilds are made
+before the bots log in; the bots then run the closed checks (arena, battleground, the Marches, guild war, market, the bazaar
+lock, the guards the server runs) among themselves, never with a player. The guilds, wars, tester market book and arena records
+of the run are removed when it ends, and by cleanup.
 """
 import asyncio
 import base64
@@ -64,6 +68,7 @@ import loadtest as LT  # noqa: E402
 import tester_core as TC  # noqa: E402
 import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario, O249)
 import tester_checks as TX  # noqa: E402  (the system checks, O110)
+import tester_closed as TCL  # noqa: E402  (closed test mode, O582)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -389,6 +394,43 @@ def setup(a):
         sum(1 for b in bots if 'player_id' in b), len(classes), a.levels, state_path(a.state)))
 
 
+# ------------------------------------------------------------------------------------------------ closed test mode (O582)
+def closed_start(a, entries, st):
+    """--closed: only with the switch on (data/chaos_testers_closed); leftovers of an older run go, then the two tester guilds are
+    made before the bots log in (the engine loads a guild at login). The plan is kept in the state and in a.closed_plan"""
+    if not TCL.flag_on(a.server_dir):
+        sys.exit('closed test mode is off: chaos-ctl.sh testers closed on (data/chaos_testers_closed)')
+    ids = [int(b['player_id']) for b in entries if b.get('player_id')]
+    sql(closed_clean(ids))
+    a.closed_plan = TCL.plan([b['name'] for b in entries])
+    if a.closed_plan['guilds']:
+        sql(TCL.guild_statements(a.closed_plan))
+    st['closed'] = {'guilds': [g['name'] for g in a.closed_plan['guilds']], 'at': int(time.time())}
+    save_state(a.state, st)
+    print('closed test mode: %s' % (', '.join('%s (%d members)' % (g['name'], len(g['members'])) for g in a.closed_plan['guilds'])
+                                    or 'no guilds (fewer than %d bots per guild)' % TCL.MIN_MEMBERS), flush=True)
+
+
+def closed_tables():
+    """the names of the tables closed mode touches that exist now"""
+    out = rows(sql(["SELECT `TABLE_NAME` FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND "
+                    "(`TABLE_NAME` LIKE 'chaos\\_%' OR `TABLE_NAME` LIKE 'guild%');"]))
+    return {r[0] for r in out if r}
+
+
+def closed_clean(ids):
+    return TCL.clean_statements(closed_tables(), ids)
+
+
+def closed_finish(a, entries):
+    """the run is over: the guilds, wars, tester market book and tester arena records it made go"""
+    try:
+        sql(closed_clean([int(b['player_id']) for b in entries if b.get('player_id')]))
+        print('closed test mode: guilds, orders and arena records of the run removed', flush=True)
+    except (SystemExit, OSError, subprocess.SubprocessError) as e:
+        print('closed test mode: the clean-up failed (%s): testers cleanup --yes removes them' % e, flush=True)
+
+
 # ------------------------------------------------------------------------------------------------ cleanup
 def cleanup_targets(state_bots, db_rows):
     """the (player ids, account ids) cleanup may delete. db_rows: [(player id, player name, account id, account name,
@@ -456,7 +498,7 @@ def cleanup(a):
                        "('players', 'accounts') ORDER BY 1, 2;"]))
     has_houses = bool(rows(sql(["SELECT 1 FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND "
                                 "`TABLE_NAME` = 'houses';"])))
-    stmts = cleanup_statements(tables, players, accounts, has_houses)
+    stmts = closed_clean(players) + cleanup_statements(tables, players, accounts, has_houses)
     print('cleanup: %d characters, %d accounts; rows in %d tables' % (len(players), len(accounts), len(tables)))
     if a.dry:
         print('\n'.join(stmts))
@@ -611,6 +653,11 @@ class Results:
             h['slow'][i] += 1
             h['max_s'] = round(max(h['max_s'], seconds), 1)
 
+    def keep(self, key, n=1):
+        """the bag keeping counters of the report's "Bag keeping" line (O584)"""
+        k = self.d.setdefault('keep', {})
+        k[key] = k.get(key, 0) + n
+
     def behaviour(self, name, outcome, bot=None):
         b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0, 'expected': 0})
         b[outcome] = b.get(outcome, 0) + 1
@@ -681,6 +728,19 @@ class CheckIO(KeyIO):
             return None
         return await self.bot.helper_says(command, kind, wait)
 
+    async def open_bag(self, client_id):
+        """the own backpack as container 0 (a position inside it is (0xFFFF, 0x40, slot)); nothing without the client id"""
+        if self.alive() and client_id:
+            self.bot.conn.send(TC.use_packet((0xFFFF, 3, 0), int(client_id)))
+            await self.bot.conn.w.drain()
+
+    async def use_with(self, from_slot, from_sprite, to_slot, to_sprite):
+        """use the backpack item in from_slot on the one in to_slot (a gem on a piece of gear)"""
+        if self.alive():
+            self.bot.conn.send(TC.use_with_packet((0xFFFF, 0x40, from_slot), int(from_sprite), from_slot,
+                                                  (0xFFFF, 0x40, to_slot), int(to_sprite), to_slot))
+            await self.bot.conn.w.drain()
+
     async def say(self, text):
         if self.alive():
             self.bot.say(text)
@@ -750,6 +810,39 @@ class CheckIO(KeyIO):
 
     def autosetup(self):
         return getattr(self.bot.args, 'checks_rotation', None)
+
+    # closed test mode (O582): the same calls for another bot, the plan of the tester guilds, the bazaar rows
+    def _bot(self, name):
+        return next((b for b in ONLINE.values() if b.name == name and b.alive and not b.died), None)
+
+    def online(self, name):
+        return name if name and self._bot(name) is not None else None
+
+    def closed_plan(self):
+        return (getattr(self.bot.args, 'closed_plan', None) or {}).get('of', {}).get(self.bot.name)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        b = self._bot(other)
+        return await b.helper_says(command, kind, wait) if b is not None and self.alive() else None
+
+    async def go_of(self, other, place):
+        b = self._bot(other)
+        if b is None or not self.alive():
+            return False
+        b.stay = place == 'town'
+        r = await b.helper_says(place, place)
+        return bool(r and not r.get('err'))
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        b = self._bot(other)
+        return await KeyIO(b, self.clock).request(opname, action, data, expect, timeout) if b is not None else None
+
+    def sql(self, statements):
+        try:
+            sql(statements)
+            return True
+        except (SystemExit, OSError, subprocess.SubprocessError):
+            return False
 
     def spells(self):
         return getattr(self.bot.args, 'checks_spells', None) or {}
@@ -865,11 +958,17 @@ class TesterBot(LT.Bot):
         self.fails = 0
         self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
         self.back_at = None  # after a flee: when to go back to the hunt
+        self.equip_refused = set()  # item ids the server refused to wear (a class or level rule): not tried again (O584)
+        self.jams = 0  # keep rounds in a row that ended with a jammed bag
+        self.hunt_since = None  # when the bot came to its hunt spot (login, `!tester hunt`); None: away from it (O584)
+        self.last_progress = None  # the last experience or loot message (TC.hunt_outcome)
+        self.flee_check = None  # (when to judge it, health at the flee) of the flee under way (TC.flee_outcome)
         self.npc_spoke = False
         self.nothing_to_sell = False
         self.walk_until = 0.0  # until when a blind walk is the likely cause of a "not possible"
         self.room_fails = 0  # "not enough room" since the bag was last emptied (helper "bag")
-        self.bag_at = -999.0  # when the bag was last emptied
+        self.bag_at = -999.0  # when the bag was last looked at
+        self.bag_report = {}  # the newest `!tester bag` answer
         self.waiters = []  # (opcode, {actions}, future): requests of the keystone scenario waiting for their answer
         self.class_index = 0  # this bot's place among the bots of its class (the keystone scenario starts there)
         self.keytest_done = False
@@ -909,6 +1008,7 @@ class TesterBot(LT.Bot):
         self.results.d['logins'] += 1
         self.results.log(self, 'login', 'in game')
         self.alive, self.died, self.health, self.health_at = True, False, 100, None
+        self.hunt_since, self.flee_check = time.monotonic(), None  # the login spot is the hunt spot
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
         guard = asyncio.ensure_future(self.guard())
@@ -1003,6 +1103,11 @@ class TesterBot(LT.Bot):
         if self.died:
             return
         self.died = self.after_death = True
+        if self.flee_check:  # the flee did not save it
+            self.flee_check = None
+            self.results.behaviour('flee', 'failed', self)
+            self.results.count('failures', 'flee: died within %d s of the flee' % TC.FLEE_LOOK, self)
+        self.hunt_since = None
         for kind in list(self.pending):  # dead before the heal or the potion could work: the deaths have their section
             self.results.behaviour(kind, 'expected', self)
         self.pending.clear()
@@ -1026,6 +1131,10 @@ class TesterBot(LT.Bot):
                 self.results.helper_answer('late')
                 return
             self.helper[hk] = data
+            if hk == 'hunt' and not data.get('err'):
+                self.hunt_since = time.monotonic()
+            elif hk == 'town':
+                self.hunt_since = None
             if hk == 'info':
                 self.level = data.get('level', self.level)
                 cid = data.get('cid')
@@ -1056,11 +1165,17 @@ class TesterBot(LT.Bot):
                     del self.pending[kind_]
                     self.results.behaviour(kind_, 'expected', self)
             self.results.count('failures', detail, self)
+        elif kind == 'sold':
+            self.results.keep('sold_units', detail[0])
+            self.results.keep('sold_gold', detail[1])
+            self.results.log(self, 'keep', 'sold %d for %d gold' % detail)
         elif kind == 'xp':
+            self.last_progress = time.monotonic()
             rule = TC.xp_anomaly(self.level, detail)
             if rule:
                 self.results.anomaly(rule, self, gained=detail)
         elif kind == 'loot':
+            self.last_progress = time.monotonic()
             rule = TC.gold_anomaly(self.level, detail[1])
             if rule:
                 self.results.anomaly(rule, self, monster=detail[0], gold=detail[1])
@@ -1101,18 +1216,134 @@ class TesterBot(LT.Bot):
 
     # ---------------------------------------------------------------- what the bot does
     async def tidy_bag(self):
-        """the helper empties the backpack of loot and tops up the potions (`!tester bag`): the bots loot and never sell,
-        so the bag fills and every pickup says "There is not enough room." (1225 times in the first live run); the
-        supplies were given once, a potion count of 100 does not last 29 deaths"""
+        """the potion top-up and a look at the backpack (`!tester bag`, O584): the helper tops the potions up (a count of 100 does
+        not last 29 deaths) and reports the slots; it removes nothing any more. What to do with the drops is `do_keep`: sell,
+        wear a better piece, drop junk. The report also tells the bot how full the bag is"""
         self.results.behaviour('bag', 'tried')
-        r = await self.helper_says('bag', 'bag')
-        self.bag_at, self.room_fails = time.monotonic(), 0
+        r = await self.helper_says('bag', 'bag', 6.0)
+        self.bag_at = time.monotonic()
         if not r or r.get('err'):
             if self.died or not self.alive:
                 self.results.behaviour('bag', 'expected', self)
                 return False
             return self.failed('bag', r)
+        self.bag_report = r
         self.results.behaviour('bag', 'ok', self)
+        return True
+
+    async def keep_report(self):
+        """a fresh `!tester bag` report, None when the helper did not answer"""
+        r = await self.helper_says('bag', 'bag', 6.0)
+        if not r or r.get('err'):
+            return None
+        self.bag_report = r
+        return r
+
+    async def open_bag(self, report):
+        """the own backpack as container 0, so a slot has a position the move packet can name"""
+        cid = report.get('bagClientId')
+        if cid:
+            self.conn.send(TC.use_packet((0xFFFF, 3, 0), int(cid)))
+            await asyncio.sleep(1.0)
+
+    async def sell_trip(self):
+        """to the Loot Buyer by the helper, the NPC trade window, every kind it lists sold, back (O584: the trade path a player
+        takes). True when it sold at least once"""
+        self.results.keep('sell_visits')
+        self.hunt_since = None
+        r = await self.helper_says('shop Loot Buyer', 'shop')
+        if not r or r.get('err') or not r.get('npc'):
+            self.failed('keep: sell trip', r)
+            await self.helper_says('hunt', 'hunt')
+            return False
+        before = self.results.d.get('keep', {}).get('sold_units', 0)
+        self.shop_npc, self.shop, self.npc_spoke, self.nothing_to_sell = r['npc'], None, False, False
+        self.say('hi')
+        await asyncio.sleep(1.5)
+        self.say('trade', NPC_CHANNEL)
+        await asyncio.sleep(1.5)
+        if self.shop:
+            sell = [i for i in self.shop if i['sell'] > 0][:TC.SELL_ITEMS]
+            for item in sell:
+                self.conn.send(TC.sale_packet(item['id'], item['sub'], TC.SELL_AMOUNT))
+                await self.conn.w.drain()
+                await asyncio.sleep(0.7)
+            await asyncio.sleep(1)
+            self.conn.send(b'\x7c')
+        elif self.nothing_to_sell:
+            self.results.keep('nothing')
+        else:
+            self.results.count('failures', 'keep: no trade window from %s (%s)' % (
+                r['npc'], 'it answered' if self.npc_spoke else 'no answer to hi'), self)
+        self.say('bye', NPC_CHANNEL)
+        self.shop_npc = None
+        await self.helper_says('hunt', 'hunt')
+        return self.results.d.get('keep', {}).get('sold_units', 0) > before
+
+    async def do_keep(self, clock):
+        """keep the bag like a player (O584): look at it (`!tester bag`), wear a piece that beats the worn one (the move packet
+        to the equipment slot), sell at the Loot Buyer when it is full, drop junk when it is still jammed (the move packet to the
+        floor). The helper only reports. A bag that stays jammed with what can be neither sold nor dropped is wiped by the helper
+        after MAX_JAMS rounds, as a counted failure"""
+        r = await self.keep_report()
+        if r is None:
+            return self.failed('keep', self.helper.get('bag'))
+        plan = TC.keep_plan(r, self.equip_refused, self.room_fails)
+        self.room_fails = 0
+        await self.open_bag(r)
+        if plan['equip']:
+            await self.equip(plan['equip'], r)
+            r = await self.keep_report() or r
+        if plan['sell']:
+            await self.sell_trip()
+            r = await self.keep_report() or r
+        dropped = 0
+        for row in TC.drop_rows(r):
+            await self.drop(row, r)
+            dropped += 1
+        if dropped:
+            r = await self.keep_report() or r
+        if TC.bag_fill(r) >= TC.BAG_JAM and not dropped:
+            self.jams += 1
+            if self.jams >= TC.MAX_JAMS:
+                self.jams = 0
+                self.results.keep('wiped')
+                self.results.count('failures', 'keep: the bag stayed jammed with items that are neither sold nor dropped: wiped by the helper', self)
+                await self.helper_says('bag wipe', 'bag', 6.0)
+        else:
+            self.jams = 0
+        return True
+
+    async def equip(self, row, report):
+        """wear the piece: move it from its backpack slot to its equipment slot; ok when the slot of the backpack holds another
+        thing afterwards. The server's refusal (a class or level rule) is remembered, not retried"""
+        slot = row.get('s')
+        if not slot:
+            return False
+        self.conn.send(TC.move_packet((0xFFFF, 0x40, row['i']), int(row['cid']), row['i'], (0xFFFF, slot, 0), 1))
+        await self.conn.w.drain()
+        await asyncio.sleep(1.5)
+        after = await self.keep_report()
+        left = TC.row_at(after, row['i']) if after else None
+        if after is not None and not (left and left.get('id') == row['id']):
+            self.results.keep('equipped')
+            self.results.log(self, 'keep', 'wore item %s (score %s)' % (row['id'], row.get('sc')))
+            return True
+        self.equip_refused.add(row['id'])
+        self.results.keep('equip_refused')
+        return False
+
+    async def drop(self, row, report):
+        """throw a junk item on the floor of the bot's own tile, as a player clears a bag"""
+        pos = report.get('pos') or {}
+        if not all(isinstance(pos.get(k), int) for k in 'xyz'):
+            return False
+        self.conn.send(TC.move_packet((0xFFFF, 0x40, row['i']), int(row['cid']), row['i'], (pos['x'], pos['y'], pos['z']),
+                                      int(row.get('n') or 1)))
+        await self.conn.w.drain()
+        await asyncio.sleep(1.0)
+        self.results.keep('dropped')
+        self.results.log(self, 'keep', 'dropped item %s' % row['id'])
         return True
 
     async def act(self, clock):
@@ -1126,14 +1357,20 @@ class TesterBot(LT.Bot):
             if (self.room_fails >= ROOM_FAILS_BAG or now >= next_bag) and self.cid:
                 next_bag = now + BAG_EVERY
                 try:
-                    await self.tidy_bag()
+                    if self.room_fails >= ROOM_FAILS_BAG:
+                        self.last = 'keep'
+                        self.results.behaviour('keep', 'tried')  # no room for a pickup: keep the bag now
+                        ok = await self.do_keep(clock)
+                        self.results.behaviour('keep', 'ok' if ok else 'failed', self)
+                    else:
+                        await self.tidy_bag()
                 except (ConnectionError, OSError, asyncio.IncompleteReadError):
                     break
             if now >= next_pick:
                 name = self.sched.next(now) or 'hunt'
                 if getattr(self.args, 'keystones', False) and not self.keytest_done:
                     name = 'keytest'  # before anything else, until it is through (it goes on after a death and a new login)
-                elif getattr(self.args, 'checks', False) and not self.checks_done:
+                elif (getattr(self.args, 'checks', False) or getattr(self.args, 'closed', False)) and not self.checks_done:
                     name = 'checks'  # then the system checks (tester_checks.py)
                 self.last = name
                 self.results.behaviour(name, 'tried')
@@ -1144,7 +1381,11 @@ class TesterBot(LT.Bot):
                 # a behaviour cut short by the bot's own death or a dropped connection is not a failure of the system
                 # it tried: the deaths and kicks have their sections
                 cut = not ok and (self.died or not self.alive)
-                self.results.behaviour(name, 'expected' if cut else 'ok' if ok else 'failed', self)
+                if ok is None:  # not judged (TC.hunt_outcome: the bot has not been at its hunt long enough)
+                    outcome = 'expected'
+                else:
+                    outcome = 'expected' if cut else 'ok' if ok else 'failed'
+                self.results.behaviour(name, outcome, self)
                 next_pick = time.monotonic() + 5 + random.random() * 10
             try:
                 await self.conn.w.drain()
@@ -1178,6 +1419,13 @@ class TesterBot(LT.Bot):
         FLEE_AT % with both on cooldown, back to the temple (as a player's town portal) and to the hunt FLEE_REST
         seconds later; cast the rotation otherwise (not under 50 % with a heal: the mana is for the heal). A heal or a
         potion counts ok when the health rises within HEAL_SEEN seconds, else failed"""
+        if self.flee_check and now >= self.flee_check[0]:
+            at_flee = self.flee_check[1]
+            self.flee_check = None
+            outcome, why = TC.flee_outcome(at_flee, self.health, self.died, self.helper.get('town'))
+            self.results.behaviour('flee', outcome, self)
+            if outcome != 'ok':
+                self.results.count('failures', 'flee: ' + why, self)
         for kind, until in list(self.pending.items()):
             if now > until:
                 del self.pending[kind]
@@ -1202,9 +1450,11 @@ class TesterBot(LT.Bot):
                 self.pending.setdefault('potion', now + HEAL_SEEN)
         if self.health <= FLEE_AT and not self.back_at and self.ready.get('flee', 0) <= now \
                 and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
+            self.helper.pop('town', None)
             self.say('!tester town')
             self.ready['flee'] = now + 60
             self.back_at = now + FLEE_REST
+            self.flee_check = (now + TC.FLEE_LOOK, self.health)
             self.results.behaviour('flee', 'tried')
             self.results.log(self, 'do', 'flee at %d %% health' % self.health)
             return
@@ -1247,7 +1497,14 @@ class TesterBot(LT.Bot):
             self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
 
     async def do_hunt(self, clock):
-        return True
+        """O584: ok only when the bot gained experience or loot within TC.HUNT_WINDOW seconds; failed when it stood at its
+        hunt that long and gained none; not judged (None) before it has been there a window. It said ok always before."""
+        outcome = TC.hunt_outcome(time.monotonic(), self.hunt_since, self.last_progress)
+        if outcome == 'failed':
+            self.results.count('failures', 'hunt: no experience in %d s at the hunt spot' % TC.HUNT_WINDOW, self)
+            self.hunt_since = time.monotonic()  # judged again after the next window, not at every pick
+            return False
+        return True if outcome == 'ok' else None
 
     async def do_wander(self, clock):
         self.walk(random.randint(2, 5))
@@ -1412,7 +1669,9 @@ class TesterBot(LT.Bot):
         login; a failed check is logged as a BUG line at once"""
         first = self.checks is None
         if first:
-            self.checks = TX.CheckRun(self.name, self.cls, self.level)
+            closed = bool(getattr(self.args, 'closed', False))
+            self.checks = TX.CheckRun(self.name, self.cls, self.level, closed=closed,
+                                      only=None if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS)
         run = self.checks
         io = CheckIO(self, clock)
         await asyncio.sleep(10 if first else 3)
@@ -1591,6 +1850,7 @@ def run(a):
         a.checks_spells = load_check_spells(a.server_dir, vocs)
     a.backpack_client_id = 0
     a.after_login = ''
+    a.closed_plan = {'guilds': [], 'of': {}}
     if a.scenarios:
         import tester_scenarios as TS  # the coverage layer (server/tools/tester_scenarios.py)
         TS.attach(a, a.scenarios)
@@ -1602,6 +1862,8 @@ def run(a):
     if not entries:
         sys.exit('no testers in %s: run setup first' % state_path(a.state))
     entries = entries[:min(a.count or len(entries), TC.MAX_BOTS)]
+    if a.closed:
+        closed_start(a, entries, st)
     if a.rsa_key == '':
         # the login key the server really uses (rsaKeyFile, patch 0046), not key.pem: with another key every login block
         # is unreadable and the server closes the connection without a word
@@ -1620,7 +1882,11 @@ def run(a):
                  'scenarios': os.path.abspath(a.scenarios) if a.scenarios else ''}
     save_state(a.state, st)
     print('%d testers for %d minutes (Ctrl+C or SIGTERM ends early)' % (len(entries), a.minutes), flush=True)
-    asyncio.run(run_bots(a, entries))
+    try:
+        asyncio.run(run_bots(a, entries))
+    finally:
+        if a.closed:
+            closed_finish(a, entries)
 
 
 # ------------------------------------------------------------------------------------------------ report
@@ -1656,6 +1922,26 @@ def report(a):
     sys.stdout.write(report_text(a))
 
 
+def previous_report(state, activity):
+    """(text, ' of <stamp>') of the newest report file in runs/ that is older than the run of `activity` (O584: the diff); ('', '')
+    when there is none"""
+    folder = os.path.join(state, 'runs')
+    mine = re.search(r'run-(\d{8}-\d{6})', activity or '')
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return '', ''
+    stamps = sorted(n[4:19] for n in names if re.match(r'^run-\d{8}-\d{6}-report\.txt$', n)
+                    and (not mine or n[4:19] < mine.group(1)))
+    if not stamps:
+        return '', ''
+    try:
+        with open(os.path.join(folder, 'run-%s-report.txt' % stamps[-1]), encoding='utf-8', errors='replace') as f:
+            return f.read(), ' of ' + stamps[-1]
+    except OSError:
+        return '', ''
+
+
 def report_text(a):
     st = load_state(a.state)
     r = st.get('run') or {}
@@ -1670,8 +1956,9 @@ def report_text(a):
     table = a.scenarios or r.get('scenarios') or ''
     if table and os.path.exists(table):
         import tester_scenarios as TS  # the per-system coverage: tried, ok, refused, log errors, never reached and why
-        res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed)
-    text = TC.build_report(res, parsed)
+        res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed, res.get('checks'))
+    prev, prev_title = previous_report(a.state, r.get('activity'))
+    text = TC.build_report(res, parsed, prev, prev_title)
     if not log:
         text += '(no server log given: --log)\n'
     if r.get('activity'):
@@ -1714,7 +2001,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -1734,6 +2021,7 @@ def parse(argv):
     for k, v in vals.items():
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
+    a.closed = flags['--closed']
     if a.hash_iterations < 1:
         sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:

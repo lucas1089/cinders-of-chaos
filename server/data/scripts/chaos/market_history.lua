@@ -92,6 +92,9 @@ local SCHEMA = {
 }
 
 local function realmOf(player)
+	if Chaos.isTester(player) then
+		return 900000001 -- the testers' own book (market_core.lua TESTER_REALM, closed test mode O582)
+	end
 	local S = ChaosSeason
 	if S and S.realmOfGuid then
 		local ok, r = pcall(S.realmOfGuid, player:getGuid())

@@ -9622,8 +9622,8 @@ systems that never answered, with no refusal and no log error, on one line "no a
   scenario waits for minutes. The ping now runs in the always-on guard task as well.
 - *"not possible" after wander (823).* A blind step into a wall or a counter: the engine answers "Sorry, not possible."
   A "not possible" within 3 s of a bot's walk is counted as `not possible (a blind step into an obstacle)`, expected.
-- *"not enough room" (1225).* The bots loot and never sell, so the backpack fills. The helper has `!tester bag`: it empties
-  the backpack of everything but the potions and tops the potions up to 100 (also at login; the supplies were given once,
+- *"not enough room" (1225).* The bots loot and never sell, so the backpack fills. The helper has `!tester bag`: it emptied
+  the backpack of everything but the potions and tops the potions up to 100 (O584: since then `!tester bag` only tops up and reports, the bots keep the bag themselves, see "Keeping the drops"; also at login; the supplies were given once,
   a potion count of 100 does not last 29 deaths). A bot calls it every 4 minutes and after 3 "not enough room". A "not
   enough room" within 30 s of a clean-up is reported as its own, unexpected, line.
 - *"no helper answer" (town, depot, shop) and "no way".* A bot that died while it waited for the helper has no answer to
@@ -9694,8 +9694,10 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
   - `place`: the helper's `enter` argument.
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
-  - `out`: what bots truly cannot do, with the reason. Payments, moderation, guilds, market, orb exchange, party
-    finder, ranked arena, PvP zones, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
+    raid, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar. Only a `--closed` run reaches
+    them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
 - Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
   world and staff actions (start, stop, reset, grant, give, transfer, gift and the rest of `ADMIN`).
@@ -9710,6 +9712,108 @@ Data keys are filled only from the bot's own earlier answers on that opcode. Nev
 Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
 Report: per system tried / ok / refused / log errors. A system never reached says why:
 out of scope with the reason, passive, or not picked in this run.
+
+#### Table fixes, proof and effects (O584)
+
+Owner 2026-11-16: the bots must use every mechanic and play like a human, for a real mass test. Audit: `COVERAGE.md`
+section 4 (items 1, 15, 2, 3, 4 are this round; the closed test mode O582, chains, profiles and the Unity journey bots follow).
+- **Table.** The player's own `start` of the Ember Descent (and of the Ashen Sepulchre raid, allowed by name in `ADMIN_ALLOW`; the raid itself is out of scope since O582, the server refuses testers there, so it is not sent), and the `reset` of the DPS meter, hunt
+  meter, loot filter counters and dummy meter are sent: `ADMIN_ALLOW` in the generator names them per opcode, with the reason;
+  the same word on another opcode stays a staff word. A scenario that sent `start` sends `leave` at its end, so a bot does not wait
+  alone in a lobby. Conquest is a solo token vendor and left `OUT_OF_SCOPE`. Every action the bots never send has its reason in
+  the table (`skipWhy`); `gen_tester_scenarios.py --skips` prints the list, and `tester_scenarios_test.py` fails for a skip with
+  none or with a word that is allowed.
+- **Effects.** `EFFECTS` in the generator is a table of expected effects per action: bank withdraw and deposit move the gold
+  (and nothing else), the daily claim marks the day taken, the hunt meter reset zeroes xp, kills, damage, healing, loot and
+  supplies, the loot filter reset zeroes every counter, a loadout save fills slot 1 and its delete empties it, the tooltip of the
+  backpack slot names the item. A step names the request, the answer to wait for and conditions on it (`delta`, `eq`, `at_least`,
+  `zero`, `has`); the generator fails when an answer name is not in the server files. Run as the `effect` scenario: an answer that
+  shows the effect counts REAL, one that does not is a FAIL (`failed` in the coverage, a line `EFFECT FAIL` in the activity log, and
+  "Effects that did not hold" in the report), a precondition that is not met (too little gold in the bank, the day already taken)
+  is `skipped`. The bank, daily and loadout chains compare an answer with the one before it.
+- **Report v2.** "Proof by system": REAL = an effect the bot saw (an effect that held, a system check that passed), ANS = an
+  answer and no effect checked, HELP = the helper's shortcut (a teleport to a place, an item), fail = an answer without its effect
+  or a failed check; the line below it counts the systems with REAL proof, with ANS only and with HELP only. A report of an older
+  format still reads. "Against the previous run" (first section, from the newest older `runs/run-*-report.txt`): counters that
+  moved by 10 and 25 %, failure kinds that are new or gone, new and gone BUG lines and effect failures, systems whose REAL proof
+  appeared or vanished, checks that started to fail. Counters that meant nothing now mean something: `hunt` is ok when the bot
+  gained experience or loot within 90 s at its hunt spot, failed when it stood there that long and gained none, and not judged
+  (expected) before; `flee` is ok when the helper took it to the temple and it is alive with no less health 5 s later, failed when
+  it died or the teleport failed. The "Helper answers" line stays.
+
+#### Keeping the drops (O584 item 2, behaviour `keep`)
+
+The bag was wiped every 4 minutes by the helper, so no drop was ever sold, worn or compared. Now `!tester bag` tops the potions up
+and only REPORTS the backpack: the slots used, a kind per row (supply, currency, container, locked, sell, junk) from the real Loot
+Buyer price rules (`ChaosItemPrices.basePrice` and `saleBlock`), a piece that scores better than the worn one (armour x10, defence
+x4, attack x2, item level; head, necklace, body, legs, feet, ring), and the junk to drop. The bot does the rest like a player
+(`testers.py do_keep`, the behaviour `keep`, also called when pickups say "not enough room" three times):
+1. open the backpack as container 0, wear the better piece with the move packet 0x78 from its backpack slot to its equipment slot
+   (a piece the server refuses, a class or level rule, is remembered and not tried again);
+2. when the bag is 70 % full, or pickups failed, or the Loot Buyer buys 4 kinds, go to the Loot Buyer (`!tester shop Loot Buyer`),
+   say hi and trade, send a sale packet (0x7b) for every kind of the NPC trade window, close the window, bye, back to the hunt;
+3. when the bag is still 90 % full, drop up to 3 junk items on its own tile (move packet to a map position), weakest first.
+A bag that stays jammed with what cannot be sold or dropped for 3 rounds is wiped by `!tester bag wipe`, a counted failure.
+The report line "Bag keeping" gives the items and gold sold, visits, pieces worn, items dropped and helper wipes. Not run live:
+the helper's answer needs a server (the packet bytes, the plans and the answers are in the tests).
+
+### Closed test mode (O582, `tools/tester_closed.py`, `tools/tester_closed_test.py`, `tests/testers_test.lua`)
+
+Owner 2026-11-16 (pt-BR): "Modo teste fechado". The bots play PvP, arena, battleground, guild, guild war, market and the
+bazaar lock among themselves, switched on from the admin app (Comandos > card Testers > Modo fechado > Ligar). Never with
+a real player. Off by default.
+
+The switch: `chaos-ctl.sh testers closed on | off | status` writes `data/chaos_testers_closed` in the server folder.
+Only the word `on` (any case) is on. No file, an unreadable file or any other text is off. The server reads it at most
+every 5 seconds (`ChaosTestersCore.closedOn`), so no restart. `testers start --closed` needs it on, makes two tester guilds
+before the bots log in and runs the closed checks.
+
+The guard: `testers_core.lua`. Every party of a closed-mode action is a tester or the action is refused.
+- `sideOf(flags)`: "tester" (all testers), "player" (none), nil (mixed, empty, unknown). nil is always refused.
+- `sameSide(system, on, a, b)`: both sides known and equal. Two testers only with the switch on and only for a system of
+  `CLOSED_SYSTEMS`. A tester against a player is refused on or off, in both directions.
+- Where it is asked:
+  - arena (`arena.lua`): join (the party), the queue per side, a tester entry leaves the queue when the switch goes off,
+    and `startMatch` checks both entries again.
+  - battleground (`battleground.lua`): the testers have the realm `K.REALM`; the queue group, the party rule "plays in
+    another realm" and the match all use the realm, so a match never holds both. A tester is refused with the switch off.
+  - the Marches (`pvpzone.lua`, `pvpzone_core.lua`): realm `K.REALM` has its own instance slot (`testerSlot`, the slot after
+    the grid, in the clear block x/y 13312-13823); a tester is refused with the switch off.
+  - PvP (`testers.lua` `onTargetCombat`): tester against player is always refused; two testers hit each other only with
+    the switch on.
+  - guild (`guild.lua` `guildOf`): a tester has a guild only if it is a tester guild (name "Tester Guild ...", every
+    member a tester) and the switch is on; a player never has a tester guild. A mixed guild gives no guild to anyone
+    concerned (the members are read from `guild_membership` and kept 10 s).
+  - guild war (`guildwar.lua`): declare and accept need both guilds on the same known side; the war realm of a tester
+    is `K.REALM`; a war of tester guilds is never broadcast; a kill across the sides never scores.
+  - market (`market.lua`, `market_core.lua`, `market_history.lua`): a tester trades in the realm `K.REALM`, a separate
+    book. `realmClause` leaves it out of every player's view, `realmOf` keeps it apart from seasons, the price history
+    and `orderFind` follow the realm. Gold only: a tester request with coins is refused, `coinsAllowed` is false there.
+    With the switch off a tester cannot buy, list, post or fill.
+  - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
+    refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
+  - queues that match players (dungeons, group queue, party finder, raid): testers are refused, switch on or off.
+    Dungeons, group queue, arena and battleground were not tester-aware before (audit 2026-11-16).
+- Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
+  referral, the orb exchange, conquest and siege.
+
+The bots (`tester_checks.py`, run with `--closed`; the helper is v12 (v11 added `closed`; O584 added bag, shop NPC and give), `!tester closed` reads the deployed rules):
+`closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
+`closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
+`closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
+other bot sees and buys it), `closed_bazaar` (a listing locks the character, the release frees it). A failed guard is a
+`BUG` line. A check that cannot run says why (no partner, a level gate, fewer than 6 bots for two guilds).
+
+Clean-up (`tester_closed.clean_statements`): the guilds named "Tester Guild Alfa / Bravo" owned by a tester with their
+ranks, members, wars and Chaos rows; the market offers, orders and price history of realm `K.REALM`; arena matches whose
+every player is a tester; bazaar listings of testers. Every DELETE is keyed by the realm, the guild names or the tester ids.
+It runs before a run starts, when it ends and in `testers cleanup`.
+
+Run on a server with real players on: it is safe by the guards above, but run it on the test server first.
+Not run live: the whole flow (guilds loaded at login, the arena match, the Marches instance at slot 4, a market sale in the
+tester book). Unit tests: `tests/testers_test.lua`, `tests/groupqueue_test.lua` (arena), `tests/market_test.lua`,
+`tests/tester_helper_test.lua`, `tools/tester_closed_test.py`, `tools/tester_checks_test.py`, `tools/testers_test.py`,
+`deploy/chaos_ctl_test.py`, `website/tests/chaos_bazaar_test.php`.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -9768,6 +9872,24 @@ fight with a known outcome. The first unique and the pity (`retention_loot.lua`)
 The share of a real kill by experience (not the formula) needs both bots to kill the same monster. A run of the helper
 file with an older `HELPER_VERSION` answers none of the new commands: `chaos-ctl.sh testers start` replaces it (version 3).
 Needs a live run to confirm: the 3 % health tolerance, the rift slot wait, the share verdict timing.
+
+Crafting and upgrades (O584 item 3). `!tester give item | orb KEY [N] | gem | rune | charm | card` puts one of each in the
+backpack (a plain kit weapon with no rarity at an item level of at most 150; the orbs of `ChaosCrafting.config.orbs`, the whetstone
+and the Orb of Sockets by key; the smallest gem; the first support rune; a small charm; the first card) and answers its slot
+(`index`), ids and the backpack's client id. A new stack goes in front and moves the others back (`Held` follows that). The checks
+open the backpack as container 0 and read the item's modifiers from its TOOLTIP before and after, next to the bench's own view;
+the two must agree and the change must be what the orb's text says:
+| check | what it does and asserts |
+| `craft_orbs` | Awakening (Common or Uncommon with modifiers), Grafting (one modifier more), Upheaval (same rarity and count), Unmaking (one less), Fate (a rarity step up), Erasure (a normal item), Gilding (Magic and up with modifiers) on one plain item; the tooltip changes at every step; an orb the server refuses (a level gate) is a note, not a bug |
+| `craft_whetstone` | Gilding, then the Whetstone: quality +1 |
+| `craft_sockets` | the Orb of Sockets, up to five: sockets between 0 and the maximum, at least one in five |
+| `craft_gems` | sockets, a gem, the use-with packet (0x83): one more gem in the sockets list, the tooltip changed |
+| `craft_supports` | a rune into the first spell with a free socket: the spell lists one rune more |
+| `craft_charms` | a charm placed on an open cell (grid +1, bag -1) and taken out (back to the start) |
+| `craft_cards` | the tooltip of a card names it and carries its description |
+A check that cannot start (an older helper, a system not loaded, no free socket) is a SKIP with the helper's reason. Not run
+live: the answers' shapes come from the server code and its protocol headers; the checks run on a stateful mock of the backpack,
+the crafting window, the tooltip, the support window and the charm grid (`tester_checks_test.py` class `Crafting`).
 
 Tests: `tools/tester_checks_test.py` (mocked game: every check passes, fails with its BUG line, and skips; the Auto setup
 rule against the real client data; the spell quest on a stateful mock with a switch per rule, and the first quest spell of

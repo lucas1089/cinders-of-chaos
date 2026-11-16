@@ -559,5 +559,56 @@ act(a, "join", {arena = "1v1"})
 check(not S.isQueued(a), "disabled: no join")
 ChaosGroupQueueConfig.enabled = true
 
+-- 10) closed test mode (O582): the arena never matches a tester with a player, closed mode or not
+dofile("data/scripts/chaos/testers_core.lua")
+local TK = ChaosTestersCore
+local function tester(name, ip)
+	local p = newPlayer(name, 300, ip)
+	p.st[Chaos.storage.tester] = 1
+	return p
+end
+local mode = "off"
+TK.reader, TK.clock = function() return mode end, function() return 5000 + (TK.tick or 0) end
+local function flip(to) mode = to; TK.tick = (TK.tick or 0) + 100; TK.resetClosedCache() end
+flip("off")
+local t1, t2 = tester("Tester Aaa", 41), tester("Tester Bbb", 42)
+check(not S.join(t1, "1v1"), "mode off: a tester cannot queue for the arena")
+check(said(t1, "Closed test mode is off"), "with the reason")
+local p1, p2 = newPlayer("Pia", 300, 43), newPlayer("Quin", 300, 44)
+check(S.join(p1, "1v1"), "a player queues as always")
+flip("on")
+check(S.join(t1, "1v1"), "mode on: a tester queues")
+advance(2000)
+eq(S.matchOf[p1:getId()], nil, "the player is not matched with the queued tester")
+eq(S.matchOf[t1:getId()], nil, "nor the tester with the queued player")
+check(S.isQueued(p1) and S.isQueued(t1), "both wait in their own queues")
+check(S.join(t2, "1v1"), "a second tester queues")
+advance(2000)
+local tm = S.matchOf[t1:getId()]
+check(tm ~= nil and S.matchOf[t2:getId()] == tm, "two testers are matched in closed mode")
+eq(S.matchOf[p1:getId()], nil, "the player still waits")
+S.stopAll()
+advance((acfg.endDelaySeconds + 1) * 1000)
+check(S.join(p2, "1v1"), "a second player queues")
+advance(2000)
+check(S.matchOf[p1:getId()] ~= nil and S.matchOf[p1:getId()] == S.matchOf[p2:getId()], "two players are matched as always")
+S.stopAll()
+advance((acfg.endDelaySeconds + 1) * 1000)
+-- the mode goes off while a tester waits: it leaves the queue, no match
+local t3, t4 = tester("Tester Ccc", 45), tester("Tester Ddd", 46)
+check(S.join(t3, "1v1") and S.join(t4, "1v1"), "two testers queue again")
+flip("off")
+advance(2000)
+eq(S.matchOf[t3:getId()], nil, "mode switched off: no match for the queued testers")
+check(not S.isQueued(t3) and not S.isQueued(t4), "they left the queue")
+-- a party of a tester and a player is refused whatever the mode
+flip("on")
+local m1, m2 = tester("Tester Eee", 47), newPlayer("Rex", 300, 48)
+makeParty(m1, m2)
+check(not S.join(m1, "2v2"), "a party of a tester and a player cannot queue")
+check(not S.isQueued(m1) and not S.isQueued(m2), "nobody of it is queued")
+TK.reader, TK.clock = nil, nil
+TK.resetClosedCache()
+
 print(string.format("groupqueue_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

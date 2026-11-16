@@ -22,6 +22,10 @@ return {
 	mode = "build",
 	-- slot i at origin + (i % cols, i // cols) x spacing; x/y 13312 - 13823 (clear of every other runtime area)
 	grid = {origin = {x = 13312, y = 13312, z = 7}, cols = 4, slots = 4, spacing = 128},
+	-- closed test mode (O582): the testers' realm (testers_core.lua K.REALM) has its own instance, the slot after the
+	-- grid's last one (second row, x/y 13312 - 13439 + 128: inside the clear block above), so a tester never shares an
+	-- instance with a player or a season; tests/pvpzone_test.lua holds the two numbers to testers_core.lua
+	testerRealm = 900000001, testerSlot = 4,
 	field = {innerW = 72, innerH = 56}, -- the walkable inside of an instance (outer wall around it)
 	-- stock things (the battleground uses the same set)
 	ids = {

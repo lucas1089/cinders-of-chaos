@@ -7,6 +7,7 @@ messages, the server log parsing (the same grouping as chaos-ctl.sh errors) and 
 import json
 import random
 import re
+import struct
 
 TESTER_STORAGE = 7102900          # Chaos.storage.tester (chaos_constants.lua), src-patch 0059 CHAOS_TESTER_STORAGE
 NAME_RE = re.compile(r'^Tester [A-Z][a-z][a-z]$')
@@ -31,6 +32,7 @@ BEHAVIOURS = {
     'opcodes':  (10, 20),    # a client module request (a scenario step, --opcodes)
     'loot':     (8, 30),     # loot filter take, open the backpack
     'relog':    (2, 600),    # log out and in again
+    'keep':     (6, 150),    # the bag the way a player keeps it: wear a better piece, sell at the Loot Buyer, drop junk (O584)
 }
 
 
@@ -94,6 +96,7 @@ LUA_ERROR = re.compile(r'Lua Script Error|stack traceback|attempt to (index|call
 XP_RE = re.compile(r'You gained (-?\d+) experience points?\.')
 LOOT_RE = re.compile(r'^Loot of (?:an? )?([^:]+): (.*)$')
 GOLD_RE = re.compile(r'(\d+) (gold|platinum|crystal) coins?')
+SOLD_RE = re.compile(r'^Sold (?:(\d+)x )?(.+) for ([\d,]+) gold\.$')  # loot_buyer.lua onSell: "Sold 3x item for 120 gold."
 ADVANCE_RE = re.compile(r'You advanced from Level (\d+) to Level (\d+)\.')
 DEATH_RE = re.compile(r'You are dead\.')
 HELPER_RE = re.compile(r'^\[tester-helper\] ([a-z]+) (\{.*\})$')
@@ -140,6 +143,9 @@ def classify(text):
         for n, kind in GOLD_RE.findall(m.group(2)):
             gold += int(n) * {'gold': 1, 'platinum': 100, 'crystal': 10000}[kind]
         return 'loot', (m.group(1), gold)
+    m = SOLD_RE.match(text)
+    if m:
+        return 'sold', (int(m.group(1) or 1), int(m.group(3).replace(',', '')))
     m = ADVANCE_RE.search(text)
     if m:
         return 'advance', (int(m.group(1)), int(m.group(2)))
@@ -284,12 +290,214 @@ def parse_log(lines):
     return out
 
 
+# ------------------------------------------------------------------------------------------------ outcomes that mean something
+HUNT_WINDOW = 90.0   # seconds a bot may hunt without one experience message before "hunt" counts as failed
+FLEE_LOOK = 5.0      # seconds after the flee at which its result is judged
+
+
+def hunt_outcome(now, hunt_since, last_progress, window=HUNT_WINDOW):
+    """what one pick of "hunt" proved (O584: it always said ok): 'ok' when the bot gained experience or took a loot message
+    within the window, 'failed' when it stood at its hunt that long and gained nothing, 'expected' (not judged) while it has
+    not been at the hunt for a window yet (just logged in, in the temple, back from a flee)"""
+    if hunt_since is None or now - hunt_since < window:
+        return 'expected'
+    if last_progress is not None and now - last_progress <= window and last_progress >= hunt_since:
+        return 'ok'
+    return 'failed'
+
+
+def flee_outcome(health_at_flee, health_now, died, helper_answer):
+    """what a flee (the helper's town teleport at low health) proved, FLEE_LOOK seconds later: 'ok' when the helper brought the
+    bot to the temple without an error and it is alive with no less health, else 'failed' with the reason"""
+    if helper_answer is None:
+        return 'failed', 'no helper answer to the town teleport'
+    if isinstance(helper_answer, dict) and helper_answer.get('err'):
+        return 'failed', 'the town teleport was refused: %s' % str(helper_answer['err'])[:60]
+    if died:
+        return 'failed', 'died within %d s of the flee' % FLEE_LOOK
+    if health_now < health_at_flee:
+        return 'failed', 'health fell from %d to %d after the flee' % (health_at_flee, health_now)
+    return 'ok', ''
+
+
+# ------------------------------------------------------------------------------------------------ keeping the bag (O584)
+BAG_FULL = 0.7     # tester_helper_core.lua H.BAG_FULL: the share of the slots that sends a bot to sell
+BAG_JAM = 0.9      # H.BAG_JAM: the share that makes it drop junk
+MAX_DROPS = 3      # a player drops a few things, not the whole bag in one go
+MAX_JAMS = 3       # rounds a bag stays jammed with what cannot be sold or dropped before the helper wipes it (a counted failure)
+SELL_AMOUNT = 100  # the u8 amount of a sale packet: the Loot Buyer sells at most what the bot carries
+SELL_ITEMS = 12    # kinds sold in one visit
+
+
+def move_packet(src, sprite, stackpos, dst, count=1):
+    """the client's move item packet (0x78): u16 x, u16 y, u8 z of the item, u16 sprite id, u8 stack position, the target
+    position, u8 count. A backpack slot is (0xFFFF, 0x40 + container id, slot), an equipment slot (0xFFFF, slot, 0), the floor
+    a map position"""
+    return (b'\x78' + struct.pack('<HHB', *src) + struct.pack('<HB', sprite, stackpos) + struct.pack('<HHB', *dst)
+            + struct.pack('<B', max(1, min(255, count))))
+
+
+def use_packet(pos, sprite, stackpos=0, index=0):
+    """use an item (0x82); index: the container id the item opens as"""
+    return b'\x82' + struct.pack('<HHB', *pos) + struct.pack('<HBB', sprite, stackpos, index)
+
+
+def use_with_packet(src, sprite, stackpos, dst, dst_sprite, dst_stackpos):
+    """use an item on another (0x83): the item's position, sprite id and stack position, then the target's"""
+    return (b'\x83' + struct.pack('<HHB', *src) + struct.pack('<HB', sprite, stackpos)
+            + struct.pack('<HHB', *dst) + struct.pack('<HB', dst_sprite, dst_stackpos))
+
+
+def sale_packet(item_id, sub, amount):
+    """sell to the NPC of the open trade window (0x7b): u16 id, u8 sub type, u8 amount, u8 ignore equipped"""
+    return b'\x7b' + struct.pack('<HBBB', item_id, sub, max(1, min(255, amount)), 1)
+
+
+def bag_fill(report):
+    return (report.get('used') or 0) / max(1, report.get('size') or 1)
+
+
+def row_at(report, index):
+    for r in report.get('rows') or []:
+        if r.get('i') == index:
+            return r
+    return None
+
+
+def keep_plan(report, refused=(), room_fails=0):
+    """what a bot does with the `!tester bag` report: {'equip': row or None, 'sell': bool}. Equip a piece the helper found
+    better than the worn one (never one the server refused before); sell when the bag is BAG_FULL full, when pickups said
+    there is no room, or when there is enough to make the trip worth it, and the Loot Buyer buys something"""
+    better = row_at(report, report.get('better')) if report.get('better') is not None else None
+    if better and better.get('id') in refused:
+        better = None
+    sells = report.get('sell') or 0
+    sell = sells > 0 and (bag_fill(report) >= BAG_FULL or room_fails > 0 or sells >= 4)
+    return {'equip': better, 'sell': sell}
+
+
+def drop_rows(report):
+    """the junk rows to drop from a report (the helper listed their container indexes: only at BAG_JAM or more), at most MAX_DROPS"""
+    out = []
+    for i in report.get('junk') or []:
+        r = row_at(report, i)
+        if r:
+            out.append(r)
+    return out[:MAX_DROPS]
+
+
+DIFF_MIN = 10     # a counter must move by this many ...
+DIFF_SHARE = 0.25  # ... and by this share to show in the "against the previous run" section
+SECTION_RE = re.compile(r'^== (.*?)(?: \(.*)?$')
+FAIL_ROW_RE = re.compile(r'^\s*(\d+)x (.+?)(?: \(expected in play\))?(?: \(first: .*)?$')
+BEHAVIOUR_ROW_RE = re.compile(r'^  ([a-z_]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$')
+PROOF_ROW_RE = re.compile(r'^  (\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$')
+CHECK_ROW_RE = re.compile(r'^  ([a-z_]+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$')
+
+
+def read_report(text):
+    """the numbers of a report text (this format or an older one) -> {'head': {name: n}, 'failures': {text: n}, 'behaviours':
+    {name: (tried, ok, failed, expected)}, 'proof': {system: (real, ans, help, failed)}, 'checks': {name: (pass, fail, skip)},
+    'bugs': set(text), 'effects': set(text)}"""
+    out = {'head': {}, 'failures': {}, 'behaviours': {}, 'proof': {}, 'checks': {}, 'bugs': set(), 'effects': set()}
+    section = ''
+    for line in (text or '').splitlines():
+        m = re.match(r'^logins (\d+), deaths (\d+), relogs (\d+), reconnects (\d+)', line)
+        if m:
+            out['head'] = dict(zip(('logins', 'deaths', 'relogs', 'reconnects'), (int(x) for x in m.groups())))
+            continue
+        m = SECTION_RE.match(line)
+        if m:
+            section = m.group(1)
+            continue
+        if line.strip().startswith('BUG '):
+            out['bugs'].add(line.strip()[:160])
+            continue
+        if section.startswith('Failure messages'):
+            m = FAIL_ROW_RE.match(line)
+            if m:
+                out['failures'][m.group(2).strip()] = int(m.group(1))
+        elif section.startswith('Behaviours'):
+            m = BEHAVIOUR_ROW_RE.match(line)
+            if m:
+                out['behaviours'][m.group(1)] = tuple(int(x) for x in m.groups()[1:])
+        elif section.startswith('Proof by system'):
+            m = PROOF_ROW_RE.match(line)
+            if m:
+                v = tuple(int(x) for x in m.groups()[1:])
+                out['proof'][m.group(1)] = (v[0], v[1], v[2], v[3])
+        elif section.startswith('System checks'):
+            m = CHECK_ROW_RE.match(line)
+            if m:
+                out['checks'][m.group(1)] = tuple(int(x) for x in m.groups()[1:])
+        elif section.startswith('Effects that did not hold'):
+            if line.startswith('  FAIL '):
+                out['effects'].add(line.strip()[:160])
+    return out
+
+
+def moved(a, b):
+    return abs(b - a) >= DIFF_MIN and abs(b - a) >= DIFF_SHARE * max(1, a, b)
+
+
+def report_diff(previous, current, title=''):
+    """lines of the "against the previous run" section: what changed between two report texts (O584). Counters that moved by
+    DIFF_MIN and DIFF_SHARE, failure kinds that are new or gone, BUG lines that are new or gone, systems whose REAL proof
+    appeared or vanished, checks that started failing. [] when there is no previous report or nothing moved"""
+    if not previous or not previous.strip():
+        return []
+    a, b = read_report(previous), read_report(current)
+    L = []
+    for k, v in sorted(b['head'].items()):
+        old = a['head'].get(k)
+        if old is not None and moved(old, v):
+            L.append('  %s %d -> %d' % (k, old, v))
+    for name, v in sorted(b['behaviours'].items()):
+        old = a['behaviours'].get(name)
+        if old is None:
+            L.append('  behaviour %s is new: %d tried, %d ok' % (name, v[0], v[1]))
+        elif moved(old[2], v[2]) or moved(old[1], v[1]):
+            L.append('  behaviour %s ok %d -> %d, failed %d -> %d' % (name, old[1], v[1], old[2], v[2]))
+    for name in sorted(set(a['behaviours']) - set(b['behaviours'])):
+        L.append('  behaviour %s is gone' % name)
+    for text, n in sorted(b['failures'].items()):
+        if text not in a['failures']:
+            L.append('  new failure: %dx %s' % (n, text[:100]))
+        elif moved(a['failures'][text], n):
+            L.append('  failure %s: %d -> %d' % (text[:80], a['failures'][text], n))
+    for text in sorted(set(a['failures']) - set(b['failures'])):
+        L.append('  failure gone: %s' % text[:100])
+    for name, v in sorted(b['proof'].items()):
+        old = a['proof'].get(name)
+        if old is None:
+            continue
+        if v[0] > 0 and old[0] == 0:
+            L.append('  %s: REAL proof now (%d)' % (name, v[0]))
+        elif v[0] == 0 and old[0] > 0:
+            L.append('  %s: REAL proof lost (was %d)' % (name, old[0]))
+        if v[3] > old[3]:
+            L.append('  %s: failed effects %d -> %d' % (name, old[3], v[3]))
+    for name, v in sorted(b['checks'].items()):
+        old = a['checks'].get(name)
+        if old is not None and v[1] > old[1]:
+            L.append('  check %s: fail %d -> %d' % (name, old[1], v[1]))
+    for text in sorted(b['bugs'] - a['bugs']):
+        L.append('  new ' + text)
+    for text in sorted(a['bugs'] - b['bugs']):
+        L.append('  gone ' + text)
+    for text in sorted(b['effects'] - a['effects']):
+        L.append('  new effect failure: ' + text[7:])
+    if not L:
+        return ['== Against the previous run%s: nothing moved by %d and %d%%' % (title, DIFF_MIN, int(DIFF_SHARE * 100))]
+    return ['== Against the previous run%s (%d changes)' % (title, len(L))] + L[:60]
+
+
 # ------------------------------------------------------------------------------------------------ the report
 def group(counts, top=40):
     return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:top]
 
 
-def build_report(run, log):
+def build_report(run, log, previous=None, previous_title=''):
     """run: the run's results (testers.py writes them to the state folder) {started, ended, bots, behaviours: {name:
     {tried, ok, failed}}, failures: {key: count}, lua_errors: {text: count}, kicks: {text: count}, deaths, relogs,
     reconnects, anomalies: [dict], first: {key: {bot, did, at}}}; log: parse_log of the server log of the run.
@@ -378,7 +586,7 @@ def build_report(run, log):
             if tried and okn and not err:
                 fine += 1
                 continue
-            if not tried and why.startswith(('out of scope', 'passive')):
+            if not tried and why.startswith(('out of scope', 'passive', 'closed test mode')):
                 skipped.setdefault(why, []).append(system)
                 continue
             if tried and not okn and not err and not c.get('refused', 0):
@@ -394,4 +602,43 @@ def build_report(run, log):
             # choice); a bug shows as a log error or a refusal
             L.append('  no answer, no error: %s' % ', '.join(silent))
         L.append('  (%d systems fine: not listed)' % fine)
-    return '\n'.join(L) + '\n'
+        L.extend(proof_lines(cov))
+    fx = run.get('effects')
+    if fx:
+        L.append('== Effects that did not hold (%d: the server answered, the effect was not there)' % len(fx))
+        for e in fx[:40]:
+            L.append('  FAIL %s %s: %s (%s)' % (e.get('effect'), e.get('step'), e.get('why'), e.get('bot')))
+    keep = run.get('keep')
+    if keep:
+        L.append('== Bag keeping (sold %d items for %d gold in %d visits, equipped %d, dropped %d, helper wipes %d, '
+                 'sell visits with nothing to sell %d)' % (
+                     keep.get('sold_units', 0), keep.get('sold_gold', 0), keep.get('sell_visits', 0), keep.get('equipped', 0),
+                     keep.get('dropped', 0), keep.get('wiped', 0), keep.get('nothing', 0)))
+    text = '\n'.join(L) + '\n'
+    diff = report_diff(previous, text, previous_title)
+    if diff:
+        # after the three header lines: what moved is the first thing the owner reads
+        lines = text.split('\n')
+        text = '\n'.join(lines[:3] + [''] + diff + lines[3:])
+    return text
+
+
+def proof_lines(cov):
+    """the proof table: for every system the bots reached, what kind of proof there is (O584 item 15)
+    REAL: an effect the bot saw (an effect scenario that held, a system check that passed); ANS: an answer, no effect checked;
+    HELP: the helper's shortcut (teleport, item); fail: an answer without its effect or a failed check"""
+    rows = []
+    for system, c in sorted(cov.items()):
+        real, ans, helped, failed = c.get('real', 0), c.get('ans', 0), c.get('help', 0), c.get('failed', 0)
+        if real or ans or helped or failed:
+            rows.append((system, real, ans, helped, failed, c.get('refused', 0), c.get('errors', 0)))
+    if not rows:
+        return []
+    only = lambda i: sum(1 for r in rows if r[i] and not any(r[j] for j in (1, 2, 3) if j != i))
+    L = ['== Proof by system (REAL: an effect the bot saw; ANS: an answer, no effect checked; HELP: the helper\'s shortcut)',
+         '  %-24s %5s %5s %5s %5s %5s %5s' % ('system', 'real', 'ans', 'help', 'fail', 'refus', 'errs')]
+    for r in rows:
+        L.append('  %-24s %5d %5d %5d %5d %5d %5d' % r)
+    L.append('  (%d systems reached: %d with REAL proof, %d with ANS only, %d with HELP only)' % (
+        len(rows), sum(1 for r in rows if r[1]), only(2), only(3)))
+    return L

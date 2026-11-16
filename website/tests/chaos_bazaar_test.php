@@ -366,6 +366,17 @@ check($coins(2) === $before, 'the duplicate\'s escrow was refunded');
 check($bz->cancelDuplicateListings() === array(), 'the install step runs twice harmlessly');
 $pdo->exec('CREATE UNIQUE INDEX chaos_bazaar_listings_active ON chaos_bazaar_listings (active_player_id)');
 [$ok] = $bz->cancel($dupIds[0], 99, true, 'test cleanup');
+// closed test mode (O582): a tester bot's listing is never shown and never bid on
+$pdo->exec("INSERT INTO players (id, name, account_id, level) VALUES (32, 'Tester Zed', 1, 120)");
+$pdo->exec("INSERT INTO chaos_bazaar_listings (player_id, seller_account_id, min_price, status, created_at, ends_at, player_name) VALUES
+	(32, 1, 500, 'active', $now, " . ($now + 86400) . ", 'Tester Zed')");
+$tid = (int)$pdo->query('SELECT id FROM chaos_bazaar_listings WHERE player_id = 32')->fetchColumn();
+check(ChaosBazaar::isTesterName('Tester Zed') && !ChaosBazaar::isTesterName('Tester Zedd') && !ChaosBazaar::isTesterName('Zed'), 'the tester name rule');
+check(!in_array($tid, array_map(function ($r) { return (int)$r['id']; }, $bz->open()), true), 'a tester listing is not in the open list');
+$before = $coins(2);
+[$ok, $msg] = $bz->bid(2, $tid, 650, '2.2.2.2');
+check(!$ok && $coins(2) === $before, 'nobody can bid on a tester listing: no Chaos Coins move');
+$pdo->exec("UPDATE chaos_bazaar_listings SET status = 'cancelled' WHERE player_id = 32");
 foreach (array(__DIR__ . '/../overlay/plugins/chaos/install.sql', __DIR__ . '/../../server/sql/chaos_bazaar.sql') as $f) {
 	$sql = (string)file_get_contents($f);
 	check(strpos($sql, "`active_player_id` int(11) GENERATED ALWAYS AS (CASE WHEN `status` IN ('active', 'settling') THEN `player_id` ELSE NULL END) STORED") !== false

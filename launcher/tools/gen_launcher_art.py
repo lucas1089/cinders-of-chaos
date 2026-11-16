@@ -5,6 +5,8 @@
 
 Writes into launcher/assets/ (embedded with include_bytes!):
   icon.rgba            128x128 raw RGBA, the brand icon (window icon)
+  app.ico              the brand icon at 16, 20, 24, 32, 40, 48, 64, 128 and 256 px (PNG frames): the icon of the exe, so of
+                       the setup program, the installed launcher and its shortcuts (build.rs links it on Windows)
   hero.jpg             1280x800, the login art covered to the window, darkened, a vignette and a fade to the bottom bar
   logo.png             the brand logo cropped to its pixels, 560 px wide
   news_<tag>.jpg       560x140 default news pictures (update, news, event, notice): crops of the login art
@@ -32,6 +34,7 @@ CINZEL = ROOT / "client" / "fonts-src" / "Cinzel" / "Cinzel-VariableFont_wght.tt
 ALEGREYA = ROOT / "client" / "fonts-src" / "AlegreyaSans" / "AlegreyaSans-Medium.ttf"
 WW, WH = 1280, 800
 IW = 128
+ICO_SIZES = (16, 20, 24, 32, 40, 48, 64, 128, 256)
 TOL = 2.0
 # byte copies: file name in launcher/assets -> source under the game's image folder
 COPIES = {
@@ -80,6 +83,24 @@ def news(tag):
 
 def icon():
     return Image.open(ICON).convert("RGBA").resize((IW, IW), Image.LANCZOS)
+
+
+def ico_bytes():
+    src = Image.open(ICON).convert("RGBA")
+    b = io.BytesIO()
+    src.resize((256, 256), Image.LANCZOS).save(b, "ICO", sizes=[(n, n) for n in ICO_SIZES])
+    return b.getvalue()
+
+
+def ico_frames(data):
+    """size -> RGBA array of every frame of an .ico"""
+    im = Image.open(io.BytesIO(data))
+    out = {}
+    for n in ICO_SIZES:
+        if (n, n) in im.info.get("sizes", set()):
+            im.size = (n, n)
+            out[n] = np.asarray(im.convert("RGBA"), np.int16)
+    return out
 
 
 def jpeg(im):
@@ -138,6 +159,15 @@ def check():
         got = np.frombuffer(p.read_bytes(), np.uint8).reshape(want.shape).astype(np.int16)
         if float(np.abs(got - want).mean()) > TOL:
             fail("icon.rgba differs from a fresh render")
+    p = OUT / "app.ico"
+    if not p.is_file():
+        fail("app.ico missing")
+    else:
+        want, got = ico_frames(ico_bytes()), ico_frames(p.read_bytes())
+        if sorted(got) != list(ICO_SIZES):
+            fail("app.ico has the sizes %s, want %s" % (sorted(got), list(ICO_SIZES)))
+        elif any(float(np.abs(got[n] - want[n]).mean()) > TOL for n in ICO_SIZES):
+            fail("app.ico differs from a fresh render")
     for name, (b, _) in pictures().items():
         p = OUT / name
         if not p.is_file():
@@ -169,6 +199,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "fonts").mkdir(exist_ok=True)
     (OUT / "icon.rgba").write_bytes(icon().tobytes())
+    (OUT / "app.ico").write_bytes(ico_bytes())
     for name, src in COPIES.items():
         (OUT / name).write_bytes((CHAOS / src).read_bytes())
     (OUT / "fonts" / "alegreya_sans.ttf").write_bytes(ALEGREYA.read_bytes())

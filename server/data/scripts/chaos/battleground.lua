@@ -213,6 +213,11 @@ end
 
 -- ======================================================================== where a player is
 local function realmOf(player)
+	-- closed test mode (O582): the testers queue and play in a realm of their own, so a match never holds a player
+	-- and a tester together (the queue group, the party rule "plays in another realm" and the match all use it)
+	if Chaos.isTester(player) then
+		return ChaosTestersCore and ChaosTestersCore.REALM or 900000001
+	end
 	local S = ChaosSeason
 	if not S or not S.current or not S.realmOf then
 		return 0
@@ -313,6 +318,10 @@ local function refusal(player, ignoreQueue)
 	local cfg = C()
 	if not cfg.enabled then
 		return "The battleground is closed."
+	end
+	-- closed test mode (O582): a tester plays only while the mode is on (testers_core.lua)
+	if Chaos.isTester(player) and not (ChaosTestersCore and ChaosTestersCore.closedOn()) then
+		return "Closed test mode is off: the testers do not play this."
 	end
 	if player:getLevel() < cfg.minLevel then
 		return string.format("You need level %d for the battleground.", cfg.minLevel)
