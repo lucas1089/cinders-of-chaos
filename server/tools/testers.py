@@ -686,6 +686,19 @@ class CheckIO(KeyIO):
             return None
         return await self.bot.helper_says(command, kind, wait)
 
+    async def open_bag(self, client_id):
+        """the own backpack as container 0 (a position inside it is (0xFFFF, 0x40, slot)); nothing without the client id"""
+        if self.alive() and client_id:
+            self.bot.conn.send(TC.use_packet((0xFFFF, 3, 0), int(client_id)))
+            await self.bot.conn.w.drain()
+
+    async def use_with(self, from_slot, from_sprite, to_slot, to_sprite):
+        """use the backpack item in from_slot on the one in to_slot (a gem on a piece of gear)"""
+        if self.alive():
+            self.bot.conn.send(TC.use_with_packet((0xFFFF, 0x40, from_slot), int(from_sprite), from_slot,
+                                                  (0xFFFF, 0x40, to_slot), int(to_sprite), to_slot))
+            await self.bot.conn.w.drain()
+
     async def say(self, text):
         if self.alive():
             self.bot.say(text)

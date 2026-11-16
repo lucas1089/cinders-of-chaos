@@ -35,7 +35,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -704,5 +704,34 @@ function H.bagReport(rows, worn, size, refused)
 	return {used = used, size = size, rows = out, better = better and rows[better].i or nil, junk = junk, sell = sells}
 end
 
+
+-- ---------------------------------------------------------------- O584: `!tester give <what>`: items for the crafting checks
+-- item: a plain piece of the class kit (no rarity, an item level); orb <key> [n]: crafting orbs (ChaosCrafting.config.orbs keys,
+-- also whetstone and sockets); gem: the smallest gem; rune: the first support rune; charm: a small charm; card: the first card.
+-- The tester gets them in its own backpack. Never another character's.
+H.GIVE_WHAT = {item = true, orb = true, gem = true, rune = true, charm = true, card = true}
+H.GIVE_MAX = 20
+function H.parseGive(arg)
+	local what, rest = tostring(arg or ""):match("^%s*(%a+)%s*(.-)%s*$")
+	what = what and what:lower()
+	if not what or not H.GIVE_WHAT[what] then
+		return nil
+	end
+	local key, n
+	if what == "orb" then
+		key, n = rest:match("^(%a+)%s*(%d*)$")
+		if not key then
+			return nil
+		end
+		key = key:lower()
+	elseif rest ~= "" then
+		n = rest:match("^(%d+)$")
+		if not n then
+			return nil
+		end
+	end
+	n = tonumber(n) or 1
+	return {what = what, key = key, n = math.max(1, math.min(H.GIVE_MAX, n))}
+end
 
 return H

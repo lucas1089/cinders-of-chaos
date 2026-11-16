@@ -69,6 +69,7 @@ CHECK_SYSTEMS = {
     'party_xp': 'party_xp', 'unique_passive': 'unique_passives', 'dual_fists': 'check:dual_fists',
     'dual_blades': 'check:dual_blades', 'waystone': 'waystone_atlas', 'reward_chest': 'check:reward_chest',
     'cursed_chest': 'cursedchest', 'auto_setup': 'check:auto_setup', 'spell_quest': 'spellquest',
+    'craft_charms': 'charms', 'craft_cards': 'cards',
 }
 EFFECT_LIST_MAX = 200  # failed effects kept in the run's results
 

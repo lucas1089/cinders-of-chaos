@@ -342,6 +342,12 @@ def use_packet(pos, sprite, stackpos=0, index=0):
     return b'\x82' + struct.pack('<HHB', *pos) + struct.pack('<HBB', sprite, stackpos, index)
 
 
+def use_with_packet(src, sprite, stackpos, dst, dst_sprite, dst_stackpos):
+    """use an item on another (0x83): the item's position, sprite id and stack position, then the target's"""
+    return (b'\x83' + struct.pack('<HHB', *src) + struct.pack('<HB', sprite, stackpos)
+            + struct.pack('<HHB', *dst) + struct.pack('<HB', dst_sprite, dst_stackpos))
+
+
 def sale_packet(item_id, sub, amount):
     """sell to the NPC of the open trade window (0x7b): u16 id, u8 sub type, u8 amount, u8 ignore equipped"""
     return b'\x7b' + struct.pack('<HBBB', item_id, sub, max(1, min(255, amount)), 1)

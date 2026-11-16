@@ -684,6 +684,59 @@ do
 	ChaosItemPrices = nil
 end
 
+
+-- ------------------------------------------------------------------ O584: `!tester give` (items for the crafting checks)
+do
+	T.present = function() return true end
+	local H = ChaosTesterHelperCore
+	local g = H.parseGive("orb alchemy 3")
+	check(g and g.what == "orb" and g.key == "alchemy" and g.n == 3, "give: an orb with its key and number")
+	eq(H.parseGive("orb whetstone").n, 1, "give: one orb by default")
+	eq(H.parseGive("orb chaos 99").n, H.GIVE_MAX, "give: at most GIVE_MAX")
+	check(H.parseGive("orb") == nil, "give: an orb needs its key")
+	check(H.parseGive("sword") == nil and H.parseGive("") == nil and H.parseGive("gem x") == nil, "give: only the listed things")
+	eq(H.parseGive("gem 2").n, 2, "give: a gem number")
+	eq(H.parseCommand("give item #3"), "give", "give is a command")
+
+	local made, putIn = {}, {}
+	ChaosCrafting = {orbByKey = {alchemy = {id = 24691}}, createItem = function(id, rarity, level)
+		made[#made + 1] = {id, rarity, level}
+		return {getId = function() return id end, getCount = function() return 1 end, setCustomAttribute = function(self, k, v) self.attr = v end,
+			getCustomAttribute = function(self) return self.attr end}
+	end}
+	ChaosGems = {gemId = function(t, tier) return 32000 + t * 5 + tier end}
+	ChaosTestKit = {kits = {sword = {slots = {[CONST_SLOT_LEFT] = 2400}}}, kindFor = function() return "sword" end}
+	local stored = {}
+	local bag = {getSize = function() return #stored end, getItem = function(_, i) return stored[i + 1] end, getId = function() return 1988 end}
+	Game.createItem = function(id, n)
+		return {getId = function() return id end, getCount = function() return n end, setCustomAttribute = function(self, k, v) self.attr = v end,
+			getCustomAttribute = function(self) return self.attr end}
+	end
+	local gb = creature(268435490, "Tester Gvq", {store = {[ST] = 1}})
+	gb.slots = {[CONST_SLOT_BACKPACK] = bag}
+	function gb:addItemEx(item) stored[#stored + 1] = item; return RETURNVALUE_NOERROR or 0 end
+	function gb:getLevel() return 700 end
+	RETURNVALUE_NOERROR = 0
+	check(talks["!tester"].onSay(gb, "!tester", "give item #2") == false, "give item: consumed")
+	local line = gb.log.msgs[#gb.log.msgs]
+	check(line:find('"what":"item"', 1, true) ~= nil and line:find('"path":"0"', 1, true) ~= nil and line:find('"seq":2', 1, true) ~= nil,
+		"give item: the slot of the backpack and the number: " .. tostring(line))
+	eq(made[1][1] .. "," .. made[1][2] .. "," .. made[1][3], "2400,0,150", "give item: the plain kit weapon at an item level of at most 150")
+	check(talks["!tester"].onSay(gb, "!tester", "give orb alchemy 2") == false, "give orb: consumed")
+	line = gb.log.msgs[#gb.log.msgs]
+	check(line:find('"id":24691', 1, true) ~= nil and line:find('"count":2', 1, true) ~= nil and line:find('"index":1', 1, true) ~= nil, "give orb: the orb stack: " .. tostring(line))
+	talks["!tester"].onSay(gb, "!tester", "give orb nothing")
+	check(gb.log.msgs[#gb.log.msgs]:find("no orb nothing", 1, true) ~= nil, "give orb: an unknown orb says so")
+	talks["!tester"].onSay(gb, "!tester", "give gem")
+	check(gb.log.msgs[#gb.log.msgs]:find('"id":32006', 1, true) ~= nil, "give gem: the smallest gem")
+	talks["!tester"].onSay(gb, "!tester", "give nonsense")
+	check(gb.log.msgs[#gb.log.msgs]:find("give takes", 1, true) ~= nil, "give: a wrong word is told")
+	local ana2 = creature(268435491, "Ana Player", {})
+	ana2.slots = {[CONST_SLOT_BACKPACK] = bag}
+	check(talks["!tester"].onSay(ana2, "!tester", "give item") == true, "give: left to the game for a player")
+	ChaosCrafting, ChaosGems, ChaosTestKit = nil, nil, nil
+end
+
 -- ------------------------------------------------------------------ the bag clean-up (`!tester bag`)
 do
 	T.present = function() return true end

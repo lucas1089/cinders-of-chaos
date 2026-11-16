@@ -1067,6 +1067,21 @@ finally:
 eq([b for b in ke.conn.out if b[:1] in (b'\x78', b'\x7b')], [], 'a calm bag: no move, no sale')
 ok('keep' in TC.BEHAVIOURS, 'keep is a behaviour of the scheduler')
 
+# the use-with packet and the check io's open_bag / use_with (O584 item 3)
+eq(TC.use_with_packet((0xFFFF, 0x40, 1), 500, 1, (0xFFFF, 0x40, 2), 600, 2),
+   b'\x83' + struct.pack('<HHB', 0xFFFF, 0x40, 1) + struct.pack('<HB', 500, 1) + struct.pack('<HHB', 0xFFFF, 0x40, 2) + struct.pack('<HB', 600, 2),
+   'the use-with packet: item, then target')
+rio = T.Results(1)
+ib = T.TesterBot(12, dict(bot), A(), 1, rio, {'rotation': [], 'heal': None})
+ib.conn, ib.cid, ib.alive, ib.died = KC(), 0x1000000c, True, False
+cio = T.CheckIO(ib, {'stop': False, 'until': 1e12})
+asyncio.run(cio.open_bag(1988))
+asyncio.run(cio.use_with(0, 111, 1, 222))
+eq(ib.conn.out[0], TC.use_packet((0xFFFF, 3, 0), 1988), 'open_bag uses the backpack slot')
+eq(ib.conn.out[1][:1], b'\x83', 'use_with sends the use-with packet')
+asyncio.run(cio.open_bag(0))
+eq(len(ib.conn.out), 2, 'no client id: nothing sent')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

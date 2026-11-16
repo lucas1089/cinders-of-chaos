@@ -23,7 +23,7 @@
 --     functions, a real rift run opened as a player does; the facts the checks waystone_run, rift_layout and content_rewards
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
---   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
+--   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
 --   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
@@ -702,6 +702,108 @@ function commands.bag(player, arg)
 	report.bagClientId = ItemType(bag:getId()):getClientId()
 	report.gold = player:getMoney()
 	tell(player, "bag", report)
+end
+
+-- O584: `!tester give item | orb <key> [n] | gem | rune | charm | card`: what the crafting checks (tester_checks.py check_craft_*) work
+-- on. The item is marked with a custom attribute so its backpack slot is found again; the answer names the slot, the ids and the
+-- backpack's client id (to open it as container 0). Plain items: no rarity, no unique roll.
+local function slotOfMarked(bag, mark)
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local ok, v = pcall(function() return item:getCustomAttribute("tester_give") end)
+			if ok and v == mark then
+				return i, item
+			end
+		end
+	end
+	return nil
+end
+
+local giveSeq = 0
+
+function commands.give(player, arg)
+	local g = H.parseGive(arg)
+	if not g then
+		tell(player, "give", {err = "give takes item | orb <key> [n] | gem | rune | charm | card"})
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "give", {err = "no backpack"})
+		return
+	end
+	local ok, ans = pcall(function()
+		local id, count, item
+		if g.what == "item" then
+			local K = ChaosTestKit
+			local kit = K and K.kits and K.kindFor and K.kits[K.kindFor(player:getVocation():getId())]
+			id = kit and kit.slots and (kit.slots[CONST_SLOT_LEFT] or kit.slots[CONST_SLOT_RIGHT])
+			if not id then
+				return {err = "no kit item for this class"}
+			end
+			local level = math.max(1, math.min(150, player:getLevel()))
+			item = ChaosCrafting.createItem(id, 0, level)
+		elseif g.what == "orb" then
+			local orb = ChaosCrafting.orbByKey and ChaosCrafting.orbByKey[g.key]
+			if not orb then
+				return {err = "no orb " .. tostring(g.key)}
+			end
+			id, count = orb.id, g.n
+		elseif g.what == "gem" then
+			id, count = ChaosGems.gemId(1, 1), g.n
+		elseif g.what == "rune" then
+			id, count = ChaosSupports.runeId(1, 1), g.n
+		elseif g.what == "charm" then
+			local CH, CC, cfg = ChaosCharms, ChaosCharmsCore, ChaosCharmsConfig
+			if not (CH and CH.makeItem and CC and cfg) then
+				return {err = "the charm system is not loaded"}
+			end
+			item = CH.makeItem(CC.rollCharm(cfg, {shape = "small", rarity = 3, ilvl = 100}))
+		else
+			local cards = ChaosCardsCore and ChaosCardsCore.cardIds and ChaosCardsCore.cardIds()
+			id, count = cards and cards[1], 1
+			if not id then
+				return {err = "the card system is not loaded"}
+			end
+		end
+		if not item then
+			item = Game.createItem(id, count or 1)
+			if not item then
+				return {err = "the item could not be made"}
+			end
+		end
+		id = item:getId()
+		local stackable = ItemType(id):isStackable()
+		giveSeq = giveSeq + 1
+		local mark = "m" .. giveSeq .. "_" .. tostring(player:getId())
+		if not stackable then
+			item:setCustomAttribute("tester_give", mark) -- a stack merges: it is found by its id instead
+		end
+		local rc = player:addItemEx(item, false)
+		if rc ~= nil and rc ~= RETURNVALUE_NOERROR then
+			return {err = "no room for the item"}
+		end
+		local index, put
+		if stackable then
+			for i = 0, bag:getSize() - 1 do
+				local c = bag:getItem(i)
+				if c and c:getId() == id then
+					index, put = i, c
+					break
+				end
+			end
+		else
+			index, put = slotOfMarked(bag, mark)
+		end
+		if not index then
+			return {err = "the item went somewhere else than the backpack"}
+		end
+		local it = ItemType(put:getId())
+		return {what = g.what, key = g.key, id = put:getId(), clientId = it:getClientId(), index = index, path = tostring(index),
+			count = put:getCount(), bagClientId = ItemType(bag:getId()):getClientId(), level = player:getLevel()}
+	end)
+	tell(player, "give", ok and ans or {err = tostring(ans):sub(1, 120)})
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest
