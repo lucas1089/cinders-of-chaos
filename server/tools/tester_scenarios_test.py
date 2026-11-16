@@ -54,9 +54,9 @@ shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
 for o in ('market', 'guild', 'antibot'):
     ok(table['opcodes'].get(o, {}).get('out'), o + ': an out-of-scope opcode')
-for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar'):
+for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar', 'raid'):
     ok(table['systems'][n]['kind'] == 'closed', n + ': reached only in closed test mode (O582)')
-for n in ('groupqueue', 'party_finder', 'raid'):
+for n in ('groupqueue', 'party_finder'):
     ok(table['systems'][n]['kind'] == 'out', n + ': a queue that matches players, testers refused (O582)')
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
@@ -71,6 +71,9 @@ for o, acts in (('descent', ['start']), ('raid', ['start']), ('combatLog', ['res
         ok(a in G.ADMIN and a in G.ADMIN_ALLOW[o], '%s: %s is allowed by name, not by dropping it from ADMIN' % (o, a))
 for o in ('invasion', 'riftAtlas', 'waystoneAtlas', 'daily'):  # the same word on another opcode stays a staff word
     ok(not set(table['opcodes'][o]['actions']) & {'start', 'reset', 'shift', 'grant'}, o + ': no staff word is sent')
+ok('raid' not in G.OUT_OF_SCOPE and 'raid' in G.CLOSED_MODE, 'the raid is a closed-mode system, no longer out of scope (O588)')
+ok(table['opcodes']['raid']['actions'] == [] and 'start' in table['opcodes']['raid']['skip'],
+   'the raid window is never sent by the random request behaviour: only the closed check closed_raid starts it (O588)')
 ok('conquest' not in G.OUT_OF_SCOPE and table['systems']['conquest']['kind'] == 'opcode', 'conquest is a solo token vendor, not out of scope')
 eq(sorted(table['opcodes']['conquest']['actions']), ['buy', 'close', 'open'], 'conquest: the vendor window actions are sent')
 # every skipped action with its reason: nothing is skipped without one, and the reason names the rule that skipped it

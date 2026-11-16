@@ -53,7 +53,7 @@ class FakeIO:
         self.partied.append((action, other))
         return True
 
-    async def partner(self):
+    async def partner(self, min_level=0):
         return self.partner_name
 
     def autosetup(self):
@@ -1603,6 +1603,462 @@ class ClosedMode(unittest.TestCase):
         self.assertEqual(self.one(TX.check_closed_bazaar, ClosedIO(answers={'closed': closed_answer()})).status, TX.SKIP)
         io = ClosedIO(answers={'closed': closed_answer(bazaar={'locked': False})}, sql_ok=False)
         self.assertEqual(self.one(TX.check_closed_bazaar, io).status, TX.SKIP)
+
+
+# ---------------------------------------------------------------------------------------------------- the raid in closed mode (O588)
+class RaidWorld:
+    """a tiny raid on one lane (y = 5): the entrance portal at x 100, the hall from x 0, a pack at x 25, the boss at x 50, the exit
+    portal at x 55 once every boss is slain. It answers `!tester raid` as the helper does (the guide's rules in miniature), moves
+    the bots by their steps and is the raid window. Time does not pass."""
+    PORTAL, PACK, BOSS, EXIT, TEMPLE = (100, 5), (25, 5), (50, 5), (55, 5), (92, 3)
+
+    def __init__(self, need=1, bosses=1, level=900, on=True, refuse=None, side='tester', slot=3, blocked=(), kill_after=3,
+                 never_kill=False, leave_ok=True, levels=None, players=1, no_path=False, no_portal=False, town_ok=True):
+        self.no_path, self.no_portal, self.town_ok = no_path, no_portal, town_ok
+        self.need, self.bosses, self.level, self.on, self.refuse = need, bosses, level, on, refuse
+        self.side, self.slot, self.blocked, self.kill_after = side, slot, set(blocked), kill_after
+        self.never_kill, self.leave_ok, self.levels, self.players = never_kill, leave_ok, levels or {}, players
+        self.units, self.party = {}, set()
+        self.killed = self.trash = 0
+        self.packhp, self.hp = kill_after, 100.0
+        self.closed = 0
+        self.steps = {}
+        self.log = []
+
+    def unit(self, name):
+        return self.units.setdefault(name, {'pos': (60, 60), 'inside': False})
+
+    def pos(self, name):
+        x, y = self.unit(name)['pos']
+        return {'x': x, 'y': y, 'z': 7}
+
+    def facts(self, name):
+        u = self.unit(name)
+        out = {'inside': u['inside'], 'level': self.levels.get(name, self.level), 'minLevel': 800, 'minPlayers': self.need,
+               'maxPlayers': 15, 'pos': self.pos(name), 'pz': not u['inside'], 'on': self.on, 'enabled': True, 'bosses': self.bosses,
+               'portal': {'x': self.PORTAL[0], 'y': self.PORTAL[1], 'z': 7}, 'slot': 3}
+        if not u['inside']:
+            return out
+        guide = self.guide(u['pos'])
+        out['run'] = {'id': 1, 'slot': self.slot, 'side': self.side, 'players': self.players, 'killed': self.killed,
+                      'trash': self.trash, 'cleared': self.killed >= self.bosses, 'kills': self.killed, 'fallen': False,
+                      'monsters': (self.packhp if not self.trash else 0) + (0 if self.killed else 1),
+                      'trashLeft': self.packhp if not self.trash else None, 'bossHp': None if self.killed else int(self.hp)}
+        out['guide'] = guide
+        return out
+
+    def guide(self, pos):
+        def near(a, b, d):
+            return abs(a[0] - b[0]) <= d and abs(a[1] - b[1]) <= d
+
+        def g(mode, goal, area, where):
+            return {'mode': mode, 'goal': {'x': goal[0], 'y': goal[1], 'z': 7}, 'area': area, 'where': where, 'idx': 1}
+        where = 'hall' if pos[0] < 15 else 'corridor' if pos[0] < 35 else 'room'
+        if self.killed >= self.bosses:
+            return g('exit', self.EXIT, None, where)
+        if not self.trash:
+            return g('fight' if near(pos, self.PACK, 3) else 'walk', self.PACK, 'trash', where)
+        return g('fight' if near(pos, self.BOSS, 4) else 'walk', self.BOSS, 'boss', where)
+
+    def tick(self, name):
+        """one look of the leader at its fight: the pack or the boss loses health"""
+        u = self.unit(name)
+        if not u['inside'] or self.never_kill:
+            return
+        g = self.guide(u['pos'])
+        if g['mode'] == 'fight' and g['area'] == 'trash':
+            self.packhp -= 1
+            if self.packhp <= 0:
+                self.trash = 1
+        elif g['mode'] == 'fight' and g['area'] == 'boss':
+            self.hp -= 100.0 / self.kill_after
+            if self.hp <= 0:
+                self.killed = 1
+
+    def answer(self, name, command):
+        if command == 'raid path':
+            if self.no_path:
+                return {'err': 'no path to the raid portal'}
+            x, y = self.unit(name)['pos']
+            tx, ty = self.PORTAL[0] - 1, self.PORTAL[1]
+            dirs = []
+            while y != ty and x != tx:
+                dirs.append(5 if ty > y else 7)    # a diagonal, southeast or northeast
+                x, y = x + 1, y + (1 if ty > y else -1)
+            dirs += [1] * max(0, tx - x) + [3] * max(0, x - tx) + [2] * max(0, ty - y) + [0] * max(0, y - ty)
+            return dict(self.facts(name), path=dirs)
+        if command == 'raid portal':
+            if self.no_portal:
+                return {'err': 'no free tile next to the raid portal'}
+            self.unit(name)['pos'] = (self.PORTAL[0] - 1, self.PORTAL[1])
+            return self.facts(name)
+        if command == 'raid close':
+            was = any(u['inside'] for u in self.units.values())
+            for u in self.units.values():
+                u['inside'] = False
+            self.closed += 1
+            return dict(self.facts(name), closed=was)
+        if command == 'raid state':
+            self.tick(name)
+            return self.facts(name)
+        if command == 'bag':
+            return {'potions': 100}
+        return None
+
+    def request(self, name, opname, action):
+        if opname != 'raid':
+            return None
+        u = self.unit(name)
+        if action == 'open':
+            return {'action': 'info', 'data': {}}
+        if action == 'start':
+            if self.refuse:
+                return {'action': 'msg', 'data': {'text': self.refuse}}
+            for n in [name] + sorted(self.party):
+                self.unit(n)['inside'], self.unit(n)['pos'] = True, (0, 5)
+            return {'action': 'closeInfo', 'data': {}}
+        if action == 'leave':
+            fighting = self.guide(u['pos'])['mode'] == 'fight' and u['inside']
+            if fighting and not self.leave_ok:
+                return {'action': 'msg', 'data': {'text': 'Not in the middle of a boss fight.'}}
+            u['inside'] = False
+            return {'action': 'end', 'data': {}}
+        return None
+
+    def step(self, name, dx, dy):
+        u = self.unit(name)
+        nx, ny = u['pos'][0] + dx, u['pos'][1] + dy
+        self.steps[name] = self.steps.get(name, 0) + 1
+        if (nx, ny) in self.blocked or not (-1 <= nx <= 200):
+            return
+        if not u['inside'] and (nx, ny) == self.PORTAL:
+            return   # the portal opens the window and puts the bot back
+        if u['inside'] and (nx, ny) == self.EXIT and self.killed >= self.bosses:
+            u['inside'], u['pos'] = False, (self.PORTAL[0] - 1, self.PORTAL[1])
+            return
+        u['pos'] = (nx, ny)
+
+
+class RaidIO(ClosedIO):
+    def __init__(self, world, partner='Tester Bbb', **kw):
+        super().__init__(partner=partner, **kw)
+        self.w, self.me, self.looted, self.modes, self.partner_levels, self.left_party = world, 'Tester Aaa', 0, [], [], []
+        self.cmds = []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append((self.me, command))
+        return self.w.answer(self.me, command)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        self.cmds.append((other, command))
+        return self.w.answer(other, command)
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(self.me, opname, action)
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        self.other_asked.append((opname, action, data))
+        return self.w.request(other, opname, action)
+
+    async def partner(self, min_level=0):
+        self.partner_levels.append(min_level)
+        return self.partner_name if self.partner_name and self.w.levels.get(self.partner_name, self.w.level) >= min_level else None
+
+    async def party(self, action, other):
+        self.partied.append((action, other))
+        if action == 'form':
+            self.w.party.add(other)
+        else:
+            self.left_party.append(other)
+        return True
+
+    async def go(self, place):
+        self.moves.append(place)
+        if self.w.town_ok:
+            self.w.unit(self.me)['pos'] = self.w.TEMPLE
+        return self.w.town_ok
+
+    async def go_of(self, other, place):
+        if self.w.town_ok:
+            self.w.unit(other)['pos'] = self.w.TEMPLE
+        return self.w.town_ok
+
+    async def step(self, dx, dy):
+        self.w.step(self.me, dx, dy)
+
+    async def step_of(self, other, dx, dy):
+        self.w.step(other, dx, dy)
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on):
+        self.modes.append((list(names), on))
+
+
+class RaidClosed(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.RAID_BUDGET, TX.RAID_FIGHT_MIN, TX.RAID_LEAVE_WAIT, TX.RAID_STUCK)
+        TX.reset_raid_turn()
+
+    def tearDown(self):
+        TX.RAID_BUDGET, TX.RAID_FIGHT_MIN, TX.RAID_LEAVE_WAIT, TX.RAID_STUCK = self.keep
+        TX.reset_raid_turn()
+
+    def play(self, world, **kw):
+        io = RaidIO(world, **kw)
+        return run(TX.check_closed_raid(io, 'Tester Aaa', 'Warrior', 900)), io
+
+    # -------------------------------------------------------------------------------- the pure parts
+    def test_plan_and_walker(self):
+        here = {'x': 0, 'y': 5, 'z': 7}
+        self.assertEqual(TX.raid_plan(here, {'x': 3, 'y': 5, 'z': 7}, 2), [(1, 0), (1, 0)])
+        self.assertEqual(TX.raid_plan(here, {'x': 1, 'y': 9, 'z': 7}, 9), [(0, 1)] * 3 + [(1, 0), (0, 1)])   # the longer axis first
+        self.assertEqual(TX.raid_plan(here, {'x': -2, 'y': 5, 'z': 7}, 5), [(-1, 0), (-1, 0)])
+        self.assertEqual(TX.raid_plan(here, here, 3), [])
+        self.assertEqual(TX.raid_plan(here, {'x': 3, 'y': 5, 'z': 6}, 3), [])      # another floor: no step
+        self.assertEqual(TX.raid_plan(None, here, 3), [])
+        self.assertTrue(TX.raid_near(here, {'x': 2, 'y': 4, 'z': 7}, 2))
+        self.assertFalse(TX.raid_near(here, {'x': 3, 'y': 5, 'z': 7}, 2))
+        self.assertFalse(TX.raid_near(here, {'x': 1, 'y': 5, 'z': 6}, 2))
+        w = TX.RaidWalker()
+        goal = {'x': 9, 'y': 5, 'z': 7}
+        self.assertEqual(w.steps(here, goal, 2, 0.0), [(1, 0), (1, 0)])
+        moved = {'x': 2, 'y': 5, 'z': 7}
+        self.assertEqual(w.steps(moved, goal, 2, 1.0), [(1, 0), (1, 0)])                # it moved: no detour
+        self.assertEqual(w.stuck(1.0), 0.0)
+        first = w.steps(moved, goal, 2, 2.0)                                           # same tile: blocked
+        self.assertEqual(first, [(0, 1)])                                              # one tile to the side
+        second = w.steps(moved, goal, 2, 3.0)
+        self.assertEqual(second, [(0, -1)] * 2)                                        # the other side, further
+        self.assertGreaterEqual(w.stuck(3.0), 2.0)
+        self.assertEqual(w.steps({'x': 2, 'y': 6, 'z': 7}, goal, 2, 4.0), [(1, 0), (1, 0)])   # round it: on
+        self.assertEqual(w.stuck(4.0), 0.0)
+        v = TX.RaidWalker()
+        self.assertEqual(v.steps(here, {'x': 0, 'y': 9, 'z': 7}, 1, 0.0), [(0, 1)])
+        self.assertEqual(v.steps(here, {'x': 0, 'y': 9, 'z': 7}, 1, 1.0), [(1, 0)])    # blocked going south: across is east / west
+
+    def test_refusal(self):
+        ok = {'on': True, 'level': 900, 'minLevel': 800, 'portal': {'x': 1, 'y': 1, 'z': 7}}
+        self.assertIsNone(TX.raid_refusal(ok))
+        self.assertEqual(TX.raid_refusal(None)[0], TX.SKIP)
+        self.assertEqual(TX.raid_refusal({'err': 'no raid system'}), (TX.SKIP, 'no raid system'))
+        self.assertIn('switch', TX.raid_refusal(dict(ok, on=False))[1])
+        self.assertIn('sealed', TX.raid_refusal(dict(ok, enabled=False))[1])
+        self.assertIn('level 700', TX.raid_refusal(dict(ok, level=700))[1])
+        self.assertIn('inside', TX.raid_refusal(dict(ok, inside=True))[1])
+        self.assertIn('portal', TX.raid_refusal({k: v for k, v in ok.items() if k != 'portal'})[1])
+        self.assertIn('level 500', TX.raid_refusal({'on': True, 'minLevel': 800, 'portal': ok['portal']}, 500)[1])
+
+    def test_problems_and_verdict(self):
+        mine = {'run': {'side': 'tester', 'slot': 3, 'players': 2}}
+        self.assertEqual(TX.raid_problems(mine, 3), [])
+        self.assertEqual(TX.raid_problems({}, 3), [])
+        self.assertTrue(TX.raid_problems({'run': {'side': 'player', 'slot': 3, 'players': 1}}, 3))
+        self.assertTrue(TX.raid_problems({'run': {'side': 'tester', 'slot': 0, 'players': 1}}, 3))
+        self.assertTrue(TX.raid_problems({'run': {'side': 'tester', 'slot': 3, 'players': 3}}, 3))
+        self.assertEqual(TX.raid_problems({'run': {'side': 'tester', 'slot': 0, 'players': 1}}), [])   # no slot known: not judged
+        base = {'faults': [], 'killed': 0, 'trash': 0, 'kills': 0, 'reached': {'hall'}, 'fought': 0, 'stuck': None, 'secs': 50, 'bosses': 5}
+        self.assertEqual(TX.raid_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.raid_verdict(dict(base, trash=1))[0], TX.PASS)
+        self.assertEqual(TX.raid_verdict(dict(base, killed=2, left='the exit'))[0], TX.PASS)
+        self.assertEqual(TX.raid_verdict(dict(base, kills=1))[0], TX.PASS)
+        self.assertEqual(TX.raid_verdict(dict(base, fought=TX.RAID_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.raid_verdict(dict(base, stuck=(5, 6)))[0], TX.SKIP)
+        self.assertEqual(TX.raid_verdict(base)[0], TX.SKIP)
+        self.assertEqual(TX.raid_start_refusal('Closed test mode is off: the testers do not play this.')[0], TX.FAIL)
+        self.assertEqual(TX.raid_start_refusal('Testers and players are never mixed.')[0], TX.FAIL)
+        self.assertEqual(TX.raid_start_refusal('Every wing of the Sepulchre is taken right now.')[0], TX.SKIP)
+        self.assertEqual(TX.raid_start_refusal(None)[0], TX.SKIP)
+
+    def test_registered_in_the_closed_run_only(self):
+        self.assertIn('closed_raid', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_raid', TX.KEYS)
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')     # the longest check goes last
+        self.assertIn('raid', TX.CLOSED_SYSTEMS)
+        self.assertEqual(TX.CheckRun('Tester Aaa', 'Warrior', 1).todo().count('closed_raid'), 0)
+
+    # -------------------------------------------------------------------------------- the check
+    def test_played_to_the_exit_by_a_party(self):
+        world = RaidWorld()
+        r, io = self.play(world)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('2 bot(s)', r.detail)
+        self.assertIn('bosses slain 1 of 1', r.detail)
+        self.assertIn('left by the exit', r.detail)
+        self.assertIn('came on foot from the temple', r.detail)
+        self.assertEqual(io.partied[0], ('form', 'Tester Bbb'))
+        self.assertIn(('leave', 'Tester Bbb'), io.partied)                       # the party is dissolved at the end
+        self.assertEqual(io.partner_levels, [800])                                # a member of the raid's level only
+        self.assertIn(('raid', 'open', {}), io.asked)
+        self.assertEqual([a for a in io.asked if a[1] == 'start'], [('raid', 'start', {})])
+        self.assertGreaterEqual(io.looted, 1)                                     # the loot of the kill
+        self.assertGreater(world.steps['Tester Aaa'], 40)                         # walked it: hall, corridor, room, to the exit
+        self.assertGreater(world.steps['Tester Bbb'], 40)                         # the member walked too
+        self.assertEqual(world.closed, 1)                                         # the empty run was closed
+        self.assertEqual(io.modes[0], (['Tester Aaa', 'Tester Bbb'], True))
+        self.assertEqual(io.modes[-1][1], False)                                  # and the flight rule is back
+        self.assertIn('Tester Aaa', TX.RAID_TURN['done'])
+        self.assertIsNone(TX.RAID_TURN['by'])
+        self.assertEqual(TX.RAID_MEMBERS, {})
+        self.assertLess(io.cmds.index(('Tester Aaa', 'bag')), io.cmds.index(('Tester Aaa', 'raid path')))   # the potions first, then the way
+        self.assertIn(('Tester Bbb', 'raid path'), io.cmds)                       # the member walks to the entrance too
+        self.assertNotIn(('Tester Aaa', 'raid portal'), io.cmds)                  # nobody is put next to the portal: they walked
+        self.assertEqual(io.moves.count('town'), 1)                               # to the temple first
+        self.assertEqual(io.cmds[-2:], [('Tester Aaa', 'raid close'), ('Tester Aaa', 'raid state')])   # the run is closed, then looked at
+
+    def test_the_way_to_the_entrance(self):
+        r, io = self.play(RaidWorld(no_path=True), partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('next to the portal by the helper', r.detail)               # no path: the helper's step next to it
+        self.assertIn(('Tester Aaa', 'raid portal'), io.cmds)
+        TX.reset_raid_turn()
+        r, io = self.play(RaidWorld(blocked={(97, 5), (96, 5), (95, 5), (94, 5), (93, 4), (93, 5), (93, 3), (94, 3)}), partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)                             # a path that does not arrive: the helper's step
+        self.assertIn('by the helper', r.detail)
+        TX.reset_raid_turn()
+        r, io = self.play(RaidWorld(no_path=True, no_portal=True), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no free tile next to the raid portal', r.detail)
+        self.assertEqual([a for a in io.asked if a[1] == 'start'], [])            # it never started
+        self.assertEqual(TX.RAID_MEMBERS, {})
+        TX.reset_raid_turn()
+        r, io = self.play(RaidWorld(town_ok=False), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not bring the bot to the temple', r.detail)
+        self.assertEqual(TX.raid_path_steps([1, 5, 7, 99, True, 'x', 0]), [(1, 0), (1, 0), (0, 1), (1, 0), (0, -1), (0, -1)])
+        self.assertEqual(TX.raid_path_steps(None), [])
+        self.assertEqual(TX.raid_path_steps([2] * 300).count((0, 1)), 120)         # at most 120 steps
+
+    def test_solo_when_nobody_is_free(self):
+        r, io = self.play(RaidWorld(), partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('1 bot(s)', r.detail)
+        self.assertEqual(io.partied, [])
+
+    def test_a_member_below_the_level_stays_out(self):
+        world = RaidWorld(levels={'Tester Bbb': 500})
+        r, io = self.play(world)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('1 bot(s)', r.detail)
+        self.assertEqual(world.steps.get('Tester Bbb', 0), 0)
+
+    def test_a_blocked_way_is_walked_round(self):
+        r, io = self.play(RaidWorld(blocked={(10, 5), (11, 5), (11, 4), (11, 6)}), partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def test_the_party_minimum(self):
+        r, _ = self.play(RaidWorld(need=2), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('needs 2 players', r.detail)
+        r, _ = self.play(RaidWorld(need=2))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        TX.reset_raid_turn()
+        r, _ = self.play(RaidWorld(need=3))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('needs 3 players', r.detail)
+
+    def test_no_check_for_a_bot_that_cannot(self):
+        for over, word in ((dict(on=False), 'switch'), (dict(level=700), 'level 700')):
+            r, io = self.play(RaidWorld(**over))
+            self.assertEqual(r.status, TX.SKIP)
+            self.assertIn(word, r.detail)
+            self.assertEqual(io.partied, [])
+            self.assertIsNone(TX.RAID_TURN['by'])
+        io = RaidIO(RaidWorld())
+        io.w.answer = lambda name, command: None
+        r = run(TX.check_closed_raid(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual((r.status, 'old helper file' in r.detail), (TX.SKIP, True))
+
+    def test_the_start_refused(self):
+        r, io = self.play(RaidWorld(refuse='Closed test mode is off: the testers do not play this.'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_raid', r.bug_line())
+        self.assertIsNone(TX.RAID_TURN['done'])
+        self.assertEqual(TX.RAID_MEMBERS, {})
+        r, io = self.play(RaidWorld(refuse='Every wing of the Sepulchre is taken right now. Try again in a moment.'))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not open', r.detail)
+        self.assertIsNone(TX.RAID_TURN['done'])
+
+    def test_a_tester_in_a_players_raid_fails(self):
+        for over, word in ((dict(side='player'), 'player raid'), (dict(slot=0), 'slot 0'), (dict(players=3), 'players in the testers')):
+            TX.reset_raid_turn()
+            world = RaidWorld(**over)
+            world.slot_expected = 3
+            r, io = self.play(world, partner=None)
+            self.assertEqual(r.status, TX.FAIL, r.detail)
+            self.assertIn(word.split()[0], r.detail)
+            self.assertEqual(world.closed, 1)   # the bot is taken out and the run closed even then
+
+    def test_one_raid_at_a_time(self):
+        TX.RAID_TURN['by'] = 'Tester Ccc'
+        r, io = self.play(RaidWorld())
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('Tester Ccc is in it', r.detail)
+        TX.RAID_TURN.update(by=None, done='Tester Ccc')
+        r, io = self.play(RaidWorld())
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('Tester Ccc played it', r.detail)
+        TX.reset_raid_turn()
+        TX.RAID_MEMBERS['Tester Aaa'] = 'Tester Zzz'
+        r, io = self.play(RaidWorld())
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('member of the party of Tester Zzz', r.detail)
+
+    def test_walk_blocked_for_good_is_a_skip(self):
+        TX.RAID_BUDGET, TX.RAID_STUCK = 70.0, 15.0
+        wall = {(x, y) for x in range(0, 40) for y in range(0, 12)} - {(0, 5)}
+        r, io = self.play(RaidWorld(blocked=wall), partner=None)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('blocked at', r.detail)
+
+    def test_a_fight_without_a_kill_fails(self):
+        TX.RAID_BUDGET, TX.RAID_FIGHT_MIN = 400.0, 60.0
+        r, io = self.play(RaidWorld(never_kill=True), partner=None)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('killed nothing', r.detail)
+
+    def test_time_is_up_in_a_fight(self):
+        TX.RAID_BUDGET, TX.RAID_FIGHT_MIN, TX.RAID_LEAVE_WAIT = 60.0, 9999.0, 20.0
+        world = RaidWorld(never_kill=True, leave_ok=False)
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertEqual(world.closed, 1)                                         # closed by the helper after the wait
+        # and with a clear leave, the Leave button does it
+        TX.reset_raid_turn()
+        world = RaidWorld(kill_after=60)
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_the_budget_ends_a_slow_raid_at_the_leave_button(self):
+        TX.RAID_BUDGET = 40.0
+        world = RaidWorld(kill_after=999)     # the pack falls late: not within the budget
+        world.PACK = (25, 5)
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn(('raid', 'leave', {}), io.asked)
+        self.assertEqual(world.closed, 1)
+
+    def test_no_answer_from_the_helper_inside(self):
+        world = RaidWorld()
+        io = RaidIO(world, partner=None)
+        real = world.answer
+        calls = {'n': 0, 'inside': 0}
+
+        def flaky(name, command):
+            if command == 'raid state' and world.unit(name)['inside']:
+                calls['inside'] += 1
+                if calls['inside'] > 2:      # the first looks answer (the bot is seen inside), the helper goes silent after
+                    calls['n'] += 1
+                    return None
+            return real(name, command)
+        world.answer = flaky
+        r = run(TX.check_closed_raid(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('no pack was killed', r.detail)
+        self.assertGreaterEqual(calls['n'], TX.RAID_MISSES)
 
 
 if __name__ == '__main__':

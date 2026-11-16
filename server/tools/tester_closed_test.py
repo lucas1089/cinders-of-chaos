@@ -90,9 +90,9 @@ except AssertionError:
 # removing what the mode made
 ALL = {'guilds', 'guild_ranks', 'guild_membership', 'guild_wars', 'chaos_guildwar', 'chaos_guildwar_kills'} | set(C.GUILD_TABLES) | {
     'chaos_market_offers', 'chaos_market_offer_mods', 'chaos_market_orders', 'chaos_market_history', 'chaos_market_history_daily',
-    'chaos_arena_matches', 'chaos_arena_match_players', 'chaos_bazaar_listings', 'chaos_bazaar_bids'}
+    'chaos_arena_matches', 'chaos_arena_match_players', 'chaos_bazaar_listings', 'chaos_bazaar_bids'} | set(C.RAID_TABLES.values())
 cs = C.clean_statements(ALL, [10, 11, 12])
-eq(len(cs), 24, 'every table is cleaned')
+eq(len(cs), 29, 'every table is cleaned')
 for s in cs:
     ok(s.startswith('DELETE FROM'), 'only DELETEs: ' + s[:40])
     keyed = (str(C.REALM) in s or "'Tester Guild Alfa'" in s or '(10,11,12)' in s)
@@ -105,6 +105,23 @@ ok(cs.index(last_guild[0]) > max(i for i, s in enumerate(cs) if 'guild_membershi
 ok(any('realm` = %d' % C.REALM in s and 'chaos_market_orders' in s for s in cs), 'the tester order book')
 ok(any('chaos_arena_matches' in s and 'NOT IN (10,11,12)' in s for s in cs), 'arena matches with no player outside the testers')
 ok(any('chaos_bazaar_listings' in s and 'player_id` IN (10,11,12)' in s for s in cs), 'bazaar listings of testers')
+# the testers' own raids (O588)
+rt = C.RAID_TABLES
+raid_st = [s for s in cs if 'chaos_raid_' in s]
+eq(len(raid_st), 5, 'five raid statements: members, instances, lockouts, players, purchases')
+ok(all('(10,11,12)' in s for s in raid_st), 'every raid statement is keyed by the tester ids')
+for s in raid_st:
+    target = re.match(r'DELETE FROM `(\w+)`', s).group(1)
+    ok(target not in re.sub(r'^DELETE FROM `\w+`', '', s), 'no statement reads the table it deletes from (error 1093): ' + s[:60])
+ok(cs.index([s for s in raid_st if s.startswith('DELETE FROM `chaos_raid_members`')][0]) <
+   cs.index([s for s in raid_st if s.startswith('DELETE FROM `chaos_raid_instances`')][0]), 'members before their raids')
+ok(any('chaos_raid_instances' in s and 'NOT IN (SELECT `instance_id` FROM `chaos_raid_members`)' in s for s in raid_st),
+   'a raid with a member row left (a player) is kept')
+eq(C.clean_statements({rt['players']}, [7]), ['DELETE FROM `chaos_raid_players` WHERE `player_id` IN (7);'], 'one raid table alone')
+eq(C.clean_statements({rt['instances']}, [7]), [], 'the raids need their member table too')
+raid_cfg = lua('raid_config.lua')
+for key, table in rt.items():
+    ok(('%s = "%s"' % (key, table)) in raid_cfg, 'raid_config.lua names the table ' + table)
 eq(C.clean_statements(set(), [1]), [], 'no table, nothing to do')
 only = C.clean_statements({'chaos_market_orders'}, [])
 eq(only, ['DELETE FROM `chaos_market_orders` WHERE `realm` = %d;' % C.REALM], 'only the book, without tester ids')

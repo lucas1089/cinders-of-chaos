@@ -240,11 +240,11 @@
 #                               party, rift, waystone atlas, reward and cursed chest, Auto setup list; a failure is a BUG
 #                               line in testers report)
 #                               --closed: closed test mode (needs `testers closed on` first): two tester guilds are made, the bots
-#                               run the closed checks (arena, battleground, the Marches, guild war, market, bazaar lock) among
+#                               run the closed checks (arena, battleground, the Marches, guild war, market, bazaar lock, the raid) among
 #                               themselves; the guilds, wars, tester market book and arena records go when the run ends
 #   testers closed on|off|status  closed test mode (O582, server/README.md "Closed test mode"): the switch file data/chaos_testers_closed
 #                               ("on" or "off"; off, or no file, is the default). On: the bots may play PvP, arena, battleground,
-#                               guild, guild war, market and the bazaar lock, only among themselves; a player is never matched, attacked,
+#                               guild, guild war, market, the bazaar lock and the raid, only among themselves; a player is never matched, attacked,
 #                               traded with or shown a tester order, on or off. The server reads the file within 5 seconds, no restart
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
 #   testers status              key=value lines: running, pid, started, bots, minutes, online (bots in game now),
@@ -3733,7 +3733,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
             chmod 0644 "$cf.tmp"; chown "$own" "$cf.tmp" 2>/dev/null || true
             mv -f "$cf.tmp" "$cf" || die "cannot write $cf"
             if [ "$1" = on ]; then
-              echo "closed=on (the bots play arena, battleground, PvP, guild, guild war, market and the bazaar lock among themselves; never with players)"
+              echo "closed=on (the bots play arena, battleground, PvP, guild, guild war, market, the bazaar lock and the raid among themselves; never with players)"
             else
               echo "closed=off (the testers play none of those; the server reads the switch within 5 seconds)"
             fi

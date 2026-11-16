@@ -9695,8 +9695,8 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `place`: the helper's `enter` argument.
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
   - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
-    raid, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
-  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar. Only a `--closed` run reaches
+    sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, and the raid (O588). Only a `--closed` run reaches
     them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
 - Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
@@ -9717,7 +9717,7 @@ out of scope with the reason, passive, or not picked in this run.
 
 Owner 2026-11-16: the bots must use every mechanic and play like a human, for a real mass test. Audit: `COVERAGE.md`
 section 4 (items 1, 15, 2, 3, 4 are this round; the closed test mode O582, chains, profiles and the Unity journey bots follow).
-- **Table.** The player's own `start` of the Ember Descent (and of the Ashen Sepulchre raid, allowed by name in `ADMIN_ALLOW`; the raid itself is out of scope since O582, the server refuses testers there, so it is not sent), and the `reset` of the DPS meter, hunt
+- **Table.** The player's own `start` of the Ember Descent (and of the Ashen Sepulchre raid, allowed by name in `ADMIN_ALLOW`; the raid is a closed system since O588: its window requests are sent only by the closed check `closed_raid`, never by the random request behaviour), and the `reset` of the DPS meter, hunt
   meter, loot filter counters and dummy meter are sent: `ADMIN_ALLOW` in the generator names them per opcode, with the reason;
   the same word on another opcode stays a staff word. A scenario that sent `start` sends `leave` at its end, so a bot does not wait
   alone in a lobby. Conquest is a solo token vendor and left `OUT_OF_SCOPE`. Every action the bots never send has its reason in
@@ -9792,21 +9792,26 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
     With the switch off a tester cannot buy, list, post or fill.
   - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
     refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
-  - queues that match players (dungeons, group queue, party finder, raid): testers are refused, switch on or off.
+  - queues that match players (dungeons, group queue, party finder): testers are refused, switch on or off.
     Dungeons, group queue, arena and battleground were not tester-aware before (audit 2026-11-16).
+  - the raid (`raid.lua`, O588): a party of testers only, in the slot `testerSlot` of its own, only with the switch on; a tester and
+    a player are never in the same raid; no broadcast, board, trophy or Discord event ("The raid in closed mode" below).
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v12 (v11 added `closed`; O584 added bag, shop NPC and give), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v13 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
-other bot sees and buys it), `closed_bazaar` (a listing locks the character, the release frees it). A failed guard is a
+other bot sees and buys it), `closed_bazaar` (a listing locks the character, the release frees it), `closed_raid` (a party plays
+the raid like people, see "The raid in closed mode" below). A failed guard is a
 `BUG` line. A check that cannot run says why (no partner, a level gate, fewer than 6 bots for two guilds).
 
 Clean-up (`tester_closed.clean_statements`): the guilds named "Tester Guild Alfa / Bravo" owned by a tester with their
 ranks, members, wars and Chaos rows; the market offers, orders and price history of realm `K.REALM`; arena matches whose
-every player is a tester; bazaar listings of testers. Every DELETE is keyed by the realm, the guild names or the tester ids.
+every player is a tester; bazaar listings of testers; the raids a tester led with no member row left, the member rows of testers
+in them, and the lockouts, marks and purchases of testers (O588, no statement reads the table it deletes from). Every DELETE is keyed
+by the realm, the guild names or the tester ids.
 It runs before a run starts, when it ends and in `testers cleanup`.
 
 Run on a server with real players on: it is safe by the guards above, but run it on the test server first.
@@ -9814,6 +9819,69 @@ Not run live: the whole flow (guilds loaded at login, the arena match, the March
 tester book). Unit tests: `tests/testers_test.lua`, `tests/groupqueue_test.lua` (arena), `tests/market_test.lua`,
 `tests/tester_helper_test.lua`, `tools/tester_closed_test.py`, `tools/tester_checks_test.py`, `tools/testers_test.py`,
 `deploy/chaos_ctl_test.py`, `website/tests/chaos_bazaar_test.php`.
+
+#### The raid in closed mode (O588, `raid.lua`, `raid_core.lua`, `tools/tester_checks.py` `closed_raid`)
+
+Owner 2026-11-16 (translated): "Yes, do it. The bots must play the game's full content and in the most human way possible."
+The Ashen Sepulchre was out of scope: the server refused every tester in it. Now it is a closed system (`K.CLOSED_SYSTEMS.raid`).
+
+Server rules (tests: `tests/raid_test.lua` section "closed test mode (O588)", `tests/testers_test.lua`):
+- With the switch off a tester cannot open, continue or join a raid ("Closed test mode is off: the testers do not play this."),
+  in the window's request and in `X.open` / `X.join`. A raid of testers that runs when the switch goes off ends on the next tick
+  (everyone to the temple, the progress stays saved, like the idle close).
+- With the switch on, a party of testers opens a raid. A tester and a player are never in one raid: a member of the other side
+  in the party stays behind (the leader is told), `X.join` refuses the other side, `run.side` is "tester" or "player".
+- The slot of its own: the grid has 4 slots (`raid_config.lua` `grid`). `testerSlot = 3`: while the switch is on a tester raid takes
+  only slot 3 and a player raid never does (`ChaosRaidCore.allocSlot`; players then have 3 slots, with the switch off they have 4).
+  A second tester party finds the slot taken ("Every wing of the Sepulchre is taken ...") and never joins the players' waiting list.
+- A tester raid sends no broadcast (the unique found and the final boss fell), puts nothing on the fastest-clear board, gives no
+  trophy or guild XP, and the Discord events are not made. The loot is the testers' own (it only goes to the raid's members).
+  The personal rows (lockouts, marks, purchases, saved raids) of the testers are removed with the other closed-mode rows.
+- `X.probe(player)` is what a person sees (position, entrance, level rule, inside: the run and `K.guide`), `X.testerClose(player)`
+  closes the testers' own raid when it is empty or the asker is inside. Both are read or called only by the TEST ONLY helper.
+
+How the bots play it (`closed_raid`, the last of `CLOSED_CHECKS`; helper v13 `!tester raid [state | path | portal | close]`):
+1. Level: the raid needs `minLevel` (800). A bot below it is a SKIP with the level. One raid slot: one party plays in a run, the
+   other bots skip with the name of the bot that plays it. The raid needs `minPlayers` (1, owner 2026-10-24: all content solo): the
+   party is the leader and one free bot of the raid's level when there is one (a party of 2 at most); a raid that needs more bots than
+   are free is a SKIP with the numbers.
+2. Potions topped up (`!tester bag`), the temple, then on foot to the entrance by `!tester raid path` (the engine's own pathfinding,
+   `Creature:getPathTo`, a tile next to the portal). Only when there is no path, or the walk did not arrive, the helper puts the bot next to the
+   portal (`raid portal`, the way `enter` takes a bot to an NPC). The result says which one it was.
+3. The leader invites, the member joins, the leader waits up to 20 s for the member at the entrance. The first step into the portal
+   opens the window (`open`), the Start button is `start`.
+4. Inside: a look every second (`raid state`: position, the run, the guide), then up to 3 walk steps of 0.3 s by the guide's goal. The
+   guide (`K.guide`) is the way a person plays: first the pack of the corridor (walk to the live monster, fight when near), wait for
+   the door, then into the boss room and the boss, wait outside while the room is sealed, wait in the hall when fallen (a lethal hit
+   is caught, the engine lands the bot in the hall), after the last boss to the exit portal on the throne. A step that did not move the
+   bot makes it go round (one tile to the side, the other side next time). No teleport inside the raid.
+5. The fights are the bot's own: it casts its class rotation and drinks potions at its health thresholds (`keep_alive`), the helper only
+   targets what is within 5 tiles, as everywhere. In the raid a bot never flees to the temple (`in_raid`). After every boss kill the bot
+   takes the loot of the corpse (the loot filter) as it does anywhere.
+6. The time is `RAID_BUDGET` (20 min); then the Leave button (`leave`, refused in a fight: it fights on up to 150 s, then the helper
+   closes the run). The empty run is closed by `raid close` so the slot is free for the next one.
+Verdict (`raid_verdict`): PASS when at least one pack or boss was killed, FAIL for a tester in a player's raid or in another slot, more
+players than the party in the testers' raid, the raid refusing a tester with the switch on, a bot still inside after the close, or
+180 s at a pack or a boss without any kill; SKIP with the reason for the level, the free bots, the slot taken, no pack killed in the time,
+or a walk blocked for 30 s on one tile. Not run live: the walk, the fights and the loot need a server (the check is proven against a small
+raid on a lane that answers like the helper: the way on foot, the fallback, the party, a blocked way, the leave and the close).
+
+Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could do like a person, with a plan each:
+- `patchnotes`: done now, read and mark-seen requests of the window (no engine work): moved out of `OUT_OF_SCOPE`.
+- dungeons (`dungeons.lua` refuses testers, the `queue` action is refused): the same recipe as the raid (closed system, side of the
+  queue, slot of its own, `probe` and `guide`), the same walk and fight loop of `closed_raid` with another guide. The biggest gap.
+- `groupqueue` and `party_finder` (match players): a queue per side like the arena (a tester entry only meets testers, a listing
+  carries its side); then the bots can form parties of testers from the finder, and dungeons can be queued.
+- `mentor`, `guildboss`, `siege`, `orbexchange`, `community` (pair, guild or market content of real players): each needs its own
+  side rule like the market realm (a tester book for the exchange, tester guilds for the siege and the guild boss, a tester mentor
+  list); the tester guilds of closed mode exist already, so siege and guild boss come first.
+- places reached by `!tester enter` (the temple, depot, NPC booths, bosses, travel, spell quest NPCs, trials): walk like the raid
+  entrance does, with `raid path`'s idea (`Creature:getPathTo` to the place, a generic `!tester path KIND`), the teleport only as the
+  fallback. No engine work, a helper command and a walk step in `CheckIO`; do it place by place with the raid walker.
+- checks that use the helper for what a person does (rift keys, waystone runs and rift layout by `riftrun`, chest spawns, `give`):
+  a person finds a key in a hunt, opens the rift at the portal and walks it. The rift is the next one for the guide recipe (the
+  layout is a known map).
+- left as they are: real money, staff tools, referral, reports, beta, telemetry and the library or generator systems.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

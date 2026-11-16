@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Closed test mode of the tester bots (O582; server/README.md "Closed test mode").
 
-On the test server the bots play arena, battleground, the Marches (PvP), guild, guild war, market and bazaar only among
+On the test server the bots play arena, battleground, the Marches (PvP), guild, guild war, market, bazaar and the raid only among
 themselves, switched on by `chaos-ctl.sh testers closed on` (the admin app's "Modo fechado (bots entre si)"). The switch is
 the file data/chaos_testers_closed in the server folder: the word "on" is on, anything else (or no file) is off. The server
 scripts read it (testers_core.lua K.closedOn) and check that every party of a closed-mode action is a tester.
@@ -12,7 +12,8 @@ This module is the part outside the game:
                               war's minimum of members each, the first bot of each one its leader; per bot its guild, rank, rival
   guild_statements(plan)      the SQL that makes those guilds before the bots log in
   clean_statements(present, ids)  the SQL that removes everything closed mode made: guilds and their wars, the tester market book
-                              (offers, orders, price history), arena matches of testers only, bazaar listings of testers
+                              (offers, orders, price history), arena matches of testers only, bazaar listings of testers, the
+                              raids of testers only (instances, members) and the raid rows of the testers (O588)
 Standard library only.
 """
 import os
@@ -26,6 +27,8 @@ MAX_MEMBERS = 5
 LEADER, MEMBER = 3, 1        # guild rank levels of the base server (3 leader, 2 vice-leader, 1 member)
 NAME_RE = re.compile(r'^Tester [A-Z][a-z][a-z]$')
 SAFE_TABLE = re.compile(r'^[A-Za-z0-9_]+$')
+RAID_TABLES = {'lockouts': 'chaos_raid_lockouts', 'instances': 'chaos_raid_instances', 'members': 'chaos_raid_members',
+               'players': 'chaos_raid_players', 'purchases': 'chaos_raid_purchases'}   # raid_config.lua tables (O588)
 
 
 def parse_flag(text):
@@ -139,6 +142,17 @@ def clean_statements(present, tester_ids):
         st.append("DELETE FROM `chaos_arena_matches` WHERE `id` IN (SELECT `match_id` FROM `chaos_arena_match_players` "
                   "WHERE `player_id` IN (%s)) AND `id` NOT IN (SELECT `match_id` FROM `chaos_arena_match_players` "
                   "WHERE `player_id` NOT IN (%s));" % (ids, ids))
+    # the testers' own raids (O588): the member rows of testers in raids a tester led, then those raids when no member row is
+    # left (a raid with a player in it is kept), and the lockouts, marks and vendor purchases of the testers. No statement reads the
+    # table it deletes from (MySQL error 1093)
+    if has(RAID_TABLES['instances'], RAID_TABLES['members']):
+        st.append("DELETE FROM `%s` WHERE `player_id` IN (%s) AND `instance_id` IN (SELECT `id` FROM `%s` WHERE `leader_id` IN (%s));"
+                  % (RAID_TABLES['members'], ids, RAID_TABLES['instances'], ids))
+        st.append("DELETE FROM `%s` WHERE `leader_id` IN (%s) AND `id` NOT IN (SELECT `instance_id` FROM `%s`);"
+                  % (RAID_TABLES['instances'], ids, RAID_TABLES['members']))
+    for key in ('lockouts', 'players', 'purchases'):
+        if has(RAID_TABLES[key]):
+            st.append("DELETE FROM `%s` WHERE `player_id` IN (%s);" % (RAID_TABLES[key], ids))
     if has('chaos_bazaar_listings'):
         if has('chaos_bazaar_bids'):
             st.append("DELETE FROM `chaos_bazaar_bids` WHERE `listing_id` IN (SELECT `id` FROM `chaos_bazaar_listings` "
