@@ -60,6 +60,33 @@ eq(H.hotSpot(287, {{"Urzog", 300}}), nil, "hotSpot: a few levels lost by dying k
 eq(H.hotSpot(40, {{"a", 65}}), nil, "hotSpot: the margin is at least 25 levels")
 eq(H.hotSpot(40, {{"a", 66}})[1], "a", "hotSpot: over the margin")
 eq(H.hotSpot(575, {{"Embermaw Archon", 2100}})[1], "Embermaw Archon", "hotSpot: a far higher monster")
+-- the fist pair of the probe (O580): the best two plain fist weapons the level may wield (code 33 = NOTENOUGHLEVEL otherwise)
+local fistItems = {[40000] = {level = 1}, [36654] = {level = 8}, [40009] = {level = 14, unique = "Vigil-Knot Wraps"},
+	[40010] = {level = 26, unique = "Chapel-Iron Knuckles"}, [40001] = {level = 35}, [36655] = {level = 60},
+	[40002] = {level = 100}, [36656] = {level = 150}, [36657] = {level = 300}, [36659] = {level = 650, unique = "Grasp"}}
+local function pair(level) local p = H.fistPair(level, fistItems, {36656, 36657}) return p[1] .. "," .. p[2] end
+eq(pair(30), "36654,40000", "fistPair: level 30 wears the level 8 and the level 1 weapon")
+eq(pair(100), "40002,36655", "fistPair: level 100")
+eq(pair(150), "36656,40002", "fistPair: level 150 (the old probe failed the second hand at 150-299)")
+eq(pair(299), "36656,40002", "fistPair: level 299")
+eq(pair(300), "36657,36656", "fistPair: level 300")
+eq(pair(2000), "36657,36656", "fistPair: a unique is never picked")
+eq(pair(1), "40000,40000", "fistPair: only one fits: the same one twice")
+eq(pair(0), "36656,36657", "fistPair: none fits: the fallback")
+eq(H.fistPair(50, nil, {1, 2})[2], 2, "fistPair: no table: the fallback")
+-- hunt marks for a level (O580): the band is read from the name, the whole band must be at or under the level
+local lo, hi = H.huntBand("Hunting: Penguin, Mammoth (level 1-20)")
+check(lo == 1 and hi == 20 and H.huntBand("Temple") == nil, "huntBand reads the band of a hunt mark")
+local huntMarks = {{k = "hunt", x = 1, y = 1, z = 7, n = "Hunting: A (level 1-20)"},
+	{k = "hunt", x = 2, y = 2, z = 7, n = "Hunting: B (level 20-90)"}, {k = "hunt", x = 3, y = 3, z = 7, n = "Hunting: C (level 70-80)"},
+	{k = "hunt", x = 4, y = 4, z = 7, n = "Hunting: D (level 60-85)"}, {k = "hunt", x = 5, y = 5, z = 7, n = "no band"},
+	{k = "boss", x = 6, y = 6, z = 7, n = "Boss (level 10-20)"}}
+local function xs(list) local o = {} for _, m in ipairs(list) do o[#o + 1] = m.x end return table.concat(o, ",") end
+eq(xs(H.huntCandidates(huntMarks, 100, 0)), "2,4,3,1", "huntCandidates: tops 90 and 85 first (>= 0.8 x 90), then 80, then 20")
+eq(xs(H.huntCandidates(huntMarks, 100, 1)), "4,3,2,1", "huntCandidates: the seed turns the best group (90, 85, 80), not the rest")
+eq(xs(H.huntCandidates(huntMarks, 30, 0)), "1", "huntCandidates: only the bands at or under level 30")
+eq(xs(H.huntCandidates(huntMarks, 5, 0)), "1,3,4,2", "huntCandidates: none fits: the lowest band first, then upward")
+eq(#H.huntCandidates(nil, 100, 0), 0, "huntCandidates: no marks")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -344,6 +371,45 @@ talks["!tester"].onSay(tester, "!tester", "town")
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 50, "hunt spot with a monster far above the level: no teleport")
 check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "and the answer names it")
+-- O580: a hunt of the tester's level is looked for before the bot stays in the temple for good. The marks: a band above
+-- the level (never), a band at the level with a high monster beside it (skipped), a clean band at the level (taken)
+local realTile, realSpect, realPoi = Tile, Game.getSpectators, ChaosPoi
+function Tile(p)
+	return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return nil end}
+end
+ChaosPoi = {all = {
+	{k = "hunt", x = 300, y = 300, z = 7, n = "Hunting: Dragon (level 300-400)"},
+	{k = "hunt", x = 200, y = 200, z = 7, n = "Hunting: Hound (level 60-90)"},
+	{k = "hunt", x = 210, y = 210, z = 7, n = "Hunting: Rat (level 40-80)"},
+	{k = "temple", x = 50, y = 50, z = 7, n = "Temple"},
+}}
+local nearPos = {}
+Game.getSpectators = function(p)
+	-- the old spot (100, 100) and the mark of the Hound hold a monster far above level 100; the Rat's mark is clean
+	if (p.x == 100 and p.y == 100) or (p.x >= 199 and p.x <= 203 and p.y >= 199 and p.y <= 203) then
+		return {wolf}
+	end
+	nearPos[#nearPos + 1] = p.x
+	return {}
+end
+tester.pos = {x = 50, y = 50, z = 7}
+talks["!tester"].onSay(tester, "!tester", "hunt")
+check(tester.pos.x >= 209 and tester.pos.x <= 213 and tester.pos.y >= 209 and tester.pos.y <= 213,
+	"hunt spot too high: the bot goes to the clean hunt of its level (" .. tostring(tester.pos.x) .. ")")
+check(tester.log.msgs[#tester.log.msgs]:find('"moved":{', 1, true) ~= nil, "and the answer says it moved")
+eq(tester.store[ST + 2], tester.pos.x, "the new spot is the bot's hunt spot from now on")
+for _, x in ipairs(nearPos) do
+	check(x ~= 300, "a band above the level is never a candidate")
+end
+-- no clean hunt: it stays
+Game.getSpectators = function() return {wolf} end
+tester.store[ST + 2], tester.store[ST + 3], tester.store[ST + 4] = 100, 100, 7
+tester.pos = {x = 50, y = 50, z = 7}
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 50, "no clean hunt: no teleport")
+check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "no clean hunt: the old answer")
+Tile, Game.getSpectators, ChaosPoi = realTile, realSpect, realPoi
 Chaos.monsterHuntingLevel = realMhl
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 100, "a spot within the level: teleport")
