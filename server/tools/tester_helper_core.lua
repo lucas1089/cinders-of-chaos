@@ -37,7 +37,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, closed = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -591,6 +591,165 @@ function H.onlineLine(count, last, minute)
 		return nil
 	end
 	return string.format("%s testers online: %d", H.MARK, count)
+end
+
+-- ---------------------------------------------------------------- O584: keeping the drops like a player
+-- The bag was wiped every 4 minutes, so no drop was ever sold, worn or compared. Now `!tester bag` only reports the backpack
+-- (and tops the potions up); the bot sells at the Loot Buyer by the NPC trade window, wears a better piece by the move packet
+-- and drops junk by the move packet. `!tester bag wipe` is the helper's last resort, counted as a failure in the report.
+H.TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
+H.EQUIP_MARGIN = 1 -- a piece must score this much more than the worn one
+H.BAG_FULL = 0.7 -- the share of the backpack slots that sends a bot to sell
+H.BAG_JAM = 0.9 -- the share left after selling that makes it drop junk
+H.REPORT_MAX = 24 -- rows of the answer (a text message of the game is not a place for 60 items)
+
+-- `shop <npc>`: a trader of the list only, any other name is no trader
+function H.parseShop(arg)
+	if type(arg) ~= "string" then
+		return nil
+	end
+	local want = arg:lower():gsub("^%s+", ""):gsub("%s+$", "")
+	for _, name in ipairs(H.TRADERS) do
+		if name:lower() == want then
+			return name
+		end
+	end
+	return nil
+end
+
+-- `bag [wipe]`
+function H.parseBag(arg)
+	if arg == nil or arg == "" then
+		return "report"
+	end
+	return tostring(arg):lower() == "wipe" and "wipe" or nil
+end
+
+-- row = {id, count, price, blocked, container, slot, score}; ctx = {want = {[id] = n}, currency = {[id] = true}}
+-- kinds: supply (the potions), currency (coins), container (a bag), locked (the Loot Buyer refuses it: a unique, a locked
+-- item), sell (the Loot Buyer buys it), junk (nothing buys it)
+function H.itemKind(row, ctx)
+	if (ctx.want or {})[row.id] then
+		return "supply"
+	end
+	if (ctx.currency or {})[row.id] then
+		return "currency"
+	end
+	if row.container then
+		return "container"
+	end
+	if row.blocked then
+		return "locked"
+	end
+	if (row.price or 0) > 0 then
+		return "sell"
+	end
+	return "junk"
+end
+
+-- worn = {[slot] = score} (0 or nil: nothing worn); rows with `slot` and `score`. The row index of the piece that gains the
+-- most over what is worn there, or nil. A piece the bot already tried and the server refused (`refused[id]`) is left out.
+function H.betterPiece(worn, rows, refused)
+	local best, gain = nil, H.EQUIP_MARGIN - 1
+	for i, r in ipairs(rows or {}) do
+		if r.slot and not (refused or {})[r.id] and r.kind ~= "supply" and r.kind ~= "currency" and r.kind ~= "container" then
+			local g = (r.score or 0) - ((worn or {})[r.slot] or 0)
+			if g > gain then
+				best, gain = i, g
+			end
+		end
+	end
+	return best
+end
+
+-- the rows to drop when the bag has `size` slots and `used` are taken: only at BAG_JAM or more, junk first, the weakest and
+-- the smallest stack first, until the used share is 0.1 under BAG_JAM. Never a supply, coins, a bag, a locked item
+-- or anything the Loot Buyer buys (that is sold, not dropped). Returns row indexes.
+function H.junkPlan(rows, used, size)
+	local out = {}
+	if size <= 0 or used / size < H.BAG_JAM then
+		return out
+	end
+	local junk = {}
+	for i, r in ipairs(rows or {}) do
+		if r.kind == "junk" then
+			junk[#junk + 1] = i
+		end
+	end
+	table.sort(junk, function(a, b)
+		local ra, rb = rows[a], rows[b]
+		if (ra.score or 0) ~= (rb.score or 0) then
+			return (ra.score or 0) < (rb.score or 0)
+		end
+		if (ra.count or 1) ~= (rb.count or 1) then
+			return (ra.count or 1) < (rb.count or 1)
+		end
+		return a < b
+	end)
+	local left = used
+	for _, i in ipairs(junk) do
+		if left / size < H.BAG_JAM - 0.1 then
+			break
+		end
+		out[#out + 1] = i
+		left = left - 1
+	end
+	return out
+end
+
+-- the answer of `!tester bag`: rows (the backpack's own slots, each with its container index `i`), worn scores, size
+-- {used, size, rows = [{i, id, cid, n, k, s, sc}], better = row index or nil, junk = [row index], sell = number of rows
+-- the Loot Buyer buys, potions = {id = count}}
+function H.bagReport(rows, worn, size, refused)
+	local used = #rows
+	local better = H.betterPiece(worn, rows, refused)
+	local sells = 0
+	for _, r in ipairs(rows) do
+		if r.kind == "sell" then
+			sells = sells + 1
+		end
+	end
+	local out = {}
+	for i, r in ipairs(rows) do
+		if #out < H.REPORT_MAX or i == better then
+			out[#out + 1] = {i = r.i, id = r.id, cid = r.clientId, n = r.count, k = r.kind, s = r.slot, sc = r.score}
+		end
+	end
+	local junk = {}
+	for _, idx in ipairs(H.junkPlan(rows, used, size)) do
+		junk[#junk + 1] = rows[idx].i
+	end
+	return {used = used, size = size, rows = out, better = better and rows[better].i or nil, junk = junk, sell = sells}
+end
+
+
+-- ---------------------------------------------------------------- O584: `!tester give <what>`: items for the crafting checks
+-- item: a plain piece of the class kit (no rarity, an item level); orb <key> [n]: crafting orbs (ChaosCrafting.config.orbs keys,
+-- also whetstone and sockets); gem: the smallest gem; rune: the first support rune; charm: a small charm; card: the first card.
+-- The tester gets them in its own backpack. Never another character's.
+H.GIVE_WHAT = {item = true, orb = true, gem = true, rune = true, charm = true, card = true}
+H.GIVE_MAX = 20
+function H.parseGive(arg)
+	local what, rest = tostring(arg or ""):match("^%s*(%a+)%s*(.-)%s*$")
+	what = what and what:lower()
+	if not what or not H.GIVE_WHAT[what] then
+		return nil
+	end
+	local key, n
+	if what == "orb" then
+		key, n = rest:match("^(%a+)%s*(%d*)$")
+		if not key then
+			return nil
+		end
+		key = key:lower()
+	elseif rest ~= "" then
+		n = rest:match("^(%d+)$")
+		if not n then
+			return nil
+		end
+	end
+	n = tonumber(n) or 1
+	return {what = what, key = key, n = math.max(1, math.min(H.GIVE_MAX, n))}
 end
 
 return H

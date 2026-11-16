@@ -466,7 +466,7 @@ async def _says_q(command, kind, wait=4.0):
 q.helper_says = _says_q
 q.room_fails = 5
 eq(asyncio.run(q.tidy_bag()), True, 'the clean-up worked')
-eq((q.room_fails, r5.d['behaviours']['bag']['ok']), (0, 1), 'and the count starts again')
+eq((q.room_fails, r5.d['behaviours']['bag']['ok']), (5, 1), 'the look does not clear the count of missing room: only a keep round does (O584)')
 q.helper = {}
 q.died = True
 eq(asyncio.run(q.tidy_bag()), False, 'the helper did not answer a dead bot')
@@ -837,6 +837,250 @@ eq(h.helper['info']['level'], 9, 'info is kept whatever its number')
 rep6 = TC.build_report(r6.d, {'errors': {}, 'warnings': {}, 'events': [], 'anomalies': []})
 ok('== Helper answers (' in rep6, 'the report has a helper answers line')
 ok('1 late and dropped' in rep6 and 'slowest' in rep6, 'with the late answers and the slowest answer')
+
+# ---------------------------------------------------------------- report v2 (O584 item 15)
+W = TC.HUNT_WINDOW
+eq(TC.hunt_outcome(100.0, None, None), 'expected', 'hunt: away from the hunt spot is not judged')
+eq(TC.hunt_outcome(100.0, 50.0, None), 'expected', 'hunt: not there a window yet is not judged')
+eq(TC.hunt_outcome(1000.0, 0.0, None), 'failed', 'hunt: a window at the spot and no experience is failed')
+eq(TC.hunt_outcome(1000.0, 0.0, 950.0), 'ok', 'hunt: experience within the window is ok')
+eq(TC.hunt_outcome(1000.0, 0.0, 100.0), 'failed', 'hunt: experience long ago is failed')
+eq(TC.hunt_outcome(1000.0, 500.0, 400.0), 'failed', 'hunt: experience from before the return is not this hunt')
+eq(TC.flee_outcome(30, 30, False, {'pos': {}}), ('ok', ''), 'flee: alive, health not lower, the helper answered')
+eq(TC.flee_outcome(30, 20, False, {'pos': {}})[0], 'failed', 'flee: health fell')
+eq(TC.flee_outcome(30, 30, True, {'pos': {}})[0], 'failed', 'flee: died')
+eq(TC.flee_outcome(30, 30, False, None)[0], 'failed', 'flee: no helper answer')
+eq(TC.flee_outcome(30, 30, False, {'err': 'x'})[0], 'failed', 'flee: the helper refused')
+
+# a bot at its hunt: the experience message is progress, the hunt pick says so
+rh = T.Results(1)
+hb = T.TesterBot(6, dict(bot), A(), 1, rh, {'rotation': [], 'heal': None})
+hb.alive, hb.died = True, False
+hb.hunt_since = _time.monotonic() - 1000
+eq(asyncio.run(hb.do_hunt(None)), False, 'a bot that gained nothing for a window fails its hunt')
+ok(any('hunt: no experience' in k for k in rh.d['failures']), 'and the failure says so')
+hb.on_text('You gained 120 experience points.')
+hb.hunt_since = _time.monotonic() - 1000
+eq(asyncio.run(hb.do_hunt(None)), True, 'experience since: the hunt is ok')
+hb.hunt_since = _time.monotonic() - 3
+eq(asyncio.run(hb.do_hunt(None)), None, 'just arrived: not judged')
+hb.on_text('[tester-helper] town {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+eq(hb.hunt_since, None, 'the town answer ends the hunt stay')
+hb.on_text('[tester-helper] hunt {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+ok(hb.hunt_since is not None, 'the hunt answer starts it')
+
+# a flee is judged FLEE_LOOK seconds later; a death in between fails it
+rf = T.Results(1)
+fb = T.TesterBot(7, dict(bot), A(), 1, rf, {'rotation': [], 'heal': None})
+fb.conn, fb.alive, fb.died, fb.cid = C(), True, False, 0
+fb.say = lambda text, kind=1: None
+fb.health, fb.heal = 20, None
+fb.ready = {'heal': 9e9, 'potion': 9e9}
+fb.keep_alive(1000.0)
+eq(rf.d['behaviours']['flee']['tried'], 1, 'the flee is tried')
+ok(fb.flee_check is not None, 'and waits to be judged')
+fb.on_text('[tester-helper] town {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+fb.health = 25
+fb.keep_alive(1000.0 + TC.FLEE_LOOK + 1)
+eq(rf.d['behaviours']['flee'].get('ok'), 1, 'a flee that reached the temple alive counts ok (it read 0 before)')
+fb.flee_check = (5000.0, 20)
+fb.on_death()
+eq(rf.d['behaviours']['flee'].get('failed'), 1, 'a death before the look fails the flee')
+ok(any(k.startswith('flee: died') for k in rf.d['failures']), 'with its reason')
+
+# the proof table and the diff against the previous run
+cov = {'bank': {'tried': 5, 'ok': 4, 'errors': 0, 'real': 2, 'ans': 2, 'help': 0, 'failed': 0, 'refused': 0},
+       'rift': {'tried': 3, 'ok': 3, 'errors': 0, 'real': 0, 'ans': 0, 'help': 3, 'failed': 0, 'refused': 0},
+       'charms': {'tried': 4, 'ok': 4, 'errors': 0, 'real': 0, 'ans': 4, 'help': 0, 'failed': 0, 'refused': 0},
+       'daily': {'tried': 2, 'ok': 1, 'errors': 0, 'real': 0, 'ans': 0, 'help': 0, 'failed': 1, 'refused': 0}}
+empty_log = {'errors': {}, 'warnings': {}, 'anomalies': [], 'events': [], 'first': {}}
+run1 = {'logins': 100, 'deaths': 40, 'relogs': 2, 'reconnects': 0, 'coverage': cov, 'failures': {'depot: no locker': 5},
+        'behaviours': {'hunt': {'tried': 500, 'ok': 400, 'failed': 50, 'expected': 50}},
+        'effects': [{'effect': 'daily_claim_sets_day', 'step': 'calim', 'why': 'TakenReward is 0', 'bot': 'Tester Abc'}],
+        'keep': {'sold_units': 9, 'sold_gold': 700, 'sell_visits': 3, 'equipped': 2, 'dropped': 1}}
+rep1 = TC.build_report(run1, empty_log)
+ok('== Proof by system' in rep1 and 'bank' in rep1.split('== Proof by system')[1], 'the proof table lists the systems reached')
+ok('(4 systems reached: 1 with REAL proof, 1 with ANS only, 1 with HELP only)' in rep1, 'with the summary')
+ok('== Effects that did not hold (1' in rep1 and 'FAIL daily_claim_sets_day calim' in rep1, 'failed effects are listed as FAIL')
+ok('== Bag keeping (sold 9 items for 700 gold in 3 visits, equipped 2, dropped 1' in rep1, 'the bag keeping line')
+eq(TC.report_diff('', rep1), [], 'no previous report: no diff section')
+ok('Against the previous run' not in rep1, 'and none in the report')
+back = TC.read_report(rep1)
+eq(back['proof']['bank'], (2, 2, 0, 0), 'a report reads back: proof')
+eq(back['behaviours']['hunt'], (500, 400, 50, 50), 'a report reads back: behaviours')
+eq(back['failures']['depot: no locker'], 5, 'a report reads back: failures')
+eq(back['head']['deaths'], 40, 'a report reads back: the head line')
+cov2 = json.loads(json.dumps(cov))
+cov2['bank']['real'] = 0
+cov2['daily']['real'] = 3
+cov2['daily']['failed'] = 0
+cov2['charms']['failed'] = 2
+run2 = dict(run1, deaths=10, coverage=cov2, failures={'shop: no window': 7}, effects=[],
+            behaviours={'hunt': {'tried': 500, 'ok': 100, 'failed': 350, 'expected': 50}})
+rep2 = TC.build_report(run2, empty_log, rep1, ' of 20261115-100000')
+ok('== Against the previous run of 20261115-100000 (' in rep2, 'the diff names the previous run')
+for want in ('deaths 40 -> 10', 'bank: REAL proof lost (was 2)', 'daily: REAL proof now (3)', 'charms: failed effects 0 -> 2',
+             'new failure: 7x shop: no window', 'failure gone: depot: no locker', 'behaviour hunt ok 400 -> 100, failed 50 -> 350'):
+    ok(want in rep2, 'the diff says %r' % want)
+ok(rep2.index('Against the previous run') < rep2.index('== Server log: errors'), 'the diff comes first, after the header')
+rep3 = TC.build_report(run1, empty_log, rep1, ' of x')
+ok('nothing moved' in rep3, 'the same run twice: nothing moved')
+# the previous report file: the newest one older than this run
+_d = tempfile.mkdtemp()
+os.makedirs(os.path.join(_d, 'runs'))
+for st_, txt in (('20261101-000000', 'old'), ('20261110-000000', 'newer'), ('20261120-000000', 'later')):
+    with open(os.path.join(_d, 'runs', 'run-%s-report.txt' % st_), 'w') as f_:
+        f_.write(txt)
+eq(T.previous_report(_d, '/x/runs/run-20261115-120000.log'), ('newer', ' of 20261110-000000'), 'the newest report older than the run')
+eq(T.previous_report(_d, '/x/runs/run-20261101-000000.log'), ('', ''), 'no older report: none')
+shutil.rmtree(_d)
+
+# ---------------------------------------------------------------- keeping the drops (O584 item 2)
+eq(TC.classify('Sold 3x item 5 for 1,200 gold.'), ('sold', (3, 1200)), 'the Loot Buyer sale text')
+eq(TC.classify('Sold item 5 for 40 gold.'), ('sold', (1, 40)), 'a single copy')
+eq(TC.move_packet((0xFFFF, 0x40, 2), 0x1234, 2, (0xFFFF, 1, 0), 1),
+   b'\x78' + struct.pack('<HHB', 0xFFFF, 0x40, 2) + struct.pack('<HB', 0x1234, 2) + struct.pack('<HHB', 0xFFFF, 1, 0) + b'\x01',
+   'the move packet: from the backpack slot to the equipment slot')
+eq(len(TC.move_packet((1, 2, 3), 4, 5, (6, 7, 8), 300)), 1 + 5 + 3 + 5 + 1, 'the move packet is 15 bytes')
+eq(TC.move_packet((1, 2, 3), 4, 5, (6, 7, 8), 300)[-1], 255, 'a count is one byte')
+eq(TC.sale_packet(2400, 0, 100), b'\x7b' + struct.pack('<HBBB', 2400, 0, 100, 1), 'the sale packet')
+eq(TC.use_packet((0xFFFF, 3, 0), 1988), b'\x82' + struct.pack('<HHB', 0xFFFF, 3, 0) + struct.pack('<HBB', 1988, 0, 0), 'the use packet')
+rep0 = {'used': 16, 'size': 20, 'sell': 2, 'better': 3, 'junk': [5, 9, 11, 12, 13],
+        'rows': [{'i': 3, 'id': 3001, 'cid': 13001, 'n': 1, 'k': 'sell', 's': 1, 'sc': 90},
+                 {'i': 5, 'id': 3003, 'cid': 13003, 'n': 4, 'k': 'junk'}, {'i': 9, 'id': 3004, 'cid': 13004, 'n': 1, 'k': 'junk'},
+                 {'i': 11, 'id': 3005, 'cid': 13005, 'n': 1, 'k': 'junk'}, {'i': 12, 'id': 3006, 'cid': 13006, 'n': 1, 'k': 'junk'}]}
+pl = TC.keep_plan(rep0)
+eq((pl['equip']['id'], pl['sell']), (3001, True), 'plan: a better piece to wear, a full bag to sell')
+eq(TC.keep_plan(rep0, refused={3001})['equip'], None, 'plan: a refused piece is not tried again')
+eq(TC.keep_plan(dict(rep0, used=5))['sell'], False, 'plan: an empty bag and two things to sell: no trip')
+eq(TC.keep_plan(dict(rep0, used=5), room_fails=1)['sell'], True, 'plan: pickups with no room: sell')
+eq(TC.keep_plan(dict(rep0, sell=0))['sell'], False, 'plan: nothing the Loot Buyer buys: no trip')
+eq([r['i'] for r in TC.drop_rows(rep0)], [5, 9, 11], 'drop: at most three junk rows')
+eq(TC.drop_rows({'rows': [], 'junk': [4]}), [], 'drop: a junk index with no row')
+
+class KC:
+    def __init__(self):
+        self.out = []
+
+        class W:
+            async def drain(self):
+                return None
+        self.w = W()
+
+    def send(self, b):
+        self.out.append(b)
+
+
+# a bot keeps its bag: scripted reports, real packets
+rk = T.Results(1)
+kb = T.TesterBot(8, dict(bot), A(), 1, rk, {'rotation': [], 'heal': None})
+kb.conn, kb.cid, kb.alive, kb.died = KC(), 0x10000008, True, False
+kb.say = lambda text, kind=1: None
+jam = {'used': 19, 'size': 20, 'sell': 0, 'better': 3, 'junk': [5], 'pos': {'x': 10, 'y': 20, 'z': 7}, 'bagClientId': 1988,
+       'rows': [{'i': 3, 'id': 3001, 'cid': 13001, 'n': 1, 'k': 'sell', 's': 1, 'sc': 90},
+                {'i': 5, 'id': 3003, 'cid': 13003, 'n': 4, 'k': 'junk'}]}
+calm = {'used': 17, 'size': 20, 'sell': 0, 'better': None, 'junk': [], 'pos': jam['pos'], 'bagClientId': 1988, 'rows': []}
+script = [jam, jam, calm]  # first look, after the wear (the piece is gone but one junk is left), after the drop
+said_k = []
+
+
+async def _says_k(command, kind, wait=4.0):
+    said_k.append(command)
+    if command.startswith('bag'):
+        return script.pop(0) if script else calm
+    return {'pos': {}}
+kb.helper_says = _says_k
+_sleep = asyncio.sleep
+
+
+async def _fast(_s, *a, **k):
+    return None
+asyncio.sleep = _fast
+try:
+    jam['rows'][0]['i'] = 3
+    after_wear = dict(jam, rows=[jam['rows'][1]], better=None)
+    script[:] = [jam, after_wear, after_wear, calm]  # look, check of the wear, look after it, look after the drop
+    eq(asyncio.run(kb.do_keep(None)), True, 'a keep round ends ok')
+finally:
+    asyncio.sleep = _sleep
+sent_k = kb.conn.out
+moves = [b for b in sent_k if b[:1] == b'\x78']
+eq(moves[0], TC.move_packet((0xFFFF, 0x40, 3), 13001, 3, (0xFFFF, 1, 0), 1), 'the better piece is moved to its equipment slot')
+eq(moves[1], TC.move_packet((0xFFFF, 0x40, 5), 13003, 5, (10, 20, 7), 4), 'the junk is moved to the floor of the own tile')
+ok(sent_k[0][:1] == b'\x82', 'the backpack is opened first (use packet)')
+eq((rk.d['keep'].get('equipped'), rk.d['keep'].get('dropped')), (1, 1), 'counted: one worn, one dropped')
+ok(not any(c.startswith('bag wipe') for c in said_k), 'the helper did not wipe')
+# a piece the server will not let it wear: remembered
+rk2 = T.Results(1)
+kc = T.TesterBot(9, dict(bot), A(), 1, rk2, {'rotation': [], 'heal': None})
+kc.conn, kc.cid, kc.alive, kc.died = KC(), 0x10000009, True, False
+kc.say = lambda text, kind=1: None
+same = dict(jam, junk=[])
+script2 = [same, same]
+
+
+async def _says_c(command, kind, wait=4.0):
+    return script2.pop(0) if script2 else same
+kc.helper_says = _says_c
+asyncio.sleep = _fast
+try:
+    asyncio.run(kc.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+ok(3001 in kc.equip_refused and rk2.d['keep'].get('equip_refused') == 1, 'a piece still in its slot after the move is refused, and remembered')
+# a bag jammed with what cannot go: three rounds, then the helper wipes it, as a counted failure
+rk3 = T.Results(1)
+kd = T.TesterBot(10, dict(bot), A(), 1, rk3, {'rotation': [], 'heal': None})
+kd.conn, kd.cid, kd.alive, kd.died = KC(), 0x1000000a, True, False
+kd.say = lambda text, kind=1: None
+stuck = {'used': 19, 'size': 20, 'sell': 0, 'better': None, 'junk': [], 'pos': jam['pos'], 'bagClientId': 1988, 'rows': []}
+cmds = []
+
+
+async def _says_d(command, kind, wait=4.0):
+    cmds.append(command)
+    return stuck
+kd.helper_says = _says_d
+asyncio.sleep = _fast
+try:
+    for _ in range(3):
+        asyncio.run(kd.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+ok('bag wipe' in cmds and rk3.d['keep'].get('wiped') == 1, 'a bag jammed three rounds in a row is wiped by the helper')
+ok(any(k.startswith('keep: the bag stayed jammed') for k in rk3.d['failures']), 'and the wipe is a counted failure')
+# a calm bag does not touch anything
+rk4 = T.Results(1)
+ke = T.TesterBot(11, dict(bot), A(), 1, rk4, {'rotation': [], 'heal': None})
+ke.conn, ke.cid, ke.alive, ke.died = KC(), 0x1000000b, True, False
+ke.say = lambda text, kind=1: None
+
+
+async def _says_e(command, kind, wait=4.0):
+    return calm
+ke.helper_says = _says_e
+asyncio.sleep = _fast
+try:
+    asyncio.run(ke.do_keep(None))
+finally:
+    asyncio.sleep = _sleep
+eq([b for b in ke.conn.out if b[:1] in (b'\x78', b'\x7b')], [], 'a calm bag: no move, no sale')
+ok('keep' in TC.BEHAVIOURS, 'keep is a behaviour of the scheduler')
+
+# the use-with packet and the check io's open_bag / use_with (O584 item 3)
+eq(TC.use_with_packet((0xFFFF, 0x40, 1), 500, 1, (0xFFFF, 0x40, 2), 600, 2),
+   b'\x83' + struct.pack('<HHB', 0xFFFF, 0x40, 1) + struct.pack('<HB', 500, 1) + struct.pack('<HHB', 0xFFFF, 0x40, 2) + struct.pack('<HB', 600, 2),
+   'the use-with packet: item, then target')
+rio = T.Results(1)
+ib = T.TesterBot(12, dict(bot), A(), 1, rio, {'rotation': [], 'heal': None})
+ib.conn, ib.cid, ib.alive, ib.died = KC(), 0x1000000c, True, False
+cio = T.CheckIO(ib, {'stop': False, 'until': 1e12})
+asyncio.run(cio.open_bag(1988))
+asyncio.run(cio.use_with(0, 111, 1, 222))
+eq(ib.conn.out[0], TC.use_packet((0xFFFF, 3, 0), 1988), 'open_bag uses the backpack slot')
+eq(ib.conn.out[1][:1], b'\x83', 'use_with sends the use-with packet')
+asyncio.run(cio.open_bag(0))
+eq(len(ib.conn.out), 2, 'no client id: nothing sent')
 
 # ---------------------------------------------------------------- closed test mode (O582)
 eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--closed']).closed, True, '--closed is a flag of run')

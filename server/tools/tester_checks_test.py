@@ -1181,6 +1181,265 @@ class Runner(unittest.TestCase):
         self.assertEqual((cr.results[0].status, cr.results[0].detail), (TX.SKIP, 'the check broke: boom'))
 
 
+# ---------------------------------------------------------------- crafting and upgrades (O584 item 3)
+class CraftIO(FakeIO):
+    """a mocked backpack, crafting window and tooltip: new stacks go in front, an orb changes the item as its text says;
+    `bug` names an orb that does nothing (or the wrong thing)"""
+
+    def __init__(self, bug=None, give_error=None, max_sockets=3, refuse=None):
+        FakeIO.__init__(self)
+        self.bug, self.give_error, self.refuse = bug, give_error, refuse
+        self.slots = []   # front first: {'what', 'id', 'clientId'}
+        self.item = {'rarity': 0, 'mods': [], 'quality': 0, 'sockets': 0, 'max': max_sockets, 'socketed': 0}
+        self.orbs = {}
+        self.opened = False
+        self.use_withs = []
+        self.supports = [{'id': 7, 'name': 'Fire Bolt', 'count': 0, 'max': 2}]
+        self.charm_bag, self.charm_placed = [], []
+        self.rnd = 0
+
+    def index_of(self, what):
+        return next(i for i, s in enumerate(self.slots) if s['what'] == what)
+
+    async def go(self, place):
+        return True
+
+    async def open_bag(self, client_id):
+        self.opened = True
+
+    async def use_with(self, a, ac, b, bc):
+        self.use_withs.append((a, b))
+        if self.slots[a]['what'] == 'gem' and self.slots[b]['what'] == 'item' and self.item['socketed'] < self.item['sockets']:
+            self.item['socketed'] += 1
+            del self.slots[a]
+
+    async def helper(self, command, kind, wait=4.0):
+        if kind != 'give':
+            return None
+        if self.give_error:
+            return {'err': self.give_error}
+        _, what, *rest = command.split()
+        ids = {'item': 2400, 'orb': 30000, 'gem': 32006, 'rune': 33001, 'charm': 32301, 'card': 27482}
+        key = rest[0] if what == 'orb' else what
+        if what == 'orb':
+            self.orbs[key] = self.orbs.get(key, 0) + int(rest[1])
+            what_ = 'orb:' + key
+        else:
+            what_ = what
+        existing = next((i for i, s in enumerate(self.slots) if s['what'] == what_), None)
+        if existing is None or what in ('item', 'charm'):
+            self.slots.insert(0, {'what': what_, 'id': ids[what] + (hash(key) % 7 if what == 'orb' else 0), 'clientId': 100 + len(self.slots)})
+            existing = 0
+        if what == 'charm':
+            self.charm_bag.append({'ref': 's3.0', 'sid': 32301, 'iid': '5'})
+        s = self.slots[existing]
+        return {'what': what, 'key': key, 'id': s['id'], 'clientId': s['clientId'], 'index': existing, 'path': str(existing),
+                'count': 1, 'bagClientId': 1988, 'level': 700}
+
+    def mods_state(self):
+        return [{'key': m, 'group': m} for m in self.item['mods']]
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        it = self.item
+        if opname == 'crafting' and action == 'select':
+            return {'action': 'state', 'data': {'counts': dict(self.orbs), 'item': {
+                'path': data['path'], 'rarity': it['rarity'], 'mods': self.mods_state(), 'quality': it['quality'], 'sig': 'sig',
+                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{}] * it['socketed']}}}}
+        if opname == 'itemTooltip':
+            pos = data['items'][0]['pos']
+            slot = self.slots[pos['z']]
+            tip = {'name': 'thing', 'rarity': it['rarity'], 'mods': [{'k': m} for m in it['mods']], 'q': it['quality'],
+                   'sk': it['socketed']}
+            if slot['what'] == 'card':
+                tip = {'name': 'Minor Card', 'desc': self.card_desc}
+            return {'action': 'tips', 'data': {'items': [{'pos': pos, 'tip': tip}]}}
+        if opname == 'crafting' and action == 'apply':
+            return self.apply(data['orb'])
+        if opname == 'supports' and action == 'open':
+            return {'action': 'state', 'data': {'spells': [dict(s) for s in self.supports]}}
+        if opname == 'supports' and action == 'socket':
+            if self.refuse:
+                return {'action': 'result', 'data': {'ok': False, 'text': self.refuse}}
+            if self.bug != 'supports':
+                self.supports[0]['count'] += 1
+            return {'action': 'result', 'data': {'ok': True, 'text': 'ok'}}
+        if opname == 'charms' and action == 'open':
+            return {'action': 'state', 'data': {'bag': list(self.charm_bag), 'placed': list(self.charm_placed),
+                                                'cells': [{'x': 1, 'y': 1, 'open': True}, {'x': 2, 'y': 1}]}}
+        if opname == 'charms' and action == 'place':
+            if self.bug != 'charms':
+                self.charm_placed.append({'id': 41})
+                self.charm_bag.pop(0)
+            return {'action': 'result', 'data': {'ok': True}}
+        if opname == 'charms' and action == 'take':
+            self.charm_placed.pop()
+            self.charm_bag.append({'ref': 's3.0', 'sid': 32301, 'iid': '5'})
+            return {'action': 'result', 'data': {'ok': True}}
+        return None
+
+    card_desc = 'Gives 2% fire damage. Use it to add it to your deck.'
+
+    def apply(self, orb):
+        it = self.item
+        if self.orbs.get(orb, 0) < 1:
+            return {'action': 'result', 'data': {'ok': False, 'text': 'You do not have it'}}
+        if self.refuse == orb:
+            return {'action': 'result', 'data': {'ok': False, 'text': 'item level too low for this orb'}}
+        self.orbs[orb] -= 1
+        if self.bug == orb:
+            return {'action': 'result', 'data': {'ok': True, 'text': 'done'}}   # an orb that did nothing
+        self.rnd += 1
+        if orb == 'transmutation':
+            it['rarity'], it['mods'] = 1, ['a%d' % self.rnd]
+        elif orb == 'alchemy':
+            it['rarity'], it['mods'] = 3, ['a%d' % self.rnd, 'b%d' % self.rnd]
+        elif orb == 'exalted':
+            it['mods'] = it['mods'] + ['c%d' % self.rnd]
+        elif orb == 'annulment':
+            it['mods'] = it['mods'][:-1]
+        elif orb == 'scouring':
+            it['rarity'], it['mods'] = 0, []
+        elif orb == 'chaos':
+            it['mods'] = ['r%d' % self.rnd for _ in it['mods']]
+        elif orb == 'divine':
+            it['rarity'] = {1: 2, 2: 3, 3: 4, 4: 5, 5: 10}.get(it['rarity'], it['rarity'])
+            it['mods'] = it['mods'] + ['d%d' % self.rnd]
+        elif orb == 'whetstone':
+            it['quality'] += 1
+        elif orb == 'sockets':
+            it['sockets'] = min(it['max'], self.rnd)
+        return {'action': 'result', 'data': {'ok': True, 'text': 'done'}}
+
+
+class Crafting(unittest.TestCase):
+    def go(self, fn, io, cls='Ninja'):
+        return run(fn(io, 'Tester Cra', cls, 600))
+
+    def test_the_orbs_change_the_item_as_promised(self):
+        io = CraftIO()
+        r = self.go(TX.check_craft_orbs, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertTrue(r.detail.startswith('Orb of Awakening, Orb of Grafting, Orb of Upheaval, Orb of Unmaking, Orb of Fate, '
+                                            'Orb of Erasure, Orb of Gilding changed'), r.detail)
+        self.assertTrue(io.opened, 'the backpack is opened as container 0 for the tooltip')
+        self.assertEqual(io.item['rarity'], 3, 'the chain ends on the Gilding')
+        tip_asks = [a for a in io.asked if a[0] == 'itemTooltip']
+        self.assertEqual(tip_asks[0][2]['items'][0]['pos'], {'x': 0xFFFF, 'y': 0x40, 'z': 0}, 'the item sits in slot 0 of the backpack')
+
+    def test_an_orb_that_does_nothing_is_a_bug(self):
+        for orb, label in (('exalted', 'Orb of Grafting'), ('transmutation', 'Orb of Awakening'), ('divine', 'Orb of Fate')):
+            r = self.go(TX.check_craft_orbs, CraftIO(bug=orb))
+            self.assertEqual(r.status, TX.FAIL, orb)
+            self.assertIn(label, r.detail)
+            self.assertIsNotNone(r.bug_line())
+
+    def test_the_tooltip_and_the_bench_must_agree(self):
+        class Lying(CraftIO):
+            async def request(self, opname, action, data, expect, timeout):
+                r = await CraftIO.request(self, opname, action, data, expect, timeout)
+                if opname == 'itemTooltip' and self.item['mods']:
+                    r['data']['items'][0]['tip']['mods'] = r['data']['items'][0]['tip']['mods'][:1] + [{'k': 'x'}, {'k': 'y'}, {'k': 'z'}]
+                return r
+        r = self.go(TX.check_craft_orbs, Lying())
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the tooltip lists', r.detail)
+
+    def test_refused_orbs_are_notes_not_bugs(self):
+        r = self.go(TX.check_craft_orbs, CraftIO(refuse='divine'))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('Orb of Fate refused', r.detail)
+
+    def test_skips_say_why(self):
+        r = self.go(TX.check_craft_orbs, CraftIO(give_error='the charm system is not loaded'))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('not loaded', r.detail)
+        old = self.go(TX.check_craft_orbs, CraftIO(give_error='unknown command'))
+        self.assertEqual(old.status, TX.SKIP)
+
+    def test_whetstone_adds_quality(self):
+        io = CraftIO()
+        r = self.go(TX.check_craft_whetstone, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.item['quality'], 1)
+        r = self.go(TX.check_craft_whetstone, CraftIO(bug='whetstone'))
+        self.assertEqual((r.status, 'quality' in r.detail), (TX.FAIL, True))
+
+    def test_sockets(self):
+        r = self.go(TX.check_craft_sockets, CraftIO())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        r = self.go(TX.check_craft_sockets, CraftIO(max_sockets=0))
+        self.assertEqual(r.status, TX.SKIP)
+        r = self.go(TX.check_craft_sockets, CraftIO(bug='sockets'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('five Orbs of Sockets', r.detail)
+
+    def test_gems_go_in_by_use_with(self):
+        io = CraftIO()
+        r = self.go(TX.check_craft_gems, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        gem_slot, item_slot = io.use_withs[0]
+        self.assertEqual((gem_slot, item_slot), (0, 1), 'the gem (given last, in front) is used on the item one slot back')
+        self.assertEqual(io.item['socketed'], 1)
+
+    def test_a_gem_that_does_not_stick_is_a_bug(self):
+        class NoStick(CraftIO):
+            async def use_with(self, a, ac, b, bc):
+                self.use_withs.append((a, b))
+        r = self.go(TX.check_craft_gems, NoStick())
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('expected one more', r.detail)
+
+    def test_the_slots_follow_new_stacks(self):
+        h = TX.Held()
+        h.add('a', {'id': 1, 'index': 0})
+        h.add('b', {'id': 2, 'index': 0})
+        self.assertEqual((h['a']['index'], h['b']['index']), (1, 0), 'a new stack moves the older ones back')
+        h.add('c', {'id': 1, 'index': 1})
+        self.assertEqual((h['a']['index'], h['b']['index']), (1, 0), 'a stack that merged moves nothing')
+
+    def test_supports(self):
+        r = self.go(TX.check_craft_supports, CraftIO())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        r = self.go(TX.check_craft_supports, CraftIO(bug='supports'))
+        self.assertEqual(r.status, TX.FAIL)
+        r = self.go(TX.check_craft_supports, CraftIO(refuse='The spell has no free socket'))
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_charms(self):
+        io = CraftIO()
+        r = self.go(TX.check_craft_charms, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual((len(io.charm_bag), len(io.charm_placed)), (1, 0), 'the charm is back in the bag')
+        r = self.go(TX.check_craft_charms, CraftIO(bug='charms'))
+        self.assertEqual(r.status, TX.FAIL)
+
+    def test_cards_tooltip(self):
+        r = self.go(TX.check_craft_cards, CraftIO())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        io = CraftIO()
+        io.card_desc = ''
+        r = self.go(TX.check_craft_cards, io)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('no description', r.detail)
+
+    def test_orb_rules(self):
+        v = lambda rarity=0, mods=(), quality=0, sockets=0: {'rarity': rarity, 'mods': list(mods), 'bench_mods': list(mods),  # noqa: E731
+                                                              'quality': quality, 'sockets': sockets, 'sockets_max': 3,
+                                                              'socketed': 0, 'tip': ''}
+        self.assertEqual(TX.orb_problems('chaos', v(3, 'ab'), v(3, 'cd')), [])
+        self.assertTrue(TX.orb_problems('chaos', v(3, 'ab'), v(3, 'c')))
+        self.assertTrue(TX.orb_problems('scouring', v(3, 'ab'), v(3, 'ab')))
+        self.assertTrue(TX.orb_problems('annulment', v(3, 'ab'), v(3, 'ab')))
+        self.assertEqual(TX.orb_problems('divine', v(4, 'ab'), v(5, 'abc')), [])
+        self.assertTrue(TX.orb_problems('divine', v(10, 'ab'), v(5, 'abc')), 'a step down is no step up')
+        self.assertTrue(TX.orb_problems('sockets', v(), v(sockets=4)))
+
+    def test_the_checks_are_in_the_run_and_the_report(self):
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        for k in ('craft_orbs', 'craft_whetstone', 'craft_sockets', 'craft_gems', 'craft_supports', 'craft_charms', 'craft_cards'):
+            self.assertIn(k, keys)
+
 class ClosedIO(FakeIO):
     """FakeIO plus the closed-mode calls: a second bot (`other`) with its own helper answers and replies"""
 

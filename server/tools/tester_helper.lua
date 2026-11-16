@@ -23,7 +23,7 @@
 --     functions, a real rift run opened as a player does; the facts the checks waystone_run, rift_layout and content_rewards
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
---   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
+--   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
 --   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
@@ -51,7 +51,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 11
+HELPER_VERSION = 12
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -315,8 +315,17 @@ local function findTrader(origin)
 	return findNpc(origin)
 end
 
-function commands.shop(player)
-	local npc = findTrader(temple(player))
+function commands.shop(player, arg)
+	local want = H.parseShop(arg) -- `shop Loot Buyer`: that trader (the sell trip of the bag keeping, O584)
+	local npc = want and Creature(want)
+	if not (npc and npc:isNpc() and freeNear(npc:getPosition(), npc)) then
+		if want then
+			tell(player, "shop", {err = "no free tile next to " .. want})
+			return
+		end
+		npc = nil
+	end
+	npc = npc or findTrader(temple(player))
 	local spot = npc and freeNear(npc:getPosition(), npc)
 	if not spot then
 		tell(player, "shop", {err = "no NPC near the temple"})
@@ -563,6 +572,11 @@ for _, s in ipairs(SUPPLIES) do
 	WANT[s[1]] = s[2]
 end
 
+local WANT_SUPPLY = {}
+for id in pairs(WANT) do
+	WANT_SUPPLY[id] = true
+end
+
 -- potions topped up to their number when under half of it (a tester dies about thirty times an hour and loses some)
 local function topUp(player)
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
@@ -580,26 +594,216 @@ local function topUp(player)
 	return #add
 end
 
--- TEST ONLY: empties the backpack of loot (every slot of it that is not a supply; a bag goes with what it holds) and
--- tops up the potions. Only this tester's own backpack. The bots loot and never sell, so the bag fills and every
--- pickup says "There is not enough room."
-function commands.bag(player)
+-- O584: `!tester bag` keeps the drops. It tops the potions up and REPORTS the backpack (the slots, what each is worth to the Loot
+-- Buyer, a piece better than the worn one, the junk to drop); the bot sells, wears and drops by the game's own packets.
+-- `!tester bag wipe` is the old emptying of the loot, the last resort when the bot could not keep the bag open (a counted failure).
+local BAG_SLOTS = { -- ItemType:getSlotPosition() bit -> CONST_SLOT_*; the hands stay as they are (the tester's weapon)
+	{1, CONST_SLOT_HEAD}, {2, CONST_SLOT_NECKLACE}, {8, CONST_SLOT_ARMOR}, {64, CONST_SLOT_LEGS},
+	{128, CONST_SLOT_FEET}, {256, CONST_SLOT_RING},
+}
+local COINS = {[2148] = true, [2152] = true, [2160] = true}
+
+local function bagSlotOf(itemType)
+	local bits = itemType:getSlotPosition() or 0
+	for _, e in ipairs(BAG_SLOTS) do
+		if math.floor(bits / e[1]) % 2 == 1 then
+			return e[2]
+		end
+	end
+	return nil
+end
+
+local function pieceScore(item, itemType)
+	local function num(f)
+		local ok, v = pcall(f)
+		return ok and tonumber(v) or 0
+	end
+	local ilvl = 0
+	if ChaosCrafting and ChaosCrafting.levelOf then
+		ilvl = num(function() return ChaosCrafting.levelOf(item) end)
+	end
+	return num(function() return itemType:getArmor() end) * 10 + num(function() return itemType:getDefense() end) * 4
+		+ num(function() return itemType:getAttack() end) * 2 + ilvl
+end
+
+local function priceInfo(item)
+	local P = ChaosItemPrices
+	if not (P and P.basePrice) then
+		return 0, false
+	end
+	local okP, price = pcall(P.basePrice, item:getId())
+	local blocked = false
+	if P.saleBlock then
+		local okB, why = pcall(P.saleBlock, item)
+		blocked = okB and why and true or false
+	end
+	return okP and tonumber(price) or 0, blocked
+end
+
+local function bagRows(player, bag)
+	local rows = {}
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local it = ItemType(item:getId())
+			local price, blocked = priceInfo(item)
+			local slot = bagSlotOf(it)
+			rows[#rows + 1] = {i = i, id = item:getId(), clientId = it:getClientId(), count = item:getCount(),
+				price = price, blocked = blocked, container = item:isContainer(), slot = slot,
+				score = slot and pieceScore(item, it) or 0}
+		end
+	end
+	local ctx = {want = WANT_SUPPLY, currency = COINS}
+	for _, r in ipairs(rows) do
+		r.kind = H.itemKind(r, ctx)
+	end
+	return rows
+end
+
+local function wornScores(player)
+	local worn = {}
+	for _, e in ipairs(BAG_SLOTS) do
+		local item = player:getSlotItem(e[2])
+		worn[e[2]] = item and pieceScore(item, ItemType(item:getId())) or 0
+	end
+	return worn
+end
+
+function commands.bag(player, arg)
+	local mode = H.parseBag(arg)
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not mode then
+		tell(player, "bag", {err = "bag takes nothing or wipe"})
+		return
+	end
 	if not bag then
 		tell(player, "bag", {err = "no backpack"})
 		return
 	end
-	local list, rows = {}, {}
-	for _, item in ipairs(bag:getItems() or {}) do
-		list[#list + 1] = {id = item:getId(), count = item:getCount()}
-		rows[#rows + 1] = item
-	end
-	local remove = H.bagPlan(list, WANT, {})
-	for _, i in ipairs(remove) do
-		rows[i]:remove()
+	if mode == "wipe" then
+		local list, rows = {}, {}
+		for _, item in ipairs(bag:getItems() or {}) do
+			list[#list + 1] = {id = item:getId(), count = item:getCount()}
+			rows[#rows + 1] = item
+		end
+		local remove = H.bagPlan(list, WANT, {})
+		for _, i in ipairs(remove) do
+			rows[i]:remove()
+		end
+		local ok, added = pcall(topUp, player)
+		tell(player, "bag", {wiped = #remove, topped = ok and added or 0})
+		return
 	end
 	local ok, added = pcall(topUp, player)
-	tell(player, "bag", {removed = #remove, topped = ok and added or 0})
+	local rows = bagRows(player, bag)
+	local report = H.bagReport(rows, wornScores(player), bag:getCapacity(), nil)
+	report.topped = ok and added or 0
+	report.pos = posOf(player:getPosition())
+	report.bagClientId = ItemType(bag:getId()):getClientId()
+	report.gold = player:getMoney()
+	tell(player, "bag", report)
+end
+
+-- O584: `!tester give item | orb <key> [n] | gem | rune | charm | card`: what the crafting checks (tester_checks.py check_craft_*) work
+-- on. The item is marked with a custom attribute so its backpack slot is found again; the answer names the slot, the ids and the
+-- backpack's client id (to open it as container 0). Plain items: no rarity, no unique roll.
+local function slotOfMarked(bag, mark)
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local ok, v = pcall(function() return item:getCustomAttribute("tester_give") end)
+			if ok and v == mark then
+				return i, item
+			end
+		end
+	end
+	return nil
+end
+
+local giveSeq = 0
+
+function commands.give(player, arg)
+	local g = H.parseGive(arg)
+	if not g then
+		tell(player, "give", {err = "give takes item | orb <key> [n] | gem | rune | charm | card"})
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "give", {err = "no backpack"})
+		return
+	end
+	local ok, ans = pcall(function()
+		local id, count, item
+		if g.what == "item" then
+			local K = ChaosTestKit
+			local kit = K and K.kits and K.kindFor and K.kits[K.kindFor(player:getVocation():getId())]
+			id = kit and kit.slots and (kit.slots[CONST_SLOT_LEFT] or kit.slots[CONST_SLOT_RIGHT])
+			if not id then
+				return {err = "no kit item for this class"}
+			end
+			local level = math.max(1, math.min(150, player:getLevel()))
+			item = ChaosCrafting.createItem(id, 0, level)
+		elseif g.what == "orb" then
+			local orb = ChaosCrafting.orbByKey and ChaosCrafting.orbByKey[g.key]
+			if not orb then
+				return {err = "no orb " .. tostring(g.key)}
+			end
+			id, count = orb.id, g.n
+		elseif g.what == "gem" then
+			id, count = ChaosGems.gemId(1, 1), g.n
+		elseif g.what == "rune" then
+			id, count = ChaosSupports.runeId(1, 1), g.n
+		elseif g.what == "charm" then
+			local CH, CC, cfg = ChaosCharms, ChaosCharmsCore, ChaosCharmsConfig
+			if not (CH and CH.makeItem and CC and cfg) then
+				return {err = "the charm system is not loaded"}
+			end
+			item = CH.makeItem(CC.rollCharm(cfg, {shape = "small", rarity = 3, ilvl = 100}))
+		else
+			local cards = ChaosCardsCore and ChaosCardsCore.cardIds and ChaosCardsCore.cardIds()
+			id, count = cards and cards[1], 1
+			if not id then
+				return {err = "the card system is not loaded"}
+			end
+		end
+		if not item then
+			item = Game.createItem(id, count or 1)
+			if not item then
+				return {err = "the item could not be made"}
+			end
+		end
+		id = item:getId()
+		local stackable = ItemType(id):isStackable()
+		giveSeq = giveSeq + 1
+		local mark = "m" .. giveSeq .. "_" .. tostring(player:getId())
+		if not stackable then
+			item:setCustomAttribute("tester_give", mark) -- a stack merges: it is found by its id instead
+		end
+		local rc = player:addItemEx(item, false)
+		if rc ~= nil and rc ~= RETURNVALUE_NOERROR then
+			return {err = "no room for the item"}
+		end
+		local index, put
+		if stackable then
+			for i = 0, bag:getSize() - 1 do
+				local c = bag:getItem(i)
+				if c and c:getId() == id then
+					index, put = i, c
+					break
+				end
+			end
+		else
+			index, put = slotOfMarked(bag, mark)
+		end
+		if not index then
+			return {err = "the item went somewhere else than the backpack"}
+		end
+		local it = ItemType(put:getId())
+		return {what = g.what, key = g.key, id = put:getId(), clientId = it:getClientId(), index = index, path = tostring(index),
+			count = put:getCount(), bagClientId = ItemType(bag:getId()):getClientId(), level = player:getLevel()}
+	end)
+	tell(player, "give", ok and ans or {err = tostring(ans):sub(1, 120)})
 end
 
 -- ---------------------------------------------------------------- O582 closed test mode

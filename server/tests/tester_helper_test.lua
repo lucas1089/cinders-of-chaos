@@ -173,6 +173,7 @@ eq(H.damageOf(-40, COMBAT_PHYSICALDAMAGE, 15, COMBAT_HEALING), 40, "a healing se
 eq(H.damageOf(nil, 0, 0 / 0, 0), 0, "nothing, nan: 0")
 COMBAT_FIREDAMAGE = COMBAT_FIREDAMAGE or 2
 CONST_SLOT_BACKPACK, CONST_SLOT_LEFT, CONST_SLOT_RIGHT = 3, 6, 5
+CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING = 1, 2, 4, 7, 8, 9
 TILESTATE_BLOCKSOLID = 1
 TILESTATE_FLOORCHANGE = 2
 TILESTATE_TELEPORT = 4
@@ -596,6 +597,146 @@ for _ = 1, 20 do
 end
 check(not T.started, "the loop ends once the file is gone")
 
+
+-- ------------------------------------------------------------------ O584: keeping the drops (`!tester bag` reports, never wipes)
+do
+	T.present = function() return true end
+	local H = ChaosTesterHelperCore
+	eq(H.parseBag(nil), "report", "bag: a plain bag reports")
+	eq(H.parseBag("wipe"), "wipe", "bag wipe: the last resort")
+	check(H.parseBag("everything") == nil, "bag: another word is refused")
+	eq(H.parseShop("loot buyer"), "Loot Buyer", "shop: a trader by name, any case")
+	check(H.parseShop("Odrenna") == nil, "shop: not a trader of the list")
+	local ctx = {want = {[7618] = 100}, currency = {[2160] = true}}
+	eq(H.itemKind({id = 7618}, ctx), "supply", "kind: the potion is a supply")
+	eq(H.itemKind({id = 2160}, ctx), "currency", "kind: coins")
+	eq(H.itemKind({id = 5, container = true}, ctx), "container", "kind: a bag")
+	eq(H.itemKind({id = 6, price = 40, blocked = true}, ctx), "locked", "kind: the Loot Buyer refuses it")
+	eq(H.itemKind({id = 7, price = 40}, ctx), "sell", "kind: the Loot Buyer buys it")
+	eq(H.itemKind({id = 8, price = 0}, ctx), "junk", "kind: nothing buys it")
+	local rows = {{id = 10, slot = 1, score = 30, kind = "sell"}, {id = 11, slot = 1, score = 90, kind = "sell"},
+		{id = 12, slot = 4, score = 5, kind = "sell"}, {id = 7618, slot = nil, kind = "supply"}}
+	eq(H.betterPiece({[1] = 50, [4] = 5}, rows), 2, "better: the helmet that beats the worn one by most")
+	check(H.betterPiece({[1] = 95, [4] = 9}, rows) == nil, "better: nothing beats what is worn")
+	check(H.betterPiece({[1] = 50}, rows, {[11] = true}) == nil or H.betterPiece({[1] = 50}, rows, {[11] = true}) ~= 2,
+		"better: a refused piece is not tried again")
+	eq(H.betterPiece({[1] = 89, [4] = 5}, rows), 2, "better: a gain of the margin counts")
+	-- junk is dropped only from a jammed bag, the weakest first, never a supply, a locked item or a sale
+	local bag = {}
+	for i = 1, 18 do
+		bag[i] = {i = i - 1, id = 100 + i, count = 1, kind = i <= 4 and "sell" or i <= 6 and "locked" or "junk", score = i}
+	end
+	eq(#H.junkPlan(bag, 17, 20), 0, "junk: a bag under BAG_JAM drops nothing")
+	local drop = H.junkPlan(bag, 19, 20)
+	check(#drop >= 1 and #drop <= 6, "junk: a jammed bag drops a few")
+	for _, idx in ipairs(drop) do
+		eq(bag[idx].kind, "junk", "junk: only junk is dropped")
+	end
+	eq(drop[1], 7, "junk: the weakest first")
+	local rep = H.bagReport(bag, {}, 20, nil)
+	eq(rep.used, 18, "report: the slots in use")
+	eq(rep.sell, 4, "report: the rows the Loot Buyer buys")
+	check(#rep.rows <= H.REPORT_MAX, "report: the answer stays small")
+
+	-- the command on a mock backpack
+	local saved = ItemType
+	local types = {[3001] = {slot = 1, armor = 8, def = 0, atk = 0, price = 120}, [3002] = {slot = 1, armor = 3, def = 0, atk = 0, price = 40},
+		[3003] = {slot = 0, armor = 0, def = 0, atk = 0, price = 0}, [7618] = {slot = 0, armor = 0, def = 0, atk = 0, price = 0}}
+	function ItemType(id)
+		local t = types[id] or {slot = 0, armor = 0, def = 0, atk = 0}
+		return {getClientId = function() return id + 10000 end, getName = function() return "item " .. id end,
+			isStackable = function() return false end, getSlotPosition = function() return t.slot end,
+			getArmor = function() return t.armor end, getDefense = function() return t.def end, getAttack = function() return t.atk end}
+	end
+	ChaosItemPrices = {basePrice = function(id) return (types[id] or {}).price or 0 end, saleBlock = function() return nil end}
+	local function it(id, n)
+		return {getId = function() return id end, getCount = function() return n or 1 end, isContainer = function() return false end}
+	end
+	local items = {[0] = it(7618, 90), [1] = it(3002), [2] = it(3001), [3] = it(3003)}
+	local kb = creature(268435480, "Tester Kbg", {store = {[ST] = 1}})
+	local wornHelmet = it(3002)
+	kb.slots = {[CONST_SLOT_HEAD] = wornHelmet, [CONST_SLOT_BACKPACK] = {
+		getSize = function() return 4 end, getItem = function(_, i) return items[i] end, getCapacity = function() return 20 end,
+		getItems = function() return {items[0], items[1], items[2], items[3]} end, getId = function() return 1988 end,
+		addItem = function() end}}
+	function kb:getItemCount(id) return id == 7618 and 90 or 0 end
+	function kb:getMoney() return 321 end
+	check(talks["!tester"].onSay(kb, "!tester", "bag #4") == false, "bag report: consumed")
+	local line = kb.log.msgs[#kb.log.msgs]
+	check(line:find("[tester-helper] bag ", 1, true) ~= nil, "bag report: the answer line")
+	check(line:find('"seq":4', 1, true) ~= nil, "bag report: numbered")
+	check(line:find('"used":4', 1, true) ~= nil and line:find('"size":20', 1, true) ~= nil, "bag report: slots used of the size")
+	check(line:find('"better":2', 1, true) ~= nil, "bag report: the helmet of armour 8 beats the worn one of armour 3 (container index 2)")
+	check(line:find('"gold":321', 1, true) ~= nil and line:find('"bagClientId":11988', 1, true) ~= nil, "bag report: the gold and the backpack id")
+	check(line:find('"k":"junk"', 1, true) ~= nil and line:find('"k":"sell"', 1, true) ~= nil and line:find('"k":"supply"', 1, true) ~= nil,
+		"bag report: the kinds of the rows")
+	eq(#kb.log.items, 0, "bag report: nothing added when the potions are enough")
+	eq(kb.removedItems, nil, "bag report: nothing removed")
+	-- `shop Loot Buyer` goes to that trader and names it
+	local lb = {getName = function() return "Loot Buyer" end, isNpc = function() return true end,
+		getPosition = function() return {x = 70, y = 70, z = 7} end}
+	npcs["Loot Buyer"] = lb
+	check(talks["!tester"].onSay(kb, "!tester", "shop Loot Buyer #5") == false, "shop Loot Buyer: consumed")
+	check(kb.log.msgs[#kb.log.msgs]:find('"npc":"Loot Buyer"', 1, true) ~= nil or kb.log.msgs[#kb.log.msgs]:find("no free tile next to Loot Buyer", 1, true) ~= nil,
+		"shop Loot Buyer: it names the Loot Buyer or says why not")
+	npcs["Loot Buyer"] = nil
+	ItemType = saved
+	ChaosItemPrices = nil
+end
+
+
+-- ------------------------------------------------------------------ O584: `!tester give` (items for the crafting checks)
+do
+	T.present = function() return true end
+	local H = ChaosTesterHelperCore
+	local g = H.parseGive("orb alchemy 3")
+	check(g and g.what == "orb" and g.key == "alchemy" and g.n == 3, "give: an orb with its key and number")
+	eq(H.parseGive("orb whetstone").n, 1, "give: one orb by default")
+	eq(H.parseGive("orb chaos 99").n, H.GIVE_MAX, "give: at most GIVE_MAX")
+	check(H.parseGive("orb") == nil, "give: an orb needs its key")
+	check(H.parseGive("sword") == nil and H.parseGive("") == nil and H.parseGive("gem x") == nil, "give: only the listed things")
+	eq(H.parseGive("gem 2").n, 2, "give: a gem number")
+	eq(H.parseCommand("give item #3"), "give", "give is a command")
+
+	local made, putIn = {}, {}
+	ChaosCrafting = {orbByKey = {alchemy = {id = 24691}}, createItem = function(id, rarity, level)
+		made[#made + 1] = {id, rarity, level}
+		return {getId = function() return id end, getCount = function() return 1 end, setCustomAttribute = function(self, k, v) self.attr = v end,
+			getCustomAttribute = function(self) return self.attr end}
+	end}
+	ChaosGems = {gemId = function(t, tier) return 32000 + t * 5 + tier end}
+	ChaosTestKit = {kits = {sword = {slots = {[CONST_SLOT_LEFT] = 2400}}}, kindFor = function() return "sword" end}
+	local stored = {}
+	local bag = {getSize = function() return #stored end, getItem = function(_, i) return stored[i + 1] end, getId = function() return 1988 end}
+	Game.createItem = function(id, n)
+		return {getId = function() return id end, getCount = function() return n end, setCustomAttribute = function(self, k, v) self.attr = v end,
+			getCustomAttribute = function(self) return self.attr end}
+	end
+	local gb = creature(268435490, "Tester Gvq", {store = {[ST] = 1}})
+	gb.slots = {[CONST_SLOT_BACKPACK] = bag}
+	function gb:addItemEx(item) stored[#stored + 1] = item; return RETURNVALUE_NOERROR or 0 end
+	function gb:getLevel() return 700 end
+	RETURNVALUE_NOERROR = 0
+	check(talks["!tester"].onSay(gb, "!tester", "give item #2") == false, "give item: consumed")
+	local line = gb.log.msgs[#gb.log.msgs]
+	check(line:find('"what":"item"', 1, true) ~= nil and line:find('"path":"0"', 1, true) ~= nil and line:find('"seq":2', 1, true) ~= nil,
+		"give item: the slot of the backpack and the number: " .. tostring(line))
+	eq(made[1][1] .. "," .. made[1][2] .. "," .. made[1][3], "2400,0,150", "give item: the plain kit weapon at an item level of at most 150")
+	check(talks["!tester"].onSay(gb, "!tester", "give orb alchemy 2") == false, "give orb: consumed")
+	line = gb.log.msgs[#gb.log.msgs]
+	check(line:find('"id":24691', 1, true) ~= nil and line:find('"count":2', 1, true) ~= nil and line:find('"index":1', 1, true) ~= nil, "give orb: the orb stack: " .. tostring(line))
+	talks["!tester"].onSay(gb, "!tester", "give orb nothing")
+	check(gb.log.msgs[#gb.log.msgs]:find("no orb nothing", 1, true) ~= nil, "give orb: an unknown orb says so")
+	talks["!tester"].onSay(gb, "!tester", "give gem")
+	check(gb.log.msgs[#gb.log.msgs]:find('"id":32006', 1, true) ~= nil, "give gem: the smallest gem")
+	talks["!tester"].onSay(gb, "!tester", "give nonsense")
+	check(gb.log.msgs[#gb.log.msgs]:find("give takes", 1, true) ~= nil, "give: a wrong word is told")
+	local ana2 = creature(268435491, "Ana Player", {})
+	ana2.slots = {[CONST_SLOT_BACKPACK] = bag}
+	check(talks["!tester"].onSay(ana2, "!tester", "give item") == true, "give: left to the game for a player")
+	ChaosCrafting, ChaosGems, ChaosTestKit = nil, nil, nil
+end
+
 -- ------------------------------------------------------------------ the bag clean-up (`!tester bag`)
 do
 	T.present = function() return true end
@@ -618,10 +759,10 @@ do
 	bt.slots = {[CONST_SLOT_BACKPACK] = {getItems = function() return {slot(2160, 5), slot(7618, 30), slot(1987, 1)} end,
 		addItem = function(_, id, n) added[#added + 1] = id .. ":" .. n end}}
 	function bt:getItemCount(id) return id == 7618 and 30 or 0 end
-	check(talks["!tester"].onSay(bt, "!tester", "bag") == false, "bag: consumed")
-	eq(table.concat(removed, ","), "2160,1987", "bag: the loot is removed, the potions stay")
+	check(talks["!tester"].onSay(bt, "!tester", "bag wipe") == false, "bag wipe: consumed")
+	eq(table.concat(removed, ","), "2160,1987", "bag wipe: the loot is removed, the potions stay")
 	eq(table.concat(added, " "), "7618:70 7620:100", "bag: the potions topped up")
-	check(bt.log.msgs[#bt.log.msgs]:find('bag {"removed":2,"topped":2}', 1, true) ~= nil, "bag: the answer line")
+	check(bt.log.msgs[#bt.log.msgs]:find('bag {"topped":2,"wiped":2}', 1, true) ~= nil or bt.log.msgs[#bt.log.msgs]:find('"wiped":2', 1, true) ~= nil, "bag wipe: the answer line")
 	for _, p in ipairs({ana, fake, marked}) do
 		removed = {}
 		check(talks["!tester"].onSay(p, "!tester", "bag") == true, p.name .. ": !tester bag is left to the game")

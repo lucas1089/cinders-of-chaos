@@ -17,7 +17,7 @@ NPC dialogs: every NPC of data/npc with the {keywords} of its greeting.
 keytest (O249, tester_keytree.py): per class key every keystone and mastery of the passive tree it may hold, the route to
 it and how a bot can see that it works (statTotals for masteries, a combat log row for the keystones with extra hits).
 
-usage: python3 -I server/tools/gen_tester_scenarios.py [--check]
+usage: python3 -I server/tools/gen_tester_scenarios.py [--check | --skips]   (--skips lists every action the bots never send, with its reason)
 Standard library only; deterministic (sorted, no timestamps).
 """
 import json
@@ -59,7 +59,6 @@ OUT_OF_SCOPE = {
     'legal_notice': 'a text the client shows; nothing to do',
     'patchnotes': 'a text the client shows; nothing to do',
     'beta': 'beta sign-up of real accounts',
-    'conquest': 'needs guilds of real players',
     'siege': 'needs guilds of real players',
     'groupqueue': 'a queue that matches players: the server refuses testers (O582)',
     'party_finder': 'a list and a queue that match players: the server refuses testers (O582)',
@@ -104,6 +103,67 @@ HINTS = {
 # no answer ever carries them {opcode name: [keys]}. Hand-listed: other switches accept, allow or confirm something
 FLAGS = {'mapMarkers': ['party', 'poi'], 'mapmarks': ['on']}
 
+# expected effects of a request (O584 item 4): what an answer must show before it counts as REAL proof, not just ANS. Each
+# effect is a short scenario on one opcode: {name, system, opcode, about, steps}. A step sends {action, data}, waits for the
+# answer whose action is `reply` and checks it. `data` may hold {"$answer": path, "plus": n, "table": [...]}: a value taken from
+# the last answer the bot got (table is 1-based, as in Lua). Conditions are lists on a path into the answer (the message
+# {"action", "data"}; a Lua array is a JSON list, so its first element has index 0):
+#   need    [cond ...]  checked on the step's own answer; false: the effect is skipped (nothing to show), not failed
+#   expect  [cond ...]  checked on the step's answer against the last answer of the same kind; false: a FAIL, never ok
+#   ["delta", path, n]   now - before == n          ["eq", path, v]   now == v          ["at_least", path, n]  now >= n
+#   ["zero", path]       every number under path is 0 (a number, or a table of numbers)    ["has", path]  a value is there
+# `replies` (default 1): how many answers of that kind may come before one has to show the effect (a watcher's own state push
+# can come between the request and its answer). The generator fails when an opcode, an action or an answer name is not in the
+# server files, so a renamed answer is a failed build of the table, not a silent ANS.
+EFFECTS = [
+    {'name': 'bank_gold_moves', 'system': 'bank', 'opcode': 'bank',
+     'about': 'withdrawing gold takes it from the bank balance into the backpack, depositing moves it back',
+     'steps': [
+         {'action': 'openBank', 'reply': 'open', 'need': [['at_least', ['data', 1], 500]]},
+         {'action': 'withdraw', 'data': ['gold', 500], 'reply': 'open',
+          'expect': [['delta', ['data', 1], -500], ['delta', ['data', 0], 500]]},
+         {'action': 'deposit', 'data': ['gold', 500], 'reply': 'open',
+          'expect': [['delta', ['data', 1], 500], ['delta', ['data', 0], -500]]},
+     ]},
+    {'name': 'daily_claim_sets_day', 'system': 'daily', 'opcode': 'daily',
+     'about': 'the claim of a day not yet taken marks the day as taken',
+     'steps': [
+         {'action': 'open', 'reply': 'OpenDailyWindow', 'need': [['eq', ['data', 'TakenReward'], 0]]},
+         {'action': 'calim', 'reply': 'OpenDailyWindow',
+          'data': {'$answer': ['data', 'Day'], 'plus': 2, 'table': [6, 7, 1, 2, 3, 4, 5]},
+          'expect': [['eq', ['data', 'TakenReward'], 1]]},
+     ]},
+    {'name': 'hunt_session_reset', 'system': 'hunt', 'opcode': 'hunt',
+     'about': 'the reset of the hunt meter zeroes experience, kills, damage, healing, loot and supplies',
+     'steps': [
+         {'action': 'open', 'reply': 'state', 'need': [['at_least', ['data', 'dmg'], 1]]},
+         {'action': 'reset', 'reply': 'state', 'replies': 2,
+          'expect': [['zero', ['data', key]] for key in ('xp', 'kc', 'dmg', 'heal', 'lv', 'sv')]},
+     ]},
+    {'name': 'lootfilter_counts_reset', 'system': 'lootfilter', 'opcode': 'lootfilter',
+     'about': 'the reset of the filter counters (all) answers with every counter at 0',
+     'steps': [
+         {'action': 'reset', 'data': {'scope': 'all'}, 'reply': 'counts',
+          'expect': [['zero', ['data', 'session']], ['zero', ['data', 'total']]]},
+     ]},
+    {'name': 'loadout_save_delete', 'system': 'loadouts', 'opcode': 'loadouts',
+     'about': 'saving the live build fills slot 1, deleting it empties the slot again',
+     'steps': [
+         {'action': 'open', 'reply': 'state',
+          'need': [['eq', ['data', 'slots', 0, 'empty'], True], ['eq', ['data', 'slots', 0, 'locked'], False]]},
+         {'action': 'save', 'data': {'slot': 1, 'name': 'Bot build'}, 'reply': 'state',
+          'expect': [['eq', ['data', 'slots', 0, 'name'], 'Bot build']]},
+         {'action': 'delete', 'data': {'slot': 1}, 'reply': 'state',
+          'expect': [['eq', ['data', 'slots', 0, 'empty'], True]]},
+     ]},
+    {'name': 'tooltip_of_backpack', 'system': 'item_tooltip', 'opcode': 'itemTooltip',
+     'about': 'the tooltip of the item in the backpack slot names the item',
+     'steps': [
+         {'action': 'get', 'data': {'items': [{'pos': {'x': 65535, 'y': 3, 'z': 0}}]}, 'reply': 'tips',
+          'expect': [['has', ['data', 'items', 0, 'tip', 'name']]]},
+     ]},
+]
+
 # systems the helper can bring a tester to: system -> the argument of "!tester enter"
 PLACES = {
     'rift': 'rift', 'pocketboss': 'boss', 'bossspawns': 'boss', 'boss_mechanics': 'boss', 'bosspoints': 'boss',
@@ -139,6 +199,16 @@ DENY_RE = re.compile(r'pay|checkout|donat|report|ticket|appeal|redeem|coupon|vou
 ADMIN = {'start', 'stop', 'end', 'reset', 'rebuild', 'shift', 'schedule', 'wave', 'breach', 'event', 'grant',
          'give', 'xp', 'level', 'expire', 'winner', 'transfer', 'gift', 'gift_coins', 'giftPrice', 'claimreset',
          'rescan', 'testip', 'nopz', 'species', 'complete', 'memset', 'stat', 'pity', 'unlink'}
+# ADMIN words that are a player's own action on one opcode (O584): {opcode name: {action: why}}. A word in ADMIN is skipped
+# on every opcode but these; the generator fails when an entry names an action no server file answers on that opcode
+ADMIN_ALLOW = {
+    'descent': {'start': "the player's own run of the Ember Descent (X.start of the player, a rate limit of 2 s)"},
+    'raid': {'start': "the player's own raid of the Ashen Sepulchre (X.open of the player); a leave step follows it"},
+    'combatLog': {'reset': "the player's own DPS meter counters"},
+    'hunt': {'reset': "the player's own hunt session meter"},
+    'lootfilter': {'reset': "the player's own filter counters (scope session, total or all)"},
+    'trainerMeter': {'reset': "the player's own dummy meter"},
+}
 
 
 def read(path):
@@ -366,6 +436,24 @@ def build():
     unused = sorted((set(OUT_OF_SCOPE) | set(CLOSED_MODE)) - set(systems))
     if unused:
         raise SystemExit('OUT_OF_SCOPE or CLOSED_MODE names no system: %s' % ', '.join(unused))
+    for o, acts in ADMIN_ALLOW.items():
+        missing = sorted(a for a in acts if a not in table.get(o, {}).get('actions', []))
+        if o not in table or missing:
+            raise SystemExit('ADMIN_ALLOW names an opcode or action no server file answers: %s %s' % (o, missing))
+        bad = sorted(a for a in acts if a not in ADMIN)
+        if bad:
+            raise SystemExit('ADMIN_ALLOW names an action that is not in ADMIN: %s %s' % (o, bad))
+    for e in EFFECTS:
+        o = e['opcode']
+        t = table.get(o)
+        if not t or e['system'] not in systems:
+            raise SystemExit('EFFECTS names an opcode or system the server does not have: %s' % e['name'])
+        text = '\n'.join(clean[f] for f in t['files'])
+        for st in e['steps']:
+            if st['action'] not in t['actions']:
+                raise SystemExit('EFFECTS %s: the action %s is not one the bots may send on %s' % (e['name'], st['action'], o))
+            if '"%s"' % st['reply'] not in text:
+                raise SystemExit('EFFECTS %s: no server file of %s names the answer "%s"' % (e['name'], o, st['reply']))
     for o, keys in FLAGS.items():
         if o not in table or sorted(set(keys) - set(table[o]['dataKeys'])):
             raise SystemExit('FLAGS names an opcode or data key no server file reads: %s' % o)
@@ -382,26 +470,57 @@ def build():
         op_systems = sorted(n for n, x in systems.items() if o in x['opcodes'])
         t['systems'] = op_systems
         t['out'] = bool(op_systems) and all(systems[n]['kind'] in ('out', 'closed') for n in op_systems)
-        # actions only an out-of-scope system's files answer, and money / staff actions: never sent
-        allowed = set()
+        # actions only an out-of-scope system's files answer, and money / staff actions: never sent, each with its reason
+        allowed, out_why = set(), {}
         for f in t['files']:
             own = owners(f, names, texts[f])
             if not own or any(systems.get(n, {}).get('kind') not in ('out', 'closed') for n in own):
                 allowed |= set(per_file[(o, f)])
-        t['skip'] = [a for a in t['actions'] if a not in allowed or a in ADMIN or DENY_RE.search(a)]
+            else:
+                for a in per_file[(o, f)]:
+                    out_why.setdefault(a, 'out of scope (%s): %s' % (own[0], systems[own[0]]['why']))
+        keep = ADMIN_ALLOW.get(o, {})
+        t['skip'], t['skipWhy'] = [], {}
+        for a in t['actions']:
+            if a not in allowed:
+                why = out_why.get(a, 'only an out-of-scope system answers it')
+            elif a in ADMIN and a not in keep:
+                why = 'staff or world action (ADMIN): it would change the world for real players or hand out value'
+            elif DENY_RE.search(a):
+                why = 'money, report, ticket or code action (DENY_RE)'
+            else:
+                continue
+            t['skip'].append(a)
+            t['skipWhy'][a] = why
         t['actions'] = [a for a in t['actions'] if a not in t['skip']]
+        if keep:
+            t['adminAllowed'] = sorted(keep)
+    for e in EFFECTS:
+        for st in e['steps']:
+            if st['action'] in table[e['opcode']]['skip']:
+                raise SystemExit('EFFECTS %s: the action %s is skipped on %s' % (e['name'], st['action'], e['opcode']))
     used = {t['opcode'] for t in table.values()}
     client_only = sorted({m for n, mods in clients.items() if n not in used for m, _ in mods})
     return {'generated_by': 'server/tools/gen_tester_scenarios.py', 'counts': dict(sorted(counts.items())),
             'systems': dict(sorted(systems.items())), 'opcodes': dict(sorted(table.items())),
-            'clientOnly': client_only, 'npcs': npc_dialogs(), 'keytest': KT.build(CHAOS)}
+            'clientOnly': client_only, 'npcs': npc_dialogs(), 'keytest': KT.build(CHAOS),
+            'effects': sorted(EFFECTS, key=lambda e: e['name'])}
 
 
 def render(table):
     return json.dumps(table, indent=1, sort_keys=True, ensure_ascii=False) + '\n'
 
 
+def skipped(table):
+    """[(opcode name, action, reason)] of every action the bots never send, sorted"""
+    return sorted((o, a, t.get('skipWhy', {}).get(a, '')) for o, t in table['opcodes'].items() for a in t['skip'])
+
+
 def main(argv):
+    if '--skips' in argv:
+        for o, a, why in skipped(build()):
+            print('%-16s %-14s %s' % (o, a, why))
+        return 0
     text = render(build())
     if '--check' in argv:
         old = read(OUT) if os.path.exists(OUT) else ''
