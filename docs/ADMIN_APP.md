@@ -279,7 +279,7 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
   **Corrigir e reiniciar (5 min)** avisa os jogadores, para (salva), passa as pastas de novo, liga como chaos e confere; se
   não subir como chaos, a unidade antiga volta e liga sozinha. Pode ser repetido. A atualização do servidor (Painel >
   Atualizar servidor) avisa quando a unidade ainda roda como root. Detalhes: server/README.md "Server user (O271)".
-- **Testers** (`testers start N MINUTOS --restart 300`, com o botão **Iniciar testando a árvore** `testers start N MINUTOS --keystones --restart 300`, `testers stop`, `testers status`, `testers report`, `testers log 400`, `testers cleanup --yes`): os
+- **Testers** (`testers start N MINUTOS --restart 300`, com o botão **Iniciar testando a árvore** `testers start N MINUTOS --keystones --restart 300`, `testers stop`, `testers status`, `testers report`, `testers log 5000`, `testers cleanup --yes`): os
   testers no servidor ao vivo (server/README.md "Tester bots"). Iniciar reinicia o servidor com 5 minutos de aviso
   só quando o ajudante de teste ainda não carregou. A chave fica em /etc/chaos/tester-client-key (criada pela VPS).
   Status mostra quantos testers estão online agora, o pico da rodada e a contagem do servidor.
