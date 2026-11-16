@@ -789,6 +789,55 @@ _tb.name = 'P9'
 eq((asyncio.run(_tb.do_party(None)), len(_stepped)), (True, 1), 'a free bot does its party step')
 T.ONLINE.clear(); T.PARTY_BUSY.clear()
 
+# ---------------------------------------------------------------- numbered helper commands (O579)
+# live run 2026-11-15: 4 % of the helper commands read "no answer" on a busy server, and a late answer was taken for the answer of
+# the next command of the same kind ("spawned chest is 'none'"). Every command now ends in " #N"; an answer carries N.
+r6 = T.Results(1)
+h = T.TesterBot(4, dict(bot), A(), 1, r6, {'rotation': [], 'heal': heal})
+h.conn, h.alive, h.died = C(), True, False
+said6 = []
+h.say = lambda text, kind=1: said6.append(text)
+
+
+async def _answered(delay, text):
+    await asyncio.sleep(delay)
+    h.on_text(text)
+
+
+async def _ask(command, kind, wait, *answers):
+    tasks = [asyncio.ensure_future(_answered(d, t)) for d, t in answers]
+    r = await h.helper_says(command, kind, wait)
+    for t in tasks:
+        await t
+    return r
+
+
+r = asyncio.run(_ask('chest spawn', 'chest', 2.0, (0.1, '[tester-helper] chest {"seq":1,"state":"idle"}')))
+eq((said6[-1], r and r.get('state')), ('!tester chest spawn #1', 'idle'), 'the command carries its number, the answer with it is taken')
+# the answer of command 2 comes after its wait; command 3 of the same kind must not take it
+r = asyncio.run(_ask('chest use', 'chest', 0.3))
+eq((said6[-1], r), ('!tester chest use #2', None), 'no answer in time: None')
+r = asyncio.run(_ask('chest state', 'chest', 2.0, (0.1, '[tester-helper] chest {"seq":2,"state":"none"}'),
+                     (0.5, '[tester-helper] chest {"seq":3,"state":"running"}')))
+eq((said6[-1], r and r.get('state')), ('!tester chest state #3', 'running'), 'a late answer (older number) is dropped, not read as the new one')
+eq(r6.d['helper']['late'], 1, 'and counted')
+eq(r6.d['helper']['lost'], 1, 'the missing answer is counted as lost')
+eq(r6.d['helper']['answered'], 2, 'answers counted')
+# an answer with no number (an old helper, a command typed without one) is taken as before
+r = asyncio.run(_ask('town', 'town', 2.0, (0.1, '[tester-helper] town {"pos":{"x":1,"y":2,"z":7}}')))
+eq(r and r.get('pos', {}).get('x'), 1, 'an answer without a number is taken')
+# the helper's error answer for this command is the answer: a failed command is not "no answer"
+r = asyncio.run(_ask('spellquest kill 3', 'spellquest', 2.0, (0.1, '[tester-helper] error {"seq":5,"err":"boom","cmd":"spellquest"}')))
+eq(r and r.get('err'), 'boom', 'the error answer of this command comes back')
+eq(r6.d['failures'].get('helper: boom'), 1, 'and is counted as a failure with its reason')
+eq(h.helper.get('error'), None, 'taken once')
+# the login answer ("info") has no number to match and is always kept
+h.on_text('[tester-helper] info {"cid":77,"level":9,"seq":1,"potions":{}}')
+eq(h.helper['info']['level'], 9, 'info is kept whatever its number')
+rep6 = TC.build_report(r6.d, {'errors': {}, 'warnings': {}, 'events': [], 'anomalies': []})
+ok('== Helper answers (' in rep6, 'the report has a helper answers line')
+ok('1 late and dropped' in rep6 and 'slowest' in rep6, 'with the late answers and the slowest answer')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

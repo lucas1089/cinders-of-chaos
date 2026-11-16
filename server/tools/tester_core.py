@@ -353,6 +353,15 @@ def build_report(run, log):
     for name, b in sorted(run.get('behaviours', {}).items()):
         L.append('  %-10s %6d %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0),
                                               b.get('expected', 0)))
+    h = run.get('helper')
+    if h:
+        # O579: how fast the helper answered the bots' numbered commands; a busy server shows here (answers over 4 s, late
+        # ones) before it shows as "no helper answer" in the failures above
+        slow = (list(h.get('slow') or []) + [0] * 5)[:5]
+        L.append('== Helper answers (%d commands: %d answered, %d with no answer in time, %d late and dropped; seconds to answer: '
+                 'under 1 %d, 1-2 %d, 2-4 %d, 4-8 %d, over 8 %d; slowest %.1f s)' % (
+                     h.get('answered', 0) + h.get('lost', 0), h.get('answered', 0), h.get('lost', 0), h.get('late', 0),
+                     slow[0], slow[1], slow[2], slow[3], slow[4], float(h.get('max_s', 0) or 0)))
     if run.get('keytest') or run.get('keytest_resets'):
         import tester_keystones as TK  # the per-node results of the keystone and mastery scenario (O249)
         L.extend(TK.report_lines(run.get('keytest') or [], run.get('keytest_resets') or []))

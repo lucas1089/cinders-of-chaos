@@ -34,6 +34,9 @@ C.wish = C.wish or {}   -- player id -> {v = wants marks, t = os.time() of the r
 C.forced = nil          -- player id set by C.as
 C.installed = C.installed or false
 
+if not ChaosTimerGuard then -- O579: the guarded addEvent (data/lib/chaos_timer_guard.lua) is the one kept below
+	pcall(dofile, "data/lib/chaos_timer_guard.lua")
+end
 local rawAddEvent = addEvent
 
 -- ---------------------------------------------------------------- pure parts

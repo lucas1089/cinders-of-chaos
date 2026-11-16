@@ -44,16 +44,18 @@ local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
 local HUNT_CHECK = 7 -- tiles round the hunt spot checked for monsters above the tester's level
 local SEARCH = 30 -- tiles around the temple for an NPC
+local NPC_REACH = 4 -- tiles round an NPC that `enter npc` looks for a free one
 local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 9
+HELPER_VERSION = 10
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
+T.seq = T.seq or {} -- player id -> the number of the bot's newest numbered command ("!tester <cmd> #N"): the answers carry it (O579)
 
 local function storageOf(player)
 	local ok, v = pcall(function() return player:getStorageValue(STORE) end)
@@ -76,6 +78,11 @@ local function anomaly(rule, data)
 end
 
 local function tell(player, kind, data)
+	data = data or {}
+	local seq = T.seq[player:getId()]
+	if seq and data.seq == nil then
+		data.seq = seq -- the bot matches an answer to its command by this number, a late answer is never the next one's
+	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, H.encode(kind, data))
 end
 
@@ -106,13 +113,16 @@ end
 -- floor change or a teleport (the tester would land elsewhere). With `npc`: only a tile where that NPC is the one that
 -- answers (no other NPC within talk range as near or nearer: data/lib/chaos_npc_focus.lua lets only the nearest answer)
 local RINGS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {-1, -1}, {1, -1}, {1, 1}, {-1, 1}}
-for dx = -2, 2 do
-	for dy = -2, 2 do
-		if math.max(math.abs(dx), math.abs(dy)) == 2 then
-			RINGS[#RINGS + 1] = {dx, dy}
+for ring = 2, 4 do -- two tiles out, then three and four (a crowd round a stall: `enter npc` asks for four)
+	for dx = -ring, ring do
+		for dy = -ring, ring do
+			if math.max(math.abs(dx), math.abs(dy)) == ring then
+				RINGS[#RINGS + 1] = {dx, dy}
+			end
 		end
 	end
 end
+T.RINGS = RINGS
 
 local function nearestNpc(npc, p)
 	local mine = math.max(math.abs(npc:getPosition().x - p.x), math.abs(npc:getPosition().y - p.y))
@@ -340,9 +350,12 @@ function commands.enter(player, arg)
 			tell(player, "enter", {kind = "npc", err = "no such NPC", name = place.name})
 			return
 		end
-		local spot = freeNear(npc:getPosition())
+		-- four tiles out: an NPC with a stall in the hub (Archivist Odrenna's trial question counts within her range) has the
+		-- 24 tiles round it taken by the other testers at times (live run 2026-11-15: 4 checks read "not in the game")
+		local spot = freeNear(npc:getPosition(), nil, NPC_REACH)
 		if not spot then
-			tell(player, "enter", {kind = "npc", err = "no free tile", name = place.name})
+			tell(player, "enter", {kind = "npc", err = "no free tile", name = place.name, crowd = true,
+				npcPos = posOf(npc:getPosition())})
 			return
 		end
 		player:teleportTo(spot)
@@ -486,7 +499,8 @@ function talk.onSay(player, words, param)
 	if not eligible(player) or not T.present() then
 		return true -- a player's words are left alone (and a stopped helper does nothing)
 	end
-	local cmd, arg = H.parseCommand(param)
+	local cmd, arg, seq = H.parseCommand(param)
+	T.seq[player:getId()] = seq -- nil for a command with no number: its answers carry none
 	if not cmd or not commands[cmd] then
 		tell(player, "error", {err = "unknown command", param = tostring(param)})
 		return false
@@ -964,27 +978,50 @@ function commands.chest(player, arg)
 		if not ch then
 			local C, Kc = ChaosCursedChestConfig, ChaosCursedChestCore
 			local level = Kc.areaLevel(C, player:getLevel(), player:getLevel())
-			ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
-				pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			local function spawnAt(center)
+				return CC.spawnChest(player, center, {name = "Tester Monster",
+					pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			end
+			ch = spawnAt(player:getPosition())
 			if not ch then
 				-- the rift and spell quest checks leave the tester in the temple: the chest goes to its hunt spot
 				local tile = Tile(player:getPosition())
 				local spot = tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) and huntPos(player)
 				if spot then
 					player:teleportTo(spot)
-					ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
-						pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+					ch = spawnAt(player:getPosition())
+				end
+			end
+			if not ch then
+				-- no usable tile within the game's radius of the tester (a corridor, a doorway, tiles taken by the chests of the
+				-- other testers on the same hunt spot: cursedchest.lua placeFor): the nearest free tile up to four away is the
+				-- centre of the search instead. The chest then stands a few tiles from the tester, as a kill's would.
+				local tile = Tile(player:getPosition())
+				if not (tile and tile:hasFlag(TILESTATE_PROTECTIONZONE)) then
+					for _, d in ipairs(T.RINGS) do
+						local near = Position(player:getPosition().x + d[1], player:getPosition().y + d[2], player:getPosition().z)
+						if math.max(math.abs(d[1]), math.abs(d[2])) >= 3 then
+							ch = spawnAt(near)
+							if ch then
+								break
+							end
+						end
+					end
 				end
 			end
 			if ch then
 				ch.level = level
 			else
-				-- the game puts no chest in a protection zone (cursedchest.lua usableTile): the temple after a death
 				local tile = Tile(player:getPosition())
 				if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+					-- the game puts no chest in a protection zone (cursedchest.lua usableTile): the temple after a death
 					tell(player, "chest", {err = "the tester stands in a protection zone: no chest there by design"})
-					return
+				else
+					-- before this answer the check read state "none" and called it a failure of the chest (live run 2026-11-15)
+					tell(player, "chest", {err = "no tile for a chest near the tester (the game's own rule: not walkable, a house, a protection zone, taken)",
+						pos = posOf(player:getPosition())})
 				end
+				return
 			end
 		end
 	elseif what == "use" and ch then
@@ -1771,6 +1808,7 @@ login:register()
 local logout = CreatureEvent("TesterHelperLogout")
 function logout.onLogout(player)
 	T.ids[player:getId()] = nil
+	T.seq[player:getId()] = nil
 	T.hits[player:getId()] = nil
 	T.loginAt[player:getId()] = nil
 	return true
@@ -1918,7 +1956,8 @@ local function nearestMonster(player)
 	return best and best.c
 end
 
-local function step()
+-- one round of the loop. Returns true when the loop ends (the helper file is gone)
+local function stepBody()
 	T.step = T.step + 1
 	local g = T.step % GROUPS
 	for id in pairs(T.ids) do
@@ -1966,10 +2005,29 @@ local function step()
 	if T.step % 20 == 0 and not T.present() then
 		T.started = false
 		print("[tester-helper] stopped: " .. T.FILE .. " is gone")
-		return
+		return true
 	end
-	addEvent(step, STEP_MS)
+	return false
 end
+
+-- The loop is a timer: an error in a round (a monster that left, a player that logged out between two lines) must neither
+-- throw into the engine as "Lua Script Error ... in a timer event" nor end the loop for every tester (O579). A round that
+-- fails is printed once a minute at most and the next round runs.
+local function step()
+	local ok, stopped = pcall(stepBody)
+	if not ok then
+		local now = os.time()
+		if not T.lastStepError or now - T.lastStepError >= 60 then
+			T.lastStepError = now
+			print("[tester-helper] error in the loop: " .. tostring(stopped))
+		end
+		stopped = false
+	end
+	if not stopped then
+		addEvent(step, STEP_MS)
+	end
+end
+T.step_fn = step
 
 T.FILE = "data/scripts/zz_tester_helper.lua"
 function T.present()
