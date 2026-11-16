@@ -10,6 +10,8 @@
 --   loot       one eligible player's spoils of a boss, the unique pick
 --   vendor     the week's stock (seeded), offer lookup
 --   texts      the journal (mechanics with their numbers), the HUD payload, validation
+--   closed     O588, closed test mode: the slot of a run by side (K.allocSlot: the testers' own slot) and the way a tester bot
+--              walks the raid like a player (K.guide: the next goal and what to do there, from the saved raid and what is alive)
 -- Every random number comes from a `rand(a, b)` argument (integer in [a, b]). Lua 5.1 / LuaJIT and Lua 5.3.
 
 ChaosRaidCore = ChaosRaidCore or {}
@@ -1005,6 +1007,121 @@ function K.hud(cfg, s)
 	return out
 end
 
+-- ------------------------------------------------------------------ closed test mode (O588)
+-- The raid runs on a grid of cfg.grid.cols x rows slots. While closed test mode is on, the slot cfg.testerSlot belongs to the
+-- testers: a tester run takes only that one, a player run never does. With the mode off no tester runs and the slot is a
+-- player's like the others. runs / bad: tables slot -> truthy (busy, not usable). side: "tester" or "player".
+-- Returns the slot or nil (no free slot of that side).
+function K.allocSlot(cfg, side, closedOn, runs, bad)
+	local count = cfg.grid.cols * cfg.grid.rows
+	local reserved = type(cfg.testerSlot) == "number" and cfg.testerSlot or nil
+	if side == "tester" then
+		if closedOn ~= true or reserved == nil or reserved < 0 or reserved >= count then
+			return nil
+		end
+		if (runs and runs[reserved]) or (bad and bad[reserved]) then
+			return nil
+		end
+		return reserved
+	end
+	for slot = 0, count - 1 do
+		if not (closedOn == true and slot == reserved) and not (runs and runs[slot]) and not (bad and bad[slot]) then
+			return slot
+		end
+	end
+	return nil
+end
+
+-- the side of a run's party: flags = one boolean per member (true = a tester). Same rule as every closed system
+-- (testers_core.lua K.joinRefusal); `rules` = ChaosTestersCore, nil when it is not loaded: a tester is then refused.
+-- Returns side ("tester" | "player" | nil) and the refusal key ("mixed" | "closed-off" | nil)
+function K.sideOfGroup(rules, closedOn, flags)
+	if rules then
+		local side = rules.sideOf(flags)
+		return side, rules.joinRefusal("raid", closedOn, flags)
+	end
+	flags = flags or {}
+	for _, f in ipairs(flags) do
+		if f ~= false then
+			return nil, f == true and "closed-off" or "mixed"
+		end
+	end
+	if #flags == 0 then
+		return nil, "mixed"
+	end
+	return "player", nil
+end
+
+local function near(a, b, d)
+	return a ~= nil and b ~= nil and a.z == b.z and abs(a.x - b.x) <= d and abs(a.y - b.y) <= d
+end
+
+-- How a person plays the raid, as one answer per look at the screen. Used by the tester bots (the helper's `raid` command): they
+-- walk to `goal` a step at a time and, on `fight`, stand and fight (a bot casts its rotation and drinks by itself, the helper
+-- targets what is within 5 tiles). Nothing here moves anyone.
+--   inst   the saved raid (killed / trash bit masks)
+--   ctx    {pos = the player's position, fallen = the player is fallen (waits in the hall), fight = the boss fight's index or nil,
+--           monster = {pos, boss = true|nil} the nearest live monster of the run (or nil), bossPos = position of the next boss
+--           when it is alive, finalExit = the exit portal's position when it is up}
+-- Returns {mode, goal, why, idx, where, wi, area}: mode "walk" (go to goal), "fight" (stand, the goal is in reach), "wait"
+-- (stay: fallen, or the room is sealed while the others fight), "exit" (every boss is slain: leave by the portal at goal).
+function K.guide(cfg, L, inst, ctx)
+	local pos = ctx.pos
+	local where, wi = K.where(L, pos)
+	local out = {where = where, wi = wi}
+	local nb = K.nextBoss(cfg, inst)
+	if not nb then
+		out.mode, out.goal, out.why = "exit", ctx.finalExit or L.exit, "every boss is slain"
+		return out
+	end
+	out.idx = nb
+	if ctx.fallen then
+		out.mode, out.goal, out.why = "wait", L.fallen, "fallen: the room opens again when the fight ends"
+		return out
+	end
+	local cr, room = L.corridors[nb], L.rooms[nb]
+	if not K.hasBit(inst.trash, nb) then
+		-- the corridor's pack first: walk to the live monster, else to the middle of the pack spots
+		out.area = "trash"
+		local m = ctx.monster
+		local goal = m and not m.boss and K.where(L, m.pos) == "corridor" and m.pos or cr.packAt[2]
+		out.goal = goal
+		out.mode = near(pos, goal, 3) and "fight" or "walk"
+		out.why = "the pack of corridor " .. nb
+		if where == "corridor" and wi == nb and ctx.monster == nil then
+			out.mode, out.why = "wait", "the pack is down: the door opens"
+		end
+		return out
+	end
+	-- the boss room: walk in, then to the boss
+	out.area = "boss"
+	local inRoom = where == "room" and wi == nb
+	if ctx.fight == nb and not inRoom then
+		out.mode, out.goal, out.why = "wait", cr.packAt[1], "the room is sealed while the fight goes on"
+		return out
+	end
+	local target = ctx.bossPos or room.bossSpawn
+	out.goal = inRoom and target or room.entry -- through the east door of the corridor first
+	out.mode = (inRoom and near(pos, target, 4)) and "fight" or "walk"
+	out.why = "boss " .. nb
+	return out
+end
+
+-- one step toward a goal: dx, dy in {-1, 0, 1} (one of them 0), or 0, 0 when there; the longer axis first
+function K.stepToward(pos, goal)
+	if not pos or not goal or pos.z ~= goal.z then
+		return 0, 0
+	end
+	local dx, dy = goal.x - pos.x, goal.y - pos.y
+	if dx == 0 and dy == 0 then
+		return 0, 0
+	end
+	if abs(dx) >= abs(dy) then
+		return dx > 0 and 1 or -1, 0
+	end
+	return 0, dy > 0 and 1 or -1
+end
+
 -- problems of the config (startup console and the test)
 function K.validate(cfg)
 	local out = {}
@@ -1074,6 +1191,13 @@ function K.validate(cfg)
 	end
 	if cfg.minPlayers < 1 or cfg.maxPlayers < cfg.minPlayers then
 		bad("players %d-%d", cfg.minPlayers, cfg.maxPlayers)
+	end
+	local slots = cfg.grid.cols * cfg.grid.rows
+	if cfg.testerSlot ~= nil and (cfg.testerSlot < 0 or cfg.testerSlot >= slots or cfg.testerSlot ~= floor(cfg.testerSlot)) then
+		bad("testerSlot %s is not a slot of the grid (0-%d)", tostring(cfg.testerSlot), slots - 1)
+	end
+	if slots < 2 then
+		bad("a grid of %d slot(s) leaves no slot for the testers' own raid (O588)", slots)
 	end
 	return out
 end

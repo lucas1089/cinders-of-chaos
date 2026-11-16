@@ -11,7 +11,7 @@
 --   K.receiverOf(text)                    the receiver of a label or letter text (its first line, trimmed)
 --   K.lookLine(isSelf)                    the line every look at a tester adds
 -- Closed test mode (O582, server/README.md "Closed test mode"): the bots play arena, battleground, PvP, guild, guild war,
--- market and bazaar among themselves, never with a player. The switch is the file data/chaos_testers_closed
+-- market, bazaar and the raid among themselves, never with a player. The switch is the file data/chaos_testers_closed
 -- (chaos-ctl.sh testers closed on | off); anything but the word "on" in it, no file or a read that fails is OFF. Rules:
 --   K.parseClosed(text)                   true only for the word "on" (trimmed, any case)
 --   K.closedOn()                          the file, read at most every K.CLOSED_TTL seconds (K.reader / K.clock replace io / os.time)
@@ -39,7 +39,7 @@ K.CLOSED_FILE = "data/chaos_testers_closed"
 K.CLOSED_TTL = 5 -- seconds a read of the file is kept
 K.GUILD_PREFIX = "Tester " -- a tester guild's name starts with it
 K.GUILD_MARK = "Tester Guild " -- the names of the guilds testers.py makes ("Tester Guild Alfa"): never in a broadcast or Discord event
-K.CLOSED_SYSTEMS = {arena = true, battleground = true, pvp = true, guild = true, guildwar = true, market = true, bazaar = true}
+K.CLOSED_SYSTEMS = {arena = true, battleground = true, pvp = true, guild = true, guildwar = true, market = true, bazaar = true, raid = true}
 
 function K.safetyProblem(group, accountType)
 	group, accountType = tonumber(group) or 0, tonumber(accountType) or 0

@@ -1389,11 +1389,11 @@ async def check_craft_cards(io, name, cls, level):
     return Result('craft_cards', name, cls, PASS, 'the tooltip of %s carries its description' % tip.get('name'))
 
 # ------------------------------------------------------------------------------------------------ closed test mode (O582)
-# testers.py run --closed (switch: chaos-ctl.sh testers closed on): arena, battleground, the Marches, guild and guild war, market
-# and the bazaar lock among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
+# testers.py run --closed (switch: chaos-ctl.sh testers closed on): arena, battleground, the Marches, guild and guild war, market,
+# the bazaar lock and the raid (O588, below) among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
 # 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
 # another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
-CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'guild', 'guildwar', 'market', 'pvp')  # testers_core.lua K.CLOSED_SYSTEMS
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'guild', 'guildwar', 'market', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
 ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
 FEE_GOLD = 100      # the gold price of the market check's offer
 
@@ -1600,6 +1600,421 @@ async def check_closed_bazaar(io, name, cls, level):
     return Result('closed_bazaar', name, cls, PASS, 'listed: locked; cancelled: free (no Chaos Coins, no bid, not on the site)')
 
 
+# ------------------------------------------------------------------------------------------------ the raid, played (O588)
+# The Ashen Sepulchre in closed test mode: a party of testers forms, waits for its members at the entrance, steps into the portal,
+# starts the raid from its window, walks hall, corridors and boss rooms a step at a time, fights each pack and each boss (the bot
+# casts its rotation and drinks by itself; the helper targets what is within 5 tiles), takes the loot, and leaves by the exit
+# portal or the Leave button. The helper only reads (`!tester raid`: what a person sees on the screen, and the step next to the
+# entrance, like `enter` for an NPC) and closes the empty run so the next one finds the slot free. No teleport inside the raid.
+# Extra io for this check: io.partner(min_level=N), async io.step(dx, dy) / io.step_of(name, dx, dy) (one walk step: north (0, -1),
+# east (1, 0), south (0, 1), west (-1, 0)), async io.loot(), io.raid_mode(names, on) (no flight to the temple while inside).
+RAID_BUDGET = 1200.0    # seconds a party plays at most (the whole raid takes an hour; the check judges what it reached)
+RAID_LOOK = 1.0         # seconds between two looks at the screen
+RAID_STEP = 0.3         # seconds between two steps of a walk
+RAID_STEPS = 3          # steps between two looks
+RAID_PARTY = 2          # a party of this many bots at most (the leader and one member)
+RAID_PARTY_WAIT = 20.0  # seconds the leader waits for its member at the entrance
+RAID_ENTER_WAIT = 12.0  # seconds from `start` to standing inside
+RAID_FIGHT_MIN = 180.0  # seconds at a pack or a boss without a kill that make a failure (damage, targets or the monsters)
+RAID_LEAVE_WAIT = 150.0  # seconds after the budget for a fight to end before the run is closed by the helper
+RAID_STUCK = 30.0       # seconds on one tile with a goal elsewhere: the walk is blocked there
+RAID_MISSES = 6         # looks without an answer in a row
+RAID_TURN = {'by': None, 'done': None}   # the testers have ONE raid slot: one party at a time, once in a run
+RAID_MEMBERS = {}       # member name -> leader name, while a party plays (a member's own check starts no second raid)
+
+
+def reset_raid_turn():
+    RAID_TURN.update(by=None, done=None)
+    RAID_MEMBERS.clear()
+
+
+def raid_refusal(a, level=0):
+    """(status, text) when this bot must not start the raid check, else None: from its `!tester raid` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester raid (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if not a.get('on'):
+        return SKIP, 'the closed mode switch reads off'
+    if a.get('enabled') is False:
+        return SKIP, 'the raid is sealed (raid_config.lua enabled)'
+    have, need = int(a.get('level') or level or 0), int(a.get('minLevel') or 0)
+    if have < need:
+        return SKIP, 'level %d: the raid needs level %d' % (have, need)
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a raid already'
+    if not isinstance(a.get('portal'), dict):
+        return SKIP, 'no entrance portal known'
+    return None
+
+
+def raid_plan(pos, goal, n):
+    """up to n steps [(dx, dy)] from pos to goal, the longer axis first, walked in the head (so a look every few steps is
+    enough); [] on another floor or when there"""
+    if not isinstance(pos, dict) or not isinstance(goal, dict) or pos.get('z') != goal.get('z'):
+        return []
+    x, y = pos['x'], pos['y']
+    out = []
+    while len(out) < n and (x, y) != (goal['x'], goal['y']):
+        dx, dy = goal['x'] - x, goal['y'] - y
+        step = ((1 if dx > 0 else -1), 0) if abs(dx) >= abs(dy) else (0, (1 if dy > 0 else -1))
+        out.append(step)
+        x, y = x + step[0], y + step[1]
+    return out
+
+
+# the directions of the engine (north 0, east 1, south 2, west 3, southwest 4, southeast 5, northwest 6, northeast 7) as walk steps; a
+# diagonal is two steps (the longer part of it first is not needed: x then y)
+RAID_DIRS = {0: [(0, -1)], 1: [(1, 0)], 2: [(0, 1)], 3: [(-1, 0)], 4: [(-1, 0), (0, 1)], 5: [(1, 0), (0, 1)], 6: [(-1, 0), (0, -1)],
+             7: [(1, 0), (0, -1)]}
+
+
+def raid_path_steps(path):
+    """the walk steps of a path of engine directions (`!tester raid path`); [] for anything that is not a list of directions"""
+    out = []
+    if not isinstance(path, list):
+        return out
+    for d in path[:120]:
+        out.extend(RAID_DIRS.get(d, []) if isinstance(d, int) and not isinstance(d, bool) else [])
+    return out
+
+
+def raid_near(pos, goal, d):
+    return isinstance(pos, dict) and isinstance(goal, dict) and pos.get('z') == goal.get('z') \
+        and abs(pos['x'] - goal['x']) <= d and abs(pos['y'] - goal['y']) <= d
+
+
+class RaidWalker:
+    """what a person does when the way is blocked (a creature, a pillar, a door that is not open yet): the steps did not move the
+    bot, so it goes round, one tile to the side, alternating the side, then on. `stuck(now)`: seconds without moving"""
+
+    def __init__(self):
+        self.pos = None
+        self.sent = 0
+        self.blocked = 0
+        self.since = None
+
+    def steps(self, pos, goal, n, now):
+        p = (pos['x'], pos['y'], pos['z'])
+        if p == self.pos and self.sent:
+            self.blocked += 1
+        else:
+            self.blocked = 0
+            self.since = now
+        if self.since is None:
+            self.since = now
+        self.pos = p
+        plan = raid_plan(pos, goal, n)
+        if self.blocked and plan:
+            dx, dy = plan[0]
+            sign = 1 if self.blocked % 2 else -1   # the other side every time the way is blocked again
+            side = (0, sign) if dx else (sign, 0)  # across the blocked direction; the next look walks on from the new tile
+            plan = [side] * (1 + self.blocked // 2)
+        self.sent = len(plan)
+        return plan
+
+    def stuck(self, now):
+        return 0.0 if self.since is None else now - self.since
+
+
+def raid_problems(a, slot=None):
+    """[text] for one inside-the-raid answer: whatever says the run is not the testers' own"""
+    out = []
+    r = a.get('run') if isinstance(a, dict) else None
+    if not isinstance(r, dict):
+        return out
+    if r.get('side') != 'tester':
+        out.append('a tester is in a %s raid (it must be the testers\' own)' % r.get('side'))
+    if slot is not None and r.get('slot') != slot:
+        out.append('the testers\' raid runs in slot %s, not the testers\' slot %s' % (r.get('slot'), slot))
+    if int(r.get('players') or 0) > RAID_PARTY:
+        out.append('%s players in the testers\' raid, the party is %d bots at most (a player may be in it)' % (r.get('players'), RAID_PARTY))
+    return out
+
+
+def raid_verdict(t):
+    """(status, text) from the trace of a played raid: entered, faults, killed (bosses), trash (corridors cleared), reached (set of
+    places), fought (seconds at a pack or a boss), stuck (position or None), steps, secs, left, members"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    done = 'came %s, entered by the portal with %d bot(s), %d step(s), corridors cleared %d, bosses slain %d of %d in %d s, left by %s' % (
+        'on foot from the temple' if t.get('came') == 'foot' else 'next to the portal by the helper', t.get('members', 1), t.get('steps', 0),
+        t.get('trash', 0), t.get('killed', 0), t.get('bosses', 0), t.get('secs', 0), t.get('left', '?'))
+    if t.get('killed') or t.get('trash') or t.get('kills'):
+        return PASS, done
+    reached = sorted(t.get('reached') or [])
+    if t.get('fought', 0) >= RAID_FIGHT_MIN:
+        return FAIL, 'fought %d s at the first pack and killed nothing (damage, targets or the pack); reached %s' % (t['fought'], ', '.join(reached))
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s; reached %s' % (t['stuck'][0], t['stuck'][1], RAID_STUCK, ', '.join(reached) or 'the hall')
+    return SKIP, 'no pack was killed in %d s (reached %s)' % (t.get('secs', 0), ', '.join(reached) or 'the hall')
+
+
+def raid_start_refusal(text):
+    """(status, text) of a start the raid window refused: the mode on and a closed-mode text is a bug, the rest is the state of the world"""
+    text = str(text or '')[:90]
+    if 'Closed test mode is off' in text or 'never mixed' in text:
+        return FAIL, 'the raid refused a tester with the mode on: %s' % text
+    return SKIP, 'the raid did not open: %s' % text
+
+
+async def raid_look(io, r):
+    if r['lead']:
+        return await io.helper('raid state', 'raid', ANSWER)
+    return await io.helper_of(r['name'], 'raid state', 'raid', ANSWER)
+
+
+async def raid_walk(io, r, step):
+    if r['lead']:
+        await io.step(step[0], step[1])
+    else:
+        await io.step_of(r['name'], step[0], step[1])
+
+
+async def raid_to_portal(io, r, portal):
+    """'foot' when the bot walked from the temple to the entrance by its path, 'helper' when the helper had to put it next to the
+    portal, else the reason it could not be there"""
+    ask = (lambda c: io.helper(c, 'raid', HELPER_WAIT)) if r['lead'] else (lambda c: io.helper_of(r['name'], c, 'raid', HELPER_WAIT))
+    if not (await io.go('town') if r['lead'] else await io.go_of(r['name'], 'town')):
+        return 'the helper did not bring the bot to the temple'
+    await io.sleep(SETTLE)
+    got = await ask('raid path')
+    steps = raid_path_steps((got or {}).get('path') if isinstance(got, dict) else None)
+    for step in steps:
+        await raid_walk(io, r, step)
+        await io.sleep(RAID_STEP)
+    if steps:
+        await io.sleep(RAID_STEP)
+        here = await raid_look(io, r)
+        if isinstance(here, dict) and raid_near(here.get('pos'), portal, 1):
+            return 'foot'
+    got = await ask('raid portal')
+    if not isinstance(got, dict) or got.get('err'):
+        return str((got or {}).get('err') if isinstance(got, dict) else 'no answer')[:80] or 'no answer'
+    return 'helper'
+
+
+async def raid_release(io, partners):
+    for p in list(partners):
+        RAID_MEMBERS.pop(p, None)
+        await io.party('leave', p)
+
+
+async def check_closed_raid(io, name, cls, level):
+    """a party of testers plays the raid like people: forms, waits for its members, enters by the portal, walks, fights, loots, leaves"""
+    key = 'closed_raid'
+    if name in RAID_MEMBERS:
+        return Result(key, name, cls, SKIP, 'played as the member of the party of %s (its result is the party\'s)' % RAID_MEMBERS[name])
+    a = await io.helper('raid state', 'raid', ANSWER)
+    no = raid_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    if RAID_TURN['done']:
+        return Result(key, name, cls, SKIP, 'the testers have one raid slot and %s played it in this run' % RAID_TURN['done'])
+    if RAID_TURN['by'] not in (None, name):
+        return Result(key, name, cls, SKIP, 'the testers have one raid slot: %s is in it' % RAID_TURN['by'])
+    RAID_TURN['by'] = name
+    partners = []
+    try:
+        r = await raid_play(io, name, cls, a, partners)
+    finally:
+        RAID_TURN['by'] = None
+        await raid_release(io, partners)
+        io.raid_mode([name] + partners, False)
+    return r
+
+
+async def raid_play(io, name, cls, a, partners):
+    key = 'closed_raid'
+    need = int(a.get('minPlayers') or 1)
+    if need > RAID_PARTY:
+        return Result(key, name, cls, SKIP, 'the raid needs %d players: a run of the bots forms %d at most' % (need, RAID_PARTY))
+    # the party: one member when a free bot of the raid's level is in game (the raid opens for one alone, minPlayers 1)
+    want = max(need, RAID_PARTY)
+    min_level = int(a.get('minLevel') or 0)
+    while len(partners) + 1 < want:
+        other = await io.partner(min_level=min_level)
+        if not other:
+            break
+        RAID_MEMBERS[other] = name
+        partners.append(other)
+    if len(partners) + 1 < need:
+        return Result(key, name, cls, SKIP, 'the raid needs %d players and %d bot(s) of level %d are free' % (need, len(partners) + 1, min_level))
+    squad = [{'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}]
+    for p in list(partners):
+        m = await io.helper_of(p, 'raid state', 'raid', ANSWER)
+        if raid_refusal(m, 0) is not None:
+            await raid_release(io, [p])
+            partners.remove(p)
+            continue
+        squad.append({'name': p, 'lead': False, 'walker': RaidWalker(), 'inside': False})
+    if len(squad) < need:
+        return Result(key, name, cls, SKIP, 'the raid needs %d players and %d bot(s) can play it' % (need, len(squad)))
+    # to the shop first, like a person: the potions topped up
+    for r in squad:
+        if r['lead']:
+            await io.helper('bag', 'bag', HELPER_WAIT)
+        else:
+            await io.helper_of(r['name'], 'bag', 'bag', HELPER_WAIT)
+    # to the entrance: from the temple on foot, by the path the server's own pathfinding gives (a player's auto walk); the helper
+    # puts the bot next to the portal only when that path fails (the way `enter` takes a bot to an NPC). The leader then invites,
+    # the member joins
+    portal = a['portal']
+    came = {}
+    for r in squad:
+        how = await raid_to_portal(io, r, portal)
+        if how not in ('foot', 'helper'):
+            return Result(key, name, cls, SKIP, 'to the raid portal: %s' % how)
+        came[r['name']] = how
+    if len(squad) > 1:
+        await io.party('form', squad[1]['name'])
+        waited = 0.0
+        while waited < RAID_PARTY_WAIT and io.alive():
+            there = []
+            for r in squad:
+                there.append(raid_near(((await raid_look(io, r)) or {}).get('pos'), portal, 3))
+            if all(there):
+                break
+            await io.sleep(LOOK)
+            waited += LOOK
+        else:
+            if io.alive():
+                return Result(key, name, cls, SKIP, 'the member of the party did not come to the entrance in %d s' % int(RAID_PARTY_WAIT))
+    await io.sleep(SETTLE)
+    io.raid_mode([r['name'] for r in squad], True)
+    # the first step into the portal opens the raid window; the start request is the window's button
+    me = await raid_look(io, squad[0])
+    for step in raid_plan((me or {}).get('pos'), portal, 1):
+        await io.step(step[0], step[1])
+    await io.sleep(1.0)
+    window = await io.request('raid', 'open', {}, ['info'], ANSWER)
+    if window is None:
+        return Result(key, name, cls, SKIP, 'no answer from the raid window (not installed)')
+    start = await io.request('raid', 'start', {}, ['closeInfo', 'msg', 'hud'], ANSWER)
+    if start is not None and start.get('action') == 'msg':
+        no = raid_start_refusal((start.get('data') or {}).get('text'))
+        return Result(key, name, cls, no[0], no[1])
+    trace = {'faults': [], 'reached': set(), 'steps': 0, 'killed': 0, 'trash': 0, 'kills': 0, 'fought': 0.0, 'stuck': None,
+             'secs': 0, 'left': '?', 'members': 0, 'bosses': int(a.get('bosses') or 0),
+             'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper'}
+    waited, state = 0.0, None
+    while waited <= RAID_ENTER_WAIT and io.alive():
+        state = await raid_look(io, squad[0])
+        if isinstance(state, dict) and state.get('inside'):
+            break
+        await io.sleep(1.0)
+        waited += 1.0
+    if not (isinstance(state, dict) and state.get('inside')):
+        return Result(key, name, cls, SKIP, 'the start did not bring the bot into the raid (%s)' % str(((start or {}).get('data') or {}).get('text') or 'no answer')[:70])
+    RAID_TURN['done'] = name   # a raid is played in this run: the other bots do not start a second one (one slot)
+    for r in squad:
+        s = state if r['lead'] else await raid_look(io, r)
+        r['inside'] = bool(isinstance(s, dict) and s.get('inside'))
+    trace['members'] = sum(1 for r in squad if r['inside'])
+    return await raid_walk_all(io, name, cls, a, squad, trace)
+
+
+async def raid_walk_all(io, name, cls, a, squad, trace):
+    """the play loop: look, then each bot walks, waits or fights by what the screen says, until the raid is over or the time is"""
+    key = 'closed_raid'
+    slot = a.get('slot')
+    elapsed, misses = 0.0, 0
+    leaving, leave_at = False, None
+    fight_since, progress = None, None
+    while io.alive():
+        looks = {}
+        for r in squad:
+            looks[r['name']] = await raid_look(io, r) if r['inside'] else None
+        lead = looks.get(squad[0]['name'])
+        if not isinstance(lead, dict):
+            misses += 1
+            if misses >= RAID_MISSES:
+                trace['left'] = 'no answer from the helper'
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        if not lead.get('inside'):
+            trace['left'] = 'the exit' if trace['killed'] >= trace['bosses'] and trace['bosses'] else 'the run ended (time or an exit)'
+            break
+        trace['faults'] += [p for p in raid_problems(lead, slot) if p not in trace['faults']]
+        if trace['faults']:
+            break
+        run = lead.get('run') or {}
+        guide = lead.get('guide') or {}
+        trace['reached'].add(str(guide.get('where') or 'hall'))
+        if run.get('killed', 0) > trace['killed']:
+            trace['killed'] = int(run['killed'])
+            await io.loot()
+        trace['trash'] = max(trace['trash'], int(run.get('trash') or 0))
+        trace['kills'] = max(trace['kills'], int(run.get('kills') or 0))
+        # progress: a pack or a boss losing health, or a corridor cleared, resets the clock of a fight with nothing to show
+        mark = (run.get('killed'), run.get('trash'), run.get('trashLeft'), run.get('bossHp'), run.get('monsters'))
+        if mark != progress:
+            progress, fight_since = mark, None
+        mode = guide.get('mode')
+        if mode == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        else:
+            fight_since = None if mode != 'wait' else fight_since
+        if elapsed >= RAID_BUDGET and not leaving:
+            leaving, leave_at = True, elapsed
+        if leaving:
+            for r in squad:
+                if not r['inside'] or not (looks.get(r['name']) or {}).get('inside'):
+                    continue
+                reply = await (io.request('raid', 'leave', {}, ['end', 'msg'], ANSWER) if r['lead']
+                               else io.request_of(r['name'], 'raid', 'leave', {}, ['end', 'msg'], ANSWER))
+                if reply is not None and reply.get('action') == 'end':
+                    r['inside'] = False
+            if not any(r['inside'] for r in squad):
+                trace['left'] = 'the Leave button'
+                break
+            if elapsed - leave_at >= RAID_LEAVE_WAIT:
+                trace['left'] = 'a close by the helper (a fight did not end in %d s)' % int(RAID_LEAVE_WAIT)
+                break
+        else:
+            sent = {}
+            for r in squad:
+                s = looks.get(r['name'])
+                g = (s or {}).get('guide') or {}
+                if not r['inside'] or not isinstance(s, dict) or not s.get('inside'):
+                    r['inside'] = False
+                    continue
+                if g.get('mode') in ('walk', 'exit') and isinstance(g.get('goal'), dict) and not (
+                        g.get('mode') == 'walk' and raid_near(s.get('pos'), g['goal'], 1)):
+                    sent[r['name']] = r['walker'].steps(s['pos'], g['goal'], RAID_STEPS, elapsed)
+                    if r['lead'] and r['walker'].stuck(elapsed) >= RAID_STUCK:
+                        trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+            for i in range(RAID_STEPS):
+                moved = False
+                for r in squad:
+                    plan = sent.get(r['name']) or []
+                    if i < len(plan):
+                        await raid_walk(io, r, plan[i])
+                        trace['steps'] += 1
+                        moved = True
+                if not moved:
+                    break
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    # out: the empty run is closed so the slot is free for the next one (the idle close would do it after minutes)
+    closed = await io.helper('raid close', 'raid', ANSWER)
+    after = await io.helper('raid state', 'raid', ANSWER)
+    if isinstance(after, dict) and after.get('inside'):
+        trace['faults'].append('the bot is still inside the raid after the close')
+    if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
+        trace['left'] = 'a close by the helper'
+    status, text = raid_verdict(trace)
+    return Result(key, name, cls, status, text)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -1609,6 +2024,7 @@ CLOSED_CHECKS = [
     ('closed_guild_war', check_closed_guild, lambda c: True),
     ('closed_market', check_closed_market, lambda c: True),
     ('closed_bazaar', check_closed_bazaar, lambda c: True),
+    ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
 

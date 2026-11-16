@@ -24,6 +24,10 @@
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
 --   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
+--   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
+--     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
+--     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
+--     the fights, the potions and the loot are the bot's own (tester_checks.py closed_raid)
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
 --   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
@@ -51,7 +55,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 12
+HELPER_VERSION = 13
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -832,6 +836,67 @@ function commands.closed(player)
 		data.pvp = {inside = ChaosPvpZone.isInside(player) and true or false}
 	end
 	tell(player, "closed", data)
+end
+
+-- ---------------------------------------------------------------- O588 the raid in closed test mode
+-- "!tester raid [state | path | portal | close]": reads ChaosRaid.probe (what a person sees of the raid); `path` is the way on foot to
+-- a tile next to the entrance portal (Creature:getPathTo, the engine's own pathfinding: the bot walks it step by step); `portal` puts
+-- the tester on a free tile next to the portal, as `enter` does for an NPC or a locker (when no path is found; the bot steps onto
+-- the portal itself and starts the raid from its window); `close` ends the testers' own empty raid so the slot is free. Nothing
+-- here opens, moves inside or fights.
+function commands.raid(player, arg)
+	local what, usage = H.parseRaid(arg)
+	if not what then
+		tell(player, "raid", {err = usage})
+		return
+	end
+	local R = ChaosRaid
+	if not (R and R.probe) then
+		tell(player, "raid", {err = "no raid system"})
+		return
+	end
+	if what == "close" then
+		local closed = R.testerClose and R.testerClose(player) or false
+		tell(player, "raid", H.raidAnswer(R.probe(player), {closed = closed and true or false}))
+		return
+	end
+	if what == "path" then
+		local probe = R.probe(player)
+		local portal = probe.portal
+		if probe.inside or not portal then
+			tell(player, "raid", {err = probe.inside and "already inside the raid" or "no raid portal"})
+			return
+		end
+		local ok, path = pcall(function()
+			return player:getPathTo(Position(portal.x, portal.y, portal.z), 0, 1, true, true, 0)
+		end)
+		local dirs = ok and H.pathDirections(path) or {}
+		if #dirs == 0 then
+			tell(player, "raid", {err = "no path to the raid portal"})
+			return
+		end
+		tell(player, "raid", H.raidAnswer(probe, {path = dirs}))
+		return
+	end
+	if what == "portal" then
+		local probe = R.probe(player)
+		local portal = probe.portal
+		if probe.inside then
+			tell(player, "raid", {err = "already inside the raid"})
+			return
+		end
+		local spot = portal and freeNear(Position(portal.x, portal.y, portal.z), nil, 1)
+		if not spot then
+			tell(player, "raid", {err = "no free tile next to the raid portal"})
+			return
+		end
+		player:teleportTo(spot)
+		if not landed(player, spot) then
+			tell(player, "raid", {err = "the teleport next to the raid portal was refused"})
+			return
+		end
+	end
+	tell(player, "raid", H.raidAnswer(R.probe(player)))
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

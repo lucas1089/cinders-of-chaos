@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "closed": 10,
-  "opcode": 71,
-  "out": 30,
+  "closed": 11,
+  "opcode": 72,
+  "out": 28,
   "passive": 110,
   "place": 15,
   "staff": 17
@@ -10644,7 +10644,14 @@
    ]
   },
   "patchnotes": {
-   "actions": [],
+   "actions": [
+    "seen",
+    "get",
+    "changelog",
+    "closed",
+    "open",
+    "auto"
+   ],
    "client": [
     "game_patchnotes"
    ],
@@ -10656,23 +10663,9 @@
     "patchnotes.lua"
    ],
    "opcode": 244,
-   "out": true,
-   "skip": [
-    "seen",
-    "get",
-    "changelog",
-    "closed",
-    "open",
-    "auto"
-   ],
-   "skipWhy": {
-    "auto": "out of scope (patchnotes): a text the client shows; nothing to do",
-    "changelog": "out of scope (patchnotes): a text the client shows; nothing to do",
-    "closed": "out of scope (patchnotes): a text the client shows; nothing to do",
-    "get": "out of scope (patchnotes): a text the client shows; nothing to do",
-    "open": "out of scope (patchnotes): a text the client shows; nothing to do",
-    "seen": "out of scope (patchnotes): a text the client shows; nothing to do"
-   },
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "patchnotes"
    ]
@@ -10837,14 +10830,14 @@
     "query"
    ],
    "skipWhy": {
-    "buy": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "continue": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "join": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "journal": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "leave": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "open": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "query": "out of scope (raid): a run other players join: the server refuses testers (O582)",
-    "start": "out of scope (raid): a run other players join: the server refuses testers (O582)"
+    "buy": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "continue": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "join": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "journal": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "leave": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "open": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "query": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)",
+    "start": "out of scope (raid): the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)"
    },
    "systems": [
     "raid"
@@ -13064,14 +13057,13 @@
    "files": [
     "patchnotes.lua"
    ],
-   "kind": "out",
+   "kind": "opcode",
    "opcodes": [
     "patchnotes"
    ],
    "talkactions": [
     "/patchnotes"
-   ],
-   "why": "a text the client shows; nothing to do"
+   ]
   },
   "pets": {
    "files": [
@@ -13230,7 +13222,7 @@
     "chaos_constants.lua",
     "raid.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "raid"
    ],
@@ -13238,7 +13230,7 @@
    "talkactions": [
     "/raid"
    ],
-   "why": "a run other players join: the server refuses testers (O582)"
+   "why": "the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)"
   },
   "rarity_migrate": {
    "files": [

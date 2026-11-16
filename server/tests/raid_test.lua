@@ -1475,6 +1475,310 @@ do
 	check(Chaos.instances.raid.close(run.inst.id) and next(X.runs) == nil, "solo: closed again")
 end
 
+-- ================================================================== closed test mode (O588)
+-- a party of testers only can open and play the raid, in the slot of its own, only with the switch on; a tester and a player never
+-- share a raid; no broadcast, no board and no guild trophy for a tester raid; the bots' eyes (K.guide, X.probe) and the close
+do
+	-- ---------------------------------------------------------------- the pure rules
+	eq(cfg.testerSlot, 3, "closed: the testers' slot is the last of the 2 x 2 grid")
+	check(#K.validate(cfg) == 0, "closed: the shipped config is valid")
+	do
+		local bad = setmetatable({testerSlot = 9}, {__index = cfg})
+		local found = false
+		for _, p in ipairs(K.validate(bad)) do
+			found = found or p:find("testerSlot", 1, true) ~= nil
+		end
+		check(found, "closed: a testerSlot outside the grid is a config problem")
+		local one = setmetatable({grid = {origin = cfg.grid.origin, cols = 1, rows = 1, spacing = 256}, testerSlot = 0}, {__index = cfg})
+		found = false
+		for _, p in ipairs(K.validate(one)) do
+			found = found or p:find("no slot for the testers", 1, true) ~= nil
+		end
+		check(found, "closed: a one slot grid leaves nothing to the players")
+	end
+	eq(K.allocSlot(cfg, "player", false, {}, {}), 0, "slot: a player takes the first slot")
+	eq(K.allocSlot(cfg, "player", true, {[0] = true}, {}), 1, "slot: the next free one")
+	eq(K.allocSlot(cfg, "player", false, {[0] = true, [1] = true, [2] = true}, {}), 3, "slot: switch off, the last slot is a player's too")
+	eq(K.allocSlot(cfg, "player", true, {[0] = true, [1] = true, [2] = true}, {}), nil, "slot: switch on, the testers' slot is never a player's")
+	eq(K.allocSlot(cfg, "player", true, {}, {[0] = true}), 1, "slot: a bad slot is skipped")
+	eq(K.allocSlot(cfg, "tester", true, {}, {}), 3, "slot: a tester takes the testers' slot")
+	eq(K.allocSlot(cfg, "tester", true, {[0] = true, [1] = true, [2] = true}, {}), 3, "slot: whatever the players hold")
+	eq(K.allocSlot(cfg, "tester", true, {[3] = true}, {}), nil, "slot: taken by a tester raid already")
+	eq(K.allocSlot(cfg, "tester", true, {}, {[3] = true}), nil, "slot: a bad slot is no slot")
+	eq(K.allocSlot(cfg, "tester", false, {}, {}), nil, "slot: switch off, no tester slot")
+	eq(K.allocSlot(cfg, "tester", "on", {}, {}), nil, "slot: only the boolean true switches it on")
+	eq(K.allocSlot(setmetatable({testerSlot = false}, {__index = cfg}), "tester", true, {}, {}), nil, "slot: no testerSlot in the config")
+
+	dofile("data/scripts/chaos/testers_core.lua")
+	local TK = ChaosTestersCore
+	local mode = "off"
+	TK.reader = function() return mode end
+	local function setMode(m)
+		mode = m
+		TK.resetClosedCache()
+	end
+	check(TK.CLOSED_SYSTEMS.raid == true, "closed: the raid is a closed system")
+	local s1, w1 = K.sideOfGroup(TK, true, {true, true})
+	check(s1 == "tester" and w1 == nil, "side: testers, switch on")
+	s1, w1 = K.sideOfGroup(TK, false, {true})
+	check(s1 == "tester" and w1 == "closed-off", "side: testers, switch off")
+	s1, w1 = K.sideOfGroup(TK, true, {true, false})
+	check(s1 == nil and w1 == "mixed", "side: a tester and a player")
+	s1, w1 = K.sideOfGroup(TK, true, {false, false})
+	check(s1 == "player" and w1 == nil, "side: players")
+	s1, w1 = K.sideOfGroup(nil, true, {true})
+	check(s1 == nil and w1 == "closed-off", "side: no rules file, a tester is refused")
+	s1, w1 = K.sideOfGroup(nil, true, {false})
+	check(s1 == "player" and w1 == nil, "side: no rules file, a player is a player")
+	s1, w1 = K.sideOfGroup(nil, true, {})
+	check(s1 == nil and w1 == "mixed", "side: nobody")
+
+	-- ---------------------------------------------------------------- K.guide: what a person does, step by step
+	do
+		local L = K.layout(cfg, 3)
+		local inst = K.newInstance(1, 20261005, 1, "x")
+		local function at(p) return {x = p.x, y = p.y, z = p.z} end
+		local g = K.guide(cfg, L, inst, {pos = at(L.start)})
+		check(g.mode == "walk" and g.area == "trash" and g.idx == 1, "guide: from the hall to the first pack")
+		eq(g.goal.x, L.corridors[1].packAt[2].x, "guide: the goal is the middle of the pack spots")
+		eq(g.where, "hall", "guide: in the hall")
+		local m = {pos = at(L.corridors[1].packAt[1])}
+		g = K.guide(cfg, L, inst, {pos = at(L.corridors[1].packAt[3]), monster = m})
+		check(g.mode == "fight" and g.goal.x == m.pos.x, "guide: next to the pack, fight")
+		g = K.guide(cfg, L, inst, {pos = at(L.start), monster = m})
+		check(g.mode == "walk" and g.goal.x == m.pos.x, "guide: walk to the live monster of the corridor")
+		g = K.guide(cfg, L, inst, {pos = at(L.corridors[1].packAt[2])})
+		check(g.mode == "wait" and g.where == "corridor", "guide: the pack is down: wait for the door")
+		g = K.guide(cfg, L, inst, {pos = at(L.start), monster = {pos = at(L.rooms[1].center)}})
+		eq(g.goal.x, L.corridors[1].packAt[2].x, "guide: a monster outside the corridor is not the goal")
+		inst.trash = K.setBit(inst.trash, 1)
+		g = K.guide(cfg, L, inst, {pos = at(L.corridors[1].packAt[2])})
+		check(g.mode == "walk" and g.area == "boss" and g.goal.x == L.rooms[1].entry.x, "guide: the door is open: into the boss room")
+		g = K.guide(cfg, L, inst, {pos = at(L.rooms[1].entry), bossPos = at(L.rooms[1].bossSpawn)})
+		check(g.mode == "walk" and g.goal.x == L.rooms[1].bossSpawn.x, "guide: in the room, walk to the boss")
+		g = K.guide(cfg, L, inst, {pos = {x = L.rooms[1].bossSpawn.x - 2, y = L.rooms[1].bossSpawn.y, z = L.z},
+			bossPos = at(L.rooms[1].bossSpawn), fight = 1})
+		eq(g.mode, "fight", "guide: in reach of the boss, fight")
+		g = K.guide(cfg, L, inst, {pos = at(L.start), fight = 1})
+		check(g.mode == "wait" and g.goal.x == L.corridors[1].packAt[1].x, "guide: outside while the room is sealed, wait")
+		g = K.guide(cfg, L, inst, {pos = at(L.fallen), fight = 1, fallen = true})
+		check(g.mode == "wait" and g.goal.x == L.fallen.x, "guide: fallen, wait in the hall")
+		inst.killed = K.setBit(inst.killed, 1)
+		g = K.guide(cfg, L, inst, {pos = at(L.rooms[1].center)})
+		check(g.idx == 2 and g.mode == "walk", "guide: boss 1 is slain, the next corridor")
+		for i = 2, #cfg.bosses do
+			inst.killed = K.setBit(inst.killed, i)
+		end
+		g = K.guide(cfg, L, inst, {pos = at(L.rooms[5].center)})
+		check(g.mode == "exit" and g.goal.x == L.exit.x, "guide: all slain, the hall's exit")
+		g = K.guide(cfg, L, inst, {pos = at(L.rooms[5].center), finalExit = at(L.rooms[5].bossSpawn)})
+		check(g.mode == "exit" and g.goal.x == L.rooms[5].bossSpawn.x, "guide: all slain, the portal on the throne")
+		local dx, dy = K.stepToward({x = 5, y = 5, z = 7}, {x = 9, y = 6, z = 7})
+		check(dx == 1 and dy == 0, "step: the longer axis first")
+		dx, dy = K.stepToward({x = 5, y = 5, z = 7}, {x = 5, y = 2, z = 7})
+		check(dx == 0 and dy == -1, "step: north")
+		dx, dy = K.stepToward({x = 5, y = 5, z = 7}, {x = 5, y = 5, z = 7})
+		check(dx == 0 and dy == 0, "step: there")
+		dx, dy = K.stepToward({x = 5, y = 5, z = 7}, {x = 9, y = 5, z = 6})
+		check(dx == 0 and dy == 0, "step: another floor, no step")
+	end
+
+	-- ---------------------------------------------------------------- the engine file
+	X.interruptAll()
+	for i = 1, 6 do
+		raiders[i].party = nil
+		raiders[i].pos = Position(99 + i, 100, 7)
+		raiders[i].texts = {}
+		raiders[i].sent = nil
+	end
+	local function newTester(name, guid, x)
+		local p = newPlayer(name, guid, x)
+		p.storage[Chaos.storage.tester] = 1
+		return p
+	end
+	local t1, t2, t3 = newTester("Tester Aaa", 501, 106), newTester("Tester Bbb", 502, 107), newTester("Tester Ccc", 503, 108)
+	local function told(p, text)
+		for _, t in ipairs(p.texts) do
+			if t:find(text, 1, true) then
+				return true
+			end
+		end
+		return false
+	end
+	local ext = registered.ChaosRaidExtended
+
+	-- the switch off: a tester is refused (the window's request and the function itself)
+	setMode("off")
+	local ok, why = X.open(t1)
+	check(not ok and why == "Closed test mode is off: the testers do not play this.", "off: a tester cannot open: " .. tostring(why))
+	check(X.runOf[t1.id] == nil and next(X.runs) == nil, "off: nothing opened")
+	ext.onExtendedOpcode(t1, ChaosOpcodes.raid, {action = "start", data = {}})
+	local last = t1.sent and t1.sent[#t1.sent]
+	check(last and last.action == "msg" and last.data.text:find("Closed test mode is off", 1, true), "off: the window's start is answered with the refusal")
+	check(X.runOf[t1.id] == nil, "off: and nothing opened")
+	-- no rules file loaded at all: a tester is refused, a player is not
+	do
+		local keep = ChaosTestersCore
+		ChaosTestersCore = nil
+		local okN, whyN = X.open(t1)
+		check(not okN and whyN:find("Closed test mode is off", 1, true), "no rules: a tester is refused")
+		ChaosTestersCore = keep
+	end
+	-- a player is not touched by the mode
+	check(X.open(raiders[6]), "a player opens a raid with the mode off")
+	local pr = X.runOf[raiders[6].id]
+	eq(pr.side, "player", "a player's raid is a player's")
+	eq(pr.slot, 0, "with the mode off the first slot")
+	check(not X.testerClose(t1), "close: a tester cannot close a player's raid")
+	check(X.runOf[raiders[6].id] == pr, "close: the player's raid stands")
+	X.interruptAll()
+
+	-- the switch on: a party of testers opens, a player in the same party stays behind, the slot is the testers'
+	setMode("on")
+	local partyT = {t1, t2, raiders[5]}
+	local party = {getLeader = function() return t1 end, getMembers = function() return {t2, raiders[5]} end}
+	for _, p in ipairs(partyT) do p.party = party end
+	raiders[5].pos = Position(108, 100, 7)
+	ok, why = X.open(t1)
+	check(ok, "on: a party of testers opens: " .. tostring(why))
+	local run = X.runOf[t1.id]
+	check(run ~= nil and run.side == "tester", "on: the run is a tester run")
+	eq(run.slot, cfg.testerSlot, "on: in the slot of its own")
+	check(X.runOf[t2.id] == run, "on: the second tester came along")
+	check(X.runOf[raiders[5].id] == nil, "on: the player in the party stays behind")
+	check(told(t1, "Testers and players are never mixed."), "on: the leader is told")
+	eq(K.where(run.L, t1.pos), "hall", "on: landed in the hall of the testers' slot")
+	check(t1.pos.x > cfg.grid.origin.x + cfg.grid.spacing, "on: the testers' slot is the third column row")
+	-- the probe: what a person sees
+	local pb = X.probe(t1)
+	check(pb.inside and pb.run.side == "tester" and pb.run.slot == 3 and pb.run.players == 2, "probe: inside the testers' raid")
+	check(pb.guide and pb.guide.mode == "walk" and pb.guide.area == "trash", "probe: the way on is the first pack")
+	eq(pb.run.trashLeft, run.trashLeft[1], "probe: the pack is counted")
+	check(pb.run.monsters >= pb.run.trashLeft and pb.run.bossHp == 100, "probe: the monsters and the boss are counted")
+	local out = X.probe(raiders[5])
+	check(not out.inside and out.portal and out.portal.x == cfg.portal.positions[1].x and out.minLevel == cfg.minLevel,
+		"probe: outside, the entrance and the level rule")
+	check(out.on == true and out.minPlayers == cfg.minPlayers, "probe: the switch and the party minimum")
+	-- a player and a tester are never in the same raid: not by join, whichever raid it is
+	run.inst.members[raiders[5].guid] = true
+	local okJ, whyJ = X.join(raiders[5], run.inst.id)
+	check(not okJ and whyJ == "Testers and players are never mixed.", "join: a player cannot enter a tester raid: " .. tostring(whyJ))
+	check(X.runOf[raiders[5].id] == nil, "join: and is not inside")
+	-- a player opens his own raid beside it, never in the testers' slot
+	for i = 1, 4 do raiders[i].party = nil end
+	raiders[4].pos = Position(104, 100, 7)
+	check(X.open(raiders[4]), "a player opens a raid while the testers' raid runs")
+	local prun = X.runOf[raiders[4].id]
+	check(prun.side == "player" and prun.slot ~= cfg.testerSlot, "a player's raid never takes the testers' slot")
+	raiders[3].pos = Position(103, 100, 7)
+	check(X.open(raiders[3]), "second player raid")
+	raiders[2].pos = Position(102, 100, 7)
+	check(X.open(raiders[2]), "third player raid")
+	raiders[1].pos = Position(101, 100, 7)
+	local okF, whyF = X.open(raiders[1])
+	check(not okF, "the fourth player raid finds no slot: the testers' is theirs (" .. tostring(whyF) .. ")")
+	local slots = {}
+	for slot in pairs(X.runs) do slots[#slots + 1] = slot end
+	table.sort(slots)
+	eq(table.concat(slots, ","), "0,1,2,3", "three player slots and the testers' slot are busy")
+	-- the tester joining a player's raid
+	prun.inst.members[t3.guid] = true
+	okJ, whyJ = X.join(t3, prun.inst.id)
+	check(not okJ and whyJ == "Testers and players are never mixed.", "join: a tester cannot enter a player raid: " .. tostring(whyJ))
+	-- a second tester party finds the testers' slot taken
+	local okT, whyT = X.open(t3)
+	check(not okT and whyT:find("Every wing of the Sepulchre is taken", 1, true), "a second tester raid waits: " .. tostring(whyT))
+	X.runs[prun.slot] = nil
+	for _, r in pairs({raiders[2], raiders[3], raiders[4]}) do
+		local rr = X.runOf[r.id]
+		if rr then
+			X.interruptAll()
+			break
+		end
+	end
+
+	-- the switch goes off in the middle of the run: the testers' raid ends
+	setMode("on")
+	for _, p in ipairs({t1, t2}) do p.pos = Position(106, 100, 7) end
+	check(X.open(t1), "on: a tester raid again")
+	run = X.runOf[t1.id]
+	check(run and run.side == "tester", "again: tester run")
+	setMode("off")
+	t1.texts = {}
+	runTo(T + 1000)
+	check(X.runOf[t1.id] == nil and next(X.runs) == nil, "off: the testers' raid closes when the switch goes off")
+	check(told(t1, "Closed test mode is off"), "off: the tester is told")
+	eq(t1.pos.x, 1000, "off: sent to the temple")
+	check(mem.inst[run.inst.id] ~= nil, "off: its progress stays saved")
+
+	-- the testers' own raid played to the end: loot only for testers, no broadcast, no board, no trophy
+	setMode("on")
+	t1.guild, t2.guild = {id = 88}, {id = 88}
+	for _, p in ipairs({t1, t2}) do
+		p.party = nil
+		p.pos = Position(106, 100, 7)
+	end
+	local party2 = {getLeader = function() return t1 end, getMembers = function() return {t2} end}
+	t1.party, t2.party = party2, party2
+	check(X.open(t1), "clear: the testers open")
+	run = X.runOf[t1.id]
+	local recBefore = #ChaosLeaderboard.rec
+	Game.lastBroadcast = nil
+	local gold1 = t1.bank or 0
+	local achBefore = ChaosAchievements.got["Tester Aaa:raid_clears"]
+	for i = 1, 5 do
+		run.inst.trash = K.setBit(run.inst.trash, i)
+		X.syncDoors(run)
+		for k, p in ipairs({t1, t2}) do
+			p.pos = Position(run.L.rooms[i].center.x - 1, run.L.rooms[i].center.y + k - 1, 7)
+			p.hp = p.maxhp
+		end
+		runTo(T + 300)
+		check(run.fight and run.fight.idx == i, "clear: boss " .. i .. " pulled")
+		for _ = 1, 3 do
+			t1.hp, t2.hp = t1.maxhp, t2.maxhp
+			runTo(T + 1000)
+		end
+		if run.fight then
+			registered.ChaosRaidBossDeath.onDeath(Monster(run.bossId[i]))
+		end
+		runTo(T + 300)
+		check(K.hasBit(run.inst.killed, i), "clear: boss " .. i .. " slain")
+	end
+	check(run.inst.cleared, "clear: the testers' raid is cleared")
+	check((t1.bank or 0) > gold1, "clear: the testers got the gold of the spoils")
+	eq(#ChaosLeaderboard.rec, recBefore, "clear: no entry on the fastest-clear board")
+	eq(ChaosGuild.stats["88:raidClears"], nil, "clear: no trophy for a guild")
+	eq(ChaosGuild.xp[88], nil, "clear: no guild XP")
+	eq(Game.lastBroadcast, nil, "clear: no broadcast of the final boss")
+	check(ChaosAchievements.got["Tester Aaa:raid_clears"] ~= achBefore or achBefore ~= nil, "clear: the tester's own progress still counts")
+	local pf2 = X.probe(t1)
+	check(pf2.guide.mode == "exit" and pf2.run.final ~= nil and pf2.guide.goal.x == pf2.run.final.x, "probe: cleared, the exit portal on the throne")
+	-- the bots leave by the exit portal, then the empty run is closed for the next one
+	for _, m in ipairs(moves) do
+		m.onStepIn(t2, Tile(run.L.exit):getItemById(cfg.objects.exit), run.L.exit, run.L.start)
+		break
+	end
+	check(X.runOf[t2.id] == nil, "exit: a tester leaves by the portal")
+	check(X.testerClose(t1), "close: the asker inside closes its testers' raid")
+	check(X.runOf[t1.id] == nil and X.runs[cfg.testerSlot] == nil, "close: the slot is free")
+	check(not X.testerClose(t1), "close: nothing left to close")
+	eq(mem.inst[run.inst.id].cleared, true, "close: the cleared raid stays saved (the clean-up removes it)")
+
+	-- a player who clears a raid still gets the board and the broadcast (the rule is the testers' only)
+	setMode("on")
+	for i = 1, 6 do
+		raiders[i].party = nil
+		raiders[i].guild = nil
+	end
+	raiders[6].pos = Position(105, 100, 7)
+	check(X.open(raiders[6]), "player: opens beside the closed mode")
+	local rp = X.runOf[raiders[6].id]
+	eq(rp.side, "player", "player: a player's run")
+	X.interruptAll()
+	setMode("off")
+end
+
 print(string.format("raid_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

@@ -9,7 +9,7 @@ player can do with it, and how the bots reach it.
   * talkactions: the words of TalkAction("...") in its engine files. Every one is a staff command (Chaos.staffCommand),
     so a system with nothing else is kind 'staff': never reached, testers are never staff
   * places: the systems the TEST ONLY helper can bring a tester to (`!tester enter ...`), with the argument
-  * closed: arena, battleground, the Marches, guild, guild war, market, bazaar: only a --closed run reaches them (O582)
+  * closed: arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588): only a --closed run reaches them (O582)
   * out of scope: what bots truly cannot do (staff only, real money, needs real players, a website flow), with the
     reason; the bots never send these
   * passive: everything else is reached by play (combat, loot, login, death): only server log errors name it
@@ -57,12 +57,10 @@ OUT_OF_SCOPE = {
     'orbexchange': 'an order book matched against real players\' orders',
     'party_finder': 'listings and applications real players see and answer',
     'legal_notice': 'a text the client shows; nothing to do',
-    'patchnotes': 'a text the client shows; nothing to do',
     'beta': 'beta sign-up of real accounts',
     'siege': 'needs guilds of real players',
     'groupqueue': 'a queue that matches players: the server refuses testers (O582)',
     'party_finder': 'a list and a queue that match players: the server refuses testers (O582)',
-    'raid': 'a run other players join: the server refuses testers (O582)',
     'testers': 'the tester rules themselves (tests/testers_test.lua)',
     'i18n': 'translations; every bot text passes through it',
     'item_codec': 'the item encoding library; used by every item system',
@@ -83,6 +81,7 @@ CLOSED_MODE = {
     'market_history': 'the testers\' own book, gold only (closed test mode)',
     'market_notify': 'the testers\' own book, gold only (closed test mode)',
     'bazaar': 'the character lock of a listing of a tester; the site never shows or sells it (closed test mode)',
+    'raid': 'the Ashen Sepulchre among testers only, in the slot of their own (closed test mode, O588)',
 }
 
 # requests the server answers with nothing, by design: {opcode name: {action: why}}. The bots count them as sent and fine
@@ -203,7 +202,7 @@ ADMIN = {'start', 'stop', 'end', 'reset', 'rebuild', 'shift', 'schedule', 'wave'
 # on every opcode but these; the generator fails when an entry names an action no server file answers on that opcode
 ADMIN_ALLOW = {
     'descent': {'start': "the player's own run of the Ember Descent (X.start of the player, a rate limit of 2 s)"},
-    'raid': {'start': "the player's own raid of the Ashen Sepulchre (X.open of the player); a leave step follows it"},
+    'raid': {'start': "the player's own raid of the Ashen Sepulchre (X.open of the player); sent only by the closed check closed_raid (O588), which walks, fights and leaves"},
     'combatLog': {'reset': "the player's own DPS meter counters"},
     'hunt': {'reset': "the player's own hunt session meter"},
     'lootfilter': {'reset': "the player's own filter counters (scope session, total or all)"},

@@ -415,7 +415,13 @@ end
 for _, file in ipairs({"arena", "battleground", "pvpzone", "market", "guildwar", "guild"}) do
 	check(source("data/scripts/chaos/" .. file .. ".lua"):find("O582", 1, true), file .. ".lua carries the closed-mode guard")
 end
-for _, file in ipairs({"dungeons", "groupqueue", "party_finder", "raid"}) do
+-- the raid (O588) is a closed system: its rules for testers are in raid.lua, it no longer refuses every tester
+do
+	local t = source("data/scripts/chaos/raid.lua")
+	check(t:find("O588", 1, true) and t:find("testerRefusal", 1, true) and t:find("K.allocSlot", 1, true), "raid.lua carries the closed-mode guard (O588)")
+	check(not t:find("Testers do not use this queue", 1, true), "raid.lua no longer refuses every tester")
+end
+for _, file in ipairs({"dungeons", "groupqueue", "party_finder"}) do
 	local t = source("data/scripts/chaos/" .. file .. ".lua")
 	check(t:find("Chaos.isTester(player)", 1, true) and t:find("Testers do not use this queue", 1, true),
 		file .. ".lua refuses a tester: a queue that matches players")
