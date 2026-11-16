@@ -228,6 +228,22 @@ hundreds or thousands of colours and much single-pixel noise. `gen_creature_pale
 The per-look numbers are in `client/tools/sprites/monster_looks/creature_palette.csv`; client/MANIFEST.md "Creature
 palette pass" has the pair.
 
+## Wings
+
+The bar is the six wings of O581 (`gen_drawn_wings.py`). No wing drawn after them may fall below it. `gen_drawn_wings_test.py`
+holds every row of `drawn_wings/designs.csv` to it (`bar_problems`).
+
+- **Size:** 96 x 96 px, 3 x 3 tiles. Nothing on the cell border.
+- **Frames:** 16 a direction, 83 ms each. Not 8 shown twice: half a cycle later the picture differs.
+- **Loop:** every frame differs from the next. The step from frame 15 to frame 0 is no bigger than 1.5 times the largest other step.
+- **Directions:** four, all different. West is not east mirrored.
+- **Layers:** a back and a front, both used. The body stands between them (base patch 0203).
+- **Alpha:** 0 or 255. One glow level, 144, for spark arms and trails. A transparent pixel carries no colour.
+- **Outline:** one colour a wing. Every solid pixel that touches transparency is that colour, in the back, the front and both together.
+- **Shading:** a 5 shade ramp a material, light from the top left.
+- **Anchor:** the art stands round (48, 64) of the canvas, the torso. The engine puts that point on the body (base patch 0204).
+- **Distinct:** no two wings draw the same pictures (`designs.sums`).
+
 ## Effects and missiles
 
 Frame counts of our generated effects (`report`, last section):

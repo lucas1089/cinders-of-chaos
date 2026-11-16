@@ -1,0 +1,227 @@
+# Chaos: wings with a part in front of the body (O583; client/BASE.md "0203"; src/client/chaoswinglayers.h (new, pure), outfit.cpp;
+# after 0001-0202).
+# Owner 2026-11-16: the code-drawn wings (O581) wrap the body: rings, orbits, feathers that cross the shoulder. The engine draws a
+# look's wings once, before the body facing south or east and after it facing north or west, so a wing was either all behind or all
+# in front. A wings look with two y patterns is now drawn twice in every direction: y 0 (the whole wing) before the body, y 1 (only
+# the part in front) after it. A wings look with one y pattern is drawn as before. A client without this patch draws y 0 only, in
+# the old order: the whole wing, behind the body facing south or east. The north / west placement moved into a lambda unchanged,
+# because a layered wing needs it before the body too. The pair writes the patterns (client/tools/sprites/gen_drawn_wings.py apply).
+diff -ruN a/src/client/chaoswinglayers.h b/src/client/chaoswinglayers.h
+--- /dev/null
++++ b/src/client/chaoswinglayers.h
+@@ -0,0 +1,40 @@
++// Cinders of Chaos (base patch 0203): wings with a part in front of the body. Pure and header-only so
++// client/tools/chaoswinglayers_test.cpp can run it without the engine.
++// The engine draws a look's wings once: before the body when the creature faces south or east, after it when it
++// faces north or west. A wing that wraps the body (a ring, an orbit, a feather that crosses the shoulder) needs both.
++// A wings look with two y patterns is such a wing:
++//   y pattern 0  the whole wing (what a client without this patch draws, in the order above),
++//   y pattern 1  only the part in front of the body.
++// For it the engine draws y 0 before the body and y 1 after it, in every direction. A wings look with one y pattern
++// is drawn as before. The pair writes the patterns (client/tools/sprites/gen_drawn_wings.py apply).
++#ifndef CHAOSWINGLAYERS_H
++#define CHAOSWINGLAYERS_H
++
++namespace chaos {
++namespace winglayers {
++
++constexpr int kNone = -1;
++constexpr int kWhole = 0;  // y pattern of the whole wing
++constexpr int kFront = 1;  // y pattern of the part in front of the body
++
++inline bool layered(int numPatternY) { return numPatternY >= 2; }
++
++struct Plan {
++    int before;  // y pattern to draw before the body, kNone for no draw
++    int after;   // y pattern to draw after the body, kNone for no draw
++};
++
++// direction: 0 north, 1 east, 2 south, 3 west (a diagonal is folded to east or west before)
++inline Plan plan(int numPatternY, int direction)
++{
++    if (layered(numPatternY))
++        return Plan{ kWhole, kFront };
++    if (direction == 1 || direction == 2)
++        return Plan{ kWhole, kNone };
++    return Plan{ kNone, kWhole };
++}
++
++}  // namespace winglayers
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -27,6 +27,7 @@
+ #include "spritemanager.h"
+ #include "chaosfacing.h"
+ #include "chaoswingfit.h"
++#include "chaoswinglayers.h"
+ #include "chaosheadfit.h"
+ 
+ #include <framework/graphics/painter.h>
+@@ -301,7 +302,9 @@
+                                       g_game.getFeature(Otc::GameWingOffset) ? chaos::wingfit::kLiftPx : 0);
+     };
+ 
+-    auto drawWings = [&] {
++    // Cinders of Chaos (base patch 0203): a wings look with two y patterns is drawn twice, the whole wing before the
++    // body and its front part after it (chaoswinglayers.h); yPattern says which
++    auto drawWings = [&](int yPattern) {
+         int wingAnimationPhase = walkAnimationPhase;
+         auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+         int wingsZPattern = m_mount > 0 ? std::min<int>(1, wingsType->getNumPatternZ() - 1) : 0;
+@@ -321,7 +324,7 @@
+                 wingAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
+             }
+         }
+-        wingsType->draw(wingDest, 0, direction, 0, wingsZPattern, wingAnimationPhase, Color::white, lightView);
++        wingsType->draw(wingDest, 0, direction, yPattern, wingsZPattern, wingAnimationPhase, Color::white, lightView);
+     };
+ 
+     Point auraDest = dest;
+@@ -414,7 +417,9 @@
+         dest += seatedShift[direction <= Otc::West ? direction : Otc::South] * g_sprites.getOffsetFactor();
+     }
+ 
+-    if (m_wings && (direction == Otc::South || direction == Otc::East)) {
++    // Cinders of Chaos (base patch 0203): the wings' place when the creature faces north or west, as before; a lambda
++    // because a layered wing is also drawn before the body in these directions
++    auto placeWingsBehindViewer = [&] {
+         auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+         if (wingsType) {
+             if (type->hasBones() && wingsType->hasBones()) {
+@@ -426,13 +431,13 @@
+                 auto boneOffset = Point((outfitBones.x - wingsBones.x) + bonusOffset, (outfitBones.y - wingsBones.y) + bonusOffset);
+ 
+                 if (m_mount > 0) {
+-                    if (direction == Otc::South) {
+-                        boneOffset.x -= 7;
+-                        boneOffset.y -= 17;
++                    if (direction == Otc::North) {
++                        boneOffset.x -= 11;
++                        boneOffset.y -= 9;
+                     }
+-                    else if (direction == Otc::East) {
+-                        boneOffset.x -= 18;
+-                        boneOffset.y -= 7;
++                    else if (direction == Otc::West) {
++                        boneOffset.x -= 9;
++                        boneOffset.y -= 11;
+                     }
+                 }
+ 
+@@ -441,17 +446,60 @@
+ 
+                 wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
+             } else {
+-                // Cinders of Chaos (base patch 0193): the wings' pair centre onto the body's torso (chaoswingfit.h)
+                 wingDest += Point(wingFitShift(direction), 0) * g_sprites.getOffsetFactor();
+             }
+         }
+-        if (g_game.getFeature(Otc::GameWingOffset) && riding) {
+-            if (direction == Otc::East)
+-                wingDest -= Point(6, 2) * g_sprites.getOffsetFactor();
+-            else
+-                wingDest -= Point(0, 6) * g_sprites.getOffsetFactor();
++        if (g_game.getFeature(Otc::GameWingOffset) && riding)
++            wingDest += Point(4, 6);
++
++    };
++    const auto wingPlan = [&] {
++        auto wingsType = m_wings ? g_things.rawGetThingType(m_wings, ThingCategoryCreature) : nullptr;
++        return chaos::winglayers::plan(wingsType ? wingsType->getNumPatternY() : 1, direction);
++    }();
++
++    if (m_wings && wingPlan.before != chaos::winglayers::kNone) {
++        if (direction == Otc::South || direction == Otc::East) {
++            auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
++            if (wingsType) {
++                if (type->hasBones() && wingsType->hasBones()) {
++                    auto outfitBones = type->getBones(direction);
++                    auto outfitWidth = type->getWidth();
++                    auto wingsWidth = wingsType->getWidth();
++                    int bonusOffset = std::abs(wingsWidth - outfitWidth) * 32;
++                    auto wingsBones = wingsType->getBones(direction);
++                    auto boneOffset = Point((outfitBones.x - wingsBones.x) + bonusOffset, (outfitBones.y - wingsBones.y) + bonusOffset);
++
++                    if (m_mount > 0) {
++                        if (direction == Otc::South) {
++                            boneOffset.x -= 7;
++                            boneOffset.y -= 17;
++                        }
++                        else if (direction == Otc::East) {
++                            boneOffset.x -= 18;
++                            boneOffset.y -= 7;
++                        }
++                    }
++
++                    if (g_game.getFeature(Otc::GameWingOffset) && m_wings)
++                        boneOffset -= Point(6, 6);
++
++                    wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
++                } else {
++                    // Cinders of Chaos (base patch 0193): the wings' pair centre onto the body's torso (chaoswingfit.h)
++                    wingDest += Point(wingFitShift(direction), 0) * g_sprites.getOffsetFactor();
++                }
++            }
++            if (g_game.getFeature(Otc::GameWingOffset) && riding) {
++                if (direction == Otc::East)
++                    wingDest -= Point(6, 2) * g_sprites.getOffsetFactor();
++                else
++                    wingDest -= Point(0, 6) * g_sprites.getOffsetFactor();
++            }
++        } else {
++            placeWingsBehindViewer();
+         }
+-        drawWings();
++        drawWings(wingPlan.before);
+     }
+ 
+     LightView* const baseLightView = NegativeOffset::baseCreatureLightView(
+@@ -500,40 +548,10 @@
+         }
+     }
+ 
+-    if (m_wings && (direction == Otc::North || direction == Otc::West)) {
+-        auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+-        if (wingsType) {
+-            if (type->hasBones() && wingsType->hasBones()) {
+-                auto outfitBones = type->getBones(direction);
+-                auto outfitWidth = type->getWidth();
+-                auto wingsWidth = wingsType->getWidth();
+-                int bonusOffset = std::abs(wingsWidth - outfitWidth) * 32;
+-                auto wingsBones = wingsType->getBones(direction);
+-                auto boneOffset = Point((outfitBones.x - wingsBones.x) + bonusOffset, (outfitBones.y - wingsBones.y) + bonusOffset);
+-
+-                if (m_mount > 0) {
+-                    if (direction == Otc::North) {
+-                        boneOffset.x -= 11;
+-                        boneOffset.y -= 9;
+-                    }
+-                    else if (direction == Otc::West) {
+-                        boneOffset.x -= 9;
+-                        boneOffset.y -= 11;
+-                    }
+-                }
+-
+-                if (g_game.getFeature(Otc::GameWingOffset) && m_wings)
+-                    boneOffset -= Point(6, 6);
+-
+-                wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
+-            } else {
+-                wingDest += Point(wingFitShift(direction), 0) * g_sprites.getOffsetFactor();
+-            }
+-        }
+-        if (g_game.getFeature(Otc::GameWingOffset) && riding)
+-            wingDest += Point(4, 6);
+-
+-        drawWings();
++    if (m_wings && wingPlan.after != chaos::winglayers::kNone) {
++        if (wingPlan.before == chaos::winglayers::kNone)
++            placeWingsBehindViewer();
++        drawWings(wingPlan.after);
+     }
+     
+     if (m_aura && (g_game.getFeature(Otc::GameDrawAuraOnTop) || g_game.getFeature(Otc::GameAuraFrontAndBack))) {

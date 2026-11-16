@@ -29,6 +29,15 @@ preview writes MP4s at 4x (the four directions side by side on a plain body; wit
 tinted, else a drawn silhouette), all_designs.mp4 and scale_1x.png (game size). Previews are never committed.
 
 Designs (our own, dark fantasy): ember_pinions, ossuary_wings, void_orbit, bladefan, rimeshard, grave_lanterns.
+
+The 121 wings looks of the pair (O583) are rows of drawn_wings/designs.csv, drawn by gen_drawn_wings_families.py
+with this kit. Their commands, handed over from here:
+  table [--check]              the table rules, drawn_wings/designs.sums, client_chaos_wingfit/wing_anchors.lua
+  sheets OUT_DIR               a contact sheet a family, 1x and 3x
+  compare OUT_DIR DAT SPR      an MP4 a family: old art of the pair left, the drawn wing right, four directions
+  fit OUT_DIR DAT SPR LOOKS [WINGS]   one wing on several looks (LOOK or LOOK:MOUNT): engine anchor left, old table right
+  apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
+  live DAT SPR                 a built pair holds them
 """
 import argparse
 import math
@@ -120,14 +129,26 @@ def poly_mask(pts):
     """pixels whose centre lies in the polygon (even-odd)"""
     inside = np.zeros((SIZE, SIZE), bool)
     n = len(pts)
+    if n < 3:
+        return inside
+    bx0 = max(0, int(math.floor(min(p[0] for p in pts))) - 1)
+    bx1 = min(SIZE, int(math.ceil(max(p[0] for p in pts))) + 1)
+    by0 = max(0, int(math.floor(min(p[1] for p in pts))) - 1)
+    by1 = min(SIZE, int(math.ceil(max(p[1] for p in pts))) + 1)
+    if bx0 >= bx1 or by0 >= by1:
+        return inside
+    px = PX[by0:by1, bx0:bx1]
+    py = PY[by0:by1, bx0:bx1]
+    sub = np.zeros(px.shape, bool)
     for i in range(n):
         x0, y0 = pts[i]
         x1, y1 = pts[(i + 1) % n]
         if y0 == y1:
             continue
-        cross = (y0 <= PY) != (y1 <= PY)
-        xint = x0 + (PY - y0) * (x1 - x0) / (y1 - y0)
-        inside ^= cross & (PX < xint)
+        cross = (y0 <= py) != (y1 <= py)
+        xint = x0 + (py - y0) * (x1 - x0) / (y1 - y0)
+        sub ^= cross & (px < xint)
+    inside[by0:by1, bx0:bx1] = sub
     return inside
 
 
@@ -886,6 +907,11 @@ def preview(out_dir, dat=None, spr=None, look=2050, loops=6):
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv and argv[0] in ('table', 'sheets', 'compare', 'fit', 'apply', 'live'):
+        sys.path.insert(0, HERE)
+        import gen_drawn_wings_families as fam        # the 121 looks of the pair (O583)
+        return fam.main(argv)
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     b = sub.add_parser('build')

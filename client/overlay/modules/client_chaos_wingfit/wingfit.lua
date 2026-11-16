@@ -9,6 +9,10 @@ local function headsSupported()
   return setOutfitHeadCentre ~= nil and setOutfitHeadRef ~= nil and setOutfitHeadPieces ~= nil and ChaosHeadCentres ~= nil
 end
 
+local function anchorsSupported()
+  return setOutfitWingsAnchor ~= nil and setOutfitBodyAnchor ~= nil and ChaosWingAnchors ~= nil
+end
+
 local function supported()
   return setOutfitBodyCentre ~= nil and setOutfitWingsCentre ~= nil
 end
@@ -21,6 +25,13 @@ function init()
       function(first, last) setOutfitHeadPieces(first, last) end,
       function(look, dir, x, y) setOutfitHeadCentre(look, dir, x, y) end)
   end
+  -- code-drawn wings (base patch 0204): the engine measures the body and puts the wings' anchor on its torso; a
+  -- client without the patch has none of these functions and keeps the table below
+  if anchorsSupported() then
+    if clearOutfitWingAnchors then clearOutfitWingAnchors() end
+    WingFitCore.applyAnchors(ChaosWingAnchors, function(look, x, y) setOutfitWingsAnchor(look, x, y) end,
+      function(look, dir, x, y) setOutfitBodyAnchor(look, dir, x, y) end)
+  end
   if not supported() then return end
   if clearOutfitWingCentres then clearOutfitWingCentres() end
   WingFitCore.apply(ChaosWingCentres, function(look, dir, px) setOutfitBodyCentre(look, dir, px) end,
@@ -30,6 +41,7 @@ end
 function terminate()
   if clearOutfitWingCentres then clearOutfitWingCentres() end
   if clearOutfitHeadCentres then clearOutfitHeadCentres() end
+  if clearOutfitWingAnchors then clearOutfitWingAnchors() end
 end
 
 -- the {x, y} shift of a head piece of an outfit table {type, aura, ...} facing south, in sprite pixels at 1x; {0, 0}
