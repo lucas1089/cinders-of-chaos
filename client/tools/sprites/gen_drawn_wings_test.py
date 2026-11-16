@@ -3,6 +3,8 @@
 And of the table of the existing wings (O583, gen_drawn_wings_families.py): every row of drawn_wings/designs.csv is
 drawn and holds the same bar (docs/SPRITE_STYLE.md "Wings"), no two rows give the same pictures, the generated files
 are current, the pair step on a synthetic pair, the torso rule against the fixtures the C++ header reads.
+And of the likeness round (O587): every row has its measured numbers and no picture data, the outline comes back in
+the south view, feathers end rounded, a haze is one glow level, the score, the fit preview takes player looks only.
 
 python3 -I client/tools/sprites/gen_drawn_wings_test.py
 """
@@ -332,6 +334,81 @@ if __name__ == '__main__':
             check(fa.read() == fb.read(), 'the same pair twice: ' + name)
     import shutil
     shutil.rmtree(case.dir)
+
+# ---- O587: the redone wings follow the old art by numbers (outline, hollow, feather count, beat), no picture data
+import csv as _csv  # noqa: E402
+import math  # noqa: E402
+import gen_drawn_wings_families as fm587  # noqa: E402
+with open(fm587.CSV, newline='', encoding='utf-8') as _f:
+    _rows = list(_csv.DictReader(_f))
+_specs = fm587.load()
+check(len(_rows) == 121, 'O587: 121 rows')
+for _r, _sp in zip(_rows, _specs):
+    check(len(_r['env'].split()) == len(fm587.ENV_ANGLES) and len(_r['core'].split()) == len(fm587.ENV_ANGLES),
+          'O587: %s has an outline and a core of %d radii' % (_r['key'], len(fm587.ENV_ANGLES)))
+    check(all(0 <= float(v) <= 64 for v in _r['env'].split() + _r['core'].split()), 'O587: %s radii in the cell' % _r['key'])
+    check(0.6 <= _sp.fit <= 1.0, 'O587: %s fit %s' % (_r['key'], _sp.fit))
+    check(0.35 <= _sp.swing <= 1.5, 'O587: %s swing' % _r['key'])
+    check(max(len(v) for v in _r.values()) < 80, 'O587: %s holds numbers and words, no picture data' % _r['key'])
+_var = {sp.key: (sp.family, sp.var) for sp in _specs}
+for _key, _want in (('tornado_funnel', ('energy', 'funnel')), ('whirlpool', ('energy', 'whirl')),
+                    ('shadow_smoke', ('energy', 'smoke')), ('rain_veil', ('energy', 'rain')), ('nebula', ('energy', 'nebula')),
+                    ('origami_crane', ('fan', 'fold')), ('pearl_scallop', ('fan', 'shell'))):
+    check(_var.get(_key) == _want, 'O587: %s is drawn as %s/%s' % ((_key,) + _want))
+check(sum(1 for sp in _specs if sp.family == 'feather') == 35, 'O587: 35 feather rows')
+for _name, _v in fm587.FEATHER_VARS.items():                 # plumes, no spikes: a rounded tip, two rows or more
+    check(_v[1][-1][1] >= 0.14 and _v[1][-2][1] >= 0.4, 'O587: feather %s ends in a rounded tip' % _name)
+    check(len(_v[0]) >= 2, 'O587: feather %s has flight feathers and coverts' % _name)
+
+# the outline in the wing's plane shows the measured radii again in the south view
+_sp = [sp for sp in _specs if sp.key == 'fiery'][0]
+_env = fm587.env_of(_sp, 38, 8)
+_wing = gd.Wing(1, fm587.ROOT, math.radians(38), lambda t: math.radians(8), 1.0)
+_o = gd.project(_wing.at(0, 0), 'south', fm587.PIVOT)
+for _ang, _rad in zip(fm587.ENV_ANGLES, _sp.env):
+    _i = fm587.ENV_ANGLES.index(_ang)
+    _q = gd.project(_wing.at(*_env.pt(float(_env.phis[_i]))), 'south', fm587.PIVOT)
+    check(abs(math.hypot(_q[0] - _o[0], _q[1] - _o[1]) - _rad * _sp.size * _sp.fit) < 0.01, 'O587: outline radius at %d' % _ang)
+
+# a haze is one glow level, only on clear pixels
+_c = gd.Canvas((20, 20, 30))
+_m = np.zeros((gd.SIZE, gd.SIZE), bool)
+_m[40:50, 40:50] = True
+_c.piece(_m, np.full((gd.SIZE, gd.SIZE), 2, np.int8), fm587.ramp5((200, 60, 60)))
+_h = np.zeros((gd.SIZE, gd.SIZE), bool)
+_h[36:60, 36:60] = True
+_c.haze(_h, (90, 80, 120))
+_img = _c.finish()
+check(set(np.unique(_img[..., 3]).tolist()) == {0, 255, gd.GLOW_ALPHA}, 'O587: a haze is the glow level')
+check((_img[40:50, 40:50, 3] == 255).all(), 'O587: a haze does not cover art')
+
+# the likeness score: 0 for the same pictures, larger the further away
+def _pic(x0, y0, x1, y1, colour):
+    a = np.zeros((64, 64, 4), np.uint8)
+    a[y0:y1, x0:x1, :3] = colour
+    a[y0:y1, x0:x1, 3] = 255
+    return a
+
+
+_a = {d: [_pic(10, 20, 50, 40, (200, 40, 40)), _pic(10, 18, 50, 40, (200, 40, 40))] for d in gd.DIRS}
+_b = {d: [_pic(10, 20, 50, 40, (40, 40, 200)), _pic(10, 18, 50, 40, (40, 40, 200))] for d in gd.DIRS}
+_c2 = {d: [_pic(28, 4, 36, 60, (40, 40, 200)), _pic(28, 4, 36, 60, (40, 40, 200))] for d in gd.DIRS}
+_same, _col, _far = fm587.likeness(_a, _a), fm587.likeness(_a, _b), fm587.likeness(_a, _c2)
+check(_same['score'] == 0.0, 'O587: the same pictures score 0')
+check(_col['shape'] == 0.0 and _col['colour'] > 0.9, 'O587: another colour is a colour distance only')
+check(_far['score'] > _col['score'] > 0, 'O587: another shape and colour is further away')
+_rad, _core, _tips = fm587.measure_env([_pic(10, 20, 50, 40, (200, 40, 40))])
+check(len(_rad) == len(fm587.ENV_ANGLES) and max(_rad) > 0, 'O587: an outline is 13 radii')
+
+# the fit preview takes player bodies only
+_players = fm587.player_looks()
+check(fm587.parse_fit_look('2073+3:370', _players) == (2073, 370, 3), 'O587: a class look with addons on a mount')
+for _bad in ('35', '370', '2073:35', '2073+4'):
+    try:
+        fm587.parse_fit_look(_bad, _players)
+        check(False, 'O587: the fit preview refuses %s' % _bad)
+    except SystemExit:
+        pass
 
 if fails:
     print('%d FAILED' % fails)

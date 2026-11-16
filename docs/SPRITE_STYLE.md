@@ -238,11 +238,16 @@ holds every row of `drawn_wings/designs.csv` to it (`bar_problems`).
 - **Loop:** every frame differs from the next. The step from frame 15 to frame 0 is no bigger than 1.5 times the largest other step.
 - **Directions:** four, all different. West is not east mirrored.
 - **Layers:** a back and a front, both used. The body stands between them (base patch 0203).
-- **Alpha:** 0 or 255. One glow level, 144, for spark arms and trails. A transparent pixel carries no colour.
+- **Alpha:** 0 or 255. One glow level, 144, for spark arms, trails and a haze (smoke, mist; O587). A transparent pixel carries no colour.
 - **Outline:** one colour a wing. Every solid pixel that touches transparency is that colour, in the back, the front and both together.
 - **Shading:** a 5 shade ramp a material, light from the top left.
 - **Anchor:** the art stands round (48, 64) of the canvas, the torso. The engine puts that point on the body (base patch 0204).
 - **Distinct:** no two wings draw the same pictures (`designs.sums`).
+- **Feathers (O587):** plumes, never spikes. A flight row with its tips on the outline, coverts over its roots, each row a shade apart.
+  A feather ends rounded, has a shaft line and a two-tone vane.
+- **Likeness (O587):** a wing that replaces old art follows its outline, its hollow, its tip count and its motion.
+  The numbers are measured once and kept in `designs.csv` (`env`, `core`, `tips`, `beat`). No picture data in the repository.
+  `gen_drawn_wings.py score DAT SPR` gives the distance.
 
 ## Effects and missiles
 

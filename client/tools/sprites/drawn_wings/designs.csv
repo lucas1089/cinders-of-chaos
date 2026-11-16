@@ -1,122 +1,122 @@
-wings,look,key,name,family,variant,main,accent,glow,spark,n,size,old,source
-1,937,fiery,Fiery Wings,feather,pinion,c8442c,e0b060,ffd890,rise,0,1.0,2x2 tiles 3 frames,store
-2,938,lullaby,Lullaby Wings,insect,butterfly,434c86,cab88c,ece2c9,twinkle,0,1.0,2x2 tiles 4 frames,store
-3,939,elderleaf,Elderleaf Wings,leaf,oval,2c8a4a,7f3e09,fdfb6a,fall,0,1.0,2x2 tiles 4 frames,store
-4,940,vampire,Vampire Wings,bat,bat,3c3a46,8a1c2c,e04858,none,0,1.0,3x3 tiles 4 frames,store
-5,941,bark,Bark Wings,feather,owl,91473c,c9a070,fdf4d3,none,0,1.0,2x2 tiles 3 frames,store
-6,1177,electric_rider,Electric Rider Wings,bat,dragon,17508a,d09f6a,bfe8ff,twinkle,0,0.95,2x2 tiles 1 frames,store
-7,1178,vorondor_flames,Vorondor Flames,energy,flame,d17a00,f3f596,fff6b0,rise,0,1.0,3x3 tiles 1 frames,store
-8,1179,mortis_mirage,Mortis Mirage,feather,plume,30303a,4a7a80,8fe0d8,fall,0,1.0,3x3 tiles 1 frames,store
-9,1180,angelic,Angelic Wings,feather,angel,eee6d2,d8a040,ffffff,twinkle,0,1.0,2x2 tiles 1 frames,store
-10,1181,nimbus,Nimbus Wings,feather,swift,2a8a7c,8affeb,c8fff4,twinkle,0,1.0,3x3 tiles 1 frames,store
-11,1182,butterfly,Butterfly Wings,insect,butterfly,fdaf31,4b1ba5,fffffe,none,0,1.05,2x2 tiles 1 frames,store
-12,1183,dreadbone_spectra,Dreadbone Spectra,bone,finger,cfe4ee,0a6aa8,01fafa,rise,0,1.0,3x3 tiles 1 frames,store
-13,1184,enslaved,Enslaved Wings,bone,wire,8c8c96,4a4850,e8e8f0,none,0,1.0,3x3 tiles 1 frames,store
-14,1185,bride,Bride Wings,bat,dragon,c30e0d,f5963b,ffc261,rise,-1,1.0,2x2 tiles 8 frames,store
-15,1186,strength,Strength Wings,feather,seraph,c91e00,e6e6e6,ffd0c0,none,0,1.0,2x2 tiles 4 frames,store
-16,1486,cinder_plumes,Cinder Plumes,feather,plume,9b0227,eacea0,ffb060,rise,1,1.0,2x2 tiles 3 frames,boss
-17,2140,bloodthorn_pinions,Bloodthorn Pinions,bat,demon,4a3f3a,8b0a0e,e02830,none,0,1.0,3x3 tiles 8 frames,achievement
-18,2141,gravecrow,Gravecrow Wings,feather,pinion,3c3a44,898889,c8c8d8,fall,-1,1.0,3x3 tiles 9 frames,achievement
-19,2142,riftglass,Riftglass Wings,crystal,cluster,9105af,43004a,faf6fe,twinkle,0,1.0,3x3 tiles 9 frames,achievement
-20,2187,runic,Runic Wings,feather,angel,c8ccd8,7a6a50,9fd8ff,twinkle,-1,1.0,3x3 tiles 8 frames,boss
-21,2225,jadeleaf_pinions,Jadeleaf Pinions,feather,plume,9bec53,2f8a2a,dffbff,none,0,1.0,3x3 tiles 9 frames,store
-22,2226,tidewing_plumes,Tidewing Plumes,feather,plume,35b7c3,1c6167,40dcea,fall,-1,1.0,3x3 tiles 9 frames,store
-23,2227,duskfeather,Duskfeather Wings,feather,plume,6c12b1,c060f0,e0a0ff,twinkle,1,0.95,3x3 tiles 9 frames,store
-24,2228,emberplume,Emberplume Wings,feather,plume,cf4900,ffb030,ffe080,rise,-1,1.05,3x3 tiles 9 frames,store
-25,2229,wildgrove,Wildgrove Wings,feather,plume,00ad00,a8e040,d8ff90,none,2,0.92,3x3 tiles 9 frames,store
-26,2230,bloodfeather,Bloodfeather Wings,feather,plume,cf0000,501018,ff8070,none,0,1.06,3x3 tiles 9 frames,store
-27,2231,gloomgild,Gloomgild Wings,feather,scaled,5d3274,c68556,ffd9a0,twinkle,0,1.0,3x3 tiles 8 frames,boss
-28,2232,sunforged,Sunforged Wings,feather,scaled,f1641f,fca570,ffe0b7,rise,1,1.0,3x3 tiles 8 frames,boss
-29,2233,starmoth,Starmoth Wings,insect,moth,885d92,3b1b48,ffdfff,twinkle,0,1.0,3x3 tiles 5 frames,boss
-30,2385,amber_sap,Amber Sap Wings,crystal,drop,c66a0e,8a4a10,fff5c3,fall,0,1.0,3x3 tiles 16 frames,pack
-31,2386,arc_bolt,Arc Bolt Wings,energy,bolt,3a3ab0,d2ddff,ecf2ff,twinkle,0,1.0,4x3 tiles 16 frames,pack
-32,2387,aurora_veil,Aurora Veil Wings,energy,veil,32b5b7,d8b6fd,f4fafa,twinkle,0,1.0,4x4 tiles 24 frames,pack
-33,2388,banner,Banner Wings,fan,slat,a41b2c,b7851e,fff5bb,none,0,1.0,3x3 tiles 24 frames,pack
-34,2389,bark_owl,Bark Owl Wings,feather,owl,674c34,d2ae7c,d2ae7c,none,1,1.0,3x3 tiles 20 frames,pack
-35,2390,blaze_dragon,Blaze Dragon Wings,bat,dragon,8a1c1c,f18221,ffd65a,rise,0,1.05,4x4 tiles 24 frames,pack
-36,2391,bonsai_branch,Bonsai Branch Wings,leaf,oval,35893b,5a3a22,9bdb6b,none,-1,1.0,4x3 tiles 24 frames,pack
-37,2392,boulder_beetle,Boulder Beetle Wings,insect,beetle,645227,fac451,fac451,none,0,1.0,3x3 tiles 16 frames,pack
-38,2393,brass_fan,Brass Fan Wings,fan,web,b1742a,e8d8a8,f7d989,none,0,1.0,3x3 tiles 20 frames,pack
-39,2394,briar_rose,Briar Rose Wings,leaf,needle,2c5a3a,7a1224,d9414e,none,0,1.0,4x4 tiles 20 frames,pack
-40,2395,bubble_fairy,Bubble Fairy Wings,insect,fairy,5099d9,c8e8ff,fdfeff,rise,0,1.0,3x3 tiles 16 frames,pack
-41,2396,burning_chain,Burning Chain Wings,bat,torn,563428,fea52b,ffeb81,rise,0,1.0,4x3 tiles 20 frames,pack
-42,2397,cherub,Cherub Wings,feather,owl,f3d3dc,e5889e,fffbfa,twinkle,-1,0.9,4x3 tiles 16 frames,pack
-43,2398,cinder_bat,Cinder Bat Wings,bat,bat,651f1b,c05a20,ffd65a,rise,1,1.0,4x3 tiles 16 frames,pack
-44,2399,clockwork,Clockwork Wings,fan,blade,ae7331,55627b,eaf2fe,none,0,0.95,3x3 tiles 24 frames,pack
-45,2400,cloud_puff,Cloud Puff Wings,energy,cloud,c7d0e4,99a4c3,f8fafd,none,0,1.0,3x3 tiles 20 frames,pack
-46,2401,dandelion_seed,Dandelion Seed Wings,leaf,fern,e6dfcb,819a64,fbfdfe,rise,0,1.0,3x3 tiles 20 frames,pack
-47,2402,dawn_seraph,Dawn Seraph Wings,feather,seraph,ecba54,fbeadc,fbeadc,twinkle,1,1.0,4x4 tiles 24 frames,pack
-48,2403,deathshead_moth,Deathshead Moth Wings,insect,moth,706458,3a302a,e8e0c8,none,0,1.05,3x3 tiles 16 frames,pack
-49,2404,deep_ray,Deep Ray Wings,insect,ray,1a3a6b,accbe5,fbfdfe,fall,0,1.0,4x4 tiles 24 frames,pack
-50,2405,demon_rend,Demon Rend Wings,bat,demon,5c0f15,6c554a,e7dabd,none,1,1.05,4x3 tiles 24 frames,pack
-51,2406,dove_feather,Dove Feather Wings,feather,swift,e2eaf8,e0c99f,f4f6fc,none,0,0.95,3x3 tiles 20 frames,pack
-52,2407,ember_hawk,Ember Hawk Wings,feather,pinion,523728,fa952b,ffdf7d,rise,0,1.0,3x3 tiles 20 frames,pack
-53,2408,fern_frond,Fern Frond Wings,leaf,fern,378839,23672f,d6f48b,none,2,1.0,4x3 tiles 20 frames,pack
-54,2409,firefly_swarm,Firefly Swarm Wings,orbit,firefly,9fd041,f8fc96,f8fc96,twinkle,0,1.0,4x4 tiles 20 frames,pack
-55,2410,firework_burst,Firework Burst Wings,energy,ray,b1181a,fdc93d,fffffa,twinkle,1,1.0,4x4 tiles 16 frames,pack
-56,2411,flame_luna,Flame Luna Wings,insect,moth,cf3313,ffc555,fffcd6,rise,0,1.0,4x3 tiles 16 frames,pack
-57,2412,flame_pinions,Flame Pinions,energy,flame,e76619,fdb53e,fff4b9,rise,1,1.0,4x3 tiles 20 frames,pack
-58,2413,foam_crest,Foam Crest Wings,energy,water,1a8ca0,e8fcff,fdfeff,fall,0,1.0,4x3 tiles 20 frames,pack
-59,2414,frost_crystal,Frost Crystal Wings,crystal,shard,437ece,a8d0ff,fbfeff,twinkle,0,1.0,4x3 tiles 20 frames,pack
-60,2415,gale_streak,Gale Streak Wings,energy,ray,7ec3d1,e1f9fa,fafefe,none,-1,1.0,3x3 tiles 16 frames,pack
-61,2416,gargoyle,Gargoyle Wings,bat,gargoyle,4d4d58,8a8a9a,c1c1cf,none,0,1.0,3x3 tiles 24 frames,pack
-62,2417,geode,Geode Wings,crystal,cluster,8a4fcc,62584f,eed5ff,none,-1,1.0,4x3 tiles 24 frames,pack
-63,2418,gold_peacock,Gold Peacock Wings,feather,peacock,249274,e0b030,fff7bc,twinkle,0,1.0,4x3 tiles 24 frames,pack
-64,2419,gossamer_fairy,Gossamer Fairy Wings,insect,fairy,aac2f3,3b3462,e8dcff,twinkle,1,1.0,3x3 tiles 16 frames,pack
-65,2420,grasping_hand,Grasping Hand Wings,bone,finger,7450a3,351f53,c8a8ff,none,1,1.0,3x3 tiles 20 frames,pack
-66,2421,grave_bone,Grave Bone Wings,bone,rib,9b9686,4f4d44,eee9d4,none,0,1.0,3x3 tiles 20 frames,pack
-67,2422,halo_ray,Halo Ray Wings,energy,ray,fae098,ffffff,fffef5,twinkle,2,1.0,4x4 tiles 16 frames,pack
-68,2423,hawk_plume,Hawk Plume Wings,feather,pinion,57311e,bfa27a,d4e6e8,none,1,1.0,3x3 tiles 20 frames,pack
-69,2424,heraldic_eagle,Heraldic Eagle Wings,feather,angel,e7b33b,a86a18,fff1a9,none,1,1.0,4x3 tiles 24 frames,pack
-70,2425,icarus_wax,Icarus Wax Wings,feather,pinion,ddb680,fff0c0,fddd81,fall,-1,0.95,3x3 tiles 24 frames,pack
-71,2426,icicle_harp,Icicle Harp Wings,crystal,needle,65a2dd,3b70b7,fefeff,fall,0,1.0,4x4 tiles 20 frames,pack
-72,2427,ink_splash,Ink Splash Wings,energy,water,1f336d,4a6ac0,c8e2ff,fall,1,1.0,4x4 tiles 16 frames,pack
-73,2428,ivy_leaf,Ivy Leaf Wings,leaf,oval,38833b,7ab04a,abdb6e,none,1,1.0,3x3 tiles 20 frames,pack
-74,2429,jellyfish,Jellyfish Wings,energy,veil,6f72c4,c6ccf7,e3f7ff,fall,-2,0.95,3x3 tiles 24 frames,pack
-75,2430,koi_fin,Koi Fin Wings,fan,web,c2411d,fcaa5c,fff1e1,none,-1,1.0,4x4 tiles 20 frames,pack
-76,2431,lace_fan,Lace Fan Wings,fan,web,875b2b,fcfbff,ffffff,none,1,1.0,4x4 tiles 20 frames,pack
-77,2432,lava_rock,Lava Rock Wings,bat,gargoyle,3d3235,e05a18,ff9f2c,rise,-1,1.05,4x3 tiles 24 frames,pack
-78,2433,magic_circle,Magic Circle Wings,orbit,circle,5a3ab0,e3c7ff,fffcff,twinkle,0,1.0,4x4 tiles 24 frames,pack
-79,2434,maple_leaf,Maple Leaf Wings,leaf,maple,cc301d,85380b,eab935,fall,0,1.0,3x3 tiles 20 frames,pack
-80,2435,mirror_pane,Mirror Pane Wings,crystal,pane,b8d0e8,a86e1e,e9f1fc,twinkle,0,1.0,4x3 tiles 20 frames,pack
-81,2436,monarch,Monarch Wings,insect,butterfly,eb7813,2a1a14,f9f9fb,none,0,0.95,4x3 tiles 16 frames,pack
-82,2437,nebula,Nebula Wings,energy,cloud,791a79,0f637a,fdfdff,twinkle,-1,1.0,4x4 tiles 24 frames,pack
-83,2438,nightmare_bat,Nightmare Bat Wings,bat,torn,4f2073,4b475b,dcdce6,none,1,1.0,4x3 tiles 16 frames,pack
-84,2439,obsidian_blade,Obsidian Blade Wings,fan,blade,392569,ab82ea,ebd2ff,twinkle,1,1.0,3x3 tiles 20 frames,pack
-85,2440,ophanim_eye,Ophanim Eye Wings,feather,seraph,f4e5cd,e7b13c,8fd0ff,twinkle,-1,1.0,4x4 tiles 24 frames,pack
-86,2441,origami_crane,Origami Crane Wings,fan,kite,b2d0eb,324770,eaf5f9,none,1,1.0,4x3 tiles 20 frames,pack
-87,2442,pearl_scallop,Pearl Scallop Wings,fan,web,cc707c,f1c4ba,fdfafa,twinkle,-2,1.0,3x3 tiles 16 frames,pack
-88,2443,petal_bloom,Petal Bloom Wings,leaf,petal,ec849e,8d1f4c,ffe880,fall,0,1.0,4x4 tiles 20 frames,pack
-89,2444,pinwheel,Pinwheel Wings,fan,kite,e64841,fedb54,49c3c0,none,2,1.0,4x4 tiles 16 frames,pack
-90,2445,prism,Prism Wings,crystal,prism,d03b4c,e5b82f,eaf1f7,twinkle,0,1.0,3x3 tiles 20 frames,pack
-91,2446,pterosaur,Pterosaur Wings,bat,dragon,707632,a27f53,f7e4b4,none,1,1.0,3x3 tiles 20 frames,pack
-92,2447,pyre_seraph,Pyre Seraph Wings,feather,seraph,e05919,fed477,fff8d6,rise,0,1.05,4x4 tiles 24 frames,pack
-93,2448,rain_veil,Rain Veil Wings,energy,water,516e9a,b8d0f0,e1effa,fall,2,1.0,4x4 tiles 20 frames,pack
-94,2449,reed_pipe,Reed Pipe Wings,fan,pipe,8c5a32,96b858,edea9f,none,0,1.0,3x3 tiles 20 frames,pack
-95,2450,rib_bone,Rib Bone Wings,bone,rib,b09e83,7f6c57,fcf7e4,none,0,0.92,3x3 tiles 20 frames,pack
-96,2451,rose_window,Rose Window Wings,crystal,pane,ea3652,28cc6d,ffd958,twinkle,0,0.95,4x4 tiles 20 frames,pack
-97,2452,rune_sigil,Rune Sigil Wings,feather,scaled,bd8122,ffd462,f0cdff,twinkle,-1,1.0,3x3 tiles 20 frames,pack
-98,2453,salamander_fan,Salamander Fan Wings,fan,web,9b451d,e8902c,ffbc4d,rise,2,1.0,3x3 tiles 16 frames,pack
-99,2454,samara_spin,Samara Spin Wings,insect,dragonfly,c0a25c,895125,e0fff6,none,0,0.95,3x3 tiles 16 frames,pack
-100,2455,sand_dune,Sand Dune Wings,feather,owl,cc9740,89551d,fbe7aa,fall,2,1.05,4x4 tiles 20 frames,pack
-101,2456,shackle_chain,Shackle Chain Wings,bone,wire,535065,2a2737,b0adc3,none,1,1.0,3x3 tiles 20 frames,pack
-102,2457,shadow_smoke,Shadow Smoke Wings,energy,cloud,4a3874,2a1c44,9a80e0,none,-2,1.0,4x3 tiles 20 frames,pack
-103,2458,sky_dragonfly,Sky Dragonfly Wings,insect,dragonfly,81b9e8,235198,9acbf0,twinkle,0,1.0,3x3 tiles 16 frames,pack
-104,2459,slate_plate,Slate Plate Wings,fan,tile,545968,3e2a1a,aab0bd,none,0,1.0,3x3 tiles 24 frames,pack
-105,2460,snow_owl,Snow Owl Wings,feather,owl,c4d1e9,353c54,fafcff,fall,0,1.0,3x3 tiles 20 frames,pack
-106,2461,snowflake,Snowflake Wings,crystal,flake,9bcdf4,e3f5fe,fafdff,fall,0,1.0,4x3 tiles 20 frames,pack
-107,2462,solar_flare,Solar Flare Wings,energy,water,ee6e1a,feb23f,fff8c7,rise,-1,1.0,4x4 tiles 20 frames,pack
-108,2463,soot_moth,Soot Moth Wings,insect,moth,4e4d54,95959d,dedee0,fall,0,0.95,3x3 tiles 16 frames,pack
-109,2464,squall_kite,Squall Kite Wings,fan,kite,22878d,e8d8b0,e6fff5,none,0,1.0,4x3 tiles 16 frames,pack
-110,2465,star_gossamer,Star Gossamer Wings,insect,fairy,e3c4f9,8892b6,ffffff,twinkle,0,0.95,3x3 tiles 16 frames,pack
-111,2466,storm_gull,Storm Gull Wings,feather,swift,748196,292f3d,eaf8ff,none,1,1.0,4x3 tiles 20 frames,pack
-112,2467,sun_disc,Sun Disc Wings,energy,ray,c8963c,1d3eae,fff6c8,none,0,0.95,4x4 tiles 20 frames,pack
-113,2468,sunflower,Sunflower Wings,leaf,flower,3a7a2c,4c2d15,fcce35,none,0,1.0,4x3 tiles 16 frames,pack
-114,2469,swallow_tail,Swallow Tail Wings,feather,swift,1f2f65,e8ecf8,fefeff,none,-1,0.94,3x3 tiles 16 frames,pack
-115,2470,terracotta_tile,Terracotta Tile Wings,fan,tile,b3552a,81361e,fbca99,none,1,1.0,3x3 tiles 20 frames,pack
-116,2471,tide_swan,Tide Swan Wings,feather,angel,57c8dc,e8fcff,eef8fd,fall,0,1.0,4x3 tiles 24 frames,pack
-117,2472,tornado_funnel,Tornado Funnel Wings,energy,spiral,71819b,c8d8e8,fcfeff,none,0,1.0,3x3 tiles 20 frames,pack
-118,2473,void_raven,Void Raven Wings,feather,pinion,3a2369,7a52c0,c8a8ff,twinkle,0,1.0,4x3 tiles 20 frames,pack
-119,2474,volt_bat,Volt Bat Wings,bat,bat,1a407f,354155,ffffff,twinkle,0,1.0,3x3 tiles 16 frames,pack
-120,2475,whirlpool,Whirlpool Wings,energy,spiral,163678,55a0da,afe0f8,fall,1,1.0,4x3 tiles 20 frames,pack
-121,2476,zephyr_ribbon,Zephyr Ribbon Wings,fan,ribbon,69c6ad,fdf4d5,fffbe6,none,0,1.0,3x3 tiles 24 frames,pack
+wings,look,key,name,family,variant,main,accent,glow,spark,n,size,env,tips,core,beat,fit,old,source
+1,937,fiery,Fiery Wings,feather,pinion,deb28d,a21123,ffd890,rise,0,1.0,0 11 27 32 29 25 22 21 15 6 8 7 0,2,0 5 0 0 0 0 8 10 0 0 3 4 0,0.00,,2x2 tiles 3 frames,store
+2,938,lullaby,Lullaby Wings,insect,butterfly,434c86,cab88c,ece2c9,twinkle,0,1.0,0 5 10 19 28 26 24 22 20 18 15 11 0,0,0 3 4 0 0 0 0 0 0 0 0 0 0,0.15,,2x2 tiles 4 frames,store
+3,939,elderleaf,Elderleaf Wings,leaf,oval,8a4d13,145d61,d5e189,fall,0,1.0,0 21 28 43 38 32 26 20 29 29 20 8 0,3,0 0 0 0 0 0 0 0 0 0 0 4 0,0.08,,2x2 tiles 4 frames,store
+4,940,vampire,Vampire Wings,bat,bat,292929,444444,6b6b6b,none,0,1.0,0 26 25 39 37 28 17 15 4 0 0 0 0,1,0 13 11 0 0 0 6 0 3 0 0 0 0,0.14,,3x3 tiles 4 frames,store
+5,941,bark,Bark Wings,feather,owl,893d36,d37961,f6ab93,none,0,1.0,0 8 13 14 18 25 26 22 13 10 7 5 0,0,0 4 5 5 0 0 0 0 0 4 3 3 0,0.15,,2x2 tiles 3 frames,store
+6,1177,electric_rider,Electric Rider Wings,bat,dragon,4b3d29,a27c52,eed6b1,twinkle,0,0.95,29 31 39 34 28 26 19 21 19 4 5 6 0,2,20 19 16 0 10 0 7 8 0 2 3 4 0,,,2x2 tiles 1 frames,store
+7,1178,vorondor_flames,Vorondor Flames,energy,flame,d17a00,f3f596,fff6b0,rise,0,1.0,0 46 49 41 35 31 23 10 8 7 5 0 0,0,0 18 19 15 0 0 0 4 4 0 3 0 0,,0.78,3x3 tiles 1 frames,store
+8,1179,mortis_mirage,Mortis Mirage,feather,plume,010101,090909,8fe0d8,fall,0,1.0,44 43 45 41 35 29 23 18 15 12 10 8 0,2,19 18 18 15 0 0 0 0 0 5 4 4 0,,,3x3 tiles 1 frames,store
+9,1180,angelic,Angelic Wings,feather,angel,daccb1,c7b48f,fbf5eb,twinkle,0,1.0,0 0 27 28 27 31 28 25 29 18 18 10 0,0,0 0 14 12 9 0 0 0 0 0 0 4 0,,,2x2 tiles 1 frames,store
+10,1181,nimbus,Nimbus Wings,feather,swift,0f0f0e,191b18,c8fff4,twinkle,0,1.0,0 30 36 39 36 32 29 22 18 12 11 8 0,4,0 22 20 18 14 0 0 0 0 0 4 4 0,,,3x3 tiles 1 frames,store
+11,1182,butterfly,Butterfly Wings,insect,butterfly,fdaf31,4b1ba5,fffffe,none,0,1.05,0 10 15 19 21 25 24 24 22 11 6 7 0,1,0 4 0 0 0 0 0 0 0 0 3 4 0,,,2x2 tiles 1 frames,store
+12,1183,dreadbone_spectra,Dreadbone Spectra,bone,finger,01b8fa,dfefef,fcfcfc,rise,0,1.0,0 13 41 34 31 26 19 13 5 4 5 0 0,2,0 5 0 14 0 9 8 6 3 2 3 0 0,,0.94,3x3 tiles 1 frames,store
+13,1184,enslaved,Enslaved Wings,bone,wire,bcbcbc,2d2d2d,d8d8d9,none,0,1.0,0 17 22 34 32 31 22 14 20 17 9 6 0,1,0 0 0 0 0 0 0 5 0 0 3 4 0,,,3x3 tiles 1 frames,store
+14,1185,bride,Bride Wings,bat,dragon,c30e0d,f5963b,ffc261,rise,-1,1.0,27 25 25 26 30 32 34 30 13 0 0 0 0,1,22 19 18 13 0 0 0 0 0 0 0 0 0,0.22,,2x2 tiles 8 frames,store
+15,1186,strength,Strength Wings,feather,seraph,9a0400,b9babf,c6b8a4,none,0,1.0,0 9 25 35 35 25 23 32 33 26 5 0 0,2,0 6 11 0 0 0 0 20 19 0 3 0 0,0.38,,2x2 tiles 4 frames,store
+16,1486,cinder_plumes,Cinder Plumes,feather,plume,e6c498,9f1330,ebd1a3,rise,1,1.0,0 12 34 33 30 24 21 19 17 11 7 0 0,1,0 4 0 0 0 0 0 0 0 0 3 0 0,0.00,,2x2 tiles 3 frames,boss
+17,2140,bloodthorn_pinions,Bloodthorn Pinions,bat,demon,8c0d10,3d3632,835b55,none,0,1.0,9 8 8 8 29 38 38 37 38 17 21 19 9,2,7 3 3 0 0 0 0 0 0 0 0 7 6,0.14,,3x3 tiles 8 frames,achievement
+18,2141,gravecrow,Gravecrow Wings,feather,pinion,292829,353435,c8c8d8,fall,-1,1.0,13 25 30 43 37 22 27 15 6 4 0 0 0,1,9 10 10 0 13 0 0 10 3 2 0 0 0,0.27,0.88,3x3 tiles 9 frames,achievement
+19,2142,riftglass,Riftglass Wings,crystal,cluster,ad3ae6,d9aafa,f1e1fe,twinkle,0,1.0,26 41 39 42 37 33 29 25 17 13 12 13 10,2,14 0 16 0 0 0 0 0 0 5 4 5 8,0.29,0.94,3x3 tiles 9 frames,achievement
+20,2187,runic,Runic Wings,feather,angel,ffffff,f0f3ee,ffffff,twinkle,-1,1.0,0 6 10 29 29 24 17 13 12 8 6 6 0,1,0 4 4 0 0 0 0 5 4 0 3 4 0,0.16,,3x3 tiles 8 frames,boss
+21,2225,jadeleaf_pinions,Jadeleaf Pinions,feather,plume,a2ed64,44bf1e,a6ee6e,none,0,1.0,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.22,0.88,3x3 tiles 9 frames,store
+22,2226,tidewing_plumes,Tidewing Plumes,feather,plume,36bbc7,164c50,40dcea,fall,-1,1.0,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.31,0.83,3x3 tiles 9 frames,store
+23,2227,duskfeather,Duskfeather Wings,feather,plume,6c12b1,540e8a,e0a0ff,twinkle,1,0.95,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.31,0.94,3x3 tiles 9 frames,store
+24,2228,emberplume,Emberplume Wings,feather,plume,8c3100,c64600,d54b00,rise,-1,1.05,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.31,0.78,3x3 tiles 9 frames,store
+25,2229,wildgrove,Wildgrove Wings,feather,plume,00d300,005500,00d500,none,2,0.92,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.31,0.88,3x3 tiles 9 frames,store
+26,2230,bloodfeather,Bloodfeather Wings,feather,plume,cf0000,a10000,d50000,none,0,1.06,0 30 49 47 40 34 25 27 17 13 14 13 12,2,0 0 19 0 0 0 0 0 0 5 0 5 8,0.31,0.83,3x3 tiles 9 frames,store
+27,2231,gloomgild,Gloomgild Wings,feather,scaled,392950,2f2641,ffd9a0,twinkle,0,1.0,0 14 22 27 39 36 30 17 15 11 7 0 0,0,0 9 8 0 0 0 0 0 0 4 3 0 0,0.25,,3x3 tiles 8 frames,boss
+28,2232,sunforged,Sunforged Wings,feather,scaled,ca5728,faa874,ffe0b7,rise,1,1.0,0 14 22 27 39 36 30 17 15 11 7 0 0,0,0 9 8 0 0 0 0 0 0 4 3 0 0,0.25,0.94,3x3 tiles 8 frames,boss
+29,2233,starmoth,Starmoth Wings,insect,moth,885d92,3b1b48,ffdfff,twinkle,0,1.0,0 37 34 33 30 29 28 26 22 11 0 0 0,6,0 15 12 0 0 0 0 0 8 0 0 0 0,0.14,,3x3 tiles 5 frames,boss
+30,2385,amber_sap,Amber Sap Wings,crystal,drop,c1660e,924307,fbc655,fall,0,1.0,0 27 28 26 25 24 25 26 17 9 8 6 0,0,0 12 12 11 10 11 11 11 0 0 3 4 0,0.20,,3x3 tiles 16 frames,pack
+31,2386,arc_bolt,Arc Bolt Wings,energy,bolt,dbd9ff,917df5,e8e5ff,twinkle,0,1.0,0 12 26 31 34 29 16 13 13 8 8 5 0,0,0 0 13 11 0 0 6 6 0 0 3 3 0,0.42,,4x3 tiles 16 frames,pack
+32,2387,aurora_veil,Aurora Veil Wings,energy,veil,32b5b7,d8b6fd,f4fafa,twinkle,0,1.0,8 22 29 32 36 35 18 7 0 0 0 0 0,0,7 12 0 0 0 0 0 4 0 0 0 0 0,0.50,0.94,4x4 tiles 24 frames,pack
+33,2388,banner,Banner Wings,fan,slat,942729,542a1f,fbe48a,none,0,1.0,0 27 29 33 31 30 32 11 2 2 0 0 0,0,0 18 15 13 0 11 0 5 1 1 0 0 0,0.40,,3x3 tiles 24 frames,pack
+34,2389,bark_owl,Bark Owl Wings,feather,owl,39281c,664b33,a6855d,none,1,1.0,0 15 32 33 34 32 32 24 14 8 6 5 0,0,0 10 22 21 20 19 14 0 0 0 3 3 0,0.44,,3x3 tiles 20 frames,pack
+35,2390,blaze_dragon,Blaze Dragon Wings,bat,dragon,561617,86351c,f0983a,rise,0,1.05,0 27 30 30 34 36 24 16 14 9 5 0 0,0,0 19 19 18 17 15 11 0 0 0 3 0 0,0.50,,4x4 tiles 24 frames,pack
+36,2391,bonsai_branch,Bonsai Branch Wings,leaf,oval,35893b,5a3a22,9bdb6b,none,-1,1.0,8 21 23 26 30 35 38 39 22 16 9 0 0,0,6 12 15 15 16 17 17 0 0 6 0 0 0,0.40,,4x3 tiles 24 frames,pack
+37,2392,boulder_beetle,Boulder Beetle Wings,insect,beetle,645227,fac451,fac451,none,0,1.0,5 27 28 29 33 38 35 29 21 12 10 9 0,0,4 0 11 11 0 13 0 11 0 4 4 4 0,0.15,,3x3 tiles 16 frames,pack
+38,2393,brass_fan,Brass Fan Wings,fan,web,502b10,864e1d,ca9b54,none,0,1.0,0 5 6 7 10 23 35 39 38 35 28 18 16,0,0 3 3 3 0 0 0 0 0 0 0 0 9,0.37,,3x3 tiles 20 frames,pack
+39,2394,briar_rose,Briar Rose Wings,leaf,needle,2c5a3a,7a1224,d9414e,none,0,1.0,0 5 17 39 42 39 29 13 8 4 0 0 0,0,0 3 0 0 0 0 0 5 3 2 0 0 0,0.43,0.88,4x4 tiles 20 frames,pack
+40,2395,bubble_fairy,Bubble Fairy Wings,insect,fairy,5099d9,c8e8ff,fdfeff,rise,0,1.0,24 30 31 30 28 31 31 22 7 5 5 0 0,0,13 15 13 12 12 13 0 0 3 2 3 0 0,0.38,,3x3 tiles 16 frames,pack
+41,2396,burning_chain,Burning Chain Wings,bat,torn,563428,fea52b,ffeb81,rise,0,1.0,0 33 34 32 31 24 21 20 14 3 3 3 0,1,0 13 12 0 0 9 11 12 0 2 1 2 0,0.45,,4x3 tiles 20 frames,pack
+42,2397,cherub,Cherub Wings,feather,owl,f5dbe0,efb7bb,fcede8,twinkle,-1,0.9,0 13 29 33 37 38 26 21 16 11 5 0 0,0,0 8 17 19 19 15 11 0 0 0 3 0 0,0.41,,4x3 tiles 16 frames,pack
+43,2398,cinder_bat,Cinder Bat Wings,bat,bat,592220,3c1f20,f6b44e,rise,1,1.0,0 13 30 33 36 35 24 16 15 9 8 0 0,1,0 8 20 17 17 14 11 6 0 0 3 0 0,0.35,,4x3 tiles 16 frames,pack
+44,2399,clockwork,Clockwork Wings,fan,blade,ae7331,55627b,eaf2fe,none,0,0.95,36 36 33 30 29 20 17 15 9 4 5 6 0,0,32 13 12 11 0 9 9 8 3 2 3 3 0,0.29,,3x3 tiles 24 frames,pack
+45,2400,cloud_puff,Cloud Puff Wings,energy,cloud,c7d0e4,99a4c3,f8fafd,none,0,1.0,0 32 33 36 35 34 28 22 18 12 10 7 0,0,0 0 15 16 14 0 0 0 0 0 4 4 0,0.36,,3x3 tiles 20 frames,pack
+46,2401,dandelion_seed,Dandelion Seed Wings,leaf,fern,c1bfb6,f1efe3,fefbec,rise,0,1.0,0 6 7 9 17 27 33 39 41 25 22 10 0,0,0 3 3 3 0 0 16 20 0 0 0 0 0,0.37,0.94,3x3 tiles 20 frames,pack
+47,2402,dawn_seraph,Dawn Seraph Wings,feather,seraph,f3e3c9,a2846a,fcedd9,twinkle,1,1.0,0 12 14 13 33 39 37 33 33 29 27 26 25,2,0 5 0 5 0 25 23 22 20 18 18 18 20,0.51,0.94,4x4 tiles 24 frames,pack
+48,2403,deathshead_moth,Deathshead Moth Wings,insect,moth,706458,3a302a,e8e0c8,none,0,1.05,0 19 29 32 29 25 25 10 9 0 0 0 0,1,0 11 0 11 0 9 0 5 4 0 0 0 0,0.37,,3x3 tiles 16 frames,pack
+49,2404,deep_ray,Deep Ray Wings,insect,ray,183564,bcddec,e0f1f8,fall,0,1.0,0 0 4 10 37 39 25 14 10 6 0 0 0,1,0 0 2 0 0 0 0 0 4 0 0 0 0,0.35,0.94,4x4 tiles 24 frames,pack
+50,2405,demon_rend,Demon Rend Wings,bat,demon,380a11,623935,e7dabd,none,1,1.05,0 26 30 33 35 35 32 18 11 8 5 0 0,0,0 17 19 17 19 19 14 0 4 0 3 0 0,0.43,,4x3 tiles 24 frames,pack
+51,2406,dove_feather,Dove Feather Wings,feather,swift,e5e2db,ebd9b2,f4f6fc,none,0,0.95,0 29 29 28 26 24 25 14 6 6 5 0 0,1,0 21 19 17 14 11 0 5 3 0 3 0 0,0.51,,3x3 tiles 20 frames,pack
+52,2407,ember_hawk,Ember Hawk Wings,feather,pinion,422c21,e97c24,ffdb78,rise,0,1.0,0 27 27 30 31 32 32 27 21 14 10 8 0,1,0 21 20 21 20 21 19 17 0 5 4 4 0,0.56,,3x3 tiles 20 frames,pack
+53,2408,fern_frond,Fern Frond Wings,leaf,fern,2d5824,48933b,aedc6b,none,2,1.0,0 17 29 30 31 37 35 28 10 9 7 8 0,0,0 0 0 0 0 0 0 0 4 0 3 4 0,0.38,0.94,4x3 tiles 20 frames,pack
+54,2409,firefly_swarm,Firefly Swarm Wings,orbit,firefly,9fd041,f8fc96,f8fc96,twinkle,0,1.0,0 0 0 30 44 37 26 9 6 0 0 0 0,1,0 0 0 0 0 0 0 4 4 0 0 0 0,0.60,,4x4 tiles 20 frames,pack
+55,2410,firework_burst,Firework Burst Wings,energy,ray,b1181a,fdc93d,fffffa,twinkle,1,1.0,11 17 18 26 36 39 34 29 25 22 21 11 9,1,8 0 0 0 0 0 0 0 9 8 0 6 8,0.49,0.94,4x4 tiles 16 frames,pack
+56,2411,flame_luna,Flame Luna Wings,insect,moth,ac2810,ffcf71,fffcd6,rise,0,1.0,14 15 13 14 34 39 34 28 27 26 26 28 30,1,8 0 4 0 0 17 12 10 10 9 10 0 13,0.24,,4x3 tiles 16 frames,pack
+57,2412,flame_pinions,Flame Pinions,energy,flame,e76619,fdb53e,fff4b9,rise,1,1.0,26 27 26 25 25 25 26 19 13 9 5 0 0,1,18 18 17 15 14 13 11 0 0 0 3 0 0,0.51,,4x3 tiles 20 frames,pack
+58,2413,foam_crest,Foam Crest Wings,energy,water,105766,208b94,e6f4fb,fall,0,1.0,15 30 30 29 29 29 28 36 41 42 34 14 0,0,9 17 16 14 13 12 0 0 0 0 16 7 0,0.46,0.94,4x3 tiles 20 frames,pack
+59,2414,frost_crystal,Frost Crystal Wings,crystal,shard,437ece,a8d0ff,fbfeff,twinkle,0,1.0,31 31 28 27 27 29 29 20 9 6 5 0 0,2,19 19 15 13 11 10 0 0 3 0 3 0 0,0.43,,4x3 tiles 20 frames,pack
+60,2415,gale_streak,Gale Streak Wings,energy,ray,7ec3d1,e1f9fa,fafefe,none,-1,1.0,25 27 28 27 30 32 33 25 18 11 8 6 0,4,10 10 12 13 13 13 14 0 0 0 3 4 0,0.50,0.73,3x3 tiles 16 frames,pack
+61,2416,gargoyle,Gargoyle Wings,bat,gargoyle,32323b,4b4b55,848492,none,0,1.0,0 10 22 27 31 35 28 20 19 19 15 11 0,0,0 7 12 15 12 13 10 9 12 8 6 5 0,0.44,,3x3 tiles 24 frames,pack
+62,2417,geode,Geode Wings,crystal,cluster,605255,443c38,d0b0e2,none,-1,1.0,0 19 26 32 32 30 27 23 0 0 0 0 0,0,0 9 10 11 0 11 10 10 0 0 0 0 0,0.20,,4x3 tiles 24 frames,pack
+63,2418,gold_peacock,Gold Peacock Wings,feather,peacock,2f9b83,f1c955,fff7bc,twinkle,0,1.0,0 34 34 35 36 35 34 20 12 7 6 0 0,0,0 27 22 19 17 16 13 0 0 0 3 0 0,0.28,,4x3 tiles 24 frames,pack
+64,2419,gossamer_fairy,Gossamer Fairy Wings,insect,fairy,bca0d9,90bfdc,c0c8d8,twinkle,1,1.0,0 21 23 25 27 26 32 31 22 15 11 9 0,1,0 0 0 0 0 0 0 0 0 6 4 4 0,0.32,,3x3 tiles 16 frames,pack
+65,2420,grasping_hand,Grasping Hand Wings,bone,finger,7450a3,351f53,c8a8ff,none,1,1.0,0 6 17 43 44 36 25 8 4 0 0 0 0,0,0 3 0 0 0 0 0 4 3 0 0 0 0,0.50,0.83,3x3 tiles 20 frames,pack
+66,2421,grave_bone,Grave Bone Wings,bone,rib,4d4a42,7e7a6c,e0dbc5,none,0,1.0,0 18 21 24 31 35 35 31 21 20 16 11 0,0,0 11 11 14 14 14 17 17 16 12 8 6 0,0.44,,3x3 tiles 20 frames,pack
+67,2422,halo_ray,Halo Ray Wings,energy,ray,fae098,ffffff,fffef5,twinkle,2,1.0,0 20 24 28 32 37 38 19 17 12 4 0 0,1,0 13 14 15 16 18 16 0 0 0 2 0 0,0.43,,4x4 tiles 16 frames,pack
+68,2423,hawk_plume,Hawk Plume Wings,feather,pinion,412619,886749,d4e6e8,none,1,1.0,0 14 28 29 29 30 31 27 16 10 8 7 0,1,0 10 18 19 17 17 17 12 0 0 3 4 0,0.51,,3x3 tiles 20 frames,pack
+69,2424,heraldic_eagle,Heraldic Eagle Wings,feather,angel,f8ce59,d7a12e,fff1a9,none,1,1.0,0 22 24 27 30 34 38 33 25 17 14 12 10,0,0 14 16 15 15 16 18 18 15 6 0 5 8,0.31,,4x3 tiles 24 frames,pack
+70,2425,icarus_wax,Icarus Wax Wings,feather,pinion,f3dda2,deb67b,f7e2a4,fall,-1,0.95,13 30 32 33 34 35 35 25 23 15 10 4 0,0,10 19 23 22 20 18 15 0 0 0 0 3 0,0.44,,3x3 tiles 24 frames,pack
+71,2426,icicle_harp,Icicle Harp Wings,crystal,needle,65a2dd,3b70b7,fefeff,fall,0,1.0,0 18 27 33 37 36 9 9 0 0 0 0 0,0,0 9 10 0 0 0 4 4 0 0 0 0 0,0.46,,4x4 tiles 20 frames,pack
+72,2427,ink_splash,Ink Splash Wings,energy,water,1f336d,4a6ac0,c8e2ff,fall,1,1.0,0 16 33 35 38 39 31 20 18 18 18 19 19,1,0 0 12 0 0 0 0 0 0 0 0 0 17,0.44,0.88,4x4 tiles 16 frames,pack
+73,2428,ivy_leaf,Ivy Leaf Wings,leaf,oval,38833b,7ab04a,abdb6e,none,1,1.0,0 6 5 6 31 37 38 39 36 25 12 6 0,3,0 3 3 0 0 19 18 0 0 0 0 3 0,0.51,,3x3 tiles 20 frames,pack
+74,2429,jellyfish,Jellyfish Wings,energy,veil,c5d4f7,6a6bbf,d7eafb,fall,-2,0.95,0 23 25 26 27 35 36 34 15 11 9 6 0,0,0 9 11 12 12 14 14 0 0 0 3 4 0,0.19,0.94,3x3 tiles 24 frames,pack
+75,2430,koi_fin,Koi Fin Wings,fan,web,c2411d,fcaa5c,fff1e1,none,-1,1.0,0 32 32 32 33 33 33 22 6 6 5 0 0,0,0 19 15 13 13 13 0 0 3 0 3 0 0,0.33,,4x4 tiles 20 frames,pack
+76,2431,lace_fan,Lace Fan Wings,fan,web,875b2b,fcfbff,ffffff,none,1,1.0,12 12 14 17 26 35 38 37 33 24 19 18 13,0,8 5 0 0 0 0 0 0 0 0 7 0 8,0.14,,4x4 tiles 20 frames,pack
+77,2432,lava_rock,Lava Rock Wings,bat,gargoyle,3d3235,e05a18,ff9f2c,rise,-1,1.05,27 29 27 26 25 28 30 23 9 6 0 0 0,0,19 18 17 14 11 11 11 0 0 4 0 0 0,0.40,,4x3 tiles 24 frames,pack
+78,2433,magic_circle,Magic Circle Wings,orbit,circle,5a3ab0,e3c7ff,fffcff,twinkle,0,1.0,0 29 32 34 34 36 36 16 12 7 0 0 0,1,0 20 19 18 18 15 13 0 0 0 0 0 0,0.23,,4x4 tiles 24 frames,pack
+79,2434,maple_leaf,Maple Leaf Wings,leaf,maple,cc301d,85380b,eab935,fall,0,1.0,16 22 22 20 25 26 31 32 31 20 15 14 12,2,9 9 9 10 12 13 15 17 16 12 8 6 8,0.40,,3x3 tiles 20 frames,pack
+80,2435,mirror_pane,Mirror Pane Wings,crystal,pane,b8d0e8,a86e1e,e9f1fc,twinkle,0,1.0,7 18 23 25 32 37 38 33 26 19 14 10 0,0,4 0 10 11 12 13 14 0 0 0 0 4 0,0.22,,4x3 tiles 20 frames,pack
+81,2436,monarch,Monarch Wings,insect,butterfly,e16c11,d5d3da,f0eff3,none,0,0.95,6 24 30 34 36 36 38 38 15 10 10 10 6,0,4 0 11 12 0 13 15 14 0 4 4 4 4,0.28,,4x3 tiles 16 frames,pack
+82,2437,nebula,Nebula Wings,energy,nebula,791a79,0f637a,fdfdff,twinkle,-1,1.0,12 19 22 28 32 35 38 33 23 12 12 9 10,0,8 0 8 0 0 13 0 0 0 4 4 4 8,0.20,,4x4 tiles 24 frames,pack
+83,2438,nightmare_bat,Nightmare Bat Wings,bat,torn,4f2073,4b475b,dcdce6,none,1,1.0,7 9 21 24 28 33 35 32 26 23 18 15 12,1,5 5 9 11 15 15 17 19 19 17 12 9 8,0.57,,4x3 tiles 16 frames,pack
+84,2439,obsidian_blade,Obsidian Blade Wings,fan,blade,0e0a18,261a40,ebd2ff,twinkle,1,1.0,0 22 24 26 31 36 34 26 25 23 18 12 0,2,0 16 13 12 13 14 15 14 0 0 0 5 0,0.34,,3x3 tiles 20 frames,pack
+85,2440,ophanim_eye,Ophanim Eye Wings,feather,seraph,f2e6ce,e5be68,fcf8e9,twinkle,-1,1.0,0 30 30 28 27 32 38 35 37 34 23 16 10,1,0 0 20 17 13 12 0 0 0 0 0 6 8,0.25,,4x4 tiles 24 frames,pack
+86,2441,origami_crane,Origami Crane Wings,fan,fold,b2d0eb,324770,eaf5f9,none,1,1.0,0 0 0 4 4 26 32 39 37 24 18 10 7,0,0 0 0 2 0 0 17 19 0 0 0 4 6,0.60,,4x3 tiles 20 frames,pack
+87,2442,pearl_scallop,Pearl Scallop Wings,fan,shell,e8afaa,f1d2ce,f8ebe7,twinkle,-2,1.0,0 7 7 7 16 30 31 28 25 20 16 16 0,0,0 4 3 0 0 12 12 11 9 8 7 7 0,0.20,,3x3 tiles 16 frames,pack
+88,2443,petal_bloom,Petal Bloom Wings,leaf,petal,ec849e,8d1f4c,ffe880,fall,0,1.0,7 16 22 27 32 37 38 34 25 20 14 8 0,0,4 0 0 10 0 0 0 13 0 0 0 4 0,0.25,,4x4 tiles 20 frames,pack
+89,2444,pinwheel,Pinwheel Wings,fan,kite,75472e,a3d9d7,edf7f9,none,2,1.0,0 25 27 33 34 37 36 19 19 14 5 0 0,2,0 16 16 18 19 18 16 0 0 0 3 0 0,0.36,,4x4 tiles 16 frames,pack
+90,2445,prism,Prism Wings,crystal,prism,dabe96,937683,f4e7b1,twinkle,0,1.0,0 28 30 30 29 28 25 24 13 8 5 0 0,0,0 20 21 19 17 14 11 0 0 0 3 0 0,0.51,,3x3 tiles 20 frames,pack
+91,2446,pterosaur,Pterosaur Wings,bat,dragon,6f6f33,3f3c1c,dac491,none,1,1.0,0 15 27 33 32 21 23 12 7 0 0 0 0,0,0 11 11 0 0 0 0 5 3 0 0 0 0,0.43,,3x3 tiles 20 frames,pack
+92,2447,pyre_seraph,Pyre Seraph Wings,feather,seraph,feda86,e16c1f,fff8d6,rise,0,1.05,0 32 31 32 31 32 34 20 12 7 0 0 0,0,0 19 19 19 19 16 14 0 4 0 0 0 0,0.49,,4x4 tiles 24 frames,pack
+93,2448,rain_veil,Rain Veil Wings,energy,rain,516e9a,b8d0f0,e1effa,fall,2,1.0,0 21 31 35 34 24 21 15 33 26 22 8 0,2,0 10 0 0 0 0 0 8 16 0 0 4 0,0.50,,4x4 tiles 20 frames,pack
+94,2449,reed_pipe,Reed Pipe Wings,fan,pipe,6d602e,8c9f4e,dfe197,none,0,1.0,0 21 24 31 29 26 16 9 0 0 0 0 0,0,0 0 0 0 0 0 6 5 0 0 0 0 0,0.40,,3x3 tiles 20 frames,pack
+95,2450,rib_bone,Rib Bone Wings,bone,rib,99866e,614840,e9dec6,none,0,0.92,26 28 29 29 30 31 28 21 15 11 9 5 0,0,15 14 15 13 13 13 10 0 0 0 3 3 0,0.39,,3x3 tiles 20 frames,pack
+96,2451,rose_window,Rose Window Wings,crystal,pane,f5c957,a42d3c,fbe37f,twinkle,0,0.95,0 0 6 34 44 28 0 0 0 0 0 0 0,1,0 0 2 0 0 0 0 0 0 0 0 0 0,0.36,0.88,4x4 tiles 20 frames,pack
+97,2452,rune_sigil,Rune Sigil Wings,feather,scaled,f7d389,e4b246,f0cdff,twinkle,-1,1.0,0 31 31 28 25 22 19 7 0 0 0 0 0,0,0 19 16 11 9 8 7 4 0 0 0 0 0,0.43,,3x3 tiles 20 frames,pack
+98,2453,salamander_fan,Salamander Fan Wings,fan,web,9b451d,e8902c,ffbc4d,rise,2,1.0,34 29 31 32 35 32 33 23 6 6 5 0 0,1,26 19 15 14 14 13 12 0 3 0 3 0 0,0.21,,3x3 tiles 16 frames,pack
+99,2454,samara_spin,Samara Spin Wings,insect,dragonfly,c79752,694020,c2edd4,none,0,0.95,0 0 4 43 44 27 3 0 0 0 0 0 0,0,0 0 2 0 0 0 1 0 0 0 0 0 0,0.58,0.88,3x3 tiles 16 frames,pack
+100,2455,sand_dune,Sand Dune Wings,feather,owl,ddaf5b,cc9844,fbe7aa,fall,2,1.05,0 7 23 33 37 37 35 29 8 7 6 5 0,1,0 4 0 12 13 13 13 0 3 0 3 3 0,0.39,0.94,4x4 tiles 20 frames,pack
+101,2456,shackle_chain,Shackle Chain Wings,bone,wire,302a37,554a62,a8a5bd,none,1,1.0,21 26 28 32 33 34 33 26 21 13 12 8 0,2,16 12 15 13 13 0 0 0 0 5 4 4 0,0.42,,3x3 tiles 20 frames,pack
+102,2457,shadow_smoke,Shadow Smoke Wings,energy,smoke,21173a,09070d,21173b,none,-2,1.0,22 24 25 28 29 29 30 29 41 42 20 6 0,0,15 14 15 15 16 14 11 0 0 0 0 3 0,0.16,,4x3 tiles 20 frames,pack
+103,2458,sky_dragonfly,Sky Dragonfly Wings,insect,dragonfly,81b9e8,235198,9acbf0,twinkle,0,1.0,15 32 28 24 27 25 17 0 0 0 0 0 0,0,10 17 12 10 11 11 9 0 0 0 0 0 0,0.48,,3x3 tiles 16 frames,pack
+104,2459,slate_plate,Slate Plate Wings,fan,tile,463d3b,565a67,9b9895,none,0,1.0,27 31 32 32 32 33 35 30 24 14 10 7 0,1,15 17 18 16 15 14 14 0 0 0 0 4 0,0.38,,3x3 tiles 24 frames,pack
+105,2460,snow_owl,Snow Owl Wings,feather,owl,d4def0,8c9cc0,e5ebf8,fall,0,1.0,0 31 34 35 35 34 31 22 10 7 6 5 0,0,0 15 22 22 21 17 0 0 4 0 3 3 0,0.43,,3x3 tiles 20 frames,pack
+106,2461,snowflake,Snowflake Wings,crystal,flake,9bcdf4,e3f5fe,fafdff,fall,0,1.0,0 25 30 32 36 36 33 18 18 12 6 0 0,0,0 17 15 15 17 17 14 0 0 0 3 0 0,0.28,0.88,4x3 tiles 20 frames,pack
+107,2462,solar_flare,Solar Flare Wings,energy,water,ee6e1a,feb23f,fff8c7,rise,-1,1.0,10 10 11 15 22 32 38 30 33 24 16 9 9,0,6 4 0 0 0 0 0 0 0 10 9 8 8,0.39,,4x4 tiles 20 frames,pack
+108,2463,soot_moth,Soot Moth Wings,insect,moth,98979f,5b5a63,b4b3ba,fall,0,0.95,16 24 28 31 34 35 37 37 23 14 12 12 12,0,9 0 10 11 12 12 15 16 0 6 4 5 8,0.13,,3x3 tiles 16 frames,pack
+109,2464,squall_kite,Squall Kite Wings,fan,kite,374a4e,28878c,dcc75d,none,0,1.0,0 0 0 2 5 22 34 39 43 40 13 10 0,2,0 0 0 0 2 0 16 0 0 0 6 6 0,0.42,0.94,4x3 tiles 16 frames,pack
+110,2465,star_gossamer,Star Gossamer Wings,insect,fairy,b5a5e8,dcc8f8,e7dafa,twinkle,0,0.95,16 15 0 46 44 29 15 13 12 12 10 0 0,1,9 10 0 30 15 0 5 0 0 0 0 0 0,0.42,,3x3 tiles 16 frames,pack
+111,2466,storm_gull,Storm Gull Wings,feather,swift,b8c7d5,78879c,c4dee8,none,1,1.0,0 0 0 0 0 11 33 39 39 28 0 0 0,0,0 0 0 0 0 5 0 0 0 15 0 0 0,0.50,0.94,4x3 tiles 20 frames,pack
+112,2467,sun_disc,Sun Disc Wings,energy,ray,c8963c,1d3eae,fff6c8,none,0,0.95,0 0 5 20 35 39 36 25 7 6 0 0 0,0,0 0 3 0 12 0 0 0 3 0 0 0 0,0.23,,4x4 tiles 20 frames,pack
+113,2468,sunflower,Sunflower Wings,leaf,flower,3a7a2c,4c2d15,fcce35,none,0,1.0,0 28 31 34 36 35 27 22 13 9 5 0 0,0,0 17 17 18 18 16 13 0 0 0 3 0 0,0.29,,4x3 tiles 16 frames,pack
+114,2469,swallow_tail,Swallow Tail Wings,feather,swift,d1d8ea,1d2c5f,fefeff,none,-1,0.94,0 2 2 2 14 37 33 32 44 30 20 0 0,2,0 1 1 1 0 28 24 0 0 0 0 0 0,0.71,0.88,3x3 tiles 16 frames,pack
+115,2470,terracotta_tile,Terracotta Tile Wings,fan,tile,b3552a,81361e,fbca99,none,1,1.0,14 30 27 28 31 32 35 32 16 11 8 7 0,1,9 19 15 14 14 13 14 0 0 0 3 4 0,0.34,,3x3 tiles 20 frames,pack
+116,2471,tide_swan,Tide Swan Wings,feather,angel,6fc9db,c1d9e7,d1e6f2,fall,0,1.0,31 31 29 28 30 31 31 19 11 7 0 0 0,0,24 23 19 17 17 18 16 0 4 0 0 0 0,0.35,,4x3 tiles 24 frames,pack
+117,2472,tornado_funnel,Tornado Funnel Wings,energy,funnel,93a7b8,c5e2eb,dcf2f8,none,0,1.0,0 28 32 33 31 25 21 18 16 20 27 8 0,0,0 0 15 13 12 11 8 0 0 0 0 4 0,0.35,,3x3 tiles 20 frames,pack
+118,2473,void_raven,Void Raven Wings,feather,pinion,1d0f37,1e1233,c8a8ff,twinkle,0,1.0,0 25 27 30 32 32 32 30 23 16 11 9 0,0,0 19 19 21 21 21 20 18 0 6 4 4 0,0.56,,4x3 tiles 20 frames,pack
+119,2474,volt_bat,Volt Bat Wings,bat,bat,1a407f,354155,ffffff,twinkle,0,1.0,0 4 6 6 17 22 32 35 30 28 28 24 19,1,0 2 2 0 7 11 14 15 17 21 23 17 15,0.66,,3x3 tiles 16 frames,pack
+120,2475,whirlpool,Whirlpool Wings,energy,whirl,163678,55a0da,afe0f8,fall,1,1.0,0 12 30 34 38 39 35 19 17 12 5 0 0,0,0 7 16 16 18 19 15 0 0 0 3 0 0,0.29,0.88,4x3 tiles 20 frames,pack
+121,2476,zephyr_ribbon,Zephyr Ribbon Wings,fan,ribbon,69c6ad,fdf4d5,fffbe6,none,0,1.0,10 37 8 42 43 32 19 7 6 4 0 0 0,1,8 14 3 0 0 0 0 4 3 2 0 0 0,0.66,0.88,3x3 tiles 24 frames,pack
