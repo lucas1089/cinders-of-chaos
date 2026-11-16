@@ -312,6 +312,138 @@ cap.on_answer(b2, ops_['veiled']['opcode'], {'action': 'result', 'data': {'ok': 
 eq(b2.results.d['coverage']['veiled']['refused'], 0, 'veiled: the expected refusal is not counted refused')
 eq(b2.results.d['coverage']['veiled']['ok'], 1, 'veiled: it counts ok')
 
+# ---------------------------------------------------------------- effects (O584 item 4): an answer without its effect is a FAIL
+EF = TS.Scenarios(table, {}, random.Random(9))
+eq(sorted(EF.effects), sorted(e['name'] for e in table['effects']), 'every effect of the table runs')
+for e in table['effects']:
+    ok(e['system'] in table['systems'], e['name'] + ': a system of the table')
+    ok(any(st.get('expect') for st in e['steps']), e['name'] + ': at least one step states an effect')
+
+
+class FxRes(Res):
+    def log(self, bot, kind, text):
+        self.d.setdefault('log', []).append((kind, text))
+
+
+class FxBot(Bot):
+    def __init__(self, name, cid):
+        Bot.__init__(self, name, cid)
+        self.results = FxRes()
+
+
+def play(effect, answers, bot=None):
+    """runs the steps of an effect; answers[i] is the answer message(s) to step i (None: no answer). -> (bot, sent)"""
+    bot = bot or FxBot('Tester Fxa', 0x10000009)
+    sent_ = []
+    op = table['opcodes'][next(e for e in table['effects'] if e['name'] == effect)['opcode']]['opcode']
+    snd = (lambda o, p: sent_.append(json.loads(p)))
+    n = len(next(e for e in table['effects'] if e['name'] == effect)['steps'])
+    for i in range(n):
+        EF.run_step(bot, ('fx', effect, i), {}, snd, None, None)
+        for m in (answers[i] if i < len(answers) and answers[i] else []):
+            EF.on_answer(bot, op, m)
+    return bot, sent_
+
+
+def bank_msg(money, bank):
+    return {'action': 'open', 'data': [money, bank, 0, 0]}
+
+
+b, s_ = play('bank_gold_moves', [[bank_msg(100, 20000)], [bank_msg(600, 19500)], [bank_msg(100, 20000)]])
+eq([x['action'] for x in s_], ['openBank', 'withdraw', 'deposit'], 'the bank effect sends its three steps')
+eq(s_[1]['data'], ['gold', 500], 'the withdraw amount')
+c = b.results.d['coverage']['bank']
+eq((c['real'], c.get('failed', 0), c['tried']), (2, 0, 3), 'bank: two effects seen, none failed')
+eq(c['ans'], 1, 'the opening answer is an answer only')
+# the bank answers but the gold did not move: FAIL, not ok
+b, s_ = play('bank_gold_moves', [[bank_msg(100, 20000)], [bank_msg(100, 20000)], None])
+c = b.results.d['coverage']['bank']
+eq((c.get('real', 0), c['failed']), (0, 1), 'bank: an answer with no effect is a failure')
+ok(b.results.d['effects'][0]['effect'] == 'bank_gold_moves' and 'moved by 0' in b.results.d['effects'][0]['why'], 'with its reason')
+ok(any(k == 'EFFECT' for k, _ in b.results.d['log']), 'and a log line')
+eq(len(s_), 2, 'a failed effect ends the chain')
+# a balance under 500: nothing to show, skipped
+b, s_ = play('bank_gold_moves', [[bank_msg(0, 100)]])
+c = b.results.d['coverage']['bank']
+eq((c.get('skipped'), c.get('failed', 0), len(s_)), (1, 0, 1), 'bank: too little gold is a skip')
+# a refusal ends it as refused
+b, _ = play('bank_gold_moves', [[bank_msg(10, 900)], [{'action': 'error', 'data': {'error': 'no'}}]])
+eq(b.results.d['coverage']['bank']['refused'], 1, 'a refusal is counted refused')
+
+# the daily claim: the value of the client's map comes from the day of the window
+day = {'action': 'OpenDailyWindow', 'data': {'Day': 1, 'TakenReward': 0}}
+done = {'action': 'OpenDailyWindow', 'data': {'Day': 1, 'TakenReward': 1}}
+b, s_ = play('daily_claim_sets_day', [[day], [done]])
+eq(s_[1], {'action': 'calim', 'data': 1}, 'Day 1 is slot 3, the client sends map[3] = 1')
+eq(b.results.d['coverage']['daily']['real'], 1, 'daily: the day is taken')
+b, s_ = play('daily_claim_sets_day', [[day], [day]])
+eq(b.results.d['coverage']['daily']['failed'], 1, 'daily: a claim that leaves the day open fails')
+b, s_ = play('daily_claim_sets_day', [[done]])
+eq(b.results.d['coverage']['daily'].get('skipped'), 1, 'daily: already taken is a skip')
+
+# the hunt meter: a push of the watcher may come first; the second answer decides
+hz = {'action': 'state', 'data': {'xp': 0, 'kc': 0, 'dmg': 0, 'heal': 0, 'lv': 0, 'sv': 0}}
+hs = {'action': 'state', 'data': {'xp': 5, 'kc': 1, 'dmg': 40, 'heal': 0, 'lv': 3, 'sv': 0}}
+b, _ = play('hunt_session_reset', [[hs], [hs, hz]])
+eq((b.results.d['coverage']['hunt'].get('real'), b.results.d['coverage']['hunt'].get('failed', 0)), (1, 0), 'hunt: the second state shows the reset')
+b, _ = play('hunt_session_reset', [[hs], [hs, hs]])
+eq(b.results.d['coverage']['hunt']['failed'], 1, 'hunt: a meter that keeps its numbers fails')
+b, _ = play('hunt_session_reset', [[hz]])
+eq(b.results.d['coverage']['hunt'].get('skipped'), 1, 'hunt: nothing to reset is a skip')
+
+# the filter counters, the loadout slot, the tooltip
+lf = {'action': 'counts', 'data': {'session': {'a': 0}, 'total': {'a': 0, 'b': 0}}}
+b, _ = play('lootfilter_counts_reset', [[lf]])
+eq(b.results.d['coverage']['lootfilter']['real'], 1, 'lootfilter: counters at 0')
+b, _ = play('lootfilter_counts_reset', [[{'action': 'counts', 'data': {'session': {'a': 2}, 'total': {}}}]])
+eq(b.results.d['coverage']['lootfilter']['failed'], 1, 'lootfilter: a counter left')
+
+
+def slots(**kw):
+    return {'action': 'state', 'data': {'slots': [dict({'slot': 1, 'locked': False}, **kw)]}}
+
+
+b, s_ = play('loadout_save_delete', [[slots(empty=True)], [slots(name='Bot build')], [slots(empty=True)]])
+eq(b.results.d['coverage']['loadouts']['real'], 2, 'loadouts: saved, then deleted')
+b, s_ = play('loadout_save_delete', [[slots(empty=True)], [slots(empty=True)]])
+eq(b.results.d['coverage']['loadouts']['failed'], 1, 'loadouts: a save that left the slot empty fails')
+b, s_ = play('loadout_save_delete', [[slots(name='Mine')]])
+eq((b.results.d['coverage']['loadouts'].get('skipped'), len(s_)), (1, 1), 'loadouts: a used slot 1 is never touched')
+b, _ = play('tooltip_of_backpack', [[{'action': 'tips', 'data': {'items': [{'tip': {'name': 'backpack'}}]}}]])
+eq(b.results.d['coverage']['item_tooltip']['real'], 1, 'tooltip: names the item')
+b, _ = play('tooltip_of_backpack', [[{'action': 'tips', 'data': {'items': [{'gone': True}]}}]])
+eq(b.results.d['coverage']['item_tooltip']['failed'], 1, 'tooltip: gone is a failure')
+# no answer: the next chain finds the old one waiting and counts it silent, judges nothing
+b = FxBot('Tester Fxb', 0x1000000a)
+EF.run_step(b, ('fx', 'bank_gold_moves', 0), {}, lambda o, p: None, None, None)
+EF.run_step(b, ('fx', 'bank_gold_moves', 1), {}, lambda o, p: None, None, None)
+eq((b.results.d['coverage']['bank'].get('silent'), b.results.d['coverage']['bank'].get('failed', 0)), (1, 0), 'no answer: silent, not failed')
+
+# the condition language
+M = TS.MISSING
+eq(TS.path_get({'data': [1, {'a': 2}]}, ['data', 1, 'a']), 2, 'path: list index and key')
+ok(TS.path_get({'data': []}, ['data', 0]) is M, 'path: missing')
+ok(TS.cond_holds(['zero', ['d']], {'d': {'x': 0, 'y': [0, 0]}})[0], 'zero walks tables')
+ok(not TS.cond_holds(['zero', ['d']], {'d': {'x': 0, 'y': [0, 1]}})[0], 'zero finds a number')
+ok(not TS.cond_holds(['delta', ['d'], 1], {'d': 5})[0], 'delta needs a before')
+ok(TS.cond_holds(['delta', ['d'], 1], {'d': 5}, {'d': 4})[0], 'delta 1')
+eq(TS.resolve_data({'$answer': ['d'], 'plus': 2, 'table': [6, 7, 1]}, {'x': {'d': 0}}), (7, True), 'a value from a table, 1-based')
+eq(TS.resolve_data({'$answer': ['d']}, {}), (None, False), 'no answer, no value')
+
+# the report merge: REAL / ANS / HELP per system, and the system checks
+syn_cov = {'bank': {'tried': 5, 'ok': 4, 'refused': 0, 'real': 2, 'ans': 2, 'failed': 1, 'actions': {}},
+           'place:rift': {'tried': 2, 'ok': 2, 'refused': 0, 'actions': {}, 'help': 2}}
+real_table = {'systems': {'bank': {'kind': 'opcode', 'files': ['bank.lua']}, 'rift': {'kind': 'place', 'files': ['rift.lua']},
+                          'pets': {'kind': 'opcode', 'files': []}}}
+mm = TS.merge(real_table, syn_cov, {'errors': {}}, [{'check': 'pets', 'status': 'pass'}, {'check': 'dual_fists', 'status': 'fail'},
+                                                    {'check': 'rift', 'status': 'skip'}])
+eq((mm['bank']['real'], mm['bank']['ans'], mm['bank']['failed']), (2, 2, 1), 'merge: real, ans, failed')
+eq((mm['rift']['help'], mm['rift']['real']), (2, 0), 'merge: a helper teleport is HELP')
+eq((mm['pets']['real'], mm['pets']['help'], mm['pets']['ok']), (1, 1, 1), 'merge: a passed check is REAL and HELP')
+eq((mm['check:dual_fists']['failed'], mm['check:dual_fists']['real']), (1, 0), 'merge: a failed check is failed')
+for k in TS.CHECK_SYSTEMS.values():
+    ok(k.startswith('check:') or k in table['systems'], 'CHECK_SYSTEMS names a system of the table: ' + k)
+
 for f in FAILS:
     print('FAIL ' + f)
 print('tester_scenarios_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

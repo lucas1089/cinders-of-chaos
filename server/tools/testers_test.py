@@ -838,6 +838,103 @@ rep6 = TC.build_report(r6.d, {'errors': {}, 'warnings': {}, 'events': [], 'anoma
 ok('== Helper answers (' in rep6, 'the report has a helper answers line')
 ok('1 late and dropped' in rep6 and 'slowest' in rep6, 'with the late answers and the slowest answer')
 
+# ---------------------------------------------------------------- report v2 (O584 item 15)
+W = TC.HUNT_WINDOW
+eq(TC.hunt_outcome(100.0, None, None), 'expected', 'hunt: away from the hunt spot is not judged')
+eq(TC.hunt_outcome(100.0, 50.0, None), 'expected', 'hunt: not there a window yet is not judged')
+eq(TC.hunt_outcome(1000.0, 0.0, None), 'failed', 'hunt: a window at the spot and no experience is failed')
+eq(TC.hunt_outcome(1000.0, 0.0, 950.0), 'ok', 'hunt: experience within the window is ok')
+eq(TC.hunt_outcome(1000.0, 0.0, 100.0), 'failed', 'hunt: experience long ago is failed')
+eq(TC.hunt_outcome(1000.0, 500.0, 400.0), 'failed', 'hunt: experience from before the return is not this hunt')
+eq(TC.flee_outcome(30, 30, False, {'pos': {}}), ('ok', ''), 'flee: alive, health not lower, the helper answered')
+eq(TC.flee_outcome(30, 20, False, {'pos': {}})[0], 'failed', 'flee: health fell')
+eq(TC.flee_outcome(30, 30, True, {'pos': {}})[0], 'failed', 'flee: died')
+eq(TC.flee_outcome(30, 30, False, None)[0], 'failed', 'flee: no helper answer')
+eq(TC.flee_outcome(30, 30, False, {'err': 'x'})[0], 'failed', 'flee: the helper refused')
+
+# a bot at its hunt: the experience message is progress, the hunt pick says so
+rh = T.Results(1)
+hb = T.TesterBot(6, dict(bot), A(), 1, rh, {'rotation': [], 'heal': None})
+hb.alive, hb.died = True, False
+hb.hunt_since = _time.monotonic() - 1000
+eq(asyncio.run(hb.do_hunt(None)), False, 'a bot that gained nothing for a window fails its hunt')
+ok(any('hunt: no experience' in k for k in rh.d['failures']), 'and the failure says so')
+hb.on_text('You gained 120 experience points.')
+hb.hunt_since = _time.monotonic() - 1000
+eq(asyncio.run(hb.do_hunt(None)), True, 'experience since: the hunt is ok')
+hb.hunt_since = _time.monotonic() - 3
+eq(asyncio.run(hb.do_hunt(None)), None, 'just arrived: not judged')
+hb.on_text('[tester-helper] town {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+eq(hb.hunt_since, None, 'the town answer ends the hunt stay')
+hb.on_text('[tester-helper] hunt {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+ok(hb.hunt_since is not None, 'the hunt answer starts it')
+
+# a flee is judged FLEE_LOOK seconds later; a death in between fails it
+rf = T.Results(1)
+fb = T.TesterBot(7, dict(bot), A(), 1, rf, {'rotation': [], 'heal': None})
+fb.conn, fb.alive, fb.died, fb.cid = C(), True, False, 0
+fb.say = lambda text, kind=1: None
+fb.health, fb.heal = 20, None
+fb.ready = {'heal': 9e9, 'potion': 9e9}
+fb.keep_alive(1000.0)
+eq(rf.d['behaviours']['flee']['tried'], 1, 'the flee is tried')
+ok(fb.flee_check is not None, 'and waits to be judged')
+fb.on_text('[tester-helper] town {"pos":{"x":1,"y":2,"z":7},"seq":0}')
+fb.health = 25
+fb.keep_alive(1000.0 + TC.FLEE_LOOK + 1)
+eq(rf.d['behaviours']['flee'].get('ok'), 1, 'a flee that reached the temple alive counts ok (it read 0 before)')
+fb.flee_check = (5000.0, 20)
+fb.on_death()
+eq(rf.d['behaviours']['flee'].get('failed'), 1, 'a death before the look fails the flee')
+ok(any(k.startswith('flee: died') for k in rf.d['failures']), 'with its reason')
+
+# the proof table and the diff against the previous run
+cov = {'bank': {'tried': 5, 'ok': 4, 'errors': 0, 'real': 2, 'ans': 2, 'help': 0, 'failed': 0, 'refused': 0},
+       'rift': {'tried': 3, 'ok': 3, 'errors': 0, 'real': 0, 'ans': 0, 'help': 3, 'failed': 0, 'refused': 0},
+       'charms': {'tried': 4, 'ok': 4, 'errors': 0, 'real': 0, 'ans': 4, 'help': 0, 'failed': 0, 'refused': 0},
+       'daily': {'tried': 2, 'ok': 1, 'errors': 0, 'real': 0, 'ans': 0, 'help': 0, 'failed': 1, 'refused': 0}}
+empty_log = {'errors': {}, 'warnings': {}, 'anomalies': [], 'events': [], 'first': {}}
+run1 = {'logins': 100, 'deaths': 40, 'relogs': 2, 'reconnects': 0, 'coverage': cov, 'failures': {'depot: no locker': 5},
+        'behaviours': {'hunt': {'tried': 500, 'ok': 400, 'failed': 50, 'expected': 50}},
+        'effects': [{'effect': 'daily_claim_sets_day', 'step': 'calim', 'why': 'TakenReward is 0', 'bot': 'Tester Abc'}],
+        'keep': {'sold_units': 9, 'sold_gold': 700, 'sell_visits': 3, 'equipped': 2, 'dropped': 1}}
+rep1 = TC.build_report(run1, empty_log)
+ok('== Proof by system' in rep1 and 'bank' in rep1.split('== Proof by system')[1], 'the proof table lists the systems reached')
+ok('(4 systems reached: 1 with REAL proof, 1 with ANS only, 1 with HELP only)' in rep1, 'with the summary')
+ok('== Effects that did not hold (1' in rep1 and 'FAIL daily_claim_sets_day calim' in rep1, 'failed effects are listed as FAIL')
+ok('== Bag keeping (sold 9 items for 700 gold in 3 visits, equipped 2, dropped 1' in rep1, 'the bag keeping line')
+eq(TC.report_diff('', rep1), [], 'no previous report: no diff section')
+ok('Against the previous run' not in rep1, 'and none in the report')
+back = TC.read_report(rep1)
+eq(back['proof']['bank'], (2, 2, 0, 0), 'a report reads back: proof')
+eq(back['behaviours']['hunt'], (500, 400, 50, 50), 'a report reads back: behaviours')
+eq(back['failures']['depot: no locker'], 5, 'a report reads back: failures')
+eq(back['head']['deaths'], 40, 'a report reads back: the head line')
+cov2 = json.loads(json.dumps(cov))
+cov2['bank']['real'] = 0
+cov2['daily']['real'] = 3
+cov2['daily']['failed'] = 0
+cov2['charms']['failed'] = 2
+run2 = dict(run1, deaths=10, coverage=cov2, failures={'shop: no window': 7}, effects=[],
+            behaviours={'hunt': {'tried': 500, 'ok': 100, 'failed': 350, 'expected': 50}})
+rep2 = TC.build_report(run2, empty_log, rep1, ' of 20261115-100000')
+ok('== Against the previous run of 20261115-100000 (' in rep2, 'the diff names the previous run')
+for want in ('deaths 40 -> 10', 'bank: REAL proof lost (was 2)', 'daily: REAL proof now (3)', 'charms: failed effects 0 -> 2',
+             'new failure: 7x shop: no window', 'failure gone: depot: no locker', 'behaviour hunt ok 400 -> 100, failed 50 -> 350'):
+    ok(want in rep2, 'the diff says %r' % want)
+ok(rep2.index('Against the previous run') < rep2.index('== Server log: errors'), 'the diff comes first, after the header')
+rep3 = TC.build_report(run1, empty_log, rep1, ' of x')
+ok('nothing moved' in rep3, 'the same run twice: nothing moved')
+# the previous report file: the newest one older than this run
+_d = tempfile.mkdtemp()
+os.makedirs(os.path.join(_d, 'runs'))
+for st_, txt in (('20261101-000000', 'old'), ('20261110-000000', 'newer'), ('20261120-000000', 'later')):
+    with open(os.path.join(_d, 'runs', 'run-%s-report.txt' % st_), 'w') as f_:
+        f_.write(txt)
+eq(T.previous_report(_d, '/x/runs/run-20261115-120000.log'), ('newer', ' of 20261110-000000'), 'the newest report older than the run')
+eq(T.previous_report(_d, '/x/runs/run-20261101-000000.log'), ('', ''), 'no older report: none')
+shutil.rmtree(_d)
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

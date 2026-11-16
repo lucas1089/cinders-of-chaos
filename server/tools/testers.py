@@ -865,6 +865,9 @@ class TesterBot(LT.Bot):
         self.fails = 0
         self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
         self.back_at = None  # after a flee: when to go back to the hunt
+        self.hunt_since = None  # when the bot came to its hunt spot (login, `!tester hunt`); None: away from it (O584)
+        self.last_progress = None  # the last experience or loot message (TC.hunt_outcome)
+        self.flee_check = None  # (when to judge it, health at the flee) of the flee under way (TC.flee_outcome)
         self.npc_spoke = False
         self.nothing_to_sell = False
         self.walk_until = 0.0  # until when a blind walk is the likely cause of a "not possible"
@@ -909,6 +912,7 @@ class TesterBot(LT.Bot):
         self.results.d['logins'] += 1
         self.results.log(self, 'login', 'in game')
         self.alive, self.died, self.health, self.health_at = True, False, 100, None
+        self.hunt_since, self.flee_check = time.monotonic(), None  # the login spot is the hunt spot
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
         guard = asyncio.ensure_future(self.guard())
@@ -1003,6 +1007,11 @@ class TesterBot(LT.Bot):
         if self.died:
             return
         self.died = self.after_death = True
+        if self.flee_check:  # the flee did not save it
+            self.flee_check = None
+            self.results.behaviour('flee', 'failed', self)
+            self.results.count('failures', 'flee: died within %d s of the flee' % TC.FLEE_LOOK, self)
+        self.hunt_since = None
         for kind in list(self.pending):  # dead before the heal or the potion could work: the deaths have their section
             self.results.behaviour(kind, 'expected', self)
         self.pending.clear()
@@ -1026,6 +1035,10 @@ class TesterBot(LT.Bot):
                 self.results.helper_answer('late')
                 return
             self.helper[hk] = data
+            if hk == 'hunt' and not data.get('err'):
+                self.hunt_since = time.monotonic()
+            elif hk == 'town':
+                self.hunt_since = None
             if hk == 'info':
                 self.level = data.get('level', self.level)
                 cid = data.get('cid')
@@ -1057,10 +1070,12 @@ class TesterBot(LT.Bot):
                     self.results.behaviour(kind_, 'expected', self)
             self.results.count('failures', detail, self)
         elif kind == 'xp':
+            self.last_progress = time.monotonic()
             rule = TC.xp_anomaly(self.level, detail)
             if rule:
                 self.results.anomaly(rule, self, gained=detail)
         elif kind == 'loot':
+            self.last_progress = time.monotonic()
             rule = TC.gold_anomaly(self.level, detail[1])
             if rule:
                 self.results.anomaly(rule, self, monster=detail[0], gold=detail[1])
@@ -1144,7 +1159,11 @@ class TesterBot(LT.Bot):
                 # a behaviour cut short by the bot's own death or a dropped connection is not a failure of the system
                 # it tried: the deaths and kicks have their sections
                 cut = not ok and (self.died or not self.alive)
-                self.results.behaviour(name, 'expected' if cut else 'ok' if ok else 'failed', self)
+                if ok is None:  # not judged (TC.hunt_outcome: the bot has not been at its hunt long enough)
+                    outcome = 'expected'
+                else:
+                    outcome = 'expected' if cut else 'ok' if ok else 'failed'
+                self.results.behaviour(name, outcome, self)
                 next_pick = time.monotonic() + 5 + random.random() * 10
             try:
                 await self.conn.w.drain()
@@ -1178,6 +1197,13 @@ class TesterBot(LT.Bot):
         FLEE_AT % with both on cooldown, back to the temple (as a player's town portal) and to the hunt FLEE_REST
         seconds later; cast the rotation otherwise (not under 50 % with a heal: the mana is for the heal). A heal or a
         potion counts ok when the health rises within HEAL_SEEN seconds, else failed"""
+        if self.flee_check and now >= self.flee_check[0]:
+            at_flee = self.flee_check[1]
+            self.flee_check = None
+            outcome, why = TC.flee_outcome(at_flee, self.health, self.died, self.helper.get('town'))
+            self.results.behaviour('flee', outcome, self)
+            if outcome != 'ok':
+                self.results.count('failures', 'flee: ' + why, self)
         for kind, until in list(self.pending.items()):
             if now > until:
                 del self.pending[kind]
@@ -1202,9 +1228,11 @@ class TesterBot(LT.Bot):
                 self.pending.setdefault('potion', now + HEAL_SEEN)
         if self.health <= FLEE_AT and not self.back_at and self.ready.get('flee', 0) <= now \
                 and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
+            self.helper.pop('town', None)
             self.say('!tester town')
             self.ready['flee'] = now + 60
             self.back_at = now + FLEE_REST
+            self.flee_check = (now + TC.FLEE_LOOK, self.health)
             self.results.behaviour('flee', 'tried')
             self.results.log(self, 'do', 'flee at %d %% health' % self.health)
             return
@@ -1247,7 +1275,14 @@ class TesterBot(LT.Bot):
             self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
 
     async def do_hunt(self, clock):
-        return True
+        """O584: ok only when the bot gained experience or loot within TC.HUNT_WINDOW seconds; failed when it stood at its
+        hunt that long and gained none; not judged (None) before it has been there a window. It said ok always before."""
+        outcome = TC.hunt_outcome(time.monotonic(), self.hunt_since, self.last_progress)
+        if outcome == 'failed':
+            self.results.count('failures', 'hunt: no experience in %d s at the hunt spot' % TC.HUNT_WINDOW, self)
+            self.hunt_since = time.monotonic()  # judged again after the next window, not at every pick
+            return False
+        return True if outcome == 'ok' else None
 
     async def do_wander(self, clock):
         self.walk(random.randint(2, 5))
@@ -1656,6 +1691,26 @@ def report(a):
     sys.stdout.write(report_text(a))
 
 
+def previous_report(state, activity):
+    """(text, ' of <stamp>') of the newest report file in runs/ that is older than the run of `activity` (O584: the diff); ('', '')
+    when there is none"""
+    folder = os.path.join(state, 'runs')
+    mine = re.search(r'run-(\d{8}-\d{6})', activity or '')
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return '', ''
+    stamps = sorted(n[4:19] for n in names if re.match(r'^run-\d{8}-\d{6}-report\.txt$', n)
+                    and (not mine or n[4:19] < mine.group(1)))
+    if not stamps:
+        return '', ''
+    try:
+        with open(os.path.join(folder, 'run-%s-report.txt' % stamps[-1]), encoding='utf-8', errors='replace') as f:
+            return f.read(), ' of ' + stamps[-1]
+    except OSError:
+        return '', ''
+
+
 def report_text(a):
     st = load_state(a.state)
     r = st.get('run') or {}
@@ -1670,8 +1725,9 @@ def report_text(a):
     table = a.scenarios or r.get('scenarios') or ''
     if table and os.path.exists(table):
         import tester_scenarios as TS  # the per-system coverage: tried, ok, refused, log errors, never reached and why
-        res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed)
-    text = TC.build_report(res, parsed)
+        res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed, res.get('checks'))
+    prev, prev_title = previous_report(a.state, r.get('activity'))
+    text = TC.build_report(res, parsed, prev, prev_title)
     if not log:
         text += '(no server log given: --log)\n'
     if r.get('activity'):

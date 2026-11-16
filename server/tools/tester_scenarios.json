@@ -13,6 +13,344 @@
   "place": 15,
   "staff": 17
  },
+ "effects": [
+  {
+   "about": "withdrawing gold takes it from the bank balance into the backpack, depositing moves it back",
+   "name": "bank_gold_moves",
+   "opcode": "bank",
+   "steps": [
+    {
+     "action": "openBank",
+     "need": [
+      [
+       "at_least",
+       [
+        "data",
+        1
+       ],
+       500
+      ]
+     ],
+     "reply": "open"
+    },
+    {
+     "action": "withdraw",
+     "data": [
+      "gold",
+      500
+     ],
+     "expect": [
+      [
+       "delta",
+       [
+        "data",
+        1
+       ],
+       -500
+      ],
+      [
+       "delta",
+       [
+        "data",
+        0
+       ],
+       500
+      ]
+     ],
+     "reply": "open"
+    },
+    {
+     "action": "deposit",
+     "data": [
+      "gold",
+      500
+     ],
+     "expect": [
+      [
+       "delta",
+       [
+        "data",
+        1
+       ],
+       500
+      ],
+      [
+       "delta",
+       [
+        "data",
+        0
+       ],
+       -500
+      ]
+     ],
+     "reply": "open"
+    }
+   ],
+   "system": "bank"
+  },
+  {
+   "about": "the claim of a day not yet taken marks the day as taken",
+   "name": "daily_claim_sets_day",
+   "opcode": "daily",
+   "steps": [
+    {
+     "action": "open",
+     "need": [
+      [
+       "eq",
+       [
+        "data",
+        "TakenReward"
+       ],
+       0
+      ]
+     ],
+     "reply": "OpenDailyWindow"
+    },
+    {
+     "action": "calim",
+     "data": {
+      "$answer": [
+       "data",
+       "Day"
+      ],
+      "plus": 2,
+      "table": [
+       6,
+       7,
+       1,
+       2,
+       3,
+       4,
+       5
+      ]
+     },
+     "expect": [
+      [
+       "eq",
+       [
+        "data",
+        "TakenReward"
+       ],
+       1
+      ]
+     ],
+     "reply": "OpenDailyWindow"
+    }
+   ],
+   "system": "daily"
+  },
+  {
+   "about": "the reset of the hunt meter zeroes experience, kills, damage, healing, loot and supplies",
+   "name": "hunt_session_reset",
+   "opcode": "hunt",
+   "steps": [
+    {
+     "action": "open",
+     "need": [
+      [
+       "at_least",
+       [
+        "data",
+        "dmg"
+       ],
+       1
+      ]
+     ],
+     "reply": "state"
+    },
+    {
+     "action": "reset",
+     "expect": [
+      [
+       "zero",
+       [
+        "data",
+        "xp"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "kc"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "dmg"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "heal"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "lv"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "sv"
+       ]
+      ]
+     ],
+     "replies": 2,
+     "reply": "state"
+    }
+   ],
+   "system": "hunt"
+  },
+  {
+   "about": "saving the live build fills slot 1, deleting it empties the slot again",
+   "name": "loadout_save_delete",
+   "opcode": "loadouts",
+   "steps": [
+    {
+     "action": "open",
+     "need": [
+      [
+       "eq",
+       [
+        "data",
+        "slots",
+        0,
+        "empty"
+       ],
+       true
+      ],
+      [
+       "eq",
+       [
+        "data",
+        "slots",
+        0,
+        "locked"
+       ],
+       false
+      ]
+     ],
+     "reply": "state"
+    },
+    {
+     "action": "save",
+     "data": {
+      "name": "Bot build",
+      "slot": 1
+     },
+     "expect": [
+      [
+       "eq",
+       [
+        "data",
+        "slots",
+        0,
+        "name"
+       ],
+       "Bot build"
+      ]
+     ],
+     "reply": "state"
+    },
+    {
+     "action": "delete",
+     "data": {
+      "slot": 1
+     },
+     "expect": [
+      [
+       "eq",
+       [
+        "data",
+        "slots",
+        0,
+        "empty"
+       ],
+       true
+      ]
+     ],
+     "reply": "state"
+    }
+   ],
+   "system": "loadouts"
+  },
+  {
+   "about": "the reset of the filter counters (all) answers with every counter at 0",
+   "name": "lootfilter_counts_reset",
+   "opcode": "lootfilter",
+   "steps": [
+    {
+     "action": "reset",
+     "data": {
+      "scope": "all"
+     },
+     "expect": [
+      [
+       "zero",
+       [
+        "data",
+        "session"
+       ]
+      ],
+      [
+       "zero",
+       [
+        "data",
+        "total"
+       ]
+      ]
+     ],
+     "reply": "counts"
+    }
+   ],
+   "system": "lootfilter"
+  },
+  {
+   "about": "the tooltip of the item in the backpack slot names the item",
+   "name": "tooltip_of_backpack",
+   "opcode": "itemTooltip",
+   "steps": [
+    {
+     "action": "get",
+     "data": {
+      "items": [
+       {
+        "pos": {
+         "x": 65535,
+         "y": 3,
+         "z": 0
+        }
+       }
+      ]
+     },
+     "expect": [
+      [
+       "has",
+       [
+        "data",
+        "items",
+        0,
+        "tip",
+        "name"
+       ]
+      ]
+     ],
+     "reply": "tips"
+    }
+   ],
+   "system": "item_tooltip"
+  }
+ ],
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
   "classes": {
