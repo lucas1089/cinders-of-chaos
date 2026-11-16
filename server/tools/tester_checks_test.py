@@ -2061,5 +2061,504 @@ class RaidClosed(unittest.TestCase):
         self.assertGreaterEqual(calls['n'], TX.RAID_MISSES)
 
 
+# ---------------------------------------------------------------------------------------------------- the dungeons in closed mode (O589)
+class DungeonWorld:
+    """a tiny dungeon world on one lane (y = 5): the entrance mark at x 100 (the temple at x 92), dungeon 4 (level 600, one player) and
+    dungeon 1 (level 150, two players), monsters at x 10, 20, 30 and the boss at x 60 of the run. It answers `!tester path`, `enter`
+    and `dungeon` as the helper does (the guide's rules in miniature), moves the bots by their steps and is the dungeons window.
+    Time does not pass."""
+    ENTRY, TEMPLE = (100, 5), (92, 3)
+    MONSTERS = (10, 20, 30)
+    BOSS = 60
+
+    def __init__(self, level=900, on=True, side='tester', no_path=False, refuse=False, kill_after=2, never_kill=False, blocked=(),
+                 levels=None, no_enter=False, town_ok=True, size4=1, members=None, dungeons=(4, 1), queued_forever=False):
+        self.level, self.on, self.side, self.no_path, self.refuse = level, on, side, no_path, refuse
+        self.kill_after, self.never_kill, self.blocked, self.levels = kill_after, never_kill, set(blocked), levels or {}
+        self.no_enter, self.town_ok, self.size4, self.members_override = no_enter, town_ok, size4, members
+        self.dungeons, self.queued_forever = dungeons, queued_forever
+        self.units, self.queue = {}, []
+        self.run = None
+        self.hp = {}
+        self.steps, self.teleports, self.closed = {}, 0, 0
+
+    def unit(self, name):
+        return self.units.setdefault(name, {'pos': (60, 60), 'inside': False, 'queued': None})
+
+    def pos(self, name):
+        x, y = self.unit(name)['pos']
+        return {'x': x, 'y': y, 'z': 8}
+
+    def listing(self):
+        table = {4: {'id': 4, 'title': 'Rootmaw', 'level': 600, 'size': self.size4, 'max': 1},
+                 1: {'id': 1, 'title': 'Bones Dungeon', 'level': 150, 'size': 2, 'max': 1}}
+        return [table[i] for i in self.dungeons]
+
+    def monsters_alive(self):
+        return [x for x in self.MONSTERS if self.hp.get(x, 1) > 0]
+
+    def percent(self):
+        return int(100 * (len(self.MONSTERS) - len(self.monsters_alive())) / len(self.MONSTERS))
+
+    def guide(self, pos):
+        def near(a, b, d):
+            return abs(a - b) <= d
+
+        def g(mode, goal, area):
+            return {'mode': mode, 'goal': {'x': goal, 'y': 5, 'z': 8}, 'area': area, 'why': 'test'}
+        alive = self.monsters_alive()
+        if alive:
+            goal = min(alive, key=lambda m: abs(m - pos[0]))
+            return g('fight' if near(pos[0], goal, 3) else 'walk', goal, 'monsters')
+        if self.hp.get(self.BOSS, 1) > 0:
+            return g('fight' if near(pos[0], self.BOSS, 4) else 'walk', self.BOSS, 'boss')
+        return {'mode': 'wait', 'area': 'boss', 'why': 'the run is over'}
+
+    def facts(self, name):
+        u = self.unit(name)
+        out = {'inside': u['inside'], 'level': self.levels.get(name, self.level), 'pos': self.pos(name), 'on': self.on,
+               'queued': u['queued'], 'maxDifficulty': 6, 'soloWait': 5}
+        if not u['inside']:
+            if not u['queued']:
+                out['list'] = self.listing()
+            return out
+        members = self.members_override if self.members_override is not None else len(self.run['names'])
+        out['run'] = {'id': 1, 'dungeon': self.run['id'], 'title': 'x', 'side': self.side, 'size': 1, 'members': members,
+                      'difficulty': 1, 'percent': self.percent(), 'total': 3, 'left': len(self.monsters_alive()),
+                      'unlocked': not self.monsters_alive(), 'ended': self.run.get('exit_in') is not None, 'deaths': 0,
+                      'bossHp': int(100 * self.hp.get(self.BOSS, 1.0)) if self.hp.get(self.BOSS, 1) > 0 else None}
+        out['guide'] = self.guide(u['pos'])
+        return out
+
+    def tick(self, name):
+        u = self.unit(name)
+        if not u['inside'] or name != self.run['names'][0]:
+            return
+        if self.run.get('exit_in') is not None:   # the exit teleport comes a few looks after the clear (exitDelayMs)
+            self.run['exit_in'] -= 1
+            if self.run['exit_in'] <= 0:
+                for n in self.run['names']:
+                    self.units[n]['inside'] = False
+                    self.units[n]['pos'] = (self.ENTRY[0] - 5, 5)
+            return
+        if self.never_kill:
+            return
+        g = self.guide(u['pos'])
+        if g['mode'] != 'fight':
+            return
+        target = g['goal']['x']
+        self.hp[target] = self.hp.get(target, 1.0) - 1.0 / self.kill_after
+        if target == self.BOSS and self.hp[target] <= 0:
+            self.run['exit_in'] = 3
+
+    def path_to(self, name, goal, reach):
+        x, y = self.unit(name)['pos']
+        dirs = [2] * max(0, 5 - y) + [0] * max(0, y - 5)
+        if x < goal - reach:
+            dirs += [1] * (goal - reach - x)
+        elif x > goal + reach:
+            dirs += [3] * (x - goal - reach)
+        return dirs
+
+    def answer(self, name, command):
+        u = self.unit(name)
+        if command == 'bag':
+            return {'potions': 100}
+        if command == 'path dungeon':
+            if self.no_path:
+                return {'err': 'no path', 'name': 'Bones Dungeon', 'dest': {'x': self.ENTRY[0], 'y': 5, 'z': 8}}
+            dist = max(abs(u['pos'][0] - self.ENTRY[0]), abs(u['pos'][1] - self.ENTRY[1]))
+            base = {'pos': self.pos(name), 'dest': {'x': self.ENTRY[0], 'y': 5, 'z': 8}, 'dist': dist, 'name': 'Bones Dungeon'}
+            if dist <= 1:
+                return dict(base, here=True, path=[])
+            return dict(base, path=self.path_to(name, self.ENTRY[0], 1))
+        if command == 'enter dungeon':
+            if self.no_enter:
+                return {'err': 'no free tile'}
+            self.teleports += 1
+            u['pos'] = (self.ENTRY[0] - 1, 5)
+            return {'kind': 'dungeon', 'pos': self.pos(name)}
+        if command == 'dungeon state':
+            if u['queued'] and not self.queued_forever:    # the solo wait: a queue short of its group starts after a few looks
+                self.waits = getattr(self, 'waits', 0) + 1
+                if self.waits >= 2:
+                    size = 2 if u['queued'] == 1 else self.size4
+                    self.run = {'id': u['queued'], 'names': list(self.queue[:size])}
+                    self.hp = {}
+                    for n in self.run['names']:
+                        self.units[n].update(inside=True, queued=None, pos=(0, 5))
+                    self.queue = self.queue[size:]
+            self.tick(name)
+            return self.facts(name)
+        if command == 'dungeon path':
+            if not u['inside']:
+                return dict(self.facts(name), err='not inside a dungeon run')
+            g = self.guide(u['pos'])
+            if g['mode'] != 'walk':
+                return dict(self.facts(name), err='no goal')
+            return dict(self.facts(name), path=self.path_to(name, g['goal']['x'], 3), dist=abs(u['pos'][0] - g['goal']['x']))
+        if command == 'dungeon close':
+            was = any(v['inside'] for v in self.units.values())
+            for v in self.units.values():
+                v['inside'] = False
+            self.closed += 1
+            return dict(self.facts(name), closed=was)
+        return None
+
+    def request(self, name, opname, action, data=None):
+        if opname != 'dungeons':
+            return None
+        u = self.unit(name)
+        if action == 'fetch':
+            return {'action': 'list', 'data': {}}
+        if action == 'queue':
+            if u['queued']:                       # the window's one button: again leaves
+                u['queued'] = None
+                self.queue = [n for n in self.queue if n != name]
+                return {'action': 'queue', 'data': {'id': data['id'], 'joined': False}}
+            if self.refuse:
+                return {'action': 'queue', 'data': {'id': data['id'], 'joined': False}}
+            u['queued'] = data['id']
+            self.queue.append(name)
+            size = 2 if data['id'] == 1 else self.size4
+            if not self.queued_forever and len(self.queue) >= size:
+                self.run = {'id': data['id'], 'names': list(self.queue[:size])}
+                self.hp = {}
+                for n in self.run['names']:
+                    self.units[n].update(inside=True, queued=None, pos=(0, 5))
+                self.queue = self.queue[size:]
+            return {'action': 'queue', 'data': {'id': data['id'], 'joined': True}}
+        return None
+
+    def step(self, name, dx, dy):
+        u = self.unit(name)
+        nx, ny = u['pos'][0] + dx, u['pos'][1] + dy
+        self.steps[name] = self.steps.get(name, 0) + 1
+        if (nx, ny) in self.blocked or not (-1 <= nx <= 200):
+            return
+        if not u['inside'] and (nx, ny) == self.ENTRY:
+            return   # the entrance tile opens the window
+        u['pos'] = (nx, ny)
+
+
+class DungeonIO(ClosedIO):
+    def __init__(self, world, me='Tester Aaa', partner='Tester Bbb', **kw):
+        super().__init__(partner=partner, **kw)
+        self.w, self.me, self.looted, self.modes, self.partner_levels, self.cmds = world, me, 0, [], [], []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append((self.me, command))
+        return self.w.answer(self.me, command)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        self.cmds.append((other, command))
+        return self.w.answer(other, command)
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(self.me, opname, action, data)
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        self.other_asked.append((opname, action, data))
+        return self.w.request(other, opname, action, data)
+
+    async def partner(self, min_level=0):
+        self.partner_levels.append(min_level)
+        return self.partner_name if self.partner_name and self.w.levels.get(self.partner_name, self.w.level) >= min_level else None
+
+    async def go(self, place):
+        self.moves.append(place)
+        if self.w.town_ok:
+            self.w.unit(self.me)['pos'] = self.w.TEMPLE
+        return self.w.town_ok
+
+    async def go_of(self, other, place):
+        if self.w.town_ok:
+            self.w.unit(other)['pos'] = self.w.TEMPLE
+        return self.w.town_ok
+
+    async def step(self, dx, dy):
+        self.w.step(self.me, dx, dy)
+
+    async def step_of(self, other, dx, dy):
+        self.w.step(other, dx, dy)
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class DungeonClosed(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.DUNGEON_BUDGET, TX.DUNGEON_FIGHT_MIN, TX.DUNGEON_STUCK, TX.DUNGEON_QUEUE_WAIT)
+        TX.reset_dungeon_turn()
+
+    def tearDown(self):
+        TX.DUNGEON_BUDGET, TX.DUNGEON_FIGHT_MIN, TX.DUNGEON_STUCK, TX.DUNGEON_QUEUE_WAIT = self.keep
+        TX.reset_dungeon_turn()
+
+    def play(self, world, name='Tester Aaa', level=900, **kw):
+        io = DungeonIO(world, me=name, **kw)
+        return run(TX.check_closed_dungeon(io, name, 'Warrior', level)), io
+
+    # -------------------------------------------------------------------------------- the pure parts
+    def test_pick_refusal_problems_verdict(self):
+        listing = [{'id': 1, 'level': 150, 'size': 2}, {'id': 4, 'level': 600, 'size': 1}, {'id': 9, 'level': 2000, 'size': 1}]
+        a = {'level': 900, 'list': listing, 'on': True}
+        self.assertIsNone(TX.dungeon_refusal(a))
+        self.assertEqual(TX.dungeon_pick(a)[0]['id'], 4)                                # the highest of its level
+        self.assertEqual(TX.dungeon_pick(dict(a, level=2500))[0]['id'], 9)
+        d, why = TX.dungeon_pick(dict(a, level=100))
+        self.assertIsNone(d)
+        self.assertIn('level 100: the lowest dungeon needs level 150', why)
+        TX.DUNGEON_BUSY[4] = 'Tester Ccc'
+        self.assertEqual(TX.dungeon_pick(a)[0]['id'], 1)                                # 4 is played: the next one
+        TX.DUNGEON_DONE[1] = 'Tester Ddd'
+        d, why = TX.dungeon_pick(a)
+        self.assertIsNone(d)
+        self.assertIn('Tester Ccc', why)
+        self.assertIn('Tester Ddd', why)
+        for bad, word in ((None, 'old helper'), ({'err': 'no dungeon system'}, 'no dungeon system'), (dict(a, on=False), 'switch'),
+                          (dict(a, inside=True), 'inside'), (dict(a, queued=4), 'queued'), (dict(a, list=[]), 'no dungeon list')):
+            r = TX.dungeon_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        mine = {'run': {'side': 'tester', 'members': 2}}
+        self.assertEqual(TX.dungeon_problems(mine, 2), [])
+        self.assertEqual(TX.dungeon_problems({}, 2), [])
+        self.assertTrue(TX.dungeon_problems({'run': {'side': 'player', 'members': 1}}, 2))
+        self.assertTrue(TX.dungeon_problems({'run': {'side': 'tester', 'members': 3}}, 2))
+        self.assertEqual(TX.dungeon_problems({'run': {'side': 'tester', 'members': 3}}), [])
+        base = {'secs': 100, 'members': 1, 'steps': 5, 'came': 'foot'}
+        self.assertEqual(TX.dungeon_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.dungeon_verdict(dict(base, percent=10))[0], TX.PASS)
+        self.assertEqual(TX.dungeon_verdict(dict(base, won=True))[0], TX.PASS)
+        self.assertEqual(TX.dungeon_verdict(dict(base, fought=TX.DUNGEON_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.dungeon_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.dungeon_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.dungeon_verdict(base)[0], TX.SKIP)
+        self.assertIn('enter dungeon (no path)', TX.dungeon_verdict(dict(base, won=True, fallbacks=['enter dungeon (no path)']))[1])
+        self.assertIn('closed_dungeon', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_dungeon', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_dungeon'), TX.CLOSED_KEYS.index('closed_raid'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')
+
+    def test_the_closed_systems_are_the_servers(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'testers_core.lua'), encoding='utf-8') as f:
+            text = f.read()
+        line = [ln for ln in text.splitlines() if ln.startswith('K.CLOSED_SYSTEMS')][0]
+        keys = sorted(re.findall(r'(\w+) = true', line))
+        self.assertEqual(keys, sorted(TX.CLOSED_SYSTEMS), 'testers_core.lua K.CLOSED_SYSTEMS and tester_checks.py CLOSED_SYSTEMS agree')
+
+    # -------------------------------------------------------------------------------- walking like a person
+    def test_walk_by_path(self):
+        class W:
+            def __init__(self, answers):
+                self.answers, self.stepped = list(answers), 0
+
+        class IO(FakeIO):
+            def __init__(self, answers):
+                super().__init__()
+                self.queue_ = list(answers)
+                self.steps = []
+
+            async def helper(self, command, kind, wait=4.0):
+                return self.queue_.pop(0) if self.queue_ else None
+
+            async def step(self, dx, dy):
+                self.steps.append((dx, dy))
+        lead = {'name': 'Tester Aaa', 'lead': True}
+        io = IO([{'path': [1, 1], 'dist': 5}, {'path': [], 'dist': 1, 'pos': {}}])
+        how, got = run(TX.walk_by_path(io, lead, 'path x', 'path'))
+        self.assertEqual(how, 'foot')
+        self.assertEqual(io.steps, [(1, 0), (1, 0)])
+        io = IO([{'here': True}])
+        self.assertEqual(run(TX.walk_by_path(io, lead, 'path x', 'path'))[0], 'foot')
+        self.assertEqual(io.steps, [])
+        how, got = run(TX.walk_by_path(IO([{'err': 'no path'}]), lead, 'path x', 'path'))
+        self.assertEqual((how, got['err']), ('err', 'no path'))
+        how, got = run(TX.walk_by_path(IO([None]), lead, 'path x', 'path'))
+        self.assertEqual(how, 'err')
+        self.assertIn('no answer', got['err'])
+        how, got = run(TX.walk_by_path(IO([{'path': [], 'dist': 9}]), lead, 'path x', 'path'))
+        self.assertEqual((how, got['err']), ('err', 'an empty path'))
+        io = IO([{'path': [1], 'dist': 9}, {'path': [1], 'dist': 9}, {'path': [1], 'dist': 9}, {'path': [1], 'dist': 9}])
+        self.assertEqual(run(TX.walk_by_path(io, lead, 'path x', 'path'))[0], 'far')     # the steps do not bring it nearer
+        io = IO([{'path': [1], 'dist': 50 - i} for i in range(20)])
+        self.assertEqual(run(TX.walk_by_path(io, lead, 'path x', 'path', rounds=3))[0], 'far')   # still on the way after 3 asks
+        self.assertEqual(len(io.steps), 3)
+        self.assertIn('enter x (no path)', TX.fallback_note('enter x', 'no path'))
+
+    # -------------------------------------------------------------------------------- the check
+    def test_played_to_the_end(self):
+        world = DungeonWorld()
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertTrue(r.detail.startswith('Rootmaw: came'), r.detail)
+        self.assertIn('100% of the monsters dead', r.detail)
+        self.assertIn('boss slain', r.detail)
+        self.assertIn('came on foot from the temple', r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(world.teleports, 0)
+        self.assertNotIn(('Tester Aaa', 'enter dungeon'), io.cmds)                # it walked
+        self.assertLess(io.cmds.index(('Tester Aaa', 'bag')), io.cmds.index(('Tester Aaa', 'path dungeon')))
+        self.assertIn(('dungeons', 'fetch', {}), io.asked)
+        self.assertEqual([a for a in io.asked if a[1] == 'queue'], [('dungeons', 'queue', {'id': 4, 'difficulty': 1})])
+        self.assertGreaterEqual(io.looted, 2)                                     # a loot after the kills and one after the boss
+        self.assertGreater(world.steps['Tester Aaa'], 50)
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))                # no walk back to the hunt, but the bot may still flee
+        self.assertEqual(io.modes[-1][1], False)
+        self.assertEqual(io.cmds[-2:], [('Tester Aaa', 'dungeon close'), ('Tester Aaa', 'dungeon state')])
+        self.assertEqual(TX.DUNGEON_DONE, {4: 'Tester Aaa'})
+        self.assertEqual(TX.DUNGEON_BUSY, {})
+        self.assertEqual(TX.DUNGEON_MEMBERS, {})
+        self.assertEqual(io.moves.count('town'), 1)
+        self.assertIn(('Tester Aaa', 'dungeon path'), io.cmds)                    # inside: the engine path to the goal
+
+    def test_a_party_of_two_in_a_dungeon_of_two(self):
+        world = DungeonWorld(level=300, dungeons=(1,))
+        r, io = self.play(world, level=300)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('2 bot(s)', r.detail)
+        self.assertEqual(io.partner_levels, [150])
+        self.assertEqual(io.partied[0], ('form', 'Tester Bbb'))
+        self.assertIn(('leave', 'Tester Bbb'), io.partied)
+        self.assertEqual([a for a in io.other_asked if a[1] == 'queue'], [('dungeons', 'queue', {'id': 1, 'difficulty': 1})])
+        self.assertGreater(world.steps['Tester Bbb'], 20)                         # the member walked to the entrance and in
+        self.assertIn(('Tester Bbb', 'path dungeon'), io.cmds)
+        self.assertEqual(TX.DUNGEON_MEMBERS, {})
+        self.assertEqual(io.modes[0][0], ['Tester Aaa', 'Tester Bbb'])
+
+    def test_a_member_of_another_party_does_no_second_run(self):
+        TX.DUNGEON_MEMBERS['Tester Aaa'] = 'Tester Zzz'
+        r, io = self.play(DungeonWorld())
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('member of the party of Tester Zzz', r.detail)
+        self.assertEqual(io.asked, [])
+
+    def test_each_dungeon_once_per_run(self):
+        world = DungeonWorld()
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        r2, io2 = self.play(DungeonWorld(), name='Tester Ccc', partner=None)       # the second bot gets the other dungeon, played alone
+        self.assertEqual(r2.status, TX.PASS, r2.detail)
+        self.assertEqual(TX.DUNGEON_DONE, {4: 'Tester Aaa', 1: 'Tester Ccc'})
+        self.assertEqual([a for a in io2.asked if a[1] == 'queue'], [('dungeons', 'queue', {'id': 1, 'difficulty': 1})])
+        TX.DUNGEON_DONE.update({4: 'a', 1: 'b'})
+        r3, io3 = self.play(DungeonWorld(), name='Tester Ddd', partner=None)
+        self.assertEqual(r3.status, TX.SKIP)
+        self.assertIn('was played in this run', r3.detail)
+        self.assertEqual(io3.asked, [])
+
+    def test_no_path_the_teleport_is_the_fallback_and_counted(self):
+        world = DungeonWorld(no_path=True)
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(world.teleports, 1)
+        self.assertIn(('Tester Aaa', 'enter dungeon'), io.cmds)
+        self.assertEqual(r.fallbacks, ['enter dungeon (no path)'])
+        self.assertIn('teleport in place of walking: enter dungeon (no path)', r.detail)
+        self.assertIn('by a helper teleport next to the entrance', r.detail)
+        self.assertEqual(r.as_dict()['fallbacks'], ['enter dungeon (no path)'])
+        lines = TX.report_lines([r.as_dict()])
+        self.assertTrue(any('helper teleports in place of walking: 1' in ln for ln in lines), lines)
+        self.assertTrue(any('closed_dungeon' in ln and 'enter dungeon (no path)' in ln and '1x' in ln for ln in lines), lines)
+        self.assertEqual([ln for ln in TX.report_lines([TX.Result('x', 'b', 'c', TX.PASS).as_dict()]) if 'teleports' in ln], [])
+        TX.reset_dungeon_turn()
+        r, io = self.play(DungeonWorld(no_path=True, no_enter=True), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no way to dungeon', r.detail)
+        self.assertEqual([a for a in io.asked if a[1] == 'queue'], [])
+        self.assertEqual(TX.DUNGEON_BUSY, {})
+
+    def test_a_blocked_way_to_the_entrance_falls_back(self):
+        world = DungeonWorld(blocked={(97, 5), (96, 5), (95, 5), (94, 5), (93, 5), (93, 4), (93, 6), (94, 3), (94, 4), (94, 6), (93, 3)})
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(r.fallbacks and r.fallbacks[0].startswith('enter dungeon'), True)
+
+    def test_refusals_before_the_walk(self):
+        for over, word in ((dict(on=False), 'switch'), (dict(level=100), 'level 100')):
+            r, io = self.play(DungeonWorld(**over), level=over.get('level', 900))
+            self.assertEqual(r.status, TX.SKIP)
+            self.assertIn(word, r.detail)
+            self.assertEqual(io.asked, [])
+            self.assertEqual(TX.DUNGEON_BUSY, {})
+        r, io = self.play(DungeonWorld(town_ok=False), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not bring the bot to the temple', r.detail)
+        io = DungeonIO(DungeonWorld())
+        io.w.answer = lambda name, command: None
+        r = run(TX.check_closed_dungeon(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual((r.status, 'old helper file' in r.detail), (TX.SKIP, True))
+
+    def test_the_queue_refuses_or_waits(self):
+        r, io = self.play(DungeonWorld(refuse=True), partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('queue refused the bot', r.detail)
+        self.assertEqual(TX.DUNGEON_DONE, {})
+        TX.reset_dungeon_turn()
+        TX.DUNGEON_QUEUE_WAIT = 6.0
+        world = DungeonWorld(queued_forever=True)
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not start in 6 s', r.detail)
+        self.assertEqual([a for a in io.asked if a[1] == 'queue'].__len__(), 2)       # the entry is left by asking again
+        self.assertIsNone(world.unit('Tester Aaa')['queued'])
+
+    def test_a_tester_in_a_players_run_fails(self):
+        for over, word in ((dict(side='player'), 'player dungeon run'), (dict(members=3), 'players in the testers')):
+            TX.reset_dungeon_turn()
+            r, io = self.play(DungeonWorld(**over), partner=None)
+            self.assertEqual(r.status, TX.FAIL, r.detail)
+            self.assertIn(word, r.detail)
+            self.assertIn('BUG closed_dungeon', r.bug_line())
+            self.assertEqual(TX.DUNGEON_DONE, {})
+
+    def test_no_kill_in_a_fight_is_a_failure(self):
+        TX.DUNGEON_BUDGET, TX.DUNGEON_FIGHT_MIN = 60.0, 20.0
+        r, io = self.play(DungeonWorld(never_kill=True), partner=None)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('killed none', r.detail)
+        self.assertEqual(TX.DUNGEON_DONE, {})
+
+    def test_a_walk_that_never_moves_is_a_skip(self):
+        TX.DUNGEON_BUDGET, TX.DUNGEON_STUCK = 60.0, 10.0
+        world = DungeonWorld(blocked={(x, y) for x in range(0, 40) for y in range(0, 12)} - {(0, 5)})
+        world.blocked.discard((0, 5))
+        r, io = self.play(world, partner=None)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('blocked', r.detail)
+
+    def test_the_budget_closes_a_slow_run(self):
+        TX.DUNGEON_BUDGET = 8.0
+        world = DungeonWorld(kill_after=50)
+        r, io = self.play(world, partner=None)
+        self.assertIn(r.status, (TX.PASS, TX.SKIP), r.detail)
+        self.assertEqual(world.closed, 1)
+        self.assertIn(('Tester Aaa', 'dungeon close'), io.cmds)
+        self.assertFalse(world.unit('Tester Aaa')['inside'])
+        self.assertEqual(TX.DUNGEON_BUSY, {})
+
+    def test_a_bot_still_inside_after_the_close_fails(self):
+        world = DungeonWorld()
+        io = DungeonIO(world, partner=None)
+        real = world.answer
+
+        def stubborn(name, command):
+            if command == 'dungeon close':
+                return dict(world.facts(name), closed=False)
+            return real(name, command)
+        world.answer = stubborn
+        TX.DUNGEON_BUDGET = 8.0
+        world2 = world
+        world2.kill_after = 50
+        r = run(TX.check_closed_dungeon(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('still inside the dungeon after the close', r.detail)
+
+
 if __name__ == '__main__':
     unittest.main()

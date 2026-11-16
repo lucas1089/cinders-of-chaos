@@ -421,7 +421,14 @@ do
 	check(t:find("O588", 1, true) and t:find("testerRefusal", 1, true) and t:find("K.allocSlot", 1, true), "raid.lua carries the closed-mode guard (O588)")
 	check(not t:find("Testers do not use this queue", 1, true), "raid.lua no longer refuses every tester")
 end
-for _, file in ipairs({"dungeons", "groupqueue", "party_finder"}) do
+-- the dungeons (O589) are a closed system too: the entry carries its side (dungeons_core.lua), no blanket refusal left
+do
+	local t = source("data/scripts/chaos/dungeons.lua")
+	check(t:find("O589", 1, true) and t:find("DC.pick", 1, true) and t:find("sideOfPlayer", 1, true), "dungeons.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "dungeons.lua no longer refuses every tester")
+	check(t:find('run.side ~= "tester"', 1, true), "dungeons.lua never ranks or records a tester run")
+end
+for _, file in ipairs({"groupqueue", "party_finder"}) do
 	local t = source("data/scripts/chaos/" .. file .. ".lua")
 	check(t:find("Chaos.isTester(player)", 1, true) and t:find("Testers do not use this queue", 1, true),
 		file .. ".lua refuses a tester: a queue that matches players")

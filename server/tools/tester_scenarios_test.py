@@ -74,6 +74,10 @@ for o in ('invasion', 'riftAtlas', 'waystoneAtlas', 'daily'):  # the same word o
 ok('raid' not in G.OUT_OF_SCOPE and 'raid' in G.CLOSED_MODE, 'the raid is a closed-mode system, no longer out of scope (O588)')
 ok(table['opcodes']['raid']['actions'] == [] and 'start' in table['opcodes']['raid']['skip'],
    'the raid window is never sent by the random request behaviour: only the closed check closed_raid starts it (O588)')
+ok(table['opcodes']['dungeons']['actions'] == ['fetch'] and table['opcodes']['dungeons']['skip'] == ['queue'],
+   'the dungeons window is fetched at random; only the closed check closed_dungeon queues (O589)')
+ok(all(a in table['opcodes'][o]['skip'] for o, acts in G.CLOSED_ONLY.items() for a in acts), 'every closed-only action is skipped from the random behaviour')
+ok(table['systems']['dungeons']['kind'] == 'opcode' and 'dungeons.lua' in table['systems']['dungeons']['files'], 'dungeons is a system with its own core (O589)')
 ok('conquest' not in G.OUT_OF_SCOPE and table['systems']['conquest']['kind'] == 'opcode', 'conquest is a solo token vendor, not out of scope')
 eq(sorted(table['opcodes']['conquest']['actions']), ['buy', 'close', 'open'], 'conquest: the vendor window actions are sent')
 # every skipped action with its reason: nothing is skipped without one, and the reason names the rule that skipped it
@@ -81,7 +85,7 @@ rows = G.skipped(table)
 ok(rows, 'there are skipped actions')
 for o, a, why in rows:
     ok(why, '%s %s: a reason why the bots never send it' % (o, a))
-    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope')),
+    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope', 'only the closed check')),
        '%s %s: a known reason: %s' % (o, a, why))
     if a in G.ADMIN and not why.startswith('out of scope'):
         ok(a not in G.ADMIN_ALLOW.get(o, {}), '%s %s: an allowed word is not skipped' % (o, a))

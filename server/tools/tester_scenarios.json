@@ -8,7 +8,7 @@
  ],
  "counts": {
   "closed": 11,
-  "opcode": 72,
+  "opcode": 73,
   "out": 28,
   "passive": 110,
   "place": 15,
@@ -9465,8 +9465,7 @@
   },
   "dungeons": {
    "actions": [
-    "fetch",
-    "queue"
+    "fetch"
    ],
    "client": [],
    "dataKeys": [
@@ -9479,9 +9478,15 @@
    ],
    "opcode": 109,
    "out": false,
-   "skip": [],
-   "skipWhy": {},
-   "systems": []
+   "skip": [
+    "queue"
+   ],
+   "skipWhy": {
+    "queue": "only the closed check closed_dungeon queues (it walks to the entrance, plays the run and leaves; a random queue would teleport a bot into a run it does not play)"
+   },
+   "systems": [
+    "dungeons"
+   ]
   },
   "emberCache": {
    "actions": [
@@ -12138,6 +12143,17 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "dungeons": {
+   "files": [
+    "dungeons.lua",
+    "dungeons_difficulty.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "dungeons"
+   ],
+   "talkactions": []
   },
   "embercache": {
    "files": [

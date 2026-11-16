@@ -9696,7 +9696,8 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
   - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
     sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
-  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, and the raid (O588). Only a `--closed` run reaches
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, and the raid (O588); the dungeons (O589) are
+    reached at random by `fetch` only, their `queue` only by the closed check. Only a `--closed` run reaches
     them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
 - Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
@@ -9792,8 +9793,8 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
     With the switch off a tester cannot buy, list, post or fill.
   - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
     refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
-  - queues that match players (dungeons, group queue, party finder): testers are refused, switch on or off.
-    Dungeons, group queue, arena and battleground were not tester-aware before (audit 2026-11-16).
+  - queues that match players (group queue, party finder): testers are refused, switch on or off (O589 changes this next, see below).
+    The dungeons are a closed system since O589 ("The rest of the closed audit (O589)").
   - the raid (`raid.lua`, O588): a party of testers only, in the slot `testerSlot` of its own, only with the switch on; a tester and
     a player are never in the same raid; no broadcast, board, trophy or Discord event ("The raid in closed mode" below).
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
@@ -9868,8 +9869,7 @@ raid on a lane that answers like the helper: the way on foot, the fallback, the 
 
 Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could do like a person, with a plan each:
 - `patchnotes`: done now, read and mark-seen requests of the window (no engine work): moved out of `OUT_OF_SCOPE`.
-- dungeons (`dungeons.lua` refuses testers, the `queue` action is refused): the same recipe as the raid (closed system, side of the
-  queue, slot of its own, `probe` and `guide`), the same walk and fight loop of `closed_raid` with another guide. The biggest gap.
+- dungeons: done in O589 (step 1 below).
 - `groupqueue` and `party_finder` (match players): a queue per side like the arena (a tester entry only meets testers, a listing
   carries its side); then the bots can form parties of testers from the finder, and dungeons can be queued.
 - `mentor`, `guildboss`, `siege`, `orbexchange`, `community` (pair, guild or market content of real players): each needs its own
@@ -9882,6 +9882,56 @@ Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could
   a person finds a key in a hunt, opens the rift at the portal and walks it. The rift is the next one for the guide recipe (the
   layout is a known map).
 - left as they are: real money, staff tools, referral, reports, beta, telemetry and the library or generator systems.
+
+#### The rest of the closed audit (O589)
+
+Owner 2026-11-16 (translated): "the bots must play the game's full content and in the most human way possible". The owner approved the
+plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
+person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
+ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task).
+
+##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
+
+Server rules (`dungeon` is in `K.CLOSED_SYSTEMS`; the blanket "Testers do not use this queue" refusal of O582 is gone):
+- With the switch off a tester cannot queue ("Closed test mode is off: the testers do not play this."), in the window's `queue` and in
+  `ChaosDungeons.queueJoin` (the Group Queue's door); a queued tester is dropped by the next tick when the switch goes off.
+- A queue entry has a side (`player` or `tester`). `ChaosDungeonsCore.pick` picks the entries of a run: one side and one difficulty
+  (a bucket); a full group goes at once, fewer after `soloWaitSeconds`. A tester bucket starts only with the switch on and never while a
+  player entry waits in that dungeon's queue (players first: a player is never kept behind a tester). A tester and a player are never in
+  one run (`run.side`). The dungeon itself is the base map area as always (one run per dungeon): the testers' instance is the run,
+  not a reserved dungeon, so no dungeon is taken from the players.
+- A tester run is never ranked or recorded: no `chaos_dungeon_runs` row, no `ChaosRecords.dungeonClear` (so no record, board or Discord
+  event). The rewards (experience, gold, loot, tokens, the boss chest) are the testers' own. The run ends when the switch goes off (a failed
+  run: everyone out where they entered).
+- `Chaos.mcSiblings`: two testers on one address are not multi-clients (the bots all come from one IP; `Chaos.isMultiClient` refuses the
+  dungeon, and the closed checks of arena and raid ask the same). A tester next to a player on the address still is.
+- `ChaosDungeons.probe(player)` is what a person sees: outside the list (id, title, level, group size, the difficulty unlocked), queued the
+  dungeon, inside the kill counter (percent, left, total), the boss and its health, the time left, and `guide`
+  (`ChaosDungeonsCore.guide`: the monsters nearest first until the boss is unlocked, then the boss; `wait` when nothing is in sight or the
+  run is over). `ChaosDungeons.testerClose(player)` ends the testers' own run of the asker, or an empty one. Both are read or called only
+  by the TEST ONLY helper.
+
+How the bots play it (`closed_dungeon`, a closed check before `closed_raid`; helper v14 `!tester dungeon [state | path | close]`):
+1. The dungeon: the highest of the bot's level (`dungeon_pick`) that no other bot played or plays in this run (one play of each dungeon is the
+   coverage). A bot below the lowest level (150) is a SKIP with the level. A dungeon of two takes a free partner of its level (a party).
+2. Potions topped up, the temple, then on foot to a dungeon entrance by the engine path (`!tester path dungeon`, see "The way on foot"
+   below), the last step onto the entrance tile opens the window like a player's; `fetch` and `queue` are the window's requests. Only when
+   the path fails does the helper's `enter dungeon` put the bot next to the entrance; the result names it and the report counts it.
+3. Queued: the bot waits up to 90 s for its run (a player's run ahead of it is a SKIP). Inside: a look every second (`dungeon state`), then up
+   to 6 steps of the engine path to the guide's goal (`dungeon path`, within reach of the monster); a step that did not move the bot makes it go
+   round (`RaidWalker`). The fights are the bot's own (rotation, potions, flight at low health: a dungeon does not catch a lethal hit, so a bot
+   that flees leaves the run like a person). The loot is taken after kills and after the boss. No teleport inside the run.
+4. After the boss the server's exit teleport (10 s) takes the bot out; the time of the check is 1000 s, then `dungeon close` (the failed
+   run) so the dungeon is free. Verdict (`dungeon_verdict`): PASS when a monster died or the boss fell, FAIL for a tester in a player's run,
+   more players than the party, 180 s at a monster or the boss without progress, a bot still inside after the close; SKIP with the reason for
+   the level, a queue that refused the bot or a run of players ahead, a walk blocked for 30 s, a death before any kill.
+Clean-up: the `chaos_dungeon_progress` rows of the testers (`tester_closed.py`). The scenario table skips the random `queue` of the window
+(`CLOSED_ONLY` in `gen_tester_scenarios.py`): only `closed_dungeon` queues; `fetch` stays in the random requests.
+Proven by tests: the rules, the queue by side, the probe and guide on a mocked engine (`dungeons_closed_test.lua`), the helper command
+(`tester_helper_test.lua`), the whole check on a lane world with a party of two, the fallback and each refusal (`tester_checks_test.py`
+`DungeonClosed`). Needs a live run: the engine's `getPathTo` over a long way (the search is bounded: the walk asks again, up to 8 rounds of
+80 steps, else the helper's teleport is the counted fallback), the real monsters and their placement, the exit teleport.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

@@ -208,6 +208,12 @@ ADMIN_ALLOW = {
     'lootfilter': {'reset': "the player's own filter counters (scope session, total or all)"},
     'trainerMeter': {'reset': "the player's own dummy meter"},
 }
+# actions a bot sends only from a closed check that walks, fights and leaves (O589), never from the random request behaviour: {opcode
+# name: {action: why}}. They stay actions of the opcode (the closed check sends them), skipped here with the reason
+CLOSED_ONLY = {
+    'dungeons': {'queue': 'only the closed check closed_dungeon queues (it walks to the entrance, plays the run and leaves; a random queue '
+                          'would teleport a bot into a run it does not play)'},
+}
 
 
 def read(path):
@@ -442,6 +448,10 @@ def build():
         bad = sorted(a for a in acts if a not in ADMIN)
         if bad:
             raise SystemExit('ADMIN_ALLOW names an action that is not in ADMIN: %s %s' % (o, bad))
+    for o, acts in CLOSED_ONLY.items():
+        missing = sorted(a for a in acts if a not in table.get(o, {}).get('actions', []))
+        if o not in table or missing:
+            raise SystemExit('CLOSED_ONLY names an opcode or action no server file answers: %s %s' % (o, missing))
     for e in EFFECTS:
         o = e['opcode']
         t = table.get(o)
@@ -487,6 +497,8 @@ def build():
                 why = 'staff or world action (ADMIN): it would change the world for real players or hand out value'
             elif DENY_RE.search(a):
                 why = 'money, report, ticket or code action (DENY_RE)'
+            elif a in CLOSED_ONLY.get(o, {}):
+                why = CLOSED_ONLY[o][a]
             else:
                 continue
             t['skip'].append(a)

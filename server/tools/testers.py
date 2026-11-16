@@ -857,11 +857,13 @@ class CheckIO(KeyIO):
         if self.alive():
             await self.bot.do_loot(self.clock)
 
-    def raid_mode(self, names, on):
+    def raid_mode(self, names, on, keep_flee=False):
+        """inside a run of closed mode: no walk back to the hunt; `keep_flee`: the bot may still flee to the temple at low health
+        (a dungeon does not catch a lethal hit as the raid does, so there the bot flees like a person, and leaves the run)"""
         for name in names or []:
             b = self._bot(name)
             if b is not None:
-                b.in_raid = bool(on)
+                b.in_raid = bool(on) and not keep_flee
                 b.stay = bool(on)
 
     def sql(self, statements):
