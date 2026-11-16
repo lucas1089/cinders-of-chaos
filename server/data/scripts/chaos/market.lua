@@ -363,6 +363,10 @@ local function currentSeason()
 end
 
 local function realmOfGuid(guid)
+	-- closed test mode (O582): a tester trades in the testers' own book, whatever season runs; nobody else sees it
+	if Chaos.isTesterGuid and Chaos.isTesterGuid(guid) then
+		return MC.TESTER_REALM
+	end
 	local S = ChaosSeason
 	if S and S.realmOfGuid then
 		local ok, r = pcall(S.realmOfGuid, guid)
@@ -374,6 +378,9 @@ local function realmOfGuid(guid)
 end
 
 local function realmOf(player)
+	if Chaos.isTester(player) then
+		return MC.TESTER_REALM -- the storage, not the guid list: a reload never leaks a tester order into the standard book
+	end
 	return realmOfGuid(player:getGuid())
 end
 
@@ -1163,8 +1170,8 @@ function MK.orderFind(player, q)
 	if bag and isContainer(bag) then
 		walk(bag, 1)
 	end
-	for _, r in ipairs(sql(string.format("SELECT `item_id` FROM `%s` WHERE `name` LIKE %s ORDER BY `id` DESC LIMIT 200", T.offers,
-			esc("%" .. MC.likeEscape(q) .. "%")), {{"item_id", "n"}})) do
+	for _, r in ipairs(sql(string.format("SELECT `item_id` FROM `%s` WHERE `name` LIKE %s AND %s ORDER BY `id` DESC LIMIT 200", T.offers,
+			esc("%" .. MC.likeEscape(q) .. "%"), MC.realmClause(realmOf(player), (currentSeason()))), {{"item_id", "n"}})) do
 		add(r.item_id)
 	end
 	return out
@@ -1316,6 +1323,9 @@ end
 
 -- may a market of this realm trade in Chaos Coins? (season.lua: season markets are gold only; season_config.lua market)
 local function coinsAllowed(realm)
+	if realm == MC.TESTER_REALM then
+		return false -- the testers' book trades gold only: no Chaos Coins, never real money (closed test mode, O582)
+	end
 	local S = ChaosSeason
 	if (realm or 0) == 0 or not S or not S.marketCurrencyAllowed then
 		return true
@@ -1813,9 +1823,17 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local d = type(msg.data) == "table" and msg.data or {}
 	local a = msg.action
 	-- tester bots never trade with players: no buying, listing, posting or filling (testers.lua)
-	if ChaosTestersCore and ChaosTestersCore.marketBlocked(a) and Chaos.isTester(player) then
-		refuse(player, Chaos.t(player, "Tester characters cannot trade on the market."))
-		return
+	-- closed test mode (O582): they trade in their own book, gold only, and only while the mode is on
+	if Chaos.isTester(player) then
+		local K = ChaosTestersCore
+		local blocked = K == nil or K.marketRefusal(a, true, K.closedOn()) ~= nil
+		if not blocked and K.marketBlocked(a) and ((tonumber(d.coins) or 0) > 0 or d.cur == "coins" or d.currency == "coins") then
+			blocked = true
+		end
+		if blocked then
+			refuse(player, Chaos.t(player, "Tester characters cannot trade on the market."))
+			return
+		end
 	end
 	if a == "open" then
 		MK.open(player)

@@ -174,6 +174,10 @@ function G.guildOf(player)
 		return nil
 	end
 	G.names[g:getId()] = g:getName()
+	-- closed test mode (O582): a tester only has a tester guild, a player never has one (testers.lua)
+	if ChaosTesters and ChaosTesters.guildBlocked and ChaosTesters.guildBlocked(player, g:getId(), g:getName()) then
+		return nil
+	end
 	return g:getId(), g:getName(), player:getGuildLevel()
 end
 

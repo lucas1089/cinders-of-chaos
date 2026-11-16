@@ -403,6 +403,10 @@ final class ChaosBazaar {
 		if (!$l || $l['status'] !== 'active' || (int)$l['ends_at'] <= $now) {
 			return array(false, 'This auction is not open.');
 		}
+		if (self::isTesterName((string)($l['player_name'] ?? ''))) {
+			// the staff's tester bots (closed test mode, O582) are never for sale: no Chaos Coins ever move for them
+			return array(false, 'This auction is not open.');
+		}
 		if ((int)$l['seller_account_id'] === $accountId) {
 			return array(false, 'You cannot bid on your own character.');
 		}
@@ -617,8 +621,16 @@ final class ChaosBazaar {
 	}
 
 	// ------------------------------------------------------------------ views
+	/** A tester bot's name, "Tester Xxx" (server/README.md "Tester bots"): its listing is never shown or bid on. */
+	public static function isTesterName(string $name): bool {
+		return preg_match('/^Tester [A-Z][a-z][a-z]$/', $name) === 1;
+	}
+
 	public function open(int $limit = 50): array {
-		return $this->db->rows("SELECT * FROM `chaos_bazaar_listings` WHERE `status` = 'active' AND `ends_at` > ? ORDER BY `ends_at` LIMIT ?;", [$this->now(), $limit]);
+		$rows = $this->db->rows("SELECT * FROM `chaos_bazaar_listings` WHERE `status` = 'active' AND `ends_at` > ? ORDER BY `ends_at` LIMIT ?;", [$this->now(), $limit]);
+		return array_values(array_filter($rows, function ($r) {
+			return !self::isTesterName((string)($r['player_name'] ?? ''));
+		}));
 	}
 
 	public function ofSeller(int $accountId): array {

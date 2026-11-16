@@ -8,7 +8,7 @@ local function check(cond, label)
 	count = count + 1
 	if not cond then
 		failures = failures + 1
-		print("FAIL " .. label)
+		io.stderr:write("FAIL " .. label .. "\n")
 	end
 end
 local function eq(a, b, label)
@@ -168,7 +168,19 @@ eq(combat(tester, ana), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "a tester never h
 eq(combat(ana, tester), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "a player never hits a tester")
 eq(combat(summon(tester), ana), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "a tester's summon never hits a player")
 eq(combat(ana, summon(tester)), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "a player never hits a tester's summon")
-eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves")
+K.reader, K.clock = function() return nil end, function() return 1000 end
+K.resetClosedCache()
+eq(combat(tester, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "two testers never fight while closed mode is off")
+eq(combat(summon(tester), tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "nor a tester's summon and another tester")
+K.reader, K.clock = function() return "on" end, function() return 2000 end
+K.resetClosedCache()
+eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves in closed mode")
+eq(combat(summon(tester), tester2), RETURNVALUE_NOERROR, "their summons too")
+eq(combat(tester, ana), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a tester still never hits a player")
+eq(combat(ana, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a player still never hits a tester")
+eq(combat(tester, summon(tester)), RETURNVALUE_NOERROR, "a tester and its own summon")
+K.reader, K.clock = nil, nil
+K.resetClosedCache()
 eq(combat(ana, bob), RETURNVALUE_NOERROR, "players among themselves: other systems decide")
 eq(combat(tester, monster()), RETURNVALUE_NOERROR, "a tester hits a monster")
 eq(combat(monster(), tester), RETURNVALUE_NOERROR, "a monster hits a tester: real damage")
@@ -230,6 +242,184 @@ eq(move(tester, mail(2160, ""), 1, nil, mailbox), RETURNVALUE_NOERROR, "other it
 eq(moved, 3, "the depot check runs after")
 dofile("data/scripts/chaos/testers.lua")
 check(ChaosDepot.onMoveItem == move, "the move wrapper is installed once")
+
+-- ------------------------------------------------------------------ closed test mode (O582), the rules
+check(K.parseClosed("on") and K.parseClosed(" ON \n") and K.parseClosed("On"), "the word on, any case, trimmed")
+check(not K.parseClosed("off") and not K.parseClosed("") and not K.parseClosed("onn") and not K.parseClosed("1")
+	and not K.parseClosed("on off") and not K.parseClosed(nil) and not K.parseClosed(12), "anything else is off")
+local now, text = 100, "on"
+K.reader, K.clock = function() return text end, function() return now end
+K.resetClosedCache()
+check(K.closedOn(), "the file says on")
+text = "off"
+check(K.closedOn(), "read at most every few seconds")
+now = now + K.CLOSED_TTL
+check(not K.closedOn(), "then read again: off")
+K.reader = function() error("disk gone") end
+now = now + K.CLOSED_TTL
+check(not K.closedOn(), "a read that fails is off")
+K.reader = function() return nil end
+now = now + K.CLOSED_TTL
+check(not K.closedOn(), "no file is off")
+K.reader = function() return "on" end
+now = now - 1000
+K.resetClosedCache()
+check(K.closedOn(), "on again")
+now = now - 500
+check(K.closedOn(), "a clock that went back reads again")
+K.reader, K.clock = nil, nil
+K.resetClosedCache()
+
+eq(K.sideOf({true, true}), "tester", "all testers")
+eq(K.sideOf({false}), "player", "a player")
+eq(K.sideOf({true, false}), nil, "a tester and a player: no side")
+eq(K.sideOf({false, true, false}), nil, "a tester in a party of players")
+eq(K.sideOf({}), nil, "nobody")
+eq(K.sideOf({true, "?"}), nil, "an unknown party")
+eq(K.sideOf(nil), nil, "no list")
+for sys in pairs(K.CLOSED_SYSTEMS) do
+	check(K.sameSide(sys, true, "tester", "tester"), sys .. ": testers together, mode on")
+	local ok, why = K.sameSide(sys, false, "tester", "tester")
+	check(not ok and why == "closed-off", sys .. ": testers together, mode off")
+	ok, why = K.sameSide(sys, true, "tester", "player")
+	check(not ok and why == "apart", sys .. ": a tester against a player, mode on")
+	ok, why = K.sameSide(sys, true, "player", "tester")
+	check(not ok and why == "apart", sys .. ": a player against a tester, mode on")
+	ok = K.sameSide(sys, false, "player", "tester")
+	check(not ok, sys .. ": a player against a tester, mode off")
+	ok, why = K.sameSide(sys, true, nil, "tester")
+	check(not ok and why == "mixed", sys .. ": an unknown side is refused")
+	ok, why = K.sameSide(sys, true, "tester", nil)
+	check(not ok and why == "mixed", sys .. ": an unknown side is refused (second)")
+	check(K.sameSide(sys, false, "player", "player"), sys .. ": players among themselves are not a closed-mode matter")
+end
+check(not K.sameSide("dungeons", true, "tester", "tester"), "a system outside the closed list never pairs testers")
+check(not K.sameSide("arena", "yes", "tester", "tester"), "only the boolean true switches it on")
+eq(K.joinRefusal("arena", true, {true, true}), nil, "a tester party queues in closed mode")
+eq(K.joinRefusal("arena", false, {true}), "closed-off", "a tester queues with the mode off: refused")
+eq(K.joinRefusal("arena", true, {true, false}), "mixed", "a mixed party is refused")
+eq(K.joinRefusal("arena", false, {false, false}), nil, "players queue as always")
+for why, line in pairs(K.CLOSED_TEXT) do
+	check(type(line) == "string" and line ~= "", "a refusal text for " .. why)
+end
+
+eq(K.guildSide("Tester Guild Alfa", true, true), "tester", "a tester guild")
+eq(K.guildSide("Iron Crows", false, false), "player", "a player guild")
+eq(K.guildSide("Tester Guild Alfa", true, false), nil, "a tester guild with a player member")
+eq(K.guildSide("Iron Crows", true, true), nil, "testers in a player guild: no side")
+eq(K.guildSide("Iron Crows", true, false), nil, "a tester among players")
+eq(K.guildSide("Tester Guild Alfa", nil, nil), nil, "unknown members")
+eq(K.guildSide("Tester Foo", false, false), "player", "a player's guild named like a tester one is still theirs")
+eq(K.guildBlocked(true, "Tester Guild Alfa", true, true, true), nil, "a tester in a tester guild, mode on")
+eq(K.guildBlocked(true, "Tester Guild Alfa", true, true, false), "closed-off", "mode off")
+eq(K.guildBlocked(true, "Iron Crows", false, false, true), "apart", "a tester in a player guild")
+eq(K.guildBlocked(true, "Iron Crows", true, false, true), "mixed", "a tester in a mixed guild")
+eq(K.guildBlocked(true, "Tester Guild Alfa", nil, nil, true), "mixed", "a tester with an unknown guild")
+eq(K.guildBlocked(false, "Tester Guild Alfa", true, true, true), "apart", "a player in a tester guild")
+eq(K.guildBlocked(false, "Tester Guild Alfa", true, false, true), "mixed", "a player in a tester guild with testers")
+eq(K.guildBlocked(false, "Tester Guild Alfa", nil, nil, true), "mixed", "a player in a tester-named guild, unknown members")
+eq(K.guildBlocked(false, "Iron Crows", false, false, true), nil, "a player in a player guild")
+eq(K.guildBlocked(false, "Iron Crows", true, false, false), nil, "a player is not blocked by a stray tester of its guild")
+
+eq(K.marketRealm(true, 0), K.REALM, "a tester trades in the tester book")
+eq(K.marketRealm(true, 5), K.REALM, "whatever season runs")
+eq(K.marketRealm(false, 5), 5, "a player in its own realm")
+check(K.REALM > 1000000, "no season has the tester realm")
+eq(K.marketRefusal("buy", true, false), "Tester characters cannot trade on the market.", "mode off: a tester cannot buy")
+eq(K.marketRefusal("orderPost", true, nil), "Tester characters cannot trade on the market.", "unknown mode is off")
+eq(K.marketRefusal("fill", true, "on"), "Tester characters cannot trade on the market.", "only the boolean true")
+eq(K.marketRefusal("buy", true, true), nil, "mode on: a tester buys in its book")
+eq(K.marketRefusal("browse", true, false), nil, "looking is always allowed")
+eq(K.marketRefusal("buy", false, false), nil, "a player is not this rule's business")
+check(not K.marketCoinsOk(K.REALM) and K.marketCoinsOk(0) and K.marketCoinsOk(3), "the tester book trades gold only")
+
+-- testers.lua: the guild sides from the database (members' tester storage), the war rule and the guild block
+do
+	local guilds = {[1] = {n = 3, t = 3}, [2] = {n = 2, t = 0}, [3] = {n = 3, t = 1}, [4] = {n = 0, t = 0}}
+	local queries, row = 0, nil
+	local realStore = db.storeQuery
+	db.storeQuery = function(sql)
+		queries = queries + 1
+		local gid = tonumber(sql:match("`m`.`guild_id` = (%d+)"))
+		if not guilds[gid] then error("database gone") end
+		row = guilds[gid]
+		return 1
+	end
+	local realNum, realFree = result.getNumber, result.free
+	result.getNumber = function(_, k) return row[k] end
+	result.free = function() end
+	local X = ChaosTesters
+	K.reader, K.clock = function() return "on" end, function() return os.time() end
+	K.resetClosedCache()
+	eq(X.guildSide(1, "Tester Guild Alfa"), "tester", "a guild of three testers")
+	eq(X.guildSide(2, "Iron Crows"), "player", "a guild of players")
+	eq(X.guildSide(3, "Tester Guild Bravo"), nil, "a tester guild with a player in it")
+	eq(X.guildSide(4, "Tester Guild Echo"), nil, "an empty guild")
+	eq(X.guildSide(9, "Tester Guild Zulu"), nil, "a database error: no side")
+	local q = queries
+	X.guildSide(1, "Tester Guild Alfa")
+	eq(queries, q, "the members are kept a few seconds")
+	local ok = X.warAllowed(1, "Tester Guild Alfa", 1, "Tester Guild Alfa")
+	check(ok, "a war between tester guilds, mode on")
+	check(not X.warAllowed(1, "Tester Guild Alfa", 2, "Iron Crows"), "a tester guild against a player guild")
+	check(not X.warAllowed(2, "Iron Crows", 1, "Tester Guild Alfa"), "a player guild against a tester guild")
+	check(not X.warAllowed(1, "Tester Guild Alfa", 3, "Tester Guild Bravo"), "a tester guild against a mixed one")
+	check(not X.warAllowed(1, "Tester Guild Alfa", 9, "Tester Guild Zulu"), "a tester guild against an unknown one")
+	check(X.warAllowed(2, "Iron Crows", 2, "Iron Crows"), "player guilds as always")
+	eq(X.guildBlocked(tester, 1, "Tester Guild Alfa"), nil, "a tester uses its tester guild, mode on")
+	eq(X.guildBlocked(ana, 2, "Iron Crows"), nil, "a player uses its guild")
+	eq(X.guildBlocked(ana, 1, "Tester Guild Alfa"), "apart", "a player never uses a tester guild")
+	eq(X.guildBlocked(tester, 2, "Iron Crows"), "apart", "a tester never uses a player guild")
+	K.reader, K.clock = function() return "off" end, function() return os.time() + 500 end
+	K.resetClosedCache()
+	X.guildCache = {}
+	check(not X.warAllowed(1, "Tester Guild Alfa", 1, "Tester Guild Alfa"), "a war between tester guilds, mode off")
+	eq(X.guildBlocked(tester, 1, "Tester Guild Alfa"), "closed-off", "a tester guild, mode off")
+	local q2 = queries
+	X.guildBlocked(ana, 2, "Iron Crows")
+	eq(queries, q2, "a player in an ordinary guild costs no query")
+	K.reader, K.clock = nil, nil
+	K.resetClosedCache()
+	X.guildCache = {}
+	db.storeQuery, result.getNumber, result.free = realStore, realNum, realFree
+end
+
+-- the same numbers in the systems that carry them
+dofile("data/scripts/chaos/market_core.lua")
+eq(ChaosMarketCore.TESTER_REALM, K.REALM, "market_core.lua carries the tester realm")
+eq(ChaosMarketCore.realmOf(K.REALM, 0), K.REALM, "an offer of the tester book stays in it")
+check(ChaosMarketCore.realmClause(0, 0):find(tostring(K.REALM), 1, true), "a player's view leaves the tester book out")
+check(ChaosMarketCore.realmClause(0, 4):find(tostring(K.REALM), 1, true), "a season player's view too")
+eq(ChaosMarketCore.realmClause(K.REALM, 4), "`realm` = " .. K.REALM, "a tester sees only its book")
+local pcfg = dofile("data/scripts/chaos/pvpzone_config.lua")
+eq(pcfg.testerRealm, K.REALM, "pvpzone_config.lua carries the tester realm")
+dofile("data/scripts/chaos/pvpzone_core.lua")
+local PZ = ChaosPvpZoneCore
+eq(PZ.slotForRealm(pcfg, K.REALM), pcfg.testerSlot, "the testers have their own Marches slot")
+for realm = 0, 12 do
+	check(PZ.slotForRealm(pcfg, realm) ~= pcfg.testerSlot, "realm " .. realm .. " never shares the testers' slot")
+end
+check(pcfg.testerSlot >= pcfg.grid.slots, "the testers' slot is after the grid's slots")
+local origin = PZ.slotOrigin(pcfg, pcfg.testerSlot)
+eq(PZ.slotOfPos(pcfg, {x = origin.x + 2, y = origin.y + 2, z = origin.z}), pcfg.testerSlot, "a position in the testers' slot belongs to it")
+check(PZ.entryRefusal(pcfg, {testerClosedOff = true, accept = true, inPz = true, level = 9999}) ~= nil,
+	"a tester with the mode off cannot enter the Marches")
+
+-- the systems' own guards, in the files
+local function source(path)
+	local f = assert(io.open(path, "r"))
+	local t = f:read("*a")
+	f:close()
+	return t
+end
+for _, file in ipairs({"arena", "battleground", "pvpzone", "market", "guildwar", "guild"}) do
+	check(source("data/scripts/chaos/" .. file .. ".lua"):find("O582", 1, true), file .. ".lua carries the closed-mode guard")
+end
+for _, file in ipairs({"dungeons", "groupqueue", "party_finder", "raid"}) do
+	local t = source("data/scripts/chaos/" .. file .. ".lua")
+	check(t:find("Chaos.isTester(player)", 1, true) and t:find("Testers do not use this queue", 1, true),
+		file .. ".lua refuses a tester: a queue that matches players")
+end
 
 print = origPrint
 print(string.format("testers_test: %d checks, %d failures", count, failures))

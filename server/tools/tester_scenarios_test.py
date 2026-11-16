@@ -35,7 +35,7 @@ def ok(cond, what):
 table = G.build()
 eq(G.render(table), G.read(G.OUT), 'tester_scenarios.json is up to date (run gen_tester_scenarios.py)')
 kinds = {s['kind'] for s in table['systems'].values()}
-ok(kinds <= {'opcode', 'out', 'passive', 'place', 'staff'}, 'known kinds: %s' % sorted(kinds))
+ok(kinds <= {'closed', 'opcode', 'out', 'passive', 'place', 'staff'}, 'known kinds: %s' % sorted(kinds))
 for name, s in table['systems'].items():
     if s['kind'] in ('out', 'staff', 'passive'):
         ok(s.get('why'), name + ': a reason why the bots do not send it')
@@ -53,6 +53,10 @@ shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
 for o in ('market', 'guild', 'antibot'):
     ok(table['opcodes'].get(o, {}).get('out'), o + ': an out-of-scope opcode')
+for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar'):
+    ok(table['systems'][n]['kind'] == 'closed', n + ': reached only in closed test mode (O582)')
+for n in ('groupqueue', 'party_finder', 'raid'):
+    ok(table['systems'][n]['kind'] == 'out', n + ': a queue that matches players, testers refused (O582)')
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})

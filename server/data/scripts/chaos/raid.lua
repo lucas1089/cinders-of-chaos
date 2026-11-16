@@ -2465,6 +2465,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if rate(player, "journal", 1000) then
 			X.sendJournal(player)
 		end
+	elseif (a == "start" or a == "continue" or a == "join") and Chaos.isTester(player) then
+		send(player, "msg", {ok = false, text = Chaos.t(player, "Testers do not use this queue: it matches players.")}) -- testers never share a run with players (O582)
 	elseif a == "start" or a == "continue" or a == "join" then
 		if rate(player, "start", 2000) then
 			local id = tonumber(d.id)

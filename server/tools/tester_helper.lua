@@ -50,7 +50,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 10
+HELPER_VERSION = 11
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -586,6 +586,34 @@ function commands.bag(player)
 	end
 	local ok, added = pcall(topUp, player)
 	tell(player, "bag", {removed = #remove, topped = ok and added or 0})
+end
+
+-- ---------------------------------------------------------------- O582 closed test mode
+-- "!tester closed": the facts the closed-mode checks read, about the tester that asks and the deployed rules: the switch, the
+-- guards of every closed system (a tester against a player is refused, testers together only with the mode on), the tester's
+-- guild and its side, its market realm, its arena queue and match. Reads only; nothing is changed.
+function commands.closed(player)
+	local K = ChaosTestersCore
+	local data = {loaded = K ~= nil, on = K and K.closedOn() or false, guards = H.closedGuards(K), realm = K and K.REALM or 0}
+	local okG, gid, gname = pcall(function() return ChaosGuild and ChaosGuild.guildOf(player) end)
+	if okG and gid then
+		data.guild = {id = gid, name = gname, level = player:getGuildLevel(), side = ChaosTesters and ChaosTesters.guildSide and ChaosTesters.guildSide(gid, gname) or nil}
+	end
+	if ChaosBazaar and ChaosBazaar.lockOf then
+		local okB, row = pcall(ChaosBazaar.lockOf, player:getGuid())
+		data.bazaar = {locked = okB and row ~= nil or false} -- a listing of the character locks it (bazaar.lua)
+	end
+	if ChaosArena then
+		data.arena = {queued = ChaosArena.isQueued(player) and true or false, inMatch = ChaosArena.isInside(player) and true or false}
+	end
+	if ChaosBattleground then
+		data.battleground = {queued = ChaosBattleground.isQueued(player) and true or false,
+			inMatch = ChaosBattleground.isInside(player) and true or false}
+	end
+	if ChaosPvpZone then
+		data.pvp = {inside = ChaosPvpZone.isInside(player) and true or false}
+	end
+	tell(player, "closed", data)
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

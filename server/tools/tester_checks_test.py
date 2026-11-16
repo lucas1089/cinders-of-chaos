@@ -1089,5 +1089,170 @@ class Runner(unittest.TestCase):
         self.assertEqual((cr.results[0].status, cr.results[0].detail), (TX.SKIP, 'the check broke: boom'))
 
 
+class ClosedIO(FakeIO):
+    """FakeIO plus the closed-mode calls: a second bot (`other`) with its own helper answers and replies"""
+
+    def __init__(self, other_answers=None, other_replies=None, plan=None, sql_ok=True, bot_up=True, **kw):
+        super().__init__(**kw)
+        self.other_answers, self.other_replies = other_answers or {}, other_replies or {}
+        self.plan, self.sql_ok, self.bot_up, self.sqls, self.other_asked = plan, sql_ok, bot_up, [], []
+
+    async def go_of(self, other, place):
+        return True
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        a = self.other_answers.get(command)
+        return a(self) if callable(a) else a
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        self.other_asked.append((opname, action, data))
+        r = self.other_replies.get((opname, action))
+        return r(self) if callable(r) else r
+
+    def closed_plan(self):
+        return self.plan
+
+    def online(self, name):
+        return name if self.bot_up else None
+
+    def sql(self, statements):
+        self.sqls.append(list(statements))
+        return self.sql_ok
+
+
+GUARDS = {s: {'mixed': True, 'off': True, 'together': True} for s in TX.CLOSED_SYSTEMS}
+
+
+def closed_answer(**over):
+    d = {'loaded': True, 'on': True, 'guards': GUARDS, 'realm': 900000001}
+    d.update(over)
+    return d
+
+
+class ClosedMode(unittest.TestCase):
+    def one(self, fn, io):
+        return run(fn(io, 'Tester Aaa', 'Warrior', 500))
+
+    def test_closed_checks_only_in_a_closed_run(self):
+        self.assertEqual(TX.CheckRun('Tester Aaa', 'Warrior', 1).todo().count('closed_arena'), 0)
+        todo = TX.CheckRun('Tester Aaa', 'Warrior', 1, closed=True).todo()
+        for key in TX.CLOSED_KEYS:
+            self.assertIn(key, todo)
+        self.assertEqual(TX.CheckRun('Tester Aaa', 'Warrior', 1, closed=True, only=TX.CLOSED_KEYS).todo(), list(TX.CLOSED_KEYS))
+
+    def test_problems(self):
+        self.assertEqual(TX.closed_problems(closed_answer()), [])
+        self.assertTrue(TX.closed_problems(closed_answer(on=False)))
+        self.assertTrue(TX.closed_problems({'loaded': False}))
+        weak = dict(GUARDS, arena={'mixed': False, 'off': True, 'together': True})
+        self.assertIn('arena: the rules let a tester meet a player', TX.closed_problems(closed_answer(guards=weak)))
+        weak = dict(GUARDS, market={'mixed': True, 'off': False, 'together': True})
+        self.assertIn('market: testers are matched with the mode off', TX.closed_problems(closed_answer(guards=weak)))
+        gone = {k: v for k, v in GUARDS.items() if k != 'guild'}
+        self.assertTrue(any(p.startswith('guild: no guard') for p in TX.closed_problems(closed_answer(guards=gone))))
+        self.assertTrue(TX.closed_problems(closed_answer(guild={'name': 'Iron Crows', 'side': 'player'})))
+
+    def test_guards(self):
+        r = self.one(TX.check_closed_guards, ClosedIO(answers={'closed': closed_answer()}))
+        self.assertEqual(r.status, TX.PASS)
+        r = self.one(TX.check_closed_guards, ClosedIO(answers={'closed': closed_answer(on=False)}))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_guards', r.bug_line())
+        self.assertEqual(self.one(TX.check_closed_guards, ClosedIO()).status, TX.SKIP)
+
+    def arena_io(self, answer):
+        both = {'closed': closed_answer(arena=answer)}
+        q = {('arena', 'queue'): {'action': 'state'}}
+        return ClosedIO(answers=both, other_answers=both, replies=dict(q), other_replies=dict(q))
+
+    def test_arena(self):
+        self.assertEqual(self.one(TX.check_closed_arena, self.arena_io({'queued': False, 'inMatch': True})).status, TX.PASS)
+        self.assertEqual(self.one(TX.check_closed_arena, ClosedIO(partner=None)).status, TX.SKIP)
+        self.assertEqual(self.one(TX.check_closed_arena, ClosedIO()).status, TX.SKIP)  # no answer from the window
+        io = self.arena_io({'queued': True, 'inMatch': False})
+        self.assertEqual(self.one(TX.check_closed_arena, io).status, TX.FAIL)
+        self.assertIn(('arena', 'leave', {}), io.asked)
+        self.assertEqual(self.one(TX.check_closed_arena, self.arena_io({'queued': False, 'inMatch': False})).status, TX.SKIP)
+
+    def test_battleground_and_pvp(self):
+        io = ClosedIO(answers={'closed': closed_answer(battleground={'queued': True})},
+                      replies={('battleground', 'queue'): {'action': 'state'}})
+        self.assertEqual(self.one(TX.check_closed_battleground, io).status, TX.PASS)
+        self.assertIn(('battleground', 'leave', {}), io.asked)
+        io = ClosedIO(answers={'closed': closed_answer(battleground={'queued': False})},
+                      replies={('battleground', 'queue'): {'action': 'state'}})
+        self.assertEqual(self.one(TX.check_closed_battleground, io).status, TX.SKIP)
+        io = ClosedIO(answers={'closed': closed_answer(pvp={'inside': True})}, replies={('pvpZone', 'enter'): {'action': 'enter'}})
+        self.assertEqual(self.one(TX.check_closed_pvp, io).status, TX.PASS)
+        io = ClosedIO(answers={'closed': closed_answer(pvp={'inside': False})},
+                      replies={('pvpZone', 'enter'): {'action': 'msg', 'data': {'text': 'no'}}})
+        self.assertEqual(self.one(TX.check_closed_pvp, io).status, TX.SKIP)
+
+    def war_io(self, accept_ok=True, active=True, declare_ok=True, plan=None, offers=True):
+        plan = plan or {'guild': 'Tester Guild Alfa', 'leader': True, 'rival': 'Tester Guild Bravo', 'rival_leader': 'Tester Bbb'}
+        me = closed_answer(guild={'name': 'Tester Guild Alfa', 'side': 'tester', 'level': 3})
+        state = {'action': 'state', 'data': {'wars': {'pending': [{'id': 7}] if offers else [], 'active': [{'id': 7}] if active else []}}}
+        return ClosedIO(answers={'closed': me}, plan=plan, replies={
+            ('guildWar', 'declare'): {'action': 'message', 'data': {'ok': declare_ok, 'text': 'x'}},
+            ('guildWar', 'refresh'): state, ('guildWar', 'surrender'): {'action': 'message', 'data': {'ok': True}}},
+            other_replies={('guildWar', 'refresh'): state,
+                           ('guildWar', 'accept'): {'action': 'message', 'data': {'ok': accept_ok, 'text': 'no'}}})
+
+    def test_guild_war(self):
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io()).status, TX.PASS)
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io(active=False)).status, TX.FAIL)
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io(accept_ok=False)).status, TX.FAIL)
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io(offers=False)).status, TX.FAIL)
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io(declare_ok=False)).status, TX.SKIP)
+        self.assertEqual(self.one(TX.check_closed_guild, ClosedIO()).status, TX.SKIP)
+        member = {'guild': 'Tester Guild Alfa', 'leader': False, 'rival': 'Tester Guild Bravo', 'rival_leader': 'Tester Bbb'}
+        self.assertEqual(self.one(TX.check_closed_guild, self.war_io(plan=member)).status, TX.SKIP)
+        io = self.war_io()
+        io.bot_up = False
+        self.assertEqual(self.one(TX.check_closed_guild, io).status, TX.SKIP)
+        io = self.war_io()
+        io.answers['closed'] = closed_answer(guild={'name': 'Iron Crows', 'side': 'player'})
+        self.assertEqual(self.one(TX.check_closed_guild, io).status, TX.FAIL)
+
+    def market_io(self, buy=True, listed=True, items=True):
+        sellable = {'action': 'sellable', 'data': {'items': [{'ref': '0', 'sid': 7618}] if items else []}}
+        done = {'action': 'done', 'data': {'what': 'list', 'id': 41}} if listed else {'action': 'error', 'data': {'text': 'busy'}}
+        bought = {'action': 'done', 'data': {'what': 'buy'}} if buy else {'action': 'error', 'data': {'text': 'no'}}
+        return ClosedIO(replies={('market', 'sellable'): sellable, ('market', 'list'): done, ('market', 'cancel'): {'action': 'done'}},
+                        other_replies={('market', 'browse'): {'action': 'page', 'data': {'rows': [{'id': 41}]}},
+                                       ('market', 'buy'): bought})
+
+    def test_market(self):
+        io = self.market_io()
+        self.assertEqual(self.one(TX.check_closed_market, io).status, TX.PASS)
+        self.assertEqual(io.asked[1][2]['coins'], 0)  # gold only
+        self.assertEqual(self.one(TX.check_closed_market, self.market_io(buy=False)).status, TX.FAIL)
+        self.assertEqual(self.one(TX.check_closed_market, self.market_io(listed=False)).status, TX.SKIP)
+        self.assertEqual(self.one(TX.check_closed_market, self.market_io(items=False)).status, TX.SKIP)
+        self.assertEqual(self.one(TX.check_closed_market, ClosedIO()).status, TX.SKIP)
+        self.assertEqual(self.one(TX.check_closed_market, ClosedIO(partner=None)).status, TX.SKIP)
+
+    def test_bazaar(self):
+        self.assertIsNone(TX.bazaar_problem(False, True, False))
+        self.assertTrue(TX.bazaar_problem(True, True, False))
+        self.assertTrue(TX.bazaar_problem(False, False, False))
+        self.assertTrue(TX.bazaar_problem(False, True, True))
+        seq = [closed_answer(bazaar={'locked': v}) for v in (False, True, False)]
+
+        def nxt(io):
+            return seq.pop(0)
+        io = ClosedIO(answers={'closed': nxt})
+        self.assertEqual(self.one(TX.check_closed_bazaar, io).status, TX.PASS)
+        self.assertEqual(len(io.sqls), 2)  # listed, then released
+        self.assertIn('cancelled', io.sqls[1][0])
+        seq[:] = [closed_answer(bazaar={'locked': v}) for v in (False, False, False)]
+        io = ClosedIO(answers={'closed': nxt})
+        self.assertEqual(self.one(TX.check_closed_bazaar, io).status, TX.FAIL)
+        self.assertEqual(len(io.sqls), 2)  # released even when the check fails
+        self.assertEqual(self.one(TX.check_closed_bazaar, ClosedIO(answers={'closed': closed_answer()})).status, TX.SKIP)
+        io = ClosedIO(answers={'closed': closed_answer(bazaar={'locked': False})}, sql_ok=False)
+        self.assertEqual(self.one(TX.check_closed_bazaar, io).status, TX.SKIP)
+
+
 if __name__ == '__main__':
     unittest.main()

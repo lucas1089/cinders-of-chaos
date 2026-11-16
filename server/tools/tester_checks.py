@@ -984,6 +984,231 @@ async def check_dual_blades(io, name, cls, level):
     return await check_dual(io, name, cls, level, 'blades')
 
 
+# ------------------------------------------------------------------------------------------------ closed test mode (O582)
+# testers.py run --closed (switch: chaos-ctl.sh testers closed on): arena, battleground, the Marches, guild and guild war, market
+# and the bazaar lock among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
+# 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
+# another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'guild', 'guildwar', 'market', 'pvp')  # testers_core.lua K.CLOSED_SYSTEMS
+ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
+FEE_GOLD = 100      # the gold price of the market check's offer
+
+
+def closed_problems(c):
+    """[text] for one `!tester closed` answer: whatever says a tester could meet a player, or the mode is not what the run needs"""
+    if not isinstance(c, dict):
+        return ['no answer']
+    out = []
+    if not c.get('loaded'):
+        return ['the server has no testers_core.lua rules']
+    if not c.get('on'):
+        out.append('the switch reads off while the bots run in closed mode (data/chaos_testers_closed)')
+    guards = c.get('guards') or {}
+    for system in CLOSED_SYSTEMS:
+        g = guards.get(system)
+        if not isinstance(g, dict):
+            out.append('%s: no guard reported (an old rules file)' % system)
+            continue
+        if not g.get('mixed'):
+            out.append('%s: the rules let a tester meet a player' % system)
+        if not g.get('off'):
+            out.append('%s: testers are matched with the mode off' % system)
+        if not g.get('together'):
+            out.append('%s: testers are refused with the mode on' % system)
+    guild = c.get('guild')
+    if isinstance(guild, dict) and guild.get('side') != 'tester':
+        out.append('guild %s is not a tester guild (side %s)' % (guild.get('name'), guild.get('side')))
+    return out
+
+
+async def check_closed_guards(io, name, cls, level):
+    """the rules the server runs: a tester against a player is refused in every closed system, the mode off refuses testers"""
+    c = await io.helper('closed', 'closed', ANSWER)
+    if not c or c.get('err'):
+        return Result('closed_guards', name, cls, SKIP, 'no answer to !tester closed (old helper file)')
+    problems = closed_problems(c)
+    if problems:
+        return Result('closed_guards', name, cls, FAIL, '; '.join(problems[:4]))
+    return Result('closed_guards', name, cls, PASS, 'every closed system refuses a tester against a player; guild %s' % (
+        (c.get('guild') or {}).get('name') or 'none'))
+
+
+async def check_closed_arena(io, name, cls, level):
+    """two testers queue for a 1v1 in the arena and are matched with each other"""
+    other = await io.partner()
+    if not other:
+        return Result('closed_arena', name, cls, SKIP, 'no free bot in game')
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result('closed_arena', name, cls, SKIP, 'the helper did not bring both bots to the temple')
+    await io.sleep(SETTLE)
+    a = await io.request('arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    b = await io.request_of(other, 'arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    if a is None or b is None:
+        return Result('closed_arena', name, cls, SKIP, 'no answer from the arena window (not installed)')
+    waited = 0.0
+    while waited <= ARENA_WAIT and io.alive():
+        ca = await io.helper('closed', 'closed', ANSWER)
+        cb = await io.helper_of(other, 'closed', 'closed', ANSWER)
+        sa, sb = (ca or {}).get('arena') or {}, (cb or {}).get('arena') or {}
+        if sa.get('inMatch') and sb.get('inMatch'):
+            return Result('closed_arena', name, cls, PASS, 'matched with %s, both inside' % other)
+        if waited >= 6 and not (sa.get('queued') or sa.get('inMatch')) and not (sb.get('queued') or sb.get('inMatch')):
+            return Result('closed_arena', name, cls, SKIP, 'neither bot is in the queue after the request (level, zone or cooldown)')
+        await io.sleep(LOOK * 2)
+        waited += LOOK * 2
+    await io.request('arena', 'leave', {}, ['state'], ANSWER)
+    await io.request_of(other, 'arena', 'leave', {}, ['state'], ANSWER)
+    return Result('closed_arena', name, cls, FAIL, 'two queued testers were not matched in %d seconds' % int(ARENA_WAIT))
+
+
+async def check_closed_battleground(io, name, cls, level):
+    """a tester queues for the battleground (its own realm) and leaves the queue; the match needs the whole roster"""
+    await io.go('town')
+    await io.sleep(SETTLE)
+    q = await io.request('battleground', 'queue', {}, ['state'], ANSWER)
+    if q is None:
+        return Result('closed_battleground', name, cls, SKIP, 'no answer from the battleground window (not installed)')
+    await io.sleep(SETTLE)
+    c = await io.helper('closed', 'closed', ANSWER)
+    queued = bool(((c or {}).get('battleground') or {}).get('queued'))
+    inside = bool(((c or {}).get('battleground') or {}).get('inMatch'))
+    await io.request('battleground', 'leave', {}, ['state'], ANSWER)
+    if not queued and not inside:
+        return Result('closed_battleground', name, cls, SKIP, 'the queue refused the bot (level, zone, deserter)')
+    return Result('closed_battleground', name, cls, PASS, 'queued among testers, then left (a match needs a full roster)')
+
+
+async def check_closed_pvp(io, name, cls, level):
+    """a tester enters the Marches: its own instance, never a player's"""
+    await io.go('town')
+    await io.sleep(SETTLE)
+    r = await io.request('pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+    if r is None:
+        return Result('closed_pvp', name, cls, SKIP, 'no answer from the Marches window (not installed)')
+    await io.sleep(SETTLE)
+    c = await io.helper('closed', 'closed', ANSWER)
+    inside = bool(((c or {}).get('pvp') or {}).get('inside'))
+    if not inside:
+        return Result('closed_pvp', name, cls, SKIP, 'the Marches refused the bot: %s' % str(((r or {}).get('data') or {}).get('text', ''))[:80])
+    return Result('closed_pvp', name, cls, PASS, 'inside the testers\' own Marches instance')
+
+
+async def check_closed_guild(io, name, cls, level):
+    """the leader of a tester guild declares a war on the other tester guild, its leader accepts, the war is active, the
+    declarer surrenders"""
+    plan = io.closed_plan()
+    if not plan:
+        return Result('closed_guild_war', name, cls, SKIP, 'this bot has no tester guild (too few bots for two guilds)')
+    if not plan.get('leader'):
+        return Result('closed_guild_war', name, cls, SKIP, 'not the leader of its guild')
+    rival = io.online(plan.get('rival_leader'))
+    if not rival:
+        return Result('closed_guild_war', name, cls, SKIP, 'the leader of %s is not in game' % plan.get('rival'))
+    c = await io.helper('closed', 'closed', ANSWER)
+    g = (c or {}).get('guild') or {}
+    if g.get('name') != plan.get('guild') or g.get('side') != 'tester':
+        return Result('closed_guild_war', name, cls, FAIL, 'the bot has guild %s (side %s), expected %s as a tester guild' % (
+            g.get('name'), g.get('side'), plan.get('guild')))
+    d = await io.request('guildWar', 'declare', {'target': plan['rival'], 'fragLimit': 10, 'hours': 6, 'stake': 0}, ['message'], ANSWER)
+    if d is None:
+        return Result('closed_guild_war', name, cls, SKIP, 'no answer from the guild war window (not installed)')
+    data = d.get('data') or {}
+    if not data.get('ok'):
+        return Result('closed_guild_war', name, cls, SKIP, 'declare refused: %s' % str(data.get('text', ''))[:90])
+    await io.sleep(SETTLE)
+    state = await io.request_of(rival, 'guildWar', 'refresh', {'tab': 'wars'}, ['state'], ANSWER)
+    pending = (((state or {}).get('data') or {}).get('wars') or {}).get('pending') or []
+    offer = next((w for w in pending if w.get('id')), None)
+    if not offer:
+        return Result('closed_guild_war', name, cls, FAIL, 'the other tester guild sees no war offer')
+    acc = await io.request_of(rival, 'guildWar', 'accept', {'id': offer['id']}, ['message'], ANSWER)
+    if acc is None or not (acc.get('data') or {}).get('ok'):
+        return Result('closed_guild_war', name, cls, FAIL, 'accept refused: %s' % str(((acc or {}).get('data') or {}).get('text', ''))[:90])
+    await io.sleep(SETTLE)
+    mine = await io.request('guildWar', 'refresh', {'tab': 'wars'}, ['state'], ANSWER)
+    active = (((mine or {}).get('data') or {}).get('wars') or {}).get('active') or []
+    await io.request('guildWar', 'surrender', {'id': offer['id']}, ['message'], ANSWER)
+    if not any(w.get('id') == offer['id'] for w in active):
+        return Result('closed_guild_war', name, cls, FAIL, 'the accepted war %s is not active' % offer['id'])
+    return Result('closed_guild_war', name, cls, PASS, 'war %s between %s and %s: declared, accepted, active, surrendered' % (
+        offer['id'], plan.get('guild'), plan.get('rival')))
+
+
+async def check_closed_market(io, name, cls, level):
+    """a tester lists an item for gold, another tester sees it in the tester book and buys it"""
+    other = await io.partner()
+    if not other:
+        return Result('closed_market', name, cls, SKIP, 'no free bot in game')
+    s = await io.request('market', 'sellable', {}, ['sellable'], ANSWER)
+    if s is None:
+        return Result('closed_market', name, cls, SKIP, 'no answer from the market (not installed)')
+    items = [i for i in ((s.get('data') or {}).get('items') or []) if i.get('ref') and not i.get('why')]
+    if not items:
+        return Result('closed_market', name, cls, SKIP, 'nothing sellable in the backpack')
+    item = items[0]
+    r = await io.request('market', 'list', {'ref': item['ref'], 'count': 1, 'gold': FEE_GOLD, 'coins': 0, 'days': 1}, ['done', 'error'], ANSWER)
+    if r is None or r.get('action') == 'error' or (r.get('data') or {}).get('what') != 'list':
+        return Result('closed_market', name, cls, SKIP, 'the offer was not listed: %s' % str(((r or {}).get('data') or {}).get('text', ''))[:90])
+    offer_id = (r.get('data') or {}).get('id')
+    page = await io.request_of(other, 'market', 'browse', {}, ['page'], ANSWER)
+    rows = ((page or {}).get('data') or {}).get('rows') or []
+    seen = any(row.get('id') == offer_id for row in rows)
+    b = await io.request_of(other, 'market', 'buy', {'id': offer_id, 'cur': 'gold'}, ['done', 'error'], ANSWER)
+    bought = b is not None and b.get('action') != 'error' and (b.get('data') or {}).get('what') == 'buy'
+    if not bought:
+        await io.request('market', 'cancel', {'id': offer_id}, ['done', 'error'], ANSWER)
+        return Result('closed_market', name, cls, FAIL, 'offer %s: %s could not buy it (%s); seen in browse: %s' % (
+            offer_id, other, str(((b or {}).get('data') or {}).get('text', ''))[:70], seen))
+    return Result('closed_market', name, cls, PASS, 'offer %s listed for %d gold, bought by %s%s' % (
+        offer_id, FEE_GOLD, other, '' if seen else ' (not in its first browse page)'))
+
+
+def bazaar_problem(before, during, after):
+    """the three `!tester closed` bazaar facts (locked before listing, while listed, after release) -> text or None"""
+    if before:
+        return 'locked before it was listed'
+    if not during:
+        return 'a listed tester is not locked: it could log in during its own sale'
+    if after:
+        return 'still locked after the listing was cancelled'
+    return None
+
+
+async def check_closed_bazaar(io, name, cls, level):
+    """a listing of a tester locks the character like any listing (login refused); the website never shows or sells it"""
+    import tester_closed as TCL
+    c0 = await io.helper('closed', 'closed', ANSWER)
+    if not c0 or c0.get('err') or 'bazaar' not in c0:
+        return Result('closed_bazaar', name, cls, SKIP, 'the helper does not report the bazaar lock (old helper file)')
+    if not io.sql(TCL.bazaar_statements(name)):
+        return Result('closed_bazaar', name, cls, SKIP, 'the listing could not be written (no database access)')
+    try:
+        await io.sleep(1.0)
+        c1 = await io.helper('closed', 'closed', ANSWER)
+    finally:
+        io.sql(TCL.bazaar_release_statements(name))
+    await io.sleep(1.0)
+    c2 = await io.helper('closed', 'closed', ANSWER)
+    problem = bazaar_problem(bool((c0.get('bazaar') or {}).get('locked')), bool(((c1 or {}).get('bazaar') or {}).get('locked')),
+                             bool(((c2 or {}).get('bazaar') or {}).get('locked')))
+    if problem:
+        return Result('closed_bazaar', name, cls, FAIL, problem)
+    return Result('closed_bazaar', name, cls, PASS, 'listed: locked; cancelled: free (no Chaos Coins, no bid, not on the site)')
+
+
+# the checks of closed mode, run only with --closed: (key, function, applies to the class)
+CLOSED_CHECKS = [
+    ('closed_guards', check_closed_guards, lambda c: True),
+    ('closed_arena', check_closed_arena, lambda c: True),
+    ('closed_battleground', check_closed_battleground, lambda c: True),
+    ('closed_pvp', check_closed_pvp, lambda c: True),
+    ('closed_guild_war', check_closed_guild, lambda c: True),
+    ('closed_market', check_closed_market, lambda c: True),
+    ('closed_bazaar', check_closed_bazaar, lambda c: True),
+]
+CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
+
+
 CHECKS = [
     ('beastmaster_wolf', check_summons, lambda c: c == 'Beastmaster'),
     ('necro_minions', check_summons, lambda c: c in ('Necromancer', 'Lich', 'Bone Lord')),
@@ -1009,19 +1234,20 @@ KEYS = tuple(k for k, _, _ in CHECKS)
 class CheckRun:
     """the checks of one bot; results go on after a death (a check cut off by it is done again) like the keystone scenario"""
 
-    def __init__(self, name, cls, level, only=None):
+    def __init__(self, name, cls, level, only=None, closed=False):
         self.name, self.cls, self.level = name, cls, level
         self.only = set(only) if only else None
+        self.table = CHECKS + (CLOSED_CHECKS if closed else [])   # the closed-mode checks only in a --closed run (O582)
         self.done = set()
         self.results = []
         self.resets = []
 
     def todo(self):
-        return [k for k, _, ok in CHECKS if ok(self.cls) and k not in self.done and (not self.only or k in self.only)]
+        return [k for k, _, ok in self.table if ok(self.cls) and k not in self.done and (not self.only or k in self.only)]
 
     async def run(self, io):
         """True when no check failed; stops early when the bot is gone"""
-        for key, fn, ok in CHECKS:
+        for key, fn, ok in self.table:
             if key in self.done or not ok(self.cls) or (self.only and key not in self.only):
                 continue
             if not io.alive():

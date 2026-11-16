@@ -384,6 +384,9 @@ local function handle(player, action, d)
 	elseif action == "refresh" then
 		return PF.pushList(player)
 	end
+	if Chaos.isTester(player) then
+		return refuse(player, "Testers do not use this queue: it matches players.") -- testers never list, apply or queue where players are matched (O582)
+	end
 	local who = PF.who(player)
 	if action == "post" then
 		local L, st = K.post(state, cfg, PF.acts(), who, d, now)

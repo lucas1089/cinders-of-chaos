@@ -183,6 +183,10 @@ local function seasonOn()
 end
 
 function W.realmOfGuid(guid)
+	-- closed test mode (O582): the testers' wars have a realm of their own, so no season or standard guild meets them
+	if guid and Chaos.isTesterGuid and Chaos.isTesterGuid(guid) then
+		return ChaosTestersCore and ChaosTestersCore.REALM or 900000001
+	end
 	if not guid or guid == 0 or not seasonOn() then
 		return 0
 	end
@@ -191,6 +195,9 @@ function W.realmOfGuid(guid)
 end
 
 function W.realmOfPlayer(player)
+	if Chaos.isTester and Chaos.isTester(player) then
+		return ChaosTestersCore and ChaosTestersCore.REALM or 900000001
+	end
 	if not seasonOn() then
 		return 0
 	end
@@ -404,6 +411,25 @@ function W.message(player, ok, text)
 end
 
 -- ---------------------------------------------------------------- declaring and answering
+-- closed test mode (O582): a war is between two tester guilds (closed mode on) or two player guilds, never one of each;
+-- nil, or the reason (testers.lua guild sides: the name prefix and every member's storage)
+function W.closedRefusal(gidA, nameA, gidB, nameB)
+	if not (ChaosTesters and ChaosTesters.warAllowed) then
+		return nil
+	end
+	local ok, why = ChaosTesters.warAllowed(gidA, nameA, gidB, nameB)
+	if ok then
+		return nil
+	end
+	return (ChaosTestersCore.CLOSED_TEXT[why] or ChaosTestersCore.CLOSED_TEXT.mixed)
+end
+
+-- a war of tester guilds (closed test mode, O582) is never announced to the players
+function W.quiet(war)
+	local mark = ChaosTestersCore and ChaosTestersCore.GUILD_MARK or ("Tester " .. "Guild ")
+	return tostring(war.name1 or ""):find(mark, 1, true) == 1 or tostring(war.name2 or ""):find(mark, 1, true) == 1
+end
+
 function W.declare(player, data)
 	local c = cfg()
 	local gid, gname, rank = G().guildOf(player)
@@ -426,6 +452,10 @@ function W.declare(player, data)
 		info.sinceLastDeclare = W.lastDeclare[gid] and (now() - W.lastDeclare[gid]) or nil
 	end
 	why = C.declareError(info, c)
+	if why then
+		return false, why
+	end
+	why = W.closedRefusal(gid, gname, tid, tname)
 	if why then
 		return false, why
 	end
@@ -524,6 +554,10 @@ function W.accept(player, id)
 	if (war.realm or 0) ~= W.realmOfGuild(gid) then
 		return false, "Wars are fought only within a realm."
 	end
+	why = W.closedRefusal(war.guild1, war.name1, war.guild2, war.name2)
+	if why then
+		return false, why
+	end
 	if war.stake > 0 and not G().spend(gid, war.stake) then
 		return false, string.format("Your guild bank holds %s gold.", C.money(bankOf(gid)))
 	end
@@ -556,7 +590,7 @@ function W.accept(player, id)
 		return L(lang, "WAR! %s and %s are at war: %s. Ends in %s.", war.name1, war.name2, C.termsText(war, lang),
 			C.durationText(war.hours * 3600)) .. (live and "" or L(lang, " The war emblems show after your next login."))
 	end)
-	if c.broadcast then
+	if c.broadcast and not W.quiet(war) then
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, function(lang)
 			return L(lang, "%s and %s are now at war (%s).", war.name1, war.name2, C.termsText(war, lang))
 		end)
@@ -650,7 +684,7 @@ function W.finish(war, reason, loserSide, byName)
 		return text
 	end
 	tellBoth(war, result)
-	if c.broadcast then
+	if c.broadcast and not W.quiet(war) then
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, result)
 	end
 	log(string.format("war %d ended: %s", war.id, result("en")))
@@ -682,6 +716,10 @@ end
 function W.onKill(victim, killer)
 	local vg, kg = victim:getGuild(), killer:getGuild()
 	if not vg or not kg or vg:getId() == kg:getId() then
+		return
+	end
+	-- closed test mode (O582): a tester and a player never score for a war
+	if ChaosTestersCore and ChaosTestersCore.mixed(Chaos.isTester(victim), Chaos.isTester(killer)) then
 		return
 	end
 	local war = pairOf(vg:getId(), kg:getId())

@@ -147,8 +147,12 @@ end
 -- ------------------------------------------------------------------ seasons
 -- the market an offer is on: its season while that season runs, the standard market (0) otherwise (an ended season's
 -- characters are standard characters again, so are their offers)
+C.TESTER_REALM = 900000001 -- the testers' own book (closed test mode, O582; testers_core.lua K.REALM, tests hold them equal)
 function C.realmOf(storedRealm, currentSeason)
 	storedRealm = int(storedRealm) or 0
+	if storedRealm == C.TESTER_REALM then
+		return storedRealm
+	end
 	if storedRealm ~= 0 and storedRealm == (int(currentSeason) or 0) then
 		return storedRealm
 	end
@@ -388,10 +392,11 @@ function C.realmClause(realm, season)
 	if realm > 0 then
 		return "`realm` = " .. realm
 	end
+	-- never the testers' book (closed test mode, O582)
 	if season > 0 then
-		return "`realm` <> " .. season
+		return "`realm` <> " .. season .. " AND `realm` <> " .. C.TESTER_REALM
 	end
-	return "`realm` >= 0"
+	return "`realm` >= 0 AND `realm` <> " .. C.TESTER_REALM
 end
 
 function C.browseQuery(filter, realm, now, cfg, esc, season, known)

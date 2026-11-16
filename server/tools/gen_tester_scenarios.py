@@ -9,6 +9,7 @@ player can do with it, and how the bots reach it.
   * talkactions: the words of TalkAction("...") in its engine files. Every one is a staff command (Chaos.staffCommand),
     so a system with nothing else is kind 'staff': never reached, testers are never staff
   * places: the systems the TEST ONLY helper can bring a tester to (`!tester enter ...`), with the argument
+  * closed: arena, battleground, the Marches, guild, guild war, market, bazaar: only a --closed run reaches them (O582)
   * out of scope: what bots truly cannot do (staff only, real money, needs real players, a website flow), with the
     reason; the bots never send these
   * passive: everything else is reached by play (combat, loot, login, death): only server log errors name it
@@ -51,30 +52,38 @@ OUT_OF_SCOPE = {
     'creator_codes': 'real money creator codes',
     'referral': 'links real accounts',
     'mentor': 'pairs a tester with real players',
-    'guild': 'guilds of real players; testers stay apart',
-    'guildwar': 'guild wars of real players',
     'guildboss': 'guild content of real players',
     'community': 'posts real players read',
-    'market': 'testers are refused on the market by design (tests/testers_test.lua)',
-    'market_orders': 'testers are refused on the market by design',
-    'market_history': 'testers are refused on the market by design',
-    'market_notify': 'testers are refused on the market by design',
-    'bazaar': 'trades with real players',
     'orbexchange': 'an order book matched against real players\' orders',
     'party_finder': 'listings and applications real players see and answer',
-    'arena': 'ranked PvP: a queue would match testers against real players',
     'legal_notice': 'a text the client shows; nothing to do',
     'patchnotes': 'a text the client shows; nothing to do',
     'beta': 'beta sign-up of real accounts',
-    'pvpzone': 'player versus player; testers never fight players',
-    'battleground': 'needs teams of real players',
     'conquest': 'needs guilds of real players',
     'siege': 'needs guilds of real players',
+    'groupqueue': 'a queue that matches players: the server refuses testers (O582)',
+    'party_finder': 'a list and a queue that match players: the server refuses testers (O582)',
+    'raid': 'a run other players join: the server refuses testers (O582)',
     'testers': 'the tester rules themselves (tests/testers_test.lua)',
     'i18n': 'translations; every bot text passes through it',
     'item_codec': 'the item encoding library; used by every item system',
     'item_fusion': 'the rule of the base item fusion (opcode 67, not a Chaos opcode); no client window sends it (O544)',
     'areagen': 'a map building tool, not run in game',
+}
+
+# systems only the closed test mode reaches (O582, tester_closed.py, testers.py run --closed, chaos-ctl.sh testers closed on): the
+# bots play them among themselves, the server refuses every pairing with a player; tried only in a --closed run
+CLOSED_MODE = {
+    'arena': 'ranked PvP, testers only matched with testers (closed test mode)',
+    'battleground': 'queue of the testers\' own realm (closed test mode)',
+    'pvpzone': 'the Marches, the testers\' own instance (closed test mode)',
+    'guild': 'a tester guild made by the run (closed test mode)',
+    'guildwar': 'a war between the two tester guilds (closed test mode)',
+    'market': 'the testers\' own book, gold only (closed test mode)',
+    'market_orders': 'the testers\' own book, gold only (closed test mode)',
+    'market_history': 'the testers\' own book, gold only (closed test mode)',
+    'market_notify': 'the testers\' own book, gold only (closed test mode)',
+    'bazaar': 'the character lock of a listing of a tester; the site never shows or sells it (closed test mode)',
 }
 
 # requests the server answers with nothing, by design: {opcode name: {action: why}}. The bots count them as sent and fine
@@ -338,6 +347,8 @@ def build():
         entry = {'files': eng, 'opcodes': op_names, 'talkactions': sorted(talks)}
         if name in OUT_OF_SCOPE:
             entry['kind'], entry['why'] = 'out', OUT_OF_SCOPE[name]
+        elif name in CLOSED_MODE:
+            entry['kind'], entry['why'] = 'closed', CLOSED_MODE[name]
         elif any(table[o]['actions'] for o in op_names):
             entry['kind'] = 'opcode'
         elif name in PLACES:
@@ -352,9 +363,9 @@ def build():
         if name in PLACES:
             entry['place'] = PLACES[name]
         systems[name] = entry
-    unused = sorted(set(OUT_OF_SCOPE) - set(systems))
+    unused = sorted((set(OUT_OF_SCOPE) | set(CLOSED_MODE)) - set(systems))
     if unused:
-        raise SystemExit('OUT_OF_SCOPE names no system: %s' % ', '.join(unused))
+        raise SystemExit('OUT_OF_SCOPE or CLOSED_MODE names no system: %s' % ', '.join(unused))
     for o, keys in FLAGS.items():
         if o not in table or sorted(set(keys) - set(table[o]['dataKeys'])):
             raise SystemExit('FLAGS names an opcode or data key no server file reads: %s' % o)
@@ -370,12 +381,12 @@ def build():
     for o, t in table.items():
         op_systems = sorted(n for n, x in systems.items() if o in x['opcodes'])
         t['systems'] = op_systems
-        t['out'] = bool(op_systems) and all(systems[n]['kind'] == 'out' for n in op_systems)
+        t['out'] = bool(op_systems) and all(systems[n]['kind'] in ('out', 'closed') for n in op_systems)
         # actions only an out-of-scope system's files answer, and money / staff actions: never sent
         allowed = set()
         for f in t['files']:
             own = owners(f, names, texts[f])
-            if not own or any(systems.get(n, {}).get('kind') != 'out' for n in own):
+            if not own or any(systems.get(n, {}).get('kind') not in ('out', 'closed') for n in own):
                 allowed |= set(per_file[(o, f)])
         t['skip'] = [a for a in t['actions'] if a not in allowed or a in ADMIN or DENY_RE.search(a)]
         t['actions'] = [a for a in t['actions'] if a not in t['skip']]

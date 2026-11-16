@@ -40,6 +40,10 @@ totals of the tree window, the keystone's own row of the combat log) or says it 
 --checks: each bot then runs the system checks of its class once (tester_checks.py, O110): pets, the Necromancer's minions,
 the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play and its shared experience, a rift and its layout, waystone runs by tier and modifiers, the content rewards, the waystone
 atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
+--closed (O582, tester_closed.py; the switch data/chaos_testers_closed must be on): closed test mode. Two tester guilds are made
+before the bots log in; the bots then run the closed checks (arena, battleground, the Marches, guild war, market, the bazaar
+lock, the guards the server runs) among themselves, never with a player. The guilds, wars, tester market book and arena records
+of the run are removed when it ends, and by cleanup.
 """
 import asyncio
 import base64
@@ -64,6 +68,7 @@ import loadtest as LT  # noqa: E402
 import tester_core as TC  # noqa: E402
 import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario, O249)
 import tester_checks as TX  # noqa: E402  (the system checks, O110)
+import tester_closed as TCL  # noqa: E402  (closed test mode, O582)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -389,6 +394,43 @@ def setup(a):
         sum(1 for b in bots if 'player_id' in b), len(classes), a.levels, state_path(a.state)))
 
 
+# ------------------------------------------------------------------------------------------------ closed test mode (O582)
+def closed_start(a, entries, st):
+    """--closed: only with the switch on (data/chaos_testers_closed); leftovers of an older run go, then the two tester guilds are
+    made before the bots log in (the engine loads a guild at login). The plan is kept in the state and in a.closed_plan"""
+    if not TCL.flag_on(a.server_dir):
+        sys.exit('closed test mode is off: chaos-ctl.sh testers closed on (data/chaos_testers_closed)')
+    ids = [int(b['player_id']) for b in entries if b.get('player_id')]
+    sql(closed_clean(ids))
+    a.closed_plan = TCL.plan([b['name'] for b in entries])
+    if a.closed_plan['guilds']:
+        sql(TCL.guild_statements(a.closed_plan))
+    st['closed'] = {'guilds': [g['name'] for g in a.closed_plan['guilds']], 'at': int(time.time())}
+    save_state(a.state, st)
+    print('closed test mode: %s' % (', '.join('%s (%d members)' % (g['name'], len(g['members'])) for g in a.closed_plan['guilds'])
+                                    or 'no guilds (fewer than %d bots per guild)' % TCL.MIN_MEMBERS), flush=True)
+
+
+def closed_tables():
+    """the names of the tables closed mode touches that exist now"""
+    out = rows(sql(["SELECT `TABLE_NAME` FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND "
+                    "(`TABLE_NAME` LIKE 'chaos\\_%' OR `TABLE_NAME` LIKE 'guild%');"]))
+    return {r[0] for r in out if r}
+
+
+def closed_clean(ids):
+    return TCL.clean_statements(closed_tables(), ids)
+
+
+def closed_finish(a, entries):
+    """the run is over: the guilds, wars, tester market book and tester arena records it made go"""
+    try:
+        sql(closed_clean([int(b['player_id']) for b in entries if b.get('player_id')]))
+        print('closed test mode: guilds, orders and arena records of the run removed', flush=True)
+    except (SystemExit, OSError, subprocess.SubprocessError) as e:
+        print('closed test mode: the clean-up failed (%s): testers cleanup --yes removes them' % e, flush=True)
+
+
 # ------------------------------------------------------------------------------------------------ cleanup
 def cleanup_targets(state_bots, db_rows):
     """the (player ids, account ids) cleanup may delete. db_rows: [(player id, player name, account id, account name,
@@ -456,7 +498,7 @@ def cleanup(a):
                        "('players', 'accounts') ORDER BY 1, 2;"]))
     has_houses = bool(rows(sql(["SELECT 1 FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND "
                                 "`TABLE_NAME` = 'houses';"])))
-    stmts = cleanup_statements(tables, players, accounts, has_houses)
+    stmts = closed_clean(players) + cleanup_statements(tables, players, accounts, has_houses)
     print('cleanup: %d characters, %d accounts; rows in %d tables' % (len(players), len(accounts), len(tables)))
     if a.dry:
         print('\n'.join(stmts))
@@ -730,6 +772,39 @@ class CheckIO(KeyIO):
 
     def autosetup(self):
         return getattr(self.bot.args, 'checks_rotation', None)
+
+    # closed test mode (O582): the same calls for another bot, the plan of the tester guilds, the bazaar rows
+    def _bot(self, name):
+        return next((b for b in ONLINE.values() if b.name == name and b.alive and not b.died), None)
+
+    def online(self, name):
+        return name if name and self._bot(name) is not None else None
+
+    def closed_plan(self):
+        return (getattr(self.bot.args, 'closed_plan', None) or {}).get('of', {}).get(self.bot.name)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        b = self._bot(other)
+        return await b.helper_says(command, kind, wait) if b is not None and self.alive() else None
+
+    async def go_of(self, other, place):
+        b = self._bot(other)
+        if b is None or not self.alive():
+            return False
+        b.stay = place == 'town'
+        r = await b.helper_says(place, place)
+        return bool(r and not r.get('err'))
+
+    async def request_of(self, other, opname, action, data, expect, timeout):
+        b = self._bot(other)
+        return await KeyIO(b, self.clock).request(opname, action, data, expect, timeout) if b is not None else None
+
+    def sql(self, statements):
+        try:
+            sql(statements)
+            return True
+        except (SystemExit, OSError, subprocess.SubprocessError):
+            return False
 
     def spells(self):
         return getattr(self.bot.args, 'checks_spells', None) or {}
@@ -1106,7 +1181,7 @@ class TesterBot(LT.Bot):
                 name = self.sched.next(now) or 'hunt'
                 if getattr(self.args, 'keystones', False) and not self.keytest_done:
                     name = 'keytest'  # before anything else, until it is through (it goes on after a death and a new login)
-                elif getattr(self.args, 'checks', False) and not self.checks_done:
+                elif (getattr(self.args, 'checks', False) or getattr(self.args, 'closed', False)) and not self.checks_done:
                     name = 'checks'  # then the system checks (tester_checks.py)
                 self.last = name
                 self.results.behaviour(name, 'tried')
@@ -1369,7 +1444,9 @@ class TesterBot(LT.Bot):
         login; a failed check is logged as a BUG line at once"""
         first = self.checks is None
         if first:
-            self.checks = TX.CheckRun(self.name, self.cls, self.level)
+            closed = bool(getattr(self.args, 'closed', False))
+            self.checks = TX.CheckRun(self.name, self.cls, self.level, closed=closed,
+                                      only=None if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS)
         run = self.checks
         io = CheckIO(self, clock)
         await asyncio.sleep(10 if first else 3)
@@ -1548,6 +1625,7 @@ def run(a):
         a.checks_spells = load_check_spells(a.server_dir, vocs)
     a.backpack_client_id = 0
     a.after_login = ''
+    a.closed_plan = {'guilds': [], 'of': {}}
     if a.scenarios:
         import tester_scenarios as TS  # the coverage layer (server/tools/tester_scenarios.py)
         TS.attach(a, a.scenarios)
@@ -1559,6 +1637,8 @@ def run(a):
     if not entries:
         sys.exit('no testers in %s: run setup first' % state_path(a.state))
     entries = entries[:min(a.count or len(entries), TC.MAX_BOTS)]
+    if a.closed:
+        closed_start(a, entries, st)
     if a.rsa_key == '':
         # the login key the server really uses (rsaKeyFile, patch 0046), not key.pem: with another key every login block
         # is unreadable and the server closes the connection without a word
@@ -1577,7 +1657,11 @@ def run(a):
                  'scenarios': os.path.abspath(a.scenarios) if a.scenarios else ''}
     save_state(a.state, st)
     print('%d testers for %d minutes (Ctrl+C or SIGTERM ends early)' % (len(entries), a.minutes), flush=True)
-    asyncio.run(run_bots(a, entries))
+    try:
+        asyncio.run(run_bots(a, entries))
+    finally:
+        if a.closed:
+            closed_finish(a, entries)
 
 
 # ------------------------------------------------------------------------------------------------ report
@@ -1671,7 +1755,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -1691,6 +1775,7 @@ def parse(argv):
     for k, v in vals.items():
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
+    a.closed = flags['--closed']
     if a.hash_iterations < 1:
         sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:

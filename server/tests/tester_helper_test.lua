@@ -1156,6 +1156,23 @@ do
 	ChaosRift, ChaosRiftConfig = saved.RF, saved.RFC
 end
 
+-- closed test mode (O582): the helper reports the deployed rules
+do
+	check(H.COMMANDS.closed and H.parseCommand("closed") == "closed", "closed is a registered command (O582)")
+	dofile("data/scripts/chaos/testers_core.lua")
+	local g = H.closedGuards(ChaosTestersCore)
+	local n = 0
+	for system in pairs(ChaosTestersCore.CLOSED_SYSTEMS) do
+		n = n + 1
+		check(g[system] and g[system].mixed and g[system].off and g[system].together, system .. ": every guard holds in the rules")
+	end
+	check(n >= 7, "arena, battleground, pvp, guild, guild war, market and bazaar are closed systems")
+	check(next(H.closedGuards(nil)) == nil and next(H.closedGuards({})) == nil, "no rules: no guards reported")
+	local weak = {CLOSED_SYSTEMS = {arena = true}, sameSide = function() return true end}
+	local w = H.closedGuards(weak)
+	check(w.arena.mixed == false and w.arena.off == false, "rules that let a tester meet a player are reported as not guarding")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

@@ -336,6 +336,9 @@ end
 -- ---------------------------------------------------------------- actions
 function G.join(player, data)
 	local c = cfg()
+	if Chaos.isTester(player) then
+		return refuse(player, "Testers do not use this queue: it matches players.") -- testers never enter a queue that matches players (O582)
+	end
 	if c.enabled == false then
 		return refuse(player, "The Group Queue is closed.")
 	end
