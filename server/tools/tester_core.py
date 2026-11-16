@@ -378,7 +378,7 @@ def build_report(run, log):
             if tried and okn and not err:
                 fine += 1
                 continue
-            if not tried and why.startswith(('out of scope', 'passive')):
+            if not tried and why.startswith(('out of scope', 'passive', 'closed test mode')):
                 skipped.setdefault(why, []).append(system)
                 continue
             if tried and not okn and not err and not c.get('refused', 0):

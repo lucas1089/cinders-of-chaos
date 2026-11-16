@@ -838,6 +838,50 @@ rep6 = TC.build_report(r6.d, {'errors': {}, 'warnings': {}, 'events': [], 'anoma
 ok('== Helper answers (' in rep6, 'the report has a helper answers line')
 ok('1 late and dropped' in rep6 and 'slowest' in rep6, 'with the late answers and the slowest answer')
 
+# ---------------------------------------------------------------- closed test mode (O582)
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--closed']).closed, True, '--closed is a flag of run')
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k']).closed, False, 'closed mode is off by default')
+with tempfile.TemporaryDirectory() as _d:
+    os.makedirs(os.path.join(_d, 'data'))
+    _a = T.Args()
+    _a.server_dir, _a.state = _d, os.path.join(_d, 'state')
+    _entries = [{'player_id': 100 + i, 'name': 'Tester Aa%s' % c} for i, c in enumerate('bcdefg')]
+    _ran, _real_sql, _real_rows = [], T.sql, T.rows
+    T.sql = lambda statements, db=None: _ran.append(list(statements)) or ''
+    T.rows = lambda out: [['guilds'], ['chaos_market_orders'], ['chaos_arena_matches'], ['chaos_arena_match_players']]
+    try:
+        try:
+            T.closed_start(_a, _entries, {})
+            ok(False, 'the switch off: the run is refused')
+        except SystemExit as e:
+            ok('closed test mode is off' in str(e.code), 'the switch off: the run is refused')
+        eq(_ran, [], 'nothing was written with the switch off')
+        with open(os.path.join(_d, 'data', 'chaos_testers_closed'), 'w') as f:
+            f.write('on\n')
+        _st = {}
+        with contextlib.redirect_stdout(io.StringIO()):
+            T.closed_start(_a, _entries, _st)
+        ok(_a.closed_plan['guilds'] and len(_a.closed_plan['guilds']) == 2, 'with the switch on: two tester guilds are planned')
+        _flat = '\n'.join('\n'.join(x) for x in _ran)
+        ok('INSERT INTO `guilds`' in _flat and 'DELETE FROM `guilds`' in _flat, 'old leftovers go, then the guilds are made')
+        ok(_flat.index('DELETE FROM `guilds`') < _flat.index('INSERT INTO `guilds`'), 'in that order')
+        ok(_st['closed']['guilds'] == ['Tester Guild Alfa', 'Tester Guild Bravo'], 'the state remembers the guilds')
+        _ran.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            T.closed_finish(_a, _entries)
+        ok(any('DELETE FROM `chaos_market_orders`' in s for batch in _ran for s in batch), 'the end of a run removes the tester book')
+        T.sql = lambda statements, db=None: (_ for _ in ()).throw(SystemExit('database: gone'))
+        with contextlib.redirect_stdout(io.StringIO()) as _out:
+            T.closed_finish(_a, _entries)
+        ok('testers cleanup --yes' in _out.getvalue(), 'a failed clean-up says what removes it')
+    finally:
+        T.sql, T.rows = _real_sql, _real_rows
+# the cleanup statements of closed mode come before the players go
+_cs = T.cleanup_statements([('chaos_arena_ratings', 'player_id')], {5}, {7})
+ok(_cs[0].startswith('DELETE FROM `chaos_arena_ratings`'), 'the generic cleanup is keyed by the ids (arena ratings)')
+_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testers.py'), encoding='utf-8').read()
+ok('stmts = closed_clean(players) + cleanup_statements(' in _src, 'cleanup removes the closed-mode rows first')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

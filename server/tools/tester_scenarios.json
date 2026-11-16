@@ -7,8 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 72,
-  "out": 39,
+  "closed": 10,
+  "opcode": 70,
+  "out": 31,
   "passive": 110,
   "place": 15,
   "staff": 17
@@ -9264,13 +9265,7 @@
    ]
   },
   "groupQueue": {
-   "actions": [
-    "open",
-    "leave",
-    "join",
-    "raid",
-    "query"
-   ],
+   "actions": [],
    "client": [
     "game_groupqueue"
    ],
@@ -9283,8 +9278,14 @@
     "groupqueue.lua"
    ],
    "opcode": 160,
-   "out": false,
-   "skip": [],
+   "out": true,
+   "skip": [
+    "open",
+    "leave",
+    "join",
+    "raid",
+    "query"
+   ],
    "systems": [
     "groupqueue"
    ]
@@ -9798,6 +9799,7 @@
     "coins",
     "count",
     "cur",
+    "currency",
     "days",
     "gold",
     "id",
@@ -10273,15 +10275,7 @@
    ]
   },
   "raid": {
-   "actions": [
-    "continue",
-    "join",
-    "journal",
-    "buy",
-    "open",
-    "leave",
-    "query"
-   ],
+   "actions": [],
    "client": [
     "game_raid"
    ],
@@ -10297,9 +10291,16 @@
     "raid.lua"
    ],
    "opcode": 213,
-   "out": false,
+   "out": true,
    "skip": [
-    "start"
+    "continue",
+    "join",
+    "journal",
+    "buy",
+    "open",
+    "start",
+    "leave",
+    "query"
    ],
    "systems": [
     "raid"
@@ -10902,13 +10903,13 @@
     "arena.lua",
     "arena_season.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "arena"
    ],
    "place": "npc Arena Master",
    "talkactions": [],
-   "why": "ranked PvP: a queue would match testers against real players"
+   "why": "ranked PvP, testers only matched with testers (closed test mode)"
   },
   "arenalook": {
    "files": [
@@ -11010,23 +11011,23 @@
    "files": [
     "battleground.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "battleground"
    ],
    "talkactions": [
     "/bg"
    ],
-   "why": "needs teams of real players"
+   "why": "queue of the testers' own realm (closed test mode)"
   },
   "bazaar": {
    "files": [
     "bazaar.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [],
    "talkactions": [],
-   "why": "trades with real players"
+   "why": "the character lock of a listing of a tester; the site never shows or sells it (closed test mode)"
   },
   "bestiary": {
    "files": [
@@ -11701,11 +11702,12 @@
     "chaos_constants.lua",
     "groupqueue.lua"
    ],
-   "kind": "opcode",
+   "kind": "out",
    "opcodes": [
     "groupQueue"
    ],
-   "talkactions": []
+   "talkactions": [],
+   "why": "a queue that matches players: the server refuses testers (O582)"
   },
   "guardian": {
    "files": [],
@@ -11719,14 +11721,14 @@
     "guild.lua",
     "guild_hall.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "guild"
    ],
    "talkactions": [
     "/guild"
    ],
-   "why": "guilds of real players; testers stay apart"
+   "why": "a tester guild made by the run (closed test mode)"
   },
   "guildboss": {
    "files": [
@@ -11743,14 +11745,14 @@
    "files": [
     "guildwar.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "guildWar"
    ],
    "talkactions": [
     "/guildwar"
    ],
-   "why": "guild wars of real players"
+   "why": "a war between the two tester guilds (closed test mode)"
   },
   "harvest_event": {
    "files": [
@@ -12122,37 +12124,37 @@
     "chaos_constants.lua",
     "market.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "market"
    ],
    "talkactions": [
     "/market"
    ],
-   "why": "testers are refused on the market by design (tests/testers_test.lua)"
+   "why": "the testers' own book, gold only (closed test mode)"
   },
   "market_history": {
    "files": [
     "market_history.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [],
    "talkactions": [],
-   "why": "testers are refused on the market by design"
+   "why": "the testers' own book, gold only (closed test mode)"
   },
   "market_notify": {
    "files": [],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [],
    "talkactions": [],
-   "why": "testers are refused on the market by design"
+   "why": "the testers' own book, gold only (closed test mode)"
   },
   "market_orders": {
    "files": [],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [],
    "talkactions": [],
-   "why": "testers are refused on the market by design"
+   "why": "the testers' own book, gold only (closed test mode)"
   },
   "melee_skill": {
    "files": [
@@ -12404,7 +12406,7 @@
     "partyFinder"
    ],
    "talkactions": [],
-   "why": "listings and applications real players see and answer"
+   "why": "a list and a queue that match players: the server refuses testers (O582)"
   },
   "party_xp": {
    "files": [
@@ -12602,14 +12604,14 @@
     "chaos_constants.lua",
     "pvpzone.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "pvpZone"
    ],
    "talkactions": [
     "/marches"
    ],
-   "why": "player versus player; testers never fight players"
+   "why": "the Marches, the testers' own instance (closed test mode)"
   },
   "pz_guard": {
    "files": [
@@ -12646,14 +12648,15 @@
     "chaos_constants.lua",
     "raid.lua"
    ],
-   "kind": "opcode",
+   "kind": "out",
    "opcodes": [
     "raid"
    ],
    "place": "hunt",
    "talkactions": [
     "/raid"
-   ]
+   ],
+   "why": "a run other players join: the server refuses testers (O582)"
   },
   "rarity_migrate": {
    "files": [

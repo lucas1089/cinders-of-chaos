@@ -9694,8 +9694,10 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
   - `place`: the helper's `enter` argument.
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
-  - `out`: what bots truly cannot do, with the reason. Payments, moderation, guilds, market, orb exchange, party
-    finder, ranked arena, PvP zones, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
+    raid, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar. Only a `--closed` run reaches
+    them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
 - Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
   world and staff actions (start, stop, reset, grant, give, transfer, gift and the rest of `ADMIN`).
@@ -9710,6 +9712,64 @@ Data keys are filled only from the bot's own earlier answers on that opcode. Nev
 Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
 Report: per system tried / ok / refused / log errors. A system never reached says why:
 out of scope with the reason, passive, or not picked in this run.
+
+### Closed test mode (O582, `tools/tester_closed.py`, `tools/tester_closed_test.py`, `tests/testers_test.lua`)
+
+Owner 2026-11-16 (pt-BR): "Modo teste fechado". The bots play PvP, arena, battleground, guild, guild war, market and the
+bazaar lock among themselves, switched on from the admin app (Comandos > card Testers > Modo fechado > Ligar). Never with
+a real player. Off by default.
+
+The switch: `chaos-ctl.sh testers closed on | off | status` writes `data/chaos_testers_closed` in the server folder.
+Only the word `on` (any case) is on. No file, an unreadable file or any other text is off. The server reads it at most
+every 5 seconds (`ChaosTestersCore.closedOn`), so no restart. `testers start --closed` needs it on, makes two tester guilds
+before the bots log in and runs the closed checks.
+
+The guard: `testers_core.lua`. Every party of a closed-mode action is a tester or the action is refused.
+- `sideOf(flags)`: "tester" (all testers), "player" (none), nil (mixed, empty, unknown). nil is always refused.
+- `sameSide(system, on, a, b)`: both sides known and equal. Two testers only with the switch on and only for a system of
+  `CLOSED_SYSTEMS`. A tester against a player is refused on or off, in both directions.
+- Where it is asked:
+  - arena (`arena.lua`): join (the party), the queue per side, a tester entry leaves the queue when the switch goes off,
+    and `startMatch` checks both entries again.
+  - battleground (`battleground.lua`): the testers have the realm `K.REALM`; the queue group, the party rule "plays in
+    another realm" and the match all use the realm, so a match never holds both. A tester is refused with the switch off.
+  - the Marches (`pvpzone.lua`, `pvpzone_core.lua`): realm `K.REALM` has its own instance slot (`testerSlot`, the slot after
+    the grid, in the clear block x/y 13312-13823); a tester is refused with the switch off.
+  - PvP (`testers.lua` `onTargetCombat`): tester against player is always refused; two testers hit each other only with
+    the switch on.
+  - guild (`guild.lua` `guildOf`): a tester has a guild only if it is a tester guild (name "Tester Guild ...", every
+    member a tester) and the switch is on; a player never has a tester guild. A mixed guild gives no guild to anyone
+    concerned (the members are read from `guild_membership` and kept 10 s).
+  - guild war (`guildwar.lua`): declare and accept need both guilds on the same known side; the war realm of a tester
+    is `K.REALM`; a war of tester guilds is never broadcast; a kill across the sides never scores.
+  - market (`market.lua`, `market_core.lua`, `market_history.lua`): a tester trades in the realm `K.REALM`, a separate
+    book. `realmClause` leaves it out of every player's view, `realmOf` keeps it apart from seasons, the price history
+    and `orderFind` follow the realm. Gold only: a tester request with coins is refused, `coinsAllowed` is false there.
+    With the switch off a tester cannot buy, list, post or fill.
+  - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
+    refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
+  - queues that match players (dungeons, group queue, party finder, raid): testers are refused, switch on or off.
+    Dungeons, group queue, arena and battleground were not tester-aware before (audit 2026-11-16).
+- Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
+  referral, the orb exchange, conquest and siege.
+
+The bots (`tester_checks.py`, run with `--closed`; the helper is v11, `!tester closed` reads the deployed rules):
+`closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
+`closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
+`closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
+other bot sees and buys it), `closed_bazaar` (a listing locks the character, the release frees it). A failed guard is a
+`BUG` line. A check that cannot run says why (no partner, a level gate, fewer than 6 bots for two guilds).
+
+Clean-up (`tester_closed.clean_statements`): the guilds named "Tester Guild Alfa / Bravo" owned by a tester with their
+ranks, members, wars and Chaos rows; the market offers, orders and price history of realm `K.REALM`; arena matches whose
+every player is a tester; bazaar listings of testers. Every DELETE is keyed by the realm, the guild names or the tester ids.
+It runs before a run starts, when it ends and in `testers cleanup`.
+
+Run on a server with real players on: it is safe by the guards above, but run it on the test server first.
+Not run live: the whole flow (guilds loaded at login, the arena match, the Marches instance at slot 4, a market sale in the
+tester book). Unit tests: `tests/testers_test.lua`, `tests/groupqueue_test.lua` (arena), `tests/market_test.lua`,
+`tests/tester_helper_test.lua`, `tools/tester_closed_test.py`, `tools/tester_checks_test.py`, `tools/testers_test.py`,
+`deploy/chaos_ctl_test.py`, `website/tests/chaos_bazaar_test.php`.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

@@ -1344,6 +1344,49 @@ def test_testers():
         except OSError:
             pass
 
+        # closed test mode (O582): the switch file, off by default, and --closed only with it on
+        flag = os.path.join(server, 'data', 'chaos_testers_closed')
+        r = run('testers', 'closed', 'status')
+        check(r.returncode == 0 and r.stdout.strip() == 'closed=off', 'closed status: off by default: ' + r.stdout + r.stderr)
+        before = tcalls()
+        r = run('testers', 'start', '2', '1', '--closed', extra={'STUB_BOTS': '5'})
+        check(r.returncode != 0 and 'closed test mode is off' in r.stderr and not os.path.exists(helper)
+              and not os.path.exists(os.path.join(state, 'run.pid')), 'start --closed with the switch off is refused: ' + r.stderr)
+        check(tcalls() == before, 'nothing ran')
+        check(run('testers', 'closed', 'maybe').returncode != 0 and run('testers', 'closed', 'on', 'x').returncode == 0,
+              'closed: an unknown word is refused')
+        r = run('testers', 'closed', 'on')
+        check(r.returncode == 0 and r.stdout.startswith('closed=on') and open(flag).read().strip() == 'on', 'closed on: ' + r.stdout)
+        check(oct(os.stat(flag).st_mode & 0o777) == '0o644', 'the server reads the switch: mode 644')
+        check(run('testers', 'closed', 'status').stdout.strip() == 'closed=on', 'closed status: on')
+        check(run('testers', 'status', extra={'STUB_BOTS': '5'}).stdout.count('closed=on') == 1, 'testers status shows the switch')
+        before = tcalls()
+        r = run('testers', 'start', '2', '1', '--closed', extra={'STUB_BOTS': '5'})
+        check(r.returncode == 0 and 'closed test mode' in r.stdout, 'start --closed with the switch on: ' + r.stdout + r.stderr)
+        pid = int(open(os.path.join(state, 'run.pid')).read())
+        for _ in range(50):
+            if 'run --key-file' in tcalls()[len(before):]:
+                break
+            time.sleep(0.1)
+        new = tcalls()[len(before):]
+        check('--scenarios' in new and new.split('--scenarios', 1)[1].split()[1:2] == ['--closed'],
+              'the run gets --closed after the table: ' + new)
+        run('testers', 'stop')
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except OSError:
+            pass
+        r = run('testers', 'closed', 'off')
+        check(r.returncode == 0 and r.stdout.startswith('closed=off') and open(flag).read().strip() == 'off', 'closed off: ' + r.stdout)
+        check(run('testers', 'closed', 'status').stdout.strip() == 'closed=off', 'closed status: off again')
+        with open(flag, 'w') as f:
+            f.write(' ON \n')
+        check(run('testers', 'closed', 'status').stdout.strip() == 'closed=on', 'the word on, any case')
+        with open(flag, 'w') as f:
+            f.write('onn\n')
+        check(run('testers', 'closed', 'status').stdout.strip() == 'closed=off', 'anything but the word on is off')
+        os.unlink(flag)
+
         # not loaded, with --restart: the restart countdown is queued, the bots wait for it
         with open(log, 'a') as f:
             f.write('Loading config\n')

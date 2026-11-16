@@ -7,6 +7,9 @@
 --   * the name plate shows the title TESTER (top priority); every look at it says it is a test character
 --   * no combat, trade or party between a tester and a player (summons count as their master)
 --   * Game.broadcastMessage drops a broadcast that names a tester (level, achievement, record, prize broadcasts)
+--   * closed test mode (O582, data/chaos_testers_closed, chaos-ctl.sh testers closed on): two testers may fight, queue and trade
+--     with each other only while it is on; a tester and a player never meet in any of those, on or off. The guards of the
+--     systems (arena, battleground, pvpzone, guild, guildwar, market) ask the rules of testers_core.lua
 --   * no mail: a tester's parcel or letter, or one to a tester's name, is refused at the mailbox (through
 --     ChaosDepot.onMoveItem, the move hook patch_base_depot.py puts first in Player:onMoveItem)
 -- Assumed engine API (TFS 1.4.2): CreatureEvent login/logout, EventCallback onLook / onTargetCombat / onTradeRequest /
@@ -100,6 +103,57 @@ function startup.onStartup()
 end
 startup:register()
 
+-- ---------------------------------------------------------------- closed test mode (O582)
+X.closed = K.closedOn
+
+-- every tester guild member flag of a guild from the database (kept GUILD_TTL seconds): any, all (nil, nil when unknown)
+local GUILD_TTL = 10
+X.guildCache = X.guildCache or {}
+function X.guildFlags(gid)
+	local now = os.time()
+	local c = X.guildCache[gid]
+	if c and now - c.at < GUILD_TTL and now >= c.at then
+		return c.any, c.all
+	end
+	local any, all
+	local ok, id = pcall(db.storeQuery, string.format(
+		"SELECT COUNT(*) AS `n`, SUM(EXISTS(SELECT 1 FROM `player_storage` `s` WHERE `s`.`player_id` = `m`.`player_id` " ..
+		"AND `s`.`key` = %d AND `s`.`value` = 1)) AS `t` FROM `guild_membership` `m` WHERE `m`.`guild_id` = %d",
+		Chaos.storage.tester, tonumber(gid) or 0))
+	if ok and id then
+		local n, t = result.getNumber(id, "n"), result.getNumber(id, "t")
+		result.free(id)
+		if n and n > 0 then
+			any, all = (t or 0) > 0, (t or 0) == n
+		end
+	end
+	X.guildCache[gid] = {at = now, any = any, all = all}
+	return any, all
+end
+
+-- the side of a guild: "tester", "player" or nil (mixed, empty, unknown)
+function X.guildSide(gid, name)
+	local any, all = X.guildFlags(gid)
+	return K.guildSide(name, any, all)
+end
+
+-- the reason a character may not use its guild (a tester outside a tester guild or with closed mode off, a player in a
+-- tester guild), or nil. Fast for a player in a guild not named like a tester guild: no query
+function X.guildBlocked(player, gid, name)
+	local isT = Chaos.isTester(player)
+	local prefixed = type(name) == "string" and name:sub(1, #K.GUILD_PREFIX) == K.GUILD_PREFIX
+	if not isT and not prefixed then
+		return nil
+	end
+	local any, all = X.guildFlags(gid)
+	return K.guildBlocked(isT, name, any, all, K.closedOn())
+end
+
+-- a war between guilds a and b (ids and names): ok, reason. Both sides known and equal, tester wars in closed mode only
+function X.warAllowed(gidA, nameA, gidB, nameB)
+	return K.sameSide("guildwar", K.closedOn(), X.guildSide(gidA, nameA), X.guildSide(gidB, nameB))
+end
+
 -- ---------------------------------------------------------------- the TESTER tag
 if ChaosTitles and ChaosTitles.register then
 	ChaosTitles.register("tester", function(player)
@@ -126,6 +180,10 @@ guard.onTargetCombat = function(creature, target)
 		return RETURNVALUE_NOERROR
 	end
 	if K.mixed(isTester(creature), isTester(target)) then
+		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
+	end
+	-- two testers hit each other only in closed test mode (their own summon or themselves: the engine's rules)
+	if isTester(creature) and isTester(target) and testerOf(creature) ~= testerOf(target) and not K.closedOn() then
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	return RETURNVALUE_NOERROR

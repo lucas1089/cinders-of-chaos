@@ -979,6 +979,41 @@ final class CommandsTab {
         b.addView(ui.hint("Cada rodada grava sozinha o log de tudo o que os testers fizeram e os erros que receberam, e "
                 + "o relatório no fim. Ficam as 20 últimas rodadas na VPS. Log das ações traz até 5000 linhas: em Ver detalhes, "
                 + "Compartilhar manda o log como arquivo .txt."), ui.gap(4));
+        // closed test mode (O582): the bots play PvP, arena, battleground, guild, guild war, market and the bazaar lock only among
+        // themselves, never with players (chaos-ctl.sh testers closed, server/README.md "Closed test mode")
+        TextView closedNow = ui.text("Modo fechado (bots entre si): toque em Status.");
+        b.addView(closedNow, ui.gap(12));
+        MaterialButton closedStatus = ui.secondary("Status", R.drawable.ic_refresh);
+        closedStatus.setOnClickListener(v -> a.ctlAction("testers closed status", 30, f -> {
+            if (!f.ok) {
+                result.show("Modo fechado", f);
+                return;
+            }
+            closedNow.setText("Modo fechado (bots entre si): "
+                    + (f.raw.contains("closed=on") ? "LIGADO" : f.raw.contains("closed=off") ? "desligado" : "?"));
+        }));
+        MaterialButton closedOn = ui.secondary("Ligar", 0);
+        closedOn.setOnClickListener(v -> a.confirm("Ligar o modo fechado?", "Os testers passam a jogar PvP, arena, "
+                + "campo de batalha, guilda, guerra de guildas, mercado e o bloqueio do bazar, só entre si. Jogador "
+                + "nunca é pareado, atacado, negociado nem vê ordem de tester.", "Ligar", false,
+                () -> ctl("Modo fechado ligado", "testers closed on", 30, null)));
+        MaterialButton closedOff = ui.secondary("Desligar", 0);
+        closedOff.setOnClickListener(v -> ctl("Modo fechado desligado", "testers closed off", 30, null));
+        b.addView(ui.evenRow(closedOn, closedOff), ui.gap(8));
+        b.addView(closedStatus, ui.gap(8));
+        MaterialButton startClosed = ui.secondary("Iniciar em modo fechado", 0);
+        startClosed.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min em modo fechado?", "Precisa do modo fechado ligado. Cria "
+                    + "duas guildas de tester, e os bots testam arena, campo de batalha, Marches, guerra de guildas, mercado e "
+                    + "o bloqueio do bazar entre si. No fim as guildas, as ordens e os registros da arena somem. Vale 6 testers "
+                    + "ou mais.", "Iniciar", true,
+                    () -> ctl("Iniciar testers (modo fechado)", "testers start " + n + " " + m + " --closed --restart 300", 180, null));
+        });
+        b.addView(startClosed, ui.gap(8));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
         clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
                 + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "

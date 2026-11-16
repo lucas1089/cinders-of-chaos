@@ -25,6 +25,8 @@
 --                                       owner or of its party), "ally" (a party member), "monster" (wild), "player" (a stranger)
 --   H.summonAnomalies(snap, now, seen) O86: the rules summon_targets_owner / summon_targets_ally / owner_targets_summon over a
 --                                       snapshot {who, ownerTarget, summons = {{name, id, target}}}, once per 30 s per rule
+--   H.closedGuards(rules)              O582: what the deployed testers_core.lua rules answer for a tester against a player and for
+--                                       testers with the mode off, per closed system: {system = {mixed = refused, off = refused, together = allowed}}
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
 --                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
@@ -35,7 +37,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, closed = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -567,6 +569,22 @@ end
 
 -- once a minute the helper counts the testers in game; the server console gets a line when it changed (or every
 -- ONLINE_EVERY minutes, so the log shows they are still there)
+-- the live rules of the server (ChaosTestersCore) held to what closed test mode promises: a tester against a player is refused
+-- (mode on), testers together are refused with the mode off and allowed with it on. `rules` = ChaosTestersCore
+function H.closedGuards(rules)
+	local out = {}
+	if type(rules) ~= "table" or type(rules.sameSide) ~= "function" or type(rules.CLOSED_SYSTEMS) ~= "table" then
+		return out
+	end
+	for system in pairs(rules.CLOSED_SYSTEMS) do
+		out[system] = {
+			mixed = not rules.sameSide(system, true, "tester", "player") and not rules.sameSide(system, true, "player", "tester"),
+			off = not rules.sameSide(system, false, "tester", "tester"),
+			together = rules.sameSide(system, true, "tester", "tester") and true or false}
+	end
+	return out
+end
+
 H.ONLINE_EVERY = 5
 function H.onlineLine(count, last, minute)
 	if count == last and (minute or 0) % H.ONLINE_EVERY ~= 0 then

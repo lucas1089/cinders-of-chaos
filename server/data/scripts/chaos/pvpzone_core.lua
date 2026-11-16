@@ -53,6 +53,10 @@ function K.slotForRealm(cfg, realm)
 	if cfg.mode == "map" then
 		return 0
 	end
+	-- closed test mode (O582): the testers' own instance, never the slot of a season or of the standard realm
+	if cfg.testerRealm and realm == cfg.testerRealm then
+		return cfg.testerSlot
+	end
 	if realm <= 0 then
 		return 0
 	end
@@ -619,7 +623,8 @@ function K.slotOfPos(cfg, pos)
 		return nil
 	end
 	local slot = row * g.cols + col
-	if slot >= g.slots then
+	-- the grid's slots, and the testers' own one after them (closed test mode, O582)
+	if slot >= g.slots + ((cfg.testerSlot and cfg.testerSlot >= g.slots) and 1 or 0) then
 		return nil
 	end
 	local lx, ly = dx - col * g.spacing, dy - row * g.spacing
@@ -710,6 +715,9 @@ end
 function K.entryRefusal(cfg, p)
 	if not cfg.enabled or p.enabled == false then
 		return string.format("%s are closed.", cfg.name)
+	end
+	if p.testerClosedOff then
+		return "Closed test mode is off: the testers do not play this."
 	end
 	if p.inside then
 		return string.format("You are already in %s.", cfg.name)

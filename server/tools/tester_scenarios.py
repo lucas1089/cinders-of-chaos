@@ -75,7 +75,7 @@ class Scenarios:
             self.opcodes[num] = (name, e)
         self.places = []  # (system, place argument, opcode name or None)
         for name, s in sorted(table.get('systems', {}).items()):
-            if s.get('place') and s.get('kind') not in ('out', 'staff'):
+            if s.get('place') and s.get('kind') not in ('out', 'staff', 'closed'):
                 op = next((o for o in s.get('opcodes', []) if o in table.get('opcodes', {})
                            and not table['opcodes'][o].get('out')), None)
                 self.places.append((name, s['place'], op))
@@ -283,6 +283,8 @@ def merge(table, run_cov, log):
         kind = s.get('kind')
         if kind in ('out', 'staff'):
             row['why'] = 'out of scope: ' + s.get('why', '')
+        elif kind == 'closed':
+            row['why'] = 'closed test mode: ' + s.get('why', '') + ' (testers.py run --closed)'
         elif kind == 'passive':
             row['why'] = 'passive (reached by play; only log errors name it)'
         elif not row['tried']:

@@ -196,8 +196,59 @@ function S.isQueued(player)
 	return S.queued[player:getId()] ~= nil
 end
 
+-- closed test mode (O582, testers_core.lua): a tester queues and fights only among testers and only while the mode is on;
+-- a player never meets a tester. `flags` = one boolean per party (true = a tester). Without the rules file a tester is refused.
+local function sideOfFlags(flags)
+	local K = ChaosTestersCore
+	if K then
+		return K.sideOf(flags)
+	end
+	for _, f in ipairs(flags) do
+		if f then
+			return nil
+		end
+	end
+	return #flags > 0 and "player" or nil
+end
+
+local function testerFlags(cids)
+	local flags = {}
+	for i, cid in ipairs(cids) do
+		local p = Player(cid)
+		if p then
+			flags[i] = Chaos.isTester(p) and true or false
+		else
+			flags[i] = "?" -- unknown: the side is nil
+		end
+	end
+	return flags
+end
+
+local function closedRefusal(players)
+	local flags = {}
+	for _, p in ipairs(players) do
+		flags[#flags + 1] = Chaos.isTester(p)
+	end
+	local K = ChaosTestersCore
+	local why
+	if K then
+		why = K.joinRefusal("arena", K.closedOn(), flags)
+		return why and (K.CLOSED_TEXT[why] or K.CLOSED_TEXT.mixed) or nil
+	end
+	for _, f in ipairs(flags) do
+		if f then
+			return "Closed test mode is off: the testers do not play this."
+		end
+	end
+	return nil
+end
+
 -- nil when the player may queue / start a match, else the reason
 local function refusal(player, ignoreQueue)
+	local closedWhy = closedRefusal({player})
+	if closedWhy then
+		return closedWhy
+	end
 	if player:getLevel() < C().minLevel then
 		return string.format("You need level %d to fight in the arena.", C().minLevel)
 	end
@@ -329,6 +380,11 @@ function S.join(player, mode)
 			return false
 		end
 		members = list
+	end
+	local mixedWhy = closedRefusal(members)
+	if mixedWhy then
+		player:sendCancelMessage(Chaos.tx(player, mixedWhy))
+		return false
 	end
 	for _, m in ipairs(members) do
 		local why = refusal(m)
@@ -676,6 +732,17 @@ local function startMatch(a, b)
 			end
 		end
 	end
+	-- closed test mode: the two sides are both testers (mode on) or both players, checked again at the start
+	do
+		local sa, sb = sideOfFlags(testerFlags(a.members)), sideOfFlags(testerFlags(b.members))
+		local K = ChaosTestersCore
+		local ok = sa ~= nil and sa == sb and (sa ~= "tester" or (K and K.sameSide("arena", K.closedOn(), sa, sb)))
+		if not ok then
+			removeEntry(a)
+			removeEntry(b)
+			return false
+		end
+	end
 	if cfg.modes[a.mode].size == 1 then
 		local pa, pb = Player(a.members[1]), Player(b.members[1])
 		if pa:getParty() and pa:getParty() == pb:getParty() then
@@ -997,7 +1064,33 @@ local function matchmake()
 			entries[#entries + 1] = e
 		end
 	end
-	for _, pair in ipairs(A.findMatches(cfg, entries, now)) do
+	-- closed test mode (O582): the queue is matched per side, testers only while the mode is on; an entry of no known
+	-- side (a tester and a player together) or a tester entry with the mode off leaves the queue
+	local groups, found = {player = {}, tester = {}}, {}
+	for _, e in ipairs(entries) do
+		local side = sideOfFlags(testerFlags(e.members))
+		if side == "tester" and not (ChaosTestersCore and ChaosTestersCore.closedOn()) then
+			side = nil
+		end
+		if side then
+			groups[side][#groups[side] + 1] = e
+		else
+			removeEntry(e)
+			for _, cid in ipairs(e.members) do
+				local p = Player(cid)
+				if p then
+					msg(p, ChaosI18n.msg("Arena: %s", Chaos.tx(p, "Testers and players are never mixed.")))
+					stateLater(cid)
+				end
+			end
+		end
+	end
+	for _, side in ipairs({"player", "tester"}) do
+		for _, pair in ipairs(A.findMatches(cfg, groups[side], now)) do
+			found[#found + 1] = pair
+		end
+	end
+	for _, pair in ipairs(found) do
 		if not startMatch(pair[1], pair[2]) and not freeSlot() then
 			-- every slot in use: the pair hears it once (instance limits), with the wait, and stays first in the queue
 			if ChaosInstanceLimits then
