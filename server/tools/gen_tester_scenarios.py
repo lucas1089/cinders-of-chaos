@@ -16,7 +16,7 @@ NPC dialogs: every NPC of data/npc with the {keywords} of its greeting.
 keytest (O249, tester_keytree.py): per class key every keystone and mastery of the passive tree it may hold, the route to
 it and how a bot can see that it works (statTotals for masteries, a combat log row for the keystones with extra hits).
 
-usage: python3 -I server/tools/gen_tester_scenarios.py [--check]
+usage: python3 -I server/tools/gen_tester_scenarios.py [--check | --skips]   (--skips lists every action the bots never send, with its reason)
 Standard library only; deterministic (sorted, no timestamps).
 """
 import json
@@ -68,7 +68,6 @@ OUT_OF_SCOPE = {
     'beta': 'beta sign-up of real accounts',
     'pvpzone': 'player versus player; testers never fight players',
     'battleground': 'needs teams of real players',
-    'conquest': 'needs guilds of real players',
     'siege': 'needs guilds of real players',
     'testers': 'the tester rules themselves (tests/testers_test.lua)',
     'i18n': 'translations; every bot text passes through it',
@@ -130,6 +129,16 @@ DENY_RE = re.compile(r'pay|checkout|donat|report|ticket|appeal|redeem|coupon|vou
 ADMIN = {'start', 'stop', 'end', 'reset', 'rebuild', 'shift', 'schedule', 'wave', 'breach', 'event', 'grant',
          'give', 'xp', 'level', 'expire', 'winner', 'transfer', 'gift', 'gift_coins', 'giftPrice', 'claimreset',
          'rescan', 'testip', 'nopz', 'species', 'complete', 'memset', 'stat', 'pity', 'unlink'}
+# ADMIN words that are a player's own action on one opcode (O584): {opcode name: {action: why}}. A word in ADMIN is skipped
+# on every opcode but these; the generator fails when an entry names an action no server file answers on that opcode
+ADMIN_ALLOW = {
+    'descent': {'start': "the player's own run of the Ember Descent (X.start of the player, a rate limit of 2 s)"},
+    'raid': {'start': "the player's own raid of the Ashen Sepulchre (X.open of the player); a leave step follows it"},
+    'combatLog': {'reset': "the player's own DPS meter counters"},
+    'hunt': {'reset': "the player's own hunt session meter"},
+    'lootfilter': {'reset': "the player's own filter counters (scope session, total or all)"},
+    'trainerMeter': {'reset': "the player's own dummy meter"},
+}
 
 
 def read(path):
@@ -355,6 +364,13 @@ def build():
     unused = sorted(set(OUT_OF_SCOPE) - set(systems))
     if unused:
         raise SystemExit('OUT_OF_SCOPE names no system: %s' % ', '.join(unused))
+    for o, acts in ADMIN_ALLOW.items():
+        missing = sorted(a for a in acts if a not in table.get(o, {}).get('actions', []))
+        if o not in table or missing:
+            raise SystemExit('ADMIN_ALLOW names an opcode or action no server file answers: %s %s' % (o, missing))
+        bad = sorted(a for a in acts if a not in ADMIN)
+        if bad:
+            raise SystemExit('ADMIN_ALLOW names an action that is not in ADMIN: %s %s' % (o, bad))
     for o, keys in FLAGS.items():
         if o not in table or sorted(set(keys) - set(table[o]['dataKeys'])):
             raise SystemExit('FLAGS names an opcode or data key no server file reads: %s' % o)
@@ -371,14 +387,31 @@ def build():
         op_systems = sorted(n for n, x in systems.items() if o in x['opcodes'])
         t['systems'] = op_systems
         t['out'] = bool(op_systems) and all(systems[n]['kind'] == 'out' for n in op_systems)
-        # actions only an out-of-scope system's files answer, and money / staff actions: never sent
-        allowed = set()
+        # actions only an out-of-scope system's files answer, and money / staff actions: never sent, each with its reason
+        allowed, out_why = set(), {}
         for f in t['files']:
             own = owners(f, names, texts[f])
             if not own or any(systems.get(n, {}).get('kind') != 'out' for n in own):
                 allowed |= set(per_file[(o, f)])
-        t['skip'] = [a for a in t['actions'] if a not in allowed or a in ADMIN or DENY_RE.search(a)]
+            else:
+                for a in per_file[(o, f)]:
+                    out_why.setdefault(a, 'out of scope (%s): %s' % (own[0], systems[own[0]]['why']))
+        keep = ADMIN_ALLOW.get(o, {})
+        t['skip'], t['skipWhy'] = [], {}
+        for a in t['actions']:
+            if a not in allowed:
+                why = out_why.get(a, 'only an out-of-scope system answers it')
+            elif a in ADMIN and a not in keep:
+                why = 'staff or world action (ADMIN): it would change the world for real players or hand out value'
+            elif DENY_RE.search(a):
+                why = 'money, report, ticket or code action (DENY_RE)'
+            else:
+                continue
+            t['skip'].append(a)
+            t['skipWhy'][a] = why
         t['actions'] = [a for a in t['actions'] if a not in t['skip']]
+        if keep:
+            t['adminAllowed'] = sorted(keep)
     used = {t['opcode'] for t in table.values()}
     client_only = sorted({m for n, mods in clients.items() if n not in used for m, _ in mods})
     return {'generated_by': 'server/tools/gen_tester_scenarios.py', 'counts': dict(sorted(counts.items())),
@@ -390,7 +423,16 @@ def render(table):
     return json.dumps(table, indent=1, sort_keys=True, ensure_ascii=False) + '\n'
 
 
+def skipped(table):
+    """[(opcode name, action, reason)] of every action the bots never send, sorted"""
+    return sorted((o, a, t.get('skipWhy', {}).get(a, '')) for o, t in table['opcodes'].items() for a in t['skip'])
+
+
 def main(argv):
+    if '--skips' in argv:
+        for o, a, why in skipped(build()):
+            print('%-16s %-14s %s' % (o, a, why))
+        return 0
     text = render(build())
     if '--check' in argv:
         old = read(OUT) if os.path.exists(OUT) else ''

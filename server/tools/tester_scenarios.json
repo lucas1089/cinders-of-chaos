@@ -7,8 +7,8 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 72,
-  "out": 39,
+  "opcode": 73,
+  "out": 38,
   "passive": 110,
   "place": 15,
   "staff": 17
@@ -8398,6 +8398,7 @@
    "opcode": 250,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "achievements"
    ]
@@ -8420,6 +8421,10 @@
     "answer",
     "another"
    ],
+   "skipWhy": {
+    "another": "out of scope (antibot): judges bots; testers are exempt by design",
+    "answer": "out of scope (antibot): judges bots; testers are exempt by design"
+   },
    "systems": [
     "antibot"
    ]
@@ -8450,6 +8455,11 @@
     "open",
     "leave"
    ],
+   "skipWhy": {
+    "leave": "out of scope (arena): ranked PvP: a queue would match testers against real players",
+    "open": "out of scope (arena): ranked PvP: a queue would match testers against real players",
+    "queue": "out of scope (arena): ranked PvP: a queue would match testers against real players"
+   },
    "systems": [
     "arena"
    ]
@@ -8477,6 +8487,7 @@
    "opcode": 216,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "bank": {
@@ -8499,6 +8510,9 @@
    "skip": [
     "transfer"
    ],
+   "skipWhy": {
+    "transfer": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "bank"
    ]
@@ -8535,6 +8549,15 @@
     "board",
     "query"
    ],
+   "skipWhy": {
+    "board": "out of scope (battleground): needs teams of real players",
+    "buy": "out of scope (battleground): needs teams of real players",
+    "leave": "out of scope (battleground): needs teams of real players",
+    "open": "out of scope (battleground): needs teams of real players",
+    "query": "out of scope (battleground): needs teams of real players",
+    "queue": "out of scope (battleground): needs teams of real players",
+    "role": "out of scope (battleground): needs teams of real players"
+   },
    "systems": [
     "battleground"
    ]
@@ -8583,6 +8606,7 @@
    "opcode": 253,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "bestiary"
    ]
@@ -8605,6 +8629,7 @@
    "opcode": 217,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "bossspawns"
    ]
@@ -8628,6 +8653,7 @@
    "opcode": 223,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "bounty"
    ]
@@ -8647,6 +8673,7 @@
    "opcode": 234,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "itemdesc_i18n"
    ]
@@ -8668,6 +8695,7 @@
    "opcode": 176,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "candlemarks"
    ]
@@ -8696,6 +8724,7 @@
    "opcode": 173,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "cards"
    ]
@@ -8717,6 +8746,7 @@
     "cancel": "ends the running cast of the player; there is nothing to say when none runs"
    },
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "charms": {
@@ -8746,6 +8776,7 @@
    "opcode": 198,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "charms"
    ]
@@ -8775,6 +8806,9 @@
    "skip": [
     "memset"
    ],
+   "skipWhy": {
+    "memset": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "chronicle",
     "memorial"
@@ -8792,6 +8826,7 @@
    "opcode": 190,
    "out": true,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "clientguard"
    ]
@@ -8802,7 +8837,11 @@
     "close",
     "seg",
     "party",
-    "share"
+    "share",
+    "reset"
+   ],
+   "adminAllowed": [
+    "reset"
    ],
    "client": [
     "game_dpsmeter"
@@ -8819,9 +8858,8 @@
    ],
    "opcode": 204,
    "out": false,
-   "skip": [
-    "reset"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "combatlog"
    ]
@@ -8843,6 +8881,7 @@
    "opcode": 119,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "combat_stats"
    ]
@@ -8870,12 +8909,21 @@
     "open",
     "donate"
    ],
+   "skipWhy": {
+    "close": "out of scope (community): posts real players read",
+    "donate": "out of scope (community): posts real players read",
+    "open": "out of scope (community): posts real players read"
+   },
    "systems": [
     "community"
    ]
   },
   "conquest": {
-   "actions": [],
+   "actions": [
+    "buy",
+    "open",
+    "close"
+   ],
    "client": [
     "game_conquest"
    ],
@@ -8886,12 +8934,9 @@
     "conquest.lua"
    ],
    "opcode": 167,
-   "out": true,
-   "skip": [
-    "buy",
-    "open",
-    "close"
-   ],
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "conquest"
    ]
@@ -8922,6 +8967,7 @@
    "opcode": 225,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "cosmetics"
    ]
@@ -8961,6 +9007,7 @@
    "opcode": 232,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "stash"
    ]
@@ -8988,6 +9035,9 @@
    "skip": [
     "shift"
    ],
+   "skipWhy": {
+    "shift": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "daily"
    ]
@@ -9009,6 +9059,7 @@
    "opcode": 154,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "deathrecap"
    ]
@@ -9018,10 +9069,14 @@
     "pick",
     "buy",
     "open",
+    "start",
     "craft",
     "ready",
     "leave",
     "query"
+   ],
+   "adminAllowed": [
+    "start"
    ],
    "client": [
     "game_descent"
@@ -9041,9 +9096,8 @@
    ],
    "opcode": 205,
    "out": false,
-   "skip": [
-    "start"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "descent"
    ]
@@ -9064,6 +9118,7 @@
    "opcode": 157,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "display_scale",
     "i18n"
@@ -9086,6 +9141,7 @@
    "opcode": 109,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "emberCache": {
@@ -9105,6 +9161,7 @@
    "opcode": 174,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "embercache"
    ]
@@ -9121,6 +9178,7 @@
    "opcode": 224,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "everfull": {
@@ -9137,6 +9195,7 @@
    "opcode": 116,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "potions"
    ]
@@ -9165,6 +9224,7 @@
    "opcode": 215,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "factions"
    ]
@@ -9183,6 +9243,7 @@
    "opcode": 164,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "gamble": {
@@ -9206,6 +9267,7 @@
    "opcode": 199,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "gamble"
    ]
@@ -9227,6 +9289,7 @@
    "opcode": 178,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "goals"
    ]
@@ -9259,6 +9322,7 @@
    "opcode": 230,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "groundloot"
    ]
@@ -9285,6 +9349,7 @@
    "opcode": 160,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "groupqueue"
    ]
@@ -9324,6 +9389,17 @@
     "refresh",
     "open"
    ],
+   "skipWhy": {
+    "buyHall": "out of scope (guild): guilds of real players; testers stay apart",
+    "deposit": "out of scope (guild): guilds of real players; testers stay apart",
+    "open": "out of scope (guild): guilds of real players; testers stay apart",
+    "payRent": "out of scope (guild): guilds of real players; testers stay apart",
+    "refresh": "out of scope (guild): guilds of real players; testers stay apart",
+    "scroll": "out of scope (guild): guilds of real players; testers stay apart",
+    "take": "out of scope (guild): guilds of real players; testers stay apart",
+    "upgrade": "out of scope (guild): guilds of real players; testers stay apart",
+    "withdraw": "out of scope (guild): guilds of real players; testers stay apart"
+   },
    "systems": [
     "guild"
    ]
@@ -9359,6 +9435,17 @@
     "close",
     "open"
    ],
+   "skipWhy": {
+    "accept": "out of scope (guildwar): guild wars of real players",
+    "cancel": "out of scope (guildwar): guild wars of real players",
+    "close": "out of scope (guildwar): guild wars of real players",
+    "declare": "out of scope (guildwar): guild wars of real players",
+    "decline": "out of scope (guildwar): guild wars of real players",
+    "log": "out of scope (guildwar): guild wars of real players",
+    "open": "out of scope (guildwar): guild wars of real players",
+    "refresh": "out of scope (guildwar): guild wars of real players",
+    "surrender": "out of scope (guildwar): guild wars of real players"
+   },
    "systems": [
     "guildwar"
    ]
@@ -9408,6 +9495,7 @@
    "opcode": 192,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "hideout"
    ]
@@ -9417,7 +9505,11 @@
     "restock",
     "restockQuote",
     "close",
-    "open"
+    "open",
+    "reset"
+   ],
+   "adminAllowed": [
+    "reset"
    ],
    "client": [
     "game_hunt"
@@ -9429,9 +9521,8 @@
    ],
    "opcode": 241,
    "out": false,
-   "skip": [
-    "reset"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "hunt",
     "restock"
@@ -9456,6 +9547,7 @@
    "opcode": 214,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "infinitytower"
    ]
@@ -9478,6 +9570,7 @@
    "opcode": 237,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "commands_ui"
    ]
@@ -9501,6 +9594,7 @@
    "opcode": 240,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "inspect"
    ]
@@ -9523,6 +9617,7 @@
    "opcode": 251,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "invasion"
    ]
@@ -9539,6 +9634,7 @@
    "opcode": 155,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "itemfinder"
    ]
@@ -9563,6 +9659,7 @@
    "opcode": 249,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "itemlink"
    ]
@@ -9610,6 +9707,7 @@
    "opcode": 242,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "item_tooltip"
    ]
@@ -9626,6 +9724,7 @@
    "opcode": 186,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "kitewalk"
    ]
@@ -9661,6 +9760,7 @@
    "opcode": 229,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "leaderboard",
     "records"
@@ -9690,6 +9790,7 @@
    "opcode": 206,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "loadouts"
    ]
@@ -9699,10 +9800,14 @@
     "peek",
     "take",
     "sound",
+    "reset",
     "set",
     "preset",
     "open",
     "sync"
+   ],
+   "adminAllowed": [
+    "reset"
    ],
    "client": [
     "game_lootfilter"
@@ -9723,9 +9828,8 @@
    ],
    "opcode": 238,
    "out": false,
-   "skip": [
-    "reset"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "lootfilter"
    ]
@@ -9759,6 +9863,7 @@
    "opcode": 153,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "partymarkers",
     "poi",
@@ -9784,6 +9889,7 @@
    "opcode": 245,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "map_marks"
    ]
@@ -9831,6 +9937,24 @@
     "history",
     "open"
    ],
+   "skipWhy": {
+    "browse": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "buy": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "cancel": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "fill": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "fillable": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "history": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "list": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "mine": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "myOrders": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "open": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "orderCancel": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "orderFind": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "orderPost": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "orders": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "sellable": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)",
+    "tip": "out of scope (market): testers are refused on the market by design (tests/testers_test.lua)"
+   },
    "systems": [
     "market"
    ]
@@ -9876,6 +10000,21 @@
     "open",
     "seek"
    ],
+   "skipWhy": {
+    "accept": "out of scope (mentor): pairs a tester with real players",
+    "buy": "out of scope (mentor): pairs a tester with real players",
+    "choose": "out of scope (mentor): pairs a tester with real players",
+    "decline": "out of scope (mentor): pairs a tester with real players",
+    "dismiss": "out of scope (mentor): pairs a tester with real players",
+    "invite": "out of scope (mentor): pairs a tester with real players",
+    "list": "out of scope (mentor): pairs a tester with real players",
+    "offer": "out of scope (mentor): pairs a tester with real players",
+    "open": "out of scope (mentor): pairs a tester with real players",
+    "register": "out of scope (mentor): pairs a tester with real players",
+    "release": "out of scope (mentor): pairs a tester with real players",
+    "retire": "out of scope (mentor): pairs a tester with real players",
+    "seek": "out of scope (mentor): pairs a tester with real players"
+   },
    "systems": [
     "mentor"
    ]
@@ -9898,6 +10037,7 @@
    "opcode": 125,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "hitcap",
     "manashield",
@@ -9917,6 +10057,7 @@
    "opcode": 248,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "nameplate"
    ]
@@ -9935,6 +10076,7 @@
    "opcode": 163,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "nemesis"
    ]
@@ -9949,6 +10091,7 @@
    "opcode": 151,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "notificationsQueue": {
@@ -9961,6 +10104,7 @@
    "opcode": 152,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "npcTravel": {
@@ -9979,6 +10123,7 @@
    "opcode": 121,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "npc_travel"
    ]
@@ -10007,6 +10152,14 @@
     "wallet",
     "open"
    ],
+   "skipWhy": {
+    "book": "out of scope (orbexchange): an order book matched against real players' orders",
+    "cancel": "out of scope (orbexchange): an order book matched against real players' orders",
+    "mine": "out of scope (orbexchange): an order book matched against real players' orders",
+    "open": "out of scope (orbexchange): an order book matched against real players' orders",
+    "place": "out of scope (orbexchange): an order book matched against real players' orders",
+    "wallet": "out of scope (orbexchange): an order book matched against real players' orders"
+   },
    "systems": [
     "orbexchange"
    ]
@@ -10037,6 +10190,7 @@
    "opcode": 222,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "pact"
    ]
@@ -10070,6 +10224,19 @@
     "unqueue",
     "queue"
    ],
+   "skipWhy": {
+    "accept": "out of scope (party_finder): listings and applications real players see and answer",
+    "apply": "out of scope (party_finder): listings and applications real players see and answer",
+    "decline": "out of scope (party_finder): listings and applications real players see and answer",
+    "hide": "out of scope (party_finder): listings and applications real players see and answer",
+    "open": "out of scope (party_finder): listings and applications real players see and answer",
+    "post": "out of scope (party_finder): listings and applications real players see and answer",
+    "queue": "out of scope (party_finder): listings and applications real players see and answer",
+    "refresh": "out of scope (party_finder): listings and applications real players see and answer",
+    "unlist": "out of scope (party_finder): listings and applications real players see and answer",
+    "unqueue": "out of scope (party_finder): listings and applications real players see and answer",
+    "withdraw": "out of scope (party_finder): listings and applications real players see and answer"
+   },
    "systems": [
     "party_finder"
    ]
@@ -10095,6 +10262,7 @@
    "opcode": 235,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "partyframes"
    ]
@@ -10124,6 +10292,7 @@
    "opcode": 65,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "passivetree"
    ]
@@ -10150,6 +10319,14 @@
     "open",
     "auto"
    ],
+   "skipWhy": {
+    "auto": "out of scope (patchnotes): a text the client shows; nothing to do",
+    "changelog": "out of scope (patchnotes): a text the client shows; nothing to do",
+    "closed": "out of scope (patchnotes): a text the client shows; nothing to do",
+    "get": "out of scope (patchnotes): a text the client shows; nothing to do",
+    "open": "out of scope (patchnotes): a text the client shows; nothing to do",
+    "seen": "out of scope (patchnotes): a text the client shows; nothing to do"
+   },
    "systems": [
     "patchnotes"
    ]
@@ -10176,6 +10353,7 @@
    "opcode": 254,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "pets"
    ]
@@ -10199,6 +10377,7 @@
    "opcode": 226,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "pouches"
    ]
@@ -10223,6 +10402,7 @@
    "opcode": 195,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "professions"
    ]
@@ -10268,6 +10448,13 @@
     "enter",
     "query"
    ],
+   "skipWhy": {
+    "buy": "out of scope (pvpzone): player versus player; testers never fight players",
+    "enter": "out of scope (pvpzone): player versus player; testers never fight players",
+    "open": "out of scope (pvpzone): player versus player; testers never fight players",
+    "pledge": "out of scope (pvpzone): player versus player; testers never fight players",
+    "query": "out of scope (pvpzone): player versus player; testers never fight players"
+   },
    "systems": [
     "pvpzone"
    ]
@@ -10279,8 +10466,12 @@
     "journal",
     "buy",
     "open",
+    "start",
     "leave",
     "query"
+   ],
+   "adminAllowed": [
+    "start"
    ],
    "client": [
     "game_raid"
@@ -10298,9 +10489,8 @@
    ],
    "opcode": 213,
    "out": false,
-   "skip": [
-    "start"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "raid"
    ]
@@ -10324,6 +10514,10 @@
     "open",
     "enter"
    ],
+   "skipWhy": {
+    "enter": "out of scope (referral): links real accounts",
+    "open": "out of scope (referral): links real accounts"
+   },
    "systems": [
     "referral"
    ]
@@ -10351,6 +10545,7 @@
    "opcode": 228,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "rift"
    ]
@@ -10377,6 +10572,10 @@
     "reset",
     "grant"
    ],
+   "skipWhy": {
+    "grant": "staff or world action (ADMIN): it would change the world for real players or hand out value",
+    "reset": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "atlas"
    ]
@@ -10393,6 +10592,7 @@
    "opcode": 188,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "rightclick_equip"
    ]
@@ -10430,6 +10630,7 @@
    "opcode": 246,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "season",
     "season_journey",
@@ -10471,6 +10672,9 @@
    "skip": [
     "giftPrice"
    ],
+   "skipWhy": {
+    "giftPrice": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "seasonpass"
    ]
@@ -10515,6 +10719,9 @@
    "skip": [
     "gift_coins"
    ],
+   "skipWhy": {
+    "gift_coins": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "shop",
     "shop_payments"
@@ -10536,6 +10743,11 @@
     "join",
     "leave"
    ],
+   "skipWhy": {
+    "join": "out of scope (siege): needs guilds of real players",
+    "leave": "out of scope (siege): needs guilds of real players",
+    "open": "out of scope (siege): needs guilds of real players"
+   },
    "systems": [
     "siege"
    ]
@@ -10558,6 +10770,7 @@
    "opcode": 219,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "stash": {
@@ -10590,6 +10803,7 @@
    "opcode": 110,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "sub": {
     "make": [
      "SendCategories",
@@ -10631,6 +10845,7 @@
    "opcode": 243,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "combine",
     "damage_pool"
@@ -10648,6 +10863,7 @@
    "opcode": 122,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "survey"
    ]
@@ -10666,6 +10882,7 @@
    "opcode": 156,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "tilebars"
    ]
@@ -10688,13 +10905,18 @@
    "opcode": 239,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "townportal"
    ]
   },
   "trainerMeter": {
    "actions": [
-    "watch"
+    "watch",
+    "reset"
+   ],
+   "adminAllowed": [
+    "reset"
    ],
    "client": [
     "game_trainerdps"
@@ -10708,9 +10930,8 @@
    ],
    "opcode": 147,
    "out": false,
-   "skip": [
-    "reset"
-   ],
+   "skip": [],
+   "skipWhy": {},
    "systems": [
     "trainer_meter"
    ]
@@ -10739,6 +10960,7 @@
    "opcode": 212,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "transmog"
    ]
@@ -10760,6 +10982,7 @@
    "opcode": 115,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "unlocks"
    ]
@@ -10788,6 +11011,7 @@
     "choose": "answers a window the Orb of Unveiling opens (the signature of the item); the bots hold no veiled item"
    },
    "skip": [],
+   "skipWhy": {},
    "systems": []
   },
   "waystoneAtlas": {
@@ -10810,6 +11034,9 @@
    "skip": [
     "reset"
    ],
+   "skipWhy": {
+    "reset": "staff or world action (ADMIN): it would change the world for real players or hand out value"
+   },
    "systems": [
     "waystone_atlas"
    ]
@@ -10828,6 +11055,7 @@
    "opcode": 114,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "weather"
    ]
@@ -10847,6 +11075,7 @@
    "opcode": 117,
    "out": false,
    "skip": [],
+   "skipWhy": {},
    "systems": [
     "weeklychest"
    ]
@@ -11361,14 +11590,13 @@
     "chaos_constants.lua",
     "conquest.lua"
    ],
-   "kind": "out",
+   "kind": "opcode",
    "opcodes": [
     "conquest"
    ],
    "talkactions": [
     "/conquest"
-   ],
-   "why": "needs guilds of real players"
+   ]
   },
   "content_rewards": {
    "files": [

@@ -169,6 +169,10 @@ class Scenarios:
         rest = [a for a in acts if a != 'open']
         pick = sorted(self.rand.sample(range(len(rest)), min(len(rest), self.rand.randint(1, 3)))) if rest else []
         chosen = (['open'] if 'open' in acts else []) + [rest[i] for i in pick]
+        if 'start' in chosen and 'leave' in acts:
+            # a run the bot began (Descent, raid: gen_tester_scenarios.py ADMIN_ALLOW) is left again at once; a player
+            # who started alone does not stand in the lobby until the run times out (O584)
+            chosen = [a for a in chosen if a != 'leave'] + ['leave']
         return [('op', num, a) for a in chosen]
 
     def build(self, bot):

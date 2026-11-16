@@ -47,7 +47,8 @@ sendable = TS.Scenarios(table)
 for num, (name, e) in sendable.opcodes.items():
     ok(not e['out'], name + ': no out-of-scope opcode is sent')
     for act in e['actions']:
-        ok(act not in G.ADMIN and not G.DENY_RE.search(act), '%s: %s is never sent' % (name, act))
+        ok(not G.DENY_RE.search(act), '%s: %s is never sent' % (name, act))
+        ok(act not in G.ADMIN or act in G.ADMIN_ALLOW.get(name, {}), '%s: %s is a staff word, never sent (O584)' % (name, act))
     ok(not set(e['actions']) & set(e.get('skip', [])), name + ': skipped actions are not offered')
 shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
@@ -57,6 +58,41 @@ staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})
 ok(inv and 'start' not in inv['actions'], 'a bot never starts an invasion')
+# O584 item 1: the player's own start of a run, the reset of the filters and meters; conquest is a solo vendor
+for o, acts in (('descent', ['start']), ('raid', ['start']), ('combatLog', ['reset']), ('hunt', ['reset']),
+                ('lootfilter', ['reset']), ('trainerMeter', ['reset'])):
+    for a in acts:
+        ok(a in table['opcodes'][o]['actions'] and a not in table['opcodes'][o]['skip'], '%s: %s is sent (ADMIN_ALLOW)' % (o, a))
+        ok(a in G.ADMIN and a in G.ADMIN_ALLOW[o], '%s: %s is allowed by name, not by dropping it from ADMIN' % (o, a))
+for o in ('invasion', 'riftAtlas', 'waystoneAtlas', 'daily'):  # the same word on another opcode stays a staff word
+    ok(not set(table['opcodes'][o]['actions']) & {'start', 'reset', 'shift', 'grant'}, o + ': no staff word is sent')
+ok('conquest' not in G.OUT_OF_SCOPE and table['systems']['conquest']['kind'] == 'opcode', 'conquest is a solo token vendor, not out of scope')
+eq(sorted(table['opcodes']['conquest']['actions']), ['buy', 'close', 'open'], 'conquest: the vendor window actions are sent')
+# every skipped action with its reason: nothing is skipped without one, and the reason names the rule that skipped it
+rows = G.skipped(table)
+ok(rows, 'there are skipped actions')
+for o, a, why in rows:
+    ok(why, '%s %s: a reason why the bots never send it' % (o, a))
+    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope')),
+       '%s %s: a known reason: %s' % (o, a, why))
+    if a in G.ADMIN and not why.startswith('out of scope'):
+        ok(a not in G.ADMIN_ALLOW.get(o, {}), '%s %s: an allowed word is not skipped' % (o, a))
+eq(sum(len(t['skip']) for t in table['opcodes'].values()), len(rows), 'the list holds every skipped action')
+eq(sorted(len(t['skip']) for t in table['opcodes'].values()), sorted(len(t['skipWhy']) for t in table['opcodes'].values()),
+   'a reason for each skipped action of each opcode')
+ok(any(why.startswith('money, report') for _, _, why in rows) or any(why.startswith('staff') for _, _, why in rows),
+   'staff and money words are in the list')
+# a run the bot starts is left again
+rs = TS.Scenarios(table, {}, random.Random(5))
+for o in ('descent', 'raid'):
+    num = table['opcodes'][o]['opcode']
+    seen_start = 0
+    for _ in range(300):
+        st = [a for _, _, a in rs.opcode_steps(num)]
+        if 'start' in st:
+            seen_start += 1
+            ok(st[-1] == 'leave' and st.index('start') < st.index('leave') and st.count('leave') == 1, o + ': a start is followed by a leave: %s' % st)
+    ok(seen_start > 0, o + ': a start comes up')
 # only what the client really sends: the item tooltip asks with "get" (its `kind == "slot"` is no action)
 eq(table['opcodes']['itemTooltip']['actions'], ['get'], 'the item tooltip: the action the client sends')
 eq(table['opcodes']['nemesis']['actions'], ['get'], 'nemesis: its guard `action ~= "get"` is read')
