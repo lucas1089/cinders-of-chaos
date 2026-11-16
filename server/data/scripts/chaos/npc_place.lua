@@ -117,6 +117,30 @@ local function booth(name, temple)
 	return ok and s and Position(s.x, s.y, s.z) or nil
 end
 
+-- Game.createNpc on a tile. A tile that refuses the NPC (a creature stands on it, an item blocks it: a stall of the hub at a
+-- startup) gets the engine's own search for the nearest free tile (`extended`), and the move is printed once per NPC and tile. nil when the NPC cannot be made at all (its
+-- XML missing or broken) or no tile is free near the spot.
+NP.logged = NP.logged or {}
+function NP.create(name, pos)
+	local npc = Game.createNpc(name, pos)
+	if npc then
+		return npc
+	end
+	npc = Game.createNpc(name, pos, true)
+	local key = name .. "@" .. pos.x .. "," .. pos.y .. "," .. pos.z
+	if not NP.logged[key] then
+		NP.logged[key] = true
+		if npc then
+			local p = npc:getPosition()
+			print(string.format("[Chaos npc place] %s: the tile %d,%d,%d took no NPC, placed at %d,%d,%d", name, pos.x, pos.y, pos.z, p.x, p.y, p.z))
+		else
+			print(string.format("[Chaos npc place] error: %s cannot be placed at %d,%d,%d or next to it (is data/npc/%s.xml loaded?)", name,
+				pos.x, pos.y, pos.z, name))
+		end
+	end
+	return npc
+end
+
 function NP.place(name, temple, offsets, opts)
 	local b = booth(name, temple)
 	if b then
@@ -125,7 +149,11 @@ function NP.place(name, temple, offsets, opts)
 				return e.npc
 			end
 		end
-		return Game.createNpc(name, b)
+		local npc = NP.create(name, b)
+		if npc then
+			return npc
+		end
+		-- the stall took no NPC at all (not even a tile next to it): the search round the temple below, as for an NPC with no stall
 	end
 	local radius = (opts and opts.radius) or K.DEFAULTS.radius
 	for _, e in ipairs(near(temple, radius)) do
@@ -135,7 +163,7 @@ function NP.place(name, temple, offsets, opts)
 	end
 	local pos = NP.spot(temple, offsets, name, opts)
 	if pos then
-		return Game.createNpc(name, pos)
+		return NP.create(name, pos)
 	end
 	if not (opts and opts.depotFallback) then
 		return nil
@@ -149,7 +177,7 @@ function NP.place(name, temple, offsets, opts)
 		end
 		pos = NP.spot(anchor, {}, name, opts)
 		if pos then
-			return Game.createNpc(name, pos)
+			return NP.create(name, pos)
 		end
 	end
 	return nil

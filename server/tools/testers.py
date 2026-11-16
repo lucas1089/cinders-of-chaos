@@ -591,6 +591,26 @@ class Results:
         self.log(bot, {'failures': 'FAIL', 'lua_errors': 'LUAERROR', 'kicks': 'KICK'}.get(table, table.upper()), key)
         self.first({'failures': 'fail:', 'lua_errors': 'lua:', 'kicks': 'kick:'}.get(table, table + ':') + key, bot)
 
+    # seconds an answer of the helper took: the buckets of the report's "Helper answers" line
+    HELPER_BUCKETS = (1.0, 2.0, 4.0, 8.0)
+
+    def helper_answer(self, outcome, seconds=None):
+        """outcome: 'answered' (with the seconds it took), 'late' (an answer after its wait, dropped), 'lost' (no answer in time
+        from a bot that was still there). Why: the first live run of 100 bots read "no helper answer" in 4 % of the commands,
+        and no way to tell a busy server from a helper that never answered (O579)"""
+        h = self.d.setdefault('helper', {'answered': 0, 'late': 0, 'lost': 0, 'slow': [0] * (len(self.HELPER_BUCKETS) + 1),
+                                         'max_s': 0.0})
+        if outcome == 'late' or outcome == 'lost':
+            h[outcome] += 1
+        else:
+            h['answered'] += 1
+        if seconds is not None:
+            i = 0
+            while i < len(self.HELPER_BUCKETS) and seconds >= self.HELPER_BUCKETS[i]:
+                i += 1
+            h['slow'][i] += 1
+            h['max_s'] = round(max(h['max_s'], seconds), 1)
+
     def behaviour(self, name, outcome, bot=None):
         b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0, 'expected': 0})
         b[outcome] = b.get(outcome, 0) + 1
@@ -836,6 +856,7 @@ class TesterBot(LT.Bot):
         self.health_at = None  # monotonic time of the last health update of its own creature (None: none seen yet)
         self.deaths_at = []  # monotonic times of its deaths (TC.death_rest)
         self.helper = {}
+        self.helper_seq = 0   # the number of the newest numbered helper command: "!tester <cmd> #N" (O579)
         self.shop = None
         self.kills = []
         self.chunks = {}
@@ -998,6 +1019,12 @@ class TesterBot(LT.Bot):
         kind, detail = TC.classify(text)
         if kind == 'helper':
             hk, data = detail
+            seq = data.get('seq') if isinstance(data, dict) else None
+            if isinstance(seq, int) and hk != 'info' and seq < self.helper_seq:
+                # the answer to a command the bot stopped waiting for (a busy server): it is not the answer to the newer
+                # command of the same kind (live run 2026-11-15: a late "chest none" read as the new chest's state)
+                self.results.helper_answer('late')
+                return
             self.helper[hk] = data
             if hk == 'info':
                 self.level = data.get('level', self.level)
@@ -1189,13 +1216,29 @@ class TesterBot(LT.Bot):
                 self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
 
     async def helper_says(self, command, kind, wait=4.0):
+        """say `!tester <command> #N` and wait for the answer of that kind that carries N (the helper echoes it). The helper's own
+        error answer for this command comes back as {err, cmd}: a command that failed is a failure with its reason, not "no
+        answer". None when nothing came within `wait` (the helper is not there, the bot died, the server was busy; counted
+        in the report's "Helper answers" line)"""
+        self.helper_seq += 1
+        seq = self.helper_seq
         self.helper.pop(kind, None)
-        self.say('!tester ' + command)
-        end = time.monotonic() + wait
+        self.helper.pop('error', None)
+        self.say('!tester %s #%d' % (command, seq))
+        t0 = time.monotonic()
+        end = t0 + wait
         while time.monotonic() < end and self.alive:
             if kind in self.helper:
+                self.results.helper_answer('answered', time.monotonic() - t0)
                 return self.helper[kind]
+            err = self.helper.get('error')
+            if isinstance(err, dict) and err.get('seq') == seq:
+                self.helper.pop('error', None)
+                self.results.helper_answer('answered', time.monotonic() - t0)
+                return err
             await asyncio.sleep(0.2)
+        if self.alive and not self.died:
+            self.results.helper_answer('lost', time.monotonic() - t0)
         return None
 
     def walk(self, steps):

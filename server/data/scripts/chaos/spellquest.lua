@@ -537,9 +537,10 @@ local function placed(pos)
 			return c
 		end
 	end
-	return Game.createNpc(name, pos)
+	return ChaosNpcPlace.create(name, pos)
 end
 
+local placeLogged = {} -- a town that could not be placed is printed once, not at every try
 function S.placeArchivists()
 	local n = C().npc
 	local count = 0
@@ -557,20 +558,50 @@ function S.placeArchivists()
 			if ok and npc then
 				count = count + 1
 			else
-				log("could not place " .. n.name .. " in town " .. tostring(townId)
-					.. " (no free tile near the temple, or data/npc/" .. n.name .. ".xml is missing)")
+				if not placeLogged[townId] then
+					placeLogged[townId] = true
+					log("could not place " .. n.name .. " in town " .. tostring(townId)
+						.. " (no free tile near the temple, or data/npc/" .. n.name .. ".xml is missing)")
+				end
 			end
 		end
 	end
 	return count
 end
 
+-- how many Archivists the config asks for (a fixed list of positions, else one per town)
+function S.archivistsWanted()
+	local n = C().npc
+	local list = n.positions or {}
+	if #list > 0 then
+		return #list
+	end
+	return #(n.townIds or {})
+end
+
+-- The timer of the startup placement (live run 2026-11-15: 54 "Lua Script Error ... in a timer event" and Odrenna missing for
+-- some checks): it never throws (S.placeArchivists under pcall), it asks again a few times when an Archivist is still missing
+-- (a stall tile that was busy, a town that was not ready) and prints ONE line, the result of the last try.
+S.PLACE_TRIES, S.PLACE_RETRY_MS = 4, 5000
+local function placeStartup(attempt)
+	local ok, count = pcall(S.placeArchivists)
+	if not ok then
+		log("placement error: " .. tostring(count))
+		count = 0
+	end
+	local wanted = S.archivistsWanted()
+	if count < wanted and attempt < S.PLACE_TRIES then
+		addEvent(placeStartup, S.PLACE_RETRY_MS, attempt + 1)
+		return
+	end
+	log(count .. " of " .. wanted .. " " .. C().npc.name .. " placed" .. (attempt > 1 and (" (try " .. attempt .. ")") or ""))
+end
+S.placeStartup = placeStartup
+
 local startup = GlobalEvent("ChaosSpellQuestStartup")
 function startup.onStartup()
 	if C().enabled and C().npc.spawn then
-		addEvent(function()
-			log(S.placeArchivists() .. " " .. C().npc.name .. " placed")
-		end, 1100)
+		addEvent(placeStartup, 1100, 1)
 	end
 	return true
 end

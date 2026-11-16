@@ -21,6 +21,22 @@ fn world(name: &str) -> PathBuf {
     d
 }
 
+/// Starts the fake game. Another test thread can fork while `world` still has Chaos.exe open for writing; the
+/// forked child keeps that write handle until its own exec, and exec of a file open for writing fails with
+/// "Text file busy" (ETXTBSY). That is a property of the test's fresh script, not of the launcher: retry briefly.
+fn start(cfg: &Config, ticket: Option<&str>) {
+    let t0 = Instant::now();
+    loop {
+        match launch::start(cfg, "Chaos.exe", ticket) {
+            Ok(()) => return,
+            Err(e) if format!("{e:?}").contains("Text file busy") && t0.elapsed() < Duration::from_secs(5) => {
+                std::thread::sleep(Duration::from_millis(20))
+            }
+            Err(e) => panic!("start: {e:?}"),
+        }
+    }
+}
+
 fn seen(d: &Path) -> String {
     let f = d.join("seen.txt");
     let t0 = Instant::now();
@@ -40,7 +56,7 @@ fn the_game_gets_a_ticket_for_its_build_and_nothing_else_does() {
     let d = world("env");
     let cfg = Config::bare(&d);
     let t = launch::ticket_for(&cfg, Some(47)).expect("a ticket");
-    launch::start(&cfg, "Chaos.exe", Some(&t)).unwrap();
+    start(&cfg, Some(&t));
     let got = seen(&d);
     assert_eq!(got, t);
     let v = ticket::verify(&ticket::embedded_sub_key(), &got, ticket::unix_now(), 47);
@@ -53,7 +69,7 @@ fn the_game_gets_a_ticket_for_its_build_and_nothing_else_does() {
     // no ticket given: the game gets none, even when this process has one of its own
     let _ = std::fs::remove_file(d.join("seen.txt"));
     std::env::set_var(ticket::ENV, "t1.1.1.1.00.00");
-    launch::start(&cfg, "Chaos.exe", None).unwrap();
+    start(&cfg, None);
     assert_eq!(seen(&d), "none");
     std::env::remove_var(ticket::ENV);
     let _ = std::fs::remove_dir_all(&d);

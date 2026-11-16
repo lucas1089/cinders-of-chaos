@@ -60,6 +60,33 @@ eq(H.hotSpot(287, {{"Urzog", 300}}), nil, "hotSpot: a few levels lost by dying k
 eq(H.hotSpot(40, {{"a", 65}}), nil, "hotSpot: the margin is at least 25 levels")
 eq(H.hotSpot(40, {{"a", 66}})[1], "a", "hotSpot: over the margin")
 eq(H.hotSpot(575, {{"Embermaw Archon", 2100}})[1], "Embermaw Archon", "hotSpot: a far higher monster")
+-- the fist pair of the probe (O580): the best two plain fist weapons the level may wield (code 33 = NOTENOUGHLEVEL otherwise)
+local fistItems = {[40000] = {level = 1}, [36654] = {level = 8}, [40009] = {level = 14, unique = "Vigil-Knot Wraps"},
+	[40010] = {level = 26, unique = "Chapel-Iron Knuckles"}, [40001] = {level = 35}, [36655] = {level = 60},
+	[40002] = {level = 100}, [36656] = {level = 150}, [36657] = {level = 300}, [36659] = {level = 650, unique = "Grasp"}}
+local function pair(level) local p = H.fistPair(level, fistItems, {36656, 36657}) return p[1] .. "," .. p[2] end
+eq(pair(30), "36654,40000", "fistPair: level 30 wears the level 8 and the level 1 weapon")
+eq(pair(100), "40002,36655", "fistPair: level 100")
+eq(pair(150), "36656,40002", "fistPair: level 150 (the old probe failed the second hand at 150-299)")
+eq(pair(299), "36656,40002", "fistPair: level 299")
+eq(pair(300), "36657,36656", "fistPair: level 300")
+eq(pair(2000), "36657,36656", "fistPair: a unique is never picked")
+eq(pair(1), "40000,40000", "fistPair: only one fits: the same one twice")
+eq(pair(0), "36656,36657", "fistPair: none fits: the fallback")
+eq(H.fistPair(50, nil, {1, 2})[2], 2, "fistPair: no table: the fallback")
+-- hunt marks for a level (O580): the band is read from the name, the whole band must be at or under the level
+local lo, hi = H.huntBand("Hunting: Penguin, Mammoth (level 1-20)")
+check(lo == 1 and hi == 20 and H.huntBand("Temple") == nil, "huntBand reads the band of a hunt mark")
+local huntMarks = {{k = "hunt", x = 1, y = 1, z = 7, n = "Hunting: A (level 1-20)"},
+	{k = "hunt", x = 2, y = 2, z = 7, n = "Hunting: B (level 20-90)"}, {k = "hunt", x = 3, y = 3, z = 7, n = "Hunting: C (level 70-80)"},
+	{k = "hunt", x = 4, y = 4, z = 7, n = "Hunting: D (level 60-85)"}, {k = "hunt", x = 5, y = 5, z = 7, n = "no band"},
+	{k = "boss", x = 6, y = 6, z = 7, n = "Boss (level 10-20)"}}
+local function xs(list) local o = {} for _, m in ipairs(list) do o[#o + 1] = m.x end return table.concat(o, ",") end
+eq(xs(H.huntCandidates(huntMarks, 100, 0)), "2,4,3,1", "huntCandidates: tops 90 and 85 first (>= 0.8 x 90), then 80, then 20")
+eq(xs(H.huntCandidates(huntMarks, 100, 1)), "4,3,2,1", "huntCandidates: the seed turns the best group (90, 85, 80), not the rest")
+eq(xs(H.huntCandidates(huntMarks, 30, 0)), "1", "huntCandidates: only the bands at or under level 30")
+eq(xs(H.huntCandidates(huntMarks, 5, 0)), "1,3,4,2", "huntCandidates: none fits: the lowest band first, then upward")
+eq(#H.huntCandidates(nil, 100, 0), 0, "huntCandidates: no marks")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -344,6 +371,45 @@ talks["!tester"].onSay(tester, "!tester", "town")
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 50, "hunt spot with a monster far above the level: no teleport")
 check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "and the answer names it")
+-- O580: a hunt of the tester's level is looked for before the bot stays in the temple for good. The marks: a band above
+-- the level (never), a band at the level with a high monster beside it (skipped), a clean band at the level (taken)
+local realTile, realSpect, realPoi = Tile, Game.getSpectators, ChaosPoi
+function Tile(p)
+	return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return nil end}
+end
+ChaosPoi = {all = {
+	{k = "hunt", x = 300, y = 300, z = 7, n = "Hunting: Dragon (level 300-400)"},
+	{k = "hunt", x = 200, y = 200, z = 7, n = "Hunting: Hound (level 60-90)"},
+	{k = "hunt", x = 210, y = 210, z = 7, n = "Hunting: Rat (level 40-80)"},
+	{k = "temple", x = 50, y = 50, z = 7, n = "Temple"},
+}}
+local nearPos = {}
+Game.getSpectators = function(p)
+	-- the old spot (100, 100) and the mark of the Hound hold a monster far above level 100; the Rat's mark is clean
+	if (p.x == 100 and p.y == 100) or (p.x >= 199 and p.x <= 203 and p.y >= 199 and p.y <= 203) then
+		return {wolf}
+	end
+	nearPos[#nearPos + 1] = p.x
+	return {}
+end
+tester.pos = {x = 50, y = 50, z = 7}
+talks["!tester"].onSay(tester, "!tester", "hunt")
+check(tester.pos.x >= 209 and tester.pos.x <= 213 and tester.pos.y >= 209 and tester.pos.y <= 213,
+	"hunt spot too high: the bot goes to the clean hunt of its level (" .. tostring(tester.pos.x) .. ")")
+check(tester.log.msgs[#tester.log.msgs]:find('"moved":{', 1, true) ~= nil, "and the answer says it moved")
+eq(tester.store[ST + 2], tester.pos.x, "the new spot is the bot's hunt spot from now on")
+for _, x in ipairs(nearPos) do
+	check(x ~= 300, "a band above the level is never a candidate")
+end
+-- no clean hunt: it stays
+Game.getSpectators = function() return {wolf} end
+tester.store[ST + 2], tester.store[ST + 3], tester.store[ST + 4] = 100, 100, 7
+tester.pos = {x = 50, y = 50, z = 7}
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 50, "no clean hunt: no teleport")
+check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "no clean hunt: the old answer")
+Tile, Game.getSpectators, ChaosPoi = realTile, realSpect, realPoi
 Chaos.monsterHuntingLevel = realMhl
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 100, "a spot within the level: teleport")
@@ -1088,6 +1154,118 @@ do
 	Tile, Game, ChaosWaystoneTiers, ChaosWaystoneMods = saved.Tile, saved.Game, saved.WT, saved.WM
 	ChaosContentRewards, ChaosLoot, ChaosGearSets = saved.CR, saved.L, saved.GS
 	ChaosRift, ChaosRiftConfig = saved.RF, saved.RFC
+end
+
+-- ------------------------------------------------------------------ O579: numbered commands, a loop that never throws, a crowd, no chest tile
+do
+	local c1, a1, n1 = H.parseCommand("spellquest kill 3 #12")
+	check(c1 == "spellquest" and a1 == "kill 3" and n1 == 12, "parseCommand: the number after the argument")
+	local c2, a2, n2 = H.parseCommand("town #5")
+	check(c2 == "town" and a2 == nil and n2 == 5, "parseCommand: a number and no argument")
+	eq(select(3, H.parseCommand("town")), nil, "parseCommand: no number")
+	eq(select(3, H.parseCommand("enter npc Archivist Odrenna")), nil, "parseCommand: a name is no number")
+	check(H.parseCommand("nonsense #3") == nil, "parseCommand: an unknown command stays unknown")
+	check(H.parseSpellQuest((select(2, H.parseCommand("spellquest set 1 1 0 0 #8")))).quest == 1, "the argument of a numbered command parses")
+
+	local t5 = creature(268435490, "Tester Abq", {store = {[ST] = 1}})
+	talks["!tester"].onSay(t5, "!tester", "info #7")
+	check(last(t5):find('"seq":7', 1, true) ~= nil, "a numbered command: its answer carries the number")
+	talks["!tester"].onSay(t5, "!tester", "nonsense #9")
+	check(last(t5):find('error {', 1, true) and last(t5):find('"seq":9', 1, true), "an unknown command answers with its number too")
+	talks["!tester"].onSay(t5, "!tester", "info")
+	check(last(t5):find('"seq"', 1, true) == nil, "a command with no number: an answer with none")
+	talks["!tester"].onSay(t5, "!tester", "info #11")
+	events.TesterHelperLogout.onLogout(t5)
+	eq(T.seq[t5:getId()], nil, "a logout forgets the number")
+
+	-- the loop is a timer: a round that errors must not throw into the engine nor end the loop (live run 2026-11-15: 54 timer errors)
+	T.ids[t5:getId()] = true
+	local realSpectators = Game.getSpectators
+	Game.getSpectators = function() error("stale creature") end
+	local nt, nprinted = #timers, #printed
+	local threw = false
+	for _ = 1, 8 do
+		if not pcall(function() lastStep().fn() end) then
+			threw = true
+		end
+	end
+	check(not threw, "a failing round of the loop does not throw")
+	eq(#timers, nt + 8, "and every round schedules the next")
+	local errors = 0
+	for i = nprinted + 1, #printed do
+		if printed[i]:find("[tester-helper] error in the loop", 1, true) and printed[i]:find("stale creature", 1, true) then
+			errors = errors + 1
+		end
+	end
+	eq(errors, 1, "the error is printed once a minute, not at every round")
+	Game.getSpectators = realSpectators
+	T.ids[t5:getId()] = nil
+	T.present = function() return false end
+	T.lastStepError, T.ids = nil, {}
+	local nt2, nprinted2 = #timers, #printed
+	for _ = 1, 20 do lastStep().fn() end
+	T.present = function() return true end
+	check(#timers <= nt2 + 20, "a removed helper file still ends the loop")
+	local stopped = false
+	for i = nprinted2 + 1, #printed do
+		if printed[i]:find("stopped:", 1, true) then stopped = true end
+	end
+	check(stopped, "the loop says it stopped")
+	T.started = true
+	addEvent(T.step_fn, 500) -- the loop goes on for the tests below
+
+	-- a crowd round an NPC: no tile within four, the answer says so (the check asks again instead of "not in the game")
+	local realTile2 = Tile
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return {} end} end
+	talks["!tester"].onSay(t5, "!tester", "enter npc Keeper of Trials #20")
+	check(last(t5):find('"crowd":true', 1, true) and last(t5):find('"err":"no free tile"', 1, true) and last(t5):find('"seq":20', 1, true),
+		"enter npc in a crowd: no free tile, crowd true")
+	-- a free tile only at four tiles: found now (two was the reach before)
+	Tile = function(p) return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() if math.max(math.abs(p.x - 70), math.abs(p.y - 70)) < 4 then return {} end end} end
+	talks["!tester"].onSay(t5, "!tester", "enter npc Keeper of Trials #21")
+	check(last(t5):find('"npc":"Keeper of Trials"', 1, true) ~= nil, "enter npc: a free tile four away is taken")
+	check(math.max(math.abs(t5.pos.x - 70), math.abs(t5.pos.y - 70)) == 4, "the tile is four from the NPC")
+	check(T.RINGS[1][2] == -1 and #T.RINGS == 8 + 16 + 24 + 32, "the rings: 8 neighbours first, then 2, 3 and 4 out")
+	Tile = realTile2
+
+	-- no tile for a cursed chest near the tester: an answer with the reason, not state "none"
+	local realGuid2 = t5.getGuid
+	t5.getGuid = function() return 91 end
+	local spawned = {}
+	ChaosCursedChestConfig = {}
+	ChaosCursedChestCore = {areaLevel = function() return 50 end, buildPool = function() return {} end}
+	ChaosCursedChest = {chests = {}, tagged = {}, spawnChest = function(_, center)
+		spawned[#spawned + 1] = center
+		return nil
+	end}
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end} end
+	talks["!tester"].onSay(t5, "!tester", "chest spawn #30")
+	check(last(t5):find('"err":"no tile for a chest near the tester', 1, true) and last(t5):find('"seq":30', 1, true),
+		"chest spawn with no tile: an error answer with its reason")
+	check(last(t5):find('"state"', 1, true) == nil, "and no state \"none\"")
+	check(#spawned > 2, "other centres up to four tiles out were tried first (" .. #spawned .. ")")
+	local far = false
+	for _, c in ipairs(spawned) do
+		if math.max(math.abs(c.x - t5.pos.x), math.abs(c.y - t5.pos.y)) >= 3 then far = true end
+	end
+	check(far, "a centre three or four tiles out")
+	-- the first centre that takes a chest wins
+	local made
+	ChaosCursedChest.spawnChest = function(owner, center)
+		spawned[#spawned + 1] = center
+		if math.abs(center.x - t5.pos.x) >= 3 and not made then
+			made = {key = "k9", ownerId = 91, state = "idle", itemId = 1, pos = {x = center.x, y = center.y, z = 7}, ev = nil}
+			ChaosCursedChest.chests.k9 = made
+			return made
+		end
+	end
+	talks["!tester"].onSay(t5, "!tester", "chest spawn #31")
+	check(last(t5):find('"state":"idle"', 1, true) ~= nil and made and made.level == 50, "a chest made at a farther centre: idle, level set")
+	ChaosCursedChest, ChaosCursedChestConfig, ChaosCursedChestCore = nil, nil, nil
+	t5.getGuid = realGuid2
+	Tile = realTile2
 end
 
 print = origPrint

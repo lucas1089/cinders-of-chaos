@@ -36,6 +36,10 @@ WATCH = 20.0        # seconds a summon is watched for a wrong target
 LOOK = 2.0          # seconds between two looks
 SETTLE = 3.0        # seconds after a cast, a teleport or a party change before the first look (the server's purge runs at 0.5 s)
 ANSWER = 6.0
+QUEST_WAIT = 12.0   # one answer of `!tester spellquest`: the quest check sends 25 commands, the first live run of 100 bots lost 4 % of
+                    # all helper commands to a busy server (O579), and a quest is no fault of the game for a late answer
+CROWD_TRIES = 3     # `enter npc` finds no free tile round the NPC (the other testers crowd her stall): asked again this often
+CROWD_WAIT = 4.0    # seconds between the asks
 QUEST_LEVEL = 500   # the level of the first line spell quest (spellquest_config.lua quests[1].level)
 QUEST_LEVELS = (500, 800, 1200)  # spellquest_config.lua quests[n].level, in order
 QUEST_GOLD = 2000   # gold per level to the bank when a spell quest is done (spellquest_config.lua reward.goldPerLevel)
@@ -317,6 +321,17 @@ def party_share_problems(p):
     return out
 
 
+def party_gone(p, name):
+    """True when a `!tester party` answer shows no party of two or more with this bot as the leader"""
+    return int(p.get('size') or 0) < 2 or p.get('leader') != name
+
+
+def party_state(p):
+    """the facts behind a party_xp verdict, for the failure text: size, leader, where the leader stood"""
+    return 'party of %s, leader %s, leader in a fight outside a protection zone: %s, in a protection zone: %s' % (
+        p.get('size', 0), p.get('leader'), bool(p.get('leaderBlocked')), bool(p.get('leaderPz')))
+
+
 KILL_TOLERANCE = 0.05
 
 
@@ -403,8 +418,16 @@ async def check_party_xp(io, name, cls, level):
         bad = [x for x in a if x in b]    # the engine's own update lags a tick: only what both looks saw
         if bad and not partner_kept(io, other):
             return Result('party_xp', name, cls, SKIP, PARTNER_GONE)
+        # O580 (live run 2026-11-15: 1 "the party says it is off" in 68): the engine drops the switch of a leader with no
+        # party (Game::playerEnableSharedPartyExperience) and a party that broke up and formed again starts with the
+        # switch off. Nobody died or logged in (partner_kept), but a random invite, a join or a leave of either bot, or the
+        # hold of PARTY_BUSY running out, can still end the party between the first look and the switch: no party of two
+        # with this bot as the leader in a look is no verdict on the shared experience
+        if bad and (party_gone(first, name) or party_gone(second, name)):
+            return Result('party_xp', name, cls, SKIP, 'the party broke up before the switch could be read (%s)' % party_state(
+                second if party_gone(second, name) else first))
         if bad:
-            return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]))
+            return Result('party_xp', name, cls, FAIL, '; '.join(bad[:3]) + ' (%s)' % party_state(second))
         verdict = 'working' if second.get('shareEnabled') else 'off: %s' % (
             ', '.join('%s %s' % (x.get('name'), x.get('kind')) for x in second.get('problems') or [])[:60] or 'none')
         pays = second.get('shareOf1000')
@@ -623,6 +646,10 @@ async def check_cursed_chest(io, name, cls, level):
         await io.helper('chest abort', 'chest', ANSWER)
         return Result('cursed_chest', name, cls, FAIL, 'spawned chest is %r, expected idle' % a.get('state'))
     u = await io.helper('chest use', 'chest', ANSWER)
+    if u is None:
+        # no answer (a busy server, a bot cut off): the chest is taken away again; the system was not looked at
+        await io.helper('chest abort', 'chest', ANSWER)
+        return Result('cursed_chest', name, cls, SKIP, 'no answer to !tester chest use (the server did not answer in time)')
     await io.sleep(SETTLE)
     s = await io.helper('chest state', 'chest', ANSWER)
     bad = []
@@ -691,10 +718,23 @@ def quest_spell_problems(spell, cls, level, spells, table, timers=None):
     return out
 
 
+class NoAnswer(Exception):
+    """the helper did not answer a command in time: the server was busy or the bot was cut off, no fault of the system the
+    check looks at (the live run of 2026-11-15 failed 33 of 60 spell quest checks for it)"""
+
+
+async def quest_answer(io, command, want):
+    """quest_step, but a missing answer raises NoAnswer (the check is then a skip, not a bug)"""
+    a, bad = await quest_step(io, command, want)
+    if a is None:
+        raise NoAnswer(bad)
+    return a, bad
+
+
 async def quest_step(io, command, want):
     """one !tester spellquest command; (answer, problem): the problem names the first wrong field of `want`
-    ({field: value}, a callable(answer) -> bool for a rule)"""
-    a = await io.helper('spellquest ' + command, 'spellquest', ANSWER)
+    ({field: value}, a callable(answer) -> bool for a rule); (None, 'no answer ...') when nothing came in QUEST_WAIT seconds"""
+    a = await io.helper('spellquest ' + command, 'spellquest', QUEST_WAIT)
     if not isinstance(a, dict):
         return None, 'no answer to !tester spellquest %s' % command
     if a.get('err'):
@@ -727,7 +767,7 @@ async def check_spell_quest(io, name, cls, level):
     try:
         return await _spell_quest_run(io, name, cls, level)
     finally:
-        await io.helper('spellquest reset', 'spellquest', ANSWER)
+        await io.helper('spellquest reset', 'spellquest', QUEST_WAIT)
         await io.go('hunt')
 
 
@@ -750,46 +790,61 @@ async def _spell_quest_run(io, name, cls, level):
 
 
 async def _one_spell_quest(io, name, cls, level, n):
+    try:
+        return await _one_spell_quest_run(io, name, cls, level, n)
+    except NoAnswer as e:
+        return Result('spell_quest', name, cls, SKIP, 'quest %d: %s (the server did not answer in time: no fault of the quest)' % (n, e))
+
+
+async def _one_spell_quest_run(io, name, cls, level, n):
     check = 'spell_quest'
 
     def fail(text):
         return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text))
 
-    a, bad = await quest_step(io, 'state', {'quest': n, 'code': 'ok', 'step': 0})
+    a, bad = await quest_answer(io, 'state', {'quest': n, 'code': 'ok', 'step': 0})
     if bad:
         return fail('level %s, %s: %s' % (level, 'fresh' if n == 1 else 'after quest %d' % (n - 1), bad))
     spell = a.get('spell')
     need = a.get('need') or {}
     if not spell or not need.get('kills'):
         return fail('the state names no spell or hunt: %s' % json.dumps(a)[:100])
-    a, bad = await quest_step(io, 'set %d 1 0 0' % n, {'step': 1, 'kills': 0, 'fragments': 0})
+    a, bad = await quest_answer(io, 'set %d 1 0 0' % n, {'step': 1, 'kills': 0, 'fragments': 0})
     if bad:
         return fail(bad)
-    a, bad = await quest_step(io, 'kill 3', {'counted': 3, 'kills': 3})
+    a, bad = await quest_answer(io, 'kill 3', {'counted': 3, 'kills': 3})
     if bad:
         return fail('kills do not count: ' + bad)
-    a, bad = await quest_step(io, 'kill 45', {'counted': 45, 'kills': 48, 'fragments': lambda r: int(r.get('fragments') or 0) >= 1})
+    a, bad = await quest_answer(io, 'kill 45', {'counted': 45, 'kills': 48, 'fragments': lambda r: int(r.get('fragments') or 0) >= 1})
     if bad:
         return fail('no fragment within 41 counted kills (pity): ' + bad)
-    a, bad = await quest_step(io, 'kill boss', {'weight': 25, 'kills': 73})
+    a, bad = await quest_answer(io, 'kill boss', {'weight': 25, 'kills': 73})
     if bad:
         return fail('a boss kill does not count 25: ' + bad)
-    a, bad = await quest_step(io, 'set %d 2' % n, {'step': 2, 'kills': need['kills'], 'fragments': need['fragments']})
+    a, bad = await quest_answer(io, 'set %d 2' % n, {'step': 2, 'kills': need['kills'], 'fragments': need['fragments']})
     if bad:
         return fail('the trial step: ' + bad)
     # Archivist Odrenna must stand in the world (placed at startup in her stall); the helper takes the bot to her
-    at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
+    at = None
+    for attempt in range(CROWD_TRIES):
+        at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
+        if not at or not (at.get('err') and at.get('crowd')):
+            break
+        await io.sleep(CROWD_WAIT)   # the other testers stand round her stall: they move on
     if not at:
         return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n)
+    if at.get('err') and at.get('crowd'):
+        return Result(check, name, cls, SKIP, 'quest %d: no free tile within 4 of Archivist Odrenna after %d tries (the testers crowd '
+                      'her stall: no fault of the quest)' % (n, CROWD_TRIES))
     if at.get('err'):
         return fail('Archivist Odrenna is not in the game (%s): placement at startup failed or her XML did not load' % str(at['err'])[:60])
-    a, bad = await quest_step(io, 'trial', {'near': True, 'entered': True, 'running': True})
+    a, bad = await quest_answer(io, 'trial', {'near': True, 'entered': True, 'running': True})
     if bad:
         return fail('the trial does not open at Odrenna (%s): %s' % (str((a or {}).get('text'))[:60], bad))
-    a, bad = await quest_step(io, 'leave', {'left': True, 'running': False})
+    a, bad = await quest_answer(io, 'leave', {'left': True, 'running': False})
     if bad:
         return fail('the trial run could not be left: ' + bad)
-    a, bad = await quest_step(io, 'complete', {'completed': n, 'taught': spell, 'taughtKnown': True,
+    a, bad = await quest_answer(io, 'complete', {'completed': n, 'taught': spell, 'taughtKnown': True,
                                                'gold': lambda r: int(r.get('gold') or 0) == QUEST_GOLD * level})
     if bad:
         return fail('the reward: ' + bad)
@@ -919,8 +974,15 @@ def dual_problems(f, kind):
     if off == 0:
         out.append('%d melee hits with a %s in each hand and no off-hand strike' % (melee, what))
         return out
-    if off < melee - 1 or off > melee:
-        out.append('%d melee hits but %d off-hand strikes (one each)' % (melee, off))
+    # a hit may bring no strike by rule (O580, live run 2026-11-15: "14 melee hits but 11 off-hand strikes"): the one that
+    # landed in the last 150 ms of the watch (the strike follows after delayMs), the strikes the attack rate gate refused
+    # (ChaosAttackRate limits offhand / fistOffhand, 1.5 a second a player: the helper counts them) and the hits too small
+    # for a strike of at least 1 (the helper counts those too). Anything beyond that is a hit without its strike.
+    gated, small = int(f.get('gated') or 0), int(f.get('small') or 0)
+    if off < melee - 1 - gated - small or off > melee:
+        out.append('%d melee hits but %d off-hand strikes (one each%s)' % (
+            melee, off, '; %d refused by the attack rate gate, %d hits too small' % (gated, small) if gated or small
+            else ''))
     return out
 
 

@@ -9481,6 +9481,29 @@ full health" anomalies. Causes found:
   dying and kept failing its own spawn. `setup` also keeps testers off the waystone tier maps (`LT.waystone_areas` of
   `waystone_tiers_config.lua`): their monsters count at the run tier (1100+), not at the pool level, and two level 600
   testers stood next to level 1600 and 2100 monsters.
+- Live run 2026-11-15 (O580 part B, 100 bots, 1 hour, 3241 deaths). Found in the code and fixed in the helper (v10) and the checks:
+  * `dual_fists` "weapon hand code 33, shield hand code 33": 33 is `RETURNVALUE_NOTENOUGHLEVEL`. The probe always wore the pair of ember
+    knuckles (level 150) and the ossuary gauntlet (level 300), and the engine refuses a fist weapon below its level. Level 30 to 149:
+    both refused (33 / 33); 150 to 299: the second (0 / 33). The game was right. `H.fistPair` takes the two best plain fist weapons
+    the bot's level may wield (`ChaosFistWeapons.items`).
+  * `dual_blades` "14 melee hits but 11 off-hand strikes": a hit may bring no strike by rule: the attack rate gate (`ChaosAttackRate`
+    limits `offhand` / `fistOffhand`, 1.5 a second a player), a hit too small for a strike of 1 (`ChaosClasses.offhandDamage` rounds
+    hit x share x ratio), the last hit before the watch ends (the strike follows after 150 ms). The helper now counts the refusals of
+    the gate (`gated`) and the tiny hits (`small`, under 4 points); the check allows `melee - 1 - gated - small` strikes, never more
+    than the hits.
+  * `party_xp` "the party says it is off": the engine drops the switch of a leader with no party, and a party that broke up and formed
+    again starts with the switch off. A random invite, join or leave, or a PARTY_BUSY hold that ran out, can end the party between the
+    first look and the switch with nobody dead. A look with no party of two led by this bot is now a skip; a real refusal names party
+    size, leader and zone in its text. Not reproduced on the live server, so no claim beyond what the code can do.
+  * `depot` / `town` "hunt spot too high": the setup picks the spot from the pool levels of the spawn file; the helper judges the
+    live monsters (their own level). Deaths cost levels, so a spot that was fine at level 2000 is above a bot that fell to 1700.
+    `!tester hunt` now looks for a hunt of the bot's level (`H.huntCandidates`, no monster above the margin within 12 tiles), keeps it
+    as the bot's spot and answers `moved`; only when none is clean does it stay in the temple.
+  * deaths within 5 s of the login: a bot that logs in on ground above its level is sent to the temple (`loginGuard`, outside the
+    protection zones; console line "logged in next to ...").
+  * Frost Larva (hunting level 225, melee 1000-3200 before the pace curve): 1266 against 829 health of a level 100 bot is inside the
+    rules (`pace_config.lua` base damage curve about 0.43 at twice the level, so up to about 1380 plus the level bonus); a level 225
+    character has about 2300 to 2800 health. The bot did not belong at that hunt (the two items above).
 - Keystone test: 1240 nodes "not tested: the bot left the game" and the FAILs "no answer to planApply / statTotals" were
   bots that died in the middle. The scenario now goes on after the login and drops the node it was cut off in.
   A hunt mark's band is the pool level, which is the hunting level since O285.
@@ -34048,3 +34071,26 @@ Client side: client/MANIFEST.md "Pair 72 (pending owner approval)" (14 outfits 3
 - **Golden Ki and Crimson Blaze (O577)** (aura ids 6 and 7, names, owners and store offers stay). The old looks 1511 and 1512 are one flame drawn straight up (owner 2026-11-14: "nao estao obliquos, troque por outros"); pair 72 holds two oblique ground auras, outfits 3525 and 3526 (client/MANIFEST.md "Pair 72", Ki auras; `gen_ki_auras.py`). `data/XML/chaos_auras_pair72.csv` gets the rows `6,3525,Golden Ki` and `7,3526,Crimson Blaze` next to `32,3524,Rune Seal`: `install_auras.py` (same gate, same replace-by-aura-id rule, same rollback: lowering the record puts 1511 and 1512 back; `chaos_auras.csv` is unchanged) and `ChaosFunCostumes.ki` / `ChaosFunCostumes.auraLook(aura)` (the new look once the gate is on, else the old one; the Rune Seal answers too, nil for any other aura). `ChaosVfxAura` in `chaos_vfx.lua` is generated and keeps 1511 and 1512 (the `tests/fun_costumes_test.lua` rows hold `ki.old` to it). The base server finds an aura by its client look, so each aura id keeps exactly one look at a time: the new look replaces the old one in the same `auras.xml` line, nothing is offered twice. Tests: `tests/fun_costumes_test.lua` (the rows against `ki_auras.csv`, the manifests, `auraLook` off and on), `install_fun_looks_test.py` (auras 6 and 7 at pair 71 / 72 / 71 again).
 - **Not touched:** the Codex, the wiki and the website lists read the store config, so they list the costumes the day the gate is on (their generated files are unchanged while it is off); `docs/CREDITS.md` lists the art (PixelLab, ours).
 - **Tests.** `tests/fun_costumes_test.lua` (looks in order, the same rows as the art table, pt-BR texts, the pair record reading, gate off and on: the store, the pet, the store offer, the aura exclusive), `install_outfits_test.py` (the block at 71 / 72 / 75, lowered, a clash), `install_fun_looks_test.py` (the moth file and the aura at 71 / 72, a rollback, refusals, dry run), `client_pair_test.py`, `gen_fun_costumes_test.py` (CI). Not verified: a client, a server with the pair on.
+
+## Timer guard (O579) (`data/lib/chaos_timer_guard.lua`, `scripts/chaos/timer_guard.lua`)
+
+The engine prints an error of an `addEvent` callback as `Lua Script Error: [Main Interface] in a timer event called from: (Unknown scriptfile)`, with no
+script named (54 of them in the first run of 100 tester bots, 2026-11-15; the usual cause is a Player, Creature or Item kept in the callback's upvalue
+and used after a logout or a death: keep the id and ask `Player(id)` again). The guard swaps the global `addEvent` for one that runs every callback
+under `xpcall`: the callback never throws into the engine, and the error is printed as `[Chaos timer error] data/scripts/chaos/foo.lua:123: message`
+(the file and line where the callback is written; the traceback the first time; then at most once a minute per callback, with "(N more since the last
+line)"). The line has the word "error": `chaos-ctl.sh errors` and the tester report group it. `chaos_update.sh` still counts only `Lua Script Error`
+lines after a start: read the `errors` output too. Event ids, `stopEvent` and arguments are the engine's own. A script that keeps the engine's
+addEvent in a local (`local rawAddEvent = addEvent`) must `dofile` the lib before: `_supports.lua`, `combatlog.lua`, `chaos_fx_owner.lua` do. Test: `tests/timer_guard_test.lua`.
+Also: Archivist Odrenna's startup placement (`spellquest.lua` `placeStartup`) never throws, asks again 4 times 5 s apart and prints one line; a stall
+tile that takes no NPC gets the engine's nearest free tile (`ChaosNpcPlace.create`) and then the search round the temple. Test: `tests/spellquest_place_test.lua`.
+
+## Helper commands are numbered (O579) (`tools/tester_helper.lua` v10, `testers.py helper_says`)
+
+The bots say `!tester <command> #N`; every answer of that command carries `"seq": N`. A bot drops an answer with an older number (counted as late),
+so an answer that came after its wait is never read as the answer of the next command of the same kind (the "spawned chest is 'none'" of the first
+100-bot run). The helper's error answer (`kind error`, same number) is returned to the caller as `{err, cmd}`. An answer with no number (an old helper,
+a typed command) is taken as before. The report has `== Helper answers`: commands answered, with no answer in time, late, seconds to answer in
+buckets, the slowest. The spell quest check waits 12 s per answer and a missing answer is a SKIP; `enter npc` looks 4 tiles round the NPC and the check
+asks 3 times 4 s apart before a SKIP; no tile for a cursed chest is an answer with the reason. The helper loop (`step`) runs under `pcall` and always
+schedules the next round. Tests: `tests/tester_helper_test.lua`, `tools/testers_test.py`, `tools/tester_checks_test.py`.

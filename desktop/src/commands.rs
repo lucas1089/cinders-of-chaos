@@ -437,7 +437,7 @@ pub static ACTIONS: &[Action] = &[
     act(Testers, "Testers", "Parar", "testers stop").ask().t(60),
     act(Testers, "Testers", "Estado", "testers status").t(60),
     act(Testers, "Testers", "Relatório", "testers report").t(120),
-    act(Testers, "Testers", "Log das ações", "testers log 400").t(60),
+    act(Testers, "Testers", "Log das ações", "testers log 5000").t(120),
     act(Testers, "Testers", "Apagar testers", "testers cleanup --yes").ask().t(240),
     // ---- Journey bots (O542): fresh tester characters that play like players, no restart
     act(Testers, "Bots de jornada", "Iniciar", "journey start {n} {m}").p(JOURNEY_P).ask().t(180),

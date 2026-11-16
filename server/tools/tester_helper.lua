@@ -44,16 +44,18 @@ local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
 local HUNT_CHECK = 7 -- tiles round the hunt spot checked for monsters above the tester's level
 local SEARCH = 30 -- tiles around the temple for an NPC
+local NPC_REACH = 4 -- tiles round an NPC that `enter npc` looks for a free one
 local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 9
+HELPER_VERSION = 10
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
+T.seq = T.seq or {} -- player id -> the number of the bot's newest numbered command ("!tester <cmd> #N"): the answers carry it (O579)
 
 local function storageOf(player)
 	local ok, v = pcall(function() return player:getStorageValue(STORE) end)
@@ -76,6 +78,11 @@ local function anomaly(rule, data)
 end
 
 local function tell(player, kind, data)
+	data = data or {}
+	local seq = T.seq[player:getId()]
+	if seq and data.seq == nil then
+		data.seq = seq -- the bot matches an answer to its command by this number, a late answer is never the next one's
+	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, H.encode(kind, data))
 end
 
@@ -106,13 +113,16 @@ end
 -- floor change or a teleport (the tester would land elsewhere). With `npc`: only a tile where that NPC is the one that
 -- answers (no other NPC within talk range as near or nearer: data/lib/chaos_npc_focus.lua lets only the nearest answer)
 local RINGS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {-1, -1}, {1, -1}, {1, 1}, {-1, 1}}
-for dx = -2, 2 do
-	for dy = -2, 2 do
-		if math.max(math.abs(dx), math.abs(dy)) == 2 then
-			RINGS[#RINGS + 1] = {dx, dy}
+for ring = 2, 4 do -- two tiles out, then three and four (a crowd round a stall: `enter npc` asks for four)
+	for dx = -ring, ring do
+		for dy = -ring, ring do
+			if math.max(math.abs(dx), math.abs(dy)) == ring then
+				RINGS[#RINGS + 1] = {dx, dy}
+			end
 		end
 	end
 end
+T.RINGS = RINGS
 
 local function nearestNpc(npc, p)
 	local mine = math.max(math.abs(npc:getPosition().x - p.x), math.abs(npc:getPosition().y - p.y))
@@ -215,25 +225,67 @@ function commands.town(player)
 	tell(player, "town", {pos = posOf(player:getPosition())})
 end
 
+-- the wild monsters within `radius` tiles of a position on its floor: {{name, hunting level}}
+local function monstersNear(pos, radius)
+	local near = {}
+	for _, c in ipairs(Game.getSpectators(pos, false, false, radius, radius, radius, radius) or {}) do
+		if c:isMonster() and not c:getMaster() then
+			near[#near + 1] = {c:getName(), Chaos.monsterHuntingLevel(c, 0)}
+		end
+	end
+	return near
+end
+
+-- a hunt for this level that has no monster above it (O580): the marks of H.huntCandidates (the hunts whose band is at or
+-- under the level, rule of tester_core.safe_hunts) with a free tile and no monster within HUNT_CLEAR tiles above the
+-- level (the same margin as H.hotSpot), the first one of at most HUNT_TRIES. Live run 2026-11-15: 314 of 522 town visits
+-- ended in "hunt spot too high: <monster> level N" and the bot stayed in the temple for the rest of the hour, because the
+-- spot setup chose (the pool level of the spawn file) was not what the live monsters were (their own level).
+local HUNT_CLEAR, HUNT_TRIES = 12, 60
+local function safeHunt(player)
+	local level = player:getLevel()
+	local tries = 0
+	for _, m in ipairs(H.huntCandidates(ChaosPoi and ChaosPoi.all, level, player.getGuid and player:getGuid() or player:getId())) do
+		tries = tries + 1
+		if tries > HUNT_TRIES then
+			break
+		end
+		local spot = freeNear(Position(m.x, m.y, m.z), nil, 3)
+		if spot and not H.hotSpot(level, monstersNear(spot, HUNT_CLEAR)) then
+			return spot, m
+		end
+	end
+	return nil
+end
+
+local function setHuntPos(player, p)
+	player:setStorageValue(STORE + 2, p.x)
+	player:setStorageValue(STORE + 3, p.y)
+	player:setStorageValue(STORE + 4, p.z)
+end
+
 function commands.hunt(player)
 	local p = huntPos(player)
 	if not p then
 		tell(player, "hunt", {err = "no hunt spot"})
 		return
 	end
-	local near = {}
-	for _, c in ipairs(Game.getSpectators(p, false, false, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK) or {}) do
-		if c:isMonster() and not c:getMaster() then
-			near[#near + 1] = {c:getName(), Chaos.monsterHuntingLevel(c, 0)}
+	local hot = H.hotSpot(player:getLevel(), monstersNear(p, HUNT_CHECK))
+	local moved
+	if hot then
+		-- the spot is above the bot (setup chose it from the pool levels, the monsters here are what they are): a hunt of
+		-- its level, kept as its spot from now on; none: stay in the temple, the report shows it
+		local spot, mark = safeHunt(player)
+		if not spot then
+			tell(player, "hunt", {err = "hunt spot too high: " .. hot[1] .. " level " .. hot[2]})
+			return
 		end
-	end
-	local hot = H.hotSpot(player:getLevel(), near)
-	if hot then -- stale spot from before the safe-spawn fix: stay in the temple, the report shows it
-		tell(player, "hunt", {err = "hunt spot too high: " .. hot[1] .. " level " .. hot[2]})
-		return
+		moved = {from = hot[1], level = hot[2], to = mark.n}
+		p = spot
+		setHuntPos(player, p)
 	end
 	player:teleportTo(p)
-	tell(player, "hunt", {pos = posOf(player:getPosition())})
+	tell(player, "hunt", {pos = posOf(player:getPosition()), moved = moved})
 end
 
 function commands.depot(player)
@@ -340,9 +392,12 @@ function commands.enter(player, arg)
 			tell(player, "enter", {kind = "npc", err = "no such NPC", name = place.name})
 			return
 		end
-		local spot = freeNear(npc:getPosition())
+		-- four tiles out: an NPC with a stall in the hub (Archivist Odrenna's trial question counts within her range) has the
+		-- 24 tiles round it taken by the other testers at times (live run 2026-11-15: 4 checks read "not in the game")
+		local spot = freeNear(npc:getPosition(), nil, NPC_REACH)
 		if not spot then
-			tell(player, "enter", {kind = "npc", err = "no free tile", name = place.name})
+			tell(player, "enter", {kind = "npc", err = "no free tile", name = place.name, crowd = true,
+				npcPos = posOf(npc:getPosition())})
 			return
 		end
 		player:teleportTo(spot)
@@ -486,7 +541,8 @@ function talk.onSay(player, words, param)
 	if not eligible(player) or not T.present() then
 		return true -- a player's words are left alone (and a stopped helper does nothing)
 	end
-	local cmd, arg = H.parseCommand(param)
+	local cmd, arg, seq = H.parseCommand(param)
+	T.seq[player:getId()] = seq -- nil for a command with no number: its answers carry none
 	if not cmd or not commands[cmd] then
 		tell(player, "error", {err = "unknown command", param = tostring(param)})
 		return false
@@ -964,27 +1020,50 @@ function commands.chest(player, arg)
 		if not ch then
 			local C, Kc = ChaosCursedChestConfig, ChaosCursedChestCore
 			local level = Kc.areaLevel(C, player:getLevel(), player:getLevel())
-			ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
-				pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			local function spawnAt(center)
+				return CC.spawnChest(player, center, {name = "Tester Monster",
+					pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			end
+			ch = spawnAt(player:getPosition())
 			if not ch then
 				-- the rift and spell quest checks leave the tester in the temple: the chest goes to its hunt spot
 				local tile = Tile(player:getPosition())
 				local spot = tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) and huntPos(player)
 				if spot then
 					player:teleportTo(spot)
-					ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
-						pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+					ch = spawnAt(player:getPosition())
+				end
+			end
+			if not ch then
+				-- no usable tile within the game's radius of the tester (a corridor, a doorway, tiles taken by the chests of the
+				-- other testers on the same hunt spot: cursedchest.lua placeFor): the nearest free tile up to four away is the
+				-- centre of the search instead. The chest then stands a few tiles from the tester, as a kill's would.
+				local tile = Tile(player:getPosition())
+				if not (tile and tile:hasFlag(TILESTATE_PROTECTIONZONE)) then
+					for _, d in ipairs(T.RINGS) do
+						local near = Position(player:getPosition().x + d[1], player:getPosition().y + d[2], player:getPosition().z)
+						if math.max(math.abs(d[1]), math.abs(d[2])) >= 3 then
+							ch = spawnAt(near)
+							if ch then
+								break
+							end
+						end
+					end
 				end
 			end
 			if ch then
 				ch.level = level
 			else
-				-- the game puts no chest in a protection zone (cursedchest.lua usableTile): the temple after a death
 				local tile = Tile(player:getPosition())
 				if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+					-- the game puts no chest in a protection zone (cursedchest.lua usableTile): the temple after a death
 					tell(player, "chest", {err = "the tester stands in a protection zone: no chest there by design"})
-					return
+				else
+					-- before this answer the check read state "none" and called it a failure of the chest (live run 2026-11-15)
+					tell(player, "chest", {err = "no tile for a chest near the tester (the game's own rule: not walkable, a house, a protection zone, taken)",
+						pos = posOf(player:getPosition())})
 				end
+				return
 			end
 		end
 	elseif what == "use" and ch then
@@ -1522,11 +1601,37 @@ end
 -- two fist weapons (engine patch 0087, O360): a Monk-line bot puts one in each hand through the engine's own slot rule
 -- (addItemEx runs Player::queryAdd and the Equip event), hits a Demon next to it with the auto attack and counts the
 -- melee hits and the off-hand strikes (physical, ORIGIN_NONE) it deals; any other class must be refused the fist weapon.
--- Answer kind "fists": {able (Monk line), left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, err}
+-- Answer kind "fists": {able (Monk line), left, right (return codes; 0 = worn), melee, off, meleeSum, offSum, gated (off-hand
+-- strikes the attack rate gate refused), small (melee hits too small for a strike), err}
 local FIST_IDS, FIST_WATCH_MS = {36656, 36657}, 10000
+-- a melee hit under this many points may bring an off-hand strike of 0 (O580, see the health event below)
+local FIST_TINY_HIT = 4
 -- monster id -> {player id, counts}; a global, so the doTargetCombat wrapper below (made once) sees it after a reload
 TesterFistWatch = TesterFistWatch or {}
 local fistWatch = TesterFistWatch
+-- the off-hand strikes are capped at ChaosAttackRate.limits.offhand / fistOffhand a second per player (O426, 1.5): a hit the
+-- gate refused brings no strike by rule (live run 2026-11-15: "14 melee hits but 11 off-hand strikes"). The gate is wrapped
+-- once (a flag on the table itself, so a reload does not wrap it twice) and counts its refusals for a probe in progress.
+local function countGate()
+	local R = ChaosAttackRate
+	if type(R) ~= "table" or type(R.gate) ~= "function" or R.testerGateWrapped then
+		return
+	end
+	R.testerGateWrapped = true
+	local realGate = R.gate
+	R.gate = function(pid, key, ...)
+		local allowed = realGate(pid, key, ...)
+		if not allowed and (key == "offhand" or key == "fistOffhand") then
+			for _, w in pairs(TesterFistWatch) do
+				if w.pid == pid then
+					w.gated = w.gated + 1
+				end
+			end
+		end
+		return allowed
+	end
+end
+
 local fistEvent = CreatureEvent("TesterHelperDualFist")
 function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local w = fistWatch[creature:getId()]
@@ -1534,6 +1639,11 @@ function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType
 		local dmg = math.abs(primaryDamage) + math.abs(secondaryDamage)
 		if origin == ORIGIN_MELEE then
 			w.melee, w.meleeSum = w.melee + 1, w.meleeSum + dmg
+			-- a hit this small can round its off-hand strike to 0 after the class's cut (ChaosClasses.offhandDamage floors
+			-- hit x share x ratio + 0.5; the Thief's main hit is cut by 1 / (1 + share x ratio) first): no strike is no bug
+			if dmg < FIST_TINY_HIT then
+				w.small = w.small + 1
+			end
 		end
 	end
 	-- the probe's Demon never dies: a kill would pay experience to the bot's party (live run 2026-11-01: party_xp read
@@ -1655,7 +1765,8 @@ local function dualProbe(player, spec)
 		out.err = "no Demon next to the tester"
 		return tell(player, spec.kind, out)
 	end
-	local w = {pid = player:getId(), melee = 0, off = 0, meleeSum = 0, offSum = 0}
+	local w = {pid = player:getId(), melee = 0, off = 0, meleeSum = 0, offSum = 0, gated = 0, small = 0}
+	pcall(countGate)
 	fistWatch[m:getId()] = w
 	m:registerEvent("TesterHelperDualFist")
 	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
@@ -1679,6 +1790,7 @@ local function dualProbe(player, spec)
 			return
 		end
 		out.melee, out.off, out.meleeSum, out.offSum = w.melee, w.off, w.meleeSum, w.offSum
+		out.gated, out.small = w.gated, w.small
 		restore()
 		tell(p, spec.kind, out)
 	end, FIST_WATCH_MS)
@@ -1687,7 +1799,9 @@ end
 function commands.fists(player)
 	local voc = player:getVocation()
 	local monk = ChaosMonk and ChaosMonk.isMonkLine and voc and ChaosMonk.isMonkLine(voc:getId()) or false
-	dualProbe(player, {kind = "fists", ids = FIST_IDS, able = monk, event = "ChaosMonkCombat"})
+	-- the best pair the bot's level may wield (O580: the fixed pair of level 150 and 300 was refused below them, code 33)
+	local ids = H.fistPair(player:getLevel(), ChaosFistWeapons and ChaosFistWeapons.items, FIST_IDS)
+	dualProbe(player, {kind = "fists", ids = ids, able = monk, event = "ChaosMonkCombat"})
 end
 
 -- the Thief and Ninja dual wield (src-patch 0002, thief_combat.lua): a dagger in each hand; every melee hit of the main
@@ -1738,6 +1852,26 @@ local function supplies(player)
 	player:setStorageValue(STORE + 1, 1)
 end
 
+-- a bot that logs in on ground above its level (a relog loop at a deadly spot: 509 of the 3241 deaths of the live run of
+-- 2026-11-15 came within 5 s of the login) goes to the temple at once, outside the protection zones only. The bot then
+-- walks back to a hunt of its level through `!tester hunt` (safeHunt), as a player's town portal would take it.
+local function loginGuard(id)
+	local p = Player(id)
+	if not p or not eligible(p) then
+		return
+	end
+	local tile = Tile(p:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		return
+	end
+	local hot = H.hotSpot(p:getLevel(), monstersNear(p:getPosition(), HUNT_CHECK + 3))
+	if hot then
+		print(string.format("[tester-helper] %s logged in next to %s (level %s) at level %d: sent to the temple",
+			p:getName(), tostring(hot[1]), tostring(hot[2]), p:getLevel()))
+		p:teleportTo(temple(p))
+	end
+end
+
 local login = CreatureEvent("TesterHelperLogin")
 function login.onLogin(player)
 	if not eligible(player) then
@@ -1757,6 +1891,7 @@ function login.onLogin(player)
 	pcall(supplies, player)
 	pcall(topUp, player)
 	local id = player:getId()
+	addEvent(function() pcall(loginGuard, id) end, 300)
 	addEvent(function()
 		local p = Player(id)
 		if p and eligible(p) then
@@ -1771,6 +1906,7 @@ login:register()
 local logout = CreatureEvent("TesterHelperLogout")
 function logout.onLogout(player)
 	T.ids[player:getId()] = nil
+	T.seq[player:getId()] = nil
 	T.hits[player:getId()] = nil
 	T.loginAt[player:getId()] = nil
 	return true
@@ -1918,7 +2054,8 @@ local function nearestMonster(player)
 	return best and best.c
 end
 
-local function step()
+-- one round of the loop. Returns true when the loop ends (the helper file is gone)
+local function stepBody()
 	T.step = T.step + 1
 	local g = T.step % GROUPS
 	for id in pairs(T.ids) do
@@ -1966,10 +2103,29 @@ local function step()
 	if T.step % 20 == 0 and not T.present() then
 		T.started = false
 		print("[tester-helper] stopped: " .. T.FILE .. " is gone")
-		return
+		return true
 	end
-	addEvent(step, STEP_MS)
+	return false
 end
+
+-- The loop is a timer: an error in a round (a monster that left, a player that logged out between two lines) must neither
+-- throw into the engine as "Lua Script Error ... in a timer event" nor end the loop for every tester (O579). A round that
+-- fails is printed once a minute at most and the next round runs.
+local function step()
+	local ok, stopped = pcall(stepBody)
+	if not ok then
+		local now = os.time()
+		if not T.lastStepError or now - T.lastStepError >= 60 then
+			T.lastStepError = now
+			print("[tester-helper] error in the loop: " .. tostring(stopped))
+		end
+		stopped = false
+	end
+	if not stopped then
+		addEvent(step, STEP_MS)
+	end
+end
+T.step_fn = step
 
 T.FILE = "data/scripts/zz_tester_helper.lua"
 function T.present()
