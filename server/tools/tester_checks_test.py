@@ -884,6 +884,11 @@ class QuestIO(FakeIO):
 
     async def helper(self, command, kind, wait=4.0):
         self.cmds.append(command)
+        if command == 'path npc Archivist Odrenna':   # O589: a person walks to her first
+            if self.odrenna and getattr(self, 'walkable', False):
+                self.near = True
+                return {'here': True, 'name': 'Archivist Odrenna', 'pos': {'x': 5, 'y': 5, 'z': 7}, 'dest': {'x': 6, 'y': 5, 'z': 7}}
+            return {'err': 'no path', 'name': 'Archivist Odrenna'}
         if command == 'enter npc Archivist Odrenna':
             if not self.odrenna:
                 return {'kind': 'npc', 'err': 'no such NPC', 'name': 'Archivist Odrenna'}
@@ -963,6 +968,27 @@ class SpellQuest(unittest.TestCase):
         self.assertIn('enter npc Archivist Odrenna', io.cmds)
         self.assertEqual(io.moves, ['hunt'], 'back to the hunt spot')
         self.assertFalse(io.known)
+
+    def test_the_bot_walks_to_odrenna_and_the_teleport_is_only_the_counted_fallback(self):
+        io = QuestIO(table=quest_table(), spells=KEEPFALL)
+        io.walkable = True
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('path npc Archivist Odrenna', io.cmds)
+        self.assertNotIn('enter npc Archivist Odrenna', io.cmds, 'on foot: no teleport')
+        self.assertEqual(r.fallbacks, [])
+        io = QuestIO(table=quest_table(), spells=KEEPFALL)      # no path to her: the helper's teleport, named and counted
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertLess(io.cmds.index('path npc Archivist Odrenna'), io.cmds.index('enter npc Archivist Odrenna'))
+        self.assertEqual(r.fallbacks, ['enter npc Archivist Odrenna (no path)'])
+        self.assertEqual(r.as_dict()['fallbacks'], ['enter npc Archivist Odrenna (no path)'])
+        r = run(TX.check_spell_quest(QuestIO(level=1300), 'Tester Aaa', 'Warrior', 1300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(len(r.fallbacks), 3, 'one teleport per quest of a level 1300 bot')
+        io = QuestIO(faults=['nokill'])
+        io.walkable = True
+        self.assertEqual(self.go(io).fallbacks, [], 'a failed quest keeps the fallbacks it had (none)')
 
     def test_low_level_is_a_skip(self):
         io = QuestIO(level=499)
@@ -1913,6 +1939,10 @@ class RaidClosed(unittest.TestCase):
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertIn('next to the portal by the helper', r.detail)               # no path: the helper's step next to it
         self.assertIn(('Tester Aaa', 'raid portal'), io.cmds)
+        self.assertEqual(r.fallbacks, ['raid portal (no path, or the walk did not arrive)'])   # O589: counted and named
+        TX.reset_raid_turn()
+        r, io = self.play(RaidWorld(), partner=None)
+        self.assertEqual(r.fallbacks, [], 'on foot: no teleport to count')
         TX.reset_raid_turn()
         r, io = self.play(RaidWorld(blocked={(97, 5), (96, 5), (95, 5), (94, 5), (93, 4), (93, 5), (93, 3), (94, 3)}), partner=None)
         self.assertEqual(r.status, TX.PASS, r.detail)                             # a path that does not arrive: the helper's step

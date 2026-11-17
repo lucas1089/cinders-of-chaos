@@ -7,9 +7,12 @@ FILE is the generated table server/tools/tester_scenarios.json (gen_tester_scena
     it), {"action": a, "data": {...}}. The data keys the server reads are filled from the answers this bot got on that
     opcode before (a value seen under the same key), never invented. A key that names a character (name, target, cid,
     ...) only ever gets a tester (this bot or another one), never a name or id from an answer.
-  * place: `!tester enter <place>` (the TEST ONLY helper teleports this tester), the opcode of the system there, back to
+  * place: the bot WALKS to the place (`!tester path <place>`: the engine's own pathfinding, the bot takes the steps; O589), the opcode
+    of the system there, back to
     the hunt
-  * npc: `!tester enter npc <name>`, hi, a keyword or two of its greeting, bye, back
+  * npc: the bot walks to the NPC (`!tester path npc <name>`), hi, a keyword or two of its greeting, bye, back
+    The helper's teleport (`!tester enter ...`) is only the fallback when there is no path or the walk did not arrive; the coverage counts
+    it (HELP) and names the reason (`teleport: ...` in the system's actions), a walked arrival is counted as `walk` (O589).
   * rift: `!tester enter rift N` (a key of tier N into the backpack), then the key is used by hotkey
 Never sent: out-of-scope and staff systems, opcodes only they answer, the skipped actions of the table.
 Coverage per system goes to the run's results ('coverage': {key: {tried, ok, refused, actions}}); merge() adds what
@@ -300,7 +303,8 @@ class Scenarios:
             return [('fx', e['name'], i) for i in range(len(e['steps']))]
         if kind == 'place':
             system, place, op = self.rand.choice(self.places)
-            steps = [('say', '!tester enter ' + place), ('check', 'place:' + system)]
+            # a rift key is no place to walk to: `enter rift` stays the helper's (step 5 of O589 walks the rift itself)
+            steps = [('say', '!tester enter ' + place) if place.split(' ')[0] == 'rift' else ('walk', place), ('check', 'place:' + system)]
             if op and op in self.by_name:
                 steps += self.opcode_steps(self.by_name[op])
             return steps + [('say', '!tester hunt')]
@@ -309,7 +313,7 @@ class Scenarios:
             words = list(npc.get('keywords') or [])
             say = self.rand.sample(words, min(2, len(words)))
             # after "hi" the NPC has the player in focus and hears keywords only in the NPC channel ('npc' steps)
-            return ([('say', '!tester enter npc ' + npc['npc']), ('check', 'npc:' + npc['npc']), ('say', 'hi')]
+            return ([('walk', 'npc ' + npc['npc']), ('check', 'npc:' + npc['npc']), ('say', 'hi')]
                     + [('npc', w) for w in say] + [('npc', 'bye'), ('say', '!tester hunt')])
         tier = self.rand.randint(1, 5)
         return [('say', '!tester enter rift %d' % tier), ('check', 'place:rift'), ('usekey',)]
@@ -340,6 +344,10 @@ class Scenarios:
             self.run_effect(bot, step, others, send_ext)
         elif kind == 'say':
             say(step[1])
+        elif kind == 'walk':
+            # a driver that cannot walk (a test, an old runner): the helper's teleport. TesterBot.do_opcodes walks the engine path
+            # first and only falls back to this word (O589)
+            say('!tester enter ' + step[1])
         elif kind == 'npc':
             say(step[1], NPC_CHANNEL)
         elif kind == 'check':
@@ -350,9 +358,16 @@ class Scenarios:
             if ans.get('err'):
                 c['refused'] += 1
                 c['actions'][str(ans['err'])[:40]] = c['actions'].get(str(ans['err'])[:40], 0) + 1
+            elif ans and ans.get('walked'):
+                c['ok'] += 1
+                bump(c, 'walk')   # the bot walked the engine path there (O589): no helper shortcut
+                c.setdefault('help', 0)
             elif ans:
                 c['ok'] += 1
                 bump(c, 'help')  # the helper's teleport brought the bot there: a shortcut, not a walk
+                if ans.get('fallback'):
+                    label = 'teleport: ' + str(ans['fallback'])[:50]   # a fallback is named and counted (O589)
+                    c['actions'][label] = c['actions'].get(label, 0) + 1
             bot.helper['entered'] = bot.helper.pop('enter', None) or {}
         elif kind == 'usekey':
             cid = (bot.helper.get('entered') or {}).get('keyClientId')
@@ -517,7 +532,7 @@ def merge(table, run_cov, log, checks=None):
                'refused': c.get('refused', 0) + place.get('refused', 0), 'errors': errors.get(name, 0),
                'kind': s.get('kind'), 'real': c.get('real', 0) + ch.get('real', 0),
                'failed': c.get('failed', 0) + ch.get('failed', 0),
-               'ans': c.get('ans', max(0, c.get('ok', 0) - c.get('real', 0))),
+               'ans': c.get('ans', max(0, c.get('ok', 0) - c.get('real', 0))) + place.get('walk', 0),
                'help': c.get('help', 0) + place.get('help', place.get('ok', 0)) + ch.get('help', 0)}
         kind = s.get('kind')
         if kind in ('out', 'staff'):
@@ -536,7 +551,7 @@ def merge(table, run_cov, log, checks=None):
             helped = key.startswith(('npc:', 'place:'))
             out[key]['help'] = c.get('help', c.get('ok', 0) if helped else 0)
             out[key].setdefault('real', 0)
-            out[key].setdefault('ans', 0 if helped else c.get('ok', 0))
+            out[key].setdefault('ans', c.get('walk', 0) if helped else c.get('ok', 0))
     for key, ch in by_check.items():
         out[key] = dict(ch, refused=0, errors=0, ans=0)
     return out

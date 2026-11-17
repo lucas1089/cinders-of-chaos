@@ -1189,6 +1189,74 @@ ok(_cs[0].startswith('DELETE FROM `chaos_arena_ratings`'), 'the generic cleanup 
 _src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testers.py'), encoding='utf-8').read()
 ok('stmts = closed_clean(players) + cleanup_statements(' in _src, 'cleanup removes the closed-mode rows first')
 
+# ---------------------------------------------------------------- O589: the bot walks to a place by the engine path
+class _WConn:
+    def __init__(self):
+        self.out = []
+
+        class _Drain:
+            async def drain(self):
+                return None
+        self.w = _Drain()
+
+    def send(self, b):
+        self.out.append(b)
+
+
+def _walker(answers):
+    """a TesterBot whose helper answers `path ...` from a list (None = no answer) and `enter ...` with a teleport"""
+    b = T.TesterBot.__new__(T.TesterBot)
+    b.conn, b.alive, b.died, b.helper, b.walk_until = _WConn(), True, False, {}, 0.0
+    b.cmds, queue = [], list(answers)
+
+    async def says(command, kind, wait=4.0):
+        b.cmds.append(command)
+        if command.startswith('path '):
+            ans = queue.pop(0) if queue else None
+            if ans is not None:
+                b.helper['path'] = ans
+            return ans
+        ans = {'kind': 'x', 'pos': {'x': 1, 'y': 1, 'z': 7}}
+        b.helper['enter'] = ans
+        return ans
+    b.helper_says = says
+    return b
+
+
+async def _no_sleep(*a, **k):
+    return None
+_real_sleep = asyncio.sleep
+asyncio.sleep = _no_sleep
+try:
+    _clock = {'stop': False}
+    _b = _walker([{'path': [1, 1, 2], 'dist': 3}, {'here': True, 'dist': 1}])
+    eq(asyncio.run(_b.walk_to('depot', _clock)), 'foot', 'walk: asked again until the answer says it is there')
+    eq(_b.conn.out, [bytes([0x66]), bytes([0x66]), bytes([0x67])], 'walk: the steps of the path as walk packets (east, east, south)')
+    eq(asyncio.run(_walker([{'here': True}]).walk_to('depot', _clock)), 'foot', 'walk: already there')
+    eq(asyncio.run(_walker([{'err': 'no path'}]).walk_to('depot', _clock)), 'no path', 'walk: the helper\'s reason')
+    eq(asyncio.run(_walker([None]).walk_to('depot', _clock)), 'no answer', 'walk: no answer')
+    eq(asyncio.run(_walker([{'path': [], 'dist': 5}]).walk_to('depot', _clock)), 'an empty path', 'walk: an empty path')
+    eq(asyncio.run(_walker([{'path': [1], 'dist': 9}] * 5).walk_to('depot', _clock)), 'blocked', 'walk: the steps bring it no nearer: blocked')
+    eq(asyncio.run(_walker([{'path': [1], 'dist': 50 - i} for i in range(20)]).walk_to('depot', _clock)), 'far',
+       'walk: still on the way after the rounds')
+    eq(asyncio.run(_walker([{'path': [1], 'dist': 9}]).walk_to('depot', {'stop': True})), 'gone', 'walk: the run is over')
+    # walk_to_place: on foot, no teleport; else the teleport with its reason
+    _b = _walker([{'here': True}])
+    ok(asyncio.run(_b.walk_to_place('depot', _clock)), 'place: done')
+    eq(_b.helper['enter'], {'walked': True, 'kind': 'depot'}, 'place: a walked arrival is recorded as walked')
+    ok(not any(c.startswith('enter ') for c in _b.cmds), 'place: no teleport on foot')
+    _b = _walker([{'err': 'no path'}])
+    ok(asyncio.run(_b.walk_to_place('npc Archivist Odrenna', _clock)), 'place: done by the fallback')
+    eq(_b.cmds, ['path npc Archivist Odrenna', 'enter npc Archivist Odrenna'], 'place: the path first, then the teleport')
+    eq(_b.helper['enter'].get('fallback'), 'enter npc Archivist Odrenna: no path', 'place: the teleport answer names its reason')
+    ok(not _b.helper['enter'].get('walked'), 'place: not recorded as walked')
+    _b = _walker([None])
+    asyncio.run(_b.walk_to_place('boss', _clock))
+    eq(_b.helper['enter'].get('fallback'), 'enter boss: no answer', 'place: no answer to the path asks for the teleport too')
+    ok(not asyncio.run(_walker([{'path': [1], 'dist': 9}]).walk_to_place('boss', {'stop': True})), 'place: a stopped run does nothing more')
+finally:
+    asyncio.sleep = _real_sleep
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

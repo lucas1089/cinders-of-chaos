@@ -9801,7 +9801,7 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v13 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v14 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
@@ -9875,9 +9875,7 @@ Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could
 - `mentor`, `guildboss`, `siege`, `orbexchange`, `community` (pair, guild or market content of real players): each needs its own
   side rule like the market realm (a tester book for the exchange, tester guilds for the siege and the guild boss, a tester mentor
   list); the tester guilds of closed mode exist already, so siege and guild boss come first.
-- places reached by `!tester enter` (the temple, depot, NPC booths, bosses, travel, spell quest NPCs, trials): walk like the raid
-  entrance does, with `raid path`'s idea (`Creature:getPathTo` to the place, a generic `!tester path KIND`), the teleport only as the
-  fallback. No engine work, a helper command and a walk step in `CheckIO`; do it place by place with the raid walker.
+- places reached by `!tester enter`: done in O589 (step 4 below); the temple, the hunt spot and the rift key stay helper teleports.
 - checks that use the helper for what a person does (rift keys, waystone runs and rift layout by `riftrun`, chest spawns, `give`):
   a person finds a key in a hunt, opens the rift at the portal and walks it. The rift is the next one for the guide recipe (the
   layout is a known map).
@@ -9966,6 +9964,30 @@ Proven by tests: the rules and every refusal (Lua), the two checks against lane 
 `PartyFinderClosed`). That a player never sees a tester listing is proven on the core (`visibleTo`, the nudge, the quick-join match), not
 by a live run with a player on. Needs a live run: the window answers of the real server (the check reads `state.group.check`, `list.rows`,
 `mine.apps`), and the dungeon start after the ready check.
+
+##### 4. The way on foot (`!tester path`, `walk_by_path`, `walk_to_place`, `TesterBot.walk_to_place`)
+
+A person walks; the helper's `!tester enter <place>` is a teleport. Helper v14 has the generic walk: `!tester path <kind> [N] | npc <name> |
+pos X Y Z` answers the engine's own pathfinding (`Creature:getPathTo`, the call a player's auto walk uses) to the tile of a map mark (the
+n-th of its kind, as `enter` takes it), an NPC or a position, as directions 0-7 (at most 80), the distance left (`dist`), `here` when the bot
+stands next to it, or an `err` (`no path`, `another floor`, `no such place`, `no such NPC`). It moves nobody (tests:
+`tester_helper_test.lua`). A rift key is no place: `path rift` is refused.
+- The scenarios of the coverage layer (`tester_scenarios.py`): a place or an NPC is now the step `walk` (`TesterBot.walk_to_place`): the bot asks
+  for a path, takes its steps (0.3 s each, the walk packets) and asks again, up to 8 rounds and 150 s; a walk that stops getting nearer is
+  `blocked`. Only when it fails (no path, another floor, blocked, far, no answer) the bot says `!tester enter <place>` and the answer carries the
+  reason. The coverage counts a walked arrival as `walk` (ANS in the proof table, no HELP) and a teleport as `help`, with the reason in the
+  system's actions (`teleport: enter bank: no path`). The rift key (`enter rift N`) stays the helper's: a key is not a place (step 5).
+- The checks: `walk_by_path` / `walk_to_place` (tester_checks.py) do the same for a check; `closed_dungeon` (step 1) and the spell quest's walk to
+  Archivist Odrenna use them, and `closed_raid`'s step next to the portal (`raid portal`) is a named fallback too. A result that used a teleport
+  carries it in `Result.fallbacks` (`enter npc Archivist Odrenna (no path)`): the result text names it, `run.json` keeps it
+  (`fallbacks`), and the report's "System checks" section counts them ("helper teleports in place of walking: N").
+- Left as helper teleports (not places a person walks to for the check): the temple (`!tester town`: every check starts from it, the bots
+  hunt far from it), the hunt spot (`!tester hunt`), the rift key, the shop step of `bag` (the bot walks to the Loot Buyer in the keep
+  behaviour of O584 by `shop`, unchanged) and `give`. A walk to the temple would take most of a run.
+Proven by tests: the helper command, the bot's walk and its fallbacks (`testers_test.py`), the scenarios and their coverage counts
+(`tester_scenarios_test.py`), the checks and their `fallbacks` (`tester_checks_test.py`). Needs a live run: how far the engine's path search
+goes (it has a node limit: a far place is walked in several asks, and a place across the world falls back to the teleport, counted), and
+whether the map marks are on tiles a person can stand next to.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

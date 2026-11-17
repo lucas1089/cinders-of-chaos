@@ -778,7 +778,7 @@ async def check_spell_quest(io, name, cls, level):
 async def _spell_quest_run(io, name, cls, level):
     """every quest the level opens, in order (500, 800, 1200): before, only the first one ran live (O302)"""
     check = 'spell_quest'
-    done = []
+    done, fallbacks = [], []
     for n, qlevel in enumerate(QUEST_LEVELS, 1):
         if level < qlevel:
             break
@@ -786,11 +786,13 @@ async def _spell_quest_run(io, name, cls, level):
         if r.status != PASS:
             if done and r.status == SKIP:
                 break
+            r.fallbacks = fallbacks + r.fallbacks
             return r
         done.append(r.detail)
+        fallbacks += r.fallbacks
     later = [lv for lv in QUEST_LEVELS[len(done):]]
     tail = '; quests at level %s not reached (level %s)' % (', '.join(map(str, later)), level) if later else ''
-    return Result(check, name, cls, PASS, ' | '.join(done) + tail)
+    return Result(check, name, cls, PASS, ' | '.join(done) + tail, fallbacks)
 
 
 async def _one_spell_quest(io, name, cls, level, n):
@@ -802,9 +804,10 @@ async def _one_spell_quest(io, name, cls, level, n):
 
 async def _one_spell_quest_run(io, name, cls, level, n):
     check = 'spell_quest'
+    fallbacks = []   # helper teleports used in place of walking (O589)
 
     def fail(text):
-        return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text))
+        return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text), fallbacks)
 
     a, bad = await quest_answer(io, 'state', {'quest': n, 'code': 'ok', 'step': 0})
     if bad:
@@ -829,17 +832,23 @@ async def _one_spell_quest_run(io, name, cls, level, n):
     if bad:
         return fail('the trial step: ' + bad)
     # Archivist Odrenna must stand in the world (placed at startup in her stall); the helper takes the bot to her
+    # a person walks to her by the engine path (O589); the helper's teleport only when there is no path, and the result names it
     at = None
-    for attempt in range(CROWD_TRIES):
-        at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
-        if not at or not (at.get('err') and at.get('crowd')):
-            break
-        await io.sleep(CROWD_WAIT)   # the other testers stand round her stall: they move on
+    how, got = await walk_by_path(io, {'name': name, 'lead': True}, 'path npc Archivist Odrenna', 'path', 1)
+    if how == 'foot':
+        at = {'npc': 'Archivist Odrenna', 'walked': True}
+    else:
+        fallbacks.append(fallback_note('enter npc Archivist Odrenna', (got or {}).get('err') or 'the walk did not arrive'))
+        for attempt in range(CROWD_TRIES):
+            at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
+            if not at or not (at.get('err') and at.get('crowd')):
+                break
+            await io.sleep(CROWD_WAIT)   # the other testers stand round her stall: they move on
     if not at:
-        return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n)
+        return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n, fallbacks)
     if at.get('err') and at.get('crowd'):
         return Result(check, name, cls, SKIP, 'quest %d: no free tile within 4 of Archivist Odrenna after %d tries (the testers crowd '
-                      'her stall: no fault of the quest)' % (n, CROWD_TRIES))
+                      'her stall: no fault of the quest)' % (n, CROWD_TRIES), fallbacks)
     if at.get('err'):
         return fail('Archivist Odrenna is not in the game (%s): placement at startup failed or her XML did not load' % str(at['err'])[:60])
     a, bad = await quest_answer(io, 'trial', {'near': True, 'entered': True, 'running': True})
@@ -866,7 +875,7 @@ async def _one_spell_quest_run(io, name, cls, level, n):
         parts.append('in the spell list')
     if table and cls in table:
         parts.append('in the Auto setup data')
-    return Result(check, name, cls, PASS, ', '.join(parts))
+    return Result(check, name, cls, PASS, ', '.join(parts), fallbacks)
 
 
 def preset_for(presets, level):
@@ -1900,7 +1909,8 @@ async def raid_play(io, name, cls, a, partners):
         return Result(key, name, cls, no[0], no[1])
     trace = {'faults': [], 'reached': set(), 'steps': 0, 'killed': 0, 'trash': 0, 'kills': 0, 'fought': 0.0, 'stuck': None,
              'secs': 0, 'left': '?', 'members': 0, 'bosses': int(a.get('bosses') or 0),
-             'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper'}
+             'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper',
+             'fallbacks': [fallback_note('raid portal', 'no path, or the walk did not arrive') for h in came.values() if h != 'foot']}
     waited, state = 0.0, None
     while waited <= RAID_ENTER_WAIT and io.alive():
         state = await raid_look(io, squad[0])
@@ -2016,7 +2026,7 @@ async def raid_walk_all(io, name, cls, a, squad, trace):
     if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
         trace['left'] = 'a close by the helper'
     status, text = raid_verdict(trace)
-    return Result(key, name, cls, status, text)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
 # ------------------------------------------------------------------------------------------------ walking like a person (O589)

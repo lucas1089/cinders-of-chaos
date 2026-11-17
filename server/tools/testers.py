@@ -721,6 +721,9 @@ class KeyIO:
                 bot.waiters.remove(waiter)
 
 
+STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68}   # the walk packets: north, east, south, west
+
+
 class CheckIO(KeyIO):
     """what tester_checks.CheckRun needs of a bot in game (KeyIO's requests and pauses, plus the helper, speech and parties)"""
 
@@ -843,7 +846,7 @@ class CheckIO(KeyIO):
         return await KeyIO(b, self.clock).request(opname, action, data, expect, timeout) if b is not None else None
 
     # the raid in closed test mode (O588): the walk steps of a person, the loot, and no flight to the temple inside
-    STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68}   # north, east, south, west
+    STEP_BYTES = STEP_BYTES
 
     async def step_of(self, other, dx, dy):
         b = self._bot(other)
@@ -1653,9 +1656,67 @@ class TesterBot(LT.Bot):
             if not self.alive or self.died or clock['stop']:
                 break
             self.last = 'opcodes:' + ' '.join(str(x) for x in step)[:60]
+            if step[0] == 'walk':
+                await self.walk_to_place(step[1], clock)   # O589: on foot first, the helper's teleport only as the named fallback
+                await asyncio.sleep(getattr(runner, 'pause', 1.5))
+                continue
             runner.run_step(self, step, ONLINE, send_ext, self.say, use_hotkey)
             await self.conn.w.drain()
             await asyncio.sleep(getattr(runner, 'pause', 1.5))
+        return True
+
+    WALK_ROUNDS = 8      # asks for a path at most this many times (each answer holds up to 80 steps)
+    WALK_BUDGET = 150.0  # seconds a walk to a place may take: then the helper's teleport is the fallback
+
+    async def walk_to(self, args, clock):
+        """walks the engine path of `!tester path <args>`: 'foot' when the bot stands next to it, else the reason it did not
+        arrive (the helper's own words: no path, another floor, no such place; or 'no answer', 'far', 'blocked')"""
+        t0, last, stalled = time.monotonic(), None, 0
+        for _ in range(self.WALK_ROUNDS):
+            if not self.alive or self.died or clock['stop']:
+                return 'gone'
+            r = await self.helper_says('path ' + args, 'path', 6.0)
+            if not isinstance(r, dict):
+                return 'no answer'
+            if r.get('err'):
+                return str(r['err'])[:40]
+            dist = r.get('dist')
+            if r.get('here') or (dist is not None and dist <= 1):
+                return 'foot'
+            steps = TX.raid_path_steps(r.get('path'))
+            if not steps:
+                return 'an empty path'
+            if last is not None and dist is not None and dist >= last:
+                stalled += 1
+                if stalled >= 2:
+                    return 'blocked'
+            else:
+                stalled = 0
+            last = dist
+            self.walk_until = time.monotonic() + 3.0
+            for dx, dy in steps:
+                if not self.alive or self.died or clock['stop']:
+                    return 'gone'
+                self.conn.send(bytes([STEP_BYTES[(dx, dy)]]))
+                await self.conn.w.drain()
+                await asyncio.sleep(0.3)
+            if time.monotonic() - t0 > self.WALK_BUDGET:
+                return 'far'
+        return 'far'
+
+    async def walk_to_place(self, args, clock):
+        """a scenario's way to a place or an NPC: on foot; when that fails the helper's `enter` puts the bot there and its answer
+        carries `fallback` (the reason), which the coverage counts and names. The answer is left in self.helper['enter'] for the
+        `check` step, as the plain `enter` was"""
+        why = await self.walk_to(args, clock)
+        if why == 'gone':
+            return False
+        if why == 'foot':
+            self.helper['enter'] = {'walked': True, 'kind': args.split(' ', 1)[0]}
+            return True
+        r = await self.helper_says('enter ' + args, 'enter', 8.0)
+        if isinstance(r, dict) and not r.get('err'):
+            r['fallback'] = 'enter %s: %s' % (args, why)
         return True
 
     async def do_keytest(self, clock):
