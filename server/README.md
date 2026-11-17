@@ -9694,9 +9694,11 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
   - `place`: the helper's `enter` argument.
   - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
-  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, party finder, group queue,
-    sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
-  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, and the raid (O588). Only a `--closed` run reaches
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, anti-bot (and, until the O589 steps
+    are done, the siege and the guild boss). The list is `OUT_OF_SCOPE` in the generator.
+  - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588), the group queue and the party
+    finder (O589); the dungeons (O589) are
+    reached at random by `fetch` only, their `queue` only by the closed check. Only a `--closed` run reaches
     them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
 - Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
@@ -9792,14 +9794,14 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
     With the switch off a tester cannot buy, list, post or fill.
   - bazaar: the character lock of a listing already applies to a tester. The website never shows a tester listing and
     refuses a bid on it (`bazaar_lib.php` `isTesterName`), so no Chaos Coins move.
-  - queues that match players (dungeons, group queue, party finder): testers are refused, switch on or off.
-    Dungeons, group queue, arena and battleground were not tester-aware before (audit 2026-11-16).
+  - queues that match players: the dungeons, the group queue and the party finder are closed systems since O589: a queue entry, a group
+    or a listing has a side, testers only among testers and only with the switch on ("The rest of the closed audit (O589)").
   - the raid (`raid.lua`, O588): a party of testers only, in the slot `testerSlot` of its own, only with the switch on; a tester and
     a player are never in the same raid; no broadcast, board, trophy or Discord event ("The raid in closed mode" below).
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v13 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v14 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
@@ -9868,20 +9870,146 @@ raid on a lane that answers like the helper: the way on foot, the fallback, the 
 
 Other audit items (`tester_scenarios.json` `kind` out / place), what a bot could do like a person, with a plan each:
 - `patchnotes`: done now, read and mark-seen requests of the window (no engine work): moved out of `OUT_OF_SCOPE`.
-- dungeons (`dungeons.lua` refuses testers, the `queue` action is refused): the same recipe as the raid (closed system, side of the
-  queue, slot of its own, `probe` and `guide`), the same walk and fight loop of `closed_raid` with another guide. The biggest gap.
-- `groupqueue` and `party_finder` (match players): a queue per side like the arena (a tester entry only meets testers, a listing
-  carries its side); then the bots can form parties of testers from the finder, and dungeons can be queued.
+- dungeons: done in O589 (step 1 below).
+- `groupqueue` and `party_finder`: done in O589 (step 2 below).
 - `mentor`, `guildboss`, `siege`, `orbexchange`, `community` (pair, guild or market content of real players): each needs its own
   side rule like the market realm (a tester book for the exchange, tester guilds for the siege and the guild boss, a tester mentor
   list); the tester guilds of closed mode exist already, so siege and guild boss come first.
-- places reached by `!tester enter` (the temple, depot, NPC booths, bosses, travel, spell quest NPCs, trials): walk like the raid
-  entrance does, with `raid path`'s idea (`Creature:getPathTo` to the place, a generic `!tester path KIND`), the teleport only as the
-  fallback. No engine work, a helper command and a walk step in `CheckIO`; do it place by place with the raid walker.
+- places reached by `!tester enter`: done in O589 (step 4 below); the temple, the hunt spot and the rift key stay helper teleports.
 - checks that use the helper for what a person does (rift keys, waystone runs and rift layout by `riftrun`, chest spawns, `give`):
   a person finds a key in a hunt, opens the rift at the portal and walks it. The rift is the next one for the guide recipe (the
   layout is a known map).
 - left as they are: real money, staff tools, referral, reports, beta, telemetry and the library or generator systems.
+
+#### The rest of the closed audit (O589)
+
+Owner 2026-11-16 (translated): "the bots must play the game's full content and in the most human way possible". The owner approved the
+plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
+person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
+ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task).
+
+##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
+
+Server rules (`dungeon` is in `K.CLOSED_SYSTEMS`; the blanket "Testers do not use this queue" refusal of O582 is gone):
+- With the switch off a tester cannot queue ("Closed test mode is off: the testers do not play this."), in the window's `queue` and in
+  `ChaosDungeons.queueJoin` (the Group Queue's door); a queued tester is dropped by the next tick when the switch goes off.
+- A queue entry has a side (`player` or `tester`). `ChaosDungeonsCore.pick` picks the entries of a run: one side and one difficulty
+  (a bucket); a full group goes at once, fewer after `soloWaitSeconds`. A tester bucket starts only with the switch on and never while a
+  player entry waits in that dungeon's queue (players first: a player is never kept behind a tester). A tester and a player are never in
+  one run (`run.side`). The dungeon itself is the base map area as always (one run per dungeon): the testers' instance is the run,
+  not a reserved dungeon, so no dungeon is taken from the players.
+- A tester run is never ranked or recorded: no `chaos_dungeon_runs` row, no `ChaosRecords.dungeonClear` (so no record, board or Discord
+  event). The rewards (experience, gold, loot, tokens, the boss chest) are the testers' own. The run ends when the switch goes off (a failed
+  run: everyone out where they entered).
+- `Chaos.mcSiblings`: two testers on one address are not multi-clients (the bots all come from one IP; `Chaos.isMultiClient` refuses the
+  dungeon, and the closed checks of arena and raid ask the same). A tester next to a player on the address still is.
+- `ChaosDungeons.probe(player)` is what a person sees: outside the list (id, title, level, group size, the difficulty unlocked), queued the
+  dungeon, inside the kill counter (percent, left, total), the boss and its health, the time left, and `guide`
+  (`ChaosDungeonsCore.guide`: the monsters nearest first until the boss is unlocked, then the boss; `wait` when nothing is in sight or the
+  run is over). `ChaosDungeons.testerClose(player)` ends the testers' own run of the asker, or an empty one. Both are read or called only
+  by the TEST ONLY helper.
+
+How the bots play it (`closed_dungeon`, a closed check before `closed_raid`; helper v14 `!tester dungeon [state | path | close]`):
+1. The dungeon: the highest of the bot's level (`dungeon_pick`) that no other bot played or plays in this run (one play of each dungeon is the
+   coverage). A bot below the lowest level (150) is a SKIP with the level. A dungeon of two takes a free partner of its level (a party).
+2. Potions topped up, the temple, then on foot to a dungeon entrance by the engine path (`!tester path dungeon`, see "The way on foot"
+   below), the last step onto the entrance tile opens the window like a player's; `fetch` and `queue` are the window's requests. Only when
+   the path fails does the helper's `enter dungeon` put the bot next to the entrance; the result names it and the report counts it.
+3. Queued: the bot waits up to 90 s for its run (a player's run ahead of it is a SKIP). Inside: a look every second (`dungeon state`), then up
+   to 6 steps of the engine path to the guide's goal (`dungeon path`, within reach of the monster); a step that did not move the bot makes it go
+   round (`RaidWalker`). The fights are the bot's own (rotation, potions, flight at low health: a dungeon does not catch a lethal hit, so a bot
+   that flees leaves the run like a person). The loot is taken after kills and after the boss. No teleport inside the run.
+4. After the boss the server's exit teleport (10 s) takes the bot out; the time of the check is 1000 s, then `dungeon close` (the failed
+   run) so the dungeon is free. Verdict (`dungeon_verdict`): PASS when a monster died or the boss fell, FAIL for a tester in a player's run,
+   more players than the party, 180 s at a monster or the boss without progress, a bot still inside after the close; SKIP with the reason for
+   the level, a queue that refused the bot or a run of players ahead, a walk blocked for 30 s, a death before any kill.
+Clean-up: the `chaos_dungeon_progress` rows of the testers (`tester_closed.py`). The scenario table skips the random `queue` of the window
+(`CLOSED_ONLY` in `gen_tester_scenarios.py`): only `closed_dungeon` queues; `fetch` stays in the random requests.
+Proven by tests: the rules, the queue by side, the probe and guide on a mocked engine (`dungeons_closed_test.lua`), the helper command
+(`tester_helper_test.lua`), the whole check on a lane world with a party of two, the fallback and each refusal (`tester_checks_test.py`
+`DungeonClosed`). Needs a live run: the engine's `getPathTo` over a long way (the search is bounded: the walk asks again, up to 8 rounds of
+80 steps, else the helper's teleport is the counted fallback), the real monsters and their placement, the exit teleport.
+
+##### 2. Group queue and party finder (`groupqueue.lua`, `party_finder.lua`, `closed_groupqueue`, `closed_party_finder`)
+
+Server rules (`groupqueue` and `partyfinder` are in `K.CLOSED_SYSTEMS`; the blanket refusal of O582 is gone from both files):
+- Group Queue (tests: `groupqueue_test.lua` section 11): a group is the player alone or the party. `sideOfGroup` asks the same rule as every closed
+  system (`K.joinRefusal("groupqueue", closedOn, flags)`): all members testers or none; a mixed party is refused ("Testers and players are
+  never mixed."), a tester group with the switch off is refused ("Closed test mode is off ..."). The group keeps its side (`g.side`).
+  The queues themselves are the modes' own (arena, battleground, dungeons), which pair by side already; `K.gate` is the second look: a found
+  match whose groups are of two sides gets the verdict `mixed` and is never started (`G.gate` returns false). A tester group is dropped by
+  the next tick when the switch goes off (every queue left, the member told).
+- Party Finder (tests: `party_finder_test.lua`, the last block): the listing, the application and the quick-join queue entry carry a side
+  (`L.tester`, `q.tester`, from `PF.who`). `K.visibleTo` is the one door every read and match goes through (the browse list, `apply`, the
+  quick-join match, the Group Nudge's count): a listing of a tester is seen and filled by testers only, and a staff listing is not open to a
+  tester (nor a tester's to staff: the finder never shows it to them). A party of a tester and a player cannot list (`mixed`). With the
+  switch off a tester cannot list, apply or queue ("closedOff"); the tick closes the tester listings and queue entries when the switch goes
+  off. The invite of an accepted application is the engine's own party invite between the two testers.
+- Neither keeps a table: the listings and groups are in memory, so there is nothing to clean up.
+
+How the bots play them (two closed checks before `closed_dungeon`, the windows' own requests):
+- `closed_groupqueue`: two bots (the partner of the level of the lowest dungeon for two, 150) go to the temple, form a party, open the window,
+  `join` a dungeon of two (`groupqueue_pick`: the highest both may enter that no bot plays now), poll `query`, and every bot that sees the ready
+  check accepts it; then the run of the testers starts with both inside (`dungeon state`), and the check closes it (`dungeon close`) and leaves
+  the party. PASS: both were inside a run of side `tester` after a ready check. FAIL: the join refused with the mode on, a run of the
+  `player` side, one bot inside, a party started with no ready check, a bot still inside after the close. SKIP with the reason: level, no partner,
+  no free dungeon, another refusal, no run in 45 s (a player's run ahead).
+- `closed_party_finder`: the bot lists a group (the first activity that needs no title; it wants a role the partner fills), the partner refreshes
+  its list, finds the listing, applies, the leader sees the application and accepts it by its guid, the partner joins the engine's invite
+  (`io.party('join')`, the 0xA4 packet) and the helper counts a party of 2; the listing is taken down and the party left. FAIL: refused with the
+  mode on, the listing missing from the other tester's list, an application the leader never sees, a party that did not form.
+
+Proven by tests: the rules and every refusal (Lua), the two checks against lane worlds with each failure (`GroupQueueClosed`,
+`PartyFinderClosed`). That a player never sees a tester listing is proven on the core (`visibleTo`, the nudge, the quick-join match), not
+by a live run with a player on. Needs a live run: the window answers of the real server (the check reads `state.group.check`, `list.rows`,
+`mine.apps`), and the dungeon start after the ready check.
+
+##### 3. Siege and guild boss: not done (stopped, nothing half-built)
+
+Both stay `out of scope` in the scenario table. Why they were too large for this round, and the plan:
+- `siege.lua`: one global state machine (`S.state.phase`), weekly sign-ups in `chaos_siege_signups`, a bracket arena built per run, a broadcast and a
+  toast at start and end, rows in `chaos_siege_results`, a champion title and buff, the leaderboard. It reads `player:getGuild()` itself, not the
+  tester-aware `ChaosGuild.guildOf`. Plan: a tester siege as a second mode of the same machine (`state.side`): sign-ups split by the guild side
+  (`K.guildSide`), `S.start` takes one side only, a tester run never announces, writes no result row, leaderboard or champion, the player portals refuse
+  testers and the tester portals refuse players, the switch off stops it; a TEST ONLY helper start (the weekly schedule is the only normal start); the bots:
+  leader signs up, members walk to the portal (`path`), gather, walk through the gate and hold the obelisk for a score above 0 (bots do not target
+  players yet: that is part of the work).
+- `guildboss.lua`: needs a guild hall (rent), fuel in the stone and a leader's summon, and its board lists every guild. The tester guilds of O582 have no
+  hall. Plan: a free test hall for the tester guilds (guild_hall.lua), the board and the guild log hiding tester guilds, then the summon and the
+  uber-style fight on the raid recipe (`probe`, `guide`).
+Neither has code in this round, so there is nothing to clean.
+
+##### 4. The way on foot (`!tester path`, `walk_by_path`, `walk_to_place`, `TesterBot.walk_to_place`)
+
+A person walks; the helper's `!tester enter <place>` is a teleport. Helper v14 has the generic walk: `!tester path <kind> [N] | npc <name> |
+pos X Y Z` answers the engine's own pathfinding (`Creature:getPathTo`, the call a player's auto walk uses) to the tile of a map mark (the
+n-th of its kind, as `enter` takes it), an NPC or a position, as directions 0-7 (at most 80), the distance left (`dist`), `here` when the bot
+stands next to it, or an `err` (`no path`, `another floor`, `no such place`, `no such NPC`). It moves nobody (tests:
+`tester_helper_test.lua`). A rift key is no place: `path rift` is refused.
+- The scenarios of the coverage layer (`tester_scenarios.py`): a place or an NPC is now the step `walk` (`TesterBot.walk_to_place`): the bot asks
+  for a path, takes its steps (0.3 s each, the walk packets) and asks again, up to 8 rounds and 150 s; a walk that stops getting nearer is
+  `blocked`. Only when it fails (no path, another floor, blocked, far, no answer) the bot says `!tester enter <place>` and the answer carries the
+  reason. The coverage counts a walked arrival as `walk` (ANS in the proof table, no HELP) and a teleport as `help`, with the reason in the
+  system's actions (`teleport: enter bank: no path`). The rift key (`enter rift N`) stays the helper's: a key is not a place (step 5).
+- The checks: `walk_by_path` / `walk_to_place` (tester_checks.py) do the same for a check; `closed_dungeon` (step 1) and the spell quest's walk to
+  Archivist Odrenna use them, and `closed_raid`'s step next to the portal (`raid portal`) is a named fallback too. A result that used a teleport
+  carries it in `Result.fallbacks` (`enter npc Archivist Odrenna (no path)`): the result text names it, `run.json` keeps it
+  (`fallbacks`), and the report's "System checks" section counts them ("helper teleports in place of walking: N").
+- Left as helper teleports (not places a person walks to for the check): the temple (`!tester town`: every check starts from it, the bots
+  hunt far from it), the hunt spot (`!tester hunt`), the rift key, the shop step of `bag` (the bot walks to the Loot Buyer in the keep
+  behaviour of O584 by `shop`, unchanged) and `give`. A walk to the temple would take most of a run.
+Proven by tests: the helper command, the bot's walk and its fallbacks (`testers_test.py`), the scenarios and their coverage counts
+(`tester_scenarios_test.py`), the checks and their `fallbacks` (`tester_checks_test.py`). Needs a live run: how far the engine's path search
+goes (it has a node limit: a far place is walked in several asks, and a place across the world falls back to the teleport, counted), and
+whether the map marks are on tiles a person can stand next to.
+
+##### 5. The rift by walking: not done
+
+The rift checks (`rift`, `rift_layout`, `waystone_run`) still use the helper's rift key (`enter rift N`, `riftrun`, `waystone`). A walk needs a
+guide like the raid's: the rift map is a known layout (`rift_layout_model`), so the plan is `ChaosRift.probe` (position, portal, monsters left, guardian)
+and a pure `guide` in a core, a bot that opens the key at the portal next to the temple (`path portal`) and walks and fights the layout. Not started:
+the layout checks of the rift are the part that needs the helper's own run to read the numbers.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -31935,9 +32063,16 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   forgotten when it has no bag, only emptied bags, or when the bag could not live any more. A bag goes `emptySeconds` plus at most
   one second after its last item left. No items.xml change (the decay is the item's own, the step only sets the full time),
   nothing to install for it: the file loads with the other scripts. State is in memory; after a restart bags already on the
-  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer:** Raise Dead and
-  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside), so they now have those
-  5 seconds after the last item leaves a bag instead of up to 3 minutes; raise `emptySeconds` if that is too short.
+  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer (O591):** Raise Dead and
+  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside). 5 seconds was too short to
+  loot and then cast, so an empty bag whose owner (the killer, `getCorpseOwner`) is of the Necromancer line (Necromancer, Lich,
+  Bone Lord: `ChaosNecro.classOf`) or has one in the party keeps `necroEmptySeconds` (config, 20; Raise Dead has a 2 s cooldown,
+  Corpse Explosion 4 s). Piles stay small: of the empty bags of one owner only the newest `necroMaxBags` (6) keep that time, older
+  ones fall back to `emptySeconds`; a kept bag only ever shortens (never longer than the bag's own time), a bag with loot is
+  untouched, and the sweep (`ChaosCorpse.sweep`, rows carry `necro` and `owner`) keeps watching a place while a kept bag lives so
+  the cap holds. `necroEmptySeconds = 0` turns it off. Raise Dead also works with no corpse (one minion from nothing for twice the
+  mana), and `minion_model.py` reads no corpse input (it raises the minions again before every pack), so the class numbers do not
+  move: `minion_model.py --check` and `necro_test.lua` are unchanged and green. Tests: `tests/corpse_bag_test.lua` part 6.
 * **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
   Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
   fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),

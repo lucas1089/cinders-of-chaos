@@ -15,6 +15,7 @@
 --                                        {size, remaining} rows (remaining in ms), shorten(row, ms) is called for each
 --                                        empty bag that lasts longer; a place with no bag left, or only bags that are empty
 --                                        and about to go, is forgotten; so is a place older than the bag can live
+--   ChaosCorpse.necroMs(cfg)             milliseconds an emptied bag of a Necromancer line owner has left (O591), nil when off
 --   ChaosCorpse.count(w)                 places watched
 
 ChaosCorpse = ChaosCorpse or {}
@@ -48,6 +49,18 @@ function C.validate(cfg)
 		out[#out + 1] = "emptySeconds must be 0-60 (0 = an empty bag keeps the normal time)"
 	elseif type(cfg.seconds) == "number" and cfg.emptySeconds > 0 and cfg.emptySeconds >= cfg.seconds then
 		out[#out + 1] = "emptySeconds must be shorter than seconds"
+	end
+	local ne = cfg.necroEmptySeconds
+	if ne ~= nil and (type(ne) ~= "number" or ne < 0 or ne > 120) then
+		out[#out + 1] = "necroEmptySeconds must be 0-120 (0 = off)"
+	elseif ne and ne > 0 and type(cfg.seconds) == "number" and ne >= cfg.seconds then
+		out[#out + 1] = "necroEmptySeconds must be shorter than seconds"
+	elseif ne and ne > 0 and type(cfg.emptySeconds) == "number" and ne < cfg.emptySeconds then
+		out[#out + 1] = "necroEmptySeconds must not be shorter than emptySeconds"
+	end
+	local nb = cfg.necroMaxBags
+	if ne and ne > 0 and (type(nb) ~= "number" or nb < 1 or nb > 30 or nb ~= math.floor(nb)) then
+		out[#out + 1] = "necroMaxBags must be a whole number 1-30"
 	end
 	for i, id in ipairs(cfg.keepIds or {}) do
 		if not isId(id) then
@@ -134,17 +147,65 @@ function C.count(w)
 	return w.n
 end
 
+-- milliseconds an emptied bag of a Necromancer line owner has left (O591), nil when off or no shortcut at all
+function C.necroMs(cfg)
+	local base = C.emptyMs(cfg)
+	if not base or type(cfg.necroEmptySeconds) ~= "number" or cfg.necroEmptySeconds <= 0 then
+		return nil
+	end
+	return math.floor(cfg.necroEmptySeconds * 1000)
+end
+
+-- rows of one pass may carry necro (the owner is of the Necromancer line or has one in the party) and owner (an id).
+-- Of the empty necro rows of one owner the newest `necroMaxBags` (most time left) keep necroMs, the rest and every other
+-- empty row go to emptyMs. A kept row keeps its place watched while it lives longer than emptyMs, so the cap holds.
 function C.sweep(cfg, w, nowSec, probe, shorten)
 	local ms = C.emptyMs(cfg)
-	local done = {}
+	local nms = C.necroMs(cfg)
+	local cap = cfg.necroMaxBags or 0
+	local seen = {}
+	local owners = {}
 	for k, place in pairs(w.places) do
 		local rows = ms and probe(place.pos) or {}
+		seen[k] = rows
+		if nms then
+			for i, row in ipairs(rows) do
+				if (row.size or 0) == 0 and row.necro and row.owner then
+					local list = owners[row.owner] or {}
+					owners[row.owner] = list
+					list[#list + 1] = {row = row, key = k .. "#" .. i}
+				end
+			end
+		end
+	end
+	for _, list in pairs(owners) do
+		table.sort(list, function(a, b)
+			if (a.row.remaining or 0) ~= (b.row.remaining or 0) then
+				return (a.row.remaining or 0) > (b.row.remaining or 0)
+			end
+			return a.key < b.key
+		end)
+		for i = 1, math.min(cap, #list) do
+			list[i].row.keep = true
+		end
+	end
+	local done = {}
+	for k, place in pairs(w.places) do
+		local rows = seen[k]
 		local pending = false
 		for _, row in ipairs(rows) do
-			if C.shouldShorten(cfg, row.size, row.remaining) then
-				shorten(row, ms)
-			elseif (row.size or 0) > 0 then
+			local size = row.size or 0
+			if size > 0 then
 				pending = true -- loot still in it: look again
+			elseif row.keep and nms then
+				if (row.remaining or 0) > nms then
+					shorten(row, nms)
+				end
+				if (row.remaining or 0) > ms then
+					pending = true -- a necro bag that is still waiting for its spell: look again
+				end
+			elseif C.shouldShorten(cfg, size, row.remaining) then
+				shorten(row, ms)
 			end
 		end
 		local expired = (nowSec or 0) - place.at > cfg.seconds + C.GRACE_SEC

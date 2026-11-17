@@ -973,6 +973,29 @@ def test_admin_commands():
         check(r.returncode == 0 and 'no site install log yet' in r.stdout, 'site-log without a log: ' + r.stdout + r.stderr)
         r = run('publish-log', extra={'CHAOS_PUBLISH_LOG': os.path.join(tmp, 'no-publish.log')})
         check(r.returncode == 0 and 'no publish log yet' in r.stdout, 'publish-log without a log: ' + r.stdout + r.stderr)
+        # update-log (admin app Logs > Updates, O591): never an error for a log that is not there, a plain line for an empty
+        # one, the log itself, and the private repository hint for a bare GitHub 404 (the run truncates its log at every start)
+        ulog = os.path.join(tmp, 'update-test.log')
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'no update log yet' in r.stdout and 'no update was run' in r.stdout,
+              'update-log without a log: ' + r.stdout + r.stderr)
+        open(ulog, 'w').close()
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'update log is empty' in r.stdout, 'update-log empty: ' + r.stdout + r.stderr)
+        with open(ulog, 'w') as f:
+            f.write('step 1 ok\nstep 2 ok\n')
+        r = run('update-log', '1', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and r.stdout.strip() == 'step 2 ok', 'update-log 1: the last line only: ' + r.stdout)
+        with open(ulog, 'w') as f:
+            f.write('fetching\ndownload failed (exit code: 22): curl: (22) The requested URL returned error: 404\n')
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'error: 404' in r.stdout and 'github-token-set' in r.stdout,
+              'update-log with a bare 404 adds the hint: ' + r.stdout + r.stderr)
+        with open(ulog, 'w') as f:
+            f.write('private-repo: GitHub says 404 and no GitHub token is saved\n')
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'hint:' not in r.stdout, 'update-log with a reason word adds no hint: ' + r.stdout)
+        check(run('update-log', 'x', extra={'CHAOS_UPDATE_LOG': ulog}).returncode != 0, 'update-log refuses a bad N')
 
         # areas-publish: the map inbox into CHAOS_DL_DIR/areas-TOKEN (a stub area_inbox.py), a token kept in a 600 file
         atool = os.path.join(repo, 'server', 'tools')

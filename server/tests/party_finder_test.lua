@@ -828,6 +828,113 @@ op(healP, "bogus", {})
 op(healP, "apply", {id = "x", role = 5})
 eq(last("Seris", "notice").data.kind, "error", "garbage refused")
 
+
+-- ---------------------------------------------------------------- closed test mode (O589): testers list and apply among themselves
+do
+	dofile("data/scripts/chaos/testers_core.lua")
+	local TK = ChaosTestersCore
+	local mode = "off"
+	TK.reader, TK.clock = function() return mode end, function() return 9000 + (TK.t or 0) end
+	local function flip(to) mode = to; TK.t = (TK.t or 0) + 100; TK.resetClosedCache() end
+	local function mkTester(guid, name, voc, level)
+		local p = mkPlayer(guid, name, voc, level)
+		p.store = {[Chaos.storage.tester] = 1}
+		p.getStorageValue = function(self, k) return self.store[k] or -1 end
+		registry.ChaosPartyFinderLogin.onLogin(p)
+		return p
+	end
+	local function lastNotice(name) local n = last(name, "notice") return n and n.data.text or "" end
+	check(K.reasons.closedOff and K.reasons.mixed, "reasons: closedOff and mixed")
+
+	-- the core: the side of a listing and of a viewer
+	local L = {tester = true, realm = 0}
+	check(not K.visibleTo(L, {tester = false, realm = 0}), "a tester listing is not visible to a player")
+	check(not K.visibleTo(L, {tester = false, realm = 0, staff = true}), "...nor to staff")
+	check(K.visibleTo(L, {tester = true, realm = 0}), "...but to a tester")
+	check(not K.visibleTo({tester = false, realm = 0, staff = true}, {tester = true, realm = 0}), "a staff listing is not open to a tester")
+	check(K.visibleTo({realm = 0}, {realm = 0}), "a listing with no side is a player's (before O589)")
+
+	flip("off")
+	local ta = mkTester(40, "Tester Pfa", ids.juggernaut, 500)
+	op(ta, "open", {})
+	op(ta, "post", {a = "dungeon", t = 1, want = {healer = 1}, minLevel = 100, role = "tank"})
+	check(lastNotice("Tester Pfa"):find("Closed test mode is off", 1, true) ~= nil, "switch off: a tester cannot list, with the reason")
+	check(PF.state.byLeader[40] == nil, "no listing")
+	op(ta, "queue", {role = "tank"})
+	check(PF.state.queue[40] == nil, "switch off: a tester does not queue")
+
+	flip("on")
+	op(ta, "post", {a = "dungeon", t = 1, want = {healer = 1}, minLevel = 100, role = "tank"})
+	local tid = PF.state.byLeader[40]
+	check(tid ~= nil and PF.state.listings[tid].tester == true, "switch on: a tester lists, the listing carries its side")
+	-- a player sees nothing of it, and cannot apply
+	local civ = mkPlayer(41, "Ana Finder", ids.illusionist, 400)
+	registry.ChaosPartyFinderLogin.onLogin(civ)
+	op(civ, "open", {})
+	local seen = 0
+	for _, row in ipairs(last("Ana Finder", "list").data.rows) do
+		if row.id == tid then seen = seen + 1 end
+	end
+	eq(seen, 0, "a player does not see the tester's listing")
+	op(civ, "apply", {id = tid, role = "healer"})
+	check(lastNotice("Ana Finder") == K.reasons.realm, "a player cannot apply to it: " .. lastNotice("Ana Finder"))
+	check(PF.state.listings[tid].apps[41] == nil, "no application")
+	op(civ, "queue", {role = "healer"})
+	PF.tick()
+	check(PF.state.listings[tid].apps[41] == nil and PF.state.queue[41] ~= nil, "a queued player is never matched with the tester's listing")
+	op(civ, "unqueue", {})
+	-- a staff member sees it no more than a player
+	local staffP = mkPlayer(42, "Warden Two", ids.warrior, 100, 4)
+	registry.ChaosPartyFinderLogin.onLogin(staffP)
+	op(staffP, "open", {})
+	seen = 0
+	for _, row in ipairs(last("Warden Two", "list").data.rows) do
+		if row.id == tid then seen = seen + 1 end
+	end
+	eq(seen, 0, "staff does not see the tester's listing in the finder either")
+	-- a tester sees it, applies; the leader accepts and invites: testers only
+	local tb = mkTester(43, "Tester Pfb", ids.illusionist, 450)
+	op(tb, "open", {})
+	local rows = last("Tester Pfb", "list").data.rows
+	local found = false
+	for _, row in ipairs(rows) do if row.id == tid then found = true end end
+	check(found, "a tester sees the tester's listing")
+	op(tb, "apply", {id = tid, role = "healer"})
+	check(PF.state.listings[tid].apps[43] ~= nil, "a tester applies")
+	op(ta, "accept", {id = tid, g = 43})
+	check(ta.party ~= nil and ta.party.invites[1] == tb, "the leader's invite is a real party invite, between testers")
+	-- quick join: a queued tester meets the tester's listing, a queued player does not
+	local tc = mkTester(44, "Tester Pfc", ids.deadeye, 420)
+	op(tc, "queue", {role = "dps"})
+	check(PF.state.queue[44] ~= nil and PF.state.queue[44].tester == true, "a tester's queue entry carries its side")
+	PF.state.listings[tid].want.dps = 1
+	PF.tick()
+	check(PF.state.listings[tid].apps[44] ~= nil, "the queued tester is matched with the tester's listing")
+	-- the nudge a lone player gets counts no tester listing
+	do
+		local N = ChaosGroupNudgeCore
+		if N then
+			local n = N.looking(PF.state, cfg, PF.acts(), PF.who(civ), "dungeon", nil)
+			eq(n, 0, "the nudge of a player counts no tester listing")
+		end
+	end
+	-- a party of a tester and a player cannot list
+	local mixLead = mkTester(45, "Tester Pfd", ids.juggernaut, 500)
+	local mixMate = mkPlayer(46, "Rex Finder", ids.illusionist, 400)
+	local mixParty = Party(mixLead)
+	mixParty:join(mixMate)
+	local okMixed, why = K.post(PF.state, cfg, PF.acts(), PF.who(mixLead), {a = "dungeon", t = 1, want = {healer = 1}, minLevel = 100, role = "tank"}, 1)
+	check(okMixed == nil and why == "mixed", "a party of a tester and a player cannot list (" .. tostring(why) .. ")")
+	mixLead.party, mixMate.party = nil, nil
+	-- the switch goes off: tester listings and queue entries end
+	flip("off")
+	PF.tick()
+	check(PF.state.byLeader[40] == nil and PF.state.listings[tid] == nil, "the switch went off: the tester listing is closed")
+	check(PF.state.queue[44] == nil, "and the tester's queue entry is gone")
+	TK.reader, TK.clock = nil, nil
+	TK.resetClosedCache()
+end
+
 if failures > 0 then
 	print(string.format("party_finder_test: %d of %d checks failed", failures, count))
 	os.exit(1)

@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Families of code-drawn wings (O583): one generator per shape class, each read from a row of drawn_wings/designs.csv.
 
-A row names a family and a variant, three colours (main, accent, glow), a spark kind, a count and a size. The kit, the
-projection and the frame rules are gen_drawn_wings.py's; this file only places pieces. Every motion reads the frame
-phase, so every design loops in 16 frames. No art file is read.
+A row names a family and a variant, three colours (main, accent, glow), a spark kind and a count. The kit and the
+frame rules are gen_drawn_wings.py's; this file only places pieces. Every motion reads the frame phase, so every
+design loops in 16 frames. No art file is read.
 
-Likeness to the old art (O587). A row also holds numbers measured once on the old wing of the pair (`measure DAT SPR
---write`, by hand, never at build): `env`, the outline as 13 radii from the point where the two wings meet (south view,
-the larger wing, ENV_ANGLES); `core`, where the wing begins at each angle (a crescent has a hollow); `tips`, the tips
-counted on the outline; `beat`, the share of the silhouette that moved over the loop; `fit`, a scale that keeps every
-frame inside the cell. The generator turns the outline into the plane of the wing (Env) and draws every family inside
-it (Fit bends a family's own drawing to it; the feathers and the special forms read it themselves). The repository
-holds these numbers only, no picture data. `score DAT SPR [OUT]` prints how far each row is from the old art.
-Feathers are plumes: rows of long feathers (flight row, coverts) that fan from the shoulder, rounded tips on the
-outline, a shaft line, a two-tone vane. No spikes.
+Likeness to the old art (O587, second pass O590). A row also holds numbers measured once on the old wing of the pair
+(`measure DAT SPR --write`, by hand, never at build): `sl`, `sr`, `nl`, `nr`, the strip of the left and the right
+wing in the south and the north view (gen_drawn_wings_strip.py: the root, five places along the spine each with the
+reach to both sides, the tip; 24 whole numbers, empty when the old art has no wing on that side); `zones`, six
+colours of the larger wing (inner, middle and outer third, upper and lower half); `beat`, the share of the silhouette
+that moved over the loop; `mould` (free: as the style draws; clip: cut to the strip; fill: cut, and what the style
+leaves open is closed in the dark shade of the zone). A style (STYLES, one a family) fills a strip with the material
+of its family at strip places (s along, t across), so one style draws a long flat wing and a short upright one. East
+and west are the face-on pictures with x and y changed over, as in the old art (render_frame). The repository holds
+these numbers only, no picture data. `score DAT SPR [OUT]` prints how far each row is from the old art.
 
 Families: feather, bone, bat, insect, crystal, fan, leaf, energy, orbit (variants: VARIANTS below).
 """
@@ -25,6 +26,7 @@ import os
 import numpy as np
 
 import gen_drawn_wings as k
+import gen_drawn_wings_strip as st
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = os.path.join(HERE, 'drawn_wings', 'designs.csv')
@@ -45,6 +47,7 @@ VARIANTS = {
     'orbit': ('firefly', 'circle'),
 }
 SPARKS = ('none', 'rise', 'fall', 'twinkle')
+AMP_PER_BEAT = 0.45          # radians of beat per share of the old wing that moved
 
 
 # ------------------------------------------------------------------------------------------------ colour
@@ -99,21 +102,24 @@ class Spec:
         self.glow = rgb(row['glow'])
         self.spark = row['spark']
         self.n = int(row['n'])
-        self.size = float(row['size'])
         self.old = row.get('old', '')
-        self.env = tuple(float(v) for v in row.get('env', '').split()) or None    # the outline of the old wing (ENV_ANGLES)
-        self.core = tuple(float(v) for v in row.get('core', '').split()) or None  # where the old wing begins, by angle (a crescent)
+        self.mould = row.get('mould') or 'free'            # free: as the style draws; clip, fill: held to the old outline
         self.beat = float(row['beat']) if row.get('beat') else None   # the share of the old wing that moved over its loop
-        self.swing = 0.6 if self.beat is None else k.clamp(self.beat / BEAT_REF[self.family], 0.35, 1.5)   # how far this row swings
-        self.tips = int(row.get('tips') or 0)              # feather tips counted on the old outline, 0: by size
-        self.fit = float(row.get('fit') or 1.0)            # the outline's scale that keeps every frame inside the cell
-        if self.env is not None and len(self.env) != len(ENV_ANGLES):
-            raise ValueError('%s: env needs %d radii' % (self.key, len(ENV_ANGLES)))
+        self.amp = 0.07 if self.beat is None else k.clamp(self.beat * AMP_PER_BEAT, 0.03, 0.3)   # the beat, radians
+        # the strips of the old wing: {view: (left, right)}, a missing wing is None (gen_drawn_wings_strip.py)
+        self.strips = {'south': (st.parse(row.get('sl', '')), st.parse(row.get('sr', ''))),
+                       'north': (st.parse(row.get('nl', '')), st.parse(row.get('nr', '')))}
+        zones = [rgb(v) for v in row.get('zones', '').split()]
+        if len(zones) != 6:
+            raise ValueError('%s: zones needs 6 colours' % self.key)
+        self.zones = zones                                 # the colour of the inner, middle and outer third, upper and lower half
+        self.Z = [ramp5(c) for c in zones]
         self.R = ramp5(self.main)
         self.A = ramp5(self.accent)
         self.outline = outline_of(self.main)
         self.jit = (self.wings * 0.6180339887) % 1.0       # a fixed offset a row, so two rows never move in step
         self.PAL = self.R + self.A + (self.glow,)          # one table for two-colour pieces: 0-4 main, 5-9 accent, 10 glow
+        self.ZT = sum(self.Z, ()) + self.R + self.A + (self.glow,)   # zone i shade j: 5 i + j; 30-34 main, 35-39 accent, 40 glow
         if self.family not in VARIANTS or self.var not in VARIANTS[self.family]:
             raise ValueError('%s: no variant %s/%s' % (self.key, self.family, self.var))
         if self.spark not in SPARKS:
@@ -125,271 +131,203 @@ def load(path=CSV):
         return [Spec(row) for row in csv.DictReader(f)]
 
 
-# ------------------------------------------------------------------------------------------------ helpers
-ROOT = (3.0, 9.0, -3.5)
-
-
-SIDE_DEPTH = None           # east and west keep the kit's camera (a higher one lays the far wing on its edge)
-BEAT_REF = {'feather': 0.21, 'insect': 0.6, 'bat': 0.38, 'crystal': 0.26, 'fan': 0.26, 'leaf': 0.34, 'energy': 0.3,
-            'bone': 0.3, 'orbit': 0.3}    # the share of a family's wing that moves over a loop at full swing
-ENV_ANGLES = tuple(range(-90, 91, 15))     # screen angles of a row's `env`: 0 outward, -90 up, 90 down (south view)
 PIVOT = 9.0
 
 
-class Env:
-    """the outline of a wing (O587): the radii of designs.csv `env`, measured once on the old art (south view, the
-    larger wing, from the point where the two wings meet), turned into the local plane of a wing with a given sweep
-    and mean lift, so that the near wing of the south view shows that outline. Numbers only: no picture is read."""
-
-    def __init__(self, radii, sweep, elev, size=1.0, turn=0.0, scale=1.0, core=None):
-        mean = k.Wing(1, ROOT, rad(sweep), lambda t: rad(elev), 1.0)
-        o = k.project(mean.at(0, 0), 'south', PIVOT)
-        ea = k.project(mean.at(1, 0), 'south', PIVOT)
-        eb = k.project(mean.at(0, 1), 'south', PIVOT)
-        ax, ay, bx, by = ea[0] - o[0], ea[1] - o[1], eb[0] - o[0], eb[1] - o[1]
-        det = ax * by - ay * bx
-        phis, rhos, cores = [], [], []
-        for i, (ang, r) in enumerate(zip(ENV_ANGLES, radii)):
-            dx, dy = cos(rad(ang)) * size * scale, sin(rad(ang)) * size * scale
-            a, b = (dx * by - dy * bx) / det, (-dx * ay + dy * ax) / det
-            phis.append(math.atan2(b, a) + turn)
-            rhos.append(r * math.hypot(a, b))
-            cores.append((core[i] if core else 0.0) * math.hypot(a, b))
-        self.phis = np.asarray(phis)
-        self.rhos = np.asarray(rhos)
-        self.cores = np.asarray(cores)
-        self.rmax = float(self.rhos.max())
-        big = np.nonzero(self.rhos >= 0.3 * self.rmax)[0]
-        self.lo, self.hi = float(self.phis[big[0]]), float(self.phis[big[-1]])
-        self.peak = float(self.phis[int(self.rhos.argmax())])
-        # a crescent: the wing begins far from the shoulder over a wide span of angles (a narrow blade that does
-        # not point at the shoulder is no crescent)
-        deep = int(((self.cores >= 0.45 * np.maximum(self.rhos, 1e-6)) & (self.rhos >= 0.3 * self.rmax)).sum())
-        self.hollow = deep >= 4 and self.hi - self.lo >= rad(75)
-
-    def R(self, phi, floor=0.0):
-        return max(float(np.interp(phi, self.phis, self.rhos, left=0.0, right=0.0)), floor * self.rmax)
-
-    def Rin(self, phi):
-        """where the wing begins at an angle: 0 for a wing that is full from the shoulder"""
-        return float(np.interp(phi, self.phis, self.cores, left=0.0, right=0.0)) if self.hollow else 0.0
-
-    def pt(self, phi, share=1.0, floor=0.0):
-        r = self.R(phi, floor) * share
-        return (r * cos(phi), r * sin(phi))
-
-    def arc(self, n=24):
-        """the length of the outline between lo and hi"""
-        pts = [self.pt(self.lo + (self.hi - self.lo) * i / float(n)) for i in range(n + 1)]
-        return sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]) for i in range(n))
+# ------------------------------------------------------------------------------------------------ the strip engine
+# O590. A wing is a strip (gen_drawn_wings_strip.py): the spine and the reach of the old wing, measured for the south
+# and the north view, the left and the right wing. A style fills the strip with the material of its family: it puts
+# pieces at strip places (s along, t across), so the same style draws a long flat wing and a short upright one.
+# The colours of a wing come from six measured zones (three along, two across): `zones` of the table.
+ROOT = (0.0, 9.0, -3.5)      # the model point where the wings meet (the side views turn about its picture)
+INNER = np.zeros((S, S), bool)
+INNER[2:S - 2, 2:S - 2] = True
 
 
-DEFAULT_ENV = (0, 14, 22, 27, 29, 28, 25, 20, 15, 11, 8, 4, 0)
-_ENVS = {}
+def _hash(i, j=0):
+    """a fixed number in 0..1 for a pair of whole numbers"""
+    v = (i * 374761393 + j * 668265263 + 1013904223) & 0xFFFFFFFF
+    v = ((v ^ (v >> 13)) * 1274126177) & 0xFFFFFFFF
+    return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
 
 
-def env_of(sp, sweep, elev, turn=0.0, scale=1.0):
-    key = (sp.key, sweep, elev, turn, scale)
-    if key not in _ENVS:
-        _ENVS[key] = Env(sp.env or DEFAULT_ENV, sweep, elev, sp.size, turn, scale * sp.fit, sp.core if sp.env else None)
-    return _ENVS[key]
+NOISE = ((k.XX * 7 + k.YY * 13 + (k.XX * k.YY) % 3) % 5 - 2) * 0.03      # a fixed grain, so zone borders are ragged
 
 
-class Fit:
-    """a wing whose local plane is bent so that what a family draws fills the row's outline: the angle a family uses
-    (its own range, probed once on its mean pose) goes on the angles of the outline, the reach at an angle on the
-    outline's radius there. Without an outline it is the plain wing."""
+class Clip(k.Canvas):
+    """a layer that keeps its art off the cell border"""
 
-    def __init__(self, base, env=None, probe=None, rec=None):
-        self.base, self.env, self.probe, self.rec = base, env, probe, rec
-        self.sgn, self.root, self.sweep, self.length = base.sgn, base.root, base.sweep, base.length
-        self.k = 1.0
-        if env is not None and probe is not None:
-            self.k = k.clamp(env.rmax / probe[3], 0.45, 1.35)
+    def piece(self, mask, idx, ramp, line=None, ring=True):
+        k.Canvas.piece(self, mask & INNER, idx, ramp, line=line, ring=ring)
 
-    def warp(self, a, b):
-        if self.rec is not None:
-            self.rec.append((math.atan2(b, a), math.hypot(a, b)))
-            return a, b
-        if self.env is None or self.probe is None:
-            return a, b
-        bins, g0, g1, gmax = self.probe
-        env = self.env
-        phi, rho = math.atan2(b, a), math.hypot(a, b)
-        if g1 - g0 > rad(25):
-            phi2 = env.lo + (phi - g0) / (g1 - g0) * (env.hi - env.lo)
+
+def lum(c):
+    return c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11
+
+
+_PLACED = {}
+
+
+def placed(sp, d):
+    """(origin, scale) of a row's pair in one face-on view"""
+    key = (sp.key, d)
+    if key not in _PLACED:
+        _PLACED[key] = st.place(sp.strips[d], amp=sp.amp)
+    return _PLACED[key]
+
+
+class G:
+    """what a style draws with: one wing (w, bent by the beat; rest, the same wing at rest), its layer, the row"""
+
+    def __init__(self, canvas, w, rest, sp, sc, sgn):
+        self.c, self.w, self.rest, self.sp, self.sgn = canvas, w, rest, sp, sgn
+        self.ph, self.f, self.d = sc.ph, sc.f, sc.d
+        self.full = w
+
+    # -- colours
+    def zi(self, s, t):
+        return min(2, int(k.clamp(s, 0.0, 0.999) * 3)) * 2 + (0 if t < 0 else 1)
+
+    def ramp(self, s, t):
+        """the ramp of the measured zone at a place of the whole wing"""
+        return self.sp.Z[self.zi(s, t)]
+
+    def pal2(self, a, b):
+        """a table for a piece of two colours: 0-4 the zone at a, 5-9 the zone at b, 10 the glow"""
+        return self.ramp(*a) + self.ramp(*b) + (self.sp.glow,)
+
+    # -- pieces
+    def piece(self, mask, idx, ramp, line=None, ring=True):
+        if not isinstance(idx, np.ndarray):
+            idx = np.full((S, S), idx, np.int8)
+        self.c.piece(mask, idx.astype(np.int8), ramp, line=line, ring=ring)
+
+    def zonefill(self, mask=None, shade=None, w=None):
+        """the wing's body in its zone colours, lit along the upper edge; returns the field (ss, tt) of the whole wing"""
+        ss, tt = self.full.field()
+        mask = (w or self.full).body() if mask is None else mask
+        zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + ((tt + 2 * NOISE) >= 0)
+        sh = (2 + (tt < -0.4).astype(np.int8) - (tt > 0.5).astype(np.int8)) if shade is None else shade(ss, tt)
+        self.piece(mask, zi * 5 + np.clip(sh, 0, 4), self.sp.ZT)
+        return ss, tt
+
+    def rimf(self, q0, q1):
+        return lambda u: self.w.rim(q0 + (q1 - q0) * u)
+
+    def linef(self, s0, s1, t0, t1=None):
+        t1 = t0 if t1 is None else t1
+        return lambda u: self.w.pt(s0 + (s1 - s0) * u, t0 + (t1 - t0) * u)
+
+    def fan(self, n, bases, tips, knots, shader, pal, hwk=0.75, hw=None, bend=0.0, order=-1, minw=1.2, maxw=5.0,
+            line=None, sway=0.0, lag=0.6, reach=None):
+        """n long pieces from bases(u) to tips(u), u from 0 to 1; the width follows the gap between neighbours;
+        `sway` turns each piece a little with the frame, one after the other; returns [(base, tip)]"""
+        got = []
+        for i in range(n):
+            u = i / float(max(1, n - 1))
+            b, t = bases(u), tips(u)
+            dx, dy = t[0] - b[0], t[1] - b[1]
+            if reach is not None:
+                r = reach(i)
+                dx, dy = dx * r, dy * r
+            if sway:
+                a = sway * sin(self.ph - lag * i + TAU * self.sp.jit)
+                dx, dy = dx * cos(a) - dy * sin(a), dx * sin(a) + dy * cos(a)
+            got.append((b, (b[0] + dx, b[1] + dy)))
+        if hw is None:
+            mids = [(b[0] + (t[0] - b[0]) * 0.7, b[1] + (t[1] - b[1]) * 0.7) for b, t in got]
+            gaps = [math.hypot(mids[i + 1][0] - mids[i][0], mids[i + 1][1] - mids[i][1]) for i in range(n - 1)] or [3.0]
+            hw = k.clamp(hwk * sum(gaps) / len(gaps), minw, maxw)
+        for i in (range(n - 1, -1, -1) if order < 0 else range(n)):
+            b, t = got[i]
+            if math.hypot(t[0] - b[0], t[1] - b[1]) < 2.5:
+                continue
+            mask, tt, ss, lit = k.leaf(b, t, hw, knots, bend * self.sgn)
+            ramp = pal(i, i / float(max(1, n - 1))) if callable(pal) else pal
+            self.c.piece(mask, shader(tt, ss, lit, hw).astype(np.int8), ramp, line=line)
+        return got
+
+    def stem(self, places, hw0, hw1, ramp, knob0=0.0, knob1=0.0, shade=(3, 2, 1), w=None):
+        m = (w or self.w).line(places, hw0, hw1, knob0, knob1)
+        self.piece(m, k.edge_shade(m, *shade), ramp)
+
+    def seg(self, a, b, hw0, hw1, ramp, shade=(3, 2, 1), knob1=0.0):
+        """a thick line between two canvas points"""
+        m = k.capsule_mask(a, b, hw0, hw1)
+        if knob1:
+            m |= k.disc_mask(b[0], b[1], knob1)
+        self.piece(m, k.edge_shade(m, *shade), ramp)
+
+    def ball(self, x, y, r, ramp, line=None):
+        self.piece(k.disc_mask(x, y, r), k.sphere_shade(x, y, r + 0.5), ramp, line=line)
+
+    def motes(self, pts, count=2, reach=12.0):
+        """sparks from canvas points: they rise, fall or twinkle (the row's `spark`)"""
+        sp = self.sp
+        if sp.spark == 'none' or not pts:
+            return
+        for i in range(count):
+            x, y = pts[(i * 2 + (1 if self.sgn > 0 else 0)) % len(pts)]
+            q = (self.f / float(k.FRAMES) + i / float(count) + sp.jit + (0.29 if self.sgn > 0 else 0.0)) % 1.0
+            if sp.spark == 'twinkle':
+                gl = cos(TAU * q)
+                if gl > 0.55:
+                    self.c.spark(x, y, sp.glow, 2 if gl > 0.93 else 1)
+                continue
+            x += 2.0 * sin(TAU * (q * 1.2 + i * 0.37))
+            y += -reach * q if sp.spark == 'rise' else 3 + reach * q
+            if q < 0.4:
+                self.c.spark(x, y, sp.glow, 1)
+            elif q < 0.8:
+                self.c.spark(x, y, sp.glow, 0)
+
+    def glint(self):
+        """a light that walks out along the wing once a loop, so every frame is a new picture"""
+        q = (self.f / float(k.FRAMES) + self.sp.jit + (0.5 if self.sgn > 0 else 0.0)) % 1.0
+        x, y = self.rest.pt(0.12 + 0.8 * q, -0.25)
+        xi, yi = int(math.floor(x)), int(math.floor(y))
+        if 2 <= xi < S - 2 and 2 <= yi < S - 2 and self.c.op[yi, xi]:
+            self.c.spark(x, y, self.sp.glow, 1)
         else:
-            phi2 = phi - (g0 + g1) / 2.0 + (env.lo + env.hi) / 2.0
-        phi2 = k.clamp(phi2, env.lo - rad(30), env.hi + rad(30))
-        ref = bins[int((math.degrees(phi) + 180.0) // 10) % 36]
-        rho2 = rho / ref * env.R(k.clamp(phi2, env.lo, env.hi), 0.3)
-        return rho2 * cos(phi2), rho2 * sin(phi2)
+            x, y = self.rest.pt(0.2 + 0.7 * q, -1.0)
+            self.c.spark(x, y - 2, self.sp.glow, 0)
 
-    def at(self, a, b):
-        a, b = self.warp(a, b)
-        return self.base.at(a, b)
-
-    def wdir(self, a, ang):
-        return self.base.wdir(a, ang)
-
-    def still(self, elev):
-        """the same wing at rest (the mean pose): sparks start from it"""
-        return Fit(k.Wing(self.sgn, self.root, self.sweep, lambda t: elev, self.length), self.env, self.probe, self.rec)
-
-
-_PROBES = {}
-_PROBING = []
+    def stalk(self, hw=1.3, ramp=None, knob=0.0):
+        """a wing that begins as a thin stalk: draw the stalk and go on with the head only; returns the share of
+        the length that is stalk"""
+        s0 = self.full.stalk()
+        if s0 < 0.14:
+            return 0.0
+        s0 = min(s0, 0.7)
+        self.stem([(s0 * i / 4.0, 0.0) for i in range(5)] + [(s0 + 0.05, 0.0)], hw, hw * 0.8, ramp or self.ramp(s0 * 0.4, 0.0),
+                  knob0=knob, w=self.full)
+        self.w = st.Sub(self.full, s0 * 0.92)
+        self.rest = st.Sub(self.rest, s0 * 0.92)
+        return s0
 
 
-def _probe(sp):
-    """the reach of a family's own drawing by angle, on its mean pose: (36 bins of 10 degrees, first and last angle
-    of its long pieces, longest reach)"""
-    if sp.key in _PROBES:
-        return _PROBES[sp.key]
-    rec = []
-    _PROBING.append(rec)
-    try:
-        fn, pivot = FAMILIES[sp.family]
-        fn(k.Scene(sp.outline, 'south', 0, pivot), sp)
-    finally:
-        _PROBING.pop()
-    if not rec:
-        _PROBES[sp.key] = None
-        return None
-    gmax = max(r for _, r in rec)
-    raw = [0.0] * 36
-    for phi, r in rec:
-        i = int((math.degrees(phi) + 180.0) // 10) % 36
-        raw[i] = max(raw[i], r)
-    far = [phi for phi, r in rec if r >= 0.5 * gmax]
-    g0, g1 = min(far), max(far)
-    bins = []
-    for i in range(36):
-        v = max(raw[(i + j) % 36] for j in (-2, -1, 0, 1, 2))
-        bins.append(max(v, 0.55 * gmax))
-    _PROBES[sp.key] = (bins, g0, g1, gmax)
-    return _PROBES[sp.key]
-
-
-def sides(sc, sweep, elev_at, length, root=ROOT, sp=None, mean=24):
-    """the two wings, the far one first: (side, wing, canvas, dim). With a row that has an outline the wing is bent
-    to it (Fit); `mean` is the family's mean lift in degrees"""
-    env = probe = None
-    rec = _PROBING[-1] if _PROBING else None
-    if sp is not None and sp.env is not None and rec is None:
-        probe = _probe(sp)
-        env = env_of(sp, sweep, mean) if probe else None
-    if sp is not None:                                    # the row's swing about the family's mean lift
-        full = elev_at
-        elev_at = lambda t: rad(mean) + (full(t) - rad(mean)) * sp.swing  # noqa: E731
-    for sgn in k.sides_far_first(sc.d):
-        base = k.Wing(sgn, (sgn * root[0], root[1], root[2]), rad(sweep), elev_at, length)
-        wing = Fit(base, env, probe, rec if sgn > 0 else ([] if rec is not None else None))
-        yield sgn, wing, sc.layer(sc.P(base.at(length * 0.4, 0))[2]), k.side_dim(sc.d, sgn)
-
-
-def raw_sides(sc, sweep, elev_at, length, root=ROOT):
-    """the two plain wings, the far one first (families that read the outline themselves)"""
-    for sgn in k.sides_far_first(sc.d):
-        wing = k.Wing(sgn, (sgn * root[0], root[1], root[2]), rad(sweep), elev_at, length)
-        yield sgn, wing, sc.layer(sc.P(wing.at(length * 0.4, 0))[2]), k.side_dim(sc.d, sgn)
-
-
-def local_field(sc, wing, ca, cb):
-    """per pixel the local place (a, b) of the wing's plane, measured from the local point (ca, cb)"""
-    o = sc.P(wing.at(ca, cb))
-    ea = sc.P(wing.at(ca + 1.0, cb))
-    eb = sc.P(wing.at(ca, cb + 1.0))
-    ax, ay, bx, by = ea[0] - o[0], ea[1] - o[1], eb[0] - o[0], eb[1] - o[1]
-    det = ax * by - ay * bx
-    if abs(det) < 0.05:
-        det = 0.05 if det >= 0 else -0.05
-    dx, dy = k.PX - o[0], k.PY - o[1]
-    return (dx * by - dy * bx) / det, (-dx * ay + dy * ax) / det
-
-
-def lfeather(sc, canvas, wing, a, b, ang, ln, hw, knots, shader, ramp, bend=0.0, dim=0, minw=1.2, line=None):
-    base = wing.at(a, b)
-    tip = wing.at(a + ln * cos(ang), b + ln * sin(ang))
-    return sc.leaf3(canvas, base, tip, wing.wdir(a, ang), hw * getattr(wing, 'k', 1.0), knots, shader, ramp, bend=bend * wing.sgn,
-                    dim=dim, minw=minw, line=line)
-
-
-def lpts(sc, wing, pts):
-    return [sc.P(wing.at(a, b))[:2] for a, b in pts]
-
-
-def lline(sc, wing, pts, hw0, hw1, knob0=0.0, knob1=0.0):
-    """mask of a thick line through local points"""
-    m = np.zeros((S, S), bool)
-    sp = lpts(sc, wing, pts)
-    n = len(sp) - 1
-    z = max(0.7, min(1.2, getattr(wing, 'k', 1.0)))
-    hw0, hw1 = hw0 * z, hw1 * z
-    for i in range(n):
-        m |= k.capsule_mask(sp[i], sp[i + 1], hw0 + (hw1 - hw0) * i / n, hw0 + (hw1 - hw0) * (i + 1) / n)
-    if knob0:
-        m |= k.disc_mask(sp[0][0], sp[0][1], knob0)
-    if knob1:
-        m |= k.disc_mask(sp[-1][0], sp[-1][1], knob1)
-    return m
-
-
-def lbone(sc, canvas, wing, pts, hw0, hw1, ramp, dim=0, knob0=0.0, knob1=0.0, shade=(4, 3, 1)):
-    m = lline(sc, wing, pts, hw0, hw1, knob0, knob1)
-    canvas.piece(m, k.edge_shade(m, *shade) - dim, ramp)
-
-
-def motes(sc, canvas, wing, pts, sp, sgn, count=2, reach=14.0):
-    """sparks from local points of the mean pose: they rise, fall or twinkle"""
-    if sp.spark == 'none' or not pts:
-        return
-    for i in range(count):
-        a, b = pts[(i * 2 + (1 if sgn > 0 else 0)) % len(pts)]
-        x, y, _ = sc.P(wing.at(a, b))
-        q = (sc.f / k.FRAMES + i / float(count) + sp.jit + (0.29 if sgn > 0 else 0.0)) % 1.0
-        if sp.spark == 'twinkle':
-            g = cos(TAU * q)
-            if g > 0.55:
-                canvas.spark(x, y, sp.glow, 2 if g > 0.93 else 1)
-            continue
-        x += 2.0 * sin(TAU * (q * 1.2 + i * 0.37))
-        y += -reach * q if sp.spark == 'rise' else 3 + reach * q
-        if q < 0.4:
-            canvas.spark(x, y, sp.glow, 1)
-        elif q < 0.8:
-            canvas.spark(x, y, sp.glow, 0)
-
-
-def arch(length, lift=3.6):
-    def edge(s):
-        return length * s, -lift * sin(math.pi * min(s, 1.0)) ** 0.8
-    return edge
-
-
-# ------------------------------------------------------------------------------------------------ feather
-# A feathered wing is built as a bird's is (O587): an arm from the shoulder to a wrist, the flight feathers in one
-# row (the primaries fan from the wrist, the secondaries stand along the arm), and rows of coverts over their roots,
-# each row shorter and laid over the one below. The tips of the flight feathers lie on the row's outline (Env), so
-# the wing has the shape of the old art. A feather has a round, soft tip, a shaft line and a vane of two tones.
+# ------------------------------------------------------------------------------------------------ shaders, outlines
 ROUND = ((0.0, 0.42), (0.12, 0.8), (0.35, 1.0), (0.7, 1.0), (0.87, 0.84), (0.95, 0.6), (1.0, 0.3))
 SOFT = ((0.0, 0.38), (0.12, 0.78), (0.36, 1.0), (0.68, 0.96), (0.86, 0.74), (0.95, 0.48), (1.0, 0.2))
 PLUME = ((0.0, 0.34), (0.1, 0.74), (0.3, 1.0), (0.58, 0.94), (0.8, 0.68), (0.93, 0.4), (1.0, 0.14))
-FEATHER_VARS = {
-    #          rows (share of the full length)   tip    width  lift flap  bars   lead plumes
-    'pinion': ((1.0, 0.62, 0.36), SOFT, 1.0, 8, 12, False, 0),
-    'angel': ((1.0, 0.78, 0.56, 0.34), ROUND, 1.05, 10, 12, False, 0),
-    'owl': ((1.0, 0.66, 0.38), ROUND, 1.2, 6, 9, True, 0),
-    'swift': ((1.0, 0.5), SOFT, 0.82, 8, 13, False, 0),
-    'plume': ((1.0, 0.8, 0.58, 0.36), PLUME, 1.12, 8, 9, False, 3),
-    'peacock': ((1.0, 0.7, 0.42), PLUME, 1.1, 8, 9, False, 2),
-    'seraph': ((1.0, 0.66, 0.38), SOFT, 0.95, 10, 12, False, 0),
-    'scaled': ((1.0, 0.8, 0.62, 0.45, 0.28), ROUND, 1.25, 8, 9, False, 0),
-}
+THORN = ((0.0, 1.0), (1.0, 0.0))
+PANE = ((0.0, 0.5), (0.1, 1.0), (0.84, 1.0), (1.0, 0.3))
+DROP = ((0.0, 0.2), (0.3, 0.5), (0.62, 1.0), (0.86, 0.9), (1.0, 0.0))
+SLAT = ((0.0, 0.6), (0.06, 0.85), (0.9, 1.0), (0.97, 0.8), (1.0, 0.45))
+KITE = ((0.0, 0.0), (0.38, 1.0), (1.0, 0.0))
+RIBBON = ((0.0, 0.5), (0.2, 1.0), (0.8, 0.8), (1.0, 0.0))
+LEAF = ((0.0, 0.12), (0.22, 0.8), (0.5, 1.0), (0.8, 0.66), (1.0, 0.0))
+PETAL = ((0.0, 0.2), (0.3, 0.86), (0.64, 1.0), (0.9, 0.72), (1.0, 0.12))
+TONGUE = ((0.0, 0.7), (0.16, 1.0), (0.45, 0.8), (0.75, 0.42), (1.0, 0.0))
+RAY = ((0.0, 0.25), (0.45, 1.0), (1.0, 0.0))
+BAR = ((0.0, 0.9), (0.05, 1.0), (0.95, 1.0), (1.0, 0.9))
+POINT = ((0.0, 0.3), (0.12, 0.8), (0.4, 1.0), (0.7, 0.8), (0.9, 0.42), (1.0, 0.0))
+BLADE = ((0.0, 0.34), (0.12, 0.8), (0.4, 1.0), (0.72, 0.9), (0.9, 0.62), (1.0, 0.22))
 
 
-def feather_shader(row, rows, tip_from, bars, shaft_idx):
-    """ramp index in the row's table: 0-4 the body colour, 5-9 the tip colour, 10 the glow. The vane is one shade
+
+def feather_shader(row, tip_from, bars=False, shaft_idx=7):
+    """ramp index in a two-colour table: 0-4 the body colour, 5-9 the tip colour, 10 the glow. The vane is one shade
     lighter on the lit side, the shaft is a line, the root lies in the shadow of the row above"""
     def shader(tt, ss, lit, hw):
         base = (2, 3, 2, 3, 2)[row]                       # the rows differ by a shade, so the layers read
@@ -400,512 +338,26 @@ def feather_shader(row, rows, tip_from, bars, shaft_idx):
         idx = np.clip(idx, 0, 4)
         shaft = (np.abs(ss) * hw < 0.6) & (tt > 0.08) & (tt < 0.9) & (hw > 1.9)
         idx[shaft] = shaft_idx
-        tip = tt > tip_from
-        idx = np.where(tip, idx + 5, idx).astype(np.int8)
-        return idx
+        return np.where(tt > tip_from, idx + 5, idx).astype(np.int8)
     return shader
 
 
-def feather_wing(sc, canvas, wing, sp, env, var, dim, wph, eyes=False):
-    """one wing: rows of long feathers that fan from the shoulder, their tips on the outline. The flight row is the
-    longest and lies lowest; each row of coverts is shorter, a shade apart, and lies over the roots of the row
-    below. The feathers that reach furthest root a little way out, on the arm. A crescent (the outline has a hollow,
-    `core`) is a band of short feathers that root on its inner rim. Returns the local tips of the flight row"""
-    rows, knots, wide, _, _, bars, lead = FEATHER_VARS[var]
-    lo, hi = env.lo, env.hi
-    if hi - lo < rad(40):                                 # a narrow wing still fans a little
-        c = (lo + hi) / 2.0
-        lo, hi = c - rad(20), c + rad(20)
-    arc = max(env.arc(), 12.0)
-    small = env.rmax < 24.0
-    if small:                                             # a small wing: fewer, plainer feathers
-        rows = rows[:1] + (0.56,)
-    count = sp.tips if 7 <= sp.tips <= 15 else int(round(arc / (6.2 if small else 4.6)))
-    count = max(5, min(15, count + sp.n))
-    hw = k.clamp(arc / count * 0.78 * wide, 2.0, 3.9)
-    hollow = env.Rin(env.peak) > 0
-    if hollow:                                            # a crescent: a band of short feathers
-        rows = rows[:1] + (0.55,)
-        hw = min(hw, max(1.7, 0.4 * (env.rmax - env.Rin(env.peak))))
-    spread = 1.0 + 0.05 * sin(wph - 0.6)
-    mid = (lo + hi) / 2.0
-    peak = k.clamp(env.peak, lo, hi)
-    up = (peak - lo) / (hi - lo)
-    end = env.pt(peak, 0.34, 0.3)
-    v = sp.main[0] * 0.3 + sp.main[1] * 0.59 + sp.main[2] * 0.11
-    shaft_idx = 7 if sp.accent != sp.main else (1 if v > 150 else 4)     # the shaft: a line in the second colour
-    two = sp.accent != sp.main
-    plain = var not in ('angel', 'scaled', 'seraph')
-    arm = (sp.R[0], sp.R[0], sp.R[1], sp.R[2], sp.R[3]) if plain else sp.A
-    z = k.clamp(env.rmax / 28.0, 0.6, 1.1)
-    tips = []
-    for r, share in enumerate(rows):
-        shader = feather_shader(r, len(rows), (0.7 if r == 0 else 2.0) if two else 2.0, bars, shaft_idx)
-        n = count if r % 2 == 0 else count - 1
-        for i in range(n - 1, -1, -1):                    # the leading feathers lie over the trailing ones
-            u = (i + (0.0 if r % 2 == 0 else 0.5)) / float(count - 1)
-            phi = lo + u * (hi - lo)
-            reach = 1.0 - (0.1 * _hash(i, sp.wings + 7 * r) if knots is PLUME else 0.04 * _hash(i, sp.wings))
-            tx, ty = env.pt(phi, reach, 0.12)
-            ang = (phi - mid) * (spread - 1.0)            # the fan opens and closes a little
-            tx, ty = tx * cos(ang) - ty * sin(ang), tx * sin(ang) + ty * cos(ang)
-            rin = env.Rin(phi)
-            if rin > 0:
-                bx, by = rin * cos(phi + ang), rin * sin(phi + ang)
-            else:
-                f = 0.08 + 0.92 * max(0.0, 1.0 - abs(u - up) / 0.45) ** 1.5
-                bx, by = end[0] * f, end[1] * f
-            dx, dy = tx - bx, ty - by
-            ln = math.hypot(dx, dy) * share
-            if ln < 3.0:
-                continue
-            got = lfeather(sc, canvas, wing, bx, by, math.atan2(dy, dx), ln, hw * (1.0 if r == 0 else 0.92), knots, shader, sp.PAL,
-                           bend=(1.2 if var != 'swift' else 0.4) * (1.0 if u > up else -1.0) * (1.0 - share * 0.3), dim=dim,
-                           line=None if r == 0 else sp.PAL[0])
-            if r == 0:
-                tips.append((bx + dx * 0.9, by + dy * 0.9))
-                if eyes and got and i % 2 == 0:           # the eye of a peacock feather
-                    b0, t0 = got
-                    x, y = b0[0] + (t0[0] - b0[0]) * 0.8, b0[1] + (t0[1] - b0[1]) * 0.8
-                    m = k.disc_mask(x, y, 2.4)
-                    idx = np.full((S, S), 6, np.int8)
-                    idx[k.disc_mask(x, y, 1.5)] = 1
-                    idx[k.disc_mask(x, y, 0.8)] = 10
-                    canvas.piece(m, idx, sp.PAL, ring=False)
-    if hollow:                                            # the inner rim of a crescent
-        rim = []
-        for j in range(11):
-            phi = lo + (hi - lo) * j / 10.0
-            if env.Rin(phi) > 0:
-                rim.append((env.Rin(phi) * cos(phi), env.Rin(phi) * sin(phi)))
-        if len(rim) >= 2:
-            lbone(sc, canvas, wing, rim, 1.3, 1.0, arm, dim, shade=(3, 2, 1))
-    elif plain:                                           # the shoulder, under a tuft
-        lbone(sc, canvas, wing, [(0.0, 0.0), (end[0] * 0.5, end[1] * 0.5)], 1.7 * z, 1.2 * z, arm, dim, knob0=1.9 * z, shade=(3, 2, 1))
-    else:                                                 # a bright arm lies on the wing
-        lbone(sc, canvas, wing, [(0.0, 0.0), (end[0] * 0.7, end[1] * 0.7 - 0.5), (end[0] * 1.5, end[1] * 1.5)],
-              1.5 * z, 0.8 * z, arm, dim, knob0=1.8 * z, shade=(4, 3, 1))
-    return tips
-
-
-def fam_feather(sc, sp):
-    ph = sc.ph
-    wph = ph + 0.35 * sin(ph)
-    var = sp.var
-    rows, knots, wide, lift, flap, bars, lead = FEATHER_VARS[var]
-    sweep = 38
-    env = env_of(sp, sweep, lift)
-    flap *= sp.swing
-    for sgn, wing, canvas, dim in raw_sides(sc, sweep, lambda t: rad(lift) + rad(flap) * sin(wph - 0.9 * t), max(env.rmax, 8.0)):
-        if var == 'seraph':                               # a second, smaller pair below, half a beat behind
-            low_env = env_of(sp, sweep, lift, rad(52), 0.6)
-            low = k.Wing(sgn, wing.root, rad(sweep + 6), lambda t: rad(lift) + rad(flap) * sin(wph - 1.2 - 0.9 * t), max(env.rmax, 8.0))
-            feather_wing(sc, canvas, low, sp, low_env, var, dim, wph - 1.2)
-        tips = feather_wing(sc, canvas, wing, sp, env, var, dim, wph, eyes=(var == 'peacock'))
-        if var == 'scaled':                               # the jewel at the shoulder
-            x, y, _ = sc.P(wing.at(1.5, 0.5))
-            m = k.disc_mask(x, y, 2.4)
-            canvas.piece(m, k.sphere_shade(x, y, 2.9), ramp5(sp.glow))
-        still = k.Wing(sgn, wing.root, wing.sweep, lambda t: rad(lift), wing.length)
-        motes(sc, canvas, still, tips, sp, sgn, 3)
-
-
-# ------------------------------------------------------------------------------------------------ bone
-def fam_bone(sc, sp):
-    ph = sc.ph
-    length = 24.0 * sp.size
-    z = sp.size
-    arm = ((0.0, 0.0), (7.0 * z, -5.0 * z), (15.0 * z, -7.0 * z), (22.5 * z, -3.5 * z))
-    for sgn, wing, canvas, dim in sides(sc, 36, lambda s: rad(24) + rad(13) * sin(ph - 0.8 * s), length, sp=sp, mean=24):
-        tips = []
-        if sp.var == 'wire':                              # thin chains that hang in arcs, a shackle at each end
-            n = max(3, min(6, 4 + sp.n))
-            for i in range(n - 1, -1, -1):
-                u = i / float(n - 1)
-                end = ((22.0 - 9.0 * u) * z, (-6.0 + 17.0 * u) * z)
-                sag = 3.0 + 1.2 * sin(ph - 0.7 * i)
-                pts = [(end[0] * t, end[1] * t + sag * sin(math.pi * t)) for t in (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)]
-                m = lline(sc, wing, pts, 0.9, 0.9)
-                x, y = lpts(sc, wing, [end])[0]
-                idx = k.edge_shade(m, 4, 3, 2)
-                idx[((k.XX + k.YY) % 3) == 0] -= 2
-                canvas.piece(m, idx - dim, sp.R)
-                ring = k.disc_mask(x, y, 2.0)
-                canvas.piece(ring, k.sphere_shade(x, y, 2.5), sp.A)
-                tips.append(end)
-        elif sp.var == 'finger':                          # a bare hand of long finger bones, a claw on each
-            wrist = arm[2]
-            n = max(3, min(5, 4 + sp.n))
-            fingers = []
-            for j in range(n):
-                a0 = rad(-18 + 100.0 * j / (n - 1) + (4 + 2 * j) * sin(ph - 0.5 - 0.45 * j))
-                ln = (17.0 - 1.6 * abs(j - 1)) * z
-                mid = (wrist[0] + 0.55 * ln * cos(a0), wrist[1] + 0.55 * ln * sin(a0))
-                tip = (mid[0] + 0.45 * ln * cos(a0 + rad(18)), mid[1] + 0.45 * ln * sin(a0 + rad(18)))
-                fingers.append((mid, tip))
-            for j in range(n - 1, -1, -1):
-                mid, tip = fingers[j]
-                web = lpts(sc, wing, [wrist, (wrist[0] + (mid[0] - wrist[0]) * 0.8, wrist[1] + (mid[1] - wrist[1]) * 0.8),
-                                      (wrist[0] + 2.5, wrist[1] + 4.0)])
-                m = k.poly_mask(web)
-                canvas.piece(m, k.edge_shade(m, 2, 1, 0) - dim, sp.A)
-            for j in range(n - 1, -1, -1):
-                mid, tip = fingers[j]
-                lbone(sc, canvas, wing, [mid, tip], 1.25, 0.6, sp.R, dim, knob0=1.7)
-                lbone(sc, canvas, wing, [wrist, mid], 1.5, 1.25, sp.R, dim)
-                tips.append(tip)
-            lbone(sc, canvas, wing, [arm[1], arm[2]], 1.8, 1.6, sp.R, dim, knob1=2.4)
-            lbone(sc, canvas, wing, [arm[0], arm[1]], 2.0, 1.8, sp.R, dim, knob0=2.4, knob1=2.5)
-        else:                                             # 'rib': ribs that curl back, torn skin at their roots
-            ribs = []
-            roots = (arm[1], (11.0 * z, -6.2 * z), arm[2], arm[3])
-            for i, (root, ang, ln) in enumerate(zip(roots, (82, 70, 56, 40), (10.5, 14.0, 16.5, 13.0))):
-                a0 = rad(ang + 5.0 * sin(ph - 0.5 - 0.45 * i))
-                pts = [root]
-                x, y = root
-                for step in range(4):
-                    x += ln * z / 4.0 * cos(a0 + rad(17) * step)
-                    y += ln * z / 4.0 * sin(a0 + rad(17) * step)
-                    pts.append((x, y))
-                ribs.append(pts)
-            for i in (3, 2, 1, 0):
-                root, nxt = ribs[i][0], ribs[i][2]
-                m = k.poly_mask(lpts(sc, wing, [(root[0] - 3.2, root[1] + 0.6), (root[0] + 3.2, root[1] + 0.2),
-                                                (nxt[0] + 1.6, nxt[1]), (nxt[0] - 1.2, nxt[1] - 1.0)]))
-                canvas.piece(m, k.edge_shade(m, 2, 1, 0) - dim, sp.A)
-            for i in (3, 2, 1, 0):
-                lbone(sc, canvas, wing, ribs[i], 1.45, 0.75, sp.R, dim)
-                tips.append(ribs[i][-1])
-            lbone(sc, canvas, wing, [arm[2], arm[3]], 1.6, 1.3, sp.R, dim, knob1=1.9)
-            lbone(sc, canvas, wing, [arm[1], arm[2]], 1.8, 1.6, sp.R, dim, knob1=2.4)
-            lbone(sc, canvas, wing, [arm[0], arm[1]], 2.0, 1.8, sp.R, dim, knob0=2.4, knob1=2.5)
-            lbone(sc, canvas, wing, [arm[2], (arm[2][0] + 1.5, arm[2][1] - 5.0)], 1.1, 0.6, sp.R, dim)
-        mean = wing.still(rad(24))
-        motes(sc, canvas, mean, tips, sp, sgn, 2)
-
-
-# ------------------------------------------------------------------------------------------------ bat
-BAT_VARS = {
-    #           fingers (angle, length)                         bone hw  flap  claws  holes  thorns
-    'bat': (((-24, 19.0), (10, 21.0), (46, 19.0), (84, 15.0)), 0.55, 22, False, False, False),
-    'dragon': (((-30, 22.0), (-2, 24.0), (28, 23.0), (60, 20.0), (94, 15.0)), 0.7, 20, True, False, False),
-    'torn': (((-26, 20.0), (8, 22.0), (44, 18.0), (82, 15.0)), 0.55, 22, False, True, False),
-    'demon': (((-34, 21.0), (0, 23.0), (36, 21.0), (76, 17.0)), 0.75, 20, True, False, True),
-    'gargoyle': (((-18, 17.0), (16, 19.0), (52, 17.0), (88, 13.0)), 1.1, 12, True, False, False),
-}
-THORN = ((0.0, 1.0), (1.0, 0.0))
-
-
-def fam_bat(sc, sp):
-    ph = sc.ph
-    wph = ph + 0.35 * sin(ph)
-    fing, bhw, amp, claws, holes, thorns = BAT_VARS[sp.var]
-    z = sp.size
-    elbow = (6.0 * z, -5.0 * z)
-    wrist = (11.0 * z, -8.5 * z)
-    spread = 1.0 + 0.13 * sin(wph - 0.6)
-    for sgn, wing, canvas, dim in sides(sc, 40, lambda s: rad(24) + rad(amp) * sin(wph - 0.9 * s), 24.0 * z, sp=sp, mean=24):
-        tips = []
-        for i, (ang, ln) in enumerate(fing):
-            a = rad((ang + 3 * sin(wph - 0.5 * i)) * spread)
-            tips.append((wrist[0] + ln * z * cos(a), wrist[1] + ln * z * sin(a)))
-        body = (1.5, 10.0 * z)
-        panels = []
-        for i in range(len(tips) - 1):
-            t0, t1 = tips[i], tips[i + 1]
-            mid = ((t0[0] + t1[0]) / 2.0, (t0[1] + t1[1]) / 2.0)
-            mid = (mid[0] + (wrist[0] - mid[0]) * 0.24, mid[1] + (wrist[1] - mid[1]) * 0.24)
-            panels.append([wrist, t0, mid, t1])
-        t0 = tips[-1]
-        mid = ((t0[0] + body[0]) / 2.0 + 1.5, (t0[1] + body[1]) / 2.0 - 2.5)
-        panels.append([wrist, t0, mid, body, (0.0, 0.0), elbow])
-        for i in range(len(panels) - 1, -1, -1):
-            m = k.poly_mask(lpts(sc, wing, panels[i]))
-            if holes and i % 2 == 0:
-                cx = sum(p[0] for p in panels[i]) / len(panels[i])
-                cy = sum(p[1] for p in panels[i]) / len(panels[i])
-                hx, hy = lpts(sc, wing, [(cx + 1.5, cy + 2.0)])[0]
-                m &= ~k.disc_mask(hx, hy, 1.9)
-            shade = k.edge_shade(m, 3, 2, 1)
-            idx = shade - (i % 2)
-            canvas.piece(m, idx - dim, sp.R, line=sp.R[0])
-        for i in range(len(tips) - 1, -1, -1):
-            lbone(sc, canvas, wing, [wrist, tips[i]], bhw, bhw * 0.55, sp.A, dim, shade=(3, 2, 1))
-            if claws:
-                a = math.atan2(tips[i][1] - wrist[1], tips[i][0] - wrist[0])
-                lfeather(sc, canvas, wing, tips[i][0], tips[i][1], a + rad(18), 2.6, 0.8, THORN, lambda tt, ss, lit, hw: np.where(lit, 4, 3).astype(np.int8),
-                         sp.A, dim=dim, minw=1.0)
-        if thorns:
-            for i, s in enumerate((0.3, 0.6, 0.9)):
-                a = elbow[0] * s if s < 0.5 else elbow[0] + (wrist[0] - elbow[0]) * (s - 0.5) * 2
-                b = elbow[1] * s * 2 if s < 0.5 else elbow[1] + (wrist[1] - elbow[1]) * (s - 0.5) * 2
-                lfeather(sc, canvas, wing, a, b - 0.5, rad(-80 + 12 * i), 5.0, 1.4, THORN, lambda tt, ss, lit, hw: np.where(lit, 3, 2).astype(np.int8),
-                         ramp5(sp.glow), dim=dim, minw=1.0)
-        lbone(sc, canvas, wing, [elbow, wrist], bhw + 0.7, bhw + 0.5, sp.A, dim, knob1=bhw + 1.2, shade=(3, 2, 1))
-        lbone(sc, canvas, wing, [(0.0, 0.0), elbow], bhw + 0.9, bhw + 0.7, sp.A, dim, knob0=bhw + 1.2, knob1=bhw + 1.3, shade=(3, 2, 1))
-        lbone(sc, canvas, wing, [wrist, (wrist[0] + 1.5, wrist[1] - 4.5)], 1.1, 0.5, sp.A, dim, shade=(4, 3, 2))
-        mean = wing.still(rad(24))
-        motes(sc, canvas, mean, tips, sp, sgn, 2)
-
-
-# ------------------------------------------------------------------------------------------------ insect
-LOBE = ((0.0, 0.14), (0.12, 0.55), (0.3, 0.86), (0.55, 1.0), (0.78, 0.92), (0.92, 0.62), (1.0, 0.0))
-MOTH = ((0.0, 0.12), (0.2, 0.42), (0.5, 0.78), (0.8, 1.0), (0.94, 0.72), (1.0, 0.0))
-GLASS = ((0.0, 0.3), (0.15, 0.8), (0.55, 1.0), (0.88, 0.8), (1.0, 0.0))
-INSECT_VARS = {
-    #             lobes (angle, length, half width, knots)                              beats  amplitude
-    'butterfly': (((34, 12.5, 6.2, LOBE), (-36, 18.0, 7.2, LOBE)), 2, 30),
-    'moth': (((40, 10.5, 5.2, LOBE), (-28, 20.0, 6.4, MOTH)), 1, 22),
-    'dragonfly': (((16, 21.0, 2.6, GLASS), (-18, 24.0, 2.8, GLASS)), 2, 16),
-    'fairy': (((38, 12.0, 3.6, GLASS), (-34, 20.0, 4.6, GLASS)), 2, 24),
-    'beetle': (((22, 17.0, 3.8, GLASS), (-24, 17.0, 5.6, LOBE)), 1, 14),
-    'ray': (((8, 23.0, 7.5, MOTH),), 1, 20),
-}
-
-
-def fam_insect(sc, sp):
-    ph = sc.ph
-    lobes, beats, amp = INSECT_VARS[sp.var]
-    z = sp.size
-    var = sp.var
-
-    def wing_shader(front):
-        def shader(tt, ss, lit, hw):
-            ax = np.abs(ss)
-            idx = (2 + (tt > 0.5) - (~lit)).astype(np.int8)
-            if var in ('dragonfly', 'fairy') or (var == 'beetle' and not front):
-                idx = (3 + lit - (tt < 0.25)).astype(np.int8)            # clear wings: pale, a cell pattern of veins
-                vein = ((np.abs(ss) * hw < 0.5) | (((tt * 7).astype(np.int32) % 2 == 0) & (ax > 0.45))) & (tt < 0.92)
-                idx[vein] = 6 if var != 'fairy' else 2
-                return idx
-            border = (ax > 0.66) | (tt > 0.9)
-            idx[border] = 6 - (~lit[border]).astype(np.int8) + 1
-            vein = (np.abs(ss) * hw < 0.5) & (tt < 0.72) & ~border
-            idx[vein] = 5 if var != 'beetle' else 4
-            if var in ('butterfly', 'moth'):
-                dots = border & (((tt * 9).astype(np.int32) % 2) == 0) & (ax > 0.82) & (tt > 0.3)
-                idx[dots] = 10
-            if var == 'beetle':
-                idx[(ax < 0.3) & lit & (tt > 0.2) & (tt < 0.8)] = 4       # the shine of the shell
-            return idx
-        return shader
-
-    # two beats a cycle: a strong one and a soft one, so the 16 frames are 16 pictures and not 8 shown twice
-    flut = sin(beats * ph + TAU * sp.jit) * ((0.78 + 0.34 * sin(ph + TAU * sp.jit)) if beats == 2 else 1.0)
-    for sgn, wing, canvas, dim in sides(sc, 30, lambda s: rad(14) + rad(amp) * flut, 20.0 * z, sp=sp, mean=14):
-        tips = []
-        for li, (ang, ln, hw, knots) in enumerate(lobes):
-            front = li == len(lobes) - 1
-            a = rad(ang + (5 if front else -4) * sin(beats * ph + TAU * sp.jit - 0.6))
-            got = lfeather(sc, canvas, wing, 1.0, 0.0, a, ln * z, hw * z, knots, wing_shader(front), sp.PAL, dim=dim, minw=1.6)
-            tips.append((1.0 + ln * z * 0.8 * cos(a), ln * z * 0.8 * sin(a)))
-            if var == 'moth' and front and got:           # the eye on the fore wing
-                b, t = got
-                x, y = b[0] + (t[0] - b[0]) * 0.66, b[1] + (t[1] - b[1]) * 0.66
-                if canvas.op[int(k.clamp(y, 0, S - 1)), int(k.clamp(x, 0, S - 1))]:
-                    m = k.disc_mask(x, y, 2.2) & canvas.op & ~(k.dilate4(~canvas.op))
-                    canvas.rgb[m] = sp.A[0]
-                    canvas.rgb[k.disc_mask(x, y, 1.0) & m] = sp.glow
-        mean = wing.still(rad(14))
-        motes(sc, canvas, mean, tips, sp, sgn, 2)
-
-
-# ------------------------------------------------------------------------------------------------ crystal
-PANE = ((0.0, 0.5), (0.1, 1.0), (0.84, 1.0), (1.0, 0.3))
-DROP = ((0.0, 0.2), (0.3, 0.5), (0.62, 1.0), (0.86, 0.9), (1.0, 0.0))
-CRYSTAL_VARS = {
-    #          shards (angle, length, half width)
-    'shard': ((-44, 15.0, 2.6), (-16, 23.0, 3.2), (11, 26.5, 3.5), (40, 20.0, 3.1), (72, 13.5, 2.5)),
-    'cluster': ((-58, 11.0, 2.4), (-36, 18.0, 3.0), (-14, 13.0, 2.6), (6, 22.0, 3.4), (28, 14.0, 2.7), (50, 18.0, 3.0),
-                (76, 10.5, 2.4)),
-    'prism': ((-50, 14.0, 2.4), (-26, 21.0, 2.8), (-2, 25.0, 3.0), (22, 21.0, 2.8), (46, 16.0, 2.6), (70, 11.5, 2.3)),
-    'pane': ((-34, 17.0, 4.0), (-4, 22.0, 4.4), (26, 19.0, 4.2), (58, 14.0, 3.8)),
-    'drop': ((8, 10.0, 2.6), (30, 15.0, 3.2), (52, 12.0, 2.8), (74, 16.0, 3.3), (96, 10.0, 2.5)),
-}
-
-
-def crystal_shader(var):
+def flat_shader(base=2, tip_from=2.0, mid=None):
+    """a plain piece: lit side a shade up, the root a shade down; past tip_from the second colour of the table;
+    `mid`: the index of a line down the middle"""
     def shader(tt, ss, lit, hw):
-        idx = np.where(lit, 3, 1).astype(np.int8)
-        idx = idx + (tt > 0.7) - ((tt < 0.2) & ~lit)
-        if var == 'pane':                                 # a glare runs across a flat pane
-            idx[((tt * 2.0 + ss * 0.35) % 1.0) < 0.16] = 4
-        elif var == 'drop':
-            idx = (2 + lit).astype(np.int8)
-            idx[(np.abs(ss - 0.35) < 0.22) & (tt > 0.55) & (tt < 0.8)] = 4
-        else:
-            idx[(np.abs(ss) * hw < 0.55) & lit & (tt > 0.12) & (hw > 1.6)] = 4
-        return idx
+        idx = np.clip(base + lit.astype(np.int8) - (tt < 0.18).astype(np.int8), 0, 4)
+        if mid is not None:
+            idx[(np.abs(ss) * hw < 0.55) & (tt > 0.06) & (tt < 0.92) & (hw > 1.7)] = mid
+        return np.where(tt > tip_from, idx + 5, idx).astype(np.int8)
     return shader
 
 
-def fam_crystal(sc, sp):
-    ph = sc.ph
-    z = sp.size
-    var = sp.var
-    if var in ('needle', 'flake'):
-        return crystal_branch(sc, sp)
-    shards = CRYSTAL_VARS[var]
-    knots = PANE if var == 'pane' else DROP if var == 'drop' else k.SHARD
-    shader = crystal_shader(var)
-    order = sorted(range(len(shards)), key=lambda i: shards[i][1])
-    for sgn, wing, canvas, dim in sides(sc, 30, lambda s: rad(20) + rad(6) * sin(ph), 24.0 * z, sp=sp, mean=20):
-        got_all = {}
-        tips = []
-        for i in order:
-            ang, ln, hw = shards[i]
-            pulse = 1.0 + 0.15 * sin(ph - 0.75 * i + TAU * sp.jit)
-            a = rad(ang + 2.5 * sin(ph - 0.75 * i))
-            ramp = ramp5(hue_turn(sp.main, i / float(len(shards)))) if var == 'prism' else sp.R
-            got = lfeather(sc, canvas, wing, 2.0 * cos(a), 2.0 * sin(a), a, ln * z * pulse - 2.0, hw, knots, shader, ramp, dim=dim)
-            tips.append((ln * z * 0.8 * cos(rad(ang)), ln * z * 0.8 * sin(rad(ang))))
-            if got:
-                got_all[i] = got
-        for i, r in ((1, 5.5), (len(shards) - 2, 5.0)):   # small crystals at the root, in the accent
-            ang = rad(shards[i][0] + 13)
-            ln = r + 0.5 * sin(ph)
-            lfeather(sc, canvas, wing, 0.0, 0.0, ang, ln, 1.9, k.SHARD, crystal_shader('shard'), sp.A, dim=dim)
-        for i, (b, t) in sorted(got_all.items()):
-            g = cos(ph - TAU * i / float(len(shards)) - (math.pi if sgn > 0 else 0.0) + TAU * sp.jit)
-            if g > 0.72:
-                canvas.spark(b[0] + (t[0] - b[0]) * 0.8, b[1] + (t[1] - b[1]) * 0.8, sp.glow, 2 if g > 0.93 else 1)
-        mean = wing.still(rad(20))
-        motes(sc, canvas, mean, tips, sp, sgn, 2)
-
-
-def crystal_branch(sc, sp):
-    """needle: icicles under an arm; flake: three arms with side branches"""
-    ph = sc.ph
-    z = sp.size
-    shader = crystal_shader('shard')
-    for sgn, wing, canvas, dim in sides(sc, 34, lambda s: rad(22) + rad(7) * sin(ph - 0.5 * s), 24.0 * z, sp=sp, mean=22):
-        tips = []
-        if sp.var == 'needle':
-            edge = arch(23.0 * z, 5.0)
-            n = max(5, min(9, 7 + sp.n))
-            for i in range(n - 1, -1, -1):
-                a, b = edge(0.1 + 0.88 * i / (n - 1))
-                ln = (7.0 + 8.0 * sin(math.pi * (0.15 + 0.8 * i / (n - 1)))) * z * (1.0 + 0.14 * sin(ph - 0.8 * i))
-                lfeather(sc, canvas, wing, a, b + 0.5, rad(92 - 3 * i), ln, 1.7, k.SHARD, shader, sp.R, dim=dim)
-                tips.append((a, b + ln))
-            lbone(sc, canvas, wing, [edge(i / 8.0) for i in range(9)], 1.6, 0.9, sp.A, dim, shade=(4, 3, 1))
-        else:
-            for j, (ang, ln) in enumerate(((52, 16.0), (-48, 18.0), (2, 24.0))):
-                a = rad(ang + 3 * sin(ph - 0.8 * j))
-                pulse = 1.0 + 0.1 * sin(ph - 0.9 * j)
-                for u in (0.42, 0.68):
-                    for side in (-1, 1):
-                        ba, bb = ln * z * u * cos(a), ln * z * u * sin(a)
-                        lfeather(sc, canvas, wing, ba, bb, a + side * rad(52), ln * z * 0.36 * (1.25 - u) * pulse + 1.5, 1.5, k.SHARD,
-                                 shader, sp.A, dim=dim, minw=1.0)
-                lfeather(sc, canvas, wing, 0.5, 0.0, a, ln * z * pulse, 2.2, k.SHARD, shader, sp.R, dim=dim)
-                tips.append((ln * z * 0.85 * cos(a), ln * z * 0.85 * sin(a)))
-        mean = wing.still(rad(22))
-        motes(sc, canvas, mean, tips, sp, sgn, 3)
-
-
-# ------------------------------------------------------------------------------------------------ fan
-SLAT = ((0.0, 0.6), (0.06, 0.85), (0.9, 1.0), (0.97, 0.8), (1.0, 0.45))
-KITE = ((0.0, 0.0), (0.38, 1.0), (1.0, 0.0))
-RIBBON = ((0.0, 0.5), (0.2, 1.0), (0.8, 0.8), (1.0, 0.0))
-FAN_VARS = {
-    #          slats  from  to   length  half width  knots     open by
-    'blade': (5, -66, 44, 24.0, 2.7, k.BLADE, 0.55),
-    'slat': (6, -62, 50, 21.0, 2.3, SLAT, 0.5),
-    'web': (6, -64, 52, 21.0, 1.2, SLAT, 0.5),
-    'tile': (5, -56, 60, 15.0, 3.6, SLAT, 0.3),
-    'ribbon': (5, -70, 40, 24.0, 1.5, RIBBON, 0.35),
-    'pipe': (7, -30, 84, 20.0, 1.7, SLAT, 0.25),
-    'kite': (3, -48, 42, 19.0, 4.6, KITE, 0.4),
-}
-
-
-def fam_fan(sc, sp):
-    ph = sc.ph
-    if sp.var in SPECIAL:
-        return SPECIAL[sp.var](sc, sp)
-    n, a0, a1, ln0, hw, knots, by = FAN_VARS[sp.var]
-    n = max(3, min(9, n + sp.n))
-    z = sp.size
-    var = sp.var
-
-    def shader(tt, ss, lit, hw2):
-        if var == 'blade':
-            return k.blade_shader(tt, ss, lit, hw2)
-        idx = np.where(lit, 3, 2).astype(np.int8)
-        if var in ('tile', 'slat'):
-            idx = idx - (tt < 0.18) + ((tt > 0.86) & lit)
-        if var == 'pipe':
-            idx = idx - (((tt * 5).astype(np.int32) % 2) == 1) + (tt > 0.9)
-        if var == 'kite':
-            idx = (2 + lit + (np.abs(ss) < 0.18)).astype(np.int8)
-        if var == 'ribbon':
-            idx = (2 + lit + (tt > 0.6)).astype(np.int8)
-        return idx
-
-    for sgn, wing, canvas, dim in sides(sc, 36, lambda s: rad(22) + rad(5) * sin(ph), 24.0 * z, sp=sp, mean=22):
-        angs, lens = [], []
-        for i in range(n):
-            u = i / float(n - 1)
-            opened = k.ease(0.5 - 0.5 * cos(ph - 0.25 * i + TAU * sp.jit))
-            mid = (a0 + a1) / 2.0
-            ang = mid + (a0 + (a1 - a0) * u - mid) * ((1.0 - by) + by * opened)
-            ln = ln0 * z * (1.0 - 0.28 * abs(u - 0.4) ** 1.3)
-            if var == 'pipe':
-                ln = ln0 * z * (1.0 - 0.55 * u)
-            if var == 'tile':
-                ln = ln0 * z * (1.0 + 0.25 * (i % 2))
-            angs.append(rad(ang))
-            lens.append(ln)
-        tips = [(lens[i] * cos(angs[i]), lens[i] * sin(angs[i])) for i in range(n)]
-        if var == 'web':                                  # the leaf of the fan, a panel between each pair of ribs
-            for i in range(n - 2, -1, -1):
-                p0, p1 = tips[i], tips[i + 1]
-                mid = ((p0[0] + p1[0]) * 0.46, (p0[1] + p1[1]) * 0.46)
-                m = k.poly_mask(lpts(sc, wing, [(0.0, 0.0), (p0[0] * 0.94, p0[1] * 0.94), mid, (p1[0] * 0.94, p1[1] * 0.94)]))
-                idx = k.edge_shade(m, 3, 2, 1) - (i % 2)
-                band = lpts(sc, wing, [(mid[0] * 0.62 / 0.92, mid[1] * 0.62 / 0.92)])[0]
-                idx[k.disc_mask(band[0], band[1], 1.3) & m] = 4
-                canvas.piece(m, idx - dim, sp.A, line=sp.A[0])
-        order = sorted(range(n), key=lambda i: -abs(i - (n - 1) * 0.4))
-        for i in order:
-            bend = 3.5 * sin(ph - 0.9 * i) if var == 'ribbon' else 0.0
-            ramp = sp.R
-            if var == 'kite' and i % 2 == 1:
-                ramp = sp.A
-            if var == 'ribbon' and i % 2 == 1:
-                ramp = sp.A
-            got = lfeather(sc, canvas, wing, 1.5 * cos(angs[i]), 1.5 * sin(angs[i]), angs[i], lens[i] - 1.5, hw, knots, shader, ramp,
-                           bend=bend, dim=dim)
-            if got and var in ('slat', 'tile', 'pipe', 'web'):     # a cap in the accent at the end of each rib
-                b, t = got
-                x, y = b[0] + (t[0] - b[0]) * 0.96, b[1] + (t[1] - b[1]) * 0.96
-                m = k.disc_mask(x, y, 1.5 if var != 'tile' else 1.2)
-                canvas.piece(m, k.sphere_shade(x, y, 2.0), sp.A if var != 'web' else ramp5(sp.glow))
-            if got and var == 'blade':
-                b, t = got
-                glint = max(0.0, cos(ph - math.pi - 0.5 * i + TAU * sp.jit)) ** 6
-                if glint > 0.4:
-                    canvas.spark(b[0] + (t[0] - b[0]) * 0.86, b[1] + (t[1] - b[1]) * 0.86, sp.glow, 2 if glint > 0.8 else 1)
-        x, y, _ = sc.P(wing.at(0.5, 0.0))
-        m = k.disc_mask(x, y, 2.4)
-        canvas.piece(m, k.sphere_shade(x, y, 2.9), sp.A)
-        mean = wing.still(rad(22))
-        motes(sc, canvas, mean, [(a * 0.9, b * 0.9) for a, b in tips], sp, sgn, 2)
-
-
-# ------------------------------------------------------------------------------------------------ leaf
-LEAF = ((0.0, 0.12), (0.22, 0.8), (0.5, 1.0), (0.8, 0.66), (1.0, 0.0))
-PETAL = ((0.0, 0.2), (0.3, 0.86), (0.64, 1.0), (0.9, 0.72), (1.0, 0.12))
-LEAF_VARS = {
-    #          leaves  length  half width  knots
-    'oval': (9, 9.5, 3.3, LEAF),
-    'needle': (15, 8.0, 1.4, k.SHARD),
-    'petal': (6, 15.0, 4.4, PETAL),
-    'maple': (6, 9.5, 2.9, LEAF),
-    'fern': (17, 7.0, 1.7, LEAF),
-    'flower': (6, 9.0, 3.0, LEAF),
-}
+def glass_shader(tt, ss, lit, hw):
+    idx = np.where(lit, 3, 1).astype(np.int8)
+    idx = idx + (tt > 0.7) - ((tt < 0.2) & ~lit)
+    idx[(np.abs(ss) * hw < 0.55) & lit & (tt > 0.12) & (hw > 1.6)] = 4
+    return idx
 
 
 def leaf_shader(tt, ss, lit, hw):
@@ -914,516 +366,1017 @@ def leaf_shader(tt, ss, lit, hw):
     return idx
 
 
-def fam_leaf(sc, sp):
-    ph = sc.ph
-    n, ln0, hw, knots = LEAF_VARS[sp.var]
-    n = max(4, n + sp.n)
-    z = sp.size
-    var = sp.var
-    length = 22.0 * z
-    for sgn, wing, canvas, dim in sides(sc, 38, lambda s: rad(26) + rad(9) * sin(ph - 0.8 * s), length, sp=sp, mean=26):
+def flame_shader(tt, ss, lit, hw):
+    """hot in the middle and at the root, the second colour at the tip"""
+    idx = (3 - (np.abs(ss) > 0.55) + (tt < 0.3)).astype(np.int8)
+    idx = np.clip(idx, 1, 4)
+    return np.where(tt > 0.62, idx + 5 - 1, idx).astype(np.int8)
+
+
+# ------------------------------------------------------------------------------------------------ feather
+def st_feather(g):
+    """an arm with rows of feathers: the flight row hangs from the arm to the lower edge and fans round the tip,
+    rows of coverts lie over its roots, each shorter and a shade apart. Rounded tips, a shaft line, a two-tone vane"""
+    sp, var = g.sp, g.sp.var
+    g.stalk(1.5)
+    w = g.w
+    knots = POINT if var in ('swift', 'pinion', 'plume', 'seraph') else BLADE
+    n = int(k.clamp(round(w.length / (4.6 if var == 'swift' else 3.8)) + sp.n, 4, 14))
+    wide = (w.half(0.5, -1) + w.half(0.5, 1))
+    thin = wide < 7.0
+    g.zonefill(shade=lambda ss, tt: np.where(tt < -0.55, 1, 2))
+    slant = 0.34 if var in ('swift', 'pinion', 'seraph') else 0.26
+    spiky = var == 'plume'
+    reach = (lambda i: 1.0 + 0.12 * _hash(i, sp.wings)) if spiky else (lambda i: 1.0 - 0.06 * _hash(i, sp.wings))
+
+    def tip_of(u):                                        # the lower edge, then round the tip of the wing
+        s = 0.06 + 0.9 * u + slant
+        return w.pt(s, 1.05) if s <= 1.0 else w.pt(1.0 + 0.04 * (s - 1.0), 1.05 - 2.6 * (s - 1.0))
+    got = g.fan(n, g.linef(0.02, 0.86, -0.35 if not thin else -0.7), tip_of, knots,
+                feather_shader(0, 0.7, var == 'owl'), lambda i, u: g.ramp(0.9 * u, 0.5) + sp.A + (sp.glow,),
+                hwk=0.62, bend=0.6, sway=0.035, reach=reach, maxw=3.4, minw=1.3, order=1)
+    tips = [t for b, t in got]
+    dark = g.ramp(0.4, -0.5)[0]
+    if not thin:
+        g.fan(max(3, n - 2), g.linef(0.0, 0.8, -0.95), lambda u: w.pt(0.1 + 0.8 * u + slant * 0.7, 0.05), knots,
+              feather_shader(1, 2.0), lambda i, u: g.pal2((0.8 * u, -0.5), (0.8 * u, -0.5)), hwk=0.6, sway=0.025,
+              line=dark, maxw=3.0, order=1)
+        if var in ('angel', 'scaled', 'owl', 'plume', 'peacock') and wide > 12.0:
+            g.fan(max(3, n - 3), g.linef(0.0, 0.62, -1.0), lambda u: w.pt(0.08 + 0.62 * u + slant * 0.5, -0.45), knots,
+                  feather_shader(2, 2.0), lambda i, u: g.pal2((0.7 * u, -0.5), (0.7 * u, -0.5)), hwk=0.6, line=dark,
+                  maxw=2.6, order=1)
+    g.stem([(0.0, -0.75), (0.35, -0.95), (0.8, -0.95), (0.97, -0.5)], 1.1, 0.7, g.ramp(0.5, -0.5), shade=(2, 1, 0))
+    if var in ('angel', 'scaled', 'seraph'):              # a bright arm lies on the wing
+        g.stem([(0.0, -0.5), (0.3, -0.88), (0.72, -0.94)], 1.4, 0.8, sp.A, shade=(4, 3, 1))
+    if var == 'peacock':
+        for i, (b, t) in enumerate(got):
+            if i % 2 == 0:
+                x, y = b[0] + (t[0] - b[0]) * 0.82, b[1] + (t[1] - b[1]) * 0.82
+                m = k.disc_mask(x, y, 2.4)
+                idx = np.full((S, S), 6, np.int8)
+                idx[k.disc_mask(x, y, 1.5)] = 1
+                idx[k.disc_mask(x, y, 0.8)] = 10
+                g.piece(m, idx, sp.PAL, ring=False)
+    if var == 'scaled':
+        x, y = w.pt(0.06, -0.2)
+        g.ball(x, y, 2.3, ramp5(sp.glow))
+    if var == 'seraph':                                   # gold on the tips
+        for i, (b, t) in enumerate(got):
+            if i % 3 == 1:
+                g.c.spark(t[0], t[1], sp.glow, 1 if (i + g.f // 4) % 2 else 0)
+    g.motes(tips, 3)
+
+
+# ------------------------------------------------------------------------------------------------ bat
+def st_bat(g):
+    """an arm to a wrist, fingers from the wrist to the lower edge, a membrane between them with a scalloped edge"""
+    sp, var = g.sp, g.sp.var
+    g.stalk(1.6, sp.A)
+    w = g.w
+    nf = {'bat': 4, 'dragon': 5, 'torn': 4, 'demon': 4, 'gargoyle': 3}[var] + sp.n
+    nf = max(3, min(6, nf if w.length > 26 else nf - 1))
+    wrist = w.pt(0.4, -0.72)
+    elbow = w.pt(0.18, -0.2)
+    root = w.pt(0.0, 0.0)
+    tips = []
+    for i in range(nf):
+        q = 0.05 + 0.47 * i / float(nf - 1)
+        x, y = w.rim(q + 0.012 * sin(g.ph - 0.7 * i))
+        tips.append((x, y))
+    mask = w.body()
+    for i in range(nf - 1):                               # the scallops between the finger tips
+        mx, my = (tips[i][0] + tips[i + 1][0]) / 2.0, (tips[i][1] + tips[i + 1][1]) / 2.0
+        gap = math.hypot(tips[i + 1][0] - tips[i][0], tips[i + 1][1] - tips[i][1])
+        dx, dy = mx - wrist[0], my - wrist[1]
+        ln = math.hypot(dx, dy) or 1.0
+        mask &= ~k.disc_mask(mx + dx / ln * gap * 0.33, my + dy / ln * gap * 0.33, gap * 0.52)
+    ang = np.arctan2(k.PY - wrist[1], k.PX - wrist[0])
+    a0 = math.atan2(tips[0][1] - wrist[1], tips[0][0] - wrist[0])
+    rel = (ang - a0 + math.pi) % TAU - math.pi
+    fa = sorted(((math.atan2(t[1] - wrist[1], t[0] - wrist[0]) - a0 + math.pi) % TAU - math.pi) for t in tips)
+    panel = np.zeros((S, S), np.int32)
+    for a in fa:
+        panel += rel > a
+    ss, tt = g.full.field()
+    idx = 2 - (panel % 2) + (tt < -0.45)
+    if var == 'gargoyle':                                 # stone: flat, a crack
+        idx = np.where(np.abs(((ss * 7.0 + tt * 1.5) % 1.0) - 0.5) < 0.07, 0, idx)
+    if var == 'torn':
+        for i in range(nf - 1):
+            mx, my = (tips[i][0] + tips[i + 1][0] + wrist[0]) / 3.0, (tips[i][1] + tips[i + 1][1] + wrist[1]) / 3.0
+            if i % 2 == 0:
+                mask &= ~k.disc_mask(mx, my, 1.9)
+    zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + 1
+    g.piece(mask, zi * 5 + np.clip(idx, 0, 4), sp.ZT, line=g.ramp(0.5, 0.5)[0])
+    bone = sp.A if lum(sp.accent) > lum(g.ramp(0.5, 0.5)[2]) + 12 else g.ramp(0.2, -0.5)
+    bhw = {'bat': 0.6, 'dragon': 0.75, 'torn': 0.6, 'demon': 0.8, 'gargoyle': 1.1}[var]
+    for i in range(nf - 1, -1, -1):
+        g.seg(wrist, tips[i], bhw, bhw * 0.55, bone)
+        if var in ('dragon', 'demon', 'gargoyle'):
+            dx, dy = tips[i][0] - wrist[0], tips[i][1] - wrist[1]
+            ln = math.hypot(dx, dy) or 1.0
+            g.seg(tips[i], (tips[i][0] + dx / ln * 2.4, tips[i][1] + dy / ln * 2.4), 0.8, 0.4, bone, shade=(4, 3, 2))
+    if var == 'demon':
+        for s in (0.12, 0.26, 0.4):
+            b = w.pt(s, -0.8)
+            e = w.pt(s + 0.03, -1.0)
+            dx, dy = e[0] - b[0], e[1] - b[1]
+            ln = math.hypot(dx, dy) or 1.0
+            g.seg(b, (b[0] + dx / ln * 4.5, b[1] + dy / ln * 4.5), 1.1, 0.4, ramp5(sp.glow), shade=(3, 2, 2))
+    g.seg(elbow, wrist, bhw + 0.6, bhw + 0.4, bone, knob1=bhw + 1.0)
+    g.seg(root, elbow, bhw + 0.8, bhw + 0.6, bone, knob1=bhw + 1.1)
+    up = w.pt(0.44, -1.0)
+    g.seg(wrist, (up[0] + (up[0] - wrist[0]) * 0.8, up[1] + (up[1] - wrist[1]) * 0.8), 1.0, 0.5, bone, shade=(4, 3, 2))
+    g.motes(tips, 2)
+
+
+# ------------------------------------------------------------------------------------------------ insect
+def st_insect(g):
+    """a wing of one sheet: veins that fan from the root, a border, the pattern of its kind"""
+    sp, var = g.sp, g.sp.var
+    g.stalk(1.2)
+    w = g.w
+    ss, tt = w.field()
+    mask = w.body()
+    at = np.abs(tt)
+    full_ss, _ = g.full.field()
+    zi = np.clip(((full_ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + ((tt + 2 * NOISE) >= 0)
+    base = zi * 5
+    A = 35
+    if var in ('dragonfly', 'fairy'):                     # clear wings: pale, a net of veins
+        sh = 3 + (tt < -0.25).astype(np.int8) - (tt > 0.6).astype(np.int8)
+        idx = base + np.clip(sh, 0, 4)
+        vein = (at < 0.13) | ((((ss * (9 if var == 'dragonfly' else 6)) % 1.0) < 0.2) & (at > 0.2))
+        idx = np.where(vein & (ss < 0.93), base + 1, idx)
+        if var == 'fairy':
+            idx = np.where((tt < -0.45) & (tt > -0.8) & (ss > 0.2) & (ss < 0.8), base + 4, idx)
+        else:
+            idx = np.where((ss > 0.8) & (ss < 0.92) & (tt < -0.3), A + 1, idx)      # the dark mark near the tip
+    elif var == 'beetle':                                 # a hard shell over a soft wing
+        sh = 2 + (tt < -0.2).astype(np.int8) + ((tt < -0.45) & (tt > -0.75)).astype(np.int8) - (tt > 0.25).astype(np.int8)
+        idx = base + np.clip(sh, 0, 4)
+        idx = np.where(np.abs(tt - 0.05) < 0.1, base + 0, idx)
+        idx = np.where((tt > 0.5), A + 3 - ((ss * 8).astype(np.int32) % 2), idx)
+    elif var == 'ray':                                    # a fin: dark above, pale below, spots
+        sh = 2 + (tt < -0.5).astype(np.int8) - (tt > 0.2).astype(np.int8)
+        idx = base + np.clip(sh, 0, 4)
+        idx = np.where((tt > 0.62), A + 3, idx)
+        spot = (((ss * 6.0) % 1.0 - 0.5) ** 2 + ((tt * 1.5 + 0.2) % 1.0 - 0.5) ** 2) < 0.03
+        idx = np.where(spot & (tt < 0.5), base + 4, idx)
+    else:                                                 # butterfly, moth: veins, a dark border, dots on it
+        sh = 2 + (tt < -0.3).astype(np.int8) - (tt > 0.55).astype(np.int8)
+        idx = base + np.clip(sh, 0, 4)
+        fanv = np.abs(((tt * 2.6 + ss * 0.4) % 1.0) - 0.5) < 0.09
+        border = (at > 0.7) | (ss > 0.9)
+        dark = A if lum(sp.accent) < lum(sp.main) else base
+        idx = np.where(fanv & ~border & (ss > 0.08), dark + 1, idx)
+        idx = np.where(border, dark + (1 if var == 'butterfly' else 2) - (tt > 0).astype(np.int8) * 0, idx)
+        dots = border & (((ss * 11).astype(np.int32) % 2) == 0) & (at > 0.8) & (at < 1.0) & (ss > 0.2)
+        idx = np.where(dots, 40, idx)
+    g.piece(mask, idx, sp.ZT)
+    if var == 'moth':                                     # the eye
+        x, y = w.pt(0.62, 0.1)
+        r = k.clamp(w.half(0.62, 1) * 0.55, 1.6, 3.2)
+        m = k.disc_mask(x, y, r) & mask & ~k.dilate4(~mask)
+        idx2 = np.full((S, S), A + 0, np.int32)
+        idx2[k.disc_mask(x, y, r * 0.55)] = 40
+        g.piece(m, idx2, sp.ZT, ring=False)
+    if var == 'fairy':
+        for i in range(3):
+            x, y = w.pt(0.3 + 0.25 * i, -0.2 + 0.5 * _hash(i, sp.wings))
+            if mask[int(k.clamp(y, 0, S - 1)), int(k.clamp(x, 0, S - 1))]:
+                g.c.spark(x, y, sp.glow, 1 if (i + g.f // 3) % 3 == 0 else 0)
+    g.motes([w.rim(0.2), w.rim(0.4), w.rim(0.5), w.rim(0.7)], 2)
+
+
+# ------------------------------------------------------------------------------------------------ crystal
+def st_crystal(g):
+    sp, var = g.sp, g.sp.var
+    s0 = g.stalk(1.3)
+    w = g.w
+    if var == 'drop':                                     # a drop of sap: one smooth body, a shine, a drip
+        ss, tt = g.zonefill(shade=lambda ss, tt: 2 + (tt < -0.2).astype(np.int8) + ((tt < -0.35) & (tt > -0.7) & (ss > 0.3) & (ss < 0.8)).astype(np.int8) - (tt > 0.5).astype(np.int8))
+        x, y = w.pt(0.55, 0.9)
+        q = (g.f / float(k.FRAMES) + sp.jit) % 1.0
+        g.ball(x, y + 2 + 9 * q, 1.3 if q < 0.7 else 0.9, sp.Z[3])
+        g.motes([w.rim(0.3), w.rim(0.5)], 2)
+        return
+    if var == 'needle':                                   # icicles hang from an arm
+        n = int(k.clamp(round(w.length / 4.2) + sp.n, 5, 12))
+        got = g.fan(n, g.linef(0.04, 0.96, -0.55), g.linef(0.04, 0.99, 1.0), k.SHARD, glass_shader,
+                    lambda i, u: g.ramp(u, 0.5), hwk=0.6, maxw=2.4, sway=0.03,
+                    reach=lambda i: 1.0 + 0.12 * sin(g.ph - 0.8 * i))
+        g.stem([(i / 8.0, -0.55) for i in range(9)], 1.6, 1.0, g.ramp(0.3, -0.5), shade=(4, 3, 1))
+        tips = [t for b, t in got]
+    elif var == 'flake':                                  # a six-armed flake on the head
+        x, y, r = w.mid()
+        r = max(r, w.length * 0.4, 5.0)
         tips = []
-        if var == 'petal':                                # petals fan from the shoulder as a flower opens
-            for i in sorted(range(n), key=lambda i: -abs(i - (n - 1) * 0.35)):
+        turn = 0.12 * sin(g.ph)
+        for j in range(6):
+            a = turn + TAU * j / 6.0
+            ex, ey = x + r * cos(a), y + r * sin(a)
+            g.seg((x, y), (ex, ey), 1.1, 0.8, g.ramp(0.6, 0.0), shade=(4, 3, 2))
+            for u in (0.5, 0.78):
+                for side in (-1, 1):
+                    bx, by = x + r * u * cos(a), y + r * u * sin(a)
+                    g.seg((bx, by), (bx + r * 0.3 * cos(a + side * 0.9), by + r * 0.3 * sin(a + side * 0.9)), 0.8, 0.5,
+                          g.ramp(0.9, 0.0), shade=(4, 3, 2))
+            tips.append((ex, ey))
+        g.ball(x, y, 1.8, g.ramp(0.5, 0.0))
+    else:                                                 # shards that burst from the spine to both edges
+        knots = PANE if var == 'pane' else k.SHARD
+        n = int(k.clamp(round(w.length / (5.5 if var == 'pane' else 4.6)) + sp.n, 4, 11))
+        if var in ('pane', 'prism'):                      # a fan of panes from the arm to the lower edge
+            def pal(i, u):
+                if var == 'prism' or sp.key == 'rose_window':
+                    return ramp5(hue_turn(sp.main, i / float(n)))
+                return g.ramp(0.2 + 0.8 * u, 0.5)
+            g.piece(w.region(0.0, 0.94, -0.8, 0.5), 1, g.ramp(0.4, 0.0))
+            got = g.fan(n, g.linef(0.0, 0.7, -0.7), g.rimf(0.04, 0.6), knots, glass_shader, pal, hwk=0.72, sway=0.03,
+                        reach=lambda i: 1.0 + 0.06 * sin(g.ph - 0.7 * i))
+            g.stem([(0.0, -0.6), (0.35, -0.85), (0.72, -0.9)], 1.2, 0.7, g.ramp(0.2, -0.5), shade=(4, 3, 1))
+        else:
+            order = sorted(range(n), key=lambda i: _hash(i, sp.wings))
+            got = []
+            for i in order:
                 u = i / float(n - 1)
-                opened = 0.8 + 0.2 * sin(ph - 0.5 * i)
-                ang = rad((-58 + 118 * u) * opened + 6)
-                ln = ln0 * z * (1.25 - 0.5 * abs(u - 0.3))
-                lfeather(sc, canvas, wing, 1.0, 0.0, ang, ln, hw, knots, leaf_shader, sp.R if i % 2 == 0 else sp.A, dim=dim,
-                         bend=1.5 * sin(ph - 0.5 * i))
-                tips.append((ln * 0.85 * cos(ang), ln * 0.85 * sin(ang)))
-            x, y, _ = sc.P(wing.at(1.0, 0.0))
-            m = k.disc_mask(x, y, 2.5)
-            canvas.piece(m, k.sphere_shade(x, y, 3.0), ramp5(sp.glow))
-            mean = wing.still(rad(26))
-            motes(sc, canvas, mean, tips, sp, sgn, 2)
+                b = w.pt(0.05 + 0.6 * u, 0.0)
+                t = w.rim(0.08 + 0.84 * ((i * 0.618 + 0.3 * u) % 1.0)) if var == 'cluster' else w.rim(0.06 + 0.56 * u)
+                pulse = 1.0 + 0.1 * sin(g.ph - 0.75 * i + TAU * sp.jit)
+                t = (b[0] + (t[0] - b[0]) * pulse, b[1] + (t[1] - b[1]) * pulse)
+                if math.hypot(t[0] - b[0], t[1] - b[1]) < 3:
+                    continue
+                m, tt_, ss_, lit = k.leaf(b, t, k.clamp(w.length / n * 0.62, 1.8, 3.6), knots)
+                g.c.piece(m, glass_shader(tt_, ss_, lit, 2.5), g.ramp(0.1 + 0.85 * u, 0.5 if i % 2 else -0.5))
+                got.append((b, t))
+        tips = [t for b, t in got]
+        for i, (b, t) in enumerate(got):
+            gl = cos(g.ph - TAU * i / float(max(1, len(got))) + TAU * sp.jit)
+            if gl > 0.75:
+                g.c.spark(b[0] + (t[0] - b[0]) * 0.8, b[1] + (t[1] - b[1]) * 0.8, sp.glow, 2 if gl > 0.94 else 1)
+    g.motes(tips, 2)
+
+
+# ------------------------------------------------------------------------------------------------ leaf
+def _head_petals(g, x, y, r, n, ramp, heart, heart_r, turn=0.0, knots=PETAL):
+    for j in range(n):
+        a = turn + TAU * j / float(n)
+        m, tt, ss, lit = k.leaf((x + heart_r * 0.5 * cos(a), y + heart_r * 0.5 * sin(a)), (x + r * cos(a), y + r * sin(a)),
+                                max(1.3, r * math.pi / n * 0.8), knots)
+        g.c.piece(m, leaf_shader(tt, ss, lit, 2.0), ramp)
+    if heart_r:
+        g.ball(x, y, heart_r, heart)
+
+
+def st_leaf(g):
+    sp, var = g.sp, g.sp.var
+    green = g.ramp(0.15, 0.0)
+    s0 = g.stalk(1.3, green)
+    w = g.w
+    tips = []
+    if var in ('petal', 'flower'):                        # a flower head on its stalk
+        x, y, r = w.mid()
+        r = max(r, w.length * 0.42, 5.5)
+        turn = 0.1 * sin(g.ph) + TAU * sp.jit
+        if var == 'flower':
+            _head_petals(g, x, y, r, 12, g.ramp(0.95, -0.5), sp.A if lum(sp.accent) < 120 else g.ramp(0.7, 0.5), r * 0.45, turn, LEAF)
+            lx, ly = g.full.pt(max(0.1, s0 * 0.5), 0.0)
+            m, tt, ss, lit = k.leaf((lx, ly), (lx + 6 * g.sgn, ly + 3 + sin(g.ph)), 2.4, LEAF)
+            g.c.piece(m, leaf_shader(tt, ss, lit, 2.4), green)
+        else:
+            _head_petals(g, x, y, r, 6, g.ramp(0.8, 0.5), ramp5(sp.glow), 1.8, turn + 0.3)
+            _head_petals(g, x, y, r * 0.62, 5, g.ramp(0.6, -0.5), ramp5(sp.glow), 1.8, -turn)
+        tips = [(x + r * cos(TAU * j / 5.0), y + r * sin(TAU * j / 5.0)) for j in range(5)]
+        g.motes(tips, 2)
+        return
+    if var == 'needle':                                   # stems with thorns, a bloom at each end
+        for j, t in enumerate((-0.6, 0.0, 0.6)):
+            pl = [(i / 6.0 * (0.8 + 0.1 * j), t * (0.3 + 0.7 * i / 6.0)) for i in range(7)]
+            g.stem(pl, 1.0, 0.7, green)
+            x, y = w.pt(*pl[-1])
+            g.ball(x, y, 2.6 + 0.3 * sin(g.ph - j), g.ramp(0.95, t))
+            tips.append((x, y))
+            for i in (2, 4):
+                b = w.pt(*pl[i])
+                g.seg(b, (b[0] + 2.2 * g.sgn, b[1] - 2.0), 0.7, 0.3, green, shade=(4, 3, 2))
+        g.motes(tips, 2)
+        return
+    n = int(k.clamp(round(w.length / (3.4 if var == 'fern' else 5.0)) + sp.n, 4, 14))
+    if var == 'fern' and sp.key == 'dandelion_seed':      # seed heads on a bent stalk
+        g.stem([(i / 8.0, 0.0) for i in range(9)], 1.0, 0.7, green)
+        for i in range(n):
+            u = i / float(n - 1)
+            x, y = w.pt(0.15 + 0.85 * u, (-0.75 if i % 2 else 0.75))
+            x += 0.8 * sin(g.ph - 0.6 * i)
+            g.ball(x, y, 2.0, g.ramp(0.3 + 0.7 * u, -0.5 if i % 2 else 0.5))
+            tips.append((x, y))
+        g.motes(tips, 3)
+        return
+    knots = LEAF
+    hw = None
+    for side in (-1, 1):                                  # leaves to both sides of a twig
+        def bases(u):
+            return w.pt(0.06 + 0.8 * u, 0.0)
+
+        def ends(u, side=side):
+            return w.pt(min(1.0, 0.16 + 0.86 * u), side * 1.0)
+        if var == 'maple':
+            for i in range(n // 2, -1, -1):
+                u = i / float(max(1, n // 2))
+                b, t = bases(u), ends(u)
+                a0 = math.atan2(t[1] - b[1], t[0] - b[0]) + 0.1 * sin(g.ph - 0.7 * i)
+                ln = math.hypot(t[0] - b[0], t[1] - b[1]) * 1.05
+                for da, share in ((-0.75, 0.62), (0.75, 0.62), (-0.36, 0.86), (0.36, 0.86), (0.0, 1.0)):
+                    m, tt, ss, lit = k.leaf(b, (b[0] + ln * share * cos(a0 + da), b[1] + ln * share * sin(a0 + da)), max(1.4, ln * 0.2), LEAF)
+                    g.c.piece(m, leaf_shader(tt, ss, lit, 2.0), g.ramp(0.1 + 0.85 * u, side * 0.5), line=g.ramp(0.5, side * 0.5)[1])
+                tips.append(t)
             continue
-        edge = arch(length, 4.5)
-        heads = []
+        got = g.fan(n if var == 'fern' else max(3, n // 2 + 1), bases, ends, knots, leaf_shader,
+                    lambda i, u, side=side: g.ramp(0.1 + 0.85 * u, side * 0.5), hwk=0.62 if var == 'fern' else 0.78,
+                    sway=0.07, maxw=4.0 if var != 'fern' else 2.2, bend=0.8 * side)
+        tips += [t for b, t in got]
+    g.stem([(i / 8.0, 0.0) for i in range(9)], 1.3, 0.7, sp.A if var != 'fern' else green, shade=(3, 2, 1))
+    g.motes(tips, 3)
+
+
+# ------------------------------------------------------------------------------------------------ bone
+def st_bone(g):
+    sp, var = g.sp, g.sp.var
+    w = g.w
+    bone = g.ramp(0.5, 0.0)
+    tips = []
+    if var == 'rib':                                      # an arm, curled ribs hang from it
+        n = int(k.clamp(round(w.length / 5.0) + sp.n, 4, 9))
         for i in range(n - 1, -1, -1):
             u = i / float(n - 1)
-            a, b = edge(0.08 + 0.92 * u)
-            up = (i % 2 == 0)
-            flut = 6 * sin(ph - 0.7 * i + TAU * sp.jit)
-            ang = rad((-58 if up else 72) - 22 * u * (1 if up else -0.3) + flut + (20 if not up else 0) * 0)
-            ln = ln0 * z * (1.0 - 0.45 * u if var == 'fern' else 1.0 - 0.25 * abs(u - 0.45))
-            ramp = sp.R
-            if var == 'maple':
-                for side in (-1, 1):
-                    lfeather(sc, canvas, wing, a, b, ang + side * rad(42), ln * 0.68, hw * 0.8, knots, leaf_shader, ramp, dim=dim)
-            if var == 'flower' and i in (n - 1, n // 2):
-                heads.append((a + 4.5 * cos(ang), b + 4.5 * sin(ang)))
-                continue
-            lfeather(sc, canvas, wing, a, b, ang, ln, hw, knots, leaf_shader, ramp, dim=dim)
-            tips.append((a + ln * 0.8 * cos(ang), b + ln * 0.8 * sin(ang)))
-        lbone(sc, canvas, wing, [edge(i / 8.0) for i in range(9)], 1.5, 0.8, sp.A, dim, shade=(3, 2, 1))
-        for hx, hy in heads:                              # a flower head: a ring of petals round a dark heart
-            cx, cy, _ = sc.P(wing.at(hx, hy))
-            turn = ph * 0.0 + TAU * sp.jit
-            gr = ramp5(sp.glow)
-            for j in range(8):
-                px, py = cx + 4.3 * cos(turn + TAU * j / 8.0), cy + 4.3 * sin(turn + TAU * j / 8.0)
-                m = k.disc_mask(px, py, 1.9)
-                canvas.piece(m, k.sphere_shade(px, py, 2.4), gr, line=gr[0])
-            m = k.disc_mask(cx, cy, 2.7 + 0.3 * sin(ph))
-            canvas.piece(m, k.sphere_shade(cx, cy, 3.2), sp.A)
-            tips.append((hx, hy))
-        if sp.spark == 'none' and var in ('needle', 'oval'):    # berries, fixed
-            pass
-        mean = wing.still(rad(26))
-        motes(sc, canvas, mean, tips, sp, sgn, 3)
+            s = 0.08 + 0.84 * u
+            curl = 0.1 + 0.03 * sin(g.ph - 0.7 * i)
+            pl = [(s, -0.6), (s + curl * 0.4, 0.0), (s + curl * 0.8, 0.6), (s + curl * 0.6, 1.0)]
+            g.stem(pl, 1.1, 0.6, g.ramp(s, 0.5), knob1=1.1, shade=(4, 3, 1))
+            tips.append(w.pt(*pl[-1]))
+        g.stem([(i / 8.0, -0.62) for i in range(9)], 1.9, 1.1, g.ramp(0.3, -0.5), knob0=2.2, knob1=1.5, shade=(4, 3, 1))
+    else:                                                 # finger: bones that fan from the root; wire: thin, beads
+        n = int(k.clamp(round((w.half(0.6, -1) + w.half(0.6, 1)) / (3.6 if var == 'wire' else 4.2)) + sp.n, 3, 8))
+        for i in range(n):
+            u = i / float(max(1, n - 1))
+            q = 0.1 + 0.8 * u + 0.02 * sin(g.ph - 0.8 * i)
+            tx, ty = w.rim(q)
+            b = w.pt(0.02, 0.0)
+            mid = w.pt(0.45, (0.5 - u) * 1.3)
+            ramp = g.ramp(0.6, 0.5 if u < 0.5 else -0.5)
+            hw = 0.75 if var == 'wire' else 1.15
+            g.seg(b, mid, hw + 0.3, hw, ramp, shade=(4, 3, 1))
+            g.seg(mid, (tx, ty), hw, hw * 0.7, ramp, shade=(4, 3, 1), knob1=1.5 if var != 'wire' else 0.0)
+            if var == 'wire':
+                for j in range(1, 4):
+                    x, y = mid[0] + (tx - mid[0]) * j / 3.0, mid[1] + (ty - mid[1]) * j / 3.0
+                    g.ball(x, y, 1.5, g.ramp(0.9, 0.0) if j == 3 else ramp)
+            tips.append((tx, ty))
+        g.ball(*(w.pt(0.03, 0.0) + (2.0, g.ramp(0.1, 0.0))))
+    g.motes(tips, 2)
+
+
+# ------------------------------------------------------------------------------------------------ fan
+def st_fan(g):
+    sp, var = g.sp, g.sp.var
+    wood = g.ramp(0.12, 0.0)
+    s0 = g.stalk(1.4, wood)
+    w = g.w
+    tips = []
+    if var in ('web', 'shell'):                           # sticks that fan from the root, a web between them
+        ss, tt = w.field()
+        mask = w.body()
+        if var == 'shell':                                # a scalloped edge
+            n = int(k.clamp(round((w.half(0.8, -1) + w.half(0.8, 1)) / 3.4), 4, 8))
+            for i in range(n):
+                x, y = w.rim(0.12 + 0.76 * (i + 0.5) / n)
+                c = w.pt(0.5, 0.0)
+                d = math.hypot(x - c[0], y - c[1]) or 1.0
+                mask &= ~k.disc_mask(x + (x - c[0]) / d * 1.2, y + (y - c[1]) / d * 1.2, 1.5)
+        ridge = np.abs(((tt * (3.2 if var == 'shell' else 4.2)) % 1.0) - 0.5)
+        full_ss, _ = g.full.field()
+        zi = np.clip(((full_ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0)
+        sh = 2 + (ridge > 0.3).astype(np.int8) - (ridge < 0.12).astype(np.int8) + (tt < -0.6).astype(np.int8)
+        if var == 'shell':
+            sh = sh - (np.abs(((ss * 3.3) % 1.0) - 0.5) < 0.08).astype(np.int8)      # growth lines
+        idx = zi * 5 + np.clip(sh, 0, 4)
+        if var == 'web':
+            idx = np.where((ss > 0.86) & (np.abs(tt) < 1.0), 35 + 2 + (ridge > 0.3), idx)   # the trim of the edge
+            if sp.key in ('salamander_fan', 'koi_fin'):
+                spot = (((ss * 5.0) % 1.0 - 0.5) ** 2 + ((tt * 2.0) % 1.0 - 0.5) ** 2) < 0.04
+                idx = np.where(spot & (ss < 0.84), 35 + 1, idx)
+        g.piece(mask, idx, sp.ZT)
+        n = int(k.clamp(round((w.half(0.8, -1) + w.half(0.8, 1)) / 4.0) + sp.n, 3, 8))
+        if var == 'web':
+            for i in range(n):
+                x, y = w.rim(0.1 + 0.8 * i / float(n - 1))
+                g.seg(w.pt(0.02, 0.0), (x, y), 0.8, 0.5, wood, shade=(4, 3, 1))
+                tips.append((x, y))
+        g.ball(*(w.pt(0.03, 0.0) + (1.9, ramp5(sp.glow) if var == 'web' else g.ramp(0.1, 0.0))))
+        tips = tips or [w.rim(0.2), w.rim(0.5), w.rim(0.8)]
+    elif var == 'tile':                                   # plates in rows, each over the next
+        ss, tt = w.field()
+        mask = w.body()
+        rows = 3 if w.width > 12 else 2
+        cols = int(k.clamp(round(w.length / 7.0), 3, 8))
+        r = np.floor((tt + 1.0) / 2.0 * rows).astype(np.int32)
+        cu = ss * cols + (r % 2) * 0.5
+        c = np.floor(cu).astype(np.int32)
+        fu, fv = cu - c, ((tt + 1.0) / 2.0 * rows) % 1.0
+        full_ss, _ = g.full.field()
+        zi = np.clip(((full_ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0)
+        sh = 2 + ((fu < 0.3) | (fv < 0.25)).astype(np.int8) - ((fu > 0.82) | (fv > 0.85)).astype(np.int8) * 2 - ((c + r) % 3 == 0).astype(np.int8)
+        g.piece(mask, zi * 5 + np.clip(sh, 0, 4), sp.ZT)
+        g.stem([(i / 6.0 * 0.9, -0.1) for i in range(7)], 1.0, 0.6, wood)
+        tips = [w.rim(0.2), w.rim(0.4), w.rim(0.6)]
+    elif var == 'ribbon':                                 # bands that stream from the root
+        n = max(3, min(6, 4 + sp.n))
+        for i in range(n):
+            u = i / float(n - 1)
+            t1 = -1.0 + 2.0 * u
+            wave = 0.35 * sin(g.ph - 1.3 * i)
+            pl = [(j / 8.0, t1 * (j / 8.0) ** 0.8 + wave * sin(math.pi * j / 8.0) * 0.6) for j in range(9)]
+            g.stem(pl, 1.5, 0.6, g.ramp(0.7, t1), shade=(4, 3, 1))
+            tips.append(w.pt(*pl[-1]))
+    elif var == 'pipe':                                   # pipes side by side across the blade
+        n = int(k.clamp(round(w.length / 3.6) + sp.n, 5, 16))
+        got = g.fan(n, g.linef(0.03, 0.97, -1.0), g.linef(0.03, 0.97, 1.0), BAR, flat_shader(2, mid=4), lambda i, u: g.ramp(u, 0.0),
+                    hwk=0.46, maxw=2.0, sway=0.02, reach=lambda i: 0.82 + 0.18 * abs(sin(1.7 * i + 0.4)) + 0.04 * sin(g.ph - 0.5 * i))
+        for b, t in got:
+            g.ball(t[0], t[1], 1.0, (g.ramp(0.5, 0.0)[0],) * 5)
+        g.stem([(i / 6.0, -0.2) for i in range(7)], 1.0, 0.8, sp.A, shade=(4, 3, 1))
+        tips = [t for b, t in got]
+    elif var == 'kite':                                   # a head on a stick: a kite, a pinwheel
+        x, y, r = w.mid()
+        r = max(r, w.length * 0.42, 6.0)
+        if sp.key == 'pinwheel':
+            turn = g.ph
+            for j in range(4):
+                a = turn + TAU * j / 4.0
+                tip = (x + r * cos(a), y + r * sin(a))
+                side = (x + r * 0.7 * cos(a + 0.9), y + r * 0.7 * sin(a + 0.9))
+                m = k.poly_mask([(x, y), tip, side])
+                g.piece(m, k.edge_shade(m, 4, 3, 2), ramp5(hue_turn(sp.main, j / 4.0)) if j % 2 else g.ramp(0.8, 0.0))
+                tips.append(tip)
+            g.ball(x, y, 1.6, ramp5(sp.glow))
+        else:
+            a = math.atan2(w.pt(1.0, 0)[1] - w.pt(0.0, 0)[1], w.pt(1.0, 0)[0] - w.pt(0.0, 0)[0]) + 0.05 * sin(g.ph)
+            p = [(x + r * 1.25 * cos(a), y + r * 1.25 * sin(a)), (x + r * 0.75 * cos(a + 1.57), y + r * 0.75 * sin(a + 1.57)),
+                 (x - r * 1.25 * cos(a), y - r * 1.25 * sin(a)), (x + r * 0.75 * cos(a - 1.57), y + r * 0.75 * sin(a - 1.57))]
+            for j in range(4):
+                m = k.poly_mask([(x, y), p[j], p[(j + 1) % 4]])
+                g.piece(m, k.edge_shade(m, 4, 3, 2) - (j % 2), g.ramp(0.8, 0.5 if j < 2 else -0.5), line=g.ramp(0.8, 0.0)[0])
+            g.seg(p[0], p[2], 0.7, 0.7, sp.A, shade=(4, 3, 2))
+            g.seg(p[1], p[3], 0.7, 0.7, sp.A, shade=(4, 3, 2))
+            tx, ty = p[2]
+            for j in range(4):                            # the tail streams
+                nx_, ny_ = tx + 3 * g.sgn * 0 + 2.0 * sin(g.ph - j), ty + 3.0
+                g.seg((tx, ty), (nx_, ny_), 0.7, 0.5, ramp5(sp.glow), shade=(3, 2, 2))
+                tx, ty = nx_, ny_
+            tips = p
+    elif var == 'fold':                                   # folded paper: flat faces, light and dark, sharp creases
+        n = int(k.clamp(round(w.length / 8.0) + 1, 3, 6))
+        cuts = [(i / float(n)) for i in range(n + 1)]
+        for i in range(n):
+            a, b = cuts[i], cuts[i + 1]
+            mid = (a + b) / 2.0
+            peak = 1.0 + 0.12 * sin(g.ph - 0.9 * i)
+            up = [w.pt(a, -0.15), w.pt(mid, -1.0 * peak), w.pt(b, -0.15)]
+            dn = [w.pt(a, -0.15), w.pt(mid + 0.06, 1.0 * peak), w.pt(b, -0.15)]
+            m = k.poly_mask(dn)
+            g.piece(m, 1 + (i % 2), g.ramp(mid, 0.5))
+            m = k.poly_mask(up)
+            g.piece(m, 3 + (i % 2), g.ramp(mid, -0.5))
+            tips.append(up[1])
+        g.stem([(0.0, -0.15), (1.0, -0.15)], 0.7, 0.5, g.ramp(0.5, 0.0), shade=(1, 1, 0))
+    else:                                                 # blade, slat: long pieces from an arm
+        knots = k.BLADE if var == 'blade' else SLAT
+        n = int(k.clamp(round(w.length / (6.0 if var == 'slat' else 4.6)) + sp.n, 3, 10))
+        if sp.key == 'clockwork':                         # gears along a rod
+            g.stem([(i / 6.0, 0.0) for i in range(7)], 1.2, 0.9, wood)
+            for i in range(n):
+                u = i / float(n - 1)
+                x, y = w.pt(0.2 + 0.75 * u, 0.5 * (1 if i % 2 else -1))
+                r = 2.2 + 1.4 * _hash(i, sp.wings)
+                turn = g.ph * (1 if i % 2 else -1)
+                for j in range(6):
+                    a = turn + TAU * j / 6.0
+                    g.seg((x, y), (x + (r + 1.3) * cos(a), y + (r + 1.3) * sin(a)), 0.8, 0.8, g.ramp(u, 0.0), shade=(3, 2, 1))
+                g.ball(x, y, r, g.ramp(u, 0.5))
+                g.ball(x, y, 0.9, (g.ramp(u, 0.0)[0],) * 5)
+                tips.append((x, y))
+        elif var == 'slat':                               # poles, a flag on each
+            for i in range(n - 1, -1, -1):
+                u = i / float(max(1, n - 1))
+                q = 0.5 - 0.42 * u
+                b, t = w.pt(0.0 + 0.3 * u, -0.2), w.rim(q)
+                g.seg(b, t, 0.9, 0.7, wood, shade=(4, 3, 1))
+                fl = [(b[0] + (t[0] - b[0]) * 0.45, b[1] + (t[1] - b[1]) * 0.45), t]
+                dx, dy = w.rim(max(0.02, q - 0.12))
+                wave = 1.2 * sin(g.ph - 0.8 * i)
+                m = k.poly_mask([fl[0], fl[1], (dx + wave, dy + 1.0), ((fl[0][0] + dx) / 2.0, (fl[0][1] + dy) / 2.0 + 1.5 + wave)])
+                idx = k.edge_shade(m, 3, 2, 1)
+                g.piece(m, idx, g.ramp(0.8, 0.5))
+                edge = m & ~k.nb(m, 0, 1)
+                g.piece(edge, 3, ramp5(sp.glow), ring=False)
+                tips.append(t)
+        else:
+            got = g.fan(n, g.linef(0.0, 0.55, -0.4), g.rimf(0.06, 0.62), knots,
+                        lambda tt, ss, lit, hw: np.clip(np.where(lit, 3, 1) + (tt > 0.75) + ((np.abs(ss) < 0.2) & lit), 0, 4),
+                        lambda i, u: g.ramp(0.2 + 0.8 * u, 0.5), hwk=0.7, sway=0.05, maxw=3.4)
+            g.ball(*(w.pt(0.04, -0.2) + (2.2, ramp5(sp.glow))))
+            tips = [t for b, t in got]
+    g.motes(tips, 2)
 
 
 # ------------------------------------------------------------------------------------------------ energy
-TONGUE = ((0.0, 0.7), (0.16, 1.0), (0.45, 0.8), (0.75, 0.42), (1.0, 0.0))
-RAY = ((0.0, 0.25), (0.45, 1.0), (1.0, 0.0))
-STRIP = ((0.0, 0.8), (0.1, 1.0), (0.7, 0.9), (1.0, 0.2))
+def st_energy(g):
+    sp, var = g.sp, g.sp.var
+    fn = ENERGY.get(sp.key) or ENERGY.get(var)
+    return fn(g)
 
 
-def fam_energy(sc, sp):
-    ph = sc.ph
-    z = sp.size
-    var = sp.var
-    n = sp.n
-    length = 23.0 * z
-    if var in SPECIAL:
-        return SPECIAL[var](sc, sp)
-    for sgn, wing, canvas, dim in sides(sc, 34, lambda s: rad(24) + rad(8) * sin(ph - 0.6 * s), length, sp=sp, mean=24):
-        tips = []
-        if var == 'flame':
-            cnt = max(4, min(8, 6 + n))
-            for i in sorted(range(cnt), key=lambda i: -abs(i - 1.5)):
-                u = i / float(cnt - 1)
-                flick = 1.0 + 0.15 * sin(2 * ph + 1.7 * i + TAU * sp.jit)
-                ang = rad(-68 + 104 * u + 4 * sin(ph + 1.1 * i))
-                ln = (25.0 - 14.0 * abs(u - 0.2) ** 1.1) * z * flick
-                bend = 2.6 * sin(ph + 1.1 * i) + 1.2
-                lfeather(sc, canvas, wing, 0.5, 0.0, ang, ln, 3.4, TONGUE,
-                         lambda tt, ss, lit, hw: (1 + lit + (tt > 0.55)).astype(np.int8), sp.R, bend=bend, dim=dim)
-                lfeather(sc, canvas, wing, 0.5, 0.0, ang, ln * 0.66, 1.9, TONGUE,
-                         lambda tt, ss, lit, hw: (2 + lit + (tt < 0.5)).astype(np.int8), sp.A, bend=bend * 0.5, dim=dim, minw=1.0)
-                tips.append((ln * cos(ang), ln * sin(ang)))
-        elif var == 'cloud':
-            puffs = [(3.0, -1.0, 4.4), (9.0, -5.0, 5.2), (15.0, -7.5, 4.8), (21.0, -6.5, 3.9), (25.5, -3.5, 2.8), (7.5, 2.5, 3.8),
-                     (13.5, 1.0, 3.6), (19.0, 0.5, 2.8)][:max(5, min(8, 8 + n))]
-            for i, (a, b, r) in sorted(enumerate(puffs), key=lambda it: -it[1][2] + 0.0, reverse=True):
-                rr = (r + 0.5 * sin(ph + 0.9 * i + TAU * sp.jit)) * z
-                x, y, _ = sc.P(wing.at(a * z + 0.6 * sin(ph + i), b * z))
-                m = k.disc_mask(x, y, rr)
-                canvas.piece(m, k.sphere_shade(x, y, rr + 0.6, (-0.1, 0.25, 0.6, 0.88)) - dim, sp.R, line=sp.R[0])
-                if i >= 5:
-                    tips.append((a * z, b * z))
-            tips = tips or [(12.0, 0.0)]
-        elif var == 'bolt':
-            def zig(pts, amp, seed):
-                out = []
-                for q, (a, b) in enumerate(pts):
-                    j = amp * sin(q * 2.4 + seed + ph * (1 + q % 3)) if 0 < q < len(pts) - 1 else 0.0
-                    out.append((a, b + j))
-                return out
-            main = zig([(0, 0), (5 * z, -5 * z), (9 * z, -2 * z), (14 * z, -8 * z), (18 * z, -5 * z), (24 * z, -10 * z)], 1.6, sp.jit * 9)
-            forks = [zig([main[2], (12 * z, 4 * z), (15 * z, 2 * z), (19 * z, 8 * z)], 1.3, 2.0 + sp.jit * 9),
-                     zig([main[4], (21 * z, 0), (25 * z, -1 * z), (27 * z, 4 * z)], 1.2, 4.0 + sp.jit * 9)]
-            if n > 0:
-                forks.append(zig([main[1], (6 * z, 3 * z), (8 * z, 7 * z), (7 * z, 12 * z)], 1.2, 5.5 + sp.jit * 9))
-            for pts in forks + [main]:
-                m = lline(sc, wing, pts, 1.5, 0.75)
-                idx = k.edge_shade(m, 4, 4, 2)
-                canvas.piece(m, idx, sp.A, line=sp.R[1])
-                tips.append(pts[-1])
-        elif var == 'water':
-            cnt = max(2, min(5, 3 + n))
-            for i in range(cnt - 1, -1, -1):
-                u = i / float(max(1, cnt - 1))
-                reach = (24.0 - 8.0 * u) * z
-                rise = (11.0 - 8.0 * u) * z
-                sway = 1.4 * sin(ph - 0.9 * i + TAU * sp.jit)
-                pts = [(reach * t, -rise * 4 * t * (1 - t) + (6.0 + 9.0 * u) * z * t * t + sway * t) for t in (0, 0.18, 0.36, 0.54, 0.72, 0.88, 1.0)]
-                m = lline(sc, wing, pts, 2.3 - 0.4 * u, 0.8)
-                canvas.piece(m, k.edge_shade(m, 4, 2, 1) - dim, sp.R if i % 2 == 0 else sp.A)
-                tips.append(pts[-1])
-        elif var == 'ray':
-            cnt = max(4, min(9, 6 + n))
-            for i in sorted(range(cnt), key=lambda i: -abs(i - 2)):
-                u = i / float(cnt - 1)
-                ang = rad(-64 + 112 * u)
-                ln = (25.0 - 9.0 * abs(u - 0.3)) * z * (0.78 + 0.22 * sin(ph + 2.0 * i + TAU * sp.jit))
-                lfeather(sc, canvas, wing, 1.5 * cos(ang), 1.5 * sin(ang), ang, ln, 1.9 + 0.5 * (i % 2), RAY,
-                         lambda tt, ss, lit, hw: np.where(np.abs(ss) < 0.34, 9, np.where(lit, 3, 2)).astype(np.int8), sp.PAL, dim=0)
-                tips.append((ln * cos(ang), ln * sin(ang)))
-            x, y, _ = sc.P(wing.at(0.5, 0.0))
-            m = k.disc_mask(x, y, 2.8)
-            canvas.piece(m, k.sphere_shade(x, y, 3.3), sp.A)
-        else:                                             # 'veil': strips of light hang from an arch and wave
-            edge = arch(24.0 * z, 6.0)
-            cnt = max(6, min(11, 9 + n))
-            for i in range(cnt - 1, -1, -1):
-                u = i / float(cnt - 1)
-                a, b = edge(0.06 + 0.92 * u)
-                ln = (8.0 + 9.0 * sin(math.pi * (0.1 + 0.85 * u))) * z * (1.0 + 0.28 * sin(ph - 0.8 * i + TAU * sp.jit))
-                mixc = tuple(int(round(sp.main[c] + (sp.accent[c] - sp.main[c]) * u)) for c in range(3))
-                lfeather(sc, canvas, wing, a, b, rad(90 + 8 * sin(ph - 0.8 * i)), ln, 1.5, STRIP,
-                         lambda tt, ss, lit, hw: (4 - (tt > 0.3) - (tt > 0.6) - (tt > 0.85) - (~lit & (tt > 0.3))).astype(np.int8),
-                         ramp5(mixc), dim=0, minw=1.4)
-                tips.append((a, b + ln))
-            lbone(sc, canvas, wing, [edge(i / 8.0) for i in range(9)], 1.3, 0.8, ramp5(sp.glow), 0, shade=(4, 3, 2))
-        mean = wing.still(rad(24))
-        motes(sc, canvas, mean, tips, sp, sgn, 3)
+def en_flame(g):
+    """tongues of fire: hot at the root, they lick out to the edge and past it"""
+    sp = g.sp
+    g.stalk(1.4)
+    w = g.w
+    n = int(k.clamp(round(w.length / 4.4) + sp.n, 4, 11))
+    g.piece(w.region(0.0, 0.9, -0.7, 0.6), 3, g.ramp(0.3, 0.0))
+    got = g.fan(n, g.linef(0.0, 0.7, -0.2), g.rimf(0.05, 0.66), TONGUE, flame_shader,
+                lambda i, u: g.pal2((0.6 * u, 0.2), (0.3 + 0.69 * u, 0.9)), hwk=0.95, sway=0.13, lag=1.7,
+                reach=lambda i: 1.05 + 0.17 * sin(2 * g.ph + 1.7 * i + TAU * sp.jit), bend=1.6, maxw=4.6)
+    g.motes([t for b, t in got], 3)
+
+
+def en_cloud(g):
+    """puffs along the spine, lit from above, they swell one after the other"""
+    sp = g.sp
+    w = g.w
+    n = int(k.clamp(round(w.length / 4.2), 5, 13))
+    pts = []
+    for i in range(n):
+        u = i / float(n - 1)
+        for side in ((-0.45, 0.45) if w.half(u, 1) + w.half(u, -1) > 9 else (0.0,)):
+            x, y = w.pt(0.04 + 0.92 * u, side)
+            r = max(1.8, (w.half(u, -1) + w.half(u, 1)) * (0.36 if side else 0.55)) * (1.0 + 0.1 * sin(g.ph - 0.8 * i))
+            pts.append((x, y, r, u, side))
+    mask = np.zeros((S, S), bool)
+    for x, y, r, u, side in pts:
+        mask |= k.disc_mask(x, y, r)
+    idx = np.full((S, S), 1, np.int32)
+    for x, y, r, u, side in pts:                          # each puff is a ball of light
+        sh = k.sphere_shade(x, y, r + 0.5)
+        idx = np.where(k.disc_mask(x, y, r), np.maximum(idx, sh), idx)
+    ss, tt = g.full.field()
+    zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0.3)
+    g.piece(mask, zi * 5 + np.clip(idx, 1, 4), sp.ZT)
+    g.motes([(x, y) for x, y, r, u, side in pts], 2)
+
+
+def en_bolt(g):
+    """a dark arm, a bolt runs along it and forks"""
+    sp = g.sp
+    w = g.w
+    g.stem([(i / 8.0, 0.25) for i in range(9)], max(1.4, w.half(0.3, 1) * 0.45), 0.9, g.ramp(0.4, 0.5))
+    tips = []
+    for b in range(2):
+        pl = []
+        n = 7
+        for i in range(n + 1):
+            u = i / float(n)
+            jit = (_hash(i + 7 * b, sp.wings + g.f // 2) - 0.5) * 1.1 if 0 < i < n else 0.0
+            pl.append((u if b == 0 else 0.25 + 0.5 * u, (-0.55 if b == 0 else 0.1 - 1.0 * u) + jit))
+        m = w.line(pl, 0.9 if b == 0 else 0.7, 0.6)
+        g.piece(m, 3 + (k.edge_shade(m, 1, 1, 0)), ramp5(sp.main), line=sp.A[1])
+        tips.append(w.pt(*pl[-1]))
+        for i in (2, 4):
+            a = w.pt(*pl[i])
+            g.seg(a, (a[0] + 2.5 * (_hash(i, g.f // 2) - 0.5) * 2, a[1] - 3.0), 0.6, 0.4, ramp5(sp.main), shade=(4, 4, 3))
+    g.c.haze(k.disc_mask(*(w.pt(0.05, 0.3) + (4.0,))), sp.A[1])
+    for i, (x, y) in enumerate(tips):
+        g.c.spark(x, y, sp.glow, 1 + (g.f + i) % 2)
+
+
+def en_water(g):
+    """water: a body of curled lobes, foam on the upper edge, drops fly off"""
+    sp = g.sp
+    g.stalk(1.3)
+    w = g.w
+    n = int(k.clamp(round(w.length / 6.0) + sp.n, 3, 8))
+    ss, tt = g.zonefill(shade=lambda ss, tt: 2 + (tt < -0.3).astype(np.int8) - (tt > 0.45).astype(np.int8) + (np.abs(((ss * n + tt * 0.6) % 1.0) - 0.5) < 0.1).astype(np.int8) * -1)
+    tips = []
+    foam = ramp5(sp.glow) if lum(sp.glow) > 150 else g.ramp(0.9, -0.5)
+    for i in range(n):
+        u = (i + 0.5) / n
+        x, y = w.pt(u, -0.75 + 0.1 * sin(g.ph - i))
+        r = k.clamp(w.half(u, -1) * 0.5, 1.5, 3.4) * (1.0 + 0.12 * sin(g.ph - 0.9 * i))
+        if sp.key != 'ink_splash' and sp.key != 'solar_flare':
+            g.ball(x, y, r, foam, line=foam[1])
+        tx, ty = w.rim(0.08 + 0.5 * u)
+        q = (g.f / float(k.FRAMES) + _hash(i, sp.wings)) % 1.0
+        g.ball(tx + (tx - x) * 0.25 * q, ty + 1 + 5 * q, 1.4 - 0.5 * q, g.ramp(u, 0.5))
+        tips.append((tx, ty))
+    g.motes(tips, 2)
+
+
+def en_arcs(g):
+    """loops of fire that leave the body and come back"""
+    sp = g.sp
+    w = g.w
+    n = max(3, min(6, 4 + sp.n))
+    tips = []
+    for i in range(n):
+        u = i / float(n - 1)
+        t1 = 1.0 - 2.0 * u
+        swell = 1.0 + 0.1 * sin(g.ph - 1.1 * i)
+        pl = [(j / 8.0, t1 * sin(math.pi * (j / 8.0) ** 0.8) * swell) for j in range(9)]
+        g.stem(pl, 1.7, 0.9, g.pal2((0.5, t1), (0.5, t1))[:5], shade=(4, 3, 2))
+        tips.append(w.pt(0.6, t1 * swell))
+    g.ball(*(w.pt(0.04, 0.0) + (2.6, g.ramp(0.1, 0.0))))
+    g.motes(tips, 3)
+
+
+def en_ray(g):
+    """rays that burst from one point: the root, or the head of a stalk"""
+    sp = g.sp
+    s0 = g.stalk(1.2)
+    w = g.w
+    burst = sp.key in ('firework_burst',)
+    wide = (w.half(0.6, -1) + w.half(0.6, 1))
+    n = int(k.clamp(round(wide / 2.6) + sp.n, 4, 12))
+    c = w.pt(0.5, 0.0) if burst else w.pt(0.02, 0.0)
+    tips = []
+    for i in range(n):
+        u = i / float(n - 1)
+        if burst:
+            a = TAU * i / n + 0.1 * sin(g.ph)
+            r = max(w.length * 0.5, wide * 0.5) * (0.75 + 0.25 * sin(g.ph - 1.3 * i) ** 2)
+            t = (c[0] + r * cos(a), c[1] + r * sin(a))
+        else:
+            t = w.rim(0.1 + 0.8 * u)
+            r = 0.86 + 0.14 * sin(g.ph - 1.1 * i + TAU * sp.jit)
+            t = (c[0] + (t[0] - c[0]) * r, c[1] + (t[1] - c[1]) * r)
+        m, tt, ss, lit = k.leaf(c, t, 1.5 if sp.key == 'gale_streak' else 2.1, RAY)
+        idx = np.where(np.abs(ss) < 0.45, 4, 3) - (tt > 0.7)
+        g.c.piece(m, np.where(tt > 0.6, idx + 5, idx).astype(np.int8), g.pal2((0.4, 1 - 2 * u), (0.95, 1 - 2 * u)))
+        tips.append(t)
+        if burst:
+            g.c.spark(t[0], t[1], sp.glow, 1 + (i + g.f // 2) % 2)
+    g.ball(c[0], c[1], 2.0 if not burst else 2.6, ramp5(sp.glow))
+    g.motes(tips, 2)
+
+
+def en_disc(g):
+    """a bar of feathers of light with a disc on it (the sun disc)"""
+    sp = g.sp
+    w = g.w
+    n = int(k.clamp(round(w.length / 3.6), 5, 14))
+    got = g.fan(n, g.linef(0.05, 0.95, -0.9), g.linef(0.08, 1.0, 1.0), SLAT, flat_shader(2, 0.7, mid=4),
+                lambda i, u: g.pal2((u, -0.5), (u, 0.9)), hwk=0.5, maxw=2.2, sway=0.02,
+                reach=lambda i: 0.9 + 0.1 * sin(g.ph - 0.6 * i))
+    g.stem([(i / 6.0, -0.85) for i in range(7)], 1.4, 1.0, sp.A, shade=(4, 3, 1))
+    x, y = w.pt(0.06, -0.3)
+    g.ball(x, y, 2.6 + 0.3 * sin(g.ph), ramp5(sp.glow))
+    g.motes([t for b, t in got], 2)
+
+
+def en_veil(g):
+    """an arm of light, bands hang from it and sway"""
+    sp = g.sp
+    w = g.w
+    n = int(k.clamp(round(w.length / 5.0) + sp.n, 4, 10))
+    got = g.fan(n, g.linef(0.08, 0.96, -0.7), g.linef(0.02, 0.9, 1.0), RIBBON, flat_shader(3, 0.55),
+                lambda i, u: g.pal2((u, 0.2), (u, 0.9)), hwk=0.5, maxw=2.3, sway=0.12, lag=0.9,
+                reach=lambda i: 0.9 + 0.12 * sin(g.ph - 0.9 * i))
+    g.stem([(i / 8.0, -0.75) for i in range(9)], 1.6, 0.9, g.ramp(0.5, -0.5), shade=(4, 3, 2))
+    for i, (b, t) in enumerate(got):
+        if i % 2 == 0:
+            q = (g.f / float(k.FRAMES) + i * 0.17) % 1.0
+            g.c.spark(b[0] + (t[0] - b[0]) * q, b[1] + (t[1] - b[1]) * q - 5, sp.glow, 0 if q > 0.5 else 1)
+    g.motes([b for b, t in got], 2)
+
+
+def en_jelly(g):
+    """a bell on a stalk, tentacles under it"""
+    sp = g.sp
+    s0 = g.stalk(1.3)
+    w = g.w
+    x, y, r = w.mid()
+    r = max(r * 0.9, 4.5) * (1.0 + 0.08 * sin(g.ph))
+    tips = []
+    for i in range(5):
+        bx = x - r * 0.7 + r * 1.4 * i / 4.0
+        px, py = bx, y + 1
+        for j in range(3):
+            nx_, ny_ = bx + 1.3 * sin(g.ph - 0.9 * j - i), py + (r * 0.5 + 1.5)
+            g.seg((px, py), (nx_, ny_), 0.8, 0.5, g.ramp(0.8, 0.9), shade=(4, 3, 2))
+            px, py = nx_, ny_
+        tips.append((px, py))
+    bell = k.disc_mask(x, y, r) & (k.PY < y + r * 0.35)
+    g.piece(bell, np.clip(k.sphere_shade(x, y, r + 0.5), 1, 4), g.ramp(0.7, -0.5))
+    g.c.spark(x - r * 0.3, y - r * 0.4, sp.glow, 1)
+    g.motes(tips, 2)
+
+
+def en_funnel(g):
+    """a tornado: a cone that widens from the root to a dark mouth, bands of cloud turn round it, dust flies"""
+    sp = g.sp
+    w = g.w
+    ss, tt = w.field()
+    mask = w.body()
+    turn = g.f / float(k.FRAMES)
+    band = ((ss * 5.5 - tt * 0.45 - turn) % 1.0)
+    sh = np.where(band < 0.4, 4, np.where(band < 0.55, 2, 1)) + (tt < -0.35).astype(np.int8) - (tt > 0.45).astype(np.int8)
+    zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0.2)
+    idx = zi * 5 + np.clip(sh, 0, 4)
+    mouth = (ss > 0.86) & (np.abs(tt) < 0.72)
+    idx = np.where(mouth, zi * 5 + 0, idx)
+    g.piece(mask, idx, sp.ZT)
+    for i in range(4):                                    # dust that is thrown out
+        q = (turn + i / 4.0) % 1.0
+        x, y = w.pt(0.3 + 0.6 * _hash(i, sp.wings), (1.15 + 0.6 * q) * (1 if i % 2 else -1))
+        g.c.spark(x, y, sp.glow, 1 if q < 0.5 else 0)
+    x, y = w.pt(0.95, 0.0)
+    g.c.haze(k.disc_mask(x, y, 3.5) & ~mask, g.ramp(0.9, 0.0)[1])
+
+
+def en_whirl(g):
+    """a whirlpool: a disc of water on a stalk, a spiral of foam that turns"""
+    sp = g.sp
+    s0 = g.stalk(1.6)
+    w = g.w
+    x, y, r = w.mid()
+    r = max(r, w.length * 0.46, 5.5)
+    mask = w.body() | k.disc_mask(x, y, r * 0.8)
+    dx, dy = k.PX - x, k.PY - y
+    rr = np.sqrt(dx * dx + dy * dy) / r
+    th = np.arctan2(dy, dx)
+    turn = TAU * g.f / float(k.FRAMES)
+    arm = ((th * g.sgn + rr * 7.5 - turn) / TAU * 2.0) % 1.0
+    sh = np.where(arm < 0.3, 4, np.where(arm < 0.5, 3, np.where(rr > 0.8, 1, 2)))
+    sh = np.where(rr < 0.16, 0, sh)
+    g.piece(mask, sh, g.ramp(0.7, 0.0))
+    for i in range(3):
+        a = turn + TAU * i / 3.0
+        g.c.spark(x + (r + 1.5) * cos(a), y + (r + 1.5) * sin(a), sp.glow, 1 if i == 0 else 0)
+
+
+def en_smoke(g):
+    """dark smoke: thick wisps that curl from the root, a haze round them, pieces that drift off"""
+    sp = g.sp
+    w = g.w
+    body = np.zeros((S, S), bool)
+    n = max(4, min(6, 5 + sp.n))
+    turn = g.f / float(k.FRAMES)
+    for i in range(n):
+        u = i / float(n - 1)
+        t1 = -0.9 + 1.8 * u
+        pl = [(j / 8.0, t1 * (j / 8.0) ** 0.7 + 0.28 * sin(g.ph - 1.2 * i + 5.0 * j / 8.0)) for j in range(9)]
+        m = w.line(pl, 2.6, 1.0, knob1=1.8 + 0.5 * sin(g.ph - i))
+        body |= m
+    ss, tt = g.full.field()
+    zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0)
+    curl = ((ss * 4.0 + tt * 0.8 - turn) % 1.0) < 0.35
+    g.c.haze(k.dilate4(k.dilate4(body)) & ~body, g.ramp(0.5, 0.0)[1])
+    g.piece(body, zi * 5 + 1 + curl + (tt < -0.5), sp.ZT)
+    for i in range(3):
+        q = (turn + i / 3.0) % 1.0
+        x, y = w.pt(0.75 + 0.3 * q, -1.0 + 0.8 * i - 0.4 * q)
+        g.c.haze(k.disc_mask(x, y - 4 * q, 2.6 * (1.0 - 0.6 * q)), g.ramp(0.9, 0.0)[2])
+
+
+def en_rain(g):
+    """a rain cloud arm: strands of rain hang from it, bright drops run down them, rings where they land"""
+    sp = g.sp
+    w = g.w
+    n = int(k.clamp(round(w.length / 3.0) + sp.n, 6, 16))
+    turn = g.f / float(k.FRAMES)
+    tips = []
+    for i in range(n):
+        u = i / float(n - 1)
+        b = w.pt(0.05 + 0.93 * u, -0.6)
+        t = w.pt(0.03 + 0.9 * u, 1.0)
+        g.seg(b, t, 0.75, 0.5, g.ramp(u, 0.5), shade=(3, 2, 2))
+        q = (turn * 2.0 + _hash(i, sp.wings)) % 1.0
+        g.c.spark(b[0] + (t[0] - b[0]) * q, b[1] + (t[1] - b[1]) * q, sp.glow, 0)
+        tips.append(t)
+    g.stem([(i / 8.0, -0.7) for i in range(9)], 2.0, 1.2, g.ramp(0.4, -0.5), shade=(4, 3, 2))
+    x, y = w.pt(0.45, 1.0)
+    q = turn
+    ring = k.disc_mask(x, y + 7, 1.5 + 3.5 * q) & ~k.disc_mask(x, y + 7, 0.6 + 3.5 * q)
+    ring &= (k.PY > y + 5.5)
+    g.c.haze(ring, sp.glow)
+
+
+def en_nebula(g):
+    """a cloud of two colours with a field of stars"""
+    sp = g.sp
+    w = g.w
+    ss, tt = w.field()
+    mask = w.body()
+    n = 5
+    for i in range(n):                                    # a knobbly edge
+        x, y = w.rim(0.1 + 0.8 * i / float(n - 1))
+        mask |= k.disc_mask(x, y, 2.4 + 0.5 * sin(g.ph - i))
+    drift = 0.15 * sin(g.ph)
+    lobes = np.sin(ss * 9.0 + drift) + np.sin(tt * 3.0 + ss * 4.0 - drift)
+    zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + (tt >= 0)
+    idx = zi * 5 + np.clip(2 + (lobes > 0.6).astype(np.int8) - (lobes < -0.7).astype(np.int8) + (tt < -0.5), 0, 4)
+    idx = np.where((lobes > 1.2), 35 + 3, idx)
+    g.piece(mask, idx, sp.ZT)
+    turn = g.f / float(k.FRAMES)
+    for j in range(7):
+        x, y = w.pt(0.1 + 0.85 * _hash(j, sp.wings), -0.7 + 1.4 * _hash(j, 77))
+        gl = cos(TAU * (turn + _hash(j, 5)))
+        if gl > -0.2:
+            g.c.spark(x, y, (255, 255, 255) if j % 2 else sp.glow, 1 if gl > 0.7 else 0)
+
+
+ENERGY = {'flame': en_flame, 'cloud': en_cloud, 'bolt': en_bolt, 'water': en_water, 'ray': en_ray, 'veil': en_veil,
+          'funnel': en_funnel, 'whirl': en_whirl, 'smoke': en_smoke, 'rain': en_rain, 'nebula': en_nebula,
+          'jellyfish': en_jelly, 'solar_flare': en_arcs, 'sun_disc': en_disc}
 
 
 # ------------------------------------------------------------------------------------------------ orbit
-def fam_orbit(sc, sp):
-    items = []
-    if sp.var == 'firefly':                               # small lights on two rings that turn against each other
-        for ring, (cnt, radius, tilt, way, height) in enumerate(((5, 22.0, 12, 1, 3.0), (4, 14.0, -18, -1, 8.0))):
-            cnt = max(3, cnt + sp.n)
-            for i in range(cnt):
-                th = way * TAU * (i / float(cnt) + sc.f / float(k.FRAMES * cnt)) + ring * 1.3 + TAU * sp.jit
-                x, zz = radius * cos(th), radius * sin(th)
-                p = (x * cos(rad(tilt)), height + x * sin(rad(tilt)) + 1.5 * sin(3 * th), zz)
-                items.append((sc.P(p), th, ring))
-        items.sort(key=lambda it: it[0][2])
-        for (x, y, depth), th, ring in items:
-            canvas = sc.layer(depth)
-            blink = cos(2 * th + ring)
-            r = 1.9 + 0.5 * blink
-            m = k.disc_mask(x, y, r)
-            canvas.piece(m, k.sphere_shade(x, y, r + 0.5, (-0.3, 0.1, 0.5, 0.85)), sp.R)
-            canvas.spark(x, y, sp.glow, 2 if blink > 0.6 else 1)
-            canvas.spark(x - 3.0 * cos(th + 1.57) * 0, y + 3.5, sp.accent, 0)
+def st_orbit(g):
+    sp = g.sp
+    stem = g.ramp(0.15, 0.0)
+    if sp.var == 'firefly':                               # stalks that end in lights; the lights breathe
+        w = g.w
+        n = max(8, min(14, int(w.length / 3.0) + sp.n))
+        for i in range(n):                                # a swarm: lights in two loose rows along the wing
+            u = i / float(n - 1)
+            x, y = w.pt(0.08 + 0.88 * u, (-0.55 if i % 2 else 0.55) + 0.35 * (_hash(i, sp.wings) - 0.5))
+            x += 0.9 * sin(g.ph - 0.9 * i)
+            y += 0.9 * cos(g.ph - 0.9 * i)
+            if i % 3 == 0:
+                g.seg(w.pt(max(0.0, u - 0.25), 0.0), (x, y), 0.6, 0.5, stem)
+            gl = 0.5 + 0.5 * sin(g.ph - 1.4 * i)
+            g.ball(x, y, 1.9 + 0.5 * gl, g.ramp(0.1 + 0.8 * u, 0.0))
+            if gl > 0.75:
+                g.c.spark(x, y, sp.glow, 1)
         return
-    # 'circle': a dashed ring that turns round the body, four rune stones on it
-    dashes = 18
-    radius = 21.0 * sp.size
-    for i in range(dashes):
-        th = TAU * (i / float(dashes) + sc.f / float(k.FRAMES * dashes))
-        pts = []
-        for q in (-0.085, 0.0, 0.085):
-            x, zz = radius * cos(th + q), radius * sin(th + q)
-            pts.append(sc.P((x * cos(rad(10)), 2.0 + x * sin(rad(10)), zz)))
-        items.append((pts[1][2], 'dash', pts, i))
-    stones = max(3, 4 + sp.n)
-    for i in range(stones):
-        th = -TAU * (i / float(stones) + sc.f / float(k.FRAMES * stones)) + TAU * sp.jit
-        x, zz = (radius + 0.5) * cos(th), (radius + 0.5) * sin(th)
-        p = sc.P((x * cos(rad(10)), 2.5 + x * sin(rad(10)) + 1.5 * sin(stones * th), zz))
-        items.append((p[2] + 0.01, 'stone', p, th))
-    items.sort(key=lambda it: it[0])
-    for depth, kind, arg, extra in items:
-        canvas = sc.layer(depth)
-        if kind == 'dash':
-            m = k.capsule_mask(arg[0][:2], arg[1][:2], 1.0) | k.capsule_mask(arg[1][:2], arg[2][:2], 1.0)
-            canvas.piece(m, k.edge_shade(m, 4, 3, 2), sp.A)
-        else:
-            x, y = arg[0], arg[1]
-            m = k.poly_mask([(x, y - 4.6), (x + 3.4, y), (x, y + 4.6), (x - 3.4, y)])
-            idx = np.where((k.PX - x) + (k.PY - y) < 0, 3, 1).astype(np.int8)
-            idx[k.disc_mask(x, y, 1.2)] = 4
-            canvas.piece(m, idx, sp.R)
-            g = cos(stones * extra)
-            if g > 0.5:
-                canvas.spark(x, y, sp.glow, 2 if g > 0.9 else 1)
+    s0 = g.stalk(1.5, stem)                               # a disc of signs that turns on a stalk
+    w = g.w
+    x, y, r = w.mid()
+    r = max(r, w.length * 0.45, 6.0)
+    turn = g.ph * 0.5
+    mask = k.disc_mask(x, y, r)
+    dx, dy = k.PX - x, k.PY - y
+    rr = np.sqrt(dx * dx + dy * dy) / r
+    idx = np.where(rr > 0.8, 3, 2) + (dy < -r * 0.3)
+    for j in range(6):
+        a = turn + TAU * j / 6.0
+        mask &= ~k.disc_mask(x + r * 0.52 * cos(a), y + r * 0.52 * sin(a), r * 0.17)
+    mask &= ~k.disc_mask(x, y, r * 0.16)
+    g.piece(mask, idx, g.ramp(0.8, 0.0))
+    for j in range(3):
+        a = -turn + TAU * j / 3.0
+        g.c.spark(x + (r + 2) * cos(a), y + (r + 2) * sin(a), sp.glow, 1)
 
 
-# ------------------------------------------------------------------------------------------------ own forms (O587)
-# Wings whose old art is a material of its own: a funnel of wind, a whirl of water, smoke, rain, a star cloud,
-# folded paper, a shell. Each reads the row's outline (Env) and fills it with that material.
-CONE = ((0.0, 0.14), (0.25, 0.36), (0.6, 0.72), (0.88, 1.0), (0.96, 0.92), (1.0, 0.6))
+STYLES = {'feather': st_feather, 'bat': st_bat, 'insect': st_insect, 'crystal': st_crystal, 'leaf': st_leaf, 'bone': st_bone,
+          'fan': st_fan, 'energy': st_energy, 'orbit': st_orbit}
 
 
-def _hash(i, j=0):
-    """a fixed number in 0..1 for a pair of whole numbers"""
-    v = (i * 374761393 + j * 668265263 + 1013904223) & 0xFFFFFFFF
-    v = ((v ^ (v >> 13)) * 1274126177) & 0xFFFFFFFF
-    return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
+def fam_strip(sc, sp):
+    """one face-on frame of a row: the far (smaller) wing first; south behind the body, north in front of it"""
+    d = sc.d
+    sc.back, sc.front = Clip(sp.outline), Clip(sp.outline)
+    canvas = sc.front if d == 'north' else sc.back
+    origin, scale = placed(sp, d)
+    wings = [(v, sgn) for v, sgn in zip(sp.strips[d], (-1, 1)) if v is not None]
+    wings.sort(key=lambda it: st.Strip(it[0], it[1], origin, scale).length)
+    for v, sgn in wings:
+        lagp = 0.35 if sgn > 0 else 0.0
+
+        def bend(u, sgn=sgn, lagp=lagp):
+            return -sgn * sp.amp * (0.25 + 0.75 * u) * sin(sc.ph - 1.0 * u - lagp)
+        w = st.Strip(v, sgn, origin, scale, bend, 1.0 + 0.015 * sin(sc.ph + 1.0))
+        rest = st.Strip(v, sgn, origin, scale)
+        mould = MOULD_ENV or sp.mould
+        layer = Clip(sp.outline) if mould != 'free' else canvas
+        g = G(layer, w, rest, sp, sc, sgn)
+        STYLES[sp.family](g)
+        g.glint()
+        if layer is not canvas:
+            _mould(layer, canvas, w, sp, mould == 'fill')
+    if d == 'north':                                      # from behind, the knot that ties the pair is in sight
+        x, y = origin
+        m = k.disc_mask(x + 0.5, y + 0.5, 1.9) & INNER
+        canvas.piece(m, k.sphere_shade(x + 0.5, y + 0.5, 2.4).astype(np.int8), sp.A)
 
 
-def env_poly(env, lo, hi, n, share=1.0, floor=0.25):
-    return [env.pt(lo + (hi - lo) * i / float(n), share, floor) for i in range(n + 1)]
+def _grow(mask, n):
+    for _ in range(n):
+        mask = k.dilate4(mask)
+    return mask
 
 
-def sp_funnel(sc, sp):
-    """a funnel of wind: narrow at the shoulder, a wide mouth outside, bands of cloud that turn round it"""
-    ph, turn = sc.ph, sc.f / float(k.FRAMES)
-    env = env_of(sp, 34, 16)
-    for sgn, wing, canvas, dim in raw_sides(sc, 34, lambda t: rad(16) + rad(5) * sin(ph - 0.8 * t), env.rmax):
-        phi = env.peak + rad(5) * sin(ph + 0.6)
-        ln = env.R(env.peak, 0.3)
-        hw = k.clamp(0.36 * ln, 5.0, 11.0)
-
-        def shader(tt, ss, lit, hw2):
-            band = ((tt * 2.6 + 0.55 * ss * sgn + 0.5 * ss * ss - turn + sp.jit) % 1.0)
-            idx = np.select([band < 0.14, band < 0.42, band < 0.75], [9, 3, 2], 1).astype(np.int8)
-            idx = np.where((idx < 5) & ~lit & (np.abs(ss) > 0.45), idx - 1, idx)
-            return np.clip(idx, 0, 9).astype(np.int8)
-
-        got = lfeather(sc, canvas, wing, 0.0, 0.0, phi, ln, hw, CONE, shader, sp.PAL, bend=1.5 * sin(ph), dim=0, minw=3.0)
-        if got:
-            b0, t0 = got
-            mx, my = b0[0] + (t0[0] - b0[0]) * 0.93, b0[1] + (t0[1] - b0[1]) * 0.93
-            ux, uy = t0[0] - b0[0], t0[1] - b0[1]
-            n = math.hypot(ux, uy) or 1.0
-            ux, uy = ux / n, uy / n
-            px, py = k.PX - mx, k.PY - my
-            al, ac = px * ux + py * uy, -px * uy + py * ux
-            w = max(3.0, hw * 0.72)
-            mouth = (al / (w * 0.42)) ** 2 + (ac / w) ** 2 <= 1.0
-            idx = np.where((al / (w * 0.42)) ** 2 + (ac / w) ** 2 <= 0.35, 0, 1).astype(np.int8)
-            canvas.piece(mouth & canvas.op, idx, sp.R, ring=False)          # the dark mouth of the funnel
-            for j in range(3):                                              # dust flies round the mouth
-                q = TAU * (turn + j / 3.0 + sp.jit)
-                canvas.spark(mx + ux * 2.0 + (-uy) * (w + 2.5) * cos(q), my + uy * 2.0 + ux * (w + 2.5) * cos(q) + 1.5 * sin(q),
-                             sp.glow, 1 if sin(q) > 0.3 else 0)
+def _mould(layer, canvas, w, sp, fill):
+    """hold one wing to the measured outline of the old wing: what a style draws outside the strip is cut away
+    and, with `fill`, what it leaves open inside is closed in the dark shade of the zone; then the wing goes on
+    the frame's layer"""
+    body = w.body() & INNER
+    layer.op &= _grow(body, 1)
+    if fill:
+        under = body & ~layer.op
+        if under.any():
+            ss, tt = w.field()
+            zi = np.clip(((ss + NOISE) * 3).astype(np.int32), 0, 2) * 2 + ((tt + 2 * NOISE) >= 0)
+            layer.rgb[under] = np.asarray(sp.ZT, np.uint8)[(zi * 5 + 1)[under]]
+            layer.op |= under
+    op = layer.op
+    edge = op & ~(k.nb(op, 1, 0) & k.nb(op, -1, 0) & k.nb(op, 0, 1) & k.nb(op, 0, -1))
+    layer.rgb[edge] = sp.outline
+    canvas.rgb[op] = layer.rgb[op]
+    canvas.op |= op
+    near = _grow(body, 3)
+    canvas.sparks.extend(layer.sparks)
+    canvas.hazes.extend((m & near, c) for m, c in layer.hazes)
 
 
-def sp_whirl(sc, sp):
-    """a whirl of water: a flat spiral that turns, foam on its arms, a stem of water to the shoulder"""
-    ph, turn = sc.ph, sc.f / float(k.FRAMES)
-    env = env_of(sp, 34, 12)
-    for sgn, wing, canvas, dim in raw_sides(sc, 34, lambda t: rad(12) + rad(5) * sin(ph - 0.8 * t), env.rmax):
-        ln = env.R(env.peak, 0.3)
-        rx = k.clamp(0.4 * ln, 6.0, 12.5)
-        ry = rx * 0.74
-        ca, cb = env.pt(env.peak, 1.0, 0.3)
-        ca, cb = ca - rx * cos(env.peak) * 0.9, cb - rx * sin(env.peak) * 0.9
-        stem = [(0.0, 0.0), (ca * 0.35, cb * 0.35 + 3.0 + sin(ph)), (ca * 0.7, cb * 0.7 + 3.5), (ca, cb + ry * 0.7)]
-        lbone(sc, canvas, wing, stem, 1.7, 1.4, sp.R, dim, shade=(4, 3, 1))
-        la, lb = local_field(sc, wing, ca, cb)
-        rr = np.sqrt((la / rx) ** 2 + (lb / ry) ** 2)
-        th = np.arctan2(lb / ry, la / rx) * sgn
-        disc = rr <= 1.0
-        arm = (th / TAU * 2.0 + rr * 1.7 - turn + sp.jit) % 1.0
-        idx = np.select([arm < 0.12, arm < 0.42, arm < 0.7], [10, 8, 3], 1).astype(np.int8)
-        idx[(idx == 10) & (rr < 0.3)] = 8
-        idx[rr < 0.16] = 0                                                 # the eye of the whirl
-        idx[(rr > 0.84) & (idx < 5)] = 2
-        canvas.piece(disc, idx, sp.PAL)
-        still = k.Wing(sgn, wing.root, wing.sweep, lambda t: rad(12), wing.length)
-        for j in range(3):                                                 # drops are thrown off the rim
-            q = (turn + j / 3.0 + sp.jit) % 1.0
-            a = TAU * (j / 3.0 + 0.2) * sgn
-            x, y, _ = sc.P(still.at(ca + rx * (1.0 + 0.5 * q) * cos(a), cb + ry * (1.0 + 0.5 * q) * sin(a) + 5.0 * q * q))
-            canvas.spark(x, y, sp.glow, 1 if q < 0.35 else 0)
+MOULD_ENV = os.environ.get('CHAOS_WINGS_MOULD', '')      # a trial switch for `score`: free, clip or fill for every row
+MOULDS = ('free', 'clip', 'fill')
 
 
-def sp_smoke(sc, sp):
-    """smoke: a thin dark tendril that curls, a soft haze drifting round and off it"""
-    ph, turn = sc.ph, sc.f / float(k.FRAMES)
-    env = env_of(sp, 34, 14)
-    for sgn, wing, canvas, dim in raw_sides(sc, 34, lambda t: rad(14) + rad(6) * sin(ph - 1.0 * t), env.rmax):
-        lo, hi = env.lo, env.hi
-        pts = []
-        n = 9
-        for i in range(n + 1):                                             # the tendril leaves low and curls up to the tip
-            u = i / float(n)
-            phi = hi + (lo - hi) * u ** 1.3 * 0.9 + rad(8) * sin(ph - 2.6 * u + TAU * sp.jit) * u
-            r = (0.25 + 0.75 * u) * env.R(lo + (hi - lo) * (1.0 - 0.9 * u ** 1.3), 0.45) * min(1.0, 0.35 + u * 2.0)
-            pts.append((r * cos(phi), r * sin(phi)))
-        m = lline(sc, wing, pts, 2.6, 1.0)
-        canvas.piece(m, k.edge_shade(m, 2, 1, 0), sp.R)
-        fork = [pts[4], (pts[5][0] - 1.0, pts[5][1] - 5.0 - sin(ph)), (pts[6][0] - 3.0, pts[6][1] - 9.0 - 1.5 * sin(ph - 0.8))]
-        m = lline(sc, wing, fork, 1.5, 0.7)
-        canvas.piece(m, k.edge_shade(m, 2, 1, 0), sp.R)
-        haze = np.zeros((S, S), bool)
-        for i in range(1, n + 1):                                          # the haze breathes along the tendril
-            x, y = lpts(sc, wing, [pts[i]])[0]
-            haze |= k.disc_mask(x, y, 4.6 + 1.6 * sin(ph - 0.9 * i + TAU * sp.jit) + 2.5 * i / n)
-        for j in range(4):                                                 # puffs leave it and thin out
-            q = (turn + j / 4.0 + sp.jit) % 1.0
-            x, y = lpts(sc, wing, [pts[3 + 2 * (j % 3)]])[0]
-            haze |= k.disc_mask(x + 2.5 * sin(TAU * q + j), y - 3.0 - 9.0 * q, 3.4 * (1.0 - q) + 0.6)
-        canvas.haze(haze, sp.accent)
-        x, y, _ = sc.P(wing.at(*pts[-1]))
-        canvas.spark(x, y - 2, sp.glow, 0)
+FAMILIES = {name: (fam_strip, PIVOT) for name in STYLES}
 
 
-def sp_rain(sc, sp):
-    """rain: a thin arm, the wing hangs from it as slanted streaks of rain that run down, a mist between them,
-    drops and a ring on the ground below"""
-    ph, turn = sc.ph, sc.f / float(k.FRAMES)
-    env = env_of(sp, 34, 12)
-    for sgn, wing, canvas, dim in raw_sides(sc, 34, lambda t: rad(12) + rad(7) * sin(ph - 0.8 * t), env.rmax):
-        lo, hi = env.lo, env.hi
-        arm_phi = lo + 0.12 * (hi - lo)
-        ln = env.R(env.peak, 0.3)
-        arm = [(env.R(arm_phi, 0.6) * t * cos(arm_phi + 0.25 * t), env.R(arm_phi, 0.6) * t * sin(arm_phi + 0.25 * t)) for t in (0, 0.25, 0.5, 0.75, 1.0)]
-        veil = k.poly_mask(lpts(sc, wing, [(0.0, 0.0)] + env_poly(env, lo, hi, 12, 0.92)))
-        canvas.haze(veil, sp.main)
-        cnt = max(7, min(13, int(round(ln / 2.6)) + sp.n))
-        slant = rad(62)
-        for i in range(cnt - 1, -1, -1):
-            u = (i + 0.5) / cnt
-            j = u * 4.0
-            j0 = min(3, int(j))
-            a0 = arm[j0][0] + (arm[j0 + 1][0] - arm[j0][0]) * (j - j0)
-            b0 = arm[j0][1] + (arm[j0 + 1][1] - arm[j0][1]) * (j - j0)
-            # the streak ends where it leaves the outline
-            reach = 3.0
-            for step in range(1, 40):
-                a, b = a0 + step * cos(slant) * 0.9, b0 + step * sin(slant) * 0.9
-                if math.hypot(a, b) > env.R(math.atan2(b, a), 0.0) + 0.5:
-                    break
-                reach = step * 0.9
-            reach = max(4.0, reach)
-            q = (turn * 2.0 + _hash(i, sp.wings)) % 1.0                    # a bright drop runs down the streak
-            p0 = lpts(sc, wing, [(a0, b0)])[0]
-            p1 = lpts(sc, wing, [(a0 + reach * cos(slant), b0 + reach * sin(slant))])[0]
-            m = k.capsule_mask(p0, p1, 0.62)
-            tt = ((k.PX - p0[0]) * (p1[0] - p0[0]) + (k.PY - p0[1]) * (p1[1] - p0[1])) / max(1.0, (p1[0] - p0[0]) ** 2 + (p1[1] - p0[1]) ** 2)
-            idx = np.where(np.abs(tt - q) < 0.16, 9, np.where(tt < 0.5, 3, 2)).astype(np.int8)
-            canvas.piece(m, idx, sp.PAL)
-        lbone(sc, canvas, wing, arm, 1.3, 0.8, sp.A, 0, shade=(4, 3, 2))
-        still = k.Wing(sgn, wing.root, wing.sweep, lambda t: rad(12), wing.length)
-        gx, gy, _ = sc.P(still.at(ln * 0.45, 0.0))
-        gy = min(S - 6.0, k.ANCHOR[1] + 20.0)
-        for j in range(2):                                                 # drops fall to the ground
-            q = (turn + j / 2.0 + sp.jit) % 1.0
-            x, y, _ = sc.P(still.at(ln * (0.3 + 0.3 * j), 4.0))
-            if q < 0.7:
-                canvas.spark(x, y + (gy - y) * q / 0.7, sp.glow, 0 if q < 0.5 else 1)
-        q = (turn + sp.jit) % 1.0                                          # and a ring spreads where they land
-        rx = 1.5 + 4.5 * q
-        ring = np.abs(((k.PX - gx) / rx) ** 2 + ((k.PY - gy) / (rx * 0.5)) ** 2 - 1.0) < 0.42 / max(1.0, rx * 0.5)
-        if q < 0.8:
-            canvas.haze(ring, sp.glow)
+VIEW_SRC = {'north': 'north', 'south': 'south', 'east': 'south', 'west': 'north'}
+SIDE_ROOT = {'east': 2, 'west': 9}      # px right of the torso where the wings meet in a side view (measured, O590)
+SIDE_MID = -5                           # px under the torso line where the middle of the pair lies in a side view
+_FACE = {}
 
 
-def sp_nebula(sc, sp):
-    """a star cloud: a lumpy cloud in the outline, drifting fields of two colours in it, stars that twinkle, a glow round it"""
-    ph, turn = sc.ph, sc.f / float(k.FRAMES)
-    env = env_of(sp, 34, 12)
-    third = ramp5(hue_turn(sp.main, 0.09))
-    table = sp.R + sp.A + third + (sp.glow,)
-    for sgn, wing, canvas, dim in raw_sides(sc, 34, lambda t: rad(12) + rad(5) * sin(ph - 0.8 * t), env.rmax):
-        lo, hi = env.lo, env.hi
-        cloud = np.zeros((S, S), bool)
-        lumps = []
-        for i in range(9):                                                 # lumps along the middle of the outline, and its rim
-            u = i / 8.0
-            phi = lo + (hi - lo) * (0.12 + 0.76 * u)
-            for share in (0.42, 0.8):
-                a, b = env.pt(phi, share, 0.12)
-                r = k.clamp(env.R(phi, 0.12) * (0.3 if share < 0.5 else 0.2), 2.2, 6.0) + 0.7 * sin(ph + 1.3 * i + 2.0 * share + TAU * sp.jit)
-                x, y = lpts(sc, wing, [(a, b)])[0]
-                cloud |= k.disc_mask(x, y, r)
-                lumps.append((x, y))
-        x0, y0 = lpts(sc, wing, [(0.0, 0.0)])[0]
-        cloud |= k.capsule_mask((x0, y0), lumps[0], 2.2)
-        la, lb = local_field(sc, wing, 0.0, 0.0)
-        f1 = np.sin(la * 0.2 + 1.2 * np.sin(lb * 0.17 + ph) + TAU * sp.jit) + np.sin(lb * 0.26 - la * 0.08 - ph)
-        f2 = np.sin(la * 0.13 - lb * 0.22 + 2.0 + ph) + 0.6 * np.sin(la * 0.3 + lb * 0.12)
-        idx = np.select([f1 > 1.2, f1 > 0.3, f1 > -0.9], [3, 2, 1], 0).astype(np.int8)
-        idx = np.where(f2 > 0.75, 5 + np.clip(idx, 1, 3), idx)             # fields of the second colour
-        idx = np.where(f2 < -1.0, 10 + np.clip(idx + 1, 1, 4), idx).astype(np.int8)   # and of a third, a hue on
-        canvas.piece(cloud, idx - 0, table)
-        core = cloud & ~k.dilate4(~cloud)
-        for j in range(16):                                                # stars: fixed places, each twinkles in its turn
-            a, b = env.pt(lo + (hi - lo) * _hash(j, sp.wings), 0.2 + 0.7 * _hash(j, 77), 0.3)
-            x, y = lpts(sc, wing, [(a, b)])[0]
-            xi, yi = int(x), int(y)
-            if not (2 <= xi < S - 2 and 2 <= yi < S - 2) or not core[yi, xi]:
-                continue
-            g = cos(TAU * (turn + _hash(j, 5)))
-            if g > -0.2:
-                canvas.rgb[yi, xi] = sp.glow
-            if g > 0.75:
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    if core[yi + dy, xi + dx]:
-                        canvas.rgb[yi + dy, xi + dx] = table[14]
-        glow = cloud
+def _face(sp, d, f):
+    """a face-on frame (north or south) as the family draws it; one row is kept, so a side view costs nothing more"""
+    if _FACE.get('key') != sp.key:
+        _FACE.clear()
+        _FACE['key'] = sp.key
+    if (d, f) not in _FACE:
+        fn, pivot = FAMILIES[sp.family]
+        sc = k.Scene(sp.outline, d, f, pivot)
+        fn(sc, sp)
+        _FACE[(d, f)] = sc.result()
+    return _FACE[(d, f)]
+
+
+def _side_shift(sp, d):
+    """where a side view puts the turned face-on picture: (dx, dy) of the transposed canvas. The point where the
+    wings meet goes SIDE_ROOT right of the torso, the middle of the pair SIDE_MID under it; then the whole loop is
+    pushed back inside the cell"""
+    if ('shift', d) in _FACE and _FACE.get('key') == sp.key:
+        return _FACE[('shift', d)]
+    src = VIEW_SRC[d]
+    pivot = FAMILIES[sp.family][1]
+    rx, ry, _ = k.project((0.0, ROOT[1], ROOT[2]), src, pivot)
+    any_ = np.zeros((S, S), bool)
+    for f in range(k.FRAMES):
+        b, fr = _face(sp, src, f)
+        any_ |= (b[..., 3] > 0) | (fr[..., 3] > 0)
+    dx = int(round(k.ANCHOR[0] + SIDE_ROOT[d] - ry))      # a face-on y becomes x
+    dy = int(round(k.ANCHOR[1] + SIDE_MID - rx))          # a face-on x becomes y
+    ys, xs = np.nonzero(any_.T)
+    if len(xs):
+        lo, hi = 2, S - 3
         for _ in range(2):
-            glow = k.dilate4(glow)
-        canvas.haze(glow, sp.main)
+            if xs.max() + dx > hi:
+                dx = hi - int(xs.max())
+            if xs.min() + dx < lo:
+                dx = lo - int(xs.min())
+            if ys.max() + dy > hi:
+                dy = hi - int(ys.max())
+            if ys.min() + dy < lo:
+                dy = lo - int(ys.min())
+    _FACE[('shift', d)] = (dx, dy)
+    return dx, dy
 
 
-def sp_fold(sc, sp):
-    """folded paper: flat facets between sharp folds, a zigzag edge, the pleats open and close"""
-    ph = sc.ph
-    env = env_of(sp, 36, 14)
-    for sgn, wing, canvas, dim in raw_sides(sc, 36, lambda t: rad(14) + rad(9) * sin(ph - 0.5 * t), env.rmax):
-        lo, hi = env.lo, env.hi
-        if hi - lo < rad(50):
-            mid = (lo + hi) / 2.0
-            lo, hi = mid - rad(25), mid + rad(25)
-        n = max(5, min(9, 7 + sp.n))
-        mid = (lo + hi) / 2.0
-        opened = 0.86 + 0.14 * sin(ph + TAU * sp.jit)
-        rim = []
-        for i in range(n + 1):
-            u = i / float(n)
-            phi0 = lo + (hi - lo) * u
-            phi = mid + (phi0 - mid) * opened
-            r = env.R(phi0, 0.3) * (1.0 if i % 2 == 0 else 0.7)             # a peak, a valley: the zigzag of the pleats
-            rim.append((r * cos(phi), r * sin(phi)))
-        for i in sorted(range(n), key=lambda i: -abs(i - 1)):
-            m = k.poly_mask(lpts(sc, wing, [(0.0, 0.0), rim[i], rim[i + 1]]))
-            flat = (4, 2, 3, 1)[i % 4]                                     # a facet is one flat tone, lit or turned away
-            idx = np.full((S, S), flat, np.int8)
-            canvas.piece(m, idx - dim, sp.R if i % 4 != 3 else sp.A, line=sp.A[1])
-        # the spine fold and a small folded tail below
-        lbone(sc, canvas, wing, [(0.0, 0.0), (rim[0][0] * 0.96, rim[0][1] * 0.96)], 0.8, 0.6, sp.A, dim, shade=(2, 1, 0))
-        tail = [(0.0, 0.0), (4.0 * cos(hi + 0.5), 4.0 * sin(hi + 0.5) + 2.0), (1.0, 6.5 + sin(ph))]
-        m = k.poly_mask(lpts(sc, wing, tail))
-        canvas.piece(m, np.full((S, S), 3, np.int8) - dim, sp.R, line=sp.A[1])
-        motes(sc, canvas, k.Wing(sgn, wing.root, wing.sweep, lambda t: rad(14), wing.length), [rim[0], rim[2]], sp, sgn, 2)
-
-
-def sp_shell(sc, sp):
-    """a shell: a round fan with ribs that run from the hinge, growth bands across them, a scalloped rim, a pearl
-    at the hinge"""
-    ph = sc.ph
-    env = env_of(sp, 36, 14)
-    for sgn, wing, canvas, dim in raw_sides(sc, 36, lambda t: rad(14) + rad(7) * sin(ph - 0.5 * t), env.rmax):
-        lo, hi = env.lo, env.hi
-        if hi - lo < rad(70):
-            mid = (lo + hi) / 2.0
-            lo, hi = mid - rad(35), mid + rad(35)
-        ribs = max(5, min(9, 7 + sp.n))
-        opened = 0.93 + 0.07 * sin(ph + TAU * sp.jit)
-        mid = (lo + hi) / 2.0
-        rmean = float(np.mean([env.R(lo + (hi - lo) * i / 8.0, 0.45) for i in range(9)]))
-        steps = ribs * 6
-        rim = [(0.0, 0.0)]
-        for i in range(steps + 1):
-            u = i / float(steps)
-            phi = mid + (lo + (hi - lo) * u - mid) * opened
-            r = (0.55 * rmean + 0.45 * env.R(lo + (hi - lo) * u, 0.45)) * (1.0 - 0.07 * (0.5 - 0.5 * cos(TAU * u * ribs)))
-            rim.append((r * cos(phi), r * sin(phi)))
-        m = k.poly_mask(lpts(sc, wing, rim))
-        la, lb = local_field(sc, wing, 0.0, 0.0)
-        phi = np.arctan2(lb, la)
-        rho = np.sqrt(la * la + lb * lb) / max(rmean, 1.0)
-        u = (mid + (phi - mid) / opened - lo) / (hi - lo)
-        rib = (u * ribs) % 1.0
-        idx = np.select([rib < 0.22, rib < 0.62], [1, 3], 2).astype(np.int8)            # a groove, the lit flank, the far flank
-        idx = idx + (((rho * 4.2) % 1.0) < 0.2) * -1 + (rho > 0.82) * 1                # growth bands; a pale rim
-        idx = np.where(rho < 0.26, 6, idx)                                             # the hinge in the second colour
-        canvas.piece(m, np.clip(idx, 0, 9).astype(np.int8) - dim, sp.PAL)
-        x, y, _ = sc.P(wing.at(1.2, 0.6))
-        pm = k.disc_mask(x, y, 2.3)
-        canvas.piece(pm, k.sphere_shade(x, y, 2.8), ramp5(sp.glow))                    # the pearl
-        still = k.Wing(sgn, wing.root, wing.sweep, lambda t: rad(14), wing.length)
-        motes(sc, canvas, still, [rim[1 + steps // 4], rim[1 + 3 * steps // 4]], sp, sgn, 2)
-        if cos(ph + TAU * sp.jit + (1.5 if sgn > 0 else 0.0)) > 0.8:
-            canvas.spark(x - 1, y - 1, sp.glow, 1)
-
-
-SPECIAL = {'funnel': sp_funnel, 'whirl': sp_whirl, 'smoke': sp_smoke, 'rain': sp_rain, 'nebula': sp_nebula,
-           'fold': sp_fold, 'shell': sp_shell}
-
-
-FAMILIES = {
-    'feather': (fam_feather, 9.0), 'bone': (fam_bone, 9.0), 'bat': (fam_bat, 9.0), 'insect': (fam_insect, 9.0),
-    'crystal': (fam_crystal, 9.0), 'fan': (fam_fan, 9.0), 'leaf': (fam_leaf, 9.0), 'energy': (fam_energy, 9.0),
-    'orbit': (fam_orbit, 3.0),
-}
+def _turned(img, dx, dy):
+    """the picture transposed (the light from the top left stays where it is) and moved by (dx, dy)"""
+    t = np.ascontiguousarray(img.transpose(1, 0, 2))
+    out = np.zeros_like(t)
+    x0, x1 = max(0, dx), min(S, S + dx)
+    y0, y1 = max(0, dy), min(S, S + dy)
+    if x1 > x0 and y1 > y0:
+        out[y0:y1, x0:x1] = t[y0 - dy:y1 - dy, x0 - dx:x1 - dx]
+    return out
 
 
 def render_frame(sp, d, f):
-    fn, pivot = FAMILIES[sp.family]
-    sc = k.Scene(sp.outline, d, f, pivot, SIDE_DEPTH)
-    fn(sc, sp)
-    return sc.result()
+    """(back, front) of one frame. North and south are drawn face on. East and west are the old art's side views
+    (O590): the south picture (east) or the north picture (west) with x and y changed over, the wings one over the
+    other behind the body. Measured on the old pair: 113 of 121 east views are the south view turned that way."""
+    src = VIEW_SRC[d]
+    back, front = _face(sp, src, f)
+    if src == d:
+        return back, front
+    dx, dy = _side_shift(sp, d)
+    # from the side the pair lies behind the body, so it never hides the character
+    return _turned(k.merge(back, front), dx, dy), np.zeros_like(front)
 
 
 def render(sp, dirs=k.DIRS, frames=None):
@@ -1507,11 +1460,11 @@ def problems(specs=None):
         seen.add(sp.wings)
         keys.add(sp.key)
         looks.add(sp.look)
-        if not 0.85 <= sp.size <= 1.1 or not -2 <= sp.n <= 2:
+        if not -2 <= sp.n <= 2:
             bad.append('%s: size or n out of range' % sp.key)
     recipe = {}
     for sp in specs:
-        key = (sp.family, sp.var, sp.main, sp.accent, sp.glow, sp.spark, sp.n, sp.size)
+        key = (sp.family, sp.var, sp.main, sp.accent, sp.glow, sp.spark, sp.n, str(sp.strips), tuple(sp.zones))
         if key in recipe:
             bad.append('%s and %s: the same recipe' % (recipe[key], sp.key))
         recipe[key] = sp.key
@@ -2185,72 +2138,7 @@ def score_text(specs, scores):
     return '\n'.join(lines) + '\n'
 
 
-# ------------------------------------------------------------------------------------------------ measuring (O587)
-ENV_FIT = (38.0, 44.0, 30.0)        # the room of the 96 px cell from the shoulder: outward, up, down
-
-
-def measure_env(frames):
-    """the outline of an old wing from its south pictures: (radii at ENV_ANGLES in px of the drawn wing, tips).
-    The two wings meet where the picture is thinnest near its middle; from that point the larger wing is read as a
-    radius by angle (the 92nd percentile of its pixels in a sector of 15 degrees, the median over the frames). Art
-    that would not fit the cell is scaled down. tips: the peaks of the radius read by 3 degrees."""
-    masks = [f[..., 3] >= 128 for f in frames]
-    box = _alpha_box(masks)
-    if box is None:
-        return None, None, 0
-    x0, y0, x1, y1 = box
-    cols = np.mean([m.sum(axis=0) for m in masks], axis=0).astype(np.float64)
-    smooth = np.convolve(cols, np.ones(5) / 5.0, mode='same')
-    w = x1 - x0
-    c0, c1 = x0 + int(w * 0.3), x1 - int(w * 0.3)
-    mid = (x0 + x1 - 1) / 2.0
-    xs = np.arange(c0, max(c0 + 1, c1))
-    cut = int(xs[np.lexsort((np.abs(xs - mid), np.round(smooth[xs], 1)))[0]])
-    per_frame, per_core, fine, sides_px = [], [], [], [0, 0]
-    yy, xx = np.nonzero(masks[0])
-    near = np.abs(xx - cut)
-    sel = near <= max(2, int(np.sort(near)[min(len(near) - 1, 12)]))
-    cy = float(np.median(yy[sel]))
-    for m in masks:
-        yy, xx = np.nonzero(m)
-        sides_px[0] += int((xx < cut).sum())
-        sides_px[1] += int((xx > cut).sum())
-    sgn = 1 if sides_px[1] >= sides_px[0] else -1
-    for m in masks:
-        yy, xx = np.nonzero(m)
-        dx, dy = (xx - cut) * sgn, yy - cy
-        keep = dx > 0
-        dx, dy = dx[keep], dy[keep]
-        ang = np.degrees(np.arctan2(dy, dx))
-        r = np.hypot(dx, dy)
-        row, inner = [], []
-        for a in ENV_ANGLES:
-            got = r[np.abs(ang - a) <= 7.5]
-            row.append(float(np.percentile(got, 92)) if len(got) >= 3 else 0.0)
-            inner.append(float(np.percentile(got, 10)) if len(got) >= 3 else 0.0)
-        per_frame.append(row)
-        per_core.append(inner)
-        prof = np.zeros(61)
-        for i in range(61):
-            got = r[np.abs(ang - (-90 + 3 * i)) <= 1.5]
-            prof[i] = got.max() if len(got) else 0.0
-        fine.append(prof)
-    radii = np.median(np.asarray(per_frame), axis=0)
-    core = np.median(np.asarray(per_core), axis=0)
-    core = np.where(core >= 0.35 * np.maximum(radii, 1.0), core, 0.0)      # only a true hollow counts
-    ca = np.cos(np.radians(ENV_ANGLES))
-    sa = np.sin(np.radians(ENV_ANGLES))
-    out_, up, down = float((radii * ca).max()), float((-radii * sa).max()), float((radii * sa).max())
-    scale = min(1.0, ENV_FIT[0] / max(out_, 1.0), ENV_FIT[1] / max(up, 1.0), ENV_FIT[2] / max(down, 1.0))
-    prof = np.convolve(np.median(np.asarray(fine), axis=0), np.ones(3) / 3.0, mode='same')
-    tips = 0
-    for i in range(1, 60):
-        if prof[i] >= 0.45 * prof.max() and prof[i] > prof[i - 1] + 0.8 and prof[i] >= prof[i + 1] and \
-                prof[i] - min(prof[max(0, i - 3):i + 4]) >= 2.0:
-            tips += 1
-    return [int(round(v * scale)) for v in radii], [int(round(v * scale)) for v in core], tips
-
-
+# ------------------------------------------------------------------------------------------------ measuring (O590)
 def moved(masks):
     """the share of a silhouette that changes over its loop"""
     base = np.mean(masks, axis=0)
@@ -2268,32 +2156,10 @@ def measure_beat(frames):
     return float(np.mean(out)) if out else 0.0
 
 
-def measure_colours(old):
-    """three colours of an old wing: the body (the commonest of three groups of its colours), the second (the
-    next), and the light (the brightest tenth); for a feathered wing the body is the inner two thirds and the
-    second the outer third, as a feather has a tip colour. old: {direction: [RGBA]}"""
-    px = np.concatenate([f[f[..., 3] >= 128][:, :3] for d in k.DIRS for f in old[d]]).astype(np.float64)
-    lum = px @ np.array([0.3, 0.59, 0.11])
-    body = px[lum > 34] if (lum > 34).sum() > len(px) * 0.3 else px
-    bl = body @ np.array([0.3, 0.59, 0.11])
-    centres = np.array([np.median(body[(bl >= np.percentile(bl, q0)) & (bl <= np.percentile(bl, q1))], axis=0)
-                        for q0, q1 in ((0, 33), (33, 67), (67, 100))])
-    for _ in range(8):
-        lab = np.argmin(((body[:, None, :] - centres[None]) ** 2).sum(axis=2), axis=1)
-        for j in range(3):
-            if (lab == j).any():
-                centres[j] = body[lab == j].mean(axis=0)
-    counts = np.bincount(lab, minlength=3)
-    order = np.argsort(-counts)
-    light = body[bl >= np.percentile(bl, 90)].mean(axis=0)
-    hexs = lambda c: '%02x%02x%02x' % tuple(int(round(v)) for v in c)  # noqa: E731
-    return hexs(centres[order[0]]), hexs(centres[order[1]]), hexs(light)
-
-
-def _groups(px):
-    """three groups of colours (k-means from the dark, middle and light third): (centres, counts), largest first"""
-    lum = px @ np.array([0.3, 0.59, 0.11])
-    centres = np.array([np.median(px[(lum >= np.percentile(lum, q0)) & (lum <= np.percentile(lum, q1))], axis=0)
+def _lead(px):
+    """the commonest of three groups of colours; of two the same size the lighter"""
+    lumv = px @ np.array([0.3, 0.59, 0.11])
+    centres = np.array([np.median(px[(lumv >= np.percentile(lumv, q0)) & (lumv <= np.percentile(lumv, q1))], axis=0)
                         for q0, q1 in ((0, 33), (33, 67), (67, 100))])
     lab = np.zeros(len(px), int)
     for _ in range(8):
@@ -2302,64 +2168,79 @@ def _groups(px):
             if (lab == j).any():
                 centres[j] = px[lab == j].mean(axis=0)
     counts = np.bincount(lab, minlength=3)
-    order = np.argsort(-counts)
-    return centres[order], counts[order]
+    w = [counts[j] * (0.85 + 0.3 * float(centres[j] @ np.array([0.3, 0.59, 0.11])) / 255.0) for j in range(3)]
+    return centres[int(np.argmax(w))]
 
 
-def measure_radial(frames):
-    """(inner, outer): the commonest colour of the inner two thirds and of the outer third of a south picture; when
-    they are one colour, the outer is the wing's second colour"""
-    masks = [f[..., 3] >= 128 for f in frames]
-    x0, y0, x1, y1 = _alpha_box(masks)
-    cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
-    ins, outs = [], []
-    for f, m in zip(frames, masks):
-        yy, xx = np.nonzero(m)
-        c = f[yy, xx, :3].astype(np.float64)
-        lum = c @ np.array([0.3, 0.59, 0.11])
-        r = np.hypot((xx - cx) / max(1.0, (x1 - x0) / 2.0), (yy - cy) / max(1.0, (y1 - y0) / 2.0))
-        ok = lum > 34 if (lum > 34).sum() > len(lum) * 0.3 else lum >= 0
-        cut = np.percentile(r[ok], 66)
-        ins.append(c[ok & (r <= cut)])
-        outs.append(c[ok & (r > cut)])
-    ins, outs = np.concatenate(ins), np.concatenate(outs)
-    def lead(px):                                         # the commonest group, the lighter of two near in size
-        c, n = _groups(px)
-        w = [n[j] * (0.5 + float(c[j] @ np.array([0.3, 0.59, 0.11])) / 255.0) for j in range(3)]
-        return c[int(np.argmax(w))]
-    inner = lead(ins)
-    outer = lead(outs)
-    if np.abs(inner - outer).sum() < 60:
-        both = _groups(np.concatenate([ins, outs]))[0]
-        outer = both[1] if np.abs(both[1] - inner).sum() >= np.abs(both[0] - inner).sum() else both[0]
-    hexs = lambda c: '%02x%02x%02x' % tuple(int(round(v)) for v in c)  # noqa: E731
-    return hexs(inner), hexs(outer)
+def measure_zones(frames, strip, sgn, meet):
+    """six colours of an old wing: the inner, middle and outer third of its strip, each the upper and the lower
+    half (the leading colour of the zone, its dark outline pixels left out). frames: RGBA pictures of one view;
+    strip: the wing's numbers; meet: the px where the wings meet"""
+    img = frames[0]
+    h, w_ = img.shape[:2]
+    vals = strip
+    xs = [vals[0]] + [vals[2 + 4 * i] for i in range(st.STATIONS)] + [vals[-2]]
+    ys = [vals[1]] + [vals[3 + 4 * i] for i in range(st.STATIONS)] + [vals[-1]]
+    ox = int(k.clamp(S // 2 - (min(xs) + max(xs)) // 2, -meet[0], S - meet[0] + 200))
+    oy = int(k.clamp(S // 2 - (min(ys) + max(ys)) // 2, -meet[1], S - meet[1] + 200))
+    win = np.zeros((S, S, 4), np.uint8)                   # the wing in a cell of its own
+    x0, y0 = meet[0] - ox, meet[1] - oy                   # picture px of the cell's corner
+    sx0, sy0 = max(0, x0), max(0, y0)
+    sx1, sy1 = min(w_, x0 + S), min(h, y0 + S)
+    if sx1 > sx0 and sy1 > sy0:
+        win[sy0 - y0:sy1 - y0, sx0 - x0:sx1 - x0] = img[sy0:sy1, sx0:sx1]
+    strip_ = st.Strip(vals, sgn, (ox, oy))
+    ss, tt = strip_.field()
+    solid = (win[..., 3] >= 128) & (np.abs(tt) <= 1.3)
+    rgbs = win[..., :3].astype(np.float64)
+    lumv = rgbs @ np.array([0.3, 0.59, 0.11])
+    out = []
+    whole_ = rgbs[solid] if solid.sum() >= 3 else np.array([[128.0, 128.0, 128.0]] * 3)
+    for i in range(3):
+        for j in range(2):
+            sel = solid & (np.clip((ss * 3).astype(int), 0, 2) == i) & ((tt >= 0) == bool(j))
+            px = rgbs[sel]
+            if len(px) >= 12:                             # without the dark outline pixels
+                lv = lumv[sel]
+                keep = lv > np.percentile(lv, 25) if (lv > 40).mean() > 0.5 else np.ones(len(lv), bool)
+                px = px[keep] if keep.sum() >= 8 else px
+            out.append(_lead(px) if len(px) >= 8 else None)
+    fill = _lead(whole_)
+    for i in range(6):                                    # a zone that is nearly all outline says nothing
+        if out[i] is not None and lum(out[i]) < 30 and lum(fill) > 70:
+            out[i] = None
+    for i in range(6):                                    # an empty zone takes its neighbour's colour
+        if out[i] is None:
+            near = [out[j] for j in (i ^ 1, i - 2, i + 2, i - 1, i + 1) if 0 <= j < 6 and out[j] is not None]
+            out[i] = near[0] if near else fill
+    return ' '.join('%02x%02x%02x' % tuple(int(round(v)) for v in c) for c in out)
 
 
-def measure(dat_path, spr_path, write=False, colours=False, log=print):
-    """read the outline (env, tips) of every row from the old art of a pair and, with `write`, put the numbers in
-    designs.csv; `colours` also re-reads main / accent / glow. The pair is only read here, by hand, never at build."""
+def measure(dat_path, spr_path, write=False, log=print):
+    """read the strips (`sl`, `sr`, `nl`, `nr`), the zone colours (`zones`) and the beat of every row from the old
+    art of a pair and, with `write`, put the numbers in designs.csv. The pair is only read here, by hand, never at
+    build; the table holds numbers, no picture."""
     from datspr import Dat, Spr
     dat, spr = Dat(dat_path), Spr(spr_path)
     with open(CSV, newline='', encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
-    fields = list(rows[0].keys())
-    for name in ('env', 'core', 'tips', 'beat'):
+    fields = [name for name in rows[0].keys() if name not in ('env', 'tips', 'core', 'fit', 'size')]
+    for name in ('sl', 'sr', 'nl', 'nr', 'zones', 'beat'):
         if name not in fields:
             fields.insert(fields.index('old'), name)
     for row in rows:
+        for name in ('env', 'tips', 'core', 'fit', 'size'):
+            row.pop(name, None)
         old, _ = old_frames(dat, spr, int(row['look']))
-        radii, core, tips = measure_env(old['south'])
-        row['env'] = ' '.join(str(v) for v in radii)
-        row['core'] = ' '.join(str(v) for v in core)
+        for d, (a, b) in (('south', ('sl', 'sr')), ('north', ('nl', 'nr'))):
+            left, right = st.measure_view(old[d])
+            row[a], row[b] = st.text_of(left), st.text_of(right)
+        left, right = st.parse(row['sl']), st.parse(row['sr'])
+        meet = st.view_meet(old['south'])
+        big, sgn = (left, -1) if right is None or (left is not None and st.Strip(left, -1, (0, 0)).length >= st.Strip(right, 1, (0, 0)).length) else (right, 1)
+        row['zones'] = measure_zones(old['south'], big, sgn, meet)
         row['beat'] = '%.2f' % measure_beat(old) if len(old['south']) > 1 else ''
-        row['tips'] = str(tips)
-        if colours:
-            main, accent, glow = measure_colours(old)
-            if row['family'] == 'feather':
-                main, accent = measure_radial(old['south'])
-            row['main'], row['accent'], row['glow'] = main, accent, glow
-        log('%3s %-20s env %s core %s tips %s  %s %s %s' % (row['wings'], row['key'], row['env'], row['core'], row['tips'], row['main'], row['accent'], row['glow']))
+        log('%3s %-20s %s | %s | %s' % (row['wings'], row['key'], row['sl'], row['sr'], row['zones']))
     if write:
         with open(CSV, 'w', newline='', encoding='utf-8') as f:
             wr = csv.DictWriter(f, fieldnames=fields, lineterminator='\n')
@@ -2411,7 +2292,7 @@ def main(argv):
         fit_preview(args[0], args[1], args[2], args[3].split(','), wings=int(args[4]) if len(args) > 4 else 1)
         return 0
     if cmd == 'measure':
-        measure(args[0], args[1], write='--write' in args, colours='--colours' in args)
+        measure(args[0], args[1], write='--write' in args)
         return 0
     if cmd == 'score':
         specs = load()

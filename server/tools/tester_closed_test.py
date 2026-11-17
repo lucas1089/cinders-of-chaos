@@ -90,9 +90,9 @@ except AssertionError:
 # removing what the mode made
 ALL = {'guilds', 'guild_ranks', 'guild_membership', 'guild_wars', 'chaos_guildwar', 'chaos_guildwar_kills'} | set(C.GUILD_TABLES) | {
     'chaos_market_offers', 'chaos_market_offer_mods', 'chaos_market_orders', 'chaos_market_history', 'chaos_market_history_daily',
-    'chaos_arena_matches', 'chaos_arena_match_players', 'chaos_bazaar_listings', 'chaos_bazaar_bids'} | set(C.RAID_TABLES.values())
+    'chaos_arena_matches', 'chaos_arena_match_players', 'chaos_bazaar_listings', 'chaos_bazaar_bids'} | set(C.RAID_TABLES.values()) | {C.DUNGEON_PROGRESS}
 cs = C.clean_statements(ALL, [10, 11, 12])
-eq(len(cs), 29, 'every table is cleaned')
+eq(len(cs), 30, 'every table is cleaned')
 for s in cs:
     ok(s.startswith('DELETE FROM'), 'only DELETEs: ' + s[:40])
     keyed = (str(C.REALM) in s or "'Tester Guild Alfa'" in s or '(10,11,12)' in s)
@@ -122,6 +122,9 @@ eq(C.clean_statements({rt['instances']}, [7]), [], 'the raids need their member 
 raid_cfg = lua('raid_config.lua')
 for key, table in rt.items():
     ok(('%s = "%s"' % (key, table)) in raid_cfg, 'raid_config.lua names the table ' + table)
+ok(any('chaos_dungeon_progress' in s and 'player_id` IN (10,11,12)' in s for s in cs), 'dungeon progress of testers (O589)')
+ok('dungeonProgress = "%s"' % C.DUNGEON_PROGRESS in lua('chaos_constants.lua'), 'chaos_constants.lua names the dungeon progress table')
+eq(C.clean_statements({C.DUNGEON_PROGRESS}, [7]), ['DELETE FROM `chaos_dungeon_progress` WHERE `player_id` IN (7);'], 'the progress table alone')
 eq(C.clean_statements(set(), [1]), [], 'no table, nothing to do')
 only = C.clean_statements({'chaos_market_orders'}, [])
 eq(only, ['DELETE FROM `chaos_market_orders` WHERE `realm` = %d;' % C.REALM], 'only the book, without tester ids')
