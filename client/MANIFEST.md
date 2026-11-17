@@ -6898,3 +6898,31 @@ The owner saw the O587 previews: "redo the ones that are bad". 73 rows scored 45
   Also open: a zone holds one colour, so marks of a second colour inside a wing are lost (the teal of 3, the black of 69, mosaics). Sword pendants and gold trim are not drawn. `fill` rows show a plain dark ground where the style is thin (17, 4).
 - **Test**: `gen_drawn_wings_test.py`: every row has its strips (24 whole numbers or empty), six zones, a mould, a beat; a strip measured from a drawn picture covers it again; east and west are the face-on views turned and lose no pixel; the mould cuts and fills; the O581 bar on all 121 rows. `designs.sums` was written again. `wing_anchors.lua` and `anchor_fixtures.txt` did not change, the two C++ anchor tests pass.
 - **Previews** (never committed): per family MP4s, old art left, O587 middle, O590 right, four directions each; sheets of the scoped rows; the fit preview on player looks only; the score table.
+
+## Spell VFX packs: spell effects and projectiles (O596, `tools/sprites/gen_spell_vfx.py`, `art_import/spell_vfx.csv`; joins pair 73; owner 2026-11-17)
+
+Owner (translated): "about the effects, do the recommended". Five purchased effect packs give the spells new looks at game size.
+The sibling step O597 adds the status layer and the kill dissolves after this one.
+
+- **Step of pair 73.** It applies on top of pair 72, or on any pair with exactly 4,742 effects and 253 missiles. Any other pair is refused.
+  The other steps of pair 73 add no effect and no missile, so the order is free.
+- **Ids.** 40 effects at 4743..4782. The block 4743..5142 is this step's. The next step starts at 5143 and pads the gap.
+  The table's `total` row records the exact count: 40.
+- **Projectiles.** A projectile id is one byte on the wire, so none can be appended past 253. The block 254..399 cannot exist.
+  Four pieces fill the blank stock ids 43, 46, 47 and 52. No script sent those ids and the pair drew nothing there.
+  Two rebuild a pack projectile in place at its own size and send offset: 163 and 132.
+- **Size.** Game size, not HD. Projectiles and small hits: 64 px footprint. Areas, auras and big hits: 96 px.
+  A projectile is 3 x 3 tiles, 8 phases of 50 ms, its head on the middle, sent at offset (1, 1).
+  An effect has at most 12 phases of 60 to 120 ms. Its anchor lands on the target tile: body, tile middle, ground or feet.
+- **Cut.** Lanczos on premultiplied colour, then a lift so the glow reads on grass and stone: alpha through `1 - (1 - a)^1.8`.
+  Then the cut of docs/SPRITE_STYLE.md: alpha 255 from 0.5 up, one glow level 144 from 0.2 up, 16 colours a piece.
+- **Art.** Never in the repository. Committed: the script, `spell_vfx.csv` and `spell_vfx.sums`.
+  A row holds a neutral name, the pack key and `src`, the first 12 hex of the sha256 of the sheet file.
+  The sheets are read by the local script only. They are never sent to a web or AI service. Licence terms: docs/CREDITS.md.
+- **Build.** `gen_spell_vfx.py build P72/Tibia.dat P72/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest.
+  It runs `import_fx_art.py` and then `live` on the result. `--write` rewrites the table and the sums after a wanted change.
+- **Checks.** `gen_spell_vfx.py check` needs no art and no pair. `gen_spell_vfx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_spell_vfx_test.py` runs on synthetic sheets.
+- **Server.** `server/data/lib/chaos_spell_vfx.lua` maps spells to pieces behind `chaosClientPair >= 73`. See server/README.md.
+- **Not used.** Four projectile sheets found no free one-byte id: a soul bolt, a blood bolt, a light bolt, a heal mote.
+- **Previews** (never committed): per class, before and after of every changed spell, and a rotation clip.
