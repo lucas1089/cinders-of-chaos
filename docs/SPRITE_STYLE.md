@@ -248,6 +248,10 @@ holds every row of `drawn_wings/designs.csv` to it (`bar_problems`).
 - **Likeness (O587, O590):** a wing that replaces old art follows its shape, its colour areas and its motion, each wing and
   each view by itself. The numbers are measured once and kept in `designs.csv` (`sl`, `sr`, `nl`, `nr`: the strips of the
   left and right wing, south and north; `zones`; `beat`). No picture data in the repository.
+- **Painted rows (O594):** a row of `drawn_wings/pixellab_rows.csv` may come from a painted sheet in a private folder
+  (`--src DIR`). `gen_pixellab_wings.py clean` makes it hold this bar: alpha cut at 128, one palette of 28 colours a row,
+  the outline colour on every open edge, lights at the glow level, the box of the code-drawn row. The same test holds it.
+  Without the folder the row is drawn by code.
   `gen_drawn_wings.py score DAT SPR` gives the distance.
 - **Side views (O590):** east is the south picture with x and y changed over, west the north picture. The old art shows the
   wings face on in every direction. A wing the old art does not have is not drawn.
