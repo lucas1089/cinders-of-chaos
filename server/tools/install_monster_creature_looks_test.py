@@ -93,7 +93,7 @@ def looks(mon):
 rows = M.read_map()
 check([r[0] for r in rows] == ['The Rotmother', 'Vhoss the Hexmaw', 'Talath'], 'the map has the three bosses (%s)' % [r[0] for r in rows])
 check([r[2] for r in rows] == [3527, 3528, 3529], 'the new looks are the outfits 3527-3529, one boss on each')
-check(C.PAIR_CREATURE == 73 and C.PAIR_CREATURE > C.PAIR_FUN and C.PAIR_ASSETS < C.PAIR_CREATURE, 'the step needs pair 73, which is not on windows-assets')
+check(C.PAIR_CREATURE == 73 and C.PAIR_CREATURE > C.PAIR_FUN and C.PAIR_ASSETS >= C.PAIR_CREATURE, 'the step needs pair 73, which windows-assets carries')
 pool = G.read(G.DEFAULT_OUT)
 chaos = os.path.join(REPO, 'server', 'data', 'monster', 'monsters', 'chaos')
 files = R.monster_files(chaos)
