@@ -4,7 +4,7 @@ A small Rust program that runs before the game. It updates the files the in-game
 its DLLs and `chaos.pack`. Then the player presses **Jogar** and the game starts. Before it, every engine patch meant
 a new download of the client from the website (`min_package`). Now the launcher fetches the change.
 
-Status: done in code and tests (Linux). Not run on Windows. Open: code-signing certificate, install path.
+Status: done in code and tests (Linux). Not run on Windows. Open: code-signing certificate (owner), install path.
 
 ## What it does
 
@@ -283,9 +283,20 @@ Run in a window: `cargo run --release -- --dir PATH_WITH_launcher.json`. Without
 
 ## Open
 
-- **Code-signing certificate.** An unsigned exe that downloads and swaps programs is what antivirus tools and
-  SmartScreen distrust. Without a certificate expect warnings. Buy one (OV or EV) and sign `CindersLauncher.exe` in
-  the workflow before packing, and `Chaos.exe` with it.
+- **Code-signing certificate (owner, O591).** No workflow signs a Windows exe with Authenticode today. An unsigned exe that
+  downloads and swaps programs is what antivirus tools and SmartScreen distrust. What is ready: the release signatures that do
+  not need a certificate (the Ed25519 update manifest the launcher and the client check, `desktop/tools/sign_release.py` for
+  `cinders-admin.exe`, the release keystore secrets for both Android apps), the exes are built in one place each, and
+  the update manifest is made on the VPS from the finished release zip (`publish_client_update.sh`), so a signature added in the
+  build is covered by its hashes. What the owner supplies: one code-signing certificate (OV, or EV for an instant SmartScreen reputation; a cloud
+  signing service works too) as repository secrets, for example `WINDOWS_CODESIGN_PFX_B64` (the .pfx, base64) and
+  `WINDOWS_CODESIGN_PASS`, or the service's own token and profile. No secret is in the repository. Then one step (`signtool sign
+  /fd SHA256 /tr TIMESTAMP_URL /td SHA256`, run on the `windows-2025` runner) goes in these files, before the exe is packed:
+  `Chaos.exe` (`windows-package.yml` after the client build, `windows-client.yml` `out/exe/Chaos.exe`), `CindersLauncher.exe`
+  (`windows-package.yml`, the `cp ... CindersLauncher.exe` step), `ChaosServer.exe` (server job), `cinders-admin.exe`
+  (`admin-desktop.yml`, before `sign_release.py`, because its `.sig` covers the exe bytes), and the map editor exes
+  (`mapeditor-build.yml`). The launcher has no installer exe: `CindersLauncher.exe` is the setup (its setup screen), so signing it is the
+  installer signing. Not done on purpose: the step needs the secret to exist, and a run without it must keep working.
 - **Install path.** The launcher writes into its own folder. A folder where the player has no write rights (for
   example `C:\Program Files`) fails with a disk error. Today the zip is extracted by hand (a short path in the user's
   folder). A per-user installer (`%LOCALAPPDATA%\CindersOfChaos`, no admin rights) is not built.

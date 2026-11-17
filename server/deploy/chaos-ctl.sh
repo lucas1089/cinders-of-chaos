@@ -784,6 +784,31 @@ lines_arg() {
   echo "$n"
 }
 
+# the last N lines of one of the update logs (update-log, publish-log, site-log; admin app Logs > Updates, O591).
+# show_log FILE N WORD MISSING: a missing file or an empty one is a plain sentence and exit 0 (an update that was never run
+# is not an error); a log that ends in a GitHub 404 / curl 22 without a reason word gets the private repository hint: the
+# update truncates its log at every start, so a failed run leaves only that line (O530: chaos-ctl.sh github-token-status).
+show_log() {
+  local file=$1 n=$2 word=$3 missing=$4 text
+  if [ ! -f "$file" ]; then
+    echo "no $word log yet ($file): $missing"
+    return 0
+  fi
+  if [ ! -s "$file" ]; then
+    echo "the $word log is empty ($file): a run has just started, or nothing was written yet"
+    return 0
+  fi
+  text=$(tail -n "$n" "$file" 2>&1) || { printf '%s\n' "$text"; return 1; }
+  printf '%s\n' "$text"
+  case $text in
+    *private-repo:*|*token-refused:*|*no-access:*|*no-release:*) ;;
+    *404*|*"exit code: 22"*|*"curl: (22)"*)
+      echo "--"
+      echo "hint: GitHub answered 404. The repository is private: save the token with chaos-ctl.sh github-token-set (admin app: Definir token do GitHub), check it with github-token-status, then run the update again."
+      ;;
+  esac
+}
+
 # one remote.cmd line; the text is one line of printable characters (the engine checks it again)
 spool() {
   local file="$SERVER/remote.cmd" line=$1 max=${2:-300}
@@ -1787,8 +1812,7 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     echo "started ($cmd ${args[*]}); follow it with: chaos-ctl.sh update-log"
     ;;
   update-log)
-    [ -f "$ULOG" ] || { echo "no update log yet ($ULOG): no update was run"; exit 0; }
-    tail -n "$(lines_arg "${1:-60}")" "$ULOG" 2>&1
+    show_log "$ULOG" "$(lines_arg "${1:-60}")" update "no update was run"
     ;;
   publish-update)
     tag=${1:-}
@@ -1871,8 +1895,7 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     echo "started (publish-unity $utag ${args[*]}); follow it with: chaos-ctl.sh publish-log"
     ;;
   publish-log)
-    [ -f "$PLOG" ] || { echo "no publish log yet ($PLOG): nothing was published"; exit 0; }
-    tail -n "$(lines_arg "${1:-60}")" "$PLOG" 2>&1
+    show_log "$PLOG" "$(lines_arg "${1:-60}")" publish "nothing was published"
     ;;
   update-check|update-apply|update-rollback|update-downloads)
     [ -n "$KIT" ] || die "kit-not-found: update-check / update-apply are for the Linux kit (set CHAOS_KIT_DIR in $CONF)"

@@ -104,6 +104,12 @@ O caminho inteiro, sem terminal:
 Só uma rodada por vez: com uma na fila ou rodando, Recompilar é recusado (também quando a rodada foi aberta na página do
 GitHub). Se uma rodada falhar, nada mudou; corrija o motivo (o job e o passo estão no cartão) e rode de novo.
 
+Logs > Updates mostrava só "404" (O591): cada atualização zera o seu log ao começar, e com o repositório privado e sem token
+o único conteúdo era o erro do GitHub. Agora `update-log` e `publish-log` (`chaos-ctl.sh`, `show_log`) dizem em uma frase quando
+o log ainda não existe ("no update log yet ... no update was run") ou está vazio, mostram o log, e quando ele termina num 404 /
+`curl: (22)` sem a palavra do motivo (`private-repo:`, `token-refused:`, `no-access:`) juntam a dica: salve o token
+(**Definir token do GitHub**) e rode a atualização de novo. Os dois apps leem os mesmos comandos; a tabela do app do PC não mudou.
+
 ### Repositório privado e o token do GitHub (O530, uma vez)
 
 O repositório `lucas1089/cinders-of-chaos` é **privado** (2026-11-12). Sem login, o GitHub responde 404 a tudo: o `git fetch`
