@@ -144,6 +144,9 @@ jobs:
           # the bolt from the sky, drawn by code (O614, joins pair 73): the script draws the committed table and sums, ids file, tags; the test holds the drawing to its bar (same bytes twice, alpha, palette, the strike reaches the target tile)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx_test.py
+          # animated decor flames from pixelfx (O623, joins pair 74): table, sums, manifest, strips held to the bar and to style_check (the raw render is never in git); the test fits a synthetic sheet and builds / checks a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check
@@ -1418,6 +1421,7 @@ jobs:
           python3 -I server/tools/install_relic_sets.py --lua --check
           python3 -I server/tools/install_relic_sets_test.py
           python3 -I server/tools/install_temple_art_test.py
+          python3 -I server/tools/install_decor_flames_test.py
 
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py

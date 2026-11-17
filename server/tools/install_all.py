@@ -88,6 +88,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                carpet, blood stains, walls, pillars, statue pedestals, torch; client pair 60, client ids 44511-44549, server ids
                48511-48549, names "temple ...") in items.otb / items.xml for the map editor (README "Temple tileset (pair 60)";
                waits for config.lua chaosClientPair >= 60, README "Client pair guard"; nothing is sold or dropped)
+  decorflames  tools/install_decor_flames.py     the four animated decor flames (flame brazier, campfire, candle, cold spirit; O623; client pair 74,
+               client ids 44560-44563, server ids 48560-48563) in items.otb / items.xml for the map editor (README "Decor flames
+               (pair 74)"; waits for config.lua chaosClientPair >= 74, README "Client pair guard"; nothing is sold or dropped)
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
@@ -917,6 +920,14 @@ def step_templeart(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('relicsets') + 1, 'templeart')  # right after the relic sets (client ids appended after theirs, pair 60)
+
+
+def step_decorflames(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 74) is in the tool; its warning reaches the report
+    return tool_result_warn(run_tool([tool('install_decor_flames.py'), data], 'install_decor_flames.py'))
+
+
+STEPS.insert(STEPS.index('templeart') + 1, 'decorflames')  # right after the temple tileset (client ids 44560-44563 appended to pair 74)
 
 
 def step_ownerdecor(server, data, ctx):

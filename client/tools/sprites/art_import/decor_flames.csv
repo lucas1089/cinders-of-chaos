@@ -1,0 +1,6 @@
+key,fx,client_id,server_id,name,kind,w,h,frames,ms,mode,theme,flags,note
+torch,fire/torch,44544,48544,temple torch,stump,2,2,12,100,replace,fire,bottom notwalkable notmoveable light:6:206,"the temple torch of pair 60, animated in place (mode replace: the server item stays)"
+brazier,fire/brazier,44560,48560,flame brazier,stump,2,2,12,100,new,fire,bottom notwalkable notmoveable light:7:206,"an iron brazier on a tripod, solid"
+campfire,fire/campfire,44561,48561,flame campfire,decor,2,2,12,100,new,fire,notmoveable light:7:206,"logs and a fire, walkable"
+candle,fire/candle,44562,48562,flame candle,decor,1,1,12,120,new,fire,notmoveable light:3:206,a wax candle in a brass dish
+spirit,fire/spirit-flame,44563,48563,flame cold spirit,decor,1,1,12,100,new,cold,notmoveable light:5:101,the spirit flame recoloured to a cold blue-white

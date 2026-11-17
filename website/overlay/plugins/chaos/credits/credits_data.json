@@ -569,6 +569,13 @@
      "use": "the recipe of the Unity front-art test scene (blocky diorama with 16 texels per unit, front-facing sprites, sun-facing shadow proxies, bent-normal sprite light, tilt-shift depth of field): the ideas only, ported to C# with our own code and textures"
     },
     {
+     "name": "pixelfx",
+     "author": "Patch, Hugo Duprez (parts adapt Sprite Fusion's open-source fire effects, MIT, Hugo Duprez, and the act code of rehan-remade's hollow-crown, MIT)",
+     "licence": "MIT (Copyright (c) 2026 Patch, Copyright (c) 2026 Hugo Duprez); its gallery fonts are not MIT and are not used",
+     "use": "five animated fire props, rendered once from its code at commit 5294518 and fitted to our 32 px grid and theme palettes: the temple torch, a brazier, a campfire, a candle and a cold spirit flame (client/tools/sprites/gen_decor_flames.py, O623); the strips are our derivative, no pixelfx code ships in the game",
+     "source": "https://github.com/patch-gg/pixelfx"
+    },
+    {
      "name": "json.lua",
      "author": "rxi",
      "licence": "MIT",

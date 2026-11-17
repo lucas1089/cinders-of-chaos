@@ -1,0 +1,5 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+44560,48560,brazier,stump,new,flame brazier,2x2,0,16785409,2,0,7,206,family=flame|ms=100
+44561,48561,campfire,decor,new,flame campfire,2x2,0,16777216,0,0,7,206,family=flame|ms=100
+44562,48562,candle,decor,new,flame candle,1x1,0,16777216,0,0,3,206,family=flame|ms=120
+44563,48563,spirit,decor,new,flame cold spirit,1x1,0,16777216,0,0,5,101,family=flame|ms=100
