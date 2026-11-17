@@ -6930,6 +6930,42 @@ The other 49 spells keep today's effects. One pack is left of five. The table we
   Add `live` to the job `live-pair` when pair 73 ships. `gen_spell_vfx_test.py` runs on synthetic sheets.
 - **Server.** `server/data/lib/chaos_spell_vfx.lua` maps the three spells to pieces behind `chaosClientPair >= 73`. See server/README.md.
 - **Previews** (never committed): one MP4 of the three kept spells, before and after.
+## Area bursts, beams and markers of the pair 36 packs (O607, `tools/sprites/gen_area_fx.py`, `art_import/area_fx.csv`; joins pair 73; owner 2026-11-17)
+
+The owner approved the review O604. Five of our area bursts are faint. The beam spells draw balls on a line. The packs have markers we lack.
+42 effects. Not in a live pair yet, not seen in a client.
+
+- **Refills, 39 effects.** Pair 36 imported them. Pair 51 blanked them as unused. Each is put back at its pair 36 id.
+  Size, phases and send offset are those of its pair 36 spec, so `chaos_pack36_fx_ids.lua` stays true.
+  Area bursts: 1612 `area_whiteout`, 1642 `area_radiant_repulse`.
+  Beams, eight headings each: 3356..3363 `mega_blood_siphon`, 3404..3411 `mega_glacier_breath`, 3492..3499 `mega_soul_chain`, 3508..3515 `mega_sunbeam_lance`.
+  Markers: 3685 `mega_util_checkpoint_crystal`, 3688 `mega_util_interact_hand`, 3690 `mega_util_locked_marker`, 4051 `w_fx_quest_marker`, 4076 `w_marker_skull`.
+  Their 39 rows moved from `pair51_removed.csv` to `pair51_keep.csv`.
+- **New, 3 effects at 5300..5302.** `ab_fire_rain` 7 x 6, `ab_blood_sigil` 8 x 7, `ab_arcane_clock` 9 x 9. A set pair 36 did not have.
+- **Step of pair 73, the last effect step.** The input pair needs 253 missiles and 4,742 to 5,299 effects. Every refill id must be blank in it.
+  The tool pads every id from the input's last effect + 1 up to 5299 with a blank effect: one 1 x 1 frame, sprite 0, the 12 bytes pair 51 writes.
+  After O606 (`gen_gap_fx.py`, 5190..5237) that is 5238..5299, 62 blanks. Order: `gen_spell_vfx.py`, `gen_gap_fx.py`, then this step.
+  From pair 72 alone it is 4743..5299, 557 blanks. After a step that ends at N it starts at N + 1. Both cases were built.
+  So the steps that own 4743..5142 and 5143..5299 run first. A step that needs an exact effect count cannot run after this one.
+  The tool never touches an id below 5300 that has art.
+- **Cut.** The cut the pair 36 tools use now: the 32 px sheets 1:1, alpha cut hard at 0.5, no dither mesh. The 64 px markers are halved first.
+  O604 measured it: the hard cut keeps 84% to 106% of the alpha mass of every pick. No pick needs the game size cut of O596.
+  A looping pack effect plays once and its last 3 frames dissolve, as in pair 36.
+  The old sums of `pack36_fx.sums` are of the dither rule, so the refills have their own sums in `area_fx.sums`.
+- **Placing.** The pack's anchor tile. An area burst is sent on the centre tile of the spell. A beam is sent on the caster's tile. A marker on the marked tile.
+  Art width in tiles: shard rain 6.1, blood sigil 6.3, clock face 7.4, whiteout 5.8, radiant burst 5.3. Ours: 6.8 on 7 x 7, 8.7 for the blood ring.
+- **Ground layer.** The five area bursts lie under the creatures, like the bursts they stand in for.
+  `gen_ground_fx.py` reads the new catalogue `server/data/spells/area_fx_catalog.csv`. `ground_fx.csv` has five more rows.
+- **Art.** Never in the repository. Committed: the script, `area_fx.csv`, `area_fx.sums`. A row holds a name, a neutral set key and `src`.
+  `src` is the first 12 hex of the sha256 of the sheet file. The sheets are read by the local script only. They are never sent to a web or AI service.
+  Licence terms: docs/CREDITS.md.
+- **Build.** `gen_area_fx.py build IN/Tibia.dat IN/Tibia.spr OUT --src PACKS_DIR`. It finds each sheet by digest. 14 sheets and the packs' json tables are needed.
+  It pads the dat, runs `import_fx_art.py` with replace rows and `--expect-first-effect 5300`, then `live` on the result.
+  `--write` rewrites the table and the sums after a wanted change. Proven from pair 72: 39 replaced in place, 3 new, every other thing byte-identical.
+- **Checks.** `gen_area_fx.py check` needs no art and no pair. `gen_area_fx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_area_fx_test.py` pads a fake dat and cuts synthetic frames.
+- **Server.** `server/data/lib/chaos_area_fx.lua` behind `chaosClientPair >= 73`. See server/README.md "Area bursts, beams and markers".
+- **Previews** (never committed): area bursts before and after, the beams in four headings, the markers.
 ## Wings from PixelLab (O594, `tools/sprites/gen_pixellab_wings.py`, `drawn_wings/pixellab_rows.csv`, `gen_drawn_wings.py --src DIR`; owner 2026-11-17)
 The owner saw the O590 previews: "do the hardest ones in PixelLab, but only the 10 that came out bad". Those are the ten rows O590 left at 45 or more. No pair built, not seen in a client.
 - **Rows**: 111 storm gull, 109 squall kite, 96 rose window, 104 slate plate, 116 tide swan, 117 tornado funnel, 93 rain veil, 118 void raven, 58 foam crest, 110 star gossamer.

@@ -514,6 +514,16 @@ function W.creditKill(player, name, corpse)
 	end
 	set(player, "count", math.min(target, math.max(0, get(player, "count")) + 1))
 	local key = where == "bag" and "drop" or (where == "pack" and "inPack" or "inInbox")
+	if where == "bag" then
+		-- O607: a quest marker over the loot bag that holds the item, to this player only (client pair 73, else nothing)
+		if ChaosAreaFx == nil then
+			ChaosAreaFx = false
+			pcall(dofile, "data/lib/chaos_area_fx.lua")
+		end
+		if ChaosAreaFx then
+			pcall(function() ChaosAreaFx.sendMark(corpse:getPosition(), "quest", player) end)
+		end
+	end
 	local shown = where == "bag" and held or math.min(target, held + 1) -- in the bag it is not held yet
 	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
 		string.format(K.text(c.texts[key], lang), K.text(cond.item, lang), shown, target))

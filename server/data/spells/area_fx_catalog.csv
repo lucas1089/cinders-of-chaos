@@ -1,0 +1,6 @@
+kind,id,name,size,send_offset,patterns,frames,ms,note
+effect,5300,ab_fire_rain,7x6,"3,2",1x1,12,83,burning shards rain on a 5 x 5 square
+effect,5301,ab_blood_sigil,8x7,"3,3",1x1,12,83,"a blood sigil, a disc of 5 tiles"
+effect,5302,ab_arcane_clock,9x9,"4,4",1x1,13,83,"a clock face of runes, a disc of 7 tiles"
+effect,1612,area_whiteout,7x6,"3,2",1x1,16,83,"a white burst of snow, a disc of 5 tiles"
+effect,1642,area_radiant_repulse,7x7,"3,3",1x1,12,83,"a burst of light that pushes out, a disc of 5 tiles"

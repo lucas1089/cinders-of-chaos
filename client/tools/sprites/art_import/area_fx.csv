@@ -1,0 +1,43 @@
+kind,id,name,role,set,src,dir,element,w,h,phases,ms,dx,dy,note
+new,5300,ab_fire_rain,area,a3,88fd2670bf53,,fire,7,6,12,83,3,2,burning shards rain on a 5 x 5 square
+new,5301,ab_blood_sigil,area,a3,91d7c5fd23cc,,physical,8,7,12,83,3,3,"a blood sigil, a disc of 5 tiles"
+new,5302,ab_arcane_clock,area,a3,8fb10e93aff5,,arcane,9,9,13,83,4,4,"a clock face of runes, a disc of 7 tiles"
+refill,1612,area_whiteout,area,g,0c1ea500c11a,,ice,7,6,16,83,3,2,"a white burst of snow, a disc of 5 tiles"
+refill,1642,area_radiant_repulse,area,g,77a6f450cafc,,holy,7,7,12,83,3,3,"a burst of light that pushes out, a disc of 5 tiles"
+refill,3356,mega_blood_siphon_n,beam,v1,e004c7df3c91,n,physical,2,4,13,83,1,0,"a red stream, towards n"
+refill,3357,mega_blood_siphon_ne,beam,v1,e004c7df3c91,ne,physical,4,4,13,83,3,0,"a red stream, towards ne"
+refill,3358,mega_blood_siphon_e,beam,v1,e004c7df3c91,e,physical,5,2,13,83,4,1,"a red stream, towards e"
+refill,3359,mega_blood_siphon_se,beam,v1,e004c7df3c91,se,physical,4,4,13,83,3,3,"a red stream, towards se"
+refill,3360,mega_blood_siphon_s,beam,v1,e004c7df3c91,s,physical,2,5,13,83,1,4,"a red stream, towards s"
+refill,3361,mega_blood_siphon_sw,beam,v1,e004c7df3c91,sw,physical,4,4,13,83,0,3,"a red stream, towards sw"
+refill,3362,mega_blood_siphon_w,beam,v1,e004c7df3c91,w,physical,4,2,13,83,0,1,"a red stream, towards w"
+refill,3363,mega_blood_siphon_nw,beam,v1,e004c7df3c91,nw,physical,4,4,13,83,0,0,"a red stream, towards nw"
+refill,3404,mega_glacier_breath_n,beam,v1,7778956be1cd,n,ice,3,5,13,83,1,0,"a breath of frost, towards n"
+refill,3405,mega_glacier_breath_ne,beam,v1,7778956be1cd,ne,ice,4,4,13,83,3,0,"a breath of frost, towards ne"
+refill,3406,mega_glacier_breath_e,beam,v1,7778956be1cd,e,ice,4,3,13,83,3,1,"a breath of frost, towards e"
+refill,3407,mega_glacier_breath_se,beam,v1,7778956be1cd,se,ice,4,4,13,83,3,3,"a breath of frost, towards se"
+refill,3408,mega_glacier_breath_s,beam,v1,7778956be1cd,s,ice,3,4,13,83,1,3,"a breath of frost, towards s"
+refill,3409,mega_glacier_breath_sw,beam,v1,7778956be1cd,sw,ice,4,4,13,83,0,3,"a breath of frost, towards sw"
+refill,3410,mega_glacier_breath_w,beam,v1,7778956be1cd,w,ice,5,3,13,83,0,1,"a breath of frost, towards w"
+refill,3411,mega_glacier_breath_nw,beam,v1,7778956be1cd,nw,ice,4,4,13,83,0,0,"a breath of frost, towards nw"
+refill,3492,mega_soul_chain_n,beam,v1,406a12a645e7,n,death,1,4,13,83,0,0,"a chain of souls, towards n"
+refill,3493,mega_soul_chain_ne,beam,v1,406a12a645e7,ne,death,3,3,13,83,2,0,"a chain of souls, towards ne"
+refill,3494,mega_soul_chain_e,beam,v1,406a12a645e7,e,death,4,1,13,83,3,0,"a chain of souls, towards e"
+refill,3495,mega_soul_chain_se,beam,v1,406a12a645e7,se,death,3,3,13,83,2,2,"a chain of souls, towards se"
+refill,3496,mega_soul_chain_s,beam,v1,406a12a645e7,s,death,2,4,13,83,0,3,"a chain of souls, towards s"
+refill,3497,mega_soul_chain_sw,beam,v1,406a12a645e7,sw,death,3,3,13,83,0,2,"a chain of souls, towards sw"
+refill,3498,mega_soul_chain_w,beam,v1,406a12a645e7,w,death,4,1,13,83,0,0,"a chain of souls, towards w"
+refill,3499,mega_soul_chain_nw,beam,v1,406a12a645e7,nw,death,3,3,13,83,0,0,"a chain of souls, towards nw"
+refill,3508,mega_sunbeam_lance_n,beam,v1,3959fb2e44aa,n,holy,2,5,13,83,0,0,"a lance of sunlight, towards n"
+refill,3509,mega_sunbeam_lance_ne,beam,v1,3959fb2e44aa,ne,holy,4,4,13,83,3,0,"a lance of sunlight, towards ne"
+refill,3510,mega_sunbeam_lance_e,beam,v1,3959fb2e44aa,e,holy,5,2,13,83,4,0,"a lance of sunlight, towards e"
+refill,3511,mega_sunbeam_lance_se,beam,v1,3959fb2e44aa,se,holy,4,4,13,83,3,3,"a lance of sunlight, towards se"
+refill,3512,mega_sunbeam_lance_s,beam,v1,3959fb2e44aa,s,holy,2,5,13,83,0,4,"a lance of sunlight, towards s"
+refill,3513,mega_sunbeam_lance_sw,beam,v1,3959fb2e44aa,sw,holy,4,4,13,83,0,3,"a lance of sunlight, towards sw"
+refill,3514,mega_sunbeam_lance_w,beam,v1,3959fb2e44aa,w,holy,5,2,13,83,0,0,"a lance of sunlight, towards w"
+refill,3515,mega_sunbeam_lance_nw,beam,v1,3959fb2e44aa,nw,holy,4,4,13,83,0,0,"a lance of sunlight, towards nw"
+refill,3685,mega_util_checkpoint_crystal,mark,v1,56953a0c7351,,any,3,3,25,83,1,1,a checkpoint crystal
+refill,3688,mega_util_interact_hand,mark,v1,ceab1f723e41,,any,3,3,17,83,1,1,a hand: something to use
+refill,3690,mega_util_locked_marker,mark,v1,1fdc423525e8,,any,3,3,17,83,1,1,a lock: the way is shut
+refill,4051,w_fx_quest_marker,mark,ui,695411437e97,,any,2,3,17,83,0,0,a gold quest marker
+refill,4076,w_marker_skull,mark,ui,6ec163293be4,,any,3,3,17,83,1,1,a skull mark

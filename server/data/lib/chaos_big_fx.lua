@@ -165,11 +165,12 @@ function C.swapFor(spellId, name)
 end
 
 -- send a big effect at its offset tile (Vfx centres it on pos); false when off or unknown
-function C.send(pos, name)
+-- raw: our own art even where a pack burst would stand in for it (data/lib/chaos_area_fx.lua, O607)
+function C.send(pos, name, raw)
 	if not pos or not C.live() or not known(name) then
 		return false
 	end
-	return Vfx(Position(pos.x, pos.y, pos.z), name) and true or false
+	return Vfx(Position(pos.x, pos.y, pos.z), name, raw) and true or false
 end
 
 -- the big effect of a use (ChaosPackFx.send calls this first); false when off, no use or not in the pair
@@ -191,6 +192,14 @@ function C.bossHit(tiles, element)
 	if not C.live() then
 		return false
 	end
-	local centre = C.circleOf(tiles)
-	return centre ~= nil and C.send(centre, C.hits[element or "physical"])
+	local centre, size = C.circleOf(tiles)
+	local name = C.hits[element or "physical"]
+	-- O607: a pack burst smaller than this area does not stand in for ours (the blood sigil on a 9 tile area)
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, "data/lib/chaos_area_fx.lua")
+	end
+	local A = ChaosAreaFx
+	local raw = A and A.names and A.names[name] and not A.fits(A.names[name], size) or false
+	return centre ~= nil and C.send(centre, name, raw)
 end

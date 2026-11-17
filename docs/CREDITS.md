@@ -123,7 +123,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **UI Game Feel**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set
+  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set; since pair 73 two markers put back (quest marker, skull)
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
@@ -135,7 +135,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 48 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair
+  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 48 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair; since pair 73 four beams and three markers put back, and three area bursts of Mega VFX 500 Vol. 3 (same author and licence terms as Grid Magic 500)
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -143,7 +143,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Grid Magic 500**
   - Author: WsT
   - Licence: purchased; credit appreciated, not required; no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled game); never machine-learning training data
-  - Used for: since pair 36 (2026-10-22) all its tile spells, fields, area skills and cones (directional ones in eight directions), and our procedural area and hit effects redrawn with its tile spells
+  - Used for: since pair 36 (2026-10-22) all its tile spells, fields, area skills and cones (directional ones in eight directions), and our procedural area and hit effects redrawn with its tile spells; since pair 73 two area bursts put back
 - **Anime Ki Auras**
   - Author: WsT
   - Licence: purchased; credit not required

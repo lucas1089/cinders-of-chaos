@@ -138,6 +138,9 @@ jobs:
           # effects for roles that had none (O606, joins pair 73): table, sums, id table, element tags (the art is never in git); the test cuts synthetic sheets
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_gap_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_gap_fx_test.py
+          # area bursts, beams and markers of the pair 36 packs (O607, joins pair 73): table, sums, ids file, tags, the pair 51 lists (the art is never in git); the test pads a fake dat and cuts synthetic frames
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_area_fx.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_area_fx_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check

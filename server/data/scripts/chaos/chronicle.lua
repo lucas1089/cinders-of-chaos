@@ -525,6 +525,18 @@ function X.applyWorld()
 	return d
 end
 
+-- O607: a lock over a gate that refuses the player, to that player only (data/lib/chaos_area_fx.lua; client pair 73, else
+-- nothing more than the message)
+local function lockMark(pos, player)
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, "data/lib/chaos_area_fx.lua")
+	end
+	if ChaosAreaFx then
+		pcall(ChaosAreaFx.sendMark, pos, "locked", player)
+	end
+end
+
 -- the gate portals: a player goes to the area's arrival while it is open
 local step = MoveEvent()
 step:type("stepin")
@@ -537,11 +549,13 @@ function step.onStepIn(creature, item, position, fromPosition)
 	local area = cfg.areas[index]
 	if not area or not X.world.open[area.key] or not K.arrivalOf(area) then
 		player:teleportTo(fromPosition, true)
+		lockMark(position, player)
 		player:sendCancelMessage(Chaos.t(player, "The way is sealed."))
 		return true
 	end
 	if player:getLevel() < (area.minLevel or 1) then
 		player:teleportTo(fromPosition, true)
+		lockMark(position, player)
 		player:sendCancelMessage(Chaos.t(player, "%s is for level %d and above.", area.name, area.minLevel))
 		return true
 	end

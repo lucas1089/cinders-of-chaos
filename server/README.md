@@ -34842,3 +34842,49 @@ Looks only. No damage, no timing, no area changes.
 | 5235 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
 | 5236 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
 | 5237 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+## Area bursts, beams and markers (O607; `data/lib/chaos_area_fx.lua`, `data/lib/chaos_area_fx_ids.lua`, client pair 73)
+
+The owner approved the review O604. Looks only: no damage, no timing, no area changes.
+
+- **Gate.** `config.lua` `chaosClientPair >= 73`, read once at load. Below 73 every spell, boss and event sends exactly what it sends today.
+  The old ids keep their art. Nothing is overwritten in place.
+- **Area bursts.** A faint burst of ours is drawn as a pack burst. The swap sits in `Vfx(pos, name, raw)` of `data/lib/chaos_vfx.lua`.
+  Every named effect goes through that door. `raw` asks for our own art.
+
+  | Ours | Pack burst | Senders |
+  |---|---|---|
+  | 638 `big_shock_fire_7` | 5300 `ab_fire_rain` | Doomtide (206), Colossus Fall (225), Falling Pyre (204), fire boss hits, fire boss deaths |
+  | 642 `big_shock_blood_9` | 5301 `ab_blood_sigil` | Judgment of Iron (148), world boss enrage, physical boss hits, quake, vault slam, chain lash, whirlwind |
+  | 4711 `donor_arcane_nova_695` | 5302 `ab_arcane_clock` | none today |
+  | 644 `big_nova_frost_7` | 1612 `area_whiteout` | Primordial Squall (213) |
+  | 646 `big_nova_holy_7` | 1642 `area_radiant_repulse` | Hammer of Ember Dawn (237), holy boss hits |
+
+  The boss death effect is sent by id: `deathfx.lua` asks `ChaosAreaFx.swapId`.
+  Purging Nova (199) is listed for 646 in `chaos_big_fx.lua`, but the effects pass sends its donor ring first. It does not change.
+- **Open: the arcane burst.** No script sends 4711. The clock face is in the pair and mapped, but no spell shows it yet.
+  The arcane spells send `big_nova_arcane_7` (648: Veil of Whispers, Reality Rift) or `weave_crush` (Tear in the Weave).
+  One row in `ChaosAreaFx.names` gives one of them the clock face. It waits for the owner's word.
+- **Size.** A pack burst is sent on the centre tile of the area, as ours is. The blood sigil is 6 tiles wide and ours 9.
+  `ChaosBigFx.bossHit` keeps ours on an area wider than 7 tiles (`ChaosAreaFx.maxSize`).
+  A boss mechanic that sends its hit on every second telegraph tile sends the pack burst there, as it sends ours today.
+- **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
+  It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
+
+  | Spell | Beam | Line | Segments, straight / diagonal |
+  |---|---|---|---|
+  | Soulrend Beam (118, death) | `mega_soul_chain` 3492..3499 | 6 | 2 of 3 / 3 of 2 |
+  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` 3508..3515 | 3 | 1 of 4 / 1 of 3 |
+  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 2 of 4 / 3 of 3 |
+  | Eclipse Edge (155, physical) | `mega_blood_siphon` 3356..3363 | 5 | 1 of 4 or 2 of 3 / 2 of 3 |
+
+  A beam reaches 2 to 4 tiles by heading, so a longer line is drawn as segments, end to end. The beam may end one tile past the line or before it.
+  A cosmetic skin of the spell's effect wins: then the line is drawn as before.
+  `mega_glacier_breath` 3404..3411 is in the pair with no sender: no class has an ice line spell.
+  Rift Cleaver, Chi Lance and Gale Volley are weapon lines, not beams. They do not change.
+- **Markers.** Sent to one player only.
+  - Lock, 3690: over a Chronicle gate that is sealed or above the player's level (`chronicle.lua`), over a generated area's entrance above the player's level (`areagen.lua`).
+  - Quest marker, 4051: over the loot bag that holds a main quest item (`mainquest.lua`).
+  - Skull 4076, checkpoint crystal 3685, hand 3688: in the pair, no sender yet. The server has no checkpoint. NPC quest marks stay those of the client.
+- **Element rule.** Every id has a row in `data/spells/spell_fx_elements.csv`. A pack burst has the element of the burst it stands in for.
+  A beam has the element of its spell. `check_spell_fx.py` measures with the gate off.
+- **Tests.** `tests/area_fx_test.lua` in the server loop. `client/tools/sprites/gen_area_fx_test.py`. The tool: client/MANIFEST.md.
