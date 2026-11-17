@@ -749,6 +749,9 @@ function A.deliver(player, run)
 	if r.relic then
 		local relicInbox = A.giveRelic(player, r.relic)
 		if relicInbox ~= nil then
+			if ChaosGapFx then -- O606
+				ChaosGapFx.on(player, "relic")
+			end
 			inbox = relicInbox or inbox
 			found[#found + 1] = U.relicName(cfg, r.relic)
 		end
@@ -886,7 +889,9 @@ local function spawnAdds(run, adds)
 			setHealth(m, hp)
 			A.monsterRun[m:getId()] = run
 			run.adds[m:getId()] = true
-			m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			if not (ChaosGapFx and ChaosGapFx.on(m, "summon_gate")) then -- O606
+				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			end
 			made = made + 1
 		end
 	end
@@ -953,6 +958,9 @@ local function telegraph(run, name)
 	for i, ms in ipairs(timing.marks) do
 		local filling = timing.kinds and timing.kinds[i] == "fill"
 		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
+		if ChaosGapFx then -- O606: the strike circle on client pair 73
+			effect = ChaosGapFx.telegraph(effect)
+		end
 		addEvent(function()
 			if not live() then
 				return
@@ -978,7 +986,11 @@ local function telegraph(run, name)
 				end
 			end
 			if mark and ChaosTelegraph then
-				ChaosTelegraph.draw(mark, pulse)
+				ChaosTelegraph.draw(mark, pulse, function(who) -- O606: the strike circle over the floor mark
+					for _, t in ipairs(plan.big) do
+						fx(P(t), effect, nil, who)
+					end
+				end)
 			else
 				pulse(nil)
 			end

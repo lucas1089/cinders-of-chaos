@@ -376,7 +376,9 @@ function M.cast(creature, kind, variant)
 	if from.x ~= pos.x or from.y ~= pos.y then
 		from:sendDistanceEffect(pos, const(SHOT[element], CONST_ANI_SMALLSTONE or 1))
 	end
-	pos:sendMagicEffect(kind == "trap" and (CONST_ME_BLOCKHIT or CONST_ME_POFF) or const(MINE_MARK[element], CONST_ME_FIREATTACK or CONST_ME_POFF))
+	if not (ChaosGapFx and ChaosGapFx.at(pos, kind == "trap" and "trap_spikes" or "mine_armed")) then -- O606
+		pos:sendMagicEffect(kind == "trap" and (CONST_ME_BLOCKHIT or CONST_ME_POFF) or const(MINE_MARK[element], CONST_ME_FIREATTACK or CONST_ME_POFF))
+	end
 	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR or 1, tr(player, "%s %s (%s): %d of %d.",
 		kind == "trap" and "Trap" or "Mine", "set", element, S.count(M.state, player:getId(), kind), S.cap(kind, mods)))
 	schedule()

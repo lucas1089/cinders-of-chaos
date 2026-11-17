@@ -426,7 +426,12 @@ local function craft(player, orbKey, item, orbItem, opts)
 		-- a Void Orb: the dark corruption cloud (the downside stays red)
 		pos:sendMagicEffect(CONST_ME_MORTAREA or CONST_ME_MAGIC_RED)
 	else
-		pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+		-- O606: the craft's own effect in place of the stock puff; an orb that only removes keeps its red puff
+		local key = (res.outcome == "ruin" or res.outcome == "decay") and "craft_fail"
+			or (not red and (res.outcome == "improve" and "masterwork" or "craft_success")) or nil
+		if not (key and ChaosGapFx and ChaosGapFx.at(pos, key)) then
+			pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+		end
 	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %s", orb.name, res.text))
 	return true, res.text, res.item, fromStash and "stash" or "bag"

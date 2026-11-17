@@ -502,6 +502,14 @@ local function announceTaken(player, taken, newIds, firstId)
 	end
 	if #newIds > 0 then
 		sound(player)
+		if ChaosGapFx then -- O606: one effect for the best new card
+			local rare = false
+			for _, id in ipairs(newIds) do
+				local r = K.rarityOf and K.rarityOf(id)
+				rare = rare or (r ~= nil and r ~= (DK.rarities or {})[1])
+			end
+			ChaosGapFx.on(player, rare and "card_rare" or "card_common")
+		end
 	end
 end
 

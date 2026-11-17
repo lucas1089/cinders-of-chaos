@@ -6996,3 +6996,93 @@ Owner (translated): "Import the creatures. They are 2x2." Eight creature packs o
 - **Knock-on at the pair 73 build**: regenerate `outfit_anchors.lua`, `info_lifts.lua`, `wing_centres.lua`, `foot_marks.lua`, `InfoLiftData.cs` from the built pair. Raise `PAIR_OUTFITS` of `check_content.py`.
 - **Server**: 11 monsters, `server/data/monster/monster_creature_looks.csv`, step `monstercreaturelooks` behind `chaosClientPair >= 73`. See server/README.md "Creature pack looks (O605)".
 - **Previews** (never committed): one MP4, each look idle and walk in 4 directions on grass and stone, beside the old look and a player.
+
+## Effects for roles that had none (O606, `tools/sprites/gen_gap_fx.py`, `art_import/gap_fx.csv`; joins pair 73; owner 2026-11-17)
+
+The owner watched the O603 previews of the fourth volume of a purchased effect set. The first volume is in pair 36.
+Rule: replace nothing that works. An effect is imported only for an event that sends no effect of its own today.
+One owner order goes past that rule: the boss warning pulse becomes the set's strike circle.
+
+- **Step of pair 73, the last effect step.** Input: 253 missiles and 4,742 to 5,189 effects. Any other pair is refused.
+  The ids are fixed: 48 effects at 5190..5237, dense, in table order. The gap up to 5189 is padded with blank effects.
+  A blank effect is one empty 1 x 1 phase. `import_fx_art.py` takes it from a spec row with `blank=1`.
+  The spell effects own 4743..5142 and the next step 5143..5189. Run those first: the spell step wants exactly 4,742 effects.
+  A step that fills a padded id later rebuilds it in place. No missile is added.
+- **Size.** The set's own 32 px sheets. Nothing is scaled. One id per effect, the set's combined sheet. No split in front and behind.
+- **Frames.** Up to 24 phases of 83 ms, as the set plays them. An empty frame at either end is dropped.
+- **Cut.** The cut of O596: alpha through `1 - (1 - a)^1.8`, 255 from 0.5 up, one glow level 144 from 0.2 up. The colours stay.
+- **Placement.** The set stands 8 px right of and 4 px below our standing point. Its ground rings are centred on 24, 24 of the tile.
+  The rings of pair 36 sit there too. Not every sheet holds that point, so the art is moved by its own pixels. Column `at`:
+  `stand` puts the alpha centroid on x 16.5 and moves down by the same amount plus 4. `tile` centres a floor mark on 16, 16.
+  `gate` centres the width and keeps the set's height. `sx`, `sy` are in the table.
+- **Strike circle.** One sheet, two parts. Frames 0..7 are the ring: the danger pulse. Frames 8..12 are the filling: the last pulse.
+  Both are 3 x 3 tiles at offset (1, 1), so a pulse never leaves its 3 x 3 slot. The burst frames 13..15 are wider and are not used.
+- **Words.** A script looked for rows of letter shapes in every picked sheet. None was found. Shaded letters could slip past it.
+- **Art.** Never in the repository. Committed: the script, `gap_fx.csv`, `gap_fx.sums`. `src` is 12 hex of the sheet file.
+  The sheets are read by the local script only. They are never sent to a web or AI service. Licence terms: docs/CREDITS.md.
+- **Build.** `gen_gap_fx.py build IN/Tibia.dat IN/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest and runs `live` at the end.
+  `--write` rewrites the table and the sums after a wanted change. `gen_gap_fx.py ids` writes the server files.
+- **Checks.** `gen_gap_fx.py check` needs no art and no pair. `gen_gap_fx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_gap_fx_test.py` runs on synthetic sheets.
+- **Proved 2026-11-17** on pair 72 with the Ki auras (dat dd4b6ac4165fb810d1c9d8fd26b8c080, 4,742 effects):
+  447 blank effects 4743..5189, then 48 effects. 7,757 sprites appended (972,454 to 980,211). 1,355 frames read back pixel for pixel.
+  Every old item, outfit, effect and missile is byte identical. Output dat 246da90dac50190fbc4df4b7f2c596a4 (9,090,529 bytes),
+  spr 97e711eb28b6bfa061e3fad8302df0b6 (1,147,423,910 bytes). The files were deleted after the check. This is not the shipped pair 73.
+- **game_telegraph.** The module draws a boss area with UI widgets, not with art. One floor widget per tile (base patch 0078).
+  A background colour fills the tile and borders on its open sides make the outline. Colours and the heat ramp are Lua, in
+  `telegraph.lua` and `telegraph_logic.lua`. No shader, no generated tile, no picture file.
+  A round ring cannot edge an arbitrary set of tiles, so the set's art cannot replace that drawing.
+  It comes as effect pulses instead: the server sends the strike circle on the 3 x 3 slots, over the floor mark. No client change.
+- **Server.** `server/data/lib/chaos_gapfx.lua` behind `chaosClientPair >= 73`. See server/README.md.
+- **Previews** (never committed): one MP4 of every effect over a player, one of the boss warning pulse before and after.
+
+| id | set no. | name | size, phases | sender and what it sent before |
+|---|---|---|---|---|
+| 5190 | 19 | `gx_talent_point` | 3 x 3, 18 | passivetree.lua: new nodes saved or a plan applied (nothing before) |
+| 5191 | 13 | `gx_class_unlock` | 4 x 4, 17 | class_unlocks.lua: a class unlocked (nothing before) |
+| 5192 | 5 | `gx_spell_mastery` | 3 x 3, 20 | spell_masteries.lua: a mastery chosen (nothing before) |
+| 5193 | 35 | `gx_paragon` | 3 x 3, 24 | paragon.lua: Paragon points spent (nothing before) |
+| 5194 | 40 | `gx_title` | 3 x 4, 17 | descent.lua: a Descent title earned (nothing before) |
+| 5195 | 9 | `gx_rank_up` | 4 x 4, 18 | professions.lua: a profession level (the yellow firework before) |
+| 5196 | 2 | `gx_class_change` | 3 x 3, 20 | ascension.lua: the ascension, in place of the stock holy area; the class effect stays |
+| 5197 | 31 | `gx_milestone_bronze` | 3 x 3, 13 | milestones.lua: level milestone, first quarter of the list (nothing before) |
+| 5198 | 34 | `gx_milestone_silver` | 3 x 4, 15 | milestones.lua: second quarter |
+| 5199 | 33 | `gx_milestone_gold` | 3 x 5, 18 | milestones.lua: third quarter |
+| 5200 | 32 | `gx_milestone_diamond` | 4 x 5, 20 | milestones.lua: last quarter |
+| 5201 | 22 | `gx_respec` | 3 x 4, 18 | passivetree.lua, respec.lua, paragon.lua: a tree or Paragon reset (nothing before) |
+| 5202 | 56 | `gx_quest_complete` | 5 x 5, 20 | mainquest.lua: the last step of a chapter (nothing before) |
+| 5203 | 47 | `gx_daily` | 3 x 5, 22 | daily.lua: the daily reward (the yellow firework before; the red milestone firework stays) |
+| 5204 | 61 | `gx_bounty` | 4 x 5, 24 | bounty.lua: a bounty paid (the yellow firework before) |
+| 5205 | 42 | `gx_chest_royal` | 5 x 5, 21 | weeklychest.lua: the chest opens (nothing before); cursedchest.lua: the chest unseals (the yellow firework before) |
+| 5206 | 78 | `gx_season_tier` | 5 x 5, 22 | seasonpass.lua: a tier claimed, one or all (the stock green puff before) |
+| 5207 | 79 | `gx_set_complete` | 5 x 5, 22 | itemsets.lua: a set piece found (the yellow firework before) |
+| 5208 | 62 | `gx_card_common` | 3 x 3, 16 | cards.lua: a new Common card in the Deck (nothing before) |
+| 5209 | 63 | `gx_card_rare` | 5 x 5, 22 | cards.lua: a new card above Common (nothing before) |
+| 5210 | 77 | `gx_relic` | 4 x 4, 24 | uber.lua: a relic in the reward (nothing before) |
+| 5211 | 54 | `gx_jackpot` | 6 x 5, 23 | prizes.lua: a unique won from a roulette (nothing before) |
+| 5212 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
+| 5213 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
+| 5214 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
+| 5215 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
+| 5216 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
+| 5217 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
+| 5218 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
+| 5219 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
+| 5220 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
+| 5221 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
+| 5222 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
+| 5223 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
+| 5224 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
+| 5225 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
+| 5226 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
+| 5227 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
+| 5228 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
+| 5229 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
+| 5230 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
+| 5231 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
+| 5232 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
+| 5233 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
+| 5234 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
+| 5235 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
+| 5236 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
+| 5237 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |

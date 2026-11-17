@@ -117,6 +117,15 @@ local function apply(player, plan)
 	if plan.top then
 		toast(player, plan.top, inbox)
 		broadcast(player, plan.top)
+		if ChaosGapFx then -- O606: bronze, silver, gold, diamond by the quarter of the list
+			local index = 1
+			for i, m in ipairs(cfg.list) do
+				if m == plan.top then
+					index = i
+				end
+			end
+			ChaosGapFx.on(player, ChaosGapFx.milestoneKey(index, #cfg.list))
+		end
 	end
 end
 

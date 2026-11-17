@@ -384,6 +384,31 @@ local m3 = T.open("y:1", sq(700, 700, 702, 702), {ms = 2000})
 calls = 0
 T.draw(m3, function() calls = calls + 1 end)
 eq(calls, 0, "no sprite pulses when every player near has the module")
+-- O606: the strike circle of client pair 73 also goes to the players with the module, through the third argument
+local arts = 0
+T.draw(m3, function() calls = calls + 1 end, function() arts = arts + 1 end)
+eq(arts, 0, "no ChaosGapFx: the players with the module get no sprite")
+ChaosGapFx = {onModule = function() return false end}
+T.draw(m3, function() calls = calls + 1 end, function() arts = arts + 1 end)
+eq(arts, 0, "the gate off: none")
+ChaosGapFx = {onModule = function() return true end}
+T.draw(m3, function() calls = calls + 1 end, function(who)
+	arts = arts + 1
+	eq(who:getId(), 10, "the player with the module")
+end)
+eq(arts, 1, "the gate on: the art call for the player with the module")
+eq(calls, 0, "and still no sprite pulse of before")
+arts, calls = 0, 0
+T.draw(mark, function() calls = calls + 1 end, function(who)
+	arts = arts + 1
+	eq(who:getId(), 1, "Ann has the module")
+end)
+eq(calls, 1, "mixed: Bob gets the pulse")
+eq(arts, 1, "mixed: Ann gets the art")
+arts = 0
+T.draw(nil, function() end, function() arts = arts + 1 end)
+eq(arts, 0, "no mark: no art call")
+ChaosGapFx = nil
 -- no mark (the switch off, too big a shape): the pulse is for everybody
 calls = 0
 T.draw(nil, function(who)

@@ -1319,6 +1319,18 @@ function W.start(index)
 		print("[Chaos world boss] no portal spot found (Game.getTowns / portalPositions)")
 	end
 	addEvent(spawnBoss, c.gatherSeconds * 1000, token)
+	-- O606: a beacon where the boss will appear, while the players gather (client pair 73)
+	if ChaosGapFx and ChaosGapFx.name("boss_beacon") then
+		local every = math.max(1000, ChaosGapFx.ms("boss_beacon"))
+		local function beacon(t)
+			if state.token ~= t or state.phase ~= "gather" then
+				return
+			end
+			ChaosGapFx.at(W.layout().bossSpawn, "boss_beacon")
+			addEvent(beacon, every, t)
+		end
+		beacon(token)
+	end
 	addEvent(function(t)
 		if state.token == t and state.portalsOpen then
 			closePortals()

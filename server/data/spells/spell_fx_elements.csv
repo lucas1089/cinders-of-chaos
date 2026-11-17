@@ -147,3 +147,5 @@ id,name,element
 4742,donor_physical_hit_209,physical
 4743,sv_death_bone_shatter,death
 4744,sv_death_lifesteal,death
+5227,gx_mine_armed,any
+5228,gx_trap_spikes,any

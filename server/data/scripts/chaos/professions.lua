@@ -116,6 +116,16 @@ local function fx(pos, name, fallback)
 	end
 end
 
+-- O606: delving and wortcunning have their own effect on client pair 73, else the stock one of the config
+local GAP_KEY = {delving = "mining", wortcunning = "herb"}
+local function profFx(pos, prof, name, fallback)
+	local key = GAP_KEY[prof]
+	if key and ChaosGapFx and ChaosGapFx.at(pos, key) then
+		return
+	end
+	fx(pos, name, fallback)
+end
+
 local function custom(item, key)
 	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
 	if not ok then
@@ -553,7 +563,9 @@ function P.reward(player, S, prof, r)
 	if gained > 0 then
 		refreshBonus(S)
 		saveLevel(S, prof)
-		fx(player:getPosition(), "CONST_ME_FIREWORK_YELLOW", 29)
+		if not (ChaosGapFx and ChaosGapFx.on(player, "rank_up")) then -- O606
+			fx(player:getPosition(), "CONST_ME_FIREWORK_YELLOW", 29)
+		end
 		msg(player, ChaosI18n.msg("You advanced to %s level %d. Profession experience bonus: +%s%%.", p.name, e.level,
 			fmtPct(S.bonus)), MESSAGE_EVENT_ADVANCE)
 		toast(player, Chaos.t(player, ChaosI18n.msg("%s level %d!", p.name, e.level)))
@@ -618,7 +630,7 @@ local function finish(player, ch)
 	end
 	castbar(player, "end", {s = ch.serial, r = "done"})
 	local p = idx.prof[ch.prof]
-	fx(ch.pos, p.fx, 3)
+	profFx(ch.pos, ch.prof, p.fx, 3)
 	P.reward(player, S, ch.prof, K.resolve(cfg, idx, g, math.random))
 end
 
@@ -644,7 +656,7 @@ local function tick(pid, serial)
 	end
 	if t >= ch.fxAt then
 		ch.fxAt = t + 1000
-		fx(ch.pos, idx.prof[ch.prof].fx, 3)
+		profFx(ch.pos, ch.prof, idx.prof[ch.prof].fx, 3)
 	end
 	addEvent(tick, 200, pid, serial)
 end
@@ -670,7 +682,7 @@ function P.startChannel(player, ctx)
 		from = player:getPosition(), endMs = t + ms, fxAt = t + 1000}
 	P.channels[pid] = ch
 	castbar(player, "start", {s = ch.serial, n = p.verb, ms = ms})
-	fx(ctx.pos, p.fx, 3)
+	profFx(ctx.pos, ctx.prof, p.fx, 3)
 	addEvent(tick, 200, pid, ch.serial)
 	return true
 end
@@ -813,7 +825,9 @@ function P.onFishCast(player, item, target, toPosition)
 	if r.count == 0 then
 		return
 	end
-	fx(toPosition, "CONST_ME_WATERSPLASH", 2)
+	if not (ChaosGapFx and ChaosGapFx.at(toPosition, "fishing")) then -- O606
+		fx(toPosition, "CONST_ME_WATERSPLASH", 2)
+	end
 	P.reward(player, S, "angling", r)
 end
 

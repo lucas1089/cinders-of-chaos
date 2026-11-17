@@ -135,7 +135,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit
+  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 48 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required

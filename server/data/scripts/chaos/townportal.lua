@@ -512,6 +512,13 @@ function think.onThink(interval)
 			if pair.back then
 				fx(pair.back, pair.style.loop)
 			end
+		elseif ChaosGapFx then -- O606: a style without a loop (the Waygate) gets the gate loop on client pair 73
+			if pair.field then
+				ChaosGapFx.at(pair.field, "gate")
+			end
+			if pair.back then
+				ChaosGapFx.at(pair.back, "gate")
+			end
 		end
 	end
 	return true
