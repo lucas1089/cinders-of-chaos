@@ -51,6 +51,11 @@ PAIR_SWAP = 73      # the look swaps of O619: 24 monsters leave a look that fail
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
 PAIR_ASSETS = 72
 PAIR_ASSETS_DAT_MD5 = 'dd4b6ac4165fb810d1c9d8fd26b8c080'
+# pair 73 is built (2026-11-17, O621; client/MANIFEST.md "Pair 73") and not yet on windows-assets: the generated client tables
+# (outfit_anchors.lua, info_lifts.lua, wing_centres.lua, foot_marks.lua) were made from it. When it is pushed, move these two
+# values into PAIR_ASSETS / PAIR_ASSETS_DAT_MD5 and delete the lines.
+PAIR_BUILT = 73
+PAIR_BUILT_DAT_MD5 = 'd4bc7cef1fa224926c04b07ad35fd6ed'
 
 
 def parse(text):

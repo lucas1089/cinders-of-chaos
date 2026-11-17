@@ -262,7 +262,8 @@ check(C.platformRect(128, 500, 400) == C.platformRect(128, 500, 400, C.PLATFORMS
 check(C.platformFor({ reach = 15 }) == C.PLATFORMS[1] and C.platformFor({}) == C.PLATFORMS[1], 'a narrow body: the small dais')
 check(C.platformFor({ reach = 22 }) == C.PLATFORMS[1] and C.platformFor({ reach = 23 }) == C.PLATFORMS[2], 'the overhang limit')
 check(C.platformFor({ reach = 30 }) == C.PLATFORMS[3] and C.platformFor({ reach = 99 }) == C.PLATFORMS[3], 'the biggest dais')
-check(C.platformFor(C.figure(A, { type = 2039 })).r > C.PLATFORMS[1].r, 'the Juggernaut gets a wider dais')
+-- the Juggernaut (2039) was a wide figure until O618 drew it again at the stock bar (reach 17): a still wider look takes the dais
+check(C.platformFor(C.figure(A, { type = 2036 })).r > C.PLATFORMS[1].r, 'a wide look (2036) gets a wider dais')
 for id, e in pairs(A) do
   if type(id) == 'number' and e[9] and e[9] <= C.PLATFORMS[#C.PLATFORMS].r + C.OVERHANG then
     local p = C.platformFor(C.figure(A, { type = id }))

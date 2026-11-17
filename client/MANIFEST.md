@@ -7354,6 +7354,45 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
 - **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and twelve refused orders, the needs held to the tools' own constants,
   flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
 
+### Pair 73, the real build (O621, 2026-11-17): built, not published
+Owner 2026-11-17: everything approved. Built with `build_pair73.py` from pair 72, which was first made again from pair 71 (`gen_ki_auras.py build71`, 40 s):
+dat dd4b6ac4165fb810d1c9d8fd26b8c080 and spr 52022eace84290b4a231f033e5b8188c, the live pair 72. The files are on a RAM disk (`/dev/shm/o621/p73`) and gone with the machine. **Nothing was pushed. `PAIR_ASSETS` stays 72.**
+- **Result.** 44,559 items, **3,529 outfits, 5,325 effects, 253 missiles**, 1,056,963 sprites. Dat **d4bc7cef1fa224926c04b07ad35fd6ed** (9,456,889 bytes), spr **4147c8d0639c6943279b2a8e3b2f5638** (1,223,176,678 bytes).
+  Against pair 72: 311 outfits (the union of 169 centred looks, 121 wings and 36 class looks) and 30 effects and missile 46 changed in place, 3 outfits and 583 effects are new (most of the effects are blank pads). Nothing else differs (`check_pair.py --old`). 5,184 warnings (pair 72 had 11,843), none in the new things.
+- **Steps** (seconds, dat md5 after the step; 4 minutes in all):
+
+  | step | s | dat md5 | spr md5 |
+  |---|---|---|---|
+  | 1 centre (O585) | 25 | 8d48f09c4204f492447b32e87953baa3 | c2d780ca4af3a61345b6ea0548e58245 |
+  | 2 wings (O583 / O594 / O620) | 157 | 19c88a83b1a6e4be467d6fea9dd3b569 | 48ad283a34c0e8219f3a769696966bf8 |
+  | 3 classredraw (O618) | 12 | a9f28bdc84cf528ea0115eca78528728 | da0b3fe83f16b6560a1bdb8004e708d3 |
+  | 4 creature (O608 / O616) | 16 | fca9b484d8fb98c4ab463f5c6eca9026 | 6dfba48c46f65cafb56430378c697ee5 |
+  | 5 spell (O596 / O600) | 7 | 243a38a98f6a3d867858bf2190b31666 | 4072ea213a6a46e64c1032b42a8d8e7b |
+  | 6 status (O597) | 5 | d6141ff0a53ed63ec0d23896d39827c6 | ce112b847f29b9f50eded9f472a47f06 |
+  | 7 gap (O606) | 9 | ea3f89eadb3e1a98e39ae3507df7dba6 | b98047906adeaea4b7a08324353b37b4 |
+  | 8 area (O607 / O609 / O613) | 19 | 270a101e659bd4294c2e0420bbc8711c | 56fdf70e74f5cf02e691f6d53cac4c5e |
+  | 9 lightning (O614) | 5 | d4bc7cef1fa224926c04b07ad35fd6ed | 4147c8d0639c6943279b2a8e3b2f5638 |
+
+  The wings are the ten painted rows of O620 (`pixellab_rows.csv` digests held by the dry run) and 111 drawn by code. Log: `build/pair73_build.txt` of the output folder.
+- **Sources** (never in the repository; the purchased packs by public Drive link, the rest local): the creature frames of O605, the spell sheets (the death pack, 128 px), the status and kill sheets (two status packs), the Vol. 4 effect set (an upload), the Vol. 1 and Vol. 3 effect packs and the UI feel pack for the area step, the ten wings pictures of O620.
+  The area step finds an effect by the metadata of its pack folder and takes the first folder that names it: the six Vol. 3 parts each hold the whole metadata, so give `--area-src` ONE folder with the parts merged, not one per part (the first part, without the sheet, shadows the part that has it).
+- **Centre table.** The committed `pair_fixes/outfit_centre.csv` had the kind column changed by hand after O619 (31 report rows), so its notes differed from what `measure` writes and the build stopped. The measured table is committed (2,791 rows: 31 notes, 16 new rows for looks 3511..3526).
+- **Checks on the result** (the job "Live sprite pair" and the pair checks of CLAUDE.md, 31 run): pass 29: `check_pair.py`, `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`, `gen_outfit_anchors.py --check`, `gen_info_lift.py --check`, `gen_minimap_swatches.py build --check`, `gen_wing_centres.py --check`, `fit_pair50_offsets.py --check`, `gen_foot_marks.py --check`, `gen_missile_fx.py build --check`, `gen_hd_overlay.py build --check`, `clean_wing_shadows.py check-clean`, `gen_dungeon_banners.py --check`, `gen_sprite_images.py`,
+  the `live` of the donor effects, recolours, donor outfits, purchased outfits, fun costumes, Ki auras, drawn wings, creatures, spell, status, gap, area, lightning and class redraw, and `check_content.py --pair` with `PAIR_OUTFITS` raised to 3529.
+  Fail as expected, 2: `gen_outfit_centre.py check` (135 problems: the wings and class looks leave the table's displacement, 3527..3529 have no row) and `check_content.py --pair` as committed (`PAIR_OUTFITS` says 3510).
+- **Knock-on tables, committed.** `outfit_anchors.lua` (2,794 things), `info_lifts.lua` (2,098 looks), `wing_centres.lua` (2,666 bodies, 121 wings), `head_centres.lua` (2,666 bodies), `foot_marks.lua` (2,793 things), unity `InfoLiftData.cs`, `pair_fixes/outfit_centre.csv`. `look_idle.csv` and the HD overlay are unchanged. `server/tools/client_pair.py` has `PAIR_BUILT` / `PAIR_BUILT_DAT_MD5`
+  (the tables name the built pair, `PAIR_ASSETS` is still 72; `client_pair_test.py` takes either). Client tests that held numbers of the old art follow the redrawn looks: Juggernaut 2039 is narrow now (dais test uses 2036), look 2064 is not lifted, Astral Fire 1213 box -32..26, the drawn wings 937 are 3x3 and not symmetric about the figure.
+  591 client and python checks pass (every client test under luajit and lua5.3, `check_modules`, `check_content`, `check_names`, `check_locales`, `check_unity_opcodes`, the tests and `check` of every pair 73 tool).
+- **Not done on purpose** (they move with the push): `PAIR_ASSETS` 73 and its md5, `PAIR_OUTFITS` 3529 / `PAIR_NAME` in `check_content.py`, the `live` steps of the pair 73 tools in the job `live-pair` (it reads windows-assets, which holds pair 72), `chaosClientPair` 73 on the server. The archive for windows-assets was cut on the RAM disk only (sizes in the push steps below).
+- **Push steps, ready, not run** (windows-assets is the pair of the Windows package; pair 72 went the same way, commit `7fffe853`):
+  1. Archive: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-11-17 00:00:00' -cf - Tibia.dat Tibia.spr | xz -9 -T0 > things-1098.tar.xz`, then `split -b 99614720 -d -a 2 things-1098.tar.xz things-1098.tar.xz.part` (two parts of 95 MiB: part00 99,614,720 bytes sha256 2d72e13f29c9873502bc33fe7cb47cf71b95e9bccfd45508154fb0f7a5f71ba1, part01 42,966,544 bytes sha256 45f225cd5f451e96ad9a8fddb54d7804d578784481b7ea448bc49cbe30ce6590; total 142,581,264 bytes; unpacks to the two md5s above, read back).
+  2. On a checkout of the branch `windows-assets`: replace `things/things-1098.tar.xz.part00` and `.part01`, put the two sha256 into `SHA256SUMS.parts` (lines of `things/things-1098.tar.xz.part00` / `.part01`), commit "Sprite pair 73: ..." with the md5s, `git push origin windows-assets`. Nothing else on the branch changes.
+  3. On `main`: `PAIR_ASSETS = 73` and `PAIR_ASSETS_DAT_MD5 = 'd4bc7cef1fa224926c04b07ad35fd6ed'` in `server/tools/client_pair.py` (delete `PAIR_BUILT`), `PAIR_OUTFITS` 3529 and `PAIR_NAME` 'pair 73' in `tools/ci/check_content.py`, the `live` steps of `gen_creature_outfits.py`, `gen_spell_vfx.py`, `gen_status_vfx.py`, `gen_gap_fx.py`, `gen_area_fx.py`, `gen_lightning_fx.py` and `gen_class_redraw.py` in the job "Live sprite pair" of `ci.yml`. The job then reads the new archive (`cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf -`).
+  4. Ship the client: Actions > Windows package (`windows-package.yml`, manual, input `client_build`: raise it only for a new exe) builds `winpkg-N` from windows-assets; then on the VPS `chaos-ctl.sh publish-update winpkg-N` (admin app: Comandos > Site e update do client > "Publicar update"; follow with `publish-log`), which signs and serves the manifest.
+  5. Only then, on the server: admin app Comandos > "Par do cliente" > Gravar 73 (`chaos-ctl.sh client-pair set 73`, not while an update runs), then Painel > Atualizar servidor (`update-apply`). Pair 73 opens: the three boss looks and Talath's lair, the look swaps of O619, the spell, status, gap, area and lightning effects (all gated `chaosClientPair >= 73`). A client below pair 73 draws nothing for the new ids, so the record is raised last.
+- **Preview** (never committed): `pair73_real.mp4`, 49 s, read from the built pair by script and not viewed: class looks with drawn wings, the three bosses, the long beams, area effects, three status loops, two bolts, two gap effects.
+
+
 ## Class outfits redrawn (O618; `tools/sprites/gen_class_redraw.py`, `art_import/class_redraw.csv`; owner 2026-11-17, "Pode seguir")
 
 The owner asked for the class outfits that miss the stock bar to be drawn again, same name and theme. The O610 audit names them:
