@@ -125,7 +125,9 @@ if shutil.which('systemd-analyze'):
     for path in units:
         r = subprocess.run(['systemd-analyze', 'verify', path], capture_output=True, text=True)
         bad = [l for l in (r.stdout + r.stderr).splitlines()
-               if l.strip() and not re.search(r'not executable|No such file|not found|Failed to create|Access denied|Unit .* not found', l)]
+               if l.strip() and not re.search(r'not executable|No such file|not found|Failed to create|Access denied|Unit .* not found', l)
+               # warnings about the runner's own units (a newer systemd drops options they still use) are not ours
+               and not re.match(r'/(usr/lib|lib|etc|run)/systemd/', l)]
         check(not bad, os.path.basename(path) + ': systemd-analyze verify: ' + '; '.join(bad[:3]))
 
 if fails:
