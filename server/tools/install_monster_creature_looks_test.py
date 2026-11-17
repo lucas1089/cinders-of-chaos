@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""python3 -I server/tools/install_monster_creature_looks_test.py : install_monster_creature_looks.py (O605, install step
-`monstercreaturelooks`) on the shipped map and on a synthetic server folder: the map (11 rows, ids 3527-3535, the old looks are our
-files' and the committed pool's, at most 2 monsters on a look, the hunt monsters each on a look of their own), the client pair guard
-end to end (pair 72 or missing: nothing written and a WARNING line; pair 73: our XML, a base XML, a base Lua monster and the pool
-rows move, colours stay, a boss with no pool row moves too), a monster that wears its hue shifted copy (Rimecairn, pair 69) moves on
-from it and the recolour step then leaves it alone, idempotent, a file with another look stops the step, a missing file stops it,
---dry-run writes nothing, gen_bounty_pool.py turns a new look back to the old one, the audits read the map at pair 73. No base
-server needed."""
+"""python3 -I server/tools/install_monster_creature_looks_test.py : install_monster_creature_looks.py (O608, after O605; install step
+`monstercreaturelooks`) on the shipped map and on a synthetic server folder: the map (3 rows, ids 3527-3529, three bosses of ours,
+each on a look of its own, the old looks are our files', none of them a hunt monster of the pool or a monster of an earlier map),
+the client pair guard end to end (pair 72 or missing: nothing written and a WARNING line; pair 73: our XML, a base XML, a base Lua
+monster and the pool rows move, colours stay, a boss with no pool row moves too), a monster that wears the look an earlier pair's
+step gave it moves on from it, idempotent, a file with another look stops the step, a missing file stops it, --dry-run writes
+nothing, gen_bounty_pool.py turns a new look back to the old one, the audits read the map at pair 73. No base server needed."""
 import os
 import re
 import subprocess
@@ -90,49 +89,40 @@ def looks(mon):
     return out
 
 
-# ---- the shipped map
+# ---- the shipped map: three bosses (owner, O608: the hunt monsters of O605 keep their old looks)
 rows = M.read_map()
-check(len(rows) == 11, 'the map has 11 rows (%d)' % len(rows))
-check(sorted({r[2] for r in rows}) == list(range(3527, 3536)), 'the new looks are the outfits 3527-3535, every one worn')
-check(len({r[0] for r in rows}) == len(rows), 'one row per monster')
-per = {}
-for _n, _o, new in rows:
-    per[new] = per.get(new, 0) + 1
-check(max(per.values()) <= 2, 'at most 2 monsters on one new look')
+check([r[0] for r in rows] == ['The Rotmother', 'Vhoss the Hexmaw', 'Talath'], 'the map has the three bosses (%s)' % [r[0] for r in rows])
+check([r[2] for r in rows] == [3527, 3528, 3529], 'the new looks are the outfits 3527-3529, one boss on each')
 check(C.PAIR_CREATURE == 73 and C.PAIR_CREATURE > C.PAIR_FUN and C.PAIR_ASSETS < C.PAIR_CREATURE, 'the step needs pair 73, which is not on windows-assets')
 pool = G.read(G.DEFAULT_OUT)
 chaos = os.path.join(REPO, 'server', 'data', 'monster', 'monsters', 'chaos')
 files = R.monster_files(chaos)
-hunt = []
 for name, old, new in rows:
-    m = re.search(r'\{name = "%s",[^}]*?\blook = (\d+)' % re.escape(name), pool)
-    check(m or name in files, '%s is a monster of ours or of the pool' % name)
-    if m:
-        hunt.append((name, new))
-        check(int(m.group(1)) == old, '%s: the committed pool keeps look %d' % (name, old))
+    check(not re.search(r'\{name = "%s",' % re.escape(name), pool), '%s is no hunt monster of the pool' % name)
+    check(name in files, '%s is a monster of ours' % name)
     if name in files:
         check(R.LOOK_TAG.search(open(files[name], encoding='utf-8').read()).group(2) == str(old), '%s: the repository file keeps look %d' % (name, old))
-check(len(hunt) == 6 and len({n for _m, n in hunt}) == 6, 'six hunt monsters, each on a look of its own (%s)' % hunt)
-check(dict((r[0], r[2]) for r in rows)['Elite Ice Witch'] != dict((r[0], r[2]) for r in rows)['Frost Maiden'], 'the elite has its own look')
-both = {r[0] for r in rows} & {r[0] for r in R.read_map()}
-check(both == {'Rimecairn'}, 'one monster of the recolour map takes a creature look over its copy: %s' % sorted(both))
-check(not {r[0] for r in rows} & (set(S.load_donor()) | set(S.load_purchased())), 'no monster of the donor or the purchased map')
+gone = ('Ink Blob', 'Aberration of the Depths', 'Rimecairn', 'Ashmaw Warlord', 'Thalcyra the Stormbound Seer', 'Ascended Thalcyra', 'Frost Maiden',
+        'Vaelith the Fallen Seraph', 'Sangrith the Bloodmoon Herald', 'Ascended Sangrith', 'Elite Ice Witch')
+check(not {r[0] for r in rows} & set(gone), 'the eleven monsters of O605 keep their old looks')
+check(not {r[0] for r in rows} & ({r[0] for r in R.read_map()} | set(S.load_donor()) | set(S.load_purchased())),
+      'no monster of the recolour, the donor or the purchased map')
 
-# ---- the audits read the map: the old look below pair 73, the new one from it (Rimecairn: old, copy, new)
-check(S.look_at_pair('Frost Maiden', 149, 72, S.load_recolour()) == 149 and S.look_at_pair('Frost Maiden', 149, 73, S.load_recolour()) == 3532,
-      'audit_shared_looks: the Frost Maiden wears 149 at pair 72 and 3532 at pair 73')
+# ---- the audits read the map: the old look below pair 73, the new one from it; a boss is no row of the pool, so the pool reads the same
 rc_ = S.load_recolour()
-check([S.look_at_pair('Rimecairn', 1531, p, rc_) for p in (68, 69, 72, 73)] == [1531, rc_['Rimecairn'][1], rc_['Rimecairn'][1], 3529],
-      'audit_shared_looks: Rimecairn goes old look, copy, copy, creature look')
-check(S.look_at_pair('Rimecairn', 3529, 68, rc_) == 1531, 'a file written for pair 73 reads as the old look for pair 68')
+check(S.look_at_pair('The Rotmother', 238, 72, rc_) == 238 and S.look_at_pair('The Rotmother', 238, 73, rc_) == 3527,
+      'audit_shared_looks: the Rotmother wears 238 at pair 72 and 3527 at pair 73')
+check(S.look_at_pair('The Rotmother', 3527, 68, rc_) == 238, 'a file written for pair 73 reads as the old look for pair 68')
+check([S.look_at_pair('Rimecairn', 1531, p, rc_) for p in (68, 69, 73)] == [1531, rc_['Rimecairn'][1], rc_['Rimecairn'][1]],
+      'audit_shared_looks: Rimecairn keeps the copy of pair 69 at pair 73')
 check(S.check_pool(pair=C.PAIR_CREATURE) == [], 'no shared look at pair 73: %s' % S.check_pool(pair=C.PAIR_CREATURE))
 check(I.check_pool(pair=C.PAIR_CREATURE) == [], 'every hunt monster moves while it stands at pair 73: %s' % I.check_pool(pair=C.PAIR_CREATURE))
 check(I.check_crowded(pair=C.PAIR_CREATURE) == [], 'no crowded look at pair 73')
 idle = I.load_idle()
-check(all(idle.get(n, (False,))[0] and idle[n][3] == 'idle group' for n in range(3527, 3536)), 'look_idle.csv: the nine looks have an idle group that moves')
-moved = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_CREATURE)[0]}
-check(all(moved[n] == new for n, new in hunt), 'the pool read at pair 73 wears the new looks')
-check(all(r['look'] != new for r in I.donor_rows(S.pool_rows(), C.PAIR_FUN)[0] for _n, new in hunt), 'and none of them at pair 72')
+check(all(idle.get(n, (False,))[0] and idle[n][3] == 'idle group' for n in range(3527, 3530)), 'look_idle.csv: the three looks have an idle group that moves')
+check(not [n for n in range(3530, 3536) if n in idle], 'look_idle.csv: the six outfits of O605 that are gone have no row')
+check([r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_CREATURE)[0]] == [r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_FUN)[0]],
+      'the pool reads the same at pair 72 and 73: no hunt monster changes')
 
 # ---- the guard and the step end to end (synthetic server: our files, a base XML, a base Lua monster, a boss with no pool row)
 mp = os.path.join(tempfile.mkdtemp(prefix='creaturelooks_map_'), 'map.csv')
@@ -164,25 +154,20 @@ check(rc == 0 and '0 moved to their new look, 5 already there' in out and snapsh
 rc, out = run(os.path.join(server(80, OURS, BX, BL, ptext), 'data'), '--map', mp)
 check(rc == 0 and '5 moved' in out, 'pair 80 installs')
 
-# Rimecairn (the shipped maps: 1531 -> its copy at pair 69 -> 3529 at pair 73): from the copy and straight from the old look; then the
-# recolour step leaves a monster that wears its creature look alone
+# a monster that wears the look an earlier pair's step gave it (a row of the recolour map: Rimecairn, 1531 -> its copy at pair 69) would
+# move on from the copy and straight from the old look; no row of the shipped map is such a monster now, the rule stays for a later one
 copy = rc_['Rimecairn'][1]
 for start in (copy, 1531):
     dn = server(73, [('Rimecairn', start)], [], [], pool_text([('Rimecairn', start, '')]))
     rc, out = run(os.path.join(dn, 'data'))
-    check(rc == 1 and 'no monster file' in out, 'the shipped map on a folder with one monster stops (the others are missing)')
+    check(rc == 1 and 'no monster file' in out, 'the shipped map on a folder without the bosses stops')
     one = os.path.join(tempfile.mkdtemp(prefix='creaturelooks_one_'), 'map.csv')
     open(one, 'w').write('monster,look,new_look\nRimecairn,1531,3529\n')
     rc, out = run(os.path.join(dn, 'data'), '--map', one)
     check(rc == 0 and '1 moved to their new look' in out and '1 rows moved' in out and looks(os.path.join(dn, 'data', 'monster')) == {'Rimecairn': 3529},
-          'Rimecairn on look %d moves to 3529 (%s)' % (start, out.strip()))
-    rmap = os.path.join(tempfile.mkdtemp(prefix='creaturelooks_rec_'), 'rec.csv')
-    open(rmap, 'w').write('monster,look,new_look\nRimecairn,1531,%d\n' % copy)
-    snap = snapshot(dn)
-    rc, out = run(os.path.join(dn, 'data'), '--map', rmap, tool=RECOLOUR_TOOL)
-    check(rc == 0 and '0 moved to their copy, 1 already there' in out and snapshot(dn) == snap,
-          'the recolour step leaves a monster that wears its creature look alone (%s)' % out.strip())
-check(R.creature_looks().get('Rimecairn') == 3529, 'the recolour step reads the creature map')
+          'a monster on look %d moves to 3529 (%s)' % (start, out.strip()))
+check(R.creature_looks() == {'The Rotmother': 3527, 'Vhoss the Hexmaw': 3528, 'Talath': 3529}, 'the recolour step reads the creature map')
+check(R.creature_looks(one) == {'Rimecairn': 3529}, 'and a map it is given')
 check(M.retype_pool(pool_text([('A', 3394, '')]), [('A', 100, 3529)], {'A': {3394}})[1:] == (1, 0), 'pool: an earlier pair\'s look moves too')
 check(M.retype_pool(pool_text([('A', 7, '')]), [('A', 100, 3529)], {})[1:] == (0, 0), 'pool: another look stays')
 
@@ -197,9 +182,9 @@ rc, out = run(os.path.join(server(73, OURS, BX, BL, None), 'data'), '--map', mp)
 check(rc == 0 and 'bounty_pool.lua: not installed' in out and '5 moved' in out, 'no installed pool: skipped, the files move')
 
 # ---- the pool generator gives the committed pool back from a server that wears the creature looks
-check(G.committed_look('Frost Maiden', 3532) == 149 and G.committed_look('Frost Maiden', 149) == 149 and G.committed_look('Zulu', 3532) == 3532,
+check(G.committed_look('The Rotmother', 3527) == 238 and G.committed_look('The Rotmother', 238) == 238 and G.committed_look('Zulu', 3527) == 3527,
       'gen_bounty_pool: a creature look is turned back to the old one, others untouched')
-check(G.committed_look('Rimecairn', 3529) == 1531 and G.committed_look('Rimecairn', copy) == 1531, 'gen_bounty_pool: Rimecairn goes back from its copy and from its creature look')
+check(G.committed_look('Rimecairn', copy) == 1531 and G.committed_look('Frost Maiden', 149) == 149, 'gen_bounty_pool: the monsters of O605 read as before')
 
 # ---- the install step is wired after the fun looks
 import install_all as A  # noqa: E402

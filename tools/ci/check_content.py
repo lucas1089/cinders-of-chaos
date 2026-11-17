@@ -826,10 +826,10 @@ for _n, (_o, _nl) in sorted(_wmap.items()):
 for _nl, _c in sorted(_wcount.items()):
     if _c > 2:
         fail(f'server/data/monster/monster_wst_looks.csv: look {_nl} is on {_c} monsters (at most 2, owner rule of O533)')
-# the creature pack map (O605, server/data/monster/monster_creature_looks.csv, client pair 73, which is not built yet): one row per monster, the new
-# looks are the outfits 3527..3535 right after the 3,526 of pair 72, every one worn, at most 2 monsters on one, each monster wears the old look in
-# its file when it is ours and else in the committed bounty pool, no monster of the donor or the purchased map is in it (Rimecairn leaves
-# its hue shifted copy of pair 69 for its new look), and no two monsters of the pool hunt list are on one of the new looks
+# the creature pack map (O608, after O605; server/data/monster/monster_creature_looks.csv, client pair 73, which is not built yet): one row per
+# monster, the new looks are the outfits 3527..3529 right after the 3,526 of pair 72, every one worn, at most 2 monsters on one, each monster wears
+# the old look in its file when it is ours and else in the committed bounty pool, no monster of the donor or the purchased map is in it, and
+# bosses only (owner 2026-11-17): no monster of the pool hunt list is on one of the new looks
 _cmap = audit_shared_looks.load_creature()
 _ccount = {}
 for _n, (_o, _nl) in sorted(_cmap.items()):
@@ -841,13 +841,14 @@ for _n, (_o, _nl) in sorted(_cmap.items()):
         fail(f'server/data/monster/monster_creature_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow.get(_n)}')
     if _n in _dmap or _n in _wmap:
         fail(f'server/data/monster/monster_creature_looks.csv: {_n} is in the donor or the purchased map as well')
-if sorted(_ccount) != list(range(3527, 3527 + len(_ccount))) or len(_ccount) != 9:
-    fail('server/data/monster/monster_creature_looks.csv: the new looks must be the 9 outfits 3527..3535, every one worn')
+if sorted(_ccount) != list(range(3527, 3527 + len(_ccount))) or len(_ccount) != 3:
+    fail('server/data/monster/monster_creature_looks.csv: the new looks must be the 3 outfits 3527..3529, every one worn')
 for _nl, _ns in sorted(_ccount.items()):
     if len(_ns) > 2:
         fail(f'server/data/monster/monster_creature_looks.csv: look {_nl} is on {len(_ns)} monsters (at most 2)')
-    if sum(1 for _n in _ns if _n in _prow) > 1:
-        fail(f'server/data/monster/monster_creature_looks.csv: look {_nl} is on two hunt monsters ({", ".join(_ns)}): no two hunt monsters share a look (O529)')
+    for _n in _ns:
+        if _n in _prow:
+            fail(f'server/data/monster/monster_creature_looks.csv: {_n} (look {_nl}) is a hunt monster of the pool: the creature looks are boss looks (O608)')
 # a hunt monster moves while it stands (O533): the bounty pool hunt list, each look read in server/data/monster/look_idle.csv (written
 # from the live dat by tools/audit_idle_looks.py --write-idle): an idle frame group with 2 or more phases, or animateAlways. A look
 # without one needs a row of server/data/monster/no_idle_allow.csv with its reason; the list may only shrink.

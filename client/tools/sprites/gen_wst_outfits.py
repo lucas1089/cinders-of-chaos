@@ -578,11 +578,12 @@ def record_index(spr):
     return idx
 
 
-def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, log=print, specs_of=None):
+def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, log=print, specs_of=None, flags_of=None):
     """pair in (DAT, SPR; its outfits end at first - 1) -> pair out in OUT_DIR (not there yet): every row of the table is one new
     outfit, built from the creature of the row. Verified before the rename; returns the new ids.
     specs_of(row) -> [(Group, tiles)]: another tool's outfits through the same append and checks (gen_creature_outfits.py, O605);
-    then `src` is not read here."""
+    then `src` is not read here. flags_of(row) -> (flag bytes of the entry, the flags as the dat reader gives them): an outfit with a
+    displacement (the 4x4 boss looks of O608); without it an outfit has no flags."""
     import random
     import shutil
     import struct
@@ -650,7 +651,7 @@ def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, 
                 setattr(g2, k, getattr(g, k))
             g2.sprites = tuple((id(g), s) for s in range(len(tiles)))
             gs.append(g2)
-        entries.append(build_entry(b'', gs, sid_map))
+        entries.append(build_entry(flags_of(r)[0] if flags_of else b'', gs, sid_map))
         src_specs.append((first + i, r, specs))
     d = od.data
     ins = od.effects[0].raw[0]
@@ -688,7 +689,7 @@ def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, 
     nslots = nframes = 0
     for nid, r, specs in src_specs:
         tm = md.outfit(nid)
-        assert not tm.flags, (nid, 'flags')
+        assert dict(tm.flags) == (flags_of(r)[1] if flags_of else {}), (nid, 'flags')
         mg = parse_body(md, tm)
         assert len(mg) == len(specs), nid
         for (g, tiles), h in zip(specs, mg):
@@ -706,7 +707,7 @@ def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, 
         for (g, tiles), h in zip(specs, mg):
             for (xx, yy, zz, ph) in frames_of(h):
                 a = frame(h, ms, xx, yy, zz, ph)
-                assert a.shape == (CANVAS, CANVAS, 4)
+                assert a.shape == (h.h * 32, h.w * 32, 4)
     random.seed(1)
     for sid in random.sample(range(1, cnt + 1), min(3000, cnt)) + [1, cnt]:
         x, y = ospr.sprite(sid), ms.sprite(sid)

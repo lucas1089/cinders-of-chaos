@@ -285,8 +285,8 @@ def load_purchased(path=PURCHASED):
 
 
 def load_creature(path=None):
-    """{monster name: (look, new_look)} of monster_creature_looks.csv (O605): the same shape, from pair 73 on; `look` is the committed
-    look, also for a monster that wears a copy of it since pair 69 (Rimecairn)"""
+    """{monster name: (look, new_look)} of monster_creature_looks.csv (O605, O608: three bosses): the same shape, from pair 73 on; `look` is
+    the committed look, also for a monster that wears a copy of it since pair 69"""
     out = {}
     path = CREATURE if path is None else path
     if os.path.exists(path):

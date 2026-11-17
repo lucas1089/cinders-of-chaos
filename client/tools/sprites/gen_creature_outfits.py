@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Eight creature packs of one author as 2x2 creature outfits (O605; client/MANIFEST.md "Creature packs as 2x2 outfits (O605)").
+"""Three creature packs of one author as boss outfits of 4x4 and 5x5 tiles (O608, after O605; client/MANIFEST.md "Creature packs as boss outfits (O608)").
 
     python3 -I gen_creature_outfits.py check                     # the table, the sums keys, the monster rows and the map (no pair, no pack files)
     python3 -I gen_creature_outfits.py looks [--check]           # server/data/monster/monster_creature_looks.csv from the `creature` rows of monster_looks/picks.csv
@@ -7,14 +7,17 @@
     python3 -I gen_creature_outfits.py table --src DIR [--write] # measure the creatures of ROWS, print (or write) the table and the sums
     python3 -I gen_creature_outfits.py sums --src DIR --check    # the pack files give the committed sums
     python3 -I gen_creature_outfits.py build DAT SPR OUT_DIR --src DIR
-                                                                 # a pair with 3,526 outfits in, 9 more out (OUT_DIR must not exist)
+                                                                 # a pair with 3,526 outfits in, 3 more out (OUT_DIR must not exist)
     python3 -I gen_creature_outfits.py live DAT SPR              # the pair holds every outfit at its id, as the sums say
 
-Owner 2026-11-17 (translated): "Import the creatures. They are 2x2." Eight creature packs of one author (docs/CREDITS.md names the
-author and each pack). The licence allows commercial use and changes, asks for the credit, and allows distribution only inside the
-finished game: no sharing of the original or changed files on their own. So no art is committed, as in O540: committed are this tool,
-the table art_import/creature_outfits.csv and art_import/creature_outfits.sums (a digest of every outfit, to hold a built pair and
-the pack files to). The pack files are read locally by this script only: never sent to a web or AI service, never shown to one.
+Owner 2026-11-17 (translated), after the nine 2x2 outfits of O605: "Put the creatures back the way they were. Forget the humanoids
+and add the others to bosses. They can be bigger." and "3 is the number of monsters". So the three creatures that are no humanoid
+(a drifting ooze, a floating aberration, a hovering shard of ice) are boss looks at the size they were drawn; the humanoids and the winged angel
+are not imported, and the hunt monsters of O605 keep their old looks. docs/CREDITS.md names the author and each pack. The licence
+allows commercial use and changes, asks for the credit, and allows distribution only inside the finished game: no sharing of the
+original or changed files on their own. So no art is committed, as in O540: committed are this tool, the table
+art_import/creature_outfits.csv and art_import/creature_outfits.sums (a digest of every outfit, to hold a built pair and the pack
+files to). The pack files are read locally by this script only: never sent to a web or AI service, never shown to one.
 
 Source. `--src DIR` holds the unpacked packs in any folder layout. A creature is found by its files, not by a name: a folder with
 an idle animation folder (its name holds "idle") that has the four folders south, east, north, west of numbered PNG frames on one
@@ -22,35 +25,37 @@ an idle animation folder (its name holds "idle") that has the four folders south
 neither walks on its idle frames (walk_src idle: a thing that hovers has no step). Attack and death frames are not read. A creature
 is named by `src`: the first 12 hex digits of the sha256 of its first south idle frame file, so no pack name is in the repository.
 
-Scale. One figure of these packs is 120 to 144 px on its long side on the 256 px canvas. A 2x2 outfit is 64 px, so the frames go
-down 2:1 with nearest neighbour sampling (no filter, so no colour the art does not have; the art is drawn in 2 px blocks). Where
-the box of all idle and walk frames of the four directions is longer than 128 px, the sampling step grows so that the box is 64 px:
-scale 64/D, D = the longer side of that box, at least 128. Alpha is cut hard at one half.
+Scale. None: a figure is taken pixel for pixel, at the size it was drawn (120 to 144 px on its long side on the 256 px canvas;
+the art is drawn in 2 px blocks, and a sampling step that is no whole number would break them). The canvas is the smallest whole
+number of tiles that holds the box of all idle and walk frames of the four directions: 4x4 (128 px) up to 128 px, else 5x5 (160 px).
+The scale column says so: 128/128 or 160/160. Only a figure longer than 160 px would be sampled down, nearest neighbour, to 160/D.
+Alpha is cut hard at one half.
 
-Place (the rule of gen_wst_outfits.py, measured on the 671 2x2 monster looks of pair 71: feet 0 to 6 px above the bottom row, no
-displacement flag, the box right against the right edge): one shift for all frames, the lowest opaque pixel of any frame on row 63,
-the middle of the box on column 47.5, moved left when the box would pass column 63.
+Place. One shift for all frames: the lowest opaque pixel of any frame on the last row of the canvas, the middle of the box on the
+middle column. The dat displacement, (-48, 0) for 4x4 and (-64, 0) for 5x5, then moves the picture right, so the middle of the
+figure stands over the middle of the creature's own tile and its lowest pixel on the tile's bottom row: a boss four tiles wide
+reaches a tile and a half to each side of the tile it stands on. Negative displacements centre the big looks of the pair (the 5x5
+world boss looks 1534 and 1538: (-64, -32) and (-64, -64); the client profile has GameNegativeOffset on); a 4x4 look without one
+(3361) hangs up and left of its tile.
 
 Frames. The source runs at 12 pictures a second and has another number of frames in every direction. A dat group has one number
 of phases: the idle group has IDLE_PHASES (4), the walk group WALK_PHASES (8), fewer when a direction has fewer frames. A direction
 with n frames gives the frames floor(i * n / phases): evenly spaced over its own loop, so the loop stays closed. One phase lasts
 the mean loop time of the four directions divided by the phases.
 
-Tint. A row with a tint is a second outfit of the same creature: `cold+120` turns every pixel whose hue is cold (150 to 270 degrees,
-saturation 0.15 or more) by 120 degrees and leaves the warm and the grey ones (skin, metal). The elite of a monster family wears it,
-so no two hunt monsters share a look (O529).
-
 The outfits go after the 3,526 outfits of pair 72 (3511-3524 costumes, 3525-3526 Ki auras): the row at line n (0-based) is outfit
 3527 + n. They join pair 73. No other step planned for pair 73 adds an outfit (the centring O585 and the drawn wings O583 / O594
-change outfits in place, the spell effects O596 / O600 add effects and missiles), so the order of the steps is free: this step asks
-only for 3,526 outfits in its input. An outfit has an idle group (gtype 0) and a walk group (gtype 1), 2x2, one layer, 4 directions,
-no flags. The append and its checks are gen_wst_outfits.build (old things byte identical, every slot read back).
+change outfits in place, the spell effects O596 / O600 / O606 / O607 add effects and missiles), so the order of the steps is free:
+this step asks only for 3,526 outfits in its input. An outfit has an idle group (gtype 0) and a walk group (gtype 1), NxN, one
+layer, 4 directions, and the displacement as its only flag. The append and its checks are gen_wst_outfits.build (old things byte
+identical, every slot read back).
 Needs numpy and Pillow (the fx venv of CI) for everything but `check` and `looks`.
 """
-import colorsys
 import csv
 import os
+import math
 import re
+import struct
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -60,7 +65,7 @@ import gen_wst_outfits as W  # noqa: E402
 ART = os.path.join(HERE, 'art_import')
 TABLE = os.path.join(ART, 'creature_outfits.csv')
 SUMS = os.path.join(ART, 'creature_outfits.sums')
-HEADER = ['src', 'new', 'kind', 'size', 'scale', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'tint', 'colours']
+HEADER = ['src', 'new', 'kind', 'size', 'scale', 'disp', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'colours']
 REPO = W.REPO
 PICKS = W.PICKS
 POOL = W.POOL
@@ -71,8 +76,10 @@ FAMILY = 'creature'
 PAIR = 73
 OUTFITS_72 = 3526
 FIRST_NEW = OUTFITS_72 + 1
-CANVAS = W.CANVAS
+MIN_TILES = 4                       # a boss look is 4x4 tiles (128 px) or more
+MAX_TILES = 5                       # and 5x5 (160 px) at most: a longer figure is sampled down to 160 px
 SRC_CANVAS = 256
+DISP_FLAG = 25                      # the displacement flag byte of our 10.98 dat (datspr.TABLE_NEW)
 FPS = 12
 IDLE_PHASES = 4
 WALK_PHASES = 8
@@ -81,20 +88,13 @@ MIN_WALK = 3
 MAX_ON_LOOK = 2
 DIRS = ('north', 'east', 'south', 'west')   # engine order
 SOUTH = 2
-KIND_NAMES = ('aberration', 'angel/spirit', 'elemental', 'humanoid', 'ooze')
-TINTS = {'': None, 'cold+120': (150.0, 270.0, 0.15, 120.0)}   # hue from, hue to (degrees), least saturation, turn
+KIND_NAMES = ('aberration', 'elemental', 'ooze')   # no humanoid and no angel: the owner dropped them (O608)
 
-# the outfits in id order: (src id, kind, tint). The monster that wears each one is in monster_looks/picks.csv (family `creature`).
+# the outfits in id order: (src id, kind). The boss that wears each one is in monster_looks/picks.csv (family `creature`).
 ROWS = (
-    ('cc1b36d161cb', 'ooze', ''),
-    ('851989630524', 'aberration', ''),
-    ('48602508e8e2', 'elemental', ''),
-    ('f4dcb7077799', 'humanoid', ''),
-    ('89411b15353c', 'humanoid', ''),
-    ('8e477f3018bc', 'humanoid', ''),
-    ('28a8b3a3df23', 'angel/spirit', ''),
-    ('9f3b1c04adc4', 'humanoid', ''),
-    ('8e477f3018bc', 'humanoid', 'cold+120'),
+    ('cc1b36d161cb', 'ooze'),
+    ('851989630524', 'aberration'),
+    ('48602508e8e2', 'elemental'),
 )
 
 
@@ -107,19 +107,46 @@ def read_sums(path=SUMS):
     return W.read_sums(path)
 
 
-def scale_d(text):
-    """D of a scale text 64/D, or None"""
-    m = re.fullmatch(r'64/(\d+)', text)
+def tiles_of_size(text):
+    """N of a size text NxN from MIN_TILES to MAX_TILES, or None"""
+    m = re.fullmatch(r'(\d)x(\d)', text)
+    return int(m.group(1)) if m and m.group(1) == m.group(2) and MIN_TILES <= int(m.group(1)) <= MAX_TILES else None
+
+
+def tiles_for(side):
+    """the tiles of the canvas for a figure whose longer side is `side` px: the smallest canvas that holds it pixel for pixel"""
+    return min(MAX_TILES, max(MIN_TILES, -(-side // 32)))
+
+
+def scale_d(text, canvas):
+    """D of a scale text C/D with C the canvas, or None"""
+    m = re.fullmatch(r'%d/(\d+)' % canvas, text)
     return int(m.group(1)) if m else None
 
 
+def disp_of(tiles):
+    """the dat displacement of an NxN outfit: the middle column of the canvas over the middle of the creature's tile, the last row on
+    the tile's last row"""
+    return (-(16 * tiles - 16), 0)
+
+
+def disp_text(tiles):
+    return '%d:%d' % disp_of(tiles)
+
+
+def flags_of(row):
+    """(the flag bytes of an outfit entry, the flags as the dat reader gives them) of a table row: the displacement only"""
+    u = tuple(v & 0xFFFF for v in disp_of(tiles_of_size(row['size'])))
+    return bytes([DISP_FLAG]) + struct.pack('<HH', *u), {'displacement': u}
+
+
 def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
-    """What is wrong with the table: the rows are ROWS in order, ids in a row from the first new outfit, a (src, tint) once, kinds,
-    2x2, the scale, phases, durations, and the sums name the same outfits."""
+    """What is wrong with the table: the rows are ROWS in order, ids in a row from the first new outfit, a src once, kinds, the size,
+    the scale, the displacement, phases, durations, and the sums name the same outfits."""
     t = rows() if table is None else table
     s = read_sums() if sums is None else sums
     out, seen = [], set()
-    if want is not None and [(r['src'], r['kind'], r['tint']) for r in t] != list(want):
+    if want is not None and [(r['src'], r['kind']) for r in t] != list(want):
         out.append('the rows are not ROWS of gen_creature_outfits.py, in its order')
     for i, r in enumerate(t):
         d, n = r['src'], int(r['new'])
@@ -127,16 +154,21 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
             out.append('row %d: src %s is not 12 hex digits' % (i, d))
         if n != first + i:
             out.append('src %s: new id %d, the row at line %d must be %d' % (d, n, i, first + i))
-        if (d, r['tint']) in seen:
-            out.append('src %s with tint "%s" is on two rows' % (d, r['tint']))
-        seen.add((d, r['tint']))
+        if d in seen:
+            out.append('src %s is on two rows' % d)
+        seen.add(d)
         if r['kind'] not in KIND_NAMES:
             out.append('src %s: kind %s is not one of %s' % (d, r['kind'], ', '.join(KIND_NAMES)))
-        if r['size'] != '2x2':
-            out.append('src %s: size %s, every outfit of this table is 2x2 (owner 2026-11-17)' % (d, r['size']))
-        dd = scale_d(r['scale'])
-        if dd is None or dd < SRC_CANVAS // 2 or dd > SRC_CANVAS:
-            out.append('src %s: scale %s is not 64/D with D from %d to %d' % (d, r['scale'], SRC_CANVAS // 2, SRC_CANVAS))
+        n = tiles_of_size(r['size'])
+        if n is None:
+            out.append('src %s: size %s, a boss look is %dx%d to %dx%d (owner 2026-11-17)' % (d, r['size'], MIN_TILES, MIN_TILES, MAX_TILES, MAX_TILES))
+            continue
+        dd = scale_d(r['scale'], 32 * n)
+        if dd is None or dd < 32 * n or dd > SRC_CANVAS or (dd > 32 * n and n < MAX_TILES):
+            out.append('src %s: scale %s is not %d/%d (pixel for pixel); only a %dx%d outfit is sampled down, %d/D with D up to %d'
+                       % (d, r['scale'], 32 * n, 32 * n, MAX_TILES, MAX_TILES, 32 * MAX_TILES, SRC_CANVAS))
+        if r['disp'] != disp_text(n):
+            out.append('src %s: displacement %s, a %s outfit stands on its tile with %s' % (d, r['disp'], r['size'], disp_text(n)))
         if not MIN_IDLE <= int(r['idle']) <= IDLE_PHASES:
             out.append('src %s: %s idle phases, %d to %d' % (d, r['idle'], MIN_IDLE, IDLE_PHASES))
         if not MIN_WALK <= int(r['walk']) <= WALK_PHASES:
@@ -145,10 +177,6 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
             out.append('src %s: walk_src %s is not walk or idle' % (d, r['walk_src']))
         if not 40 <= int(r['idle_ms']) <= 1000 or not 40 <= int(r['walk_ms']) <= 1000:
             out.append('src %s: a phase lasts 40 to 1000 ms' % d)
-        if r['tint'] not in TINTS:
-            out.append('src %s: tint %s is not one of %s' % (d, r['tint'], ', '.join(k for k in TINTS if k)))
-        if r['tint'] and (d, '') not in seen:
-            out.append('src %s: the tinted row comes after the plain row of its creature' % d)
         if int(r['colours']) < 1:
             out.append('src %s: no colours in the output' % d)
     if set(s) != {r['new'] for r in t}:
@@ -293,40 +321,49 @@ def pick(n, phases):
     return [(i * n) // phases for i in range(phases)]
 
 
-def tint_colour(rgb, spec):
-    lo, hi, sat, turn = spec
-    h, s, v = colorsys.rgb_to_hsv(rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0)
-    if s < sat or not lo <= h * 360.0 <= hi:
-        return rgb
-    r, g, b = colorsys.hsv_to_rgb((h + turn / 360.0) % 1.0, s, v)
-    return (int(round(r * 255)), int(round(g * 255)), int(round(b * 255)))
-
-
-def tinted(a, tint):
-    """the frame with the tint of a row ('' = as drawn)"""
-    import numpy as np
-    spec = TINTS[tint]
-    if spec is None:
-        return a
-    out = a.copy()
-    m = a[..., 3] > 0
-    cols, inv = np.unique(a[m][:, :3], axis=0, return_inverse=True)
-    new = np.array([tint_colour(tuple(int(x) for x in c), spec) for c in cols], np.uint8).reshape(-1, 3)
-    out[m, :3] = new[inv.reshape(-1)]
-    return out
-
-
-def sample(a, box, d):
-    """nearest neighbour: the box (x0, y0, x1, y1 inclusive) of a source frame at scale 64/d"""
+def sample(a, box, d, canvas):
+    """nearest neighbour: the box (x0, y0, x1, y1 inclusive) of a source frame at scale canvas/d (d = canvas: pixel for pixel)"""
     import numpy as np
     x0, y0, x1, y1 = box
-    xs = [x0 + ((2 * i + 1) * d) // 128 for i in range(CANVAS) if ((2 * i + 1) * d) // 128 <= x1 - x0]
-    ys = [y0 + ((2 * i + 1) * d) // 128 for i in range(CANVAS) if ((2 * i + 1) * d) // 128 <= y1 - y0]
+    xs = [x0 + ((2 * i + 1) * d) // (2 * canvas) for i in range(canvas) if ((2 * i + 1) * d) // (2 * canvas) <= x1 - x0]
+    ys = [y0 + ((2 * i + 1) * d) // (2 * canvas) for i in range(canvas) if ((2 * i + 1) * d) // (2 * canvas) <= y1 - y0]
     return np.ascontiguousarray(a[np.ix_(ys, xs)])
 
 
-def measure(c, tint='', idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
-    """the outfit of a creature: {'placed': {(group, direction): [64 px frames]}, 'scale', 'idle', 'walk', 'idle_ms', 'walk_ms',
+def place(fr, canvas):
+    """shift every frame by one (dx, dy) onto the canvas: the lowest opaque pixel on the last row, the middle of the union box on the
+    middle of the canvas (the dat displacement then puts it over the tile). Returns {key: [canvas x canvas RGBA arrays]}; raises
+    ValueError when a frame does not fit."""
+    import numpy as np
+    x0 = y0 = 10 ** 6
+    x1 = y1 = -1
+    for lst in fr.values():
+        for a in lst:
+            ys, xs = np.nonzero(a[..., 3] > 0)
+            if len(xs):
+                x0, x1, y0, y1 = min(x0, int(xs.min())), max(x1, int(xs.max())), min(y0, int(ys.min())), max(y1, int(ys.max()))
+    if x1 < 0:
+        raise ValueError('no opaque pixel')
+    dy = canvas - 1 - y1
+    dx = math.floor((canvas - 1) / 2.0 - (x0 + x1) / 2.0)
+    if x0 + dx < 0 or y0 + dy < 0 or x1 + dx > canvas - 1:
+        raise ValueError('the figure (%dx%d) does not fit the %d px canvas' % (x1 - x0 + 1, y1 - y0 + 1, canvas))
+    out = {}
+    for k, lst in fr.items():
+        res = []
+        for a in lst:
+            c = np.zeros((canvas, canvas, 4), np.uint8)
+            h, w = a.shape[:2]
+            sy0, sx0 = max(0, -dy), max(0, -dx)     # rows and columns past the canvas hold no opaque pixel (checked above)
+            ey, ex = min(h, canvas - dy), min(w, canvas - dx)
+            c[sy0 + dy:ey + dy, sx0 + dx:ex + dx] = a[sy0:ey, sx0:ex]
+            res.append(c)
+        out[k] = res
+    return out
+
+
+def measure(c, idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
+    """the outfit of a creature: {'placed': {(group, direction): [frames of the canvas]}, 'tiles', 'scale', 'idle', 'walk', 'idle_ms', 'walk_ms',
     'colours', 'box', 'counts', 'loop'}; raises ValueError when it cannot be one"""
     import numpy as np
     src = {k: [cut(W._read_png(p)) for p in ps] for k, ps in c.files.items()}
@@ -341,8 +378,11 @@ def measure(c, tint='', idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
                 raise ValueError('an empty frame')
             x0, x1, y0, y1 = min(x0, int(xs.min())), max(x1, int(xs.max())), min(y0, int(ys.min())), max(y1, int(ys.max()))
     box = (x0, y0, x1, y1)
-    d = max(SRC_CANVAS // 2, x1 - x0 + 1, y1 - y0 + 1)
-    out = {'box': box, 'scale': '64/%d' % d, 'counts': {k: len(v) for k, v in src.items()}}
+    side = max(x1 - x0 + 1, y1 - y0 + 1)
+    tiles = tiles_for(side)
+    canvas = 32 * tiles
+    d = max(canvas, side)
+    out = {'box': box, 'tiles': tiles, 'scale': '%d/%d' % (canvas, d), 'counts': {k: len(v) for k, v in src.items()}}
     fr = {}
     for g, want in (('idle', idle_phases), ('walk', walk_phases)):
         ns = [len(src[(g, k)]) for k in range(4)]
@@ -350,8 +390,8 @@ def measure(c, tint='', idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
         out[g] = phases
         out[g + '_ms'] = int(round(1000.0 * sum(ns) / 4.0 / FPS / phases))
         for k in range(4):
-            fr[(g, k)] = [tinted(sample(src[(g, k)][i], box, d), tint) for i in pick(ns[k], phases)]
-    out['placed'] = W.place(fr)
+            fr[(g, k)] = [sample(src[(g, k)][i], box, d, canvas) for i in pick(ns[k], phases)]
+    out['placed'] = place(fr, canvas)
     out['colours'] = W.colours_south(out['placed'])
     # how closed the source loop is, facing south: the step last -> first against the median step (pixels that change)
     loop = {}
@@ -367,18 +407,18 @@ def groups_of(m):
     """[(Group, [tile arrays in slot order])] idle then walk: the dat shape and the sprite arrays of one outfit"""
     from import_outfits import Group
     from gen_effects import tiles_of
-    out = []
+    out, n = [], m['tiles']
     for gtype, key in ((0, 'idle'), (1, 'walk')):
         phases, ms = m[key], m[key + '_ms']
         g = Group()
-        g.gtype, g.w, g.h, g.exact, g.layers, g.px, g.py, g.pz, g.phases = gtype, 2, 2, 64, 1, 4, 1, 1, phases
+        g.gtype, g.w, g.h, g.exact, g.layers, g.px, g.py, g.pz, g.phases = gtype, n, n, 32 * n, 1, 4, 1, 1, phases
         g.anim = (0, 0, 0, tuple([ms, ms] * phases)) if phases > 1 else None
         tiles = []
         for ph in range(phases):
             for d in range(4):
-                t = tiles_of(m['placed'][(key, d)][ph], 2, 2)
-                for hh in range(2):
-                    for ww in range(2):
+                t = tiles_of(m['placed'][(key, d)][ph], n, n)
+                for hh in range(n):
+                    for ww in range(n):
                         tiles.append(t[(ww, hh)])
         g.sprites = tuple(range(len(tiles)))
         out.append((g, tiles))
@@ -386,19 +426,19 @@ def groups_of(m):
 
 
 def measured(src, want=ROWS, first=FIRST_NEW):
-    """[(row dict, measure)] of the rows of `want` (src, kind, tint) from the pack files, ids from `first`"""
+    """[(row dict, measure)] of the rows of `want` (src, kind) from the pack files, ids from `first`"""
     by = {c.id: c for c in discover(src)}
     out = []
-    for i, (cid, kind, tint) in enumerate(want):
+    for i, (cid, kind) in enumerate(want):
         if cid not in by:
             raise SystemExit('no creature %s under %s' % (cid, src))
         try:
-            m = measure(by[cid], tint)
+            m = measure(by[cid])
         except ValueError as e:
             raise SystemExit('creature %s: %s' % (cid, e))
-        r = {'src': cid, 'new': str(first + i), 'kind': kind, 'size': '2x2', 'scale': m['scale'], 'idle': str(m['idle']),
-             'idle_ms': str(m['idle_ms']), 'walk': str(m['walk']), 'walk_ms': str(m['walk_ms']), 'walk_src': by[cid].walk_src,
-             'tint': tint, 'colours': str(m['colours'])}
+        r = {'src': cid, 'new': str(first + i), 'kind': kind, 'size': '%dx%d' % (m['tiles'], m['tiles']), 'scale': m['scale'], 'disp': disp_text(m['tiles']),
+             'idle': str(m['idle']), 'idle_ms': str(m['idle_ms']), 'walk': str(m['walk']), 'walk_ms': str(m['walk_ms']),
+             'walk_src': by[cid].walk_src, 'colours': str(m['colours'])}
         out.append((r, m))
     return out
 
@@ -408,7 +448,7 @@ def table_text(rs):
 
 
 def sums_text(sums):
-    return ('# sha256 of each outfit (shapes, animator, every sprite slot) by outfit id, written by gen_creature_outfits.py table --write (O605)\n'
+    return ('# sha256 of each outfit (shapes, animator, every sprite slot) by outfit id, written by gen_creature_outfits.py table --write (O608)\n'
             + ''.join('%s %s\n' % (k, sums[k]) for k in sorted(sums)))
 
 
@@ -432,11 +472,13 @@ def build(dat, spr, out_dir, src, want=ROWS, first=FIRST_NEW, log=print):
     """pair in (its outfits end at first - 1) -> pair out in OUT_DIR: one new outfit per row. Returns the new ids."""
     ms = measured(src, want, first)
     by = {r['new']: m for r, m in ms}
-    return W.build(dat, spr, out_dir, None, table=[r for r, _m in ms], first=first, log=log, specs_of=lambda r: groups_of(by[r['new']]))
+    return W.build(dat, spr, out_dir, None, table=[r for r, _m in ms], first=first, log=log, specs_of=lambda r: groups_of(by[r['new']]),
+                   flags_of=flags_of)
 
 
 def live(dat, spr, table=None, sums=None, log=print):
-    """the pair holds every outfit at its id, its digest the one of the sums file, 2x2, one layer, idle and walk group, no flags"""
+    """the pair holds every outfit at its id, its digest the one of the sums file, its size, one layer, idle and walk group, the displacement
+    as its only flag"""
     from datspr import Dat, Spr
     from import_outfits import parse_body
     t = rows() if table is None else table
@@ -452,8 +494,11 @@ def live(dat, spr, table=None, sums=None, log=print):
             out.append('outfit %d (src %s): the pictures are not the ones of creature_outfits.sums' % (nid, r['src']))
         th = d.outfit(nid)
         gs = parse_body(d, th)
-        if th.flags or [g.gtype for g in gs] != [0, 1] or any(g.layers != 1 or (g.w, g.h) != (2, 2) for g in gs):
-            out.append('outfit %d (src %s): not an idle and a walk group of 2x2 with one layer and no flags' % (nid, r['src']))
+        n = tiles_of_size(r['size'])
+        if dict(th.flags) != flags_of(r)[1]:
+            out.append('outfit %d (src %s): flags %s, the displacement %s only' % (nid, r['src'], dict(th.flags), r['disp']))
+        elif [g.gtype for g in gs] != [0, 1] or any(g.layers != 1 or (g.w, g.h) != (n, n) for g in gs):
+            out.append('outfit %d (src %s): not an idle and a walk group of %s with one layer' % (nid, r['src'], r['size']))
         elif (gs[0].phases, gs[1].phases) != (int(r['idle']), int(r['walk'])):
             out.append('outfit %d (src %s): %d / %d phases, the table says %s / %s' % (nid, r['src'], gs[0].phases, gs[1].phases, r['idle'], r['walk']))
     log('live: %d outfits %d to %d checked, %d problems' % (len(t), int(t[0]['new']), last, len(out)))

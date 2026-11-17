@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Creature pack looks for 11 monsters (O605): the monsters move to them once the client has pair 73. install_all.py step
+"""Creature pack looks for three bosses (O608, after O605): the bosses move to them once the client has pair 73. install_all.py step
 `monstercreaturelooks`.
 
 usage: python3 -I install_monster_creature_looks.py DATA_DIR [--dry-run] [--map CSV]
 
-Client pair 73 holds 9 creature outfits, 2x2, made from eight creature packs of one author (client/tools/sprites/
-gen_creature_outfits.py, README "Creature pack looks (O605)"). server/data/monster/monster_creature_looks.csv names, for each monster
-that wears one, its old look (the one its file in the repository has, or for a base server monster the one the committed bounty pool
-gives it) and its new look (the outfit id, 3527 to 3535). The rows are the `creature` rows of
-client/tools/sprites/monster_looks/picks.csv: six hunt monsters (two of them base server monsters), three bosses and the two
-Ascended forms of the Omen bosses. Rimecairn wears a hue shifted copy of its old look since pair 69 (monster_recolour_looks.csv,
-step `monsterrecolour`): the new look replaces it, so its file may hold the old look or the copy.
+Client pair 73 holds 3 creature outfits of 4x4 and 5x5 tiles, made from three creature packs of one author (client/tools/sprites/
+gen_creature_outfits.py, README "Creature pack looks (O608)"). server/data/monster/monster_creature_looks.csv names, for each
+monster that wears one, its old look (the one its file in the repository has, or for a base server monster the one the committed
+bounty pool gives it) and its new look (the outfit id, 3527 to 3529). The rows are the `creature` rows of
+client/tools/sprites/monster_looks/picks.csv: the Rotmother (world boss), Vhoss the Hexmaw (raid boss) and Talath (an ice boss that
+is not spawned yet). Owner 2026-11-17: the eleven monsters of O605 (six of the hunts, three bosses, two Ascended forms) keep their
+old looks; the humanoid outfits are gone. The step still knows a monster that wears the look an earlier pair's step gave it (a row
+of monster_recolour_looks.csv, monster_donor_looks.csv or monster_wst_looks.csv): the new look replaces it. No row is one today.
 
 The repository files keep the old look, so a server whose client is on an older pair draws what it always did. This step runs
 after `funlooks` and does, only when config.lua chaosClientPair is 73 or more (client_pair.py, README "Client pair guard"):

@@ -277,11 +277,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   funlooks     tools/install_fun_looks.py        the Dusk Moth pet wears its new moth outfit 3523 in place of the stock look 213 (client pair 72, O566;
                the installed monster file; the fun costumes' outfits.xml lines come with the `outfits` step, the round Rune Seal with `auras`);
                waits for config.lua chaosClientPair >= 72, README "Client pair guard" and "Fun costumes (O566)"; after monsterwstlooks
-  monstercreaturelooks tools/install_monster_creature_looks.py  11 monsters (six of the hunts, three bosses, two Ascended forms) wear a 2x2
-               creature outfit made from the creature packs of O605 (client pair 73, outfits 3527-3535, data/monster/
-               monster_creature_looks.csv); Rimecairn leaves its hue shifted copy for it; the installed files and the installed bounty
-               pool get the new look; waits for config.lua chaosClientPair >= 73, README "Client pair guard" and "Creature pack looks
-               (O605)"; after funlooks
+  monstercreaturelooks tools/install_monster_creature_looks.py  three bosses (the Rotmother, Vhoss the Hexmaw, Talath) wear a 4x4 or 5x5
+               creature outfit made from three creature packs (O608, after O605; client pair 73, outfits 3527-3529, data/monster/
+               monster_creature_looks.csv); the installed files get the new look (and a row of the installed bounty pool, were a
+               hunt monster on the map); waits for config.lua chaosClientPair >= 73, README "Client pair guard" and "Creature pack
+               looks (O608)"; after funlooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn

@@ -88,8 +88,9 @@ def retype_pool(text, rows):
 
 
 def creature_looks(path=None):
-    """{monster: creature pack look} of the pair 73 map (O605, monster_creature_looks.csv): a monster of both maps (Rimecairn) wears that
-    look once step `monstercreaturelooks` has run, which is past this step, not a look this step does not know"""
+    """{monster: creature pack look} of the pair 73 map (O605, O608, monster_creature_looks.csv): a monster of both maps would wear that
+    look once step `monstercreaturelooks` has run, which is past this step, not a look this step does not know (O608: the map
+    holds three bosses, none of them on this map)"""
     path = os.path.join(os.path.dirname(MAP), 'monster_creature_looks.csv') if path is None else path
     if not os.path.exists(path):
         return {}

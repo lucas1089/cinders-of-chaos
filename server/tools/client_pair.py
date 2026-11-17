@@ -41,7 +41,7 @@ PAIR_DONOR = 70     # the 28 polished creature outfits 3406-3433 of the donor cl
 PAIR_PURCHASED = 71 # the 77 purchased creature outfits 3434-3510 (install_monster_wst_looks.py, step `monsterwstlooks`)
 PAIR_FUN = 72       # the 12 fun costumes 3511-3522, the new Dusk Moth 3523 and the round Rune Seal 3524 (install_outfits.py, install_fun_looks.py,
                     # install_auras.py; data/lib/chaos_fun_costumes.lua reads the same record, O566)
-PAIR_CREATURE = 73  # the 9 creature outfits 3527-3535 made from the creature packs of O605 (install_monster_creature_looks.py, step
+PAIR_CREATURE = 73  # the 3 boss outfits 3527-3529 made from creature packs (O608, after O605; install_monster_creature_looks.py, step
                     # `monstercreaturelooks`); pair 73 is not built yet, so PAIR_ASSETS stays below it
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships

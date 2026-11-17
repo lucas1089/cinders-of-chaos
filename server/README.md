@@ -34636,50 +34636,51 @@ the plain effect that plays when the dissolve cannot.
   ember `burn`, achievement Keeper of the Ashes), Void Collapse (127, `void`, Herald of Omens), Gilded Dust (128, gold `gold`, Hoardbreaker). Names stay
   English like every cosmetic name (`i18n_strings.lua`: proper names stay in English); the texts the client adds are in pt-BR.
 - **Never power.** A dissolve changes a picture only (no damage, drop, timing or area); the cosmetics test still refuses any field that is not cosmetic.
-## Creature pack looks (O605; picks.csv rows `creature`, `monster_creature_looks.csv`, install step `monstercreaturelooks`)
+## Creature pack looks (O608, after O605; picks.csv rows `creature`, `monster_creature_looks.csv`, install step `monstercreaturelooks`)
 
-Owner 2026-11-17 (translated): "Import the creatures. They are 2x2." Client pair 73 will hold 9 creature outfits, 3527 to 3535,
-made from eight creature packs of one author (client/MANIFEST.md "Creature packs as 2x2 outfits (O605)"). Pair 73 is not built.
+O605 gave nine 2x2 creature outfits to 11 monsters. Owner 2026-11-17 after the preview (translated): "Put the creatures back the way they were.
+Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
+Client pair 73 will hold 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles, made from three creature packs of one author
+(client/MANIFEST.md "Creature packs as boss outfits (O608)"). Pair 73 is not built.
 
-- **Map**: `server/data/monster/monster_creature_looks.csv` (monster, look, new_look), 11 rows. `gen_creature_outfits.py looks` writes it
-  from the `creature` rows of `client/tools/sprites/monster_looks/picks.csv`. The old look is the monster's file in the repository, else its
-  row of the committed bounty pool.
+- **Back to their old looks**: Ink Blob, Aberration of the Depths, Rimecairn, Ashmaw Warlord, Frost Maiden, Elite Ice Witch, Thalcyra, Vaelith,
+  Sangrith and the two Ascended forms. Nothing of O605 had shipped, so no installed server changes. The humanoid outfits and the angel are not imported.
+- **Map**: `server/data/monster/monster_creature_looks.csv` (monster, look, new_look), 3 rows. `gen_creature_outfits.py looks` writes it
+  from the `creature` rows of `client/tools/sprites/monster_looks/picks.csv`. The old look is the monster's file in the repository.
 
-| monster | what it is | old look | new look |
+| boss | what it is | old look | new look |
 |---|---|---|---|
-| Ink Blob | base server monster, pool level 192 | 992 | 3527 |
-| Aberration of the Depths | base server monster, pool level 187 | 961 | 3528 |
-| Rimecairn | hunt, level 1000-1040 | 1531 (copy 3394 since pair 69) | 3529 |
-| Ashmaw Warlord | hunt, level 620-640 | 2289 | 3530 |
-| Thalcyra the Stormbound Seer | Omen boss | 2118 | 3531 |
-| Ascended Thalcyra | the same boss ascended | 2118 | 3531 |
-| Frost Maiden | hunt, level 800-840 | 149 | 3532 |
-| Vaelith the Fallen Seraph | Fallen Sanctum boss | 2213 | 3533 |
-| Sangrith the Bloodmoon Herald | Omen boss | 2116 | 3534 |
-| Ascended Sangrith | the same boss ascended | 2116 | 3534 |
-| Elite Ice Witch | hunt elite, pool level 960 | 149 | 3535 |
+| The Rotmother | world boss (`world_bosses/the_rotmother.xml`), slow, tanky, poison | 238, 2x2 | 3527, 4x4 |
+| Vhoss the Hexmaw | raid boss of the Ashen Sepulchre (`raid/vhoss_the_hexmaw.xml`) | 2130, 2x2 | 3528, 5x5 |
+| Talath | ice boss (`talath.xml`, `boss_mechanics_config.lua` element ice), not spawned yet | 1473, 2x2 | 3529, 5x5 |
 
-- **Every new look is 2x2.** The old looks of Rimecairn (5x4), the Ashmaw Warlord (3x3) and the three bosses (3x3, 4x4) were bigger. Owner decision.
-- **The Elite Ice Witch** shared look 149 with the Frost Maiden. At pair 73 she wears 3535, the Frost Maiden's new look with its cold colours
-  turned 120 degrees. So the two no longer share a look. The rows of `shared_looks_allow.csv`, `crowded_looks_allow.csv` and
-  `no_idle_allow.csv` for look 149 stay: they hold for a server below pair 73.
-- **Rimecairn** has no walk animation in its pack. It hovers, so it glides on its idle frames. It keeps its monster file: speed 45, melee.
-- **The Ascended forms** of the two Omen bosses wear the same look as the boss. They wore the same look before.
-- **Thalcyra and the bigger guardians**: `rift_config.lua` `looks.bigGuardians` maps look 2118 to 2212. It is off (`bigGuardiansOn = false`).
-  With the new look in her file the map no longer finds her. Add 3531 there if the switch ever goes on again.
+- **Why the Rotmother** (the drifting ooze): the slowest world boss (speed 200), race venom, poison waves. A drifting ooze fits a slow, venomous boss.
+  Her old look 238 is a stock 2x2 with three walk frames. No boss of ours is a water or depths boss. The Drownbell Depths plan has no boss block.
+- **Why Vhoss the Hexmaw** (the floating horror): the raid's hex caster, an eldritch thing already. Its old look 2130 is a 2x2 with no idle group.
+  Nyxareth the Void Archon fits the theme too, but its look 1538 is a 5x5 of 138 px, as big as the new figure: nothing to gain.
+- **Why Talath** (the hovering ice shard): Rimecairn is no boss. It is a hunt monster with 130 spawns and no boss flag, so it keeps its look.
+  Talath is the one boss with ice mechanics besides Skaldra (Frost Lance, a glacial ring, ice pillars). It is dormant: no system spawns it yet.
+  So the look shows only once Talath is put in the game. Skaldra the Rime Queen is the live ice boss, but she is a frost wyrm that summons Frost Dragons,
+  and her look 1534 has the wing beat of `game_bossanimate` (owner 2026-11-06). She keeps it. To move the shard to her: change one row of `picks.csv`, run `gen_creature_outfits.py looks`.
+- **Passed over**: Aquatic Overlord Thalassa (an island boss of the base server: no file of ours, no committed look to go back to) and the Abyssal Rift guardian
+  (its look comes from `rift_config.lua` `looks`, not from a monster file; the `bigGuardians` switch is one switch for four guardians and is off).
+- **Size**: the old looks are 2x2 (64 px). The new figures are 117 to 141 px wide and 123 to 131 px tall, pixel for pixel from the pack. They stand centred
+  on the boss's tile by the dat displacement and reach about two tiles to each side. The monster files do not change: speed, health, attacks and the
+  mechanics of `boss_mechanics_config.lua` stay (its `size` is the mark's size, not the look's).
+- **Talath's pack has no walk animation.** It hovers, so it glides on its idle frames. Its file has speed 800: tune that when Talath gets a spawn.
 - **Step** `monstercreaturelooks` (`tools/install_monster_creature_looks.py`, after `funlooks`). Only when config.lua `chaosClientPair` is 73 or
-  more: the look of each monster's installed file (XML or Lua, ours and the base server's) and its row of the installed bounty pool become the
-  new look. Colour fields stay. Below pair 73 it prints a WARNING line and changes nothing. A second run changes nothing. `--dry-run` writes nothing.
-  A monster with no file, or with a look the maps do not know, stops the step.
-- **The repository files keep the old looks.** `gen_bounty_pool.py` turns a new look back to the old one, so the committed pool stays the same.
-  The `monsterrecolour` step leaves Rimecairn alone once it wears 3529.
+  more: the look of each monster's installed file (XML or Lua, ours and the base server's) becomes the new look. Colour fields stay.
+  Below pair 73 it prints a WARNING line and changes nothing. A second run changes nothing. `--dry-run` writes nothing.
+  A monster with no file, or with a look the maps do not know, stops the step. The step still moves a pool row and a monster that wears an earlier
+  pair's look, were one on the map. None is today.
+- **The repository files keep the old looks.** A boss has no row in the bounty pool, so the pool is the same at pair 72 and 73.
 - **Audits**: `audit_shared_looks.py` and `audit_idle_looks.py` read the map from pair 73 on. `tools/ci/check_content.py` holds the map
-  (ids 3527 to 3535, every one worn, at most 2 monsters a look, never two hunt monsters on one) and runs the shared, idle and crowded rules at pair 73.
-  `look_idle.csv` has the nine rows: idle group, 4 phases, 4 pictures (read from the proof build).
+  (ids 3527 to 3529, every one worn, no hunt monster of the pool on one) and runs the shared, idle and crowded rules at pair 73.
+  `look_idle.csv` has the three rows: idle group, 4 phases, 4 pictures.
 - **Tests**: `python3 -I server/tools/install_monster_creature_looks_test.py`.
 - **Switch on**: build pair 73 with this step in it, push it to windows-assets, ship the client. Then admin app Comandos > "Par do cliente" >
   Gravar 73. Fallback: `chaos-ctl.sh client-pair set 73`. Then update the server: the update runs the step.
-- **Not done**: attack and death frames are not imported. No new monster.
+- **Not done**: attack and death frames are not imported. No new monster. Not seen in a client.
 
 ## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)
 Owner, 2026-11-14 (pt-BR): "coloque mais costumes divertidas. como personagens, coisas inusitadas (como lata de energético, maço de cigarro e coisas diferentes assim)", and two more items for the same client pair: the Rune Seal aura as a round ring, and a Dusk Moth pet with a stronger animation.

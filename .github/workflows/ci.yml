@@ -221,7 +221,7 @@ jobs:
           # packs and pairs, the table, the sums and the monster map against the outfits and the committed pool (no art is committed)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_outfits.py check
-          # the 9 creature outfits 3527-3535, 2x2, made from eight creature packs of one author, and the 11 monsters that wear them (O605, joins pair 73): no art in the repository, the table and digests only; frame pick, scale, alpha cut, tint, placement, build / live on synthetic packs and pairs
+          # the 3 boss outfits 3527-3529, 4x4 and 5x5, made from three creature packs of one author, and the 3 bosses that wear them (O608, after O605, joins pair 73): no art in the repository, the table and digests only; frame pick, size, alpha cut, placement, displacement, build / live on synthetic packs and pairs
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_outfits.py check
           # the twelve fun costumes, the new Dusk Moth and the round Rune Seal ring of pair 72 (O566; PixelLab art of ours, committed as sheets):
@@ -1632,7 +1632,7 @@ jobs:
 
       - name: Purchased looks move 79 monsters at pair 71 (install_monster_wst_looks.py, monsterwstlooks step, O540)
         run: python3 -I server/tools/install_monster_wst_looks_test.py
-      - name: Creature pack looks move 11 monsters at pair 73 (install_monster_creature_looks.py, monstercreaturelooks step, O605)
+      - name: Creature pack looks move 3 bosses at pair 73 (install_monster_creature_looks.py, monstercreaturelooks step, O608)
         run: python3 -I server/tools/install_monster_creature_looks_test.py
 
       - name: Fun costumes, the new Dusk Moth and the round Rune Seal appear at pair 72 (install_fun_looks.py, install_auras.py, O566)
