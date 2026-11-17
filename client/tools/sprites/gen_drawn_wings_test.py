@@ -3,8 +3,9 @@
 And of the table of the existing wings (O583, gen_drawn_wings_families.py): every row of drawn_wings/designs.csv is
 drawn and holds the same bar (docs/SPRITE_STYLE.md "Wings"), no two rows give the same pictures, the generated files
 are current, the pair step on a synthetic pair, the torso rule against the fixtures the C++ header reads.
-And of the likeness round (O587): every row has its measured numbers and no picture data, the outline comes back in
-the south view, feathers end rounded, a haze is one glow level, the score, the fit preview takes player looks only.
+And of the likeness rounds (O587, O590): every row has its measured numbers and no picture data (the strips of
+gen_drawn_wings_strip.py, six zone colours, the beat), a strip gives the measured shape again, east and west are the
+face-on views turned, the mould, a haze is one glow level, the score, the fit preview takes player looks only.
 
 python3 -I client/tools/sprites/gen_drawn_wings_test.py
 """
@@ -335,40 +336,81 @@ if __name__ == '__main__':
     import shutil
     shutil.rmtree(case.dir)
 
-# ---- O587: the redone wings follow the old art by numbers (outline, hollow, feather count, beat), no picture data
+# ---- O587, O590: the redone wings follow the old art by numbers (strips, zone colours, beat), no picture data
 import csv as _csv  # noqa: E402
 import math  # noqa: E402
 import gen_drawn_wings_families as fm587  # noqa: E402
+import gen_drawn_wings_strip as _st  # noqa: E402
 with open(fm587.CSV, newline='', encoding='utf-8') as _f:
     _rows = list(_csv.DictReader(_f))
 _specs = fm587.load()
 check(len(_rows) == 121, 'O587: 121 rows')
+_LEN = 4 + 4 * _st.STATIONS
 for _r, _sp in zip(_rows, _specs):
-    check(len(_r['env'].split()) == len(fm587.ENV_ANGLES) and len(_r['core'].split()) == len(fm587.ENV_ANGLES),
-          'O587: %s has an outline and a core of %d radii' % (_r['key'], len(fm587.ENV_ANGLES)))
-    check(all(0 <= float(v) <= 64 for v in _r['env'].split() + _r['core'].split()), 'O587: %s radii in the cell' % _r['key'])
-    check(0.6 <= _sp.fit <= 1.0, 'O587: %s fit %s' % (_r['key'], _sp.fit))
-    check(0.35 <= _sp.swing <= 1.5, 'O587: %s swing' % _r['key'])
+    for _name in ('sl', 'sr', 'nl', 'nr'):
+        _v = _r[_name].split()
+        check(len(_v) in (0, _LEN), 'O590: %s %s is a strip of %d whole numbers or empty' % (_r['key'], _name, _LEN))
+        check(all(-96 <= int(x) <= 96 for x in _v), 'O590: %s %s lies in the cell' % (_r['key'], _name))
+    check(_r['sl'] or _r['sr'], 'O590: %s has a wing in the south view' % _r['key'])
+    check(_r['nl'] or _r['nr'], 'O590: %s has a wing in the north view' % _r['key'])
+    check(len(_r['zones'].split()) == 6 and len(_sp.zones) == 6, 'O590: %s has six zone colours' % _r['key'])
+    check(_r['mould'] in fm587.MOULDS, 'O590: %s mould %s' % (_r['key'], _r['mould']))
+    check(0.03 <= _sp.amp <= 0.3, 'O590: %s beat %s' % (_r['key'], _sp.amp))
     check(max(len(v) for v in _r.values()) < 80, 'O587: %s holds numbers and words, no picture data' % _r['key'])
+check(not any(name in _rows[0] for name in ('env', 'core', 'tips', 'fit', 'size')), 'O590: the O587 columns are gone')
 _var = {sp.key: (sp.family, sp.var) for sp in _specs}
 for _key, _want in (('tornado_funnel', ('energy', 'funnel')), ('whirlpool', ('energy', 'whirl')),
                     ('shadow_smoke', ('energy', 'smoke')), ('rain_veil', ('energy', 'rain')), ('nebula', ('energy', 'nebula')),
                     ('origami_crane', ('fan', 'fold')), ('pearl_scallop', ('fan', 'shell'))):
     check(_var.get(_key) == _want, 'O587: %s is drawn as %s/%s' % ((_key,) + _want))
 check(sum(1 for sp in _specs if sp.family == 'feather') == 35, 'O587: 35 feather rows')
-for _name, _v in fm587.FEATHER_VARS.items():                 # plumes, no spikes: a rounded tip, two rows or more
-    check(_v[1][-1][1] >= 0.14 and _v[1][-2][1] >= 0.4, 'O587: feather %s ends in a rounded tip' % _name)
-    check(len(_v[0]) >= 2, 'O587: feather %s has flight feathers and coverts' % _name)
+check(set(fm587.STYLES) == set(fm587.VARIANTS), 'O590: every family has a strip style')
 
-# the outline in the wing's plane shows the measured radii again in the south view
+# a strip measured from a picture gives that picture's shape again (no pair: a drawn bar pair)
+_bar = np.zeros((64, 96, 4), np.uint8)
+for _i in range(34):                                      # the left wing rises to the left, the right one is short
+    _bar[40 - _i // 2 - 4:40 - _i // 2 + 5, 46 - _i, 3] = 255
+for _i in range(16):
+    _bar[40 - _i - 3:40 - _i + 4, 50 + _i, 3] = 255
+_bar[36:45, 46:50, 3] = 255
+_l, _r2 = _st.measure_view([_bar])
+check(_l is not None and _r2 is not None and len(_l) == _LEN and len(_r2) == _LEN, 'O590: two strips from a picture')
+check(_st.parse(_st.text_of(_l)) == list(_l), 'O590: a strip goes through the table text unchanged')
+check(_st.parse('') is None, 'O590: an empty field is no wing')
+_origin, _scale = _st.place((_l, _r2))
+_m = np.zeros((gd.SIZE, gd.SIZE), bool)
+for _v, _sgn in ((_l, -1), (_r2, 1)):
+    _m |= _st.Strip(_v, _sgn, _origin, _scale).body()
+_ob, _nb = fm587._alpha_box([_bar[..., 3] > 0]), fm587._alpha_box([_m])
+_x, _y = fm587._norm_mask(_bar[..., 3] > 0, _ob), fm587._norm_mask(_m, _nb)
+check((_x & _y).sum() / float((_x | _y).sum()) > 0.7, 'O590: the strips cover the measured picture')
+_sl = _st.Strip(_l, -1, _origin, _scale)
+check(_sl.length > _st.Strip(_r2, 1, _origin, _scale).length, 'O590: the long wing stays the long one')
+check(abs((_nb[0] + _nb[2]) / 2.0 - gd.ANCHOR[0]) <= 3, 'O590: the pair is centred on the anchor')
+_ss, _tt = _sl.field()
+check(_ss.shape == (gd.SIZE, gd.SIZE) and 0.0 <= float(_ss[_sl.body()].min()) and float(_ss[_sl.body()].max()) <= 1.0,
+      'O590: the field of a strip runs from root to tip')
+
+# east and west are the face-on pictures with x and y changed over (the old art's side views)
 _sp = [sp for sp in _specs if sp.key == 'fiery'][0]
-_env = fm587.env_of(_sp, 38, 8)
-_wing = gd.Wing(1, fm587.ROOT, math.radians(38), lambda t: math.radians(8), 1.0)
-_o = gd.project(_wing.at(0, 0), 'south', fm587.PIVOT)
-for _ang, _rad in zip(fm587.ENV_ANGLES, _sp.env):
-    _i = fm587.ENV_ANGLES.index(_ang)
-    _q = gd.project(_wing.at(*_env.pt(float(_env.phis[_i]))), 'south', fm587.PIVOT)
-    check(abs(math.hypot(_q[0] - _o[0], _q[1] - _o[1]) - _rad * _sp.size * _sp.fit) < 0.01, 'O587: outline radius at %d' % _ang)
+for _d, _src in (('east', 'south'), ('west', 'north')):
+    _fb, _ff = fm587.render_frame(_sp, _src, 3)
+    _eb, _ef = fm587.render_frame(_sp, _d, 3)
+    _dx, _dy = fm587._side_shift(_sp, _d)
+    check(np.array_equal(_eb, fm587._turned(gd.merge(_fb, _ff), _dx, _dy)), 'O590: %s is the %s view turned' % (_d, _src))
+    check(not _ef[..., 3].any(), 'O590: from the side the pair lies behind the body (%s)' % _d)
+    check((gd.merge(_eb, _ef)[..., 3] > 0).sum() == (gd.merge(_fb, _ff)[..., 3] > 0).sum(), 'O590: %s loses no pixel' % _d)
+
+# a mould holds a wing to its strip: nothing further than a pixel outside, `fill` leaves no hole
+for _mould in ('clip', 'fill'):
+    _lay, _can = fm587.Clip((10, 10, 10)), fm587.Clip((10, 10, 10))
+    _box = np.zeros((gd.SIZE, gd.SIZE), bool)
+    _box[20:60, 30:60] = True
+    _lay.piece(_box & (gd.XX % 2 == 0), np.full((gd.SIZE, gd.SIZE), 2, np.int8), _sp.R, ring=False)
+    fm587._mould(_lay, _can, _sl, _sp, _mould == 'fill')
+    check(not (_can.op & ~fm587._grow(_sl.body(), 1)).any(), 'O590: %s cuts what lies outside the strip' % _mould)
+    if _mould == 'fill':
+        check(not (_sl.body() & fm587.INNER & ~_can.op).any(), 'O590: fill closes the strip')
 
 # a haze is one glow level, only on clear pixels
 _c = gd.Canvas((20, 20, 30))
@@ -397,8 +439,6 @@ _same, _col, _far = fm587.likeness(_a, _a), fm587.likeness(_a, _b), fm587.likene
 check(_same['score'] == 0.0, 'O587: the same pictures score 0')
 check(_col['shape'] == 0.0 and _col['colour'] > 0.9, 'O587: another colour is a colour distance only')
 check(_far['score'] > _col['score'] > 0, 'O587: another shape and colour is further away')
-_rad, _core, _tips = fm587.measure_env([_pic(10, 20, 50, 40, (200, 40, 40))])
-check(len(_rad) == len(fm587.ENV_ANGLES) and max(_rad) > 0, 'O587: an outline is 13 radii')
 
 # the fit preview takes player bodies only
 _players = fm587.player_looks()

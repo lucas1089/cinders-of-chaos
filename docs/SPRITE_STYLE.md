@@ -245,9 +245,13 @@ holds every row of `drawn_wings/designs.csv` to it (`bar_problems`).
 - **Distinct:** no two wings draw the same pictures (`designs.sums`).
 - **Feathers (O587):** plumes, never spikes. A flight row with its tips on the outline, coverts over its roots, each row a shade apart.
   A feather ends rounded, has a shaft line and a two-tone vane.
-- **Likeness (O587):** a wing that replaces old art follows its outline, its hollow, its tip count and its motion.
-  The numbers are measured once and kept in `designs.csv` (`env`, `core`, `tips`, `beat`). No picture data in the repository.
+- **Likeness (O587, O590):** a wing that replaces old art follows its shape, its colour areas and its motion, each wing and
+  each view by itself. The numbers are measured once and kept in `designs.csv` (`sl`, `sr`, `nl`, `nr`: the strips of the
+  left and right wing, south and north; `zones`; `beat`). No picture data in the repository.
   `gen_drawn_wings.py score DAT SPR` gives the distance.
+- **Side views (O590):** east is the south picture with x and y changed over, west the north picture. The old art shows the
+  wings face on in every direction. A wing the old art does not have is not drawn.
+- **Feathers (O590):** long and pointed or blade-ended, slanted toward the tip of the wing. Never round scales across it.
 
 ## Effects and missiles
 

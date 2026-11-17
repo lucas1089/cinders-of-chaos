@@ -38,7 +38,7 @@ with this kit. Their commands, handed over from here:
   compare OUT_DIR DAT SPR      an MP4 a family: old art of the pair left, the drawn wing right, four directions
   fit OUT_DIR DAT SPR LOOKS [WINGS]   one wing on several player looks (LOOK, LOOK+ADDONS, LOOK:MOUNT; rows of
                                player_looks.csv only, O587): engine anchor left, old table right
-  measure DAT SPR [--write] [--colours]   read outline, core, tips and beat of the old wings into designs.csv (O587)
+  measure DAT SPR [--write]    read the strips, zone colours and beat of the old wings into designs.csv (O587, O590)
   score DAT SPR [OUT.tsv]      likeness of every row to the old art: shape, colour, layout, motion, 0 is the same
   apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
   live DAT SPR                 a built pair holds them
