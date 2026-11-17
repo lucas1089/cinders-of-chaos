@@ -13,7 +13,7 @@ This module is the part outside the game:
   guild_statements(plan)      the SQL that makes those guilds before the bots log in
   clean_statements(present, ids)  the SQL that removes everything closed mode made: guilds and their wars, the tester market book
                               (offers, orders, price history), arena matches of testers only, bazaar listings of testers, the
-                              raids of testers only (instances, members) and the raid rows of the testers (O588)
+                              raids of testers only (instances, members) and the raid rows of the testers (O588), the dungeon progress rows of the testers (O589)
 Standard library only.
 """
 import os
@@ -27,6 +27,7 @@ MAX_MEMBERS = 5
 LEADER, MEMBER = 3, 1        # guild rank levels of the base server (3 leader, 2 vice-leader, 1 member)
 NAME_RE = re.compile(r'^Tester [A-Z][a-z][a-z]$')
 SAFE_TABLE = re.compile(r'^[A-Za-z0-9_]+$')
+DUNGEON_PROGRESS = 'chaos_dungeon_progress'   # chaos_constants.lua Chaos.tables.dungeonProgress (O589): the unlocked difficulty of a tester
 RAID_TABLES = {'lockouts': 'chaos_raid_lockouts', 'instances': 'chaos_raid_instances', 'members': 'chaos_raid_members',
                'players': 'chaos_raid_players', 'purchases': 'chaos_raid_purchases'}   # raid_config.lua tables (O588)
 
@@ -153,6 +154,9 @@ def clean_statements(present, tester_ids):
     for key in ('lockouts', 'players', 'purchases'):
         if has(RAID_TABLES[key]):
             st.append("DELETE FROM `%s` WHERE `player_id` IN (%s);" % (RAID_TABLES[key], ids))
+    # the testers' dungeon rows (O589): their unlocked difficulties; a tester run is never stored on the boards (dungeons.lua), so no run row
+    if has(DUNGEON_PROGRESS):
+        st.append("DELETE FROM `%s` WHERE `player_id` IN (%s);" % (DUNGEON_PROGRESS, ids))
     if has('chaos_bazaar_listings'):
         if has('chaos_bazaar_bids'):
             st.append("DELETE FROM `chaos_bazaar_bids` WHERE `listing_id` IN (SELECT `id` FROM `chaos_bazaar_listings` "

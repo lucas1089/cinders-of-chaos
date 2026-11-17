@@ -421,10 +421,23 @@ do
 	check(t:find("O588", 1, true) and t:find("testerRefusal", 1, true) and t:find("K.allocSlot", 1, true), "raid.lua carries the closed-mode guard (O588)")
 	check(not t:find("Testers do not use this queue", 1, true), "raid.lua no longer refuses every tester")
 end
-for _, file in ipairs({"dungeons", "groupqueue", "party_finder"}) do
-	local t = source("data/scripts/chaos/" .. file .. ".lua")
-	check(t:find("Chaos.isTester(player)", 1, true) and t:find("Testers do not use this queue", 1, true),
-		file .. ".lua refuses a tester: a queue that matches players")
+-- the dungeons (O589) are a closed system too: the entry carries its side (dungeons_core.lua), no blanket refusal left
+do
+	local t = source("data/scripts/chaos/dungeons.lua")
+	check(t:find("O589", 1, true) and t:find("DC.pick", 1, true) and t:find("sideOfPlayer", 1, true), "dungeons.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "dungeons.lua no longer refuses every tester")
+	check(t:find('run.side ~= "tester"', 1, true), "dungeons.lua never ranks or records a tester run")
+end
+-- the group queue and the party finder (O589) are closed systems: a group or a listing has a side, no blanket refusal left
+do
+	local t = source("data/scripts/chaos/groupqueue.lua")
+	check(t:find("O589", 1, true) and t:find("sideOfGroup", 1, true) and t:find("K.sidesAgree", 1, true) == nil, "groupqueue.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "groupqueue.lua no longer refuses every tester")
+	check(source("data/scripts/chaos/groupqueue_core.lua"):find("sidesAgree", 1, true), "groupqueue_core.lua: a match of two sides is never started")
+	t = source("data/scripts/chaos/party_finder.lua")
+	check(t:find("O589", 1, true) and t:find("testerOn", 1, true), "party_finder.lua carries the closed-mode guard (O589)")
+	check(not t:find("Testers do not use this queue", 1, true), "party_finder.lua no longer refuses every tester")
+	check(source("data/scripts/chaos/party_finder_core.lua"):find("L.tester and true or false", 1, true), "party_finder_core.lua: a listing has a side")
 end
 
 print = origPrint

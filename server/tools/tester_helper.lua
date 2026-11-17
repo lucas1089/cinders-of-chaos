@@ -24,6 +24,11 @@
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
 --   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
+--   * "!tester path <kind> [N] | npc <name> | pos X Y Z" (O589): the way on foot to a map mark, an NPC or a position, the engine's own
+--     pathfinding (Creature:getPathTo) as directions the bot walks; the helper's teleport (`enter`) stays only as the fallback
+--     when there is no path, and the bot's report counts it
+--   * "!tester dungeon [state | path | close]" (O589, closed test mode): the dungeons as a person sees them (ChaosDungeons.probe), the
+--     path to the guide's goal inside a run and the close of the testers' own run; the walk and the fights are the bot's own
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -55,7 +60,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 13
+HELPER_VERSION = 14
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -836,6 +841,103 @@ function commands.closed(player)
 		data.pvp = {inside = ChaosPvpZone.isInside(player) and true or false}
 	end
 	tell(player, "closed", data)
+end
+
+-- ---------------------------------------------------------------- O589 the way on foot
+-- the engine's own pathfinding from the tester to a position, as directions 0-7 the bot walks (a player's auto walk). minD / maxD:
+-- how near to the target the walk may end (0, 1: on it or next to it; 1, 3: within reach of a monster). nil + the reason when the
+-- engine has no call, no path (a wall, another floor) or an empty one
+local function pathTo(player, pos, minD, maxD)
+	if player:getPosition().z ~= pos.z then
+		return nil, "another floor"
+	end
+	local ok, path = pcall(function()
+		return player:getPathTo(Position(pos.x, pos.y, pos.z), minD or 0, maxD or 1, true, true, 0)
+	end)
+	local dirs = ok and H.pathDirections(path) or {}
+	if #dirs == 0 then
+		return nil, "no path"
+	end
+	return dirs
+end
+
+-- "!tester path <kind> [N] | npc <name> | pos X Y Z": the mark (the n-th of its kind, as `enter` takes it), the NPC or the position;
+-- `here` when the tester stands next to it already. Nothing moves.
+function commands.path(player, arg)
+	local place, usage = H.parsePath(arg)
+	if not place then
+		tell(player, "path", {err = usage})
+		return
+	end
+	local dest, name
+	if place.kind == "pos" then
+		dest = {x = place.x, y = place.y, z = place.z}
+	elseif place.kind == "npc" then
+		local npc = Creature(place.name)
+		if not npc or not npc:isNpc() then
+			tell(player, "path", {err = "no such NPC", name = place.name})
+			return
+		end
+		dest, name = posOf(npc:getPosition()), npc:getName()
+	else
+		local mark, count = H.pickMark(marks(), place.kind, place.n)
+		if not mark then
+			tell(player, "path", {err = "no such place", kind = place.kind, count = count})
+			return
+		end
+		dest, name = {x = mark.x, y = mark.y, z = mark.z}, mark.n
+	end
+	local here = posOf(player:getPosition())
+	if here.z == dest.z and math.max(math.abs(here.x - dest.x), math.abs(here.y - dest.y)) <= 1 then
+		tell(player, "path", H.pathAnswer(here, dest, {}, {here = true, name = name}))
+		return
+	end
+	local dirs, why = pathTo(player, dest, 0, 1)
+	if not dirs then
+		tell(player, "path", H.pathAnswer(here, dest, {}, {err = why, name = name}))
+		return
+	end
+	tell(player, "path", H.pathAnswer(here, dest, dirs, {name = name}))
+end
+
+-- ---------------------------------------------------------------- O589 the dungeons in closed test mode
+-- "!tester dungeon [state | path | close]": reads ChaosDungeons.probe (what a person sees of the dungeons); `path` is the way on foot to
+-- the guide's goal inside a run (the nearest monster or the boss: within reach of it); `close` ends the testers' own run of the
+-- asker so the dungeon is free. Nothing here queues, moves inside or fights.
+function commands.dungeon(player, arg)
+	local what, usage = H.parseDungeon(arg)
+	if not what then
+		tell(player, "dungeon", {err = usage})
+		return
+	end
+	local D = ChaosDungeons
+	if not (D and D.probe) then
+		tell(player, "dungeon", {err = "no dungeon system"})
+		return
+	end
+	if what == "close" then
+		local closed = D.testerClose and D.testerClose(player) or false
+		tell(player, "dungeon", H.dungeonAnswer(D.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = D.probe(player)
+	if what == "path" then
+		local goal = probe.guide and probe.guide.goal
+		if not probe.inside or not goal then
+			tell(player, "dungeon", H.dungeonAnswer(probe, {err = probe.inside and "no goal" or "not inside a dungeon run"}))
+			return
+		end
+		local here = posOf(player:getPosition())
+		local dirs, why = pathTo(player, goal, 1, 3)
+		if not dirs then
+			tell(player, "dungeon", H.dungeonAnswer(probe, {err = why}))
+			return
+		end
+		tell(player, "dungeon", H.dungeonAnswer(probe, {path = dirs, dist = here.z == goal.z and math.max(math.abs(here.x - goal.x),
+			math.abs(here.y - goal.y)) or nil}))
+		return
+	end
+	tell(player, "dungeon", H.dungeonAnswer(probe))
 end
 
 -- ---------------------------------------------------------------- O588 the raid in closed test mode

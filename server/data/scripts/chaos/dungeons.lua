@@ -41,8 +41,13 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 
+if not ChaosDungeonsCore then
+	dofile("data/scripts/chaos/dungeons_core.lua")
+end
+
 local OPCODE = ChaosOpcodes.dungeons
 local cfg = Chaos.dungeons
+local DC = ChaosDungeonsCore
 local TP = Chaos.tables.dungeonProgress
 local TR = Chaos.tables.dungeonRuns
 local TRP = Chaos.tables.dungeonRunPlayers
@@ -59,6 +64,30 @@ local runOfPlayer = {} -- [guid] = run
 local runOfDungeon = {} -- [dungeonId] = run
 local nextRunId = 1
 local tickerEvent = nil
+
+-- ------------------------------------------------------------------ closed test mode (O589)
+-- With the switch on (testers_core.lua) testers queue and run among themselves: the queue entry carries its side, a run takes the
+-- entries of one side, a tester run is never ranked or recorded and ends when the switch goes off. With the switch off a tester is
+-- refused as before. server/README.md "Dungeons in closed mode (O589)".
+local TXT_OFF = "Closed test mode is off: the testers do not play this."
+local TXT_MIXED = "Testers and players are never mixed."
+
+local function testerOn()
+	local R = ChaosTestersCore
+	return R ~= nil and R.closedOn() == true
+end
+
+-- the side of a character and the text of its refusal (nil when it may use the dungeon queue)
+local function sideOfPlayer(player)
+	local isTester = Chaos.isTester and Chaos.isTester(player) and true or false
+	local side, why = DC.sideRefusal(ChaosTestersCore, testerOn(), isTester)
+	if why == "closed-off" then
+		return side, TXT_OFF
+	elseif why then
+		return side, TXT_MIXED
+	end
+	return side, nil
+end
 
 -- ------------------------------------------------------------------ helpers
 
@@ -555,6 +584,10 @@ end})
 
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
+	local _, closedWhy = sideOfPlayer(player)
+	if closedWhy then
+		return Chaos.t(player, closedWhy)
+	end
 	if runOfPlayer[guid] then
 		return Chaos.t(player, "You are already inside a dungeon.")
 	end
@@ -725,7 +758,8 @@ local function endRun(run, success, reason)
 			memberInfo[#memberInfo + 1] = {guid = guid, name = p:getName()}
 		end
 	end
-	if #memberInfo > 0 then
+	-- the testers' own run is never ranked or recorded: no board row, no record, no event (O589)
+	if #memberInfo > 0 and run.side ~= "tester" then
 		storeRun(run.dungeonId, run.difficulty, elapsed, memberInfo)
 		if ChaosRecords and ChaosRecords.dungeonClear then
 			pcall(ChaosRecords.dungeonClear, {dungeonId = run.dungeonId,
@@ -1016,7 +1050,7 @@ local function settleMonsters(id, dg, bossName, monsterList, taken)
 	return kept, bosses
 end
 
-local function startRun(dungeonId, difficulty, players)
+local function startRun(dungeonId, difficulty, players, side)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
 	local bossName = extra.bossName and extra.bossName:lower() or nil
@@ -1026,6 +1060,7 @@ local function startRun(dungeonId, difficulty, players)
 		dungeonId = dungeonId,
 		difficulty = difficulty,
 		difficultyStart = difficulty, -- competitive records: a run whose difficulty changed is not valid
+		side = side or "player", -- "tester": the testers' own run, never ranked or recorded (O589)
 		members = {}, -- [guid] = origin Position
 		startedAt = nowMs(),
 		deaths = 0,
@@ -1224,20 +1259,9 @@ local function tryMatch(id)
 
 	local size = groupSizeOf(dg)
 	local soloWait = (cfg.party and cfg.party.soloWaitSeconds) or 0
-	local byDifficulty = {}
-	for _, entry in ipairs(queues[id]) do
-		local bucket = byDifficulty[entry.difficulty] or {}
-		byDifficulty[entry.difficulty] = bucket
-		bucket[#bucket + 1] = entry
-	end
-	local chosenDiff, chosen
-	for diff, bucket in pairs(byDifficulty) do
-		-- a full group starts now; fewer (down to one player) once the first of them has waited soloWaitSeconds
-		local ready = #bucket >= size or os.time() - bucket[1].joined >= soloWait
-		if ready and (not chosen or bucket[1].joined < chosen[1].joined) then
-			chosenDiff, chosen = diff, bucket
-		end
-	end
+	-- one side and one difficulty per run: a full group starts now; fewer (down to one player) once the first of them has waited
+	-- soloWaitSeconds; testers only in closed mode and never ahead of a queued player (O589)
+	local chosenDiff, chosen, chosenSide = DC.pick(queues[id], {size = size, soloWait = soloWait, now = os.time(), closedOn = testerOn()})
 	if not chosen then
 		return
 	end
@@ -1262,7 +1286,7 @@ local function tryMatch(id)
 			return
 		end
 	end
-	startRun(id, chosenDiff, players)
+	startRun(id, chosenDiff, players, chosenSide)
 	-- a lone player: the Party Finder's open groups for this dungeon, one line (groupnudge.lua, O261)
 	if ChaosGroupNudge and ChaosGroupNudge.onEnter and #players == 1 and players[1] then
 		pcall(ChaosGroupNudge.onEnter, players[1], "dungeon", (extraOf(id) or {}).title)
@@ -1299,6 +1323,10 @@ tick = function()
 	end
 
 	for runId, run in pairs(runs) do
+		if not run.ended and run.side == "tester" and not testerOn() then
+			-- the switch went off: the testers' run ends where it stands, everyone out (O589)
+			endRun(run, false, TXT_OFF)
+		end
 		if not run.ended then
 			local dg = baseDungeons()[run.dungeonId]
 			local extra = extraOf(run.dungeonId)
@@ -1586,9 +1614,10 @@ end
 
 -- The Group Queue (groupqueue.lua, O407) joins and leaves this queue without the window. true, or false + the reason.
 function ChaosDungeons.queueJoin(player, id, difficulty)
-	-- testers never enter a queue that matches players (O582: only arena, battleground and the Marches have a closed mode)
-	if Chaos.isTester(player) then
-		return false, Chaos.t(player, "Testers do not use this queue: it matches players.")
+	-- a tester queues only among testers and only in closed test mode (O589): its entry carries its side
+	local side, closedWhy = sideOfPlayer(player)
+	if closedWhy then
+		return false, Chaos.t(player, closedWhy)
 	end
 	local dg = baseDungeons()[id]
 	if not dg then
@@ -1605,7 +1634,7 @@ function ChaosDungeons.queueJoin(player, id, difficulty)
 		return false, problem
 	end
 	queues[id] = queues[id] or {}
-	queues[id][#queues[id] + 1] = {guid = guid, difficulty = difficulty, joined = os.time()}
+	queues[id][#queues[id] + 1] = {guid = guid, difficulty = difficulty, joined = os.time(), side = side}
 	queuedIn[guid] = id
 	send(player, "queue", {id = id, joined = true})
 	broadcastQueue(id)
@@ -1643,6 +1672,91 @@ function ChaosDungeons.groupQueueList(player)
 			fixed = extraOf(id).fixedDifficulty}
 	end
 	return out
+end
+
+-- ------------------------------------------------------------------ the bots' eyes (O589)
+-- What a person sees of the dungeons, for the tester bots' `!tester dungeon` (tools/tester_helper.lua checks that the asker is a
+-- tester): outside, the list with the level rule; queued, the dungeon; inside, the kill counter, the nearest monster and the boss,
+-- and the guide that turns them into the next goal (dungeons_core.lua K.guide). Reads only.
+local function plain(p)
+	return {x = p.x, y = p.y, z = p.z}
+end
+
+function ChaosDungeons.probe(player)
+	local guid = player:getGuid()
+	local run = runOfPlayer[guid]
+	local pos = player:getPosition()
+	local out = {inside = run ~= nil, level = player:getLevel(), pos = plain(pos),
+		on = testerOn(), queued = queuedIn[guid], maxDifficulty = cfg.maxDifficulty, soloWait = cfg.party and cfg.party.soloWaitSeconds}
+	if not run then
+		if not queuedIn[guid] then
+			local ids = {}
+			for id in pairs(baseDungeons()) do
+				ids[#ids + 1] = id
+			end
+			table.sort(ids)
+			out.list = {}
+			for _, id in ipairs(ids) do
+				local dg = baseDungeons()[id]
+				out.list[#out.list + 1] = {id = id, title = titleOf(id, dg), level = levelOf(dg), size = groupSizeOf(dg),
+					max = loadProgress(guid, id).difficulty, fixed = extraOf(id).fixedDifficulty}
+			end
+		end
+		return out
+	end
+	local dg = baseDungeons()[run.dungeonId]
+	local extra = extraOf(run.dungeonId)
+	local bossName = extra.bossName and extra.bossName:lower() or nil
+	local _, _, _, monsterList = scanArea(run.dungeonId, dg, bossName)
+	local monster, best, bestZ, bestZd, boss = nil, nil, nil, nil, nil
+	local alive = 0
+	for _, m in ipairs(monsterList) do
+		if bossName and m:getName():lower() == bossName then
+			boss = boss or m
+		elseif run.roster and run.roster[m:getId()] then
+			alive = alive + 1
+			local mp = m:getPosition()
+			local d = math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y))
+			if mp.z == pos.z then
+				if best == nil or d < best then
+					monster, best = {pos = plain(mp)}, d
+				end
+			elseif bestZd == nil or d < bestZd then
+				bestZ, bestZd = {pos = plain(mp)}, d
+			end
+		end
+	end
+	monster = monster or bestZ -- another floor only when nothing is left on this one
+	local members = 0
+	for _ in pairs(run.members) do
+		members = members + 1
+	end
+	local bossPos = boss and plain(boss:getPosition()) or nil
+	out.run = {id = run.id, dungeon = run.dungeonId, title = titleOf(run.dungeonId, dg), side = run.side, size = run.size,
+		members = members, difficulty = run.difficulty, percent = math.max(0, run.lastPercent), total = run.total, left = alive,
+		unlocked = run.unlocked and true or false, ended = run.ended and true or false, deaths = run.deaths,
+		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		endsIn = run.durationMs and math.max(0, math.floor((run.startedAt + run.durationMs - nowMs()) / 1000)) or nil}
+	out.guide = DC.guide({pos = plain(pos), percent = run.lastPercent, unlocked = run.unlocked and true or false,
+		ended = run.ended and true or false, monster = monster, bossPos = bossPos})
+	return out
+end
+
+-- TEST ONLY (tools/tester_helper.lua `dungeon close`): ends the testers' own run of the asker, or an empty tester run, so the
+-- dungeon is free for the next one. A failed run (no board, no record). Never a player's run.
+function ChaosDungeons.testerClose(player)
+	local run = runOfPlayer[player:getGuid()]
+	if run and run.side == "tester" and not run.ended then
+		endRun(run, false, "A tester run was closed.")
+		return true
+	end
+	for _, r in pairs(runs) do
+		if r.side == "tester" and not r.ended and next(r.members) == nil then
+			endRun(r, false, "A tester run was closed.")
+			return true
+		end
+	end
+	return false
 end
 
 local ExtendedEvent = CreatureEvent("ChaosDungeonsExtended")

@@ -76,14 +76,18 @@ def snapshot_problems(snap):
 
 
 class Result:
-    def __init__(self, check, bot, cls, status, detail=''):
+    def __init__(self, check, bot, cls, status, detail='', fallbacks=None):
         self.check, self.bot, self.cls, self.status, self.detail = check, bot, cls, status, detail
+        self.fallbacks = list(fallbacks or [])   # helper teleports used in place of walking (O589), counted by the report
 
     def bug_line(self):
         return 'BUG %s: %s (%s, %s)' % (self.check, self.detail, self.bot, self.cls) if self.status == FAIL else None
 
     def as_dict(self):
-        return {'check': self.check, 'bot': self.bot, 'class': self.cls, 'status': self.status, 'detail': self.detail}
+        d = {'check': self.check, 'bot': self.bot, 'class': self.cls, 'status': self.status, 'detail': self.detail}
+        if self.fallbacks:
+            d['fallbacks'] = list(self.fallbacks)
+        return d
 
 
 # ------------------------------------------------------------------------------------------------ the checks
@@ -774,7 +778,7 @@ async def check_spell_quest(io, name, cls, level):
 async def _spell_quest_run(io, name, cls, level):
     """every quest the level opens, in order (500, 800, 1200): before, only the first one ran live (O302)"""
     check = 'spell_quest'
-    done = []
+    done, fallbacks = [], []
     for n, qlevel in enumerate(QUEST_LEVELS, 1):
         if level < qlevel:
             break
@@ -782,11 +786,13 @@ async def _spell_quest_run(io, name, cls, level):
         if r.status != PASS:
             if done and r.status == SKIP:
                 break
+            r.fallbacks = fallbacks + r.fallbacks
             return r
         done.append(r.detail)
+        fallbacks += r.fallbacks
     later = [lv for lv in QUEST_LEVELS[len(done):]]
     tail = '; quests at level %s not reached (level %s)' % (', '.join(map(str, later)), level) if later else ''
-    return Result(check, name, cls, PASS, ' | '.join(done) + tail)
+    return Result(check, name, cls, PASS, ' | '.join(done) + tail, fallbacks)
 
 
 async def _one_spell_quest(io, name, cls, level, n):
@@ -798,9 +804,10 @@ async def _one_spell_quest(io, name, cls, level, n):
 
 async def _one_spell_quest_run(io, name, cls, level, n):
     check = 'spell_quest'
+    fallbacks = []   # helper teleports used in place of walking (O589)
 
     def fail(text):
-        return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text))
+        return Result(check, name, cls, FAIL, 'quest %d: %s' % (n, text), fallbacks)
 
     a, bad = await quest_answer(io, 'state', {'quest': n, 'code': 'ok', 'step': 0})
     if bad:
@@ -825,17 +832,23 @@ async def _one_spell_quest_run(io, name, cls, level, n):
     if bad:
         return fail('the trial step: ' + bad)
     # Archivist Odrenna must stand in the world (placed at startup in her stall); the helper takes the bot to her
+    # a person walks to her by the engine path (O589); the helper's teleport only when there is no path, and the result names it
     at = None
-    for attempt in range(CROWD_TRIES):
-        at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
-        if not at or not (at.get('err') and at.get('crowd')):
-            break
-        await io.sleep(CROWD_WAIT)   # the other testers stand round her stall: they move on
+    how, got = await walk_by_path(io, {'name': name, 'lead': True}, 'path npc Archivist Odrenna', 'path', 1)
+    if how == 'foot':
+        at = {'npc': 'Archivist Odrenna', 'walked': True}
+    else:
+        fallbacks.append(fallback_note('enter npc Archivist Odrenna', (got or {}).get('err') or 'the walk did not arrive'))
+        for attempt in range(CROWD_TRIES):
+            at = await io.helper('enter npc Archivist Odrenna', 'enter', 8.0)
+            if not at or not (at.get('err') and at.get('crowd')):
+                break
+            await io.sleep(CROWD_WAIT)   # the other testers stand round her stall: they move on
     if not at:
-        return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n)
+        return Result(check, name, cls, SKIP, 'quest %d: no answer to !tester enter npc Archivist Odrenna' % n, fallbacks)
     if at.get('err') and at.get('crowd'):
         return Result(check, name, cls, SKIP, 'quest %d: no free tile within 4 of Archivist Odrenna after %d tries (the testers crowd '
-                      'her stall: no fault of the quest)' % (n, CROWD_TRIES))
+                      'her stall: no fault of the quest)' % (n, CROWD_TRIES), fallbacks)
     if at.get('err'):
         return fail('Archivist Odrenna is not in the game (%s): placement at startup failed or her XML did not load' % str(at['err'])[:60])
     a, bad = await quest_answer(io, 'trial', {'near': True, 'entered': True, 'running': True})
@@ -862,7 +875,7 @@ async def _one_spell_quest_run(io, name, cls, level, n):
         parts.append('in the spell list')
     if table and cls in table:
         parts.append('in the Auto setup data')
-    return Result(check, name, cls, PASS, ', '.join(parts))
+    return Result(check, name, cls, PASS, ', '.join(parts), fallbacks)
 
 
 def preset_for(presets, level):
@@ -1393,7 +1406,7 @@ async def check_craft_cards(io, name, cls, level):
 # the bazaar lock and the raid (O588, below) among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
 # 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
 # another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
-CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'guild', 'guildwar', 'market', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'dungeon', 'groupqueue', 'guild', 'guildwar', 'market', 'partyfinder', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
 ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
 FEE_GOLD = 100      # the gold price of the market check's offer
 
@@ -1896,7 +1909,8 @@ async def raid_play(io, name, cls, a, partners):
         return Result(key, name, cls, no[0], no[1])
     trace = {'faults': [], 'reached': set(), 'steps': 0, 'killed': 0, 'trash': 0, 'kills': 0, 'fought': 0.0, 'stuck': None,
              'secs': 0, 'left': '?', 'members': 0, 'bosses': int(a.get('bosses') or 0),
-             'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper'}
+             'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper',
+             'fallbacks': [fallback_note('raid portal', 'no path, or the walk did not arrive') for h in came.values() if h != 'foot']}
     waited, state = 0.0, None
     while waited <= RAID_ENTER_WAIT and io.alive():
         state = await raid_look(io, squad[0])
@@ -2012,7 +2026,570 @@ async def raid_walk_all(io, name, cls, a, squad, trace):
     if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
         trace['left'] = 'a close by the helper'
     status, text = raid_verdict(trace)
-    return Result(key, name, cls, status, text)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
+# ------------------------------------------------------------------------------------------------ walking like a person (O589)
+# The helper's `enter` puts a bot at a place by a teleport; a person walks. `walk_by_path` walks the engine's own path of a helper
+# command (`path <kind>`, `dungeon path`): the answer carries the directions, the bot takes them step by step and asks again until it
+# is there. A teleport stays only as the fallback when there is no path (a wall, another floor, the engine's search limit); the check
+# names it in its result and the report counts it (Result.fallbacks, "Helper teleports in place of walking").
+PATH_ROUNDS = 8         # asks for a path at most this many times for one walk (each answer holds up to 80 steps)
+PATH_STALL = 2          # rounds in a row that left the bot no nearer: the walk is blocked
+
+
+def fallback_note(what, why):
+    """the line a result carries for a teleport it used because the walk was not possible: `what` is the helper command"""
+    return '%s (%s)' % (what, str(why or 'no reason')[:60])
+
+
+async def hcmd(io, r, command, kind, wait=None):
+    """a helper command of the leader (r['lead']) or of the squad member r['name']"""
+    wait = ANSWER if wait is None else wait
+    if r['lead']:
+        return await io.helper(command, kind, wait)
+    return await io.helper_of(r['name'], command, kind, wait)
+
+
+async def walk_by_path(io, r, command, kind, near=1, rounds=PATH_ROUNDS):
+    """walks the engine path of a helper command until the answer says the bot is there (`here`, or `dist` at most `near`).
+    -> (how, got): how is 'foot' (arrived: got is the last answer, with pos and dest), 'err' (got['err'] says why: no path, another
+    floor, no answer) or 'far' (still on the way after `rounds` asks, or blocked)"""
+    last, stalled = None, 0
+    for _ in range(rounds):
+        if not io.alive():
+            return 'err', {'err': 'the bot is gone'}
+        got = await hcmd(io, r, command, kind)
+        if not isinstance(got, dict):
+            return 'err', {'err': 'no answer to !tester %s' % command}
+        if got.get('err'):
+            return 'err', got
+        dist = got.get('dist')
+        if got.get('here') or (dist is not None and dist <= near):
+            return 'foot', got
+        steps = raid_path_steps(got.get('path'))
+        if not steps:
+            return 'err', dict(got, err='an empty path')
+        if last is not None and dist is not None and dist >= last:
+            stalled += 1
+            if stalled >= PATH_STALL:
+                return 'far', got
+        else:
+            stalled = 0
+        last = dist
+        for step in steps:
+            await raid_walk(io, r, step)
+            await io.sleep(RAID_STEP)
+        await io.sleep(RAID_STEP)
+    return 'far', got
+
+
+async def walk_to_place(io, r, kind, n=None, near=1):
+    """a person's way to a map place: on foot by `!tester path <kind>`; when that fails the helper's `enter` puts the bot next to it.
+    -> (how, got, fallback): 'foot' / 'helper' (or the failure text), the last path answer, the note of the teleport or None"""
+    place = kind if n is None else '%s %d' % (kind, n)
+    how, got = await walk_by_path(io, r, 'path ' + place, 'path', near)
+    if how == 'foot':
+        return 'foot', got, None
+    why = (got or {}).get('err') or 'the walk did not arrive'
+    moved = await hcmd(io, r, 'enter ' + place, 'enter', HELPER_WAIT)
+    if not isinstance(moved, dict) or moved.get('err'):
+        return 'no way to %s: %s; the teleport: %s' % (place, why, str((moved or {}).get('err') or 'no answer')[:50]), got, None
+    again = await hcmd(io, r, 'path ' + place, 'path')
+    return 'helper', again if isinstance(again, dict) else got, fallback_note('enter ' + place, why)
+
+
+# ------------------------------------------------------------------------------------------------ the dungeons, played (O589)
+# A dungeon in closed test mode: the bots go to a dungeon entrance on foot, step on it (the window), queue, and play the run like a
+# person: the monsters nearest first until the boss is unlocked, then the boss, loot, and out by the exit teleport the server gives
+# after a clear. The helper only reads (`!tester dungeon`: what a person sees on the screen) and gives the engine path to the next
+# goal; the walk, the fights (the class's own rotation and potions) and the loot are the bot's own. No teleport inside the run.
+DUNGEON_BUDGET = 1000.0   # seconds a run is played at most (the server's own limit is 15 minutes)
+DUNGEON_STEPS = 6         # steps between two looks
+DUNGEON_QUEUE_WAIT = 90.0 # seconds a queued bot waits for its run (a player's run may be ahead of it)
+DUNGEON_START_WAIT = 20.0 # seconds from the start of the run to the first look inside
+DUNGEON_FIGHT_MIN = 180.0 # seconds at a monster or the boss without any progress that make a failure (damage, targets, the monsters)
+DUNGEON_STUCK = 30.0      # seconds on one tile with a goal elsewhere: the walk is blocked there
+DUNGEON_MISSES = 6        # looks without an answer in a row
+DUNGEON_BUSY = {}         # dungeon id -> bot name, while a bot plays it
+DUNGEON_DONE = {}         # dungeon id -> bot name, once a bot played it in this run (one play of each dungeon is the coverage)
+DUNGEON_MEMBERS = {}      # member name -> leader name, while a party plays
+
+
+def reset_dungeon_turn():
+    DUNGEON_BUSY.clear()
+    DUNGEON_DONE.clear()
+    DUNGEON_MEMBERS.clear()
+
+
+def dungeon_refusal(a, level=0):
+    """(status, text) when this bot must not start the dungeon check, else None: from its `!tester dungeon` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester dungeon (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if not a.get('on'):
+        return SKIP, 'the closed mode switch reads off'
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a dungeon already'
+    if a.get('queued'):
+        return SKIP, 'the bot is queued for a dungeon already'
+    if not a.get('list'):
+        return SKIP, 'no dungeon list'
+    return None
+
+
+def dungeon_pick(a, level=0):
+    """the dungeon this bot plays: the highest of its level not played or being played by another bot in this run.
+    -> (dungeon dict, None) or (None, the skip text)"""
+    have = int(a.get('level') or level or 0)
+    ok = [d for d in a.get('list') or [] if isinstance(d, dict) and isinstance(d.get('id'), int)]
+    fit = [d for d in ok if int(d.get('level') or 0) <= have]
+    if not fit:
+        low = min([int(d.get('level') or 0) for d in ok] or [0])
+        return None, 'level %d: the lowest dungeon needs level %d' % (have, low)
+    free = [d for d in fit if d['id'] not in DUNGEON_BUSY and d['id'] not in DUNGEON_DONE]
+    if not free:
+        names = sorted(set(list(DUNGEON_DONE.values()) + list(DUNGEON_BUSY.values())))
+        return None, 'every dungeon of level %d was played in this run (by %s)' % (have, ', '.join(names) or 'another bot')
+    return max(free, key=lambda d: (int(d.get('level') or 0), -d['id'])), None
+
+
+def dungeon_problems(a, size=None):
+    """[text] for one inside-a-run answer: whatever says the run is not the testers' own"""
+    out = []
+    r = a.get('run') if isinstance(a, dict) else None
+    if not isinstance(r, dict):
+        return out
+    if r.get('side') != 'tester':
+        out.append('a tester is in a %s dungeon run (it must be the testers\' own)' % r.get('side'))
+    if size is not None and int(r.get('members') or 0) > size:
+        out.append('%s players in the testers\' dungeon run, the party is %d bots at most (a player may be in it)' % (r.get('members'), size))
+    return out
+
+
+def dungeon_verdict(t):
+    """(status, text) from the trace of a played run: faults, kills (percent reached), won (boss down after the unlock), unlocked,
+    fought (seconds at a monster or the boss without progress), stuck, steps, secs, left, members, title"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = 'came %s, %d bot(s), %d step(s), %d%% of the monsters dead%s%s in %d s, left by %s' % (
+        'on foot from the temple' if t.get('came') == 'foot' else 'by a helper teleport next to the entrance', t.get('members', 1),
+        t.get('steps', 0), t.get('percent', 0), ', boss unlocked' if t.get('unlocked') else '', ', boss slain' if t.get('won') else '',
+        t.get('secs', 0), t.get('left', '?'))
+    if t.get('fallbacks'):
+        how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if t.get('won') or t.get('percent', 0) > 0:
+        return PASS, '%s: %s' % (t.get('title') or 'dungeon', how)
+    if t.get('fought', 0) >= DUNGEON_FIGHT_MIN:
+        return FAIL, 'fought %d s at the first monsters and killed none (damage, targets or the monsters)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s' % (t['stuck'][0], t['stuck'][1], DUNGEON_STUCK)
+    if t.get('died'):
+        return SKIP, 'the bot died before it killed a monster (level %s against the dungeon)' % t.get('level', '?')
+    return SKIP, 'no monster was killed in %d s' % t.get('secs', 0)
+
+
+async def dungeon_look(io, r):
+    return await hcmd(io, r, 'dungeon state', 'dungeon')
+
+
+async def check_closed_dungeon(io, name, cls, level):
+    """a bot (and a partner when the dungeon takes two) walks to a dungeon entrance, queues and plays the run: monsters, boss, loot, out"""
+    key = 'closed_dungeon'
+    if name in DUNGEON_MEMBERS:
+        return Result(key, name, cls, SKIP, 'played as the member of the party of %s (its result is the party\'s)' % DUNGEON_MEMBERS[name])
+    a = await io.helper('dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    dg, why = dungeon_pick(a, level)
+    if dg is None:
+        return Result(key, name, cls, SKIP, why)
+    DUNGEON_BUSY[dg['id']] = name
+    partners = []
+    result = None
+    try:
+        result = await dungeon_play(io, name, cls, a, dg, partners)
+    finally:
+        DUNGEON_BUSY.pop(dg['id'], None)
+        if result is not None and result.status == PASS:
+            DUNGEON_DONE[dg['id']] = name
+        for p in list(partners):
+            DUNGEON_MEMBERS.pop(p, None)
+            await io.party('leave', p)
+        io.raid_mode([name] + partners, False)
+    return result
+
+
+async def dungeon_play(io, name, cls, a, dg, partners):
+    key = 'closed_dungeon'
+    size = max(1, int(dg.get('size') or 1))
+    while len(partners) + 1 < size:
+        other = await io.partner(min_level=int(dg.get('level') or 0))
+        if not other:
+            break
+        DUNGEON_MEMBERS[other] = name
+        partners.append(other)
+    squad = [{'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}]
+    for p in list(partners):
+        m = await io.helper_of(p, 'dungeon state', 'dungeon', ANSWER)
+        if dungeon_refusal(m, 0) is not None:
+            DUNGEON_MEMBERS.pop(p, None)
+            partners.remove(p)
+            continue
+        squad.append({'name': p, 'lead': False, 'walker': RaidWalker(), 'inside': False})
+    # the potions topped up, then the temple and the way to an entrance on foot (the helper only when there is no path)
+    for r in squad:
+        await hcmd(io, r, 'bag', 'bag', HELPER_WAIT)
+    fallbacks, came = [], {}
+    for r in squad:
+        if not (await io.go('town') if r['lead'] else await io.go_of(r['name'], 'town')):
+            return Result(key, name, cls, SKIP, 'the helper did not bring the bot to the temple')
+        await io.sleep(SETTLE)
+        how, got, note = await walk_to_place(io, r, 'dungeon')
+        if how not in ('foot', 'helper'):
+            return Result(key, name, cls, SKIP, how[:110])
+        came[r['name']] = how
+        if note:
+            fallbacks.append(note)
+        # the last step is onto the entrance tile: that opens the window, as for a player
+        here, dest = (got or {}).get('pos'), (got or {}).get('dest')
+        for step in raid_plan(here, dest, 1):
+            await raid_walk(io, r, step)
+        await io.sleep(1.0)
+    if len(squad) > 1:
+        await io.party('form', squad[1]['name'])
+    io.raid_mode([r['name'] for r in squad], True, keep_flee=True)
+    window = await io.request('dungeons', 'fetch', {}, ['list', 'dungeon'], ANSWER)
+    if window is None:
+        return Result(key, name, cls, SKIP, 'no answer from the dungeons window (not installed)', fallbacks)
+    # queue, each bot from its own window; the run starts when the group is full or the solo wait is over
+    for r in squad:
+        data = {'id': dg['id'], 'difficulty': 1}
+        reply = await (io.request('dungeons', 'queue', data, ['queue'], ANSWER) if r['lead']
+                       else io.request_of(r['name'], 'dungeons', 'queue', data, ['queue'], ANSWER))
+        if reply is not None and (reply.get('data') or {}).get('joined') is False and r['lead']:
+            return Result(key, name, cls, SKIP, 'the queue refused the bot (level, a cooldown, a fight or the dungeon\'s own rule)', fallbacks)
+    waited, state = 0.0, None
+    while waited <= DUNGEON_QUEUE_WAIT and io.alive():
+        state = await dungeon_look(io, squad[0])
+        if isinstance(state, dict) and state.get('inside'):
+            break
+        if isinstance(state, dict) and not state.get('queued') and waited >= 4.0:
+            return Result(key, name, cls, SKIP, 'the bot is not in the queue after the request (level, a cooldown or a fight)', fallbacks)
+        await io.sleep(2.0)
+        waited += 2.0
+    if not (isinstance(state, dict) and state.get('inside')):
+        for r in squad:   # a queue entry is left by sending the request again (the window's one button)
+            await (io.request('dungeons', 'queue', {'id': dg['id'], 'difficulty': 1}, ['queue'], ANSWER) if r['lead']
+                   else io.request_of(r['name'], 'dungeons', 'queue', {'id': dg['id'], 'difficulty': 1}, ['queue'], ANSWER))
+        return Result(key, name, cls, SKIP, 'the dungeon did not start in %d s (a run of players is ahead of the testers)' % int(DUNGEON_QUEUE_WAIT), fallbacks)
+    for r in squad:
+        s = state if r['lead'] else await dungeon_look(io, r)
+        r['inside'] = bool(isinstance(s, dict) and s.get('inside'))
+    trace = {'faults': [], 'steps': 0, 'percent': 0, 'unlocked': False, 'won': False, 'fought': 0.0, 'stuck': None, 'secs': 0,
+             'left': '?', 'members': sum(1 for r in squad if r['inside']), 'title': dg.get('title'), 'died': False,
+             'level': a.get('level'), 'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper',
+             'size': size, 'fallbacks': fallbacks}
+    res = await dungeon_walk_all(io, name, cls, squad, trace)
+    return res
+
+
+async def dungeon_walk_all(io, name, cls, squad, trace):
+    """the play loop: look, then each bot walks, waits or fights by what the screen says, until the run is over or the time is"""
+    key = 'closed_dungeon'
+    elapsed, misses = 0.0, 0
+    fight_since, progress, boss_seen, looted = None, None, False, 0.0
+    while io.alive():
+        looks = {}
+        for r in squad:
+            looks[r['name']] = await dungeon_look(io, r) if r['inside'] else None
+        lead = looks.get(squad[0]['name'])
+        if not isinstance(lead, dict):
+            misses += 1
+            if misses >= DUNGEON_MISSES:
+                trace['left'] = 'no answer from the helper'
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        if not lead.get('inside'):
+            trace['left'] = 'the exit teleport' if trace['won'] else 'the run ended (time, death or the exit)'
+            trace['died'] = not trace['won'] and elapsed < DUNGEON_BUDGET and not trace['unlocked']
+            break
+        trace['faults'] += [p for p in dungeon_problems(lead, trace['size']) if p not in trace['faults']]
+        if trace['faults']:
+            break
+        run = lead.get('run') or {}
+        guide = lead.get('guide') or {}
+        pct = int(run.get('percent') or 0)
+        if pct > trace['percent']:
+            trace['percent'] = pct
+            if elapsed - looted >= 3.0:   # the corpses of the pack: the bot takes the loot as it does anywhere
+                await io.loot()
+                looted = elapsed
+        trace['unlocked'] = trace['unlocked'] or bool(run.get('unlocked'))
+        if run.get('bossHp') is not None:
+            boss_seen = True
+        if run.get('unlocked') and boss_seen and run.get('bossHp') is None:
+            trace['won'] = True
+            await io.loot()
+        mark = (run.get('percent'), run.get('left'), run.get('bossHp'), run.get('unlocked'))
+        if mark != progress:
+            progress, fight_since = mark, None
+        mode = guide.get('mode')
+        if mode == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        elif mode != 'wait':
+            fight_since = None
+        if elapsed >= DUNGEON_BUDGET:
+            trace['left'] = 'a close by the helper (the time of the check)'
+            break
+        sent = {}
+        for r in squad:
+            s = looks.get(r['name'])
+            g = (s or {}).get('guide') or {}
+            if not r['inside'] or not isinstance(s, dict) or not s.get('inside'):
+                r['inside'] = False
+                continue
+            if g.get('mode') == 'walk' and isinstance(g.get('goal'), dict):
+                plan = r['walker'].steps(s['pos'], g['goal'], DUNGEON_STEPS, elapsed)
+                if not r['walker'].blocked:   # the engine's path first (walls, doors); the side step only when the way is blocked
+                    got = await hcmd(io, r, 'dungeon path', 'dungeon')
+                    steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                    plan = steps[:DUNGEON_STEPS] or plan
+                sent[r['name']] = plan
+                if r['lead'] and r['walker'].stuck(elapsed) >= DUNGEON_STUCK:
+                    trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+        for i in range(DUNGEON_STEPS):
+            moved = False
+            for r in squad:
+                plan = sent.get(r['name']) or []
+                if i < len(plan):
+                    await raid_walk(io, r, plan[i])
+                    trace['steps'] += 1
+                    moved = True
+            if not moved:
+                break
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    # out: the run of the testers is closed so the dungeon is free for the next one
+    closed = await io.helper('dungeon close', 'dungeon', ANSWER)
+    after = await io.helper('dungeon state', 'dungeon', ANSWER)
+    if isinstance(after, dict) and after.get('inside'):
+        trace['faults'].append('the bot is still inside the dungeon after the close')
+    if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
+        trace['left'] = 'a close by the helper'
+    status, text = dungeon_verdict(trace)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
+# ------------------------------------------------------------------------------------------------ the group queue and the party finder (O589)
+# Two checks of closed mode, both with two bots that form a group the way people do: through the windows. The server keeps them apart
+# from the players (a group or a listing has a side, the modes pair by side); the live rules are asked by closed_guards.
+GQ_WAIT = 45.0     # seconds from the join to a run of the group (a ready check and the dungeon's next tick)
+GQ_LOOK = 1.0      # seconds between two looks
+PF_ROLES = ('tank', 'healer', 'dps', 'support')
+
+
+def groupqueue_pick(listing, have, taken):
+    """the dungeon of a group of two: the highest one both bots may enter that no bot plays now. -> dict or None"""
+    sized = [d for d in listing or [] if isinstance(d, dict) and isinstance(d.get('id'), int) and int(d.get('size') or 1) >= 2
+             and int(d.get('level') or 0) <= have and d['id'] not in taken]
+    return max(sized, key=lambda d: (int(d.get('level') or 0), -d['id'])) if sized else None
+
+
+def groupqueue_text(reply):
+    return str(((reply or {}).get('data') or {}).get('text') or '')[:90]
+
+
+def groupqueue_refusal(text):
+    """(status, text) of a join the Group Queue refused: a closed-mode text with the mode on is a bug, the rest is the state of the world"""
+    if 'Closed test mode is off' in text or 'never mixed' in text:
+        return FAIL, 'the Group Queue refused a party of testers with the mode on: %s' % text
+    return SKIP, 'the Group Queue did not take the party: %s' % (text or 'no reason')
+
+
+async def check_closed_groupqueue(io, name, cls, level):
+    """two testers form a party, join a dungeon through the Group Queue, both accept the ready check, and the run of the testers starts"""
+    key = 'closed_groupqueue'
+    a = await io.helper('dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    two = [int(d.get('level') or 0) for d in a['list'] if isinstance(d, dict) and int(d.get('size') or 1) >= 2]
+    if not two:
+        return Result(key, name, cls, SKIP, 'no dungeon takes a group of two')
+    if int(a.get('level') or level or 0) < min(two):
+        return Result(key, name, cls, SKIP, 'level %d: the lowest dungeon for two needs level %d' % (int(a.get('level') or level or 0), min(two)))
+    other = await io.partner(min_level=min(two))
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot of level %d in game' % min(two))
+    try:
+        return await groupqueue_play(io, name, cls, a, other)
+    finally:
+        await io.party('leave', other)
+
+
+async def groupqueue_play(io, name, cls, a, other):
+    key = 'closed_groupqueue'
+    b = await io.helper_of(other, 'dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(b, 0)
+    if no:
+        return Result(key, name, cls, SKIP, 'the partner %s: %s' % (other, no[1]))
+    have = min(int(a.get('level') or 0), int(b.get('level') or 0))
+    dg = groupqueue_pick(a['list'], have, set(DUNGEON_BUSY))
+    if dg is None:
+        return Result(key, name, cls, SKIP, 'no dungeon for two at level %d that no bot plays now' % have)
+    DUNGEON_BUSY[dg['id']] = name
+    try:
+        if not await io.go('town') or not await io.go_of(other, 'town'):
+            return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple')
+        await io.sleep(SETTLE)
+        if not await io.party('form', other):
+            return Result(key, name, cls, SKIP, 'the invite could not be sent')
+        await io.sleep(SETTLE)
+        window = await io.request('groupQueue', 'open', {}, ['state'], ANSWER)
+        if window is None:
+            return Result(key, name, cls, SKIP, 'no answer from the Group Queue window (not installed)')
+        join = await io.request('groupQueue', 'join', {'dungeon': {'id': dg['id'], 'difficulty': 1}}, ['state', 'msg'], ANSWER)
+        if join is not None and join.get('action') == 'msg':
+            no = groupqueue_refusal(groupqueue_text(join))
+            return Result(key, name, cls, no[0], no[1])
+        saw_check, answered, run, waited = False, set(), None, 0.0
+        while waited <= GQ_WAIT and io.alive():
+            st = await io.request('groupQueue', 'query', {}, ['state'], ANSWER)
+            group = ((st or {}).get('data') or {}).get('group') or {}
+            check = group.get('check')
+            if isinstance(check, dict):
+                saw_check = True
+                for who in (name, other):
+                    if who in answered:
+                        continue
+                    answered.add(who)
+                    await (io.request('groupQueue', 'accept', {}, ['state', 'checkEnd'], ANSWER) if who == name
+                           else io.request_of(other, 'groupQueue', 'accept', {}, ['state', 'checkEnd'], ANSWER))
+            la = await io.helper('dungeon state', 'dungeon', ANSWER)
+            if isinstance(la, dict) and la.get('inside'):
+                run = la
+                break
+            await io.sleep(GQ_LOOK)
+            waited += GQ_LOOK
+        if run is None:
+            await io.request('groupQueue', 'leave', {}, ['state', 'msg'], ANSWER)
+            why = 'the ready check was accepted by both' if len(answered) == 2 else 'no ready check came'
+            return Result(key, name, cls, SKIP, 'no run in %d s (%s; a run of players ahead of the testers?)' % (int(GQ_WAIT), why))
+        lb = await io.helper_of(other, 'dungeon state', 'dungeon', ANSWER)
+        r = (run.get('run') or {})
+        problems = dungeon_problems(run, 2)
+        if int(r.get('members') or 0) < 2 or not (isinstance(lb, dict) and lb.get('inside')):
+            problems.append('the party of two started with %s member(s) inside' % r.get('members'))
+        if not saw_check:
+            problems.append('the party was started without a ready check')
+        await io.helper('dungeon close', 'dungeon', ANSWER)
+        after = await io.helper('dungeon state', 'dungeon', ANSWER)
+        if isinstance(after, dict) and after.get('inside'):
+            problems.append('the bot is still inside the dungeon after the close')
+        if problems:
+            return Result(key, name, cls, FAIL, '; '.join(problems[:3]))
+        return Result(key, name, cls, PASS, 'party of 2 in the Group Queue for %s: ready check accepted by both, a run of the testers started (%d s)'
+                      % (dg.get('title') or dg['id'], int(waited)))
+    finally:
+        DUNGEON_BUSY.pop(dg['id'], None)
+
+
+def pf_pick_activity(init):
+    """(activity dict, None) the listing is made for: the first activity that needs no title; else the first. (None, text) when none"""
+    acts = [x for x in ((init or {}).get('acts') or []) if isinstance(x, dict) and x.get('k')]
+    if not acts:
+        return None, 'the window lists no activity'
+    plain = [x for x in acts if not x.get('title')]
+    return (plain or acts)[0], None
+
+
+def pf_listing(act, role, want, init):
+    """the data of a `post` request for one wanted slot of `want`"""
+    d = {'a': act['k'], 'want': {want: 1}, 'minLevel': 1, 'role': role, 'exp': int((init or {}).get('defExp') or 30), 'nk': 0}
+    if isinstance(act.get('range'), dict):
+        d['lo'] = d['hi'] = int(act['range'].get('min') or 1)
+    if act.get('targets'):
+        d['t'] = 1
+    if act.get('title'):
+        d['title'] = 'Tester group'
+    return d
+
+
+def pf_roles(init):
+    return [r for r in ((init or {}).get('my') or []) if r in PF_ROLES]
+
+
+async def check_closed_party_finder(io, name, cls, level):
+    """a tester lists a group in the Party Finder, another tester finds it, applies, is accepted by the leader and joins the party"""
+    key = 'closed_party_finder'
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    listed = None
+    try:
+        init = await io.request('partyFinder', 'open', {}, ['init'], ANSWER)
+        init_b = await io.request_of(other, 'partyFinder', 'open', {}, ['init'], ANSWER)
+        if init is None or init_b is None:
+            return Result(key, name, cls, SKIP, 'no answer from the Party Finder window (not installed)')
+        a_init, b_init = init.get('data') or {}, init_b.get('data') or {}
+        mine, theirs = pf_roles(a_init), pf_roles(b_init)
+        if not mine or not theirs:
+            return Result(key, name, cls, SKIP, 'no role either bot can fill')
+        act, why = pf_pick_activity(a_init)
+        if act is None:
+            return Result(key, name, cls, SKIP, why)
+        post = await io.request('partyFinder', 'post', pf_listing(act, mine[0], theirs[0], a_init), ['list', 'notice'], ANSWER)
+        text = str(((post or {}).get('data') or {}).get('text') or '')
+        if post is None:
+            return Result(key, name, cls, SKIP, 'no answer to the listing')
+        if post.get('action') == 'notice':
+            if 'Closed test mode is off' in text or 'never mixed' in text:
+                return Result(key, name, cls, FAIL, 'the Party Finder refused a tester with the mode on: %s' % text[:80])
+            return Result(key, name, cls, SKIP, 'the listing was refused: %s' % text[:80])
+        mine_row = (post.get('data') or {}).get('mine') or {}
+        listed = mine_row.get('id')
+        if listed is None:
+            return Result(key, name, cls, SKIP, 'the answer to the listing holds no listing of the bot')
+        seen = await io.request_of(other, 'partyFinder', 'refresh', {}, ['list'], ANSWER)
+        rows = ((seen or {}).get('data') or {}).get('rows') or []
+        row = next((r for r in rows if isinstance(r, dict) and r.get('id') == listed), None)
+        if row is None:
+            return Result(key, name, cls, FAIL, 'a tester\'s listing is not in another tester\'s Party Finder (%d rows)' % len(rows))
+        await io.request_of(other, 'partyFinder', 'apply', {'id': listed, 'role': theirs[0]}, ['notice', 'list'], ANSWER)
+        look = await io.request('partyFinder', 'refresh', {}, ['list'], ANSWER)
+        apps = (((look or {}).get('data') or {}).get('mine') or {}).get('apps') or []
+        app = next((x for x in apps if isinstance(x, dict) and x.get('n') == other), None)
+        if app is None:
+            return Result(key, name, cls, FAIL, '%s applied to the listing, the leader sees %d application(s) and not it' % (other, len(apps)))
+        await io.request('partyFinder', 'accept', {'id': listed, 'g': app.get('g')}, ['list', 'notice'], ANSWER)
+        await io.sleep(SETTLE)
+        if not await io.party('join', other):
+            return Result(key, name, cls, SKIP, 'the bots could not join the party of the invite')
+        await io.sleep(SETTLE)
+        p = await io.helper('party', 'party', ANSWER)
+        if not p or p.get('err'):
+            return Result(key, name, cls, SKIP, 'no answer to !tester party')
+        if int(p.get('size') or 0) < 2:
+            if not partner_kept(io, other):
+                return Result(key, name, cls, SKIP, PARTNER_GONE)
+            return Result(key, name, cls, FAIL, 'the leader accepted %s through the finder, the party has %s member(s)' % (other, p.get('size')))
+        return Result(key, name, cls, PASS, 'listed (%s), found by %s, applied, accepted, joined: party of %s among testers' % (
+            act.get('n') or act['k'], other, p.get('size')))
+    finally:
+        if listed is not None:
+            await io.request('partyFinder', 'unlist', {'id': listed}, ['list', 'notice'], ANSWER)
+        await io.party('leave', other)
 
 
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
@@ -2024,6 +2601,9 @@ CLOSED_CHECKS = [
     ('closed_guild_war', check_closed_guild, lambda c: True),
     ('closed_market', check_closed_market, lambda c: True),
     ('closed_bazaar', check_closed_bazaar, lambda c: True),
+    ('closed_groupqueue', check_closed_groupqueue, lambda c: True),   # O589
+    ('closed_party_finder', check_closed_party_finder, lambda c: True),   # O589
+    ('closed_dungeon', check_closed_dungeon, lambda c: True),   # O589
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -2115,6 +2695,14 @@ def report_lines(results):
             skips[(r['check'], r['detail'])] += 1
     for (key, why), n in sorted(skips.items()):
         L.append('  skip %-14s %3dx %s' % (key, n, why[:100]))
+    tele = {}
+    for r in results:
+        for f in r.get('fallbacks') or []:
+            tele[(r['check'], f)] = tele.get((r['check'], f), 0) + 1
+    if tele:
+        L.append('  helper teleports in place of walking: %d (a person walks; the path failed or did not arrive)' % sum(tele.values()))
+        for (key, f), n in sorted(tele.items()):
+            L.append('    %-18s %3dx %s' % (key, n, f[:100]))
     return L
 
 

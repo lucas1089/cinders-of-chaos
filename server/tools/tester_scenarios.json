@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "closed": 11,
-  "opcode": 72,
-  "out": 28,
+  "closed": 13,
+  "opcode": 73,
+  "out": 26,
   "passive": 110,
   "place": 15,
   "staff": 17
@@ -9465,8 +9465,7 @@
   },
   "dungeons": {
    "actions": [
-    "fetch",
-    "queue"
+    "fetch"
    ],
    "client": [],
    "dataKeys": [
@@ -9479,9 +9478,15 @@
    ],
    "opcode": 109,
    "out": false,
-   "skip": [],
-   "skipWhy": {},
-   "systems": []
+   "skip": [
+    "queue"
+   ],
+   "skipWhy": {
+    "queue": "only the closed check closed_dungeon queues (it walks to the entrance, plays the run and leaves; a random queue would teleport a bot into a run it does not play)"
+   },
+   "systems": [
+    "dungeons"
+   ]
   },
   "emberCache": {
    "actions": [
@@ -9689,11 +9694,11 @@
     "query"
    ],
    "skipWhy": {
-    "join": "out of scope (groupqueue): a queue that matches players: the server refuses testers (O582)",
-    "leave": "out of scope (groupqueue): a queue that matches players: the server refuses testers (O582)",
-    "open": "out of scope (groupqueue): a queue that matches players: the server refuses testers (O582)",
-    "query": "out of scope (groupqueue): a queue that matches players: the server refuses testers (O582)",
-    "raid": "out of scope (groupqueue): a queue that matches players: the server refuses testers (O582)"
+    "join": "out of scope (groupqueue): groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue",
+    "leave": "out of scope (groupqueue): groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue",
+    "open": "out of scope (groupqueue): groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue",
+    "query": "out of scope (groupqueue): groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue",
+    "raid": "out of scope (groupqueue): groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue"
    },
    "systems": [
     "groupqueue"
@@ -10571,17 +10576,17 @@
     "queue"
    ],
    "skipWhy": {
-    "accept": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "apply": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "decline": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "hide": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "open": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "post": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "queue": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "refresh": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "unlist": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "unqueue": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)",
-    "withdraw": "out of scope (party_finder): a list and a queue that match players: the server refuses testers (O582)"
+    "accept": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "apply": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "decline": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "hide": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "open": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "post": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "queue": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "refresh": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "unlist": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "unqueue": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder",
+    "withdraw": "out of scope (party_finder): listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder"
    },
    "systems": [
     "party_finder"
@@ -12139,6 +12144,17 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "dungeons": {
+   "files": [
+    "dungeons.lua",
+    "dungeons_difficulty.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "dungeons"
+   ],
+   "talkactions": []
+  },
   "embercache": {
    "files": [
     "chaos_constants.lua",
@@ -12277,12 +12293,12 @@
     "chaos_constants.lua",
     "groupqueue.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "groupQueue"
    ],
    "talkactions": [],
-   "why": "a queue that matches players: the server refuses testers (O582)"
+   "why": "groups of testers only, the modes pair by side (closed test mode, O589); sent only by the closed check closed_groupqueue"
   },
   "guardian": {
    "files": [],
@@ -12976,12 +12992,12 @@
     "chaos_constants.lua",
     "party_finder.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "partyFinder"
    ],
    "talkactions": [],
-   "why": "a list and a queue that match players: the server refuses testers (O582)"
+   "why": "listings, applications and the quick-join queue of the testers' own side (closed test mode, O589); sent only by the closed check closed_party_finder"
   },
   "party_xp": {
    "files": [

@@ -58,6 +58,36 @@ local function send(player, action, data)
 	end
 end
 
+-- ---------------------------------------------------------------- closed test mode (O589)
+-- A group is all testers or no tester; testers queue only among testers and only with the switch on (the modes pair by side
+-- again: arena, battleground and dungeons). server/README.md "Group queue and party finder in closed mode (O589)".
+local function testerOn()
+	local R = ChaosTestersCore
+	return R ~= nil and R.closedOn() == true
+end
+
+-- the side of a group (flags: one boolean per member, true = a tester) and the refusal text, or nil
+local function sideOfGroup(flags)
+	local R = ChaosTestersCore
+	local side, why
+	if R then
+		side, why = R.sideOf(flags), R.joinRefusal("groupqueue", testerOn(), flags)
+	else
+		side = "player"
+		for _, f in ipairs(flags) do
+			if f then
+				side, why = nil, "closed-off"
+			end
+		end
+	end
+	if why == "closed-off" then
+		return side, "Closed test mode is off: the testers do not play this."
+	elseif why then
+		return side, "Testers and players are never mixed."
+	end
+	return side, nil
+end
+
 local function tell(player, text)
 	if player then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
@@ -304,6 +334,10 @@ function G.gate(key, cids)
 	if verdict == "free" then
 		return true
 	end
+	if verdict == "mixed" then
+		log("gate: a match of testers and players was refused (" .. tostring(key) .. ")")
+		return false
+	end
 	if verdict == "wait" then
 		for _, g in ipairs(groups) do
 			for _, p in ipairs(onlineOf(g)) do
@@ -336,9 +370,6 @@ end
 -- ---------------------------------------------------------------- actions
 function G.join(player, data)
 	local c = cfg()
-	if Chaos.isTester(player) then
-		return refuse(player, "Testers do not use this queue: it matches players.") -- testers never enter a queue that matches players (O582)
-	end
 	if c.enabled == false then
 		return refuse(player, "The Group Queue is closed.")
 	end
@@ -349,6 +380,14 @@ function G.join(player, data)
 	if not members then
 		return refuse(player, why)
 	end
+	local flags = {}
+	for i, m in ipairs(members) do
+		flags[i] = Chaos.isTester(m) and true or false
+	end
+	local side, closedWhy = sideOfGroup(flags)
+	if closedWhy then
+		return refuse(player, closedWhy)
+	end
 	local picks
 	picks, why = K.parseSelection(c, data, #members)
 	if not picks then
@@ -358,7 +397,7 @@ function G.join(player, data)
 	for i, m in ipairs(members) do
 		ids[i] = m:getId()
 	end
-	local g = K.add(G.state, player:getId(), ids, picks, os.time())
+	local g = K.add(G.state, player:getId(), ids, picks, os.time(), side)
 	if not g then
 		return refuse(player, "A party member is in the Group Queue already.")
 	end
@@ -499,6 +538,19 @@ end
 -- ---------------------------------------------------------------- the tick
 function G.tick()
 	local now = os.time()
+	if not testerOn() then
+		-- the switch went off: the groups of testers leave every queue (nothing is lost; no ready check is left open)
+		local gone = {}
+		for _, g in pairs(G.state.groups) do
+			if g.side == "tester" then
+				gone[#gone + 1] = g
+			end
+		end
+		for _, g in ipairs(gone) do
+			K.remove(G.state, g)
+			dropped(g, "Closed test mode is off: the testers do not play this.")
+		end
+	end
 	for _, e in ipairs(K.expire(G.state, now)) do
 		local names = {}
 		for _, cid in ipairs(e.missing) do

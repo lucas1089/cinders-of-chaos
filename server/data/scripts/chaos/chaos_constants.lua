@@ -1357,8 +1357,11 @@ function Chaos.mcSiblings(player)
 			or Game.getStorageValue(Chaos.multiClient.offStorage) == 1 then
 		return list
 	end
+	-- the tester bots all connect from one address: two testers are never a multi-client of a person (O589: the dungeons and the
+	-- raid refuse a multi-client, and the bots of closed test mode play them together)
+	local mineIsTester = Chaos.isTester(player)
 	for _, other in ipairs(Game.getPlayers()) do
-		if other ~= player and other:getIp() == ip then
+		if other ~= player and other:getIp() == ip and not (mineIsTester and Chaos.isTester(other)) then
 			list[#list + 1] = other
 		end
 	end

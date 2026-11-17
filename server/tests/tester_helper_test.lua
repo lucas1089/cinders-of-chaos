@@ -1512,6 +1512,114 @@ do
 	check(passed == true and #civ.log.msgs == nBefore, "raid: a player's words go on and get no answer")
 end
 
+-- the way on foot and the dungeons in closed test mode (O589): `!tester path ...`, `!tester dungeon [state | path | close]`
+do
+	check(H.COMMANDS.path and H.COMMANDS.dungeon, "path and dungeon are registered commands (O589)")
+	check(H.parseCommand("path temple") == "path" and H.parseCommand("dungeon path #3") == "dungeon", "path / dungeon parse")
+	eq(H.parseDungeon(nil), "state", "dungeon: no word is state")
+	eq(H.parseDungeon("PATH"), "path", "dungeon: path (any case)")
+	eq(H.parseDungeon("close"), "close", "dungeon: close")
+	local w, usage = H.parseDungeon("queue")
+	check(w == nil and usage:find("usage: dungeon", 1, true), "dungeon: queue is no helper word: the bot queues from the window")
+	local pl = H.parsePath("temple")
+	check(pl and pl.kind == "temple", "path: a place kind")
+	pl = H.parsePath("dungeon 2")
+	check(pl and pl.kind == "dungeon" and pl.n == 2, "path: the n-th mark of a kind")
+	pl = H.parsePath("npc Archivist Odrenna")
+	check(pl and pl.kind == "npc" and pl.name == "Archivist Odrenna", "path: an NPC")
+	pl = H.parsePath("pos 31574 31623 8")
+	check(pl and pl.kind == "pos" and pl.x == 31574 and pl.y == 31623 and pl.z == 8, "path: a position")
+	check(H.parsePath("rift 3") == nil and H.parsePath("pos 1 2") == nil and H.parsePath("pos 1 2 99") == nil and H.parsePath("") == nil,
+		"path: a rift, half a position, a floor above 15 and nothing are no destination")
+	local ans = H.pathAnswer({x = 10, y = 10, z = 7}, {x = 13, y = 8, z = 7}, {1, 1}, {name = "x"})
+	check(ans.dist == 3 and ans.path[2] == 1 and ans.dest.x == 13 and ans.name == "x" and ans.floor == nil, "path answer: the distance left")
+	ans = H.pathAnswer({x = 10, y = 10, z = 7}, {x = 13, y = 8, z = 8}, nil)
+	check(ans.dist == nil and ans.floor == 1 and #ans.path == 0, "path answer: another floor has no distance")
+	local a = H.dungeonAnswer({inside = true, level = 900, pos = {x = 1, y = 2, z = 8, junk = 1}, on = true, junk = 1,
+		run = {id = 4, dungeon = 4, title = "Rootmaw", side = "tester", percent = 40, left = 12, unlocked = false, junk = 1},
+		guide = {mode = "walk", goal = {x = 5, y = 6, z = 8}, why = ("w"):rep(80), area = "monsters", junk = 1}})
+	check(a.inside and a.on and a.pos.junk == nil and a.junk == nil, "dungeon answer: cut down to what the bot reads")
+	check(a.run.side == "tester" and a.run.percent == 40 and a.run.junk == nil and a.run.unlocked == false, "dungeon answer: the run")
+	check(a.guide.mode == "walk" and a.guide.goal.x == 5 and #a.guide.why == 60 and a.guide.junk == nil, "dungeon answer: the guide")
+	local list = {}
+	for i = 1, 40 do list[i] = {id = i, title = "d" .. i, level = i, size = 1, max = 1} end
+	eq(#H.dungeonAnswer({list = list}).list, H.DUNGEON_LIST_MAX, "dungeon answer: the list is bounded")
+	check(H.dungeonAnswer(nil).inside == false and H.dungeonAnswer(nil).run == nil, "dungeon answer: nothing known")
+
+	local t6 = creature(268435510, "Tester Abx", {store = {[ST] = 1}})
+	local realPoi, realD, realTile4, realCreature = ChaosPoi, ChaosDungeons, Tile, Creature
+	ChaosPoi = {all = {{k = "dungeon", x = 50, y = 51, z = 7, n = "Bones Dungeon"}, {k = "temple", x = 60, y = 60, z = 7, n = "Temple"}}}
+	t6.pos = {x = 40, y = 51, z = 7}
+	t6.getPathTo = function(self, pos, minD, maxD, full, clear, dist)
+		t6.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {1, 1, 1, 2}
+	end
+	talks["!tester"].onSay(t6, "!tester", "path dungeon #60")
+	check(last(t6):find('"path":[1,1,1,2]', 1, true) and last(t6):find('"seq":60', 1, true) and last(t6):find('"name":"Bones Dungeon"', 1, true),
+		"path: the directions to the mark, the name and the number of the command")
+	check(last(t6):find('"dist":10', 1, true), "path: the distance left")
+	check(t6.pathAsked.pos.x == 50 and t6.pathAsked.minD == 0 and t6.pathAsked.maxD == 1, "path: to the tile or next to it")
+	t6.getPathTo = function() return false end
+	talks["!tester"].onSay(t6, "!tester", "path dungeon #61")
+	check(last(t6):find('"err":"no path"', 1, true), "path: no path, the reason (the bot's fallback is the teleport)")
+	t6.getPathTo = nil
+	talks["!tester"].onSay(t6, "!tester", "path dungeon #62")
+	check(last(t6):find('"err":"no path"', 1, true), "path: an engine without the call, the reason")
+	t6.pos = {x = 50, y = 52, z = 7}
+	talks["!tester"].onSay(t6, "!tester", "path dungeon #63")
+	check(last(t6):find('"here":true', 1, true), "path: next to it already: here")
+	t6.pos = {x = 40, y = 51, z = 8}
+	talks["!tester"].onSay(t6, "!tester", "path dungeon #64")
+	check(last(t6):find('"err":"another floor"', 1, true), "path: another floor, the reason")
+	t6.pos = {x = 40, y = 51, z = 7}
+	talks["!tester"].onSay(t6, "!tester", "path bank #65")
+	check(last(t6):find('"err":"no such place"', 1, true), "path: a kind with no mark on the map")
+	talks["!tester"].onSay(t6, "!tester", "path rift 3 #66")
+	check(last(t6):find("usage: path", 1, true), "path: a rift is no destination")
+	talks["!tester"].onSay(t6, "!tester", "path pos 70 70 7 #67")
+	check(last(t6):find('"dest":{"x":70,"y":70,"z":7}', 1, true), "path: a position")
+	Creature = function(name) return nil end
+	talks["!tester"].onSay(t6, "!tester", "path npc Nobody #68")
+	check(last(t6):find('"err":"no such NPC"', 1, true), "path: no such NPC")
+
+	local closeCalls = 0
+	ChaosDungeons = {probe = function(p)
+		if p.inRun then
+			return {inside = true, level = 900, pos = p:getPosition(), on = true,
+				run = {id = 4, dungeon = 4, side = "tester", percent = 10, left = 20, unlocked = false},
+				guide = {mode = "walk", goal = {x = 45, y = 51, z = 7}, area = "monsters"}}
+		end
+		return {inside = false, level = 900, pos = p:getPosition(), on = true, list = {{id = 4, title = "Rootmaw", level = 600, size = 1, max = 1}}}
+	end, testerClose = function() closeCalls = closeCalls + 1 return true end}
+	talks["!tester"].onSay(t6, "!tester", "dungeon #70")
+	check(last(t6):find('"list":[{', 1, true) and last(t6):find('"level":600', 1, true) and last(t6):find('"seq":70', 1, true),
+		"dungeon state: the list with the level rule")
+	talks["!tester"].onSay(t6, "!tester", "dungeon path #71")
+	check(last(t6):find("not inside a dungeon run", 1, true), "dungeon path: outside, the reason")
+	t6.inRun = true
+	t6.getPathTo = function(self, pos, minD, maxD)
+		t6.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {3, 3, 0}
+	end
+	talks["!tester"].onSay(t6, "!tester", "dungeon path #72")
+	check(last(t6):find('"path":[3,3,0]', 1, true) and last(t6):find('"dist":5', 1, true), "dungeon path: the directions to the guide's goal")
+	check(t6.pathAsked.pos.x == 45 and t6.pathAsked.minD == 1 and t6.pathAsked.maxD == 3, "dungeon path: within reach of the monster, not on it")
+	t6.getPathTo = function() return false end
+	talks["!tester"].onSay(t6, "!tester", "dungeon path #73")
+	check(last(t6):find('"err":"no path"', 1, true), "dungeon path: no path, the reason")
+	talks["!tester"].onSay(t6, "!tester", "dungeon close #74")
+	check(last(t6):find('"closed":true', 1, true) and closeCalls == 1, "dungeon close: the testers' own run is closed")
+	talks["!tester"].onSay(t6, "!tester", "dungeon bogus #75")
+	check(last(t6):find("usage: dungeon", 1, true), "dungeon: an unknown word is the usage")
+	ChaosDungeons = nil
+	talks["!tester"].onSay(t6, "!tester", "dungeon #76")
+	check(last(t6):find("no dungeon system", 1, true), "dungeon: no dungeon system, the reason")
+	ChaosPoi, ChaosDungeons, Tile, Creature = realPoi, realD, realTile4, realCreature
+	local civ2 = creature(991, "Ana Walker", {store = {}})
+	local n2 = #civ2.log.msgs
+	check(talks["!tester"].onSay(civ2, "!tester", "path temple #1") == true and #civ2.log.msgs == n2, "path: a player's words go on and get no answer")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

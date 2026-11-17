@@ -31,6 +31,10 @@
 --   H.pathDirections(path)             O588: a path of Creature:getPathTo cut to the directions 0-7 the bot can walk (at most H.RAID_PATH_MAX)
 --   H.raidAnswer(probe, extra)         O588: the answer of `raid`: ChaosRaid.probe of the tester, cut down to what the bot reads (the
 --                                       position, the entrance, the guide's goal and mode, the run's counts), `extra` merged in
+--   H.parseDungeon(arg)                O589: "dungeon [state | path | close]" -> the word (state when empty), or nil and the usage
+--   H.dungeonAnswer(probe, extra)      O589: the answer of `dungeon`: ChaosDungeons.probe of the tester cut down to what the bot reads
+--   H.parsePath(arg)                   O589: "path <kind> [N]" / "path npc <name>" / "path pos X Y Z" -> the destination, or nil and the usage
+--   H.pathAnswer(from, dest, dirs, extra)  O589: the answer of `path`: the engine directions, the destination and the distance left
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
 --                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
@@ -41,7 +45,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -182,6 +186,88 @@ function H.raidAnswer(probe, extra)
 	if type(g) == "table" then
 		out.guide = {mode = g.mode, goal = xyz(g.goal), why = g.why and tostring(g.why):sub(1, 60) or nil, idx = g.idx,
 			where = g.where, wi = g.wi, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester dungeon [state | path | close] (O589, closed test mode): the dungeons as a person sees them (the list with the level rule,
+-- the queue, the kill counter, the nearest monster, the boss), the path on foot to the guide's goal inside a run, and the close of the
+-- testers' own run
+function H.parseDungeon(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if what ~= "state" and what ~= "path" and what ~= "close" then
+		return nil, "usage: dungeon [state | path | close]"
+	end
+	return what
+end
+
+H.DUNGEON_LIST_MAX = 24
+function H.dungeonAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), on = probe.on and true or false,
+		queued = probe.queued, maxDifficulty = probe.maxDifficulty, soloWait = probe.soloWait}
+	if type(probe.list) == "table" then
+		out.list = {}
+		for i = 1, math.min(#probe.list, H.DUNGEON_LIST_MAX) do
+			local d = probe.list[i]
+			if type(d) == "table" then
+				out.list[#out.list + 1] = {id = d.id, title = d.title and tostring(d.title):sub(1, 40) or nil, level = d.level,
+					size = d.size, max = d.max, fixed = d.fixed}
+			end
+		end
+	end
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, dungeon = r.dungeon, title = r.title and tostring(r.title):sub(1, 40) or nil, side = r.side, size = r.size,
+			members = r.members, difficulty = r.difficulty, percent = r.percent, total = r.total, left = r.left,
+			unlocked = r.unlocked and true or false, ended = r.ended and true or false, deaths = r.deaths, bossHp = r.bossHp,
+			endsIn = r.endsIn}
+	end
+	local g = probe.guide
+	if type(g) == "table" then
+		out.guide = {mode = g.mode, goal = xyz(g.goal), why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester path <place kind> [N] | npc <name> | pos X Y Z: the way on foot to a map mark, an NPC or a position, by the engine's own
+-- pathfinding (O589). A kind is one of H.PLACE_KINDS that can be walked to (a rift key is no place).
+function H.parsePath(arg)
+	local usage = "usage: path <kind> [N] | npc <name> | pos X Y Z"
+	local x, y, z = tostring(arg or ""):match("^%s*[Pp][Oo][Ss]%s+(%d+)%s+(%d+)%s+(%d+)%s*$")
+	if x then
+		x, y, z = tonumber(x), tonumber(y), tonumber(z)
+		if x < 1 or y < 1 or x > 65535 or y > 65535 or z > 15 then
+			return nil, usage
+		end
+		return {kind = "pos", x = x, y = y, z = z}
+	end
+	local place = H.parsePlace(arg)
+	if not place or place.kind == "rift" then
+		return nil, usage
+	end
+	return place
+end
+
+local function cheb(a, b)
+	return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
+end
+
+function H.pathAnswer(from, dest, dirs, extra)
+	local out = {pos = xyz(from), dest = xyz(dest), path = dirs or {}}
+	if type(from) == "table" and type(dest) == "table" then
+		out.dist = from.z == dest.z and cheb(from, dest) or nil
+		out.floor = from.z ~= dest.z and (dest.z - from.z) or nil
 	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v

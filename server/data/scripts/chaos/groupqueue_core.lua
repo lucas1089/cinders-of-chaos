@@ -91,8 +91,9 @@ function K.shares(state, cid, a, b)
 	return g ~= nil and K.pickOf(g, a) ~= nil and K.pickOf(g, b) ~= nil
 end
 
--- a new group; nil when a member is in another group already (or nobody is given)
-function K.add(state, leader, members, picks, now)
+-- a new group; nil when a member is in another group already (or nobody is given). side: "tester" | "player" (O589, closed test
+-- mode: a group is all testers or no tester; a found match never holds groups of two sides)
+function K.add(state, leader, members, picks, now, side)
 	if type(members) ~= "table" or #members == 0 then
 		return nil
 	end
@@ -102,7 +103,7 @@ function K.add(state, leader, members, picks, now)
 		end
 	end
 	state.seq = state.seq + 1
-	local g = {id = state.seq, leader = leader, members = {}, picks = {}, joined = now}
+	local g = {id = state.seq, leader = leader, members = {}, picks = {}, joined = now, side = side or "player"}
 	for i, cid in ipairs(members) do
 		g.members[i] = cid
 		state.of[cid] = g.id
@@ -153,7 +154,21 @@ function K.startCheck(cfg, g, key, now)
 	return g.check
 end
 
--- a mode found a match for the players `cids` (creature ids, every side): see the header
+-- true when every group of a found match is of one side (O589: the modes pair by side, this is the second look)
+function K.sidesAgree(groups)
+	local first
+	for _, g in ipairs(groups or {}) do
+		local side = g.side or "player"
+		if first and side ~= first then
+			return false
+		end
+		first = side
+	end
+	return true
+end
+
+-- a mode found a match for the players `cids` (creature ids, every side): see the header. Besides the verdicts of the header:
+--   "mixed"  the match holds groups of two sides (testers and players): the mode does not start it (O589)
 function K.gate(state, cfg, key, cids, now)
 	local seen, groups = {}, {}
 	for _, cid in ipairs(cids or {}) do
@@ -165,6 +180,9 @@ function K.gate(state, cfg, key, cids, now)
 	end
 	if #groups == 0 then
 		return "free", groups
+	end
+	if not K.sidesAgree(groups) then
+		return "mixed", groups
 	end
 	local started, waiting = {}, false
 	for _, g in ipairs(groups) do

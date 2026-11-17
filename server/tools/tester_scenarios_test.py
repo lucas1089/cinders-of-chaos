@@ -54,10 +54,13 @@ shop = table['opcodes'].get('shop', {})
 ok(shop and not any(a.startswith('pay_') for a in shop['actions']), 'the payment actions of the shop are skipped')
 for o in ('market', 'guild', 'antibot'):
     ok(table['opcodes'].get(o, {}).get('out'), o + ': an out-of-scope opcode')
-for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar', 'raid'):
+for n in ('arena', 'battleground', 'pvpzone', 'guild', 'guildwar', 'market', 'market_orders', 'market_history', 'market_notify', 'bazaar', 'raid',
+          'groupqueue', 'party_finder'):
     ok(table['systems'][n]['kind'] == 'closed', n + ': reached only in closed test mode (O582)')
-for n in ('groupqueue', 'party_finder'):
-    ok(table['systems'][n]['kind'] == 'out', n + ': a queue that matches players, testers refused (O582)')
+ok('groupqueue' not in G.OUT_OF_SCOPE and 'party_finder' not in G.OUT_OF_SCOPE, 'the group queue and the party finder are closed-mode systems (O589)')
+for o in ('groupQueue', 'partyFinder'):
+    ok(table['opcodes'][o]['actions'] == [] and table['opcodes'][o]['skip'] and table['opcodes'][o]['out'],
+       o + ': never sent by the random request behaviour, only by its closed check (O589)')
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})
@@ -74,6 +77,10 @@ for o in ('invasion', 'riftAtlas', 'waystoneAtlas', 'daily'):  # the same word o
 ok('raid' not in G.OUT_OF_SCOPE and 'raid' in G.CLOSED_MODE, 'the raid is a closed-mode system, no longer out of scope (O588)')
 ok(table['opcodes']['raid']['actions'] == [] and 'start' in table['opcodes']['raid']['skip'],
    'the raid window is never sent by the random request behaviour: only the closed check closed_raid starts it (O588)')
+ok(table['opcodes']['dungeons']['actions'] == ['fetch'] and table['opcodes']['dungeons']['skip'] == ['queue'],
+   'the dungeons window is fetched at random; only the closed check closed_dungeon queues (O589)')
+ok(all(a in table['opcodes'][o]['skip'] for o, acts in G.CLOSED_ONLY.items() for a in acts), 'every closed-only action is skipped from the random behaviour')
+ok(table['systems']['dungeons']['kind'] == 'opcode' and 'dungeons.lua' in table['systems']['dungeons']['files'], 'dungeons is a system with its own core (O589)')
 ok('conquest' not in G.OUT_OF_SCOPE and table['systems']['conquest']['kind'] == 'opcode', 'conquest is a solo token vendor, not out of scope')
 eq(sorted(table['opcodes']['conquest']['actions']), ['buy', 'close', 'open'], 'conquest: the vendor window actions are sent')
 # every skipped action with its reason: nothing is skipped without one, and the reason names the rule that skipped it
@@ -81,7 +88,7 @@ rows = G.skipped(table)
 ok(rows, 'there are skipped actions')
 for o, a, why in rows:
     ok(why, '%s %s: a reason why the bots never send it' % (o, a))
-    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope')),
+    ok(why.startswith(('out of scope', 'staff or world action', 'money, report', 'only an out-of-scope', 'only the closed check')),
        '%s %s: a known reason: %s' % (o, a, why))
     if a in G.ADMIN and not why.startswith('out of scope'):
         ok(a not in G.ADMIN_ALLOW.get(o, {}), '%s %s: an allowed word is not skipped' % (o, a))
@@ -148,7 +155,11 @@ for _ in range(200):
     steps = S.next_request(me)
     ok(steps, 'a scenario')
     for st in steps:
-        ok(st[0] in ('op', 'say', 'npc', 'check', 'usekey'), 'a known step: %r' % (st,))
+        ok(st[0] in ('op', 'say', 'npc', 'check', 'usekey', 'walk'), 'a known step: %r' % (st,))
+        if st[0] == 'walk':
+            ok(not st[1].startswith('rift'), 'a rift key is no place to walk to (the rift scenario keeps its enter): %r' % (st,))
+        if st[0] == 'say' and st[1].startswith('!tester enter '):
+            ok(st[1].startswith('!tester enter rift'), 'the only teleport left in a scenario is the rift key: %r' % (st,))
         if st[0] == 'op':
             ok(st[1] != 200, 'never the out-of-scope opcode')
         if st[0] in ('say', 'npc'):
@@ -200,11 +211,27 @@ ok('enter' not in me.helper, 'the answer is used once')
 used.clear()
 S.run_step(me, ('usekey',), online, send, said.append, used.append)
 eq(used, [], 'after a refused enter no key is used')
+# O589: a walked arrival is a walk, no helper shortcut; a teleport fallback is counted as help and named
+wb = Bot('Tester Wlk', 0x10000009)
+wb.helper['enter'] = {'walked': True, 'kind': 'depot'}
+S.run_step(wb, ('check', 'place:bank'), online, send, said.append, used.append)
+cw = wb.results.d['coverage']['place:bank']
+eq((cw['ok'], cw['walk'], cw.get('help')), (1, 1, 0), 'a walked arrival counts ok and walk, never help')
+wb.helper['enter'] = {'kind': 'bank', 'pos': {'x': 1, 'y': 2, 'z': 7}, 'fallback': 'enter bank: no path'}
+S.run_step(wb, ('check', 'place:bank'), online, send, said.append, used.append)
+eq((cw['ok'], cw['walk'], cw['help']), (2, 1, 1), 'a teleport fallback counts ok and help')
+eq(cw['actions'], {'teleport: enter bank: no path': 1}, 'and its reason is named in the actions')
+wsys = dict(syn)
+mw = TS.merge(wsys, wb.results.d['coverage'], TC.parse_log([]))
+eq((mw['place:bank']['help'], mw['place:bank']['ans']), (1, 1), 'the report row: one helper shortcut, one walked arrival (ANS)')
+said_before = list(said)
+S.run_step(wb, ('walk', 'depot'), online, send, said.append, used.append)
+eq(said[len(said_before):], ['!tester enter depot'], 'a driver that cannot walk falls back to the helper word')
 S.run_step(me, ('check', 'npc:Archivist Maelis'), online, send, said.append, used.append)
 eq(me.results.d['coverage']['npc:Archivist Maelis'], {'tried': 1, 'ok': 0, 'refused': 0, 'actions': {}},
    'no answer: tried only')
 S.run_step(me, ('say', 'hi'), online, send, said.append, used.append)
-eq(said, ['hi'], 'say')
+eq(said[-1:], ['hi'], 'say')
 said_kinds = []
 S.run_step(me, ('npc', 'lore'), online, send, lambda text, kind=1: said_kinds.append((text, kind)), used.append)
 eq(said_kinds, [('lore', 12)], 'words to a focused NPC go in the NPC channel (TALKTYPE_PRIVATE_PN 12)')
@@ -258,10 +285,44 @@ bot = T.TesterBot.__new__(T.TesterBot)
 bot.args, bot.conn, bot.alive, bot.died, bot.helper, bot.name, bot.cid = a, Conn(), True, False, {}, 'Tester Abc', 1
 bot.results, bot.last = Res(), ''
 bot.say = lambda text, kind=1: bot.conn.send(b'\x96' + bytes([kind]) + text.encode())
+# the helper of the walk (O589): `path <place>` answers a path, then "here"; an NPC has no path (the fallback: the teleport, named)
+cmds, pending = [], {}
+
+
+async def fake_says(command, kind, wait=4.0):
+    cmds.append(command)
+    if command.startswith('path '):
+        args = command[5:]
+        if args.startswith('npc '):
+            ans = {'err': 'no path', 'name': args}
+        elif args in pending:
+            pending.pop(args)
+            ans = {'here': True, 'dist': 1, 'pos': {'x': 5, 'y': 5, 'z': 7}}
+        else:
+            pending[args] = True
+            ans = {'path': [1, 1, 2], 'dist': 3, 'pos': {'x': 1, 'y': 1, 'z': 7}}
+        bot.helper['path'] = ans
+        return ans
+    ans = {'kind': command.split(' ')[1], 'pos': {'x': 9, 'y': 9, 'z': 7}}
+    bot.helper['enter'] = ans
+    return ans
+bot.helper_says = fake_says
+bot.walk_until = 0.0
 for _ in range(30):
     ok(asyncio.run(bot.do_opcodes({'stop': False})), 'a scenario ran')
 kinds_sent = {b[0] for b in bot.conn.out}
-ok(kinds_sent <= {0x32, 0x96, 0x82}, 'only extended opcodes, says and the hotkey use: %r' % kinds_sent)
+ok(kinds_sent <= {0x32, 0x96, 0x82, 0x65, 0x66, 0x67, 0x68}, 'only extended opcodes, says, the hotkey use and walk steps: %r' % kinds_sent)
+ok(0x66 in kinds_sent and 0x67 in kinds_sent, 'the bot walked the steps of the path (east, south)')
+ok(any(c.startswith('path ') for c in cmds), 'a place is asked for as a path first')
+ok(not any(c.startswith('enter ') and not c.startswith('enter npc ') and not c.startswith('enter rift') for c in cmds),
+   'a place the path reached is not teleported to: %r' % [c for c in cmds if c.startswith('enter ')][:3])
+ok(any(c.startswith('enter npc ') for c in cmds) and not any(c.startswith('enter npc ') and ('path ' + c[6:]) not in cmds for c in cmds),
+   'an NPC with no path: the teleport only after the path was asked')
+cov = bot.results.d['coverage']
+ok(any(k.startswith('place:') and v.get('walk') for k, v in cov.items()), 'a walked arrival is counted as walk')
+ok(all(v.get('help', 0) == 0 for k, v in cov.items() if k.startswith('place:') and v.get('walk')), 'walks are no helper shortcut')
+ok(any(k.startswith('npc:') and v.get('help') and any(a.startswith('teleport: enter npc') and 'no path' in a for a in v['actions']) for k, v in cov.items()),
+   'the teleport fallback is counted (help) and named (teleport: enter npc ...: no path)')
 ok(0x32 in kinds_sent, 'extended opcodes were sent')
 out_nums = {e['opcode'] for e in table['opcodes'].values() if e['out']}
 ok(not any(b[0] == 0x32 and b[1] in out_nums for b in bot.conn.out), 'never an out-of-scope opcode on the wire')

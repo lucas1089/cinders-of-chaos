@@ -49,7 +49,9 @@ K.reasons = {
 	noApp = "That application is gone.",
 	partyFull = "Your party is full.",
 	queued = "You are already queued.",
-	notQueued = "You are not queued."
+	notQueued = "You are not queued.",
+	closedOff = "Closed test mode is off: the testers do not play this.",
+	mixed = "Testers and players are never mixed."
 }
 
 K.closeText = {
@@ -291,7 +293,12 @@ function K.maxOf(cfg, L)
 	return int(L and L.max) or cfg.maxParty
 end
 
+-- O589, closed test mode: a listing of a tester is seen, answered and filled by testers only, whatever the realm or the staff flag
+-- (a staff listing is not open to a tester either): listings, applications, the quick-join queue and the nudge all ask this
 function K.visibleTo(L, viewer)
+	if (L.tester and true or false) ~= (viewer.tester and true or false) then
+		return false
+	end
 	return viewer.staff or L.staff or (L.realm or 0) == (viewer.realm or 0)
 end
 
@@ -360,6 +367,11 @@ function K.post(state, cfg, acts, who, input, now)
 	input = type(input) == "table" and input or {}
 	if who.party and not who.party.leader then
 		return nil, "notLeader"
+	end
+	for _, m in ipairs(who.party and who.party.members or {}) do
+		if (m.tester and true or false) ~= (who.tester and true or false) then
+			return nil, "mixed" -- a tester and a player in one party never list together (O589)
+		end
 	end
 	local L = state.byLeader[who.guid] and state.listings[state.byLeader[who.guid]] or nil
 	local a = K.activity(acts, input.a)
@@ -461,6 +473,7 @@ function K.post(state, cfg, acts, who, input, now)
 	state.lastUpdate[who.guid] = now
 	L.leader = plainOf(who, role)
 	L.realm, L.staff = who.realm or 0, who.staff and true or false
+	L.tester = who.tester and true or false -- the side of the listing (O589)
 	L.a, L.lo, L.hi, L.t, L.title = a.k, lo, hi, t, title
 	L.max = max
 	L.want, L.minLevel, L.expMin, L.auto = want, minLevel, expMin, input.auto and true or false
@@ -752,6 +765,7 @@ function K.queueJoin(state, cfg, acts, who, role, activity, now)
 		q[k] = v
 	end
 	q.realm, q.staff = who.realm or 0, who.staff and true or false
+	q.tester = who.tester and true or false -- the side of the entry: it only meets listings of its side (O589)
 	q.a = (activity ~= "" and activity) or nil
 	q.at = q.at or now
 	q.untilAt = now + cfg.queueMinutes * 60
