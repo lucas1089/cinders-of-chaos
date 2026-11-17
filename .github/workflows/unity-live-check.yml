@@ -27,7 +27,7 @@ concurrency:
 jobs:
   live:
     name: Core against a live server
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # the private MariaDB of tools/ci/unity_live_check.sh does not install on the 26.04 image (MariaDB 11.8)
     timeout-minutes: 90
     env:
       GH_TOKEN: ${{ github.token }}
