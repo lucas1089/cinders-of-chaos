@@ -31,30 +31,30 @@ def fake_pair(folder, outfits=3526, effects=4742, missiles=253, body=b'spr'):
 def test_order():
     ok(B.order_problems() == [], 'the order of the script is one the tools take: %s' % B.order_problems())
     steps = B.plan()[0]
-    ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'lightning'], 'eight steps in order')
+    ok([k for k, _c in steps] == ['centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'gap', 'area', 'lightning'], 'nine steps in order')
     ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5325 and steps[-2][1]['effects'] == 5320,
        'pair 73 ends at 3,529 outfits and 5,325 effects, the area step at 5,320')
-    ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5189 and steps[5][1]['effects'] == 5236,
+    ok(steps[4][1]['effects'] == 4744 and steps[5][1]['effects'] == 5189 and steps[6][1]['effects'] == 5236,
        'the spell step ends at 4744, the status step at 5189, the gap step at 5236')
-    for bad, word in ((('centre', 'wings', 'creature', 'gap', 'spell', 'status', 'area'), 'spell takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'gap', 'area', 'status'), 'status takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'area', 'status', 'gap'), 'status takes'),
-                      (('centre', 'wings', 'creature', 'status', 'spell', 'gap', 'area'), 'spell takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'area', 'gap'), 'gap takes'),
-                      (('centre', 'wings', 'creature', 'area', 'spell', 'status', 'gap'), 'spell takes'),
-                      (('wings', 'centre', 'creature', 'spell', 'status', 'gap', 'area'), 'wings runs after centre'),
-                      (('centre', 'wings', 'spell', 'status', 'gap', 'area'), 'creature: missing'),
-                      (('centre', 'wings', 'creature', 'spell', 'gap', 'area'), 'status: missing'),
-                      (('centre', 'wings', 'creature', 'creature', 'spell', 'status', 'gap', 'area'), 'creature: twice'),
-                      (('centre', 'wings', 'creature', 'status', 'status', 'spell', 'gap', 'area'), 'status: twice'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'lightning', 'area'), 'area takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'lightning', 'gap', 'area'), 'gap takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area'), 'lightning: missing'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'lightning', 'fx'), 'no such step')):
+    for bad, word in ((('centre', 'wings', 'classredraw', 'creature', 'gap', 'spell', 'status', 'area'), 'spell takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'gap', 'area', 'status'), 'status takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'area', 'status', 'gap'), 'status takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'status', 'spell', 'gap', 'area'), 'spell takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'area', 'gap'), 'gap takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'area', 'spell', 'status', 'gap'), 'spell takes'),
+                      (('wings', 'classredraw', 'centre', 'creature', 'spell', 'status', 'gap', 'area'), 'wings runs after centre'),
+                      (('centre', 'wings', 'classredraw', 'spell', 'status', 'gap', 'area'), 'creature: missing'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'gap', 'area'), 'status: missing'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'creature', 'spell', 'status', 'gap', 'area'), 'creature: twice'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'status', 'status', 'spell', 'gap', 'area'), 'status: twice'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'gap', 'lightning', 'area'), 'area takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'lightning', 'gap', 'area'), 'gap takes'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'gap', 'area'), 'lightning: missing'),
+                      (('centre', 'wings', 'classredraw', 'creature', 'spell', 'status', 'gap', 'area', 'lightning', 'fx'), 'no such step')):
         ok(any(word in p for p in B.order_problems(bad)), 'refused: %s (%s)' % (','.join(bad), B.order_problems(bad)))
-    for free in (('creature', 'centre', 'wings', 'spell', 'status', 'gap', 'area', 'lightning'),
-                 ('centre', 'spell', 'status', 'gap', 'wings', 'area', 'lightning', 'creature'),
-                 ('spell', 'status', 'gap', 'area', 'creature', 'centre', 'lightning', 'wings')):
+    for free in (('creature', 'centre', 'wings', 'classredraw', 'spell', 'status', 'gap', 'area', 'lightning'),
+                 ('centre', 'spell', 'status', 'gap', 'wings', 'classredraw', 'area', 'lightning', 'creature'),
+                 ('spell', 'status', 'gap', 'area', 'creature', 'centre', 'lightning', 'wings', 'classredraw')):
         ok(B.order_problems(free) == [], 'also a good order: %s' % ','.join(free))
     ok(B.order_problems(base={'outfits': 3524, 'effects': 4742, 'missiles': 253}), 'a base without the Ki auras is refused')
 
@@ -100,7 +100,7 @@ def put(folder, name, data):
 
 def test_flags_and_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
-        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,creature,spell,status,gap,area,lightning')
+        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,classredraw,creature,spell,status,gap,area,lightning')
         ok(a.dry_run and a.area_src == [os.path.join(tmp, 'a1'), os.path.join(tmp, 'a2')] and a.wings_src is None, 'flags')
         ok(a.order == B.ORDER and a.work.endswith('w') and not a.any_base, 'the order flag is read, spaces dropped')
         ok(B.source_dirs(a)['wings'] == [] and len(B.source_dirs(a)['area']) == 2, 'source folders by step')
@@ -177,6 +177,12 @@ def test_commands():
                             [{'id': '1612', 'kind': 'refill'}, {'id': '5300', 'kind': 'new'}],
                             [{'id': '46', 'kind': 'missile'}, {'id': '4743', 'kind': 'effect'}])
     ok(allow == 'outfit:7,9;effect:1612;missile:46', 'only the things changed in place may differ from pair 72: %s' % allow)
+    allow = B.allow_changed([{'look': '9', 'action': 'move'}], [{'look': '7'}], [], [], [{'looks': '1508+2071'}, {'looks': '1551'}])
+    ok(allow == 'outfit:7,9,1508,1551,2071', 'the class looks of O618 may differ from pair 72 too: %s' % allow)
+    ok(B.BY_KEY['classredraw'].after == ('centre',) and B.BY_KEY['classredraw'].needs == {} and B.BY_KEY['classredraw'].src is None,
+       'the class step: after the centring, no count it needs, no source folder')
+    ok(B.build_cmd('classredraw', args(tempfile.gettempdir()), 'D', 'S', 'O', 'T')[2:] == B.tool('gen_class_redraw.py')[2:] + ['build', 'D', 'S', 'O'],
+       'the class step builds from the committed sheets')
 
 
 def test_build_on_fakes():
@@ -209,12 +215,12 @@ def test_build_on_fakes():
         held = []
         notes = B.build(a, run=runner, log=lambda t: None, hold=lambda d, s, c: held.append(d) or [])
         builds = [n for n, v in calls if v in ('apply', 'build')]
-        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the eight tools in order: %s' % builds)
+        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the nine tools in order: %s' % builds)
         ok(calls[0] == ('gen_outfit_centre.py', 'measure'), 'the centre table is measured first')
         ok(calls[1:3] == [('gen_outfit_centre.py', 'apply'), ('gen_outfit_centre.py', 'check')], 'a check right after each build')
         ok(all(len(d) <= 2 for d in alive) and alive[-1] == ['area', 'lightning'], 'at most two pairs in the work folder: %s' % alive)
-        tail = [c for c in calls[17:]]
-        ok(tail == [('gen_drawn_wings.py', 'live'), ('gen_creature_outfits.py', 'live'), ('gen_spell_vfx.py', 'live'),
+        tail = [c for c in calls[19:]]
+        ok(tail == [('gen_drawn_wings.py', 'live'), ('gen_class_redraw.py', 'live'), ('gen_creature_outfits.py', 'live'), ('gen_spell_vfx.py', 'live'),
                     ('gen_status_vfx.py', 'live'), ('gen_gap_fx.py', 'live'), ('gen_area_fx.py', 'live'), ('gen_lightning_fx.py', 'live'),
                     ('gen_fun_costumes.py', 'live'), ('gen_ki_auras.py', 'live'),
                     ('check_pair.py', os.path.join(tmp, 'out.work', 'lightning', 'Tibia.dat'))],
@@ -229,7 +235,7 @@ def test_build_on_fakes():
         ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5325, 'missiles': 253},
            'the counts of pair 73')
         log = open(os.path.join(out, 'build', 'pair73_build.txt'), encoding='utf-8').read()
-        ok(log.count('\nstep ') == 8 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
+        ok(log.count('\nstep ') == 9 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
            'centre table: 1 rows' in log and notes[-1].startswith('Tibia.spr md5'), 'the log names every step and the md5s')
         ok(open(os.path.join(out, 'build', 'outfit_centre.csv'), encoding='utf-8').read().endswith(',x\n'), 'the measured table')
 

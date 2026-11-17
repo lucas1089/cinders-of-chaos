@@ -233,6 +233,11 @@ jobs:
           # the twelve fun costumes, the new Dusk Moth and the round Rune Seal ring of pair 72 (O566; PixelLab art of ours, committed as sheets):
           # table, sums and sheets agree, the ring is drawn by script, placement, build / live on a synthetic pair (the live pair step
           # comes with the push of pair 72 to windows-assets)
+          # class outfits drawn again at the stock bar (O618: the 36 looks of 32 sheets; PixelLab art of ours, committed as sheets): table, sums,
+          # sheets against the O610 numbers (lean, four directions, walk of 8, dark rim, colour template, O585 standing point), idle of 4,
+          # the Templar and Monk addons, synthetic download; the build step of pair 73 is held by build_pair73_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_redraw_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_redraw.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_fun_costumes.py check
           # the two oblique Ki auras of pair 72 (O577; drawn by script, sheets committed): table, sums and sheets agree, the drawing loops and is centred,

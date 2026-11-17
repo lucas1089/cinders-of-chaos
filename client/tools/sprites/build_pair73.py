@@ -12,6 +12,7 @@ the strips/ folder a step writes beside its pair is deleted.
 Steps, in the order the tools' input rules allow (order_problems holds it; STEPS is the table):
   centre    O585          gen_outfit_centre.py apply     169 player looks move to the stock standing point (in place)
   wings     O583 / O594   gen_drawn_wings.py apply       the 121 wings looks drawn again (in place, sprites appended)
+  classredraw O618        gen_class_redraw.py build      the class outfits drawn again (in place, sprites appended; sheets are committed, no source folder)
   creature  O608          gen_creature_outfits.py build  3 boss outfits after the 3,526 of pair 72
   spell     O596 / O600   gen_spell_vfx.py build         2 effects at 4743.., one projectile in the blank missile 46
   status    O597          gen_status_vfx.py build        blanks up to 5142, then 47 effects at 5143..5189 (status layer, kills)
@@ -68,6 +69,7 @@ STATUS_CSV = os.path.join(ART, 'status_vfx.csv')
 AREA_CSV = os.path.join(ART, 'area_fx.csv')
 LIGHTNING_CSV = os.path.join(ART, 'lightning_fx.csv')
 CREATURE_CSV = os.path.join(ART, 'creature_outfits.csv')
+CLASS_CSV = os.path.join(ART, 'class_redraw.csv')
 
 PAIR = 73
 BASE = {'outfits': 3526, 'effects': 4742, 'missiles': 253}       # pair 72
@@ -77,6 +79,8 @@ Step = collections.namedtuple('Step', 'key onum tool title needs after src table
 STEPS = (
     Step('centre', 'O585', 'gen_outfit_centre.py', 'outfits centred on the tile', {}, (), None, CENTRE_CSV),
     Step('wings', 'O583 / O594', 'gen_drawn_wings.py', 'the 121 wings looks drawn again', {}, ('centre',), 'wings', WINGS_CSV),
+    Step('classredraw', 'O618', 'gen_class_redraw.py', 'class outfits drawn again at the stock bar', {}, ('centre',), None,
+         CLASS_CSV),
     Step('creature', 'O608', 'gen_creature_outfits.py', 'boss creature outfits', {'outfits': (3526, 3526)}, (), 'creature',
          CREATURE_CSV),
     Step('spell', 'O596 / O600', 'gen_spell_vfx.py', 'spell effects and a projectile', {'effects': (4742, 4742)}, (), 'spell',
@@ -304,9 +308,15 @@ def table_grew(old_text, new_text):
     return len(new) - len(old)
 
 
-def allow_changed(centre_rows, wings_rows, area_rows, spell_rows):
+def class_looks(class_rows):
+    """the looks the class step (O618) rewrites"""
+    return {int(v) for r in class_rows for v in r['looks'].split('+')}
+
+
+def allow_changed(centre_rows, wings_rows, area_rows, spell_rows, class_rows=()):
     """the things of pair 72 that pair 73 changes in place, for check_pair.py --allow-changed"""
-    outfits = sorted({int(r['look']) for r in centre_rows if r['action'] == 'move'} | {int(r['look']) for r in wings_rows})
+    outfits = sorted({int(r['look']) for r in centre_rows if r['action'] == 'move'} | {int(r['look']) for r in wings_rows}
+                     | class_looks(class_rows))
     effects = sorted(int(r['id']) for r in area_rows if r['kind'] == 'refill')
     missiles = sorted(int(r['id']) for r in spell_rows if r['kind'] == 'missile')
     parts = [('outfit', outfits), ('effect', effects), ('missile', missiles)]
@@ -314,13 +324,15 @@ def allow_changed(centre_rows, wings_rows, area_rows, spell_rows):
 
 
 def centre_rows_hold(dat, spr, centre_csv):
-    """after the wings: every moved look still stands where its row says (the wings rows of the table are stale then)"""
+    """after the wings: every moved look still stands where its row says (the wings rows of the table are stale then; the class
+    looks of O618 are drawn again and stand on the point by their own table)"""
     sys.path.insert(0, HERE)
     import gen_outfit_centre as C
     from datspr import Dat, Spr
     d, s = Dat(dat), Spr(spr)
+    skip = class_looks(rows_of(CLASS_CSV))
     bad = [r['look'] for r in C.read_csv(centre_csv)
-           if r['action'] == 'move' and C.row_state(r, d.outfits[int(r['look']) - 1], s) != 'after']
+           if r['action'] == 'move' and int(r['look']) not in skip and C.row_state(r, d.outfits[int(r['look']) - 1], s) != 'after']
     return ['outfit %s is not where its row of the centre table puts it' % look for look in bad]
 
 
@@ -395,7 +407,7 @@ def build(a, run=run, log=say_now, hold=centre_rows_hold):
         run(check_cmd(key, a, cur_dat, cur_spr, centre_csv), log)
     for name in ('gen_fun_costumes.py', 'gen_ki_auras.py'):
         run(tool(name) + ['live', cur_dat, cur_spr], log)
-    allow = allow_changed(rows_of(centre_csv), rows_of(WINGS_CSV), rows_of(AREA_CSV), rows_of(SPELL_CSV))
+    allow = allow_changed(rows_of(centre_csv), rows_of(WINGS_CSV), rows_of(AREA_CSV), rows_of(SPELL_CSV), rows_of(CLASS_CSV))
     run(tool('check_pair.py') + [cur_dat, cur_spr, '--old', base_dat, base_spr, '--new-only', '--allow-changed', allow], log)
     say('final: every step holds on the built pair; against pair 72 only the listed things changed (%d outfits, %d effects, '
         '%d missiles in place)' % tuple(len(p.split(':')[1].split(',')) for p in allow.split(';')))

@@ -7278,11 +7278,12 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   |---|---|---|---|---|
   | 1 `centre` | O585 | `gen_outfit_centre.py apply` | the wings looks as pair 72 has them | 3,526 outfits, 4,742 effects |
   | 2 `wings` | O583 / O594 | `gen_drawn_wings.py apply` | after `centre` | the same counts |
-  | 3 `creature` | O608 | `gen_creature_outfits.py build` | exactly 3,526 outfits | 3,529 outfits |
-  | 4 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
-  | 5 `status` | O597 / O617 | `gen_status_vfx.py build` | 4,742 to 5,142 effects; pads up to 5,142 | 5,189 effects |
-  | 6 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
-  | 7 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,320 effects (O613) |
+  | 3 `classredraw` | O618 | `gen_class_redraw.py build` | after `centre`; no count, no source folder | the same counts (36 looks in place) |
+  | 4 `creature` | O608 | `gen_creature_outfits.py build` | exactly 3,526 outfits | 3,529 outfits |
+  | 5 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
+  | 6 `status` | O597 / O617 | `gen_status_vfx.py build` | 4,742 to 5,142 effects; pads up to 5,142 | 5,189 effects |
+  | 7 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
+  | 8 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,320 effects (O613) |
 
 - **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `status`, then `gap`, then `area`.
   `status` (O617) pads 4745..5142 (398 blanks) and writes 5143..5189 (47 effects, `--status-src DIR`, pictures found by digest like the others).
@@ -7352,6 +7353,99 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   the three bosses walking and idle in four directions, the four long beam families, two area bursts, two gap effects.
 - **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and twelve refused orders, the needs held to the tools' own constants,
   flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
+
+## Class outfits redrawn (O618; `tools/sprites/gen_class_redraw.py`, `art_import/class_redraw.csv`; owner 2026-11-17, "Pode seguir")
+
+The owner asked for the class outfits that miss the stock bar to be drawn again, same name and theme. The O610 audit names them:
+the ten donor B class outfits 1551 to 1560 (upright camera, 46 to 71 px tall, 3x3 / 3x2 tiles, no outline, no colour template) and the
+class outfits and class looks that walk in 2 pictures. The run does **all 36 looks, 32 sheets**: 1505 to 1510, 1551 to 1560, 2039 to 2042,
+2044, 2060 to 2064, 2067 to 2072, 2078 to 2081. 2043 stays as it is (`class_looks_core.lua` leaves it unused). 2069 / 2070 / 2071 / 2072 are copies of
+1505 / 1506 / 1508 / 1510 and share their sheet. Seraph (1553) had one direction and no walk: it has four and a walk now.
+Where the looks are used: the class looks by `class_looks_core.lua` (ids unchanged, the server gives every class look both addons), the
+ten donor outfits and the six ninja / samurai outfits by `outfits.xml` and the store. Every id and the outfit count stay, so nothing
+else changes (the build is `mode=replace`).
+
+- **Art.** Ours: PixelLab (docs/CREDITS.md, Tools), `create_character` mode `standard`, view `oblique`, 4 directions, described by words
+  only (the `prompt` column), no picture of the old look goes to the tool. Nothing is held in the hands (a held weapon comes and
+  goes between pictures). Size 44 for the pilot and 15 first drawings, then **size 52**: it costs the same (1 generation) and the figure
+  is 31 to 37 px tall instead of 26 to 29. The walk is the tool's v3 animation (`animate_character` mode v3, 8 frames, `keep_first_frame`
+  false), **one job a direction with the standing picture as the end frame**, so it loops. Downloads answer 423 while a job runs.
+  Cost: 235 generations for the run (about 7 a sheet: 5 clean, 10 with a re-roll; 17 sheets were drawn twice because the first
+  drawing was too short (25 to 29 px), had almost no colour to template or had the wrong colour), 493 left of 2,000. The
+  pilot's two sheets (Warborn, Oni Samurai) stay as they were approved.
+- **Script.** `art --src DIR --write [KEY ...]` places a download: hard alpha, the walk's colours pulled back to the standing pictures,
+  a dark outline on the whole rim, one move for the look so it stands on the O585 point (x 16.5, y 20; at most 4 pixels of a weapon
+  tip may fall over the edge of the 64 px frame at displacement 0 and are cut), the colour template, the idle and the addons. The
+  row's `disp` (dat displacement) is `auto` for a new row: `--write` stores the highest displacement that loses no pixel.
+- **Colour template, wider than the pilot's.** `accent` is hue ranges joined by `+`: `LO-HI` degrees (wraps through 0), `LO-HI@SATMIN`
+  for a range that must stay clear of skin, `white` for pale cloth and plate (the Sentinel's, Templar's and Seraph's armour and robes).
+  The accent pixels turn grey in the art and head / body / legs / feet in the template by where they sit along the figure, like the
+  stock looks. The share of the body is the mean of the four standing pictures. Class looks start in the class colours
+  (`class_looks_core.lua` `startColors`: Templar gold and white, Mystic grey and deep blue, ...), so the default look is the theme.
+- **Idle.** 4 pictures (a breath: the standing picture one row taller in the middle phases, 600 ms) for the six looks that had an idle
+  of their own (Mystic 2060 / 2061, Elementalist 2062 / 2063, Templar 2067 / 2068); PixelLab gave no cleaner idle at this size, so the breath is
+  drawn by script. The others stand in one picture, like the stock looks.
+- **Addons.** Templar 2067 / 2068 (3 patterns) and Monk 2080 / 2081: two overlays drawn by script on every placed picture, no template
+  (`ADDON_KINDS`). Templar: a gold halo, two ice crystals on the shoulders. Monk: a red headband with tails, a staff across the back
+  (seen over the body from the north only). The old addons were not looked at (purchased or donor art): these are new, same slots.
+- **Sheets.** `art_import/class_redraw/KEY.png` (import_art_things.py outfit layout, 2x2 tiles, rows idle then walk, columns
+  `(addon * 2 + layer) * 4 + direction`) and `art_import/class_redraw.sums`. `check` holds the table, the sums and every sheet to the
+  O610 numbers.
+- **Pair.** `build DAT SPR OUT_DIR` rewrites the 36 looks in place (sprites appended: 5,953 on pair 72); `live DAT SPR` reads every cell back.
+  Built on pair 72 on a RAM disk in 11 s, `check_pair` append-only guard passed, 0 cells differ. **Step `classredraw` of
+  build_pair73.py** (after `wings`, needs no count, no source folder): `build_pair73_test.py` holds the order, the command, the
+  `--allow-changed` list (the 36 looks) and the skip of those looks in the centre rows held after the wings.
+- **Numbers** (O610 `audit.py` rules; before: the ten donors 46 to 71 px tall with a lean under 5 and a dark rim on 7 to 89%, the class looks 34 to 54 px with a walk of 2 pictures):
+
+| sheet | looks | height | lean south / east | east = mirrored west | colour template (share of the body, zones) | idle | addons |
+|---|---|---|---|---|---|---|---|
+| Warborn | 1551 | 30 | 18.8 / 15.4 | 0.20 | 9%, 3 | 1 | - |
+| Oni Samurai | 1508 + 2071 | 34 | 23.0 / 18.0 | 0.19 | 16%, 3 | 1 | - |
+| Golden Templar | 1552 | 33 | 21.7 / 16.8 | 0.17 | 14%, 3 | 1 | - |
+| Seraph | 1553 | 32 | 16.9 / 16.0 | 0.20 | 32%, 4 | 1 | - |
+| Wandering Blade | 1554 | 34 | 20.2 / 16.7 | 0.17 | 22%, 2 | 1 | - |
+| Nightblade | 1555 | 36 | 8.7 / 10.8 | 0.23 | 10%, 3 | 1 | - |
+| Hooded Thief | 1556 | 31 | 21.7 / 16.9 | 0.15 | 31%, 3 | 1 | - |
+| Brawler | 1557 | 31 | 21.9 / 17.3 | 0.16 | 9%, 2 | 1 | - |
+| Wildwood Ranger | 1558 | 34 | 21.0 / 16.8 | 0.19 | 34%, 3 | 1 | - |
+| Archmage (old) | 1559 | 30 | 21.7 / 16.6 | 0.17 | 27%, 4 | 1 | - |
+| Plague Doctor | 1560 | 35 | 21.1 / 16.3 | 0.18 | 9%, 3 | 1 | - |
+| Shadow Ninja | 1505 + 2069 | 37 | 15.5 / 18.0 | 0.21 | 15%, 3 | 1 | - |
+| Crimson Ninja | 1506 + 2070 | 33 | 18.3 / 17.3 | 0.22 | 9%, 4 | 1 | - |
+| Masked Ninja | 1507 | 32 | 20.6 / 16.8 | 0.19 | 12%, 2 | 1 | - |
+| Ronin | 1509 | 33 | 21.5 / 17.3 | 0.14 | 29%, 4 | 1 | - |
+| Dark Samurai | 1510 + 2072 | 32 | 15.0 / 10.9 | 0.21 | 24%, 4 | 1 | - |
+| Juggernaut Class (male) | 2039 | 33 | 18.9 / 14.3 | 0.23 | 19%, 4 | 1 | - |
+| Juggernaut Class (female) | 2040 | 32 | 18.5 / 12.2 | 0.24 | 35%, 4 | 1 | - |
+| Sentinel Class (male) | 2042 | 32 | 20.1 / 13.4 | 0.24 | 27%, 4 | 1 | - |
+| Sentinel Class (female) | 2041 | 34 | 22.0 / 17.6 | 0.13 | 33%, 4 | 1 | - |
+| Necromancer Class (male) | 2044 | 33 | 20.4 / 17.2 | 0.20 | 7%, 3 | 1 | - |
+| Necromancer Class (female) | 2064 | 33 | 20.6 / 17.6 | 0.17 | 4%, 4 | 1 | - |
+| Mystic Class (male) | 2060 | 33 | 21.4 / 16.5 | 0.17 | 41%, 4 | 4 | - |
+| Mystic Class (female) | 2061 | 33 | 21.8 / 18.3 | 0.19 | 34%, 4 | 4 | - |
+| Elementalist Class (male) | 2062 | 33 | 19.4 / 17.1 | 0.17 | 65%, 4 | 4 | - |
+| Elementalist Class (female) | 2063 | 35 | 21.9 / 19.1 | 0.15 | 60%, 4 | 4 | - |
+| Templar Class (male) | 2067 | 31 | 21.3 / 16.6 | 0.16 | 30%, 4 | 4 | templar |
+| Templar Class (female) | 2068 | 31 | 20.7 / 16.6 | 0.17 | 33%, 4 | 4 | templar |
+| Ranger Class (male) | 2078 | 36 | 16.2 / 15.8 | 0.17 | 32%, 3 | 1 | - |
+| Ranger Class (female) | 2079 | 32 | 18.2 / 16.6 | 0.20 | 18%, 2 | 1 | - |
+| Monk Class (male) | 2080 | 34 | 22.7 / 17.7 | 0.16 | 8%, 2 | 1 | monk |
+| Monk Class (female) | 2081 | 31 | 20.3 / 16.3 | 0.16 | 10%, 2 | 1 | monk |
+
+  Stock 128: 32 px, lean 16.1 / 15.1, mirror 0.20, rim 93%. Heights 30 to 37 (mean 31.7): 30 of 32 sheets in the stock band 31 to 40;
+  Warborn (the pilot) and the Archmage are 30. Lean 8.7 to 23.0 south (the Nightblade's south picture has the long daggers across it and
+  the Dark Samurai leans 10.9 east; both pass on the other direction). Walk 8 different pictures in every direction, four different
+  standing pictures, 100% dark rim, hard alpha, standing point 16.5, 20 (+-1) on every look. Colour template 4% (Nightblade, Plague
+  Doctor, Necromancer f: black cloth) to 65% (Elementalist m); the floor of `check` is 3%.
+- **Knock-on tables to regenerate at the real build** (they hold the look's geometry; the committed ones describe the old art): the
+  centre table `pair_fixes/outfit_centre.csv` (`build_pair73.py` measures it on the base pair and writes `build/outfit_centre.csv`; the
+  36 looks are skipped by the held rows), `client_chaos_infolift/info_lifts.lua` (`gen_info_lift.py`),
+  `client_chaos_charselect/outfit_anchors.lua` (`gen_outfit_anchors.py`), `game_cosmeticfx/foot_marks.lua` (`gen_foot_marks.py`),
+  `client_chaos_wingfit/wing_centres.lua` and `head_centres.lua` (`gen_wing_centres.py`: torso x per look, so the wings sit on the new
+  bodies), and the tables that hold the dat md5. Nothing of these was changed here: no pair 73 exists yet.
+- **Open.** The owner's look at `classes_all.mp4` (36 looks: new, old, stock 128, four directions, idle and walk, two colour sets).
+  Not seen in a client. The old Templar and Monk addons are gone, the two new ones are code-drawn and plain. The Nightblade, Plague
+  Doctor and Necromancers colour little (black cloth); a PixelLab re-roll with a bigger coloured part costs 5 generations a sheet.
 
 ## Bolt from the sky, drawn by code (O614, `tools/sprites/gen_lightning_fx.py`, `art_import/lightning_fx.csv`; joins pair 73; owner 2026-11-17)
 
