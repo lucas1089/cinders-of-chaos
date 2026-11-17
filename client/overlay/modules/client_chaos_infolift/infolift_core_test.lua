@@ -24,8 +24,8 @@ for k, v in pairs(D) do
 end
 ok(n >= 100, 'looks in the table: ' .. n)
 
--- the report's look and the other tall class looks go up; the stock citizen does not
-for _, look in ipairs({ 2183, 2184, 2173, 2174, 2064 }) do
+-- the report's look and the other tall class looks go up (2064 left the list at pair 73: O618 drew it again at the stock height); the stock citizen does not
+for _, look in ipairs({ 2183, 2184, 2173, 2174 }) do
   ok(C.liftOf(D, look) >= 6, 'tall class look ' .. look .. ' lifted: ' .. C.liftOf(D, look))
 end
 ok(C.liftOf(D, 2183) >= 12, 'the Necromancer in the witch hat clears the hat: ' .. C.liftOf(D, 2183))

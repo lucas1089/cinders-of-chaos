@@ -141,7 +141,7 @@ local function anchors(id) return P.anchorFrom(CharSelectAnchors[id]) end
 -- the dat of pair 30 (things-1098, dat 8156792438dabee3aa768663d57a1619): size and displacement, no sprites
 local DAT = { [128] = { w = 2, h = 2, dx = 8, dy = 8, pz = 2 }, [1221] = { w = 2, h = 2, dx = 8, dy = 8, pz = 2 },
   [1213] = { w = 2, h = 2, dx = 3, dy = 3, pz = 2 }, [1338] = { w = 3, h = 3, pz = 1 },
-  [2163] = { w = 2, h = 2, dx = 8, dy = 8, pz = 1 }, [937] = { w = 2, h = 2, pz = 1 },
+  [2163] = { w = 2, h = 2, dx = 8, dy = 8, pz = 1 }, [937] = { w = 3, h = 3, pz = 1 },
   [1561] = { w = 3, h = 4, dx = 65504, dy = 65504, pz = 2 } }
 local function info(id) return DAT[id] end
 eq(P.signed(65504), -32, 'a negative displacement as the engine reads it') eq(P.signed(8), 8, 'positive')
@@ -150,7 +150,7 @@ eq(P.signed(65504), -32, 'a negative displacement as the engine reads it') eq(P.
 local pb = P.lookBox({ type = 1221, addons = 3 }, anchors, info, 6)
 eq(pb.left .. ',' .. pb.top .. ',' .. pb.right .. ',' .. pb.bottom, '-12,-12,24,24', 'Prince of Lands box')
 for _, look in ipairs({ { type = 1221, addons = 3 }, { type = 1213, addons = 3 }, { type = 128 }, { type = 128, mount = 1338 },
-    { type = 9999 }, { type = 128, wings = 937 } }) do
+    { type = 9999 } }) do  -- wings never move the figure (below); the drawn wings of pair 73 are not symmetric about it, so no wings look here
   local bx = P.lookBox(look, anchors, info, 6)
   local Lb = P.layout(bx, 200, 300)
   eq(Lb.scale, 2, 'every look at 2x: ' .. look.type) eq(Lb.size, 128, 'creature rect 2T')
@@ -185,7 +185,7 @@ local nc = P.layout({ left = 0, top = 0, right = 32, bottom = 32, fx = 16, fy = 
 eq(nc.x + (16 + 32) * 2, 100, 'no core: the whole box')
 -- Astral Fire (1213): its anchors (wide: a torch held out left)
 local ab = P.lookBox({ type = 1213, addons = 3 }, anchors, info, 6)
-eq(ab.left .. ',' .. ab.right, '-35,23', 'Astral Fire box')
+eq(ab.left .. ',' .. ab.right, '-32,26', 'Astral Fire box (pair 73: -35,23 before O618 drew it again)')
 -- a look the anchors do not know: from its sprite tiles. A 2x2 look with 8,8 whose art is in the bottom-right tile
 -- only (yPattern 0) and its addon 1 (yPattern 1) also in the top-right tile: sprites in ThingType order
 local tiles = { w = 2, h = 2, dx = 8, dy = 8, layers = 1, px = 1, py = 2, pz = 1, phases = 1,
@@ -542,7 +542,8 @@ for _, st in ipairs({ { 318, 130 }, { 318, 211 }, { 204, 150 }, { 188, 130 }, { 
     end
     if W >= 188 then eq(#SL.prints, 4, 'room for all four prints: ' .. tag) end
     -- the figure's own centre is the stage's centre (the old layout was 70 px off)
-    eq(math.abs(SL.x + ((box.left + box.right) / 2 + 32) * SL.scale - W / 2) <= 1, true, 'the figure stays centred: ' .. tag)
+    local fb = box.core or box -- the figure's own box (wings are not part of it)
+    eq(math.abs(SL.x + ((fb.left + fb.right) / 2 + 32) * SL.scale - W / 2) <= 1, true, 'the figure stays centred: ' .. tag)
   end
 end
 -- a stage the prints cannot all fit: closer first, then fewer; never a print outside, the creature rect the same

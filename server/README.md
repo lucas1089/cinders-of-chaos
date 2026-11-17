@@ -34706,6 +34706,7 @@ Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics 
 - **Way in**: a magic forcefield at 16794, 14352, 7, action id 47890. `bosslair.lua` creates it at startup. No map file is written for it.
   The tile is bare, has free ground all round and lies three tiles or more from every spawn point. The way back lands at 16794, 14354, 7.
   Level 500 or more enters. That is below the hunt's first level, so every hunter of the Reach may go in.
+  The owner left the entry level open (2026-11-17) and it stays 500 (`minLevel` in `bosslair_config.lua`).
 - **Respawn**: 4 hours after its death (`respawn = 14400`), like Vharzul the Verdant Eye. The plan's boss block writes the spawn entry.
 - **Gate**: the lair opens when config.lua `chaosClientPair` is 73 or more. Below that there is no portal, and a portal of ours is removed.
   The engine's spawn of Talath is refused then (`EventCallback.onSpawn` returns false). So a client without look 3529 never meets it.
@@ -34720,6 +34721,7 @@ Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics 
   `tests/bossspawns_test.lua` covers `minPair`.
 - **Owner steps**: admin app, tab Painel > card Atualizar servidor > button Aplicar e reiniciar. The update runs `install_all.py`, step `contentareas` among them.
   Fallback: `chaos-ctl.sh update-apply`. Nothing else to run. The lair is placed at any pair. It opens at pair 73.
+- **Pair 73**: the boss outfits 3527 to 3529 are built into pair 73 (O621, 2026-11-17, not yet published; client/MANIFEST.md "Pair 73, the real build"). The lair opens when the pair is shipped and `chaosClientPair` is 73.
 - **Not done**: not placed on a real map, not seen in a client. Talath has 21 million health: it is a group boss. No extra loot rule, no announcement.
 
 ## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)

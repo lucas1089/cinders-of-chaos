@@ -613,7 +613,8 @@ namespace Chaos.Core.Tests
             bool range = true;
             for (int i = 0; i + 1 < InfoLiftData.Table.Length; i += 2) if (InfoLiftData.Table[i] < 1 || InfoLiftData.Table[i + 1] < 3 || InfoLiftData.Table[i + 1] > InfoLift.Max) range = false;
             check(range, "infolift: every entry is a look of 1 or more with a lift of 3 to the cap");
-            foreach (int look in new[] { 2183, 2184, 2173, 2174, 2064 }) check(InfoLift.Of(look) >= 6, "infolift: tall class look " + look + " lifted: " + InfoLift.Of(look));
+            // 2064 left the list at pair 73: O618 drew it again at the stock height
+            foreach (int look in new[] { 2183, 2184, 2173, 2174 }) check(InfoLift.Of(look) >= 6, "infolift: tall class look " + look + " lifted: " + InfoLift.Of(look));
             check(InfoLift.Of(2183) >= 12, "infolift: the Necromancer in the witch hat clears the hat");
             check(InfoLift.Of(128) == 0 && InfoLift.Of(136) == 0 && InfoLift.Of(-5) == 0, "infolift: the stock citizen keeps its place");
             var e = InfoLift.Entries(new[] { 5, 4, 2, 200, 3, 0, 4, -1, 7, 3 });

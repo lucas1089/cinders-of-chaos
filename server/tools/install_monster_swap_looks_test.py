@@ -107,7 +107,7 @@ def looks(mon):
 rows = M.read_map()
 names = [r[0] for r in rows]
 check(len(rows) == 23 and len(set(names)) == 23, 'the map has 23 monsters, once each (%d)' % len(rows))
-check(C.PAIR_SWAP == 73 and C.PAIR_SWAP > C.PAIR_FUN and C.PAIR_ASSETS < C.PAIR_SWAP, 'the step needs pair 73, which is not on windows-assets')
+check(C.PAIR_SWAP == 73 and C.PAIR_SWAP > C.PAIR_FUN and C.PAIR_ASSETS >= C.PAIR_SWAP, 'the step needs pair 73, which windows-assets carries')
 pool = G.read(G.DEFAULT_OUT)
 pool_old = {r['name']: r['look'] for r in S.pool_rows()}
 chaos = os.path.join(REPO, 'server', 'data', 'monster', 'monsters', 'chaos')
