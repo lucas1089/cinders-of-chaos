@@ -34871,14 +34871,28 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
 - **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
   It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
 
-  | Spell | Beam | Line | Segments, straight / diagonal |
+  | Spell | Beam | Line | One effect per heading (O609) |
   |---|---|---|---|
-  | Soulrend Beam (118, death) | `mega_soul_chain` 3492..3499 | 6 | 2 of 3 / 3 of 2 |
-  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` 3508..3515 | 3 | 1 of 4 / 1 of 3 |
-  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 2 of 4 / 3 of 3 |
-  | Eclipse Edge (155, physical) | `mega_blood_siphon` 3356..3363 | 5 | 1 of 4 or 2 of 3 / 2 of 3 |
+  | Soulrend Beam (118, death) | `mega_soul_chain` | 6 | 5303..5310 `mega_soul_chain_l6_<heading>` |
+  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` | 3 | straight: the pack's own 3508, 3510, 3512, 3514. Diagonal: 5311..5314 `mega_sunbeam_lance_l3_<heading>` |
+  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 5315..5322 `mega_sunbeam_lance_l8_<heading>` |
+  | Eclipse Edge (155, physical) | `mega_blood_siphon` | 5 | 5323..5330 `mega_blood_siphon_l5_<heading>` |
 
-  A beam reaches 2 to 4 tiles by heading, so a longer line is drawn as segments, end to end. The beam may end one tile past the line or before it.
+- **Long beams in one piece (O609).** The owner saw O607: "the larger beams are in segments".
+  The pack's beam art covers 3 tiles on a straight heading and less on a diagonal. O607 drew copies end to end, so a start and a tip sat inside the line.
+  Now the pair has one effect for each beam, heading and line length: one start, one body, one tip on the last tile of the line. Headings in id order: n ne e se s sw w nw.
+  - `ChaosAreaFx.beam(spellId, dir, length)` returns one segment `{name, at = 0, len = length}`. The name comes from `ChaosAreaFxIds.lengths[beam][length][heading]`.
+    The table is generated. A straight line of 3 tiles names the pack's own beam there.
+  - `ChaosAreaFx.chain` is the O607 rule: copies of the pack's beam end to end. `beam` falls back to it for a length the pair has no row for. A changed spell length still draws.
+  - `ChaosAreaFx.sendBeam` sends per viewer. The client draws an effect from its bottom right tile and drops one whose tile it cannot see.
+    A viewer who sees the far corner of the picture gets the one piece. A viewer who does not gets the chain, so nobody loses the beam.
+    The caster always sees the far corner: the canvas is held within 8 tiles east and 7 south of the caster's tile.
+    Without `Game.getSpectators` the one piece is broadcast.
+  - The art covers the damage line tile for tile, the same length on all 8 headings. One exception: Dawnbreaker Shot south-east, south and south-west.
+    The line is 8 tiles and the view ends 7 tiles south, so the art stops on the seventh tile. The damage does not change.
+  - Lance of Vigil ended one tile past its line on straight headings and short on diagonals in the O607 text. Measured now: 3 tiles straight, the new rows cover 3 on the diagonals.
+  - How the art is made longer, the seams and the numbers: client/MANIFEST.md "Long beams in one piece (O609)".
+- **Beams, the rest.**
   A cosmetic skin of the spell's effect wins: then the line is drawn as before.
   `mega_glacier_breath` 3404..3411 is in the pair with no sender: no class has an ice line spell.
   Rift Cleaver, Chi Lance and Gale Volley are weapon lines, not beams. They do not change.
@@ -34889,3 +34903,5 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
 - **Element rule.** Every id has a row in `data/spells/spell_fx_elements.csv`. A pack burst has the element of the burst it stands in for.
   A beam has the element of its spell. `check_spell_fx.py` measures with the gate off.
 - **Tests.** `tests/area_fx_test.lua` in the server loop. `client/tools/sprites/gen_area_fx_test.py`. The tool: client/MANIFEST.md.
+  O609 in the Lua test: every beam spell and heading gets one effect named for the length of the real damage line (`ChaosAttackKitCore.tiles`).
+  Also the canvas reach, the caster's view, the per viewer choice with fake spectators, the chain for a length with no row.

@@ -6966,6 +6966,49 @@ The owner approved the review O604. Five of our area bursts are faint. The beam 
   Add `live` to the job `live-pair` when pair 73 ships. `gen_area_fx_test.py` pads a fake dat and cuts synthetic frames.
 - **Server.** `server/data/lib/chaos_area_fx.lua` behind `chaosClientPair >= 73`. See server/README.md "Area bursts, beams and markers".
 - **Previews** (never committed): area bursts before and after, the beams in four headings, the markers.
+
+### Long beams in one piece (O609, kind `long` of `gen_area_fx.py`, 5303..5330; joins pair 73; owner 2026-11-17)
+
+The owner saw O607: "the larger beams are in segments". 28 more effects, 70 in the table. Not in a live pair yet, not seen in a client.
+
+- **Measured.** A beam sheet has 12 frames and 8 heading rows. The art covers 3 tiles on a straight heading, 2.2 to 2.6 on a diagonal.
+  The lines the spells hit: Soulrend Beam 6 tiles, Lance of Vigil 3, Dawnbreaker Shot 8, Eclipse Edge 5. The same on all 8 headings.
+  O607 drew copies end to end. Each copy has its own start flare and its own tip, so both showed inside the line.
+  The light of the body flows 8 px a frame: outward in the sun lance, inward in the blood stream and the chain. On a diagonal 5.1 to 5.8 px per axis.
+- **One effect per beam, heading and length.** Name `<beam>_l<tiles>_<heading>`. The list `LONG` holds the beam and the length of each spell.
+
+  | Beam | Line | Ids, headings n ne e se s sw w nw | Canvas, tiles | Periods added |
+  |---|---|---|---|---|
+  | `mega_soul_chain` | 6 | 5303..5310 | 1 x 7, 7 x 1, 2 x 7, 7 x 7 | 3 of 32 px straight, 4 of 30 to 32 px diagonal |
+  | `mega_sunbeam_lance` | 3 | 5311..5314, diagonals only: ne se sw nw | 4 x 4 to 5 x 5 | 1 of 23 or 28 px |
+  | `mega_sunbeam_lance` | 8 | 5315..5322 | 2 x 10, 9 x 2, 1 x 8, 10 x 2, up to 10 x 10 | 4 or 5 of 32 to 40 px straight, 5 to 8 of 23 to 38 px diagonal |
+  | `mega_blood_siphon` | 5 | 5323..5330 | 2 x 6 to 7 x 7 | 2 of 32 px or 4 of 16 px straight, 3 to 6 of 16 to 29 px diagonal |
+
+  A line of 3 tiles on a straight heading is the pack's own beam, the refill row. So Lance of Vigil has long rows on the diagonals only.
+- **How a beam is made longer.** The frames are turned into beam coordinates: along the heading and across it. Whole pixels both ways, on a diagonal too.
+  The start flare and the tip are left alone (`CAPS`, px of each beam). A piece of the body, one period long, is put in again n times after itself.
+  Each copy shows the frame the flow has there: a copy q px further out plays q / flow frames apart (`flow_step`). So the light runs on through the seams.
+  The cut and the period are searched: the smallest sum of the seam errors that gives the needed length. Limit `SEAM_MAX` 0.75.
+  Needed length: 32 px a tile on a straight heading, exactly. On a diagonal the tip ends where the straight tips end, turned onto the diagonal, within 2 px.
+  Nothing is resampled and no colour is made up. The alpha is the hard 0.5 cut of the sheet.
+- **A body that sways** (`WAVY`: the chain, the blood stream). A plain seam would step 2 to 6 px sideways.
+  At each seam and in each frame both sides move sideways, half the gap each, fading out over one period. The build stops over 2.0 px (`JUMP_MAX`).
+  The build also stops when a line of the new body is wider than the art's body: that would be a copied flare or tip.
+  Seam errors: sun lance 0.13 to 0.32, chain 0.37 to 0.58, blood stream 0.41 to 0.60. The middle line of the swaying beams steps 2.0 px at most.
+- **The view.** The client draws an effect from its bottom right tile. A player sees 9 tiles east and 7 south of its own tile.
+  The far tile of a long canvas stays within 8 east and 7 south of the caster's tile (`VIEW`), so the caster always gets its beam. Art past that is cut.
+  Cut rows: Dawnbreaker Shot south-east, south and south-west lose 8% to 11% and cover 7 of 8 tiles. East loses 1%, a few px of the tip.
+  Table columns: `len` the line, `reach` the tiles the art covers, `cut` the seam (`c` cut px, `q` period, `n` copies, `o` frame step, `e` error, `b` bend) and `view-N%`.
+- **Step of pair 73.** The long rows are appended after 5302. A full build from a pair with 4,742 to 5,299 effects makes all 70 rows.
+  A pair that already ends at 5302 gets only the 28 long beams. That run needs the three beam sheets only and keeps the other rows of the table.
+  `import_fx_art.py --expect-first-effect 5303` then. Still the last effect step. `live DAT SPR --long` holds the long rows alone.
+- **Proof.** Built on a pair padded with blank effects up to 5302: 5,302 to 5,330 effects, 3,574 sprites appended, `live --long` OK for 28 rows. Deleted.
+  The refills and the three bursts of O607 were blank in that pair, so the full 70 row `live` waits for the real pair 73 build.
+- **Checks.** `gen_area_fx.py check`: every spell length and heading has a row, ids 5303..5330 with no hole, the seam limit, the view, the reach.
+  `gen_area_fx_test.py`: a synthetic beam with a start flare, pulses that flow and a tip, made longer on four headings.
+  The result is the same pixels as that beam drawn long, every frame: one start, one tip. A swaying body, plain against bent. The view cut. The row rules.
+- **Server.** `ChaosAreaFx.beam` reads the generated `lengths` table of `chaos_area_fx_ids.lua`. See server/README.md "Area bursts, beams and markers".
+- **Preview** (never committed): every beam spell at full length in 8 headings, O607 left, O609 right, plain floor, box stand-ins.
 ## Wings from PixelLab (O594, `tools/sprites/gen_pixellab_wings.py`, `drawn_wings/pixellab_rows.csv`, `gen_drawn_wings.py --src DIR`; owner 2026-11-17)
 The owner saw the O590 previews: "do the hardest ones in PixelLab, but only the 10 that came out bad". Those are the ten rows O590 left at 45 or more. No pair built, not seen in a client.
 - **Rows**: 111 storm gull, 109 squall kite, 96 rose window, 104 slate plate, 116 tide swan, 117 tornado funnel, 93 rain veil, 118 void raven, 58 foam crest, 110 star gossamer.

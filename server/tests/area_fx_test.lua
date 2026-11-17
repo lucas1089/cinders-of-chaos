@@ -3,7 +3,10 @@
 -- generated chaos_area_fx_ids.lua): the gate is config.lua chaosClientPair >= 73 and below it every sender sends exactly what
 -- it sends today; a pack burst has the element of the burst it stands in for and is sent on the same centre tile; a refill
 -- keeps the id and send offset of chaos_pack36_fx_ids.lua; the new ids are the block 5300..; a beam is the heading from the
--- caster to the target, in segments that cover the line; a marker goes to one player; every id has its element tag.
+-- caster to the target; a marker goes to one player; every id has its element tag.
+-- O609: every beam spell draws ONE effect per heading, as long as its damage line (one start, one tip): the generated
+-- lengths table, the ids 5303.., the canvas, the view of the caster; the chain of copies only for a length the pair
+-- lacks and for a viewer who cannot draw the one piece.
 local n = 0
 local function eq(a, b, m)
 	n = n + 1
@@ -98,13 +101,17 @@ for name, e in pairs(I.effects) do
 		eq(pack36[name].dy, e.dy, name .. ": the pair 36 dy")
 	else
 		new = new + 1
-		ok(name:match("^ab_"), name .. ": a neutral name")
+		ok(name:match("^ab_") or (e.len and name:match("^mega_[a-z_]+_l%d+_[nesw]+$")), name .. ": a neutral name")
 		ok(not pack36[name], name .. ": a new name")
+		ok(e.id >= I.first and e.id < I.first + I.count, name .. ": inside the new block")
+		eq(e.len ~= nil, e.id >= I.first + 3, name .. ": the long beams follow the three bursts")
 		eq(ChaosVfx[name].id, e.id, name .. ": merged into ChaosVfx")
 	end
 end
 eq(new, I.count, "the recorded count")
-eq(total, 42, "42 effects")
+eq(total, 70, "70 effects: 39 refilled, 3 new bursts, 28 long beams")
+eq(I.count, 31, "the new block is 5300..5330")
+eq(I.natural, 3, "the pack's own beam covers 3 tiles on a straight heading")
 for id = I.first, I.first + I.count - 1 do
 	ok(ids[id], "effect " .. id .. " missing: the block has no hole")
 end
@@ -197,49 +204,141 @@ for _, spec in pairs(ChaosAttackKit.cfg.spells or ChaosAttackKit.cfg) do
 	end
 end
 local STEP = C.STEP
-local beams = 0
+dofile("data/scripts/chaos/attack_kit_core.lua")
+local K = ChaosAttackKitCore
+local beams, long, natural = 0, 0, 0
+local usedBeam = {}
 for spellId, base in pairs(C.beams) do
 	beams = beams + 1
 	local spec = kit[spellId]
 	ok(spec and spec.shape == "line", spellId .. ": a line spell of the attack kit")
 	ok(I.beams[base], base .. ": a beam of the ids file")
+	ok(I.lengths[base] and I.lengths[base][spec.length], spellId .. ": the pair has the beam at the spell's line length " .. spec.length)
 	for dir = 0, 7 do
 		local d = C.DIRNAME[dir]
-		local e = I.effects[base .. "_" .. d]
-		ok(e and e.role == "beam", base .. "_" .. d)
-		eq(e.element, element[spellId], spellId .. " " .. d .. ": the spell's element")
-		local reach = I.beams[base][d]
-		-- the canvas really reaches that far from the caster's tile along the heading
 		local s = STEP[dir]
-		if s[1] > 0 then ok(e.dx >= reach, base .. " " .. d .. " east reach") end
-		if s[1] < 0 then ok(e.w - 1 - e.dx >= reach, base .. " " .. d .. " west reach") end
-		if s[2] > 0 then ok(e.dy >= reach, base .. " " .. d .. " south reach") end
-		if s[2] < 0 then ok(e.h - 1 - e.dy >= reach, base .. " " .. d .. " north reach") end
+		local straight = s[1] == 0 or s[2] == 0
+		-- the damage line: `length` tiles from the caster's along the heading
+		local line = K.tiles(spec, HERE, dir)
+		eq(#line, spec.length, spellId .. " " .. d .. ": the damage line")
+		eq(line[#line][1], HERE.x + s[1] * spec.length, "the last tile of the line (x)")
+		eq(line[#line][2], HERE.y + s[2] * spec.length, "the last tile of the line (y)")
+		-- O609: ONE effect, as long as that line
 		local segs = C.beam(spellId, dir, spec.length)
-		ok(segs and #segs >= 1, spellId .. " " .. d .. ": segments")
-		local covered = #segs * reach
-		ok(covered >= spec.length - 1 and covered <= spec.length + 2, spellId .. " " .. d .. ": the beam covers the line (" .. covered ..
-			" of " .. spec.length .. ")")
+		ok(segs and #segs == 1, spellId .. " " .. d .. ": one effect, not a chain")
+		eq(segs[1].at, 0, spellId .. " " .. d .. ": from the caster's tile")
+		eq(segs[1].len, spec.length, spellId .. " " .. d .. ": named for the length of the line")
+		local name = segs[1].name
+		eq(name, I.lengths[base][spec.length][d], "the name of the lengths table")
+		local e = I.effects[name]
+		ok(e and e.role == "beam", name .. ": a beam of the pair")
+		eq(e.element, element[spellId], spellId .. " " .. d .. ": the spell's element")
+		eq(ChaosVfx[name].id, e.id, name .. ": known to Vfx")
+		usedBeam[name] = true
+		local reach
+		if e.refill then
+			-- the pack's own art is as long as the line: only 3 tiles on a straight heading
+			natural = natural + 1
+			ok(straight and spec.length == I.natural, name .. ": the pack's own beam only where the line is its length")
+			eq(name, base .. "_" .. d, "the refilled name")
+			reach = I.natural
+		else
+			long = long + 1
+			eq(name, base .. "_l" .. spec.length .. "_" .. d, "the name says the length")
+			eq(e.len, spec.length, name .. ": made for the length of the line")
+			-- the art covers the whole line; only a beam cut at the caster's view (7 tiles south) stops one tile short
+			ok(e.reach == e.len or (e.reach == e.len - 1 and s[2] > 0 and e.dy == 7), name .. ": the art covers " .. e.reach ..
+				" tiles of " .. e.len)
+			reach = e.reach
+		end
+		-- the canvas holds those tiles from the caster's along the heading, and at most one more (a tip that spills)
+		local far = {}
+		if s[1] > 0 then far[#far + 1] = e.dx end
+		if s[1] < 0 then far[#far + 1] = e.w - 1 - e.dx end
+		if s[2] > 0 then far[#far + 1] = e.dy end
+		if s[2] < 0 then far[#far + 1] = e.h - 1 - e.dy end
+		for _, f in ipairs(far) do
+			ok(f >= reach and f <= reach + 1, name .. ": the canvas reaches " .. f .. " tiles for a beam of " .. reach)
+		end
+		-- the caster gets its own beam: the far corner of the picture is in its view
+		ok(C.sees(HERE, {x = HERE.x + e.dx, y = HERE.y + e.dy, z = HERE.z}), name .. ": the caster sees the far corner")
 		local before = #sent
 		ok(C.sendBeam(HERE, spellId, dir, spec.length), "beam sent")
-		eq(#sent - before, #segs, "one effect per segment")
-		for i, seg in ipairs(segs) do
-			local p = sent[before + i]
-			eq(p.id, e.id, "the heading's id")
-			eq(p.x, HERE.x + s[1] * seg.at + e.dx, "segment x: from the caster's tile along the heading")
-			eq(p.y, HERE.y + s[2] * seg.at + e.dy, "segment y")
-		end
+		eq(#sent - before, 1, spellId .. " " .. d .. ": one effect is sent")
+		eq(last().id, e.id, "the id of the length and heading")
+		eq(last().x, HERE.x + e.dx, "sent so that the caster's tile is the start (x)")
+		eq(last().y, HERE.y + e.dy, "sent so that the caster's tile is the start (y)")
+		eq(last().who, nil, "to every spectator")
 	end
 end
 eq(beams, 4, "four beam spells")
+eq(natural, 4, "Lance of Vigil on the four straight headings is the pack's own beam, 3 tiles")
+eq(long, 28, "28 long beams: every other spell and heading")
 eq(C.beams[118], "mega_soul_chain", "Soulrend Beam is the chain of souls")
-eq(#C.beam(118, 1, 6), 2, "Soulrend Beam east: two segments of 3 tiles")
-eq(C.beam(118, 1, 6)[2].at, 3, "the second segment starts where the first ends")
+eq(C.beam(118, 1, 6)[1].name, "mega_soul_chain_l6_e", "Soulrend Beam east: one beam of 6 tiles")
+eq(I.effects.mega_soul_chain_l6_e.id, 5305, "its id")
+eq(C.beam(129, 1, 3)[1].name, "mega_sunbeam_lance_e", "Lance of Vigil east: the pack's own 3 tiles")
+eq(C.beam(129, 7, 3)[1].name, "mega_sunbeam_lance_l3_ne", "Lance of Vigil north-east: a beam made for 3 diagonal tiles")
+eq(C.beam(151, 1, 8)[1].name, "mega_sunbeam_lance_l8_e", "Dawnbreaker Shot east: one beam of 8 tiles")
+eq(C.beam(155, 2, 5)[1].name, "mega_blood_siphon_l5_s", "Eclipse Edge south: one beam of 5 tiles")
+-- every long beam of the pair is the beam of a spell
+for name, e in pairs(I.effects) do
+	if e.len then
+		ok(usedBeam[name], name .. ": a long beam no spell draws")
+	end
+end
+-- the chain of O607 stays for a length the pair has no beam for
+eq(#C.chain(118, 1, 6), 2, "the chain: two copies of 3 tiles")
+eq(C.chain(118, 1, 6)[2].at, 3, "the second copy starts where the first ends")
+local odd = C.beam(118, 1, 7)
+eq(#odd, 2, "a length with no variant falls back to the chain")
+eq(odd[1].name, "mega_soul_chain_e", "the chain is the pack's own beam")
+eq(odd[1].len, nil, "a chain copy is not named for a length")
 eq(C.beam(9, 1, 3), nil, "a line spell with no beam")
 eq(C.beam(118, 9, 6), nil, "no such heading")
+eq(C.chain(9, 1, 3), nil, "no chain either")
 ok(I.beams.mega_glacier_breath, "the ice beam is in the pair")
+ok(not I.lengths.mega_glacier_breath, "the ice beam has no long variant")
 for _, base in pairs(C.beams) do
 	ok(base ~= "mega_glacier_breath", "the ice beam has no sender")
+end
+-- the view: 8 tiles west, 9 east, 6 north, 7 south
+ok(C.sees(HERE, {x = HERE.x + 9, y = HERE.y + 7, z = HERE.z}), "the far corner of the view")
+ok(not C.sees(HERE, {x = HERE.x + 10, y = HERE.y, z = HERE.z}), "10 east is out")
+ok(not C.sees(HERE, {x = HERE.x, y = HERE.y + 8, z = HERE.z}), "8 south is out")
+ok(C.sees(HERE, {x = HERE.x - 8, y = HERE.y - 6, z = HERE.z}) and not C.sees(HERE, {x = HERE.x - 9, y = HERE.y, z = HERE.z}), "west and north")
+-- with the engine's spectators: who sees the far corner gets the one piece, who stands behind the caster gets the chain
+do
+	local function viewer(dx, dy)
+		return {getPosition = function() return {x = HERE.x + dx, y = HERE.y + dy, z = HERE.z} end}
+	end
+	local near, behind = viewer(1, 2), viewer(-6, 0)
+	local asked
+	Game = {getSpectators = function(pos, multifloor, onlyPlayers)
+		asked = {pos = pos, multifloor = multifloor, onlyPlayers = onlyPlayers}
+		return {near, behind}
+	end}
+	local before = #sent
+	ok(C.sendBeam(HERE, 118, 1, 6), "Soulrend Beam east with two viewers")
+	ok(asked and asked.onlyPlayers == true and asked.pos == HERE, "the players around the caster are asked for")
+	local got = {[near] = {}, [behind] = {}}
+	for i = before + 1, #sent do
+		local list = got[sent[i].who]
+		ok(list, "every effect goes to one viewer")
+		list[#list + 1] = sent[i]
+	end
+	eq(#got[near], 1, "a viewer who sees the far corner gets one effect")
+	eq(got[near][1].id, 5305, "the beam of 6 tiles")
+	eq(got[near][1].x, HERE.x + I.effects.mega_soul_chain_l6_e.dx, "at its far corner")
+	eq(#got[behind], 2, "a viewer 6 tiles behind the caster cannot draw it: the chain")
+	eq(got[behind][1].id, 3494, "the pack's own beam")
+	eq(got[behind][2].x - got[behind][1].x, 3, "its second copy 3 tiles on")
+	-- a beam towards the north-west has its far corner on the caster's tile: both viewers get the one piece
+	before = #sent
+	ok(C.sendBeam(HERE, 118, 6, 6), "Soulrend Beam north-west")
+	eq(#sent - before, 2, "one effect each")
+	eq(sent[#sent].id, I.effects.mega_soul_chain_l6_nw.id, "the one piece")
+	Game = nil
 end
 
 -- C. markers
@@ -263,6 +362,7 @@ for _, alt in pairs(C.names) do used[alt] = true end
 for _, base in pairs(C.beams) do
 	for dir = 0, 7 do used[base .. "_" .. C.DIRNAME[dir]] = true end
 end
+for name in pairs(usedBeam) do used[name] = true end
 for _, name in pairs(C.marks) do used[name] = true end
 for name in pairs(I.effects) do
 	ok(used[name] or name:match("^mega_glacier_breath_"), name .. ": in the pair but not in a table of chaos_area_fx.lua")

@@ -1,4 +1,4 @@
--- chaos_area_fx.lua: area bursts, beams and markers of the purchased effect packs of pair 36 (O607, client pair 73; the art is
+-- chaos_area_fx.lua: area bursts, beams and markers of the purchased effect packs of pair 36 (O607, O609, client pair 73; the art is
 -- in the sprite pair only, client/tools/sprites/gen_area_fx.py, docs/CREDITS.md). The owner approved the review O604: five of
 -- our area bursts are faint, the beam spells draw balls on a line, and the pack has markers we lack. Looks only: no damage,
 -- no timing, no area changes.
@@ -15,13 +15,19 @@
 --    Size: a pack burst is sent on the centre tile of the area, as ours is. The blood sigil is 6 tiles wide and ours 9, so
 --    a boss area wider than 7 tiles keeps ours (C.fits, ChaosBigFx.bossHit).
 -- B. Beams (C.beams): a line spell of the attack kit draws one pack beam from the caster's tile toward the target in place
---    of an effect on every tile of the line (_attackkit.lua). The beam of a heading reaches `reach` tiles, so a longer line
---    is drawn as segments, end to end. The damage tiles are the line's, untouched.
+--    of an effect on every tile of the line (_attackkit.lua). The damage tiles are the line's, untouched.
+--    O609: the pack's art is about 3 tiles long, and O607 drew a longer line as copies end to end; every copy showed its
+--    own start flare and tip, so a long beam looked cut in pieces (the owner). Now the pair has ONE effect per beam,
+--    heading and line length the spells use (C.ids.lengths: one start, the body run on, one tip on the last tile of the
+--    line), and C.beam answers with that one. The chain of copies stays for two cases only: a length with no variant,
+--    and a viewer who cannot draw the one piece. The client draws an effect from the far corner of its picture, and a
+--    player gets an effect only when that tile is in its view (9 tiles east, 7 south): a player standing behind the
+--    caster of a long beam east or south would get nothing, so that player alone gets the chain (C.sendBeam).
 -- C. Markers (C.marks): a lock over a gate that refuses a player (chronicle.lua, areagen.lua), a quest marker over the loot
 --    bag that holds a main quest item (mainquest.lua); sent to that player only. Skull, checkpoint crystal and hand are in
 --    the pair with no sender yet.
 --
--- The ids, send offsets and beam reaches are the generated data/lib/chaos_area_fx_ids.lua. Plain Lua, no engine call at
+-- The ids, send offsets, beam reaches and beam lengths are the generated data/lib/chaos_area_fx_ids.lua. Plain Lua, no engine call at
 -- load (server/tests/area_fx_test.lua).
 
 local C = {}
@@ -139,9 +145,9 @@ function C.swapId(e)
 	return C.byId[e.id] or e
 end
 
--- B. the segments of the beam of spell `spellId` along `dir` (0..7, the kit's headings) for a line of `length` tiles:
--- {{name = effect name, at = tiles from the caster}, ...}, or nil (gate off, no beam for the spell, a name the pair lacks)
-function C.beam(spellId, dir, length)
+-- B. the chain of O607 for the beam of spell `spellId` along `dir` over a line of `length` tiles: copies of the pack's own
+-- beam end to end, {{name = effect name, at = tiles from the caster}, ...}, or nil. Each copy has its own start and tip.
+function C.chain(spellId, dir, length)
 	local base = spellId and C.beams[spellId]
 	local d = DIRNAME[dir]
 	if not base or not d or not C.live() then
@@ -160,15 +166,69 @@ function C.beam(spellId, dir, length)
 	return out
 end
 
--- B. draw the beam from `pos` (the caster's tile); true when it was drawn
+-- B. the beam of spell `spellId` along `dir` (0..7, the kit's headings) for a line of `length` tiles: ONE effect of that
+-- length, {{name = effect name, at = 0, len = length}}; the chain when the pair has no variant of that length; nil (gate
+-- off, no beam for the spell, a name the pair lacks)
+function C.beam(spellId, dir, length)
+	local base = spellId and C.beams[spellId]
+	local d = DIRNAME[dir]
+	if not base or not d or not C.live() then
+		return nil
+	end
+	local len = tonumber(length)
+	local byLen = len and C.ids.lengths and C.ids.lengths[base] and C.ids.lengths[base][math.floor(len)]
+	local name = byLen and byLen[d]
+	if name and ChaosVfx[name] then
+		return {{name = name, at = 0, len = math.floor(len)}}
+	end
+	return C.chain(spellId, dir, length)
+end
+
+-- does a player standing on `from` get an effect sent to `pos` (the engine's view around a player: 8 tiles west, 9 east,
+-- 6 north, 7 south, moved by the floor difference)
+function C.sees(from, pos)
+	local oz = from.z - pos.z
+	return pos.x >= from.x - 8 + oz and pos.x <= from.x + 9 + oz and pos.y >= from.y - 6 + oz and pos.y <= from.y + 7 + oz
+end
+
+local function sendTo(pos, name, s, at, viewer)
+	local e = ChaosVfx[name]
+	if e then
+		Position(pos.x + s[1] * at + e.dx, pos.y + s[2] * at + e.dy, pos.z):sendMagicEffect(e.id, viewer)
+	end
+end
+
+-- B. draw the beam from `pos` (the caster's tile); true when it was drawn. A beam in one piece goes to every player
+-- who sees its far corner; a player near the line who does not gets the chain, as before O609.
 function C.sendBeam(pos, spellId, dir, length)
 	local segs = pos and C.beam(spellId, dir, length)
 	if not segs or not Vfx then
 		return false
 	end
 	local s = STEP[dir]
-	for _, seg in ipairs(segs) do
-		Vfx(Position(pos.x + s[1] * seg.at, pos.y + s[2] * seg.at, pos.z), seg.name, true)
+	local one = #segs == 1 and ChaosVfx[segs[1].name]
+	local viewers
+	if one and Game and Game.getSpectators then
+		local ok, list = pcall(Game.getSpectators, pos, true, true, 18, 18, 14, 14)
+		viewers = ok and list or nil
+	end
+	if not viewers then
+		for _, seg in ipairs(segs) do
+			Vfx(Position(pos.x + s[1] * seg.at, pos.y + s[2] * seg.at, pos.z), seg.name, true)
+		end
+		return true
+	end
+	local far = {x = pos.x + one.dx, y = pos.y + one.dy, z = pos.z}
+	local chain
+	for _, viewer in ipairs(viewers) do
+		if C.sees(viewer:getPosition(), far) then
+			sendTo(pos, segs[1].name, s, 0, viewer)
+		else
+			chain = chain or C.chain(spellId, dir, length) or {}
+			for _, seg in ipairs(chain) do
+				sendTo(pos, seg.name, s, seg.at, viewer)
+			end
+		end
 	end
 	return true
 end
