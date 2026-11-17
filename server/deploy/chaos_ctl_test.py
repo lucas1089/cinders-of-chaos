@@ -647,7 +647,8 @@ def main():
             dst.write(src.read())
         os.chmod(tfs, 0o755)
         pidf = os.path.join(tmp, 'server.pid')
-        proc = subprocess.Popen([tfs, '30'])
+        # argv[0] stays 'sleep': a multi-call coreutils picks its program by argv[0]; /proc/PID/comm still reads tfs
+        proc = subprocess.Popen(['sleep', '30'], executable=tfs)
         try:
             with open(pidf, 'w') as f:
                 f.write('%d\n' % proc.pid)
