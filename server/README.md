@@ -9965,6 +9965,21 @@ Proven by tests: the rules and every refusal (Lua), the two checks against lane 
 by a live run with a player on. Needs a live run: the window answers of the real server (the check reads `state.group.check`, `list.rows`,
 `mine.apps`), and the dungeon start after the ready check.
 
+##### 3. Siege and guild boss: not done (stopped, nothing half-built)
+
+Both stay `out of scope` in the scenario table. Why they were too large for this round, and the plan:
+- `siege.lua`: one global state machine (`S.state.phase`), weekly sign-ups in `chaos_siege_signups`, a bracket arena built per run, a broadcast and a
+  toast at start and end, rows in `chaos_siege_results`, a champion title and buff, the leaderboard. It reads `player:getGuild()` itself, not the
+  tester-aware `ChaosGuild.guildOf`. Plan: a tester siege as a second mode of the same machine (`state.side`): sign-ups split by the guild side
+  (`K.guildSide`), `S.start` takes one side only, a tester run never announces, writes no result row, leaderboard or champion, the player portals refuse
+  testers and the tester portals refuse players, the switch off stops it; a TEST ONLY helper start (the weekly schedule is the only normal start); the bots:
+  leader signs up, members walk to the portal (`path`), gather, walk through the gate and hold the obelisk for a score above 0 (bots do not target
+  players yet: that is part of the work).
+- `guildboss.lua`: needs a guild hall (rent), fuel in the stone and a leader's summon, and its board lists every guild. The tester guilds of O582 have no
+  hall. Plan: a free test hall for the tester guilds (guild_hall.lua), the board and the guild log hiding tester guilds, then the summon and the
+  uber-style fight on the raid recipe (`probe`, `guide`).
+Neither has code in this round, so there is nothing to clean.
+
 ##### 4. The way on foot (`!tester path`, `walk_by_path`, `walk_to_place`, `TesterBot.walk_to_place`)
 
 A person walks; the helper's `!tester enter <place>` is a teleport. Helper v14 has the generic walk: `!tester path <kind> [N] | npc <name> |
@@ -9988,6 +10003,13 @@ Proven by tests: the helper command, the bot's walk and its fallbacks (`testers_
 (`tester_scenarios_test.py`), the checks and their `fallbacks` (`tester_checks_test.py`). Needs a live run: how far the engine's path search
 goes (it has a node limit: a far place is walked in several asks, and a place across the world falls back to the teleport, counted), and
 whether the map marks are on tiles a person can stand next to.
+
+##### 5. The rift by walking: not done
+
+The rift checks (`rift`, `rift_layout`, `waystone_run`) still use the helper's rift key (`enter rift N`, `riftrun`, `waystone`). A walk needs a
+guide like the raid's: the rift map is a known layout (`rift_layout_model`), so the plan is `ChaosRift.probe` (position, portal, monsters left, guardian)
+and a pure `guide` in a core, a bot that opens the key at the portal next to the temple (`path portal`) and walks and fights the layout. Not started:
+the layout checks of the rift are the part that needs the helper's own run to read the numbers.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
