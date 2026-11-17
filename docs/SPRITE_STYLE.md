@@ -300,6 +300,9 @@ Frame counts of our generated effects (`report`, last section):
 
    It prints PASS or FAIL per image and one line per failed cell and reason; it exits 1 on any failure. `--verbose`
    also prints the light warnings of passing cells.
+10. Bosses, creatures and outfits also face the quality bar of the reference sprite ("Quality bar (O625)" below):
+    `sprite_quality.py check --kind boss|creature|outfit|item|effect FILE`. It measures colour ramps, outline, smoothness,
+    detail and animation, which `style_check.py` does not.
 
 ## Importing
 
@@ -329,3 +332,94 @@ python3 -I client/tools/sprites/check_pair.py NEW/Tibia.dat NEW/Tibia.spr --old 
 `style_check.py build-palettes` makes it from the seven sheets: every owner cell passes its own theme with a margin.
 CI runs `build-palettes --check` and `style_check_test.py`. Do not edit the JSON by hand; when the owner sends new
 sheets, add them to `THEMES` in `style_check.py` and rebuild.
+
+The thresholds of the reference-sprite bar are separate: `client/tools/sprites/sprite_quality_bar.json` (numbers and a
+"why" for each; see "Quality bar (O625)" below). CI runs `sprite_quality_test.py` only; the bar is not enforced on old art.
+
+## Quality bar (O625)
+
+The owner picked one sprite from a donor pair as the quality to reach (outfit 939, "the reference boss": 4x4 tiles, a big red
+demon head, one group of 8 phases at 100 ms) and asked for it to be analysed pixel by pixel. `client/tools/sprites/sprite_quality.py`
+does that by script, and `sprite_quality_bar.json` holds the numbers. The reference art itself is never in the repository (no
+licence); only its measured numbers are.
+
+What the reference does, in numbers (mean per frame, 8 frames, 128x128 canvas):
+
+- Size and shape. 8,037 opaque px, 49% of the canvas, 66% of its own box. Rim length over sqrt(area) 6.2 (a circle reads 4.5,
+  a frayed outline 11 to 20). 1.25 holes and 4.6 hole px: no pinholes.
+- Colour. 5,736 colours a frame (15,814 over the 8 frames), ramps of 8 to 24 luma steps a hue family,
+  five hue families. The red body ramp turns 19 degrees in hue from shadow to light (lights toward orange), the others turn the
+  other way: hue moves along every ramp. Low key: median luma 28, half the pixels under luma 28, p95 116, p99 177, almost no white.
+  Saturation 0.72 (spread 0.30).
+- Smooth. Mean luma deviation in a 3x3 window 17 (ours 35 to 70). Edge density 0.73 a pixel, plainest 32x32 tile 0.30: detail
+  everywhere, no flat area, no run of one colour (0%), no dither (0.002%). 97% of the pixels are lone in exact colour because the
+  shading is continuous, not because it is noise.
+- Light. Not a single lamp on a dome: luma against the mask normal has R2 0.02, no pillow shading (r -0.04). All 8 frames agree.
+  61 small highlights a frame, 2.5 px each.
+- Outline. 74% of the 384 rim px are dark. Only 26% of those are black; 74% are a dark shade of the neighbouring colour, and 84%
+  follow the interior hue (selective outline). About 3 px of dark at the rim.
+- Alpha. 237 levels. 17.6% of the visible px are semi-transparent: 11% of those on the rim (anti-aliasing), the rest a blue
+  translucent layer inside the body (about 1,400 px).
+- Animation. 8 distinct frames, 100 ms, loop 800 ms. 77% of the body changes visibly every step (97% by any difference), 94% of
+  that is shading with the silhouette staying (4.5% of the figure enters or leaves it). The parts that change are one region that
+  moves at most 1 px; the volume is kept (area range 3.7%, box ratio 2.7%). The last frame closes to the first like any step (1.04
+  times the mean step), no held frame. The four directions are one animation: east, south and west are byte-identical, north the
+  same pictures a few px off. That is not asked of ours: our creatures draw four directions.
+
+Our own art against it (the numbers are in `client/MANIFEST.md` "Quality bar (O625)"): none of the 32 class sheets, 5 decor
+flame strips and 5 big guardians reaches it. The class sheets have 17 to 54 colours a frame (reference 5,736; the bar asks 0.075
+a pixel, 43 for a 2x2 outfit), a luma deviation of 29 to 70, an outline that is 94% black, and a body that changes 30% a step.
+The guardians have 24 to 30 colours, 5 to 12 ramp steps, black outlines (hue share 1% to 43%, bar 40%), and up to 388 hole px.
+
+What to aim for, for a boss or creature (the numbers `check --kind boss` holds):
+
+| quality | aim | the bar |
+|---|---|---|
+| colours | continuous ramps, not a palette | at least 0.075 colours a solid px (600 for a 4x4 boss), never fewer than 300 / 60 |
+| ramp | 10 or more luma steps in a hue family, and hue moves along it | steps >= 10, hue turn >= 8 degrees |
+| contrast | a real dark and a real highlight | p95 - p5 luma >= 80, p99 >= 120 |
+| smooth | gradients, not one-pixel jumps | 3x3 luma deviation <= 30 |
+| silhouette | a clean shape, no holes, no loose pixels | rim / sqrt(area) <= 9, hole px <= 30, holes <= 8 |
+| detail | no flat 32x32 tile, no banding | tile edge density >= 0.2, flat tiles <= 10%, runs of 8 same-colour px <= 6% |
+| outline | all round, a dark shade of the body, one width | dark rim >= 50%, hue share >= 40%, follows the interior >= 60%, about 3 px at most |
+| light | one light, no dome | no pillow shading, light agrees over the loop >= 80% |
+| accents | many small highlights | >= 18 clusters a 8,000 px, mean size <= 4.5 px |
+| alpha (warning) | soft rim, translucent glow | semi-transparent >= 5%, 16 or more alpha levels |
+| animation | the whole body breathes in sub-pixel steps | 40 to 95% changes a step, shading share >= 50%, silhouette change <= 25%, area range <= 8%, motion 0.4 to 4 px |
+| loop | closes like any step, no held frame | last / first change 0.4 to 2 times the mean step, no equal frames |
+
+Outfits, items and effects use the same rows with floors for their size (an outfit of 2x2 tiles: colours 0.075 a px, never under
+40; ramp steps 6; 3x3 deviation 40; walk rules for the motion rows); the exact numbers are in the JSON, each with a "why".
+A row marked warn prints but only fails with `--strict`.
+
+Rules that follow for new sprites (generators, PixelLab prompts, fitting scripts):
+
+1. Do not quantise a boss or creature to a palette. `big_bosses.py` median-cuts every frame to about 25 colours
+   (`rift_variants.palette_of`) and `gen_class_redraw.py` pulls the walk back to the colours of the standing pictures
+   (`fun_costume_motion.lock_palette`); keep the generator's own colours and only clean alpha. A palette step belongs to
+   items and icons.
+2. Outline in a dark shade of the neighbouring colour, never black. The rim darkening of the fitting scripts (`outline` and `RIM_LUMA` in
+   `gen_class_redraw.py`, `outline` in `rift_variants.py`) should multiply the local colour by 0.2 to 0.3 instead of writing near-black.
+3. Smooth, not crisp. Ask PixelLab for "smooth painted shading, soft gradients, fine surface detail, no dithering, no
+   hard-edged highlights"; after the fit, run `measure` and keep the 3x3 deviation under 30. Highlights are 2 to 3 px clusters.
+4. Animate the whole body in sub-pixel steps: re-shade most of the figure each frame and move parts by 1 px or less, keep the
+   area, keep the silhouette, and close the loop with a frame that is one step from the first (not a copy). A walk that moves two
+   limbs and freezes the rest changes only 30% of the pixels and fails the animation rows.
+5. Keep the cut clean. After the alpha cut and the specks step, holes must stay under 30 px and rim / sqrt(area) under 9
+   (the guardians have 162 to 388 hole px); keep the soft rim and translucent glow of the generator where the client draws
+   soft alpha, instead of the hard 0.5 cut.
+
+How to run it:
+
+```
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py measure SHEET.png            # every number, per group
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py measure --json --frames SHEET.png
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py check --kind boss SHEET.png   # PASS / FAIL, one line a failed row
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py check --kind outfit --cell 64 SHEET.png
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py check --kind effect STRIP.png  # square frames side by side
+/tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality.py check --kind boss --dat Tibia.dat --spr Tibia.spr --outfit 3527
+```
+
+A sheet is the import layout (columns north, east, south, west; rows idle then 8 walk; `--cell` 128 for boss, 64 otherwise).
+`check` exits 1 when a row fails. CI runs `sprite_quality_test.py` (synthetic art: a flat blob fails, a shaded outlined animated
+one passes, each metric moves the right way); it does not run `check` on committed art, which does not reach the bar yet.

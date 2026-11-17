@@ -7565,3 +7565,75 @@ docs/CREDITS.md). The owner said yes to the O622 fit. Not built into a pair yet.
   stays 73 until pair 74 is built). Manifest `server/data/items/decor_flames.csv` (written by `fit`, checked by `check`).
 - **Previews** (never committed): `sheets OUT_DIR`, `preview OUT.mp4 [--dat D --spr S]` (the five at 1x and 3x on a stone floor, beside
   the pair 73 torch when a pair is given).
+
+## Quality bar (O625; `tools/sprites/sprite_quality.py`, `sprite_quality_bar.json`, `sprite_quality_test.py`; owner 2026-11-17)
+
+Owner (translated): picked outfit 939 of a donor pair (4x4, a big red demon head, 8 phases) and asked to "analyse it pixel by pixel,
+frame by frame; I want future sprites to have its quality". The sprite is read by script only and never committed (no licence, no
+picture or pixel of it in the repository); `docs/SPRITE_STYLE.md` "Quality bar (O625)" has what it does and the aim, in numbers.
+
+- **Tool.** `sprite_quality.py measure FILE...` prints canvas use (box, fill, rim length over sqrt(area), holes), alpha (levels, semi
+  share, rim against inside), palette (colours, hue families, ramp steps, hue turn, warm / cool, luma percentiles), shading
+  (light from the mask normal, pillow test, banding, highlights), outline (coverage, black against hue, selective, width), texture
+  (3x3 deviation, same-colour clusters, dither, detail per 32x32 tile) and animation (changed px, regions, motion by block matching,
+  volume, loop closure, duplicate frames, mirrored or copied directions). `check --kind boss|creature|outfit|item|effect` holds the
+  numbers to `sprite_quality_bar.json`: each entry has `min` / `max`, the reference value `ref`, a `scale` by figure size, a
+  `floor`, a level (`warn` fails only with `--strict`) and a `why`. Reads PNG strips (item, effect), the import sheet (boss,
+  creature, outfit: `--cell`), a pair (`--dat D --spr S --outfit ID`, also `--item`, `--effect`) or a private `--npz`.
+  numpy and Pillow only. `sprite_quality_test.py` (CI, fx venv, about 25 s): synthetic art, a flat blob fails, a shaded outlined
+  animated blob passes, each metric moves the right way, the readers (sheet, strip, a synthetic pair, npz) and the CLI.
+- **Not enforced.** CI runs the test only. `check` is not run on committed art, which does not reach the bar (below).
+- **Reference.** One animation of 8 frames at 100 ms for all four directions (east, south, west byte-identical, north a few px off),
+  5,736 colours a frame, 237 alpha levels, 3x3 deviation 17, a dark outline in the body hue, one region changing 77% of the body each
+  step by at most 1 px. The full per-frame study is private (`scratchpad/o625/REPORT.md`, `ref939_study.mp4`).
+- **Our art against it** (`check`, class sheets as `outfit`, flame strips as `item`, guardians as `boss`; 0 of 42 pass; the reference
+  passes `boss`). Failing rows named:
+
+| file | kind | failing rows |
+|---|---|---|
+| class_redraw/archmage.png | outfit | colours, local_std, outline_selout_share, spec_mean_size |
+| class_redraw/brawler.png | outfit | colours, local_std, pillow |
+| class_redraw/crimson_ninja.png | outfit | colours, ramp_steps, ramp_hue_shift |
+| class_redraw/dark_samurai.png | outfit | colours |
+| class_redraw/elementalist_f.png | outfit | local_std |
+| class_redraw/elementalist_m.png | outfit | colours, local_std |
+| class_redraw/golden_templar.png | outfit | colours, local_std |
+| class_redraw/hooded_thief.png | outfit | colours, ramp_hue_shift, local_std |
+| class_redraw/juggernaut_f.png | outfit | colours, ramp_steps |
+| class_redraw/juggernaut_m.png | outfit | colours, ramp_steps, ramp_hue_shift, local_std, outline_selout_share |
+| class_redraw/masked_ninja.png | outfit | colours, ramp_steps, ramp_hue_shift |
+| class_redraw/monk_f.png | outfit | colours, ramp_hue_shift, local_std, spec_mean_size |
+| class_redraw/monk_m.png | outfit | ramp_hue_shift, local_std |
+| class_redraw/mystic_f.png | outfit | colours, ramp_hue_shift, local_std, outline_selout_share |
+| class_redraw/mystic_m.png | outfit | colours, ramp_steps, local_std |
+| class_redraw/necromancer_f.png | outfit | colours, ramp_steps |
+| class_redraw/necromancer_m.png | outfit | colours, ramp_steps, ramp_hue_shift |
+| class_redraw/nightblade.png | outfit | colours, ramp_steps, ramp_hue_shift, spec_mean_size |
+| class_redraw/oni_samurai.png | outfit | colours, local_std |
+| class_redraw/plague_doctor.png | outfit | colours, ramp_steps, ramp_hue_shift, spec_mean_size |
+| class_redraw/ranger_f.png | outfit | colours, ramp_hue_shift, local_std, spec_mean_size |
+| class_redraw/ranger_m.png | outfit | colours, ramp_hue_shift, local_std, flat_run_share, spec_mean_size |
+| class_redraw/ronin.png | outfit | colours, ramp_hue_shift, local_std, spec_mean_size |
+| class_redraw/sentinel_f.png | outfit | colours, ramp_steps, ramp_hue_shift, local_std |
+| class_redraw/sentinel_m.png | outfit | colours, ramp_steps, local_std, spec_mean_size |
+| class_redraw/seraph.png | outfit | colours, local_std, spec_mean_size |
+| class_redraw/shadow_ninja.png | outfit | colours, ramp_steps, local_std |
+| class_redraw/templar_f.png | outfit | colours, ramp_steps, local_std, spec_mean_size |
+| class_redraw/templar_m.png | outfit | colours, ramp_steps, ramp_hue_shift, local_std |
+| class_redraw/wandering_blade.png | outfit | colours, local_std, spec_mean_size |
+| class_redraw/warborn.png | outfit | colours, ramp_steps, local_std |
+| class_redraw/wildwood_ranger.png | outfit | colours, local_std, spec_mean_size |
+| decor_flames/brazier.png | item | colours, complexity, flat_tile_share |
+| decor_flames/campfire.png | item | colours |
+| decor_flames/candle.png | item | flat_tile_share, loop_ratio |
+| decor_flames/spirit.png | item | colours, ramp_steps, local_std, flat_tile_share |
+| decor_flames/torch.png | item | colours, flat_tile_share |
+| big_bosses/abyss_guardian_big.png | boss | colours, ramp_steps, local_std, complexity, hole_px, holes, outline_selout_share |
+| big_bosses/crypt_guardian_big.png | boss | colours, ramp_steps, local_std, outline_hue_share, outline_selout_share |
+| big_bosses/obsidian_guardian_big.png | boss | colours, ramp_steps, flat_run_share, outline_thick, outline_hue_share, outline_selout_share, pillow, spec_mean_size |
+| big_bosses/omen_seer_big.png | boss | colours, ramp_hue_shift, local_std, complexity, hole_px, holes, flat_run_share, outline_hue_share, spec_mean_size, area_range |
+| big_bosses/sanctum_guardian_big.png | boss | colours, ramp_steps, outline_hue_share, outline_selout_share, spec_mean_size |
+
+  Most failed rows: outfit (32 sheets) colours 30, 3x3 deviation 24, ramp steps 15, ramp hue turn 15, highlight size 12; item (5)
+  colours 4, flat tiles 4; boss (5) colours 5, ramp steps 4, outline hue and selective outline 4 each, deviation 3, highlight size 3.
+  Warnings on almost all: black outline (hue share), hard alpha (no soft rim or glow).
