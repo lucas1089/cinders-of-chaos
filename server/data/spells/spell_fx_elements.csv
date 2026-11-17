@@ -266,3 +266,8 @@ id,name,element
 5328,mega_blood_siphon_l5_sw,physical
 5329,mega_blood_siphon_l5_w,physical
 5330,mega_blood_siphon_l5_nw,physical
+5331,lf_bolt_a,energy
+5332,lf_bolt_b,energy
+5333,lf_bolt_c,energy
+5334,lf_bolt_heavy_a,energy
+5335,lf_bolt_heavy_b,energy

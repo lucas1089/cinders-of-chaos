@@ -31,8 +31,9 @@ def fake_pair(folder, outfits=3526, effects=4742, missiles=253, body=b'spr'):
 def test_order():
     ok(B.order_problems() == [], 'the order of the script is one the tools take: %s' % B.order_problems())
     steps = B.plan()[0]
-    ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area'], 'seven steps in order')
-    ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5330, 'pair 73 ends at 3,529 outfits and 5,330 effects')
+    ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'lightning'], 'eight steps in order')
+    ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5335 and steps[-2][1]['effects'] == 5330,
+       'pair 73 ends at 3,529 outfits and 5,335 effects, the area step at 5,330')
     ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5189 and steps[5][1]['effects'] == 5237,
        'the spell step ends at 4744, the status step at 5189, the gap step at 5237')
     for bad, word in ((('centre', 'wings', 'creature', 'gap', 'spell', 'status', 'area'), 'spell takes'),
@@ -46,11 +47,14 @@ def test_order():
                       (('centre', 'wings', 'creature', 'spell', 'gap', 'area'), 'status: missing'),
                       (('centre', 'wings', 'creature', 'creature', 'spell', 'status', 'gap', 'area'), 'creature: twice'),
                       (('centre', 'wings', 'creature', 'status', 'status', 'spell', 'gap', 'area'), 'status: twice'),
-                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'fx'), 'no such step')):
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'lightning', 'area'), 'area takes'),
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'lightning', 'gap', 'area'), 'gap takes'),
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area'), 'lightning: missing'),
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'lightning', 'fx'), 'no such step')):
         ok(any(word in p for p in B.order_problems(bad)), 'refused: %s (%s)' % (','.join(bad), B.order_problems(bad)))
-    for free in (('creature', 'centre', 'wings', 'spell', 'status', 'gap', 'area'),
-                 ('centre', 'spell', 'status', 'gap', 'wings', 'area', 'creature'),
-                 ('spell', 'status', 'gap', 'area', 'creature', 'centre', 'wings')):
+    for free in (('creature', 'centre', 'wings', 'spell', 'status', 'gap', 'area', 'lightning'),
+                 ('centre', 'spell', 'status', 'gap', 'wings', 'area', 'lightning', 'creature'),
+                 ('spell', 'status', 'gap', 'area', 'creature', 'centre', 'lightning', 'wings')):
         ok(B.order_problems(free) == [], 'also a good order: %s' % ','.join(free))
     ok(B.order_problems(base={'outfits': 3524, 'effects': 4742, 'missiles': 253}), 'a base without the Ki auras is refused')
 
@@ -60,6 +64,7 @@ def test_tool_rules():
     import gen_area_fx as A
     import gen_creature_outfits as K
     import gen_gap_fx as G
+    import gen_lightning_fx as L
     import gen_spell_vfx as V
     import gen_status_vfx as T
     need = {s.key: s.needs for s in B.STEPS}
@@ -67,6 +72,8 @@ def test_tool_rules():
     ok(need['status'] == {'effects': (T.BASE_EFFECTS, T.RESERVED_LAST)}, 'status: %d to %d effects' % (T.BASE_EFFECTS, T.RESERVED_LAST))
     ok(need['gap'] == {'effects': (G.MIN_EFFECTS, G.FIRST - 1)}, 'gap: %d to %d effects' % (G.MIN_EFFECTS, G.FIRST - 1))
     ok(need['area'] == {'effects': (A.MIN_EFFECTS, A.FIRST - 1)}, 'area: %d to %d effects' % (A.MIN_EFFECTS, A.FIRST - 1))
+    ok(need['lightning'] == {'effects': (L.MIN_EFFECTS, L.FIRST - 1)}, 'lightning: %d to %d effects' % (L.MIN_EFFECTS, L.FIRST - 1))
+    ok(B.gives()['area']['effects'] == L.FIRST - 1 and L.NEED_MISSILES == 253, 'the lightning block starts right after the area block')
     ok(need['creature'] == {'outfits': (K.OUTFITS_72, K.OUTFITS_72)}, 'creature: exactly %d outfits' % K.OUTFITS_72)
     ok(B.BASE == {'outfits': K.OUTFITS_72, 'effects': V.NEED_EFFECTS, 'missiles': V.NEED_MISSILES}, 'the base is pair 72')
     ok(V.NEED_MISSILES == G.NEED_MISSILES == A.NEED_MISSILES == 253, 'no step takes another missile count')
@@ -93,7 +100,7 @@ def put(folder, name, data):
 
 def test_flags_and_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
-        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,creature,spell,status,gap,area')
+        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,creature,spell,status,gap,area,lightning')
         ok(a.dry_run and a.area_src == [os.path.join(tmp, 'a1'), os.path.join(tmp, 'a2')] and a.wings_src is None, 'flags')
         ok(a.order == B.ORDER and a.work.endswith('w') and not a.any_base, 'the order flag is read, spaces dropped')
         ok(B.source_dirs(a)['wings'] == [] and len(B.source_dirs(a)['area']) == 2, 'source folders by step')
@@ -160,6 +167,9 @@ def test_commands():
         ok(c[3:] == ['build', 'D', 'S', 'O', '--src', os.path.join(tmp, 'a1'), '--src', os.path.join(tmp, 'a2')], 'area, two folders')
         ok(B.check_cmd('area', a, 'D', 'S', 'T')[2].endswith('gen_area_fx.py') and B.check_cmd('area', a, 'D', 'S', 'T')[3:] ==
            ['live', 'D', 'S'], 'area live: all 70 rows')
+        c = B.build_cmd('lightning', a, 'D', 'S', 'O', 'T')
+        ok(c[2].endswith('gen_lightning_fx.py') and c[3:] == ['build', 'D', 'S', 'O'], 'lightning: drawn by code, no source folder')
+        ok(B.check_cmd('lightning', a, 'D', 'S', 'T')[3:] == ['live', 'D', 'S'], 'lightning live')
         ok(B.check_cmd('centre', a, 'D', 'S', 'T')[3:] == ['check', 'D', 'S', '--csv', 'T'], 'centre check with the measured table')
     ok(B.table_grew('h\na\nb\n', 'h\na\nb\nc\nd\n') == 2 and B.table_grew('h\na\n', 'h\na\n') == 0, 'new looks at the end')
     ok(B.table_grew('h\na\nb\n', 'h\na\nB\nc\n') is None and B.table_grew('h\na\nb\n', 'h\na\n') is None, 'a changed row is found')
@@ -199,26 +209,27 @@ def test_build_on_fakes():
         held = []
         notes = B.build(a, run=runner, log=lambda t: None, hold=lambda d, s, c: held.append(d) or [])
         builds = [n for n, v in calls if v in ('apply', 'build')]
-        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the seven tools in order: %s' % builds)
+        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the eight tools in order: %s' % builds)
         ok(calls[0] == ('gen_outfit_centre.py', 'measure'), 'the centre table is measured first')
         ok(calls[1:3] == [('gen_outfit_centre.py', 'apply'), ('gen_outfit_centre.py', 'check')], 'a check right after each build')
-        ok(all(len(d) <= 2 for d in alive) and alive[-1] == ['area', 'gap'], 'at most two pairs in the work folder: %s' % alive)
-        tail = [c for c in calls[15:]]
+        ok(all(len(d) <= 2 for d in alive) and alive[-1] == ['area', 'lightning'], 'at most two pairs in the work folder: %s' % alive)
+        tail = [c for c in calls[17:]]
         ok(tail == [('gen_drawn_wings.py', 'live'), ('gen_creature_outfits.py', 'live'), ('gen_spell_vfx.py', 'live'),
-                    ('gen_status_vfx.py', 'live'), ('gen_gap_fx.py', 'live'), ('gen_area_fx.py', 'live'), ('gen_fun_costumes.py', 'live'),
-                    ('gen_ki_auras.py', 'live'), ('check_pair.py', os.path.join(tmp, 'out.work', 'area', 'Tibia.dat'))],
+                    ('gen_status_vfx.py', 'live'), ('gen_gap_fx.py', 'live'), ('gen_area_fx.py', 'live'), ('gen_lightning_fx.py', 'live'),
+                    ('gen_fun_costumes.py', 'live'), ('gen_ki_auras.py', 'live'),
+                    ('check_pair.py', os.path.join(tmp, 'out.work', 'lightning', 'Tibia.dat'))],
            'the final pass: every live again, pair 72, check_pair: %s' % tail)
         ok(len(held) == 1, 'the moved looks are held once after the wings')
         out = os.path.join(tmp, 'out')
         ok(sorted(os.listdir(out)) == ['Tibia.dat', 'Tibia.spr', 'build'] and not os.path.exists(out + '.work'),
            'OUT_DIR holds the pair and build/, no strips, the work folder is gone')
-        ok(open(os.path.join(out, 'Tibia.spr'), 'rb').read() == b'area', 'the last step is the pair')
+        ok(open(os.path.join(out, 'Tibia.spr'), 'rb').read() == b'lightning', 'the last step is the pair')
         ok(open(os.path.join(tmp, 'p72', 'Tibia.spr'), 'rb').read() == b'base spr' and
            sorted(os.listdir(os.path.join(tmp, 'p72'))) == ['Tibia.dat', 'Tibia.spr'], 'pair 72 is untouched')
-        ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5330, 'missiles': 253},
+        ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5335, 'missiles': 253},
            'the counts of pair 73')
         log = open(os.path.join(out, 'build', 'pair73_build.txt'), encoding='utf-8').read()
-        ok(log.count('\nstep ') == 7 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
+        ok(log.count('\nstep ') == 8 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
            'centre table: 1 rows' in log and notes[-1].startswith('Tibia.spr md5'), 'the log names every step and the md5s')
         ok(open(os.path.join(out, 'build', 'outfit_centre.csv'), encoding='utf-8').read().endswith(',x\n'), 'the measured table')
 

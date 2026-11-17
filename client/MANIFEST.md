@@ -7286,3 +7286,46 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   the three bosses walking and idle in four directions, the four long beam families, two area bursts, two gap effects.
 - **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and twelve refused orders, the needs held to the tools' own constants,
   flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
+
+## Bolt from the sky, drawn by code (O614, `tools/sprites/gen_lightning_fx.py`, `art_import/lightning_fx.csv`; joins pair 73; owner 2026-11-17)
+
+Owner: "For the lightning falling from the sky, make the tool to draw the lightning." Our own art, drawn by code, as the wings of O581.
+No art file is read. No purchased art, no AI service. **Status: tool, table, server lib and previews. Not seen in a client. The owner can still say no.**
+
+- **Measured in pair 72.** Effect 458 `lightning_strike`: 4 x 4 tiles, send offset 1, 1, 16 phases of 83 ms. It reaches 77 px above the standing point.
+  It leans 45 degrees from up-left, then falls straight. Its alpha has four levels. The level up pillar 457: 4 x 5 at 1, 2, 56 px above.
+- **Channel.** From a point high up-left to the standing point of the target tile, 16, 20. Midpoint displacement on a seeded `random.Random`.
+  Each segment's middle moves sideways by up to 26% of its length. Three rounds, the heavy bolt four. The lean is 0.56 px across per px down.
+- **Branches.** Three, the heavy bolt five. They leave the upper two thirds, run down and outward and end in the air. The far part is thinner. The tip is glow only.
+- **Frames.** Two leader frames, the strike, a second strike on a shaken channel, a dim frame, a re-strike, two afterglow frames, the last sparks.
+  9 frames in 610 ms. The heavy bolt has one more strike: 10 frames in 690 ms. Each frame has its own duration, 50 to 90 ms.
+- **Ground.** A flat burst with spikes on the target tile, then a ring that runs out. Sparks fly up and fall back. A circle on the floor is half as high as wide.
+- **Colours.** Four a tint: core, light, rim, glow. Alpha is 0 or 255 and one glow level, 144. A transparent pixel carries no colour.
+  No dark outline: the saturated rim holds the bolt against bright ground. Checked on grass green and stone grey.
+- **Tints.** Energy is white and blue. Holy gold and dark violet share the shapes. `sheets` and `preview` draw them. No sender needs them, so they are not in the pair.
+- **Sizes.** `std`: 4 x 4 at offset 1, 0. The bolt comes in 116 px above the target point. `heavy`: 5 x 6 at 1, 1, 148 px, thicker, a wider burst.
+- **Ids.** Five effects at 5331..5335, after the long beams of O609 at 5330. Block up to 5350.
+
+| Id | Name | Canvas, phases | Seed |
+| --- | --- | --- | --- |
+| 5331 | `lf_bolt_a` | 4 x 4, 9 | 11 |
+| 5332 | `lf_bolt_b` | 4 x 4, 9 | 23 |
+| 5333 | `lf_bolt_c` | 4 x 4, 9 | 37 |
+| 5334 | `lf_bolt_heavy_a` | 5 x 6, 10 | 53 |
+| 5335 | `lf_bolt_heavy_b` | 5 x 6, 10 | 71 |
+
+- **Step of pair 73, now the last effect step.** Input: 253 missiles and 4,742 to 5,330 effects. Run it after `gen_area_fx.py`.
+  A pair with fewer than 5,330 effects is padded with blank effects up to 5330, so the ids never move. Nothing is replaced. No missile is added.
+  It is the eighth step of `build_pair73.py` of O612, after `area`: `gen_lightning_fx.py build IN/Tibia.dat IN/Tibia.spr OUT`.
+  It needs no `--src`. Pair 73 then ends at 5,335 effects. The rehearsal md5s of O612 are of the pair before this step.
+- **Drawn over the creature.** Effect 458 is in the ground list of `game_groundfx`. The new ids are not. A bolt hits the creature from above.
+- **Commands.** `sheets OUT_DIR` writes PNG sheets on dark, green and grey. `preview OUT_DIR --dat D --spr S` writes two MP4 files.
+  `table` writes the table and the sums. `ids` writes the server files. `build` runs `live` at the end. None of the pictures is committed.
+- **Checks.** `gen_lightning_fx.py check` draws every bolt again and holds it to the sums. It needs no pair. `live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_lightning_fx_test.py`: the same bytes twice, frame count, alpha levels, palette,
+  the strike is one piece from the top to the target point, branches inside the canvas, the import spec appends only.
+- **Proved 2026-11-17** on the pair 73 rehearsal of O612 (dat 3b8e7cdb6bbed615d04eeb2955b129e1, 5,330 effects):
+  no blank effect, 5 effects appended, 47 frames read back pixel for pixel. Every old item, outfit, effect and missile is byte identical.
+  Output dat 72deab68313773f5783f226925846475 (9,434,040 bytes), spr ad553da9e7d2d71c2361c2437db15e2d (1,217,424,242 bytes).
+  The files were deleted after the check. This is not the shipped pair 73.
+- **Unity.** Not done. The Unity client has no effect 5331+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.

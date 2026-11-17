@@ -68,11 +68,21 @@ local function orange()
 	return MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR
 end
 
+-- O614: a boss strike that names the bolt from the sky gets the heavy code-drawn bolt on client pair 73
+local function skyHeavy(name)
+	if ChaosLightningFx == nil then
+		ChaosLightningFx = false
+		pcall(dofile, "data/lib/chaos_lightning_fx.lua")
+	end
+	return ChaosLightningFx and ChaosLightningFx.boss(name) or name
+end
+
 -- an effect by name (chaos_vfx, pack and big ids), else the stock constant named `fallback`
 local function fx(pos, name, fallback, who)
 	if not pos then
 		return
 	end
+	name = skyHeavy(name)
 	if who and ChaosTelegraph then
 		ChaosTelegraph.effectTo(who, pos, name, fallback) -- one player's sprite marks (O549)
 		return

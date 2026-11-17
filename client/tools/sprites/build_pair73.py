@@ -17,11 +17,12 @@ Steps, in the order the tools' input rules allow (order_problems holds it; STEPS
   status    O597          gen_status_vfx.py build        blanks up to 5142, then 47 effects at 5143..5189 (status layer, kills)
   gap       O606          gen_gap_fx.py build            48 effects at 5190.. (it takes up to 5189 and pads nothing here)
   area      O607 / O609   gen_area_fx.py build           blanks up to 5299, 39 refills in place, 3 bursts, 28 long beams
+  lightning O614          gen_lightning_fx.py build      5 effects at 5331.. drawn by code (no source folder; it pads nothing here)
 
 Why this order. The spell step takes a pair with exactly 4,742 effects, the status step 4,742 to 5,142 and it pads up to 5142
 (the spell block 4743..5142 is the spell step's: after it the pair has 4,744 effects, so the status step pads 4745..5142),
-the gap step 4,742 to 5,189, the area step 4,742 to 5,299 and it pads up to 5299: so spell, status, gap, area, and nothing
-that adds an effect after area. The status step before the spell step is refused (the spell step wants exactly 4,742). The creature step
+the gap step 4,742 to 5,189, the area step 4,742 to 5,299 and it pads up to 5299, the lightning step 4,742 to 5,330 and it
+pads up to 5330: so spell, status, gap, area, lightning, and nothing that adds an effect after lightning. The status step before the spell step is refused (the spell step wants exactly 4,742). The creature step
 takes exactly 3,526 outfits and no other step adds one. The centring runs before the wings: its table lists the wings
 looks with the displacement of pair 72, which the drawn wings drop, so its `check` is true only before them. After the
 wings the 169 moved looks are held to their rows in this script (centre_rows_hold).
@@ -65,6 +66,7 @@ SPELL_CSV = os.path.join(ART, 'spell_vfx.csv')
 GAP_CSV = os.path.join(ART, 'gap_fx.csv')
 STATUS_CSV = os.path.join(ART, 'status_vfx.csv')
 AREA_CSV = os.path.join(ART, 'area_fx.csv')
+LIGHTNING_CSV = os.path.join(ART, 'lightning_fx.csv')
 CREATURE_CSV = os.path.join(ART, 'creature_outfits.csv')
 
 PAIR = 73
@@ -84,6 +86,8 @@ STEPS = (
     Step('gap', 'O606', 'gen_gap_fx.py', 'effects for roles that had none', {'effects': (4742, 5189)}, (), 'gap', GAP_CSV),
     Step('area', 'O607 / O609', 'gen_area_fx.py', 'area bursts, beams, markers, long beams', {'effects': (4742, 5299)}, (),
          'area', AREA_CSV),
+    Step('lightning', 'O614', 'gen_lightning_fx.py', 'the bolt from the sky, drawn by code', {'effects': (4742, 5330)}, (), None,
+         LIGHTNING_CSV),
 )
 BY_KEY = {s.key: s for s in STEPS}
 ORDER = tuple(s.key for s in STEPS)
@@ -102,12 +106,14 @@ def gives(tables=None):
     gap = t.get('gap') or rows_of(GAP_CSV)
     area = t.get('area') or rows_of(AREA_CSV)
     creature = t.get('creature') or rows_of(CREATURE_CSV)
+    lightning = t.get('lightning') or rows_of(LIGHTNING_CSV)
     return {
         'creature': {'outfits': max(int(r['new']) for r in creature)},
         'spell': {'effects': max(int(r['id']) for r in spell if r['kind'] == 'effect')},
         'status': {'effects': max(int(r['id']) for r in status)},
         'gap': {'effects': max(int(r['id']) for r in gap if r['kind'] == 'effect')},
         'area': {'effects': max(int(r['id']) for r in area if r['kind'] in ('new', 'long'))},
+        'lightning': {'effects': max(int(r['id']) for r in lightning if r['kind'] == 'effect')},
     }
 
 
@@ -270,7 +276,7 @@ def build_cmd(key, a, dat, spr, out, centre_csv):
     if key == 'wings':
         return tool(s.tool) + ['apply', dat, spr, out] + (['--src', a.wings_src] if a.wings_src else [])
     cmd = tool(s.tool) + ['build', dat, spr, out]
-    for d in source_dirs(a)[s.src]:
+    for d in source_dirs(a).get(s.src, []):                  # a step drawn by code has no source folder
         cmd += ['--src', d]
     return cmd
 

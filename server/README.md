@@ -34962,3 +34962,34 @@ status holds, an end once. Players and monsters alike.
   `statusfx_test.lua`; `tests/pack29_vfx_test.lua` unchanged and green.
 - **Not verified.** Not run on a server or in a client: pair 73 is not live. Watch for: the cost of the scan in a full hunt, a
   status that stays after the creature died, a monster's condition the engine reports under another condition id.
+
+## Bolt from the sky (O614; `data/lib/chaos_lightning_fx.lua`, `data/lib/chaos_lightning_fx_ids.lua`, client pair 73)
+
+Owner 2026-11-17: "For the lightning falling from the sky, make the tool to draw the lightning."
+The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MANIFEST.md. Looks only. No damage, timing or area changes.
+
+- **Gate.** `chaosClientPair` of `config.lua` is 73 or more, read once at load. Below 73 every sender draws effect 458 as today.
+  The owner raises the record when pair 73 ships: README "Client pair guard".
+- **Ids.** 5331..5333 are three shapes of the bolt. 5334 and 5335 are two shapes of a heavy bolt. All are tagged `energy` in `data/spells/spell_fx_elements.csv`.
+- **The swap.** The name `lightning_strike` is effect 458 of `data/lib/chaos_vfx.lua`. `Vfx()` is the one door every named effect goes through.
+  There `ChaosLightningFx.swap` answers with the next of the three shapes. Bolts that fall together do not look alike.
+  A name changed before `Vfx()` is not touched: a cosmetic skin, the pair 27 and 29 tables, the effects pass. `Vfx(pos, name, true)` still draws 458.
+- **Boss strikes.** A boss area draws its hit on every second tile, dozens at once. `fx()` of `boss_mechanics.lua` and `uber.lua` asks `ChaosLightningFx.boss` first.
+  One strike in four is a heavy bolt, the others are plain shapes. The number is `heavyEvery`.
+
+| Sender | What | Bolt at pair 73 |
+| --- | --- | --- |
+| `spells/chaos/sorcerer/cataclysm.lua` | Doomtide: four bolts on a ring with the energy wave | plain shapes in turn |
+| `spells/chaos/sorcerer/glacial_doom.lua` | Glacial Doom: four bolts on a ring with the energy wave | plain shapes in turn |
+| `lib/chaos_pack_fx.lua` | the energy snare burst, the energy strike of a rift modifier | plain shapes in turn |
+| `scripts/chaos/boss_mechanics_config.lua` | Thalcyra's Storm Marks, Saga's Storm Verse | one heavy in four |
+| `scripts/chaos/uber_config.lua` | Ascended Thalcyra: the hit of every pattern | one heavy in four |
+| `spells/chaos/sorcerer/chain_lightning.lua` | Forked Storm: each jump | not swapped. The effects pass sends the owner's donor strike 4707 |
+
+- **Not a sender.** The weather has no thunder: `weather_config.lua` dropped the base's strike. Sky Lance, Thunder Cone and Storm Columns send `lightning_hit`, a hit on the tile, not a bolt.
+  Effect 386 of `chaos_fx.lua` has the same name. No script sends it by that name today.
+- **Element rule.** `check_spell_fx.py` measures with the gate off. The new ids carry the element of the bolt they stand in for.
+- **Tests.** `tests/lightning_fx_test.lua` in the server loop: gate off sends 458 at its offset, gate on the new ids at theirs, the turn of the shapes,
+  one heavy in four, `raw`, other names untouched, a pair that lacks a shape, the list of senders against the files. `client/tools/sprites/gen_lightning_fx_test.py`.
+- **VPS.** Nothing to run now. The gate opens when the pair record is raised to 73. Admin app first: README "Client pair guard". Fallback: `chaos-ctl.sh client-pair set 73`.
+- **Open.** Not seen in a client. The holy and dark tints have no sender and are not in the pair.

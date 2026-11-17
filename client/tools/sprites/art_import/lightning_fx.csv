@@ -1,0 +1,7 @@
+kind,id,name,seed,tint,size,w,h,phases,durs,dx,dy,tag,note
+effect,5331,lf_bolt_a,11,energy,std,4,4,9,50;50;80;70;50;70;70;80;90,1,0,energy,"bolt from the sky, energy, first shape"
+effect,5332,lf_bolt_b,23,energy,std,4,4,9,50;50;80;70;50;70;70;80;90,1,0,energy,"bolt from the sky, energy, second shape"
+effect,5333,lf_bolt_c,37,energy,std,4,4,9,50;50;80;70;50;70;70;80;90,1,0,energy,"bolt from the sky, energy, third shape"
+effect,5334,lf_bolt_heavy_a,53,energy,heavy,5,6,10,50;50;90;70;50;80;60;70;80;90,1,1,energy,"heavy bolt from the sky, energy, first shape (boss strikes)"
+effect,5335,lf_bolt_heavy_b,71,energy,heavy,5,6,10,50;50;90;70;50;80;60;70;80;90,1,1,energy,"heavy bolt from the sky, energy, second shape (boss strikes)"
+total,5,effects_5331_5335,,,,,,,,,,,this step appends exactly 5 effects at 5331.. after blank effects up to 5330 and no missile; its block ends at 5350

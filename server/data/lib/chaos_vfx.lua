@@ -183,9 +183,19 @@ local function areaSwap(name)
 	return ChaosAreaFx and ChaosAreaFx.swap(name) or name
 end
 
+-- O614: the bolt from the sky (lightning_strike, 458) is the code-drawn bolt on client pair 73 (data/lib/chaos_lightning_fx.lua,
+-- loaded on the first call; gate off or `raw`: the name as asked)
+local function skySwap(name)
+	if ChaosLightningFx == nil then
+		ChaosLightningFx = false
+		pcall(dofile, "data/lib/chaos_lightning_fx.lua")
+	end
+	return ChaosLightningFx and ChaosLightningFx.swap(name) or name
+end
+
 function Vfx(pos, name, raw)
 	if not raw then
-		name = areaSwap(name)
+		name = skySwap(areaSwap(name))
 	end
 	local e = ChaosVfx[name]
 	if not e or not pos then
