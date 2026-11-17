@@ -226,6 +226,7 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_outfits.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_vfx_test.py  # status layer and kill overlays of pair 73 (O597)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_vfx.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/build_pair73_test.py  # pair 73 in one command (O612): step order, dry run, fake runner
           # the twelve fun costumes, the new Dusk Moth and the round Rune Seal ring of pair 72 (O566; PixelLab art of ours, committed as sheets):
           # table, sums and sheets agree, the ring is drawn by script, placement, build / live on a synthetic pair (the live pair step
           # comes with the push of pair 72 to windows-assets)

@@ -7200,3 +7200,87 @@ Two purchased packs (docs/CREDITS.md) join pair 73 as one step of their own. **N
   sources by digest, padding, fixed ids, refusals, the same bytes twice, `live` and a changed pixel, the generated Lua and tags.
 - **Not done.** Pair 73 is not built for release and nothing was pushed to the assets branch. No client was run: the widget
   placement, the option row and the overlays were never seen in a game window. Previews were made offline (never committed).
+
+## Pair 73 build (O612, `tools/sprites/build_pair73.py`; rehearsal 2026-11-17)
+One command builds pair 73 from pair 72. **Rehearsal only: nothing shipped, `PAIR_ASSETS` stays 72, no table of the repository changed.**
+The real build waits for the owner's wings choice. O597 (status effects) is not merged and is not a step.
+
+- **Command.** `python3 -I client/tools/sprites/build_pair73.py P72_DIR OUT_DIR --creature-src DIR --spell-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...] [--wings-src DIR]`.
+  `--dry-run` only checks the inputs. `--work DIR` names the work folder (default `OUT_DIR.work`; use a RAM disk). `--any-base` takes a rebuilt pair 72.
+  `--wings-src DIR`: the ten painted wings of O594 come from DIR. Without it all 121 wings are drawn by code.
+- **Order** (the table `STEPS`; `order_problems` refuses any order a tool would refuse):
+
+  | step | item | tool | what it needs in the input | after it |
+  |---|---|---|---|---|
+  | 1 `centre` | O585 | `gen_outfit_centre.py apply` | the wings looks as pair 72 has them | 3,526 outfits, 4,742 effects |
+  | 2 `wings` | O583 / O594 | `gen_drawn_wings.py apply` | after `centre` | the same counts |
+  | 3 `creature` | O608 | `gen_creature_outfits.py build` | exactly 3,526 outfits | 3,529 outfits |
+  | 4 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
+  | 5 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
+  | 6 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,330 effects |
+
+- **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `gap`, then `area`.
+  `gap` pads 4745..5189 (445 blanks). `area` pads 5238..5299 (62 blanks). The block 5143..5189 of O597 stays blank.
+  If O597 joins later it fills its ids in place (`import_fx_art.py` replace), or it runs between `spell` and `gap`.
+  No tool refused this order. No tool was changed.
+- **Why `centre` runs before `wings`.** The centre table lists the wings looks with their pair 72 displacement. The drawn wings drop that flag.
+  So `gen_outfit_centre.py check` is true only before the wings. After them the script holds the 169 moved looks to their rows itself.
+- **Centre table.** It is of pair 71. Pair 72 has 16 more looks. The script measures pair 72 first (2 minutes) and stops when a committed row changed.
+  Measured: the 2,775 rows are the same, 16 new rows 3511..3526, all `report` (kind `other`). It applies and checks with the measured table.
+  The table lands in `OUT_DIR/build/outfit_centre.csv`. Commit it at the real build.
+- **Each step.** Build into the work folder. The step's own `live` or `check`. The counts of the plan. Then the input copy is deleted.
+  At most two pairs lie in the work folder. `P72_DIR` is never changed. The `strips/` folder a step writes is deleted.
+- **Final pass.** Every `live` again on the last pair, plus `gen_fun_costumes.py live` and `gen_ki_auras.py live`.
+  Then `check_pair.py --old P72 --new-only --allow-changed LIST`: only the things the tables name may differ from pair 72.
+  The log with every md5 is `OUT_DIR/build/pair73_build.txt`.
+- **Dry run.** Pair 72 files, counts and dat md5 (`client_pair.py`). Every picture a table names, by file digest, in its source folder.
+  The ten wings sheets by sha256. Room for two pairs. The step order. It decodes no picture. It does not check the packs' json tables.
+- **Rehearsal** on a RAM disk, pair 72 rebuilt from pair 71 (dat dd4b6ac4165fb810d1c9d8fd26b8c080, the live one). About 6 minutes. Run twice: the same md5s.
+
+  | step | seconds | dat md5 | spr md5 |
+  |---|---|---|---|
+  | centre | 21 | 8d48f09c4204f492447b32e87953baa3 | c2d780ca4af3a61345b6ea0548e58245 |
+  | wings (ten painted rows) | 154 | 087d72fde78601f6dd615201e43766d5 | 32f172d99511f26920a4959fb46bfec5 |
+  | creature | 12 | 23695ea3bcb04e096b722eb131844309 | c64defc2d1d802246808226a9583354c |
+  | spell | 7 | ffd990e0b6ee6191712927614dedf30f | 8b1c3095a6ed88416d8349700f6c83ae |
+  | gap | 9 | 2ca564db382a3cdfdcbe90ff6a5d9cda | 1cbfc086681c249a4528954d2b1f9bcc |
+  | area | 24 | 3b8e7cdb6bbed615d04eeb2955b129e1 | fa32d71e75c80c53b0c05665d6b0b2eb |
+
+  Result: 44,559 items, 3,529 outfits, 5,330 effects, 253 missiles, 1,049,978 sprites. Dat 9,429,461 bytes, spr 1,217,243,369 bytes.
+  Against pair 72: 290 outfits, 39 effects and missile 46 changed in place. 3 outfits and 588 effects are new (507 of them blank). Nothing else differs.
+  **These md5s are not pair 73.** They change with the owner's wings choice. The files were deleted.
+- **Cross checks on the result** (the steps of the CI job "Live sprite pair" and the pair checks of CLAUDE.md), 28 run:
+  - Pass, 22: `check_pair.py` (0 errors, 5,184 warnings; pair 72 had 11,843), `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`,
+    `gen_minimap_swatches.py build --check`, `fit_pair50_offsets.py --check`, `gen_missile_fx.py build --check`, `gen_hd_overlay.py build --check`,
+    `clean_wing_shadows.py check-clean`, `gen_dungeon_banners.py --check`, `gen_sprite_images.py`, the `live` of the donor effects, the recolour,
+    donor, purchased, costume and Ki aura outfits, the five `live` of pair 73, and `check_content.py --pair` with `PAIR_OUTFITS` 3529.
+  - Fail as expected, 4: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py`, `gen_foot_marks.py` with `--check`.
+    The committed tables hold the dat md5 of pair 72. They pass once regenerated (next point).
+  - Fail as expected, 1: `gen_outfit_centre.py check` on the final pair: 99 wings rows keep a displacement the drawn wings dropped, and 3527..3529 have no row.
+    After the real build measure the final pair again, or leave the table as the record of the step.
+  - Fail as expected, 1: `check_content.py --pair` as committed: `PAIR_OUTFITS` says 3510. The blank list (735) is still right.
+- **Knock-on tables**, regenerated from the rehearsal pair outside the repository. Commit them at the real build, from the real pair:
+
+  | file | entries | changed | new |
+  |---|---|---|---|
+  | `client_chaos_charselect/outfit_anchors.lua` | 2,791 to 2,794 | 290 | 3 |
+  | `client_chaos_infolift/info_lifts.lua` | 2,095 to 2,099 | 119 | 4 |
+  | `client_chaos_wingfit/wing_centres.lua` | 2,783 to 2,786 | 277 | 3 |
+  | `client_chaos_wingfit/head_centres.lua` | 2,662 to 2,665 | 169 | 3 |
+  | `game_cosmeticfx/foot_marks.lua` | 2,790 to 2,793 | 290 | 3 |
+  | unity `Core/InfoLiftData.cs` | 274 to 275 lines | 181 lines | 1 line |
+  | `pair_fixes/outfit_centre.csv` | 2,775 to 2,791 rows | 0 | 16 |
+
+  290 is the 169 moved looks plus the 121 wings. 3 is the boss looks. `server/data/monster/look_idle.csv` does not change.
+  The HD overlay has no row of the 22 looks whose pixels moved. Codex, HowItWorks and HelpSearch json do not change.
+- **At the real build**, after the script: commit the seven tables, `PAIR_OUTFITS` 3529 and `PAIR_NAME` in `check_content.py`,
+  `PAIR_ASSETS` 73 and its dat md5 in `server/tools/client_pair.py`, the `live` steps of the five tools in the job `live-pair`, the md5s here.
+  Then push the pair, ship the client, set the client pair to 73 (admin app: Comandos > "Par do cliente" > Gravar 73).
+- **Open.** The wings choice (ten painted rows or all by code; still weak rows in "Wings from PixelLab"). O597.
+  The 12 fun costumes 3511..3522 are worn by players but count as `other` in the centre table: they are listed, not moved (they stand at y 26 to 30).
+  `wing_centres.lua` measures the mass of the wings art. It is only the fallback for a client without base patch 0204.
+  Nothing was seen in a client.
+- **Preview** (never committed): `pair73_tour.mp4`, 39 s, read from the built pair: four moved class looks with drawn wings,
+  the three bosses walking and idle in four directions, the four long beam families, two area bursts, two gap effects.
+- **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and seven refused orders, the needs held to the tools' own constants,
+  flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
