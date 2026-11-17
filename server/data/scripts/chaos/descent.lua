@@ -1107,7 +1107,9 @@ local function rewardPlayer(run, pe, cleared, player)
 				uniqueId = u.id
 				lines[#lines + 1] = u.name
 				items[#items + 1] = {name = u.name, count = 1, unique = true}
-				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s carried %s out of the Ember Descent!", player:getName(), u.name)
+				if not Chaos.isTester(player) then -- a tester's find is never announced (O595)
+					Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s carried %s out of the Ember Descent!", player:getName(), u.name)
+				end
 			end
 		end
 		-- Conquest Tokens (conquest.lua) by the depth reached, more for a full clear
@@ -1138,7 +1140,7 @@ local function rewardPlayer(run, pe, cleared, player)
 			row.week, row.weekBest = week, 0
 		end
 		row.weekBest = math.max(row.weekBest, depth)
-		if ChaosLeaderboard and ChaosLeaderboard.record then
+		if ChaosLeaderboard and ChaosLeaderboard.record and not (player and Chaos.isTester(player)) then
 			ChaosLeaderboard.record(cfg.board, player or {guid = pe.guid, name = pe.name}, depth, "max")
 		end
 	end
@@ -1362,6 +1364,12 @@ function X.start(player, weekly)
 	local running = 0
 	for _ in pairs(X.runs) do
 		running = running + 1
+	end
+	if ChaosTesters and ChaosTesters.soloRefusal then -- testers beside the players (O595): never mixed, the halls kept for the players
+		local why = ChaosTesters.soloRefusal(group, (cfg.limits.maxRuns or 8) - running, cfg.tester.reserve)
+		if why then
+			return false, why
+		end
 	end
 	local slot, L
 	if not (IL and IL.capped("descent", running, cfg.limits)) then
@@ -1898,6 +1906,9 @@ end})
 
 if ChaosTitles and ChaosTitles.register then
 	ChaosTitles.register("descent", function(player)
+		if Chaos.isTester(player) then
+			return nil -- no title of a tester bot (O595)
+		end
 		local row = X.rows[player:getGuid()]
 		if not row then
 			return nil
@@ -1908,6 +1919,93 @@ if ChaosTitles and ChaosTitles.register then
 		end
 		return list
 	end)
+end
+
+-- ======================================================================== what a person sees (the tester bots, O595)
+-- What a person sees of the Descent, for the tester bots' `!tester descent` (tools/tester_helper.lua checks that the asker is a tester):
+-- outside, the level, the protection zone, how a run would be paid (free or a sigil) and the halls free; inside, the room, its kind, the
+-- state, a boon choice waiting, the monsters left, the clock, who is in it and `guide` (ChaosDescentCore.guide). Reads only.
+function X.probe(player)
+	local cfg = C()
+	local pos = player:getPosition()
+	local function plain(p)
+		return p and {x = p.x, y = p.y, z = p.z} or nil
+	end
+	local running = 0
+	for _ in pairs(X.runs) do
+		running = running + 1
+	end
+	local fs = DC.freeState(cfg, X.rowOf(player:getGuid()), os.time())
+	local pay, payWhy = DC.payment(fs, false, #X.sigils(player))
+	local out = {level = player:getLevel(), minLevel = cfg.minLevel, pos = plain(pos), pz = inProtectionZone(player), inside = false,
+		pay = pay, payWhy = payWhy, sigils = #X.sigils(player), free = (cfg.limits.maxRuns or 8) - running, reserve = cfg.tester.reserve,
+		bank = player.getBankBalance and player:getBankBalance() or nil, fight = inCombat(player) and true or false}
+	local run = X.runOf[player:getId()]
+	local pe = run and run.players[player:getId()]
+	if not run or not pe or run.ended then
+		return out
+	end
+	out.inside = true
+	local nearest, nd, boss = nil, nil, nil
+	local mons = 0
+	for mid, r in pairs(X.monsterRun) do
+		if r == run and run.monsters[mid] then
+			local m = Monster(mid)
+			local at = m and m:getPosition()
+			if at then
+				mons = mons + 1
+				local isBoss = mid == run.bossId
+				if isBoss then
+					boss = {pos = plain(at), hp = math.floor(m:getHealth() * 100 / math.max(1, m:getMaxHealth()))}
+				end
+				if at.z == pos.z then
+					local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+					if not nd or d < nd or (d == nd and isBoss) then
+						nearest, nd = {pos = plain(at), boss = isBoss}, d
+					end
+				end
+			end
+		end
+	end
+	local members, testers = 0, 0
+	for pid in pairs(run.players) do
+		members = members + 1
+		local p = Player(pid)
+		if p and Chaos.isTester(p) then
+			testers = testers + 1
+		end
+	end
+	local room = run.plan and run.plan.rooms[run.idx]
+	local offer = pe.offer and {id = pe.offer.id, cards = #pe.offer.cards, curse = pe.offer.curse and true or false,
+		left = math.max(0, pe.offer.until_ - os.time())} or nil
+	out.run = {id = run.id, slot = run.slot, room = run.idx, rooms = run.plan and run.plan.count, kind = room and room.type, state = run.state,
+		depth = run.depth, wave = run.wave, waves = run.waves, monsters = mons, alive = run.alive, left = math.max(0, run.deadline - os.time()),
+		weekly = run.weekly and true or false, players = members, testers = testers, embers = pe.st.embers, offer = offer,
+		ready = run.ready[player:getId()] and true or false, boss = boss}
+	out.guide = DC.guide({inRun = true, state = run.state, offer = offer, ready = out.run.ready, pos = out.pos, monster = nearest, reach = 5})
+	return out
+end
+
+-- TEST ONLY (`!tester descent close`): the asker leaves as by the Leave button: the rewards of the depth reached, out where it entered. A run
+-- of other characters goes on; the hall is cleaned when the last one is out
+function X.testerClose(player)
+	local run = X.runOf[player:getId()]
+	if not run or run.ended then
+		return false
+	end
+	removePlayer(run, player:getId(), "left")
+	return true
+end
+
+-- TEST ONLY (`!tester descent sigil`): an Ember Sigil for a tester whose free run of the day is used (the bots cannot forge one: the shards
+-- and the gold would have to be earned). Into the backpack, else the inbox
+function X.testerSigil(player)
+	local item = X.makeSigil()
+	if not item then
+		return false
+	end
+	giveEx(player, item)
+	return true
 end
 
 -- ======================================================================== the city portal

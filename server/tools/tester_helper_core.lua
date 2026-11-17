@@ -37,6 +37,12 @@
 --   H.siegeAnswer(probe, extra)        O592: the answer of `siege`: ChaosSiege.probe of the tester cut down to what the bot reads
 --   H.parseGuildBoss(arg)              O592: "guildboss [state | path | hall | close]" -> the word (state when empty), or nil and the usage
 --   H.guildBossAnswer(probe, extra)    O592: the answer of `guildboss`: ChaosGuildBoss.probe of the tester cut down to what the bot reads
+--   H.parseTower(arg)                  O595: "tower [state | path | close]" -> the word (state when empty), or nil and the usage
+--   H.towerAnswer(probe, extra)        O595: the answer of `tower`: ChaosTowerRun.probe of the tester cut down to what the bot reads
+--   H.parseTrial(arg)                  O595: "trial [state | path | close]" -> the word (state when empty), or nil and the usage
+--   H.trialAnswer(probe, extra)        O595: the answer of `trial`: ChaosTrials.probe of the tester cut down to what the bot reads
+--   H.parseDescent(arg)                O595: "descent [state | path | close | sigil]" -> the word, or nil and the usage
+--   H.descentAnswer(probe, extra)      O595: the answer of `descent`: ChaosDescent.probe of the tester cut down to what the bot reads
 --   H.parseRift(arg)                   O592: "rift [state | key | path | close]" -> {what, tier?}, or nil and the usage
 --   H.riftAnswer(probe, extra)         O592: the answer of `rift`: ChaosRift.probe of the tester cut down to what the bot reads
 --   H.parsePath(arg)                   O589: "path <kind> [N]" / "path npc <name>" / "path pos X Y Z" -> the destination, or nil and the usage
@@ -51,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -385,6 +391,105 @@ function H.riftAnswer(probe, extra)
 		local reach = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
 		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
 	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester tower [state | path | close] and !tester descent [state | path | close | sigil] (O595): the Infinity Tower and the Ember Descent as a
+-- person sees them (the level rule, how a run is paid, the halls free, inside the floor or room, the monsters, the clock, who is in the run
+-- and the guide), the path on foot to the guide's goal, the close of the bot's own run; `sigil` gives an Ember Sigil when the day's free
+-- descent is used. The window's requests (enter, start, pick, ready, skip) are the bot's own
+local function parseSolo(arg, system, words)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if not (what and words[what]) then
+		return nil, "usage: " .. system .. " [state | path | close" .. (words.sigil and " | sigil" or "") .. "]"
+	end
+	return what
+end
+
+function H.parseTower(arg)
+	return parseSolo(arg, "tower", {state = true, path = true, close = true})
+end
+
+function H.parseDescent(arg)
+	return parseSolo(arg, "descent", {state = true, path = true, close = true, sigil = true})
+end
+
+function H.parseTrial(arg)
+	return parseSolo(arg, "trial", {state = true, path = true, close = true})
+end
+
+local function soloGuide(g)
+	if type(g) ~= "table" then
+		return nil
+	end
+	local reach = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
+	return {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area, skip = g.skip,
+		offer = g.offer, card = g.card}
+end
+
+function H.towerAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, pos = xyz(probe.pos), canEnter = probe.canEnter,
+		free = probe.free, reserve = probe.reserve, bank = probe.bank, floorGold = probe.floorGold, inArena = probe.inArena and true or false}
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {slot = r.slot, floor = r.floor, cleared = r.cleared, remaining = r.remaining, total = r.total, monsters = r.monsters,
+			boss = r.boss and true or false, waiting = r.waiting and true or false, nextIn = r.nextIn, left = r.left, floorLeft = r.floorLeft,
+			players = r.players, testers = r.testers, canSkip = r.canSkip and true or false, nextBoss = r.nextBoss and true or false}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+function H.trialAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, pos = xyz(probe.pos), pz = probe.pz and true or false,
+		fight = probe.fight and true or false, free = probe.free, reserve = probe.reserve, bank = probe.bank, family = probe.family,
+		familyName = probe.familyName and tostring(probe.familyName):sub(1, 40) or nil, cleared = probe.cleared, tier = probe.tier, maxTier = probe.maxTier,
+		problem = probe.problem and tostring(probe.problem):sub(1, 90) or nil, puzzle = probe.puzzle and true or nil}
+	if type(probe.kinds) == "table" then
+		out.kinds = {}
+		for i = 1, math.min(#probe.kinds, 12) do
+			out.kinds[#out.kinds + 1] = tostring(probe.kinds[i]):sub(1, 12)
+		end
+	end
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {tier = r.tier, phase = r.phase, stage = r.stage, stageIdx = r.stageIdx, stages = r.stages, killed = r.killed, total = r.total,
+			lives = r.lives, livesMax = r.livesMax, left = r.left, monsters = r.monsters, boss = r.boss, bossHp = r.bossHp, bossPos = xyz(r.bossPos),
+			spell = r.spell and true or false}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+function H.descentAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, pos = xyz(probe.pos), pz = probe.pz and true or false,
+		pay = probe.pay, payWhy = probe.payWhy and tostring(probe.payWhy):sub(1, 90) or nil, sigils = probe.sigils, free = probe.free,
+		reserve = probe.reserve, bank = probe.bank, fight = probe.fight and true or false}
+	local r = probe.run
+	if type(r) == "table" then
+		local offer = type(r.offer) == "table" and {id = r.offer.id, cards = r.offer.cards, curse = r.offer.curse and true or false, left = r.offer.left} or nil
+		local boss = type(r.boss) == "table" and {pos = xyz(r.boss.pos), hp = r.boss.hp} or nil
+		out.run = {id = r.id, slot = r.slot, room = r.room, rooms = r.rooms, kind = r.kind, state = r.state, depth = r.depth, wave = r.wave, waves = r.waves,
+			monsters = r.monsters, alive = r.alive, left = r.left, weekly = r.weekly and true or false, players = r.players, testers = r.testers,
+			embers = r.embers, offer = offer, ready = r.ready and true or false, boss = boss}
+	end
+	out.guide = soloGuide(probe.guide)
 	for k, v in pairs(extra or {}) do
 		out[k] = v
 	end

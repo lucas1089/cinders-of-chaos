@@ -455,6 +455,30 @@ do
 	check(source("data/scripts/chaos/party_finder_core.lua"):find("L.tester and true or false", 1, true), "party_finder_core.lua: a listing has a side")
 end
 
+-- ------------------------------------------------------------------ solo content a tester plays beside the players (O595)
+do
+	local P = player({cid = 91, guid = 910, name = "Ana"})
+	local T1 = player({cid = 92, guid = 911, name = "Tester Abc", storage = T})
+	local T2 = player({cid = 93, guid = 912, name = "Tester Abd", storage = T})
+	eq(K.soloRefusal({false}, 1, 4), nil, "a player is never kept waiting by the reserve")
+	eq(K.soloRefusal({true}, 16, 4), nil, "a tester with the halls free: in")
+	eq(K.soloRefusal({true}, 5, 4), nil, "a tester may take the fifth-last hall: 4 stay free")
+	eq(K.soloRefusal({true}, 4, 4), "reserve", "a tester may not take a hall when fewer than 4 would stay free")
+	eq(K.soloRefusal({true, true}, 2, 2), "reserve", "a group of testers is one hall")
+	eq(K.soloRefusal({true, false}, 16, 4), "mixed", "a tester and a player are never one group")
+	eq(K.soloRefusal({true, "?"}, 16, 4), "mixed", "an unknown side is mixed")
+	check(K.CLOSED_TEXT.reserve:find("kept for the players", 1, true) ~= nil, "the reserve text")
+	eq(ChaosTesters.soloRefusal({P}, 0, 4), nil, "players: no refusal and no query")
+	eq(ChaosTesters.soloRefusal({T1}, 16, 4), nil, "a tester alone with halls free")
+	eq(ChaosTesters.soloRefusal({T1, T2}, 16, 4), nil, "two testers")
+	eq(ChaosTesters.soloRefusal({T1}, 3, 4), K.CLOSED_TEXT.reserve, "a tester when the halls are the players'")
+	eq(ChaosTesters.soloRefusal({T1, P}, 16, 4), K.CLOSED_TEXT.mixed, "a tester with a player")
+	eq(ChaosTesters.soloRefusal({P, T1}, 16, 4), K.CLOSED_TEXT.mixed, "a player with a tester")
+	eq(ChaosTesters.soloRefusal(nil, 16, 4), nil, "nobody")
+	eq(source("data/scripts/chaos/i18n_strings.lua"):find("The testers wait: the halls are kept for the players.", 1, true) ~= nil, true,
+		"the reserve text has pt-BR")
+end
+
 print = origPrint
 print(string.format("testers_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

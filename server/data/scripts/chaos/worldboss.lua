@@ -1578,6 +1578,12 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	local c = C()
+	-- the event is the players' (O595): one arena for everyone, damage-share rewards, a role title for the top 3 of each category. A tester
+	-- would take a share and a place from a player, so no tester enters it; the tester bots have no side of their own here yet
+	if Chaos.isTester and Chaos.isTester(player) then
+		pushBack(player, fromPosition, "The world boss is the players' event: the testers do not enter it.")
+		return true
+	end
 	if not open() or not state.portalsOpen then
 		pushBack(player, fromPosition, "The world boss portal is closed.")
 		return true
@@ -1614,6 +1620,10 @@ function toArena.onStepIn(creature, item, position, fromPosition)
 	end
 	if not open() then
 		pushBack(player, fromPosition, "There is no fight in the arena right now.")
+		return true
+	end
+	if Chaos.isTester and Chaos.isTester(player) then -- the lobby is reached by the portal only: a tester is never here, but never in the arena
+		pushBack(player, fromPosition, "The world boss is the players' event: the testers do not enter it.")
 		return true
 	end
 	W.watchPlayer(player)

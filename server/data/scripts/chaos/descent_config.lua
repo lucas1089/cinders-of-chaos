@@ -72,6 +72,9 @@ return {
 	-- timeLimit; at most maxRuns runs at once (8 halls of 19 x 19); a party that finds every hall taken waits in line and
 	-- is told when one frees up. A run ends at once when its last player is out, so no idle grace is needed.
 	limits = {warnAt = {300, 60, 10}, maxRuns = 8, waitlist = true},
+	-- tester bots (O595): a group of testers is refused while fewer than `reserve` of the `limits.maxRuns` halls would stay free; a group of
+	-- a tester and a player is never made
+	tester = {reserve = 2},
 	readySeconds = 90, -- shrine / merchant rooms: after this the party moves on even if not everyone is ready
 
 	-- waves of a combat room: waves = base + floor(depth x perDepth) (at most max); monsters per wave = size.base +

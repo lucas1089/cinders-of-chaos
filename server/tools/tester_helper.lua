@@ -35,6 +35,11 @@
 --     path, and the close of the testers' own run; the walk, the fights, the donation and the summon are the bot's own
 --   * "!tester rift [state | key [tier] | path | close]" (O592): a rift opened and walked like a person's (the key into the backpack where the
 --     bot stands, in a protection zone; what the screen shows inside; the path on foot to the guardian or the nearest pack monster; the close)
+--   * "!tester tower [state | path | close]", "!tester descent [state | path | close | sigil]", "!tester trial [state | path | close]" (O595): the
+--     Infinity Tower, the Ember Descent and the Vocation Trials as a
+--     person sees them (ChaosTowerRun.probe, ChaosDescent.probe, ChaosTrials.probe: the level rule, how a run is paid, the floor or room, the monsters, the guide),
+--     the path on foot to the guide's goal and the close of the bot's own run; `descent sigil` gives an Ember Sigil when the free descent of
+--     the day is used. The window's requests (enter, start, pick a boon, Continue, Next floor now) and the fights are the bot's own
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -67,7 +72,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 15
+HELPER_VERSION = 16
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1256,6 +1261,112 @@ function commands.rift(player, arg)
 		return
 	end
 	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf()}))
+end
+
+-- ---------------------------------------------------------------- O595 the Infinity Tower and the Ember Descent
+-- "!tester tower [state | path | close]": reads ChaosTowerRun.probe; `path` is the engine's path to the guide's goal (the nearest monster of the
+-- floor, within reach of it); `close` is the Leave button without the countdown. Nothing here enters, moves inside or fights.
+function commands.tower(player, arg)
+	local what, usage = H.parseTower(arg)
+	if not what then
+		tell(player, "tower", {err = usage})
+		return
+	end
+	local TR = ChaosTowerRun
+	if not (TR and TR.probe) then
+		tell(player, "tower", {err = "no tower system"})
+		return
+	end
+	if what == "close" then
+		local closed = TR.testerClose and TR.testerClose(player) or false
+		tell(player, "tower", H.towerAnswer(TR.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = TR.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside the tower"
+		end
+		tell(player, "tower", H.towerAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "tower", H.towerAnswer(probe))
+end
+
+-- "!tester trial [state | path | close]": reads ChaosTrials.probe (the family of the vocation, the next tier and its stages, inside the stage, the
+-- kills, the lives, the guardian); `path` and `close` as for the tower (`close` is the Leave button: a failed run with no cooldown)
+function commands.trial(player, arg)
+	local what, usage = H.parseTrial(arg)
+	if not what then
+		tell(player, "trial", {err = usage})
+		return
+	end
+	local TT = ChaosTrials
+	if not (TT and TT.probe) then
+		tell(player, "trial", {err = "no trial system"})
+		return
+	end
+	if what == "close" then
+		local closed = TT.testerClose and TT.testerClose(player) or false
+		tell(player, "trial", H.trialAnswer(TT.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = TT.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a trial"
+		end
+		tell(player, "trial", H.trialAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "trial", H.trialAnswer(probe))
+end
+
+-- "!tester descent [state | path | close | sigil]": reads ChaosDescent.probe; `path` and `close` as for the tower; `sigil` puts an Ember Sigil
+-- into the bag (outside a run only: the bot pays a second run of the day with it, as a player who bought or forged one does)
+function commands.descent(player, arg)
+	local what, usage = H.parseDescent(arg)
+	if not what then
+		tell(player, "descent", {err = usage})
+		return
+	end
+	local D = ChaosDescent
+	if not (D and D.probe) then
+		tell(player, "descent", {err = "no descent system"})
+		return
+	end
+	if what == "close" then
+		local closed = D.testerClose and D.testerClose(player) or false
+		tell(player, "descent", H.descentAnswer(D.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = D.probe(player)
+	if what == "sigil" then
+		if probe.inside then
+			tell(player, "descent", H.descentAnswer(probe, {err = "already inside the descent"}))
+			return
+		end
+		local given = D.testerSigil and D.testerSigil(player) or false
+		tell(player, "descent", H.descentAnswer(D.probe(player), {given = given and true or false, err = (not given) and "the sigil could not be made" or nil}))
+		return
+	end
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside the descent"
+		end
+		tell(player, "descent", H.descentAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "descent", H.descentAnswer(probe))
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest
