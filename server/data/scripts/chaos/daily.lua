@@ -387,7 +387,9 @@ local function claim(player, value)
 		end
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_RED)
 	end
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	if not (ChaosGapFx and ChaosGapFx.on(player, "daily")) then -- O606
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	end
 	sendWindow(player)
 end
 

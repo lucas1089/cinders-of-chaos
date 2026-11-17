@@ -628,18 +628,26 @@ look,idle,phases,frames,how,walk,walk_frames
 2984,no,1,1,none,8,8
 2986,yes,12,9,idle group,0,0
 2988,no,1,1,none,8,8
+2989,no,1,1,none,8,8
+2991,no,1,1,none,8,8
 2997,yes,10,8,idle group,0,0
 2998,yes,8,8,idle group,0,0
 3006,yes,8,8,idle group,0,0
 3009,yes,12,12,animateAlways,12,12
 3012,yes,8,8,idle group,0,0
 3014,yes,8,3,idle group,0,0
+3015,no,1,1,none,8,8
+3016,no,1,1,none,8,8
 3018,yes,8,8,animateAlways,8,8
 3019,yes,12,11,idle group,0,0
 3020,no,1,1,none,8,8
 3021,no,1,1,none,8,8
 3025,no,1,1,none,8,8
+3026,no,1,1,none,8,8
+3032,no,1,1,none,8,8
 3037,yes,8,8,idle group,0,0
+3039,yes,8,7,idle group,0,0
+3040,no,1,1,none,8,8
 3043,yes,8,8,idle group,0,0
 3071,yes,8,8,idle group,0,0
 3076,no,1,1,none,8,8
@@ -647,8 +655,10 @@ look,idle,phases,frames,how,walk,walk_frames
 3090,yes,8,8,idle group,0,0
 3091,yes,8,8,idle group,0,0
 3092,yes,8,8,idle group,0,0
+3100,no,1,1,none,8,8
 3103,yes,8,8,idle group,0,0
 3104,yes,8,8,idle group,0,0
+3127,no,1,1,none,8,8
 3136,no,1,1,none,8,8
 3137,yes,8,8,idle group,0,0
 3138,no,1,1,none,8,8
@@ -661,6 +671,8 @@ look,idle,phases,frames,how,walk,walk_frames
 3182,yes,8,8,animateAlways,8,8
 3183,yes,8,8,idle group,0,0
 3184,yes,8,8,idle group,0,0
+3190,yes,8,8,idle group,0,0
+3193,no,1,1,none,8,8
 3195,yes,8,7,idle group,0,0
 3198,yes,8,8,animateAlways,8,8
 3201,no,1,1,none,8,8
@@ -670,12 +682,14 @@ look,idle,phases,frames,how,walk,walk_frames
 3216,yes,8,8,idle group,0,0
 3217,yes,8,8,idle group,0,0
 3218,yes,8,8,idle group,0,0
+3222,yes,16,16,idle group,0,0
 3224,yes,8,8,idle group,0,0
 3225,yes,8,8,idle group,0,0
 3227,yes,4,4,idle group,0,0
 3232,yes,8,8,idle group,0,0
 3234,yes,8,8,idle group,0,0
 3237,yes,24,24,idle group,0,0
+3240,no,9,1,none,9,9
 3258,yes,4,4,animateAlways,4,4
 3260,yes,8,8,idle group,0,0
 3261,yes,8,8,idle group,0,0
@@ -689,12 +703,18 @@ look,idle,phases,frames,how,walk,walk_frames
 3278,yes,8,8,idle group,0,0
 3293,no,1,1,none,8,8
 3294,yes,8,8,idle group,0,0
+3296,yes,8,8,idle group,0,0
+3297,no,1,1,none,8,8
+3298,no,1,1,none,8,8
 3303,yes,8,6,idle group,0,0
 3304,yes,3,3,animateAlways,3,3
 3306,yes,8,8,idle group,0,0
+3309,yes,8,8,idle group,0,0
 3311,yes,16,16,idle group,0,0
 3313,yes,8,8,idle group,0,0
+3315,yes,8,8,idle group,0,0
 3316,yes,8,8,idle group,0,0
+3317,no,1,1,none,8,8
 3321,yes,12,8,idle group,0,0
 3322,yes,12,12,animateAlways,12,12
 3326,yes,6,6,animateAlways,6,6
@@ -703,6 +723,7 @@ look,idle,phases,frames,how,walk,walk_frames
 3333,yes,4,4,idle group,0,0
 3334,yes,4,3,idle group,0,0
 3337,yes,56,39,animateAlways,56,39
+3345,yes,26,22,idle group,0,0
 3349,yes,8,8,idle group,0,0
 3351,yes,12,7,idle group,0,0
 3352,yes,12,12,idle group,0,0
@@ -818,3 +839,6 @@ look,idle,phases,frames,how,walk,walk_frames
 3508,yes,2,2,idle group,0,0
 3509,yes,2,2,idle group,0,0
 3510,yes,2,2,idle group,0,0
+3527,yes,16,12,idle group,0,0
+3528,yes,19,17,idle group,0,0
+3529,yes,12,12,idle group,0,0

@@ -121,15 +121,19 @@ function T.move(h, tiles, ms)
 	return true
 end
 
-function T.draw(h, fn)
+-- art (O606, optional): called with each player near the mark that has the module, when the strike circle of client
+-- pair 73 is on (ChaosGapFx.onModule): the sender draws its 3 x 3 slots for that player, over the floor mark
+function T.draw(h, fn, art)
 	if not h then
 		fn(nil)
 		return
 	end
 	local capableN, legacy = 0, {}
+	local capable = {}
 	for _, p in ipairs(spectatorsOf(h)) do
 		if K.isCapable(T.state, p:getId()) then
 			capableN = capableN + 1
+			capable[#capable + 1] = p
 		else
 			legacy[#legacy + 1] = p
 		end
@@ -140,6 +144,11 @@ function T.draw(h, fn)
 	elseif mode == "some" then
 		for _, p in ipairs(legacy) do
 			fn(p)
+		end
+	end
+	if art and #capable > 0 and ChaosGapFx and ChaosGapFx.onModule() then
+		for _, p in ipairs(capable) do
+			art(p)
 		end
 	end
 end

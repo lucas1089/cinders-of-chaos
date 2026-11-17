@@ -180,15 +180,48 @@ local function effect(name)
 	return name and ChaosVfx and ChaosVfx[name] or nil
 end
 
+-- the effect name that draws `state` on a creature now: on client pair 73 a pack effect may stand in for the aura (O613: the
+-- gravity press for the whirlwind of a slowed creature, data/lib/chaos_area_fx.lua C.status), else the aura of C.auras
+local function auraNow(state)
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, "data/lib/chaos_area_fx.lua")
+	end
+	local A = ChaosAreaFx
+	local alt = A and A.statusName and A.statusName(state) or nil
+	return alt or C.auraFor(state)
+end
+C.auraNow = auraNow
+
 -- the blast for a name a spell sends, when live and the id is known
 function C.swapFor(kind, name)
 	local alt = C.pick(kind, name)
 	return alt and C.live() and effect(alt) and alt or nil
 end
 
+-- O597: while the status layer is live (client pair 73, lib/chaos_status_vfx.lua) a state that has a status there is
+-- handed to it (a mark for `ms`) and this library sends no aura of its own for it; true when it took the state
+local layerTried = false
+local function toLayer(creature, state, ms)
+	if not ChaosStatusVfx and not layerTried and dofile then
+		layerTried = true
+		pcall(dofile, "data/lib/chaos_status_vfx.lua")
+	end
+	local L = ChaosStatusVfx
+	if not (L and L.live and L.live() and L.states[state]) or not creature then
+		return false
+	end
+	local ok, id = pcall(creature.getId, creature)
+	return ok and id ~= nil and L.markState(id, state, ms, now()) or false
+end
+C.toLayer = toLayer
+
 -- the aura of `state` on `creature` once (throttled to its own length); true when sent
 function C.show(creature, state)
-	local name = C.auraFor(state)
+	if toLayer(creature, state, 1000 + (ChaosStatusVfx and ChaosStatusVfx.showSlackMs or 0)) then
+		return true
+	end
+	local name = auraNow(state)
 	if not name or not creature or not C.live() then
 		return false
 	end
@@ -205,10 +238,13 @@ end
 
 -- the aura of `state` on `creature`, sent again every time it ends, for `ms`; one chain per creature and state
 function C.hold(creature, state, ms)
+	if toLayer(creature, state, math.max(tonumber(ms) or 0, 1000)) then
+		return true
+	end
 	if not C.show(creature, state) and not C.live() then
 		return false
 	end
-	local e = effect(C.auraFor(state))
+	local e = effect(auraNow(state))
 	if not e or not addEvent or not ms or ms <= e.ms then
 		return true
 	end
@@ -281,8 +317,13 @@ function C.engineRows(G, vfx, missiles, fxMissiles)
 			hits[#hits + 1] = {kind, key, e.id, e.dx, e.dy}
 		end
 	end
+	local layer = ChaosStatusVfx
+	local layerOn = layer and layer.live and layer.live()
 	for ctype, state in pairs(C.conditionTicks) do
-		add(2, G[ctype], C.auras[state])
+		-- O597: the status layer shows these states itself; the tick keeps the stock sparks
+		if not (layerOn and layer.states[state]) then
+			add(2, G[ctype], C.auras[state])
+		end
 	end
 	for race, name in pairs(C.raceHits) do
 		add(0, race, name)
@@ -321,6 +362,7 @@ function C.applyEngine()
 	if not C.live() then
 		return 0
 	end
+	toLayer(nil, "", 0) -- loads the status layer (O597) before the rows are made
 	if not ChaosFxMissile and dofile then
 		pcall(dofile, "data/lib/chaos_fx.lua")
 	end

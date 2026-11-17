@@ -172,7 +172,10 @@ namespace Chaos.Core.Tests
             return File.Exists(f) ? File.ReadAllText(f) : null;
         }
 
-        static readonly string[] NotMirrored = { "craft_orbs", "craft_whetstone", "craft_sockets", "craft_gems", "craft_supports", "craft_charms", "craft_cards" };
+        // the crafting checks (O584) and the solo walks of O592 / O595 run in the Python bots only (Unity work on hold)
+        static readonly string[] NotMirrored = { "craft_orbs", "craft_whetstone", "craft_sockets", "craft_gems", "craft_supports", "craft_charms", "craft_cards",
+            "rift_walk", "tower_walk", "descent_walk", "trial_walk", "hideout",
+            "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk" };
 
         static void Coverage(Action<bool, string> check)
         {

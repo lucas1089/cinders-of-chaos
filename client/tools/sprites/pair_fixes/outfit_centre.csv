@@ -1318,7 +1318,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 1558,outfit,3x2,report,-32,0,-32,0,0,0,16.5,14.5,16.5,14.5,2,2,not 1x1 or 2x2
 1559,outfit,3x3,report,-32,0,-32,0,0,0,15.5,18,15.5,18,3,0,not 1x1 or 2x2
 1560,outfit,3x2,report,-32,0,-32,0,0,0,16,18,16,18,2,0,not 1x1 or 2x2
-1561,mount,3x4,report,-32,-32,-32,-32,0,0,16,24.5,16,24.5,4,14,not a body
+1561,other,3x4,report,-32,-32,-32,-32,0,0,16,24.5,16,24.5,4,14,not a body
 2000,other,2x2,report,0,0,0,0,0,0,18,22,18,22,6,4,not a player look
 2001,other,2x2,report,0,0,0,0,0,0,17,23,17,23,4,3,not a player look
 2002,other,2x2,report,0,0,0,0,0,0,15.5,21,15.5,21,4,4,not a player look
@@ -1424,10 +1424,10 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 2129,other,3x3,report,0,0,0,0,0,0,-9.5,21.5,-9.5,21.5,13,5,not a player look
 2130,other,2x2,report,0,0,0,0,0,0,6,26,6,26,6,2,not a player look
 2131,other,4x4,report,0,0,0,0,0,0,-12.5,0,-12.5,0,8,8,not a player look
-2132,mount,3x4,report,-32,-32,-32,-32,0,0,16,13.5,16,13.5,2,17,not a body
-2133,mount,3x4,report,-32,-32,-32,-32,0,0,16,23.5,16,23.5,8,7,not a body
-2134,mount,5x4,report,-64,-32,-64,-32,0,0,16,28,16,28,0,14,not a body
-2135,mount,3x5,report,-32,-32,-32,-32,0,0,16,21.5,16,21.5,0,14,not a body
+2132,other,3x4,report,-32,-32,-32,-32,0,0,16,13.5,16,13.5,2,17,not a body
+2133,other,3x4,report,-32,-32,-32,-32,0,0,16,23.5,16,23.5,8,7,not a body
+2134,other,5x4,report,-64,-32,-64,-32,0,0,16,28,16,28,0,14,not a body
+2135,other,3x5,report,-32,-32,-32,-32,0,0,16,21.5,16,21.5,0,14,not a body
 2136,aura,3x3,report,20,11,20,11,0,0,-8,11,-8,11,0,0,not a body
 2137,aura,3x3,report,30,24,30,24,0,0,-12,5,-12,5,0,0,not a body
 2138,aura,3x3,report,28,21,28,21,0,0,-13,5,-13,5,0,0,not a body
@@ -2252,9 +2252,9 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 2986,monster,2x2,report,0,0,0,0,0,0,14,22.5,14,22.5,8,2,monster look: reported apart
 2987,other,1x1,report,8,8,8,8,0,0,16,20.5,16,20.5,3,2,not a player look
 2988,monster,2x2,report,0,0,0,0,0,0,16,23.5,16,23.5,1,1,monster look: reported apart
-2989,other,2x2,report,8,8,8,8,0,0,16,20,16,20,3,1,not a player look
+2989,monster,2x2,report,8,8,8,8,0,0,16,20,16,20,3,1,not a player look
 2990,other,2x2,report,0,0,0,0,0,0,9,20,9,20,6,5,not a player look
-2991,other,2x2,report,0,0,0,0,0,0,15.5,22,15.5,22,3,2,not a player look
+2991,monster,2x2,report,0,0,0,0,0,0,15.5,22,15.5,22,3,2,not a player look
 2992,other,2x2,report,0,0,0,0,0,0,13,26,13,26,23,10,not a player look
 2993,other,2x2,report,0,0,0,0,0,0,-4.5,20.5,-4.5,20.5,11,7,not a player look
 2994,other,2x2,report,0,0,0,0,0,0,14,24.5,14,24.5,0,4,not a player look
@@ -2262,7 +2262,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 2996,other,2x2,report,0,0,0,0,0,0,7,23.5,7,23.5,6,5,not a player look
 2997,monster,2x2,report,0,0,0,0,0,0,7,22.5,7,22.5,2,3,monster look: reported apart
 2998,monster,2x2,report,0,0,0,0,0,0,22,27,22,27,6,2,monster look: reported apart
-2999,other,2x2,report,0,0,0,0,0,0,10,24.5,10,24.5,7,2,not a player look
+2999,mount,2x2,report,0,0,0,0,0,0,10,24.5,10,24.5,7,2,not a player look
 3000,other,2x2,report,0,0,0,0,0,0,13.5,23.5,13.5,23.5,8,5,not a player look
 3001,other,2x2,report,0,0,0,0,0,0,16.5,27.5,16.5,27.5,4,2,not a player look
 3002,other,2x2,report,0,0,0,0,0,0,8,24.5,8,24.5,7,1,not a player look
@@ -2278,8 +2278,8 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3012,monster,1x1,report,0,0,0,0,0,0,14.5,19.5,14.5,19.5,7,3,monster look: reported apart
 3013,other,2x2,report,0,0,0,0,0,0,7,23,7,23,1,2,not a player look
 3014,monster,2x2,report,0,0,0,0,0,0,11,25,11,25,9,6,monster look: reported apart
-3015,other,1x1,report,0,0,0,0,0,0,25,29,25,29,1,0,not a player look
-3016,other,1x1,report,0,0,0,0,0,0,25,29,25,29,1,0,not a player look
+3015,monster,1x1,report,0,0,0,0,0,0,25,29,25,29,1,0,not a player look
+3016,monster,1x1,report,0,0,0,0,0,0,25,29,25,29,1,0,not a player look
 3017,other,2x2,report,0,0,0,0,0,0,7,24.5,7,24.5,15,2,not a player look
 3018,monster,2x2,report,0,0,0,0,0,0,14,27.5,14,27.5,7,4,monster look: reported apart
 3019,monster,2x2,report,0,0,0,0,0,0,19,26.5,19,26.5,5,1,monster look: reported apart
@@ -2289,21 +2289,21 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3023,other,2x2,report,0,0,0,0,0,0,12.5,24.5,12.5,24.5,22,3,not a player look
 3024,other,2x2,report,0,0,0,0,0,0,5,22,5,22,3,2,not a player look
 3025,monster,2x2,report,0,0,0,0,0,0,10,24,10,24,5,4,monster look: reported apart
-3026,other,2x2,report,0,0,0,0,0,0,17.5,25,17.5,25,8,2,not a player look
+3026,monster,2x2,report,0,0,0,0,0,0,17.5,25,17.5,25,8,2,not a player look
 3027,other,2x2,report,0,0,0,0,0,0,1.5,23,1.5,23,11,6,not a player look
 3028,other,2x2,report,0,0,0,0,0,0,11,26,11,26,6,1,not a player look
 3029,other,2x2,report,0,0,0,0,0,0,11,26,11,26,6,1,not a player look
 3030,other,2x2,report,0,0,0,0,0,0,11,26,11,26,6,1,not a player look
 3031,other,2x2,report,0,0,0,0,0,0,21.5,28,21.5,28,5,0,not a player look
-3032,other,2x2,report,0,0,0,0,0,0,0.5,24,0.5,24,9,4,not a player look
+3032,monster,2x2,report,0,0,0,0,0,0,0.5,24,0.5,24,9,4,not a player look
 3033,other,2x2,report,0,0,0,0,0,0,10,24.5,10,24.5,7,2,not a player look
 3034,other,2x2,report,0,0,0,0,0,0,5,25,5,25,5,3,not a player look
 3035,other,2x2,report,0,0,0,0,0,0,13.5,26.5,13.5,26.5,5,3,not a player look
 3036,other,2x2,report,0,0,0,0,0,0,13.5,26,13.5,26,5,3,not a player look
 3037,monster,2x2,report,0,0,0,0,0,0,10,22.5,10,22.5,13,2,monster look: reported apart
 3038,other,2x2,report,0,0,0,0,0,0,10,22.5,10,22.5,13,2,not a player look
-3039,other,2x2,report,0,0,0,0,0,0,10,22.5,10,22.5,13,2,not a player look
-3040,other,2x2,report,0,0,0,0,0,0,12,26,12,26,10,2,not a player look
+3039,monster,2x2,report,0,0,0,0,0,0,10,22.5,10,22.5,13,2,not a player look
+3040,monster,2x2,report,0,0,0,0,0,0,12,26,12,26,10,2,not a player look
 3041,other,2x2,report,0,0,0,0,0,0,12,26,12,26,10,2,not a player look
 3042,other,2x2,report,0,0,0,0,0,0,12,26,12,26,10,2,not a player look
 3043,monster,2x2,report,0,0,0,0,0,0,6.5,24,6.5,24,16,7,monster look: reported apart
@@ -2359,11 +2359,11 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3093,other,2x2,report,0,0,0,0,0,0,11.5,25,11.5,25,11,1,not a player look
 3094,other,2x2,report,0,0,0,0,0,0,11.5,25,11.5,25,11,1,not a player look
 3095,other,2x2,report,0,0,0,0,0,0,11.5,25,11.5,25,11,1,not a player look
-3096,other,2x2,report,0,0,0,0,0,0,11.5,25.5,11.5,25.5,7,2,not a player look
+3096,mount,2x2,report,0,0,0,0,0,0,11.5,25.5,11.5,25.5,7,2,not a player look
 3097,other,2x2,report,0,0,0,0,0,0,11.5,25.5,11.5,25.5,7,2,not a player look
 3098,other,2x2,report,0,0,0,0,0,0,11.5,25.5,11.5,25.5,7,2,not a player look
 3099,other,2x2,report,0,0,0,0,0,0,15.5,22,15.5,22,3,2,not a player look
-3100,other,2x2,report,0,0,0,0,0,0,6.5,20,6.5,20,6,2,not a player look
+3100,monster,2x2,report,0,0,0,0,0,0,6.5,20,6.5,20,6,2,not a player look
 3101,other,2x2,report,0,0,0,0,0,0,19,25,19,25,5,4,not a player look
 3102,other,2x2,report,0,0,0,0,0,0,12,25,12,25,10,1,not a player look
 3103,monster,2x2,report,0,0,0,0,0,0,8,24.5,8,24.5,9,5,monster look: reported apart
@@ -2384,13 +2384,13 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3118,other,2x2,report,0,0,0,0,0,0,3.5,22,3.5,22,12,4,not a player look
 3119,other,2x2,report,0,0,0,0,0,0,6.5,23,6.5,23,15,4,not a player look
 3120,other,2x2,report,0,0,0,0,0,0,14,25,14,25,6,3,not a player look
-3121,other,2x2,report,0,0,0,0,0,0,11.5,26,11.5,26,14,2,not a player look
+3121,mount,2x2,report,0,0,0,0,0,0,11.5,26,11.5,26,14,2,not a player look
 3122,other,2x2,report,0,0,0,0,0,0,11,25.5,11,25.5,3,1,not a player look
 3123,other,2x2,report,0,0,0,0,0,0,11,25.5,11,25.5,3,1,not a player look
 3124,other,2x2,report,0,0,0,0,0,0,11,25.5,11,25.5,3,1,not a player look
 3125,other,2x2,report,0,0,0,0,0,0,15,25,15,25,3,3,not a player look
 3126,other,2x2,report,0,0,0,0,0,0,15,25,15,25,3,3,not a player look
-3127,other,2x2,report,0,0,0,0,0,0,15,25,15,25,3,3,not a player look
+3127,monster,2x2,report,0,0,0,0,0,0,15,25,15,25,3,3,not a player look
 3128,other,2x2,report,0,0,0,0,0,0,9.5,26,9.5,26,11,1,not a player look
 3129,other,2x2,report,0,0,0,0,0,0,10.5,25.5,10.5,25.5,17,3,not a player look
 3130,other,2x2,report,0,0,0,0,0,0,10,25.5,10,25.5,13,4,not a player look
@@ -2453,10 +2453,10 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3187,other,4x4,report,0,0,0,0,0,0,-10.5,19.5,-10.5,19.5,26,7,not a player look
 3188,other,3x3,report,0,0,0,0,0,0,-2.5,16,-2.5,16,4,3,not a player look
 3189,other,2x2,report,0,0,0,0,0,0,9.5,26,9.5,26,5,3,not a player look
-3190,other,2x2,report,0,0,0,0,0,0,9.5,26,9.5,26,5,3,not a player look
+3190,monster,2x2,report,0,0,0,0,0,0,9.5,26,9.5,26,5,3,not a player look
 3191,other,2x2,report,0,0,0,0,0,0,9.5,26,9.5,26,5,3,not a player look
 3192,other,2x2,report,0,0,0,0,0,0,7.5,26,7.5,26,13,1,not a player look
-3193,other,2x2,report,0,0,0,0,0,0,10.5,26,10.5,26,2,3,not a player look
+3193,monster,2x2,report,0,0,0,0,0,0,10.5,26,10.5,26,2,3,not a player look
 3194,other,2x2,report,0,0,0,0,0,0,10,25.5,10,25.5,5,2,not a player look
 3195,monster,2x2,report,0,0,0,0,0,0,5.5,27,5.5,27,12,2,monster look: reported apart
 3196,other,2x2,report,0,0,0,0,0,0,5.5,27,5.5,27,12,2,not a player look
@@ -2470,7 +2470,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3204,monster,2x2,report,0,0,0,0,0,0,14,26.5,14,26.5,10,1,monster look: reported apart
 3205,other,2x2,report,0,0,0,0,0,0,22,26,22,26,9,5,not a player look
 3206,other,2x2,report,0,0,0,0,0,0,13.5,24.5,13.5,24.5,5,3,not a player look
-3207,other,2x2,report,0,0,0,0,0,0,12,25,12,25,11,3,not a player look
+3207,mount,2x2,report,0,0,0,0,0,0,12,25,12,25,11,3,not a player look
 3208,other,2x2,report,0,0,0,0,0,0,12,25,12,25,11,3,not a player look
 3209,monster,3x3,report,0,0,0,0,0,0,-21.5,-4.5,-21.5,-4.5,5,3,monster look: reported apart
 3210,other,2x2,report,0,0,0,0,0,0,12,26,12,26,11,2,not a player look
@@ -2485,7 +2485,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3219,other,4x4,report,0,0,0,0,0,0,1.5,12.5,1.5,12.5,12,10,not a player look
 3220,other,4x4,report,0,0,0,0,0,0,2,12.5,2,12.5,11,10,not a player look
 3221,other,5x5,report,0,0,0,0,0,0,-19.5,7,-19.5,7,16,7,not a player look
-3222,other,5x5,report,0,0,0,0,0,0,-16.5,7,-16.5,7,16,7,not a player look
+3222,monster,5x5,report,0,0,0,0,0,0,-16.5,7,-16.5,7,16,7,not a player look
 3223,other,5x5,report,0,0,0,0,0,0,-17,6.5,-17,6.5,16,8,not a player look
 3224,monster,2x2,report,0,0,0,0,0,0,14,21,14,21,7,7,monster look: reported apart
 3225,monster,2x2,report,0,0,0,0,0,0,7.5,23,7.5,23,17,2,monster look: reported apart
@@ -2503,7 +2503,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3237,monster,4x4,report,0,0,0,0,0,0,-15,-4.5,-15,-4.5,11,7,monster look: reported apart
 3238,other,4x4,report,0,0,0,0,0,0,-15,-4.5,-15,-4.5,11,7,not a player look
 3239,other,2x2,report,6,6,6,6,0,0,14,17,14,17,9,5,not a player look
-3240,other,2x2,report,0,0,0,0,0,0,18.5,25.5,18.5,25.5,12,3,not a player look
+3240,monster,2x2,report,0,0,0,0,0,0,18.5,25.5,18.5,25.5,12,3,not a player look
 3241,other,2x2,report,0,0,0,0,0,0,14,24.5,14,24.5,8,4,not a player look
 3242,other,2x2,report,0,0,0,0,0,0,17,23,17,23,3,2,not a player look
 3243,other,2x2,report,0,0,0,0,0,0,17,23,17,23,2,1,not a player look
@@ -2559,9 +2559,9 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3293,monster,2x2,report,0,0,0,0,0,0,13.5,23.5,13.5,23.5,6,1,monster look: reported apart
 3294,monster,2x2,report,0,0,0,0,0,0,1.5,24,1.5,24,17,7,monster look: reported apart
 3295,other,2x2,report,0,0,0,0,0,0,13,25,13,25,10,2,not a player look
-3296,other,4x4,report,0,0,0,0,0,0,-30,18,-30,18,17,3,not a player look
-3297,other,2x2,report,0,0,0,0,0,0,7,26.5,7,26.5,13,3,not a player look
-3298,other,2x2,report,8,8,8,8,0,0,9,19,9,19,11,5,not a player look
+3296,monster,4x4,report,0,0,0,0,0,0,-30,18,-30,18,17,3,not a player look
+3297,monster,2x2,report,0,0,0,0,0,0,7,26.5,7,26.5,13,3,not a player look
+3298,monster,2x2,report,8,8,8,8,0,0,9,19,9,19,11,5,not a player look
 3299,other,2x2,report,8,8,8,8,0,0,12,18.5,12,18.5,11,1,not a player look
 3300,other,2x2,report,0,0,0,0,0,0,17.5,27,17.5,27,4,2,not a player look
 3301,other,2x2,report,0,0,0,0,0,0,17.5,27,17.5,27,4,2,not a player look
@@ -2572,15 +2572,15 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3306,monster,2x2,report,0,0,0,0,0,0,13.5,25.5,13.5,25.5,3,1,monster look: reported apart
 3307,other,2x2,report,0,0,0,0,0,0,13.5,25.5,13.5,25.5,3,1,not a player look
 3308,other,2x2,report,0,0,0,0,0,0,13.5,25.5,13.5,25.5,3,1,not a player look
-3309,other,2x2,report,0,0,0,0,0,0,13.5,25.5,13.5,25.5,3,1,not a player look
+3309,monster,2x2,report,0,0,0,0,0,0,13.5,25.5,13.5,25.5,3,1,not a player look
 3310,other,2x2,report,0,0,0,0,0,0,7,25,7,25,3,1,not a player look
 3311,monster,2x2,report,0,0,0,0,0,0,7,25,7,25,3,1,monster look: reported apart
 3312,other,2x2,report,0,0,0,0,0,0,7,25,7,25,3,1,not a player look
 3313,monster,2x2,report,0,0,0,0,0,0,7.5,25,7.5,25,4,3,monster look: reported apart
-3314,other,2x2,report,0,0,0,0,0,0,11.5,26,11.5,26,14,2,not a player look
-3315,other,2x2,report,0,0,0,0,0,0,11.5,25,11.5,25,5,1,not a player look
+3314,mount,2x2,report,0,0,0,0,0,0,11.5,26,11.5,26,14,2,not a player look
+3315,monster,2x2,report,0,0,0,0,0,0,11.5,25,11.5,25,5,1,not a player look
 3316,monster,2x2,report,0,0,0,0,0,0,13,24.5,13,24.5,9,3,monster look: reported apart
-3317,other,2x2,report,0,0,0,0,0,0,14,26.5,14,26.5,10,1,not a player look
+3317,monster,2x2,report,0,0,0,0,0,0,14,26.5,14,26.5,10,1,not a player look
 3318,other,2x2,report,0,0,0,0,0,0,13.5,23,13.5,23,5,3,not a player look
 3319,other,2x2,report,0,0,0,0,0,0,13,24.5,13,24.5,4,2,not a player look
 3320,other,2x2,report,0,0,0,0,0,0,15.5,25.5,15.5,25.5,7,2,not a player look
@@ -2608,7 +2608,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3342,other,2x2,report,0,0,0,0,0,0,16.5,25,16.5,25,2,1,not a player look
 3343,other,2x2,report,0,0,0,0,0,0,15,25,15,25,4,1,not a player look
 3344,other,2x2,report,0,0,0,0,0,0,16.5,25,16.5,25,2,1,not a player look
-3345,other,3x3,report,0,0,0,0,0,0,-10,7.5,-10,7.5,3,15,not a player look
+3345,monster,3x3,report,0,0,0,0,0,0,-10,7.5,-10,7.5,3,15,not a player look
 3346,other,3x3,report,0,0,0,0,0,0,-10.5,7.5,-10.5,7.5,2,13,not a player look
 3347,other,2x2,report,0,0,0,0,0,0,10.5,26,10.5,26,8,3,not a player look
 3348,other,2x2,report,0,0,0,0,0,0,-0.5,24,-0.5,24,10,2,not a player look

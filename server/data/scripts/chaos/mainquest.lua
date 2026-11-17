@@ -514,6 +514,16 @@ function W.creditKill(player, name, corpse)
 	end
 	set(player, "count", math.min(target, math.max(0, get(player, "count")) + 1))
 	local key = where == "bag" and "drop" or (where == "pack" and "inPack" or "inInbox")
+	if where == "bag" then
+		-- O607: a quest marker over the loot bag that holds the item, to this player only (client pair 73, else nothing)
+		if ChaosAreaFx == nil then
+			ChaosAreaFx = false
+			pcall(dofile, "data/lib/chaos_area_fx.lua")
+		end
+		if ChaosAreaFx then
+			pcall(function() ChaosAreaFx.sendMark(corpse:getPosition(), "quest", player) end)
+		end
+	end
 	local shown = where == "bag" and held or math.min(target, held + 1) -- in the bag it is not held yet
 	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
 		string.format(K.text(c.texts[key], lang), K.text(cond.item, lang), shown, target))
@@ -616,6 +626,10 @@ function W.advance(player)
 	tell(player, who .. ": " .. K.text(step.done, lang))
 	tell(player, string.format(K.text(c.texts.stepDone, lang), i, #c.steps, K.fill(K.text(step.title, lang), vars(lang)), got))
 	toast(player, string.format("%s %d/%d: %s", K.text(c.texts.title, lang), i, #c.steps, K.fill(K.text(step.title, lang), vars(lang))))
+	local after = c.steps[i + 1]
+	if ChaosGapFx and (not after or after.ch ~= step.ch) then -- O606: the last step of a chapter
+		ChaosGapFx.on(player, "quest_complete")
+	end
 	if i >= #c.steps then
 		set(player, "state", c.states.done)
 		tell(player, K.text(c.texts.finished, lang))
@@ -804,6 +818,37 @@ function W.state(player)
 	for _, e in ipairs(c.epilogue) do
 		out.epilogue[#out.epilogue + 1] = {key = e.key, level = e.level, title = K.text(e.title, lang), text = K.text(e.text, lang)}
 	end
+	return out
+end
+
+-- What a person sees of the main quest, for the tester bots' `!tester mainquest` (tools/tester_helper.lua checks that the asker is a tester):
+-- the state, the open step (key, level, the first condition, progress, where to go) and what a bot can play of it (K.botPlan). Reads only.
+function W.probe(player)
+	local c = C()
+	local pos = player:getPosition()
+	local out = {enabled = c.enabled and true or false, level = player:getLevel(), pos = {x = pos.x, y = pos.y, z = pos.z}, staff = staff(player) and true or false}
+	local state = get(player, "state")
+	out.state, out.active, out.done = state, state == c.states.active, state == c.states.done
+	local i = math.max(1, get(player, "step"))
+	out.step, out.steps = i, #c.steps
+	local step = c.steps[i]
+	if not (out.active and step) then
+		return out
+	end
+	local v = W.view(player)
+	local row = v.rows and v.rows[1]
+	local cond = step.conds[1] or {}
+	out.key, out.stepLevel, out.running = step.key, step.level, player:getLevel() >= step.level
+	out.cond = {kind = cond.c, mons = cond.mons, target = cond.target, label = cond.label, radius = cond.radius,
+		pos = cond.pos and {x = cond.pos.x, y = cond.pos.y, z = cond.pos.z} or nil, bring = cond.bring}
+	out.progress, out.target = row and row.progress, row and row.target
+	out.ready = row and row.state == "done" or false
+	local w = resolveWhere(player, step.where, "en")
+	if w then
+		local wp = w.pos
+		out.where = {k = w.k, name = w.name, label = w.label, pos = wp and {x = wp.x, y = wp.y, z = wp.z} or nil}
+	end
+	out.plan = K.botPlan(step)
 	return out
 end
 

@@ -1875,6 +1875,286 @@ do
 		and talks["!tester"].onSay(civ3, "!tester", "rift key #3") == true and #civ3.log.msgs == n3, "siege / guildboss / rift: a player's words go on and get no answer")
 end
 
+-- the Infinity Tower and the Ember Descent (O595): `!tester tower | descent ...`
+do
+	check(H.COMMANDS.tower and H.COMMANDS.descent, "tower and descent are registered commands (O595)")
+	check(H.parseCommand("tower path #3") == "tower" and H.parseCommand("descent sigil") == "descent", "tower / descent parse")
+	eq(H.parseTower(nil), "state", "tower: no word is state")
+	eq(H.parseTower("CLOSE"), "close", "tower: close (any case)")
+	local w, usage = H.parseTower("enter")
+	check(w == nil and usage:find("usage: tower", 1, true) and not usage:find("sigil", 1, true), "tower: enter is no helper word: the bot enters from the window")
+	eq(H.parseDescent("sigil"), "sigil", "descent: sigil")
+	w, usage = H.parseDescent("start")
+	check(w == nil and usage:find("usage: descent", 1, true) and usage:find("sigil", 1, true), "descent: start is no helper word: the bot starts from the window")
+	local ta = H.towerAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, canEnter = true, free = 12, reserve = 4, bank = 99,
+		floorGold = 50, inArena = true, run = {slot = 2, floor = 3, cleared = 2, remaining = 4, total = 6, monsters = 4, boss = false, waiting = false, nextIn = 0,
+		left = 7000, floorLeft = 200, players = 1, testers = 1, canSkip = false, nextBoss = true, junk = 1},
+		guide = {mode = "walk", goal = {x = 5, y = 5, z = 7, junk = 1}, reach = {1, 5}, why = ("w"):rep(90), area = "pack", junk = 1}, junk = 1})
+	check(ta.inside and ta.canEnter and ta.free == 12 and ta.bank == 99 and ta.junk == nil and ta.pos.junk == nil, "tower answer: the facts, cut down")
+	check(ta.run.floor == 3 and ta.run.testers == 1 and ta.run.nextBoss and ta.run.junk == nil, "tower answer: the run")
+	check(ta.guide.mode == "walk" and ta.guide.reach[2] == 5 and #ta.guide.why == 60 and ta.guide.goal.junk == nil and ta.guide.junk == nil, "tower answer: the guide")
+	check(H.towerAnswer(nil).inside == false and H.towerAnswer(nil).run == nil, "tower answer: nothing known")
+	local da = H.descentAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7}, pz = false, pay = "sigil", payWhy = ("y"):rep(120), sigils = 1,
+		free = 6, reserve = 2, run = {id = 4, room = 2, rooms = 10, kind = "combat", state = "choose", depth = 1, monsters = 0, left = 500, players = 1, testers = 1,
+		embers = 5, offer = {id = 9, cards = 3, curse = true, left = 30, junk = 1}, boss = {pos = {x = 3, y = 3, z = 7, junk = 1}, hp = 40}, ready = true, junk = 1},
+		guide = {mode = "pick", offer = 9, card = 1}, junk = 1})
+	check(da.pay == "sigil" and #da.payWhy == 90 and da.sigils == 1 and da.junk == nil, "descent answer: how it is paid, cut down")
+	check(da.run.offer.id == 9 and da.run.offer.cards == 3 and da.run.offer.junk == nil and da.run.boss.hp == 40 and da.run.boss.pos.junk == nil and da.run.junk == nil,
+		"descent answer: the choice and the boss")
+	check(da.guide.mode == "pick" and da.guide.offer == 9 and da.guide.card == 1, "descent answer: the guide asks the pick")
+	check(H.descentAnswer(nil).inside == false, "descent answer: nothing known")
+
+	local last = function(p) return p.log.msgs[#p.log.msgs] end
+	local t9 = creature(268435530, "Tester Abz", {store = {[ST] = 1}})
+	local realTR, realD = ChaosTowerRun, ChaosDescent
+	local closes, sigils = 0, 0
+	ChaosTowerRun = {probe = function(p)
+		if p.inTower then
+			return {inside = true, level = 300, minLevel = 100, pos = p:getPosition(), canEnter = true, run = {floor = 2, remaining = 3, players = 1, testers = 1},
+				guide = {mode = "walk", goal = {x = 90, y = 50, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, minLevel = 100, pos = p:getPosition(), canEnter = true, free = 16, reserve = 4}
+	end, testerClose = function() closes = closes + 1 return true end}
+	ChaosDescent = {probe = function(p)
+		if p.inDescent then
+			return {inside = true, level = 300, pos = p:getPosition(), run = {room = 1, rooms = 9, state = "fight"},
+				guide = {mode = "walk", goal = {x = 40, y = 40, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, pos = p:getPosition(), pz = true, pay = sigils > 0 and "sigil" or "free", sigils = sigils}
+	end, testerClose = function() closes = closes + 1 return true end, testerSigil = function() sigils = sigils + 1 return true end}
+	t9.pos = {x = 60, y = 60, z = 7}
+	t9.getPathTo = function(self, pos, minD, maxD)
+		t9.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {2, 2, 3}
+	end
+	talks["!tester"].onSay(t9, "!tester", "tower #130")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"free":16', 1, true) and last(t9):find('"seq":130', 1, true), "tower state: outside, the halls and the number")
+	talks["!tester"].onSay(t9, "!tester", "tower path #131")
+	check(last(t9):find("not inside the tower", 1, true), "tower path outside: the reason")
+	t9.inTower = true
+	talks["!tester"].onSay(t9, "!tester", "tower path #132")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 90 and t9.pathAsked.minD == 1 and t9.pathAsked.maxD == 5, "tower path: on foot to the monster, within reach")
+	talks["!tester"].onSay(t9, "!tester", "tower close #133")
+	check(closes == 1 and last(t9):find('"closed":true', 1, true), "tower close: the bot's own run")
+	talks["!tester"].onSay(t9, "!tester", "tower bogus #134")
+	check(last(t9):find("usage: tower", 1, true), "tower: an unknown word is the usage")
+	t9.inTower = nil
+	talks["!tester"].onSay(t9, "!tester", "descent #140")
+	check(last(t9):find('"pay":"free"', 1, true) and last(t9):find('"pz":true', 1, true), "descent state: how a run is paid")
+	talks["!tester"].onSay(t9, "!tester", "descent sigil #141")
+	check(sigils == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"pay":"sigil"', 1, true), "descent sigil: given, and the next run is paid with it")
+	t9.inDescent = true
+	talks["!tester"].onSay(t9, "!tester", "descent sigil #142")
+	check(sigils == 1 and last(t9):find("already inside the descent", 1, true), "descent sigil: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "descent path #143")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 40, "descent path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "descent close #144")
+	check(closes == 2 and last(t9):find('"closed":true', 1, true), "descent close: the bot's own run")
+	ChaosTowerRun = nil
+	talks["!tester"].onSay(t9, "!tester", "tower #145")
+	check(last(t9):find("no tower system", 1, true), "tower: no tower system, the reason")
+	ChaosDescent = nil
+	talks["!tester"].onSay(t9, "!tester", "descent #146")
+	check(last(t9):find("no descent system", 1, true), "descent: no descent system, the reason")
+	-- ---- the trials
+	check(H.COMMANDS.trial and H.parseCommand("trial path #5") == "trial", "trial is a registered command")
+	eq(H.parseTrial(nil), "state", "trial: no word is state")
+	w, usage = H.parseTrial("enter")
+	check(w == nil and usage:find("usage: trial", 1, true), "trial: enter is no helper word: the bot enters from the tree window")
+	local tra = H.trialAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = false, family = "warrior", familyName = "Iron Gauntlet",
+		cleared = 1, tier = 2, maxTier = 3, problem = ("p"):rep(120), puzzle = true, kinds = {"wave", "wave", "boss", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+		run = {tier = 2, phase = "fight", stage = "wave", stageIdx = 1, stages = 4, killed = 3, total = 12, lives = 3, livesMax = 3, left = 400, monsters = 5,
+		boss = "waiting", bossPos = {x = 3, y = 3, z = 7, junk = 1}, junk = 1}, guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "pack"}, junk = 1})
+	check(tra.inside and tra.family == "warrior" and tra.tier == 2 and #tra.problem == 90 and tra.puzzle == true and #tra.kinds == 12 and tra.junk == nil, "trial answer: the facts, bounded")
+	check(tra.run.killed == 3 and tra.run.lives == 3 and tra.run.bossPos.junk == nil and tra.run.junk == nil and tra.guide.mode == "fight", "trial answer: the run and the guide")
+	check(H.trialAnswer(nil).inside == false and H.trialAnswer(nil).run == nil, "trial answer: nothing known")
+	local realTT = ChaosTrials
+	ChaosTrials = {probe = function(p)
+		if p.inTrial then
+			return {inside = true, level = 300, pos = p:getPosition(), run = {stage = "wave", killed = 1},
+				guide = {mode = "walk", goal = {x = 70, y = 40, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, pos = p:getPosition(), pz = true, family = "warrior", tier = 1, minLevel = 100, free = 8, reserve = 2}
+	end, testerClose = function() closes = closes + 1 return true end}
+	t9.inDescent = nil
+	local c0 = closes
+	talks["!tester"].onSay(t9, "!tester", "trial #150")
+	check(last(t9):find('"family":"warrior"', 1, true) and last(t9):find('"tier":1', 1, true) and last(t9):find('"seq":150', 1, true), "trial state: outside, the family and the next tier")
+	talks["!tester"].onSay(t9, "!tester", "trial path #151")
+	check(last(t9):find("not inside a trial", 1, true), "trial path outside: the reason")
+	t9.inTrial = true
+	talks["!tester"].onSay(t9, "!tester", "trial path #152")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70, "trial path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "trial close #153")
+	check(closes == c0 + 1 and last(t9):find('"closed":true', 1, true), "trial close: the bot's own run")
+	-- ---- the Ascended arenas and the omen arenas (O599)
+	check(H.COMMANDS.ascended and H.COMMANDS.omen and H.parseCommand("ascended sigil bloodmoon #1") == "ascended", "ascended and omen are registered commands")
+	local pa = H.parseAscended("sigil Storm")
+	check(pa.what == "sigil" and pa.kind == "storm", "ascended: sigil with a kind (lower case)")
+	eq(H.parseAscended(nil).what, "state", "ascended: no word is state")
+	eq(H.parseAscended("path").what, "path", "ascended: path")
+	w, usage = H.parseAscended("open")
+	check(w == nil and usage:find("usage: ascended", 1, true), "ascended: open is no helper word: the bot uses the sigil itself")
+	w, usage = H.parseAscended("close now")
+	check(w == nil and usage ~= nil, "ascended: close takes no argument")
+	local po = H.parseOmen("key hollow")
+	check(po.what == "key" and po.kind == "hollow", "omen: key with a kind")
+	check(H.parseOmen("sigil") == nil, "omen: sigil is the Ascended word")
+	local aa = H.ascendedAnswer({inside = true, level = 1000, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = false, held = true, sigilKind = "storm", free = 3, reserve = 1,
+		kinds = {{key = "bloodmoon", minLevel = 900, junk = 1}}, run = {id = 4, kind = "storm", boss = "alive", state = "running", tester = true, lives = 3, livesMax = 3,
+		players = 1, testers = 1, left = 700, down = false, gateIn = 0, phase = 2, bossPos = {x = 5, y = 5, z = 7, junk = 1}, bossHp = 80, gate = {x = 1, y = 1, z = 7}, adds = 2, junk = 1},
+		guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "boss", why = ("w"):rep(90)}, junk = 1})
+	check(aa.inside and aa.held and aa.sigilKind == "storm" and aa.free == 3 and aa.junk == nil and aa.pos.junk == nil and aa.kinds[1].junk == nil, "ascended answer: the facts, cut down")
+	check(aa.run.tester and aa.run.bossHp == 80 and aa.run.phase == 2 and aa.run.bossPos.junk == nil and aa.run.junk == nil and #aa.guide.why == 60, "ascended answer: the run and the guide")
+	check(H.ascendedAnswer(nil).inside == false and H.ascendedAnswer(nil).run == nil, "ascended answer: nothing known")
+	check(H.omenAnswer({inside = true, run = {omen = "storm", state = "running"}}).run.omen == "storm", "omen answer: the omen kind of the run")
+	local realA, realRF, realRC = ChaosAscended, ChaosRift, ChaosRiftConfig
+	local gave, c1 = 0, closes
+	ChaosAscended = {probe = function(p)
+		if p.inAscended then
+			return {inside = true, level = 1000, pos = p:getPosition(), run = {boss = "alive", state = "running"},
+				guide = {mode = "walk", goal = {x = 33, y = 44, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 1000, pos = p:getPosition(), pz = true, held = gave > 0, free = 4, reserve = 1}
+	end, testerClose = function() closes = closes + 1 return true end, testerSigil = function(_, kind)
+		if kind == "nonsense" then return nil, "no such Ascended Omen" end
+		gave = gave + 1
+		return false, kind or "bloodmoon"
+	end}
+	t9.inTrial = nil
+	talks["!tester"].onSay(t9, "!tester", "ascended #160")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"pz":true', 1, true) and last(t9):find('"seq":160', 1, true), "ascended state: outside")
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil #161")
+	check(gave == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"kind":"bloodmoon"', 1, true) and last(t9):find('"held":true', 1, true), "ascended sigil: given, then held")
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil nonsense #162")
+	check(gave == 1 and last(t9):find("no such Ascended Omen", 1, true), "ascended sigil: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "ascended path #163")
+	check(last(t9):find("not inside an arena", 1, true), "ascended path outside: the reason")
+	t9.inAscended = true
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil #164")
+	check(gave == 1 and last(t9):find("already inside an arena", 1, true), "ascended sigil: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "ascended path #165")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 33 and t9.pathAsked.maxD == 5, "ascended path: on foot to the boss, within reach")
+	talks["!tester"].onSay(t9, "!tester", "ascended close #166")
+	check(closes == c1 + 1 and last(t9):find('"closed":true', 1, true), "ascended close: the bot's own run")
+	ChaosAscended = nil
+	talks["!tester"].onSay(t9, "!tester", "ascended #167")
+	check(last(t9):find("no ascended system", 1, true), "ascended: no system, the reason")
+	-- the omen arena
+	t9.inAscended = nil
+	local keyHeld, removed = false, 0
+	t9.getItemById = function() return keyHeld and {remove = function() keyHeld = false removed = removed + 1 end} or nil end
+	ChaosRiftConfig = {omen = {minLevel = 800, key = {id = 32072}}}
+	ChaosRift = {probe = function(p)
+		if p.inOmen then
+			return {inside = true, level = 900, pos = p:getPosition(), run = {omen = "storm", state = "running"},
+				guide = {mode = "walk", goal = {x = 55, y = 66, z = 7}, reach = {1, 4}, area = "boss"}}
+		end
+		return {inside = false, level = 900, pos = p:getPosition(), pz = p.omenPz ~= false}
+	end, testerClose = function() closes = closes + 1 return true end, testerOmenKey = function(_, kind)
+		if kind == "nonsense" then return nil, "no such omen" end
+		keyHeld = true
+		return kind or "hollow"
+	end}
+	local realIT = ItemType
+	ItemType = function() return {getClientId = function() return 2222 end} end
+	talks["!tester"].onSay(t9, "!tester", "omen #170")
+	check(last(t9):find('"minLevel":800', 1, true) and last(t9):find('"seq":170', 1, true), "omen state: outside, the level rule")
+	talks["!tester"].onSay(t9, "!tester", "omen key storm #171")
+	check(keyHeld and last(t9):find('"kind":"storm"', 1, true) and last(t9):find('"keyClientId":2222', 1, true) and last(t9):find('"held":true', 1, true), "omen key: given, the client id to use it")
+	talks["!tester"].onSay(t9, "!tester", "omen key nonsense #172")
+	check(last(t9):find("no such omen", 1, true), "omen key: the reason of the refusal")
+	t9.omenPz = false
+	talks["!tester"].onSay(t9, "!tester", "omen key #173")
+	check(last(t9):find("not in a protection zone", 1, true), "omen key: only in a protection zone")
+	t9.omenPz = nil
+	t9.inOmen = true
+	talks["!tester"].onSay(t9, "!tester", "omen key #174")
+	check(last(t9):find("already inside a run", 1, true), "omen key: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "omen path #175")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 55 and t9.pathAsked.maxD == 4 and last(t9):find('"omen":"storm"', 1, true), "omen path: on foot to the guardian")
+	talks["!tester"].onSay(t9, "!tester", "omen close #176")
+	check(last(t9):find('"closed":true', 1, true) and removed == 1 and not keyHeld, "omen close: the run ends and a refunded key leaves the backpack")
+	ItemType = realIT
+	ChaosAscended, ChaosRift, ChaosRiftConfig = realA, realRF, realRC
+	t9.inOmen = nil
+	-- ---- the bounty board (O599)
+	check(H.COMMANDS.bounty and H.parseCommand("bounty where Rat #5") == "bounty", "bounty is a registered command")
+	eq(H.parseBounty(nil).what, "state", "bounty: no word is state")
+	eq(H.parseBounty("PATH").what, "path", "bounty: path (any case)")
+	local pw = H.parseBounty("where Cave Rat")
+	check(pw.what == "where" and pw.name == "Cave Rat", "bounty: where takes a monster name with spaces")
+	w, usage = H.parseBounty("where")
+	check(w == nil and usage:find("usage: bounty", 1, true), "bounty: where needs a name")
+	check(H.parseBounty("where Rat; drop table") == nil, "bounty: a name is letters only")
+	check(H.parseBounty("accept") == nil, "bounty: accept is the window's word")
+	check(H.parseBounty("state now") == nil, "bounty: state takes no argument")
+	local ba = H.bountyAnswer({level = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, day = 5, maxActive = 3, target = "1-2",
+		active = {{key = "1-2", name = "Rat", progress = 3, required = 60, status = 0, junk = 1}},
+		candidates = {{key = "1-1", name = ("N"):rep(60), count = 80, level = 4, distance = 12, mark = {x = 5, y = 6, z = 7, n = ("m"):rep(100), junk = 1}, junk = 1}},
+		where = {name = "Rat", marks = 3, distance = 20, nearest = {x = 9, y = 9, z = 7, n = "Hunting: Rat (level 1-10)", junk = 1}},
+		guide = {mode = "walk", goal = {x = 5, y = 5, z = 7}, reach = {1, 5}, area = "monster"}, junk = 1})
+	check(ba.level == 100 and ba.day == 5 and ba.target == "1-2" and ba.junk == nil and ba.pos.junk == nil, "bounty answer: the facts, cut down")
+	check(ba.active[1].progress == 3 and ba.active[1].junk == nil and ba.candidates[1].count == 80 and #ba.candidates[1].name == 40 and #ba.candidates[1].mark.n == 70
+		and ba.candidates[1].mark.junk == nil, "bounty answer: the contracts, bounded")
+	check(ba.where.marks == 3 and ba.where.nearest.x == 9 and ba.where.nearest.junk == nil and ba.guide.mode == "walk", "bounty answer: where and the guide")
+	check(H.bountyAnswer(nil).active[1] == nil and H.bountyAnswer(nil).where == nil, "bounty answer: nothing known")
+	local realB = ChaosBounty
+	local asked
+	ChaosBounty = {probe = function(p, name)
+		asked = name
+		return {level = 100, pos = p:getPosition(), day = 1, active = {{key = "1-2", name = "Rat", progress = 1, required = 60, status = 0}},
+			candidates = {}, where = name and {name = name, marks = 2, distance = 7} or nil,
+			guide = {mode = "walk", goal = {x = 77, y = 88, z = 7}, reach = {1, 5}, area = "monster"}}
+	end}
+	talks["!tester"].onSay(t9, "!tester", "bounty #180")
+	check(last(t9):find('"day":1', 1, true) and last(t9):find('"progress":1', 1, true) and last(t9):find('"seq":180', 1, true) and asked == nil, "bounty state: the contracts held")
+	talks["!tester"].onSay(t9, "!tester", "bounty where Cave Rat #181")
+	check(asked == "Cave Rat" and last(t9):find('"marks":2', 1, true), "bounty where: asks for the monster")
+	talks["!tester"].onSay(t9, "!tester", "bounty path #182")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 77 and t9.pathAsked.maxD == 5, "bounty path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "bounty bogus #183")
+	check(last(t9):find("usage: bounty", 1, true), "bounty: an unknown word is the usage")
+	ChaosBounty = nil
+	talks["!tester"].onSay(t9, "!tester", "bounty #184")
+	check(last(t9):find("no bounty system", 1, true), "bounty: no system, the reason")
+	ChaosBounty = realB
+	-- ---- the main quest (O599)
+	check(H.COMMANDS.mainquest and H.parseCommand("mainquest #9") == "mainquest", "mainquest is a registered command")
+	eq(H.parseMainQuest(nil), "state", "mainquest: no word is state")
+	w, usage = H.parseMainQuest("skip")
+	check(w == nil and usage:find("usage: mainquest", 1, true), "mainquest: skip is the window's word, not the helper's")
+	local mq = H.mainQuestAnswer({enabled = true, level = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, state = 1, active = true, step = 5, steps = 60, key = "trolls",
+		stepLevel = 8, running = true, progress = 3, target = 12, ready = false,
+		cond = {kind = "count", mons = {"Troll", "a", "b", "c", "d"}, target = 12, label = "Troll", pos = {x = 5, y = 5, z = 7, junk = 1}, junk = 1},
+		where = {k = "pos", label = "the Troll ground", pos = {x = 9, y = 9, z = 8, junk = 1}, junk = 1},
+		plan = {action = "kill", label = "Troll", target = 12, monsters = {"Troll", "a", "b", "c", "d", "e"}, reason = ("r"):rep(120)}, junk = 1})
+	check(mq.active and mq.step == 5 and mq.key == "trolls" and mq.progress == 3 and mq.junk == nil and mq.pos.junk == nil, "mainquest answer: the facts, cut down")
+	check(mq.cond.kind == "count" and #mq.cond.mons == 4 and mq.cond.pos.junk == nil and mq.where.pos.z == 8 and mq.where.junk == nil, "mainquest answer: the condition and the place")
+	check(mq.plan.action == "kill" and #mq.plan.monsters == 4 and #mq.plan.reason == 90 and mq.plan.target == 12, "mainquest answer: the plan, bounded")
+	check(H.mainQuestAnswer(nil).active == false and H.mainQuestAnswer(nil).plan == nil, "mainquest answer: nothing known")
+	local realW = ChaosMainQuest
+	ChaosMainQuest = {probe = function(p) return {enabled = true, level = 100, pos = p:getPosition(), active = true, step = 1, key = "warden", plan = {action = "talk", label = "Warden Ysolde"}} end}
+	talks["!tester"].onSay(t9, "!tester", "mainquest #190")
+	check(last(t9):find('"key":"warden"', 1, true) and last(t9):find('"action":"talk"', 1, true) and last(t9):find('"seq":190', 1, true), "mainquest state: the step and the plan")
+	talks["!tester"].onSay(t9, "!tester", "mainquest bogus #191")
+	check(last(t9):find("usage: mainquest", 1, true), "mainquest: an unknown word is the usage")
+	ChaosMainQuest = nil
+	talks["!tester"].onSay(t9, "!tester", "mainquest #192")
+	check(last(t9):find("no main quest system", 1, true), "mainquest: no system, the reason")
+	ChaosMainQuest = realW
+	ChaosTrials = nil
+	talks["!tester"].onSay(t9, "!tester", "trial #154")
+	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")
+	ChaosTrials = realTT
+	t9.inTrial = nil
+	ChaosTowerRun, ChaosDescent = realTR, realD
+	local civ4 = creature(993, "Ana Tower", {store = {}})
+	local n4 = #civ4.log.msgs
+	check(talks["!tester"].onSay(civ4, "!tester", "tower close #1") == true and talks["!tester"].onSay(civ4, "!tester", "descent sigil #2") == true
+		and #civ4.log.msgs == n4, "tower / descent: a player's words go on and get no answer")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

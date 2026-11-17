@@ -7288,5 +7288,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Epic"] = "Épica",
   ["Mythic"] = "Mítica",
   ["Every card you loot, in one place"] = "Toda carta que você pega, num lugar só",
+  -- game_statusfx (O597, base patch 0205)
+  ["Status effects on creatures"] = "Efeitos de status nas criaturas",
+  ["Fire, ice, lightning, poison, curses, roots, stuns, shields and other statuses are drawn on the creature\nwhile they last: on you, on other players and on monsters. At most two on a creature. Turn it off if your frame rate drops."] = "Fogo, gelo, raio, veneno, maldição, raízes, atordoamento, escudo e outros status aparecem na criatura\nenquanto duram: em você, nos outros jogadores e nos monstros. No máximo dois por criatura. Desligue se os quadros por segundo caírem.",
 }
 return ChaosLocaleStrings['pt-BR']

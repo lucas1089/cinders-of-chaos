@@ -1305,6 +1305,63 @@ MOULDS = ('free', 'clip', 'fill')
 FAMILIES = {name: (fam_strip, PIVOT) for name in STYLES}
 
 
+# ------------------------------------------------------------------------------------------------ sheets (O594)
+# Ten rows are painted with PixelLab (gen_pixellab_wings.py). Their sheets are picture data and live outside the
+# repository: `<wings id>.png` in a private folder, 16 columns x 4 rows of 96 px (south, north, east, west), cleaned. With
+# `--src DIR` (or CHAOS_WINGS_SRC) a row of drawn_wings/pixellab_rows.csv is taken from that folder; without it
+# every row is drawn by code. A sheet that is not the one of the table (sha256) is refused.
+SHEET_CSV = os.path.join(HERE, 'drawn_wings', 'pixellab_rows.csv')
+SHEET_SUMS = os.path.join(HERE, 'drawn_wings', 'pixellab_rows.sums')
+SRC_DIR = os.environ.get('CHAOS_WINGS_SRC', '')
+SRC_CHECK = True
+SHEET_VIEWS = ('south', 'north', 'east', 'west')         # the rows of a sheet, top to bottom
+_SHEETS = {}
+_SHEET_ROWS = {}
+
+
+def sheet_rows(path=None):
+    """{wings id: row} of pixellab_rows.csv"""
+    path = path or SHEET_CSV
+    if path not in _SHEET_ROWS:
+        with open(path, newline='', encoding='utf-8') as f:
+            _SHEET_ROWS[path] = {int(row['wings']): row for row in csv.DictReader(f)}
+    return _SHEET_ROWS[path]
+
+
+def use_src(path, check=True):
+    """name the sheets folder ('' for none); check=False takes a sheet whatever its sha256 (the cleaning step)"""
+    global SRC_DIR, SRC_CHECK
+    SRC_DIR, SRC_CHECK = path or '', check
+    _SHEETS.clear()
+    _FACE.clear()
+
+
+def sheet_faces(sp):
+    """{view: [16 RGBA]} (south, north, east, west) of a row that comes from a sheet, or None: no folder named, or
+    the row is drawn by code"""
+    if not SRC_DIR:
+        return None
+    row = sheet_rows().get(sp.wings)
+    if row is None:
+        return None
+    if sp.wings not in _SHEETS:
+        import hashlib
+        from PIL import Image
+        path = os.path.join(SRC_DIR, '%d.png' % sp.wings)
+        if not os.path.isfile(path):
+            raise SystemExit('%s: no sheet for row %d (%s); leave --src out to draw it by code' % (path, sp.wings, sp.key))
+        with open(path, 'rb') as f:
+            data = f.read()
+        if SRC_CHECK and hashlib.sha256(data).hexdigest() != row['sha256']:
+            raise SystemExit('%s: not the sheet of drawn_wings/pixellab_rows.csv (sha256)' % path)
+        sheet = np.asarray(Image.open(path).convert('RGBA'))
+        if sheet.shape != (len(SHEET_VIEWS) * S, k.FRAMES * S, 4):
+            raise SystemExit('%s: a sheet is %d x %d' % (path, k.FRAMES * S, len(SHEET_VIEWS) * S))
+        _SHEETS[sp.wings] = {v: [np.ascontiguousarray(sheet[r * S:(r + 1) * S, f * S:(f + 1) * S]) for f in range(k.FRAMES)]
+                             for r, v in enumerate(SHEET_VIEWS)}
+    return _SHEETS[sp.wings]
+
+
 VIEW_SRC = {'north': 'north', 'south': 'south', 'east': 'south', 'west': 'north'}
 SIDE_ROOT = {'east': 2, 'west': 9}      # px right of the torso where the wings meet in a side view (measured, O590)
 SIDE_MID = -5                           # px under the torso line where the middle of the pair lies in a side view
@@ -1331,12 +1388,17 @@ def _side_shift(sp, d):
     if ('shift', d) in _FACE and _FACE.get('key') == sp.key:
         return _FACE[('shift', d)]
     src = VIEW_SRC[d]
-    pivot = FAMILIES[sp.family][1]
-    rx, ry, _ = k.project((0.0, ROOT[1], ROOT[2]), src, pivot)
     any_ = np.zeros((S, S), bool)
     for f in range(k.FRAMES):
         b, fr = _face(sp, src, f)
         any_ |= (b[..., 3] > 0) | (fr[..., 3] > 0)
+    _FACE[('shift', d)] = side_shift_of(any_, d, FAMILIES[sp.family][1])
+    return _FACE[('shift', d)]
+
+
+def side_shift_of(any_, d, pivot=PIVOT):
+    """the (dx, dy) of _side_shift for a face-on loop that covers the mask any_"""
+    rx, ry, _ = k.project((0.0, ROOT[1], ROOT[2]), VIEW_SRC[d], pivot)
     dx = int(round(k.ANCHOR[0] + SIDE_ROOT[d] - ry))      # a face-on y becomes x
     dy = int(round(k.ANCHOR[1] + SIDE_MID - rx))          # a face-on x becomes y
     ys, xs = np.nonzero(any_.T)
@@ -1351,7 +1413,6 @@ def _side_shift(sp, d):
                 dy = hi - int(ys.max())
             if ys.min() + dy < lo:
                 dy = lo - int(ys.min())
-    _FACE[('shift', d)] = (dx, dy)
     return dx, dy
 
 
@@ -1370,6 +1431,10 @@ def render_frame(sp, d, f):
     """(back, front) of one frame. North and south are drawn face on. East and west are the old art's side views
     (O590): the south picture (east) or the north picture (west) with x and y changed over, the wings one over the
     other behind the body. Measured on the old pair: 113 of 121 east views are the south view turned that way."""
+    faces = sheet_faces(sp)
+    if faces is not None:                                 # a painted row (O594, own side views O620): north in front of the body, the rest behind
+        img, none = faces[d][f], np.zeros((S, S, 4), np.uint8)
+        return (none, img) if d == 'north' else (img, none)
     src = VIEW_SRC[d]
     back, front = _face(sp, src, f)
     if src == d:
@@ -1754,7 +1819,10 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print):
     """a built pair holds the drawn wings: every row's look has the shape and the pictures of designs.sums"""
     from datspr import Dat, Spr
     specs = load() if specs is None else specs
-    sums = read_sums() if sums is None else sums
+    if sums is None:
+        sums = read_sums()
+        if SRC_DIR:                                       # a pair built with --src holds the painted rows (O594)
+            sums.update(read_sums(SHEET_SUMS))
     dat, spr = Dat(dat_path), Spr(spr_path)
     bad = []
     for sp in specs:
@@ -2269,6 +2337,17 @@ def main(argv):
     cmd, args = argv[0], argv[1:]
     check = '--check' in args
     args = [a for a in args if a != '--check']
+    if '--src' in args:                                   # the folder of the painted sheets (O594)
+        i = args.index('--src')
+        if cmd == 'table' or i + 1 >= len(args):
+            raise SystemExit('--src DIR goes with sheets, compare, fit, score, apply and live; '
+                             'the table of the sheets is gen_pixellab_wings.py table DIR')
+        if not os.path.isdir(args[i + 1]):
+            raise SystemExit('%s: no such folder' % args[i + 1])
+        use_src(args[i + 1])
+        del args[i:i + 2]
+    elif cmd == 'table':
+        use_src('')                                       # designs.sums is the code drawing of every row
     if cmd == 'table':
         bad = problems()
         if not bad:

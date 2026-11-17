@@ -556,4 +556,114 @@ function B.expire(entries, day)
 	return n
 end
 
+-- ---------------------------------------------------------------- the tester bots (O599)
+-- Where does monster X spawn: the map marks of the hunts (data/chaos_poi.lua, kind "hunt", named "Hunting: Penguin, Mammoth (level 1-20)")
+-- list the monsters of each hunt and carry its position. These are the facts the server already has; no spawn file is read at runtime.
+
+-- "Hunting: A, B (level 1-20)" -> {"a", "b"} (lower case), 1, 20; nil for any other text
+function B.huntNames(text)
+	local list, lo, hi = tostring(text or ""):match("^Hunting: (.-) %(level (%d+)%-(%d+)%)$")
+	if not list then
+		return nil
+	end
+	local names = {}
+	for part in list:gmatch("[^,]+") do
+		local n = part:match("^%s*(.-)%s*$")
+		if n ~= "" then
+			names[#names + 1] = n:lower()
+		end
+	end
+	return names, tonumber(lo), tonumber(hi)
+end
+
+-- the hunt marks that list a monster: {{x, y, z, n, lo, hi}}, in the order of the marks
+function B.spawnMarks(marks, monster)
+	local want = tostring(monster or ""):lower()
+	local out = {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == "hunt" and m.x and m.y and m.z then
+			local names, lo, hi = B.huntNames(m.n)
+			for _, n in ipairs(names or {}) do
+				if n == want then
+					out[#out + 1] = {x = m.x, y = m.y, z = m.z, n = m.n, lo = lo, hi = hi}
+					break
+				end
+			end
+		end
+	end
+	return out
+end
+
+-- the distance used to pick the nearest mark: tiles (Chebyshev) plus 1000 for every floor apart
+function B.markDistance(pos, mark)
+	return math.max(math.abs(pos.x - mark.x), math.abs(pos.y - mark.y)) + 1000 * math.abs((pos.z or 0) - (mark.z or 0))
+end
+
+function B.nearestMark(list, pos)
+	local best, bd
+	for _, m in ipairs(list or {}) do
+		local d = B.markDistance(pos, m)
+		if not bd or d < bd then
+			best, bd = m, d
+		end
+	end
+	return best, bd
+end
+
+-- The contracts a tester may take for the counter check, the smallest first. contracts: the board's contracts of the visible bands
+-- ({key, type, name, level, count}), taken: a set {key = true} of contracts already accepted today, marks: ChaosPoi.all, level: the character's.
+-- A contract qualifies when it is a hunt (not an elite or a boss: those are tier or boss fights), its level is at most the character's and a hunt
+-- mark lists its monster. -> {{key, name, count, level, mark, distance}}
+function B.testerCandidates(contracts, taken, marks, level, pos)
+	local out = {}
+	for _, c in ipairs(contracts or {}) do
+		if c.type == "hunt" and not (taken and taken[c.key]) and (tonumber(c.level) or 0) <= (tonumber(level) or 0) then
+			local mark, d = B.nearestMark(B.spawnMarks(marks, c.name), pos or {x = 0, y = 0, z = 7})
+			if mark then
+				out[#out + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, mark = mark, distance = d}
+			end
+		end
+	end
+	table.sort(out, function(a, b)
+		if (a.count or 0) ~= (b.count or 0) then
+			return (a.count or 0) < (b.count or 0)
+		end
+		if a.distance ~= b.distance then
+			return a.distance < b.distance
+		end
+		return a.key < b.key
+	end)
+	return out
+end
+
+-- What a person does next with an accepted hunt contract. a = {active (the contract entry {name, progress, required, status} or nil),
+-- pos, mark ({x, y, z}), monster ({x, y, z}: the nearest living monster of that name in sight, or nil), reach}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
+function B.guide(a)
+	local e = a.active
+	if not e then
+		return {mode = "wait", why = "no contract accepted"}
+	end
+	if e.status ~= 0 then
+		return {mode = "wait", why = "the contract is done"}
+	end
+	local reach = a.reach or 5
+	local function near(p)
+		return a.pos and p and p.z == a.pos.z and math.max(math.abs(a.pos.x - p.x), math.abs(a.pos.y - p.y)) <= reach
+	end
+	if a.monster then
+		if near(a.monster) then
+			return {mode = "fight", goal = a.monster, area = "monster", why = "in reach of " .. tostring(e.name)}
+		end
+		return {mode = "walk", goal = a.monster, reach = {1, reach}, area = "monster", why = "to a " .. tostring(e.name)}
+	end
+	if a.mark then
+		if a.pos and a.pos.z == a.mark.z and math.max(math.abs(a.pos.x - a.mark.x), math.abs(a.pos.y - a.mark.y)) <= 12 then
+			return {mode = "wait", area = "spawn", why = "at the hunt, waiting for a " .. tostring(e.name)}
+		end
+		return {mode = "walk", goal = a.mark, reach = {1, 8}, area = "mark", why = "to the hunt of " .. tostring(e.name)}
+	end
+	return {mode = "wait", why = "no hunt lists " .. tostring(e.name)}
+end
+
 return B

@@ -1,0 +1,4 @@
+src,new,kind,size,scale,disp,idle,idle_ms,walk,walk_ms,walk_src,colours,idle_frames,walk_frames,pixels
+cc1b36d161cb,3527,ooze,4x4,128/128,-48:0,16,83,21,83,walk,64,16/16/12/16,11/16/21/16,1009990
+851989630524,3528,aberration,5x5,160/160,-64:0,19,83,15,83,walk,56,19/19/17/14,15/15/14/15,1021347
+48602508e8e2,3529,elemental,5x5,160/160,-64:0,12,83,12,83,idle,60,12/12/12/12,12/12/12/12,580686

@@ -744,6 +744,13 @@ function step.onStepIn(creature, item, position, fromPosition)
 		local need = entry.def.minLevel or 1
 		if player:getLevel() < need then
 			player:teleportTo(fromPosition, true)
+			if ChaosAreaFx == nil then
+				ChaosAreaFx = false
+				pcall(dofile, "data/lib/chaos_area_fx.lua")
+			end
+			if ChaosAreaFx then
+				pcall(ChaosAreaFx.sendMark, position, "locked", player) -- O607: a lock over the entrance, to this player (pair 73)
+			end
 			player:sendCancelMessage(Chaos.t(player, "%s is for level %d and above.", entry.def.name, need))
 			return true
 		end

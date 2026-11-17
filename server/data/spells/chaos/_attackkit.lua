@@ -224,6 +224,28 @@ local function burst(pos, spec, dir, fxOnly)
 	end
 end
 
+-- O607: a line spell with a pack beam (data/lib/chaos_area_fx.lua, client pair 73) draws the beam from the caster's tile toward
+-- the target in place of an effect on every tile of the line; the tiles that are hit do not change. A cosmetic skin of the
+-- spell's effect wins: then, and below pair 73, the line is drawn as before. True when the beam was drawn.
+local function beam(spec, pos, dir)
+	if spec.shape ~= "line" then
+		return false
+	end
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, 'data/lib/chaos_area_fx.lua')
+	end
+	local B = ChaosAreaFx
+	if not B or not B.beams[spec.id] or not B.live() then
+		return false
+	end
+	local skinned = ChaosSpell.skinned
+	if skinned and ((spec.fx and skinned("fx", spec.fx)) or (spec.vfx and skinned("vfx", spec.vfx))) then
+		return false
+	end
+	return B.sendBeam(pos, spec.id, dir, spec.length)
+end
+
 -- the second effect of an ultimate (vfx2) at the target tile (the caster's own tile for a self-centred one)
 local function burst2(pos, spec)
 	if spec.vfx2 then
@@ -366,11 +388,13 @@ function A.cast(key, creature, variant)
 			A.hit(player, c, spec, lo * m, hi * m, effect)
 		end
 	else -- wave, line: from the caster toward the target
-		local first = true
-		for _, t in ipairs(K.tiles(spec, pos, dir)) do
-			local p = Position(t[1], t[2], pos.z)
-			burst(p, spec, dir, not first)
-			first = false
+		if not beam(spec, pos, dir) then
+			local first = true
+			for _, t in ipairs(K.tiles(spec, pos, dir)) do
+				local p = Position(t[1], t[2], pos.z)
+				burst(p, spec, dir, not first)
+				first = false
+			end
 		end
 		burst2(tpos, spec)
 		for _, c in ipairs(victims(player, spec, pos, dir, false)) do

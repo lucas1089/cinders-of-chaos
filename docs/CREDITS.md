@@ -60,6 +60,21 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
   - Author: Will Tice / unTied Games
   - Licence: purchased; the licence asks for credit
   - Credit: Super Pixel Effects Gigapack - Will Tice / unTied Games
+- **Abyssal Jelly**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Abyssal Jelly - elie automata
+  - Used for: the look of the Rotmother, a world boss (client pair 73)
+- **Floating Eldritch Organism**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Floating Eldritch Organism - elie automata
+  - Used for: the look of Vhoss the Hexmaw, a raid boss (client pair 73)
+- **Glacial Heart**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Glacial Heart - elie automata
+  - Used for: the look of Talath, a boss (client pair 73)
 
 ## Art packs {pt-BR: Pacotes de arte}
 
@@ -83,7 +98,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **UI Game Feel**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set
+  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set; since pair 73 two markers put back (quest marker, skull)
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
@@ -95,7 +110,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit
+  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 47 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair; since pair 73 three beams, three markers and the gravity press of a slowed creature put back, and one area burst (a clock face of runes) of Mega VFX 500 Vol. 3 (same author and licence terms as Grid Magic 500)
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -158,10 +173,19 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
   - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned); since pair 71 (O540) 7 of its creatures as creature outfits (a werewolf, a witch, a pumpkin brute, a scarecrow, a ghost, two skeletons); the art is not in the repository
+- **BANE - HD Status Effect VFX**
+  - Licence: purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data; every frame comes from a procedural generator program whose code was written with AI help (no image-generation model, no stock art)
+  - Used for: the status layer of pair 73 (O597): start, loop and end of 14 statuses drawn on a creature (burn, freeze, shock, poison, curse, root, soak, stun, confusion, haste, blessing, regeneration, shield, fury), scaled to game size; the art is only in the sprite pair, not in the repository
+- **UNMAKE - Death, Dissolve & Disintegration VFX**
+  - Licence: purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data
+  - Used for: the ground overlays of five kill dissolves of pair 73 (O597): a pool, broken earth, bones, vapour and rubble, with the pack's body removed; the art is only in the sprite pair, not in the repository
 - **Dark Fantasy RPG UI Kit Full Pack**
   - Author: ZSS Game Lab (itch.io)
   - Licence: purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand
   - Used for: the liquid orb rings, the character plate, the action bar slots, window, panel, button, tab, text field, tooltip and minimap frames (cropped, resized and recoloured by client/tools/import_hud_kit.py; the original files are not in the repository)
+- **MORTIS spell VFX pack**
+  - Licence: purchased by the owner (LICENSE.txt v1.0 of the pack); unlimited personal and commercial projects; modify, recolour, retime and re-atlas allowed; no credit needed; the image files are never resold or redistributed as an asset pack, never uploaded to an asset store or stock site, never machine-learning training data
+  - Used for: three death spells whose old effect did not read at game size: a skull bolt (Marrow Bolt), bone splinters (Bone Shrapnel), a life steal aura (Life Siphon); game size, not HD (client/tools/sprites/gen_spell_vfx.py, O596, trimmed by O600); the art is not in the repository, only in the sprite pair (pair 73)
 - **A freely shared potion-throwing pack**
   - Licence: shared freely by its maker; no licence text
   - Used for: throwable potion flasks, projectiles and bursts
@@ -464,7 +488,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the 35 socket gem looks (seven gems in five qualities), the 18 crafting bench orb looks, the four front-facing test characters of the Unity front-art scene and their normal maps, the three HD monster pictures of the HD sprite overlay (Ghoul, Skeleton and Troll, 4 directions and a walk cycle each, from text prompts of our own), the twelve fun costumes of pair 72 (characters and objects, 4 directions each, from text prompts of our own; the hops and breaths of the objects are moved by script, O578)
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the thirteen Monk fist weapon looks (six claws, four uniques, three new weapons), the 34 weapons above level 800 (bows, crossbows, wands, rods and three two-handed melee weapons), the 65 pieces of the five relic sets (a helmet, chest armour, legs, boots, shield, spellbook, sword, axe, hammer, bow, wand or rod, ring and amulet each), nine ring and amulet looks of the jewelry loot bases, the Reward Chest, the hundred support rune stones (also the support icons) and the icons of the 21 line quest spells (also their seven buff bar icons), the 72 repainted class spell icons (the Necromancer line, the other lines' kits, the snares, Town Portal and the four vigils) and the redrawn icons of the Loot Bag, Orbs Pouch and Everfull Ration, the 35 socket gem looks (seven gems in five qualities), the 18 crafting bench orb looks, the four front-facing test characters of the Unity front-art scene and their normal maps, the three HD monster pictures of the HD sprite overlay (Ghoul, Skeleton and Troll, 4 directions and a walk cycle each, from text prompts of our own), the twelve fun costumes of pair 72 (characters and objects, 4 directions each, from text prompts of our own; the hops and breaths of the objects are moved by script, O578), ten wings looks painted from text prompts of our own and our own code-drawn pictures (cleaned, fitted and moved by script, O594)
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift

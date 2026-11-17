@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Kill dissolve (O563): the seven dissolve shaders, their tile pictures and the offline previews.
+"""Kill dissolve (O563, O597): the twelve dissolve shaders, their tile pictures and the offline previews.
 
 usage: python3 -I client/tools/gen_kill_dissolve.py             write the shaders and the pictures
        python3 -I client/tools/gen_kill_dissolve.py --check     fail when a shipped file differs from what is generated
@@ -8,7 +8,7 @@ usage: python3 -I client/tools/gen_kill_dissolve.py             write the shader
 
 What is generated (client/MANIFEST.md "game_killdissolve", base patch 0201):
   client/overlay/data/shaders/chaos_outfit_kd_<mode>.frag   one outfit fragment stage per mode (the vertex stage is
-        chaos_outfit_vertex.frag); the seven modes share one template below and differ in a few lines (MODES)
+        chaos_outfit_vertex.frag); the twelve modes share one template below and differ in a few lines (MODES)
   client/overlay/modules/game_killdissolve/images/<mode>_<tint>.png   the tile picture of a kill effect: the sample
         creature of this file at 42% of the dissolve, 64x64 (the Customise window's tiles; ICONS lists the pairs)
 
@@ -19,6 +19,11 @@ u_Src = the part's rectangle in the texture, base patch 0201):
   for `life` of the progress on a path `vel` + `grav` and fade. The shader draws a pixel by looking BACK along that
   path (two fixed-point steps): the grain that lands on this pixel came from the cell it would have left. The body
   is the sprite itself while its cell has not left yet. Colours: the pixel's own, mixed with the tint colour.
+  O597 adds five modes after a purchased pack of kill effects (melt, sink, bones, vapour, stone; docs/CREDITS.md). The
+  pack draws one plain body, so nothing of its body is used: a mode may `warp` the body (the sprite is read at a moved
+  place: a melt squashes it to the ground and widens it, a sink slides it down behind a ground line) and `fade` it, and
+  the dying monster keeps its own width and look. What the pack adds on the ground (a pool, broken earth, bones, vapour,
+  rubble) is an effect of the sprite pair the client plays on the tile (client/tools/sprites/gen_status_vfx.py).
 
 The emulation below (numpy, float32) is the same maths line by line; the previews and the tile pictures are drawn
 with it. The sample creature is drawn here (no sprite of the client pair is read or shipped).
@@ -51,6 +56,30 @@ TINT_NAMES = ['own', 'green', 'crimson', 'violet', 'gold', 'frost', 'bone', 'emb
 # cell shows a grain at age a; mix: how far a grain goes to the tint colour; dflt: the mode's own tint colour; glow:
 # (width in progress, colour) of the edge that burns on the body just before a cell leaves; body: (amount, from, to)
 # the body drifts to the tint colour over that progress range; ms: how long the dissolve plays.
+# warp (optional): GLSL statements that set `vec2 wuv`, the place the body is read at (here, p, seed, cellN in scope);
+# fade (optional): GLSL expression in p the whole picture's alpha is multiplied by; py warp(x, y, p, seed, cn) and
+# fade(p) are the same. SIZE is the sprite size the emulation draws (a die rule may read it; the shader has u_Params.w).
+SIZE = [32.0, 32.0]
+
+
+def _rib(x, y):
+    hpx = max(SIZE[0], 8.0) * SIZE[1] / SIZE[0]
+    fr = y * hpx / 6.0
+    stripe = ((fr - np.floor(fr)) >= 0.5) & (np.abs(x - 0.5) <= 0.34)
+    return (stripe | (np.abs(x - 0.5) <= 0.07)).astype(np.float32)
+
+
+def _melt_warp(x, y, p, seed, cn):
+    k = smoothstep(0.0, 0.85, p)
+    n = hash_a(np.floor(x * cn[0] * 0.5), seed * 13.0 + 0.0 * x)
+    sy = np.maximum(1.0 - k * (0.80 + 0.15 * n), 0.02)
+    return 0.5 + (x - 0.5) / (1.0 + 0.45 * k), 1.0 - (1.0 - y) / sy
+
+
+def _sink_warp(x, y, p, seed, cn):
+    k = smoothstep(0.0, 0.9, p)
+    ux = x + np.sin(y * 40.0 + p * 30.0) * 0.012 * k
+    return np.where(y > 0.92, -1.0, ux), y - 1.05 * k
 MODES = {
     'sand': dict(
         name='Sand in the wind', cell=1.0, life=0.30, ms=1000, mix=0.35, dflt=(0.86, 0.74, 0.50), glow=None, body=None,
@@ -134,12 +163,73 @@ MODES = {
                 vel=lambda x, y, h, h2, w: ((h2 - 0.5) * 0.14, -0.40 - 0.35 * h2),
                 grav=lambda x, y, h, h2, w: (0.0 * x, -0.12 + 0.0 * x),
                 dens=lambda a: 0.85 * (1.0 - a * a))),
+    'melt': dict(
+        name='Melting to the ground', cell=1.0, life=0.05, ms=1200, mix=0.0, dflt=(0.45, 0.62, 0.35), glow=None,
+        body=(0.45, 0.0, 0.7),
+        die='2.0', vel='vec2(0.0, 0.0)', grav='vec2(0.0, 0.0)', dens='0.0',
+        warp='    float wk = smoothstep(0.0, 0.85, p);\n'
+             '    float wn = hashA(vec2(floor(here.x * cellN.x * 0.5), seed * 13.0));\n'
+             '    vec2 wuv = vec2(0.5 + (here.x - 0.5) / (1.0 + 0.45 * wk),\n'
+             '                    1.0 - (1.0 - here.y) / max(1.0 - wk * (0.80 + 0.15 * wn), 0.02));\n',
+        fade='1.0 - smoothstep(0.80, 1.0, p)',
+        py=dict(die=lambda x, y, h, h2, w: 2.0 + 0.0 * x,
+                vel=lambda x, y, h, h2, w: (0.0 * x, 0.0 * x),
+                grav=lambda x, y, h, h2, w: (0.0 * x, 0.0 * x),
+                dens=lambda a: 0.0 * a,
+                warp=_melt_warp, fade=lambda p: 1.0 - smoothstep(0.80, 1.0, p))),
+    'sink': dict(
+        name='Sinking into the ground', cell=1.0, life=0.05, ms=1200, mix=0.0, dflt=(0.42, 0.32, 0.22), glow=None,
+        body=(0.5, 0.2, 1.0),
+        die='2.0', vel='vec2(0.0, 0.0)', grav='vec2(0.0, 0.0)', dens='0.0',
+        warp='    float wk = smoothstep(0.0, 0.9, p);\n'
+             '    vec2 wuv = vec2(here.y > 0.92 ? -1.0 : here.x + sin(here.y * 40.0 + p * 30.0) * 0.012 * wk,\n'
+             '                    here.y - 1.05 * wk);\n',
+        fade='1.0',
+        py=dict(die=lambda x, y, h, h2, w: 2.0 + 0.0 * x,
+                vel=lambda x, y, h, h2, w: (0.0 * x, 0.0 * x),
+                grav=lambda x, y, h, h2, w: (0.0 * x, 0.0 * x),
+                dens=lambda a: 0.0 * a,
+                warp=_sink_warp, fade=lambda p: 1.0)),
+    'bones': dict(
+        name='Flesh falls, bones stay', cell=1.0, life=0.20, ms=1300, mix=0.25, dflt=(0.90, 0.87, 0.78), glow=None,
+        body=(0.92, 0.0, 0.3),
+        die='0.05 + 0.30 * h + 0.40 * (0.75 + 0.35 * uv.y) * max(step(0.5, fract(uv.y * max(u_Params.w, 8.0) * u_Src.w '
+            '/ u_Src.z / 6.0)) * step(abs(uv.x - 0.5), 0.34), step(abs(uv.x - 0.5), 0.07))',
+        vel='vec2((h2 - 0.5) * 0.08, 0.10 + 0.20 * h2)',
+        grav='vec2(0.0, 0.35)',
+        dens='0.9 * (1.0 - a)',
+        py=dict(die=lambda x, y, h, h2, w: 0.05 + 0.30 * h + 0.40 * (0.75 + 0.35 * y) * _rib(x, y),
+                vel=lambda x, y, h, h2, w: ((h2 - 0.5) * 0.08, 0.10 + 0.20 * h2),
+                grav=lambda x, y, h, h2, w: (0.0 * x, 0.35 + 0.0 * x),
+                dens=lambda a: 0.9 * (1.0 - a))),
+    'vapour': dict(
+        name='Boiling off as vapour', cell=1.0, life=0.50, ms=1000, mix=0.9, dflt=(0.75, 0.92, 1.0),
+        glow=(0.06, (0.90, 0.98, 1.0)), body=(0.6, 0.0, 0.3),
+        die='0.04 + 0.42 * h',
+        vel='vec2(sin(6.2831853 * h2 + uv.y * 9.0) * 0.10, -0.45 - 0.40 * h2)',
+        grav='vec2(0.0, -0.15)',
+        dens='0.8 * (1.0 - a)',
+        py=dict(die=lambda x, y, h, h2, w: 0.04 + 0.42 * h,
+                vel=lambda x, y, h, h2, w: (np.sin(6.2831853 * h2 + y * 9.0) * 0.10, -0.45 - 0.40 * h2),
+                grav=lambda x, y, h, h2, w: (0.0 * x, -0.15 + 0.0 * x),
+                dens=lambda a: 0.8 * (1.0 - a))),
+    'stone': dict(
+        name='Turned to stone and broken', cell=5.0, life=0.30, ms=1300, mix=0.9, dflt=(0.62, 0.62, 0.60),
+        glow=(0.03, (0.92, 0.92, 0.88)), body=(1.0, 0.0, 0.3),
+        die='0.45 + 0.24 * h',
+        vel='vec2((h2 - 0.5) * 0.25, 0.05 + 0.10 * h2)',
+        grav='vec2(0.0, 0.50)',
+        dens='1.0',
+        py=dict(die=lambda x, y, h, h2, w: 0.45 + 0.24 * h,
+                vel=lambda x, y, h, h2, w: ((h2 - 0.5) * 0.25, 0.05 + 0.10 * h2),
+                grav=lambda x, y, h, h2, w: (0.0 * x, 0.50 + 0.0 * x),
+                dens=lambda a: 1.0 + 0.0 * a)),
 }
-ORDER = ['sand', 'pixels', 'ash', 'burn', 'void', 'frost', 'gold']
+ORDER = ['sand', 'pixels', 'ash', 'burn', 'void', 'frost', 'gold', 'melt', 'sink', 'bones', 'vapour', 'stone']
 
 # the tile pictures: (mode, tint) pairs of the cosmetics (server cosmetics_config.lua `dissolve` / `tint`; --check reads them)
 ICONS = [('pixels', 1), ('burn', 2), ('ash', 2), ('sand', 0), ('pixels', 0), ('ash', 0), ('frost', 0), ('burn', 7),
-         ('void', 0), ('gold', 4)]
+         ('void', 0), ('gold', 4), ('melt', 0), ('sink', 0), ('bones', 0), ('vapour', 0), ('stone', 0)]
 
 # ---------------------------------------------------------------------------------------------------- the GLSL
 TEMPLATE = '''// Cinders of Chaos outfit shader (game_killdissolve, written for this server). Kill dissolve "%(name)s": the dying
@@ -266,8 +356,7 @@ void main()
     }
 
     // the body: the sprite itself while its cell has not left yet
-    vec4 b = spriteAt(here, here);
-    float hb = hashA(floor(here * cellN) + vec2(seed * 17.0, 3.0));
+%(bodyfetch)s    float hb = hashA(floor(here * cellN) + vec2(seed * 17.0, 3.0));
     float dieB = dieAt(here, hb);
     if (p < dieB && b.a > 0.02) {
         vec3 col = b.rgb;
@@ -299,9 +388,15 @@ def render_glsl(mode):
     if m['glow']:
         w, gc = m['glow']
         glow = ('        col = mix(col, vec3(%s), smoothstep(%s, 0.0, dieB - p));\n' % (vec3s(gc), f(w)))
+    fetch = '    vec4 b = spriteAt(here, here);\n'
+    if m.get('warp'):
+        fetch = m['warp'] + '    vec4 b = spriteAt(wuv, here);\n'
+    extra = m.get('extra', '')
+    if m.get('fade') and m['fade'] != '1.0':
+        extra += '    outc.a *= %s;\n' % m['fade']
     return TEMPLATE % dict(name=m['name'], die=m['die'], vel=m['vel'], grav=m['grav'], dens=m['dens'],
                            cell=f(m['cell']), life=f(m['life']), mix=f(m['mix']), dflt=vec3s(m['dflt']),
-                           bodyline=body, glowline=glow, extra=m.get('extra', ''))
+                           bodyline=body, glowline=glow, extra=extra, bodyfetch=fetch)
 
 
 # ---------------------------------------------------------------------------------------------------- numpy emulation
@@ -370,6 +465,7 @@ def render(sprite, mode, tint, p, seed=0.3, bg=None, timef=0.0):
     m = MODES[mode]
     pyf = m['py']
     h_, w_ = sprite.shape[:2]
+    SIZE[0], SIZE[1] = float(w_), float(h_)
     ys, xs = np.mgrid[0:h_, 0:w_].astype(np.float32)
     hx = (xs + 0.5) / w_
     hy = (ys + 0.5) / h_
@@ -414,6 +510,8 @@ def render(sprite, mode, tint, p, seed=0.3, bg=None, timef=0.0):
     out[gmask, 3] = (1.0 - a)[gmask]
 
     b = sprite
+    if 'warp' in pyf:
+        b = fetch(*pyf['warp'](hx, hy, np.float32(p), seed, cn))
     hb, _ = hashes(hx, hy)
     dieb = pyf['die'](hx, hy, hb, hb * 0.0, wind)
     bmask = (p < dieb) & (b[..., 3] > 0.02)
@@ -435,6 +533,8 @@ def render(sprite, mode, tint, p, seed=0.3, bg=None, timef=0.0):
         k = np.clip(core, 0, 1)[..., None]
         out[..., :3] = out[..., :3] + (np.array([0.92, 0.80, 1.0], np.float32)[None, None, :] - out[..., :3]) * k
         out[..., 3] = np.maximum(out[..., 3], core * 0.9)
+    if 'fade' in pyf:
+        out[..., 3] *= np.float32(pyf['fade'](np.float32(p)))
     out[out[..., 3] < 0.01] = 0.0
     return out
 

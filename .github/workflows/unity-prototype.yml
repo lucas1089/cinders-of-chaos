@@ -80,7 +80,7 @@ jobs:
   build:
     if: github.event_name == 'workflow_dispatch'
     needs: core
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # the private MariaDB of tools/ci/unity_live_check.sh does not install on the 26.04 image (MariaDB 11.8)
     timeout-minutes: 120
     steps:
       - name: Unity license present?

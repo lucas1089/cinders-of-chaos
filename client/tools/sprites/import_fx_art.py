@@ -91,7 +91,7 @@ def build(r):
         px = py = 3
     for k, c in frames.items():
         assert c[:, :, 3].any() or k[0] == n - 1 or r['durs'], (r['name'], 'empty frame', k)    # a spec with durs keeps the donor's blank frames
-    assert any(c[:, :, 3].any() for c in frames.values()), (r['name'], 'no art')
+    assert r.get('blank') or any(c[:, :, 3].any() for c in frames.values()), (r['name'], 'no art')   # blank=1: an id kept free (O606)
     durs = r['durs'] or [(r['ms'], r['ms'])] * n
     return dict(kind=r['kind'], w=r['w'], h=r['h'], layers=1, px=px, py=py, phases=n, ms=r['ms'], frames=frames,
                 dx=r['dx'], dy=r['dy'], disp=None, durs=durs, total=sum((a + b) // 2 for a, b in durs))

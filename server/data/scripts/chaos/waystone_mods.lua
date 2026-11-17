@@ -188,6 +188,9 @@ function WM.take(player, sid)
 		return false, {}
 	end
 	ws.mods.opener = guid -- the map's opener (waystone_atlas.lua: their atlas shapes the run)
+	if ChaosGapFx then -- O606
+		ChaosGapFx.on(player, "waystone")
+	end
 	return true, ws.mods
 end
 

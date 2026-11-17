@@ -87,6 +87,28 @@ def retype_pool(text, rows):
     return text, moved, done
 
 
+def creature_looks(path=None):
+    """{monster: creature pack look} of the pair 73 map (O605, O608, monster_creature_looks.csv): a monster of both maps would wear that
+    look once step `monstercreaturelooks` has run, which is past this step, not a look this step does not know (O608: the map
+    holds three bosses, none of them on this map)"""
+    path = os.path.join(os.path.dirname(MAP), 'monster_creature_looks.csv') if path is None else path
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline='', encoding='utf-8') as f:
+        return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
+
+
+def swap_looks(path=None):
+    """{monster: swapped look} of the pair 73 map of O619 (monster_o619_looks.csv): six monsters of the recolour map (Gildguard Revenant,
+    Rimecairn, Pyre Stork, Rootbound Pilgrim, Thornveil Wraith, Ironmask Taskmaster) leave their copy for it once step `monsterswaplooks`
+    has run, which is past this step, so a copy or an old look is not the only look this step may meet"""
+    path = os.path.join(os.path.dirname(MAP), 'monster_o619_looks.csv') if path is None else path
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline='', encoding='utf-8') as f:
+        return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
+
+
 def write(path, text):
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8', errors='surrogateescape', newline='') as f:
@@ -112,6 +134,7 @@ def main(argv=None):
     if not ok:
         return 0
     rows = read_map(path)
+    beyond = dict(swap_looks(), **creature_looks())
     files = monster_files(os.path.join(data_dir, OURS))
     bad, moved, done, writes = [], 0, 0, []
     for name, old, new in rows:
@@ -122,8 +145,10 @@ def main(argv=None):
         with open(p, encoding='utf-8', errors='surrogateescape', newline='') as f:
             text = f.read()
         out, state = retype_xml(text, old, new)
-        if state == 'other':
-            m = LOOK_TAG.search(text)
+        m = LOOK_TAG.search(text)
+        if state == 'other' and m and int(m.group(2)) == beyond.get(name):
+            done += 1   # the creature pack look (pair 73, O605) is already on the monster: nothing to move
+        elif state == 'other':
             bad.append('%s: %s has look %s, the map knows %d and %d' % (
                 name, os.path.relpath(p, data_dir), m.group(2) if m else 'none', old, new))
         elif state == 'moved':

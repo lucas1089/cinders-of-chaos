@@ -1319,6 +1319,18 @@ function W.start(index)
 		print("[Chaos world boss] no portal spot found (Game.getTowns / portalPositions)")
 	end
 	addEvent(spawnBoss, c.gatherSeconds * 1000, token)
+	-- O606: a beacon where the boss will appear, while the players gather (client pair 73)
+	if ChaosGapFx and ChaosGapFx.name("boss_beacon") then
+		local every = math.max(1000, ChaosGapFx.ms("boss_beacon"))
+		local function beacon(t)
+			if state.token ~= t or state.phase ~= "gather" then
+				return
+			end
+			ChaosGapFx.at(W.layout().bossSpawn, "boss_beacon")
+			addEvent(beacon, every, t)
+		end
+		beacon(token)
+	end
 	addEvent(function(t)
 		if state.token == t and state.portalsOpen then
 			closePortals()
@@ -1578,6 +1590,12 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	local c = C()
+	-- the event is the players' (O595): one arena for everyone, damage-share rewards, a role title for the top 3 of each category. A tester
+	-- would take a share and a place from a player, so no tester enters it; the tester bots have no side of their own here yet
+	if Chaos.isTester and Chaos.isTester(player) then
+		pushBack(player, fromPosition, "The world boss is the players' event: the testers do not enter it.")
+		return true
+	end
 	if not open() or not state.portalsOpen then
 		pushBack(player, fromPosition, "The world boss portal is closed.")
 		return true
@@ -1614,6 +1632,10 @@ function toArena.onStepIn(creature, item, position, fromPosition)
 	end
 	if not open() then
 		pushBack(player, fromPosition, "There is no fight in the arena right now.")
+		return true
+	end
+	if Chaos.isTester and Chaos.isTester(player) then -- the lobby is reached by the portal only: a tester is never here, but never in the arena
+		pushBack(player, fromPosition, "The world boss is the players' event: the testers do not enter it.")
 		return true
 	end
 	W.watchPlayer(player)

@@ -409,6 +409,9 @@ P.actions = {
 		P.cache[player:getId()] = alloc
 		reapply(player)
 		P.sendState(player)
+		if ChaosGapFx and P.spent(alloc) > P.spent(current) then -- O606
+			ChaosGapFx.on(player, "paragon")
+		end
 	end,
 
 	paragonMastery = function(player, data)
@@ -462,6 +465,9 @@ P.actions = {
 			return
 		end
 		P.resetAll(player)
+		if ChaosGapFx then -- O606
+			ChaosGapFx.on(player, "respec")
+		end
 		message(player, "Paragon", string.format("Your Paragon points were reset for %d gold coins.", cost))
 	end
 }

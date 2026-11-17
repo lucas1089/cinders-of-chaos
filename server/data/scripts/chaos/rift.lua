@@ -847,7 +847,9 @@ local function removePlayer(run, id, mode)
 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		elseif mode == "out" or mode == "logout" then
 			player:teleportTo(entry.entry)
-			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			if not (ChaosGapFx and ChaosGapFx.on(player, "rift_close")) then -- O606
+				player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			end
 		end
 		if mode ~= "logout" then
 			local running = run.state == "running"
@@ -2038,7 +2040,9 @@ local function breach(run, pos)
 		return
 	end
 	local rid, slot = run.id, run.slot
-	Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	if not (ChaosGapFx and ChaosGapFx.at(pos, "rift")) then -- O606
+		Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	end
 	addEvent(function(p0)
 		local r = RF.runs[slot]
 		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
@@ -2304,9 +2308,14 @@ local function enter(run, group)
 		m:registerEvent("ChaosRiftPlayerMana")
 		m:registerEvent("ChaosRiftPlayerKill")
 		RF.capLast(m) -- O478
-		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
+		if not (ChaosGapFx and ChaosGapFx.at(entryPos, "rift_open")) then -- O606
+			entryPos:sendMagicEffect(CONST_ME_TELEPORT)
+		end
 		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}})[i] or {0, 0}
 		local at = RF.entryOf(run)
+		if i == 1 and ChaosGapFx then -- O606: the seal on the arrival point, once a run
+			ChaosGapFx.at(at, "rift_seal")
+		end
 		if L.walkKeys and not RL.isFloor(L, at.x + off[1], at.y + off[2], at.z) then
 			off = {0, 0}
 		end
@@ -2466,6 +2475,17 @@ function RF.openOmen(player, item)
 		return false
 	end
 	local group = gather(player, t)
+	if ChaosTesters and ChaosTesters.soloRefusal then -- testers beside the players (O599): never mixed, arenas kept for the players
+		local running = 0
+		for _ in pairs(RF.runs) do
+			running = running + 1
+		end
+		local why = ChaosTesters.soloRefusal(group, (cfg.limits.maxRuns or 16) - running, (o.tester and o.tester.reserve) or 4)
+		if why then
+			player:sendCancelMessage(Chaos.t(player, why))
+			return false
+		end
+	end
 	-- the guardian's arena of a ready layout (its theme's when one is ready, any size): the party arrives at its mouth
 	local slot, L = takeSlot(player, (cfg.themes[def.theme] or cfg.themes[1]).name, nil)
 	if not slot then
@@ -2557,6 +2577,7 @@ function RF.probe(player)
 		end
 	end
 	out.run = {id = run.id, tier = run.key and run.key.tier, theme = run.themeName, kind = run.L and run.L.kind, state = run.state, boss = run.boss,
+		omen = run.omen or nil,
 		killed = run.killed, total = run.total, bossAt = run.bossAt, left = R.timeLeft(run, os.time()), lives = run.lives, players = run.size,
 		floors = run.L and #run.L.floors or 1, entry = plain(RF.entryOf(run)), monsters = mons,
 		bossPos = boss and plain(boss:getPosition()) or nil,
@@ -2564,6 +2585,30 @@ function RF.probe(player)
 	out.guide = R.guide({state = run.state, boss = run.boss, pos = out.pos, bossPos = out.run.bossPos,
 		monster = nearest and {pos = plain(nearest)} or nil, other = other and not nearest, reach = 4})
 	return out
+end
+
+-- TEST ONLY (`!tester omen key [kind]`): an Omen Key for a TESTER (60 fragments are many Rift kills a check cannot repeat). Never for a
+-- player, never below the Omen level, never inside a run; one console line each. -> the kind, or nil + why
+function RF.testerOmenKey(player, want)
+	local cfg = C()
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	if RF.runOf[player:getId()] then
+		return nil, "already inside a run"
+	end
+	if player:getLevel() < cfg.omen.minLevel then
+		return nil, string.format("level %d: an omen arena needs level %d", player:getLevel(), cfg.omen.minLevel)
+	end
+	if want ~= nil and not R.omenKind(cfg, want) then
+		return nil, "no such omen"
+	end
+	local kind = RF.giveOmenKey(player, want, "TEST ONLY omen key")
+	if not kind then
+		return nil, "the omen key could not be made"
+	end
+	print(string.format("[ChaosRift] TEST ONLY: an omen key (%s) given to tester %s (level %d)", kind, player:getName(), player:getLevel()))
+	return kind
 end
 
 -- TEST ONLY (`!tester rift close`): ends the asker's own run as a clean shutdown does (RF.interrupt: out to the temple)

@@ -423,4 +423,88 @@ do
 	eq(B.rerollContract(hunt, cfg, pool, everything, B.rng(1)), nil, "nothing else fits: none")
 end
 
+
+-- ---------------------------------------------------------------- the tester bots (O599): where does monster X spawn, the contract to take
+do
+	local names, lo, hi = B.huntNames("Hunting: Penguin, Mammoth (level 1-20)")
+	assert(names and #names == 2 and names[1] == "penguin" and names[2] == "mammoth" and lo == 1 and hi == 20, "huntNames: a list, lower case, the band")
+	eq(#B.huntNames("Hunting: Wyrmblood Warmaster (level 70-80)"), 1, "huntNames: one monster")
+	eq(B.huntNames("Temple of Cinderhold"), nil, "huntNames: not a hunt text")
+	eq(B.huntNames(nil), nil, "huntNames: nothing")
+	local marks = {
+		{k = "hunt", x = 100, y = 100, z = 7, n = "Hunting: Rat, Cave Rat (level 1-10)"},
+		{k = "hunt", x = 500, y = 500, z = 7, n = "Hunting: Rat (level 1-10)"},
+		{k = "hunt", x = 110, y = 100, z = 8, n = "Hunting: Rat (level 1-10)"},
+		{k = "temple", x = 1, y = 1, z = 7, n = "Hunting: Rat (level 1-10)"},
+		{k = "hunt", x = 300, y = 300, z = 7, n = "Hunting: Snake (level 1-10)"}
+	}
+	eq(#B.spawnMarks(marks, "Rat"), 3, "spawnMarks: every hunt mark that lists it (a temple mark does not count)")
+	eq(#B.spawnMarks(marks, "CAVE rat"), 1, "spawnMarks: any case")
+	eq(#B.spawnMarks(marks, "Dragon"), 0, "spawnMarks: none")
+	eq(#B.spawnMarks(nil, "Rat"), 0, "spawnMarks: no marks")
+	local list = B.spawnMarks(marks, "Rat")
+	local m1 = B.nearestMark(list, {x = 120, y = 100, z = 7})
+	eq(m1.x, 100, "nearestMark: the same floor first")
+	local m2 = B.nearestMark(list, {x = 111, y = 100, z = 8})
+	eq(m2.z, 8, "nearestMark: the floor the character stands on")
+	eq(B.nearestMark({}, {x = 1, y = 1, z = 7}), nil, "nearestMark: none")
+	-- the contracts a tester may take
+	local contracts = {
+		{key = "1-1", type = "hunt", name = "Rat", level = 4, count = 80},
+		{key = "1-2", type = "hunt", name = "Snake", level = 5, count = 60},
+		{key = "1-3", type = "elite", name = "Rat", level = 4, count = 5},
+		{key = "1-4", type = "hunt", name = "Dragon", level = 4, count = 10},
+		{key = "1-5", type = "hunt", name = "Cave Rat", level = 50, count = 20},
+		{key = "1-6", type = "boss", name = "Snake", level = 4, count = 1}
+	}
+	local c = B.testerCandidates(contracts, {}, marks, 10, {x = 100, y = 100, z = 7})
+	eq(#c, 2, "candidates: hunts with a hunt mark and a level the bot has (elite, boss, unknown spawn, too high are left out)")
+	eq(c[1].key, "1-2", "candidates: the smallest count first")
+	eq(c[2].mark.x, 100, "candidates: the nearest mark of the monster")
+	eq(#B.testerCandidates(contracts, {["1-2"] = true}, marks, 10, {x = 100, y = 100, z = 7}), 1, "candidates: a contract taken today is not offered again")
+	eq(#B.testerCandidates(contracts, {}, marks, 3, {x = 0, y = 0, z = 7}), 0, "candidates: a bot below the contract levels takes none")
+	eq(#B.testerCandidates(nil, nil, marks, 10, nil), 0, "candidates: no board")
+	-- the same, tie broken by distance then key
+	local tie = B.testerCandidates({{key = "b", type = "hunt", name = "Rat", level = 1, count = 10}, {key = "a", type = "hunt", name = "Snake", level = 1, count = 10}},
+		{}, marks, 10, {x = 300, y = 300, z = 7})
+	eq(tie[1].key, "a", "candidates: the same count, the nearer hunt first")
+	-- the guide
+	local at = {x = 100, y = 100, z = 7}
+	local e = {name = "Rat", progress = 2, required = 80, status = 0}
+	eq(B.guide({pos = at}).mode, "wait", "guide: no contract")
+	eq(B.guide({active = {name = "Rat", status = 1}, pos = at}).why, "the contract is done", "guide: a finished contract")
+	local g1 = B.guide({active = e, pos = at, monster = {x = 103, y = 100, z = 7}})
+	assert(g1.mode == "fight" and g1.area == "monster", "guide: a monster within 5 tiles: fight")
+	local g2 = B.guide({active = e, pos = at, monster = {x = 120, y = 100, z = 7}, reach = 5})
+	assert(g2.mode == "walk" and g2.goal.x == 120 and g2.reach[2] == 5 and g2.area == "monster", "guide: a monster in sight: walk to it")
+	eq(B.guide({active = e, pos = at, monster = {x = 101, y = 100, z = 6}}).mode, "walk", "guide: another floor is not in reach")
+	local g3 = B.guide({active = e, pos = at, mark = {x = 400, y = 100, z = 7}})
+	assert(g3.mode == "walk" and g3.area == "mark" and g3.goal.x == 400, "guide: no monster in sight: walk to the hunt")
+	local g4 = B.guide({active = e, pos = at, mark = {x = 105, y = 100, z = 7}})
+	assert(g4.mode == "wait" and g4.area == "spawn", "guide: at the hunt with nothing in sight: wait for a spawn")
+	local g5 = B.guide({active = e, pos = at})
+	assert(g5.mode == "wait" and g5.why:find("no hunt lists Rat", 1, true), "guide: nothing known of where it spawns")
+	-- the real pool: the hunt marks of the installed map list monsters of the pool (the same names)
+	local f = io.open("data/chaos_poi.lua", "r")
+	if f then
+		f:close()
+		local poi = dofile("data/chaos_poi.lua")
+		local inPool = {}
+		for _, mon in ipairs(pool.hunt) do
+			inPool[mon.name:lower()] = true
+		end
+		local listed, known = 0, 0
+		for _, mk in ipairs(poi.marks) do
+			for _, n in ipairs(B.huntNames(mk.n) or {}) do
+				listed = listed + 1
+				if inPool[n] then
+					known = known + 1
+				end
+			end
+		end
+		assert(listed > 0, "the hunt marks of the installed map list monsters")
+		assert(known * 2 >= listed, "at least half of the hunt mark monsters are bounty pool monsters (" .. known .. " of " .. listed .. ")")
+	end
+end
+
 print("bounty: all asserts passed")

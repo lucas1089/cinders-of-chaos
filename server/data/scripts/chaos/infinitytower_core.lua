@@ -21,6 +21,7 @@
 --                                        "pending", secs  a countdown already runs: seconds left
 --                                        "now", 0         no live floor (start delay, the pause between floors): out at once
 --                                        "countdown", d   a floor is being fought: out after d seconds
+--   K.guide(a)                           O595: what the tester bots do next (wait between floors, fight within reach, else walk to the nearest monster)
 --   K.exitPos(entry, temple, inArena)    where a leaver lands: the entry spot; the temple when it is missing or in an arena
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -181,6 +182,28 @@ function K.exitPos(entry, temple, inArena)
 		return entry
 	end
 	return temple
+end
+
+-- What a person does next in the tower (the tester bots' `!tester tower`, O595). a = {inRun, waiting (between floors), nextIn (seconds to the
+-- next floor), remaining (monsters alive), pos, monster = {pos, boss} (the nearest one), reach (tiles a fight starts at), canSkip}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area = "pack" | "boss", skip = true when "Next floor now" is open}
+function K.guide(a)
+	if not a.inRun then
+		return {mode = "wait", why = "not inside the tower"}
+	end
+	local reach = a.reach or 5
+	if a.waiting or (tonumber(a.remaining) or 0) <= 0 then
+		return {mode = "wait", skip = a.canSkip and true or nil, why = string.format("the next floor starts in %d s", math.max(0, tonumber(a.nextIn) or 0))}
+	end
+	local m = a.monster
+	if not (m and m.pos and a.pos) then
+		return {mode = "wait", why = "no monster in sight"}
+	end
+	local area = m.boss and "boss" or "pack"
+	if m.pos.z == a.pos.z and math.max(math.abs(a.pos.x - m.pos.x), math.abs(a.pos.y - m.pos.y)) <= reach then
+		return {mode = "fight", goal = m.pos, area = area, why = "in reach of a monster"}
+	end
+	return {mode = "walk", goal = m.pos, reach = {1, reach}, area = area, why = "to the nearest monster"}
 end
 
 K.placeNames = {"1st", "2nd", "3rd"}

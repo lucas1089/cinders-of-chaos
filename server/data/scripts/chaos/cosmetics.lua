@@ -39,7 +39,8 @@
 --                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded,
 --                     and score = the collection score (collection.lua K.view: score, groups, next, milestones), when loaded
 --                     kdis {i = creature id, x, y, z, m = dissolve mode, t = tint (absent 0), o = {l = look type, h, b, g, f = colours,
---                     a = addons}, d = direction, v = {id, dx, dy} the plain effect}  (a dissolve kill near the player, O563;
+--                     a = addons}, d = direction, v = {id, dx, dy} the plain effect, p = {id, dx, dy} the mode's ground
+--                     overlay of client pair 73 (O597, absent below it)}  (a dissolve kill near the player, O563;
 --                     client game_killdissolve; an old client ignores it)
 --                     result {ok, text}
 -- Staff: /cosmetic <character>, <key | all>[, revoke]   /cosmetic <character>, sync   (achievement cosmetics and the
@@ -713,8 +714,9 @@ function M.dissolve(creature, killer, a)
 	local pos = creature:getPosition()
 	local okOutfit, outfit = pcall(function() return creature:getOutfit() end)
 	local entry = ChaosVfx and a.killfx and ChaosVfx[a.killfx] or nil
+	local over = ChaosStatusVfxIds and ChaosStatusVfxIds.on and ChaosStatusVfxIds.kill[dis.mode] or nil
 	local msg = okOutfit and K.dissolvePayload(cfg, creature:getId(), pos, dis.mode, dis.tint, outfit,
-		creature.getDirection and creature:getDirection() or 2, entry)
+		creature.getDirection and creature:getDirection() or 2, entry, over)
 	if not msg then
 		return false
 	end

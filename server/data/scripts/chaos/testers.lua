@@ -160,6 +160,21 @@ function X.guildVisible(player, gid, name)
 	return K.guildVisible(isT, name, X.guildSide(gid, name))
 end
 
+-- a group of characters that wants a hall of solo content (the Infinity Tower, the Ember Descent, O595): the refusal text, or nil.
+-- `free` halls are free now, `reserve` of them stay the players'. Fast for a group of players: no tester, no refusal
+function X.soloRefusal(players, free, reserve)
+	local flags, any = {}, false
+	for i, p in ipairs(players or {}) do
+		flags[i] = Chaos.isTester(p)
+		any = any or flags[i]
+	end
+	if not any then
+		return nil
+	end
+	local why = K.soloRefusal(flags, free, reserve)
+	return why and (K.CLOSED_TEXT[why] or K.CLOSED_TEXT.mixed) or nil
+end
+
 -- a war between guilds a and b (ids and names): ok, reason. Both sides known and equal, tester wars in closed mode only
 function X.warAllowed(gidA, nameA, gidB, nameB)
 	return K.sameSide("guildwar", K.closedOn(), X.guildSide(gidA, nameA), X.guildSide(gidB, nameB))

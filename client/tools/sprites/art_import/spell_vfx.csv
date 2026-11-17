@@ -1,0 +1,5 @@
+kind,id,name,pack,src,cols,rows,frames,ax,ay,size,at,element,role,w,h,phases,ms,dx,dy,note
+effect,4743,sv_death_bone_shatter,death_a,78632c328005,6,4,22,0.5,0.5,96,body,death,hit,3,3,12,73,1,1,bone splinters
+effect,4744,sv_death_lifesteal,death_a,fac42de15d61,8,4,32,0.5,0.52,96,body,death,aura,3,3,12,111,1,1,life drawn out in red threads
+missile,46,sv_death_skull,death_a,06e85ef15cc6,8,3,24,0.66,0.5,64,new,death,missile,3,3,8,50,1,1,a wailing skull (blank stock id 46)
+total,2,effects_4743_4744,,,,,,,,,,,,,,,,,,this step appends exactly 2 effects and no missile; the next step starts at 5143

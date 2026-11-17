@@ -1118,6 +1118,179 @@ do
 	check(told(friend, "A place in the Ascended arenas is free now"), "limits: the first in line is told")
 end
 
+
+-- ================================================================== the tester bots (O599)
+-- U.testerKind / U.guide / U.testerRefusal (pure), then the engine side: A.testerSigil, A.probe, A.testerClose, the arenas kept for the
+-- players, a tester and a player never in one run, no board row and no broadcast for a tester's Cinderheart kill
+do
+	dofile("data/scripts/chaos/testers_core.lua")
+	local K = ChaosTestersCore
+	-- the sigil a tester may be given
+	local d1 = U.testerKind(cfg, 1000)
+	eq(d1 and d1.key, "bloodmoon", "testerKind: the first Omen of the highest level the character opens")
+	local d2 = U.testerKind(cfg, 950)
+	check(d2 and d2.minLevel == 900 and not d2.final, "testerKind: level 950 opens a 900 one")
+	local none, why = U.testerKind(cfg, 500)
+	check(none == nil and why:find("opens no Ascended Omen", 1, true) ~= nil, "testerKind: level 500 opens none")
+	local fin, whyF = U.testerKind(cfg, 2000, "cinder")
+	check(fin == nil and whyF:find("Cinderheart", 1, true) ~= nil, "testerKind: never the Cinderheart sigil")
+	local low, whyL = U.testerKind(cfg, 800, "hollow")
+	check(low == nil and whyL:find("needs level 900", 1, true) ~= nil, "testerKind: a named Omen above the level is refused")
+	local named = U.testerKind(cfg, 950, "storm")
+	eq(named and named.key, "storm", "testerKind: a named kind is looked up")
+	local nokind, whyK = U.testerKind(cfg, 2000, "nonsense")
+	check(nokind == nil and whyK:find("no such", 1, true) ~= nil, "testerKind: an unknown kind")
+
+	-- the guide
+	local at, boss = {x = 10, y = 10, z = 7}, {x = 20, y = 10, z = 7}
+	local function g(o)
+		local a = {inside = true, state = "running", boss = "alive", pos = at, bossPos = boss, gate = {x = 5, y = 5, z = 7}, reach = 5}
+		for k, v in pairs(o) do a[k] = v end
+		return U.guide(a)
+	end
+	eq(g({inside = false}).mode, "wait", "guide: outside")
+	eq(g({state = "success"}).mode, "wait", "guide: a finished fight")
+	eq(g({boss = "waiting", bossPos = false}).mode, "wait", "guide: the boss is coming")
+	eq(g({boss = "dead"}).why, "the boss is down", "guide: the boss is down")
+	local w = g({})
+	check(w.mode == "walk" and w.goal == boss and w.reach[1] == 1 and w.reach[2] == 5 and w.area == "boss", "guide: walk to the boss")
+	local f = g({pos = {x = 16, y = 10, z = 7}})
+	check(f.mode == "fight" and f.area == "boss", "guide: in reach, fight")
+	check(g({pos = {x = 16, y = 10, z = 6}}).mode == "walk", "guide: another floor is not in reach")
+	local dn = g({down = true, gateIn = 5.2})
+	check(dn.mode == "wait" and dn.area == "antechamber" and dn.why:find("6 s", 1, true) ~= nil, "guide: in the antechamber the gate is waited for")
+	local gt = g({down = true, gateIn = 0})
+	check(gt.mode == "walk" and gt.area == "gate" and gt.goal.x == 5 and gt.reach[2] == 0, "guide: back through the Ember Gate")
+
+	-- the arenas kept for the players
+	eq(U.testerRefusal({true}, 0, cfg), nil, "refusal: a tester with every arena free")
+	eq(U.testerRefusal({true}, 2, cfg), nil, "refusal: two left after it with 1 kept")
+	eq(U.testerRefusal({true}, 3, cfg), "reserve", "refusal: the last free arena is the players'")
+	eq(U.testerRefusal({true, true}, 3, cfg), "reserve", "refusal: a group of testers, the same")
+	eq(U.testerRefusal({true, false}, 0, cfg), "mixed", "refusal: a tester and a player")
+	eq(U.testerRefusal({false}, 4, cfg), nil, "refusal: a player takes any free arena (no tester: no rule)")
+	check(cfg.tester and cfg.tester.reserve >= 1 and cfg.tester.reserve < cfg.limits.maxRuns, "config: the reserve is under the arenas")
+	eq(K.CLOSED_TEXT.reserve ~= nil, true, "the refusal text exists")
+
+	-- the engine side
+	function C:getItemById(id)
+		for _, it in ipairs(self.bag) do
+			if it.id == id and not it.removed then
+				return it
+			end
+		end
+		return nil
+	end
+	A.interruptAll()
+	local function newBot(name, guid, level, x)
+		local p = newCreature({player = true, name = name, guid = guid, level = level, pos = Position(x or 100, 100, 7), hp = 10000,
+			maxhp = 10000, storage = {}, bag = {}})
+		p.storage[Chaos.storage.tester] = 1
+		return p
+	end
+	hero.party, friend.party = nil, nil
+	hero.pos, friend.pos = Position(100, 100, 7), Position(101, 100, 7)
+	local bot = newBot("Tester Aaa", 91, 1000)
+	local p0 = A.probe(bot)
+	check(p0.inside == false and p0.pz == true and p0.held == false and p0.free == 4 and p0.reserve == cfg.tester.reserve, "probe: outside a run")
+	eq(#p0.kinds, 3, "probe: the three Omens and their levels")
+	local held0 = hero:getItemCount(cfg.items.sigil.id)
+	local ib, kind = A.testerSigil(hero, "bloodmoon")
+	check(ib == nil and kind == "not a tester", "a sigil is never given to a player")
+	eq(hero:getItemCount(cfg.items.sigil.id), held0, "no sigil reached the player")
+	local ib2, why2 = A.testerSigil(newBot("Tester Zzz", 99, 500))
+	check(ib2 == nil and why2:find("opens no Ascended Omen", 1, true) ~= nil, "a level 500 tester gets no sigil")
+	local inbox, k1 = A.testerSigil(bot)
+	check(inbox ~= nil and k1 == "bloodmoon", "a tester gets the sigil of the first Omen of the highest level its level opens")
+	local sg = bot:getItemById(cfg.items.sigil.id)
+	check(sg and sg.custom.ascended_kind == "bloodmoon", "the sigil carries its kind")
+	local p1 = A.probe(bot)
+	check(p1.held and p1.sigilKind == "bloodmoon", "probe: the sigil is read from the backpack")
+
+	-- a tester and a player in one party: refused, nothing spent
+	local mixed = {getLeader = function() return bot end, getMembers = function() return {friend} end}
+	bot.party, friend.party = mixed, mixed
+	T = T + 5000
+	bot.storage[Chaos.storage.ascendedRun + 2] = nil
+	sigilUse.onUse(bot, sg)
+	check(A.runOf[bot.id] == nil and not sg.removed, "mixed party: no arena, the sigil is kept")
+	check(bot.texts[#bot.texts]:find("never mixed", 1, true) ~= nil, "mixed party: the reason")
+	bot.party, friend.party = nil, nil
+
+	-- the arenas kept for the players: 3 of 4 in use, the tester waits
+	do
+		local fake = {}
+		for i = 1, 3 do
+			fake[i] = {ended = false, players = {}, state = "running"}
+			A.runs[100 + i] = fake[i]
+		end
+		T = T + 5000
+		bot.storage[Chaos.storage.ascendedRun + 2] = nil
+		sigilUse.onUse(bot, sg)
+		check(A.runOf[bot.id] == nil and not sg.removed, "reserve: the last arena is kept for the players")
+		check(bot.texts[#bot.texts]:find("halls are kept for the players", 1, true) ~= nil, "reserve: the reason")
+		for i = 1, 3 do
+			A.runs[100 + i] = nil
+		end
+	end
+
+	-- the run: opened by the bot itself
+	T = T + 5000
+	bot.storage[Chaos.storage.ascendedRun + 2] = nil
+	sigilUse.onUse(bot, sg)
+	local br = A.runOf[bot.id]
+	check(br ~= nil and br.tester == true and sg.removed, "a tester's run is marked, the sigil is spent")
+	local pi = A.probe(bot)
+	check(pi.inside and pi.run.tester and pi.run.players == 1 and pi.run.testers == 1, "probe inside: the run is the testers'")
+	eq(pi.guide.mode, "wait", "probe inside: the boss is coming")
+	runTo(T + cfg.startDelay * 1000 + 500)
+	local pb = A.probe(bot)
+	check(pb.run.boss == "alive" and pb.run.bossPos ~= nil and pb.run.bossHp == 100 and pb.run.phase == 1, "probe inside: the boss, its place and health")
+	check(pb.guide.mode == "walk" or pb.guide.mode == "fight", "probe inside: the guide has a goal")
+	local bm = Monster(br.bossId)
+	bot.pos = Position(bm.pos.x + 2, bm.pos.y, bm.pos.z)
+	eq(A.probe(bot).guide.mode, "fight", "probe inside: within 5 tiles, fight")
+	bm.hp = math.floor(bm.maxhp * 0.9)
+	eq(A.probe(bot).run.bossHp, 90, "probe inside: the boss is hurt")
+	-- the close: the run ends, the arena is free, the bot is out where it entered
+	check(A.testerClose(hero) == false, "close: a player's close does nothing")
+	check(A.testerClose(bot), "close: the tester leaves")
+	check(A.runOf[bot.id] == nil and A.runs[br.slot] == nil and br.state == "failed", "close: the arena is free and failed")
+	eq(bot.storage[Chaos.storage.ascendedRun], 0, "close: no refund marker (the grant is spent)")
+	check(not U.inArena(br.L, bot.pos), "close: out of the arena")
+	check(A.testerClose(bot) == false, "close: nothing to close twice")
+	eq(A.probe(bot).inside, false, "probe: outside again")
+
+	-- a tester's Cinderheart kill: no board row, no broadcast
+	local recs, lastBroadcast = #ChaosLeaderboard.rec, Game.lastBroadcast
+	Game.lastBroadcast = nil
+	A.giveSigil(bot, "cinder")
+	local cs2
+	for _, it in ipairs(bot.bag) do
+		if it.id == cfg.items.sigil.id and it.custom.ascended_kind == "cinder" and not it.removed then
+			cs2 = it
+		end
+	end
+	T = T + 5000
+	bot.pos = Position(100, 100, 7)
+	bot.storage[Chaos.storage.ascendedRun + 2] = nil
+	sigilUse.onUse(bot, cs2)
+	local r4 = A.runOf[bot.id]
+	check(r4 ~= nil and r4.tester, "a tester opens the Cinderheart's arena with its sigil")
+	runTo(T + cfg.startDelay * 1000 + 500)
+	runTo(T + 60000)
+	local cb4 = Monster(r4.bossId)
+	registered.ChaosAscendedBossDeath.onDeath(cb4)
+	cb4:remove()
+	runTo(T + 10)
+	eq(r4.state, "success", "the tester's Cinderheart falls")
+	eq(#ChaosLeaderboard.rec, recs, "no board row of a tester")
+	check(Game.lastBroadcast == nil, "no broadcast of a tester's kill")
+	A.interruptAll()
+	Game.lastBroadcast = lastBroadcast
+end
+
+
 print(string.format("uber_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

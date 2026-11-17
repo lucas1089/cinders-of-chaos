@@ -739,6 +739,20 @@ function M.lowLevelText()
 	return ChaosI18n.msg("The hideout opens at level %d.", cfg.minLevel or 1)
 end
 
+-- tester bots and players never visit one another's hideouts (O595): a visit counts for the owner, a like, the showcase and the list of
+-- recent visits are what players read. A character may always enter its own, staff may enter any (/hideout). The refusal text, or nil
+function M.sideRefusal(ownerGuid, visitor)
+	if ownerGuid == visitor:getGuid() or isStaff(visitor) then
+		return nil
+	end
+	local visitorIsTester = Chaos.isTester and Chaos.isTester(visitor) == true
+	local ownerIsTester = Chaos.isTesterGuid and Chaos.isTesterGuid(ownerGuid) == true
+	if visitorIsTester ~= ownerIsTester then
+		return "Testers and players are never mixed."
+	end
+	return nil
+end
+
 function M.enter(player, owner, back)
 	owner = tonumber(owner) or player:getGuid()
 	local here = player:getPosition()
@@ -757,6 +771,10 @@ function M.enter(player, owner, back)
 	local name = nameOf(owner)
 	if not name then
 		return false, "There is no such character."
+	end
+	local mixed = M.sideRefusal(owner, player)
+	if mixed then
+		return false, mixed
 	end
 	local d = M.load(owner)
 	local ok, why = K.mayVisit(d.perm, M.relation(owner, player))
@@ -1170,14 +1188,16 @@ function M.sendVisits(player)
 	local friends = {}
 	for _, g in ipairs(order) do
 		local d = M.load(g)
-		if K.mayVisit(d.perm, M.relation(g, player)) then
+		if not M.sideRefusal(g, player) and K.mayVisit(d.perm, M.relation(g, player)) then
 			local t = K.theme(cfg, d.theme) or K.defaultTheme(cfg)
 			friends[#friends + 1] = {guid = g, name = nameOf(g) or "?", why = cand[g], theme = t.name, likes = d.likes,
 				visits = d.visits, online = Player(g) ~= nil}
 		end
 	end
 	local rows = Chaos.select(string.format("SELECT h.`player_id`, p.`name`, h.`theme`, h.`likes`, h.`visits` FROM `%s` h " ..
-		"JOIN `players` p ON p.`id` = h.`player_id` WHERE h.`permission` = 3 ORDER BY h.`likes` + h.`visits` DESC LIMIT 100", T.hideouts),
+		"JOIN `players` p ON p.`id` = h.`player_id` WHERE h.`permission` = 3 AND %s ORDER BY h.`likes` + h.`visits` DESC LIMIT 100", T.hideouts,
+		-- the showcase of the players shows no tester's hideout (O595)
+		Chaos.isTester(player) and "1 = 1" or Chaos.notTesterSql("p")),
 		{{"player_id", "n"}, {"name", "s"}, {"theme", "s"}, {"likes", "n"}, {"visits", "n"}})
 	local list = {}
 	for _, r in ipairs(rows) do

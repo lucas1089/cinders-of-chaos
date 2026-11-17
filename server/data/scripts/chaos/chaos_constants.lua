@@ -2335,6 +2335,12 @@ Chaos.storage.survey = 7103060
 -- -1 (set at the hello, cleared at login and logout; 7103121 - 7103129 free). No table.
 ChaosOpcodes.fxOwner = 164
 Chaos.storage.fxOwner = 7103120
+-- Status layer (O597; data/lib/chaos_status_vfx.lua, status_vfx.lua; client game_statusfx): which of 14 statuses (burn, freeze,
+-- shock ...) the creatures near a player show, as bit masks; the client plays the pair 73 effects on them. client -> server
+-- `hello {on}`, server -> client `cfg {on, e, ms}` and `s {l}` (only to a player whose client said hello). 165 is free in the
+-- reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode collision
+-- check"; tests/status_vfx_test.lua). No storage, no table.
+ChaosOpcodes.statusVfx = 165
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

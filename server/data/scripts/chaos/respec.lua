@@ -204,6 +204,9 @@ actions.resetPreset = function(player, data)
 	T.sendPoints(player)
 	ChaosPassiveTree.apply(player)
 	R.sendInfo(player)
+	if ChaosGapFx then -- O606
+		ChaosGapFx.on(player, "respec")
+	end
 	T.sendMessageBox(player, "Reset", free and Chaos.t(player, "Your passive tree was reset for free (%s).", free) or
 		Chaos.t(player, "Your passive tree was reset for %s gold coins.", Core.formatGold(cost)))
 	return true
@@ -229,6 +232,9 @@ actions.paragonReset = function(player)
 	R.useFree(player)
 	P.resetAll(player)
 	R.sendInfo(player)
+	if ChaosGapFx then -- O606
+		ChaosGapFx.on(player, "respec")
+	end
 	box(player, "Paragon", free and Chaos.t(player, "Your Paragon points were reset for free (%s).", free) or
 		Chaos.t(player, "Your Paragon points were reset for %s gold coins.", Core.formatGold(cost)))
 	return true

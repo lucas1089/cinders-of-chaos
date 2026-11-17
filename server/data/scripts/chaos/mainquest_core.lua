@@ -895,4 +895,40 @@ function M.talk(cfg, get, set, items)
 	return "wait"
 end
 
+-- ------------------------------------------------------------------------------------------------- the tester bots (O599)
+-- What a bot can play of a step (the check mainquest_walk, tools/tester_checks.py), from the step's first condition:
+--   "talk"   walk to the NPC of `where` and say the words (a bring step, which hands over the drops, is "kill": the drops come first)
+--   "visit"  walk to the place of the condition
+--   "kill"   walk to the `where` place and kill the named monsters ("count" steps: a kill counter, or a quest drop of the same kill)
+--   "skip"   everything else (a spell, a window, a stat, a flag, a resistance, a gear piece, a storage, the boss): `reason` says which
+-- -> {action, reason, label, monsters, target, radius}
+function M.botPlan(step)
+	local c = step and step.conds and step.conds[1]
+	if not c then
+		return {action = "skip", reason = "the step has no condition"}
+	end
+	if c.c == "talk" then
+		if c.bring then
+			return {action = "skip", reason = "a bring step: the drops of " .. tostring(c.bring) .. " are handed over (not played yet)"}
+		end
+		if not (step.where and step.where.k == "npc" and step.where.name) then
+			return {action = "skip", reason = "a talk step with no NPC to walk to"}
+		end
+		return {action = "talk", label = step.where.name}
+	end
+	if c.c == "visit" and c.pos then
+		return {action = "visit", label = c.label, radius = c.radius or 6}
+	end
+	if c.c == "count" and type(c.mons) == "table" and #c.mons > 0 then
+		if not (step.where and step.where.k == "pos" and step.where.pos) then
+			return {action = "skip", reason = "a kill step with no place to walk to"}
+		end
+		return {action = "kill", label = c.label, monsters = c.mons, target = c.target}
+	end
+	if c.c == "boss" then
+		return {action = "skip", reason = "the boss is a spell trial of the trials engine: no testers' instance of it is built"}
+	end
+	return {action = "skip", reason = "the step asks for '" .. tostring(c.c) .. "' (the bots do not play it)"}
+end
+
 return M

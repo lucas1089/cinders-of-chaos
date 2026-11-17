@@ -1319,5 +1319,54 @@ function eve:getTown() return nil end
 req(eve, "leave")
 ok(eve.pos.x == 60 and eve.pos.y == 60, "no home town: the main city's temple")
 
+-- =====================================================================================================================
+-- tester bots and players never visit one another's hideouts (O595)
+-- =====================================================================================================================
+do
+	local pa = newPlayer(70, "Pia", 700, {x = 100, y = 100, z = 7})
+	local tb = newPlayer(71, "Tester Hha", 710, {x = 100, y = 100, z = 7})
+	local tc = newPlayer(72, "Tester Hhb", 720, {x = 100, y = 100, z = 7})
+	tb.st[Chaos.storage.tester] = 1
+	tc.st[Chaos.storage.tester] = 1
+	Chaos.testerGuids[71], Chaos.testerGuids[72] = "Tester Hha", "Tester Hhb"
+	local gm = newPlayer(73, "Gm Hh", 730, {x = 100, y = 100, z = 7})
+	gm.group = 4
+	eq(M.sideRefusal(70, pa), nil, "a player's own hideout")
+	eq(M.sideRefusal(71, tb), nil, "a tester's own hideout")
+	eq(M.sideRefusal(72, tb), nil, "a tester may visit a tester")
+	eq(M.sideRefusal(70, tb), "Testers and players are never mixed.", "a tester may not visit a player")
+	eq(M.sideRefusal(71, pa), "Testers and players are never mixed.", "a player may not visit a tester")
+	eq(M.sideRefusal(71, gm), nil, "staff may enter any (/hideout)")
+	eq(M.sideRefusal(70, gm), nil, "staff may enter a player's")
+	-- the real entry: a public hideout is still no place for the other side
+	DB.hideouts[70] = {theme = "", permission = 3, visits = 0, likes = 0}
+	DB.hideouts[71] = {theme = "", permission = 3, visits = 0, likes = 0}
+	DB.hideouts[72] = {theme = "", permission = 3, visits = 0, likes = 0}
+	local before = DB.hideouts[70].visits
+	local okE, whyE = M.enter(tb, 70)
+	ok(okE == false and whyE == "Testers and players are never mixed.", "a tester at a public hideout of a player is refused")
+	eq(DB.hideouts[70].visits, before, "and no visit is counted")
+	okE, whyE = M.enter(pa, 71)
+	ok(okE == false and whyE == "Testers and players are never mixed.", "a player at a public hideout of a tester is refused")
+	okE = M.enter(tb, 72)
+	ok(okE == true, "a tester visits a tester's public hideout")
+	M.leave(tb)
+	okE = M.enter(tb, 71)
+	ok(okE == true, "a tester enters its own")
+	M.leave(tb)
+	-- the showcase of a player filters the testers by SQL, the tester's own does not
+	local shown = {}
+	local realSelect = Chaos.select
+	Chaos.select = function(q, ...)
+		if q:find("`permission` = 3", 1, true) then shown[#shown + 1] = q end
+		return realSelect(q, ...)
+	end
+	M.sendVisits(pa)
+	M.sendVisits(tb)
+	Chaos.select = realSelect
+	ok(#shown == 2 and shown[1]:find("`ts`.`key` = " .. Chaos.storage.tester, 1, true) and not shown[2]:find("`ts`", 1, true),
+		"the showcase of a player leaves the testers out, a tester's is not cut")
+end
+
 os.time = realTime
 print(string.format("hideout_test: %d checks OK", checks))

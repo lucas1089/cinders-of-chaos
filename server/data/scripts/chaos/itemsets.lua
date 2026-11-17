@@ -586,7 +586,9 @@ function S.grantChase(player, source, key, ctx, rand)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You found %s, a piece of %s.%s", hit.piece.name,
 		hit.set.name, inbox and Chaos.t(player, " Your backpack was full: it is in your inbox.") or ""))
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+	if not (ChaosGapFx and ChaosGapFx.on(player, "set_complete")) then -- O606
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+	end
 	if Game.broadcastMessage then
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s (%s)!", player:getName(), hit.piece.name, hit.set.name)
 	end

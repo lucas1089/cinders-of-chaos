@@ -188,7 +188,7 @@ end
 -- The message of a dissolve (client game_killdissolve): the dying monster's look (nil when it has no creature look: a plain
 -- effect plays), its place, the mode and tint and the plain effect {id, dx, dy} the client plays when it cannot dissolve.
 -- outfit = the engine's {lookType, lookTypeEx, lookHead, lookBody, lookLegs, lookFeet, lookAddons}; vfx = ChaosVfx[name].
-function C.dissolvePayload(cfg, creatureId, pos, mode, tint, outfit, direction, vfx)
+function C.dissolvePayload(cfg, creatureId, pos, mode, tint, outfit, direction, vfx, over)
 	if not C.dissolveKnown(cfg, mode) or type(pos) ~= "table" or type(outfit) ~= "table" then
 		return nil
 	end
@@ -202,6 +202,10 @@ function C.dissolvePayload(cfg, creatureId, pos, mode, tint, outfit, direction, 
 		d = tonumber(direction) or 2}
 	if type(vfx) == "table" and tonumber(vfx.id) then
 		data.v = {id = vfx.id, dx = vfx.dx ~= 0 and vfx.dx or nil, dy = vfx.dy ~= 0 and vfx.dy or nil}
+	end
+	-- O597: the mode's ground overlay, an effect of client pair 73 the client plays on the tile under the dissolve
+	if type(over) == "table" and tonumber(over.id) then
+		data.p = {id = over.id, dx = over.dx ~= 0 and over.dx or nil, dy = over.dy ~= 0 and over.dy or nil}
 	end
 	return {action = "kdis", data = data}
 end

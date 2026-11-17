@@ -84,8 +84,9 @@ namespace Chaos.Core.LiveCheck
         IEnumerable<string> TimelineLines(string kind) => timeline.Where(x => x.Kind == kind).Select(x => (x.T / 1000).ToString("0.0", CultureInfo.InvariantCulture) + " s " + x.Text);
 
         /// <summary>The extended opcodes outside the table that a first login brings: the base modules (89 tasks, 92 faction coins, 99 and 106 stats and upgrade points, 181) and the guard
-        /// challenge (0, 189). Unity does not read them (docs/UNITY_PARITY.md); any other opcode in a first login is a message Core has no reader for.</summary>
-        static readonly HashSet<byte> KnownUnread = new HashSet<byte> { 0, 89, 92, 99, 106, 181, 189 };
+        /// challenge (0, 189), and the Deck of Cards (173, O570: on tools/ci/unity_opcodes_allowlist.txt, not ported while Unity work is paused). Unity does not read them
+        /// (docs/UNITY_PARITY.md); any other opcode in a first login is a message Core has no reader for.</summary>
+        static readonly HashSet<byte> KnownUnread = new HashSet<byte> { 0, 89, 92, 99, 106, 173, 181, 189 };
 
         /// <summary>The ext lines of the first login grouped by what they carry: "opcode name action xN @first second".</summary>
         List<string> TimelineExtGrouped()

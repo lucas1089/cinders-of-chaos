@@ -1031,6 +1031,9 @@ local function spawnAdds(run, adds)
 			setHealth(m, hp)
 			GB.monsterRun[m:getId()] = run
 			run.adds[m:getId()] = true
+			if ChaosGapFx then -- O606
+				ChaosGapFx.on(m, "summon_gate")
+			end
 			made = made + 1
 		end
 	end
@@ -1095,6 +1098,9 @@ local function telegraph(run, name)
 	for i, ms in ipairs(timing.marks) do
 		local filling = timing.kinds and timing.kinds[i] == "fill"
 		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
+		if ChaosGapFx then -- O606: the strike circle on client pair 73
+			effect = ChaosGapFx.telegraph(effect)
+		end
 		addEvent(function()
 			if not live() then
 				return
@@ -1120,7 +1126,11 @@ local function telegraph(run, name)
 				end
 			end
 			if mark and ChaosTelegraph then
-				ChaosTelegraph.draw(mark, pulse)
+				ChaosTelegraph.draw(mark, pulse, function(who) -- O606: the strike circle over the floor mark
+					for _, t in ipairs(plan.big) do
+						fx(P(t), effect, nil, who)
+					end
+				end)
 			else
 				pulse(nil)
 			end

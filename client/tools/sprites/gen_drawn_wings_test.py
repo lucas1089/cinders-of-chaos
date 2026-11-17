@@ -21,6 +21,8 @@ import gen_drawn_wings as gd  # noqa: E402
 import gen_drawn_wings_families as fm  # noqa: E402
 
 fails = 0
+SHEETS = os.environ.get('CHAOS_WINGS_SRC', '')   # the private folder of the painted sheets (O594), or nothing
+fm.use_src('')                                   # everything below is the code drawing until the O594 part names it
 
 
 def check(cond, what):
@@ -449,6 +451,187 @@ for _bad in ('35', '370', '2073:35', '2073+4'):
         check(False, 'O587: the fit preview refuses %s' % _bad)
     except SystemExit:
         pass
+
+# ---- O594: ten rows painted with PixelLab; no picture in the repository, the sheets come from a private folder
+import hashlib as _hl  # noqa: E402
+import gen_pixellab_wings as pw  # noqa: E402
+_prow = fm587.sheet_rows()
+_TEN = {58, 93, 96, 104, 109, 110, 111, 116, 117, 118}
+check(set(_prow) == _TEN, 'O594: the ten rows of pixellab_rows.csv')
+_by = {sp.wings: sp for sp in _specs}
+for _w, _r in sorted(_prow.items()):
+    check(_w in _by and _by[_w].key == _r['key'], 'O594: row %d is a row of designs.csv with its key' % _w)
+    check(_r['source'] == 'pixellab' and _r['frames'] == '16' and _r['notes'], 'O594: row %d names its source' % _w)
+    pw.parse_motion(_r['ms']), pw.parse_motion(_r['mn']), pw.parse_fit(_r['fs']), pw.parse_fit(_r['fn']), pw.parse_tint(_r['tint'])
+    check(len(_r['sha256']) == 64 and set(_r['sha256']) <= set('0123456789abcdef'), 'O594: row %d has the sha256 of its sheet' % _w)
+check(len({_r['sha256'] for _r in _prow.values()}) == len(_prow), 'O594: no two rows share a sheet')
+_psums = fm587.read_sums(fm587.SHEET_SUMS)
+_dsums = fm587.read_sums()
+check(set(_psums) == _TEN, 'O594: pixellab_rows.sums has the ten rows')
+check(all(_psums[_w] != _dsums[_w] for _w in _psums), 'O594: a painted row is not the code drawing')
+check(set(pw.EXTRAS) == _TEN, 'O594: every painted row names its lights')
+_here = os.path.dirname(os.path.abspath(__file__))
+_pics = [n for n in os.listdir(os.path.join(_here, 'drawn_wings')) if n.lower().endswith(('.png', '.gif', '.bmp', '.webp'))]
+check(not _pics, 'O594: no picture in drawn_wings: %s' % _pics)
+
+# the folder path on a made-up sheet: the loader, the sha256 guard, the fall back to code
+_sp = _by[111]
+_code = {d: [fm587.render_frame(_sp, d, f) for f in (0, 5)] for d in gd.DIRS}
+check(fm587.sheet_faces(_sp) is None, 'O594: no folder named, a row is drawn by code')
+with tempfile.TemporaryDirectory() as _tmp:
+    _raw = os.path.join(_tmp, 'raw')
+    os.makedirs(_raw)
+    for _v in pw.VIEWS:                                    # a made-up raw loop: a bar that swings, soft edged, with a crumb
+        for _f in range(gd.FRAMES + 1):
+            _a = np.zeros((gd.SIZE, gd.SIZE, 4), np.uint8)
+            _t = abs(_f % gd.FRAMES - 8)                    # up and down, every step a pixel
+            _y = 30 if _v == 'south' else 44
+            _a[_y + _t:_y + 14 + _t, 20:70] = (90 + 4 * _f, 120, 200, 255)
+            _a[_y + 3 + _t:_y + 9 + _t, 26:60] = (200, 210, 240 - 3 * _f, 255)
+            _a[_y + 14 + _t, 20:70] = (90, 120, 200, 90)   # under the alpha cut
+            _a[5, 5] = (250, 0, 0, 255)                    # a crumb
+            Image.fromarray(_a, 'RGBA').save(os.path.join(_raw, '111_%s_%02d.png' % (_v[0], _f)))
+    _dir = os.path.join(_tmp, 'sheets')
+    _done = pw.clean(_raw, _dir, only={111}, log=lambda *a: None, rows={111: {}})
+    check(_done == [(111, [])], 'O594: a cleaned loop holds the bar: %s' % (_done,))
+    check(fm587.SRC_DIR == '', 'O594: the cleaning step leaves no folder named')
+    _sheet = np.asarray(Image.open(os.path.join(_dir, '111.png')))
+    check(_sheet.shape == (4 * gd.SIZE, gd.FRAMES * gd.SIZE, 4), 'O594: a sheet is 16 x 4 cells of 96 px')
+    check(set(np.unique(_sheet[..., 3]).tolist()) <= {0, 255, gd.GLOW_ALPHA}, 'O594: a sheet has alpha 0, 255 or the glow level')
+    check(not _sheet[5, 5::gd.SIZE, 3].any(), 'O594: crumbs are dropped')
+    _solid = _sheet[..., 3] == 255
+    check(len(np.unique(_sheet[_solid][:, :3], axis=0)) <= pw.PALETTE + 2, 'O594: one palette a row')
+    check(np.array_equal(_sheet[:, :gd.SIZE], np.asarray(Image.open(os.path.join(_dir, '111.png')))[:, :gd.SIZE]), 'O594: a sheet reads back')
+    _b0 = pw.box_of([_sheet[:gd.SIZE, _f * gd.SIZE:(_f + 1) * gd.SIZE, 3] == 255 for _f in range(gd.FRAMES)])
+    check(_b0[0] + _b0[2] == 2 * gd.ANCHOR[0], 'O620: the pair stands with its middle on the anchor column: %s' % (_b0,))
+    fm587.use_src(_dir)
+    try:
+        fm587.render_frame(_sp, 'south', 0)
+        check(False, 'O594: a sheet that is not the one of the table is refused')
+    except SystemExit:
+        pass
+    fm587.use_src(_dir, check=False)
+    _bk, _fr = fm587.render_frame(_sp, 'south', 5)
+    check(np.array_equal(_bk, _sheet[:gd.SIZE, 5 * gd.SIZE:6 * gd.SIZE]) and not _fr.any(), 'O594: south is the sheet, behind the body')
+    _bk, _fr = fm587.render_frame(_sp, 'north', 5)
+    check(np.array_equal(_fr, _sheet[gd.SIZE:2 * gd.SIZE, 5 * gd.SIZE:6 * gd.SIZE]) and not _bk.any(), 'O594: north is the sheet, in front of the body')
+    _eb, _ef = fm587.render_frame(_sp, 'east', 5)
+    check(np.array_equal(_eb, _sheet[2 * gd.SIZE:3 * gd.SIZE, 5 * gd.SIZE:6 * gd.SIZE]) and not _ef.any(),
+          'O594: east is the third row of the sheet, behind the body')
+    _wb, _wf = fm587.render_frame(_sp, 'west', 5)
+    check(np.array_equal(_wb, _sheet[3 * gd.SIZE:, 5 * gd.SIZE:6 * gd.SIZE]) and not _wf.any(),
+          'O594: west is the fourth row of the sheet, behind the body')
+
+    # ---- O620: the layout of a painted row. One wing is painted; the pair, the side views and the join are made by rule
+    _fr = pw.row_frames(_sp)
+    _n = pw.measure(_fr)
+    check(pw.fit_problems(_fr) == [], 'O620: a cleaned loop holds the layout: %s' % pw.fit_problems(_fr))
+    for _d in gd.DIRS:
+        check(abs(_n['centre'][_d]) <= 1.0, 'O620: %s, the wings stand on the torso column (%.1f px off)' % (_d, _n['centre'][_d]))
+        check(_n['join'][_d] <= 1.0, 'O620: %s, no gap between the wings and the join (%.1f px)' % (_d, _n['join'][_d]))
+        check(_n['one'][_d] >= 0.9, 'O620: %s, the pair hangs together (%.2f)' % (_d, _n['one'][_d]))
+        check((_fr[_d][3][pw.JOIN[1], pw.JOIN[0], 3] == 255), 'O620: %s, the join is the same point in every view' % _d)
+    for _d in pw.VIEWS:
+        check(_n['lopsided'][_d] <= pw.LOPSIDED, 'O620: %s, the pair is the same left and right' % _d)
+        check(all(np.array_equal(pw.wing_of(_i), pw.mirrored(pw.wing_of(_i))) for _i in _fr[_d]), 'O620: %s, every frame is its own mirror picture' % _d)
+    for _d in ('east', 'west'):
+        check(_n['top'][_d] >= pw.SIDE_RISE and _n['hang'][_d] <= pw.SIDE_HANG,
+              'O620: %s, the side wing rises over the shoulder line and does not hang (%d px, %.2f)' % (_d, _n['top'][_d], _n['hang'][_d]))
+        _ys, _xs = np.nonzero(pw.wing_of(_fr[_d][0]))
+        check(_ys.mean() < pw.JOIN[1], 'O620: %s, the middle of the side wing lies over the join' % _d)
+    _ex = np.nonzero(pw.wing_of(_fr['east'][0]))[1]
+    _wx = np.nonzero(pw.wing_of(_fr['west'][0]))[1]
+    check(_ex.mean() < pw.JOIN[0] < _wx.mean(), 'O620: the east wing trails left of the join, the west wing right')
+    check(_n['pair'] <= pw.PAIR_GAP, 'O620: north and south share their colours (%.2f)' % _n['pair'])
+    check(_n['edge_dark']['north'] >= pw.CONTRAST and _n['line_light']['north'] >= pw.CONTRAST,
+          'O620: the north view reads on dark and on light ground (%.1f, %.1f)' % (_n['edge_dark']['north'], _n['line_light']['north']))
+
+    # the same wings on a body: the engine puts the anchor on the torso (base patch 0204), so the middle of the pair
+    # is the middle of the torso, on every figure of the fixtures
+    for _name, _alpha, _want in fm587.read_fixtures():
+        _rel = fm587.body_rel(_alpha)
+        if _rel is None or fm587.wing_shift(_rel) == (0, 0):
+            continue
+        for _d in gd.DIRS:
+            _off = pw.on_body(_n['centre'][_d], _rel)
+            check(abs(_off) <= 1.0, 'O620: %s on body %s, the wings are %.1f px beside the torso' % (_d, _name, _off))
+
+    # what the measure refuses
+    def _moved(_frames, _dx, _dy):
+        return {_d: [pw.moved(_i, _dx, _dy) for _i in _seq] for _d, _seq in _frames.items()}
+
+    def _has(_frames, _word):
+        return any(_word in _t for _t in pw.fit_problems(_frames))
+
+    check(_has(_moved(_fr, 3, 0), 'beside the torso'), 'O620: a pair 3 px beside the torso is refused')
+    check(_has(_moved(_fr, 0, -5), 'a gap'), 'O620: a pair 5 px over the join is refused')
+    _cut = {_d: [_i.copy() for _i in _seq] for _d, _seq in _fr.items()}
+    for _i in _cut['south']:
+        _i[:, pw.JOIN[0] - 6:pw.JOIN[0] - 3] = 0
+    check(_has(_cut, 'comes apart') or _has(_cut, 'not the same left and right'), 'O620: a pair that comes apart is refused')
+    _red = {_d: [_i.copy() for _i in _seq] for _d, _seq in _fr.items()}
+    for _i in _red['north']:
+        _in = pw.wing_of(_i) & ~pw.open_edge(pw.wing_of(_i))
+        _i[..., :3][_in] = (230, 40, 30)
+    check(_has(_red, 'do not share their colours'), 'O620: a north view in colours the south view lacks is refused')
+    _dim = {_d: [_i.copy() for _i in _seq] for _d, _seq in _fr.items()}
+    for _i in _dim['north']:
+        _i[..., :3][pw.wing_of(_i)] = pw.GROUND_DARK
+    check(_has(_dim, 'lost on dark ground'), 'O620: a north view as dark as the ground is refused')
+    _old = dict(_fr)
+    _old['east'] = [np.ascontiguousarray(_i.transpose(1, 0, 2)) for _i in _fr['south']]      # the O594 side view
+    check(_has(_old, 'hangs') or _has(_old, 'beside the torso'), 'O620: the south picture turned on its side is refused')
+    check(abs(pw.contrast((255, 255, 255), (0, 0, 0)) - 21.0) < 1e-6 and pw.contrast((9, 9, 9), (9, 9, 9)) == 1.0, 'O620: the contrast ratio')
+
+    _row = dict(ms='still 6', mn='loop 3', fs='45 -1 -1 5 90 100', fn='', tint='20 110 95', rim='c0b0ff')
+    _done = pw.clean(_raw, os.path.join(_tmp, 'fit'), only={111}, log=lambda *a: None, rows={111: _row})
+    check(_done == [(111, [])], 'O594: a loop with a beat, a fit and a tint holds the bar: %s' % (_done,))
+    check(not np.array_equal(np.asarray(Image.open(os.path.join(_tmp, 'fit', '111.png'))), _sheet), 'O594: the numbers of a row change its sheet')
+    check(pw.parse_motion('') == ('loop', 0) and pw.parse_fit('') == pw.FIT_NONE and pw.parse_tint('') == pw.TINT_NONE
+          and pw.rim_of({}) is None, 'O594: an empty column changes nothing')
+    for _bad_text, _fn in (('sway 3', pw.parse_motion), ('1 2 3', pw.parse_fit), ('-1 -1 -1 0 20 100', pw.parse_fit), ('1 2', pw.parse_tint),
+                           ('fff', lambda _t: pw.rim_of({'rim': _t}))):
+        try:
+            _fn(_bad_text)
+            check(False, 'O594: a wrong column is refused: %s' % _bad_text)
+        except ValueError:
+            pass
+    _other = _by[1]
+    check(fm587.digest(fm587.patterns(_other)) == _dsums[1], 'O594: with a folder named a row that is not painted is still drawn by code')
+    try:
+        fm587.render_frame(_by[58], 'south', 0)
+        check(False, 'O594: a folder without the sheet of a painted row is refused')
+    except SystemExit:
+        pass
+    try:
+        fm587.main(['table', '--src', _dir])
+        check(False, 'O594: the table of the code drawing takes no folder')
+    except SystemExit:
+        pass
+    fm587.use_src('')
+    check(all(np.array_equal(_code[d][i][0], fm587.render_frame(_sp, d, f)[0]) for d in gd.DIRS for i, f in enumerate((0, 5))),
+          'O594: without the folder the row is the code drawing again')
+
+# the real sheets, when their folder is named: the files of the table, the bar, the sums
+if SHEETS:
+    for _w, _r in sorted(_prow.items()):
+        _path = os.path.join(SHEETS, '%d.png' % _w)
+        check(os.path.isfile(_path), 'O594: %s is there' % _path)
+        if os.path.isfile(_path):
+            with open(_path, 'rb') as _f:
+                check(_hl.sha256(_f.read()).hexdigest() == _r['sha256'], 'O594: %d.png is the sheet of the table' % _w)
+    fm587.use_src(SHEETS)
+    for _w in sorted(_prow):
+        _frames = fm587.render(_by[_w])
+        _bad = fm587.bar_problems(_by[_w], _frames)
+        check(not _bad, 'O594: the bar, painted row %d %s: %s' % (_w, _by[_w].key, _bad[:4]))
+        check(fm587.digest(fm587.patterns(_by[_w])) == _psums[_w], 'O594: pixellab_rows.sums is stale for %d' % _w)
+        _fit = pw.fit_problems({_d: [gd.merge(*_p) for _p in _frames[_d]] for _d in gd.DIRS})
+        check(not _fit, 'O620: the layout, painted row %d %s: %s' % (_w, _by[_w].key, _fit[:4]))
+    fm587.use_src('')
+    print('O594, O620: the ten sheets of %s hold the table, the bar, the layout and the sums' % SHEETS)
+else:
+    print('O594: no sheets folder named (CHAOS_WINGS_SRC), the ten painted sheets are not checked')
 
 if fails:
     print('%d FAILED' % fails)

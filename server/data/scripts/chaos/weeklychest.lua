@@ -203,6 +203,9 @@ function W.credit(player, key)
 	if due.chest then
 		local r, inbox = give(player, c.chest)
 		toast(player, "Weekly Chest", Chaos.t(player, "The Weekly Chest opens: %s", rewardText(player, r, inbox)))
+		if ChaosGapFx then -- O606
+			ChaosGapFx.on(player, "chest_royal")
+		end
 	end
 	if due.bonus then
 		local _, def = K.bonusOption(c, math.random())

@@ -548,6 +548,12 @@ if ! [[ $SUSER =~ ^[a-z_][a-z0-9_-]{0,30}$ ]] || [ "$SUSER" = root ]; then die "
 unit_prop() { systemctl show "$UNIT" -p "$1" --value 2>/dev/null || true; }
 # systemd runs a unit without User= as root; a numeric 0 is root as well
 unit_user() { local u; u=$(unit_prop User); case $u in ''|0) u=root ;; esac; printf '%s' "$u"; }
+# milliseconds since the epoch from bash itself: date's %N is not in every coreutils
+epoch_ms() {
+  local t=${EPOCHREALTIME:-}
+  t=${t/[.,]/}
+  if [ ${#t} -gt 3 ]; then printf '%s\n' "${t%???}"; else printf '%s000\n' "$(date +%s)"; fi
+}
 proc_user() { ps -o user:32= -p "$1" 2>/dev/null | tr -d ' ' || true; }
 # the engine's pid, else the unit's main process
 run_pid() {
@@ -1697,11 +1703,11 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     flock -n 9 || sp_fail busy "another view is being drawn" 75
     # at most one view every 0.8 s
     last=$(head -c 20 "$SPSTATE/last" 2>/dev/null | tr -dc 0-9)
-    now_ms=$(date +%s%3N)
+    now_ms=$(epoch_ms)
     if [ -n "$last" ] && [ $((now_ms - last)) -ge 0 ] && [ $((now_ms - last)) -lt 800 ]; then
       sleep "0.$(printf '%03d' $((800 - (now_ms - last))))"
     fi
-    date +%s%3N > "$SPSTATE/last"
+    epoch_ms > "$SPSTATE/last"
     # the watch: a new line for a new name, else every 5 s (the engine keeps it 20 s)
     now=$(date +%s)
     prev=$(head -c 100 "$SPSTATE/watch" 2>/dev/null)

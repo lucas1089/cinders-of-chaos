@@ -1,0 +1,12 @@
+Module
+  name: game_statusfx
+  description: Status layer (O597): burn, freeze, shock, poison, curse, root, soak, stun, confusion, haste, blessing, regeneration, shield and fury drawn on any creature while the status holds (start, loop, stop), from effects of the sprite pair; the server tells which creatures show what (extended opcode 165); at most 2 statuses a creature and 24 on screen; switch in Options > Graphics
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ statusfx_logic, statusfx ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1006
+  @onLoad: init()
+  @onUnload: terminate()

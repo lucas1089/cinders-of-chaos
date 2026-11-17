@@ -26,6 +26,8 @@
 -- `radius` sqm (and 1 floor) of `pos`, or anywhere with anywhere = true. Entries without `monster` are not tracked.
 -- loc = nil: the window shows "near <closest town>" from the temples of Game.getTowns(). note = the line under the place
 -- when there are no coordinates to show.
+-- minPair = N: the entry is listed only while config.lua chaosClientPair is N or more (sources.clientPair; a boss
+-- whose look exists only from that client pair, bosslair_config.lua).
 return {
 	enabled = true,
 
@@ -205,6 +207,11 @@ return {
 		-- our area plans (server/tools/areaplan/plans/, "boss" block: the spawn the planner writes, its respawn)
 		{key = "lair_vharzul", category = "lair", name = "Vharzul the Verdant Eye", monster = "Vharzul the Verdant Eye",
 			loc = "Embergut Rift", pos = {x = 16542, y = 14381, z = 10}, radius = 12, rule = {type = "timer", seconds = 14400}},
+		-- a boss lair (bosslair_config.lua: a planned room of its own behind a portal in the hunt). minPair: listed only
+		-- while config.lua chaosClientPair is that or more, as the lair itself opens (server/README.md "Talath's lair (O616)")
+		{key = "lair_talath", category = "lair", name = "Talath", monster = "Talath", minPair = 73, level = 650,
+			loc = "The Shard Hollow", note = "A rift in the Glacial Col of the Frostvein Reach",
+			pos = {x = 15880, y = 15517, z = 7}, radius = 24, rule = {type = "timer", seconds = 14400}},
 
 		-- ------------------------------------------------------------------ rifts and omens (rift_config.lua)
 		{key = "rift_guardian", category = "omen", name = "Rift Guardian", loc = "Rift (instance)", level = 100,

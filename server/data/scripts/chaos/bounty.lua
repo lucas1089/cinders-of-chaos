@@ -401,7 +401,9 @@ local function payContract(player, c, e)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Bounty completed: %s. Reward: %s.%s", c.name,
 		table.concat(parts, ", "), inbox and Chaos.t(player, " Your backpack was full: the orbs are in your inbox.") or ""))
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	if not (ChaosGapFx and ChaosGapFx.on(player, "bounty")) then -- O606
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	end
 	if ChaosRift and ChaosRift.onBountyPaid then
 		ChaosRift.onBountyPaid(player, c) -- a chance of a tier-1 Rift Key (rift_config.lua bountyKey)
 	end
@@ -614,6 +616,73 @@ function B.onKill(creature, killer, mostDamageKiller)
 			end
 		end
 	end
+end
+
+-- ---------------------------------------------------------------- what a person sees (the tester bots, O599)
+-- For the tester bots' `!tester bounty` (tools/tester_helper.lua checks that the asker is a tester): the contracts of the visible bands that
+-- a hunt mark lists (B.testerCandidates: the smallest first, with where they spawn), the contracts the character holds with their progress,
+-- and for the first one held `guide` (B.guide: the nearest living monster of that name within 40 tiles, else the hunt mark). Reads only.
+-- `name` (optional) answers "where does monster X spawn" for any monster: the marks that list it and the nearest one.
+function B.probe(player, name)
+	local pos = player:getPosition()
+	local at = {x = pos.x, y = pos.y, z = pos.z}
+	local marks = ChaosPoi and ChaosPoi.all or {}
+	local board = B.board()
+	local st = stateOf(player)
+	local out = {level = player:getLevel(), pos = at, day = board.day, maxActive = cfg.maxActive, active = {}, candidates = {}}
+	local visible, contracts = B.visibleBands(player:getLevel(), cfg), {}
+	for _, bi in ipairs(visible) do
+		for _, c in ipairs(board.bands[bi] and board.bands[bi].contracts or {}) do
+			contracts[#contracts + 1] = c
+		end
+	end
+	local taken, first = {}, nil
+	for key, e in pairs(st.entries) do
+		if e.day == board.day then
+			taken[key] = true
+			local row = {key = key, name = e.monster, progress = e.progress, required = e.required, status = e.status}
+			out.active[#out.active + 1] = row
+			if e.status == 0 and not first then
+				first = row
+			end
+		end
+	end
+	table.sort(out.active, function(a, b) return a.key < b.key end)
+	for i, c in ipairs(B.testerCandidates(contracts, taken, marks, player:getLevel(), at)) do
+		if i > 6 then
+			break
+		end
+		out.candidates[#out.candidates + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, distance = c.distance,
+			mark = {x = c.mark.x, y = c.mark.y, z = c.mark.z, n = c.mark.n}}
+	end
+	local function nearestMonster(monsterName, center, radius)
+		local best, bd
+		for _, cr in ipairs(Game.getSpectators(Position(center.x, center.y, center.z), false, false, radius, radius, radius, radius) or {}) do
+			if cr:isMonster() and not cr:getMaster() and typeNameOf(cr):lower() == monsterName:lower() then
+				local p = cr:getPosition()
+				if p.z == pos.z then
+					local d = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))
+					if not bd or d < bd then
+						best, bd = {x = p.x, y = p.y, z = p.z}, d
+					end
+				end
+			end
+		end
+		return best
+	end
+	if first then
+		table.sort(out.active, function(a, b) return a.key < b.key end)
+		local mark = B.nearestMark(B.spawnMarks(marks, first.name), at)
+		local monster = nearestMonster(first.name, at, 20)
+		out.guide = B.guide({active = first, pos = at, mark = mark, monster = monster, reach = 5})
+		out.target = first.key
+	end
+	if type(name) == "string" and name ~= "" then
+		local list = B.spawnMarks(marks, name)
+		local mark, d = B.nearestMark(list, at)
+		out.where = {name = name, marks = #list, nearest = mark and {x = mark.x, y = mark.y, z = mark.z, n = mark.n} or nil, distance = d}
+	end
+	return out
 end
 
 local death = CreatureEvent("ChaosBountyDeath")

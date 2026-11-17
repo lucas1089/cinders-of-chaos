@@ -765,7 +765,7 @@ for msg in rift_looks.problems(open(RIFT_CFG, encoding='utf-8').read(), BLANK_OU
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'server', 'tools'))
 import audit_shared_looks
 import client_pair
-for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED):
+for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE):
     for msg in audit_shared_looks.check_pool(pair=_pair):
         fail(f'server/data/monster/shared_looks_allow.csv: [look.shared] at client pair {_pair}: {msg}')
 # the recolour map: one row per monster, the copies are consecutive outfits right after pair 68's 3370 and inside the pair, never blank,
@@ -826,12 +826,110 @@ for _n, (_o, _nl) in sorted(_wmap.items()):
 for _nl, _c in sorted(_wcount.items()):
     if _c > 2:
         fail(f'server/data/monster/monster_wst_looks.csv: look {_nl} is on {_c} monsters (at most 2, owner rule of O533)')
+# the creature pack map (O608, after O605; server/data/monster/monster_creature_looks.csv, client pair 73, which is not built yet): one row per
+# monster, the new looks are the outfits 3527..3529 right after the 3,526 of pair 72, every one worn, at most 2 monsters on one, each monster wears
+# the old look in its file when it is ours and else in the committed bounty pool, no monster of the donor or the purchased map is in it, and
+# bosses only (owner 2026-11-17): no monster of the pool hunt list is on one of the new looks
+_cmap = audit_shared_looks.load_creature()
+_ccount = {}
+for _n, (_o, _nl) in sorted(_cmap.items()):
+    _ccount.setdefault(_nl, []).append(_n)
+    if _n in _own:
+        if _own[_n] != _o:
+            fail(f'server/data/monster/monster_creature_looks.csv: {_n}: the map says look {_o}, the monster file says {_own[_n]}')
+    elif _prow.get(_n) != _o:
+        fail(f'server/data/monster/monster_creature_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow.get(_n)}')
+    if _n in _dmap or _n in _wmap:
+        fail(f'server/data/monster/monster_creature_looks.csv: {_n} is in the donor or the purchased map as well')
+if sorted(_ccount) != list(range(3527, 3527 + len(_ccount))) or len(_ccount) != 3:
+    fail('server/data/monster/monster_creature_looks.csv: the new looks must be the 3 outfits 3527..3529, every one worn')
+for _nl, _ns in sorted(_ccount.items()):
+    if len(_ns) > 2:
+        fail(f'server/data/monster/monster_creature_looks.csv: look {_nl} is on {len(_ns)} monsters (at most 2)')
+    for _n in _ns:
+        if _n in _prow:
+            fail(f'server/data/monster/monster_creature_looks.csv: {_n} (look {_nl}) is a hunt monster of the pool: the creature looks are boss looks (O608)')
+# the swap map (O619, server/data/monster/monster_o619_looks.csv, client pair 73, no new outfit): one row per monster that leaves a look which fails the
+# stock bar of the O610 look audit (o619_look_facts.csv holds the measures of every old and new look: an old look fails, a new one passes) for
+# a look of pair 50 that no other monster, player or step wears: each monster wears the old look in its file when it is ours and in the committed
+# pool when it is a hunt monster, no monster of the donor, the purchased or the creature map is in it (a monster of the recolour map leaves its
+# copy for the new look), a new look is inside the pair, not blank, not a player look, not worn by a monster outside the map, not a new look of an
+# earlier map, at most 2 monsters on one (owner rule of O533), and a hunt monster on it moves while it stands (checked above at pair 73)
+import install_monster_swap_looks as swapmod
+_smap = audit_shared_looks.load_swap()
+_sfacts = swapmod.read_facts()
+_splayer = {int(r[0]) for r in csv.reader(open('server/data/monster/player_looks.csv', encoding='utf-8'))
+            if r[0].isdigit()}
+_sworn = {}
+for _n, _o_ in {**{r['name']: r['look'] for r in audit_shared_looks.pool_rows()}, **_own}.items():
+    _sworn.setdefault(_o_, set()).add(_n)
+_scount = {}
+_earlier_news = ({n for _o, n in _rmap.values()} | {n for _o, n in _dmap.values()} | {n for _o, n in _wmap.values()}
+                 | {n for _o, n in _cmap.values()})
+for _n, (_o, _nl) in sorted(_smap.items()):
+    _scount.setdefault(_nl, []).append(_n)
+    if _n in _own and _own[_n] != _o:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the map says look {_o}, the monster file says {_own[_n]}')
+    if _n in _prow and _prow[_n] != _o:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow[_n]}')
+    if _n not in _own and _n not in _prow:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n} is neither a monster file of ours nor a row of the pool')
+    if _n in _dmap or _n in _wmap or _n in _cmap:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n} is in the donor, the purchased or the creature map as well')
+    if _n in _rmap and _rmap[_n][0] != _o:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the recolour map has the old look {_rmap[_n][0]}, this one {_o}')
+    if _nl > PAIR_OUTFITS or _nl in BLANK_OUTFITS:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: look {_nl} is not an outfit the pair draws')
+    if _nl in _splayer:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: look {_nl} is a look a player can wear (player_looks.csv)')
+    if _nl in _earlier_news:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: look {_nl} is a new look of an earlier pair already')
+    if _sworn.get(_nl, set()) - set(_smap):
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: look {_nl} is worn by {sorted(_sworn[_nl] - set(_smap))} already')
+    if _o not in _sfacts or _sfacts[_o]['role'] != 'old' or not _sfacts[_o]['reasons']:
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the old look {_o} is no look of o619_look_facts.csv that fails the bar')
+    if _nl not in _sfacts or _sfacts[_nl]['role'] != 'new':
+        fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the new look {_nl} has no row in o619_look_facts.csv')
+    else:
+        for _why in swapmod.bar_problems(_sfacts[_nl]):
+            fail(f'server/data/monster/monster_o619_looks.csv: {_n}: the new look {_nl} fails the bar: {_why}')
+for _nl, _ns in sorted(_scount.items()):
+    if len(_ns) > 2:
+        fail(f'server/data/monster/monster_o619_looks.csv: look {_nl} is on {len(_ns)} monsters (at most 2, owner rule of O533)')
+for _l, _r in sorted(_sfacts.items()):
+    if _r['role'] == 'old' and _l not in {o for o, _n in _smap.values()} or _r['role'] == 'new' and _l not in {n for _o, n in _smap.values()}:
+        fail(f'server/data/monster/o619_look_facts.csv: look {_l} ({_r["role"]}) is no look of the swap map')
+# the five donor mounts (O619, install_outfits.py MOUNTS): the mounts wear pair 50 looks that pass the same bar, which a player wears as a mount only
+# (player_looks.csv) and no monster, and the five looks they left (o619_look_facts.csv old_mount) fail it and are worn by nobody
+sys.path.insert(0, 'server/tools')
+import install_outfits as _io
+_mount_now = {m[1] for m in _io.MOUNTS}
+_mount_new = {l for l, r in _sfacts.items() if r['role'] == 'mount'}
+_mount_old = {l for l, r in _sfacts.items() if r['role'] == 'old_mount'}
+if _mount_now != _mount_new or len(_io.MOUNTS) != len(_mount_now) or len(_mount_old) != len(_mount_new):
+    fail('server/tools/install_outfits.py: MOUNTS wear looks %s, o619_look_facts.csv says %s' % (sorted(_mount_now), sorted(_mount_new)))
+_pl_src = {}
+for _r in csv.reader(open('server/data/monster/player_looks.csv', encoding='utf-8')):
+    if _r[0].isdigit():
+        _pl_src.setdefault(int(_r[0]), set()).add(_r[1])
+for _l in sorted(_mount_new):
+    for _why in swapmod.bar_problems(_sfacts[_l]):
+        fail(f'server/data/monster/o619_look_facts.csv: mount look {_l} fails the bar: {_why}')
+    if _pl_src.get(_l) != {'mounts.xml'}:
+        fail(f'server/data/monster/player_looks.csv: mount look {_l} must be a look of mounts.xml only, it is {sorted(_pl_src.get(_l, []))}')
+    if _l in _sworn or _l in {n for _o, n in _smap.values()}:
+        fail(f'server/data/monster/o619_look_facts.csv: mount look {_l} is worn by a monster')
+for _l in sorted(_mount_old):
+    if not _sfacts[_l]['reasons']:
+        fail(f'server/data/monster/o619_look_facts.csv: old mount look {_l} fails nothing')
+    if _l in _pl_src:
+        fail(f'server/data/monster/player_looks.csv: look {_l} is no mount any more (O619) but is a look of {sorted(_pl_src[_l])}')
 # a hunt monster moves while it stands (O533): the bounty pool hunt list, each look read in server/data/monster/look_idle.csv (written
 # from the live dat by tools/audit_idle_looks.py --write-idle): an idle frame group with 2 or more phases, or animateAlways. A look
 # without one needs a row of server/data/monster/no_idle_allow.csv with its reason; the list may only shrink.
 import audit_idle_looks
 for msg in (audit_idle_looks.check_pool() + audit_idle_looks.check_pool(pair=client_pair.PAIR_DONOR)
-            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PURCHASED)):
+            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PURCHASED) + audit_idle_looks.check_pool(pair=client_pair.PAIR_CREATURE)):
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
 # the walk in place list of game_bossanimate (O534): generated from look_idle.csv and player_looks.csv, up to date, and no look a
 # player can wear (a mount or an outfit must not walk in place)
@@ -842,7 +940,7 @@ if not _player:
     fail('server/data/monster/player_looks.csv: [look.walk] empty (run tools/audit_idle_looks.py --write-player-looks DATA_DIR)')
 for _l in sorted(audit_idle_looks.load_walklist() & set(_player)):
     fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] look {_l} is a player look ({_player[_l]})')
-for _p in (None, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pairs 70 and 71
+for _p in (None, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pairs 70, 71 and 73
     for msg in audit_idle_looks.check_crowded(pair=_p):
         fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):

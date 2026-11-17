@@ -45,7 +45,7 @@
 -- And "daily" (days = the streak length): a login streak milestone (daily_config.lua milestones `cosmetic`, O409),
 -- granted once per account by daily.lua; never sold.
 
-return {
+local config = {
 	opcode = 225, -- ChaosOpcodes.cosmetics (client game_cosmetics)
 	table = "chaos_cosmetics", -- one row per account and unlocked cosmetic (server/sql/chaos_cosmetics.sql)
 	-- player storages, 7100940 - 7100949 reserved (chaos_constants.lua): the id of the chosen cosmetic per kind, and per
@@ -64,9 +64,11 @@ return {
 	-- played by the server. The client has its own cap too (6 at once, 3 on a phone). Modes (client/tools/gen_kill_dissolve.py,
 	-- data/shaders/chaos_outfit_kd_<mode>.frag): sand (blown away top first), pixels (the sprite's pixels drift apart),
 	-- ash (crumbles and falls), burn (burns from the edges inward), void (collapses to a point), frost (shatters and melts),
-	-- gold (rises as dust).
+	-- gold (rises as dust). O597 (client pair 73): melt (squashes to the ground), sink (slides into the ground), bones (the
+	-- flesh falls, ribs stay a moment), vapour (boils off upward), stone (turns grey and breaks); each of these also plays an
+	-- overlay effect of the pair on the tile (data/lib/chaos_status_vfx_ids.lua `kill`: a pool, broken earth, bones, vapour, rubble).
 	dissolve = {
-		modes = {"sand", "pixels", "ash", "burn", "void", "frost", "gold"},
+		modes = {"sand", "pixels", "ash", "burn", "void", "frost", "gold", "melt", "sink", "bones", "vapour", "stone"},
 		tints = 8,
 		perSec = 4,
 		maxViewers = 12,
@@ -514,6 +516,18 @@ return {
 		{id = 128, key = "kill_gildeddust", kind = "killfx", icon = 2148, source = "achievement", achievement = "goblin_50", vfx = "aura_burst_gold",
 			dissolve = "gold", tint = 4, name = "Gilded Dust",
 			desc = "The monster you finish turns to gold and rises as dust. Achievement: Hoardbreaker."},
+		-- O597: five more dissolves, with a ground overlay from the sprite pair. `pair = 73`: the entry exists only while
+		-- config.lua chaosClientPair is 73 or more (the filter at the end of this file), so an older client is never sent one.
+		{id = 141, key = "kill_meltdown", kind = "killfx", icon = 2149, source = "store", price = 200, vfx = "px448_green", pair = 73,
+			dissolve = "melt", name = "Meltdown", desc = "The monster you finish melts to the ground and leaves a dark pool."},
+		{id = 142, key = "kill_swallowed", kind = "killfx", icon = 2147, source = "store", price = 200, vfx = "necro_seal", pair = 73,
+			dissolve = "sink", name = "Swallowed", desc = "The monster you finish sinks into the ground and the earth closes over it."},
+		{id = 143, key = "kill_barebones", kind = "killfx", icon = 2148, source = "store", price = 200, vfx = "necro_seal", pair = 73,
+			dissolve = "bones", name = "Bare Bones", desc = "The flesh of the monster you finish falls away and its bones drop in a heap."},
+		{id = 144, key = "kill_boiloff", kind = "killfx", icon = 2146, source = "store", price = 200, vfx = "px195_ice", pair = 73,
+			dissolve = "vapour", name = "Boil Off", desc = "The monster you finish boils away and rises as vapour."},
+		{id = 145, key = "kill_stonebreak", kind = "killfx", icon = 2147, source = "store", price = 200, vfx = "px586_white", pair = 73,
+			dissolve = "stone", name = "Stonebreak", desc = "The monster you finish turns to stone, cracks and falls to rubble."},
 
 		-- Spell effect skins for the spells the starter builds lean on (O563; store 250 like the others). Each keeps the
 		-- element readable: a fire spell stays fire (ember), ice stays ice, a war cry or a strike only changes colour.
@@ -561,3 +575,33 @@ return {
 			spells = {118}, fx = {void_eye = "summon_portal"}}
 	}
 }
+
+-- O597: a cosmetic with `pair = N` needs client pair N (config.lua chaosClientPair, read by data/lib/chaos_status_vfx_ids.lua
+-- `on`; a test sets ChaosStatusVfxIds.on before it loads this file). Below it the entry is not in the list: no store
+-- offer, no window row, nothing to select.
+do
+	local ids = ChaosStatusVfxIds
+	if not ids then
+		local ok, v = pcall(dofile, "data/lib/chaos_status_vfx_ids.lua")
+		ids = ok and v or nil
+	end
+	local on = type(ids) == "table" and ids.on == true
+	local keep = {}
+	for _, c in ipairs(config.cosmetics) do
+		if not c.pair or (on and ids.PAIR >= c.pair) then
+			keep[#keep + 1] = c
+		end
+	end
+	config.cosmetics = keep
+	-- the dissolve modes of pair 73 go with them
+	local pairModes = {melt = 73, sink = 73, bones = 73, vapour = 73, stone = 73}
+	local modes = {}
+	for _, m in ipairs(config.dissolve.modes) do
+		if not pairModes[m] or (on and ids.PAIR >= pairModes[m]) then
+			modes[#modes + 1] = m
+		end
+	end
+	config.dissolve.modes = modes
+end
+
+return config

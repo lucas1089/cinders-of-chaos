@@ -679,6 +679,40 @@ function D.payment(fs, weekly, sigils)
 		or "Your free descent of today is used and you carry no Ember Sigil."
 end
 
+-- ---------------------------------------------------------------- what a person does next (the tester bots, O595)
+-- a = {inRun, state ("fight" | "choose" | "rest" | "travel" | "done"), offer = {id, cards} (a boon choice waiting), ready (already pressed Continue),
+-- pos, monster = {pos, boss} (the nearest on this floor), reach (tiles a fight starts at)}
+-- -> {mode = "wait" | "pick" | "ready" | "walk" | "fight", offer, card, goal, reach = {min, max}, why, area = "pack" | "boss"}
+-- A choice is answered first (the first card, as when the time runs out), a shrine or merchant room is left by Continue, a fight is the
+-- nearest monster: in reach, fight, else walk. The altar and the merchant's stand are not used (the bots keep their embers)
+function D.guide(a)
+	if not a.inRun or a.state == "done" then
+		return {mode = "wait", why = "not inside the descent"}
+	end
+	if a.offer and a.offer.id then
+		return {mode = "pick", offer = a.offer.id, card = 1, why = "a boon choice is open"}
+	end
+	if a.state == "rest" then
+		if a.ready then
+			return {mode = "wait", why = "waiting for the party"}
+		end
+		return {mode = "ready", why = "a room of rest: go on"}
+	end
+	if a.state ~= "fight" then
+		return {mode = "wait", why = a.state == "travel" and "the next door is opening" or "no monster to fight"}
+	end
+	local reach = a.reach or 5
+	local m = a.monster
+	if not (m and m.pos and a.pos) then
+		return {mode = "wait", why = "no monster in sight"}
+	end
+	local area = m.boss and "boss" or "pack"
+	if m.pos.z == a.pos.z and math.max(math.abs(a.pos.x - m.pos.x), math.abs(a.pos.y - m.pos.y)) <= reach then
+		return {mode = "fight", goal = m.pos, area = area, why = "in reach of a monster"}
+	end
+	return {mode = "walk", goal = m.pos, reach = {1, reach}, area = area, why = "to the nearest monster"}
+end
+
 -- ---------------------------------------------------------------- checks
 function D.validate(cfg)
 	local problems = {}

@@ -600,4 +600,73 @@ function U.hud(s, lang)
 		title = s.def.final and "The Cinderheart" or T(lang, "Ascended Omen - %s", s.def.name)}
 end
 
+-- ---------------------------------------------------------------- the tester bots (O599)
+-- The kind of sigil a TESTER may be given (`!tester ascended sigil`): the highest Ascended Omen (never the Cinderheart: its sigil is
+-- bound from three relics a bot cannot have earned) whose level the character has, or the named kind when it is one of them.
+-- -> the kind definition, or nil + why
+function U.testerKind(cfg, level, want)
+	level = tonumber(level) or 0
+	if want ~= nil then
+		local d = U.kind(cfg, want)
+		if not d then
+			return nil, "no such Ascended Omen"
+		end
+		if d.final then
+			return nil, "the Cinderheart sigil is not granted to a tester"
+		end
+		if level < d.minLevel then
+			return nil, string.format("level %d: %s needs level %d", level, d.boss, d.minLevel)
+		end
+		return d
+	end
+	local best
+	for _, d in ipairs(cfg.kinds) do
+		if not d.final and level >= d.minLevel and (not best or d.minLevel > best.minLevel) then
+			best = d
+		end
+	end
+	if not best then
+		return nil, string.format("level %d opens no Ascended Omen", level)
+	end
+	return best
+end
+
+-- What a person does next inside an Ascended arena (the same recipe as the guild boss, guildboss_core.lua B.guide).
+-- a = {inside, state ("running" | ...), boss ("waiting" | "alive" | "dead"), down (in the antechamber), gateIn (seconds until the Ember Gate
+--      lets the fallen back), pos, bossPos, gate (the Ember Gate tile), reach (tiles the boss is fought from)}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
+function U.guide(a)
+	if not a.inside then
+		return {mode = "wait", why = "outside the arena"}
+	end
+	if a.state ~= "running" then
+		return {mode = "wait", why = "the fight is over"}
+	end
+	if a.down then
+		if (a.gateIn or 0) > 0 then
+			return {mode = "wait", why = "the Ember Gate opens in " .. math.ceil(a.gateIn) .. " s", area = "antechamber"}
+		end
+		return {mode = "walk", goal = a.gate, reach = {0, 0}, area = "gate", why = "back through the Ember Gate"}
+	end
+	if a.boss ~= "alive" or not a.bossPos then
+		return {mode = "wait", why = a.boss == "dead" and "the boss is down" or "the boss is coming"}
+	end
+	if a.pos and a.bossPos.z == a.pos.z and math.max(math.abs(a.pos.x - a.bossPos.x), math.abs(a.pos.y - a.bossPos.y)) <= (a.reach or 5) then
+		return {mode = "fight", goal = a.bossPos, area = "boss", why = "in reach of the boss"}
+	end
+	return {mode = "walk", goal = a.bossPos, reach = {1, a.reach or 5}, area = "boss", why = "to the boss"}
+end
+
+-- Whether a group may open an arena while the testers' rules apply (O599): wraps ChaosTestersCore.soloRefusal with the arena counts.
+-- flags: a list of booleans (true = a tester), running: arenas in use, cfg: uber_config (limits.maxRuns, tester.reserve).
+-- -> a key of ChaosTestersCore.CLOSED_TEXT ("mixed" | "reserve") or nil
+function U.testerRefusal(flags, running, cfg)
+	local K = ChaosTestersCore
+	if not K then
+		return nil
+	end
+	local maxRuns = (cfg.limits and cfg.limits.maxRuns) or 4
+	return K.soloRefusal(flags, maxRuns - (running or 0), (cfg.tester and cfg.tester.reserve) or 1)
+end
+
 return U

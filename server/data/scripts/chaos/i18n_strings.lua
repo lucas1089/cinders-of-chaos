@@ -1679,6 +1679,8 @@ return {
 		["Your guild owns a guild hall now (free for the test guilds)."] = "Sua guilda tem um guild hall agora (de graça para as guildas de teste).",
 		["Closed test mode went off."] = "O modo teste fechado foi desligado.",
 		["The testers' guild boss waits: the arenas are kept for the players."] = "O guild boss dos testers espera: as arenas ficam reservadas para os jogadores.",
+		["The testers wait: the halls are kept for the players."] = "Os testers esperam: os salões ficam reservados para os jogadores.",
+		["The world boss is the players' event: the testers do not enter it."] = "O world boss é o evento dos jogadores: os testers não entram nele.",
 		["Testers do not use this queue: it matches players."] = "Testers não usam esta fila: ela junta jogadores.",
 		["Tester characters cannot send mail."] = "Personagens tester não podem enviar correio.",
 		["Mail to tester characters is not delivered."] = "Correio para personagens tester não é entregue.",
@@ -1834,6 +1836,7 @@ return {
 		["The way is sealed."] = "O caminho está selado.",
 		["%s is for level %d and above."] = "%s é para o nível %d ou mais.",
 		["%s. The portal beside you leads back to the temple."] = "%s. O portal ao seu lado leva de volta ao templo.",
+		["%s. The portal beside you leads back to the hunt."] = "%s. O portal ao seu lado leva de volta à caçada.",
 		["%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s."] =
 			"%s declarou guerra à sua guilda (%s). Responda em Social > Guild Wars antes que expire em %s.",
 		["Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s"] =

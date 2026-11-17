@@ -10,7 +10,7 @@
   "closed": 15,
   "opcode": 73,
   "out": 24,
-  "passive": 110,
+  "passive": 111,
   "place": 15,
   "staff": 17
  },
@@ -11173,6 +11173,25 @@
     "stash"
    ]
   },
+  "statusVfx": {
+   "actions": [
+    "hello"
+   ],
+   "client": [
+    "game_statusfx"
+   ],
+   "dataKeys": [
+    "on"
+   ],
+   "files": [
+    "status_vfx.lua"
+   ],
+   "opcode": 165,
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
+   "systems": []
+  },
   "supports": {
    "actions": [
     "socket",
@@ -11661,6 +11680,15 @@
    "opcodes": [],
    "place": "boss",
    "talkactions": []
+  },
+  "bosslair": {
+   "files": [
+    "bosslair.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "bosspoints": {
    "files": [

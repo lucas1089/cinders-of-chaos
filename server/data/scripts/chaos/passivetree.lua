@@ -337,6 +337,9 @@ local function handleSave(player, data)
 	savePreset(guid, preset, name, ids, masteries)
 	sendPoints(player)
 	applyBonuses(player)
+	if ChaosGapFx and #ids > #(saved or {}) then -- O606: new nodes
+		ChaosGapFx.on(player, "talent_point")
+	end
 end
 
 local function planResult(player, ok, message)
@@ -381,6 +384,9 @@ local function handlePlanApply(player, data)
 	sendNodes(player)
 	sendPoints(player)
 	applyBonuses(player)
+	if ChaosGapFx and #result.added > 0 then -- O606
+		ChaosGapFx.on(player, "talent_point")
+	end
 	planResult(player, true, string.format(#result.added == 1 and "%d node allocated." or "%d nodes allocated.", #result.added))
 end
 
@@ -459,6 +465,9 @@ local function handleReset(player, data)
 	sendNodes(player)
 	sendPoints(player)
 	applyBonuses(player)
+	if ChaosGapFx then -- O606
+		ChaosGapFx.on(player, "respec")
+	end
 	sendMessageBox(player, "Reset", string.format("Your passive tree was reset for %d gold coins.", cost))
 end
 

@@ -725,6 +725,7 @@ collision check") and be added here.
 | 178 | `goals` | `goals.lua` | `game_goals` | client -> server `open` / `close` / `tracker`; server -> client `goals` through `Chaos.sendChunked`, `tracker`, `done` (see "Next Goals") |
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
+| 165 | `statusVfx` | `status_vfx.lua` (the scan and the wish), `data/lib/chaos_status_vfx.lua` (the rules) | `game_statusfx` | client -> server `hello {on}`, server -> client `cfg {on, e, ms}`, `s {l}` only to a client that asked (O597, README "Status layer (O597)") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -859,7 +860,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The effect owner marks (O567) took **164**, a number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/fx_owner_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The status layer (O597) took **165**, the next number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/status_vfx_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The effect owner marks (O567) took **164**, a number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/fx_owner_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 No other Chaos opcode collides. The trainer DPS panel (O573) took **147**, free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module (`tests/trainer_meter_test.lua` checks it, and that no two `ChaosOpcodes` share a number); it could not share 204 with the DPS meter because a client module that registers an opcode replaces the earlier one. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
@@ -9801,7 +9802,7 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v15 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`; O592 `siege`, `guildboss` and `rift`), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v16 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`; O592 `siege`, `guildboss` and `rift`; O595 `tower`, `descent` and `trial`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
@@ -9887,7 +9888,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10095,36 +10096,160 @@ temple. Helper v15 `!tester rift [state | key [tier] | path | close]`:
 Needs a live run: the engine's path across a real rift layout (the walkable cells are a layout the server builds; the search is bounded), rifts of two
 floors (the stairs), the real hotkey use of the key, the exhaust after a use, what `RF.open` refuses for a bot in a fight.
 
-##### 6. What a player does that no closed check plays yet (O592, from `data/scripts/chaos` against `CHECKS` and `CLOSED_CHECKS`)
+##### 6. What a player does that no check plays yet (O592, brought up to date by O595)
 
 Covered by a check that plays or reads it: arena, battleground, the Marches, guild, guild war, market, bazaar lock, raid, dungeons, group queue, party finder,
 siege, guild boss (closed); rift, rift layout, waystone runs, content rewards, pets, wolves and minions, party and shared experience, unique passives, dual
-wield, the reward chest, the cursed chest, Auto setup, the spell quest, the crafting windows (open). Everything with an extended opcode is also opened and
-used by the random requests (`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet:
-- **World boss** (`worldboss.lua`): a scheduled event, one arena for everyone, a portal next to every temple, damage-share rewards, a role title for the top 3, a
-  broadcast. It is not tester-aware (no `isTester` anywhere in the file): a bot that walked in would share the arena and the top-3 lists with players. Needs
-  the same pattern as the siege (a testers' event started by the helper, never while a players' event runs or is due, a side at the portal, no title or
-  broadcast, a probe and a guide). Not done: the title and the ranking are the part that reaches players.
-- **Infinity Tower** (`infinitytower_run.lua`) and **Ember Descent** (`descent.lua`): solo runs. The random requests open the windows and the Descent's own
-  `start`, but no bot plays a floor. Plan: the same as the rift (a probe with a guide, `!tester tower`, `!tester descent`, a walked check); the leaderboards
-  already leave testers out (`Chaos.notTesterSql`).
-- **Ascended arenas, Omen keys and the Nemesis** (`uber.lua`, `rift.lua` omen, `nemesis.lua`): boss arenas of the same recipe as the guild boss (`uber_core.lua`).
-  Plan: `guildboss_core.guide` is the model; a probe per arena file and one check that walks in, fights and closes. Their rewards go to the tester.
-- **Trials, the Hollow Crypt and the ascension quest** (`trials.lua`, `ascension_quest.lua`): scripted rooms; the places are visited by `enter`, no room is played.
-- **The main quest and its boss** (`mainquest.lua`, `mainquest_boss.lua`): passive (steps are credited by play). A walked check could take the first steps
-  (talk to an NPC, kill N of a monster): the NPC walk exists (`walk_to_place` `npc ...`); the boss fight needs a probe like the guild boss's.
-- **Bounty contracts, daily and weekly challenges, tasks, the Chronicle, the season journey and pass** (`bounty.lua`, `daily.lua`, `weekly_challenge.lua`,
-  `chronicle.lua`, `season_journey.lua`, `seasonpass.lua`): the windows answer, the claims are never made (money-like or a one-off): a bot that accepts a bounty
-  and kills the monster would need a probe that says which monster and where.
-- **Hideouts and the memorial** (`hideout.lua`, `memorial.lua`): the windows are asked; placing items, visiting another character's hideout (a closed matter:
-  a tester must never visit a player's) and the memorial candles are not played.
-- **Harvest event, treasure goblin, invasions, conquest** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`, `conquest.lua`): shared world events
-  and a faction map that players read; not tester-aware (only `invasion.lua` has one `isTester`). They need the world boss's treatment first.
+wield, the reward chest, the cursed chest, Auto setup, the spell quest, the crafting windows, **the Infinity Tower, the Ember Descent, the trials of the
+wave families and the own hideout (open, O595: step 7 below)**. Everything with an extended opcode is also opened and used by the random requests
+(`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet (O595 did the first four bullets of the old list and the
+guards of the last two):
+- **Ascended arenas and Omen keys** (`uber.lua`, `rift.lua` omen): done in O599, step 8 below. **The Nemesis** (`nemesis.lua`) is left: its birth is a
+  chance on a death and its appearance a chance on a kill, so a check needs a TEST ONLY birth and appearance (`NE.appear`, a `chaos_nemesis` row) that
+  are not built; it never touches a player (it appears for its victim only, its damage to anyone but the victim's party is cancelled, nobody else can
+  damage it, the leaderboard skips testers, nothing is broadcast), so nothing here needs a separation rule.
+- **The main quest and its boss**: the first steps are done in O599 (step 8: talk, walk to a place, kill the named monsters). Left: the steps that ask
+  for a spell, a window, a stat, a flag, a resistance, a gear piece or the bring step of the drops, and **Vael Ashmourn**, the solo boss, which is the
+  spell trial of the trials engine (`T.hookFor`): a testers' instance of it is not built, so the check says SKIP with that reason.
+- **Bounty contracts** are done in O599 (step 8: where a monster spawns, accept, walk, kill a few, the counter moves). Left: the elite and boss contracts
+  (a tier or a boss fight), the claims of the daily, the weekly challenges, the tasks, the season journey and pass (the windows answer, the claims are
+  not made), and the Chronicle. The Chronicle needs no rule: it already drops testers from every member list (`chronicle.lua` `tester(guid)`), and the
+  daily claim is a row of the bot's own account (a login-streak title broadcast naming a tester is dropped by `ChaosTestersCore.mentions`).
+- **Memorial** (`memorial.lua`): the candles are not played; the window is asked by the random requests. Hideout visits are now closed by side (step 7).
+- **Shared world events**: see "Shared world events and the world boss (O595)" in step 7: the world boss is closed to the testers; harvest, goblin,
+  invasion and conquest are left, with the reason.
 - **PvP between testers**: kills in the siege (20 points), the Marches and the arena are never played: the bots do not target players. That needs the
   bot's targeting (a creature id in the attack packet) and a rule for who may be hit.
 - **Mentor, referral, creator codes, store payments, orb exchange, community, reports**: out of scope on purpose (real accounts, real money, or a queue players read).
-Each item above has a first step that needs only a probe, a guide and a walked check (the recipe of the dungeons, the raid and now the rift and the guild
-boss); the shared events (world boss, harvest, goblin, invasion, conquest) first need their closed-mode rules.
+
+##### 7. Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)
+
+Owner 2026-11-17 (translated): "the bots have to do the complete content of the game, in the most human way possible". These are solo contents: they
+share nothing with a player but the halls (the arenas of a run), the leaderboards and the public lists. So they are **open checks** (`CHECKS`, no closed
+mode needed, all classes, a level of 100 and up), and the server rules are the same three everywhere: a group of a tester and a player is never made, a
+tester takes a hall only while at least `reserve` halls stay free after it (the halls are the players'), and nothing of a tester reaches a public board, a
+season chest, a title or a broadcast. Helper v16 (`HELPER_VERSION`, bumped once for the whole task; v17 is O599, step 8): `!tester tower | descent | trial`.
+
+Server rules (all in `testers_core.lua`, tested in `tests/testers_test.lua`):
+- `K.soloRefusal(flags, free, reserve)`: "mixed" for a group of both sides, "reserve" for a tester when fewer than `reserve` halls would stay free.
+  `ChaosTesters.soloRefusal(players, free, reserve)` returns the text (`K.CLOSED_TEXT`, with a pt-BR line) or nil, with no query for a group of players.
+- **Infinity Tower** (`infinitytower_run.lua`, `infinitytower.lua`; tests `infinitytower_run_test.lua` "O595"): `ChaosTowerRun.start` asks the rule
+  (`cfg.tester.reserve` 4 of the 16 arenas). The window's ranking (`buildPayload`) and the season ranking (`processSeason`: top 3 chests and their
+  broadcast) filter the testers with `Chaos.notTesterSql("p")`: before O595 a bot with a high floor stood on the public board and could win a chest.
+  The record boards already skipped testers (`records.lua memberOf`); a tester's own row (`chaos_tower_players`) is its own and goes with
+  `testers cleanup` (it deletes every row of a tester id). `ChaosTowerRun.probe(player)`: outside the level, the try cooldown, the free arenas; inside
+  the floor, the monsters, the clock, who is in the run, whether "Next floor now" is open, the bank and the floor gold, and `guide`
+  (`ChaosTowerCore.guide`: wait between floors, fight within 5 tiles, else walk to the nearest monster). `ChaosTowerRun.testerClose(player)` is the Leave
+  button with no countdown (the floors cleared are written as always), or the way out of a stray arena.
+- **Ember Descent** (`descent.lua`, `descent_core.lua` `D.guide`, `descent_config.lua` `tester.reserve` 2 of the 8 halls; test `descent_probe_test.lua`):
+  the rule in `X.start`; the weekly board record skips a tester (it already skipped by guid), the title source returns nothing for a tester, the unique
+  find is not announced for a tester (the broadcast of a name of a tester is dropped by the game anyway, `testers.lua`). `ChaosDescent.probe`: how a run
+  would be paid (free, sigil or neither), the halls free, inside the room and its kind, the state (fight, choose, rest, travel), a boon choice waiting
+  (id, cards), the monsters, the boss, `guide`: **pick** (the first card, as when the time runs out), **ready** (Continue in a shrine or merchant room), else
+  the nearest monster. `testerClose` is the Leave button (the rewards of the depth reached), `testerSigil` gives an Ember Sigil when the day's free
+  descent is used (the bots cannot forge one).
+- **Vocation trials** (`trials.lua`, `trials_core.lua` `M.guide`, `trials_config.lua` `tester.reserve` 2 of the 8 chambers; test `trials_probe_test.lua`):
+  the rule in `T.enter`; the records board skips testers (`records.lua`). `ChaosTrials.probe`: the family of the vocation, the next tier and its stages
+  (`puzzle` when a stage is seals or marks), the cooldown, inside the stage, the kills, the lives, the guardian; `guide` waits at a puzzle stage
+  (`area` "puzzle"), else fights the nearest thrall or the guardian. `testerClose` is the Leave button (a failed run with no cooldown).
+- **Hideouts** (`hideout.lua`, test `hideout_test.lua` last block): `ChaosHideout.sideRefusal(owner, visitor)`: a tester never enters a player's hideout,
+  a player never a tester's (a public one included: the visit counter, likes and the showcase are what players read); staff may enter any; one's own
+  always. `M.enter` asks it, the Visit tab's friend list too, and the public showcase of a player filters the testers by SQL.
+
+How the bots play them (helper v16 `!tester tower | descent | trial [state | path | close]`, `descent sigil`; the window's own requests are the bot's; the
+helper reads the screen, gives the engine path and closes, nothing teleports the bot inside):
+1. `solo_refusal`: SKIP with the reason for a missing system, the level, a bot already inside, the halls kept for the players (`free - 1 < reserve`).
+2. Temple on foot (`walk_to_place`; the helper's teleport is the counted fallback, `enter temple (no path)` in the result and the report). The descent and
+   the trial need a protection zone and say so when the temple tile is not one.
+3. The window's door: `infinitytower enter`, `descent start {weekly: false}`, `passivetree trialEnter {tier}`, asked again once after 7 s, then up to 14 s
+   for the helper to say the bot is inside. A refusal is a SKIP with the server's text.
+4. `solo_play`, the one loop of all three: a look every second; a boon choice is answered (`descent pick`, the first card; a choice that stays open after 3
+   answers is a FAIL), Continue in a room of rest (`descent ready`), "Next floor now" between tower floors once a floor is cleared (`infinitytower skip`);
+   otherwise the engine path (`... path`, up to 6 steps, `RaidWalker` side steps only when blocked) to the nearest monster and the bot's own rotation, the
+   loot after a kill. `raid_mode` keeps the bot from walking back to the hunt; it still flees at low health like a person.
+5. Verdicts. `tower_walk` PASS: 2 floors cleared (`TOWER_FLOORS`); FAIL: a player in the run, a cleared floor whose gold did not reach the bank (the floor number
+   x 50 gold per floor), 150 s in reach of a monster with no floor cleared, still inside after the close. `descent_walk` PASS: a room cleared (a boon choice
+   answered after it); FAIL: a player in the run, a choice that stays open, 150 s with no room, still inside after the close. `trial_walk` PASS: a thrall
+   killed (the guardian's health is reported); the check stops at the first of: the guardian hurt, the budget (480 s), a puzzle stage; FAIL: 150 s with no kill.
+   SKIP: the walk blocked 30 s, the bot fell before anything was cleared, no free run and no sigil, a puzzle trial (the Mystic and Thief families and their
+   ascensions have a seals or marks stage the bots do not play: `puzzle` is read before the bot enters, so no attempt is spent). The run is always closed
+   after, and the bot goes back to the hunt.
+6. `hideout` (window requests only): open, Enter (the room is built for the bot), place the first owned floor decoration on a tile the room accepts (the
+   tiles are tried middle first, away from the reserved ones), the room must list it and count it, Remove must take it away, Leave must bring the bot out.
+   FAIL: no tile takes it in 30 tries, the list or count is wrong, the removal did not count down, still inside after Leave. SKIP: no decoration owned, below the
+   hideout level, the room did not open.
+The rewards are the tester's own (gold to the bank, orbs, the first-clear rows of the trials; `testers cleanup` deletes every row of a tester id, the
+closed-mode clean-up of O582 is not needed: nothing here is shared).
+
+Shared world events and the world boss (O595):
+- **World boss** (`worldboss.lua`): one arena for everyone, damage-share rewards, a role title for the top 3 of each category. A tester in it would take a
+  share and a place from a player, so the portal and the arena step now refuse a tester ("The world boss is the players' event: the testers do not enter
+  it.", tested in `worldboss_test.lua`). A testers' event started by the helper, as the siege has, is not built: the event builds one arena and its portals
+  next to every temple, and a second, hidden one would need its own slot grid and its own schedule. The role titles and the broadcast need no work
+  for testers any more: no tester is in the arena.
+- **Harvest event, treasure goblin, invasions** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`): left. A treasure goblin or an invader is a
+  monster the first killer takes the reward of, so a bot hunting next to it takes it from a player, and the harvest event keeps shared counters. No
+  rule that keeps a bot out of them exists without touching what the players hunt; the only safe change is to make those monsters ignore testers (no
+  damage from a tester), which is an engine-side rule (`onTargetCombat`, the monster is a player-side target) and not done here.
+- **Conquest** (`conquest.lua`) is a per-character token balance (`chaos_conquest`), not a shared map: nothing to separate.
+
+Needs a live run: the engine's path inside the arenas (the tower arena is a 25-tile square: one path call), the real rate limits of the windows (the tower
+`enter` 300 ms, the descent `start` 2 s, the trial `trialEnter` 1 s), `Chaos.isMultiClient` for a bot with a real address, the first floors of a level-100
+bot (the thresholds are `TOWER_FLOORS`, `DESCENT_ROOMS`, `SOLO_FIGHT_MIN`), the hideout catalogue a new tester owns, and the Descent's boon choice with the
+real client ids (`pick {offer, card, curse}` is the window's own message).
+
+##### 8. Ascended and Omen arenas, bounties and the main quest for the bots (O599)
+
+Owner 2026-11-17 (translated): "the bots have to do the complete content of the game, in the most human way possible". Open checks again (no closed mode
+needed, all classes, the level of the content). Helper v17 (`HELPER_VERSION`, bumped once for the whole task): `!tester ascended | omen | bounty | mainquest`.
+
+Server rules and probes (tests: `uber_test.lua`, `rift_probe_test.lua`, `bounty_test.lua`, `mainquest_test.lua`, `tester_helper_test.lua`):
+- **Ascended Omens** (`uber.lua`, `uber_core.lua`, `uber_config.lua` `tester.reserve` 1 of the 4 arenas): `A.open` asks `U.testerRefusal` (the O595
+  `ChaosTestersCore.soloRefusal`): a group of a tester and a player is never made ("Testers and players are never mixed."), a tester takes an arena only
+  while at least `reserve` arenas stay free after it. A run of testers is marked `run.tester`; the Cinderheart kill of such a run writes no board row and
+  sends no broadcast (the leaderboard skipped testers already). `A.probe(player)`: the level rule of each Omen, the sigil in the backpack (kind, client id),
+  the protection zone, the arenas free; inside, the boss (state, health, phase, enrage, adds), the clock, the lives, who is in the run, the Ember Gate wait
+  and `guide` (`U.guide`, the recipe of the guild boss: wait for the boss, walk to it, fight within 5 tiles, back through the Ember Gate once its wait is
+  over). `A.testerSigil(player, kind)` is the TEST ONLY grant: a tester only, the highest Omen the level opens (`U.testerKind`) or the named one, never the
+  Cinderheart's (its sigil is bound from relics a bot cannot have earned), never inside a run, one console line each. `A.testerClose(player)`: the
+  asker leaves; the arena ends as a failed one when it was the last one in (the sigil is spent, as when the time runs out).
+- **Omen arenas** are rift slots (`RF.openOmen`): `rift_config.lua` `omen.tester.reserve` 4 of the 16 slots and the same mixed rule; `RF.probe` names the
+  omen of the run (`run.omen`); `RF.testerOmenKey(player, kind)` is the TEST ONLY grant of an Omen Key (a tester only, from the Omen level, logged);
+  `!tester omen close` also takes a refunded key out of the backpack.
+- **Bounties** (`bounty_core.lua`): "where does monster X spawn" is answered from the hunt marks the server already has (`data/chaos_poi.lua`, kind
+  `hunt`, "Hunting: Penguin, Mammoth (level 1-20)"): `B.huntNames`, `B.spawnMarks(marks, name)`, `B.nearestMark`. `B.testerCandidates` picks the hunt
+  contracts of the visible bands whose level the character has and whose monster a mark lists, the smallest count first. `B.guide`: a monster of the
+  contract in sight within 5 tiles is fought, one farther is walked to, none: walk to the hunt, wait at it for a spawn. `ChaosBounty.probe(player, name)`
+  reads the contracts held and offered, the nearest living monster of the contract (20 tiles) and `where` for any monster name. The test pins the marks
+  of the installed map to the bounty pool (at least half of the hunt mark monsters are pool monsters). No tester is on a public board: `leaderboard.lua`
+  skips testers (the `bounty` board too), the rows of a contract are the bot's own and go with `testers cleanup`.
+- **Main quest** (`mainquest_core.lua` `M.botPlan`, `mainquest.lua` `W.probe`): the plan of a step from its first condition: `talk` (walk to the NPC of the
+  step's `where`, say the words), `visit` (walk to the place), `kill` (a "count" step with a `where` place: walk there and kill the named monsters), else
+  `skip` with the reason. The probe answers the state, the open step, its condition, the progress and where to go (an NPC name or a position).
+
+How the bots play them (helper v17; the window's own requests are the bot's, the helper reads the screen and gives the engine path):
+1. `ascended_walk` / `omen_walk` (`check_ascended_walk`, `check_omen_walk`): SKIP for a missing system, the level, a bot inside already, the arenas kept for
+   the players (`free - 1 < reserve`). Temple on foot (the helper's teleport is the counted fallback), a protection zone is needed. `!tester ascended sigil`
+   / `omen key` is the grant (a refusal is a SKIP with the text; an item that is not in the backpack after it is a FAIL; a full bag is a SKIP). The bot
+   uses the sigil or key like a hotkey (again after 5 and 9 s, 12 s in all), then `solo_play` (the loop of O595): the engine path to the boss, the
+   bot's own rotation, loot, the Ember Gate when it falls. PASS: the boss hurt (its lowest health under 100 %, with the phase). FAIL: a player in the run,
+   an Ascended run not marked as the testers' (a board row or a broadcast would follow), 150 s in reach of the boss with its health untouched, still
+   inside after the close. SKIP: the arena did not open in 12 s, the boss did not come, the walk blocked 30 s, a fall before the boss was hurt. The run is
+   always closed after (`ascended close`, `omen close`) and the bot goes back to the hunt.
+2. `bounty_walk`: `!tester bounty` lists the hunt contracts a mark lists; the bot accepts the smallest through the window (`accept {key}`), or hunts one it
+   holds, walks to the monster in sight or the hunt (`bounty path`), and kills with its own rotation. PASS: the counter moved 3 (`BOUNTY_KILLS`; the 50-400
+   kills of the contract are not played). FAIL: the accepted contract left the list, 150 s in reach of a monster of it with the counter not moving (kills,
+   credit or the target). SKIP: no candidate (no hunt mark lists a contract monster of the band), the accept was refused, the walk blocked, no monster in
+   sight at the hunt for 120 s, a death. The contract is abandoned after (`abandon {key}`) when the check accepted it.
+3. `mainquest_walk`: up to 3 steps of "The Ember Oath": talk to Warden Ysolde (`path npc`, `hi`, `oath`), walk to a place (`path pos`), kill the named monsters
+   (the kill counter must move). The step must be credited within 14 s of a talk or a visit (FAIL when it is not). PASS: the step number rose or a kill
+   counter moved. SKIP: a step the bots do not play ends the check, named ("the step asks for 'spell' ...", "the boss is a spell trial ..." for Vael),
+   a walk with no way, a level under the step's, the quest not running, staff.
+
+Needs a live run: the engine's path in the Omen and Ascended arenas (the sigil / key use is the hotkey of the rift check), the first boss health of an
+Ascended Omen at level 1000 (`ASC_BUDGET` 420 s against the 840 s limit), the hunt marks as spawn places (a mark lists 1-3 monsters of a hunt, so a
+contract monster that no mark lists is simply not offered), whether the monster of a contract is in sight at the nearest mark, the quest's think sweep
+(`MQ_STEP_WAIT` 14 s), the NPC `path npc Warden Ysolde` of a bot in the hub.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10144,7 +10269,15 @@ the system is not installed): never faked. A death in the middle drops the check
 | `rift` | all | `!tester enter rift 1` (a key of tier 1, then the temple) answers without an error and the key reached the backpack; a full bag sends it to the inbox (`RF.giveKey`) or the ground: the helper takes it back from there, a skip |
 | `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
 | `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
+| `ascended_walk` | all, level 900 and up | O599: walks to the temple (a protection zone), `!tester ascended sigil` (the TEST ONLY grant: the highest Omen the level opens), uses the sigil, walks to the Ascended boss by the engine's path and fights it. PASS: the boss hurt (health and phase reported). BUG: a player in the run, a run not marked as the testers', 150 s in reach with the boss untouched, still inside after the close. SKIP: the arenas kept for the players, the arena did not open, the boss did not come, a blocked walk, a fall. Closed after, always |
+| `omen_walk` | all, level 800 and up | O599: the same for an Omen Key (`!tester omen key`, a rift slot, the guardian). Same verdicts |
+| `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
+| `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named; Vael Ashmourn: no testers' instance), no way, the quest not running |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
+| `tower_walk` | all, level 100 and up | O595: walks to the temple, opens the Infinity Tower from its window (`infinitytower enter`) and plays floors by the engine's path (`!tester tower path`) with its own rotation, calls "Next floor now" between floors, and leaves (`tower close`). PASS: 2 floors cleared. BUG: a player in the run, a cleared floor whose gold (floor x 50) did not reach the bank, 150 s in reach with no floor cleared, still inside after the close. SKIP: level, the try cooldown, the arenas kept for the players, the walk blocked, a fall before a floor (section "Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)") |
+| `descent_walk` | all, level 100 and up | O595: walks to the temple (a protection zone), starts the Ember Descent from its window (the free run of the day, else a sigil from `!tester descent sigil`), answers every boon choice with the first card, leaves rooms of rest with Continue and fights by the engine's path. PASS: a room cleared. BUG: a player in the run, a choice that stays open after 3 answers, 150 s with no room, still inside after the close. SKIP: level, no free run and no sigil, the halls kept for the players, the walk blocked, a fall before a room |
+| `trial_walk` | all, level 100 and up | O595: walks to the temple, enters the vocation's trial from the tree window (`trialEnter`), fights the waves and the guardian by the engine's path. PASS: a thrall killed (the guardian's health reported). BUG: 150 s with no kill, still inside after the close. SKIP: a puzzle family (seals or marks), the cooldown, the tier rules, the chambers kept for the players, a fall before a kill |
+| `hideout` | all, level of the hideout | O595: the window's requests: open, Enter, place the first owned floor decoration on a tile the room takes, the room lists and counts it, Remove, Leave. BUG: no tile takes it, a wrong list or count, still inside after Leave. SKIP: no decoration owned, below the level, the room did not open |
 | `rift_layout` | all, level 100 and up | `!tester riftrun layout` opens a real rift as a player does (key of the highest tier the level may open, temple, `ChaosRift.open`) and reads its layout. BUG when the kind or the floor count is not in the config of the theme, the size band is not the tier's, the walkable cells are outside the band limits of `rift_layout_balance_config.lua`, the arrival, the guardian's spot, the arena's mouth or the bot is not a walkable cell, 40 sampled walkable cells have no ground or block, or the run or its slot stays open after `RF.interrupt` (the key comes back). Level under 100, a busy slot or a layout still being built is a skip |
 | `content_rewards` | all | the passive rewards of `content_rewards.lua` through `ChaosContentRewards.onKill` with a stand-in monster (nothing is spawned, a backpack is the corpse): a boss kill of a tier 8 waystone run (`!tester waystone 8 loot`) holds the config's guaranteed gear pieces of Legendary or better, none below, the sure orbs (Awakening, Gilding) at their minimum and a waystone of the run's tier; the guardian kill of a rift (`!tester riftrun loot`) holds at least `floor(base + perTier x tier)` orbs. A level under 100 checks the waystone half only. The first unique and the pity of `retention_loot.lua` are not checked: they skip testers by rule |
 | `party_xp` | all | the bot invites another bot and switches shared experience on (packet 0xA8) in the temple (the engine refuses the switch in a fight outside a protection zone; the helper loads `Party:onShareExperience` from `data/events/scripts/party.lua` in a sandbox, as it lives in the events state, not in the scripts one): the party says it is on; `Party:onShareExperience(1000)` pays `ceil(1000 x (100 + bonus) / 100 / members)` with the bonus of `ChaosPartyXpCore.bonusPercent` for the class lines; the engine's verdict follows the rules (nobody under two thirds of the highest level, within 30 tiles and 1 floor, in a fight): working while a member fails level or range, or off while all pass, is a BUG when two looks 3 s apart agree. Then a real kill at the leader's hunt (`!tester party kill`, helper v4, own answer kind `partykill`): a leader in the temple steps out to the nearest street tile, the partner is put next to it, one hit of a tenth of a monster's health by each makes both active for the engine (Party ticksMap; a hit of 1 counted 0 after the armour), a Demon made there and hit by the leader down to 0 (the engine's own death path on its next creature check, `Creature::onDeath` and `Party:shareExperience`; gains read 1.5 s later, a monster scaled up after it was made is hit again), then the share off and one solo kill. With the share working both gain and the leader's gain is `shareOf1000 / 1000` of the solo kill (5%); with it off, or in the solo kill, the partner gains nothing, unless it hit that monster itself (helper event `TesterHelperKillHits`; the engine pays every attacker its damage share). A kill that could not run is a skip. Switched off and left again at the end |
@@ -34488,6 +34621,15 @@ in client/MANIFEST.md). Modes (`cfg.dissolve.modes`): `sand` (blown away, top fi
 `burn` (burns from the edges inward), `void` (collapses to a point), `frost` (shatters and melts), `gold` (rises as dust). The cosmetic keeps `vfx`:
 the plain effect that plays when the dissolve cannot.
 
+**Five more modes (O597, client pair 73).** `melt` (squashes to the ground), `sink` (slides into the ground), `bones` (the flesh
+falls, ribs stay a moment), `vapour` (boils off upward), `stone` (turns grey and breaks). Cosmetics 141 to 145: Meltdown, Swallowed,
+Bare Bones, Boil Off, Stonebreak; store, 200 coins each, like the other store dissolves. Each mode also names a ground overlay, an
+effect of the pair (`data/lib/chaos_status_vfx_ids.lua` `kill`, ids 5185 to 5189: a pool, broken earth, bones, vapour, rubble). The
+message carries it as `p = {id, dx, dy}`. The client plays it once per tile of the monster's width, at most 3. **Gate:** a cosmetic
+with `pair = 73` and the five modes exist only while `config.lua` `chaosClientPair` is 73 or more (the filter at the end of
+`cosmetics_config.lua`, read through `ChaosStatusVfxIds.on`). Below it: no store offer, no window row, nothing to select.
+Tests: `tests/cosmetics_test.lua` (the O597 block: gate on and off, the payload with and without `p`).
+
 - **The message.** `cosmetics.lua` `M.dissolve` (called by the death handler `ChaosCosmeticsDeath` after the killing blow of a character that wears one):
   `{action = "kdis", data = {i, x, y, z, m, t, o = {l, h, b, g, f, a}, d, v = {id, dx, dy}}}` on the cosmetics opcode 225 (no new opcode, an old client
   ignores the action) to the killer first and the other players within `cfg.dissolve.range` (9 x 7 tiles), at most `maxViewers` (12). The rules are in
@@ -34504,6 +34646,82 @@ the plain effect that plays when the dissolve cannot.
   ember `burn`, achievement Keeper of the Ashes), Void Collapse (127, `void`, Herald of Omens), Gilded Dust (128, gold `gold`, Hoardbreaker). Names stay
   English like every cosmetic name (`i18n_strings.lua`: proper names stay in English); the texts the client adds are in pt-BR.
 - **Never power.** A dissolve changes a picture only (no damage, drop, timing or area); the cosmetics test still refuses any field that is not cosmetic.
+## Creature pack looks (O608, after O605; picks.csv rows `creature`, `monster_creature_looks.csv`, install step `monstercreaturelooks`)
+
+O605 gave nine 2x2 creature outfits to 11 monsters. Owner 2026-11-17 after the preview (translated): "Put the creatures back the way they were.
+Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
+Client pair 73 will hold 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles, made from three creature packs of one author
+(client/MANIFEST.md "Creature packs as boss outfits (O608)"). Pair 73 is not built.
+
+- **Back to their old looks**: Ink Blob, Aberration of the Depths, Rimecairn, Ashmaw Warlord, Frost Maiden, Elite Ice Witch, Thalcyra, Vaelith,
+  Sangrith and the two Ascended forms. Nothing of O605 had shipped, so no installed server changes. The humanoid outfits and the angel are not imported.
+- **Map**: `server/data/monster/monster_creature_looks.csv` (monster, look, new_look), 3 rows. `gen_creature_outfits.py looks` writes it
+  from the `creature` rows of `client/tools/sprites/monster_looks/picks.csv`. The old look is the monster's file in the repository.
+
+| boss | what it is | old look | new look |
+|---|---|---|---|
+| The Rotmother | world boss (`world_bosses/the_rotmother.xml`), slow, tanky, poison | 238, 2x2 | 3527, 4x4 |
+| Vhoss the Hexmaw | raid boss of the Ashen Sepulchre (`raid/vhoss_the_hexmaw.xml`) | 2130, 2x2 | 3528, 5x5 |
+| Talath | ice boss (`talath.xml`, `boss_mechanics_config.lua` element ice), spawned in its lair from pair 73 (O616) | 1473, 2x2 | 3529, 5x5 |
+
+- **Why the Rotmother** (the drifting ooze): the slowest world boss (speed 200), race venom, poison waves. A drifting ooze fits a slow, venomous boss.
+  Her old look 238 is a stock 2x2 with three walk frames. No boss of ours is a water or depths boss. The Drownbell Depths plan has no boss block.
+- **Why Vhoss the Hexmaw** (the floating horror): the raid's hex caster, an eldritch thing already. Its old look 2130 is a 2x2 with no idle group.
+  Nyxareth the Void Archon fits the theme too, but its look 1538 is a 5x5 of 138 px, as big as the new figure: nothing to gain.
+- **Why Talath** (the hovering ice shard): Rimecairn is no boss. It is a hunt monster with 130 spawns and no boss flag, so it keeps its look.
+  Talath is the one boss with ice mechanics besides Skaldra (Frost Lance, a glacial ring, ice pillars). It was dormant at O608.
+  O616 gave it a spawn: "Talath's lair (O616)" below. The owner kept the shard on Talath (2026-11-17). Skaldra the Rime Queen is the live ice boss, but she is a frost wyrm that summons Frost Dragons,
+  and her look 1534 has the wing beat of `game_bossanimate` (owner 2026-11-06). She keeps it. To move the shard to her: change one row of `picks.csv`, run `gen_creature_outfits.py looks`.
+- **Passed over**: Aquatic Overlord Thalassa (an island boss of the base server: no file of ours, no committed look to go back to) and the Abyssal Rift guardian
+  (its look comes from `rift_config.lua` `looks`, not from a monster file; the `bigGuardians` switch is one switch for four guardians and is off).
+- **Size**: the old looks are 2x2 (64 px). The new figures are 117 to 141 px wide and 123 to 131 px tall, pixel for pixel from the pack. They stand centred
+  on the boss's tile by the dat displacement and reach about two tiles to each side. The monster files do not change: speed, health, attacks and the
+  mechanics of `boss_mechanics_config.lua` stay (its `size` is the mark's size, not the look's).
+- **Talath's pack has no walk animation.** It hovers, so it glides on its idle frames. O616 set its speed from 800 to 280.
+- **Step** `monstercreaturelooks` (`tools/install_monster_creature_looks.py`, after `funlooks`). Only when config.lua `chaosClientPair` is 73 or
+  more: the look of each monster's installed file (XML or Lua, ours and the base server's) becomes the new look. Colour fields stay.
+  Below pair 73 it prints a WARNING line and changes nothing. A second run changes nothing. `--dry-run` writes nothing.
+  A monster with no file, or with a look the maps do not know, stops the step. The step still moves a pool row and a monster that wears an earlier
+  pair's look, were one on the map. None is today.
+- **The repository files keep the old looks.** A boss has no row in the bounty pool, so the pool is the same at pair 72 and 73.
+- **Audits**: `audit_shared_looks.py` and `audit_idle_looks.py` read the map from pair 73 on. `tools/ci/check_content.py` holds the map
+  (ids 3527 to 3529, every one worn, no hunt monster of the pool on one) and runs the shared, idle and crowded rules at pair 73.
+  `look_idle.csv` has the three rows, idle group: 16 phases and 12 pictures south, 19 and 17, 12 and 12 (O616: every pack frame).
+- **Tests**: `python3 -I server/tools/install_monster_creature_looks_test.py`.
+- **Switch on**: build pair 73 with this step in it, push it to windows-assets, ship the client. Then admin app Comandos > "Par do cliente" >
+  Gravar 73. Fallback: `chaos-ctl.sh client-pair set 73`. Then update the server: the update runs the step.
+- **Not done**: attack and death frames are not imported. No new monster. Not seen in a client.
+
+## Talath's lair (O616; `scripts/chaos/bosslair.lua`, `bosslair_core.lua`, `bosslair_config.lua`, `tools/areaplan/rooms/shard_hollow.json`)
+
+Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics and a new look, but no spawn. Now it has one map spawn.
+
+- **Place**: The Shard Hollow, a small ice area of its own. Origin 15840, 15500, 7 in the annex row, 72 x 84 tiles, 567 walkable.
+  One protected ledge in the south where players arrive. One boss hall in the north, 36 x 30, with a single way in.
+  Talath stands at 15880, 15517, 7. Players arrive at 15878, 15571, 7. The exit portal of the plan leads back to the hunt.
+- **Why there**: Talath's mechanics are fair at level 650 (`boss_mechanics_config.lua`, `fair.refLevel`). Its element is ice.
+  The Frostvein Reach is the ice hunt of levels 575 to 690. So the way in is in that hunt, in its Glacial Col.
+  The hunt has no dead end for a boss room. A new zone would reshape a placed hunt, and the installer refuses that.
+  So the lair is a fixed area of the `rooms` folder, like the annexes. No tile of the hunt changes.
+- **Way in**: a magic forcefield at 16794, 14352, 7, action id 47890. `bosslair.lua` creates it at startup. No map file is written for it.
+  The tile is bare, has free ground all round and lies three tiles or more from every spawn point. The way back lands at 16794, 14354, 7.
+  Level 500 or more enters. That is below the hunt's first level, so every hunter of the Reach may go in.
+- **Respawn**: 4 hours after its death (`respawn = 14400`), like Vharzul the Verdant Eye. The plan's boss block writes the spawn entry.
+- **Gate**: the lair opens when config.lua `chaosClientPair` is 73 or more. Below that there is no portal, and a portal of ours is removed.
+  The engine's spawn of Talath is refused then (`EventCallback.onSpawn` returns false). So a client without look 3529 never meets it.
+  The boss list (`bossspawns_config.lua` entry `lair_talath`, `minPair = 73`) leaves it out below pair 73 too.
+  A refused spawn is tried again at the spawn's next turn. That costs one callback per turn.
+- **Speed**: `talath.xml` had speed 800. That was the donor file's number, three times our bosses: world bosses run 200 to 320, raid bosses 200 to 260.
+  It is a data mistake. Talath now has 280, the speed of Skaldra the Rime Queen (`tune_monsters.py` row `talath.xml`).
+- **Action ids**: the block 47890 to 47899 is the boss lairs'. Only 47890 is used.
+- **Another lair**: add a plan to `tools/areaplan/rooms/` with a boss block, then an entry in `bosslair_config.lua`. `boss_lair_test.py` holds both to each other.
+- **Tests**: `tests/bosslair_test.lua` in the server loop (gate, level, arrival, config rules, the script on a mocked engine).
+  `python3 -I server/tools/boss_lair_test.py` (needs luajit): the config against the compiled plan and against `frostvein_reach.json`.
+  `tests/bossspawns_test.lua` covers `minPair`.
+- **Owner steps**: admin app, tab Painel > card Atualizar servidor > button Aplicar e reiniciar. The update runs `install_all.py`, step `contentareas` among them.
+  Fallback: `chaos-ctl.sh update-apply`. Nothing else to run. The lair is placed at any pair. It opens at pair 73.
+- **Not done**: not placed on a real map, not seen in a client. Talath has 21 million health: it is a group boss. No extra loot rule, no announcement.
+
 ## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)
 Owner, 2026-11-14 (pt-BR): "coloque mais costumes divertidas. como personagens, coisas inusitadas (como lata de energético, maço de cigarro e coisas diferentes assim)", and two more items for the same client pair: the Rune Seal aura as a round ring, and a Dusk Moth pet with a stronger animation.
 Client side: client/MANIFEST.md "Pair 72 (pending owner approval)" (14 outfits 3511-3524, `gen_fun_costumes.py`, the art). This is the server side.
@@ -34544,3 +34762,348 @@ a typed command) is taken as before. The report has `== Helper answers`: command
 buckets, the slowest. The spell quest check waits 12 s per answer and a missing answer is a SKIP; `enter npc` looks 4 tiles round the NPC and the check
 asks 3 times 4 s apart before a SKIP; no tile for a cursed chest is an answer with the reason. The helper loop (`step`) runs under `pcall` and always
 schedules the next round. Tests: `tests/tester_helper_test.lua`, `tools/testers_test.py`, `tools/tester_checks_test.py`.
+
+## Spell VFX packs (O596, trimmed by O600; `data/lib/chaos_spell_vfx.lua`, `data/lib/chaos_spell_vfx_ids.lua`, client pair 73)
+
+One purchased effect pack gives three spells a new look. Looks only: no damage, timing or area changes.
+Art, sizes and ids: client/MANIFEST.md "Spell VFX packs". Licence: docs/CREDITS.md.
+
+O596 mapped 52 spells to five packs. The owner watched the previews: "I think I like the effects we already have better.
+Use only the ones that were really bad. No need to replace the rest." O600 judged each spell by today's effect alone.
+Really bad means one of: a blank or missing piece, a stock engine effect of the wrong element or plainly generic,
+a hit or projectile too small or dim to read on grass and stone, a projectile with no impact. Plainer than the pack is not enough.
+
+- **Gate.** `config.lua` `chaosClientPair >= 73`, read at load (`ChaosSpellVfx.ON`). Below 73 nothing answers.
+  A pair 72 client keeps today's effects. The owner raises the record when pair 73 ships.
+  Admin app: Commands tab > client pair card > set 73. Fallback: `chaos-ctl.sh client-pair set 73`.
+- **Hook.** `data/spells/chaos/_common.lua` `pass()` asks `ChaosSpellVfx.swapFor(spellId, kind, name)` first.
+  It comes before the effects pass (O457), pair 29, pair 36 and pair 27. Kinds: `fx` and `missile`.
+  The Mystic helper `chaos_mystic_fx.lua` no longer asks it: no Mystic spell is mapped.
+- **Ids.** `chaos_spell_vfx_ids.lua` is generated (`gen_spell_vfx.py ids`, `--check` in CI). It is a plain table.
+  The lib merges it into `ChaosVfx` and `ChaosVfxMissile` only with the gate on. Effects 4743..4744. New projectile 46.
+  No projectile is rebuilt in place. 163 and 132 stay as they are. Monsters send 132 too.
+- **Kept, with the reason.**
+  - Marrow Bolt (106): the projectile only. Today's bolt is a small dark green dart. It is lost on grass. The skull hit stays.
+  - Life Siphon (184): the drain on the target. Today's is a thin dark hook of a few pixels. The red projectile stays.
+  - Bone Shrapnel (197): the hit. Today's is a dark olive smudge with a few bone chips. It is lost on grass. The projectile stays.
+- **Dropped: today's effects stay.** Witchfire Bolt, Falling Pyre, Doomtide, Martyr's Pyre, Pyre of Absolution.
+  Soul Rot, Crimson Covenant, Grave Nova, Funeral of Kings, Corpse Explosion, Crypt Collapse, Ossuary Surge, Splinter Volley,
+  the four Raise spells, Withering Curse, Gravewail, Dreamrot. Blightbrand, Venom Spiral, Packhunter's Dart, Blightswarm.
+  Dawnpiercer, Sunspear, Lance of Vigil, Heretic's Brand, Dawnbreaker Shot, Twin Verdict, Judgement, Final Verdict, Radiant Smite,
+  Consecration, Blessed Earth, Sanctified Ground, Bell of Reckoning, Hammer of Ember Dawn, Aegis of Faith, Lightward, Mantle of Dawn.
+  Lay on Hands, Vow of Mending, Purifying Wellspring, Mirror Mend. Phantom Needles, Prismatic Rupture, Tear in the Weave, Soulward.
+- **Weak but not changed.** Grave Nova still sends the stock death effect on every tile. O596 never replaced that part.
+  The projectiles of Blightbrand, Packhunter's Dart and Soul Rot are small and dark. Their hits read well. O596 had no piece for them.
+- **Element rule.** A piece has an element tag in `data/spells/spell_fx_elements.csv`. A spell with an element gets a piece of it.
+  `ChaosSpellVfx.allow` is empty: the three spells and the three pieces are death. `check_spell_fx.py` measures with the gate off.
+- **Tests.** `tests/spell_vfx_test.lua` in the server loop. `client/tools/sprites/gen_spell_vfx_test.py`.
+
+## Effects for roles that had none (O606; `data/lib/chaos_gapfx.lua`, `data/lib/chaos_gapfx_ids.lua`, `scripts/chaos/gapfx.lua`, client pair 73)
+
+47 effects of a purchased effect set at the ids 5190..5236. The art is in the sprite pair only: client/MANIFEST.md, docs/CREDITS.md.
+O613 (owner 2026-11-17): the "Jackpot" effect (a unique won from a roulette) is gone, with its sender in `prizes.lua`. The rows after it moved up one id.
+Each goes to an event that sent no effect of its own: nothing, a stock puff or the shared yellow firework.
+Looks only. No damage, no timing, no area changes.
+
+- **Gate.** config.lua `chaosClientPair` is 73 or more, read once at load. A client on pair 72 has no effect 5190+.
+  Below 73 every sender does exactly what it did. The old line stays in the script, in the branch the gate does not take.
+  The owner raises the record when pair 73 ships.
+- **How a sender asks.** `ChaosGapFx.on(creature, key)` and `ChaosGapFx.at(pos, key)` answer true when the effect went out.
+  In place of a shared effect: `if not (ChaosGapFx and ChaosGapFx.on(player, "daily")) then <the old line> end`.
+  Where nothing was sent: `if ChaosGapFx then ChaosGapFx.on(player, "talent_point") end`.
+  `ChaosGapFx.to(who, pos, key)` sends to one client. The keys are `C.events`. `scripts/chaos/gapfx.lua` loads the lib.
+- **Boss warning pulse (owner order).** The four senders of `warnEffect` and `fillEffect` ask `ChaosGapFx.telegraph(name)`.
+  With the gate on `warning_zone` becomes `gx_tele_zone` and `warning_fill` becomes `gx_tele_fill`. The configs are not changed.
+  Senders: boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua. World bosses and rift guardians run through boss_mechanics.lua.
+  The marked strikes of rift affixes keep their stock marks: those carry the element colour.
+  The edge tiles outside a 3 x 3 slot keep their stock red puff. The big danger circle of the first pulse stays.
+- **Players with game_telegraph.** They see the floor mark and got no sprite pulse (O549). With the gate on they also get
+  the strike circle on the 3 x 3 slots, over the floor mark. `ChaosTelegraph.draw(mark, fn, art)` calls `art(player)` for them.
+  Switch: `ChaosGapFx.onModuleClients` (true). false: only players without the module see the strike circle.
+- **Boss marks that had no effect.** `gx_chase` on the target of a follow circle. `gx_spread` on each player under falling puddles.
+  `gx_safe_zone` on the cover of a line of sight blast. `gx_countdown` over the boss as a channel ends.
+  `gx_meteor_shadow` on the slots of an attack whose hit is `meteor_strike`. All additive. None changes a hit.
+- **Dropped from the first pick, with the reason.** Achievement Trophy: achievements.lua sends the pair 29 star firework.
+  Arcane Gate Open and Close: every town portal style has its own open and close. Recall Channel: the cast sends `arcane_circle`.
+  Wood Chips: there is no woodcutting. Stack Marker: the soak circle sends `holy_seal`. Meteor Impact: the hit sends `meteor_strike`.
+  Mine Trigger and Trap Snap: a snare's burst sends its element effect of the pack effects. Rank Up moved to the profession level:
+  badge upgrades are the base's script and have no hook.
+- **Not given an effect.** World boss titles: the reward already sends the boss firework. The daily streak title: the red firework stays.
+  The world boss arrival and its adds keep `void_maw` and `teleport_in`. The Ascended and guild boss arrivals keep `shadow_eruption`.
+- **Tests.** `tests/gapfx_test.lua`: the gate off sends the old effect or nothing, the gate on the new id at its offset,
+  the ids are one block, every effect has a key and a sender that asks for it. `tests/telegraph_test.lua`: the `art` argument.
+- **Not seen in a client.** Pair 73 is not built. Placement was set by numbers, not by eye.
+
+| id | set no. | name | size, phases | sender and what it sent before |
+|---|---|---|---|---|
+| 5190 | 19 | `gx_talent_point` | 3 x 3, 18 | passivetree.lua: new nodes saved or a plan applied (nothing before) |
+| 5191 | 13 | `gx_class_unlock` | 4 x 4, 17 | class_unlocks.lua: a class unlocked (nothing before) |
+| 5192 | 5 | `gx_spell_mastery` | 3 x 3, 20 | spell_masteries.lua: a mastery chosen (nothing before) |
+| 5193 | 35 | `gx_paragon` | 3 x 3, 24 | paragon.lua: Paragon points spent (nothing before) |
+| 5194 | 40 | `gx_title` | 3 x 4, 17 | descent.lua: a Descent title earned (nothing before) |
+| 5195 | 9 | `gx_rank_up` | 4 x 4, 18 | professions.lua: a profession level (the yellow firework before) |
+| 5196 | 2 | `gx_class_change` | 3 x 3, 20 | ascension.lua: the ascension, in place of the stock holy area; the class effect stays |
+| 5197 | 31 | `gx_milestone_bronze` | 3 x 3, 13 | milestones.lua: level milestone, first quarter of the list (nothing before) |
+| 5198 | 34 | `gx_milestone_silver` | 3 x 4, 15 | milestones.lua: second quarter |
+| 5199 | 33 | `gx_milestone_gold` | 3 x 5, 18 | milestones.lua: third quarter |
+| 5200 | 32 | `gx_milestone_diamond` | 4 x 5, 20 | milestones.lua: last quarter |
+| 5201 | 22 | `gx_respec` | 3 x 4, 18 | passivetree.lua, respec.lua, paragon.lua: a tree or Paragon reset (nothing before) |
+| 5202 | 56 | `gx_quest_complete` | 5 x 5, 20 | mainquest.lua: the last step of a chapter (nothing before) |
+| 5203 | 47 | `gx_daily` | 3 x 5, 22 | daily.lua: the daily reward (the yellow firework before; the red milestone firework stays) |
+| 5204 | 61 | `gx_bounty` | 4 x 5, 24 | bounty.lua: a bounty paid (the yellow firework before) |
+| 5205 | 42 | `gx_chest_royal` | 5 x 5, 21 | weeklychest.lua: the chest opens (nothing before); cursedchest.lua: the chest unseals (the yellow firework before) |
+| 5206 | 78 | `gx_season_tier` | 5 x 5, 22 | seasonpass.lua: a tier claimed, one or all (the stock green puff before) |
+| 5207 | 79 | `gx_set_complete` | 5 x 5, 22 | itemsets.lua: a set piece found (the yellow firework before) |
+| 5208 | 62 | `gx_card_common` | 3 x 3, 16 | cards.lua: a new Common card in the Deck (nothing before) |
+| 5209 | 63 | `gx_card_rare` | 5 x 5, 22 | cards.lua: a new card above Common (nothing before) |
+| 5210 | 77 | `gx_relic` | 4 x 4, 24 | uber.lua: a relic in the reward (nothing before) |
+| 5211 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
+| 5212 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
+| 5213 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
+| 5214 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
+| 5215 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
+| 5216 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
+| 5217 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
+| 5218 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
+| 5219 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
+| 5220 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
+| 5221 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
+| 5222 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
+| 5223 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
+| 5224 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
+| 5225 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
+| 5226 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
+| 5227 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
+| 5228 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
+| 5229 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
+| 5230 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
+| 5231 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
+| 5232 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
+| 5233 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
+| 5234 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
+| 5235 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
+| 5236 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+## Area bursts, beams and markers (O607, O609, O613; `data/lib/chaos_area_fx.lua`, `data/lib/chaos_area_fx_ids.lua`, client pair 73)
+
+The owner approved the review O604. Looks only: no damage, no timing, no area changes.
+
+- **Gate.** `config.lua` `chaosClientPair >= 73`, read once at load. Below 73 every spell, boss and event sends exactly what it sends today.
+  The old ids keep their art. Nothing is overwritten in place.
+- **O613 (owner 2026-11-17, after the O607 previews).** Our old area bursts stay. The swap by name is gone from `Vfx` of `data/lib/chaos_vfx.lua`.
+  638 fire, 642 blood, 644 ice and 646 holy are ours again for every sender: spells, boss hits, boss deaths, Purging Nova.
+  `deathfx.lua` and `chaos_big_fx.lua` ask nothing of this file any more. The size rule for boss hits is gone with it.
+  Four pack bursts left the pair: fire rain, blood sigil, whiteout, radiant burst. Nothing sent them after the undo.
+- **The clock face, two spells only.** 5300 `ab_arcane_clock`, a disc of 7 tiles. `ChaosAreaFx.spellBursts`:
+
+  | Spell | The name its script sends | Drawn before | On pair 73 |
+  |---|---|---|---|
+  | Veil of Whispers (153) | `big_nova_arcane_7` at the caster's feet | 648, our arcane nova | 5300 |
+  | Tear in the Weave (231, script `illusionist/reality_rift.lua`) | `arcane_circle`, each of the two implosions | 775 `weave_crush`, the pair 29 swap | 5300 |
+
+  The owner named the second spell by its script, "Reality Rift". Its rift core `void_rift` does not change.
+  `ChaosSpell.vfx` of `data/spells/chaos/_common.lua` asks `ChaosAreaFx.spellBurst(spellId, name)` inside a cast.
+  The spell id comes from `ChaosSupportsSpell.cast()`. A cosmetic skin of the spell wins. The clock wins over the pair 29, large and class effects.
+  Any other sender of 648 keeps 648. Outside a cast nothing is swapped.
+- **Slowed.** A slowed creature shows 3036 `mega_gravity_press` in place of our whirlwind 783 `cond_slowed`. `ChaosAreaFx.status`.
+  `ChaosPack29Vfx.show` and `.hold` ask `ChaosAreaFx.statusName(state)` first (`auraNow` in `data/lib/chaos_pack29_vfx.lua`).
+  3 x 3 tiles, 17 phases of 83 ms, sent with the pack's own offset. Below pair 73 the whirlwind stays.
+  The status layer (O597) would show its `root` status for a slowed creature on the same pair. The owner's word of O613 is the gravity press.
+  So `root` yields: `ChaosStatusVfx.yield = {root = "slowed"}`. No mark from the state and no bit from the paralyse condition while the press is live.
+  The three `st_root_*` effects 5158..5160 are in the pair with no sender then. An empty `yield` table gives root back to the layer.
+- **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
+  It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
+
+  | Spell | Beam | Line | One effect per heading (O609) |
+  |---|---|---|---|
+  | Soulrend Beam (118, death) | `mega_soul_chain` | 6 | 5301..5308 `mega_soul_chain_l6_<heading>` |
+  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` | 3 | straight: the pack's own 3508, 3510, 3512, 3514. Diagonal: 5309..5312 `mega_sunbeam_lance_l3_<heading>` |
+  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 5313..5320 `mega_sunbeam_lance_l8_<heading>` |
+
+  O613: Eclipse Edge (155) has no beam any more. It draws its line tile by tile, as before O607. The blood stream beam left the pair.
+
+- **Long beams in one piece (O609).** The owner saw O607: "the larger beams are in segments".
+  The pack's beam art covers 3 tiles on a straight heading and less on a diagonal. O607 drew copies end to end, so a start and a tip sat inside the line.
+  Now the pair has one effect for each beam, heading and line length: one start, one body, one tip on the last tile of the line. Headings in id order: n ne e se s sw w nw.
+  - `ChaosAreaFx.beam(spellId, dir, length)` returns one segment `{name, at = 0, len = length}`. The name comes from `ChaosAreaFxIds.lengths[beam][length][heading]`.
+    The table is generated. A straight line of 3 tiles names the pack's own beam there.
+  - `ChaosAreaFx.chain` is the O607 rule: copies of the pack's beam end to end. `beam` falls back to it for a length the pair has no row for. A changed spell length still draws.
+  - `ChaosAreaFx.sendBeam` sends per viewer. The client draws an effect from its bottom right tile and drops one whose tile it cannot see.
+    A viewer who sees the far corner of the picture gets the one piece. A viewer who does not gets the chain, so nobody loses the beam.
+    The caster always sees the far corner: the canvas is held within 8 tiles east and 7 south of the caster's tile.
+    Without `Game.getSpectators` the one piece is broadcast.
+  - The art covers the damage line tile for tile, the same length on all 8 headings. One exception: Dawnbreaker Shot south-east, south and south-west.
+    The line is 8 tiles and the view ends 7 tiles south, so the art stops on the seventh tile. The damage does not change.
+  - Lance of Vigil ended one tile past its line on straight headings and short on diagonals in the O607 text. Measured now: 3 tiles straight, the new rows cover 3 on the diagonals.
+  - How the art is made longer, the seams and the numbers: client/MANIFEST.md "Long beams in one piece (O609)".
+- **Beams, the rest.**
+  A cosmetic skin of the spell's effect wins: then the line is drawn as before.
+  `mega_glacier_breath` 3404..3411 is in the pair with no sender: no class has an ice line spell.
+  Rift Cleaver, Chi Lance and Gale Volley are weapon lines, not beams. They do not change.
+- **Markers.** Sent to one player only.
+  - Lock, 3690: over a Chronicle gate that is sealed or above the player's level (`chronicle.lua`), over a generated area's entrance above the player's level (`areagen.lua`).
+  - Quest marker, 4051: over the loot bag that holds a main quest item (`mainquest.lua`).
+  - Skull 4076, checkpoint crystal 3685, hand 3688: in the pair, no sender yet. The server has no checkpoint. NPC quest marks stay those of the client.
+- **Element rule.** Every id has a row in `data/spells/spell_fx_elements.csv`. The clock face is arcane, as the nova it stands in for. The gravity press is tagged `any`, as a status effect.
+  A beam has the element of its spell. `check_spell_fx.py` measures with the gate off.
+- **Tests.** `tests/area_fx_test.lua` in the server loop. `client/tools/sprites/gen_area_fx_test.py`. The tool: client/MANIFEST.md.
+  O609 in the Lua test: every beam spell and heading gets one effect named for the length of the real damage line (`ChaosAttackKitCore.tiles`).
+  Also the canvas reach, the caster's view, the per viewer choice with fake spectators, the chain for a length with no row.
+## Status layer (O597; `data/lib/chaos_status_vfx.lua`, `data/lib/chaos_status_vfx_ids.lua`, `scripts/chaos/status_vfx.lua`, opcode 165, client `game_statusfx`, client pair 73)
+
+Owner 2026-11-17: "about the effects, do the recommended". The recommendation named a purchased status pack as a status layer
+(docs/CREDITS.md). A creature that burns, is frozen, stunned, blessed and so on shows it on its body: a start once, a loop while the
+status holds, an end once. Players and monsters alike.
+
+- **Statuses (14) and their sources.** One bit each, in the order of `ChaosStatusVfxIds.order`.
+
+  | Status | Engine condition | Chaos state (through `ChaosPack29Vfx.show` / `hold`) |
+  |---|---|---|
+  | burn | `CONDITION_FIRE` | `burning` |
+  | freeze | `CONDITION_FREEZING` | `frozen` |
+  | shock | `CONDITION_ENERGY` | `shocked` |
+  | poison | `CONDITION_POISON` | `poison` |
+  | curse | `CONDITION_CURSED` | `cursed` |
+  | root | `CONDITION_PARALYZE` | `slowed`. O613: yields to the gravity press while that is live, see "Area bursts, beams and markers" |
+  | soak | `CONDITION_DROWN` | none |
+  | stun | none | `stunned` |
+  | confuse | `CONDITION_DRUNK` (players) | `confused` |
+  | haste | `CONDITION_HASTE` (players) | none |
+  | bless | none | `blessed` |
+  | regen | `CONDITION_REGENERATION` of a spell (players, not the food one) | `regeneration` |
+  | shield | `CONDITION_MANASHIELD` (players) | `invulnerable` |
+  | rage | none | `enraged` |
+
+  The pack's sleep was skipped: no condition or state matches it. Haste is brief: shown 2.5 s after it starts, not for as long as it
+  lasts, because most characters are hasted all the time.
+- **The Chaos states.** Every Chaos call site that knows a state already goes through `ChaosPack29Vfx.show` or `hold` (slows, stuns,
+  chill and shock, status words, boss phases, blessings, rages, shields). While the layer is live that library hands those states to
+  `ChaosStatusVfx.markState` and no longer sends its own pair 29 aura for them. Its engine override of the condition tick effect is
+  left out for the same states, so the tick shows the stock spark and the layer draws the status. With the gate off nothing changes.
+- **Protocol.** Extended opcode 165 (`ChaosOpcodes.statusVfx`), JSON. Client to server: `hello {on = 1 | 0}`. Server to client:
+  `cfg {on, e, ms}` (the effect ids, flat `start, loop, stop` per status in bit order; `on = 0` below pair 73) and
+  `s {l = {creature id, mask, ...}}`, only what changed, mask 0 clears. Only a client that said hello gets messages. Every 500 ms the
+  creatures within 9 x 7 tiles of each watcher are read once; each watcher gets its changes, at most 60 pairs a message (under 1 KB).
+  No watcher: the scan does nothing. The Unity client never says hello (`tools/ci/unity_opcodes_allowlist.txt`).
+- **Gate.** `ChaosStatusVfxIds.on`: `config.lua` `chaosClientPair >= 73`. Off: `cfg {on = 0}`, no scan, no hand-over.
+- **Ids.** Effects 5143 to 5184 (three a status), 5185 to 5189 (the kill overlays). Generated: `data/lib/chaos_status_vfx_ids.lua` and
+  the 47 `sv_` rows of `data/spells/spell_fx_elements.csv` (`client/tools/sprites/gen_status_vfx.py ids`, `--check` in CI). Effects
+  4743 to 5142 belong to the spell packs of O596. No storage key, no table.
+- **Client.** `game_statusfx` draws at most 2 statuses a creature (stun, freeze, root first; haste and regeneration last) and 24 on
+  screen (12 on a phone), the nearest creatures first. Options > Graphics "Status effects on creatures", default on (base patch `0205`).
+- **Tests.** `tests/status_vfx_test.lua` (opcode free, ids file and gate, masks, conditions on a mocked creature, marks and their
+  end, the brief haste, changes and batches, the glue on a mocked engine, the hand-over from `chaos_pack29_vfx.lua`); client
+  `statusfx_test.lua`; `tests/pack29_vfx_test.lua` unchanged and green.
+- **Not verified.** Not run on a server or in a client: pair 73 is not live. Watch for: the cost of the scan in a full hunt, a
+  status that stays after the creature died, a monster's condition the engine reports under another condition id.
+
+
+## Look swaps (O619; `data/monster/monster_o619_looks.csv`, `o619_look_facts.csv`, install step `monsterswaplooks`, mounts in `install_outfits.py`)
+
+Owner 2026-11-17 (translated): "The mounts can just be swapped, the monsters can be swapped too, I know we have many. The fun costumes can stay.
+Keep everything at the same quality band." The O610 audit measured every outfit, mount and monster look of pair 71 against the stock bar
+(`docs/SPRITE_STYLE.md`: an oblique camera with a lean of 13 to 18 px, an east that is not a mirrored west, a dark outline on 88% of the rim, no soft
+alpha, a walk of 8 pictures, a look that moves while it stands). The five donor mounts and the donor B first set (outfits 1530-1550) failed worst. This
+round swaps them for looks the pair already has: no new picture, no new outfit. The fun costumes 3511-3522 are not touched.
+
+- **Where the new looks come from.** The pair has 2,776 outfits. A look qualifies when no monster (the repository's, the base server's, the pool), no
+  player (`player_looks.csv`: outfits, mounts, wings, auras), no class and no earlier look map wears it; when the audit finds nothing wrong with it by
+  the numbers (`flags.py` of the audit, applied to the unused looks as well: the audit had skipped them); when it has no colour mask (the monster files
+  keep colours that a masked look would wear); and when it moves while it stands (an idle group, or the walk in place list of O534). That leaves 569
+  looks outside pair 30 (the owner turned its sheet looks down in O524) and pair 33: pair 50 (`data/items/pair50_outfits.csv`) and a few stock
+  looks. Of them 46 have an idle group, the rest walk in place. The 24 picks were made by name, element, size and level against what the monster is.
+- **The step.** `monsterswaplooks` (`tools/install_monster_swap_looks.py`, after `monstercreaturelooks`). Only when config.lua `chaosClientPair` is 73
+  or more: the look of each monster's installed file (XML or Lua, ours and the base server's), its row of the installed bounty pool, and the look
+  rows of `ascension_quest_config.lua` and `trials_config.lua` that name an old look (the Warden of Ascension, Risen Bones and Tithed Dead are
+  spawned from those tables) become the new look. Colour fields stay. A monster of the recolour map (six of them) leaves its hue shifted copy for
+  the new look. Below pair 73 it prints a WARNING line and changes nothing; a second run changes nothing; `--dry-run` writes nothing. A monster with no
+  file, or with a look the maps do not know, stops the step. The recolour step knows the swap map, so a run of `install_all.py` after this step
+  leaves the monsters on their new looks. `gen_bounty_pool.py` turns a new look back to the old one: the committed pool stays the same.
+- **The repository files keep the old looks** (no client below pair 73 sees a change). The new looks exist in pair 50 already, so the mounts, which have
+  no pair gate, show them at once.
+
+| monster | old look | new look | why |
+|---|---|---|---|
+| Golden Dragon | 1530, 5x5, one direction only | 3315 red and gold horned demon, 2x2 | gold and fire; the only gold 2x2 with an idle group besides 3309 |
+| Gildguard Revenant | 1530 (copy 3393) | 3309 armoured beast, golden, 2x2 | an armoured, gilded guard; leaves its copy of a one direction look |
+| Scaleborn | 1531, 5x4, an east that is a west | 3127 hooded armoured lizard knight, red, 2x2 | scaled and fire |
+| Rimecairn | 1531 (copy 3394) | 3039 stone head golem, blue crystal, 2x2 | a cairn of rime: a stone head with blue crystal |
+| Pyrewing Tyrant | 1532, 5x5, upright | 3032 black dragon, 2x2 (63 px body) | the widest dragon the pair has left |
+| Pyre Stork | 1532 (copy 3395) | 3190 flame raven reaper, orange, 2x2 | a flame bird |
+| Elite Ice Dragon, Ice Dragon | 1533, no outline | 3297 blue spectral dragon beast, 2x2 | one look for both (rank variants, `shared_looks_allow.csv`); ice |
+| Kaelgor the Infernal Warlord | 1536, upright | 3345 dark spear stalker, 3x3 | a warlord with a spear; 3x3 against the old 3x4 |
+| Vharok the Blood Colossus | 1537, upright | 3222 horned bull beast, red, 5x5 | the red colour of the 3221 art; a colossus is big |
+| Nyxareth the Void Archon | 1538, 5x5, one direction only | 3296 purple coiled dragon serpent, 4x4 | purple and void; the third big look with an idle group |
+| Ascension Warden, Trial Warden | 1540, upright | 2991 skeletal lich with green staff, 2x2 | a lich lord; the quest table follows |
+| Dark Sorcerer | 1541 | 3298 black hooded reaper, 2x2 | a hooded caster |
+| Death Mage | 1541 | 3317 black wraith with red hood, 2x2 | a hooded death caster |
+| Rootbound Pilgrim (copy 3396) | 1541 | 3040 hunched hooded beast, teal, 2x2 | a hooded pilgrim, rooted green |
+| Risen Skeleton | 1542, upright | 3026 armoured skeleton warrior, 2x2 | a skeleton; the Risen Bones and Tithed Dead tables follow |
+| Lich Shade | 1545, soft alpha, no outline | 2989 black wraith with hood, 2x2 | a shade |
+| Elite Spider | 1548, upright | 3100 giant teal spider, 2x2 | venom spider |
+| Thornveil Wraith (copy 3397) | 1548 | 3193 vine-wrapped plant beast, 2x2 | thorns and vines |
+| Evil Man | 1550, one direction only | 3016 red hooded cultist, 1x1 | a cultist |
+| Captain Bloodbeard | 1491, no outline | 3015 dark armoured knight, red trim, 1x1 | a captain |
+| Ironmask Taskmaster (copy 3384) | 1491 | 3240 orc executioner with axe, 2x2 | an overseer with an axe |
+
+- **Mounts.** Every look of the pair that is a mount (151) was on offer in `mounts.xml` already, so no free mount look existed. The five took pair 50
+  creature looks that pass the bar, are 2x2 with displacement 0 like 131 of the stock mounts (so no rider seat), and are worn by no monster and no other
+  player look: 141 Bone Steed 1561 -> 2999 bone beast with antlers; 142 Pyrewarden Charger 2132 -> 3096 armoured tusked beast, red; 143 Forgeborn
+  Emberwolf 2133 -> 3121 dark beast wreathed in fire; 144 Veilrunner 2134 -> 3314 blue spectral beast; 145 Thornbound Stag 2135 -> 3207 antlered ghost
+  horse, brown. 3121 and 3314 are one art in two colours; the pair has no other free steed. The names, prices and faction offers stay. The store row
+  (`shop_cosmetics.lua`), `player_looks.csv` and the mounts block of `mounts.xml` (`install_outfits.py` MOUNTS) carry the new ids. The old looks and
+  their rider seats (`rider_seats.csv`) stay in the pair, worn by nobody.
+- **Left as they are.** Eight purchased looks of pair 50 with a mild camera fail (Earworm 2879, Thornback Tortoise 2887, Vicious Manbat 3012, Sight of
+  Surrender 3076, Gazer Spectre 3153, Rustguard 3215, Rimeshroud Revenant 3234, Ogre Brute 3355: an east 0.66 to 0.77 like a west) are the O610 "needs the
+  owner eye" list: numbers only, nobody has seen them. Varkhul the Ashen Sovereign (2131, a 4x4 with one walk picture) has no free 4x4 left that
+  passes. Ghosts and elementals whose soft alpha or missing outline is the look (Banshee, Spectre, Lost Soul, the Lost Souls, Massive Energy
+  Elemental, Quicksilver Wraith), the boss looks with a glow (2118, 2119, 2126-2128, the Hollow Rider) and the stock wyrms and drakes (soft alpha 10 to 18%)
+  have no free look of their kind. Looks that only lack an idle group are no failure of the bar (the walk in place list, O534), and the many
+  looks the audit flags only for a high colour count are not either. The rest of the unused pool (about 540 looks) is waiting for the next round.
+- **Facts.** `o619_look_facts.csv` holds the O610 numbers of the 14 old looks, the 21 new looks, the 5 old mount looks and the 5 new ones (tiles, directions,
+  layers, idle and walk pictures, rim, soft alpha, lean, east against west, body, reasons). `install_monster_swap_looks.bar_problems` applies the
+  bar to a row: the old ones must fail it, the new ones must not.
+- **Audits.** `audit_shared_looks.py` and `audit_idle_looks.py` read the map from pair 73 (`look_at_pair`, `donor_rows`, `write_idle`). `look_idle.csv`
+  has the 21 new rows, `idle_walk_looks.lua` (generated) the 14 that walk in place. `tools/ci/check_content.py` holds the map: the old look is the
+  file's and the pool's, no monster of the donor, purchased or creature map, a new look is inside the pair, not blank, not a player look, worn by no
+  monster outside the map, at most 2 monsters on one, passes the bar by the facts; the mounts wear passing looks that only a mount wears. The shared,
+  idle and crowded rules run at pair 73 (3297 has an allow row for the two ice dragons).
+- **Tests.** `python3 -I server/tools/install_monster_swap_looks_test.py` (map, facts, bar, audits at pairs 68 to 73, the guard, the step on a
+  synthetic server, the recolour step, `gen_bounty_pool.py`, the mounts). The creature looks test now reads Rimecairn and the pool without the swap map.
+- **Preview.** `swaps.mp4` (27 pages of 3 s): each swap, old look above, new look below, four directions standing and walking, drawn by script from
+  pair 71; the five mounts alone. Purchased art was drawn by the script and not looked at by the author: the owner decides.
+- **Switch on.** With pair 73: admin app Comandos > "Par do cliente" > Gravar 73 (fallback `chaos-ctl.sh client-pair set 73`), then update the
+  server: the update runs the step. The mounts need no switch.
+- **Not done.** Not seen in a client. A hue shifted copy of the new looks was not made, so the pairs that shared a look (Golden Dragon and Gildguard
+  Revenant, Rimecairn and Scaleborn, the Pyre pair, Thornveil Wraith and Elite Spider) now have two looks of two arts. The sizes: the old figures were
+  3x3 to 5x5, 18 of the 21 new looks are 2x2 or 1x1; only three world bosses keep a big look. Skaldra the Rime Queen keeps 1534 (owner, 2026-11-17).
+
+## Bolt from the sky (O614; `data/lib/chaos_lightning_fx.lua`, `data/lib/chaos_lightning_fx_ids.lua`, client pair 73)
+
+Owner 2026-11-17: "For the lightning falling from the sky, make the tool to draw the lightning."
+The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MANIFEST.md. Looks only. No damage, timing or area changes.
+
+- **Gate.** `chaosClientPair` of `config.lua` is 73 or more, read once at load. Below 73 every sender draws effect 458 as today.
+  The owner raises the record when pair 73 ships: README "Client pair guard".
+- **Ids.** 5321..5323 are three shapes of the bolt. 5324 and 5325 are two shapes of a heavy bolt. All are tagged `energy` in `data/spells/spell_fx_elements.csv`.
+- **The swap.** The name `lightning_strike` is effect 458 of `data/lib/chaos_vfx.lua`. `Vfx()` is the one door every named effect goes through.
+  There `ChaosLightningFx.swap` answers with the next of the three shapes. Bolts that fall together do not look alike.
+  A name changed before `Vfx()` is not touched: a cosmetic skin, the pair 27 and 29 tables, the effects pass. `Vfx(pos, name, true)` still draws 458.
+- **Boss strikes.** A boss area draws its hit on every second tile, dozens at once. `fx()` of `boss_mechanics.lua` and `uber.lua` asks `ChaosLightningFx.boss` first.
+  One strike in four is a heavy bolt, the others are plain shapes. The number is `heavyEvery`.
+
+| Sender | What | Bolt at pair 73 |
+| --- | --- | --- |
+| `spells/chaos/sorcerer/cataclysm.lua` | Doomtide: four bolts on a ring with the energy wave | plain shapes in turn |
+| `spells/chaos/sorcerer/glacial_doom.lua` | Glacial Doom: four bolts on a ring with the energy wave | plain shapes in turn |
+| `lib/chaos_pack_fx.lua` | the energy snare burst, the energy strike of a rift modifier | plain shapes in turn |
+| `scripts/chaos/boss_mechanics_config.lua` | Thalcyra's Storm Marks, Saga's Storm Verse | one heavy in four |
+| `scripts/chaos/uber_config.lua` | Ascended Thalcyra: the hit of every pattern | one heavy in four |
+| `spells/chaos/sorcerer/chain_lightning.lua` | Forked Storm: each jump | not swapped. The effects pass sends the owner's donor strike 4707 |
+
+- **Not a sender.** The weather has no thunder: `weather_config.lua` dropped the base's strike. Sky Lance, Thunder Cone and Storm Columns send `lightning_hit`, a hit on the tile, not a bolt.
+  Effect 386 of `chaos_fx.lua` has the same name. No script sends it by that name today.
+- **Element rule.** `check_spell_fx.py` measures with the gate off. The new ids carry the element of the bolt they stand in for.
+- **Tests.** `tests/lightning_fx_test.lua` in the server loop: gate off sends 458 at its offset, gate on the new ids at theirs, the turn of the shapes,
+  one heavy in four, `raw`, other names untouched, a pair that lacks a shape, the list of senders against the files. `client/tools/sprites/gen_lightning_fx_test.py`.
+- **VPS.** Nothing to run now. The gate opens when the pair record is raised to 73. Admin app first: README "Client pair guard". Fallback: `chaos-ctl.sh client-pair set 73`.
+- **Open.** Not seen in a client. The holy and dark tints have no sender and are not in the pair.

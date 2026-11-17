@@ -102,7 +102,8 @@ local function buildPayload(player)
 	local ranks = Chaos.select(
 		"SELECT p.`name` AS `name`, t.`best_floor` AS `floor_n`, t.`best_time` AS `time_s` FROM `" .. T ..
 			"` t JOIN `players` p ON p.`id` = t.`player_id` WHERE t.`season` = " .. season ..
-			" AND t.`best_floor` > 0 ORDER BY t.`best_floor` DESC, t.`best_time` ASC LIMIT " .. cfg.rankingSize,
+			" AND t.`best_floor` > 0 AND " .. Chaos.notTesterSql("p") .. -- no tester bot on the public board (O595)
+			" ORDER BY t.`best_floor` DESC, t.`best_time` ASC LIMIT " .. cfg.rankingSize,
 		{{"name", "s"}, {"floor_n", "n"}, {"time_s", "n"}}
 	)
 	for i, rank in ipairs(ranks) do
@@ -336,7 +337,8 @@ end
 -- the awards of an ended season, written once (INSERT IGNORE on season + character)
 function ChaosTower.processSeason(season)
 	local rows = Chaos.select(string.format("SELECT t.`player_id`, p.`name`, p.`group_id`, t.`best_floor`, t.`best_time` " ..
-		"FROM `%s` t JOIN `players` p ON p.`id` = t.`player_id` WHERE t.`season` = %d AND t.`best_floor` > 0", T, season),
+		"FROM `%s` t JOIN `players` p ON p.`id` = t.`player_id` WHERE t.`season` = %d AND t.`best_floor` > 0 AND %s", T, season,
+		Chaos.notTesterSql("p")), -- a tester bot never wins a season chest or a place (O595)
 		{{"player_id", "n"}, {"name", "s"}, {"group_id", "n"}, {"best_floor", "n"}, {"best_time", "n"}})
 	local list = {}
 	for _, r in ipairs(rows) do

@@ -1395,6 +1395,9 @@ of things_custom15.
   | 2135 | 145 Thornbound Stag | 20 -4 | 18 -15 | 14 -8 | 14 -16 |
 
 - Data only: no engine change beyond 0034 (it already reads a pair per direction). The stock path needs no seat.
+- O619: no mount wears these five looks any more (owner 2026-11-17: the mounts can be swapped; they failed the stock bar of the O610 audit).
+  The five mounts took 2x2 pair 50 looks with displacement 0 like the stock mounts, so they need no seat: server/README.md "Look swaps (O619)".
+  The looks and their seats stay in the pair, worn by nobody.
 
 ```
 python3 -I client/tools/sprites/set_rider_seat.py --ours-dat things_custom15/Tibia.dat --ours-spr things_custom15/Tibia.spr \
@@ -6898,3 +6901,591 @@ The owner saw the O587 previews: "redo the ones that are bad". 73 rows scored 45
   Also open: a zone holds one colour, so marks of a second colour inside a wing are lost (the teal of 3, the black of 69, mosaics). Sword pendants and gold trim are not drawn. `fill` rows show a plain dark ground where the style is thin (17, 4).
 - **Test**: `gen_drawn_wings_test.py`: every row has its strips (24 whole numbers or empty), six zones, a mould, a beat; a strip measured from a drawn picture covers it again; east and west are the face-on views turned and lose no pixel; the mould cuts and fills; the O581 bar on all 121 rows. `designs.sums` was written again. `wing_anchors.lua` and `anchor_fixtures.txt` did not change, the two C++ anchor tests pass.
 - **Previews** (never committed): per family MP4s, old art left, O587 middle, O590 right, four directions each; sheets of the scoped rows; the fit preview on player looks only; the score table.
+
+## Spell VFX packs: spell effects and projectiles (O596, trimmed by O600, `tools/sprites/gen_spell_vfx.py`, `art_import/spell_vfx.csv`; joins pair 73; owner 2026-11-17)
+
+Owner (translated): "about the effects, do the recommended". O596 gave 52 spells a piece of five purchased effect packs at game size.
+The sibling step O597 adds the status layer and the kill dissolves after this one.
+
+**O600.** The owner watched the before and after previews: "I think I like the effects we already have better. Use only the ones that were really bad."
+Every one of the 52 spells was judged by today's effect alone, on grass and stone at game size. Three were really bad. They keep a pack piece.
+The other 49 spells keep today's effects. One pack is left of five. The table went from 46 pieces to 3.
+
+- **Step of pair 73.** It applies on top of pair 72, or on any pair with exactly 4,742 effects and 253 missiles. Any other pair is refused.
+  The other steps of pair 73 add no effect and no missile, so the order is free.
+- **Ids.** 2 effects at 4743..4744: `sv_death_bone_shatter`, `sv_death_lifesteal`. The block 4743..5142 is this step's.
+  The next step starts at 5143 and pads the gap. The table's `total` row records the exact count: 2.
+- **Projectiles.** A projectile id is one byte on the wire, so none can be appended past 253.
+  One piece fills the blank stock id 46: `sv_death_skull`. No script sent that id and the pair drew nothing there.
+  The blank ids 43, 47 and 52 stay blank. No projectile is rebuilt in place: 163 and 132 stay as pair 72 draws them. Monsters send 132 too.
+- **Size.** Game size, not HD. Projectiles and small hits: 64 px footprint. Areas, auras and big hits: 96 px.
+  A projectile is 3 x 3 tiles, 8 phases of 50 ms, its head on the middle, sent at offset (1, 1).
+  An effect has at most 12 phases of 60 to 120 ms. Its anchor lands on the target tile: body, tile middle, ground or feet.
+- **Cut.** Lanczos on premultiplied colour, then a lift so the glow reads on grass and stone: alpha through `1 - (1 - a)^1.8`.
+  Then the cut of docs/SPRITE_STYLE.md: alpha 255 from 0.5 up, one glow level 144 from 0.2 up, 16 colours a piece.
+- **Art.** Never in the repository. Committed: the script, `spell_vfx.csv` and `spell_vfx.sums`.
+  A row holds a neutral name, the pack key and `src`, the first 12 hex of the sha256 of the sheet file.
+  The sheets are read by the local script only. They are never sent to a web or AI service. Licence terms: docs/CREDITS.md.
+  The trim needed no art: a strip and its sum do not depend on the id.
+- **Build.** `gen_spell_vfx.py build P72/Tibia.dat P72/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest. Three sheets are needed.
+  It runs `import_fx_art.py` and then `live` on the result. `--write` rewrites the table and the sums after a wanted change.
+- **Checks.** `gen_spell_vfx.py check` needs no art and no pair. `gen_spell_vfx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_spell_vfx_test.py` runs on synthetic sheets.
+- **Server.** `server/data/lib/chaos_spell_vfx.lua` maps the three spells to pieces behind `chaosClientPair >= 73`. See server/README.md.
+- **Previews** (never committed): one MP4 of the three kept spells, before and after.
+## Area bursts, beams and markers of the pair 36 packs (O607, `tools/sprites/gen_area_fx.py`, `art_import/area_fx.csv`; joins pair 73; owner 2026-11-17)
+
+The owner approved the review O604. Five of our area bursts are faint. The beam spells draw balls on a line. The packs have markers we lack.
+42 effects then. Not in a live pair yet, not seen in a client.
+
+**O613 (owner 2026-11-17, after the previews): the table is smaller. Read this block first, the text below it is the O607 state.**
+
+- **Now 51 rows.** 30 refills, 1 new at 5300, 20 long beams at 5301..5320.
+- **Dropped.** Refills 1612 `area_whiteout`, 1642 `area_radiant_repulse`, 3356..3363 `mega_blood_siphon`. New `ab_fire_rain`, `ab_blood_sigil`.
+  Long `mega_blood_siphon_l5` 5323..5330. Our own bursts stay, so nothing sent the four pack bursts. Eclipse Edge lost its beam.
+  The ten refill rows are back in `pair51_removed.csv`. `RETIRED` in the tool names them, and `check` fails when one comes back.
+- **Added.** Refill 3036 `mega_gravity_press`, role `status`: the slowed status effect. 3 x 3, offset (1, 1), 17 phases of 83 ms.
+  Pair 51 had blanked it. Its row moved to `pair51_keep.csv`.
+- **Ids.** 5300 `ab_arcane_clock`. 5301..5308 `mega_soul_chain_l6`. 5309..5312 `mega_sunbeam_lance_l3`, diagonals. 5313..5320 `mega_sunbeam_lance_l8`.
+  The clock and the long beams are one block with no hole. Pair 73 is not shipped, so no id was in use.
+- **Step.** Unchanged, with new numbers. A pair that ends at 5300 gets only the 20 long beams, `--expect-first-effect 5301`.
+  11 sheets are needed for a full build, two beam sheets for the long rows alone.
+- **Ground layer.** One burst lies under the creatures: the clock. `ground_fx.csv` lost four rows. 225 ground effects.
+- **Proved 2026-11-17** on a pair 72 rehearsal build: spell step, gap step, this step. `live` OK for 51 rows: 30 replaced in place, 1 new, 20 long.
+  Test output dat df25278419c022f5bdd01297bbb3db28, spr 9866112487abaceeff42de41f4a3b356. Deleted. This is not the shipped pair 73.
+  The long rows alone were also built on a pair padded to 5300.
+- **Preview** (never committed): slowed before and after, the clock on the two spells, the four bursts of ours.
+
+- **Refills, 39 effects.** Pair 36 imported them. Pair 51 blanked them as unused. Each is put back at its pair 36 id.
+  Size, phases and send offset are those of its pair 36 spec, so `chaos_pack36_fx_ids.lua` stays true.
+  Area bursts: 1612 `area_whiteout`, 1642 `area_radiant_repulse`.
+  Beams, eight headings each: 3356..3363 `mega_blood_siphon`, 3404..3411 `mega_glacier_breath`, 3492..3499 `mega_soul_chain`, 3508..3515 `mega_sunbeam_lance`.
+  Markers: 3685 `mega_util_checkpoint_crystal`, 3688 `mega_util_interact_hand`, 3690 `mega_util_locked_marker`, 4051 `w_fx_quest_marker`, 4076 `w_marker_skull`.
+  Their 39 rows moved from `pair51_removed.csv` to `pair51_keep.csv`.
+- **New, 3 effects at 5300..5302.** `ab_fire_rain` 7 x 6, `ab_blood_sigil` 8 x 7, `ab_arcane_clock` 9 x 9. A set pair 36 did not have.
+- **Step of pair 73, the last effect step.** The input pair needs 253 missiles and 4,742 to 5,299 effects. Every refill id must be blank in it.
+  The tool pads every id from the input's last effect + 1 up to 5299 with a blank effect: one 1 x 1 frame, sprite 0, the 12 bytes pair 51 writes.
+  After O606 (`gen_gap_fx.py`, 5190..5236) that is 5237..5299, 63 blanks. Order: `gen_spell_vfx.py`, `gen_gap_fx.py`, then this step.
+  From pair 72 alone it is 4743..5299, 557 blanks. After a step that ends at N it starts at N + 1. Both cases were built.
+  So the steps that own 4743..5142 and 5143..5299 run first. A step that needs an exact effect count cannot run after this one.
+  The tool never touches an id below 5300 that has art.
+- **Cut.** The cut the pair 36 tools use now: the 32 px sheets 1:1, alpha cut hard at 0.5, no dither mesh. The 64 px markers are halved first.
+  O604 measured it: the hard cut keeps 84% to 106% of the alpha mass of every pick. No pick needs the game size cut of O596.
+  A looping pack effect plays once and its last 3 frames dissolve, as in pair 36.
+  The old sums of `pack36_fx.sums` are of the dither rule, so the refills have their own sums in `area_fx.sums`.
+- **Placing.** The pack's anchor tile. An area burst is sent on the centre tile of the spell. A beam is sent on the caster's tile. A marker on the marked tile.
+  Art width in tiles: shard rain 6.1, blood sigil 6.3, clock face 7.4, whiteout 5.8, radiant burst 5.3. Ours: 6.8 on 7 x 7, 8.7 for the blood ring.
+- **Ground layer.** The five area bursts lie under the creatures, like the bursts they stand in for.
+  `gen_ground_fx.py` reads the new catalogue `server/data/spells/area_fx_catalog.csv`. `ground_fx.csv` has five more rows.
+- **Art.** Never in the repository. Committed: the script, `area_fx.csv`, `area_fx.sums`. A row holds a name, a neutral set key and `src`.
+  `src` is the first 12 hex of the sha256 of the sheet file. The sheets are read by the local script only. They are never sent to a web or AI service.
+  Licence terms: docs/CREDITS.md.
+- **Build.** `gen_area_fx.py build IN/Tibia.dat IN/Tibia.spr OUT --src PACKS_DIR`. It finds each sheet by digest. 14 sheets and the packs' json tables are needed.
+  It pads the dat, runs `import_fx_art.py` with replace rows and `--expect-first-effect 5300`, then `live` on the result.
+  `--write` rewrites the table and the sums after a wanted change. Proven from pair 72: 39 replaced in place, 3 new, every other thing byte-identical.
+- **Checks.** `gen_area_fx.py check` needs no art and no pair. `gen_area_fx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_area_fx_test.py` pads a fake dat and cuts synthetic frames.
+- **Server.** `server/data/lib/chaos_area_fx.lua` behind `chaosClientPair >= 73`. See server/README.md "Area bursts, beams and markers".
+- **Previews** (never committed): area bursts before and after, the beams in four headings, the markers.
+
+### Long beams in one piece (O609, kind `long` of `gen_area_fx.py`, 5303..5330; joins pair 73; owner 2026-11-17)
+
+The owner saw O607: "the larger beams are in segments". 28 more effects, 70 in the table. Not in a live pair yet, not seen in a client.
+O613 dropped the blood stream rows and moved the ids: 20 long beams at 5301..5320. See the O613 block of the section above.
+
+- **Measured.** A beam sheet has 12 frames and 8 heading rows. The art covers 3 tiles on a straight heading, 2.2 to 2.6 on a diagonal.
+  The lines the spells hit: Soulrend Beam 6 tiles, Lance of Vigil 3, Dawnbreaker Shot 8, Eclipse Edge 5. The same on all 8 headings.
+  O607 drew copies end to end. Each copy has its own start flare and its own tip, so both showed inside the line.
+  The light of the body flows 8 px a frame: outward in the sun lance, inward in the blood stream and the chain. On a diagonal 5.1 to 5.8 px per axis.
+- **One effect per beam, heading and length.** Name `<beam>_l<tiles>_<heading>`. The list `LONG` holds the beam and the length of each spell.
+
+  | Beam | Line | Ids, headings n ne e se s sw w nw | Canvas, tiles | Periods added |
+  |---|---|---|---|---|
+  | `mega_soul_chain` | 6 | 5301..5308 (O613) | 1 x 7, 7 x 1, 2 x 7, 7 x 7 | 3 of 32 px straight, 4 of 30 to 32 px diagonal |
+  | `mega_sunbeam_lance` | 3 | 5309..5312 (O613), diagonals only: ne se sw nw | 4 x 4 to 5 x 5 | 1 of 23 or 28 px |
+  | `mega_sunbeam_lance` | 8 | 5313..5320 (O613) | 2 x 10, 9 x 2, 1 x 8, 10 x 2, up to 10 x 10 | 4 or 5 of 32 to 40 px straight, 5 to 8 of 23 to 38 px diagonal |
+  | `mega_blood_siphon` | 5 | dropped by O613 | 2 x 6 to 7 x 7 | 2 of 32 px or 4 of 16 px straight, 3 to 6 of 16 to 29 px diagonal |
+
+  A line of 3 tiles on a straight heading is the pack's own beam, the refill row. So Lance of Vigil has long rows on the diagonals only.
+- **How a beam is made longer.** The frames are turned into beam coordinates: along the heading and across it. Whole pixels both ways, on a diagonal too.
+  The start flare and the tip are left alone (`CAPS`, px of each beam). A piece of the body, one period long, is put in again n times after itself.
+  Each copy shows the frame the flow has there: a copy q px further out plays q / flow frames apart (`flow_step`). So the light runs on through the seams.
+  The cut and the period are searched: the smallest sum of the seam errors that gives the needed length. Limit `SEAM_MAX` 0.75.
+  Needed length: 32 px a tile on a straight heading, exactly. On a diagonal the tip ends where the straight tips end, turned onto the diagonal, within 2 px.
+  Nothing is resampled and no colour is made up. The alpha is the hard 0.5 cut of the sheet.
+- **A body that sways** (`WAVY`: the chain, the blood stream). A plain seam would step 2 to 6 px sideways.
+  At each seam and in each frame both sides move sideways, half the gap each, fading out over one period. The build stops over 2.0 px (`JUMP_MAX`).
+  The build also stops when a line of the new body is wider than the art's body: that would be a copied flare or tip.
+  Seam errors: sun lance 0.13 to 0.32, chain 0.37 to 0.58, blood stream 0.41 to 0.60. The middle line of the swaying beams steps 2.0 px at most.
+- **The view.** The client draws an effect from its bottom right tile. A player sees 9 tiles east and 7 south of its own tile.
+  The far tile of a long canvas stays within 8 east and 7 south of the caster's tile (`VIEW`), so the caster always gets its beam. Art past that is cut.
+  Cut rows: Dawnbreaker Shot south-east, south and south-west lose 8% to 11% and cover 7 of 8 tiles. East loses 1%, a few px of the tip.
+  Table columns: `len` the line, `reach` the tiles the art covers, `cut` the seam (`c` cut px, `q` period, `n` copies, `o` frame step, `e` error, `b` bend) and `view-N%`.
+- **Step of pair 73.** The long rows are appended after 5302. A full build from a pair with 4,742 to 5,299 effects makes all 70 rows.
+  A pair that already ends at 5302 gets only the 28 long beams. That run needs the three beam sheets only and keeps the other rows of the table.
+  `import_fx_art.py --expect-first-effect 5303` then. Still the last effect step. `live DAT SPR --long` holds the long rows alone.
+- **Proof.** Built on a pair padded with blank effects up to 5302: 5,302 to 5,330 effects, 3,574 sprites appended, `live --long` OK for 28 rows. Deleted.
+  The refills and the three bursts of O607 were blank in that pair, so the full 70 row `live` waits for the real pair 73 build.
+- **Checks.** `gen_area_fx.py check`: every spell length and heading has a row, ids 5303..5330 with no hole, the seam limit, the view, the reach.
+  `gen_area_fx_test.py`: a synthetic beam with a start flare, pulses that flow and a tip, made longer on four headings.
+  The result is the same pixels as that beam drawn long, every frame: one start, one tip. A swaying body, plain against bent. The view cut. The row rules.
+- **Server.** `ChaosAreaFx.beam` reads the generated `lengths` table of `chaos_area_fx_ids.lua`. See server/README.md "Area bursts, beams and markers".
+- **Preview** (never committed): every beam spell at full length in 8 headings, O607 left, O609 right, plain floor, box stand-ins.
+## Wings from PixelLab (O594, `tools/sprites/gen_pixellab_wings.py`, `drawn_wings/pixellab_rows.csv`, `gen_drawn_wings.py --src DIR`; owner 2026-11-17)
+The owner saw the O590 previews: "do the hardest ones in PixelLab, but only the 10 that came out bad". Those are the ten rows O590 left at 45 or more. No pair built, not seen in a client.
+- **Rows**: 111 storm gull, 109 squall kite, 96 rose window, 104 slate plate, 116 tide swan, 117 tornado funnel, 93 rain veil, 118 void raven, 58 foam crest, 110 star gossamer.
+- **What was sent**: a text of ours for each row and our own O590 code-drawn picture as the guide. No pixel of the pair's wings, of a purchased pack or of a third party file. No name of the owner or the project.
+- **What came back**: a face-on still for south and one for north, then a 16 frame loop of each with the first frame as the last. 96 x 96 px.
+- **No picture in the repository** (the O540 way). The cleaned sheets live in a private folder, one `<wings id>.png` a row: 16 columns, 4 rows of 96 px (south, north, east, west).
+  The repository holds `drawn_wings/pixellab_rows.csv` (row, source, sha256 of the sheet, frames, the measured numbers, notes) and `pixellab_rows.sums` (the digest of the 128 pictures a row gives with its sheet).
+- **`--src DIR`** on `gen_drawn_wings.py` (`sheets`, `compare`, `fit`, `score`, `apply`, `live`): the ten rows come from the folder. A missing sheet or a wrong sha256 stops the run. Without `--src` every row is the O590 code drawing: the fallback stays, `designs.sums` did not change. `table` takes no folder.
+- **Cleaning** (`gen_pixellab_wings.py clean RAW_DIR SHEETS_DIR`, reads no pair): alpha cut at 128, crumbs under 6 px dropped; one palette of 28 colours a row, median cut, no dither; the loop's box put on the box of the code-drawn row; the row's outline colour on every open edge; frames 0 to 15 kept, so the loop closes.
+- **Fit** (`fit RAW_DIR DAT SPR --write`, by hand, once, on the private pair): whole numbers only, as the strips of `designs.csv`.
+  `fs`, `fn`: the split column, then dx, dy, turn, wide, high for the left wing and for the right one. Each wing moves onto the old wing's place, angle and length.
+  `ms`, `mn`: `loop A` keeps the painted loop, `still A` takes the still picture. A degrees of beat are added by code about the point where the wings meet. The painted south loops moved too little, the north loops too much: all ten north views are `still`.
+  `tint`: hue turn, saturation and value in per cent, so the colour areas come near the old ones.
+- **Side views**: east is the cleaned south loop with x and y changed over, west the north loop, placed by the rule of every row (`side_shift_of`).
+- **Lights** by code at the glow level (`EXTRAS`): wind streaks for 111 and 109, twinkles, falling drops for 93 and 58. Twinkles and drops stay inside the box of the loop. A wind streak runs left in every view, as in the old art.
+- **Layers**: north lies in the front layer, the other three views in the back layer.
+- **Score** (`gen_drawn_wings.py score DAT SPR --src DIR`), O590 to O594: 58 47.8 to 31.6, 93 49.4 to 37.6, 96 52.3 to 39.0, 104 51.5 to 36.1, 109 53.4 to 35.6, 110 45.9 to 32.9, 111 61.4 to 46.1, 116 50.2 to 31.9, 117 50.1 to 27.0, 118 48.7 to 41.7. Mean 51.1 to 35.9. Rows at 45 or more: 10 to 1.
+- **Still weak**: 111 storm gull: thin blades now, but the short wing reads as a loose leaf and the north view as a crescent. 118 void raven: too grey, the indigo is thin. 96 rose window: a curved blade of glass panes, the old art is a paddle of small mosaic tiles. 109: the gold trim is faint.
+  The fit moves pixels to the nearest place, so a turned wing shows small steps on its edge. Where a view is `still` the motion is a code beat, not a painted flap.
+- **Spend**: 97 PixelLab generations of the subscription (34 stills, 63 for 21 loops). No pay-as-you-go credit.
+- **Test**: `gen_drawn_wings_test.py`: the table and sums of the ten rows, no picture file in `drawn_wings`, a made-up raw loop through `clean` (bar, palette, crumbs, box, four rows), the loader, the sha256 guard, the fallback to code, wrong columns refused. With `CHAOS_WINGS_SRC=DIR` it also holds the ten real sheets to the table, the bar and the sums. Without it that part prints a skip line.
+- **Previews** (never committed): per row an MP4, old art left, O590 middle, PixelLab right, four directions; fit previews on player looks for 117, 58 and 116; the score table.
+- **Credit**: `docs/CREDITS.md`, Tools, PixelLab.
+## Painted wings redone and centred (O620, `tools/sprites/gen_pixellab_wings.py`; owner 2026-11-17)
+The owner saw the O615 review of the ten painted wings (translated): "As for the wings, redo the ones that came out bad", then "And fix the side view. Also their centring." No pair built, not seen in a client.
+- **Found by the review**: 111 storm gull came apart (two shards with a gap to the body, a line and a lone blade in the north view). 96 rose window: the north view was confetti in primary colours, unlike the south. 118 void raven: near invisible in the north view. All ten: east and west were the face-on sheets turned on their side and hung beside and under the body. All ten stood 2 to 6 px beside the torso column, one wing spread and one short.
+- **One layout for the ten rows** (`clean`, no pair read): one wing is painted, the pair is made by rule.
+  North and south: the left wing of the painted view with its root on the join, the right wing its mirror picture about the anchor column (48). The middle of the pair is the torso column, the pair is the same left and right in every frame.
+  The join is (48, 58): the shoulder line, 6 px over the anchor, the same point in the four views. A 3 px knot of the outline colour lies on it. A painted loop that lets go of it gets a 2 px bridge.
+  East and west: own side views. The same wing at 70% of its width, raised 18 degrees, the far wing behind it (55%, 28 degrees, a step darker, 2 px right and 3 px up), both rising from the join. East is made of the south wing and trails left, west of the north wing and trails right. In a side view the root stands on the torso column and the wings trail behind the body; the middle of their box lies 12 to 18 px behind it.
+- **Numbers of a view** in `pixellab_rows.csv`: `fs`, `fn` are now "split rx ry turn wide high" (the column that parts the painted wings, the root of the left wing, both found when -1; degrees; per cent). `ms`, `mn` as before; the code beat is half a sine, half a saw, so no frame equals the next. New column `rim` (rrggbb): a light line inside the outline. The `fit` command and the eleven numbers a view of O594 are gone: nothing is fitted to the old art any more.
+- **Redone with PixelLab**: 111, 96 and 118, south and north. One wing alone on 48 x 48 px from a text of ours; for 111 and 118 our own O594 still as the guide picture; the north view from the new south picture with its colours as the forced palette. No pixel of the pair, of a purchased pack or of a third party file was sent, no name of the owner or the project.
+  111 storm gull: a grey wing of three rows of feather blades in one piece, lighter by tint, longer wind streaks. 96 rose window: stained glass feathers in black lead under a red arch, the north view the same glass. 118 void raven: a row of ragged feathers turned to indigo by tint, with a lavender rim light (`b9a2ff`) so it reads on dark ground; the dark outline reads on light ground.
+  The three are stills with a code beat (6 to 12 degrees). 104 slate plate also got a rim (`a9b9ba`): its north view was as dark as the raven's.
+- **The other seven** keep their O594 paintings (the raw frames were kept): the spread left wing of each view is used twice, the short right wing is dropped. Scaled to 74 to 100% so the pair fits the cell.
+- **Measured** (`gen_pixellab_wings.py measure SHEETS_DIR`; O594 sheets to O620 sheets, the worst row):
+  middle of the pair beside the torso column, north and south: 5.5 px to 0. Join of a side view beside it: 13 px to 0. The same on the stock body 128, the class body 2235, the 1x1 look 2639 and the 2x2 look 251 (base patch 0204 puts the anchor on the measured torso, so the offset on a body is the offset in the cell).
+  Gap between wings and join: up to 14.9 px to 0. Share of the pair in one piece with the join: from 0.39 to at least 0.95. Pixels without a mirror partner, north and south: 65 to 151% to 0.
+  Side wing under the anchor row: 42 to 66% to at most 12%. It rises 9 to 22 px over the join.
+  North painted in colours the south lacks: 96 from 0.49 to 0.00, all rows at most 0.02. Contrast of the line inside the outline on dark ground, north: 118 from 1.2 to 3.7, 104 from 1.3 to 4.0, 111 from 1.5 to 1.8; least now 1.8. Outline on light ground: 8.9 or more.
+- **Fallback of base patch 0193** (`wing_centres.lua`, a client without 0204): it centres the mass of the art. North and south agree with the anchor now; a side view would be centred by its mass, about 15 px off the root.
+- **Test**: `gen_drawn_wings_test.py` on a made-up raw loop: per direction the offset of the wings from the torso column (limit 1 px), also on every figure of `anchor_fixtures.txt` through the 0204 rule; no gap to the join; one piece; mirror pair; the side wing rises 8 px or more over the join and at most 12% hangs; north and south share colours; contrast on dark and light ground. It also shows that each fault is refused: a pair 3 px aside, a pair over the join, a cut pair, a red north view, a north view as dark as the ground, the O594 side view. With `CHAOS_WINGS_SRC=DIR` the ten real sheets are held to the same rules. `table` and `clean` refuse a row that fails.
+- **Spend**: 14 PixelLab generations of the subscription (9 south tries, 2 guided tries more, 3 north views). No pay-as-you-go credit. Balance before: 781 generations.
+- **Not done**: no painted loop for the three redone rows. The side views are made by rule from the face-on wing, not painted. The likeness score to the old art (O594) is not held any more: the owner asked for a centred, even pair, the old art has one spread and one short wing.
+- **Preview** (never committed): `wings10_v2.mp4`, per row three columns (old art, O594, O620), four directions, the stock body and the class body, a line on the torso column.
+## Creature packs as boss outfits (O608, after O605; `tools/sprites/gen_creature_outfits.py`, `art_import/creature_outfits.csv`; joins pair 73; owner 2026-11-17)
+O605 made nine 2x2 outfits for 11 monsters. The owner saw the preview and changed it (translated): "Put the creatures back the way they were.
+Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
+So three creatures stay, all for bosses. The four humanoids, the winged angel and the tinted copy are gone. Not in a pair on windows-assets, not seen in a client.
+- **Licence**: commercial use and changes allowed, credit asked (docs/CREDITS.md, one entry a pack), shipped only inside the game. The files are never shared on their own.
+  So **no picture is in the repository** (the O540 way). The repository holds the tool, the table and `creature_outfits.sums` (a digest per outfit).
+  The pack files are read by local script only. They are never sent to a web or AI service.
+- **Ids**: 3 outfits **3527 to 3529**, right after the 3,526 outfits of pair 72. The row at line n of the table is outfit 3527 + n. The ids 3530 to 3535 of O605 are free again.
+  No other step planned for pair 73 adds an outfit (O585, O583 / O594 change outfits in place; O596 / O600 / O606 / O607 add effects and missiles). The order of the steps is free.
+- **Table** `art_import/creature_outfits.csv`: `src` (12 hex of the first south idle frame file, no pack name), `new`, `kind`, `size`, `scale`, `disp`, `idle`, `idle_ms`, `walk`, `walk_ms`, `walk_src`, `colours`,
+  `idle_frames`, `walk_frames` (pack frames north / east / south / west), `pixels` (opaque pixels of the built outfit).
+- **Source**: a creature is found by its files: an idle folder with south, east, north, west frame folders on a 256 px canvas. Walk is the sibling folder named walk, else move.
+  A creature with neither walks on its idle frames (`walk_src idle`). Attack and death frames are not read.
+- **Size: pixel for pixel.** No scaling. The art is drawn in 2 px blocks, and a step that is no whole number would break them.
+  The canvas is the smallest whole number of tiles that holds the box of all idle and walk frames: 4x4 (128 px) up to 128 px, else 5x5 (160 px).
+  The boxes are 127, 144 and 134 px on the long side. So one outfit is 4x4 and two are 5x5. The figures are 123 to 141 px on screen: about four tiles each.
+  Nothing is ever sampled (O616). A longer figure gets a larger canvas, up to 8x8. Past that the tool stops.
+  The packs have alpha 0 or 255 only. A frame with soft alpha is refused, not cut. 56 to 64 colours a look.
+- **Place**: one shift for all frames. The lowest pixel on the last row of the canvas, the box in the middle column.
+  The dat displacement then moves the picture right: (-48, 0) for 4x4, (-64, 0) for 5x5. So the middle of the figure is over the middle of the boss's tile,
+  and its lowest pixel is on the tile's bottom row. A boss reaches about two tiles to each side of its tile and four tiles up.
+  This is how the pair centres its big looks: the 5x5 world boss looks 1534 and 1538 have (-64, -32) and (-64, -64). The client profile has `GameNegativeOffset` on.
+  A 4x4 look with no displacement (3361) hangs up and left of its tile.
+- **Frames (O616)**: the source has 12 pictures a second and another frame count in every direction (11 to 21). Every frame is used.
+  A dat group has one phase count for its four directions. So a group has as many phases as its longest direction has frames.
+  One phase lasts 83 ms, the pack's 12 a second. The longest direction plays frame for frame at the pack's speed.
+  A direction with n frames shows frame floor(i * n / P) at phase i: every frame, in order, some held for two phases. Its loop lasts P / n of the pack's.
+  The four directions are the pack's own. Nothing is mirrored. The source loops close.
+  The client plays the idle group by these durations. The phase of a walking creature is the engine's step phase, not the dat durations.
+- **Shape**: idle group and walk group, one layer, 4 directions, the displacement as the only flag. The idle rule of O533 holds: 12 or more different idle pictures in every direction.
+
+| outfit | boss | old look | new size | figure on screen | displacement | idle | walk |
+|---|---|---|---|---|---|---|---|
+| 3527 | The Rotmother (world boss) | 238, 2x2, a stock look, 3 walk phases, no idle group | 4x4, 128/128 | 125 x 123 px | -48, 0 | 16 x 83 ms | 21 x 83 ms |
+| 3528 | Vhoss the Hexmaw (raid boss, Ashen Sepulchre) | 2130, 2x2, 4 walk phases, no idle group | 5x5, 160/160 | 141 x 131 px | -64, 0 | 19 x 83 ms | 15 x 83 ms |
+| 3529 | Talath (ice boss, lair spawn from pair 73, O616) | 1473, 2x2 | 5x5, 160/160 | 117 x 128 px | -64, 0 | 12 x 83 ms | 12 x 83 ms, the idle frames |
+
+- **No pixel lost (O616).** Owner 2026-11-17: "Keep it as it is so no pixel is lost, apply this to the others too, it has to look as good as possible."
+  The tool counts opaque pixels of every pack frame and of the tiles it built, every frame and direction. They are equal.
+
+| outfit | pack frames idle N / E / S / W | pack frames walk N / E / S / W | opaque pixels, each pack frame once | opaque pixels of the outfit, held frames counted |
+|---|---|---|---|---|
+| 3527 | 16 / 16 / 12 / 16 | 11 / 16 / 21 / 16 | 842,457 | 1,009,990 |
+| 3528 | 19 / 19 / 17 / 14 | 15 / 15 / 14 / 15 | 960,855 | 1,021,347 |
+| 3529 | 12 / 12 / 12 / 12 | none, the idle frames | 580,686 | 580,686 |
+
+- **Foot point (O616).** The lowest pixel of every frame lies in the rows of the boss's tile. The middle of the lowest 8 rows lies in its columns,
+  as a mean over the frames of a direction. `measured`, `check` by the table and `live` on the pair hold it.
+
+- **Why these bosses.** Each old look is a 2x2, so every boss grows. See server/README.md "Creature pack looks (O608)" for the reasons and the ones passed over.
+- **Talath**: its pack has no walk animation. The creature hovers, so it glides on its idle frames. It can also stand still: the idle group plays.
+  O616 gave it a spawn: server/README.md "Talath's lair (O616)".
+- **Build** (proved on /dev/shm, then deleted): pair 71 + `gen_ki_auras.py build71` gave pair 72 (3,526 outfits, 972,454 sprite records).
+  `gen_creature_outfits.py build P72/Tibia.dat P72/Tibia.spr OUT --src PACK_DIR` on it (O616 numbers): 3 outfits, 8,168 sprite slots and 380 frames read back as drawn, 4,502 sprite records appended (972,454 to 976,956), 110 slots reuse a sprite.
+  3,529 outfits. The append-only guard passed. `live` passed on the output. `sums --src PACK_DIR --check` passed. This output is not pair 73: the other pair 73 steps are not in it.
+- **Checks.** `gen_creature_outfits.py check` needs no art and no pair. `gen_creature_outfits_test.py` runs on synthetic packs and a synthetic pair.
+  `check` holds the table: scale 1:1, 83 ms, phases the longest direction, the pixel column. `live DAT SPR` holds the pair: phase durations,
+  the opaque pixel total, as many different pictures a direction as the pack has frames, the foot point.
+  `sums --src DIR --check` holds the pack files to the table and the sums. Add `live` to the job `live-pair` when pair 73 ships.
+- **Knock-on at the pair 73 build**: regenerate `outfit_anchors.lua`, `info_lifts.lua`, `wing_centres.lua`, `foot_marks.lua`, `InfoLiftData.cs` from the built pair. Raise `PAIR_OUTFITS` of `check_content.py`.
+- **Server**: 3 bosses, `server/data/monster/monster_creature_looks.csv`, step `monstercreaturelooks` behind `chaosClientPair >= 73`.
+- **Not seen in a client.** The displacement is read back from the dat, not watched on a map. Check the three bosses on their tile in the first client with pair 73.
+- **Previews** (never committed): one MP4, each boss look idle and walk in 4 directions on grass and stone, beside the old look and a player, the boss's tile outlined.
+
+## Effects for roles that had none (O606, `tools/sprites/gen_gap_fx.py`, `art_import/gap_fx.csv`; joins pair 73; owner 2026-11-17)
+
+The owner watched the O603 previews of the fourth volume of a purchased effect set. The first volume is in pair 36.
+Rule: replace nothing that works. An effect is imported only for an event that sends no effect of its own today.
+One owner order goes past that rule: the boss warning pulse becomes the set's strike circle.
+
+- **Step of pair 73, the last effect step.** Input: 253 missiles and 4,742 to 5,189 effects. Any other pair is refused.
+  The ids are fixed: 47 effects at 5190..5236, dense, in table order. The gap up to 5189 is padded with blank effects.
+  O613 (owner 2026-11-17): the "Jackpot" effect left the table and the rows after it moved up one id. Pair 73 is not shipped, so no id was in use.
+  A blank effect is one empty 1 x 1 phase. `import_fx_art.py` takes it from a spec row with `blank=1`.
+  The spell effects own 4743..5142 and the next step 5143..5189. Run those first: the spell step wants exactly 4,742 effects.
+  A step that fills a padded id later rebuilds it in place. No missile is added.
+- **Size.** The set's own 32 px sheets. Nothing is scaled. One id per effect, the set's combined sheet. No split in front and behind.
+- **Frames.** Up to 24 phases of 83 ms, as the set plays them. An empty frame at either end is dropped.
+- **Cut.** The cut of O596: alpha through `1 - (1 - a)^1.8`, 255 from 0.5 up, one glow level 144 from 0.2 up. The colours stay.
+- **Placement.** The set stands 8 px right of and 4 px below our standing point. Its ground rings are centred on 24, 24 of the tile.
+  The rings of pair 36 sit there too. Not every sheet holds that point, so the art is moved by its own pixels. Column `at`:
+  `stand` puts the alpha centroid on x 16.5 and moves down by the same amount plus 4. `tile` centres a floor mark on 16, 16.
+  `gate` centres the width and keeps the set's height. `sx`, `sy` are in the table.
+- **Strike circle.** One sheet, two parts. Frames 0..7 are the ring: the danger pulse. Frames 8..12 are the filling: the last pulse.
+  Both are 3 x 3 tiles at offset (1, 1), so a pulse never leaves its 3 x 3 slot. The burst frames 13..15 are wider and are not used.
+- **Words.** A script looked for rows of letter shapes in every picked sheet. None was found. Shaded letters could slip past it.
+- **Art.** Never in the repository. Committed: the script, `gap_fx.csv`, `gap_fx.sums`. `src` is 12 hex of the sheet file.
+  The sheets are read by the local script only. They are never sent to a web or AI service. Licence terms: docs/CREDITS.md.
+- **Build.** `gen_gap_fx.py build IN/Tibia.dat IN/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest and runs `live` at the end.
+  `--write` rewrites the table and the sums after a wanted change. `gen_gap_fx.py ids` writes the server files.
+- **Checks.** `gen_gap_fx.py check` needs no art and no pair. `gen_gap_fx.py live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_gap_fx_test.py` runs on synthetic sheets.
+- **Proved 2026-11-17** on pair 72 with the Ki auras (dat dd4b6ac4165fb810d1c9d8fd26b8c080, 4,742 effects):
+  447 blank effects 4743..5189, then 48 effects. O613 rebuilt it with 47: `live` OK at 5190..5236. 7,757 sprites appended (972,454 to 980,211). 1,355 frames read back pixel for pixel.
+  Every old item, outfit, effect and missile is byte identical. Output dat 246da90dac50190fbc4df4b7f2c596a4 (9,090,529 bytes),
+  spr 97e711eb28b6bfa061e3fad8302df0b6 (1,147,423,910 bytes). The files were deleted after the check. This is not the shipped pair 73.
+- **game_telegraph.** The module draws a boss area with UI widgets, not with art. One floor widget per tile (base patch 0078).
+  A background colour fills the tile and borders on its open sides make the outline. Colours and the heat ramp are Lua, in
+  `telegraph.lua` and `telegraph_logic.lua`. No shader, no generated tile, no picture file.
+  A round ring cannot edge an arbitrary set of tiles, so the set's art cannot replace that drawing.
+  It comes as effect pulses instead: the server sends the strike circle on the 3 x 3 slots, over the floor mark. No client change.
+- **Server.** `server/data/lib/chaos_gapfx.lua` behind `chaosClientPair >= 73`. See server/README.md.
+- **Previews** (never committed): one MP4 of every effect over a player, one of the boss warning pulse before and after.
+
+| id | set no. | name | size, phases | sender and what it sent before |
+|---|---|---|---|---|
+| 5190 | 19 | `gx_talent_point` | 3 x 3, 18 | passivetree.lua: new nodes saved or a plan applied (nothing before) |
+| 5191 | 13 | `gx_class_unlock` | 4 x 4, 17 | class_unlocks.lua: a class unlocked (nothing before) |
+| 5192 | 5 | `gx_spell_mastery` | 3 x 3, 20 | spell_masteries.lua: a mastery chosen (nothing before) |
+| 5193 | 35 | `gx_paragon` | 3 x 3, 24 | paragon.lua: Paragon points spent (nothing before) |
+| 5194 | 40 | `gx_title` | 3 x 4, 17 | descent.lua: a Descent title earned (nothing before) |
+| 5195 | 9 | `gx_rank_up` | 4 x 4, 18 | professions.lua: a profession level (the yellow firework before) |
+| 5196 | 2 | `gx_class_change` | 3 x 3, 20 | ascension.lua: the ascension, in place of the stock holy area; the class effect stays |
+| 5197 | 31 | `gx_milestone_bronze` | 3 x 3, 13 | milestones.lua: level milestone, first quarter of the list (nothing before) |
+| 5198 | 34 | `gx_milestone_silver` | 3 x 4, 15 | milestones.lua: second quarter |
+| 5199 | 33 | `gx_milestone_gold` | 3 x 5, 18 | milestones.lua: third quarter |
+| 5200 | 32 | `gx_milestone_diamond` | 4 x 5, 20 | milestones.lua: last quarter |
+| 5201 | 22 | `gx_respec` | 3 x 4, 18 | passivetree.lua, respec.lua, paragon.lua: a tree or Paragon reset (nothing before) |
+| 5202 | 56 | `gx_quest_complete` | 5 x 5, 20 | mainquest.lua: the last step of a chapter (nothing before) |
+| 5203 | 47 | `gx_daily` | 3 x 5, 22 | daily.lua: the daily reward (the yellow firework before; the red milestone firework stays) |
+| 5204 | 61 | `gx_bounty` | 4 x 5, 24 | bounty.lua: a bounty paid (the yellow firework before) |
+| 5205 | 42 | `gx_chest_royal` | 5 x 5, 21 | weeklychest.lua: the chest opens (nothing before); cursedchest.lua: the chest unseals (the yellow firework before) |
+| 5206 | 78 | `gx_season_tier` | 5 x 5, 22 | seasonpass.lua: a tier claimed, one or all (the stock green puff before) |
+| 5207 | 79 | `gx_set_complete` | 5 x 5, 22 | itemsets.lua: a set piece found (the yellow firework before) |
+| 5208 | 62 | `gx_card_common` | 3 x 3, 16 | cards.lua: a new Common card in the Deck (nothing before) |
+| 5209 | 63 | `gx_card_rare` | 5 x 5, 22 | cards.lua: a new card above Common (nothing before) |
+| 5210 | 77 | `gx_relic` | 4 x 4, 24 | uber.lua: a relic in the reward (nothing before) |
+| 5211 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
+| 5212 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
+| 5213 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
+| 5214 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
+| 5215 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
+| 5216 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
+| 5217 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
+| 5218 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
+| 5219 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
+| 5220 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
+| 5221 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
+| 5222 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
+| 5223 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
+| 5224 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
+| 5225 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
+| 5226 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
+| 5227 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
+| 5228 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
+| 5229 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
+| 5230 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
+| 5231 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
+| 5232 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
+| 5233 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
+| 5234 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
+| 5235 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
+| 5236 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+## Status layer and kill overlays (O597, `tools/sprites/gen_status_vfx.py`, `art_import/status_vfx.csv`, `game_statusfx`, `game_killdissolve`, base patch 0205; pair 73)
+
+Two purchased packs (docs/CREDITS.md) join pair 73 as one step of their own. **No art is in the repository**: only the table
+`client/tools/sprites/art_import/status_vfx.csv` (ids, canvas, cut numbers, `src` = 12 hex of the picture file) and the digests
+`status_vfx.sums` of the finished strips.
+
+- **The step.** `gen_status_vfx.py build DAT SPR OUT --src DIR` reads pair 72 (4,742 effects) or pair 72 plus the O596 step. It pads
+  blank effects up to 5142 when the pair has fewer, refuses a pair below 4,742 or above 5,142 effects, then appends 47 effects at
+  the fixed ids 5143 to 5189. The sheets are found by digest, whatever their names. Everything older stays byte-identical.
+  `check` reads the table, the sums and the generated server files. `live DAT SPR` reads the effects back from a pair and holds
+  them to the sums. `table --src DIR` rewrites the sums after a tuning. `strips OUT --src DIR` writes the strips to look at.
+- **Status effects, 5143 to 5184.** 14 statuses, three rows each: start, loop, stop. Canvas 2 x 2 tiles, the feet at canvas point
+  32, 56, every second frame of the pack at 66 ms. The pack's cells of 96 x 128 are scaled to 0.45 (root 0.6, haste 0.5, stun and
+  confusion at native size with only the head zone kept). Alpha: 255, one glow level of 144, nothing. The pack's soft body tint
+  falls below the cut and goes. Gain, cut and tint a row: the table.
+- **Kill overlays, 5185 to 5189.** Melt, sink, bones, vapour, stone. Canvas 3 x 2 tiles. The pack draws one plain body dying; its
+  three body colours are removed (`nobody`), or only a band at the feet is kept (`band:N`), and frames before the body is gone are
+  blank (`from:N`). What stays is ground art: a pool, broken earth, a heap of bones, vapour, rubble.
+- **`game_statusfx`.** The server names creature and mask (opcode 165, server/README.md "Status layer (O597)"). The module puts one
+  widget of sprites on the creature per shown status and steps the phases itself: start, loop, stop. The canvas follows the
+  creature's size: 64 px on a one tile creature, 96 px on two tiles, 128 px on three and more, feet point on the feet. Caps: 2 a
+  creature by priority, 24 on screen, 12 on a phone, nearest first. Option `statusEffects` (Options > Graphics, default on, base
+  patch 0205, pt-BR in `client_chaos_locale`); off tells the server to stop sending. Rules: `statusfx_logic.lua`, test
+  `statusfx_test.lua` in the client loop.
+- **Kill dissolves.** `gen_kill_dissolve.py` has twelve modes now. The five new ones (melt, sink, bones, vapour, stone) are shaders
+  on the dying monster's own sprite, like the first seven, so a wide monster keeps its width and its look. A mode may `warp` where
+  the body is read (melt squashes and widens, sink slides down behind a ground line) and `fade` it. The pack's art is only the
+  ground overlay: the server names it (`p = {id, dx, dy}`), `killdissolve.lua` plays it once per tile of the monster's width, at
+  most 3 (`K.overlayTiles`). Without `p` (server below pair 73) nothing extra plays. Test: `killdissolve_core_test.lua`.
+- **Stun and haste.** Both read weak at 64 px in the O593 previews. Stun: the ring of stars at native size over the head, gain 2.
+  Haste: gain 2.6, a cyan tint, shown 2.5 s only. Haste is still the faintest of the 14 on pale stone.
+- **Tests.** `gen_status_vfx_test.py` draws its own sheets and pair: alpha levels, scale and anchor, frame step, kill rules,
+  sources by digest, padding, fixed ids, refusals, the same bytes twice, `live` and a changed pixel, the generated Lua and tags.
+- **Not done.** Pair 73 is not built for release and nothing was pushed to the assets branch. No client was run: the widget
+  placement, the option row and the overlays were never seen in a game window. Previews were made offline (never committed).
+
+## Pair 73 build (O612, `tools/sprites/build_pair73.py`; rehearsal 2026-11-17)
+One command builds pair 73 from pair 72. **Rehearsal only: nothing shipped, `PAIR_ASSETS` stays 72, no table of the repository changed.**
+The real build waits for the owner's wings choice. O597 (status effects) is step `status` (O617).
+
+- **Command.** `python3 -I client/tools/sprites/build_pair73.py P72_DIR OUT_DIR --creature-src DIR --spell-src DIR --status-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...] [--wings-src DIR]`.
+  `--dry-run` only checks the inputs. `--work DIR` names the work folder (default `OUT_DIR.work`; use a RAM disk). `--any-base` takes a rebuilt pair 72.
+  `--wings-src DIR`: the ten painted wings of O594 come from DIR. Without it all 121 wings are drawn by code.
+- **Order** (the table `STEPS`; `order_problems` refuses any order a tool would refuse):
+
+  | step | item | tool | what it needs in the input | after it |
+  |---|---|---|---|---|
+  | 1 `centre` | O585 | `gen_outfit_centre.py apply` | the wings looks as pair 72 has them | 3,526 outfits, 4,742 effects |
+  | 2 `wings` | O583 / O594 | `gen_drawn_wings.py apply` | after `centre` | the same counts |
+  | 3 `classredraw` | O618 | `gen_class_redraw.py build` | after `centre`; no count, no source folder | the same counts (36 looks in place) |
+  | 4 `creature` | O608 | `gen_creature_outfits.py build` | exactly 3,526 outfits | 3,529 outfits |
+  | 5 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
+  | 6 `status` | O597 / O617 | `gen_status_vfx.py build` | 4,742 to 5,142 effects; pads up to 5,142 | 5,189 effects |
+  | 7 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
+  | 8 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,320 effects (O613) |
+
+- **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `status`, then `gap`, then `area`.
+  `status` (O617) pads 4745..5142 (398 blanks) and writes 5143..5189 (47 effects, `--status-src DIR`, pictures found by digest like the others).
+  `gap` then pads nothing (it takes up to 5,189). `area` pads 5238..5299 (62 blanks). `status` before `spell` is refused (`spell` wants exactly 4,742);
+  `status` after `gap` is refused (it takes at most 5,142). It changes no effect in place, so `--allow-changed` has no `status` ids.
+  No tool was changed. The rehearsal below ran before `status` existed: its md5s and the 507 blanks are of the six step order.
+- **Why `centre` runs before `wings`.** The centre table lists the wings looks with their pair 72 displacement. The drawn wings drop that flag.
+  So `gen_outfit_centre.py check` is true only before the wings. After them the script holds the 169 moved looks to their rows itself.
+- **Centre table.** It is of pair 71. Pair 72 has 16 more looks. The script measures pair 72 first (2 minutes) and stops when a committed row changed.
+  Measured: the 2,775 rows are the same, 16 new rows 3511..3526, all `report` (kind `other`). It applies and checks with the measured table.
+  The table lands in `OUT_DIR/build/outfit_centre.csv`. Commit it at the real build.
+- **Each step.** Build into the work folder. The step's own `live` or `check`. The counts of the plan. Then the input copy is deleted.
+  At most two pairs lie in the work folder. `P72_DIR` is never changed. The `strips/` folder a step writes is deleted.
+- **Final pass.** Every `live` again on the last pair, plus `gen_fun_costumes.py live` and `gen_ki_auras.py live`.
+  Then `check_pair.py --old P72 --new-only --allow-changed LIST`: only the things the tables name may differ from pair 72.
+  The log with every md5 is `OUT_DIR/build/pair73_build.txt`.
+- **Dry run.** Pair 72 files, counts and dat md5 (`client_pair.py`). Every picture a table names, by file digest, in its source folder.
+  The `--status-src` pictures by digest. The ten wings sheets by sha256. Room for two pairs. The step order. It decodes no picture. It does not check the packs' json tables.
+- **Rehearsal** on a RAM disk, pair 72 rebuilt from pair 71 (dat dd4b6ac4165fb810d1c9d8fd26b8c080, the live one). About 6 minutes. Run twice: the same md5s.
+
+  | step | seconds | dat md5 | spr md5 |
+  |---|---|---|---|
+  | centre | 21 | 8d48f09c4204f492447b32e87953baa3 | c2d780ca4af3a61345b6ea0548e58245 |
+  | wings (ten painted rows) | 154 | 087d72fde78601f6dd615201e43766d5 | 32f172d99511f26920a4959fb46bfec5 |
+  | creature | 12 | 23695ea3bcb04e096b722eb131844309 | c64defc2d1d802246808226a9583354c |
+  | spell | 7 | ffd990e0b6ee6191712927614dedf30f | 8b1c3095a6ed88416d8349700f6c83ae |
+  | gap | 9 | 2ca564db382a3cdfdcbe90ff6a5d9cda | 1cbfc086681c249a4528954d2b1f9bcc |
+  | area | 24 | 3b8e7cdb6bbed615d04eeb2955b129e1 | fa32d71e75c80c53b0c05665d6b0b2eb |
+
+  Result: 44,559 items, 3,529 outfits, 5,330 effects, 253 missiles, 1,049,978 sprites. Dat 9,429,461 bytes, spr 1,217,243,369 bytes. O613 and the id move of O614 came after this rehearsal: the tables now end at 5,320 (area) and 5,325 (lightning).
+  Against pair 72: 290 outfits, 39 effects and missile 46 changed in place. 3 outfits and 588 effects are new (507 of them blank). Nothing else differs.
+  **These md5s are not pair 73.** They change with the owner's wings choice. The files were deleted.
+  O616 changed the creature step after this rehearsal: it appends 4,502 sprite records, not 1,886. So the md5s from the creature step on are stale,
+  and the sprite total grows by 2,616 to 1,052,594. The step order and the counts of things stay.
+- **Cross checks on the result** (the steps of the CI job "Live sprite pair" and the pair checks of CLAUDE.md), 28 run:
+  - Pass, 22: `check_pair.py` (0 errors, 5,184 warnings; pair 72 had 11,843), `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`,
+    `gen_minimap_swatches.py build --check`, `fit_pair50_offsets.py --check`, `gen_missile_fx.py build --check`, `gen_hd_overlay.py build --check`,
+    `clean_wing_shadows.py check-clean`, `gen_dungeon_banners.py --check`, `gen_sprite_images.py`, the `live` of the donor effects, the recolour,
+    donor, purchased, costume and Ki aura outfits, the five `live` of pair 73, and `check_content.py --pair` with `PAIR_OUTFITS` 3529.
+  - Fail as expected, 4: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py`, `gen_foot_marks.py` with `--check`.
+    The committed tables hold the dat md5 of pair 72. They pass once regenerated (next point).
+  - Fail as expected, 1: `gen_outfit_centre.py check` on the final pair: 99 wings rows keep a displacement the drawn wings dropped, and 3527..3529 have no row.
+    After the real build measure the final pair again, or leave the table as the record of the step.
+  - Fail as expected, 1: `check_content.py --pair` as committed: `PAIR_OUTFITS` says 3510. The blank list (735) is still right.
+- **Knock-on tables**, regenerated from the rehearsal pair outside the repository. Commit them at the real build, from the real pair:
+
+  | file | entries | changed | new |
+  |---|---|---|---|
+  | `client_chaos_charselect/outfit_anchors.lua` | 2,791 to 2,794 | 290 | 3 |
+  | `client_chaos_infolift/info_lifts.lua` | 2,095 to 2,099 | 119 | 4 |
+  | `client_chaos_wingfit/wing_centres.lua` | 2,783 to 2,786 | 277 | 3 |
+  | `client_chaos_wingfit/head_centres.lua` | 2,662 to 2,665 | 169 | 3 |
+  | `game_cosmeticfx/foot_marks.lua` | 2,790 to 2,793 | 290 | 3 |
+  | unity `Core/InfoLiftData.cs` | 274 to 275 lines | 181 lines | 1 line |
+  | `pair_fixes/outfit_centre.csv` | 2,775 to 2,791 rows | 0 | 16 |
+
+  290 is the 169 moved looks plus the 121 wings. 3 is the boss looks. `server/data/monster/look_idle.csv` does not change.
+  The HD overlay has no row of the 22 looks whose pixels moved. Codex, HowItWorks and HelpSearch json do not change.
+- **At the real build**, after the script: commit the seven tables, `PAIR_OUTFITS` 3529 and `PAIR_NAME` in `check_content.py`,
+  `PAIR_ASSETS` 73 and its dat md5 in `server/tools/client_pair.py`, the `live` steps of the five tools in the job `live-pair`, the md5s here.
+  Then push the pair, ship the client, set the client pair to 73 (admin app: Comandos > "Par do cliente" > Gravar 73).
+- **Open.** The wings choice (ten painted rows or all by code; still weak rows in "Wings from PixelLab"). `status` has had no run on a real pair here (fake runner only).
+  The 12 fun costumes 3511..3522 are worn by players but count as `other` in the centre table: they are listed, not moved (they stand at y 26 to 30).
+  `wing_centres.lua` measures the mass of the wings art. It is only the fallback for a client without base patch 0204.
+  Nothing was seen in a client.
+- **Preview** (never committed): `pair73_tour.mp4`, 39 s, read from the built pair: four moved class looks with drawn wings,
+  the three bosses walking and idle in four directions, the four long beam families, two area bursts, two gap effects.
+- **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and twelve refused orders, the needs held to the tools' own constants,
+  flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
+
+## Class outfits redrawn (O618; `tools/sprites/gen_class_redraw.py`, `art_import/class_redraw.csv`; owner 2026-11-17, "Pode seguir")
+
+The owner asked for the class outfits that miss the stock bar to be drawn again, same name and theme. The O610 audit names them:
+the ten donor B class outfits 1551 to 1560 (upright camera, 46 to 71 px tall, 3x3 / 3x2 tiles, no outline, no colour template) and the
+class outfits and class looks that walk in 2 pictures. The run does **all 36 looks, 32 sheets**: 1505 to 1510, 1551 to 1560, 2039 to 2042,
+2044, 2060 to 2064, 2067 to 2072, 2078 to 2081. 2043 stays as it is (`class_looks_core.lua` leaves it unused). 2069 / 2070 / 2071 / 2072 are copies of
+1505 / 1506 / 1508 / 1510 and share their sheet. Seraph (1553) had one direction and no walk: it has four and a walk now.
+Where the looks are used: the class looks by `class_looks_core.lua` (ids unchanged, the server gives every class look both addons), the
+ten donor outfits and the six ninja / samurai outfits by `outfits.xml` and the store. Every id and the outfit count stay, so nothing
+else changes (the build is `mode=replace`).
+
+- **Art.** Ours: PixelLab (docs/CREDITS.md, Tools), `create_character` mode `standard`, view `oblique`, 4 directions, described by words
+  only (the `prompt` column), no picture of the old look goes to the tool. Nothing is held in the hands (a held weapon comes and
+  goes between pictures). Size 44 for the pilot and 15 first drawings, then **size 52**: it costs the same (1 generation) and the figure
+  is 31 to 37 px tall instead of 26 to 29. The walk is the tool's v3 animation (`animate_character` mode v3, 8 frames, `keep_first_frame`
+  false), **one job a direction with the standing picture as the end frame**, so it loops. Downloads answer 423 while a job runs.
+  Cost: 235 generations for the run (about 7 a sheet: 5 clean, 10 with a re-roll; 17 sheets were drawn twice because the first
+  drawing was too short (25 to 29 px), had almost no colour to template or had the wrong colour), 493 left of 2,000. The
+  pilot's two sheets (Warborn, Oni Samurai) stay as they were approved.
+- **Script.** `art --src DIR --write [KEY ...]` places a download: hard alpha, the walk's colours pulled back to the standing pictures,
+  a dark outline on the whole rim, one move for the look so it stands on the O585 point (x 16.5, y 20; at most 4 pixels of a weapon
+  tip may fall over the edge of the 64 px frame at displacement 0 and are cut), the colour template, the idle and the addons. The
+  row's `disp` (dat displacement) is `auto` for a new row: `--write` stores the highest displacement that loses no pixel.
+- **Colour template, wider than the pilot's.** `accent` is hue ranges joined by `+`: `LO-HI` degrees (wraps through 0), `LO-HI@SATMIN`
+  for a range that must stay clear of skin, `white` for pale cloth and plate (the Sentinel's, Templar's and Seraph's armour and robes).
+  The accent pixels turn grey in the art and head / body / legs / feet in the template by where they sit along the figure, like the
+  stock looks. The share of the body is the mean of the four standing pictures. Class looks start in the class colours
+  (`class_looks_core.lua` `startColors`: Templar gold and white, Mystic grey and deep blue, ...), so the default look is the theme.
+- **Idle.** 4 pictures (a breath: the standing picture one row taller in the middle phases, 600 ms) for the six looks that had an idle
+  of their own (Mystic 2060 / 2061, Elementalist 2062 / 2063, Templar 2067 / 2068); PixelLab gave no cleaner idle at this size, so the breath is
+  drawn by script. The others stand in one picture, like the stock looks.
+- **Addons.** Templar 2067 / 2068 (3 patterns) and Monk 2080 / 2081: two overlays drawn by script on every placed picture, no template
+  (`ADDON_KINDS`). Templar: a gold halo, two ice crystals on the shoulders. Monk: a red headband with tails, a staff across the back
+  (seen over the body from the north only). The old addons were not looked at (purchased or donor art): these are new, same slots.
+- **Sheets.** `art_import/class_redraw/KEY.png` (import_art_things.py outfit layout, 2x2 tiles, rows idle then walk, columns
+  `(addon * 2 + layer) * 4 + direction`) and `art_import/class_redraw.sums`. `check` holds the table, the sums and every sheet to the
+  O610 numbers.
+- **Pair.** `build DAT SPR OUT_DIR` rewrites the 36 looks in place (sprites appended: 5,953 on pair 72); `live DAT SPR` reads every cell back.
+  Built on pair 72 on a RAM disk in 11 s, `check_pair` append-only guard passed, 0 cells differ. **Step `classredraw` of
+  build_pair73.py** (after `wings`, needs no count, no source folder): `build_pair73_test.py` holds the order, the command, the
+  `--allow-changed` list (the 36 looks) and the skip of those looks in the centre rows held after the wings.
+- **Numbers** (O610 `audit.py` rules; before: the ten donors 46 to 71 px tall with a lean under 5 and a dark rim on 7 to 89%, the class looks 34 to 54 px with a walk of 2 pictures):
+
+| sheet | looks | height | lean south / east | east = mirrored west | colour template (share of the body, zones) | idle | addons |
+|---|---|---|---|---|---|---|---|
+| Warborn | 1551 | 30 | 18.8 / 15.4 | 0.20 | 9%, 3 | 1 | - |
+| Oni Samurai | 1508 + 2071 | 34 | 23.0 / 18.0 | 0.19 | 16%, 3 | 1 | - |
+| Golden Templar | 1552 | 33 | 21.7 / 16.8 | 0.17 | 14%, 3 | 1 | - |
+| Seraph | 1553 | 32 | 16.9 / 16.0 | 0.20 | 32%, 4 | 1 | - |
+| Wandering Blade | 1554 | 34 | 20.2 / 16.7 | 0.17 | 22%, 2 | 1 | - |
+| Nightblade | 1555 | 36 | 8.7 / 10.8 | 0.23 | 10%, 3 | 1 | - |
+| Hooded Thief | 1556 | 31 | 21.7 / 16.9 | 0.15 | 31%, 3 | 1 | - |
+| Brawler | 1557 | 31 | 21.9 / 17.3 | 0.16 | 9%, 2 | 1 | - |
+| Wildwood Ranger | 1558 | 34 | 21.0 / 16.8 | 0.19 | 34%, 3 | 1 | - |
+| Archmage (old) | 1559 | 30 | 21.7 / 16.6 | 0.17 | 27%, 4 | 1 | - |
+| Plague Doctor | 1560 | 35 | 21.1 / 16.3 | 0.18 | 9%, 3 | 1 | - |
+| Shadow Ninja | 1505 + 2069 | 37 | 15.5 / 18.0 | 0.21 | 15%, 3 | 1 | - |
+| Crimson Ninja | 1506 + 2070 | 33 | 18.3 / 17.3 | 0.22 | 9%, 4 | 1 | - |
+| Masked Ninja | 1507 | 32 | 20.6 / 16.8 | 0.19 | 12%, 2 | 1 | - |
+| Ronin | 1509 | 33 | 21.5 / 17.3 | 0.14 | 29%, 4 | 1 | - |
+| Dark Samurai | 1510 + 2072 | 32 | 15.0 / 10.9 | 0.21 | 24%, 4 | 1 | - |
+| Juggernaut Class (male) | 2039 | 33 | 18.9 / 14.3 | 0.23 | 19%, 4 | 1 | - |
+| Juggernaut Class (female) | 2040 | 32 | 18.5 / 12.2 | 0.24 | 35%, 4 | 1 | - |
+| Sentinel Class (male) | 2042 | 32 | 20.1 / 13.4 | 0.24 | 27%, 4 | 1 | - |
+| Sentinel Class (female) | 2041 | 34 | 22.0 / 17.6 | 0.13 | 33%, 4 | 1 | - |
+| Necromancer Class (male) | 2044 | 33 | 20.4 / 17.2 | 0.20 | 7%, 3 | 1 | - |
+| Necromancer Class (female) | 2064 | 33 | 20.6 / 17.6 | 0.17 | 4%, 4 | 1 | - |
+| Mystic Class (male) | 2060 | 33 | 21.4 / 16.5 | 0.17 | 41%, 4 | 4 | - |
+| Mystic Class (female) | 2061 | 33 | 21.8 / 18.3 | 0.19 | 34%, 4 | 4 | - |
+| Elementalist Class (male) | 2062 | 33 | 19.4 / 17.1 | 0.17 | 65%, 4 | 4 | - |
+| Elementalist Class (female) | 2063 | 35 | 21.9 / 19.1 | 0.15 | 60%, 4 | 4 | - |
+| Templar Class (male) | 2067 | 31 | 21.3 / 16.6 | 0.16 | 30%, 4 | 4 | templar |
+| Templar Class (female) | 2068 | 31 | 20.7 / 16.6 | 0.17 | 33%, 4 | 4 | templar |
+| Ranger Class (male) | 2078 | 36 | 16.2 / 15.8 | 0.17 | 32%, 3 | 1 | - |
+| Ranger Class (female) | 2079 | 32 | 18.2 / 16.6 | 0.20 | 18%, 2 | 1 | - |
+| Monk Class (male) | 2080 | 34 | 22.7 / 17.7 | 0.16 | 8%, 2 | 1 | monk |
+| Monk Class (female) | 2081 | 31 | 20.3 / 16.3 | 0.16 | 10%, 2 | 1 | monk |
+
+  Stock 128: 32 px, lean 16.1 / 15.1, mirror 0.20, rim 93%. Heights 30 to 37 (mean 31.7): 30 of 32 sheets in the stock band 31 to 40;
+  Warborn (the pilot) and the Archmage are 30. Lean 8.7 to 23.0 south (the Nightblade's south picture has the long daggers across it and
+  the Dark Samurai leans 10.9 east; both pass on the other direction). Walk 8 different pictures in every direction, four different
+  standing pictures, 100% dark rim, hard alpha, standing point 16.5, 20 (+-1) on every look. Colour template 4% (Nightblade, Plague
+  Doctor, Necromancer f: black cloth) to 65% (Elementalist m); the floor of `check` is 3%.
+- **Knock-on tables to regenerate at the real build** (they hold the look's geometry; the committed ones describe the old art): the
+  centre table `pair_fixes/outfit_centre.csv` (`build_pair73.py` measures it on the base pair and writes `build/outfit_centre.csv`; the
+  36 looks are skipped by the held rows), `client_chaos_infolift/info_lifts.lua` (`gen_info_lift.py`),
+  `client_chaos_charselect/outfit_anchors.lua` (`gen_outfit_anchors.py`), `game_cosmeticfx/foot_marks.lua` (`gen_foot_marks.py`),
+  `client_chaos_wingfit/wing_centres.lua` and `head_centres.lua` (`gen_wing_centres.py`: torso x per look, so the wings sit on the new
+  bodies), and the tables that hold the dat md5. Nothing of these was changed here: no pair 73 exists yet.
+- **Open.** The owner's look at `classes_all.mp4` (36 looks: new, old, stock 128, four directions, idle and walk, two colour sets).
+  Not seen in a client. The old Templar and Monk addons are gone, the two new ones are code-drawn and plain. The Nightblade, Plague
+  Doctor and Necromancers colour little (black cloth); a PixelLab re-roll with a bigger coloured part costs 5 generations a sheet.
+
+## Bolt from the sky, drawn by code (O614, `tools/sprites/gen_lightning_fx.py`, `art_import/lightning_fx.csv`; joins pair 73; owner 2026-11-17)
+
+Owner: "For the lightning falling from the sky, make the tool to draw the lightning." Our own art, drawn by code, as the wings of O581.
+No art file is read. No purchased art, no AI service. **Status: tool, table, server lib and previews. Not seen in a client. The owner can still say no.**
+
+- **Measured in pair 72.** Effect 458 `lightning_strike`: 4 x 4 tiles, send offset 1, 1, 16 phases of 83 ms. It reaches 77 px above the standing point.
+  It leans 45 degrees from up-left, then falls straight. Its alpha has four levels. The level up pillar 457: 4 x 5 at 1, 2, 56 px above.
+- **Channel.** From a point high up-left to the standing point of the target tile, 16, 20. Midpoint displacement on a seeded `random.Random`.
+  Each segment's middle moves sideways by up to 26% of its length. Three rounds, the heavy bolt four. The lean is 0.56 px across per px down.
+- **Branches.** Three, the heavy bolt five. They leave the upper two thirds, run down and outward and end in the air. The far part is thinner. The tip is glow only.
+- **Frames.** Two leader frames, the strike, a second strike on a shaken channel, a dim frame, a re-strike, two afterglow frames, the last sparks.
+  9 frames in 610 ms. The heavy bolt has one more strike: 10 frames in 690 ms. Each frame has its own duration, 50 to 90 ms.
+- **Ground.** A flat burst with spikes on the target tile, then a ring that runs out. Sparks fly up and fall back. A circle on the floor is half as high as wide.
+- **Colours.** Four a tint: core, light, rim, glow. Alpha is 0 or 255 and one glow level, 144. A transparent pixel carries no colour.
+  No dark outline: the saturated rim holds the bolt against bright ground. Checked on grass green and stone grey.
+- **Tints.** Energy is white and blue. Holy gold and dark violet share the shapes. `sheets` and `preview` draw them. No sender needs them, so they are not in the pair.
+- **Sizes.** `std`: 4 x 4 at offset 1, 0. The bolt comes in 116 px above the target point. `heavy`: 5 x 6 at 1, 1, 148 px, thicker, a wider burst.
+- **Ids.** Five effects at 5321..5325, after the long beams of O609 at 5320. Block up to 5340.
+
+| Id | Name | Canvas, phases | Seed |
+| --- | --- | --- | --- |
+| 5321 | `lf_bolt_a` | 4 x 4, 9 | 11 |
+| 5322 | `lf_bolt_b` | 4 x 4, 9 | 23 |
+| 5323 | `lf_bolt_c` | 4 x 4, 9 | 37 |
+| 5324 | `lf_bolt_heavy_a` | 5 x 6, 10 | 53 |
+| 5325 | `lf_bolt_heavy_b` | 5 x 6, 10 | 71 |
+
+- **Step of pair 73, now the last effect step.** Input: 253 missiles and 4,742 to 5,320 effects. Run it after `gen_area_fx.py`.
+  A pair with fewer than 5,320 effects is padded with blank effects up to 5320, so the ids never move. Nothing is replaced. No missile is added.
+  It is the eighth step of `build_pair73.py` of O612, after `area`: `gen_lightning_fx.py build IN/Tibia.dat IN/Tibia.spr OUT`.
+  It needs no `--src`. Pair 73 then ends at 5,325 effects. The rehearsal md5s of O612 are of the pair before this step.
+- **Drawn over the creature.** Effect 458 is in the ground list of `game_groundfx`. The new ids are not. A bolt hits the creature from above.
+- **Commands.** `sheets OUT_DIR` writes PNG sheets on dark, green and grey. `preview OUT_DIR --dat D --spr S` writes two MP4 files.
+  `table` writes the table and the sums. `ids` writes the server files. `build` runs `live` at the end. None of the pictures is committed.
+- **Checks.** `gen_lightning_fx.py check` draws every bolt again and holds it to the sums. It needs no pair. `live DAT SPR` holds a built pair pixel for pixel.
+  Add `live` to the job `live-pair` when pair 73 ships. `gen_lightning_fx_test.py`: the same bytes twice, frame count, alpha levels, palette,
+  the strike is one piece from the top to the target point, branches inside the canvas, the import spec appends only.
+- **Proved 2026-11-17** on the pair 73 rehearsal of O612 (dat 3b8e7cdb6bbed615d04eeb2955b129e1, 5,320 effects):
+  no blank effect, 5 effects appended, 47 frames read back pixel for pixel. Every old item, outfit, effect and missile is byte identical.
+  Output dat 72deab68313773f5783f226925846475 (9,434,040 bytes), spr ad553da9e7d2d71c2361c2437db15e2d (1,217,424,242 bytes).
+  The files were deleted after the check. This is not the shipped pair 73.
+- **Unity.** Not done. The Unity client has no effect 5321+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.

@@ -574,6 +574,97 @@ do
   assertEq(Tile(Position(5001, 5001, 7)), nil, "look: nothing was built")
   cfg.arenaBase = savedBase
 end
+-- ---- O595: what the tester bots see, the tester rules, the close
+do
+  ChaosTowerBuiltSlots[0] = true -- slot 0 was built by the earlier tests: its tiles are ours
+  local TKc = ChaosTowerCore
+  local g = function(o) local a = {inRun = true, remaining = 4, pos = {x = 10, y = 10, z = 7}, reach = 5}; for k, v in pairs(o) do a[k] = v end; return TKc.guide(a) end
+  assertEq(g({inRun = false}).mode, "wait", "guide: outside")
+  assertEq(g({waiting = true, nextIn = 4, canSkip = true}).skip, true, "guide: between floors the skip is offered")
+  assertEq(g({remaining = 0}).mode, "wait", "guide: a cleared floor waits")
+  assertEq(g({}).mode, "wait", "guide: no monster, wait")
+  local w = g({monster = {pos = {x = 20, y = 10, z = 7}}})
+  assertEq(w.mode == "walk" and w.goal.x == 20 and w.area == "pack" and w.reach[2] == 5, true, "guide: far, walk to it")
+  assertEq(g({monster = {pos = {x = 14, y = 12, z = 7}}}).mode, "fight", "guide: within 5 tiles, fight")
+  assertEq(g({monster = {pos = {x = 11, y = 10, z = 7}, boss = true}}).area, "boss", "guide: the boss floor's monster is the boss area")
+
+  Chaos.isTester = function(p) return p.tester == true end
+  Chaos.notTesterSql = function() return "1=1" end
+  dofile("data/scripts/chaos/testers_core.lua")
+  ChaosTesters = {soloRefusal = function(group, free, reserve)
+    local flags, any = {}, false
+    for i, m in ipairs(group) do flags[i] = m.tester == true; any = any or flags[i] end
+    if not any then return nil end
+    local why = ChaosTestersCore.soloRefusal(flags, free, reserve)
+    return why and ChaosTestersCore.CLOSED_TEXT[why] or nil
+  end}
+  Monster = function(id) return monsters[id] end
+  local function mkT(id, name) local p = mkPlayer(id, name); p.tester = true; players[id] = p; return p end
+
+  local t = mkT(300, "Tester Aaa")
+  local pr = ChaosTowerRun.probe(t)
+  assertEq(pr.inside, false, "probe: outside")
+  assertEq(pr.level == 200 and pr.minLevel == 100 and pr.canEnter == true and pr.reserve == 4 and pr.floorGold == 50, true, "probe: outside facts")
+  assertEq(ChaosTowerRun.testerClose(t), false, "close: a bot with no run")
+  assertEq(ChaosTowerRun.start(t), true, "a tester starts a run")
+  pr = ChaosTowerRun.probe(t)
+  assertEq(pr.inside and pr.run.floor == 0 and pr.run.waiting and pr.run.players == 1 and pr.run.testers == 1, true, "probe: inside before floor 1, a run of testers only")
+  assertEq(pr.guide.mode == "wait" and pr.guide.skip == true, true, "probe: the start delay may be skipped")
+  advance(5000)
+  local _, _, monsterRun = ChaosTowerRun._state()
+  local n, at = 0, t.pos
+  for id, r in pairs(monsterRun) do
+    local m = monsters[id]
+    n = n + 1
+    local pos = Position(at.x + 2 + n * 3, at.y, at.z)
+    m.getPosition = function() return pos end
+    m.getHealth = function() return m.hp end
+  end
+  pr = ChaosTowerRun.probe(t)
+  assertEq(pr.run.floor == 1 and pr.run.monsters == n and pr.run.remaining == n and pr.run.waiting == false and pr.run.nextBoss == false, true, "probe: floor 1 and its monsters")
+  assertEq(pr.guide.mode == "fight" and pr.guide.goal.x == at.x + 5, true, "probe: the nearest monster is in reach: fight")
+  assertEq(pr.run.floorLeft ~= nil and pr.run.floorLeft > 0, true, "probe: the floor clock")
+  -- a tester run is no record of a player: the run is marked by who is in it
+  local before = #recorded
+  assertEq(ChaosTowerRun.testerClose(t), true, "close: the asker leaves")
+  assertEq(ChaosTowerRun.isInside(t), false, "close: outside")
+  assertEq(#recorded, before + 1, "close: the floors cleared are written (a tester's own row)")
+  assertEq(ChaosTowerRun.testerClose(t), false, "close: twice does nothing")
+
+  -- the arenas are the players' first
+  local cfgT = ChaosTowerRunConfig
+  local fillers = {}
+  for i = 1, cfgT.maxSlots - cfgT.tester.reserve - 1 do
+    local f = mkPlayer(400 + i, "Filler" .. i); players[400 + i] = f
+    assertEq(ChaosTowerRun.start(f), true, "a player fills hall " .. i)
+    fillers[#fillers + 1] = f
+  end
+  local t2 = mkT(310, "Tester Bbb")
+  assertEq(ChaosTowerRun.start(t2), true, "a tester takes the last hall that leaves the reserve")
+  ChaosTowerRun.testerClose(t2)
+  local more = mkPlayer(499, "Filler499"); players[499] = more
+  assertEq(ChaosTowerRun.start(more), true, "one more player: the reserve is down to 3 free")
+  assertEq(ChaosTowerRun.start(t2), false, "a tester is refused when fewer than 4 would stay free")
+  assertEq(t2.cancel, ChaosTestersCore.CLOSED_TEXT.reserve, "the refusal says the halls are the players'")
+  local more2 = mkPlayer(498, "Filler498"); players[498] = more2
+  assertEq(ChaosTowerRun.start(more2), true, "a player still enters while the reserve is kept for players")
+  for _, f in ipairs(fillers) do ChaosTowerRun.leave(f) end
+  ChaosTowerRun.leave(more); ChaosTowerRun.leave(more2)
+
+  -- never mixed: a tester leads a party with a player in it
+  local lead, mate = mkT(320, "Tester Ccc"), mkPlayer(321, "Ana"); players[321] = mate
+  mate.pos = lead.pos
+  lead.getParty = function() return {getLeader = function() return lead end, getMembers = function() return {mate} end} end
+  mate.getParty = lead.getParty
+  assertEq(ChaosTowerRun.start(lead), false, "a tester's party with a player is never made")
+  assertEq(lead.cancel, ChaosTestersCore.CLOSED_TEXT.mixed, "the refusal says testers and players are never mixed")
+  assertEq(ChaosTowerRun.isInside(mate), false, "the player was not taken along")
+  lead.getParty = function() return nil end
+  -- the boards and the season chest leave the testers out
+  local f = io.open("data/scripts/chaos/infinitytower.lua", "r"); local src = f:read("*a"); f:close()
+  assertEq(select(2, src:gsub("Chaos.notTesterSql%(\"p\"%)", "")), 2, "the window's board and the season ranking both filter the testers")
+end
+print("infinity tower run: tester probe and rules passed")
 print("infinity tower run: next floor now passed")
 print("infinity tower run: O144 floor health, rewards and drops passed")
 print("infinity tower run: all asserts passed")

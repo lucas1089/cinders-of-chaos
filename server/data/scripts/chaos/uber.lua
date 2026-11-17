@@ -156,7 +156,17 @@ local function bigFx(fn, ...)
 	end
 end
 
+-- O614: a boss strike that names the bolt from the sky gets the heavy code-drawn bolt on client pair 73
+local function skyHeavy(name)
+	if ChaosLightningFx == nil then
+		ChaosLightningFx = false
+		pcall(dofile, "data/lib/chaos_lightning_fx.lua")
+	end
+	return ChaosLightningFx and ChaosLightningFx.boss(name) or name
+end
+
 local function fx(pos, name, fallback, who)
+	name = skyHeavy(name)
 	if who and ChaosTelegraph then
 		ChaosTelegraph.effectTo(who, pos, name, fallback) -- one player's sprite marks (O549)
 		return
@@ -749,6 +759,9 @@ function A.deliver(player, run)
 	if r.relic then
 		local relicInbox = A.giveRelic(player, r.relic)
 		if relicInbox ~= nil then
+			if ChaosGapFx then -- O606
+				ChaosGapFx.on(player, "relic")
+			end
 			inbox = relicInbox or inbox
 			found[#found + 1] = U.relicName(cfg, r.relic)
 		end
@@ -791,7 +804,7 @@ local function success(run)
 					pcall(ChaosAchievements.progress, p, s[1], s[2])
 				end
 			end
-			if def.final and ChaosLeaderboard and ChaosLeaderboard.record then
+			if def.final and not run.tester and ChaosLeaderboard and ChaosLeaderboard.record then -- no board row of a tester (O599)
 				pcall(ChaosLeaderboard.record, U.boardFor(cfg, size), p, math.max(1, secs))
 			end
 			if e.guid == run.openerGuid then
@@ -799,7 +812,7 @@ local function success(run)
 			end
 		end
 	end
-	if def.final then
+	if def.final and not run.tester then -- the broadcast names players only (O599)
 		local names = {}
 		for _, e in pairs(run.players) do
 			names[#names + 1] = e.name
@@ -886,7 +899,9 @@ local function spawnAdds(run, adds)
 			setHealth(m, hp)
 			A.monsterRun[m:getId()] = run
 			run.adds[m:getId()] = true
-			m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			if not (ChaosGapFx and ChaosGapFx.on(m, "summon_gate")) then -- O606
+				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			end
 			made = made + 1
 		end
 	end
@@ -953,6 +968,9 @@ local function telegraph(run, name)
 	for i, ms in ipairs(timing.marks) do
 		local filling = timing.kinds and timing.kinds[i] == "fill"
 		local effect = filling and cfg.telegraph.fillEffect or cfg.telegraph.warnEffect
+		if ChaosGapFx then -- O606: the strike circle on client pair 73
+			effect = ChaosGapFx.telegraph(effect)
+		end
 		addEvent(function()
 			if not live() then
 				return
@@ -978,7 +996,11 @@ local function telegraph(run, name)
 				end
 			end
 			if mark and ChaosTelegraph then
-				ChaosTelegraph.draw(mark, pulse)
+				ChaosTelegraph.draw(mark, pulse, function(who) -- O606: the strike circle over the floor mark
+					for _, t in ipairs(plan.big) do
+						fx(P(t), effect, nil, who)
+					end
+				end)
 			else
 				pulse(nil)
 			end
@@ -1361,6 +1383,23 @@ function A.open(player, item)
 		return false
 	end
 	local group = gather(player, def)
+	local flags, anyTester = {}, false
+	for i, m in ipairs(group) do
+		flags[i] = Chaos.isTester and Chaos.isTester(m) or false
+		anyTester = anyTester or flags[i]
+	end
+	if anyTester then -- testers beside the players (O599): never mixed, the arenas kept for the players
+		local running = 0
+		for _ in pairs(A.runs) do
+			running = running + 1
+		end
+		local why = U.testerRefusal(flags, running, cfg)
+		if why then
+			local K = ChaosTestersCore
+			player:sendCancelMessage(Chaos.t(player, (K and (K.CLOSED_TEXT[why] or K.CLOSED_TEXT.mixed)) or "Testers and players are never mixed."))
+			return false
+		end
+	end
 	local slot, L = takeSlot(player, def.key)
 	if not slot then
 		return false
@@ -1373,7 +1412,7 @@ function A.open(player, item)
 	A.nextId = A.nextId + 1
 	local run = {id = A.nextId, slot = slot, L = L, def = def, players = {}, adds = {}, state = "running", boss = "waiting",
 		size = #group, openerGuid = player:getGuid(), startedAt = mnow(), bossDueAt = mnow() + cfg.startDelay * 1000,
-		deaths = 0}
+		deaths = 0, tester = anyTester}
 	run.lives = U.livesFor(def, #group)
 	run.livesMax = run.lives
 	A.runs[slot] = run
@@ -1403,6 +1442,116 @@ end
 
 function A.isInside(player)
 	return A.runOf[player:getId()] ~= nil
+end
+
+-- ======================================================================== what a person sees (the tester bots, O599)
+local function plain(pos)
+	return pos and {x = pos.x, y = pos.y, z = pos.z} or nil
+end
+
+local function addsOf(run)
+	local n = 0
+	for mid in pairs(run.adds or {}) do
+		if Monster(mid) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- What a person sees of the Ascended arenas, for the tester bots' `!tester ascended` (tools/tester_helper.lua checks that the asker is a
+-- tester): outside, the level rule of each Omen, the sigil in the backpack, the protection zone, the arenas free; inside, the boss, its
+-- health and phase, the clock, the lives, who is in the run and `guide` (U.guide). Reads only.
+function A.probe(player)
+	local cfg = C()
+	local running = 0
+	for _ in pairs(A.runs) do
+		running = running + 1
+	end
+	local sigil = cfg.items and cfg.items.sigil and player.getItemById and player:getItemById(cfg.items.sigil.id, true) or nil
+	local out = {enabled = cfg.enabled, level = player:getLevel(), pos = plain(player:getPosition()), pz = inProtectionZone(player),
+		fight = inCombat(player) and true or false, free = (cfg.limits.maxRuns or 4) - running, reserve = cfg.tester.reserve, inside = false,
+		held = sigil ~= nil, sigilKind = sigil and kindOf(sigil) or nil, kinds = {}}
+	local it = cfg.items and cfg.items.sigil and ItemType(cfg.items.sigil.id)
+	out.sigilClientId = it and it.getClientId and it:getClientId() or nil
+	for _, d in ipairs(cfg.kinds) do
+		if not d.final then
+			out.kinds[#out.kinds + 1] = {key = d.key, minLevel = d.minLevel, boss = d.boss}
+		end
+	end
+	local run = A.runOf[player:getId()]
+	local entry = run and run.players[player:getId()]
+	if not run or not entry or run.ended then
+		return out
+	end
+	out.inside = true
+	local boss = bossOf(run)
+	local members, testers = 0, 0
+	for pid in pairs(run.players) do
+		members = members + 1
+		local p = Player(pid)
+		if p and Chaos.isTester and Chaos.isTester(p) then
+			testers = testers + 1
+		end
+	end
+	local gateIn = entry.down and math.max(0, (entry.reenterAt or 0) - os.time()) or 0
+	out.run = {id = run.id, slot = run.slot, kind = run.def.key, boss = run.boss, state = run.state, tester = run.tester and true or false,
+		lives = run.lives, livesMax = run.livesMax, players = members, testers = testers, left = timeLeft(run, mnow()),
+		down = entry.down and true or false, gateIn = gateIn, enraged = run.enraged and true or false, phase = run.phase,
+		bossPos = boss and plain(boss:getPosition()) or nil,
+		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil, gate = plain(run.L.portal),
+		adds = addsOf(run)}
+	out.guide = U.guide({inside = true, state = run.state, boss = run.boss, down = out.run.down, gateIn = gateIn, pos = out.pos,
+		bossPos = out.run.bossPos, gate = out.run.gate, reach = 5})
+	return out
+end
+
+-- TEST ONLY (`!tester ascended close`): the asker leaves its own run: the arena ends as a failed one when it is the last one in (the
+-- sigil is spent, as when the time runs out), else only the asker goes to the temple. A player's run is never touched.
+function A.testerClose(player)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return false
+	end
+	local run = A.runOf[player:getId()]
+	if not run or run.ended then
+		return false
+	end
+	local others = 0
+	for pid in pairs(run.players) do
+		if pid ~= player:getId() then
+			others = others + 1
+		end
+	end
+	if others > 0 then
+		removePlayer(run, player:getId(), "temple")
+	elseif run.state == "running" then
+		fail(run, "A test close.")
+	else
+		finishExit(run)
+	end
+	return true
+end
+
+-- TEST ONLY (`!tester ascended sigil [kind]`): an Ascended Sigil for a TESTER (the shards come from Omen kills a bot cannot repeat for this
+-- check). Never for a player, never the Cinderheart's, never inside a run; one console line each. -> inbox flag (true: it is in the inbox)
+-- and the kind, or nil + why
+function A.testerSigil(player, want)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	if A.runOf[player:getId()] then
+		return nil, "already inside an arena"
+	end
+	local d, why = U.testerKind(C(), player:getLevel(), want)
+	if not d then
+		return nil, why
+	end
+	local inbox = A.giveSigil(player, d.key, "TEST ONLY sigil")
+	if inbox == nil then
+		return nil, "the sigil could not be made"
+	end
+	log(string.format("TEST ONLY: a sigil of %s given to tester %s (level %d)", d.key, player:getName(), player:getLevel()))
+	return inbox, d.key
 end
 
 Chaos.registerInstance("ascended", {label = "an Ascended Omen", inside = A.isInside, at = function(pos)

@@ -423,6 +423,9 @@ return {
 		key = {id = 32072, sourceId = 21703, article = "an", name = "omen key", plural = "omen keys", weight = 50,
 			description = "It hums with a guardian's name. Use it in a protection zone to open its arena."},
 		minLevel = 800,
+		-- tester bots (O599): an omen arena of a tester only while at least `reserve` of the `limits.maxRuns` slots stay free after it;
+		-- a group of a tester and a player is never made
+		tester = {reserve = 4},
 		timeLimit = 720, -- 12 minutes, was 10 (server/README.md "Solo kill times")
 		startDelay = 5,
 		healthPerExtraPlayer = 1.0,
