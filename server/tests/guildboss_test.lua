@@ -638,4 +638,172 @@ do
 	eq(WEEK[key2].fuel, fuel + B.fuelAfterFail(0, r.need, cfg), "limits: half of the need stays (the failure rule)")
 end
 
+
+-- ====================================================================== closed test mode (O592)
+-- a tester guild: a small stone, a summon only with the switch on and never into the players' arenas, a board that shows each viewer the
+-- guilds of its own side, the probe a bot reads, the close (the free hall: tests/guild_test.lua)
+do
+	dofile("data/scripts/chaos/testers_core.lua")
+	local K = ChaosTestersCore
+	local mode = "on"
+	K.reader = function() return mode end
+	local function setMode(m)
+		mode = m
+		K.resetClosedCache()
+	end
+	-- the pure rules
+	eq(B.need(1, cfg, true), cfg.tester.need, "a tester guild's stone needs the tester number")
+	eq(B.need(5, cfg, false), 625, "a player's stone is as before")
+	eq(B.need(5, cfg), 625, "no flag: a player's")
+	ok(cfg.tester.need <= 5 and cfg.tester.need > 0, "the tester stone is one Orb of Upheaval (5 embers) or less, never free")
+	eq(B.testerSummonRefusal(0, cfg), nil, "no run: a tester may summon")
+	ok(B.testerSummonRefusal(cfg.limits.maxRuns - cfg.tester.reserve, cfg), "the reserve of arenas is kept for the players")
+	ok(B.testerSummonRefusal(cfg.limits.maxRuns - cfg.tester.reserve - 1, cfg) == nil, "one arena less in use: allowed")
+	local at = {x = 10, y = 10, z = 7}
+	local function gd(o)
+		local a = {inside = true, state = "running", boss = "alive", pos = at, bossPos = {x = 30, y = 10, z = 7},
+			gate = {x = 1, y = 1, z = 7}, reach = 5}
+		for k, v in pairs(o) do a[k] = v end
+		return B.guide(a)
+	end
+	eq(gd({inside = false}).mode, "wait", "outside: wait")
+	eq(gd({state = "success"}).mode, "wait", "after the fight: wait for the exit")
+	eq(gd({boss = "waiting", bossPos = false}).mode, "wait", "the boss is coming: wait")
+	eq(gd({boss = "dead"}).mode, "wait", "the boss is down: wait")
+	local g1 = gd({down = true})
+	ok(g1.mode == "walk" and g1.goal.x == 1 and g1.area == "gate", "at the Ember Gate: back through it")
+	g1 = gd({})
+	ok(g1.mode == "walk" and g1.goal.x == 30 and g1.area == "boss" and g1.reach[2] == 5, "far from the boss: walk to it")
+	eq(gd({pos = {x = 27, y = 10, z = 7}}).mode, "fight", "within 5 tiles: fight")
+	eq(gd({pos = {x = 27, y = 10, z = 8}}).mode, "walk", "the boss on another floor is not in reach")
+	ok(K.CLOSED_SYSTEMS.guildboss, "guildboss is a closed system of testers_core.lua")
+	ok(not K.sameSide("guildboss", true, "tester", "player"), "the rules refuse a tester against a player")
+	ok(K.guildVisible(false, "Ashen Wolves", nil) and not K.guildVisible(false, "Tester Guild Alfa", "tester"), "a player sees no tester guild")
+	ok(not K.guildVisible(false, "Tester Guild Alfa", nil), "a player never sees a guild of unknown side that is named like a tester guild")
+	ok(K.guildVisible(true, "Tester Guild Alfa", "tester") and not K.guildVisible(true, "Ashen Wolves", "player"), "a tester sees only tester guilds")
+
+	-- the engine file
+	Chaos.guildConfig = Chaos.guildConfig or gcfg
+	ChaosTesters = {guildSide = function(gid, name) return gid == 71 and "tester" or "player" end}
+	ChaosTesters.guildVisible = function(viewer, gid, name)
+		return K.guildVisible(Chaos.isTester(viewer), name, ChaosTesters.guildSide(gid, name))
+	end
+	ChaosGuild.hallOf = function(gid) return (gid == 4 or gid == 71) and {slot = gid == 4 and 1 or 2, upgrades = {}} or nil end
+	ChaosGuild.inHall = function(pos) return pos.hall and (pos.hallOwner == 71 and 2 or 1) or nil, pos.hall and (pos.hallOwner or 4) or nil end
+	ChaosGuild.onlineMembers = function(gid)
+		local l = {}
+		for _, p in ipairs(members) do
+			if p.gid == gid then l[#l + 1] = p end
+		end
+		return l
+	end
+	ChaosGuild.guildOf = function(player) return player.gid, player.gname or "Ashen Wolves", player.rank end
+	local function hallPos(owner)
+		return {x = 9300, y = 9300, z = 7, hall = true, hallOwner = owner, sendMagicEffect = function() end}
+	end
+	local function tester(id, gid)
+		local t = member(id, 3, 300, 0)
+		t.gid, t.gname = gid, "Tester Guild Alfa"
+		t.pos = hallPos(gid)
+		function t:getStorageValue(k) return k == Chaos.storage.tester and 1 or -1 end
+		return t
+	end
+	local tl = tester(31, 71)
+	local weekK = B.weekKey(cfg, NOW)
+	local tkey = "71:" .. weekK
+	-- a tester fuels its stone with one Orb of Upheaval
+	tl.items[29856] = 1
+	NOW = NOW + 2
+	local okd, text = GB.handle(tl, "bossItem", {key = "upheaval"})
+	ok(okd == true, "a tester donates an Orb of Upheaval: " .. tostring(text))
+	eq(WEEK[tkey].fuel, 5, "5 embers in the tester stone")
+	local pr = GB.probe(tl)
+	ok(pr.on and pr.hasHall and pr.inHall and pr.need == 5 and pr.fuel == 5 and pr.canSummon and pr.side == "tester", "the probe: hall, fuel, the small need, side")
+	ok(pr.stone and pr.stone.z == 7, "the probe names the stone")
+	ok(not pr.inside and pr.guide == nil, "outside: no run, no guide")
+	-- the switch off: refused
+	setMode("off")
+	NOW = NOW + 2
+	local oks, why = GB.handle(tl, "bossSummon", {})
+	ok(oks == false and why:find("Closed test mode is off", 1, true), "switch off: the summon is refused (" .. tostring(why) .. ")")
+	eq(WEEK[tkey].fuel, 5, "...and the stone keeps its embers")
+	setMode("on")
+	-- players first: the arenas the players need
+	local fake = {}
+	for i = 1, cfg.limits.maxRuns - cfg.tester.reserve do
+		GB.runs[100 + i] = {players = {}}
+		fake[#fake + 1] = 100 + i
+	end
+	NOW = NOW + 2
+	oks, why = GB.handle(tl, "bossSummon", {})
+	ok(oks == false and why:find("kept for the players", 1, true), "arenas kept for the players: refused (" .. tostring(why) .. ")")
+	eq(WEEK[tkey].fuel, 5, "...the stone keeps its embers")
+	for _, i in ipairs(fake) do GB.runs[i] = nil end
+	-- the summon
+	NOW = NOW + 2
+	oks, why = GB.handle(tl, "bossSummon", {})
+	ok(oks == true, "the tester guild summons: " .. tostring(why))
+	eq(WEEK[tkey].fuel, 0, "the small need left the stone")
+	local run = GB.guildRun[71]
+	ok(run and run.tester == true, "the run is marked as the testers'")
+	pr = GB.probe(tl)
+	ok(pr.inside and pr.run.tester and pr.run.state == "running" and pr.run.boss == "waiting", "inside: the probe names the run")
+	eq(pr.guide.mode, "wait", "the boss is coming: wait")
+	local bossAt = {x = 9340, y = 9300, z = 7}
+	Monster = function(id)
+		if id ~= 900 then return nil end
+		return {getPosition = function() return bossAt end, getHealth = function() return 400 end, getMaxHealth = function() return 1000 end}
+	end
+	run.boss, run.bossId = "alive", 900
+	tl.pos = {x = run.L.entry.x, y = run.L.entry.y, z = run.L.entry.z, sendMagicEffect = function() end}
+	bossAt = {x = tl.pos.x + 30, y = tl.pos.y, z = tl.pos.z}
+	pr = GB.probe(tl)
+	ok(pr.run.bossHp == 40 and pr.run.bossPos.x == bossAt.x, "the boss's health and place")
+	eq(pr.guide.mode, "walk", "far from the boss: walk")
+	tl.pos = {x = bossAt.x - 4, y = bossAt.y, z = bossAt.z, sendMagicEffect = function() end}
+	eq(GB.probe(tl).guide.mode, "fight", "near the boss: fight")
+	-- the switch goes off in the middle: the testers' run ends
+	setMode("off")
+	GB._tick(run.slot, run.id)
+	ok(run.ended and run.state == "failed", "the switch went off: the testers' run failed and ended")
+	setMode("on")
+	eq(GB.guildRun[71], nil, "the arena is free")
+	-- the close: a testers' run only, never a player's
+	WEEK[tkey].fuel, WEEK[tkey].attempts = 5, 0
+	tl.pos = hallPos(71)
+	NOW = NOW + 2
+	oks = GB.handle(tl, "bossSummon", {})
+	ok(oks == true, "a second summon")
+	local second = GB.guildRun[71]
+	ok(GB.testerClose(tl) == true and second.ended, "the close ends the testers' run")
+	eq(GB.testerClose(tl), false, "nothing left to close")
+	NOW = NOW + 2
+	local pkey = "4:" .. weekK
+	WEEK[pkey] = WEEK[pkey] or {fuel = 0, attempts = 0, killed_at = 0, best_seconds = 0, damage = 0, players = 0}
+	WEEK[pkey].fuel, WEEK[pkey].attempts, WEEK[pkey].killed_at = 800, 0, 0
+	oks, why = GB.handle(leader, "bossSummon", {})
+	ok(oks == true, "a player guild summons: " .. tostring(why))
+	ok(GB.guildRun[4].tester == nil or GB.guildRun[4].tester == false, "its run is a player's run")
+	eq(GB.testerClose(leader), false, "a player's run is never closed by the testers' close")
+	GB._fail(GB.guildRun[4], "Test.")
+	-- the board: each viewer sees its own side
+	local selectBefore = Chaos.select
+	Chaos.select = function(q)
+		if q:find("JOIN `guilds` g ON g.`id` = w.`guild_id`", 1, true) then
+			return {{id = 4, name = "Ashen Wolves", killed_at = 0, best_seconds = 0, damage = 100, players = 1},
+				{id = 71, name = "Tester Guild Alfa", killed_at = 5, best_seconds = 60, damage = 999, players = 1}}
+		end
+		return selectBefore(q)
+	end
+	local all = GB.board()
+	eq(#all, 2, "no viewer: every guild (the staff)")
+	local forPlayer = GB.board(nil, leader)
+	ok(#forPlayer == 1 and forPlayer[1].name == "Ashen Wolves" and forPlayer[1].rank == 1, "a player sees only player guilds, ranked on their own")
+	local forTester = GB.board(nil, tl)
+	ok(#forTester == 1 and forTester[1].name == "Tester Guild Alfa" and forTester[1].rank == 1, "a tester sees only tester guilds")
+	pr = GB.probe(tl)
+	ok(pr.board and #pr.board == 1 and pr.board[1] == "Tester Guild Alfa", "the probe's board names what the tester sees")
+	Chaos.select = selectBefore
+end
+
 print(string.format("guildboss_test: %d checks OK", checks))

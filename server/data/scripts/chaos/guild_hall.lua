@@ -596,14 +596,17 @@ function G.buyHall(player, from)
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "guild.money", 1000) then
 		return false, "Slow down."
 	end
-	local blocked = G.seasonBlocked(player)
+	-- closed test mode (O592): the leader of a tester guild (G.guildOf gives a tester only its tester guild, and only with the
+	-- switch on) gets the hall for nothing, at any guild level: the bots cannot earn 5,000,000 gold, and the guild boss needs a hall
+	local free = gid ~= nil and Chaos.isTester(player)
+	local blocked = not free and G.seasonBlocked(player)
 	if blocked then
 		return false, blocked
 	end
 	local r = gid and G.row(gid) or {}
 	local money = Chaos.totalMoney(player)
 	local err = C.hallBuyError({guildId = gid, rank = rank, level = gid and G.levelOf(gid) or 0, hasHall = gid and G.hallOf(gid) ~= nil,
-		from = from, bank = r.bank or 0, money = money}, cfg)
+		from = from, bank = r.bank or 0, money = money, free = free}, cfg)
 	if err then
 		return false, err
 	end
@@ -624,7 +627,9 @@ function G.buyHall(player, from)
 	end
 	-- pay
 	local paid
-	if from == "bank" then
+	if free then
+		paid = true
+	elseif from == "bank" then
 		paid = G.spend(gid, H.cost)
 	else
 		paid = G.payFromPlayer(player, H.cost)
@@ -633,25 +638,32 @@ function G.buyHall(player, from)
 		return false, "Not enough gold."
 	end
 	local t = now()
-	local period = H.rent.periodDays * 86400
+	local period = (free and 3650 or H.rent.periodDays) * 86400 -- a tester hall never falls due
 	local n = G.exec(string.format("INSERT IGNORE INTO `%s` (`guild_id`, `slot`, `bought_at`, `paid_until`) VALUES (%d, %d, %d, %d)",
 		T.hall, gid, slot, t, t + period))
 	if n ~= 1 then
-		if from == "bank" then
+		if not free and from == "bank" then
 			G.credit(gid, H.cost)
-		else
+		elseif not free then
 			player:setBankBalance(player:getBankBalance() + H.cost)
 		end
-		G.logRow(gid, player, "refund", H.cost, 0, 0, "hall purchase failed")
+		G.logRow(gid, player, "refund", free and 0 or H.cost, 0, 0, "hall purchase failed")
 		return false, "The purchase failed; the gold was returned."
 	end
 	G.halls[gid] = {slot = slot, boughtAt = t, paidUntil = t + period, upgrades = {}}
 	G.built[slot] = nil
-	G.logRow(gid, player, "hall", H.cost, 0, slot, string.format("bought the guild hall (slot %d, %s)", slot,
-		from == "bank" and "guild bank" or "own gold"))
+	if free then
+		G.testerHalls = G.testerHalls or {}
+		G.testerHalls[gid] = slot
+	end
+	G.logRow(gid, player, "hall", free and 0 or H.cost, 0, slot, string.format("bought the guild hall (slot %d, %s)", slot,
+		free and "free for the testers" or (from == "bank" and "guild bank" or "own gold")))
 	G.furnish(gid)
 	G.tellGuild(gid, string.format("%s bought a guild hall for %s! Enter it through the portal next to the temple.",
 		player:getName(), G.nameOf(gid)))
+	if free then
+		return true, "Your guild owns a guild hall now (free for the test guilds)."
+	end
 	return true, string.format("Your guild owns a guild hall now. The first week's rent is paid; next rent: %s gold.",
 		C.money(C.rentAmount({}, cfg)))
 end
@@ -765,6 +777,13 @@ function G.hallThink(noPay)
 		G.loadHalls()
 	end
 	G.placePortals()
+	-- a tester hall whose guild the clean-up (tester_closed.py) removed: dropped here, its slot is free again (O592)
+	for gid, slot in pairs(G.testerHalls or {}) do
+		local rows = Chaos.select(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `guild_id` = %d", T.hall, gid), {{"n", "n"}})
+		if rows[1] and rows[1].n == 0 then
+			G.testerHalls[gid], G.halls[gid], G.built[slot] = nil, nil, nil
+		end
+	end
 	for gid, h in pairs(G.halls) do
 		local state = C.rentState(h.paidUntil, now(), cfg)
 		if state ~= "paid" and not noPay then

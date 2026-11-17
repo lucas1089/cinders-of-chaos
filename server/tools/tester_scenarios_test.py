@@ -160,6 +160,7 @@ for _ in range(200):
             ok(not st[1].startswith('rift'), 'a rift key is no place to walk to (the rift scenario keeps its enter): %r' % (st,))
         if st[0] == 'say' and st[1].startswith('!tester enter '):
             ok(st[1].startswith('!tester enter rift'), 'the only teleport left in a scenario is the rift key: %r' % (st,))
+            ok(steps[steps.index(st) - 1] == ('walk', 'temple'), 'the bot walks to the temple before the rift key (O592): %r' % (steps,))
         if st[0] == 'op':
             ok(st[1] != 200, 'never the out-of-scope opcode')
         if st[0] in ('say', 'npc'):
@@ -221,6 +222,21 @@ wb.helper['enter'] = {'kind': 'bank', 'pos': {'x': 1, 'y': 2, 'z': 7}, 'fallback
 S.run_step(wb, ('check', 'place:bank'), online, send, said.append, used.append)
 eq((cw['ok'], cw['walk'], cw['help']), (2, 1, 1), 'a teleport fallback counts ok and help')
 eq(cw['actions'], {'teleport: enter bank: no path': 1}, 'and its reason is named in the actions')
+# O592: the rift scenario walks to the temple first; the rift key's answer says whether the helper had to put the bot there
+rb = Bot('Tester Rft', 0x1000000a)
+rb.helper['enter'] = {'kind': 'rift', 'tier': 2, 'keyClientId': 1, 'teleported': False}
+S.run_step(rb, ('check', 'place:rift'), online, send, said.append, used.append)
+cr = rb.results.d['coverage']['place:rift']
+eq((cr['ok'], cr['walk'], cr.get('help')), (1, 1, 0), 'a rift key given in the temple the bot walked to counts as a walk')
+rb.helper['enter'] = {'kind': 'rift', 'tier': 2, 'keyClientId': 1, 'teleported': True}
+S.run_step(rb, ('check', 'place:rift'), online, send, said.append, used.append)
+eq((cr['ok'], cr['walk'], cr['help']), (2, 1, 1), 'a rift key given after the helper put the bot in the temple counts as help')
+ok('teleport: enter rift: the bot was not in a protection zone' in cr['actions'], 'and the reason is named')
+rb.helper['enter'] = {'kind': 'rift', 'tier': 2, 'keyClientId': 1, 'teleported': False}
+rb.helper['walk'] = {'fallback': 'enter temple: no path'}
+S.run_step(rb, ('check', 'place:rift'), online, send, said.append, used.append)
+eq((cr['ok'], cr['walk'], cr['help']), (3, 1, 2), 'a walk to the temple that fell back to the helper is help, whatever the key answer says')
+ok(cr['actions'].get('teleport: enter temple: no path') == 1 and 'walk' not in rb.helper, 'the walk fallback is named and used once')
 wsys = dict(syn)
 mw = TS.merge(wsys, wb.results.d['coverage'], TC.parse_log([]))
 eq((mw['place:bank']['help'], mw['place:bank']['ans']), (1, 1), 'the report row: one helper shortcut, one walked arrival (ANS)')

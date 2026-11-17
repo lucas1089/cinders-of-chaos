@@ -738,6 +738,14 @@ class CheckIO(KeyIO):
             self.bot.conn.send(TC.use_packet((0xFFFF, 3, 0), int(client_id)))
             await self.bot.conn.w.drain()
 
+    async def use_item(self, client_id):
+        """uses an item the character carries by its client id, as a hotkey does (0x82 with the position 0xFFFF: a rift key, O592)"""
+        if self.alive() and client_id:
+            self.bot.conn.send(TC.use_packet((0xFFFF, 0, 0), int(client_id)))
+            await self.bot.conn.w.drain()
+            return True
+        return False
+
     async def use_with(self, from_slot, from_sprite, to_slot, to_sprite):
         """use the backpack item in from_slot on the one in to_slot (a gem on a piece of gear)"""
         if self.alive():
@@ -1713,10 +1721,13 @@ class TesterBot(LT.Bot):
             return False
         if why == 'foot':
             self.helper['enter'] = {'walked': True, 'kind': args.split(' ', 1)[0]}
+            self.helper['walk'] = {'foot': True}
             return True
         r = await self.helper_says('enter ' + args, 'enter', 8.0)
         if isinstance(r, dict) and not r.get('err'):
             r['fallback'] = 'enter %s: %s' % (args, why)
+        # a later step (the rift key, O592) replaces the answer in helper['enter']: the walk's own outcome is kept for it
+        self.helper['walk'] = {'fallback': 'enter %s: %s' % (args, why)}
         return True
 
     async def do_keytest(self, clock):

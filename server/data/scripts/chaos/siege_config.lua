@@ -83,5 +83,12 @@ return {
 	-- the login-screen calendar and !events get a "Guild Siege" day (events_schedule.lua)
 	calendar = {colorlight = "#c0392b", colordark = "#5e1a12"},
 
+	-- the testers' own siege (O592, closed test mode, server/README.md "The siege and the guild boss in closed mode (O592)"): the bots of the
+	-- two tester guilds play it among themselves, short. Started only by the TEST ONLY helper (`!tester siege start`), never by the weekly
+	-- schedule, only with the switch on, never while a player siege runs, is signed up for or is due within startMargin seconds (the first
+	-- warning is 60 minutes before the start, so the margin is longer than that and the testers' whole siege). Never announced, never a
+	-- results row, leaderboard entry, champion title or buff; the rewards are the testers' own.
+	tester = {gatherSeconds = 25, matchSeconds = 150, exitDelaySeconds = 4, minPresenceSeconds = 15, startMargin = 6000},
+
 	tables = {signups = "chaos_siege_signups", results = "chaos_siege_results"} -- server/sql/chaos_siege.sql
 }

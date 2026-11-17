@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Closed test mode of the tester bots (O582; server/README.md "Closed test mode").
 
-On the test server the bots play arena, battleground, the Marches (PvP), guild, guild war, market, bazaar and the raid only among
+On the test server the bots play arena, battleground, the Marches (PvP), guild, guild war, market, bazaar, the raid, the dungeons, the
+siege and the guild boss only among
 themselves, switched on by `chaos-ctl.sh testers closed on` (the admin app's "Modo fechado (bots entre si)"). The switch is
 the file data/chaos_testers_closed in the server folder: the word "on" is on, anything else (or no file) is off. The server
 scripts read it (testers_core.lua K.closedOn) and check that every party of a closed-mode action is a tester.

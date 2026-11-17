@@ -149,6 +149,17 @@ function X.guildBlocked(player, gid, name)
 	return K.guildBlocked(isT, name, any, all, K.closedOn())
 end
 
+-- may this viewer see this guild on a board (O592)? a player never sees a tester guild, a tester only tester guilds. Fast for a
+-- player and a guild not named like a tester guild: no query
+function X.guildVisible(player, gid, name)
+	local isT = Chaos.isTester(player)
+	local prefixed = type(name) == "string" and name:sub(1, #K.GUILD_PREFIX) == K.GUILD_PREFIX
+	if not isT and not prefixed then
+		return true
+	end
+	return K.guildVisible(isT, name, X.guildSide(gid, name))
+end
+
 -- a war between guilds a and b (ids and names): ok, reason. Both sides known and equal, tester wars in closed mode only
 function X.warAllowed(gidA, nameA, gidB, nameB)
 	return K.sameSide("guildwar", K.closedOn(), X.guildSide(gidA, nameA), X.guildSide(gidB, nameB))
