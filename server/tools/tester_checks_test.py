@@ -3669,5 +3669,618 @@ class RiftWalk(unittest.TestCase):
         self.assertEqual(io.w.closed, 1)
         self.assertEqual(io.moves[-1], 'hunt')
 
+class SoloWorld:
+    """a tower or a descent on one lane (y = 5): the temple at x 92, the bot hunting at x 60. `tower | descent state / path / close` and
+    `path temple`, `enter temple` as the helper answers them; the window's requests (`enter`, `start`, `pick`, `ready`, `skip`) come through
+    SoloIO.request. Looks advance the world: a floor or room starts, monsters die while the bot fights in reach, a cleared floor pays gold."""
+    TEMPLE = 92
+    FIGHT = 5
+
+    def __init__(self, kind, level=900, pay='free', sigil_ok=True, no_path=False, never_open=False, never_kill=False, mixed=False, bank_stuck=False,
+                 free=16, can_enter=True, inside=False, err=None, pz=True, start_text=None, stay_open=False, blocked=(), die_after=None,
+                 puzzle=False, family='warrior', problem=None, boss_fall=True):
+        self.kind, self.level, self.pay, self.sigil_ok, self.no_path, self.never_open = kind, level, pay, sigil_ok, no_path, never_open
+        self.never_kill, self.mixed, self.bank_stuck, self.free, self.can_enter, self.err, self.pz = never_kill, mixed, bank_stuck, free, can_enter, err, pz
+        self.start_text, self.stay_open, self.blocked, self.die_after = start_text, stay_open, set(blocked), die_after
+        self.pos = (60, 5)
+        self.inside, self.floor, self.cleared, self.bank = inside, 0, 0, 1000
+        self.monsters, self.wait, self.state, self.offer = [], 0, 'fight', None
+        self.closed, self.teleports, self.skips, self.picks, self.readies, self.sigils, self.starts, self.looks = 0, 0, 0, 0, 0, 0, 0, 0
+        self.kinds = ['combat', 'shrine', 'combat', 'combat']
+        self.ready = False
+        self.depth = 0
+        self.puzzle, self.family, self.problem, self.boss_fall = puzzle, family, problem, boss_fall
+        self.stage, self.boss_hp, self.killed, self.won = 'wave', 100, 0, False
+
+    # ---- the screen
+    def facts(self):
+        out = {'inside': self.inside, 'level': self.level, 'minLevel': 100, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'free': self.free,
+               'reserve': 4 if self.kind == 'tower' else 2, 'bank': self.bank}
+        if self.kind == 'tower':
+            out.update(canEnter=self.can_enter, floorGold=50, inArena=self.inside)
+        elif self.kind == 'trial':
+            out.update(pz=self.pz, family=self.family, familyName='The Iron Gauntlet', tier=1, cleared=0, maxTier=3, minLevel=100, problem=self.problem,
+                       puzzle=True if self.puzzle else None, kinds=['wave', 'wave', 'boss'])
+        else:
+            out.update(pz=self.pz, pay=self.pay, sigils=self.sigils)
+        if self.inside:
+            out['run'] = self.run()
+            out['guide'] = self.guide()
+        return out
+
+    def run(self):
+        players = 2 if self.mixed else 1
+        if self.kind == 'trial':
+            return {'tier': 1, 'phase': 'fight', 'stage': 'seals' if self.puzzle else self.stage, 'stageIdx': 1 if self.stage == 'wave' else 3, 'stages': 3,
+                    'killed': self.killed, 'total': 8, 'lives': 3, 'livesMax': 3, 'left': 400, 'monsters': len(self.alive()),
+                    'boss': 'alive' if self.stage == 'boss' else 'waiting', 'bossHp': self.boss_hp if self.stage == 'boss' else None}
+        if self.kind == 'tower':
+            return {'floor': self.floor, 'cleared': self.cleared, 'remaining': len(self.alive()), 'monsters': len(self.alive()), 'waiting': self.wait > 0 or self.floor == 0,
+                    'nextIn': self.wait, 'canSkip': self.wait > 0, 'players': players, 'testers': 1}
+        return {'room': self.floor, 'rooms': 4, 'kind': self.kinds[max(0, self.floor - 1)], 'state': self.state, 'depth': self.depth, 'monsters': len(self.alive()),
+                'players': players, 'testers': 1, 'offer': {'id': 7, 'cards': 3} if self.offer else None, 'ready': self.ready}
+
+    def alive(self):
+        return [m for m in self.monsters if m['hp'] > 0]
+
+    def guide(self):
+        if self.kind == 'trial':
+            if self.puzzle:
+                return {'mode': 'wait', 'area': 'puzzle', 'why': 'a seals stage'}
+            if not self.alive():
+                return {'mode': 'wait', 'why': 'no monster'}
+        if self.kind == 'tower':
+            if self.wait > 0 or self.floor == 0:
+                return {'mode': 'wait', 'skip': True if self.wait > 0 else None, 'why': 'between floors'}
+        else:
+            if self.offer:
+                return {'mode': 'pick', 'offer': 7, 'card': 1}
+            if self.state == 'rest':
+                return {'mode': 'wait', 'why': 'waiting for the party'} if self.ready else {'mode': 'ready', 'why': 'a room of rest'}
+            if self.state != 'fight':
+                return {'mode': 'wait', 'why': 'the door'}
+        alive = self.alive()
+        if not alive:
+            return {'mode': 'wait', 'why': 'no monster'}
+        goal = min(alive, key=lambda m: abs(m['x'] - self.pos[0]))
+        near = abs(goal['x'] - self.pos[0]) <= self.FIGHT
+        return {'mode': 'fight' if near else 'walk', 'goal': {'x': goal['x'], 'y': 5, 'z': 7}, 'reach': [1, self.FIGHT],
+                'area': 'boss' if goal.get('boss') else 'pack', 'why': 'test'}
+
+    def spawn(self):
+        self.monsters = [{'x': self.pos[0] + 8, 'hp': 1.0}, {'x': self.pos[0] + 14, 'hp': 1.0}]
+
+    def tick_trial(self):
+        if self.floor == 0:
+            self.floor = 1
+            self.spawn()
+            return
+        g = self.guide()
+        if g['mode'] != 'fight' or self.never_kill:
+            return
+        x = g['goal']['x']
+        for m in self.monsters:
+            if m['x'] == x and m['hp'] > 0:
+                m['hp'] -= 0.5
+                if m['hp'] <= 0:
+                    self.killed += 1
+        if not self.alive() and self.stage == 'wave':
+            self.stage = 'boss'
+            self.monsters = [{'x': self.pos[0] + 6, 'hp': 1.0, 'boss': True}]
+        elif self.stage == 'boss' and self.boss_fall:
+            self.boss_hp = max(0, int(self.monsters[0]['hp'] * 100))
+            if not self.alive():
+                self.inside = False
+
+    def tick(self):
+        if not self.inside:
+            return
+        self.looks += 1
+        if self.die_after is not None and self.looks > self.die_after:
+            self.inside = False
+            return
+        if self.kind == 'trial':
+            self.tick_trial()
+            return
+        if self.kind == 'tower':
+            if self.floor == 0 or self.wait > 0:
+                self.wait = max(0, self.wait - 1)
+                if self.wait == 0:
+                    self.floor += 1
+                    self.spawn()
+                return
+        else:
+            if self.state == 'travel':
+                self.floor += 1
+                self.state = 'rest' if self.kinds[self.floor - 1] == 'shrine' else 'fight'
+                self.ready = False
+                if self.state == 'fight':
+                    self.spawn()
+                return
+            if self.state != 'fight':
+                return
+            if self.floor == 0:
+                self.floor = 1
+                self.spawn()
+                return
+        g = self.guide()
+        if g['mode'] != 'fight' or self.never_kill:
+            return
+        x = g['goal']['x']
+        for m in self.monsters:
+            if m['x'] == x and m['hp'] > 0:
+                m['hp'] -= 0.5
+        if not self.alive():
+            self.cleared += 1
+            if self.kind == 'tower':
+                if not self.bank_stuck:
+                    self.bank += 50 * self.cleared
+                self.wait = 3
+            else:
+                self.depth = self.floor
+                self.offer = True
+                self.state = 'choose'
+
+    def path_to(self, goal, reach):
+        x, _ = self.pos
+        if x < goal - reach:
+            return [1] * (goal - reach - x)
+        if x > goal + reach:
+            return [3] * (x - goal - reach)
+        return []
+
+    def answer(self, command):
+        kind = self.kind
+        if command == '%s state' % kind:
+            if self.err:
+                return {'err': self.err}
+            self.tick()
+            return self.facts()
+        if command == '%s path' % kind:
+            g = self.guide() if self.inside else None
+            if not g or g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal' if self.inside else 'not inside')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]), dist=abs(self.pos[0] - g['goal']['x']))
+        if command == '%s close' % kind:
+            was = self.inside
+            self.inside = False
+            self.closed += 1
+            return dict(self.facts(), closed=was)
+        if command == 'descent sigil':
+            self.sigils += 1
+            if self.sigil_ok:
+                self.pay = 'sigil'
+            return dict(self.facts(), given=self.sigil_ok, err=None if self.sigil_ok else 'the sigil could not be made')
+        if command == 'path temple':
+            if self.no_path:
+                return {'err': 'no path', 'dest': {'x': self.TEMPLE, 'y': 5, 'z': 7}}
+            dist = abs(self.pos[0] - self.TEMPLE)
+            base = {'pos': {'x': self.pos[0], 'y': 5, 'z': 7}, 'dest': {'x': self.TEMPLE, 'y': 5, 'z': 7}, 'dist': dist}
+            return dict(base, here=True, path=[]) if dist <= 1 else dict(base, path=self.path_to(self.TEMPLE, 1))
+        if command == 'enter temple':
+            self.teleports += 1
+            self.pos = (self.TEMPLE - 1, 5)
+            return {'kind': 'temple', 'pos': {'x': self.pos[0], 'y': 5, 'z': 7}}
+        return None
+
+    def open(self):
+        if self.never_open or self.inside:
+            return None
+        self.starts += 1
+        self.inside, self.floor, self.state = True, 0, 'fight'
+        self.pos = (30, 5)
+        return True
+
+    def step(self, dx, dy):
+        nx = self.pos[0] + dx
+        if (nx, self.pos[1] + dy) in self.blocked or not (-1 <= nx <= 200):
+            return
+        self.pos = (nx, self.pos[1] + dy)
+
+
+class SoloIO(FakeIO):
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted, self.sent = world, [], [], 0, []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        if place == 'hunt':
+            self.w.pos = (60, 5)
+        return True
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.sent.append((opname, action, data))
+        w = self.w
+        if (opname, action) == ('passivetree', 'trialEnter'):
+            if w.start_text:
+                return {'action': 'sendMessage', 'data': {'message': w.start_text}}
+            w.open()
+            return {'action': 'trialState'}
+        if (opname, action) in (('infinitytower', 'enter'), ('descent', 'start')):
+            if w.start_text:
+                return {'action': 'msg', 'data': {'text': w.start_text}}
+            w.open()
+            return {'action': 'state' if opname == 'infinitytower' else 'closeInfo'}
+        if (opname, action) == ('infinitytower', 'skip') and w.wait > 0:
+            w.wait, w.skips = 1, w.skips + 1
+            return {'action': 'state'}
+        if (opname, action) == ('descent', 'pick'):
+            w.picks += 1
+            if not w.stay_open and data.get('offer') == 7:
+                w.offer, w.state = None, 'travel'
+            return {'action': 'closeOffer'}
+        if (opname, action) == ('descent', 'ready'):
+            w.readies += 1
+            w.ready, w.state = True, 'travel'
+            return {'action': 'hud'}
+        return None
+
+    async def step(self, dx, dy):
+        self.w.step(dx, dy)
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class SoloWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.TOWER_BUDGET, TX.DESCENT_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK, TX.SOLO_ENTER_WAIT)
+
+    def tearDown(self):
+        TX.TOWER_BUDGET, TX.DESCENT_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK, TX.SOLO_ENTER_WAIT = self.keep
+
+    def tower(self, **kw):
+        w = SoloWorld('tower', **kw)
+        io = SoloIO(w)
+        return run(TX.check_tower_walk(io, 'Tester Aaa', 'Warrior', w.level)), io
+
+    def descent(self, **kw):
+        w = SoloWorld('descent', **kw)
+        io = SoloIO(w)
+        return run(TX.check_descent_walk(io, 'Tester Aaa', 'Warrior', w.level)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 300, 'came': 'foot', 'steps': 20, 'secs': 60}
+        self.assertEqual(TX.tower_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.tower_walk_verdict(dict(base, cleared=2, skips=1))[0], TX.PASS)
+        self.assertIn('called 1 time', TX.tower_walk_verdict(dict(base, cleared=2, skips=1))[1])
+        self.assertEqual(TX.tower_walk_verdict(dict(base, cleared=0, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.tower_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.tower_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.tower_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('enter temple (no path)', TX.tower_walk_verdict(dict(base, cleared=1, fallbacks=['enter temple (no path)']))[1])
+        self.assertEqual(TX.descent_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.descent_walk_verdict(dict(base, depth=2, picks=2, rests=1))[0], TX.PASS)
+        self.assertIn('2 boon choice(s) answered', TX.descent_walk_verdict(dict(base, depth=2, picks=2, rests=1))[1])
+        self.assertEqual(TX.descent_walk_verdict(dict(base, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.descent_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.descent_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        for k in ('tower_walk', 'descent_walk'):
+            self.assertIn(k, TX.KEYS)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertLess(TX.KEYS.index('tower_walk'), TX.KEYS.index('rift_walk'))
+
+    def test_the_tower_is_walked_and_two_floors_are_a_pass(self):
+        r, io = self.tower()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        self.assertEqual(io.w.starts, 1)
+        self.assertGreaterEqual(io.w.cleared, 2)
+        self.assertGreaterEqual(io.w.skips, 1, 'the next floor was called between the floors')
+        self.assertIn(('infinitytower', 'enter', {}), io.sent)
+        self.assertFalse(io.w.inside)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertGreater(io.looted, 0)
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('tower path'))
+        self.assertIn('2 floor(s) cleared', r.detail)
+
+    def test_no_path_to_the_temple_is_a_counted_fallback(self):
+        r, io = self.tower(no_path=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 1)
+        self.assertEqual(len(r.fallbacks), 1)
+        self.assertIn('enter temple', r.fallbacks[0])
+        self.assertIn('teleport in place of walking', r.detail)
+
+    def test_the_tower_skips(self):
+        r, _ = self.tower(err='no tower system')
+        self.assertEqual((r.status, 'no tower' in r.detail), (TX.SKIP, True))
+        r, _ = self.tower(level=50)
+        self.assertEqual((r.status, 'needs level 100' in r.detail), (TX.SKIP, True))
+        r, _ = self.tower(inside=True)
+        self.assertEqual((r.status, 'inside the Infinity Tower already' in r.detail), (TX.SKIP, True))
+        r, _ = self.tower(can_enter=False)
+        self.assertEqual((r.status, 'try cooldown' in r.detail), (TX.SKIP, True))
+        r, io = self.tower(free=4)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.starts, 0, 'the reserve: the bot does not even ask')
+        r, io = self.tower(never_open=True)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not take the bot in', r.detail)
+        self.assertEqual(io.moves[-1], 'hunt')
+        r, _ = self.tower(die_after=3)
+        self.assertEqual((r.status, 'fell before a floor' in r.detail), (TX.SKIP, True))
+        TX.SOLO_STUCK = 5.0
+        r, _ = self.tower(blocked={(x, y) for x in range(20, 60) for y in range(0, 12)})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('blocked', r.detail)
+
+    def test_the_tower_bugs(self):
+        r, io = self.tower(bank_stuck=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('bank rose by 0', r.detail)
+        self.assertIn('BUG tower_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closed, 1, 'the run is closed')
+        r, _ = self.tower(mixed=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a player is in the tower run of the testers', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.tower(never_kill=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('cleared no floor', r.detail)
+        self.assertFalse(io.w.inside)
+
+    def test_the_budget_ends_the_tower(self):
+        TX.TOWER_BUDGET = 6.0
+        r, io = self.tower(never_kill=True)
+        self.assertIn(r.status, (TX.SKIP, TX.PASS))
+        self.assertFalse(io.w.inside)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_the_descent_is_walked_boons_are_picked_and_rest_is_left(self):
+        r, io = self.descent()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 0)
+        self.assertEqual(io.w.sigils, 0, 'the free run pays: no sigil asked')
+        self.assertGreaterEqual(io.w.picks, 1)
+        self.assertEqual(io.w.readies, 1, 'the shrine room is left with Continue')
+        self.assertIn(('descent', 'start', {'weekly': False}), io.sent)
+        self.assertGreaterEqual(io.w.depth, 2)
+        self.assertFalse(io.w.inside)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('descent path'))
+        self.assertIn('boon choice(s) answered', r.detail)
+
+    def test_a_used_free_run_asks_for_a_sigil(self):
+        r, io = self.descent(pay=None)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.sigils, 1)
+        r, io = self.descent(pay=None, sigil_ok=False)
+        self.assertEqual((r.status, 'no free descent today' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.starts, 0)
+
+    def test_the_descent_skips(self):
+        r, _ = self.descent(err='no descent system')
+        self.assertEqual((r.status, 'no descent' in r.detail), (TX.SKIP, True))
+        r, _ = self.descent(level=50)
+        self.assertEqual((r.status, 'needs level 100' in r.detail), (TX.SKIP, True))
+        r, _ = self.descent(inside=True)
+        self.assertEqual((r.status, 'inside the Ember Descent already' in r.detail), (TX.SKIP, True))
+        r, io = self.descent(free=2)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        r, io = self.descent(pz=False)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('not in a protection zone', r.detail)
+        self.assertEqual(io.w.starts, 0)
+        r, io = self.descent(start_text='You are already in the Descent.')
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not start', r.detail)
+        self.assertIn('already in the Descent', r.detail)
+        r, _ = self.descent(die_after=3)
+        self.assertEqual((r.status, 'fell before a room' in r.detail), (TX.SKIP, True))
+
+    def trial(self, **kw):
+        w = SoloWorld('trial', **kw)
+        io = SoloIO(w)
+        return run(TX.check_trial_walk(io, 'Tester Aaa', 'Warrior', w.level)), io
+
+    def test_the_trial_verdict(self):
+        base = {'level': 300, 'came': 'foot', 'steps': 20, 'secs': 60, 'tier': 1, 'family': 'warrior'}
+        self.assertEqual(TX.trial_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.trial_walk_verdict(dict(base, killed=4, boss_seen=True, hp=60))[0], TX.PASS)
+        self.assertIn('the guardian at 60%', TX.trial_walk_verdict(dict(base, killed=4, boss_seen=True, hp=60))[1])
+        self.assertEqual(TX.trial_walk_verdict(dict(base, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.trial_walk_verdict(dict(base, puzzle='seals'))[0], TX.SKIP)
+        self.assertEqual(TX.trial_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.trial_walk_verdict(dict(base, died=True, lives=0))[0], TX.SKIP)
+        self.assertEqual(TX.trial_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('trial_walk', TX.KEYS)
+        self.assertNotIn('trial_walk', TX.CLOSED_KEYS)
+
+    def test_the_trial_is_walked_the_waves_and_the_guardian(self):
+        r, io = self.trial()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 0)
+        self.assertIn(('passivetree', 'trialEnter', {'tier': 1}), io.sent)
+        self.assertGreaterEqual(io.w.killed, 2)
+        self.assertFalse(io.w.inside)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('trial path'))
+        self.assertIn('tier 1 of warrior', r.detail)
+
+    def test_the_trial_skips(self):
+        r, io = self.trial(err='no trial system')
+        self.assertEqual((r.status, 'no trial' in r.detail), (TX.SKIP, True))
+        r, _ = self.trial(level=50)
+        self.assertEqual((r.status, 'needs level 100' in r.detail), (TX.SKIP, True))
+        r, _ = self.trial(inside=True)
+        self.assertEqual((r.status, 'inside the trial already' in r.detail), (TX.SKIP, True))
+        r, io = self.trial(puzzle=True, family='mystic')
+        self.assertEqual((r.status, 'puzzle' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.starts, 0, 'a puzzle trial is not even entered')
+        r, _ = self.trial(family=None)
+        self.assertEqual((r.status, 'has no trial' in r.detail), (TX.SKIP, True))
+        r, _ = self.trial(problem='The trial is still closed to you for 40 seconds.')
+        self.assertEqual((r.status, 'still closed' in r.detail), (TX.SKIP, True))
+        r, _ = self.trial(free=2)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        r, io = self.trial(pz=False)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertEqual(io.w.starts, 0)
+        r, io = self.trial(never_open=True)
+        self.assertEqual((r.status, 'did not open' in r.detail), (TX.SKIP, True))
+        r, _ = self.trial(die_after=3)
+        self.assertEqual((r.status, 'ended before a thrall died' in r.detail), (TX.SKIP, True))
+
+    def test_the_trial_bugs(self):
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.trial(never_kill=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('killed none', r.detail)
+        self.assertIn('BUG trial_walk', r.bug_line())
+        self.assertFalse(io.w.inside)
+
+    def test_the_descent_bugs(self):
+        r, io = self.descent(stay_open=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('stayed open', r.detail)
+        self.assertIn('BUG descent_walk', r.bug_line())
+        self.assertFalse(io.w.inside)
+        r, _ = self.descent(mixed=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a player is in the descent run of the testers', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.descent(never_kill=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('cleared no room', r.detail)
+        self.assertGreaterEqual(io.w.closed, 1)
+
+
+class HideoutIO(FakeIO):
+    """the hideout window of a mocked server: `open` / `get` answer the state, `enter` builds the room, `place` accepts a free tile that is not
+    reserved (and only the first `accept` tiles tried are refused when `refuse` is set), `remove`, `leave`"""
+
+    def __init__(self, level_text=None, refuse=False, lie_list=False, keep_on_remove=False, no_room=False, stuck_inside=False, owned=True,
+                 inside=False, silent=False):
+        super().__init__()
+        self.level_text, self.refuse, self.lie_list, self.keep_on_remove, self.no_room, self.stuck_inside = level_text, refuse, lie_list, keep_on_remove, no_room, stuck_inside
+        self.owned, self.silent = owned, silent
+        self.inside, self.placed, self.nid, self.tries, self.sent = inside, [], 0, 0, []
+        self.modes = []
+
+    def catalogue(self):
+        return [{'key': 'banner', 'name': 'Wall banner', 'layer': 'wall', 'owned': True, 'max': 2, 'placed': 0},
+                {'key': 'rug', 'name': 'Rug', 'layer': 'floor', 'owned': self.owned, 'max': 3, 'placed': len(self.placed)}]
+
+    def state(self):
+        return {'action': 'state', 'data': {'me': 5, 'inside': {'owner': 5, 'isOwner': True} if self.inside else None,
+                'layout': {'w': 9, 'h': 7, 'reserved': [[4, 3, 'altar'], [1, 1, 'door']], 'arrival': [4, 5]}, 'catalogue': self.catalogue(),
+                'hideout': {'count': len(self.placed) + (1 if self.lie_list else 0), 'max': 20},
+                'placed': [] if self.lie_list else [dict(p) for p in self.placed]}}
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.sent.append((action, data))
+        if self.silent:
+            return None
+        if self.level_text and action == 'open':
+            return {'action': 'result', 'data': {'ok': False, 'text': self.level_text}}
+        if action in ('open', 'get'):
+            return self.state()
+        if action == 'enter':
+            if not self.no_room:
+                self.inside = True
+            return self.state()
+        if action == 'place':
+            self.tries += 1
+            if self.refuse or (data['x'], data['y']) in ((4, 3), (4, 5), (1, 1)):
+                return {'action': 'result', 'data': {'ok': False, 'text': 'That tile is taken.'}}
+            self.nid += 1
+            self.placed.append({'id': self.nid, 'key': data['key'], 'x': data['x'], 'y': data['y'], 'r': 0})
+            return {'action': 'result', 'data': {'ok': True, 'text': 'Rug placed.'}}
+        if action == 'remove':
+            if not self.keep_on_remove:
+                self.placed = [p for p in self.placed if p['id'] != data['id']]
+            return {'action': 'result', 'data': {'ok': True, 'text': 'Removed.'}}
+        if action == 'leave':
+            if not self.stuck_inside:
+                self.inside = False
+            return self.state()
+        return None
+
+    async def go(self, place):
+        self.moves.append(place)
+        return True
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class HideoutCheck(unittest.TestCase):
+    def play(self, **kw):
+        io = HideoutIO(**kw)
+        return run(TX.check_hideout(io, 'Tester Aaa', 'Warrior', 900)), io
+
+    def test_the_candidates_and_the_pick(self):
+        layout = {'w': 9, 'h': 7, 'reserved': [[4, 3, 'altar']], 'arrival': [4, 5]}
+        cells = TX.hideout_candidates(layout)
+        self.assertEqual(len(cells), TX.HIDEOUT_TRIES)
+        self.assertNotIn((4, 3), cells)
+        self.assertNotIn((4, 5), cells)
+        self.assertEqual(TX.hideout_candidates({}), [])
+        self.assertTrue(all(1 <= x < 9 and 1 <= y < 7 for x, y in cells))
+        self.assertEqual(TX.hideout_pick([{'key': 'a', 'owned': False, 'max': 1}, {'key': 'w', 'owned': True, 'layer': 'wall', 'max': 1},
+                                          {'key': 'full', 'owned': True, 'layer': 'floor', 'max': 2, 'placed': 2},
+                                          {'key': 'rug', 'owned': True, 'layer': 'floor', 'max': 2, 'placed': 1}])['key'], 'rug')
+        self.assertIsNone(TX.hideout_pick([]))
+        self.assertIn('hideout', TX.KEYS)
+
+    def test_a_decoration_is_placed_listed_removed_and_the_room_left(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        actions = [a for a, _ in io.sent]
+        for want in ('open', 'enter', 'place', 'remove', 'leave'):
+            self.assertIn(want, actions)
+        self.assertLess(actions.index('enter'), actions.index('place'))
+        self.assertLess(actions.index('place'), actions.index('remove'))
+        self.assertFalse(io.inside)
+        self.assertEqual(io.placed, [])
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        placed = [d for a, d in io.sent if a == 'place'][0]
+        self.assertEqual(placed['key'], 'rug', 'the wall banner is no floor decoration')
+        self.assertGreaterEqual(io.tries, 1)
+
+    def test_skips(self):
+        r, _ = self.play(silent=True)
+        self.assertEqual((r.status, 'not installed' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(level_text='The hideout opens at level 50.')
+        self.assertEqual((r.status, 'opens at level' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(inside=True)
+        self.assertEqual((r.status, 'inside a hideout already' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(owned=False)
+        self.assertEqual((r.status, 'no decoration' in r.detail), (TX.SKIP, True))
+        r, io = self.play(no_room=True)
+        self.assertEqual((r.status, 'did not open' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_bugs(self):
+        r, io = self.play(refuse=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('no tile of the room took', r.detail)
+        self.assertIn('BUG hideout', r.bug_line())
+        self.assertFalse(io.inside, 'the bot is taken out again')
+        r, _ = self.play(lie_list=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('lists 0 such decoration', r.detail)
+        r, _ = self.play(keep_on_remove=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('was removed', r.detail)
+        r, io = self.play(stuck_inside=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('Leave did not bring the bot out', r.detail)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -17,6 +17,7 @@
 --   K.closedOn()                          the file, read at most every K.CLOSED_TTL seconds (K.reader / K.clock replace io / os.time)
 --   K.sideOf(flags)                       "tester" when every party is a tester, "player" when none is, nil when mixed or empty
 --   K.sameSide(system, closedOn, a, b)    ok, why: two sides of one match / war / trade, THE guard of every closed-mode pairing
+--   K.soloRefusal(flags, free, reserve)   O595: why a group may not take a hall of solo content ("mixed" | "reserve"), or nil
 --   K.joinRefusal(system, closedOn, flags) the reason a group of parties may not enter a queue, or nil
 --   K.guildSide(name, anyTester, allTester) the side of a guild: "tester" (name starts "Tester ", every member a tester),
 --                                         "player" (no tester member), nil (mixed, empty, or a tester in a player's guild)
@@ -215,8 +216,25 @@ end
 K.CLOSED_TEXT = {
 	["closed-off"] = "Closed test mode is off: the testers do not play this.",
 	mixed = "Testers and players are never mixed.",
-	apart = "Testers and players are never mixed."
+	apart = "Testers and players are never mixed.",
+	reserve = "The testers wait: the halls are kept for the players."
 }
+
+-- Solo content a tester plays beside the players (the Infinity Tower, the Ember Descent, O595): it needs no closed mode (nothing is shared
+-- with a player but the halls), so a tester may enter with the switch off. Two rules keep it apart: a group of a tester and a player is
+-- never made ("mixed"), and a tester takes a hall only while at least `reserve` halls stay free after it ("reserve": the halls are the
+-- players'). flags: a list of booleans (true = a tester), free: halls free now, reserve: halls kept for the players.
+-- Returns the reason (a key of K.CLOSED_TEXT) or nil.
+function K.soloRefusal(flags, free, reserve)
+	local side = K.sideOf(flags)
+	if side == nil then
+		return "mixed"
+	end
+	if side == "tester" and (tonumber(free) or 0) - 1 < (tonumber(reserve) or 0) then
+		return "reserve"
+	end
+	return nil
+end
 
 function K.guildSide(name, anyTester, allTester)
 	local prefixed = type(name) == "string" and name:sub(1, #K.GUILD_PREFIX) == K.GUILD_PREFIX

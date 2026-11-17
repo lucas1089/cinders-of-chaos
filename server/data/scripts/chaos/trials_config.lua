@@ -115,6 +115,8 @@ return {
 	-- warnings at warnAt seconds left; at most maxRuns trials at once (the grid's 8 chambers); a player who finds them all
 	-- in use waits in line and is told when one frees up. Solo: a logout ends the trial at once (no idle grace needed).
 	limits = {warnAt = {120, 60, 10}, maxRuns = 8, waitlist = true},
+	-- tester bots (O595): a trial of a tester is refused while fewer than `reserve` of the `limits.maxRuns` chambers would stay free
+	tester = {reserve = 2},
 
 	-- the NPC that tells the story and opens the same door as the tree window's Trials button
 	npc = {

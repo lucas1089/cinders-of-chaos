@@ -73,6 +73,7 @@ CHECK_SYSTEMS = {
     'dual_blades': 'check:dual_blades', 'waystone': 'waystone_atlas', 'reward_chest': 'check:reward_chest',
     'cursed_chest': 'cursedchest', 'auto_setup': 'check:auto_setup', 'spell_quest': 'spellquest',
     'craft_charms': 'charms', 'craft_cards': 'cards', 'rift_walk': 'rift', 'closed_siege': 'siege', 'closed_guildboss': 'guildboss',
+    'tower_walk': 'infinitytower', 'descent_walk': 'descent', 'trial_walk': 'trials', 'hideout': 'hideout',
 }
 EFFECT_LIST_MAX = 200  # failed effects kept in the run's results
 

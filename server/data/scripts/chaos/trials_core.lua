@@ -400,6 +400,33 @@ function M.tier(i)
 end
 
 -- level / previous tier / protection: why a character may not enter tier i (nil = may), in `lang` (English by default)
+-- What a person does next in a trial (the tester bots' `!tester trial`, O595). a = {inRun, phase ("countdown" | "fight"), stage (the kind of the
+-- stage now: "wave" | "seals" | "marks" | "boss"), pos, monster = {pos, boss} (the nearest on this floor), reach}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area = "pack" | "boss" | "puzzle"}
+-- A wave is its thralls, the last stage the guardian: the nearest one, in reach fight, else walk. The seals and the marks are puzzles the bots
+-- do not play (they wait there: the check asks before it enters)
+function M.guide(a)
+	if not a.inRun then
+		return {mode = "wait", why = "not inside a trial"}
+	end
+	if a.phase ~= "fight" then
+		return {mode = "wait", why = "the countdown runs"}
+	end
+	if a.stage == "seals" or a.stage == "marks" then
+		return {mode = "wait", area = "puzzle", why = "a " .. a.stage .. " stage: a puzzle the bots do not play"}
+	end
+	local m = a.monster
+	if not (m and m.pos and a.pos) then
+		return {mode = "wait", why = "no monster in sight"}
+	end
+	local reach = a.reach or 5
+	local area = m.boss and "boss" or "pack"
+	if m.pos.z == a.pos.z and math.max(math.abs(a.pos.x - m.pos.x), math.abs(a.pos.y - m.pos.y)) <= reach then
+		return {mode = "fight", goal = m.pos, area = area, why = "in reach of a monster"}
+	end
+	return {mode = "walk", goal = m.pos, reach = {1, reach}, area = area, why = "to the nearest monster"}
+end
+
 function M.enterProblem(tierIdx, level, tierCleared, now, cooldownUntil, lang)
 	local t = M.tier(tierIdx)
 	if not t then

@@ -1875,6 +1875,130 @@ do
 		and talks["!tester"].onSay(civ3, "!tester", "rift key #3") == true and #civ3.log.msgs == n3, "siege / guildboss / rift: a player's words go on and get no answer")
 end
 
+-- the Infinity Tower and the Ember Descent (O595): `!tester tower | descent ...`
+do
+	check(H.COMMANDS.tower and H.COMMANDS.descent, "tower and descent are registered commands (O595)")
+	check(H.parseCommand("tower path #3") == "tower" and H.parseCommand("descent sigil") == "descent", "tower / descent parse")
+	eq(H.parseTower(nil), "state", "tower: no word is state")
+	eq(H.parseTower("CLOSE"), "close", "tower: close (any case)")
+	local w, usage = H.parseTower("enter")
+	check(w == nil and usage:find("usage: tower", 1, true) and not usage:find("sigil", 1, true), "tower: enter is no helper word: the bot enters from the window")
+	eq(H.parseDescent("sigil"), "sigil", "descent: sigil")
+	w, usage = H.parseDescent("start")
+	check(w == nil and usage:find("usage: descent", 1, true) and usage:find("sigil", 1, true), "descent: start is no helper word: the bot starts from the window")
+	local ta = H.towerAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, canEnter = true, free = 12, reserve = 4, bank = 99,
+		floorGold = 50, inArena = true, run = {slot = 2, floor = 3, cleared = 2, remaining = 4, total = 6, monsters = 4, boss = false, waiting = false, nextIn = 0,
+		left = 7000, floorLeft = 200, players = 1, testers = 1, canSkip = false, nextBoss = true, junk = 1},
+		guide = {mode = "walk", goal = {x = 5, y = 5, z = 7, junk = 1}, reach = {1, 5}, why = ("w"):rep(90), area = "pack", junk = 1}, junk = 1})
+	check(ta.inside and ta.canEnter and ta.free == 12 and ta.bank == 99 and ta.junk == nil and ta.pos.junk == nil, "tower answer: the facts, cut down")
+	check(ta.run.floor == 3 and ta.run.testers == 1 and ta.run.nextBoss and ta.run.junk == nil, "tower answer: the run")
+	check(ta.guide.mode == "walk" and ta.guide.reach[2] == 5 and #ta.guide.why == 60 and ta.guide.goal.junk == nil and ta.guide.junk == nil, "tower answer: the guide")
+	check(H.towerAnswer(nil).inside == false and H.towerAnswer(nil).run == nil, "tower answer: nothing known")
+	local da = H.descentAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7}, pz = false, pay = "sigil", payWhy = ("y"):rep(120), sigils = 1,
+		free = 6, reserve = 2, run = {id = 4, room = 2, rooms = 10, kind = "combat", state = "choose", depth = 1, monsters = 0, left = 500, players = 1, testers = 1,
+		embers = 5, offer = {id = 9, cards = 3, curse = true, left = 30, junk = 1}, boss = {pos = {x = 3, y = 3, z = 7, junk = 1}, hp = 40}, ready = true, junk = 1},
+		guide = {mode = "pick", offer = 9, card = 1}, junk = 1})
+	check(da.pay == "sigil" and #da.payWhy == 90 and da.sigils == 1 and da.junk == nil, "descent answer: how it is paid, cut down")
+	check(da.run.offer.id == 9 and da.run.offer.cards == 3 and da.run.offer.junk == nil and da.run.boss.hp == 40 and da.run.boss.pos.junk == nil and da.run.junk == nil,
+		"descent answer: the choice and the boss")
+	check(da.guide.mode == "pick" and da.guide.offer == 9 and da.guide.card == 1, "descent answer: the guide asks the pick")
+	check(H.descentAnswer(nil).inside == false, "descent answer: nothing known")
+
+	local last = function(p) return p.log.msgs[#p.log.msgs] end
+	local t9 = creature(268435530, "Tester Abz", {store = {[ST] = 1}})
+	local realTR, realD = ChaosTowerRun, ChaosDescent
+	local closes, sigils = 0, 0
+	ChaosTowerRun = {probe = function(p)
+		if p.inTower then
+			return {inside = true, level = 300, minLevel = 100, pos = p:getPosition(), canEnter = true, run = {floor = 2, remaining = 3, players = 1, testers = 1},
+				guide = {mode = "walk", goal = {x = 90, y = 50, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, minLevel = 100, pos = p:getPosition(), canEnter = true, free = 16, reserve = 4}
+	end, testerClose = function() closes = closes + 1 return true end}
+	ChaosDescent = {probe = function(p)
+		if p.inDescent then
+			return {inside = true, level = 300, pos = p:getPosition(), run = {room = 1, rooms = 9, state = "fight"},
+				guide = {mode = "walk", goal = {x = 40, y = 40, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, pos = p:getPosition(), pz = true, pay = sigils > 0 and "sigil" or "free", sigils = sigils}
+	end, testerClose = function() closes = closes + 1 return true end, testerSigil = function() sigils = sigils + 1 return true end}
+	t9.pos = {x = 60, y = 60, z = 7}
+	t9.getPathTo = function(self, pos, minD, maxD)
+		t9.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {2, 2, 3}
+	end
+	talks["!tester"].onSay(t9, "!tester", "tower #130")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"free":16', 1, true) and last(t9):find('"seq":130', 1, true), "tower state: outside, the halls and the number")
+	talks["!tester"].onSay(t9, "!tester", "tower path #131")
+	check(last(t9):find("not inside the tower", 1, true), "tower path outside: the reason")
+	t9.inTower = true
+	talks["!tester"].onSay(t9, "!tester", "tower path #132")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 90 and t9.pathAsked.minD == 1 and t9.pathAsked.maxD == 5, "tower path: on foot to the monster, within reach")
+	talks["!tester"].onSay(t9, "!tester", "tower close #133")
+	check(closes == 1 and last(t9):find('"closed":true', 1, true), "tower close: the bot's own run")
+	talks["!tester"].onSay(t9, "!tester", "tower bogus #134")
+	check(last(t9):find("usage: tower", 1, true), "tower: an unknown word is the usage")
+	t9.inTower = nil
+	talks["!tester"].onSay(t9, "!tester", "descent #140")
+	check(last(t9):find('"pay":"free"', 1, true) and last(t9):find('"pz":true', 1, true), "descent state: how a run is paid")
+	talks["!tester"].onSay(t9, "!tester", "descent sigil #141")
+	check(sigils == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"pay":"sigil"', 1, true), "descent sigil: given, and the next run is paid with it")
+	t9.inDescent = true
+	talks["!tester"].onSay(t9, "!tester", "descent sigil #142")
+	check(sigils == 1 and last(t9):find("already inside the descent", 1, true), "descent sigil: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "descent path #143")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 40, "descent path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "descent close #144")
+	check(closes == 2 and last(t9):find('"closed":true', 1, true), "descent close: the bot's own run")
+	ChaosTowerRun = nil
+	talks["!tester"].onSay(t9, "!tester", "tower #145")
+	check(last(t9):find("no tower system", 1, true), "tower: no tower system, the reason")
+	ChaosDescent = nil
+	talks["!tester"].onSay(t9, "!tester", "descent #146")
+	check(last(t9):find("no descent system", 1, true), "descent: no descent system, the reason")
+	-- ---- the trials
+	check(H.COMMANDS.trial and H.parseCommand("trial path #5") == "trial", "trial is a registered command")
+	eq(H.parseTrial(nil), "state", "trial: no word is state")
+	w, usage = H.parseTrial("enter")
+	check(w == nil and usage:find("usage: trial", 1, true), "trial: enter is no helper word: the bot enters from the tree window")
+	local tra = H.trialAnswer({inside = true, level = 300, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = false, family = "warrior", familyName = "Iron Gauntlet",
+		cleared = 1, tier = 2, maxTier = 3, problem = ("p"):rep(120), puzzle = true, kinds = {"wave", "wave", "boss", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+		run = {tier = 2, phase = "fight", stage = "wave", stageIdx = 1, stages = 4, killed = 3, total = 12, lives = 3, livesMax = 3, left = 400, monsters = 5,
+		boss = "waiting", bossPos = {x = 3, y = 3, z = 7, junk = 1}, junk = 1}, guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "pack"}, junk = 1})
+	check(tra.inside and tra.family == "warrior" and tra.tier == 2 and #tra.problem == 90 and tra.puzzle == true and #tra.kinds == 12 and tra.junk == nil, "trial answer: the facts, bounded")
+	check(tra.run.killed == 3 and tra.run.lives == 3 and tra.run.bossPos.junk == nil and tra.run.junk == nil and tra.guide.mode == "fight", "trial answer: the run and the guide")
+	check(H.trialAnswer(nil).inside == false and H.trialAnswer(nil).run == nil, "trial answer: nothing known")
+	local realTT = ChaosTrials
+	ChaosTrials = {probe = function(p)
+		if p.inTrial then
+			return {inside = true, level = 300, pos = p:getPosition(), run = {stage = "wave", killed = 1},
+				guide = {mode = "walk", goal = {x = 70, y = 40, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 300, pos = p:getPosition(), pz = true, family = "warrior", tier = 1, minLevel = 100, free = 8, reserve = 2}
+	end, testerClose = function() closes = closes + 1 return true end}
+	t9.inDescent = nil
+	local c0 = closes
+	talks["!tester"].onSay(t9, "!tester", "trial #150")
+	check(last(t9):find('"family":"warrior"', 1, true) and last(t9):find('"tier":1', 1, true) and last(t9):find('"seq":150', 1, true), "trial state: outside, the family and the next tier")
+	talks["!tester"].onSay(t9, "!tester", "trial path #151")
+	check(last(t9):find("not inside a trial", 1, true), "trial path outside: the reason")
+	t9.inTrial = true
+	talks["!tester"].onSay(t9, "!tester", "trial path #152")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70, "trial path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "trial close #153")
+	check(closes == c0 + 1 and last(t9):find('"closed":true', 1, true), "trial close: the bot's own run")
+	ChaosTrials = nil
+	talks["!tester"].onSay(t9, "!tester", "trial #154")
+	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")
+	ChaosTrials = realTT
+	t9.inTrial = nil
+	ChaosTowerRun, ChaosDescent = realTR, realD
+	local civ4 = creature(993, "Ana Tower", {store = {}})
+	local n4 = #civ4.log.msgs
+	check(talks["!tester"].onSay(civ4, "!tester", "tower close #1") == true and talks["!tester"].onSay(civ4, "!tester", "descent sigil #2") == true
+		and #civ4.log.msgs == n4, "tower / descent: a player's words go on and get no answer")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

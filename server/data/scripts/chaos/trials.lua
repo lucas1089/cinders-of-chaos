@@ -1343,6 +1343,12 @@ function T.enter(player, tierIdx, opts)
 	for _ in pairs(T.runs) do
 		running = running + 1
 	end
+	if ChaosTesters and ChaosTesters.soloRefusal then -- a tester beside the players (O595): the chambers kept for the players
+		local why = ChaosTesters.soloRefusal({player}, (c.limits.maxRuns or 8) - running, c.tester.reserve)
+		if why then
+			return false, Chaos.t(player, why)
+		end
+	end
 	local IL = ChaosInstanceLimits
 	local slot = not (IL and IL.capped("trials", running, c.limits)) and freeSlot() or nil
 	if not slot then
@@ -1425,6 +1431,75 @@ function T.leave(player)
 		return true
 	end
 	return false
+end
+
+-- ======================================================================== what a person sees (the tester bots, O595)
+-- What a person sees of the trials, for the tester bots' `!tester trial` (tools/tester_helper.lua checks that the asker is a tester): outside,
+-- the level, the family of the vocation, the next tier, the kinds of its stages (a seals or marks stage is a puzzle: `puzzle`), the cooldown,
+-- the protection zone and the chambers free; inside, the stage, the kills, the lives, the clock, the guardian and `guide`
+-- (ChaosTrialsCore.guide). Reads only.
+function T.probe(player)
+	local c = C()
+	local pos = player:getPosition()
+	local function plain(p)
+		return p and {x = p.x, y = p.y, z = p.z} or nil
+	end
+	local voc = vocId(player)
+	local fam, famKey = M.family(voc)
+	local running = 0
+	for _ in pairs(T.runs) do
+		running = running + 1
+	end
+	local out = {level = player:getLevel(), pos = plain(pos), pz = inProtectionZone(player), inside = false, fight = inCombat(player) and true or false,
+		free = (c.limits.maxRuns or 8) - running, reserve = c.tester.reserve, family = famKey, familyName = fam and fam.name or nil,
+		bank = player.getBankBalance and player:getBankBalance() or nil}
+	if fam then
+		local cleared = T.tierCleared(player, voc)
+		local tier = math.min(#c.tiers, cleared + 1)
+		out.cleared, out.tier, out.minLevel, out.maxTier = cleared, tier, c.tiers[tier].minLevel, #c.tiers
+		out.problem = M.enterProblem(tier, player:getLevel(), cleared, os.time(), getS(player, S().cooldown), "en")
+		out.kinds = {}
+		for _, st in ipairs(M.stages(famKey, tier)) do
+			out.kinds[#out.kinds + 1] = st.kind
+			if st.kind == "seals" or st.kind == "marks" then
+				out.puzzle = true
+			end
+		end
+	end
+	local tr = T.runs[player:getId()]
+	if not tr or tr.over then
+		return out
+	end
+	out.inside = true
+	local nearest, nd, mons = nil, nil, 0
+	for mid, pid in pairs(T.monsterRun) do
+		if pid == player:getId() then
+			local m = Monster(mid)
+			local at = m and m:getPosition()
+			if at then
+				mons = mons + 1
+				if at.z == pos.z then
+					local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+					if not nd or d < nd or (d == nd and mid == tr.bossId) then
+						nearest, nd = {pos = plain(at), boss = mid == tr.bossId}, d
+					end
+				end
+			end
+		end
+	end
+	local boss = tr.bossId and Monster(tr.bossId)
+	local stage = tr.stage and tr.stage.kind or nil
+	out.run = {tier = tr.tier, phase = tr.phase, stage = stage, stageIdx = tr.stageIdx, stages = #tr.stages, killed = tr.killed, total = tr.total,
+		lives = tr.lives, livesMax = tr.livesMax, left = math.max(0, math.floor((tr.deadline - mnow()) / 1000)), monsters = mons,
+		boss = tr.bossState, bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		bossPos = boss and plain(boss:getPosition()) or nil, spell = tr.spell and true or false}
+	out.guide = M.guide({inRun = true, phase = tr.phase, stage = stage, pos = out.pos, monster = nearest, reach = 5})
+	return out
+end
+
+-- TEST ONLY (`!tester trial close`): the asker leaves as by the Leave button (a failed run with no cooldown, "Nothing is lost")
+function T.testerClose(player)
+	return T.leave(player) and true or false
 end
 
 -- ======================================================================== opcode actions (the tree window)

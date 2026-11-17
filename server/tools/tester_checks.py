@@ -3251,6 +3251,500 @@ async def rift_walk_play(io, name, cls, r, trace):
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
+# ------------------------------------------------------------------------------------------------ the Infinity Tower and the Ember Descent, played (O595)
+# Solo content, so they are open checks (CHECKS: no closed mode needed): the bot goes to the temple on foot, opens the window's own door
+# (`enter` of the tower, `start` of the descent, which pays with the free run of the day or an Ember Sigil the helper gives), and plays the
+# run like a person: the nearest monster by the engine's path, its own rotation, loot, the boon choices (the first card), Continue in a room
+# of rest, "Next floor now" between floors. The helper reads the screen (`!tester tower | descent state`), gives the path (`path`) and
+# closes the bot's own run; nothing teleports the bot inside. A tester run is refused while the halls are the players' (the reserve) and
+# is never mixed with a player; no record, board, season chest, title or broadcast is a tester's (server/README.md "Infinity Tower, Ember
+# Descent and the trials for the bots (O595)").
+TOWER_BUDGET = 540.0      # seconds a tower run is played at most
+TOWER_FLOORS = 2          # floors cleared that make a pass (the gold of the second proves the pause and the skip)
+DESCENT_BUDGET = 720.0    # seconds a descent is played at most
+DESCENT_ROOMS = 2         # rooms cleared that make a pass (a boon choice answered after each)
+SOLO_ENTER_WAIT = 14.0    # seconds from the window's request to standing inside (asked again once)
+SOLO_STEPS = 6
+SOLO_FIGHT_MIN = 150.0    # seconds in reach of a monster with nothing to show
+SOLO_STUCK = 30.0
+SOLO_MISSES = 6
+SOLO_PICK_TRIES = 3       # answers to one boon choice before it counts as refused
+
+
+def tower_problems(s, trace):
+    """[text] for one inside-the-tower answer: a player in the run, a cleared floor whose gold did not reach the bank. Keeps the
+    last floor and bank in the trace"""
+    out = []
+    run = s.get('run') or {}
+    if run.get('players') is not None and run.get('testers') is not None and run['players'] != run['testers']:
+        out.append('a player is in the tower run of the testers (%s of %s are testers)' % (run['testers'], run['players']))
+    cleared, bank, gold = run.get('cleared'), s.get('bank'), s.get('floorGold')
+    prev, was = trace.get('cleared_prev'), trace.get('bank_prev')
+    if all(isinstance(v, int) for v in (cleared, bank, gold)) and prev is not None and was is not None and cleared > prev:
+        want = gold * sum(range(prev + 1, cleared + 1))
+        if bank - was < want:
+            out.append('floor %d was cleared and the bank rose by %d, the floor gold is %d' % (cleared, bank - was, want))
+    if isinstance(cleared, int):
+        trace['cleared_prev'] = cleared
+        trace['cleared'] = max(trace.get('cleared', 0), cleared)
+    if isinstance(bank, int):
+        trace['bank_prev'] = bank
+    return out
+
+
+def descent_problems(s, trace):
+    out = []
+    run = s.get('run') or {}
+    if run.get('players') is not None and run.get('testers') is not None and run['players'] != run['testers']:
+        out.append('a player is in the descent run of the testers (%s of %s are testers)' % (run['testers'], run['players']))
+    if isinstance(run.get('depth'), int):
+        trace['depth'] = max(trace.get('depth', 0), run['depth'])
+    return out
+
+
+def solo_text(t, what):
+    return 'level %s, %s the temple, %d step(s) in %d s%s' % (
+        t.get('level'), 'walked to' if t.get('came') == 'foot' else 'the helper put the bot at', t.get('steps', 0), t.get('secs', 0),
+        ('; teleport in place of walking: ' + ', '.join(t['fallbacks'])) if t.get('fallbacks') else '')
+
+
+def tower_walk_verdict(t):
+    """(status, text) from the trace of a walked tower: faults, cleared (floors), skips, fought, stuck, died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'tower')
+    if t.get('cleared', 0) >= 1:
+        return PASS, '%d floor(s) cleared%s (%s)' % (t['cleared'], ', the next floor called %d time(s)' % t['skips'] if t.get('skips') else '', how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in the tower and cleared no floor (damage, targets or the monsters)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot fell before a floor was cleared (level %s against floor 1)' % t.get('level', '?')
+    return SKIP, 'no floor was cleared in %d s (%s)' % (t.get('secs', 0), how)
+
+
+def descent_walk_verdict(t):
+    """(status, text) from the trace of a walked descent: faults, depth (rooms cleared), picks, rests, fought, stuck, died, came, steps, secs"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'descent')
+    if t.get('depth', 0) >= 1:
+        extra = []
+        if t.get('picks'):
+            extra.append('%d boon choice(s) answered' % t['picks'])
+        if t.get('rests'):
+            extra.append('%d room(s) of rest left' % t['rests'])
+        return PASS, 'room %d cleared%s (%s)' % (t['depth'], (', ' + ', '.join(extra)) if extra else '', how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in the descent and cleared no room (damage, targets or the monsters)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot fell before a room was cleared (level %s against room 1)' % t.get('level', '?')
+    return SKIP, 'no room was cleared in %d s (%s)' % (t.get('secs', 0), how)
+
+
+def solo_refusal(a, system, what, level=0):
+    """(status, text) when this bot must not play the check, else None: from its `!tester tower | descent` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester %s (old helper file)' % system
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    have, need = int(a.get('level') or level or 0), int(a.get('minLevel') or 0)
+    if have < need:
+        return SKIP, 'level %d: the %s needs level %d' % (have, what, need)
+    if a.get('inside'):
+        return SKIP, 'the bot is inside the %s already' % what
+    if a.get('free') is not None and a.get('reserve') is not None and int(a['free']) - 1 < int(a['reserve']):
+        return SKIP, 'the halls are kept for the players (%s free, %s reserved)' % (a['free'], a['reserve'])
+    return None
+
+
+async def solo_enter(io, r, trace, system, opname, action, data, reply_expect):
+    """sends the window's own request, asked again once, until the helper says the bot is inside; -> the last look or None"""
+    s, waited = None, 0.0
+    while waited <= SOLO_ENTER_WAIT and io.alive():
+        if waited in (0.0, 7.0):
+            await io.request(opname, action, data, reply_expect, ANSWER)
+        await io.sleep(1.0)
+        waited += 1.0
+        s = await io.helper('%s state' % system, system, ANSWER)
+        if isinstance(s, dict) and s.get('inside'):
+            return s
+    return s
+
+
+async def solo_play(io, r, trace, c):
+    """the play loop of both checks: look every second; answer a boon choice or a room of rest (descent), call the next floor between
+    floors (tower), else walk by the engine path to the nearest monster and fight within reach with the bot's own rotation.
+    c: system, budget, done(trace), problems(s, trace), mark(s) (what changes while the bot makes progress)"""
+    system = c['system']
+    elapsed, misses, fight_since, mark, last_skip, tries = 0.0, 0, None, None, -99.0, {}
+    while io.alive() and elapsed < c['budget']:
+        s = await io.helper('%s state' % system, system, ANSWER)
+        if not isinstance(s, dict):
+            misses += 1
+            if misses >= SOLO_MISSES:
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        if not s.get('inside'):
+            trace['died'] = not c['made'](trace) and elapsed < c['budget']
+            break
+        for p in c['problems'](s, trace):
+            if p not in trace['faults']:
+                trace['faults'].append(p)
+        if trace['faults'] or c['done'](trace) or (c.get('stop') and c['stop'](s, trace)):
+            break
+        g = s.get('guide') or {}
+        m = c['mark'](s)
+        if m != mark:
+            mark, fight_since = m, None
+            if mark is not None:
+                await io.loot()   # a corpse of the room: the bot takes the loot as it does anywhere
+        mode = g.get('mode')
+        if mode == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        elif mode != 'wait':
+            fight_since = None
+        if mode == 'pick':   # the descent's boon choice: the first card, as when the time runs out
+            oid = g.get('offer')
+            tries[oid] = tries.get(oid, 0) + 1
+            if tries[oid] > SOLO_PICK_TRIES:
+                trace['faults'].append('the boon choice %s stayed open after %d answers' % (oid, SOLO_PICK_TRIES))
+                break
+            await io.request('descent', 'pick', {'offer': oid, 'card': g.get('card') or 1, 'curse': False}, ['hud', 'closeOffer'], ANSWER)
+            trace['picks'] = trace.get('picks', 0) + 1
+        elif mode == 'ready':   # a room of rest: Continue
+            await io.request('descent', 'ready', {}, ['hud'], ANSWER)
+            trace['rests'] = trace.get('rests', 0) + 1
+        elif mode == 'wait' and g.get('skip') and c.get('skip') and elapsed - last_skip >= 3.0 and trace.get('cleared', 0) >= 1:
+            last_skip = elapsed   # "Next floor now": the pause between floors is skipped, as a person presses it
+            await io.request('infinitytower', 'skip', {}, ['state'], ANSWER)
+            trace['skips'] = trace.get('skips', 0) + 1
+        plan = []
+        if mode == 'walk' and isinstance(g.get('goal'), dict):
+            plan = r['walker'].steps(s['pos'], g['goal'], SOLO_STEPS, elapsed)
+            if not r['walker'].blocked:   # the engine's path first (walls, pillars); the side step only when the way is blocked
+                got = await hcmd(io, r, '%s path' % system, system)
+                steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                plan = steps[:SOLO_STEPS] or plan
+            if r['walker'].stuck(elapsed) >= SOLO_STUCK:
+                trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                break
+        for step in plan:
+            await raid_walk(io, r, step)
+            trace['steps'] += 1
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+
+
+async def solo_to_temple(io, r, trace, fallbacks, need_pz=False, system=None):
+    """on foot to the temple (the helper's teleport is the counted fallback); -> None, or the reason the check cannot go on"""
+    how, got, note = await walk_to_place(io, r, 'temple')
+    if how not in ('foot', 'helper'):
+        return how[:110]
+    if note:
+        fallbacks.append(note)
+        trace['came'] = 'helper'
+    await io.sleep(SETTLE)
+    if need_pz:
+        a = await io.helper('%s state' % system, system, ANSWER)
+        if not (isinstance(a, dict) and a.get('pz')):
+            return 'the bot stands at the temple but not in a protection zone: the descent cannot be entered there'
+    return None
+
+
+# ------------------------------------------------------------------------------------------------ the hideout, lived in (O595)
+# The window's own requests, as a person uses Character > Hideout: open, Enter (the room is built for the bot), place a decoration of the
+# catalogue on a tile the room accepts, take it away again, Leave. The server's rules are the proof: a decoration the bot owns is accepted on
+# some free tile, it is listed afterwards (`placed`, the count of the hideout), it goes when removed, and Leave brings the bot out. The side
+# rule (a tester never visits a player's hideout, a player never a tester's) is in tests/hideout_test.lua: a bot knows no player to ask.
+HIDEOUT_TRIES = 30        # tiles tried for the first decoration
+HIDEOUT_WAIT = 6.0
+
+
+def hideout_text(reply):
+    d = (reply or {}).get('data') if isinstance(reply, dict) else None
+    return str((d or {}).get('text') or '')[:90]
+
+
+def hideout_candidates(layout, tries=HIDEOUT_TRIES):
+    """tiles [(x, y)] of the room the check tries for a decoration: the floor of the inner room away from the reserved tiles (fixtures,
+    the arrival), the middle first, then the rest in rows"""
+    w, h = int((layout or {}).get('w') or 0), int((layout or {}).get('h') or 0)
+    reserved = {(int(t[0]), int(t[1])) for t in (layout or {}).get('reserved') or [] if isinstance(t, (list, tuple)) and len(t) >= 2}
+    arrival = (layout or {}).get('arrival')
+    if isinstance(arrival, (list, tuple)) and len(arrival) >= 2:
+        reserved.add((int(arrival[0]), int(arrival[1])))
+    cells = [(x, y) for y in range(1, h) for x in range(1, w) if (x, y) not in reserved]
+    cx, cy = w // 2, h // 2
+    cells.sort(key=lambda c: (abs(c[0] - cx) + abs(c[1] - cy), c))
+    return cells[:tries]
+
+
+def hideout_pick(catalogue):
+    """the first floor decoration the character owns and may place once more, or None"""
+    for d in catalogue or []:
+        if isinstance(d, dict) and d.get('owned') and d.get('layer') != 'wall' and (d.get('max') or 0) > (d.get('placed') or 0):
+            return d
+    return None
+
+
+async def hideout_state(io, action):
+    reply = await io.request('hideout', action, {}, ['state', 'result'], ANSWER)
+    if isinstance(reply, dict) and reply.get('action') == 'state':
+        return reply.get('data') or {}, reply
+    return None, reply
+
+
+async def check_hideout(io, name, cls, level):
+    """opens the hideout window, enters the bot's own room, places a decoration on a tile the room accepts, removes it, leaves"""
+    key = 'hideout'
+    st, reply = await hideout_state(io, 'open')
+    if st is None:
+        text = hideout_text(reply)
+        if reply is None:
+            return Result(key, name, cls, SKIP, 'no answer from the hideout window (not installed)')
+        return Result(key, name, cls, SKIP, text or 'the hideout window sent no state')
+    if st.get('inside'):
+        return Result(key, name, cls, SKIP, 'the bot is inside a hideout already')
+    deco = hideout_pick(st.get('catalogue'))
+    if deco is None:
+        return Result(key, name, cls, SKIP, 'no decoration of the catalogue is owned and free to place')
+    cells = hideout_candidates(st.get('layout'))
+    if not cells:
+        return Result(key, name, cls, SKIP, 'the layout of the room names no free tile')
+    inside_room = False
+    try:
+        io.raid_mode([name], True, keep_flee=True)   # no walk back to the hunt while the bot is in its room
+        entered, reply = await hideout_state(io, 'enter')
+        await io.sleep(1.0)
+        if entered is None or not (entered.get('inside') or {}).get('isOwner'):
+            st2, _ = await hideout_state(io, 'get')
+            if not isinstance(st2, dict) or not (st2.get('inside') or {}).get('isOwner'):
+                return Result(key, name, cls, SKIP, 'the room did not open: %s' % (hideout_text(reply) or 'no text'))
+        inside_room = True
+        count0 = int(((entered or st).get('hideout') or {}).get('count') or 0)
+        placed, tile, last = None, None, None
+        for (x, y) in cells:
+            last = await io.request('hideout', 'place', {'key': deco['key'], 'x': x, 'y': y, 'r': 0}, ['result'], ANSWER)
+            if isinstance(last, dict) and (last.get('data') or {}).get('ok'):
+                placed, tile = last, (x, y)
+                break
+        if placed is None:
+            return Result(key, name, cls, FAIL, 'no tile of the room took %s in %d tries: %s' % (deco.get('name') or deco['key'], len(cells), hideout_text(last) or 'no answer'))
+        after, _ = await hideout_state(io, 'get')
+        rows = [p for p in ((after or {}).get('placed') or []) if isinstance(p, dict) and p.get('key') == deco['key'] and (p.get('x'), p.get('y')) == tile]
+        count1 = int((((after or {}).get('hideout')) or {}).get('count') or 0)
+        if not rows or count1 != count0 + 1:
+            return Result(key, name, cls, FAIL, '%s was placed at %s and the room lists %d such decoration(s), the count went %s to %s' % (
+                deco['key'], tile, len(rows), count0, count1))
+        gone = await io.request('hideout', 'remove', {'id': rows[0].get('id')}, ['result'], ANSWER)
+        again, _ = await hideout_state(io, 'get')
+        count2 = int((((again or {}).get('hideout')) or {}).get('count') or 0)
+        if not (isinstance(gone, dict) and (gone.get('data') or {}).get('ok')) or count2 != count0:
+            return Result(key, name, cls, FAIL, 'the decoration was removed and the room counts %s, it counted %s before: %s' % (count2, count0, hideout_text(gone) or 'no text'))
+        await io.request('hideout', 'leave', {}, ['state', 'result'], ANSWER)
+        await io.sleep(1.0)
+        outside, _ = await hideout_state(io, 'get')
+        inside_room = bool(isinstance(outside, dict) and outside.get('inside'))
+        if inside_room:
+            return Result(key, name, cls, FAIL, 'Leave did not bring the bot out of its hideout')
+        return Result(key, name, cls, PASS, '%s placed at %s, listed, removed; the room was entered and left' % (deco.get('name') or deco['key'], tile))
+    finally:
+        if inside_room:
+            await io.request('hideout', 'leave', {}, ['state', 'result'], ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+TRIAL_BUDGET = 480.0      # seconds a trial is played at most (the first tier lasts 8 minutes)
+
+
+def trial_problems(s, trace):
+    """[text] for one inside-a-trial answer; keeps the kills and the guardian's lowest health in the trace"""
+    run = s.get('run') or {}
+    if isinstance(run.get('killed'), int):
+        trace['killed'] = max(trace.get('killed', 0), run['killed'])
+    if isinstance(run.get('bossHp'), int):
+        trace['boss_seen'] = True
+        trace['hp'] = run['bossHp'] if trace.get('hp') is None else min(trace['hp'], run['bossHp'])
+    if run.get('lives') is not None:
+        trace['lives'] = run['lives']
+    return []
+
+
+def trial_stop(s, trace):
+    """a stage the bots cannot play (seals, marks): the check stops there"""
+    if ((s.get('guide') or {}).get('area')) == 'puzzle':
+        trace['puzzle'] = (s.get('run') or {}).get('stage')
+        return True
+    return False
+
+
+def trial_walk_verdict(t):
+    """(status, text) from the trace of a walked trial: faults, killed (kills), boss_seen, hp (the guardian's lowest health percent), tier, family, puzzle,
+    fought, stuck, died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'trial')
+    what = 'tier %s of %s' % (t.get('tier'), t.get('family') or '?')
+    if t.get('killed', 0) >= 1:
+        text = '%d kill(s)' % t['killed']
+        if t.get('boss_seen'):
+            text += ', the guardian at %s%%' % t.get('hp')
+        return PASS, '%s: %s (%s)' % (what, text, how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in the trial and killed none (damage, targets or the monsters; %s)' % (t['fought'], what)
+    if t.get('puzzle'):
+        return SKIP, 'the %s stage is a puzzle the bots do not play (%s)' % (t['puzzle'], what)
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the trial ended before a thrall died (%s lives left, level %s against %s)' % (t.get('lives', '?'), t.get('level', '?'), what)
+    return SKIP, 'no monster was killed in %d s (%s)' % (t.get('secs', 0), how)
+
+
+async def check_trial_walk(io, name, cls, level):
+    """walks to the temple, enters the vocation's trial from the tree window, fights its waves and the guardian by the engine's path, leaves"""
+    key = 'trial_walk'
+    a = await io.helper('trial state', 'trial', ANSWER)
+    refused = solo_refusal(a, 'trial', 'trial', level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    if not a.get('family'):
+        return Result(key, name, cls, SKIP, 'the vocation of the bot has no trial')
+    if a.get('puzzle'):
+        return Result(key, name, cls, SKIP, 'the trial of %s has a seals or marks stage: a puzzle the bots do not play' % (a.get('familyName') or a.get('family')))
+    if a.get('problem'):
+        return Result(key, name, cls, SKIP, str(a['problem'])[:90])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'killed': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'tier': a.get('tier'), 'family': a.get('family'), 'boss_seen': False, 'hp': None}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='trial')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'the trial'), fallbacks)
+        s = await solo_enter(io, r, trace, 'trial', 'passivetree', 'trialEnter', {'tier': a.get('tier')}, ['trialState', 'sendMessage'])
+        if not (isinstance(s, dict) and s.get('inside')):
+            return Result(key, name, cls, SKIP, 'the trial did not open in %d s (a fight, the cooldown or the chambers kept for the players)' % int(SOLO_ENTER_WAIT),
+                          fallbacks)
+        await solo_play(io, r, trace, {
+            'system': 'trial', 'budget': TRIAL_BUDGET, 'problems': trial_problems, 'stop': trial_stop,
+            'done': lambda t: t.get('killed', 0) >= 1 and t.get('boss_seen') and t.get('hp') is not None and t['hp'] < 100,
+            'made': lambda t: t.get('killed', 0) > 0,
+            'mark': lambda s: ((s.get('run') or {}).get('stageIdx'), (s.get('run') or {}).get('killed'), (s.get('run') or {}).get('monsters'))})
+        await io.helper('trial close', 'trial', ANSWER)
+        again = await io.helper('trial state', 'trial', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the trial after the close')
+        status, text = trial_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('trial close', 'trial', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+async def check_tower_walk(io, name, cls, level):
+    """walks to the temple, opens the tower from its window, plays floors by the engine's path, calls the next floor, leaves"""
+    key = 'tower_walk'
+    a = await io.helper('tower state', 'tower', ANSWER)
+    refused = solo_refusal(a, 'tower', 'Infinity Tower', level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    if a.get('canEnter') is False:
+        return Result(key, name, cls, SKIP, 'the bot has to wait before it may try the tower again (the try cooldown)')
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'cleared': 0, 'skips': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot',
+             'fallbacks': fallbacks, 'level': a.get('level')}
+    io.raid_mode([name], True, keep_flee=True)   # no walk back to the hunt, but the bot may still flee like a person
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks)
+        if why:
+            return Result(key, name, cls, SKIP, why)
+        s = await solo_enter(io, r, trace, 'tower', 'infinitytower', 'enter', {}, ['state'])
+        if not (isinstance(s, dict) and s.get('inside')):
+            return Result(key, name, cls, SKIP, 'the tower did not take the bot in %d s (a fight, a busy hall or the reserve)' % int(SOLO_ENTER_WAIT), fallbacks)
+        await solo_play(io, r, trace, {
+            'system': 'tower', 'budget': TOWER_BUDGET, 'skip': True, 'problems': tower_problems,
+            'done': lambda t: t.get('cleared', 0) >= TOWER_FLOORS, 'made': lambda t: t.get('cleared', 0) > 0,
+            'mark': lambda s: ((s.get('run') or {}).get('floor'), (s.get('run') or {}).get('remaining'))})
+        after = await io.helper('tower close', 'tower', ANSWER)
+        again = await io.helper('tower state', 'tower', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the tower after the close')
+        status, text = tower_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('tower close', 'tower', ANSWER)   # a bot that is still inside leaves (the Leave button, no countdown)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+async def check_descent_walk(io, name, cls, level):
+    """walks to the temple, starts the descent from its window (the free run or a sigil), plays rooms by the engine's path, answers the
+    boon choices, leaves rooms of rest, leaves"""
+    key = 'descent_walk'
+    a = await io.helper('descent state', 'descent', ANSWER)
+    refused = solo_refusal(a, 'descent', 'Ember Descent', level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    if not a.get('pay'):   # the free run of the day is used: the helper gives a sigil, as a player who forged one has it
+        g = await io.helper('descent sigil', 'descent', HELPER_WAIT)
+        if not isinstance(g, dict) or g.get('err') or not g.get('given'):
+            return Result(key, name, cls, SKIP, 'no free descent today and no sigil: %s' % str((g or {}).get('err') or 'no answer')[:60])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'depth': 0, 'picks': 0, 'rests': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot',
+             'fallbacks': fallbacks, 'level': a.get('level')}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='descent')
+        if why:
+            return Result(key, name, cls, SKIP, why, fallbacks)
+        reply = None
+        s, waited = None, 0.0
+        while waited <= SOLO_ENTER_WAIT and io.alive():
+            if waited in (0.0, 7.0):
+                reply = await io.request('descent', 'start', {'weekly': False}, ['closeInfo', 'msg', 'hud'], ANSWER)
+            await io.sleep(1.0)
+            waited += 1.0
+            s = await io.helper('descent state', 'descent', ANSWER)
+            if isinstance(s, dict) and s.get('inside'):
+                break
+        if not (isinstance(s, dict) and s.get('inside')):
+            text = window_text(reply)
+            return Result(key, name, cls, SKIP, 'the descent did not start in %d s: %s' % (int(SOLO_ENTER_WAIT), text or 'no text'), fallbacks)
+        await solo_play(io, r, trace, {
+            'system': 'descent', 'budget': DESCENT_BUDGET, 'problems': descent_problems,
+            'done': lambda t: t.get('depth', 0) >= DESCENT_ROOMS, 'made': lambda t: t.get('depth', 0) > 0,
+            'mark': lambda s: ((s.get('run') or {}).get('room'), (s.get('run') or {}).get('monsters'), (s.get('run') or {}).get('state'))})
+        await io.helper('descent close', 'descent', ANSWER)
+        again = await io.helper('descent state', 'descent', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the descent after the close')
+        status, text = descent_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('descent close', 'descent', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -3295,6 +3789,10 @@ CHECKS = [
     ('craft_supports', check_craft_supports, lambda c: True),
     ('craft_charms', check_craft_charms, lambda c: True),
     ('craft_cards', check_craft_cards, lambda c: True),
+    ('tower_walk', check_tower_walk, lambda c: True),   # O595: the Infinity Tower on foot, two floors
+    ('descent_walk', check_descent_walk, lambda c: True),   # O595: the Ember Descent on foot, two rooms
+    ('trial_walk', check_trial_walk, lambda c: True),   # O595: the vocation's trial on foot (the families with no puzzle stage)
+    ('hideout', check_hideout, lambda c: True),   # O595: the own hideout: enter, place a decoration, remove it, leave
     ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)

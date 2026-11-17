@@ -1679,6 +1679,8 @@ return {
 		["Your guild owns a guild hall now (free for the test guilds)."] = "Sua guilda tem um guild hall agora (de graça para as guildas de teste).",
 		["Closed test mode went off."] = "O modo teste fechado foi desligado.",
 		["The testers' guild boss waits: the arenas are kept for the players."] = "O guild boss dos testers espera: as arenas ficam reservadas para os jogadores.",
+		["The testers wait: the halls are kept for the players."] = "Os testers esperam: os salões ficam reservados para os jogadores.",
+		["The world boss is the players' event: the testers do not enter it."] = "O world boss é o evento dos jogadores: os testers não entram nele.",
 		["Testers do not use this queue: it matches players."] = "Testers não usam esta fila: ela junta jogadores.",
 		["Tester characters cannot send mail."] = "Personagens tester não podem enviar correio.",
 		["Mail to tester characters is not delivered."] = "Correio para personagens tester não é entregue.",

@@ -102,6 +102,10 @@ local cfg = {
 	},
 	healBetweenFloors = 0.5, -- fraction of missing health and mana restored
 	bossEvery = BC.bossEvery,
+	-- tester bots (O595, server/README.md "Infinity Tower, Ember Descent and the trials for the bots"): they play the tower beside the
+	-- players, so a run of testers is refused while fewer than `reserve` of the maxSlots arenas would stay free ("The testers wait ...")
+	-- and a group of a tester and a player is never made ("Testers and players are never mixed."); no record, board or season chest is theirs
+	tester = {reserve = 4},
 	floorGold = 50, -- gold per floor per player (multiplied by the floor number), 0 = none
 	-- the species of a floor's band and the bosses of the boss floors: infinitytower_balance_config.lua (the floor's band is
 	-- floor // bandFloors + 1, the last one repeats)
@@ -837,6 +841,13 @@ function ChaosTowerRun.start(player)
 			return false
 		end
 	end
+	if ChaosTesters and ChaosTesters.soloRefusal then -- testers beside the players (O595): never mixed, the arenas kept for the players
+		local why = ChaosTesters.soloRefusal(group, cfg.maxSlots - ChaosTowerRun.activeRuns(), cfg.tester.reserve)
+		if why then
+			player:sendCancelMessage(Chaos.t(player, why))
+			return false
+		end
+	end
 	local IL = ChaosInstanceLimits
 	local slot = not (IL and IL.capped("tower", ChaosTowerRun.activeRuns(), cfg.limits)) and freeSlot() or nil
 	if not slot then
@@ -946,6 +957,61 @@ local function leaveNow(run, player)
 	end
 end
 
+-- ------------------------------------------------------------------ what a person sees (the tester bots, O595)
+-- What a person sees of the tower, for the tester bots' `!tester tower` (tools/tester_helper.lua checks that the asker is a tester): outside,
+-- the level and the try cooldown; inside, the floor, the monsters left, the clock, the floor gold the bank should show, who is in the run
+-- and `guide` (ChaosTowerCore.guide). Reads only.
+function ChaosTowerRun.probe(player)
+	local pos = player:getPosition()
+	local function plain(p)
+		return p and {x = p.x, y = p.y, z = p.z} or nil
+	end
+	local out = {level = player:getLevel(), minLevel = cfg.minLevel, pos = plain(pos), inside = false, floorGold = cfg.floorGold,
+		free = cfg.maxSlots - ChaosTowerRun.activeRuns(), reserve = cfg.tester.reserve,
+		bank = player.getBankBalance and player:getBankBalance() or nil, inArena = inArena(pos) and true or false}
+	out.canEnter = not (ChaosTower and ChaosTower.canEnter) or ChaosTower.canEnter(player) and true or false
+	local run = runOf[player:getId()]
+	if not run or run.ended then
+		return out
+	end
+	out.inside = true
+	local now = os.time()
+	local nearest, nd, mons, bossAlive = nil, nil, 0, false
+	for mid, r in pairs(monsterRun) do
+		if r == run then
+			local m = Monster(mid)
+			local at = m and m:getPosition()
+			if at then
+				mons = mons + 1
+				local info = monsterInfo[mid]
+				bossAlive = bossAlive or (info and info.boss) and true or false
+				if at.z == pos.z then
+					local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+					if not nd or d < nd or (d == nd and info and info.boss) then
+						nearest, nd = {pos = plain(at), boss = info and info.boss and true or false}, d
+					end
+				end
+			end
+		end
+	end
+	local members, testers = 0, 0
+	for id in pairs(run.players) do
+		members = members + 1
+		local p = Player(id)
+		if p and Chaos.isTester and Chaos.isTester(p) then
+			testers = testers + 1
+		end
+	end
+	local canSkip = skipRefusal(run, player, now) == nil
+	out.run = {slot = run.slot, floor = run.floor, cleared = run.cleared, remaining = run.remaining, total = run.total, monsters = mons,
+		boss = bossAlive, waiting = run.waiting and true or false, nextIn = run.waiting and math.max(0, (run.nextDue or now) - now) or 0,
+		left = runLeft(run, now), floorLeft = run.floorStart and run.remaining > 0 and math.max(0, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now) or nil,
+		players = members, testers = testers, canSkip = canSkip, nextBoss = (run.floor + 1) % cfg.bossEvery == 0}
+	out.guide = TK.guide({inRun = true, waiting = run.waiting, nextIn = out.run.nextIn, remaining = run.remaining, pos = out.pos, monster = nearest,
+		reach = 5, canSkip = canSkip})
+	return out
+end
+
 local function leaveDue(playerId, owner)
 	local run = runOf[playerId]
 	local player = Player(playerId)
@@ -1001,6 +1067,24 @@ end
 -- damage factor of a tower monster against players (infinitytower_balance_config.lua `damage`: the pace_config.lua curve
 -- at the pool's hunting level, so a species hits as hard as outside). monster_damage.lua multiplies it on top of the
 -- monster's own boost; 1 for anything that is not a tower monster, a boss included.
+-- TEST ONLY (`!tester tower close`): the asker leaves as by the Leave button, with no countdown: out where it entered, the floors cleared
+-- recorded (a tester's own row). A bot in an arena with no run goes to the temple. Only the asker moves; a run of other characters goes on
+function ChaosTowerRun.testerClose(player)
+	local run = runOf[player:getId()]
+	if run and not run.ended then
+		leaveNow(run, player)
+		return true
+	end
+	if player.getPosition and inArena(player:getPosition()) then
+		local temple = templeOf(player)
+		if temple then
+			player:teleportTo(temple)
+			return true
+		end
+	end
+	return false
+end
+
 function ChaosTowerRun.damageMultOf(attacker)
 	if not attacker or not attacker.isMonster or not attacker:isMonster() then
 		return 1

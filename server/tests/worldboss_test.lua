@@ -481,6 +481,16 @@ assertEq(ok3, false, "no second event"); assert(err3:find("already"), "reason")
 local from = Position(101, 100, 7)
 moves[cfg.aid.enter].onStepIn(low, portal, W.state.portals[1], from)
 assertEq(low.pos.x, 101, "level gate pushes back")
+-- a tester bot never enters (O595): it would take a damage share and a role place from a player
+local tbot = mkPlayer(11, "Tester Wwa", 900)
+tbot.storage[Chaos.storage.tester] = 1
+tbot.pos = from
+moves[cfg.aid.enter].onStepIn(tbot, portal, W.state.portals[1], from)
+assertEq(tbot.pos.x, 101, "a tester is pushed back from the world boss portal")
+assert(tbot.cancel and tbot.cancel:find("testers do not enter", 1, true), "and told why")
+assert(not W.inLobby(tbot.pos), "the tester is not in the lobby")
+moves[cfg.aid.arena].onStepIn(tbot, nil, nil, from)
+assert(not W.inArena(tbot.pos), "a tester is not taken into the arena either")
 mcSet[5] = true
 for _, p in ipairs({a, b, cy, alt}) do moves[cfg.aid.enter].onStepIn(p, portal, W.state.portals[1], from) end
 assert(W.inLobby(a.pos), "Alice in the lobby")

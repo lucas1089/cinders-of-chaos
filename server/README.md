@@ -9801,7 +9801,7 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v15 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`; O592 `siege`, `guildboss` and `rift`), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v16 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`; O592 `siege`, `guildboss` and `rift`; O595 `tower`, `descent` and `trial`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
@@ -9887,7 +9887,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10095,36 +10095,109 @@ temple. Helper v15 `!tester rift [state | key [tier] | path | close]`:
 Needs a live run: the engine's path across a real rift layout (the walkable cells are a layout the server builds; the search is bounded), rifts of two
 floors (the stairs), the real hotkey use of the key, the exhaust after a use, what `RF.open` refuses for a bot in a fight.
 
-##### 6. What a player does that no closed check plays yet (O592, from `data/scripts/chaos` against `CHECKS` and `CLOSED_CHECKS`)
+##### 6. What a player does that no check plays yet (O592, brought up to date by O595)
 
 Covered by a check that plays or reads it: arena, battleground, the Marches, guild, guild war, market, bazaar lock, raid, dungeons, group queue, party finder,
 siege, guild boss (closed); rift, rift layout, waystone runs, content rewards, pets, wolves and minions, party and shared experience, unique passives, dual
-wield, the reward chest, the cursed chest, Auto setup, the spell quest, the crafting windows (open). Everything with an extended opcode is also opened and
-used by the random requests (`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet:
-- **World boss** (`worldboss.lua`): a scheduled event, one arena for everyone, a portal next to every temple, damage-share rewards, a role title for the top 3, a
-  broadcast. It is not tester-aware (no `isTester` anywhere in the file): a bot that walked in would share the arena and the top-3 lists with players. Needs
-  the same pattern as the siege (a testers' event started by the helper, never while a players' event runs or is due, a side at the portal, no title or
-  broadcast, a probe and a guide). Not done: the title and the ranking are the part that reaches players.
-- **Infinity Tower** (`infinitytower_run.lua`) and **Ember Descent** (`descent.lua`): solo runs. The random requests open the windows and the Descent's own
-  `start`, but no bot plays a floor. Plan: the same as the rift (a probe with a guide, `!tester tower`, `!tester descent`, a walked check); the leaderboards
-  already leave testers out (`Chaos.notTesterSql`).
-- **Ascended arenas, Omen keys and the Nemesis** (`uber.lua`, `rift.lua` omen, `nemesis.lua`): boss arenas of the same recipe as the guild boss (`uber_core.lua`).
-  Plan: `guildboss_core.guide` is the model; a probe per arena file and one check that walks in, fights and closes. Their rewards go to the tester.
-- **Trials, the Hollow Crypt and the ascension quest** (`trials.lua`, `ascension_quest.lua`): scripted rooms; the places are visited by `enter`, no room is played.
-- **The main quest and its boss** (`mainquest.lua`, `mainquest_boss.lua`): passive (steps are credited by play). A walked check could take the first steps
-  (talk to an NPC, kill N of a monster): the NPC walk exists (`walk_to_place` `npc ...`); the boss fight needs a probe like the guild boss's.
+wield, the reward chest, the cursed chest, Auto setup, the spell quest, the crafting windows, **the Infinity Tower, the Ember Descent, the trials of the
+wave families and the own hideout (open, O595: step 7 below)**. Everything with an extended opcode is also opened and used by the random requests
+(`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet (O595 did the first four bullets of the old list and the
+guards of the last two):
+- **Ascended arenas, Omen keys and the Nemesis** (`uber.lua`, `rift.lua` omen, `nemesis.lua`): boss arenas of the recipe of the guild boss (`uber_core.lua`).
+  Not done in O595 (the list was long): `uber.lua` is 1,800 lines (shards, sigils, antechamber, Ember Gate, four phases), the Omen keys are rifts with a
+  guardian (the rift probe already reads them, the key comes from the helper) and the Nemesis is a hunt event. Plan: `ChaosAscended.probe` and `guide` from
+  `guildboss_core.guide` (walk to the boss, fight, back through the Ember Gate), `!tester ascended [state | sigil | path | close]` (the sigil is
+  `ChaosAscended.giveSigil`), a check that gives a sigil, walks to the temple, uses it and fights until the boss is hurt; the rewards are the tester's own.
+- **The main quest and its boss** (`mainquest.lua`, `mainquest_boss.lua`): passive (steps are credited by play). Not done: every step asks for one named
+  fact (a named monster at a named place, a drop, a window, a spell), and the boss fight is a spell-trial of the trials engine (`T.hookFor`), so it reuses
+  `ChaosTrials.probe` once a step check has taken the bot there. Plan: a check that reads `mqOpen` and plays the current step by its `where` (walk to the
+  place, kill the named monster, bring the drops to Warden Ysolde); the boss: `trial_walk` with `opts.spell` of the quest.
 - **Bounty contracts, daily and weekly challenges, tasks, the Chronicle, the season journey and pass** (`bounty.lua`, `daily.lua`, `weekly_challenge.lua`,
-  `chronicle.lua`, `season_journey.lua`, `seasonpass.lua`): the windows answer, the claims are never made (money-like or a one-off): a bot that accepts a bounty
-  and kills the monster would need a probe that says which monster and where.
-- **Hideouts and the memorial** (`hideout.lua`, `memorial.lua`): the windows are asked; placing items, visiting another character's hideout (a closed matter:
-  a tester must never visit a player's) and the memorial candles are not played.
-- **Harvest event, treasure goblin, invasions, conquest** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`, `conquest.lua`): shared world events
-  and a faction map that players read; not tester-aware (only `invasion.lua` has one `isTester`). They need the world boss's treatment first.
+  `chronicle.lua`, `season_journey.lua`, `seasonpass.lua`): the windows answer, the claims are never made. Not done: a hunt contract is 50-400 kills of one
+  named monster; a bot that accepts one needs a probe that says where that monster spawns (`bounty_pool.lua` has the names, the spawn tiles are in the map).
+  The rewards are gold and orbs to the tester (its own rows, cleaned by `testers cleanup`), so claiming would be fine for a bot; it is the walk that is missing.
+- **Memorial** (`memorial.lua`): the candles are not played; the window is asked by the random requests. Hideout visits are now closed by side (step 7).
+- **Shared world events**: see "Shared world events and the world boss (O595)" in step 7: the world boss is closed to the testers; harvest, goblin,
+  invasion and conquest are left, with the reason.
 - **PvP between testers**: kills in the siege (20 points), the Marches and the arena are never played: the bots do not target players. That needs the
   bot's targeting (a creature id in the attack packet) and a rule for who may be hit.
 - **Mentor, referral, creator codes, store payments, orb exchange, community, reports**: out of scope on purpose (real accounts, real money, or a queue players read).
-Each item above has a first step that needs only a probe, a guide and a walked check (the recipe of the dungeons, the raid and now the rift and the guild
-boss); the shared events (world boss, harvest, goblin, invasion, conquest) first need their closed-mode rules.
+
+##### 7. Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)
+
+Owner 2026-11-17 (translated): "the bots have to do the complete content of the game, in the most human way possible". These are solo contents: they
+share nothing with a player but the halls (the arenas of a run), the leaderboards and the public lists. So they are **open checks** (`CHECKS`, no closed
+mode needed, all classes, a level of 100 and up), and the server rules are the same three everywhere: a group of a tester and a player is never made, a
+tester takes a hall only while at least `reserve` halls stay free after it (the halls are the players'), and nothing of a tester reaches a public board, a
+season chest, a title or a broadcast. Helper v16 (`HELPER_VERSION`, bumped once for the whole task): `!tester tower | descent | trial`.
+
+Server rules (all in `testers_core.lua`, tested in `tests/testers_test.lua`):
+- `K.soloRefusal(flags, free, reserve)`: "mixed" for a group of both sides, "reserve" for a tester when fewer than `reserve` halls would stay free.
+  `ChaosTesters.soloRefusal(players, free, reserve)` returns the text (`K.CLOSED_TEXT`, with a pt-BR line) or nil, with no query for a group of players.
+- **Infinity Tower** (`infinitytower_run.lua`, `infinitytower.lua`; tests `infinitytower_run_test.lua` "O595"): `ChaosTowerRun.start` asks the rule
+  (`cfg.tester.reserve` 4 of the 16 arenas). The window's ranking (`buildPayload`) and the season ranking (`processSeason`: top 3 chests and their
+  broadcast) filter the testers with `Chaos.notTesterSql("p")`: before O595 a bot with a high floor stood on the public board and could win a chest.
+  The record boards already skipped testers (`records.lua memberOf`); a tester's own row (`chaos_tower_players`) is its own and goes with
+  `testers cleanup` (it deletes every row of a tester id). `ChaosTowerRun.probe(player)`: outside the level, the try cooldown, the free arenas; inside
+  the floor, the monsters, the clock, who is in the run, whether "Next floor now" is open, the bank and the floor gold, and `guide`
+  (`ChaosTowerCore.guide`: wait between floors, fight within 5 tiles, else walk to the nearest monster). `ChaosTowerRun.testerClose(player)` is the Leave
+  button with no countdown (the floors cleared are written as always), or the way out of a stray arena.
+- **Ember Descent** (`descent.lua`, `descent_core.lua` `D.guide`, `descent_config.lua` `tester.reserve` 2 of the 8 halls; test `descent_probe_test.lua`):
+  the rule in `X.start`; the weekly board record skips a tester (it already skipped by guid), the title source returns nothing for a tester, the unique
+  find is not announced for a tester (the broadcast of a name of a tester is dropped by the game anyway, `testers.lua`). `ChaosDescent.probe`: how a run
+  would be paid (free, sigil or neither), the halls free, inside the room and its kind, the state (fight, choose, rest, travel), a boon choice waiting
+  (id, cards), the monsters, the boss, `guide`: **pick** (the first card, as when the time runs out), **ready** (Continue in a shrine or merchant room), else
+  the nearest monster. `testerClose` is the Leave button (the rewards of the depth reached), `testerSigil` gives an Ember Sigil when the day's free
+  descent is used (the bots cannot forge one).
+- **Vocation trials** (`trials.lua`, `trials_core.lua` `M.guide`, `trials_config.lua` `tester.reserve` 2 of the 8 chambers; test `trials_probe_test.lua`):
+  the rule in `T.enter`; the records board skips testers (`records.lua`). `ChaosTrials.probe`: the family of the vocation, the next tier and its stages
+  (`puzzle` when a stage is seals or marks), the cooldown, inside the stage, the kills, the lives, the guardian; `guide` waits at a puzzle stage
+  (`area` "puzzle"), else fights the nearest thrall or the guardian. `testerClose` is the Leave button (a failed run with no cooldown).
+- **Hideouts** (`hideout.lua`, test `hideout_test.lua` last block): `ChaosHideout.sideRefusal(owner, visitor)`: a tester never enters a player's hideout,
+  a player never a tester's (a public one included: the visit counter, likes and the showcase are what players read); staff may enter any; one's own
+  always. `M.enter` asks it, the Visit tab's friend list too, and the public showcase of a player filters the testers by SQL.
+
+How the bots play them (helper v16 `!tester tower | descent | trial [state | path | close]`, `descent sigil`; the window's own requests are the bot's; the
+helper reads the screen, gives the engine path and closes, nothing teleports the bot inside):
+1. `solo_refusal`: SKIP with the reason for a missing system, the level, a bot already inside, the halls kept for the players (`free - 1 < reserve`).
+2. Temple on foot (`walk_to_place`; the helper's teleport is the counted fallback, `enter temple (no path)` in the result and the report). The descent and
+   the trial need a protection zone and say so when the temple tile is not one.
+3. The window's door: `infinitytower enter`, `descent start {weekly: false}`, `passivetree trialEnter {tier}`, asked again once after 7 s, then up to 14 s
+   for the helper to say the bot is inside. A refusal is a SKIP with the server's text.
+4. `solo_play`, the one loop of all three: a look every second; a boon choice is answered (`descent pick`, the first card; a choice that stays open after 3
+   answers is a FAIL), Continue in a room of rest (`descent ready`), "Next floor now" between tower floors once a floor is cleared (`infinitytower skip`);
+   otherwise the engine path (`... path`, up to 6 steps, `RaidWalker` side steps only when blocked) to the nearest monster and the bot's own rotation, the
+   loot after a kill. `raid_mode` keeps the bot from walking back to the hunt; it still flees at low health like a person.
+5. Verdicts. `tower_walk` PASS: 2 floors cleared (`TOWER_FLOORS`); FAIL: a player in the run, a cleared floor whose gold did not reach the bank (the floor number
+   x 50 gold per floor), 150 s in reach of a monster with no floor cleared, still inside after the close. `descent_walk` PASS: a room cleared (a boon choice
+   answered after it); FAIL: a player in the run, a choice that stays open, 150 s with no room, still inside after the close. `trial_walk` PASS: a thrall
+   killed (the guardian's health is reported); the check stops at the first of: the guardian hurt, the budget (480 s), a puzzle stage; FAIL: 150 s with no kill.
+   SKIP: the walk blocked 30 s, the bot fell before anything was cleared, no free run and no sigil, a puzzle trial (the Mystic and Thief families and their
+   ascensions have a seals or marks stage the bots do not play: `puzzle` is read before the bot enters, so no attempt is spent). The run is always closed
+   after, and the bot goes back to the hunt.
+6. `hideout` (window requests only): open, Enter (the room is built for the bot), place the first owned floor decoration on a tile the room accepts (the
+   tiles are tried middle first, away from the reserved ones), the room must list it and count it, Remove must take it away, Leave must bring the bot out.
+   FAIL: no tile takes it in 30 tries, the list or count is wrong, the removal did not count down, still inside after Leave. SKIP: no decoration owned, below the
+   hideout level, the room did not open.
+The rewards are the tester's own (gold to the bank, orbs, the first-clear rows of the trials; `testers cleanup` deletes every row of a tester id, the
+closed-mode clean-up of O582 is not needed: nothing here is shared).
+
+Shared world events and the world boss (O595):
+- **World boss** (`worldboss.lua`): one arena for everyone, damage-share rewards, a role title for the top 3 of each category. A tester in it would take a
+  share and a place from a player, so the portal and the arena step now refuse a tester ("The world boss is the players' event: the testers do not enter
+  it.", tested in `worldboss_test.lua`). A testers' event started by the helper, as the siege has, is not built: the event builds one arena and its portals
+  next to every temple, and a second, hidden one would need its own slot grid and its own schedule. The role titles and the broadcast need no work
+  for testers any more: no tester is in the arena.
+- **Harvest event, treasure goblin, invasions** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`): left. A treasure goblin or an invader is a
+  monster the first killer takes the reward of, so a bot hunting next to it takes it from a player, and the harvest event keeps shared counters. No
+  rule that keeps a bot out of them exists without touching what the players hunt; the only safe change is to make those monsters ignore testers (no
+  damage from a tester), which is an engine-side rule (`onTargetCombat`, the monster is a player-side target) and not done here.
+- **Conquest** (`conquest.lua`) is a per-character token balance (`chaos_conquest`), not a shared map: nothing to separate.
+
+Needs a live run: the engine's path inside the arenas (the tower arena is a 25-tile square: one path call), the real rate limits of the windows (the tower
+`enter` 300 ms, the descent `start` 2 s, the trial `trialEnter` 1 s), `Chaos.isMultiClient` for a bot with a real address, the first floors of a level-100
+bot (the thresholds are `TOWER_FLOORS`, `DESCENT_ROOMS`, `SOLO_FIGHT_MIN`), the hideout catalogue a new tester owns, and the Descent's boon choice with the
+real client ids (`pick {offer, card, curse}` is the window's own message).
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10145,6 +10218,10 @@ the system is not installed): never faked. A death in the middle drops the check
 | `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
 | `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
+| `tower_walk` | all, level 100 and up | O595: walks to the temple, opens the Infinity Tower from its window (`infinitytower enter`) and plays floors by the engine's path (`!tester tower path`) with its own rotation, calls "Next floor now" between floors, and leaves (`tower close`). PASS: 2 floors cleared. BUG: a player in the run, a cleared floor whose gold (floor x 50) did not reach the bank, 150 s in reach with no floor cleared, still inside after the close. SKIP: level, the try cooldown, the arenas kept for the players, the walk blocked, a fall before a floor (section "Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)") |
+| `descent_walk` | all, level 100 and up | O595: walks to the temple (a protection zone), starts the Ember Descent from its window (the free run of the day, else a sigil from `!tester descent sigil`), answers every boon choice with the first card, leaves rooms of rest with Continue and fights by the engine's path. PASS: a room cleared. BUG: a player in the run, a choice that stays open after 3 answers, 150 s with no room, still inside after the close. SKIP: level, no free run and no sigil, the halls kept for the players, the walk blocked, a fall before a room |
+| `trial_walk` | all, level 100 and up | O595: walks to the temple, enters the vocation's trial from the tree window (`trialEnter`), fights the waves and the guardian by the engine's path. PASS: a thrall killed (the guardian's health reported). BUG: 150 s with no kill, still inside after the close. SKIP: a puzzle family (seals or marks), the cooldown, the tier rules, the chambers kept for the players, a fall before a kill |
+| `hideout` | all, level of the hideout | O595: the window's requests: open, Enter, place the first owned floor decoration on a tile the room takes, the room lists and counts it, Remove, Leave. BUG: no tile takes it, a wrong list or count, still inside after Leave. SKIP: no decoration owned, below the level, the room did not open |
 | `rift_layout` | all, level 100 and up | `!tester riftrun layout` opens a real rift as a player does (key of the highest tier the level may open, temple, `ChaosRift.open`) and reads its layout. BUG when the kind or the floor count is not in the config of the theme, the size band is not the tier's, the walkable cells are outside the band limits of `rift_layout_balance_config.lua`, the arrival, the guardian's spot, the arena's mouth or the bot is not a walkable cell, 40 sampled walkable cells have no ground or block, or the run or its slot stays open after `RF.interrupt` (the key comes back). Level under 100, a busy slot or a layout still being built is a skip |
 | `content_rewards` | all | the passive rewards of `content_rewards.lua` through `ChaosContentRewards.onKill` with a stand-in monster (nothing is spawned, a backpack is the corpse): a boss kill of a tier 8 waystone run (`!tester waystone 8 loot`) holds the config's guaranteed gear pieces of Legendary or better, none below, the sure orbs (Awakening, Gilding) at their minimum and a waystone of the run's tier; the guardian kill of a rift (`!tester riftrun loot`) holds at least `floor(base + perTier x tier)` orbs. A level under 100 checks the waystone half only. The first unique and the pity of `retention_loot.lua` are not checked: they skip testers by rule |
 | `party_xp` | all | the bot invites another bot and switches shared experience on (packet 0xA8) in the temple (the engine refuses the switch in a fight outside a protection zone; the helper loads `Party:onShareExperience` from `data/events/scripts/party.lua` in a sandbox, as it lives in the events state, not in the scripts one): the party says it is on; `Party:onShareExperience(1000)` pays `ceil(1000 x (100 + bonus) / 100 / members)` with the bonus of `ChaosPartyXpCore.bonusPercent` for the class lines; the engine's verdict follows the rules (nobody under two thirds of the highest level, within 30 tiles and 1 floor, in a fight): working while a member fails level or range, or off while all pass, is a BUG when two looks 3 s apart agree. Then a real kill at the leader's hunt (`!tester party kill`, helper v4, own answer kind `partykill`): a leader in the temple steps out to the nearest street tile, the partner is put next to it, one hit of a tenth of a monster's health by each makes both active for the engine (Party ticksMap; a hit of 1 counted 0 after the armour), a Demon made there and hit by the leader down to 0 (the engine's own death path on its next creature check, `Creature::onDeath` and `Party:shareExperience`; gains read 1.5 s later, a monster scaled up after it was made is hit again), then the share off and one solo kill. With the share working both gain and the leader's gain is `shareOf1000 / 1000` of the solo kill (5%); with it off, or in the solo kill, the partner gains nothing, unless it hit that monster itself (helper event `TesterHelperKillHits`; the engine pays every attacker its damage share). A kill that could not run is a skip. Switched off and left again at the end |
