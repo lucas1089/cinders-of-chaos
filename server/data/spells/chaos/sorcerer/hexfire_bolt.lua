@@ -38,7 +38,7 @@ function onCastSpell(creature, variant, isHotkey)
 		local from, to = creature:getPosition(), target:getPosition()
 		VfxShoot(from, to, ChaosSpell.pack29Name("missile", "fireball")) -- pair 29: witchfire_lance
 		if delayed then
-			M.later(M.flightMs(from, to), to, M.alt("send", "fire_explosion")) -- the name of this cast (O596: the pack burst on pair 73)
+			M.later(M.flightMs(from, to), to, "fire_explosion")
 		else
 			ChaosSpell.vfx(to, "fireball_hit")
 		end

@@ -6899,18 +6899,22 @@ The owner saw the O587 previews: "redo the ones that are bad". 73 rows scored 45
 - **Test**: `gen_drawn_wings_test.py`: every row has its strips (24 whole numbers or empty), six zones, a mould, a beat; a strip measured from a drawn picture covers it again; east and west are the face-on views turned and lose no pixel; the mould cuts and fills; the O581 bar on all 121 rows. `designs.sums` was written again. `wing_anchors.lua` and `anchor_fixtures.txt` did not change, the two C++ anchor tests pass.
 - **Previews** (never committed): per family MP4s, old art left, O587 middle, O590 right, four directions each; sheets of the scoped rows; the fit preview on player looks only; the score table.
 
-## Spell VFX packs: spell effects and projectiles (O596, `tools/sprites/gen_spell_vfx.py`, `art_import/spell_vfx.csv`; joins pair 73; owner 2026-11-17)
+## Spell VFX packs: spell effects and projectiles (O596, trimmed by O600, `tools/sprites/gen_spell_vfx.py`, `art_import/spell_vfx.csv`; joins pair 73; owner 2026-11-17)
 
-Owner (translated): "about the effects, do the recommended". Five purchased effect packs give the spells new looks at game size.
+Owner (translated): "about the effects, do the recommended". O596 gave 52 spells a piece of five purchased effect packs at game size.
 The sibling step O597 adds the status layer and the kill dissolves after this one.
+
+**O600.** The owner watched the before and after previews: "I think I like the effects we already have better. Use only the ones that were really bad."
+Every one of the 52 spells was judged by today's effect alone, on grass and stone at game size. Three were really bad. They keep a pack piece.
+The other 49 spells keep today's effects. One pack is left of five. The table went from 46 pieces to 3.
 
 - **Step of pair 73.** It applies on top of pair 72, or on any pair with exactly 4,742 effects and 253 missiles. Any other pair is refused.
   The other steps of pair 73 add no effect and no missile, so the order is free.
-- **Ids.** 40 effects at 4743..4782. The block 4743..5142 is this step's. The next step starts at 5143 and pads the gap.
-  The table's `total` row records the exact count: 40.
-- **Projectiles.** A projectile id is one byte on the wire, so none can be appended past 253. The block 254..399 cannot exist.
-  Four pieces fill the blank stock ids 43, 46, 47 and 52. No script sent those ids and the pair drew nothing there.
-  Two rebuild a pack projectile in place at its own size and send offset: 163 and 132.
+- **Ids.** 2 effects at 4743..4744: `sv_death_bone_shatter`, `sv_death_lifesteal`. The block 4743..5142 is this step's.
+  The next step starts at 5143 and pads the gap. The table's `total` row records the exact count: 2.
+- **Projectiles.** A projectile id is one byte on the wire, so none can be appended past 253.
+  One piece fills the blank stock id 46: `sv_death_skull`. No script sent that id and the pair drew nothing there.
+  The blank ids 43, 47 and 52 stay blank. No projectile is rebuilt in place: 163 and 132 stay as pair 72 draws them. Monsters send 132 too.
 - **Size.** Game size, not HD. Projectiles and small hits: 64 px footprint. Areas, auras and big hits: 96 px.
   A projectile is 3 x 3 tiles, 8 phases of 50 ms, its head on the middle, sent at offset (1, 1).
   An effect has at most 12 phases of 60 to 120 ms. Its anchor lands on the target tile: body, tile middle, ground or feet.
@@ -6919,13 +6923,13 @@ The sibling step O597 adds the status layer and the kill dissolves after this on
 - **Art.** Never in the repository. Committed: the script, `spell_vfx.csv` and `spell_vfx.sums`.
   A row holds a neutral name, the pack key and `src`, the first 12 hex of the sha256 of the sheet file.
   The sheets are read by the local script only. They are never sent to a web or AI service. Licence terms: docs/CREDITS.md.
-- **Build.** `gen_spell_vfx.py build P72/Tibia.dat P72/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest.
+  The trim needed no art: a strip and its sum do not depend on the id.
+- **Build.** `gen_spell_vfx.py build P72/Tibia.dat P72/Tibia.spr OUT --src SHEETS_DIR`. It finds each sheet by digest. Three sheets are needed.
   It runs `import_fx_art.py` and then `live` on the result. `--write` rewrites the table and the sums after a wanted change.
 - **Checks.** `gen_spell_vfx.py check` needs no art and no pair. `gen_spell_vfx.py live DAT SPR` holds a built pair pixel for pixel.
   Add `live` to the job `live-pair` when pair 73 ships. `gen_spell_vfx_test.py` runs on synthetic sheets.
-- **Server.** `server/data/lib/chaos_spell_vfx.lua` maps spells to pieces behind `chaosClientPair >= 73`. See server/README.md.
-- **Not used.** Four projectile sheets found no free one-byte id: a soul bolt, a blood bolt, a light bolt, a heal mote.
-- **Previews** (never committed): per class, before and after of every changed spell, and a rotation clip.
+- **Server.** `server/data/lib/chaos_spell_vfx.lua` maps the three spells to pieces behind `chaosClientPair >= 73`. See server/README.md.
+- **Previews** (never committed): one MP4 of the three kept spells, before and after.
 ## Wings from PixelLab (O594, `tools/sprites/gen_pixellab_wings.py`, `drawn_wings/pixellab_rows.csv`, `gen_drawn_wings.py --src DIR`; owner 2026-11-17)
 The owner saw the O590 previews: "do the hardest ones in PixelLab, but only the 10 that came out bad". Those are the ten rows O590 left at 45 or more. No pair built, not seen in a client.
 - **Rows**: 111 storm gull, 109 squall kite, 96 rose window, 104 slate plate, 116 tide swan, 117 tornado funnel, 93 rain veil, 118 void raven, 58 foam crest, 110 star gossamer.

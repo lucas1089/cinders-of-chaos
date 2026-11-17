@@ -1,5 +1,6 @@
 -- Run from the server/ folder: luajit tests/spell_vfx_test.lua (and lua5.3; CI runs both)
--- The spell effects of the purchased effect packs (O596, client pair 73, data/lib/chaos_spell_vfx.lua and the generated
+-- The spell effects of the purchased effect pack (O596, trimmed to three spells by O600, client pair 73,
+-- data/lib/chaos_spell_vfx.lua and the generated
 -- chaos_spell_vfx_ids.lua): the gate is config.lua chaosClientPair >= 73 and nothing answers below it, every piece a spell
 -- is given exists with the right kind, the ids are the block 4743.. in order, a projectile id fits one byte, every effect
 -- has its element tag, and a spell with an element is only given a piece of that element (or a reason in C.allow).
@@ -38,30 +39,33 @@ eq(C.recordedPair("tests/no_such_config.lua"), nil, "no file")
 -- ---------------------------------------------------------------- gate off: nothing answers, nothing is merged
 ChaosVfx = {fire_nova = {id = 372, dx = 0, dy = 0, ms = 500}}
 ChaosVfxMissile = {fireball = {id = 4, dx = 0, dy = 0}}
-eq(C.pick(201, "missile", "fireball"), "sv_fire_bolt", "pick is pure")
-eq(C.swapFor(201, "missile", "fireball"), nil, "gate off: no projectile")
-eq(C.swapFor(106, "fx", "necro_skull"), nil, "gate off: no effect")
-eq(ChaosVfx.sv_death_wail, nil, "gate off: no name merged")
+eq(C.pick(106, "missile", "skull_orb"), "sv_death_skull", "pick is pure")
+eq(C.swapFor(106, "missile", "skull_orb"), nil, "gate off: no projectile")
+eq(C.swapFor(184, "fx", "lich_soul_drain"), nil, "gate off: no effect")
+eq(ChaosVfx.sv_death_lifesteal, nil, "gate off: no name merged")
 eq(ChaosSpellVfxIds, nil, "gate off: the ids are not even loaded")
 
 -- ---------------------------------------------------------------- gate on
 C.ON = true
 C.loaded = nil
-eq(C.swapFor(201, "missile", "fireball"), "sv_fire_bolt", "Witchfire Bolt: the bolt")
-eq(C.swapFor(201, "send", "fire_explosion"), "sv_fire_bolt_hit", "Witchfire Bolt: a projectile ends in its paired burst")
 eq(C.swapFor(106, "missile", "skull_orb"), "sv_death_skull", "Marrow Bolt: the skull")
-eq(C.swapFor(106, "fx", "necro_skull"), "sv_death_wail", "Marrow Bolt: the wail")
-eq(C.swapFor(57, "missile", "venom_glob"), "sv_venom_glob", "Venom Spiral")
-eq(C.swapFor(218, "missile", "holy_spear"), "sv_holy_lance", "Final Verdict")
-eq(C.swapFor(201, "fx", "necro_skull"), nil, "a name the spell is not given")
+eq(C.swapFor(106, "fx", "necro_skull"), nil, "Marrow Bolt: today's skull hit stays (O600)")
+eq(C.swapFor(184, "fx", "lich_soul_drain"), "sv_death_lifesteal", "Life Siphon")
+eq(C.swapFor(197, "fx", "bone_burst"), "sv_death_bone_shatter", "Bone Shrapnel")
+-- O600: the owner kept today's effects for the other 49 spells of O596
+for _, id in ipairs({201, 204, 206, 127, 177, 183, 203, 42, 160, 185, 119, 120, 193, 180, 192, 40, 176, 182, 112, 43, 113, 57, 23,
+	207, 214, 19, 129, 138, 151, 144, 198, 218, 189, 190, 216, 137, 128, 237, 252, 217, 178, 253, 191, 208, 96, 24, 152, 231, 234}) do
+	eq(C.spells[id], nil, "spell " .. id .. " keeps today's effects")
+end
+eq(C.swapFor(193, "fx", "bone_burst"), nil, "the same name of another spell is not swapped")
 eq(C.swapFor(9999, "fx", "fire_nova"), nil, "a spell with no entry")
 eq(C.swapFor(nil, "fx", "fire_nova"), nil, "no spell")
-eq(C.swapFor(201, "fx", 372), nil, "not a name")
+eq(C.swapFor(184, "fx", 372), nil, "not a name")
 local I = ChaosSpellVfxIds
 ok(I, "the ids are loaded")
 eq(I.pair, C.PAIR, "the ids are of the same pair")
-eq(ChaosVfx.sv_death_wail.id, I.effects.sv_death_wail.id, "merged into ChaosVfx")
-eq(ChaosVfxMissile.sv_fire_bolt.id, 43, "merged into ChaosVfxMissile")
+eq(ChaosVfx.sv_death_lifesteal.id, I.effects.sv_death_lifesteal.id, "merged into ChaosVfx")
+eq(ChaosVfxMissile.sv_death_skull.id, 46, "merged into ChaosVfxMissile")
 eq(ChaosVfx.fire_nova.id, 372, "other names untouched")
 
 -- ---------------------------------------------------------------- the id block
@@ -87,9 +91,7 @@ for name, e in pairs(I.missiles) do
 	eq(e.dx, 1, name .. " dx")
 	eq(e.dy, 1, name .. " dy")
 end
-for id in pairs(I.rebuilt) do
-	ok(id >= 1 and id <= 253 and not mseen[id], "rebuilt projectile " .. id)
-end
+eq(next(I.rebuilt), nil, "no projectile is rebuilt in place (O600: 163 and 132 stay as they are, monsters send 132 too)")
 
 -- ---------------------------------------------------------------- tags, and the element rule
 local tags = {}
@@ -108,12 +110,12 @@ local element = {}
 for id, el in slurp("../client/overlay/modules/game_chaosspells/spelldata.lua"):gmatch('{ id = (%d+), name = "[^"]+"[^\n]-element = "(%w+)"') do
 	element[tonumber(id)] = el
 end
-ok(element[201] == "fire", "the client spell list is read")
+ok(element[106] == "death", "the client spell list is read")
 local used, spells = {}, 0
 for spellId, kinds in pairs(C.spells) do
 	spells = spells + 1
 	for kind, map in pairs(kinds) do
-		ok(kind == "fx" or kind == "send" or kind == "missile", "kind " .. tostring(kind))
+		ok(kind == "fx" or kind == "missile", "kind " .. tostring(kind))
 		for asked, piece in pairs(map) do
 			local e = kind == "missile" and I.missiles[piece] or (kind ~= "missile" and I.effects[piece])
 			ok(e, spellId .. ": " .. piece .. " is not a piece of that kind")
@@ -127,7 +129,7 @@ for spellId, kinds in pairs(C.spells) do
 		end
 	end
 end
-ok(spells >= 40, "the spells mapped")
+eq(spells, 3, "the spells mapped (O600)")
 for spellId, map in pairs(C.allow) do
 	for piece, why in pairs(map) do
 		local e = I.effects[piece]
