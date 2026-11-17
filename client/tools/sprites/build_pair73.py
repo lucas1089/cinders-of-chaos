@@ -2,7 +2,7 @@
 """Pair 73 in one command (O612; client/MANIFEST.md "Pair 73 build (O612)").
 
 usage: python3 -I client/tools/sprites/build_pair73.py P72_DIR OUT_DIR
-           --creature-src DIR --spell-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...]
+           --creature-src DIR --spell-src DIR --status-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...]
            [--wings-src DIR] [--work DIR] [--dry-run] [--any-base] [--order A,B,...]
 
 P72_DIR holds Tibia.dat and Tibia.spr of pair 72 (read only, never changed). OUT_DIR must not exist: it gets the pair
@@ -14,11 +14,14 @@ Steps, in the order the tools' input rules allow (order_problems holds it; STEPS
   wings     O583 / O594   gen_drawn_wings.py apply       the 121 wings looks drawn again (in place, sprites appended)
   creature  O608          gen_creature_outfits.py build  3 boss outfits after the 3,526 of pair 72
   spell     O596 / O600   gen_spell_vfx.py build         2 effects at 4743.., one projectile in the blank missile 46
-  gap       O606          gen_gap_fx.py build            blanks up to 5189, then 48 effects at 5190..
+  status    O597          gen_status_vfx.py build        blanks up to 5142, then 47 effects at 5143..5189 (status layer, kills)
+  gap       O606          gen_gap_fx.py build            48 effects at 5190.. (it takes up to 5189 and pads nothing here)
   area      O607 / O609   gen_area_fx.py build           blanks up to 5299, 39 refills in place, 3 bursts, 28 long beams
 
-Why this order. The spell step takes a pair with exactly 4,742 effects, the gap step 4,742 to 5,189, the area step
-4,742 to 5,299 and it pads up to 5299: so spell, gap, area, and nothing that adds an effect after area. The creature step
+Why this order. The spell step takes a pair with exactly 4,742 effects, the status step 4,742 to 5,142 and it pads up to 5142
+(the spell block 4743..5142 is the spell step's: after it the pair has 4,744 effects, so the status step pads 4745..5142),
+the gap step 4,742 to 5,189, the area step 4,742 to 5,299 and it pads up to 5299: so spell, status, gap, area, and nothing
+that adds an effect after area. The status step before the spell step is refused (the spell step wants exactly 4,742). The creature step
 takes exactly 3,526 outfits and no other step adds one. The centring runs before the wings: its table lists the wings
 looks with the displacement of pair 72, which the drawn wings drop, so its `check` is true only before them. After the
 wings the 169 moved looks are held to their rows in this script (centre_rows_hold).
@@ -60,6 +63,7 @@ WINGS_CSV = os.path.join(HERE, 'drawn_wings', 'designs.csv')
 WINGS_SHEETS_CSV = os.path.join(HERE, 'drawn_wings', 'pixellab_rows.csv')
 SPELL_CSV = os.path.join(ART, 'spell_vfx.csv')
 GAP_CSV = os.path.join(ART, 'gap_fx.csv')
+STATUS_CSV = os.path.join(ART, 'status_vfx.csv')
 AREA_CSV = os.path.join(ART, 'area_fx.csv')
 CREATURE_CSV = os.path.join(ART, 'creature_outfits.csv')
 
@@ -75,6 +79,8 @@ STEPS = (
          CREATURE_CSV),
     Step('spell', 'O596 / O600', 'gen_spell_vfx.py', 'spell effects and a projectile', {'effects': (4742, 4742)}, (), 'spell',
          SPELL_CSV),
+    Step('status', 'O597', 'gen_status_vfx.py', 'status layer and kill overlay effects', {'effects': (4742, 5142)}, (), 'status',
+         STATUS_CSV),
     Step('gap', 'O606', 'gen_gap_fx.py', 'effects for roles that had none', {'effects': (4742, 5189)}, (), 'gap', GAP_CSV),
     Step('area', 'O607 / O609', 'gen_area_fx.py', 'area bursts, beams, markers, long beams', {'effects': (4742, 5299)}, (),
          'area', AREA_CSV),
@@ -92,12 +98,14 @@ def gives(tables=None):
     """{step: {count: value}}: what a step leaves in the pair, read from the committed tables"""
     t = tables or {}
     spell = t.get('spell') or rows_of(SPELL_CSV)
+    status = t.get('status') or rows_of(STATUS_CSV)
     gap = t.get('gap') or rows_of(GAP_CSV)
     area = t.get('area') or rows_of(AREA_CSV)
     creature = t.get('creature') or rows_of(CREATURE_CSV)
     return {
         'creature': {'outfits': max(int(r['new']) for r in creature)},
         'spell': {'effects': max(int(r['id']) for r in spell if r['kind'] == 'effect')},
+        'status': {'effects': max(int(r['id']) for r in status)},
         'gap': {'effects': max(int(r['id']) for r in gap if r['kind'] == 'effect')},
         'area': {'effects': max(int(r['id']) for r in area if r['kind'] in ('new', 'long'))},
     }
@@ -189,7 +197,7 @@ def base_md5():
 
 def source_dirs(a):
     return {'wings': [a.wings_src] if a.wings_src else [], 'creature': [a.creature_src], 'spell': [a.spell_src],
-            'gap': [a.gap_src], 'area': list(a.area_src or [])}
+            'status': [a.status_src] if a.status_src else [], 'gap': [a.gap_src], 'area': list(a.area_src or [])}
 
 
 def input_problems(a, tables=None, want_md5=None, free=None):
@@ -407,6 +415,7 @@ def parse(argv=None):
     ap.add_argument('out', metavar='OUT_DIR')
     ap.add_argument('--creature-src')
     ap.add_argument('--spell-src')
+    ap.add_argument('--status-src')
     ap.add_argument('--gap-src')
     ap.add_argument('--area-src', action='append')
     ap.add_argument('--wings-src')

@@ -31,19 +31,26 @@ def fake_pair(folder, outfits=3526, effects=4742, missiles=253, body=b'spr'):
 def test_order():
     ok(B.order_problems() == [], 'the order of the script is one the tools take: %s' % B.order_problems())
     steps = B.plan()[0]
-    ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'gap', 'area'], 'six steps in order')
+    ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area'], 'seven steps in order')
     ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5330, 'pair 73 ends at 3,529 outfits and 5,330 effects')
-    ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5237, 'the spell step ends at 4744, the gap step at 5237')
-    for bad, word in ((('centre', 'wings', 'creature', 'gap', 'spell', 'area'), 'spell takes'),
-                      (('centre', 'wings', 'creature', 'spell', 'area', 'gap'), 'gap takes'),
-                      (('centre', 'wings', 'creature', 'area', 'spell', 'gap'), 'spell takes'),
-                      (('wings', 'centre', 'creature', 'spell', 'gap', 'area'), 'wings runs after centre'),
-                      (('centre', 'wings', 'spell', 'gap', 'area'), 'creature: missing'),
-                      (('centre', 'wings', 'creature', 'creature', 'spell', 'gap', 'area'), 'creature: twice'),
-                      (('centre', 'wings', 'creature', 'spell', 'gap', 'area', 'status'), 'no such step')):
+    ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5189 and steps[5][1]['effects'] == 5237,
+       'the spell step ends at 4744, the status step at 5189, the gap step at 5237')
+    for bad, word in ((('centre', 'wings', 'creature', 'gap', 'spell', 'status', 'area'), 'spell takes'),
+                      (('centre', 'wings', 'creature', 'spell', 'gap', 'area', 'status'), 'status takes'),
+                      (('centre', 'wings', 'creature', 'spell', 'area', 'status', 'gap'), 'status takes'),
+                      (('centre', 'wings', 'creature', 'status', 'spell', 'gap', 'area'), 'spell takes'),
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'area', 'gap'), 'gap takes'),
+                      (('centre', 'wings', 'creature', 'area', 'spell', 'status', 'gap'), 'spell takes'),
+                      (('wings', 'centre', 'creature', 'spell', 'status', 'gap', 'area'), 'wings runs after centre'),
+                      (('centre', 'wings', 'spell', 'status', 'gap', 'area'), 'creature: missing'),
+                      (('centre', 'wings', 'creature', 'spell', 'gap', 'area'), 'status: missing'),
+                      (('centre', 'wings', 'creature', 'creature', 'spell', 'status', 'gap', 'area'), 'creature: twice'),
+                      (('centre', 'wings', 'creature', 'status', 'status', 'spell', 'gap', 'area'), 'status: twice'),
+                      (('centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'fx'), 'no such step')):
         ok(any(word in p for p in B.order_problems(bad)), 'refused: %s (%s)' % (','.join(bad), B.order_problems(bad)))
-    for free in (('creature', 'centre', 'wings', 'spell', 'gap', 'area'), ('centre', 'spell', 'gap', 'wings', 'area', 'creature'),
-                 ('spell', 'gap', 'area', 'creature', 'centre', 'wings')):
+    for free in (('creature', 'centre', 'wings', 'spell', 'status', 'gap', 'area'),
+                 ('centre', 'spell', 'status', 'gap', 'wings', 'area', 'creature'),
+                 ('spell', 'status', 'gap', 'area', 'creature', 'centre', 'wings')):
         ok(B.order_problems(free) == [], 'also a good order: %s' % ','.join(free))
     ok(B.order_problems(base={'outfits': 3524, 'effects': 4742, 'missiles': 253}), 'a base without the Ki auras is refused')
 
@@ -54,23 +61,26 @@ def test_tool_rules():
     import gen_creature_outfits as K
     import gen_gap_fx as G
     import gen_spell_vfx as V
+    import gen_status_vfx as T
     need = {s.key: s.needs for s in B.STEPS}
     ok(need['spell'] == {'effects': (V.NEED_EFFECTS, V.NEED_EFFECTS)}, 'spell: exactly %d effects' % V.NEED_EFFECTS)
+    ok(need['status'] == {'effects': (T.BASE_EFFECTS, T.RESERVED_LAST)}, 'status: %d to %d effects' % (T.BASE_EFFECTS, T.RESERVED_LAST))
     ok(need['gap'] == {'effects': (G.MIN_EFFECTS, G.FIRST - 1)}, 'gap: %d to %d effects' % (G.MIN_EFFECTS, G.FIRST - 1))
     ok(need['area'] == {'effects': (A.MIN_EFFECTS, A.FIRST - 1)}, 'area: %d to %d effects' % (A.MIN_EFFECTS, A.FIRST - 1))
     ok(need['creature'] == {'outfits': (K.OUTFITS_72, K.OUTFITS_72)}, 'creature: exactly %d outfits' % K.OUTFITS_72)
     ok(B.BASE == {'outfits': K.OUTFITS_72, 'effects': V.NEED_EFFECTS, 'missiles': V.NEED_MISSILES}, 'the base is pair 72')
     ok(V.NEED_MISSILES == G.NEED_MISSILES == A.NEED_MISSILES == 253, 'no step takes another missile count')
     out = B.gives()
-    ok(out['gap']['effects'] < A.FIRST and out['spell']['effects'] < G.FIRST, 'no block runs into the next')
-    ok(V.PAIR == G.PAIR == A.PAIR == K.PAIR == B.PAIR, 'every step is of pair %d' % B.PAIR)
+    ok(out['gap']['effects'] < A.FIRST and out['spell']['effects'] <= T.RESERVED_LAST, 'no block runs into the next')
+    ok(out['status']['effects'] < G.FIRST and out['status']['effects'] >= T.FIRST, 'the status block ends before the gap block')
+    ok(V.PAIR == G.PAIR == A.PAIR == K.PAIR == T.PAIR == B.PAIR, 'every step is of pair %d' % B.PAIR)
     for s in B.STEPS:
         ok(os.path.isfile(os.path.join(HERE, s.tool)) and os.path.isfile(s.table), '%s: its tool and table are there' % s.key)
 
 
 def args(tmp, *more):
     return B.parse([os.path.join(tmp, 'p72'), os.path.join(tmp, 'out'), '--creature-src', os.path.join(tmp, 'c'),
-                    '--spell-src', os.path.join(tmp, 's'), '--gap-src', os.path.join(tmp, 'g'),
+                    '--spell-src', os.path.join(tmp, 's'), '--status-src', os.path.join(tmp, 'st'), '--gap-src', os.path.join(tmp, 'g'),
                     '--area-src', os.path.join(tmp, 'a1'), '--area-src', os.path.join(tmp, 'a2')] + list(more))
 
 
@@ -83,20 +93,26 @@ def put(folder, name, data):
 
 def test_flags_and_dry_run():
     with tempfile.TemporaryDirectory() as tmp:
-        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,creature,spell,gap,area')
+        a = args(tmp, '--dry-run', '--work', os.path.join(tmp, 'w'), '--order', 'centre, wings,creature,spell,status,gap,area')
         ok(a.dry_run and a.area_src == [os.path.join(tmp, 'a1'), os.path.join(tmp, 'a2')] and a.wings_src is None, 'flags')
         ok(a.order == B.ORDER and a.work.endswith('w') and not a.any_base, 'the order flag is read, spaces dropped')
         ok(B.source_dirs(a)['wings'] == [] and len(B.source_dirs(a)['area']) == 2, 'source folders by step')
         ok(any('no Tibia.dat' in p for p in B.input_problems(a, free=1 << 40)), 'a missing pair is said')
         fake_pair(os.path.join(tmp, 'p72'))
         tables = {'spell': [{'src': hashlib.sha256(b'sv').hexdigest()[:12]}],
+                  'status': [{'src': hashlib.sha256(b'stx').hexdigest()[:12]}, {'src': ''}],
                   'gap': [{'src': hashlib.sha256(b'gx1').hexdigest()[:12]}, {'src': hashlib.sha256(b'gx2').hexdigest()[:12]}],
                   'area': [{'src': hashlib.sha256(b'ar1').hexdigest()[:12]}, {'src': hashlib.sha256(b'ar2').hexdigest()[:12]},
                            {'src': ''}],
                   'creature': [{'src': hashlib.sha256(b'cr').hexdigest()[:12]}], 'sheets': []}
         bad = B.input_problems(a, tables, free=1 << 40)
-        ok(len(bad) == 5 and all('is no folder' in p for p in bad), 'five source folders missing: %s' % bad)
+        ok(len(bad) == 6 and all('is no folder' in p for p in bad), 'six source folders missing: %s' % bad)
+        a.status_src = None
+        ok(any('--status-src: no folder named' in p for p in B.input_problems(a, tables, free=1 << 40)), 'no --status-src is said')
+        a.status_src = os.path.join(tmp, 'st')
         put(os.path.join(tmp, 's'), 'x.png', b'sv')
+        ok(len(B.input_problems(a, tables, free=1 << 40)) == 5, 'the status pictures are counted on their own')
+        put(os.path.join(tmp, 'st', 'a', 'b'), 'sheet.png', b'stx')
         put(os.path.join(tmp, 'g', 'deep', 'er'), 'one.png', b'gx1')
         put(os.path.join(tmp, 'a1'), 'p.png', b'ar1')
         put(os.path.join(tmp, 'a2'), 'q.png', b'ar2')
@@ -137,6 +153,9 @@ def test_commands():
         ok(B.check_cmd('wings', a, 'D', 'S', 'T')[3:] == ['live', 'D', 'S', '--src', '/w'], 'wings live with the same sheets')
         a.wings_src = None
         ok(B.build_cmd('wings', a, 'D', 'S', 'O', 'T')[3:] == ['apply', 'D', 'S', 'O'], 'wings by code')
+        c = B.build_cmd('status', a, 'D', 'S', 'O', 'T')
+        ok(c[2].endswith('gen_status_vfx.py') and c[3:] == ['build', 'D', 'S', 'O', '--src', os.path.join(tmp, 'st')], 'status')
+        ok(B.check_cmd('status', a, 'D', 'S', 'T')[2:] == B.tool('gen_status_vfx.py')[2:] + ['live', 'D', 'S'], 'status live: all 47 rows')
         c = B.build_cmd('area', a, 'D', 'S', 'O', 'T')
         ok(c[3:] == ['build', 'D', 'S', 'O', '--src', os.path.join(tmp, 'a1'), '--src', os.path.join(tmp, 'a2')], 'area, two folders')
         ok(B.check_cmd('area', a, 'D', 'S', 'T')[2].endswith('gen_area_fx.py') and B.check_cmd('area', a, 'D', 'S', 'T')[3:] ==
@@ -180,13 +199,13 @@ def test_build_on_fakes():
         held = []
         notes = B.build(a, run=runner, log=lambda t: None, hold=lambda d, s, c: held.append(d) or [])
         builds = [n for n, v in calls if v in ('apply', 'build')]
-        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the six tools in order: %s' % builds)
+        ok(builds == [B.BY_KEY[k].tool for k in B.ORDER], 'the seven tools in order: %s' % builds)
         ok(calls[0] == ('gen_outfit_centre.py', 'measure'), 'the centre table is measured first')
         ok(calls[1:3] == [('gen_outfit_centre.py', 'apply'), ('gen_outfit_centre.py', 'check')], 'a check right after each build')
         ok(all(len(d) <= 2 for d in alive) and alive[-1] == ['area', 'gap'], 'at most two pairs in the work folder: %s' % alive)
-        tail = [c for c in calls[13:]]
+        tail = [c for c in calls[15:]]
         ok(tail == [('gen_drawn_wings.py', 'live'), ('gen_creature_outfits.py', 'live'), ('gen_spell_vfx.py', 'live'),
-                    ('gen_gap_fx.py', 'live'), ('gen_area_fx.py', 'live'), ('gen_fun_costumes.py', 'live'),
+                    ('gen_status_vfx.py', 'live'), ('gen_gap_fx.py', 'live'), ('gen_area_fx.py', 'live'), ('gen_fun_costumes.py', 'live'),
                     ('gen_ki_auras.py', 'live'), ('check_pair.py', os.path.join(tmp, 'out.work', 'area', 'Tibia.dat'))],
            'the final pass: every live again, pair 72, check_pair: %s' % tail)
         ok(len(held) == 1, 'the moved looks are held once after the wings')
@@ -199,7 +218,7 @@ def test_build_on_fakes():
         ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5330, 'missiles': 253},
            'the counts of pair 73')
         log = open(os.path.join(out, 'build', 'pair73_build.txt'), encoding='utf-8').read()
-        ok(log.count('\nstep ') == 6 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
+        ok(log.count('\nstep ') == 7 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and
            'centre table: 1 rows' in log and notes[-1].startswith('Tibia.spr md5'), 'the log names every step and the md5s')
         ok(open(os.path.join(out, 'build', 'outfit_centre.csv'), encoding='utf-8').read().endswith(',x\n'), 'the measured table')
 

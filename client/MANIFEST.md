@@ -7203,9 +7203,9 @@ Two purchased packs (docs/CREDITS.md) join pair 73 as one step of their own. **N
 
 ## Pair 73 build (O612, `tools/sprites/build_pair73.py`; rehearsal 2026-11-17)
 One command builds pair 73 from pair 72. **Rehearsal only: nothing shipped, `PAIR_ASSETS` stays 72, no table of the repository changed.**
-The real build waits for the owner's wings choice. O597 (status effects) is not merged and is not a step.
+The real build waits for the owner's wings choice. O597 (status effects) is step `status` (O617).
 
-- **Command.** `python3 -I client/tools/sprites/build_pair73.py P72_DIR OUT_DIR --creature-src DIR --spell-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...] [--wings-src DIR]`.
+- **Command.** `python3 -I client/tools/sprites/build_pair73.py P72_DIR OUT_DIR --creature-src DIR --spell-src DIR --status-src DIR --gap-src DIR --area-src DIR [--area-src DIR ...] [--wings-src DIR]`.
   `--dry-run` only checks the inputs. `--work DIR` names the work folder (default `OUT_DIR.work`; use a RAM disk). `--any-base` takes a rebuilt pair 72.
   `--wings-src DIR`: the ten painted wings of O594 come from DIR. Without it all 121 wings are drawn by code.
 - **Order** (the table `STEPS`; `order_problems` refuses any order a tool would refuse):
@@ -7216,13 +7216,15 @@ The real build waits for the owner's wings choice. O597 (status effects) is not 
   | 2 `wings` | O583 / O594 | `gen_drawn_wings.py apply` | after `centre` | the same counts |
   | 3 `creature` | O608 | `gen_creature_outfits.py build` | exactly 3,526 outfits | 3,529 outfits |
   | 4 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
-  | 5 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
-  | 6 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,330 effects |
+  | 5 `status` | O597 / O617 | `gen_status_vfx.py build` | 4,742 to 5,142 effects; pads up to 5,142 | 5,189 effects |
+  | 6 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
+  | 7 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,330 effects |
 
-- **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `gap`, then `area`.
-  `gap` pads 4745..5189 (445 blanks). `area` pads 5238..5299 (62 blanks). The block 5143..5189 of O597 stays blank.
-  If O597 joins later it fills its ids in place (`import_fx_art.py` replace), or it runs between `spell` and `gap`.
-  No tool refused this order. No tool was changed.
+- **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `status`, then `gap`, then `area`.
+  `status` (O617) pads 4745..5142 (398 blanks) and writes 5143..5189 (47 effects, `--status-src DIR`, pictures found by digest like the others).
+  `gap` then pads nothing (it takes up to 5,189). `area` pads 5238..5299 (62 blanks). `status` before `spell` is refused (`spell` wants exactly 4,742);
+  `status` after `gap` is refused (it takes at most 5,142). It changes no effect in place, so `--allow-changed` has no `status` ids.
+  No tool was changed. The rehearsal below ran before `status` existed: its md5s and the 507 blanks are of the six step order.
 - **Why `centre` runs before `wings`.** The centre table lists the wings looks with their pair 72 displacement. The drawn wings drop that flag.
   So `gen_outfit_centre.py check` is true only before the wings. After them the script holds the 169 moved looks to their rows itself.
 - **Centre table.** It is of pair 71. Pair 72 has 16 more looks. The script measures pair 72 first (2 minutes) and stops when a committed row changed.
@@ -7234,7 +7236,7 @@ The real build waits for the owner's wings choice. O597 (status effects) is not 
   Then `check_pair.py --old P72 --new-only --allow-changed LIST`: only the things the tables name may differ from pair 72.
   The log with every md5 is `OUT_DIR/build/pair73_build.txt`.
 - **Dry run.** Pair 72 files, counts and dat md5 (`client_pair.py`). Every picture a table names, by file digest, in its source folder.
-  The ten wings sheets by sha256. Room for two pairs. The step order. It decodes no picture. It does not check the packs' json tables.
+  The `--status-src` pictures by digest. The ten wings sheets by sha256. Room for two pairs. The step order. It decodes no picture. It does not check the packs' json tables.
 - **Rehearsal** on a RAM disk, pair 72 rebuilt from pair 71 (dat dd4b6ac4165fb810d1c9d8fd26b8c080, the live one). About 6 minutes. Run twice: the same md5s.
 
   | step | seconds | dat md5 | spr md5 |
@@ -7276,11 +7278,11 @@ The real build waits for the owner's wings choice. O597 (status effects) is not 
 - **At the real build**, after the script: commit the seven tables, `PAIR_OUTFITS` 3529 and `PAIR_NAME` in `check_content.py`,
   `PAIR_ASSETS` 73 and its dat md5 in `server/tools/client_pair.py`, the `live` steps of the five tools in the job `live-pair`, the md5s here.
   Then push the pair, ship the client, set the client pair to 73 (admin app: Comandos > "Par do cliente" > Gravar 73).
-- **Open.** The wings choice (ten painted rows or all by code; still weak rows in "Wings from PixelLab"). O597.
+- **Open.** The wings choice (ten painted rows or all by code; still weak rows in "Wings from PixelLab"). `status` has had no run on a real pair here (fake runner only).
   The 12 fun costumes 3511..3522 are worn by players but count as `other` in the centre table: they are listed, not moved (they stand at y 26 to 30).
   `wing_centres.lua` measures the mass of the wings art. It is only the fallback for a client without base patch 0204.
   Nothing was seen in a client.
 - **Preview** (never committed): `pair73_tour.mp4`, 39 s, read from the built pair: four moved class looks with drawn wings,
   the three bosses walking and idle in four directions, the four long beam families, two area bursts, two gap effects.
-- **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and seven refused orders, the needs held to the tools' own constants,
+- **Test**: `build_pair73_test.py` (no pair, no art, no tool started): the order and twelve refused orders, the needs held to the tools' own constants,
   flags, the dry run on fake folders, the commands, the run of the steps with a fake runner (order, checks, at most two pairs, clean-up, log, stops).
