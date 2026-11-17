@@ -209,6 +209,12 @@ ok, msg = C.allows(os.path.join(server('chaosClientPair = 71\n'), 'data'), C.PAI
 check(not ok and msg.startswith('WARNING: funlooks skipped') and 'client-pair set 72' in msg, 'funlooks, pair 71: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 72\n'), 'data'), C.PAIR_FUN, 'funlooks')[0], 'funlooks, pair 72: runs')
 
+# the creature pack looks (O605) wait for pair 73, which is not built: the windows-assets pair stays below it, so the package's server skips the step
+check(C.PAIR_CREATURE == 73 and C.PAIR_CREATURE > C.PAIR_FUN, 'the creature pack looks need pair 73')
+ok, msg = C.allows(os.path.join(server('chaosClientPair = 72\n'), 'data'), C.PAIR_CREATURE, 'monstercreaturelooks')
+check(not ok and msg.startswith('WARNING: monstercreaturelooks skipped') and 'client-pair set 73' in msg, 'monstercreaturelooks, pair 72: skipped with how to set it')
+check(C.allows(os.path.join(server('chaosClientPair = 73\n'), 'data'), C.PAIR_CREATURE, 'monstercreaturelooks')[0], 'monstercreaturelooks, pair 73: runs')
+
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
 check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN), 'PAIR_ASSETS covers every guarded pair')

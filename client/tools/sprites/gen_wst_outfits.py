@@ -578,9 +578,11 @@ def record_index(spr):
     return idx
 
 
-def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, log=print):
+def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, log=print, specs_of=None):
     """pair in (DAT, SPR; its outfits end at first - 1) -> pair out in OUT_DIR (not there yet): every row of the table is one new
-    outfit, built from the creature of the row. Verified before the rename; returns the new ids."""
+    outfit, built from the creature of the row. Verified before the rename; returns the new ids.
+    specs_of(row) -> [(Group, tiles)]: another tool's outfits through the same append and checks (gen_creature_outfits.py, O605);
+    then `src` is not read here."""
     import random
     import shutil
     import struct
@@ -604,7 +606,7 @@ def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, 
     if nours + 1 != first:
         raise SystemExit('the input has %d outfits, the first new outfit would be %d, not %d: wrong input pair (or already built)'
                          % (nours, nours + 1, first))
-    by = {c.id: c for c in discover(src)}
+    by = {} if specs_of else {c.id: c for c in discover(src)}
     tmp = out_dir.rstrip('/') + '.tmp'
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
@@ -614,13 +616,16 @@ def build(dat, spr, out_dir, src, table=None, first=FIRST_NEW, expect_md5=None, 
     newrecs, recs, reused = [], {}, 0
     entries, src_specs = [], []
     for i, r in enumerate(t):
-        c = by.get(r['src'])
-        if c is None:
-            raise SystemExit('no creature %s under %s' % (r['src'], src))
-        m = measure(c)
-        if m['reason']:
-            raise SystemExit('creature %s: %s' % (r['src'], m['reason']))
-        specs = groups_of(c, m['placed'])
+        if specs_of:
+            specs = specs_of(r)
+        else:
+            c = by.get(r['src'])
+            if c is None:
+                raise SystemExit('no creature %s under %s' % (r['src'], src))
+            m = measure(c)
+            if m['reason']:
+                raise SystemExit('creature %s: %s' % (r['src'], m['reason']))
+            specs = groups_of(c, m['placed'])
         sid_map = {0: 0}
         for g, tiles in specs:
             for slot, a in enumerate(tiles):
