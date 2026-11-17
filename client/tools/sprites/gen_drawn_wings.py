@@ -42,6 +42,9 @@ with this kit. Their commands, handed over from here:
   score DAT SPR [OUT.tsv]      likeness of every row to the old art: shape, colour, layout, motion, 0 is the same
   apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
   live DAT SPR                 a built pair holds them
+  --src DIR                    with sheets, compare, fit, score, apply, live: ten rows come from the painted sheets of
+                               DIR (O594, gen_pixellab_wings.py, drawn_wings/pixellab_rows.csv); without it every row
+                               is drawn by code. CHAOS_WINGS_SRC names the folder for the test
 """
 import argparse
 import math
