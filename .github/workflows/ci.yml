@@ -230,6 +230,10 @@ jobs:
           # the 3 boss outfits 3527-3529, 4x4 and 5x5, made from three creature packs of one author, and the 3 bosses that wear them (O608, after O605, joins pair 73): no art in the repository, the table and digests only; frame pick, size, alpha cut, placement, displacement, build / live on synthetic packs and pairs
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_outfits_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_outfits.py check
+          # the 15 source wings 3530-3544 of pair 74 (O627): O495 centre, stray specks, canvas, layers, anchors, build / live on synthetic pairs, the table, the sums, the server lib and the anchors file (no art is committed; the live check of a real pair 74 joins the live-pair job when pair 74 is built)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_source_wings_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_source_wings.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_source_wings.py anchors --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_vfx_test.py  # status layer and kill overlays of pair 73 (O597)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_vfx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/build_pair73_test.py  # pair 73 in one command (O612): step order, dry run, fake runner

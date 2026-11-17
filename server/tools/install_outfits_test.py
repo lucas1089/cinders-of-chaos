@@ -138,6 +138,42 @@ def test_pair72(tmp):
     expect(IO.main([data]) == 1, 'a clashing look type stops the step')
 
 
+def test_pair74(tmp):
+    """the source wings (chaos_source_wings.lua): their wings.xml lines come only while config.lua chaosClientPair is 74 or more (O627)"""
+    srv = os.path.join(tmp, 'srv74')
+    data = os.path.join(srv, 'data')
+    os.makedirs(os.path.join(data, 'XML'))
+    for name, text in BASE.items():
+        open(os.path.join(data, 'XML', name), 'w').write(text)
+    cfg = os.path.join(srv, 'config.lua')
+
+    def run(pair):
+        if pair is None:
+            if os.path.exists(cfg):
+                os.remove(cfg)
+        else:
+            open(cfg, 'w').write('chaosClientPair = %d\n' % pair)
+        IO.main([data])
+        return open(os.path.join(data, 'XML', 'wings.xml')).read()
+    for pair in (None, 73):
+        xml = run(pair)
+        expect('clientid="3530"' not in xml and 'Voidbloom' not in xml, 'pair %s: no source wings' % pair)
+    xml = run(74)
+    sw = IO.source_wings(data)
+    expect(len(sw) == 15 and sw[0] == (122, 3530, 'Voidbloom Wings') and sw[-1] == (136, 3544, 'Bloodring Wings'), 'pair 74: fifteen wings read: %r' % (sw[:1],))
+    for i, look, name in sw:
+        expect('<wing id="%d" clientid="%d" name="%s" speed="20" />' % (i, look, name) in xml, 'pair 74: %s in wings.xml' % name)
+    expect(IO.WBEGIN in xml and IO.WEND in xml, 'pair 74: the wings block is written')
+    expect(run(74) == xml, 'pair 74: a second run changes nothing')
+    expect(run(80) == xml, 'pair 80: the same block')
+    xml = run(73)
+    expect('clientid="3530"' not in xml and 'Voidbloom' not in xml, 'back to pair 73: the wings are gone again')
+    # an id wings.xml already has outside the block stops the step
+    open(os.path.join(data, 'XML', 'wings.xml'), 'w').write(BASE['wings.xml'].replace('</wings>', '\t<wing id="122" clientid="9999" name="X" speed="20" />\n</wings>\n'))
+    open(cfg, 'w').write('chaosClientPair = 74\n')
+    expect(IO.main([data]) == 1, 'a clashing wings id stops the step')
+
+
 def main():
     test_shipped()
     tmp = tempfile.mkdtemp()
@@ -145,6 +181,7 @@ def main():
         test_switch_on(tmp)
         test_install(tmp)
         test_pair72(tmp)
+        test_pair74(tmp)
     finally:
         shutil.rmtree(tmp)
     if FAILS:

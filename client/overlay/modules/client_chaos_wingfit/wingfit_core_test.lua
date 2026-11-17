@@ -145,5 +145,30 @@ nw, nr = C.applyAnchors(junkA, function(l, x, y) gotW[#gotW + 1] = { l, x, y } e
 ok(nw == 2 and gotW[1][1] == 4 and gotW[2][1] == 9 and gotW[1][2] == -17, 'only whole ids, sorted, whole pixels')
 ok(nr == 1 and gotB[1][1] == 7 and gotB[1][2] == 2 and gotB[1][3] == -30 and gotB[1][4] == -4, 'only whole hand rows')
 
+-- the source wings (O627): one anchor a look, the generated rows of source_wing_anchors.lua (gen_source_wings.py anchors)
+dofile(dir .. 'source_wing_anchors.lua')
+local S = ChaosSourceWingAnchors
+ok(type(S) == 'table' and #S.wings == 15, 'fifteen source wings anchors')
+local gotS = {}
+local ns = C.applyAnchorRows(S, function(l, x, y) gotS[#gotS + 1] = { l, x, y } end)
+ok(ns == 15 and #gotS == 15, 'applyAnchorRows hands every row: ' .. ns)
+ok(gotS[1][1] == 3530 and gotS[15][1] == 3544, 'the looks 3530 to 3544 in order')
+local own, ours = {}, {}
+for _, id in ipairs(A.wings) do ours[id] = true end
+local sorted = true
+for i, row in ipairs(gotS) do
+  if ours[row[1]] or own[row[1]] then sorted = false end
+  own[row[1]] = true
+  if i > 1 and gotS[i - 1][1] >= row[1] then sorted = false end
+  -- 32 - 16 N: the middle column of an N x N canvas, from the creature's place; y the torso row of look 128 (+2)
+  if not ((row[2] == -16 or row[2] == -32) and row[3] == 2) then sorted = false end
+end
+ok(sorted, 'source looks are new, sorted, and anchored on the middle column at +2')
+ok(C.applyAnchorRows(nil, error) == 0 and C.applyAnchorRows({}, error) == 0, 'no table, no rows: nothing')
+local junkS = { wings = { { 9, -16.7, 2.9 }, { 'x', 1, 1 }, { 0, 1, 1 }, { 2.5, 1, 1 }, { 4, 1 }, 'x', { 3, -32, 2 } } }
+local gotJ = {}
+ns = C.applyAnchorRows(junkS, function(l, x, y) gotJ[#gotJ + 1] = { l, x, y } end)
+ok(ns == 2 and gotJ[1][1] == 3 and gotJ[2][1] == 9 and gotJ[2][2] == -17 and gotJ[2][3] == 2, 'only whole looks, sorted, whole pixels')
+
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')

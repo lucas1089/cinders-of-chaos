@@ -35124,3 +35124,25 @@ The step writes the items.otb nodes and an items.xml block (markers, rewritten w
 waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` stays 73 because pair 74 is not built). Below it a WARNING
 line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
 `server/tools/install_decor_flames_test.py`.
+
+## Source wings (O627) (`data/lib/chaos_source_wings.lua`, `install_outfits.py` step `outfits`, gate `chaosClientPair >= 74`)
+
+Owner 2026-11-17: fifteen wings of the source pair, fitted by `client/tools/sprites/gen_source_wings.py` (client/MANIFEST.md "Source wings
+(O627)"). Client outfits **3530 to 3544** (pair 73 ends at 3529), wings.xml ids **122 to 136** (the 121 wings of pair 33 come first). They ride with
+pair 74 beside the decor flames: `client_pair.PAIR_SOURCE_WINGS = 74`, `PAIR_ASSETS` stays 73 until pair 74 is built.
+- **Names** (English like every wings name; the store text has pt-BR sentences by element, none for names): 122 Voidbloom Wings, 123 Bloodmoon Wings, 124
+  Rustfang Wings, 125 Nightglass Wings, 126 Cinderveil Wings, 127 Ashen Relic Wings, 128 Gildenmourn Wings, 129 Sootweave Wings, 130 Mirewood Wings,
+  131 Gravemist Wings, 132 Drownlight Wings, 133 Redthorn Wings, 134 Wraithspan Wings, 135 Hollow Halo Wings, 136 Bloodring Wings.
+- **How a player gets them**: the store, category Wings, after the pair 33 wings, the way most wings are sold (`ChaosSourceWings.addStore`, called by
+  `shop_config.lua`): 250 Cinder Coins for the 3x3 canvases, 300 for the two 4x4 ones (Wraithspan, Hollow Halo), the prices of the pair 33 wings; the text
+  is the element sentence ("Dark wings, animated. Wear them with any aura, head accessory or cape."). No boss drop, no achievement: they are the owner's
+  picks, not a reward set. The wardrobe lists them from wings.xml like the others.
+- **Gate**: the lib reads `config.lua` `chaosClientPair` at load (as the fun costumes of pair 72); below 74 there is no store offer. The install step
+  (`install_outfits.py`, `source_wings(data)`) writes the 15 `<wing>` lines into the Chaos wings block only while the record is 74 or more, with a WARNING
+  line otherwise; a second run changes nothing, a lower record removes the lines again; an id or look wings.xml already has outside the block stops the step.
+  No new install step: `install_all.py --only outfits`. Lift: the admin app first (tab Comandos > card "Par do cliente" > field "Par" 74 > Gravar),
+  the shell `chaos-ctl.sh client-pair set 74` only as a fallback; then the admin app's update installs it (it runs `install_all.py`; the shell
+  fallback is `install_all.py --only outfits`) and the server restarts.
+- **Tests**: `tests/source_wings_test.lua` (ids after 3529 and 121, the rows against `source_wings.csv`, names and keys unused elsewhere, prices by canvas,
+  pt-BR sentences, gate off: no offer, gate on: fifteen offers at the end of Wings, the store validates with the real cores), `tools/install_outfits_test.py`
+  `test_pair74`, `tools/client_pair_test.py`; `gen_source_wings.py check` holds the lib to the table.

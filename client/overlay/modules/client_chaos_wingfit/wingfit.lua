@@ -31,6 +31,10 @@ function init()
     if clearOutfitWingAnchors then clearOutfitWingAnchors() end
     WingFitCore.applyAnchors(ChaosWingAnchors, function(look, x, y) setOutfitWingsAnchor(look, x, y) end,
       function(look, dir, x, y) setOutfitBodyAnchor(look, dir, x, y) end)
+    -- the source wings (O627): their canvases differ, so one anchor a look
+    if ChaosSourceWingAnchors ~= nil then
+      WingFitCore.applyAnchorRows(ChaosSourceWingAnchors, function(look, x, y) setOutfitWingsAnchor(look, x, y) end)
+    end
   end
   if not supported() then return end
   if clearOutfitWingCentres then clearOutfitWingCentres() end

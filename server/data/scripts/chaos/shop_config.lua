@@ -754,4 +754,11 @@ if okFun and type(FUN) == "table" and FUN.addStore then
 	FUN.addStore(cfg)
 end
 
+-- the fifteen source wings of client pair 74 (O627, data/lib/chaos_source_wings.lua; nothing while config.lua chaosClientPair is below
+-- 74): at the end of the Wings category, after the pair 33 wings
+local okSrcWings, SRCWINGS = pcall(dofile, "data/lib/chaos_source_wings.lua")
+if okSrcWings and type(SRCWINGS) == "table" and SRCWINGS.addStore then
+	SRCWINGS.addStore(cfg)
+end
+
 return cfg

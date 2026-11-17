@@ -536,6 +536,11 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
 - **pair 50 source F**: a second purchased sprite set (ground, walls, stairs, decoration, monsters and effects), the other source
   of pair 50 (`client/tools/sprites/pair50_F_selection.csv`). Purchased; the owner approved using it (2026-10-27). The raw files are
   not shared. Not shown in the game or on the website; its sprites ship only inside the pair.
+- **pair 74 wing source**: the sprite pair of the same source family as pair 50, the source of the fifteen wings outfits 3530-3544 of
+  pair 74 (`client/tools/sprites/art_import/source_wings.csv`, client/MANIFEST.md "Source wings (O627)"). It has no licence of its
+  own and its author is not recorded; the owner picked the fifteen wings and approved using them (2026-11-17), as for pair 50. No
+  picture is in the repository, only the table of ids and digests; the raw files are not shared and never sent to a web or AI
+  service. Not shown in the game or on the website; its sprites ship only inside the pair.
 - **set29 status**, **set29 projectile**, **set29 firework**, **set29 blood**, **set29 explosion**: the internal
   labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
   fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by

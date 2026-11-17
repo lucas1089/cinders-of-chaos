@@ -1,0 +1,16 @@
+src,srchash,new,key,name,kind,size,frames,ms,anchor,shift,centres,strays,pixels,dirs,solid,dip,aspect,floor,src_light,note
+906,2fba23c378c8,3530,voidbloom,Voidbloom Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,4,50494,4,88,96,133,0,10:191,
+903,0568f495ecc7,3531,bloodmoon,Bloodmoon Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,0,50473,4,88,96,133,0,none,
+940,8bdcf2496179,3532,rustfang,Rustfang Wings,aura,3x3,6,50,-16:2,-16:-2:-15:-15,-3:-5:2:5,0,79510,4,90,98,116,0,none,
+912,5bbc9901588b,3533,nightglass,Nightglass Wings,aura,3x3,6,100,-16:2,-12:3:-15:-11,-3:-4:5:-2,4,50500,4,88,96,133,0,10:39,
+902,fa1688bf5ee1,3534,cinderveil,Cinderveil Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,0,50488,4,88,96,133,0,none,
+943,01bd109bb04f,3535,ashenrelic,Ashen Relic Wings,borderline,3x3,6,100,-16:2,-18:-7:-22:-17,-1:1:2:4,0,36902,4,76,91,127,0,none,
+908,6a62f7191da6,3536,gildenmourn,Gildenmourn Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,4,50500,4,88,96,133,0,10:210,
+942,fa473e07f757,3537,sootweave,Sootweave Wings,borderline,3x3,6,100,-16:2,-18:-7:-22:-17,-3:1:2:4,0,36902,4,76,91,127,0,none,
+913,9eae8ff9e831,3538,mirewood,Mirewood Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,4,50500,4,88,96,133,0,10:127,
+941,91bec81b87fa,3539,gravemist,Gravemist Wings,borderline,3x3,6,100,-16:2,-18:-7:-22:-17,-1:1:2:4,0,36902,4,76,91,127,0,none,
+904,41bdace1e54b,3540,drownlight,Drownlight Wings,aura,3x3,6,100,-16:2,-12:3:-16:-11,-3:-3:-5:-2,4,50500,4,88,96,133,0,10:179,
+1240,181f442ed851,3541,redthorn,Redthorn Wings,wings,3x3,4,300,-16:2,-19:-19:-13:-21,4:-1:5:4,0,17151,4,43,62,111,0,none,dup of look 1186 (Strength Wings) before O583 redrew it
+915,de0cbeb55e06,3542,wraithspan,Wraithspan Wings,wings,4x4,6,100,-32:2,-5:-36:-3:-41,1:-2:-5:1,0,42148,4,66,66,404,7,none,
+1221,b3120d72dee2,3543,hollowhalo,Hollow Halo Wings,aura,4x4,8,125,-32:2,-2:2:-8:-7,-4:-1:-4:-1,0,41860,4,75,97,250,24,none,
+1220,9a9952297a46,3544,bloodring,Bloodring Wings,aura,3x3,8,100,-16:2,-17:-13:-17:-13,0:4:0:4,0,22594,2,66,71,152,0,none,

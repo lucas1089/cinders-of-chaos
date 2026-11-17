@@ -36,6 +36,8 @@ ids 19-24; client game_chaosshaders draws them) join the same shaders.xml block 
 shader in shaders.xml is still locked for everyone until Player:addShader (cosmetics.lua, only while the switch is on).
 The season pass's own shaders (data/scripts/chaos/seasonpass_config.lua rewards of kind "shader", ids 25-26) join the
 same block; they stay locked until the premium track's claim adds them (seasonpass.lua).
+The fifteen source wings of client pair 74 (data/lib/chaos_source_wings.lua M.wings, wings.xml ids 122-136, outfits 3530-3544, O627) join
+the wings block only while config.lua chaosClientPair is 74 or more (client_pair.py PAIR_SOURCE_WINGS); the store sells them.
 
 The look types exist only in the client pair that has them (client/tools/sprites/import_outfits.py, outfits 1505-1510;
 import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14; the
@@ -77,6 +79,9 @@ PACK33_DATA = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack33_c
 # the moon outfits and costumes of client pair 37 (data/lib/chaos_pack37_looks.lua M.outfits, one line each); a fourth
 # outfits.xml block, locked (the store sells them), written only while ChaosPack37.PAIR37 is on
 PACK37 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack37_looks.lua')
+# the source wings of client pair 74 (data/lib/chaos_source_wings.lua M.wings, one line each, O627): wings.xml lines in the Chaos wings block, written only
+# while config.lua chaosClientPair is 74 or more (client_pair.py PAIR_SOURCE_WINGS)
+SOURCE_WINGS = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_source_wings.lua')
 P37BEGIN = '\t<!-- Chaos pair 37 outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 P37END = '\t<!-- end of the Chaos pair 37 outfits -->\n'
 # the fun costumes of client pair 72 (data/lib/chaos_fun_costumes.lua M.outfits, one line each, O566); a fifth outfits.xml block, locked,
@@ -166,6 +171,20 @@ def pack33_wings(path=None):
     """[(wings.xml id, look, name)] of every pair 33 wings (lines {key = "wings_..", id, look, name, ...})"""
     path = path or PACK33_DATA
     if not os.path.isfile(path):
+        return []
+    return [(int(i), int(lk), n) for i, lk, n in re.findall(
+        r'\{key = "wings_\w+", id = (\d+), look = (\d+), name = "([^"]+)"', open(path, encoding='utf-8').read())]
+
+
+def source_wings(data, path=None):
+    """[(wings.xml id, look, name)] of chaos_source_wings.lua M.wings; [] (and a WARNING line) while config.lua chaosClientPair is below 74"""
+    path = path or SOURCE_WINGS
+    if not os.path.isfile(path):
+        return []
+    import client_pair
+    ok, msg = client_pair.allows(data, client_pair.PAIR_SOURCE_WINGS, 'wings (source wings)')
+    print(msg)
+    if not ok:
         return []
     return [(int(i), int(lk), n) for i, lk, n in re.findall(
         r'\{key = "wings_\w+", id = (\d+), look = (\d+), name = "([^"]+)"', open(path, encoding='utf-8').read())]
@@ -475,6 +494,7 @@ def main(argv):
     if new != text and not dry:
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
     code = install_mounts(args[0], dry)
+    ex['wings'] = ex['wings'] + source_wings(args[0])
     code = install_wings(args[0], dry, ex) or code
     ex['shader'] = ex['shader'] + cosmetic_shaders() + seasonpass_shaders()
     return install_shaders(args[0], dry, ex) or code

@@ -128,4 +128,21 @@ function M.applyAnchors(data, setWings, setBody)
   return #ids, rows
 end
 
+-- Source wings (O627): one anchor a look, rows {look, x, y} (source_wing_anchors.lua: the canvas of a wing is 3x3, 4x4 or 5x5 tiles, so the
+-- point that belongs on the torso differs). Only whole rows with a look from 1 and whole pixels are handed over; sorted by look.
+-- Returns the number of rows handed over.
+function M.applyAnchorRows(data, setWings)
+  if type(data) ~= 'table' or type(data.wings) ~= 'table' then return 0 end
+  local rows = {}
+  for _, row in ipairs(data.wings) do
+    if type(row) == 'table' and type(row[1]) == 'number' and row[1] >= 1 and row[1] == math.floor(row[1])
+      and type(row[2]) == 'number' and type(row[3]) == 'number' then
+      rows[#rows + 1] = { row[1], math.floor(row[2]), math.floor(row[3]) }
+    end
+  end
+  table.sort(rows, function(a, b) return a[1] < b[1] end)
+  for _, row in ipairs(rows) do setWings(row[1], row[2], row[3]) end
+  return #rows
+end
+
 return M
