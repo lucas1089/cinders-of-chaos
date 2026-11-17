@@ -25819,7 +25819,7 @@ When a character gains a level, everyone on screen sees the level-up effect of t
 `w_fx_level_up` = 4047, about 1.4 s: a ring, a rising star and the words LEVEL UP in English baked into the art). The
 client plays it with `Effect.create` + `g_map.addThing` on the character's tile + (1, 1) (client/MANIFEST.md
 "game_levelwings"). Since 2026-10-22 (owner: "Use as spells, level up e loot beams"); until then a pair of golden wings
-(our PNG frames, `gen_levelwings_art.py`, both retired). The server side did not change. The stock level-up text and
+(our PNG frames, `gen_levelwings_art.py`, both retired). The server side did not change. Since 2026-11-17 (owner: "Use o pilar 457 no subir de nível") the effect is the level up pillar, 457 (`level_up` of `data/lib/chaos_vfx.lua`), on the tile + (1, 2), in both clients. The stock level-up text and
 magic effect are the engine's and stay as they were. A client on a pair older than 36 draws nothing.
 
 - **Trigger:** a `CreatureEvent` `onAdvance` (`ChaosLevelWingsAdvance`, registered at login) for `SKILL_LEVEL` with a

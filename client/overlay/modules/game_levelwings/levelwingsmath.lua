@@ -4,14 +4,16 @@
 -- Since pair 36 (2026-10-22, owner: "Use as spells, level up e loot beams") a level-up is the pack's level-up effect
 -- (w_fx_level_up of server/data/lib/chaos_pack36_fx_ids.lua, credited in docs/CREDITS.md), drawn by the client pair.
 -- Our golden wing images (images/wings_*.png, client/tools/gen_levelwings_art.py) are retired.
+-- Since 2026-11-17 (owner: "Use o pilar 457 no subir de nível") it is the level up pillar, effect 457 of the pair
+-- (level_up of server/data/lib/chaos_vfx.lua), in place of the pack's w_fx_level_up 4047.
 
 LevelWingsMath = {}
 local M = LevelWingsMath
 
 -- the effect: its id in the pair and its send offset (the art's bottom-right tile is the creature's tile + dx, dy);
--- levelwingsmath_test.lua checks both against chaos_pack36_fx_ids.lua
-M.EFFECT_NAME = 'w_fx_level_up'
-M.EFFECT = { id = 4047, dx = 1, dy = 1 }
+-- levelwingsmath_test.lua checks both against chaos_vfx.lua
+M.EFFECT_NAME = 'level_up'
+M.EFFECT = { id = 457, dx = 1, dy = 2 }
 
 -- the tile the effect is added to for a creature standing on pos
 function M.effectPos(pos)

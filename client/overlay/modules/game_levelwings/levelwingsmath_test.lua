@@ -1,5 +1,5 @@
 -- luajit levelwingsmath_test.lua && lua5.3 levelwingsmath_test.lua (from any folder)
--- The level-up effect: its id and offset are those of w_fx_level_up in the server ids file (pair 36), the tile it goes
+-- The level-up effect: its id and offset are those of level_up in server/data/lib/chaos_vfx.lua (the pillar 457), the tile it goes
 -- to, the settings rule and the server message check.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'levelwingsmath.lua')
@@ -11,14 +11,14 @@ local function eq(a, b, what)
 end
 
 -- the effect of the pair
-local f = io.open(dir .. '../../../../server/data/lib/chaos_pack36_fx_ids.lua', 'r')
+local f = io.open(dir .. '../../../../server/data/lib/chaos_vfx.lua', 'r')
 local text = f and f:read('*a') or ''
 if f then f:close() end
-local id, dx, dy = text:match('\nChaosVfx%.' .. M.EFFECT_NAME .. ' = {id = (%d+), dx = (%d+), dy = (%d+)')
+local id, dx, dy = text:match('\n%s+' .. M.EFFECT_NAME .. ' = {id = (%d+), dx = (%d+), dy = (%d+)')
 eq(M.EFFECT.id, tonumber(id), 'the id of ' .. M.EFFECT_NAME)
 eq(M.EFFECT.dx, tonumber(dx), 'its x offset')
 eq(M.EFFECT.dy, tonumber(dy), 'its y offset')
-eq(M.EFFECT.id > 854, true, 'an effect appended in pair 36')
+eq(M.EFFECT.id, 457, 'the level up pillar (owner 2026-11-17)')
 
 -- the tile
 local p = M.effectPos({ x = 100, y = 200, z = 7 })
