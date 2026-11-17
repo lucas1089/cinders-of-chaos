@@ -32,10 +32,10 @@ def test_order():
     ok(B.order_problems() == [], 'the order of the script is one the tools take: %s' % B.order_problems())
     steps = B.plan()[0]
     ok([k for k, _c in steps] == ['centre', 'wings', 'creature', 'spell', 'status', 'gap', 'area', 'lightning'], 'eight steps in order')
-    ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5335 and steps[-2][1]['effects'] == 5330,
-       'pair 73 ends at 3,529 outfits and 5,335 effects, the area step at 5,330')
-    ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5189 and steps[5][1]['effects'] == 5237,
-       'the spell step ends at 4744, the status step at 5189, the gap step at 5237')
+    ok(steps[-1][1]['outfits'] == 3529 and steps[-1][1]['effects'] == 5325 and steps[-2][1]['effects'] == 5320,
+       'pair 73 ends at 3,529 outfits and 5,325 effects, the area step at 5,320')
+    ok(steps[3][1]['effects'] == 4744 and steps[4][1]['effects'] == 5189 and steps[5][1]['effects'] == 5236,
+       'the spell step ends at 4744, the status step at 5189, the gap step at 5236')
     for bad, word in ((('centre', 'wings', 'creature', 'gap', 'spell', 'status', 'area'), 'spell takes'),
                       (('centre', 'wings', 'creature', 'spell', 'gap', 'area', 'status'), 'status takes'),
                       (('centre', 'wings', 'creature', 'spell', 'area', 'status', 'gap'), 'status takes'),
@@ -166,7 +166,7 @@ def test_commands():
         c = B.build_cmd('area', a, 'D', 'S', 'O', 'T')
         ok(c[3:] == ['build', 'D', 'S', 'O', '--src', os.path.join(tmp, 'a1'), '--src', os.path.join(tmp, 'a2')], 'area, two folders')
         ok(B.check_cmd('area', a, 'D', 'S', 'T')[2].endswith('gen_area_fx.py') and B.check_cmd('area', a, 'D', 'S', 'T')[3:] ==
-           ['live', 'D', 'S'], 'area live: all 70 rows')
+           ['live', 'D', 'S'], 'area live: all 51 rows')
         c = B.build_cmd('lightning', a, 'D', 'S', 'O', 'T')
         ok(c[2].endswith('gen_lightning_fx.py') and c[3:] == ['build', 'D', 'S', 'O'], 'lightning: drawn by code, no source folder')
         ok(B.check_cmd('lightning', a, 'D', 'S', 'T')[3:] == ['live', 'D', 'S'], 'lightning live')
@@ -226,7 +226,7 @@ def test_build_on_fakes():
         ok(open(os.path.join(out, 'Tibia.spr'), 'rb').read() == b'lightning', 'the last step is the pair')
         ok(open(os.path.join(tmp, 'p72', 'Tibia.spr'), 'rb').read() == b'base spr' and
            sorted(os.listdir(os.path.join(tmp, 'p72'))) == ['Tibia.dat', 'Tibia.spr'], 'pair 72 is untouched')
-        ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5335, 'missiles': 253},
+        ok(B.dat_counts(os.path.join(out, 'Tibia.dat')) == {'items': 44559, 'outfits': 3529, 'effects': 5325, 'missiles': 253},
            'the counts of pair 73')
         log = open(os.path.join(out, 'build', 'pair73_build.txt'), encoding='utf-8').read()
         ok(log.count('\nstep ') == 8 and 'Tibia.dat md5 ' + B.md5(os.path.join(out, 'Tibia.dat')) in log and

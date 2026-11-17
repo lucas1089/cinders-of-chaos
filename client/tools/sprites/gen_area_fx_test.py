@@ -4,6 +4,8 @@ the canvas of its pair 36 spec on synthetic frames, the beam reach, the generate
 O609, the long beams: the table of lengths, a synthetic beam (a start flare, a body with light that flows, a tip) made
 longer on a straight and a diagonal heading: one start, one tip, the body and its flow run on pixel for pixel; a body that
 sways is bent so its middle line does not step; the view cut; the rows' rules.
+O613: the table after the owner's review (one burst, three beams, the gravity press of a slowed creature), the rows that
+left it are gone from the tags and back on the removed list of pair 51.
 No pack art and no pair: python3 -I client/tools/sprites/gen_area_fx_test.py (numpy, Pillow)."""
 import os
 import struct
@@ -26,15 +28,19 @@ def ok(cond, msg):
 def test_table():
     rows = G.pieces()
     ok(G.table_errors(rows) == [], 'the table of the script holds its rules: %s' % G.table_errors(rows))
-    ok(len(rows) == 70, '70 effects')
+    ok(len(rows) == 51, '51 effects')
     new = [r for r in rows if r['kind'] == 'new']
-    ok([r['id'] for r in new] == [5300, 5301, 5302], 'the new effects are 5300..5302')
-    ok(G.last_new() == 5302, 'the O607 step ends at 5302')
+    ok([(r['id'], r['name']) for r in new] == [(5300, 'ab_arcane_clock')], 'the one new effect is the clock face at 5300')
+    ok(G.last_new() == 5300, 'the O607 step ends at 5300')
     ok(all(r['id'] < 4743 for r in rows if r['kind'] == 'refill'), 'a refill is an id of pair 36')
-    ok(sum(r['role'] == 'beam' and r['kind'] == 'refill' for r in rows) == 32, 'four beams of eight headings')
+    ok(sum(r['role'] == 'beam' and r['kind'] == 'refill' for r in rows) == 24, 'three beams of eight headings')
+    ok([(r['id'], r['name'], r['kind'], r['element']) for r in rows if r['role'] == 'status'] == [(3036, 'mega_gravity_press', 'refill', 'any')],
+       'O613: the gravity press of a slowed creature is a refill of pair 36')
+    ok(not any(r['name'].startswith(G.RETIRED) for r in rows) and not any(b.startswith(G.RETIRED) for b, _ in G.LONG),
+       'O613: the bursts that stood in for ours and the blood stream are not in the table')
     long = [r for r in rows if r['kind'] == 'long']
-    ok([r['id'] for r in long] == list(range(5303, 5331)), 'the long beams are 5303..5330, after the O607 block')
-    ok(rows[-28:] == long, 'the long beams are the last rows')
+    ok([r['id'] for r in long] == list(range(5301, 5321)), 'the long beams are 5301..5320, after the O607 block')
+    ok(rows[-20:] == long, 'the long beams are the last rows')
     for base, ln in G.LONG:
         for d in G.DIRS:
             name = G.long_name(base, ln, d)
@@ -45,11 +51,13 @@ def test_table():
     ok(all(r['role'] == 'beam' and r['dir'] and r['name'] == G.long_name(r['name'][:r['name'].rindex('_l')], r['len'], r['dir'])
            for r in long), 'a long beam is named for its beam, length and heading')
     ok([r['dir'] for r in rows if r['kind'] == 'refill' and r['name'].startswith('mega_soul_chain_')] == G.DIRS, 'the headings in the order of pair 36')
-    for change, why in ((lambda b: b[1].update(id=5305), 'a hole in the new block'),
+    for change, why in ((lambda b: b[0].update(id=5305), 'a hole in the new block'),
                         (lambda b: b[0].update(src='fire_pack.png'), 'src must be 12 hex'),
                         (lambda b: b[3].update(id=5303), 'a refill above pair 36'),
                         (lambda b: b[4].update(name=b[3]['name']), 'a name twice'),
-                        (lambda b: b[3].update(dir='n'), 'a heading on an area burst'),
+                        (lambda b: b[0].update(dir='n'), 'a heading on an area burst'),
+                        (lambda b: b[1].update(dir='n'), 'a heading on a status effect'),
+                        (lambda b: b[1].update(role='aura'), 'an unknown role'),
                         (lambda b: b[0].update(element='shadow'), 'an unknown element'),
                         (lambda b: b[-1].update(len=''), 'a long beam with no length'),
                         (lambda b: b[0].update(len=4), 'a length on a burst'),
@@ -81,7 +89,7 @@ def test_padding():
     ok(G.pad_plan(4745) == (4746, 554), 'after the O596 step: from its last effect')
     ok(G.pad_plan(5250) == (5251, 49), 'after a step that ends at 5250: only the rest')
     ok(G.pad_plan(5299) == (5300, 0), 'a pair that ends at 5299: nothing to pad')
-    ok(G.pad_plan(5300) is None and G.pad_plan(5302) is None, 'already imported: refused')
+    ok(G.pad_plan(5300) is None and G.pad_plan(5320) is None, 'already imported: refused')
     ok(G.pad_plan(4741) is None, 'an older pair: refused')
     ok(len(G.BLANK) == 12 and G.BLANK[0] == 0xFF and G.BLANK[-4:] == b'\0\0\0\0', 'a blank effect: one 1x1 frame, sprite 0')
     # a fake dat: header, two "effects", two "missiles"
@@ -177,12 +185,14 @@ def test_server_files():
     rows = G.read_spec()
     lua = G.lua_text(rows)
     ok(lua.count('{id = ') == len(rows), 'one Lua row per effect')
-    ok('ab_fire_rain = {id = 5300, dx = 3, dy = 2' in lua and 'first = 5300, count = 31, natural = 3' in lua, 'the new block in the ids file')
+    ok('ab_arcane_clock = {id = 5300, dx = 4, dy = 4' in lua and 'first = 5300, count = 21, natural = 3' in lua, 'the new block in the ids file')
+    ok('mega_gravity_press = {id = 3036, dx = 1, dy = 1, ms = 1411, w = 3, h = 3, element = "any", role = "status", refill = true}' in lua,
+       'the status effect in the ids file')
     ok('[6] = {n = "mega_soul_chain_l6_n", ne = "mega_soul_chain_l6_ne", e = "mega_soul_chain_l6_e"' in lua, 'the lengths: a long beam per heading')
     ok('[3] = {n = "mega_sunbeam_lance_n", ne = "mega_sunbeam_lance_l3_ne", e = "mega_sunbeam_lance_e"' in lua,
        'the lengths: 3 tiles is the pack\'s own beam on a straight heading')
-    ok('mega_soul_chain_l6_e = {id = 5305,' in lua and 'refill = false, len = 6, reach = 6}' in lua, 'a long beam row has its length and reach')
-    ok(lua.count('len = ') == 28 and 'mega_glacier_breath = {' not in lua.split('lengths = {')[1], 'only the beams the spells draw are long')
+    ok('mega_soul_chain_l6_e = {id = 5303,' in lua and 'refill = false, len = 6, reach = 6}' in lua, 'a long beam row has its length and reach')
+    ok(lua.count('len = ') == 20 and 'mega_glacier_breath = {' not in lua.split('lengths = {')[1], 'only the beams the spells draw are long')
     ok('mega_soul_chain = {n = 3, ne = 2, e = 3, se = 2, s = 3, sw = 2, w = 3, nw = 2}' in lua, 'the beam reaches')
     ok(lua.startswith('-- GENERATED') and 'ChaosVfx.' not in lua, 'a plain table: no other generator reads it as ChaosVfx rows')
     tags = G.tags_text(rows)
@@ -191,8 +201,12 @@ def test_server_files():
     ok([int(l.split(',')[0]) for l in lines] == sorted(int(l.split(',')[0]) for l in lines), 'the tags stay in id order')
     for r in rows:
         ok('%s,%s,%s' % (r['id'], r['name'], r['element']) in lines, r['name'] + ': tagged')
+    ok(not any(l.split(',')[1].startswith(G.RETIRED) for l in lines), 'O613: a row that left the table has no tag')
+    ok([l for l in lines if int(l.split(',')[0]) >= G.FIRST and l.split(',')[1].startswith(('ab_', 'mega_'))] ==
+       ['%s,%s,%s' % (r['id'], r['name'], r['element']) for r in rows if r['kind'] != 'refill'],
+       'from 5300 on the tags of this step are its rows and nothing else (the lightning rows of O614 follow)')
     cat = G.catalog_text(rows).splitlines()
-    ok(len(cat) == 6 and cat[1].startswith('effect,5300,ab_fire_rain,7x6,"3,2"'), 'the five area bursts are a ground catalogue')
+    ok(len(cat) == 2 and cat[1].startswith('effect,5300,ab_arcane_clock,9x9,"4,4"'), 'the one area burst is a ground catalogue')
     ok(G.ids(True) == 0, 'the generated files are committed up to date')
     for p in (G.SPEC, G.SUMS, G.LUA, G.CATALOG, os.path.abspath(G.__file__), os.path.abspath(__file__)):
         text = open(p, encoding='utf-8').read().lower()
@@ -317,9 +331,18 @@ def test_pair51():
     ok(G.pair51_errors(rows) == [], 'the refilled ids left the removed list of pair 51 and are on its keep list')
     fake = [dict(rows[0], kind='refill', id='560', name='x')]
     ok(G.pair51_errors(fake), 'a refill that is not on the keep list under its name is found')
+    import csv
     import prune_pair
     keep = prune_pair.keep_list()
     ok(all(('effect', int(r['id'])) in keep for r in rows if r['kind'] == 'refill'), 'prune_pair.py keeps them')
+    # O613: the ten refills the owner dropped are blank again: off the keep list, back on the removed list
+    gone = [1612, 1642] + list(range(3356, 3364))
+    with open(G.REMOVED, newline='') as fh:
+        removed = {int(r['id']) for r in csv.DictReader(fh) if r['kind'] == 'effect'}
+    ok(all(i in removed and ('effect', i) not in keep for i in gone), 'the dropped refills are on the removed list of pair 51 again')
+    ok(3036 not in removed and ('effect', 3036) in keep, 'the gravity press left the removed list')
+    with open(G.KEEP, newline='') as fh:
+        ok(not any(r['name'].startswith(G.RETIRED) for r in csv.DictReader(fh)), 'no dropped name on the keep list')
 
 
 def main():

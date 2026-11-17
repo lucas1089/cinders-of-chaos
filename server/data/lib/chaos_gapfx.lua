@@ -1,5 +1,5 @@
 -- chaos_gapfx.lua: effects for roles that had none (O606, client pair 73; the art is in the sprite pair only,
--- client/tools/sprites/gen_gap_fx.py, docs/CREDITS.md). 48 effects of a purchased effect set at the ids 5190..5237 for
+-- client/tools/sprites/gen_gap_fx.py, docs/CREDITS.md). 47 effects of a purchased effect set at the ids 5190..5236 for
 -- events that sent no effect of their own (nothing, a stock puff or the shared yellow firework): progress, rewards, boss
 -- marks, portals, snares, professions, world. Nothing that had its own effect is replaced, with one owner order: the boss
 -- warning pulse (warning_zone, warning_fill) becomes the set's strike circle. Looks only: no damage, no timing, no area.
@@ -69,7 +69,6 @@ C.events = {
 	card_common = "gx_card_common", -- cards.lua: a new card
 	card_rare = "gx_card_rare", -- cards.lua: a new card above Common
 	relic = "gx_relic", -- uber.lua: a relic
-	jackpot = "gx_jackpot", -- prizes.lua: a unique from a roulette
 	masterwork = "gx_masterwork", -- crafting.lua: the best outcome
 	-- boss marks
 	tele_zone = "gx_tele_zone", -- the danger pulse of a boss area (the four senders of warnEffect)

@@ -15,14 +15,14 @@ Steps, in the order the tools' input rules allow (order_problems holds it; STEPS
   creature  O608          gen_creature_outfits.py build  3 boss outfits after the 3,526 of pair 72
   spell     O596 / O600   gen_spell_vfx.py build         2 effects at 4743.., one projectile in the blank missile 46
   status    O597          gen_status_vfx.py build        blanks up to 5142, then 47 effects at 5143..5189 (status layer, kills)
-  gap       O606          gen_gap_fx.py build            48 effects at 5190.. (it takes up to 5189 and pads nothing here)
-  area      O607 / O609   gen_area_fx.py build           blanks up to 5299, 39 refills in place, 3 bursts, 28 long beams
-  lightning O614          gen_lightning_fx.py build      5 effects at 5331.. drawn by code (no source folder; it pads nothing here)
+  gap       O606          gen_gap_fx.py build            47 effects at 5190.. (it takes up to 5189 and pads nothing here)
+  area      O607 / O609   gen_area_fx.py build           blanks up to 5299, 30 refills in place, 1 burst, 20 long beams
+  lightning O614          gen_lightning_fx.py build      5 effects at 5321.. drawn by code (no source folder; it pads nothing here)
 
 Why this order. The spell step takes a pair with exactly 4,742 effects, the status step 4,742 to 5,142 and it pads up to 5142
 (the spell block 4743..5142 is the spell step's: after it the pair has 4,744 effects, so the status step pads 4745..5142),
-the gap step 4,742 to 5,189, the area step 4,742 to 5,299 and it pads up to 5299, the lightning step 4,742 to 5,330 and it
-pads up to 5330: so spell, status, gap, area, lightning, and nothing that adds an effect after lightning. The status step before the spell step is refused (the spell step wants exactly 4,742). The creature step
+the gap step 4,742 to 5,189, the area step 4,742 to 5,299 and it pads up to 5299, the lightning step 4,742 to 5,320 and it
+pads up to 5320: so spell, status, gap, area, lightning, and nothing that adds an effect after lightning. The status step before the spell step is refused (the spell step wants exactly 4,742). The creature step
 takes exactly 3,526 outfits and no other step adds one. The centring runs before the wings: its table lists the wings
 looks with the displacement of pair 72, which the drawn wings drop, so its `check` is true only before them. After the
 wings the 169 moved looks are held to their rows in this script (centre_rows_hold).
@@ -86,7 +86,7 @@ STEPS = (
     Step('gap', 'O606', 'gen_gap_fx.py', 'effects for roles that had none', {'effects': (4742, 5189)}, (), 'gap', GAP_CSV),
     Step('area', 'O607 / O609', 'gen_area_fx.py', 'area bursts, beams, markers, long beams', {'effects': (4742, 5299)}, (),
          'area', AREA_CSV),
-    Step('lightning', 'O614', 'gen_lightning_fx.py', 'the bolt from the sky, drawn by code', {'effects': (4742, 5330)}, (), None,
+    Step('lightning', 'O614', 'gen_lightning_fx.py', 'the bolt from the sky, drawn by code', {'effects': (4742, 5320)}, (), None,
          LIGHTNING_CSV),
 )
 BY_KEY = {s.key: s for s in STEPS}

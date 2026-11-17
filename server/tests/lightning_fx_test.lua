@@ -2,7 +2,7 @@
 -- The bolt from the sky, drawn by code (O614, client pair 73, data/lib/chaos_lightning_fx.lua and the generated
 -- chaos_lightning_fx_ids.lua): the gate is config.lua chaosClientPair >= 73; below it Vfx(pos, "lightning_strike") sends
 -- effect 458 as before; with it the new ids go out at their send offsets, the three shapes in turn, a boss strike one
--- heavy bolt in four; `raw` and every other name are untouched; the ids are the block 5331.. in order and tagged energy;
+-- heavy bolt in four; `raw` and every other name are untouched; the ids are the block 5321.. in order and tagged energy;
 -- every file that names the old bolt is a listed sender, and the two boss scripts ask the lib.
 local n = 0
 local function eq(a, b, m)
@@ -71,7 +71,7 @@ ok(C.live(), "gate on: the ids load")
 local I = ChaosLightningFxIds
 ok(I, "the generated ids")
 eq(I.pair, 73, "the ids are of pair 73")
-eq(I.first, 5331, "after the last effect of the steps before (5330)")
+eq(I.first, 5321, "after the last effect of the steps before (5320)")
 eq(I.count, #C.std + #C.heavy, "every effect of the pair has a use")
 local seen = {}
 for name, e in pairs(I.effects) do
@@ -176,7 +176,7 @@ for _, file in ipairs({"data/scripts/chaos/boss_mechanics.lua", "data/scripts/ch
 	ok(text:find("ChaosLightningFx.boss(name)", 1, true), file .. " asks for the boss bolt")
 	ok(text:find("name = skyHeavy(name)", 1, true), file .. ": in its fx")
 end
-ok(slurp("data/lib/chaos_vfx.lua"):find("name = skySwap(areaSwap(name))", 1, true), "Vfx asks the lib")
-ok(slurp("../client/tools/sprites/import_vfx.py"):find("name = skySwap(areaSwap(name))", 1, true), "and the tool that writes chaos_vfx.lua keeps it")
+ok(slurp("data/lib/chaos_vfx.lua"):find("name = skySwap(name)", 1, true), "Vfx asks the lib")
+ok(slurp("../client/tools/sprites/import_vfx.py"):find("name = skySwap(name)", 1, true), "and the tool that writes chaos_vfx.lua keeps it")
 
 print("lightning_fx_test: " .. n .. " checks passed")

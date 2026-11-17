@@ -173,16 +173,6 @@ ChaosVfxAura = {
 	aura_void_rift = {look = 1529, aura = 24, title = "Void Rift"},
 }
 
--- O607: a faint area burst of ours is drawn as the pack burst on client pair 73 (data/lib/chaos_area_fx.lua, loaded on the
--- first call; gate off or `raw`: the name as asked)
-local function areaSwap(name)
-	if ChaosAreaFx == nil then
-		ChaosAreaFx = false
-		pcall(dofile, "data/lib/chaos_area_fx.lua")
-	end
-	return ChaosAreaFx and ChaosAreaFx.swap(name) or name
-end
-
 -- O614: the bolt from the sky (lightning_strike, 458) is the code-drawn bolt on client pair 73 (data/lib/chaos_lightning_fx.lua,
 -- loaded on the first call; gate off or `raw`: the name as asked)
 local function skySwap(name)
@@ -195,7 +185,7 @@ end
 
 function Vfx(pos, name, raw)
 	if not raw then
-		name = skySwap(areaSwap(name))
+		name = skySwap(name)
 	end
 	local e = ChaosVfx[name]
 	if not e or not pos then

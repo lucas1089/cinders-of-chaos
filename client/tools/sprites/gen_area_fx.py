@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Area bursts, beams and markers of the purchased effect packs of pair 36 (O607; joins client pair 73).
+"""An area burst, beams, markers and a status effect of the purchased effect packs of pair 36 (O607, O609, O613; joins
+client pair 73).
 
     python3 -I gen_area_fx.py build DAT SPR OUT_DIR --src DIR [--src DIR ...]   # DIR: the unzipped packs (any sub folders;
                                                          # only the picked sheets and the packs' json tables are needed)
@@ -8,32 +9,34 @@
     python3 -I gen_area_fx.py ids [--check]              # server/data/lib/chaos_area_fx_ids.lua, spells/area_fx_catalog.csv,
                                                          # the tags of spell_fx_elements.csv
     python3 -I gen_area_fx.py live DAT SPR [--long]      # the pair holds every row at its id, pixel for pixel
-                                                         # (--long: only the long beams 5303..)
+                                                         # (--long: only the long beams 5301..)
 
-The owner approved the review O604: five area bursts of ours are faint, the beam spells draw balls on a line, and the pack
-has markers we lack. 42 effects in two kinds of rows:
-  refill  39 effects that pair 36 imported at their ids and pair 51 blanked as unused (prune_pair.py): two area bursts,
-          four beams of eight headings each, five markers. Each is put back AT ITS PAIR 36 ID, in the size, the send
+The owner approved the review O604: the beam spells draw balls on a line, and the pack has markers we lack. O607 also
+swapped five area bursts of ours for pack ones; the owner saw them and kept ours (O613, 2026-11-17: "the new area bursts
+are too weak"), so four of those bursts and the blood stream beam left the table, the clock face stays for two arcane
+spells, and the pack's gravity press came in for a slowed creature. 51 effects in three kinds of rows:
+  refill  30 effects that pair 36 imported at their ids and pair 51 blanked as unused (prune_pair.py): three beams of
+          eight headings each, five markers, one status effect. Each is put back AT ITS PAIR 36 ID, in the size, the send
           offset and the phase count of its pair 36 spec (art_import/pack36_*.csv), so the names and offsets of
           server/data/lib/chaos_pack36_fx_ids.lua stay true. Their rows moved from pair51_removed.csv to pair51_keep.csv.
-  new     3 area bursts of a set pair 36 did not have, appended at 5300..5302. The input pair may end anywhere from 4742
+  new     1 area burst of a set pair 36 did not have, appended at 5300. The input pair may end anywhere from 4742
           to 5299: every id from its last effect + 1 up to 5299 is padded with a blank effect (one 1x1 frame, sprite 0,
           the bytes of a pair 51 blank), so this step runs LAST of the effect steps of pair 73, after the steps that own
-          4743..5142 (O596, gen_spell_vfx.py) and 5190..5237 (O606, gen_gap_fx.py; then 5238..5299 are padded here).
+          4743..5142 (O596, gen_spell_vfx.py) and 5190..5236 (O606, gen_gap_fx.py; then 5237..5299 are padded here).
           It never touches an id below 5300 that has art.
-  long    28 beams at 5303..5330 (O609, the owner: "the larger beams are in segments"). The pack's beam art covers 3 tiles
-          on a straight heading and less on a diagonal, and three of the four beam spells hit a longer line, so O607 drew
+  long    20 beams at 5301..5320 (O609, the owner: "the larger beams are in segments"). The pack's beam art covers 3 tiles
+          on a straight heading and less on a diagonal, and the beam spells hit a longer line, so O607 drew
           copies end to end: a start flare and a tip in the middle of every line. A long row is ONE effect for one beam,
           heading and line length (LONG): the one start, the body made longer by whole periods of itself, the one tip at
           the true end of the line. See "Long beams" below. The input pair is the one of the two kinds above (4742..5299
-          effects: all three kinds are built) or a pair that ends at 5302 (only the long beams are appended; only the
+          effects: all three kinds are built) or a pair that ends at 5300 (only the long beams are appended; only the
           beam sheets are needed).
 
 The cut is the one the pair 36 tools use now (gen_pack36_fx.load: the 32 px sheets 1:1, alpha cut hard at 0.5; the 64 px
 set halved, the same cut; no dither mesh): O604's numbers show the hard cut keeps 84% to 106% of the alpha mass of every
 pick, so none needs the game size cut of O596. A looping pack effect plays once and its last 3 frames dissolve, as in
 pair 36. Placing is the pack's own anchor tile: an area burst is sent at the centre tile of the spell, a beam at the
-caster's tile, a marker at the marked tile.
+caster's tile, a marker at the marked tile, a status effect at the creature's tile.
 
 The art is purchased (docs/CREDITS.md: use and change allowed, no resale or redistribution, never machine-learning data),
 so no picture is in the repository. Committed: this script, art_import/area_fx.csv (one row per effect: the name, a
@@ -76,14 +79,10 @@ FIELDS = ['kind', 'id', 'name', 'role', 'set', 'src', 'dir', 'element', 'len', '
 
 # (kind, first id, name, role, set key, src, element, directional, note)
 #   set: a neutral key of the pack and its family (the names are in docs/CREDITS.md): a3 the area set pair 36 did not have,
-#   g the tile-grid area skills, v1 the 500 effect set, ui the 64 px interface set
+#   v1 the 500 effect set, ui the 64 px interface set
 PICKS = [
-    ('new', 5300, 'ab_fire_rain', 'area', 'a3', '88fd2670bf53', 'fire', False, 'burning shards rain on a 5 x 5 square'),
-    ('new', 5301, 'ab_blood_sigil', 'area', 'a3', '91d7c5fd23cc', 'physical', False, 'a blood sigil, a disc of 5 tiles'),
-    ('new', 5302, 'ab_arcane_clock', 'area', 'a3', '8fb10e93aff5', 'arcane', False, 'a clock face of runes, a disc of 7 tiles'),
-    ('refill', 1612, 'area_whiteout', 'area', 'g', '0c1ea500c11a', 'ice', False, 'a white burst of snow, a disc of 5 tiles'),
-    ('refill', 1642, 'area_radiant_repulse', 'area', 'g', '77a6f450cafc', 'holy', False, 'a burst of light that pushes out, a disc of 5 tiles'),
-    ('refill', 3356, 'mega_blood_siphon', 'beam', 'v1', 'e004c7df3c91', 'physical', True, 'a red stream'),
+    ('new', 5300, 'ab_arcane_clock', 'area', 'a3', '8fb10e93aff5', 'arcane', False, 'a clock face of runes, a disc of 7 tiles'),
+    ('refill', 3036, 'mega_gravity_press', 'status', 'v1', '11e5c615b9c3', 'any', False, 'a weight that presses down: a slowed creature'),
     ('refill', 3404, 'mega_glacier_breath', 'beam', 'v1', '7778956be1cd', 'ice', True, 'a breath of frost'),
     ('refill', 3492, 'mega_soul_chain', 'beam', 'v1', '406a12a645e7', 'death', True, 'a chain of souls'),
     ('refill', 3508, 'mega_sunbeam_lance', 'beam', 'v1', '3959fb2e44aa', 'holy', True, 'a lance of sunlight'),
@@ -93,17 +92,20 @@ PICKS = [
     ('refill', 4051, 'w_fx_quest_marker', 'mark', 'ui', '695411437e97', 'any', False, 'a gold quest marker'),
     ('refill', 4076, 'w_marker_skull', 'mark', 'ui', '6ec163293be4', 'any', False, 'a skull mark'),
 ]
-PACK36_GROUP = {'g': 'area', 'v1': 'mega', 'ui': 'ui'}      # set key -> the pair 36 spec that holds a refill's row
+PACK36_GROUP = {'v1': 'mega', 'ui': 'ui'}      # set key -> the pair 36 spec that holds a refill's row
+# O613: the refills the owner dropped (the two area bursts that stood in for ours, the blood stream of Eclipse Edge): blank
+# again as in pair 51, back on pair51_removed.csv, and their tags leave spell_fx_elements.csv (name prefixes)
+RETIRED = ('area_whiteout', 'area_radiant_repulse', 'mega_blood_siphon')
 
 # O609: a line spell whose line is not the length of the beam's own art gets ONE effect of that length per heading:
 # (beam, line length in tiles). The lengths are the `length` of the spells of C.beams in server/data/lib/chaos_area_fx.lua
 # (attack_kit_config.lua; server/tests/area_fx_test.lua holds the two together).
-LONG = [('mega_soul_chain', 6), ('mega_sunbeam_lance', 3), ('mega_sunbeam_lance', 8), ('mega_blood_siphon', 5)]
-NATURAL = 3                  # tiles the pack's own art covers on a straight heading (held by the build, all three beams)
+LONG = [('mega_soul_chain', 6), ('mega_sunbeam_lance', 3), ('mega_sunbeam_lance', 8)]
+NATURAL = 3                  # tiles the pack's own art covers on a straight heading (held by the build, both beams)
 STRAIGHT = ('n', 'e', 's', 'w')
 # px along the axis that are not body: the start flare and the tip (measured, O609: the 1 px profile of the heading e)
-CAPS = {'mega_soul_chain': (14, 14), 'mega_sunbeam_lance': (30, 14), 'mega_blood_siphon': (10, 44)}
-WAVY = ('mega_soul_chain', 'mega_blood_siphon')   # the body sways (its middle line jumps 2 to 6 px at a plain seam): bent
+CAPS = {'mega_soul_chain': (14, 14), 'mega_sunbeam_lance': (30, 14)}
+WAVY = ('mega_soul_chain',)  # the body sways (its middle line jumps 2 to 6 px at a plain seam): bent
 SLAB = 6                     # px each side of a seam that the seam error compares
 SEAM_MAX = 0.75              # the worst seam error a long beam may have (0: the art continues exactly, 1: nothing matches)
 VIEW = (8, 7)                # a player sees a tile up to 9 east and 7 south of its own (the engine's view): the far tile of
@@ -177,7 +179,7 @@ def table_errors(rows):
     for r in rows:
         if (r['kind'] == 'long') != bool(r['len']) or (r['kind'] == 'long' and r['role'] != 'beam'):
             errs.append('%s: a long beam has a length, nothing else has' % r['name'])
-        if r['kind'] not in ('new', 'refill', 'long') or r['role'] not in ('area', 'beam', 'mark') or r['element'] not in ELEMENTS:
+        if r['kind'] not in ('new', 'refill', 'long') or r['role'] not in ('area', 'beam', 'mark', 'status') or r['element'] not in ELEMENTS:
             errs.append('%s: kind, role or element' % r['name'])
         if len(r['src']) != 12 or any(c not in '0123456789abcdef' for c in r['src']):
             errs.append('%s: src is the first 12 hex of the sheet digest' % r['name'])
@@ -251,11 +253,11 @@ def fixed_strip(P, name, frames, anchor, point, loop, w, h, dx, dy, phases):
 # end, so every copy showed its own flare and tip (the owner: "os beams maiores estao segmentados"). A long beam is ONE
 # effect: the art up to a cut in its body, the body between the cut and one period further repeated n times, then the rest
 # of the art with its one tip, moved out by n periods. A copy plays `o` frames ahead of the one before it, so what flows
-# along the body (the light pulses, the blood, the glint on the chain) runs on through the copies: the speed of that flow
+# along the body (the light pulses, the glint on the chain) runs on through the copies: the speed of that flow
 # is measured (flow) and gives the frame step of a period (flow_step). The cut `c` and the period `q` are searched for
 # the smallest sum of seam errors: the seam error compares, SLAB px each side
 # of a cut, the art that would have come next with the art that does come next, over every frame (0: the same pixels).
-# A beam whose body sways (WAVY: the chain, the blood) is also bent: at every seam and in every frame the two sides are
+# A beam whose body sways (WAVY: the chain) is also bent: at every seam and in every frame the two sides are
 # moved sideways, half the gap each and falling to nothing over one period, so the middle line never jumps.
 # The work is done in beam coordinates (v along the heading, c across it): whole pixels both ways, on a diagonal too (one
 # step along a diagonal is one px in x and one in y), so nothing is resampled and no colour is made up.
@@ -766,8 +768,8 @@ def reach(r):
 
 def lua_text(rows):
     new = [r for r in rows if r['kind'] != 'refill']
-    L = ['-- GENERATED by client/tools/sprites/gen_area_fx.py from art_import/area_fx.csv (O607, O609). Do not edit by hand.',
-         '-- Area bursts, beams and markers of the purchased effect packs (docs/CREDITS.md), drawn by client pair %d:' % PAIR,
+    L = ['-- GENERATED by client/tools/sprites/gen_area_fx.py from art_import/area_fx.csv (O607, O609, O613). Do not edit by hand.',
+         '-- An area burst, beams, markers and a status effect of the purchased effect packs (docs/CREDITS.md), drawn by client pair %d:' % PAIR,
          '-- %d effects refilled at their pair 36 ids (pair 51 had blanked them; the names, sizes and send offsets are the ones' % (
              len(rows) - len(new)),
          '-- of chaos_pack36_fx_ids.lua) and %d new ones at %d..%d. A plain table: data/lib/chaos_area_fx.lua merges it into' % (
@@ -820,11 +822,14 @@ def catalog_text(rows):
 
 
 def tags_text(rows):
-    """spell_fx_elements.csv with this step's rows (id, name, element) in id order, the other rows as they are"""
+    """spell_fx_elements.csv with this step's rows (id, name, element) in id order, the other rows as they are. A row
+    this step wrote once and no longer has goes: its names (`ab_`, `mega_`) from FIRST on, and the names of RETIRED.
+    Rows of a later step (the lightning step, O614) stay."""
     mine = {r['id'] for r in rows}
     with open(TAGS, encoding='utf-8', newline='') as fh:
         lines = fh.read().splitlines()
-    keep = [l for l in lines[1:] if l.split(',')[0] not in mine]
+    keep = [l for l in lines[1:] if l.split(',')[0] not in mine and not l.split(',')[1].startswith(RETIRED)
+            and not (int(l.split(',')[0]) >= FIRST and l.split(',')[1].startswith(('ab_', 'mega_')))]
     new = ['%s,%s,%s' % (r['id'], r['name'], r['element']) for r in rows]
     return '\n'.join(lines[:1] + sorted(keep + new, key=lambda l: int(l.split(',')[0]))) + '\n'
 

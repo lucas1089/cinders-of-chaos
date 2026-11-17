@@ -51,13 +51,6 @@ local function send(pos, e)
 	if not (pos and e) then
 		return false
 	end
-	if ChaosAreaFx == nil then
-		ChaosAreaFx = false
-		pcall(dofile, "data/lib/chaos_area_fx.lua")
-	end
-	if ChaosAreaFx then
-		e = ChaosAreaFx.swapId(e) -- O607: the pack burst for a faint one of ours on client pair 73, else e itself
-	end
 	local ok = pcall(function()
 		Position(pos.x + e.dx, pos.y + e.dy, pos.z):sendMagicEffect(e.id)
 	end)

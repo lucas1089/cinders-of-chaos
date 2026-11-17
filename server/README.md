@@ -34800,7 +34800,8 @@ a hit or projectile too small or dim to read on grass and stone, a projectile wi
 
 ## Effects for roles that had none (O606; `data/lib/chaos_gapfx.lua`, `data/lib/chaos_gapfx_ids.lua`, `scripts/chaos/gapfx.lua`, client pair 73)
 
-48 effects of a purchased effect set at the ids 5190..5237. The art is in the sprite pair only: client/MANIFEST.md, docs/CREDITS.md.
+47 effects of a purchased effect set at the ids 5190..5236. The art is in the sprite pair only: client/MANIFEST.md, docs/CREDITS.md.
+O613 (owner 2026-11-17): the "Jackpot" effect (a unique won from a roulette) is gone, with its sender in `prizes.lua`. The rows after it moved up one id.
 Each goes to an event that sent no effect of its own: nothing, a stock puff or the shared yellow firework.
 Looks only. No damage, no timing, no area changes.
 
@@ -34856,67 +34857,69 @@ Looks only. No damage, no timing, no area changes.
 | 5208 | 62 | `gx_card_common` | 3 x 3, 16 | cards.lua: a new Common card in the Deck (nothing before) |
 | 5209 | 63 | `gx_card_rare` | 5 x 5, 22 | cards.lua: a new card above Common (nothing before) |
 | 5210 | 77 | `gx_relic` | 4 x 4, 24 | uber.lua: a relic in the reward (nothing before) |
-| 5211 | 54 | `gx_jackpot` | 6 x 5, 23 | prizes.lua: a unique won from a roulette (nothing before) |
-| 5212 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
-| 5213 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
-| 5214 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
-| 5215 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
-| 5216 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
-| 5217 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
-| 5218 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
-| 5219 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
-| 5220 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
-| 5221 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
-| 5222 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
-| 5223 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
-| 5224 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
-| 5225 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
-| 5226 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
-| 5227 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
-| 5228 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
-| 5229 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
-| 5230 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
-| 5231 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
-| 5232 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
-| 5233 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
-| 5234 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
-| 5235 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
-| 5236 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
-| 5237 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
-## Area bursts, beams and markers (O607; `data/lib/chaos_area_fx.lua`, `data/lib/chaos_area_fx_ids.lua`, client pair 73)
+| 5211 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
+| 5212 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
+| 5213 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
+| 5214 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
+| 5215 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
+| 5216 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
+| 5217 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
+| 5218 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
+| 5219 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
+| 5220 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
+| 5221 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
+| 5222 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
+| 5223 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
+| 5224 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
+| 5225 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
+| 5226 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
+| 5227 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
+| 5228 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
+| 5229 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
+| 5230 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
+| 5231 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
+| 5232 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
+| 5233 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
+| 5234 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
+| 5235 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
+| 5236 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+## Area bursts, beams and markers (O607, O609, O613; `data/lib/chaos_area_fx.lua`, `data/lib/chaos_area_fx_ids.lua`, client pair 73)
 
 The owner approved the review O604. Looks only: no damage, no timing, no area changes.
 
 - **Gate.** `config.lua` `chaosClientPair >= 73`, read once at load. Below 73 every spell, boss and event sends exactly what it sends today.
   The old ids keep their art. Nothing is overwritten in place.
-- **Area bursts.** A faint burst of ours is drawn as a pack burst. The swap sits in `Vfx(pos, name, raw)` of `data/lib/chaos_vfx.lua`.
-  Every named effect goes through that door. `raw` asks for our own art.
+- **O613 (owner 2026-11-17, after the O607 previews).** Our old area bursts stay. The swap by name is gone from `Vfx` of `data/lib/chaos_vfx.lua`.
+  638 fire, 642 blood, 644 ice and 646 holy are ours again for every sender: spells, boss hits, boss deaths, Purging Nova.
+  `deathfx.lua` and `chaos_big_fx.lua` ask nothing of this file any more. The size rule for boss hits is gone with it.
+  Four pack bursts left the pair: fire rain, blood sigil, whiteout, radiant burst. Nothing sent them after the undo.
+- **The clock face, two spells only.** 5300 `ab_arcane_clock`, a disc of 7 tiles. `ChaosAreaFx.spellBursts`:
 
-  | Ours | Pack burst | Senders |
-  |---|---|---|
-  | 638 `big_shock_fire_7` | 5300 `ab_fire_rain` | Doomtide (206), Colossus Fall (225), Falling Pyre (204), fire boss hits, fire boss deaths |
-  | 642 `big_shock_blood_9` | 5301 `ab_blood_sigil` | Judgment of Iron (148), world boss enrage, physical boss hits, quake, vault slam, chain lash, whirlwind |
-  | 4711 `donor_arcane_nova_695` | 5302 `ab_arcane_clock` | none today |
-  | 644 `big_nova_frost_7` | 1612 `area_whiteout` | Primordial Squall (213) |
-  | 646 `big_nova_holy_7` | 1642 `area_radiant_repulse` | Hammer of Ember Dawn (237), holy boss hits |
+  | Spell | The name its script sends | Drawn before | On pair 73 |
+  |---|---|---|---|
+  | Veil of Whispers (153) | `big_nova_arcane_7` at the caster's feet | 648, our arcane nova | 5300 |
+  | Tear in the Weave (231, script `illusionist/reality_rift.lua`) | `arcane_circle`, each of the two implosions | 775 `weave_crush`, the pair 29 swap | 5300 |
 
-  The boss death effect is sent by id: `deathfx.lua` asks `ChaosAreaFx.swapId`.
-  Purging Nova (199) is listed for 646 in `chaos_big_fx.lua`, but the effects pass sends its donor ring first. It does not change.
-- **Open: the arcane burst.** No script sends 4711. The clock face is in the pair and mapped, but no spell shows it yet.
-  The arcane spells send `big_nova_arcane_7` (648: Veil of Whispers, Reality Rift) or `weave_crush` (Tear in the Weave).
-  One row in `ChaosAreaFx.names` gives one of them the clock face. It waits for the owner's word.
-- **Size.** A pack burst is sent on the centre tile of the area, as ours is. The blood sigil is 6 tiles wide and ours 9.
-  `ChaosBigFx.bossHit` keeps ours on an area wider than 7 tiles (`ChaosAreaFx.maxSize`).
-  A boss mechanic that sends its hit on every second telegraph tile sends the pack burst there, as it sends ours today.
+  The owner named the second spell by its script, "Reality Rift". Its rift core `void_rift` does not change.
+  `ChaosSpell.vfx` of `data/spells/chaos/_common.lua` asks `ChaosAreaFx.spellBurst(spellId, name)` inside a cast.
+  The spell id comes from `ChaosSupportsSpell.cast()`. A cosmetic skin of the spell wins. The clock wins over the pair 29, large and class effects.
+  Any other sender of 648 keeps 648. Outside a cast nothing is swapped.
+- **Slowed.** A slowed creature shows 3036 `mega_gravity_press` in place of our whirlwind 783 `cond_slowed`. `ChaosAreaFx.status`.
+  `ChaosPack29Vfx.show` and `.hold` ask `ChaosAreaFx.statusName(state)` first (`auraNow` in `data/lib/chaos_pack29_vfx.lua`).
+  3 x 3 tiles, 17 phases of 83 ms, sent with the pack's own offset. Below pair 73 the whirlwind stays.
+  The status layer (O597) would show its `root` status for a slowed creature on the same pair. The owner's word of O613 is the gravity press.
+  So `root` yields: `ChaosStatusVfx.yield = {root = "slowed"}`. No mark from the state and no bit from the paralyse condition while the press is live.
+  The three `st_root_*` effects 5158..5160 are in the pair with no sender then. An empty `yield` table gives root back to the layer.
 - **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
   It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
 
   | Spell | Beam | Line | One effect per heading (O609) |
   |---|---|---|---|
-  | Soulrend Beam (118, death) | `mega_soul_chain` | 6 | 5303..5310 `mega_soul_chain_l6_<heading>` |
-  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` | 3 | straight: the pack's own 3508, 3510, 3512, 3514. Diagonal: 5311..5314 `mega_sunbeam_lance_l3_<heading>` |
-  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 5315..5322 `mega_sunbeam_lance_l8_<heading>` |
-  | Eclipse Edge (155, physical) | `mega_blood_siphon` | 5 | 5323..5330 `mega_blood_siphon_l5_<heading>` |
+  | Soulrend Beam (118, death) | `mega_soul_chain` | 6 | 5301..5308 `mega_soul_chain_l6_<heading>` |
+  | Lance of Vigil (129, holy) | `mega_sunbeam_lance` | 3 | straight: the pack's own 3508, 3510, 3512, 3514. Diagonal: 5309..5312 `mega_sunbeam_lance_l3_<heading>` |
+  | Dawnbreaker Shot (151, holy) | `mega_sunbeam_lance` | 8 | 5313..5320 `mega_sunbeam_lance_l8_<heading>` |
+
+  O613: Eclipse Edge (155) has no beam any more. It draws its line tile by tile, as before O607. The blood stream beam left the pair.
 
 - **Long beams in one piece (O609).** The owner saw O607: "the larger beams are in segments".
   The pack's beam art covers 3 tiles on a straight heading and less on a diagonal. O607 drew copies end to end, so a start and a tip sat inside the line.
@@ -34940,7 +34943,7 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
   - Lock, 3690: over a Chronicle gate that is sealed or above the player's level (`chronicle.lua`), over a generated area's entrance above the player's level (`areagen.lua`).
   - Quest marker, 4051: over the loot bag that holds a main quest item (`mainquest.lua`).
   - Skull 4076, checkpoint crystal 3685, hand 3688: in the pair, no sender yet. The server has no checkpoint. NPC quest marks stay those of the client.
-- **Element rule.** Every id has a row in `data/spells/spell_fx_elements.csv`. A pack burst has the element of the burst it stands in for.
+- **Element rule.** Every id has a row in `data/spells/spell_fx_elements.csv`. The clock face is arcane, as the nova it stands in for. The gravity press is tagged `any`, as a status effect.
   A beam has the element of its spell. `check_spell_fx.py` measures with the gate off.
 - **Tests.** `tests/area_fx_test.lua` in the server loop. `client/tools/sprites/gen_area_fx_test.py`. The tool: client/MANIFEST.md.
   O609 in the Lua test: every beam spell and heading gets one effect named for the length of the real damage line (`ChaosAttackKitCore.tiles`).
@@ -34960,7 +34963,7 @@ status holds, an end once. Players and monsters alike.
   | shock | `CONDITION_ENERGY` | `shocked` |
   | poison | `CONDITION_POISON` | `poison` |
   | curse | `CONDITION_CURSED` | `cursed` |
-  | root | `CONDITION_PARALYZE` | `slowed` |
+  | root | `CONDITION_PARALYZE` | `slowed`. O613: yields to the gravity press while that is live, see "Area bursts, beams and markers" |
   | soak | `CONDITION_DROWN` | none |
   | stun | none | `stunned` |
   | confuse | `CONDITION_DRUNK` (players) | `confused` |
@@ -35081,7 +35084,7 @@ The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MA
 
 - **Gate.** `chaosClientPair` of `config.lua` is 73 or more, read once at load. Below 73 every sender draws effect 458 as today.
   The owner raises the record when pair 73 ships: README "Client pair guard".
-- **Ids.** 5331..5333 are three shapes of the bolt. 5334 and 5335 are two shapes of a heavy bolt. All are tagged `energy` in `data/spells/spell_fx_elements.csv`.
+- **Ids.** 5321..5323 are three shapes of the bolt. 5324 and 5325 are two shapes of a heavy bolt. All are tagged `energy` in `data/spells/spell_fx_elements.csv`.
 - **The swap.** The name `lightning_strike` is effect 458 of `data/lib/chaos_vfx.lua`. `Vfx()` is the one door every named effect goes through.
   There `ChaosLightningFx.swap` answers with the next of the three shapes. Bolts that fall together do not look alike.
   A name changed before `Vfx()` is not touched: a cosmetic skin, the pair 27 and 29 tables, the effects pass. `Vfx(pos, name, true)` still draws 458.

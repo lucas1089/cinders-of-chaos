@@ -211,9 +211,6 @@ function P.bossPrize(player, w, cfg)
 			return false
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_UNIQUE, pick.name))
-		if ChaosGapFx then -- O606
-			ChaosGapFx.on(player, "jackpot")
-		end
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "The player %s has won the unique %s from the %s roulette!",
 			player:getName(), pick.name, tostring(cfg.title or "boss"))
 		return true

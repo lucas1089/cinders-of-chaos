@@ -25,6 +25,9 @@ spell effects own 4743..5142, the next step 5143..5189). The gap up to 5189 is p
 phase, no sprite), so this step's ids are fixed whatever came before: 5190 onward, dense, in table order. A step that
 later fills its own ids rebuilds them in place (import_fx_art.py `replace`). No missile is added.
 
+O613 (owner 2026-11-17): the "Jackpot" effect was used for nothing worth a word on the screen, so it left the table and
+its sender (prizes.lua); the rows after it moved up one id (pair 73 is not shipped): 47 effects, 5190..5236.
+
 A sheet is one row of frames of whole 32 px tiles, drawn for a 32 px tile: nothing is scaled. Per effect:
   plain   the set's combined sheet (what lies behind and in front of a character in one picture), drawn over the creature
           as every effect is; one id, no split.
@@ -99,7 +102,6 @@ PICKS = [
     ('gx_card_common', 62, '3ca75f6b2762', 96, 96, 16, 1, 1, 0, 15, 'stand', 'a new card'),
     ('gx_card_rare', 63, 'c44b7178b2f5', 128, 160, 22, 1, 2, 0, 21, 'stand', 'a new rare card'),
     ('gx_relic', 77, '46f976a376ca', 128, 128, 24, 1, 1, 0, 23, 'stand', 'a relic drops'),
-    ('gx_jackpot', 54, '0a03e83b83aa', 160, 160, 24, 2, 2, 0, 23, 'stand', 'the roulette pays its top prize'),
     ('gx_masterwork', 71, '47c55c7d9766', 128, 160, 24, 1, 2, 0, 23, 'stand', 'a craft that ends on the best outcome'),
     ('gx_tele_zone', 145, '55e87a349225', 128, 128, 16, 1, 1, 0, 7, 'tile', 'boss telegraph, the danger pulse (strike circle, first half)'),
     ('gx_tele_fill', 145, '55e87a349225', 128, 128, 16, 1, 1, 8, 12, 'tile', 'boss telegraph, the last pulse before the hit (strike circle, the filling)'),

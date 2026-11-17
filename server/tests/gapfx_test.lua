@@ -164,7 +164,7 @@ local where = {
 	milestone_gold = "../../lib/chaos_gapfx.lua", milestone_diamond = "../../lib/chaos_gapfx.lua", respec = "respec.lua",
 	quest_complete = "mainquest.lua", daily = "daily.lua", bounty = "bounty.lua", chest_royal = "weeklychest.lua",
 	season_tier = "seasonpass.lua", set_complete = "itemsets.lua", card_common = "cards.lua", card_rare = "cards.lua",
-	relic = "uber.lua", jackpot = "prizes.lua", masterwork = "crafting.lua",
+	relic = "uber.lua", masterwork = "crafting.lua",
 	tele_zone = "../../lib/chaos_gapfx.lua", tele_fill = "../../lib/chaos_gapfx.lua", spread = "boss_mechanics.lua",
 	chase = "boss_mechanics.lua", safe_zone = "boss_mechanics.lua", countdown = "boss_mechanics.lua",
 	meteor_shadow = "boss_mechanics.lua", gate = "townportal.lua", rift_open = "rift.lua", rift = "rift.lua",

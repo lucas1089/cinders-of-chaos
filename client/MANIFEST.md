@@ -6936,7 +6936,25 @@ The other 49 spells keep today's effects. One pack is left of five. The table we
 ## Area bursts, beams and markers of the pair 36 packs (O607, `tools/sprites/gen_area_fx.py`, `art_import/area_fx.csv`; joins pair 73; owner 2026-11-17)
 
 The owner approved the review O604. Five of our area bursts are faint. The beam spells draw balls on a line. The packs have markers we lack.
-42 effects. Not in a live pair yet, not seen in a client.
+42 effects then. Not in a live pair yet, not seen in a client.
+
+**O613 (owner 2026-11-17, after the previews): the table is smaller. Read this block first, the text below it is the O607 state.**
+
+- **Now 51 rows.** 30 refills, 1 new at 5300, 20 long beams at 5301..5320.
+- **Dropped.** Refills 1612 `area_whiteout`, 1642 `area_radiant_repulse`, 3356..3363 `mega_blood_siphon`. New `ab_fire_rain`, `ab_blood_sigil`.
+  Long `mega_blood_siphon_l5` 5323..5330. Our own bursts stay, so nothing sent the four pack bursts. Eclipse Edge lost its beam.
+  The ten refill rows are back in `pair51_removed.csv`. `RETIRED` in the tool names them, and `check` fails when one comes back.
+- **Added.** Refill 3036 `mega_gravity_press`, role `status`: the slowed status effect. 3 x 3, offset (1, 1), 17 phases of 83 ms.
+  Pair 51 had blanked it. Its row moved to `pair51_keep.csv`.
+- **Ids.** 5300 `ab_arcane_clock`. 5301..5308 `mega_soul_chain_l6`. 5309..5312 `mega_sunbeam_lance_l3`, diagonals. 5313..5320 `mega_sunbeam_lance_l8`.
+  The clock and the long beams are one block with no hole. Pair 73 is not shipped, so no id was in use.
+- **Step.** Unchanged, with new numbers. A pair that ends at 5300 gets only the 20 long beams, `--expect-first-effect 5301`.
+  11 sheets are needed for a full build, two beam sheets for the long rows alone.
+- **Ground layer.** One burst lies under the creatures: the clock. `ground_fx.csv` lost four rows. 225 ground effects.
+- **Proved 2026-11-17** on a pair 72 rehearsal build: spell step, gap step, this step. `live` OK for 51 rows: 30 replaced in place, 1 new, 20 long.
+  Test output dat df25278419c022f5bdd01297bbb3db28, spr 9866112487abaceeff42de41f4a3b356. Deleted. This is not the shipped pair 73.
+  The long rows alone were also built on a pair padded to 5300.
+- **Preview** (never committed): slowed before and after, the clock on the two spells, the four bursts of ours.
 
 - **Refills, 39 effects.** Pair 36 imported them. Pair 51 blanked them as unused. Each is put back at its pair 36 id.
   Size, phases and send offset are those of its pair 36 spec, so `chaos_pack36_fx_ids.lua` stays true.
@@ -6947,7 +6965,7 @@ The owner approved the review O604. Five of our area bursts are faint. The beam 
 - **New, 3 effects at 5300..5302.** `ab_fire_rain` 7 x 6, `ab_blood_sigil` 8 x 7, `ab_arcane_clock` 9 x 9. A set pair 36 did not have.
 - **Step of pair 73, the last effect step.** The input pair needs 253 missiles and 4,742 to 5,299 effects. Every refill id must be blank in it.
   The tool pads every id from the input's last effect + 1 up to 5299 with a blank effect: one 1 x 1 frame, sprite 0, the 12 bytes pair 51 writes.
-  After O606 (`gen_gap_fx.py`, 5190..5237) that is 5238..5299, 62 blanks. Order: `gen_spell_vfx.py`, `gen_gap_fx.py`, then this step.
+  After O606 (`gen_gap_fx.py`, 5190..5236) that is 5237..5299, 63 blanks. Order: `gen_spell_vfx.py`, `gen_gap_fx.py`, then this step.
   From pair 72 alone it is 4743..5299, 557 blanks. After a step that ends at N it starts at N + 1. Both cases were built.
   So the steps that own 4743..5142 and 5143..5299 run first. A step that needs an exact effect count cannot run after this one.
   The tool never touches an id below 5300 that has art.
@@ -6973,6 +6991,7 @@ The owner approved the review O604. Five of our area bursts are faint. The beam 
 ### Long beams in one piece (O609, kind `long` of `gen_area_fx.py`, 5303..5330; joins pair 73; owner 2026-11-17)
 
 The owner saw O607: "the larger beams are in segments". 28 more effects, 70 in the table. Not in a live pair yet, not seen in a client.
+O613 dropped the blood stream rows and moved the ids: 20 long beams at 5301..5320. See the O613 block of the section above.
 
 - **Measured.** A beam sheet has 12 frames and 8 heading rows. The art covers 3 tiles on a straight heading, 2.2 to 2.6 on a diagonal.
   The lines the spells hit: Soulrend Beam 6 tiles, Lance of Vigil 3, Dawnbreaker Shot 8, Eclipse Edge 5. The same on all 8 headings.
@@ -6982,10 +7001,10 @@ The owner saw O607: "the larger beams are in segments". 28 more effects, 70 in t
 
   | Beam | Line | Ids, headings n ne e se s sw w nw | Canvas, tiles | Periods added |
   |---|---|---|---|---|
-  | `mega_soul_chain` | 6 | 5303..5310 | 1 x 7, 7 x 1, 2 x 7, 7 x 7 | 3 of 32 px straight, 4 of 30 to 32 px diagonal |
-  | `mega_sunbeam_lance` | 3 | 5311..5314, diagonals only: ne se sw nw | 4 x 4 to 5 x 5 | 1 of 23 or 28 px |
-  | `mega_sunbeam_lance` | 8 | 5315..5322 | 2 x 10, 9 x 2, 1 x 8, 10 x 2, up to 10 x 10 | 4 or 5 of 32 to 40 px straight, 5 to 8 of 23 to 38 px diagonal |
-  | `mega_blood_siphon` | 5 | 5323..5330 | 2 x 6 to 7 x 7 | 2 of 32 px or 4 of 16 px straight, 3 to 6 of 16 to 29 px diagonal |
+  | `mega_soul_chain` | 6 | 5301..5308 (O613) | 1 x 7, 7 x 1, 2 x 7, 7 x 7 | 3 of 32 px straight, 4 of 30 to 32 px diagonal |
+  | `mega_sunbeam_lance` | 3 | 5309..5312 (O613), diagonals only: ne se sw nw | 4 x 4 to 5 x 5 | 1 of 23 or 28 px |
+  | `mega_sunbeam_lance` | 8 | 5313..5320 (O613) | 2 x 10, 9 x 2, 1 x 8, 10 x 2, up to 10 x 10 | 4 or 5 of 32 to 40 px straight, 5 to 8 of 23 to 38 px diagonal |
+  | `mega_blood_siphon` | 5 | dropped by O613 | 2 x 6 to 7 x 7 | 2 of 32 px or 4 of 16 px straight, 3 to 6 of 16 to 29 px diagonal |
 
   A line of 3 tiles on a straight heading is the pack's own beam, the refill row. So Lance of Vigil has long rows on the diagonals only.
 - **How a beam is made longer.** The frames are turned into beam coordinates: along the heading and across it. Whole pixels both ways, on a diagonal too.
@@ -7106,7 +7125,8 @@ Rule: replace nothing that works. An effect is imported only for an event that s
 One owner order goes past that rule: the boss warning pulse becomes the set's strike circle.
 
 - **Step of pair 73, the last effect step.** Input: 253 missiles and 4,742 to 5,189 effects. Any other pair is refused.
-  The ids are fixed: 48 effects at 5190..5237, dense, in table order. The gap up to 5189 is padded with blank effects.
+  The ids are fixed: 47 effects at 5190..5236, dense, in table order. The gap up to 5189 is padded with blank effects.
+  O613 (owner 2026-11-17): the "Jackpot" effect left the table and the rows after it moved up one id. Pair 73 is not shipped, so no id was in use.
   A blank effect is one empty 1 x 1 phase. `import_fx_art.py` takes it from a spec row with `blank=1`.
   The spell effects own 4743..5142 and the next step 5143..5189. Run those first: the spell step wants exactly 4,742 effects.
   A step that fills a padded id later rebuilds it in place. No missile is added.
@@ -7127,7 +7147,7 @@ One owner order goes past that rule: the boss warning pulse becomes the set's st
 - **Checks.** `gen_gap_fx.py check` needs no art and no pair. `gen_gap_fx.py live DAT SPR` holds a built pair pixel for pixel.
   Add `live` to the job `live-pair` when pair 73 ships. `gen_gap_fx_test.py` runs on synthetic sheets.
 - **Proved 2026-11-17** on pair 72 with the Ki auras (dat dd4b6ac4165fb810d1c9d8fd26b8c080, 4,742 effects):
-  447 blank effects 4743..5189, then 48 effects. 7,757 sprites appended (972,454 to 980,211). 1,355 frames read back pixel for pixel.
+  447 blank effects 4743..5189, then 48 effects. O613 rebuilt it with 47: `live` OK at 5190..5236. 7,757 sprites appended (972,454 to 980,211). 1,355 frames read back pixel for pixel.
   Every old item, outfit, effect and missile is byte identical. Output dat 246da90dac50190fbc4df4b7f2c596a4 (9,090,529 bytes),
   spr 97e711eb28b6bfa061e3fad8302df0b6 (1,147,423,910 bytes). The files were deleted after the check. This is not the shipped pair 73.
 - **game_telegraph.** The module draws a boss area with UI widgets, not with art. One floor widget per tile (base patch 0078).
@@ -7161,33 +7181,32 @@ One owner order goes past that rule: the boss warning pulse becomes the set's st
 | 5208 | 62 | `gx_card_common` | 3 x 3, 16 | cards.lua: a new Common card in the Deck (nothing before) |
 | 5209 | 63 | `gx_card_rare` | 5 x 5, 22 | cards.lua: a new card above Common (nothing before) |
 | 5210 | 77 | `gx_relic` | 4 x 4, 24 | uber.lua: a relic in the reward (nothing before) |
-| 5211 | 54 | `gx_jackpot` | 6 x 5, 23 | prizes.lua: a unique won from a roulette (nothing before) |
-| 5212 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
-| 5213 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
-| 5214 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
-| 5215 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
-| 5216 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
-| 5217 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
-| 5218 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
-| 5219 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
-| 5220 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
-| 5221 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
-| 5222 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
-| 5223 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
-| 5224 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
-| 5225 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
-| 5226 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
-| 5227 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
-| 5228 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
-| 5229 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
-| 5230 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
-| 5231 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
-| 5232 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
-| 5233 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
-| 5234 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
-| 5235 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
-| 5236 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
-| 5237 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+| 5211 | 71 | `gx_masterwork` | 3 x 5, 24 | crafting.lua: the Orb of Ruin improves the item (the stock green puff before) |
+| 5212 | 145 | `gx_tele_zone` | 3 x 3, 8 | boss_mechanics.lua, uber.lua, guildboss.lua, raid.lua: the danger pulse of a boss area (owner order; `warning_zone` 451 before) |
+| 5213 | 145 | `gx_tele_fill` | 3 x 3, 5 | the same four: the last pulse before the hit (`warning_fill` 450 before) |
+| 5214 | 157 | `gx_spread` | 5 x 5, 16 | boss_mechanics.lua: puddles that fall on players, on each player at the first pulse (nothing before) |
+| 5215 | 142 | `gx_chase` | 3 x 3, 16 | boss_mechanics.lua: the target of a follow circle, at the first pulse (nothing before) |
+| 5216 | 156 | `gx_safe_zone` | 5 x 5, 24 | boss_mechanics.lua: the cover of a line of sight blast, while it charges (nothing before) |
+| 5217 | 147 | `gx_countdown` | 5 x 4, 23 | boss_mechanics.lua: over the boss as a channel ends (nothing before) |
+| 5218 | 152 | `gx_meteor_shadow` | 5 x 5, 18 | boss_mechanics.lua: the 3 x 3 slots of a meteor attack at the fill pulse (nothing before) |
+| 5219 | 342 | `gx_gate` | 3 x 4, 24 | townportal.lua: the loop of a style that has none, the Waygate (nothing before) |
+| 5220 | 354 | `gx_rift_open` | 4 x 4, 16 | rift.lua: where a player leaves for the rift (the stock teleport puff before) |
+| 5221 | 353 | `gx_rift` | 3 x 4, 24 | rift.lua: a breach opens (the stock purple energy before) |
+| 5222 | 352 | `gx_rift_close` | 3 x 4, 15 | rift.lua: where a player comes back out (the stock teleport puff before) |
+| 5223 | 359 | `gx_waystone` | 3 x 5, 18 | waystone_mods.lua: a waystone is used (nothing before) |
+| 5224 | 345 | `gx_dungeon_beacon` | 3 x 4, 24 | dungeons.lua: the arrival in a dungeon (stock effect 40 before) |
+| 5225 | 355 | `gx_spawn_in` | 4 x 4, 13 | raid.lua: a raid boss appears (nothing before) |
+| 5226 | 336 | `gx_mine_armed` | 3 x 3, 24 | spells/chaos/_snares.lua: a mine laid (a stock element puff before) |
+| 5227 | 339 | `gx_trap_spikes` | 3 x 3, 14 | spells/chaos/_snares.lua: a trap laid (the stock block puff before) |
+| 5228 | 407 | `gx_mining` | 3 x 3, 13 | professions.lua: delving, at the vein while the channel runs (the stock block puff before) |
+| 5229 | 406 | `gx_herb` | 3 x 3, 15 | professions.lua: wortcunning, at the patch (the stock small plants before) |
+| 5230 | 404 | `gx_fishing` | 3 x 3, 19 | professions.lua: a catch (the stock water splash before) |
+| 5231 | 403 | `gx_craft_success` | 4 x 4, 15 | crafting.lua: an orb changes the item (the stock green puff before) |
+| 5232 | 402 | `gx_craft_fail` | 3 x 3, 15 | crafting.lua: the item is ruined or decays (the stock red puff before) |
+| 5233 | 427 | `gx_enchant` | 3 x 3, 19 | gems.lua: a gem set or taken out whole (the stock blue puff before) |
+| 5234 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
+| 5235 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
+| 5236 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
 ## Status layer and kill overlays (O597, `tools/sprites/gen_status_vfx.py`, `art_import/status_vfx.csv`, `game_statusfx`, `game_killdissolve`, base patch 0205; pair 73)
 
 Two purchased packs (docs/CREDITS.md) join pair 73 as one step of their own. **No art is in the repository**: only the table
@@ -7241,7 +7260,7 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   | 4 `spell` | O596 / O600 | `gen_spell_vfx.py build` | exactly 4,742 effects | 4,744 effects |
   | 5 `status` | O597 / O617 | `gen_status_vfx.py build` | 4,742 to 5,142 effects; pads up to 5,142 | 5,189 effects |
   | 6 `gap` | O606 | `gen_gap_fx.py build` | 4,742 to 5,189 effects | 5,237 effects |
-  | 7 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,330 effects |
+  | 7 `area` | O607 / O609 | `gen_area_fx.py build` | 4,742 to 5,299 effects | 5,320 effects (O613) |
 
 - **The conflict of "last effect step".** O606 and O607 both say it. The counts settle it: `spell`, then `status`, then `gap`, then `area`.
   `status` (O617) pads 4745..5142 (398 blanks) and writes 5143..5189 (47 effects, `--status-src DIR`, pictures found by digest like the others).
@@ -7271,7 +7290,7 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   | gap | 9 | 2ca564db382a3cdfdcbe90ff6a5d9cda | 1cbfc086681c249a4528954d2b1f9bcc |
   | area | 24 | 3b8e7cdb6bbed615d04eeb2955b129e1 | fa32d71e75c80c53b0c05665d6b0b2eb |
 
-  Result: 44,559 items, 3,529 outfits, 5,330 effects, 253 missiles, 1,049,978 sprites. Dat 9,429,461 bytes, spr 1,217,243,369 bytes.
+  Result: 44,559 items, 3,529 outfits, 5,330 effects, 253 missiles, 1,049,978 sprites. Dat 9,429,461 bytes, spr 1,217,243,369 bytes. O613 and the id move of O614 came after this rehearsal: the tables now end at 5,320 (area) and 5,325 (lightning).
   Against pair 72: 290 outfits, 39 effects and missile 46 changed in place. 3 outfits and 588 effects are new (507 of them blank). Nothing else differs.
   **These md5s are not pair 73.** They change with the owner's wings choice. The files were deleted.
   O616 changed the creature step after this rehearsal: it appends 4,502 sprite records, not 1,886. So the md5s from the creature step on are stale,
@@ -7329,28 +7348,28 @@ No art file is read. No purchased art, no AI service. **Status: tool, table, ser
   No dark outline: the saturated rim holds the bolt against bright ground. Checked on grass green and stone grey.
 - **Tints.** Energy is white and blue. Holy gold and dark violet share the shapes. `sheets` and `preview` draw them. No sender needs them, so they are not in the pair.
 - **Sizes.** `std`: 4 x 4 at offset 1, 0. The bolt comes in 116 px above the target point. `heavy`: 5 x 6 at 1, 1, 148 px, thicker, a wider burst.
-- **Ids.** Five effects at 5331..5335, after the long beams of O609 at 5330. Block up to 5350.
+- **Ids.** Five effects at 5321..5325, after the long beams of O609 at 5320. Block up to 5340.
 
 | Id | Name | Canvas, phases | Seed |
 | --- | --- | --- | --- |
-| 5331 | `lf_bolt_a` | 4 x 4, 9 | 11 |
-| 5332 | `lf_bolt_b` | 4 x 4, 9 | 23 |
-| 5333 | `lf_bolt_c` | 4 x 4, 9 | 37 |
-| 5334 | `lf_bolt_heavy_a` | 5 x 6, 10 | 53 |
-| 5335 | `lf_bolt_heavy_b` | 5 x 6, 10 | 71 |
+| 5321 | `lf_bolt_a` | 4 x 4, 9 | 11 |
+| 5322 | `lf_bolt_b` | 4 x 4, 9 | 23 |
+| 5323 | `lf_bolt_c` | 4 x 4, 9 | 37 |
+| 5324 | `lf_bolt_heavy_a` | 5 x 6, 10 | 53 |
+| 5325 | `lf_bolt_heavy_b` | 5 x 6, 10 | 71 |
 
-- **Step of pair 73, now the last effect step.** Input: 253 missiles and 4,742 to 5,330 effects. Run it after `gen_area_fx.py`.
-  A pair with fewer than 5,330 effects is padded with blank effects up to 5330, so the ids never move. Nothing is replaced. No missile is added.
+- **Step of pair 73, now the last effect step.** Input: 253 missiles and 4,742 to 5,320 effects. Run it after `gen_area_fx.py`.
+  A pair with fewer than 5,320 effects is padded with blank effects up to 5320, so the ids never move. Nothing is replaced. No missile is added.
   It is the eighth step of `build_pair73.py` of O612, after `area`: `gen_lightning_fx.py build IN/Tibia.dat IN/Tibia.spr OUT`.
-  It needs no `--src`. Pair 73 then ends at 5,335 effects. The rehearsal md5s of O612 are of the pair before this step.
+  It needs no `--src`. Pair 73 then ends at 5,325 effects. The rehearsal md5s of O612 are of the pair before this step.
 - **Drawn over the creature.** Effect 458 is in the ground list of `game_groundfx`. The new ids are not. A bolt hits the creature from above.
 - **Commands.** `sheets OUT_DIR` writes PNG sheets on dark, green and grey. `preview OUT_DIR --dat D --spr S` writes two MP4 files.
   `table` writes the table and the sums. `ids` writes the server files. `build` runs `live` at the end. None of the pictures is committed.
 - **Checks.** `gen_lightning_fx.py check` draws every bolt again and holds it to the sums. It needs no pair. `live DAT SPR` holds a built pair pixel for pixel.
   Add `live` to the job `live-pair` when pair 73 ships. `gen_lightning_fx_test.py`: the same bytes twice, frame count, alpha levels, palette,
   the strike is one piece from the top to the target point, branches inside the canvas, the import spec appends only.
-- **Proved 2026-11-17** on the pair 73 rehearsal of O612 (dat 3b8e7cdb6bbed615d04eeb2955b129e1, 5,330 effects):
+- **Proved 2026-11-17** on the pair 73 rehearsal of O612 (dat 3b8e7cdb6bbed615d04eeb2955b129e1, 5,320 effects):
   no blank effect, 5 effects appended, 47 frames read back pixel for pixel. Every old item, outfit, effect and missile is byte identical.
   Output dat 72deab68313773f5783f226925846475 (9,434,040 bytes), spr ad553da9e7d2d71c2361c2437db15e2d (1,217,424,242 bytes).
   The files were deleted after the check. This is not the shipped pair 73.
-- **Unity.** Not done. The Unity client has no effect 5331+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.
+- **Unity.** Not done. The Unity client has no effect 5321+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.

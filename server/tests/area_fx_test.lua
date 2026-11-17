@@ -1,12 +1,15 @@
 -- Run from the server/ folder: luajit tests/area_fx_test.lua (and lua5.3; CI runs both)
--- Area bursts, beams and markers of the purchased effect packs (O607, client pair 73, data/lib/chaos_area_fx.lua and the
--- generated chaos_area_fx_ids.lua): the gate is config.lua chaosClientPair >= 73 and below it every sender sends exactly what
--- it sends today; a pack burst has the element of the burst it stands in for and is sent on the same centre tile; a refill
--- keeps the id and send offset of chaos_pack36_fx_ids.lua; the new ids are the block 5300..; a beam is the heading from the
--- caster to the target; a marker goes to one player; every id has its element tag.
+-- An area burst, beams, markers and a status effect of the purchased effect packs (O607, client pair 73,
+-- data/lib/chaos_area_fx.lua and the generated chaos_area_fx_ids.lua): the gate is config.lua chaosClientPair >= 73 and below
+-- it every sender sends exactly what it sends today; a refill keeps the id and send offset of chaos_pack36_fx_ids.lua; the
+-- new ids are the block 5300..; a beam is the heading from the caster to the target; a marker goes to one player; every id
+-- has its element tag.
 -- O609: every beam spell draws ONE effect per heading, as long as its damage line (one start, one tip): the generated
--- lengths table, the ids 5303.., the canvas, the view of the caster; the chain of copies only for a length the pair
+-- lengths table, the ids 5301.., the canvas, the view of the caster; the chain of copies only for a length the pair
 -- lacks and for a viewer who cannot draw the one piece.
+-- O613 (owner 2026-11-17): our own fire, blood, frost and holy bursts are sent again by every sender (spells, boss hits,
+-- boss deaths), gate on or off; the pack's clock face goes to the arcane nova of Veil of Whispers and Tear in the Weave
+-- only; Eclipse Edge has no beam; a slowed creature shows the pack's gravity press in place of the whirlwind.
 local n = 0
 local function eq(a, b, m)
 	n = n + 1
@@ -30,6 +33,9 @@ end
 -- a fake engine: Position(...):sendMagicEffect records what was sent
 local sent = {}
 function Position(x, y, z)
+	if type(x) == "table" then
+		x, y, z = x.x, x.y, x.z
+	end
 	return {x = x, y = y, z = z, sendMagicEffect = function(self, id, who)
 		sent[#sent + 1] = {x = self.x, y = self.y, z = self.z, id = id, who = who}
 	end}
@@ -56,26 +62,45 @@ eq(C.parsePair("chaosClientPair = 73"), 73, "plain")
 eq(C.recordedPair("tests/no_such_config.lua"), nil, "no file")
 
 local HERE = {x = 100, y = 200, z = 7}
-local OLD = {big_shock_fire_7 = 638, big_shock_blood_9 = 642, donor_arcane_nova_695 = 4711, big_nova_frost_7 = 644,
-	big_nova_holy_7 = 646}
+-- our own bursts: O607 swapped the first four for pack bursts, O613 gave them back; 648 is the arcane nova
+local OLD = {big_shock_fire_7 = 638, big_shock_blood_9 = 642, big_nova_frost_7 = 644, big_nova_holy_7 = 646,
+	big_nova_arcane_7 = 648}
 
 -- ---------------------------------------------------------------- gate off: exactly what is sent today
 for name, id in pairs(OLD) do
-	eq(C.swap(name), name, name .. ": gate off, the name as asked")
 	ok(Vfx(HERE, name), name .. " is sent")
 	eq(last().id, id, name .. ": gate off, our id")
 	eq(last().x, HERE.x + pack36[name].dx, name .. ": gate off, our offset")
 end
+eq(C.spellBurst(153, "big_nova_arcane_7"), nil, "gate off: Veil of Whispers keeps our nova")
+eq(C.spellBurst(231, "arcane_circle"), nil, "gate off: Tear in the Weave keeps what it sends")
+eq(C.statusName("slowed"), nil, "gate off: a slowed creature keeps the whirlwind")
 eq(C.beam(118, 1, 6), nil, "gate off: no beam")
 eq(C.sendBeam(HERE, 118, 1, 6), false, "gate off: no beam is drawn")
 eq(C.mark("locked"), nil, "gate off: no marker")
 local count = #sent
 eq(C.sendMark(HERE, "locked", "player"), false, "gate off: no marker is sent")
 eq(#sent, count, "gate off: nothing more was sent")
-local e638 = {id = 638, dx = 3, dy = 3, ms = 700}
-eq(C.swapId(e638), e638, "gate off: the boss death effect as it is")
 eq(ChaosAreaFxIds, nil, "gate off: the ids are not even loaded")
-eq(ChaosVfx.ab_fire_rain, nil, "gate off: no name merged")
+eq(ChaosVfx.ab_arcane_clock, nil, "gate off: no name merged")
+-- the large effects and the slowed aura with the gate off: what they sent before pair 73
+dofile("data/lib/chaos_big_fx.lua")
+local B = ChaosBigFx
+ok(B.live(), "the large effects are on")
+eq(B.swapFor(231, "arcane_circle"), "big_nova_arcane_7", "the large effect of each implosion of Tear in the Weave is our arcane nova")
+eq(B.swapFor(153, "big_nova_arcane_7"), nil, "Veil of Whispers names the nova itself")
+dofile("data/lib/chaos_pack29_fx.lua")
+dofile("data/lib/chaos_pack29_vfx.lua")
+dofile("data/lib/chaos_pack29_vfx_ids.lua")
+local V = ChaosPack29Vfx
+ok(V.live(), "the pair 29 auras are on")
+eq(V.auraNow("slowed"), "cond_slowed", "gate off: the aura of a slowed creature is the whirlwind")
+local function creature(id)
+	return {getId = function() return id end, getPosition = function() return Position(HERE.x, HERE.y, HERE.z) end}
+end
+V.resetThrottle()
+ok(V.show(creature(11), "slowed"), "gate off: the slowed aura is sent")
+eq(last().id, 783, "gate off: the whirlwind 783")
 
 -- ---------------------------------------------------------------- gate on
 C.ON = true
@@ -104,13 +129,20 @@ for name, e in pairs(I.effects) do
 		ok(name:match("^ab_") or (e.len and name:match("^mega_[a-z_]+_l%d+_[nesw]+$")), name .. ": a neutral name")
 		ok(not pack36[name], name .. ": a new name")
 		ok(e.id >= I.first and e.id < I.first + I.count, name .. ": inside the new block")
-		eq(e.len ~= nil, e.id >= I.first + 3, name .. ": the long beams follow the three bursts")
+		eq(e.len ~= nil, e.id >= I.first + 1, name .. ": the long beams follow the one burst")
 		eq(ChaosVfx[name].id, e.id, name .. ": merged into ChaosVfx")
 	end
 end
 eq(new, I.count, "the recorded count")
-eq(total, 70, "70 effects: 39 refilled, 3 new bursts, 28 long beams")
-eq(I.count, 31, "the new block is 5300..5330")
+eq(total, 51, "51 effects: 30 refilled, 1 new burst, 20 long beams")
+eq(I.count, 21, "the new block is 5300..5320")
+for _, gone in ipairs({"ab_fire_rain", "ab_blood_sigil", "area_whiteout", "area_radiant_repulse", "mega_blood_siphon_n",
+	"mega_blood_siphon_l5_n"}) do
+	eq(I.effects[gone], nil, gone .. ": O613, not in the pair")
+end
+for _, id in ipairs({1612, 1642, 3356, 3363}) do
+	eq(ids[id], nil, "effect " .. id .. ": O613, blank again")
+end
 eq(I.natural, 3, "the pack's own beam covers 3 tiles on a straight heading")
 for id = I.first, I.first + I.count - 1 do
 	ok(ids[id], "effect " .. id .. " missing: the block has no hole")
@@ -130,44 +162,18 @@ for name, e in pairs(I.effects) do
 	eq(tags[name].element, e.element, name .. ": tag element")
 end
 
--- A. the bursts: the pack burst of the same element, on the same centre tile
-local swaps = 0
-for name, alt in pairs(C.names) do
-	swaps = swaps + 1
-	ok(OLD[name], name .. ": one of the five bursts")
-	local e = I.effects[alt]
-	ok(e and e.role == "area", alt .. " is an area burst")
-	eq(tags[name].element, e.element, name .. " -> " .. alt .. ": the same element")
-	eq(C.swap(name), alt, name .. " swapped")
+-- A. O613: our own bursts are sent by every sender, gate on as off (O607 had swapped four of them in Vfx)
+for name, id in pairs(OLD) do
 	ok(Vfx(HERE, name), name .. " is sent")
-	eq(last().id, e.id, name .. ": the pack id")
-	eq(last().x - e.dx, HERE.x, name .. ": centred on the centre tile (x)")
-	eq(last().y - e.dy, HERE.y, name .. ": centred on the centre tile (y)")
+	eq(last().id, id, name .. ": gate on, still our id")
+	eq(last().x, HERE.x + pack36[name].dx, name .. ": gate on, our offset")
 	eq(last().who, nil, name .. ": to every spectator")
-	-- the centre tile lies inside the picture, with at least 2 tiles on every side
-	ok(e.dx >= 2 and e.dy >= 2 and e.w - 1 - e.dx >= 2 and e.h - 1 - e.dy >= 2, alt .. ": the anchor is not at an edge")
-	ok(Vfx(HERE, name, true), name .. " raw")
-	eq(last().id, OLD[name], name .. ": raw keeps our id")
-	local se = C.swapId({id = OLD[name], dx = 3, dy = 3})
-	eq(se.id, e.id, name .. ": by id")
-	eq(se.dx, e.dx, name .. ": by id, the pack offset")
 end
-eq(swaps, 5, "five bursts")
-eq(C.swap("big_nova_void_7"), "big_nova_void_7", "another burst is not swapped")
-eq(C.swap(nil), nil, "no name")
-eq(C.swapId({id = 647, dx = 3, dy = 3}).id, 647, "another id is not swapped")
-ok(Vfx(HERE, "big_nova_void_7"), "another burst is sent")
-eq(last().id, 647, "another burst keeps its id")
 eq(Vfx(HERE, "no_such_effect"), false, "an unknown name sends nothing")
--- the size rule: the blood sigil is 6 tiles wide, an area of 9 keeps ours
-eq(C.swap("big_shock_blood_9", 7), "ab_blood_sigil", "blood on 7 tiles")
-eq(C.swap("big_shock_blood_9", 9), "big_shock_blood_9", "blood on 9 tiles keeps ours")
-eq(C.swap("big_shock_fire_7", 9), "ab_fire_rain", "no size limit for the others")
-
--- the boss hit of chaos_big_fx.lua goes through the same door
-dofile("data/lib/chaos_big_fx.lua")
-local B = ChaosBigFx
-ok(B.live(), "the large effects are on")
+eq(C.names, nil, "no swap by name is left")
+eq(C.swap, nil, "no swap door is left")
+eq(C.swapId, nil, "no swap by id is left")
+-- the boss hits and the spells of chaos_big_fx.lua send ours
 do
 	local function disc(r)
 		local t = {}
@@ -180,14 +186,174 @@ do
 		end
 		return t
 	end
-	ok(B.bossHit(disc(3), "physical"), "boss hit, 7 tiles")
-	eq(last().id, 5301, "7 tiles: the sigil")
-	ok(B.bossHit(disc(4), "physical"), "boss hit, 9 tiles")
-	eq(last().id, 642, "9 tiles: ours")
-	ok(B.bossHit(disc(4), "fire"), "fire boss hit")
-	eq(last().id, 5300, "fire: the shard rain")
-	ok(B.bossHit(disc(3), "holy"), "holy boss hit")
-	eq(last().id, 1642, "holy: the refilled burst")
+	for element, id in pairs({physical = 642, fire = 638, holy = 646}) do
+		ok(B.bossHit(disc(3), element), element .. " boss hit, 7 tiles")
+		eq(last().id, id, element .. " boss hit: ours")
+		ok(B.bossHit(disc(4), element), element .. " boss hit, 9 tiles")
+		eq(last().id, id, element .. " boss hit on 9 tiles: ours")
+	end
+	eq(B.swapFor(206, "fire_explosion"), "big_shock_fire_7", "Doomtide: our fire shockwave")
+	eq(B.swapFor(225, "earth_spikes"), "big_shock_fire_7", "Colossus Fall: our fire shockwave")
+	eq(B.swapFor(148, "aura_burst_red"), "big_shock_blood_9", "Judgment of Iron: our blood shockwave")
+	eq(B.swapFor(213, "frost_nova"), "big_nova_frost_7", "Primordial Squall: our frost nova")
+	eq(B.swapFor(199, "dome_blast_holy"), "big_nova_holy_7", "Purging Nova: our holy nova")
+	eq(B.swapFor(237, "dome_blast_holy"), "big_nova_holy_7", "Hammer of Ember Dawn: our holy nova")
+	eq(B.pickUse("wb_enrage"), "big_shock_blood_9", "the world boss enrage: our blood shockwave")
+end
+-- the boss death effect is sent by id, as it is in the config (deathfx.lua has no hook)
+dofile("data/scripts/chaos/deathfx_config.lua")
+ok(not slurp("data/scripts/chaos/deathfx.lua"):find("ChaosAreaFx", 1, true), "deathfx.lua asks no swap")
+ok(slurp("data/scripts/chaos/deathfx_config.lua"):find("fire = {id = 638, dx = 3, dy = 3", 1, true), "a fire boss death is our 638")
+
+-- A. the clock face: the arcane nova of two spells only
+local clock = I.effects.ab_arcane_clock
+ok(clock and clock.role == "area" and clock.id == 5300, "the clock face is the area burst 5300")
+eq(clock.element, "arcane", "the clock face is arcane, as the nova it stands in for")
+eq(tags.ab_arcane_clock.element, "arcane", "and tagged so")
+-- the centre tile lies inside the picture with 3 tiles on every side: a disc of 7 tiles, as our nova (7 x 7)
+ok(clock.dx >= 3 and clock.dy >= 3 and clock.w - 1 - clock.dx >= 3 and clock.h - 1 - clock.dy >= 3, "the clock covers 7 tiles round its centre")
+local asks = {[153] = "big_nova_arcane_7", [231] = "arcane_circle"}   -- the name each script sends to ChaosSpell.vfx
+local bursts = 0
+for spellId, t in pairs(C.spellBursts) do
+	for name, alt in pairs(t) do
+		bursts = bursts + 1
+		eq(name, asks[spellId], spellId .. ": the name its script sends")
+		eq(alt, "ab_arcane_clock", spellId .. ": the clock face")
+		eq(C.spellBurst(spellId, name), alt, spellId .. ": swapped")
+	end
+end
+eq(bursts, 2, "two spells")
+ok(C.spellBursts[153] and C.spellBursts[231], "Veil of Whispers (153) and Tear in the Weave (231)")
+local xml = slurp("data/spells/chaos/spells_chaos.xml")
+ok(xml:find('spellid="153" name="Veil of Whispers"', 1, true), "153 is Veil of Whispers")
+ok(xml:find('spellid="231" name="Tear in the Weave"', 1, true), "231 is Tear in the Weave")
+ok(xml:find('spellid="231"[^\n]-illusionist/reality_rift.lua'), "231 is the script reality_rift.lua")
+ok(slurp("data/spells/chaos/sorcerer/veil_of_whispers.lua"):find("'big_nova_arcane_7', 'arcane_circle'", 1, true), "Veil of Whispers asks for the arcane nova")
+ok(slurp("data/spells/chaos/illusionist/reality_rift.lua"):find('ChaosSpell.vfx(center, "arcane_circle")', 1, true), "each implosion asks for arcane_circle")
+eq(B.pick(231, "arcane_circle"), "big_nova_arcane_7", "which is the arcane nova 648 of the large effects")
+eq(C.spellBurst(231, "void_rift"), nil, "Tear in the Weave: the rift stays ours")
+eq(C.spellBurst(231, "big_nova_arcane_7"), nil, "Tear in the Weave: only the name it sends")
+eq(C.spellBurst(153, "arcane_circle"), nil, "Veil of Whispers: its fallback name is not touched")
+eq(C.spellBurst(230, "big_nova_arcane_7"), nil, "another spell that names the nova keeps it")
+eq(C.spellBurst(nil, "big_nova_arcane_7"), nil, "no spell: no clock")
+eq(C.spellBurst(153, nil), nil, "no name: no clock")
+eq(B.swapFor(231, "arcane_circle"), "big_nova_arcane_7", "the large effects are asked nothing new")
+ok(Vfx(HERE, C.spellBurst(153, "big_nova_arcane_7")), "the clock is sent")
+eq(last().id, 5300, "the clock id")
+eq(last().x - clock.dx, HERE.x, "the clock is centred on the caster's tile (x)")
+eq(last().y - clock.dy, HERE.y, "the clock is centred on the caster's tile (y)")
+ok(Vfx(HERE, "big_nova_arcane_7"), "any other sender of the arcane nova")
+eq(last().id, 648, "any other sender: our 648")
+-- through the door the spells use: ChaosSpell.vfx of _common.lua, inside a cast (the supports wrapper names the spell)
+do
+	local cast
+	ChaosSupportsSpell = {cast = function() if cast then return 7, cast end end}
+	local keep = {Vfx = Vfx}
+	NORTH, EAST, SOUTH, WEST, SOUTHWEST, SOUTHEAST, NORTHWEST, NORTHEAST = 0, 1, 2, 3, 4, 5, 6, 7
+	CONST_ME_POFF = 3
+	Player = function() return nil end
+	dofile("data/spells/chaos/_common.lua")
+	ok(ChaosSpell and ChaosSpell.areaBurst, "the spells' library has the door")
+	local function sendsIn(spellId, name)
+		cast = spellId
+		local before = #sent
+		local okv = ChaosSpell.vfx(HERE, name)
+		cast = nil
+		return okv, #sent - before, last().id
+	end
+	local okv, count, id = sendsIn(153, "big_nova_arcane_7")
+	ok(okv and count == 1, "Veil of Whispers: one effect")
+	eq(id, 5300, "Veil of Whispers: the clock")
+	okv, count, id = sendsIn(231, "arcane_circle")
+	ok(okv and count == 1, "Tear in the Weave, an implosion: one effect")
+	eq(id, 5300, "Tear in the Weave: the clock, before the pair 29 swap and the large effect")
+	okv, count, id = sendsIn(231, "void_rift")
+	ok(okv and id ~= 5300, "Tear in the Weave: the rift is not the clock")
+	okv, count, id = sendsIn(160, "big_nova_arcane_7")
+	ok(okv and count == 1, "another spell that sends the nova")
+	eq(id, 648, "another spell: our 648")
+	eq(ChaosSpell.areaBurst("big_nova_arcane_7"), nil, "outside a cast: no clock")
+	-- gate off: what the two spells sent before (648 for the Veil; the pair 29 gravity crush for the implosion)
+	C.ON = false
+	okv, count, id = sendsIn(153, "big_nova_arcane_7")
+	eq(id, 648, "gate off: Veil of Whispers sends our nova")
+	okv, count, id = sendsIn(231, "arcane_circle")
+	ok(okv and count == 1 and id ~= 5300, "gate off: an implosion is not the clock")
+	eq(id, ChaosVfx.weave_crush and ChaosVfx.weave_crush.id or 648, "gate off: an implosion is what pair 29 draws (775) or our nova")
+	C.ON = true
+	ChaosSupportsSpell = nil
+	Vfx = keep.Vfx
+end
+
+-- D. the status effect: the gravity press on a slowed creature
+do
+	local g = I.effects.mega_gravity_press
+	ok(g and g.role == "status" and g.refill and g.id == 3036, "the gravity press is the refilled 3036")
+	eq(C.status.slowed, "mega_gravity_press", "slowed -> the gravity press")
+	eq(C.statusName("slowed"), "mega_gravity_press", "gate on: the name")
+	eq(C.statusName("stunned"), nil, "another state has no stand-in")
+	eq(C.statusName(nil), nil, "no state")
+	local states = 0
+	for state in pairs(C.status) do
+		states = states + 1
+		ok(V.auras[state], state .. ": a state of chaos_pack29_vfx.lua")
+	end
+	eq(states, 1, "one state")
+	eq(V.auraFor("slowed"), "cond_slowed", "the table of auras is untouched")
+	eq(V.auraNow("slowed"), "mega_gravity_press", "gate on: the aura of a slowed creature now")
+	eq(V.auraNow("stunned"), "cond_stunned", "another state keeps its aura")
+	V.resetThrottle()
+	local before = #sent
+	ok(V.show(creature(12), "slowed"), "a slowed creature shows its aura")
+	eq(#sent - before, 1, "one effect")
+	eq(last().id, 3036, "the gravity press, not the whirlwind 783")
+	eq(last().x, HERE.x + g.dx, "centred on the creature (x): the middle tile of 3 x 3")
+	eq(last().y, HERE.y + g.dy, "centred on the creature (y)")
+	eq(V.show(creature(12), "slowed"), false, "not sent again while it plays")
+	ok(V.show(creature(12), "stunned"), "a stunned creature shows its own aura")
+	eq(last().id, ChaosVfx.cond_stunned.id, "the stunned aura of pair 29")
+	-- held: the next send comes after the gravity press has played (its own length, not the whirlwind's)
+	local waits = {}
+	addEvent = function(fn, ms) waits[#waits + 1] = ms end
+	V.resetThrottle()
+	ok(V.hold(creature(13), "slowed", 5000), "a slow of 5 s holds the effect")
+	eq(waits[1], g.ms, "the next one after " .. g.ms .. " ms, the length of the gravity press")
+	ok(g.ms ~= ChaosVfx.cond_slowed.ms, "which is not the whirlwind's length")
+	addEvent = nil
+	-- with the status layer of O597 live (lib/chaos_status_vfx.lua): its root status yields to the gravity press, so a
+	-- slowed creature is not handed to the layer and the paralyse condition gives no root bit; other states go to the layer
+	dofile("data/lib/chaos_status_vfx.lua")
+	local L = ChaosStatusVfx
+	local keepOn = ChaosStatusVfxIds.on
+	ChaosStatusVfxIds.on = true
+	ok(L.live(), "the status layer is live")
+	eq(L.yield.root, "slowed", "the layer's root status is the slowed state")
+	ok(L.yielded("root") and not L.yielded("stun") and not L.yielded("nope"), "root yields, nothing else")
+	eq(L.markState(21, "slowed", 1000, 0), false, "slowed is not marked in the layer")
+	ok(L.markState(21, "stunned", 1000, 0), "stunned is")
+	eq(L.markMask(21, 1), L.bits.stun, "the mark is the stun alone")
+	eq(L.cutBrief(21, L.bits.root + L.bits.burn, 0), L.bits.burn, "a paralysed creature shows no root in the layer")
+	L.forget(21)
+	V.resetThrottle()
+	before = #sent
+	ok(V.show(creature(14), "slowed"), "layer live: a slowed creature shows its effect")
+	eq(#sent - before, 1, "layer live: one effect")
+	eq(last().id, 3036, "layer live: the gravity press")
+	before = #sent
+	ok(V.show(creature(14), "stunned"), "layer live: stunned is taken")
+	eq(#sent - before, 0, "layer live: by the layer, no aura is sent")
+	C.ON = false
+	ok(not L.yielded("root"), "area effects off: root does not yield")
+	ok(L.markState(22, "slowed", 1000, 0), "area effects off: slowed is the layer's root")
+	eq(L.cutBrief(22, L.bits.root, 0), L.bits.root, "area effects off: the root bit stays")
+	C.ON = true
+	L.forget(21)
+	L.forget(22)
+	L.forget(14)
+	ChaosStatusVfxIds.on = keepOn
+	-- the root word of chaos_status_fx.lua holds slowed too
+	eq(V.words.word_rooted_vines, "slowed", "the root word is the slowed state")
+	ok(slurp("data/spells/chaos/_common.lua"):find('pcall(ChaosPack29Vfx.hold, target, "slowed", ticks)', 1, true), "ChaosSpell.slow holds slowed")
 end
 
 -- B. beams
@@ -271,16 +437,21 @@ for spellId, base in pairs(C.beams) do
 		eq(last().who, nil, "to every spectator")
 	end
 end
-eq(beams, 4, "four beam spells")
+eq(beams, 3, "three beam spells")
 eq(natural, 4, "Lance of Vigil on the four straight headings is the pack's own beam, 3 tiles")
-eq(long, 28, "28 long beams: every other spell and heading")
+eq(long, 20, "20 long beams: every other spell and heading")
 eq(C.beams[118], "mega_soul_chain", "Soulrend Beam is the chain of souls")
 eq(C.beam(118, 1, 6)[1].name, "mega_soul_chain_l6_e", "Soulrend Beam east: one beam of 6 tiles")
-eq(I.effects.mega_soul_chain_l6_e.id, 5305, "its id")
+eq(I.effects.mega_soul_chain_l6_e.id, 5303, "its id")
 eq(C.beam(129, 1, 3)[1].name, "mega_sunbeam_lance_e", "Lance of Vigil east: the pack's own 3 tiles")
 eq(C.beam(129, 7, 3)[1].name, "mega_sunbeam_lance_l3_ne", "Lance of Vigil north-east: a beam made for 3 diagonal tiles")
 eq(C.beam(151, 1, 8)[1].name, "mega_sunbeam_lance_l8_e", "Dawnbreaker Shot east: one beam of 8 tiles")
-eq(C.beam(155, 2, 5)[1].name, "mega_blood_siphon_l5_s", "Eclipse Edge south: one beam of 5 tiles")
+-- O613: Eclipse Edge draws its line, no beam
+eq(C.beams[155], nil, "Eclipse Edge has no beam")
+eq(C.beam(155, 2, 5), nil, "Eclipse Edge south: nothing from the beam door")
+eq(C.sendBeam(HERE, 155, 2, 5), false, "Eclipse Edge: the attack kit draws the line as before")
+eq(kit[155].shape, "line", "Eclipse Edge is still a line spell")
+eq(I.beams.mega_blood_siphon, nil, "the blood stream is not in the pair")
 -- every long beam of the pair is the beam of a spell
 for name, e in pairs(I.effects) do
 	if e.len then
@@ -328,7 +499,7 @@ do
 		list[#list + 1] = sent[i]
 	end
 	eq(#got[near], 1, "a viewer who sees the far corner gets one effect")
-	eq(got[near][1].id, 5305, "the beam of 6 tiles")
+	eq(got[near][1].id, 5303, "the beam of 6 tiles")
 	eq(got[near][1].x, HERE.x + I.effects.mega_soul_chain_l6_e.dx, "at its far corner")
 	eq(#got[behind], 2, "a viewer 6 tiles behind the caster cannot draw it: the chain")
 	eq(got[behind][1].id, 3494, "the pack's own beam")
@@ -358,7 +529,10 @@ eq(C.sendMark(nil, "locked", "player"), false, "no position")
 
 -- every effect of the ids file has a use or is named as having no sender
 local used = {}
-for _, alt in pairs(C.names) do used[alt] = true end
+for _, t in pairs(C.spellBursts) do
+	for _, alt in pairs(t) do used[alt] = true end
+end
+for _, name in pairs(C.status) do used[name] = true end
 for _, base in pairs(C.beams) do
 	for dir = 0, 7 do used[base .. "_" .. C.DIRNAME[dir]] = true end
 end
@@ -370,9 +544,17 @@ end
 
 -- ---------------------------------------------------------------- the callers hold the hook
 local vfx = slurp("data/lib/chaos_vfx.lua")
-ok(vfx:find("function Vfx(pos, name, raw)", 1, true) and vfx:find("ChaosAreaFx.swap(name)", 1, true), "Vfx asks the swap")
-ok(slurp("../client/tools/sprites/import_vfx.py"):find("ChaosAreaFx.swap(name)", 1, true), "the generator of chaos_vfx.lua writes the hook")
-ok(slurp("data/scripts/chaos/deathfx.lua"):find("ChaosAreaFx.swapId(e)", 1, true), "deathfx.lua swaps by id")
+ok(vfx:find("function Vfx(pos, name, raw)", 1, true) and vfx:find("name = skySwap(name)", 1, true) and not vfx:find("ChaosAreaFx", 1, true),
+	"O613: Vfx asks no area swap (the bolt from the sky of O614 is its only swap)")
+ok(not slurp("../client/tools/sprites/import_vfx.py"):find("ChaosAreaFx", 1, true), "the generator of chaos_vfx.lua writes no hook")
+local big = slurp("data/lib/chaos_big_fx.lua")
+ok(big:find("function C.send(pos, name)", 1, true) and not big:find("ChaosAreaFx", 1, true), "the large effects ask no swap: boss hits are ours on any size")
+local common = slurp("data/spells/chaos/_common.lua")
+ok(common:find("pcall(A.spellBurst, spellId, name)", 1, true) and common:find("local burst = not alt and areaBurst(name)", 1, true),
+	"ChaosSpell.vfx asks for the burst of the spell, after the skin")
+local p29 = slurp("data/lib/chaos_pack29_vfx.lua")
+ok(p29:find("A.statusName(state)", 1, true) and p29:find("local name = auraNow(state)", 1, true), "the auras ask for the status effect")
+ok(not slurp("data/scripts/chaos/prizes.lua"):find("jackpot", 1, true), "O613: the roulette sends no jackpot effect")
 ok(slurp("data/spells/chaos/_attackkit.lua"):find("B.sendBeam(pos, spec.id, dir, spec.length)", 1, true), "the attack kit draws the beam")
 ok(slurp("data/scripts/chaos/chronicle.lua"):find('ChaosAreaFx.sendMark, pos, "locked", player', 1, true), "chronicle.lua marks the gate")
 ok(slurp("data/scripts/chaos/areagen.lua"):find('ChaosAreaFx.sendMark, position, "locked", player', 1, true), "areagen.lua marks the entrance")

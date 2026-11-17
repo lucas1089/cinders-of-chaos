@@ -37,8 +37,8 @@ The drawing, per variant (a seed and a size):
             more branches, a wider burst, for boss strikes.
 Everything is integer raster work on a seeded random.Random: the same bytes on every run.
 
-Pair step: appended after the last effect of pair 73 (5330, the long beams of O609), so FIRST is 5331. The input pair
-needs 253 missiles and 4,742 to 5,330 effects; one with fewer than 5,330 is padded with blank effects up to 5330, so the
+Pair step: appended after the last effect of pair 73 (5320, the long beams of O609 after O613), so FIRST is 5321. The input pair
+needs 253 missiles and 4,742 to 5,320 effects; one with fewer than 5,320 is padded with blank effects up to 5320, so the
 ids are fixed whatever came before. This step runs last. No missile is added, nothing is replaced.
 
 Needs numpy and Pillow (the fx venv of CI); `preview` needs ffmpeg.
@@ -62,8 +62,8 @@ LUA = os.path.join(ROOT, 'server', 'data', 'lib', 'chaos_lightning_fx_ids.lua')
 TAGS = os.path.join(ROOT, 'server', 'data', 'spells', 'spell_fx_elements.csv')
 
 MIN_EFFECTS, NEED_MISSILES = 4742, 253      # the input pair: pair 72 or later steps of pair 73
-FIRST = 5331                                # 4743..5330 belong to the effect steps before (O596, O606, O607, O609)
-LAST = 5350                                 # this step's block ends here
+FIRST = 5321                                # 4743..5320 belong to the effect steps before (O596, O597, O606, O607, O609, O613)
+LAST = 5340                                 # this step's block ends here
 PAIR = 73
 GLOW = 144                                  # the one glow level (docs/SPRITE_STYLE.md)
 STAND = (16, 20)                            # the target point in the target tile: where a creature's feet are

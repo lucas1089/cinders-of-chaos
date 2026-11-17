@@ -108,6 +108,32 @@ end
 ChaosSpell.bigFx = bigFx
 -- <<< Large spell effects
 
+-- >>> The area burst of a spell (data/lib/chaos_area_fx.lua C.spellBursts, O613, client pair 73): the pack's clock face in place
+-- of the arcane nova of Veil of Whispers and of each implosion of Tear in the Weave, those two spells only. nil outside a
+-- cast, for any other spell or name, and below pair 73. A skin wins over it; it wins over the pair 29, large and class effects.
+local function areaBurst(name)
+	local W = ChaosSupportsSpell
+	if type(name) ~= "string" or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, 'data/lib/chaos_area_fx.lua')
+	end
+	local A = ChaosAreaFx
+	if not A or not A.spellBurst then
+		return nil
+	end
+	local ok, alt = pcall(A.spellBurst, spellId, name)
+	return ok and alt or nil
+end
+ChaosSpell.areaBurst = areaBurst
+-- <<< The area burst of a spell
+
 -- >>> Pair 27 effects (data/lib/chaos_pack27_fx.lua, switch ChaosPack27Fx.PAIR27_FX, off): a spell may send an effect
 -- or missile of its own; nil when the switch is off or no swap fits. Skins win over it; large and class effects too,
 -- unless the second result is true (the swap is listed as `first` for that spell).
@@ -333,6 +359,10 @@ function ChaosSpell.vfx(pos, name)
 	end
 	local alt = skinned("vfx", name) -- Cosmetics: the skin's variant first, the default when the pair lacks it
 	if alt and Vfx(Position(pos), alt) then
+		return true
+	end
+	local burst = not alt and areaBurst(name) -- O613: the pack burst of this spell on client pair 73, unless a skin was chosen
+	if burst and Vfx(Position(pos), burst) then
 		return true
 	end
 	local p27, p27first = nil, false

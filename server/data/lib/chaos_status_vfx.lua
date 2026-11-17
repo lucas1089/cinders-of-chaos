@@ -72,6 +72,29 @@ function S.live()
 	return I.on == true
 end
 
+-- O613 (owner 2026-11-17): a status that another pair 73 effect draws is not shown by the layer. A slowed creature
+-- shows the pack's gravity press (data/lib/chaos_area_fx.lua C.status, sent by ChaosPack29Vfx.show / hold), so `root`
+-- yields while that effect is live: no mark from the state, no bit from the paralyse condition. One row; an empty
+-- table gives the root status back to the layer.
+S.yield = {root = "slowed"}   -- status -> the pack 29 state the other effect draws
+
+function S.yielded(status)
+	local state = S.yield[status]
+	if not state then
+		return false
+	end
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, "data/lib/chaos_area_fx.lua")
+	end
+	local A = ChaosAreaFx
+	if not A or not A.statusName then
+		return false
+	end
+	local ok, name = pcall(A.statusName, state)
+	return ok and name ~= nil
+end
+
 local function hasBit(mask, bit)
 	return mask % (bit * 2) >= bit
 end
@@ -152,7 +175,7 @@ end
 -- a pack 29 state on a creature id for ms; false when the state has no status (the caller sends its own aura)
 function S.markState(id, state, ms, now)
 	local status = S.states[state]
-	return status ~= nil and S.mark(id, status, ms, now)
+	return status ~= nil and not S.yielded(status) and S.mark(id, status, ms, now)
 end
 
 -- the marks' part of a creature's mask; ended marks are dropped
@@ -202,6 +225,12 @@ S.since = S.since or {}   -- creature id -> {status -> ms it was first seen}
 
 -- a mask with the brief statuses cut to their first S.briefMs
 function S.cutBrief(id, mask, now)
+	for status in pairs(S.yield) do -- O613: a status another effect draws
+		local b = S.bits[status]
+		if b and hasBit(mask, b) and S.yielded(status) then
+			mask = mask - b
+		end
+	end
 	local t = S.since[id]
 	for name in pairs(S.brief) do
 		local b = S.bits[name]

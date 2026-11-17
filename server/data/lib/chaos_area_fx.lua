@@ -1,19 +1,22 @@
--- chaos_area_fx.lua: area bursts, beams and markers of the purchased effect packs of pair 36 (O607, O609, client pair 73; the art is
--- in the sprite pair only, client/tools/sprites/gen_area_fx.py, docs/CREDITS.md). The owner approved the review O604: five of
--- our area bursts are faint, the beam spells draw balls on a line, and the pack has markers we lack. Looks only: no damage,
--- no timing, no area changes.
+-- chaos_area_fx.lua: an area burst, beams, markers and a status effect of the purchased effect packs of pair 36 (O607, O609,
+-- O613, client pair 73; the art is in the sprite pair only, client/tools/sprites/gen_area_fx.py, docs/CREDITS.md). The
+-- owner approved the review O604: the beam spells draw balls on a line, and the pack has markers we lack. Looks only: no
+-- damage, no timing, no area changes.
 --
 -- Gate: config.lua `chaosClientPair` (README "Client pair guard") is 73 or more, read from the file at load (C.ON). Below 73
 -- the pair has blank effects at the refilled ids and no effect 5300+, so nothing here answers and every spell, boss and
 -- event sends exactly what it sends today. The owner raises the record when pair 73 ships.
 --
--- A. Area bursts (C.names): the name of a faint burst of ours -> the pack burst that takes its place. The swap sits in
---    Vfx() of data/lib/chaos_vfx.lua, the one door every named effect goes through, so it covers the spells (the large
---    effect swap of chaos_big_fx.lua and the scripts that name a burst), the boss hits and telegraph hits of
---    boss_mechanics.lua, raids and guild bosses. The boss death effect is sent by id (deathfx.lua): C.swapId. The old ids
---    keep their art: a cosmetic skin, a pair below 73 and a caller that passes `raw` still draw them.
---    Size: a pack burst is sent on the centre tile of the area, as ours is. The blood sigil is 6 tiles wide and ours 9, so
---    a boss area wider than 7 tiles keeps ours (C.fits, ChaosBigFx.bossHit).
+-- A. Area burst (C.spellBursts). O607 swapped five of our large bursts for pack ones in Vfx(), for every sender. The owner
+--    saw them (O613, 2026-11-17): "the new area bursts are too weak", ours stay. So there is no swap by name any more:
+--    the fire, blood, frost and holy bursts (638, 642, 644, 646), the boss hits and the boss deaths send our art again,
+--    and the four pack bursts left the pair. One pack burst stays, the clock face of runes, for two spells only (the
+--    owner: "the arcane big bursts of Veil of Whispers and Reality Rift"): the arcane nova 648 big_nova_arcane_7 that
+--    Veil of Whispers (153) sends at the caster's feet, and each implosion of Tear in the Weave (231, the script
+--    reality_rift.lua), which asks for arcane_circle: the large effects map that to 648 and pair 29 to its gravity
+--    crush (775 weave_crush, which is what a client drew since pair 29). ChaosSpell.vfx (_common.lua) asks
+--    C.spellBurst with the name the script sends, after the cosmetic skin and before every other swap, so a skin of the
+--    spell still wins and no other sender of 648 changes. The clock is a disc of 7 tiles, as our nova is.
 -- B. Beams (C.beams): a line spell of the attack kit draws one pack beam from the caster's tile toward the target in place
 --    of an effect on every tile of the line (_attackkit.lua). The damage tiles are the line's, untouched.
 --    O609: the pack's art is about 3 tiles long, and O607 drew a longer line as copies end to end; every copy showed its
@@ -23,9 +26,13 @@
 --    and a viewer who cannot draw the one piece. The client draws an effect from the far corner of its picture, and a
 --    player gets an effect only when that tile is in its view (9 tiles east, 7 south): a player standing behind the
 --    caster of a long beam east or south would get nothing, so that player alone gets the chain (C.sendBeam).
+--    O613: Eclipse Edge (155) has no beam any more (a blood stream is no blade): it draws its line as before O607.
 -- C. Markers (C.marks): a lock over a gate that refuses a player (chronicle.lua, areagen.lua), a quest marker over the loot
 --    bag that holds a main quest item (mainquest.lua); sent to that player only. Skull, checkpoint crystal and hand are in
 --    the pair with no sender yet.
+-- D. Status (C.status, O613): the pack's gravity press on a slowed creature, in place of our whirlwind (783 cond_slowed).
+--    data/lib/chaos_pack29_vfx.lua asks C.statusName for the aura of a state, so every slow that holds the aura (the
+--    spells' slows, the status word of a root) draws it. The whirlwind keeps its art for a pair below 73.
 --
 -- The ids, send offsets, beam reaches and beam lengths are the generated data/lib/chaos_area_fx_ids.lua. Plain Lua, no engine call at
 -- load (server/tests/area_fx_test.lua).
@@ -55,25 +62,20 @@ end
 -- the gate, read once at load; tests set it by hand
 C.ON = (C.recordedPair() or 0) >= C.PAIR
 
--- A. our burst -> the pack burst (the element of both is the same: server/tests/area_fx_test.lua)
-C.names = {
-	big_shock_fire_7 = "ab_fire_rain",             -- 638: Doomtide, Colossus Fall, Falling Pyre, fire boss hits, fire boss deaths
-	big_shock_blood_9 = "ab_blood_sigil",          -- 642: Judgment of Iron, the world boss enrage, physical boss hits
-	donor_arcane_nova_695 = "ab_arcane_clock",     -- 4711: no sender names it today (README "Area bursts, beams and markers")
-	big_nova_frost_7 = "area_whiteout",            -- 644: Primordial Squall
-	big_nova_holy_7 = "area_radiant_repulse",      -- 646: Hammer of Ember Dawn, holy boss hits
+-- A. [spell id] = {the effect name the spell's script sends (ChaosSpell.vfx) = the pack burst}: only for that spell
+C.spellBursts = {
+	[153] = {big_nova_arcane_7 = "ab_arcane_clock"},   -- Veil of Whispers: the arcane nova at the caster's feet
+	[231] = {arcane_circle = "ab_arcane_clock"},       -- Tear in the Weave (reality_rift.lua): each implosion
 }
--- the widest area (tiles across) a pack burst stands in for; none listed: any
-C.maxSize = {ab_blood_sigil = 7}
 
 -- B. [spell id] = the beam (a name of C.ids.beams); its element is the spell's
 C.beams = {
 	[118] = "mega_soul_chain",      -- Soulrend Beam (death, 6 tiles)
 	[129] = "mega_sunbeam_lance",   -- Lance of Vigil (holy, 3 tiles)
 	[151] = "mega_sunbeam_lance",   -- Dawnbreaker Shot (holy, 8 tiles)
-	[155] = "mega_blood_siphon",    -- Eclipse Edge (physical, 5 tiles; its hit is a blood splash)
 }
 -- mega_glacier_breath is in the pair with no sender: no class has an ice line spell
+-- Eclipse Edge (155) had the blood stream in O607; the owner took it off (O613): a blade spell draws its line
 
 -- C. the markers by use
 C.marks = {
@@ -82,6 +84,11 @@ C.marks = {
 	skull = "w_marker_skull",                    -- no sender yet
 	checkpoint = "mega_util_checkpoint_crystal", -- no sender yet
 	interact = "mega_util_interact_hand",        -- no sender yet
+}
+
+-- D. a state of data/lib/chaos_pack29_vfx.lua (C.auras there) -> the pack effect that stands in for its aura
+C.status = {
+	slowed = "mega_gravity_press",               -- in place of the whirlwind 783 cond_slowed
 }
 
 local DIRNAME = {[0] = "n", [1] = "e", [2] = "s", [3] = "w", [4] = "sw", [5] = "se", [6] = "nw", [7] = "ne"}
@@ -113,36 +120,15 @@ function C.live()
 	return C.loaded
 end
 
--- does the pack burst `alt` stand in on an area `size` tiles across (nil: unknown, a spell's own area)
-function C.fits(alt, size)
-	local max = C.maxSize[alt]
-	return not (max and size and size > max)
-end
-
--- A. the name to send in place of `name`: the pack burst when the gate is on and the pair has it, else `name` itself
-function C.swap(name, size)
-	local alt = type(name) == "string" and C.names[name] or nil
-	if not alt or not C.live() or not ChaosVfx[alt] or not C.fits(alt, size) then
-		return name
+-- A. the burst spell `spellId` sends in place of `name` (the effect name its script asks for): the pack burst when the
+-- gate is on and the pair has it, else nil
+function C.spellBurst(spellId, name)
+	local t = spellId and C.spellBursts[spellId]
+	local alt = t and type(name) == "string" and t[name] or nil
+	if not alt or not C.live() or not ChaosVfx[alt] then
+		return nil
 	end
 	return alt
-end
-
--- A. the same for a sender that holds an effect as {id, dx, dy} (deathfx.lua): the pack burst's entry, or `e` itself
-function C.swapId(e)
-	if type(e) ~= "table" or not e.id or not C.live() then
-		return e
-	end
-	if C.byId == nil then
-		C.byId = {}
-		for name, alt in pairs(C.names) do
-			local old = ChaosVfx[name]
-			if old and ChaosVfx[alt] then
-				C.byId[old.id] = ChaosVfx[alt]
-			end
-		end
-	end
-	return C.byId[e.id] or e
 end
 
 -- B. the chain of O607 for the beam of spell `spellId` along `dir` over a line of `length` tiles: copies of the pack's own
@@ -257,6 +243,15 @@ function C.sendMark(pos, use, player)
 		end
 	end)
 	return ok
+end
+
+-- D. the effect name that draws `state` on a creature in place of its aura, or nil (gate off, no stand-in, not in the pair)
+function C.statusName(state)
+	local name = type(state) == "string" and C.status[state] or nil
+	if not name or not C.live() or not ChaosVfx[name] then
+		return nil
+	end
+	return name
 end
 
 ChaosAreaFx = C

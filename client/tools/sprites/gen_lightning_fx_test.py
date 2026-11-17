@@ -25,8 +25,8 @@ def ok(cond, msg):
 def test_table():
     rows = G.pieces()
     ok(G.table_errors(rows) == [], 'the table of the script holds its rules: %s' % G.table_errors(rows))
-    ok(rows[0]['id'] == 5331 and rows[-1]['id'] <= G.LAST, 'effects in the block 5331..%d' % G.LAST)
-    ok(G.FIRST == 5331, 'the ids of the steps before (4743..5330) are not touched')
+    ok(rows[0]['id'] == 5321 and rows[-1]['id'] <= G.LAST, 'effects in the block 5321..%d' % G.LAST)
+    ok(G.FIRST == 5321, 'the ids of the steps before (4743..5320) are not touched')
     ok(all(6 <= r['phases'] <= 10 for r in rows), '6 to 10 frames')
     ok({r['size'] for r in rows} == {'std', 'heavy'} and {r['tint'] for r in rows} == {'energy'},
        'the pair has plain and heavy bolts, energy only')
@@ -57,10 +57,10 @@ def test_table():
 
 
 def test_pair_refusal():
-    ok(G.pair_ok(5330, 253) and G.pads(5330) == 0, 'every effect step of pair 73 done: nothing to pad')
-    ok(G.pair_ok(4742, 253) and G.pads(4742) == 588, 'pair 72: 588 blank effects, 4743..5330')
-    ok(not G.pair_ok(5331, 253), 'already imported')
-    ok(not G.pair_ok(5330, 254), 'another missile count')
+    ok(G.pair_ok(5320, 253) and G.pads(5320) == 0, 'every effect step of pair 73 done: nothing to pad')
+    ok(G.pair_ok(4742, 253) and G.pads(4742) == 578, 'pair 72: 578 blank effects, 4743..5320')
+    ok(not G.pair_ok(5321, 253), 'already imported')
+    ok(not G.pair_ok(5320, 254), 'another missile count')
     ok(not G.pair_ok(4702, 253), 'an older pair')
 
 
@@ -156,10 +156,10 @@ def test_import_spec():
     pairs = G.build_rows()
     with tempfile.TemporaryDirectory() as tmp:
         spec = os.path.join(tmp, 'import.csv')
-        G.import_spec(spec, tmp, 5329, pairs)
+        G.import_spec(spec, tmp, 5319, pairs)
         rows = list(csv.DictReader(open(spec, newline='')))
-        ok([x['name'] for x in rows] == ['lf_pad_5329', 'lf_pad_5330'] + [r['name'] for r, _ in pairs],
-           'blank effects up to 5330, then the bolts in id order')
+        ok([x['name'] for x in rows] == ['lf_pad_5319', 'lf_pad_5320'] + [r['name'] for r, _ in pairs],
+           'blank effects up to 5320, then the bolts in id order')
         ok(all((x['w'], x['h'], x['phases'], x['blank']) == ('1', '1', '1', '1') for x in rows[:2]), 'a blank effect is one empty 1 x 1 phase')
         ok(all(x['kind'] == 'effect' and not x['replace'] and not x['lua'] for x in rows), 'the build appends only: effects, nothing replaced')
         ok(all(x['alpha'] == 'soft' for x in rows), 'the glow level is kept')
@@ -167,16 +167,16 @@ def test_import_spec():
         for x, (r, s) in zip(rows[2:], pairs):
             ok(G.digest(np.asarray(Image.open(x['file']))) == G.digest(s), '%s: the strip is written as drawn' % r['name'])
             ok(x['durs'] == r['durs'] and (int(x['dx']), int(x['dy'])) == (r['dx'], r['dy']), '%s: durations and send offset' % r['name'])
-        G.import_spec(spec, tmp, 5331, pairs)
+        G.import_spec(spec, tmp, 5321, pairs)
         rows = list(csv.DictReader(open(spec, newline='')))
-        ok([x['name'] for x in rows] == [r['name'] for r, _ in pairs], 'on a pair with 5330 effects nothing is padded')
+        ok([x['name'] for x in rows] == [r['name'] for r, _ in pairs], 'on a pair with 5320 effects nothing is padded')
 
 
 def test_server_files():
     rows = G.read_spec()
     lua = G.lua_text(rows)
     ok(open(G.LUA).read() == lua, 'chaos_lightning_fx_ids.lua is up to date')
-    ok('first = 5331, count = %d' % len(rows) in lua, 'the count is in the ids file')
+    ok('first = 5321, count = %d' % len(rows) in lua, 'the count is in the ids file')
     for r in rows:
         ms = sum(int(v) for v in r['durs'].split(';'))
         ok('%s = {id = %s, dx = %s, dy = %s, ms = %d,' % (r['name'], r['id'], r['dx'], r['dy'], ms) in lua, 'ids row of ' + r['name'])

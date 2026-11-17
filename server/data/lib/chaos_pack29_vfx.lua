@@ -180,6 +180,19 @@ local function effect(name)
 	return name and ChaosVfx and ChaosVfx[name] or nil
 end
 
+-- the effect name that draws `state` on a creature now: on client pair 73 a pack effect may stand in for the aura (O613: the
+-- gravity press for the whirlwind of a slowed creature, data/lib/chaos_area_fx.lua C.status), else the aura of C.auras
+local function auraNow(state)
+	if ChaosAreaFx == nil then
+		ChaosAreaFx = false
+		pcall(dofile, "data/lib/chaos_area_fx.lua")
+	end
+	local A = ChaosAreaFx
+	local alt = A and A.statusName and A.statusName(state) or nil
+	return alt or C.auraFor(state)
+end
+C.auraNow = auraNow
+
 -- the blast for a name a spell sends, when live and the id is known
 function C.swapFor(kind, name)
 	local alt = C.pick(kind, name)
@@ -208,7 +221,7 @@ function C.show(creature, state)
 	if toLayer(creature, state, 1000 + (ChaosStatusVfx and ChaosStatusVfx.showSlackMs or 0)) then
 		return true
 	end
-	local name = C.auraFor(state)
+	local name = auraNow(state)
 	if not name or not creature or not C.live() then
 		return false
 	end
@@ -231,7 +244,7 @@ function C.hold(creature, state, ms)
 	if not C.show(creature, state) and not C.live() then
 		return false
 	end
-	local e = effect(C.auraFor(state))
+	local e = effect(auraNow(state))
 	if not e or not addEvent or not ms or ms <= e.ms then
 		return true
 	end

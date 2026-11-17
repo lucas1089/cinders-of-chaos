@@ -1,10 +1,10 @@
 -- chaos_lightning_fx.lua: the bolt from the sky, drawn by code (O614, client pair 73; our own art, in the sprite pair only,
 -- client/tools/sprites/gen_lightning_fx.py). Owner 2026-11-17: "For the lightning falling from the sky, make the tool to
--- draw the lightning." Five effects at 5331..5335: three shapes of the bolt and two of a heavy bolt. Looks only: no damage,
+-- draw the lightning." Five effects at 5321..5325: three shapes of the bolt and two of a heavy bolt. Looks only: no damage,
 -- no timing, no area changes.
 --
 -- Gate: config.lua `chaosClientPair` (README "Client pair guard") is 73 or more, read from the file at load (C.ON). A
--- client on pair 72 has no effect 5331+, so below 73 nothing here answers and every sender draws effect 458 as today.
+-- client on pair 72 has no effect 5321+, so below 73 nothing here answers and every sender draws effect 458 as today.
 --
 -- What is swapped: the name `lightning_strike` (effect 458 of data/lib/chaos_vfx.lua, "energy: bolt from the sky"), at the
 -- one door every named effect goes through, Vfx(). So whatever would have drawn 458 draws the new bolt, and a sender whose
