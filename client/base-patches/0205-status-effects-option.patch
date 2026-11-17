@@ -1,0 +1,65 @@
+# Chaos: status effects option (O597; client/BASE.md "0205"; mods/client_settings/classes/dataset.lua, options/graphics.otui;
+# after 0001-0204). Lua and OTUI only, no engine code: the overlay module game_statusfx draws the statuses the server names
+# (burn, freeze, shock, poison, curse, root, soak, stun, confusion, haste, blessing, regeneration, shield, fury) on the
+# creatures, from effects of the sprite pair (pair 73), and reads this option.
+#  * dataset.lua: `statusEffects` (default on); its apply tells game_statusfx (`onOption(name, value)`), which tells the
+#    server to send or to stop.
+#  * options/graphics.otui: one checkbox "Status effects on creatures" under "Auras on chests and Templars" (the visual
+#    effects panel grows from 409 to 428 px, 19 px a row); pt-BR in client_chaos_locale.
+# Without the patch the option counts as on (the module's default). Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2323,6 +2323,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0205): status effects drawn on creatures (game_statusfx)
++  statusEffects = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_statusfx
++      if m and m.onOption then m.onOption('statusEffects', value) end
++      return true
++    end,
++  },
++
+   -- Chaos (base patch 0154): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
+   showWholeMenu = {
+     value = false,
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -604,7 +604,7 @@
+ 
+     FlatPanel
+       // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-      size: 505 409
++      size: 505 428
+       anchors.top: prev.bottom
+       anchors.right: parent.right
+       anchors.left: parent.left
+@@ -1007,6 +1007,25 @@
+           local value = modules.client_settings.getOption('chestAuras')
+           self:setChecked(value ~= false)
+ 
++      SettingsCheckBox
++        id: statusEffects
++        size: 12 12
++        !text: tr('Status effects on creatures')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: chestAuras.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Fire, ice, lightning, poison, curses, roots, stuns, shields and other statuses are drawn on the creature\nwhile they last: on you, on other players and on monsters. At most two on a creature. Turn it off if your frame rate drops.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('statusEffects')
++          self:setChecked(value ~= false)
++
+       UIWidget
+         size: 12 12
+         anchors.top: parent.top

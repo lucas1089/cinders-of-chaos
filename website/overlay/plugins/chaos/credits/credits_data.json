@@ -212,6 +212,16 @@
      "use": "harvest farmland and catacomb tiles, decoration, event props and monsters (planned); since pair 71 (O540) 7 of its creatures as creature outfits (a werewolf, a witch, a pumpkin brute, a scarecrow, a ghost, two skeletons); the art is not in the repository"
     },
     {
+     "name": "BANE - HD Status Effect VFX",
+     "licence": "purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data; every frame comes from a procedural generator program whose code was written with AI help (no image-generation model, no stock art)",
+     "use": "the status layer of pair 73 (O597): start, loop and end of 14 statuses drawn on a creature (burn, freeze, shock, poison, curse, root, soak, stun, confusion, haste, blessing, regeneration, shield, fury), scaled to game size; the art is only in the sprite pair, not in the repository"
+    },
+    {
+     "name": "UNMAKE - Death, Dissolve & Disintegration VFX",
+     "licence": "purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data",
+     "use": "the ground overlays of five kill dissolves of pair 73 (O597): a pool, broken earth, bones, vapour and rubble, with the pack's body removed; the art is only in the sprite pair, not in the repository"
+    },
+    {
      "name": "Dark Fantasy RPG UI Kit Full Pack",
      "author": "ZSS Game Lab (itch.io)",
      "licence": "purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand",

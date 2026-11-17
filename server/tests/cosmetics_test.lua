@@ -1277,4 +1277,41 @@ for _, f in ipairs({"game_cosmetics/game_cosmetics.otmod", "game_cosmetics/cosme
 	eq(readFile("../client/overlay/modules/" .. f) ~= nil, true, "client " .. f)
 end
 
+-- O597: the five dissolves of client pair 73 exist only while the pair gate is on; their message names the ground overlay
+do
+	eq(K.byKey(cfg, "kill_meltdown"), nil, "pair below 73: no Meltdown")
+	eq(#cfg.dissolve.modes, 7, "pair below 73: seven modes")
+	local ids = dofile("data/lib/chaos_status_vfx_ids.lua")
+	eq(ids.on, false, "the gate is off without a config.lua record")
+	ids.on = true
+	local cfg73 = dofile("data/scripts/chaos/cosmetics_config.lua")
+	ids.on = false
+	eq(#cfg73.cosmetics, #cfg.cosmetics + 5, "pair 73: five more cosmetics")
+	eq(#cfg73.dissolve.modes, 12, "pair 73: twelve modes")
+	local used = {}
+	for _, c in ipairs(cfg73.cosmetics) do
+		if c.dissolve then used[c.dissolve] = true end
+	end
+	local seenId = {}
+	for _, c in ipairs(cfg73.cosmetics) do
+		eq(seenId[c.id], nil, "cosmetic id used once: " .. c.id)
+		seenId[c.id] = true
+	end
+	for _, key in ipairs({"kill_meltdown", "kill_swallowed", "kill_barebones", "kill_boiloff", "kill_stonebreak"}) do
+		local c = K.byKey(cfg73, key)
+		eq(c ~= nil and c.kind, "killfx", key .. " is a kill effect")
+		eq(c.source, "store", key .. " is sold") eq(c.price, 200, key .. " costs what the other dissolves cost") eq(c.pair, 73, key .. " needs pair 73")
+		eq(K.dissolveKnown(cfg73, c.dissolve), true, key .. ": its mode is known")
+		eq(ids.kill[c.dissolve] ~= nil, true, key .. ": its mode has a ground overlay")
+		eq(K.dissolveKnown(cfg, c.dissolve), false, key .. ": unknown below pair 73")
+	end
+	for _, m in ipairs(cfg73.dissolve.modes) do
+		eq(used[m], true, "pair 73: mode " .. m .. " is used by a kill effect")
+	end
+	local outfit = {lookType = 15, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 0}
+	local msg = K.dissolvePayload(cfg73, 1, {x = 1, y = 1, z = 7}, "melt", 0, outfit, 2, nil, ids.kill.melt)
+	eq(msg.data.p.id, ids.kill.melt.id, "the overlay id") eq(msg.data.p.dx, 1, "its shift") eq(msg.data.p.dy, nil, "dy 0 is left out")
+	eq(K.dissolvePayload(cfg73, 1, {x = 1, y = 1, z = 7}, "sand", 0, outfit, 2, nil, nil).data.p, nil, "no overlay: none sent")
+end
+
 print(string.format("cosmetics_test: %d checks OK", n))

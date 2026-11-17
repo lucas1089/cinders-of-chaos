@@ -725,6 +725,7 @@ collision check") and be added here.
 | 178 | `goals` | `goals.lua` | `game_goals` | client -> server `open` / `close` / `tracker`; server -> client `goals` through `Chaos.sendChunked`, `tracker`, `done` (see "Next Goals") |
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
+| 165 | `statusVfx` | `status_vfx.lua` (the scan and the wish), `data/lib/chaos_status_vfx.lua` (the rules) | `game_statusfx` | client -> server `hello {on}`, server -> client `cfg {on, e, ms}`, `s {l}` only to a client that asked (O597, README "Status layer (O597)") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -859,7 +860,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The effect owner marks (O567) took **164**, a number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/fx_owner_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. The status layer (O597) took **165**, the next number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/status_vfx_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The effect owner marks (O567) took **164**, a number nothing uses: not in the reference server list, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any other client module (`tests/fx_owner_test.lua` checks all four, and that no two `ChaosOpcodes` share a number). The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 No other Chaos opcode collides. The trainer DPS panel (O573) took **147**, free in the reference server, the base client's `ExtendedIds`, every Chaos script and every client module (`tests/trainer_meter_test.lua` checks it, and that no two `ChaosOpcodes` share a number); it could not share 204 with the DPS meter because a client module that registers an opcode replaces the earlier one. The new player survey (O374) took **122**, the next number after 121 that nothing uses (`tests/survey_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
@@ -34620,6 +34621,15 @@ in client/MANIFEST.md). Modes (`cfg.dissolve.modes`): `sand` (blown away, top fi
 `burn` (burns from the edges inward), `void` (collapses to a point), `frost` (shatters and melts), `gold` (rises as dust). The cosmetic keeps `vfx`:
 the plain effect that plays when the dissolve cannot.
 
+**Five more modes (O597, client pair 73).** `melt` (squashes to the ground), `sink` (slides into the ground), `bones` (the flesh
+falls, ribs stay a moment), `vapour` (boils off upward), `stone` (turns grey and breaks). Cosmetics 141 to 145: Meltdown, Swallowed,
+Bare Bones, Boil Off, Stonebreak; store, 200 coins each, like the other store dissolves. Each mode also names a ground overlay, an
+effect of the pair (`data/lib/chaos_status_vfx_ids.lua` `kill`, ids 5185 to 5189: a pool, broken earth, bones, vapour, rubble). The
+message carries it as `p = {id, dx, dy}`. The client plays it once per tile of the monster's width, at most 3. **Gate:** a cosmetic
+with `pair = 73` and the five modes exist only while `config.lua` `chaosClientPair` is 73 or more (the filter at the end of
+`cosmetics_config.lua`, read through `ChaosStatusVfxIds.on`). Below it: no store offer, no window row, nothing to select.
+Tests: `tests/cosmetics_test.lua` (the O597 block: gate on and off, the payload with and without `p`).
+
 - **The message.** `cosmetics.lua` `M.dissolve` (called by the death handler `ChaosCosmeticsDeath` after the killing blow of a character that wears one):
   `{action = "kdis", data = {i, x, y, z, m, t, o = {l, h, b, g, f, a}, d, v = {id, dx, dy}}}` on the cosmetics opcode 225 (no new opcode, an old client
   ignores the action) to the killer first and the other players within `cfg.dissolve.range` (9 x 7 tiles), at most `maxViewers` (12). The rules are in
@@ -34905,3 +34915,50 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
 - **Tests.** `tests/area_fx_test.lua` in the server loop. `client/tools/sprites/gen_area_fx_test.py`. The tool: client/MANIFEST.md.
   O609 in the Lua test: every beam spell and heading gets one effect named for the length of the real damage line (`ChaosAttackKitCore.tiles`).
   Also the canvas reach, the caster's view, the per viewer choice with fake spectators, the chain for a length with no row.
+## Status layer (O597; `data/lib/chaos_status_vfx.lua`, `data/lib/chaos_status_vfx_ids.lua`, `scripts/chaos/status_vfx.lua`, opcode 165, client `game_statusfx`, client pair 73)
+
+Owner 2026-11-17: "about the effects, do the recommended". The recommendation named a purchased status pack as a status layer
+(docs/CREDITS.md). A creature that burns, is frozen, stunned, blessed and so on shows it on its body: a start once, a loop while the
+status holds, an end once. Players and monsters alike.
+
+- **Statuses (14) and their sources.** One bit each, in the order of `ChaosStatusVfxIds.order`.
+
+  | Status | Engine condition | Chaos state (through `ChaosPack29Vfx.show` / `hold`) |
+  |---|---|---|
+  | burn | `CONDITION_FIRE` | `burning` |
+  | freeze | `CONDITION_FREEZING` | `frozen` |
+  | shock | `CONDITION_ENERGY` | `shocked` |
+  | poison | `CONDITION_POISON` | `poison` |
+  | curse | `CONDITION_CURSED` | `cursed` |
+  | root | `CONDITION_PARALYZE` | `slowed` |
+  | soak | `CONDITION_DROWN` | none |
+  | stun | none | `stunned` |
+  | confuse | `CONDITION_DRUNK` (players) | `confused` |
+  | haste | `CONDITION_HASTE` (players) | none |
+  | bless | none | `blessed` |
+  | regen | `CONDITION_REGENERATION` of a spell (players, not the food one) | `regeneration` |
+  | shield | `CONDITION_MANASHIELD` (players) | `invulnerable` |
+  | rage | none | `enraged` |
+
+  The pack's sleep was skipped: no condition or state matches it. Haste is brief: shown 2.5 s after it starts, not for as long as it
+  lasts, because most characters are hasted all the time.
+- **The Chaos states.** Every Chaos call site that knows a state already goes through `ChaosPack29Vfx.show` or `hold` (slows, stuns,
+  chill and shock, status words, boss phases, blessings, rages, shields). While the layer is live that library hands those states to
+  `ChaosStatusVfx.markState` and no longer sends its own pair 29 aura for them. Its engine override of the condition tick effect is
+  left out for the same states, so the tick shows the stock spark and the layer draws the status. With the gate off nothing changes.
+- **Protocol.** Extended opcode 165 (`ChaosOpcodes.statusVfx`), JSON. Client to server: `hello {on = 1 | 0}`. Server to client:
+  `cfg {on, e, ms}` (the effect ids, flat `start, loop, stop` per status in bit order; `on = 0` below pair 73) and
+  `s {l = {creature id, mask, ...}}`, only what changed, mask 0 clears. Only a client that said hello gets messages. Every 500 ms the
+  creatures within 9 x 7 tiles of each watcher are read once; each watcher gets its changes, at most 60 pairs a message (under 1 KB).
+  No watcher: the scan does nothing. The Unity client never says hello (`tools/ci/unity_opcodes_allowlist.txt`).
+- **Gate.** `ChaosStatusVfxIds.on`: `config.lua` `chaosClientPair >= 73`. Off: `cfg {on = 0}`, no scan, no hand-over.
+- **Ids.** Effects 5143 to 5184 (three a status), 5185 to 5189 (the kill overlays). Generated: `data/lib/chaos_status_vfx_ids.lua` and
+  the 47 `sv_` rows of `data/spells/spell_fx_elements.csv` (`client/tools/sprites/gen_status_vfx.py ids`, `--check` in CI). Effects
+  4743 to 5142 belong to the spell packs of O596. No storage key, no table.
+- **Client.** `game_statusfx` draws at most 2 statuses a creature (stun, freeze, root first; haste and regeneration last) and 24 on
+  screen (12 on a phone), the nearest creatures first. Options > Graphics "Status effects on creatures", default on (base patch `0205`).
+- **Tests.** `tests/status_vfx_test.lua` (opcode free, ids file and gate, masks, conditions on a mocked creature, marks and their
+  end, the brief haste, changes and batches, the glue on a mocked engine, the hand-over from `chaos_pack29_vfx.lua`); client
+  `statusfx_test.lua`; `tests/pack29_vfx_test.lua` unchanged and green.
+- **Not verified.** Not run on a server or in a client: pair 73 is not live. Watch for: the cost of the scan in a full hunt, a
+  status that stays after the creature died, a monster's condition the engine reports under another condition id.

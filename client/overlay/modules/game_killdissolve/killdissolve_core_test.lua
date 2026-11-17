@@ -9,8 +9,8 @@ local function eq(a, b, what)
 end
 local function near(a, b, what) eq(math.abs(a - b) < 1e-6, true, what .. ' (' .. tostring(a) .. ' vs ' .. tostring(b) .. ')') end
 
--- modes: seven, each with a duration of about a second, in the generator's order
-eq(#K.ORDER, 7, 'seven modes')
+-- modes: twelve (seven of O563, five of O597), each with a duration of about a second, in the generator's order
+eq(#K.ORDER, 12, 'twelve modes')
 for _, m in ipairs(K.ORDER) do
   eq(K.isMode(m), true, m .. ' is a mode')
   eq(K.duration(m) >= 800 and K.duration(m) <= 1500, true, m .. ' lasts about a second')
@@ -134,6 +134,23 @@ eq(K.stage('nope', 100).phase, 'stand', 'unknown mode stands')
 eq(K.tileFps(true, false), 30, 'a hovered tile animates at 30 per second')
 eq(K.tileFps(false, true), 30, 'a selected tile animates')
 eq(K.tileFps(false, false), 0, 'the other tiles are still')
+
+-- O597: the ground overlay of the five pair 73 modes
+for _, m in ipairs({ 'melt', 'sink', 'bones', 'vapour', 'stone' }) do eq(K.isMode(m), true, m .. ' is a mode') end
+eq(K.overlay({ p = { id = 5185, dx = 1 } }).id, 5185, 'overlay id'); eq(K.overlay({ p = { id = 5185, dx = 1 } }).dx, 1, 'overlay dx')
+eq(K.overlay({ p = { id = 5185, dx = 1 } }).dy, 0, 'overlay dy default'); eq(K.overlay({}), nil, 'no overlay')
+eq(K.overlay({ p = { id = 0 } }), nil, 'id 0 is none'); eq(K.overlay({ p = 'x' }), nil, 'junk is none'); eq(K.overlay({ p = { id = 99999 } }), nil, 'too big is none')
+local ov = { id = 5185, dx = 1, dy = 0 }
+eq(#K.overlayTiles(ov, 32), 1, 'one tile wide: once'); eq(K.overlayTiles(ov, 32)[1].dx, 1, 'at its shift')
+eq(#K.overlayTiles(ov, 64), 2, 'two tiles wide: twice'); eq(K.overlayTiles(ov, 64)[2].dx, 0, 'the second one tile to the left')
+eq(#K.overlayTiles(ov, 400), 3, 'capped at three'); eq(#K.overlayTiles(nil, 64), 0, 'no overlay: nothing')
+do
+  local env = { enabled = true, hasParams = true, ready = function() return true end, cap = K.newCap(2) }
+  local plan = K.plan({ m = 'melt', i = 5, x = 100, y = 100, z = 7, o = { l = 20 }, p = { id = 5185, dx = 1 } }, env)
+  eq(plan.action, 'dissolve', 'a melt dissolves'); eq(plan.over.id, 5185, 'and carries its overlay')
+  plan = K.plan({ m = 'sand', i = 5, x = 100, y = 100, z = 7, o = { l = 20 } }, env)
+  eq(plan.over, nil, 'an old mode has none')
+end
 
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('killdissolve_core_test: ' .. checks .. ' checks ok')

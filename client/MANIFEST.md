@@ -7165,3 +7165,38 @@ One owner order goes past that rule: the boss warning pulse becomes the set's st
 | 5235 | 121 | `gx_boss_beacon` | 3 x 4, 24 | worldboss.lua: where the boss will appear, while the players gather (nothing before) |
 | 5236 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
 | 5237 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
+## Status layer and kill overlays (O597, `tools/sprites/gen_status_vfx.py`, `art_import/status_vfx.csv`, `game_statusfx`, `game_killdissolve`, base patch 0205; pair 73)
+
+Two purchased packs (docs/CREDITS.md) join pair 73 as one step of their own. **No art is in the repository**: only the table
+`client/tools/sprites/art_import/status_vfx.csv` (ids, canvas, cut numbers, `src` = 12 hex of the picture file) and the digests
+`status_vfx.sums` of the finished strips.
+
+- **The step.** `gen_status_vfx.py build DAT SPR OUT --src DIR` reads pair 72 (4,742 effects) or pair 72 plus the O596 step. It pads
+  blank effects up to 5142 when the pair has fewer, refuses a pair below 4,742 or above 5,142 effects, then appends 47 effects at
+  the fixed ids 5143 to 5189. The sheets are found by digest, whatever their names. Everything older stays byte-identical.
+  `check` reads the table, the sums and the generated server files. `live DAT SPR` reads the effects back from a pair and holds
+  them to the sums. `table --src DIR` rewrites the sums after a tuning. `strips OUT --src DIR` writes the strips to look at.
+- **Status effects, 5143 to 5184.** 14 statuses, three rows each: start, loop, stop. Canvas 2 x 2 tiles, the feet at canvas point
+  32, 56, every second frame of the pack at 66 ms. The pack's cells of 96 x 128 are scaled to 0.45 (root 0.6, haste 0.5, stun and
+  confusion at native size with only the head zone kept). Alpha: 255, one glow level of 144, nothing. The pack's soft body tint
+  falls below the cut and goes. Gain, cut and tint a row: the table.
+- **Kill overlays, 5185 to 5189.** Melt, sink, bones, vapour, stone. Canvas 3 x 2 tiles. The pack draws one plain body dying; its
+  three body colours are removed (`nobody`), or only a band at the feet is kept (`band:N`), and frames before the body is gone are
+  blank (`from:N`). What stays is ground art: a pool, broken earth, a heap of bones, vapour, rubble.
+- **`game_statusfx`.** The server names creature and mask (opcode 165, server/README.md "Status layer (O597)"). The module puts one
+  widget of sprites on the creature per shown status and steps the phases itself: start, loop, stop. The canvas follows the
+  creature's size: 64 px on a one tile creature, 96 px on two tiles, 128 px on three and more, feet point on the feet. Caps: 2 a
+  creature by priority, 24 on screen, 12 on a phone, nearest first. Option `statusEffects` (Options > Graphics, default on, base
+  patch 0205, pt-BR in `client_chaos_locale`); off tells the server to stop sending. Rules: `statusfx_logic.lua`, test
+  `statusfx_test.lua` in the client loop.
+- **Kill dissolves.** `gen_kill_dissolve.py` has twelve modes now. The five new ones (melt, sink, bones, vapour, stone) are shaders
+  on the dying monster's own sprite, like the first seven, so a wide monster keeps its width and its look. A mode may `warp` where
+  the body is read (melt squashes and widens, sink slides down behind a ground line) and `fade` it. The pack's art is only the
+  ground overlay: the server names it (`p = {id, dx, dy}`), `killdissolve.lua` plays it once per tile of the monster's width, at
+  most 3 (`K.overlayTiles`). Without `p` (server below pair 73) nothing extra plays. Test: `killdissolve_core_test.lua`.
+- **Stun and haste.** Both read weak at 64 px in the O593 previews. Stun: the ring of stars at native size over the head, gain 2.
+  Haste: gain 2.6, a cyan tint, shown 2.5 s only. Haste is still the faintest of the 14 on pale stone.
+- **Tests.** `gen_status_vfx_test.py` draws its own sheets and pair: alpha levels, scale and anchor, frame step, kill rules,
+  sources by digest, padding, fixed ids, refusals, the same bytes twice, `live` and a changed pixel, the generated Lua and tags.
+- **Not done.** Pair 73 is not built for release and nothing was pushed to the assets branch. No client was run: the widget
+  placement, the option row and the overlays were never seen in a game window. Previews were made offline (never committed).

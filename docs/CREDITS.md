@@ -173,6 +173,12 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
   - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned); since pair 71 (O540) 7 of its creatures as creature outfits (a werewolf, a witch, a pumpkin brute, a scarecrow, a ghost, two skeletons); the art is not in the repository
+- **BANE - HD Status Effect VFX**
+  - Licence: purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data; every frame comes from a procedural generator program whose code was written with AI help (no image-generation model, no stock art)
+  - Used for: the status layer of pair 73 (O597): start, loop and end of 14 statuses drawn on a creature (burn, freeze, shock, poison, curse, root, soak, stun, confusion, haste, blessing, regeneration, shield, fury), scaled to game size; the art is only in the sprite pair, not in the repository
+- **UNMAKE - Death, Dissolve & Disintegration VFX**
+  - Licence: purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data
+  - Used for: the ground overlays of five kill dissolves of pair 73 (O597): a pool, broken earth, bones, vapour and rubble, with the pack's body removed; the art is only in the sprite pair, not in the repository
 - **Dark Fantasy RPG UI Kit Full Pack**
   - Author: ZSS Game Lab (itch.io)
   - Licence: purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand

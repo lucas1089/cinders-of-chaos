@@ -9,12 +9,15 @@
 KillDissolveCore = {}
 local K = KillDissolveCore
 
--- the seven modes: how long the dissolve plays (ms) and the shader it uses; the order is the generator's
-K.ORDER = { 'sand', 'pixels', 'ash', 'burn', 'void', 'frost', 'gold' }
+-- the twelve modes: how long the dissolve plays (ms) and the shader it uses; the order is the generator's (the last five
+-- are O597: each also plays a ground overlay of the sprite pair when the server names one, K.overlay)
+K.ORDER = { 'sand', 'pixels', 'ash', 'burn', 'void', 'frost', 'gold', 'melt', 'sink', 'bones', 'vapour', 'stone' }
 K.MODES = {
   sand = { ms = 1000 }, pixels = { ms = 1000 }, ash = { ms = 1100 }, burn = { ms = 1000 }, void = { ms = 1100 },
-  frost = { ms = 1100 }, gold = { ms = 1100 },
+  frost = { ms = 1100 }, gold = { ms = 1100 }, melt = { ms = 1200 }, sink = { ms = 1200 }, bones = { ms = 1300 },
+  vapour = { ms = 1000 }, stone = { ms = 1300 },
 }
+K.OVERLAY_MAX_TILES = 3                          -- widest monster the ground overlay is repeated under
 K.SHADER_PREFIX = 'chaos_kd_'                   -- the registered outfit shader name: chaos_kd_<mode>
 K.FILE_PATTERN = '/shaders/chaos_outfit_kd_%s'   -- the fragment stage file: string.format(FILE_PATTERN, mode)
 K.VERTEX = '/shaders/chaos_outfit_vertex'
@@ -101,6 +104,25 @@ function K.plainEffect(m)
   return { id = id, dx = math.floor(num(v.dx, 0)), dy = math.floor(num(v.dy, 0)) }
 end
 
+-- the ground overlay a message names (O597: an effect of client pair 73, id and the tile shift), nil when none
+function K.overlay(m)
+  local v = type(m) == 'table' and m.p
+  if type(v) ~= 'table' then return nil end
+  local id = math.floor(num(v.id, 0))
+  if id <= 0 or id > 65535 then return nil end
+  return { id = id, dx = math.floor(num(v.dx, 0)), dy = math.floor(num(v.dy, 0)) }
+end
+
+-- where the overlay plays under a monster `widthPx` sprite pixels wide: one tile shift per tile of width (the engine
+-- draws a wide outfit to the left of its tile), so a wide monster keeps its width. -> {{dx, dy}, ...}
+function K.overlayTiles(over, widthPx)
+  if type(over) ~= 'table' then return {} end
+  local n = clamp(math.ceil(num(widthPx, 32) / 32 - 0.01), 1, K.OVERLAY_MAX_TILES)
+  local out = {}
+  for k = 0, n - 1 do out[#out + 1] = { dx = over.dx - k, dy = over.dy } end
+  return out
+end
+
 -- ---------------------------------------------------------------- the cap
 function K.newCap(max)
   return { active = 0, max = math.max(0, math.floor(num(max, K.MAX_ACTIVE))), dropped = 0, started = 0 }
@@ -143,7 +165,7 @@ function K.plan(msg, env)
   if not env.cap or not K.admit(env.cap) then return fallback('cap') end
   local tint = clamp(math.floor(num(msg.t, 0)), 0, K.TINTS - 1)
   return { action = 'dissolve', mode = msg.m, tint = tint, seed = K.seedOf(pos.x, pos.y, pos.z, msg.i),
-    look = look, pos = pos, direction = clamp(math.floor(num(msg.d, 2)), 0, 7) }
+    look = look, pos = pos, direction = clamp(math.floor(num(msg.d, 2)), 0, 7), over = K.overlay(msg) }
 end
 
 -- ---------------------------------------------------------------- the preview loop of the Customise window

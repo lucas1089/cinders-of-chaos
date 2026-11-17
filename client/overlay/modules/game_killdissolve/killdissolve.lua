@@ -104,6 +104,10 @@ local function start(plan, msg)
   c:setPassable(true)
   c:setHealthPercent(0) -- no bars, no battle list entry, no target
   g_map.addThing(c, plan.pos, -1)
+  -- O597: the mode's ground overlay (a pool, broken earth, bones, vapour, rubble) under the whole width of the monster
+  for _, t in ipairs(K.overlayTiles(plan.over, width)) do
+    playPlain({ id = plan.over.id, dx = t.dx, dy = t.dy }, plan.pos)
+  end
   running[#running + 1] = d
   d.event = scheduleEvent(function() step(d) end, K.FRAME_MS)
 end
