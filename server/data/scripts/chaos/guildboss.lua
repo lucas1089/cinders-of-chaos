@@ -68,6 +68,12 @@ local function now()
 	return os.time()
 end
 
+-- closed test mode (O592): the switch (testers_core.lua), used by a tester's summon and the testers' run
+local function testerOn()
+	local K = ChaosTestersCore
+	return K ~= nil and K.closedOn() == true
+end
+
 local function mnow()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
@@ -305,19 +311,26 @@ local function summonInfo(player, gid, rank, row)
 		end
 	end
 	return {enabled = cfg.enabled, guildId = gid, rank = rank, hasHall = hall ~= nil,
-		rentLocked = hall ~= nil and G().rentStateOf(gid) == "locked", inHall = inHall, fuel = row.fuel, need = B.need(level, cfg),
+		rentLocked = hall ~= nil and G().rentStateOf(gid) == "locked", inHall = inHall, fuel = row.fuel,
+		need = B.need(level, cfg, Chaos.isTester(player)),
 		killed = row.killed_at > 0, attempts = row.attempts, players = players, running = GB.guildRun[gid] ~= nil}
 end
 
-function GB.board(week)
+function GB.board(week, viewer)
 	local rows = Chaos.select(string.format("SELECT w.`guild_id` AS `id`, g.`name` AS `name`, w.`killed_at`, w.`best_seconds`, w.`damage`, " ..
 		"w.`players` FROM `%s` w JOIN `guilds` g ON g.`id` = w.`guild_id` WHERE w.`week` = %d AND (w.`killed_at` > 0 OR w.`damage` > 0)",
 		T().week, week or weekNow()), {{"id", "n"}, {"name", "s"}, {"killed_at", "n"}, {"best_seconds", "n"}, {"damage", "n"}, {"players", "n"}})
+	local seen = {}
 	for _, r in ipairs(rows) do
 		r.killed = r.killed_at > 0
 		r.seconds = r.best_seconds
+		-- the board shows a viewer the guilds of its own side only (O592): a player never sees a tester guild
+		local T = ChaosTesters
+		if not (viewer and T and T.guildVisible) or T.guildVisible(viewer, r.id, r.name) then
+			seen[#seen + 1] = r
+		end
 	end
-	return B.rankGuilds(rows)
+	return B.rankGuilds(seen)
 end
 
 function GB.view(player)
@@ -327,7 +340,7 @@ function GB.view(player)
 	local v = {enabled = cfg.enabled, boss = cfg.boss.boss, minLevel = cfg.minLevel, minPlayers = cfg.minPlayers,
 		maxPlayers = cfg.maxPlayers, maxAttempts = cfg.maxAttempts, resetIn = math.max(0, B.nextReset(cfg, t) - t),
 		gold = {perEmber = cfg.gold.perEmber, min = cfg.gold.min}, materials = {}, contributors = {}, spoils = {}, board = {}}
-	for i, r in ipairs(GB.board()) do
+	for i, r in ipairs(GB.board(nil, player)) do
 		if i > cfg.board.rows then
 			break
 		end
@@ -1255,6 +1268,10 @@ local function tick(slot, rid)
 	local cfg = C()
 	local def = cfg.boss
 	local t = mnow()
+	if run.tester and run.state == "running" and not testerOn() then
+		fail(run, "Closed test mode went off.") -- the testers' run ends with the switch (O592)
+		return
+	end
 	for id, e in pairs(run.players) do
 		local p = Player(id)
 		if not p then
@@ -1361,12 +1378,26 @@ function GB.summon(player)
 	if not gid then
 		return false, "You are not in a guild."
 	end
+	local tester = Chaos.isTester(player)
+	if tester and not testerOn() then
+		return false, "Closed test mode is off: the testers do not play this."
+	end
 	local week = weekNow()
 	local row = GB.weekRow(gid, week)
 	local info = summonInfo(player, gid, rank, row)
 	local why = B.summonError(info, cfg)
 	if why then
 		return false, why
+	end
+	if tester then
+		local used = 0
+		for _ in pairs(GB.runs) do
+			used = used + 1
+		end
+		local refused = B.testerSummonRefusal(used, cfg)
+		if refused then
+			return false, refused
+		end
 	end
 	if player:getLevel() < cfg.minLevel then
 		return false, string.format("You need level %d to face the guild boss.", cfg.minLevel)
@@ -1407,7 +1438,7 @@ function GB.summon(player)
 	cleanSlot(L)
 	GB.nextId = GB.nextId + 1
 	local run = {id = GB.nextId, slot = slot, L = L, gid = gid, guildName = gname, week = week, need = info.need, players = {},
-		adds = {}, damage = {}, healers = {}, healing = {}, state = "running", boss = "waiting", size = #group, startedAt = now(),
+		adds = {}, damage = {}, healers = {}, healing = {}, state = "running", boss = "waiting", size = #group, startedAt = now(), tester = tester,
 		bossDueAt = mnow() + cfg.startDelay * 1000, deaths = 0}
 	run.lives = B.livesFor(cfg, #group)
 	run.livesMax = run.lives
@@ -1434,6 +1465,73 @@ end
 
 function GB.isInside(player)
 	return GB.runOf[player:getId()] ~= nil
+end
+
+-- ======================================================================== what a person sees (the tester bots, O592)
+local function plain(pos)
+	return pos and {x = pos.x, y = pos.y, z = pos.z} or nil
+end
+
+-- What a person sees of the guild boss, for the tester bots' `!tester guildboss` (tools/tester_helper.lua checks that the asker is a
+-- tester): outside, the guild, the hall and the stone, the fuel and the summon rule, the board as this viewer sees it; inside, the boss,
+-- its health, the clock, the lives and `guide` (B.guide). Reads only.
+function GB.probe(player)
+	local cfg = C()
+	local gid, gname, rank = G().guildOf(player)
+	local out = {on = testerOn(), enabled = cfg.enabled, level = player:getLevel(), minLevel = cfg.minLevel, pos = plain(player:getPosition()),
+		guild = gname, rank = rank or 0, minPlayers = cfg.minPlayers, boss = cfg.boss.boss, maxAttempts = cfg.maxAttempts}
+	if gid then
+		local info = summonInfo(player, gid, rank, GB.weekRow(gid))
+		local why = B.summonError(info, cfg)
+		out.guildId, out.hasHall, out.inHall, out.fuel, out.need = gid, info.hasHall, info.inHall, info.fuel, info.need
+		out.attempts, out.killed, out.running, out.canSummon, out.reason = info.attempts, info.killed, info.running, why == nil, why
+		out.side = ChaosTesters and ChaosTesters.guildSide and ChaosTesters.guildSide(gid, gname) or nil
+		local hall = G().hallOf and G().hallOf(gid)
+		out.stone = hall and plain(stonePos(hall.slot)) or nil
+	end
+	out.board = {}
+	for i, r in ipairs(GB.board(nil, player)) do
+		if i > 8 then
+			break
+		end
+		out.board[#out.board + 1] = r.name
+	end
+	local run = GB.runOf[player:getId()]
+	if run then
+		local entry = run.players[player:getId()]
+		local boss = bossOf(run)
+		local def = cfg.boss
+		out.inside = true
+		out.run = {state = run.state, boss = run.boss, tester = run.tester and true or false, lives = run.lives, livesMax = run.livesMax,
+			players = run.size, left = timeLeft(run, mnow()), down = entry and entry.down and true or false, enraged = run.enraged and true or false,
+			phase = run.phase, bossPos = boss and plain(boss:getPosition()) or nil,
+			bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil, gate = plain(run.L.portal)}
+		out.guide = B.guide({inside = true, state = run.state, boss = run.boss, down = out.run.down, pos = out.pos, bossPos = out.run.bossPos,
+			gate = out.run.gate, reach = 5})
+	end
+	return out
+end
+
+-- TEST ONLY (`!tester guildboss close`): ends the testers' own run of the asker (a failed attempt, as when the time runs out) or an
+-- empty one of its guild, so the arena is free; a player's run is never touched
+function GB.testerClose(player)
+	local run = GB.runOf[player:getId()]
+	if not run then
+		local gid = G().guildOf(player)
+		run = gid and GB.guildRun[gid] or nil
+		if not run or next(run.players) ~= nil then
+			return false
+		end
+	end
+	if not run.tester or run.ended then
+		return false
+	end
+	if run.state == "running" then
+		fail(run, "A test close.")
+	else
+		finishExit(run)
+	end
+	return true
 end
 
 Chaos.registerInstance("guildboss", {label = "the guild boss arena", inside = GB.isInside, at = function(pos)

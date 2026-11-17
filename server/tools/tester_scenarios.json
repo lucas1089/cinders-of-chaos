@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "closed": 13,
+  "closed": 15,
   "opcode": 73,
-  "out": 26,
+  "out": 24,
   "passive": 110,
   "place": 15,
   "staff": 17
@@ -11097,9 +11097,9 @@
     "leave"
    ],
    "skipWhy": {
-    "join": "out of scope (siege): needs guilds of real players",
-    "leave": "out of scope (siege): needs guilds of real players",
-    "open": "out of scope (siege): needs guilds of real players"
+    "join": "out of scope (siege): a short siege of the two tester guilds, started by the TEST ONLY helper, never announced or stored (closed test mode, O592); played only by the closed check closed_siege",
+    "leave": "out of scope (siege): a short siege of the two tester guilds, started by the TEST ONLY helper, never announced or stored (closed test mode, O592); played only by the closed check closed_siege",
+    "open": "out of scope (siege): a short siege of the two tester guilds, started by the TEST ONLY helper, never announced or stored (closed test mode, O592); played only by the closed check closed_siege"
    },
    "systems": [
     "siege"
@@ -12325,12 +12325,12 @@
    "files": [
     "guildboss.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [],
    "talkactions": [
     "/guildboss"
    ],
-   "why": "guild content of real players"
+   "why": "the weekly guild boss of a tester guild: a free hall, a small stone, the arenas kept for the players, a board that hides tester guilds (closed test mode, O592); played only by the closed check closed_guildboss"
   },
   "guildwar": {
    "files": [
@@ -13533,14 +13533,14 @@
    "files": [
     "siege.lua"
    ],
-   "kind": "out",
+   "kind": "closed",
    "opcodes": [
     "siege"
    ],
    "talkactions": [
     "/siege"
    ],
-   "why": "needs guilds of real players"
+   "why": "a short siege of the two tester guilds, started by the TEST ONLY helper, never announced or stored (closed test mode, O592); played only by the closed check closed_siege"
   },
   "smartloot": {
    "files": [

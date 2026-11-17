@@ -101,4 +101,20 @@ reads = 0
 ev.onExtendedOpcode(p, OP, {action = "scroll", data = {}})
 eq(reads > 0, true, "a later request is answered")
 
+-- (3) the top board of a guild window shows a viewer the guilds of its own side (O592)
+do
+	local rows = {{id = 1, name = "Tester Guild Alfa", points = 900, level = 3}, {id = 9, name = "Wolves", points = 500, level = 2},
+		{id = 2, name = "Crows", points = 100, level = 1}}
+	eq(G.visibleRows(p, rows), rows, "no tester rules loaded: the rows as they are")
+	ChaosTesters = {guildVisible = function(viewer, gid, name) return name:sub(1, 7) ~= "Tester " end}
+	local seen = G.visibleRows(p, rows)
+	eq(#seen, 2, "a player's board has no tester guild")
+	eq(seen[1].name .. seen[1].rank .. seen[2].name .. seen[2].rank, "Wolves1Crows2", "...and is ranked again from 1")
+	eq(rows[2].rank, nil, "the cached rows are not changed")
+	eq(#rows, 3, "...nor shortened")
+	ChaosTesters = {guildVisible = function() return true end}
+	eq(G.visibleRows(p, rows), rows, "every row visible: the same table")
+	ChaosTesters = nil
+end
+
 print(string.format("guild_flood_test: %d checks OK", checks))

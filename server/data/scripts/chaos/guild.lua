@@ -759,6 +759,27 @@ function G.logLines(gid, actions, limit, player)
 	return out
 end
 
+-- the rows of a guild board as this viewer may see them (O592): a player never sees a tester guild, a tester only tester guilds. The
+-- rows of the cache are not changed: a board with a hidden row is ranked again on copies (C.rankGuilds)
+function G.visibleRows(player, rows)
+	local T = ChaosTesters
+	if not (T and T.guildVisible) then
+		return rows
+	end
+	local list, hidden = {}, false
+	for _, r in ipairs(rows) do
+		if T.guildVisible(player, r.id, r.name) then
+			list[#list + 1] = r
+		else
+			hidden = true
+		end
+	end
+	if not hidden then
+		return rows
+	end
+	return C.rankGuilds(list)
+end
+
 function G.state(player, tab)
 	local gid, gname, rank = G.guildOf(player)
 	if not gid then
@@ -768,14 +789,14 @@ function G.state(player, tab)
 	local r = G.row(gid)
 	local level, into, need, pct = C.levelOf(r.xp, cfg)
 	local week = weekNow()
-	local top = G.topGuilds(week)
+	local top = G.visibleRows(player, G.topGuilds(week))
 	local own
 	for _, t in ipairs(top) do
 		if t.id == gid then
 			own = t
 		end
 	end
-	local lastWeek = G.topGuilds(C.weekKey(now() - 7 * 86400, cfg.week.resetHour))
+	local lastWeek = G.visibleRows(player, G.topGuilds(C.weekKey(now() - 7 * 86400, cfg.week.resetHour)))
 	local rows = {}
 	for i = 1, math.min(#top, cfg.week.rows) do
 		local t = top[i]

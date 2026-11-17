@@ -9697,7 +9697,7 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
   - `out`: what bots truly cannot do, with the reason. Payments, moderation, orb exchange, anti-bot (and, until the O589 steps
     are done, the siege and the guild boss). The list is `OUT_OF_SCOPE` in the generator.
   - `closed` (O582): arena, battleground, the Marches, guild, guild war, market, bazaar, the raid (O588), the group queue and the party
-    finder (O589); the dungeons (O589) are
+    finder (O589), the guild siege and the guild boss (O592); the dungeons (O589) are
     reached at random by `fetch` only, their `queue` only by the closed check. Only a `--closed` run reaches
     them (`CLOSED_MODE` in the generator); the report says "closed test mode" for what was not tried.
   - `passive`: reached by play only. The report counts the server log errors that name its files.
@@ -9801,7 +9801,7 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
 - Left out: real money, staff queues, Discord (a tester guild name never leaves in a broadcast or event), reports,
   referral, the orb exchange, conquest and siege.
 
-The bots (`tester_checks.py`, run with `--closed`; the helper is v14 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`), `!tester closed` reads the deployed rules):
+The bots (`tester_checks.py`, run with `--closed`; the helper is v15 (v11 added `closed`; O584 added bag, shop NPC and give; O588 added `raid`; O589 `path` and `dungeon`; O592 `siege`, `guildboss` and `rift`), `!tester closed` reads the deployed rules):
 `closed_guards` (the live rules refuse a tester against a player in every closed system, and testers with the switch off),
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
@@ -9887,7 +9887,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -9965,24 +9965,91 @@ Proven by tests: the rules and every refusal (Lua), the two checks against lane 
 by a live run with a player on. Needs a live run: the window answers of the real server (the check reads `state.group.check`, `list.rows`,
 `mine.apps`), and the dungeon start after the ready check.
 
-##### 3. Siege and guild boss: not done (stopped, nothing half-built)
+##### 3. The siege and the guild boss (O592)
 
-Both stay `out of scope` in the scenario table. Why they were too large for this round, and the plan:
-- `siege.lua`: one global state machine (`S.state.phase`), weekly sign-ups in `chaos_siege_signups`, a bracket arena built per run, a broadcast and a
-  toast at start and end, rows in `chaos_siege_results`, a champion title and buff, the leaderboard. It reads `player:getGuild()` itself, not the
-  tester-aware `ChaosGuild.guildOf`. Plan: a tester siege as a second mode of the same machine (`state.side`): sign-ups split by the guild side
-  (`K.guildSide`), `S.start` takes one side only, a tester run never announces, writes no result row, leaderboard or champion, the player portals refuse
-  testers and the tester portals refuse players, the switch off stops it; a TEST ONLY helper start (the weekly schedule is the only normal start); the bots:
-  leader signs up, members walk to the portal (`path`), gather, walk through the gate and hold the obelisk for a score above 0 (bots do not target
-  players yet: that is part of the work).
-- `guildboss.lua`: needs a guild hall (rent), fuel in the stone and a leader's summon, and its board lists every guild. The tester guilds of O582 have no
-  hall. Plan: a free test hall for the tester guilds (guild_hall.lua), the board and the guild log hiding tester guilds, then the summon and the
-  uber-style fight on the raid recipe (`probe`, `guide`).
-Neither has code in this round, so there is nothing to clean.
+Both are closed systems now (`K.CLOSED_SYSTEMS` has `siege` and `guildboss`; `tester_checks.py` `CLOSED_SYSTEMS` agrees, a test holds the two lists
+together). Both stay outside the random request behaviour (`gen_tester_scenarios.py`: kind `closed`): only `closed_siege` and `closed_guildboss`
+play them. Tests: `tests/siege_closed_test.lua`, `tests/guildboss_test.lua` (last block), `tests/guild_hall_closed_test.lua`,
+`tests/testers_test.lua`, `tests/guild_flood_test.lua`, `tester_helper_test.lua`, `tester_checks_test.py` (`SiegeClosed`, `GuildBossClosed`).
+
+**The siege** (`siege.lua`, `siege_core.lua`, `siege_config.lua` `tester`). One state machine, a second side:
+- `state.side` is `player` (the weekly siege, as before) or `tester`. The TEST ONLY helper starts the testers' siege (`ChaosSiege.startTester`, from
+  `!tester siege start`); the weekly schedule never does. `S.testerStartRefusal` (pure): the switch must be on, no siege running, no player guild signed
+  up for the next siege, the next weekly start at least `tester.startMargin` seconds away (6000: the first warning comes 60 minutes before the start,
+  so the testers' siege, which lasts `gatherSeconds` 25 + `matchSeconds` 150 + 4 s, always ends before it), two tester guilds that may play (named
+  `Tester Guild ...`, every member a tester, the sign-up rule's member count). Players first: `S.start` (staff or schedule) stops a testers' siege that
+  is running and asks again; the schedule stops it when the weekly start comes within the margin; the tick stops it when the switch goes off.
+- Nothing is public: `announce` only logs for a testers' siege (no broadcast, no toast); `finish` writes no `chaos_siege_results` row, no sign-up
+  delete, no champion guild (so no title, no buff), no leaderboard entry (and so no guild XP from `ChaosGuild.checkSiegeResults`, which reads the rows).
+  The rewards (gold, orbs) are the testers' own, as in the dungeons; presence needed is `tester.minPresenceSeconds` (15).
+- Sides at the door: the portal asks `S.sideRefusal` (`K.joinRefusal("siege", ...)`) and the side of the siege: a tester at a players' siege is pushed
+  back ("Testers and players are never mixed."), a player at a testers' siege too, a tester with the switch off too. `guildOf` is the tester-aware guild
+  (`ChaosTesters.guildBlocked`: a tester only has a tester guild, a player never has one). A tester cannot sign up (`S.join`, `S.leave`) and the staff
+  `/siege signup` refuses a guild named `Tester ...`.
+- Invisible to players: the window (`runningFor`), `S.status` and `S.probe` read a testers' siege as idle for a player (and a players' siege as idle for a
+  tester); the staff command shows it with "(testers)". Two testers are no multi-client (`Chaos.mcSiblings`, O589).
+- `ChaosSiege.probe(player)` is what a person sees: outside the portal and the phase; inside where (base / arena), the clock, the scores of the guild
+  and its rivals, who holds the obelisk, whether it is contested, whether the bot stands on the point, the own gate tile and the obelisk, and `guide`
+  (`ChaosSiegeCore.guide`: wait while the gates are shut or downed, walk to the gate, walk to the obelisk within the capture radius, hold it, fight an
+  enemy on the point within 3 tiles). `ChaosSiege.testerClose(player)` ends the testers' own siege with its standings and rewards when the asker is
+  inside it or it is empty.
+- Nothing to clean up: the testers' siege stores no row (`tester_closed.py`, a test reads `siege.lua` for the two guards).
+
+`closed_siege` (helper v15 `!tester siege [state | start | path | portal | close]`, a closed check before `closed_raid`): the leader of one tester
+guild runs it with the leader of the other (`SIEGE_TURN`: one at a time; the other leader's own run is a skip "played as the rival leader of ...").
+1. Both bots to the temple (the one accepted teleport), then `siege start`. A refusal (players due, switch off, too few guilds) is a SKIP with the reason.
+2. Each bot walks to the siege portal on foot (`walk_by_path` `siege path`), the last step onto the portal tile is its own. No path: `siege portal`
+   puts it next to the portal (the counted fallback of O589). A bot the portal does not take is a FAIL ("the siege portal did not take ...").
+3. In the base the guide sends it to its gate; in the arena to the obelisk (the engine path to within the capture radius; the `RaidWalker` side step only
+   when the way is blocked). The first guild holds the point alone and must score (`held` 8 looks with score 0 is a FAIL); the second guild waits in its
+   base until the first scored `SIEGE_HOLD_FIRST` (3) points, then comes: both on the point, the server must call it contested within
+   `SIEGE_CONTEST_LOOKS` (4) looks, else FAIL. PASS: both inside, the first guild scored, the tie was contested; then `siege close`.
+   SKIP: the walk blocked for 30 s, the second bot never reached the obelisk, the siege ended by itself.
+The bots do not target players yet, so the 20 points a kill gives and the downed-and-wake-up rule are not played (list below).
+Needs a live run: the portal of a real town (`ChaosCityPortals`), the gate and the engine path across the arena, the real `Chaos.mcSiblings`, the
+real clock of the siege (25 + 150 s: the walk from the portal to the obelisk has to fit; the arena is 31 tiles).
+
+**The guild hall of a tester guild** (`guild_hall.lua` `buyHall`, `guild_core.lua` `hallBuyError` `free`): the leader of a tester guild (a tester with a
+guild: `G.guildOf` gives a tester only its tester guild, and only with the switch on) buys the hall from the guild window like a player, for nothing, at
+any guild level (the bots cannot earn 5,000,000 gold and the guild boss needs a hall). The row is real (`chaos_guild_hall`, paid until ten years from
+now, so the rent never falls due), the hall is built and furnished as any (`G.testerHalls` remembers it). A vice-leader still cannot buy, a guild still
+has one hall, a player still pays and needs the level (tests). `hallThink` drops a tester hall whose row the clean-up removed, so its slot can be
+built again. The clean-up (`tester_closed.py` `GUILD_TABLES`, which has had `chaos_guild_hall` and the three `chaos_guildboss_*` tables since O582)
+removes the rows by guild.
+
+**The guild boss** (`guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua` `tester`):
+- The stone of a tester guild needs `tester.need` embers (5: one Orb of Upheaval, which the helper gives with `!tester give orb chaos 1`), not the
+  525-1000 embers (5.25-10 million gold) of a player guild (`B.need(level, cfg, tester)`).
+- Players first: a tester summon is refused while fewer than `tester.reserve` (2) of the `limits.maxRuns` (8) arenas would stay free
+  (`B.testerSummonRefusal`, "The testers' guild boss waits: the arenas are kept for the players."), and with the switch off ("Closed test mode is off: the
+  testers do not play this."). The run is marked `tester`; the tick ends it when the switch goes off (a failed attempt). Only members of the tester
+  guild come along (the hall group), so a tester and a player are never in one run.
+- The boards: `GB.board(week, viewer)` and the guild window's top board (`ChaosGuild.visibleRows`, ranked again on copies) show a player no tester guild
+  and a tester no player guild (`K.guildVisible`, `ChaosTesters.guildVisible`; a guild named like a tester guild whose side is unknown is hidden from
+  players). The rows themselves (`chaos_guildboss_week`, `_contrib`, `_runs`, the guild's XP and log) are the tester guild's and go with it.
+- `ChaosGuildBoss.probe(player)`: the guild, the hall and the stone, the fuel and the need, `canSummon` and the reason, the board the viewer sees; inside the
+  run (state, boss, the boss's health and place, lives, the Ember Gate) and `guide` (`ChaosGuildBossCore.guide`: wait for the boss, walk to it within 5
+  tiles, fight, back through the Ember Gate when fallen). `ChaosGuildBoss.testerClose(player)` ends the testers' own run (a failed attempt) or an empty one;
+  a player's run is never closed by it.
+
+`closed_guildboss` (helper v15 `!tester guildboss [state | path | hall | close]`, after `closed_siege`): the leader of a tester guild (rank 2 or more, level
+150 or more).
+1. The board the bot reads must list tester guilds only (a player guild on it is a FAIL).
+2. No hall: the guild window's `buyHall` (from the bank); refused or no hall afterwards is a FAIL "could not buy its free hall".
+3. Temple, then on foot to the Guild Hall Portal near it (`guildboss path`: the portal is found by its action id) and onto it. No path or a portal that does
+   not take the bot: `guildboss hall` is the portal's own entry (the counted fallback).
+4. In the hall: on foot to the stone, the window's `open` of the boss tab, `!tester give orb chaos 1`, `bossItem {key: upheaval}`; the stone must hold the
+   need (else FAIL "holds 0 of 5"), then `bossSummon` (requests of the stone are 1.3 s apart: the server's rate limit).
+5. In the arena: a look every second; the guide walks to Gorvath by the engine path (`guildboss path`, within 5 tiles) and fights with the bot's own
+   rotation. PASS: the boss came and lost health (or fell). FAIL: no boss in 45 s, 150 s at the boss without taking any of its health, a tester in a run of
+   players. SKIP: the arenas kept for the players, the switch off, the walk blocked 30 s, a death before the boss was hurt. The run is always closed after.
+Needs a live run: the real Guild Hall Portal tile and the path to it, the stone tile, the real fight (Gorvath's telegraphs are not dodged: a bot that
+dies sends the run to the Ember Gate and the bot walks back through it, but a whole fight to a kill is not expected of a bot), `Chaos.saveCharacter` on
+the donation, the rate limits of the stone.
 
 ##### 4. The way on foot (`!tester path`, `walk_by_path`, `walk_to_place`, `TesterBot.walk_to_place`)
 
-A person walks; the helper's `!tester enter <place>` is a teleport. Helper v14 has the generic walk: `!tester path <kind> [N] | npc <name> |
+A person walks; the helper's `!tester enter <place>` is a teleport. Helper v14 (and v15) has the generic walk: `!tester path <kind> [N] | npc <name> |
 pos X Y Z` answers the engine's own pathfinding (`Creature:getPathTo`, the call a player's auto walk uses) to the tile of a map mark (the
 n-th of its kind, as `enter` takes it), an NPC or a position, as directions 0-7 (at most 80), the distance left (`dist`), `here` when the bot
 stands next to it, or an `err` (`no path`, `another floor`, `no such place`, `no such NPC`). It moves nobody (tests:
@@ -10004,12 +10071,60 @@ Proven by tests: the helper command, the bot's walk and its fallbacks (`testers_
 goes (it has a node limit: a far place is walked in several asks, and a place across the world falls back to the teleport, counted), and
 whether the map marks are on tiles a person can stand next to.
 
-##### 5. The rift by walking: not done
+##### 5. The rift by walking (O592, `!tester rift`, `rift_walk`)
 
-The rift checks (`rift`, `rift_layout`, `waystone_run`) still use the helper's rift key (`enter rift N`, `riftrun`, `waystone`). A walk needs a
-guide like the raid's: the rift map is a known layout (`rift_layout_model`), so the plan is `ChaosRift.probe` (position, portal, monsters left, guardian)
-and a pure `guide` in a core, a bot that opens the key at the portal next to the temple (`path portal`) and walks and fights the layout. Not started:
-the layout checks of the rift are the part that needs the helper's own run to read the numbers.
+A rift is opened with a key in a protection zone (`rift_config.lua` `needProtectionZone`); there is no rift portal to walk to, so "the entrance" is the
+temple. Helper v15 `!tester rift [state | key [tier] | path | close]`:
+- `key [tier]` gives a key (the highest tier the level opens when none is named) into the backpack where the bot stands, and only in a protection zone
+  (no teleport); the bot uses it itself like a hotkey (`io.use_item`, `KeyIO.use_item`). `state` is `ChaosRift.probe`: outside whether the bot is in a
+  protection zone and holds a key; inside the run (tier, theme, kills, total, the guardian's state and health, the time, the entry) and `guide`
+  (`ChaosRiftCore.guide`: the guardian when it is up, else the nearest pack monster of the bot's floor, fight within 4 tiles; wait when the monsters left are
+  on another floor). `path` is the engine path to the guide's goal (a floor change answers "another floor"). `close` is `RF.testerClose` (a clean
+  shutdown's `RF.interrupt`: out to the temple) and takes a refunded key out of the backpack again.
+- `rift_walk` (an open check, the last of `CHECKS`, all classes, tier of the level): the bot walks from where it is to the temple (`walk_to_place`
+  `temple`; a bot already in a protection zone walks nowhere), takes the key, uses it (the hotkey again at 5 and 9 s when nothing opens: a slot being
+  built), and walks through the rift like a person: the nearest pack monster by the engine path, fights with its own rotation, takes the loot after a kill,
+  then the guardian once it is up. PASS: a kill, or the guardian hurt. FAIL: the key was given and the backpack holds none, 150 s of fighting with no kill.
+  SKIP: the key went to the inbox, the rift did not open in 12 s, the walk blocked 30 s, the next goal on another floor ("the stairs are not walked yet"),
+  a death before a kill. `rift close` and the way back to the hunt follow in every case. The helper's teleport to the temple is the counted fallback
+  (`enter temple (no path)` in the result's fallbacks and the report). Inside the rift nothing teleports the bot (`rift_layout` and `waystone_run` still use
+  the helper's atomic runs: they read numbers, they do not play).
+- The coverage layer: the rift scenarios start with a walk to the temple (`('walk', 'temple')`); `!tester enter rift N` no longer teleports a bot that stands
+  in a protection zone (its answer says `teleported`), the coverage counts the key given after a walk as a walk and one after the helper's teleport (or a
+  walk that fell back) as help, named `teleport: enter rift: the bot was not in a protection zone` or `teleport: enter temple: no path`.
+Needs a live run: the engine's path across a real rift layout (the walkable cells are a layout the server builds; the search is bounded), rifts of two
+floors (the stairs), the real hotkey use of the key, the exhaust after a use, what `RF.open` refuses for a bot in a fight.
+
+##### 6. What a player does that no closed check plays yet (O592, from `data/scripts/chaos` against `CHECKS` and `CLOSED_CHECKS`)
+
+Covered by a check that plays or reads it: arena, battleground, the Marches, guild, guild war, market, bazaar lock, raid, dungeons, group queue, party finder,
+siege, guild boss (closed); rift, rift layout, waystone runs, content rewards, pets, wolves and minions, party and shared experience, unique passives, dual
+wield, the reward chest, the cursed chest, Auto setup, the spell quest, the crafting windows (open). Everything with an extended opcode is also opened and
+used by the random requests (`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet:
+- **World boss** (`worldboss.lua`): a scheduled event, one arena for everyone, a portal next to every temple, damage-share rewards, a role title for the top 3, a
+  broadcast. It is not tester-aware (no `isTester` anywhere in the file): a bot that walked in would share the arena and the top-3 lists with players. Needs
+  the same pattern as the siege (a testers' event started by the helper, never while a players' event runs or is due, a side at the portal, no title or
+  broadcast, a probe and a guide). Not done: the title and the ranking are the part that reaches players.
+- **Infinity Tower** (`infinitytower_run.lua`) and **Ember Descent** (`descent.lua`): solo runs. The random requests open the windows and the Descent's own
+  `start`, but no bot plays a floor. Plan: the same as the rift (a probe with a guide, `!tester tower`, `!tester descent`, a walked check); the leaderboards
+  already leave testers out (`Chaos.notTesterSql`).
+- **Ascended arenas, Omen keys and the Nemesis** (`uber.lua`, `rift.lua` omen, `nemesis.lua`): boss arenas of the same recipe as the guild boss (`uber_core.lua`).
+  Plan: `guildboss_core.guide` is the model; a probe per arena file and one check that walks in, fights and closes. Their rewards go to the tester.
+- **Trials, the Hollow Crypt and the ascension quest** (`trials.lua`, `ascension_quest.lua`): scripted rooms; the places are visited by `enter`, no room is played.
+- **The main quest and its boss** (`mainquest.lua`, `mainquest_boss.lua`): passive (steps are credited by play). A walked check could take the first steps
+  (talk to an NPC, kill N of a monster): the NPC walk exists (`walk_to_place` `npc ...`); the boss fight needs a probe like the guild boss's.
+- **Bounty contracts, daily and weekly challenges, tasks, the Chronicle, the season journey and pass** (`bounty.lua`, `daily.lua`, `weekly_challenge.lua`,
+  `chronicle.lua`, `season_journey.lua`, `seasonpass.lua`): the windows answer, the claims are never made (money-like or a one-off): a bot that accepts a bounty
+  and kills the monster would need a probe that says which monster and where.
+- **Hideouts and the memorial** (`hideout.lua`, `memorial.lua`): the windows are asked; placing items, visiting another character's hideout (a closed matter:
+  a tester must never visit a player's) and the memorial candles are not played.
+- **Harvest event, treasure goblin, invasions, conquest** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`, `conquest.lua`): shared world events
+  and a faction map that players read; not tester-aware (only `invasion.lua` has one `isTester`). They need the world boss's treatment first.
+- **PvP between testers**: kills in the siege (20 points), the Marches and the arena are never played: the bots do not target players. That needs the
+  bot's targeting (a creature id in the attack packet) and a rule for who may be hit.
+- **Mentor, referral, creator codes, store payments, orb exchange, community, reports**: out of scope on purpose (real accounts, real money, or a queue players read).
+Each item above has a first step that needs only a probe, a guide and a walked check (the recipe of the dungeons, the raid and now the rift and the guild
+boss); the shared events (world boss, harvest, goblin, invasion, conquest) first need their closed-mode rules.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10029,6 +10144,7 @@ the system is not installed): never faked. A death in the middle drops the check
 | `rift` | all | `!tester enter rift 1` (a key of tier 1, then the temple) answers without an error and the key reached the backpack; a full bag sends it to the inbox (`RF.giveKey`) or the ground: the helper takes it back from there, a skip |
 | `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
 | `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
+| `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
 | `rift_layout` | all, level 100 and up | `!tester riftrun layout` opens a real rift as a player does (key of the highest tier the level may open, temple, `ChaosRift.open`) and reads its layout. BUG when the kind or the floor count is not in the config of the theme, the size band is not the tier's, the walkable cells are outside the band limits of `rift_layout_balance_config.lua`, the arrival, the guardian's spot, the arena's mouth or the bot is not a walkable cell, 40 sampled walkable cells have no ground or block, or the run or its slot stays open after `RF.interrupt` (the key comes back). Level under 100, a busy slot or a layout still being built is a skip |
 | `content_rewards` | all | the passive rewards of `content_rewards.lua` through `ChaosContentRewards.onKill` with a stand-in monster (nothing is spawned, a backpack is the corpse): a boss kill of a tier 8 waystone run (`!tester waystone 8 loot`) holds the config's guaranteed gear pieces of Legendary or better, none below, the sure orbs (Awakening, Gilding) at their minimum and a waystone of the run's tier; the guardian kill of a rift (`!tester riftrun loot`) holds at least `floor(base + perTier x tier)` orbs. A level under 100 checks the waystone half only. The first unique and the pity of `retention_loot.lua` are not checked: they skip testers by rule |
 | `party_xp` | all | the bot invites another bot and switches shared experience on (packet 0xA8) in the temple (the engine refuses the switch in a fight outside a protection zone; the helper loads `Party:onShareExperience` from `data/events/scripts/party.lua` in a sandbox, as it lives in the events state, not in the scripts one): the party says it is on; `Party:onShareExperience(1000)` pays `ceil(1000 x (100 + bonus) / 100 / members)` with the bonus of `ChaosPartyXpCore.bonusPercent` for the class lines; the engine's verdict follows the rules (nobody under two thirds of the highest level, within 30 tiles and 1 floor, in a fight): working while a member fails level or range, or off while all pass, is a BUG when two looks 3 s apart agree. Then a real kill at the leader's hunt (`!tester party kill`, helper v4, own answer kind `partykill`): a leader in the temple steps out to the nearest street tile, the partner is put next to it, one hit of a tenth of a monster's health by each makes both active for the engine (Party ticksMap; a hit of 1 counted 0 after the armour), a Demon made there and hit by the leader down to 0 (the engine's own death path on its next creature check, `Creature::onDeath` and `Party:shareExperience`; gains read 1.5 s later, a monster scaled up after it was made is hit again), then the share off and one solo kill. With the share working both gain and the leader's gain is `shareOf1000 / 1000` of the solo kill (5%); with it off, or in the solo kill, the partner gains nothing, unless it hit that monster itself (helper event `TesterHelperKillHits`; the engine pays every attacker its damage share). A kill that could not run is a skip. Switched off and left again at the end |
@@ -16220,6 +16336,11 @@ Portal Style window. Not verified in game: an invasion or treasure goblin record
 A weekly scheduled war between guilds for the Chaos Obelisk. Client: `game_siege` (HUD + sign-up window, extended
 opcode 233, Adventure > Guild Siege in the top menu). Every number below is in `siege_config.lua`.
 
+**Closed test mode (O592):** the same state machine has a second side, the testers' own siege (`state.side`), started only by the TEST ONLY helper,
+only with the switch on, never ahead of the players' siege (sign-ups, the weekly start within `tester.startMargin`); it is never announced, stores no
+results row, champion, buff or leaderboard entry, and a player never sees it. Rules, the probe and the bot's check: "The siege and the guild boss (O592)"
+under "The rest of the closed audit (O589)".
+
 **Install.** Run `sql/chaos_siege.sql` (tables `chaos_siege_signups`, `chaos_siege_results`) and
 `python3 -I server/tools/patch_base_events.py <server>/data` (its third patch puts the siege rules in front of the
 base server's `Creature:onTargetCombat`, see "PvP inside"). The Chaos spells ask the siege through
@@ -17777,6 +17898,10 @@ the kill log, a surrender (1,800,000 to the winner, 200,000 burnt), emblems gone
 ## The weekly guild boss (`guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, monsters `monsters/chaos/guildboss/`)
 
 **Limits** (`guildboss_config.lua` `limits`, "Instance limits"): the boss's limit (13 minutes after it appears) with warnings at 5 min, 1 min and 10 s; time up is a failed attempt (half of the need stays as fuel, everyone back in the hall); at most 8 arenas, the wait and the waiting line when all are in use.
+
+**Closed test mode (O592):** a tester guild has a free guild hall (bought from the guild window), a stone that needs 5 embers (`guildboss_config.lua` `tester`),
+its summon never takes the arenas the players need (`tester.reserve`), and the boards show a viewer the guilds of its own side only. Rules, the probe and
+the bot's check: "The siege and the guild boss (O592)" under "The rest of the closed audit (O589)".
 
 A guild-only instanced boss, Gorvath the Banner-Eater, once per guild and week (Monday 06:00). Window: the Guild Boss tab
 of `game_guildwar` (opcode 197), also opened by using the **Summoning Stone**, an obelisk (1560, action id 47609) that

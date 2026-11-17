@@ -310,6 +310,15 @@ eq(K.guildSide("Iron Crows", true, true), nil, "testers in a player guild: no si
 eq(K.guildSide("Iron Crows", true, false), nil, "a tester among players")
 eq(K.guildSide("Tester Guild Alfa", nil, nil), nil, "unknown members")
 eq(K.guildSide("Tester Foo", false, false), "player", "a player's guild named like a tester one is still theirs")
+-- which guilds a viewer sees on a board (O592)
+check(K.guildVisible(false, "Iron Crows", nil) and K.guildVisible(false, "Iron Crows", "player"), "a player sees a player guild (no query: side unknown is fine)")
+check(not K.guildVisible(false, "Tester Guild Alfa", "tester"), "a player never sees a tester guild")
+check(not K.guildVisible(false, "Tester Guild Alfa", nil), "a guild named like a tester guild of unknown side is hidden from a player")
+check(K.guildVisible(false, "Tester Foo", "player"), "a player's guild named like a tester one is shown to its side")
+check(K.guildVisible(true, "Tester Guild Alfa", "tester"), "a tester sees a tester guild")
+check(not K.guildVisible(true, "Iron Crows", "player"), "a tester never sees a player guild")
+check(not K.guildVisible(true, "Tester Guild Alfa", nil), "a tester does not see a guild of unknown side")
+check(K.CLOSED_SYSTEMS.siege and K.CLOSED_SYSTEMS.guildboss, "the siege and the guild boss are closed systems (O592)")
 eq(K.guildBlocked(true, "Tester Guild Alfa", true, true, true), nil, "a tester in a tester guild, mode on")
 eq(K.guildBlocked(true, "Tester Guild Alfa", true, true, false), "closed-off", "mode off")
 eq(K.guildBlocked(true, "Iron Crows", false, false, true), "apart", "a tester in a player guild")
@@ -370,6 +379,12 @@ do
 	eq(X.guildBlocked(ana, 2, "Iron Crows"), nil, "a player uses its guild")
 	eq(X.guildBlocked(ana, 1, "Tester Guild Alfa"), "apart", "a player never uses a tester guild")
 	eq(X.guildBlocked(tester, 2, "Iron Crows"), "apart", "a tester never uses a player guild")
+	-- the boards (O592): the engine side of K.guildVisible
+	check(X.guildVisible(ana, 2, "Iron Crows"), "a player's board lists a player guild")
+	check(not X.guildVisible(ana, 1, "Tester Guild Alfa"), "a player's board never lists a tester guild")
+	check(X.guildVisible(tester, 1, "Tester Guild Alfa"), "a tester's board lists a tester guild")
+	check(not X.guildVisible(tester, 2, "Iron Crows"), "a tester's board never lists a player guild")
+	check(not X.guildVisible(ana, 3, "Tester Guild Bravo"), "a player never sees a mixed guild named like a tester guild")
 	K.reader, K.clock = function() return "off" end, function() return os.time() + 500 end
 	K.resetClosedCache()
 	X.guildCache = {}

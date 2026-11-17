@@ -13,6 +13,10 @@
 --   ChaosSiege.winner(list)                     the bracket winner of standings (nil: no score, or a tie for first)
 --   ChaosSiege.rewardFor(isWinner, presence, cfg)  "winner" | "others" | nil and the reward table
 --   ChaosSiege.championOf(champions, guildId, now)  champion entry while the title lasts
+--   ChaosSiege.testerTimes(cfg)                  O592: gather / match / exit seconds and the presence a reward needs of the testers' own siege
+--   ChaosSiege.testerStartRefusal(info, cfg)     O592: nil or why the testers' siege may not start (switch, a running siege, players first, guilds)
+--   ChaosSiege.sideRefusal(K, closedOn, isTester) O592: side ("player" / "tester") of a character and the refusal of a tester with the switch off
+--   ChaosSiege.guide(a)                          O592: what a person does next inside (wait, walk to the gate or the obelisk, hold it, fight)
 --   ChaosSiege.durationText(s), clock(s), whenText(t), calendarEvent(cfg)   texts
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible (integer arithmetic through math.floor).
 
@@ -360,6 +364,77 @@ function S.durationText(seconds)
 		return string.format("%dh %dm", h, m)
 	end
 	return string.format("%dm", m)
+end
+
+-- ---------------------------------------------------------------- the testers' own siege (O592)
+function S.testerTimes(cfg)
+	local t = cfg.tester or {}
+	return {gather = t.gatherSeconds or 25, match = t.matchSeconds or 150, exit = t.exitDelaySeconds or 4,
+		presence = t.minPresenceSeconds or 15, margin = t.startMargin or 6000}
+end
+
+-- info = {on (the switch), active (a siege is running), now, at (the next weekly start), playerSignups, guilds (tester guilds that may play)}
+function S.testerStartRefusal(info, cfg)
+	if info.on ~= true then
+		return "closed test mode is off"
+	end
+	if info.active then
+		return "a siege is already running"
+	end
+	if (info.playerSignups or 0) > 0 then
+		return "players are signed up for the next siege"
+	end
+	local t = S.testerTimes(cfg)
+	if info.at and info.now and info.at - info.now < t.margin then
+		return "the weekly siege of the players is due within " .. math.floor(t.margin / 60) .. " minutes"
+	end
+	if (info.guilds or 0) < (cfg.minGuilds or 2) then
+		return string.format("fewer than %d tester guilds can play (%d)", cfg.minGuilds or 2, info.guilds or 0)
+	end
+	return nil
+end
+
+-- K: testers_core.lua rules (nil: not loaded: a tester is refused). Returns side, why (why only for a refused tester)
+function S.sideRefusal(K, closedOn, isTester)
+	if not isTester then
+		return "player", nil
+	end
+	if not K or not K.joinRefusal then
+		return "tester", "closed-off"
+	end
+	return "tester", K.joinRefusal("siege", closedOn, {true})
+end
+
+local function cheb(a, b)
+	return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
+end
+
+-- a = {phase, where ("base" | "arena" | nil), pos, gate (the own gate tile), center, radius, onPoint, downed, enemy (nearest enemy tile
+-- in the arena or nil), reach (tiles an enemy is fought from)}. -> {mode = "wait" | "walk" | "hold" | "fight", goal, reach = {min, max}, why, area}
+function S.guide(a)
+	if not a.where then
+		return {mode = "wait", why = "outside the siege"}
+	end
+	if a.phase == "ending" then
+		return {mode = "wait", why = "the siege is over"}
+	end
+	if a.downed then
+		return {mode = "wait", why = "downed: waking up in the base"}
+	end
+	if a.phase ~= "match" then
+		return {mode = "wait", why = "the gates are shut"}
+	end
+	if a.where == "base" then
+		return {mode = "walk", goal = a.gate, reach = {0, 0}, area = "gate", why = "to the gate of the base"}
+	end
+	local radius = a.radius or 2
+	if a.onPoint then
+		if a.enemy and a.pos and a.enemy.z == a.pos.z and cheb(a.pos, a.enemy) <= (a.reach or 3) then
+			return {mode = "fight", goal = a.enemy, area = "obelisk", why = "an enemy on the point"}
+		end
+		return {mode = "hold", goal = a.center, area = "obelisk", why = "holding the obelisk"}
+	end
+	return {mode = "walk", goal = a.center, reach = {0, radius}, area = "obelisk", why = "to the obelisk"}
 end
 
 -- seconds -> "12:05"

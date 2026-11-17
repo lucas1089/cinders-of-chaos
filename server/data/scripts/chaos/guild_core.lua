@@ -224,6 +224,9 @@ function C.hallBuyError(info, cfg)
 	if info.hasHall then
 		return "Your guild already owns a guild hall."
 	end
+	if info.free then
+		return nil -- a tester guild in closed test mode (O592): no guild level, no price
+	end
 	if (info.level or 1) < h.level then
 		return string.format("Your guild needs guild level %d for a guild hall.", h.level)
 	end

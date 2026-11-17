@@ -72,7 +72,7 @@ CHECK_SYSTEMS = {
     'party_xp': 'party_xp', 'unique_passive': 'unique_passives', 'dual_fists': 'check:dual_fists',
     'dual_blades': 'check:dual_blades', 'waystone': 'waystone_atlas', 'reward_chest': 'check:reward_chest',
     'cursed_chest': 'cursedchest', 'auto_setup': 'check:auto_setup', 'spell_quest': 'spellquest',
-    'craft_charms': 'charms', 'craft_cards': 'cards',
+    'craft_charms': 'charms', 'craft_cards': 'cards', 'rift_walk': 'rift', 'closed_siege': 'siege', 'closed_guildboss': 'guildboss',
 }
 EFFECT_LIST_MAX = 200  # failed effects kept in the run's results
 
@@ -303,8 +303,12 @@ class Scenarios:
             return [('fx', e['name'], i) for i in range(len(e['steps']))]
         if kind == 'place':
             system, place, op = self.rand.choice(self.places)
-            # a rift key is no place to walk to: `enter rift` stays the helper's (step 5 of O589 walks the rift itself)
-            steps = [('say', '!tester enter ' + place) if place.split(' ')[0] == 'rift' else ('walk', place), ('check', 'place:' + system)]
+            # a rift key is no place: the bot walks to the temple (a protection zone, where a rift is opened) and `enter rift` then only gives
+            # the key, with no teleport; the helper's teleport to the temple is the counted fallback (O592)
+            if place.split(' ')[0] == 'rift':
+                steps = [('walk', 'temple'), ('say', '!tester enter ' + place), ('check', 'place:' + system)]
+            else:
+                steps = [('walk', place), ('check', 'place:' + system)]
             if op and op in self.by_name:
                 steps += self.opcode_steps(self.by_name[op])
             return steps + [('say', '!tester hunt')]
@@ -316,7 +320,7 @@ class Scenarios:
             return ([('walk', 'npc ' + npc['npc']), ('check', 'npc:' + npc['npc']), ('say', 'hi')]
                     + [('npc', w) for w in say] + [('npc', 'bye'), ('say', '!tester hunt')])
         tier = self.rand.randint(1, 5)
-        return [('say', '!tester enter rift %d' % tier), ('check', 'place:rift'), ('usekey',)]
+        return [('walk', 'temple'), ('say', '!tester enter rift %d' % tier), ('check', 'place:rift'), ('usekey',)]
 
     def next_request(self, bot):
         """a scenario for the bot: [step]; testers.py TesterBot.do_opcodes runs it with run_step()"""
@@ -355,17 +359,22 @@ class Scenarios:
             c = self.cov(bot, step[1])
             c['tried'] += 1
             ans = bot.helper.get('enter') or {}
+            walk = bot.helper.pop('walk', None) or {}
+            if ans.get('kind') == 'rift' and walk.get('fallback'):
+                # the bot did not walk to the temple: the key was given where the helper put it (O592)
+                ans = dict(ans, teleported=True, fallback=walk['fallback'])
             if ans.get('err'):
                 c['refused'] += 1
                 c['actions'][str(ans['err'])[:40]] = c['actions'].get(str(ans['err'])[:40], 0) + 1
-            elif ans and ans.get('walked'):
+            elif ans and (ans.get('walked') or (ans.get('kind') == 'rift' and ans.get('teleported') is False)):
                 c['ok'] += 1
-                bump(c, 'walk')   # the bot walked the engine path there (O589): no helper shortcut
+                bump(c, 'walk')   # the bot walked the engine path there (O589; a rift key given in the temple it walked to, O592): no shortcut
                 c.setdefault('help', 0)
             elif ans:
                 c['ok'] += 1
                 bump(c, 'help')  # the helper's teleport brought the bot there: a shortcut, not a walk
-                if ans.get('fallback'):
+                if ans.get('fallback') or (ans.get('kind') == 'rift' and ans.get('teleported')):
+                    ans.setdefault('fallback', 'enter rift: the bot was not in a protection zone')
                     label = 'teleport: ' + str(ans['fallback'])[:50]   # a fallback is named and counted (O589)
                     c['actions'][label] = c['actions'].get(label, 0) + 1
             bot.helper['entered'] = bot.helper.pop('enter', None) or {}

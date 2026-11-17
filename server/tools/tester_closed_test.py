@@ -130,6 +130,16 @@ only = C.clean_statements({'chaos_market_orders'}, [])
 eq(only, ['DELETE FROM `chaos_market_orders` WHERE `realm` = %d;' % C.REALM], 'only the book, without tester ids')
 ok(all('IN (0)' in s or str(C.REALM) in s for s in C.clean_statements(ALL, [])), 'no ids: an impossible id, never everything')
 ok(all(re.match(r'^[A-Za-z0-9_]+$', t) for t in C.GUILD_TABLES), 'table names are plain')
+# the guild boss and the guild hall of a tester guild (O592): the rows are keyed by the tester guild and go with it; the siege stores none
+for table in ('chaos_guild_hall', 'chaos_guildboss_week', 'chaos_guildboss_contrib', 'chaos_guildboss_runs'):
+    ok(table in C.GUILD_TABLES, 'the clean-up removes ' + table + ' of a tester guild')
+gb_cfg = lua('guildboss_config.lua')
+for table in ('chaos_guildboss_week', 'chaos_guildboss_contrib', 'chaos_guildboss_runs'):
+    ok('"%s"' % table in gb_cfg, 'guildboss_config.lua names the table ' + table)
+ok(any('chaos_guildboss_week' in s and '`guild_id` IN (SELECT `id` FROM `guilds` WHERE `name` IN' in s for s in cs), 'the guild boss week rows by the tester guilds')
+siege_core_text = lua('siege.lua')
+ok('if not testers then db.query' in siege_core_text and 'if not testers then\n\t\t\tdb.query' in siege_core_text,
+   'siege.lua writes no results row and no sign-up row for the testers\' siege')
 
 # the bazaar lock probe
 b = C.bazaar_statements('Tester Abc')
