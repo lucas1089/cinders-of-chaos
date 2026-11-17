@@ -42,20 +42,15 @@ PAIR_PURCHASED = 71 # the 77 purchased creature outfits 3434-3510 (install_monst
 PAIR_FUN = 72       # the 12 fun costumes 3511-3522, the new Dusk Moth 3523 and the round Rune Seal 3524 (install_outfits.py, install_fun_looks.py,
                     # install_auras.py; data/lib/chaos_fun_costumes.lua reads the same record, O566)
 PAIR_CREATURE = 73  # the 3 boss outfits 3527-3529 made from creature packs (O608, after O605; install_monster_creature_looks.py, step
-                    # `monstercreaturelooks`); pair 73 is not built yet, so PAIR_ASSETS stays below it
+                    # `monstercreaturelooks`)
 PAIR_SWAP = 73      # the look swaps of O619: 24 monsters leave a look that fails the stock bar for a better one already in the pair (O610 audit;
                     # install_monster_swap_looks.py, step `monsterswaplooks`); no new outfit, so it rides with pair 73
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 72
-PAIR_ASSETS_DAT_MD5 = 'dd4b6ac4165fb810d1c9d8fd26b8c080'
-# pair 73 is built (2026-11-17, O621; client/MANIFEST.md "Pair 73") and not yet on windows-assets: the generated client tables
-# (outfit_anchors.lua, info_lifts.lua, wing_centres.lua, foot_marks.lua) were made from it. When it is pushed, move these two
-# values into PAIR_ASSETS / PAIR_ASSETS_DAT_MD5 and delete the lines.
-PAIR_BUILT = 73
-PAIR_BUILT_DAT_MD5 = 'd4bc7cef1fa224926c04b07ad35fd6ed'
+PAIR_ASSETS = 73
+PAIR_ASSETS_DAT_MD5 = 'd4bc7cef1fa224926c04b07ad35fd6ed'
 
 
 def parse(text):

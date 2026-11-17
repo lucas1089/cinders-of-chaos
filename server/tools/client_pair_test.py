@@ -217,12 +217,12 @@ check(C.allows(os.path.join(server('chaosClientPair = 73\n'), 'data'), C.PAIR_CR
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
-check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN), 'PAIR_ASSETS covers every guarded pair')
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN, C.PAIR_CREATURE, C.PAIR_SWAP), 'PAIR_ASSETS covers every guarded pair')
 mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:
         head = f.read(4000)
-    check(C.PAIR_ASSETS_DAT_MD5 in head or C.PAIR_BUILT_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS or of the built, unpublished pair' % rel)
+    check(C.PAIR_ASSETS_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS' % rel)
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets')
 check(rc == 0 and out.strip() == str(C.PAIR_ASSETS), 'assets prints PAIR_ASSETS (%s)' % out.strip())
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets-md5')
