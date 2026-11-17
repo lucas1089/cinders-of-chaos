@@ -6953,3 +6953,46 @@ The owner saw the O590 previews: "do the hardest ones in PixelLab, but only the 
 - **Test**: `gen_drawn_wings_test.py`: the table and sums of the ten rows, no picture file in `drawn_wings`, a made-up raw loop through `clean` (bar, palette, crumbs, box, four rows), the loader, the sha256 guard, the fallback to code, wrong columns refused. With `CHAOS_WINGS_SRC=DIR` it also holds the ten real sheets to the table, the bar and the sums. Without it that part prints a skip line.
 - **Previews** (never committed): per row an MP4, old art left, O590 middle, PixelLab right, four directions; fit previews on player looks for 117, 58 and 116; the score table.
 - **Credit**: `docs/CREDITS.md`, Tools, PixelLab.
+## Creature packs as 2x2 outfits (O605, `tools/sprites/gen_creature_outfits.py`, `art_import/creature_outfits.csv`; joins pair 73; owner 2026-11-17)
+Owner (translated): "Import the creatures. They are 2x2." Eight creature packs of one author. Not in a pair on windows-assets, not seen in a client.
+- **Licence**: commercial use and changes allowed, credit asked (docs/CREDITS.md, one entry a pack), shipped only inside the game. The files are never shared on their own.
+  So **no picture is in the repository** (the O540 way). The repository holds the tool, the table and `creature_outfits.sums` (a digest per outfit).
+  The pack files are read by local script only. They are never sent to a web or AI service.
+- **Ids**: 9 outfits **3527 to 3535**, right after the 3,526 outfits of pair 72. The row at line n of the table is outfit 3527 + n.
+  No other step planned for pair 73 adds an outfit (O585, O583 / O594 change outfits in place; O596 / O600 add effects and missiles). The order of the steps is free.
+- **Table** `art_import/creature_outfits.csv`: `src` (12 hex of the first south idle frame file, no pack name), `new`, `kind`, `size`, `scale`, `idle`, `idle_ms`, `walk`, `walk_ms`, `walk_src`, `tint`, `colours`.
+- **Source**: a creature is found by its files: an idle folder with south, east, north, west frame folders on a 256 px canvas. Walk is the sibling folder named walk, else move.
+  A creature with neither walks on its idle frames (`walk_src idle`). Attack and death frames are not read.
+- **Scale**: 2:1 nearest neighbour, no filter, so no new colour (56 to 71 colours a look). The art is drawn in 2 px blocks.
+  Where the box of all idle and walk frames is longer than 128 px the step grows: scale 64/D, D 128 to 144. Alpha is cut hard at one half.
+- **Place**: the rule of `gen_wst_outfits.py`. One shift for all frames, the lowest pixel on row 63, the box against the right edge. No displacement flag.
+  Measured on the 671 2x2 monster looks of pair 71: feet 0 to 6 px above the bottom row (median 1.2), box centre 16 to 32 px from the right edge, 603 of 671 with no displacement.
+  The new looks: the lowest pixel of a frame is 0 to 5 px above the bottom row (the hovering ones up to 8), the box 54 to 64 px wide against the right edge.
+- **Frames**: the source has 12 pictures a second and another frame count in every direction (8 to 21). Idle group 4 phases, walk group 8 phases.
+  A direction with n frames gives the frames floor(i * n / phases), so the loop stays closed. One phase lasts the mean loop time divided by the phases.
+  Idle 224 to 359 ms a phase, walk 83 to 167 ms. The source loops close: the step from the last frame to the first is the size of a middle step.
+- **Shape**: idle group and walk group, 2x2, one layer, 4 directions, no flags. The idle rule of O533 holds: 4 idle phases, 4 different pictures, every direction.
+- **Tint** `cold+120`: outfit 3535 is 3532 with every cold hue (150 to 270 degrees, saturation 0.15 or more) turned 120 degrees. Warm and grey pixels stay.
+
+| outfit | monster | old look | scale | idle | walk |
+|---|---|---|---|---|---|
+| 3527 | Ink Blob (base monster) | 992, 2x2 | 64/128 | 4 x 312 ms | 8 x 167 ms |
+| 3528 | Aberration of the Depths (base monster) | 961, 2x2 | 64/144 | 4 x 359 ms | 8 x 154 ms |
+| 3529 | Rimecairn | 1531, 5x4 (copy 3394 since pair 69) | 64/134 | 4 x 250 ms | 8 x 125 ms, the idle frames |
+| 3530 | Ashmaw Warlord | 2289, 3x3 | 64/130 | 4 x 240 ms | 8 x 128 ms |
+| 3531 | Thalcyra the Stormbound Seer, Ascended Thalcyra | 2118, 3x3 | 64/131 | 4 x 224 ms | 8 x 83 ms |
+| 3532 | Frost Maiden | 149, player look with a mask | 64/135 | 4 x 323 ms | 8 x 102 ms |
+| 3533 | Vaelith the Fallen Seraph | 2213, 4x4 | 64/134 | 4 x 302 ms | 8 x 99 ms |
+| 3534 | Sangrith the Bloodmoon Herald, Ascended Sangrith | 2116, 4x4 | 64/129 | 4 x 250 ms | 8 x 125 ms |
+| 3535 | Elite Ice Witch | 149 | 64/135, tint cold+120 | 4 x 323 ms | 8 x 102 ms |
+
+- **Rimecairn**: its pack has no walk animation. The creature hovers, so it glides on its idle frames. It can also stand still: the idle group plays.
+- **Build** (proved on /dev/shm, then deleted): pair 71 + `gen_fun_costumes.py build` + `gen_ki_auras.py build` gave the live pair 72 byte for byte (dat dd4b6ac4165fb810d1c9d8fd26b8c080).
+  `gen_creature_outfits.py build P72/Tibia.dat P72/Tibia.spr OUT --src PACK_DIR` on it: 9 outfits, 1,728 sprite slots and 432 frames read back as drawn, 1,664 sprite records appended (972,454 to 974,118).
+  Output dat 5460e311726ddd95b4da1d2cdee4177b (9,028,797 bytes), spr a4ef3271d70e099ba61b6f0d4864303a (1,138,158,185 bytes), 3,535 outfits. The append-only guard passed.
+  `live` passed on the output and fails on pair 72. The `live` steps of pairs 71 and 72 pass on the output too. This output is not pair 73: the other pair 73 steps are not in it.
+- **Checks.** `gen_creature_outfits.py check` needs no art and no pair. `gen_creature_outfits_test.py` runs on synthetic packs and a synthetic pair.
+  `sums --src DIR --check` holds the pack files to the table and the sums. Add `live` to the job `live-pair` when pair 73 ships.
+- **Knock-on at the pair 73 build**: regenerate `outfit_anchors.lua`, `info_lifts.lua`, `wing_centres.lua`, `foot_marks.lua`, `InfoLiftData.cs` from the built pair. Raise `PAIR_OUTFITS` of `check_content.py`.
+- **Server**: 11 monsters, `server/data/monster/monster_creature_looks.csv`, step `monstercreaturelooks` behind `chaosClientPair >= 73`. See server/README.md "Creature pack looks (O605)".
+- **Previews** (never committed): one MP4, each look idle and walk in 4 directions on grass and stone, beside the old look and a player.

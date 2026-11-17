@@ -60,6 +60,46 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
   - Author: Will Tice / unTied Games
   - Licence: purchased; the licence asks for credit
   - Credit: Super Pixel Effects Gigapack - Will Tice / unTied Games
+- **Abyssal Jelly**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Abyssal Jelly - elie automata
+  - Used for: the look of the Ink Blob (client pair 73)
+- **Floating Eldritch Organism**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Floating Eldritch Organism - elie automata
+  - Used for: the look of the Aberration of the Depths (client pair 73)
+- **Glacial Heart**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Glacial Heart - elie automata
+  - Used for: the look of the Rimecairn (client pair 73)
+- **Northern Gothic War Chieftain**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Northern Gothic War Chieftain - elie automata
+  - Used for: the look of the Ashmaw Warlord (client pair 73)
+- **Lightning Academy Magister**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Lightning Academy Magister - elie automata
+  - Used for: the look of Thalcyra the Stormbound Seer (client pair 73)
+- **Silverstorm Frost Defender**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Silverstorm Frost Defender - elie automata
+  - Used for: the look of the Frost Maiden and the Elite Ice Witch (client pair 73)
+- **Sanctuary Seraph**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Sanctuary Seraph - elie automata
+  - Used for: the look of Vaelith the Fallen Seraph (client pair 73)
+- **Battle Axemaiden**
+  - Author: elie automata
+  - Licence: free pack; commercial use and changes allowed; the licence asks for credit; shipped only inside the game, the files are never shared on their own
+  - Credit: Battle Axemaiden - elie automata
+  - Used for: the look of Sangrith the Bloodmoon Herald (client pair 73)
 
 ## Art packs {pt-BR: Pacotes de arte}
 

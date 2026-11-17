@@ -1,0 +1,10 @@
+src,new,kind,size,scale,idle,idle_ms,walk,walk_ms,walk_src,tint,colours
+cc1b36d161cb,3527,ooze,2x2,64/128,4,312,8,167,walk,,64
+851989630524,3528,aberration,2x2,64/144,4,359,8,154,walk,,56
+48602508e8e2,3529,elemental,2x2,64/134,4,250,8,125,idle,,60
+f4dcb7077799,3530,humanoid,2x2,64/130,4,240,8,128,walk,,71
+89411b15353c,3531,humanoid,2x2,64/131,4,224,8,83,walk,,67
+8e477f3018bc,3532,humanoid,2x2,64/135,4,323,8,102,walk,,66
+28a8b3a3df23,3533,angel/spirit,2x2,64/134,4,302,8,99,walk,,56
+9f3b1c04adc4,3534,humanoid,2x2,64/129,4,250,8,125,walk,,70
+8e477f3018bc,3535,humanoid,2x2,64/135,4,323,8,102,walk,cold+120,66
