@@ -1836,6 +1836,7 @@ return {
 		["The way is sealed."] = "O caminho está selado.",
 		["%s is for level %d and above."] = "%s é para o nível %d ou mais.",
 		["%s. The portal beside you leads back to the temple."] = "%s. O portal ao seu lado leva de volta ao templo.",
+		["%s. The portal beside you leads back to the hunt."] = "%s. O portal ao seu lado leva de volta à caçada.",
 		["%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s."] =
 			"%s declarou guerra à sua guilda (%s). Responda em Social > Guild Wars antes que expire em %s.",
 		["Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s"] =

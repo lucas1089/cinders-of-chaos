@@ -1387,6 +1387,9 @@ jobs:
       - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
         run: python3 -I server/tools/idle_hall_test.py
 
+      - name: "Boss lairs (O616: the config against the compiled lair plan and its hunt; needs luajit)"
+        run: python3 -I server/tools/boss_lair_test.py
+
       - name: Hub NPC stalls (the base NPCs' spawn entries on the stall tiles go; synthetic spawn file)
         run: python3 -I server/tools/patch_hub_npcs_test.py
 

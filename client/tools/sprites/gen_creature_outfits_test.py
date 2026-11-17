@@ -5,10 +5,14 @@ The committed table, sums, picks rows and monster map against the rules, every r
 `build` / `live` on synthetic packs drawn here (frame folders of the four directions on a 256 px canvas: a creature with a walk
 folder, one with a move folder and a run folder that is not read, one with no walk at all whose box is longer than 128 px, one
 with a direction of few frames) and a small synthetic input pair: the frame pick (evenly spaced, the loop closed), the hard alpha cut,
-the size (4x4 up to 128 px, else 5x5, pixel for pixel; sampled down only past 160 px), the placement (lowest pixel on the last row,
-the box in the middle of the canvas), the displacement that puts the middle over the creature's tile, the outfit shape (idle group,
-walk group, phases, durations from 12 pictures a second), the idle rule, the outfits appended after the input's, every slot reading
-back as drawn, wrong input pairs and an existing output folder refused. No pack files and no real pair needed. Needs numpy and
+the size (4x4 up to 128 px, 5x5 up to 160 px, up to 8x8, always pixel for pixel: nothing is sampled down), the placement (lowest
+pixel on the last row, the box in the middle of the canvas), the displacement that puts the middle over the creature's tile, the
+outfit shape (idle group, walk group, as many phases as the longest direction has frames, 83 ms a phase: 12 pictures a second), the
+idle rule, the outfits appended after the input's, every slot reading back as drawn, wrong input pairs and an existing output
+folder refused. O616 (owner 2026-11-17, "so no pixel is lost"): every built frame has the opaque pixels of its source frame, on the
+canvas and in the sprite tiles, colour for colour; every source frame of every direction is shown, in order; a frame with soft
+alpha is refused; the four directions are the pack's own folders; the foot point stands on the boss's tile; each with a failing
+case, and `live` holds the pair to the durations, the pixel count, the pictures per direction and the foot point. No pack files and no real pair needed. Needs numpy and
 Pillow (the fx venv of CI). Nothing drawn here is art of any pack."""
 import os
 import sys
@@ -53,8 +57,9 @@ def four(n):
 
 
 def row(src, new, **kw):
-    r = {'src': src, 'new': str(new), 'kind': 'ooze', 'size': '4x4', 'scale': '128/128', 'disp': '-48:0', 'idle': '4', 'idle_ms': '250',
-         'walk': '8', 'walk_ms': '125', 'walk_src': 'walk', 'colours': '60'}
+    r = {'src': src, 'new': str(new), 'kind': 'ooze', 'size': '4x4', 'scale': '128/128', 'disp': '-48:0', 'idle': '4', 'idle_ms': '83',
+         'walk': '8', 'walk_ms': '83', 'walk_src': 'walk', 'colours': '60', 'idle_frames': '4/3/4/2', 'walk_frames': '8/8/5/8',
+         'pixels': '1000'}
     r.update({k: str(v) for k, v in kw.items()})
     return r
 
@@ -65,7 +70,13 @@ def main():
     assert G.problems() == [], G.problems()
     assert len(t) == 3 and [int(r['new']) for r in t] == list(range(3527, 3530)) and G.FIRST_NEW == 3527 == G.OUTFITS_72 + 1 and G.PAIR == 73
     assert [(r['src'], r['kind']) for r in t] == list(G.ROWS) and not {'humanoid', 'angel/spirit'} & set(G.KIND_NAMES)
-    assert [r['size'] for r in t] == ['4x4', '5x5', '5x5'] and all(r['idle'] == '4' and r['walk'] == '8' for r in t)
+    assert [r['size'] for r in t] == ['4x4', '5x5', '5x5']
+    # no frame dropped (O616): a group has as many phases as its longest direction has frames, 83 ms each (12 a second)
+    assert [(r['idle'], r['walk']) for r in t] == [('16', '21'), ('19', '15'), ('12', '12')]
+    assert [(r['idle_frames'], r['walk_frames']) for r in t] == [('16/16/12/16', '11/16/21/16'), ('19/19/17/14', '15/15/14/15'),
+                                                                 ('12/12/12/12', '12/12/12/12')]
+    assert all(int(r[g]) == max(G.frames_of(r[g + '_frames'])) and r[g + '_ms'] == '83' for r in t for g in ('idle', 'walk')) and G.FRAME_MS == 83
+    assert [r['pixels'] for r in t] == ['1009990', '1021347', '580686']
     # every one pixel for pixel, at the size it was drawn, and standing on its tile
     assert all(r['scale'] == '%d/%d' % (32 * int(r['size'][0]), 32 * int(r['size'][0])) and r['disp'] == G.disp_text(int(r['size'][0])) for r in t)
     assert [r['walk_src'] for r in t].count('idle') == 1
@@ -100,7 +111,7 @@ def main():
             ([row(A, 3527, kind='fish'), row(B, 3528)], 'kind fish'),
             ([row(A, 3527, size='3x3'), row(B, 3528)], 'a boss look is'),
             ([row(A, 3527, size='2x2'), row(B, 3528)], 'a boss look is'),
-            ([row(A, 3527, size='6x6'), row(B, 3528)], 'a boss look is'),
+            ([row(A, 3527, size='9x9'), row(B, 3528)], 'a boss look is'),
             ([row(A, 3527, size='4x5'), row(B, 3528)], 'a boss look is'),
             ([row(A, 3527, scale='1/2'), row(B, 3528)], 'pixel for pixel'),
             ([row(A, 3527, scale='128/100'), row(B, 3528)], 'pixel for pixel'),
@@ -111,11 +122,18 @@ def main():
             ([row(A, 3527, idle=1), row(B, 3528)], 'idle phases'),
             ([row(A, 3527, walk=2), row(B, 3528)], 'walk phases'),
             ([row(A, 3527, walk_src='run'), row(B, 3528)], 'walk_src'),
-            ([row(A, 3527, idle_ms=5), row(B, 3528)], '40 to 1000'),
+            ([row(A, 3527, idle_ms=250), row(B, 3528)], 'a phase lasts 83 ms'),
+            ([row(A, 3527, walk_ms=84), row(B, 3528)], 'a phase lasts 83 ms'),
+            ([row(A, 3527, size='5x5', scale='160/200', disp='-64:0'), row(B, 3528)], 'pixel for pixel'),
+            ([row(A, 3527, idle_frames='4/3/4'), row(B, 3528)], 'four frame counts'),
+            ([row(A, 3527, idle_frames='4/3/6/2'), row(B, 3528)], 'a frame is dropped'),
+            ([row(A, 3527, walk=9), row(B, 3528)], 'a frame is dropped or shown twice'),
+            ([row(A, 3527, walk_src='idle'), row(B, 3528)], 'walk_frames is not idle_frames'),
+            ([row(A, 3527, pixels='many'), row(B, 3528)], 'opaque pixels'),
             ([row(A, 3527, colours=0), row(B, 3528)], 'no colours')):
         p = G.problems(bad, sums, want=None)
         assert any(text in x for x in p), (text, p)
-    assert G.problems([row(A, 3527, size='5x5', scale='160/160', disp='-64:0'), row(B, 3528, size='5x5', scale='160/200', disp='-64:0')],
+    assert G.problems([row(A, 3527, size='5x5', scale='160/160', disp='-64:0'), row(B, 3528, size='7x7', scale='224/224', disp='-96:0')],
                       sums, want=None) == []
     assert any('name other outfits' in x for x in G.problems(good, {'3527': 'x'}, want=None))
     assert any('not ROWS' in x for x in G.problems(good, sums))
@@ -151,7 +169,13 @@ def main():
     s = G.sample(src, (0, 0, 199, 99), 200, 160)         # a figure of 200 px: 5 source pixels give 4
     assert s.shape == (80, 160, 4) and (s[0, 0] == src[0, 0]).all() and (s[79, 159] == src[99, 199]).all()
     # the size: the smallest canvas of whole tiles that holds the figure, 4x4 to 5x5; the displacement puts its middle over the tile
-    assert [G.tiles_for(n) for n in (60, 120, 128, 129, 144, 160, 161, 250)] == [4, 4, 4, 5, 5, 5, 5, 5]
+    assert [G.tiles_for(n) for n in (60, 120, 128, 129, 144, 160, 161, 250, 256)] == [4, 4, 4, 5, 5, 5, 6, 8, 8]
+    assert G.tile_box(4) == (48, 96, 79, 127) and G.tile_box(5) == (64, 128, 95, 159), 'the boss tile on the canvas'
+    assert G.frames_of('16/16/12/16') == [16, 16, 12, 16] and G.frames_of('1/2/3') is None and G.frames_of('0/1/1/1') is None
+    for n in range(2, 25):       # with as many phases as the longest direction has frames, a shorter one still shows every frame
+        for ph in range(n, 25):
+            p = G.pick(n, ph)
+            assert sorted(set(p)) == list(range(n)) and p == sorted(p) and max(p.count(i) for i in range(n)) - min(p.count(i) for i in range(n)) <= 1
     assert G.disp_of(4) == (-48, 0) and G.disp_of(5) == (-64, 0) and G.disp_text(4) == '-48:0'
     for n in (4, 5):   # the middle column of the canvas, moved by the displacement, is the middle column of the last tile
         assert (32 * n - 1) / 2.0 - G.disp_of(n)[0] == 32 * n - 16.5
@@ -163,7 +187,7 @@ def main():
         src_dir = os.path.join(tmp, 'packs')
         creature(src_dir, 'one', {'Idle': four(12), 'Walk': four(8)})
         creature(src_dir, 'two', {'Hover_Idle': {'south': 10, 'east': 16, 'north': 3, 'west': 9}, 'Run': four(8), 'Slow_Move': four(15)},
-                 box=(60, 60, 100, 120), soft=True)
+                 box=(60, 60, 100, 120))
         creature(src_dir, 'deep/three', {'Idle': four(12), 'Attack': four(5)}, box=(50, 80, 150, 90))
         os.makedirs(os.path.join(src_dir, 'four', 'Animations', 'Idle', 'south'))   # three directions missing: no creature
         found = G.discover(src_dir)
@@ -180,19 +204,77 @@ def main():
         assert three.files[('walk', 1)] == three.files[('idle', 1)]
 
         m1 = G.measure(one)
-        assert (m1['tiles'], m1['scale'], m1['idle'], m1['walk'], m1['idle_ms'], m1['walk_ms']) == (4, '128/128', 4, 8, 250, 83), m1['scale']
+        assert (m1['tiles'], m1['scale'], m1['idle'], m1['walk'], m1['idle_ms'], m1['walk_ms']) == (4, '128/128', 12, 8, 83, 83), m1['scale']
         m2 = G.measure(two)
-        assert (m2['idle'], m2['walk']) == (3, 8), 'a direction with 3 idle frames gives 3 phases'
-        assert m2['idle_ms'] == round(1000 * (10 + 16 + 3 + 9) / 4 / 12 / 3) and m2['walk_ms'] == round(1000 * 15 / 12 / 8)
-        assert m2['box'][1] == 61, 'the soft top row is cut away'
+        assert (m2['idle'], m2['walk']) == (16, 15), 'as many phases as the longest direction has frames'
+        assert m2['idle_ms'] == 83 == m2['walk_ms'] and m2['counts'][('idle', 0)] == 3 and G.frames_text(m2, 'idle') == '3/16/10/9'
+        # the direction of 3 frames shows each of them, in order, over the 16 phases; the longest one frame for frame
+        assert m2['use'][('idle', 0)] == [0] * 6 + [1] * 5 + [2] * 5 and m2['use'][('idle', 1)] == list(range(16))
         m3 = G.measure(three)
         # 150 px wide, 3 steps of 2 px across the directions: 156 px, so 5x5 and still pixel for pixel
-        assert (m3['tiles'], m3['scale']) == (5, '160/160') and m3['walk'] == 8 and m3['idle'] == 4, m3['scale']
+        assert (m3['tiles'], m3['scale']) == (5, '160/160') and m3['walk'] == 12 and m3['idle'] == 12, m3['scale']
+        assert m3['use'][('walk', 2)] == list(range(12)) and G.frames_text(m3, 'walk') == G.frames_text(m3, 'idle') == '12/12/12/12'
+        import shutil
         creature(src_dir, 'wide', {'Idle': four(4)}, box=(20, 80, 200, 90))
         mw = G.measure([c for c in G.discover(src_dir) if c.id not in ids][0])
-        assert (mw['tiles'], mw['scale']) == (5, '160/206'), mw['scale']      # longer than 160 px: sampled down to 160
-        import shutil
+        assert (mw['tiles'], mw['scale']) == (7, '224/224'), mw['scale']      # longer than 160 px: a bigger canvas, never sampled down
+        assert G.pixel_problems(mw) == []
         shutil.rmtree(os.path.join(src_dir, 'wide'))
+        creature(src_dir, 'softy', {'Idle': four(4)}, soft=True)              # a soft pixel would be lost or changed by the cut: refused
+        try:
+            G.measure([c for c in G.discover(src_dir) if c.id not in ids][0])
+        except ValueError as e:
+            assert 'soft alpha' in str(e), str(e)
+        else:
+            raise AssertionError('a frame with soft alpha was taken')
+        shutil.rmtree(os.path.join(src_dir, 'softy'))
+        # ---- no pixel lost (O616): every phase has the opaque pixels of its source frame, on the canvas and in the tiles
+        for c, m in ((one, m1), (two, m2), (three, m3)):
+            assert G.pixel_problems(m) == [] and G.foot_problems(m) == [], (G.pixel_problems(m), G.foot_problems(m))
+            total = 0
+            for (g, d), use in m['use'].items():
+                assert sorted(set(use)) == list(range(len(c.files[(g, d)]))), 'every source frame is shown'
+                for ph, i in enumerate(use):
+                    n_src = int((W._read_png(c.files[(g, d)][i])[..., 3] > 0).sum())
+                    assert n_src == G.opaque(m['placed'][(g, d)][ph]) > 0
+                    total += n_src
+            assert total == m['pixels']
+            # the four directions are the pack's own folders: nothing is mirrored
+            assert len({tuple(c.files[('idle', d)]) for d in range(4)}) == 4 and len({m['placed'][('idle', d)][0].tobytes() for d in range(4)}) == 4
+
+        def tampered(m, key, ph, fn, use=None):
+            placed = dict(m['placed'])
+            lst = list(placed[key])
+            lst[ph] = fn(lst[ph].copy())
+            placed[key] = lst
+            return dict(m, placed=placed)
+
+        def lose(a):
+            ys, xs = np.nonzero(a[..., 3])
+            a[ys[0], xs[0]] = 0
+            return a
+
+        def recolour(a):
+            ys, xs = np.nonzero(a[..., 3])
+            a[ys[0], xs[0], :3] ^= 1
+            return a
+
+        assert any('opaque pixels in the source' in x for x in G.pixel_problems(tampered(m1, ('idle', 2), 5, lose))), 'a lost pixel'
+        assert any('pixel for pixel' in x for x in G.pixel_problems(tampered(m1, ('walk', 1), 0, recolour))), 'a changed colour'
+        assert any('moved by' in x for x in G.pixel_problems(tampered(m1, ('walk', 3), 2, lambda a: np.roll(a, -1, 1)))), 'a frame moved alone'
+        assert any('dropped or out of order' in x for x in G.pixel_problems(dict(m1, use={**m1['use'], ('idle', 0): [0] * 12}))), 'a dropped frame'
+        assert any('sampled' in x for x in G.pixel_problems(dict(m1, scale='128/134')))
+        # the foot point: a figure pushed off the boss's tile, sideways or up, is refused
+        def only(a, rows, cols):
+            b = np.zeros_like(a)
+            b[rows, cols] = a[rows, cols]
+            return b
+
+        off = dict(m1, placed={k: [only(a, slice(None), slice(0, 40)) for a in v] for k, v in m1['placed'].items()})
+        assert all('foot column' in x for x in G.foot_problems(off)) and len(G.foot_problems(off)) == 8, G.foot_problems(off)
+        up = dict(m1, placed={k: [only(a, slice(0, 88), slice(None)) for a in v] for k, v in m1['placed'].items()})
+        assert all('lowest pixel' in x for x in G.foot_problems(up)) and len(G.foot_problems(up)) == 8, G.foot_problems(up)
+        assert 'tile cols 48-79 rows 96-127' in G.foot_line(m1)
         for m in (m1, m2, m3):
             low = right = 0
             c = 32 * m['tiles']
@@ -208,16 +290,16 @@ def main():
         assert G.idle_problems([(row(one.id, 3), m1)]) == []
         flat = dict(m1, placed={k: [v[0]] * len(v) for k, v in m1['placed'].items()})
         assert len(G.idle_problems([(row(one.id, 3), flat)])) == 4, 'an idle group of one picture is refused'
-        # the frames are the picked source frames, sampled: phase 1 of the idle group facing south is source frame 3
+        # the frames are the source frames: phase 3 of the idle group facing south is source frame 3
         a3 = G.cut(W._read_png(one.files[('idle', 2)][3]))
         want3 = G.place({('x', 0): [G.sample(a3, m1['box'], 128, 128)], ('y', 0): [G.sample(G.cut(W._read_png(p)), m1['box'], 128, 128)
                                                                                    for lst in one.files.values() for p in lst]}, 128)[('x', 0)][0]
-        assert (m1['placed'][('idle', 2)][1] == want3).all()
+        assert (m1['placed'][('idle', 2)][3] == want3).all()
         gs = G.groups_of(m1)
-        assert [(g.gtype, g.w, g.h, g.exact, g.layers, g.px, g.phases) for g, _t in gs] == [(0, 4, 4, 128, 1, 4, 4), (1, 4, 4, 128, 1, 4, 8)]
+        assert [(g.gtype, g.w, g.h, g.exact, g.layers, g.px, g.phases) for g, _t in gs] == [(0, 4, 4, 128, 1, 4, 12), (1, 4, 4, 128, 1, 4, 8)]
         assert [(g.w, g.h, g.exact) for g, _t in G.groups_of(m3)] == [(5, 5, 160)] * 2
-        assert gs[0][0].anim == (0, 0, 0, (250, 250) * 4) and gs[1][0].anim == (0, 0, 0, (83, 83) * 8)
-        assert [len(tl) for _g, tl in gs] == [4 * 4 * 16, 8 * 4 * 16]
+        assert gs[0][0].anim == (0, 0, 0, (83, 83) * 12) and gs[1][0].anim == (0, 0, 0, (83, 83) * 8)
+        assert [len(tl) for _g, tl in gs] == [12 * 4 * 16, 8 * 4 * 16]
 
         # ---- the pair: build, read back, live
         odat, ospr = WT.input_pair(tmp)
@@ -236,7 +318,7 @@ def main():
         d, sp = Dat(paths[0]), Spr(paths[1])
         assert len(d.outfits) == 5
         g0, g1 = parse_body(d, d.outfit(4))
-        assert (g0.gtype, g0.phases, g1.gtype, g1.phases) == (0, 3, 1, 8) and (g0.w, g0.h, g1.w, g1.h) == (4, 4, 4, 4)
+        assert (g0.gtype, g0.phases, g1.gtype, g1.phases) == (0, 16, 1, 15) and (g0.w, g0.h, g1.w, g1.h) == (4, 4, 4, 4)
         # the displacement is the outfit's only flag, as the dat reader gives it (u16: -48 and -64)
         assert dict(d.outfit(4).flags) == {'displacement': (65488, 0)} and dict(d.outfit(5).flags) == {'displacement': (65472, 0)}
         assert [(g.w, g.h) for g in parse_body(d, d.outfit(5))] == [(5, 5), (5, 5)]
@@ -246,6 +328,12 @@ def main():
         assert G.live(odat, ospr, table=table, sums=sums, **quiet), 'a pair without the outfits'
         assert G.live(*paths, table=[dict(table[0], idle='2')] + table[1:], sums=sums, **quiet), 'another phase count'
         assert G.live(*paths, table=[dict(table[0], size='5x5')] + table[1:], sums=sums, **quiet), 'another size and displacement'
+        # O616: the pair is held to the durations, the pixel count and the pictures a direction shows
+        for bad, text in ((dict(table[1], idle_ms='84'), 'do not last 84 ms'), (dict(table[1], pixels=str(int(table[1]['pixels']) + 1)), 'opaque pixels'),
+                          (dict(table[1], idle_frames='4/16/10/9'), 'different pictures')):
+            p = G.live(*paths, table=[table[0], bad, table[2]], sums=sums, **quiet)
+            assert len(p) == 1 and text in p[0], (text, p)
+        assert [int(r['pixels']) for r in table] == [m['pixels'] for _r, m in ms]
         for args, kw, text in (((odat, ospr, out, src_dir), dict(want=want, first=3), 'exists'),
                                ((odat, ospr, os.path.join(tmp, 'o2'), src_dir), dict(want=want, first=9), 'wrong input pair'),
                                ((odat, ospr, os.path.join(tmp, 'o3'), src_dir), dict(want=(('f' * 12, 'ooze'),), first=3), 'no creature')):

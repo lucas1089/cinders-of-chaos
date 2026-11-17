@@ -7041,35 +7041,55 @@ So three creatures stay, all for bosses. The four humanoids, the winged angel an
   The pack files are read by local script only. They are never sent to a web or AI service.
 - **Ids**: 3 outfits **3527 to 3529**, right after the 3,526 outfits of pair 72. The row at line n of the table is outfit 3527 + n. The ids 3530 to 3535 of O605 are free again.
   No other step planned for pair 73 adds an outfit (O585, O583 / O594 change outfits in place; O596 / O600 / O606 / O607 add effects and missiles). The order of the steps is free.
-- **Table** `art_import/creature_outfits.csv`: `src` (12 hex of the first south idle frame file, no pack name), `new`, `kind`, `size`, `scale`, `disp`, `idle`, `idle_ms`, `walk`, `walk_ms`, `walk_src`, `colours`.
+- **Table** `art_import/creature_outfits.csv`: `src` (12 hex of the first south idle frame file, no pack name), `new`, `kind`, `size`, `scale`, `disp`, `idle`, `idle_ms`, `walk`, `walk_ms`, `walk_src`, `colours`,
+  `idle_frames`, `walk_frames` (pack frames north / east / south / west), `pixels` (opaque pixels of the built outfit).
 - **Source**: a creature is found by its files: an idle folder with south, east, north, west frame folders on a 256 px canvas. Walk is the sibling folder named walk, else move.
   A creature with neither walks on its idle frames (`walk_src idle`). Attack and death frames are not read.
 - **Size: pixel for pixel.** No scaling. The art is drawn in 2 px blocks, and a step that is no whole number would break them.
   The canvas is the smallest whole number of tiles that holds the box of all idle and walk frames: 4x4 (128 px) up to 128 px, else 5x5 (160 px).
   The boxes are 127, 144 and 134 px on the long side. So one outfit is 4x4 and two are 5x5. The figures are 123 to 141 px on screen: about four tiles each.
-  Only a figure longer than 160 px would be sampled down (160/D). None is. Alpha is cut hard at one half. 56 to 64 colours a look, the same count as at 2:1.
+  Nothing is ever sampled (O616). A longer figure gets a larger canvas, up to 8x8. Past that the tool stops.
+  The packs have alpha 0 or 255 only. A frame with soft alpha is refused, not cut. 56 to 64 colours a look.
 - **Place**: one shift for all frames. The lowest pixel on the last row of the canvas, the box in the middle column.
   The dat displacement then moves the picture right: (-48, 0) for 4x4, (-64, 0) for 5x5. So the middle of the figure is over the middle of the boss's tile,
   and its lowest pixel is on the tile's bottom row. A boss reaches about two tiles to each side of its tile and four tiles up.
   This is how the pair centres its big looks: the 5x5 world boss looks 1534 and 1538 have (-64, -32) and (-64, -64). The client profile has `GameNegativeOffset` on.
   A 4x4 look with no displacement (3361) hangs up and left of its tile.
-- **Frames**: the source has 12 pictures a second and another frame count in every direction (11 to 21). Idle group 4 phases, walk group 8 phases.
-  A direction with n frames gives the frames floor(i * n / phases), so the loop stays closed. One phase lasts the mean loop time divided by the phases.
-  The source loops close: the step from the last frame to the first is the size of a middle step.
-- **Shape**: idle group and walk group, one layer, 4 directions, the displacement as the only flag. The idle rule of O533 holds: 4 idle phases, 4 different pictures, every direction.
+- **Frames (O616)**: the source has 12 pictures a second and another frame count in every direction (11 to 21). Every frame is used.
+  A dat group has one phase count for its four directions. So a group has as many phases as its longest direction has frames.
+  One phase lasts 83 ms, the pack's 12 a second. The longest direction plays frame for frame at the pack's speed.
+  A direction with n frames shows frame floor(i * n / P) at phase i: every frame, in order, some held for two phases. Its loop lasts P / n of the pack's.
+  The four directions are the pack's own. Nothing is mirrored. The source loops close.
+  The client plays the idle group by these durations. The phase of a walking creature is the engine's step phase, not the dat durations.
+- **Shape**: idle group and walk group, one layer, 4 directions, the displacement as the only flag. The idle rule of O533 holds: 12 or more different idle pictures in every direction.
 
 | outfit | boss | old look | new size | figure on screen | displacement | idle | walk |
 |---|---|---|---|---|---|---|---|
-| 3527 | The Rotmother (world boss) | 238, 2x2, a stock look, 3 walk phases, no idle group | 4x4, 128/128 | 125 x 123 px | -48, 0 | 4 x 312 ms | 8 x 167 ms |
-| 3528 | Vhoss the Hexmaw (raid boss, Ashen Sepulchre) | 2130, 2x2, 4 walk phases, no idle group | 5x5, 160/160 | 141 x 131 px | -64, 0 | 4 x 359 ms | 8 x 154 ms |
-| 3529 | Talath (ice boss, not spawned yet) | 1473, 2x2 | 5x5, 160/160 | 117 x 128 px | -64, 0 | 4 x 250 ms | 8 x 125 ms, the idle frames |
+| 3527 | The Rotmother (world boss) | 238, 2x2, a stock look, 3 walk phases, no idle group | 4x4, 128/128 | 125 x 123 px | -48, 0 | 16 x 83 ms | 21 x 83 ms |
+| 3528 | Vhoss the Hexmaw (raid boss, Ashen Sepulchre) | 2130, 2x2, 4 walk phases, no idle group | 5x5, 160/160 | 141 x 131 px | -64, 0 | 19 x 83 ms | 15 x 83 ms |
+| 3529 | Talath (ice boss, lair spawn from pair 73, O616) | 1473, 2x2 | 5x5, 160/160 | 117 x 128 px | -64, 0 | 12 x 83 ms | 12 x 83 ms, the idle frames |
+
+- **No pixel lost (O616).** Owner 2026-11-17: "Keep it as it is so no pixel is lost, apply this to the others too, it has to look as good as possible."
+  The tool counts opaque pixels of every pack frame and of the tiles it built, every frame and direction. They are equal.
+
+| outfit | pack frames idle N / E / S / W | pack frames walk N / E / S / W | opaque pixels, each pack frame once | opaque pixels of the outfit, held frames counted |
+|---|---|---|---|---|
+| 3527 | 16 / 16 / 12 / 16 | 11 / 16 / 21 / 16 | 842,457 | 1,009,990 |
+| 3528 | 19 / 19 / 17 / 14 | 15 / 15 / 14 / 15 | 960,855 | 1,021,347 |
+| 3529 | 12 / 12 / 12 / 12 | none, the idle frames | 580,686 | 580,686 |
+
+- **Foot point (O616).** The lowest pixel of every frame lies in the rows of the boss's tile. The middle of the lowest 8 rows lies in its columns,
+  as a mean over the frames of a direction. `measured`, `check` by the table and `live` on the pair hold it.
 
 - **Why these bosses.** Each old look is a 2x2, so every boss grows. See server/README.md "Creature pack looks (O608)" for the reasons and the ones passed over.
 - **Talath**: its pack has no walk animation. The creature hovers, so it glides on its idle frames. It can also stand still: the idle group plays.
+  O616 gave it a spawn: server/README.md "Talath's lair (O616)".
 - **Build** (proved on /dev/shm, then deleted): pair 71 + `gen_ki_auras.py build71` gave pair 72 (3,526 outfits, 972,454 sprite records).
-  `gen_creature_outfits.py build P72/Tibia.dat P72/Tibia.spr OUT --src PACK_DIR` on it: 3 outfits, 3,168 sprite slots and 144 frames read back as drawn, 1,886 sprite records appended (972,454 to 974,340), 61 slots reuse a sprite.
+  `gen_creature_outfits.py build P72/Tibia.dat P72/Tibia.spr OUT --src PACK_DIR` on it (O616 numbers): 3 outfits, 8,168 sprite slots and 380 frames read back as drawn, 4,502 sprite records appended (972,454 to 976,956), 110 slots reuse a sprite.
   3,529 outfits. The append-only guard passed. `live` passed on the output. `sums --src PACK_DIR --check` passed. This output is not pair 73: the other pair 73 steps are not in it.
 - **Checks.** `gen_creature_outfits.py check` needs no art and no pair. `gen_creature_outfits_test.py` runs on synthetic packs and a synthetic pair.
+  `check` holds the table: scale 1:1, 83 ms, phases the longest direction, the pixel column. `live DAT SPR` holds the pair: phase durations,
+  the opaque pixel total, as many different pictures a direction as the pack has frames, the foot point.
   `sums --src DIR --check` holds the pack files to the table and the sums. Add `live` to the job `live-pair` when pair 73 ships.
 - **Knock-on at the pair 73 build**: regenerate `outfit_anchors.lua`, `info_lifts.lua`, `wing_centres.lua`, `foot_marks.lua`, `InfoLiftData.cs` from the built pair. Raise `PAIR_OUTFITS` of `check_content.py`.
 - **Server**: 3 bosses, `server/data/monster/monster_creature_looks.csv`, step `monstercreaturelooks` behind `chaosClientPair >= 73`.
@@ -7251,6 +7271,8 @@ The real build waits for the owner's wings choice. O597 (status effects) is step
   Result: 44,559 items, 3,529 outfits, 5,330 effects, 253 missiles, 1,049,978 sprites. Dat 9,429,461 bytes, spr 1,217,243,369 bytes.
   Against pair 72: 290 outfits, 39 effects and missile 46 changed in place. 3 outfits and 588 effects are new (507 of them blank). Nothing else differs.
   **These md5s are not pair 73.** They change with the owner's wings choice. The files were deleted.
+  O616 changed the creature step after this rehearsal: it appends 4,502 sprite records, not 1,886. So the md5s from the creature step on are stale,
+  and the sprite total grows by 2,616 to 1,052,594. The step order and the counts of things stay.
 - **Cross checks on the result** (the steps of the CI job "Live sprite pair" and the pair checks of CLAUDE.md), 28 run:
   - Pass, 22: `check_pair.py` (0 errors, 5,184 warnings; pair 72 had 11,843), `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`,
     `gen_minimap_swatches.py build --check`, `fit_pair50_offsets.py --check`, `gen_missile_fx.py build --check`, `gen_hd_overlay.py build --check`,

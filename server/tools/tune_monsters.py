@@ -149,7 +149,9 @@ TUNING = {
     #    one per experience point like the world bosses, the world bosses' heal (20-40k at chance 8 every 2 s, ~1.2k/s),
     #    armor 80-150 and the strongest hit 8-10k. They stay dormant (no spawn).
     'ormathulak.xml': {'experience': 22000000, 'health': 22000000, 'armor': 150, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 10000},
-    'talath.xml': {'experience': 21000000, 'health': 21000000, 'armor': 140, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 10000},
+    # speed 800 was the donor's number, three times our bosses' (world bosses 200-320, raid bosses 200-260): with its lair
+    # (O616, bosslair_config.lua) Talath walks as Skaldra the Rime Queen, the ice world boss of its scale
+    'talath.xml': {'experience': 21000000, 'health': 21000000, 'armor': 140, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 10000, 'speed': 280},
     # (Gloomfire's 2,005,500 earth hit became 36-42k on 2026-10-13; `hit` now scales it with the rest)
     'gloomfire.xml': {'experience': 20000000, 'health': 20000000, 'armor': 90, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 9000},
     'saga.xml': {'experience': 18000000, 'health': 18000000, 'armor': 80, 'heal_spell': WORLD_BOSS_HEAL, 'hit': 9000},

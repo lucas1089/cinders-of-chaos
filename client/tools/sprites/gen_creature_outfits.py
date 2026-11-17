@@ -25,11 +25,13 @@ an idle animation folder (its name holds "idle") that has the four folders south
 neither walks on its idle frames (walk_src idle: a thing that hovers has no step). Attack and death frames are not read. A creature
 is named by `src`: the first 12 hex digits of the sha256 of its first south idle frame file, so no pack name is in the repository.
 
-Scale. None: a figure is taken pixel for pixel, at the size it was drawn (120 to 144 px on its long side on the 256 px canvas;
-the art is drawn in 2 px blocks, and a sampling step that is no whole number would break them). The canvas is the smallest whole
-number of tiles that holds the box of all idle and walk frames of the four directions: 4x4 (128 px) up to 128 px, else 5x5 (160 px).
-The scale column says so: 128/128 or 160/160. Only a figure longer than 160 px would be sampled down, nearest neighbour, to 160/D.
-Alpha is cut hard at one half.
+Scale. None, ever (owner 2026-11-17, O616, translated: "Keep it as it is so no pixel is lost, apply this to the others too, it has
+to look as good as possible."). A figure is taken pixel for pixel, at the size it was drawn (120 to 144 px on its long side on the
+256 px canvas). The canvas is the smallest whole number of tiles that holds the box of all idle and walk frames of the four
+directions: 4x4 (128 px) up to 128 px, 5x5 (160 px) up to 160 px, and so on up to 8x8 (the source canvas). The scale column says
+so: 128/128 or 160/160. No step samples, crops or drops a pixel: `pixel_problems` holds every built frame to its source frame
+(the same number of opaque pixels in the source frame, on the canvas and in the sprite tiles, and the same colours at the same
+places). The packs have alpha 0 or 255 only; a frame with a soft pixel is refused, since the hard cut would lose or change it.
 
 Place. One shift for all frames: the lowest opaque pixel of any frame on the last row of the canvas, the middle of the box on the
 middle column. The dat displacement, (-48, 0) for 4x4 and (-64, 0) for 5x5, then moves the picture right, so the middle of the
@@ -38,10 +40,18 @@ reaches a tile and a half to each side of the tile it stands on. Negative displa
 world boss looks 1534 and 1538: (-64, -32) and (-64, -64); the client profile has GameNegativeOffset on); a 4x4 look without one
 (3361) hangs up and left of its tile.
 
-Frames. The source runs at 12 pictures a second and has another number of frames in every direction. A dat group has one number
-of phases: the idle group has IDLE_PHASES (4), the walk group WALK_PHASES (8), fewer when a direction has fewer frames. A direction
-with n frames gives the frames floor(i * n / phases): evenly spaced over its own loop, so the loop stays closed. One phase lasts
-the mean loop time of the four directions divided by the phases.
+Frames. Every source frame is used (O616). The source runs at 12 pictures a second and has another number of frames in every
+direction (11 to 21). A dat group has one number of phases for its four directions and one list of durations: the group has as
+many phases as its longest direction has frames, and one phase lasts 83 ms, the pack's 12 a second. The longest direction plays
+frame for frame at the pack's speed. A direction with n frames, fewer than the P phases, shows frame floor(i * n / P) at phase i:
+every frame in order, the loop closed, P - n frames held for two phases, spread evenly, so its loop lasts P / n of the pack's
+(the dat format has no per-direction phase count; the table columns idle_frames and walk_frames name the counts north / east /
+south / west). The four directions are the pack's own: nothing is mirrored. A pack without a walk animation walks on its idle
+frames (walk_src idle). The client plays the idle group by these durations; the phase of a walking creature is the engine's step
+phase.
+
+Foot point. The lowest pixel of every frame lies in the rows of the boss's tile, and the middle of the lowest 8 rows of the
+figure, as a mean over the frames of a direction, in its columns (`foot_problems`).
 
 The outfits go after the 3,526 outfits of pair 72 (3511-3524 costumes, 3525-3526 Ki auras): the row at line n (0-based) is outfit
 3527 + n. They join pair 73. No other step planned for pair 73 adds an outfit (the centring O585 and the drawn wings O583 / O594
@@ -65,7 +75,8 @@ import gen_wst_outfits as W  # noqa: E402
 ART = os.path.join(HERE, 'art_import')
 TABLE = os.path.join(ART, 'creature_outfits.csv')
 SUMS = os.path.join(ART, 'creature_outfits.sums')
-HEADER = ['src', 'new', 'kind', 'size', 'scale', 'disp', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'colours']
+HEADER = ['src', 'new', 'kind', 'size', 'scale', 'disp', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'colours', 'idle_frames',
+          'walk_frames', 'pixels']
 REPO = W.REPO
 PICKS = W.PICKS
 POOL = W.POOL
@@ -77,14 +88,15 @@ PAIR = 73
 OUTFITS_72 = 3526
 FIRST_NEW = OUTFITS_72 + 1
 MIN_TILES = 4                       # a boss look is 4x4 tiles (128 px) or more
-MAX_TILES = 5                       # and 5x5 (160 px) at most: a longer figure is sampled down to 160 px
+MAX_TILES = 8                       # up to the source canvas (256 px): never sampled down (owner 2026-11-17, O616)
 SRC_CANVAS = 256
 DISP_FLAG = 25                      # the displacement flag byte of our 10.98 dat (datspr.TABLE_NEW)
 FPS = 12
-IDLE_PHASES = 4
-WALK_PHASES = 8
+FRAME_MS = int(round(1000.0 / FPS))  # one phase: 83 ms, the pack's 12 pictures a second
+MAX_PHASES = 32                      # a sanity bound on the frames of one direction
 MIN_IDLE = 2
 MIN_WALK = 3
+FOOT_ROWS = 8                        # the foot point of a frame: the middle of its lowest FOOT_ROWS rows
 MAX_ON_LOOK = 2
 DIRS = ('north', 'east', 'south', 'west')   # engine order
 SOUTH = 2
@@ -122,6 +134,18 @@ def scale_d(text, canvas):
     """D of a scale text C/D with C the canvas, or None"""
     m = re.fullmatch(r'%d/(\d+)' % canvas, text)
     return int(m.group(1)) if m else None
+
+
+def frames_of(text):
+    """[frames north, east, south, west] of a frames text n/e/s/w, or None"""
+    m = re.fullmatch(r'(\d+)/(\d+)/(\d+)/(\d+)', text)
+    return [int(v) for v in m.groups()] if m and all(1 <= int(v) <= MAX_PHASES for v in m.groups()) else None
+
+
+def tile_box(tiles):
+    """(x0, y0, x1, y1) of the creature's own tile on the canvas of an NxN outfit: the last tile, moved by the displacement"""
+    c, (dx, dy) = 32 * tiles, disp_of(tiles)
+    return (c - 32 + dx, c - 32 + dy, c - 1 + dx, c - 1 + dy)
 
 
 def disp_of(tiles):
@@ -163,22 +187,33 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
         if n is None:
             out.append('src %s: size %s, a boss look is %dx%d to %dx%d (owner 2026-11-17)' % (d, r['size'], MIN_TILES, MIN_TILES, MAX_TILES, MAX_TILES))
             continue
-        dd = scale_d(r['scale'], 32 * n)
-        if dd is None or dd < 32 * n or dd > SRC_CANVAS or (dd > 32 * n and n < MAX_TILES):
-            out.append('src %s: scale %s is not %d/%d (pixel for pixel); only a %dx%d outfit is sampled down, %d/D with D up to %d'
-                       % (d, r['scale'], 32 * n, 32 * n, MAX_TILES, MAX_TILES, 32 * MAX_TILES, SRC_CANVAS))
+        if scale_d(r['scale'], 32 * n) != 32 * n:
+            out.append('src %s: scale %s is not %d/%d (pixel for pixel); nothing is sampled down (owner 2026-11-17)'
+                       % (d, r['scale'], 32 * n, 32 * n))
         if r['disp'] != disp_text(n):
             out.append('src %s: displacement %s, a %s outfit stands on its tile with %s' % (d, r['disp'], r['size'], disp_text(n)))
-        if not MIN_IDLE <= int(r['idle']) <= IDLE_PHASES:
-            out.append('src %s: %s idle phases, %d to %d' % (d, r['idle'], MIN_IDLE, IDLE_PHASES))
-        if not MIN_WALK <= int(r['walk']) <= WALK_PHASES:
-            out.append('src %s: %s walk phases, %d to %d' % (d, r['walk'], MIN_WALK, WALK_PHASES))
+        if not MIN_IDLE <= int(r['idle']) <= MAX_PHASES:
+            out.append('src %s: %s idle phases, %d to %d' % (d, r['idle'], MIN_IDLE, MAX_PHASES))
+        if not MIN_WALK <= int(r['walk']) <= MAX_PHASES:
+            out.append('src %s: %s walk phases, %d to %d' % (d, r['walk'], MIN_WALK, MAX_PHASES))
         if r['walk_src'] not in ('walk', 'idle'):
             out.append('src %s: walk_src %s is not walk or idle' % (d, r['walk_src']))
-        if not 40 <= int(r['idle_ms']) <= 1000 or not 40 <= int(r['walk_ms']) <= 1000:
-            out.append('src %s: a phase lasts 40 to 1000 ms' % d)
+        if int(r['idle_ms']) != FRAME_MS or int(r['walk_ms']) != FRAME_MS:
+            out.append('src %s: a phase lasts %d ms, the pack\'s %d pictures a second' % (d, FRAME_MS, FPS))
         if int(r['colours']) < 1:
             out.append('src %s: no colours in the output' % d)
+        # no frame dropped: a group has as many phases as its longest direction has frames
+        for g in ('idle', 'walk'):
+            ns = frames_of(r.get(g + '_frames') or '')
+            if ns is None:
+                out.append('src %s: %s_frames %s is not four frame counts north/east/south/west' % (d, g, r.get(g + '_frames')))
+            elif max(ns) != int(r[g]):
+                out.append('src %s: %s %s phases, its longest direction has %d frames: a frame is dropped or shown twice'
+                           % (d, r[g], g, max(ns)))
+        if r['walk_src'] == 'idle' and r.get('walk_frames') != r.get('idle_frames'):
+            out.append('src %s: walk_src idle, but walk_frames is not idle_frames' % d)
+        if not (r.get('pixels') or '').isdigit() or int(r['pixels']) < 1:
+            out.append('src %s: pixels %s is not the count of opaque pixels of the outfit' % (d, r.get('pixels')))
     if set(s) != {r['new'] for r in t}:
         out.append('creature_outfits.sums and the table name other outfits (%s)' % ', '.join(sorted(set(s) ^ {r['new'] for r in t})))
     return out
@@ -317,8 +352,14 @@ def cut(a):
 
 
 def pick(n, phases):
-    """the frames of a loop of n pictures shown as `phases` phases: evenly spaced, the first frame first"""
+    """the frames of a loop of n pictures shown as `phases` phases: evenly spaced, the first frame first. With phases >= n every
+    frame is shown, in order, phases - n of them for two phases"""
     return [(i * n) // phases for i in range(phases)]
+
+
+def opaque(a):
+    """the opaque pixels of an RGBA array"""
+    return int((a[..., 3] > 0).sum())
 
 
 def sample(a, box, d, canvas):
@@ -362,11 +403,17 @@ def place(fr, canvas):
     return out
 
 
-def measure(c, idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
+def measure(c):
     """the outfit of a creature: {'placed': {(group, direction): [frames of the canvas]}, 'tiles', 'scale', 'idle', 'walk', 'idle_ms', 'walk_ms',
-    'colours', 'box', 'counts', 'loop'}; raises ValueError when it cannot be one"""
+    'colours', 'box', 'counts', 'loop', 'use': {(group, direction): [source frame of each phase]}, 'src': {(group, direction): [the
+    source frames as read]}, 'pixels'}; raises ValueError when it cannot be one"""
     import numpy as np
-    src = {k: [cut(W._read_png(p)) for p in ps] for k, ps in c.files.items()}
+    raw = {k: [W._read_png(p) for p in ps] for k, ps in c.files.items()}
+    for lst in raw.values():
+        for a in lst:
+            if a.shape[2] == 4 and ((a[..., 3] > 0) & (a[..., 3] < 255)).any():
+                raise ValueError('a frame with soft alpha: the hard cut would lose or change a pixel')
+    src = {k: [cut(a) for a in lst] for k, lst in raw.items()}
     x0 = y0 = 10 ** 6
     x1 = y1 = -1
     for lst in src.values():
@@ -381,17 +428,24 @@ def measure(c, idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
     side = max(x1 - x0 + 1, y1 - y0 + 1)
     tiles = tiles_for(side)
     canvas = 32 * tiles
-    d = max(canvas, side)
-    out = {'box': box, 'tiles': tiles, 'scale': '%d/%d' % (canvas, d), 'counts': {k: len(v) for k, v in src.items()}}
+    if side > canvas:
+        raise ValueError('a figure of %d px, longer than the %d px canvas: nothing is sampled down' % (side, canvas))
+    d = canvas      # pixel for pixel, always (owner 2026-11-17)
+    out = {'box': box, 'tiles': tiles, 'scale': '%d/%d' % (canvas, d), 'counts': {k: len(v) for k, v in src.items()}, 'src': raw,
+           'use': {}}
     fr = {}
-    for g, want in (('idle', idle_phases), ('walk', walk_phases)):
+    for g in ('idle', 'walk'):
         ns = [len(src[(g, k)]) for k in range(4)]
-        phases = min([want] + ns)
+        phases = max(ns)        # no frame dropped: as many phases as the longest direction has frames
+        if phases > MAX_PHASES:
+            raise ValueError('%d %s frames in one direction, %d at most' % (phases, g, MAX_PHASES))
         out[g] = phases
-        out[g + '_ms'] = int(round(1000.0 * sum(ns) / 4.0 / FPS / phases))
+        out[g + '_ms'] = FRAME_MS
         for k in range(4):
-            fr[(g, k)] = [sample(src[(g, k)][i], box, d, canvas) for i in pick(ns[k], phases)]
+            out['use'][(g, k)] = pick(ns[k], phases)
+            fr[(g, k)] = [sample(src[(g, k)][i], box, d, canvas) for i in out['use'][(g, k)]]
     out['placed'] = place(fr, canvas)
+    out['pixels'] = sum(opaque(a) for lst in out['placed'].values() for a in lst)
     out['colours'] = W.colours_south(out['placed'])
     # how closed the source loop is, facing south: the step last -> first against the median step (pixels that change)
     loop = {}
@@ -401,6 +455,87 @@ def measure(c, idle_phases=IDLE_PHASES, walk_phases=WALK_PHASES):
         loop[g] = (steps[-1], int(np.median(steps[:-1])) if len(steps) > 1 else 0)
     out['loop'] = loop
     return out
+
+
+def pixel_problems(m, name=''):
+    """No pixel lost (owner 2026-11-17, O616): every phase of every direction against its source frame as read from the pack. The
+    same number of opaque pixels in the source frame, on the canvas and in the sprite tiles; the canvas is the source frame moved
+    by one shift, colour for colour; every source frame of every direction is shown, in order; nothing sampled."""
+    import numpy as np
+    from gen_effects import tiles_of
+    out, n = [], m['tiles']
+    c = 32 * n
+    if m['scale'] != '%d/%d' % (c, c):
+        out.append('%sscale %s: sampled, not pixel for pixel' % (name, m['scale']))
+    shift = None
+    for (g, d), lst in sorted(m['placed'].items()):
+        use, srcs = m['use'][(g, d)], m['src'][(g, d)]
+        where = '%s%s %s' % (name, g, DIRS[d])
+        if len(lst) != m[g] or len(use) != m[g]:
+            out.append('%s: %d phases, the group has %d' % (where, len(lst), m[g]))
+            continue
+        if sorted(set(use)) != list(range(len(srcs))) or use != sorted(use):
+            out.append('%s: the phases show the frames %s of %d: a frame is dropped or out of order' % (where, use, len(srcs)))
+        for ph, a in enumerate(lst):
+            s = srcs[use[ph]]
+            want, got = opaque(s), opaque(a)
+            tl = tiles_of(a, n, n)
+            in_tiles = sum(opaque(tl[(ww, hh)]) for hh in range(n) for ww in range(n) if tl[(ww, hh)] is not None)
+            if not want == got == in_tiles:
+                out.append('%s phase %d (frame %d): %d opaque pixels in the source, %d on the canvas, %d in the tiles'
+                           % (where, ph, use[ph], want, got, in_tiles))
+                continue
+            ys, xs = np.nonzero(s[..., 3] > 0)
+            cy, cx = np.nonzero(a[..., 3] > 0)
+            sh = (int(cx.min()) - int(xs.min()), int(cy.min()) - int(ys.min()))
+            shift = sh if shift is None else shift
+            if sh != shift:
+                out.append('%s phase %d: moved by %s, the other frames by %s' % (where, ph, sh, shift))
+            elif not ((cy - sh[1] == ys).all() and (cx - sh[0] == xs).all() and (a[cy, cx] == s[ys, xs]).all()):
+                out.append('%s phase %d (frame %d): not the source frame pixel for pixel' % (where, ph, use[ph]))
+    return out
+
+
+def foot_of(a):
+    """(x, y) of the foot point of a placed frame: the mean column of the opaque pixels of its lowest FOOT_ROWS rows, its lowest row"""
+    import numpy as np
+    ys, xs = np.nonzero(a[..., 3] > 0)
+    low = int(ys.max())
+    return float(xs[ys > low - FOOT_ROWS].mean()), low
+
+
+def foot_problems(m, name=''):
+    """The body's foot point stands on the boss's tile: the lowest pixel of every frame in the tile's rows, and the mean foot column
+    of the frames of a direction in the tile's columns (a tentacle that trails in one frame does not move the body)."""
+    x0, y0, x1, y1 = tile_box(m['tiles'])
+    out = []
+    for (g, d), lst in sorted(m['placed'].items()):
+        feet = [foot_of(a) for a in lst]
+        lows = [f[1] for f in feet]
+        mx = sum(f[0] for f in feet) / len(feet)
+        if min(lows) < y0 or max(lows) > y1:
+            out.append('%s%s %s: lowest pixel on rows %d to %d, the tile has %d to %d' % (name, g, DIRS[d], min(lows), max(lows), y0, y1))
+        if not x0 <= mx <= x1:
+            out.append('%s%s %s: foot column %.1f, the tile has %d to %d' % (name, g, DIRS[d], mx, x0, x1))
+    return out
+
+
+def foot_line(m):
+    """the foot numbers of an outfit for the log: per group the range of the lowest row and of the mean foot column over the directions"""
+    x0, y0, x1, y1 = tile_box(m['tiles'])
+    parts = []
+    for g in ('idle', 'walk'):
+        lows, cols = [], []
+        for d in range(4):
+            feet = [foot_of(a) for a in m['placed'][(g, d)]]
+            lows += [f[1] for f in feet]
+            cols.append(sum(f[0] for f in feet) / len(feet))
+        parts.append('%s rows %d-%d cols %.1f-%.1f' % (g, min(lows), max(lows), min(cols), max(cols)))
+    return 'tile cols %d-%d rows %d-%d; %s' % (x0, x1, y0, y1, '; '.join(parts))
+
+
+def frames_text(m, g):
+    return '/'.join(str(m['counts'][(g, d)]) for d in range(4))
 
 
 def groups_of(m):
@@ -436,9 +571,13 @@ def measured(src, want=ROWS, first=FIRST_NEW):
             m = measure(by[cid])
         except ValueError as e:
             raise SystemExit('creature %s: %s' % (cid, e))
+        bad = pixel_problems(m) + foot_problems(m)
+        if bad:
+            raise SystemExit('creature %s: %s' % (cid, '; '.join(bad[:5])))
         r = {'src': cid, 'new': str(first + i), 'kind': kind, 'size': '%dx%d' % (m['tiles'], m['tiles']), 'scale': m['scale'], 'disp': disp_text(m['tiles']),
              'idle': str(m['idle']), 'idle_ms': str(m['idle_ms']), 'walk': str(m['walk']), 'walk_ms': str(m['walk_ms']),
-             'walk_src': by[cid].walk_src, 'colours': str(m['colours'])}
+             'walk_src': by[cid].walk_src, 'colours': str(m['colours']), 'idle_frames': frames_text(m, 'idle'),
+             'walk_frames': frames_text(m, 'walk'), 'pixels': str(m['pixels'])}
         out.append((r, m))
     return out
 
@@ -478,7 +617,9 @@ def build(dat, spr, out_dir, src, want=ROWS, first=FIRST_NEW, log=print):
 
 def live(dat, spr, table=None, sums=None, log=print):
     """the pair holds every outfit at its id, its digest the one of the sums file, its size, one layer, idle and walk group, the displacement
-    as its only flag"""
+    as its only flag; and (O616) every phase lasts the pack's 83 ms, the sprite tiles hold the opaque pixels the table counts, a
+    direction shows as many different pictures as the pack has frames, and its foot point stands on the boss's tile"""
+    import numpy as np
     from datspr import Dat, Spr
     from import_outfits import parse_body
     t = rows() if table is None else table
@@ -501,6 +642,33 @@ def live(dat, spr, table=None, sums=None, log=print):
             out.append('outfit %d (src %s): not an idle and a walk group of %s with one layer' % (nid, r['src'], r['size']))
         elif (gs[0].phases, gs[1].phases) != (int(r['idle']), int(r['walk'])):
             out.append('outfit %d (src %s): %d / %d phases, the table says %s / %s' % (nid, r['src'], gs[0].phases, gs[1].phases, r['idle'], r['walk']))
+        else:
+            c = 32 * n
+            placed, total = {}, 0
+            for g, key in zip(gs, ('idle', 'walk')):
+                ms = int(r[key + '_ms'])
+                if not g.anim or tuple(g.anim[3]) != (ms, ms) * g.phases:
+                    out.append('outfit %d (src %s): the %s phases do not last %d ms each' % (nid, r['src'], key, ms))
+                for dd in range(4):
+                    lst = []
+                    for ph in range(g.phases):
+                        a = np.zeros((c, c, 4), np.uint8)
+                        for hh in range(n):
+                            for ww in range(n):
+                                sid = g.sprites[((ph * 4 + dd) * n + hh) * n + ww]
+                                tl = sp.sprite(sid) if sid else None
+                                if tl is not None:
+                                    a[(n - 1 - hh) * 32:(n - hh) * 32, (n - 1 - ww) * 32:(n - ww) * 32] = tl
+                        total += opaque(a)
+                        lst.append(a)
+                    placed[(key, dd)] = lst
+                    want = (frames_of(r[key + '_frames']) or [0] * 4)[dd]
+                    if W.distinct(lst) != want:
+                        out.append('outfit %d (src %s): %s %s shows %d different pictures, the pack has %d frames'
+                                   % (nid, r['src'], key, DIRS[dd], W.distinct(lst), want))
+            if total != int(r['pixels']):
+                out.append('outfit %d (src %s): %d opaque pixels in its sprites, the table counts %d' % (nid, r['src'], total, int(r['pixels'])))
+            out += foot_problems({'tiles': n, 'placed': placed}, 'outfit %d: ' % nid)
     log('live: %d outfits %d to %d checked, %d problems' % (len(t), int(t[0]['new']), last, len(out)))
     return out
 
@@ -528,6 +696,7 @@ def main(argv):
                 print('%s walk_src %s frames %s box %s scale %s idle %d x %d ms walk %d x %d ms colours %d loop (last step, median step) %s' % (
                     c.id, c.walk_src, ' '.join('%s%s=%d' % (g[0], DIRS[d][0], n) for (g, d), n in sorted(m['counts'].items())), m['box'],
                     m['scale'], m['idle'], m['idle_ms'], m['walk'], m['walk_ms'], m['colours'], m['loop']))
+                print('    pixels %d; %s; problems %s' % (m['pixels'], foot_line(m), (pixel_problems(m) + foot_problems(m)) or 'none'))
             except ValueError as e:
                 print('%s cannot be an outfit: %s' % (c.id, e))
         return 0

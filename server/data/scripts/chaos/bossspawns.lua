@@ -141,7 +141,9 @@ function S.rebuild()
 		ascensionLevel = Chaos.classes and Chaos.classes.ascension and Chaos.classes.ascension.minLevel,
 		dungeonsExtra = Chaos.dungeons and Chaos.dungeons.extra,
 		dungeonsBase = ds and ds.Dungeons,
-		dungeonCooldown = storages.timerCooldown or storages.TimerCooldown
+		dungeonCooldown = storages.timerCooldown or storages.TimerCooldown,
+		-- the recorded client pair (bosslair.lua read it at load): an entry with minPair above it is not listed
+		clientPair = ChaosBossLair and ChaosBossLair.pair or 0
 	}
 	local idx = K.build(cfg, sources)
 	for _, p in ipairs(idx.problems) do

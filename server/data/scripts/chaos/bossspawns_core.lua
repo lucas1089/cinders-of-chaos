@@ -198,6 +198,10 @@ function K.build(cfg, sources)
 			idx.problems[#idx.problems + 1] = e.key .. ": no rule"
 			return
 		end
+		-- a boss whose look needs a newer client pair than the recorded one is not listed (bosslair_config.lua)
+		if e.minPair and (tonumber(sources.clientPair) or 0) < e.minPair then
+			return
+		end
 		e.order = #idx.list + 1
 		idx.list[#idx.list + 1] = e
 		idx.byKey[e.key] = e

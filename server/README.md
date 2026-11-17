@@ -34662,22 +34662,22 @@ Client pair 73 will hold 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles,
 |---|---|---|---|
 | The Rotmother | world boss (`world_bosses/the_rotmother.xml`), slow, tanky, poison | 238, 2x2 | 3527, 4x4 |
 | Vhoss the Hexmaw | raid boss of the Ashen Sepulchre (`raid/vhoss_the_hexmaw.xml`) | 2130, 2x2 | 3528, 5x5 |
-| Talath | ice boss (`talath.xml`, `boss_mechanics_config.lua` element ice), not spawned yet | 1473, 2x2 | 3529, 5x5 |
+| Talath | ice boss (`talath.xml`, `boss_mechanics_config.lua` element ice), spawned in its lair from pair 73 (O616) | 1473, 2x2 | 3529, 5x5 |
 
 - **Why the Rotmother** (the drifting ooze): the slowest world boss (speed 200), race venom, poison waves. A drifting ooze fits a slow, venomous boss.
   Her old look 238 is a stock 2x2 with three walk frames. No boss of ours is a water or depths boss. The Drownbell Depths plan has no boss block.
 - **Why Vhoss the Hexmaw** (the floating horror): the raid's hex caster, an eldritch thing already. Its old look 2130 is a 2x2 with no idle group.
   Nyxareth the Void Archon fits the theme too, but its look 1538 is a 5x5 of 138 px, as big as the new figure: nothing to gain.
 - **Why Talath** (the hovering ice shard): Rimecairn is no boss. It is a hunt monster with 130 spawns and no boss flag, so it keeps its look.
-  Talath is the one boss with ice mechanics besides Skaldra (Frost Lance, a glacial ring, ice pillars). It is dormant: no system spawns it yet.
-  So the look shows only once Talath is put in the game. Skaldra the Rime Queen is the live ice boss, but she is a frost wyrm that summons Frost Dragons,
+  Talath is the one boss with ice mechanics besides Skaldra (Frost Lance, a glacial ring, ice pillars). It was dormant at O608.
+  O616 gave it a spawn: "Talath's lair (O616)" below. The owner kept the shard on Talath (2026-11-17). Skaldra the Rime Queen is the live ice boss, but she is a frost wyrm that summons Frost Dragons,
   and her look 1534 has the wing beat of `game_bossanimate` (owner 2026-11-06). She keeps it. To move the shard to her: change one row of `picks.csv`, run `gen_creature_outfits.py looks`.
 - **Passed over**: Aquatic Overlord Thalassa (an island boss of the base server: no file of ours, no committed look to go back to) and the Abyssal Rift guardian
   (its look comes from `rift_config.lua` `looks`, not from a monster file; the `bigGuardians` switch is one switch for four guardians and is off).
 - **Size**: the old looks are 2x2 (64 px). The new figures are 117 to 141 px wide and 123 to 131 px tall, pixel for pixel from the pack. They stand centred
   on the boss's tile by the dat displacement and reach about two tiles to each side. The monster files do not change: speed, health, attacks and the
   mechanics of `boss_mechanics_config.lua` stay (its `size` is the mark's size, not the look's).
-- **Talath's pack has no walk animation.** It hovers, so it glides on its idle frames. Its file has speed 800: tune that when Talath gets a spawn.
+- **Talath's pack has no walk animation.** It hovers, so it glides on its idle frames. O616 set its speed from 800 to 280.
 - **Step** `monstercreaturelooks` (`tools/install_monster_creature_looks.py`, after `funlooks`). Only when config.lua `chaosClientPair` is 73 or
   more: the look of each monster's installed file (XML or Lua, ours and the base server's) becomes the new look. Colour fields stay.
   Below pair 73 it prints a WARNING line and changes nothing. A second run changes nothing. `--dry-run` writes nothing.
@@ -34686,11 +34686,41 @@ Client pair 73 will hold 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles,
 - **The repository files keep the old looks.** A boss has no row in the bounty pool, so the pool is the same at pair 72 and 73.
 - **Audits**: `audit_shared_looks.py` and `audit_idle_looks.py` read the map from pair 73 on. `tools/ci/check_content.py` holds the map
   (ids 3527 to 3529, every one worn, no hunt monster of the pool on one) and runs the shared, idle and crowded rules at pair 73.
-  `look_idle.csv` has the three rows: idle group, 4 phases, 4 pictures.
+  `look_idle.csv` has the three rows, idle group: 16 phases and 12 pictures south, 19 and 17, 12 and 12 (O616: every pack frame).
 - **Tests**: `python3 -I server/tools/install_monster_creature_looks_test.py`.
 - **Switch on**: build pair 73 with this step in it, push it to windows-assets, ship the client. Then admin app Comandos > "Par do cliente" >
   Gravar 73. Fallback: `chaos-ctl.sh client-pair set 73`. Then update the server: the update runs the step.
 - **Not done**: attack and death frames are not imported. No new monster. Not seen in a client.
+
+## Talath's lair (O616; `scripts/chaos/bosslair.lua`, `bosslair_core.lua`, `bosslair_config.lua`, `tools/areaplan/rooms/shard_hollow.json`)
+
+Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics and a new look, but no spawn. Now it has one map spawn.
+
+- **Place**: The Shard Hollow, a small ice area of its own. Origin 15840, 15500, 7 in the annex row, 72 x 84 tiles, 567 walkable.
+  One protected ledge in the south where players arrive. One boss hall in the north, 36 x 30, with a single way in.
+  Talath stands at 15880, 15517, 7. Players arrive at 15878, 15571, 7. The exit portal of the plan leads back to the hunt.
+- **Why there**: Talath's mechanics are fair at level 650 (`boss_mechanics_config.lua`, `fair.refLevel`). Its element is ice.
+  The Frostvein Reach is the ice hunt of levels 575 to 690. So the way in is in that hunt, in its Glacial Col.
+  The hunt has no dead end for a boss room. A new zone would reshape a placed hunt, and the installer refuses that.
+  So the lair is a fixed area of the `rooms` folder, like the annexes. No tile of the hunt changes.
+- **Way in**: a magic forcefield at 16794, 14352, 7, action id 47890. `bosslair.lua` creates it at startup. No map file is written for it.
+  The tile is bare, has free ground all round and lies three tiles or more from every spawn point. The way back lands at 16794, 14354, 7.
+  Level 500 or more enters. That is below the hunt's first level, so every hunter of the Reach may go in.
+- **Respawn**: 4 hours after its death (`respawn = 14400`), like Vharzul the Verdant Eye. The plan's boss block writes the spawn entry.
+- **Gate**: the lair opens when config.lua `chaosClientPair` is 73 or more. Below that there is no portal, and a portal of ours is removed.
+  The engine's spawn of Talath is refused then (`EventCallback.onSpawn` returns false). So a client without look 3529 never meets it.
+  The boss list (`bossspawns_config.lua` entry `lair_talath`, `minPair = 73`) leaves it out below pair 73 too.
+  A refused spawn is tried again at the spawn's next turn. That costs one callback per turn.
+- **Speed**: `talath.xml` had speed 800. That was the donor file's number, three times our bosses: world bosses run 200 to 320, raid bosses 200 to 260.
+  It is a data mistake. Talath now has 280, the speed of Skaldra the Rime Queen (`tune_monsters.py` row `talath.xml`).
+- **Action ids**: the block 47890 to 47899 is the boss lairs'. Only 47890 is used.
+- **Another lair**: add a plan to `tools/areaplan/rooms/` with a boss block, then an entry in `bosslair_config.lua`. `boss_lair_test.py` holds both to each other.
+- **Tests**: `tests/bosslair_test.lua` in the server loop (gate, level, arrival, config rules, the script on a mocked engine).
+  `python3 -I server/tools/boss_lair_test.py` (needs luajit): the config against the compiled plan and against `frostvein_reach.json`.
+  `tests/bossspawns_test.lua` covers `minPair`.
+- **Owner steps**: admin app, tab Painel > card Atualizar servidor > button Aplicar e reiniciar. The update runs `install_all.py`, step `contentareas` among them.
+  Fallback: `chaos-ctl.sh update-apply`. Nothing else to run. The lair is placed at any pair. It opens at pair 73.
+- **Not done**: not placed on a real map, not seen in a client. Talath has 21 million health: it is a group boss. No extra loot rule, no announcement.
 
 ## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)
 Owner, 2026-11-14 (pt-BR): "coloque mais costumes divertidas. como personagens, coisas inusitadas (como lata de energético, maço de cigarro e coisas diferentes assim)", and two more items for the same client pair: the Rune Seal aura as a round ring, and a Dusk Moth pet with a stronger animation.

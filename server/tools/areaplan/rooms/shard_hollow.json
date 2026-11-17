@@ -1,0 +1,74 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "shard_hollow",
+  "name": "The Shard Hollow",
+  "biome": "ice",
+  "size": [
+    72,
+    84
+  ],
+  "floors": 1,
+  "level": [
+    575,
+    690
+  ],
+  "seed": 61673,
+  "origin": {
+    "x": 15840,
+    "y": 15500,
+    "z": 7
+  },
+  "decoration": "sparse",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "rime_ledge",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "shard_hall",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "north",
+      "role": "boss"
+    }
+  ],
+  "paths": [
+    {
+      "from": "rime_ledge",
+      "to": "shard_hall",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "rime_ledge",
+    "from_world": {
+      "x": 16794,
+      "y": 14352,
+      "z": 7
+    }
+  },
+  "exit": {
+    "zone": "rime_ledge",
+    "to": {
+      "x": 16794,
+      "y": 14354,
+      "z": 7
+    }
+  },
+  "spawns": [],
+  "boss": {
+    "zone": "shard_hall",
+    "monster": "Talath",
+    "respawn": 14400,
+    "title": "Talath"
+  },
+  "notes": "Talath's lair (O616, owner 2026-11-17: \"Talath: put a spawn of it\"): a fixed area of the rooms folder, placed by contentareas at its own origin in the annex row, with no hall teleport. One protected ledge where players arrive and one boss hall with a single way in. The way in is a runtime portal in the Glacial Col of the Frostvein Reach (levels 575-690, the ice hunt of Talath's level), placed by bosslair.lua only while config.lua chaosClientPair is 73 or more (bosslair_config.lua; tools/boss_lair_test.py holds its tiles to this plan and to frostvein_reach.json). The exit portal leads back beside it. Talath respawns 4 hours after its death, like Vharzul the Verdant Eye."
+}
