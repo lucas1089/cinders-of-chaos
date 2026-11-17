@@ -33,9 +33,16 @@ return {
 
 	-- an EMPTY bag (looted by hand, by quick loot or by auto loot, or a monster with no loot) lasts only this many seconds
 	-- more (corpse_empty.lua, O565, owner 2026-11-14: "faca tambem eles desaparecem mais rapido quando estiverem vazias"); a
-	-- bag with items keeps `seconds`. 0 = no shortcut. Note: Necromancer Raise Dead and Corpse Explosion use an EMPTY corpse
-	-- of the caster or the party, so those spells have this long after the last item leaves a bag.
+	-- bag with items keeps `seconds`. 0 = no shortcut.
 	emptySeconds = 5,
+
+	-- Necromancer line (O591, the open point of O565): Raise Dead and Corpse Explosion use an EMPTY corpse of the caster or the
+	-- party, and 5 s is too short to cast them after looting. An empty bag whose owner (the killer) is a Necromancer, Lich or
+	-- Bone Lord, or has one in the party, lasts necroEmptySeconds instead, so the spells find it in normal play (Raise Dead has a
+	-- 2 s cooldown, Corpse Explosion 4 s). Piles are capped: of the empty bags of one owner only the newest necroMaxBags keep
+	-- that time, the older ones fall back to emptySeconds. 0 = off (every empty bag goes in emptySeconds).
+	necroEmptySeconds = 20,
+	necroMaxBags = 6,
 
 	-- the monsters whose OWN corpse id stays as it is: scripts of the base server look for these items by id.
 	--   8934, 8967, 8968, 8969   the four Elemental Overlord corpses of the sphere quest (movements/.../summonOverlord.lua

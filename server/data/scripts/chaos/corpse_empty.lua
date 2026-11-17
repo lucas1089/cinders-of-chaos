@@ -5,7 +5,9 @@
 -- A bag has the normal `seconds` of corpse_config.lua (items.xml duration, tools/patch_monster_corpses.py). When it holds
 -- nothing any more (looted by hand, by quick loot, by auto loot, or a monster with no loot at all) its remaining time is cut
 -- to `emptySeconds`: item:setAttribute(ITEM_ATTRIBUTE_DURATION, ms) moves a decaying item to its new time (decay.h). A
--- bag with items keeps its time; the time is never made longer.
+-- bag with items keeps its time; the time is never made longer. An empty bag of a Necromancer line owner (or of a player
+-- with one in the party) keeps `necroEmptySeconds` so Raise Dead and Corpse Explosion can use it (O591), at most
+-- `necroMaxBags` of those per owner at a time.
 --
 -- How it finds them without a hook on every way an item can leave a container: EventCallback onDropLoot (the corpse is on its
 -- tile, the loot layer and auto loot ran before, priority 9) remembers the PLACE of a new bag; one timer, only while a place is
@@ -28,7 +30,40 @@ local function nowSec()
 	return os.time()
 end
 
--- the bags of the tile as {size, remaining, item} rows
+-- O591: is the bag's owner (the killer) of the Necromancer line, or has one in the party? Raise Dead and Corpse Explosion
+-- need the empty bag for a little longer then (corpse_config.lua necroEmptySeconds). Any missing piece of the engine: no.
+local function necroOwner(item)
+	if not ChaosNecro or not ChaosNecro.classOf or not item.isContainer or not item:isContainer() then
+		return false, nil
+	end
+	local container = Container(item.uid)
+	local id = container and container:getCorpseOwner() or 0
+	if id == 0 then
+		return false, nil
+	end
+	local owner = Player(id)
+	if not owner then
+		return false, id
+	end
+	if ChaosNecro.classOf(owner) then
+		return true, id
+	end
+	local party = owner:getParty()
+	if party then
+		for _, m in ipairs(party:getMembers() or {}) do
+			if ChaosNecro.classOf(m) then
+				return true, id
+			end
+		end
+		local leader = party:getLeader()
+		if leader and ChaosNecro.classOf(leader) then
+			return true, id
+		end
+	end
+	return false, id
+end
+
+-- the bags of the tile as {size, remaining, item, necro, owner} rows
 local function probe(pos)
 	local rows = {}
 	local tile = Tile(pos.x, pos.y, pos.z)
@@ -38,7 +73,14 @@ local function probe(pos)
 	for _, item in ipairs(tile:getItems() or {}) do
 		if item:getId() == cfg.bagId then
 			local size = item.getSize and item:getSize() or 0
-			rows[#rows + 1] = {size = size, remaining = item:getAttribute(ITEM_ATTRIBUTE_DURATION) or 0, item = item}
+			local row = {size = size, remaining = item:getAttribute(ITEM_ATTRIBUTE_DURATION) or 0, item = item}
+			if size == 0 and C.necroMs(cfg) then
+				local ok, necro, owner = pcall(necroOwner, item)
+				if ok then
+					row.necro, row.owner = necro, owner
+				end
+			end
+			rows[#rows + 1] = row
 		end
 	end
 	return rows

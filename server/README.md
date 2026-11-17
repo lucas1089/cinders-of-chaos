@@ -31935,9 +31935,16 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   forgotten when it has no bag, only emptied bags, or when the bag could not live any more. A bag goes `emptySeconds` plus at most
   one second after its last item left. No items.xml change (the decay is the item's own, the step only sets the full time),
   nothing to install for it: the file loads with the other scripts. State is in memory; after a restart bags already on the
-  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer:** Raise Dead and
-  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside), so they now have those
-  5 seconds after the last item leaves a bag instead of up to 3 minutes; raise `emptySeconds` if that is too short.
+  ground keep their time. `emptySeconds = 0` or `enabled = false` turns it off with a `/reload`. **Necromancer (O591):** Raise Dead and
+  Corpse Explosion use an empty corpse of the caster or the party (`corpseUsable`: no items inside). 5 seconds was too short to
+  loot and then cast, so an empty bag whose owner (the killer, `getCorpseOwner`) is of the Necromancer line (Necromancer, Lich,
+  Bone Lord: `ChaosNecro.classOf`) or has one in the party keeps `necroEmptySeconds` (config, 20; Raise Dead has a 2 s cooldown,
+  Corpse Explosion 4 s). Piles stay small: of the empty bags of one owner only the newest `necroMaxBags` (6) keep that time, older
+  ones fall back to `emptySeconds`; a kept bag only ever shortens (never longer than the bag's own time), a bag with loot is
+  untouched, and the sweep (`ChaosCorpse.sweep`, rows carry `necro` and `owner`) keeps watching a place while a kept bag lives so
+  the cap holds. `necroEmptySeconds = 0` turns it off. Raise Dead also works with no corpse (one minion from nothing for twice the
+  mana), and `minion_model.py` reads no corpse input (it raises the minions again before every pack), so the class numbers do not
+  move: `minion_model.py --check` and `necro_test.lua` are unchanged and green. Tests: `tests/corpse_bag_test.lua` part 6.
 * **Players.** Not touched: `Player::getLookCorpse` is not in the patch, the table is read only from `Monster::getLookCorpse`.
   Tested three ways: `ChaosCorpse.corpseFor(cfg, "player", id)` returns the id for any id (`tests/corpse_bag_test.lua`), the patch guard
   fails when the patch touches player.* / creature.* or calls the table anywhere but monster.h (`tools/patch_monster_corpses_test.py`),

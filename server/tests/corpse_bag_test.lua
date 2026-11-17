@@ -452,4 +452,140 @@ local glueSrc = readFile("data/scripts/chaos/corpse_empty.lua")
 ok(glueSrc:find("drop:register(9)", 1, true), "glue: registered after autoloot")
 ok(glueSrc:find("ITEM_ATTRIBUTE_DURATION", 1, true), "glue: reads and sets the duration attribute")
 
+-- ---------------------------------------------------------------- part 6: bags of the Necromancer line (O591)
+local NW = 1000 * cfg.necroEmptySeconds
+ok(cfg.necroEmptySeconds > cfg.emptySeconds and cfg.necroEmptySeconds < cfg.seconds, "necro time between the empty time and the bag's own")
+ok(cfg.necroEmptySeconds >= 10 and cfg.necroEmptySeconds <= 30, "long enough for two Raise Dead casts, short enough not to pile")
+ok(cfg.necroMaxBags >= 1 and cfg.necroMaxBags <= 10, "a small pile cap")
+eq(C.necroMs(cfg), NW, "necroMs: the config in milliseconds")
+eq(C.necroMs(off), nil, "necroMs: switched off")
+eq(C.necroMs(zero), nil, "necroMs: no empty shortcut at all, none for necro")
+local nz = {}
+for k, v in pairs(cfg) do nz[k] = v end
+nz.necroEmptySeconds = 0
+eq(C.necroMs(nz), nil, "necroMs: 0 is off")
+eq(#C.validate(nz), 0, "necroEmptySeconds 0 is valid")
+bad(function(c) c.necroEmptySeconds = 121 end, "a necro time over two minutes")
+bad(function(c) c.necroEmptySeconds = -1 end, "a negative necro time")
+bad(function(c) c.necroEmptySeconds = c.seconds end, "a necro time as long as the bag's own")
+bad(function(c) c.necroEmptySeconds = 2 end, "a necro time shorter than the plain empty time")
+bad(function(c) c.necroMaxBags = 0 end, "no necro bags allowed")
+bad(function(c) c.necroMaxBags = 2.5 end, "a fraction of a bag")
+
+local function sweepRows(tiles, w, now)
+	local cuts = {}
+	local n = C.sweep(cfg, w, now, function(pos)
+		return tiles[pos.x .. "," .. pos.y .. "," .. pos.z] or {}
+	end, function(row, ms)
+		row.remaining = ms
+		cuts[#cuts + 1] = {row = row, ms = ms}
+	end)
+	return cuts, n
+end
+-- a necro owner's empty bag keeps the longer time, another owner's goes in emptySeconds
+local wn = C.newWatch()
+C.watch(wn, {x = 1, y = 1, z = 7}, 100)
+C.watch(wn, {x = 2, y = 1, z = 7}, 100)
+local mine = {size = 0, remaining = 170000, necro = true, owner = 11}
+local plain = {size = 0, remaining = 170000, necro = false, owner = 12}
+local cuts, gone = sweepRows({["1,1,7"] = {mine}, ["2,1,7"] = {plain}}, wn, 101)
+eq(#cuts, 2, "both are cut")
+eq(mine.remaining, NW, "the necro owner's bag keeps necroEmptySeconds")
+eq(plain.remaining, W, "another owner's bag goes in emptySeconds")
+eq(gone, 1, "the plain place is forgotten")
+eq(C.count(wn), 1, "the necro place stays watched while its bag lives")
+cuts, gone = sweepRows({["1,1,7"] = {mine}}, wn, 102)
+eq(#cuts, 0, "no second cut")
+eq(C.count(wn), 1, "still watched")
+mine.remaining = W -- the clock ran down to the plain time
+cuts, gone = sweepRows({["1,1,7"] = {mine}}, wn, 103)
+eq(C.count(wn), 0, "forgotten once it is about to go")
+-- the pile cap: of 9 empty bags of one owner the 6 newest (most time left) keep the long time
+local wp = C.newWatch()
+local tilesP, rowsP = {}, {}
+for i = 1, 9 do
+	C.watch(wp, {x = i, y = 5, z = 7}, 100)
+	rowsP[i] = {size = 0, remaining = 100000 + i * 1000, necro = true, owner = 11}
+	tilesP[i .. ",5,7"] = {rowsP[i]}
+end
+cuts = sweepRows(tilesP, wp, 101)
+local long, short = 0, 0
+for i = 1, 9 do
+	if rowsP[i].remaining == NW then long = long + 1 elseif rowsP[i].remaining == W then short = short + 1 end
+end
+eq(long, cfg.necroMaxBags, "the newest bags keep the long time")
+eq(short, 9 - cfg.necroMaxBags, "the older ones fall back to the plain time")
+eq(rowsP[9].remaining, NW, "the newest kept")
+eq(rowsP[1].remaining, W, "the oldest cut short")
+-- another owner is counted apart
+local wq = C.newWatch()
+local rq, tq = {}, {}
+for i = 1, 8 do
+	C.watch(wq, {x = i, y = 6, z = 7}, 100)
+	rq[i] = {size = 0, remaining = 170000, necro = true, owner = i % 2 == 0 and 21 or 22}
+	tq[i .. ",6,7"] = {rq[i]}
+end
+sweepRows(tq, wq, 101)
+local kept = 0
+for i = 1, 8 do if rq[i].remaining == NW then kept = kept + 1 end end
+eq(kept, 8, "two owners with 4 bags each keep all of them (cap is per owner)")
+-- an emptied bag with loot still in it is not touched, necro or not
+local wl = C.newWatch()
+C.watch(wl, {x = 1, y = 1, z = 7}, 100)
+local lootRow = {size = 3, remaining = 170000, necro = true, owner = 11}
+cuts = sweepRows({["1,1,7"] = {lootRow}}, wl, 101)
+eq(#cuts, 0, "a necro bag with loot keeps its time")
+eq(C.count(wl), 1, "and its place stays watched")
+-- the necro time off: necro rows go the plain way
+local wo = C.newWatch()
+C.watch(wo, {x = 1, y = 1, z = 7}, 100)
+local nrow = {size = 0, remaining = 170000, necro = true, owner = 11}
+C.sweep(nz, wo, 101, function() return {nrow} end, function(row, ms) row.remaining = ms end)
+eq(nrow.remaining, W, "necroEmptySeconds 0: the plain time")
+
+-- the engine glue: the owner and the party decide
+do
+	local genv = glue(cfg)
+	local classes = {[31] = "necromancer", [32] = "lich"}
+	ChaosNecro = {classOf = function(p) return classes[p.id] end}
+	local owners = {}
+	Container = function(uid) return {getCorpseOwner = function() return owners[uid] or 0 end} end
+	local players = {}
+	Player = function(id) return players[id] end
+	local function mkPlayer(id, party)
+		players[id] = {id = id, getParty = function() return party end}
+		return players[id]
+	end
+	local nec = mkPlayer(31)
+	local knight = mkPlayer(40)
+	local partyOfKnight = {getLeader = function() return knight end, getMembers = function() return {knight, mkPlayer(32)} end}
+	players[40].getParty = function() return partyOfKnight end
+	local alone = mkPlayer(41)
+	local function bag(pos, ownerId)
+		local b = genv.newBag(pos, 0, 180000)
+		b.uid = ownerId * 1000 + pos.x
+		b.isContainer = function() return true end
+		owners[b.uid] = ownerId
+		return b
+	end
+	local a = bag({x = 10, y = 1, z = 7}, 31)  -- a necromancer's own bag
+	local b = bag({x = 11, y = 1, z = 7}, 40)  -- a knight in a party with a lich
+	local c = bag({x = 12, y = 1, z = 7}, 41)  -- a lone knight
+	for _, x in ipairs({a, b, c}) do genv.callbacks[1].fn({}, x) end
+	genv.runEvents()
+	eq(a.remaining, NW, "glue: a Necromancer's empty bag keeps the necro time")
+	eq(b.remaining, NW, "glue: so does a party member's of a Lich")
+	eq(c.remaining, W, "glue: a lone player's bag goes in the plain time")
+	-- no necro module loaded: everything is plain
+	ChaosNecro = nil
+	local genv2 = glue(cfg)
+	local d = genv2.newBag({x = 20, y = 1, z = 7}, 0, 180000)
+	d.uid = 31020
+	d.isContainer = function() return true end
+	genv2.callbacks[1].fn({}, d)
+	genv2.runEvents()
+	eq(d.remaining, W, "glue: without the Necromancer module every empty bag is plain")
+	Container, Player, ChaosNecro = nil, nil, nil
+end
+
 print(string.format("corpse_bag_test: %d checks ok", checks))
