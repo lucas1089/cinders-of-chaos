@@ -1,0 +1,696 @@
+{
+ "version": 1,
+ "reference": "the reference boss, outfit 939 of a donor pair: 4x4 tiles, one group of 8 phases at 100 ms, 4 directions (south, east, west the same pictures, north the same pictures a few px off); measured by sprite_quality.py over its 32 frames, not stored in the repository",
+ "method": "every value is a mean over the frames of the art unless named otherwise; min / max are on the art summary of `sprite_quality.py measure`; `ref` is the reference outfit value; `scale` linear (or sqrt): min times solid px / ref_px (or its root), never more than scale_cap times min; floor: lowest min after scaling; level warn: printed, fails only with --strict; needs_frames: skipped for art whose longest group has fewer phases",
+ "kinds": {
+  "boss": {
+   "solid": 128,
+   "about": "figures of 4x4 tiles and up (about 90 px and more on a side)",
+   "metrics": {
+    "colours": {
+     "min": 600,
+     "ref": 5735.875,
+     "floor": 300,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "The reference paints with 5,736 colours (2,784 in its main red family alone) so every ramp is smooth. Below about 600 the shading is a palette of a few dozen colours with visible steps. The count scales with the figure size against the reference (8,037 solid px, about 0.07 colours per pixel asked) and is never asked for more than 600."
+    },
+    "ramp_steps": {
+     "min": 10,
+     "ref": 12.5129,
+     "why": "Steps from light to dark inside one hue family, measured with 6-luma bins holding 1.5% of the family. Reference 12.5 (up to 15.9), a palette-quantised sprite of ours 8.7. Threshold is 0.8 of the reference."
+    },
+    "ramp_hue_shift": {
+     "min": 8,
+     "ref": 17.1172,
+     "why": "Mean hue turn along a ramp, light end against dark end, in degrees. Reference 17: highlights and shadows are other hues, not the same hue darker. Half the reference."
+    },
+    "contrast": {
+     "min": 80,
+     "ref": 110.3566,
+     "why": "Luma p95 minus p5. Reference 110 (a low-key dark figure with red accents). Not flat: at least 0.7 of the reference."
+    },
+    "luma_p99": {
+     "min": 120,
+     "ref": 176.5941,
+     "why": "The brightest 1% of the figure reaches this luma: a real highlight exists. Reference 177, 0.7 of it."
+    },
+    "local_std": {
+     "max": 30,
+     "ref": 17.1635,
+     "why": "Mean luma deviation in a 3x3 window inside the body. Reference 17: smooth, readable gradients. Ours 35-48: harsh one-pixel jumps. Limit 1.8 times the reference."
+    },
+    "complexity": {
+     "max": 9,
+     "ref": 6.2136,
+     "why": "Rim length over sqrt(area). Reference 6.2. A frayed silhouette (loose pixels, notches) reads 11-20. Limit 1.45 times the reference."
+    },
+    "hole_px": {
+     "max": 30,
+     "ref": 4.625,
+     "why": "Transparent pixels fully inside the figure. Reference 4.6 per frame: no pinholes. Ours big bosses up to 388 (cut-out noise)."
+    },
+    "holes": {
+     "max": 8,
+     "ref": 1.25,
+     "why": "Separate holes inside the figure. Reference 1.25 per frame."
+    },
+    "detail_p10": {
+     "min": 0.2,
+     "ref": 0.3032,
+     "why": "Edge density (neighbouring pixels whose luma differs by 12+ per solid pixel) of the plainest 32x32 tile with art. Reference 0.30: even the plainest tile has detail."
+    },
+    "flat_tile_share": {
+     "max": 0.1,
+     "ref": 0.0,
+     "why": "Share of art tiles with edge density under 0.12. Reference 0: no empty flat areas."
+    },
+    "flat_run_share": {
+     "max": 0.06,
+     "ref": 0.0,
+     "why": "Share of pixels inside horizontal or vertical runs of one colour 8 px or longer (banding). Reference 0."
+    },
+    "outline_coverage": {
+     "min": 0.5,
+     "ref": 0.739,
+     "why": "Share of rim pixels that are dark (luma under 56). Reference 0.74: the figure is outlined all round. Floor 0.5 so a one-sided outline fails."
+    },
+    "outline_thick": {
+     "max": 3.5,
+     "ref": 2.9452,
+     "why": "Dark pixels counted over the first four layers from the rim: about the outline width in px. Reference 2.9 (the dark body edge is part of it); a slab above 3.5 eats the figure."
+    },
+    "outline_hue_share": {
+     "min": 0.4,
+     "ref": 0.7378,
+     "why": "Share of dark outline pixels that are a dark shade of a colour and not black. Reference 0.74 (a black share of only 0.26). Ours 0.14: black outlines. Threshold 0.55 of the reference."
+    },
+    "outline_selout_share": {
+     "min": 0.6,
+     "ref": 0.8399,
+     "why": "Share of dark outline pixels whose hue follows the interior hue within 35 degrees (selective outlining). Reference 0.84."
+    },
+    "pillow": {
+     "max": 0.25,
+     "ref": 0.0,
+     "why": "Share of frames that are pillow shaded: luma follows the distance from the rim (r 0.45 or more, and better than the directional light model). Reference r -0.04, no frame flagged; one stray frame in eight is tolerated."
+    },
+    "light_frames_agree": {
+     "min": 0.8,
+     "ref": 1.0,
+     "why": "Share of frames whose light direction agrees with the mean one. Reference 1.0: one light for the whole animation."
+    },
+    "spec_clusters": {
+     "min": 18,
+     "ref": 61.375,
+     "floor": 4,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "Small bright accents (luma in the top 2% and 20 above the 5x5 neighbourhood, clusters up to 40 px). Reference 61 per frame. 0.3 of it, scaled with the figure size."
+    },
+    "spec_mean_size": {
+     "max": 4.5,
+     "ref": 2.4742,
+     "why": "Mean size of a highlight cluster in px. Reference 2.5; blobs of 5+ read as flat patches."
+    },
+    "semi_share": {
+     "min": 0.05,
+     "ref": 0.1763,
+     "level": "warn",
+     "why": "Share of visible pixels that are semi-transparent. Reference 0.176 (edges and translucent smoke inside). Our importers cut alpha hard at 0.5; a warning, since the client draws soft alpha."
+    },
+    "alpha_levels": {
+     "min": 16,
+     "ref": 236.875,
+     "level": "warn",
+     "why": "Distinct alpha values. Reference 237. Hard 0/255 art has 1-2."
+    },
+    "frames_max": {
+     "min": 6,
+     "needs_frames": 2,
+     "why": "Phases of the longest group. Reference 8."
+    },
+    "changed_share": {
+     "min": 0.4,
+     "max": 0.95,
+     "ref": 0.7734,
+     "needs_frames": 4,
+     "why": "Share of the figure that changes visibly (a channel moves 12+) between two frames. Reference 0.77: the whole body breathes. Under 0.4 the animation is a few parts moving on a frozen body; over 0.95 it flickers."
+    },
+    "shade_only_share": {
+     "min": 0.5,
+     "ref": 0.9413,
+     "needs_frames": 4,
+     "why": "Of the changed pixels, the share that stay solid (shading and colour flow, not the outline moving). Reference 0.94."
+    },
+    "silhouette_change_share": {
+     "max": 0.25,
+     "ref": 0.0454,
+     "needs_frames": 4,
+     "why": "Share of the figure that enters or leaves the silhouette between frames. Reference 0.045 (a hovering body that breathes); a walking boss moves its limbs and reads 0.12-0.2, above 0.25 the outline pops."
+    },
+    "area_range": {
+     "max": 0.08,
+     "ref": 0.0375,
+     "needs_frames": 4,
+     "why": "(max - min) / mean of the solid area over the loop. Reference 0.037: volume is kept (squash and stretch, not growing and shrinking)."
+    },
+    "loop_ratio": {
+     "min": 0.4,
+     "max": 2.0,
+     "ref": 1.0357,
+     "needs_frames": 4,
+     "why": "Change from the last frame to the first over the mean change between neighbours. Reference 1.04: the loop closes like any other step. Near 0 is a duplicate frame, large a pop."
+    },
+    "loop_exact": {
+     "max": 0,
+     "ref": 0.0,
+     "needs_frames": 4,
+     "why": "1 when the last frame equals the first (a held frame at the loop seam). Reference 0."
+    },
+    "dup_frames": {
+     "max": 0,
+     "needs_frames": 4,
+     "why": "Frames equal to another frame of the same direction. Reference 0: every phase is drawn."
+    },
+    "motion_px": {
+     "min": 0.4,
+     "max": 4.0,
+     "ref": 1.0103,
+     "needs_frames": 4,
+     "why": "Distance in px the changing parts move between frames (block matching). Reference 1.0: sub-pixel to one pixel, readable at 100 ms. Under 0.4 nothing moves; over 4 jitters."
+    }
+   }
+  },
+  "creature": {
+   "solid": 128,
+   "about": "monsters and creatures of 2x2 to 3x3 tiles",
+   "metrics": {
+    "colours": {
+     "min": 600,
+     "ref": 5735.875,
+     "floor": 60,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "As the boss, scaled with the figure size against the reference (8,037 solid px); a 2x2 creature of 700 px is asked for about 52 colours, never fewer than 60."
+    },
+    "ramp_steps": {
+     "min": 10,
+     "ref": 12.5129,
+     "why": "Steps from light to dark inside one hue family, measured with 6-luma bins holding 1.5% of the family. Reference 12.5 (up to 15.9), a palette-quantised sprite of ours 8.7. Threshold is 0.8 of the reference."
+    },
+    "ramp_hue_shift": {
+     "min": 8,
+     "ref": 17.1172,
+     "why": "Mean hue turn along a ramp, light end against dark end, in degrees. Reference 17: highlights and shadows are other hues, not the same hue darker. Half the reference."
+    },
+    "contrast": {
+     "min": 80,
+     "ref": 110.3566,
+     "why": "Luma p95 minus p5. Reference 110 (a low-key dark figure with red accents). Not flat: at least 0.7 of the reference."
+    },
+    "luma_p99": {
+     "min": 120,
+     "ref": 176.5941,
+     "why": "The brightest 1% of the figure reaches this luma: a real highlight exists. Reference 177, 0.7 of it."
+    },
+    "local_std": {
+     "max": 30,
+     "ref": 17.1635,
+     "why": "Mean luma deviation in a 3x3 window inside the body. Reference 17: smooth, readable gradients. Ours 35-48: harsh one-pixel jumps. Limit 1.8 times the reference."
+    },
+    "complexity": {
+     "max": 9,
+     "ref": 6.2136,
+     "why": "Rim length over sqrt(area). Reference 6.2. A frayed silhouette (loose pixels, notches) reads 11-20. Limit 1.45 times the reference."
+    },
+    "hole_px": {
+     "max": 12,
+     "ref": 4.625,
+     "why": "Pinholes inside the figure; a 2x2 creature has far fewer pixels than the reference, so the limit is a share of it."
+    },
+    "holes": {
+     "max": 4,
+     "ref": 1.25,
+     "why": "Separate holes. Reference 1.25 on a 4x4 figure."
+    },
+    "detail_p10": {
+     "min": 0.2,
+     "ref": 0.3032,
+     "why": "As the boss."
+    },
+    "flat_tile_share": {
+     "max": 0.1,
+     "ref": 0.0,
+     "why": "Share of art tiles with edge density under 0.12. Reference 0: no empty flat areas."
+    },
+    "flat_run_share": {
+     "max": 0.06,
+     "ref": 0.0,
+     "why": "Share of pixels inside horizontal or vertical runs of one colour 8 px or longer (banding). Reference 0."
+    },
+    "outline_coverage": {
+     "min": 0.5,
+     "ref": 0.739,
+     "why": "Share of rim pixels that are dark (luma under 56). Reference 0.74: the figure is outlined all round. Floor 0.5 so a one-sided outline fails."
+    },
+    "outline_thick": {
+     "max": 3.5,
+     "ref": 2.9452,
+     "why": "Dark pixels counted over the first four layers from the rim: about the outline width in px. Reference 2.9 (the dark body edge is part of it); a slab above 3.5 eats the figure."
+    },
+    "outline_hue_share": {
+     "min": 0.4,
+     "ref": 0.7378,
+     "why": "Share of dark outline pixels that are a dark shade of a colour and not black. Reference 0.74 (a black share of only 0.26). Ours 0.14: black outlines. Threshold 0.55 of the reference."
+    },
+    "outline_selout_share": {
+     "min": 0.6,
+     "ref": 0.8399,
+     "why": "Share of dark outline pixels whose hue follows the interior hue within 35 degrees (selective outlining). Reference 0.84."
+    },
+    "pillow": {
+     "max": 0.25,
+     "ref": 0.0,
+     "why": "Share of frames that are pillow shaded: luma follows the distance from the rim (r 0.45 or more, and better than the directional light model). Reference r -0.04, no frame flagged; one stray frame in eight is tolerated."
+    },
+    "light_frames_agree": {
+     "min": 0.8,
+     "ref": 1.0,
+     "why": "Share of frames whose light direction agrees with the mean one. Reference 1.0: one light for the whole animation."
+    },
+    "spec_clusters": {
+     "min": 18,
+     "ref": 61.375,
+     "floor": 3,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "As the boss, scaled with figure size, never fewer than 3."
+    },
+    "spec_mean_size": {
+     "max": 4.5,
+     "ref": 2.4742,
+     "why": "Mean size of a highlight cluster in px. Reference 2.5; blobs of 5+ read as flat patches."
+    },
+    "semi_share": {
+     "min": 0.05,
+     "ref": 0.1763,
+     "level": "warn",
+     "why": "Share of visible pixels that are semi-transparent. Reference 0.176 (edges and translucent smoke inside). Our importers cut alpha hard at 0.5; a warning, since the client draws soft alpha."
+    },
+    "alpha_levels": {
+     "min": 16,
+     "ref": 236.875,
+     "level": "warn",
+     "why": "Distinct alpha values (reference 237); hard 0/255 art has 1-2."
+    },
+    "frames_max": {
+     "min": 6,
+     "needs_frames": 2,
+     "why": "Phases of the longest group. Reference 8."
+    },
+    "changed_share": {
+     "min": 0.4,
+     "max": 0.95,
+     "ref": 0.7734,
+     "needs_frames": 4,
+     "why": "Share of the figure that changes visibly (a channel moves 12+) between two frames. Reference 0.77: the whole body breathes. Under 0.4 the animation is a few parts moving on a frozen body; over 0.95 it flickers."
+    },
+    "shade_only_share": {
+     "min": 0.5,
+     "ref": 0.9413,
+     "needs_frames": 4,
+     "why": "Of the changed pixels, the share that stay solid (shading and colour flow, not the outline moving). Reference 0.94."
+    },
+    "silhouette_change_share": {
+     "max": 0.25,
+     "ref": 0.0454,
+     "needs_frames": 4,
+     "why": "Share of the figure that enters or leaves the silhouette between frames. Reference 0.045 (a hovering body that breathes); a walking boss moves its limbs and reads 0.12-0.2, above 0.25 the outline pops."
+    },
+    "area_range": {
+     "max": 0.08,
+     "ref": 0.0375,
+     "needs_frames": 4,
+     "why": "(max - min) / mean of the solid area over the loop. Reference 0.037: volume is kept (squash and stretch, not growing and shrinking)."
+    },
+    "loop_ratio": {
+     "min": 0.4,
+     "max": 2.0,
+     "ref": 1.0357,
+     "needs_frames": 4,
+     "why": "Change from the last frame to the first over the mean change between neighbours. Reference 1.04: the loop closes like any other step. Near 0 is a duplicate frame, large a pop."
+    },
+    "loop_exact": {
+     "max": 0,
+     "ref": 0.0,
+     "needs_frames": 4,
+     "why": "1 when the last frame equals the first (a held frame at the loop seam). Reference 0."
+    },
+    "dup_frames": {
+     "max": 0,
+     "needs_frames": 4,
+     "why": "Frames equal to another frame of the same direction. Reference 0: every phase is drawn."
+    },
+    "motion_px": {
+     "min": 0.4,
+     "max": 4.0,
+     "ref": 1.0103,
+     "needs_frames": 4,
+     "why": "Distance in px the changing parts move between frames (block matching). Reference 1.0: sub-pixel to one pixel, readable at 100 ms. Under 0.4 nothing moves; over 4 jitters."
+    }
+   }
+  },
+  "outfit": {
+   "solid": 128,
+   "about": "player outfits of 2x2 tiles (idle and walk rows of the sheet)",
+   "metrics": {
+    "colours": {
+     "min": 600,
+     "ref": 5735.875,
+     "floor": 40,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "Player outfits are small (2x2 tiles, 600-800 px): scaled with the size against the reference (0.075 colours per pixel), never under 40 (the stock outfits use 20-60)."
+    },
+    "ramp_steps": {
+     "min": 6,
+     "ref": 12.5129,
+     "why": "Steps light to dark per hue family. Reference 12.5; a 2x2 outfit cannot hold as many pixels per ramp, so half of it, floor 6."
+    },
+    "ramp_hue_shift": {
+     "min": 8,
+     "ref": 17.1172,
+     "why": "Mean hue turn along a ramp, light end against dark end, in degrees. Reference 17: highlights and shadows are other hues, not the same hue darker. Half the reference."
+    },
+    "contrast": {
+     "min": 80,
+     "ref": 110.3566,
+     "why": "Luma p95 minus p5. Reference 110 (a low-key dark figure with red accents). Not flat: at least 0.7 of the reference."
+    },
+    "luma_p99": {
+     "min": 120,
+     "ref": 176.5941,
+     "why": "The brightest 1% of the figure reaches this luma: a real highlight exists. Reference 177, 0.7 of it."
+    },
+    "local_std": {
+     "max": 40,
+     "ref": 17.1635,
+     "why": "Mean luma deviation in 3x3. Reference 17; small figures are crisper, so 2.4 times the reference."
+    },
+    "complexity": {
+     "max": 9,
+     "ref": 6.2136,
+     "why": "As the boss."
+    },
+    "hole_px": {
+     "max": 8,
+     "ref": 4.625,
+     "why": "Pinholes inside a small figure."
+    },
+    "holes": {
+     "max": 3,
+     "ref": 1.25,
+     "why": "Separate holes."
+    },
+    "detail_p10": {
+     "min": 0.2,
+     "ref": 0.3032,
+     "why": "Edge density (neighbouring pixels whose luma differs by 12+ per solid pixel) of the plainest 32x32 tile with art. Reference 0.30: even the plainest tile has detail."
+    },
+    "flat_tile_share": {
+     "max": 0.1,
+     "ref": 0.0,
+     "why": "Share of art tiles with edge density under 0.12. Reference 0: no empty flat areas."
+    },
+    "flat_run_share": {
+     "max": 0.1,
+     "ref": 0.0,
+     "why": "Banding: runs of one colour of 8 px or more. Reference 0; small figures have some, so 0.1."
+    },
+    "outline_coverage": {
+     "min": 0.5,
+     "ref": 0.739,
+     "why": "Share of rim pixels that are dark (luma under 56). Reference 0.74: the figure is outlined all round. Floor 0.5 so a one-sided outline fails."
+    },
+    "outline_thick": {
+     "max": 3.5,
+     "ref": 2.9452,
+     "why": "Dark pixels counted over the first four layers from the rim: about the outline width in px. Reference 2.9 (the dark body edge is part of it); a slab above 3.5 eats the figure."
+    },
+    "outline_hue_share": {
+     "min": 0.3,
+     "ref": 0.7378,
+     "level": "warn",
+     "why": "Share of the outline that is a dark shade rather than black. Reference 0.74; stock outfits use black, so a warning."
+    },
+    "outline_selout_share": {
+     "min": 0.5,
+     "ref": 0.8399,
+     "why": "Outline hue follows the interior (reference 0.84)."
+    },
+    "pillow": {
+     "max": 0.25,
+     "ref": 0.0,
+     "why": "Share of frames that are pillow shaded: luma follows the distance from the rim (r 0.45 or more, and better than the directional light model). Reference r -0.04, no frame flagged; one stray frame in eight is tolerated."
+    },
+    "light_frames_agree": {
+     "min": 0.7,
+     "ref": 1.0,
+     "level": "warn",
+     "why": "Share of frames whose light direction agrees with the mean one (reference 1.0); noisy on a 2x2 figure, so a warning."
+    },
+    "spec_clusters": {
+     "min": 6,
+     "ref": 61.375,
+     "floor": 2,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "Small bright accents, scaled with figure size."
+    },
+    "spec_mean_size": {
+     "max": 4.5,
+     "ref": 2.4742,
+     "why": "Mean size of a highlight cluster in px. Reference 2.5; blobs of 5+ read as flat patches."
+    },
+    "semi_share": {
+     "min": 0.05,
+     "ref": 0.1763,
+     "level": "warn",
+     "why": "Share of visible pixels that are semi-transparent. Reference 0.176 (edges and translucent smoke inside). Our importers cut alpha hard at 0.5; a warning, since the client draws soft alpha."
+    },
+    "alpha_levels": {
+     "min": 16,
+     "ref": 236.875,
+     "level": "warn",
+     "why": "Distinct alpha values. Reference 237. Hard 0/255 art has 1-2."
+    },
+    "frames_max": {
+     "min": 4,
+     "needs_frames": 2,
+     "why": "Phases of the longest group: the walk has 8, the idle at least 1; at least 4 in the longest."
+    },
+    "changed_share": {
+     "min": 0.2,
+     "max": 0.95,
+     "ref": 0.7734,
+     "needs_frames": 4,
+     "why": "Share of the figure that changes between frames. Reference 0.77 (a boss that breathes); a walking player changes the legs and arms, 0.2 or more."
+    },
+    "shade_only_share": {
+     "min": 0.3,
+     "ref": 0.9413,
+     "needs_frames": 4,
+     "why": "Of the changed pixels, the share that stay solid. Reference 0.94; a walk moves limbs, so 0.3."
+    },
+    "silhouette_change_share": {
+     "max": 0.2,
+     "ref": 0.0454,
+     "needs_frames": 4,
+     "why": "Share entering or leaving the silhouette. A walk moves limbs: 0.2."
+    },
+    "area_range": {
+     "max": 0.1,
+     "ref": 0.0375,
+     "needs_frames": 4,
+     "why": "Area change over the loop. Reference 0.037."
+    },
+    "loop_ratio": {
+     "min": 0.3,
+     "max": 2.5,
+     "ref": 1.0357,
+     "needs_frames": 4,
+     "why": "Last to first change over the mean step. Reference 1.04."
+    },
+    "loop_exact": {
+     "max": 0,
+     "ref": 0.0,
+     "needs_frames": 4,
+     "why": "1 when the last frame equals the first (a held frame at the loop seam). Reference 0."
+    },
+    "dup_frames": {
+     "max": 1.0,
+     "needs_frames": 4,
+     "why": "Equal frames in a direction, averaged over the idle and walk rows. Reference 0. The idle breath of 4 may hold the standing picture on three of its four phases (a mean of 1.5 over idle and walk with a walk of 8 distinct pictures is 1.0)."
+    },
+    "motion_px": {
+     "min": 0.2,
+     "max": 4.0,
+     "ref": 1.0103,
+     "needs_frames": 4,
+     "why": "Distance the changing parts move between frames; a walk steps 0.2 px to 4."
+    }
+   }
+  },
+  "item": {
+   "solid": 128,
+   "about": "items and decor, still or animated strips of square frames",
+   "metrics": {
+    "colours": {
+     "min": 600,
+     "ref": 5735.875,
+     "floor": 12,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "Items are 32 px: scaled with the size against the reference, never under 12."
+    },
+    "ramp_steps": {
+     "min": 4,
+     "ref": 12.5129,
+     "why": "Light to dark steps per hue family; 32 px sprites hold fewer pixels per ramp."
+    },
+    "contrast": {
+     "min": 70,
+     "ref": 110.3566,
+     "why": "Luma p95 minus p5; reference 110."
+    },
+    "luma_p99": {
+     "min": 100,
+     "ref": 176.5941,
+     "why": "A real highlight exists."
+    },
+    "local_std": {
+     "max": 55,
+     "ref": 17.1635,
+     "why": "Mean luma deviation in 3x3. Reference 17; tiny sprites are crisp, 55 flags noise."
+    },
+    "complexity": {
+     "max": 12,
+     "ref": 6.2136,
+     "why": "Rim over sqrt(area); small shapes with details read 7-10."
+    },
+    "outline_coverage": {
+     "min": 0.4,
+     "ref": 0.739,
+     "level": "warn",
+     "why": "Rim pixels that are dark. Reference 0.74."
+    },
+    "pillow": {
+     "max": 0.25,
+     "ref": 0.0,
+     "level": "warn",
+     "why": "Share of frames that are pillow shaded."
+    },
+    "flat_tile_share": {
+     "max": 0.5,
+     "ref": 0.0,
+     "why": "Share of art tiles that are flat. Reference 0."
+    },
+    "loop_ratio": {
+     "min": 0.3,
+     "max": 2.5,
+     "ref": 1.0357,
+     "needs_frames": 4,
+     "why": "Last to first change over the mean step. Reference 1.04."
+    },
+    "loop_exact": {
+     "max": 0,
+     "ref": 0.0,
+     "needs_frames": 4,
+     "why": "The last frame equals the first (a held frame at the seam). Reference 0."
+    },
+    "dup_frames": {
+     "max": 0,
+     "needs_frames": 4,
+     "why": "Equal frames in the loop. Reference 0."
+    },
+    "changed_share": {
+     "min": 0.05,
+     "max": 0.98,
+     "ref": 0.7734,
+     "needs_frames": 4,
+     "why": "Share of the picture that changes between frames; under 0.05 it is nearly still."
+    }
+   }
+  },
+  "effect": {
+   "solid": 40,
+   "about": "spell effects and missiles: strips of square frames, soft alpha allowed",
+   "metrics": {
+    "colours": {
+     "min": 600,
+     "ref": 5735.875,
+     "floor": 8,
+     "scale": "linear",
+     "ref_px": 8037,
+     "scale_cap": 1.0,
+     "why": "Effects are small and glow: scaled with the size, never under 8."
+    },
+    "contrast": {
+     "min": 60,
+     "ref": 110.3566,
+     "why": "Luma p95 minus p5; an effect that is all one brightness does not read."
+    },
+    "luma_p99": {
+     "min": 120,
+     "ref": 176.5941,
+     "why": "A bright core exists."
+    },
+    "semi_share": {
+     "min": 0.1,
+     "ref": 0.1763,
+     "level": "warn",
+     "why": "Share of semi-transparent pixels. Reference 0.176; a glow has a soft falloff."
+    },
+    "frames_max": {
+     "min": 4,
+     "needs_frames": 2,
+     "level": "warn",
+     "why": "Phases of the longest group."
+    },
+    "loop_ratio": {
+     "min": 0.3,
+     "max": 2.5,
+     "ref": 1.0357,
+     "needs_frames": 4,
+     "why": "Last to first change over the mean step."
+    },
+    "loop_exact": {
+     "max": 0,
+     "ref": 0.0,
+     "needs_frames": 4,
+     "why": "The last frame equals the first."
+    },
+    "dup_frames": {
+     "max": 0,
+     "needs_frames": 4,
+     "why": "Equal frames in the loop."
+    },
+    "changed_share": {
+     "min": 0.2,
+     "max": 1.0,
+     "ref": 0.7734,
+     "needs_frames": 4,
+     "why": "Share of the picture that changes between frames; under 0.2 the effect hardly moves."
+    }
+   }
+  }
+ }
+}

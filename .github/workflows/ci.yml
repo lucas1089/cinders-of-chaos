@@ -383,6 +383,8 @@ jobs:
           # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check_test.py
+          # quality bar of the reference sprite (O625): synthetic art against sprite_quality_bar.json; `check` is not run on committed art
+          /tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
