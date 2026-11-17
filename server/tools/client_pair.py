@@ -45,6 +45,8 @@ PAIR_CREATURE = 73  # the 3 boss outfits 3527-3529 made from creature packs (O60
                     # `monstercreaturelooks`)
 PAIR_SWAP = 73      # the look swaps of O619: 24 monsters leave a look that fails the stock bar for a better one already in the pair (O610 audit;
                     # install_monster_swap_looks.py, step `monsterswaplooks`); no new outfit, so it rides with pair 73
+PAIR_DECOR = 74     # the four animated decor flames 44560-44563 (O623, install_decor_flames.py, step `decorflames`); the torch 44544 of pair 60
+                    # is animated in place and needs no step. Pair 74 is not built yet, PAIR_ASSETS stays 73 until it is
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package

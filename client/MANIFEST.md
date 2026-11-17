@@ -7529,3 +7529,39 @@ No art file is read. No purchased art, no AI service. **Status: tool, table, ser
   Output dat 72deab68313773f5783f226925846475 (9,434,040 bytes), spr ad553da9e7d2d71c2361c2437db15e2d (1,217,424,242 bytes).
   The files were deleted after the check. This is not the shipped pair 73.
 - **Unity.** Not done. The Unity client has no effect 5321+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.
+
+## Decor flames (O623; `tools/sprites/gen_decor_flames.py`, `art_import/decor_flames.csv`; owner 2026-11-17; joins pair 74)
+
+Five animated fire props from pixelfx (https://github.com/patch-gg/pixelfx, commit 5294518, MIT, Copyright (c) 2026 Patch, Hugo Duprez;
+docs/CREDITS.md). The owner said yes to the O622 fit. Not built into a pair yet.
+
+- **Source and safety.** `render --pixelfx DIR OUT` checks the checkout is at the pinned commit, copies only the 25 files the five
+  effects need (`SOURCE_FILES`, held to one sha256) into `OUT/sandbox` and runs node there with `--permission` (read the sandbox, write
+  `OUT/raw`, no child process, no network). Nothing is installed. The gallery fonts are not MIT and are never copied. Our driver
+  `decor_flames_render.mjs` does what `tools/render.mjs --sheet --no-actor` does, with the colour layer only (the large additive halo
+  of the light layer is left out: the game lights by the item's light flag).
+- **Fit.** `fit OUT/raw`: 12 evenly spaced frames of the periodic render (the loop closes), body (pixels solid in a quarter of the
+  frames) area-scaled down to the canvas, standing on the bottom row, pivot on the middle column, alpha 0 / 144 / 255 (cuts 0.22 / 0.5),
+  pieces under 3 pixels dropped, every colour to the nearest of a theme palette and then to the 26 most used of it. The spirit flame is
+  turned from teal to blue and lightened first (a cold blue-white). `check` holds each strip to the bar (sizes, alpha, palette, a
+  frame never equals the next, the loop step at most 1.5 times the largest other) and to `style_check` in effects mode.
+- **Items.**
+
+  | Client id | Server id | Item | Tiles | Kind | Light | ms | Scale of the render |
+  |---|---|---|---|---|---|---|---|
+  | 44544 | 48544 | temple torch (pair 60), animated IN PLACE | 2x2 | stump, solid | 6 / 206 (kept) | 100 | 0.74 |
+  | 44560 | 48560 | flame brazier | 2x2 | stump, solid | 7 / 206 | 100 | 0.62 |
+  | 44561 | 48561 | flame campfire | 2x2 | decor, walkable | 7 / 206 | 100 | 0.79 |
+  | 44562 | 48562 | flame candle | 1x1 | decor | 3 / 206 | 120 | 0.74 |
+  | 44563 | 48563 | flame cold spirit | 1x1 | decor | 5 / 101 (cold) | 100 | 0.57 |
+
+  The loop is 1.2 to 1.44 s, quicker than the original (2 to 4 s); the candle's 4 s loop runs 2.8 times faster than drawn.
+- **Pair step.** `build DAT SPR OUT` on pair 73: `import_art_things.py` appends 44560-44563 (`--first-item 44560 --expect-items 44559`),
+  then the torch entry is rewritten in place (flags kept, 2x2, 12 phases, animator and durations, new sprites appended). Every other
+  entry stays byte-identical; use `check_pair.py --old PAIR73 --allow-changed item:44544`. `live DAT SPR` reads all five back pixel
+  for pixel. The disk need is three copies of the spr at a time (input, intermediate, output). Not run on the real pair 73 here:
+  the pair was not on this machine; the tests build a small synthetic pair (the torch as item 101, the real ids for the new items).
+- **Server.** `server/tools/install_decor_flames.py`, step `decorflames`, waits for `chaosClientPair >= 74` (`PAIR_DECOR`; `PAIR_ASSETS`
+  stays 73 until pair 74 is built). Manifest `server/data/items/decor_flames.csv` (written by `fit`, checked by `check`).
+- **Previews** (never committed): `sheets OUT_DIR`, `preview OUT.mp4 [--dat D --spr S]` (the five at 1x and 3x on a stone floor, beside
+  the pair 73 torch when a pair is given).

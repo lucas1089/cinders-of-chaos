@@ -31587,6 +31587,7 @@ README warned.
   | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
   | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
+  | `decorflames` (the four animated decor flames, "Decor flames (pair 74)") | 74 | the whole step is skipped |
   | `monsterrecolour` (35 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
@@ -35109,3 +35110,17 @@ The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MA
   one heavy in four, `raw`, other names untouched, a pair that lacks a shape, the list of senders against the files. `client/tools/sprites/gen_lightning_fx_test.py`.
 - **VPS.** Nothing to run now. The gate opens when the pair record is raised to 73. Admin app first: README "Client pair guard". Fallback: `chaos-ctl.sh client-pair set 73`.
 - **Open.** Not seen in a client. The holy and dark tints have no sender and are not in the pair.
+
+## Decor flames (pair 74) (`install_decor_flames.py`, step `decorflames`, O623)
+
+Owner 2026-11-17: animated decor flames from pixelfx, fitted by `client/tools/sprites/gen_decor_flames.py` (client/MANIFEST.md
+"Decor flames (O623)"). Four items, appended to pair 74 after the 44,559 items of pair 73: client ids 44560 to 44563, server ids
+48560 to 48563 (client id + 4000), names `flame brazier`, `flame campfire`, `flame candle`, `flame cold spirit`. The brazier is solid,
+the rest walkable; none is moveable or pickupable; all carry the animated bit; the lights are warm (7, 7, 3 with colour 206) and cold
+(5 with colour 101) for the spirit flame. The temple torch 44544 / 48544 is not a row: it keeps its server item and gets its flame in the
+client pair.
+
+The step writes the items.otb nodes and an items.xml block (markers, rewritten when the manifest changes) like `templeart`, and
+waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` stays 73 because pair 74 is not built). Below it a WARNING
+line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
+`server/tools/install_decor_flames_test.py`.
