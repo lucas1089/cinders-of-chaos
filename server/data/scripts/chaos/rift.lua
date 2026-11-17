@@ -2516,6 +2516,65 @@ function RF.isInside(player)
 	return player ~= nil and RF.runOf[player:getId()] ~= nil
 end
 
+-- What a person sees of a rift, for the tester bots' `!tester rift` (tools/tester_helper.lua checks that the asker is a tester, O592):
+-- outside, whether the bot stands in a protection zone (a rift is opened there) and holds a key; inside, the run's counts, the guardian
+-- and the nearest pack monster of the floor, and `guide` (ChaosRiftCore.guide). Reads only.
+function RF.probe(player)
+	local cfg = C()
+	local pos = player:getPosition()
+	local function plain(p)
+		return p and {x = p.x, y = p.y, z = p.z} or nil
+	end
+	local out = {level = player:getLevel(), pos = plain(pos), pz = inProtectionZone(player), inside = false}
+	local key = cfg.key and cfg.key.itemId and player:getItemById(cfg.key.itemId, true) or nil
+	out.held = key ~= nil
+	local run = RF.runOf[player:getId()]
+	if not run then
+		return out
+	end
+	out.inside = true
+	local mons, other, nearest, nd = 0, false, nil, nil
+	for mid in pairs(run.aliveIds or {}) do
+		local m = Monster(mid)
+		local at = m and m:getPosition()
+		if at then
+			mons = mons + 1
+			if at.z == pos.z then
+				local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+				if not nd or d < nd then
+					nearest, nd = at, d
+				end
+			else
+				other = true
+			end
+		end
+	end
+	local boss
+	for bid in pairs(run.bossIds or {}) do
+		boss = Monster(bid)
+		if boss then
+			break
+		end
+	end
+	out.run = {id = run.id, tier = run.key and run.key.tier, theme = run.themeName, kind = run.L and run.L.kind, state = run.state, boss = run.boss,
+		killed = run.killed, total = run.total, bossAt = run.bossAt, left = R.timeLeft(run, os.time()), lives = run.lives, players = run.size,
+		floors = run.L and #run.L.floors or 1, entry = plain(RF.entryOf(run)), monsters = mons,
+		bossPos = boss and plain(boss:getPosition()) or nil,
+		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil}
+	out.guide = R.guide({state = run.state, boss = run.boss, pos = out.pos, bossPos = out.run.bossPos,
+		monster = nearest and {pos = plain(nearest)} or nil, other = other and not nearest, reach = 4})
+	return out
+end
+
+-- TEST ONLY (`!tester rift close`): ends the asker's own run as a clean shutdown does (RF.interrupt: out to the temple)
+function RF.testerClose(player)
+	local run = RF.runOf[player:getId()]
+	if not run then
+		return false
+	end
+	return RF.interrupt(run) and true or false
+end
+
 Chaos.registerInstance("rift", {label = "a rift", inside = RF.isInside, at = function(pos)
 	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
 end, runs = function() -- /instances (instance_limits.lua)

@@ -29,6 +29,12 @@
 --     when there is no path, and the bot's report counts it
 --   * "!tester dungeon [state | path | close]" (O589, closed test mode): the dungeons as a person sees them (ChaosDungeons.probe), the
 --     path to the guide's goal inside a run and the close of the testers' own run; the walk and the fights are the bot's own
+--   * "!tester siege [state | start | path | portal | close]", "!tester guildboss [state | path | hall | close]" (O592, closed test mode): the
+--     guild siege and the weekly guild boss as a person sees them (ChaosSiege.probe, ChaosGuildBoss.probe), the TEST ONLY start of the testers'
+--     own siege, the path on foot to the portal, the stone or the next goal inside, the step next to a portal (the hall) when there is no
+--     path, and the close of the testers' own run; the walk, the fights, the donation and the summon are the bot's own
+--   * "!tester rift [state | key [tier] | path | close]" (O592): a rift opened and walked like a person's (the key into the backpack where the
+--     bot stands, in a protection zone; what the screen shows inside; the path on foot to the guardian or the nearest pack monster; the close)
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -54,13 +60,14 @@ local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
 local HUNT_CHECK = 7 -- tiles round the hunt spot checked for monsters above the tester's level
 local SEARCH = 30 -- tiles around the temple for an NPC
 local NPC_REACH = 4 -- tiles round an NPC that `enter npc` looks for a free one
+local HALL_SEARCH = 30 -- tiles around the temple for the Guild Hall Portal
 local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 14
+HELPER_VERSION = 15
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -399,9 +406,17 @@ function commands.enter(player, arg)
 				pcall(dropped.remove, dropped)
 			end
 		end
-		player:teleportTo(temple(player))
+		-- a rift is opened in a protection zone: a bot that walked to one (O592) stays; otherwise the temple, counted as a teleport
+		local okZone, inZone = pcall(function()
+			local tile = Tile(player:getPosition())
+			return tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE)
+		end)
+		local teleported = not (okZone and inZone)
+		if teleported then
+			player:teleportTo(temple(player))
+		end
 		tell(player, "enter", {kind = "rift", tier = place.tier, keyClientId = it and it:getClientId() or 0, held = held,
-			bagFull = bagFull or nil, pos = posOf(player:getPosition())})
+			bagFull = bagFull or nil, pos = posOf(player:getPosition()), teleported = teleported})
 		return
 	end
 	if place.kind == "npc" then
@@ -999,6 +1014,248 @@ function commands.raid(player, arg)
 		end
 	end
 	tell(player, "raid", H.raidAnswer(R.probe(player)))
+end
+
+-- ---------------------------------------------------------------- O592 the siege, the guild boss and the rift
+-- the way on foot to the guide's goal of a probe (mode "walk" with a goal): the answer to merge, or nil + the reason
+local function goalPath(player, probe)
+	local g = probe.guide
+	if type(g) ~= "table" or g.mode ~= "walk" or type(g.goal) ~= "table" then
+		return nil, "no goal"
+	end
+	local here = posOf(player:getPosition())
+	local reach = type(g.reach) == "table" and g.reach or {1, 3}
+	if here.z == g.goal.z and math.max(math.abs(here.x - g.goal.x), math.abs(here.y - g.goal.y)) <= math.max(reach[2] or 0, 0)
+		and (reach[2] or 0) > 0 then
+		return H.pathAnswer(here, g.goal, {}, {here = true})
+	end
+	local dirs, why = pathTo(player, g.goal, reach[1] or 0, reach[2] or 1)
+	if not dirs then
+		return nil, why
+	end
+	return H.pathAnswer(here, g.goal, dirs, nil)
+end
+
+-- the way on foot to a fixed tile (a portal, the stone): next to it
+local function tilePath(player, dest)
+	local here = posOf(player:getPosition())
+	if here.z == dest.z and math.max(math.abs(here.x - dest.x), math.abs(here.y - dest.y)) <= 1 then
+		return H.pathAnswer(here, dest, {}, {here = true})
+	end
+	local dirs, why = pathTo(player, dest, 0, 1)
+	if not dirs then
+		return nil, why
+	end
+	return H.pathAnswer(here, dest, dirs, nil)
+end
+
+-- a free tile next to a portal, the bot put there when no path is found (the bot steps onto the portal itself)
+local function stepNext(player, dest)
+	local spot = freeNear(Position(dest.x, dest.y, dest.z), nil, 1)
+	if not spot then
+		return nil, "no free tile next to the portal"
+	end
+	player:teleportTo(spot)
+	if not landed(player, spot) then
+		return nil, "the teleport next to the portal was refused"
+	end
+	return true
+end
+
+-- "!tester siege [state | start | path | portal | close]": reads ChaosSiege.probe (what a person sees of the siege). `start` is the TEST ONLY
+-- start of the testers' own siege of the two tester guilds (never the weekly schedule's, only with the switch on, never ahead of players:
+-- ChaosSiege.startTester asks); `path` the way on foot to the portal, or inside to the gate or the obelisk; `portal` the step next to the
+-- portal when there is no path; `close` ends the testers' own siege (standings and rewards, nothing stored)
+function commands.siege(player, arg)
+	local what, usage = H.parseSiege(arg)
+	if not what then
+		tell(player, "siege", {err = usage})
+		return
+	end
+	local S = ChaosSiege
+	if not (S and S.probe and S.startTester) then
+		tell(player, "siege", {err = "no siege system"})
+		return
+	end
+	if what == "start" then
+		local started, why = S.startTester()
+		tell(player, "siege", H.siegeAnswer(S.probe(player), {started = started and true or false,
+			why = (not started) and tostring(why):sub(1, 90) or nil}))
+		return
+	end
+	if what == "close" then
+		local closed = S.testerClose and S.testerClose(player) or false
+		tell(player, "siege", H.siegeAnswer(S.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = S.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		elseif probe.portal then
+			got, why = tilePath(player, probe.portal)
+		else
+			why = probe.running and "no siege portal" or "no siege running"
+		end
+		tell(player, "siege", H.siegeAnswer(probe, got or {err = why}))
+		return
+	end
+	if what == "portal" then
+		if probe.inside or not probe.portal then
+			tell(player, "siege", H.siegeAnswer(probe, {err = probe.inside and "already inside the siege" or "no siege portal"}))
+			return
+		end
+		local done, why = stepNext(player, probe.portal)
+		tell(player, "siege", H.siegeAnswer(S.probe(player), done and {} or {err = why}))
+		return
+	end
+	tell(player, "siege", H.siegeAnswer(probe))
+end
+
+-- the Guild Hall Portal next to a temple (a forcefield with the hall's action id, cityportals.lua): the nearest one on the temple's floor
+local function hallPortalNear(origin)
+	local cfg = Chaos.guildConfig and Chaos.guildConfig.hall
+	if not (cfg and cfg.ids and cfg.aid) then
+		return nil
+	end
+	local best, bd
+	for dx = -HALL_SEARCH, HALL_SEARCH do
+		for dy = -HALL_SEARCH, HALL_SEARCH do
+			local tile = Tile(Position(origin.x + dx, origin.y + dy, origin.z))
+			local item = tile and tile:getItemById(cfg.ids.portal)
+			if item and item:getActionId() == cfg.aid.enter then
+				local d = math.max(math.abs(dx), math.abs(dy))
+				if not bd or d < bd then
+					best, bd = {x = origin.x + dx, y = origin.y + dy, z = origin.z}, d
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- "!tester guildboss [state | path | hall | close]": reads ChaosGuildBoss.probe. `path` is the way on foot to the guild hall portal (outside),
+-- to the Summoning Stone (in the hall) or to the guide's goal (in the arena); `hall` brings the tester into its hall as the portal does
+-- (when there is no path); `close` ends the testers' own run. The window requests (buy the hall, feed the stone, summon) are the bot's own.
+function commands.guildboss(player, arg)
+	local what, usage = H.parseGuildBoss(arg)
+	if not what then
+		tell(player, "guildboss", {err = usage})
+		return
+	end
+	local B = ChaosGuildBoss
+	if not (B and B.probe) then
+		tell(player, "guildboss", {err = "no guild boss system"})
+		return
+	end
+	if what == "close" then
+		local closed = B.testerClose and B.testerClose(player) or false
+		tell(player, "guildboss", H.guildBossAnswer(B.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = B.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		elseif probe.hasHall and probe.inHall and probe.stone then
+			got, why = tilePath(player, probe.stone)
+			if got then
+				got.target = "stone"
+			end
+		elseif probe.hasHall then
+			local portal = hallPortalNear(temple(player))
+			if portal then
+				got, why = tilePath(player, portal)
+				if got then
+					got.target = "hall"
+				end
+			else
+				why = "no guild hall portal near the temple"
+			end
+		else
+			why = "the guild has no hall"
+		end
+		tell(player, "guildboss", H.guildBossAnswer(probe, got or {err = why}))
+		return
+	end
+	if what == "hall" then
+		local G = ChaosGuild
+		if probe.inside or not probe.hasHall then
+			tell(player, "guildboss", H.guildBossAnswer(probe, {err = probe.inside and "already inside the arena" or "the guild has no hall"}))
+			return
+		end
+		local entered = G and G.enterHall and G.enterHall(player, true) or false
+		tell(player, "guildboss", H.guildBossAnswer(B.probe(player), entered and {} or {err = "the hall could not be entered"}))
+		return
+	end
+	tell(player, "guildboss", H.guildBossAnswer(probe))
+end
+
+-- "!tester rift [state | key [tier] | path | close]": reads ChaosRift.probe. `key` puts a key into the backpack where the bot stands (the
+-- highest tier its level opens when none is named): it must be in a protection zone, as a player opening a rift must; the bot uses the key
+-- itself. `path` is the way on foot to the guide's goal inside (the guardian, else the nearest pack monster of the floor); `close` ends the
+-- bot's own run and takes a refunded key out of the backpack again.
+function commands.rift(player, arg)
+	local want, usage = H.parseRift(arg)
+	if not want then
+		tell(player, "rift", {err = usage})
+		return
+	end
+	local RF, cfg, R = ChaosRift, ChaosRiftConfig, ChaosRiftCore
+	if not (RF and RF.probe and RF.giveKey and cfg and cfg.key and R) then
+		tell(player, "rift", {err = "no rifts on this server"})
+		return
+	end
+	local function tierOf()
+		return H.riftTierFor(player:getLevel(), cfg.maxTier or 15, function(t) return R.tierInfo(cfg, t).minLevel end)
+	end
+	if want.what == "close" then
+		local closed = RF.testerClose and RF.testerClose(player) or false
+		for _ = 1, 5 do -- the refunded key (a run whose guardian lived) is no loot of the bot's: out again
+			local key = player:getItemById(cfg.key.itemId, true)
+			if not key then
+				break
+			end
+			pcall(key.remove, key, 1)
+		end
+		tell(player, "rift", H.riftAnswer(RF.probe(player), {closed = closed and true or false, tier = tierOf()}))
+		return
+	end
+	local probe = RF.probe(player)
+	if want.what == "key" then
+		local tier = want.tier or tierOf()
+		if not tier then
+			tell(player, "rift", H.riftAnswer(probe, {err = "level too low for a rift", level = player:getLevel()}))
+			return
+		end
+		if probe.inside then
+			tell(player, "rift", H.riftAnswer(probe, {err = "already inside a rift"}))
+			return
+		end
+		if not probe.pz then
+			tell(player, "rift", H.riftAnswer(probe, {err = "not in a protection zone", tier = tier}))
+			return
+		end
+		local inbox = RF.giveKey(player, {tier = tier, mods = {}}, "Tester key")
+		local key = player:getItemById(cfg.key.itemId, true)
+		local it = ItemType(cfg.key.itemId)
+		tell(player, "rift", H.riftAnswer(RF.probe(player), {tier = tier, held = key ~= nil, keyClientId = it and it:getClientId() or 0,
+			bagFull = (key == nil and inbox == true) or nil}))
+		return
+	end
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a rift"
+		end
+		tell(player, "rift", H.riftAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf()}))
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

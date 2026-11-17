@@ -30,6 +30,13 @@
 --   * white skulls that attacks give inside are taken back every second, and on leaving the in-fight condition (pz
 --     lock) is removed when the player came in without a skull.
 -- Multi-client (Chaos.isMultiClient): refused at the portal; a participant who becomes one is sent out.
+--
+-- Closed test mode (O592, server/README.md "The siege and the guild boss in closed mode (O592)"): the same state machine has a second
+-- side. `state.side` is "player" (the weekly siege, as above) or "tester": the TEST ONLY helper starts a short siege of the two tester
+-- guilds (S.startTester), only with the switch on, never while a player siege runs, is signed up for or is due (players first). A tester
+-- siege is never announced (log only), writes no results row, leaderboard entry, champion title or buff, takes no sign-up row, and shows
+-- nowhere to a player (the window and !siege read it as idle); a tester at a player siege portal and a player at a tester portal are
+-- refused (testers_core.lua K.sameSide). The switch going off, or the weekly schedule coming near, stops it. The rewards are the testers'.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -92,6 +99,10 @@ end
 
 -- `what`: an English text, a deferred text (ChaosI18n.msg) or a function(lang) -> text; each player reads their language
 local function announce(what, toast)
+	if state.side == "tester" then
+		log("(testers) " .. tostring(type(what) == "function" and what("en") or what)) -- a tester siege is never announced (O592)
+		return
+	end
 	local text
 	if Game.broadcastMessage then
 		text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, what)
@@ -114,6 +125,21 @@ end
 
 local function active()
 	return state.phase ~= "idle"
+end
+
+-- closed test mode (O592): the switch, a character's side, and whether a running siege is the one that character may see
+local function testerOn()
+	local K = ChaosTestersCore
+	return K ~= nil and K.closedOn() == true
+end
+
+local function sideOfPlayer(player)
+	return Chaos.isTester(player) and "tester" or "player"
+end
+
+-- a tester siege is invisible to a player (and a player's to a tester): the window and the status read it as idle
+local function runningFor(player)
+	return active() and (state.side or "player") == sideOfPlayer(player)
 end
 
 -- participant record of a player (or nil)
@@ -179,6 +205,10 @@ local function guildOf(player)
 	if not g then
 		return nil
 	end
+	-- closed test mode (O592): a tester only has a tester guild (and only with the switch on), a player never has one (testers.lua)
+	if ChaosTesters and ChaosTesters.guildBlocked and ChaosTesters.guildBlocked(player, g:getId(), g:getName()) then
+		return nil
+	end
 	return g:getId(), g:getName()
 end
 
@@ -234,10 +264,13 @@ local function signupInfo(player)
 	end
 	return {guildId = guildId, guildName = guildName, rank = guildId and player:getGuildLevel() or 0,
 		members = guildId and memberCount(guildId) or 0, signed = signed, count = #list,
-		open = S.signupsOpen(os.time(), at, cfg), running = active()}, list, at
+		open = S.signupsOpen(os.time(), at, cfg), running = runningFor(player)}, list, at
 end
 
 function S.join(player)
+	if Chaos.isTester(player) then
+		return false, "The testers play the siege through the staff helper, not through the sign-up."
+	end
 	local info, _, at = signupInfo(player)
 	local err = S.signupError(info, cfg)
 	if err then
@@ -251,6 +284,9 @@ function S.join(player)
 end
 
 function S.leave(player)
+	if Chaos.isTester(player) then
+		return false, "The testers play the siege through the staff helper, not through the sign-up."
+	end
 	local info, _, at = signupInfo(player)
 	local err = S.leaveError(info, cfg)
 	if err then
@@ -749,6 +785,10 @@ local function tick(token)
 	if state.token ~= token or not active() then
 		return
 	end
+	if state.side == "tester" and state.phase ~= "ending" and not testerOn() then
+		finish("stop") -- the switch went off: the testers' siege ends (nothing is stored or announced)
+		return
+	end
 	local now = os.time()
 	local match = state.phase == "match"
 	local counts = {}
@@ -836,7 +876,7 @@ local function beginMatch(token)
 	end
 	state.phase = "match"
 	state.matchAt = os.time()
-	state.endAt = os.time() + cfg.matchMinutes * 60
+	state.endAt = os.time() + (state.matchSeconds or cfg.matchMinutes * 60)
 	if not cfg.lateJoin then
 		closePortals()
 	end
@@ -849,7 +889,7 @@ local function beginMatch(token)
 	end
 	announce(function(lang)
 		return ChaosI18n.text(lang, "GUILD SIEGE: the gates are open! %d minutes to hold the Chaos Obelisk and strike down your enemies.%s",
-			cfg.matchMinutes, cfg.lateJoin and ChaosI18n.text(lang, " The portals next to the temples stay open.") or "")
+			math.max(1, math.floor((state.matchSeconds or cfg.matchMinutes * 60) / 60)), cfg.lateJoin and ChaosI18n.text(lang, " The portals next to the temples stay open.") or "")
 	end, true)
 end
 
@@ -885,9 +925,12 @@ local function closeOut(token)
 	for b = 1, #(state.brackets or {}) do
 		cleanArena(b)
 	end
+	local wasTester = state.side == "tester"
 	S.state = {phase = "idle", token = token + 1}
 	state = S.state
-	S.nextAt = S.nextStart(os.time(), cfg)
+	if not wasTester then
+		S.nextAt = S.nextStart(os.time(), cfg)
+	end
 end
 
 -- reason: "time" (normal end), "end" (staff: end now with results), "stop" (staff: cancel, no results)
@@ -900,7 +943,8 @@ finish = function(reason)
 	local token = state.token
 	closePortals()
 	local now = os.time()
-	local delay = cfg.exitDelaySeconds
+	local testers = state.side == "tester" -- O592: no row, board, title or announcement of the testers' siege is ever stored
+	local delay = state.exitDelay or cfg.exitDelaySeconds
 	if reason == "stop" then
 		announce("The guild siege was cancelled by the staff.", true)
 		delay = math.min(delay, 5)
@@ -914,18 +958,18 @@ finish = function(reason)
 			br.result = {winner = win and win.name or "", standings = {}}
 			for _, t in ipairs(br.standings) do
 				br.result.standings[#br.result.standings + 1] = {place = t.place, name = t.name, score = t.score, kills = t.kills, color = t.color}
-				db.query(string.format("INSERT INTO `%s` (`siege_at`, `ended_at`, `bracket`, `guild_id`, `guild_name`, `place`, `winner`, `score`, `kills`, `hold_seconds`, `members`) VALUES (%d, %d, %d, %d, %s, %d, %d, %d, %d, %d, %d)",
+				if not testers then db.query(string.format("INSERT INTO `%s` (`siege_at`, `ended_at`, `bracket`, `guild_id`, `guild_name`, `place`, `winner`, `score`, `kills`, `hold_seconds`, `members`) VALUES (%d, %d, %d, %d, %s, %d, %d, %d, %d, %d, %d)",
 					T_RESULTS, state.at, now, b, t.id, db.escapeString(t.name), t.place, (win and win.id == t.id) and 1 or 0,
-					t.score, t.kills, t.hold or 0, t.joined or 0))
+					t.score, t.kills, t.hold or 0, t.joined or 0)) end
 			end
-			if win then
+			if win and not testers then
 				S.champions[win.id] = {name = win.name, untilAt = now + (cfg.titleDays or 7) * 86400}
 			end
 			lines[#lines + 1] = {arena = #state.brackets > 1 and b or nil, winner = win and win.name or nil, br = br}
 		end
 		for guid, p in pairs(state.players) do
 			local br = state.brackets[p.bracket]
-			local kind, r = S.rewardFor(br.winner == p.guildId, p.presence, cfg)
+			local kind, r = S.rewardFor(br.winner == p.guildId, p.presence, state.rewardCfg or cfg)
 			if kind then
 				rewards[#rewards + 1] = {guid = guid, name = p.name, kind = kind, bankGold = r.bankGold, items = r.items}
 			else
@@ -936,7 +980,7 @@ finish = function(reason)
 						cfg.minPresenceSeconds or 0, p.presence))
 				end
 			end
-			if ChaosLeaderboard and ChaosLeaderboard.record and cfg.leaderboard and (p.points > 0 or p.kills > 0) then
+			if not testers and ChaosLeaderboard and ChaosLeaderboard.record and cfg.leaderboard and (p.points > 0 or p.kills > 0) then
 				pcall(ChaosLeaderboard.record, cfg.leaderboard, {guid = guid, name = p.name}, p.points, "add")
 			end
 		end
@@ -959,7 +1003,9 @@ finish = function(reason)
 				or "GUILD SIEGE OVER: %s Everyone inside returns home in %d seconds."
 			return ChaosI18n.text(lang, over, table.concat(parts, " | "), delay)
 		end, true)
-		db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d", T_SIGNUPS, state.at))
+		if not testers then
+			db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d", T_SIGNUPS, state.at))
+		end
 		for guid, p in pairs(state.players) do
 			local player = Player(p.name)
 			if player and player:getGuid() == guid and p.inside then
@@ -971,17 +1017,8 @@ finish = function(reason)
 	return true
 end
 
--- forced = staff start (uses the sign-ups of the upcoming siege). Returns true or false + reason.
-function S.start(forced)
-	if active() then
-		return false, "a siege is already running"
-	end
-	local at = S.upcoming()
-	local signups = signupsFor(at)
-	local guilds = {}
-	for i, r in ipairs(signups) do
-		guilds[#guilds + 1] = {id = r.guild_id, name = r.guild_name, order = i}
-	end
+-- the start itself, for both sides. times (testers only): S.testerTimes
+local function begin(forced, side, at, guilds, times)
 	local brackets, waiting = S.brackets(guilds, cfg)
 	if #brackets == 0 then
 		return false, string.format("not enough guilds signed up (%d, at least %d needed)", #guilds, cfg.minGuilds or 2)
@@ -993,8 +1030,11 @@ function S.start(forced)
 		end
 	end
 	local token = state.token + 1
-	S.state = {phase = "gather", token = token, at = at, forced = forced or false, startedAt = os.time(),
-		matchAt = os.time() + cfg.gatherSeconds, brackets = {}, players = {}, guildBracket = {}, portals = {}}
+	local gather = times and times.gather or cfg.gatherSeconds
+	S.state = {phase = "gather", token = token, at = at, forced = forced or false, startedAt = os.time(), side = side,
+		matchAt = os.time() + gather, brackets = {}, players = {}, guildBracket = {}, portals = {},
+		matchSeconds = times and times.match or cfg.matchMinutes * 60, exitDelay = times and times.exit or cfg.exitDelaySeconds,
+		rewardCfg = times and setmetatable({minPresenceSeconds = times.presence}, {__index = cfg}) or nil}
 	state = S.state
 	for b, list in ipairs(brackets) do
 		local br = {L = layoutOf(b), teams = {}, byGuild = {}}
@@ -1017,7 +1057,7 @@ function S.start(forced)
 		end
 	end
 	announce(ChaosI18n.msg("GUILD SIEGE: %s march on the Chaos Obelisk! Members (level %d+): enter through the portals next to the temples. The gates open in %d seconds.",
-		table.concat(names, ", "), cfg.minLevel, cfg.gatherSeconds), true)
+		table.concat(names, ", "), cfg.minLevel, gather), true)
 	if #waiting > 0 then
 		local w = {}
 		for _, g in ipairs(waiting) do
@@ -1025,9 +1065,54 @@ function S.start(forced)
 		end
 		announce(ChaosI18n.msg("No room in this siege for: %s.", table.concat(w, ", ")), false)
 	end
-	addEvent(beginMatch, cfg.gatherSeconds * 1000, token)
+	addEvent(beginMatch, gather * 1000, token)
 	addEvent(tick, 1000, token)
 	return true
+end
+
+-- forced = staff start (uses the sign-ups of the upcoming siege). Returns true or false + reason. A running testers' siege gives way:
+-- it is stopped, and the start is asked again in a moment (players first, O592)
+function S.start(forced)
+	if active() then
+		if state.side == "tester" then
+			finish("stop")
+			return false, "a testers' siege was running: it is being closed, try again in a few seconds"
+		end
+		return false, "a siege is already running"
+	end
+	local at = S.upcoming()
+	local signups = signupsFor(at)
+	local guilds = {}
+	for i, r in ipairs(signups) do
+		guilds[#guilds + 1] = {id = r.guild_id, name = r.guild_name, order = i}
+	end
+	return begin(forced, "player", at, guilds, nil)
+end
+
+-- the tester guilds that may play: named like one, every member a tester, the sign-up rule's member count (ChaosTesters.guildSide)
+local function testerGuilds()
+	local list = {}
+	local rows = Chaos.select("SELECT `id`, `name` FROM `guilds` WHERE `name` LIKE 'Tester Guild %' ORDER BY `id`", {{"id", "n"}, {"name", "s"}})
+	for _, r in ipairs(rows) do
+		local side = ChaosTesters and ChaosTesters.guildSide and ChaosTesters.guildSide(r.id, r.name)
+		if side == "tester" and memberCount(r.id) >= (cfg.minMembers or 3) then
+			list[#list + 1] = {id = r.id, name = r.name, order = #list + 1}
+		end
+	end
+	return list
+end
+
+-- TEST ONLY (tools/tester_helper.lua `siege start`): the testers' own siege of their two guilds, short, never announced, nothing stored
+function S.startTester()
+	local at = S.upcoming()
+	local guilds = testerGuilds()
+	local info = {on = testerOn(), active = active(), now = os.time(), at = at, guilds = #guilds,
+		playerSignups = active() and 0 or #signupsFor(at)}
+	local why = S.testerStartRefusal(info, cfg)
+	if why then
+		return false, why
+	end
+	return begin(true, "tester", at, guilds, S.testerTimes(cfg))
 end
 
 function S.stop()
@@ -1051,9 +1136,11 @@ function S.matchNow()
 	return true
 end
 
-function S.status(lang)
+function S.status(lang, viewer, staff)
 	local T = function(key, ...) return ChaosI18n.text(lang, key, ...) end
-	if state.phase == "idle" then
+	-- a tester siege is idle to a player and the other way round; the staff command sees it with a mark (O592)
+	local hidden = active() and not staff and viewer ~= nil and not runningFor(viewer)
+	if state.phase == "idle" or hidden then
 		local at = S.upcoming()
 		local list = signupsFor(at)
 		local names = {}
@@ -1064,8 +1151,9 @@ function S.status(lang)
 			S.durationText(at - os.time()), #list, S.capacity(cfg), #names > 0 and table.concat(names, ", ") or T("nobody yet"),
 			S.signupsOpen(os.time(), at, cfg) and "" or T(" Sign-ups are closed."))
 	end
+	local mark = (staff and state.side == "tester") and "(testers) " or ""
 	if state.phase == "gather" then
-		return T("The guild siege is gathering: the gates open in %d seconds. Portals are next to the temples.",
+		return mark .. T("The guild siege is gathering: the gates open in %d seconds. Portals are next to the temples.",
 			math.max(0, state.matchAt - os.time()))
 	elseif state.phase == "match" then
 		local parts = {}
@@ -1077,9 +1165,112 @@ function S.status(lang)
 			end
 			parts[#parts + 1] = table.concat(t, ", ")
 		end
-		return T("The guild siege is on (%s left): %s.", S.clock(state.endAt - os.time()), table.concat(parts, " | "))
+		return mark .. T("The guild siege is on (%s left): %s.", S.clock(state.endAt - os.time()), table.concat(parts, " | "))
 	end
-	return T("The guild siege is ending.")
+	return mark .. T("The guild siege is ending.")
+end
+
+-- ======================================================================== what a person sees (the tester bots, O592)
+local function plain(pos)
+	return pos and {x = pos.x, y = pos.y, z = pos.z} or nil
+end
+
+local function cheb(a, b)
+	return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
+end
+
+-- the own gate tile of a base (the wall piece shifts the forcefield: wallsOf's `spot`), kept per bracket
+local gateCache = {}
+local function gateOf(b, slot)
+	local key = b .. ":" .. slot
+	if not gateCache[key] then
+		local L = layoutOf(b)
+		local _, spot = wallsOf(L)
+		local g = spot(L.bases[slot].gate)
+		gateCache[key] = {x = g.x, y = g.y, z = g.z}
+	end
+	return gateCache[key]
+end
+
+-- What a person sees of the siege, for the tester bots' `!tester siege` (tools/tester_helper.lua checks that the asker is a tester):
+-- outside, the portal and the rules for the tester's own side; inside, where the bot stands, the clock, the scores, the obelisk and the
+-- nearest enemy. Reads only. A siege of the other side is shown as idle.
+function S.probe(player)
+	local pos = player:getPosition()
+	local gid, gname = guildOf(player)
+	local out = {on = testerOn(), level = player:getLevel(), minLevel = cfg.minLevel, pos = plain(pos), guild = gname,
+		enabled = cfg.enabled ~= false, running = runningFor(player), phase = runningFor(player) and state.phase or "idle",
+		radius = cfg.capture.radius}
+	local p = part(player)
+	local where, _, b = locate(pos)
+	if not runningFor(player) then
+		return out
+	end
+	out.side = state.side or "player"
+	out.signed = gid ~= nil and state.guildBracket ~= nil and state.guildBracket[gid] ~= nil
+	out.left = (state.phase == "gather" and math.max(0, (state.matchAt or 0) - os.time()))
+		or (state.phase == "match" and math.max(0, (state.endAt or 0) - os.time())) or 0
+	if state.portalsOpen then
+		local best
+		for _, q in ipairs(state.portals or {}) do
+			if pos.z == q.z and (not best or cheb(pos, q) < cheb(pos, best)) then
+				best = q
+			end
+		end
+		out.portal = plain(best)
+	end
+	if not (p and where and b == p.bracket) then
+		return out
+	end
+	local br = state.brackets[b]
+	local L = br.L
+	out.inside, out.where, out.bracket = true, where, b
+	out.center, out.gate = plain(L.center), gateOf(b, p.slot)
+	local onPoint = where == "arena" and S.onPoint(pos, L, cfg.capture.radius)
+	out.onPoint, out.downed = onPoint and true or false, p.downedUntil ~= nil
+	local own = team(p)
+	out.team = {name = own.name, score = own.score, kills = own.kills}
+	out.rivals = {}
+	for _, t in ipairs(bracketTeams(br)) do
+		if t.id ~= p.guildId then
+			out.rivals[#out.rivals + 1] = {name = t.name, score = t.score, kills = t.kills}
+		end
+	end
+	local holder = br.holder and br.teams[br.byGuild[br.holder]]
+	out.holder, out.contested = holder and holder.name or "", br.contested and true or false
+	out.you = {points = p.points, kills = p.kills, deaths = p.deaths}
+	out.members = insideCount(b, p.guildId)
+	local enemy
+	for _, q in pairs(state.players) do
+		if q.bracket == b and q.guildId ~= p.guildId and q.inside and not q.downedUntil then
+			local other = Player(q.name)
+			local at = other and other:getPosition()
+			if at and locate(at) == "arena" and (not enemy or cheb(pos, at) < cheb(pos, enemy)) then
+				enemy = at
+			end
+		end
+	end
+	out.guide = S.guide({phase = state.phase, where = where, pos = out.pos, gate = out.gate, center = out.center, radius = cfg.capture.radius,
+		onPoint = out.onPoint, downed = out.downed, enemy = plain(enemy), reach = 3})
+	return out
+end
+
+-- TEST ONLY (`!tester siege close`): ends the testers' own siege with its standings and rewards when the asker is in it or it is empty
+function S.testerClose(player)
+	if not active() or state.side ~= "tester" or state.phase == "ending" then
+		return false
+	end
+	local inside = 0
+	for _, q in pairs(state.players or {}) do
+		if q.inside then
+			inside = inside + 1
+		end
+	end
+	local p = part(player)
+	if inside > 0 and not (p ~= nil and p.inside == true) then
+		return false
+	end
+	return S.endNow() and true or false
 end
 
 -- ======================================================================== the window (client game_siege)
@@ -1101,11 +1292,11 @@ function S.sendInfo(player, open)
 	local joinErr = S.signupError(info, cfg)
 	local leaveErr = S.leaveError(info, cfg)
 	Chaos.send(player, OPCODE, "info", {
-		open = open or false, phase = state.phase, at = at, whenText = S.whenText(at, lang), inSeconds = math.max(0, at - now),
+		open = open or false, phase = runningFor(player) and state.phase or "idle", at = at, whenText = S.whenText(at, lang), inSeconds = math.max(0, at - now),
 		signupsOpen = info.open and not info.running, signups = signups, capacity = S.capacity(cfg),
 		guild = info.guildName or "", rank = info.rank, signed = info.signed, members = info.members,
 		canJoin = joinErr == nil, joinReason = joinErr and ChaosI18n.translate(lang, joinErr) or "", canLeave = leaveErr == nil and info.signed,
-		champions = champions, status = S.status(lang),
+		champions = champions, status = S.status(lang, player),
 		rules = {
 			T("Every %s at %02d:%02d server time: %s of gathering, then a %d-minute war for the Chaos Obelisk.",
 				T(S.WEEKDAYS[cfg.weekday]), cfg.hour, cfg.minute, cfg.gatherSeconds >= 120 and T("%d minutes", math.floor(cfg.gatherSeconds / 60))
@@ -1256,6 +1447,17 @@ function enter.onStepIn(creature, item, position, fromPosition)
 		pushBack(player, fromPosition, "The siege portal is closed.")
 		return true
 	end
+	-- closed test mode (O592): a tester only in a testers' siege (switch on), a player never in one, never mixed
+	local K = ChaosTestersCore
+	local isT = Chaos.isTester(player)
+	local mine, why = S.sideRefusal(K, testerOn(), isT)
+	if why == nil and mine ~= (state.side or "player") then
+		why = "apart"
+	end
+	if why then
+		pushBack(player, fromPosition, (K and K.CLOSED_TEXT and K.CLOSED_TEXT[why]) or "Testers and players are never mixed.")
+		return true
+	end
 	local guildId, guildName = guildOf(player)
 	local b = guildId and state.guildBracket[guildId]
 	if not b then
@@ -1368,6 +1570,10 @@ function schedule.onThink(interval)
 	local now = os.time()
 	local at = S.upcoming()
 	if active() then
+		-- players first (O592): a testers' siege never runs into the weekly start
+		if state.side == "tester" and state.phase ~= "ending" and at - now < S.testerTimes(cfg).margin then
+			finish("stop")
+		end
 		return true
 	end
 	for i, m in ipairs(cfg.warnMinutes or {}) do
@@ -1460,6 +1666,8 @@ function gm.onSay(player, words, param)
 		local rows = Chaos.select("SELECT `id`, `name` FROM `guilds` WHERE `name` = " .. db.escapeString(name), {{"id", "n"}, {"name", "s"}})
 		if not rows[1] then
 			say("No guild named " .. name .. ".")
+		elseif rows[1].name:sub(1, 7) == "Tester " then
+			say("A tester guild is never signed up for the players' siege (it plays its own, `!tester siege start`).")
 		else
 			local at = S.upcoming()
 			db.query(string.format("INSERT IGNORE INTO `%s` (`siege_at`, `guild_id`, `guild_name`, `signed_by`, `signed_at`) VALUES (%d, %d, %s, %d, %d)",
@@ -1470,7 +1678,7 @@ function gm.onSay(player, words, param)
 		db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d", T_SIGNUPS, S.upcoming()))
 		say("Sign-ups for " .. S.whenText(S.upcoming()) .. " cleared.")
 	else
-		say(S.status() .. "\nUsage: /siege start | match | end | stop | portal | arena [n] | signup <guild> | clear")
+		say(S.status(nil, nil, true) .. "\nUsage: /siege start | match | end | stop | portal | arena [n] | signup <guild> | clear")
 	end
 	return false
 end

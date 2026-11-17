@@ -11,7 +11,7 @@
 --   K.receiverOf(text)                    the receiver of a label or letter text (its first line, trimmed)
 --   K.lookLine(isSelf)                    the line every look at a tester adds
 -- Closed test mode (O582, server/README.md "Closed test mode"): the bots play arena, battleground, PvP, guild, guild war,
--- market, bazaar, the raid, the dungeons, the group queue and the party finder among themselves, never with a player. The switch is the file data/chaos_testers_closed
+-- market, bazaar, the raid, the dungeons, the group queue, the party finder, the guild siege and the guild boss among themselves, never with a player. The switch is the file data/chaos_testers_closed
 -- (chaos-ctl.sh testers closed on | off); anything but the word "on" in it, no file or a read that fails is OFF. Rules:
 --   K.parseClosed(text)                   true only for the word "on" (trimmed, any case)
 --   K.closedOn()                          the file, read at most every K.CLOSED_TTL seconds (K.reader / K.clock replace io / os.time)
@@ -21,6 +21,7 @@
 --   K.guildSide(name, anyTester, allTester) the side of a guild: "tester" (name starts "Tester ", every member a tester),
 --                                         "player" (no tester member), nil (mixed, empty, or a tester in a player's guild)
 --   K.guildBlocked(isTester, name, anyTester, allTester, closedOn)  a character may not use this guild (reason) or nil
+--   K.guildVisible(isTester, name, side)  a guild may be listed to this viewer (the boards): a player sees player guilds, a tester tester guilds (O592)
 --   K.marketRealm(isTester, realm)        a tester trades in its own book (K.REALM), a player in its own realm
 --   K.marketRefusal(action, isTester, closedOn)  the refusal of a market action of a tester, or nil
 --   K.marketCoinsOk(realm)                the tester book trades gold only
@@ -40,7 +41,7 @@ K.CLOSED_TTL = 5 -- seconds a read of the file is kept
 K.GUILD_PREFIX = "Tester " -- a tester guild's name starts with it
 K.GUILD_MARK = "Tester Guild " -- the names of the guilds testers.py makes ("Tester Guild Alfa"): never in a broadcast or Discord event
 K.CLOSED_SYSTEMS = {arena = true, battleground = true, pvp = true, guild = true, guildwar = true, market = true, bazaar = true, raid = true, dungeon = true,
-	groupqueue = true, partyfinder = true}
+	groupqueue = true, partyfinder = true, siege = true, guildboss = true}
 
 function K.safetyProblem(group, accountType)
 	group, accountType = tonumber(group) or 0, tonumber(accountType) or 0
@@ -248,6 +249,19 @@ function K.guildBlocked(isTester, name, anyTester, allTester, closedOn)
 		return "closed-off"
 	end
 	return side == "tester" and "apart" or nil
+end
+
+-- a board row of a guild shown to a viewer (O592): a player never sees a tester guild, a tester sees only tester guilds. `side` is the
+-- guild's own side (K.guildSide); a guild not named like a tester guild is a player guild without a query (side may be nil then)
+function K.guildVisible(isTester, name, side)
+	local prefixed = type(name) == "string" and name:sub(1, #K.GUILD_PREFIX) == K.GUILD_PREFIX
+	if isTester then
+		return side == "tester"
+	end
+	if not prefixed then
+		return true
+	end
+	return side == "player"
 end
 
 function K.marketRealm(isTester, realm)

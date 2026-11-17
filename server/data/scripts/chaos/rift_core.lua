@@ -1777,6 +1777,39 @@ function R.atlasFragments(n, am, rand)
 	return roundChance(n * (1 + f / 100), rand)
 end
 
+-- What a person does next in a rift (the tester bots' `!tester rift`, O592): the guardian when it is there, else the nearest pack
+-- monster of the floor the bot stands on, else wait. a = {state ("running" ...), boss ("waiting" | "alive" | ...), pos, bossPos,
+-- monster = {pos} (the nearest on this floor), other = true when monsters are left on other floors only, reach (tiles a fight starts at)}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
+function R.guide(a)
+	if a.state ~= "running" then
+		return {mode = "wait", why = "the run is over"}
+	end
+	local reach = a.reach or 4
+	local function near(goal)
+		return a.pos and goal and goal.z == a.pos.z and math.max(math.abs(a.pos.x - goal.x), math.abs(a.pos.y - goal.y)) <= reach
+	end
+	if a.boss == "alive" and a.bossPos then
+		if a.bossPos.z ~= (a.pos and a.pos.z) then
+			return {mode = "walk", goal = a.bossPos, reach = {1, reach}, area = "boss", why = "the guardian is on another floor"}
+		end
+		if near(a.bossPos) then
+			return {mode = "fight", goal = a.bossPos, area = "boss", why = "in reach of the guardian"}
+		end
+		return {mode = "walk", goal = a.bossPos, reach = {1, reach}, area = "boss", why = "to the guardian"}
+	end
+	if a.monster and a.monster.pos then
+		if near(a.monster.pos) then
+			return {mode = "fight", goal = a.monster.pos, area = "pack", why = "in reach of a pack monster"}
+		end
+		return {mode = "walk", goal = a.monster.pos, reach = {1, reach}, area = "pack", why = "to the nearest pack monster"}
+	end
+	if a.other then
+		return {mode = "wait", area = "pack", why = "the monsters left are on another floor"}
+	end
+	return {mode = "wait", why = a.boss == "waiting" and "no monster in sight" or "nothing to do"}
+end
+
 -- the HUD line of a run's atlas ("Atlas: Lone Ember, +12% packs, +1 life"), or nil; in `lang` (English without)
 function R.atlasNote(am, lang)
 	if not am then

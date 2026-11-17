@@ -2865,5 +2865,809 @@ class PartyFinderClosed(unittest.TestCase):
         self.assertIn('not installed', r.detail)
 
 
+
+# ------------------------------------------------------------------------------------------------ the siege, the guild boss and the rift (O592)
+class SiegeWorld:
+    """a tiny siege world on one lane (y = 5): the portal at x 100 (the temple at x 92), the base of each guild at x 10, its gate at x 20, the
+    obelisk at x 60 (radius 2). It answers `!tester siege ...` as the helper does (the guide's rules in miniature), moves the bots by their
+    steps, takes a bot through the portal and the gate when it steps on them, scores the hold and calls a tie contested. Time does not pass."""
+    PORTAL, TEMPLE, GATE, CENTER, RADIUS = 100, (92, 3), 20, 60, 2
+
+    def __init__(self, on=True, started=True, why='players are signed up for the next siege', refuse_portal=False, no_path=False, level=900,
+                 side='tester', no_contest=False, no_score=False, blocked=(), running=False, guilds=('Tester Guild Alfa', 'Tester Guild Bravo'),
+                 no_portal_step=False):
+        self.on, self.started, self.why, self.refuse_portal, self.no_path, self.level = on, started, why, refuse_portal, no_path, level
+        self.side, self.no_contest, self.no_score, self.blocked, self.running = side, no_contest, no_score, set(blocked), running
+        self.guilds, self.units, self.up, self.closed, self.teleports = guilds, {}, False, 0, 0
+        self.score = 0
+        self.no_portal_step = no_portal_step
+
+    def unit(self, name):
+        return self.units.setdefault(name, {'pos': (60, 60), 'inside': False, 'where': None})
+
+    def pos(self, name):
+        x, y = self.unit(name)['pos']
+        return {'x': x, 'y': y, 'z': 7}
+
+    def on_point(self, name):
+        u = self.unit(name)
+        return u['inside'] and u['where'] == 'arena' and abs(u['pos'][0] - self.CENTER) <= self.RADIUS
+
+    def guide(self, name):
+        u = self.unit(name)
+        if not u['inside']:
+            return None
+        if u['where'] == 'base':
+            return {'mode': 'walk', 'goal': {'x': self.GATE, 'y': 5, 'z': 7}, 'reach': [0, 0], 'area': 'gate', 'why': 'test'}
+        if self.on_point(name):
+            return {'mode': 'hold', 'goal': {'x': self.CENTER, 'y': 5, 'z': 7}, 'area': 'obelisk', 'why': 'test'}
+        return {'mode': 'walk', 'goal': {'x': self.CENTER, 'y': 5, 'z': 7}, 'reach': [0, self.RADIUS], 'area': 'obelisk', 'why': 'test'}
+
+    def facts(self, name):
+        u = self.unit(name)
+        guild = self.guilds[0] if name == 'Tester Aaa' else self.guilds[1]
+        out = {'inside': u['inside'], 'level': self.level, 'minLevel': 100, 'pos': self.pos(name), 'on': self.on, 'running': self.up or self.running,
+               'phase': 'match' if self.up else 'idle', 'side': self.side if self.up else None, 'guild': guild, 'signed': self.up,
+               'portal': {'x': self.PORTAL, 'y': 5, 'z': 7} if self.up else None}
+        if u['inside']:
+            both = [n for n, v in self.units.items() if self.on_point(n)]
+            contested = len(both) == 2 and not self.no_contest
+            holder = '' if len(both) != 1 else ('Tester Guild Alfa' if both[0] == 'Tester Aaa' else 'Tester Guild Bravo')
+            out.update({'where': u['where'], 'bracket': 1, 'center': {'x': self.CENTER, 'y': 5, 'z': 7}, 'gate': {'x': self.GATE, 'y': 5, 'z': 7},
+                        'onPoint': self.on_point(name), 'downed': False, 'members': 1, 'holder': holder, 'contested': contested,
+                        'team': {'name': guild, 'score': self.score if name == 'Tester Aaa' else 0, 'kills': 0},
+                        'rivals': [{'name': 'x', 'score': 0, 'kills': 0}], 'you': {'points': self.score, 'kills': 0, 'deaths': 0},
+                        'guide': self.guide(name)})
+        return out
+
+    def tick(self):
+        """one second of the siege: the hold scores for the guild that stands on the obelisk alone"""
+        on = [n for n in self.units if self.on_point(n)]
+        if on == ['Tester Aaa'] and not self.no_score:
+            self.score += 1
+
+    def path_to(self, name, goal, reach):
+        x, y = self.unit(name)['pos']
+        dirs = [2] * max(0, 5 - y) + [0] * max(0, y - 5)
+        if x < goal - reach:
+            dirs += [1] * (goal - reach - x)
+        elif x > goal + reach:
+            dirs += [3] * (x - goal - reach)
+        return dirs
+
+    def answer(self, name, command):
+        u = self.unit(name)
+        if command == 'siege state':
+            self.tick() if name == 'Tester Aaa' else None
+            return self.facts(name)
+        if command == 'siege start':
+            if not self.started:
+                return {'started': False, 'why': self.why}
+            self.up = True
+            return {'started': True}
+        if command == 'siege path':
+            if u['inside']:
+                g = self.guide(name)
+                if g['mode'] != 'walk':
+                    return dict(self.facts(name), err='no goal')
+                return dict(self.facts(name), path=self.path_to(name, g['goal']['x'], g['reach'][1]), dist=abs(u['pos'][0] - g['goal']['x']))
+            dist = max(abs(u['pos'][0] - self.PORTAL), abs(u['pos'][1] - 5))
+            base = {'pos': self.pos(name), 'dest': {'x': self.PORTAL, 'y': 5, 'z': 7}, 'dist': dist}
+            if dist <= 1:
+                return dict(base, here=True, path=[])
+            if self.no_path:
+                return dict(self.facts(name), err='no path')
+            return dict(base, path=self.path_to(name, self.PORTAL, 1))
+        if command == 'siege portal':
+            self.teleports += 1
+            u['pos'] = (self.PORTAL - 1, 5)
+            return self.facts(name)
+        if command == 'siege close':
+            for v in self.units.values():
+                v['inside'] = False
+            was, self.up = self.up, False
+            self.closed += 1
+            return dict(self.facts(name), closed=was)
+        return None
+
+    def step(self, name, dx, dy):
+        u = self.unit(name)
+        nx, ny = u['pos'][0] + dx, u['pos'][1] + dy
+        if (nx, ny) in self.blocked or not (-1 <= nx <= 200):
+            return
+        u['pos'] = (nx, ny)
+        if not u['inside'] and (nx, ny) == (self.PORTAL, 5) and self.up and not self.refuse_portal and not self.no_portal_step:
+            u.update(inside=True, where='base', pos=(10, 5))
+        elif u['inside'] and u['where'] == 'base' and (nx, ny) == (self.GATE, 5):
+            u.update(where='arena', pos=(self.GATE + 2, 5))
+
+
+class SiegeIO(ClosedIO):
+    def __init__(self, world, me='Tester Aaa', **kw):
+        super().__init__(**kw)
+        self.w, self.me, self.modes, self.cmds = world, me, [], []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append((self.me, command))
+        return self.w.answer(self.me, command)
+
+    async def helper_of(self, other, command, kind, wait=4.0):
+        self.cmds.append((other, command))
+        return self.w.answer(other, command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        self.w.unit(self.me)['pos'] = self.w.TEMPLE
+        return True
+
+    async def go_of(self, other, place):
+        self.w.unit(other)['pos'] = self.w.TEMPLE
+        return True
+
+    async def step(self, dx, dy):
+        self.w.step(self.me, dx, dy)
+
+    async def step_of(self, other, dx, dy):
+        self.w.step(other, dx, dy)
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+ALFA = {'guild': 'Tester Guild Alfa', 'leader': True, 'rival': 'Tester Guild Bravo', 'rival_leader': 'Tester Bbb'}
+
+
+class SiegeClosed(unittest.TestCase):
+    def setUp(self):
+        TX.reset_siege_turn()
+
+    def tearDown(self):
+        TX.reset_siege_turn()
+
+    def play(self, world, name='Tester Aaa', plan=ALFA, **kw):
+        io = SiegeIO(world, me=name, plan=plan, **kw)
+        return run(TX.check_closed_siege(io, name, 'Warrior', 900)), io
+
+    def test_pure_parts(self):
+        a = {'on': True, 'guild': 'Tester Guild Alfa', 'level': 900, 'minLevel': 100}
+        self.assertIsNone(TX.siege_refusal(a))
+        for bad, word in ((None, 'old helper'), ({'err': 'no siege system'}, 'no siege system'), (dict(a, on=False), 'switch'),
+                          (dict(a, running=True), 'running already'), (dict(a, inside=True), 'inside'), (dict(a, guild=None), 'no tester guild'),
+                          (dict(a, level=50), 'level 50')):
+            r = TX.siege_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        self.assertEqual(TX.siege_problems({'inside': True, 'side': 'tester'}), [])
+        self.assertEqual(TX.siege_problems({'inside': False, 'side': 'player'}), [])
+        self.assertTrue(TX.siege_problems({'inside': True, 'side': 'player'}))
+        base = {'both': True, 'secs': 100, 'steps': 40, 'came': 'foot', 'guild': 'A', 'rival': 'B', 'score': 5, 'contested': True}
+        self.assertEqual(TX.siege_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.siege_verdict(base)[0], TX.PASS)
+        self.assertEqual(TX.siege_verdict(dict(base, both=False))[0], TX.SKIP)
+        self.assertEqual(TX.siege_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.siege_verdict(dict(base, contested=False))[0], TX.SKIP)
+        self.assertEqual(TX.siege_verdict(dict(base, score=0, contested=False, held=9))[0], TX.FAIL)
+        self.assertEqual(TX.siege_verdict(dict(base, score=0, contested=False))[0], TX.SKIP)
+        self.assertIn('siege portal (no path)', TX.siege_verdict(dict(base, fallbacks=['siege portal (no path)']))[1])
+        self.assertIn('closed_siege', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_siege', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_dungeon'), TX.CLOSED_KEYS.index('closed_siege'))
+        self.assertLess(TX.CLOSED_KEYS.index('closed_siege'), TX.CLOSED_KEYS.index('closed_raid'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')
+
+    def test_a_siege_played_on_foot_is_a_pass(self):
+        r, io = self.play(SiegeWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('contested', r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0)
+        self.assertEqual(io.w.closed, 1)
+        self.assertEqual(io.w.up, False)
+        self.assertGreater(io.w.score, 0)
+        self.assertEqual(io.modes[0], (['Tester Aaa', 'Tester Bbb'], True, False))
+        self.assertEqual(io.modes[-1], (['Tester Aaa', 'Tester Bbb'], False, False))
+        cmds = [c for _, c in io.cmds]
+        self.assertLess(cmds.index('siege start'), cmds.index('siege path'))
+        self.assertTrue(all(c != 'siege portal' for c in cmds), 'no helper step next to the portal when the path works')
+
+    def test_the_rival_waits_for_the_first_guild_to_score(self):
+        w = SiegeWorld()
+        r, io = self.play(w)
+        self.assertEqual(r.status, TX.PASS)
+        # the rival (Bbb) never stood on the point before the runner (Aaa) held it alone
+        self.assertGreaterEqual(w.score, TX.SIEGE_HOLD_FIRST)
+
+    def test_no_path_to_the_portal_is_a_counted_fallback(self):
+        r, io = self.play(SiegeWorld(no_path=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 2)
+        self.assertEqual(len(r.fallbacks), 2)
+        self.assertIn('siege portal (no path)', r.fallbacks[0])
+        self.assertIn('teleport in place of walking', r.detail)
+
+    def test_skips(self):
+        for world, word in ((SiegeWorld(on=False), 'switch'), (SiegeWorld(running=True), 'running already'),
+                            (SiegeWorld(level=50), 'level 50'), (SiegeWorld(started=False), 'did not start: players are signed up')):
+            r, io = self.play(world)
+            self.assertEqual(r.status, TX.SKIP)
+            self.assertIn(word, r.detail)
+        r, _ = self.play(SiegeWorld(), plan=None)
+        self.assertEqual((r.status, 'no tester guild' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(SiegeWorld(), plan=dict(ALFA, leader=False))
+        self.assertEqual((r.status, 'not the leader' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(SiegeWorld(), bot_up=False)
+        self.assertEqual((r.status, 'not in game' in r.detail), (TX.SKIP, True))
+        TX.SIEGE_STUCK = 4.0
+        r, _ = self.play(SiegeWorld(blocked={(x, y) for x in range(0, 40) for y in range(0, 12)} - {(10, 5)}))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('blocked', r.detail)
+        TX.SIEGE_STUCK = 30.0
+
+    def test_one_siege_check_at_a_time(self):
+        r, _ = self.play(SiegeWorld())
+        self.assertEqual(r.status, TX.PASS)
+        # the other leader's own check is the rival of the first: its result is the siege's
+        r2, _ = self.play(SiegeWorld(), name='Tester Bbb', plan=dict(ALFA, guild='Tester Guild Bravo', rival='Tester Guild Alfa', rival_leader='Tester Aaa'))
+        self.assertEqual(r2.status, TX.SKIP)
+        self.assertIn('played as the rival leader of Tester Aaa', r2.detail)
+        TX.reset_siege_turn()
+        TX.SIEGE_TURN['by'] = 'Tester Ccc'
+        r3, _ = self.play(SiegeWorld())
+        self.assertEqual(r3.status, TX.SKIP)
+        self.assertIn('played by Tester Ccc', r3.detail)
+
+    def test_bugs(self):
+        r, io = self.play(SiegeWorld(refuse_portal=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not take', r.detail)
+        self.assertEqual(io.w.closed, 1)
+        r, _ = self.play(SiegeWorld(no_contest=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('never called it contested', r.detail)
+        self.assertIn('BUG closed_siege', r.bug_line())
+        r, _ = self.play(SiegeWorld(no_score=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('scored 0', r.detail)
+        r, _ = self.play(SiegeWorld(side='player'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('must be the testers', r.detail)
+
+    def test_the_siege_is_closed_when_the_bot_is_gone(self):
+        io = SiegeIO(SiegeWorld(), plan=ALFA)
+        real = io.alive
+        n = {'k': 0}
+
+        def alive():
+            n['k'] += 1
+            return n['k'] < 40
+        io.alive = alive
+        r = run(TX.check_closed_siege(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(io.w.closed, 1, 'the siege is closed even when the check is cut off')
+        del real
+
+
+class GuildBossWorld:
+    """a tiny guild boss world on one lane (y = 5): the Guild Hall Portal at x 100 (the temple at x 92), the stone at x 80 in the hall, the
+    arena entry at x 0 and the boss at x 40. It answers `!tester guildboss ...`, the guild window's buyHall and the stone's requests as the
+    server does (a free hall, a stone of 5 embers, a boss that comes a few looks after the summon) and moves the bot by its steps."""
+    PORTAL, TEMPLE, STONE, BOSS = 100, (92, 3), 80, 40
+
+    def __init__(self, has_hall=False, buy_refused=False, level=900, rank=3, on=True, board=('Tester Guild Alfa',), side='tester', no_fuel=False,
+                 summon_refused='', never_boss=False, never_hurt=False, no_path=False, killed=False, hall_stuck=False, tester_flag=True,
+                 boss_after=3, kill_after=5, blocked=(), no_orb=False):
+        self.has_hall, self.buy_refused, self.level, self.rank, self.on, self.board, self.side = has_hall, buy_refused, level, rank, on, board, side
+        self.no_fuel, self.summon_refused, self.never_boss, self.never_hurt, self.no_path = no_fuel, summon_refused, never_boss, never_hurt, no_path
+        self.killed, self.hall_stuck, self.tester_flag, self.boss_after, self.kill_after = killed, hall_stuck, tester_flag, boss_after, kill_after
+        self.blocked, self.no_orb = set(blocked), no_orb
+        self.pos, self.in_hall, self.inside, self.fuel, self.orbs, self.looks, self.hp = (60, 60), False, False, 0, 0, 0, 100
+        self.closed, self.teleports, self.asked, self.boss_up, self.summoned_at = 0, 0, [], False, None
+
+    def guide(self):
+        if not self.inside:
+            return None
+        if not self.boss_up:
+            return {'mode': 'wait', 'why': 'the boss is coming'}
+        if abs(self.pos[0] - self.BOSS) <= 5:
+            return {'mode': 'fight', 'goal': {'x': self.BOSS, 'y': 5, 'z': 7}, 'area': 'boss', 'why': 'test'}
+        return {'mode': 'walk', 'goal': {'x': self.BOSS, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'boss', 'why': 'test'}
+
+    def facts(self):
+        out = {'inside': self.inside, 'level': self.level, 'minLevel': 150, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'on': self.on,
+               'guild': 'Tester Guild Alfa', 'rank': self.rank, 'side': self.side, 'hasHall': self.has_hall, 'inHall': self.in_hall,
+               'fuel': self.fuel, 'need': 5, 'attempts': 0, 'maxAttempts': 3, 'killed': self.killed, 'running': self.inside,
+               'canSummon': self.has_hall and self.in_hall and self.fuel >= 5 and not self.inside,
+               'reason': 'The stone holds %d of 5 embers.' % self.fuel, 'stone': {'x': self.STONE, 'y': 5, 'z': 7} if self.has_hall else None,
+               'board': list(self.board)}
+        if self.inside:
+            out['run'] = {'state': 'running', 'boss': 'alive' if self.boss_up else 'waiting', 'tester': self.tester_flag, 'lives': 3,
+                          'bossPos': {'x': self.BOSS, 'y': 5, 'z': 7} if self.boss_up else None, 'bossHp': self.hp if self.boss_up else None,
+                          'gate': {'x': 2, 'y': 5, 'z': 7}}
+            out['guide'] = self.guide()
+        return out
+
+    def tick(self):
+        if not self.inside:
+            return
+        self.looks += 1
+        if not self.boss_up and self.looks >= self.boss_after and not self.never_boss:
+            self.boss_up = True
+        g = self.guide()
+        if g and g['mode'] == 'fight' and not self.never_hurt:
+            self.hp = max(0, self.hp - 100 // self.kill_after)
+            if self.hp <= 0:
+                self.boss_up = False
+                self.won = True
+
+    def path_to(self, goal, reach):
+        x, y = self.pos
+        dirs = [2] * max(0, 5 - y) + [0] * max(0, y - 5)
+        if x < goal - reach:
+            dirs += [1] * (goal - reach - x)
+        elif x > goal + reach:
+            dirs += [3] * (x - goal - reach)
+        return dirs
+
+    def answer(self, command):
+        if command == 'guildboss state':
+            self.tick()
+            return self.facts()
+        if command == 'guildboss path':
+            if self.no_path and not self.inside:
+                return dict(self.facts(), err='no path')
+            if self.inside:
+                g = self.guide()
+                if g['mode'] != 'walk':
+                    return dict(self.facts(), err='no goal')
+                return dict(self.facts(), path=self.path_to(g['goal']['x'], 5), dist=abs(self.pos[0] - self.BOSS))
+            dest = self.STONE if self.in_hall else self.PORTAL
+            dist = max(abs(self.pos[0] - dest), abs(self.pos[1] - 5))
+            base = {'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'dest': {'x': dest, 'y': 5, 'z': 7}, 'dist': dist,
+                    'target': 'stone' if self.in_hall else 'hall'}
+            if dist <= 1:
+                return dict(self.facts(), **dict(base, here=True, path=[]))
+            return dict(self.facts(), **dict(base, path=self.path_to(dest, 1)))
+        if command == 'guildboss hall':
+            self.teleports += 1
+            self.in_hall = True
+            self.pos = (self.STONE - 3, 5)
+            return self.facts()
+        if command == 'guildboss close':
+            was = self.inside
+            self.inside = False
+            self.closed += 1
+            return dict(self.facts(), closed=was)
+        if command == 'give orb chaos 1':
+            if self.no_orb:
+                return {'err': 'no orb chaos'}
+            self.orbs += 1
+            return {'what': 'orb', 'id': 29856, 'count': 1}
+        if command == 'bag':
+            return {'potions': 100}
+        return None
+
+    def request(self, opname, action, data=None):
+        self.asked.append((opname, action, data))
+        if (opname, action) == ('guild', 'buyHall'):
+            if self.buy_refused:
+                return {'action': 'message', 'data': {'ok': False, 'text': 'Your guild needs guild level 5 for a guild hall.'}}
+            self.has_hall = True
+            return {'action': 'message', 'data': {'ok': True, 'text': 'Your guild owns a guild hall now (free for the test guilds).'}}
+        if (opname, action) == ('guildWar', 'bossItem'):
+            if self.orbs and not self.no_fuel:
+                self.orbs -= 1
+                self.fuel += 5
+            return {'action': 'message', 'data': {'ok': True, 'text': 'You fed the Summoning Stone 1 x Orb of Upheaval: 5 embers.'}}
+        if (opname, action) == ('guildWar', 'bossSummon'):
+            if self.summon_refused:
+                return {'action': 'message', 'data': {'ok': False, 'text': self.summon_refused}}
+            if self.fuel >= 5 and self.in_hall:
+                self.fuel -= 5
+                self.inside, self.pos, self.looks, self.boss_up, self.hp = True, (0, 5), 0, False, 100
+            return {'action': 'message', 'data': {'ok': True, 'text': 'Gorvath is coming.'}}
+        if (opname, action) == ('guildWar', 'open'):
+            return {'action': 'state', 'data': {}}
+        return None
+
+    def step(self, dx, dy):
+        nx, ny = self.pos[0] + dx, self.pos[1] + dy
+        if (nx, ny) in self.blocked or not (-1 <= nx <= 200):
+            return
+        self.pos = (nx, ny)
+        if not self.in_hall and (nx, ny) == (self.PORTAL, 5) and self.has_hall and not self.hall_stuck:
+            self.in_hall, self.pos = True, (self.STONE - 10, 5)
+
+
+class GuildBossIO(FakeIO):
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted = world, [], [], 0
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(opname, action, data)
+
+    async def go(self, place):
+        self.moves.append(place)
+        self.w.pos = self.w.TEMPLE
+        return True
+
+    async def step(self, dx, dy):
+        self.w.step(dx, dy)
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class GuildBossClosed(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.GB_BUDGET, TX.GB_FIGHT_MIN, TX.GB_STUCK, TX.GB_BOSS_WAIT)
+
+    def tearDown(self):
+        TX.GB_BUDGET, TX.GB_FIGHT_MIN, TX.GB_STUCK, TX.GB_BOSS_WAIT = self.keep
+
+    def play(self, world, name='Tester Aaa', level=900):
+        io = GuildBossIO(world)
+        return run(TX.check_closed_guildboss(io, name, 'Warrior', level)), io
+
+    def test_pure_parts(self):
+        a = {'on': True, 'guild': 'Tester Guild Alfa', 'rank': 3, 'level': 900, 'minLevel': 150}
+        self.assertIsNone(TX.guildboss_refusal(a))
+        for bad, word in ((None, 'old helper'), ({'err': 'no guild boss system'}, 'no guild boss system'), (dict(a, on=False), 'switch'),
+                          (dict(a, inside=True), 'inside'), (dict(a, guild=None), 'no tester guild'), (dict(a, rank=1), 'leader'),
+                          (dict(a, level=100), 'level 100'), (dict(a, killed=True), 'slew'), (dict(a, running=True), 'fighting')):
+            r = TX.guildboss_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        self.assertEqual(TX.guildboss_problems({'guild': 'Tester Guild Alfa', 'side': 'tester', 'board': ['Tester Guild Alfa'],
+                                                'run': {'tester': True}}), [])
+        self.assertEqual(TX.guildboss_problems({}), [])
+        self.assertTrue(TX.guildboss_problems({'guild': 'x', 'side': 'player'}))
+        self.assertTrue(TX.guildboss_problems({'board': ['Ashen Wolves']}))
+        self.assertTrue(TX.guildboss_problems({'run': {'tester': False}}))
+        base = {'secs': 100, 'steps': 30, 'fuel': 5, 'need': 5, 'came': 'foot', 'boss_seen': True, 'hp': 60}
+        self.assertEqual(TX.guildboss_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.guildboss_verdict(base)[0], TX.PASS)
+        self.assertEqual(TX.guildboss_verdict(dict(base, hp=100, won=True))[0], TX.PASS)
+        self.assertEqual(TX.guildboss_verdict(dict(base, hp=100, fought=TX.GB_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.guildboss_verdict(dict(base, hp=100, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.guildboss_verdict(dict(base, hp=100, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.guildboss_verdict(dict(base, hp=100))[0], TX.SKIP)
+        self.assertEqual(TX.guildboss_verdict(dict(base, boss_seen=False))[0], TX.FAIL)
+        self.assertEqual(TX.guildboss_verdict(dict(base, boss_seen=False, died=True))[0], TX.SKIP)
+        self.assertIn('guildboss hall (no path)', TX.guildboss_verdict(dict(base, fallbacks=['guildboss hall (no path)']))[1])
+        self.assertIn('closed_guildboss', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_guildboss', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_guildboss'), TX.CLOSED_KEYS.index('closed_raid'))
+        self.assertEqual(TX.window_text({'data': {'text': 'x' * 200}}), 'x' * 90)
+        self.assertEqual(TX.window_text(None), '')
+
+    def test_a_guild_boss_played_on_foot_is_a_pass(self):
+        r, io = self.play(GuildBossWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Gorvath', r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0)
+        self.assertGreaterEqual(io.w.closed, 1)
+        self.assertEqual(io.w.inside, False)
+        asked = [(o, a) for o, a, _ in io.asked]
+        self.assertEqual([x for x in asked if x[1] in ('buyHall', 'bossItem', 'bossSummon')],
+                         [('guild', 'buyHall'), ('guildWar', 'bossItem'), ('guildWar', 'bossSummon')], 'the window, in a person\'s order')
+        self.assertIn(('guildWar', 'bossItem', {'key': 'upheaval'}), io.asked)
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, False))
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertGreater(io.looted, -1)
+
+    def test_a_hall_that_is_there_is_not_bought_again(self):
+        r, io = self.play(GuildBossWorld(has_hall=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn(('guild', 'buyHall'), [(o, a) for o, a, _ in io.asked])
+
+    def test_the_hall_by_the_portals_entry_is_a_counted_fallback(self):
+        r, io = self.play(GuildBossWorld(hall_stuck=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 1)
+        self.assertEqual(len(r.fallbacks), 1)
+        self.assertIn('guildboss hall', r.fallbacks[0])
+        r, io = self.play(GuildBossWorld(no_path=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('no path', r.fallbacks[0])
+
+    def test_skips(self):
+        for world, word in ((GuildBossWorld(on=False), 'switch'), (GuildBossWorld(level=100), 'level 100'), (GuildBossWorld(rank=1), 'leader'),
+                            (GuildBossWorld(killed=True), 'slew'), (GuildBossWorld(no_orb=True), 'Orb of Upheaval'),
+                            (GuildBossWorld(summon_refused='The testers\' guild boss waits: the arenas are kept for the players.'), 'kept for the players'),
+                            (GuildBossWorld(summon_refused='Closed test mode is off: the testers do not play this.'), 'Closed test mode')):
+            r, _ = self.play(world)
+            self.assertEqual(r.status, TX.SKIP, (word, r.detail))
+            self.assertIn(word, r.detail)
+
+    def test_bugs(self):
+        r, _ = self.play(GuildBossWorld(buy_refused=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('could not buy its free hall', r.detail)
+        self.assertIn('BUG closed_guildboss', r.bug_line())
+        r, _ = self.play(GuildBossWorld(no_fuel=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('holds 0 of 5', r.detail)
+        r, _ = self.play(GuildBossWorld(board=('Tester Guild Alfa', 'Ashen Wolves')))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('Ashen Wolves', r.detail)
+        r, _ = self.play(GuildBossWorld(side='player'))
+        self.assertEqual(r.status, TX.FAIL)
+        r, _ = self.play(GuildBossWorld(tester_flag=False))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('run of players', r.detail)
+        TX.GB_BOSS_WAIT = 6.0
+        r, io = self.play(GuildBossWorld(never_boss=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not appear', r.detail)
+        self.assertEqual(io.w.inside, False, 'the run is closed')
+        TX.GB_FIGHT_MIN = 8.0
+        r, _ = self.play(GuildBossWorld(never_hurt=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('took none of its health', r.detail)
+
+    def test_walks_blocked_and_the_budget(self):
+        TX.GB_STUCK = 5.0
+        r, _ = self.play(GuildBossWorld(blocked={(x, y) for x in range(0, 40) for y in range(0, 12)} - {(0, 5)}))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('blocked', r.detail)
+        TX.GB_STUCK = self.keep[2]
+        TX.GB_BUDGET = 12.0
+        r, io = self.play(GuildBossWorld(never_hurt=True))
+        self.assertIn(r.status, (TX.SKIP, TX.PASS))
+        self.assertEqual(io.w.inside, False, 'closed at the end of the time')
+
+
+class RiftWorld:
+    """a tiny rift world on one lane (y = 5): the temple at x 92 (a protection zone within 3 tiles), the bot hunting at x 60, a rift whose
+    monsters stand at x 10, 20, 30 and the guardian at x 50. `!tester path temple`, `rift ...` as the helper answers them; using the key
+    in the zone opens the rift (the bot arrives at x 0), `rift close` ends it."""
+    TEMPLE = 92
+
+    def __init__(self, level=900, in_zone=False, no_path=False, no_key=False, bag_full=False, never_open=False, never_kill=False, floor=False,
+                 blocked=(), kill_after=2, tier=3, err=None, key_err=None):
+        self.level, self.in_zone, self.no_path, self.no_key, self.bag_full, self.never_open = level, in_zone, no_path, no_key, bag_full, never_open
+        self.never_kill, self.floor, self.blocked, self.kill_after, self.tier, self.err, self.key_err = never_kill, floor, set(blocked), kill_after, tier, err, key_err
+        self.pos = (self.TEMPLE if in_zone else 60, 5)
+        self.key, self.inside, self.killed, self.hp, self.monsters = False, False, 0, {}, [10, 20, 30]
+        self.boss_hp, self.closed, self.teleports, self.used = 100, 0, 0, 0
+
+    def pz(self):
+        return abs(self.pos[0] - self.TEMPLE) <= 3 and abs(self.pos[1] - 3) <= 3
+
+    def alive(self):
+        return [m for m in self.monsters if self.hp.get(m, 1) > 0]
+
+    def guide(self):
+        if not self.inside:
+            return None
+        alive = self.alive()
+        if not alive and self.boss_hp > 0 and self.killed >= 1 and True:
+            g = ('fight' if abs(self.pos[0] - 50) <= 4 else 'walk')
+            return {'mode': g, 'goal': {'x': 50, 'y': 5, 'z': 7}, 'reach': [1, 4], 'area': 'boss', 'why': 'test'}
+        if not alive:
+            return {'mode': 'wait', 'why': 'nothing to do'}
+        goal = min(alive, key=lambda m: abs(m - self.pos[0]))
+        z = 6 if self.floor else 7
+        return {'mode': 'fight' if abs(self.pos[0] - goal) <= 4 and not self.floor else 'walk', 'goal': {'x': goal, 'y': 5, 'z': z}, 'reach': [1, 4], 'area': 'pack',
+                'why': 'test'}
+
+    def facts(self):
+        out = {'inside': self.inside, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'pz': self.pz(), 'held': self.key,
+               'tier': self.tier}
+        if self.inside:
+            out['run'] = {'id': 1, 'tier': self.tier, 'theme': 'ash', 'kind': 'rooms', 'state': 'running',
+                          'boss': 'alive' if not self.alive() and self.killed else 'waiting', 'killed': self.killed, 'total': 3, 'bossAt': 3,
+                          'floors': 1, 'monsters': len(self.alive()), 'bossHp': self.boss_hp if not self.alive() else None}
+            out['guide'] = self.guide()
+        return out
+
+    def tick(self):
+        if not self.inside or self.never_kill:
+            return
+        g = self.guide()
+        if not g or g['mode'] != 'fight':
+            return
+        x = g['goal']['x']
+        if g['area'] == 'boss':
+            self.boss_hp = max(0, self.boss_hp - 100 // self.kill_after)
+            return
+        self.hp[x] = self.hp.get(x, 1.0) - 1.0 / self.kill_after
+        if self.hp[x] <= 0:
+            self.killed += 1
+
+    def path_to(self, goal, reach):
+        x, y = self.pos
+        dirs = [2] * max(0, 5 - y) + [0] * max(0, y - 5)
+        if x < goal - reach:
+            dirs += [1] * (goal - reach - x)
+        elif x > goal + reach:
+            dirs += [3] * (x - goal - reach)
+        return dirs
+
+    def answer(self, command):
+        if command == 'rift state':
+            if self.err:
+                return {'err': self.err}
+            self.tick()
+            return self.facts()
+        if command == 'path temple':
+            if self.no_path:
+                return {'err': 'no path', 'dest': {'x': self.TEMPLE, 'y': 5, 'z': 7}}
+            dist = max(abs(self.pos[0] - self.TEMPLE), abs(self.pos[1] - 5))
+            base = {'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'dest': {'x': self.TEMPLE, 'y': 5, 'z': 7}, 'dist': dist}
+            if dist <= 1:
+                return dict(base, here=True, path=[])
+            return dict(base, path=self.path_to(self.TEMPLE, 1))
+        if command == 'enter temple':
+            self.teleports += 1
+            self.pos = (self.TEMPLE - 1, 5)
+            return {'kind': 'temple', 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}}
+        if command == 'rift key':
+            if self.key_err:
+                return dict(self.facts(), err=self.key_err)
+            if not self.pz():
+                return dict(self.facts(), err='not in a protection zone')
+            self.key = not self.no_key and not self.bag_full
+            return dict(self.facts(), held=self.key, keyClientId=20155, bagFull=True if self.bag_full else None)
+        if command == 'rift path':
+            g = self.guide()
+            if not self.inside or not g or g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal' if self.inside else 'not inside a rift')
+            if self.floor:
+                return dict(self.facts(), err='another floor')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]), dist=abs(self.pos[0] - g['goal']['x']))
+        if command == 'rift close':
+            was = self.inside
+            self.inside, self.key = False, False
+            self.closed += 1
+            return dict(self.facts(), closed=was)
+        return None
+
+    def use(self):
+        self.used += 1
+        if self.key and self.pz() and not self.never_open:
+            self.key, self.inside, self.pos = False, True, (0, 5)
+
+    def step(self, dx, dy):
+        nx, ny = self.pos[0] + dx, self.pos[1] + dy
+        if (nx, ny) in self.blocked or not (-1 <= nx <= 200):
+            return
+        self.pos = (nx, ny)
+
+
+class RiftIO(FakeIO):
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted = world, [], [], 0
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        if place == 'hunt':
+            self.w.pos = (60, 5)
+        return True
+
+    async def step(self, dx, dy):
+        self.w.step(dx, dy)
+
+    async def use_item(self, client_id):
+        self.w.use()
+        return True
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class RiftWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.RIFT_BUDGET, TX.RIFT_FIGHT_MIN, TX.RIFT_STUCK)
+
+    def tearDown(self):
+        TX.RIFT_BUDGET, TX.RIFT_FIGHT_MIN, TX.RIFT_STUCK = self.keep
+
+    def play(self, world, level=900):
+        io = RiftIO(world)
+        return run(TX.check_rift_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_the_verdict(self):
+        base = {'tier': 3, 'theme': 'ash', 'came': 'foot', 'steps': 20, 'secs': 60, 'kills': 2}
+        self.assertEqual(TX.rift_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.rift_walk_verdict(base)[0], TX.PASS)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, hp=70, boss_seen=True))[0], TX.PASS)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, fought=TX.RIFT_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, floor=True))[0], TX.SKIP)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0))[0], TX.SKIP)
+        self.assertIn('enter temple (no path)', TX.rift_walk_verdict(dict(base, fallbacks=['enter temple (no path)']))[1])
+        self.assertIn('rift_walk', TX.KEYS)
+        self.assertNotIn('rift_walk', TX.CLOSED_KEYS)
+
+    def test_a_rift_walked_from_the_hunt_is_a_pass(self):
+        r, io = self.play(RiftWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        self.assertEqual(io.w.used, 1, 'the key was used once')
+        self.assertEqual(io.w.closed, 1)
+        self.assertFalse(io.w.inside)
+        self.assertIn('walked to the temple', r.detail)
+        self.assertEqual(io.moves[-1], 'hunt', 'back to the hunt')
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertGreater(io.looted, 0)
+        cmds = io.cmds
+        self.assertLess(cmds.index('path temple'), cmds.index('rift key'))
+        self.assertLess(cmds.index('rift key'), cmds.index('rift path'))
+
+    def test_a_bot_in_the_zone_walks_nowhere(self):
+        r, io = self.play(RiftWorld(in_zone=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('path temple', io.cmds)
+
+    def test_no_path_to_the_temple_is_a_counted_fallback(self):
+        r, io = self.play(RiftWorld(no_path=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.teleports, 1)
+        self.assertEqual(len(r.fallbacks), 1)
+        self.assertIn('enter temple', r.fallbacks[0])
+        self.assertIn('no path', r.fallbacks[0])
+        self.assertIn('teleport in place of walking', r.detail)
+
+    def test_skips(self):
+        r, _ = self.play(RiftWorld(err='no rifts on this server'))
+        self.assertEqual((r.status, 'no rifts' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(RiftWorld(tier=None, level=50))
+        self.assertEqual((r.status, 'opens no rift' in r.detail), (TX.SKIP, True))
+        r, io = self.play(RiftWorld(never_open=True))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not open', r.detail)
+        self.assertEqual(io.w.used, 3, 'the hotkey is sent again twice')
+        self.assertEqual(io.w.closed, 1, 'the unused key is taken out again')
+        r, _ = self.play(RiftWorld(bag_full=True))
+        self.assertEqual((r.status, 'bag is full' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(RiftWorld(key_err='level too low for a rift'))
+        self.assertEqual((r.status, 'level too low' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(RiftWorld(floor=True))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('another floor', r.detail)
+        TX.RIFT_STUCK = 5.0
+        r, _ = self.play(RiftWorld(blocked={(x, y) for x in range(0, 60) for y in range(0, 12)} - {(0, 5)}))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('blocked', r.detail)
+
+    def test_bugs(self):
+        r, io = self.play(RiftWorld(no_key=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('backpack holds none', r.detail)
+        self.assertIn('BUG rift_walk', r.bug_line())
+        TX.RIFT_FIGHT_MIN = 8.0
+        r, io = self.play(RiftWorld(never_kill=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('killed none', r.detail)
+        self.assertEqual(io.w.closed, 1, 'the run is closed')
+
+    def test_the_budget_ends_the_walk(self):
+        TX.RIFT_BUDGET = 6.0
+        r, io = self.play(RiftWorld(never_kill=True))
+        self.assertIn(r.status, (TX.SKIP, TX.PASS))
+        self.assertEqual(io.w.closed, 1)
+        self.assertEqual(io.moves[-1], 'hunt')
+
 if __name__ == '__main__':
     unittest.main()

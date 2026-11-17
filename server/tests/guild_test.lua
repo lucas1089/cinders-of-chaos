@@ -160,6 +160,12 @@ ok(buy({bank = 4999999}):find("guild bank holds 4,999,999"), "bank short")
 eq(buy({from = "self", money = 5000000}), nil, "own gold")
 ok(buy({from = "self", money = 10}):find("You have 10"), "own gold short")
 ok(buy({from = "other"}):find("Pay from"), "unknown source")
+-- a tester guild in closed test mode (O592): the hall is free at any guild level; the leader rule and one hall stay
+eq(buy({free = true, level = 1, bank = 0, from = "bank"}), nil, "a tester guild: no level, no price")
+eq(buy({free = true, level = 1, bank = 0, from = "other"}), nil, "a tester guild: no source needed")
+ok(buy({free = true, rank = 2}):find("Only the guild leader"), "a tester guild: still only the leader")
+ok(buy({free = true, hasHall = true}):find("already owns"), "a tester guild: still one hall")
+ok(buy({free = true, guildId = false}):find("not in a guild"), "a tester guild flag without a guild: refused")
 
 -- ---------------------------------------------------------------- upgrades
 local function up(key, over)

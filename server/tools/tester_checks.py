@@ -1406,7 +1406,8 @@ async def check_craft_cards(io, name, cls, level):
 # the bazaar lock and the raid (O588, below) among the bots only. Extra io (testers.py CheckIO): io.closed_plan() -> {'guild', 'leader', 'rival',
 # 'rival_leader'} of this bot or None; async io.helper_of / request_of / go_of(other, ...) the same as io.helper / request / go for
 # another bot; io.online(name) -> the name when that bot is in game; io.sql(statements) the closed-mode rows of the bazaar check.
-CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'dungeon', 'groupqueue', 'guild', 'guildwar', 'market', 'partyfinder', 'pvp', 'raid')  # testers_core.lua K.CLOSED_SYSTEMS
+CLOSED_SYSTEMS = ('arena', 'battleground', 'bazaar', 'dungeon', 'groupqueue', 'guild', 'guildboss', 'guildwar', 'market', 'partyfinder', 'pvp', 'raid',
+                  'siege')  # testers_core.lua K.CLOSED_SYSTEMS
 ARENA_WAIT = 40.0   # seconds two queued testers wait for their match
 FEE_GOLD = 100      # the gold price of the market check's offer
 
@@ -2592,6 +2593,664 @@ async def check_closed_party_finder(io, name, cls, level):
         await io.party('leave', other)
 
 
+# ------------------------------------------------------------------------------------------------ the siege and the guild boss, played (O592)
+# Two checks of closed mode that play content the way a person does. The server keeps the testers' own side apart from the players (the
+# siege has a side of its own, the guild boss a tester guild with a free hall and a small stone, the boards hide tester guilds); the helper
+# only reads (`!tester siege`, `!tester guildboss`: what a person sees on the screen) and gives the engine path to the next goal, the
+# walk, the donation, the summon and the fights are the bot's own.
+SIEGE_BUDGET = 220.0      # seconds a siege is played at most (the testers' siege lasts a gather and a match: siege_config.lua `tester`)
+SIEGE_STEPS = 6           # steps between two looks
+SIEGE_HOLD_FIRST = 3      # points the first guild holds the obelisk alone before the rival walks to it: then the point must be contested
+SIEGE_CONTEST_LOOKS = 4   # looks with both guilds on the point in which the server must call it contested
+SIEGE_STUCK = 30.0        # seconds on one tile with a goal elsewhere: the walk is blocked there
+SIEGE_MISSES = 6          # looks without an answer in a row
+SIEGE_IN_WAIT = 4.0       # seconds from the step onto the portal to the look inside
+SIEGE_TURN = {'by': None, 'members': {}}   # one siege check at a time: the leader that runs it and the rival leader it plays with
+
+
+def reset_siege_turn():
+    SIEGE_TURN['by'] = None
+    SIEGE_TURN['members'].clear()
+
+
+def siege_refusal(a, who='the bot'):
+    """(status, text) when this bot must not play the siege, else None: from its `!tester siege` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester siege (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if not a.get('on'):
+        return SKIP, 'the closed mode switch reads off'
+    if a.get('running'):
+        return SKIP, 'a siege is running already'
+    if a.get('inside'):
+        return SKIP, '%s is inside a siege already' % who
+    if not a.get('guild'):
+        return SKIP, '%s is in no tester guild' % who
+    if int(a.get('level') or 0) < int(a.get('minLevel') or 0):
+        return SKIP, '%s is level %s, the siege needs %s' % (who, a.get('level'), a.get('minLevel'))
+    return None
+
+
+def siege_problems(a):
+    """[text] for one inside-the-siege answer: whatever says it is not the testers' own"""
+    if not isinstance(a, dict) or not a.get('inside'):
+        return []
+    if a.get('side') != 'tester':
+        return ['a tester is inside a %s siege (it must be the testers\' own)' % a.get('side')]
+    return []
+
+
+def siege_verdict(t):
+    """(status, text) from the trace of a played siege: faults, both (both bots inside at once), score (the runner guild's best), held
+    (looks the runner held the point alone), contested (the server called a tie contested), contest_looks, came, secs, fallbacks, stuck,
+    left, guild, rival"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    if not t.get('both'):
+        return SKIP, 'the two bots were never inside the siege together'
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s' % (t['stuck'][0], t['stuck'][1], SIEGE_STUCK)
+    how = '%s on foot, %d step(s) in %d s' % ('came' if t.get('came') == 'foot' else 'came by a helper teleport next to the portal, then',
+                                             t.get('steps', 0), t.get('secs', 0))
+    if t.get('fallbacks'):
+        how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if t.get('score', 0) > 0 and t.get('contested'):
+        return PASS, '%s held the Chaos Obelisk for %d point(s); with %s on it too the server called it contested; closed (%s)' % (
+            t.get('guild'), t['score'], t.get('rival'), how)
+    if t.get('held', 0) >= 8 and t.get('score', 0) <= 0:
+        return FAIL, 'held the obelisk alone for %d looks and the guild scored 0' % t['held']
+    if t.get('score', 0) > 0:
+        return SKIP, 'the guild scored %d but the rival never stood on the obelisk with it (%s)' % (t['score'], how)
+    return SKIP, 'the bots never reached the obelisk in %d s (%s)' % (t.get('secs', 0), how)
+
+
+async def check_closed_siege(io, name, cls, level):
+    """the leader of one tester guild and the leader of the other: the helper starts the testers' own siege, both walk to the portal,
+    through the base's gate to the obelisk; the first holds it alone (it scores), the second comes and the point is contested"""
+    key = 'closed_siege'
+    if name in SIEGE_TURN['members']:
+        return Result(key, name, cls, SKIP, 'played as the rival leader of %s (its result is the siege\'s)' % SIEGE_TURN['members'][name])
+    plan = io.closed_plan()
+    if not plan:
+        return Result(key, name, cls, SKIP, 'this bot has no tester guild (too few bots for two guilds)')
+    if not plan.get('leader'):
+        return Result(key, name, cls, SKIP, 'not the leader of its guild')
+    rival = io.online(plan.get('rival_leader'))
+    if not rival:
+        return Result(key, name, cls, SKIP, 'the leader of %s is not in game' % plan.get('rival'))
+    if SIEGE_TURN['by'] not in (None, name):
+        return Result(key, name, cls, SKIP, 'the siege is played by %s' % SIEGE_TURN['by'])
+    SIEGE_TURN['by'] = name
+    SIEGE_TURN['members'][rival] = name
+    try:
+        return await siege_play(io, name, cls, rival, plan)
+    finally:
+        io.raid_mode([name, rival], False)
+
+
+async def siege_play(io, name, cls, rival, plan):
+    key = 'closed_siege'
+    squad = [{'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False},
+             {'name': rival, 'lead': False, 'walker': RaidWalker(), 'inside': False}]
+    a = await io.helper('siege state', 'siege', ANSWER)
+    no = siege_refusal(a)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    b = await io.helper_of(rival, 'siege state', 'siege', ANSWER)
+    no = siege_refusal(b, 'the rival leader')
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    io.raid_mode([name, rival], True)
+    for r in squad:
+        if not (await io.go('town') if r['lead'] else await io.go_of(r['name'], 'town')):
+            return Result(key, name, cls, SKIP, 'the helper did not bring the bot to the temple')
+    await io.sleep(SETTLE)
+    started = await io.helper('siege start', 'siege', HELPER_WAIT)
+    if not isinstance(started, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester siege start')
+    if started.get('err') or not started.get('started'):
+        return Result(key, name, cls, SKIP, 'the testers\' siege did not start: %s' % str(started.get('why') or started.get('err'))[:90])
+    fallbacks, came = [], {}
+    trace = {'faults': [], 'steps': 0, 'both': False, 'inside': 0, 'score': 0, 'held': 0, 'contested': False, 'contest_looks': 0,
+             'stuck': None, 'secs': 0, 'left': '?', 'guild': plan.get('guild'), 'rival': plan.get('rival'), 'fallbacks': fallbacks,
+             'came': 'foot'}
+    try:
+        for r in squad:
+            how, got = await walk_by_path(io, r, 'siege path', 'siege', near=1)
+            came[r['name']] = how
+            if how != 'foot':
+                why = (got or {}).get('err') or 'the walk did not arrive'
+                moved = await hcmd(io, r, 'siege portal', 'siege', HELPER_WAIT)
+                if not isinstance(moved, dict) or moved.get('err'):
+                    return Result(key, name, cls, SKIP, 'no way to the siege portal: %s; the teleport: %s' % (
+                        str(why)[:50], str((moved or {}).get('err') or 'no answer')[:40]), fallbacks)
+                fallbacks.append(fallback_note('siege portal', why))
+                trace['came'] = 'helper'
+                got = await hcmd(io, r, 'siege path', 'siege')
+            for attempt in range(2):   # the last step is onto the portal tile, as a person's
+                here, dest = (got or {}).get('pos'), (got or {}).get('dest')
+                for step in raid_plan(here, dest, 1):
+                    await raid_walk(io, r, step)
+                await io.sleep(SIEGE_IN_WAIT)
+                look = await hcmd(io, r, 'siege state', 'siege')
+                r['inside'] = bool(isinstance(look, dict) and look.get('inside'))
+                if r['inside']:
+                    break
+                got = await hcmd(io, r, 'siege path', 'siege')
+            if not r['inside']:
+                trace['faults'].append('the siege portal did not take %s, a member of the tester guild it was started for' % r['name'])
+                return Result(key, name, cls, FAIL, trace['faults'][0], fallbacks)
+        trace['inside'] = 2
+        return await siege_walk_all(io, name, cls, squad, trace)
+    finally:
+        closed = await io.helper('siege close', 'siege', ANSWER)   # standings and rewards of the testers, nothing stored
+        trace['closed'] = bool(isinstance(closed, dict) and closed.get('closed'))
+
+
+async def siege_walk_all(io, name, cls, squad, trace):
+    key = 'closed_siege'
+    rival = squad[1]['name']
+    elapsed, misses = 0.0, 0
+    while io.alive() and elapsed < SIEGE_BUDGET:
+        looks = {}
+        for r in squad:
+            looks[r['name']] = await hcmd(io, r, 'siege state', 'siege')
+        lead, riv = looks.get(name), looks.get(rival)
+        if not isinstance(lead, dict):
+            misses += 1
+            if misses >= SIEGE_MISSES:
+                trace['left'] = 'no answer from the helper'
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        for s in (lead, riv):
+            for p in siege_problems(s):
+                if p not in trace['faults']:
+                    trace['faults'].append(p)
+        if trace['faults']:
+            break
+        if not lead.get('running') or not lead.get('inside'):
+            trace['left'] = 'the siege ended by itself'
+            break
+        trace['both'] = trace['both'] or bool(isinstance(riv, dict) and riv.get('inside'))
+        team = lead.get('team') or {}
+        trace['score'] = max(trace['score'], int(team.get('score') or 0))
+        riv_on = bool(isinstance(riv, dict) and riv.get('onPoint'))
+        if lead.get('onPoint') and not riv_on:
+            trace['held'] += 1
+        if lead.get('onPoint') and riv_on:
+            trace['contest_looks'] += 1
+            if lead.get('contested'):
+                trace['contested'] = True
+            if trace['contest_looks'] >= SIEGE_CONTEST_LOOKS and not trace['contested']:
+                trace['faults'].append('both guilds stood on the obelisk for %d looks and the server never called it contested' %
+                                       trace['contest_looks'])
+                break
+        if trace['contested'] and trace['score'] > 0 and trace['contest_looks'] >= SIEGE_CONTEST_LOOKS:
+            trace['left'] = 'closed by the check (the point was contested)'
+            break
+        sent = {}
+        for r in squad:
+            s = looks.get(r['name'])
+            if not isinstance(s, dict) or not s.get('inside'):
+                continue
+            g = s.get('guide') or {}
+            # the second guild waits in its base until the first one scored: then it comes and the point must be contested
+            waits = (not r['lead']) and not (trace['score'] >= SIEGE_HOLD_FIRST or elapsed > SIEGE_BUDGET * 0.55)
+            if g.get('mode') == 'walk' and isinstance(g.get('goal'), dict) and not (waits and g.get('area') == 'obelisk'):
+                plan = r['walker'].steps(s['pos'], g['goal'], SIEGE_STEPS, elapsed)
+                if not r['walker'].blocked:   # the engine's path first (walls, the gate); the side step only when the way is blocked
+                    got = await hcmd(io, r, 'siege path', 'siege')
+                    steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                    plan = steps[:SIEGE_STEPS] or plan
+                sent[r['name']] = plan
+                if r['lead'] and r['walker'].stuck(elapsed) >= SIEGE_STUCK:
+                    trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+        if trace['stuck']:
+            break
+        for i in range(SIEGE_STEPS):
+            moved = False
+            for r in squad:
+                plan = sent.get(r['name']) or []
+                if i < len(plan):
+                    await raid_walk(io, r, plan[i])
+                    trace['steps'] += 1
+                    moved = True
+            if not moved:
+                break
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    status, text = siege_verdict(trace)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
+GB_BUDGET = 480.0       # seconds a guild boss run is played at most (the boss's own limit is 13 minutes)
+GB_BOSS_WAIT = 45.0     # seconds from the summon to the boss
+GB_ENTER_WAIT = 30.0    # seconds from the summon to standing in the arena
+GB_FIGHT_MIN = 150.0    # seconds at the boss without taking any of its health: damage, targets or the boss
+GB_STUCK = 30.0
+GB_STEPS = 6
+GB_MISSES = 6
+GB_ACT_GAP = 1.3        # seconds between two requests of the stone (guildboss.lua rate limit: one a second)
+
+def guildboss_refusal(a):
+    """(status, text) when this bot must not play the guild boss, else None: from its `!tester guildboss` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester guildboss (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if not a.get('on'):
+        return SKIP, 'the closed mode switch reads off'
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a guild boss arena already'
+    if not a.get('guild'):
+        return SKIP, 'the bot is in no tester guild'
+    if int(a.get('rank') or 0) < 2:
+        return SKIP, 'not a leader or vice-leader of its guild'
+    if int(a.get('level') or 0) < int(a.get('minLevel') or 0):
+        return SKIP, 'level %s, the guild boss needs %s' % (a.get('level'), a.get('minLevel'))
+    if a.get('killed'):
+        return SKIP, 'the guild slew the guild boss this week already'
+    if a.get('running'):
+        return SKIP, 'the guild is fighting the guild boss already'
+    return None
+
+
+def guildboss_problems(a):
+    """[text] for one `!tester guildboss` answer: whatever says a tester meets players' content"""
+    out = []
+    if not isinstance(a, dict):
+        return out
+    if a.get('guild') and a.get('side') not in (None, 'tester'):
+        out.append('the tester\'s guild %s has side %s' % (a.get('guild'), a.get('side')))
+    for g in a.get('board') or []:
+        if not str(g).startswith('Tester '):
+            out.append('the board a tester sees lists the guild %s (a guild of players)' % str(g)[:40])
+    r = a.get('run')
+    if isinstance(r, dict) and r.get('tester') is False:
+        out.append('a tester is in a guild boss run of players')
+    return out
+
+
+def guildboss_verdict(t):
+    """(status, text) from the trace of a played run: faults, boss_seen, hp (lowest health percent of the boss seen), won, stuck, died,
+    fought (seconds at the boss without damage), secs, fuel, need, came, fallbacks, left"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = 'free hall, %s of %s embers from an Orb of Upheaval, summoned' % (t.get('fuel'), t.get('need'))
+    if t.get('came') != 'foot':
+        how += ' (the hall by the portal\'s own entry)'
+    if t.get('fallbacks'):
+        how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if not t.get('boss_seen'):
+        if t.get('died') or t.get('left') in ('the run ended', 'the arena closed'):
+            return SKIP, 'the run ended before the boss came (%s)' % how
+        return FAIL, 'the guild boss did not appear in %d s after the summon (%s)' % (int(GB_BOSS_WAIT), how)
+    if t.get('won') or (t.get('hp') is not None and t['hp'] < 100):
+        return PASS, 'Gorvath at %s%% health after %d s, %d step(s), left by %s (%s)' % (
+            'down: 0' if t.get('won') else t.get('hp'), t.get('secs', 0), t.get('steps', 0), t.get('left', '?'), how)
+    if t.get('fought', 0) >= GB_FIGHT_MIN:
+        return FAIL, 'fought %d s at the guild boss and took none of its health (damage, targets or the boss)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s' % (t['stuck'][0], t['stuck'][1], GB_STUCK)
+    if t.get('died'):
+        return SKIP, 'the bot died before it hurt the boss (level %s against Gorvath)' % t.get('level', '?')
+    return SKIP, 'the boss was not hurt in %d s' % t.get('secs', 0)
+
+
+async def check_closed_guildboss(io, name, cls, level):
+    """the leader of a tester guild buys its free hall (the guild window), walks into it by the portal, feeds the Summoning Stone one Orb of
+    Upheaval, summons Gorvath and walks into the arena and fights him; the board it reads shows tester guilds only; the run is closed"""
+    key = 'closed_guildboss'
+    a = await io.helper('guildboss state', 'guildboss', ANSWER)
+    no = guildboss_refusal(a)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    bad = guildboss_problems(a)
+    if bad:
+        return Result(key, name, cls, FAIL, '; '.join(bad[:3]))
+    io.raid_mode([name], True)
+    try:
+        return await guildboss_play(io, name, cls, a)
+    finally:
+        await io.helper('guildboss close', 'guildboss', ANSWER)
+        io.raid_mode([name], False)
+
+
+def window_text(reply):
+    d = (reply or {}).get('data') if isinstance(reply, dict) else None
+    return str((d or {}).get('text') or '')[:90]
+
+
+async def guildboss_play(io, name, cls, a):
+    key = 'closed_guildboss'
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'boss_seen': False, 'hp': None, 'won': False, 'stuck': None, 'died': False, 'fought': 0.0, 'secs': 0,
+             'left': '?', 'fuel': a.get('fuel'), 'need': a.get('need'), 'came': 'foot', 'fallbacks': fallbacks, 'level': a.get('level')}
+    # 1. the hall: free for a tester guild, bought from the guild window like a player's
+    if not a.get('hasHall'):
+        reply = await io.request('guild', 'buyHall', {'from': 'bank'}, ['message'], ANSWER)
+        if reply is None:
+            return Result(key, name, cls, SKIP, 'no answer from the guild window (not installed)')
+        await io.sleep(SETTLE)
+        a = await io.helper('guildboss state', 'guildboss', ANSWER)
+        if not (isinstance(a, dict) and a.get('hasHall')):
+            return Result(key, name, cls, FAIL, 'the leader of a tester guild could not buy its free hall: %s' % (window_text(reply) or 'no text'))
+    # 2. on foot from the temple to the Guild Hall Portal, and in (the portal's own entry is the counted fallback)
+    if not a.get('inHall'):
+        if not await io.go('town'):
+            return Result(key, name, cls, SKIP, 'the helper did not bring the bot to the temple')
+        await io.sleep(SETTLE)
+        how, got = await walk_by_path(io, r, 'guildboss path', 'guildboss', near=1)
+        if how == 'foot':
+            here, dest = (got or {}).get('pos'), (got or {}).get('dest')
+            for step in raid_plan(here, dest, 1):
+                await raid_walk(io, r, step)
+            await io.sleep(SIEGE_IN_WAIT)
+        look = await io.helper('guildboss state', 'guildboss', ANSWER)
+        if not (isinstance(look, dict) and look.get('inHall')):
+            why = (got or {}).get('err') or 'the walk did not arrive'
+            moved = await io.helper('guildboss hall', 'guildboss', HELPER_WAIT)
+            if not isinstance(moved, dict) or moved.get('err') or not moved.get('inHall'):
+                return Result(key, name, cls, SKIP, 'no way into the guild hall: %s; the portal\'s entry: %s' % (
+                    str(why)[:50], str((moved or {}).get('err') or 'not in the hall')[:40]), fallbacks)
+            fallbacks.append(fallback_note('guildboss hall', why))
+            trace['came'] = 'helper'
+    # 3. to the stone, the window, the stone's fuel
+    how, _ = await walk_by_path(io, r, 'guildboss path', 'guildboss', near=1)
+    await io.request('guildWar', 'open', {'tab': 'boss'}, ['state'], ANSWER)
+    a = await io.helper('guildboss state', 'guildboss', ANSWER)
+    if not isinstance(a, dict) or a.get('err'):
+        return Result(key, name, cls, SKIP, 'no state in the hall: %s' % str((a or {}).get('err') or 'no answer')[:60], fallbacks)
+    need = int(a.get('need') or 0)
+    if int(a.get('fuel') or 0) < need:
+        g = await io.helper('give orb chaos 1', 'give', HELPER_WAIT)
+        if not isinstance(g, dict) or g.get('err'):
+            return Result(key, name, cls, SKIP, 'the helper could not give an Orb of Upheaval: %s' % str((g or {}).get('err') or 'no answer')[:60], fallbacks)
+        await io.sleep(GB_ACT_GAP)
+        reply = await io.request('guildWar', 'bossItem', {'key': 'upheaval'}, ['message'], ANSWER)
+        await io.sleep(GB_ACT_GAP)
+        a = await io.helper('guildboss state', 'guildboss', ANSWER)
+        if not isinstance(a, dict) or int(a.get('fuel') or 0) < need:
+            return Result(key, name, cls, FAIL, 'fed the stone an Orb of Upheaval (5 embers) and it holds %s of %s: %s' % (
+                (a or {}).get('fuel'), need, window_text(reply) or 'no text'), fallbacks)
+    trace['fuel'], trace['need'] = a.get('fuel'), a.get('need')
+    bad = guildboss_problems(a)
+    if bad:
+        return Result(key, name, cls, FAIL, '; '.join(bad[:3]), fallbacks)
+    if not a.get('canSummon'):
+        why = str(a.get('reason') or 'no reason')[:80]
+        return Result(key, name, cls, FAIL if 'embers' in why else SKIP, 'the stone is full and the summon is not open: %s' % why, fallbacks)
+    # 4. the summon and into the arena
+    await io.sleep(GB_ACT_GAP)
+    reply = await io.request('guildWar', 'bossSummon', {}, ['message'], ANSWER)
+    waited, state = 0.0, None
+    while waited <= GB_ENTER_WAIT and io.alive():
+        state = await io.helper('guildboss state', 'guildboss', ANSWER)
+        if isinstance(state, dict) and state.get('inside'):
+            break
+        await io.sleep(1.0)
+        waited += 1.0
+    if not (isinstance(state, dict) and state.get('inside')):
+        text = window_text(reply)
+        if 'kept for the players' in text or 'Closed test mode' in text:
+            return Result(key, name, cls, SKIP, 'the summon was refused: %s' % text, fallbacks)
+        return Result(key, name, cls, FAIL, 'the summon with a full stone put nobody in the arena in %d s: %s' % (int(GB_ENTER_WAIT), text or 'no text'),
+                      fallbacks)
+    r['inside'] = True
+    return await guildboss_walk(io, name, cls, r, trace)
+
+
+async def guildboss_walk(io, name, cls, r, trace):
+    key = 'closed_guildboss'
+    elapsed, misses, since_summon, fight_since, last_hp = 0.0, 0, 0.0, None, None
+    while io.alive():
+        s = await io.helper('guildboss state', 'guildboss', ANSWER)
+        if not isinstance(s, dict):
+            misses += 1
+            if misses >= GB_MISSES:
+                trace['left'] = 'no answer from the helper'
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        for p in guildboss_problems(s):
+            if p not in trace['faults']:
+                trace['faults'].append(p)
+        if trace['faults']:
+            break
+        run = s.get('run') or {}
+        if not s.get('inside') or run.get('state') not in (None, 'running'):
+            trace['left'] = 'the run ended' if not run.get('state') or run.get('state') == 'failed' else 'the kill'
+            trace['died'] = not trace['won'] and run.get('state') == 'failed' and not trace['boss_seen']
+            break
+        if run.get('boss') == 'alive':
+            trace['boss_seen'] = True
+            hp = run.get('bossHp')
+            if hp is not None:
+                trace['hp'] = hp if trace['hp'] is None else min(trace['hp'], hp)
+        elif run.get('boss') == 'dead':
+            trace['won'] = True
+            trace['left'] = 'the kill'
+            await io.loot()
+            break
+        if not trace['boss_seen'] and since_summon >= GB_BOSS_WAIT:
+            break
+        g = s.get('guide') or {}
+        hp_now = run.get('bossHp')
+        if hp_now != last_hp:
+            last_hp, fight_since = hp_now, None
+        if g.get('mode') == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        elif g.get('mode') != 'wait':
+            fight_since = None
+        if elapsed >= GB_BUDGET:
+            trace['left'] = 'a close by the helper (the time of the check)'
+            break
+        plan = []
+        if g.get('mode') == 'walk' and isinstance(g.get('goal'), dict):
+            plan = r['walker'].steps(s['pos'], g['goal'], GB_STEPS, elapsed)
+            if not r['walker'].blocked:   # the engine's path first; the side step only when the way is blocked
+                got = await hcmd(io, r, 'guildboss path', 'guildboss')
+                steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                plan = steps[:GB_STEPS] or plan
+            if r['walker'].stuck(elapsed) >= GB_STUCK:
+                trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                break
+        for step in plan:
+            await raid_walk(io, r, step)
+            trace['steps'] += 1
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+            since_summon += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        since_summon += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    after = await io.helper('guildboss close', 'guildboss', ANSWER)
+    again = await io.helper('guildboss state', 'guildboss', ANSWER)
+    if isinstance(again, dict) and again.get('inside'):
+        trace['faults'].append('the bot is still inside the guild boss arena after the close')
+    status, text = guildboss_verdict(trace)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
+# ------------------------------------------------------------------------------------------------ the rift, walked (O592)
+# The bot walks from where it stands to the temple (a rift is opened in a protection zone), takes a key, uses it and plays the rift like a
+# person: the guardian when it is up, else the nearest pack monster of its floor, by the engine's own path. The helper only gives the key
+# (`!tester rift key`), reads the screen (`rift state`), gives the path (`rift path`) and closes the run; nothing teleports the bot inside.
+RIFT_BUDGET = 420.0       # seconds a rift is played at most
+RIFT_STEPS = 6
+RIFT_OPEN_WAIT = 12.0     # seconds from the key to standing in the rift (the hotkey is sent again twice)
+RIFT_FIGHT_MIN = 150.0    # seconds at a monster without a kill
+RIFT_STUCK = 30.0
+RIFT_MISSES = 6
+
+
+def rift_walk_verdict(t):
+    """(status, text) from the trace of a walked rift: faults, kills (kills made), boss_seen, hp (the guardian's lowest health percent), came
+    ('foot' / 'helper'), steps, secs, fought, stuck, floor (a goal on another floor: the stairs are not walked), died, tier, theme, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = 'tier %s %s, %s the temple, %d step(s) in %d s' % (t.get('tier'), t.get('theme') or '?',
+                                                           'walked to' if t.get('came') == 'foot' else 'the helper put the bot at', t.get('steps', 0), t.get('secs', 0))
+    if t.get('fallbacks'):
+        how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if t.get('kills', 0) > 0 or (t.get('hp') is not None and t['hp'] < 100):
+        what = '%d kill(s)' % t.get('kills', 0)
+        if t.get('boss_seen'):
+            what += ', the guardian at %s%%' % t.get('hp')
+        return PASS, '%s (%s)' % (what, how)
+    if t.get('fought', 0) >= RIFT_FIGHT_MIN:
+        return FAIL, 'fought %d s in the rift and killed none (damage, targets or the monsters)' % t['fought']
+    if t.get('floor'):
+        return SKIP, 'the next goal is on another floor of the rift: the stairs are not walked yet (%s)' % how
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], RIFT_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot died before it killed a monster (level %s against the rift)' % t.get('level', '?')
+    return SKIP, 'no monster was killed in %d s (%s)' % (t.get('secs', 0), how)
+
+
+async def check_rift_walk(io, name, cls, level):
+    """walks to the temple, takes a key, opens a rift, walks through it fighting by the engine's path, closes it"""
+    key = 'rift_walk'
+    a = await io.helper('rift state', 'rift', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester rift (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if a.get('inside'):
+        return Result(key, name, cls, SKIP, 'the bot is inside a rift already')
+    if not a.get('tier'):
+        return Result(key, name, cls, SKIP, 'level %s opens no rift' % a.get('level'))
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'kills': 0, 'boss_seen': False, 'hp': None, 'fought': 0.0, 'stuck': None, 'floor': False, 'died': False,
+             'secs': 0, 'came': 'foot', 'tier': a.get('tier'), 'theme': None, 'fallbacks': fallbacks, 'level': a.get('level')}
+    io.raid_mode([name], True, keep_flee=True)   # no walk back to the hunt, but the bot may still flee like a person
+    try:
+        if not a.get('pz'):
+            how, got, note = await walk_to_place(io, r, 'temple')
+            if how not in ('foot', 'helper'):
+                return Result(key, name, cls, SKIP, how[:110])
+            if note:
+                fallbacks.append(note)
+                trace['came'] = 'helper'
+            await io.sleep(SETTLE)
+            a = await io.helper('rift state', 'rift', ANSWER)
+            if not (isinstance(a, dict) and a.get('pz')):
+                return Result(key, name, cls, SKIP, 'the bot stands at the temple but not in a protection zone: a rift cannot be opened there', fallbacks)
+        k = await io.helper('rift key', 'rift', HELPER_WAIT)
+        if not isinstance(k, dict):
+            return Result(key, name, cls, SKIP, 'no answer to !tester rift key', fallbacks)
+        if k.get('err'):
+            return Result(key, name, cls, SKIP, 'rift key: %s' % str(k['err'])[:80], fallbacks)
+        if k.get('held') is False:
+            if k.get('bagFull'):
+                return Result(key, name, cls, SKIP, 'the bag is full: the key went to the inbox (by design)', fallbacks)
+            return Result(key, name, cls, FAIL, 'a rift key of tier %s was given, the backpack holds none' % k.get('tier'), fallbacks)
+        trace['tier'] = k.get('tier') or trace['tier']
+        # the key is used like a hotkey; sent again when nothing happens (the first use may meet an exhaust or a slot being built)
+        opened, waited = None, 0.0
+        while waited <= RIFT_OPEN_WAIT and io.alive():
+            if waited in (0.0, 5.0, 9.0):
+                await io.use_item(k.get('keyClientId'))
+            await io.sleep(1.0)
+            waited += 1.0
+            opened = await io.helper('rift state', 'rift', ANSWER)
+            if isinstance(opened, dict) and opened.get('inside'):
+                break
+        if not (isinstance(opened, dict) and opened.get('inside')):
+            return Result(key, name, cls, SKIP, 'the rift did not open in %d s (a slot is busy or being built, or the bot is in a fight)' % int(RIFT_OPEN_WAIT),
+                          fallbacks)
+        return await rift_walk_play(io, name, cls, r, trace)
+    finally:
+        await io.helper('rift close', 'rift', ANSWER)   # the run closes, a refunded key is taken out of the backpack again
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+async def rift_walk_play(io, name, cls, r, trace):
+    key = 'rift_walk'
+    elapsed, misses, fight_since, last_kills, looted = 0.0, 0, None, None, 0.0
+    first_kills = None
+    while io.alive() and elapsed < RIFT_BUDGET:
+        s = await io.helper('rift state', 'rift', ANSWER)
+        if not isinstance(s, dict):
+            misses += 1
+            if misses >= RIFT_MISSES:
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        run = s.get('run') or {}
+        if not s.get('inside') or run.get('state') not in (None, 'running'):
+            trace['died'] = not trace['kills'] and elapsed < RIFT_BUDGET and not trace['boss_seen']
+            break
+        trace['theme'] = run.get('theme') or trace['theme']
+        killed = int(run.get('killed') or 0)
+        first_kills = killed if first_kills is None else first_kills
+        trace['kills'] = max(trace['kills'], killed - first_kills)
+        if killed != last_kills:
+            last_kills, fight_since = killed, None
+            if elapsed - looted >= 3.0:   # the corpses of the pack: the bot takes the loot as it does anywhere
+                await io.loot()
+                looted = elapsed
+        if run.get('boss') == 'alive':
+            trace['boss_seen'] = True
+            hp = run.get('bossHp')
+            if hp is not None:
+                trace['hp'] = hp if trace['hp'] is None else min(trace['hp'], hp)
+        g = s.get('guide') or {}
+        if g.get('mode') == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        elif g.get('mode') != 'wait':
+            fight_since = None
+        if trace['kills'] > 0 and trace['boss_seen'] and trace['hp'] is not None and trace['hp'] < 100:
+            break   # a pack monster killed and the guardian hurt: the run has been walked through
+        plan = []
+        if g.get('mode') == 'walk' and isinstance(g.get('goal'), dict):
+            plan = r['walker'].steps(s['pos'], g['goal'], RIFT_STEPS, elapsed)
+            if not r['walker'].blocked:   # the engine's path first (walls, doors); the side step only when the way is blocked
+                got = await hcmd(io, r, 'rift path', 'rift')
+                if isinstance(got, dict) and str(got.get('err')) == 'another floor':
+                    trace['floor'] = True
+                    break
+                steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                plan = steps[:RIFT_STEPS] or plan
+            if r['walker'].stuck(elapsed) >= RIFT_STUCK:
+                trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                break
+        elif g.get('mode') == 'wait' and g.get('area') == 'pack' and not trace['kills']:
+            trace['floor'] = True   # the monsters left are on another floor
+            break
+        for step in plan:
+            await raid_walk(io, r, step)
+            trace['steps'] += 1
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    status, text = rift_walk_verdict(trace)
+    return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -2604,6 +3263,8 @@ CLOSED_CHECKS = [
     ('closed_groupqueue', check_closed_groupqueue, lambda c: True),   # O589
     ('closed_party_finder', check_closed_party_finder, lambda c: True),   # O589
     ('closed_dungeon', check_closed_dungeon, lambda c: True),   # O589
+    ('closed_siege', check_closed_siege, lambda c: True),   # O592
+    ('closed_guildboss', check_closed_guildboss, lambda c: True),   # O592
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -2634,6 +3295,7 @@ CHECKS = [
     ('craft_supports', check_craft_supports, lambda c: True),
     ('craft_charms', check_craft_charms, lambda c: True),
     ('craft_cards', check_craft_cards, lambda c: True),
+    ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)
 

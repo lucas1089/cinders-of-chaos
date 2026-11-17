@@ -778,6 +778,27 @@ do
 	talks["!tester"].onSay(lt, "!tester", "shop")
 	check(lt.log.msgs[#lt.log.msgs]:find("shop {\"err\":\"the teleport next to the NPC was refused", 1, true) ~= nil,
 		"shop: a refused teleport is an error, not a window the bot cannot reach")
+	-- the depot twin (O592): a locker stands near the temple, the teleport next to it is refused, the bot stays and the answer says so
+	local dt = creature(268435472, "Tester Abs", {store = {[ST] = 1}})
+	function dt:teleportTo(p) end
+	local lockerAt = {x = 53, y = 50, z = 7}
+	function Tile(p)
+		local t = {getGround = function() return true end, hasFlag = function() return false end,
+			getTopCreature = function() return nil end, getPosition = function() return p end,
+			getThingIndex = function() return 1 end}
+		t.getItemById = function(_, id)
+			if id == 2589 and p.x == lockerAt.x and p.y == lockerAt.y and p.z == lockerAt.z then
+				return {getId = function() return id end}
+			end
+			return nil
+		end
+		return t
+	end
+	local dx0 = dt.pos.x
+	talks["!tester"].onSay(dt, "!tester", "depot")
+	check(dt.log.msgs[#dt.log.msgs]:find("depot {\"err\":\"the teleport next to the locker was refused", 1, true) ~= nil,
+		"depot: a refused teleport is an error, not a locker the bot cannot reach")
+	eq(dt.pos.x, dx0, "depot: the refused bot stayed where it was")
 end
 
 -- ------------------------------------------------------------------ O86: summons, party, cursed chest probes
@@ -1618,6 +1639,240 @@ do
 	local civ2 = creature(991, "Ana Walker", {store = {}})
 	local n2 = #civ2.log.msgs
 	check(talks["!tester"].onSay(civ2, "!tester", "path temple #1") == true and #civ2.log.msgs == n2, "path: a player's words go on and get no answer")
+end
+
+
+-- the siege, the guild boss and the rift (O592): `!tester siege | guildboss | rift ...`
+do
+	check(H.COMMANDS.siege and H.COMMANDS.guildboss and H.COMMANDS.rift, "siege, guildboss and rift are registered commands (O592)")
+	check(H.parseCommand("siege path #3") == "siege" and H.parseCommand("guildboss hall") == "guildboss" and H.parseCommand("rift key 3") == "rift",
+		"siege / guildboss / rift parse")
+	eq(H.parseSiege(nil), "state", "siege: no word is state")
+	eq(H.parseSiege("START"), "start", "siege: start (any case)")
+	eq(H.parseSiege("portal"), "portal", "siege: portal")
+	local w, usage = H.parseSiege("join")
+	check(w == nil and usage:find("usage: siege", 1, true), "siege: join is no helper word: the testers never sign up")
+	eq(H.parseGuildBoss(nil), "state", "guildboss: no word is state")
+	eq(H.parseGuildBoss("hall"), "hall", "guildboss: hall")
+	w, usage = H.parseGuildBoss("summon")
+	check(w == nil and usage:find("usage: guildboss", 1, true), "guildboss: summon is no helper word: the bot summons from the window")
+	local r = H.parseRift("key 3")
+	check(r and r.what == "key" and r.tier == 3, "rift: key with a tier")
+	r = H.parseRift("key")
+	check(r and r.what == "key" and r.tier == nil, "rift: key with no tier")
+	check(H.parseRift("key 99") == nil and H.parseRift("key 0") == nil and H.parseRift("state 3") == nil and H.parseRift("open") == nil,
+		"rift: a bad tier, a number after another word, an unknown word")
+	eq(H.parseRift(nil).what, "state", "rift: no word is state")
+	-- the answers cut the probes down
+	local a = H.siegeAnswer({inside = true, level = 900, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, on = true, running = true, phase = "match",
+		side = "tester", guild = "Tester Guild Alfa", signed = true, left = 90, where = "arena", bracket = 1, center = {x = 5, y = 5, z = 7},
+		gate = {x = 4, y = 4, z = 7}, onPoint = true, members = 1, team = {name = "A", score = 7, kills = 0, junk = 1}, holder = "A", contested = false,
+		rivals = {{name = "B", score = 0, kills = 0}}, you = {points = 7, kills = 0, deaths = 0, junk = 1},
+		guide = {mode = "hold", goal = {x = 5, y = 5, z = 7}, reach = {0, 2}, why = ("w"):rep(80), area = "obelisk", junk = 1}, junk = 1})
+	check(a.inside and a.on and a.pos.junk == nil and a.junk == nil and a.team.junk == nil and a.you.junk == nil, "siege answer: cut down to what the bot reads")
+	check(a.team.score == 7 and a.holder == "A" and a.rivals[1].name == "B" and a.where == "arena" and a.center.x == 5, "siege answer: the scores and the place")
+	check(a.guide.mode == "hold" and a.guide.reach[2] == 2 and #a.guide.why == 60 and a.guide.junk == nil, "siege answer: the guide")
+	check(H.siegeAnswer(nil).inside == false and H.siegeAnswer(nil).team == nil, "siege answer: nothing known")
+	local g = H.guildBossAnswer({inside = true, hasHall = true, inHall = false, fuel = 5, need = 5, canSummon = true, reason = ("r"):rep(120), stone = {x = 1, y = 1, z = 7},
+		board = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}, run = {state = "running", boss = "alive", tester = true, bossHp = 40,
+		bossPos = {x = 3, y = 3, z = 7, junk = 1}, gate = {x = 2, y = 2, z = 7}, junk = 1}, guide = {mode = "fight", goal = {x = 3, y = 3, z = 7}, area = "boss"}, junk = 1})
+	check(g.inside and g.hasHall and g.fuel == 5 and #g.reason == 90 and #g.board == 8 and g.junk == nil, "guild boss answer: the facts, the board is bounded")
+	check(g.run.tester and g.run.bossHp == 40 and g.run.bossPos.junk == nil and g.run.junk == nil and g.guide.mode == "fight", "guild boss answer: the run and the guide")
+	local ra = H.riftAnswer({inside = true, level = 400, pos = {x = 1, y = 2, z = 7}, pz = false, held = true, run = {id = 2, tier = 3, theme = "ash", state = "running",
+		boss = "waiting", killed = 4, total = 20, entry = {x = 9, y = 9, z = 7, junk = 1}, monsters = 5, junk = 1},
+		guide = {mode = "walk", goal = {x = 9, y = 9, z = 7}, reach = {1, 4}, area = "pack"}, junk = 1})
+	check(ra.inside and ra.held and ra.run.killed == 4 and ra.run.entry.junk == nil and ra.run.junk == nil and ra.junk == nil, "rift answer: cut down")
+	check(ra.guide.reach[2] == 4 and H.riftAnswer(nil).inside == false, "rift answer: the reach, nothing known")
+
+	local last = function(p) return p.log.msgs[#p.log.msgs] end
+	local t7 = creature(268435520, "Tester Aby", {store = {[ST] = 1}})
+	local realS, realB, realRF, realCfg, realCore, realTile5, realG = ChaosSiege, ChaosGuildBoss, ChaosRift, ChaosRiftConfig, ChaosRiftCore, Tile, ChaosGuild
+	-- ---- the siege
+	local startCalls, closeCalls, started = 0, 0, true
+	ChaosSiege = {probe = function(p)
+		local inside = p.inSiege
+		local out = {inside = inside, level = 900, minLevel = 100, pos = p:getPosition(), on = true, running = true, phase = "match", side = "tester",
+			portal = {x = 70, y = 71, z = 7}}
+		if inside then
+			out.where, out.center, out.gate = "arena", {x = 60, y = 60, z = 7}, {x = 58, y = 60, z = 7}
+			out.guide = {mode = "walk", goal = {x = 60, y = 60, z = 7}, reach = {0, 2}, area = "obelisk"}
+		end
+		return out
+	end, startTester = function() startCalls = startCalls + 1 return started, not started and "players are signed up for the next siege" or nil end,
+		testerClose = function() closeCalls = closeCalls + 1 return true end}
+	t7.pos = {x = 40, y = 71, z = 7}
+	talks["!tester"].onSay(t7, "!tester", "siege #80")
+	check(last(t7):find('"portal":{"x":70,"y":71,"z":7}', 1, true) and last(t7):find('"seq":80', 1, true), "siege state: the portal and the number")
+	talks["!tester"].onSay(t7, "!tester", "siege start #81")
+	check(last(t7):find('"started":true', 1, true) and startCalls == 1, "siege start: the testers' siege is asked for")
+	started = false
+	talks["!tester"].onSay(t7, "!tester", "siege start #82")
+	check(last(t7):find('"started":false', 1, true) and last(t7):find("players are signed up", 1, true), "siege start: refused with the reason")
+	t7.getPathTo = function(self, pos, minD, maxD)
+		t7.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {1, 1, 2}
+	end
+	talks["!tester"].onSay(t7, "!tester", "siege path #83")
+	check(last(t7):find('"path":[1,1,2]', 1, true) and last(t7):find('"dist":30', 1, true), "siege path: the directions to the portal")
+	check(t7.pathAsked.pos.x == 70 and t7.pathAsked.minD == 0 and t7.pathAsked.maxD == 1, "siege path: to the portal tile or next to it")
+	t7.pos = {x = 70, y = 70, z = 7}
+	talks["!tester"].onSay(t7, "!tester", "siege path #84")
+	check(last(t7):find('"here":true', 1, true), "siege path: next to the portal: here")
+	t7.inSiege = true
+	t7.pos = {x = 50, y = 60, z = 7}
+	talks["!tester"].onSay(t7, "!tester", "siege path #85")
+	check(last(t7):find('"path":[1,1,2]', 1, true) and t7.pathAsked.pos.x == 60 and t7.pathAsked.maxD == 2, "siege path inside: within the capture radius of the obelisk")
+	t7.getPathTo = function() return false end
+	talks["!tester"].onSay(t7, "!tester", "siege path #86")
+	check(last(t7):find('"err":"no path"', 1, true), "siege path: no path, the reason")
+	talks["!tester"].onSay(t7, "!tester", "siege portal #87")
+	check(last(t7):find("already inside the siege", 1, true), "siege portal: inside, no teleport")
+	t7.inSiege = nil
+	Tile = function() return {getGround = function() return false end, hasFlag = function() return false end, getTopCreature = function() return nil end} end
+	talks["!tester"].onSay(t7, "!tester", "siege portal #88")
+	check(last(t7):find("no free tile next to the portal", 1, true), "siege portal: no free tile, the reason")
+	Tile = realTile5
+	talks["!tester"].onSay(t7, "!tester", "siege close #89")
+	check(last(t7):find('"closed":true', 1, true) and closeCalls == 1, "siege close: the testers' own siege is closed")
+	talks["!tester"].onSay(t7, "!tester", "siege join #90")
+	check(last(t7):find("usage: siege", 1, true), "siege: an unknown word is the usage")
+	ChaosSiege = nil
+	talks["!tester"].onSay(t7, "!tester", "siege #91")
+	check(last(t7):find("no siege system", 1, true), "siege: no siege system, the reason")
+	ChaosSiege = realS
+
+	-- ---- the guild boss
+	local gbClose, entered = 0, 0
+	ChaosGuildBoss = {probe = function(p)
+		if p.inArena then
+			return {inside = true, level = 900, pos = p:getPosition(), on = true, hasHall = true, run = {state = "running", boss = "alive", tester = true,
+				bossPos = {x = 90, y = 50, z = 7}, bossHp = 100}, guide = {mode = "walk", goal = {x = 90, y = 50, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 900, pos = p:getPosition(), on = true, hasHall = p.hasHall ~= false, inHall = p.inHall, stone = {x = 80, y = 81, z = 7},
+			fuel = 0, need = 5, canSummon = false, reason = "The stone holds 0 of 5 embers.", guild = "Tester Guild Alfa", board = {"Tester Guild Alfa"}}
+	end, testerClose = function() gbClose = gbClose + 1 return true end}
+	ChaosGuild = {enterHall = function(p) entered = entered + 1 p.inHall = true return true end}
+	Chaos.guildConfig = {hall = {ids = {portal = 1387}, aid = {enter = 47602}}}
+	t7.pos = {x = 50, y = 50, z = 7}
+	t7.getPathTo = function(self, pos, minD, maxD)
+		t7.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {2, 2, 3}
+	end
+	talks["!tester"].onSay(t7, "!tester", "guildboss #100")
+	check(last(t7):find('"hasHall":true', 1, true) and last(t7):find('"need":5', 1, true) and last(t7):find('"board":["Tester Guild Alfa"]', 1, true),
+		"guildboss state: the hall, the need and the board the tester sees")
+	-- outside the hall: the portal near the temple is found by its action id
+	local hallTile = {x = 53, y = 52, z = 7}
+	Tile = function(p)
+		return {getItemById = function(_, id)
+			if id == 1387 and p.x == hallTile.x and p.y == hallTile.y and p.z == hallTile.z then
+				return {getActionId = function() return 47602 end}
+			end
+			return nil
+		end, getGround = function() return true end, hasFlag = function() return false end, getTopCreature = function() return nil end}
+	end
+	talks["!tester"].onSay(t7, "!tester", "guildboss path #101")
+	check(last(t7):find('"target":"hall"', 1, true) and last(t7):find('"path":[2,2,3]', 1, true) and t7.pathAsked.pos.x == 53,
+		"guildboss path outside: on foot to the Guild Hall Portal")
+	talks["!tester"].onSay(t7, "!tester", "guildboss hall #102")
+	check(entered == 1 and last(t7):find('"inHall":true', 1, true), "guildboss hall: the portal's own entry, the fallback")
+	talks["!tester"].onSay(t7, "!tester", "guildboss path #103")
+	check(last(t7):find('"target":"stone"', 1, true) and t7.pathAsked.pos.x == 80 and t7.pathAsked.pos.y == 81, "guildboss path in the hall: on foot to the stone")
+	t7.inArena = true
+	talks["!tester"].onSay(t7, "!tester", "guildboss path #104")
+	check(t7.pathAsked.pos.x == 90 and t7.pathAsked.minD == 1 and t7.pathAsked.maxD == 5, "guildboss path in the arena: within reach of the boss")
+	talks["!tester"].onSay(t7, "!tester", "guildboss hall #105")
+	check(last(t7):find("already inside the arena", 1, true) and entered == 1, "guildboss hall: inside the arena, no entry")
+	t7.inArena = nil
+	t7.hasHall = false
+	talks["!tester"].onSay(t7, "!tester", "guildboss path #106")
+	check(last(t7):find("the guild has no hall", 1, true), "guildboss path: no hall, the reason")
+	t7.hasHall = nil
+	Tile = realTile5
+	talks["!tester"].onSay(t7, "!tester", "guildboss close #107")
+	check(last(t7):find('"closed":true', 1, true) and gbClose == 1, "guildboss close: the testers' own run is closed")
+	talks["!tester"].onSay(t7, "!tester", "guildboss summon #108")
+	check(last(t7):find("usage: guildboss", 1, true), "guildboss: an unknown word is the usage")
+	ChaosGuildBoss = nil
+	talks["!tester"].onSay(t7, "!tester", "guildboss #109")
+	check(last(t7):find("no guild boss system", 1, true), "guildboss: no system, the reason")
+	ChaosGuildBoss, ChaosGuild = realB, realG
+
+	-- ---- the rift
+	local riftClose, given = 0, 0
+	local rcfg = {key = {itemId = 4444}, maxTier = 5}
+	ChaosRiftConfig = rcfg
+	ChaosRiftCore = {tierInfo = function(_, t) return {minLevel = t * 100} end}
+	ChaosRift = {giveKey = function() given = given + 1 end, testerClose = function() riftClose = riftClose + 1 return true end,
+		probe = function(p)
+			if p.inRift then
+				return {inside = true, level = p:getLevel(), pos = p:getPosition(), pz = false, held = false,
+					run = {id = 1, tier = 3, state = "running", boss = "waiting", killed = 1, total = 9, monsters = 8, floors = 1},
+					guide = {mode = "walk", goal = {x = 30, y = 30, z = 7}, reach = {1, 4}, area = "pack"}}
+			end
+			return {inside = false, level = p:getLevel(), pos = p:getPosition(), pz = p.zone and true or false, held = p.keyHeld and true or false}
+		end}
+	t7.getLevel = function() return 350 end
+	t7.getItemById = function(self, id) return self.keyHeld and {remove = function(item) self.keyHeld = false return true end} or nil end
+	t7.pos = {x = 50, y = 50, z = 7}
+	talks["!tester"].onSay(t7, "!tester", "rift #110")
+	check(last(t7):find('"pz":false', 1, true) and last(t7):find('"tier":3', 1, true), "rift state: the zone and the tier the level opens")
+	talks["!tester"].onSay(t7, "!tester", "rift key #111")
+	check(last(t7):find("not in a protection zone", 1, true) and given == 0, "rift key: outside a protection zone, no key")
+	t7.zone = true
+	talks["!tester"].onSay(t7, "!tester", "rift key 2 #112")
+	check(given == 1 and last(t7):find('"tier":2', 1, true), "rift key: the named tier is given where the bot stands")
+	talks["!tester"].onSay(t7, "!tester", "rift key #113")
+	check(given == 2 and last(t7):find('"tier":3', 1, true), "rift key: no tier is the highest the level opens")
+	t7.getLevel = function() return 50 end
+	talks["!tester"].onSay(t7, "!tester", "rift key #114")
+	check(last(t7):find("level too low for a rift", 1, true) and given == 2, "rift key: a level that opens none")
+	t7.getLevel = function() return 350 end
+	t7.inRift = true
+	talks["!tester"].onSay(t7, "!tester", "rift key #115")
+	check(last(t7):find("already inside a rift", 1, true) and given == 2, "rift key: inside, none")
+	t7.getPathTo = function(self, pos, minD, maxD)
+		t7.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {0, 0, 1}
+	end
+	t7.pos = {x = 50, y = 30, z = 7}
+	talks["!tester"].onSay(t7, "!tester", "rift path #116")
+	check(last(t7):find('"path":[0,0,1]', 1, true) and t7.pathAsked.pos.x == 30 and t7.pathAsked.minD == 1 and t7.pathAsked.maxD == 4,
+		"rift path: on foot to the guide's goal, within reach of the monster")
+	t7.getPathTo = function() return false end
+	talks["!tester"].onSay(t7, "!tester", "rift path #117")
+	check(last(t7):find('"err":"no path"', 1, true), "rift path: no path, the reason")
+	t7.inRift = nil
+	talks["!tester"].onSay(t7, "!tester", "rift path #118")
+	check(last(t7):find("not inside a rift", 1, true), "rift path: outside, the reason")
+	t7.keyHeld = true
+	talks["!tester"].onSay(t7, "!tester", "rift close #119")
+	check(last(t7):find('"closed":true', 1, true) and riftClose == 1 and t7.keyHeld == false, "rift close: the run ends and a refunded key is taken out")
+	talks["!tester"].onSay(t7, "!tester", "rift bogus #120")
+	check(last(t7):find("usage: rift", 1, true), "rift: an unknown word is the usage")
+	ChaosRift = nil
+	talks["!tester"].onSay(t7, "!tester", "rift #121")
+	check(last(t7):find("no rifts on this server", 1, true), "rift: no rifts, the reason")
+	ChaosRift, ChaosRiftConfig, ChaosRiftCore = realRF, realCfg, realCore
+	-- `enter rift`: no teleport from a protection zone, counted in the answer
+	ChaosRift = {giveKey = function() end}
+	ChaosRiftConfig = {key = {itemId = 4444}}
+	t7.getItemById = function() return nil end
+	local temple0 = {x = 50, y = 50, z = 7}
+	t7.pos = {x = 120, y = 120, z = 7}
+	function t7:teleportTo(p) self.pos = p end
+	Tile = function() return {hasFlag = function(_, f) return f == TILESTATE_PROTECTIONZONE end, getItemById = function() return nil end} end
+	talks["!tester"].onSay(t7, "!tester", "enter rift 2 #122")
+	check(last(t7):find('"teleported":false', 1, true) and t7.pos.x == 120, "enter rift: in a protection zone the bot stays (it walked there)")
+	Tile = function() return {hasFlag = function() return false end, getItemById = function() return nil end} end
+	talks["!tester"].onSay(t7, "!tester", "enter rift 2 #123")
+	check(last(t7):find('"teleported":true', 1, true) and t7.pos.x == temple0.x, "enter rift: outside one the temple, counted as a teleport")
+	ChaosRift, ChaosRiftConfig, Tile = realRF, realCfg, realTile5
+	-- a player is never answered
+	local civ3 = creature(992, "Ana Rifter", {store = {}})
+	local n3 = #civ3.log.msgs
+	check(talks["!tester"].onSay(civ3, "!tester", "siege start #1") == true and talks["!tester"].onSay(civ3, "!tester", "guildboss close #2") == true
+		and talks["!tester"].onSay(civ3, "!tester", "rift key #3") == true and #civ3.log.msgs == n3, "siege / guildboss / rift: a player's words go on and get no answer")
 end
 
 print = origPrint

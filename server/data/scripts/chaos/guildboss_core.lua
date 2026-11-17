@@ -3,6 +3,7 @@
 -- shapes, the phase machine and the lethal-hit catch are uber_core.lua's (U.layout / U.pattern / U.markPlan /
 -- U.advancePhase / U.clock / U.catchDamage with this config); this file holds what is the guild's own.
 --   week       B.weekKey(cfg, t), B.nextReset(cfg, t)
+--   O592       B.need(level, cfg, tester) (a tester guild's stone), B.testerSummonRefusal(running, cfg), B.guide(a) (what a bot does next)
 --   fuel       B.need(level, cfg), B.goldEmbers(amount, cfg), B.material(cfg, key), B.materialEmbers(def, count, cfg),
 --              B.fuelAfterFail(fuel, need, cfg)
 --   summon     B.summonError(info, cfg)
@@ -50,9 +51,44 @@ function B.nextReset(cfg, t)
 end
 
 -- ---------------------------------------------------------------- fuel
-function B.need(level, cfg)
+function B.need(level, cfg, tester)
+	if tester and cfg.tester and cfg.tester.need then
+		return cfg.tester.need -- a tester guild's stone (O592)
+	end
 	local n = cfg.need or {}
 	return (n.base or 0) + (n.perLevel or 0) * math.max(1, floor(tonumber(level) or 1))
+end
+
+-- O592: the reason a TESTER's summon is refused apart from the stone's own rules, or nil. running: arenas in use (all sides)
+function B.testerSummonRefusal(running, cfg)
+	local t = cfg.tester or {}
+	local maxRuns = (cfg.limits and cfg.limits.maxRuns) or 8
+	if (running or 0) + (t.reserve or 2) >= maxRuns then
+		return "The testers' guild boss waits: the arenas are kept for the players."
+	end
+	return nil
+end
+
+-- O592: what a person does next in the guild boss arena. a = {inside, state ("running" ...), boss ("waiting" | "alive" | "dead"), down
+-- (waiting at the Ember Gate), pos, bossPos, gate (the Ember Gate tile), reach (tiles the boss is fought from)}
+-- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
+function B.guide(a)
+	if not a.inside then
+		return {mode = "wait", why = "outside the arena"}
+	end
+	if a.state ~= "running" then
+		return {mode = "wait", why = "the fight is over"}
+	end
+	if a.down then
+		return {mode = "walk", goal = a.gate, reach = {0, 0}, area = "gate", why = "back through the Ember Gate"}
+	end
+	if a.boss ~= "alive" or not a.bossPos then
+		return {mode = "wait", why = a.boss == "dead" and "the boss is down" or "the boss is coming"}
+	end
+	if a.pos and a.bossPos.z == a.pos.z and math.max(math.abs(a.pos.x - a.bossPos.x), math.abs(a.pos.y - a.bossPos.y)) <= (a.reach or 5) then
+		return {mode = "fight", goal = a.bossPos, area = "boss", why = "in reach of the boss"}
+	end
+	return {mode = "walk", goal = a.bossPos, reach = {1, a.reach or 5}, area = "boss", why = "to the boss"}
 end
 
 -- gold -> embers: whole embers only. Returns embers, the gold that buys them (a multiple of perEmber), or nil + why.

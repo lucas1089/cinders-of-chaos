@@ -14,6 +14,12 @@ return {
 	resetDay = 2, -- 1 = Sunday ... 2 = Monday (raid_core.lua weekKey)
 	resetHour = 6,
 
+	-- ------------------------------------------------------------------ the testers' guild boss (O592, closed test mode)
+	-- A tester guild (server/README.md "The siege and the guild boss in closed mode (O592)") has a free hall (guild_hall.lua buyHall) and
+	-- a stone that needs `need` embers (one Orb of Upheaval is 5): the bots cannot earn 5.25M gold of fuel. Players first: a tester
+	-- summon is refused while fewer than `reserve` of the arenas (limits.maxRuns) would stay free for the guilds of players.
+	tester = {need = 5, reserve = 2},
+
 	-- ------------------------------------------------------------------ fuel (embers)
 	-- the stone needs need.base + need.perLevel x guild level embers (guild level 5: 625, 10: 750, 20: 1000)
 	need = {base = 500, perLevel = 25},

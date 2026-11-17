@@ -33,6 +33,12 @@
 --                                       position, the entrance, the guide's goal and mode, the run's counts), `extra` merged in
 --   H.parseDungeon(arg)                O589: "dungeon [state | path | close]" -> the word (state when empty), or nil and the usage
 --   H.dungeonAnswer(probe, extra)      O589: the answer of `dungeon`: ChaosDungeons.probe of the tester cut down to what the bot reads
+--   H.parseSiege(arg)                  O592: "siege [state | start | path | portal | close]" -> the word (state when empty), or nil and the usage
+--   H.siegeAnswer(probe, extra)        O592: the answer of `siege`: ChaosSiege.probe of the tester cut down to what the bot reads
+--   H.parseGuildBoss(arg)              O592: "guildboss [state | path | hall | close]" -> the word (state when empty), or nil and the usage
+--   H.guildBossAnswer(probe, extra)    O592: the answer of `guildboss`: ChaosGuildBoss.probe of the tester cut down to what the bot reads
+--   H.parseRift(arg)                   O592: "rift [state | key | path | close]" -> {what, tier?}, or nil and the usage
+--   H.riftAnswer(probe, extra)         O592: the answer of `rift`: ChaosRift.probe of the tester cut down to what the bot reads
 --   H.parsePath(arg)                   O589: "path <kind> [N]" / "path npc <name>" / "path pos X Y Z" -> the destination, or nil and the usage
 --   H.pathAnswer(from, dest, dirs, extra)  O589: the answer of `path`: the engine directions, the destination and the distance left
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
@@ -45,7 +51,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -233,6 +239,151 @@ function H.dungeonAnswer(probe, extra)
 	local g = probe.guide
 	if type(g) == "table" then
 		out.guide = {mode = g.mode, goal = xyz(g.goal), why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester siege [state | start | path | portal | close] (O592, closed test mode): the guild siege as a person sees it, the TEST ONLY start of the
+-- testers' own siege, the path on foot to the portal or the next goal inside, the step next to the portal when no path is found, the close
+function H.parseSiege(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if what ~= "state" and what ~= "start" and what ~= "path" and what ~= "portal" and what ~= "close" then
+		return nil, "usage: siege [state | start | path | portal | close]"
+	end
+	return what
+end
+
+local function team(t)
+	if type(t) ~= "table" then
+		return nil
+	end
+	return {name = t.name and tostring(t.name):sub(1, 40) or nil, score = t.score, kills = t.kills}
+end
+
+function H.siegeAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, pos = xyz(probe.pos),
+		on = probe.on and true or false, running = probe.running and true or false, phase = probe.phase, side = probe.side,
+		guild = probe.guild and tostring(probe.guild):sub(1, 40) or nil, signed = probe.signed and true or false, left = probe.left,
+		portal = xyz(probe.portal), enabled = probe.enabled ~= false, radius = probe.radius}
+	if probe.inside then
+		out.where, out.bracket, out.center, out.gate = probe.where, probe.bracket, xyz(probe.center), xyz(probe.gate)
+		out.onPoint, out.downed, out.members = probe.onPoint and true or false, probe.downed and true or false, probe.members
+		out.team = team(probe.team)
+		out.holder, out.contested = probe.holder and tostring(probe.holder):sub(1, 40) or nil, probe.contested and true or false
+		if type(probe.rivals) == "table" then
+			out.rivals = {}
+			for i = 1, math.min(#probe.rivals, 3) do
+				out.rivals[#out.rivals + 1] = team(probe.rivals[i])
+			end
+		end
+		if type(probe.you) == "table" then
+			out.you = {points = probe.you.points, kills = probe.you.kills, deaths = probe.you.deaths}
+		end
+	end
+	local g = probe.guide
+	if type(g) == "table" then
+		local r = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
+		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = r, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester guildboss [state | path | hall | close] (O592, closed test mode): the weekly guild boss as a person sees it, the path on foot to the
+-- hall portal, the stone or the next goal inside the arena, the step into the hall when no path is found, the close of the testers' own run
+function H.parseGuildBoss(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if what ~= "state" and what ~= "path" and what ~= "hall" and what ~= "close" then
+		return nil, "usage: guildboss [state | path | hall | close]"
+	end
+	return what
+end
+
+function H.guildBossAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, minLevel = probe.minLevel, pos = xyz(probe.pos),
+		on = probe.on and true or false, enabled = probe.enabled ~= false, guild = probe.guild and tostring(probe.guild):sub(1, 40) or nil,
+		rank = probe.rank, side = probe.side, hasHall = probe.hasHall and true or false, inHall = probe.inHall and true or false,
+		fuel = probe.fuel, need = probe.need, attempts = probe.attempts, maxAttempts = probe.maxAttempts, killed = probe.killed and true or false,
+		running = probe.running and true or false, canSummon = probe.canSummon and true or false,
+		reason = probe.reason and tostring(probe.reason):sub(1, 90) or nil, stone = xyz(probe.stone), minPlayers = probe.minPlayers}
+	if type(probe.board) == "table" then
+		out.board = {}
+		for i = 1, math.min(#probe.board, 8) do
+			out.board[#out.board + 1] = tostring(probe.board[i]):sub(1, 40)
+		end
+	end
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {state = r.state, boss = r.boss, tester = r.tester and true or false, lives = r.lives, livesMax = r.livesMax, players = r.players,
+			left = r.left, down = r.down and true or false, enraged = r.enraged and true or false, phase = r.phase, bossPos = xyz(r.bossPos),
+			bossHp = r.bossHp, gate = xyz(r.gate)}
+	end
+	local g = probe.guide
+	if type(g) == "table" then
+		local reach = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
+		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester rift [state | key [tier] | path | close] (O592): a rift opened and walked like a person's. `key` puts a key of the tier (the highest the
+-- level may open when none is named) into the backpack where the bot stands (it must be in a protection zone, as for a player); the bot
+-- uses it itself; `state` is what the screen shows; `path` the way on foot to the guide's goal; `close` ends the bot's own run
+function H.parseRift(arg)
+	local usage = "usage: rift [state | key [tier] | path | close]"
+	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
+	if not what then
+		return nil, usage
+	end
+	if what == "" then
+		what = "state"
+	end
+	what = what:lower()
+	if what == "key" then
+		local tier = tonumber(rest)
+		if tier and (tier < 1 or tier > H.RIFT_MAX) then
+			return nil, usage
+		end
+		return {what = "key", tier = tier}
+	end
+	if rest ~= "" or (what ~= "state" and what ~= "path" and what ~= "close") then
+		return nil, usage
+	end
+	return {what = what}
+end
+
+function H.riftAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), pz = probe.pz and true or false,
+		held = probe.held, keyClientId = probe.keyClientId, tier = probe.tier}
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, tier = r.tier, theme = r.theme and tostring(r.theme):sub(1, 30) or nil, kind = r.kind, state = r.state, boss = r.boss,
+			killed = r.killed, total = r.total, bossAt = r.bossAt, left = r.left, lives = r.lives, players = r.players, floors = r.floors,
+			entry = xyz(r.entry), bossPos = xyz(r.bossPos), monsters = r.monsters, bossHp = r.bossHp}
+	end
+	local g = probe.guide
+	if type(g) == "table" then
+		local reach = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
+		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
 	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v
