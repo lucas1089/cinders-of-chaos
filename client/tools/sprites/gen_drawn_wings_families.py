@@ -1432,7 +1432,7 @@ def render_frame(sp, d, f):
     (O590): the south picture (east) or the north picture (west) with x and y changed over, the wings one over the
     other behind the body. Measured on the old pair: 113 of 121 east views are the south view turned that way."""
     faces = sheet_faces(sp)
-    if faces is not None:                                 # a painted row (O594): north in front of the body, the rest behind
+    if faces is not None:                                 # a painted row (O594, own side views O620): north in front of the body, the rest behind
         img, none = faces[d][f], np.zeros((S, S, 4), np.uint8)
         return (none, img) if d == 'north' else (img, none)
     src = VIEW_SRC[d]

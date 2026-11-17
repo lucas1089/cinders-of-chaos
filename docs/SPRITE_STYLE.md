@@ -250,10 +250,16 @@ holds every row of `drawn_wings/designs.csv` to it (`bar_problems`).
   left and right wing, south and north; `zones`; `beat`). No picture data in the repository.
 - **Painted rows (O594):** a row of `drawn_wings/pixellab_rows.csv` may come from a painted sheet in a private folder
   (`--src DIR`). `gen_pixellab_wings.py clean` makes it hold this bar: alpha cut at 128, one palette of 28 colours a row,
-  the outline colour on every open edge, lights at the glow level, the box of the code-drawn row. The same test holds it.
+  the outline colour on every open edge, lights at the glow level. The same test holds it.
   Without the folder the row is drawn by code.
+- **Layout of a painted row (O620):** one wing is painted, the pair is made by rule. North and south: the right wing is the
+  mirror picture of the left about column 48, so the middle of the pair is the torso column. The wings meet in a knot at
+  (48, 58), the shoulder line, the same point in the four views; no gap, one piece. East and west are own side views: the
+  same wing at 70% of its width with the far wing behind it, rising from the knot, trailing behind the body, at most 12% of
+  it under row 64. The north view shares its colours with the south view and reads on dark and on light ground (a `rim`
+  colour inside the outline for a dark wing). `gen_pixellab_wings.py measure DIR` prints the numbers, `fit_problems` holds them.
   `gen_drawn_wings.py score DAT SPR` gives the distance.
-- **Side views (O590):** east is the south picture with x and y changed over, west the north picture. The old art shows the
+- **Side views (O590, the rows drawn by code):** east is the south picture with x and y changed over, west the north picture. The old art shows the
   wings face on in every direction. A wing the old art does not have is not drawn.
 - **Feathers (O590):** long and pointed or blade-ended, slanted toward the tip of the wing. Never round scales across it.
 
