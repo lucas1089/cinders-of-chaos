@@ -282,6 +282,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                monster_creature_looks.csv); the installed files get the new look (and a row of the installed bounty pool, were a
                hunt monster on the map); waits for config.lua chaosClientPair >= 73, README "Client pair guard" and "Creature pack
                looks (O608)"; after funlooks
+  monsterswaplooks tools/install_monster_swap_looks.py  24 monsters (the donor B first set 1530-1550 and the two of the third donor set with
+               no outline) wear a better look already in the pair (O619, after the O610 look audit; outfits of pair 50, data/monster/
+               monster_o619_looks.csv); the installed files, the installed bounty pool and the quest and trial tables that name an old look
+               get the new one; waits for config.lua chaosClientPair >= 73, README "Client pair guard" and "Look swaps (O619)"; after
+               monstercreaturelooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1310,6 +1315,15 @@ def step_monstercreaturelooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('funlooks') + 1, 'monstercreaturelooks')  # the creature pack looks (pair 73) go over every earlier look
+
+
+def step_monsterswaplooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 73) is in the tool; its warning reaches the report
+    args = [tool('install_monster_swap_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_swap_looks.py'))
+
+
+STEPS.insert(STEPS.index('monstercreaturelooks') + 1, 'monsterswaplooks')  # the look swaps of O619 (pair 73) go over every earlier look
 
 
 def step_monsterresists(server, data, ctx):

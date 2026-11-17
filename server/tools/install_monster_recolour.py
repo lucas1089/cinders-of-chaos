@@ -98,6 +98,17 @@ def creature_looks(path=None):
         return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
 
 
+def swap_looks(path=None):
+    """{monster: swapped look} of the pair 73 map of O619 (monster_o619_looks.csv): six monsters of the recolour map (Gildguard Revenant,
+    Rimecairn, Pyre Stork, Rootbound Pilgrim, Thornveil Wraith, Ironmask Taskmaster) leave their copy for it once step `monsterswaplooks`
+    has run, which is past this step, so a copy or an old look is not the only look this step may meet"""
+    path = os.path.join(os.path.dirname(MAP), 'monster_o619_looks.csv') if path is None else path
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline='', encoding='utf-8') as f:
+        return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
+
+
 def write(path, text):
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8', errors='surrogateescape', newline='') as f:
@@ -123,7 +134,7 @@ def main(argv=None):
     if not ok:
         return 0
     rows = read_map(path)
-    beyond = creature_looks()
+    beyond = dict(swap_looks(), **creature_looks())
     files = monster_files(os.path.join(data_dir, OURS))
     bad, moved, done, writes = [], 0, 0, []
     for name, old, new in rows:

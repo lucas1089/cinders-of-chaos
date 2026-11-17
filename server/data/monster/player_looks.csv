@@ -414,7 +414,6 @@ look,source
 1558,outfits.xml
 1559,outfits.xml
 1560,outfits.xml
-1561,mounts.xml
 2039,outfits.xml
 2040,outfits.xml
 2041,outfits.xml
@@ -455,10 +454,6 @@ look,source
 2079,outfits.xml
 2080,outfits.xml
 2081,outfits.xml
-2132,mounts.xml
-2133,mounts.xml
-2134,mounts.xml
-2135,mounts.xml
 2136,auras.xml
 2137,auras.xml
 2138,auras.xml
@@ -791,3 +786,8 @@ look,source
 2679,outfits.xml
 2680,outfits.xml
 2681,outfits.xml
+2999,mounts.xml
+3096,mounts.xml
+3121,mounts.xml
+3207,mounts.xml
+3314,mounts.xml

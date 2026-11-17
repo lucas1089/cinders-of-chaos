@@ -113,7 +113,7 @@ rc_ = S.load_recolour()
 check(S.look_at_pair('The Rotmother', 238, 72, rc_) == 238 and S.look_at_pair('The Rotmother', 238, 73, rc_) == 3527,
       'audit_shared_looks: the Rotmother wears 238 at pair 72 and 3527 at pair 73')
 check(S.look_at_pair('The Rotmother', 3527, 68, rc_) == 238, 'a file written for pair 73 reads as the old look for pair 68')
-check([S.look_at_pair('Rimecairn', 1531, p, rc_) for p in (68, 69, 73)] == [1531, rc_['Rimecairn'][1], rc_['Rimecairn'][1]],
+check([S.look_at_pair('Rimecairn', 1531, p, rc_, swap={}) for p in (68, 69, 73)] == [1531, rc_['Rimecairn'][1], rc_['Rimecairn'][1]],
       'audit_shared_looks: Rimecairn keeps the copy of pair 69 at pair 73')
 check(S.check_pool(pair=C.PAIR_CREATURE) == [], 'no shared look at pair 73: %s' % S.check_pool(pair=C.PAIR_CREATURE))
 check(I.check_pool(pair=C.PAIR_CREATURE) == [], 'every hunt monster moves while it stands at pair 73: %s' % I.check_pool(pair=C.PAIR_CREATURE))
@@ -121,8 +121,10 @@ check(I.check_crowded(pair=C.PAIR_CREATURE) == [], 'no crowded look at pair 73')
 idle = I.load_idle()
 check(all(idle.get(n, (False,))[0] and idle[n][3] == 'idle group' for n in range(3527, 3530)), 'look_idle.csv: the three looks have an idle group that moves')
 check(not [n for n in range(3530, 3536) if n in idle], 'look_idle.csv: the six outfits of O605 that are gone have no row')
-check([r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_CREATURE)[0]] == [r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_FUN)[0]],
-      'the pool reads the same at pair 72 and 73: no hunt monster changes')
+_swapped = set(S.load_swap())   # the look swaps of O619 ride with pair 73 as well: they are not this map's monsters
+check([r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_CREATURE)[0] if r['name'] not in _swapped]
+      == [r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_FUN)[0] if r['name'] not in _swapped],
+      'the pool reads the same at pair 72 and 73: no hunt monster of this map changes')
 
 # ---- the guard and the step end to end (synthetic server: our files, a base XML, a base Lua monster, a boss with no pool row)
 mp = os.path.join(tempfile.mkdtemp(prefix='creaturelooks_map_'), 'map.csv')

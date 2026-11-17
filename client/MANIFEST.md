@@ -1395,6 +1395,9 @@ of things_custom15.
   | 2135 | 145 Thornbound Stag | 20 -4 | 18 -15 | 14 -8 | 14 -16 |
 
 - Data only: no engine change beyond 0034 (it already reads a pair per direction). The stock path needs no seat.
+- O619: no mount wears these five looks any more (owner 2026-11-17: the mounts can be swapped; they failed the stock bar of the O610 audit).
+  The five mounts took 2x2 pair 50 looks with displacement 0 like the stock mounts, so they need no seat: server/README.md "Look swaps (O619)".
+  The looks and their seats stay in the pair, worn by nobody.
 
 ```
 python3 -I client/tools/sprites/set_rider_seat.py --ours-dat things_custom15/Tibia.dat --ours-spr things_custom15/Tibia.spr \

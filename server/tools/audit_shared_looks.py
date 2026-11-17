@@ -47,6 +47,7 @@ RECOLOUR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_recolour_loo
 DONOR = os.path.join(REPO, 'server', 'data', 'monster', 'monster_donor_looks.csv')
 PURCHASED = os.path.join(REPO, 'server', 'data', 'monster', 'monster_wst_looks.csv')
 CREATURE = os.path.join(os.path.dirname(PURCHASED), 'monster_creature_looks.csv')
+SWAP = os.path.join(os.path.dirname(PURCHASED), 'monster_o619_looks.csv')
 ALLOW = os.path.join(REPO, 'server', 'data', 'monster', 'shared_looks_allow.csv')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua')
 COLOUR_DIST = 0.28
@@ -295,16 +296,29 @@ def load_creature(path=None):
     return out
 
 
-def look_at_pair(name, look, pair, recolour, donor=None, purchased=None, creature=None):
+def load_swap(path=None):
+    """{monster name: (look, new_look)} of monster_o619_looks.csv (O619: monsters that leave a look that fails the stock bar): the same
+    shape, from pair 73 on; `look` is the committed look, also for a monster that wears a copy of it since pair 69"""
+    out = {}
+    path = SWAP if path is None else path
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+def look_at_pair(name, look, pair, recolour, donor=None, purchased=None, creature=None, swap=None):
     """the lookType of a monster at a client pair: its copy from pair 69 on, its donor look (O538) from pair 70 on, its purchased look
-    (O540) from pair 71 on, its creature pack look (O605) from pair 73 on, the old look below (a file or a pool row written for the
-    other state is read for this one too, so a server mid update gives the same answer). A monster in two maps goes through them in
-    the order of their pairs."""
+    (O540) from pair 71 on, its creature pack look (O605) from pair 73 on, its swapped look (O619) from pair 73 on, the old look below
+    (a file or a pool row written for the other state is read for this one too, so a server mid update gives the same answer). A
+    monster in two maps goes through them in the order of their pairs (the swap map last: it replaces a copy or a pack look)."""
     donor = load_donor() if donor is None else donor
     purchased = load_purchased() if purchased is None else purchased
     creature = load_creature() if creature is None else creature
+    swap = load_swap() if swap is None else swap
     chain = [(need, rows[name]) for rows, need in ((recolour, client_pair.PAIR_RECOLOUR), (donor, client_pair.PAIR_DONOR),
-                                                   (purchased, client_pair.PAIR_PURCHASED), (creature, client_pair.PAIR_CREATURE))
+                                                   (purchased, client_pair.PAIR_PURCHASED), (creature, client_pair.PAIR_CREATURE),
+                                                   (swap, client_pair.PAIR_SWAP))
              if name in rows]
     if not chain or look not in {x for _n, (o, nl) in chain for x in (o, nl)}:
         return look

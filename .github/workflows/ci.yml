@@ -1644,6 +1644,9 @@ jobs:
       - name: Creature pack looks move 3 bosses at pair 73 (install_monster_creature_looks.py, monstercreaturelooks step, O608)
         run: python3 -I server/tools/install_monster_creature_looks_test.py
 
+      - name: Look swaps move 24 monsters at pair 73 and the five donor mounts get new looks (install_monster_swap_looks.py, monsterswaplooks step, O619)
+        run: python3 -I server/tools/install_monster_swap_looks_test.py
+
       - name: Fun costumes, the new Dusk Moth and the round Rune Seal appear at pair 72 (install_fun_looks.py, install_auras.py, O566)
         run: python3 -I server/tools/install_fun_looks_test.py
 

@@ -54,11 +54,16 @@ CEND = '\t<!-- end of the Chaos class looks -->\n'
 MBEGIN = '\t<!-- Chaos mounts (server/tools/install_outfits.py, do not edit by hand) -->\n'
 MEND = '\t<!-- end of the Chaos mounts -->\n'
 # (mount id, client look type, name, speed). Bone Steed is sold in the store (shop_config.lua); 142..145 are the faction
-# mounts (factions_config.lua quartermasters, Exalted; donor-library looks 2132..2135 of things_custom14, picks.csv rows
-# mount_*), never sold (gen_shop_cosmetics.py excludes factions_config.lua mounts)
-MOUNTS = [(141, 1561, 'Bone Steed', 30),
-          (142, 2132, 'Pyrewarden Charger', 30), (143, 2133, 'Forgeborn Emberwolf', 30),
-          (144, 2134, 'Veilrunner', 30), (145, 2135, 'Thornbound Stag', 30)]
+# mounts (factions_config.lua quartermasters, Exalted), never sold (gen_shop_cosmetics.py excludes factions_config.lua mounts).
+# O619 (owner 2026-11-17: "the mounts can just be swapped"): the five donor mounts (looks 1561 and 2132..2135) failed the stock bar of the
+# O610 look audit (an upright camera with the east a mirrored west, soft alpha, no outline), and every look the pair has as a mount was
+# on offer already, so each mount took a pair 50 creature look that passes the bar, has no monster and no player on it and sits on a 2x2
+# like the stock mounts (displacement 0, no rider seat): 141 2999 bone beast with antlers, 142 3096 armoured tusked beast (red), 143 3121
+# dark beast wreathed in fire, 144 3314 blue spectral beast (the art of 3121 in blue), 145 3207 antlered ghost horse (brown). The old
+# looks stay in the pair, worn by nobody.
+MOUNTS = [(141, 2999, 'Bone Steed', 30),
+          (142, 3096, 'Pyrewarden Charger', 30), (143, 3121, 'Forgeborn Emberwolf', 30),
+          (144, 3314, 'Veilrunner', 30), (145, 3207, 'Thornbound Stag', 30)]
 EXCLUSIVES = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'exclusives_config.lua')
 # the wings of client pair things_custom24, in exclusives_config.lua's line format; read only while its switch is on
 THEME_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_theme_art.lua')

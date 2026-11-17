@@ -74,7 +74,7 @@ return {
 		{key = "addons:146", looktype = 146, lookfemale = 150, name = "Oriental", cost = 150, premium = true},
 	},
 	mounts = {
-		{key = "mount:141", id = 141, clientid = 1561, name = "Bone Steed", cost = 690, description = "A skeletal horse wreathed in grave-light."},
+		{key = "mount:141", id = 141, clientid = 2999, name = "Bone Steed", cost = 690, description = "A skeletal horse wreathed in grave-light."},
 		{key = "mount:140", id = 140, clientid = 1376, name = "Stormkeep", cost = 690},
 		{key = "mount:139", id = 139, clientid = 1346, name = "Golden Juggernaut", cost = 690},
 		{key = "mount:138", id = 138, clientid = 1345, name = "Golden Tempest", cost = 690},

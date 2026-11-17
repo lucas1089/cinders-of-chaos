@@ -82,6 +82,7 @@ def _donor_looks(path=DONOR_MAP):
 DONOR = _donor_looks()
 PURCHASED = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_wst_looks.csv'))   # O540, client pair 71: the same shape
 CREATURE = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_creature_looks.csv'))   # O605, client pair 73: the same shape
+SWAP = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_o619_looks.csv'))   # O619, client pair 73: the same shape
 
 
 def committed_look(name, look):
@@ -98,7 +99,10 @@ def committed_look(name, look):
     if w and look == w[1]:
         return w[0]
     k = CREATURE.get(name)      # O605: from client pair 73 the step `monstercreaturelooks` writes the creature pack look the same way
-    return k[0] if k and look == k[1] else look
+    if k and look == k[1]:
+        return k[0]
+    s = SWAP.get(name)          # O619: from client pair 73 the step `monsterswaplooks` writes the swapped look the same way
+    return s[0] if s and look == s[1] else look
 
 
 def attr(tag, name):

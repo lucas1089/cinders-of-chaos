@@ -151,6 +151,7 @@ def write_idle(dat, pool=POOL, path=IDLE, allow_path=ALLOW):
     looks |= {new for _old, new in S.load_donor().values()}   # the donor looks of pair 70 (O538) are worn above it
     looks |= {new for _old, new in S.load_purchased().values()}     # and the purchased looks of pair 71 (O540)
     looks |= {new for _old, new in S.load_creature().values()}      # and the creature pack looks of pair 73 (O605)
+    looks |= {new for _old, new in S.load_swap().values()}          # and the swapped looks of pair 73 (O619)
     walk = {}
     facts = dat_facts(dat, looks, walk)
     with open(path, 'w', newline='', encoding='utf-8') as f:
@@ -267,7 +268,8 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     """(rows, names): the pool rows as a server on client `pair` wears them. From pair 70 a monster of the donor map (O538,
     monster_donor_looks.csv) wears its new look, from pair 71 a monster of the purchased map (O540, monster_wst_looks.csv) its new look
     (over its donor look: Bonepicker, Wan Sentry), from pair 73 a monster of the creature pack map (O605, monster_creature_looks.csv)
-    its new look; names is the set of those monsters (their rows of the allow lists are for the old look)."""
+    its new look, from pair 73 a monster of the swap map (O619, monster_o619_looks.csv) its new look; names is the set of those monsters
+    (their rows of the allow lists are for the old look)."""
     import client_pair
     donor = S.load_donor() if donor is None else donor
     purchased = S.load_purchased() if purchased is None else purchased
@@ -276,9 +278,11 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     names = set()
     out = []
     creature = S.load_creature()
+    swap = S.load_swap()
     for r in rows:
         chain = [m[r['name']] for m, need in ((donor, client_pair.PAIR_DONOR), (purchased, client_pair.PAIR_PURCHASED),
-                                              (creature, client_pair.PAIR_CREATURE)) if r['name'] in m and pair >= need]
+                                              (creature, client_pair.PAIR_CREATURE), (swap, client_pair.PAIR_SWAP))
+                 if r['name'] in m and pair >= need]
         if chain and r['look'] in {x for d in chain for x in d} | {d[0] for d in chain}:
             r = dict(r, look=chain[-1][1])
             names.add(r['name'])

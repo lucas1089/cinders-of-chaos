@@ -34993,6 +34993,87 @@ status holds, an end once. Players and monsters alike.
 - **Not verified.** Not run on a server or in a client: pair 73 is not live. Watch for: the cost of the scan in a full hunt, a
   status that stays after the creature died, a monster's condition the engine reports under another condition id.
 
+
+## Look swaps (O619; `data/monster/monster_o619_looks.csv`, `o619_look_facts.csv`, install step `monsterswaplooks`, mounts in `install_outfits.py`)
+
+Owner 2026-11-17 (translated): "The mounts can just be swapped, the monsters can be swapped too, I know we have many. The fun costumes can stay.
+Keep everything at the same quality band." The O610 audit measured every outfit, mount and monster look of pair 71 against the stock bar
+(`docs/SPRITE_STYLE.md`: an oblique camera with a lean of 13 to 18 px, an east that is not a mirrored west, a dark outline on 88% of the rim, no soft
+alpha, a walk of 8 pictures, a look that moves while it stands). The five donor mounts and the donor B first set (outfits 1530-1550) failed worst. This
+round swaps them for looks the pair already has: no new picture, no new outfit. The fun costumes 3511-3522 are not touched.
+
+- **Where the new looks come from.** The pair has 2,776 outfits. A look qualifies when no monster (the repository's, the base server's, the pool), no
+  player (`player_looks.csv`: outfits, mounts, wings, auras), no class and no earlier look map wears it; when the audit finds nothing wrong with it by
+  the numbers (`flags.py` of the audit, applied to the unused looks as well: the audit had skipped them); when it has no colour mask (the monster files
+  keep colours that a masked look would wear); and when it moves while it stands (an idle group, or the walk in place list of O534). That leaves 569
+  looks outside pair 30 (the owner turned its sheet looks down in O524) and pair 33: pair 50 (`data/items/pair50_outfits.csv`) and a few stock
+  looks. Of them 46 have an idle group, the rest walk in place. The 24 picks were made by name, element, size and level against what the monster is.
+- **The step.** `monsterswaplooks` (`tools/install_monster_swap_looks.py`, after `monstercreaturelooks`). Only when config.lua `chaosClientPair` is 73
+  or more: the look of each monster's installed file (XML or Lua, ours and the base server's), its row of the installed bounty pool, and the look
+  rows of `ascension_quest_config.lua` and `trials_config.lua` that name an old look (the Warden of Ascension, Risen Bones and Tithed Dead are
+  spawned from those tables) become the new look. Colour fields stay. A monster of the recolour map (six of them) leaves its hue shifted copy for
+  the new look. Below pair 73 it prints a WARNING line and changes nothing; a second run changes nothing; `--dry-run` writes nothing. A monster with no
+  file, or with a look the maps do not know, stops the step. The recolour step knows the swap map, so a run of `install_all.py` after this step
+  leaves the monsters on their new looks. `gen_bounty_pool.py` turns a new look back to the old one: the committed pool stays the same.
+- **The repository files keep the old looks** (no client below pair 73 sees a change). The new looks exist in pair 50 already, so the mounts, which have
+  no pair gate, show them at once.
+
+| monster | old look | new look | why |
+|---|---|---|---|
+| Golden Dragon | 1530, 5x5, one direction only | 3315 red and gold horned demon, 2x2 | gold and fire; the only gold 2x2 with an idle group besides 3309 |
+| Gildguard Revenant | 1530 (copy 3393) | 3309 armoured beast, golden, 2x2 | an armoured, gilded guard; leaves its copy of a one direction look |
+| Scaleborn | 1531, 5x4, an east that is a west | 3127 hooded armoured lizard knight, red, 2x2 | scaled and fire |
+| Rimecairn | 1531 (copy 3394) | 3039 stone head golem, blue crystal, 2x2 | a cairn of rime: a stone head with blue crystal |
+| Pyrewing Tyrant | 1532, 5x5, upright | 3032 black dragon, 2x2 (63 px body) | the widest dragon the pair has left |
+| Pyre Stork | 1532 (copy 3395) | 3190 flame raven reaper, orange, 2x2 | a flame bird |
+| Elite Ice Dragon, Ice Dragon | 1533, no outline | 3297 blue spectral dragon beast, 2x2 | one look for both (rank variants, `shared_looks_allow.csv`); ice |
+| Kaelgor the Infernal Warlord | 1536, upright | 3345 dark spear stalker, 3x3 | a warlord with a spear; 3x3 against the old 3x4 |
+| Vharok the Blood Colossus | 1537, upright | 3222 horned bull beast, red, 5x5 | the red colour of the 3221 art; a colossus is big |
+| Nyxareth the Void Archon | 1538, 5x5, one direction only | 3296 purple coiled dragon serpent, 4x4 | purple and void; the third big look with an idle group |
+| Ascension Warden, Trial Warden | 1540, upright | 2991 skeletal lich with green staff, 2x2 | a lich lord; the quest table follows |
+| Dark Sorcerer | 1541 | 3298 black hooded reaper, 2x2 | a hooded caster |
+| Death Mage | 1541 | 3317 black wraith with red hood, 2x2 | a hooded death caster |
+| Rootbound Pilgrim (copy 3396) | 1541 | 3040 hunched hooded beast, teal, 2x2 | a hooded pilgrim, rooted green |
+| Risen Skeleton | 1542, upright | 3026 armoured skeleton warrior, 2x2 | a skeleton; the Risen Bones and Tithed Dead tables follow |
+| Lich Shade | 1545, soft alpha, no outline | 2989 black wraith with hood, 2x2 | a shade |
+| Elite Spider | 1548, upright | 3100 giant teal spider, 2x2 | venom spider |
+| Thornveil Wraith (copy 3397) | 1548 | 3193 vine-wrapped plant beast, 2x2 | thorns and vines |
+| Evil Man | 1550, one direction only | 3016 red hooded cultist, 1x1 | a cultist |
+| Captain Bloodbeard | 1491, no outline | 3015 dark armoured knight, red trim, 1x1 | a captain |
+| Ironmask Taskmaster (copy 3384) | 1491 | 3240 orc executioner with axe, 2x2 | an overseer with an axe |
+
+- **Mounts.** Every look of the pair that is a mount (151) was on offer in `mounts.xml` already, so no free mount look existed. The five took pair 50
+  creature looks that pass the bar, are 2x2 with displacement 0 like 131 of the stock mounts (so no rider seat), and are worn by no monster and no other
+  player look: 141 Bone Steed 1561 -> 2999 bone beast with antlers; 142 Pyrewarden Charger 2132 -> 3096 armoured tusked beast, red; 143 Forgeborn
+  Emberwolf 2133 -> 3121 dark beast wreathed in fire; 144 Veilrunner 2134 -> 3314 blue spectral beast; 145 Thornbound Stag 2135 -> 3207 antlered ghost
+  horse, brown. 3121 and 3314 are one art in two colours; the pair has no other free steed. The names, prices and faction offers stay. The store row
+  (`shop_cosmetics.lua`), `player_looks.csv` and the mounts block of `mounts.xml` (`install_outfits.py` MOUNTS) carry the new ids. The old looks and
+  their rider seats (`rider_seats.csv`) stay in the pair, worn by nobody.
+- **Left as they are.** Eight purchased looks of pair 50 with a mild camera fail (Earworm 2879, Thornback Tortoise 2887, Vicious Manbat 3012, Sight of
+  Surrender 3076, Gazer Spectre 3153, Rustguard 3215, Rimeshroud Revenant 3234, Ogre Brute 3355: an east 0.66 to 0.77 like a west) are the O610 "needs the
+  owner eye" list: numbers only, nobody has seen them. Varkhul the Ashen Sovereign (2131, a 4x4 with one walk picture) has no free 4x4 left that
+  passes. Ghosts and elementals whose soft alpha or missing outline is the look (Banshee, Spectre, Lost Soul, the Lost Souls, Massive Energy
+  Elemental, Quicksilver Wraith), the boss looks with a glow (2118, 2119, 2126-2128, the Hollow Rider) and the stock wyrms and drakes (soft alpha 10 to 18%)
+  have no free look of their kind. Looks that only lack an idle group are no failure of the bar (the walk in place list, O534), and the many
+  looks the audit flags only for a high colour count are not either. The rest of the unused pool (about 540 looks) is waiting for the next round.
+- **Facts.** `o619_look_facts.csv` holds the O610 numbers of the 14 old looks, the 21 new looks, the 5 old mount looks and the 5 new ones (tiles, directions,
+  layers, idle and walk pictures, rim, soft alpha, lean, east against west, body, reasons). `install_monster_swap_looks.bar_problems` applies the
+  bar to a row: the old ones must fail it, the new ones must not.
+- **Audits.** `audit_shared_looks.py` and `audit_idle_looks.py` read the map from pair 73 (`look_at_pair`, `donor_rows`, `write_idle`). `look_idle.csv`
+  has the 21 new rows, `idle_walk_looks.lua` (generated) the 14 that walk in place. `tools/ci/check_content.py` holds the map: the old look is the
+  file's and the pool's, no monster of the donor, purchased or creature map, a new look is inside the pair, not blank, not a player look, worn by no
+  monster outside the map, at most 2 monsters on one, passes the bar by the facts; the mounts wear passing looks that only a mount wears. The shared,
+  idle and crowded rules run at pair 73 (3297 has an allow row for the two ice dragons).
+- **Tests.** `python3 -I server/tools/install_monster_swap_looks_test.py` (map, facts, bar, audits at pairs 68 to 73, the guard, the step on a
+  synthetic server, the recolour step, `gen_bounty_pool.py`, the mounts). The creature looks test now reads Rimecairn and the pool without the swap map.
+- **Preview.** `swaps.mp4` (27 pages of 3 s): each swap, old look above, new look below, four directions standing and walking, drawn by script from
+  pair 71; the five mounts alone. Purchased art was drawn by the script and not looked at by the author: the owner decides.
+- **Switch on.** With pair 73: admin app Comandos > "Par do cliente" > Gravar 73 (fallback `chaos-ctl.sh client-pair set 73`), then update the
+  server: the update runs the step. The mounts need no switch.
+- **Not done.** Not seen in a client. A hue shifted copy of the new looks was not made, so the pairs that shared a look (Golden Dragon and Gildguard
+  Revenant, Rimecairn and Scaleborn, the Pyre pair, Thornveil Wraith and Elite Spider) now have two looks of two arts. The sizes: the old figures were
+  3x3 to 5x5, 18 of the 21 new looks are 2x2 or 1x1; only three world bosses keep a big look. Skaldra the Rime Queen keeps 1534 (owner, 2026-11-17).
+
 ## Bolt from the sky (O614; `data/lib/chaos_lightning_fx.lua`, `data/lib/chaos_lightning_fx_ids.lua`, client pair 73)
 
 Owner 2026-11-17: "For the lightning falling from the sky, make the tool to draw the lightning."
