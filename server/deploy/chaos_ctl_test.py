@@ -127,6 +127,13 @@ exit 1
 failures = 0
 
 
+def fake_tfs(path):
+    """A process named tfs: a copy of bash (a multi-call coreutils will not run a renamed sleep).
+    Run it as [path, '-c', 'sleep N; :'] so bash stays the process and SIGUSR1 ends it."""
+    shutil.copy(shutil.which('bash'), path)
+    os.chmod(path, 0o755)
+
+
 def check(cond, label):
     global failures
     if not cond:
@@ -642,13 +649,9 @@ def main():
 
         # ---- the engine pid file of the Linux kit: save signals the engine itself, never start-server.sh
         tfs = os.path.join(tmp, 'tfs')
-        sleep_bin = subprocess.run(['bash', '-c', 'command -v sleep'], capture_output=True, text=True).stdout.strip()
-        with open(sleep_bin, 'rb') as src, open(tfs, 'wb') as dst:
-            dst.write(src.read())
-        os.chmod(tfs, 0o755)
+        fake_tfs(tfs)
         pidf = os.path.join(tmp, 'server.pid')
-        # argv[0] stays 'sleep': a multi-call coreutils picks its program by argv[0]; /proc/PID/comm still reads tfs
-        proc = subprocess.Popen(['sleep', '30'], executable=tfs)
+        proc = subprocess.Popen([tfs, '-c', 'sleep 30; :'])
         try:
             with open(pidf, 'w') as f:
                 f.write('%d\n' % proc.pid)
@@ -3388,8 +3391,8 @@ def test_server_user():
 
         # the engine runs as root (a process called tfs)
         tfs = os.path.join(tmp, 'tfs')
-        shutil.copy('/bin/sleep', tfs)
-        proc = subprocess.Popen([tfs, '600'])
+        fake_tfs(tfs)
+        proc = subprocess.Popen([tfs, '-c', 'sleep 600; :'])
         try:
             with open(os.path.join(kit, 'run', 'server.pid'), 'w') as f:
                 f.write('%d\n' % proc.pid)
