@@ -454,10 +454,12 @@ def lua_text(rows):
 
 
 def tags_text(rows):
-    """spell_fx_elements.csv with this step's effect rows (id, name, element) at its end, the other rows as they are"""
+    """spell_fx_elements.csv with this step's effect rows (id, name, element) in id order, the other rows as they are"""
     with open(TAGS, encoding='utf-8', newline='') as fh:
         keep = [l for l in fh.read().splitlines() if not l.split(',')[1:2] or not l.split(',')[1].startswith('sv_')]
-    return '\n'.join(keep + ['%s,%s,%s' % (r['id'], r['name'], r['element']) for r in rows if r['kind'] == 'effect']) + '\n'
+    mine = ['%s,%s,%s' % (r['id'], r['name'], r['element']) for r in rows if r['kind'] == 'effect']
+    # data rows sorted by id: the donor (4703-4742) and spell vfx (4743-) steps both write this file, neither owns its end
+    return '\n'.join(keep[:1] + sorted(keep[1:] + mine, key=lambda l: int(l.split(',')[0]))) + '\n'
 
 
 def ids(check):
