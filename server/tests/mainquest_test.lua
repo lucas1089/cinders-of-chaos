@@ -472,6 +472,39 @@ check(said(p, "Chapter 1: Cinder-Born"), "the chapter intro")
 local s1 = lastSent(p)
 eq(s1.op, 178); eq(s1.data.rows[1].key, "warden"); eq(s1.data.chapter, 1); eq(s1.data.count, #cfg.steps)
 eq(s1.data.rows[1].where.k, "npc", "the row names the NPC")
+-- the tester bots (O599): what a bot sees and can play (K.botPlan, W.probe)
+do
+	local pr = W.probe(p)
+	check(pr.active and pr.step == 1 and pr.key == "warden" and pr.cond.kind == "talk" and pr.running, "probe: the first step, a talk")
+	check(pr.plan.action == "talk" and pr.plan.label == "Warden Ysolde", "probe: walk to Ysolde and talk")
+	check(pr.where and pr.where.k == "npc" and pr.where.name == "Warden Ysolde", "probe: where is the NPC")
+	check(pr.progress ~= nil and pr.target ~= nil and pr.ready == false, "probe: progress of the step")
+	eq(W.probe(newPlayer(9, 8)).active, false, "probe: a character the quest has not seen is not on it")
+	local kinds = {}
+	for _, st in ipairs(cfg.steps) do
+		local plan = K.botPlan(st)
+		kinds[plan.action] = (kinds[plan.action] or 0) + 1
+		check(plan.action ~= "skip" or (type(plan.reason) == "string" and #plan.reason > 0), "botPlan: a skip names the reason: " .. st.key)
+		if plan.action == "kill" then
+			check(st.where and st.where.k == "pos" and st.where.pos and #plan.monsters > 0 and plan.target > 0, "botPlan: a kill step has a place: " .. st.key)
+		elseif plan.action == "visit" then
+			check(plan.radius > 0, "botPlan: a visit has a radius: " .. st.key)
+		elseif plan.action == "talk" then
+			check(plan.label ~= nil, "botPlan: a talk names the NPC: " .. st.key)
+		end
+	end
+	check((kinds.talk or 0) >= 1 and (kinds.visit or 0) >= 1 and (kinds.kill or 0) >= 5 and (kinds.skip or 0) >= 1, "botPlan: the quest has talk, visit, kill and skip steps")
+	local boss
+	for _, st in ipairs(cfg.steps) do
+		if st.conds[1] and st.conds[1].c == "boss" then boss = st end
+	end
+	check(boss and K.botPlan(boss).action == "skip" and K.botPlan(boss).reason:find("boss", 1, true), "botPlan: Vael is not played (no testers' instance)")
+	eq(K.botPlan(nil).action, "skip", "botPlan: no step")
+	eq(K.botPlan({conds = {{c = "talk", bring = "tusks"}}}).action, "skip", "botPlan: a bring step waits for the drops")
+	eq(K.botPlan({conds = {{c = "talk"}}, where = {k = "npc", name = "A"}}).action, "talk", "botPlan: a talk with an NPC")
+	eq(K.botPlan({conds = {{c = "talk"}}}).action, "skip", "botPlan: a talk with no NPC")
+	eq(K.botPlan({conds = {{c = "count", mons = {"Troll"}, target = 3}}}).action, "skip", "botPlan: a kill with no place")
+end
 -- the talk: the NPC script sets the flag (its own Lua state does it with K.talk)
 sweep.onThink(1000)
 eq(p.store[key("step")], 1, "not yet")

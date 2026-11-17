@@ -1987,6 +1987,162 @@ do
 	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70, "trial path: on foot to the monster")
 	talks["!tester"].onSay(t9, "!tester", "trial close #153")
 	check(closes == c0 + 1 and last(t9):find('"closed":true', 1, true), "trial close: the bot's own run")
+	-- ---- the Ascended arenas and the omen arenas (O599)
+	check(H.COMMANDS.ascended and H.COMMANDS.omen and H.parseCommand("ascended sigil bloodmoon #1") == "ascended", "ascended and omen are registered commands")
+	local pa = H.parseAscended("sigil Storm")
+	check(pa.what == "sigil" and pa.kind == "storm", "ascended: sigil with a kind (lower case)")
+	eq(H.parseAscended(nil).what, "state", "ascended: no word is state")
+	eq(H.parseAscended("path").what, "path", "ascended: path")
+	w, usage = H.parseAscended("open")
+	check(w == nil and usage:find("usage: ascended", 1, true), "ascended: open is no helper word: the bot uses the sigil itself")
+	w, usage = H.parseAscended("close now")
+	check(w == nil and usage ~= nil, "ascended: close takes no argument")
+	local po = H.parseOmen("key hollow")
+	check(po.what == "key" and po.kind == "hollow", "omen: key with a kind")
+	check(H.parseOmen("sigil") == nil, "omen: sigil is the Ascended word")
+	local aa = H.ascendedAnswer({inside = true, level = 1000, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = false, held = true, sigilKind = "storm", free = 3, reserve = 1,
+		kinds = {{key = "bloodmoon", minLevel = 900, junk = 1}}, run = {id = 4, kind = "storm", boss = "alive", state = "running", tester = true, lives = 3, livesMax = 3,
+		players = 1, testers = 1, left = 700, down = false, gateIn = 0, phase = 2, bossPos = {x = 5, y = 5, z = 7, junk = 1}, bossHp = 80, gate = {x = 1, y = 1, z = 7}, adds = 2, junk = 1},
+		guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "boss", why = ("w"):rep(90)}, junk = 1})
+	check(aa.inside and aa.held and aa.sigilKind == "storm" and aa.free == 3 and aa.junk == nil and aa.pos.junk == nil and aa.kinds[1].junk == nil, "ascended answer: the facts, cut down")
+	check(aa.run.tester and aa.run.bossHp == 80 and aa.run.phase == 2 and aa.run.bossPos.junk == nil and aa.run.junk == nil and #aa.guide.why == 60, "ascended answer: the run and the guide")
+	check(H.ascendedAnswer(nil).inside == false and H.ascendedAnswer(nil).run == nil, "ascended answer: nothing known")
+	check(H.omenAnswer({inside = true, run = {omen = "storm", state = "running"}}).run.omen == "storm", "omen answer: the omen kind of the run")
+	local realA, realRF, realRC = ChaosAscended, ChaosRift, ChaosRiftConfig
+	local gave, c1 = 0, closes
+	ChaosAscended = {probe = function(p)
+		if p.inAscended then
+			return {inside = true, level = 1000, pos = p:getPosition(), run = {boss = "alive", state = "running"},
+				guide = {mode = "walk", goal = {x = 33, y = 44, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 1000, pos = p:getPosition(), pz = true, held = gave > 0, free = 4, reserve = 1}
+	end, testerClose = function() closes = closes + 1 return true end, testerSigil = function(_, kind)
+		if kind == "nonsense" then return nil, "no such Ascended Omen" end
+		gave = gave + 1
+		return false, kind or "bloodmoon"
+	end}
+	t9.inTrial = nil
+	talks["!tester"].onSay(t9, "!tester", "ascended #160")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"pz":true', 1, true) and last(t9):find('"seq":160', 1, true), "ascended state: outside")
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil #161")
+	check(gave == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"kind":"bloodmoon"', 1, true) and last(t9):find('"held":true', 1, true), "ascended sigil: given, then held")
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil nonsense #162")
+	check(gave == 1 and last(t9):find("no such Ascended Omen", 1, true), "ascended sigil: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "ascended path #163")
+	check(last(t9):find("not inside an arena", 1, true), "ascended path outside: the reason")
+	t9.inAscended = true
+	talks["!tester"].onSay(t9, "!tester", "ascended sigil #164")
+	check(gave == 1 and last(t9):find("already inside an arena", 1, true), "ascended sigil: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "ascended path #165")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 33 and t9.pathAsked.maxD == 5, "ascended path: on foot to the boss, within reach")
+	talks["!tester"].onSay(t9, "!tester", "ascended close #166")
+	check(closes == c1 + 1 and last(t9):find('"closed":true', 1, true), "ascended close: the bot's own run")
+	ChaosAscended = nil
+	talks["!tester"].onSay(t9, "!tester", "ascended #167")
+	check(last(t9):find("no ascended system", 1, true), "ascended: no system, the reason")
+	-- the omen arena
+	t9.inAscended = nil
+	local keyHeld, removed = false, 0
+	t9.getItemById = function() return keyHeld and {remove = function() keyHeld = false removed = removed + 1 end} or nil end
+	ChaosRiftConfig = {omen = {minLevel = 800, key = {id = 32072}}}
+	ChaosRift = {probe = function(p)
+		if p.inOmen then
+			return {inside = true, level = 900, pos = p:getPosition(), run = {omen = "storm", state = "running"},
+				guide = {mode = "walk", goal = {x = 55, y = 66, z = 7}, reach = {1, 4}, area = "boss"}}
+		end
+		return {inside = false, level = 900, pos = p:getPosition(), pz = p.omenPz ~= false}
+	end, testerClose = function() closes = closes + 1 return true end, testerOmenKey = function(_, kind)
+		if kind == "nonsense" then return nil, "no such omen" end
+		keyHeld = true
+		return kind or "hollow"
+	end}
+	local realIT = ItemType
+	ItemType = function() return {getClientId = function() return 2222 end} end
+	talks["!tester"].onSay(t9, "!tester", "omen #170")
+	check(last(t9):find('"minLevel":800', 1, true) and last(t9):find('"seq":170', 1, true), "omen state: outside, the level rule")
+	talks["!tester"].onSay(t9, "!tester", "omen key storm #171")
+	check(keyHeld and last(t9):find('"kind":"storm"', 1, true) and last(t9):find('"keyClientId":2222', 1, true) and last(t9):find('"held":true', 1, true), "omen key: given, the client id to use it")
+	talks["!tester"].onSay(t9, "!tester", "omen key nonsense #172")
+	check(last(t9):find("no such omen", 1, true), "omen key: the reason of the refusal")
+	t9.omenPz = false
+	talks["!tester"].onSay(t9, "!tester", "omen key #173")
+	check(last(t9):find("not in a protection zone", 1, true), "omen key: only in a protection zone")
+	t9.omenPz = nil
+	t9.inOmen = true
+	talks["!tester"].onSay(t9, "!tester", "omen key #174")
+	check(last(t9):find("already inside a run", 1, true), "omen key: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "omen path #175")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 55 and t9.pathAsked.maxD == 4 and last(t9):find('"omen":"storm"', 1, true), "omen path: on foot to the guardian")
+	talks["!tester"].onSay(t9, "!tester", "omen close #176")
+	check(last(t9):find('"closed":true', 1, true) and removed == 1 and not keyHeld, "omen close: the run ends and a refunded key leaves the backpack")
+	ItemType = realIT
+	ChaosAscended, ChaosRift, ChaosRiftConfig = realA, realRF, realRC
+	t9.inOmen = nil
+	-- ---- the bounty board (O599)
+	check(H.COMMANDS.bounty and H.parseCommand("bounty where Rat #5") == "bounty", "bounty is a registered command")
+	eq(H.parseBounty(nil).what, "state", "bounty: no word is state")
+	eq(H.parseBounty("PATH").what, "path", "bounty: path (any case)")
+	local pw = H.parseBounty("where Cave Rat")
+	check(pw.what == "where" and pw.name == "Cave Rat", "bounty: where takes a monster name with spaces")
+	w, usage = H.parseBounty("where")
+	check(w == nil and usage:find("usage: bounty", 1, true), "bounty: where needs a name")
+	check(H.parseBounty("where Rat; drop table") == nil, "bounty: a name is letters only")
+	check(H.parseBounty("accept") == nil, "bounty: accept is the window's word")
+	check(H.parseBounty("state now") == nil, "bounty: state takes no argument")
+	local ba = H.bountyAnswer({level = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, day = 5, maxActive = 3, target = "1-2",
+		active = {{key = "1-2", name = "Rat", progress = 3, required = 60, status = 0, junk = 1}},
+		candidates = {{key = "1-1", name = ("N"):rep(60), count = 80, level = 4, distance = 12, mark = {x = 5, y = 6, z = 7, n = ("m"):rep(100), junk = 1}, junk = 1}},
+		where = {name = "Rat", marks = 3, distance = 20, nearest = {x = 9, y = 9, z = 7, n = "Hunting: Rat (level 1-10)", junk = 1}},
+		guide = {mode = "walk", goal = {x = 5, y = 5, z = 7}, reach = {1, 5}, area = "monster"}, junk = 1})
+	check(ba.level == 100 and ba.day == 5 and ba.target == "1-2" and ba.junk == nil and ba.pos.junk == nil, "bounty answer: the facts, cut down")
+	check(ba.active[1].progress == 3 and ba.active[1].junk == nil and ba.candidates[1].count == 80 and #ba.candidates[1].name == 40 and #ba.candidates[1].mark.n == 70
+		and ba.candidates[1].mark.junk == nil, "bounty answer: the contracts, bounded")
+	check(ba.where.marks == 3 and ba.where.nearest.x == 9 and ba.where.nearest.junk == nil and ba.guide.mode == "walk", "bounty answer: where and the guide")
+	check(H.bountyAnswer(nil).active[1] == nil and H.bountyAnswer(nil).where == nil, "bounty answer: nothing known")
+	local realB = ChaosBounty
+	local asked
+	ChaosBounty = {probe = function(p, name)
+		asked = name
+		return {level = 100, pos = p:getPosition(), day = 1, active = {{key = "1-2", name = "Rat", progress = 1, required = 60, status = 0}},
+			candidates = {}, where = name and {name = name, marks = 2, distance = 7} or nil,
+			guide = {mode = "walk", goal = {x = 77, y = 88, z = 7}, reach = {1, 5}, area = "monster"}}
+	end}
+	talks["!tester"].onSay(t9, "!tester", "bounty #180")
+	check(last(t9):find('"day":1', 1, true) and last(t9):find('"progress":1', 1, true) and last(t9):find('"seq":180', 1, true) and asked == nil, "bounty state: the contracts held")
+	talks["!tester"].onSay(t9, "!tester", "bounty where Cave Rat #181")
+	check(asked == "Cave Rat" and last(t9):find('"marks":2', 1, true), "bounty where: asks for the monster")
+	talks["!tester"].onSay(t9, "!tester", "bounty path #182")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 77 and t9.pathAsked.maxD == 5, "bounty path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "bounty bogus #183")
+	check(last(t9):find("usage: bounty", 1, true), "bounty: an unknown word is the usage")
+	ChaosBounty = nil
+	talks["!tester"].onSay(t9, "!tester", "bounty #184")
+	check(last(t9):find("no bounty system", 1, true), "bounty: no system, the reason")
+	ChaosBounty = realB
+	-- ---- the main quest (O599)
+	check(H.COMMANDS.mainquest and H.parseCommand("mainquest #9") == "mainquest", "mainquest is a registered command")
+	eq(H.parseMainQuest(nil), "state", "mainquest: no word is state")
+	w, usage = H.parseMainQuest("skip")
+	check(w == nil and usage:find("usage: mainquest", 1, true), "mainquest: skip is the window's word, not the helper's")
+	local mq = H.mainQuestAnswer({enabled = true, level = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, state = 1, active = true, step = 5, steps = 60, key = "trolls",
+		stepLevel = 8, running = true, progress = 3, target = 12, ready = false,
+		cond = {kind = "count", mons = {"Troll", "a", "b", "c", "d"}, target = 12, label = "Troll", pos = {x = 5, y = 5, z = 7, junk = 1}, junk = 1},
+		where = {k = "pos", label = "the Troll ground", pos = {x = 9, y = 9, z = 8, junk = 1}, junk = 1},
+		plan = {action = "kill", label = "Troll", target = 12, monsters = {"Troll", "a", "b", "c", "d", "e"}, reason = ("r"):rep(120)}, junk = 1})
+	check(mq.active and mq.step == 5 and mq.key == "trolls" and mq.progress == 3 and mq.junk == nil and mq.pos.junk == nil, "mainquest answer: the facts, cut down")
+	check(mq.cond.kind == "count" and #mq.cond.mons == 4 and mq.cond.pos.junk == nil and mq.where.pos.z == 8 and mq.where.junk == nil, "mainquest answer: the condition and the place")
+	check(mq.plan.action == "kill" and #mq.plan.monsters == 4 and #mq.plan.reason == 90 and mq.plan.target == 12, "mainquest answer: the plan, bounded")
+	check(H.mainQuestAnswer(nil).active == false and H.mainQuestAnswer(nil).plan == nil, "mainquest answer: nothing known")
+	local realW = ChaosMainQuest
+	ChaosMainQuest = {probe = function(p) return {enabled = true, level = 100, pos = p:getPosition(), active = true, step = 1, key = "warden", plan = {action = "talk", label = "Warden Ysolde"}} end}
+	talks["!tester"].onSay(t9, "!tester", "mainquest #190")
+	check(last(t9):find('"key":"warden"', 1, true) and last(t9):find('"action":"talk"', 1, true) and last(t9):find('"seq":190', 1, true), "mainquest state: the step and the plan")
+	talks["!tester"].onSay(t9, "!tester", "mainquest bogus #191")
+	check(last(t9):find("usage: mainquest", 1, true), "mainquest: an unknown word is the usage")
+	ChaosMainQuest = nil
+	talks["!tester"].onSay(t9, "!tester", "mainquest #192")
+	check(last(t9):find("no main quest system", 1, true), "mainquest: no system, the reason")
+	ChaosMainQuest = realW
 	ChaosTrials = nil
 	talks["!tester"].onSay(t9, "!tester", "trial #154")
 	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")

@@ -63,6 +63,10 @@ return {
 	-- a party that finds them all in use waits in line and is told when one frees up. A run ends at once when its last
 	-- player is gone, so no idle grace is needed.
 	limits = {warnAt = {300, 60, 10}, maxRuns = 4, waitlist = true},
+	-- tester bots (O599, server/README.md "Tester bots", step 8): a group of testers opens an arena only while at least `reserve` of the
+	-- `limits.maxRuns` arenas stay free after it (the arenas are the players'); a group of a tester and a player is never made; the
+	-- fight's result is the tester's own (no board row, no broadcast: uber.lua)
+	tester = {reserve = 1},
 
 	-- ------------------------------------------------------------------ the arenas (runtime-built, like the rift slots)
 	-- Slot i of a grid far from the map: origin + (i % cols, i // cols) x spacing; x/y 7600-7700 (between the ascension

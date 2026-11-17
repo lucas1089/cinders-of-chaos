@@ -40,6 +40,14 @@
 --     person sees them (ChaosTowerRun.probe, ChaosDescent.probe, ChaosTrials.probe: the level rule, how a run is paid, the floor or room, the monsters, the guide),
 --     the path on foot to the guide's goal and the close of the bot's own run; `descent sigil` gives an Ember Sigil when the free descent of
 --     the day is used. The window's requests (enter, start, pick a boon, Continue, Next floor now) and the fights are the bot's own
+--   * "!tester ascended [state | sigil [kind] | path | close]", "!tester omen [state | key [kind] | path | close]" (O599): the Ascended Omen
+--     arenas and the Omen Key arenas as a person sees them (ChaosAscended.probe, ChaosRift.probe); `sigil` / `key` is the TEST ONLY grant
+--     (a tester only, logged), the path on foot to the guide's goal inside and the close of the bot's own run; the bot uses the sigil or
+--     key itself and fights the boss itself
+--   * "!tester bounty [state | where NAME | path]" (O599): the bounty board as a person sees it (ChaosBounty.probe: the contracts held, the ones a
+--     hunt mark lists, "where does monster X spawn" from the hunt marks) and the path on foot to the contract's monster or hunt
+--   * "!tester mainquest [state]" (O599): the open step of the main quest, its condition, progress, where to go and what a bot can play of it
+--     (ChaosMainQuest.probe); the bot walks, talks and kills itself
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -72,7 +80,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 16
+HELPER_VERSION = 17
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1367,6 +1375,160 @@ function commands.descent(player, arg)
 		return
 	end
 	tell(player, "descent", H.descentAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O599 the Ascended arenas and the Omen arenas
+-- "!tester ascended [state | sigil [kind] | path | close]": reads ChaosAscended.probe; `sigil` is the TEST ONLY grant of a sigil (the highest
+-- Omen the level opens, or the named kind; a tester only, logged; the bot uses it itself in a protection zone); `path` the engine's path to
+-- the guide's goal inside; `close` the bot's own run (the sigil is spent, as when the time runs out).
+function commands.ascended(player, arg)
+	local want, usage = H.parseAscended(arg)
+	if not want then
+		tell(player, "ascended", {err = usage})
+		return
+	end
+	local A = ChaosAscended
+	if not (A and A.probe) then
+		tell(player, "ascended", {err = "no ascended system"})
+		return
+	end
+	if want.what == "close" then
+		local closed = A.testerClose and A.testerClose(player) or false
+		tell(player, "ascended", H.ascendedAnswer(A.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = A.probe(player)
+	if want.what == "sigil" then
+		if probe.inside then
+			tell(player, "ascended", H.ascendedAnswer(probe, {err = "already inside an arena"}))
+			return
+		end
+		local inbox, kind = nil, nil
+		if A.testerSigil then
+			inbox, kind = A.testerSigil(player, want.kind)
+		end
+		if inbox == nil then
+			tell(player, "ascended", H.ascendedAnswer(probe, {err = kind or "the sigil could not be made"}))
+			return
+		end
+		tell(player, "ascended", H.ascendedAnswer(A.probe(player), {given = true, kind = kind, bagFull = inbox == true or nil}))
+		return
+	end
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside an arena"
+		end
+		tell(player, "ascended", H.ascendedAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "ascended", H.ascendedAnswer(probe))
+end
+
+-- "!tester omen [state | key [kind] | path | close]": the omen arena is a rift slot, so it reads ChaosRift.probe (`run.omen` names the
+-- kind); `key` is the TEST ONLY grant of an Omen Key (a tester only, logged; used by the bot itself in a protection zone); `close` ends the
+-- bot's own run and takes a refunded key out of the backpack again.
+function commands.omen(player, arg)
+	local want, usage = H.parseOmen(arg)
+	if not want then
+		tell(player, "omen", {err = usage})
+		return
+	end
+	local RF, cfg = ChaosRift, ChaosRiftConfig
+	if not (RF and RF.probe and RF.testerOmenKey and cfg and cfg.omen) then
+		tell(player, "omen", {err = "no omen arenas on this server"})
+		return
+	end
+	local function held()
+		return player:getItemById(cfg.omen.key.id, true)
+	end
+	if want.what == "close" then
+		local closed = RF.testerClose and RF.testerClose(player) or false
+		for _ = 1, 5 do
+			local key = held()
+			if not key then
+				break
+			end
+			pcall(key.remove, key, 1)
+		end
+		tell(player, "omen", H.omenAnswer(RF.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = RF.probe(player)
+	if want.what == "key" then
+		if probe.inside then
+			tell(player, "omen", H.omenAnswer(probe, {err = "already inside a run"}))
+			return
+		end
+		if not probe.pz then
+			tell(player, "omen", H.omenAnswer(probe, {err = "not in a protection zone"}))
+			return
+		end
+		local kind, why = RF.testerOmenKey(player, want.kind)
+		if not kind then
+			tell(player, "omen", H.omenAnswer(probe, {err = why}))
+			return
+		end
+		local key = held()
+		local it = ItemType(cfg.omen.key.id)
+		tell(player, "omen", H.omenAnswer(RF.probe(player), {kind = kind, held = key ~= nil, keyClientId = it and it:getClientId() or 0,
+			bagFull = key == nil or nil}))
+		return
+	end
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside an omen arena"
+		end
+		tell(player, "omen", H.omenAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "omen", H.omenAnswer(probe, {level = player:getLevel(), minLevel = cfg.omen.minLevel}))
+end
+
+-- ---------------------------------------------------------------- O599 the bounty board
+-- "!tester bounty [state | where NAME | path]": reads ChaosBounty.probe (the contracts held, the ones a hunt mark lists, "where does monster X
+-- spawn"); `path` is the engine's path to the guide's goal (the monster of the contract in sight, else its hunt). Nothing here accepts, moves
+-- or fights: the window's `accept` / `abandon` and the kills are the bot's own.
+function commands.bounty(player, arg)
+	local want, usage = H.parseBounty(arg)
+	if not want then
+		tell(player, "bounty", {err = usage})
+		return
+	end
+	local B = ChaosBounty
+	if not (B and B.probe) then
+		tell(player, "bounty", {err = "no bounty system"})
+		return
+	end
+	local probe = B.probe(player, want.name)
+	if want.what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "bounty", H.bountyAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "bounty", H.bountyAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O599 the main quest
+-- "!tester mainquest [state]": reads ChaosMainQuest.probe (the open step, its condition, progress, where to go, what a bot can play of it). The
+-- bot walks (`path npc NAME`, `path pos X Y Z`), talks, kills and reads the progress itself; the quest credits the steps by play
+function commands.mainquest(player, arg)
+	local what, usage = H.parseMainQuest(arg)
+	if not what then
+		tell(player, "mainquest", {err = usage})
+		return
+	end
+	local W = ChaosMainQuest
+	if not (W and W.probe) then
+		tell(player, "mainquest", {err = "no main quest system"})
+		return
+	end
+	tell(player, "mainquest", H.mainQuestAnswer(W.probe(player)))
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

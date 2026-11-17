@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -490,6 +490,165 @@ function H.descentAnswer(probe, extra)
 			embers = r.embers, offer = offer, ready = r.ready and true or false, boss = boss}
 	end
 	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester ascended [state | sigil [kind] | path | close] and !tester omen [state | key [kind] | path | close] (O599): the Ascended Omen
+-- arenas and the Omen Key arenas as a person sees them. `sigil` / `key` is the TEST ONLY grant (a tester only, logged); `path` the way on
+-- foot to the guide's goal inside; `close` the bot's own run. The sigil / key is used by the bot itself, like a hotkey.
+local function parseGrant(arg, system, word)
+	local usage = "usage: " .. system .. " [state | " .. word .. " [kind] | path | close]"
+	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(%a*)%s*$")
+	if not what then
+		return nil, usage
+	end
+	what = what == "" and "state" or what:lower()
+	if what == word then
+		return {what = word, kind = rest ~= "" and rest:lower() or nil}
+	end
+	if rest ~= "" or (what ~= "state" and what ~= "path" and what ~= "close") then
+		return nil, usage
+	end
+	return {what = what}
+end
+
+function H.parseAscended(arg)
+	return parseGrant(arg, "ascended", "sigil")
+end
+
+function H.parseOmen(arg)
+	return parseGrant(arg, "omen", "key")
+end
+
+function H.ascendedAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), pz = probe.pz and true or false,
+		fight = probe.fight and true or false, free = probe.free, reserve = probe.reserve, enabled = probe.enabled ~= false,
+		held = probe.held and true or false, sigilKind = probe.sigilKind, sigilClientId = probe.sigilClientId}
+	if type(probe.kinds) == "table" then
+		out.kinds = {}
+		for i = 1, math.min(#probe.kinds, 6) do
+			local k = probe.kinds[i]
+			out.kinds[#out.kinds + 1] = {key = tostring(k.key):sub(1, 20), minLevel = k.minLevel}
+		end
+	end
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, kind = r.kind, boss = r.boss, state = r.state, tester = r.tester and true or false, lives = r.lives,
+			livesMax = r.livesMax, players = r.players, testers = r.testers, left = r.left, down = r.down and true or false, gateIn = r.gateIn,
+			enraged = r.enraged and true or false, phase = r.phase, bossPos = xyz(r.bossPos), bossHp = r.bossHp, gate = xyz(r.gate), adds = r.adds}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- the omen answer is the rift's (the arena is a rift slot) with the omen kind of the run
+function H.omenAnswer(probe, extra)
+	local out = H.riftAnswer(probe, extra)
+	if type(probe) == "table" and type(probe.run) == "table" then
+		out.run = out.run or {}
+		out.run.omen = probe.run.omen
+	end
+	return out
+end
+
+-- !tester bounty [state | where NAME | path] (O599): the bounty board as a person sees it and "where does monster X spawn". `state` lists the
+-- contracts the bot holds and the ones a hunt mark lists (the smallest first); `where NAME` the hunt marks that list a monster and the nearest;
+-- `path` the way on foot to the guide's goal (the monster in sight, else the hunt). The window's requests (accept, abandon) are the bot's own.
+function H.parseBounty(arg)
+	local usage = "usage: bounty [state | where NAME | path]"
+	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(.-)%s*$")
+	if not what then
+		return nil, usage
+	end
+	what = what == "" and "state" or what:lower()
+	if what == "where" then
+		if rest == "" or #rest > 40 or not rest:match("^[%a' %-]+$") then
+			return nil, usage
+		end
+		return {what = "where", name = rest}
+	end
+	if rest ~= "" or (what ~= "state" and what ~= "path") then
+		return nil, usage
+	end
+	return {what = what}
+end
+
+function H.bountyAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {level = probe.level, pos = xyz(probe.pos), day = probe.day, maxActive = probe.maxActive, target = probe.target, active = {}, candidates = {}}
+	for i = 1, math.min(#(probe.active or {}), 8) do
+		local a = probe.active[i]
+		out.active[#out.active + 1] = {key = tostring(a.key):sub(1, 12), name = tostring(a.name):sub(1, 40), progress = a.progress, required = a.required, status = a.status}
+	end
+	for i = 1, math.min(#(probe.candidates or {}), 6) do
+		local c = probe.candidates[i]
+		out.candidates[#out.candidates + 1] = {key = tostring(c.key):sub(1, 12), name = tostring(c.name):sub(1, 40), count = c.count, level = c.level,
+			distance = c.distance, mark = c.mark and {x = c.mark.x, y = c.mark.y, z = c.mark.z, n = tostring(c.mark.n):sub(1, 70)} or nil}
+	end
+	local w = probe.where
+	if type(w) == "table" then
+		out.where = {name = tostring(w.name):sub(1, 40), marks = w.marks, distance = w.distance,
+			nearest = w.nearest and {x = w.nearest.x, y = w.nearest.y, z = w.nearest.z, n = tostring(w.nearest.n):sub(1, 70)} or nil}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester mainquest [state] (O599): the main quest as a person sees it on the Next Goals tracker: the state, the open step, its first condition,
+-- the progress and where to go (an NPC name or a position: the bot walks there with `path npc NAME` / `path pos X Y Z`), and what a bot can play
+-- of it (`plan`: talk | visit | kill | skip with the reason)
+function H.parseMainQuest(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == "" then
+		what = "state"
+	end
+	what = what and what:lower()
+	if what ~= "state" then
+		return nil, "usage: mainquest [state]"
+	end
+	return what
+end
+
+function H.mainQuestAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {enabled = probe.enabled ~= false, level = probe.level, pos = xyz(probe.pos), staff = probe.staff and true or false, state = probe.state,
+		active = probe.active and true or false, done = probe.done and true or false, step = probe.step, steps = probe.steps,
+		key = probe.key and tostring(probe.key):sub(1, 30) or nil, stepLevel = probe.stepLevel, running = probe.running, progress = probe.progress,
+		target = probe.target, ready = probe.ready}
+	local c = probe.cond
+	if type(c) == "table" then
+		local mons = {}
+		for i = 1, math.min(#(c.mons or {}), 4) do
+			mons[i] = tostring(c.mons[i]):sub(1, 30)
+		end
+		out.cond = {kind = c.kind, mons = mons, target = c.target, label = c.label and tostring(c.label):sub(1, 40) or nil, radius = c.radius,
+			pos = xyz(c.pos), bring = c.bring and tostring(c.bring):sub(1, 20) or nil}
+	end
+	local w = probe.where
+	if type(w) == "table" then
+		out.where = {k = w.k, name = w.name and tostring(w.name):sub(1, 40) or nil, label = w.label and tostring(w.label):sub(1, 40) or nil, pos = xyz(w.pos)}
+	end
+	local pl = probe.plan
+	if type(pl) == "table" then
+		out.plan = {action = pl.action, reason = pl.reason and tostring(pl.reason):sub(1, 90) or nil, label = pl.label and tostring(pl.label):sub(1, 40) or nil,
+			target = pl.target, radius = pl.radius}
+		if type(pl.monsters) == "table" then
+			out.plan.monsters = {}
+			for i = 1, math.min(#pl.monsters, 4) do
+				out.plan.monsters[i] = tostring(pl.monsters[i]):sub(1, 30)
+			end
+		end
+	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v
 	end

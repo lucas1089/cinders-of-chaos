@@ -10103,19 +10103,17 @@ wield, the reward chest, the cursed chest, Auto setup, the spell quest, the craf
 wave families and the own hideout (open, O595: step 7 below)**. Everything with an extended opcode is also opened and used by the random requests
 (`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet (O595 did the first four bullets of the old list and the
 guards of the last two):
-- **Ascended arenas, Omen keys and the Nemesis** (`uber.lua`, `rift.lua` omen, `nemesis.lua`): boss arenas of the recipe of the guild boss (`uber_core.lua`).
-  Not done in O595 (the list was long): `uber.lua` is 1,800 lines (shards, sigils, antechamber, Ember Gate, four phases), the Omen keys are rifts with a
-  guardian (the rift probe already reads them, the key comes from the helper) and the Nemesis is a hunt event. Plan: `ChaosAscended.probe` and `guide` from
-  `guildboss_core.guide` (walk to the boss, fight, back through the Ember Gate), `!tester ascended [state | sigil | path | close]` (the sigil is
-  `ChaosAscended.giveSigil`), a check that gives a sigil, walks to the temple, uses it and fights until the boss is hurt; the rewards are the tester's own.
-- **The main quest and its boss** (`mainquest.lua`, `mainquest_boss.lua`): passive (steps are credited by play). Not done: every step asks for one named
-  fact (a named monster at a named place, a drop, a window, a spell), and the boss fight is a spell-trial of the trials engine (`T.hookFor`), so it reuses
-  `ChaosTrials.probe` once a step check has taken the bot there. Plan: a check that reads `mqOpen` and plays the current step by its `where` (walk to the
-  place, kill the named monster, bring the drops to Warden Ysolde); the boss: `trial_walk` with `opts.spell` of the quest.
-- **Bounty contracts, daily and weekly challenges, tasks, the Chronicle, the season journey and pass** (`bounty.lua`, `daily.lua`, `weekly_challenge.lua`,
-  `chronicle.lua`, `season_journey.lua`, `seasonpass.lua`): the windows answer, the claims are never made. Not done: a hunt contract is 50-400 kills of one
-  named monster; a bot that accepts one needs a probe that says where that monster spawns (`bounty_pool.lua` has the names, the spawn tiles are in the map).
-  The rewards are gold and orbs to the tester (its own rows, cleaned by `testers cleanup`), so claiming would be fine for a bot; it is the walk that is missing.
+- **Ascended arenas and Omen keys** (`uber.lua`, `rift.lua` omen): done in O599, step 8 below. **The Nemesis** (`nemesis.lua`) is left: its birth is a
+  chance on a death and its appearance a chance on a kill, so a check needs a TEST ONLY birth and appearance (`NE.appear`, a `chaos_nemesis` row) that
+  are not built; it never touches a player (it appears for its victim only, its damage to anyone but the victim's party is cancelled, nobody else can
+  damage it, the leaderboard skips testers, nothing is broadcast), so nothing here needs a separation rule.
+- **The main quest and its boss**: the first steps are done in O599 (step 8: talk, walk to a place, kill the named monsters). Left: the steps that ask
+  for a spell, a window, a stat, a flag, a resistance, a gear piece or the bring step of the drops, and **Vael Ashmourn**, the solo boss, which is the
+  spell trial of the trials engine (`T.hookFor`): a testers' instance of it is not built, so the check says SKIP with that reason.
+- **Bounty contracts** are done in O599 (step 8: where a monster spawns, accept, walk, kill a few, the counter moves). Left: the elite and boss contracts
+  (a tier or a boss fight), the claims of the daily, the weekly challenges, the tasks, the season journey and pass (the windows answer, the claims are
+  not made), and the Chronicle. The Chronicle needs no rule: it already drops testers from every member list (`chronicle.lua` `tester(guid)`), and the
+  daily claim is a row of the bot's own account (a login-streak title broadcast naming a tester is dropped by `ChaosTestersCore.mentions`).
 - **Memorial** (`memorial.lua`): the candles are not played; the window is asked by the random requests. Hideout visits are now closed by side (step 7).
 - **Shared world events**: see "Shared world events and the world boss (O595)" in step 7: the world boss is closed to the testers; harvest, goblin,
   invasion and conquest are left, with the reason.
@@ -10129,7 +10127,7 @@ Owner 2026-11-17 (translated): "the bots have to do the complete content of the 
 share nothing with a player but the halls (the arenas of a run), the leaderboards and the public lists. So they are **open checks** (`CHECKS`, no closed
 mode needed, all classes, a level of 100 and up), and the server rules are the same three everywhere: a group of a tester and a player is never made, a
 tester takes a hall only while at least `reserve` halls stay free after it (the halls are the players'), and nothing of a tester reaches a public board, a
-season chest, a title or a broadcast. Helper v16 (`HELPER_VERSION`, bumped once for the whole task): `!tester tower | descent | trial`.
+season chest, a title or a broadcast. Helper v16 (`HELPER_VERSION`, bumped once for the whole task; v17 is O599, step 8): `!tester tower | descent | trial`.
 
 Server rules (all in `testers_core.lua`, tested in `tests/testers_test.lua`):
 - `K.soloRefusal(flags, free, reserve)`: "mixed" for a group of both sides, "reserve" for a tester when fewer than `reserve` halls would stay free.
@@ -10199,6 +10197,59 @@ Needs a live run: the engine's path inside the arenas (the tower arena is a 25-t
 bot (the thresholds are `TOWER_FLOORS`, `DESCENT_ROOMS`, `SOLO_FIGHT_MIN`), the hideout catalogue a new tester owns, and the Descent's boon choice with the
 real client ids (`pick {offer, card, curse}` is the window's own message).
 
+##### 8. Ascended and Omen arenas, bounties and the main quest for the bots (O599)
+
+Owner 2026-11-17 (translated): "the bots have to do the complete content of the game, in the most human way possible". Open checks again (no closed mode
+needed, all classes, the level of the content). Helper v17 (`HELPER_VERSION`, bumped once for the whole task): `!tester ascended | omen | bounty | mainquest`.
+
+Server rules and probes (tests: `uber_test.lua`, `rift_probe_test.lua`, `bounty_test.lua`, `mainquest_test.lua`, `tester_helper_test.lua`):
+- **Ascended Omens** (`uber.lua`, `uber_core.lua`, `uber_config.lua` `tester.reserve` 1 of the 4 arenas): `A.open` asks `U.testerRefusal` (the O595
+  `ChaosTestersCore.soloRefusal`): a group of a tester and a player is never made ("Testers and players are never mixed."), a tester takes an arena only
+  while at least `reserve` arenas stay free after it. A run of testers is marked `run.tester`; the Cinderheart kill of such a run writes no board row and
+  sends no broadcast (the leaderboard skipped testers already). `A.probe(player)`: the level rule of each Omen, the sigil in the backpack (kind, client id),
+  the protection zone, the arenas free; inside, the boss (state, health, phase, enrage, adds), the clock, the lives, who is in the run, the Ember Gate wait
+  and `guide` (`U.guide`, the recipe of the guild boss: wait for the boss, walk to it, fight within 5 tiles, back through the Ember Gate once its wait is
+  over). `A.testerSigil(player, kind)` is the TEST ONLY grant: a tester only, the highest Omen the level opens (`U.testerKind`) or the named one, never the
+  Cinderheart's (its sigil is bound from relics a bot cannot have earned), never inside a run, one console line each. `A.testerClose(player)`: the
+  asker leaves; the arena ends as a failed one when it was the last one in (the sigil is spent, as when the time runs out).
+- **Omen arenas** are rift slots (`RF.openOmen`): `rift_config.lua` `omen.tester.reserve` 4 of the 16 slots and the same mixed rule; `RF.probe` names the
+  omen of the run (`run.omen`); `RF.testerOmenKey(player, kind)` is the TEST ONLY grant of an Omen Key (a tester only, from the Omen level, logged);
+  `!tester omen close` also takes a refunded key out of the backpack.
+- **Bounties** (`bounty_core.lua`): "where does monster X spawn" is answered from the hunt marks the server already has (`data/chaos_poi.lua`, kind
+  `hunt`, "Hunting: Penguin, Mammoth (level 1-20)"): `B.huntNames`, `B.spawnMarks(marks, name)`, `B.nearestMark`. `B.testerCandidates` picks the hunt
+  contracts of the visible bands whose level the character has and whose monster a mark lists, the smallest count first. `B.guide`: a monster of the
+  contract in sight within 5 tiles is fought, one farther is walked to, none: walk to the hunt, wait at it for a spawn. `ChaosBounty.probe(player, name)`
+  reads the contracts held and offered, the nearest living monster of the contract (20 tiles) and `where` for any monster name. The test pins the marks
+  of the installed map to the bounty pool (at least half of the hunt mark monsters are pool monsters). No tester is on a public board: `leaderboard.lua`
+  skips testers (the `bounty` board too), the rows of a contract are the bot's own and go with `testers cleanup`.
+- **Main quest** (`mainquest_core.lua` `M.botPlan`, `mainquest.lua` `W.probe`): the plan of a step from its first condition: `talk` (walk to the NPC of the
+  step's `where`, say the words), `visit` (walk to the place), `kill` (a "count" step with a `where` place: walk there and kill the named monsters), else
+  `skip` with the reason. The probe answers the state, the open step, its condition, the progress and where to go (an NPC name or a position).
+
+How the bots play them (helper v17; the window's own requests are the bot's, the helper reads the screen and gives the engine path):
+1. `ascended_walk` / `omen_walk` (`check_ascended_walk`, `check_omen_walk`): SKIP for a missing system, the level, a bot inside already, the arenas kept for
+   the players (`free - 1 < reserve`). Temple on foot (the helper's teleport is the counted fallback), a protection zone is needed. `!tester ascended sigil`
+   / `omen key` is the grant (a refusal is a SKIP with the text; an item that is not in the backpack after it is a FAIL; a full bag is a SKIP). The bot
+   uses the sigil or key like a hotkey (again after 5 and 9 s, 12 s in all), then `solo_play` (the loop of O595): the engine path to the boss, the
+   bot's own rotation, loot, the Ember Gate when it falls. PASS: the boss hurt (its lowest health under 100 %, with the phase). FAIL: a player in the run,
+   an Ascended run not marked as the testers' (a board row or a broadcast would follow), 150 s in reach of the boss with its health untouched, still
+   inside after the close. SKIP: the arena did not open in 12 s, the boss did not come, the walk blocked 30 s, a fall before the boss was hurt. The run is
+   always closed after (`ascended close`, `omen close`) and the bot goes back to the hunt.
+2. `bounty_walk`: `!tester bounty` lists the hunt contracts a mark lists; the bot accepts the smallest through the window (`accept {key}`), or hunts one it
+   holds, walks to the monster in sight or the hunt (`bounty path`), and kills with its own rotation. PASS: the counter moved 3 (`BOUNTY_KILLS`; the 50-400
+   kills of the contract are not played). FAIL: the accepted contract left the list, 150 s in reach of a monster of it with the counter not moving (kills,
+   credit or the target). SKIP: no candidate (no hunt mark lists a contract monster of the band), the accept was refused, the walk blocked, no monster in
+   sight at the hunt for 120 s, a death. The contract is abandoned after (`abandon {key}`) when the check accepted it.
+3. `mainquest_walk`: up to 3 steps of "The Ember Oath": talk to Warden Ysolde (`path npc`, `hi`, `oath`), walk to a place (`path pos`), kill the named monsters
+   (the kill counter must move). The step must be credited within 14 s of a talk or a visit (FAIL when it is not). PASS: the step number rose or a kill
+   counter moved. SKIP: a step the bots do not play ends the check, named ("the step asks for 'spell' ...", "the boss is a spell trial ..." for Vael),
+   a walk with no way, a level under the step's, the quest not running, staff.
+
+Needs a live run: the engine's path in the Omen and Ascended arenas (the sigil / key use is the hotkey of the rift check), the first boss health of an
+Ascended Omen at level 1000 (`ASC_BUDGET` 420 s against the 840 s limit), the hunt marks as spawn places (a mark lists 1-3 monsters of a hunt, so a
+contract monster that no mark lists is simply not offered), whether the monster of a contract is in sight at the nearest mark, the quest's think sweep
+(`MQ_STEP_WAIT` 14 s), the NPC `path npc Warden Ysolde` of a bot in the hub.
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):
@@ -10217,6 +10268,10 @@ the system is not installed): never faked. A death in the middle drops the check
 | `rift` | all | `!tester enter rift 1` (a key of tier 1, then the temple) answers without an error and the key reached the backpack; a full bag sends it to the inbox (`RF.giveKey`) or the ground: the helper takes it back from there, a skip |
 | `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
 | `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
+| `ascended_walk` | all, level 900 and up | O599: walks to the temple (a protection zone), `!tester ascended sigil` (the TEST ONLY grant: the highest Omen the level opens), uses the sigil, walks to the Ascended boss by the engine's path and fights it. PASS: the boss hurt (health and phase reported). BUG: a player in the run, a run not marked as the testers', 150 s in reach with the boss untouched, still inside after the close. SKIP: the arenas kept for the players, the arena did not open, the boss did not come, a blocked walk, a fall. Closed after, always |
+| `omen_walk` | all, level 800 and up | O599: the same for an Omen Key (`!tester omen key`, a rift slot, the guardian). Same verdicts |
+| `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
+| `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named; Vael Ashmourn: no testers' instance), no way, the quest not running |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
 | `tower_walk` | all, level 100 and up | O595: walks to the temple, opens the Infinity Tower from its window (`infinitytower enter`) and plays floors by the engine's path (`!tester tower path`) with its own rotation, calls "Next floor now" between floors, and leaves (`tower close`). PASS: 2 floors cleared. BUG: a player in the run, a cleared floor whose gold (floor x 50) did not reach the bank, 150 s in reach with no floor cleared, still inside after the close. SKIP: level, the try cooldown, the arenas kept for the players, the walk blocked, a fall before a floor (section "Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)") |
 | `descent_walk` | all, level 100 and up | O595: walks to the temple (a protection zone), starts the Ember Descent from its window (the free run of the day, else a sigil from `!tester descent sigil`), answers every boon choice with the first card, leaves rooms of rest with Continue and fights by the engine's path. PASS: a room cleared. BUG: a player in the run, a choice that stays open after 3 answers, 150 s with no room, still inside after the close. SKIP: level, no free run and no sigil, the halls kept for the players, the walk blocked, a fall before a room |

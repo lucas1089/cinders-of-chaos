@@ -3744,6 +3744,477 @@ async def check_descent_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ the Ascended and Omen arenas, played (O599)
+# Boss arenas of the recipe of the guild boss: the bot walks to the temple (a protection zone), gets a sigil or an Omen Key from the TEST ONLY
+# grant of the helper (`!tester ascended sigil`, `!tester omen key`: a tester only, logged; the shards and fragments are many Omen kills a
+# check cannot repeat), uses it like a hotkey and fights the boss by the engine's path until it is hurt. The helper closes the run after. A
+# tester takes an arena only while one stays free for the players and is never in a run with a player; no board row, broadcast or first-kill
+# record is a tester's (server/README.md "Tester bots", step 8).
+ASC_BUDGET = 420.0        # seconds a boss arena is played at most (the boss comes a few seconds after the arrival)
+ASC_OPEN_WAIT = 12.0      # seconds from the use of the sigil / key to standing inside (the hotkey is sent again twice)
+BOSS_STOP_HP = 100        # the boss health percent under which it is hurt
+
+
+def boss_problems(s, trace):
+    """[text] for one inside-an-arena answer: a player in the testers' run, a run not marked as the testers'. Keeps the boss's lowest
+    health, the phase and the lives in the trace"""
+    out = []
+    run = s.get('run') or {}
+    if run.get('players') is not None and run.get('testers') is not None and run['players'] != run['testers']:
+        out.append('a player is in the arena run of the testers (%s of %s are testers)' % (run['testers'], run['players']))
+    if 'tester' in run and not run['tester'] and run.get('omen') is None and trace.get('system') == 'ascended':
+        out.append('the run of a tester is not marked as the testers\' (a board row or a broadcast would follow)')
+    if run.get('boss') == 'alive' or isinstance(run.get('bossHp'), int):
+        if isinstance(run.get('bossHp'), int):
+            trace['boss_seen'] = True
+            trace['hp'] = run['bossHp'] if trace.get('hp') is None else min(trace['hp'], run['bossHp'])
+    if run.get('phase') is not None:
+        trace['phase'] = max(trace.get('phase') or 0, run['phase'])
+    if run.get('lives') is not None:
+        trace['lives'] = run['lives']
+    return out
+
+
+def boss_walk_verdict(t, what):
+    """(status, text) from the trace of a walked boss arena: faults, boss_seen, hp (the boss's lowest health percent), kind, phase, fought, stuck,
+    died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, what)
+    if t.get('boss_seen') and t.get('hp') is not None and t['hp'] < BOSS_STOP_HP:
+        return PASS, '%s hurt to %s%%%s (%s)' % (t.get('boss') or 'the boss', t['hp'], ', phase %s' % t['phase'] if t.get('phase') else '', how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s at the boss of the %s and took none of its health (damage, targets or the boss)' % (t['fought'], what)
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot fell before the boss was hurt (level %s against the %s)' % (t.get('level', '?'), what)
+    if not t.get('boss_seen'):
+        return SKIP, 'the boss did not come in %d s (%s)' % (t.get('secs', 0), how)
+    return SKIP, 'the boss was not hurt in %d s (%s)' % (t.get('secs', 0), how)
+
+
+def ascended_walk_verdict(t):
+    return boss_walk_verdict(t, 'Ascended arena')
+
+
+def omen_walk_verdict(t):
+    return boss_walk_verdict(t, 'omen arena')
+
+
+def ascended_refusal(a, level=0):
+    """(status, text) when this bot must not play the check, else None: from its `!tester ascended` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester ascended (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if a.get('enabled') is False:
+        return SKIP, 'the Ascended arenas are closed'
+    levels = [int(k.get('minLevel') or 0) for k in a.get('kinds') or []]
+    have = int(a.get('level') or level or 0)
+    if not levels:
+        return SKIP, 'the server lists no Ascended Omen'
+    if have < min(levels):
+        return SKIP, 'level %d: the Ascended arenas need level %d' % (have, min(levels))
+    if a.get('inside'):
+        return SKIP, 'the bot is inside an Ascended arena already'
+    if a.get('free') is not None and a.get('reserve') is not None and int(a['free']) - 1 < int(a['reserve']):
+        return SKIP, 'the arenas are kept for the players (%s free, %s reserved)' % (a['free'], a['reserve'])
+    return None
+
+
+async def boss_use_item(io, system, client_id):
+    """uses the sigil / key like a hotkey, again after 5 and 9 s, until the helper says the bot is inside; -> the last look"""
+    opened, waited = None, 0.0
+    while waited <= ASC_OPEN_WAIT and io.alive():
+        if waited in (0.0, 5.0, 9.0):
+            await io.use_item(client_id)
+        await io.sleep(1.0)
+        waited += 1.0
+        opened = await io.helper('%s state' % system, system, ANSWER)
+        if isinstance(opened, dict) and opened.get('inside'):
+            break
+    return opened
+
+
+def boss_play_config(system, trace):
+    trace['system'] = system
+    return {'system': system, 'budget': ASC_BUDGET, 'problems': boss_problems,
+            'done': lambda t: t.get('boss_seen') and t.get('hp') is not None and t['hp'] < BOSS_STOP_HP,
+            'made': lambda t: bool(t.get('boss_seen')),
+            'mark': lambda s: ((s.get('run') or {}).get('bossHp'), (s.get('run') or {}).get('phase'), (s.get('run') or {}).get('adds'))}
+
+
+async def check_ascended_walk(io, name, cls, level):
+    """walks to the temple, takes the helper's sigil, uses it, walks to the Ascended boss and fights it until it is hurt, closes the run"""
+    key = 'ascended_walk'
+    a = await io.helper('ascended state', 'ascended', ANSWER)
+    refused = ascended_refusal(a, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'boss_seen': False, 'hp': None}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='ascended')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'an Ascended arena'), fallbacks)
+        g = await io.helper('ascended sigil', 'ascended', HELPER_WAIT)
+        if not isinstance(g, dict):
+            return Result(key, name, cls, SKIP, 'no answer to !tester ascended sigil', fallbacks)
+        if g.get('err'):
+            return Result(key, name, cls, SKIP, 'ascended sigil: %s' % str(g['err'])[:80], fallbacks)
+        if not g.get('held'):
+            if g.get('bagFull'):
+                return Result(key, name, cls, SKIP, 'the bag is full: the sigil went to the inbox (by design)', fallbacks)
+            return Result(key, name, cls, FAIL, 'a sigil of %s was given, the backpack holds none' % g.get('kind'), fallbacks)
+        trace['boss'] = g.get('kind')
+        s = await boss_use_item(io, 'ascended', g.get('sigilClientId'))
+        if not (isinstance(s, dict) and s.get('inside')):
+            return Result(key, name, cls, SKIP, 'the arena did not open in %d s (a slot is busy, or the bot is in a fight)' % int(ASC_OPEN_WAIT), fallbacks)
+        trace['boss'] = ((s.get('run') or {}).get('kind') or trace['boss'])
+        await solo_play(io, r, trace, boss_play_config('ascended', trace))
+        await io.helper('ascended close', 'ascended', ANSWER)
+        again = await io.helper('ascended state', 'ascended', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the Ascended arena after the close')
+        status, text = ascended_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('ascended close', 'ascended', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+async def check_omen_walk(io, name, cls, level):
+    """walks to the temple, takes the helper's Omen Key, uses it, walks to the omen guardian and fights it until it is hurt, closes the run"""
+    key = 'omen_walk'
+    a = await io.helper('omen state', 'omen', ANSWER)
+    refused = solo_refusal(a, 'omen', 'omen arena', level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'boss_seen': False, 'hp': None}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='omen')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'an omen arena'), fallbacks)
+        k = await io.helper('omen key', 'omen', HELPER_WAIT)
+        if not isinstance(k, dict):
+            return Result(key, name, cls, SKIP, 'no answer to !tester omen key', fallbacks)
+        if k.get('err'):
+            return Result(key, name, cls, SKIP, 'omen key: %s' % str(k['err'])[:80], fallbacks)
+        if not k.get('held'):
+            if k.get('bagFull'):
+                return Result(key, name, cls, SKIP, 'the bag is full: the key went to the inbox (by design)', fallbacks)
+            return Result(key, name, cls, FAIL, 'an omen key (%s) was given, the backpack holds none' % k.get('kind'), fallbacks)
+        trace['boss'] = k.get('kind')
+        s = await boss_use_item(io, 'omen', k.get('keyClientId'))
+        if not (isinstance(s, dict) and s.get('inside')):
+            return Result(key, name, cls, SKIP, 'the omen arena did not open in %d s (a slot is busy, or the bot is in a fight)' % int(ASC_OPEN_WAIT), fallbacks)
+        await solo_play(io, r, trace, boss_play_config('omen', trace))
+        await io.helper('omen close', 'omen', ANSWER)
+        again = await io.helper('omen state', 'omen', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the omen arena after the close')
+        status, text = omen_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('omen close', 'omen', ANSWER)   # the run closes, a refunded key is taken out of the backpack again
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ------------------------------------------------------------------------------------------------ the bounty board, hunted (O599)
+# The bot reads the board with `!tester bounty` (the hunt contracts of its band that a hunt mark lists: "where does monster X spawn" comes from the
+# marks of the map, bounty_core.lua B.spawnMarks), accepts the smallest through the window's own `accept`, walks to the hunt by the engine's
+# path, kills monsters of that name with its own rotation and proves the counter moved (BOUNTY_KILLS, not the 50-400 of the contract). The
+# contract is abandoned after. Nothing of a tester is on a public board (leaderboard.lua skips testers); its rows are its own.
+BOUNTY_BUDGET = 480.0     # seconds the hunt is played at most
+BOUNTY_KILLS = 3          # kills the counter must show for a pass
+BOUNTY_SPAWN_WAIT = 120.0 # seconds at the hunt with no monster of the contract in sight
+BOUNTY_ACCEPT_WAIT = 6.0  # seconds from `accept` to the contract in the list
+
+
+def bounty_walk_verdict(t):
+    """(status, text) from the trace of a hunted contract: faults, name, key, base (progress at the accept), progress, required, fought (seconds in
+    reach of a monster of it with the counter not moving), waited, stuck, died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = 'level %s, %d step(s) in %d s%s' % (t.get('level'), t.get('steps', 0), t.get('secs', 0),
+                                              ('; teleport in place of walking: ' + ', '.join(t['fallbacks'])) if t.get('fallbacks') else '')
+    moved = (t.get('progress') or 0) - (t.get('base') or 0)
+    if moved >= BOUNTY_KILLS:
+        return PASS, '%s: the counter went from %s to %s of %s (%s)' % (t.get('name'), t.get('base'), t.get('progress'), t.get('required'), how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in reach of %s and the contract counter moved %d (kills, credit or the target)' % (t['fought'], t.get('name'), moved)
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot died at the hunt of %s (%s)' % (t.get('name'), how)
+    if t.get('waited', 0) >= BOUNTY_SPAWN_WAIT:
+        return SKIP, 'no %s in sight at its hunt for %d s (%s)' % (t.get('name'), t['waited'], how)
+    return SKIP, 'the counter of %s moved %d in %d s (%s)' % (t.get('name'), moved, t.get('secs', 0), how)
+
+
+def bounty_pick(a):
+    """(row, accepted) the contract to hunt from a `!tester bounty` answer: one held and not done (already accepted), else the first candidate;
+    (None, text) when there is none"""
+    for row in a.get('active') or []:
+        if row.get('status') == 0 and row.get('required'):
+            return row, True
+    cands = a.get('candidates') or []
+    if not cands:
+        return None, "no hunt contract of today's board for level %s has a hunt mark that lists its monster" % a.get('level')
+    if a.get('maxActive') is not None and len(a.get('active') or []) >= int(a['maxActive']):
+        return None, 'the bot holds %d contracts already' % len(a['active'])
+    return cands[0], False
+
+
+async def check_bounty_walk(io, name, cls, level):
+    """reads the board, accepts the smallest hunt contract with a known hunt, walks there, kills monsters of it and checks the counter moved"""
+    key = 'bounty_walk'
+    a = await io.helper('bounty state', 'bounty', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester bounty (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    row, held = bounty_pick(a)
+    if row is None:
+        return Result(key, name, cls, SKIP, held)
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'waited': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'name': row.get('name'), 'key': row.get('key'), 'base': row.get('progress') or 0, 'progress': row.get('progress') or 0,
+             'required': row.get('required') or row.get('count')}
+    accepted_here = False
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        if not held:
+            reply = await io.request('bounty', 'accept', {'key': row['key']}, ['board', 'progress'], ANSWER)
+            waited, listed = 0.0, None
+            while waited <= BOUNTY_ACCEPT_WAIT and io.alive():
+                await io.sleep(1.0)
+                waited += 1.0
+                listed = await io.helper('bounty state', 'bounty', ANSWER)
+                if isinstance(listed, dict) and any(x.get('key') == row['key'] for x in listed.get('active') or []):
+                    break
+            if not (isinstance(listed, dict) and any(x.get('key') == row['key'] for x in listed.get('active') or [])):
+                return Result(key, name, cls, SKIP, 'the contract %s was not accepted: %s' % (row.get('name'), window_text(reply) or 'no text'))
+            accepted_here = True
+        trace['base'] = next((x.get('progress') or 0 for x in (listed if accepted_here else a).get('active') or [] if x.get('key') == row['key']), trace['base'])
+        trace['progress'] = trace['base']
+        elapsed, misses, fight_since, wait_since = 0.0, 0, None, None
+        while io.alive() and elapsed < BOUNTY_BUDGET:
+            s = await io.helper('bounty state', 'bounty', ANSWER)
+            if not isinstance(s, dict):
+                misses += 1
+                if misses >= SOLO_MISSES:
+                    break
+                await io.sleep(RAID_LOOK)
+                elapsed += RAID_LOOK
+                continue
+            misses = 0
+            mine = next((x for x in s.get('active') or [] if x.get('key') == row['key']), None)
+            if mine is None:
+                trace['faults'].append('the accepted contract %s left the list' % row.get('name'))
+                break
+            if (mine.get('progress') or 0) > trace['progress']:
+                trace['progress'] = mine['progress']
+                fight_since = None
+                await io.loot()
+            if trace['progress'] - trace['base'] >= BOUNTY_KILLS or mine.get('status') == 1:
+                break
+            g = s.get('guide') or {}
+            mode = g.get('mode')
+            if mode == 'fight':
+                fight_since = elapsed if fight_since is None else fight_since
+                trace['fought'] = max(trace['fought'], elapsed - fight_since)
+            else:
+                fight_since = None
+            if mode == 'wait' and g.get('area') == 'spawn':
+                wait_since = elapsed if wait_since is None else wait_since
+                trace['waited'] = max(trace['waited'], elapsed - wait_since)
+                if trace['waited'] >= BOUNTY_SPAWN_WAIT:
+                    break
+            else:
+                wait_since = None
+            plan = []
+            if mode == 'walk' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
+                plan = r['walker'].steps(s['pos'], g['goal'], SOLO_STEPS, elapsed)
+                if not r['walker'].blocked:
+                    got = await hcmd(io, r, 'bounty path', 'bounty')
+                    steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                    plan = steps[:SOLO_STEPS] or plan
+                if r['walker'].stuck(elapsed) >= SOLO_STUCK:
+                    trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                    break
+            for step in plan:
+                await raid_walk(io, r, step)
+                trace['steps'] += 1
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            trace['secs'] = int(elapsed)
+        trace['secs'] = int(elapsed)
+        trace['died'] = not io.alive()
+        status, text = bounty_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        if accepted_here:   # the contract goes back: the bot's own row is deleted with its character
+            await io.request('bounty', 'abandon', {'key': row['key']}, ['board'], ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ------------------------------------------------------------------------------------------------ the main quest, played (O599)
+# The first steps of "The Ember Oath" the way a new character plays them: the bot reads the open step (`!tester mainquest`: its condition, where to
+# go, what a bot can play: talk | visit | kill | skip), walks there on foot (`path npc NAME`, `path pos X Y Z`), talks to Warden Ysolde, stands on the
+# place of a visit step, kills the named monsters of a kill step, and the quest must credit each step (the step number rises, or the kill counter).
+# A step the bots do not play (a spell, a window, a stat, a flag, the boss: Vael Ashmourn is the spell trial of the trials engine and no testers'
+# instance of it is built) ends the check, named. Rewards are the tester's own; nothing of the quest is on a public board.
+MQ_STEPS = 3              # steps played at most
+MQ_STEP_WAIT = 14.0       # seconds the quest has to credit a talk or a visit (its think sweep runs every few seconds)
+MQ_KILL_BUDGET = 300.0    # seconds a kill step is played at most
+MQ_KILL_LOOK = 2.0
+MQ_KILLS = 3              # kills the counter must show for a pass of a kill step that does not finish
+
+
+def mainquest_verdict(t):
+    """(status, text) from the trace of the quest check: faults, first (the step it began at), step (the open step at the end), counted (kills the
+    counter moved in a kill step that did not finish), why (the reason it stopped: a step not played, a refused walk), level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    adv = (t.get('step') or 0) - (t.get('first') or 0)
+    note = ('; teleport in place of walking: ' + ', '.join(t['fallbacks'])) if t.get('fallbacks') else ''
+    if adv >= 1 or t.get('counted', 0) >= 1:
+        text = 'steps %s to %s' % (t.get('first'), t.get('step')) if adv >= 1 else 'step %s: the kill counter moved %d' % (t.get('step'), t['counted'])
+        if t.get('why'):
+            text += ' (stopped: %s)' % t['why']
+        return PASS, text + note
+    return SKIP, '%s (step %s, level %s)%s' % (t.get('why') or 'no step was credited', t.get('first'), t.get('level'), note)
+
+
+async def mq_look(io):
+    a = await io.helper('mainquest state', 'mainquest', ANSWER)
+    return a if isinstance(a, dict) and not a.get('err') else None
+
+
+async def mq_wait_step(io, step):
+    """polls until the quest is past `step` (or at most MQ_STEP_WAIT s); -> the last look"""
+    waited, a = 0.0, None
+    while waited <= MQ_STEP_WAIT and io.alive():
+        a = await mq_look(io)
+        if a is None or a.get('step') != step or not a.get('active'):
+            return a
+        await io.sleep(1.0)
+        waited += 1.0
+    return a
+
+
+async def check_mainquest_walk(io, name, cls, level):
+    """plays up to MQ_STEPS of the first steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters"""
+    key = 'mainquest_walk'
+    a = await io.helper('mainquest state', 'mainquest', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester mainquest (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if not a.get('enabled'):
+        return Result(key, name, cls, SKIP, 'the main quest is switched off')
+    if a.get('staff'):
+        return Result(key, name, cls, SKIP, 'staff walk no quest')
+    if not a.get('active'):
+        return Result(key, name, cls, SKIP, 'the main quest is %s for this bot (state %s)' % ('finished' if a.get('done') else 'not running', a.get('state')))
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'first': a.get('step'), 'step': a.get('step'), 'counted': 0, 'why': None, 'level': a.get('level'), 'fallbacks': fallbacks}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        for _ in range(MQ_STEPS):
+            a = await mq_look(io)
+            if a is None or not a.get('active'):
+                break
+            trace['step'] = a.get('step')
+            plan = a.get('plan') or {}
+            if not a.get('running'):
+                trace['why'] = 'level %s: step %s needs level %s' % (a.get('level'), a.get('key'), a.get('stepLevel'))
+                break
+            action, here = plan.get('action'), a.get('step')
+            if action == 'talk':
+                how, got, note = await walk_to_place(io, r, 'npc %s' % plan.get('label'))
+                if how not in ('foot', 'helper'):
+                    trace['why'] = how[:100]
+                    break
+                if note:
+                    fallbacks.append(note)
+                await io.sleep(SETTLE)
+                await io.say('hi')
+                await io.sleep(1.0)
+                await io.say('oath')
+                after = await mq_wait_step(io, here)
+                if after is not None and after.get('active') and after.get('step') == here:
+                    trace['faults'].append('step %s (%s): the bot said the words next to %s and the quest did not move' % (here, a.get('key'), plan.get('label')))
+                    break
+            elif action == 'visit':
+                c = a.get('cond') or {}
+                p = c.get('pos') or {}
+                if not p:
+                    trace['why'] = 'the visit step %s has no place' % a.get('key')
+                    break
+                how, got = await walk_by_path(io, r, 'path pos %d %d %d' % (p['x'], p['y'], p['z']), 'path', max(1, int(c.get('radius') or 6) - 2))
+                if how != 'foot':
+                    trace['why'] = 'no way on foot to %s: %s' % (c.get('label') or 'the place', str((got or {}).get('err') or 'far')[:50])
+                    break
+                after = await mq_wait_step(io, here)
+                if after is not None and after.get('active') and after.get('step') == here:
+                    trace['faults'].append('step %s (%s): the bot stands at %s and the quest did not move' % (here, a.get('key'), c.get('label') or 'the place'))
+                    break
+            elif action == 'kill':
+                w = (a.get('where') or {}).get('pos') or {}
+                if not w:
+                    trace['why'] = 'the kill step %s has no place' % a.get('key')
+                    break
+                how, got = await walk_by_path(io, r, 'path pos %d %d %d' % (w['x'], w['y'], w['z']), 'path', 6)
+                if how != 'foot':
+                    trace['why'] = 'no way on foot to the %s: %s' % (plan.get('label') or 'hunt', str((got or {}).get('err') or 'far')[:50])
+                    break
+                base, waited = a.get('progress') or 0, 0.0
+                moved_step = False
+                while waited < MQ_KILL_BUDGET and io.alive():
+                    await io.sleep(MQ_KILL_LOOK)
+                    waited += MQ_KILL_LOOK
+                    b = await mq_look(io)
+                    if b is None or not b.get('active') or b.get('step') != here:
+                        moved_step = True
+                        break
+                    trace['counted'] = max(trace['counted'], (b.get('progress') or 0) - base)
+                    if trace['counted'] >= MQ_KILLS:
+                        break
+                    await io.loot()
+                if not moved_step:
+                    if trace['counted'] < 1:
+                        trace['why'] = 'no %s died at the place in %d s' % (plan.get('label') or 'monster', int(waited))
+                    break   # the step is not over: the check has proved the counter
+            else:
+                trace['why'] = 'step %s: %s' % (a.get('key'), plan.get('reason') or 'not played')
+                break
+        a = await mq_look(io)
+        if a is not None:
+            trace['step'] = a.get('step') if a.get('active') else (trace['step'] or 0) + 1
+        status, text = mainquest_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
 
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
@@ -3793,6 +4264,10 @@ CHECKS = [
     ('descent_walk', check_descent_walk, lambda c: True),   # O595: the Ember Descent on foot, two rooms
     ('trial_walk', check_trial_walk, lambda c: True),   # O595: the vocation's trial on foot (the families with no puzzle stage)
     ('hideout', check_hideout, lambda c: True),   # O595: the own hideout: enter, place a decoration, remove it, leave
+    ('ascended_walk', check_ascended_walk, lambda c: True),   # O599: the Ascended arena on foot, a sigil from the helper, the boss hurt
+    ('omen_walk', check_omen_walk, lambda c: True),   # O599: the omen arena on foot, an Omen Key from the helper, the guardian hurt
+    ('bounty_walk', check_bounty_walk, lambda c: True),   # O599: the smallest hunt contract with a known hunt: accept, walk, kill, the counter moves
+    ('mainquest_walk', check_mainquest_walk, lambda c: True),   # O599: the first steps of the main quest: talk, walk, kill; Vael is a SKIP with the reason
     ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)

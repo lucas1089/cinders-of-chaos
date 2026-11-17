@@ -199,5 +199,50 @@ do
 	eq(RF.probe(a).inside, false, "outside again")
 end
 
+
+-- the omen key of a tester and the omen field of the probe (O599, helper `!tester omen`)
+do
+	restart()
+	local t = newPlayer(7, "Tester Omn")
+	t.storage[Chaos.storage.tester] = 1
+	t.getLevel = function() return 900 end
+	t.getItemById = function() return nil end
+	local kind, why = RF.testerOmenKey(t)
+	ok(kind ~= nil and why == nil, "a tester gets an omen key: " .. tostring(why))
+	local key = t.items[#t.items]
+	ok(key and key.id == cfg.omen.key.id and key.attrs.omen_kind == kind, "the key is an omen key of that kind")
+	local named, whyN = RF.testerOmenKey(t, "storm")
+	eq(named, "storm", "a named kind")
+	local bad, whyB = RF.testerOmenKey(t, "nonsense")
+	ok(bad == nil and whyB == "no such omen", "an unknown kind is refused")
+	t.getLevel = function() return 700 end
+	local low, whyL = RF.testerOmenKey(t)
+	ok(low == nil and whyL:find("needs level 800", 1, true) ~= nil, "below the omen level: refused")
+	t.getLevel = function() return 900 end
+	local p = newPlayer(8, "Plain Player")
+	p.getLevel = function() return 900 end
+	local none, whyP = RF.testerOmenKey(p)
+	ok(none == nil and whyP == "not a tester", "a player never gets one")
+	eq(#p.items, 0, "nothing reached the player")
+	-- inside: the probe names the omen
+	local c = R.slotCenter(cfg, 2)
+	local L = {start = {x = c.x, y = c.y, z = c.z}, kind = "arena", floors = {1}}
+	local run = R.newRun(cfg, os.time(), 0, 0, R.effects(cfg, {}, 1))
+	run.id, run.slot, run.L, run.key, run.omen = 2, 2, L, {tier = cfg.maxTier, mods = {}, omen = "storm"}, "storm"
+	run.themeName, run.players, run.size, run.lives = "ash", {[t.id] = {id = t.id, guid = t.guid, name = t.name, entry = pos(1, 1, 7)}}, 1, 3
+	run.openerGuid, run.state, run.boss, run.killed, run.total, run.bossAt = t.guid, "running", "waiting", 0, 0, 0
+	run.aliveIds, run.bossIds = {}, {}
+	RF.runs[2], RF.runOf[t.id] = run, run
+	t.at = pos(c.x, c.y, c.z)
+	local pr = RF.probe(t)
+	ok(pr.inside and pr.run.omen == "storm", "inside an omen arena: the probe says which")
+	-- a rift of a tier has no omen field
+	run.omen = nil
+	eq(RF.probe(t).run.omen, nil, "a plain rift: no omen")
+	RF.runs[2], RF.runOf[t.id] = nil, nil
+	-- the arenas kept for the players: a tester refused while fewer than `reserve` of the slots would stay free; a mixed party never
+	ok(cfg.omen.tester and cfg.omen.tester.reserve >= 1 and cfg.omen.tester.reserve < cfg.limits.maxRuns, "config: the omen reserve is under the slots")
+end
+
 print(string.format("rift_probe_test: %d checks, %d failures", checks, fails))
 os.exit(fails == 0 and 0 or 1)
