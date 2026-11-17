@@ -98,15 +98,6 @@ end
 -- this helper sends for the casting spell, else the same name
 function M.alt(kind, name)
 	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
-	-- the spell VFX packs first (data/lib/chaos_spell_vfx.lua, O596, client pair 73): nil below pair 73
-	local V = ChaosSpellVfx
-	if type(name) == "string" and V and V.swapFor and W and W.cast then
-		local vpid, vspell = W.cast()
-		local okv, own = pcall(V.swapFor, vspell, kind, name)
-		if vpid and okv and own then
-			return own
-		end
-	end
 	if type(name) ~= "string" or not Q or not Q.PAIR29 or not Q.swapFor or not W or not W.cast then
 		return name
 	end

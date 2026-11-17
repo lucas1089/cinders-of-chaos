@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spell effects and projectiles of five purchased effect packs at game size (O596, joins client pair 73).
+"""Spell effects and a projectile of a purchased effect pack at game size (O596, trimmed by O600; joins client pair 73).
 
     python3 -I gen_spell_vfx.py build DAT SPR OUT_DIR --src DIR   # DIR: the downloaded 128 px sheets (any layout, found by
                                                                  # digest); OUT_DIR gets Tibia.dat, Tibia.spr and strips/
@@ -15,11 +15,14 @@ per piece: a neutral name, the pack key, src = the first 12 hex of the sha256 of
 art_import/spell_vfx.sums (the digest of every built strip). The sheets are read by this local script only: they are
 never sent to a web or AI service. `build` needs them; `check` and `live` work from the table and the pair alone.
 
+O600 (owner, after the previews: "use only the ones that were really bad"): of the 46 pieces of O596 three are left,
+for the three spells whose effect of today does not read at game size (server/data/lib/chaos_spell_vfx.lua).
+
 Input pair: exactly 4,742 effects and 253 missiles (pair 72, or pair 72 plus the other steps of pair 73, which add no
-effect and no missile). Any other pair is refused. The 40 effects are appended at the fixed ids 4743..4782 (the block
+effect and no missile). Any other pair is refused. The 2 effects are appended at the fixed ids 4743..4744 (the block
 4743..5142 is this step's; the next step starts at 5143 and pads the gap). Missile ids are one byte on the wire, so no
-missile can be appended past 253: four pieces fill the blank stock ids 43, 46, 47 and 52 (never drawn before, no
-script sends them), two rebuild a pack missile in place at its own size and send offset (163, 132).
+missile can be appended past 253: the projectile fills the blank stock id 46 (never drawn before, no script sends
+it). No missile is rebuilt in place any more (the tool still can: a MISSILES row with an empty `new`).
 
 Game size, not HD (owner: "do the recommended"): a 128 px cell is put with its anchor on the middle of a canvas, turned
 for a projectile's direction, and scaled with a Lanczos filter on premultiplied colour: projectiles and small hits to a
@@ -68,55 +71,12 @@ FIELDS = ['kind', 'id', 'name', 'pack', 'src', 'cols', 'rows', 'frames', 'ax', '
 
 # (name, pack key, src, cols, rows, frames, anchor x, anchor y, footprint px, at, element, role, note)
 EFFECTS = [
-    ('sv_fire_bolt_hit', 'fire_a', '3a1c58783007', 6, 4, 24, 0.5, 0.5, 64, 'body', 'fire', 'hit', 'the burst a fire bolt ends in'),
-    ('sv_fire_crater', 'fire_a', 'd3f0c8af15b5', 7, 4, 28, 0.5, 0.78, 96, 'feet', 'fire', 'burst', 'a meteor crater'),
-    ('sv_fire_nova', 'fire_a', '65cdc560bd41', 6, 4, 24, 0.5, 0.7, 96, 'ground', 'fire', 'nova', 'a ring of flame on the ground'),
-    ('sv_fire_charge', 'fire_a', 'e8150b3723de', 7, 4, 28, 0.5, 0.5, 96, 'body', 'fire', 'aura', 'flames drawn in around the caster'),
-    ('sv_death_wail', 'death_a', 'a918f7242688', 8, 3, 24, 0.5, 0.5, 64, 'body', 'death', 'hit', 'the wail a skull bolt ends in'),
     ('sv_death_bone_shatter', 'death_a', '78632c328005', 6, 4, 22, 0.5, 0.5, 96, 'body', 'death', 'hit', 'bone splinters'),
-    ('sv_death_blood_splash', 'death_a', '0b88a300d1f0', 6, 4, 22, 0.5, 0.5, 96, 'body', 'death', 'hit', 'a splash of blood'),
-    ('sv_death_corpse_burst', 'death_a', '701efe2a60cd', 8, 3, 24, 0.5, 0.62, 96, 'ground', 'death', 'burst', 'a corpse bursts'),
-    ('sv_death_raise', 'death_a', '40cf8d586063', 8, 4, 32, 0.5, 0.8, 96, 'feet', 'death', 'field', 'the ground opens for a minion'),
-    ('sv_death_bone_prison', 'death_a', 'e07ad9bfb0a2', 7, 4, 28, 0.5, 0.8, 96, 'feet', 'death', 'field', 'ribs close over the target'),
-    ('sv_death_bone_spikes', 'death_a', 'a589a3673fbd', 8, 3, 24, 0.5, 0.8, 96, 'feet', 'death', 'burst', 'bone spikes from the ground'),
-    ('sv_death_nova', 'death_a', '60896abd6483', 8, 3, 24, 0.5, 0.62, 96, 'ground', 'death', 'nova', 'a ring of grave light'),
-    ('sv_death_mark', 'death_a', '1572c73955ac', 8, 4, 32, 0.5, 0.4, 96, 'head', 'death', 'aura', 'a mark of death over the head'),
-    ('sv_death_decay', 'death_a', '052327417582', 8, 4, 32, 0.5, 0.7, 96, 'ground', 'death', 'aura', 'rot rising from the target'),
     ('sv_death_lifesteal', 'death_a', 'fac42de15d61', 8, 4, 32, 0.5, 0.52, 96, 'body', 'death', 'aura', 'life drawn out in red threads'),
-    ('sv_shadow_burst', 'death_b', 'a54ec3394d9a', 5, 4, 20, 0.5, 0.5, 64, 'body', 'death', 'hit', 'a burst of shadow'),
-    ('sv_curse_strike', 'death_b', 'aec01f2b6b06', 5, 4, 20, 0.5, 0.5, 64, 'body', 'death', 'hit', 'the strike a curse bolt ends in'),
-    ('sv_venom_splash', 'death_b', '3767e107daea', 5, 4, 20, 0.5, 0.48, 64, 'body', 'earth', 'hit', 'the splash a venom glob ends in'),
-    ('sv_plague_burst', 'death_b', 'e69eafacc1ba', 5, 4, 20, 0.5, 0.56, 96, 'body', 'earth', 'burst', 'a burst of plague'),
-    ('sv_curse_nova', 'death_b', '3c22e3546a91', 6, 4, 24, 0.5, 0.64, 96, 'ground', 'death', 'nova', 'a ring of curse runes'),
-    ('sv_poison_cloud', 'death_b', '24914d1c094f', 8, 4, 32, 0.5, 0.8, 96, 'feet', 'earth', 'field', 'a cloud of poison'),
-    ('sv_holy_bolt_hit', 'holy_a', '7af7148e0ab2', 5, 4, 20, 0.5, 0.5, 64, 'body', 'holy', 'hit', 'a flash of light'),
-    ('sv_holy_lance_hit', 'holy_a', '470a49ce34bc', 5, 4, 20, 0.5, 0.5, 64, 'body', 'holy', 'hit', 'the hit a lance of light ends in'),
-    ('sv_heal_splash', 'holy_a', '96652a03ddf6', 5, 4, 20, 0.5, 0.5, 64, 'body', 'holy', 'hit', 'a splash of healing'),
-    ('sv_holy_ground', 'holy_a', '4d74c04d6848', 8, 3, 24, 0.5, 0.8, 96, 'feet', 'holy', 'field', 'the ground is blessed'),
-    ('sv_holy_pillar', 'holy_a', '0fc5cfe6fb10', 8, 4, 32, 0.5, 0.86, 96, 'feet', 'holy', 'burst', 'a pillar of light'),
-    ('sv_holy_nova', 'holy_a', '037acddc09cb', 8, 3, 24, 0.5, 0.5, 96, 'tile', 'holy', 'nova', 'a ring of light'),
-    ('sv_heal_burst', 'holy_a', '575b3bc18d40', 7, 4, 28, 0.5, 0.8, 96, 'feet', 'holy', 'field', 'healing rises from the ground'),
-    ('sv_holy_consecration', 'holy_a', '4d8c25daa3fa', 8, 4, 32, 0.5, 0.78, 96, 'feet', 'holy', 'field', 'a seal of light on the ground'),
-    ('sv_holy_sword', 'holy_a', '7968488768b7', 7, 4, 28, 0.5, 0.86, 96, 'feet', 'holy', 'burst', 'a sword of judgement falls'),
-    ('sv_holy_shield', 'holy_a', '2345ef53990c', 8, 4, 32, 0.5, 0.5, 96, 'body', 'holy', 'aura', 'a shield of light'),
-    ('sv_holy_blessing', 'holy_a', 'd5dbecefbd6f', 8, 4, 32, 0.5, 0.84, 96, 'feet', 'holy', 'aura', 'a blessing rises'),
-    ('sv_heal_regen', 'holy_a', 'aba37a0c5536', 8, 4, 32, 0.5, 0.84, 96, 'feet', 'holy', 'aura', 'a spiral of healing'),
-    ('sv_heal_ribbon', 'holy_a', 'a3e79ce6d84d', 6, 3, 18, 0.5, 0.84, 64, 'feet', 'holy', 'aura', 'a ribbon of healing'),
-    ('sv_storm_strike', 'storm_a', '14d7b2ba008c', 6, 4, 24, 0.5, 0.85, 96, 'feet', 'energy', 'strike', 'a bolt strikes the ground'),
-    ('sv_storm_spark', 'storm_a', 'd03ff7b25fb9', 6, 4, 24, 0.5, 0.5, 96, 'body', 'energy', 'hit', 'sparks of a lightning hit'),
-    ('sv_arcane_sigil', 'storm_a', '6e03e044fdac', 8, 4, 32, 0.5, 0.5, 96, 'tile', 'arcane', 'field', 'a circle of sigils'),
-    ('sv_arcane_implosion', 'storm_a', 'aed87320a4f0', 5, 4, 20, 0.5, 0.5, 96, 'body', 'arcane', 'burst', 'light pulled in, then out'),
-    ('sv_arcane_rift', 'storm_a', '33c19eb2dea2', 8, 4, 32, 0.5, 0.5, 96, 'body', 'arcane', 'field', 'a tear in the air'),
-    ('sv_arcane_bubble', 'storm_a', 'a85b30ed91f2', 8, 4, 32, 0.5, 0.5, 96, 'body', 'arcane', 'aura', 'a ward of six sided cells'),
 ]
 # (name, pack key, src, cols, rows, frames, anchor x, anchor y, missile id, new name or '' for a rebuild in place, element, note)
 MISSILES = [
-    ('sv_fire_bolt', 'fire_a', '2f11d7e06d3a', 6, 4, 24, 0.68, 0.5, 43, 'new', 'fire', 'a ball of fire (blank stock id 43)'),
     ('sv_death_skull', 'death_a', '06e85ef15cc6', 8, 3, 24, 0.66, 0.5, 46, 'new', 'death', 'a wailing skull (blank stock id 46)'),
-    ('sv_venom_glob', 'death_b', 'ae51a22f2cc2', 6, 4, 24, 0.64, 0.47, 47, 'new', 'earth', 'a glob of venom (blank stock id 47)'),
-    ('sv_holy_lance', 'holy_a', 'f0dc8b203b78', 8, 3, 24, 0.8, 0.5, 52, 'new', 'holy', 'a lance of light (blank stock id 52)'),
-    ('sv_fire_meteor', 'fire_a', 'e6479cba0284', 6, 4, 24, 0.66, 0.5, 163, '', 'fire', 'a meteor; rebuilds pyre_comet in place'),
-    ('sv_curse_bolt', 'death_b', '607bb4f95541', 6, 4, 24, 0.74, 0.5, 132, '', 'death', 'a curse bolt; rebuilds shadow_orb in place'),
 ]
 
 
@@ -427,8 +387,8 @@ def build(dat, spr, out, src, write):
 def lua_text(rows):
     eff = [r for r in rows if r['kind'] == 'effect']
     L = ['-- GENERATED by client/tools/sprites/gen_spell_vfx.py from art_import/spell_vfx.csv (O596). Do not edit by hand.',
-         '-- The spell effects and projectiles of the purchased effect packs (docs/CREDITS.md), drawn by client pair %d:' % PAIR,
-         '-- %d effects at the ids %d..%d, appended after the effects of pair 72, and %d projectiles. A projectile id is one' % (
+         '-- The spell effects and projectiles of the purchased effect pack (docs/CREDITS.md; O600 kept three pieces), drawn by client pair %d:' % PAIR,
+         '-- %d effects at the ids %d..%d, appended after the effects of pair 72, projectiles: %d. A projectile id is one' % (
              len(eff), FIRST, FIRST + len(eff) - 1, len(rows) - len(eff)),
          '-- byte on the wire, so none is appended: `new` fills a blank stock id, the others rebuild a pack projectile in place',
          '-- at its own size and send offset (they keep their old names and are listed for the record only).',

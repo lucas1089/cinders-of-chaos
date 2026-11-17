@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests of gen_spell_vfx.py (O596): the table rules, the pair refusal, the game size cut on synthetic sheets, the
+"""Tests of gen_spell_vfx.py (O596, O600): the table rules, the pair refusal, the game size cut on synthetic sheets, the
 generated server files. No pack art and no pair: python3 -I client/tools/sprites/gen_spell_vfx_test.py (numpy, Pillow)."""
 import os
 import sys
@@ -24,7 +24,7 @@ def test_table():
     ok(eff[0]['id'] == 4743 and eff[-1]['id'] <= 5142, 'effects in the block 4743..5142')
     ok(all(r['id'] <= 253 for r in rows if r['kind'] == 'missile'), 'a projectile id is one byte')
     bad = [dict(r) for r in rows]
-    bad[3]['id'] = 9
+    bad[1]['id'] = 9
     ok(G.table_errors(bad), 'a hole in the ids is found')
     bad = [dict(r) for r in rows]
     bad[-1]['id'] = 254
@@ -41,6 +41,10 @@ def test_table():
     ok(G.read_total() == [len(eff)], 'the total row records the exact count for the next step')
     ok(list(G.read_sums()) == [r['name'] for r in rows], 'one sum per piece, in order')
     ok(G.check() == 0, 'check passes on the repository')
+    # O600: only the pieces of the three spells that were really bad are left, no missile is rebuilt in place
+    ok([r['name'] for r in rows] == ['sv_death_bone_shatter', 'sv_death_lifesteal', 'sv_death_skull'], 'the kept pieces')
+    ok([(r['id'], r['at']) for r in rows if r['kind'] == 'missile'] == [(46, 'new')], 'one projectile, in a blank stock id')
+    ok({r['pack'] for r in rows} == {'death_a'}, 'one pack is left')
 
 
 def test_pair_refusal():

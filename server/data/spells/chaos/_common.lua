@@ -129,7 +129,7 @@ end
 if not ChaosFxPass then
 	pcall(dofile, 'data/lib/chaos_fx_pass.lua')
 end
--- The spell VFX packs (data/lib/chaos_spell_vfx.lua, O596, client pair 73): a spell's own pack effect or projectile for a
+-- The spell VFX pack (data/lib/chaos_spell_vfx.lua, O596 and O600, client pair 73): a spell's own pack effect or projectile for a
 -- name, asked before the effects pass; nil below pair 73, so a pair 72 client keeps today's effects
 if not ChaosSpellVfx then
 	pcall(dofile, 'data/lib/chaos_spell_vfx.lua')
