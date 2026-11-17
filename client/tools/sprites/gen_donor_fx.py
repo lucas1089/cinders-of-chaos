@@ -264,10 +264,12 @@ def lua_text(rows, cat):
 
 
 def tags_text(rows, cat):
-    """spell_fx_elements.csv with the 40 donor rows (id, name, element) at its end, the other rows as they are"""
+    """spell_fx_elements.csv with the 40 donor rows (id, name, element) in id order, the other rows as they are"""
     with open(TAGS, encoding='utf-8', newline='') as fh:
         keep = [l for l in fh.read().splitlines() if not l.split(',')[1:2] or not l.split(',')[1].startswith('donor_')]
-    return '\n'.join(keep + ['%s,%s,%s' % (c['id'], r['name'], r['element']) for r, c in zip(rows, cat)]) + '\n'
+    mine = ['%s,%s,%s' % (c['id'], r['name'], r['element']) for r, c in zip(rows, cat)]
+    # data rows sorted by id: the donor (4703-4742) and spell vfx (4743-) steps both write this file, neither owns its end
+    return '\n'.join(keep[:1] + sorted(keep[1:] + mine, key=lambda l: int(l.split(',')[0]))) + '\n'
 
 
 def allow_text(rows, cat):

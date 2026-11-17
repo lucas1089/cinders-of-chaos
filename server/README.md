@@ -34676,3 +34676,37 @@ a typed command) is taken as before. The report has `== Helper answers`: command
 buckets, the slowest. The spell quest check waits 12 s per answer and a missing answer is a SKIP; `enter npc` looks 4 tiles round the NPC and the check
 asks 3 times 4 s apart before a SKIP; no tile for a cursed chest is an answer with the reason. The helper loop (`step`) runs under `pcall` and always
 schedules the next round. Tests: `tests/tester_helper_test.lua`, `tools/testers_test.py`, `tools/tester_checks_test.py`.
+
+## Spell VFX packs (O596; `data/lib/chaos_spell_vfx.lua`, `data/lib/chaos_spell_vfx_ids.lua`, client pair 73)
+
+Five purchased effect packs give 52 spells new looks. Looks only: no damage, timing or area changes.
+Art, sizes and ids: client/MANIFEST.md "Spell VFX packs". Licence: docs/CREDITS.md.
+
+- **Gate.** `config.lua` `chaosClientPair >= 73`, read at load (`ChaosSpellVfx.ON`). Below 73 nothing answers.
+  A pair 72 client keeps today's effects. The owner raises the record when pair 73 ships.
+  Admin app: Commands tab > client pair card > set 73. Fallback: `chaos-ctl.sh client-pair set 73`.
+- **Hook.** `data/spells/chaos/_common.lua` `pass()` asks `ChaosSpellVfx.swapFor(spellId, kind, name)` first.
+  It comes before the effects pass (O457), pair 29, pair 36 and pair 27. `chaos_mystic_fx.lua` `M.alt` asks it too (kind `send`).
+  Witchfire Bolt resolves its delayed burst at the cast, so the pack burst plays when the bolt lands.
+- **Ids.** `chaos_spell_vfx_ids.lua` is generated (`gen_spell_vfx.py ids`, `--check` in CI). It is a plain table.
+  The lib merges it into `ChaosVfx` and `ChaosVfxMissile` only with the gate on. Effects 4743..4782. New projectiles 43, 46, 47, 52.
+  Projectiles 163 and 132 are rebuilt in place by the pair, with no server change.
+- **Map, by element.**
+  - Fire: Witchfire Bolt (bolt and burst), Falling Pyre (meteor and crater), Doomtide (first wave), Martyr's Pyre, Pyre of Absolution.
+  - Death: Marrow Bolt (skull and wail), Soul Rot, Life Siphon, Crimson Covenant, Grave Nova, Funeral of Kings, Corpse Explosion,
+    Crypt Collapse, Ossuary Surge, Splinter Volley, Bone Shrapnel, the four Raise spells, Withering Curse, Gravewail, Dreamrot.
+  - Poison: Blightbrand, Venom Spiral (glob and cloud), Packhunter's Dart, Blightswarm.
+  - Holy: the lance and its hit (Dawnpiercer, Sunspear, Lance of Vigil, Heretic's Brand, Dawnbreaker Shot, Twin Verdict),
+    Judgement (sword), Final Verdict (pillar), Radiant Smite, Consecration, Blessed Earth, Sanctified Ground, Bell of Reckoning,
+    Hammer of Ember Dawn, Aegis of Faith, Lightward, Mantle of Dawn.
+  - Heals: Lay on Hands, Vow of Mending, Purifying Wellspring, Mirror Mend.
+  - Energy and arcane: Phantom Needles, Prismatic Rupture, Tear in the Weave, Soulward.
+- **Kept on today's effect.** Forked Storm (the owner's donor strike, O532). Purging Nova (the blue nova of O523).
+  Wraithwind, Soulflay Wave, Soulrend Beam (waves per tile, pair 67 projectiles). Bone Spear, Nightburst, Shattered Psyche.
+  Frozen Crypt, Rime Bloom and the other ice spells (no ice pack). Kindled Breath (the Monk's chi look). Primordial Squall.
+  The stock spells (Kindling Spark, Pyre Torrent, Tempest Fan, stock heals): they send engine combat effects, not names.
+- **Element rule.** A piece has an element tag in `data/spells/spell_fx_elements.csv`. A spell with an element gets a piece of it.
+  The seven exceptions sit in `ChaosSpellVfx.allow` with a reason. `check_spell_fx.py` measures with the gate off.
+- **Unverified.** Doomtide's wave is sent inside a channelled pulse. The probe cannot run it. Corpse Explosion, the Raise spells,
+  Aegis of Faith and Mirror Mend need a corpse, a minion, a shield or a wounded ally. Their maps are read from the scripts.
+- **Tests.** `tests/spell_vfx_test.lua` in the server loop. `client/tools/sprites/gen_spell_vfx_test.py`.

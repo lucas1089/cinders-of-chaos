@@ -24,7 +24,7 @@ export UL_IDENTITIES=chaos
 log() { printf '== %s\n' "$*"; }
 die() { printf '::error::%s\n' "$*" >&2; exit 1; }
 
-# shellcheck disable=SC2317 # run by the trap
+# shellcheck disable=SC2317,SC2329 # run by the trap
 stop_server() { UL_WORK="$WORK" bash "$REPO/tools/ci/unity_live_check.sh" --stop > /dev/null 2>&1 || true; }
 trap stop_server EXIT
 

@@ -1,0 +1,48 @@
+kind,id,name,pack,src,cols,rows,frames,ax,ay,size,at,element,role,w,h,phases,ms,dx,dy,note
+effect,4743,sv_fire_bolt_hit,fire_a,3a1c58783007,6,4,24,0.5,0.5,64,body,fire,hit,3,3,12,83,1,1,the burst a fire bolt ends in
+effect,4744,sv_fire_crater,fire_a,d3f0c8af15b5,7,4,28,0.5,0.78,96,feet,fire,burst,3,3,12,97,1,1,a meteor crater
+effect,4745,sv_fire_nova,fire_a,65cdc560bd41,6,4,24,0.5,0.7,96,ground,fire,nova,3,3,12,83,1,1,a ring of flame on the ground
+effect,4746,sv_fire_charge,fire_a,e8150b3723de,7,4,28,0.5,0.5,96,body,fire,aura,3,4,12,97,1,1,flames drawn in around the caster
+effect,4747,sv_death_wail,death_a,a918f7242688,8,3,24,0.5,0.5,64,body,death,hit,3,3,12,80,1,1,the wail a skull bolt ends in
+effect,4748,sv_death_bone_shatter,death_a,78632c328005,6,4,22,0.5,0.5,96,body,death,hit,3,3,12,73,1,1,bone splinters
+effect,4749,sv_death_blood_splash,death_a,0b88a300d1f0,6,4,22,0.5,0.5,96,body,death,hit,3,3,12,76,1,1,a splash of blood
+effect,4750,sv_death_corpse_burst,death_a,701efe2a60cd,8,3,24,0.5,0.62,96,ground,death,burst,3,3,12,80,1,1,a corpse bursts
+effect,4751,sv_death_raise,death_a,40cf8d586063,8,4,32,0.5,0.8,96,feet,death,field,3,3,12,111,1,1,the ground opens for a minion
+effect,4752,sv_death_bone_prison,death_a,e07ad9bfb0a2,7,4,28,0.5,0.8,96,feet,death,field,3,3,12,97,1,1,ribs close over the target
+effect,4753,sv_death_bone_spikes,death_a,a589a3673fbd,8,3,24,0.5,0.8,96,feet,death,burst,3,3,12,83,1,1,bone spikes from the ground
+effect,4754,sv_death_nova,death_a,60896abd6483,8,3,24,0.5,0.62,96,ground,death,nova,3,2,12,83,1,1,a ring of grave light
+effect,4755,sv_death_mark,death_a,1572c73955ac,8,4,32,0.5,0.4,96,head,death,aura,3,2,12,111,1,0,a mark of death over the head
+effect,4756,sv_death_decay,death_a,052327417582,8,4,32,0.5,0.7,96,ground,death,aura,3,3,12,111,1,1,rot rising from the target
+effect,4757,sv_death_lifesteal,death_a,fac42de15d61,8,4,32,0.5,0.52,96,body,death,aura,3,3,12,111,1,1,life drawn out in red threads
+effect,4758,sv_shadow_burst,death_b,a54ec3394d9a,5,4,20,0.5,0.5,64,body,death,hit,3,3,12,69,1,1,a burst of shadow
+effect,4759,sv_curse_strike,death_b,aec01f2b6b06,5,4,20,0.5,0.5,64,body,death,hit,3,3,12,69,1,1,the strike a curse bolt ends in
+effect,4760,sv_venom_splash,death_b,3767e107daea,5,4,20,0.5,0.48,64,body,earth,hit,3,3,12,69,1,1,the splash a venom glob ends in
+effect,4761,sv_plague_burst,death_b,e69eafacc1ba,5,4,20,0.5,0.56,96,body,earth,burst,3,3,12,69,1,1,a burst of plague
+effect,4762,sv_curse_nova,death_b,3c22e3546a91,6,4,24,0.5,0.64,96,ground,death,nova,3,3,12,83,1,1,a ring of curse runes
+effect,4763,sv_poison_cloud,death_b,24914d1c094f,8,4,32,0.5,0.8,96,feet,earth,field,3,3,12,111,1,1,a cloud of poison
+effect,4764,sv_holy_bolt_hit,holy_a,7af7148e0ab2,5,4,20,0.5,0.5,64,body,holy,hit,3,2,12,66,1,0,a flash of light
+effect,4765,sv_holy_lance_hit,holy_a,470a49ce34bc,5,4,20,0.5,0.5,64,body,holy,hit,3,3,12,66,1,1,the hit a lance of light ends in
+effect,4766,sv_heal_splash,holy_a,96652a03ddf6,5,4,20,0.5,0.5,64,body,holy,hit,3,3,12,66,1,1,a splash of healing
+effect,4767,sv_holy_ground,holy_a,4d74c04d6848,8,3,24,0.5,0.8,96,feet,holy,field,3,4,12,83,1,1,the ground is blessed
+effect,4768,sv_holy_pillar,holy_a,0fc5cfe6fb10,8,4,32,0.5,0.86,96,feet,holy,burst,3,4,12,111,1,1,a pillar of light
+effect,4769,sv_holy_nova,holy_a,037acddc09cb,8,3,24,0.5,0.5,96,tile,holy,nova,3,3,12,80,1,1,a ring of light
+effect,4770,sv_heal_burst,holy_a,575b3bc18d40,7,4,28,0.5,0.8,96,feet,holy,field,3,4,12,97,1,1,healing rises from the ground
+effect,4771,sv_holy_consecration,holy_a,4d8c25daa3fa,8,4,32,0.5,0.78,96,feet,holy,field,3,2,12,111,1,1,a seal of light on the ground
+effect,4772,sv_holy_sword,holy_a,7968488768b7,7,4,28,0.5,0.86,96,feet,holy,burst,3,4,12,97,1,1,a sword of judgement falls
+effect,4773,sv_holy_shield,holy_a,2345ef53990c,8,4,32,0.5,0.5,96,body,holy,aura,3,3,12,111,1,1,a shield of light
+effect,4774,sv_holy_blessing,holy_a,d5dbecefbd6f,8,4,32,0.5,0.84,96,feet,holy,aura,3,4,12,111,1,1,a blessing rises
+effect,4775,sv_heal_regen,holy_a,aba37a0c5536,8,4,32,0.5,0.84,96,feet,holy,aura,3,4,12,111,1,1,a spiral of healing
+effect,4776,sv_heal_ribbon,holy_a,a3e79ce6d84d,6,3,18,0.5,0.84,64,feet,holy,aura,3,2,12,62,1,0,a ribbon of healing
+effect,4777,sv_storm_strike,storm_a,14d7b2ba008c,6,4,24,0.5,0.85,96,feet,energy,strike,3,4,12,83,1,1,a bolt strikes the ground
+effect,4778,sv_storm_spark,storm_a,d03ff7b25fb9,6,4,24,0.5,0.5,96,body,energy,hit,3,3,12,83,1,1,sparks of a lightning hit
+effect,4779,sv_arcane_sigil,storm_a,6e03e044fdac,8,4,32,0.5,0.5,96,tile,arcane,field,3,3,12,111,1,1,a circle of sigils
+effect,4780,sv_arcane_implosion,storm_a,aed87320a4f0,5,4,20,0.5,0.5,96,body,arcane,burst,3,3,12,69,1,1,"light pulled in, then out"
+effect,4781,sv_arcane_rift,storm_a,33c19eb2dea2,8,4,32,0.5,0.5,96,body,arcane,field,3,3,12,111,1,1,a tear in the air
+effect,4782,sv_arcane_bubble,storm_a,a85b30ed91f2,8,4,32,0.5,0.5,96,body,arcane,aura,3,3,12,111,1,1,a ward of six sided cells
+missile,43,sv_fire_bolt,fire_a,2f11d7e06d3a,6,4,24,0.68,0.5,64,new,fire,missile,3,3,8,50,1,1,a ball of fire (blank stock id 43)
+missile,46,sv_death_skull,death_a,06e85ef15cc6,8,3,24,0.66,0.5,64,new,death,missile,3,3,8,50,1,1,a wailing skull (blank stock id 46)
+missile,47,sv_venom_glob,death_b,ae51a22f2cc2,6,4,24,0.64,0.47,64,new,earth,missile,3,3,8,50,1,1,a glob of venom (blank stock id 47)
+missile,52,sv_holy_lance,holy_a,f0dc8b203b78,8,3,24,0.8,0.5,64,new,holy,missile,3,3,8,50,1,1,a lance of light (blank stock id 52)
+missile,163,sv_fire_meteor,fire_a,e6479cba0284,6,4,24,0.66,0.5,64,replace,fire,missile,3,3,8,50,1,1,a meteor; rebuilds pyre_comet in place
+missile,132,sv_curse_bolt,death_b,607bb4f95541,6,4,24,0.74,0.5,64,replace,death,missile,3,3,8,50,1,1,a curse bolt; rebuilds shadow_orb in place
+total,40,effects_4743_4782,,,,,,,,,,,,,,,,,,this step appends exactly 40 effects and no missile; the next step starts at 5143
