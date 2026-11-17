@@ -33,6 +33,9 @@ function M.apply(player, bonuses)
 	local changed = player:getStorageValue(key) ~= id
 	if changed then
 		player:setStorageValue(key, id)
+		if id > 0 and ChaosGapFx then -- O606: a mastery chosen (not at a login: the storage holds it then)
+			ChaosGapFx.on(player, "spell_mastery")
+		end
 	end
 	if ChaosSupports.refreshActive and (changed or id > 0) then
 		ChaosSupports.refreshActive(player)

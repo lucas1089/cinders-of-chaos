@@ -1116,7 +1116,9 @@ local function startRun(dungeonId, difficulty, players, side)
 		p:registerEvent("ChaosDungeonHit")
 		p:registerEvent("ChaosDungeonMana")
 		p:teleportTo(dg.DungeonPos)
-		p:getPosition():sendMagicEffect(40)
+		if not (ChaosGapFx and ChaosGapFx.on(p, "dungeon_beacon")) then -- O606
+			p:getPosition():sendMagicEffect(40)
+		end
 		p:say(Chaos.t(p, baseMessage("ToEntry", "Welcome to Dungeon")), TALKTYPE_MONSTER_SAY)
 	end
 

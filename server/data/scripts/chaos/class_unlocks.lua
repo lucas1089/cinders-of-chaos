@@ -165,6 +165,9 @@ function U.grant(accountId, classKey, source)
 	for _, p in ipairs(onlineOfAccount(accountId)) do
 		if K.classOfVocation(p:getVocation():getId()) == classKey then
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The %s is unlocked: you can play this character fully now.", name))
+			if ChaosGapFx then -- O606
+				ChaosGapFx.on(p, "class_unlock")
+			end
 		end
 	end
 	return true

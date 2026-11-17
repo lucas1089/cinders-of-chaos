@@ -210,7 +210,9 @@ function talk.onSay(player, words, param)
 	end
 	player:save()
 	local pos = player:getPosition()
-	pos:sendMagicEffect(CONST_ME_HOLYAREA)
+	if not (ChaosGapFx and ChaosGapFx.at(pos, "class_change")) then -- O606: in place of the stock holy area
+		pos:sendMagicEffect(CONST_ME_HOLYAREA)
+	end
 	pos:sendMagicEffect(EFFECT[newId] or CONST_ME_GROUNDSHAKER)
 	if how == true then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,

@@ -847,7 +847,9 @@ local function removePlayer(run, id, mode)
 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		elseif mode == "out" or mode == "logout" then
 			player:teleportTo(entry.entry)
-			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			if not (ChaosGapFx and ChaosGapFx.on(player, "rift_close")) then -- O606
+				player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+			end
 		end
 		if mode ~= "logout" then
 			local running = run.state == "running"
@@ -2038,7 +2040,9 @@ local function breach(run, pos)
 		return
 	end
 	local rid, slot = run.id, run.slot
-	Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	if not (ChaosGapFx and ChaosGapFx.at(pos, "rift")) then -- O606
+		Position(pos.x, pos.y, pos.z):sendMagicEffect(CONST_ME_PURPLEENERGY or CONST_ME_TELEPORT)
+	end
 	addEvent(function(p0)
 		local r = RF.runs[slot]
 		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
@@ -2304,9 +2308,14 @@ local function enter(run, group)
 		m:registerEvent("ChaosRiftPlayerMana")
 		m:registerEvent("ChaosRiftPlayerKill")
 		RF.capLast(m) -- O478
-		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
+		if not (ChaosGapFx and ChaosGapFx.at(entryPos, "rift_open")) then -- O606
+			entryPos:sendMagicEffect(CONST_ME_TELEPORT)
+		end
 		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}})[i] or {0, 0}
 		local at = RF.entryOf(run)
+		if i == 1 and ChaosGapFx then -- O606: the seal on the arrival point, once a run
+			ChaosGapFx.at(at, "rift_seal")
+		end
 		if L.walkKeys and not RL.isFloor(L, at.x + off[1], at.y + off[2], at.z) then
 			off = {0, 0}
 		end

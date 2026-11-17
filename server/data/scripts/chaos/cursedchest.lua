@@ -743,7 +743,9 @@ function CC.winEvent(ch)
 		item:setAttribute(ITEM_ATTRIBUTE_NAME, c.chest.nameOpened)
 		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The curse is lifted. Use it to take your share.")
 	end
-	fx(ch.pos, c.chest.openEffect)
+	if not (ChaosGapFx and ChaosGapFx.at(ch.pos, "chest_royal")) then -- O606
+		fx(ch.pos, c.chest.openEffect)
+	end
 	tellAll(ev, "All five hordes are dead! The cursed chest unseals: use it within %d seconds to take your loot.",
 		c.event.claimSec)
 end

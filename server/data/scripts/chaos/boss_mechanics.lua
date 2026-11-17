@@ -322,11 +322,17 @@ end
 -- the sprite marks of one pulse. who = nil: everybody near gets them (nobody near has game_telegraph, ChaosTelegraph is
 -- not loaded or its switch is off: exactly as before O549); who = a player: only that one (a player without
 -- game_telegraph while others near have it)
-local function drawMarks(f, tel, kind, who)
+local function drawMarks(f, tel, kind, who, art)
 	local cfg = C()
 	local effect = kind == "fill" and cfg.fillEffect or cfg.warnEffect
+	if ChaosGapFx then -- O606: the strike circle on client pair 73
+		effect = ChaosGapFx.telegraph(effect)
+	end
 	for _, t in ipairs(tel.plan.big) do
 		fx(t, effect, "CONST_ME_MAGIC_RED", who)
+	end
+	if art then -- a player with game_telegraph: only the strike circle, the floor mark shows the tiles
+		return
 	end
 	for _, t in ipairs(tel.plan.small) do
 		local stock = kind == "fill" and CONST_ME_DRAWBLOOD or CONST_ME_MAGIC_RED
@@ -367,9 +373,9 @@ local function telegraph(f, spec, warnMs)
 		f.markSeq = (f.markSeq or 0) + 1
 		mark = ChaosTelegraph.open("bm:" .. f.id .. ":" .. f.markSeq, tel.tiles, {ms = warnMs, user = "bossMechanics"})
 	end
-	local function draw(fn)
+	local function draw(fn, art)
 		if mark and ChaosTelegraph then
-			ChaosTelegraph.draw(mark, fn)
+			ChaosTelegraph.draw(mark, fn, art)
 		else
 			fn(nil)
 		end
@@ -404,7 +410,29 @@ local function telegraph(f, spec, warnMs)
 					end
 				end
 				drawMarks(fl, tel, pulse.kind, who)
+			end, function(who)
+				drawMarks(fl, tel, pulse.kind, who, true)
 			end)
+			-- O606 (client pair 73): the marks that had no effect. The follow circle's target is chased, the players
+			-- under falling puddles spread, a meteor attack shows its shadows before the hit
+			if ChaosGapFx and ChaosGapFx.name("tele_zone") then
+				if i == 1 and spec.kind == "follow" then
+					local boss = Monster(id)
+					local target = boss and boss:getTarget()
+					if target then
+						ChaosGapFx.on(target, "chase")
+					end
+				elseif i == 1 and spec.kind == "puddles" and (spec.onPlayers or 0) > 0 then
+					for _, p in ipairs(fightPlayers(fl)) do
+						ChaosGapFx.on(p, "spread")
+					end
+				end
+				if pulse.kind == "fill" and spec.hit == "meteor_strike" then
+					for _, t in ipairs(tel.plan.big) do
+						ChaosGapFx.at(t, "meteor_shadow")
+					end
+				end
+			end
 		end, pulse.at)
 	end
 	addEvent(function()
@@ -438,6 +466,18 @@ local function channel(f, spec, warnMs)
 	local totem = spawnNamed(f, spec.totemType, spec.totemName, G.totemHealth(spec, f.st.players), boss:getPosition())
 	f.channel = {spec = spec, endAt = mnow() + warnMs, totem = totem and totem:getId() or nil}
 	sendCast(f, spec.label, warnMs, "channel")
+	-- O606 (client pair 73): the count over the boss as the channel ends, unless it was stopped
+	local count = ChaosGapFx and ChaosGapFx.ms("countdown") or 0
+	if count > 0 then
+		local id, token, ch = f.id, f.token, f.channel
+		addEvent(function()
+			local fl = M.fights[id]
+			local b = fl and fl.token == token and fl.channel == ch and Monster(id)
+			if b then
+				ChaosGapFx.on(b, "countdown")
+			end
+		end, math.max(0, warnMs - count))
+	end
 end
 
 local function channelStep(f, now)
@@ -551,6 +591,27 @@ local function los(f, spec, warnMs)
 	end
 	sendCast(f, spec.label, warnMs, "los")
 	local id, token = f.id, f.token
+	-- O606 (client pair 73): the cover is marked while the blast charges
+	local safe = ChaosGapFx and ChaosGapFx.ms("safe_zone") or 0
+	if safe > 0 then
+		local spots = {}
+		for _, t in ipairs(made) do
+			spots[#spots + 1] = t
+		end
+		for _, t in ipairs(f.opts.pillars or {}) do
+			spots[#spots + 1] = {x = t.x, y = t.y, z = t.z or b.z}
+		end
+		for at = 0, math.max(0, warnMs - safe), safe do
+			addEvent(function()
+				local fl = M.fights[id]
+				if fl and fl.token == token then
+					for _, t in ipairs(spots) do
+						ChaosGapFx.at(t, "safe_zone")
+					end
+				end
+			end, at)
+		end
+	end
 	addEvent(function()
 		local fl = M.fights[id]
 		if fl and fl.token == token then

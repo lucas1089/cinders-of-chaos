@@ -401,7 +401,9 @@ local function payContract(player, c, e)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Bounty completed: %s. Reward: %s.%s", c.name,
 		table.concat(parts, ", "), inbox and Chaos.t(player, " Your backpack was full: the orbs are in your inbox.") or ""))
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	if not (ChaosGapFx and ChaosGapFx.on(player, "bounty")) then -- O606
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	end
 	if ChaosRift and ChaosRift.onBountyPaid then
 		ChaosRift.onBountyPaid(player, c) -- a chance of a tier-1 Rift Key (rift_config.lua bountyKey)
 	end

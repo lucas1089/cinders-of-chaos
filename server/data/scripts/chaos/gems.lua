@@ -273,7 +273,9 @@ function G.socket(player, gemItem, target)
 	local text = string.format("%s socketed into %s (socket %d): %s.", G.gemName(id), name, i,
 		e and G.effectText(e.key, e.value, e.value2) or "no effect")
 	log(player, "Gem", name, text)
-	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
+	if not (ChaosGapFx and ChaosGapFx.on(player, "enchant")) then -- O606
+		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
+	end
 	return true, text
 end
 
@@ -317,7 +319,9 @@ function G.unsocket(player, item, index, keep)
 	if keep then
 		text = string.format("%s taken out of %s for %d gold.%s", G.gemName(id), name, cost,
 			whereText(give(player, id, 1)))
-		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
+		if not (ChaosGapFx and ChaosGapFx.on(player, "enchant")) then -- O606
+			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
+		end
 	else
 		text = string.format("%s shattered (taken out of %s).", G.gemName(id), name)
 		player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)

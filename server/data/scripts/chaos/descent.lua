@@ -1159,6 +1159,9 @@ local function rewardPlayer(run, pe, cleared, player)
 		newTitle = after[#after].text
 		if player then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned the title \"%s\".", newTitle))
+			if ChaosGapFx then -- O606
+				ChaosGapFx.on(player, "title")
+			end
 			if ChaosNameplate and ChaosNameplate.refresh then
 				pcall(ChaosNameplate.refresh, player)
 			end

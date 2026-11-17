@@ -616,6 +616,10 @@ function W.advance(player)
 	tell(player, who .. ": " .. K.text(step.done, lang))
 	tell(player, string.format(K.text(c.texts.stepDone, lang), i, #c.steps, K.fill(K.text(step.title, lang), vars(lang)), got))
 	toast(player, string.format("%s %d/%d: %s", K.text(c.texts.title, lang), i, #c.steps, K.fill(K.text(step.title, lang), vars(lang))))
+	local after = c.steps[i + 1]
+	if ChaosGapFx and (not after or after.ch ~= step.ch) then -- O606: the last step of a chapter
+		ChaosGapFx.on(player, "quest_complete")
+	end
 	if i >= #c.steps then
 		set(player, "state", c.states.done)
 		tell(player, K.text(c.texts.finished, lang))

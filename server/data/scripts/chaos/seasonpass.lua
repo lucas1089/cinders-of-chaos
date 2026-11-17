@@ -619,7 +619,9 @@ function SP.claim(player, tier, track, quiet)
 	if not quiet then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season pass tier %d (%s): %s.", tier,
 			Chaos.t(player, track == P.PREMIUM and "premium" or "free"), P.rewardText(r, Chaos.lang(player))))
-		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
+		if not (ChaosGapFx and ChaosGapFx.on(player, "season_tier")) then -- O606
+			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
+		end
 	end
 	return true, r
 end
@@ -649,7 +651,9 @@ function SP.claimAll(player)
 	if got > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season pass: claimed %d reward%s: %s.", got,
 			got == 1 and "" or "s", table.concat(names, ", ")))
-		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
+		if not (ChaosGapFx and ChaosGapFx.on(player, "season_tier")) then -- O606
+			player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or CONST_ME_MAGIC_BLUE)
+		end
 	end
 	return got, stop
 end
