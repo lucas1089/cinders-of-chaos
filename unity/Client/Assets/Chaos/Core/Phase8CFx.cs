@@ -242,7 +242,7 @@ namespace Chaos.Core
     /// frame by frame (PackFx.Phase); a pair without them keeps the drawn stand-ins.</summary>
     public static class PackFx
     {
-        public const int LevelUpId = 457, LevelUpDx = 1, LevelUpDy = 2; // the level up pillar (levelwingsmath.lua)
+        public const int LevelUpId = 4047, LevelUpDx = 1, LevelUpDy = 1;
         public const double DefaultFrameMs = 70, BeamLoopMs = 1750;
         static readonly Dictionary<string, int> beams = new Dictionary<string, int>
         {
