@@ -75,7 +75,7 @@ def main():
     assert [int(r['tier']) for r in t].count(3) == 6 and [int(r['tier']) for r in t].count(4) == 5
     assert [r['key'] for r in t if r['float'] == '1'] == ['wisp', 'maw', 'bat', 'broodsac', 'veilwitch']
     assert {r['tiles'] for r in t} == {'2x2', '3x3'}, 'nothing is sampled down: a figure over 64 px is a 3x3 outfit'
-    assert [r['key'] for r in t if r['tiles'] == '2x2'] == ['imp', 'thrall', 'arbalist', 'hound', 'wisp', 'crawler', 'penitent', 'maw', 'bat', 'broodsac']
+    assert [r['key'] for r in t if r['tiles'] == '2x2'] == ['imp', 'acolyte', 'arbalist', 'hound', 'wisp', 'crawler', 'penitent', 'maw', 'bat', 'broodsac']
     assert all(r['walk'] == '8' and r['walk_ms'] == '100' for r in t) and [r['idle'] for r in t].count('15') == 1
     assert all(int(r['idle_ms']) == P.idle_ms_for(int(r['idle'])) for r in t) and P.idle_ms_for(4) == 300 and P.idle_ms_for(8) == 200 and P.idle_ms_for(15) == 100
     assert set(P.read_sums()) == {r['new'] for r in t} and all(len(v) == 64 for v in P.read_sums().values())

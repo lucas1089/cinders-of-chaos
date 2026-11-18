@@ -7718,7 +7718,7 @@ drawn from our own words alone (docs/CREDITS.md, Tools; no picture of anyone's w
   | outfit | key | name | tier, role | size | displacement | idle x ms | walk x ms | opaque px |
   |---|---|---|---|---|---|---|---|---|
   | 3531 | imp | Cinder Imp | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 42,161 |
-  | 3532 | thrall | Ashbound Thrall | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 31,318 |
+  | 3532 | acolyte | Scorched Acolyte | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 31,318 |
   | 3533 | arbalist | Soot Arbalist | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 51,006 |
   | 3534 | hound | Scorch Hound | 1, chaser | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 89,154 |
   | 3535 | wisp | Ember Wisp | 1, chaser, floats | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 16,408 |
@@ -7768,5 +7768,5 @@ drawn from our own words alone (docs/CREDITS.md, Tools; no picture of anyone's w
   `outfit_centre.csv`, unity `InfoLiftData.cs`) are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet (it
   reads windows-assets, which holds pair 73). Not seen in a client. The O625 quality bar rows made for painted art (colours, local deviation, banding, outline
   hue) are not met by hand-made pixel art and were not chased (O629 / O630 reports); the loops and the outline are PixelLab's, as given.
-  The prototype's thrall is named "Ashbound Thrall", the name of an Embergut Rift monster (AutoSprite art, docs/CREDITS.md) that keeps its own look: the new
-  look is worn by the Novice of the Cult (the table names are the art's, not the monsters').
+  The table names are the art's, not the monsters'. The prototype's thrall was named "Ashbound Thrall", the name of an Embergut Rift monster (AutoSprite
+  art) that keeps its own look; the owner had it renamed (2026-11-18): the art is now "Scorched Acolyte" (key `acolyte`), worn by the Novice of the Cult.

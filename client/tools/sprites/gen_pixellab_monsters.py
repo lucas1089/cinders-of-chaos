@@ -86,7 +86,7 @@ ROLES = ('roamer', 'chaser', 'hunter', 'sniper')
 
 # key, name, tier, role, floats. The outfits are in this order from FIRST_NEW; `dir` of the PixelLab download is the key, or t3_KEY / t4_KEY.
 SPEC = (
-    ('imp', 'Cinder Imp', 1, 'roamer', 0), ('thrall', 'Ashbound Thrall', 1, 'roamer', 0), ('arbalist', 'Soot Arbalist', 1, 'roamer', 0),
+    ('imp', 'Cinder Imp', 1, 'roamer', 0), ('acolyte', 'Scorched Acolyte', 1, 'roamer', 0), ('arbalist', 'Soot Arbalist', 1, 'roamer', 0),
     ('hound', 'Scorch Hound', 1, 'chaser', 0), ('wisp', 'Ember Wisp', 1, 'chaser', 1), ('crawler', 'Cinder Crawler', 1, 'roamer', 0),
     ('penitent', 'Hollow Penitent', 1, 'roamer', 0),
     ('maw', 'Magma Maw', 2, 'sniper', 1), ('brute', 'Slag Brute', 2, 'roamer', 0), ('stalker', 'Gloom Stalker', 2, 'chaser', 0),

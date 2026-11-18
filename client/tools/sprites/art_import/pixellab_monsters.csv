@@ -1,6 +1,6 @@
 key,name,tier,role,float,new,tiles,disp,idle,idle_ms,walk,walk_ms,pixels,src,pl
 imp,Cinder Imp,1,roamer,0,3531,2x2,-16:0,4,300,8,100,42161,023f19335732,c1756262
-thrall,Ashbound Thrall,1,roamer,0,3532,2x2,-16:0,4,300,8,100,31318,70803138f004,d7e6c9aa
+acolyte,Scorched Acolyte,1,roamer,0,3532,2x2,-16:0,4,300,8,100,31318,70803138f004,d7e6c9aa
 arbalist,Soot Arbalist,1,roamer,0,3533,2x2,-16:0,4,300,8,100,51006,7a962e1ea914,e96acc12
 hound,Scorch Hound,1,chaser,0,3534,2x2,-16:0,8,200,8,100,89154,8fd28565f70f,bbec016c
 wisp,Ember Wisp,1,chaser,1,3535,2x2,-16:0,8,200,8,100,16408,aa65dfdda417,8af6e44a

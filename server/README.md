@@ -35208,7 +35208,7 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   | outfit | art | tier | monster | level | old look | why |
   |---|---|---|---|---|---|---|
   | 3531 | Cinder Imp | 1 | Lesser Fire Devil | 17 | 40 | a small fire devil for a hunched ember imp |
-  | 3532 | Ashbound Thrall | 1 | Novice of the Cult | 16 | 133 | a cultist (look 133 was shared by four monsters) for a scorched cultist thrall |
+  | 3532 | Scorched Acolyte | 1 | Novice of the Cult | 16 | 133 | a cultist (look 133 was shared by four monsters) for a scorched cultist acolyte |
   | 3533 | Soot Arbalist | 1 | Hunter | 20 | 129 | a ranged hooded soldier (look 129 was shared by five) for a crossbow soldier |
   | 3534 | Scorch Hound | 1 | Gnarlhound | 12 | 3182 | a gnarled hound for a charred hound |
   | 3535 | Ember Wisp | 1 | Dawnfly | 9 | 528 | a winged fly (look 528 was shared with the Emerald Damselfly) for a winged ember |
