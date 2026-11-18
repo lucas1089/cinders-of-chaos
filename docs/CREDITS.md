@@ -521,6 +521,11 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   (`client/tools/sprites/decor48_selection.csv`, client/MANIFEST.md "Decoration of the ice, swamp, lava and cave biomes (pair 48)").
   Its author and licence are not recorded; the owner approved using it (2026-10-26). It is not shown in the game or on the
   website, and its sprites ship only inside the pair.
+- **footprint source**: the client of another game server, downloaded by the owner (2026-11-18, O649), the source of the 20 footprint
+  effects 5334-5353 of pair 75 (`client/tools/sprites/art_import/footprint_fx.csv`, client/MANIFEST.md "Pair 75, footprints
+  (O649)"). The files are read by local script only, never viewed, never sent to a web or AI service, never committed; the table
+  names the source by 12 hex of the digest of its dat file. Its author and licence are not recorded; the owner approved using it
+  (2026-11-18, "pode importar todos assim mesmo"). It is not shown in the game or on the website, and its sprites ship only inside the pair.
 - **decoration source C**: purchased and owner-supplied prop sheets of a haunted-village art set, the source of the cursed props of
   pair 49 (tombstones, coffins, scarecrows, cauldrons, lanterns, altars and tables) and, recoloured to marble and gold, of the
   celestial statues, stelae, lamps and sarcophagi (`client/tools/sprites/art_import/decor49_sources.csv`, client/MANIFEST.md

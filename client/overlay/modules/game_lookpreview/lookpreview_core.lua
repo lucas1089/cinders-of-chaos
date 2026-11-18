@@ -48,8 +48,9 @@ end
 --   { kind = 'subject', look = id }                  something that is not worn: a pet, drawn alone
 --   { kind = 'bundle', parts = {option, ...} }       a store bundle: every part on the character, in order (outfit,
 --                                                    mount, wings, aura, shader, an outline, an effect)
---   { kind = 'effects', play, killfx, lootfx }       a spell skin / kill effect / rare-loot effect, played on the stage (fromPlayRow):
---                                                    killfx on a troll that dies, lootfx over a loot bag beside the figure (O564)
+--   { kind = 'effects', play, killfx, lootfx, footfx } a spell skin / kill effect / rare-loot effect, played on the stage (fromPlayRow):
+--                                                    killfx on a troll that dies, lootfx over a loot bag beside the figure (O564),
+--                                                    footfx (an effect footprint, O649) on the figure's own tile, under it
 --   { kind = 'footprint', art }                      prints behind the walking figure
 --   { kind = 'lootlabel', accent }                   a loot label sample on the stage (accent: its background colour, nil = stock)
 --   { kind = 'chatcolor', color }                    a chat line sample on the stage (color: the name's colour, nil = stock)
@@ -169,7 +170,7 @@ function P.fromStoreLook(l, depth)
   elseif k == 'effects' then
     return type(l.play) == 'table' and #l.play > 0
       and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil, lootfx = l.lootfx == true or nil,
-        dissolve = P.dissolveOf(l) } or nil
+        footfx = l.footfx == true or nil, dissolve = P.dissolveOf(l) } or nil
   elseif k == 'nameplate' then
     return name(l.frame) and { kind = 'nameplate', frame = l.frame } or nil
   elseif k == 'swatch' then
@@ -646,10 +647,15 @@ P.EAST, P.WEST = 1, 3
 P.LOOT_AT = 1
 P.LOOT_BOX = { left = 0, top = 0, right = 32, bottom = 32 } -- the bag: one tile, in sprite px from its tile's top left
 
--- the scene of an effects option: {kill, loot, caster = {x, y} or nil, target = {x, y}}
+-- the scene of an effects option: {kill, loot, foot, caster = {x, y} or nil, target = {x, y}}
+-- Effect footprints (O649): the figure stands on (0, 0) facing south and the effect plays on its own tile, under it, as the
+-- map plays it on the tile a walker leaves; no troll, no bag.
 function P.sceneOf(opt)
   if type(opt) == 'table' and opt.killfx == true then
     return { kill = true, target = { x = 0, y = 0 } }
+  end
+  if type(opt) == 'table' and opt.footfx == true then
+    return { kill = false, foot = true, caster = { x = 0, y = 0 }, target = { x = 0, y = 0 } }
   end
   if type(opt) == 'table' and opt.lootfx == true then
     return { kill = false, loot = true, caster = { x = 0, y = 0 }, target = { x = P.LOOT_AT, y = 0 } }
@@ -666,6 +672,7 @@ P.TARGET_WORDS = { 'explosion', 'lightning', 'strike', 'impact', 'hit', 'punch',
 function P.landsOn(spec, hasMissile, scene)
   if type(spec) ~= 'table' then return 'target' end
   if spec.m then return 'missile' end
+  if type(scene) == 'table' and scene.foot then return 'caster' end
   if type(scene) == 'table' and (scene.kill or scene.loot or not scene.caster) then return 'target' end
   if hasMissile then return 'target' end
   local n = type(spec.n) == 'string' and spec.n:lower() or ''
@@ -1179,7 +1186,7 @@ function P.fromPlayRow(r)
   -- a kill effect plays on a troll that dies, a rare-loot effect over a loot bag beside the figure (O564: it showed the
   -- kill animation before); the others on the figure itself
   return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, lootfx = r.kind == 'rarefx' or nil,
-    dissolve = P.dissolveOf(r) }
+    footfx = r.kind == 'footprint' or nil, dissolve = P.dissolveOf(r) }
 end
 
 return P

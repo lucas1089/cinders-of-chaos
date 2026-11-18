@@ -429,9 +429,10 @@ function Preview:startFx(opt)
   local scene = P.sceneOf(opt)
   self.fx = { timeline = P.timeline(play, side, phasesOf, scene), holders = {}, started = g_clock.millis(),
     hasStock = hasStock, scene = scene, play = play, sizeOf = sizeOf }
-  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead)
+  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead) or an
+  -- effect footprint's
   local tw = targetWidget(self)
-  if tw and scene.loot then
+  if tw and (scene.loot or scene.foot) then
     tw:setVisible(false)
   elseif tw then
     pcall(tw.setOutfit, tw, { type = P.TROLL })
@@ -471,7 +472,7 @@ end
 -- the scene's extent (in tiles) with the boxes of its creatures
 function Preview:fxExtent()
   local fx = self.fx
-  local boxes = { target = fx.scene.loot and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
+  local boxes = { target = (fx.scene.loot or fx.scene.foot) and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
   if fx.scene.caster then boxes.caster = self.box end
   return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
@@ -572,7 +573,9 @@ local function holderFor(self, idx, item)
   local info = specInfo(spec)
   if not info then return nil end
   local st = self.widget.stage
-  local layer = (not spec.m and isGround(num(spec.id))) and st.fxUnder or st.fxOver
+  -- an effect footprint's effect lies under the figure whatever the ground list says (it is a mark on the floor)
+  local under = self.fx.scene.foot == true or isGround(num(spec.id))
+  local layer = (not spec.m and under) and st.fxUnder or st.fxOver
   local holder = g_ui.createWidget('UIWidget', layer)
   holder:setPhantom(true)
   holder:fill('parent')
@@ -770,7 +773,7 @@ function Preview:refresh()
       self:startFx(fxOpt)
       self.fx.compare = settings.compare
       -- a spell scene: the player faces the troll (a kill and a rare-loot scene: south)
-      if not self.fx.scene.kill and not self.fx.scene.loot then self.dir = P.EAST end
+      if not self.fx.scene.kill and not self.fx.scene.loot and not self.fx.scene.foot then self.dir = P.EAST end
     else
       if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell or rare-loot scene
       self:stopFx()

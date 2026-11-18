@@ -33,9 +33,10 @@
 --   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon) + play (spell skins and
 --                     kill effects: [{a = stock effect, b = the skin's}], each {id, dx, dy, ms, m, n}, K.playRows)]}      style {accent}  (the character's own label accent)
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
---                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse} | false}, full}  (footprints
---                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx)
---                     tryfx {kind, art, pulse}  (a preview the asking player's client draws on its own character)
+--                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse, e = {id, dx, dy, ms}} | false}, full}  (footprints
+--                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx; e: an effect footprint
+--                     of client pair 75 (O649), f is then its effect name and the client plays effect e[1] on the tile left)
+--                     tryfx {kind, art, pulse, e}  (a preview the asking player's client draws on its own character)
 --                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded,
 --                     and score = the collection score (collection.lua K.view: score, groups, next, milestones), when loaded
 --                     kdis {i = creature id, x, y, z, m = dissolve mode, t = tint (absent 0), o = {l = look type, h, b, g, f = colours,
@@ -194,7 +195,14 @@ local function broadcastLook(name, look)
 	end
 end
 
--- {f, o, p} of the chosen footprint / outline (nil when the character shows neither)
+-- the effect of an effect footprint (O649): {id, dx, dy, ms} from the same table the preview plays from, nil for a picture print
+local function footEffect(c)
+	return K.footEffect(c, function(kind, name)
+		return kind == "vfx" and ChaosVfx and ChaosVfx[name] or nil
+	end)
+end
+
+-- {f, o, p, e} of the chosen footprint / outline (nil when the character shows neither)
 local function lookOf(chosen, player)
 	local foot = chosen.footprint > 0 and owned(player, chosen.footprint)
 	local glow = chosen.outline > 0 and owned(player, chosen.outline)
@@ -203,14 +211,22 @@ local function lookOf(chosen, player)
 	if not foot and not glow then
 		return nil
 	end
-	return {f = foot and foot.art or nil, o = glow and glow.art or nil, p = glow and glow.pulse and 1 or nil}
+	local e = foot and footEffect(foot) or nil
+	if foot and foot.fx and not e then
+		foot = nil -- the effect is not known (the pair gate is off): no print rather than an empty name
+		if not glow then
+			return nil
+		end
+	end
+	return {f = foot and (foot.fx or foot.art) or nil, o = glow and glow.art or nil, p = glow and glow.pulse and 1 or nil, e = e}
 end
 
 local function sameLook(a, b)
 	if a == nil or b == nil then
 		return a == b
 	end
-	return a.f == b.f and a.o == b.o and a.p == b.p
+	local ea, eb = a.e or {}, b.e or {}
+	return a.f == b.f and a.o == b.o and a.p == b.p and ea[1] == eb[1] and ea[2] == eb[2] and ea[3] == eb[3]
 end
 
 -- rebuild the cache of a character from its storages (a choice that is not owned any more is dropped)
@@ -381,6 +397,7 @@ function M.sendState(player, open)
 		-- the effects the window's preview stage plays (client game_lookpreview): stock and skin ids per swap
 		local play = K.playRows(c, playLookup)
 		r.play = #play > 0 and play or nil
+		r.e = K.footEffect(c, playLookup) -- an effect footprint: the effect the Preview button plays on the walker (O649)
 	end
 	local l = K.index(cfg).lines[line or ""]
 	-- the Collection tab: the exclusives of every visual kind and how each is earned (exclusives.lua)
@@ -463,7 +480,11 @@ function M.preview(player, c)
 	lastPreview[pid] = t
 	if K.DRAWN[c.kind] then
 		-- footprints and outlines: the asking client draws it on its own character for a few seconds (game_cosmeticfx)
-		send(player, "tryfx", {kind = c.kind, art = c.art, pulse = c.pulse and 1 or nil})
+		local e = footEffect(c)
+		if c.fx and not e then
+			return false
+		end
+		send(player, "tryfx", {kind = c.kind, art = c.fx or c.art, pulse = c.pulse and 1 or nil, e = e})
 		return true
 	end
 	for i, e in ipairs(K.previewOf(c)) do

@@ -16,6 +16,11 @@
 --               An engine without the patch gets the old soft glow picture instead (a creature bottom widget; other
 --               modules' bottom widgets, game_levelwings, are left alone: ours is cleared only when it is the
 --               creature's only one, the engine's removeBottomWidget walks the wrong list, else blanked)
+--   effect footprints (O649, client pair 75) a footprint look that carries `e` = {id, dx, dy, ms} is drawn by playing that effect
+--               of the pair once on the tile the walker left (Effect.create + g_map.addThing, as game_levelwings and game_lootbeams
+--               play theirs), one a step, CF.FX_AT of the step time in; at most CF.FX_MAX_PER_CREATURE alive per walker and CF.FX_MAX
+--               on screen; the same viewer setting, protection zone rule and step rules as the pictures. The ids are registered as
+--               ground effects (base patch 0055) so they lie under the creatures
 -- The pictures (prints; glows for old engines): client/tools/gen_cosmeticfx_art.py. Rules: cosmeticfxlogic.lua
 -- (cosmeticfxlogic_test.lua).
 
@@ -82,6 +87,9 @@ function setSetting(key, value)
 end
 
 -- ---------------------------------------------------------------- footprints
+local fxLive = {}         -- effect footprints alive: {owner, untilMs} (CF.fxAdmit)
+local fxChecked = {}      -- effect id -> true | false: the client pair has it (a pair older than 75 does not)
+local fxGround = {}       -- effect id -> true: registered as a ground effect (drawn under the creatures)
 local hosts = {}          -- 'x,y,z' -> {widget, tile, n}: the container on a tile and how many marks it holds
 local parity = {}         -- creature id -> which foot comes next (0 left, 1 right)
 local lastStep = {}       -- creature id -> {ox, oy, nx, ny, z, t}: the same step is not marked twice
@@ -118,6 +126,7 @@ local function clearPrints()
   hosts = {}
   parity = {}
   lastStep = {}
+  fxLive = {}
 end
 
 local function inPz()
@@ -198,6 +207,47 @@ local function putMark(old, mk, rotation, art, owner, mode)
   prints[#prints + 1] = { widget = w, host = h, key = key, owner = owner, born = now(), alpha = mode.alpha }
 end
 
+-- ---------------------------------------------------------------- effect footprints (O649)
+-- the pair has this effect and the client can add one to a tile (checked once per id)
+local function hasEffect(id)
+  local c = fxChecked[id]
+  if c == nil then
+    c = false
+    if type(Effect) == 'table' and Effect.create and g_map and g_map.addThing and g_things then
+      local ok, valid = pcall(function()
+        if g_things.isValidDatId then return g_things.isValidDatId(id, ThingCategoryEffect) end
+        return g_things.getThingType(id, ThingCategoryEffect) ~= nil
+      end)
+      c = ok and valid and true or false
+    end
+    fxChecked[id] = c
+    if not c then g_logger.info('[cosmeticfx] the client pair has no effect ' .. tostring(id) .. ' (pair 75): no effect footprint') end
+  end
+  return c
+end
+
+-- the effect lies under the creatures (base patch 0055, the same call game_groundfx makes for its ids)
+local function setGround(id)
+  if fxGround[id] ~= nil then return end
+  fxGround[id] = false
+  if g_map and type(g_map.setGroundEffect) == 'function' then
+    fxGround[id] = pcall(g_map.setGroundEffect, id, true) and true or false
+  end
+end
+
+local function playEffect(old, e, owner)
+  if not hasEffect(e.id) then return end
+  local ok, live = CF.fxAdmit(fxLive, owner, now())
+  fxLive = live
+  if not ok then return end
+  local plan = CF.fxPlan(old, e, 0)
+  setGround(e.id)
+  local eff = Effect.create()
+  eff:setId(e.id)
+  g_map.addThing(eff, plan.pos, -1)
+  fxLive[#fxLive + 1] = { owner = owner, untilMs = now() + CF.fxLife(e) }
+end
+
 local function onStep(creature, newPos, oldPos)
   if not preview and next(looks) == nil then return end -- no cosmetic is active: every creature step ends here
   if not creature or not creature:isPlayer() or not g_game.isOnline() then return end
@@ -211,6 +261,17 @@ local function onStep(creature, newPos, oldPos)
   local stepMs = CF.stepTime(creature:getStepDuration())
   if CF.sameStep(lastStep[owner], oldPos, newPos, now(), stepMs) then return end
   lastStep[owner] = { ox = oldPos.x, oy = oldPos.y, nx = newPos.x, ny = newPos.y, z = newPos.z, t = now() }
+  if look.e then
+    -- an effect footprint: one effect on the tile left, as the walker leaves it (nothing if the walker stopped or was moved)
+    local old = { x = oldPos.x, y = oldPos.y, z = oldPos.z }
+    local goal = { x = newPos.x, y = newPos.y, z = newPos.z }
+    local plan = CF.fxPlan(old, look.e, stepMs)
+    scheduleEvent(safe('effect', function()
+      if creature:isRemoved() or not CF.stillWalking(creature:getPosition(), goal) then return end
+      playEffect(old, look.e, owner)
+    end), plan.delay)
+    return
+  end
   local mode = CF.MODES[CF.MODE]
   local dx, dy = newPos.x - oldPos.x, newPos.y - oldPos.y
   local ok, outfit = pcall(function() return creature:getOutfit() end)
@@ -363,10 +424,15 @@ function setLooks(msg)
   if handlers.sweepSafe then handlers.sweepSafe() end
 end
 
--- a preview on the local player: kind 'footprint' | 'outline', art, pulse (the store's SHOW, the window's Preview)
-function showPreview(kind, art, pulse)
+-- a preview on the local player: kind 'footprint' | 'outline', art, pulse (the store's SHOW, the window's Preview); e = the
+-- effect of an effect footprint ({id, dx, dy, ms}, O649), else nil
+function showPreview(kind, art, pulse, e)
   if not CF.validArt(art) then return end
   local look = kind == 'footprint' and { f = art } or { o = art, p = pulse and true or nil }
+  if kind == 'footprint' and e ~= nil then
+    look.e = CF.cleanEffect(e)
+    if not look.e then return end
+  end
   preview = { look = look, untilMs = now() + CF.PREVIEW_MS }
   if handlers.sweepSafe then handlers.sweepSafe() end
 end
@@ -389,6 +455,12 @@ end
 
 function getLooks()
   return looks
+end
+
+-- game_cosmetics (the window): lay an effect of a footprint row under the creatures before it is drawn (a no-op without the patch)
+function registerGround(id)
+  id = tonumber(id)
+  if id and id >= 1 then setGround(id) end
 end
 
 -- an outline on any creature (game_cosmetics: the window's sample, a widget's own creature); false when this engine
@@ -437,4 +509,8 @@ function terminate()
   held = {}
   clearPrints()
   clearGlows()
+  for id, on in pairs(fxGround) do
+    if on and g_map and type(g_map.setGroundEffect) == 'function' then pcall(g_map.setGroundEffect, id, false) end
+  end
+  fxGround = {}
 end

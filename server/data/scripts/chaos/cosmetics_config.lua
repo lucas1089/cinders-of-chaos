@@ -390,6 +390,51 @@ local config = {
 			color = "#ffd040", name = "Gilded Steps", desc = "Golden prints that sparkle a moment."},
 		{id = 409, key = "foot_spark", kind = "footprint", icon = 7759, source = "store", price = 200, art = "spark",
 			color = "#a8e4ff", name = "Storm Sparks", desc = "Crackling sparks jump from every step."},
+
+		-- O649, client pair 75: twenty footprints drawn as effects of the pair instead of pictures (`fx` = a name of
+		-- data/lib/chaos_footprint_fx_ids.lua; client game_cosmeticfx plays it once on the tile the walker leaves, for every viewer).
+		-- `pair = 75`: the entry exists only while config.lua chaosClientPair is 75 or more (the filter at the end of this file),
+		-- so an older client is never offered one. Store 200 like the other footprints (owner 2026-11-18: "pode importar todos").
+		{id = 410, key = "foot_heart", kind = "footprint", icon = 18415, source = "store", price = 200, pair = 75, fx = "fp_heart",
+			color = "#e04060", name = "Lovestruck Steps", desc = "A heart beats on every tile you leave."},
+		{id = 411, key = "foot_note_violet", kind = "footprint", icon = 2150, source = "store", price = 200, pair = 75, fx = "fp_note_purple",
+			color = "#a070e0", name = "Violet Melody", desc = "A violet note rings out on every tile you leave."},
+		{id = 412, key = "foot_note_silver", kind = "footprint", icon = 2146, source = "store", price = 200, pair = 75, fx = "fp_note_white",
+			color = "#d8e0e8", name = "Silver Melody", desc = "A silver note rings out on every tile you leave."},
+		{id = 413, key = "foot_shrine_flame", kind = "footprint", icon = 2187, source = "store", price = 200, pair = 75, fx = "fp_shrine_fire",
+			color = "#ff8a3a", name = "Shrine Flame", desc = "A small shrine flame lights on every tile you leave."},
+		{id = 414, key = "foot_ghost", kind = "footprint", icon = 2149, source = "store", price = 200, pair = 75, fx = "fp_ghost",
+			color = "#8fd8a0", name = "Wandering Ghost", desc = "A ghost drifts up from every tile you leave."},
+		{id = 415, key = "foot_bleeding", kind = "footprint", icon = 9020, source = "store", price = 200, pair = 75, fx = "fp_bleeding",
+			color = "#c83030", name = "Bleeding Steps", desc = "Every tile you leave bleeds."},
+		{id = 416, key = "foot_death", kind = "footprint", icon = 2229, source = "store", price = 200, pair = 75, fx = "fp_death",
+			color = "#9a949c", name = "Death's Mark", desc = "A mark of death is left where you stood."},
+		{id = 417, key = "foot_void_steps", kind = "footprint", icon = 2153, source = "store", price = 200, pair = 75, fx = "fp_void_steps",
+			color = "#8a50d0", name = "Void Steps", desc = "The void opens under every step you take."},
+		{id = 418, key = "foot_dice", kind = "footprint", icon = 2154, source = "store", price = 200, pair = 75, fx = "fp_dice",
+			color = "#f0a040", name = "Lucky Dice", desc = "Dice tumble on every tile you leave."},
+		{id = 419, key = "foot_rainbow", kind = "footprint", icon = 7759, source = "store", price = 200, pair = 75, fx = "fp_rainbow",
+			color = "#f0e8ff", name = "Rainbow Road", desc = "A rainbow arcs over every tile you leave."},
+		{id = 420, key = "foot_fairy", kind = "footprint", icon = 2150, source = "store", price = 200, pair = 75, fx = "fp_fairy",
+			color = "#c8a0f0", name = "Fairy Dust", desc = "Fairy dust glitters on every tile you leave."},
+		{id = 421, key = "foot_smoke", kind = "footprint", icon = 2229, source = "store", price = 200, pair = 75, fx = "fp_smoke",
+			color = "#a8a8b0", name = "Smoke Trail", desc = "A puff of smoke rises from every tile you leave."},
+		{id = 422, key = "foot_ice_patch", kind = "footprint", icon = 2274, source = "store", price = 200, pair = 75, fx = "fp_ice",
+			color = "#80d8f0", name = "Ice Patch", desc = "A patch of ice spreads on every tile you leave."},
+		{id = 423, key = "foot_angel", kind = "footprint", icon = 2154, source = "store", price = 200, pair = 75, fx = "fp_shrine_angel",
+			color = "#ffc060", name = "Angel's Rest", desc = "A hallowed glow marks every tile you leave."},
+		{id = 424, key = "foot_void_skulls", kind = "footprint", icon = 2153, source = "store", price = 200, pair = 75, fx = "fp_void_skull",
+			color = "#7040b0", name = "Void Skulls", desc = "A skull of the void flickers on every tile you leave."},
+		{id = 425, key = "foot_toxic", kind = "footprint", icon = 2149, source = "store", price = 200, pair = 75, fx = "fp_poison",
+			color = "#70d040", name = "Toxic Puddles", desc = "Poison pools on every tile you leave."},
+		{id = 426, key = "foot_holy_rain", kind = "footprint", icon = 2154, source = "store", price = 200, pair = 75, fx = "fp_holy_rain",
+			color = "#ffd070", name = "Holy Rain", desc = "Holy light rains down on every tile you leave."},
+		{id = 427, key = "foot_pentagram", kind = "footprint", icon = 2156, source = "store", price = 200, pair = 75, fx = "fp_pentagram",
+			color = "#d04040", name = "Pentagram Seals", desc = "A pentagram seals every tile you leave."},
+		{id = 428, key = "foot_overgrowth", kind = "footprint", icon = 18415, source = "store", price = 200, pair = 75, fx = "fp_plants",
+			color = "#c8c040", name = "Overgrowth", desc = "Plants sprout on every tile you leave."},
+		{id = 429, key = "foot_coin_trail", kind = "footprint", icon = 2154, source = "store", price = 200, pair = 75, fx = "fp_coin",
+			color = "#ffd040", name = "Coin Trail", desc = "Gold coins spin on every tile you leave."},
 		-- never sold: an achievement, the reward track and boss drops (exclusives_config.lua)
 		{id = 451, key = "foot_hunter", kind = "footprint", icon = 2392, source = "achievement", achievement = "bounty_week_10",
 			art = "hunter", color = "#c89060", name = "Hunter's Tracks", desc = "Paw-and-claw tracks of a bounty hunter. Achievement: Never Off Duty."},
@@ -576,19 +621,32 @@ local config = {
 	}
 }
 
--- O597: a cosmetic with `pair = N` needs client pair N (config.lua chaosClientPair, read by data/lib/chaos_status_vfx_ids.lua
--- `on`; a test sets ChaosStatusVfxIds.on before it loads this file). Below it the entry is not in the list: no store
--- offer, no window row, nothing to select.
+-- A cosmetic with `pair = N` needs client pair N (config.lua chaosClientPair): the entry is not in the list below it, so no
+-- store offer, no window row, nothing to select. O597: pair 73 is read by data/lib/chaos_status_vfx_ids.lua `on`; O649: pair 75
+-- (the effect footprints) by data/lib/chaos_footprint_fx_ids.lua `on`. A test sets `on` on the table before it loads this file.
 do
-	local ids = ChaosStatusVfxIds
-	if not ids then
-		local ok, v = pcall(dofile, "data/lib/chaos_status_vfx_ids.lua")
-		ids = ok and v or nil
+	local function gate(name, path)
+		local ids = _G[name]
+		if not ids then
+			local ok, v = pcall(dofile, path)
+			ids = ok and v or nil
+		end
+		return type(ids) == "table" and ids or nil
 	end
-	local on = type(ids) == "table" and ids.on == true
+	local gates = {gate("ChaosStatusVfxIds", "data/lib/chaos_status_vfx_ids.lua"),
+		gate("ChaosFootprintFxIds", "data/lib/chaos_footprint_fx_ids.lua")}
+	local function open(pair)
+		for _, g in ipairs(gates) do
+			if g.on == true and g.PAIR == pair then
+				return true
+			end
+		end
+		return false
+	end
+	local on = type(gates[1]) == "table" and gates[1].on == true
 	local keep = {}
 	for _, c in ipairs(config.cosmetics) do
-		if not c.pair or (on and ids.PAIR >= c.pair) then
+		if not c.pair or open(c.pair) then
 			keep[#keep + 1] = c
 		end
 	end
@@ -597,7 +655,7 @@ do
 	local pairModes = {melt = 73, sink = 73, bones = 73, vapour = 73, stone = 73}
 	local modes = {}
 	for _, m in ipairs(config.dissolve.modes) do
-		if not pairModes[m] or (on and ids.PAIR >= pairModes[m]) then
+		if not pairModes[m] or (on and gates[1].PAIR >= pairModes[m]) then
 			modes[#modes + 1] = m
 		end
 	end

@@ -243,6 +243,9 @@ function C.playOf(c)
 	end
 	if C.VFX_KINDS[c.kind] then
 		return type(c.vfx) == "string" and {{type = "vfx", to = c.vfx}} or {}
+	elseif c.kind == "footprint" and type(c.fx) == "string" then
+		-- an effect footprint (O649): the effect the clients play on the tile the walker leaves
+		return {{type = "vfx", to = c.fx}}
 	elseif c.kind ~= "spellskin" then
 		return {}
 	end
@@ -290,6 +293,20 @@ function C.playRows(c, lookup)
 		end
 	end
 	return out
+end
+
+-- The effect an effect footprint (O649, `fx` = a chaos_vfx.lua name of client pair 75) plays on the tile the walker leaves:
+-- {id, dx, dy, ms} (the client draws the bottom-right tile of the effect on the tile + dx, dy; ms = its whole play), or nil
+-- for any other cosmetic or a name the server does not know (the gate is off). lookup(type, name) is the one of C.playRows.
+function C.footEffect(c, lookup)
+	if type(c) ~= "table" or c.kind ~= "footprint" or type(c.fx) ~= "string" or not lookup then
+		return nil
+	end
+	local e = lookup("vfx", c.fx)
+	if type(e) ~= "table" or type(e.id) ~= "number" then
+		return nil
+	end
+	return {e.id, e.dx or 0, e.dy or 0, e.ms or 0}
 end
 
 -- ---------------------------------------------------------------- combat cosmetics others see (O318)
@@ -548,6 +565,7 @@ end
 -- What the store shows for a cosmetic unlock "cosmetic_<key>": its own appearance, in the shape of the client's look
 -- options (client game_lookpreview LookPreviewCore), used for the offer's icon and the preview beside the list:
 --   outline    {kind = "outline", art, pulse?, color?}            footprint {kind = "footprint", art, color?}
+--   effect footprint (O649)  {kind = "effects", play, footfx = true}
 --   spell skin / kill effect / rare-loot effect  {kind = "effects", play, killfx?, lootfx?}   (play: playRows, the effects)
 --   chat colour / loot label  {kind = "swatch", color, accent?}   (a sample of the colour; nothing to wear)
 --   outfit shader             {kind = "shader", shader}
@@ -557,6 +575,10 @@ function C.offerLook(cfg, unlockName, lookup)
 	if c then
 		if c.kind == "outline" then
 			return {kind = "outline", art = c.art, pulse = c.pulse or nil, color = c.color}
+		elseif c.kind == "footprint" and c.fx then
+			-- an effect footprint (O649): the effect plays on the figure's own tile (client game_lookpreview `footfx`)
+			local play = lookup and C.playRows(c, lookup) or {}
+			return #play > 0 and {kind = "effects", play = play, footfx = true} or nil
 		elseif c.kind == "footprint" then
 			return {kind = "footprint", art = c.art, color = c.color}
 		elseif c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
@@ -979,18 +1001,37 @@ function C.validate(cfg, opts)
 					bad("%s: %s is not readable in the console (contrast %.2f)", w, c.color, ratio)
 				end
 			end		elseif C.DRAWN[c.kind] then
-			-- footprints and outlines: an art key of the client's pictures (cfg.prints / cfg.glows), one per cosmetic
+			-- footprints and outlines: an art key of the client's pictures (cfg.prints / cfg.glows), one per cosmetic. An
+			-- effect footprint (O649, footprints only) names a chaos_vfx.lua effect of client pair 75 instead, `fx`, and needs
+			-- that pair: no picture, so no art
 			local list = cfg[C.DRAWN[c.kind]] or {}
 			local known = false
 			for _, a in ipairs(list) do
 				known = known or a == c.art
 			end
-			if type(c.art) ~= "string" or not known then
-				bad("%s: art %s is not in cfg.%s", w, tostring(c.art), C.DRAWN[c.kind])
-			elseif arts[c.kind .. ":" .. c.art] then
-				bad("%s: art %s used by %s too", w, c.art, arts[c.kind .. ":" .. c.art])
+			if c.fx ~= nil then
+				if c.kind ~= "footprint" then
+					bad("%s: fx is only for footprints", w)
+				elseif type(c.fx) ~= "string" or not c.fx:match("^[%w_]+$") or #c.fx > 24 then
+					bad("%s: fx is a name of letters, digits and _ (24 at most)", w)
+				elseif c.art ~= nil then
+					bad("%s: an effect footprint has no art", w)
+				elseif type(c.pair) ~= "number" then
+					bad("%s: an effect footprint needs `pair` (the client pair that has the effect)", w)
+				elseif opts.catalog and opts.catalog.vfx and not opts.catalog.vfx[c.fx] then
+					bad("%s: fx %s is not an effect of the client pair", w, c.fx)
+				elseif arts["fx:" .. c.fx] then
+					bad("%s: fx %s used by %s too", w, c.fx, arts["fx:" .. c.fx])
+				end
+				arts["fx:" .. tostring(c.fx)] = c.key
+			else
+				if type(c.art) ~= "string" or not known then
+					bad("%s: art %s is not in cfg.%s", w, tostring(c.art), C.DRAWN[c.kind])
+				elseif arts[c.kind .. ":" .. c.art] then
+					bad("%s: art %s used by %s too", w, c.art, arts[c.kind .. ":" .. c.art])
+				end
+				arts[c.kind .. ":" .. tostring(c.art)] = c.key
 			end
-			arts[c.kind .. ":" .. tostring(c.art)] = c.key
 			if not hex(c.color) or #c.color ~= 7 then
 				bad("%s: color #RRGGBB (the window's swatch)", w)
 			end

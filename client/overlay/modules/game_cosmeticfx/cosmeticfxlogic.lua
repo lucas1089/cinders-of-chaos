@@ -42,16 +42,41 @@ CF.MODE = 'feet'          -- the mode in use (the owner chooses from the mock-up
 
 CF.DEFAULTS = { othersFootprints = true, othersOutlines = true }
 
+-- effect footprints (O649, client pair 75): a footprint look that carries `e` = {id, dx, dy, ms} (a dat effect of the pair) is
+-- drawn by playing that effect once on the tile the walker left, not by a picture. One effect a step, client side only.
+CF.FX_AT = 0.3               -- it starts this share of the step time in: the walker is leaving the tile
+CF.FX_MAX_PER_CREATURE = 3   -- effects of one walker alive at once (a fast walker's trail still has its tail)
+CF.FX_MAX = 48               -- and of every walker on screen
+CF.FX_SLACK_MS = 300         -- an effect counts as alive this long past its play
+CF.FX_LIFE_MIN, CF.FX_LIFE_MAX = 400, 4000
+CF.FX_ID_MAX = 65535
+
 -- ---------------------------------------------------------------- looks
 local function validArt(s)
   return type(s) == 'string' and s:match('^[%w_]+$') ~= nil and #s <= 24
 end
 CF.validArt = validArt
 
--- one look from the server: {f = print art, o = glow art, p = 1 pulse}; nil when it carries nothing valid
+-- the effect of a look: {id, dx, dy, ms} from the server -> { id, dx, dy, ms } (whole numbers, dx and dy 0..4: the tiles past the
+-- tile the effect is added on), or nil when it is not one
+function CF.cleanEffect(v)
+  if type(v) ~= 'table' then return nil end
+  local id, dx, dy, ms = tonumber(v[1]), tonumber(v[2]) or 0, tonumber(v[3]) or 0, tonumber(v[4]) or 0
+  if not id or id < 1 or id > CF.FX_ID_MAX or id % 1 ~= 0 then return nil end
+  if dx % 1 ~= 0 or dy % 1 ~= 0 or dx < 0 or dx > 4 or dy < 0 or dy > 4 then return nil end
+  return { id = id, dx = dx, dy = dy, ms = math.max(0, math.min(CF.FX_LIFE_MAX, ms)) }
+end
+
+-- one look from the server: {f = print art, o = glow art, p = 1 pulse, e = {id, dx, dy, ms}}; nil when it carries nothing valid.
+-- An effect footprint (e) is kept whole or not at all: a bad effect leaves no print (the name has no picture)
 function CF.cleanLook(v)
   if type(v) ~= 'table' then return nil end
   local out = { f = validArt(v.f) and v.f or nil, o = validArt(v.o) and v.o or nil, p = (v.p == 1 or v.p == true) or nil }
+  if v.e ~= nil then
+    out.e = CF.cleanEffect(v.e)
+    if not out.e then out.f = nil end
+  end
+  if not out.f then out.e = nil end
   if not out.f and not out.o then return nil end
   if not out.o then out.p = nil end
   return out
@@ -181,6 +206,33 @@ end
 function CF.stillWalking(cur, newPos)
   if type(cur) ~= 'table' or type(newPos) ~= 'table' or cur.z ~= newPos.z then return false end
   return math.abs(cur.x - newPos.x) <= 1 and math.abs(cur.y - newPos.y) <= 1
+end
+
+-- ---------------------------------------------------------------- effect footprints (O649)
+-- where and when an effect footprint plays: on the tile the walker left, moved by the effect's own send offset (the bottom
+-- right tile of an effect is drawn on the tile it is added on), `delay` ms after the step starts
+function CF.fxPlan(oldPos, e, stepMs)
+  if type(oldPos) ~= 'table' or type(e) ~= 'table' then return nil end
+  return { pos = { x = oldPos.x + e.dx, y = oldPos.y + e.dy, z = oldPos.z }, delay = math.floor(CF.FX_AT * (stepMs or 300)) }
+end
+
+-- how long an effect counts as alive (ms): its play and a little more, within the limits
+function CF.fxLife(e)
+  return math.max(CF.FX_LIFE_MIN, math.min(CF.FX_LIFE_MAX, ((type(e) == 'table' and e.ms) or 0) + CF.FX_SLACK_MS))
+end
+
+-- active = list of {owner, untilMs}. Returns the list without what is over at `now`, and whether one more effect of `owner`
+-- may start (at most FX_MAX_PER_CREATURE of its own and FX_MAX on screen; the effects play out by themselves, so a refused
+-- step just leaves no effect)
+function CF.fxAdmit(active, owner, now)
+  local live, mine = {}, 0
+  for _, a in ipairs(active or {}) do
+    if a.untilMs > now then
+      live[#live + 1] = a
+      if a.owner == owner then mine = mine + 1 end
+    end
+  end
+  return mine < CF.FX_MAX_PER_CREATURE and #live < CF.FX_MAX, live
 end
 
 -- ---------------------------------------------------------------- feet and marks (O499)

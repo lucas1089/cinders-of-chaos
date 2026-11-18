@@ -153,6 +153,9 @@ jobs:
           # animated decor flames from pixelfx (O623, joins pair 74): table, sums, manifest, strips held to the bar and to style_check (the raw render is never in git); the test fits a synthetic sheet and builds / checks a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames_test.py
+          # the 20 footprint effects of the footprint source (O649, joins pair 75): table, sums, ids file (the art is never in git); the test treats synthetic frames and builds / checks a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_footprint_fx.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_footprint_fx_test.py
           # pair 41: pair 36's projectile missiles redrawn from the native 32 px renders and three appended: spec, sources
           # and sums agree, ids 251-253 (the pack art is never in git); the test uses synthetic images
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack41_missiles.py build --check
