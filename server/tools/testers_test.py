@@ -1311,6 +1311,35 @@ eq([s['words'] for s in T.class_spells([{'words': 'a', 'name': 'a', 'group': 'su
                                        {'words': 'c', 'name': 'c', 'group': 'support', 'level': 500, 'needlearn': False, 'params': False, 'vocations': set()}],
                                       {}, 'Knight', 60)['all']], ['a'], 'class_spells: `all` holds the class\'s spells at the level (a spell of every vocation too)')
 
+# ---------------------------------------------------------------- O657: a tool used on a thing of the map, the mount button
+class _RB:
+    """the part of a TesterBot the two IO calls use: the socket, the text lines, the state"""
+    def __init__(self):
+        self.conn, self.alive, self.died = _WConn(), True, False
+        self.recent, self.recent_n = [], 0
+
+
+_rb = _RB()
+_rio = T.CheckIO(_rb, {'stop': False})
+asyncio.sleep = _no_sleep
+try:
+    _texts = asyncio.run(_rio.use_item_with(5908, {'x': 100, 'y': 101, 'z': 7}, 2300, 2, 0.1))
+    eq(_rb.conn.out[-1], TC.use_with_packet((0xFFFF, 0, 0), 5908, 0, (100, 101, 7), 2300, 2), 'a tool on the map: the use-with packet from the hotkey place')
+    eq(_rb.conn.out[-1][:1], b'\x83', 'the use-with packet is 0x83')
+    eq(_texts, [], 'no text line, no answer')
+    eq(asyncio.run(_rio.use_item_with(0, {'x': 1, 'y': 1, 'z': 7}, 1, 0)), [], 'no tool, nothing is sent')
+    eq(len(_rb.conn.out), 1, 'nothing was sent for it')
+    eq(asyncio.run(_rio.use_item_with(5908, None, 1, 0)), [], 'no target place, nothing is sent')
+    asyncio.run(_rio.toggle_mount(True, 0.1))
+    eq(_rb.conn.out[-1], b'\xD4\x01', 'the mount button: mount')
+    asyncio.run(_rio.toggle_mount(False, 0.1))
+    eq(_rb.conn.out[-1], b'\xD4\x00', 'the mount button: dismount')
+    _rb.alive = False
+    eq(asyncio.run(_rio.toggle_mount(True, 0.1)), [], 'a bot that is gone sends nothing')
+    eq(len(_rb.conn.out), 3, 'nothing more was sent')
+finally:
+    asyncio.sleep = _real_sleep
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

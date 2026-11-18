@@ -847,7 +847,57 @@ function H.parseAscend(arg)
 end
 
 function H.parseGather(arg)
-	return parseWords(arg, "gather", {"state", "path"})
+	return parseWords(arg, "gather", {"state", "path", "corpse", "water"})
+end
+
+-- O657: the exercise dummy, the mount and the kill task as a person sees them.
+--   !tester dummy [state | path | give | clear]   the exercise weapon the bot carries, the nearest training dummy, the skill the weapon trains and its tries;
+--                                                 `give` is the TEST ONLY exercise weapon of the class (a tester only, logged), `clear` takes it again,
+--                                                 `path` the way on foot next to the dummy
+--   !tester mount [state | give | clear]          whether the bot is mounted, its speed, the mounts it owns; `give` is a TEST ONLY mount (a tester only, logged)
+--                                                 with the first free one as the current mount, `clear` dismounts and takes it back
+--   !tester task [state | where NAME | path]      the kill tasks of the Bestiary held (progress), the monster to hunt, the nearest living one, the hunt mark,
+--                                                 the way on foot to the guide's goal (the parser is the bounty board's)
+H.COMMANDS.dummy = true
+H.COMMANDS.mount = true
+H.COMMANDS.task = true
+
+function H.parseDummy(arg)
+	return parseWords(arg, "dummy", {"state", "path", "give", "clear"})
+end
+
+function H.parseMount(arg)
+	return parseWords(arg, "mount", {"state", "give", "clear"})
+end
+
+function H.parseTask(arg)
+	local what, usage = H.parseBounty(arg)
+	if not what then
+		return nil, (usage:gsub("^usage: bounty", "usage: task"))
+	end
+	return what
+end
+
+-- the cheapest mount of the store a free account may wear (shop_cosmetics.lua, generated from mounts.xml): {id, name} or nil
+function H.pickMount(mounts)
+	local best
+	local list = type(mounts) == "table" and mounts or {}
+	for _, m in ipairs(list) do
+		if type(m) == "table" and tonumber(m.id) and not m.premium then
+			local cost, bestCost = tonumber(m.cost) or 0, best and (tonumber(best.cost) or 0) or 0
+			if not best or cost < bestCost or (cost == bestCost and m.id < best.id) then
+				best = m
+			end
+		end
+	end
+	if not best then
+		for _, m in ipairs(list) do
+			if type(m) == "table" and tonumber(m.id) and (not best or m.id < best.id) then
+				best = m
+			end
+		end
+	end
+	return best and {id = best.id, name = tostring(best.name or ""):sub(1, 30)} or nil
 end
 
 -- a value cut down for a text line: scalars only, strings at most 90 characters, tables up to `depth` levels and 12 rows a list

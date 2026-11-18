@@ -6593,6 +6593,601 @@ async def check_gather_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ O657: what O655 left
+# The stash moved by the item-position packet, the exercise dummy, the mount, the knife on a corpse, the rod on water and the kill counts of a base
+# kill task. Each is a thing a person does with an item or a tool: the bot sends the packets the client sends (an item dragged onto the stash window
+# is the window's own `Stash` request with the item's place in the backpack, a tool used on a thing on the map is the use-with packet 0x83 from the
+# hotkey place, the mount button is 0xD4) and reads what the server shows. TEST ONLY grants (an exercise weapon, a mount) go through the helper and
+# are taken back. A check that cannot play a step says why (SKIP): a corpse is only there after a kill, water only near some hunts.
+TOOL_KNIFE, TOOL_ROD = 5908, 2580   # professions_config.lua broker.tools: the obsidian knife, the fishing rod
+STASH_WAIT = 2.5       # seconds a stash request collects its answers
+DUMMY_RUN = 6.0        # seconds the weapon trains on the dummy (a charge every 0.75 s) before the look
+MOUNT_WAIT = 2.5       # seconds from the mount toggle to the look (the server answers within a tick)
+FLAY_WAIT = 90.0       # seconds the bot waits at its hunt for a fresh corpse of its own kills
+FLAY_CHANNEL = 8.0     # seconds from the use of the knife to the experience (the channel is 2.5 s)
+ANGLE_CASTS = 6        # casts of the rod at most (the Angling roll is once every 3 s)
+ANGLE_PAUSE = 3.3      # seconds between two casts
+TASK_BUDGET = 420.0    # seconds a kill task is hunted at most
+TASK_KILLS = 3         # kills of the task's monster the counters must show for a pass
+TASK_TRIES = 3         # offers tried until one has a hunt that is known
+
+
+async def to_temple(io, r, fallbacks):
+    """on foot to the temple (the helper's teleport is the counted fallback); None, or the reason the check cannot go on"""
+    how, got, note = await walk_to_place(io, r, 'temple')
+    if how not in ('foot', 'helper'):
+        return how[:110]
+    if note:
+        fallbacks.append(note)
+    await io.sleep(SETTLE)
+    return None
+
+
+# ---- the stash: an item dragged onto the window and taken out again
+def stash_items(msgs):
+    """the entries of every `addItems` message of the stash window ({'make': 'addItems', 'items': [{id, count, row?, sprite ...}]})"""
+    out = []
+    for m in msgs or []:
+        d = m.get('data') if isinstance(m, dict) else None
+        if isinstance(d, dict) and d.get('make') == 'addItems':
+            out.extend(i for i in d.get('items') or [] if isinstance(i, dict))
+    return out
+
+
+def stash_units(msgs, item_id):
+    """(units, rows) of one item type in a list the window sent: the sum of the counts, and the row ids of the stored whole items; None when the
+    window sent no list at all"""
+    if not any(isinstance(m, dict) and isinstance(m.get('data'), dict) and m['data'].get('make') == 'addItems' for m in msgs or []):
+        return None, []
+    ents = [i for i in stash_items(msgs) if i.get('id') == item_id]
+    return sum(int(i.get('count') or 0) for i in ents), [i['row'] for i in ents if i.get('row') is not None]
+
+
+def stash_closed(msgs):
+    """the reason the window gave for refusing a deposit (`access`, or the tab list's canDeposit / depositWhy), or None"""
+    for m in msgs or []:
+        d = m.get('data') if isinstance(m, dict) else None
+        if not isinstance(d, dict):
+            continue
+        if d.get('make') == 'access' and d.get('canDeposit') is False:
+            return 'the window sent access canDeposit false'
+        if d.get('make') == 'tabs' and d.get('canDeposit') is False:
+            return 'deposits are closed here (%s)' % (d.get('depositWhy') or 'no reason given')
+    return None
+
+
+def stash_move_verdict(t):
+    """(status, text) from the trace {'name', 'units0', 'units1', 'units2' (stash units of the item before, after the deposit, after the withdrawal;
+    None: no list), 'closed' (the window's reason for refusing), 'back' (True / False / None: the backpack holds it again), 'row' (stored whole item)}"""
+    if t.get('units0') is None or t.get('units1') is None:
+        return SKIP, 'the stash sent no item list (%s)' % t.get('closed') if t.get('closed') else 'the stash sent no item list'
+    if t['units1'] != t['units0'] + 1:
+        if t.get('closed'):
+            return SKIP, 'the stash takes no deposit here: %s' % t['closed']
+        return FAIL, 'dragged %s from the backpack onto the stash and it lists %s unit(s), it listed %s before: expected one more' % (
+            t.get('name'), t['units1'], t['units0'])
+    if t.get('units2') is None:
+        return FAIL, 'asked for %s back and the stash sent no list: it stays in the stash' % t.get('name')
+    if t['units2'] != t['units0']:
+        return FAIL, 'took %s out of the stash and it lists %s unit(s), it listed %s before the deposit' % (t.get('name'), t['units2'], t['units0'])
+    if t.get('back') is False:
+        return FAIL, 'took %s out of the stash and the backpack does not hold it: the stash lost it' % t.get('name')
+    how = 'a stored item' if t.get('row') is not None else 'a stack'
+    return PASS, 'deposited %s (%s) and took it out again: the stash went %s -> %s -> %s%s' % (
+        t.get('name'), how, t['units0'], t['units1'], t['units2'], ', the backpack holds it' if t.get('back') else '')
+
+
+async def stash_read(io):
+    return await io.collect('stash', 'Stash', [{'make': 'SendItems'}], STASH_WAIT)
+
+
+async def check_stash_move(io, name, cls, level):
+    """a plain piece of the class kit (a TEST ONLY grant of the helper that goes back where it came from) dragged from the backpack onto the stash in
+    the temple and taken out again: the stash lists one more, then one less; the backpack holds it again"""
+    key = 'stash_move'
+    gave = await io.helper('give item', 'give', HELPER_WAIT)
+    if not isinstance(gave, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester give (old helper file)')
+    if gave.get('err'):
+        return Result(key, name, cls, SKIP, str(gave['err'])[:80])
+    item_id, cid, index = gave.get('id'), gave.get('clientId'), gave.get('index')
+    if not (item_id and cid and index is not None):
+        return Result(key, name, cls, SKIP, 'the helper named no item or slot')
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    t = {'name': 'item %s' % item_id, 'units0': None, 'units1': None, 'units2': None, 'closed': None, 'back': None, 'row': None}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await to_temple(io, r, fallbacks)
+        if why:
+            return Result(key, name, cls, SKIP, why, fallbacks)
+        await io.open_bag(gave.get('bagClientId'))
+        await io.sleep(1.0)
+        t['units0'], rows0 = stash_units(await stash_read(io), item_id)
+        dep = await io.collect('stash', 'Stash', [{'make': 'Stash', 'Pos': {'x': 65535, 'y': 64, 'z': int(index), 'stackpos': int(index)},
+                                                   'ItemId': int(cid), 'Count': 1, 'UpdateList': True}], STASH_WAIT)
+        t['closed'] = stash_closed(dep)
+        t['units1'], rows1 = stash_units(await stash_read(io), item_id)
+        new = [x for x in rows1 if x not in rows0]
+        t['row'] = new[0] if new else None
+        if t['units0'] is None or t['units1'] != t['units0'] + 1:
+            status, text = stash_move_verdict(t)
+            return Result(key, name, cls, status, text, fallbacks)
+        ask = {'make': 'Redeem', 'row': new[0]} if new else {'make': 'Redeem', 'item': int(item_id), 'count': 1}
+        await io.collect('stash', 'Stash', [ask], STASH_WAIT)
+        t['units2'], _ = stash_units(await stash_read(io), item_id)
+        bag = await io.helper('bag', 'bag', ANSWER)
+        if isinstance(bag, dict) and not bag.get('err'):
+            rows = bag.get('rows') or []
+            if any(x.get('id') == item_id for x in rows):
+                t['back'] = True
+            elif len(rows) >= int(bag.get('used') or 0):   # the report holds every row: the item is not there
+                t['back'] = False
+        status, text = stash_move_verdict(t)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ---- the exercise dummy: the weapon on the dummy, the skill tries rise
+def dummy_verdict(a, b):
+    """(status, text) from the state before (a) and after (b) the use of the exercise weapon on the dummy"""
+    if not isinstance(b, dict):
+        return SKIP, 'no look after the use of the weapon'
+    w0, w1 = a.get('weapon') or {}, b.get('weapon') or {}
+    s0, s1 = a.get('skill') or {}, b.get('skill') or {}
+    spent = int(w0.get('charges') or 0) - (int(w1.get('charges') or 0) if w1 else 0)
+    rose = (int(s1.get('level') or 0), int(s1.get('tries') or 0)) > (int(s0.get('level') or 0), int(s0.get('tries') or 0))
+    skill = s0.get('skill') or 'the skill'
+    if spent > 0 and rose:
+        return PASS, 'the %s weapon on a %s dummy: %d charge(s) spent, %s level %s tries %s -> level %s tries %s' % (
+            w0.get('kind'), (a.get('dummy') or {}).get('kind'), spent, skill, s0.get('level'), s0.get('tries'), s1.get('level'), s1.get('tries'))
+    if spent > 0:
+        return FAIL, 'the exercise weapon spent %d charge(s) on the dummy and %s did not rise (level %s, tries %s)' % (spent, skill, s1.get('level'), s1.get('tries'))
+    if rose:
+        return FAIL, '%s rose (tries %s -> %s) and the weapon spent no charge' % (skill, s0.get('tries'), s1.get('tries'))
+    return SKIP, 'the use of the weapon on the dummy started no training (the chain %s)' % ('runs' if b.get('training') else 'did not start')
+
+
+async def check_dummy_train(io, name, cls, level):
+    """the exercise weapon (a TEST ONLY grant of the class's lowest one) used on the nearest training dummy in a protection zone: charges fall, the skill tries rise"""
+    key = 'dummy_train'
+    a = await io.helper('dummy state', 'dummy', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester dummy (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if a.get('locked'):
+        return Result(key, name, cls, SKIP, 'the class is locked: nothing is trained')
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    granted = used = False
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        if not a.get('weapon'):
+            g = await io.helper('dummy give', 'dummy', ANSWER)
+            if not isinstance(g, dict) or g.get('err') or not g.get('weapon'):
+                return Result(key, name, cls, SKIP, 'no exercise weapon for this bot: %s' % str((g or {}).get('err') or 'no answer')[:60])
+            granted, a = True, g
+        if not a.get('dummy'):
+            return Result(key, name, cls, SKIP, str((a.get('guide') or {}).get('why') or 'no training dummy near')[:90])
+        if (a.get('guide') or {}).get('mode') == 'walk':
+            how, got = await walk_by_path(io, r, 'dummy path', 'dummy', 1)
+            if how != 'foot':
+                return Result(key, name, cls, SKIP, 'no way on foot to the dummy: %s' % str((got or {}).get('err') or 'far')[:60])
+            await io.sleep(SETTLE)
+            a = await io.helper('dummy state', 'dummy', ANSWER) or a
+        if not a.get('pz'):
+            return Result(key, name, cls, SKIP, 'the dummy stands outside a protection zone: nothing is trained there')
+        if (a.get('guide') or {}).get('mode') != 'use':
+            return Result(key, name, cls, SKIP, str((a.get('guide') or {}).get('why') or 'not within reach of the dummy')[:90])
+        w, d = a['weapon'], a['dummy']
+        used = True
+        await io.use_item_with(w['clientId'], d['pos'], d['clientId'], d.get('stackpos') or 0)
+        await io.sleep(DUMMY_RUN)
+        b = await io.helper('dummy state', 'dummy', ANSWER)
+        status, text = dummy_verdict(a, b)
+        return Result(key, name, cls, status, text)
+    finally:
+        if used:
+            await io.step(1, 0)   # a step away ends the chain, as a person walks off the dummy
+        if granted:
+            await io.helper('dummy clear', 'dummy', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ---- the mount: on, off, the speed
+def mount_verdict(t):
+    """(status, text) from the trace {'before', 'on', 'off' (mount states), 'texts_on' (the server's lines after the toggle on)}"""
+    b, on, off = t.get('before') or {}, t.get('on'), t.get('off')
+    if not isinstance(on, dict):
+        return SKIP, 'no look after the mount toggle'
+    said = ' '.join(str(x) for x in t.get('texts_on') or [])
+    if not on.get('mounted'):
+        if said:
+            return SKIP, 'the server refused the mount: %s' % said[:70]
+        if on.get('pz'):
+            return SKIP, 'the bot stands in a protection zone: a mount is refused there'
+        return FAIL, 'the mount (id %s, the current one %s) was toggled outside a protection zone and the bot is not mounted, and no word came' % (b.get('granted'), on.get('current'))
+    if int(on.get('speed') or 0) < int(b.get('speed') or 0):
+        return FAIL, 'mounted and slower: speed %s -> %s' % (b.get('speed'), on.get('speed'))
+    if not isinstance(off, dict):
+        return SKIP, 'no look after the dismount'
+    if off.get('mounted'):
+        return FAIL, 'toggled the mount off and the bot is still mounted (look mount %s)' % off.get('lookMount')
+    gain = int(on.get('speed') or 0) - int(b.get('speed') or 0)
+    if gain > 0 and int(off.get('speed') or 0) >= int(on.get('speed') or 0):
+        return FAIL, 'dismounted and the mount speed stays: %s on foot, %s mounted, %s now' % (b.get('speed'), on.get('speed'), off.get('speed'))
+    return PASS, 'mounted (speed %s -> %s) and dismounted (%s)' % (b.get('speed'), on.get('speed'), off.get('speed'))
+
+
+async def check_mount_ride(io, name, cls, level):
+    """a TEST ONLY mount from the helper, put on and off with the mount button's packet outside a protection zone: the outfit's mount, the speed"""
+    key = 'mount_ride'
+    a = await io.helper('mount state', 'mount', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester mount (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        g = await io.helper('mount give', 'mount', ANSWER)
+        if not isinstance(g, dict) or g.get('err'):
+            return Result(key, name, cls, SKIP, 'no mount for this bot: %s' % str((g or {}).get('err') or 'no answer')[:70])
+        before = await io.helper('mount state', 'mount', ANSWER)
+        if isinstance(before, dict) and before.get('pz'):   # a mount is refused in a protection zone: out to the hunt spot first
+            await io.go('hunt')
+            await io.sleep(SETTLE)
+            before = await io.helper('mount state', 'mount', ANSWER)
+        if not isinstance(before, dict) or before.get('err'):
+            return Result(key, name, cls, SKIP, 'no look at the mount before the toggle')
+        if before.get('pz'):
+            return Result(key, name, cls, SKIP, 'the hunt spot is a protection zone: a mount is refused there')
+        t = {'before': before}
+        t['texts_on'] = await io.toggle_mount(True, MOUNT_WAIT)
+        t['on'] = await io.helper('mount state', 'mount', ANSWER)
+        if isinstance(t['on'], dict) and t['on'].get('mounted'):
+            await io.toggle_mount(False, MOUNT_WAIT)
+            t['off'] = await io.helper('mount state', 'mount', ANSWER)
+        status, text = mount_verdict(t)
+        return Result(key, name, cls, status, text)
+    finally:
+        await io.helper('mount clear', 'mount', ANSWER)
+        io.raid_mode([name], False)
+
+
+# ---- the knife on a fresh corpse and the rod on water
+def tool_row(a, tool_id):
+    """the Material Broker's row of a tool in a `!tester gather` answer: {'id', 'clientId', 'price'} or None"""
+    return next((t for t in (a or {}).get('buy') or [] if t.get('id') == tool_id and t.get('clientId')), None)
+
+
+async def buy_tool(io, name, a, tool_id, fallbacks):
+    """the tool from the Material Broker when the bot has none; (the new `!tester gather` answer, None) or (None, the reason)"""
+    row = tool_row(a, tool_id)
+    if row is None:
+        return None, 'the broker lists no tool %s' % tool_id
+    bank = a.get('bank')
+    if bank is not None and int(bank) < int(row.get('price') or 0):
+        return None, 'the bot has %s gold in the bank, tool %s costs %s' % (bank, tool_id, row.get('price'))
+    why, notes = await chore_walk(io, name, 'Material Broker')
+    fallbacks.extend(notes)
+    if why:
+        return None, why
+    items = await io.shop_window('Material Broker')
+    io.shop_close()
+    if not items or not any(i.get('id') == row['clientId'] for i in items):
+        return None, 'the Material Broker\'s window does not list tool %s (%s)' % (tool_id, 'no window' if not items else 'item %s' % row['clientId'])
+    await io.buy(row['clientId'])
+    await io.sleep(1.5)
+    return await io.helper('gather state', 'gather', ANSWER), None
+
+
+def prof_mark(a, prof):
+    """(level, experience) of a profession in a `!tester gather` answer: a gather that worked raises the pair"""
+    p = ((a or {}).get('prof') or {}).get(prof) or {}
+    return int(p.get('level') or 0), int(p.get('xp') or 0)
+
+
+def flay_verdict(a, b, channel, texts):
+    """(status, text): a = the look before the use of the knife, b = after, channel = a look showed `gathering`, texts = the server's lines after the use"""
+    if not isinstance(b, dict):
+        return SKIP, 'no look after the use of the knife'
+    corpse = a.get('corpse') or {}
+    if prof_mark(b, 'flaying') > prof_mark(a, 'flaying') or int(b.get('held') or 0) > int(a.get('held') or 0):
+        return PASS, 'flayed a tier %s corpse: flaying %s -> %s, %d material(s) more' % (
+            corpse.get('tier'), '/'.join(str(x) for x in prof_mark(a, 'flaying')), '/'.join(str(x) for x in prof_mark(b, 'flaying')),
+            int(b.get('held') or 0) - int(a.get('held') or 0))
+    low = ' '.join(str(t) for t in texts or []).lower()
+    if channel:
+        return SKIP, 'the channel started and nothing came (interrupted: a monster, a step)'
+    if low:
+        return SKIP, 'the corpse said: %s' % str(texts[0])[:70]
+    if b.get('corpse') is None:
+        return SKIP, 'the corpse was gone after the use (decayed, or taken by a hand)'
+    return FAIL, 'the bot stood next to a fresh corpse, used the knife on it and no flaying started and no word came'
+
+
+async def check_flay_walk(io, name, cls, level):
+    """flaying: the bot waits at its hunt for a fresh corpse of its own kills, takes a knife from the Material Broker when it has none, walks to the corpse
+    and uses the knife on it: the Flaying experience or the materials rise"""
+    key = 'flay_walk'
+    a = await io.helper('gather state', 'gather', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester gather (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if not a.get('enabled') or not a.get('levelOk'):
+        return Result(key, name, cls, SKIP, 'level %s: the professions open at level %s' % (a.get('level') or level, a.get('minLevel')))
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        waited = 0.0
+        while not a.get('corpse') and waited < FLAY_WAIT and io.alive():
+            await io.sleep(3.0)
+            waited += 3.0
+            a = await io.helper('gather state', 'gather', ANSWER) or a
+        if not a.get('corpse'):
+            return Result(key, name, cls, SKIP, str((a.get('flayGuide') or {}).get('why') or 'no fresh corpse')[:90], fallbacks)
+        if not (a.get('tools') or {}).get('flaying'):
+            a2, why = await buy_tool(io, name, a, TOOL_KNIFE, fallbacks)
+            if why:
+                return Result(key, name, cls, SKIP, why, fallbacks)
+            a = a2 or a
+            if not (a.get('tools') or {}).get('flaying'):
+                return Result(key, name, cls, FAIL, 'bought the obsidian knife from the Material Broker and the backpack holds none', fallbacks)
+        knife = tool_row(a, TOOL_KNIFE)
+        if knife is None:
+            return Result(key, name, cls, SKIP, 'the broker lists no obsidian knife: its client id is unknown', fallbacks)
+        a = await io.helper('gather state', 'gather', ANSWER) or a
+        if not a.get('corpse'):
+            return Result(key, name, cls, SKIP, 'the corpse was gone when the bot came back from the broker', fallbacks)
+        if (a.get('flayGuide') or {}).get('mode') == 'walk':
+            how, got = await walk_by_path(io, r, 'gather corpse', 'gather', 1)
+            if how != 'foot':
+                return Result(key, name, cls, SKIP, 'no way on foot to the corpse: %s' % str((got or {}).get('err') or 'far')[:60], fallbacks)
+            await io.sleep(1.0)
+            a = await io.helper('gather state', 'gather', ANSWER) or a
+        corpse = a.get('corpse')
+        if not corpse or int(corpse.get('d') or 0) > 1:
+            return Result(key, name, cls, SKIP, 'the corpse is gone or %s tiles away after the walk' % (corpse or {}).get('d'), fallbacks)
+        before = a
+        texts = await io.use_item_with(knife['clientId'], corpse['pos'], corpse['clientId'], corpse.get('stackpos') or 0, 1.5)
+        channel, after, waited = False, None, 0.0
+        while waited <= FLAY_CHANNEL and io.alive():
+            await io.sleep(1.0)
+            waited += 1.0
+            after = await io.helper('gather state', 'gather', ANSWER)
+            if isinstance(after, dict):
+                channel = channel or bool(after.get('gathering'))
+                if prof_mark(after, 'flaying') > prof_mark(before, 'flaying'):
+                    break
+        status, text = flay_verdict(before, after, channel, texts)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+def angle_verdict(a, b, casts, texts):
+    """(status, text): a = the look before the first cast of the rod, b = after the last, casts = how many were made, texts = the server's lines meanwhile"""
+    if not isinstance(b, dict):
+        return SKIP, 'no look after the cast'
+    f0, f1 = a.get('fishing') or {}, b.get('fishing') or {}
+    skill = (int(f1.get('level') or 0), int(f1.get('tries') or 0)) > (int(f0.get('level') or 0), int(f0.get('tries') or 0))
+    xp = prof_mark(b, 'angling') > prof_mark(a, 'angling')
+    held = int(b.get('held') or 0) - int(a.get('held') or 0)
+    if held > 0 and not xp:
+        return FAIL, 'the line brought %d material(s) and the Angling experience did not rise' % held
+    if skill or xp or held > 0:
+        return PASS, 'angling after %d cast(s): Fishing tries %s -> %s, Angling %s -> %s, %d material(s)' % (
+            casts, f0.get('tries'), f1.get('tries'), '/'.join(str(x) for x in prof_mark(a, 'angling')), '/'.join(str(x) for x in prof_mark(b, 'angling')), max(0, held))
+    low = ' '.join(str(t) for t in texts or [])
+    if low:
+        return SKIP, 'the cast said: %s' % low[:70]
+    return SKIP, '%d cast(s) of the rod gave no Fishing try and no word (the rod needs bait, or the water is not fishable)' % casts
+
+
+async def check_angle_walk(io, name, cls, level):
+    """angling: the nearest fishable water on foot, a rod from the Material Broker when the bot has none, the rod cast at the water a few times: the
+    Fishing skill tries, the Angling experience or the materials rise"""
+    key = 'angle_walk'
+    a = await io.helper('gather state', 'gather', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester gather (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if not a.get('enabled') or not a.get('levelOk'):
+        return Result(key, name, cls, SKIP, 'level %s: the professions open at level %s' % (a.get('level') or level, a.get('minLevel')))
+    if not a.get('water'):
+        return Result(key, name, cls, SKIP, str((a.get('angleGuide') or {}).get('why') or 'no fishable water near')[:90])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        if not (a.get('tools') or {}).get('angling'):
+            a2, why = await buy_tool(io, name, a, TOOL_ROD, fallbacks)
+            if why:
+                return Result(key, name, cls, SKIP, why, fallbacks)
+            a = a2 or a
+            if not (a.get('tools') or {}).get('angling'):
+                return Result(key, name, cls, FAIL, 'bought the fishing rod from the Material Broker and the backpack holds none', fallbacks)
+        rod = tool_row(a, TOOL_ROD)
+        if rod is None:
+            return Result(key, name, cls, SKIP, 'the broker lists no fishing rod: its client id is unknown', fallbacks)
+        a = await io.helper('gather state', 'gather', ANSWER) or a
+        if not a.get('water'):
+            return Result(key, name, cls, SKIP, 'no fishable water near after the broker', fallbacks)
+        if (a.get('angleGuide') or {}).get('mode') == 'walk':
+            how, got = await walk_by_path(io, r, 'gather water', 'gather', 2)
+            if how != 'foot':
+                return Result(key, name, cls, SKIP, 'no way on foot to the water: %s' % str((got or {}).get('err') or 'far')[:60], fallbacks)
+            await io.sleep(1.0)
+            a = await io.helper('gather state', 'gather', ANSWER) or a
+        water = a.get('water')
+        if not water or int(water.get('d') or 0) > 2:
+            return Result(key, name, cls, SKIP, 'the walk ended %s tiles from the water' % (water or {}).get('d'), fallbacks)
+        before, after, texts, casts = a, None, [], 0
+        while casts < ANGLE_CASTS and io.alive():
+            texts += await io.use_item_with(rod['clientId'], water['pos'], water['clientId'], water.get('stackpos') or 0, 1.0)
+            casts += 1
+            await io.sleep(ANGLE_PAUSE)
+            after = await io.helper('gather state', 'gather', ANSWER)
+            if isinstance(after, dict) and angle_verdict(before, after, casts, [])[0] != SKIP:
+                break
+        status, text = angle_verdict(before, after, casts, texts)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ---- the kill counts of a base kill task: hunt the monster of an accepted task, its counter and the bestiary entry rise
+def task_hunt_pick(board, level, skip=()):
+    """the offer to hunt: an open one of a single monster (kind hunt: the task names the monster) first, the fewest kills first, then a family task;
+    an offer of `skip` (no hunt known for its monster) is left out"""
+    rows = [o for o in (board or {}).get('offers') or [] if isinstance(o, dict) and o.get('key') and o.get('state') == 'open' and o.get('key') not in skip]
+    rows.sort(key=lambda o: (0 if o.get('kind') == 'hunt' else 1, int(o.get('required') or 0), str(o.get('key'))))
+    return rows[0] if rows else None
+
+
+def task_kills_verdict(t):
+    """(status, text) from the trace: faults, name (the monster), key, base (progress at the accept), progress, required, kills0 / kills (the bestiary entry
+    before and after), fought, waited, stuck, died, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    moved = int(t.get('progress') or 0) - int(t.get('base') or 0)
+    how = 'level %s, %d step(s) in %d s' % (t.get('level'), t.get('steps', 0), t.get('secs', 0))
+    if moved >= TASK_KILLS:
+        k0, k1 = t.get('kills0'), t.get('kills')
+        if k0 is not None and k1 is not None and int(k1) <= int(k0):
+            return FAIL, 'the task %s counted %d kill(s) and the bestiary entry of %s stays at %s kills' % (t.get('key'), moved, t.get('name'), k1)
+        return PASS, '%s: the task counter went from %s to %s of %s, the bestiary entry from %s to %s kills (%s)' % (
+            t.get('name'), t.get('base'), t.get('progress'), t.get('required'), k0, k1, how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in reach of %s and the kill task counter moved %d (kills, credit or the target)' % (t['fought'], t.get('name'), moved)
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot died at the hunt of %s (%s)' % (t.get('name'), how)
+    if t.get('waited', 0) >= BOUNTY_SPAWN_WAIT:
+        return SKIP, 'no %s in sight at its hunt for %d s (%s)' % (t.get('name'), t['waited'], how)
+    return SKIP, 'the task counter of %s moved %d in %d s (%s)' % (t.get('name'), moved, t.get('secs', 0), how)
+
+
+async def task_accept(io, offer):
+    """accepts the offer through the Bestiary window; the board after it, or None when the task is not in the active list"""
+    reply = await io.request('bestiary', 'accept', {'key': offer['key']}, ('board',), ANSWER)
+    after = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if isinstance(after, dict) and any(t.get('key') == offer['key'] for t in after.get('tasks') or []):
+        return after
+    return None
+
+
+async def check_kill_task_kills(io, name, cls, level):
+    """a kill task of the Bestiary board accepted and hunted: the bot walks to the hunt that lists the monster (the bounty board's marks), fights it with
+    its own rotation and the task counter and the bestiary entry rise (the `kill` message of the window). The task is abandoned after"""
+    key = 'kill_task_kills'
+    reply = await io.request('bestiary', 'board', {}, ('board',), ANSWER)
+    board = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if not isinstance(board, dict):
+        return Result(key, name, cls, SKIP, 'no answer from the Bestiary board')
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'waited': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'level': level, 'fallbacks': fallbacks}
+    held, skip, offer, probe = None, set(), None, None
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        for _ in range(TASK_TRIES):
+            offer = task_hunt_pick(board, level, skip)
+            if offer is None:
+                break
+            after = await task_accept(io, offer)
+            if after is None:
+                skip.add(offer['key'])
+                continue
+            held = offer['key']
+            probe = await io.helper('task state', 'task', ANSWER)
+            mine = next((x for x in (probe or {}).get('active') or [] if x.get('key') == held), None) if isinstance(probe, dict) else None
+            g = (probe or {}).get('guide') or {} if isinstance(probe, dict) else {}
+            if mine is not None and mine.get('monster') and not (g.get('mode') == 'wait' and 'no hunt lists' in str(g.get('why'))):
+                break
+            await io.request('bestiary', 'abandon', {'key': held}, ('board',), ANSWER)   # no hunt is known for its monster: the next offer
+            skip.add(held)
+            held, mine = None, None
+            board = ((await io.request('bestiary', 'board', {}, ('board',), ANSWER)) or {}).get('data') or board
+        if held is None:
+            return Result(key, name, cls, SKIP, 'no open kill task with a monster that a hunt mark lists (%d offer(s) tried)' % len(skip))
+        trace.update({'name': mine.get('monster'), 'key': held, 'base': mine.get('progress') or 0, 'progress': mine.get('progress') or 0,
+                      'required': mine.get('required'), 'kills0': mine.get('kills'), 'kills': mine.get('kills')})
+        elapsed, misses, fight_since, wait_since = 0.0, 0, None, None
+        while io.alive() and elapsed < TASK_BUDGET:
+            s = await io.helper('task state', 'task', ANSWER)
+            if not isinstance(s, dict) or s.get('err'):
+                misses += 1
+                if misses >= SOLO_MISSES:
+                    break
+                await io.sleep(RAID_LOOK)
+                elapsed += RAID_LOOK
+                continue
+            misses = 0
+            mine = next((x for x in s.get('active') or [] if x.get('key') == held), None)
+            if mine is None:
+                if trace['progress'] - trace['base'] < TASK_KILLS:
+                    trace['faults'].append('the accepted kill task %s left the list before the bot had killed enough' % held)
+                break
+            if (mine.get('progress') or 0) > trace['progress']:
+                trace['progress'] = mine['progress']
+                trace['kills'] = mine.get('kills')
+                fight_since = None
+                await io.loot()
+            if trace['progress'] - trace['base'] >= TASK_KILLS:
+                break
+            g = s.get('guide') or {}
+            mode = g.get('mode')
+            if mode == 'fight':
+                fight_since = elapsed if fight_since is None else fight_since
+                trace['fought'] = max(trace['fought'], elapsed - fight_since)
+            else:
+                fight_since = None
+            if mode == 'wait' and g.get('area') == 'spawn':
+                wait_since = elapsed if wait_since is None else wait_since
+                trace['waited'] = max(trace['waited'], elapsed - wait_since)
+                if trace['waited'] >= BOUNTY_SPAWN_WAIT:
+                    break
+            else:
+                wait_since = None
+            plan = []
+            if mode == 'walk' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
+                plan = r['walker'].steps(s['pos'], g['goal'], SOLO_STEPS, elapsed)
+                if not r['walker'].blocked:
+                    got = await hcmd(io, r, 'task path', 'task')
+                    steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                    plan = steps[:SOLO_STEPS] or plan
+                if r['walker'].stuck(elapsed) >= SOLO_STUCK:
+                    trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                    break
+            for step in plan:
+                await raid_walk(io, r, step)
+                trace['steps'] += 1
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            trace['secs'] = int(elapsed)
+        trace['secs'] = int(elapsed)
+        trace['died'] = not io.alive()
+        status, text = task_kills_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        if held:   # the task goes back: its rows are the bot's own
+            await io.request('bestiary', 'abandon', {'key': held}, ('board',), ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
 # settings windows: the pouch loot rules, the Auto Seller, the stash window, the Gambler's reroll
 def rules_flags(rules):
     return sorted(k for k, v in (rules or {}).items() if isinstance(v, bool))
@@ -6826,6 +7421,12 @@ CHECKS = [
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
     ('chore_trade', check_chore_trade, lambda c: True),   # O653: the Material Broker: sell what was gathered
+    ('stash_move', check_stash_move, lambda c: True),   # O657: a plain piece dragged onto the stash in the temple and taken out again (Stash / Redeem by the item's place)
+    ('dummy_train', check_dummy_train, lambda c: True),   # O657: the exercise weapon (TEST ONLY grant) on the nearest dummy in a protection zone: charges fall, skill tries rise
+    ('mount_ride', check_mount_ride, lambda c: True),   # O657: a TEST ONLY mount on and off with the mount button's packet outside a protection zone, the speed
+    ('flay_walk', check_flay_walk, lambda c: True),   # O657: the knife on a fresh corpse of the bot's own kills: the Flaying experience rises
+    ('angle_walk', check_angle_walk, lambda c: True),   # O657: the rod cast at the nearest fishable water: Fishing tries and Angling experience rise
+    ('kill_task_kills', check_kill_task_kills, lambda c: True),   # O657: an accepted kill task hunted on foot: the task counter and the bestiary entry rise
     ('chore_salvage', check_chore_salvage, lambda c: True),   # O653: a rolled piece the bot will not wear, broken down at the bench
     ('boss_copy_walk', check_boss_copy_walk, lambda c: True),   # O652: a copy of a key boss of its own: walk, fight, step off the marks, loot
     ('spell_support', check_spell_support, lambda c: True),   # O655: the support and healing spells of the class cast by their words; the spells only a quest teaches are refused

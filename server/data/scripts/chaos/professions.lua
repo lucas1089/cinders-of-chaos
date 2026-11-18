@@ -1130,7 +1130,81 @@ function P.probe(player)
 	else
 		out.guide = {mode = "wait", why = "no node within " .. GATHER_REACH .. " tiles that is ready for the bot"}
 	end
+	-- O657: flaying and angling as a person sees them. Levels and experience of both professions (a flay or a cast that worked raises the experience), the
+	-- Fishing skill's tries (the stock cast adds one), the nearest fresh corpse tagged for flaying that the bot may take and the nearest fishable water,
+	-- each with the client id and the place in the tile that a use packet names, and a guide to each (walk, or use the tool).
+	out.prof = {}
+	for _, key in ipairs({"flaying", "angling"}) do
+		local e = S.levels[key]
+		out.prof[key] = {level = e.level, xp = e.xp, gathered = e.gathered}
+	end
+	local okF, tries = pcall(function() return player:getSkillTries(SKILL_FISHING) end)
+	local okL, flevel = pcall(function() return player:getSkillLevel(SKILL_FISHING) end)
+	out.fishing = {level = okL and flevel or nil, tries = okF and tries or nil}
+	local corpse = P.nearestCorpse(player, pos)
+	if corpse then
+		out.corpse = corpse
+		out.flayGuide = corpse.d <= 1 and {mode = "use", goal = corpse.pos, why = "next to the corpse"}
+			or {mode = "walk", goal = corpse.pos, reach = {0, 1}, why = "to the nearest fresh corpse"}
+	else
+		out.flayGuide = {mode = "wait", why = "no fresh corpse of a beast or reptile within " .. P.CORPSE_REACH .. " tiles"}
+	end
+	local water = P.nearestWater(pos)
+	if water then
+		out.water = water
+		out.angleGuide = water.d <= 2 and {mode = "use", goal = water.pos, why = "at the water"}
+			or {mode = "walk", goal = water.pos, reach = {1, 2}, why = "to the nearest water"}
+	else
+		out.angleGuide = {mode = "wait", why = "no fishable water within " .. P.WATER_REACH .. " tiles"}
+	end
 	return out
+end
+
+-- the nearest corpse tagged for flaying (fresh, not flayed, one the bot may loot) within CORPSE_REACH tiles, ring by ring: {tag, pos, clientId, stackpos,
+-- tier, d}
+P.CORPSE_REACH, P.WATER_REACH = 10, 30
+function P.nearestCorpse(player, pos)
+	for d = 0, P.CORPSE_REACH do
+		for dx = -d, d do
+			for dy = -d, d do
+				if math.max(math.abs(dx), math.abs(dy)) == d then
+					local tile = Tile(Position(pos.x + dx, pos.y + dy, pos.z))
+					for _, it in ipairs(tile and tile:getItems() or {}) do
+						local tag = tonumber(custom(it, FLAY_ATTR))
+						if tag and not custom(it, FLAYED_ATTR) and canLoot(player, it) then
+							local ct = ItemType(it:getId())
+							return {tag = tag, tier = tag % 10, pos = {x = pos.x + dx, y = pos.y + dy, z = pos.z}, d = d,
+								clientId = ct and ct:getClientId() or 0, stackpos = tile:getThingIndex(it)}
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- the nearest water tile the stock cast can fish (its ground's fluid source is water) within WATER_REACH tiles: {pos, clientId, stackpos (the ground: 0), d}
+function P.nearestWater(pos)
+	local water = FLUID_WATER
+	for d = 0, P.WATER_REACH do
+		for dx = -d, d do
+			for dy = -d, d do
+				if math.max(math.abs(dx), math.abs(dy)) == d then
+					local tile = Tile(Position(pos.x + dx, pos.y + dy, pos.z))
+					local okG, gid = pcall(function() return tile:getGround():getId() end)
+					if okG and gid then
+						local ct = ItemType(gid)
+						local okS, src = pcall(function() return ct:getFluidSource() end)
+						if okS and tonumber(src) and tonumber(src) ~= 0 and (water == nil or tonumber(src) == water) then
+							return {pos = {x = pos.x + dx, y = pos.y + dy, z = pos.z}, d = d, clientId = ct:getClientId(), stackpos = 0}
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
 end
 
 local ext = CreatureEvent("ChaosProfessionsExtended")

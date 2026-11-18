@@ -10614,8 +10614,8 @@ check `wsmap_walk`):
 - The device's pads and teleport are base code (`data/scripts/customs/waystone_system/tier_maps.lua`, not in the repository), so the TEST ONLY entry stands for them and
   the result names it as a counted teleport ("teleport: the waystone device's pads and teleport are base code"). The arrival tile of each map is the `destination` of that
   file: `python3 -I server/tools/audit_waystone_maps.py BASE_SERVER_DIR --arrivals` prints the `arrivals = {...}` block for `waystone_tiers_config.lua` (not in the
-  admin app: a one-off on the VPS after the base files are installed; `tests/waystone_layouts_test.lua` holds each tile inside its map's rectangle). **Until that block is
-  pasted every tester SKIPs the check with that reason.**
+  admin app: a one-off on the VPS after the base files are installed; `tests/waystone_layouts_test.lua` holds each tile inside its map's rectangle). **O657 pasted the
+  block (all 12 maps, read from the local base server), so no VPS step is left and the check no longer SKIPs for it.**
 - `WT.probe` is what a person sees: outside whether a map is free and at which tier (the lowest tier of each band, in order), inside the run's tier, the level of the monsters
   against the tier, the monsters left, the boss and its health, and the guide. The bot walks to the temple, `wsmap enter`, clears 3 monsters (the count of monsters on the
   map falls by 3) by the engine's path with its own rotation, leaves. BUG: a player in the testers' map, a monster at another level than the run's tier.
@@ -10684,7 +10684,7 @@ How the bots play it:
    the opcode is collected): at least one tab, no tab over its size, the search answered. `gamble_reroll` (Mordecai Ashwager, on foot): when the window's
    reroll price leaves the bot 5000 gold, the reroll must raise the count by one, cost money and change the stock.
 
-Left with the reason:
+Left with the reason (O657, step 15, took flaying, angling, the dummy, mounts, the kill counts of a task and the stash deposit and withdrawal; the rest stays):
 - **The Proof of Strength itself**: a rare or legendary monster at the bot's level does not come on demand; the credit is the TEST ONLY `ascend proof`.
   The kill credit rules (party range, damage map, the nameplate level) stay under `tests/ascension_quest_test.lua`.
 - **Flaying and angling** (the knife on a fresh corpse, the rod on water): the corpse is tagged at the death and the water tile is not in any probe yet; plan:
@@ -10700,6 +10700,70 @@ Left with the reason:
 Needs a live run: the 0xFA window layout of the server (the parser follows the protocol of the base server and the Unity client's `ModalWindows`), the 0xF9
 answer, whether the Oracle's focus holds between "hi" and the next word (the check says hi before each word), the stack position of a node (the index of the
 item in the tile), the Material Broker's trade window for a bot with a bank balance, the text of the Gambler's reroll price against `K.rerollPrice`.
+
+##### 15. Waystone arrivals, the stash moved, the dummy, the mount, flaying, angling and kill task kills (O657)
+
+Owner 2026-11-18 (translated): "continue with the other tasks": what O653 and O655 left, and the waystone map arrivals. Open checks (no closed mode needed).
+Helper v24 (`HELPER_VERSION`): `!tester dummy`, `!tester mount`, `!tester task`, `!tester gather corpse | water`. Tests: `tester_checks_test.py` (`StashMove`,
+`DummyTrain`, `MountRide`, `FlayAndAngle`, `KillTaskKills`, `NewKeys`), `testers_test.py` (section O657: the packets), `tester_helper_test.lua` (section O657),
+`exercise_test.lua`, `professions_test.lua`, `bestiary_test.lua` (sections O657: the probes), `waystone_layouts_test.lua` (every map has an arrival).
+Unity: the six new keys are in `Phase30Tests.cs` `NotMirrored`.
+
+**1. The waystone arrivals.** `python3 -I server/tools/audit_waystone_maps.py BASE --arrivals` was run on the local base server (read only) and its block is in
+`waystone_tiers_config.lua` `arrivals`: 12 tiles, one per map, each inside its map's rectangle. No VPS step. After a base map file changes, run it again and
+paste the block; `tests/waystone_layouts_test.lua` fails when a map has no tile or a tile lies outside its rectangle.
+
+**2. Probes** (all read only, the asker must be a tester, the grants are TEST ONLY and logged):
+- `ChaosExercise.probe` (`exercise_training.lua`): protection zone or not, the exercise weapon of the backpack (slot, client id, charges, kind), the skill it trains for
+  the class with level and tries now, the nearest training dummy of the floor (ring by ring, 40 tiles: place, client id, stack place, bonus or plain), the chain flag
+  and `guide` (walk next to the dummy, use the weapon, wait, or the reason). `testerGive` puts the lowest weapon (500 charges) of a kind the class may train with
+  into the backpack, marked `tester_give`; `testerClear` takes the marked ones and ends the chain.
+- `ChaosBestiary.probe` (`bestiary.lua`): the kill tasks held with progress and kills of the monster in the bestiary, the monster to hunt (a hunt task names it, a
+  family task has its most common monster of the window), the nearest living one within 20 tiles, the nearest hunt mark that lists it
+  (`ChaosBounty.spawnMarks`) and the bounty board's `guide` (fight, walk to the monster, walk to the hunt, wait). `!tester task where NAME` is the bounty board's
+  "where does it spawn".
+- `ChaosProfessions.probe` now also reports `prof` (level, experience, gathered of Flaying and Angling), `fishing` (the Fishing skill level and tries), `corpse` (the
+  nearest fresh corpse tagged for flaying that the bot may loot, within 10 tiles: tag, tier, place, client id, stack place), `water` (the nearest ground whose fluid
+  source is water, within 30 tiles: place, client id, stack place 0) and one guide for each (`flayGuide`, `angleGuide`). `!tester gather corpse | water` is the
+  engine's path next to it.
+- `!tester mount [state | give | clear]`: engine calls only. State: the outfit's mount, the speed, the base speed, the current mount, protection zone. `give` is a TEST ONLY
+  mount (the cheapest free one of `shop_cosmetics.lua`, `Player:addMount`, made the current mount); `clear` dismounts and takes it back.
+
+**3. How the bots play it** (`CheckIO.use_item_with`: 0x83 from the hotkey place 0xFFFF 0 0 with the tool's client id, the server finds the tool in the backpack;
+`CheckIO.toggle_mount`: 0xD4 and a 0 or 1 byte; both return the server's text lines of the next seconds):
+1. `stash_move`: `!tester give item` (a plain piece of the class kit, the TEST ONLY grant of O584), on foot to the temple (a protection zone), the backpack opened as
+   container 0, the stash list read, then the window's own `Stash` request with the item's place (`x 65535, y 64, z slot`, the client id and count: the packet of a
+   drag) and `UpdateList`. The list must show one more unit of the item type. Then `Redeem` by the stored row, or by type and count for a plain stack, and the list must
+   be back to the first number and the backpack report must hold the item again. FAIL: a drag that changed nothing with no reason, a withdrawal that left the unit,
+   an item the stash lost. SKIP: the stash is closed for deposits (`toDepot`, the window says so). The item is the bot's own junk; the keep loop sells it later.
+2. `dummy_train`: the nearest dummy by `!tester dummy`; a bot with no exercise weapon gets the TEST ONLY one; on foot next to the dummy (a ranged weapon works from
+   afar), the weapon used on the dummy by its client id, 6 s of training, a look. PASS: charges spent and the skill level or tries up. FAIL: charges spent and no
+   progress, or progress and no charge. SKIP: the dummy is outside a protection zone, no dummy within 40 tiles, nothing started. A step off the dummy ends the chain and
+   the granted weapon is taken back.
+3. `mount_ride`: the TEST ONLY mount, back to the hunt spot (a mount is refused in a protection zone), 0xD4 on, a look, 0xD4 off, a look; the mount is taken back.
+   PASS: mounted with a speed not below the foot speed, then not mounted and the mount speed gone. FAIL: not mounted after the button with no word from the server, a
+   mount that slows, still mounted after the button off, a mount speed that stays. SKIP: the server said why (premium, exhausted), a protection zone.
+4. `flay_walk`: the bot waits up to 90 s at its hunt for a fresh corpse of its own kills in reach; a bot with no knife buys it at the Material Broker (the bank must pay
+   600); on foot next to the corpse; the knife used on the corpse; PASS when the Flaying experience or the materials rise within 8 s. FAIL: a fresh corpse next to the
+   bot, the knife used on it, no channel and no word. SKIP: no corpse in the time, the corpse gone, interrupted.
+5. `angle_walk`: the nearest fishable water within 30 tiles on foot (a rod from the broker for 150 when the bot has none), the rod cast at the water up to 6 times, 3.3 s
+   apart (the Angling roll is once every 3 s). PASS: the Fishing tries, the Angling experience or the materials rise. FAIL: materials and no Angling experience. SKIP: no
+   water near, a cast that gave nothing and said nothing (the stock rod may need bait).
+6. `kill_task_kills`: the Bestiary board, the open task of one monster with the fewest kills (then a family task), accepted through the window; `!tester task` must name a
+   monster with a known hunt mark (else the task is given back and the next one tried, three at most); the bot walks to the hunt by the engine path, fights with its own
+   rotation, loots; PASS when the task counter moved 3 and the bestiary entry's kills rose too. FAIL: the counter moved and the entry did not, 150 s in reach with no
+   count, the task left the list. SKIP: no monster in sight for 120 s, a blocked walk, a death. The task is abandoned after.
+
+Left with the reason:
+- **The unique window** (`unique_window_core.lua`) has no opcode and no window. The one server answer is the "also any other monster of level A-B" text of an Item
+  Finder row, made by the same `ChaosUniqueWindow.levels` that `tests/unique_open_level_test.lua`, `gen_codex_data.lua --check` and `gen_wiki_data.lua --check` hold, so a bot
+  check would restate the formula. **Smartloot** is a drop rule, proved by its tests and by `!tester found` over a run. **The premium track of the pass** is bought with coins.
+- Flaying needs a tagged corpse and angling needs water: both SKIP most of the time (a corpse comes after a kill, water only near some hunts). A TEST ONLY corpse is
+  not made: the death path (`onDropLoot`) is the part under test.
+
+Needs a live run: the mount button's packet (0xD4 with one byte, as the base server's `parseToggleMount`), `Player:setCurrentMount` / `getCurrentMount` / `toggleMount`
+in the engine build, the hotkey use-with (0x83 from 0xFFFF 0 0) finding the tool in the backpack, the ground's fluid source of the water tiles (`ItemType:getFluidSource`),
+the `Stash` request's item id and count rules (`Core.sameItem`) for the kit item, whether the stash tab list has room for a weapon, the use-with range of the rod.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10732,6 +10796,12 @@ the system is not installed): never faked. A death in the middle drops the check
 | `boss_copy_walk` | all, level 300 and up | O652: `!tester boss spawn` (TEST ONLY: a copy of a key boss for the bot, only while no player is near and no lair is near, only testers can hurt it, no kill row or board), walks to it by the engine path, fights with its own rotation, steps off the telegraph marks the server names (guide `dodge`), loots. PASS: the copy killed or hurt; FAIL: a tester named in a boss board, or 150 s in reach and the copy not hurt |
 | `pocket_walk` | all, a pocket the level opens | O651: walks to the temple, opens the Boss Spawns window (`bossSpawns open`) and asks for the pocket (`pocketEnter`) of a boss that gives a boss passive point the bot lacks (else the lowest one its level opens), plays the private arena on foot (the boss by `!tester pocket path`, its own rotation, the corpse looted), leaves (`pocket close`). PASS: the boss fell. BUG: the first kill gave no boss point, the charges left did not go down when the pocket opened, a player in the testers' pocket, the pocket refused a lone tester as mixed, 150 s at the boss with none of its health taken. SKIP: the arenas kept for the players, no charge left, the pocket did not open in 14 s, the boss hurt but not dead in 720 s, the bot carried out by a lethal hit (step 10) |
 | `wsmap_walk` | all, level 1000 and up | O651: after `waystone_run` the map itself: walks to the temple, the TEST ONLY `!tester wsmap enter` stands for the device's pads and teleport (base code) and puts the bot on the arrival tile of a free map with a plain run of the first tier the server offers, clears monsters by the engine's path until 3 have fallen, leaves. PASS: 3 monsters fell and every monster in reach had the run's level. BUG: a player in the testers' map, a monster at another level than the tier, 150 s of fighting with no kill. SKIP: no arrival tile in the config, no free map, level, the server sent the bot out (a player came, 600 s), a death (step 10) |
+| `stash_move` | all | O657: a plain piece of the class kit (`!tester give item`) dragged onto the stash in the temple by its backpack place (`Stash`) and taken out again (`Redeem` by row or type). PASS: the stash lists one more unit, then the first number, the backpack holds the item. FAIL: a drag that changed nothing with no reason, a withdrawal that left the unit, an item the stash lost. SKIP: the stash is closed for deposits |
+| `dummy_train` | all | O657: the exercise weapon (a TEST ONLY grant) used on the nearest training dummy in a protection zone. PASS: charges spent and the skill level or tries up. FAIL: charges and no skill, or skill and no charge. SKIP: no dummy, outside a protection zone |
+| `mount_ride` | all | O657: a TEST ONLY mount on and off with the mount button (0xD4) outside a protection zone. PASS: mounted, then dismounted, the speed back. FAIL: not mounted and no word, a mount that slows, still mounted, a speed that stays. SKIP: the server said why |
+| `flay_walk` | all, the professions' level | O657: waits for a fresh corpse of its own kills, a knife from the broker, the knife used on the corpse. PASS: the Flaying experience or the materials rise. FAIL: no channel and no word. SKIP: no corpse |
+| `angle_walk` | all, the professions' level | O657: the nearest fishable water on foot, the rod cast up to 6 times. PASS: the Fishing tries, the Angling experience or the materials rise. FAIL: materials with no Angling experience. SKIP: no water near |
+| `kill_task_kills` | all | O657: a Bestiary kill task accepted and hunted on foot to a hunt mark that lists its monster. PASS: the task counter moved 3 and the bestiary entry's kills rose. FAIL: the entry did not count, 150 s in reach with no count, the task left the list. SKIP: no monster, no hunt known, a death. Abandoned after |
 | `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
 | `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named), no way, the quest not running. O650 adds the bring step, the Go button (`goals` `mqGo`), the daily flag, the spell step, the tier kill stats; Vael has `vael_walk` |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor with no stairs towards it, a death before a kill (section "The rift by walking (O592)"). O651: a rift of two floors is walked through the hole and the ladder; PASS needs the stairs walked there (a kill on the first floor only is a SKIP), BUG: 6 looks next to the hole or ladder with the floor unchanged (step 10) |

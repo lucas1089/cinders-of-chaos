@@ -2806,7 +2806,7 @@ do
 	check(H.parseAscend("win") == nil and select(2, H.parseAscend("win")) == "usage: ascend [state | proof | path | close]", "ascend: the usage")
 	check(H.parseAscend("proof now") == nil, "ascend: a word takes no argument")
 	eq(H.parseGather("path"), "path", "gather: path")
-	check(H.parseGather("sell") == nil and select(2, H.parseGather("sell")) == "usage: gather [state | path]", "gather: the usage")
+	check(H.parseGather("sell") == nil and select(2, H.parseGather("sell")) == "usage: gather [state | path | corpse | water]", "gather: the usage")
 	local realAQ, realPF = ChaosAscensionQuest, ChaosProfessions
 	local lastOf = function(p) return p.log.msgs[#p.log.msgs] end
 	local t = creature(268435560, "Tester Asc", {store = {[ST] = 1}})
@@ -2879,6 +2879,141 @@ do
 	check(talks["!tester"].onSay(civ, "!tester", "ascend proof #1") == true and talks["!tester"].onSay(civ, "!tester", "gather #2") == true and #civ.log.msgs == n,
 		"ascend / gather: a player's words go on and get no answer")
 	check(HELPER_VERSION >= 20, "the helper is version 20 or later (O655: a new command)")
+end
+
+-- ------------------------------------------------------------------ O657: `!tester dummy`, `mount`, `task` and `gather corpse | water`
+do
+	local H = ChaosTesterHelperCore
+	for _, c in ipairs({"dummy", "mount", "task"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parseDummy(nil), "state", "dummy: no word is state"); eq(H.parseDummy("GIVE"), "give", "dummy: give (any case)"); eq(H.parseDummy("clear"), "clear", "dummy: clear")
+	check(H.parseDummy("burn") == nil and select(2, H.parseDummy("burn")) == "usage: dummy [state | path | give | clear]", "dummy: the usage")
+	eq(H.parseMount("give"), "give", "mount: give"); check(H.parseMount("ride") == nil and select(2, H.parseMount("ride")) == "usage: mount [state | give | clear]", "mount: the usage")
+	eq(H.parseTask("path").what, "path", "task: path"); eq(H.parseTask("where Rat").name, "Rat", "task: where NAME")
+	check(H.parseTask("where") == nil and select(2, H.parseTask("where")) == "usage: task [state | where NAME | path]", "task: the usage names task")
+	eq(H.parseGather("corpse"), "corpse", "gather: corpse"); eq(H.parseGather("water"), "water", "gather: water")
+	-- the mount the helper picks: the cheapest free one of the store's list, the lowest id on a tie; a premium one only when there is no other
+	eq(H.pickMount({{id = 5, name = "A", cost = 700}, {id = 3, name = "B", cost = 350, premium = true}, {id = 9, name = "C", cost = 550}, {id = 7, name = "D", cost = 550}}).id, 7,
+		"pickMount: the cheapest free mount, the lowest id on a tie")
+	eq(H.pickMount({{id = 4, name = "P", cost = 350, premium = true}, {id = 2, name = "Q", cost = 350, premium = true}}).id, 2, "pickMount: only premium ones: the lowest id")
+	eq(H.pickMount({}), nil, "pickMount: none"); eq(H.pickMount(nil), nil, "pickMount: no list")
+	local realMounts = dofile("data/scripts/chaos/shop_cosmetics.lua").mounts
+	check(H.pickMount(realMounts) ~= nil, "pickMount: the real store list has a mount")
+	local lastOf = function(p) return p.log.msgs[#p.log.msgs] end
+	local realEx, realBes, realBounty, realPF = ChaosExercise, ChaosBestiary, ChaosBounty, ChaosProfessions
+	local t = creature(268435570, "Tester Dmy", {store = {[ST] = 1}})
+	t.pos = {x = 60, y = 60, z = 7}
+	t.getPathTo = function(self, pos, minD, maxD)
+		t.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {1, 1}
+	end
+	-- the exercise dummy
+	local gave, cleared = 0, 0
+	ChaosExercise = {probe = function(p)
+		return {enabled = true, pz = true, level = 100, pos = t.pos, weapon = gave > 0 and {id = 27733, clientId = 7733, index = 4, charges = 500, kind = "fist", allowed = true} or nil,
+			skill = {skill = "fist", level = 30, tries = 12},
+			dummy = {id = 27751, clientId = 7751, pos = {x = 64, y = 60, z = 7}, d = 4, stackpos = 2, kind = "bonus"},
+			guide = {mode = "walk", goal = {x = 64, y = 60, z = 7}, reach = {1, 1}, why = "to the nearest dummy"}}
+	end, testerGive = function(p) gave = gave + 1 return true end, testerClear = function() cleared = cleared + 1 return gave end}
+	talks["!tester"].onSay(t, "!tester", "dummy #400")
+	local l = lastOf(t)
+	check(l:find('"clientId":7751', 1, true) and l:find('"stackpos":2', 1, true) and l:find('"tries":12', 1, true) and l:find('"seq":400', 1, true), "dummy state: the dummy and the skill: " .. l)
+	talks["!tester"].onSay(t, "!tester", "dummy give #401")
+	l = lastOf(t)
+	check(gave == 1 and l:find('"granted":true', 1, true) and l:find('"index":4', 1, true) and l:find('"charges":500', 1, true), "dummy give: the weapon, its slot and charges: " .. l)
+	talks["!tester"].onSay(t, "!tester", "dummy path #402")
+	check(lastOf(t):find('"path":[1,1]', 1, true) and t.pathAsked.pos.x == 64 and t.pathAsked.minD == 1 and t.pathAsked.maxD == 1, "dummy path: on foot next to the dummy")
+	talks["!tester"].onSay(t, "!tester", "dummy clear #403")
+	check(cleared == 1 and lastOf(t):find('"cleared":1', 1, true), "dummy clear: the weapon goes")
+	talks["!tester"].onSay(t, "!tester", "dummy dance #404")
+	check(lastOf(t):find("usage: dummy", 1, true), "dummy: an unknown word")
+	ChaosExercise = nil
+	talks["!tester"].onSay(t, "!tester", "dummy #405")
+	check(lastOf(t):find("no exercise weapons", 1, true), "dummy: no system, the reason")
+	ChaosExercise = {probe = function() return {} end, testerGive = function() return nil, "no exercise weapon for this class" end, testerClear = function() return 0 end}
+	talks["!tester"].onSay(t, "!tester", "dummy give #406")
+	check(lastOf(t):find('"err":"no exercise weapon for this class"', 1, true), "dummy give: the refusal is told")
+	ChaosExercise = realEx
+	-- the kill task
+	local near = false
+	ChaosBestiary = {probe = function(p)
+		return {level = 100, pos = t.pos, maxActive = 5, target = "h:rat", active = {{key = "h:rat", kind = "hunt", label = "Rat", progress = 2, required = 10, status = 0, monster = "Rat", kills = 4}},
+			guide = {mode = "walk", goal = {x = 70, y = 60, z = 7}, reach = {1, 5}, area = "mark", why = "to the hunt of Rat"}}
+	end}
+	ChaosBounty = {probe = function(p, name)
+		return {where = {name = name, marks = 2, distance = 30, nearest = {x = 70, y = 60, z = 7, n = "Hunting: Rat (level 1-8)"}}}
+	end}
+	talks["!tester"].onSay(t, "!tester", "task #410")
+	l = lastOf(t)
+	check(l:find('"progress":2', 1, true) and l:find('"monster":"Rat"', 1, true) and l:find('"kills":4', 1, true) and l:find('"seq":410', 1, true), "task state: the task, its monster and the bestiary kills: " .. l)
+	talks["!tester"].onSay(t, "!tester", "task where Rat #411")
+	l = lastOf(t)
+	check(l:find('"marks":2', 1, true) and l:find('"x":70', 1, true), "task where: the hunt marks that list the monster: " .. l)
+	talks["!tester"].onSay(t, "!tester", "task path #412")
+	check(lastOf(t):find('"path":[1,1]', 1, true) and t.pathAsked.pos.x == 70 and t.pathAsked.maxD == 5, "task path: on foot to the hunt")
+	talks["!tester"].onSay(t, "!tester", "task win #413")
+	check(lastOf(t):find("usage: task", 1, true), "task: an unknown word")
+	ChaosBestiary = nil
+	talks["!tester"].onSay(t, "!tester", "task #414")
+	check(lastOf(t):find("no bestiary", 1, true), "task: no system, the reason")
+	ChaosBestiary, ChaosBounty = realBes, realBounty
+	-- gather corpse / water: the guide of the tool
+	ChaosProfessions = {probe = function(p)
+		return {enabled = true, level = 100, levelOk = true, tools = {flaying = true, angling = true}, held = 0,
+			corpse = {tag = 32, tier = 2, pos = {x = 66, y = 60, z = 7}, d = 6, clientId = 2300, stackpos = 1},
+			water = {pos = {x = 60, y = 69, z = 7}, d = 9, clientId = 4608, stackpos = 0},
+			guide = {mode = "wait", why = "no node"},
+			flayGuide = {mode = "walk", goal = {x = 66, y = 60, z = 7}, reach = {0, 1}, why = "to the nearest fresh corpse"},
+			angleGuide = {mode = "walk", goal = {x = 60, y = 69, z = 7}, reach = {1, 2}, why = "to the nearest water"}}
+	end}
+	talks["!tester"].onSay(t, "!tester", "gather corpse #420")
+	check(lastOf(t):find('"path":[1,1]', 1, true) and t.pathAsked.pos.x == 66 and t.pathAsked.minD == 0 and t.pathAsked.maxD == 1, "gather corpse: on foot next to the corpse")
+	talks["!tester"].onSay(t, "!tester", "gather water #421")
+	check(lastOf(t):find('"path":[1,1]', 1, true) and t.pathAsked.pos.y == 69 and t.pathAsked.maxD == 2, "gather water: on foot within two tiles of the water")
+	talks["!tester"].onSay(t, "!tester", "gather #422")
+	l = lastOf(t)
+	check(l:find('"corpse":', 1, true) and l:find('"water":', 1, true) and l:find('"flayGuide":', 1, true) and l:find('"angleGuide":', 1, true), "gather state: the corpse, the water and both guides: " .. l)
+	ChaosProfessions = realPF
+	-- the mount: a fake player with the engine's mount calls
+	local m = creature(268435571, "Tester Mnt", {store = {[ST] = 1}})
+	local mounts, current, mounted, speed = {}, nil, false, 220
+	m.getOutfit = function() return {lookType = 128, lookMount = mounted and 368 or 0} end
+	m.getSpeed = function() return mounted and speed + 20 or speed end
+	m.getBaseSpeed = function() return speed end
+	m.getCurrentMount = function() return current end
+	m.hasMount = function(_, id) return mounts[id] == true end
+	m.addMount = function(_, id) mounts[id] = true return true end
+	m.removeMount = function(_, id) mounts[id] = nil return true end
+	m.setCurrentMount = function(_, id) current = id return true end
+	m.toggleMount = function(_, on) mounted = on and true or false return true end
+	talks["!tester"].onSay(m, "!tester", "mount #430")
+	l = lastOf(m)
+	check(l:find('"mounted":false', 1, true) and l:find('"speed":220', 1, true) and l:find('"baseSpeed":220', 1, true) and l:find('"seq":430', 1, true), "mount state: not mounted, the speed: " .. l)
+	talks["!tester"].onSay(m, "!tester", "mount give #431")
+	l = lastOf(m)
+	local pick = H.pickMount(realMounts)
+	check(mounts[pick.id] == true and current == pick.id and l:find('"current":' .. pick.id, 1, true) and l:find('"granted":' .. pick.id, 1, true), "mount give: the cheapest free mount, owned and current: " .. l)
+	mounted = true
+	talks["!tester"].onSay(m, "!tester", "mount state #432")
+	l = lastOf(m)
+	check(l:find('"mounted":true', 1, true) and l:find('"speed":240', 1, true), "mount state: mounted, the speed is higher: " .. l)
+	talks["!tester"].onSay(m, "!tester", "mount clear #433")
+	l = lastOf(m)
+	check(mounted == false and next(mounts) == nil and l:find('"cleared":true', 1, true) and l:find('"mounted":false', 1, true), "mount clear: dismounted, the mount taken back: " .. l)
+	talks["!tester"].onSay(m, "!tester", "mount clear #434")
+	check(lastOf(m):find('"cleared":false', 1, true), "mount clear: nothing was given")
+	talks["!tester"].onSay(m, "!tester", "mount ride #435")
+	check(lastOf(m):find("usage: mount", 1, true), "mount: an unknown word")
+	m.addMount = function() error("no such call") end
+	talks["!tester"].onSay(m, "!tester", "mount give #436")
+	check(lastOf(m):find("the engine refused the mount", 1, true), "mount give: an engine that cannot says so")
+	-- a player's words go on and get no answer
+	local civ = creature(268435572, "Ana Mount", {store = {}})
+	local n = #civ.log.msgs
+	check(talks["!tester"].onSay(civ, "!tester", "mount give #1") == true and talks["!tester"].onSay(civ, "!tester", "dummy give #2") == true
+		and talks["!tester"].onSay(civ, "!tester", "task #3") == true and #civ.log.msgs == n, "dummy / mount / task: a player's words go on and get no answer")
+	check(HELPER_VERSION >= 24, "the helper is version 24 or later (O657: new commands)")
 end
 
 print = origPrint

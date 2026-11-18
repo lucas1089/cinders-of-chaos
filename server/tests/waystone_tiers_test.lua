@@ -368,6 +368,8 @@ do
 	local tcfg = WT.config
 	check(tcfg.tester and tcfg.tester.minLevel >= 1000 and tcfg.tester.maxSeconds > 0 and tcfg.tester.kills >= 1, "config: the tester rules")
 	check(type(tcfg.arrivals) == "table", "config: the arrivals table")
+	local realArrivals = tcfg.arrivals
+	tcfg.arrivals = {} -- O657: the config holds all 12 arrival tiles now; this section plays with none and then one
 	local creatures = {}
 	local function inBox(c, centre, hx, hy)
 		return c.pos.z == centre.z and math.abs(c.pos.x - centre.x) <= hx and math.abs(c.pos.y - centre.y) <= hy
@@ -480,7 +482,7 @@ do
 	bot.pos = {x = 5, y = 5, z = 7} -- left the map another way (a death)
 	WT.testerGuard()
 	check(WT.testerRuns[9] == nil, "a bot that is no longer in the map ends its run")
-	tcfg.arrivals[9] = nil
+	tcfg.arrivals = realArrivals
 end
 
 print(string.format("waystone_tiers_test: %d checks, %d failures", count, failures))

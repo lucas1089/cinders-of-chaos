@@ -77,6 +77,9 @@ ok(not K.isRetired(cfg, nil), "no position: not retired")
 -- the arrival tiles of the tester bots (O651): a table of map index -> tile inside that map's rectangle (empty until the audit prints them)
 do
 	ok(type(cfg.arrivals) == "table" and type(cfg.tester) == "table", "config: the tester rules and the arrivals table exist")
+	local n = 0
+	for _ in pairs(cfg.arrivals) do n = n + 1 end
+	ok(n == #cfg.maps, "O657: every map has an arrival tile (the tester check no longer SKIPs on arrivals)")
 	for i, at in pairs(cfg.arrivals) do
 		local m = cfg.maps[i]
 		ok(m ~= nil, "arrival of map " .. tostring(i) .. ": the map exists")
