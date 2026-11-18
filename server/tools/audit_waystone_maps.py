@@ -1,6 +1,7 @@
 """Waystone map audit: can a group walk from the arrival to the boss lever and the boss, and do the maps hold monsters?
 
     python3 -I server/tools/audit_waystone_maps.py BASE_SERVER_DIR [--check] [--no-clear] [N ...]
+    python3 -I server/tools/audit_waystone_maps.py BASE_SERVER_DIR --arrivals    (O651: the `arrivals` block of waystone_tiers_config.lua)
 
 BASE_SERVER_DIR is an unpacked base server (data/world/*.otbm, *-spawn.xml, data/items/items.otb + items.xml,
 data/scripts/customs/waystone_system/tier_maps.lua + waystone_bosses/). The base map is not in the repo, so CI runs only
@@ -109,6 +110,13 @@ def parse_boss(text):
             'levers': [tuple(map(int, x)) for x in re.findall(POS, lever)]}
 
 
+def arrivals_lua(maps):
+    """the `arrivals` block of waystone_tiers_config.lua (O651) from parse_tier_maps(): the tile the base device's teleport puts a group on, per
+    map in the order of the config's `maps` (tier, then the two maps of a tier as the base lists them). The tester bots enter a map there."""
+    rows = ['\t\t[%d] = {x = %d, y = %d, z = %d}, -- %s' % (i + 1, d[0], d[1], d[2], name) for i, (_, name, _a, _b, d) in enumerate(maps)]
+    return 'arrivals = {\n%s\n\t},' % '\n'.join(rows)
+
+
 def parse_clear_path(text):
     """[(x, y, z, item)] of waystone_tiers_config.lua clearPath."""
     block = re.search(r'clearPath\s*=\s*\{(.*?)\n\t\}', text, re.S)
@@ -141,6 +149,10 @@ def main(argv):
         print(__doc__)
         return 2
     base = args[0]
+    if '--arrivals' in argv:   # only tier_maps.lua is needed: no map, no items
+        path = os.path.join(base, 'data', 'scripts', 'customs', 'waystone_system', 'tier_maps.lua')
+        print(arrivals_lua(parse_tier_maps(open(path, encoding='utf-8', errors='replace').read())))
+        return 0
     check = '--check' in argv
     sys.path.insert(0, os.path.join(REPO, 'tools', 'map'))
     import otbm

@@ -226,7 +226,7 @@
 #                               creates the user "chaosadmin" and adds that ssh public key (a file, or - for stdin; keys
 #                               already there stay: one per device) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
-#   testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed]
+#   testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] [--journey [--level L]]
 #                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
 #                               most 150) play for MINUTES (default 60, at most 1440), then stop by themselves. Copies the
 #                               TEST ONLY helper into data/scripts; it loads at a server start, so without one since the
@@ -242,6 +242,12 @@
 #                               --closed: closed test mode (needs `testers closed on` first): two tester guilds are made, the bots
 #                               run the closed checks (arena, battleground, the Marches, guild war, market, bazaar lock, the raid) among
 #                               themselves; the guilds, wars, tester market book and arena records go when the run ends
+#                               --journey [--level L]: the levelling journey on foot (O654, server/README.md "The levelling journey on foot
+#                               (O654)"): the bots begin in the temple of Cinderhold at level L (default 8; fresh characters: the setup
+#                               of the last run must be cleaned up first) and level like a person: walk to the temple teleport, the hall's
+#                               stairs and the hunt of their level, hunt, move on, town portal back, sell, buy and open the depot on a trip,
+#                               die and go on. testers report: minutes per level against the model, every helper teleport counted. A run of
+#                               its own: not with --keystones, --checks or --closed
 #   testers closed on|off|status  closed test mode (O582, server/README.md "Closed test mode"): the switch file data/chaos_testers_closed
 #                               ("on" or "off"; off, or no file, is the default). On: the bots may play PvP, arena, battleground,
 #                               guild, guild war, market, the bazaar lock and the raid, only among themselves; a player is never matched, attacked,
@@ -3774,26 +3780,33 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         esac
         ;;
       start)
-        n=100 minutes=60 rsecs="" pos=0 keyarg="" checkarg="" closedarg=""
+        n=100 minutes=60 rsecs="" pos=0 keyarg="" checkarg="" closedarg="" journeyarg="" jlevel=8
         while [ $# -gt 0 ]; do
           case $1 in
             --keystones) keyarg=--keystones; shift ;;
             --checks) checkarg=--checks; shift ;;
             --closed) closedarg=--closed; shift ;;
+            --journey) journeyarg=--journey; shift ;;
+            --level)
+              jlevel=${2:-}
+              num "$jlevel" || die "--level L (a number: the level the journey characters begin at)"
+              { [ "$jlevel" -ge 1 ] && [ "$jlevel" -le 2200 ]; } || die "--level: 1 to 2200"
+              shift 2 ;;
             --restart)
               rsecs=${2:-}
               num "$rsecs" || die "--restart SECONDS"
               [ "$rsecs" -le 900 ] || die "at most 900 seconds"
               shift 2 ;;
             *)
-              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed]"
-              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed]"
+              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] [--journey [--level L]]"
+              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] [--journey [--level L]]"
               if [ $pos -eq 0 ]; then n=$1; else minutes=$1; fi
               pos=$((pos + 1)); shift ;;
           esac
         done
         if [ "$n" -lt 1 ] || [ "$n" -gt 150 ]; then die "N: 1 to 150 tester bots"; fi
         if [ "$minutes" -lt 1 ] || [ "$minutes" -gt 1440 ]; then die "MINUTES: 1 to 1440"; fi
+        if [ -n "$journeyarg" ] && [ -n "$keyarg$checkarg$closedarg" ]; then die "--journey is a run of its own: not with --keystones, --checks or --closed"; fi
         p=$(testers_pid) && die "tester bots already running (pid $p): chaos-ctl.sh testers stop"
         dev_key_on && die "config.lua has clientGuardAllowDevKey = true: the tester bots never run with the development key"
         if [ -n "$closedarg" ]; then
@@ -3823,7 +3836,8 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         have=${have:-0}
         if [ "$have" -lt "$n" ]; then
           [ "$have" -eq 0 ] || { remove_helper; die "the last setup made $have testers, fewer than $n: chaos-ctl.sh testers cleanup --yes first"; }
-          testers_py setup --count "$n" --server-dir "$SERVER" --state "$TSTATE" || { remove_helper; die "setup failed"; }
+          # --journey: fresh characters in the temple of Cinderhold at level L, the journey walks them to the hunts (O654)
+          testers_py setup --count "$n" --server-dir "$SERVER" --state "$TSTATE" ${journeyarg:+--journey --levels "$jlevel"} || { remove_helper; die "setup failed"; }
         fi
         mkdir -p "$(dirname "$TLOG")"
         echo "== $(date '+%F %T') testers start $n $minutes" >> "$TLOG"
@@ -3833,17 +3847,17 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
           # shellcheck disable=SC2016
           exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
-            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"} ${12:+"${12}"} ${13:+"${13}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"} ${12:+"${12}"} ${13:+"${13}"} ${14:+"${14}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
             "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
-            "$REPO/server/tools/tester_scenarios.json" "$keyarg" "$checkarg" "$closedarg" \
+            "$REPO/server/tools/tester_scenarios.json" "$keyarg" "$checkarg" "$closedarg" "$journeyarg" \
             >> "$TLOG" 2>&1 < /dev/null ) &
         echo $! > "$TSTATE/run.pid"
         date +%s > "$TSTATE/started"
         rm -f "$TSTATE/stopped"
         if [ "$delay" -gt 0 ]; then
-          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks}${closedarg:+, closed test mode}, starting in $delay s, after the restart (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks}${closedarg:+, closed test mode}${journeyarg:+, levelling journey on foot from level $jlevel}, starting in $delay s, after the restart (log $TLOG)"
         else
-          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks}${closedarg:+, closed test mode} (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks}${closedarg:+, closed test mode}${journeyarg:+, levelling journey on foot from level $jlevel} (log $TLOG)"
         fi
         ;;
       stop)
@@ -3913,7 +3927,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
         fi
         ;;
-      *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] | closed on|off|status | stop | status | report | log [N] | cleanup [--yes]" ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] [--journey [--level L]] | closed on|off|status | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
   journey)

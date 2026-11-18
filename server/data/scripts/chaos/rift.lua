@@ -2554,6 +2554,7 @@ function RF.probe(player)
 	end
 	out.inside = true
 	local mons, other, nearest, nd = 0, false, nil, nil
+	local otherAt, od -- the nearest pack monster of another floor (by x and y): the stairs go towards its floor (O651)
 	for mid in pairs(run.aliveIds or {}) do
 		local m = Monster(mid)
 		local at = m and m:getPosition()
@@ -2566,6 +2567,10 @@ function RF.probe(player)
 				end
 			else
 				other = true
+				local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+				if not od or d < od then
+					otherAt, od = at, d
+				end
 			end
 		end
 	end
@@ -2582,8 +2587,24 @@ function RF.probe(player)
 		floors = run.L and #run.L.floors or 1, entry = plain(RF.entryOf(run)), monsters = mons,
 		bossPos = boss and plain(boss:getPosition()) or nil,
 		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil}
+	local links = {}
+	for _, l in ipairs(run.L and run.L.links or {}) do
+		links[#links + 1] = {hole = plain(l.hole), ladder = plain(l.ladder), up = plain(l.up)}
+	end
+	out.run.links = #links
 	out.guide = R.guide({state = run.state, boss = run.boss, pos = out.pos, bossPos = out.run.bossPos,
-		monster = nearest and {pos = plain(nearest)} or nil, other = other and not nearest, reach = 4})
+		monster = nearest and {pos = plain(nearest)} or nil, other = other and not nearest, otherPos = plain(otherAt), links = links, reach = 4})
+	if out.guide.via == "ladder" and out.guide.mode == "use" then
+		-- the ladder to use: its client id and its place in the tile's stack, what a hand on the screen clicks (O651)
+		local g = out.guide.goal
+		local tile = Tile(Position(g.x, g.y, g.z))
+		local ladderId = ChaosAreaGenConfig and ChaosAreaGenConfig.items and ChaosAreaGenConfig.items.ladder
+		local item = tile and ladderId and tile:getItemById(ladderId) or nil
+		if item then
+			out.guide.use = {x = g.x, y = g.y, z = g.z, clientId = ItemType(item:getId()):getClientId(),
+				stack = tile.getThingIndex and tile:getThingIndex(item) or 1}
+		end
+	end
 	return out
 end
 

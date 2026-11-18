@@ -26,6 +26,8 @@
 --   K.marketRealm(isTester, realm)        a tester trades in its own book (K.REALM), a player in its own realm
 --   K.marketRefusal(action, isTester, closedOn)  the refusal of a market action of a tester, or nil
 --   K.marketCoinsOk(realm)                the tester book trades gold only
+--   K.pvpRefusal(aT, bT, closedOn, aPlace, bPlace)  O652: why a hit of one character on another is refused: "mixed" (a tester and a player), "closed-off",
+--                                         "no-place" (two testers outside one PvP place), or nil
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosTestersCore = ChaosTestersCore or {}
@@ -310,6 +312,30 @@ end
 function K.marketCoinsOk(realm)
 	return realm ~= K.REALM
 end
+
+-- PvP among testers (O652): the targeting rule. A tester hit on a player is always refused ("mixed"); a tester hit on another tester needs the
+-- closed switch ("closed-off") and a place made for PvP on BOTH sides ("no-place": an arena match, the battleground, the Marches, the siege
+-- arena; the places are named by blessings.lua pvpPlace). aTester / bTester: booleans; place: a name or nil. Returns the reason or nil.
+K.CLOSED_TEXT["no-place"] = "The testers fight each other only in a place made for PvP."
+function K.pvpRefusal(aTester, bTester, closedOn, aPlace, bPlace)
+	if K.mixed(aTester, bTester) then
+		return "mixed"
+	end
+	if not aTester then
+		return nil -- two players: not the testers' business
+	end
+	if closedOn ~= true then
+		return "closed-off"
+	end
+	if not aPlace or not bPlace or aPlace ~= bPlace then
+		return "no-place"
+	end
+	return nil
+end
+
+-- the tester copy of a boss (testers_boss.lua, O652): a boss made for one tester, hurt only by testers. A boss of the world, a lair or an
+-- event is the players' (K.worldBlocked). `listed`: how many testers a board names (a damage share, a kill row, a title): must be 0.
+K.BOSS_COPY_SIDE = "testers"
 
 function K.lookLine(isSelf)
 	if isSelf then

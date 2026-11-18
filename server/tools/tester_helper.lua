@@ -54,6 +54,23 @@
 --     ChaosMainQuestBoss.probe, ChaosTreasureGoblin.probe, ChaosInvasion.probe); `nemesis born | appear`, `vael enter` and `goblin spawn` are the
 --     TEST ONLY grants (a tester only, logged), `path` the way on foot to the guide's goal, `close` the end of the bot's own run; the fights and the
 --     claim are the bot's own
+--   * "!tester found" (O653): what the bot's own drops can do (read only): the orbs, whetstones, sockets orbs, gems, runes, charms and cards in its
+--     backpack, the pieces it could wear with a score that knows sets, uniques and jewelry (H.chaseScore), what it wears. Nothing is given or moved;
+--     the crafting, the socketing and the wearing are the bot's own packets (tester_checks.py craft_found, gear_chase)
+--   * "!tester ascend [state | proof | path | close]", "!tester gather [state | path]" (O655): the Ascendant Oracle's quest (stage, Proof of Strength,
+--     the Trial, the Choice and the class lock: ChaosAscensionQuest.probe) and the gathering with a pick or a sickle (the tools carried, the nearest node
+--     that is ready for the bot: ChaosProfessions.probe) as a person sees them; `ascend proof` is the TEST ONLY credit of the proof (a tester only,
+--     logged), `path` the way on foot to the guardian inside the trial / next to the node, `ascend close` the end of the bot's own trial. The talk with
+--     the Oracle (the modal windows), the fight, the choice, the use of the node and the buying of a tool are the bot's own
+--   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
+--     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
+--     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
+--     the bot's; `jump` / `hall` are the TEST ONLY teleports of the counted fallback
+--   * "!tester pvp [state | path]", "!tester boss [state | spawn | path | close]" (O652): PvP among the testers (ChaosTesters.pvpProbe: the PvP place,
+--     the foe the rules allow, the hits a rule cancelled, the arena, battleground and Marches views, the season rows of testers: 0) and the tester
+--     copy of a key boss (ChaosTestersBoss.probe: the copy, its telegraph marks and the safe tile, the kills, the boss points, the boards: no
+--     tester); `boss spawn` is the TEST ONLY grant (a tester only, logged, only while no player is near); inside a PvP place the helper's loop aims
+--     a tester without a target at a foe tester (ChaosTesters.pvpFoe: both testers, the switch on, one place, the place's own rule), never at a player
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -86,7 +103,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 18
+HELPER_VERSION = 23
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -955,6 +972,23 @@ function commands.dungeon(player, arg)
 		return
 	end
 	local probe = D.probe(player)
+	if type(what) == "table" then -- O651: the TEST ONLY unlocked difficulty (a person earns it by clearing the one before)
+		local got, why = nil, "no dungeon system"
+		if D.testerUnlock then
+			got, why = D.testerUnlock(player, what.id, what.difficulty)
+		end
+		tell(player, "dungeon", H.dungeonAnswer(D.probe(player), got and {unlocked = got} or {err = why}))
+		return
+	end
+	if what == "weekly" then -- O651: the Weekly Challenge as a person sees it: the week, the theme, the boards (no tester on them)
+		local WCH = ChaosWeeklyChallenge
+		if not (WCH and WCH.probe) then
+			tell(player, "dungeon", H.dungeonAnswer(probe, {err = "no weekly challenge"}))
+			return
+		end
+		tell(player, "dungeon", H.dungeonAnswer(probe, {weekly = H.cutValue(WCH.probe(player), 2)}))
+		return
+	end
 	if what == "path" then
 		local goal = probe.guide and probe.guide.goal
 		if not probe.inside or not goal then
@@ -1275,6 +1309,83 @@ function commands.rift(player, arg)
 		return
 	end
 	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf()}))
+end
+
+-- ---------------------------------------------------------------- O651 the pocket bosses
+-- "!tester pocket [state | path | close]": reads ChaosPocketBoss.probe (the Boss Spawns window's pocket rows with their charges and boss points, the
+-- arenas free against the ones kept for the players; inside the run, the boss and the guide); `path` is the engine's path to the boss; `close` is
+-- the bot's own Leave button. The window's `pocketEnter` and the fight are the bot's own.
+function commands.pocket(player, arg)
+	local what, usage = H.parsePocket(arg)
+	if not what then
+		tell(player, "pocket", {err = usage})
+		return
+	end
+	local PB = ChaosPocketBoss
+	if not (PB and PB.probe) then
+		tell(player, "pocket", {err = "no pocket boss system"})
+		return
+	end
+	if what == "close" then
+		local closed = PB.testerClose and PB.testerClose(player) or false
+		tell(player, "pocket", H.pocketAnswer(PB.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = PB.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a pocket"
+		end
+		tell(player, "pocket", H.pocketAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "pocket", H.pocketAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O651 the waystone maps walked
+-- "!tester wsmap [state | enter [tier] | path | close]": reads ChaosWaystoneTiers.probe (whether a map of the band is free, inside the run, the
+-- level of the monsters against the tier, the guide); `enter` is the TEST ONLY stand-in of the base device's pads and teleport (a plain run on a
+-- free map, the bot on its arrival tile: a tester only, logged); `path` the engine's path to the guide's goal; `close` the bot's own way out.
+function commands.wsmap(player, arg)
+	local want, usage = H.parseWsMap(arg)
+	if not want then
+		tell(player, "wsmap", {err = usage})
+		return
+	end
+	local WT = ChaosWaystoneTiers
+	if not (WT and WT.probe and WT.testerEnter) then
+		tell(player, "wsmap", {err = "no waystone system"})
+		return
+	end
+	if want.what == "close" then
+		local closed = WT.testerClose(player)
+		tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {closed = closed and true or false}))
+		return
+	end
+	if want.what == "enter" then
+		local got, why = WT.testerEnter(player, want.tier)
+		if not got then
+			tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {err = why}))
+			return
+		end
+		tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {entered = true, map = got.map, tier = got.tier}))
+		return
+	end
+	local probe = WT.probe(player)
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a waystone map"
+		end
+		tell(player, "wsmap", H.wsmapAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "wsmap", H.wsmapAnswer(probe))
 end
 
 -- ---------------------------------------------------------------- O595 the Infinity Tower and the Ember Descent
@@ -1694,6 +1805,251 @@ function commands.invasion(player, arg)
 		tell(player, "invasion", H.cutAnswer(probe, got or {err = why}))
 	else
 		tell(player, "invasion", H.cutAnswer(probe))
+	end
+end
+
+-- ---------------------------------------------------------------- O654 the levelling journey on foot
+-- "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]": what a person sees on the way from the temple to the next hunt of the level
+-- (H.journeyPick, the hunts of the teleport room): the hunt to go to, the temple's great teleport (`gate`), the stairs of the hall's floors,
+-- the town portal beside the bot (`portal`), the depot locker next to the temple and the nearest monster. Nothing moves in `state`; the
+-- walk is `!tester path pos X Y Z`. `jump` (the hunt's arrival) and `hall` (the hub next to the gate) are the TEST ONLY teleports of the
+-- fallback the bot counts when the walk fails; a tester only, as every command of this file.
+T.journeyCache = T.journeyCache or {}
+
+-- the facts of a tile the journey looks for (H.journeyFind): a teleport's destination, a floor change, the action id of the town portal
+local function journeyTile(x, y, z, withAid)
+	if x < 1 or y < 1 or z < 0 or z > 15 then
+		return nil
+	end
+	local tile = Tile(Position(x, y, z))
+	if not tile then
+		return nil
+	end
+	local info
+	if ITEM_TYPE_TELEPORT then
+		local tp = tile:getItemByType(ITEM_TYPE_TELEPORT)
+		if tp and tp.getDestination then
+			local ok, d = pcall(tp.getDestination, tp)
+			if ok and d then
+				info = {dest = posOf(d)}
+			end
+		end
+	end
+	if tile:hasFlag(TILESTATE_FLOORCHANGE) then
+		info = info or {}
+		info.change = (TILESTATE_FLOORCHANGE_DOWN and tile:hasFlag(TILESTATE_FLOORCHANGE_DOWN)) and "down" or "up"
+	end
+	if withAid then
+		for _, item in ipairs(tile:getItems() or {}) do
+			if item:getActionId() == H.PORTAL_AID then
+				info = info or {}
+				info.aid = H.PORTAL_AID
+				break
+			end
+		end
+	end
+	return info
+end
+
+local function journeyKey(kind, p)
+	return kind .. ":" .. p.x .. "," .. p.y .. "," .. p.z
+end
+
+local function journeyProbe(player, opts)
+	local J = H.JOURNEY
+	local ppos = player:getPosition()
+	local pos, level, tpl = posOf(ppos), player:getLevel(), posOf(temple(player))
+	local zone = H.journeyZone(pos, tpl)
+	local ports = ChaosHuntTeleports and ChaosHuntTeleports.ports and ChaosHuntTeleports.ports() or {}
+	local seed = player.getGuid and player:getGuid() or player:getId()
+	local probe = {level = level, pos = pos, zone = zone, pick = H.journeyPick(ports, level, {keep = opts.keep, skip = opts.skip, seed = seed})}
+	probe.stay = probe.pick and probe.pick.stay or nil
+	probe.above = probe.pick and probe.pick.above or nil
+	local tile = Tile(ppos)
+	probe.pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false
+	local cache = T.journeyCache
+	if zone == "temple" then
+		local key = journeyKey("gate", tpl)
+		if cache[key] == nil then
+			local found = H.journeyFind(journeyTile, tpl, 14, H.journeyIsGate)
+			cache[key] = found and {x = found.x, y = found.y, z = found.z} or false
+		end
+		probe.gate = cache[key] or nil
+		key = journeyKey("locker", tpl)
+		if cache[key] == nil then
+			local l = findLocker(Position(tpl.x, tpl.y, tpl.z))
+			local it = l and ItemType(l.id)
+			cache[key] = l and {x = l.pos.x, y = l.pos.y, z = l.pos.z, cid = it and it:getClientId() or 0, sp = l.stackpos, spot = posOf(l.spot)} or false
+		end
+		probe.locker = cache[key] or nil
+	elseif zone == "hall" then
+		local key = "stairs:" .. pos.z
+		if cache[key] == nil then
+			local up = H.journeyFind(journeyTile, pos, 40, function(i) return H.journeyIsStairs(i, "up") end)
+			local down = H.journeyFind(journeyTile, pos, 40, function(i) return H.journeyIsStairs(i, "down") end)
+			cache[key] = {up = up and {x = up.x, y = up.y, z = up.z} or nil, down = down and {x = down.x, y = down.y, z = down.z} or nil}
+		end
+		probe.stairs = cache[key]
+	end
+	local near = H.journeyFind(function(x, y, z) return journeyTile(x, y, z, true) end, pos, 4, H.journeyIsPortal)
+	probe.portal = near and {x = near.x, y = near.y, z = near.z} or nil
+	if zone == "other" then
+		local list, around = {}, 0
+		for _, c in ipairs(Game.getSpectators(ppos, false, false, J.sight, J.sight, J.sight, J.sight) or {}) do
+			if c:isMonster() and not c:getMaster() then
+				list[#list + 1] = {pos = c:getPosition(), health = c:getHealth(), owned = false, id = c:getId(), c = c}
+			end
+		end
+		local best = H.nearest(ppos, list, J.sight)
+		if best then
+			local p = best.pos
+			probe.monster = {name = best.c:getName(), level = Chaos.monsterHuntingLevel(best.c, 0), x = p.x, y = p.y, z = p.z,
+				dist = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))}
+		end
+		for _, m in ipairs(list) do
+			if m.pos.z == pos.z and math.max(math.abs(m.pos.x - pos.x), math.abs(m.pos.y - pos.y)) <= J.crowd then
+				around = around + 1
+			end
+		end
+		probe.crowd = around
+		local hot = H.hotSpot(level, monstersNear(ppos, J.crowd))
+		probe.hot = hot and {n = tostring(hot[1]), l = hot[2]} or nil
+	end
+	return probe
+end
+
+function commands.journey(player, arg)
+	local opts, usage = H.parseJourney(arg)
+	if not opts then
+		tell(player, "journey", {err = usage})
+		return
+	end
+	local probe = journeyProbe(player, opts)
+	if opts.what == "jump" or opts.what == "hall" then
+		local target = opts.what == "hall" and H.HALL_DOOR or (probe.pick and not probe.pick.above and probe.pick.a)
+		if not target then
+			local why = (probe.pick and not probe.pick.above) and "the hunt has no known arrival (a base hunt: its teleport leads there by the map)"
+				or "no hunt the level may enter"
+			tell(player, "journey", H.journeyAnswer(probe, {err = why}))
+			return
+		end
+		local spot = freeNear(Position(target.x, target.y, target.z), nil, 3)
+		if not spot then
+			tell(player, "journey", H.journeyAnswer(probe, {err = "no free tile at the " .. (opts.what == "hall" and "hall" or "hunt")}))
+			return
+		end
+		player:teleportTo(spot)
+		if not landed(player, spot) then
+			tell(player, "journey", H.journeyAnswer(probe, {err = "the teleport was refused"}))
+			return
+		end
+		tell(player, "journey", H.journeyAnswer(journeyProbe(player, opts), {jumped = opts.what}))
+		return
+	end
+	tell(player, "journey", H.journeyAnswer(probe))
+end
+
+-- "!tester pvp [state | path]": reads ChaosTesters.pvpProbe (O652): the PvP place the bot stands in, the closed switch, the foe the rules allow (a tester
+-- in a place, the nearest in sight or the nearest a system lists), the hits a rule cancelled (on a player, outside a place, the switch off), the
+-- arena / battleground / Marches views and `seasonListed` (testers with a row in the season ratings: 0). `path` is the engine's path to the guide's goal.
+function commands.pvp(player, arg)
+	local what, usage = H.parsePvp(arg)
+	if not what then
+		tell(player, "pvp", {err = usage})
+		return
+	end
+	local X = ChaosTesters
+	if not (X and X.pvpProbe) then
+		tell(player, "pvp", {err = "no PvP rules for the testers"})
+		return
+	end
+	local probe = X.pvpProbe(player)
+	if what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "pvp", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "pvp", H.cutAnswer(probe))
+	end
+end
+
+-- "!tester boss [state | spawn | path | close]": reads ChaosTestersBoss.probe (O652). `spawn` is a copy of a key boss for the bot (TEST ONLY, logged,
+-- only while no player is near and no lair's boss spawn is near: only the testers can hurt it, no board, no kill row), `path` the engine's path to
+-- it, `close` takes it away. `state` gives its telegraph marks and, when the bot stands in one, the safe tile (guide `dodge`).
+function commands.boss(player, arg)
+	local what, usage = H.parseBoss(arg)
+	if not what then
+		tell(player, "boss", {err = usage})
+		return
+	end
+	local B = ChaosTestersBoss
+	if not (B and B.probe and B.testerSpawn) then
+		tell(player, "boss", {err = "no tester boss system"})
+		return
+	end
+	if what == "close" then
+		tell(player, "boss", H.cutAnswer(B.probe(player), {closed = B.testerClose(player) and true or false}))
+	elseif what == "spawn" then
+		local m, why = B.testerSpawn(player)
+		tell(player, "boss", H.cutAnswer(B.probe(player), m and {spawned = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = B.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "boss", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "boss", H.cutAnswer(B.probe(player)))
+	end
+end
+
+-- ---------------------------------------------------------------- O655 the class ascension and the gathering
+-- "!tester ascend [state | proof | path | close]": reads ChaosAscensionQuest.probe (the stage, the proof, the trial, the choices with the class lock,
+-- inside the trial the guardian and `guide`). `proof` is the TEST ONLY credit of the Proof of Strength through its own rule (a tester only, logged: a
+-- rare monster does not come when a check asks), `path` the engine's path to the guardian inside, `close` the end of the bot's own trial. The talk
+-- with the Oracle, the modal windows, the fight and the choice are the bot's own.
+function commands.ascend(player, arg)
+	local what, usage = H.parseAscend(arg)
+	if not what then
+		tell(player, "ascend", {err = usage})
+		return
+	end
+	local A = ChaosAscensionQuest
+	if not (A and A.probe) then
+		tell(player, "ascend", {err = "no ascension quest"})
+		return
+	end
+	if what == "close" then
+		local closedNow = A.testerClose(player) and true or false -- the close first: the record shows the bot outside
+		tell(player, "ascend", H.cutAnswer(A.probe(player), {closed = closedNow}))
+	elseif what == "proof" then
+		local ok, why = A.testerProof(player)
+		tell(player, "ascend", H.cutAnswer(A.probe(player), ok and {proofed = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = A.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "ascend", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "ascend", H.cutAnswer(A.probe(player)))
+	end
+end
+
+-- "!tester gather [state | path]": reads ChaosProfessions.probe (the tools, the materials held, the nearest ready node and `guide`) and the engine's path to
+-- the node's tile. The use, the channel and the wait are the bot's own.
+function commands.gather(player, arg)
+	local what, usage = H.parseGather(arg)
+	if not what then
+		tell(player, "gather", {err = usage})
+		return
+	end
+	local P = ChaosProfessions
+	if not (P and P.probe) then
+		tell(player, "gather", {err = "no professions"})
+		return
+	end
+	local probe = P.probe(player)
+	if what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "gather", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "gather", H.cutAnswer(probe))
 	end
 end
 
@@ -3149,6 +3505,29 @@ local function nearestMonster(player)
 	return best and best.c
 end
 
+-- O652: inside a PvP place a tester without a target aims at a foe tester (ChaosTesters.pvpFoe: both testers, the closed switch on, one place, the
+-- place's own rule: the other team, nobody protected), never at a player and never outside a place. player:setTarget skips the callbacks, so this
+-- is the bot's own rule; the server's guard (testers.lua) still cancels any hit the rules refuse.
+local function pvpAim(player)
+	local X = ChaosTesters
+	if not (X and X.pvpFoe and X.pvpPlace and X.pvpPlace(player)) then
+		return
+	end
+	local pos = player:getPosition()
+	local list = {}
+	for _, c in ipairs(Game.getSpectators(pos, false, true, RANGE, RANGE, RANGE, RANGE)) do
+		if c:isPlayer() and c:getId() ~= player:getId() then
+			local ok, foe = pcall(X.pvpFoe, player, c)
+			list[#list + 1] = {pos = c:getPosition(), tester = eligible(c) and true or false, foe = ok and foe == true, health = c:getHealth(), id = c:getId(), c = c}
+		end
+	end
+	local pick = H.pvpTarget(pos, list, RANGE)
+	if pick then
+		player:setTarget(pick.c)
+		player:setDirection(H.directionTo(pos, pick.pos))
+	end
+end
+
 -- one round of the loop. Returns true when the loop ends (the helper file is gone)
 local function stepBody()
 	T.step = T.step + 1
@@ -3159,6 +3538,9 @@ local function stepBody()
 			if not player or not eligible(player) then
 				T.ids[id] = nil -- gone, or not a tester: never acted on
 			else
+				if not player:getTarget() then
+					pcall(pvpAim, player) -- O652: a foe tester inside a PvP place first
+				end
 				if not player:getTarget() then
 					local monster = nearestMonster(player)
 					if monster then
@@ -3221,6 +3603,87 @@ local function step()
 	end
 end
 T.step_fn = step
+
+-- ---------------------------------------------------------------- O653 what the bot's own drops can do
+-- "!tester found": reads the backpack and the worn gear (never gives or moves anything). Orbs by key (ChaosCrafting.orbByKey), gems, runes, charms,
+-- cards, and the pieces with their set, unique and jewelry facts; H.foundReport scores them (H.chaseScore knows sets). The crafting window, the
+-- use-with of a gem and the move to a worn slot are the bot's own packets.
+local function flag(f)
+	local ok, v = pcall(f)
+	return ok and v and true or false
+end
+
+local function foundRows(player, bag)
+	local orbOf = {}
+	for key, orb in pairs((ChaosCrafting and ChaosCrafting.orbByKey) or {}) do
+		if type(orb) == "table" and orb.id then
+			orbOf[orb.id] = key
+		end
+	end
+	local cardOf = {}
+	local okC, cards = pcall(function() return ChaosCardsCore and ChaosCardsCore.cardIds and ChaosCardsCore.cardIds() end)
+	for _, id in ipairs(okC and cards or {}) do
+		cardOf[id] = true
+	end
+	local rows = {}
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local id = item:getId()
+			local it = ItemType(id)
+			local slot = bagSlotOf(it)
+			local row = {i = i, id = id, cid = it:getClientId(), n = item:getCount(), slot = slot, orb = orbOf[id],
+				gem = flag(function() return ChaosGems and ChaosGems.isGem and ChaosGems.isGem(id) end),
+				rune = flag(function() return ChaosSupports and ChaosSupports.isRune and ChaosSupports.isRune(id) end),
+				charm = flag(function() return ChaosCharms and ChaosCharms.isCharm and ChaosCharms.isCharm(item) end),
+				card = cardOf[id] or nil}
+			if slot then
+				row.score = pieceScore(item, it)
+				local okS, set = pcall(function() return ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) end)
+				row.set = okS and set and set.key or nil
+				row.unique = flag(function() return item:getCustomAttribute("chaos_unique") ~= nil end)
+				row.jewelry = slot == CONST_SLOT_NECKLACE or slot == CONST_SLOT_RING
+			end
+			rows[#rows + 1] = row
+		end
+	end
+	return rows
+end
+
+function commands.found(player, arg)
+	local what, usage = H.parseFound(arg)
+	if not what then
+		tell(player, "found", {err = usage})
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "found", {err = "no backpack"})
+		return
+	end
+	local worn, state = {}, {sets = {}, size = {}}
+	for _, e in ipairs(BAG_SLOTS) do
+		local item = player:getSlotItem(e[2])
+		if item then
+			local okS, set = pcall(function() return ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) end)
+			worn[e[2]] = {score = pieceScore(item, ItemType(item:getId())), set = okS and set and set.key or nil,
+				unique = flag(function() return item:getCustomAttribute("chaos_unique") ~= nil end) or nil}
+		end
+	end
+	local okT, st = pcall(function() return ChaosItemSets and ChaosItemSets.stateOf and ChaosItemSets.stateOf(player) end)
+	for key, v in pairs(okT and st and st.sets or {}) do
+		state.sets[key] = v.count or 0
+	end
+	for _, set in pairs((ChaosItemSets and ChaosItemSets.sets) or {}) do
+		if type(set) == "table" and set.key and type(set.pieces) == "table" then
+			state.size[set.key] = #set.pieces
+		end
+	end
+	local report = H.foundReport(foundRows(player, bag), worn, state)
+	report.bagClientId = ItemType(bag:getId()):getClientId()
+	report.level = player:getLevel()
+	tell(player, "found", report)
+end
 
 T.FILE = "data/scripts/zz_tester_helper.lua"
 function T.present()

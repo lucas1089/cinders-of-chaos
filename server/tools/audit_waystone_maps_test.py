@@ -85,6 +85,9 @@ tm = '''  [29845] = {
 '''
 maps = a.parse_tier_maps(tm)
 check(maps == [(1, 'Underground: Map 3 Water', (33314, 33066, 8), (33606, 33178, 8), (33597, 33141, 8))], 'tier_maps parsed: %s' % maps)
+# the arrivals block the tester bots read (O651)
+block = a.arrivals_lua(maps)
+check('[1] = {x = 33597, y = 33141, z = 8}' in block and block.startswith('arrivals = {') and block.rstrip().endswith('},'), 'the arrivals block: %s' % block)
 boss = 'fromPos = Position(1, 2, 7), toPos = Position(3, 4, 7), entrancePos = Position(2, 3, 7), bossPosition = Position(3, 3, 7),\nparticipantsPos = {\nPosition(9, 9, 7),\nPosition(9, 10, 7),\n},\nattempts = {}'
 b = a.parse_boss(boss)
 check(b['levers'] == [(9, 9, 7), (9, 10, 7)] and b['boss'] == (3, 3, 7), 'boss file parsed')

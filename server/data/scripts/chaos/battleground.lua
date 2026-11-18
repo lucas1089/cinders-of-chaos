@@ -278,6 +278,54 @@ function B.isQueued(player)
 	return B.queued[player:getId()] ~= nil
 end
 
+-- O652 (the tester bots' targeting rule, testers.lua X.pvpFoe): true when `a` may hit `b` now (one match, the fight phase, other teams)
+function B.foe(a, b)
+	local am = a and B.matchOf[a:getId()]
+	if not am or am ~= B.matchOf[b:getId()] then
+		return false
+	end
+	return K.canHit(am.phase, am.players[a:getId()], am.players[b:getId()], false) and true or false
+end
+
+-- O652: what a person sees (`!tester pvp`): the queue (members of the asker's realm: the testers' own), and inside the phase, the score, the
+-- team, the roster by side (a tester match holds no player), the foes and the braziers with their place
+function B.probe(player)
+	local m = B.matchOf[player:getId()]
+	local out = {queued = B.isQueued(player), inMatch = m ~= nil, queueEntries = #B.queue, need = C().teamMin * 2}
+	local mine, myRealm = 0, realmOf(player)
+	for _, e in ipairs(B.queue) do
+		if e.realm == myRealm then
+			mine = mine + #e.members
+		end
+	end
+	out.queueMembers = mine
+	if m then
+		local me = m.players[player:getId()]
+		out.phase, out.team, out.score, out.size = m.phase, me and me.team or nil, {m.score[1], m.score[2]}, m.size
+		out.testers, out.others, out.foes, out.braziers = 0, 0, {}, {}
+		for cid, e in pairs(m.players) do
+			local pl = cid ~= player:getId() and Player(cid) or nil
+			if pl then
+				if Chaos.isTester(pl) then
+					out.testers = out.testers + 1
+				else
+					out.others = out.others + 1
+				end
+				if me and e.team ~= me.team and not e.defeated and not e.gone and #out.foes < 12 then
+					local pos = pl:getPosition()
+					out.foes[#out.foes + 1] = {x = pos.x, y = pos.y, z = pos.z, name = pl:getName(),
+						hp = math.floor(pl:getHealth() * 100 / math.max(1, pl:getMaxHealth()))}
+				end
+			end
+		end
+		local L = K.layout(C(), m.slot)
+		for i, b in ipairs(L and L.braziers or {}) do
+			out.braziers[i] = {x = b.x, y = b.y, z = b.z, owner = m.braziers[i] and m.braziers[i].owner or 0}
+		end
+	end
+	return out
+end
+
 Chaos.registerInstance("battleground", {label = "a battleground", inside = B.isInside, at = function(pos)
 	return K.slotOfPos(C(), pos) ~= nil
 end, runs = function() -- /instances (instance_limits.lua)

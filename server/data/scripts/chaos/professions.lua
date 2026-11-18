@@ -1083,6 +1083,56 @@ for _, n in ipairs(cfg.nodes) do
 end
 nodeAction:register()
 
+-- ---------------------------------------------------------------- what a person sees (the tester bots, O655)
+-- For the tester bots' `!tester gather` (tools/tester_helper.lua checks that the asker is a tester). Reads only: the level rule, which gathering tools
+-- the bot carries, the materials it holds, the channel it is in, and the nearest node that is ready for it with the tool it carries (the cooldown is
+-- the bot's own: a node is per player, a tester takes nothing a player could gather), its place, its client id and the tile position a use packet
+-- names, and `guide` (walk next to the node, use it, buy a tool first). The gather itself (the use, the channel, the wait) is the bot's own.
+local GATHER_REACH = 150 -- tiles: the nearest node within it, on the bot's floor
+function P.probe(player)
+	local S = stateOf(player)
+	local pos = player:getPosition()
+	local out = {enabled = cfg.enabled and true or false, level = player:getLevel(), minLevel = cfg.minLevel, levelOk = P.levelOk(player),
+		pos = {x = pos.x, y = pos.y, z = pos.z}, tools = {}, held = 0, gathering = P.channels[player:getId()] ~= nil, bank = player.getBankBalance and
+		player:getBankBalance() or nil, buy = {}}
+	for _, p in ipairs(cfg.professions) do
+		out.tools[p.key] = hasTool(player, p.key)
+	end
+	for _, m in ipairs(cfg.materials) do
+		out.held = out.held + player:getItemCount(m.id)
+	end
+	for _, t in ipairs(cfg.broker.tools or {}) do
+		local it = ItemType(t.id)
+		out.buy[#out.buy + 1] = {id = t.id, clientId = it and it:getClientId() or 0, price = t.price}
+	end
+	local best, bestD
+	for key, nd in pairs(P.nodes) do
+		if nd.pos and nd.pos.z == pos.z and out.tools[nd.prof] and (nd.prof == "delving" or nd.prof == "wortcunning") and cooldownLeft(S, key) == 0 then
+			local d = math.max(math.abs(nd.pos.x - pos.x), math.abs(nd.pos.y - pos.y))
+			if d <= GATHER_REACH and (not bestD or d < bestD) and nodeOnTile(nd.pos, nd.id) then
+				best, bestD = nd, d
+			end
+		end
+	end
+	if best then
+		local item = nodeOnTile(best.pos, best.id)
+		local tile = Tile(Position(best.pos.x, best.pos.y, best.pos.z))
+		local it = ItemType(best.id)
+		out.node = {prof = best.prof, tier = best.tier, id = best.id, clientId = it and it:getClientId() or 0, pos = {x = best.pos.x, y = best.pos.y, z = best.pos.z},
+			stackpos = tile and item and tile:getThingIndex(item) or 1, d = bestD, area = best.area}
+		if bestD <= 1 then
+			out.guide = {mode = "use", goal = out.node.pos, why = "next to the " .. best.prof .. " node"}
+		else
+			out.guide = {mode = "walk", goal = out.node.pos, reach = {1, 1}, area = best.area, why = "to the nearest " .. best.prof .. " node"}
+		end
+	elseif not (out.tools.delving or out.tools.wortcunning) then
+		out.guide = {mode = "shop", why = "no pick or sickle: the Material Broker sells them"}
+	else
+		out.guide = {mode = "wait", why = "no node within " .. GATHER_REACH .. " tiles that is ready for the bot"}
+	end
+	return out
+end
+
 local ext = CreatureEvent("ChaosProfessionsExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE or not cfg.enabled then

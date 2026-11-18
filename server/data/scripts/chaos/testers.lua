@@ -247,16 +247,171 @@ end
 look:register(103)
 
 -- ---------------------------------------------------------------- apart from the players
+-- PvP among testers (O652): the name of the PvP place a character stands in ("arena", "battleground", "siege", "pvp zone": blessings.lua
+-- pvpPlace, the same list the other systems use) or nil. Asked only when two testers face each other (a rare call, not every hit).
+function X.pvpPlace(creature)
+	local p = testerOf(creature)
+	local B = rawget(_G, "ChaosBlessings")
+	if not p or not B or not B.pvpPlace then
+		return nil
+	end
+	local ok, place = pcall(B.pvpPlace, p)
+	return ok and place or nil
+end
+
+-- what the bots' probe reads (`!tester pvp`): per tester player id, the hits a rule cancelled
+X.pvpStats = X.pvpStats or {} -- id -> {player = n (a hit on a player), outside = n (on a tester outside a place), off = n (closed mode off)}
+local function pvpCount(creature, what)
+	local p = testerOf(creature)
+	if p and Chaos.isTester(p) then
+		local row = X.pvpStats[p:getId()] or {player = 0, outside = 0, off = 0}
+		row[what] = row[what] + 1
+		X.pvpStats[p:getId()] = row
+	end
+end
+
+-- may tester `a` hit tester `b` now (the bots' own targeting rule: `player:setTarget` skips the callback below, so the helper asks it before it
+-- aims)? Both testers, closed mode on, one PvP place and that place's own rule (the arena / battleground foe, the Marches, the siege arena).
+-- -> true, place | false, why
+function X.pvpFoe(a, b)
+	if not a or not b or a:getId() == b:getId() or not Chaos.isTester(a) or not Chaos.isTester(b) then
+		return false, "not two testers"
+	end
+	if not K.closedOn() then
+		return false, "closed-off"
+	end
+	local place = X.pvpPlace(a)
+	if not place or place ~= X.pvpPlace(b) then
+		return false, "no-place"
+	end
+	local function ask(name, fn)
+		local sys = rawget(_G, name)
+		if not (sys and sys[fn]) then
+			return false
+		end
+		local ok, res = pcall(sys[fn], a, b)
+		return ok and res == true
+	end
+	local foe
+	if place == "arena" then
+		foe = ask("ChaosArena", "foe")
+	elseif place == "battleground" then
+		foe = ask("ChaosBattleground", "foe")
+	elseif place == "pvp zone" then
+		foe = ask("ChaosPvpZone", "foe")
+	elseif place == "siege" then
+		local S = rawget(_G, "ChaosSiege")
+		local ok, res = pcall(function() return S.targetCombat(a, b) end)
+		foe = ok and res == RETURNVALUE_NOERROR
+	end
+	return foe and true or false, place
+end
+
+X.PVP_SIGHT = 12 -- tiles within which the bot's targeting loop looks for a foe
+X.PVP_REACH = 5 -- tiles within which the guide says fight
+
+-- the nearest foe of a tester (X.pvpFoe): {x, y, z, name, id, dist, seen = true} among the characters in sight, else (seen = false) the nearest of
+-- the lists the PvP systems give (`foes` of their probes: a match is wider than the screen). nil when there is none.
+function X.pvpNearestFoe(player, lists)
+	local pos = player:getPosition()
+	local best
+	local range = X.PVP_SIGHT
+	for _, c in ipairs(Game.getSpectators(pos, false, true, range, range, range, range) or {}) do
+		if c:isPlayer() and c:getId() ~= player:getId() and X.pvpFoe(player, c) then
+			local cp = c:getPosition()
+			local d = math.max(math.abs(cp.x - pos.x), math.abs(cp.y - pos.y))
+			if cp.z == pos.z and (not best or d < best.dist) then
+				best = {x = cp.x, y = cp.y, z = cp.z, name = c:getName(), id = c:getId(), dist = d, seen = true,
+					hp = math.floor(c:getHealth() * 100 / math.max(1, c:getMaxHealth()))}
+			end
+		end
+	end
+	if best then
+		return best
+	end
+	for _, list in ipairs(lists or {}) do
+		for _, f in ipairs(list or {}) do
+			local d = math.max(math.abs(f.x - pos.x), math.abs(f.y - pos.y))
+			if f.z == pos.z and (not best or d < best.dist) then
+				best = {x = f.x, y = f.y, z = f.z, name = f.name, dist = d, seen = false, hp = f.hp}
+			end
+		end
+	end
+	return best
+end
+
+-- what the bots' probe reads (`!tester pvp`): the place, the switch, the hits the rules cancelled, and the PvP systems' own view
+function X.pvpProbe(player)
+	local pos = player:getPosition()
+	local out = {closed = K.closedOn() and true or false, place = X.pvpPlace(player), level = player:getLevel(), pos = {x = pos.x, y = pos.y, z = pos.z}}
+	local row = X.pvpStats[player:getId()] or {player = 0, outside = 0, off = 0}
+	out.cancelledPlayer, out.cancelledOutside, out.cancelledOff = row.player, row.outside, row.off
+	local PS = rawget(_G, "ChaosPvpSeason")
+	if PS and PS.listedTesters then
+		local ok, n = pcall(PS.listedTesters)
+		out.seasonListed = ok and n or nil -- testers with a row in the season ratings: 0
+	end
+	local lists = {}
+	for _, sys in ipairs({{"arena", "ChaosArena"}, {"battleground", "ChaosBattleground"}, {"zone", "ChaosPvpZone"}}) do
+		local S = rawget(_G, sys[2])
+		if S and S.probe then
+			local ok, got = pcall(S.probe, player)
+			out[sys[1]] = ok and got or nil
+			if ok and type(got) == "table" and got.foes then
+				lists[#lists + 1] = got.foes
+			end
+		end
+	end
+	-- the guide: a foe the rules allow in sight (what the bot's targeting loop aims at), else the nearest foe a system lists, else (battleground) a
+	-- brazier the team does not hold, else wait. Outside a PvP place the bot has no foe at all: it never aims at a tester there.
+	out.foe = out.place and X.pvpNearestFoe(player, lists) or nil
+	if out.foe then
+		local near = out.foe.seen and out.foe.dist <= X.PVP_REACH
+		out.guide = {mode = near and "fight" or "walk", goal = {x = out.foe.x, y = out.foe.y, z = out.foe.z}, reach = {1, X.PVP_REACH}, area = "foe"}
+	elseif out.battleground and out.battleground.phase == "fight" and out.battleground.braziers then
+		local me = out.battleground.team
+		local pos = player:getPosition()
+		local best
+		for _, b in ipairs(out.battleground.braziers) do
+			local d = math.max(math.abs(b.x - pos.x), math.abs(b.y - pos.y))
+			if b.owner ~= me and b.z == pos.z and (not best or d < best.d) then
+				best = {x = b.x, y = b.y, z = b.z, d = d}
+			end
+		end
+		out.guide = best and {mode = "walk", goal = {x = best.x, y = best.y, z = best.z}, reach = {0, 1}, area = "brazier"}
+			or {mode = "wait", why = "the braziers are held"}
+	else
+		out.guide = {mode = "wait", why = out.place and "no foe in reach" or "not in a PvP place"}
+	end
+	return out
+end
+
 local guard = EventCallback
 guard.onTargetCombat = function(creature, target)
 	if not creature or not target or not isPlayerSide(creature) or not isPlayerSide(target) then
 		return RETURNVALUE_NOERROR
 	end
-	if K.mixed(isTester(creature), isTester(target)) then
+	-- their own summon or themselves: the engine's rules
+	if testerOf(creature) == testerOf(target) then
+		return RETURNVALUE_NOERROR
+	end
+	local aT, bT = isTester(creature), isTester(target)
+	if not aT and not bT then
+		return RETURNVALUE_NOERROR
+	end
+	if K.mixed(aT, bT) then
+		pvpCount(creature, "player")
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
-	-- two testers hit each other only in closed test mode (their own summon or themselves: the engine's rules)
-	if isTester(creature) and isTester(target) and testerOf(creature) ~= testerOf(target) and not K.closedOn() then
+	-- two testers: the closed switch and a PvP place on both sides (K.pvpRefusal)
+	local why = K.pvpRefusal(aT, bT, K.closedOn(), nil, nil)
+	if why == "closed-off" then
+		pvpCount(creature, "off")
+		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
+	end
+	why = K.pvpRefusal(aT, bT, true, X.pvpPlace(creature), X.pvpPlace(target))
+	if why then
+		pvpCount(creature, "outside")
 		return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER
 	end
 	return RETURNVALUE_NOERROR

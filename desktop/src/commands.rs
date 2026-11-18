@@ -435,6 +435,7 @@ pub static ACTIONS: &[Action] = &[
     act(Testers, "Testers", "Iniciar com árvore de talentos", "testers start {n} {m} --keystones --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
     act(Testers, "Testers", "Iniciar com checagem de sistemas", "testers start {n} {m} --checks --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
     act(Testers, "Testers", "Iniciar em modo fechado (bots entre si)", "testers start {n} {m} --closed --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
+    act(Testers, "Testers", "Iniciar jornada a pé (nível 8, testers novos)", "testers start {n} {m} --journey --level 8 --restart 300").p(TESTERS_P).ask().live(Live::Restarts).t(180),
     act(Testers, "Testers", "Modo fechado: estado", "testers closed status").t(30),
     act(Testers, "Testers", "Modo fechado: ligar", "testers closed on").ask().t(30),
     act(Testers, "Testers", "Modo fechado: desligar", "testers closed off").t(30),

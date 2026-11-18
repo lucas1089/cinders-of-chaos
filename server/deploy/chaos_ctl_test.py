@@ -1274,6 +1274,7 @@ def test_testers():
             check('--scenarios ' in calls and 'server/tools/tester_scenarios.json' in calls,
                   'the run gets the coverage table: ' + calls)
             check('--keystones' not in calls, 'a plain start has no --keystones: ' + calls)
+            check('--journey' not in calls, 'a plain start has no --journey: ' + calls)
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
             check(os.getpgid(pid) == pid, 'the run has its own process group')
@@ -1352,6 +1353,30 @@ def test_testers():
         except OSError:
             pass
         check(run('testers', 'start', '--keystones', 'x').returncode != 0, 'start: a word that is not a number is refused')
+
+        # --journey (O654): fresh characters at --level in the temple of Cinderhold; the run gets the flag after the table; a run of its own
+        for bad in (('--journey', '--checks'), ('--journey', '--closed'), ('--journey', '--keystones'), ('--level',), ('--level', 'x'),
+                    ('--level', '0'), ('--level', '9999')):
+            check(run('testers', 'start', '2', '1', *bad).returncode != 0, 'start refused: %r' % (bad,))
+        for stubbots, setup_wanted in (('0', True), ('5', False)):
+            before = tcalls()
+            r = run('testers', 'start', '2', '1', '--journey', '--level', '12', extra={'STUB_BOTS': stubbots})
+            check(r.returncode == 0 and 'levelling journey on foot from level 12' in r.stdout, 'start --journey: ' + r.stdout + r.stderr)
+            pid = int(open(os.path.join(state, 'run.pid')).read())
+            for _ in range(50):
+                if 'run --key-file' in tcalls()[len(before):]:
+                    break
+                time.sleep(0.1)
+            new = tcalls()[len(before):]
+            check(('setup --count 2' in new and '--journey --levels 12' in new) == setup_wanted,
+                  'the setup of journey characters (level 12, in the temple) only when none were made: ' + new)
+            check('--scenarios' in new and new.split('--scenarios', 1)[1].split()[1:2] == ['--journey'],
+                  'the run gets --journey after the table: ' + new)
+            run('testers', 'stop')
+            try:
+                os.killpg(pid, signal.SIGKILL)
+            except OSError:
+                pass
 
         # --checks (O110): the run gets the flag after the table; both flags together give both
         before = tcalls()

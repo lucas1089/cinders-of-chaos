@@ -287,6 +287,26 @@ do
 	ok(msgs[1]:find("5:13", 1, true) ~= nil, "the time told")
 	local info = WC.info(player)
 	ok(info.current and info.label == "2026-W45" and info.resetIn > 0, "window info")
+	-- the testers' run is never ranked (O651): no board row, no line of "your best"; and the probe sees no tester on the boards
+	do
+		Chaos.isTester = function(p) return p.tester == true end
+		Chaos.isTesterGuid = function(g) return g == 900 end
+		local tmsgs = {}
+		local bot = {tester = true, sendTextMessage = function(_, _, text) tmsgs[#tmsgs + 1] = text end}
+		WC.onClear(bot, {ms = 100000, size = 1, difficulty = 1})
+		eq(#records, 2, "a tester's clear of the Weekly Challenge is not recorded")
+		eq(#tmsgs, 0, "...and it is told nothing of its best")
+		LB.rankedBoard = function(board) return board == "challenge_solo" and {{guid = 11}, {guid = 12}} or {{guid = 13}} end
+		local pr = WC.probe(bot)
+		ok(pr.enabled and pr.id == cfg.dungeon.id and pr.difficulty == cfg.dungeon.difficulty and pr.current == true and pr.built == "2026-W45",
+			"the probe: the dungeon, its fixed difficulty, the week")
+		ok(pr.rows == 3 and pr.testersListed == 0, "the probe: three rows on the boards, no tester among them")
+		LB.rankedBoard = function(board) return {{guid = 11}, {guid = 900}} end
+		eq(WC.probe(bot).testersListed, 2, "the probe counts a tester that would be listed (a bug the check reports)")
+		LB.rankedBoard = nil
+		eq(WC.probe(bot).rows, 0, "no leaderboard: no rows")
+		Chaos.isTester, Chaos.isTesterGuid = nil, nil
+	end
 	-- the week turns without a restart: last week's layout records nothing and refuses entry
 	nowT = nowT + 7 * 86400
 	ok(WC.entryProblem({}) ~= nil, "stale layout: closed")

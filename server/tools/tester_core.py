@@ -353,6 +353,16 @@ def sale_packet(item_id, sub, amount):
     return b'\x7b' + struct.pack('<HBBB', item_id, sub, max(1, min(255, amount)), 1)
 
 
+def buy_packet(item_id, sub, amount, ignore_capacity=False, in_backpacks=False):
+    """buy from the NPC of the open trade window (0x7a, O655): u16 id, u8 sub type, u8 amount, u8 ignore capacity, u8 in backpacks"""
+    return b'\x7a' + struct.pack('<HBBBB', item_id, sub, max(1, min(100, amount)), 1 if ignore_capacity else 0, 1 if in_backpacks else 0)
+
+
+def modal_answer_packet(window_id, button, choice):
+    """the answer to a modal window (0xf9, O655): u32 window id, u8 button id, u8 choice id (what a person presses in the window)"""
+    return b'\xf9' + struct.pack('<IBB', window_id, button & 0xFF, choice & 0xFF)
+
+
 def bag_fill(report):
     return (report.get('used') or 0) / max(1, report.get('size') or 1)
 

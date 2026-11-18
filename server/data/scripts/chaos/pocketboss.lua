@@ -1086,6 +1086,12 @@ function PB.enter(player, key)
 	for _ in pairs(PB.runs) do
 		running = running + 1
 	end
+	if ChaosTesters and ChaosTesters.soloRefusal then -- a pocket of testers beside the players (O651): the arenas kept for the players
+		local why = ChaosTesters.soloRefusal(group, (cfg.limits.maxRuns or 16) - running, (cfg.tester or {}).reserve or 4)
+		if why then
+			return false, Chaos.t(player, why)
+		end
+	end
 	local slot, L
 	if not (IL and IL.capped("pocketboss", running, cfg.limits)) then
 		slot, L = takeSlot(tostring((boss and (boss.name or boss.monster)) or key))
@@ -1177,6 +1183,74 @@ end, close = function(id)
 	end
 	return false, "No pocket run " .. tostring(id) .. "."
 end})
+
+-- ======================================================================== what a person sees (the tester bots, O651)
+-- What a person sees of the pocket bosses, for the tester bots' `!tester pocket` (tools/tester_helper.lua checks that the asker is a tester):
+-- outside, the Boss Spawns window's pocket rows (level, charges, the boss passive point of the boss and whether the character holds it), the
+-- protection zone and the arenas free against the ones kept for the players; inside, the run (state, the boss, its health, the clock, who is in
+-- it) and `guide` (ChaosPocketBossCore.guide). Reads only.
+local function plainPos(p)
+	return p and {x = p.x, y = p.y, z = p.z} or nil
+end
+
+function PB.probe(player)
+	local cfg = C()
+	local running = 0
+	for _ in pairs(PB.runs) do
+		running = running + 1
+	end
+	local pos = player:getPosition()
+	local out = {level = player:getLevel(), pos = plainPos(pos), pz = inProtectionZone(player), fight = inCombat(player) and true or false,
+		enabled = cfg.enabled and true or false, free = (cfg.limits.maxRuns or 16) - running, reserve = (cfg.tester or {}).reserve or 4,
+		inside = false, bosses = {}}
+	local BP = ChaosBossPoints
+	if BP and BP.probe then
+		out.points = BP.probe(player)
+	end
+	local view = PB.view(player)
+	for _, b in ipairs(PB.index().list) do
+		local s = view.bosses[b.key] or {}
+		local row = {key = b.key, name = b.name, category = b.category, level = b.minLevel, left = s.l, max = s.m, ok = s.ok == 1}
+		if BP and BP.pointOf then
+			row.point = BP.pointOf(player, b.monster or b.name)
+		end
+		out.bosses[#out.bosses + 1] = row
+	end
+	local run = PB.runOf[player:getId()]
+	if not run then
+		return out
+	end
+	out.inside = true
+	local boss = bossOf(run)
+	local players, testers = 0, 0
+	for id in pairs(run.players) do
+		local p = Player(id)
+		if p then
+			players = players + 1
+			if Chaos.isTester and Chaos.isTester(p) then
+				testers = testers + 1
+			end
+		end
+	end
+	local bossPos = boss and plainPos(boss:getPosition()) or nil
+	out.run = {id = run.id, key = run.boss.key, name = run.boss.name, category = run.boss.category, state = run.state, boss = run.bossState,
+		left = timeLeft(run, mnow()), players = players, testers = testers, slot = run.slot, bossPos = bossPos,
+		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		inArena = U.inArena(run.L, pos) and true or false, tester = Chaos.isTester and Chaos.isTester(player) and true or false}
+	out.guide = K.guide({state = run.state, boss = run.bossState, pos = out.pos, bossPos = bossPos, inArena = out.run.inArena, reach = 5})
+	return out
+end
+
+-- TEST ONLY (`!tester pocket close`): the bot's own Leave button: out of the pocket (the charge stays spent), the run ends when it was the last
+-- one out. Never a player's pocket
+function PB.testerClose(player)
+	local run = PB.runOf[player:getId()]
+	if not (run and Chaos.isTester and Chaos.isTester(player)) then
+		return false
+	end
+	removePlayer(run, player:getId(), "out")
+	return true
+end
 
 -- a lethal hit: out, healed, no death; the charge stays spent
 local function fall(run, pid)

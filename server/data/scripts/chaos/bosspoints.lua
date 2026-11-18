@@ -62,6 +62,22 @@ function B.state(player)
 	return K.state(B.index, flagOf(player))
 end
 
+-- what a person sees of the boss passive points, for the tester bots (O651; tools/tester_helper.lua `!tester pocket`): the points held and
+-- the total. Reads only
+function B.probe(player)
+	local got = B.count(player)
+	return {got = got, total = B.index.total, enabled = cfg.enabled and true or false}
+end
+
+-- the point of the boss of this monster type for this character: {id, name, got}, or nil when the type gives no point. Reads only
+function B.pointOf(player, typeName)
+	local boss = cfg.enabled and K.isBoss(B.index, typeName)
+	if not boss then
+		return nil
+	end
+	return {id = boss.id, name = boss.name, got = B.has(player, boss.id)}
+end
+
 function B.sendInfo(player)
 	if cfg.enabled and player then
 		Chaos.send(player, OPCODE, "bossPoints", B.state(player))

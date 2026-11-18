@@ -5798,5 +5798,1911 @@ class MainQuestLater(unittest.TestCase):
         self.assertEqual((r.status, 'vael_walk' in r.detail), (TX.SKIP, True))
 
 
+# ---------------------------------------------------------------- economy, crafting and progression chores (O653)
+class FoundIO(FakeIO):
+    """a mocked backpack of a bot that dropped things: one plain piece in slot 0, the bot's orbs, a gem, a rune; the crafting window and the tooltip
+    answer from it. `uncounted`: an orb the window forgets to count off; `piece`: the facts of the piece"""
+
+    def __init__(self, orbs=None, gems=0, runes=0, uncounted=None, piece=None, err=None, chase=5):
+        FakeIO.__init__(self)
+        self.orbs, self.gems, self.runes, self.uncounted, self.err = dict(orbs or {}), gems, runes, uncounted, err
+        self.item = dict({'rarity': 0, 'mods': [], 'quality': 0, 'qcap': 2, 'sockets': 0, 'max': 2, 'socketed': 0, 'unique': False, 'maxMods': 4}, **(piece or {}))
+        self.chase, self.uses, self.support = chase, [], {'id': 9, 'name': 'Fire Bolt', 'count': 0, 'max': 2}
+        self.worn, self.sets, self.wore = {4: {'s': 4, 'sc': 10}}, {}, None
+        self.piece = {'i': 0, 'id': 2400, 'cid': 3300, 's': 4, 'sc': 20, 'chase': chase}
+
+    async def open_bag(self, client_id):
+        return None
+
+    async def use_with(self, a, ac, b, bc):
+        self.uses.append((a, b))
+        if self.gems and self.item['socketed'] < self.item['sockets']:
+            self.item['socketed'] += 1
+            self.gems -= 1
+
+    async def wear(self, index, client_id, slot):
+        self.wore = (index, slot)
+        if self.chase > 0 and not self.err:
+            self.worn[slot] = {'s': slot, 'sc': self.piece['sc'], 'set': self.piece.get('set')}
+            self.piece = None
+
+    def found(self):
+        if self.err:
+            return {'err': self.err}
+        drops = []
+        if self.gems:
+            drops.append({'i': 1, 'id': 32006, 'cid': 3400, 'n': self.gems, 'k': 'gem'})
+        if self.runes:
+            drops.append({'i': 2, 'id': 33001, 'cid': 3500, 'n': self.runes, 'k': 'rune'})
+        pieces = [dict(self.piece, unique=True if self.item['unique'] else None)] if self.piece else []
+        return {'orbs': dict(self.orbs), 'drops': drops, 'pieces': pieces, 'best': self.piece['i'] if self.piece and self.chase > 0 else None,
+                'worn': [dict(w) for w in self.worn.values()], 'sets': dict(self.sets), 'bagClientId': 1988}
+
+    async def helper(self, command, kind, wait=4.0):
+        return self.found() if command == 'found' else None
+
+    def state_item(self):
+        it = self.item
+        return {'rarity': it['rarity'], 'mods': [{'key': m, 'group': m} for m in it['mods']], 'quality': it['quality'], 'qualityCap': it['qcap'],
+                'maxMods': it['maxMods'], 'unique': it['unique'], 'sig': 'sig',
+                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{}] * it['socketed']}}
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        it = self.item
+        if opname == 'crafting' and action == 'select':
+            return {'action': 'state', 'data': {'counts': dict(self.orbs), 'item': self.state_item()}}
+        if opname == 'itemTooltip':
+            tip = {'name': 'a piece', 'rarity': it['rarity'], 'mods': [{'k': m} for m in it['mods']], 'q': it['quality'], 'sk': it['socketed'], 'sc': it['sockets']}
+            return {'action': 'tips', 'data': {'items': [{'pos': data['items'][0]['pos'], 'tip': tip}]}}
+        if opname == 'crafting' and action == 'apply':
+            orb = data['orb']
+            if self.orbs.get(orb, 0) < 1:
+                return {'action': 'result', 'data': {'ok': False, 'text': 'none'}}
+            if orb != self.uncounted:
+                self.orbs[orb] -= 1
+            if orb == 'alchemy':
+                it['rarity'], it['mods'] = 3, ['a', 'b']
+            elif orb == 'whetstone':
+                it['quality'] += 1
+            elif orb == 'sockets':
+                it['sockets'] = it['max']
+            return {'action': 'result', 'data': {'ok': True, 'text': 'done'}}
+        if opname == 'supports' and action == 'open':
+            return {'action': 'state', 'data': {'spells': [dict(self.support)]}}
+        if opname == 'supports' and action == 'socket':
+            self.support['count'] += 1
+            self.runes -= 1
+            return {'action': 'result', 'data': {'ok': True}}
+        return None
+
+
+class CraftFound(unittest.TestCase):
+    def go(self, io, fn=None):
+        return run((fn or TX.check_craft_found)(io, 'Tester Fnd', 'Ninja', 300))
+
+    def test_the_orb_plan_follows_the_piece(self):
+        n = {'alchemy': 1, 'transmutation': 1, 'exalted': 1, 'whetstone': 1, 'sockets': 1}
+        base = {'rarity': 0, 'mods': [], 'quality': 0, 'qualityCap': 2, 'maxMods': 4, 'sockets': {'count': 0, 'max': 2}}
+        self.assertEqual(TX.found_next_orb(base, n)[0], 'alchemy')
+        self.assertEqual(TX.found_next_orb(base, {'transmutation': 1})[0], 'transmutation')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=1, mods=['a']), n)[0], 'exalted', 'room for a modifier on a Common piece')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=3, mods=['a', 'b']), n)[0], 'whetstone', 'a Magic piece gets the Whetstone, not Grafting')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=3, quality=2), n)[0], 'sockets', 'the quality cap is reached')
+        self.assertIsNone(TX.found_next_orb(dict(base, rarity=3, quality=2, sockets={'count': 2, 'max': 2}), n))
+        self.assertIsNone(TX.found_next_orb(dict(base, unique=True), n), 'a unique gets nothing')
+        self.assertIsNone(TX.found_next_orb(dict(base, corrupted=True), n))
+        self.assertIsNone(TX.found_next_orb(base, {}), 'an empty hand')
+
+    def test_what_the_bot_dropped_is_spent_and_counted_off(self):
+        io = FoundIO(orbs={'alchemy': 1, 'whetstone': 2, 'sockets': 1}, gems=1, runes=1)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.item['rarity'], 3)
+        self.assertEqual(io.item['quality'], 2)
+        self.assertEqual(io.item['sockets'], 2)
+        self.assertEqual((io.item['socketed'], io.gems, io.support['count']), (1, 0, 1), 'the gem sits in a socket and the rune in the spell')
+        self.assertEqual(io.uses[0], (1, 0), 'the gem (slot 1) is used on the piece (slot 0)')
+        self.assertEqual(io.orbs, {'alchemy': 0, 'whetstone': 0, 'sockets': 0})
+        self.assertIn('Orb of Gilding', r.detail)
+        self.assertIn('gem(s) socketed', r.detail)
+        self.assertIn('rune(s) into a spell', r.detail)
+        self.assertNotIn('give', [a[1] for a in io.asked], 'no helper grant')
+
+    def test_it_is_a_skip_while_nothing_dropped(self):
+        r = self.go(FoundIO())
+        self.assertEqual((r.status, 'dropped no orbs' in r.detail), (TX.SKIP, True))
+        r = self.go(FoundIO(err='no backpack'))
+        self.assertEqual((r.status, r.detail), (TX.SKIP, 'no backpack'))
+        r = self.go(FoundIO(orbs={'alchemy': 1}, piece={'unique': True}))
+        self.assertEqual(r.status, TX.SKIP, 'a unique takes no orb')
+
+    def test_an_orb_the_window_does_not_count_off_is_a_bug(self):
+        r = self.go(FoundIO(orbs={'whetstone': 3}, uncounted='whetstone'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the bench counts', r.detail)
+        self.assertIn('BUG craft_found', r.bug_line())
+
+    def test_the_checks_are_in_the_run(self):
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        for k in ('craft_found', 'gear_chase', 'chore_faction', 'chore_pass', 'chore_chests', 'chore_candlemarks', 'chore_gamble', 'chore_trade', 'chore_salvage'):
+            self.assertIn(k, keys)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertLess(keys.index('gear_chase'), keys.index('rift_walk'), 'the rift stays the longest, last')
+
+
+class GearChase(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_gear_chase(io, 'Tester Gch', 'Ninja', 300))
+
+    def test_the_best_piece_is_worn(self):
+        io = FoundIO()
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.wore, (0, 4))
+        self.assertIn('a better piece', r.detail)
+
+    def test_a_set_piece_is_named_and_counted(self):
+        io = FoundIO()
+        io.piece['set'] = 'ashen_vow'
+        io.sets = {'ashen_vow': 1}
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a set piece (ashen_vow)', r.detail)
+        io = FoundIO()
+        io.piece['jewelry'] = True
+        r = self.go(io)
+        self.assertIn('a jewel', r.detail)
+
+    def test_nothing_better_and_the_servers_refusal_are_skips(self):
+        r = self.go(FoundIO(chase=0))
+        self.assertEqual((r.status, 'beats what the bot wears' in r.detail), (TX.SKIP, True))
+
+        class Refuses(FoundIO):
+            async def wear(self, index, client_id, slot):
+                self.wore = (index, slot)
+        r = self.go(Refuses())
+        self.assertEqual((r.status, 'level or class rule' in r.detail), (TX.SKIP, True))
+
+    def test_a_worn_slot_that_is_empty_is_a_bug(self):
+        class Vanishes(FoundIO):
+            async def wear(self, index, client_id, slot):
+                self.wore = (index, slot)
+                self.piece = None
+                self.worn.pop(slot, None)
+        r = self.go(Vanishes())
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('is empty', r.detail)
+
+
+class ChoreIO(FakeIO):
+    """scripted windows: the replies of (opname, action) are dicts, lists (popped in order, the last one stays) or callables of the data"""
+
+    def __init__(self, replies=None, answers=None):
+        FakeIO.__init__(self, answers=dict({'path npc Osric the Chandler': {'here': True}, 'path npc Mordecai Ashwager': {'here': True},
+                                            'path npc Material Broker': {'here': True}}, **(answers or {})), replies=replies)
+
+    async def open_bag(self, client_id):
+        return None
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        r = self.replies.get((opname, action))
+        if isinstance(r, list):
+            return r.pop(0) if len(r) > 1 else r[0]
+        return r(data) if callable(r) else r
+
+
+def st(data):
+    return {'action': 'state', 'data': data}
+
+
+class Chores(unittest.TestCase):
+    def go(self, fn, io, level=300):
+        return run(fn(io, 'Tester Chr', 'Ninja', level))
+
+    def test_the_faction_window_turns_tokens_into_reputation(self):
+        def f(rep, tok):
+            return {'k': 'ash', 'rep': rep, 'tok': tok, 'rn': 'Friend', 'wk': 0, 'wc': 50}
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)], 'contracts': [{'key': 'c1', 'p': 1, 'n': 5}]}), st({'factions': [f(50, 0)], 'contracts': []})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('factions', 'turnin', {'f': 'ash'}), io.asked)
+        self.assertIn('reputation 10 -> 50', r.detail)
+        self.assertEqual(io.asked[-1][:2], ('factions', 'close'), 'the window is closed again')
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)]}), st({'factions': [f(10, 4)]})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('were not taken', r.detail)
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)]}), st({'factions': [f(10, 0)]})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual((r.status, 'gave no reputation' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(TX.check_chore_faction, ChoreIO()).status, TX.SKIP)
+        io = ChoreIO({('factions', 'open'): st({'factions': [f(10, 0)], 'contracts': [{'key': 'c1', 'p': 9, 'n': 5}]})})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual((r.status, 'contract c1 shows 9 of 5' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('factions', 'open'): st({'factions': [f(10, 0)], 'contracts': [{'key': 'c1', 'p': 1, 'n': 5}]})})
+        self.assertEqual(self.go(TX.check_chore_faction, io).status, TX.PASS)
+
+    def test_the_season_pass_claims_what_the_tier_holds(self):
+        base = {'season': {'id': 3}, 'tier': 3}
+        io = ChoreIO({('seasonPass', 'open'): [st(dict(base, claimed=['000', ''])), st(dict(base, claimed=['110', '']))]})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('seasonPass', 'claimAll', {}), io.asked)
+        self.assertIn('claimed 2 free tier(s) of 3', r.detail)
+        io = ChoreIO({('seasonPass', 'open'): st(dict(base, claimed=['000', '']))})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual((r.status, 'left 3 of 3' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('seasonPass', 'open'): st(dict(base, claimed=['111', '']))})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual(r.status, TX.PASS)
+        self.assertNotIn('claimAll', [a[1] for a in io.asked])
+        io = ChoreIO({('seasonPass', 'open'): st({'season': None})})
+        self.assertEqual(self.go(TX.check_chore_pass, io).status, TX.SKIP)
+        self.assertEqual(self.go(TX.check_chore_pass, ChoreIO()).status, TX.SKIP)
+        self.assertEqual(TX.pass_claimable({'season': {'id': 1}, 'tier': 5, 'claimed': ['101', '']}), [2], 'a tier beyond the string is not claimable')
+
+    def test_a_tester_has_no_weekly_chest(self):
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'need': 5, 'chest': {'given': 0}, 'chests': 0}), ('emberCache', 'open'): st({'week': 4})})
+        r = self.go(TX.check_chore_chests, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual({a[0] for a in io.asked if a[1] == 'close'}, {'weeklyChest', 'emberCache'})
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 2, 'need': 5, 'chest': {'given': 0}}), ('emberCache', 'open'): st({'week': 4})})
+        self.assertEqual(self.go(TX.check_chore_chests, io).status, TX.FAIL)
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'chest': {'given': 1}, 'chests': 1}), ('emberCache', 'open'): st({'week': 4})})
+        r = self.go(TX.check_chore_chests, io)
+        self.assertEqual((r.status, "the reward pool is the players'" in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'chest': {'given': 0}, 'chests': 0})})
+        self.assertEqual(self.go(TX.check_chore_chests, io).status, TX.SKIP)
+        self.assertEqual(self.go(TX.check_chore_chests, ChoreIO()).status, TX.SKIP)
+
+    def test_candlemarks_buy_the_cheapest_offer_it_can_pay(self):
+        offers = [{'k': 'big', 'p': 90, 'l': 1, 'kind': 'item'}, {'k': 'low', 'p': 20, 'l': 1, 'kind': 'item'}, {'k': 'hi', 'p': 5, 'l': 900, 'kind': 'item'},
+                  {'k': 'cos', 'p': 1, 'l': 1, 'kind': 'cosmetic'}, {'k': 'ownd', 'p': 2, 'l': 1, 'kind': 'item', 'own': True}]
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('candlemarks', 'open'): [st({'balance': 50, 'offers': offers}), st({'balance': 30, 'offers': offers})], ('candlemarks', 'buy'): ok})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('candlemarks', 'buy', {'k': 'low'}), io.asked, 'the cheapest item offer for its level, not a cosmetic, an owned one or a high level one')
+        io = ChoreIO({('candlemarks', 'open'): [st({'balance': 50, 'offers': offers}), st({'balance': 50, 'offers': offers})], ('candlemarks', 'buy'): ok})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'the balance fell by 0' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('candlemarks', 'open'): st({'balance': 3, 'offers': offers})})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'buys none' in r.detail), (TX.PASS, True))
+        self.assertNotIn('buy', [a[1] for a in io.asked])
+        io = ChoreIO({('candlemarks', 'open'): st({'balance': 50, 'offers': offers}), ('candlemarks', 'buy'): {'action': 'result', 'data': {'ok': False, 'text': 'walk to Osric'}}})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'walk to Osric' in r.detail), (TX.SKIP, True))
+        io = ChoreIO(answers={'path npc Osric the Chandler': {'err': 'no way'}, 'enter npc Osric the Chandler': {'err': 'no npc'}})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'no way to npc Osric' in r.detail), (TX.SKIP, True))
+
+    def test_the_gambler_sells_a_piece_that_reaches_the_bag(self):
+        def stock(sold, money):
+            return {'w': 7, 'money': money, 'items': [{'i': 1, 'id': 2400, 'n': 'Sealed Sword', 'sn': 'weapon', 'p': 300, 'sold': sold or None},
+                                                      {'i': 2, 'id': 2401, 'n': 'Dear', 'p': 99999}]}
+        bags = [{'used': 10}, {'used': 11}]
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 700))]})
+        io.answers['bag'] = lambda self: bags.pop(0)
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('gamble', 'buy', {'i': 1, 'w': 7, 'id': 2400}), io.asked)
+        bags[:] = [{'used': 10}, {'used': 10}]
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 700))]})
+        io.answers['bag'] = lambda self: bags.pop(0)
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'no new item' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(False, 700))]})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'not marked sold' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 1000))]})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'the money fell by 0' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): st(stock(False, 10))})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'for none' in r.detail), (TX.SKIP, True))
+
+    def test_the_broker_buys_what_was_gathered(self):
+        def dem(*h):
+            return {'demand': [{'id': 1, 'h': n} for n in h]}
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('professions', 'open'): [st(dem(3, 2)), st(dem(0, 0))], ('professions', 'sellAll'): ok})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'sold 5 of 5' in r.detail), (TX.PASS, True))
+        io = ChoreIO({('professions', 'open'): [st(dem(3)), st(dem(3))], ('professions', 'sellAll'): ok})
+        self.assertEqual(self.go(TX.check_chore_trade, io).status, TX.FAIL)
+        io = ChoreIO({('professions', 'open'): st(dem(3)), ('professions', 'sellAll'): {'action': 'result', 'data': {'ok': False, 'text': 'no broker near'}}})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'no broker near' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('professions', 'open'): st(dem(0, 0))})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'no gathered material' in r.detail), (TX.SKIP, True))
+        self.assertNotIn('sellAll', [a[1] for a in io.asked])
+
+
+class ChoreSalvage(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_chore_salvage(io, 'Tester Slv', 'Ninja', 300))
+
+    @staticmethod
+    def io(items_after, shards=(4, 9), rep=None, ok=True):
+        items = [{'path': '0', 'id': 2400, 'name': 'Old Axe', 'rarity': 2, 'rarityName': 'Uncommon'}, {'path': '1', 'id': 2401, 'name': 'Fine Axe', 'rarity': 3},
+                 {'path': '2', 'id': 2402, 'name': 'Grey Axe', 'rarity': 0}]
+        rep = rep if rep is not None else {'pieces': [{'i': 0, 'id': 2400, 'chase': -5}, {'i': 1, 'id': 2401, 'chase': 30}, {'i': 2, 'id': 2402, 'chase': -9}],
+                                           'bagClientId': 1988}
+        first = {'items': items, 'salvage': {'installed': True, 'shards': shards[0]}}
+        second = {'items': items[:items_after], 'salvage': {'installed': True, 'shards': shards[1]}}
+        return ChoreIO({('crafting', 'open'): [st(first), st(second)], ('crafting', 'select'): st({'item': {'sig': 's1'}}),
+                        ('crafting', 'salvage'): {'action': 'result', 'data': {'ok': ok, 'text': 'no'}}},
+                       answers={'found': rep})
+
+    def test_a_piece_the_bot_will_not_wear_is_salvaged(self):
+        io = self.io(2)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('crafting', 'salvage', {'path': '0', 'id': 2400, 'sig': 's1'}), io.asked, 'the first useless rolled piece, with its signature')
+        self.assertIn('shards 4 -> 9', r.detail)
+
+    def test_the_pick_leaves_what_the_bot_wants(self):
+        items = [{'path': '1', 'id': 2401, 'rarity': 3}, {'path': '0', 'id': 2400, 'rarity': 0}, {'path': '2', 'id': 2402, 'rarity': 2, 'locked': True},
+                 {'path': '3', 'id': 2403, 'rarity': 2, 'unique': True}]
+        rep = {'pieces': [{'i': 0, 'chase': -1}, {'i': 1, 'chase': 20}, {'i': 2, 'chase': -1}, {'i': 3, 'chase': -1, 'unique': True}]}
+        self.assertIsNone(TX.salvage_pick(rep, items), 'a better piece, a normal one, a locked one and a unique are kept')
+        items.append({'path': '4', 'id': 2404, 'rarity': 1})
+        rep['pieces'].append({'i': 4, 'chase': 0})
+        self.assertEqual(TX.salvage_pick(rep, items)['path'], '4')
+
+    def test_the_bugs_and_the_skips(self):
+        r = self.go(self.io(3))
+        self.assertEqual((r.status, 'expected one less' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(2, shards=(9, 4)))
+        self.assertEqual((r.status, 'Rune Shards fell' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(2, ok=False))
+        self.assertEqual((r.status, 'the bench refused Old Axe' in r.detail), (TX.SKIP, True))
+        r = self.go(self.io(2, rep={'pieces': [{'i': 1, 'id': 2401, 'chase': 30}], 'bagClientId': 1}))
+        self.assertEqual((r.status, 'would not wear' in r.detail), (TX.SKIP, True))
+        r = self.go(ChoreIO(answers={'found': {'err': 'no backpack'}}))
+        self.assertEqual((r.status, r.detail), (TX.SKIP, 'no backpack'))
+
+class BossCopyWorld(LaneWorld):
+    """the copy of a boss on one lane: it stands at x = 90 once made; the bot hurts it within 6 tiles; a mark falls on the bot's tile every
+    `mark_every` looks while it is in reach: the guide says dodge and the bot has to step off before the next look"""
+
+    def __init__(self, err=None, spawn_err=None, level_ok=True, hits=3, kill=True, mark_every=4, listed=0, pz_first=False, die_after=None, blocked=(), far=True):
+        super().__init__(blocked=blocked, die_after=die_after)
+        if not far:
+            self.pos = (86, 5)
+        self.err, self.spawn_err, self.level_ok, self.hits, self.kill = err, spawn_err, level_ok, hits, kill
+        self.mark_every, self.listed, self.pz_first = mark_every, listed, pz_first
+        self.made, self.hp, self.killed, self.points, self.closes, self.spawns = False, 100, 0, 1, 0, 0
+        self.marked_at, self.dodged_x, self.marks_sent, self.looks_in_reach = None, None, 0, 0
+
+    def near(self):
+        return abs(self.pos[0] - 90) <= 6
+
+    def facts(self):
+        out = {'level': 700, 'pos': self.at(), 'killed': self.killed, 'listed': self.listed, 'points': self.points,
+               'next': 'Talath' if self.level_ok else None, 'nextLevel': 650}
+        if not self.made:
+            out['guide'] = {'mode': 'wait', 'why': 'no boss copy of its own'}
+            return out
+        out['boss'] = {'pos': {'x': 90, 'y': 5, 'z': 7}, 'name': 'Talath', 'hp': self.hp, 'left': 300}
+        if self.marked_at is not None and self.pos[0] == self.marked_at:
+            out['danger'] = {'left': 1500, 'labels': ['Frost Lance'], 'count': 1, 'here': True, 'tiles': [[self.marked_at, 5]]}
+            side = -3 if self.marked_at >= 90 else 3   # toward the boss: the safe tile stays in reach
+            out['guide'] = {'mode': 'dodge', 'goal': {'x': self.marked_at + side, 'y': 5, 'z': 7}, 'why': 'a mark of Frost Lance is on the bot\'s tile'}
+        elif self.near():
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 90, 'y': 5, 'z': 7}, 'area': 'boss'}
+        else:
+            out['guide'] = {'mode': 'walk', 'goal': {'x': 90, 'y': 5, 'z': 7}, 'reach': [1, 6], 'area': 'boss'}
+        return out
+
+    def answer(self, command):
+        if command == 'boss state':
+            if self.err:
+                return {'err': self.err}
+            if self.made and self.look() and self.near():
+                self.looks_in_reach += 1
+                if self.marked_at is not None and self.pos[0] == self.marked_at:
+                    self.marked_at = None   # it stayed: the hit landed (nothing here: the world has no damage)
+                self.hp = max(0, self.hp - self.hits)
+                if self.hp == 0 and self.kill:
+                    self.killed += 1
+                    self.made = False
+                    self.points += 1
+                elif self.mark_every and self.looks_in_reach % self.mark_every == 0:
+                    self.marked_at = self.pos[0]
+                    self.marks_sent += 1
+            return self.facts()
+        if command == 'boss spawn':
+            if self.pz_first and not self.spawns:
+                self.spawns += 1
+                return dict(self.facts(), err='the bot stands in a protection zone')
+            if self.spawn_err:
+                return dict(self.facts(), err=self.spawn_err)
+            self.spawns += 1
+            self.made, self.hp = True, 100
+            return dict(self.facts(), spawned=True)
+        if command == 'boss path':
+            g = self.facts()['guide']
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1])) if g['mode'] == 'walk' else dict(self.facts(), err='no goal')
+        if command == 'boss close':
+            self.closes += 1
+            self.made = False
+            return dict(self.facts(), closed=True)
+        return None
+
+
+class BossCopyWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.BOSS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.BOSS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, **kw):
+        w = BossCopyWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_boss_copy_walk(io, 'Tester Aaa', 'Warrior', 700)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 700, 'steps': 5, 'secs': 30, 'name': 'Talath'}
+        self.assertEqual(TX.boss_copy_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        r = TX.boss_copy_verdict(dict(base, killed=1, marks=3, dodged=2, points0=1, points=2))
+        self.assertEqual(r[0], TX.PASS)
+        self.assertIn('3 warning(s) seen, 2 dodge(s)', r[1])
+        self.assertIn('boss passive points 1 -> 2', r[1])
+        self.assertEqual(TX.boss_copy_verdict(dict(base, hp=40))[0], TX.PASS)
+        self.assertIn('hurt the copy of Talath to 40%', TX.boss_copy_verdict(dict(base, hp=40))[1])
+        self.assertEqual(TX.boss_copy_verdict(dict(base, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.boss_copy_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.boss_copy_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.boss_copy_verdict(base)[0], TX.SKIP)
+        self.assertIn('boss_copy_walk', TX.KEYS)
+        self.assertNotIn('boss_copy_walk', TX.CLOSED_KEYS)
+
+    def test_the_copy_is_fought_and_the_marks_are_dodged(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('killed the copy of Talath', r.detail)
+        self.assertIn('boss passive points 1 -> 2', r.detail)
+        self.assertGreaterEqual(io.w.marks_sent, 1, 'a mark fell on the bot')
+        self.assertIn('dodge(s)', r.detail)
+        self.assertNotIn(' 0 dodge(s)', r.detail, 'it stepped off the marked tile')
+        self.assertEqual(io.cmds[-1], 'boss close')
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertIn('boss path', io.cmds, 'it walked to the copy by the engine path')
+        self.assertGreater(io.looted, 0)
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True), 'the bot may flee like a person at low health')
+
+    def test_a_copy_that_is_hurt_but_not_killed_is_a_pass(self):
+        TX.BOSS_BUDGET = 40.0
+        r, _ = self.play(hits=1, kill=False)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt the copy', r.detail)
+
+    def test_a_protection_zone_sends_the_bot_to_the_hunt_once(self):
+        r, io = self.play(pz_first=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.moves[0], 'hunt')
+        self.assertEqual(io.w.spawns, 2)
+
+    def test_the_skips(self):
+        r, _ = self.play(err='no tester boss system')
+        self.assertEqual((r.status, 'no tester boss system' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(level_ok=False)
+        self.assertEqual((r.status, 'under the lowest boss copy' in r.detail), (TX.SKIP, True))
+        r, io = self.play(spawn_err='a player is near: the copy is not made')
+        self.assertEqual((r.status, 'a player is near' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.cmds[-1], 'boss close')
+        r, _ = self.play(die_after=2, hits=0, kill=False)
+        self.assertEqual(r.status, TX.SKIP)
+        TX.SOLO_STUCK = 4.0
+        r, _ = self.play(hits=0, kill=False, blocked=[(61, 5)])
+        self.assertEqual((r.status, 'blocked' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        TX.SOLO_FIGHT_MIN = 6.0
+        r, io = self.play(hits=0, kill=False, far=False, mark_every=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not hurt it', r.detail)
+        self.assertIn('BUG boss_copy_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closes, 1)
+        r, _ = self.play(listed=1)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('tester name(s) in a boss board', r.detail)
+
+
+class PvpWorld:
+    """two bots in a PvP place (kind arena | zone | bg): `inside_after` looks to stand inside, the foe's health falls to `hp_floor` from look
+    `hp_after`, the match ends (the server puts the bots out) after `end_after` looks; `others` players in the roster, `season` tester rows"""
+
+    def __init__(self, kind='arena', inside_after=1, hp_after=None, hp_floor=60, end_after=None, others=0, season=0, closed=True, queue_members=3):
+        self.kind, self.inside_after, self.hp_after, self.hp_floor = kind, inside_after, hp_after, hp_floor
+        self.end_after, self.others, self.season, self.closed, self.queue_members = end_after, others, season, closed, queue_members
+        self.looks = {'a': 0, 'b': 0}
+
+    def state(self, who):
+        self.looks[who] += 1
+        n = self.looks[who]
+        inside = n >= self.inside_after and not (self.end_after is not None and n > self.end_after)
+        hp = self.hp_floor if self.hp_after is not None and n >= self.hp_after else 100
+        foes = [{'x': 61, 'y': 5, 'z': 7, 'name': 'Tester Bbb', 'hp': hp}]
+        if self.kind == 'zone':
+            sec = {'inside': inside, 'testers': 1, 'others': self.others, 'foes': foes if inside else []}
+        else:
+            sec = {'queued': not inside, 'inMatch': inside, 'phase': 'fight' if inside else None, 'testers': 1, 'others': self.others,
+                   'foes': foes if inside else [], 'queueMembers': self.queue_members, 'need': 10}
+        out = {'closed': self.closed, 'place': {'arena': 'arena', 'zone': 'pvp zone', 'bg': 'battleground'}[self.kind] if inside else None, 'level': 500,
+               'pos': {'x': 60, 'y': 5, 'z': 7}, 'seasonListed': self.season, 'cancelledPlayer': 0, TX.PVP_SECTION[self.kind]: sec}
+        if inside:
+            out['foe'] = {'x': 61, 'y': 5, 'z': 7, 'name': 'Tester Bbb', 'seen': True, 'dist': 1, 'hp': hp}
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 61, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'foe'}
+        else:
+            out['guide'] = {'mode': 'wait', 'why': 'not in a PvP place'}
+        return out
+
+
+class PvpIO(ClosedIO):
+    """ClosedIO with the walking calls and a PvpWorld behind `pvp state` of both bots"""
+
+    def __init__(self, world, replies=None, other_replies=None, **kw):
+        super().__init__(answers={'pvp state': lambda io: world.state('a'), 'pvp path': lambda io: {'path': []}},
+                         other_answers={'pvp state': lambda io: world.state('b'), 'pvp path': lambda io: {'path': []}},
+                         replies=replies, other_replies=other_replies, **kw)
+        self.w, self.modes, self.looted = world, [], 0
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+    async def step(self, dx, dy):
+        pass
+
+    async def step_of(self, other, dx, dy):
+        pass
+
+    async def loot(self):
+        self.looted += 1
+
+
+class PvpFights(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.PVP_FIGHT_MIN, TX.ARENA_WAIT, TX.BG_QUEUE_WAIT, TX.PVP_BUDGET.copy())
+
+    def tearDown(self):
+        TX.PVP_FIGHT_MIN, TX.ARENA_WAIT, TX.BG_QUEUE_WAIT = self.keep[:3]
+        TX.PVP_BUDGET.clear()
+        TX.PVP_BUDGET.update(self.keep[3])
+
+    def arena(self, world, **kw):
+        q = {('arena', 'queue'): {'action': 'state'}, ('arena', 'leave'): {'action': 'state'}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q), **kw)
+        return run(TX.check_closed_arena_fight(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def zone(self, world, **kw):
+        q = {('pvpZone', 'enter'): {'action': 'enter', 'data': {}}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q), **kw)
+        return run(TX.check_closed_pvp_fight(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def bg(self, world):
+        q = {('battleground', 'queue'): {'action': 'state'}, ('battleground', 'leave'): {'action': 'state'}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q))
+        return run(TX.check_closed_battleground_match(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def test_the_keys_and_the_order(self):
+        for k in ('closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match'):
+            self.assertIn(k, TX.CLOSED_KEYS)
+            self.assertNotIn(k, TX.KEYS)
+            self.assertLess(TX.CLOSED_KEYS.index(k), TX.CLOSED_KEYS.index('closed_raid'), 'the raid is the longest: last')
+
+    def test_the_verdicts(self):
+        base = {'level': 500, 'steps': 4, 'secs': 60, 'was_in': True}
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, faults=['x']), 'arena match')[0], TX.FAIL)
+        r = TX.pvp_fight_verdict(dict(base, ended=True, foe_hp=40), 'arena match')
+        self.assertEqual(r[0], TX.PASS)
+        self.assertIn('played to its end between testers only', r[1])
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, foe_hp=70), 'Marches')[0], TX.PASS)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, foe_hp=100, fought=TX.PVP_FIGHT_MIN), 'Marches')[0], TX.FAIL)
+        self.assertEqual(TX.pvp_fight_verdict({'level': 1}, 'Marches')[0], TX.SKIP)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, stuck=(1, 2)), 'Marches')[0], TX.SKIP)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, died=True), 'Marches')[0], TX.SKIP)
+        self.assertIn('hit(s) on a player were cancelled', TX.pvp_fight_verdict(dict(base, foe_hp=50, cancelled_player=2), 'Marches')[1])
+
+    def test_the_problems(self):
+        arena = lambda **kw: dict({'closed': True, 'arena': {'inMatch': True, 'others': 0}}, **kw)  # noqa: E731
+        self.assertEqual(TX.pvp_problems(arena(), 'arena'), [])
+        self.assertIn('1 player(s) are in the testers\' arena', TX.pvp_problems(arena(arena={'inMatch': True, 'others': 1}), 'arena')[0])
+        self.assertIn('tester row(s) in the season ratings', TX.pvp_problems(arena(seasonListed=2), 'arena')[0])
+        self.assertIn('closed switch off', TX.pvp_problems(arena(place='arena', closed=False), 'arena')[0])
+        self.assertEqual(TX.pvp_problems({'zone': {'inside': False, 'others': 5}}, 'zone'), [], 'outside the place nobody is judged')
+        self.assertEqual(TX.pvp_hurt({'arena': {'foes': [{'hp': 80}, {'hp': 55}]}}, 'arena'), 55)
+        self.assertEqual(TX.pvp_hurt({'foe': {'hp': 30}}, 'zone'), 30)
+        self.assertIsNone(TX.pvp_hurt({}, 'zone'))
+
+    def test_an_arena_match_played_to_its_end(self):
+        r, io = self.arena(PvpWorld('arena', hp_after=3, end_after=12))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('played to its end between testers only', r.detail)
+        self.assertEqual(io.asked[-1], ('arena', 'leave', {}))
+        self.assertEqual(io.other_asked[-1], ('arena', 'leave', {}))
+        self.assertEqual(io.modes[0], (['Tester Aaa', 'Tester Bbb'], True, False))
+        self.assertEqual(io.modes[-1], (['Tester Aaa', 'Tester Bbb'], False, False))
+
+    def test_an_arena_match_still_running_with_a_foe_hurt_is_a_pass(self):
+        r, _ = self.arena(PvpWorld('arena', hp_after=2))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a foe tester hurt to 60%', r.detail)
+
+    def test_the_arena_bugs(self):
+        r, _ = self.arena(PvpWorld('arena', hp_after=2, others=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('player(s) are in the testers\' arena', r.detail)
+        self.assertIn('BUG closed_arena_fight', r.bug_line())
+        r, _ = self.arena(PvpWorld('arena', hp_after=2, season=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('season ratings', r.detail)
+        TX.PVP_FIGHT_MIN = 5.0
+        r, _ = self.arena(PvpWorld('arena'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('hurt none', r.detail)
+
+    def test_the_arena_skips(self):
+        r, _ = self.arena(PvpWorld('arena'), partner=None)
+        self.assertEqual((r.status, 'no free bot' in r.detail), (TX.SKIP, True))
+        io = PvpIO(PvpWorld('arena'))
+        self.assertEqual(run(TX.check_closed_arena_fight(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+        TX.ARENA_WAIT = 4.0
+        r, io = self.arena(PvpWorld('arena', inside_after=999))
+        self.assertEqual((r.status, 'not in a match' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.asked[-1], ('arena', 'leave', {}), 'the queue is left')
+
+    def test_the_marches(self):
+        r, io = self.zone(PvpWorld('zone', hp_after=3))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt to 60% in the Marches', r.detail)
+        self.assertEqual(io.moves[-1], 'town')
+        r, _ = self.zone(PvpWorld('zone', hp_after=3, others=2))
+        self.assertEqual((r.status, 'testers\' zone' in r.detail), (TX.FAIL, True))
+        r, _ = self.zone(PvpWorld('zone', inside_after=999))
+        self.assertEqual((r.status, 'not inside the Marches' in r.detail), (TX.SKIP, True))
+        io = PvpIO(PvpWorld('zone'))
+        self.assertEqual(run(TX.check_closed_pvp_fight(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+
+    def test_the_battleground(self):
+        r, io = self.bg(PvpWorld('bg', inside_after=4, hp_after=8))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt to 60% in the battleground match', r.detail)
+        self.assertEqual(io.asked[-1], ('battleground', 'leave', {}))
+        TX.BG_QUEUE_WAIT = 10.0
+        r, _ = self.bg(PvpWorld('bg', inside_after=999, queue_members=4))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('4 of the 10 testers a match needs were queued', r.detail)
+        TX.BG_QUEUE_WAIT = 150.0
+        r, _ = self.bg(PvpWorld('bg', inside_after=4, hp_after=8, others=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_battleground_match', r.bug_line())
+        io = PvpIO(PvpWorld('bg'))
+        self.assertEqual(run(TX.check_closed_battleground_match(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+
+
+
+# ------------------------------------------------------------------------------------------------ O651: pocket bosses
+class PocketWorld(RiftWorld):
+    """a pocket boss on the rift lane (y = 5): the temple at x 92, the pocket's boss at x 50. `pocket state | path | close`, the Boss Spawns window's `open` and
+    `pocketEnter`; the boss comes after two looks, dies of the bot's hits, the first kill raises the points and entering spends a charge"""
+
+    def __init__(self, enter_error=None, no_point=False, no_charge=False, never_kill=False, mixed=False, free=16, left=3, enabled=True, err=None,
+                 has_point=True, level=900, **kw):
+        super().__init__(level=level, **kw)
+        self.enter_error, self.no_point, self.no_charge, self.mixed, self.free, self.left = enter_error, no_point, no_charge, mixed, free, left
+        self.enabled, self.err_p, self.has_point, self.never_kill_p = enabled, err, has_point, never_kill
+        self.inside_p, self.looks, self.boss, self.state, self.points, self.closed_p, self.entered = False, 0, 'waiting', 'running', 2, 0, []
+        self.bhp = 100
+
+    def row(self):
+        r = {'key': 'world_1', 'name': 'Kaelgor', 'category': 'world', 'level': 300, 'left': self.left}
+        if self.has_point:
+            r['point'] = {'id': 1, 'got': self.points >= 3}
+        return r
+
+    def pguide(self):
+        if self.state != 'running':
+            return {'mode': 'wait', 'why': 'the pocket is over'}
+        if self.boss != 'alive':
+            return {'mode': 'wait', 'why': 'the boss comes in a moment'}
+        return {'mode': 'fight' if abs(self.pos[0] - 50) <= 5 else 'walk', 'goal': {'x': 50, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'boss', 'why': 'test'}
+
+    def pfacts(self):
+        out = {'inside': self.inside_p, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'pz': self.pz(), 'enabled': self.enabled,
+               'free': self.free, 'reserve': 4, 'points': {'got': self.points, 'total': 10}}
+        if self.inside_p:
+            out['run'] = {'key': 'world_1', 'name': 'Kaelgor', 'state': self.state, 'boss': self.boss, 'left': 600, 'players': 1 + (1 if self.mixed else 0), 'testers': 1,
+                          'bossHp': self.bhp if self.boss == 'alive' else None, 'inArena': True}
+            out['guide'] = self.pguide()
+        else:
+            out['bosses'] = [self.row()] if self.left > 0 else []
+        return out
+
+    def ptick(self):
+        if not self.inside_p:
+            return
+        self.looks += 1
+        if self.boss == 'waiting' and self.looks >= 2:
+            self.boss = 'alive'
+        g = self.pguide()
+        if g['mode'] == 'fight' and not self.never_kill_p:
+            self.bhp = max(0, self.bhp - 50)
+            if self.bhp == 0:
+                self.boss, self.state = 'dead', 'success'
+                if not self.no_point:
+                    self.points += 1
+
+    def answer(self, command):
+        if command == 'pocket state':
+            if self.err_p:
+                return {'err': self.err_p}
+            self.ptick()
+            return self.pfacts()
+        if command == 'pocket path':
+            g = self.pguide()
+            if not self.inside_p or g['mode'] != 'walk':
+                return dict(self.pfacts(), err='no goal' if self.inside_p else 'not inside a pocket')
+            return dict(self.pfacts(), path=self.path_to(50, 5), dist=abs(self.pos[0] - 50))
+        if command == 'pocket close':
+            was = self.inside_p
+            self.inside_p = False
+            self.closed_p += 1
+            return dict(self.pfacts(), closed=was)
+        return super().answer(command)
+
+    def request(self, opname, action, data):
+        if opname != 'bossSpawns':
+            return None
+        if action == 'open':
+            return {'action': 'list', 'data': {}}
+        if action == 'pocketEnter':
+            self.entered.append(data.get('k'))
+            if self.enter_error:
+                return {'action': 'pocketError', 'data': {'text': self.enter_error}}
+            if not self.pz():
+                return {'action': 'pocketError', 'data': {'text': 'You can only open a pocket in a protection zone.'}}
+            self.inside_p = True
+            self.pos = (50 - 12, 5)
+            if not self.no_charge:
+                self.left -= 1
+            return {'action': 'pocket', 'data': {}}
+        return None
+
+
+class PocketIO(RiftIO):
+    def __init__(self, world, **kw):
+        super().__init__(world, **kw)
+        self.asked = []
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(opname, action, data)
+
+
+class PocketWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.POCKET_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_ENTER_WAIT)
+
+    def tearDown(self):
+        TX.POCKET_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_ENTER_WAIT = self.keep
+
+    def play(self, world, level=900):
+        io = PocketIO(world)
+        return run(TX.check_pocket_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_the_pure_parts(self):
+        a = {'level': 900, 'enabled': True, 'free': 16, 'reserve': 4, 'bosses': [{'key': 'world_1', 'name': 'K', 'left': 3, 'point': {'id': 1, 'got': False}},
+                                                                                 {'key': 'raid_a', 'name': 'R', 'left': 1}]}
+        self.assertIsNone(TX.pocket_refusal(a))
+        self.assertEqual(TX.pocket_pick(a)['key'], 'world_1', 'the first row: the helper ordered them')
+        self.assertIsNone(TX.pocket_pick({'bosses': []}))
+        for bad, word in ((None, 'old helper'), ({'err': 'no pocket boss system'}, 'no pocket boss'), (dict(a, enabled=False), 'closed'),
+                          (dict(a, inside=True), 'inside'), (dict(a, free=4), 'kept for the players'), (dict(a, bosses=[]), 'no pocket with a charge')):
+            r = TX.pocket_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        self.assertIsNone(TX.pocket_refusal(dict(a, free=5)), 'free 5 less one is the reserve: allowed')
+        trace = {'faults': []}
+        self.assertEqual(TX.pocket_problems({'run': {'players': 1, 'testers': 1, 'boss': 'alive', 'bossHp': 60}}, trace), [])
+        self.assertEqual((trace['boss_seen'], trace['hp']), (True, 60))
+        self.assertTrue(TX.pocket_problems({'run': {'players': 2, 'testers': 1}}, trace))
+        TX.pocket_problems({'run': {'state': 'success', 'boss': 'dead'}}, trace)
+        self.assertEqual((trace['won'], trace['hp']), (True, 0))
+        self.assertEqual(TX.pocket_error_text({'action': 'pocketError', 'data': {'text': 'No.'}}), 'No.')
+        self.assertIsNone(TX.pocket_error_text({'action': 'pocket', 'data': {}}))
+        self.assertIsNone(TX.pocket_error_text(None))
+        base = {'secs': 90, 'steps': 12, 'came': 'foot', 'boss': 'Kaelgor', 'level': 900}
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        v = TX.pocket_walk_verdict(dict(base, won=True, point={'id': 1, 'got': False}, point_gain=1))
+        self.assertEqual(v[0], TX.PASS)
+        self.assertIn('boss point came', v[1])
+        self.assertIn('held already', TX.pocket_walk_verdict(dict(base, won=True, point={'id': 1, 'got': True}))[1])
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, boss_seen=True, hp=40))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, boss_seen=True, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('pocket_walk', TX.KEYS)
+        self.assertNotIn('pocket_walk', TX.CLOSED_KEYS)
+        self.assertLess(TX.KEYS.index('pocket_walk'), TX.KEYS.index('rift_walk'))
+
+    def test_a_pocket_played_is_a_pass_with_the_point(self):
+        r, io = self.play(PocketWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Kaelgor fell', r.detail)
+        self.assertIn('boss point came (+1)', r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        ops = [(o, a) for o, a, _ in io.asked]
+        self.assertEqual(ops, [('bossSpawns', 'open'), ('bossSpawns', 'pocketEnter')], 'the window opened, then the pocket asked for')
+        self.assertEqual(io.w.entered, ['world_1'])
+        self.assertEqual(io.w.closed_p >= 1, True)
+        self.assertFalse(io.w.inside_p)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertGreater(io.looted, 0, 'the corpse of the boss is looted')
+        cmds = io.cmds
+        self.assertLess(cmds.index('path temple'), cmds.index('pocket close'))
+
+    def test_a_boss_with_no_point_is_a_pass_without_the_check(self):
+        r, _ = self.play(PocketWorld(has_point=False))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('boss point', r.detail)
+
+    def test_skips(self):
+        for world, word in ((PocketWorld(err='no pocket boss system'), 'no pocket boss'), (PocketWorld(enabled=False), 'closed'), (PocketWorld(free=4), 'kept for the players'),
+                            (PocketWorld(left=0), 'no pocket with a charge'),
+                            (PocketWorld(enter_error='The testers wait: the halls are kept for the players.'), 'testers wait')):
+            r, io = self.play(world)
+            self.assertEqual(r.status, TX.SKIP, r.detail)
+            self.assertIn(word, r.detail)
+            self.assertFalse(io.w.inside_p)
+        TX.SOLO_ENTER_WAIT = 3.0
+        r, _ = self.play(PocketWorld(enter_error='You need level 300.'))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not open', r.detail)
+
+    def test_bugs(self):
+        r, io = self.play(PocketWorld(no_point=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('gave no boss passive point', r.detail)
+        r, _ = self.play(PocketWorld(no_charge=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a charge is spent when it opens', r.detail)
+        r, _ = self.play(PocketWorld(mixed=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a player is in the pocket of the testers', r.detail)
+        r, _ = self.play(PocketWorld(enter_error='Testers and players are never mixed.'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('refused a lone tester', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(PocketWorld(never_kill=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('took none of its health', r.detail)
+        self.assertFalse(io.w.inside_p, 'the pocket is left')
+
+    def test_the_budget_ends_the_fight(self):
+        TX.POCKET_BUDGET = 6.0
+        r, io = self.play(PocketWorld(never_kill=True))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertFalse(io.w.inside_p)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+
+# ------------------------------------------------------------------------------------------------ O651: the rift stairs
+class StairsWorld(RiftWorld):
+    """a rift of two floors on one lane: the hole at x 40 on floor 7 drops to the ladder at x 40 on floor 8, the ladder is used to climb. `mons` is
+    [(x, floor)], the guardian stands at x 50 on `boss_z`; the guardian comes when the pack is dead"""
+    HOLE = 40
+
+    def __init__(self, mons=((10, 7), (20, 7), (70, 8)), boss_z=8, stuck_hole=False, **kw):
+        super().__init__(**kw)
+        self.z, self.mons, self.boss_z, self.stuck_hole = 7, [list(m) for m in mons], boss_z, stuck_hole
+        self.dead, self.uses, self.falls = set(), 0, 0
+
+    def alive_i(self):
+        return [i for i in range(len(self.mons)) if i not in self.dead]
+
+    def boss_up(self):
+        return not self.alive_i() and self.boss_hp > 0
+
+    def stairs(self, tz):
+        goal = {'x': self.HOLE, 'y': 5, 'z': self.z}
+        if tz > self.z:
+            return {'mode': 'walk', 'goal': goal, 'reach': [0, 1], 'area': 'stairs', 'via': 'hole', 'why': 'to the hole'}
+        if abs(self.pos[0] - self.HOLE) <= 1:
+            return {'mode': 'use', 'goal': goal, 'area': 'stairs', 'via': 'ladder', 'why': 'up the ladder',
+                    'use': {'x': self.HOLE, 'y': 5, 'z': self.z, 'clientId': 1386, 'stack': 1}}
+        return {'mode': 'walk', 'goal': goal, 'reach': [0, 1], 'area': 'stairs', 'via': 'ladder', 'why': 'to the ladder'}
+
+    def guide(self):
+        if not self.inside:
+            return None
+        here = [i for i in self.alive_i() if self.mons[i][1] == self.z]
+        if self.boss_up():
+            if self.boss_z != self.z:
+                return self.stairs(self.boss_z)
+            return {'mode': 'fight' if abs(self.pos[0] - 50) <= 4 else 'walk', 'goal': {'x': 50, 'y': 5, 'z': self.z}, 'reach': [1, 4], 'area': 'boss', 'why': 't'}
+        if here:
+            i = min(here, key=lambda j: abs(self.mons[j][0] - self.pos[0]))
+            x = self.mons[i][0]
+            return {'mode': 'fight' if abs(self.pos[0] - x) <= 4 else 'walk', 'goal': {'x': x, 'y': 5, 'z': self.z}, 'reach': [1, 4], 'area': 'pack', 'why': 't', 'idx': i}
+        left = self.alive_i()
+        if left:
+            return self.stairs(self.mons[left[0]][1])
+        return {'mode': 'wait', 'why': 'nothing to do'}
+
+    def facts(self):
+        out = {'inside': self.inside, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': self.z}, 'pz': self.pz(), 'held': self.key,
+               'tier': self.tier}
+        if self.inside:
+            out['run'] = {'id': 1, 'tier': self.tier, 'theme': 'ash', 'kind': 'rooms', 'state': 'running', 'boss': 'alive' if self.boss_up() else 'waiting',
+                          'killed': len(self.dead), 'total': len(self.mons), 'bossAt': len(self.mons), 'floors': 2, 'links': 1, 'monsters': len(self.alive_i()),
+                          'bossHp': self.boss_hp if self.boss_up() else None}
+            g = self.guide()
+            out['guide'] = {k: v for k, v in g.items() if k != 'idx'}
+        return out
+
+    def tick(self):
+        if not self.inside or self.never_kill:
+            return
+        g = self.guide()
+        if not g or g['mode'] != 'fight':
+            return
+        if g['area'] == 'boss':
+            self.boss_hp = max(0, self.boss_hp - 100 // self.kill_after)
+        else:
+            self.dead.add(g['idx'])
+
+    def step(self, dx, dy):
+        super().step(dx, dy)
+        if self.inside and self.z == 7 and self.pos[0] == self.HOLE and not self.stuck_hole:
+            self.z = 8   # the hole: down to the ladder under it
+            self.falls += 1
+
+    def use_at(self, pos, client_id, stack):
+        self.uses += 1
+        if self.z == 8 and pos[0] == self.HOLE and abs(self.pos[0] - self.HOLE) <= 1 and client_id == 1386:
+            self.z = 7
+            self.pos = (self.HOLE, 5)
+
+    def answer(self, command):
+        if command == 'rift path':
+            g = self.guide()
+            if not self.inside or not g or g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal' if self.inside else 'not inside a rift')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]), dist=abs(self.pos[0] - g['goal']['x']))
+        return super().answer(command)
+
+
+class StairsIO(RiftIO):
+    async def use_at(self, pos, client_id, stack=1):
+        self.w.use_at(pos, client_id, stack)
+        return True
+
+
+class RiftStairs(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.RIFT_BUDGET, TX.RIFT_BUDGET_TWO, TX.RIFT_STAIR_LOOKS)
+
+    def tearDown(self):
+        TX.RIFT_BUDGET, TX.RIFT_BUDGET_TWO, TX.RIFT_STAIR_LOOKS = self.keep
+
+    def play(self, world, level=900):
+        io = StairsIO(world)
+        return run(TX.check_rift_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_down_the_hole_to_the_guardian(self):
+        r, io = self.play(StairsWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.falls, 1, 'the bot stepped onto the hole once')
+        self.assertEqual(io.w.uses, 0, 'no ladder was needed')
+        self.assertEqual(io.w.z, 8)
+        self.assertIn('2 floors, 1 floor change(s) (1 down, 0 up, 0 ladder use(s))', r.detail)
+        self.assertIn('the guardian at', r.detail)
+        self.assertEqual(io.w.closed, 1)
+
+    def test_up_the_ladder_again(self):
+        r, io = self.play(StairsWorld(mons=((10, 8), (20, 8), (30, 8)), boss_z=7))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual((io.w.falls, io.w.z), (1, 7))
+        self.assertGreaterEqual(io.w.uses, 1, 'the ladder was used')
+        self.assertIn('1 down, 1 up', r.detail)
+        self.assertIn('1 ladder use(s)', r.detail)
+
+    def test_a_hole_that_does_not_take_the_bot_is_a_bug(self):
+        r, _ = self.play(StairsWorld(stuck_hole=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('stood next to the hole', r.detail)
+        self.assertIn('did not change', r.detail)
+
+    def test_killing_on_the_first_floor_only_is_no_walk_of_the_stairs(self):
+        base = {'tier': 3, 'theme': 'ash', 'came': 'foot', 'steps': 20, 'secs': 60, 'kills': 2, 'floors': 2, 'links': 1}
+        self.assertEqual(TX.rift_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('stairs were not walked', TX.rift_walk_verdict(base)[1])
+        self.assertEqual(TX.rift_walk_verdict(dict(base, stairs=1, down=1))[0], TX.PASS)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, floors=1, links=0))[0], TX.PASS, 'a rift of one floor needs no stairs')
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, floor=True))[0], TX.SKIP)
+
+
+# ------------------------------------------------------------------------------------------------ O651: dungeon difficulties and the Weekly Challenge
+class DifficultyWorld(DungeonWorld):
+    """the dungeon lane of DungeonWorld with the Weekly Challenge (dungeon 7, level 800, one fixed difficulty) in the list, the unlock of the helper and
+    the run's difficulty (the queue's request, the fixed one for the weekly dungeon)"""
+
+    def __init__(self, unlock_ok=True, weekly=True, current=True, listed=(0, 0), run_diff=None, scaled=True, level=900, **kw):
+        super().__init__(level=level, dungeons=(4,), **kw)
+        self.unlock_ok, self.weekly_on, self.current, self.listed, self.run_diff, self.scaled_on = unlock_ok, weekly, current, list(listed), run_diff, scaled
+        self.asked, self.unlocked, self.weekly_calls = {}, [], 0
+
+    def listing(self):
+        rows = [dict(r) for r in super().listing()]
+        if self.weekly_on:
+            rows.append({'id': 7, 'title': 'Weekly Challenge', 'level': 800, 'size': 1, 'max': 1, 'fixed': 1, 'weekly': True})
+        return rows
+
+    def facts(self, name):
+        out = super().facts(name)
+        if 'run' in out:
+            diff = 1 if self.run['id'] == 7 else self.asked.get(name, 1)
+            out['run']['difficulty'] = self.run_diff if self.run_diff is not None else diff
+            out['run']['scaled'] = out['run']['left'] if self.scaled_on else 0
+        return out
+
+    def answer(self, name, command):
+        if command.startswith('dungeon unlock '):
+            _, _, did, diff = command.split()
+            if not self.unlock_ok:
+                return {'err': 'not a tester'}
+            self.unlocked.append((int(did), int(diff)))
+            return {'unlocked': int(diff)}
+        if command == 'dungeon weekly':
+            n = self.weekly_calls
+            self.weekly_calls += 1
+            return {'weekly': {'enabled': True, 'built': '2026-W46', 'theme': 'Marrow Crypts', 'current': self.current, 'testersListed': self.listed[min(n, 1)]}}
+        return super().answer(name, command)
+
+    def request(self, name, opname, action, data=None):
+        if opname == 'dungeons' and action == 'queue' and not self.unit(name)['queued']:
+            self.asked[name] = data['difficulty']
+        return super().request(name, opname, action, data)
+
+
+class DungeonDifficulty(unittest.TestCase):
+    def setUp(self):
+        TX.reset_dungeon_turn()
+
+    def tearDown(self):
+        TX.reset_dungeon_turn()
+
+    def play(self, world, fn=None, name='Tester Aaa', level=900):
+        io = DungeonIO(world, me=name)
+        return run((fn or TX.check_dungeon_difficulty)(io, name, 'Warrior', level)), io
+
+    def test_the_pick(self):
+        a = {'level': 900, 'maxDifficulty': 6, 'list': [{'id': 4, 'level': 600, 'size': 1}, {'id': 1, 'level': 150, 'size': 2}, {'id': 7, 'level': 800, 'size': 1, 'fixed': 1, 'weekly': True}]}
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual((dg['id'], d, why), (1, 6, None), 'level 900 carries difficulty 6 of the level 150 dungeon (x3.0 = 450)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=700))
+        self.assertEqual((dg['id'], d), (1, 6))
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=300))
+        self.assertEqual((dg['id'], d), (1, 4), 'a bot of level 300: difficulty 4 of the level 150 dungeon (x1.7 = 255)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=160))
+        self.assertEqual((dg['id'], d), (1, 2), 'a bot of level 160: difficulty 2 (x1.0)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=100))
+        self.assertIsNone(dg)
+        self.assertIn('no free dungeon carries difficulty 2', why)
+        TX.DUNGEON_DIFF_DONE.update({6: 'Tester Bbb', 5: 'Tester Ccc'})
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual(d, 4, 'a difficulty another bot played is left to the next bot')
+        TX.DUNGEON_BUSY[1] = 'Tester Ddd'
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual((dg['id'], d), (4, 3), 'a dungeon a bot is in is skipped (level 900 carries 3 of the level 600 dungeon)')
+        TX.DUNGEON_DIFF_DONE.update({d: 'x' for d in (2, 3, 4)})
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertIsNone(dg)
+        self.assertIn('every difficulty', why)
+        self.assertIn('check_dungeon_difficulty', dir(TX))
+        self.assertIn('dungeon_difficulty', TX.CLOSED_KEYS)
+        self.assertIn('weekly_challenge', TX.CLOSED_KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_dungeon'), TX.CLOSED_KEYS.index('dungeon_difficulty'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')
+        self.assertNotIn('dungeon_difficulty', TX.KEYS)
+        # the plain dungeon check leaves the Weekly Challenge to its own check
+        picked = TX.dungeon_pick({'level': 900, 'list': [{'id': 7, 'level': 800, 'size': 1, 'weekly': True}, {'id': 4, 'level': 600, 'size': 1}]})[0]
+        self.assertEqual(picked['id'], 4)
+        self.assertEqual(TX.difficulty_problems({'run': {'difficulty': 3, 'scaled': 2, 'left': 2}}, {'difficulty': 3}), [])
+        self.assertTrue(TX.difficulty_problems({'run': {'difficulty': 1}}, {'difficulty': 3, 'asked': 3}))
+        self.assertIn('Weekly', TX.weekly_board_problem({'testersListed': 1}, 'after the run') or 'Weekly')
+        self.assertIsNone(TX.weekly_board_problem({'testersListed': 0}, 'x'))
+        self.assertIsNone(TX.weekly_board_problem(None, 'x'))
+
+    def test_a_difficulty_is_unlocked_asked_for_and_carried(self):
+        w = DifficultyWorld()
+        r, io = self.play(w)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Rootmaw at difficulty 3', r.detail)
+        self.assertIn('3 of 3 monster(s) scaled', r.detail)
+        self.assertEqual(w.unlocked, [(4, 3)], 'the helper unlocked it on the bot\'s own progress')
+        self.assertEqual(w.asked['Tester Aaa'], 3, 'the queue asked for it')
+        cmds = [c for _, c in io.cmds]
+        self.assertIn('dungeon unlock 4 3', cmds)
+        self.assertEqual(TX.DUNGEON_DIFF_DONE.get(3), 'Tester Aaa')
+        queue_i = [i for i, (o, a, d) in enumerate(io.asked) if a == 'queue'][0]
+        self.assertGreater(len(io.asked), queue_i)
+
+    def test_what_goes_wrong(self):
+        r, _ = self.play(DifficultyWorld(run_diff=1))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the run is at difficulty 1', r.detail)
+        r, _ = self.play(DifficultyWorld(unlock_ok=False))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('could not be unlocked', r.detail)
+        r, _ = self.play(DifficultyWorld(level=100), level=100)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('no free dungeon carries difficulty', r.detail)
+
+    def test_the_weekly_challenge_is_at_its_fixed_difficulty(self):
+        w = DifficultyWorld()
+        r, io = self.play(w, TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Weekly Challenge 2026-W46 (Marrow Crypts)', r.detail)
+        self.assertEqual(w.asked['Tester Aaa'], TX.WEEKLY_ASK, 'the bot asked for another difficulty')
+        self.assertEqual(w.unlocked, [], 'nothing is unlocked for a dungeon with one difficulty')
+        self.assertEqual(w.weekly_calls, 2, 'the boards were read before and after')
+        self.assertNotIn('difficulty %d' % TX.WEEKLY_ASK, r.detail.split('(')[0])
+
+    def test_the_weekly_challenge_bugs_and_skips(self):
+        r, _ = self.play(DifficultyWorld(run_diff=TX.WEEKLY_ASK), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the check expects 1', r.detail)
+        r, _ = self.play(DifficultyWorld(listed=(0, 2)), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('2 tester(s) after the run', r.detail)
+        r, _ = self.play(DifficultyWorld(listed=(1, 1)), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('before the run', r.detail)
+        r, _ = self.play(DifficultyWorld(weekly=False), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'not built this week' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(DifficultyWorld(current=False), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'not this week' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(DifficultyWorld(level=500), TX.check_weekly_challenge, level=500)
+        self.assertEqual((r.status, 'needs level 800' in r.detail), (TX.SKIP, True))
+        TX.DUNGEON_BUSY[7] = 'Tester Zzz'
+        r, _ = self.play(DifficultyWorld(), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'Tester Zzz' in r.detail), (TX.SKIP, True))
+
+
+# ------------------------------------------------------------------------------------------------ O651: a waystone map walked
+class WsWorld(RiftWorld):
+    """a waystone map on the rift lane: the temple at x 92, four monsters at x 10, 20, 30, 40. `wsmap state | enter | path | close`; the bot arrives at x 0"""
+
+    def __init__(self, level=1500, arrivals=4, free=True, free_why=None, free_tier=1, tier_level=1100, enter_err=None, players=0, level_bad=False,
+                 never_kill=False, evict_after=None, err=None, **kw):
+        super().__init__(level=level, **kw)
+        self.arrivals, self.free, self.free_why, self.free_tier, self.tier_level = arrivals, free, free_why, free_tier, tier_level
+        self.enter_err, self.players, self.level_bad, self.evict_after, self.err_w, self.never_kill_w = enter_err, players, level_bad, evict_after, err, never_kill
+        self.in_map, self.mons, self.dead, self.looks, self.entered, self.closed_w = False, [10, 20, 30, 40], set(), 0, [], 0
+
+    def alive_m(self):
+        return [m for m in self.mons if m not in self.dead]
+
+    def wguide(self):
+        alive = self.alive_m()
+        if not alive:
+            return {'mode': 'wait', 'why': 'no monster in sight'}
+        x = min(alive, key=lambda m: abs(m - self.pos[0]))
+        return {'mode': 'fight' if abs(self.pos[0] - x) <= 5 else 'walk', 'goal': {'x': x, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'pack', 'why': 'test'}
+
+    def wfacts(self):
+        out = {'inside': self.in_map, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'minLevel': 1000, 'kills': 3, 'arrivals': self.arrivals,
+               'enabled': True}
+        if self.in_map:
+            out['run'] = {'map': 9, 'tier': self.free_tier, 'tierLevel': self.tier_level, 'since': self.looks, 'left': 500, 'players': self.players,
+                          'monsters': len(self.alive_m()), 'monsterLevel': self.tier_level + (7 if self.level_bad else 0), 'nearestHp': 100}
+            out['guide'] = self.wguide()
+        else:
+            out.update(free=self.free, freeTier=self.free_tier if self.free else None, freeTierLevel=self.tier_level if self.free else None,
+                       why=self.free_why if not self.free else None)
+        return out
+
+    def wtick(self):
+        if not self.in_map:
+            return
+        self.looks += 1
+        if self.evict_after is not None and self.looks > self.evict_after:
+            self.in_map, self.pos = False, (self.TEMPLE - 1, 5)
+            return
+        g = self.wguide()
+        if g['mode'] == 'fight' and not self.never_kill_w:
+            self.dead.add(g['goal']['x'])
+
+    def answer(self, command):
+        if command == 'wsmap state':
+            if self.err_w:
+                return {'err': self.err_w}
+            self.wtick()
+            return self.wfacts()
+        if command.startswith('wsmap enter'):
+            self.entered.append(command)
+            if self.enter_err:
+                return dict(self.wfacts(), err=self.enter_err)
+            self.in_map, self.pos, self.looks = True, (0, 5), 0
+            return dict(self.wfacts(), entered=True, map=9, tier=self.free_tier)
+        if command == 'wsmap path':
+            g = self.wguide()
+            if not self.in_map or g['mode'] != 'walk':
+                return dict(self.wfacts(), err='no goal' if self.in_map else 'not inside a waystone map')
+            return dict(self.wfacts(), path=self.path_to(g['goal']['x'], 5), dist=abs(self.pos[0] - g['goal']['x']))
+        if command == 'wsmap close':
+            was = self.in_map
+            self.in_map = False
+            self.closed_w += 1
+            return dict(self.wfacts(), closed=was)
+        return super().answer(command)
+
+    def pz(self):
+        return super().pz() and not self.in_map
+
+
+class WsIO(RiftIO):
+    pass
+
+
+class WaystoneMapWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.WSMAP_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.WSMAP_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, world, level=1500):
+        io = WsIO(world)
+        return run(TX.check_wsmap_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_the_pure_parts(self):
+        a = {'level': 1500, 'minLevel': 1000, 'arrivals': 4, 'free': True, 'freeTier': 1, 'freeTierLevel': 1100}
+        self.assertIsNone(TX.wsmap_refusal(a))
+        for bad, word in ((None, 'old helper'), ({'err': 'no waystone system'}, 'no waystone'), (dict(a, enabled=False), 'off'), (dict(a, level=900), 'need level 1000'),
+                          (dict(a, inside=True), 'inside'), (dict(a, arrivals=0), 'arrival tile'), (dict(a, free=False, why='somebody is in the map'), 'somebody is in the map'),
+                          (dict(a, level=1000, freeTierLevel=1300), 'free waystone map is tier')):
+            r = TX.wsmap_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        trace = {}
+        self.assertEqual(TX.wsmap_problems({'run': {'players': 0, 'monsters': 8, 'tier': 1, 'tierLevel': 1100, 'monsterLevel': 1100, 'map': 3}}, trace), [])
+        self.assertEqual(TX.wsmap_problems({'run': {'players': 0, 'monsters': 5, 'tier': 1, 'tierLevel': 1100, 'monsterLevel': 1100, 'map': 3}}, trace), [])
+        self.assertEqual(trace['kills'], 3)
+        self.assertTrue(TX.wsmap_problems({'run': {'players': 1, 'monsters': 5}}, trace))
+        self.assertTrue(TX.wsmap_problems({'run': {'players': 0, 'monsters': 5, 'tierLevel': 1100, 'monsterLevel': 1107}}, trace))
+        base = {'secs': 60, 'steps': 10, 'came': 'helper', 'level': 1500, 'tier': 1, 'tier_level': 1100, 'map': 3}
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=3))[0], TX.PASS)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=1, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL, 'a long fight with too few kills is a bug')
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=1))[0], TX.SKIP)
+        self.assertIn('wsmap_walk', TX.KEYS)
+        self.assertLess(TX.KEYS.index('wsmap_walk'), TX.KEYS.index('rift_walk'))
+
+    def test_a_map_walked_is_a_pass_with_a_counted_teleport(self):
+        r, io = self.play(WsWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('tier 1 (level 1100)', r.detail)
+        self.assertEqual(io.w.entered, ['wsmap enter 1'])
+        self.assertEqual(len(r.fallbacks), 1)
+        self.assertIn('waystone device', r.fallbacks[0])
+        self.assertIn('teleport in place of walking', r.detail)
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        self.assertGreaterEqual(io.w.closed_w, 1)
+        self.assertFalse(io.w.in_map)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('wsmap enter 1'))
+
+    def test_the_band_the_server_offers_is_asked_for(self):
+        r, io = self.play(WsWorld(free_tier=6, tier_level=1600))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.entered, ['wsmap enter 6'])
+
+    def test_skips(self):
+        for world, word in ((WsWorld(err='no waystone system'), 'no waystone'), (WsWorld(arrivals=0), 'arrival tile'),
+                            (WsWorld(free=False, free_why='a tester run holds the map'), 'tester run holds the map'), (WsWorld(level=900), 'need level 1000'),
+                            (WsWorld(enter_err='somebody is in the map'), 'somebody is in the map')):
+            r, io = self.play(world, level=world.level)
+            self.assertEqual(r.status, TX.SKIP, r.detail)
+            self.assertIn(word, r.detail)
+            self.assertFalse(io.w.in_map)
+
+    def test_bugs(self):
+        r, _ = self.play(WsWorld(players=1))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('player(s) are in the waystone map of the testers', r.detail)
+        r, _ = self.play(WsWorld(level_bad=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the run is tier 1', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(WsWorld(never_kill=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('killed none', r.detail)
+        self.assertGreaterEqual(io.w.closed_w, 1)
+
+    def test_the_server_sends_the_bot_out(self):
+        r, io = self.play(WsWorld(evict_after=1))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('out of the map before it killed a monster', r.detail)
+        self.assertEqual(io.moves[-1], 'hunt')
+        TX.WSMAP_BUDGET = 4.0
+        r, _ = self.play(WsWorld(never_kill=True))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('only 0 of 3', r.detail)
+
+
+# ------------------------------------------------------------------------------------------------ O655: ascension, spells, tales, tasks, gathering, settings
+class AscWorld:
+    """the Oracle, the Proof, the Trial and the Choice of one base class tester: words, modal windows and the helper's `ascend` answers"""
+
+    def __init__(self, stage=0, voc=4, locked=(), free=8, reserve=2, wait=0, no_trial_window=False, trial_never_opens=False, grant_locked=False,
+                 enter_stays=False, level=100, deadly=False):
+        self.stage, self.voc, self.ascended, self.inside, self.looks = stage, voc, False, False, 0
+        self.locked, self.free, self.reserve, self.wait = set(locked), free, reserve, wait
+        self.no_trial_window, self.trial_never_opens, self.grant_locked = no_trial_window, trial_never_opens, grant_locked
+        self.enter_stays, self.level, self.deadly = enter_stays, level, False
+        self.choices = [{'i': 1, 'word': 'berserker', 'id': 14, 'name': 'Berserker'}, {'i': 2, 'word': 'paladin', 'id': 15, 'name': 'Paladin Lord'}]
+        self.said, self.answers = [], []
+        self.cooldown_after_fail = deadly
+
+    def probe(self, **extra):
+        out = {'enabled': True, 'level': self.level, 'minLevel': 100, 'voc': self.voc, 'vocName': {4: 'Warrior', 14: 'Berserker', 15: 'Paladin Lord'}[self.voc],
+               'eligible': not self.ascended, 'ascended': self.ascended, 'stage': self.stage, 'wait': self.wait, 'needed': 10, 'proof': 10 if self.stage >= 2 else 0,
+               'inside': self.inside, 'free': self.free, 'reserve': self.reserve, 'tester': True, 'pos': {'x': 5, 'y': 5, 'z': 7},
+               'choices': [dict(c, allowed=c['id'] not in self.locked) for c in self.choices]}
+        if self.ascended:
+            out['why'] = 'ascended'
+        if self.inside:
+            hp = max(0, 100 - 40 * self.looks)
+            out['run'] = {'state': 'fight', 'boss': 'alive', 'bossHp': hp, 'adds': 0, 'players': 1, 'testers': 1, 'tester': True}
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 6, 'y': 5, 'z': 7}, 'area': 'boss'}
+        out.update(extra)
+        return out
+
+    def answer(self, command):
+        if command == 'path npc Ascendant Oracle':
+            return {'here': True}
+        if command == 'ascend proof':
+            if self.stage != 1:
+                return {'err': 'the Proof of Strength is not open (stage %d)' % self.stage}
+            self.stage = 2
+            return self.probe(proofed=True)
+        if command == 'ascend close':
+            return self.probe(closed=False)
+        if command == 'ascend state':
+            if self.inside:
+                self.looks += 1
+                if self.looks >= 3 and not self.trial_never_opens:
+                    self.inside, self.stage = False, 3
+            return self.probe()
+        return None
+
+
+class AscIO(FakeIO):
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted = world, [], [], 0
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        return True
+
+    async def said_and_heard(self, text, wait=1.5):
+        w = self.w
+        w.said.append(text)
+        if text == 'ascension' and w.stage == 0:
+            w.stage = 1
+        return []
+
+    async def say_modal(self, text, ids, wait=5.0):
+        w = self.w
+        if text == 'trial' and w.stage == 2 and not w.no_trial_window:
+            return {'id': 7101, 'title': 'The Trial of Ascension', 'message': 'm', 'buttons': [(1, 'Enter'), (2, 'Not yet')], 'choices': [], 'escape': 2, 'enter': 1}, []
+        if text == 'choice' and w.stage == 3:
+            return {'id': 7102, 'title': 'The Choice', 'message': 'm', 'buttons': [(1, 'Choose'), (2, 'Not yet')],
+                    'choices': [(1, 'Berserker'), (2, 'Paladin Lord')], 'escape': 2, 'enter': 1}, []
+        return None, ['You are not ready.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        w = self.w
+        w.answers.append((window_id, button, choice))
+        if window_id == 7101 and button == 1:
+            w.inside, w.looks = True, 0
+            return None, []
+        if window_id == 7102:
+            c = w.choices[choice - 1]
+            return {'id': 7110 + c['id'], 'title': 'Ascend?', 'message': 'm', 'buttons': [(1, 'Ascend'), (2, 'Cancel')], 'choices': [], 'escape': 2, 'enter': 1}, []
+        if window_id > 7110 and button == 1:
+            vid = window_id - 7110
+            if vid in w.locked and not w.grant_locked:
+                return None, ['That class is locked. Unlock it in the store.']
+            w.voc, w.ascended, w.stage = vid, True, 4
+            return None, ['You have ascended.']
+        return None, []
+
+    async def step(self, dx, dy):
+        pass
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class AscensionWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.ASC_TRIAL_BUDGET, TX.ASC_ENTER_WAIT, TX.ASC_BACK_WAIT)
+
+    def tearDown(self):
+        TX.ASC_TRIAL_BUDGET, TX.ASC_ENTER_WAIT, TX.ASC_BACK_WAIT = self.keep
+
+    def play(self, **kw):
+        w = AscWorld(**kw)
+        io = AscIO(w)
+        return run(TX.check_ascension_walk(io, 'Tester Asc', 'Warrior', w.level)), io, w
+
+    def test_the_whole_quest_with_a_locked_class(self):
+        r, io, w = self.play(locked=(14,))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('steps: calling, proof, trial, locked, choice', r.detail)
+        self.assertIn('the class lock refused Berserker', r.detail)
+        self.assertIn('Warrior became Paladin Lord', r.detail)
+        self.assertEqual((w.voc, w.stage, w.ascended), (15, 4, True))
+        self.assertEqual(w.answers[0], (7101, 1, 0), 'Enter pressed in the trial window')
+        self.assertIn((7102, 1, 1), w.answers, 'the locked class was chosen first, in the window\'s own order')
+        self.assertIn((7102, 1, 2), w.answers)
+        self.assertEqual(w.said.count('ascension'), 1)
+        self.assertIn('ascend proof', io.cmds)
+        self.assertEqual(io.cmds.count('ascend close') >= 2, True, 'the bot\'s own trial is closed after the play and in the finally')
+        self.assertEqual(io.modes[0][1:], (True, True))
+        self.assertEqual(io.modes[-1][1], False)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_an_open_line_walks_to_the_first_class(self):
+        r, io, w = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('locked', r.detail.split(';')[0])
+        self.assertEqual((w.voc, w.ascended), (14, True))
+
+    def test_a_locked_class_that_is_granted_is_a_bug(self):
+        r, _, w = self.play(locked=(14,), grant_locked=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('is locked for the account and the Oracle ascended the bot to it', r.detail)
+
+    def test_every_class_locked_proves_the_refusal_only(self):
+        r, _, w = self.play(locked=(14, 15))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('locked', r.detail)
+        self.assertIn('every class of the line is locked', r.detail)
+        self.assertEqual((w.voc, w.stage), (4, 3))
+
+    def test_the_stages_are_resumed(self):
+        r, io, w = self.play(stage=2)
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('steps: trial, choice', r.detail)
+        self.assertNotIn('ascend proof', io.cmds)
+        r, io, w = self.play(stage=3)
+        self.assertIn('steps: choice', r.detail)
+
+    def test_the_stops_and_the_skips(self):
+        r, _, _ = self.play(stage=2, wait=300)
+        self.assertEqual((r.status, 'closed for 300 s' in r.detail), (TX.SKIP, True))
+        r, _, _ = self.play(stage=2, free=2)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        r, _, _ = self.play(stage=2, no_trial_window=True)
+        self.assertEqual((r.status, 'opened no trial window' in r.detail), (TX.SKIP, True))
+        TX.ASC_TRIAL_BUDGET = 6.0
+        r, _, w = self.play(stage=2, trial_never_opens=True)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('not broken', r.detail)
+
+    def test_the_refusals(self):
+        self.assertEqual(TX.ascension_refusal(None)[0], TX.SKIP)
+        self.assertEqual(TX.ascension_refusal({'err': 'no ascension quest'})[1], 'no ascension quest')
+        self.assertIn('level 50', TX.ascension_refusal({'enabled': True, 'eligible': False, 'why': 'level', 'level': 50, 'minLevel': 100})[1])
+        self.assertIn('ascended class already', TX.ascension_refusal({'enabled': True, 'ascended': True, 'vocName': 'Berserker'})[1])
+        self.assertIn('no ascension', TX.ascension_refusal({'enabled': True, 'eligible': False, 'why': 'noline'})[1])
+        self.assertIn('done already', TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 4})[1])
+        self.assertIn('inside a trial', TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 2, 'inside': True})[1])
+        self.assertIsNone(TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 0}))
+        for a in ({'enabled': False}, ):
+            self.assertEqual(TX.ascension_refusal(a)[0], TX.SKIP)
+        self.assertEqual(run(TX.check_ascension_walk(FakeIO(), 'a', 'Warrior', 100)).status, TX.SKIP)
+
+    def test_the_choice_plan_and_the_verdicts(self):
+        locked, allowed = TX.asc_choice_plan([{'i': 1, 'id': 14, 'allowed': False}, {'i': 2, 'id': 15, 'allowed': True}, {'bad': 1}])
+        self.assertEqual(([c['id'] for c in locked], [c['id'] for c in allowed]), ([14], [15]))
+        self.assertEqual(TX.asc_choice_plan(None), ([], []))
+        self.assertEqual(TX.ascension_verdict({'faults': ['x']})[0], TX.FAIL)
+        self.assertEqual(TX.ascension_verdict({'done': [], 'why': 'nothing'})[0], TX.SKIP)
+        st, text = TX.ascension_verdict({'done': ['calling'], 'why': 'no proof', 'fallbacks': ['enter npc']})
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('(stopped: no proof)', text)
+        self.assertIn('enter npc', text)
+
+    def test_it_runs_last_and_is_an_open_check(self):
+        self.assertIn('ascension_walk', TX.KEYS)
+        self.assertNotIn('ascension_walk', TX.CLOSED_KEYS)
+        self.assertEqual(TX.KEYS[-1], 'ascension_walk', 'the class changes: after every other check')
+        self.assertLess(TX.KEYS.index('rift_walk'), TX.KEYS.index('ascension_walk'))
+
+
+class SpellIO(FakeIO):
+    def __init__(self, spells, replies_by_words=None, **kw):
+        super().__init__(**kw)
+        self.list, self.by_words, self.cast = spells, replies_by_words or {}, []
+
+    def class_spells(self):
+        return self.list
+
+    async def said_and_heard(self, text, wait=1.5):
+        self.cast.append(text)
+        return self.by_words.get(text, [])
+
+
+def spell(words, group='support', level=8, **kw):
+    return dict({'words': words, 'name': words, 'group': group, 'level': level, 'needlearn': False, 'params': False, 'needtarget': False}, **kw)
+
+
+class SpellSupport(unittest.TestCase):
+    LIST = [spell('utani hur'), spell('exura', 'healing', 1), spell('exori', 'attack', 1), spell('utevo res', params=True), spell('exeta', needtarget=True),
+            spell('vok aeg', 'attack', 10, needlearn=True, needtarget=True), spell('far', level=900)]
+
+    def go(self, io, level=50):
+        return run(TX.check_spell_support(io, 'Tester Spl', 'Ninja', level))
+
+    def test_the_pick(self):
+        self.assertEqual([s['words'] for s in TX.spell_support_pick(self.LIST, 50)], ['utani hur', 'exura'], 'no attack, parameter, target, learning or level')
+        self.assertEqual(len(TX.spell_support_pick([spell('w%d' % i, level=i) for i in range(1, 20)], 50, 3)), 3)
+        self.assertEqual([s['words'] for s in TX.spell_learn_pick(self.LIST, 50)], ['vok aeg'])
+        self.assertEqual(TX.spell_learn_pick(self.LIST, 5), [])
+        self.assertEqual(TX.spell_support_pick([spell('a'), spell('a')], 50), [spell('a')], 'one row per words')
+
+    def test_the_refusal_kinds(self):
+        for text, kind in (('You must learn this spell first.', 'unknown'), ('Your vocation cannot use this spell.', 'vocation'), ('You need a premium account.', 'premium'),
+                           ('You do not have enough level.', 'level'), ('You do not have enough mana.', 'mana'), ('You are exhausted.', 'exhausted')):
+            self.assertEqual(TX.spell_refusal([text]), kind)
+        self.assertIsNone(TX.spell_refusal(['You see a rat.']))
+        self.assertIsNone(TX.spell_refusal([]))
+
+    def test_the_support_spells_are_cast_and_the_learned_one_is_refused(self):
+        io = SpellIO(self.LIST, {'vok aeg': ['You must learn this spell first.']})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.cast, ['utani hur', 'exura', 'vok aeg'])
+        self.assertIn('2 of 2 support spell(s) cast with no refusal', r.detail)
+        self.assertIn('1 of 1 learned-spell(s) refused', r.detail)
+
+    def test_a_listed_spell_that_is_refused_is_a_bug(self):
+        for text, kind in (('You must learn this spell first.', 'unknown'), ('Your vocation cannot use this spell.', 'vocation')):
+            r = self.go(SpellIO(self.LIST, {'utani hur': [text]}))
+            self.assertEqual(r.status, TX.FAIL)
+            self.assertIn('utani hur (%s)' % kind, r.detail)
+
+    def test_mana_holds_a_cast_back_and_silence_on_a_learned_spell_is_a_note(self):
+        r = self.go(SpellIO(self.LIST, {'exura': ['You do not have enough mana.']}))
+        self.assertEqual((r.status, '1 held back by mana' in r.detail, '1 cast without a word' in r.detail), (TX.PASS, True, True))
+        r = self.go(SpellIO(self.LIST, {'utani hur': ['You are exhausted.'], 'exura': ['You do not have enough mana.']}))
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_skips(self):
+        self.assertEqual(self.go(SpellIO([])).status, TX.SKIP)
+        self.assertEqual(self.go(SpellIO([spell('exori', 'attack', 1)])).status, TX.SKIP)
+        self.assertIn('spell_support', TX.KEYS)
+
+
+class TalesIO(FakeIO):
+    def __init__(self, listing, tale=None, answers=None):
+        super().__init__(answers=dict({'path npc Archivist Maelis': {'here': True}}, **(answers or {})))
+        self.listing, self.tale, self.pressed = listing, tale, []
+
+    async def say_modal(self, text, ids, wait=5.0):
+        return self.listing, ['She looks up.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        self.pressed.append((window_id, button, choice))
+        return (self.tale if window_id == 7170 and 7171 in ids else None), []
+
+
+def tales_window(choices=((1, 'The Hollow Road'),), buttons=((1, 'Read'), (2, 'Close')), title='Tales of the Ash'):
+    return {'id': 7170, 'title': title, 'message': 'pick', 'buttons': list(buttons), 'choices': list(choices), 'escape': 2, 'enter': 1}
+
+
+class TalesRead(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_tales_read(io, 'Tester Tal', 'Ninja', 300))
+
+    def test_read_opens_a_tale_and_the_windows_close(self):
+        tale = {'id': 7171, 'title': 'The Hollow Road', 'message': 'Once...', 'buttons': [(2, 'Close')], 'choices': [], 'escape': 2, 'enter': 2}
+        io = TalesIO(tales_window(), tale)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Read opened "The Hollow Road"', r.detail)
+        self.assertEqual(io.pressed[0], (7170, 1, 1), 'Read with the first tale')
+        self.assertEqual(io.pressed[1], (7171, 2, 255), 'the tale closed with its escape button')
+        self.assertEqual(io.pressed[2][:2], (7170, 2), 'the list closed')
+
+    def test_the_bugs_and_the_skips(self):
+        self.assertEqual((self.go(TalesIO(tales_window(), None)).status), TX.FAIL)
+        self.assertIn('no tale window came', self.go(TalesIO(tales_window(), None)).detail)
+        r = self.go(TalesIO(tales_window(buttons=((1, 'Go'),)), None))
+        self.assertEqual((r.status, 'not Read and Close' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(TalesIO(tales_window(title=''), None)).status, TX.FAIL)
+        r = self.go(TalesIO(tales_window(choices=()), None))
+        self.assertEqual((r.status, 'no tale open' in r.detail), (TX.PASS, True))
+        r = self.go(TalesIO(None))
+        self.assertEqual((r.status, 'opened no list of tales' in r.detail, 'She looks up' in r.detail), (TX.SKIP, True, True))
+        tale = {'id': 7171, 'title': '', 'message': '', 'buttons': [], 'choices': [], 'escape': 0, 'enter': 0}
+        self.assertEqual(self.go(TalesIO(tales_window(), tale)).status, TX.FAIL)
+        io = TalesIO(None, answers={'path npc Archivist Maelis': {'err': 'no way'}})
+        io.answers['enter npc Archivist Maelis'] = {'err': 'no npc'}
+        self.assertEqual(run(TX.check_tales_read(io, 'a', 'Ninja', 300)).status, TX.SKIP)
+
+
+class KillTaskIO(ChoreIO):
+    pass
+
+
+def board(offers=(), tasks=()):
+    return {'action': 'board', 'data': {'offers': list(offers), 'tasks': list(tasks)}}
+
+
+class KillTask(unittest.TestCase):
+    def go(self, io, level=300):
+        return run(TX.check_kill_task(io, 'Tester Kil', 'Ninja', level))
+
+    OFFERS = [{'key': 'fam:bug:1', 'kind': 'family', 'state': 'done', 'required': 5, 'lo': 1, 'hi': 50},
+              {'key': 'fam:rat:2', 'kind': 'family', 'state': 'open', 'required': 40, 'lo': 250, 'hi': 350, 'label': 'rats'},
+              {'key': 'hunt:troll', 'kind': 'hunt', 'state': 'open', 'required': 20, 'lo': 10, 'hi': 20, 'label': 'trolls'},
+              {'key': 'fam:ant:3', 'kind': 'family', 'state': 'open', 'required': 30, 'lo': 200, 'hi': 400, 'label': 'ants'}]
+
+    def test_accept_listed_active_abandon(self):
+        held = {'key': 'fam:ant:3', 'required': 30, 'progress': 0}
+        io = KillTaskIO({('bestiary', 'board'): board(self.OFFERS),
+                         ('bestiary', 'accept'): board([dict(o, state='active') if o['key'] == 'fam:ant:3' else o for o in self.OFFERS], [held]),
+                         ('bestiary', 'abandon'): board(self.OFFERS)})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('bestiary', 'accept', {'key': 'fam:ant:3'}), io.asked, 'an open offer whose level window holds the bot, the fewest kills')
+        self.assertEqual(io.asked[-1][:2], ('bestiary', 'abandon'))
+
+    def test_the_bugs(self):
+        held = {'key': 'fam:ant:3', 'required': 30, 'progress': 0}
+        act = [dict(o, state='active') if o['key'] == 'fam:ant:3' else o for o in self.OFFERS]
+        active = board(act, [held])
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): active, ('bestiary', 'abandon'): active}))
+        self.assertEqual((r.status, 'still in the active list' in r.detail), (TX.FAIL, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(self.OFFERS, [dict(held, progress=4)]),
+                                ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'shows 4 of 30' in r.detail), (TX.FAIL, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(self.OFFERS), ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'did not take' in r.detail), (TX.SKIP, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(
+            [dict(o, state='open') for o in self.OFFERS], [held]), ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'not active' in r.detail), (TX.FAIL, True))
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(KillTaskIO()).status, TX.SKIP)
+        r = self.go(KillTaskIO({('bestiary', 'board'): board([dict(self.OFFERS[0])])}))
+        self.assertEqual((r.status, 'no open kill task' in r.detail), (TX.SKIP, True))
+        self.assertIsNone(TX.kill_task_pick(None, 10))
+
+
+class GatherIO(ChoreIO):
+    def __init__(self, probes, shop=None):
+        super().__init__()
+        self.probes, self.used, self.bought, self.shop_items = list(probes), [], [], shop
+        self.answers['path npc Material Broker'] = {'here': True}
+
+    async def helper(self, command, kind, wait=4.0):
+        if command == 'gather state':
+            return self.probes.pop(0) if len(self.probes) > 1 else self.probes[0]
+        if command == 'gather path':
+            return {'here': True, 'dist': 0}
+        return self.answers.get(command)
+
+    async def shop_window(self, npc, wait=5.0):
+        return self.shop_items
+
+    def shop_close(self):
+        pass
+
+    async def buy(self, item_id, amount=1):
+        self.bought.append(item_id)
+
+    async def use_at(self, pos, client_id, stackpos=0, wait=1.5):
+        self.used.append((pos, client_id, stackpos))
+        return list(self.texts)
+
+    texts = []
+
+    async def step(self, dx, dy):
+        pass
+
+    def raid_mode(self, names, on, keep_flee=False):
+        pass
+
+
+def gprobe(held=0, tools=True, node=True, gathering=False, d=0, **kw):
+    out = {'enabled': True, 'levelOk': True, 'level': 100, 'minLevel': 20, 'held': held, 'gathering': gathering, 'bank': 500,
+           'tools': {'delving': tools, 'wortcunning': False}, 'buy': [{'id': 2553, 'clientId': 2553, 'price': 50}, {'id': 2405, 'clientId': 2405, 'price': 20}, {'id': 5908, 'clientId': 5908, 'price': 600}]}
+    if node:
+        out['node'] = {'prof': 'delving', 'tier': 2, 'id': 100, 'clientId': 4000, 'pos': {'x': 9, 'y': 9, 'z': 7}, 'stackpos': 1, 'd': d}
+    out.update(kw)
+    return out
+
+
+class GatherWalk(unittest.TestCase):
+    def go(self, io, level=100):
+        return run(TX.check_gather_walk(io, 'Tester Gat', 'Ninja', level))
+
+    def test_the_node_is_used_and_the_material_comes(self):
+        io = GatherIO([gprobe(0), gprobe(0), gprobe(0), gprobe(3, gathering=True)])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('gathered 3 material(s) from a delving node of tier 2', r.detail)
+        self.assertEqual(io.used[0], ({'x': 9, 'y': 9, 'z': 7}, 4000, 1))
+        self.assertEqual(io.bought, [], 'the bot has a pick: nothing to buy')
+
+    def test_a_bot_without_a_tool_buys_the_cheapest_at_the_broker(self):
+        io = GatherIO([gprobe(0, tools=False, node=False), gprobe(0), gprobe(0), gprobe(0), gprobe(2)], shop=[{'id': 2405, 'name': 'sickle', 'buy': 20}, {'id': 2553, 'name': 'pick', 'buy': 50}])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.bought, [2405], 'the sickle: the cheapest')
+        io = GatherIO([gprobe(0, tools=False, node=False)], shop=[{'id': 2405, 'name': 'sickle', 'buy': 20}])
+        r = self.go(io)
+        self.assertEqual((r.status, 'holds no pick or sickle' in r.detail), (TX.FAIL, True))
+        r = self.go(GatherIO([gprobe(0, tools=False, node=False)], shop=None))
+        self.assertEqual((r.status, 'no window' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, tools=False, node=False, bank=5)], shop=[]))
+        self.assertEqual((r.status, 'gold in the bank' in r.detail), (TX.SKIP, True))
+
+    def test_the_verdicts(self):
+        a, b = gprobe(0), gprobe(0)
+        self.assertEqual(TX.gather_verdict(a, gprobe(2), False, [])[0], TX.PASS)
+        self.assertEqual(TX.gather_verdict(a, b, True, [])[0], TX.SKIP)
+        st, text = TX.gather_verdict(a, b, False, ['Stand next to it.'])
+        self.assertEqual((st, 'Stand next to it' in text), (TX.SKIP, True))
+        st, text = TX.gather_verdict(a, b, False, [])
+        self.assertEqual((st, 'no gather started' in text), (TX.FAIL, True))
+        self.assertEqual(TX.gather_verdict(a, None, False, [])[0], TX.SKIP)
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
+        self.assertEqual(self.go(GatherIO([{'err': 'no professions'}])).status, TX.SKIP)
+        r = self.go(GatherIO([gprobe(0, levelOk=False, level=5)]))
+        self.assertEqual((r.status, 'open at level 20' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, node=False, guide={'mode': 'wait', 'why': 'no node within 150 tiles'})]))
+        self.assertEqual((r.status, 'no node within' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, d=5)]))
+        self.assertEqual((r.status, 'tiles from the node' in r.detail), (TX.SKIP, True))
+
+
+class SettingsIO(ChoreIO):
+    pass
+
+
+def settings(rules):
+    return {'action': 'settings', 'data': {'rules': rules}}
+
+
+class Settings(unittest.TestCase):
+    def test_pouch_rules_turn_over_and_back(self):
+        a = {'orbs': True, 'runes': False, 'minRarity': 2}
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False)), settings(a)]})
+        r = run(TX.check_pouch_rules(io, 'Tester Pou', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('rule orbs turned True and back', r.detail)
+        self.assertEqual(io.asked[1][2]['rules']['orbs'], False)
+        self.assertEqual(io.asked[2][2]['rules']['orbs'], True, 'put back')
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(a), settings(a)]})
+        self.assertEqual((run(TX.check_pouch_rules(io, 'a', 'Ninja', 1)).status), TX.FAIL)
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False, runes=True)), settings(a)]})
+        r = run(TX.check_pouch_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'changed runes as well' in r.detail), (TX.FAIL, True))
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False)), settings(dict(a, orbs=False))]})
+        r = run(TX.check_pouch_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'put back' in r.detail), (TX.FAIL, True))
+        self.assertEqual(run(TX.check_pouch_rules(SettingsIO(), 'a', 'Ninja', 1)).status, TX.SKIP)
+        io = SettingsIO({('pouches', 'open'): settings(a)})
+        self.assertEqual(run(TX.check_pouch_rules(io, 'a', 'Ninja', 1)).status, TX.SKIP)
+        self.assertEqual(io.asked[-1][:2], ('pouches', 'set'), 'the rules are put back even when no answer came')
+
+    def test_the_auto_seller(self):
+        def a(paused, unlocked, notice=None):
+            return {'action': 'autoseller', 'data': {'paused': paused, 'unlocked': unlocked, 'notice': notice}}
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(False, False, 'Needs the Auto Seller (Store).')})
+        r = run(TX.check_autosell_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'locked for the bot' in r.detail), (TX.PASS, True))
+        self.assertEqual(sum(1 for x in io.asked if x[1] == 'aspause'), 1, 'a locked window is asked once')
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(True, False, 'x')})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(False, False)})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): [a(False, True), a(True, True)]})
+        r = run(TX.check_autosell_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'switched on and back' in r.detail), (TX.PASS, True))
+        self.assertEqual([x[2] for x in io.asked if x[1] == 'aspause'], [{'on': True}, {'on': False}])
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): a(True, True)})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): [a(False, True), a(False, True)]})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        self.assertEqual(run(TX.check_autosell_rules(SettingsIO(), 'a', 'Ninja', 1)).status, TX.SKIP)
+
+    def test_the_stash_window(self):
+        def m(**d):
+            return {'action': 'Stash', 'data': d}
+        tabs = m(make='tabs', tabs=[{'name': 'General', 'used': 3, 'size': 30}, {'name': 'Weapons', 'used': 0, 'size': 25}], canWithdraw=True, canDeposit=True)
+        r = TX.stash_verdict([m(make='addCategorys'), tabs, m(make='found', total=4)])
+        self.assertEqual((r[0], '2 tab(s)' in r[1], 'search found 4' in r[1]), (TX.PASS, True, True))
+        self.assertEqual(TX.stash_verdict([tabs])[0], TX.PASS)
+        self.assertEqual(TX.stash_verdict([m(make='found', total=1)])[0], TX.SKIP)
+        self.assertEqual(TX.stash_verdict([m(make='tabs', tabs=[])])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([m(make='tabs', tabs=[{'name': 'G', 'used': 31, 'size': 30}])])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([tabs, m(make='found', error='boom')])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([tabs, m(make='found', error='short')])[0], TX.PASS)
+        self.assertEqual(TX.stash_verdict(None)[0], TX.SKIP)
+
+        class CollectIO(FakeIO):
+            async def collect(self, opname, action, datas, wait=3.0):
+                self.asked.append((opname, action, datas))
+                return [tabs]
+        io = CollectIO()
+        r = run(TX.check_stash_window(io, 'a', 'Ninja', 1))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertEqual([d['make'] for d in io.asked[0][2]], ['SendCategories', 'SendItems', 'Find'])
+
+    def test_the_gambler_reroll(self):
+        def stock(money, rerolls, ids, price=400):
+            return st({'w': 3, 'money': money, 'rerolls': rerolls, 'reroll': price, 'items': [{'i': i, 'id': 2400 + i, 'p': 10} for i in ids]})
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('gamble', 'open'): [stock(9000, 0, [1, 2]), stock(8600, 1, [5, 6])], ('gamble', 'reroll'): ok})
+        r = run(TX.check_gamble_reroll(io, 'Tester Gam', 'Ninja', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('for 400 gold', r.detail)
+        self.assertIn(('gamble', 'reroll', {'w': 3}), io.asked)
+        self.assertEqual(io.asked[-1][:2], ('gamble', 'close'))
+        for after, want in ((stock(9000, 1, [5, 6]), 'the money did not fall'), (stock(8600, 0, [5, 6]), 'the count went'), (stock(8600, 1, [1, 2]), 'the stock is the same')):
+            io = ChoreIO({('gamble', 'open'): [stock(9000, 0, [1, 2]), after], ('gamble', 'reroll'): ok})
+            r = run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300))
+            self.assertEqual((r.status, want in r.detail), (TX.FAIL, True), r.detail)
+        io = ChoreIO({('gamble', 'open'): stock(9000, 0, [1], price=None)})
+        self.assertIn('no more fresh crates', run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300)).detail)
+        io = ChoreIO({('gamble', 'open'): stock(5200, 0, [1])})
+        r = run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300))
+        self.assertEqual((r.status, 'keeps 5000 for supplies' in r.detail), (TX.SKIP, True))
+        self.assertNotIn('reroll', [a[1] for a in io.asked])
+        io = ChoreIO({('gamble', 'open'): stock(9000, 0, [1]), ('gamble', 'reroll'): {'action': 'result', 'data': {'ok': False, 'text': 'Fresh crates cost 400 gold.'}}})
+        self.assertEqual(run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300)).status, TX.SKIP)
+        self.assertEqual(run(TX.check_gamble_reroll(ChoreIO(), 'a', 'Ninja', 300)).status, TX.SKIP)
+
+    def test_the_keys(self):
+        for k in ('spell_support', 'tales_read', 'kill_task', 'gather_walk', 'pouch_rules', 'autosell_rules', 'stash_window', 'gamble_reroll', 'ascension_walk'):
+            self.assertIn(k, TX.KEYS)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
+
+
 if __name__ == '__main__':
     unittest.main()

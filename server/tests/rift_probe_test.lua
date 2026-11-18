@@ -244,5 +244,74 @@ do
 	ok(cfg.omen.tester and cfg.omen.tester.reserve >= 1 and cfg.omen.tester.reserve < cfg.limits.maxRuns, "config: the omen reserve is under the slots")
 end
 
+-- the stairs of a rift of two floors (O651): a hole drops to the ladder below, the ladder climbs to the cell south of the hole
+do
+	local links = {{hole = {x = 140, y = 100, z = 7}, ladder = {x = 140, y = 100, z = 8}, up = {x = 140, y = 101, z = 7}}}
+	local function g(o)
+		local a = {state = "running", boss = "waiting", pos = {x = 100, y = 100, z = 7}, reach = 4, links = links}
+		for k, v in pairs(o) do a[k] = v end
+		return R.guide(a)
+	end
+	local r = g({other = true, otherPos = {x = 160, y = 100, z = 8}})
+	ok(r.mode == "walk" and r.area == "stairs" and r.via == "hole" and r.goal.x == 140 and r.goal.z == 7 and r.reach[1] == 0 and r.reach[2] == 1,
+		"monsters on the floor below: walk to the hole")
+	ok(r.why:find("another floor", 1, true) ~= nil, "the reason names the other floor")
+	r = g({other = true, otherPos = {x = 160, y = 100, z = 8}, pos = {x = 139, y = 100, z = 7}})
+	ok(r.mode == "walk" and r.via == "hole", "next to the hole: still walk (the last step is onto it)")
+	r = g({other = true, otherPos = {x = 160, y = 100, z = 6}})
+	ok(r.mode == "wait" and r.area == "pack", "monsters on a floor above and no ladder on this floor: wait")
+	-- on the lower floor: the ladder
+	r = g({pos = {x = 150, y = 100, z = 8}, other = true, otherPos = {x = 120, y = 100, z = 7}})
+	ok(r.mode == "walk" and r.via == "ladder" and r.goal.x == 140 and r.goal.z == 8, "monsters on the floor above: walk to the ladder")
+	r = g({pos = {x = 141, y = 100, z = 8}, other = true, otherPos = {x = 120, y = 100, z = 7}})
+	ok(r.mode == "use" and r.via == "ladder" and r.goal.x == 140, "next to the ladder: use it")
+	r = g({pos = {x = 140, y = 100, z = 8}, other = true, otherPos = {x = 120, y = 100, z = 7}})
+	eq(r.mode, "use", "on the ladder tile (where a fall lands): use it")
+	-- the guardian on another floor
+	r = g({boss = "alive", bossPos = {x = 190, y = 100, z = 8}})
+	ok(r.mode == "walk" and r.via == "hole" and r.why:find("guardian", 1, true) ~= nil, "the guardian on the floor below: to the hole first")
+	r = g({pos = {x = 150, y = 100, z = 8}, boss = "alive", bossPos = {x = 190, y = 100, z = 8}})
+	ok(r.mode == "walk" and r.area == "boss", "the guardian on this floor: walk to it")
+	-- a pack monster on this floor comes before any stairs
+	r = g({monster = {pos = {x = 110, y = 100, z = 7}}, other = false})
+	ok(r.area == "pack", "a monster on this floor: no stairs")
+	-- no stairs known: the old answer
+	r = R.guide({state = "running", boss = "waiting", pos = {x = 100, y = 100, z = 7}, other = true, otherPos = {x = 160, y = 100, z = 8}, reach = 4})
+	ok(r.mode == "wait" and r.area == "pack", "no links: wait")
+	-- the probe: the links of the layout, the floor of the monsters left, the ladder to use
+	restart()
+	local a = newPlayer(31, "Tester Stp")
+	local c = R.slotCenter(cfg, 3)
+	local L = {start = {x = c.x, y = c.y, z = c.z}, kind = "rooms", floors = {c.z, c.z + 1}, links = {
+		{hole = {x = c.x + 5, y = c.y, z = c.z}, ladder = {x = c.x + 5, y = c.y, z = c.z + 1}, up = {x = c.x + 5, y = c.y + 1, z = c.z}}}}
+	local run = R.newRun(cfg, os.time(), 10, 8, R.effects(cfg, {}, 3))
+	run.id, run.slot, run.L, run.key = 3, 3, L, {tier = 3, mods = {}}
+	run.themeName, run.players, run.size, run.lives = "ash", {[a.id] = {id = a.id, guid = a.guid, name = a.name, entry = pos(1, 1, 7)}}, 1, 3
+	run.openerGuid, run.state, run.boss, run.killed, run.total, run.bossAt = a.guid, "running", "waiting", 2, 10, 8
+	run.aliveIds, run.bossIds = {[701] = true}, {}
+	RF.runs[3], RF.runOf[a.id] = run, run
+	a.at = pos(c.x, c.y, c.z)
+	a.getItemById = function() return nil end
+	monster(701, c.x + 12, c.y, c.z + 1) -- on the floor below
+	local pr = RF.probe(a)
+	ok(pr.run.floors == 2 and pr.run.links == 1, "the probe counts the floors and the links")
+	ok(pr.guide.mode == "walk" and pr.guide.via == "hole" and pr.guide.goal.x == c.x + 5 and pr.guide.goal.z == c.z, "the guide goes to the hole")
+	-- on the floor below, the monster above: the ladder, then its use with the client id and the place in the stack
+	monsters[701].at = pos(c.x + 2, c.y, c.z)
+	a.at = pos(c.x + 5, c.y, c.z + 1)
+	ChaosAreaGenConfig = {items = {ladder = 1386}}
+	local ladder = {id = 1386, getId = function() return 1386 end}
+	ItemType = function(id) return {getId = function() return id end, getName = function() return "item" .. id end, getClientId = function() return 4000 + id end} end
+	Tile = function(p)
+		return {hasFlag = function() return false end, getItemById = function(_, id) return id == 1386 and p.x == c.x + 5 and ladder or nil end,
+			getThingIndex = function() return 2 end}
+	end
+	pr = RF.probe(a)
+	ok(pr.guide.mode == "use" and pr.guide.via == "ladder", "on the ladder tile: use it")
+	ok(pr.guide.use and pr.guide.use.x == c.x + 5 and pr.guide.use.z == c.z + 1 and pr.guide.use.clientId == 5386 and pr.guide.use.stack == 2,
+		"the ladder to use: its tile, its client id, its place in the stack")
+	RF.runs[3], RF.runOf[a.id] = nil, nil
+end
+
 print(string.format("rift_probe_test: %d checks, %d failures", checks, fails))
 os.exit(fails == 0 and 0 or 1)

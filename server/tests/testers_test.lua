@@ -174,8 +174,11 @@ eq(combat(tester, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "two testers 
 eq(combat(summon(tester), tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "nor a tester's summon and another tester")
 K.reader, K.clock = function() return "on" end, function() return 2000 end
 K.resetClosedCache()
-eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves in closed mode")
+eq(combat(tester, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on, no PvP place: two testers still never fight (O652)")
+ChaosBlessings = {pvpPlace = function() return "arena" end}
+eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves in closed mode, in a PvP place")
 eq(combat(summon(tester), tester2), RETURNVALUE_NOERROR, "their summons too")
+ChaosBlessings = nil
 eq(combat(tester, ana), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a tester still never hits a player")
 eq(combat(ana, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a player still never hits a tester")
 eq(combat(tester, summon(tester)), RETURNVALUE_NOERROR, "a tester and its own summon")
@@ -516,6 +519,31 @@ do
 	eq(guard(invader, tester, 500, COMBAT_PHYSICALDAMAGE, 0, 2), 500, "an unmarked monster is nobody's: unchanged")
 	check(X.worldHit(tester, "players") and not X.worldHit(ana, "players") and X.worldHit(ana, "testers") and not X.worldHit(nil, "players"), "worldHit: the same rule for the scripts that ask directly")
 	eq(X.worldCancelled[1], 3, "worldHit counts a tester's cancelled hit too")
+end
+
+-- ------------------------------------------------------------------ O653: a tester is on no season board and takes no chest from the pool
+do
+	local function source(path)
+		local f = io.open(path, "r")
+		local text = f and f:read("*a") or ""
+		if f then f:close() end
+		return text
+	end
+	local season = source("data/scripts/chaos/season.lua")
+	local onRecord = season:match("function S%.onRecord%(board, who, value%)(.-)\nend\n") or ""
+	check(onRecord:find("Chaos.isTesterGuid(guid)", 1, true) ~= nil, "season.lua S.onRecord skips a tester guid: no season stat row, no milestone")
+	check((onRecord:find("isTesterGuid", 1, true) or 0) > 0 and (onRecord:find("isTesterGuid", 1, true) or 0) < (onRecord:find("INSERT INTO", 1, true) or 0),
+		"the tester guard comes before the database write")
+	local ladder = season:match("local function ladderWhere%(g, seasonId%)(.-)\nend\n") or ""
+	check(ladder:find('Chaos.notTesterSql("p")', 1, true) ~= nil, "season.lua ladderWhere leaves the testers out of the season ladder (the mode ladders share it)")
+	local modes = source("data/scripts/chaos/season_modes.lua")
+	check(modes:find("S.ladderHelpers.where(g, season.id)", 1, true) ~= nil, "the mode ladders read the same where clause")
+	local chest = source("data/scripts/chaos/weeklychest.lua")
+	local credit = chest:match("function W%.credit%(player, key%)(.-)\nend\n") or ""
+	check(credit:find("Chaos.isTesterGuid(player:getGuid())", 1, true) ~= nil, "the Weekly Chest credits a tester nothing: it is not marked and the chest is not given")
+	-- the leaderboard record the season and the pass hook into already skips a tester
+	local lb = source("data/scripts/chaos/leaderboard.lua")
+	check(lb:find("Chaos.isTesterGuid(guid)", 1, true) ~= nil, "the leaderboard record skips a tester")
 end
 
 print = origPrint

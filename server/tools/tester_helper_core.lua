@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -209,13 +209,23 @@ end
 -- the queue, the kill counter, the nearest monster, the boss), the path on foot to the guide's goal inside a run, and the close of the
 -- testers' own run
 function H.parseDungeon(arg)
-	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	local usage = "usage: dungeon [state | path | close | weekly | unlock ID N]"
+	local what, id, d = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*(%d*)%s*$")
+	if not what then
+		return nil, usage
+	end
 	if what == "" then
 		what = "state"
 	end
-	what = what and what:lower()
-	if what ~= "state" and what ~= "path" and what ~= "close" then
-		return nil, "usage: dungeon [state | path | close]"
+	what = what:lower()
+	if what == "unlock" then -- O651: the TEST ONLY unlocked difficulty of the bot's own progress
+		if id == "" or d == "" then
+			return nil, usage
+		end
+		return {what = "unlock", id = tonumber(id), difficulty = tonumber(d)}
+	end
+	if id ~= "" or (what ~= "state" and what ~= "path" and what ~= "close" and what ~= "weekly") then
+		return nil, usage
 	end
 	return what
 end
@@ -231,7 +241,7 @@ function H.dungeonAnswer(probe, extra)
 			local d = probe.list[i]
 			if type(d) == "table" then
 				out.list[#out.list + 1] = {id = d.id, title = d.title and tostring(d.title):sub(1, 40) or nil, level = d.level,
-					size = d.size, max = d.max, fixed = d.fixed}
+					size = d.size, max = d.max, fixed = d.fixed, weekly = d.weekly}
 			end
 		end
 	end
@@ -240,7 +250,7 @@ function H.dungeonAnswer(probe, extra)
 		out.run = {id = r.id, dungeon = r.dungeon, title = r.title and tostring(r.title):sub(1, 40) or nil, side = r.side, size = r.size,
 			members = r.members, difficulty = r.difficulty, percent = r.percent, total = r.total, left = r.left,
 			unlocked = r.unlocked and true or false, ended = r.ended and true or false, deaths = r.deaths, bossHp = r.bossHp,
-			endsIn = r.endsIn}
+			endsIn = r.endsIn, scaled = r.scaled, bossScaled = r.bossScaled, weekly = r.weekly}
 	end
 	local g = probe.guide
 	if type(g) == "table" then
@@ -384,12 +394,15 @@ function H.riftAnswer(probe, extra)
 	if type(r) == "table" then
 		out.run = {id = r.id, tier = r.tier, theme = r.theme and tostring(r.theme):sub(1, 30) or nil, kind = r.kind, state = r.state, boss = r.boss,
 			killed = r.killed, total = r.total, bossAt = r.bossAt, left = r.left, lives = r.lives, players = r.players, floors = r.floors,
-			entry = xyz(r.entry), bossPos = xyz(r.bossPos), monsters = r.monsters, bossHp = r.bossHp}
+			entry = xyz(r.entry), bossPos = xyz(r.bossPos), monsters = r.monsters, bossHp = r.bossHp, links = r.links}
 	end
 	local g = probe.guide
 	if type(g) == "table" then
 		local reach = type(g.reach) == "table" and {tonumber(g.reach[1]) or 0, tonumber(g.reach[2]) or 0} or nil
-		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area}
+		out.guide = {mode = g.mode, goal = xyz(g.goal), reach = reach, why = g.why and tostring(g.why):sub(1, 60) or nil, area = g.area, via = g.via}
+		if type(g.use) == "table" then -- the ladder to use (O651): its tile, client id and place in the tile's stack
+			out.guide.use = {x = g.use.x, y = g.use.y, z = g.use.z, clientId = g.use.clientId, stack = g.use.stack}
+		end
 	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v
@@ -700,8 +713,141 @@ function H.parseGoblin(arg)
 	return parseWords(arg, "goblin", {"state", "spawn", "path", "close"})
 end
 
+function H.parsePocket(arg)
+	return parseWords(arg, "pocket", {"state", "path", "close"})
+end
+
+-- the pocket answer: the bosses the bot may open now (a charge left, the level), the ones with a boss passive point it does not hold first, then
+-- by level, at most 8; inside the run and the guide as for the other boss arenas
+H.POCKET_ROWS = 8
+function H.pocketAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), pz = probe.pz and true or false,
+		fight = probe.fight and true or false, enabled = probe.enabled ~= false, free = probe.free, reserve = probe.reserve}
+	if type(probe.points) == "table" then
+		out.points = {got = probe.points.got, total = probe.points.total}
+	end
+	local usable = {}
+	for _, b in ipairs(type(probe.bosses) == "table" and probe.bosses or {}) do
+		if type(b) == "table" and b.ok and (tonumber(b.left) or 0) > 0 then
+			usable[#usable + 1] = b
+		end
+	end
+	table.sort(usable, function(a, b)
+		local am = a.point and not a.point.got and 0 or 1
+		local bm = b.point and not b.point.got and 0 or 1
+		if am ~= bm then
+			return am < bm
+		end
+		if (a.level or 0) ~= (b.level or 0) then
+			return (a.level or 0) < (b.level or 0)
+		end
+		return tostring(a.key) < tostring(b.key)
+	end)
+	out.bosses = {}
+	for i = 1, math.min(#usable, H.POCKET_ROWS) do
+		local b = usable[i]
+		out.bosses[#out.bosses + 1] = {key = tostring(b.key):sub(1, 40), name = tostring(b.name):sub(1, 40), category = b.category, level = b.level,
+			left = b.left, point = b.point and {id = b.point.id, got = b.point.got and true or false} or nil}
+	end
+	out.usable = #usable
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, key = r.key and tostring(r.key):sub(1, 40) or nil, name = r.name and tostring(r.name):sub(1, 40) or nil,
+			category = r.category, state = r.state, boss = r.boss, left = r.left, players = r.players, testers = r.testers, slot = r.slot,
+			bossPos = xyz(r.bossPos), bossHp = r.bossHp, inArena = r.inArena and true or false, tester = r.tester and true or false}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester wsmap [state | enter [tier] | path | close] (O651): a waystone map walked by a bot. `enter` is the TEST ONLY stand-in of the device's pads and
+-- teleport (base code): a plain run of the tier on a free map and the bot on its arrival tile
+function H.parseWsMap(arg)
+	local usage = "usage: wsmap [state | enter [tier] | path | close]"
+	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
+	if not what then
+		return nil, usage
+	end
+	what = what == "" and "state" or what:lower()
+	if what == "enter" then
+		local tier = tonumber(rest)
+		if tier and (tier < 1 or tier > 15) then
+			return nil, usage
+		end
+		return {what = "enter", tier = tier}
+	end
+	if rest ~= "" or (what ~= "state" and what ~= "path" and what ~= "close") then
+		return nil, usage
+	end
+	return {what = what}
+end
+
+function H.wsmapAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), minLevel = probe.minLevel, kills = probe.kills,
+		arrivals = probe.arrivals, free = probe.free, freeTier = probe.freeTier, freeTierLevel = probe.freeTierLevel, why = probe.why and tostring(probe.why):sub(1, 70) or nil, inMap = probe.inMap,
+		enabled = probe.enabled ~= false}
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {map = r.map, tier = r.tier, tierLevel = r.tierLevel, since = r.since, left = r.left, players = r.players, monsters = r.monsters,
+			monsterLevel = r.monsterLevel, nearest = xyz(r.nearest), nearestHp = r.nearestHp, active = r.active,
+			boss = type(r.boss) == "table" and {pos = xyz(r.boss.pos), hp = r.boss.hp} or nil}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
 function H.parseInvasion(arg)
 	return parseWords(arg, "invasion", {"state", "path"})
+end
+
+-- O652: PvP among the testers and the tester copies of the key bosses.
+--   !tester pvp [state | path]       the PvP place the bot stands in, the foe (only a tester, only in a place the rules allow), the hits a rule
+--                                    cancelled, the arena / battleground / Marches views and the testers in the season rows (0); path: on foot to the foe
+--   !tester boss [state | spawn | path | close]   spawn is a copy of a key boss for the bot (TEST ONLY, only while no player is near and no lair is
+--                                    near); state gives its telegraph marks, the safe tile (guide `dodge`), the kills, the boss points, `listed`
+function H.parsePvp(arg)
+	return parseWords(arg, "pvp", {"state", "path"})
+end
+
+function H.parseBoss(arg)
+	return parseWords(arg, "boss", {"state", "spawn", "path", "close"})
+end
+
+-- O652: the foe a tester aims at inside a PvP place. `list`: {{pos = {x, y, z}, tester = bool, foe = bool, health = n, id = n}} of the players in
+-- sight, `foe` the answer of ChaosTesters.pvpFoe (both testers, the switch on, one place, the place's own rule). Only a foe is ever picked, never a
+-- player: a list with no foe gives nil. The nearest on the same floor within `range`, the lowest health first among equals.
+function H.pvpTarget(origin, list, range)
+	local best
+	for _, c in ipairs(list or {}) do
+		if c.tester == true and c.foe == true and c.pos and c.pos.z == origin.z and (c.health or 1) > 0 then
+			local d = math.max(math.abs(c.pos.x - origin.x), math.abs(c.pos.y - origin.y))
+			if d <= range and (not best or d < best.d or (d == best.d and (c.health or 0) < (best.c.health or 0))) then
+				best = {c = c, d = d}
+			end
+		end
+	end
+	return best and best.c or nil
+end
+
+-- O655: the class ascension and the gathering as a person sees them.
+--   !tester ascend [state | proof | path | close]   the Ascendant Oracle's quest (stage, proof, trial, the choices and the class lock); `proof` is the TEST ONLY
+--                                                   credit of the Proof of Strength (a tester only, logged), `path` the way to the guardian inside the trial,
+--                                                   `close` the end of the bot's own trial
+--   !tester gather [state | path]                   the gathering tools the bot carries, the nearest node that is ready for it, the way on foot next to it
+function H.parseAscend(arg)
+	return parseWords(arg, "ascend", {"state", "proof", "path", "close"})
+end
+
+function H.parseGather(arg)
+	return parseWords(arg, "gather", {"state", "path"})
 end
 
 -- a value cut down for a text line: scalars only, strings at most 90 characters, tables up to `depth` levels and 12 rows a list
@@ -1417,6 +1563,296 @@ function H.parseGive(arg)
 	end
 	n = tonumber(n) or 1
 	return {what = what, key = key, n = math.max(1, math.min(H.GIVE_MAX, n))}
+end
+
+-- ---------------------------------------------------------------- O653: `!tester found`: what the bot's own drops can do
+-- The bot reads its backpack and what it wears (no grant: everything in it was dropped, bought or won by the bot) so that it can spend its orbs,
+-- gems, whetstones and runes (tester_checks.py craft_found) and wear a better piece (gear_chase). Rows (built by tester_helper.lua):
+--   {i, id, cid, n, slot, score, orb = KEY, gem = true, rune = true, charm = true, card = true, set = KEY, unique = true, jewelry = true}
+-- worn = {[slot] = {score, set, unique}}; state = {sets = {[set key] = worn pieces}, size = {[set key] = pieces of the set}}.
+H.COMMANDS.found = true
+H.CHASE_SET = 40      -- a piece of a set the bot wears already: each worn piece of the set is worth this much more
+H.CHASE_SET_NEW = 10  -- the first piece of a set
+H.CHASE_UNIQUE = 30   -- a unique is rare: chased over a plain piece of the same score
+H.CHASE_JEWELRY = 50  -- a ring or a necklace for an empty slot
+H.FOUND_MAX = 16      -- rows of each list of the answer
+
+function H.parseFound(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == nil then
+		return nil, "usage: found"
+	end
+	what = what:lower()
+	if what == "" or what == "state" then
+		return "state"
+	end
+	return nil, "usage: found"
+end
+
+-- the score of a piece that knows sets: the plain gain over what is worn in its slot, plus a share of the set it would join, a unique, a jewel
+-- for an empty slot. A set piece that is worn already in another slot of the same set counts the pieces worn; a full set adds nothing.
+function H.chaseScore(row, worn, state)
+	local w = (worn or {})[row.slot] or {}
+	local gain = (row.score or 0) - (w.score or 0)
+	local score = gain
+	if row.set then
+		local have = ((state or {}).sets or {})[row.set] or 0
+		local size = ((state or {}).size or {})[row.set] or 99
+		if w.set == row.set then
+			have = have - 1 -- it replaces a piece of the same set: no gain from the set
+		end
+		if have < size then
+			score = score + (have > 0 and H.CHASE_SET * have or H.CHASE_SET_NEW)
+		end
+	end
+	if row.unique and not w.unique then
+		score = score + H.CHASE_UNIQUE
+	end
+	if row.jewelry and (w.score or 0) == 0 then
+		score = score + H.CHASE_JEWELRY
+	end
+	return score
+end
+
+-- the answer: orbs = {key = count}, drops (what can be crafted with: orb, gem, rune, charm, card), pieces (wearable, with `chase`),
+-- `best` (the backpack slot of the piece that gains the most, or nil: it must beat the worn one by EQUIP_MARGIN)
+function H.foundReport(rows, worn, state)
+	local orbs, drops, pieces = {}, {}, {}
+	local best, gain = nil, H.EQUIP_MARGIN - 1
+	for _, r in ipairs(rows or {}) do
+		if r.orb then
+			orbs[r.orb] = (orbs[r.orb] or 0) + (r.n or 1)
+		end
+		local kind = r.orb and "orb" or (r.gem and "gem") or (r.rune and "rune") or (r.charm and "charm") or (r.card and "card") or nil
+		if kind and #drops < H.FOUND_MAX then
+			drops[#drops + 1] = {i = r.i, id = r.id, cid = r.cid, n = r.n, k = kind, key = r.orb}
+		elseif r.slot and not kind and #pieces < H.FOUND_MAX then
+			local c = H.chaseScore(r, worn, state)
+			pieces[#pieces + 1] = {i = r.i, id = r.id, cid = r.cid, s = r.slot, sc = r.score, set = r.set, unique = r.unique and true or nil,
+				jewelry = r.jewelry and true or nil, chase = c}
+			if c > gain then
+				best, gain = r.i, c
+			end
+		end
+	end
+	local out = {}
+	for slot, w in pairs(worn or {}) do
+		out[#out + 1] = {s = slot, sc = w.score, set = w.set, unique = w.unique and true or nil}
+	end
+	table.sort(out, function(a, b) return a.s < b.s end)
+	return {orbs = orbs, drops = drops, pieces = pieces, best = best, worn = out, sets = (state or {}).sets or {}}
+end
+
+-- ---------------------------------------------------------------- O654 the levelling journey on foot
+-- `!tester journey [state | jump | hall] [keep ID] [skip ID,ID]`: what a person reads off the map and the hunt signs on the way from the
+-- temple to the next hunt of the level: the hunt to go to (the teleport room's hunts, the window of progression_config.lua: hunts
+-- whose middle level is within 0.8-1.1 x the level, widened by 0.05 a side until one fits), the temple's great teleport into the teleport
+-- room (the gate), the stairs between its floors, the camp or town portal beside the bot, the depot locker and the nearest monster. The
+-- walk, the steps onto the teleports, the fights and the trips are the bot's own; `jump` and `hall` are the helper's teleports that
+-- the bot uses only as the counted fallback when the walk fails.
+H.JOURNEY = {lo = 0.8, hi = 1.1, widen = 0.05, widenMax = 40, spread = 3, aim = 0.95, templeRadius = 24, sight = 15, crowd = 7}
+H.HALL = {x1 = 31590, x2 = 31705, y1 = 32225, y2 = 32290, z1 = 5, z2 = 7} -- the teleport room of Cinderhold, hunt_teleports_config.lua room
+H.HALL_DOOR = {x = 31648, y = 32233, z = 7} -- where the temple's great teleport leads (temple_portals_config.lua: the hub of the market)
+H.PORTAL_AID = 47810 -- townportal_config.lua aid.field: the town portal beside its caster
+H.JOURNEY_WORDS = {state = true, jump = true, hall = true}
+
+function H.parseJourney(arg)
+	local usage = "usage: journey [state | jump | hall] [keep ID] [skip ID,ID]"
+	local out = {what = "state", skip = {}}
+	local want
+	for tok in tostring(arg or ""):gmatch("%S+") do
+		local low = tok:lower()
+		if want == "keep" then
+			if not tok:match("^[%w_%.%-]+$") or #tok > 48 then
+				return nil, usage
+			end
+			out.keep, want = tok, nil
+		elseif want == "skip" then
+			local n = 0
+			for id in tok:gmatch("[^,]+") do
+				n = n + 1
+				if not id:match("^[%w_%.%-]+$") or #id > 48 or n > 24 then
+					return nil, usage
+				end
+				out.skip[id] = true
+			end
+			want = nil
+		elseif low == "keep" or low == "skip" then
+			want = low
+		elseif H.JOURNEY_WORDS[low] then
+			out.what = low
+		else
+			return nil, usage
+		end
+	end
+	if want then
+		return nil, usage
+	end
+	return out
+end
+
+-- the middle of a hunt's band (what the progression model calls its hunting level)
+function H.journeyMid(entry)
+	local l = type(entry) == "table" and entry.l or nil
+	if type(l) ~= "table" or type(l[1]) ~= "number" then
+		return nil
+	end
+	local hi = (type(l[2]) == "number" and l[2] > 0) and l[2] or l[1]
+	return (l[1] + hi) / 2
+end
+
+local function journeyEntry(e, k)
+	return {id = e.i, n = e.n, lo = e.l[1], hi = e.l[2], t = xyz(e.t), f = xyz(e.f), a = xyz(e.a), b = xyz(e.b), widen = k}
+end
+
+-- the hunt a character of `level` goes to next: ports = ChaosHuntTeleports.ports() rows {i, n, l = {lo, hi}, t, f, a, b}; opts = {keep = id
+-- (the hunt it is at: kept while it still fits), skip = {id = true} (hunts that hurt it), seed = number (turns the choice so a hundred
+-- bots do not share one hunt)}. -> entry {id, n, lo, hi, t, f, a, b, widen, stay}, or nil when the room lists no hunt; `above` is set
+-- when every hunt needs more than the level (the bot cannot go in: the lowest one is returned)
+function H.journeyPick(ports, level, opts)
+	opts = opts or {}
+	level = tonumber(level) or 0
+	local J = H.JOURNEY
+	local function pool(useSkip)
+		local list = {}
+		for _, e in ipairs(ports or {}) do
+			if type(e) == "table" and type(e.i) == "string" and type(e.t) == "table" and H.journeyMid(e)
+				and not (useSkip and opts.skip and opts.skip[e.i]) then
+				list[#list + 1] = e
+			end
+		end
+		return list
+	end
+	for _, useSkip in ipairs({true, false}) do
+		local list = pool(useSkip)
+		for k = 0, J.widenMax do
+			local lo, hi = (J.lo - J.widen * k) * level, (J.hi + J.widen * k) * level
+			local fit = {}
+			for _, e in ipairs(list) do
+				local mid = H.journeyMid(e)
+				if e.l[1] <= level and mid >= lo and mid <= hi then
+					fit[#fit + 1] = e
+				end
+			end
+			if #fit > 0 then
+				for _, e in ipairs(fit) do
+					if opts.keep and e.i == opts.keep then
+						local out = journeyEntry(e, k)
+						out.stay = true
+						return out
+					end
+				end
+				local aim = J.aim * level
+				table.sort(fit, function(a, b)
+					local da, db = math.abs(H.journeyMid(a) - aim), math.abs(H.journeyMid(b) - aim)
+					if da ~= db then
+						return da < db
+					end
+					return a.i < b.i
+				end)
+				local n = math.min(#fit, J.spread)
+				return journeyEntry(fit[(math.floor(tonumber(opts.seed) or 0) % n) + 1], k)
+			end
+		end
+		-- no hunt in the widest window: the highest band the level may enter, else the lowest of all (the bot cannot go in)
+		local best, lowest
+		for _, e in ipairs(list) do
+			if e.l[1] <= level and (not best or e.l[1] > best.l[1] or (e.l[1] == best.l[1] and e.i < best.i)) then
+				best = e
+			end
+			if not lowest or e.l[1] < lowest.l[1] or (e.l[1] == lowest.l[1] and e.i < lowest.i) then
+				lowest = e
+			end
+		end
+		if best or lowest then
+			local out = journeyEntry(best or lowest, -1)
+			out.above = best == nil or nil
+			return out
+		end
+	end
+	return nil
+end
+
+function H.journeyInHall(pos)
+	local h = H.HALL
+	return type(pos) == "table" and pos.x >= h.x1 and pos.x <= h.x2 and pos.y >= h.y1 and pos.y <= h.y2 and pos.z >= h.z1 and pos.z <= h.z2
+end
+
+-- where the bot is: the teleport room, the temple, or elsewhere (a hunt, a street)
+function H.journeyZone(pos, temple)
+	if H.journeyInHall(pos) then
+		return "hall"
+	end
+	if type(pos) == "table" and type(temple) == "table" and pos.z == temple.z and cheb(pos, temple) <= H.JOURNEY.templeRadius then
+		return "temple"
+	end
+	return "other"
+end
+
+-- the nearest tile round `around` (same floor, within `radius`) whose facts `pred` accepts: tileAt(x, y, z) -> {dest = {x, y, z} of a
+-- teleport, change = "up" | "down" for a floor change, aid = action id of an item} or nil. -> {x, y, z, info}
+function H.journeyFind(tileAt, around, radius, pred)
+	local best, bestD
+	for dx = -radius, radius do
+		for dy = -radius, radius do
+			local x, y, z = around.x + dx, around.y + dy, around.z
+			local info = tileAt(x, y, z)
+			if info and pred(info) then
+				local d = math.max(math.abs(dx), math.abs(dy)) * 10 + math.min(math.abs(dx), math.abs(dy))
+				if not bestD or d < bestD then
+					best, bestD = {x = x, y = y, z = z, info = info}, d
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- the temple's teleport into the teleport room: a teleport whose destination is the hub of the market
+function H.journeyIsGate(info)
+	local d, door = info and info.dest, H.HALL_DOOR
+	return type(d) == "table" and d.z == door.z and cheb(d, door) <= 6
+end
+
+function H.journeyIsStairs(info, want)
+	return info and info.change ~= nil and (want == nil or info.change == want)
+end
+
+function H.journeyIsPortal(info)
+	return info and info.aid == H.PORTAL_AID
+end
+
+-- the answer line: the probe cut down (scalars, short lists), the places as {x, y, z}
+function H.journeyAnswer(probe, extra)
+	local out = {}
+	if type(probe) == "table" then
+		for _, k in ipairs({"level", "zone", "pz", "stay", "above", "crowd", "hot", "monster"}) do
+			local c = cutValue(probe[k], 3)
+			if c ~= nil then
+				out[k] = c
+			end
+		end
+		out.pos = xyz(probe.pos)
+		for _, k in ipairs({"gate", "portal", "spot"}) do
+			out[k] = xyz(probe[k])
+		end
+		local l = probe.locker
+		if type(l) == "table" then
+			out.locker = {x = l.x, y = l.y, z = l.z, cid = l.cid, sp = l.sp, spot = xyz(l.spot)}
+		end
+		if type(probe.stairs) == "table" then
+			out.stairs = {up = xyz(probe.stairs.up), down = xyz(probe.stairs.down)}
+		end
+		local p = probe.pick
+		if type(p) == "table" then
+			out.pick = {id = p.id, n = type(p.n) == "string" and p.n:sub(1, 40) or nil, lo = p.lo, hi = p.hi, t = xyz(p.t), f = xyz(p.f),
+				a = xyz(p.a), b = xyz(p.b), widen = p.widen, z = p.t and p.t.z or nil}
+		end
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
 end
 
 return H

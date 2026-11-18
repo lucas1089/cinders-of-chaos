@@ -167,6 +167,44 @@ function S.isInside(player)
 	return S.matchOf[player:getId()] ~= nil
 end
 
+-- O652 (the tester bots' targeting rule, testers.lua X.pvpFoe): true when `a` may hit `b` now: one match, the fight phase, other teams, neither defeated
+function S.foe(a, b)
+	local am = a and S.matchOf[a:getId()]
+	if not am or am ~= S.matchOf[b:getId()] then
+		return false
+	end
+	return A.canHit(am.phase, am.players[a:getId()], am.players[b:getId()], false) and true or false
+end
+
+-- O652: what a person sees of the match the asker stands in (`!tester pvp`): the mode, the phase, the team, the roster by side and the foes
+function S.probe(player)
+	local m = S.matchOf[player:getId()]
+	local out = {queued = S.isQueued and S.isQueued(player) and true or false, inMatch = m ~= nil}
+	if m then
+		local me = m.players[player:getId()]
+		out.mode, out.phase, out.team = m.mode, m.phase, me and me.team or nil
+		out.foes, out.mates, out.testers, out.others = {}, 0, 0, 0
+		for cid, e in pairs(m.players) do
+			local pl = cid ~= player:getId() and Player(cid) or nil
+			if pl then
+				if Chaos.isTester(pl) then
+					out.testers = out.testers + 1
+				else
+					out.others = out.others + 1
+				end
+				if me and e.team ~= me.team and not e.defeated and not e.gone then
+					local pos = pl:getPosition()
+					out.foes[#out.foes + 1] = {x = pos.x, y = pos.y, z = pos.z, name = pl:getName(),
+						hp = math.floor(pl:getHealth() * 100 / math.max(1, pl:getMaxHealth()))}
+				elseif me and e.team == me.team then
+					out.mates = out.mates + 1
+				end
+			end
+		end
+	end
+	return out
+end
+
 Chaos.registerInstance("arena", {label = "an arena match", inside = S.isInside, at = function(pos)
 	return A.slotOfPos(C(), pos) ~= nil
 end, runs = function() -- /instances (instance_limits.lua)

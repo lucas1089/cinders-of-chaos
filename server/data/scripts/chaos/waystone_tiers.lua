@@ -396,6 +396,252 @@ function WT.clearPaths()
 	return n
 end
 
+-- ---------------------------------------------------------------- a map walked by a tester bot (O651)
+-- The maps are the shared base map: the monsters stand there for every group, there is no copy per run and nothing to count free (a "reserve"
+-- of copies). So the rule is "players first": a tester run opens a map only while nobody (player or tester) is in its rectangle and no run
+-- of it lives, a tester run is one per map, and the guard below sends the tester out the moment a player steps in (or after maxSeconds).
+-- The pads and the device's teleport are base code (tier_maps.lua): the TEST ONLY entry stands for them and puts the tester on the map's
+-- arrival tile (config `arrivals`); everything after is play.
+WT.testerRuns = WT.testerRuns or {} -- map index -> {guid, name, tier, since, back = the tier the map counted at before}
+
+local function mapBox(m)
+	return Position(math.floor((m.from.x + m.to.x) / 2), math.floor((m.from.y + m.to.y) / 2), m.from.z),
+		math.ceil(math.abs(m.to.x - m.from.x) / 2), math.ceil(math.abs(m.to.y - m.from.y) / 2)
+end
+
+-- the creatures in map i: players only, or monsters
+local function inMap(i, onlyPlayers)
+	local m = WT.config.maps[i]
+	if not m then
+		return {}
+	end
+	local centre, hx, hy = mapBox(m)
+	local ok, list = pcall(Game.getSpectators, centre, false, onlyPlayers, hx, hx, hy, hy)
+	return ok and list or {}
+end
+
+-- how many players that are not testers are in map i
+function WT.playersIn(i)
+	local n = 0
+	for _, c in ipairs(inMap(i, true)) do
+		if not (Chaos.isTester and Chaos.isTester(c)) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+local function testerMapOf(player)
+	for i, r in pairs(WT.testerRuns) do
+		if r.guid == player:getGuid() then
+			return i, r
+		end
+	end
+	return nil
+end
+
+-- the map of a tier's band a tester may open now: it has an arrival, nobody is in it, no run lives on it, no tester run holds it.
+-- -> index, or nil + why
+function WT.testerMapFor(tier)
+	local cfg = WT.config
+	local why = "no map of the band has an arrival tile (config arrivals)"
+	for _, bt in ipairs(K.baseTiersOf(cfg, tier)) do
+		for i, m in ipairs(cfg.maps) do
+			if m.tier == bt and not K.isRetired(cfg, m.from) and (cfg.arrivals or {})[i] then
+				if WT.testerRuns[i] then
+					why = "a tester run holds the map"
+				elseif #inMap(i, true) > 0 then
+					why = "somebody is in the map"
+				elseif ChaosWaystoneMods and ChaosWaystoneMods.runOf and ChaosWaystoneMods.runOf(i) then
+					why = "a run of the map lives"
+				else
+					return i
+				end
+			end
+		end
+	end
+	return nil, why
+end
+
+-- TEST ONLY (`!tester wsmap enter [tier]`): opens a plain run of `tier` on a free map and puts the tester on its arrival tile. A tester only,
+-- from tester.minLevel, never inside a map already; one console line each. -> {map, tier, tierLevel, pos}, or nil + why
+function WT.testerEnter(player, tier)
+	local cfg = WT.config
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	local t = cfg.tester or {}
+	if player:getLevel() < (t.minLevel or 1000) then
+		return nil, string.format("level %d: the waystone maps need level %d", player:getLevel(), t.minLevel or 1000)
+	end
+	if testerMapOf(player) or K.mapAt(cfg, player:getPosition()) then
+		return nil, "already inside a waystone map"
+	end
+	tier = tonumber(tier) or 1
+	local row = cfg.tiers[tier]
+	if not row then
+		return nil, "no such tier"
+	end
+	local i, why = WT.testerMapFor(tier)
+	if not i then
+		return nil, why
+	end
+	local m = cfg.maps[i]
+	local at = cfg.arrivals[i]
+	local prior = WT.active[i]
+	local okRun, n = pcall(WT.startRun, {fromPos = m.from}, row.item, {})
+	if not okRun then
+		return nil, "startRun: " .. tostring(n)
+	end
+	player:teleportTo(Position(at.x, at.y, at.z))
+	if player:getPosition().x ~= at.x or player:getPosition().y ~= at.y or player:getPosition().z ~= at.z then
+		WT.active[i] = prior
+		return nil, "the arrival tile refused the tester"
+	end
+	WT.testerRuns[i] = {guid = player:getGuid(), name = player:getName(), tier = tier, since = os.time(), prior = prior}
+	print(string.format("[ChaosWaystoneTiers] TEST ONLY: tester %s opened map %d at tier %d (level %d)", player:getName(), i, tier, row.level))
+	return {map = i, tier = tier, tierLevel = row.level, pos = {x = at.x, y = at.y, z = at.z}}
+end
+
+-- the run of map i ends: the tester goes to its temple, the map counts at the tier it had (the band's first, or the last run's)
+local function endTesterRun(i, why)
+	local r = WT.testerRuns[i]
+	if not r then
+		return false
+	end
+	WT.testerRuns[i] = nil
+	local cfg = WT.config
+	local m = cfg.maps[i]
+	local p = Player(r.name)
+	if p and K.mapAt(cfg, p:getPosition()) == i then
+		p:teleportTo(p:getTown():getTemplePosition())
+		if why then
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, why)
+		end
+	end
+	if ChaosWaystoneMods and ChaosWaystoneMods.finish then
+		pcall(ChaosWaystoneMods.finish, i)
+	end
+	local back = r.prior or K.defaultTier(cfg, i) or 1
+	pcall(WT.startRun, {fromPos = m.from}, cfg.tiers[back].item, {})
+	WT.active[i] = r.prior
+	return true
+end
+
+-- TEST ONLY (`!tester wsmap close`): the bot's own way out (the exit teleport of the base after the boss, or a Waystone's end)
+function WT.testerClose(player)
+	local i = testerMapOf(player)
+	if not i then
+		return false
+	end
+	return endTesterRun(i, nil)
+end
+
+-- players first: a player in the rectangle of a map a tester walks, a logged out tester or the time limit ends the tester run
+function WT.testerGuard()
+	local cfg = WT.config
+	local limit = (cfg.tester or {}).maxSeconds or 600
+	for i, r in pairs(WT.testerRuns) do
+		local p = Player(r.name)
+		if not p or K.mapAt(cfg, p:getPosition()) ~= i then
+			endTesterRun(i, nil)
+		elseif WT.playersIn(i) > 0 then
+			endTesterRun(i, "A player came to this map: the testers leave it.")
+		elseif os.time() - r.since > limit then
+			endTesterRun(i, "The tester run of the map is over.")
+		end
+	end
+end
+
+-- What a person sees of a waystone map, for the tester bots' `!tester wsmap` (tools/tester_helper.lua checks that the asker is a tester):
+-- outside whether a map of the first tier's band is free for a tester (and why not), inside the map, its run's tier, the level of the monsters
+-- against the level that tier asks, the nearest monster and `guide` (fight within 5 tiles, else walk to it). Reads only.
+function WT.probe(player)
+	local cfg = WT.config
+	local pos = player:getPosition()
+	local function plain(p)
+		return p and {x = p.x, y = p.y, z = p.z} or nil
+	end
+	local t = cfg.tester or {}
+	local out = {level = player:getLevel(), pos = plain(pos), minLevel = t.minLevel or 1000, kills = t.kills or 3, inside = false,
+		arrivals = 0, enabled = cfg.enabled ~= false}
+	for _ in pairs(cfg.arrivals or {}) do
+		out.arrivals = out.arrivals + 1
+	end
+	local i = testerMapOf(player)
+	local mi = K.mapAt(cfg, pos)
+	if not i then
+		-- the lowest tier of each band, in order: the first whose band has a free map (the bot enters at that tier)
+		local why
+		for _, tier in ipairs({1, 6, 11}) do
+			local free, w = WT.testerMapFor(tier)
+			if free then
+				out.free, out.freeTier, out.freeTierLevel = true, tier, cfg.tiers[tier].level
+				break
+			end
+			why = why or w
+		end
+		out.free = out.free or false
+		out.why = not out.free and why or nil
+		out.inMap = mi
+		return out
+	end
+	local r = WT.testerRuns[i]
+	out.inside = true
+	local m = cfg.maps[i]
+	local nearest, nd, boss, count = nil, nil, nil, 0
+	for _, c in ipairs(inMap(i, false)) do
+		if c:isMonster() and not c:getMaster() then
+			local e = WT.entryOf(c)
+			if e then
+				count = count + 1
+				local at = c:getPosition()
+				if e.boss then
+					boss = {pos = plain(at), hp = math.floor(c:getHealth() * 100 / math.max(1, c:getMaxHealth()))}
+				elseif at.z == pos.z then
+					local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+					if not nd or d < nd then
+						nearest, nd = c, d
+					end
+				end
+			end
+		end
+	end
+	local wantLevel = cfg.tiers[r.tier].level
+	out.run = {map = i, tier = r.tier, tierLevel = wantLevel, since = os.time() - r.since, left = math.max(0, (t.maxSeconds or 600) - (os.time() - r.since)),
+		players = WT.playersIn(i), monsters = count, boss = boss, active = WT.active[i]}
+	if nearest then
+		out.run.monsterLevel = WT.applied[nearest:getId()]
+		out.run.nearest = plain(nearest:getPosition())
+		out.run.nearestHp = math.floor(nearest:getHealth() * 100 / math.max(1, nearest:getMaxHealth()))
+		if nd <= 5 then
+			out.guide = {mode = "fight", goal = out.run.nearest, area = "pack", why = "in reach of a monster"}
+		else
+			out.guide = {mode = "walk", goal = out.run.nearest, reach = {1, 5}, area = "pack", why = "to the nearest monster"}
+		end
+	else
+		out.guide = {mode = "wait", why = "no monster in sight"}
+	end
+	return out
+end
+
+if GlobalEvent then
+	local guard = GlobalEvent("ChaosWaystoneTesterGuard")
+	function guard.onThink(interval)
+		if next(WT.testerRuns) ~= nil then
+			local ok, err = pcall(WT.testerGuard)
+			if not ok then
+				print("[ChaosWaystoneTiers] tester guard: " .. tostring(err))
+			end
+		end
+		return true
+	end
+	if guard.interval then
+		guard:interval(((WT.config.tester or {}).guardSeconds or 2) * 1000)
+		guard:register()
+	end
+end
+
 if GlobalEvent then
 	local startup = GlobalEvent("ChaosWaystoneTiersStartup")
 	function startup.onStartup()

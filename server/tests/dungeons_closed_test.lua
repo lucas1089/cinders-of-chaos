@@ -398,6 +398,89 @@ do
 	Game.getPlayers, Game.getStorageValue = realPlayers, realStore
 end
 
+-- 8. difficulties 2 to 6 and the Weekly Challenge for the bots (O651): the TEST ONLY unlock of the bot's own progress, the run at that difficulty with
+-- the monsters scaled, the weekly flag of the list and the run
+do
+	setMode("on")
+	clearMonsters()
+	-- the progress table as the database keeps it: the last INSERT of a character and dungeon
+	local progress = {}
+	Chaos.select = function(q)
+		local guid, id = q:match("`player_id` = (%d+) AND `dungeon_id` = (%d+)")
+		if guid and progress[guid .. ":" .. id] then
+			return {{difficulty = progress[guid .. ":" .. id], challenges = ""}}
+		end
+		return {}
+	end
+	local realQuery = db.query
+	db.query = function(q)
+		local g, i, d = q:match("VALUES %((%d+), (%d+), (%d+),")
+		if g and q:find(Chaos.tables.dungeonProgress, 1, true) then
+			progress[g .. ":" .. i] = tonumber(d)
+		end
+		return realQuery(q)
+	end
+	local t = tester(51, "Tester Ddd")
+	local plain = newCreature(52, "Real Rita", P(32369, 32241, 7), true)
+	local got, why = D.testerUnlock(plain, 4, 3)
+	ok(got == nil and why == "not a tester", "a player's progress is never written (" .. tostring(why) .. ")")
+	eq(progress["52:4"], nil, "no row of a player")
+	got, why = D.testerUnlock(t, 99, 3)
+	ok(got == nil and why == "no such dungeon", "no such dungeon")
+	got, why = D.testerUnlock(t, 4, 0)
+	ok(got == nil and why:find("difficulty 1 to 6", 1, true), "difficulty 0 refused")
+	got, why = D.testerUnlock(t, 4, 7)
+	ok(got == nil and why:find("difficulty 1 to 6", 1, true), "difficulty 7 refused")
+	got = D.testerUnlock(t, 4, 3)
+	eq(got, 3, "a tester's difficulty 3 is unlocked")
+	eq(progress["51:4"], 3, "...in the tester's own row")
+	eq(D.testerUnlock(t, 4, 2), 3, "an unlock never goes down")
+	local entry
+	for _, d in ipairs(D.probe(t).list) do if d.id == 4 then entry = d end end
+	eq(entry.max, 3, "the list shows the difficulty unlocked")
+	ok(entry.weekly == nil, "a plain dungeon is no Weekly Challenge")
+	-- a dungeon with one difficulty for every run cannot be unlocked
+	local keepExtra = Chaos.dungeons.extra[4]
+	Chaos.dungeons.extra[4] = {fixedDifficulty = 1}
+	got, why = D.testerUnlock(t, 4, 5)
+	ok(got == nil and why:find("one difficulty", 1, true), "the Weekly Challenge's dungeon has one difficulty")
+	Chaos.dungeons.extra[4] = keepExtra
+	-- the run at difficulty 3: the monsters carry it
+	local m1 = newCreature(151, "cave crawler", P(31575, 31617, 8), false)
+	local m2 = newCreature(152, "cave lurker", P(31538, 31599, 9), false)
+	newCreature(153, "the rootmaw", P(31701, 31569, 12), false)
+	ext.onExtendedOpcode(t, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 3}})
+	ok(inside(t), "the tester queues for difficulty 3 and its run starts")
+	local pr = D.probe(t)
+	eq(pr.run.difficulty, 3, "the run is at difficulty 3")
+	ok(pr.run.scaled == 2 and pr.run.left == 2, "both monsters of the run carry the difficulty (" .. tostring(pr.run.scaled) .. " of " .. tostring(pr.run.left) .. ")")
+	ok(m1.maxHp ~= 1000, "the monster's health is the difficulty's, not the base (" .. tostring(m1.maxHp) .. ")")
+	eq(pr.run.weekly, nil, "a plain run is no Weekly Challenge")
+	-- a difficulty the character did not unlock is refused by the queue as before
+	D.testerClose(t)
+	local locked = tester(53, "Tester Eee")
+	ext.onExtendedOpcode(locked, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 4}})
+	ok(not inside(locked) and lastMsg(locked):find("still locked", 1, true), "difficulty 4 locked for a bot that did not unlock it (" .. lastMsg(locked) .. ")")
+	-- the Weekly Challenge: the list entry and the run say so
+	ChaosWeeklyChallengeConfig = {dungeon = {id = 4}}
+	entry = nil
+	for _, d in ipairs(D.probe(t).list) do if d.id == 4 then entry = d end end
+	eq(entry.weekly, true, "the list marks the Weekly Challenge")
+	m1:remove()
+	m2:remove()
+	clearMonsters()
+	newCreature(161, "cave crawler", P(31575, 31617, 8), false)
+	newCreature(162, "the rootmaw", P(31701, 31569, 12), false)
+	t.storage[DUNGEON_SYSTEM.Storages.timerCooldown] = nil
+	queue(t, 4)
+	ok(inside(t), "the tester's second run starts")
+	eq(D.probe(t).run.weekly, true, "the run of the Weekly Challenge says so")
+	D.testerClose(t)
+	ChaosWeeklyChallengeConfig = nil
+	db.query = realQuery
+	clearMonsters()
+end
+
 print(string.format("dungeons_closed_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

@@ -537,6 +537,29 @@ eq(B.rowOf(7001).honor, cfg.season.tiers[5].honor, "season honor")
 Chaos.select = realSelect
 ChaosAchievements = nil
 
+-- O652: a tester's result never enters a season board, and a tester takes no season reward
+do
+  Chaos.testerGuids[7777] = "Tester Zed"
+  local before = #queries
+  local res = PS.record("1v1", {{{guid = 7777, name = "Tester Zed"}}, {{guid = 7778, name = "Tester Yan"}}}, 1)
+  check(type(res) == "table" and next(res) == nil, "O652: a match with a tester gives no season result")
+  local wrote = false
+  for i = before + 1, #queries do if queries[i]:find("chaos_pvp_ratings", 1, true) then wrote = true end end
+  check(not wrote, "O652: no season rating row is written for a tester")
+  local mixed = PS.record("1v1", {{{guid = 7777, name = "Tester Zed"}}, {{guid = 4243, name = "Ana"}}}, 1)
+  check(next(mixed) == nil, "O652: a tester and a player in one match (never made) is no result either")
+  Chaos.select = function(q)
+    if q:find("JOIN `players`") then
+      return {{player_id = 7777, bracket = "1v1", rating = 2600, rd = 80, matches = 40, last_match = sStart - 86400, account_id = 950, group_id = 1}}
+    end
+    return {}
+  end
+  eq(PS.processSeason(sid - 1), 0, "O652: a tester row gets no season reward")
+  Chaos.select = realSelect
+  check(PS.listedTesters ~= nil, "O652: the probe of the bots asks the season for listed testers")
+  Chaos.testerGuids[7777] = nil
+end
+
 -- ---------------------------------------------------------------- instance limits (instance_limits.lua)
 -- warnings before the match's end, the found teams are told once when every field is in use, the staff list and close
 do
@@ -554,6 +577,22 @@ do
   check(B.matchOf[g2[1]:getId()] == nil, "limits: no field for the second match")
   check(said(g2[1], "Battleground: All battlefields are busy. Try again in ~"), "limits: told the wait: " .. table.concat(g2[1].msgs, " | "))
   advance((cfg.prepSeconds + 1) * 1000)
+  -- O652: the foe rule of the tester bots' targeting (testers.lua X.pvpFoe) and the probe (`!tester pvp`)
+  do
+    local me = mm.players[g1[1]:getId()]
+    local foeP, mateP
+    for i = 2, 10 do
+      local e = mm.players[g1[i]:getId()]
+      if e and e.team ~= me.team then foeP = g1[i] elseif e then mateP = g1[i] end
+    end
+    check(foeP and mateP and B.foe(g1[1], foeP) and not B.foe(g1[1], mateP), "O652: an enemy of the other team is a foe, a team mate is not")
+    check(not B.foe(g1[1], g2[1]) and not B.foe(g2[1], g1[1]), "O652: one waiting in the queue is no foe")
+    local pr = B.probe(g1[1])
+    check(pr.inMatch and pr.phase == "fight" and #pr.braziers == 3 and #pr.foes >= 1 and pr.team == me.team, "O652: the probe: phase, braziers, foes, team")
+    check(pr.braziers[1].x ~= nil and pr.braziers[1].owner ~= nil, "O652: a brazier has a place and an owner")
+    local pq = B.probe(g2[1])
+    check(pq.queued and not pq.inMatch and pq.queueMembers == 10 and pq.need == 2 * cfg.teamMin, "O652: the queue: members of the realm, the roster a match needs")
+  end
   mm.endAt = os.time() + 61
   advance(1000)
   check(said(g1[1], "Battleground: 1 minute left"), "limits: the 1 minute warning")

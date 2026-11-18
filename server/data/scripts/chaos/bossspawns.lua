@@ -282,6 +282,9 @@ spawn.onSpawn = function(self, position, startup, artificial)
 	if not cfg.enabled or self:getMaster() then
 		return true
 	end
+	if ChaosTestersBoss and ChaosTestersBoss.creating then
+		return true -- O652: a tester's copy of a boss (testers_boss.lua) is no spawn of the world: no kill row, no countdown
+	end
 	local idx = S.ensure()
 	local typeName = Chaos.monsterTypeName(self)
 	if typeName and idx.byType[typeName:lower()] then

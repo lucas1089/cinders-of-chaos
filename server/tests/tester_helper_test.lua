@@ -2282,6 +2282,76 @@ do
 	talks["!tester"].onSay(t9, "!tester", "invasion #243")
 	check(last(t9):find("no invasion system", 1, true), "invasion: no system")
 	ChaosInvasion = realIV
+	-- ---- PvP among the testers and the tester copy of a boss (O652)
+	for _, c in ipairs({"pvp", "boss"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parsePvp(nil), "state", "pvp: no word is state")
+	eq(H.parsePvp("PATH"), "path", "pvp: path (any case)")
+	local wp, up = H.parsePvp("hit")
+	check(wp == nil and up == "usage: pvp [state | path]", "pvp: an unknown word is the usage: " .. tostring(up))
+	eq(H.parseBoss("spawn"), "spawn", "boss: spawn")
+	check(H.parseBoss("kill") == nil and select(2, H.parseBoss("kill")) == "usage: boss [state | spawn | path | close]", "boss: the usage")
+	-- the aim: only a foe tester, same floor, within range, the nearest, the weakest among equals; a player is never one
+	local me = {x = 100, y = 100, z = 7}
+	local aim = H.pvpTarget(me, {
+		{pos = {x = 101, y = 100, z = 7}, tester = false, foe = true, health = 10, id = 1},
+		{pos = {x = 102, y = 100, z = 7}, tester = true, foe = false, health = 10, id = 2},
+		{pos = {x = 104, y = 100, z = 7}, tester = true, foe = true, health = 50, id = 3},
+		{pos = {x = 100, y = 103, z = 7}, tester = true, foe = true, health = 20, id = 4},
+		{pos = {x = 103, y = 100, z = 8}, tester = true, foe = true, health = 5, id = 5},
+		{pos = {x = 100, y = 101, z = 7}, tester = true, foe = true, health = 0, id = 6}}, 5)
+	check(aim and aim.id == 4, "pvpTarget: the nearest foe tester (a player, a team mate, another floor and a downed one are skipped)")
+	aim = H.pvpTarget(me, {{pos = {x = 102, y = 100, z = 7}, tester = true, foe = true, health = 40, id = 7}, {pos = {x = 100, y = 102, z = 7}, tester = true, foe = true, health = 30, id = 8}}, 5)
+	check(aim and aim.id == 8, "pvpTarget: equal distance, the lower health")
+	check(H.pvpTarget(me, {{pos = {x = 109, y = 100, z = 7}, tester = true, foe = true, health = 1, id = 9}}, 5) == nil, "pvpTarget: out of range")
+	check(H.pvpTarget(me, {{pos = {x = 101, y = 100, z = 7}, tester = true, foe = nil, health = 1, id = 9}}, 5) == nil, "pvpTarget: an unknown foe flag is no foe")
+	check(H.pvpTarget(me, nil, 5) == nil and H.pvpTarget(me, {}, 5) == nil, "pvpTarget: nobody")
+	local hf = io.open("tools/tester_helper.lua", "r")
+	local htext = hf and hf:read("*a") or ""
+	if hf then hf:close() end
+	check(htext:find("pcall(pvpAim, player)", 1, true) ~= nil, "the loop aims at a foe first (pvpAim)")
+	check((tonumber(htext:match("HELPER_VERSION = (%d+)")) or 0) >= 21, "the helper is v21 or later (O652)")
+	local realTS, realTB = ChaosTesters, ChaosTestersBoss
+	-- pvp
+	ChaosTesters = {pvpProbe = function(p)
+		return {closed = true, place = "arena", cancelledPlayer = 2, cancelledOutside = 1, cancelledOff = 0, seasonListed = 0,
+			foe = {x = 75, y = 76, z = 7, name = "Tester Ccc", seen = false}, guide = {mode = "walk", goal = {x = 75, y = 76, z = 7}, reach = {1, 5}, area = "foe"}}
+	end}
+	talks["!tester"].onSay(t9, "!tester", "pvp #250")
+	check(last(t9):find('"place":"arena"', 1, true) and last(t9):find('"seasonListed":0', 1, true) and last(t9):find('"cancelledPlayer":2', 1, true)
+		and last(t9):find('"name":"Tester Ccc"', 1, true), "pvp state: the place, the cancelled hits, the season rows, the foe")
+	talks["!tester"].onSay(t9, "!tester", "pvp path #251")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 75, "pvp path: on foot to the foe")
+	talks["!tester"].onSay(t9, "!tester", "pvp hit #252")
+	check(last(t9):find("usage: pvp", 1, true), "pvp: an unknown word is the usage")
+	ChaosTesters = nil
+	talks["!tester"].onSay(t9, "!tester", "pvp #253")
+	check(last(t9):find("no PvP rules for the testers", 1, true), "pvp: no rules")
+	ChaosTesters = realTS
+	-- boss
+	local bspawned, bcloses = 0, 0
+	ChaosTestersBoss = {probe = function(p)
+		return {killed = 0, listed = 0, points = 2, boss = bspawned > 0 and {hp = 100, name = "Talath"} or nil,
+			guide = bspawned > 0 and {mode = "walk", goal = {x = 66, y = 67, z = 7}, reach = {1, 6}, area = "boss"} or {mode = "wait", why = "no boss copy of its own"}}
+	end, testerSpawn = function() if bspawned > 0 then return nil, "the bot has a boss copy already" end bspawned = bspawned + 1 return {} end,
+		testerClose = function() bcloses = bcloses + 1 bspawned = 0 return true end}
+	talks["!tester"].onSay(t9, "!tester", "boss spawn #260")
+	check(bspawned == 1 and last(t9):find('"spawned":true', 1, true) and last(t9):find('"name":"Talath"', 1, true) and last(t9):find('"points":2', 1, true), "boss spawn: the grant, then the copy")
+	talks["!tester"].onSay(t9, "!tester", "boss spawn #261")
+	check(last(t9):find("the bot has a boss copy already", 1, true), "boss spawn: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "boss path #262")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 66, "boss path: on foot to it")
+	talks["!tester"].onSay(t9, "!tester", "boss close #263")
+	check(bcloses == 1 and last(t9):find('"closed":true', 1, true), "boss close")
+	ChaosTestersBoss = nil
+	talks["!tester"].onSay(t9, "!tester", "boss #264")
+	check(last(t9):find("no tester boss system", 1, true), "boss: no system")
+	ChaosTestersBoss = realTB
+	local civ6 = creature(995, "Ana Pvp", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "boss spawn #5") == true and talks["!tester"].onSay(civ6, "!tester", "pvp #6") == true and #civ6.log.msgs == n6,
+		"pvp / boss: a player's words go on and get no answer")
 	-- a player's words go on and get no answer
 	local civ5 = creature(994, "Ana Nemesis", {store = {}})
 	local n5 = #civ5.log.msgs
@@ -2292,11 +2362,523 @@ do
 	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")
 	ChaosTrials = realTT
 	t9.inTrial = nil
+	-- ---- O651: pocket bosses, dungeon difficulties and the Weekly Challenge, the rift stairs, a waystone map walked
+	check(H.COMMANDS.pocket and H.COMMANDS.wsmap and H.parseCommand("pocket path #1") == "pocket" and H.parseCommand("wsmap enter 11 #2") == "wsmap",
+		"pocket and wsmap are registered commands")
+	eq(H.parsePocket(nil), "state", "pocket: no word is state")
+	eq(H.parsePocket("PATH"), "path", "pocket: path")
+	eq(H.parsePocket("close"), "close", "pocket: close")
+	w, usage = H.parsePocket("enter")
+	check(w == nil and usage:find("usage: pocket", 1, true), "pocket: enter is the window's request, no helper word")
+	local pk = H.pocketAnswer({inside = false, level = 400, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = true, enabled = true, free = 12, reserve = 4,
+		points = {got = 2, total = 10, junk = 1}, bosses = {
+			{key = "island_b", name = "Island B", category = "island", level = 250, left = 3, ok = true, point = {id = 9, got = true}},
+			{key = "world_1", name = "Kaelgor", category = "world", level = 300, left = 2, ok = true, point = {id = 1, got = false}},
+			{key = "raid_a", name = "Raid A", category = "raid", level = 150, left = 3, ok = true},
+			{key = "raid_z", name = "Raid Z", category = "raid", level = 150, left = 0, ok = true},
+			{key = "world_2", name = "Skaldra", category = "world", level = 900, left = 3, ok = false}}})
+	check(pk.usable == 3 and #pk.bosses == 3 and pk.bosses[1].key == "world_1" and pk.bosses[2].key == "raid_a" and pk.bosses[3].key == "island_b",
+		"pocket answer: only the pockets the bot may open, a boss point it lacks first, then by level")
+	check(pk.bosses[1].point.id == 1 and pk.bosses[1].point.got == false and pk.points.got == 2 and pk.points.junk == nil and pk.pos.junk == nil,
+		"pocket answer: the boss point and the points held, cut down")
+	local many = {}
+	for i = 1, 20 do many[i] = {key = "k" .. i, name = "B" .. i, level = i, left = 1, ok = true} end
+	eq(#H.pocketAnswer({bosses = many}).bosses, H.POCKET_ROWS, "pocket answer: at most the rows a text line holds")
+	local pin = H.pocketAnswer({inside = true, run = {id = 3, key = "world_1", name = "Kaelgor", state = "running", boss = "alive", left = 500, players = 1,
+		testers = 1, bossHp = 70, bossPos = {x = 5, y = 5, z = 7, junk = 1}, inArena = true, tester = true, junk = 1}, guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "boss"}})
+	check(pin.run.bossHp == 70 and pin.run.testers == 1 and pin.run.bossPos.junk == nil and pin.run.junk == nil and pin.guide.mode == "fight", "pocket answer: the run and the guide")
+	local realPB = ChaosPocketBoss
+	local pclose, ppath = 0, nil
+	ChaosPocketBoss = {probe = function(p)
+		if p.inPocket then
+			return {inside = true, level = 400, pos = p:getPosition(), run = {key = "world_1", state = "running", boss = "alive", players = 1, testers = 1},
+				guide = {mode = "walk", goal = {x = 70, y = 71, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 400, pos = p:getPosition(), pz = true, enabled = true, free = 16, reserve = 4,
+			bosses = {{key = "world_1", name = "Kaelgor", category = "world", level = 300, left = 3, ok = true}}}
+	end, testerClose = function() pclose = pclose + 1 return true end}
+	talks["!tester"].onSay(t9, "!tester", "pocket #300")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"key":"world_1"', 1, true) and last(t9):find('"seq":300', 1, true), "pocket state: the pockets it may open")
+	talks["!tester"].onSay(t9, "!tester", "pocket path #301")
+	check(last(t9):find("not inside a pocket", 1, true), "pocket path outside: the reason")
+	t9.inPocket = true
+	talks["!tester"].onSay(t9, "!tester", "pocket path #302")
+	print(last(t9), t9.pathAsked and t9.pathAsked.pos.x)
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70 and t9.pathAsked.maxD == 5, "pocket path: on foot to the boss, within reach")
+	talks["!tester"].onSay(t9, "!tester", "pocket close #303")
+	check(pclose == 1 and last(t9):find('"closed":true', 1, true), "pocket close: the bot's own Leave")
+	t9.inPocket = nil
+	ChaosPocketBoss = nil
+	talks["!tester"].onSay(t9, "!tester", "pocket #304")
+	check(last(t9):find("no pocket boss system", 1, true), "pocket: no system, the reason")
+	ChaosPocketBoss = realPB
+	-- dungeons: the unlock and the weekly challenge
+	local pu = H.parseDungeon("unlock 4 3")
+	check(type(pu) == "table" and pu.what == "unlock" and pu.id == 4 and pu.difficulty == 3, "dungeon: unlock ID N")
+	eq(H.parseDungeon("weekly"), "weekly", "dungeon: weekly")
+	w, usage = H.parseDungeon("unlock 4")
+	check(w == nil and usage:find("unlock ID N", 1, true), "dungeon: unlock needs both numbers")
+	w = H.parseDungeon("close 4")
+	eq(w, nil, "dungeon: close takes no number")
+	local da = H.dungeonAnswer({inside = true, list = {{id = 10, title = "Weekly Challenge", level = 800, size = 1, max = 1, fixed = 1, weekly = true}},
+		run = {id = 1, difficulty = 3, scaled = 2, bossScaled = true, weekly = true, left = 2}})
+	check(da.list[1].weekly == true and da.list[1].fixed == 1 and da.run.scaled == 2 and da.run.bossScaled == true and da.run.weekly == true, "dungeon answer: weekly and scaled")
+	local realD2, unlocks, weeklyProbe = ChaosDungeons, {}, nil
+	ChaosDungeons = {probe = function(p) return {inside = false, level = 900, pos = p:getPosition(), on = true, list = {}} end,
+		testerUnlock = function(p, id, d)
+			unlocks[#unlocks + 1] = {id, d}
+			if id == 99 then return nil, "no such dungeon" end
+			return d
+		end}
+	local realWC = ChaosWeeklyChallenge
+	ChaosWeeklyChallenge = {probe = function() return {enabled = true, id = 10, built = "2026-W46", current = true, testersListed = 0, rows = 5} end}
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 4 3 #310")
+	check(#unlocks == 1 and unlocks[1][1] == 4 and unlocks[1][2] == 3 and last(t9):find('"unlocked":3', 1, true), "dungeon unlock: the difficulty is written")
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 99 3 #311")
+	check(last(t9):find("no such dungeon", 1, true), "dungeon unlock: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "dungeon weekly #312")
+	check(last(t9):find('"testersListed":0', 1, true) and last(t9):find('"built":"2026-W46"', 1, true) and last(t9):find('"current":true', 1, true), "dungeon weekly: the week and the boards")
+	ChaosWeeklyChallenge = nil
+	talks["!tester"].onSay(t9, "!tester", "dungeon weekly #313")
+	check(last(t9):find("no weekly challenge", 1, true), "dungeon weekly: no system")
+	ChaosWeeklyChallenge = realWC
+	ChaosDungeons.testerUnlock = nil
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 4 3 #314")
+	check(last(t9):find("no dungeon system", 1, true), "dungeon unlock: an old server has no unlock")
+	ChaosDungeons = realD2
+	local civU = creature(992, "Ana Unlock", {store = {}})
+	local nU = #civU.log.msgs
+	check(talks["!tester"].onSay(civU, "!tester", "dungeon unlock 4 6 #1") == true and talks["!tester"].onSay(civU, "!tester", "pocket close #2") == true
+		and talks["!tester"].onSay(civU, "!tester", "wsmap enter 1 #3") == true and #civU.log.msgs == nU, "unlock / pocket / wsmap: a player's words go on and get no answer")
+	-- the rift answer carries the stairs
+	local ra = H.riftAnswer({inside = true, run = {floors = 2, links = 1}, guide = {mode = "use", goal = {x = 1, y = 2, z = 8}, area = "stairs", via = "ladder",
+		use = {x = 1, y = 2, z = 8, clientId = 1386, stack = 2, junk = 1}}})
+	check(ra.run.floors == 2 and ra.run.links == 1 and ra.guide.via == "ladder" and ra.guide.use.clientId == 1386 and ra.guide.use.stack == 2 and ra.guide.use.junk == nil,
+		"rift answer: the floors, the links, the ladder to use")
+	-- a waystone map walked
+	local ws = H.parseWsMap("enter 11")
+	check(ws and ws.what == "enter" and ws.tier == 11, "wsmap: enter a tier")
+	eq(H.parseWsMap("enter").tier, nil, "wsmap: enter without a tier")
+	eq(H.parseWsMap(nil).what, "state", "wsmap: no word is state")
+	w, usage = H.parseWsMap("enter 16")
+	check(w == nil and usage:find("usage: wsmap", 1, true), "wsmap: a tier above 15")
+	w = H.parseWsMap("state 3")
+	eq(w, nil, "wsmap: state takes no number")
+	local wa = H.wsmapAnswer({inside = true, level = 1500, pos = {x = 1, y = 2, z = 7, junk = 1}, minLevel = 1000, kills = 3, arrivals = 4, free = true, freeTier = 6,
+		freeTierLevel = 1600, run = {map = 9, tier = 11, tierLevel = 2100, since = 5, left = 590, players = 0, monsters = 12, monsterLevel = 2100, nearest = {x = 3, y = 4, z = 7, junk = 1},
+		nearestHp = 90, boss = {pos = {x = 9, y = 9, z = 7}, hp = 100}, junk = 1}, guide = {mode = "walk", goal = {x = 3, y = 4, z = 7}, reach = {1, 5}, area = "pack"}})
+	check(wa.inside and wa.freeTier == 6 and wa.run.tierLevel == 2100 and wa.run.monsterLevel == 2100 and wa.run.nearest.junk == nil and wa.run.junk == nil
+		and wa.run.boss.hp == 100 and wa.guide.mode == "walk", "wsmap answer: the run, the level of the monsters, the guide")
+	local realWT, entered, wclose = ChaosWaystoneTiers, nil, 0
+	ChaosWaystoneTiers = {probe = function(p)
+		if p.inMap then
+			return {inside = true, level = 1500, pos = p:getPosition(), run = {map = 9, tier = 11, tierLevel = 2100, monsters = 3},
+				guide = {mode = "walk", goal = {x = 90, y = 91, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 1500, pos = p:getPosition(), minLevel = 1000, arrivals = 1, free = true, freeTier = 1, freeTierLevel = 1100}
+	end, testerEnter = function(p, tier)
+		if tier == 15 then return nil, "no map of the band has an arrival tile (config arrivals)" end
+		entered = tier or 1
+		return {map = 9, tier = tier or 1}
+	end, testerClose = function() wclose = wclose + 1 return true end}
+	talks["!tester"].onSay(t9, "!tester", "wsmap #320")
+	check(last(t9):find('"freeTier":1', 1, true) and last(t9):find('"seq":320', 1, true), "wsmap state: a map is free")
+	talks["!tester"].onSay(t9, "!tester", "wsmap enter 11 #321")
+	check(entered == 11 and last(t9):find('"entered":true', 1, true) and last(t9):find('"map":9', 1, true), "wsmap enter: the stand-in of the pads")
+	talks["!tester"].onSay(t9, "!tester", "wsmap enter 15 #322")
+	check(last(t9):find("arrival tile", 1, true), "wsmap enter: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "wsmap path #323")
+	check(last(t9):find("not inside a waystone map", 1, true), "wsmap path outside: the reason")
+	t9.inMap = true
+	talks["!tester"].onSay(t9, "!tester", "wsmap path #324")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 90 and t9.pathAsked.maxD == 5, "wsmap path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "wsmap close #325")
+	check(wclose == 1 and last(t9):find('"closed":true', 1, true), "wsmap close: the bot's own way out")
+	t9.inMap = nil
+	ChaosWaystoneTiers = nil
+	talks["!tester"].onSay(t9, "!tester", "wsmap #326")
+	check(last(t9):find("no waystone system", 1, true), "wsmap: no system")
+	ChaosWaystoneTiers = realWT
 	ChaosTowerRun, ChaosDescent = realTR, realD
 	local civ4 = creature(993, "Ana Tower", {store = {}})
 	local n4 = #civ4.log.msgs
 	check(talks["!tester"].onSay(civ4, "!tester", "tower close #1") == true and talks["!tester"].onSay(civ4, "!tester", "descent sigil #2") == true
 		and #civ4.log.msgs == n4, "tower / descent: a player's words go on and get no answer")
+end
+
+-- ------------------------------------------------------------------ O653: `!tester found` (what the bot's own drops can do)
+do
+	local H = ChaosTesterHelperCore
+	check(H.COMMANDS.found and H.parseCommand("found #1") == "found", "found is a registered command")
+	eq(H.parseFound(nil), "state", "found: no word is state")
+	eq(H.parseFound("state"), "state", "found: state")
+	check(H.parseFound("give") == nil and select(2, H.parseFound("give")) == "usage: found", "found: it takes no grant word")
+	-- the chase score knows sets, uniques and jewelry
+	local worn = {[1] = {score = 30}, [2] = {score = 0}, [8] = {score = 40, set = "ashen"}}
+	local state = {sets = {ashen = 2, other = 0}, size = {ashen = 4, other = 4, full = 2}}
+	eq(H.chaseScore({slot = 1, score = 50}, worn, state), 20, "chase: the plain gain only")
+	eq(H.chaseScore({slot = 1, score = 50, set = "ashen"}, worn, state), 20 + H.CHASE_SET * 2, "chase: a set piece joins the 2 worn pieces of its set")
+	eq(H.chaseScore({slot = 1, score = 50, set = "other"}, worn, state), 20 + H.CHASE_SET_NEW, "chase: the first piece of a set")
+	eq(H.chaseScore({slot = 8, score = 45, set = "ashen"}, worn, state), 5 + H.CHASE_SET, "chase: a piece of the same set as the worn one adds no piece")
+	eq(H.chaseScore({slot = 1, score = 50, set = "full"}, worn, {sets = {full = 2}, size = {full = 2}}), 20, "chase: a full set adds nothing")
+	eq(H.chaseScore({slot = 1, score = 50, unique = true}, worn, state), 20 + H.CHASE_UNIQUE, "chase: a unique")
+	eq(H.chaseScore({slot = 1, score = 50, unique = true}, {[1] = {score = 30, unique = true}}, state), 20, "chase: no bonus over a unique already worn")
+	eq(H.chaseScore({slot = 2, score = 5, jewelry = true}, worn, state), 5 + H.CHASE_JEWELRY, "chase: a jewel for an empty slot")
+	eq(H.chaseScore({slot = 2, score = 5, jewelry = true}, {[2] = {score = 4}}, state), 1, "chase: a jewel for a worn slot is a plain gain")
+	-- the report: drops, pieces, the best one
+	local rows = {
+		{i = 0, id = 7618, cid = 1, n = 90},
+		{i = 1, id = 24691, cid = 2, n = 3, orb = "alchemy"},
+		{i = 2, id = 24692, cid = 3, n = 2, orb = "alchemy"},
+		{i = 3, id = 32006, cid = 4, n = 1, gem = true},
+		{i = 4, id = 33001, cid = 5, n = 1, rune = true},
+		{i = 5, id = 3001, cid = 6, n = 1, slot = 1, score = 40},
+		{i = 6, id = 3002, cid = 7, n = 1, slot = 1, score = 50, set = "ashen"},
+		{i = 7, id = 3003, cid = 8, n = 1, slot = 2, score = 6, jewelry = true},
+	}
+	local rep = H.foundReport(rows, worn, state)
+	eq(rep.orbs.alchemy, 5, "found: the orbs by key, stacks added")
+	eq(#rep.drops, 4, "found: two orb rows, a gem and a rune are drops")
+	check(rep.drops[3].k == "gem" and rep.drops[4].k == "rune" and rep.drops[1].key == "alchemy", "found: the kinds of the drops")
+	eq(#rep.pieces, 3, "found: three wearable pieces (a potion is none)")
+	eq(rep.best, 6, "found: the piece of a set with 2 worn pieces wins (100 over the jewel 56 and the plain 10)")
+	eq(H.foundReport({rows[8], rows[6]}, worn, state).best, 7, "found: a jewel for the empty slot wins over a plain gain")
+	eq(rep.pieces[2].chase, 20 + H.CHASE_SET * 2, "found: the set piece is scored with its set")
+	eq(rep.pieces[2].set, "ashen", "found: the set key")
+	eq(rep.sets.ashen, 2, "found: the sets worn")
+	eq(#rep.worn, 3, "found: the worn slots")
+	eq(H.foundReport({{i = 0, id = 3001, cid = 6, n = 1, slot = 1, score = 20}}, worn, state).best, nil, "found: nothing beats the worn piece")
+	local many = {}
+	for i = 1, 40 do
+		many[i] = {i = i, id = 1000 + i, cid = i, n = 1, orb = "chaos"}
+	end
+	eq(#H.foundReport(many, {}, {}).drops, H.FOUND_MAX, "found: the lists are bounded")
+
+	-- the command on a mock backpack: nothing is given or moved
+	T.present = function() return true end
+	local saved = ItemType
+	local types = {[3001] = {slot = 1, armor = 4, def = 0, atk = 0}, [3002] = {slot = 1, armor = 5, def = 0, atk = 0}, [24691] = {slot = 0, armor = 0, def = 0, atk = 0},
+		[32006] = {slot = 0, armor = 0, def = 0, atk = 0}}
+	function ItemType(id)
+		local t = types[id] or {slot = 0, armor = 0, def = 0, atk = 0}
+		return {getClientId = function() return id + 10000 end, getName = function() return "item " .. id end,
+			isStackable = function() return false end, getSlotPosition = function() return t.slot end,
+			getArmor = function() return t.armor end, getDefense = function() return t.def end, getAttack = function() return t.atk end}
+	end
+	local function it(id, n, uniq)
+		return {getId = function() return id end, getCount = function() return n or 1 end, isContainer = function() return false end,
+			getCustomAttribute = function(_, k) if k == "chaos_unique" and uniq then return 1 end return nil end}
+	end
+	local items = {[0] = it(24691, 4), [1] = it(32006, 1), [2] = it(3001), [3] = it(3002, 1, true)}
+	local realC, realG, realS, realSets = ChaosCrafting, ChaosGems, ChaosSupports, ChaosItemSets
+	ChaosCrafting = {orbByKey = {alchemy = {id = 24691}}}
+	ChaosGems = {isGem = function(id) return id == 32006 end}
+	ChaosSupports = {isRune = function() return false end}
+	ChaosItemSets = {pieceOf = function(item) if item:getId() == 3002 then return {key = "ashen"} end return nil end,
+		stateOf = function() return {sets = {ashen = {count = 1}}} end, sets = {ashen = {key = "ashen", pieces = {1, 2, 3, 4}}}}
+	local fb = creature(268435495, "Tester Fnd", {store = {[ST] = 1}})
+	local gave = 0
+	fb.slots = {[CONST_SLOT_HEAD] = it(3001), [CONST_SLOT_BACKPACK] = {
+		getSize = function() return 4 end, getItem = function(_, i) return items[i] end, getCapacity = function() return 20 end, getId = function() return 1988 end,
+		addItem = function() gave = gave + 1 end}}
+	function fb:getLevel() return 300 end
+	fb.addItemEx = function() gave = gave + 1 end
+	check(talks["!tester"].onSay(fb, "!tester", "found #7") == false, "found: consumed")
+	local line = fb.log.msgs[#fb.log.msgs]
+	check(line:find("[tester-helper] found ", 1, true) ~= nil and line:find('"seq":7', 1, true) ~= nil, "found: the numbered answer line: " .. tostring(line))
+	check(line:find('"alchemy":4', 1, true) ~= nil, "found: the orb stack by key: " .. tostring(line))
+	check(line:find('"k":"gem"', 1, true) ~= nil and line:find('"k":"orb"', 1, true) ~= nil, "found: the gem and the orb are drops")
+	check(line:find('"set":"ashen"', 1, true) ~= nil and line:find('"unique":true', 1, true) ~= nil, "found: the set and unique facts of the piece")
+	check(line:find('"best":3', 1, true) ~= nil, "found: the unique set piece of armour 5 is the best: " .. tostring(line))
+	check(line:find('"bagClientId":11988', 1, true) ~= nil and line:find('"level":300', 1, true) ~= nil, "found: the backpack id and the level")
+	eq(gave, 0, "found: nothing is given")
+	check(talks["!tester"].onSay(fb, "!tester", "found give #8") == false and fb.log.msgs[#fb.log.msgs]:find("usage: found", 1, true) ~= nil, "found: a grant word is the usage")
+	fb.slots[CONST_SLOT_BACKPACK] = nil
+	talks["!tester"].onSay(fb, "!tester", "found #9")
+	check(fb.log.msgs[#fb.log.msgs]:find("no backpack", 1, true) ~= nil, "found: no backpack, the reason")
+	local civ6 = creature(268435496, "Ana Found", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "found #1") == true and #civ6.log.msgs == n6, "found: a player's words go on and get no answer")
+	ItemType = saved
+	ChaosCrafting, ChaosGems, ChaosSupports, ChaosItemSets = realC, realG, realS, realSets
+end
+
+-- ------------------------------------------------------------------ O654: the levelling journey on foot (`!tester journey`)
+do
+	check(H.COMMANDS.journey and H.parseCommand("journey state keep a #1") == "journey", "journey is a registered command")
+	-- the parser
+	local o = H.parseJourney(nil)
+	check(o and o.what == "state" and o.keep == nil and next(o.skip) == nil, "journey: no word is state")
+	o = H.parseJourney("JUMP")
+	eq(o.what, "jump", "journey: jump (any case)")
+	eq(H.parseJourney("hall").what, "hall", "journey: hall")
+	o = H.parseJourney("state keep camp_1 skip a-b,c.d")
+	check(o.keep == "camp_1" and o.skip["a-b"] and o.skip["c.d"], "journey: keep and skip")
+	local bad, usage = H.parseJourney("teleport")
+	check(bad == nil and usage == "usage: journey [state | jump | hall] [keep ID] [skip ID,ID]", "journey: an unknown word is the usage")
+	check(H.parseJourney("keep") == nil and H.parseJourney("skip") == nil, "journey: keep and skip need an id")
+	check(H.parseJourney("keep a;b") == nil and H.parseJourney("keep " .. ("x"):rep(49)) == nil, "journey: an id is plain and short")
+	local many = {}
+	for i = 1, 25 do many[i] = "h" .. i end
+	check(H.parseJourney("skip " .. table.concat(many, ",")) == nil, "journey: at most 24 skipped hunts")
+	-- the pick: the window of the progression model, widened until one hunt fits
+	local function port(id, lo, hi, z)
+		return {i = id, n = id, l = {lo, hi}, t = {x = 100 + lo, y = 50, z = z or 7}, f = {x = 100 + lo, y = 51, z = z or 7},
+			a = {x = 5000 + lo, y = 60, z = 7}, b = {x = 5000 + lo, y = 61, z = 7}}
+	end
+	local ports = {port("rats", 1, 20), port("cave", 15, 40), port("bog", 40, 90), port("keep", 60, 120), port("ruin", 90, 200),
+		port("deep", 300, 500, 6)}
+	eq(H.journeyMid(ports[1]), 10.5, "journeyMid: the middle of the band")
+	eq(H.journeyMid({l = {50, 0}}), 50, "journeyMid: no top is the bottom")
+	eq(H.journeyMid({}), nil, "journeyMid: no band")
+	local pk = H.journeyPick(ports, 100, {})
+	eq(pk.id, "keep", "pick: level 100 takes the hunt whose middle (90) is inside the window 80-110")
+	pk = H.journeyPick(ports, 8, {})
+	check(pk and pk.id == "rats" and pk.widen > 0, "pick: level 8 widens the window until the first hunt fits (and may enter)")
+	pk = H.journeyPick(ports, 70, {})
+	eq(pk.id, "bog", "pick: level 70: bog (middle 65) is the one inside the window 56-77")
+	-- the hunt it is at stays while it fits (never a hop between two equal hunts)
+	pk = H.journeyPick(ports, 70, {keep = "bog"})
+	check(pk.id == "bog" and pk.stay == true, "pick: keep: the hunt it is at stays while it fits")
+	pk = H.journeyPick(ports, 130, {keep = "bog"})
+	check(pk.id ~= "bog" and not pk.stay, "pick: keep: a hunt the level outgrew is left (middle 65 against level 130)")
+	eq(H.journeyPick(ports, 130, {keep = "nope"}).id, "ruin", "pick: an unknown keep is ignored")
+	-- skip: a hunt that hurt the bot is not picked again (and when every hunt is skipped the skip is dropped)
+	pk = H.journeyPick(ports, 70, {skip = {bog = true}})
+	check(pk.id ~= "bog", "pick: skip leaves the hunt that hurt it")
+	local allSkip = {}
+	for _, e in ipairs(ports) do allSkip[e.i] = true end
+	check(H.journeyPick(ports, 70, {skip = allSkip}) ~= nil, "pick: every hunt skipped: the skip is dropped, not the bot stranded")
+	-- a level under every band cannot go in; a level over every band goes to the highest it may enter
+	pk = H.journeyPick({port("high", 300, 400)}, 50, {})
+	check(pk.above == true and pk.id == "high", "pick: every hunt needs more than the level: above")
+	pk = H.journeyPick(ports, 5000, {})
+	check(pk and pk.id == "deep" and not pk.above, "pick: far above every band: the highest it may enter")
+	eq(H.journeyPick({}, 10, {}), nil, "pick: no hunts")
+	eq(H.journeyPick(nil, 10, {}), nil, "pick: no list")
+	-- the seed turns the choice among the best three so the bots do not share one hunt
+	local crowd = {port("a", 80, 100), port("b", 82, 100), port("c", 84, 100), port("d", 86, 100)}
+	local seen = {}
+	for seed = 0, 8 do seen[H.journeyPick(crowd, 95, {seed = seed}).id] = true end
+	local n = 0
+	for _ in pairs(seen) do n = n + 1 end
+	eq(n, 3, "pick: three hunts share the bots")
+	-- zones
+	eq(H.journeyZone({x = 31650, y = 32240, z = 7}, {x = 50, y = 50, z = 7}), "hall", "zone: the teleport room")
+	eq(H.journeyZone({x = 60, y = 55, z = 7}, {x = 50, y = 50, z = 7}), "temple", "zone: round the temple")
+	eq(H.journeyZone({x = 60, y = 55, z = 6}, {x = 50, y = 50, z = 7}), "other", "zone: another floor of the temple's tiles is not the temple")
+	eq(H.journeyZone({x = 5000, y = 60, z = 7}, {x = 50, y = 50, z = 7}), "other", "zone: a hunt")
+	check(H.journeyInHall({x = 31648, y = 32256, z = 6}) and not H.journeyInHall({x = 31648, y = 32256, z = 8}), "hall: floors 5 to 7")
+	-- finding things on a grid
+	local grid = {["50,45,7"] = {dest = {x = 31648, y = 32233, z = 7}}, ["53,50,7"] = {dest = {x = 1, y = 1, z = 7}},
+		["52,49,7"] = {change = "up"}, ["46,50,7"] = {change = "down"}, ["51,50,7"] = {aid = H.PORTAL_AID}}
+	local function at(x, y, z) return grid[x .. "," .. y .. "," .. z] end
+	local home = {x = 50, y = 50, z = 7}
+	local g = H.journeyFind(at, home, 14, H.journeyIsGate)
+	check(g and g.x == 50 and g.y == 45, "find: the gate is the teleport that leads to the hub, not the other one")
+	eq(H.journeyFind(at, home, 3, H.journeyIsGate), nil, "find: out of reach")
+	local up = H.journeyFind(at, home, 14, function(i) return H.journeyIsStairs(i, "up") end)
+	local dn = H.journeyFind(at, home, 14, function(i) return H.journeyIsStairs(i, "down") end)
+	check(up and up.x == 52 and dn and dn.x == 46, "find: stairs up and down apart")
+	local pt = H.journeyFind(at, home, 4, H.journeyIsPortal)
+	check(pt and pt.x == 51, "find: the town portal by its action id")
+	check(not H.journeyIsGate({dest = {x = 31648, y = 32233, z = 6}}) and H.journeyIsGate({dest = {x = 31650, y = 32235, z = 7}}), "gate: the hub's floor and within 6 tiles")
+	-- the answer
+	local ans = H.journeyAnswer({level = 30, zone = "temple", pz = true, pos = {x = 1, y = 2, z = 7, junk = 1}, gate = {x = 5, y = 6, z = 7},
+		locker = {x = 7, y = 8, z = 7, cid = 2589, sp = 1, spot = {x = 7, y = 9, z = 7}}, stairs = {up = {x = 1, y = 1, z = 7}},
+		pick = {id = "cave", n = ("N"):rep(80), lo = 15, hi = 40, t = {x = 1, y = 2, z = 7}, f = {x = 1, y = 3, z = 7}, a = {x = 9, y = 9, z = 7}, widen = 0}},
+		{jumped = "hunt"})
+	check(ans.zone == "temple" and ans.pz == true and ans.pos.junk == nil and ans.gate.x == 5 and ans.locker.cid == 2589 and ans.locker.spot.y == 9
+		and ans.stairs.up.x == 1 and ans.stairs.down == nil and ans.pick.id == "cave" and #ans.pick.n == 40 and ans.pick.z == 7 and ans.jumped == "hunt",
+		"answer: the places as x y z, the name cut, the extras merged")
+	-- the engine file against a fake map
+	local savedTile, savedPorts = Tile, ChaosHuntTeleports
+	local saved = {ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN, ChaosPoi}
+	ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN = 21, 8, 16
+	local fgrid = {}
+	local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
+	local function fakeTile(p)
+		local f = fgrid[key(p)] or {}
+		local t = {pos = p}
+		function t:getGround() return true end
+		function t:hasFlag(flag)
+			if flag == TILESTATE_FLOORCHANGE then return f.change ~= nil end
+			if flag == TILESTATE_FLOORCHANGE_DOWN then return f.change == "down" end
+			if flag == TILESTATE_PROTECTIONZONE then return f.pz == true end
+			if flag == TILESTATE_TELEPORT then return f.dest ~= nil end
+			return false
+		end
+		function t:getTopCreature() return nil end
+		function t:getPosition() return p end
+		function t:getItemByType(kind)
+			if kind == ITEM_TYPE_TELEPORT and f.dest then
+				return {getDestination = function() return f.dest end}
+			end
+		end
+		function t:getItems()
+			return f.aid and {{getActionId = function() return f.aid end}} or {}
+		end
+		function t:getItemById(id)
+			if f.locker == id then return {} end
+		end
+		function t:getThingIndex() return 2 end
+		return t
+	end
+	Tile = function(p) return p and p.x and fakeTile(p) or nil end
+	fgrid["50,45,7"] = {dest = {x = 31648, y = 32233, z = 7}}
+	fgrid["53,52,7"] = {locker = 2589}
+	fgrid["52,50,7"] = {pz = true}
+	ChaosHuntTeleports = {ports = function() return ports end}
+	local realMhl2, realSpectators = Chaos.monsterHuntingLevel, Game.getSpectators
+	Game.getSpectators = function() return {wolf, pet} end
+	Chaos.monsterHuntingLevel = function() return 5 end
+	local jt = creature(268435470, "Tester Jny", {store = {[ST] = 1}, pos = {x = 52, y = 50, z = 7}})
+	talks["!tester"].onSay(jt, "!tester", "journey #300")
+	local m = last(jt)
+	check(m:find('"zone":"temple"', 1, true) and m:find('"id":"keep"', 1, true) and m:find('"seq":300', 1, true) and m:find('"pz":true', 1, true),
+		"journey state at the temple: the zone, the hunt for level 100, the protection zone")
+	check(m:find('"gate":{"x":50,"y":45,"z":7}', 1, true), "journey state: the temple's great teleport")
+	check(m:find('"locker":', 1, true) and m:find('"cid":12589', 1, true), "journey state: the depot locker next to the temple")
+	check(#jt.log.teleports == 0, "journey state moves nobody")
+	talks["!tester"].onSay(jt, "!tester", "journey keep bog #301")
+	check(last(jt):find('"id":"keep"', 1, true) and not last(jt):find('"stay":true', 1, true), "journey keep: a hunt that no longer fits (bog, 65) is left")
+	talks["!tester"].onSay(jt, "!tester", "journey keep keep skip keep #302")
+	check(last(jt):find('"id":"bog"', 1, true) and not last(jt):find('"stay":true', 1, true), "journey skip: the skipped hunt is not kept, the window widens to the next (bog)")
+	talks["!tester"].onSay(jt, "!tester", "journey keep keep #303")
+	check(last(jt):find('"stay":true', 1, true) and last(jt):find('"id":"keep"', 1, true), "journey keep: stays at a hunt that fits")
+	-- the fallback teleports
+	talks["!tester"].onSay(jt, "!tester", "journey jump #304")
+	check(#jt.log.teleports == 1 and jt.pos.x >= 5000 and last(jt):find('"jumped":"jump"', 1, true), "journey jump: the hunt's arrival, counted in the answer")
+	jt.pos = {x = 52, y = 50, z = 7}
+	fgrid["31660,32250,7"] = {change = "up"}
+	talks["!tester"].onSay(jt, "!tester", "journey hall #305")
+	check(jt.pos.x >= 31645 and jt.pos.x <= 31651 and last(jt):find('"jumped":"hall"', 1, true) and last(jt):find('"zone":"hall"', 1, true),
+		"journey hall: next to the gate's arrival in the teleport room")
+	-- in the hall: the stairs of the floor
+	talks["!tester"].onSay(jt, "!tester", "journey #306")
+	check(last(jt):find('"stairs":{"up":{"x":31660', 1, true), "journey state in the hall: the stairs up")
+	-- a town portal beside the bot
+	jt.pos = {x = 5000, y = 60, z = 7}
+	fgrid["5001,60,7"] = {aid = H.PORTAL_AID}
+	talks["!tester"].onSay(jt, "!tester", "journey #307")
+	check(last(jt):find('"zone":"other"', 1, true) and last(jt):find('"portal":{"x":5001', 1, true), "journey state at a hunt: the town portal beside the bot")
+	wolf.pos = {x = 5003, y = 60, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey #310")
+	check(last(jt):find('"monster":{"dist":3,"level":5,"name":"wolf"', 1, true) and last(jt):find('"crowd":1', 1, true) and not last(jt):find('"hot"', 1, true),
+		"journey state at a hunt: the nearest monster, how many are round, nothing too high")
+	Chaos.monsterHuntingLevel = function() return 900 end
+	talks["!tester"].onSay(jt, "!tester", "journey #311")
+	check(last(jt):find('"hot":{"l":900,"n":"wolf"}', 1, true), "journey state at a hunt: a monster far above the level is `hot`")
+	Chaos.monsterHuntingLevel = realMhl2
+	wolf.pos = {x = 102, y = 100, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey fly #308")
+	check(last(jt):find("usage: journey", 1, true), "journey: an unknown word")
+	local noArrival = port("base", 85, 105)
+	noArrival.a = nil
+	ChaosHuntTeleports = {ports = function() return {noArrival} end}
+	jt.pos = {x = 52, y = 50, z = 7}
+	local before = #jt.log.teleports
+	talks["!tester"].onSay(jt, "!tester", "journey jump #312")
+	check(last(jt):find("has no known arrival", 1, true) and #jt.log.teleports == before, "journey jump: a base hunt has no arrival to put the bot at, the reason")
+	ChaosHuntTeleports = nil
+	jt.pos = {x = 52, y = 50, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey jump #309")
+	check(last(jt):find("no hunt the level may enter", 1, true), "journey jump: no teleport room, the reason")
+	-- a player's words go on and get no answer
+	local civ6 = creature(995, "Ana Journey", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "journey jump #3") == true and #civ6.log.msgs == n6 and #civ6.log.teleports == 0,
+		"journey: a player's words go on and get no answer, nobody is moved")
+	Tile, ChaosHuntTeleports = savedTile, savedPorts
+	Chaos.monsterHuntingLevel, Game.getSpectators = realMhl2, realSpectators
+	ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN, ChaosPoi = saved[1], saved[2], saved[3], saved[4]
+end
+
+-- ------------------------------------------------------------------ O655: `!tester ascend` and `!tester gather`
+do
+	local H = ChaosTesterHelperCore
+	for _, c in ipairs({"ascend", "gather"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parseAscend(nil), "state", "ascend: no word is state")
+	eq(H.parseAscend("PROOF"), "proof", "ascend: proof (any case)")
+	eq(H.parseAscend("close"), "close", "ascend: close")
+	check(H.parseAscend("win") == nil and select(2, H.parseAscend("win")) == "usage: ascend [state | proof | path | close]", "ascend: the usage")
+	check(H.parseAscend("proof now") == nil, "ascend: a word takes no argument")
+	eq(H.parseGather("path"), "path", "gather: path")
+	check(H.parseGather("sell") == nil and select(2, H.parseGather("sell")) == "usage: gather [state | path]", "gather: the usage")
+	local realAQ, realPF = ChaosAscensionQuest, ChaosProfessions
+	local lastOf = function(p) return p.log.msgs[#p.log.msgs] end
+	local t = creature(268435560, "Tester Asc", {store = {[ST] = 1}})
+	t.pos = {x = 60, y = 60, z = 7}
+	t.getPathTo = function(self, pos, minD, maxD)
+		t.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {2, 2, 3}
+	end
+	local credited, closed = 0, 0
+	local inside = false
+	ChaosAscensionQuest = {probe = function(p)
+		local out = {enabled = true, level = 100, minLevel = 100, stage = credited > 0 and 2 or 1, proof = credited > 0 and 10 or 0, needed = 10, eligible = true,
+			ascended = false, oracle = true, wait = 0, free = 8, reserve = 2, tester = true, vocName = "Warrior",
+			choices = {{i = 1, word = "berserker", id = 14, name = "Berserker", allowed = false, why = "locked", junk = 1}, {i = 2, word = "paladin", id = 15, name = "Paladin Lord", allowed = true}}}
+		if inside then
+			out.inside = true
+			out.run = {state = "fight", boss = "alive", bossHp = 80, adds = 1, players = 1, testers = 1, tester = true, kind = "Warden of Iron"}
+			out.guide = {mode = "walk", goal = {x = 90, y = 91, z = 7}, reach = {1, 5}, area = "boss"}
+		end
+		return out
+	end, testerProof = function(p)
+		if credited > 0 then return nil, "the Proof of Strength is not open (stage 2)" end
+		credited = credited + 1
+		return true
+	end, testerClose = function() closed = closed + 1 inside = false return true end}
+	talks["!tester"].onSay(t, "!tester", "ascend #300")
+	local l = lastOf(t)
+	check(l:find('"stage":1', 1, true) and l:find('"seq":300', 1, true) and l:find('"vocName":"Warrior"', 1, true) and l:find('"allowed":false', 1, true),
+		"ascend state: the stage and the choices with the class lock: " .. l)
+	talks["!tester"].onSay(t, "!tester", "ascend proof #301")
+	check(credited == 1 and lastOf(t):find('"proofed":true', 1, true) and lastOf(t):find('"stage":2', 1, true), "ascend proof: the credit, then the record")
+	talks["!tester"].onSay(t, "!tester", "ascend proof #302")
+	check(lastOf(t):find("not open", 1, true) and credited == 1, "ascend proof: the reason of the refusal")
+	talks["!tester"].onSay(t, "!tester", "ascend path #303")
+	check(lastOf(t):find('"err":"no goal"', 1, true), "ascend path outside the trial: no goal")
+	inside = true
+	talks["!tester"].onSay(t, "!tester", "ascend path #304")
+	check(lastOf(t):find('"path":[2,2,3]', 1, true) and t.pathAsked.pos.x == 90 and t.pathAsked.maxD == 5, "ascend path: on foot to the guardian, within reach")
+	check(lastOf(t):find('"bossHp":80', 1, true) and lastOf(t):find('"adds":1', 1, true) and lastOf(t):find('"testers":1', 1, true), "ascend: the guardian, its adds, the run's players")
+	talks["!tester"].onSay(t, "!tester", "ascend close #305")
+	check(closed == 1 and lastOf(t):find('"closed":true', 1, true) and lastOf(t):find('"inside"', 1, true) == nil, "ascend close: the bot's own trial ends")
+	talks["!tester"].onSay(t, "!tester", "ascend kill #306")
+	check(lastOf(t):find("usage: ascend", 1, true), "ascend: an unknown word")
+	ChaosAscensionQuest = nil
+	talks["!tester"].onSay(t, "!tester", "ascend #307")
+	check(lastOf(t):find("no ascension quest", 1, true), "ascend: no system, the reason")
+	ChaosAscensionQuest = realAQ
+	-- gather
+	ChaosProfessions = {probe = function(p)
+		return {enabled = true, level = 100, minLevel = 20, levelOk = true, tools = {delving = true, wortcunning = false}, held = 2, gathering = false, bank = 900,
+			buy = {{id = 2553, clientId = 2553, price = 50}},
+			node = {prof = "delving", tier = 2, id = 100, clientId = 4000, pos = {x = 70, y = 71, z = 7}, stackpos = 1, d = 12},
+			guide = {mode = "walk", goal = {x = 70, y = 71, z = 7}, reach = {1, 1}, area = "mine", why = "to the nearest delving node"}}
+	end}
+	talks["!tester"].onSay(t, "!tester", "gather #310")
+	l = lastOf(t)
+	check(l:find('"clientId":4000', 1, true) and l:find('"stackpos":1', 1, true) and l:find('"delving":true', 1, true) and l:find('"held":2', 1, true) and l:find('"seq":310', 1, true),
+		"gather state: the tools, the node's client id and stack position: " .. l)
+	talks["!tester"].onSay(t, "!tester", "gather path #311")
+	check(lastOf(t):find('"path":[2,2,3]', 1, true) and t.pathAsked.pos.x == 70 and t.pathAsked.minD == 1 and t.pathAsked.maxD == 1, "gather path: on foot next to the node")
+	talks["!tester"].onSay(t, "!tester", "gather sell #312")
+	check(lastOf(t):find("usage: gather", 1, true), "gather: an unknown word")
+	ChaosProfessions = nil
+	talks["!tester"].onSay(t, "!tester", "gather #313")
+	check(lastOf(t):find("no professions", 1, true), "gather: no system, the reason")
+	ChaosProfessions = realPF
+	-- a player's words go on and get no answer
+	local civ = creature(268435561, "Ana Ascend", {store = {}})
+	local n = #civ.log.msgs
+	check(talks["!tester"].onSay(civ, "!tester", "ascend proof #1") == true and talks["!tester"].onSay(civ, "!tester", "gather #2") == true and #civ.log.msgs == n,
+		"ascend / gather: a player's words go on and get no answer")
+	check(HELPER_VERSION >= 20, "the helper is version 20 or later (O655: a new command)")
 end
 
 print = origPrint

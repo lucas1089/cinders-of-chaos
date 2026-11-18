@@ -391,6 +391,15 @@ local function telegraph(f, spec, warnMs)
 	if #tel.tiles == 0 then
 		return
 	end
+	-- O652: the danger the tester bots read (M.dangerFor): the marks as the server sent them, until the hit
+	local keep = {}
+	for _, e in ipairs(f.danger or {}) do
+		if e.hitAt > now - 200 then
+			keep[#keep + 1] = e
+		end
+	end
+	keep[#keep + 1] = {tel = tel, hitAt = now + warnMs, label = spec.label}
+	f.danger = keep
 	sendCast(f, spec.label, warnMs, "telegraph")
 	pose(f, spec, warnMs)
 	local id, token = f.id, f.token
@@ -483,6 +492,39 @@ local function telegraph(f, spec, warnMs)
 			end
 		end
 	end, warnMs)
+end
+
+-- O652 (the tester bots' probe, testers_boss.lua): what a person sees of a boss's telegraphs now. -> {marked = {["x,y"] = true} (every tile any
+-- pending mark covers), left = ms to the first hit, labels = {name...}, goal = the nearest safe tile {x, y, z} of the player when it stands in a
+-- mark (G.safeSpot on the fight's own grid, within the time left), count} or nil when the boss has no fight or no mark is up.
+function M.dangerFor(bossId, pos)
+	local f = M.fights[bossId]
+	if not f or not f.danger then
+		return nil
+	end
+	local now = mnow()
+	local live, marked, labels, soonest = {}, {}, {}, nil
+	for _, e in ipairs(f.danger) do
+		if e.hitAt > now - 200 then
+			live[#live + 1] = e
+			for k in pairs(e.tel.set) do
+				marked[k] = true
+			end
+			labels[#labels + 1] = e.label
+			soonest = soonest and math.min(soonest, e.hitAt) or e.hitAt
+		end
+	end
+	f.danger = live
+	if #live == 0 then
+		return nil
+	end
+	local out = {marked = marked, left = math.max(0, soonest - now), labels = labels, count = #live}
+	if pos and marked[G.key(pos.x, pos.y)] then
+		local straight, diag = G.stepCosts(f.profile.fair or {})
+		local tile = G.safeSpot(f.grid, marked, pos, math.max(300, out.left - 200), straight, diag)
+		out.goal = tile and {x = tile.x, y = tile.y, z = tile.z or pos.z} or nil
+	end
+	return out
 end
 
 -- ======================================================================== timed mechanics
