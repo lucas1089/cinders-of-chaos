@@ -221,9 +221,8 @@ ok, msg = C.allows(os.path.join(server('chaosClientPair = 73\n'), 'data'), C.PAI
 check(not ok and msg.startswith('WARNING: monsterpixellablooks skipped') and 'client-pair set 74' in msg, 'monsterpixellablooks, pair 73: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 74\n'), 'data'), C.PAIR_PIXELLAB, 'monsterpixellablooks')[0], 'monsterpixellablooks, pair 74: runs')
 
-# the effect footprints (O649) need pair 75, which is built and not on windows-assets: PAIR_ASSETS stays at 74
-check(C.PAIR_FOOTFX == 75 and C.PAIR_FOOTFX > C.PAIR_ASSETS, 'the effect footprints need pair 75, which is built, not published (O649): PAIR_ASSETS stays at 74')
-check(C.PAIR_BUILT == 75 and C.PAIR_BUILT_DAT_MD5 == '528b2eeefe1b89dc9d3d20b1cd38a635', 'the built pair 75 is recorded with its dat md5')
+# the effect footprints (O649) need pair 75, on windows-assets since 2026-11-18
+check(C.PAIR_FOOTFX == 75 and C.PAIR_ASSETS >= C.PAIR_FOOTFX, 'the effect footprints need pair 75, which windows-assets carries (O649)')
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
@@ -233,7 +232,7 @@ mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:
         head = f.read(4000)
-    check(C.PAIR_ASSETS_DAT_MD5 in head or C.PAIR_BUILT_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS or of the built, unpublished pair' % rel)
+    check(C.PAIR_ASSETS_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS' % rel)
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets')
 check(rc == 0 and out.strip() == str(C.PAIR_ASSETS), 'assets prints PAIR_ASSETS (%s)' % out.strip())
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets-md5')

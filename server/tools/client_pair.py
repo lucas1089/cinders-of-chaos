@@ -55,18 +55,13 @@ PAIR_PIXELLAB = 74  # the 24 PixelLab monsters 3531-3554 (O640, gen_pixellab_mon
                     # `monsterpixellablooks`: 24 hunt monsters wear them). pair 74 is on windows-assets since 2026-11-18 (O647)
 
 PAIR_FOOTFX = 75    # the 20 footprint effects 5334-5353 (O649, gen_footprint_fx.py): the effect footprint cosmetics (cosmetics_config.lua `pair = 75`,
-                    # data/lib/chaos_footprint_fx_ids.lua `on`) are offered only from this pair. Pair 75 is built (O649), PAIR_ASSETS stays 74 until it is pushed
+                    # data/lib/chaos_footprint_fx_ids.lua `on`) are offered only from this pair. pair 75 is on windows-assets since 2026-11-18 (O649)
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 74
-PAIR_ASSETS_DAT_MD5 = 'e1bed47bf1ac6296f6ab5ac0117aa407'
-# pair 75 is built (2026-11-18, O649; client/MANIFEST.md "Pair 75, footprints") and not yet on windows-assets: the generated client tables
-# (outfit_anchors.lua, info_lifts.lua, wing_centres.lua, head_centres.lua, foot_marks.lua, unity InfoLiftData.cs) were made from it. When it is
-# pushed, move these two values into PAIR_ASSETS / PAIR_ASSETS_DAT_MD5 and delete the lines.
-PAIR_BUILT = 75
-PAIR_BUILT_DAT_MD5 = '528b2eeefe1b89dc9d3d20b1cd38a635'
+PAIR_ASSETS = 75
+PAIR_ASSETS_DAT_MD5 = '528b2eeefe1b89dc9d3d20b1cd38a635'
 
 
 def parse(text):
