@@ -1567,6 +1567,9 @@ jobs:
       - name: Tester bots closed test mode (switch file, tester guilds, clean-up statements; O582)
         run: python3 -I server/tools/tester_closed_test.py
 
+      - name: Tester bots levelling journey on foot (mocked world: temple teleport, hall stairs, hunts, town portal, trips, deaths; O654)
+        run: python3 -I server/tools/tester_journey_test.py
+
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 

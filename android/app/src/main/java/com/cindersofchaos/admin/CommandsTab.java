@@ -1014,6 +1014,20 @@ final class CommandsTab {
                     () -> ctl("Iniciar testers (modo fechado)", "testers start " + n + " " + m + " --closed --restart 300", 180, null));
         });
         b.addView(startClosed, ui.gap(8));
+        MaterialButton startJourney = ui.secondary("Iniciar jornada a pé (nível 8)", 0);
+        startJourney.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min na jornada a pé?", "Precisa de testers novos "
+                    + "(Apagar os testers antes). Eles começam no templo de Cinderhold no nível 8 e sobem de nível como um "
+                    + "jogador: andam até o teleporte do templo, a escada da sala de teleportes e a caçada do nível, caçam, "
+                    + "mudam de caçada quando o nível passa, voltam pelo Town Portal, vendem, compram poções e abrem o depot. "
+                    + "O relatório mostra os minutos por nível contra o modelo.", "Iniciar", true,
+                    () -> ctl("Iniciar testers (jornada a pé)", "testers start " + n + " " + m + " --journey --level 8 --restart 300", 180, null));
+        });
+        b.addView(startJourney, ui.gap(8));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
         clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
                 + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "

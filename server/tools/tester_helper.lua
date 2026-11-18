@@ -57,6 +57,10 @@
 --   * "!tester found" (O653): what the bot's own drops can do (read only): the orbs, whetstones, sockets orbs, gems, runes, charms and cards in its
 --     backpack, the pieces it could wear with a score that knows sets, uniques and jewelry (H.chaseScore), what it wears. Nothing is given or moved;
 --     the crafting, the socketing and the wearing are the bot's own packets (tester_checks.py craft_found, gear_chase)
+--   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
+--     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
+--     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
+--     the bot's; `jump` / `hall` are the TEST ONLY teleports of the counted fallback
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -89,7 +93,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 19
+HELPER_VERSION = 20
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1698,6 +1702,147 @@ function commands.invasion(player, arg)
 	else
 		tell(player, "invasion", H.cutAnswer(probe))
 	end
+end
+
+-- ---------------------------------------------------------------- O654 the levelling journey on foot
+-- "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]": what a person sees on the way from the temple to the next hunt of the level
+-- (H.journeyPick, the hunts of the teleport room): the hunt to go to, the temple's great teleport (`gate`), the stairs of the hall's floors,
+-- the town portal beside the bot (`portal`), the depot locker next to the temple and the nearest monster. Nothing moves in `state`; the
+-- walk is `!tester path pos X Y Z`. `jump` (the hunt's arrival) and `hall` (the hub next to the gate) are the TEST ONLY teleports of the
+-- fallback the bot counts when the walk fails; a tester only, as every command of this file.
+T.journeyCache = T.journeyCache or {}
+
+-- the facts of a tile the journey looks for (H.journeyFind): a teleport's destination, a floor change, the action id of the town portal
+local function journeyTile(x, y, z, withAid)
+	if x < 1 or y < 1 or z < 0 or z > 15 then
+		return nil
+	end
+	local tile = Tile(Position(x, y, z))
+	if not tile then
+		return nil
+	end
+	local info
+	if ITEM_TYPE_TELEPORT then
+		local tp = tile:getItemByType(ITEM_TYPE_TELEPORT)
+		if tp and tp.getDestination then
+			local ok, d = pcall(tp.getDestination, tp)
+			if ok and d then
+				info = {dest = posOf(d)}
+			end
+		end
+	end
+	if tile:hasFlag(TILESTATE_FLOORCHANGE) then
+		info = info or {}
+		info.change = (TILESTATE_FLOORCHANGE_DOWN and tile:hasFlag(TILESTATE_FLOORCHANGE_DOWN)) and "down" or "up"
+	end
+	if withAid then
+		for _, item in ipairs(tile:getItems() or {}) do
+			if item:getActionId() == H.PORTAL_AID then
+				info = info or {}
+				info.aid = H.PORTAL_AID
+				break
+			end
+		end
+	end
+	return info
+end
+
+local function journeyKey(kind, p)
+	return kind .. ":" .. p.x .. "," .. p.y .. "," .. p.z
+end
+
+local function journeyProbe(player, opts)
+	local J = H.JOURNEY
+	local ppos = player:getPosition()
+	local pos, level, tpl = posOf(ppos), player:getLevel(), posOf(temple(player))
+	local zone = H.journeyZone(pos, tpl)
+	local ports = ChaosHuntTeleports and ChaosHuntTeleports.ports and ChaosHuntTeleports.ports() or {}
+	local seed = player.getGuid and player:getGuid() or player:getId()
+	local probe = {level = level, pos = pos, zone = zone, pick = H.journeyPick(ports, level, {keep = opts.keep, skip = opts.skip, seed = seed})}
+	probe.stay = probe.pick and probe.pick.stay or nil
+	probe.above = probe.pick and probe.pick.above or nil
+	local tile = Tile(ppos)
+	probe.pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false
+	local cache = T.journeyCache
+	if zone == "temple" then
+		local key = journeyKey("gate", tpl)
+		if cache[key] == nil then
+			local found = H.journeyFind(journeyTile, tpl, 14, H.journeyIsGate)
+			cache[key] = found and {x = found.x, y = found.y, z = found.z} or false
+		end
+		probe.gate = cache[key] or nil
+		key = journeyKey("locker", tpl)
+		if cache[key] == nil then
+			local l = findLocker(Position(tpl.x, tpl.y, tpl.z))
+			local it = l and ItemType(l.id)
+			cache[key] = l and {x = l.pos.x, y = l.pos.y, z = l.pos.z, cid = it and it:getClientId() or 0, sp = l.stackpos, spot = posOf(l.spot)} or false
+		end
+		probe.locker = cache[key] or nil
+	elseif zone == "hall" then
+		local key = "stairs:" .. pos.z
+		if cache[key] == nil then
+			local up = H.journeyFind(journeyTile, pos, 40, function(i) return H.journeyIsStairs(i, "up") end)
+			local down = H.journeyFind(journeyTile, pos, 40, function(i) return H.journeyIsStairs(i, "down") end)
+			cache[key] = {up = up and {x = up.x, y = up.y, z = up.z} or nil, down = down and {x = down.x, y = down.y, z = down.z} or nil}
+		end
+		probe.stairs = cache[key]
+	end
+	local near = H.journeyFind(function(x, y, z) return journeyTile(x, y, z, true) end, pos, 4, H.journeyIsPortal)
+	probe.portal = near and {x = near.x, y = near.y, z = near.z} or nil
+	if zone == "other" then
+		local list, around = {}, 0
+		for _, c in ipairs(Game.getSpectators(ppos, false, false, J.sight, J.sight, J.sight, J.sight) or {}) do
+			if c:isMonster() and not c:getMaster() then
+				list[#list + 1] = {pos = c:getPosition(), health = c:getHealth(), owned = false, id = c:getId(), c = c}
+			end
+		end
+		local best = H.nearest(ppos, list, J.sight)
+		if best then
+			local p = best.pos
+			probe.monster = {name = best.c:getName(), level = Chaos.monsterHuntingLevel(best.c, 0), x = p.x, y = p.y, z = p.z,
+				dist = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))}
+		end
+		for _, m in ipairs(list) do
+			if m.pos.z == pos.z and math.max(math.abs(m.pos.x - pos.x), math.abs(m.pos.y - pos.y)) <= J.crowd then
+				around = around + 1
+			end
+		end
+		probe.crowd = around
+		local hot = H.hotSpot(level, monstersNear(ppos, J.crowd))
+		probe.hot = hot and {n = tostring(hot[1]), l = hot[2]} or nil
+	end
+	return probe
+end
+
+function commands.journey(player, arg)
+	local opts, usage = H.parseJourney(arg)
+	if not opts then
+		tell(player, "journey", {err = usage})
+		return
+	end
+	local probe = journeyProbe(player, opts)
+	if opts.what == "jump" or opts.what == "hall" then
+		local target = opts.what == "hall" and H.HALL_DOOR or (probe.pick and not probe.pick.above and probe.pick.a)
+		if not target then
+			local why = (probe.pick and not probe.pick.above) and "the hunt has no known arrival (a base hunt: its teleport leads there by the map)"
+				or "no hunt the level may enter"
+			tell(player, "journey", H.journeyAnswer(probe, {err = why}))
+			return
+		end
+		local spot = freeNear(Position(target.x, target.y, target.z), nil, 3)
+		if not spot then
+			tell(player, "journey", H.journeyAnswer(probe, {err = "no free tile at the " .. (opts.what == "hall" and "hall" or "hunt")}))
+			return
+		end
+		player:teleportTo(spot)
+		if not landed(player, spot) then
+			tell(player, "journey", H.journeyAnswer(probe, {err = "the teleport was refused"}))
+			return
+		end
+		tell(player, "journey", H.journeyAnswer(journeyProbe(player, opts), {jumped = opts.what}))
+		return
+	end
+	tell(player, "journey", H.journeyAnswer(probe))
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

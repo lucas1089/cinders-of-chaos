@@ -2396,6 +2396,197 @@ do
 	ChaosCrafting, ChaosGems, ChaosSupports, ChaosItemSets = realC, realG, realS, realSets
 end
 
+-- ------------------------------------------------------------------ O654: the levelling journey on foot (`!tester journey`)
+do
+	check(H.COMMANDS.journey and H.parseCommand("journey state keep a #1") == "journey", "journey is a registered command")
+	-- the parser
+	local o = H.parseJourney(nil)
+	check(o and o.what == "state" and o.keep == nil and next(o.skip) == nil, "journey: no word is state")
+	o = H.parseJourney("JUMP")
+	eq(o.what, "jump", "journey: jump (any case)")
+	eq(H.parseJourney("hall").what, "hall", "journey: hall")
+	o = H.parseJourney("state keep camp_1 skip a-b,c.d")
+	check(o.keep == "camp_1" and o.skip["a-b"] and o.skip["c.d"], "journey: keep and skip")
+	local bad, usage = H.parseJourney("teleport")
+	check(bad == nil and usage == "usage: journey [state | jump | hall] [keep ID] [skip ID,ID]", "journey: an unknown word is the usage")
+	check(H.parseJourney("keep") == nil and H.parseJourney("skip") == nil, "journey: keep and skip need an id")
+	check(H.parseJourney("keep a;b") == nil and H.parseJourney("keep " .. ("x"):rep(49)) == nil, "journey: an id is plain and short")
+	local many = {}
+	for i = 1, 25 do many[i] = "h" .. i end
+	check(H.parseJourney("skip " .. table.concat(many, ",")) == nil, "journey: at most 24 skipped hunts")
+	-- the pick: the window of the progression model, widened until one hunt fits
+	local function port(id, lo, hi, z)
+		return {i = id, n = id, l = {lo, hi}, t = {x = 100 + lo, y = 50, z = z or 7}, f = {x = 100 + lo, y = 51, z = z or 7},
+			a = {x = 5000 + lo, y = 60, z = 7}, b = {x = 5000 + lo, y = 61, z = 7}}
+	end
+	local ports = {port("rats", 1, 20), port("cave", 15, 40), port("bog", 40, 90), port("keep", 60, 120), port("ruin", 90, 200),
+		port("deep", 300, 500, 6)}
+	eq(H.journeyMid(ports[1]), 10.5, "journeyMid: the middle of the band")
+	eq(H.journeyMid({l = {50, 0}}), 50, "journeyMid: no top is the bottom")
+	eq(H.journeyMid({}), nil, "journeyMid: no band")
+	local pk = H.journeyPick(ports, 100, {})
+	eq(pk.id, "keep", "pick: level 100 takes the hunt whose middle (90) is inside the window 80-110")
+	pk = H.journeyPick(ports, 8, {})
+	check(pk and pk.id == "rats" and pk.widen > 0, "pick: level 8 widens the window until the first hunt fits (and may enter)")
+	pk = H.journeyPick(ports, 70, {})
+	eq(pk.id, "bog", "pick: level 70: bog (middle 65) is the one inside the window 56-77")
+	-- the hunt it is at stays while it fits (never a hop between two equal hunts)
+	pk = H.journeyPick(ports, 70, {keep = "bog"})
+	check(pk.id == "bog" and pk.stay == true, "pick: keep: the hunt it is at stays while it fits")
+	pk = H.journeyPick(ports, 130, {keep = "bog"})
+	check(pk.id ~= "bog" and not pk.stay, "pick: keep: a hunt the level outgrew is left (middle 65 against level 130)")
+	eq(H.journeyPick(ports, 130, {keep = "nope"}).id, "ruin", "pick: an unknown keep is ignored")
+	-- skip: a hunt that hurt the bot is not picked again (and when every hunt is skipped the skip is dropped)
+	pk = H.journeyPick(ports, 70, {skip = {bog = true}})
+	check(pk.id ~= "bog", "pick: skip leaves the hunt that hurt it")
+	local allSkip = {}
+	for _, e in ipairs(ports) do allSkip[e.i] = true end
+	check(H.journeyPick(ports, 70, {skip = allSkip}) ~= nil, "pick: every hunt skipped: the skip is dropped, not the bot stranded")
+	-- a level under every band cannot go in; a level over every band goes to the highest it may enter
+	pk = H.journeyPick({port("high", 300, 400)}, 50, {})
+	check(pk.above == true and pk.id == "high", "pick: every hunt needs more than the level: above")
+	pk = H.journeyPick(ports, 5000, {})
+	check(pk and pk.id == "deep" and not pk.above, "pick: far above every band: the highest it may enter")
+	eq(H.journeyPick({}, 10, {}), nil, "pick: no hunts")
+	eq(H.journeyPick(nil, 10, {}), nil, "pick: no list")
+	-- the seed turns the choice among the best three so the bots do not share one hunt
+	local crowd = {port("a", 80, 100), port("b", 82, 100), port("c", 84, 100), port("d", 86, 100)}
+	local seen = {}
+	for seed = 0, 8 do seen[H.journeyPick(crowd, 95, {seed = seed}).id] = true end
+	local n = 0
+	for _ in pairs(seen) do n = n + 1 end
+	eq(n, 3, "pick: three hunts share the bots")
+	-- zones
+	eq(H.journeyZone({x = 31650, y = 32240, z = 7}, {x = 50, y = 50, z = 7}), "hall", "zone: the teleport room")
+	eq(H.journeyZone({x = 60, y = 55, z = 7}, {x = 50, y = 50, z = 7}), "temple", "zone: round the temple")
+	eq(H.journeyZone({x = 60, y = 55, z = 6}, {x = 50, y = 50, z = 7}), "other", "zone: another floor of the temple's tiles is not the temple")
+	eq(H.journeyZone({x = 5000, y = 60, z = 7}, {x = 50, y = 50, z = 7}), "other", "zone: a hunt")
+	check(H.journeyInHall({x = 31648, y = 32256, z = 6}) and not H.journeyInHall({x = 31648, y = 32256, z = 8}), "hall: floors 5 to 7")
+	-- finding things on a grid
+	local grid = {["50,45,7"] = {dest = {x = 31648, y = 32233, z = 7}}, ["53,50,7"] = {dest = {x = 1, y = 1, z = 7}},
+		["52,49,7"] = {change = "up"}, ["46,50,7"] = {change = "down"}, ["51,50,7"] = {aid = H.PORTAL_AID}}
+	local function at(x, y, z) return grid[x .. "," .. y .. "," .. z] end
+	local home = {x = 50, y = 50, z = 7}
+	local g = H.journeyFind(at, home, 14, H.journeyIsGate)
+	check(g and g.x == 50 and g.y == 45, "find: the gate is the teleport that leads to the hub, not the other one")
+	eq(H.journeyFind(at, home, 3, H.journeyIsGate), nil, "find: out of reach")
+	local up = H.journeyFind(at, home, 14, function(i) return H.journeyIsStairs(i, "up") end)
+	local dn = H.journeyFind(at, home, 14, function(i) return H.journeyIsStairs(i, "down") end)
+	check(up and up.x == 52 and dn and dn.x == 46, "find: stairs up and down apart")
+	local pt = H.journeyFind(at, home, 4, H.journeyIsPortal)
+	check(pt and pt.x == 51, "find: the town portal by its action id")
+	check(not H.journeyIsGate({dest = {x = 31648, y = 32233, z = 6}}) and H.journeyIsGate({dest = {x = 31650, y = 32235, z = 7}}), "gate: the hub's floor and within 6 tiles")
+	-- the answer
+	local ans = H.journeyAnswer({level = 30, zone = "temple", pz = true, pos = {x = 1, y = 2, z = 7, junk = 1}, gate = {x = 5, y = 6, z = 7},
+		locker = {x = 7, y = 8, z = 7, cid = 2589, sp = 1, spot = {x = 7, y = 9, z = 7}}, stairs = {up = {x = 1, y = 1, z = 7}},
+		pick = {id = "cave", n = ("N"):rep(80), lo = 15, hi = 40, t = {x = 1, y = 2, z = 7}, f = {x = 1, y = 3, z = 7}, a = {x = 9, y = 9, z = 7}, widen = 0}},
+		{jumped = "hunt"})
+	check(ans.zone == "temple" and ans.pz == true and ans.pos.junk == nil and ans.gate.x == 5 and ans.locker.cid == 2589 and ans.locker.spot.y == 9
+		and ans.stairs.up.x == 1 and ans.stairs.down == nil and ans.pick.id == "cave" and #ans.pick.n == 40 and ans.pick.z == 7 and ans.jumped == "hunt",
+		"answer: the places as x y z, the name cut, the extras merged")
+	-- the engine file against a fake map
+	local savedTile, savedPorts = Tile, ChaosHuntTeleports
+	local saved = {ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN, ChaosPoi}
+	ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN = 21, 8, 16
+	local fgrid = {}
+	local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
+	local function fakeTile(p)
+		local f = fgrid[key(p)] or {}
+		local t = {pos = p}
+		function t:getGround() return true end
+		function t:hasFlag(flag)
+			if flag == TILESTATE_FLOORCHANGE then return f.change ~= nil end
+			if flag == TILESTATE_FLOORCHANGE_DOWN then return f.change == "down" end
+			if flag == TILESTATE_PROTECTIONZONE then return f.pz == true end
+			if flag == TILESTATE_TELEPORT then return f.dest ~= nil end
+			return false
+		end
+		function t:getTopCreature() return nil end
+		function t:getPosition() return p end
+		function t:getItemByType(kind)
+			if kind == ITEM_TYPE_TELEPORT and f.dest then
+				return {getDestination = function() return f.dest end}
+			end
+		end
+		function t:getItems()
+			return f.aid and {{getActionId = function() return f.aid end}} or {}
+		end
+		function t:getItemById(id)
+			if f.locker == id then return {} end
+		end
+		function t:getThingIndex() return 2 end
+		return t
+	end
+	Tile = function(p) return p and p.x and fakeTile(p) or nil end
+	fgrid["50,45,7"] = {dest = {x = 31648, y = 32233, z = 7}}
+	fgrid["53,52,7"] = {locker = 2589}
+	fgrid["52,50,7"] = {pz = true}
+	ChaosHuntTeleports = {ports = function() return ports end}
+	local realMhl2, realSpectators = Chaos.monsterHuntingLevel, Game.getSpectators
+	Game.getSpectators = function() return {wolf, pet} end
+	Chaos.monsterHuntingLevel = function() return 5 end
+	local jt = creature(268435470, "Tester Jny", {store = {[ST] = 1}, pos = {x = 52, y = 50, z = 7}})
+	talks["!tester"].onSay(jt, "!tester", "journey #300")
+	local m = last(jt)
+	check(m:find('"zone":"temple"', 1, true) and m:find('"id":"keep"', 1, true) and m:find('"seq":300', 1, true) and m:find('"pz":true', 1, true),
+		"journey state at the temple: the zone, the hunt for level 100, the protection zone")
+	check(m:find('"gate":{"x":50,"y":45,"z":7}', 1, true), "journey state: the temple's great teleport")
+	check(m:find('"locker":', 1, true) and m:find('"cid":12589', 1, true), "journey state: the depot locker next to the temple")
+	check(#jt.log.teleports == 0, "journey state moves nobody")
+	talks["!tester"].onSay(jt, "!tester", "journey keep bog #301")
+	check(last(jt):find('"id":"keep"', 1, true) and not last(jt):find('"stay":true', 1, true), "journey keep: a hunt that no longer fits (bog, 65) is left")
+	talks["!tester"].onSay(jt, "!tester", "journey keep keep skip keep #302")
+	check(last(jt):find('"id":"bog"', 1, true) and not last(jt):find('"stay":true', 1, true), "journey skip: the skipped hunt is not kept, the window widens to the next (bog)")
+	talks["!tester"].onSay(jt, "!tester", "journey keep keep #303")
+	check(last(jt):find('"stay":true', 1, true) and last(jt):find('"id":"keep"', 1, true), "journey keep: stays at a hunt that fits")
+	-- the fallback teleports
+	talks["!tester"].onSay(jt, "!tester", "journey jump #304")
+	check(#jt.log.teleports == 1 and jt.pos.x >= 5000 and last(jt):find('"jumped":"jump"', 1, true), "journey jump: the hunt's arrival, counted in the answer")
+	jt.pos = {x = 52, y = 50, z = 7}
+	fgrid["31660,32250,7"] = {change = "up"}
+	talks["!tester"].onSay(jt, "!tester", "journey hall #305")
+	check(jt.pos.x >= 31645 and jt.pos.x <= 31651 and last(jt):find('"jumped":"hall"', 1, true) and last(jt):find('"zone":"hall"', 1, true),
+		"journey hall: next to the gate's arrival in the teleport room")
+	-- in the hall: the stairs of the floor
+	talks["!tester"].onSay(jt, "!tester", "journey #306")
+	check(last(jt):find('"stairs":{"up":{"x":31660', 1, true), "journey state in the hall: the stairs up")
+	-- a town portal beside the bot
+	jt.pos = {x = 5000, y = 60, z = 7}
+	fgrid["5001,60,7"] = {aid = H.PORTAL_AID}
+	talks["!tester"].onSay(jt, "!tester", "journey #307")
+	check(last(jt):find('"zone":"other"', 1, true) and last(jt):find('"portal":{"x":5001', 1, true), "journey state at a hunt: the town portal beside the bot")
+	wolf.pos = {x = 5003, y = 60, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey #310")
+	check(last(jt):find('"monster":{"dist":3,"level":5,"name":"wolf"', 1, true) and last(jt):find('"crowd":1', 1, true) and not last(jt):find('"hot"', 1, true),
+		"journey state at a hunt: the nearest monster, how many are round, nothing too high")
+	Chaos.monsterHuntingLevel = function() return 900 end
+	talks["!tester"].onSay(jt, "!tester", "journey #311")
+	check(last(jt):find('"hot":{"l":900,"n":"wolf"}', 1, true), "journey state at a hunt: a monster far above the level is `hot`")
+	Chaos.monsterHuntingLevel = realMhl2
+	wolf.pos = {x = 102, y = 100, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey fly #308")
+	check(last(jt):find("usage: journey", 1, true), "journey: an unknown word")
+	local noArrival = port("base", 85, 105)
+	noArrival.a = nil
+	ChaosHuntTeleports = {ports = function() return {noArrival} end}
+	jt.pos = {x = 52, y = 50, z = 7}
+	local before = #jt.log.teleports
+	talks["!tester"].onSay(jt, "!tester", "journey jump #312")
+	check(last(jt):find("has no known arrival", 1, true) and #jt.log.teleports == before, "journey jump: a base hunt has no arrival to put the bot at, the reason")
+	ChaosHuntTeleports = nil
+	jt.pos = {x = 52, y = 50, z = 7}
+	talks["!tester"].onSay(jt, "!tester", "journey jump #309")
+	check(last(jt):find("no hunt the level may enter", 1, true), "journey jump: no teleport room, the reason")
+	-- a player's words go on and get no answer
+	local civ6 = creature(995, "Ana Journey", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "journey jump #3") == true and #civ6.log.msgs == n6 and #civ6.log.teleports == 0,
+		"journey: a player's words go on and get no answer, nobody is moved")
+	Tile, ChaosHuntTeleports = savedTile, savedPorts
+	Chaos.monsterHuntingLevel, Game.getSpectators = realMhl2, realSpectators
+	ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN, ChaosPoi = saved[1], saved[2], saved[3], saved[4]
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

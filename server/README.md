@@ -9909,7 +9909,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O654 to v20, step 10).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10412,6 +10412,70 @@ Left with the reason (a later task, each needs a live look first):
 Needs a live run: the pass window's `claimed` string for a tester below the pass level, the state of the faction window through the chunked packets, the
 `near` flag of Osric and the Gambler (the walk ends within 3 tiles), the Rune Shards in the bench state (`salvage.shards`), the backpack index of a stack
 that a gem or an orb used up (the check looks again after the orbs and uses one gem).
+##### 11. The levelling journey on foot (O654, `testers.py --journey`, `tools/tester_journey.py`, `!tester journey`)
+
+Owner 2026-11-18 (translated): "can do all the points". The biggest gap of the audit: the Python bots are made at a fixed level and teleported to a hunt by
+`!tester hunt`, and the Unity journey bot (O542) stops at level 25 (no Unity work for now). A bot of this mode levels from its level onward the way a person
+does. A run of its own: `testers.py run --journey` (not with `--keystones`, `--checks` or `--closed`), `chaos-ctl.sh testers start N M --journey [--level L]` (the
+admin app: Android and desktop, tab Testers, button "Iniciar jornada a pé"); the characters are made by `testers.py setup --journey --levels L` (town 2, in the
+temple of Cinderhold: `TJ.start_position`), so the start needs a clean `testers cleanup --yes` first, as every setup does. Helper v19. Tests:
+`tools/tester_journey_test.py` (the loop on a mocked world, the bot of `testers.py` on the same world, the report), `tests/tester_helper_test.lua` (the pick, the
+zones, the scans and the command on a fake map), `deploy/chaos_ctl_test.py` (the flag).
+
+What a person does, and what the bot does (`Journey.play`, one look a second):
+1. **Reads where to go.** `!tester journey [state | jump | hall] [keep ID] [skip ID,ID]` (`H.journeyPick`, `commands.journey`): the hunt of the level among the
+   hunts of the teleport room (`ChaosHuntTeleports.ports()`: the planned hunts and the base hunts, each with its band, its teleport, the tile in front of it, its
+   arrival and its camp portal). The window is the one of `progression_config.lua` (a hunt whose middle level is within 0.8-1.1 x the level, widened by 0.05 a
+   side until one fits, the hunt must be one the level may enter), the nearest to 0.95 x the level first, turned by the character's id among the best three so a
+   hundred bots do not share a hunt. `keep ID` is the hunt the bot is at: it stays while no hunt fits at a narrower window than it does (so it hunts "until the band
+   says move on" and never hops between two equal hunts); `skip` lists hunts that hurt it (dropped when it would leave no hunt at all). The answer also gives the
+   zone (`temple` within 24 tiles of the temple, `hall` in the teleport room, `other`), the protection zone, the temple's great teleport (`gate`: a teleport whose
+   destination is the hub of the market, scanned once and kept), the stairs of the hall's floor (floor change tiles, up and down, once a floor), the town portal
+   beside the bot (action id 47810), the depot locker next to the temple (the tile to stand on, its client id and stack position) and in a hunt the nearest monster
+   (name, level, place, distance), how many are within 7 tiles and `hot` (a monster far above the level, `H.hotSpot`). Nothing moves in `state`.
+2. **Walks.** The way is `!tester path pos X Y Z` (the engine's own path search, as for the other bots) and the walk packets, `TX.walk_by_path`; the bot steps onto the
+   teleport, the stair or the portal itself (a diagonal is two steps, the other way round when the first crosses the hunt's teleport tile). Temple to the great
+   teleport, the hub of the market, the stairs between the hall's floors (up for a higher hunt, down for a lower), the tile in front of the hunt's teleport, the
+   teleport: the hunt teleport refuses a level under its band (the bot is put back, tries twice more, then leaves the hunt alone for 15 minutes).
+3. **Hunts.** At the hunt the helper's own loop targets a monster within 5 tiles and the bot's rotation, healing and potions fight; a monster in sight farther away
+   is walked to by the engine path (two asks a look), none in sight is a few steps along the way a person explores. Loot is taken every 20 s, the bag is kept every
+   4 minutes (`!tester bag`: wear a better piece, drop junk), and the bot leaves for a trip when the bag asks for a sale (`keep_plan`) or after 25 minutes.
+4. **Moves on.** When the helper's pick is no longer the hunt (`stay` false) for three looks and the bot has been there two minutes, a monster of a far higher
+   level stands in the hunt, or no monster was in sight for two minutes, it leaves: the **Town Portal** spell ("ash domh", every class from level 1), the portal
+   that opens beside it is walked into; no portal: the camp portal of the hunt; no camp portal: the helper's `town`, counted. Two deaths at one hunt within 20 minutes
+   leave it alone for 30 minutes.
+5. **Trips.** In the temple, with a trip due (a full bag, or 25 minutes since the last): the depot locker (walk, open the container, close it), the temple's great
+   teleport, the Loot Buyer (sell what its window lists), the Apothecary (buy potions): each by `!tester path npc NAME`; when the walk does not arrive the window's
+   Go to NPC button (`npcTravel` `travel`, the keys `lootbuyer` and `apothecary`), then the helper's `enter npc`, counted. The potions also come from the helper's
+   top-up in `!tester bag` (the supplies, as for every bot): the purchase is the bot's, the top-up the backstop.
+6. **Dies and goes on.** The dead character wakes in the temple (the helper's walk back to the hunt spot is off, `stay`); the Journey is kept across the new login
+   (`TesterBot.journey`), the gap is taken off the minutes of the level, the hunt it died at is forgotten, the route starts again at the temple. A flee at low health
+   is the bot's existing `!tester town` (a teleport to the temple, as the other bots flee): the journey sees the arrival it did not ask for and counts it as the fallback
+   `flee`.
+7. **Logs.** Minutes per level (a level the bot completed, not the one it began in; a jump of several levels splits the time; a level lost by a death and won again is not
+   counted twice; offline time is taken off) in `run.json` `journey.<bot>.per_level`, the hunts in order, the trips, the deaths, `stuck` (every walk that did not arrive, with
+   its reason and place), `legs` (walks and steps) and the fallbacks. The report has a section "Levelling journey on foot (O654)": per bot the levels, the minutes per block
+   of 5 levels against `luajit tools/progression_model.lua --curve-json N` (`journey_report.compare`, x3 each way: the model counts no walking, no loot and no trips) and
+   **"helper teleports in place of walking: N"** with the kinds (`hall`, `jump`, `town`, `npc`, `flee`). The activity log has a `JOURNEY` line for every step of note.
+   `testers status` and the other sections are unchanged.
+
+The helper teleports left, all counted with their reason: `journey hall` (no teleport to the hall near the temple, or the walk to it failed twice), `journey jump` (no
+stairs on the floor, no path to the hunt's teleport, the walk failed), `town` (no town portal beside the bot, no camp portal), `enter npc` (the NPC trip), the flee.
+`journey jump` and `journey hall` are TEST ONLY like every command of the file: a tester only, never a player.
+
+Left with the reason:
+- **Other places a person levels**: the first levels in the tutorial or on the start island, the Hunt Warnings, the waystone atlas hunts, quests that give levels, the
+  rift as a way up. The journey uses the hunts of the teleport room only (the ones `progression_model.lua` paces); nothing else can be proven without the map.
+- **Spells learned by level, gear bought by level**: the rotation is the one of the bot's class at its level at login (`class_spells`); a spell learned on the journey
+  is not cast until the next start. Gear: the keep step wears a better piece the bag holds; buying gear at the shops is not played.
+- **Floors the hall does not have**: the floors the stairs scan does not find (a hunt on a floor with no stairs tile within 40 tiles of the bot) end in the counted `jump`.
+- **Journeys longer than a run**: a run is 24 hours at most (`--minutes`); a journey is hundreds of hours at the model's pace; the characters
+  stay where they are, the next `testers start N M --journey` goes on from there (the setup is skipped when the characters exist).
+
+Needs a live run: the tile scans against the real map (the gate teleport's destination, the stairs' floor change flags and which of them lead where a person walks), the path
+search across the hall (the engine's bounded search, the alcoves in front of the teleports), the hunt teleports' front tile being where a person stands, the Town Portal's
+portal tile being reachable, the pick against the band table the model uses, minutes per level against the model (the first live numbers), the helper's cost per look
+(a scan of the hall's floor once, the ports table sorted every look).
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

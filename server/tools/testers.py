@@ -40,6 +40,11 @@ totals of the tree window, the keystone's own row of the combat log) or says it 
 --checks: each bot then runs the system checks of its class once (tester_checks.py, O110): pets, the Necromancer's minions,
 the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play and its shared experience, a rift and its layout, waystone runs by tier and modifiers, the content rewards, the waystone
 atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
+--journey (O654, tester_journey.py, helper v20; setup --journey --levels 8 makes the characters in the temple of Cinderhold): the bots level
+from their level onward on foot, like a person: they read the next hunt of their level (`!tester journey`), walk to the temple's teleport, the
+hall's stairs and the hunt's teleport by the engine path, hunt, move on when the level has outgrown the hunt, go back to town by the Town Portal,
+sell, buy potions and open the depot on a trip, die and go on from the temple. Minutes per level are in the report against progression_model.lua
+--curve-json; every helper teleport in place of walking is counted with its reason. A run of its own: not with --keystones, --checks or --closed.
 --closed (O582, tester_closed.py; the switch data/chaos_testers_closed must be on): closed test mode. Two tester guilds are made
 before the bots log in; the bots then run the closed checks (arena, battleground, the Marches, guild war, market, the bazaar
 lock, the guards the server runs) among themselves, never with a player, and play the raid like a party of people (walk, fight, loot,
@@ -70,6 +75,7 @@ import tester_core as TC  # noqa: E402
 import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario, O249)
 import tester_checks as TX  # noqa: E402  (the system checks, O110)
 import tester_closed as TCL  # noqa: E402  (closed test mode, O582)
+import tester_journey as TJ  # noqa: E402  (the levelling journey on foot, O654)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -362,6 +368,8 @@ def setup(a):
     elif spawns:
         print('no data/scripts/chaos/bounty_pool.lua: the testers are not kept off spawns above their level')
     positions = place_testers([lv for _, lv in plan], hunts, temples, index, centres)
+    if a.journey:   # O654: the characters begin where a new one does, in the temple of Cinderhold; the journey takes them to the hunts
+        positions = [TJ.start_position(temples) for _ in plan]
     # names: the first free "Tester Xxx" (a name a player already has is skipped, never touched)
     taken = {r[0] for r in rows(sql(["SELECT `name` FROM `players` WHERE `name` LIKE 'Tester %';"]))}
     bots, i = [], 0
@@ -929,6 +937,79 @@ def load_check_spells(server_dir, vocs):
     return out
 
 
+class JourneyIO(CheckIO):
+    """what tester_journey.Journey needs of a bot in game (O654): the clock, the depot locker, the trade window of a shop NPC and the bag
+    keeping; the walk steps, the speech, the helper and the loot are CheckIO's"""
+
+    def alive(self):
+        return bool(self.bot.alive and not self.bot.died and not self.clock['stop'] and time.monotonic() < self.clock['until'])
+
+    def now(self):
+        return time.monotonic()
+
+    async def open_locker(self, lk):
+        """the depot locker next to the temple, opened as `do_depot` does (use the item on its tile), closed after a moment"""
+        if not self.alive() or not all(isinstance(lk.get(k), int) for k in ('x', 'y', 'z', 'cid')):
+            return False
+        bot = self.bot
+        bot.conn.send(b'\x82' + struct.pack('<HHB', lk['x'], lk['y'], lk['z']) + struct.pack('<HBB', lk['cid'], int(lk.get('sp') or 1), 0))
+        await bot.conn.w.drain()
+        await self.sleep(3)
+        bot.conn.send(b'\x87\x00')
+        bot.results.keep('journey_depot')
+        return True
+
+    async def shop_here(self, name):
+        """the trade window of the NPC the bot stands at: hi, trade, sell what the window lists as bought (the Loot Buyer), buy potions
+        (the Apothecary), bye. -> {'sold': kinds sold, 'bought': potions bought, 'window': the window opened}"""
+        bot = self.bot
+        if not self.alive():
+            return None
+        bot.shop_npc, bot.shop, bot.npc_spoke, bot.nothing_to_sell = name, None, False, False
+        bot.say('hi')
+        await self.sleep(1.5)
+        bot.say('trade', NPC_CHANNEL)
+        await self.sleep(1.5)
+        sold = bought = 0
+        window = bot.shop is not None
+        if bot.shop:
+            for item in [i for i in bot.shop if i['sell'] > 0][:TC.SELL_ITEMS]:
+                bot.conn.send(TC.sale_packet(item['id'], item['sub'], TC.SELL_AMOUNT))
+                await bot.conn.w.drain()
+                sold += 1
+                await self.sleep(0.7)
+            potions = sorted((i for i in bot.shop if i['buy'] > 0 and 'potion' in i['name'].lower()), key=lambda i: i['buy'])[:2]
+            for item in potions:
+                bot.conn.send(b'\x7a' + struct.pack('<HBBBB', item['id'], item['sub'], TJ.POTION_BUY, 0, 0))
+                await bot.conn.w.drain()
+                bought += TJ.POTION_BUY
+                await self.sleep(0.7)
+            bot.conn.send(b'\x7c')
+        elif not bot.nothing_to_sell:
+            bot.results.count('failures', 'journey: no trade window from %s (%s)' % (name, 'it answered' if bot.npc_spoke else 'no answer to hi'), bot)
+        bot.say('bye', NPC_CHANNEL)
+        bot.shop_npc = None
+        bot.results.keep('journey_shops')
+        return {'sold': sold, 'bought': bought, 'window': window}
+
+    async def keep(self):
+        """the bag the way a person keeps it on the road (`!tester bag`: the helper tops the potions up and reports): wear a better piece, drop
+        junk; the sale is the trip's. -> {'sell': the bag is full enough to make a trip worth it}"""
+        bot = self.bot
+        r = await bot.keep_report()
+        if r is None:
+            return None
+        plan = TC.keep_plan(r, bot.equip_refused, bot.room_fails)
+        bot.room_fails = 0
+        await bot.open_bag(r)
+        if plan['equip']:
+            await bot.equip(plan['equip'], r)
+            r = await bot.keep_report() or r
+        for row in TC.drop_rows(r):
+            await bot.drop(row, r)
+        return {'sell': bool(plan['sell'] or TC.bag_fill(r) >= TC.BAG_JAM)}
+
+
 class BusyNames:
     """the bot names in a party check now (partner() picks among the others; leave frees both). A name frees itself
     PARTY_HOLD_S after it was taken: a check cut off by the bot's death never sends the leave, and the two names stayed
@@ -1423,6 +1504,8 @@ class TesterBot(LT.Bot):
                     name = 'keytest'  # before anything else, until it is through (it goes on after a death and a new login)
                 elif (getattr(self.args, 'checks', False) or getattr(self.args, 'closed', False)) and not self.checks_done:
                     name = 'checks'  # then the system checks (tester_checks.py)
+                elif getattr(self.args, 'journey', False):
+                    name = 'journey'  # O654: the levelling journey on foot, the only thing this run does
                 self.last = name
                 self.results.behaviour(name, 'tried')
                 try:
@@ -1810,6 +1893,37 @@ class TesterBot(LT.Bot):
             self.checks_flushed = self.checks_done = True
             self.results.d.setdefault('checks', []).extend(r.as_dict() for r in run.results)
 
+    async def do_journey(self, clock):
+        """the levelling journey of tester_journey.py (O654): the bot walks from the temple to the hunts of its level, hunts, moves on, goes
+        back to town for the shops and the depot, dies and goes on. It goes on after a death and a new login (the Journey is kept); False
+        only when the helper never answers `!tester journey` (an older helper file)"""
+        first = getattr(self, 'journey', None) is None
+        self.stay = True   # no helper walk back to a hunt spot: the bot walks, whatever the flee and the death do
+        self.back_at = None
+        if first:
+            self.journey = TJ.Journey(self.name, self.cls, self.level, seed=self.index)
+            self.journey.sink = lambda text: self.results.log(self, 'JOURNEY', text)
+            await asyncio.sleep(10)  # the helper's supplies, once
+        else:
+            await asyncio.sleep(3)
+        j = self.journey
+        io = JourneyIO(self, clock)
+        fresh = [t for t in self.deaths_at if t > j.died_seen]
+        if fresh:
+            j.died_seen = max(fresh)
+            j.deaths_seen(len(fresh), io.now())
+        journeys = self.results.d.setdefault('journey', {})
+
+        def emit(jj):
+            journeys[self.name] = jj.as_dict(io.now())
+        try:
+            why = await j.play(io, emit=emit)
+        finally:
+            emit(j)
+        if why == 'no helper':
+            return self.failed('journey', {'err': 'no answer to !tester journey (the helper file is older than v20)'})
+        return True
+
     async def do_loot(self, clock):
         lf = self.args.ops.get('lootfilter')
         if self.kills and lf:
@@ -2071,6 +2185,12 @@ def report_text(a):
         res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed, res.get('checks'))
     prev, prev_title = previous_report(a.state, r.get('activity'))
     text = TC.build_report(res, parsed, prev, prev_title)
+    if res.get('journey'):   # O654: minutes per level against tools/progression_model.lua --curve-json
+        try:
+            top = max(int(j.get('level') or 1) for j in res['journey'].values()) + 1
+            text += '\n'.join(TJ.report_lines(res['journey'], TJ.curve_for(top))) + '\n'
+        except (ValueError, TypeError, OSError, AttributeError) as e:
+            text += '(journey section not written: %s)\n' % e
     if not log:
         text += '(no server log given: --log)\n'
     if r.get('activity'):
@@ -2113,7 +2233,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -2134,6 +2254,11 @@ def parse(argv):
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
     a.closed = flags['--closed']
+    a.journey = flags['--journey']
+    if a.journey and (a.keystones or a.checks or a.closed):
+        sys.exit('--journey is a run of its own: not with --keystones, --checks or --closed (server/README.md "The levelling journey on foot (O654)")')
+    if a.journey and a.cmd == 'setup':
+        a.town = TJ.TOWN   # the teleport room and its hunts are Cinderhold's
     if a.hash_iterations < 1:
         sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:
