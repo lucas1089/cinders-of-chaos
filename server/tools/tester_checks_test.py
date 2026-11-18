@@ -6488,5 +6488,664 @@ class PvpFights(unittest.TestCase):
         self.assertEqual(run(TX.check_closed_battleground_match(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
 
 
+
+# ------------------------------------------------------------------------------------------------ O651: pocket bosses
+class PocketWorld(RiftWorld):
+    """a pocket boss on the rift lane (y = 5): the temple at x 92, the pocket's boss at x 50. `pocket state | path | close`, the Boss Spawns window's `open` and
+    `pocketEnter`; the boss comes after two looks, dies of the bot's hits, the first kill raises the points and entering spends a charge"""
+
+    def __init__(self, enter_error=None, no_point=False, no_charge=False, never_kill=False, mixed=False, free=16, left=3, enabled=True, err=None,
+                 has_point=True, level=900, **kw):
+        super().__init__(level=level, **kw)
+        self.enter_error, self.no_point, self.no_charge, self.mixed, self.free, self.left = enter_error, no_point, no_charge, mixed, free, left
+        self.enabled, self.err_p, self.has_point, self.never_kill_p = enabled, err, has_point, never_kill
+        self.inside_p, self.looks, self.boss, self.state, self.points, self.closed_p, self.entered = False, 0, 'waiting', 'running', 2, 0, []
+        self.bhp = 100
+
+    def row(self):
+        r = {'key': 'world_1', 'name': 'Kaelgor', 'category': 'world', 'level': 300, 'left': self.left}
+        if self.has_point:
+            r['point'] = {'id': 1, 'got': self.points >= 3}
+        return r
+
+    def pguide(self):
+        if self.state != 'running':
+            return {'mode': 'wait', 'why': 'the pocket is over'}
+        if self.boss != 'alive':
+            return {'mode': 'wait', 'why': 'the boss comes in a moment'}
+        return {'mode': 'fight' if abs(self.pos[0] - 50) <= 5 else 'walk', 'goal': {'x': 50, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'boss', 'why': 'test'}
+
+    def pfacts(self):
+        out = {'inside': self.inside_p, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'pz': self.pz(), 'enabled': self.enabled,
+               'free': self.free, 'reserve': 4, 'points': {'got': self.points, 'total': 10}}
+        if self.inside_p:
+            out['run'] = {'key': 'world_1', 'name': 'Kaelgor', 'state': self.state, 'boss': self.boss, 'left': 600, 'players': 1 + (1 if self.mixed else 0), 'testers': 1,
+                          'bossHp': self.bhp if self.boss == 'alive' else None, 'inArena': True}
+            out['guide'] = self.pguide()
+        else:
+            out['bosses'] = [self.row()] if self.left > 0 else []
+        return out
+
+    def ptick(self):
+        if not self.inside_p:
+            return
+        self.looks += 1
+        if self.boss == 'waiting' and self.looks >= 2:
+            self.boss = 'alive'
+        g = self.pguide()
+        if g['mode'] == 'fight' and not self.never_kill_p:
+            self.bhp = max(0, self.bhp - 50)
+            if self.bhp == 0:
+                self.boss, self.state = 'dead', 'success'
+                if not self.no_point:
+                    self.points += 1
+
+    def answer(self, command):
+        if command == 'pocket state':
+            if self.err_p:
+                return {'err': self.err_p}
+            self.ptick()
+            return self.pfacts()
+        if command == 'pocket path':
+            g = self.pguide()
+            if not self.inside_p or g['mode'] != 'walk':
+                return dict(self.pfacts(), err='no goal' if self.inside_p else 'not inside a pocket')
+            return dict(self.pfacts(), path=self.path_to(50, 5), dist=abs(self.pos[0] - 50))
+        if command == 'pocket close':
+            was = self.inside_p
+            self.inside_p = False
+            self.closed_p += 1
+            return dict(self.pfacts(), closed=was)
+        return super().answer(command)
+
+    def request(self, opname, action, data):
+        if opname != 'bossSpawns':
+            return None
+        if action == 'open':
+            return {'action': 'list', 'data': {}}
+        if action == 'pocketEnter':
+            self.entered.append(data.get('k'))
+            if self.enter_error:
+                return {'action': 'pocketError', 'data': {'text': self.enter_error}}
+            if not self.pz():
+                return {'action': 'pocketError', 'data': {'text': 'You can only open a pocket in a protection zone.'}}
+            self.inside_p = True
+            self.pos = (50 - 12, 5)
+            if not self.no_charge:
+                self.left -= 1
+            return {'action': 'pocket', 'data': {}}
+        return None
+
+
+class PocketIO(RiftIO):
+    def __init__(self, world, **kw):
+        super().__init__(world, **kw)
+        self.asked = []
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        return self.w.request(opname, action, data)
+
+
+class PocketWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.POCKET_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_ENTER_WAIT)
+
+    def tearDown(self):
+        TX.POCKET_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_ENTER_WAIT = self.keep
+
+    def play(self, world, level=900):
+        io = PocketIO(world)
+        return run(TX.check_pocket_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_the_pure_parts(self):
+        a = {'level': 900, 'enabled': True, 'free': 16, 'reserve': 4, 'bosses': [{'key': 'world_1', 'name': 'K', 'left': 3, 'point': {'id': 1, 'got': False}},
+                                                                                 {'key': 'raid_a', 'name': 'R', 'left': 1}]}
+        self.assertIsNone(TX.pocket_refusal(a))
+        self.assertEqual(TX.pocket_pick(a)['key'], 'world_1', 'the first row: the helper ordered them')
+        self.assertIsNone(TX.pocket_pick({'bosses': []}))
+        for bad, word in ((None, 'old helper'), ({'err': 'no pocket boss system'}, 'no pocket boss'), (dict(a, enabled=False), 'closed'),
+                          (dict(a, inside=True), 'inside'), (dict(a, free=4), 'kept for the players'), (dict(a, bosses=[]), 'no pocket with a charge')):
+            r = TX.pocket_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        self.assertIsNone(TX.pocket_refusal(dict(a, free=5)), 'free 5 less one is the reserve: allowed')
+        trace = {'faults': []}
+        self.assertEqual(TX.pocket_problems({'run': {'players': 1, 'testers': 1, 'boss': 'alive', 'bossHp': 60}}, trace), [])
+        self.assertEqual((trace['boss_seen'], trace['hp']), (True, 60))
+        self.assertTrue(TX.pocket_problems({'run': {'players': 2, 'testers': 1}}, trace))
+        TX.pocket_problems({'run': {'state': 'success', 'boss': 'dead'}}, trace)
+        self.assertEqual((trace['won'], trace['hp']), (True, 0))
+        self.assertEqual(TX.pocket_error_text({'action': 'pocketError', 'data': {'text': 'No.'}}), 'No.')
+        self.assertIsNone(TX.pocket_error_text({'action': 'pocket', 'data': {}}))
+        self.assertIsNone(TX.pocket_error_text(None))
+        base = {'secs': 90, 'steps': 12, 'came': 'foot', 'boss': 'Kaelgor', 'level': 900}
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        v = TX.pocket_walk_verdict(dict(base, won=True, point={'id': 1, 'got': False}, point_gain=1))
+        self.assertEqual(v[0], TX.PASS)
+        self.assertIn('boss point came', v[1])
+        self.assertIn('held already', TX.pocket_walk_verdict(dict(base, won=True, point={'id': 1, 'got': True}))[1])
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, boss_seen=True, hp=40))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, boss_seen=True, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.pocket_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('pocket_walk', TX.KEYS)
+        self.assertNotIn('pocket_walk', TX.CLOSED_KEYS)
+        self.assertLess(TX.KEYS.index('pocket_walk'), TX.KEYS.index('rift_walk'))
+
+    def test_a_pocket_played_is_a_pass_with_the_point(self):
+        r, io = self.play(PocketWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Kaelgor fell', r.detail)
+        self.assertIn('boss point came (+1)', r.detail)
+        self.assertEqual(r.fallbacks, [])
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        ops = [(o, a) for o, a, _ in io.asked]
+        self.assertEqual(ops, [('bossSpawns', 'open'), ('bossSpawns', 'pocketEnter')], 'the window opened, then the pocket asked for')
+        self.assertEqual(io.w.entered, ['world_1'])
+        self.assertEqual(io.w.closed_p >= 1, True)
+        self.assertFalse(io.w.inside_p)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertGreater(io.looted, 0, 'the corpse of the boss is looted')
+        cmds = io.cmds
+        self.assertLess(cmds.index('path temple'), cmds.index('pocket close'))
+
+    def test_a_boss_with_no_point_is_a_pass_without_the_check(self):
+        r, _ = self.play(PocketWorld(has_point=False))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('boss point', r.detail)
+
+    def test_skips(self):
+        for world, word in ((PocketWorld(err='no pocket boss system'), 'no pocket boss'), (PocketWorld(enabled=False), 'closed'), (PocketWorld(free=4), 'kept for the players'),
+                            (PocketWorld(left=0), 'no pocket with a charge'),
+                            (PocketWorld(enter_error='The testers wait: the halls are kept for the players.'), 'testers wait')):
+            r, io = self.play(world)
+            self.assertEqual(r.status, TX.SKIP, r.detail)
+            self.assertIn(word, r.detail)
+            self.assertFalse(io.w.inside_p)
+        TX.SOLO_ENTER_WAIT = 3.0
+        r, _ = self.play(PocketWorld(enter_error='You need level 300.'))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not open', r.detail)
+
+    def test_bugs(self):
+        r, io = self.play(PocketWorld(no_point=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('gave no boss passive point', r.detail)
+        r, _ = self.play(PocketWorld(no_charge=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a charge is spent when it opens', r.detail)
+        r, _ = self.play(PocketWorld(mixed=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('a player is in the pocket of the testers', r.detail)
+        r, _ = self.play(PocketWorld(enter_error='Testers and players are never mixed.'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('refused a lone tester', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(PocketWorld(never_kill=True))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('took none of its health', r.detail)
+        self.assertFalse(io.w.inside_p, 'the pocket is left')
+
+    def test_the_budget_ends_the_fight(self):
+        TX.POCKET_BUDGET = 6.0
+        r, io = self.play(PocketWorld(never_kill=True))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertFalse(io.w.inside_p)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+
+# ------------------------------------------------------------------------------------------------ O651: the rift stairs
+class StairsWorld(RiftWorld):
+    """a rift of two floors on one lane: the hole at x 40 on floor 7 drops to the ladder at x 40 on floor 8, the ladder is used to climb. `mons` is
+    [(x, floor)], the guardian stands at x 50 on `boss_z`; the guardian comes when the pack is dead"""
+    HOLE = 40
+
+    def __init__(self, mons=((10, 7), (20, 7), (70, 8)), boss_z=8, stuck_hole=False, **kw):
+        super().__init__(**kw)
+        self.z, self.mons, self.boss_z, self.stuck_hole = 7, [list(m) for m in mons], boss_z, stuck_hole
+        self.dead, self.uses, self.falls = set(), 0, 0
+
+    def alive_i(self):
+        return [i for i in range(len(self.mons)) if i not in self.dead]
+
+    def boss_up(self):
+        return not self.alive_i() and self.boss_hp > 0
+
+    def stairs(self, tz):
+        goal = {'x': self.HOLE, 'y': 5, 'z': self.z}
+        if tz > self.z:
+            return {'mode': 'walk', 'goal': goal, 'reach': [0, 1], 'area': 'stairs', 'via': 'hole', 'why': 'to the hole'}
+        if abs(self.pos[0] - self.HOLE) <= 1:
+            return {'mode': 'use', 'goal': goal, 'area': 'stairs', 'via': 'ladder', 'why': 'up the ladder',
+                    'use': {'x': self.HOLE, 'y': 5, 'z': self.z, 'clientId': 1386, 'stack': 1}}
+        return {'mode': 'walk', 'goal': goal, 'reach': [0, 1], 'area': 'stairs', 'via': 'ladder', 'why': 'to the ladder'}
+
+    def guide(self):
+        if not self.inside:
+            return None
+        here = [i for i in self.alive_i() if self.mons[i][1] == self.z]
+        if self.boss_up():
+            if self.boss_z != self.z:
+                return self.stairs(self.boss_z)
+            return {'mode': 'fight' if abs(self.pos[0] - 50) <= 4 else 'walk', 'goal': {'x': 50, 'y': 5, 'z': self.z}, 'reach': [1, 4], 'area': 'boss', 'why': 't'}
+        if here:
+            i = min(here, key=lambda j: abs(self.mons[j][0] - self.pos[0]))
+            x = self.mons[i][0]
+            return {'mode': 'fight' if abs(self.pos[0] - x) <= 4 else 'walk', 'goal': {'x': x, 'y': 5, 'z': self.z}, 'reach': [1, 4], 'area': 'pack', 'why': 't', 'idx': i}
+        left = self.alive_i()
+        if left:
+            return self.stairs(self.mons[left[0]][1])
+        return {'mode': 'wait', 'why': 'nothing to do'}
+
+    def facts(self):
+        out = {'inside': self.inside, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': self.z}, 'pz': self.pz(), 'held': self.key,
+               'tier': self.tier}
+        if self.inside:
+            out['run'] = {'id': 1, 'tier': self.tier, 'theme': 'ash', 'kind': 'rooms', 'state': 'running', 'boss': 'alive' if self.boss_up() else 'waiting',
+                          'killed': len(self.dead), 'total': len(self.mons), 'bossAt': len(self.mons), 'floors': 2, 'links': 1, 'monsters': len(self.alive_i()),
+                          'bossHp': self.boss_hp if self.boss_up() else None}
+            g = self.guide()
+            out['guide'] = {k: v for k, v in g.items() if k != 'idx'}
+        return out
+
+    def tick(self):
+        if not self.inside or self.never_kill:
+            return
+        g = self.guide()
+        if not g or g['mode'] != 'fight':
+            return
+        if g['area'] == 'boss':
+            self.boss_hp = max(0, self.boss_hp - 100 // self.kill_after)
+        else:
+            self.dead.add(g['idx'])
+
+    def step(self, dx, dy):
+        super().step(dx, dy)
+        if self.inside and self.z == 7 and self.pos[0] == self.HOLE and not self.stuck_hole:
+            self.z = 8   # the hole: down to the ladder under it
+            self.falls += 1
+
+    def use_at(self, pos, client_id, stack):
+        self.uses += 1
+        if self.z == 8 and pos[0] == self.HOLE and abs(self.pos[0] - self.HOLE) <= 1 and client_id == 1386:
+            self.z = 7
+            self.pos = (self.HOLE, 5)
+
+    def answer(self, command):
+        if command == 'rift path':
+            g = self.guide()
+            if not self.inside or not g or g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal' if self.inside else 'not inside a rift')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]), dist=abs(self.pos[0] - g['goal']['x']))
+        return super().answer(command)
+
+
+class StairsIO(RiftIO):
+    async def use_at(self, pos, client_id, stack=1):
+        self.w.use_at(pos, client_id, stack)
+        return True
+
+
+class RiftStairs(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.RIFT_BUDGET, TX.RIFT_BUDGET_TWO, TX.RIFT_STAIR_LOOKS)
+
+    def tearDown(self):
+        TX.RIFT_BUDGET, TX.RIFT_BUDGET_TWO, TX.RIFT_STAIR_LOOKS = self.keep
+
+    def play(self, world, level=900):
+        io = StairsIO(world)
+        return run(TX.check_rift_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_down_the_hole_to_the_guardian(self):
+        r, io = self.play(StairsWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.falls, 1, 'the bot stepped onto the hole once')
+        self.assertEqual(io.w.uses, 0, 'no ladder was needed')
+        self.assertEqual(io.w.z, 8)
+        self.assertIn('2 floors, 1 floor change(s) (1 down, 0 up, 0 ladder use(s))', r.detail)
+        self.assertIn('the guardian at', r.detail)
+        self.assertEqual(io.w.closed, 1)
+
+    def test_up_the_ladder_again(self):
+        r, io = self.play(StairsWorld(mons=((10, 8), (20, 8), (30, 8)), boss_z=7))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual((io.w.falls, io.w.z), (1, 7))
+        self.assertGreaterEqual(io.w.uses, 1, 'the ladder was used')
+        self.assertIn('1 down, 1 up', r.detail)
+        self.assertIn('1 ladder use(s)', r.detail)
+
+    def test_a_hole_that_does_not_take_the_bot_is_a_bug(self):
+        r, _ = self.play(StairsWorld(stuck_hole=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('stood next to the hole', r.detail)
+        self.assertIn('did not change', r.detail)
+
+    def test_killing_on_the_first_floor_only_is_no_walk_of_the_stairs(self):
+        base = {'tier': 3, 'theme': 'ash', 'came': 'foot', 'steps': 20, 'secs': 60, 'kills': 2, 'floors': 2, 'links': 1}
+        self.assertEqual(TX.rift_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('stairs were not walked', TX.rift_walk_verdict(base)[1])
+        self.assertEqual(TX.rift_walk_verdict(dict(base, stairs=1, down=1))[0], TX.PASS)
+        self.assertEqual(TX.rift_walk_verdict(dict(base, floors=1, links=0))[0], TX.PASS, 'a rift of one floor needs no stairs')
+        self.assertEqual(TX.rift_walk_verdict(dict(base, kills=0, floor=True))[0], TX.SKIP)
+
+
+# ------------------------------------------------------------------------------------------------ O651: dungeon difficulties and the Weekly Challenge
+class DifficultyWorld(DungeonWorld):
+    """the dungeon lane of DungeonWorld with the Weekly Challenge (dungeon 7, level 800, one fixed difficulty) in the list, the unlock of the helper and
+    the run's difficulty (the queue's request, the fixed one for the weekly dungeon)"""
+
+    def __init__(self, unlock_ok=True, weekly=True, current=True, listed=(0, 0), run_diff=None, scaled=True, level=900, **kw):
+        super().__init__(level=level, dungeons=(4,), **kw)
+        self.unlock_ok, self.weekly_on, self.current, self.listed, self.run_diff, self.scaled_on = unlock_ok, weekly, current, list(listed), run_diff, scaled
+        self.asked, self.unlocked, self.weekly_calls = {}, [], 0
+
+    def listing(self):
+        rows = [dict(r) for r in super().listing()]
+        if self.weekly_on:
+            rows.append({'id': 7, 'title': 'Weekly Challenge', 'level': 800, 'size': 1, 'max': 1, 'fixed': 1, 'weekly': True})
+        return rows
+
+    def facts(self, name):
+        out = super().facts(name)
+        if 'run' in out:
+            diff = 1 if self.run['id'] == 7 else self.asked.get(name, 1)
+            out['run']['difficulty'] = self.run_diff if self.run_diff is not None else diff
+            out['run']['scaled'] = out['run']['left'] if self.scaled_on else 0
+        return out
+
+    def answer(self, name, command):
+        if command.startswith('dungeon unlock '):
+            _, _, did, diff = command.split()
+            if not self.unlock_ok:
+                return {'err': 'not a tester'}
+            self.unlocked.append((int(did), int(diff)))
+            return {'unlocked': int(diff)}
+        if command == 'dungeon weekly':
+            n = self.weekly_calls
+            self.weekly_calls += 1
+            return {'weekly': {'enabled': True, 'built': '2026-W46', 'theme': 'Marrow Crypts', 'current': self.current, 'testersListed': self.listed[min(n, 1)]}}
+        return super().answer(name, command)
+
+    def request(self, name, opname, action, data=None):
+        if opname == 'dungeons' and action == 'queue' and not self.unit(name)['queued']:
+            self.asked[name] = data['difficulty']
+        return super().request(name, opname, action, data)
+
+
+class DungeonDifficulty(unittest.TestCase):
+    def setUp(self):
+        TX.reset_dungeon_turn()
+
+    def tearDown(self):
+        TX.reset_dungeon_turn()
+
+    def play(self, world, fn=None, name='Tester Aaa', level=900):
+        io = DungeonIO(world, me=name)
+        return run((fn or TX.check_dungeon_difficulty)(io, name, 'Warrior', level)), io
+
+    def test_the_pick(self):
+        a = {'level': 900, 'maxDifficulty': 6, 'list': [{'id': 4, 'level': 600, 'size': 1}, {'id': 1, 'level': 150, 'size': 2}, {'id': 7, 'level': 800, 'size': 1, 'fixed': 1, 'weekly': True}]}
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual((dg['id'], d, why), (1, 6, None), 'level 900 carries difficulty 6 of the level 150 dungeon (x3.0 = 450)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=700))
+        self.assertEqual((dg['id'], d), (1, 6))
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=300))
+        self.assertEqual((dg['id'], d), (1, 4), 'a bot of level 300: difficulty 4 of the level 150 dungeon (x1.7 = 255)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=160))
+        self.assertEqual((dg['id'], d), (1, 2), 'a bot of level 160: difficulty 2 (x1.0)')
+        dg, d, why = TX.dungeon_difficulty_pick(dict(a, level=100))
+        self.assertIsNone(dg)
+        self.assertIn('no free dungeon carries difficulty 2', why)
+        TX.DUNGEON_DIFF_DONE.update({6: 'Tester Bbb', 5: 'Tester Ccc'})
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual(d, 4, 'a difficulty another bot played is left to the next bot')
+        TX.DUNGEON_BUSY[1] = 'Tester Ddd'
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertEqual((dg['id'], d), (4, 3), 'a dungeon a bot is in is skipped (level 900 carries 3 of the level 600 dungeon)')
+        TX.DUNGEON_DIFF_DONE.update({d: 'x' for d in (2, 3, 4)})
+        dg, d, why = TX.dungeon_difficulty_pick(a)
+        self.assertIsNone(dg)
+        self.assertIn('every difficulty', why)
+        self.assertIn('check_dungeon_difficulty', dir(TX))
+        self.assertIn('dungeon_difficulty', TX.CLOSED_KEYS)
+        self.assertIn('weekly_challenge', TX.CLOSED_KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_dungeon'), TX.CLOSED_KEYS.index('dungeon_difficulty'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')
+        self.assertNotIn('dungeon_difficulty', TX.KEYS)
+        # the plain dungeon check leaves the Weekly Challenge to its own check
+        picked = TX.dungeon_pick({'level': 900, 'list': [{'id': 7, 'level': 800, 'size': 1, 'weekly': True}, {'id': 4, 'level': 600, 'size': 1}]})[0]
+        self.assertEqual(picked['id'], 4)
+        self.assertEqual(TX.difficulty_problems({'run': {'difficulty': 3, 'scaled': 2, 'left': 2}}, {'difficulty': 3}), [])
+        self.assertTrue(TX.difficulty_problems({'run': {'difficulty': 1}}, {'difficulty': 3, 'asked': 3}))
+        self.assertIn('Weekly', TX.weekly_board_problem({'testersListed': 1}, 'after the run') or 'Weekly')
+        self.assertIsNone(TX.weekly_board_problem({'testersListed': 0}, 'x'))
+        self.assertIsNone(TX.weekly_board_problem(None, 'x'))
+
+    def test_a_difficulty_is_unlocked_asked_for_and_carried(self):
+        w = DifficultyWorld()
+        r, io = self.play(w)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Rootmaw at difficulty 3', r.detail)
+        self.assertIn('3 of 3 monster(s) scaled', r.detail)
+        self.assertEqual(w.unlocked, [(4, 3)], 'the helper unlocked it on the bot\'s own progress')
+        self.assertEqual(w.asked['Tester Aaa'], 3, 'the queue asked for it')
+        cmds = [c for _, c in io.cmds]
+        self.assertIn('dungeon unlock 4 3', cmds)
+        self.assertEqual(TX.DUNGEON_DIFF_DONE.get(3), 'Tester Aaa')
+        queue_i = [i for i, (o, a, d) in enumerate(io.asked) if a == 'queue'][0]
+        self.assertGreater(len(io.asked), queue_i)
+
+    def test_what_goes_wrong(self):
+        r, _ = self.play(DifficultyWorld(run_diff=1))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the run is at difficulty 1', r.detail)
+        r, _ = self.play(DifficultyWorld(unlock_ok=False))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('could not be unlocked', r.detail)
+        r, _ = self.play(DifficultyWorld(level=100), level=100)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('no free dungeon carries difficulty', r.detail)
+
+    def test_the_weekly_challenge_is_at_its_fixed_difficulty(self):
+        w = DifficultyWorld()
+        r, io = self.play(w, TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Weekly Challenge 2026-W46 (Marrow Crypts)', r.detail)
+        self.assertEqual(w.asked['Tester Aaa'], TX.WEEKLY_ASK, 'the bot asked for another difficulty')
+        self.assertEqual(w.unlocked, [], 'nothing is unlocked for a dungeon with one difficulty')
+        self.assertEqual(w.weekly_calls, 2, 'the boards were read before and after')
+        self.assertNotIn('difficulty %d' % TX.WEEKLY_ASK, r.detail.split('(')[0])
+
+    def test_the_weekly_challenge_bugs_and_skips(self):
+        r, _ = self.play(DifficultyWorld(run_diff=TX.WEEKLY_ASK), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the check expects 1', r.detail)
+        r, _ = self.play(DifficultyWorld(listed=(0, 2)), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('2 tester(s) after the run', r.detail)
+        r, _ = self.play(DifficultyWorld(listed=(1, 1)), TX.check_weekly_challenge)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('before the run', r.detail)
+        r, _ = self.play(DifficultyWorld(weekly=False), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'not built this week' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(DifficultyWorld(current=False), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'not this week' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(DifficultyWorld(level=500), TX.check_weekly_challenge, level=500)
+        self.assertEqual((r.status, 'needs level 800' in r.detail), (TX.SKIP, True))
+        TX.DUNGEON_BUSY[7] = 'Tester Zzz'
+        r, _ = self.play(DifficultyWorld(), TX.check_weekly_challenge)
+        self.assertEqual((r.status, 'Tester Zzz' in r.detail), (TX.SKIP, True))
+
+
+# ------------------------------------------------------------------------------------------------ O651: a waystone map walked
+class WsWorld(RiftWorld):
+    """a waystone map on the rift lane: the temple at x 92, four monsters at x 10, 20, 30, 40. `wsmap state | enter | path | close`; the bot arrives at x 0"""
+
+    def __init__(self, level=1500, arrivals=4, free=True, free_why=None, free_tier=1, tier_level=1100, enter_err=None, players=0, level_bad=False,
+                 never_kill=False, evict_after=None, err=None, **kw):
+        super().__init__(level=level, **kw)
+        self.arrivals, self.free, self.free_why, self.free_tier, self.tier_level = arrivals, free, free_why, free_tier, tier_level
+        self.enter_err, self.players, self.level_bad, self.evict_after, self.err_w, self.never_kill_w = enter_err, players, level_bad, evict_after, err, never_kill
+        self.in_map, self.mons, self.dead, self.looks, self.entered, self.closed_w = False, [10, 20, 30, 40], set(), 0, [], 0
+
+    def alive_m(self):
+        return [m for m in self.mons if m not in self.dead]
+
+    def wguide(self):
+        alive = self.alive_m()
+        if not alive:
+            return {'mode': 'wait', 'why': 'no monster in sight'}
+        x = min(alive, key=lambda m: abs(m - self.pos[0]))
+        return {'mode': 'fight' if abs(self.pos[0] - x) <= 5 else 'walk', 'goal': {'x': x, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'pack', 'why': 'test'}
+
+    def wfacts(self):
+        out = {'inside': self.in_map, 'level': self.level, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'minLevel': 1000, 'kills': 3, 'arrivals': self.arrivals,
+               'enabled': True}
+        if self.in_map:
+            out['run'] = {'map': 9, 'tier': self.free_tier, 'tierLevel': self.tier_level, 'since': self.looks, 'left': 500, 'players': self.players,
+                          'monsters': len(self.alive_m()), 'monsterLevel': self.tier_level + (7 if self.level_bad else 0), 'nearestHp': 100}
+            out['guide'] = self.wguide()
+        else:
+            out.update(free=self.free, freeTier=self.free_tier if self.free else None, freeTierLevel=self.tier_level if self.free else None,
+                       why=self.free_why if not self.free else None)
+        return out
+
+    def wtick(self):
+        if not self.in_map:
+            return
+        self.looks += 1
+        if self.evict_after is not None and self.looks > self.evict_after:
+            self.in_map, self.pos = False, (self.TEMPLE - 1, 5)
+            return
+        g = self.wguide()
+        if g['mode'] == 'fight' and not self.never_kill_w:
+            self.dead.add(g['goal']['x'])
+
+    def answer(self, command):
+        if command == 'wsmap state':
+            if self.err_w:
+                return {'err': self.err_w}
+            self.wtick()
+            return self.wfacts()
+        if command.startswith('wsmap enter'):
+            self.entered.append(command)
+            if self.enter_err:
+                return dict(self.wfacts(), err=self.enter_err)
+            self.in_map, self.pos, self.looks = True, (0, 5), 0
+            return dict(self.wfacts(), entered=True, map=9, tier=self.free_tier)
+        if command == 'wsmap path':
+            g = self.wguide()
+            if not self.in_map or g['mode'] != 'walk':
+                return dict(self.wfacts(), err='no goal' if self.in_map else 'not inside a waystone map')
+            return dict(self.wfacts(), path=self.path_to(g['goal']['x'], 5), dist=abs(self.pos[0] - g['goal']['x']))
+        if command == 'wsmap close':
+            was = self.in_map
+            self.in_map = False
+            self.closed_w += 1
+            return dict(self.wfacts(), closed=was)
+        return super().answer(command)
+
+    def pz(self):
+        return super().pz() and not self.in_map
+
+
+class WsIO(RiftIO):
+    pass
+
+
+class WaystoneMapWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.WSMAP_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.WSMAP_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, world, level=1500):
+        io = WsIO(world)
+        return run(TX.check_wsmap_walk(io, 'Tester Aaa', 'Warrior', level)), io
+
+    def test_the_pure_parts(self):
+        a = {'level': 1500, 'minLevel': 1000, 'arrivals': 4, 'free': True, 'freeTier': 1, 'freeTierLevel': 1100}
+        self.assertIsNone(TX.wsmap_refusal(a))
+        for bad, word in ((None, 'old helper'), ({'err': 'no waystone system'}, 'no waystone'), (dict(a, enabled=False), 'off'), (dict(a, level=900), 'need level 1000'),
+                          (dict(a, inside=True), 'inside'), (dict(a, arrivals=0), 'arrival tile'), (dict(a, free=False, why='somebody is in the map'), 'somebody is in the map'),
+                          (dict(a, level=1000, freeTierLevel=1300), 'free waystone map is tier')):
+            r = TX.wsmap_refusal(bad)
+            self.assertEqual(r[0], TX.SKIP)
+            self.assertIn(word, r[1])
+        trace = {}
+        self.assertEqual(TX.wsmap_problems({'run': {'players': 0, 'monsters': 8, 'tier': 1, 'tierLevel': 1100, 'monsterLevel': 1100, 'map': 3}}, trace), [])
+        self.assertEqual(TX.wsmap_problems({'run': {'players': 0, 'monsters': 5, 'tier': 1, 'tierLevel': 1100, 'monsterLevel': 1100, 'map': 3}}, trace), [])
+        self.assertEqual(trace['kills'], 3)
+        self.assertTrue(TX.wsmap_problems({'run': {'players': 1, 'monsters': 5}}, trace))
+        self.assertTrue(TX.wsmap_problems({'run': {'players': 0, 'monsters': 5, 'tierLevel': 1100, 'monsterLevel': 1107}}, trace))
+        base = {'secs': 60, 'steps': 10, 'came': 'helper', 'level': 1500, 'tier': 1, 'tier_level': 1100, 'map': 3}
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=3))[0], TX.PASS)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=1, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL, 'a long fight with too few kills is a bug')
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=0, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.wsmap_walk_verdict(dict(base, kills=1))[0], TX.SKIP)
+        self.assertIn('wsmap_walk', TX.KEYS)
+        self.assertLess(TX.KEYS.index('wsmap_walk'), TX.KEYS.index('rift_walk'))
+
+    def test_a_map_walked_is_a_pass_with_a_counted_teleport(self):
+        r, io = self.play(WsWorld())
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('tier 1 (level 1100)', r.detail)
+        self.assertEqual(io.w.entered, ['wsmap enter 1'])
+        self.assertEqual(len(r.fallbacks), 1)
+        self.assertIn('waystone device', r.fallbacks[0])
+        self.assertIn('teleport in place of walking', r.detail)
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        self.assertGreaterEqual(io.w.closed_w, 1)
+        self.assertFalse(io.w.in_map)
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('wsmap enter 1'))
+
+    def test_the_band_the_server_offers_is_asked_for(self):
+        r, io = self.play(WsWorld(free_tier=6, tier_level=1600))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.entered, ['wsmap enter 6'])
+
+    def test_skips(self):
+        for world, word in ((WsWorld(err='no waystone system'), 'no waystone'), (WsWorld(arrivals=0), 'arrival tile'),
+                            (WsWorld(free=False, free_why='a tester run holds the map'), 'tester run holds the map'), (WsWorld(level=900), 'need level 1000'),
+                            (WsWorld(enter_err='somebody is in the map'), 'somebody is in the map')):
+            r, io = self.play(world, level=world.level)
+            self.assertEqual(r.status, TX.SKIP, r.detail)
+            self.assertIn(word, r.detail)
+            self.assertFalse(io.w.in_map)
+
+    def test_bugs(self):
+        r, _ = self.play(WsWorld(players=1))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('player(s) are in the waystone map of the testers', r.detail)
+        r, _ = self.play(WsWorld(level_bad=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('the run is tier 1', r.detail)
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(WsWorld(never_kill=True))
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('killed none', r.detail)
+        self.assertGreaterEqual(io.w.closed_w, 1)
+
+    def test_the_server_sends_the_bot_out(self):
+        r, io = self.play(WsWorld(evict_after=1))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('out of the map before it killed a monster', r.detail)
+        self.assertEqual(io.moves[-1], 'hunt')
+        TX.WSMAP_BUDGET = 4.0
+        r, _ = self.play(WsWorld(never_kill=True))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('only 0 of 3', r.detail)
+
+
 if __name__ == '__main__':
     unittest.main()

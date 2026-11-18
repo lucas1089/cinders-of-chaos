@@ -561,4 +561,21 @@ function K.view(cfg, index, rows, now, level)
 	return {bosses = out, reset = K.nextReset(now, (cfg.charges or {}).resetHour)}
 end
 
+-- What a bot does next inside a pocket (the tester bots, O651; reads only): wait while the pocket is over or the boss is not there yet, fight
+-- within `reach` tiles of the boss on its floor, else walk to it. a: state, boss ("waiting" | "alive" | "dead"), pos, bossPos, reach
+function K.guide(a)
+	if a.state ~= "running" then
+		return {mode = "wait", why = "the pocket is over"}
+	end
+	if a.boss ~= "alive" or not a.bossPos then
+		return {mode = "wait", why = "the boss comes in a moment"}
+	end
+	local reach = a.reach or 5
+	local p, b = a.pos, a.bossPos
+	if p and p.z == b.z and math.max(math.abs(p.x - b.x), math.abs(p.y - b.y)) <= reach then
+		return {mode = "fight", goal = b, area = "boss", why = "in reach of the boss"}
+	end
+	return {mode = "walk", goal = b, reach = {1, reach}, area = "boss", why = "to the boss"}
+end
+
 return K

@@ -98,7 +98,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 21
+HELPER_VERSION = 22
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -967,6 +967,23 @@ function commands.dungeon(player, arg)
 		return
 	end
 	local probe = D.probe(player)
+	if type(what) == "table" then -- O651: the TEST ONLY unlocked difficulty (a person earns it by clearing the one before)
+		local got, why = nil, "no dungeon system"
+		if D.testerUnlock then
+			got, why = D.testerUnlock(player, what.id, what.difficulty)
+		end
+		tell(player, "dungeon", H.dungeonAnswer(D.probe(player), got and {unlocked = got} or {err = why}))
+		return
+	end
+	if what == "weekly" then -- O651: the Weekly Challenge as a person sees it: the week, the theme, the boards (no tester on them)
+		local WCH = ChaosWeeklyChallenge
+		if not (WCH and WCH.probe) then
+			tell(player, "dungeon", H.dungeonAnswer(probe, {err = "no weekly challenge"}))
+			return
+		end
+		tell(player, "dungeon", H.dungeonAnswer(probe, {weekly = H.cutValue(WCH.probe(player), 2)}))
+		return
+	end
 	if what == "path" then
 		local goal = probe.guide and probe.guide.goal
 		if not probe.inside or not goal then
@@ -1287,6 +1304,83 @@ function commands.rift(player, arg)
 		return
 	end
 	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf()}))
+end
+
+-- ---------------------------------------------------------------- O651 the pocket bosses
+-- "!tester pocket [state | path | close]": reads ChaosPocketBoss.probe (the Boss Spawns window's pocket rows with their charges and boss points, the
+-- arenas free against the ones kept for the players; inside the run, the boss and the guide); `path` is the engine's path to the boss; `close` is
+-- the bot's own Leave button. The window's `pocketEnter` and the fight are the bot's own.
+function commands.pocket(player, arg)
+	local what, usage = H.parsePocket(arg)
+	if not what then
+		tell(player, "pocket", {err = usage})
+		return
+	end
+	local PB = ChaosPocketBoss
+	if not (PB and PB.probe) then
+		tell(player, "pocket", {err = "no pocket boss system"})
+		return
+	end
+	if what == "close" then
+		local closed = PB.testerClose and PB.testerClose(player) or false
+		tell(player, "pocket", H.pocketAnswer(PB.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = PB.probe(player)
+	if what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a pocket"
+		end
+		tell(player, "pocket", H.pocketAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "pocket", H.pocketAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O651 the waystone maps walked
+-- "!tester wsmap [state | enter [tier] | path | close]": reads ChaosWaystoneTiers.probe (whether a map of the band is free, inside the run, the
+-- level of the monsters against the tier, the guide); `enter` is the TEST ONLY stand-in of the base device's pads and teleport (a plain run on a
+-- free map, the bot on its arrival tile: a tester only, logged); `path` the engine's path to the guide's goal; `close` the bot's own way out.
+function commands.wsmap(player, arg)
+	local want, usage = H.parseWsMap(arg)
+	if not want then
+		tell(player, "wsmap", {err = usage})
+		return
+	end
+	local WT = ChaosWaystoneTiers
+	if not (WT and WT.probe and WT.testerEnter) then
+		tell(player, "wsmap", {err = "no waystone system"})
+		return
+	end
+	if want.what == "close" then
+		local closed = WT.testerClose(player)
+		tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {closed = closed and true or false}))
+		return
+	end
+	if want.what == "enter" then
+		local got, why = WT.testerEnter(player, want.tier)
+		if not got then
+			tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {err = why}))
+			return
+		end
+		tell(player, "wsmap", H.wsmapAnswer(WT.probe(player), {entered = true, map = got.map, tier = got.tier}))
+		return
+	end
+	local probe = WT.probe(player)
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a waystone map"
+		end
+		tell(player, "wsmap", H.wsmapAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "wsmap", H.wsmapAnswer(probe))
 end
 
 -- ---------------------------------------------------------------- O595 the Infinity Tower and the Ember Descent

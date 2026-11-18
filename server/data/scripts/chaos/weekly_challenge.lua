@@ -116,6 +116,9 @@ end
 
 -- a won run, per finisher (dungeons.lua endRun -> the area's onClear): info = {ms, size, difficulty, deaths}
 function WC.onClear(player, info)
+	if Chaos.isTester and Chaos.isTester(player) then
+		return -- a run of testers is never ranked: no board row, no line of "your best" (O651; leaderboard.lua skips testers too)
+	end
 	local b = WC.built
 	if not (b and b.week == WC.weekNow() and ChaosLeaderboard and ChaosLeaderboard.record) then
 		return -- a run that crossed the week's end: the layout belongs to the week that ended
@@ -127,6 +130,28 @@ function WC.onClear(player, info)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards.", b.label, W.clock(secs),
 		Chaos.t(player, (info and info.size or 1) > 1 and "party" or "solo"), W.clock(best)))
+end
+
+-- What a person sees of the Weekly Challenge, for the tester bots' `!tester dungeon weekly` (O651): the built week and theme, whether the
+-- layout is this week's, the dungeon's id and its fixed difficulty, and how many testers the two weekly boards list (0: a tester is never
+-- ranked). Reads only.
+function WC.probe(player)
+	local cfg = C()
+	local b = WC.built
+	local out = {enabled = cfg.enabled and true or false, id = cfg.dungeon and cfg.dungeon.id, difficulty = cfg.dungeon and cfg.dungeon.difficulty,
+		built = b and b.label or nil, theme = b and b.theme or nil, current = b ~= nil and b.week == WC.weekNow(), testersListed = 0, rows = 0}
+	local LB = ChaosLeaderboard
+	if LB and LB.rankedBoard then
+		for _, board in ipairs({cfg.boards.solo, cfg.boards.party}) do
+			for _, e in ipairs(LB.rankedBoard(board) or {}) do
+				out.rows = out.rows + 1
+				if Chaos.isTesterGuid and Chaos.isTesterGuid(e.guid) then
+					out.testersListed = out.testersListed + 1
+				end
+			end
+		end
+	end
+	return out
 end
 
 -- ---------------------------------------------------------------- the week's end (leaderboard reset)

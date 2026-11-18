@@ -100,6 +100,15 @@ return {
 	bosses = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Frostreaver the Glacialblade",
 		"Rhazgor the Crimson Slayer", "Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror"},
 
+	-- tester bots (O651; `!tester wsmap`, tools/tester_checks.py wsmap_walk): a map is the shared base map, not a copy per run, so a tester walks
+	-- one only while nobody else is in it, and leaves the moment a player steps into its rectangle (WT.testerGuard, every guardSeconds) or after
+	-- maxSeconds. minLevel: the level a bot needs for monsters of the first tier (1100). `arrivals` is the tile the base device's teleport puts a
+	-- group on, per entry of `maps` ({x, y, z}), read from the base file by `tools/audit_waystone_maps.py BASE --arrivals` and pasted here: the
+	-- pads and the teleport are base code (data/scripts/customs/waystone_system/tier_maps.lua, not in the repository), so a map without an
+	-- arrival here is never entered by a tester.
+	tester = {minLevel = 1000, maxSeconds = 600, guardSeconds = 2, kills = 3},
+	arrivals = {},
+
 	-- the layout audit (tools/audit_waystone_maps.py, run on an installed base server; tests/waystone_layouts_test.lua keeps
 	-- this table and the maps above in step). One row per entry of `maps`: status "ok" (arrival, levers, boss room and
 	-- spawns all reachable on the map as the server runs it, with `clearPath` applied) or "retired" (the map is left out

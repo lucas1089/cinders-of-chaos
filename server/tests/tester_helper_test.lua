@@ -2311,7 +2311,7 @@ do
 	local htext = hf and hf:read("*a") or ""
 	if hf then hf:close() end
 	check(htext:find("pcall(pvpAim, player)", 1, true) ~= nil, "the loop aims at a foe first (pvpAim)")
-	check(htext:find("HELPER_VERSION = 21", 1, true) ~= nil, "the helper is v21 (O652)")
+	check((tonumber(htext:match("HELPER_VERSION = (%d+)")) or 0) >= 21, "the helper is v21 or later (O652)")
 	local realTS, realTB = ChaosTesters, ChaosTestersBoss
 	-- pvp
 	ChaosTesters = {pvpProbe = function(p)
@@ -2362,6 +2362,143 @@ do
 	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")
 	ChaosTrials = realTT
 	t9.inTrial = nil
+	-- ---- O651: pocket bosses, dungeon difficulties and the Weekly Challenge, the rift stairs, a waystone map walked
+	check(H.COMMANDS.pocket and H.COMMANDS.wsmap and H.parseCommand("pocket path #1") == "pocket" and H.parseCommand("wsmap enter 11 #2") == "wsmap",
+		"pocket and wsmap are registered commands")
+	eq(H.parsePocket(nil), "state", "pocket: no word is state")
+	eq(H.parsePocket("PATH"), "path", "pocket: path")
+	eq(H.parsePocket("close"), "close", "pocket: close")
+	w, usage = H.parsePocket("enter")
+	check(w == nil and usage:find("usage: pocket", 1, true), "pocket: enter is the window's request, no helper word")
+	local pk = H.pocketAnswer({inside = false, level = 400, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = true, enabled = true, free = 12, reserve = 4,
+		points = {got = 2, total = 10, junk = 1}, bosses = {
+			{key = "island_b", name = "Island B", category = "island", level = 250, left = 3, ok = true, point = {id = 9, got = true}},
+			{key = "world_1", name = "Kaelgor", category = "world", level = 300, left = 2, ok = true, point = {id = 1, got = false}},
+			{key = "raid_a", name = "Raid A", category = "raid", level = 150, left = 3, ok = true},
+			{key = "raid_z", name = "Raid Z", category = "raid", level = 150, left = 0, ok = true},
+			{key = "world_2", name = "Skaldra", category = "world", level = 900, left = 3, ok = false}}})
+	check(pk.usable == 3 and #pk.bosses == 3 and pk.bosses[1].key == "world_1" and pk.bosses[2].key == "raid_a" and pk.bosses[3].key == "island_b",
+		"pocket answer: only the pockets the bot may open, a boss point it lacks first, then by level")
+	check(pk.bosses[1].point.id == 1 and pk.bosses[1].point.got == false and pk.points.got == 2 and pk.points.junk == nil and pk.pos.junk == nil,
+		"pocket answer: the boss point and the points held, cut down")
+	local many = {}
+	for i = 1, 20 do many[i] = {key = "k" .. i, name = "B" .. i, level = i, left = 1, ok = true} end
+	eq(#H.pocketAnswer({bosses = many}).bosses, H.POCKET_ROWS, "pocket answer: at most the rows a text line holds")
+	local pin = H.pocketAnswer({inside = true, run = {id = 3, key = "world_1", name = "Kaelgor", state = "running", boss = "alive", left = 500, players = 1,
+		testers = 1, bossHp = 70, bossPos = {x = 5, y = 5, z = 7, junk = 1}, inArena = true, tester = true, junk = 1}, guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "boss"}})
+	check(pin.run.bossHp == 70 and pin.run.testers == 1 and pin.run.bossPos.junk == nil and pin.run.junk == nil and pin.guide.mode == "fight", "pocket answer: the run and the guide")
+	local realPB = ChaosPocketBoss
+	local pclose, ppath = 0, nil
+	ChaosPocketBoss = {probe = function(p)
+		if p.inPocket then
+			return {inside = true, level = 400, pos = p:getPosition(), run = {key = "world_1", state = "running", boss = "alive", players = 1, testers = 1},
+				guide = {mode = "walk", goal = {x = 70, y = 71, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 400, pos = p:getPosition(), pz = true, enabled = true, free = 16, reserve = 4,
+			bosses = {{key = "world_1", name = "Kaelgor", category = "world", level = 300, left = 3, ok = true}}}
+	end, testerClose = function() pclose = pclose + 1 return true end}
+	talks["!tester"].onSay(t9, "!tester", "pocket #300")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"key":"world_1"', 1, true) and last(t9):find('"seq":300', 1, true), "pocket state: the pockets it may open")
+	talks["!tester"].onSay(t9, "!tester", "pocket path #301")
+	check(last(t9):find("not inside a pocket", 1, true), "pocket path outside: the reason")
+	t9.inPocket = true
+	talks["!tester"].onSay(t9, "!tester", "pocket path #302")
+	print(last(t9), t9.pathAsked and t9.pathAsked.pos.x)
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70 and t9.pathAsked.maxD == 5, "pocket path: on foot to the boss, within reach")
+	talks["!tester"].onSay(t9, "!tester", "pocket close #303")
+	check(pclose == 1 and last(t9):find('"closed":true', 1, true), "pocket close: the bot's own Leave")
+	t9.inPocket = nil
+	ChaosPocketBoss = nil
+	talks["!tester"].onSay(t9, "!tester", "pocket #304")
+	check(last(t9):find("no pocket boss system", 1, true), "pocket: no system, the reason")
+	ChaosPocketBoss = realPB
+	-- dungeons: the unlock and the weekly challenge
+	local pu = H.parseDungeon("unlock 4 3")
+	check(type(pu) == "table" and pu.what == "unlock" and pu.id == 4 and pu.difficulty == 3, "dungeon: unlock ID N")
+	eq(H.parseDungeon("weekly"), "weekly", "dungeon: weekly")
+	w, usage = H.parseDungeon("unlock 4")
+	check(w == nil and usage:find("unlock ID N", 1, true), "dungeon: unlock needs both numbers")
+	w = H.parseDungeon("close 4")
+	eq(w, nil, "dungeon: close takes no number")
+	local da = H.dungeonAnswer({inside = true, list = {{id = 10, title = "Weekly Challenge", level = 800, size = 1, max = 1, fixed = 1, weekly = true}},
+		run = {id = 1, difficulty = 3, scaled = 2, bossScaled = true, weekly = true, left = 2}})
+	check(da.list[1].weekly == true and da.list[1].fixed == 1 and da.run.scaled == 2 and da.run.bossScaled == true and da.run.weekly == true, "dungeon answer: weekly and scaled")
+	local realD2, unlocks, weeklyProbe = ChaosDungeons, {}, nil
+	ChaosDungeons = {probe = function(p) return {inside = false, level = 900, pos = p:getPosition(), on = true, list = {}} end,
+		testerUnlock = function(p, id, d)
+			unlocks[#unlocks + 1] = {id, d}
+			if id == 99 then return nil, "no such dungeon" end
+			return d
+		end}
+	local realWC = ChaosWeeklyChallenge
+	ChaosWeeklyChallenge = {probe = function() return {enabled = true, id = 10, built = "2026-W46", current = true, testersListed = 0, rows = 5} end}
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 4 3 #310")
+	check(#unlocks == 1 and unlocks[1][1] == 4 and unlocks[1][2] == 3 and last(t9):find('"unlocked":3', 1, true), "dungeon unlock: the difficulty is written")
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 99 3 #311")
+	check(last(t9):find("no such dungeon", 1, true), "dungeon unlock: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "dungeon weekly #312")
+	check(last(t9):find('"testersListed":0', 1, true) and last(t9):find('"built":"2026-W46"', 1, true) and last(t9):find('"current":true', 1, true), "dungeon weekly: the week and the boards")
+	ChaosWeeklyChallenge = nil
+	talks["!tester"].onSay(t9, "!tester", "dungeon weekly #313")
+	check(last(t9):find("no weekly challenge", 1, true), "dungeon weekly: no system")
+	ChaosWeeklyChallenge = realWC
+	ChaosDungeons.testerUnlock = nil
+	talks["!tester"].onSay(t9, "!tester", "dungeon unlock 4 3 #314")
+	check(last(t9):find("no dungeon system", 1, true), "dungeon unlock: an old server has no unlock")
+	ChaosDungeons = realD2
+	local civU = creature(992, "Ana Unlock", {store = {}})
+	local nU = #civU.log.msgs
+	check(talks["!tester"].onSay(civU, "!tester", "dungeon unlock 4 6 #1") == true and talks["!tester"].onSay(civU, "!tester", "pocket close #2") == true
+		and talks["!tester"].onSay(civU, "!tester", "wsmap enter 1 #3") == true and #civU.log.msgs == nU, "unlock / pocket / wsmap: a player's words go on and get no answer")
+	-- the rift answer carries the stairs
+	local ra = H.riftAnswer({inside = true, run = {floors = 2, links = 1}, guide = {mode = "use", goal = {x = 1, y = 2, z = 8}, area = "stairs", via = "ladder",
+		use = {x = 1, y = 2, z = 8, clientId = 1386, stack = 2, junk = 1}}})
+	check(ra.run.floors == 2 and ra.run.links == 1 and ra.guide.via == "ladder" and ra.guide.use.clientId == 1386 and ra.guide.use.stack == 2 and ra.guide.use.junk == nil,
+		"rift answer: the floors, the links, the ladder to use")
+	-- a waystone map walked
+	local ws = H.parseWsMap("enter 11")
+	check(ws and ws.what == "enter" and ws.tier == 11, "wsmap: enter a tier")
+	eq(H.parseWsMap("enter").tier, nil, "wsmap: enter without a tier")
+	eq(H.parseWsMap(nil).what, "state", "wsmap: no word is state")
+	w, usage = H.parseWsMap("enter 16")
+	check(w == nil and usage:find("usage: wsmap", 1, true), "wsmap: a tier above 15")
+	w = H.parseWsMap("state 3")
+	eq(w, nil, "wsmap: state takes no number")
+	local wa = H.wsmapAnswer({inside = true, level = 1500, pos = {x = 1, y = 2, z = 7, junk = 1}, minLevel = 1000, kills = 3, arrivals = 4, free = true, freeTier = 6,
+		freeTierLevel = 1600, run = {map = 9, tier = 11, tierLevel = 2100, since = 5, left = 590, players = 0, monsters = 12, monsterLevel = 2100, nearest = {x = 3, y = 4, z = 7, junk = 1},
+		nearestHp = 90, boss = {pos = {x = 9, y = 9, z = 7}, hp = 100}, junk = 1}, guide = {mode = "walk", goal = {x = 3, y = 4, z = 7}, reach = {1, 5}, area = "pack"}})
+	check(wa.inside and wa.freeTier == 6 and wa.run.tierLevel == 2100 and wa.run.monsterLevel == 2100 and wa.run.nearest.junk == nil and wa.run.junk == nil
+		and wa.run.boss.hp == 100 and wa.guide.mode == "walk", "wsmap answer: the run, the level of the monsters, the guide")
+	local realWT, entered, wclose = ChaosWaystoneTiers, nil, 0
+	ChaosWaystoneTiers = {probe = function(p)
+		if p.inMap then
+			return {inside = true, level = 1500, pos = p:getPosition(), run = {map = 9, tier = 11, tierLevel = 2100, monsters = 3},
+				guide = {mode = "walk", goal = {x = 90, y = 91, z = 7}, reach = {1, 5}, area = "pack"}}
+		end
+		return {inside = false, level = 1500, pos = p:getPosition(), minLevel = 1000, arrivals = 1, free = true, freeTier = 1, freeTierLevel = 1100}
+	end, testerEnter = function(p, tier)
+		if tier == 15 then return nil, "no map of the band has an arrival tile (config arrivals)" end
+		entered = tier or 1
+		return {map = 9, tier = tier or 1}
+	end, testerClose = function() wclose = wclose + 1 return true end}
+	talks["!tester"].onSay(t9, "!tester", "wsmap #320")
+	check(last(t9):find('"freeTier":1', 1, true) and last(t9):find('"seq":320', 1, true), "wsmap state: a map is free")
+	talks["!tester"].onSay(t9, "!tester", "wsmap enter 11 #321")
+	check(entered == 11 and last(t9):find('"entered":true', 1, true) and last(t9):find('"map":9', 1, true), "wsmap enter: the stand-in of the pads")
+	talks["!tester"].onSay(t9, "!tester", "wsmap enter 15 #322")
+	check(last(t9):find("arrival tile", 1, true), "wsmap enter: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "wsmap path #323")
+	check(last(t9):find("not inside a waystone map", 1, true), "wsmap path outside: the reason")
+	t9.inMap = true
+	talks["!tester"].onSay(t9, "!tester", "wsmap path #324")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 90 and t9.pathAsked.maxD == 5, "wsmap path: on foot to the monster")
+	talks["!tester"].onSay(t9, "!tester", "wsmap close #325")
+	check(wclose == 1 and last(t9):find('"closed":true', 1, true), "wsmap close: the bot's own way out")
+	t9.inMap = nil
+	ChaosWaystoneTiers = nil
+	talks["!tester"].onSay(t9, "!tester", "wsmap #326")
+	check(last(t9):find("no waystone system", 1, true), "wsmap: no system")
+	ChaosWaystoneTiers = realWT
 	ChaosTowerRun, ChaosDescent = realTR, realD
 	local civ4 = creature(993, "Ana Tower", {store = {}})
 	local n4 = #civ4.log.msgs

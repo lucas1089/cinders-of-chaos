@@ -9910,7 +9910,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O653 to v19, step 10; O654 to v20, step 11; O652 to v21, step 12).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O653 to v19, step 10; O654 to v20, step 11; O652 to v21, step 12; O651 to v22, step 13).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -9947,6 +9947,7 @@ How the bots play it (`closed_dungeon`, a closed check before `closed_raid`; hel
    run) so the dungeon is free. Verdict (`dungeon_verdict`): PASS when a monster died or the boss fell, FAIL for a tester in a player's run,
    more players than the party, 180 s at a monster or the boss without progress, a bot still inside after the close; SKIP with the reason for
    the level, a queue that refused the bot or a run of players ahead, a walk blocked for 30 s, a death before any kill.
+O651 (step 10): the same walk at difficulty 2 to 6 (`dungeon_difficulty`) and in the Weekly Challenge (`weekly_challenge`).
 Clean-up: the `chaos_dungeon_progress` rows of the testers (`tester_closed.py`). The scenario table skips the random `queue` of the window
 (`CLOSED_ONLY` in `gen_tester_scenarios.py`): only `closed_dungeon` queues; `fetch` stays in the random requests.
 Proven by tests: the rules, the queue by side, the probe and guide on a mocked engine (`dungeons_closed_test.lua`), the helper command
@@ -10108,7 +10109,7 @@ temple. Helper v15 `!tester rift [state | key [tier] | path | close]`:
   `temple`; a bot already in a protection zone walks nowhere), takes the key, uses it (the hotkey again at 5 and 9 s when nothing opens: a slot being
   built), and walks through the rift like a person: the nearest pack monster by the engine path, fights with its own rotation, takes the loot after a kill,
   then the guardian once it is up. PASS: a kill, or the guardian hurt. FAIL: the key was given and the backpack holds none, 150 s of fighting with no kill.
-  SKIP: the key went to the inbox, the rift did not open in 12 s, the walk blocked 30 s, the next goal on another floor ("the stairs are not walked yet"),
+  SKIP: the key went to the inbox, the rift did not open in 12 s, the walk blocked 30 s, the next goal on another floor with no stairs towards it (O651 walks them, step 10),
   a death before a kill. `rift close` and the way back to the hunt follow in every case. The helper's teleport to the temple is the counted fallback
   (`enter temple (no path)` in the result's fallbacks and the report). Inside the rift nothing teleports the bot (`rift_layout` and `waystone_run` still use
   the helper's atomic runs: they read numbers, they do not play).
@@ -10550,6 +10551,80 @@ Needs a live run: the real `Game.createMonster` calling `onSpawn` (the copy atta
 round the copy outside a protection zone, `Monster:setMaxHealth` on a boss with a health curve, the 10 testers of a battleground match, the Marches' defeat rule
 against two bots (the lethal hit is cancelled, the loser is thrown out: `closed_pvp_fight` reads that as the bots leaving the instance), a dodge inside the warning
 time at the bots' 0.4 s look (the marks give 1.5 to 3 s).
+##### 13. Pocket bosses, dungeon difficulties, the Weekly Challenge, the rift stairs and a waystone map (O651)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650): "the bots have to do the complete content of the game, in the most human way possible". An audit
+after O650 ranked the gaps; these four are done. Helper v22 (`HELPER_VERSION`, bumped once for the whole task): `!tester pocket [state | path | close]`,
+`!tester dungeon weekly | unlock ID N`, the stairs in `!tester rift` (`guide.via`, `guide.use`) and `!tester wsmap [state | enter [tier] | path | close]`.
+Tests: `pocketboss_test.lua`, `dungeons_closed_test.lua`, `weekly_challenge_test.lua`, `rift_probe_test.lua`, `waystone_tiers_test.lua`, `waystone_layouts_test.lua`,
+`tester_helper_test.lua`, `tester_checks_test.py` (`PocketWalk`, `RiftStairs`, `DungeonDifficulty`, `WaystoneMapWalk`), `audit_waystone_maps_test.py`.
+
+**1. Pocket bosses and boss passive points** (`pocketboss.lua`, `pocketboss_core.lua`, `pocketboss_config.lua` `tester`, `bosspoints.lua`; check `pocket_walk`, an open check):
+- The pocket arenas are one grid the players share (16 slots of `limits.maxRuns`). `PB.enter` asks `ChaosTesters.soloRefusal(group, maxRuns - running, tester.reserve)`:
+  a tester takes an arena only while 4 (`tester.reserve`) stay free after it ("The testers wait: the halls are kept for the players."), and a group of a tester and a
+  player is refused ("Testers and players are never mixed."), as for the tower and the Descent. The charges (3 a day a boss) and the `chaos_pocketboss` rows are the
+  bot's own (`testers cleanup` deletes them by `player_id`); the rewards (orbs, gear, tokens) are its own. The boss point is a flag of the character's own storage
+  (`ChaosBossPoints`): nothing shared.
+- `PB.probe(player)` is what a person sees in the Boss Spawns window and inside: outside the pocket rows (level, charges left, the boss passive point of the boss
+  and whether the character holds it), the points held, the protection zone and the arenas free against the ones kept; inside the run (state, boss, health, place,
+  time left, players, testers) and `guide` (`ChaosPocketBossCore.guide`: wait while the boss is not there, fight within 5 tiles, else walk to it).
+  `PB.testerClose(player)` is the Leave button of the bot (a tester only: a player's pocket is never closed by it; the charge stays spent).
+  `ChaosBossPoints.probe` / `pointOf` read the points (reads only).
+- The bot (`check_pocket_walk`, helper `!tester pocket`): the temple on foot, `bossSpawns open`, `pocketEnter {k}` (asked again after 7 s), 14 s to stand inside, then
+  `solo_play` (the loop of the tower and the trials: the engine's path to the boss, the bot's own rotation, potions, flight, loot). After the kill the corpse is looted
+  and the bot leaves. It compares the boss's `left` charges and the points held before and after.
+- Left: the boss mechanics are the bot's own fight (no dodge of telegraphs: a lethal hit carries it out of the pocket, a SKIP), raid and island pockets are only
+  reached when the level opens no world pocket with a point first (the helper sorts the pockets a bot may open: a boss point it lacks first, then by level).
+
+**2. Dungeon difficulties 2 to 6 and the Weekly Challenge** (`dungeons.lua`, `weekly_challenge.lua`; closed checks `dungeon_difficulty` and `weekly_challenge` after `closed_dungeon`):
+- A person unlocks difficulty N + 1 by clearing N; a check cannot repeat five clears. `ChaosDungeons.testerUnlock(player, id, difficulty)` (TEST ONLY, helper
+  `!tester dungeon unlock ID N`) writes the tester's own `chaos_dungeon_progress` row (never a player's, never down, never for a dungeon with one fixed difficulty, one
+  console line each); the window's own `queue {id, difficulty}` then takes the bot like a person's. The run keeps its rules: `side = tester`, never ranked or recorded.
+- The probe adds what a person sees: `run.scaled` (the monsters of the run that carry the difficulty), `run.bossScaled`, `run.weekly`, and `weekly` on the list entry.
+  `dungeon_difficulty` plays the highest difficulty (2 to 6) not yet played in the run that the bot's level carries (the dungeon's own level x 1.0, 1.3, 1.7, 2.2,
+  3.0), on a dungeon no bot is in, solo dungeons first. BUG: the run is at another difficulty than the queue asked for.
+- Weekly Challenge: `WC.onClear` returns at once for a tester (no board row, no "your best" line; `leaderboard.lua` skips testers as well), `WC.probe` reads the two
+  weekly boards (`rows`, `testersListed`) and the week (`built`, `current`, the dungeon's id and fixed difficulty). `weekly_challenge` reads `!tester dungeon weekly`
+  before (a tester on a board is a BUG), asks for difficulty 3, and the run must be at the fixed difficulty 1, plays it, reads the boards again after. `closed_dungeon`
+  leaves the Weekly Challenge to this check (`dungeon_pick` skips `weekly`).
+- Proven by tests: the unlock rules and the run at difficulty 3 with its monsters scaled (`dungeons_closed_test.lua` section 8), the tester clear that writes no board row
+  and the probe (`weekly_challenge_test.lua`), the helper words, the picks and verdicts and the whole checks on a lane world (`DungeonDifficulty`). Needs a live run: the
+  real health of difficulty 6 against a bot's damage (a bot that cannot clear it is a SKIP: a death before a kill or 180 s without progress), the Weekly Challenge of the
+  week (built at startup).
+
+**3. The rift beyond the first floor** (`rift_core.lua` `R.guide` / `R.stairsGuide`, `rift.lua` `RF.probe`; check `rift_walk`):
+- A layout of two floors joins them by holes and ladders (`L.links`: a hole on floor k drops to the ladder under it, the ladder is used to climb to the cell south of
+  the hole). The guide now answers a goal on another floor with the stairs: `walk` to the nearest hole (`via = hole`, within 1 tile, the last step is onto it) when the
+  goal is below, `walk` to the ladder and `use` it (`via = ladder`, with `use = {x, y, z, clientId, stack}`: the ladder's tile, client id and place in the tile's stack, what
+  a click on it sends) when the goal is above. The goal is the guardian when it is up, else the nearest monster of another floor (`otherPos`). `run.links` is in the probe.
+- The bot: the walker takes the stairs like any goal (the engine path to the hole, the step onto it), `io.use_at(pos, clientId, stack)` (the use packet of a map tile)
+  climbs a ladder. The guardian is on the last floor, so a rift of two floors cannot reach it without the hole: PASS needs a floor change there (budget 660 s), a kill on
+  the first floor only is a SKIP, and 6 looks next to the hole or ladder with the floor unchanged are a BUG ("the stairs do not take the bot"). The result text counts the
+  floor changes.
+- Left: seals and themes by a choice of the bot: the key's theme comes from the key (random by tier), so the coverage is by the bots' different tiers over a run; the
+  guardian's own mechanics are the fight. A ladder use needs the real stack position (`Tile:getThingIndex`) on a live server.
+
+**4. A waystone map walked** (`waystone_tiers.lua` `WT.testerEnter` / `WT.testerGuard` / `WT.probe` / `WT.testerClose`, `waystone_tiers_config.lua` `tester` and `arrivals`;
+check `wsmap_walk`):
+- The maps are the shared base map: 12 rectangles of the world with their monsters, no copy per run, so there is nothing to count free. The rule is "players first":
+  `WT.testerEnter` (TEST ONLY, a tester from level `tester.minLevel` 1000, one console line) opens a plain run of the tier on a map of the band that has an arrival tile,
+  has nobody (player or tester) in its rectangle and no live run, one tester run a map; `WT.testerGuard` (a global event every 2 s) sends the tester to its temple the moment
+  a player steps into the rectangle, after `tester.maxSeconds` 600, or when it left the map another way, puts the map back at the tier it had (`WT.startRun` as the
+  device's own end does) and tells the bot why. A player's run on a map is never closed by it.
+- The device's pads and teleport are base code (`data/scripts/customs/waystone_system/tier_maps.lua`, not in the repository), so the TEST ONLY entry stands for them and
+  the result names it as a counted teleport ("teleport: the waystone device's pads and teleport are base code"). The arrival tile of each map is the `destination` of that
+  file: `python3 -I server/tools/audit_waystone_maps.py BASE_SERVER_DIR --arrivals` prints the `arrivals = {...}` block for `waystone_tiers_config.lua` (not in the
+  admin app: a one-off on the VPS after the base files are installed; `tests/waystone_layouts_test.lua` holds each tile inside its map's rectangle). **Until that block is
+  pasted every tester SKIPs the check with that reason.**
+- `WT.probe` is what a person sees: outside whether a map is free and at which tier (the lowest tier of each band, in order), inside the run's tier, the level of the monsters
+  against the tier, the monsters left, the boss and its health, and the guide. The bot walks to the temple, `wsmap enter`, clears 3 monsters (the count of monsters on the
+  map falls by 3) by the engine's path with its own rotation, leaves. BUG: a player in the testers' map, a monster at another level than the run's tier.
+- Left with the reason: the device (the waystone item used on it in the hideout, the window's `teleport`, the pads) and the exit teleport are base code the repository does not
+  hold (the window's protocol is unknown here); the boss lever (a group on the participant tiles) and the boss fight need the base boss files' positions (read by the audit tool
+  only); a run with modifiers (the waystone's rarity and mods are proven by `waystone_run`, the walk is a plain run). All of them need a live server with the base files.
+
+Left in the O589 list after step 10: PvP between testers (kills in the siege, the Marches, the arena), the weekly challenges of the tasks window, the season journey and pass,
+the main quest steps a hook sets, the harvest event, raid bosses of a contract, and everything marked out of scope in step 6.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10580,9 +10655,11 @@ the system is not installed): never faked. A death in the middle drops the check
 | `vael_walk` | all, level 500 and up | O650: the temple on foot (a protection zone), `!tester vael enter` (TEST ONLY: Vael's spell trial with the quest step and the resistances left out), the thralls and Vael by the engine's path. PASS: Vael hurt or a thrall killed. BUG: 150 s with no kill, still inside after the close. SKIP: below level 500, the chambers kept for the players, a puzzle first stage, a fall |
 | `invasion_walk` | all | O650: while an invasion runs: walks to the invader nearest or the breach point (`!tester invasion path`) and fights. PASS: a hit of the bot was cancelled (the invasion is the players'). BUG: the bot is in the contribution book, 150 s in reach and no hit cancelled. SKIP: no invasion runs (most of the time) |
 | `boss_copy_walk` | all, level 300 and up | O652: `!tester boss spawn` (TEST ONLY: a copy of a key boss for the bot, only while no player is near and no lair is near, only testers can hurt it, no kill row or board), walks to it by the engine path, fights with its own rotation, steps off the telegraph marks the server names (guide `dodge`), loots. PASS: the copy killed or hurt; FAIL: a tester named in a boss board, or 150 s in reach and the copy not hurt |
+| `pocket_walk` | all, a pocket the level opens | O651: walks to the temple, opens the Boss Spawns window (`bossSpawns open`) and asks for the pocket (`pocketEnter`) of a boss that gives a boss passive point the bot lacks (else the lowest one its level opens), plays the private arena on foot (the boss by `!tester pocket path`, its own rotation, the corpse looted), leaves (`pocket close`). PASS: the boss fell. BUG: the first kill gave no boss point, the charges left did not go down when the pocket opened, a player in the testers' pocket, the pocket refused a lone tester as mixed, 150 s at the boss with none of its health taken. SKIP: the arenas kept for the players, no charge left, the pocket did not open in 14 s, the boss hurt but not dead in 720 s, the bot carried out by a lethal hit (step 10) |
+| `wsmap_walk` | all, level 1000 and up | O651: after `waystone_run` the map itself: walks to the temple, the TEST ONLY `!tester wsmap enter` stands for the device's pads and teleport (base code) and puts the bot on the arrival tile of a free map with a plain run of the first tier the server offers, clears monsters by the engine's path until 3 have fallen, leaves. PASS: 3 monsters fell and every monster in reach had the run's level. BUG: a player in the testers' map, a monster at another level than the tier, 150 s of fighting with no kill. SKIP: no arrival tile in the config, no free map, level, the server sent the bot out (a player came, 600 s), a death (step 10) |
 | `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
 | `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named), no way, the quest not running. O650 adds the bring step, the Go button (`goals` `mqGo`), the daily flag, the spell step, the tier kill stats; Vael has `vael_walk` |
-| `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
+| `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor with no stairs towards it, a death before a kill (section "The rift by walking (O592)"). O651: a rift of two floors is walked through the hole and the ladder; PASS needs the stairs walked there (a kill on the first floor only is a SKIP), BUG: 6 looks next to the hole or ladder with the floor unchanged (step 10) |
 | `tower_walk` | all, level 100 and up | O595: walks to the temple, opens the Infinity Tower from its window (`infinitytower enter`) and plays floors by the engine's path (`!tester tower path`) with its own rotation, calls "Next floor now" between floors, and leaves (`tower close`). PASS: 2 floors cleared. BUG: a player in the run, a cleared floor whose gold (floor x 50) did not reach the bank, 150 s in reach with no floor cleared, still inside after the close. SKIP: level, the try cooldown, the arenas kept for the players, the walk blocked, a fall before a floor (section "Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)") |
 | `descent_walk` | all, level 100 and up | O595: walks to the temple (a protection zone), starts the Ember Descent from its window (the free run of the day, else a sigil from `!tester descent sigil`), answers every boon choice with the first card, leaves rooms of rest with Continue and fights by the engine's path. PASS: a room cleared. BUG: a player in the run, a choice that stays open after 3 answers, 150 s with no room, still inside after the close. SKIP: level, no free run and no sigil, the halls kept for the players, the walk blocked, a fall before a room |
 | `trial_walk` | all, level 100 and up | O595: walks to the temple, enters the vocation's trial from the tree window (`trialEnter`), fights the waves and the guardian by the engine's path. PASS: a thrall killed (the guardian's health reported). BUG: 150 s with no kill, still inside after the close. SKIP: a puzzle family (seals or marks), the cooldown, the tier rules, the chambers kept for the players, a fall before a kill |

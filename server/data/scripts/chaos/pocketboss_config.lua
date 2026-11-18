@@ -43,6 +43,9 @@ return {
 	-- instance limits (instance_limits.lua): warnings at warnAt seconds left; at most maxRuns pockets at once (the
 	-- grid's slots); a party that finds them all in use waits in line and is told when one frees up
 	limits = {warnAt = {300, 60, 10}, maxRuns = 16, waitlist = true},
+	-- tester bots (O651): the arenas are one grid the players share, so a pocket of testers is refused while fewer than `reserve` of the
+	-- `limits.maxRuns` arenas would stay free after it (ChaosTesters.soloRefusal: a mixed group is refused too)
+	tester = {reserve = 4},
 
 	-- ------------------------------------------------------------------ the arenas (runtime-built, uber_core.lua layout)
 	-- x 11520-11903, y 10000-10095, z 7: 8 x 2 slots of 48, east of the guild boss arenas (x 11264-11455). Free: no map

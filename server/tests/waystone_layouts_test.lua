@@ -74,5 +74,16 @@ local copy = setmetatable({retired = {{x = cfg.maps[7].from.x, y = cfg.maps[7].f
 ok(K.isRetired(copy, cfg.maps[7].from) and not K.isRetired(copy, cfg.maps[8].from), "a retired map is recognised")
 ok(not K.isRetired(cfg, nil), "no position: not retired")
 
+-- the arrival tiles of the tester bots (O651): a table of map index -> tile inside that map's rectangle (empty until the audit prints them)
+do
+	ok(type(cfg.arrivals) == "table" and type(cfg.tester) == "table", "config: the tester rules and the arrivals table exist")
+	for i, at in pairs(cfg.arrivals) do
+		local m = cfg.maps[i]
+		ok(m ~= nil, "arrival of map " .. tostring(i) .. ": the map exists")
+		ok(m and at.z == m.from.z and at.x >= math.min(m.from.x, m.to.x) and at.x <= math.max(m.from.x, m.to.x)
+			and at.y >= math.min(m.from.y, m.to.y) and at.y <= math.max(m.from.y, m.to.y), "arrival of map " .. tostring(i) .. ": inside its rectangle")
+	end
+end
+
 print(string.format("waystone_layouts_test: %d checks, %d failures", checks, fails))
 os.exit(fails == 0 and 0 or 1)

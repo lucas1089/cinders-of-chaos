@@ -362,5 +362,126 @@ eq(present["33217:33237:7"], nil, "the fir tree")
 eq(WT.clearPaths(), 0, "a second run: nothing left")
 check(globals.ChaosWaystoneTiersStartup ~= nil, "startup event registered")
 
+-- ================================================================== a map walked by a tester bot (O651)
+-- the maps are the shared base map: a tester opens one only while nobody is in it, one run a map, and is sent out the moment a player steps in
+do
+	local tcfg = WT.config
+	check(tcfg.tester and tcfg.tester.minLevel >= 1000 and tcfg.tester.maxSeconds > 0 and tcfg.tester.kills >= 1, "config: the tester rules")
+	check(type(tcfg.arrivals) == "table", "config: the arrivals table")
+	local creatures = {}
+	local function inBox(c, centre, hx, hy)
+		return c.pos.z == centre.z and math.abs(c.pos.x - centre.x) <= hx and math.abs(c.pos.y - centre.y) <= hy
+	end
+	Game = {getSpectators = function(centre, _, onlyPlayers, hx, _, hy)
+		local out = {}
+		for _, c in pairs(creatures) do
+			if inBox(c, centre, hx, hy) and (not onlyPlayers or c:isPlayer()) then out[#out + 1] = c end
+		end
+		return out
+	end}
+	local temple = {x = 32369, y = 32241, z = 7}
+	local nextP = 500
+	local function person(name, level, isT)
+		nextP = nextP + 1
+		local p = {name = name, id = nextP, pos = {x = 32369, y = 32241, z = 7}, level = level, isT = isT, msgs = {}}
+		function p:getName() return self.name end
+		function p:getId() return self.id end
+		function p:getGuid() return self.id end
+		function p:getLevel() return self.level end
+		function p:getPosition() return self.pos end
+		function p:teleportTo(q) self.pos = {x = q.x, y = q.y, z = q.z} end
+		function p:isPlayer() return true end
+		function p:isMonster() return false end
+		function p:getMaster() return nil end
+		function p:getTown() return {getTemplePosition = function() return temple end} end
+		function p:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
+		creatures[p.id] = p
+		return p
+	end
+	Chaos.isTester = function(p) return p.isT == true end
+	local named = {}
+	Player = function(name) return named[name] end
+	local bot = person("Tester Wsm", 1500, true)
+	named[bot.name] = bot
+	local human = person("Real Walt", 1500, false)
+	named[human.name] = human
+	-- refusals
+	local got, why = WT.testerEnter(human, 11)
+	check(got == nil and why == "not a tester", "a player never enters this way")
+	bot.level = 900
+	got, why = WT.testerEnter(bot, 11)
+	check(got == nil and why:find("need level 1000", 1, true), "a bot below tester.minLevel: refused (" .. tostring(why) .. ")")
+	bot.level = 1500
+	got, why = WT.testerEnter(bot, 11)
+	check(got == nil and why:find("no map of the band has an arrival", 1, true), "no arrival tile known: refused (" .. tostring(why) .. ")")
+	local pr = WT.probe(bot)
+	check(pr.inside == false and pr.arrivals == 0 and pr.free == false and pr.minLevel == tcfg.tester.minLevel, "the probe outside: no arrival, no free map")
+	got, why = WT.testerEnter(bot, 99)
+	check(got == nil and why == "no such tier", "no such tier")
+	-- the desert map (9) has an arrival
+	local arrival = {x = 33400, y = 33200, z = 7}
+	tcfg.arrivals[9] = arrival
+	pr = WT.probe(bot)
+	check(pr.free == true and pr.arrivals == 1 and pr.freeTier == 11 and pr.freeTierLevel == 2100, "the probe outside: a map is free, at the band's first tier we have an arrival for")
+	-- somebody in the map: not free
+	local walker = person("Real Wanda", 1500, false)
+	walker.pos = {x = 33420, y = 33210, z = 7}
+	check(WT.playersIn(9) == 1, "playersIn counts a player in the rectangle")
+	got, why = WT.testerEnter(bot, 11)
+	check(got == nil and why == "somebody is in the map", "a player is in the map: the tester waits (" .. tostring(why) .. ")")
+	walker.pos = {x = 1, y = 1, z = 7}
+	check(WT.playersIn(9) == 0, "gone")
+	-- the run
+	local before = WT.active[9]
+	got, why = WT.testerEnter(bot, 11)
+	check(got and got.map == 9 and got.tier == 11 and got.tierLevel == 2100 and why == nil, "a free map: the tester is in (" .. tostring(why) .. ")")
+	check(bot.pos.x == arrival.x and bot.pos.y == arrival.y and bot.pos.z == arrival.z, "...on the arrival tile")
+	eq(WT.active[9], 11, "the map counts at the run's tier")
+	got, why = WT.testerEnter(bot, 11)
+	check(got == nil and why == "already inside a waystone map", "never twice")
+	local bot2 = person("Tester Two", 1500, true)
+	got, why = WT.testerEnter(bot2, 11)
+	check(got == nil and why == "a tester run holds the map", "a second tester: one run a map (" .. tostring(why) .. ")")
+	-- the probe inside: the tier, the level of the monsters, the nearest monster, the guide
+	local mon = monster("Plague Warbringer", {x = 33410, y = 33200, z = 7}, 120000)
+	creatures[mon.id] = mon
+	WT.applied[mon.id] = 2100
+	pr = WT.probe(bot)
+	check(pr.inside and pr.run.map == 9 and pr.run.tier == 11 and pr.run.tierLevel == 2100 and pr.run.players == 0, "probe inside: the run")
+	check(pr.run.monsters == 1 and pr.run.monsterLevel == 2100 and pr.run.nearestHp == 100, "probe inside: the monster and its level")
+	check(pr.guide.mode == "walk" and pr.guide.goal.x == 33410 and pr.guide.reach[2] == 5, "the guide walks to the monster")
+	bot.pos = {x = 33406, y = 33200, z = 7}
+	eq(WT.probe(bot).guide.mode, "fight", "within 5 tiles: fight")
+	creatures[mon.id] = nil
+	pr = WT.probe(bot)
+	check(pr.run.monsters == 0 and pr.guide.mode == "wait", "no monster: wait")
+	creatures[mon.id] = mon
+	-- players first: a player steps in, the tester is sent out, the map goes back
+	walker.pos = {x = 33415, y = 33205, z = 7}
+	WT.testerGuard()
+	check(WT.testerRuns[9] == nil and bot.pos.x == temple.x, "a player came: the tester is at the temple")
+	check(bot.msgs[#bot.msgs]:find("A player came", 1, true), "...and told why")
+	eq(WT.active[9], before, "the map counts as before")
+	walker.pos = {x = 1, y = 1, z = 7}
+	-- the time limit, the bot's own close, a logout
+	got = WT.testerEnter(bot, 11)
+	check(got ~= nil, "the map is free again")
+	clock = clock + tcfg.tester.maxSeconds + 1
+	WT.testerGuard()
+	check(WT.testerRuns[9] == nil and bot.pos.x == temple.x, "the time of the run is over: out")
+	clock = clock + 5
+	got = WT.testerEnter(bot, 11)
+	check(got ~= nil and WT.testerRuns[9] ~= nil, "in again")
+	eq(WT.testerClose(human), false, "a player has no tester run to close")
+	eq(WT.testerClose(bot), true, "the bot's own close")
+	check(WT.testerRuns[9] == nil and bot.pos.x == temple.x, "out at the temple")
+	eq(WT.testerClose(bot), false, "no run: nothing to close")
+	got = WT.testerEnter(bot, 11)
+	bot.pos = {x = 5, y = 5, z = 7} -- left the map another way (a death)
+	WT.testerGuard()
+	check(WT.testerRuns[9] == nil, "a bot that is no longer in the map ends its run")
+	tcfg.arrivals[9] = nil
+end
+
 print(string.format("waystone_tiers_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

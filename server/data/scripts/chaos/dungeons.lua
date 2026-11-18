@@ -1700,8 +1700,10 @@ function ChaosDungeons.probe(player)
 			out.list = {}
 			for _, id in ipairs(ids) do
 				local dg = baseDungeons()[id]
+				local wc = ChaosWeeklyChallengeConfig
 				out.list[#out.list + 1] = {id = id, title = titleOf(id, dg), level = levelOf(dg), size = groupSizeOf(dg),
-					max = loadProgress(guid, id).difficulty, fixed = extraOf(id).fixedDifficulty}
+					max = loadProgress(guid, id).difficulty, fixed = extraOf(id).fixedDifficulty,
+					weekly = (wc and wc.dungeon and wc.dungeon.id == id) and true or nil}
 			end
 		end
 		return out
@@ -1711,12 +1713,15 @@ function ChaosDungeons.probe(player)
 	local bossName = extra.bossName and extra.bossName:lower() or nil
 	local _, _, _, monsterList = scanArea(run.dungeonId, dg, bossName)
 	local monster, best, bestZ, bestZd, boss = nil, nil, nil, nil, nil
-	local alive = 0
+	local alive, scaled = 0, 0
 	for _, m in ipairs(monsterList) do
 		if bossName and m:getName():lower() == bossName then
 			boss = boss or m
 		elseif run.roster and run.roster[m:getId()] then
 			alive = alive + 1
+			if scaledBy[m:getId()] == run then
+				scaled = scaled + 1 -- the run's difficulty is on it (scaleMonster)
+			end
 			local mp = m:getPosition()
 			local d = math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y))
 			if mp.z == pos.z then
@@ -1738,10 +1743,42 @@ function ChaosDungeons.probe(player)
 		members = members, difficulty = run.difficulty, percent = math.max(0, run.lastPercent), total = run.total, left = alive,
 		unlocked = run.unlocked and true or false, ended = run.ended and true or false, deaths = run.deaths,
 		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		scaled = scaled, bossScaled = boss and scaledBy[boss:getId()] == run or nil,
+		weekly = (ChaosWeeklyChallengeConfig and ChaosWeeklyChallengeConfig.dungeon and ChaosWeeklyChallengeConfig.dungeon.id == run.dungeonId)
+			and true or nil,
 		endsIn = run.durationMs and math.max(0, math.floor((run.startedAt + run.durationMs - nowMs()) / 1000)) or nil}
 	out.guide = DC.guide({pos = plain(pos), percent = run.lastPercent, unlocked = run.unlocked and true or false,
 		ended = run.ended and true or false, monster = monster, bossPos = bossPos})
 	return out
+end
+
+-- TEST ONLY (tools/tester_helper.lua `dungeon unlock ID N`, O651): the unlocked difficulty of a TESTER for one dungeon. A person unlocks difficulty
+-- N + 1 by clearing N (five clears of a dungeon to reach 6); a check cannot repeat them, so the helper writes the tester's own progress row (the
+-- table the clean-up empties). Never for a player, never down, never for a dungeon with one fixed difficulty (the Weekly Challenge); one console
+-- line each. -> the difficulty now unlocked, or nil + why
+function ChaosDungeons.testerUnlock(player, id, difficulty)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	local dg = baseDungeons()[id]
+	if not dg then
+		return nil, "no such dungeon"
+	end
+	if extraOf(id).fixedDifficulty then
+		return nil, "that dungeon has one difficulty for every run"
+	end
+	difficulty = math.floor(tonumber(difficulty) or 0)
+	if difficulty < 1 or difficulty > cfg.maxDifficulty then
+		return nil, string.format("difficulty 1 to %d", cfg.maxDifficulty)
+	end
+	local guid = player:getGuid()
+	local progress = loadProgress(guid, id)
+	if difficulty > progress.difficulty then
+		progress.difficulty = difficulty
+		saveProgress(guid, id, progress)
+		print(string.format("[Chaos dungeons] TEST ONLY: difficulty %d of dungeon %d unlocked for tester %s", difficulty, id, player:getName()))
+	end
+	return progress.difficulty
 end
 
 -- TEST ONLY (tools/tester_helper.lua `dungeon close`): ends the testers' own run of the asker, or an empty tester run, so the

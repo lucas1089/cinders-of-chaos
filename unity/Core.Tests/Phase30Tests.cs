@@ -177,7 +177,7 @@ namespace Chaos.Core.Tests
             "rift_walk", "tower_walk", "descent_walk", "trial_walk", "hideout",
             "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk",
             "bounty_elite_walk", "bounty_boss_walk", "daily_claim", "chronicle_walk", "nemesis_walk", "goblin_walk", "vael_walk", "invasion_walk",
-            "craft_found", "gear_chase", "chore_faction", "chore_pass", "chore_chests", "chore_candlemarks", "chore_gamble", "chore_trade", "chore_salvage", "boss_copy_walk" };
+            "craft_found", "gear_chase", "chore_faction", "chore_pass", "chore_chests", "chore_candlemarks", "chore_gamble", "chore_trade", "chore_salvage", "boss_copy_walk", "pocket_walk", "wsmap_walk" };
 
         static void Coverage(Action<bool, string> check)
         {

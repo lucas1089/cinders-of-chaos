@@ -1781,6 +1781,38 @@ end
 -- monster of the floor the bot stands on, else wait. a = {state ("running" ...), boss ("waiting" | "alive" | ...), pos, bossPos,
 -- monster = {pos} (the nearest on this floor), other = true when monsters are left on other floors only, reach (tiles a fight starts at)}
 -- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
+-- The way to another floor (the tester bots, O651): a hole on this floor drops to the ladder of the floor below, a ladder is used to climb to
+-- the cell south of its hole. a.links = {{hole, ladder, up}, ...} (the layout's own), a.pos the bot, targetZ the floor the goal is on. Returns
+-- the guide for the nearest link in the right direction, or nil when this floor has none that way (no stairs known)
+local function stairsGuide(a, targetZ)
+	local pos = a.pos
+	if not (pos and targetZ and a.links) then
+		return nil
+	end
+	local down = targetZ > pos.z
+	local best, bd
+	for _, l in ipairs(a.links) do
+		local at = down and l.hole or l.ladder
+		if at and at.z == pos.z then
+			local d = math.max(math.abs(at.x - pos.x), math.abs(at.y - pos.y))
+			if not bd or d < bd then
+				best, bd = at, d
+			end
+		end
+	end
+	if not best then
+		return nil
+	end
+	if down then
+		return {mode = "walk", goal = best, reach = {0, 1}, area = "stairs", via = "hole", why = "to the hole down to the next floor"}
+	end
+	if bd <= 1 then
+		return {mode = "use", goal = best, area = "stairs", via = "ladder", why = "up the ladder"}
+	end
+	return {mode = "walk", goal = best, reach = {0, 1}, area = "stairs", via = "ladder", why = "to the ladder up to the floor above"}
+end
+R.stairsGuide = stairsGuide
+
 function R.guide(a)
 	if a.state ~= "running" then
 		return {mode = "wait", why = "the run is over"}
@@ -1791,6 +1823,11 @@ function R.guide(a)
 	end
 	if a.boss == "alive" and a.bossPos then
 		if a.bossPos.z ~= (a.pos and a.pos.z) then
+			local st = stairsGuide(a, a.bossPos.z)
+			if st then
+				st.why = "the guardian is on another floor: " .. st.why
+				return st
+			end
 			return {mode = "walk", goal = a.bossPos, reach = {1, reach}, area = "boss", why = "the guardian is on another floor"}
 		end
 		if near(a.bossPos) then
@@ -1805,6 +1842,12 @@ function R.guide(a)
 		return {mode = "walk", goal = a.monster.pos, reach = {1, reach}, area = "pack", why = "to the nearest pack monster"}
 	end
 	if a.other then
+		local st = stairsGuide(a, a.otherPos and a.otherPos.z)
+		if st then
+			st.area = "stairs"
+			st.why = "the monsters left are on another floor: " .. st.why
+			return st
+		end
 		return {mode = "wait", area = "pack", why = "the monsters left are on another floor"}
 	end
 	return {mode = "wait", why = a.boss == "waiting" and "no monster in sight" or "nothing to do"}

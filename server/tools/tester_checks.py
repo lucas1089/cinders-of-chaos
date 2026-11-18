@@ -2118,6 +2118,7 @@ DUNGEON_MEMBERS = {}      # member name -> leader name, while a party plays
 
 
 def reset_dungeon_turn():
+    DUNGEON_DIFF_DONE.clear()
     DUNGEON_BUSY.clear()
     DUNGEON_DONE.clear()
     DUNGEON_MEMBERS.clear()
@@ -2144,7 +2145,7 @@ def dungeon_pick(a, level=0):
     """the dungeon this bot plays: the highest of its level not played or being played by another bot in this run.
     -> (dungeon dict, None) or (None, the skip text)"""
     have = int(a.get('level') or level or 0)
-    ok = [d for d in a.get('list') or [] if isinstance(d, dict) and isinstance(d.get('id'), int)]
+    ok = [d for d in a.get('list') or [] if isinstance(d, dict) and isinstance(d.get('id'), int) and not d.get('weekly')]   # the Weekly Challenge: its own check (O651)
     fit = [d for d in ok if int(d.get('level') or 0) <= have]
     if not fit:
         low = min([int(d.get('level') or 0) for d in ok] or [0])
@@ -2169,6 +2170,22 @@ def dungeon_problems(a, size=None):
     return out
 
 
+def difficulty_problems(a, trace):
+    """[text] for one inside-a-run answer (O651): the run's difficulty is the one the check expects (the queue's request, or the fixed one of the
+    Weekly Challenge), and the difficulty is on the monsters (`scaled`: monsters of the run that carry it). Keeps the most scaled in the trace"""
+    out = []
+    r = a.get('run') if isinstance(a, dict) else None
+    if not isinstance(r, dict):
+        return out
+    want = trace.get('difficulty')
+    if want is not None and r.get('difficulty') is not None and int(r['difficulty']) != int(want):
+        out.append('the run is at difficulty %s, the check expects %s (queued for %s)' % (r['difficulty'], want, trace.get('asked')))
+    if isinstance(r.get('scaled'), int):
+        trace['scaled'] = max(trace.get('scaled', 0), r['scaled'])
+        trace['monsters'] = max(trace.get('monsters', 0), int(r.get('left') or 0))
+    return out
+
+
 def dungeon_verdict(t):
     """(status, text) from the trace of a played run: faults, kills (percent reached), won (boss down after the unlock), unlocked,
     fought (seconds at a monster or the boss without progress), stuck, steps, secs, left, members, title"""
@@ -2180,6 +2197,9 @@ def dungeon_verdict(t):
         t.get('secs', 0), t.get('left', '?'))
     if t.get('fallbacks'):
         how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if t.get('asked', 1) > 1 or t.get('difficulty', 1) > 1:
+        how += '; difficulty %s%s, %d of %d monster(s) scaled' % (t.get('difficulty'), ' (asked for %s)' % t['asked'] if t.get('asked') != t.get('difficulty') else '',
+                                                                t.get('scaled', 0), t.get('monsters', 0))
     if t.get('won') or t.get('percent', 0) > 0:
         return PASS, '%s: %s' % (t.get('title') or 'dungeon', how)
     if t.get('fought', 0) >= DUNGEON_FIGHT_MIN:
@@ -2223,9 +2243,12 @@ async def check_closed_dungeon(io, name, cls, level):
     return result
 
 
-async def dungeon_play(io, name, cls, a, dg, partners):
-    key = 'closed_dungeon'
+async def dungeon_play(io, name, cls, a, dg, partners, key='closed_dungeon', difficulty=1, title=None):
+    """one run of dungeon dg at `difficulty` (O651: 2 to 6 and the Weekly Challenge, whose fixed difficulty wins over the request). A difficulty
+    above the one unlocked is unlocked on the bot's own progress first (the helper's TEST ONLY `dungeon unlock`: a person earns it with one clear
+    of each difficulty before)"""
     size = max(1, int(dg.get('size') or 1))
+    expect = int(dg.get('fixed') or difficulty)
     while len(partners) + 1 < size:
         other = await io.partner(min_level=int(dg.get('level') or 0))
         if not other:
@@ -2265,9 +2288,15 @@ async def dungeon_play(io, name, cls, a, dg, partners):
     window = await io.request('dungeons', 'fetch', {}, ['list', 'dungeon'], ANSWER)
     if window is None:
         return Result(key, name, cls, SKIP, 'no answer from the dungeons window (not installed)', fallbacks)
+    if difficulty > int(dg.get('max') or 1) and not dg.get('fixed'):
+        for r in squad:
+            got = await hcmd(io, r, 'dungeon unlock %d %d' % (dg['id'], difficulty), 'dungeon', HELPER_WAIT)
+            if not isinstance(got, dict) or got.get('err') or int(got.get('unlocked') or 0) < difficulty:
+                return Result(key, name, cls, SKIP, 'difficulty %d could not be unlocked: %s' % (
+                    difficulty, str((got or {}).get('err') or 'no answer')[:60]), fallbacks)
     # queue, each bot from its own window; the run starts when the group is full or the solo wait is over
     for r in squad:
-        data = {'id': dg['id'], 'difficulty': 1}
+        data = {'id': dg['id'], 'difficulty': difficulty}
         reply = await (io.request('dungeons', 'queue', data, ['queue'], ANSWER) if r['lead']
                        else io.request_of(r['name'], 'dungeons', 'queue', data, ['queue'], ANSWER))
         if reply is not None and (reply.get('data') or {}).get('joined') is False and r['lead']:
@@ -2283,8 +2312,8 @@ async def dungeon_play(io, name, cls, a, dg, partners):
         waited += 2.0
     if not (isinstance(state, dict) and state.get('inside')):
         for r in squad:   # a queue entry is left by sending the request again (the window's one button)
-            await (io.request('dungeons', 'queue', {'id': dg['id'], 'difficulty': 1}, ['queue'], ANSWER) if r['lead']
-                   else io.request_of(r['name'], 'dungeons', 'queue', {'id': dg['id'], 'difficulty': 1}, ['queue'], ANSWER))
+            await (io.request('dungeons', 'queue', {'id': dg['id'], 'difficulty': difficulty}, ['queue'], ANSWER) if r['lead']
+                   else io.request_of(r['name'], 'dungeons', 'queue', {'id': dg['id'], 'difficulty': difficulty}, ['queue'], ANSWER))
         return Result(key, name, cls, SKIP, 'the dungeon did not start in %d s (a run of players is ahead of the testers)' % int(DUNGEON_QUEUE_WAIT), fallbacks)
     for r in squad:
         s = state if r['lead'] else await dungeon_look(io, r)
@@ -2292,14 +2321,16 @@ async def dungeon_play(io, name, cls, a, dg, partners):
     trace = {'faults': [], 'steps': 0, 'percent': 0, 'unlocked': False, 'won': False, 'fought': 0.0, 'stuck': None, 'secs': 0,
              'left': '?', 'members': sum(1 for r in squad if r['inside']), 'title': dg.get('title'), 'died': False,
              'level': a.get('level'), 'came': 'foot' if all(h == 'foot' for h in came.values()) else 'helper',
-             'size': size, 'fallbacks': fallbacks}
+             'size': size, 'fallbacks': fallbacks, 'key': key, 'difficulty': expect, 'asked': difficulty, 'scaled': 0, 'monsters': 0}
+    if title:
+        trace['title'] = title
     res = await dungeon_walk_all(io, name, cls, squad, trace)
     return res
 
 
 async def dungeon_walk_all(io, name, cls, squad, trace):
     """the play loop: look, then each bot walks, waits or fights by what the screen says, until the run is over or the time is"""
-    key = 'closed_dungeon'
+    key = trace.get('key', 'closed_dungeon')
     elapsed, misses = 0.0, 0
     fight_since, progress, boss_seen, looted = None, None, False, 0.0
     while io.alive():
@@ -2320,7 +2351,7 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
             trace['left'] = 'the exit teleport' if trace['won'] else 'the run ended (time, death or the exit)'
             trace['died'] = not trace['won'] and elapsed < DUNGEON_BUDGET and not trace['unlocked']
             break
-        trace['faults'] += [p for p in dungeon_problems(lead, trace['size']) if p not in trace['faults']]
+        trace['faults'] += [p for p in dungeon_problems(lead, trace['size']) + difficulty_problems(lead, trace) if p not in trace['faults']]
         if trace['faults']:
             break
         run = lead.get('run') or {}
@@ -2390,6 +2421,120 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
         trace['left'] = 'a close by the helper'
     status, text = dungeon_verdict(trace)
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
+
+
+# ------------------------------------------------------------------------------------------------ dungeon difficulties 2 to 6 and the Weekly Challenge (O651)
+# The same walk and fights as closed_dungeon (a closed check: the run is the testers' own, never ranked or recorded) at a higher difficulty or in the
+# Weekly Challenge's dungeon. The difficulty a person unlocks by clearing the one before is written to the bot's own progress by the helper (TEST ONLY
+# `dungeon unlock`), the queue asks for it like the window's button, and the run must carry it: `run.difficulty` and the monsters scaled (health and
+# damage x the table of dungeons_difficulty.lua). The Weekly Challenge has one difficulty for every run: the bot asks for another and the run must
+# be at the fixed one; its board (challenge_solo, challenge_party) must list no tester before and after.
+DUNGEON_DIFFS = (2, 3, 4, 5, 6)
+DUNGEON_DIFF_DONE = {}   # difficulty -> bot name, once a bot played it in this run
+DUNGEON_DIFF_MARGIN = {2: 1.0, 3: 1.3, 4: 1.7, 5: 2.2, 6: 3.0}   # the level over the dungeon's own a bot needs for the difficulty (health x2 to x13, damage x1.3 to x6)
+WEEKLY_ASK = 3           # the difficulty the bot asks the Weekly Challenge for (its own rule ignores it)
+
+
+def reset_difficulty_turn():
+    DUNGEON_DIFF_DONE.clear()
+
+
+def dungeon_difficulty_pick(a, level=0):
+    """(dungeon, difficulty, None) this bot plays: the highest difficulty not played yet in this run that the bot's level carries on a dungeon no bot is
+    in (solo dungeons first, then the lowest level), else (None, None, the skip text)"""
+    have = int(a.get('level') or level or 0)
+    top = int(a.get('maxDifficulty') or 6)
+    plain = [d for d in a.get('list') or [] if isinstance(d, dict) and isinstance(d.get('id'), int) and not d.get('fixed') and not d.get('weekly')]
+    free = [d for d in plain if d['id'] not in DUNGEON_BUSY]
+    todo = [d for d in DUNGEON_DIFFS if d <= top and d not in DUNGEON_DIFF_DONE]
+    if not todo:
+        return None, None, 'every difficulty of 2 to %d was played in this run (by %s)' % (top, ', '.join(sorted(set(DUNGEON_DIFF_DONE.values()))) or 'other bots')
+    for d in sorted(todo, reverse=True):
+        fit = [g for g in free if have >= int(int(g.get('level') or 0) * DUNGEON_DIFF_MARGIN[d])]
+        if fit:
+            return min(fit, key=lambda g: (int(g.get('size') or 1), int(g.get('level') or 0), g['id'])), d, None
+    low = min([int(g.get('level') or 0) for g in plain] or [0])
+    return None, None, 'level %d: no free dungeon carries difficulty %d (the lowest dungeon needs level %d, x%.1f)' % (have, min(todo), low, DUNGEON_DIFF_MARGIN[min(todo)])
+
+
+async def check_dungeon_difficulty(io, name, cls, level):
+    """a dungeon at difficulty 2 to 6: unlock it on the bot's progress, queue for it, play the run, the run must carry it"""
+    key = 'dungeon_difficulty'
+    if name in DUNGEON_MEMBERS:
+        return Result(key, name, cls, SKIP, 'played as the member of the party of %s (its result is the party\'s)' % DUNGEON_MEMBERS[name])
+    a = await io.helper('dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    dg, diff, why = dungeon_difficulty_pick(a, level)
+    if dg is None:
+        return Result(key, name, cls, SKIP, why)
+    DUNGEON_BUSY[dg['id']] = name
+    partners = []
+    result = None
+    try:
+        result = await dungeon_play(io, name, cls, a, dg, partners, key=key, difficulty=diff, title='%s at difficulty %d' % (dg.get('title') or 'dungeon', diff))
+    finally:
+        DUNGEON_BUSY.pop(dg['id'], None)
+        if result is not None and result.status == PASS:
+            DUNGEON_DIFF_DONE[diff] = name
+        for p in list(partners):
+            DUNGEON_MEMBERS.pop(p, None)
+            await io.party('leave', p)
+        io.raid_mode([name] + partners, False)
+    return result
+
+
+def weekly_board_problem(w, when):
+    """the text of a Weekly Challenge board that lists a tester, else None: w is the `weekly` part of `!tester dungeon weekly`"""
+    if isinstance(w, dict) and int(w.get('testersListed') or 0) > 0:
+        return 'the Weekly Challenge boards list %s tester(s) %s (a tester run is never ranked)' % (w['testersListed'], when)
+    return None
+
+
+async def check_weekly_challenge(io, name, cls, level):
+    """the Weekly Challenge dungeon: asks for another difficulty, the run is at the fixed one, a tester is on neither board before or after"""
+    key = 'weekly_challenge'
+    if name in DUNGEON_MEMBERS:
+        return Result(key, name, cls, SKIP, 'played as the member of the party of %s (its result is the party\'s)' % DUNGEON_MEMBERS[name])
+    a = await io.helper('dungeon state', 'dungeon', ANSWER)
+    no = dungeon_refusal(a, level)
+    if no:
+        return Result(key, name, cls, no[0], no[1])
+    dg = next((d for d in a.get('list') or [] if isinstance(d, dict) and d.get('weekly') and isinstance(d.get('id'), int)), None)
+    if dg is None:
+        return Result(key, name, cls, SKIP, 'no Weekly Challenge in the dungeon list (not built this week)')
+    have = int(a.get('level') or level or 0)
+    if have < int(dg.get('level') or 0):
+        return Result(key, name, cls, SKIP, 'level %d: the Weekly Challenge needs level %s' % (have, dg.get('level')))
+    if dg['id'] in DUNGEON_BUSY:
+        return Result(key, name, cls, SKIP, 'another bot plays the Weekly Challenge now (%s)' % DUNGEON_BUSY[dg['id']])
+    w0 = await io.helper('dungeon weekly', 'dungeon', ANSWER)
+    w = (w0 or {}).get('weekly') if isinstance(w0, dict) else None
+    if not isinstance(w, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester dungeon weekly (old helper file)')
+    if not w.get('current'):
+        return Result(key, name, cls, SKIP, 'the Weekly Challenge layout is not this week\'s (built %s)' % w.get('built'))
+    bad = weekly_board_problem(w, 'before the run')
+    if bad:
+        return Result(key, name, cls, FAIL, bad)
+    DUNGEON_BUSY[dg['id']] = name
+    partners = []
+    result = None
+    try:
+        result = await dungeon_play(io, name, cls, a, dg, partners, key=key, difficulty=WEEKLY_ASK, title='Weekly Challenge %s (%s)' % (w.get('built'), w.get('theme')))
+    finally:
+        DUNGEON_BUSY.pop(dg['id'], None)
+        for p in list(partners):
+            DUNGEON_MEMBERS.pop(p, None)
+            await io.party('leave', p)
+        io.raid_mode([name] + partners, False)
+    if result is not None and result.status != SKIP:
+        w1 = await io.helper('dungeon weekly', 'dungeon', ANSWER)
+        bad = weekly_board_problem((w1 or {}).get('weekly') if isinstance(w1, dict) else None, 'after the run')
+        if bad:
+            return Result(key, name, cls, FAIL, bad, result.fallbacks)
+    return result
 
 
 # ------------------------------------------------------------------------------------------------ the group queue and the party finder (O589)
@@ -3091,6 +3236,8 @@ async def guildboss_walk(io, name, cls, r, trace):
 # person: the guardian when it is up, else the nearest pack monster of its floor, by the engine's own path. The helper only gives the key
 # (`!tester rift key`), reads the screen (`rift state`), gives the path (`rift path`) and closes the run; nothing teleports the bot inside.
 RIFT_BUDGET = 420.0       # seconds a rift is played at most
+RIFT_BUDGET_TWO = 660.0   # a rift of two floors (O651): the guardian is on the last floor, the way there goes through a hole
+RIFT_STAIR_LOOKS = 6      # looks next to the hole (or ladder) with the floor unchanged: the stairs do not take the bot (O651)
 RIFT_STEPS = 6
 RIFT_OPEN_WAIT = 12.0     # seconds from the key to standing in the rift (the hotkey is sent again twice)
 RIFT_FIGHT_MIN = 150.0    # seconds at a monster without a kill
@@ -3105,8 +3252,12 @@ def rift_walk_verdict(t):
         return FAIL, '; '.join(t['faults'][:3])
     how = 'tier %s %s, %s the temple, %d step(s) in %d s' % (t.get('tier'), t.get('theme') or '?',
                                                            'walked to' if t.get('came') == 'foot' else 'the helper put the bot at', t.get('steps', 0), t.get('secs', 0))
+    if t.get('floors', 1) > 1:
+        how += ', %d floors, %d floor change(s) (%d down, %d up, %d ladder use(s))' % (t['floors'], t.get('stairs', 0), t.get('down', 0), t.get('up', 0), t.get('uses', 0))
     if t.get('fallbacks'):
         how += '; teleport in place of walking: ' + ', '.join(t['fallbacks'])
+    if t.get('floors', 1) > 1 and t.get('links') and not t.get('stairs') and (t.get('kills', 0) > 0 or (t.get('hp') is not None and t['hp'] < 100)):
+        return SKIP, 'killed %d in the first floor of a rift of %d floors and the stairs were not walked in %d s (%s)' % (t.get('kills', 0), t['floors'], t.get('secs', 0), how)
     if t.get('kills', 0) > 0 or (t.get('hp') is not None and t['hp'] < 100):
         what = '%d kill(s)' % t.get('kills', 0)
         if t.get('boss_seen'):
@@ -3115,7 +3266,7 @@ def rift_walk_verdict(t):
     if t.get('fought', 0) >= RIFT_FIGHT_MIN:
         return FAIL, 'fought %d s in the rift and killed none (damage, targets or the monsters)' % t['fought']
     if t.get('floor'):
-        return SKIP, 'the next goal is on another floor of the rift: the stairs are not walked yet (%s)' % how
+        return SKIP, 'the next goal is on another floor of the rift and the layout names no stairs towards it (%s)' % how
     if t.get('stuck'):
         return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], RIFT_STUCK, how)
     if t.get('died'):
@@ -3186,7 +3337,8 @@ async def rift_walk_play(io, name, cls, r, trace):
     key = 'rift_walk'
     elapsed, misses, fight_since, last_kills, looted = 0.0, 0, None, None, 0.0
     first_kills = None
-    while io.alive() and elapsed < RIFT_BUDGET:
+    budget = RIFT_BUDGET
+    while io.alive() and elapsed < budget:
         s = await io.helper('rift state', 'rift', ANSWER)
         if not isinstance(s, dict):
             misses += 1
@@ -3198,9 +3350,19 @@ async def rift_walk_play(io, name, cls, r, trace):
         misses = 0
         run = s.get('run') or {}
         if not s.get('inside') or run.get('state') not in (None, 'running'):
-            trace['died'] = not trace['kills'] and elapsed < RIFT_BUDGET and not trace['boss_seen']
+            trace['died'] = not trace['kills'] and elapsed < budget and not trace['boss_seen']
             break
         trace['theme'] = run.get('theme') or trace['theme']
+        trace['floors'] = int(run.get('floors') or 1)
+        if trace['floors'] > 1:
+            budget = RIFT_BUDGET_TWO
+        trace['links'] = int(run.get('links') or 0)
+        z = (s.get('pos') or {}).get('z')
+        if trace.get('z') is not None and z is not None and z != trace['z']:   # the hole took the bot down, the ladder up (O651)
+            trace['stairs'] = trace.get('stairs', 0) + 1
+            trace['down' if z > trace['z'] else 'up'] = trace.get('down' if z > trace['z'] else 'up', 0) + 1
+            trace['at_stairs'] = 0
+        trace['z'] = z
         killed = int(run.get('killed') or 0)
         first_kills = killed if first_kills is None else first_kills
         trace['kills'] = max(trace['kills'], killed - first_kills)
@@ -3222,8 +3384,20 @@ async def rift_walk_play(io, name, cls, r, trace):
             fight_since = None
         if trace['kills'] > 0 and trace['boss_seen'] and trace['hp'] is not None and trace['hp'] < 100:
             break   # a pack monster killed and the guardian hurt: the run has been walked through
+        if g.get('area') == 'stairs' and isinstance(g.get('goal'), dict) and raid_near(s.get('pos'), g['goal'], 1):
+            trace['at_stairs'] = trace.get('at_stairs', 0) + 1
+            if trace['at_stairs'] >= RIFT_STAIR_LOOKS:
+                trace['faults'].append('stood next to the %s %d looks and the floor did not change (the stairs do not take the bot)' % (
+                    'hole' if g.get('via') == 'hole' else 'ladder', trace['at_stairs']))
+                break
+        elif g.get('area') != 'stairs':
+            trace['at_stairs'] = 0
         plan = []
-        if g.get('mode') == 'walk' and isinstance(g.get('goal'), dict):
+        if g.get('mode') == 'use' and isinstance(g.get('use'), dict):   # the ladder is used like a click on it, from the tile next to it
+            u = g['use']
+            await io.use_at((u['x'], u['y'], u['z']), u.get('clientId'), u.get('stack', 1))
+            trace['uses'] = trace.get('uses', 0) + 1
+        elif g.get('mode') == 'walk' and isinstance(g.get('goal'), dict):
             plan = r['walker'].steps(s['pos'], g['goal'], RIFT_STEPS, elapsed)
             if not r['walker'].blocked:   # the engine's path first (walls, doors); the side step only when the way is blocked
                 got = await hcmd(io, r, 'rift path', 'rift')
@@ -5676,6 +5850,261 @@ async def check_boss_copy_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ pocket bosses and boss passive points (O651)
+# The Boss Spawns window's Pocket button, as a person uses it: the bot walks to the temple (a pocket opens in a protection zone), opens the window,
+# asks for the pocket of a boss that gives a boss passive point it does not hold (else the lowest one its level opens), plays the private arena
+# like a person (to the boss by the engine's path, its own rotation, the loot of the corpse) and checks the daily charge was spent and the boss
+# point came. The arenas are one grid the players share: a tester takes one only while `reserve` stay free (the server's rule, read from
+# `!tester pocket`), the run is never mixed with a player, and nothing of it is public (server/README.md "The rest of the closed audit (O589)", step 10).
+POCKET_BUDGET = 720.0     # seconds a pocket is played at most (the pocket's own limit is 10 to 15 minutes after the boss comes)
+
+
+def pocket_refusal(a, level=0):
+    """(status, text) when this bot must not play the check, else None: from its `!tester pocket` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester pocket (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if a.get('enabled') is False:
+        return SKIP, 'the pocket bosses are closed'
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a pocket already'
+    if a.get('free') is not None and a.get('reserve') is not None and int(a['free']) - 1 < int(a['reserve']):
+        return SKIP, 'the pocket arenas are kept for the players (%s free, %s reserved)' % (a['free'], a['reserve'])
+    if not a.get('bosses'):
+        return SKIP, 'level %s opens no pocket with a charge left today' % (a.get('level') or level)
+    return None
+
+
+def pocket_pick(a):
+    """the pocket this bot opens: the first row of the answer (a boss with a passive point the bot lacks first, then by level)"""
+    rows = [b for b in a.get('bosses') or [] if isinstance(b, dict) and isinstance(b.get('key'), str)]
+    return rows[0] if rows else None
+
+
+def pocket_problems(s, trace):
+    """[text] for one inside-a-pocket answer: a player in the testers' pocket. Keeps the boss, its lowest health and the kill in the trace"""
+    out = []
+    run = s.get('run') or {}
+    if run.get('players') is not None and run.get('testers') is not None and run['players'] != run['testers']:
+        out.append('a player is in the pocket of the testers (%s of %s are testers)' % (run['testers'], run['players']))
+    if run.get('boss') == 'alive' or isinstance(run.get('bossHp'), int):
+        trace['boss_seen'] = True
+        if isinstance(run.get('bossHp'), int):
+            trace['hp'] = run['bossHp'] if trace.get('hp') is None else min(trace['hp'], run['bossHp'])
+    if run.get('boss') == 'dead' or run.get('state') == 'success':
+        trace['won'] = True
+        trace['hp'] = 0
+    return out
+
+
+def pocket_walk_verdict(t):
+    """(status, text) from the trace of a played pocket: faults, boss, won, hp (the boss's lowest health percent), boss_seen, point (the boss point before:
+    {id, got} or None), point_gain (the points held after minus before), fought, stuck, died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'pocket')
+    if t.get('won'):
+        pt = t.get('point')
+        extra = ''
+        if pt and not pt.get('got'):
+            extra = ', the boss point came (+%s)' % t.get('point_gain')
+        elif pt:
+            extra = ', the boss point was held already'
+        return PASS, '%s fell in %d s%s (%s)' % (t.get('boss') or 'the boss', t.get('secs', 0), extra, how)
+    if t.get('boss_seen') and t.get('hp') is not None and t['hp'] < 100:
+        return SKIP, '%s was hurt to %s%% and did not fall in %d s (%s)' % (t.get('boss') or 'the boss', t['hp'], t.get('secs', 0), how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s at the boss of the pocket and took none of its health (damage, targets or the boss)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot was carried out before the boss was hurt (level %s against %s)' % (t.get('level', '?'), t.get('boss') or 'the boss')
+    if not t.get('boss_seen'):
+        return SKIP, 'the boss did not come in %d s (%s)' % (t.get('secs', 0), how)
+    return SKIP, 'the boss was not hurt in %d s (%s)' % (t.get('secs', 0), how)
+
+
+def pocket_error_text(reply):
+    d = (reply or {}).get('data') if isinstance(reply, dict) and reply.get('action') == 'pocketError' else None
+    return str((d or {}).get('text') or '')[:90] if d is not None else None
+
+
+async def check_pocket_walk(io, name, cls, level):
+    """walks to the temple, opens the Boss Spawns window, asks for a pocket, plays the private arena to the boss's death, checks the charge and the point"""
+    key = 'pocket_walk'
+    a = await io.helper('pocket state', 'pocket', ANSWER)
+    refused = pocket_refusal(a, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    pick = pocket_pick(a)
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks, 'level': a.get('level'),
+             'boss_seen': False, 'hp': None, 'won': False, 'boss': pick.get('name'), 'point': pick.get('point')}
+    points0 = (a.get('points') or {}).get('got')
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='pocket')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'a pocket'), fallbacks)
+        await io.request('bossSpawns', 'open', {}, ['list', 'pocket'], ANSWER)   # the window, as a person opens it
+        s, waited, refusal = None, 0.0, None
+        while waited <= SOLO_ENTER_WAIT and io.alive():
+            if waited in (0.0, 7.0):
+                reply = await io.request('bossSpawns', 'pocketEnter', {'k': pick['key']}, ['pocketError', 'pocket'], ANSWER)
+                refusal = pocket_error_text(reply) or refusal
+                if refusal and waited == 0.0 and refusal:
+                    break
+            await io.sleep(1.0)
+            waited += 1.0
+            s = await io.helper('pocket state', 'pocket', ANSWER)
+            if isinstance(s, dict) and s.get('inside'):
+                break
+        if not (isinstance(s, dict) and s.get('inside')):
+            if refusal and ('never mixed' in refusal or 'Closed test mode' in refusal):
+                return Result(key, name, cls, FAIL, 'the pocket refused a lone tester: %s' % refusal, fallbacks)
+            return Result(key, name, cls, SKIP, 'the pocket of %s did not open in %d s: %s' % (pick.get('name'), int(SOLO_ENTER_WAIT), refusal or 'no text'), fallbacks)
+        await solo_play(io, r, trace, {
+            'system': 'pocket', 'budget': POCKET_BUDGET, 'problems': pocket_problems, 'done': lambda t: t.get('won'),
+            'made': lambda t: bool(t.get('boss_seen')),
+            'mark': lambda s: ((s.get('run') or {}).get('bossHp'), (s.get('run') or {}).get('state'), (s.get('run') or {}).get('boss'))})
+        if trace['won']:
+            await io.loot()   # the corpse of the boss: the loot is taken as anywhere
+            await io.sleep(2.0)
+        await io.helper('pocket close', 'pocket', ANSWER)
+        after = await io.helper('pocket state', 'pocket', ANSWER)
+        if isinstance(after, dict) and after.get('inside'):
+            trace['faults'].append('the bot is still inside the pocket after the close')
+        if isinstance(after, dict) and not trace['faults']:
+            row = next((b for b in after.get('bosses') or [] if isinstance(b, dict) and b.get('key') == pick['key']), None)
+            if row is not None and pick.get('left') is not None and row.get('left') is not None and int(row['left']) >= int(pick['left']):
+                trace['faults'].append('the pocket of %s was opened and the charges left went %s to %s (a charge is spent when it opens)' % (
+                    pick.get('name'), pick['left'], row['left']))
+            gained = None
+            if points0 is not None and isinstance(after.get('points'), dict) and after['points'].get('got') is not None:
+                gained = int(after['points']['got']) - int(points0)
+            trace['point_gain'] = gained
+            if trace['won'] and pick.get('point') and not pick['point'].get('got') and gained is not None and gained < 1:
+                trace['faults'].append('%s fell in a pocket and the first kill gave no boss passive point (%s of %s held)' % (
+                    pick.get('name'), after['points'].get('got'), after['points'].get('total')))
+        status, text = pocket_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('pocket close', 'pocket', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ------------------------------------------------------------------------------------------------ a waystone map walked (O651)
+# After the take, the use and the run (`waystone_run`, on the game's own code) one map is walked: the bot walks to the temple, the helper's TEST ONLY
+# `wsmap enter` stands for the device's pads and teleport (base code, not in the repository) and puts it on the arrival tile of a free map with a plain
+# run of the first tier, and the bot clears monsters like a person (the engine's path, its own rotation, the loot). The maps are the shared base map: the
+# server lets a tester in only while nobody is in the rectangle and sends it out the moment a player steps in (players first); the check proves the run's
+# tier is on the monsters (their level against the tier) and that no player is in the testers' run. The boss lever, the boss and the exit teleport are
+# base code and are left (server/README.md step 10).
+WSMAP_BUDGET = 420.0      # seconds a map is walked at most
+WSMAP_NEED = 3            # monsters of the map that fall (the count of monsters on the map falls by this much)
+WSMAP_LEVEL_SLACK = 100   # levels a bot may be under the monsters of the map's tier
+
+
+def wsmap_refusal(a, level=0):
+    """(status, text) when this bot must not play the check, else None: from its `!tester wsmap` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester wsmap (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if a.get('enabled') is False:
+        return SKIP, 'the waystone tiers are off'
+    have = int(a.get('level') or level or 0)
+    if a.get('minLevel') is not None and have < int(a['minLevel']):
+        return SKIP, 'level %d: the waystone maps need level %s' % (have, a['minLevel'])
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a waystone map already'
+    if not a.get('arrivals'):
+        return SKIP, 'no arrival tile of a waystone map is known (waystone_tiers_config.lua arrivals: audit_waystone_maps.py BASE --arrivals prints them)'
+    if a.get('free') is False:
+        return SKIP, 'no waystone map is free for the testers: %s' % (a.get('why') or 'in use')
+    if a.get('freeTierLevel') is not None and have + WSMAP_LEVEL_SLACK < int(a['freeTierLevel']):
+        return SKIP, 'level %d: the free waystone map is tier %s (level %s)' % (have, a.get('freeTier'), a['freeTierLevel'])
+    return None
+
+
+def wsmap_problems(s, trace):
+    """[text] for one inside-a-map answer: a player in the testers' map, a monster of the map not at the level of the run's tier. Keeps the fall of the
+    monster count (the kills) in the trace"""
+    out = []
+    run = s.get('run') or {}
+    if int(run.get('players') or 0) > 0:
+        out.append('%s player(s) are in the waystone map of the testers' % run['players'])
+    if run.get('monsterLevel') is not None and run.get('tierLevel') is not None and int(run['monsterLevel']) != int(run['tierLevel']):
+        out.append('a monster of the map is level %s, the run is tier %s (level %s)' % (run['monsterLevel'], run.get('tier'), run['tierLevel']))
+    if isinstance(run.get('monsters'), int):
+        trace['mon0'] = run['monsters'] if trace.get('mon0') is None else trace['mon0']
+        trace['kills'] = max(trace.get('kills', 0), trace['mon0'] - run['monsters'])
+        trace['tier'], trace['tier_level'] = run.get('tier'), run.get('tierLevel')
+        trace['map'] = run.get('map')
+    return out
+
+
+def wsmap_walk_verdict(t):
+    """(status, text) from the trace of a walked map: faults, kills, tier, tier_level, map, fought, stuck, died, came, steps, secs, level, fallbacks"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'map')
+    if t.get('kills', 0) >= WSMAP_NEED:
+        return PASS, '%d monster(s) of map %s fell at tier %s (level %s) (%s)' % (t['kills'], t.get('map'), t.get('tier'), t.get('tier_level'), how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in the waystone map and killed none (damage, targets or the monsters)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot was out of the map before it killed a monster: a fall (level %s against tier %s), or the server\'s guard sent it out (a player came)' % (
+            t.get('level', '?'), t.get('tier', '?'))
+    return SKIP, 'only %d of %d monster(s) fell in %d s (%s)' % (t.get('kills', 0), WSMAP_NEED, t.get('secs', 0), how)
+
+
+async def check_wsmap_walk(io, name, cls, level):
+    """walks to the temple, enters a free waystone map (the TEST ONLY stand-in of the pads), clears monsters by the engine's path, leaves"""
+    key = 'wsmap_walk'
+    a = await io.helper('wsmap state', 'wsmap', ANSWER)
+    refused = wsmap_refusal(a, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks, 'level': a.get('level'),
+             'kills': 0}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks)
+        if why:
+            return Result(key, name, cls, SKIP, why, fallbacks)
+        e = await io.helper('wsmap enter %d' % int(a.get('freeTier') or 1), 'wsmap', HELPER_WAIT)
+        if not isinstance(e, dict):
+            return Result(key, name, cls, SKIP, 'no answer to !tester wsmap enter', fallbacks)
+        if e.get('err'):
+            return Result(key, name, cls, SKIP, 'wsmap enter: %s' % str(e['err'])[:80], fallbacks)
+        fallbacks.append('teleport: the waystone device\'s pads and teleport are base code')
+        trace['came'] = 'helper'
+        await io.sleep(SETTLE)
+        await solo_play(io, r, trace, {
+            'system': 'wsmap', 'budget': WSMAP_BUDGET, 'problems': wsmap_problems, 'done': lambda t: t.get('kills', 0) >= WSMAP_NEED,
+            'made': lambda t: t.get('kills', 0) > 0,
+            'mark': lambda s: ((s.get('run') or {}).get('monsters'), (s.get('run') or {}).get('nearestHp'))})
+        await io.helper('wsmap close', 'wsmap', ANSWER)
+        again = await io.helper('wsmap state', 'wsmap', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the waystone map after the close')
+        status, text = wsmap_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('wsmap close', 'wsmap', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -5688,6 +6117,8 @@ CLOSED_CHECKS = [
     ('closed_groupqueue', check_closed_groupqueue, lambda c: True),   # O589
     ('closed_party_finder', check_closed_party_finder, lambda c: True),   # O589
     ('closed_dungeon', check_closed_dungeon, lambda c: True),   # O589
+    ('dungeon_difficulty', check_dungeon_difficulty, lambda c: True),   # O651: difficulty 2 to 6, unlocked on the bot's own progress, the monsters scaled
+    ('weekly_challenge', check_weekly_challenge, lambda c: True),   # O651: the Weekly Challenge: the fixed difficulty, no tester on its boards
     ('closed_siege', check_closed_siege, lambda c: True),   # O592
     ('closed_guildboss', check_closed_guildboss, lambda c: True),   # O592
     ('closed_arena_fight', check_closed_arena_fight, lambda c: True),   # O652: two testers fight in the arena, a foe hurt, no season row
@@ -5736,6 +6167,8 @@ CHECKS = [
     ('daily_claim', check_daily_claim, lambda c: True),   # O650: the daily window: the claim, the reward in the bag, the streak
     ('chronicle_walk', check_chronicle_walk, lambda c: True),   # O650: the Chronicle: the window opened, no tester in the books
     ('nemesis_walk', check_nemesis_walk, lambda c: True),   # O650: a Nemesis born from a monster in sight (TEST ONLY), the fight
+    ('pocket_walk', check_pocket_walk, lambda c: True),   # O651: a pocket boss through the Boss Spawns window: the boss falls, the charge is spent, the boss point comes
+    ('wsmap_walk', check_wsmap_walk, lambda c: True),   # O651: a waystone map on a free arrival tile: monsters of the run's tier fall, a player sends the tester out
     ('goblin_walk', check_goblin_walk, lambda c: True),   # O650: a treasure goblin of the bot's own (TEST ONLY), chased and hit
     ('vael_walk', check_vael_walk, lambda c: True),   # O650: Vael Ashmourn through the TEST ONLY door, from level 500
     ('invasion_walk', check_invasion_walk, lambda c: True),   # O650: while an invasion runs: the hits of a tester are cancelled, no share

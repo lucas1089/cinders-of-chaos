@@ -754,6 +754,15 @@ class CheckIO(KeyIO):
             return True
         return False
 
+    async def use_at(self, pos, client_id, stack=1):
+        """uses an item that lies on a map tile (a ladder of a rift, O651) by its position, client id and place in the tile's stack: the
+        packet a click on it sends, from the tile next to it"""
+        if self.alive() and client_id and isinstance(pos, (tuple, list)) and len(pos) == 3:
+            self.bot.conn.send(TC.use_packet((int(pos[0]), int(pos[1]), int(pos[2])), int(client_id), int(stack or 0)))
+            await self.bot.conn.w.drain()
+            return True
+        return False
+
     async def use_with(self, from_slot, from_sprite, to_slot, to_sprite):
         """use the backpack item in from_slot on the one in to_slot (a gem on a piece of gear)"""
         if self.alive():

@@ -956,4 +956,105 @@ eq(K.bossLevel({category = "raid"}, nil, 2200), 1, "no entry level: 1")
 eq(K.bossLevel(index.byKey.world_1, 10182, 2200), Chaos.worldBoss.minLevel,
 	"world_1 (Kaelgor's pocket): the entry level, not 10182")
 
+-- ====================================================================== tester bots (O651)
+-- a pocket of testers beside the players: the arenas are one grid, so a tester takes one only while `reserve` stay free; never mixed with a player;
+-- the probe and the guide (what a person sees), the Leave button of the bot, and the boss point of the boss
+do
+	dofile("data/scripts/chaos/testers_core.lua")
+	local TK = ChaosTestersCore
+	ChaosTesters = {soloRefusal = function(group, free, reserve)
+		local flags, any = {}, false
+		for i, p in ipairs(group) do
+			flags[i] = Chaos.isTester(p)
+			any = any or flags[i]
+		end
+		if not any then
+			return nil
+		end
+		local why = TK.soloRefusal(flags, free, reserve)
+		return why and (TK.CLOSED_TEXT[why] or TK.CLOSED_TEXT.mixed) or nil
+	end}
+	ChaosBossPoints = {probe = function(p) return {got = 2, total = 10} end,
+		pointOf = function(p, name) return name == "Kaelgor the Infernal Warlord" and {id = 1, name = name, got = false} or nil end}
+	ok(pcfg.tester and pcfg.tester.reserve >= 1 and pcfg.tester.reserve < pcfg.limits.maxRuns, "config: the tester reserve is under the arenas")
+	local function tester(id, level)
+		local t = newPlayer(id, level)
+		function t:getStorageValue(k) return k == Chaos.storage.tester and 1 or -1 end
+		return t
+	end
+	-- pure guide
+	local KG = ChaosPocketBossCore.guide
+	eq(KG({state = "failed"}).mode, "wait", "guide: a pocket that is over")
+	eq(KG({state = "running", boss = "waiting"}).mode, "wait", "guide: the boss is not there yet")
+	local g = KG({state = "running", boss = "alive", pos = {x = 10, y = 10, z = 7}, bossPos = {x = 30, y = 10, z = 7}, reach = 5})
+	ok(g.mode == "walk" and g.goal.x == 30 and g.reach[2] == 5 and g.area == "boss", "guide: walk to the boss")
+	eq(KG({state = "running", boss = "alive", pos = {x = 27, y = 10, z = 7}, bossPos = {x = 30, y = 10, z = 7}}).mode, "fight", "guide: in reach, fight")
+	eq(KG({state = "running", boss = "alive", pos = {x = 27, y = 10, z = 8}, bossPos = {x = 30, y = 10, z = 7}}).mode, "walk", "guide: another floor, not in reach")
+
+	local t1 = tester(41, 400)
+	t1.pos = pos(100, 100, 7)
+	local pr = PB.probe(t1)
+	ok(pr.inside == false and pr.pz == true and pr.enabled == true and pr.level == 400, "probe outside: the zone, the level")
+	ok(pr.free == pcfg.limits.maxRuns and pr.reserve == pcfg.tester.reserve, "probe outside: the arenas free against the ones kept")
+	local row
+	for _, b in ipairs(pr.bosses) do
+		if b.key == "world_1" then row = b end
+	end
+	ok(row and row.ok and row.left == 3 and row.level == 300 and row.category == "world", "probe: the world pocket row (level, charges)")
+	ok(row.point and row.point.id == 1 and row.point.got == false and pr.points.got == 2 and pr.points.total == 10, "probe: the boss point of the boss and the points held")
+	-- the reserve: fewer than `reserve` arenas would stay free after it
+	local fakes = pcfg.limits.maxRuns - pcfg.tester.reserve
+	for i = 1, fakes do
+		PB.runs[1000 + i] = {fake = true}
+	end
+	local okR, whyR = PB.enter(t1, "world_1")
+	ok(okR == false and whyR:find("kept for the players", 1, true), "a tester is refused while the arenas are the players' (" .. tostring(whyR) .. ")")
+	eq(ROWS["141:world_1"], nil, "a refused pocket spends no charge")
+	-- the same grid for a player: the reserve does not apply
+	local pl = newPlayer(42, 400)
+	pl.pos = pos(100, 100, 7)
+	local okP = PB.enter(pl, "world_1")
+	ok(okP == true, "a player takes an arena of the same grid")
+	PB.testerClose(pl)
+	ok(PB.isInside(pl), "testerClose never closes a player's pocket")
+	PB.runOf[pl:getId()].players[pl:getId()] = nil
+	PB.runOf[pl:getId()] = nil
+	for i = 1, fakes do
+		PB.runs[1000 + i] = nil
+	end
+	for slot, r in pairs(PB.runs) do
+		PB.runs[slot] = nil
+	end
+	-- a party of a tester and a player is never one pocket
+	local lead, member = tester(43, 400), newPlayer(44, 400)
+	lead.pos, member.pos = pos(100, 100, 7), pos(101, 100, 7)
+	local party = {getLeader = function() return lead end, getMembers = function() return {member} end}
+	lead.party, member.party = party, party
+	local okM, whyM = PB.enter(lead, "world_1")
+	ok(okM == false and whyM:find("never mixed", 1, true), "a tester and a player in one party: refused (" .. tostring(whyM) .. ")")
+	lead.party, member.party = nil, nil
+	-- the pocket of a lone tester: opens, the probe sees the run, the boss comes, the guide leads to it
+	local okT = PB.enter(t1, "world_1")
+	ok(okT == true and PB.isInside(t1), "a tester opens its pocket with the arenas free")
+	eq(ROWS["141:world_1"].used, 1, "the charge is spent")
+	pr = PB.probe(t1)
+	ok(pr.inside and pr.run.key == "world_1" and pr.run.state == "running" and pr.run.boss == "waiting" and pr.run.players == 1 and pr.run.testers == 1,
+		"probe inside: the run, a tester alone")
+	eq(pr.guide.mode, "wait", "probe inside: the boss is not there yet")
+	advance(pcfg.startDelay + 1)
+	pr = PB.probe(t1)
+	ok(pr.run.boss == "alive" and pr.run.bossHp == 100 and pr.run.bossPos ~= nil and pr.run.left > 0, "probe inside: the boss, its health and place, the clock")
+	ok(pr.guide.mode == "walk" or pr.guide.mode == "fight", "probe inside: the guide goes for the boss")
+	ok(pr.run.inArena == true, "probe inside: the bot stands in the arena")
+	-- the Leave button of the bot: out, the charge stays spent
+	eq(PB.testerClose(pl), false, "a player has no run to close")
+	eq(PB.testerClose(t1), true, "the bot's own Leave")
+	ok(not PB.isInside(t1) and PB.probe(t1).inside == false, "out of the pocket")
+	eq(ROWS["141:world_1"].used, 1, "the charge stays spent")
+	eq(PB.testerClose(t1), false, "no run: nothing to close")
+	for slot, r in pairs(PB.runs) do
+		PB.runs[slot] = nil
+	end
+end
+
 print(string.format("pocketboss_test: %d checks passed", checks))
