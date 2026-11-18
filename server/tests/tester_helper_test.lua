@@ -2282,6 +2282,76 @@ do
 	talks["!tester"].onSay(t9, "!tester", "invasion #243")
 	check(last(t9):find("no invasion system", 1, true), "invasion: no system")
 	ChaosInvasion = realIV
+	-- ---- PvP among the testers and the tester copy of a boss (O652)
+	for _, c in ipairs({"pvp", "boss"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parsePvp(nil), "state", "pvp: no word is state")
+	eq(H.parsePvp("PATH"), "path", "pvp: path (any case)")
+	local wp, up = H.parsePvp("hit")
+	check(wp == nil and up == "usage: pvp [state | path]", "pvp: an unknown word is the usage: " .. tostring(up))
+	eq(H.parseBoss("spawn"), "spawn", "boss: spawn")
+	check(H.parseBoss("kill") == nil and select(2, H.parseBoss("kill")) == "usage: boss [state | spawn | path | close]", "boss: the usage")
+	-- the aim: only a foe tester, same floor, within range, the nearest, the weakest among equals; a player is never one
+	local me = {x = 100, y = 100, z = 7}
+	local aim = H.pvpTarget(me, {
+		{pos = {x = 101, y = 100, z = 7}, tester = false, foe = true, health = 10, id = 1},
+		{pos = {x = 102, y = 100, z = 7}, tester = true, foe = false, health = 10, id = 2},
+		{pos = {x = 104, y = 100, z = 7}, tester = true, foe = true, health = 50, id = 3},
+		{pos = {x = 100, y = 103, z = 7}, tester = true, foe = true, health = 20, id = 4},
+		{pos = {x = 103, y = 100, z = 8}, tester = true, foe = true, health = 5, id = 5},
+		{pos = {x = 100, y = 101, z = 7}, tester = true, foe = true, health = 0, id = 6}}, 5)
+	check(aim and aim.id == 4, "pvpTarget: the nearest foe tester (a player, a team mate, another floor and a downed one are skipped)")
+	aim = H.pvpTarget(me, {{pos = {x = 102, y = 100, z = 7}, tester = true, foe = true, health = 40, id = 7}, {pos = {x = 100, y = 102, z = 7}, tester = true, foe = true, health = 30, id = 8}}, 5)
+	check(aim and aim.id == 8, "pvpTarget: equal distance, the lower health")
+	check(H.pvpTarget(me, {{pos = {x = 109, y = 100, z = 7}, tester = true, foe = true, health = 1, id = 9}}, 5) == nil, "pvpTarget: out of range")
+	check(H.pvpTarget(me, {{pos = {x = 101, y = 100, z = 7}, tester = true, foe = nil, health = 1, id = 9}}, 5) == nil, "pvpTarget: an unknown foe flag is no foe")
+	check(H.pvpTarget(me, nil, 5) == nil and H.pvpTarget(me, {}, 5) == nil, "pvpTarget: nobody")
+	local hf = io.open("tools/tester_helper.lua", "r")
+	local htext = hf and hf:read("*a") or ""
+	if hf then hf:close() end
+	check(htext:find("pcall(pvpAim, player)", 1, true) ~= nil, "the loop aims at a foe first (pvpAim)")
+	check(htext:find("HELPER_VERSION = 21", 1, true) ~= nil, "the helper is v21 (O652)")
+	local realTS, realTB = ChaosTesters, ChaosTestersBoss
+	-- pvp
+	ChaosTesters = {pvpProbe = function(p)
+		return {closed = true, place = "arena", cancelledPlayer = 2, cancelledOutside = 1, cancelledOff = 0, seasonListed = 0,
+			foe = {x = 75, y = 76, z = 7, name = "Tester Ccc", seen = false}, guide = {mode = "walk", goal = {x = 75, y = 76, z = 7}, reach = {1, 5}, area = "foe"}}
+	end}
+	talks["!tester"].onSay(t9, "!tester", "pvp #250")
+	check(last(t9):find('"place":"arena"', 1, true) and last(t9):find('"seasonListed":0', 1, true) and last(t9):find('"cancelledPlayer":2', 1, true)
+		and last(t9):find('"name":"Tester Ccc"', 1, true), "pvp state: the place, the cancelled hits, the season rows, the foe")
+	talks["!tester"].onSay(t9, "!tester", "pvp path #251")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 75, "pvp path: on foot to the foe")
+	talks["!tester"].onSay(t9, "!tester", "pvp hit #252")
+	check(last(t9):find("usage: pvp", 1, true), "pvp: an unknown word is the usage")
+	ChaosTesters = nil
+	talks["!tester"].onSay(t9, "!tester", "pvp #253")
+	check(last(t9):find("no PvP rules for the testers", 1, true), "pvp: no rules")
+	ChaosTesters = realTS
+	-- boss
+	local bspawned, bcloses = 0, 0
+	ChaosTestersBoss = {probe = function(p)
+		return {killed = 0, listed = 0, points = 2, boss = bspawned > 0 and {hp = 100, name = "Talath"} or nil,
+			guide = bspawned > 0 and {mode = "walk", goal = {x = 66, y = 67, z = 7}, reach = {1, 6}, area = "boss"} or {mode = "wait", why = "no boss copy of its own"}}
+	end, testerSpawn = function() if bspawned > 0 then return nil, "the bot has a boss copy already" end bspawned = bspawned + 1 return {} end,
+		testerClose = function() bcloses = bcloses + 1 bspawned = 0 return true end}
+	talks["!tester"].onSay(t9, "!tester", "boss spawn #260")
+	check(bspawned == 1 and last(t9):find('"spawned":true', 1, true) and last(t9):find('"name":"Talath"', 1, true) and last(t9):find('"points":2', 1, true), "boss spawn: the grant, then the copy")
+	talks["!tester"].onSay(t9, "!tester", "boss spawn #261")
+	check(last(t9):find("the bot has a boss copy already", 1, true), "boss spawn: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "boss path #262")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 66, "boss path: on foot to it")
+	talks["!tester"].onSay(t9, "!tester", "boss close #263")
+	check(bcloses == 1 and last(t9):find('"closed":true', 1, true), "boss close")
+	ChaosTestersBoss = nil
+	talks["!tester"].onSay(t9, "!tester", "boss #264")
+	check(last(t9):find("no tester boss system", 1, true), "boss: no system")
+	ChaosTestersBoss = realTB
+	local civ6 = creature(995, "Ana Pvp", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "boss spawn #5") == true and talks["!tester"].onSay(civ6, "!tester", "pvp #6") == true and #civ6.log.msgs == n6,
+		"pvp / boss: a player's words go on and get no answer")
 	-- a player's words go on and get no answer
 	local civ5 = creature(994, "Ana Nemesis", {store = {}})
 	local n5 = #civ5.log.msgs

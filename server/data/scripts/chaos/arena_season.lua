@@ -144,6 +144,14 @@ end
 
 -- one rated match of a bracket
 function P.record(bracket, teams, winner)
+	-- O652: a tester result never enters a season board (a tester is no ranked character; its own match is a test of the rules, not a result)
+	for side = 1, 2 do
+		for _, e in ipairs(teams[side]) do
+			if Chaos.isTesterGuid and Chaos.isTesterGuid(e.guid) then
+				return {}
+			end
+		end
+	end
 	local now = os.time()
 	local rated = {{}, {}}
 	for side = 1, 2 do
@@ -180,6 +188,16 @@ function P.record(bracket, teams, winner)
 		end
 	end
 	return out
+end
+
+-- O652 (the tester bots' probe `!tester pvp`): how many rows of the season ratings belong to testers (must be 0: P.record skips them)
+function P.listedTesters()
+	local n = 0
+	for guid in pairs(Chaos.testerGuids or {}) do
+		local rows = Chaos.select(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `player_id` = %d", T("ratings"), guid), {{"n", "n"}})
+		n = n + ((rows and rows[1] and rows[1].n) or 0)
+	end
+	return n
 end
 
 -- arena.lua finish(): `sides` are its two team lists (guid, name, left)
@@ -250,7 +268,8 @@ function P.processSeason(seasonId)
 		{"last_match", "n"}, {"account_id", "n"}, {"group_id", "n"}})
 	local byPlayer = {}
 	for _, r in ipairs(rows) do
-		if r.group_id < cfg.staffGroup then
+		-- O652: a tester takes no season reward (title, frame, cosmetics, honor), whatever row it holds
+		if r.group_id < cfg.staffGroup and not (Chaos.isTesterGuid and Chaos.isTesterGuid(r.player_id)) then
 			local e = byPlayer[r.player_id] or {account = r.account_id, rows = {}}
 			e.rows[r.bracket] = {rating = r.rating, rd = r.rd, matches = r.matches, last = r.last_match}
 			byPlayer[r.player_id] = e

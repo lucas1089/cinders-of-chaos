@@ -174,8 +174,11 @@ eq(combat(tester, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "two testers 
 eq(combat(summon(tester), tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "nor a tester's summon and another tester")
 K.reader, K.clock = function() return "on" end, function() return 2000 end
 K.resetClosedCache()
-eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves in closed mode")
+eq(combat(tester, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on, no PvP place: two testers still never fight (O652)")
+ChaosBlessings = {pvpPlace = function() return "arena" end}
+eq(combat(tester, tester2), RETURNVALUE_NOERROR, "testers among themselves in closed mode, in a PvP place")
 eq(combat(summon(tester), tester2), RETURNVALUE_NOERROR, "their summons too")
+ChaosBlessings = nil
 eq(combat(tester, ana), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a tester still never hits a player")
 eq(combat(ana, tester2), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "closed mode on: a player still never hits a tester")
 eq(combat(tester, summon(tester)), RETURNVALUE_NOERROR, "a tester and its own summon")

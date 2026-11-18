@@ -5257,6 +5257,423 @@ async def check_chore_salvage(io, name, cls, level):
     again = await io.request('crafting', 'open', {}, ('state',), ANSWER)
     status, text = salvage_verdict(item, a, (again or {}).get('data') if isinstance(again, dict) else None, res)
     return Result(key, name, cls, status, text)
+# ---- PvP among the testers (O652)
+# The bots fight each other, only inside a PvP place the rules allow (an arena match, a battleground match, the Marches), only another tester: the
+# helper's loop aims at a foe the server names (`!tester pvp`, ChaosTesters.pvpFoe) and the server cancels every other hit (testers.lua). The
+# checks play it like people: queue, wait for the match, walk to the foe by the engine path, fight with the bot's own rotation, and read what
+# the server holds afterwards: no player in the roster, no tester row in the season ratings.
+PVP_BUDGET = {'arena': 150.0, 'zone': 100.0, 'bg': 200.0}   # seconds each fight is played at most
+PVP_FIGHT_MIN = 45.0     # seconds within reach of a foe with no foe hurt and the match going on: the hits do not land (damage, targets or the guard)
+PVP_STEPS = 6
+PVP_STUCK = 30.0
+PVP_MISSES = 6
+PVP_SECTION = {'arena': 'arena', 'bg': 'battleground', 'zone': 'zone'}
+BG_QUEUE_WAIT = 150.0    # seconds a bot waits in the battleground queue for a match of testers (10 at least, level 100 and up)
+BG_START_WAIT = 90.0     # seconds from the match to the open fight (the 30 s of preparation, the gates)
+
+
+def pvp_bot(name, lead):
+    return {'name': name, 'lead': lead, 'walker': RaidWalker(), 'inside': False}
+
+
+def pvp_sec(s, kind):
+    sec = s.get(PVP_SECTION[kind]) if isinstance(s, dict) else None
+    return sec if isinstance(sec, dict) else {}
+
+
+def pvp_inside(s, kind):
+    sec = pvp_sec(s, kind)
+    return bool(sec.get('inside') if kind == 'zone' else sec.get('inMatch'))
+
+
+def pvp_problems(s, kind):
+    """[text] for one `!tester pvp` answer: whatever says the fight is not the testers' own, or a tester entered a ranking"""
+    out = []
+    sec = pvp_sec(s, kind)
+    if pvp_inside(s, kind) and int(sec.get('others') or 0) > 0:
+        out.append('%s player(s) are in the testers\' %s (it must hold testers only)' % (sec.get('others'), PVP_SECTION[kind]))
+    if int(s.get('seasonListed') or 0) > 0:
+        out.append('%s tester row(s) in the season ratings (a tester result never enters a season board)' % s.get('seasonListed'))
+    if s.get('place') and pvp_inside(s, kind) and s.get('closed') is False:
+        out.append('the bots fight inside a PvP place with the closed switch off')
+    return out
+
+
+def pvp_hurt(s, kind):
+    """the lowest health percent among the foes the bot sees (None when it sees none)"""
+    sec = pvp_sec(s, kind)
+    hps = [f.get('hp') for f in (sec.get('foes') or []) if isinstance(f, dict) and isinstance(f.get('hp'), (int, float))]
+    foe = s.get('foe')
+    if isinstance(foe, dict) and isinstance(foe.get('hp'), (int, float)):
+        hps.append(foe['hp'])
+    return min(hps) if hps else None
+
+
+async def pvp_play(io, squad, kind, trace, budget, stop=None):
+    """the bots walk to their foes by the engine path and fight with their own rotation (the helper aims at the foe the rules allow); one
+    look per bot, then up to PVP_STEPS steps each. Ends at the budget, a fault, a block, when the server put the bots out (the match is over),
+    or when `stop(trace)` says so"""
+    elapsed, misses, fight_since = 0.0, 0, None
+    while io.alive() and elapsed < budget:
+        looks = {}
+        for r in squad:
+            looks[r['name']] = await hcmd(io, r, 'pvp state', 'pvp')
+        lead = looks.get(squad[0]['name'])
+        if not isinstance(lead, dict) or lead.get('err'):
+            misses += 1
+            if misses >= PVP_MISSES:
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        got = [s for s in looks.values() if isinstance(s, dict) and not s.get('err')]
+        for s in got:
+            for p in pvp_problems(s, kind):
+                if p not in trace['faults']:
+                    trace['faults'].append(p)
+        if trace['faults']:
+            break
+        inside = [pvp_inside(s, kind) for s in got]
+        if trace.get('was_in') and not any(inside):
+            trace['ended'] = True   # the match is over: the server put the bots back where they stood
+            break
+        trace['was_in'] = trace.get('was_in') or any(inside)
+        trace['both'] = trace.get('both') or (len(squad) > 1 and all(inside))
+        phase = pvp_sec(lead, kind).get('phase')
+        trace['phase'] = phase or trace.get('phase')
+        trace['cancelled_player'] = max(trace.get('cancelled_player', 0), int(lead.get('cancelledPlayer') or 0))
+        for s in got:
+            hp = pvp_hurt(s, kind)
+            if hp is not None:
+                trace['foe_hp'] = hp if trace.get('foe_hp') is None else min(trace['foe_hp'], hp)
+        g = lead.get('guide') or {}
+        if g.get('mode') == 'fight' and phase in (None, 'fight'):
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        else:
+            fight_since = None
+        if stop and stop(trace):
+            break
+        sent = {}
+        for r in squad:
+            s = looks.get(r['name'])
+            if not isinstance(s, dict) or s.get('err') or not pvp_inside(s, kind):
+                continue
+            gr = s.get('guide') or {}
+            pos = s.get('pos')
+            if gr.get('mode') == 'walk' and isinstance(gr.get('goal'), dict) and isinstance(pos, dict):
+                plan = r['walker'].steps(pos, gr['goal'], PVP_STEPS, elapsed)
+                if not r['walker'].blocked:   # the engine's path first (walls, pillars); the side step only when the way is blocked
+                    pg = await hcmd(io, r, 'pvp path', 'pvp')
+                    steps = raid_path_steps((pg or {}).get('path')) if isinstance(pg, dict) and not pg.get('err') else []
+                    plan = steps[:PVP_STEPS] or plan
+                sent[r['name']] = plan
+                if r['lead'] and r['walker'].stuck(elapsed) >= PVP_STUCK:
+                    trace['stuck'] = (pos['x'], pos['y'])
+        if trace.get('stuck'):
+            break
+        for i in range(PVP_STEPS):
+            moved = False
+            for r in squad:
+                plan = sent.get(r['name']) or []
+                if i < len(plan):
+                    await raid_walk(io, r, plan[i])
+                    trace['steps'] += 1
+                    moved = True
+            if not moved:
+                break
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    trace['died'] = trace.get('died') or not io.alive()
+
+
+def pvp_fight_verdict(t, what):
+    """(status, text) from the trace: faults, was_in, both, ended, foe_hp, fought, stuck, died, steps, secs, phase, cancelled_player, level"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = 'level %s, %d step(s) in %d s' % (t.get('level'), t.get('steps', 0), t.get('secs', 0))
+    if t.get('cancelled_player'):
+        how += '; %d hit(s) on a player were cancelled' % t['cancelled_player']
+    hurt = t.get('foe_hp') is not None and t['foe_hp'] < 100
+    if t.get('ended') and (hurt or t.get('fought', 0) > 0):
+        return PASS, 'the %s was played to its end between testers only (a foe hurt to %s%%), no tester row in the season ratings (%s)' % (
+            what, t.get('foe_hp', '?'), how)
+    if hurt:
+        return PASS, 'a foe tester hurt to %s%% in the %s, the roster held testers only (%s)' % (t['foe_hp'], what, how)
+    if t.get('fought', 0) >= PVP_FIGHT_MIN:
+        return FAIL, 'fought %d s within reach of a foe tester in the %s and hurt none (damage, targets or the helper\'s aim)' % (t['fought'], what)
+    if not t.get('was_in'):
+        return SKIP, 'the bot never stood inside the %s' % what
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], PVP_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot died before it met a foe (%s)' % how
+    return SKIP, 'no foe was hurt in %d s (%s)' % (t.get('secs', 0), how)
+
+
+async def pvp_wait_inside(io, squad, kind, wait):
+    """True when every bot of the squad reads inside within `wait` seconds"""
+    waited = 0.0
+    while waited <= wait and io.alive():
+        looks = [await hcmd(io, r, 'pvp state', 'pvp') for r in squad]
+        if all(isinstance(s, dict) and pvp_inside(s, kind) for s in looks):
+            return True
+        await io.sleep(LOOK)
+        waited += LOOK
+    return False
+
+
+async def check_closed_arena_fight(io, name, cls, level):
+    """two testers queue a 1v1, meet in the arena and fight: the fight is theirs only, nothing of it enters a ranking or a season board"""
+    key = 'closed_arena_fight'
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple')
+    await io.sleep(SETTLE)
+    a = await io.request('arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    b = await io.request_of(other, 'arena', 'queue', {'mode': '1v1'}, ['state'], ANSWER)
+    if a is None or b is None:
+        return Result(key, name, cls, SKIP, 'no answer from the arena window (not installed)')
+    squad = [pvp_bot(name, True), pvp_bot(other, False)]
+    trace = new_trace({'level': level}, [], was_in=False, both=False, ended=False, foe_hp=None)
+    io.raid_mode([name, other], True)
+    try:
+        if not await pvp_wait_inside(io, squad, 'arena', ARENA_WAIT):
+            return Result(key, name, cls, SKIP, 'the two queued bots were not in a match in %d seconds (the closed_arena check holds that)' % int(ARENA_WAIT))
+        await pvp_play(io, squad, 'arena', trace, PVP_BUDGET['arena'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100 and t['fought'] >= PVP_FIGHT_MIN)
+        status, text = pvp_fight_verdict(trace, 'arena match')
+        return Result(key, name, cls, status, text)
+    finally:
+        await io.request('arena', 'leave', {}, ['state'], ANSWER)
+        await io.request_of(other, 'arena', 'leave', {}, ['state'], ANSWER)
+        io.raid_mode([name, other], False)
+
+
+async def check_closed_pvp_fight(io, name, cls, level):
+    """two testers enter the Marches (their own instance) and fight: the kills and defeats are theirs, never a player's"""
+    key = 'closed_pvp_fight'
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple')
+    await io.sleep(SETTLE)
+    a = await io.request('pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+    b = await io.request_of(other, 'pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+    if a is None or b is None:
+        return Result(key, name, cls, SKIP, 'no answer from the Marches window (not installed)')
+    squad = [pvp_bot(name, True), pvp_bot(other, False)]
+    trace = new_trace({'level': level}, [], was_in=False, both=False, ended=False, foe_hp=None)
+    io.raid_mode([name, other], True)
+    try:
+        if not await pvp_wait_inside(io, squad, 'zone', SETTLE * 3):
+            text = str(((a or {}).get('data') or {}).get('text', '') or ((b or {}).get('data') or {}).get('text', ''))[:80]
+            return Result(key, name, cls, SKIP, 'both bots were not inside the Marches: %s' % (text or 'no text'))
+        await pvp_play(io, squad, 'zone', trace, PVP_BUDGET['zone'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100)
+        status, text = pvp_fight_verdict(trace, 'Marches')
+        return Result(key, name, cls, status, text)
+    finally:
+        await io.go('town')   # out the way the helper allows (the carried embers are the tester's own)
+        await io.go_of(other, 'town')
+        io.raid_mode([name, other], False)
+
+
+async def check_closed_battleground_match(io, name, cls, level):
+    """the bot queues for the battleground and stays: with enough testers queued (10, a roster of 5v5) a match of testers only starts, and it
+    plays it (the braziers and the foes); players are never matched with testers (the testers' own realm)"""
+    key = 'closed_battleground_match'
+    await io.go('town')
+    await io.sleep(SETTLE)
+    q = await io.request('battleground', 'queue', {}, ['state'], ANSWER)
+    if q is None:
+        return Result(key, name, cls, SKIP, 'no answer from the battleground window (not installed)')
+    r = pvp_bot(name, True)
+    trace = new_trace({'level': level}, [], was_in=False, both=False, ended=False, foe_hp=None)
+    last = {}
+    io.raid_mode([name], True)
+    try:
+        waited = 0.0
+        inside = False
+        while waited <= BG_QUEUE_WAIT and io.alive():
+            s = await io.helper('pvp state', 'pvp', ANSWER)
+            if isinstance(s, dict) and not s.get('err'):
+                last = pvp_sec(s, 'bg')
+                if pvp_inside(s, 'bg'):
+                    inside = True
+                    break
+                if waited >= 6 and not last.get('queued'):
+                    return Result(key, name, cls, SKIP, 'the queue refused the bot (level, zone, deserter)')
+            await io.sleep(LOOK * 2)
+            waited += LOOK * 2
+        if not inside:
+            return Result(key, name, cls, SKIP, 'no match in %d s: %s of the %s testers a match needs were queued' % (
+                int(BG_QUEUE_WAIT), last.get('queueMembers', '?'), last.get('need', '?')))
+        await pvp_play(io, [r], 'bg', trace, BG_START_WAIT + PVP_BUDGET['bg'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100)
+        status, text = pvp_fight_verdict(trace, 'battleground match')
+        return Result(key, name, cls, status, text)
+    finally:
+        await io.request('battleground', 'leave', {}, ['state'], ANSWER)
+        io.raid_mode([name], False)
+
+
+# ---- the tester copy of a key boss (O652)
+# A world boss, a lair boss and an island boss are the players' content: the bots do not take their shares, loot, kill rows or boards. They play the
+# fight on a copy made for one bot (`!tester boss spawn`, TEST ONLY, only while no player is near): its telegraphs, its adds, its enrage are the boss's
+# own. The bot walks to it, fights with its own rotation, and when a mark is on its tile it steps to the safe tile the server names (guide `dodge`).
+BOSS_BUDGET = 330.0      # seconds the copy is played at most (its own life is 480 s)
+BOSS_STEPS = 6
+BOSS_DODGE_STEPS = 3     # steps of one dodge (a mark gives 1.5 - 3 s: a person steps, looks, steps)
+BOSS_DODGE_LOOK = 0.4
+
+
+def boss_copy_look(s, t):
+    t['killed'] = max(t.get('killed', 0), (s.get('killed') or 0) - t.get('killed0', 0))
+    t['points'] = s.get('points') if s.get('points') is not None else t.get('points')
+    if s.get('listed'):
+        t['faults'].append('%s tester name(s) in a boss board (a copy writes no kill row, no share)' % s['listed'])
+    b = s.get('boss')
+    if isinstance(b, dict):
+        t['seen'] = True
+        t['name'] = b.get('name') or t.get('name')
+        if isinstance(b.get('hp'), int):
+            t['hp'] = b['hp'] if t.get('hp') is None else min(t['hp'], b['hp'])
+    d = s.get('danger')
+    if isinstance(d, dict):
+        labels = tuple(d.get('labels') or ())
+        if labels and labels != t.get('last_marks'):
+            t['marks'] = t.get('marks', 0) + 1   # a new mark pulse: a person sees the warning
+        t['last_marks'] = labels
+        if d.get('here'):
+            t['stood'] = t.get('stood', 0) + 1
+    else:
+        t['last_marks'] = None
+    if t['killed'] > 0:
+        return True
+    if t.get('seen') and not isinstance(b, dict) and s.get('killed') is not None:
+        t['gone'] = True   # its life ran out
+        return True
+    return False
+
+
+async def boss_copy_play(io, r, trace, budget):
+    """like chase_play, plus the dodge: when the guide says `dodge` the bot steps to the safe tile at once and looks again quickly"""
+    elapsed, misses, fight_since = 0.0, 0, None
+    while io.alive() and elapsed < budget:
+        s = await io.helper('boss state', 'boss', ANSWER)
+        if not isinstance(s, dict) or s.get('err'):
+            misses += 1
+            if misses >= SOLO_MISSES:
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        if boss_copy_look(s, trace):
+            break
+        g = s.get('guide') or {}
+        mode = g.get('mode')
+        if mode == 'fight':
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        else:
+            fight_since = None
+        if mode == 'dodge' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
+            trace['dodged'] = trace.get('dodged', 0) + 1
+            for step in raid_plan(s['pos'], g['goal'], BOSS_DODGE_STEPS):
+                await raid_walk(io, r, step)
+                trace['steps'] += 1
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+            await io.sleep(BOSS_DODGE_LOOK)
+            elapsed += BOSS_DODGE_LOOK
+            trace['secs'] = int(elapsed)
+            continue
+        plan = []
+        if mode == 'walk' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
+            plan = r['walker'].steps(s['pos'], g['goal'], BOSS_STEPS, elapsed)
+            if not r['walker'].blocked:
+                got = await hcmd(io, r, 'boss path', 'boss')
+                steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+                plan = steps[:BOSS_STEPS] or plan
+            if r['walker'].stuck(elapsed) >= SOLO_STUCK:
+                trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+                break
+        for step in plan:
+            await raid_walk(io, r, step)
+            trace['steps'] += 1
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.loot()
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+    trace['died'] = trace.get('died') or not io.alive()
+
+
+def boss_copy_verdict(t):
+    """(status, text): faults, killed, hp (the copy's lowest health percent), seen, gone, marks (warnings seen), dodged, stood, points, fought, stuck, died, steps, secs, level, name"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = chase_text(t)
+    mech = '%d warning(s) seen, %d dodge(s)' % (t.get('marks', 0), t.get('dodged', 0))
+    pts = ''
+    if t.get('points0') is not None and t.get('points') is not None and t['points'] != t['points0']:
+        pts = ', boss passive points %s -> %s' % (t['points0'], t['points'])
+    if t.get('killed'):
+        return PASS, 'killed the copy of %s, its loot and kill are the bot\'s own%s (%s; %s)' % (t.get('name') or 'a boss', pts, mech, how)
+    if t.get('hp') is not None and t['hp'] < 100:
+        return PASS, 'hurt the copy of %s to %s%% (%s; %s)' % (t.get('name') or 'a boss', t['hp'], mech, how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s in reach of the boss copy and did not hurt it (damage, targets or the guard)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot died before it hurt the copy (%s; %s)' % (mech, how)
+    return SKIP, 'the copy was not hurt in %d s (%s)' % (t.get('secs', 0), how)
+
+
+async def check_boss_copy_walk(io, name, cls, level):
+    """a copy of a key boss for the bot (TEST ONLY, only while no player is near): it walks to it, fights with its own rotation, steps off the
+    telegraph marks the server sends, loots; the copy is the testers' own, so no share, board or kill row names a tester"""
+    key = 'boss_copy_walk'
+    a = await io.helper('boss state', 'boss', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester boss (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if not a.get('next'):
+        return Result(key, name, cls, SKIP, 'level %s is under the lowest boss copy' % a.get('level'))
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = new_trace(a, fallbacks, killed0=a.get('killed') or 0, killed=0, hp=None, seen=False, marks=0, dodged=0, stood=0, points0=a.get('points'),
+                      points=a.get('points'))
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        if a.get('boss'):
+            await io.helper('boss close', 'boss', ANSWER)
+        made = await io.helper('boss spawn', 'boss', HELPER_WAIT)
+        if isinstance(made, dict) and 'protection zone' in str(made.get('err') or ''):
+            await io.go('hunt')   # a copy is not made in a protection zone: out to the hunt, like a person
+            await io.sleep(SETTLE)
+            made = await io.helper('boss spawn', 'boss', HELPER_WAIT)
+        if not isinstance(made, dict) or made.get('err') or not made.get('spawned'):
+            return Result(key, name, cls, SKIP, 'no copy of its own: %s' % str((made or {}).get('err') or 'no answer')[:70])
+        await io.sleep(SETTLE)
+        await boss_copy_play(io, r, trace, BOSS_BUDGET)
+        status, text = boss_copy_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('boss close', 'boss', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
 
 
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
@@ -5273,6 +5690,9 @@ CLOSED_CHECKS = [
     ('closed_dungeon', check_closed_dungeon, lambda c: True),   # O589
     ('closed_siege', check_closed_siege, lambda c: True),   # O592
     ('closed_guildboss', check_closed_guildboss, lambda c: True),   # O592
+    ('closed_arena_fight', check_closed_arena_fight, lambda c: True),   # O652: two testers fight in the arena, a foe hurt, no season row
+    ('closed_pvp_fight', check_closed_pvp_fight, lambda c: True),   # O652: two testers fight in the Marches, only testers inside
+    ('closed_battleground_match', check_closed_battleground_match, lambda c: True),   # O652: a match of testers only when 10 queue
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -5328,6 +5748,7 @@ CHECKS = [
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
     ('chore_trade', check_chore_trade, lambda c: True),   # O653: the Material Broker: sell what was gathered
     ('chore_salvage', check_chore_salvage, lambda c: True),   # O653: a rolled piece the bot will not wear, broken down at the bench
+    ('boss_copy_walk', check_boss_copy_walk, lambda c: True),   # O652: a copy of a key boss of its own: walk, fight, step off the marks, loot
     ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)

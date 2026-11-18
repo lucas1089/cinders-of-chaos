@@ -579,6 +579,50 @@ local function isProtected(player, st)
 	return (st and st.moveAt ~= nil) or K.protected(protectedUntil(player), now())
 end
 
+-- O652 (the tester bots' targeting rule, testers.lua X.pvpFoe): true when `a` may hit `b` now, with no side effect (Z.targetCombat tells the
+-- attacker and ends its protection): one instance, nobody protected, not on the way out, not in one party
+function Z.foe(a, b)
+	local ast, tst = a and Z.state[a:getId()], b and Z.state[b:getId()]
+	if not ast or not tst or ast.slot ~= tst.slot or a:getId() == b:getId() then
+		return false
+	end
+	if isProtected(b, tst) or ast.moveAt then
+		return false
+	end
+	local party = a:getParty()
+	return not (party and party == b:getParty())
+end
+
+-- O652: what a person sees inside the Marches (`!tester pvp`): the instance, the others in it by side (a tester is never in a player's instance),
+-- the foes in sight, the pledge and the kills and defeats of the row
+function Z.probe(player)
+	local st = Z.state[player:getId()]
+	local out = {inside = st ~= nil}
+	local r = Z.rows[player:getGuid()]
+	if r then
+		out.kills, out.defeats, out.pledge = r.kills, r.defeats, r.pledge ~= "" and r.pledge or nil
+	end
+	if st then
+		out.slot, out.testers, out.others, out.foes = st.slot, 0, 0, {}
+		for cid, o in pairs(Z.state) do
+			local pl = cid ~= player:getId() and o.slot == st.slot and Player(cid) or nil
+			if pl then
+				if Chaos.isTester(pl) then
+					out.testers = out.testers + 1
+				else
+					out.others = out.others + 1
+				end
+				if Z.foe(player, pl) and #out.foes < 12 then
+					local pos = pl:getPosition()
+					out.foes[#out.foes + 1] = {x = pos.x, y = pos.y, z = pos.z, name = pl:getName(),
+						hp = math.floor(pl:getHealth() * 100 / math.max(1, pl:getMaxHealth()))}
+				end
+			end
+		end
+	end
+	return out
+end
+
 local HARMFUL = {"CONDITION_POISON", "CONDITION_FIRE", "CONDITION_ENERGY", "CONDITION_BLEEDING", "CONDITION_CURSED",
 	"CONDITION_DROWN", "CONDITION_FREEZING", "CONDITION_DAZZLED", "CONDITION_PARALYZE"}
 

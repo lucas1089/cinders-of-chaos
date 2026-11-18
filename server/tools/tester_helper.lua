@@ -61,6 +61,11 @@
 --     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
 --     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
 --     the bot's; `jump` / `hall` are the TEST ONLY teleports of the counted fallback
+--   * "!tester pvp [state | path]", "!tester boss [state | spawn | path | close]" (O652): PvP among the testers (ChaosTesters.pvpProbe: the PvP place,
+--     the foe the rules allow, the hits a rule cancelled, the arena, battleground and Marches views, the season rows of testers: 0) and the tester
+--     copy of a key boss (ChaosTestersBoss.probe: the copy, its telegraph marks and the safe tile, the kills, the boss points, the boards: no
+--     tester); `boss spawn` is the TEST ONLY grant (a tester only, logged, only while no player is near); inside a PvP place the helper's loop aims
+--     a tester without a target at a foe tester (ChaosTesters.pvpFoe: both testers, the switch on, one place, the place's own rule), never at a player
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -93,7 +98,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 20
+HELPER_VERSION = 21
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1845,6 +1850,57 @@ function commands.journey(player, arg)
 	tell(player, "journey", H.journeyAnswer(probe))
 end
 
+-- "!tester pvp [state | path]": reads ChaosTesters.pvpProbe (O652): the PvP place the bot stands in, the closed switch, the foe the rules allow (a tester
+-- in a place, the nearest in sight or the nearest a system lists), the hits a rule cancelled (on a player, outside a place, the switch off), the
+-- arena / battleground / Marches views and `seasonListed` (testers with a row in the season ratings: 0). `path` is the engine's path to the guide's goal.
+function commands.pvp(player, arg)
+	local what, usage = H.parsePvp(arg)
+	if not what then
+		tell(player, "pvp", {err = usage})
+		return
+	end
+	local X = ChaosTesters
+	if not (X and X.pvpProbe) then
+		tell(player, "pvp", {err = "no PvP rules for the testers"})
+		return
+	end
+	local probe = X.pvpProbe(player)
+	if what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "pvp", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "pvp", H.cutAnswer(probe))
+	end
+end
+
+-- "!tester boss [state | spawn | path | close]": reads ChaosTestersBoss.probe (O652). `spawn` is a copy of a key boss for the bot (TEST ONLY, logged,
+-- only while no player is near and no lair's boss spawn is near: only the testers can hurt it, no board, no kill row), `path` the engine's path to
+-- it, `close` takes it away. `state` gives its telegraph marks and, when the bot stands in one, the safe tile (guide `dodge`).
+function commands.boss(player, arg)
+	local what, usage = H.parseBoss(arg)
+	if not what then
+		tell(player, "boss", {err = usage})
+		return
+	end
+	local B = ChaosTestersBoss
+	if not (B and B.probe and B.testerSpawn) then
+		tell(player, "boss", {err = "no tester boss system"})
+		return
+	end
+	if what == "close" then
+		tell(player, "boss", H.cutAnswer(B.probe(player), {closed = B.testerClose(player) and true or false}))
+	elseif what == "spawn" then
+		local m, why = B.testerSpawn(player)
+		tell(player, "boss", H.cutAnswer(B.probe(player), m and {spawned = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = B.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "boss", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "boss", H.cutAnswer(B.probe(player)))
+	end
+end
+
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest
 -- plain tables for H.targetKind / H.summonAnomalies
 local function sideOf(c)
@@ -3297,6 +3353,29 @@ local function nearestMonster(player)
 	return best and best.c
 end
 
+-- O652: inside a PvP place a tester without a target aims at a foe tester (ChaosTesters.pvpFoe: both testers, the closed switch on, one place, the
+-- place's own rule: the other team, nobody protected), never at a player and never outside a place. player:setTarget skips the callbacks, so this
+-- is the bot's own rule; the server's guard (testers.lua) still cancels any hit the rules refuse.
+local function pvpAim(player)
+	local X = ChaosTesters
+	if not (X and X.pvpFoe and X.pvpPlace and X.pvpPlace(player)) then
+		return
+	end
+	local pos = player:getPosition()
+	local list = {}
+	for _, c in ipairs(Game.getSpectators(pos, false, true, RANGE, RANGE, RANGE, RANGE)) do
+		if c:isPlayer() and c:getId() ~= player:getId() then
+			local ok, foe = pcall(X.pvpFoe, player, c)
+			list[#list + 1] = {pos = c:getPosition(), tester = eligible(c) and true or false, foe = ok and foe == true, health = c:getHealth(), id = c:getId(), c = c}
+		end
+	end
+	local pick = H.pvpTarget(pos, list, RANGE)
+	if pick then
+		player:setTarget(pick.c)
+		player:setDirection(H.directionTo(pos, pick.pos))
+	end
+end
+
 -- one round of the loop. Returns true when the loop ends (the helper file is gone)
 local function stepBody()
 	T.step = T.step + 1
@@ -3307,6 +3386,9 @@ local function stepBody()
 			if not player or not eligible(player) then
 				T.ids[id] = nil -- gone, or not a tester: never acted on
 			else
+				if not player:getTarget() then
+					pcall(pvpAim, player) -- O652: a foe tester inside a PvP place first
+				end
 				if not player:getTarget() then
 					local monster = nearestMonster(player)
 					if monster then

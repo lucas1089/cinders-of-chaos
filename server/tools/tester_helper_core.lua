@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -702,6 +702,35 @@ end
 
 function H.parseInvasion(arg)
 	return parseWords(arg, "invasion", {"state", "path"})
+end
+
+-- O652: PvP among the testers and the tester copies of the key bosses.
+--   !tester pvp [state | path]       the PvP place the bot stands in, the foe (only a tester, only in a place the rules allow), the hits a rule
+--                                    cancelled, the arena / battleground / Marches views and the testers in the season rows (0); path: on foot to the foe
+--   !tester boss [state | spawn | path | close]   spawn is a copy of a key boss for the bot (TEST ONLY, only while no player is near and no lair is
+--                                    near); state gives its telegraph marks, the safe tile (guide `dodge`), the kills, the boss points, `listed`
+function H.parsePvp(arg)
+	return parseWords(arg, "pvp", {"state", "path"})
+end
+
+function H.parseBoss(arg)
+	return parseWords(arg, "boss", {"state", "spawn", "path", "close"})
+end
+
+-- O652: the foe a tester aims at inside a PvP place. `list`: {{pos = {x, y, z}, tester = bool, foe = bool, health = n, id = n}} of the players in
+-- sight, `foe` the answer of ChaosTesters.pvpFoe (both testers, the switch on, one place, the place's own rule). Only a foe is ever picked, never a
+-- player: a list with no foe gives nil. The nearest on the same floor within `range`, the lowest health first among equals.
+function H.pvpTarget(origin, list, range)
+	local best
+	for _, c in ipairs(list or {}) do
+		if c.tester == true and c.foe == true and c.pos and c.pos.z == origin.z and (c.health or 1) > 0 then
+			local d = math.max(math.abs(c.pos.x - origin.x), math.abs(c.pos.y - origin.y))
+			if d <= range and (not best or d < best.d or (d == best.d and (c.health or 0) < (best.c.health or 0))) then
+				best = {c = c, d = d}
+			end
+		end
+	end
+	return best and best.c or nil
 end
 
 -- a value cut down for a text line: scalars only, strings at most 90 characters, tables up to `depth` levels and 12 rows a list

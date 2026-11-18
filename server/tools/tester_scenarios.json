@@ -13763,7 +13763,8 @@
   "testers": {
    "files": [
     "chaos_constants.lua",
-    "testers.lua"
+    "testers.lua",
+    "testers_boss.lua"
    ],
    "kind": "out",
    "opcodes": [],

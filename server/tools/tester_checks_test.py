@@ -6166,6 +6166,327 @@ class ChoreSalvage(unittest.TestCase):
         r = self.go(ChoreIO(answers={'found': {'err': 'no backpack'}}))
         self.assertEqual((r.status, r.detail), (TX.SKIP, 'no backpack'))
 
+class BossCopyWorld(LaneWorld):
+    """the copy of a boss on one lane: it stands at x = 90 once made; the bot hurts it within 6 tiles; a mark falls on the bot's tile every
+    `mark_every` looks while it is in reach: the guide says dodge and the bot has to step off before the next look"""
+
+    def __init__(self, err=None, spawn_err=None, level_ok=True, hits=3, kill=True, mark_every=4, listed=0, pz_first=False, die_after=None, blocked=(), far=True):
+        super().__init__(blocked=blocked, die_after=die_after)
+        if not far:
+            self.pos = (86, 5)
+        self.err, self.spawn_err, self.level_ok, self.hits, self.kill = err, spawn_err, level_ok, hits, kill
+        self.mark_every, self.listed, self.pz_first = mark_every, listed, pz_first
+        self.made, self.hp, self.killed, self.points, self.closes, self.spawns = False, 100, 0, 1, 0, 0
+        self.marked_at, self.dodged_x, self.marks_sent, self.looks_in_reach = None, None, 0, 0
+
+    def near(self):
+        return abs(self.pos[0] - 90) <= 6
+
+    def facts(self):
+        out = {'level': 700, 'pos': self.at(), 'killed': self.killed, 'listed': self.listed, 'points': self.points,
+               'next': 'Talath' if self.level_ok else None, 'nextLevel': 650}
+        if not self.made:
+            out['guide'] = {'mode': 'wait', 'why': 'no boss copy of its own'}
+            return out
+        out['boss'] = {'pos': {'x': 90, 'y': 5, 'z': 7}, 'name': 'Talath', 'hp': self.hp, 'left': 300}
+        if self.marked_at is not None and self.pos[0] == self.marked_at:
+            out['danger'] = {'left': 1500, 'labels': ['Frost Lance'], 'count': 1, 'here': True, 'tiles': [[self.marked_at, 5]]}
+            side = -3 if self.marked_at >= 90 else 3   # toward the boss: the safe tile stays in reach
+            out['guide'] = {'mode': 'dodge', 'goal': {'x': self.marked_at + side, 'y': 5, 'z': 7}, 'why': 'a mark of Frost Lance is on the bot\'s tile'}
+        elif self.near():
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 90, 'y': 5, 'z': 7}, 'area': 'boss'}
+        else:
+            out['guide'] = {'mode': 'walk', 'goal': {'x': 90, 'y': 5, 'z': 7}, 'reach': [1, 6], 'area': 'boss'}
+        return out
+
+    def answer(self, command):
+        if command == 'boss state':
+            if self.err:
+                return {'err': self.err}
+            if self.made and self.look() and self.near():
+                self.looks_in_reach += 1
+                if self.marked_at is not None and self.pos[0] == self.marked_at:
+                    self.marked_at = None   # it stayed: the hit landed (nothing here: the world has no damage)
+                self.hp = max(0, self.hp - self.hits)
+                if self.hp == 0 and self.kill:
+                    self.killed += 1
+                    self.made = False
+                    self.points += 1
+                elif self.mark_every and self.looks_in_reach % self.mark_every == 0:
+                    self.marked_at = self.pos[0]
+                    self.marks_sent += 1
+            return self.facts()
+        if command == 'boss spawn':
+            if self.pz_first and not self.spawns:
+                self.spawns += 1
+                return dict(self.facts(), err='the bot stands in a protection zone')
+            if self.spawn_err:
+                return dict(self.facts(), err=self.spawn_err)
+            self.spawns += 1
+            self.made, self.hp = True, 100
+            return dict(self.facts(), spawned=True)
+        if command == 'boss path':
+            g = self.facts()['guide']
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1])) if g['mode'] == 'walk' else dict(self.facts(), err='no goal')
+        if command == 'boss close':
+            self.closes += 1
+            self.made = False
+            return dict(self.facts(), closed=True)
+        return None
+
+
+class BossCopyWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.BOSS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.BOSS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, **kw):
+        w = BossCopyWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_boss_copy_walk(io, 'Tester Aaa', 'Warrior', 700)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 700, 'steps': 5, 'secs': 30, 'name': 'Talath'}
+        self.assertEqual(TX.boss_copy_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        r = TX.boss_copy_verdict(dict(base, killed=1, marks=3, dodged=2, points0=1, points=2))
+        self.assertEqual(r[0], TX.PASS)
+        self.assertIn('3 warning(s) seen, 2 dodge(s)', r[1])
+        self.assertIn('boss passive points 1 -> 2', r[1])
+        self.assertEqual(TX.boss_copy_verdict(dict(base, hp=40))[0], TX.PASS)
+        self.assertIn('hurt the copy of Talath to 40%', TX.boss_copy_verdict(dict(base, hp=40))[1])
+        self.assertEqual(TX.boss_copy_verdict(dict(base, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.boss_copy_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.boss_copy_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.boss_copy_verdict(base)[0], TX.SKIP)
+        self.assertIn('boss_copy_walk', TX.KEYS)
+        self.assertNotIn('boss_copy_walk', TX.CLOSED_KEYS)
+
+    def test_the_copy_is_fought_and_the_marks_are_dodged(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('killed the copy of Talath', r.detail)
+        self.assertIn('boss passive points 1 -> 2', r.detail)
+        self.assertGreaterEqual(io.w.marks_sent, 1, 'a mark fell on the bot')
+        self.assertIn('dodge(s)', r.detail)
+        self.assertNotIn(' 0 dodge(s)', r.detail, 'it stepped off the marked tile')
+        self.assertEqual(io.cmds[-1], 'boss close')
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertIn('boss path', io.cmds, 'it walked to the copy by the engine path')
+        self.assertGreater(io.looted, 0)
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True), 'the bot may flee like a person at low health')
+
+    def test_a_copy_that_is_hurt_but_not_killed_is_a_pass(self):
+        TX.BOSS_BUDGET = 40.0
+        r, _ = self.play(hits=1, kill=False)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt the copy', r.detail)
+
+    def test_a_protection_zone_sends_the_bot_to_the_hunt_once(self):
+        r, io = self.play(pz_first=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.moves[0], 'hunt')
+        self.assertEqual(io.w.spawns, 2)
+
+    def test_the_skips(self):
+        r, _ = self.play(err='no tester boss system')
+        self.assertEqual((r.status, 'no tester boss system' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(level_ok=False)
+        self.assertEqual((r.status, 'under the lowest boss copy' in r.detail), (TX.SKIP, True))
+        r, io = self.play(spawn_err='a player is near: the copy is not made')
+        self.assertEqual((r.status, 'a player is near' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.cmds[-1], 'boss close')
+        r, _ = self.play(die_after=2, hits=0, kill=False)
+        self.assertEqual(r.status, TX.SKIP)
+        TX.SOLO_STUCK = 4.0
+        r, _ = self.play(hits=0, kill=False, blocked=[(61, 5)])
+        self.assertEqual((r.status, 'blocked' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        TX.SOLO_FIGHT_MIN = 6.0
+        r, io = self.play(hits=0, kill=False, far=False, mark_every=0)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not hurt it', r.detail)
+        self.assertIn('BUG boss_copy_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closes, 1)
+        r, _ = self.play(listed=1)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('tester name(s) in a boss board', r.detail)
+
+
+class PvpWorld:
+    """two bots in a PvP place (kind arena | zone | bg): `inside_after` looks to stand inside, the foe's health falls to `hp_floor` from look
+    `hp_after`, the match ends (the server puts the bots out) after `end_after` looks; `others` players in the roster, `season` tester rows"""
+
+    def __init__(self, kind='arena', inside_after=1, hp_after=None, hp_floor=60, end_after=None, others=0, season=0, closed=True, queue_members=3):
+        self.kind, self.inside_after, self.hp_after, self.hp_floor = kind, inside_after, hp_after, hp_floor
+        self.end_after, self.others, self.season, self.closed, self.queue_members = end_after, others, season, closed, queue_members
+        self.looks = {'a': 0, 'b': 0}
+
+    def state(self, who):
+        self.looks[who] += 1
+        n = self.looks[who]
+        inside = n >= self.inside_after and not (self.end_after is not None and n > self.end_after)
+        hp = self.hp_floor if self.hp_after is not None and n >= self.hp_after else 100
+        foes = [{'x': 61, 'y': 5, 'z': 7, 'name': 'Tester Bbb', 'hp': hp}]
+        if self.kind == 'zone':
+            sec = {'inside': inside, 'testers': 1, 'others': self.others, 'foes': foes if inside else []}
+        else:
+            sec = {'queued': not inside, 'inMatch': inside, 'phase': 'fight' if inside else None, 'testers': 1, 'others': self.others,
+                   'foes': foes if inside else [], 'queueMembers': self.queue_members, 'need': 10}
+        out = {'closed': self.closed, 'place': {'arena': 'arena', 'zone': 'pvp zone', 'bg': 'battleground'}[self.kind] if inside else None, 'level': 500,
+               'pos': {'x': 60, 'y': 5, 'z': 7}, 'seasonListed': self.season, 'cancelledPlayer': 0, TX.PVP_SECTION[self.kind]: sec}
+        if inside:
+            out['foe'] = {'x': 61, 'y': 5, 'z': 7, 'name': 'Tester Bbb', 'seen': True, 'dist': 1, 'hp': hp}
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 61, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'foe'}
+        else:
+            out['guide'] = {'mode': 'wait', 'why': 'not in a PvP place'}
+        return out
+
+
+class PvpIO(ClosedIO):
+    """ClosedIO with the walking calls and a PvpWorld behind `pvp state` of both bots"""
+
+    def __init__(self, world, replies=None, other_replies=None, **kw):
+        super().__init__(answers={'pvp state': lambda io: world.state('a'), 'pvp path': lambda io: {'path': []}},
+                         other_answers={'pvp state': lambda io: world.state('b'), 'pvp path': lambda io: {'path': []}},
+                         replies=replies, other_replies=other_replies, **kw)
+        self.w, self.modes, self.looted = world, [], 0
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+    async def step(self, dx, dy):
+        pass
+
+    async def step_of(self, other, dx, dy):
+        pass
+
+    async def loot(self):
+        self.looted += 1
+
+
+class PvpFights(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.PVP_FIGHT_MIN, TX.ARENA_WAIT, TX.BG_QUEUE_WAIT, TX.PVP_BUDGET.copy())
+
+    def tearDown(self):
+        TX.PVP_FIGHT_MIN, TX.ARENA_WAIT, TX.BG_QUEUE_WAIT = self.keep[:3]
+        TX.PVP_BUDGET.clear()
+        TX.PVP_BUDGET.update(self.keep[3])
+
+    def arena(self, world, **kw):
+        q = {('arena', 'queue'): {'action': 'state'}, ('arena', 'leave'): {'action': 'state'}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q), **kw)
+        return run(TX.check_closed_arena_fight(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def zone(self, world, **kw):
+        q = {('pvpZone', 'enter'): {'action': 'enter', 'data': {}}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q), **kw)
+        return run(TX.check_closed_pvp_fight(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def bg(self, world):
+        q = {('battleground', 'queue'): {'action': 'state'}, ('battleground', 'leave'): {'action': 'state'}}
+        io = PvpIO(world, replies=dict(q), other_replies=dict(q))
+        return run(TX.check_closed_battleground_match(io, 'Tester Aaa', 'Warrior', 500)), io
+
+    def test_the_keys_and_the_order(self):
+        for k in ('closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match'):
+            self.assertIn(k, TX.CLOSED_KEYS)
+            self.assertNotIn(k, TX.KEYS)
+            self.assertLess(TX.CLOSED_KEYS.index(k), TX.CLOSED_KEYS.index('closed_raid'), 'the raid is the longest: last')
+
+    def test_the_verdicts(self):
+        base = {'level': 500, 'steps': 4, 'secs': 60, 'was_in': True}
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, faults=['x']), 'arena match')[0], TX.FAIL)
+        r = TX.pvp_fight_verdict(dict(base, ended=True, foe_hp=40), 'arena match')
+        self.assertEqual(r[0], TX.PASS)
+        self.assertIn('played to its end between testers only', r[1])
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, foe_hp=70), 'Marches')[0], TX.PASS)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, foe_hp=100, fought=TX.PVP_FIGHT_MIN), 'Marches')[0], TX.FAIL)
+        self.assertEqual(TX.pvp_fight_verdict({'level': 1}, 'Marches')[0], TX.SKIP)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, stuck=(1, 2)), 'Marches')[0], TX.SKIP)
+        self.assertEqual(TX.pvp_fight_verdict(dict(base, died=True), 'Marches')[0], TX.SKIP)
+        self.assertIn('hit(s) on a player were cancelled', TX.pvp_fight_verdict(dict(base, foe_hp=50, cancelled_player=2), 'Marches')[1])
+
+    def test_the_problems(self):
+        arena = lambda **kw: dict({'closed': True, 'arena': {'inMatch': True, 'others': 0}}, **kw)  # noqa: E731
+        self.assertEqual(TX.pvp_problems(arena(), 'arena'), [])
+        self.assertIn('1 player(s) are in the testers\' arena', TX.pvp_problems(arena(arena={'inMatch': True, 'others': 1}), 'arena')[0])
+        self.assertIn('tester row(s) in the season ratings', TX.pvp_problems(arena(seasonListed=2), 'arena')[0])
+        self.assertIn('closed switch off', TX.pvp_problems(arena(place='arena', closed=False), 'arena')[0])
+        self.assertEqual(TX.pvp_problems({'zone': {'inside': False, 'others': 5}}, 'zone'), [], 'outside the place nobody is judged')
+        self.assertEqual(TX.pvp_hurt({'arena': {'foes': [{'hp': 80}, {'hp': 55}]}}, 'arena'), 55)
+        self.assertEqual(TX.pvp_hurt({'foe': {'hp': 30}}, 'zone'), 30)
+        self.assertIsNone(TX.pvp_hurt({}, 'zone'))
+
+    def test_an_arena_match_played_to_its_end(self):
+        r, io = self.arena(PvpWorld('arena', hp_after=3, end_after=12))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('played to its end between testers only', r.detail)
+        self.assertEqual(io.asked[-1], ('arena', 'leave', {}))
+        self.assertEqual(io.other_asked[-1], ('arena', 'leave', {}))
+        self.assertEqual(io.modes[0], (['Tester Aaa', 'Tester Bbb'], True, False))
+        self.assertEqual(io.modes[-1], (['Tester Aaa', 'Tester Bbb'], False, False))
+
+    def test_an_arena_match_still_running_with_a_foe_hurt_is_a_pass(self):
+        r, _ = self.arena(PvpWorld('arena', hp_after=2))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a foe tester hurt to 60%', r.detail)
+
+    def test_the_arena_bugs(self):
+        r, _ = self.arena(PvpWorld('arena', hp_after=2, others=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('player(s) are in the testers\' arena', r.detail)
+        self.assertIn('BUG closed_arena_fight', r.bug_line())
+        r, _ = self.arena(PvpWorld('arena', hp_after=2, season=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('season ratings', r.detail)
+        TX.PVP_FIGHT_MIN = 5.0
+        r, _ = self.arena(PvpWorld('arena'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('hurt none', r.detail)
+
+    def test_the_arena_skips(self):
+        r, _ = self.arena(PvpWorld('arena'), partner=None)
+        self.assertEqual((r.status, 'no free bot' in r.detail), (TX.SKIP, True))
+        io = PvpIO(PvpWorld('arena'))
+        self.assertEqual(run(TX.check_closed_arena_fight(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+        TX.ARENA_WAIT = 4.0
+        r, io = self.arena(PvpWorld('arena', inside_after=999))
+        self.assertEqual((r.status, 'not in a match' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.asked[-1], ('arena', 'leave', {}), 'the queue is left')
+
+    def test_the_marches(self):
+        r, io = self.zone(PvpWorld('zone', hp_after=3))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt to 60% in the Marches', r.detail)
+        self.assertEqual(io.moves[-1], 'town')
+        r, _ = self.zone(PvpWorld('zone', hp_after=3, others=2))
+        self.assertEqual((r.status, 'testers\' zone' in r.detail), (TX.FAIL, True))
+        r, _ = self.zone(PvpWorld('zone', inside_after=999))
+        self.assertEqual((r.status, 'not inside the Marches' in r.detail), (TX.SKIP, True))
+        io = PvpIO(PvpWorld('zone'))
+        self.assertEqual(run(TX.check_closed_pvp_fight(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+
+    def test_the_battleground(self):
+        r, io = self.bg(PvpWorld('bg', inside_after=4, hp_after=8))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('hurt to 60% in the battleground match', r.detail)
+        self.assertEqual(io.asked[-1], ('battleground', 'leave', {}))
+        TX.BG_QUEUE_WAIT = 10.0
+        r, _ = self.bg(PvpWorld('bg', inside_after=999, queue_members=4))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('4 of the 10 testers a match needs were queued', r.detail)
+        TX.BG_QUEUE_WAIT = 150.0
+        r, _ = self.bg(PvpWorld('bg', inside_after=4, hp_after=8, others=1))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('BUG closed_battleground_match', r.bug_line())
+        io = PvpIO(PvpWorld('bg'))
+        self.assertEqual(run(TX.check_closed_battleground_match(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP, 'no answer from the window')
+
 
 if __name__ == '__main__':
     unittest.main()

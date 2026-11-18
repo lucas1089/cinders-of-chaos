@@ -9804,7 +9804,7 @@ The guard: `testers_core.lua`. Every party of a closed-mode action is a tester o
   - the Marches (`pvpzone.lua`, `pvpzone_core.lua`): realm `K.REALM` has its own instance slot (`testerSlot`, the slot after
     the grid, in the clear block x/y 13312-13823); a tester is refused with the switch off.
   - PvP (`testers.lua` `onTargetCombat`): tester against player is always refused; two testers hit each other only with
-    the switch on.
+    the switch on and only inside a PvP place on both sides (O652: arena match, battleground, Marches, siege arena).
   - guild (`guild.lua` `guildOf`): a tester has a guild only if it is a tester guild (name "Tester Guild ...", every
     member a tester) and the switch is on; a player never has a tester guild. A mixed guild gives no guild to anyone
     concerned (the members are read from `guild_membership` and kept 10 s).
@@ -9828,7 +9828,8 @@ The bots (`tester_checks.py`, run with `--closed`; the helper is v16 (v11 added 
 `closed_arena` (two testers queue 1v1 and meet), `closed_battleground` (queue and leave), `closed_pvp` (enter the Marches),
 `closed_guild_war` (declare, accept, active, surrender between the two tester guilds), `closed_market` (list for gold, the
 other bot sees and buys it), `closed_bazaar` (a listing locks the character, the release frees it), `closed_raid` (a party plays
-the raid like people, see "The raid in closed mode" below). A failed guard is a
+the raid like people, see "The raid in closed mode" below); O652: `closed_arena_fight`, `closed_pvp_fight`, `closed_battleground_match` (the testers fight each
+other, "The rest of the closed audit (O589)" step 10). A failed guard is a
 `BUG` line. A check that cannot run says why (no partner, a level gate, fewer than 6 bots for two guilds).
 
 Clean-up (`tester_closed.clean_statements`): the guilds named "Tester Guild Alfa / Bravo" owned by a tester with their
@@ -9909,7 +9910,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O654 to v20, step 10).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O653 to v19, step 10; O654 to v20, step 11; O652 to v21, step 12).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10476,6 +10477,79 @@ Needs a live run: the tile scans against the real map (the gate teleport's desti
 search across the hall (the engine's bounded search, the alcoves in front of the teleports), the hunt teleports' front tile being where a person stands, the Town Portal's
 portal tile being reachable, the pick against the band table the model uses, minutes per level against the model (the first live numbers), the helper's cost per look
 (a scan of the hall's floor once, the ports table sorted every look).
+##### 12. PvP among the testers and the tester copy of a key boss (O652)
+
+Owner 2026-11-18 (translated): "pode fazer todos os pontos", which includes letting testers fight testers. Helper v21 (`HELPER_VERSION`, bumped once for the
+whole task): `!tester pvp [state | path]`, `!tester boss [state | spawn | path | close]`. Tests: `testers_test.lua`, `testers_pvp_test.lua`, `testers_boss_test.lua`,
+`arena_flow_test.lua`, `battleground_flow_test.lua`, `tester_helper_test.lua`, `tester_checks_test.py`.
+
+**PvP among the testers.** Server rules:
+- **The targeting rule** (`testers_core.lua` `K.pvpRefusal`, `testers.lua` guard): a tester hit on a player is always cancelled ("mixed"); a tester hit on
+  another tester needs the closed switch ("closed-off") and a PvP place on both sides, the same place ("no-place": `ChaosBlessings.pvpPlace` names it: arena
+  match, battleground, siege arena, the Marches). Before O652 two testers could hit each other anywhere with the switch on. The cancelled hits are counted per
+  tester (`X.pvpStats`: on a player, outside a place, the switch off) for the probe.
+- **The bot's aim** (`X.pvpFoe(a, b)`, helper `pvpAim`): `player:setTarget` skips the callbacks, so the helper loop asks the rule itself. A tester without a
+  target aims at a foe tester only: both testers, switch on, one place, and that place's own rule (`ChaosArena.foe`, `ChaosBattleground.foe`,
+  `ChaosPvpZone.foe`, `ChaosSiege.targetCombat`: the other team, nobody defeated, nobody protected, not in one party). Never a player, never outside a place.
+  Pure part: `H.pvpTarget` (nearest foe on the floor in range, the weakest among equals).
+- **Rankings** (`arena_season.lua`): `P.record` returns nothing when any guid of a match is a tester (the arena's 1v1 / 2v2 / 3v3 and the battleground `bg`
+  bracket both go through it), and `P.processSeason` skips tester rows (no title, frame, cosmetic or honor). `ChaosLeaderboard.record` skipped testers
+  already, the season-end reward did not. `P.listedTesters()` counts tester rows of the season ratings for the probe (0 is right).
+- **Probes**: `ChaosArena.probe` (mode, phase, team, foes with health, mates, roster by side), `ChaosBattleground.probe` (queue members of the asker's realm
+  against the `need` of 10, phase, score, team, foes, the braziers with their owner), `ChaosPvpZone.probe` (instance, roster by side, foes, kills, defeats,
+  pledge), `ChaosTesters.pvpProbe` (all of them, the place, the cancelled hits, `seasonListed`, the foe in sight or the nearest a system lists, the guide:
+  fight within 5 tiles, walk to the foe, else walk to the nearest brazier the team does not hold, else wait).
+- Already closed in O582 / O592 and kept: the arena queue by side, the battleground and Marches realm of the testers (a match never holds a player: the
+  probe's `others` must be 0), the siege of tester guilds (`closed_siege`).
+
+How the bots play it (three closed checks before `closed_raid`; the same walk like a person: look, engine path to the foe, the bot's own rotation):
+1. `closed_arena_fight`: two bots queue a 1v1, wait for the match (40 s), `pvp_play`: both walk to the foe by the engine path and fight until the match ends or a
+   foe is hurt and 45 s were fought; `arena leave` after. PASS: a foe hurt or the match played to its end. FAIL: a player in the roster, a tester row in the season
+   ratings, the switch off while the bots fight in a place, 45 s in reach and no foe hurt. SKIP with the reason (no partner, no match, a block, a death).
+2. `closed_pvp_fight`: the same in the Marches (their own instance), 100 s, out by the helper's town step after.
+3. `closed_battleground_match`: the bot queues and stays up to 150 s; with 10 testers queued (5v5, level 100 and up) a match of testers only starts and it
+   plays it (the 30 s of preparation, the foes, the braziers). SKIP with "N of the 10 testers a match needs were queued" when too few came: it needs a run with
+   many bots at level 100 and up in one bracket.
+
+**The tester copy of a key boss** (`testers_boss.lua`, `testers_boss_config.lua`). A world boss, a lair boss (`bosslair.lua`: Talath, Malgrath) and an island
+boss are the players' content: one boss, damage shares, kill rows, a respawn clock, titles, boards. The arena of a world boss refuses a tester (O595) and the
+bounty boss walk of O650 fights a lair boss only while no player is near; neither plays the mechanics. `!tester boss spawn` (TEST ONLY, logged) makes a copy
+for one tester:
+- only a tester, only while no player is within `clearRadius` 40 tiles, not in a protection zone, not within `lairGuard` 45 tiles of a lair's boss spawn
+  (a kill is matched to a spawn by its place), one copy per tester; the boss is the highest `refLevel` of `boss_mechanics_config.lua` the level reaches among
+  the seven listed (five world bosses, Talath, Malgrath), a level under 300 is a SKIP;
+- it stands 7 tiles from the bot, at `healthShare` 2% of the boss's health (a copy is hurt by one tester), with the boss's own mechanics (`ChaosBossMech.attach`:
+  telegraphs, adds, enrage) in a box arena of 10 tiles; only testers can hurt it (`ChaosTesters.markWorld(monster, "testers")`: a player's hit is cancelled, the
+  guard event comes first); removed after `lifeSeconds` 480;
+- the Boss Spawns tracker never sees it (`ChaosTestersBoss.creating` in the `onSpawn` of `bossspawns.lua`): no kill row, no countdown. Its loot, experience and the
+  boss passive point (`ChaosBossPoints`, the killer's own storage) are the tester's own. No broadcast, no Discord line, no board (a tester guid is skipped by the
+  leaderboard; the world boss damage book is never reached).
+- **The telegraphs**: `boss_mechanics.lua` keeps the marks of each telegraph until its hit (`f.danger`), and `ChaosBossMech.dangerFor(bossId, pos)` gives the tiles
+  marked now, the time to the hit, the labels and, when the asker stands in a mark, the nearest safe tile (`G.safeSpot` on the fight's grid, within the time left:
+  the fairness rule of the plan keeps one reachable). `B.probe` turns it into the guide `dodge` (goal = that tile), else `fight` within 6 tiles, else `walk`.
+  `listed` counts tester names in the boss spawn rows (must be 0), `points` the boss passive points.
+
+How the bot plays it (`boss_copy_walk`, an open check before `rift_walk`): a copy is asked for (a protection zone sends the bot to the hunt once), then
+`boss_copy_play`: the engine path to the copy, the bot's own rotation and loot, and when the probe says `dodge` the bot steps to the safe tile at once (up to 3
+steps, a look every 0.4 s). PASS: the copy killed (the verdict names the warnings seen, the dodges and the boss points before and after) or hurt. FAIL: a tester
+named in a boss board, 150 s in reach and the copy not hurt. SKIP with the reason (level, a player near, a lair near, a block, a death). `boss close` after.
+
+Left with the reason:
+- **Soak circles, channels and line-of-sight blasts** of the mechanics are not dodged: the probe gives floor telegraphs only (circle, cone, line, puddles). A soak
+  has to be stood in, a channel is stopped by a totem and a blast by a pillar; each needs its own guide.
+- **The real lair, world and island bosses** are never fought by a bot (the players' shares); the copy is the play. A weekly island boss belongs to the base
+  server's own scripts (not in this repository): the copy plays Talath and the world bosses, whose mechanics the Chaos profiles hold.
+- **The Marches pledge and the shrine contest**: a pledge needs reputation with a faction that a bot does not earn (`Z.pledge` refuses it), the shrine contest
+  runs every two hours in the testers' own instance.
+- **A guild siege fight** is the `closed_siege` check (the obelisk, the points); the fight between the two guilds there is the same loop as the arena's and was not
+  added to it.
+- **A tester copy in the lair itself** (the portal, the planned Shard Hollow): the real boss stands there; a copy would share its grid. The bot walks the portal
+  in the bounty boss walk of O650.
+
+Needs a live run: the real `Game.createMonster` calling `onSpawn` (the copy attaches its mechanics itself, so it does not depend on it), a free box of 10 tiles
+round the copy outside a protection zone, `Monster:setMaxHealth` on a boss with a health curve, the 10 testers of a battleground match, the Marches' defeat rule
+against two bots (the lethal hit is cancelled, the loser is thrown out: `closed_pvp_fight` reads that as the bots leaving the instance), a dodge inside the warning
+time at the bots' 0.4 s look (the marks give 1.5 to 3 s).
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -10505,6 +10579,7 @@ the system is not installed): never faked. A death in the middle drops the check
 | `goblin_walk` | all | O650: `!tester goblin spawn` (TEST ONLY: a treasure goblin of the bot's own, only while no player is within 30 tiles), chases it by the engine's path. PASS: killed or hit. BUG: 150 s in reach and not hit. SKIP: a player near, a blocked walk, a fall |
 | `vael_walk` | all, level 500 and up | O650: the temple on foot (a protection zone), `!tester vael enter` (TEST ONLY: Vael's spell trial with the quest step and the resistances left out), the thralls and Vael by the engine's path. PASS: Vael hurt or a thrall killed. BUG: 150 s with no kill, still inside after the close. SKIP: below level 500, the chambers kept for the players, a puzzle first stage, a fall |
 | `invasion_walk` | all | O650: while an invasion runs: walks to the invader nearest or the breach point (`!tester invasion path`) and fights. PASS: a hit of the bot was cancelled (the invasion is the players'). BUG: the bot is in the contribution book, 150 s in reach and no hit cancelled. SKIP: no invasion runs (most of the time) |
+| `boss_copy_walk` | all, level 300 and up | O652: `!tester boss spawn` (TEST ONLY: a copy of a key boss for the bot, only while no player is near and no lair is near, only testers can hurt it, no kill row or board), walks to it by the engine path, fights with its own rotation, steps off the telegraph marks the server names (guide `dodge`), loots. PASS: the copy killed or hurt; FAIL: a tester named in a boss board, or 150 s in reach and the copy not hurt |
 | `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
 | `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named), no way, the quest not running. O650 adds the bring step, the Go button (`goals` `mqGo`), the daily flag, the spell step, the tier kill stats; Vael has `vael_walk` |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |

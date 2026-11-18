@@ -227,6 +227,12 @@ eq(hit(b1, a1, 300), 300, "opponent damage lands")
 local outsider = newPlayer("Eve", 990, 15, 1000)
 eq(callbacks.onTargetCombat(outsider, b1), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "no attack from outside the match")
 eq(hit(b1, outsider, 300), 0, "no damage from outside the match")
+-- O652: the foe rule of the tester bots' targeting (testers.lua X.pvpFoe) and the probe of the match
+check(S.foe(a1, b1) and S.foe(b2, a1), "O652: a player of the other team is a foe")
+check(not S.foe(a1, a2) and not S.foe(a1, outsider) and not S.foe(outsider, a1), "O652: a team mate and one outside the match are not")
+local pr = S.probe(a1)
+check(pr.inMatch and pr.mode == "2v2" and #pr.foes == 2 and pr.mates == 1 and pr.others == 3 and pr.testers == 0, "O652: the probe names the foes, the mate and the roster by side")
+check(not S.probe(outsider).inMatch, "O652: the probe of one outside the match")
 
 -- the death catch: B1 keeps 1 health and goes to the gallery
 local dealt = hit(b1, a1, 99999)
