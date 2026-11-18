@@ -24,6 +24,8 @@
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
 --   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
+--   * "!tester gold [to N]" (O658): the bank balance and the gold in the backpack; `to N` is the TEST ONLY top-up of the bank (3,000,000 a call, 6,000,000 a
+--     bot) that the gear-up of tester_checks.py counts as a fallback when a bot cannot pay for its potions and basic pieces; "bag" also reports the potions held
 --   * "!tester path <kind> [N] | npc <name> | pos X Y Z" (O589): the way on foot to a map mark, an NPC or a position, the engine's own
 --     pathfinding (Creature:getPathTo) as directions the bot walks; the helper's teleport (`enter`) stays only as the fallback
 --     when there is no path, and the bot's report counts it
@@ -108,7 +110,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 24
+HELPER_VERSION = 25
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -766,6 +768,8 @@ function commands.bag(player, arg)
 	report.pos = posOf(player:getPosition())
 	report.bagClientId = ItemType(bag:getId()):getClientId()
 	report.gold = player:getMoney()
+	local okP, hp, mp = pcall(function() return player:getItemCount(7618), player:getItemCount(7620) end)
+	report.potions = okP and {health = hp, mana = mp} or nil -- O658: the gear-up buys what it is short of
 	tell(player, "bag", report)
 end
 
@@ -3809,6 +3813,31 @@ function commands.found(player, arg)
 	report.bagClientId = ItemType(bag:getId()):getClientId()
 	report.level = player:getLevel()
 	tell(player, "found", report)
+end
+
+-- O658: `!tester gold [to N]`: the bank balance and the gold in the backpack; `to N` is the TEST ONLY top-up of the bank (H.goldPlan) that the bot
+-- counts as a fallback when it cannot pay for the potions and the basic pieces of its gear-up
+T.gold = T.gold or {} -- bot name -> gold granted since the helper loaded (a reload starts the allowance again)
+function commands.gold(player, arg)
+	local g, usage = H.parseGold(arg)
+	if not g then
+		tell(player, "gold", {err = usage})
+		return
+	end
+	local name = player:getName()
+	local bank = player:getBankBalance()
+	local okM, money = pcall(function() return player:getMoney() end)
+	local data = {bank = bank, money = okM and money or 0, level = player:getLevel(), total = T.gold[name] or 0}
+	if g.to then
+		local give, why = H.goldPlan(bank, g.to, T.gold[name] or 0)
+		if give > 0 then
+			player:setBankBalance(bank + give)
+			T.gold[name] = (T.gold[name] or 0) + give
+			data.bank, data.total = bank + give, T.gold[name]
+		end
+		data.granted, data.refused = give, why
+	end
+	tell(player, "gold", data)
 end
 
 T.FILE = "data/scripts/zz_tester_helper.lua"

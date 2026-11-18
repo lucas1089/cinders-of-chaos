@@ -10828,6 +10828,46 @@ Still needs a live run: `dungeon_difficulty` and `weekly_challenge` (a free dung
 with ten bots queued together, the pocket and boss kills with gear, the node path of `gather_walk`, the first Trial of the ascension, `rift_walk` past the first floor, the
 engine's path to a hall teleport (the bounded search; the journey falls back to the helper's jump after `GATE_TRIES`).
 
+##### 17. Gear up, level gates and retreat (O658)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650): "the bots have to do the complete content of the game, in the most human way possible". The O656 live run
+(step 16) found many checks SKIP because a bot made at level 100 to 2000 had the kit weapon and nothing else: it died within seconds of every hard check ("died before a
+kill", "the guardian was not broken"), and each death took a level, so the level gates fell away too. A person gears up before a hard fight, and leaves a fight that goes
+badly. The bots do the same (`tester_checks.py` block "gear up, level gates, retreat (O658)", `CheckRun`, `CheckIO.health` / `heal_now`, helper v25).
+
+1. **`gear_up`** (before the first check of `FIGHT_KEYS` of each login, once: the creature id of the bot says which login; a gear-up cut off by a death is done again). One
+   `gear_up` result per login in the report (PASS: what was done or nothing was needed; SKIP: a step that could not be done, with its reason in `open: ...`). Steps:
+   - **Wear what it owns**: `!tester found` (the chase score: sets, uniques, jewelry, a plain gain), the piece is dragged onto the slot (`io.wear`), `found` again; repeated up to 8
+     pieces; a piece the server keeps in the bag (a class or level rule) is not worn twice.
+   - **Potions** (`gear_potions`): `!tester bag` now also answers `potions {health, mana}` (the stock potions 7618 / 7620 the heal rule drinks). Under 90 of either the bot
+     walks to Veyra the Apothecary (`chore_walk`, the engine path; the helper teleport is the counted fallback), says hi / trade (the NPC channel, one bot at a time:
+     `npc_talk_begin`), and buys up to 100 with the Buy packet (`io.buy`), at most 100 gold a potion. The count before and after is in the result.
+   - **Basic pieces** (`gear_pieces`): an empty helmet, armor, legs or boots slot (the worn list of `found`): on foot to Mordecai Ashwager (the Gambler, from level 40), the
+     cheapest unsold piece of that slot name under 1,500,000 gold, bought through the window (`gamble buy`), then worn by the next wear step. No NPC shop sells gear: the Gambler is the shop.
+   - **Heal rule** (`heal_rule_ready`): the potion id `keep_alive` drinks (`!tester info`) must be known; the result says so.
+   - **Gold**: purchases pay from the bank (`Chaos.pay`). A bot that is short is topped up by the helper (`!tester gold to N`, below): at most 3,000,000 in one gear-up; each grant is a
+     named fallback of the result (`grant 40000 gold (potions; the bank held 0)`), and the report prints them in their own line ("gold granted by the helper (TEST ONLY fallback of
+     gear_up ...)"), apart from the helper teleports. `--no-gear` (`testers.py run`) turns the gear-up off for a comparison with the old gearless run.
+2. **Level gates** (`LEVEL_GATES`, `level_gate`): 15 checks have the level their content opens at (siege 100, guild boss 150, raid 800, descent 100, rift 100, tower 100, trial 100, Nemesis
+   50, pocket 150, waystone map 1000, Vael 500, ascension 100, dungeon 150, dungeon difficulty 150, Weekly Challenge 800). A bot under it gets SKIP "level N: KEY opens at level M (not walked ...)" before it
+   walks, gears up or asks the helper anything. The level is the bot's level now (`io.bot.level`: a death takes some), not the one it had at login. The numbers are floors: the checks' own
+   helper `minLevel` answers still apply above them. `test_level_gates_hold_the_configs` reads every number from its config file, so a drift fails a test, not a live run.
+3. **Retreat** (`retreat_check`, in `solo_play`, `chase_play`, `boss_copy_play` and `bounty_play`: the tower, descent, trials, Vael, Ascended, Omen, Nemesis, goblin, invasion, boss copies and
+   bounty loops): under 30 percent health the bot drinks or casts a heal (`CheckIO.heal_now`: its heal spell when ready, else the stock health potion, the packets of the heal rule, whatever the
+   rule's own threshold), steps one tile back the way it came (the trail of its last looks; away from the guide's goal when there is no trail), and waits, healing again each second, until it is
+   over 50 percent (12 s at most, 6 retreats a loop). The old flee to the temple at 20 percent stays. A death still ends the check as before (a SKIP that says the bot died); a SKIP of a fight check
+   after retreats says "the bot retreated N time(s) to heal".
+4. **Helper v25** (`!tester gold [to N]`, `H.parseGold`, `H.goldPlan`): `gold` reads the bank and the gold in the backpack; `gold to N` raises the bank to N (TEST ONLY: 3,000,000 a call, 6,000,000 a bot
+   until the helper is reloaded). The guard of every command holds: a player's words get no answer and no gold. `tests/tester_helper_test.lua` (state, grant, step, cap, player).
+
+Tests: `tester_checks_test.py` (gear-up with a short bank, a full bank, potions only, under the Gambler's level, the grant limit and the piece cap, an old helper, a refused wear, the heal rule;
+the gates against the configs; the gate before any helper call; the gear-up once per login and before the first fight check; a gear-up that breaks; a death inside it; the retreat in the
+loops; the report), `testers_test.py` (`CheckIO.health`, `heal_now`, `--no-gear`), `tester_helper_test.lua`.
+
+Left with the reason: the numbers of a real run. Not run on a live server (no server here): how many deaths the gear-up saves (the pieces the Gambler sells at a bot's level are a basic base
+with a rolled rarity, not a build), whether the Gambler's stock always holds a piece for each empty slot (a slot with none stays empty and is said in `open:`), and whether a retreat of one
+tile is enough against a pack (the next live run reads `retreated N time(s)` and the SKIP reasons; a plan: step to the temple's protection zone by the Town Portal after the second retreat of a loop).
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):

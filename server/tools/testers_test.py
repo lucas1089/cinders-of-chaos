@@ -1343,6 +1343,31 @@ try:
 finally:
     asyncio.sleep = _real_sleep
 
+# ---------------------------------------------------------------- O658: the retreat's reads and heals, --no-gear
+_r8 = T.Results(1)
+_hb = T.TesterBot(13, dict(bot), A(), 1, _r8, {'rotation': [], 'heal': {'words': 'exura', 'group': 2, 'cooldown': 1000, 'groupcooldown': 1000}})
+_hb.conn, _hb.cid, _hb.alive, _hb.died = KC(), 0x1000000d, True, False
+_said = []
+_hb.say = lambda text, kind=1: _said.append(text)
+_hio = T.CheckIO(_hb, {'stop': False})
+eq(_hio.health, None, 'health: none seen yet is None, not a full bar')
+_hb.health, _hb.health_at = 22, _time.monotonic()
+eq(_hio.health, 22, "health: the bot's own, in percent")
+eq(asyncio.run(_hio.heal_now()), 'spell', 'heal_now: the heal spell first, whatever the health threshold of the rule')
+eq(_said, ['exura'], 'heal_now: the words are said')
+eq(asyncio.run(_hio.heal_now()), None, 'heal_now: the spell is on cooldown and there is no potion id: nothing')
+_hb.helper['info'] = {'potions': {'health': 2160}}
+eq(asyncio.run(_hio.heal_now()), 'potion', 'heal_now: then the stock health potion, the packet of the heal rule')
+eq(_hb.conn.out[-1], b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', 2160, 0) + struct.pack('<I', 0x1000000d),
+   'heal_now: use on its own creature')
+eq(asyncio.run(_hio.heal_now()), None, 'heal_now: both on cooldown')
+ok(_hb.pending.get('heal_spell') and _hb.pending.get('potion'), 'heal_now: the bot counts the heal and the potion as the heal rule does')
+_hb.alive = False
+eq(asyncio.run(_hio.heal_now()), None, 'heal_now: a bot that is gone does nothing')
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks']).no_gear, False, 'the gear-up is on by default')
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks', '--no-gear']).no_gear, True, '--no-gear is a flag of run')
+ok(T.TX.CheckRun('Tester Aaa', 'Warrior', 100).gear is True, 'a CheckRun gears up by default')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

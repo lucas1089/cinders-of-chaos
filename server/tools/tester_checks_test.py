@@ -8171,5 +8171,465 @@ class NewKeys(unittest.TestCase):
         self.assertEqual(TX.KEYS[-1], 'ascension_walk', 'the class change stays last')
 
 
+# ---------------------------------------------------------------- gear up, level gates, retreat (O658)
+class GearBot:
+    """what CheckRun and gear_up read of the bot: its creature id (one per login), its level, the helper's info"""
+
+    def __init__(self, cid=500, level=300, health=100):
+        self.cid, self.level, self.health = cid, level, health
+        self.helper = {'info': {'potions': {'health': 2160, 'mana': 2161}}}
+
+
+class GearIO(FakeIO):
+    """a mocked bot with a backpack, a bank, a bag of potions, Veyra's window and the Gambler's stock. `pieces` are backpack pieces
+    {i, id, cid, s, sc}, `worn` {slot: score}"""
+
+    def __init__(self, bank=0, pieces=None, worn=None, potions=(20, 20), stock=None, old_helper=False, refuse_wear=False, level=300):
+        FakeIO.__init__(self)
+        self.bot = GearBot(level=level)
+        self.info = {'potions': {'health': 2160, 'mana': 2161}}
+        self.bank, self.pieces, self.worn = bank, list(pieces or []), dict(worn or {})
+        self.potions = {'health': potions[0], 'mana': potions[1]}
+        self.stock = list(stock or [])
+        self.old_helper, self.refuse_wear = old_helper, refuse_wear
+        self.log, self.grants, self.walked = [], [], []
+        self.retreats = 0
+
+    def found(self):
+        best, gain = None, 0
+        out = []
+        for p in self.pieces:
+            c = p['sc'] - self.worn.get(p['s'], 0)
+            out.append({'i': p['i'], 'id': p['id'], 'cid': p['cid'], 's': p['s'], 'sc': p['sc'], 'chase': c})
+            if c > gain:
+                best, gain = p['i'], c
+        return {'pieces': out, 'best': best, 'worn': [{'s': s, 'sc': v} for s, v in sorted(self.worn.items())], 'sets': {}, 'orbs': {}, 'drops': []}
+
+    async def helper(self, command, kind, wait=4.0):
+        self.log.append(command)
+        if self.old_helper:
+            return None
+        if command == 'found':
+            return self.found()
+        if command == 'bag':
+            return {'used': 1, 'potions': dict(self.potions)}
+        if command == 'gold':
+            return {'bank': self.bank}
+        if command.startswith('gold to '):
+            want = int(command.split()[-1])
+            give = max(0, want - self.bank)
+            self.bank += give
+            self.grants.append(give)
+            return {'bank': self.bank, 'granted': give}
+        if command == 'info':
+            return self.info
+        return None
+
+    async def wear(self, index, client_id, slot):
+        if self.refuse_wear:
+            return
+        piece = next(p for p in self.pieces if p['i'] == index)
+        self.worn[slot] = piece['sc']
+        self.pieces.remove(piece)
+
+    async def shop_window(self, npc, wait=5.0):
+        return [{'id': 2160, 'sub': 0, 'name': 'health potion', 'buy': 45, 'sell': 0},
+                {'id': 2161, 'sub': 0, 'name': 'mana potion', 'buy': 50, 'sell': 0},
+                {'id': 2162, 'sub': 0, 'name': 'strong health potion', 'buy': 100, 'sell': 0}]
+
+    async def buy(self, item_id, amount=1):
+        price = 45 if item_id == 2160 else 50
+        if self.bank >= price * amount:
+            self.bank -= price * amount
+            self.potions['health' if item_id == 2160 else 'mana'] += amount
+        return []
+
+    def shop_close(self):
+        pass
+
+    async def loot(self):
+        pass
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        if opname != 'gamble':
+            return self.replies.get((opname, action))
+        if action == 'close':
+            return None
+        if action == 'buy':
+            row = next((e for e in self.stock if e['i'] == data['i']), None)
+            if row and self.bank >= row['p'] and not row.get('sold'):
+                self.bank -= row['p']
+                row['sold'] = True
+                slot = {'Helmet': 1, 'Armor': 4, 'Legs': 7, 'Boots': 8}[row['sn']]
+                self.pieces.append({'i': 40 + row['i'], 'id': 9000 + row['i'], 'cid': 9000 + row['i'], 's': slot, 'sc': 10})
+            return {'action': 'result', 'data': {'ok': True}}
+        return {'action': 'state', 'data': {'w': 1, 'money': self.bank, 'items': [dict(e) for e in self.stock]}}
+
+
+def gstock():
+    return [{'i': 1, 'id': 1, 'sn': 'Helmet', 'p': 40000, 'n': 'helm'}, {'i': 2, 'id': 2, 'sn': 'Armor', 'p': 90000, 'n': 'plate'},
+            {'i': 3, 'id': 3, 'sn': 'Legs', 'p': 60000, 'n': 'greaves'}, {'i': 4, 'id': 4, 'sn': 'Boots', 'p': 30000, 'n': 'boots'},
+            {'i': 5, 'id': 5, 'sn': 'Helmet', 'p': 20000, 'n': 'cheap helm'}, {'i': 6, 'id': 6, 'sn': 'Weapon', 'p': 10, 'n': 'sword'},
+            {'i': 7, 'id': 7, 'sn': 'Armor', 'p': 9000000, 'n': 'too dear'}]
+
+
+async def walked_stub(io, name, npc, near=1):
+    """chore_walk on a mock: the walk is recorded, the bot is there"""
+    io.walked.append(npc)
+    return None, []
+
+
+class GearUp(unittest.TestCase):
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+
+    def test_wears_buys_and_pays_with_a_named_grant(self):
+        io = GearIO(bank=0, pieces=[{'i': 3, 'id': 7, 'cid': 70, 's': 1, 'sc': 25}], worn={}, stock=gstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertEqual((r.check, r.status), ('gear_up', TX.PASS), r.detail)
+        self.assertEqual(sorted(io.worn), [1, 4, 7, 8], 'helmet, armor, legs and boots are worn')
+        self.assertEqual(io.worn[1], 25, 'the piece the bot had stays on: no helmet is bought for a slot that is filled')
+        self.assertEqual(io.potions, {'health': 100, 'mana': 100})
+        self.assertTrue(r.fallbacks and all(f.startswith('grant ') for f in r.fallbacks), 'a short bank is topped up and the grant is named')
+        self.assertIn('TEST ONLY gold grant', r.detail)
+        self.assertEqual(io.walked, ['Veyra the Apothecary', 'Mordecai Ashwager'], 'on foot to both shops')
+        sold = {e['sn'] for e in io.stock if e.get('sold')}
+        self.assertEqual(sold, {'Armor', 'Legs', 'Boots'}, 'only for the empty slots, nothing over the cap')
+        self.assertFalse(next(e for e in io.stock if e['i'] == 7).get('sold'))
+        self.assertGreaterEqual(io.bank, TX.GEAR_RESERVE - 1)
+
+    def test_no_grant_when_the_bank_is_full_enough(self):
+        io = GearIO(bank=5000000, pieces=[], worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=gstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertEqual((r.status, r.fallbacks, io.grants), (TX.PASS, [], []), r.detail)
+        self.assertEqual(io.walked, [], 'nothing to buy: no walk')
+        self.assertIn('potions held (100 health, 100 mana)', r.detail)
+
+    def test_potions_only(self):
+        io = GearIO(bank=100000, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(10, 95), stock=gstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertEqual(io.potions, {'health': 100, 'mana': 95}, 'mana 95 is over the 90 the bot buys under')
+        self.assertEqual(io.walked, ['Veyra the Apothecary'])
+        self.assertEqual(r.fallbacks, [])
+        self.assertIn('bought 90 health potion(s)', r.detail)
+
+    def test_level_under_the_gambler(self):
+        io = GearIO(bank=10 ** 6, worn={}, potions=(100, 100), stock=gstock(), level=30)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 30))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('the Gambler opens at level 40', r.detail)
+        self.assertNotIn('Mordecai Ashwager', io.walked)
+
+    def test_the_grant_limit_and_the_piece_cap(self):
+        io = GearIO(bank=0, worn={1: 5, 4: 5, 7: 5}, potions=(100, 100), stock=[{'i': 8, 'id': 8, 'sn': 'Boots', 'p': TX.GEAR_PIECE_CAP + 1}])
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertEqual((r.status, io.grants), (TX.PASS, []), 'a piece over the cap is left, no gold is asked for it')
+        io = GearIO(bank=0, worn={1: 5, 4: 5, 7: 5}, potions=(100, 100), stock=[{'i': 9, 'id': 9, 'sn': 'Boots', 'p': TX.GEAR_GRANT_CAP + 10}])
+        saved = TX.GEAR_PIECE_CAP
+        TX.GEAR_PIECE_CAP = 10 ** 9
+        try:
+            r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        finally:
+            TX.GEAR_PIECE_CAP = saved
+        self.assertEqual(io.grants, [], 'a grant over the limit of a gear-up is not asked for')
+        self.assertIn('grant limit', r.detail)
+
+    def test_an_old_helper_and_a_refused_wear(self):
+        r = run(TX.gear_up(GearIO(old_helper=True), 'Tester Aaa', 'Warrior', 300))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no answer', r.detail)
+        io = GearIO(bank=10 ** 6, pieces=[{'i': 3, 'id': 7, 'cid': 70, 's': 1, 'sc': 25}], worn={4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=gstock(),
+                    refuse_wear=True)
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertIsNone(io.worn.get(1), 'the server kept the piece in the bag: it is not forced')
+        self.assertLess(sum(1 for c in io.log if c == 'found'), 12, 'no endless loop on a refused piece')
+
+    def test_the_heal_rule_is_checked(self):
+        io = GearIO(bank=10 ** 6, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100))
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertIn('health potion 2160 on the heal rule', r.detail)
+        io = GearIO(bank=10 ** 6, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100))
+        io.bot.helper = {}
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 300))
+        self.assertIn('health potion 2160 on the heal rule', r.detail, 'the helper is asked for `info` when the bot has none')
+
+
+class Pure658(unittest.TestCase):
+    def test_level_gate(self):
+        self.assertIsNone(TX.level_gate('wsmap_walk', 1000))
+        t = TX.level_gate('wsmap_walk', 999)
+        self.assertIn('level 999', t)
+        self.assertIn('opens at level 1000', t)
+        self.assertIsNone(TX.level_gate('pets', 1), 'a check with no gate')
+        self.assertIn('opens at level 100', TX.level_gate('rift_walk', 0))
+
+    def test_the_tables(self):
+        every = set(TX.KEYS) | set(TX.CLOSED_KEYS)
+        self.assertLessEqual(TX.FIGHT_KEYS, every, 'a fight key that is no check')
+        self.assertLessEqual(set(TX.LEVEL_GATES), TX.FIGHT_KEYS, 'a gate on a check that does not gear up')
+        for key in ('closed_raid', 'rift_walk', 'pocket_walk', 'vael_walk', 'ascension_walk', 'boss_copy_walk', 'closed_dungeon'):
+            self.assertIn(key, TX.FIGHT_KEYS)
+        for key in ('pets', 'party', 'auto_setup', 'hideout', 'chore_pass', 'tales_read', 'closed_guards'):
+            self.assertNotIn(key, TX.FIGHT_KEYS, 'a window check does not need a gear-up')
+
+    def test_slot_gaps_and_pieces(self):
+        self.assertEqual(TX.slot_gaps({'worn': [{'s': 1}, {'s': 8}, {'s': 5}]}), {4: 'Armor', 7: 'Legs'})
+        self.assertEqual(TX.slot_gaps({'worn': []}), {1: 'Helmet', 4: 'Armor', 7: 'Legs', 8: 'Boots'})
+        rows = gstock()
+        got = TX.gear_pieces_for(rows, {'Helmet', 'Boots', 'Weapon'})
+        self.assertEqual([e['i'] for e in got], [6, 5, 4], 'the cheapest of each name, by price')
+        self.assertEqual(TX.gear_pieces_for(rows, {'Armor'}, 8000), [], 'nothing under the cap')
+        self.assertEqual(TX.gear_pieces_for([{'i': 1, 'sn': 'Boots', 'p': 5, 'sold': True}], {'Boots'}), [], 'a sold piece is not for sale')
+
+    def test_potion_plan_and_rows(self):
+        self.assertEqual(TX.potion_plan({'potions': {'health': 20, 'mana': 95}}), (80, 0))
+        self.assertEqual(TX.potion_plan({'potions': {'health': 100, 'mana': 0}}), (0, 100))
+        self.assertEqual(TX.potion_plan({}), (0, 0))
+        self.assertEqual(TX.potion_plan(None), (0, 0))
+        hp, mp = TX.potion_rows([{'name': 'Health Potion', 'buy': 45, 'id': 1}, {'name': 'strong health potion', 'buy': 100, 'id': 2},
+                                 {'name': 'mana potion', 'buy': 0, 'id': 3}])
+        self.assertEqual((hp['id'], mp), (1, None), 'the plain potion by name, a row with no price is no offer')
+
+    def test_retreat_step(self):
+        pos = {'x': 10, 'y': 10, 'z': 7}
+        self.assertEqual(TX.retreat_step([(7, 10), (9, 10), (10, 10)], pos), (-1, 0), 'back along the trail (west)')
+        self.assertEqual(TX.retreat_step([(10, 14), (10, 12), (10, 10)], pos), (0, 1), 'south')
+        self.assertEqual(TX.retreat_step([(10, 10)], pos, {'x': 14, 'y': 10}), (-1, 0), 'away from the goal when there is no trail')
+        self.assertIsNone(TX.retreat_step([(10, 10)], pos))
+        self.assertIsNone(TX.retreat_step([], None))
+
+    def test_report_names_the_grants_apart(self):
+        rows = [TX.Result('gear_up', 'Tester Aaa', 'Warrior', TX.PASS, 'x', ['grant 40000 gold (potions; the bank held 0)']).as_dict(),
+                TX.Result('rift_walk', 'Tester Aaa', 'Warrior', TX.SKIP, 'y', ['enter npc (no path)']).as_dict()]
+        text = '\n'.join(TX.report_lines(rows))
+        self.assertIn('gold granted by the helper (TEST ONLY fallback of gear_up', text)
+        self.assertIn('helper teleports in place of walking: 1', text, 'the grant is not counted as a teleport')
+
+    def test_level_gates_hold_the_configs(self):
+        chaos = os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos')
+
+        def first(name, pattern):
+            with open(os.path.join(chaos, name), encoding='utf-8') as f:
+                m = re.search(pattern, f.read(), re.S | re.M)
+            self.assertIsNotNone(m, '%s: %s' % (name, pattern))
+            return int(m.group(1))
+
+        want = {
+            'closed_siege': first('siege_config.lua', r'^\tminLevel = (\d+)'),
+            'closed_guildboss': first('guildboss_config.lua', r'^\tminLevel = (\d+)'),
+            'closed_raid': first('raid_config.lua', r'^\tminLevel = (\d+)'),
+            'descent_walk': first('descent_config.lua', r'^\tminLevel = (\d+)'),
+            'rift_walk': first('rift_config.lua', r'\{minLevel = (\d+), pick'),
+            'nemesis_walk': first('nemesis_config.lua', r'birth = \{.*?minLevel = (\d+)'),
+            'pocket_walk': first('pocketboss_config.lua', r'raid = \{minLevel = (\d+)'),
+            'wsmap_walk': first('waystone_tiers_config.lua', r'tester = \{minLevel = (\d+)'),
+            'trial_walk': first('trials_config.lua', r'key = "normal".*?minLevel = (\d+)'),
+            'vael_walk': first('trials_config.lua', r'key = "mq".*?minLevel = (\d+)'),
+            'tower_walk': first('weeklychest_config.lua', r'key = "tower", level = (\d+)'),
+            'closed_dungeon': first('weeklychest_config.lua', r'key = "dungeon", level = (\d+)'),
+            'dungeon_difficulty': first('bossspawns_config.lua', r'\[1\] = \{name = "[^"]+", level = (\d+)'),
+            'weekly_challenge': first('weekly_challenge_config.lua', r'Hollow Vault \(level (\d+)\)'),
+            'ascension_walk': first('chaos_constants.lua', r'ascension = \{\s*minLevel = (\d+)'),
+        }
+        for key, level in want.items():
+            self.assertEqual(TX.LEVEL_GATES[key], level, '%s: the config says level %d' % (key, level))
+        self.assertEqual(set(want), set(TX.LEVEL_GATES), 'a gate with no config proof')
+
+
+class GatedRun(unittest.TestCase):
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+
+    def test_a_gated_check_skips_before_it_walks_or_gears(self):
+        class Quiet(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                raise AssertionError('no helper call for a gated check: ' + command)
+
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 100, only=['wsmap_walk', 'closed_raid'], closed=True)
+        self.assertTrue(run(cr.run(Quiet())))
+        got = {r.check: (r.status, r.detail) for r in cr.results}
+        self.assertEqual(got['wsmap_walk'][0], TX.SKIP)
+        self.assertIn('level 100: wsmap_walk opens at level 1000', got['wsmap_walk'][1])
+        self.assertEqual(got['closed_raid'][0], TX.SKIP)
+        self.assertNotIn('gear_up', got, 'no gear-up for a check the level shuts')
+        self.assertTrue(cr.finished)
+
+    def test_the_level_now_gates_not_the_level_of_the_login(self):
+        io = GearIO(bank=10 ** 6, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), level=90)
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 500, only=['tower_walk'])
+        run(cr.run(io))
+        self.assertEqual(cr.results[0].status, TX.SKIP)
+        self.assertIn('level 90', cr.results[0].detail)
+
+    def test_gear_up_once_per_login_before_the_first_fight_check(self):
+        calls = []
+
+        async def check_a(io, name, cls, level):
+            calls.append(('a', level))
+            return TX.Result('tower_walk', name, cls, TX.PASS, 'ok')
+
+        async def check_b(io, name, cls, level):
+            calls.append(('b', level))
+            return TX.Result('hideout', name, cls, TX.PASS, 'ok')
+
+        async def check_c(io, name, cls, level):
+            calls.append(('c', level))
+            return TX.Result('descent_walk', name, cls, TX.SKIP, 'died at the hunt')
+
+        io = GearIO(bank=10 ** 6, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), level=300)
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 300)
+        cr.table = [('hideout', check_b, lambda c: True), ('tower_walk', check_a, lambda c: True), ('descent_walk', check_c, lambda c: True)]
+        io.retreats = 2
+        run(cr.run(io))
+        kinds = [r.check for r in cr.results]
+        self.assertEqual(kinds, ['hideout', 'gear_up', 'tower_walk', 'descent_walk'], 'the gear-up comes before the first fight check, once')
+        self.assertIn('the bot retreated 2 time(s) to heal', cr.results[-1].detail, 'a SKIP after a retreat says so')
+        self.assertEqual([c[1] for c in calls], [300, 300, 300])
+        # a new login (a new creature id) is geared up again
+        cr2 = TX.CheckRun('Tester Aaa', 'Warrior', 300)
+        cr2.table = [('tower_walk', check_a, lambda c: True)]
+        self.assertTrue(cr2.gear_due(io))
+        run(cr2.run(io))
+        self.assertFalse(cr2.gear_due(io))
+        io.bot.cid = 501
+        self.assertTrue(cr2.gear_due(io), 'the next login')
+
+    def test_no_gear_flag_and_a_gear_up_that_breaks(self):
+        async def check_a(io, name, cls, level):
+            return TX.Result('tower_walk', name, cls, TX.PASS, 'ok')
+
+        io = GearIO()
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 300, gear=False)
+        cr.table = [('tower_walk', check_a, lambda c: True)]
+        run(cr.run(io))
+        self.assertEqual([r.check for r in cr.results], ['tower_walk'])
+        self.assertEqual(io.log, [], 'no gear-up, no helper call')
+
+        class Breaks(GearIO):
+            async def helper(self, command, kind, wait=4.0):
+                raise ValueError('boom')
+
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 300)
+        cr.table = [('tower_walk', check_a, lambda c: True)]
+        run(cr.run(Breaks()))
+        self.assertEqual([(r.check, r.status) for r in cr.results], [('gear_up', TX.SKIP), ('tower_walk', TX.PASS)])
+        self.assertIn('the gear-up broke: boom', cr.results[0].detail)
+
+    def test_a_death_during_the_gear_up_is_not_a_result(self):
+        class Dies(GearIO):
+            async def helper(self, command, kind, wait=4.0):
+                self.up = False
+                return None
+
+        async def check_a(io, name, cls, level):
+            raise AssertionError('not reached')
+
+        io = Dies()
+        cr = TX.CheckRun('Tester Aaa', 'Warrior', 300)
+        cr.table = [('tower_walk', check_a, lambda c: True)]
+        self.assertFalse(run(cr.run(io)))
+        self.assertEqual(cr.results, [])
+        self.assertTrue(cr.gear_due(io), 'done again after the next login')
+
+
+class RetreatIO(FakeIO):
+    """a bot whose health a heal raises: `health` per look, `heal_now` counts"""
+
+    def __init__(self, health=20, heals=None):
+        FakeIO.__init__(self)
+        self.health = health
+        self.heals = heals if heals is not None else []
+        self.steps = []
+        self.retreats = 0
+
+    async def heal_now(self):
+        self.heals.append(self.health)
+        self.health = min(100, self.health + 20)
+        return 'potion'
+
+    async def step(self, dx, dy):
+        self.steps.append((dx, dy))
+
+    async def loot(self):
+        pass
+
+
+class Retreat(unittest.TestCase):
+    def go(self, io, pos, trail=None, goal=None, trace=None):
+        r = {'name': 'Tester Aaa', 'lead': True, 'trail': list(trail or [])}
+        trace = {} if trace is None else trace
+        spent = run(TX.retreat_check(io, r, {'pos': pos}, trace, {'goal': goal} if goal else {}))
+        return spent, r, trace
+
+    def test_under_30_heals_steps_back_and_waits(self):
+        io = RetreatIO(health=20)
+        spent, r, trace = self.go(io, {'x': 10, 'y': 10, 'z': 7}, trail=[(7, 10), (9, 10)])
+        self.assertGreater(spent, 0)
+        self.assertEqual(io.steps, [(-1, 0)], 'one step back the way it came')
+        self.assertGreaterEqual(len(io.heals), 2, 'a heal, then the waiting looks heal again until the health is over 50')
+        self.assertGreaterEqual(io.health, TX.RETREAT_BACK)
+        self.assertEqual((trace['retreats'], io.retreats, trace['retreat_heals'][0]), (1, 1, 'potion'))
+
+    def test_over_30_or_unknown_health_goes_on(self):
+        for h in (30, 60, 100, None):
+            io = RetreatIO(health=h)
+            spent, _, trace = self.go(io, {'x': 1, 'y': 1, 'z': 7})
+            self.assertEqual((spent, io.steps, io.heals, trace), (0.0, [], [], {}), 'health %s' % h)
+
+    def test_a_dead_bot_does_not_retreat_and_the_loop_is_bounded(self):
+        io = RetreatIO(health=10)
+        io.up = False
+        self.assertEqual(self.go(io, {'x': 1, 'y': 1, 'z': 7})[0], 0.0)
+        io = RetreatIO(health=10)
+        trace = {'retreats': TX.RETREAT_MAX}
+        self.assertEqual(self.go(io, {'x': 1, 'y': 1, 'z': 7}, trace=trace)[0], 0.0, 'at most RETREAT_MAX a loop')
+
+    def test_a_heal_that_does_not_come_ends_the_wait(self):
+        class NoHeal(RetreatIO):
+            async def heal_now(self):
+                self.heals.append(1)
+                return None
+
+        io = NoHeal(health=5)
+        spent, _, trace = self.go(io, {'x': 1, 'y': 1, 'z': 7}, goal={'x': 4, 'y': 1})
+        self.assertLessEqual(spent, TX.RETREAT_WAIT + TX.RAID_STEP + 1, 'the wait is bounded')
+        self.assertEqual((io.steps, trace['retreat_heals']), ([(-1, 0)], ['none']), 'away from the goal; no heal helped')
+
+    def test_the_play_loops_retreat_before_they_go_on(self):
+        looks = {'n': 0}
+
+        class LoopIO(RetreatIO):
+            async def helper(self, command, kind, wait=4.0):
+                looks['n'] += 1
+                return {'pos': {'x': 10 + looks['n'], 'y': 10, 'z': 7}, 'guide': {'mode': 'wait'}}
+
+        io = LoopIO(health=15)
+        r = {'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker()}
+        trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0}
+        done = {'n': 0}
+
+        def look(s, t):
+            done['n'] += 1
+            return done['n'] > 3
+
+        run(TX.chase_play(io, r, trace, {'cmd': 'nemesis', 'budget': 120.0, 'look': look}))
+        self.assertEqual(trace.get('retreats'), 1, 'one retreat: the heal brought it over the line')
+        self.assertTrue(io.heals)
+
+    def test_the_four_play_loops_call_it(self):
+        with open(os.path.join(HERE, 'tester_checks.py'), encoding='utf-8') as f:
+            src = f.read()
+        self.assertEqual(src.count('await retreat_check(io, r, s, trace, g)'), 4, 'solo_play, chase_play, boss_copy_play, bounty_play')
+
+
 if __name__ == '__main__':
     unittest.main()
