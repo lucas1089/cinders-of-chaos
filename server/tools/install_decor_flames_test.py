@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_decor_flames_test.py : install_decor_flames.py on the shipped manifest and on synthetic server files
 (4 rows: ids, kinds, names, flags, lights; the nodes added and verified, idempotent; the items.xml block added once, kept, rewritten on
-a change, refused when an id is taken outside it; the client pair guard end to end, PAIR_DECOR = 74 above PAIR_ASSETS because pair 74 is
-not built yet; the install_all wiring). No base server needed."""
+a change, refused when an id is taken outside it; the client pair guard end to end, PAIR_DECOR = 74, which windows-assets carries since
+2026-11-18 (O647); the install_all wiring). No base server needed."""
 import os, struct, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -37,8 +37,7 @@ rows = T.rows_of()
 check([r['key'] for r in rows] == ['brazier', 'campfire', 'candle', 'spirit'], 'manifest: brazier, campfire, candle, spirit')
 check([r['client_id'] for r in rows] == [44560, 44561, 44562, 44563], 'manifest: client ids 44560..44563 in order')
 check([r['server_id'] for r in rows] == [48560, 48561, 48562, 48563], 'manifest: server ids 48560..48563 in order')
-check(C.PAIR_DECOR == 74 and C.PAIR_DECOR > C.PAIR_ASSETS, 'the guard needs pair 74, which is not built yet (PAIR_ASSETS stays below)')
-check(C.PAIR_ASSETS == 73, 'PAIR_ASSETS is untouched')
+check(C.PAIR_DECOR == 74 and C.PAIR_ASSETS >= C.PAIR_DECOR, 'the guard needs pair 74, which windows-assets carries (O647)')
 check([r['kind'] for r in rows] == ['stump', 'decor', 'decor', 'decor'], 'kinds: a solid brazier, walkable the rest')
 check(rows[0]['otb_flags'] & 1 and not any(r['otb_flags'] & 1 for r in rows[1:]), 'the brazier is solid, the others are not')
 check(all(r['otb_flags'] & T.ANIM and not r['otb_flags'] & (32 | 64 | 128) for r in rows), 'animated, not pickupable, moveable or stackable')

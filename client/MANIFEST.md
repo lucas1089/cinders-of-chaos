@@ -7533,7 +7533,7 @@ No art file is read. No purchased art, no AI service. **Status: tool, table, ser
 ## Decor flames (O623; `tools/sprites/gen_decor_flames.py`, `art_import/decor_flames.csv`; owner 2026-11-17; joins pair 74)
 
 Five animated fire props from pixelfx (https://github.com/patch-gg/pixelfx, commit 5294518, MIT, Copyright (c) 2026 Patch, Hugo Duprez;
-docs/CREDITS.md). The owner said yes to the O622 fit. Not built into a pair yet.
+docs/CREDITS.md). The owner said yes to the O622 fit. Built into pair 74 (O647, "Pair 74, the real build").
 
 - **Source and safety.** `render --pixelfx DIR OUT` checks the checkout is at the pinned commit, copies only the 25 files the five
   effects need (`SOURCE_FILES`, held to one sha256) into `OUT/sandbox` and runs node there with `--permission` (read the sandbox, write
@@ -7686,7 +7686,7 @@ effect strip). The pack files are read by script only, never viewed, never sent 
   --new-only`: 0 errors, 8 warnings (`size-large` for the eight effects, 7x9 to 13x10 tiles), 53,567 old things and 1,056,963 old sprites unchanged.
   Preview `malgrath.mp4` (544 x 416, 50 fps, libx264 crf 18 yuv420p faststart, 36 s, 3.1 MB): arrival, idle, walking, the six attacks as the server plays them,
   death. Never committed.
-- **Not done.** Pair 74 is not built for real and not pushed: it joins the decor flames (O623) and waits for the owner. The knock-on tables that
+- **Not done.** (Built since: "Pair 74, the real build (O647)".) Pair 74 was not built for real and not pushed at that time: it joins the decor flames (O623) and waits for the owner. The knock-on tables that
   name the built pair's outfits (`outfit_anchors.lua`, `info_lifts.lua`, `head_centres.lua`, `foot_marks.lua`, `outfit_centre.csv`, unity `InfoLiftData.cs`)
   are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet: it reads windows-assets, which holds pair 73.
   Not seen in a client.
@@ -7763,10 +7763,45 @@ drawn from our own words alone (docs/CREDITS.md, Tools; no picture of anyone's w
   warnings (`sprite-zero-slots` info), 53,568 old things and 1,056,966 old sprites unchanged. A real build puts Malgrath's outfit in the place of the
   placeholder: the md5s of the 24 outfits' digests do not depend on it, the pair's do. Preview `monsters_ingame.mp4` (1536 x 1256, 20 fps, 16 s, libx264
   crf 18 yuv420p faststart): four pages (tier 1 to 4). Never committed.
-- **Not done.** Pair 74 is not built for real and not pushed (`PAIR_ASSETS` stays 73): it joins Malgrath (O637) and the decor flames (O623) and waits for
+- **Not done.** (Built since: "Pair 74, the real build (O647)".) Pair 74 was not built for real and not pushed (`PAIR_ASSETS` stays 73): it joined Malgrath (O637) and the decor flames (O623) and waits for
   the owner. The knock-on tables that name the built pair's outfits (`outfit_anchors.lua`, `info_lifts.lua`, `head_centres.lua`, `foot_marks.lua`,
   `outfit_centre.csv`, unity `InfoLiftData.cs`) are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet (it
   reads windows-assets, which holds pair 73). Not seen in a client. The O625 quality bar rows made for painted art (colours, local deviation, banding, outline
   hue) are not met by hand-made pixel art and were not chased (O629 / O630 reports); the loops and the outline are PixelLab's, as given.
   The table names are the art's, not the monsters'. The prototype's thrall was named "Ashbound Thrall", the name of an Embergut Rift monster (AutoSprite
   art) that keeps its own look; the owner had it renamed (2026-11-18): the art is now "Scorched Acolyte" (key `acolyte`), worn by the Novice of the Cult.
+
+## Pair 74, the real build (O647, 2026-11-18): built, not published
+Built from pair 73 as on windows-assets (parts sha256 and unpacked md5 read back: dat d4bc7cef1fa224926c04b07ad35fd6ed, spr 4147c8d0639c6943279b2a8e3b2f5638). Everything on a RAM disk (`/dev/shm/p74`), gone with the machine. **Nothing was pushed. `PAIR_ASSETS` stays 73.**
+- **Result.** 44,563 items, **3,554 outfits, 5,333 effects, 253 missiles**, 1,070,538 sprites. Dat **e1bed47bf1ac6296f6ab5ac0117aa407** (9,585,800 bytes), spr **4617fcd6764f4e5547ccd686021291a1** (1,246,649,773 bytes).
+  Against pair 73 (`check_pair.py --old ... --allow-changed item:44544`): 0 errors; only torch 44544 changed in place; 4 items, 25 outfits and 8 effects are new. 5,192 warnings (pair 73: 5,184; the 8 more are `size-large` of the Malgrath effects).
+- **Steps** (order fixed: the PixelLab step refuses a pair that ends at 3529; each step ran its own `live` before the next):
+
+  | step | s | dat md5 | spr md5 |
+  |---|---|---|---|
+  | 1 `gen_malgrath_boss.py build` (O637: outfit 3530, effects 5326-5333) | 22 | dba114650f2c3378a11cc300e9af1358 | e9c9ec7a3de1fc23dfe049afad8d7440 |
+  | 2 `gen_pixellab_monsters.py build` (O640: outfits 3531-3554) | 19 | 997151f928ca6b76b36b95a94cae82df | 3267e80e34a4a9b8e39fe0c7c5940dfa |
+  | 3 `gen_decor_flames.py build` (O623: items 44560-44563, torch 44544 in place) | 14 | e1bed47bf1ac6296f6ab5ac0117aa407 | 4617fcd6764f4e5547ccd686021291a1 |
+
+  Step 1 gives the md5s of the O637 rehearsal on the same pair 73. The Malgrath pack was taken from the owner's Drive (public link, never viewed, never committed);
+  `gen_malgrath_boss.py sums --src` said "up to date": the pack files match the committed table and sums. The pack folder was deleted after step 1.
+- **Checks on the result.** Pass: `check_pair.py` (0 errors), `check_pair.py --old`, `check_item_wire.py --table-check`, `gen_theme_art.py recolour --check`, `gen_minimap_swatches.py build --check`,
+  `fit_pair50_offsets.py --check`, `gen_missile_fx.py build --check`, `gen_hd_overlay.py build --check` (592 rows), `clean_wing_shadows.py check-clean`, `gen_dungeon_banners.py --check`, `gen_sprite_images.py`,
+  the `live` of the donor effects, recolours, donor outfits, purchased outfits, fun costumes, Ki auras, creatures, class redraw, spell, status, gap, area, lightning, Malgrath, PixelLab monsters and decor flames,
+  `check_content.py --pair` with `PAIR_OUTFITS` raised to 3554 (735 blank, as at pair 73; committed value unchanged), `audit_idle_looks.py --write-idle` (`look_idle.csv` identical).
+  Fail as before the knock-on tables: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py` and `gen_foot_marks.py --check` (the tables named pair 73; they pass after the regeneration below).
+  Fail as at pair 73 and expected: `gen_outfit_centre.py check` (134 problems, all wings and class looks that left the table's displacement; 135 at pair 73) and `gen_drawn_wings.py live` (111 of 121: the ten painted wings of O620; same on pair 73).
+- **Knock-on tables, committed.** `outfit_anchors.lua` (2,819 things), `info_lifts.lua` (2,121 looks), `wing_centres.lua` and `head_centres.lua` (2,691 bodies, 121 wings), `foot_marks.lua` (2,818 things),
+  unity `InfoLiftData.cs`, `pair_fixes/outfit_centre.csv` (28 report rows for looks 3527..3554 added; the older rows are kept, a fresh `measure` on a built pair would rewrite the moved looks).
+  `look_idle.csv` and the HD overlay are unchanged. `server/tools/client_pair.py` had `PAIR_BUILT = 74` until the push; now `PAIR_ASSETS = 74`. Test change: `wingfit_core_test.lua` lets a head row reach 170 px (Malgrath's is -158).
+  Client loop (every test under luajit and lua5.3), `check_modules`, `check_content`, `check_locales`, `check_names`, `check_unity_opcodes` and the tests and `check` of the three pair 74 tools pass.
+- **Not done on purpose** (they move with the push): `PAIR_ASSETS` 74 and its md5, `PAIR_OUTFITS` 3554 / `PAIR_NAME` 'pair 74' in `check_content.py`, the `live` steps of `gen_malgrath_boss.py`, `gen_pixellab_monsters.py` and `gen_decor_flames.py` in the job `live-pair` of `ci.yml` (it reads windows-assets, which holds pair 73),
+  `chaosClientPair` 74 on the server. Not seen in a client. No preview was made.
+- **Archive** (RAM disk `/dev/shm/p74/out`): `tar --owner=0 --group=0 --numeric-owner --mtime='2026-11-18 00:00:00' -cf - Tibia.dat Tibia.spr | xz -9 -T0 > things-1098.tar.xz`, `split -b 99614720 -d -a 2`. Read back to the two md5s above.
+  part00 99,614,720 bytes sha256 268db4d1399763a7d713c23b29cf5f42daed44a08e19dd828dcc9749d76d4d51; part01 44,961,180 bytes sha256 736ca957ded8f91f5c591e967f2a9f8a5b2c4a2a99f856acd96eda755cce1e65; total 144,575,900 bytes.
+- **Push steps, ready, not run** (owner approval needed for the push):
+  1. On a checkout of the branch `windows-assets`: replace `things/things-1098.tar.xz.part00` and `.part01` with the two parts, put the two sha256 into `SHA256SUMS.parts` (lines `things/things-1098.tar.xz.part00` / `.part01`), commit "Sprite pair 74: ..." with the md5s, `git push origin windows-assets`. Nothing else on the branch changes.
+  - **Pushed 2026-11-18** to windows-assets as f24a858a (parent f2ac2676, owner approved); steps 1 and 2 below are done.
+  2. On `main`: `PAIR_ASSETS = 74` and `PAIR_ASSETS_DAT_MD5 = 'e1bed47bf1ac6296f6ab5ac0117aa407'` in `server/tools/client_pair.py` (delete `PAIR_BUILT`), `PAIR_OUTFITS` 3554 and `PAIR_NAME` 'pair 74' in `tools/ci/check_content.py`, the three `live` steps above in the job "Live sprite pair" of `ci.yml`.
+  3. Ship the client: Actions > Windows package (`windows-package.yml`, manual) builds `winpkg-N`; on the VPS `chaos-ctl.sh publish-update winpkg-N` (admin app: Comandos > Site e update do client > "Publicar update"; follow with `publish-log`).
+  4. Only then: admin app Comandos > "Par do cliente" > Gravar 74 (`chaos-ctl.sh client-pair set 74`, not while an update runs), then Painel > Atualizar servidor (`update-apply`). Pair 74 opens Malgrath and his lair, the 24 PixelLab monsters and the decor flames (all gated `chaosClientPair >= 74`).

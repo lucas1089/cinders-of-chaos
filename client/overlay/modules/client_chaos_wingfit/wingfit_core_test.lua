@@ -85,7 +85,8 @@ ok(type(H.ref) == 'table' and #H.ref == 8, 'reference look 128 has a head per di
 local nh = 0
 for id, row in pairs(H.bodies) do
   nh = nh + 1
-  ok(type(id) == 'number' and #row == 8 and math.abs(row[5]) <= 120 and math.abs(row[6]) <= 120, 'head row ' .. tostring(id))
+  -- 170: Malgrath (3530, 7x7 tiles, O637) has its head 158 px above the foot tile
+  ok(type(id) == 'number' and #row == 8 and math.abs(row[5]) <= 170 and math.abs(row[6]) <= 170, 'head row ' .. tostring(id))
 end
 ok(nh == nb, 'a head row for every body row: ' .. nh .. ' ' .. nb)
 for _, id in ipairs({ 2060, 2061, 2073, 2074, 2161, 2183, 2173, 2163, 2045, 2049, 2080, 2169, 2171, 2179 }) do

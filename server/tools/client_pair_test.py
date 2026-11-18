@@ -215,16 +215,16 @@ ok, msg = C.allows(os.path.join(server('chaosClientPair = 72\n'), 'data'), C.PAI
 check(not ok and msg.startswith('WARNING: monstercreaturelooks skipped') and 'client-pair set 73' in msg, 'monstercreaturelooks, pair 72: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 73\n'), 'data'), C.PAIR_CREATURE, 'monstercreaturelooks')[0], 'monstercreaturelooks, pair 73: runs')
 
-# the PixelLab monsters (O640) wait for pair 74, which is not built for real: the windows-assets pair stays below it, so the package's server skips the step
-check(C.PAIR_PIXELLAB == 74 and C.PAIR_PIXELLAB > C.PAIR_ASSETS, 'the PixelLab monster looks need pair 74, which is not built yet (O640): PAIR_ASSETS stays at 73')
+# the PixelLab monsters (O640) need pair 74, on windows-assets since 2026-11-18 (O647), so PAIR_ASSETS below covers them
+check(C.PAIR_PIXELLAB == 74 and C.PAIR_PIXELLAB > C.PAIR_CREATURE, 'the PixelLab monster looks need pair 74 (O640)')
 ok, msg = C.allows(os.path.join(server('chaosClientPair = 73\n'), 'data'), C.PAIR_PIXELLAB, 'monsterpixellablooks')
 check(not ok and msg.startswith('WARNING: monsterpixellablooks skipped') and 'client-pair set 74' in msg, 'monsterpixellablooks, pair 73: skipped with how to set it')
 check(C.allows(os.path.join(server('chaosClientPair = 74\n'), 'data'), C.PAIR_PIXELLAB, 'monsterpixellablooks')[0], 'monsterpixellablooks, pair 74: runs')
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
-check(C.PAIR_DECOR == 74 and C.PAIR_DECOR > C.PAIR_ASSETS, 'the decor flames need pair 74, which is not built yet (O623): PAIR_ASSETS stays at 73')
-check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN, C.PAIR_CREATURE, C.PAIR_SWAP), 'PAIR_ASSETS covers every guarded pair')
+check(C.PAIR_DECOR == 74 and C.PAIR_MALGRATH == 74, 'the decor flames (O623) and Malgrath (O637) need pair 74')
+check(C.PAIR_ASSETS >= max(C.PAIR_PICKUPS, C.PAIR_FIST, C.PAIR_W800, C.PAIR_RELIC, C.PAIR_TEMPLE, C.PAIR_ORBS, C.PAIR_RECOLOUR, C.PAIR_DONOR, C.PAIR_PURCHASED, C.PAIR_FUN, C.PAIR_CREATURE, C.PAIR_SWAP, C.PAIR_DECOR, C.PAIR_MALGRATH, C.PAIR_PIXELLAB), 'PAIR_ASSETS covers every guarded pair')
 mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:
