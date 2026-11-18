@@ -96,7 +96,7 @@ def looks(mon):
 rows = M.read_map()
 check(len(rows) == 24 and [r[2] for r in rows] == list(range(3531, 3555)), 'the map has 24 rows, the new looks are the outfits 3531-3554 in order')
 check(len({r[0] for r in rows}) == 24 and len({r[2] for r in rows}) == 24, 'each monster once, each look once: no two hunt monsters share a look')
-check(C.PAIR_PIXELLAB == 74 and C.PAIR_PIXELLAB > C.PAIR_ASSETS, 'the step needs pair 74, which windows-assets does not carry yet')
+check(C.PAIR_PIXELLAB == 74 and C.PAIR_ASSETS >= C.PAIR_PIXELLAB, 'the step needs pair 74, which windows-assets carries (O647)')
 check(P.FIRST_NEW == 3531 and [r['key'] for r in P.rows()] == list(P.KEYS) and len(P.rows()) == 24, 'the table of the outfits has the same 24 rows')
 check([int(r['new']) for r in P.rows()] == [r[2] for r in rows], 'monster i wears outfit 3531 + i, the table row i')
 pool_rows = {r['name']: r for r in S.pool_rows()}
@@ -124,7 +124,7 @@ rc_ = S.load_recolour()
 for name, old, new in rows:
     check(S.look_at_pair(name, old, 73, rc_) == old and S.look_at_pair(name, old, 74, rc_) == new, 'audit_shared_looks: %s wears %d at pair 73 and %d at pair 74' % (name, old, new))
     check(S.look_at_pair(name, new, 70, rc_) == old, 'a file written for pair 74 reads as the old look for pair 70 (%s)' % name)
-for pair in (C.PAIR_ASSETS, C.PAIR_PIXELLAB):
+for pair in (73, C.PAIR_PIXELLAB):
     check(S.check_pool(pair=pair) == [], 'no shared look at pair %d: %s' % (pair, S.check_pool(pair=pair)))
     check(I.check_pool(pair=pair) == [], 'every hunt monster moves while it stands at pair %d: %s' % (pair, I.check_pool(pair=pair)))
     check(I.check_crowded(pair=pair) == [], 'no crowded look at pair %d' % pair)
@@ -132,7 +132,7 @@ idle = I.load_idle()
 check(all(idle.get(n, (False,))[0] and idle[n][3] == 'idle group' for n in range(3531, 3555)), 'look_idle.csv: the 24 looks have an idle group that moves')
 check([idle[int(r['new'])][1] for r in P.rows()] == [int(r['idle']) for r in P.rows()], 'look_idle.csv: the phases of each idle group are the table\'s')
 at74 = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_PIXELLAB)[0]}
-at73 = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_ASSETS)[0]}
+at73 = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), 73)[0]}
 check({n for n in at74 if at74[n] != at73[n]} == {r[0] for r in rows} and all(at74[n] == new for n, _o, new in rows),
       'the pool reads the same at pair 73 and 74 but for the 24 monsters')
 # a look worn alone: the new looks are no look of any other monster of the pool at pair 74
