@@ -54,11 +54,14 @@ PAIR_MALGRATH = 74  # Malgrath, the Drowned Crown (O637): outfit 3530 and its ei
 PAIR_PIXELLAB = 74  # the 24 PixelLab monsters 3531-3554 (O640, gen_pixellab_monsters.py; install_monster_pixellab_looks.py, step
                     # `monsterpixellablooks`: 24 hunt monsters wear them). pair 74 is on windows-assets since 2026-11-18 (O647)
 
+PAIR_FOOTFX = 75    # the 20 footprint effects 5334-5353 (O649, gen_footprint_fx.py): the effect footprint cosmetics (cosmetics_config.lua `pair = 75`,
+                    # data/lib/chaos_footprint_fx_ids.lua `on`) are offered only from this pair. pair 75 is on windows-assets since 2026-11-18 (O649)
+
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 74
-PAIR_ASSETS_DAT_MD5 = 'e1bed47bf1ac6296f6ab5ac0117aa407'
+PAIR_ASSETS = 75
+PAIR_ASSETS_DAT_MD5 = '528b2eeefe1b89dc9d3d20b1cd38a635'
 
 
 def parse(text):

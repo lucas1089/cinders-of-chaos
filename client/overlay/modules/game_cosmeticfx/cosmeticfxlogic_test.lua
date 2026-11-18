@@ -247,4 +247,50 @@ eq(CF.hasEngineOutline({}), false, 'old engine keeps the glow picture')
 eq(CF.hasEngineOutline(nil), false, 'no creature')
 eq(CF.hasEngineOutline(setmetatable({}, { __index = function() error('no field') end })), false, 'a lookup that errors')
 
+-- effect footprints (O649, client pair 75): the look carries the effect, the walker leaves one effect a step
+local ef = CF.cleanEffect({ 5334, 0, 0, 800 })
+eq(ef.id, 5334, 'the effect id') eq(ef.dx, 0, 'dx') eq(ef.dy, 0, 'dy') eq(ef.ms, 800, 'its length')
+eq(CF.cleanEffect({ 5334 }).dx, 0, 'an offset left out is 0')
+eq(CF.cleanEffect({ 0, 0, 0, 0 }), nil, 'id 0 is no effect') eq(CF.cleanEffect({ 70000, 0, 0, 0 }), nil, 'an id past 65535')
+eq(CF.cleanEffect({ 12.5, 0, 0, 0 }), nil, 'a whole id') eq(CF.cleanEffect({ 5334, 9, 0, 0 }), nil, 'an offset past 4 tiles')
+eq(CF.cleanEffect({ 5334, -1, 0, 0 }), nil, 'a negative offset') eq(CF.cleanEffect('x'), nil, 'not a table')
+eq(CF.cleanEffect({ 5334, 1, 1, 999999 }).ms, CF.FX_LIFE_MAX, 'a length is clamped')
+local fl = CF.cleanLook({ f = 'fp_heart', e = { 5334, 0, 0, 800 } })
+eq(fl.f, 'fp_heart', 'an effect footprint keeps its name') eq(fl.e.id, 5334, 'and its effect') eq(fl.o, nil, 'no glow')
+eq(CF.cleanLook({ f = 'fp_heart', e = { 0 } }), nil, 'a bad effect leaves no print: the name has no picture')
+eq(CF.cleanLook({ f = 'fp_heart', o = 'gold', e = { 0 } }).f, nil, 'a bad effect drops the footprint, the outline stays')
+eq(CF.cleanLook({ f = 'ember' }).e, nil, 'a picture footprint has no effect')
+eq(CF.cleanLook({ o = 'gold', e = { 5334, 0, 0, 800 } }).e, nil, 'an effect without a footprint name is dropped')
+local both = CF.cleanLook({ f = 'fp_heart', o = 'gold', p = 1, e = { 5334, 0, 0, 800 } })
+eq(both.e.id, 5334, 'an effect footprint and an outline together') eq(both.o, 'gold', 'the outline') eq(both.p, true, 'pulses')
+local merged = CF.mergeLooks({}, { names = { Dan = { f = 'fp_heart', e = { 5334, 0, 0, 800 } } }, full = true })
+eq(merged.Dan.e.id, 5334, 'the looks list keeps the effect')
+-- the viewer setting and the preview treat it like any footprint
+eq(CF.lookOf(merged, 'Dan', false, nil, 0).e.id, 5334, 'others see it') eq(CF.allowed('footprint', { othersFootprints = false }, false), false, 'unless hidden')
+eq(CF.lookOf(merged, 'Me', true, { look = { f = 'fp_x', e = ef }, untilMs = 100 }, 50).e.id, 5334, 'the local preview carries it')
+-- where and when
+local plan = CF.fxPlan({ x = 100, y = 200, z = 7 }, { id = 5343, dx = 1, dy = 2, ms = 1500 }, 400)
+eq(plan.pos.x, 101, 'on the tile left, moved by the send offset x') eq(plan.pos.y, 202, 'y') eq(plan.pos.z, 7, 'the same floor')
+eq(plan.delay, math.floor(CF.FX_AT * 400), 'a share of the step time in')
+eq(CF.fxPlan(nil, ef, 300), nil, 'no tile, no plan')
+eq(CF.fxPlan({ x = 1, y = 1, z = 7 }, ef, nil).delay, math.floor(CF.FX_AT * 300), 'a default step time')
+eq(CF.fxLife({ ms = 800 }), 800 + CF.FX_SLACK_MS, 'alive for its play and a little more')
+eq(CF.fxLife({ ms = 10 }), CF.FX_LIFE_MIN, 'at least a moment') eq(CF.fxLife({ ms = 99999 }), CF.FX_LIFE_MAX, 'at most a few seconds')
+eq(CF.fxLife(nil), CF.FX_LIFE_MIN, 'no effect: the minimum')
+-- the caps
+local act = {}
+for i = 1, CF.FX_MAX_PER_CREATURE do act[#act + 1] = { owner = 1, untilMs = 1000 + i } end
+local okOne, liveOne = CF.fxAdmit(act, 1, 500)
+eq(okOne, false, 'a walker at its own cap') eq(#liveOne, CF.FX_MAX_PER_CREATURE, 'nothing is dropped from the list')
+eq((CF.fxAdmit(act, 2, 500)), true, 'another walker may still start')
+local okLater, liveLater = CF.fxAdmit(act, 1, 1002)
+eq(okLater, true, 'the first ones are over: room again') eq(#liveLater, CF.FX_MAX_PER_CREATURE - 2, 'and gone from the list')
+eq(#select(2, CF.fxAdmit(act, 1, 5000)), 0, 'all over: an empty list')
+local crowd = {}
+for i = 1, CF.FX_MAX do crowd[#crowd + 1] = { owner = i, untilMs = 9999 } end
+eq((CF.fxAdmit(crowd, 'new', 0)), false, 'the screen cap')
+eq((CF.fxAdmit(nil, 1, 0)), true, 'no list yet')
+-- the same step is one effect: the step rules of the pictures apply
+eq(CF.sameStep({ ox = 1, oy = 1, nx = 2, ny = 1, z = 7, t = 1000 }, { x = 1, y = 1 }, { x = 2, y = 1, z = 7 }, 1100, 300), true, 'one step twice')
+
 print('cosmeticfxlogic_test: ' .. n .. ' checks OK')

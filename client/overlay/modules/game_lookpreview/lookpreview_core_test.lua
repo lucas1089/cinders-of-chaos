@@ -453,6 +453,22 @@ eq(fx1 >= P.LOOT_AT + 1, true, 'the scene covers the bag')
 local sk = P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } }, lootfx = true })
 eq(sk.lootfx, true, 'a store offer carries lootfx') eq(sk.killfx, nil, 'and no kill animation')
 eq(P.showable({ kind = 'effects' }), true, 'effects are shown')
+-- the effect footprint's scene (O649): the figure stands on its tile and the effect plays under it on the same tile, no troll, no bag
+local fo = P.fromPlayRow({ kind = 'footprint', play = { { b = { id = 5334, ms = 800, n = 'vfx_fp_heart' } } } })
+eq(fo.kind, 'effects', 'an effect footprint row plays its effect') eq(fo.footfx, true, 'on the figure') eq(fo.killfx, nil, 'no troll that dies')
+eq(P.fromPlayRow({ kind = 'footprint', play = {} }), nil, 'a picture footprint row has no play: the prints stay')
+eq(P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } }, footfx = true }).footfx, true, 'a store offer carries footfx')
+eq(P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } } }).footfx, nil, 'and others do not')
+local fs = P.sceneOf(fo)
+eq(fs.foot, true, 'a foot scene') eq(fs.kill, false, 'no dying troll') eq(fs.loot, nil, 'no loot bag')
+eq(fs.caster.x, 0, 'the figure on (0, 0)') eq(fs.target.x, 0, 'the effect on the same tile') eq(fs.target.y, 0, 'row')
+eq(P.landsOn({ id = 5334, n = 'vfx_fp_heart' }, false, fs), 'caster', 'around the figure')
+eq(P.landsOn({ id = 5334, n = 'vfx_fp_lightning_hit' }, false, fs), 'caster', 'whatever its name says')
+local ftl = P.timeline({ { b = { id = 5334, ms = 800 } } }, 'b', nil, fs)
+eq(ftl.lead, 0, 'it plays at once') eq(ftl.items[1].at, 'caster', 'on the figure') eq(ftl.total > 800, true, 'it loops after a pause')
+local ffx, ffy = P.itemPlace({ item = ftl.items[1], frac = 0 }, fs)
+eq(ffx .. ',' .. ffy, '0,0', 'on the figure tile')
+eq(P.hasWearer(fo), true, 'the figure is worn')
 
 -- store offers carry their own look (server shop_core.lua K.lookOf): every kind becomes an option
 local function L(l) return P.fromShopOffer({ type = 'item', item = 2160, look = l }) end

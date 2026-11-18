@@ -5424,7 +5424,7 @@ from the results), client `game_shop/shoptree_test.lua`.
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
 | Name plate frames (`nameplate.lua`) | 19 | violet, frost, ember, verdant, bone, ashen, sapphire, rose, jade, copper, obsidian, amber, storm | default (everyone), gold (staff titles), crimson (Siege Champions), laurel, sepulchre, infernal (exclusives) |
-| Footprints, outlines (`cosmetics.lua`) | 13 / 13 | 9 / 9 | an achievement, a reward track milestone and two boss drops each ("Footprints and outlines") |
+| Footprints, outlines (`cosmetics.lua`) | 13 / 13 (+20 footprints from client pair 75) | 9 / 9 (+20 from pair 75) | an achievement, a reward track milestone and two boss drops each ("Footprints and outlines"); the 20 effect footprints are sold, see "Effect footprints (O649)" |
 | Exclusives (`exclusives.lua`) | 36 | none | never sold: 5 outfits, 2 addon sets, 6 mounts, 4 wings, 2 auras, 2 shaders, 3 frames and the boss drops of portal styles, transmog sets, pets, footprints and outlines ("Exclusives") |
 | Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 17 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
 | Transmog appearance sets (`transmog.lua`) | 19 | Falconer's Regalia 300, Lionguard 350, Gravecloak 350, Soulforged 400, Soulstalker 350, Mothwing 350, Cobra Regalia 300, Lionguard Arms 300, Grand Sanguine 350 | achievement, season pass, exclusive and boss sets ("Transmog", "Exclusives") |
@@ -6125,6 +6125,27 @@ wardrobe block 7102000 - 7102049 of `chaos_constants.lua`). Everyone on screen s
 |---|---|---|---|
 | Footprints | prints on the tiles a walking player leaves, turned to the step, fading out in 3.2 s | Ember Steps, Frost Steps, Blood Trail, Ash Prints, Petal Trail, Venom Drips, Shadow Wisps, Gilded Steps, Storm Sparks, 200 each | Hunter's Tracks (Never Off Duty), Inkstep (reward track, 750 points), Rimewalker (boss: Skaldra), Omen Ash (boss: the Ascended Omens) |
 | Outlines | a 2 px line around the character's silhouette (body, addons, mount and rider, the walking frame), one colour or a vertical gradient; two of the store's and three earned ones pulse | Gilded, Crimson, Void, Frost, Verdant Glow, Ember Gradient, Storm Gradient, Radiant Pulse, Abyssal Pulse, 250 each | Paragon's Radiance (Absolute), Chronicler's Halo (reward track, 2000 points), Void Corona (boss: Nyxareth), Cinderheart Blaze (boss: the Cinderheart) |
+
+**Effect footprints (O649, client pair 75).** Twenty more store footprints, 200 coins each like the picture ones (ids 410-429, keys
+`foot_heart` .. `foot_coin_trail`), are not pictures but effects of the sprite pair: `fx = "fp_heart"` names an entry of the generated
+`data/lib/chaos_footprint_fx_ids.lua` (effects 5334-5353, `client/tools/sprites/gen_footprint_fx.py`, client/MANIFEST.md "Pair 75,
+footprints (O649)"). Each plays once on the tile the walker leaves, on every viewer's client (`game_cosmeticfx`), one effect a step: no
+work per step on the server, as for the pictures. The wire is the same `looks` message plus `e = {id, dx, dy, ms}` (`f` is the effect's
+name, which has no picture; the client keeps an effect footprint whole or not at all). The window row carries `e` and a `play` step (so
+the list icon and the shared preview play the effect on the figure, `footfx`), SHOW (`tryfx`) carries `e`, and the store's look is
+`{kind = "effects", play, footfx = true}` (`cosmetics_core.lua` `C.playOf`, `C.footEffect`, `C.offerLook`).
+**Gate.** A cosmetic with `pair = 75` is in no list, store category or window while `config.lua` `chaosClientPair` is below 75
+(`cosmetics_config.lua`, the filter at its end; `data/lib/chaos_footprint_fx_ids.lua` `on` reads the record at load, and its `merge()`
+puts the names into `ChaosVfx` only then). A character that chose one while the gate was on shows no print after the record falls back
+(the choice is dropped by `owned()`, the effect name is unknown). Validation (`C.validate`): an effect footprint has `fx` (letters,
+digits, `_`), no `art`, a `pair`, an effect in the startup catalogue (`ChaosVfx`) and its own cosmetic; the store price must equal the
+offer's. Prices: 200 for all twenty (the picture footprints' price; the outlines stay 250), within the store model, no coin loop.
+Ten of them are bigger than a tile (nine 2x2, the rainbow 3x3): the client draws them under the creatures (`g_map.setGroundEffect`, base
+patch 0055) on the tile left, at most 3 alive per walker and 48 on screen. Tests: `tests/cosmetics_test.lua` (the section "O649":
+gate, config, validation refusals, offers and prices, the helpers, `looks` / state / `tryfx` / store look through the real
+`cosmetics.lua`), client `game_cosmeticfx/cosmeticfxlogic_test.lua` and `game_lookpreview/lookpreview_core_test.lua`. The names and
+descriptions are English only, like the other cosmetics (no pt-BR text exists for any of them). The generated website wiki data
+(`gen_wiki_data.lua`) is made with the gate off, so it does not list the twenty yet.
 
 **Why client-drawn.** Two ways were weighed for the prints. Server magic effects on the tile left: one effect packet per step
 per spectator (a crowd of 30 walkers on one screen is about 60-80 packets a second to each viewer), effects of the pair that

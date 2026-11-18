@@ -1314,4 +1314,133 @@ do
 	eq(K.dissolvePayload(cfg73, 1, {x = 1, y = 1, z = 7}, "sand", 0, outfit, 2, nil, nil).data.p, nil, "no overlay: none sent")
 end
 
+-- O649: the twenty effect footprints of client pair 75 exist only while the pair gate is on; the clients get the effect with the look
+do
+	eq(K.byKey(cfg, "foot_heart"), nil, "pair below 75: no effect footprint")
+	local ids = dofile("data/lib/chaos_footprint_fx_ids.lua")
+	eq(ids.on, false, "the gate is off without a config.lua record")
+	ids.on = true
+	ids.merge()
+	local cfg75 = dofile("data/scripts/chaos/cosmetics_config.lua")
+	eq(#cfg75.cosmetics, #cfg.cosmetics + 20, "pair 75: twenty more cosmetics")
+	eq(#cfg75.dissolve.modes, #cfg.dissolve.modes, "the dissolve modes of pair 73 stay shut: the other gate is off")
+	local names, count, seenId = {}, 0, {}
+	for name in pairs(ids.effects) do names[name] = true count = count + 1 end
+	eq(count, 20, "the ids file holds twenty effects") eq(ids.FIRST, 5334, "from 5334") eq(ids.PAIR, 75, "of pair 75")
+	local used = {}
+	for _, c in ipairs(cfg75.cosmetics) do
+		eq(seenId[c.id], nil, "cosmetic id used once: " .. c.id)
+		seenId[c.id] = true
+		if c.kind == "footprint" and c.fx then
+			used[c.fx] = c.key
+			eq(c.kind, "footprint", c.key .. " is a footprint") eq(c.source, "store", c.key .. " is sold")
+			eq(c.price, 200, c.key .. " costs what the other footprints cost") eq(c.pair, 75, c.key .. " needs pair 75")
+			eq(c.art, nil, c.key .. " has no picture") eq(ids.effects[c.fx] ~= nil, true, c.key .. ": its effect is in the ids file")
+			eq(ChaosVfx[c.fx].id, ids.effects[c.fx].id, c.key .. ": the effect is in ChaosVfx")
+			eq(c.id >= 410 and c.id <= 429, true, c.key .. " in the store block 410..429")
+		end
+	end
+	for name in pairs(names) do eq(used[name] ~= nil, true, "effect " .. name .. " is worn by a footprint") end
+	-- the config validates (every effect is in the catalogue the startup reads, one cosmetic each) and the store sells each at its price
+	local cat75 = {fx = catalog.fx, missile = catalog.missile, vmissile = catalog.vmissile, vfx = {}}
+	for k in pairs(catalog.vfx) do cat75.vfx[k] = true end
+	for name in pairs(names) do cat75.vfx[name] = true end
+	local shop75 = dofile("data/scripts/chaos/shop_config.lua")
+	local p75, w75 = K.validate(cfg75, {catalog = cat75, achievements = achievements, shop = shop75, spellVocations = spellVocations})
+	eq(table.concat(p75, "\n"), "", "the config of pair 75 has no problem")
+	eq(#w75, 0, "and no warning: every effect footprint has its offer")
+	local offers = 0
+	for _, cat in ipairs(shop75.categories) do
+		for _, o in ipairs(cat.offers or {}) do
+			if o.unlock and o.unlock:match("^cosmetic_foot_") and K.byKey(cfg75, o.unlock:sub(10)) and K.byKey(cfg75, o.unlock:sub(10)).kind == "footprint" and K.byKey(cfg75, o.unlock:sub(10)).fx then
+				offers = offers + 1
+				eq(o.cost, 200, o.unlock .. " at 200")
+			end
+		end
+	end
+	eq(offers, 20, "twenty store offers in the Footprints category")
+	local bad = {}
+	for k, v in pairs(cfg75) do bad[k] = v end
+	bad.cosmetics = {}
+	for i, c in ipairs(cfg75.cosmetics) do
+		bad.cosmetics[i] = c
+		if c.key == "foot_heart" then
+			local d = {}
+			for k, v in pairs(c) do d[k] = v end
+			bad.cosmetics[i] = d
+		end
+	end
+	local function problemsOf(fn)
+		local l = {}
+		for i, c in ipairs(bad.cosmetics) do
+			l[i] = {}
+			for k, v in pairs(c) do l[i][k] = v end
+		end
+		for _, c in ipairs(l) do if c.key == "foot_heart" then fn(c) end end
+		local copy = {}
+		for k, v in pairs(cfg75) do copy[k] = v end
+		copy.cosmetics = l
+		return table.concat(K.validate(copy, {catalog = cat75}), "\n")
+	end
+	eq(problemsOf(function(c) c.art = "ember" end):find("an effect footprint has no art", 1, true) ~= nil, true, "no art with fx")
+	eq(problemsOf(function(c) c.pair = nil end):find("needs `pair`", 1, true) ~= nil, true, "an effect footprint needs its pair")
+	eq(problemsOf(function(c) c.fx = "fp_nope" end):find("is not an effect of the client pair", 1, true) ~= nil, true, "an unknown effect")
+	eq(problemsOf(function(c) c.fx = "fp_ghost" end):find("used by", 1, true) ~= nil, true, "one cosmetic per effect")
+	eq(problemsOf(function(c) c.fx = "no way" end):find("fx is a name of letters", 1, true) ~= nil, true, "a bad name")
+	-- the helpers
+	local heart = K.byKey(cfg75, "foot_heart")
+	local look = function(t, name) return t == "vfx" and ChaosVfx[name] or nil end
+	local e = K.footEffect(heart, look)
+	eq(e[1], 5334, "the effect id") eq(e[2], 0, "dx") eq(e[3], 0, "dy") eq(e[4], 800, "the whole play in ms")
+	eq(K.footEffect(K.byKey(cfg75, "foot_ember"), look), nil, "a picture footprint has none")
+	eq(K.footEffect(heart, function() return nil end), nil, "an effect the server does not know")
+	eq(K.playOf(heart)[1].type .. ":" .. K.playOf(heart)[1].to, "vfx:fp_heart", "the window plays the effect")
+	eq(#K.playOf(K.byKey(cfg75, "foot_ember")), 0, "a picture footprint plays nothing")
+	local ol = K.offerLook(cfg75, "cosmetic_foot_heart", look)
+	eq(ol.kind, "effects", "the store shows the effect") eq(ol.footfx, true, "on the figure's tile") eq(ol.play[1].b.id, 5334, "its id")
+	eq(K.offerLook(cfg75, "cosmetic_foot_ember", look).kind, "footprint", "a picture footprint stays a footprint")
+	eq(K.offerLook(cfg75, "cosmetic_foot_heart", function() return nil end), nil, "no effect: no look")
+	local rows75 = K.rows(cfg75, {}, {}, {})
+	local hr
+	for _, r in ipairs(rows75) do if r.key == "foot_heart" then hr = r end end
+	eq(hr.art, nil, "the row has no art") eq(hr.preview, true, "and a preview") eq(hr.how, "Store: 200 Chaos Coins", "how to get it")
+	-- cosmetics.lua with the gate on: the choice reaches every client with the effect, the window row and SHOW carry it
+	dofile("data/scripts/chaos/cosmetics.lua")
+	local dan = newPlayer(7, "Dan", 70, "Monk")
+	registered.ChaosCosmeticsLogin.onLogin(dan)
+	local u = M.storeUnlock("cosmetic_foot_heart")
+	eq(u.name, "Lovestruck Steps", "the unlock is named") eq(u.owned(dan), false, "not owned yet")
+	opcode(dan, "select", {kind = "footprint", id = 410})
+	eq(lastTo("Dan", "result").ok, false, "not owned: refused")
+	eq(u.grant(dan), true, "bought")
+	opcode(dan, "select", {kind = "footprint", id = 410})
+	eq(storages[7][7102000], 410, "stored in the wardrobe block")
+	local lk75 = lastTo("Ann", "looks").names.Dan
+	eq(lk75.f, "fp_heart", "the effect's name is the print key") eq(lk75.e[1], 5334, "the effect id goes with the look")
+	eq(lk75.e[2], 0, "dx") eq(lk75.e[3], 0, "dy") eq(lk75.e[4], 800, "its length")
+	eq(lk75.o, nil, "no outline") eq(lk75.p, nil, "no pulse")
+	local eve = newPlayer(8, "Eve", 80, "Ranger")
+	registered.ChaosCosmeticsLogin.onLogin(eve)
+	eq(lastTo("Eve", "looks").names.Dan.e[1], 5334, "a client logging in gets it in the full list")
+	opcode(dan, "open", {})
+	local hrow
+	for _, r in ipairs(lastTo("Dan", "state").rows) do if r.id == 410 then hrow = r end end
+	eq(hrow.e[1], 5334, "the window row carries the effect") eq(hrow.play[1].b.id, 5334, "and its play step") eq(hrow.art, nil, "no art")
+	eq(hrow.selected, true, "selected")
+	M.storePreview(dan, "cosmetic_foot_heart")
+	local try = lastTo("Dan", "tryfx")
+	eq(try.kind, "footprint", "SHOW: a footprint") eq(try.art, "fp_heart", "its key") eq(try.e[1], 5334, "with the effect")
+	local off = M.offerLook("cosmetic_foot_heart")
+	eq(off.kind == "effects" and off.footfx, true, "the store icon and preview play the effect")
+	-- a picture footprint is unchanged on the wire
+	M.storeUnlock("cosmetic_foot_ember").grant(dan)
+	opcode(dan, "select", {kind = "footprint", id = 401})
+	local lk401 = lastTo("Ann", "looks").names.Dan
+	eq(lk401.f, "ember", "a picture print") eq(lk401.e, nil, "has no effect")
+	opcode(dan, "select", {kind = "footprint", id = 0})
+	registered.ChaosCosmeticsLogout.onLogout(eve)
+	registered.ChaosCosmeticsLogout.onLogout(dan)
+	ids.on = false
+end
+
 print(string.format("cosmetics_test: %d checks OK", n))

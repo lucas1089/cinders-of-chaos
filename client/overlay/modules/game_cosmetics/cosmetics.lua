@@ -153,6 +153,20 @@ local function showSample(r)
         -- Footprints page drew turned, beta 2026-10-20)
         p:setPhantom(true)
       end
+    elseif kind == 'footprint' and r and r.id ~= 0 and type(r.e) == 'table' then
+      -- an effect footprint (O649): the effect itself, large, from the sprites of the client pair
+      local m = lp()
+      local spec = m and type(r.play) == 'table' and m.LookPreviewCore.mainEffect(r.play)
+      if spec then
+        local fxm = fx()
+        if fxm and fxm.registerGround then fxm.registerGround(spec.id) end
+        local w = g_ui.createWidget('UIWidget', holder)
+        w:setSize({ width = 48, height = 48 })
+        w:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+        w:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+        w:setPhantom(true)
+        m.effectIcon(w, spec, 48, FX_ICONS)
+      end
     end
   elseif kind == 'lootbeam' then
     box:setBackgroundColor('#2a2622')
@@ -376,7 +390,8 @@ function previewCurrent()
   if not r or not r.preview then return end
   local m = fx()
   if CL.DRAWN[r.kind] and m then
-    m.showPreview(r.kind, r.art, r.pulse) -- drawn here, no server round trip
+    -- drawn here, no server round trip; an effect footprint (O649) has no art: its row key names it, `e` is its effect
+    m.showPreview(r.kind, r.art or r.key, r.pulse, r.e)
   else
     send('preview', { id = r.id })
   end
@@ -511,7 +526,7 @@ local function onMessage(protocol, opcode, msg)
     if m then m.setLooks(data) end
   elseif msg.action == 'tryfx' then
     local m = fx()
-    if m and (data.kind == 'footprint' or data.kind == 'outline') then m.showPreview(data.kind, data.art, data.p or data.pulse) end
+    if m and (data.kind == 'footprint' or data.kind == 'outline') then m.showPreview(data.kind, data.art, data.p or data.pulse, data.e) end
   elseif msg.action == 'kdis' then
     -- a dissolve kill effect near you (server cosmetics.lua, O563): game_killdissolve draws the monster's own sprite coming apart
     local m = modules.game_killdissolve
