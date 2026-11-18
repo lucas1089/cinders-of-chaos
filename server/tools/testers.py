@@ -309,11 +309,11 @@ def setup_statements(bots, pw_hash_of):
         st.append("INSERT INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, `healthmax`, "
                   "`experience`, `mana`, `manamax`, `maglevel`, `skill_fist`, `skill_club`, `skill_sword`, `skill_axe`, "
                   "`skill_dist`, `skill_shielding`, `cap`, `town_id`, `posx`, `posy`, `posz`, `lastlogin`, `looktype`) "
-                  "SELECT '%s', `id`, 1, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, 3000, %d, %d, %d, %d, "
+                  "SELECT '%s', `id`, 1, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, "
                   "UNIX_TIMESTAMP() - 86400, 128 FROM `accounts` WHERE `name` = '%s';"
                   % (b['name'], b['vocation'], b['level'], b['hp'], b['hp'], LT.exp_for_level(b['level']), b['mana'],
                      b['mana'], b['ml'], b['skill'], b['skill'], b['skill'], b['skill'], b['skill'], b['skill'],
-                     b['town'], b['pos'][0], b['pos'][1], b['pos'][2], b['account']))
+                     b.get('cap', 3000), b['town'], b['pos'][0], b['pos'][1], b['pos'][2], b['account']))
         for off, val in ((0, 1), (2, b['pos'][0]), (3, b['pos'][1]), (4, b['pos'][2])):
             st.append("INSERT INTO `player_storage` (`player_id`, `key`, `value`) SELECT `id`, %d, %d FROM `players` "
                       "WHERE `name` = '%s';" % (TC.TESTER_STORAGE + off, val, b['name']))
@@ -381,7 +381,10 @@ def setup(a):
         hp, mana, ml, skill = LT.class_stats(cls, level, vocs[cls])
         bots.append({'account': new_account_name(), 'password': secrets.token_urlsafe(18), 'name': name,
                      'class': cls, 'vocation': vocs[cls]['id'], 'level': level, 'hp': hp, 'mana': mana, 'ml': ml,
-                     'skill': skill, 'town': a.town, 'pos': list(positions[k])})
+                     'skill': skill, 'town': a.town, 'pos': list(positions[k]),
+                     # O656: the capacity of a real character of that level (17970 at level 8, the class's gaincap a level); 3000 for every level
+                     # ran out (0) after enough deaths, each one takes a level and its gaincap, and a bot could carry nothing: "You do not have enough capacity"
+                     'cap': 17970 + max(0, level - 8) * int(vocs[cls].get('cap', 20))})
     exist = rows(sql(["SELECT `name` FROM `accounts` WHERE `name` IN (%s);"
                       % ','.join("'%s'" % b['account'] for b in bots)]))
     if exist:
@@ -823,24 +826,24 @@ class CheckIO(KeyIO):
             await self.bot.conn.w.drain()
 
     # ---- O655: what a person sees and answers in a talk: the server's text lines, a modal window, a purchase
-    async def said_and_heard(self, text, wait=1.5):
+    async def said_and_heard(self, text, wait=1.5, kind=1):
         """says `text` (a spell's words, a word to an NPC) and returns the server's text lines of the next `wait` seconds"""
         if not self.alive():
             return []
         n0 = self.bot.recent_n
-        self.bot.say(text)
+        self.bot.say(text, kind)
         await self.bot.conn.w.drain()
         await asyncio.sleep(wait)
         new = min(self.bot.recent_n - n0, len(self.bot.recent))
         return list(self.bot.recent[-new:]) if new > 0 else []
 
-    async def say_modal(self, text, ids, wait=5.0):
+    async def say_modal(self, text, ids, wait=5.0, kind=1):
         """says `text` to an NPC and waits for a modal window with one of `ids`: (the window dict of parse_modal or None, the server's text lines meanwhile)"""
         if not self.alive():
             return None, []
         self.bot.modals.clear()
         n0 = self.bot.recent_n
-        self.bot.say(text)
+        self.bot.say(text, kind)
         await self.bot.conn.w.drain()
         found, end = None, time.monotonic() + wait
         while found is None and time.monotonic() < end and self.alive():
@@ -883,8 +886,10 @@ class CheckIO(KeyIO):
         bot = self.bot
         bot.shop_npc, bot.shop = npc, None
         await self.say('hi')
-        await asyncio.sleep(1.0)
-        await self.say('trade')
+        await asyncio.sleep(1.5)
+        if self.alive():   # O656: the words to a greeted NPC go in the NPC channel (a plain "trade" after "hi" is ignored by the NPC library)
+            self.bot.say('trade', NPC_CHANNEL)
+            await self.bot.conn.w.drain()
         end = time.monotonic() + wait
         while bot.shop is None and time.monotonic() < end and self.alive():
             await asyncio.sleep(0.2)
@@ -896,8 +901,13 @@ class CheckIO(KeyIO):
     async def buy(self, item_id, amount=1):
         """buys from the NPC whose trade window is open (a person presses Buy)"""
         if self.alive():
+            n0 = self.bot.recent_n
             self.bot.conn.send(TC.buy_packet(int(item_id), 0, int(amount)))
             await self.bot.conn.w.drain()
+            await asyncio.sleep(1.0)   # O656: the server's lines of the purchase ("You do not have enough money", "Thanks for buying") come back to the check
+            new = min(self.bot.recent_n - n0, len(self.bot.recent))
+            return list(self.bot.recent[-new:]) if new > 0 else []
+        return []
 
     async def use_at(self, pos, client_id, stackpos=0, wait=1.5):
         """uses an item that lies on the map (a node, a lever: 0x82 with a map position); returns the server's text lines of the next `wait` seconds"""
@@ -2071,7 +2081,8 @@ class TesterBot(LT.Bot):
         if first:
             closed = bool(getattr(self.args, 'closed', False))
             self.checks = TX.CheckRun(self.name, self.cls, self.level, closed=closed,
-                                      only=None if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS)
+                                      only=(([k for k in str(getattr(self.args, 'only', '') or '').split(',') if k] or None)   # O656: --only a,b runs just those checks
+                                            if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS))
         run = self.checks
         io = CheckIO(self, clock)
         await asyncio.sleep(10 if first else 3)
@@ -2436,7 +2447,7 @@ def parse(argv):
     defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
                 '--levels': ','.join(str(v) for v in LEVELS), '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
                 '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
-                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT}
+                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': ''}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
     flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False}

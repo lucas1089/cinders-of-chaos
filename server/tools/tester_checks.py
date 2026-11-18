@@ -27,6 +27,7 @@ go(place) -> True ('town' / 'hunt' through the helper); autosetup() -> the rotat
 {id: {level, vocations, name}} of the server. The tests (tester_checks_test.py) give it a
 mocked server. Standard library only.
 """
+import asyncio
 import json
 
 PASS, FAIL, SKIP = 'pass', 'fail', 'skip'
@@ -3283,7 +3284,13 @@ async def check_rift_walk(io, name, cls, level):
     if a.get('err'):
         return Result(key, name, cls, SKIP, str(a['err'])[:80])
     if a.get('inside'):
-        return Result(key, name, cls, SKIP, 'the bot is inside a rift already')
+        # O656: the coverage layer (`!tester enter rift`) leaves a bot inside a rift of its own; a person walks out of one he does not play:
+        # the bot closes its own run (the helper ends only the asker's run) and looks again
+        await io.helper('rift close', 'rift', ANSWER)
+        await io.sleep(1.5)
+        a = await io.helper('rift state', 'rift', ANSWER) or a
+        if a.get('inside'):
+            return Result(key, name, cls, SKIP, 'the bot is inside a rift already')
     if not a.get('tier'):
         return Result(key, name, cls, SKIP, 'level %s opens no rift' % a.get('level'))
     r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
@@ -5258,9 +5265,11 @@ def candle_verdict(offer, a, b, res):
     return PASS, 'bought %s for %s candlemarks, balance %s -> %s' % (offer.get('k'), offer['p'], a.get('balance'), b.get('balance'))
 
 
-async def chore_walk(io, name, npc):
-    """on foot to an NPC for a shop window; (None, fallbacks) or (the reason, [])"""
-    how, got, note = await walk_to_place(io, {'name': name, 'lead': True}, 'npc ' + npc, None, CHORE_NEAR)
+async def chore_walk(io, name, npc, near=CHORE_NEAR):
+    """on foot to an NPC for a shop window; (None, fallbacks) or (the reason, [])
+    O656: a talk (hi, a keyword, a trade by words) needs `near` 1: in the hub the nearest NPC answers a greeting (chaos_npc_focus.lua), and 3 tiles
+    away it was Mordecai or Cassian, not the Oracle, the Archivist or the Broker"""
+    how, got, note = await walk_to_place(io, {'name': name, 'lead': True}, 'npc ' + npc, None, near)
     if how not in ('foot', 'helper'):
         return how[:110], []
     return None, [note] if note else []
@@ -5620,7 +5629,10 @@ async def check_closed_arena_fight(io, name, cls, level):
     io.raid_mode([name, other], True)
     try:
         if not await pvp_wait_inside(io, squad, 'arena', ARENA_WAIT):
-            return Result(key, name, cls, SKIP, 'the two queued bots were not in a match in %d seconds (the closed_arena check holds that)' % int(ARENA_WAIT))
+            qa = ((a or {}).get('data') or {}).get('queue') if isinstance(a, dict) else None   # O656: what the window said: in the queue or not
+            qb = ((b or {}).get('data') or {}).get('queue') if isinstance(b, dict) else None
+            return Result(key, name, cls, SKIP, 'the two queued bots were not in a match in %d seconds (the closed_arena check holds that; queue state: %s / %s)' % (
+                int(ARENA_WAIT), 'queued' if qa else 'not queued', 'queued' if qb else 'not queued'))
         await pvp_play(io, squad, 'arena', trace, PVP_BUDGET['arena'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100 and t['fought'] >= PVP_FIGHT_MIN)
         status, text = pvp_fight_verdict(trace, 'arena match')
         return Result(key, name, cls, status, text)
@@ -6173,9 +6185,55 @@ async def asc_look(io):
     return a if isinstance(a, dict) and not a.get('err') else None
 
 
-async def asc_greet(io):
-    await io.say('hi')
-    await io.sleep(1.0)
+NPC_CHANNEL = 12   # TALKTYPE_PRIVATE_PN: what a player says to the NPC it has greeted goes in the NPC channel (npchandler.lua ignores a plain say from a focused player)
+NPC_TALK = {}   # O656: npc name -> the asyncio.Lock of the bot that is talking to it (one focus at a time in the base NPC library)
+
+
+async def npc_talk_begin(io, npc):
+    """O656: one bot talks to one NPC at a time: ten bots said "hi" at the same Archivist in the same seconds and the NPC kept the first focus,
+    answered the second with "Another page left blank." (the walk-away line) and the rest with nothing. A person waits for the one before"""
+    lock = NPC_TALK.setdefault(npc, asyncio.Lock())
+    await lock.acquire()
+    held = getattr(io, 'npc_held', None)
+    if held is None:
+        held = []
+        try:
+            io.npc_held = held
+        except AttributeError:
+            pass
+    held.append(lock)
+
+
+async def npc_talk_end(io, bye=True):
+    """O656: says bye (the NPC drops its focus) and lets the next bot at the NPC talk"""
+    held = list(getattr(io, 'npc_held', None) or [])
+    if not held:
+        return
+    if bye:
+        try:
+            if io.alive():
+                await io.say('bye')
+                await io.sleep(1.2)
+        except Exception:   # noqa: BLE001 - the lock must go even when the bot is gone
+            pass
+    io.npc_held[:] = []
+    for lock in held:
+        if lock.locked():
+            lock.release()
+
+
+async def asc_greet(io, npc=None):
+    if npc:
+        await npc_talk_begin(io, npc)
+    # O656: the talk of a player is limited to one line a second or so ("You are exhausted."): the greeting waits for the NPC's answer, then a pause
+    said = getattr(io, 'said_and_heard', None)
+    if said is None:
+        await io.say('hi')
+        await io.sleep(1.0)
+        return []
+    heard = await said('hi', 2.0)
+    await io.sleep(1.5)
+    return heard
 
 
 async def check_ascension_walk(io, name, cls, level):
@@ -6192,19 +6250,20 @@ async def check_ascension_walk(io, name, cls, level):
              'stuck': None, 'died': False, 'secs': 0, 'level': a.get('level'), 'boss_seen': False, 'hp': None, 'system': 'ascend'}
     io.raid_mode([name], True, keep_flee=True)
     try:
-        why, notes = await chore_walk(io, name, ASC_ORACLE)
+        why, notes = await chore_walk(io, name, ASC_ORACLE, 1)
         fallbacks.extend(notes)
         if why:
             return Result(key, name, cls, SKIP, why, fallbacks)
         await io.sleep(SETTLE)
         # 1 the Calling
         if int(a.get('stage') or 0) == 0:
-            await asc_greet(io)
-            await io.said_and_heard('ascension', 2.5)
+            hi = await asc_greet(io, ASC_ORACLE)
+            said = await io.said_and_heard('ascension', 2.5, NPC_CHANNEL)
             b = await asc_look(io)
+            await npc_talk_end(io)
             if b is None or int(b.get('stage') or 0) != 1:
-                trace['faults'].append('the bot asked the %s about its ascension and the quest is at stage %s, not the Proof of Strength' % (
-                    ASC_ORACLE, (b or {}).get('stage')))
+                trace['faults'].append('the bot asked the %s about its ascension and the quest is at stage %s, not the Proof of Strength (heard: %s)' % (
+                    ASC_ORACLE, (b or {}).get('stage'), ' | '.join(str(h)[:60] for h in (list(hi or []) + list(said or []))[:5]) or 'nothing'))
                 return Result(key, name, cls, FAIL, '; '.join(trace['faults']), fallbacks)
             trace['done'].append('calling')
             a = b
@@ -6228,8 +6287,9 @@ async def check_ascension_walk(io, name, cls, level):
             elif int(a.get('free') or 0) - 1 < int(a.get('reserve') or 0) and a.get('tester', True):
                 trace['why'] = 'the trial chambers are kept for the players (%s free, %s reserved)' % (a.get('free'), a.get('reserve'))
             else:
-                await asc_greet(io)
-                win, heard = await io.say_modal('trial', (ASC_TRIAL_MODAL,), 5.0)
+                await asc_greet(io, ASC_ORACLE)
+                win, heard = await io.say_modal('trial', (ASC_TRIAL_MODAL,), 5.0, NPC_CHANNEL)
+                await npc_talk_end(io)
                 if win is None:
                     trace['why'] = 'the Oracle opened no trial window (%s)' % (heard[0][:60] if heard else 'it said nothing')
                 else:
@@ -6267,13 +6327,14 @@ async def check_ascension_walk(io, name, cls, level):
         locked, allowed = asc_choice_plan(a.get('choices'))
         await asc_look(io)
         for kind, c in [('locked', x) for x in locked[:1]] + [('allowed', x) for x in allowed[:1]]:
-            why, notes = await chore_walk(io, name, ASC_ORACLE)
+            why, notes = await chore_walk(io, name, ASC_ORACLE, 1)
             fallbacks.extend(notes)
             if why:
                 trace['why'] = why
                 break
-            await asc_greet(io)
-            win, heard = await io.say_modal('choice', (ASC_CHOICE_MODAL,), 5.0)
+            await asc_greet(io, ASC_ORACLE)
+            win, heard = await io.say_modal('choice', (ASC_CHOICE_MODAL,), 5.0, NPC_CHANNEL)
+            await npc_talk_end(io)
             if win is None:
                 trace['why'] = 'the Oracle opened no choice window (%s)' % (heard[0][:60] if heard else 'it said nothing')
                 break
@@ -6411,7 +6472,7 @@ TALES_TALE_MODAL = 7171
 def tales_verdict(listing, tale, heard):
     """(status, text) from the list window (a parse_modal dict or None), the tale window after Read (or None) and the text lines of the talk"""
     if listing is None:
-        return SKIP, 'the Archivist opened no list of tales (%s)' % (heard[0][:60] if heard else 'she said nothing')
+        return SKIP, 'the Archivist opened no list of tales (%s)' % (' | '.join(str(h)[:70] for h in heard[:4]) if heard else 'she said nothing')   # O656: every line heard, not the first
     names = [str(t).lower() for _, t in listing.get('buttons') or []]
     if not listing.get('title'):
         return FAIL, 'the list of tales has no title'
@@ -6429,11 +6490,12 @@ def tales_verdict(listing, tale, heard):
 async def check_tales_read(io, name, cls, level):
     """walks to Archivist Maelis, says hi and tales, presses Read on the first tale and closes the window"""
     key = 'tales_read'
-    why, fallbacks = await chore_walk(io, name, TALES_NPC)
+    why, fallbacks = await chore_walk(io, name, TALES_NPC, 1)
     if why:
         return Result(key, name, cls, SKIP, why)
-    await asc_greet(io)
-    listing, heard = await io.say_modal('tales', (TALES_LIST_MODAL,), 5.0)
+    await asc_greet(io, TALES_NPC)
+    listing, heard = await io.say_modal('tales', (TALES_LIST_MODAL,), 5.0, NPC_CHANNEL)
+    await npc_talk_end(io)
     tale = None
     if listing is not None and listing.get('choices'):
         read = next((b for b, t in listing.get('buttons') or [] if 'read' in str(t).lower()), listing.get('enter') or 1)
@@ -6550,19 +6612,22 @@ async def check_gather_walk(io, name, cls, level):
             tool, why = gather_tool_pick(a)
             if tool is None:
                 return Result(key, name, cls, SKIP, why)
-            why, notes = await chore_walk(io, name, 'Material Broker')
+            why, notes = await chore_walk(io, name, 'Material Broker', 1)
             fallbacks.extend(notes)
             if why:
                 return Result(key, name, cls, SKIP, why, fallbacks)
+            await npc_talk_begin(io, 'Material Broker')
             items = await io.shop_window('Material Broker')
             io.shop_close()
             if not items or not any(i.get('id') == tool['clientId'] for i in items):
                 return Result(key, name, cls, SKIP, 'the Material Broker\'s window does not list the tool (%s)' % ('no window' if not items else 'item %s' % tool['clientId']), fallbacks)
-            await io.buy(tool['clientId'])
+            bought = await io.buy(tool['clientId'])
+            await npc_talk_end(io)
             await io.sleep(1.5)
             a = await io.helper('gather state', 'gather', ANSWER) or a
             if not (a.get('tools') or {}).get('delving') and not (a.get('tools') or {}).get('wortcunning'):
-                return Result(key, name, cls, FAIL, 'bought item %s (%s gold) from the Material Broker and the backpack holds no pick or sickle' % (tool['id'], tool.get('price')), fallbacks)
+                return Result(key, name, cls, FAIL, 'bought item %s (%s gold) from the Material Broker and the backpack holds no pick or sickle (heard: %s)' % (
+                    tool['id'], tool.get('price'), ' | '.join(str(h)[:60] for h in (bought or [])[:4]) or 'nothing'), fallbacks)
         node = a.get('node')
         if not node:
             return Result(key, name, cls, SKIP, str((a.get('guide') or {}).get('why') or 'no node ready for the bot')[:90], fallbacks)
@@ -7225,6 +7290,7 @@ async def check_pouch_rules(io, name, cls, level):
         r2 = await io.request('pouches', 'set', {'rules': new}, ('settings',), ANSWER)
         flipped = ((r2 or {}).get('data') or {}).get('rules') if isinstance(r2, dict) else None
     finally:
+        await io.sleep(0.5)   # O656: the server answers one 'set' in 200 ms at most (ChaosRateLimit pouches.set): the put-back came at once and got no answer
         r3 = await io.request('pouches', 'set', {'rules': rules}, ('settings',), ANSWER)
         restored = ((r3 or {}).get('data') or {}).get('rules') if isinstance(r3, dict) else None
     status, text = pouch_rules_verdict(rules, flipped, restored, flag)
@@ -7260,10 +7326,12 @@ async def check_autosell_rules(io, name, cls, level):
     if not isinstance(st, dict):
         return Result(key, name, cls, SKIP, 'no answer from the Auto Seller window')
     on = bool(st.get('paused'))   # `on` = corpse selling on: the opposite of paused
+    await io.sleep(0.5)   # O656: the pouches.autosell limit is 250 ms: the switch right after the open got no answer
     r2 = await io.request('pouches', 'aspause', {'on': on}, ('autoseller',), ANSWER)
     after = (r2 or {}).get('data') if isinstance(r2, dict) else None
     back = None
     if isinstance(after, dict) and st.get('unlocked'):
+        await io.sleep(0.5)
         r3 = await io.request('pouches', 'aspause', {'on': not on}, ('autoseller',), ANSWER)
         back = (r3 or {}).get('data') if isinstance(r3, dict) else None
     status, text = autosell_verdict(st, after, back)
@@ -7468,6 +7536,7 @@ class CheckRun:
                 r = await fn(io, self.name, self.cls, self.level)
             except Exception as e:  # noqa: BLE001 - a check that breaks is a result, not a crash of the run
                 r = Result(key, self.name, self.cls, SKIP, 'the check broke: %s' % e)
+            await npc_talk_end(io, bye=False)   # O656: a check that ended with the NPC's focus held lets go of it
             if not io.alive() and r.status != PASS:
                 return False   # cut off by the bot's own death: not a result, done again after the next login
             self.results.append(r)

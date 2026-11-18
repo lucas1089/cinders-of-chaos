@@ -671,7 +671,7 @@ def parse_vocations(text):
     for m in re.finditer(r'<vocation\b([^>]*)>', re.sub(r'<!--.*?-->', '', text, flags=re.S)):
         a = _attrs(m.group(1))
         if 'id' in a and 'name' in a:
-            out[a['name']] = {'id': int(a['id']), 'hp': int(a.get('gainhp', 5)), 'mana': int(a.get('gainmana', 5))}
+            out[a['name']] = {'id': int(a['id']), 'hp': int(a.get('gainhp', 5)), 'mana': int(a.get('gainmana', 5)), 'cap': int(a.get('gaincap', 20))}
     return out
 
 

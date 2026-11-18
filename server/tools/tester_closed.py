@@ -85,8 +85,11 @@ def guild_statements(pl):
         st.append("INSERT INTO `guilds` (`name`, `ownerid`, `creationdata`, `motd`) SELECT %s, `id`, UNIX_TIMESTAMP(), '' "
                   "FROM `players` WHERE `name` = %s;" % (gq, _q(g['leader'])))
         for level, rank in ((3, 'Leader'), (2, 'Vice-Leader'), (1, 'Member')):
+            # O656: the base schema's trigger oncreate_guilds already made the three ranks of a new guild; a second set made
+            # two rows of each level and the member insert (a join on the level) two rows of one player: duplicate key
             st.append("INSERT INTO `guild_ranks` (`guild_id`, `name`, `level`) SELECT `id`, '%s', %d FROM `guilds` "
-                      "WHERE `name` = %s;" % (rank, level, gq))
+                      "WHERE `name` = %s AND NOT EXISTS (SELECT 1 FROM `guild_ranks` `x` WHERE `x`.`guild_id` = `guilds`.`id` "
+                      "AND `x`.`level` = %d);" % (rank, level, gq, level))
         for m in g['members']:
             level = LEADER if m == g['leader'] else MEMBER
             st.append("INSERT INTO `guild_membership` (`player_id`, `guild_id`, `rank_id`, `nick`) "
