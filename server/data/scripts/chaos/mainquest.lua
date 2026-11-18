@@ -837,10 +837,11 @@ function W.probe(player)
 	end
 	local v = W.view(player)
 	local row = v.rows and v.rows[1]
-	local cond = step.conds[1] or {}
+	local plan = K.botPlan(step, W.facts(player, i), C())
+	local cond = step.conds[plan.cond or 1] or step.conds[1] or {}
 	out.key, out.stepLevel, out.running = step.key, step.level, player:getLevel() >= step.level
 	out.cond = {kind = cond.c, mons = cond.mons, target = cond.target, label = cond.label, radius = cond.radius,
-		pos = cond.pos and {x = cond.pos.x, y = cond.pos.y, z = cond.pos.z} or nil, bring = cond.bring}
+		pos = cond.pos and {x = cond.pos.x, y = cond.pos.y, z = cond.pos.z} or nil, bring = cond.bring, flag = cond.key, stat = cond.stat}
 	out.progress, out.target = row and row.progress, row and row.target
 	out.ready = row and row.state == "done" or false
 	local w = resolveWhere(player, step.where, "en")
@@ -848,7 +849,8 @@ function W.probe(player)
 		local wp = w.pos
 		out.where = {k = w.k, name = w.name, label = w.label, pos = wp and {x = wp.x, y = wp.y, z = wp.z} or nil}
 	end
-	out.plan = K.botPlan(step)
+	out.plan = plan
+	out.conds = #step.conds
 	return out
 end
 

@@ -374,6 +374,23 @@ function K.canHurt(victimGuid, targetGuid, partyGuids)
 	return false
 end
 
+-- What a tester bot does next (O650, `!tester nemesis`). a = {pos, monster ({x, y, z}: its nemesis in the world), pending (the warning runs),
+-- has (it has a nemesis record), reach} -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, area, why}
+function K.guide(a)
+	local reach = a.reach or 5
+	if a.monster and a.pos then
+		local m = a.monster
+		if m.z == a.pos.z and math.max(math.abs(a.pos.x - m.x), math.abs(a.pos.y - m.y)) <= reach then
+			return {mode = "fight", goal = m, area = "nemesis", why = "in reach of its Nemesis"}
+		end
+		return {mode = "walk", goal = m, reach = {1, reach}, area = "nemesis", why = "to its Nemesis"}
+	end
+	if a.pending then
+		return {mode = "wait", why = "the warning runs: it is coming"}
+	end
+	return {mode = "wait", why = a.has and "no Nemesis in the world yet" or "no Nemesis"}
+end
+
 -- ------------------------------------------------------------------ rewards
 -- k = {guid, account, ip, isVictim, inParty, hc, lastBounty, lastAvenge}; v = {guid, account, ip} of the victim.
 -- Returns {kind = "avenge" | "hunt" | "none", trophy, gold, goldTo = "corpse" | "bank", title, reason}

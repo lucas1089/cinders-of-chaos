@@ -46,6 +46,7 @@ local TG = ChaosTreasureGoblin
 local G = ChaosTreasureGoblinCore
 TG.alive = TG.alive or {} -- creature id -> state
 TG.spawnState = TG.spawnState or {alive = 0, lastByCell = {}}
+TG.testerKilled = TG.testerKilled or {} -- tester player id -> testers' goblins killed (O650)
 
 local function cfg()
 	return ChaosTreasureGoblinConfig
@@ -217,6 +218,12 @@ local function setup(monster, data)
 		outfit.lookShader = shader
 		monster:setOutfit(outfit)
 	end
+	-- O650: a world goblin is the players' (a tester's hit on it is cancelled), a testers' goblin (TG.testerSpawn) only the testers';
+	-- the guard is registered first: a cancelled hit does not wake the goblin
+	st.tester = data.tester and true or nil
+	if ChaosTesters and ChaosTesters.markWorld then
+		pcall(ChaosTesters.markWorld, monster, st.tester and "testers" or "players")
+	end
 	monster:registerEvent("ChaosTreasureGoblinHit")
 	monster:registerEvent("ChaosTreasureGoblinDeath")
 	effect(pos, "summon_portal", CONST_ME_TELEPORT)
@@ -242,6 +249,116 @@ function TG.spawn(pos, opts)
 	data.variant = variant.key
 	setup(monster, data)
 	return monster
+end
+
+-- ------------------------------------------------------------------ the tester bots (O650)
+-- A world goblin is the players' (its first killer takes the hoard): a tester's hit on it is cancelled (ChaosTesters.markWorld "players").
+-- To play the content all the same a tester may ask for a goblin of its own (`!tester goblin spawn`, TEST ONLY, logged): it appears
+-- 5-6 tiles from the tester only while no player is within `cfg.tester.clearRadius` tiles, only the testers can hurt it (a player's hit is
+-- cancelled), says nothing to anybody, and pays the killer's own corpse (the leaderboard skips testers). At most one per tester.
+local function isTesterPlayer(player)
+	return player ~= nil and Chaos.isTester ~= nil and Chaos.isTester(player) == true
+end
+
+function TG.testerGoblinOf(player)
+	for id, st in pairs(TG.alive) do
+		if st.tester and st.owner == player:getId() then
+			if Monster(id) then
+				return id, st
+			end
+			TG.alive[id] = nil
+		end
+	end
+	return nil
+end
+
+-- the spawn: monster, or nil and the reason
+function TG.testerSpawn(player, variantKey)
+	if not isTesterPlayer(player) then
+		return nil, "not a tester"
+	end
+	local tc = cfg().tester or {}
+	if TG.testerGoblinOf(player) then
+		return nil, "the bot has a goblin already"
+	end
+	local pos = player:getPosition()
+	local clear = tc.clearRadius or 30
+	for _, p in ipairs(Game.getSpectators(pos, false, true, clear, clear, clear, clear) or {}) do
+		if p:isPlayer() and not isTesterPlayer(p) then
+			return nil, "a player is near: the goblin is not made"
+		end
+	end
+	local here = Tile(pos)
+	if here and here:hasFlag(TILESTATE_PROTECTIONZONE) then
+		return nil, "the bot stands in a protection zone"
+	end
+	local spot
+	for _, d in ipairs({{5, 0}, {-5, 0}, {0, 5}, {0, -5}, {4, 4}, {-4, -4}, {4, -4}, {-4, 4}, {6, 0}, {-6, 0}, {0, 6}, {0, -6}}) do
+		local q = Position(pos.x + d[1], pos.y + d[2], pos.z)
+		local t = Tile(q)
+		if t and t:getGround() and t:getCreatureCount() == 0 and not t:hasFlag(TILESTATE_PROTECTIONZONE) then
+			spot = q
+			break
+		end
+	end
+	if not spot then
+		return nil, "no free tile near the bot"
+	end
+	local monster = TG.spawn(spot, {variant = variantKey, tester = true, level = player:getLevel(), maxHealth = tc.maxHealth})
+	if not monster then
+		return nil, "the goblin could not be made"
+	end
+	local st = TG.alive[monster:getId()]
+	if st then
+		st.owner = player:getId()
+	end
+	print(string.format("[Chaos goblin] TEST ONLY: a goblin of its own made for tester %s (level %d)", player:getName(), player:getLevel()))
+	return monster
+end
+
+-- what a person sees (`!tester goblin`): the bot's own goblin (where, how it is hurt, how long it stays), the kills so far, the hits of the
+-- bot a world goblin cancelled, the world goblins alive (their number) and the guide
+function TG.probe(player)
+	local pos = player:getPosition()
+	local out = {level = player:getLevel(), pos = {x = pos.x, y = pos.y, z = pos.z}, killed = TG.testerKilled[player:getId()] or 0,
+		cancelled = ChaosTesters and ChaosTesters.worldCancelled and ChaosTesters.worldCancelled[player:getId()] or 0, world = 0}
+	local tc = cfg().tester or {}
+	local own = TG.testerGoblinOf(player)
+	for id, st in pairs(TG.alive) do
+		if not st.tester and Monster(id) then
+			out.world = out.world + 1
+		end
+	end
+	if own then
+		local st, m = TG.alive[own], Monster(own)
+		local mp = m:getPosition()
+		out.goblin = {pos = {x = mp.x, y = mp.y, z = mp.z}, hp = math.floor(m:getHealth() * 100 / math.max(1, m:getMaxHealth())), hit = st.hitAt ~= nil,
+			left = st.escapeAt and math.max(0, math.floor((st.escapeAt - nowMs()) / 1000)) or nil, name = st.goblinName}
+		local reach = tc.reach or 5
+		if mp.z == pos.z and math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y)) <= reach then
+			out.guide = {mode = "fight", goal = out.goblin.pos, area = "goblin", why = "in reach of the goblin"}
+		else
+			out.guide = {mode = "walk", goal = out.goblin.pos, reach = {1, reach}, area = "goblin", why = "to the goblin"}
+		end
+	else
+		out.guide = {mode = "wait", why = "no goblin of its own"}
+	end
+	return out
+end
+
+-- TEST ONLY (`!tester goblin close`): the bot's goblin goes (a kill that did not come)
+function TG.testerClose(player)
+	local id = TG.testerGoblinOf(player)
+	if not id then
+		return false
+	end
+	local m = Monster(id)
+	TG.alive[id] = nil
+	if m then
+		m:getPosition():sendMagicEffect(CONST_ME_POFF)
+		m:remove()
+	end
+	return true
 end
 
 -- ------------------------------------------------------------------ behaviour
@@ -305,6 +422,9 @@ local function despawn(monster, st, escaped)
 end
 
 local function announce(monster, st)
+	if st.tester then
+		return -- a testers' goblin (O650): no line, no toast
+	end
 	local c = cfg()
 	local pos = monster:getPosition()
 	local r = c.behaviour.announceRadius
@@ -561,7 +681,11 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 		return true
 	end
 	local pos = creature:getPosition()
-	tell(pos, c.behaviour.announceRadius, ChaosI18n.msg(c.killText, owner:getName(), st.goblinName or c.name))
+	if st.tester then
+		TG.testerKilled[owner:getId()] = (TG.testerKilled[owner:getId()] or 0) + 1 -- O650: the bots' probe
+	else
+		tell(pos, c.behaviour.announceRadius, ChaosI18n.msg(c.killText, owner:getName(), st.goblinName or c.name))
+	end
 
 	local xp = G.experience(c, st.replacedExp, st.level)
 	if xp > 0 then

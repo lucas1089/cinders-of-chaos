@@ -393,6 +393,25 @@ local function claim(player, value)
 	sendWindow(player)
 end
 
+-- ---------------------------------------------------------------- what a person sees (the tester bots, O650)
+-- For `!tester daily` (tools/tester_helper.lua checks that the asker is a tester): the state of the account's daily (taken today, the slot,
+-- the streak), the reward of the slot (item, count, how many the character holds) and `value`, the number the window's own "calim" request
+-- sends for that slot (the client's map {6, 7, 1, 2, 3, 4, 5} inverted). The claim is the window's own request: the row is the bot's own
+-- account's (chaos_daily_account.account_id: `testers cleanup` deletes it), and a milestone title's broadcast naming a tester is dropped by
+-- testers.lua. Reads only.
+function DY.probe(player)
+	local v, rec = getState(player)
+	local reward = cfg.rewards[v.slot] or {}
+	local itemType = reward.itemId and ItemType(reward.itemId)
+	local out = {today = DY.today(), taken = v.taken and true or false, slot = v.slot, streak = rec.streak or 0, best = rec.best or 0, next = v.next,
+		broken = v.broken and true or false, grace = rec.grace or 0, value = ((v.slot + 4) % 7) + 1, openOnLogin = cfg.openOnLogin and true or false}
+	if itemType then
+		out.reward = {itemId = reward.itemId, count = reward.count, clientId = itemType:getClientId(), name = itemType:getName(),
+			held = player:getItemCount(reward.itemId)}
+	end
+	return out
+end
+
 -- ---------------------------------------------------------------- the daily window in the login order
 LW.register("daily", SC.loginOrder and SC.loginOrder.daily or 20, function(player)
 	if not cfg.openOnLogin then

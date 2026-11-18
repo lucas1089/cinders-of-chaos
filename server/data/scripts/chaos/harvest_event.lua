@@ -248,6 +248,11 @@ local function candy(player, n)
 end
 
 local function shut(player)
+	-- O650: the harvest is the players' (shared pumpkins, graves, cauldrons, the candle counter of the circle): a tester does not use it
+	if Chaos.isTester and Chaos.isTester(player) then
+		tell(player, cfg.messages.testers)
+		return true
+	end
 	if not X.open then
 		tell(player, cfg.messages.shut)
 		return true
@@ -601,6 +606,10 @@ local bossHealth = CreatureEvent("HarvestKingHealth")
 function bossHealth.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType == COMBAT_HEALING then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	-- O650: the Hollow King is the players' (a tester's hit is cancelled: no phase, no share of the day's candy, no broadcast of its fall)
+	if ChaosTesters and ChaosTesters.worldHit and ChaosTesters.worldHit(attacker, "players") then
+		return 0, primaryType, 0, secondaryType
 	end
 	local st = X.phases[creature:getId()]
 	if not st then

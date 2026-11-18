@@ -708,6 +708,22 @@ do
 	eq(I.hud(st, 10, {}, nil, cfg).sides, nil, "hud: one horde, no sides")
 end
 
+-- ------------------------------------------------------------------ the tester bots (O650): the guide
+do
+	local at, target = {x = 100, y = 100, z = 7}, {x = 140, y = 100, z = 7}
+	eq(I.guide({running = false}).why, "no invasion is running", "guide: nothing runs")
+	local g1 = I.guide({running = true, pos = at, monster = {x = 103, y = 100, z = 7}, target = target})
+	ok(g1.mode == "fight" and g1.area == "invader", "guide: an invader within 5 tiles: fight")
+	local g2 = I.guide({running = true, pos = at, monster = {x = 120, y = 100, z = 7}, target = target})
+	ok(g2.mode == "walk" and g2.area == "invader" and g2.reach[2] == 5 and g2.goal.x == 120, "guide: an invader in sight: walk to it")
+	eq(I.guide({running = true, pos = at, monster = {x = 101, y = 100, z = 6}}).mode, "walk", "guide: another floor is not in reach")
+	local g3 = I.guide({running = true, pos = at, target = target})
+	ok(g3.mode == "walk" and g3.area == "target" and g3.reach[2] == 12 and g3.goal.x == 140, "guide: no invader in sight: walk to the breach point")
+	local g4 = I.guide({running = true, pos = {x = 135, y = 100, z = 7}, target = target})
+	ok(g4.mode == "wait" and g4.area == "breach", "guide: at the breach point: wait for the wave")
+	eq(I.guide({running = true, pos = at}).why, "no target point", "guide: no target")
+end
+
 -- ------------------------------------------------------------------ engine: the boss unique by the boss's type
 -- invasion.lua against a mocked engine: a renamed boss ("Warchief Grashnak", an Orc Warlord) rolls the unique drop
 -- lists by its type name, which is what chaos_unique_items.lua lists, not by the name it is shown under.
@@ -799,6 +815,54 @@ do
 		ChaosInvasion.invaders[901], ChaosInvasion.invaders[902], ChaosInvasion.invaders[903] = nil, nil, nil
 		st.phase, st.sides, st.areaName, st.wave, st.waves, st.breach, st.endsAt, st.factionName = save[1], save[2], save[3],
 			save[4], save[5], save[6], save[7], save[8]
+	end
+	-- O650: the tester bots: the probe, and a tester takes no share
+	do
+		local st = ChaosInvasion.state
+		local save = {st.phase, st.area, st.target, st.alive, st.wave, st.waves, st.contrib}
+		st.phase, st.alive, st.wave, st.waves, st.contrib = "running", 3, 1, 5, {}
+		st.area = {name = "Cinderhold", level = 40, from = {x = 100, y = 100}, to = {x = 190, y = 190}, z = 7}
+		st.target = {x = 150, y = 150, z = 7}
+		local bot = {id = 77, guid = 7, tester = true}
+		function bot:getPosition() return {x = 120, y = 120, z = 7} end
+		function bot:getLevel() return 300 end
+		function bot:getName() return "Tester Inv" end
+		function bot:getGuid() return self.guid end
+		function bot:getId() return self.id end
+		local human = {id = 78, guid = 8}
+		function human:getPosition() return {x = 120, y = 120, z = 7} end
+		function human:getLevel() return 300 end
+		function human:getName() return "Ana" end
+		function human:getGuid() return self.guid end
+		function human:getId() return self.id end
+		Chaos.isTester = function(p) return p.tester == true end
+		local oldMulti = Chaos.isMultiClient
+		Chaos.isMultiClient = function() return false end
+		-- no invader yet: the guide walks to the breach point
+		local p0 = ChaosInvasion.probe(bot)
+		ok(p0.running and p0.area.name == "Cinderhold" and p0.area.inArea and p0.credited == false and p0.invader == nil and p0.guide.area == "target", "probe: running, no invader in sight")
+		-- an invader 3 tiles away
+		local inv = {getPosition = function() return {x = 123, y = 120, z = 7} end, getName = function() return "Orc Raider" end,
+			getHealth = function() return 50 end, getMaxHealth = function() return 100 end}
+		Monster = function(id) return id == 5150 and inv or nil end
+		ChaosInvasion.invaders[5150] = {}
+		local p1 = ChaosInvasion.probe(bot)
+		ok(p1.invader and p1.invader.name == "Orc Raider" and p1.invader.hp == 50 and p1.guide.mode == "fight", "probe: an invader in reach: fight")
+		-- the book: a tester is never in it, a player is
+		eq(ChaosInvasion.creditPlayer(st.contrib, bot, "damage", 500), nil, "creditPlayer: a tester is not credited")
+		ok(next(st.contrib) == nil and ChaosInvasion.probe(bot).credited == false, "a tester takes no share: the book is empty")
+		local e = ChaosInvasion.creditPlayer(st.contrib, human, "damage", 500)
+		ok(e ~= nil and st.contrib[8] ~= nil and ChaosInvasion.probe(human).credited == true, "a player is credited")
+		-- the cancelled hits of the bot are in its probe
+		ChaosTesters = {worldCancelled = {[77] = 4}}
+		eq(ChaosInvasion.probe(bot).cancelled, 4, "probe: the cancelled hits")
+		ChaosTesters = nil
+		st.phase = "idle"
+		eq(ChaosInvasion.probe(bot).guide.why, "no invasion is running", "probe: nothing runs")
+		ChaosInvasion.invaders[5150] = nil
+		Monster = nil
+		Chaos.isTester, Chaos.isMultiClient = oldTester, oldMulti
+		st.phase, st.area, st.target, st.alive, st.wave, st.waves, st.contrib = save[1], save[2], save[3], save[4], save[5], save[6], save[7]
 	end
 	Game.getPlayers, Chaos.isTester = oldPlayers, oldTester
 	setmetatable(_G, nil)

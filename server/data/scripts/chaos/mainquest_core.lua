@@ -895,40 +895,86 @@ function M.talk(cfg, get, set, items)
 	return "wait"
 end
 
--- ------------------------------------------------------------------------------------------------- the tester bots (O599)
--- What a bot can play of a step (the check mainquest_walk, tools/tester_checks.py), from the step's first condition:
---   "talk"   walk to the NPC of `where` and say the words (a bring step, which hands over the drops, is "kill": the drops come first)
+-- ------------------------------------------------------------------------------------------------- the tester bots (O599, O650)
+-- What a bot can play of a step (the check mainquest_walk, tools/tester_checks.py), from the first condition of the step that does not hold yet
+-- (`facts` as W.facts gives them; without facts the first condition):
+--   "talk"   walk to the NPC of `where` and say the words
+--   "bring"  a bring step: the bot holds the drops of the step it came from (the kill step before it), walks to the NPC and says the words:
+--            Warden Ysolde takes them (O650)
 --   "visit"  walk to the place of the condition
 --   "kill"   walk to the `where` place and kill the named monsters ("count" steps: a kill counter, or a quest drop of the same kill)
---   "skip"   everything else (a spell, a window, a stat, a flag, a resistance, a gear piece, a storage, the boss): `reason` says which
--- -> {action, reason, label, monsters, target, radius}
-function M.botPlan(step)
-	local c = step and step.conds and step.conds[1]
+--   "go"     a flag the Go button marks (mainquest_config.lua `acks`: a window to see, an info page to read): the bot sends the goals window's
+--            own `mqGo {step}` (O650)
+--   "daily"  the flag of the daily reward: the bot claims it in the Daily window (the check daily_claim; O650)
+--   "cast"   the spell step: the bot casts a spell of its own at a monster of its hunt (O650)
+--   "hunt"   a stat only hunting moves (`kills_magic`, `kills_rare`: a monster of a tier): the bot hunts at the place of the step (O650)
+--   "vael"   the boss step: Vael Ashmourn, the solo spell trial; the bots take it through the TEST ONLY door of `!tester vael` (O650)
+--   "skip"   everything else (a window of a system the bots play elsewhere, a gear piece, a resistance, a storage): `reason` says which
+-- -> {action, reason, label, monsters, target, radius, flag, stat, cond (the index of the condition planned)}
+M.HUNT_STATS = {kills_magic = true, kills_rare = true}
+
+function M.condDone(cond, facts, step)
+	local p, t = condProgress(cond, facts or {}, step)
+	return p >= t
+end
+
+function M.botPlan(step, facts, cfg)
+	local conds = step and step.conds or {}
+	local c, ci
+	for i, cond in ipairs(conds) do
+		if not facts or not M.condDone(cond, facts, step) then
+			c, ci = cond, i
+			break
+		end
+	end
+	if not c then
+		c, ci = conds[1], 1
+	end
 	if not c then
 		return {action = "skip", reason = "the step has no condition"}
 	end
+	local acks = {}
+	for _, a in ipairs((cfg or M.cfg() or {}).acks or {}) do
+		acks[a] = true
+	end
+	local function plan(t)
+		t.cond = ci
+		return t
+	end
 	if c.c == "talk" then
-		if c.bring then
-			return {action = "skip", reason = "a bring step: the drops of " .. tostring(c.bring) .. " are handed over (not played yet)"}
-		end
 		if not (step.where and step.where.k == "npc" and step.where.name) then
-			return {action = "skip", reason = "a talk step with no NPC to walk to"}
+			return plan({action = "skip", reason = "a talk step with no NPC to walk to"})
 		end
-		return {action = "talk", label = step.where.name}
+		return plan({action = c.bring and "bring" or "talk", label = step.where.name, flag = c.bring})
 	end
 	if c.c == "visit" and c.pos then
-		return {action = "visit", label = c.label, radius = c.radius or 6}
+		return plan({action = "visit", label = c.label, radius = c.radius or 6})
 	end
 	if c.c == "count" and type(c.mons) == "table" and #c.mons > 0 then
 		if not (step.where and step.where.k == "pos" and step.where.pos) then
-			return {action = "skip", reason = "a kill step with no place to walk to"}
+			return plan({action = "skip", reason = "a kill step with no place to walk to"})
 		end
-		return {action = "kill", label = c.label, monsters = c.mons, target = c.target}
+		return plan({action = "kill", label = c.label, monsters = c.mons, target = c.target})
 	end
 	if c.c == "boss" then
-		return {action = "skip", reason = "the boss is a spell trial of the trials engine: no testers' instance of it is built"}
+		return plan({action = "vael", reason = "the boss is the solo spell trial: the bots take it through the TEST ONLY door of `!tester vael`"})
 	end
-	return {action = "skip", reason = "the step asks for '" .. tostring(c.c) .. "' (the bots do not play it)"}
+	if c.c == "flag" then
+		if c.key == "daily" then
+			return plan({action = "daily", flag = c.key})
+		end
+		if acks[c.key] then
+			return plan({action = "go", flag = c.key})
+		end
+		return plan({action = "skip", reason = "the flag '" .. tostring(c.key) .. "' comes from a window or a system the bots do not play in this step"})
+	end
+	if c.c == "spell" then
+		return plan({action = "cast"})
+	end
+	if c.c == "stat" and M.HUNT_STATS[c.stat] then
+		return plan({action = "hunt", stat = c.stat, target = c.target})
+	end
+	return plan({action = "skip", reason = "the step asks for '" .. tostring(c.c == "stat" and c.stat or c.c) .. "' (the bots do not play it in this step)"})
 end
 
 return M

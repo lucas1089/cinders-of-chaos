@@ -236,6 +236,17 @@ function K.soloRefusal(flags, free, reserve)
 	return nil
 end
 
+-- Monsters of a shared world event (a treasure goblin, an invader, the Harvest King; O650) belong to one side: "players" (the world's own, a
+-- tester's hit on them is cancelled: no share of a reward, no kill, no hoard taken from a player) or "testers" (a goblin only the testers' own
+-- check made: a player's hit on it is cancelled). Returns true when the hit is cancelled.
+K.WORLD_SIDES = {players = true, testers = true}
+function K.worldBlocked(side, attackerIsTester)
+	if not K.WORLD_SIDES[side] then
+		return false
+	end
+	return (side == "testers") ~= (attackerIsTester == true)
+end
+
 function K.guildSide(name, anyTester, allTester)
 	local prefixed = type(name) == "string" and name:sub(1, #K.GUILD_PREFIX) == K.GUILD_PREFIX
 	if allTester == true and anyTester == true then

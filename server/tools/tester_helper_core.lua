@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -624,7 +624,7 @@ function H.mainQuestAnswer(probe, extra)
 	local out = {enabled = probe.enabled ~= false, level = probe.level, pos = xyz(probe.pos), staff = probe.staff and true or false, state = probe.state,
 		active = probe.active and true or false, done = probe.done and true or false, step = probe.step, steps = probe.steps,
 		key = probe.key and tostring(probe.key):sub(1, 30) or nil, stepLevel = probe.stepLevel, running = probe.running, progress = probe.progress,
-		target = probe.target, ready = probe.ready}
+		target = probe.target, ready = probe.ready, conds = probe.conds}
 	local c = probe.cond
 	if type(c) == "table" then
 		local mons = {}
@@ -632,7 +632,8 @@ function H.mainQuestAnswer(probe, extra)
 			mons[i] = tostring(c.mons[i]):sub(1, 30)
 		end
 		out.cond = {kind = c.kind, mons = mons, target = c.target, label = c.label and tostring(c.label):sub(1, 40) or nil, radius = c.radius,
-			pos = xyz(c.pos), bring = c.bring and tostring(c.bring):sub(1, 20) or nil}
+			pos = xyz(c.pos), bring = c.bring and tostring(c.bring):sub(1, 20) or nil, flag = c.flag and tostring(c.flag):sub(1, 20) or nil,
+			stat = c.stat and tostring(c.stat):sub(1, 24) or nil}
 	end
 	local w = probe.where
 	if type(w) == "table" then
@@ -641,13 +642,113 @@ function H.mainQuestAnswer(probe, extra)
 	local pl = probe.plan
 	if type(pl) == "table" then
 		out.plan = {action = pl.action, reason = pl.reason and tostring(pl.reason):sub(1, 90) or nil, label = pl.label and tostring(pl.label):sub(1, 40) or nil,
-			target = pl.target, radius = pl.radius}
+			target = pl.target, radius = pl.radius, flag = pl.flag and tostring(pl.flag):sub(1, 20) or nil, stat = pl.stat and tostring(pl.stat):sub(1, 24) or nil,
+			cond = pl.cond}
 		if type(pl.monsters) == "table" then
 			out.plan.monsters = {}
 			for i = 1, math.min(#pl.monsters, 4) do
 				out.plan.monsters[i] = tostring(pl.monsters[i]):sub(1, 30)
 			end
 		end
+	end
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- O650: the Nemesis, the daily reward, the Chronicle, Vael Ashmourn, the treasure goblin and the invasions as a person sees them.
+--   !tester nemesis [state | born | appear | path | close]     born / appear are the TEST ONLY grants (a tester only, logged)
+--   !tester daily [state]            the account's daily (taken, slot, the value the window's `calim` sends, the reward and how many the bot holds)
+--   !tester chronicle [state]        the season, the open chapter and its goals, `counted` and `testersListed` (the rule: a tester is in no book)
+--   !tester vael [state | enter | path | close]   enter is the TEST ONLY door of the boss's spell trial (a tester from level 500, logged)
+--   !tester goblin [state | spawn | path | close]  spawn is a treasure goblin of the bot's own (TEST ONLY, only while no player is near)
+--   !tester invasion [state | path]  the running invasion, the invader nearest, `credited` (false for a tester) and the hits cancelled
+-- The answers are the probes' tables cut down: scalars only (a text at most 90 characters), tables up to three levels, at most 12 rows a list.
+local function parseWords(arg, system, words)
+	local usage = "usage: " .. system .. " [state" .. (#words > 1 and (" | " .. table.concat(words, " | ", 2)) or "") .. "]"
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == nil then
+		return nil, usage
+	end
+	what = what == "" and "state" or what:lower()
+	for _, w in ipairs(words) do
+		if w == what then
+			return what
+		end
+	end
+	return nil, usage
+end
+
+function H.parseNemesis(arg)
+	return parseWords(arg, "nemesis", {"state", "born", "appear", "path", "close"})
+end
+
+function H.parseDaily(arg)
+	return parseWords(arg, "daily", {"state"})
+end
+
+function H.parseChronicle(arg)
+	return parseWords(arg, "chronicle", {"state"})
+end
+
+function H.parseVael(arg)
+	return parseWords(arg, "vael", {"state", "enter", "path", "close"})
+end
+
+function H.parseGoblin(arg)
+	return parseWords(arg, "goblin", {"state", "spawn", "path", "close"})
+end
+
+function H.parseInvasion(arg)
+	return parseWords(arg, "invasion", {"state", "path"})
+end
+
+-- a value cut down for a text line: scalars only, strings at most 90 characters, tables up to `depth` levels and 12 rows a list
+local function cutValue(v, depth)
+	local t = type(v)
+	if t == "string" then
+		return v:sub(1, 90)
+	elseif t == "number" or t == "boolean" then
+		return v
+	elseif t == "table" and depth > 0 then
+		local out = {}
+		if #v > 0 then
+			for i = 1, math.min(#v, 12) do
+				local c = cutValue(v[i], depth - 1)
+				if c ~= nil then
+					out[#out + 1] = c
+				end
+			end
+		else
+			for k, c in pairs(v) do
+				if type(k) == "string" and #k <= 24 then
+					local cc = cutValue(c, depth - 1)
+					if cc ~= nil then
+						out[k] = cc
+					end
+				end
+			end
+		end
+		return out
+	end
+	return nil
+end
+H.cutValue = cutValue
+
+function H.cutAnswer(probe, extra)
+	local out = {}
+	if type(probe) == "table" then
+		for k, v in pairs(probe) do
+			if type(k) == "string" and k ~= "guide" then
+				local c = cutValue(v, 3)
+				if c ~= nil then
+					out[k] = c
+				end
+			end
+		end
+		out.pos = xyz(probe.pos) or out.pos
+		out.guide = soloGuide(probe.guide)
 	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v

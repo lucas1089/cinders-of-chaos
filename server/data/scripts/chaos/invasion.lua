@@ -361,6 +361,10 @@ end
 
 local function registerInvader(monster, info)
 	V.invaders[monster:getId()] = info
+	-- O650: an invader is the players' (a tester's hit on it is cancelled: no kill, no damage, so no share of the reward); the guard is first
+	if ChaosTesters and ChaosTesters.markWorld then
+		pcall(ChaosTesters.markWorld, monster, "players")
+	end
 	monster:registerEvent("ChaosInvasionHealth")
 	monster:registerEvent("ChaosInvasionDeath")
 	state.alive = (state.alive or 0) + 1
@@ -1474,6 +1478,9 @@ end
 spawnCb:register()
 
 local function creditPlayer(contrib, player, field, amount)
+	if Chaos.isTester and Chaos.isTester(player) then
+		return nil -- O650: a tester takes no share of an invasion's reward (the shares divide a pool among the players)
+	end
 	local guid = player:getGuid()
 	local e = I.credit(contrib, guid, player:getName(), field, amount, now())
 	if e and not e.mcChecked then
@@ -1485,6 +1492,8 @@ local function creditPlayer(contrib, player, field, amount)
 	return e
 end
 
+V.creditPlayer = creditPlayer -- tests (O650)
+
 local function activeContrib()
 	if state.phase == "running" then
 		return state.contrib
@@ -1492,6 +1501,44 @@ local function activeContrib()
 		return state.libContrib
 	end
 	return nil
+end
+
+-- What a person sees (the tester bots, `!tester invasion`, O650): the phase, the area and its target point, the invaders near the asker, whether
+-- the asker is in the contribution book (false for a tester: creditPlayer), the hits of the bot that were cancelled, and the guide. Reads only.
+function V.probe(player)
+	local pos = player:getPosition()
+	local at = {x = pos.x, y = pos.y, z = pos.z}
+	local out = {phase = state.phase, running = state.phase == "running", level = player:getLevel(), pos = at,
+		cancelled = ChaosTesters and ChaosTesters.worldCancelled and ChaosTesters.worldCancelled[player:getId()] or 0, credited = false}
+	local contrib = activeContrib()
+	if contrib and contrib[player:getGuid()] then
+		out.credited = true
+	end
+	if state.phase == "idle" or not state.area then
+		out.guide = I.guide({running = false})
+		return out
+	end
+	local a = state.area
+	local tgt = state.target
+	out.area = {name = a.name, level = a.level, inArea = I.inArea(pos, a, 0)}
+	out.target = tgt and {x = tgt.x, y = tgt.y, z = tgt.z} or nil
+	out.alive, out.wave, out.waves = state.alive, state.wave, state.waves
+	local best, bd
+	for id in pairs(V.invaders) do
+		local m = Monster(id)
+		if m then
+			local mp = m:getPosition()
+			if mp.z == pos.z then
+				local d = math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y))
+				if d <= 25 and (not bd or d < bd) then
+					best, bd = {x = mp.x, y = mp.y, z = mp.z, name = m:getName(), hp = math.floor(m:getHealth() * 100 / math.max(1, m:getMaxHealth()))}, d
+				end
+			end
+		end
+	end
+	out.invader = best
+	out.guide = I.guide({running = state.phase == "running", pos = at, monster = best, target = out.target, reach = 5})
+	return out
 end
 
 local health = CreatureEvent("ChaosInvasionHealth")

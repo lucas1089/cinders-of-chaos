@@ -3780,6 +3780,7 @@ return {
 		["The Haunted Harvest is over. The village sleeps until next year."] =
 			"A Haunted Harvest acabou. A vila dorme até o ano que vem.",
 		["The Haunted Harvest is not open now."] = "A Haunted Harvest não está aberta agora.",
+		["The Haunted Harvest is the players' event: the testers stay out of it."] = "A Haunted Harvest é o evento dos jogadores: os testadores ficam de fora.",
 		["The pumpkin is not ripe yet."] = "A abóbora ainda não está madura.",
 		["You harvest the pumpkin: %d hollow candy."] = "Você colhe a abóbora: %d hollow candy.",
 		["You harvested enough pumpkins today; the field gives you nothing more."] =

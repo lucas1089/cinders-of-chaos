@@ -4951,5 +4951,852 @@ class MainQuestWalk(unittest.TestCase):
         self.assertIn('stands at the place', r.detail)
 
 
+# ================================================================================================ O650: elite and boss contracts, the daily, the Chronicle,
+# the Nemesis, the goblin, Vael, the invasions, the later steps of the main quest
+class LaneIO(FakeIO):
+    """one lane (y = 5): a world with answer(command), step(dx, dy), reply(opname, action, data) and `dead`"""
+
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted, self.sent = world, [], [], 0, []
+
+    def alive(self):
+        return not getattr(self.w, 'dead', False)
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        return True
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.sent.append((opname, action, data))
+        return self.w.reply(opname, action, data)
+
+    async def step(self, dx, dy):
+        self.w.step(dx, dy)
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class LaneWorld:
+    def __init__(self, blocked=(), die_after=None):
+        self.pos, self.blocked, self.die_after, self.looks, self.dead = (60, 5), set(blocked), die_after, 0, False
+
+    def look(self):
+        self.looks += 1
+        if self.die_after is not None and self.looks > self.die_after:
+            self.dead = True
+            return False
+        return True
+
+    def path_to(self, goal, reach):
+        x, _ = self.pos
+        if x < goal - reach:
+            return [1] * (goal - reach - x)
+        if x > goal + reach:
+            return [3] * (x - goal - reach)
+        return []
+
+    def step(self, dx, dy):
+        nx = self.pos[0] + dx
+        if (nx, self.pos[1] + dy) in self.blocked or not (-1 <= nx <= 300):
+            return
+        self.pos = (nx, self.pos[1] + dy)
+
+    def at(self):
+        return {'x': self.pos[0], 'y': 5, 'z': 7}
+
+    def reply(self, opname, action, data):
+        return None
+
+
+class DailyWorld(LaneWorld):
+    def __init__(self, taken=False, err=None, claim_ok=True, reward_ok=True, streak_ok=True, bag_held=3):
+        super().__init__()
+        self.taken, self.err, self.claim_ok, self.reward_ok, self.streak_ok, self.held = taken, err, claim_ok, reward_ok, streak_ok, bag_held
+        self.streak, self.claims = 1, 0
+
+    def facts(self):
+        nxt = self.streak + (0 if self.taken else 1)
+        return {'taken': self.taken, 'slot': 3, 'value': 1, 'streak': self.streak, 'next': self.streak + 1 if not self.taken else self.streak,
+                'reward': {'itemId': 2160, 'count': 2, 'clientId': 3031, 'name': 'crystal coin', 'held': self.held}}
+
+    def answer(self, command):
+        if command == 'daily state':
+            return {'err': self.err} if self.err else self.facts()
+        return None
+
+    def reply(self, opname, action, data):
+        if (opname, action) == ('daily', 'calim'):
+            self.claims += 1
+            if self.claim_ok:
+                self.taken = True
+                self.streak += 1 if self.streak_ok else 2
+                if self.reward_ok:
+                    self.held += 2
+            return {'action': 'OpenDailyWindow', 'data': {'TakenReward': 1 if self.claim_ok else 0}}
+        return {'action': 'OpenDailyWindow', 'data': {'TakenReward': 1 if self.taken else 0}}
+
+
+class DailyClaim(unittest.TestCase):
+    def play(self, **kw):
+        w = DailyWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_daily_claim(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_claim_pays_and_the_streak_goes_up(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('daily', 'open', {}), io.sent)
+        self.assertIn(('daily', 'calim', 1), io.sent, 'the number the window sends for the slot')
+        self.assertIn('2x crystal coin arrived, streak 2', r.detail)
+        self.assertIn('daily_claim', TX.KEYS)
+        self.assertNotIn('daily_claim', TX.CLOSED_KEYS)
+
+    def test_the_skips(self):
+        r, io = self.play(taken=True)
+        self.assertEqual((r.status, 'is taken today' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.claims, 0, 'a day taken is not claimed again')
+        r, _ = self.play(err='no daily system')
+        self.assertEqual((r.status, 'no daily' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        r, _ = self.play(claim_ok=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('left the day open', r.detail)
+        self.assertIn('TakenReward 0', r.detail)
+        r, _ = self.play(reward_ok=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not arrive', r.detail)
+        self.assertIn('BUG daily_claim', r.bug_line())
+        r, _ = self.play(streak_ok=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the streak is 3, it should be 2', r.detail)
+
+
+class ChronicleWorld(LaneWorld):
+    def __init__(self, **over):
+        super().__init__()
+        self.facts_ = dict({'enabled': True, 'running': True, 'season': 7, 'chapter': 2, 'chapters': 5, 'counted': False, 'testersListed': 0, 'mine': 0}, **over)
+        self.top = ['Ana', 'Bob']
+
+    def answer(self, command):
+        return dict(self.facts_) if command == 'chronicle state' else None
+
+    def reply(self, opname, action, data):
+        if (opname, action) == ('chronicle', 'open'):
+            return {'action': 'state', 'data': {'chapters': [{'top': [{'n': n, 'p': 3} for n in self.top]}], 'record': []}}
+        return None
+
+
+class ChronicleWalk(unittest.TestCase):
+    def play(self, top=None, **over):
+        w = ChronicleWorld(**over)
+        if top is not None:
+            w.top = top
+        io = LaneIO(w)
+        return run(TX.check_chronicle_walk(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_window_is_opened_and_no_tester_is_in_the_books(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual([x[:2] for x in io.sent], [('chronicle', 'open'), ('chronicle', 'close')])
+        self.assertIn('not counted', r.detail)
+        self.assertIn('2 name(s)', r.detail)
+        self.assertIn('chronicle_walk', TX.KEYS)
+
+    def test_the_skips(self):
+        r, _ = self.play(running=False)
+        self.assertEqual((r.status, 'no Chronicle season' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(enabled=False)
+        self.assertEqual((r.status, 'switched off' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(err='no chronicle system')
+        self.assertEqual((r.status, 'no chronicle' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        for over, text in ((dict(counted=True), 'would enter the chapter'), (dict(testersListed=2), '2 tester row(s)'), (dict(mine=5), '5 point(s)')):
+            r, _ = self.play(**over)
+            self.assertEqual(r.status, TX.FAIL, r.detail)
+            self.assertIn(text, r.detail)
+        r, _ = self.play(top=['Ana', 'Tester Zed'])
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the window lists a tester: Tester Zed', r.detail)
+        self.assertIn('BUG chronicle_walk', r.bug_line())
+
+
+class NemesisWorld(LaneWorld):
+    """the Nemesis on one lane: a monster in sight, the TEST ONLY birth and call, the Nemesis 4 tiles from the bot; it loses `step` percent for every look
+    the bot is within 5 tiles"""
+    def __init__(self, sight=True, born_err=None, appear_err=None, never_arrive=False, step=40, never_hurt=False, die_after=None, enabled=True, level=100, has=False,
+                 record_stays=False, fade=False, far=False, blocked=(), min_level=50):
+        super().__init__(blocked=blocked, die_after=die_after)
+        self.sight, self.born_err, self.appear_err, self.never_arrive, self.step_hp = sight, born_err, appear_err, never_arrive, step
+        self.never_hurt, self.enabled, self.level, self.has, self.record_stays, self.fade, self.far, self.min_level = never_hurt, enabled, level, has, record_stays, fade, far, min_level
+        self.nem, self.hp, self.avenged, self.pending, self.closes, self.born_calls = None, 100, 0, False, 0, 0
+
+    def facts(self):
+        out = {'enabled': self.enabled, 'level': self.level, 'minLevel': self.min_level, 'pos': self.at(), 'avenged': self.avenged, 'has': self.has,
+               'pending': self.pending}
+        if self.has:
+            out['nemesis'] = {'name': 'Varkh', 'monster': 'Ghoul', 'level': 120}
+        elif self.sight:
+            out['sight'] = {'name': 'Ghoul', 'distance': 2}
+        if self.nem is not None:
+            out['world'] = {'pos': {'x': self.nem, 'y': 5, 'z': 7}, 'hp': self.hp, 'level': 120}
+            near = abs(self.nem - self.pos[0]) <= 5
+            out['guide'] = {'mode': 'fight' if near else 'walk', 'goal': {'x': self.nem, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'nemesis'}
+        else:
+            out['guide'] = {'mode': 'wait', 'why': 'no Nemesis'}
+        return out
+
+    def tick(self):
+        if not self.look():
+            return
+        if self.pending and not self.never_arrive:
+            self.pending, self.nem = False, (self.pos[0] + 4 if not self.far else 100)
+            return
+        if self.nem is None:
+            return
+        if self.fade and self.hp == 100 and self.looks > 6:
+            self.nem = None
+            return
+        if abs(self.nem - self.pos[0]) <= 5 and not self.never_hurt:
+            self.hp -= self.step_hp
+            if self.hp <= 0:
+                self.nem, self.avenged = None, self.avenged + 1
+                self.has = self.record_stays
+
+    def answer(self, command):
+        if command == 'nemesis state':
+            self.tick()
+            return self.facts()
+        if command == 'nemesis born':
+            self.born_calls += 1
+            if self.born_err:
+                return dict(self.facts(), err=self.born_err)
+            self.has = True
+            return dict(self.facts(), born=True)
+        if command == 'nemesis appear':
+            if self.appear_err:
+                return dict(self.facts(), err=self.appear_err)
+            self.pending = True
+            return dict(self.facts(), appear=True)
+        if command == 'nemesis path':
+            g = self.facts()['guide']
+            if g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]))
+        if command == 'nemesis close':
+            self.closes += 1
+            self.nem, self.has, self.pending = None, False, False
+            return dict(self.facts(), closed=True)
+        return None
+
+
+class NemesisWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.NEMESIS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK, TX.NEMESIS_SIGHT_WAIT, TX.NEMESIS_ARRIVE_WAIT)
+
+    def tearDown(self):
+        TX.NEMESIS_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK, TX.NEMESIS_SIGHT_WAIT, TX.NEMESIS_ARRIVE_WAIT = self.keep
+
+    def play(self, **kw):
+        w = NemesisWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_nemesis_walk(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 100, 'steps': 3, 'secs': 20, 'name': 'Varkh', 'avenged': 1}
+        self.assertEqual(TX.nemesis_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.nemesis_walk_verdict(dict(base, killed=True))[0], TX.PASS)
+        self.assertIn('slain, avenged 1', TX.nemesis_walk_verdict(dict(base, killed=True))[1])
+        self.assertIn('hurt to 40%', TX.nemesis_walk_verdict(dict(base, hp=40))[1])
+        self.assertEqual(TX.nemesis_walk_verdict(dict(base, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        for key in ('stuck', 'died', 'faded'):
+            self.assertEqual(TX.nemesis_walk_verdict(dict(base, **{key: (1, 2) if key == 'stuck' else True}))[0], TX.SKIP)
+        self.assertEqual(TX.nemesis_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('nemesis_walk', TX.KEYS)
+        self.assertNotIn('nemesis_walk', TX.CLOSED_KEYS)
+
+    def test_it_is_born_called_and_slain(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('slain', r.detail)
+        self.assertLess(io.cmds.index('nemesis born'), io.cmds.index('nemesis appear'))
+        self.assertEqual(io.cmds[-1], 'nemesis close', 'the record and the monster go after the run')
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+        self.assertFalse(io.w.has)
+
+    def test_a_bot_far_from_it_walks_to_it(self):
+        r, io = self.play(far=True, step=100)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('nemesis path', io.cmds)
+        self.assertGreater(io.w.pos[0], 80)
+
+    def test_a_record_left_by_an_earlier_run_goes_first(self):
+        r, io = self.play(has=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.cmds.count('nemesis close'), 2)
+        self.assertLess(io.cmds.index('nemesis close'), io.cmds.index('nemesis born'))
+
+    def test_the_skips(self):
+        r, _ = self.play(enabled=False)
+        self.assertEqual((r.status, 'switched off' in r.detail), (TX.SKIP, True))
+        r, io = self.play(level=30)
+        self.assertEqual((r.status, 'born from level 50' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.born_calls, 0)
+        TX.NEMESIS_SIGHT_WAIT = 6.0
+        r, io = self.play(sight=False)
+        self.assertEqual((r.status, 'no regular monster in sight' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.born_calls, 0, 'nothing is born without a monster in sight')
+        r, _ = self.play(born_err='the bot has a Nemesis already')
+        self.assertEqual((r.status, 'was not born' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(appear_err='the bot stands in a protection zone')
+        self.assertEqual((r.status, 'not called' in r.detail or 'was not called' in r.detail), (TX.SKIP, True))
+        TX.NEMESIS_ARRIVE_WAIT = 4.0
+        r, io = self.play(never_arrive=True)
+        self.assertEqual((r.status, 'did not arrive' in r.detail), (TX.SKIP, True))
+        self.assertGreaterEqual(io.w.closes, 1, 'the record goes even when it never came')
+        r, _ = self.play(die_after=2)
+        self.assertEqual(r.status, TX.SKIP)
+        r, _ = self.play(fade=True, never_hurt=True)
+        self.assertEqual((r.status, 'faded' in r.detail), (TX.SKIP, True))
+        TX.SOLO_STUCK = 4.0
+        r, _ = self.play(far=True, blocked=[(61, 5)])
+        self.assertEqual((r.status, 'blocked' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(never_hurt=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('health did not move', r.detail)
+        self.assertIn('BUG nemesis_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closes, 1)
+        r, _ = self.play(record_stays=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('record is still there', r.detail)
+
+
+class GoblinWorld(LaneWorld):
+    """a treasure goblin of the bot's own on one lane: 5 tiles away, asleep until hit; after the first hit it moves 1 tile away every look and
+    escapes after `escape` looks; `hits` hits kill it"""
+    def __init__(self, err=None, spawn_err=None, hits=2, escape=99, never_hit=False, die_after=None, blocked=(), has=False, far=False):
+        super().__init__(blocked=blocked, die_after=die_after)
+        self.err, self.spawn_err, self.hits, self.escape, self.never_hit, self.has, self.far = err, spawn_err, hits, escape, never_hit, has, far
+        self.gob, self.hit, self.taken, self.killed, self.since, self.closes = None, 0, 0, 0, 0, 0
+
+    def facts(self):
+        out = {'killed': self.killed, 'world': 0, 'pos': self.at(), 'cancelled': 0}
+        if self.gob is not None:
+            near = abs(self.gob - self.pos[0]) <= 5
+            out['goblin'] = {'pos': {'x': self.gob, 'y': 5, 'z': 7}, 'hp': 100 - 50 * self.taken, 'hit': self.hit > 0}
+            out['guide'] = {'mode': 'fight' if near else 'walk', 'goal': {'x': self.gob, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'goblin'}
+        else:
+            out['guide'] = {'mode': 'wait', 'why': 'no goblin of its own'}
+        return out
+
+    def tick(self):
+        if not self.look() or self.gob is None:
+            return
+        near = abs(self.gob - self.pos[0]) <= 5
+        if self.hit:
+            self.since += 1
+            if self.since > self.escape:
+                self.gob = None
+                return
+            self.gob += 1
+        if near and not self.never_hit:
+            self.hit += 1
+            self.taken += 1
+            if self.taken >= self.hits:
+                self.gob, self.killed = None, self.killed + 1
+
+    def answer(self, command):
+        if command == 'goblin state':
+            if self.err:
+                return {'err': self.err}
+            if self.has and self.gob is None and command == 'goblin state' and not self.looks:
+                self.gob = self.pos[0] + 5
+            self.tick()
+            return self.facts()
+        if command == 'goblin spawn':
+            if self.spawn_err:
+                return dict(self.facts(), err=self.spawn_err)
+            self.gob = self.pos[0] + (40 if self.far else 5)
+            return dict(self.facts(), spawned=True)
+        if command == 'goblin path':
+            g = self.facts()['guide']
+            if g['mode'] != 'walk':
+                return dict(self.facts(), err='no goal')
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1]))
+        if command == 'goblin close':
+            self.closes += 1
+            self.gob = None
+            return dict(self.facts(), closed=True)
+        return None
+
+
+class GoblinWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.GOBLIN_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.GOBLIN_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, **kw):
+        w = GoblinWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_goblin_walk(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 100, 'steps': 3, 'secs': 20}
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, killed=1))[0], TX.PASS)
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, hit=True))[0], TX.PASS)
+        self.assertIn('it escaped', TX.goblin_walk_verdict(dict(base, hit=True))[1])
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.goblin_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.goblin_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('goblin_walk', TX.KEYS)
+
+    def test_the_goblin_is_chased_and_killed(self):
+        r, io = self.play(far=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('killed the goblin', r.detail)
+        self.assertEqual(io.cmds[-1], 'goblin close')
+        self.assertEqual(io.moves[-1], 'hunt')
+        self.assertIn('goblin path', io.cmds, 'it ran: the bot walked after it')
+        self.assertGreater(io.looted, 0)
+        self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
+
+    def test_a_goblin_that_escapes_after_a_hit_is_a_pass(self):
+        r, _ = self.play(hits=9, escape=2)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('it escaped', r.detail)
+
+    def test_the_skips(self):
+        r, _ = self.play(err='no treasure goblin system')
+        self.assertEqual((r.status, 'no treasure goblin' in r.detail), (TX.SKIP, True))
+        r, io = self.play(spawn_err='a player is near: the goblin is not made')
+        self.assertEqual((r.status, 'a player is near' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.cmds[-1], 'goblin close')
+        r, _ = self.play(die_after=2, hits=99, never_hit=True)
+        self.assertEqual(r.status, TX.SKIP)
+        TX.SOLO_STUCK = 4.0
+        r, _ = self.play(hits=99, never_hit=True, far=True, blocked=[(61, 5)])
+        self.assertEqual((r.status, 'blocked' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        TX.SOLO_FIGHT_MIN = 6.0
+        r, io = self.play(never_hit=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('did not hit it', r.detail)
+        self.assertIn('BUG goblin_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closes, 1)
+
+
+class InvasionWorld(LaneWorld):
+    def __init__(self, running=True, err=None, credited=False, landed=False, die_after=None, blocked=(), start_cancelled=0):
+        super().__init__(blocked=blocked, die_after=die_after)
+        self.running, self.err, self.credited, self.landed, self.cancelled = running, err, credited, landed, start_cancelled
+        self.inv = 90
+
+    def facts(self):
+        out = {'phase': 'running' if self.running else 'idle', 'running': self.running, 'level': 300, 'pos': self.at(), 'credited': self.credited,
+               'cancelled': self.cancelled, 'invader': {'x': self.inv, 'y': 5, 'z': 7, 'name': 'Orc Raider', 'hp': 80}}
+        near = abs(self.inv - self.pos[0]) <= 5
+        out['guide'] = {'mode': 'fight' if near else 'walk', 'goal': {'x': self.inv, 'y': 5, 'z': 7}, 'reach': [1, 5], 'area': 'invader'}
+        return out
+
+    def answer(self, command):
+        if command == 'invasion state':
+            if self.err:
+                return {'err': self.err}
+            if self.look() and abs(self.inv - self.pos[0]) <= 5 and not self.landed:
+                self.cancelled += 1
+            return self.facts()
+        if command == 'invasion path':
+            g = self.facts()['guide']
+            return dict(self.facts(), path=self.path_to(g['goal']['x'], g['reach'][1])) if g['mode'] == 'walk' else dict(self.facts(), err='no goal')
+        return None
+
+
+class InvasionWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.INVASION_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.INVASION_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, **kw):
+        w = InvasionWorld(**kw)
+        io = LaneIO(w)
+        return run(TX.check_invasion_walk(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 300, 'steps': 3, 'secs': 20}
+        self.assertEqual(TX.invasion_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertEqual(TX.invasion_walk_verdict(dict(base, cancelled=2))[0], TX.PASS)
+        self.assertIn('2 hit(s)', TX.invasion_walk_verdict(dict(base, cancelled=2))[1])
+        self.assertEqual(TX.invasion_walk_verdict(dict(base, cancelled=0, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.invasion_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.invasion_walk_verdict(dict(base, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.invasion_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('invasion_walk', TX.KEYS)
+
+    def test_the_bot_walks_to_the_invaders_and_its_hits_are_cancelled(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('invasion path', io.cmds)
+        self.assertGreater(io.w.pos[0], 80)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_the_skips(self):
+        r, _ = self.play(err='no invasion system')
+        self.assertEqual((r.status, 'no invasion system' in r.detail), (TX.SKIP, True))
+        r, io = self.play(running=False)
+        self.assertEqual((r.status, 'no invasion is running' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.cmds, ['invasion state'], 'nothing runs: the bot does not move')
+        r, _ = self.play(die_after=2)
+        self.assertEqual(r.status, TX.SKIP)
+        TX.SOLO_STUCK = 4.0
+        r, _ = self.play(blocked=[(61, 5)])
+        self.assertEqual((r.status, 'blocked' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        r, _ = self.play(credited=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('contribution book', r.detail)
+        self.assertIn('BUG invasion_walk', r.bug_line())
+        TX.SOLO_FIGHT_MIN = 6.0
+        r, _ = self.play(landed=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('no hit was cancelled', r.detail)
+
+
+class VaelWorld(SoloWorld):
+    """Vael's chamber: the trial world with the commands of `!tester vael` (state, enter = the TEST ONLY door, path, close)"""
+    def __init__(self, min_level=500, enter_err=None, level=900, **kw):
+        super().__init__('trial', level=level, **kw)
+        self.min_level, self.enter_err = min_level, enter_err
+
+    def facts(self):
+        out = super().facts()
+        out.update(minLevel=self.min_level, won=False, tries=0, door='door_closed')
+        return out
+
+    def answer(self, command):
+        head, _, rest = command.partition(' ')
+        if head != 'vael':
+            return super().answer(command)
+        if rest == 'enter':
+            if self.enter_err:
+                return dict(self.facts(), err=self.enter_err)
+            self.open()
+            return dict(self.facts(), entered=True)
+        return super().answer('trial ' + rest)
+
+
+class VaelWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.VAEL_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK)
+
+    def tearDown(self):
+        TX.VAEL_BUDGET, TX.SOLO_FIGHT_MIN, TX.SOLO_STUCK = self.keep
+
+    def play(self, **kw):
+        w = VaelWorld(**kw)
+        io = SoloIO(w)
+        return run(TX.check_vael_walk(io, 'Tester Aaa', 'Warrior', w.level)), io
+
+    def test_the_verdicts(self):
+        base = {'level': 600, 'came': 'foot', 'steps': 20, 'secs': 60}
+        self.assertEqual(TX.vael_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        self.assertIn('Vael hurt to 60%', TX.vael_walk_verdict(dict(base, killed=4, boss_seen=True, hp=60))[1])
+        self.assertEqual(TX.vael_walk_verdict(dict(base, killed=2))[0], TX.PASS)
+        self.assertEqual(TX.vael_walk_verdict(dict(base, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.vael_walk_verdict(dict(base, puzzle='seals'))[0], TX.SKIP)
+        self.assertEqual(TX.vael_walk_verdict(dict(base, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.vael_walk_verdict(dict(base, died=True, lives=0))[0], TX.SKIP)
+        self.assertEqual(TX.vael_walk_verdict(base)[0], TX.SKIP)
+        self.assertIn('vael_walk', TX.KEYS)
+        self.assertNotIn('vael_walk', TX.CLOSED_KEYS)
+
+    def test_vael_is_entered_through_the_test_only_door_and_fought(self):
+        r, io = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Vael hurt to', r.detail)
+        self.assertEqual(io.w.teleports, 0, 'the bot walked to the temple')
+        self.assertLess(io.cmds.index('path temple'), io.cmds.index('vael enter'))
+        self.assertLess(io.cmds.index('vael enter'), io.cmds.index('vael path'))
+        self.assertFalse(io.w.inside)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_the_skips(self):
+        r, _ = self.play(err='no main quest boss')
+        self.assertEqual((r.status, 'no main quest boss' in r.detail), (TX.SKIP, True))
+        r, io = self.play(level=300, min_level=500)
+        self.assertEqual((r.status, 'needs level 500' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.starts, 0)
+        r, _ = self.play(inside=True)
+        self.assertEqual((r.status, 'inside' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(free=2)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(family=None)
+        self.assertEqual((r.status, 'no trial family' in r.detail), (TX.SKIP, True))
+        r, io = self.play(puzzle=True, family='mystic')
+        self.assertEqual((r.status, 'puzzle' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.w.starts, 0, 'a puzzle stage is not even entered')
+        r, io = self.play(pz=False)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertEqual(io.w.starts, 0)
+        r, io = self.play(enter_err="Vael's door opens from level 500")
+        self.assertEqual((r.status, 'door stayed shut' in r.detail, 'opens from level 500' in r.detail), (TX.SKIP, True, True))
+        r, _ = self.play(die_after=1)
+        self.assertEqual((r.status, 'lives ran out' in r.detail), (TX.SKIP, True))
+
+    def test_the_bugs(self):
+        TX.SOLO_FIGHT_MIN = 8.0
+        r, io = self.play(never_kill=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn("killed none", r.detail)
+        self.assertIn('BUG vael_walk', r.bug_line())
+        self.assertGreaterEqual(io.w.closed, 1)
+
+
+class BountyKinds(unittest.TestCase):
+    """the elite and the boss contract through the same loop as the hunt contract (BountyWorld with `type`, `tier`, a crowd)"""
+
+    def play(self, kind, world=None, **kw):
+        w = world or BountyWorld(**kw)
+        w.kind = kind
+        io = BountyIO(w)
+        fn = {'elite': TX.check_bounty_elite_walk, 'boss': TX.check_bounty_boss_walk, 'hunt': TX.check_bounty_walk}[kind]
+        return run(fn(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_the_pick(self):
+        a = {'level': 100, 'active': [{'key': 'h', 'status': 0, 'required': 60}], 'candidates': [{'key': 'c'}], 'elite': [{'key': 'e'}], 'boss': [{'key': 'b'}]}
+        self.assertEqual(TX.bounty_pick(a, 'hunt'), (a['active'][0], True))
+        self.assertEqual(TX.bounty_pick(a, 'elite'), ({'key': 'e'}, False), 'a hunt contract held is no elite contract')
+        self.assertEqual(TX.bounty_pick(a, 'boss'), ({'key': 'b'}, False))
+        a['active'].append({'key': 'x', 'status': 0, 'required': 4, 'type': 'elite'})
+        self.assertEqual(TX.bounty_pick(a, 'elite')[0]['key'], 'x')
+        self.assertTrue(TX.bounty_pick(a, 'elite')[1])
+        row, why = TX.bounty_pick({'level': 100, 'active': []}, 'elite')
+        self.assertIsNone(row)
+        self.assertIn('no elite contract', why)
+        row, why = TX.bounty_pick({'level': 100, 'active': []}, 'boss')
+        self.assertIn('open boss mark', why)
+
+    def test_the_verdicts(self):
+        base = {'level': 100, 'steps': 10, 'secs': 50, 'name': 'Wyrm', 'base': 0, 'progress': 1, 'required': 2, 'kind': 'elite', 'need': 1}
+        self.assertEqual(TX.bounty_walk_verdict(base)[0], TX.PASS)
+        self.assertEqual(TX.bounty_walk_verdict(dict(base, progress=0, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        boss = dict(base, kind='boss', progress=0, fought=TX.SOLO_FIGHT_MIN)
+        self.assertEqual(TX.bounty_walk_verdict(boss)[0], TX.SKIP, 'a boss that did not fall in 150 s is no bug')
+        self.assertIn('did not fall', TX.bounty_walk_verdict(boss)[1])
+        crowd = TX.bounty_walk_verdict(dict(base, kind='boss', progress=0, crowd=TX.BOUNTY_CROWD_WAIT))
+        self.assertEqual(crowd[0], TX.SKIP)
+        self.assertIn('a player is near', crowd[1])
+        self.assertEqual(TX.bounty_walk_verdict(dict(base, kind='boss', progress=0, waited=TX.BOUNTY_BOSS_WAIT))[0], TX.SKIP)
+        self.assertIn('lair', TX.bounty_walk_verdict(dict(base, kind='boss', progress=0, waited=TX.BOUNTY_BOSS_WAIT))[1])
+        self.assertEqual(TX.bounty_walk_verdict(dict(base, kind='boss', progress=0, waited=TX.BOUNTY_SPAWN_WAIT))[0], TX.SKIP)
+        for k in ('bounty_elite_walk', 'bounty_boss_walk'):
+            self.assertIn(k, TX.KEYS)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+            self.assertLess(TX.KEYS.index(k), TX.KEYS.index('rift_walk'))
+        self.assertEqual(TX.BOUNTY_NEED, {'hunt': 3, 'elite': 1, 'boss': 1})
+
+    def test_an_elite_contract_counts_one_kill(self):
+        class Elite(BountyWorld):
+            def facts(self):
+                out = super().facts()
+                out['elite'] = [{'key': '1-3', 'name': 'Rat', 'count': 5, 'level': 4, 'tier': 'magic', 'mark': {'x': self.HUNT, 'y': 5, 'z': 7}}]
+                out['candidates'] = []
+                return out
+        w = Elite()
+        io = BountyIO(w)
+        r = run(TX.check_bounty_elite_walk(io, 'Tester Aaa', 'Warrior', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual((w.accepts, w.abandons), (1, 1))
+        self.assertIn(('bounty', 'accept', {'key': '1-3'}), io.sent)
+        self.assertLessEqual(w.mine()['progress'] if w.mine() else 1, 1)
+
+    def test_a_boss_contract_leaves_a_boss_the_players_are_at(self):
+        class Boss(BountyWorld):
+            crowd = False
+
+            def facts(self):
+                out = super().facts()
+                out['boss'] = [{'key': '1-4', 'name': 'The Collector', 'count': 1, 'level': 16, 'mark': {'x': self.HUNT, 'y': 5, 'z': 7}}]
+                out['candidates'] = []
+                return out
+
+            def guide(self):
+                if self.crowd:
+                    return {'mode': 'wait', 'area': 'crowd', 'why': 'a player is near'}
+                return super().guide()
+        w = Boss()
+        w.crowd = True
+        io = BountyIO(w)
+        r = run(TX.check_bounty_boss_walk(io, 'Tester Aaa', 'Warrior', 100))
+        self.assertEqual((r.status, 'a player is near' in r.detail), (TX.SKIP, True))
+        self.assertEqual(w.abandons, 1, 'the contract goes back')
+        w2 = Boss()
+        io2 = BountyIO(w2)
+        r2 = run(TX.check_bounty_boss_walk(io2, 'Tester Aaa', 'Warrior', 100))
+        self.assertEqual(r2.status, TX.PASS, r2.detail)
+        self.assertIn('The Collector', r2.detail)
+        r3, _ = self.play('elite', candidates=False)
+        self.assertEqual((r3.status, 'no elite contract' in r3.detail), (TX.SKIP, True))
+
+
+class MainQuestLaterWorld(MainQuestWorld):
+    """the later steps: bring, go, daily, cast, hunt, vael on top of the first lane"""
+    def __init__(self, kinds, **kw):
+        super().__init__(kinds=kinds, **kw)
+        self.go_sent, self.daily_taken, self.daily_claims, self.cast_after, self.hunt_after = 0, False, 0, 3, 3
+        self.kill_target = 2
+        self.go_ok, self.daily_ok, self.bring_ok, self.hunt_ok, self.cast_ok = True, True, True, True, True
+
+    def plan(self):
+        kind = self.kinds[self.step - 1]
+        if kind == 'bring':
+            return {'action': 'bring', 'label': 'Warden Ysolde', 'flag': 'tusks'}
+        if kind == 'go':
+            return {'action': 'go', 'flag': 'pets'}
+        if kind == 'daily':
+            return {'action': 'daily', 'flag': 'daily'}
+        if kind == 'cast':
+            return {'action': 'cast'}
+        if kind == 'hunt':
+            return {'action': 'hunt', 'stat': 'kills_magic', 'target': 1}
+        if kind == 'vael':
+            return {'action': 'vael', 'reason': 'the boss'}
+        return super().plan()
+
+    def facts(self):
+        out = super().facts()
+        kind = self.kinds[self.step - 1] if self.step <= len(self.kinds) else ''
+        if kind in ('cast', 'hunt'):
+            out['where'] = {'k': 'pos', 'pos': {'x': self.TROLLS, 'y': 5, 'z': 7}}
+        return out
+
+    def tick(self):
+        super().tick()
+        if self.step > len(self.kinds):
+            return
+        kind = self.kinds[self.step - 1]
+        if kind == 'kill' and self.progress >= self.kill_target:
+            self.step, self.progress = self.step + 1, 0
+        elif kind == 'bring' and self.armed and self.bring_ok:
+            self.step, self.armed = self.step + 1, False
+        elif kind == 'cast' and abs(self.pos[0] - self.TROLLS) <= 6 and self.cast_ok:
+            self.cast_after -= 1
+            if self.cast_after <= 0:
+                self.step += 1
+        elif kind == 'hunt' and abs(self.pos[0] - self.TROLLS) <= 6 and self.hunt_ok:
+            self.hunt_after -= 1
+            if self.hunt_after <= 0:
+                self.step += 1
+
+    def answer(self, command):
+        if command == 'daily state':
+            return {'taken': self.daily_taken, 'slot': 1, 'value': 6, 'streak': 0, 'next': 1, 'reward': {'itemId': 1, 'count': 1, 'held': 0 if not self.daily_taken else 1}} \
+                if not self.daily_taken else {'taken': True, 'slot': 1, 'value': 6, 'streak': 1, 'next': 1, 'reward': {'itemId': 1, 'count': 1, 'held': 1}}
+        return super().answer(command)
+
+
+class MainQuestLaterIO(MainQuestIO):
+    async def request(self, opname, action, data, expect, timeout):
+        w = self.w
+        if (opname, action) == ('goals', 'mqGo'):
+            w.go_sent += 1
+            if w.go_ok and w.kinds[w.step - 1] == 'go':
+                w.step += 1
+            return {'action': 'welcome'}
+        if (opname, action) == ('daily', 'calim'):
+            w.daily_claims += 1
+            w.daily_taken = True
+            if w.daily_ok and w.kinds[w.step - 1] == 'daily':
+                w.step += 1
+            return {'action': 'OpenDailyWindow', 'data': {'TakenReward': 1}}
+        return None
+
+
+class MainQuestLater(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.MQ_KILL_BUDGET, TX.MQ_STEP_WAIT, TX.MQ_CAST_WAIT, TX.MQ_HUNT_BUDGET)
+
+    def tearDown(self):
+        TX.MQ_KILL_BUDGET, TX.MQ_STEP_WAIT, TX.MQ_CAST_WAIT, TX.MQ_HUNT_BUDGET = self.keep
+
+    def play(self, kinds, start=1, **kw):
+        w = MainQuestLaterWorld(kinds, start=start)
+        for k, v in kw.items():
+            setattr(w, k, v)
+        io = MainQuestLaterIO(w)
+        return run(TX.check_mainquest_walk(io, 'Tester Aaa', 'Warrior', 100)), io
+
+    def test_a_flag_of_the_go_button_is_pressed(self):
+        r, io = self.play(['go', 'spell'])
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.go_sent, 1)
+        self.assertIn('steps 1 to 2', r.detail)
+        r, io = self.play(['go', 'spell'], go_ok=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the Go button was pressed for pets and the quest did not move', r.detail)
+
+    def test_the_daily_flag_is_a_claim(self):
+        r, io = self.play(['daily', 'spell'])
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.daily_claims, 1)
+        r, io = self.play(['daily', 'spell'], daily_taken=True)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('is taken today', r.detail)
+        self.assertEqual(io.w.daily_claims, 0)
+        r, _ = self.play(['daily', 'spell'], daily_ok=False)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the daily was claimed and the quest did not move', r.detail)
+
+    def test_a_bring_step_hands_the_drops_over(self):
+        r, io = self.play(['kill', 'bring', 'spell'], start=1)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.w.said.count('oath'), 1, 'the kill step has no words')
+        self.assertEqual(io.w.step, 3, 'the drops were collected in this run: the bring step moved')
+        # the bring step alone: the drops were not collected in this run, so a step that does not move is no bug of the bot
+        TX.MQ_STEP_WAIT = 3.0
+        r, io = self.play(['bring', 'spell'], bring_ok=False)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('the drops of the kill step before it are not in the bag', r.detail)
+        self.assertEqual(io.w.said, ['hi', 'oath'])
+
+    def test_a_cast_and_a_tier_kill_are_hunted(self):
+        r, io = self.play(['cast', 'spell'])
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertGreater(io.looted, 0)
+        r, _ = self.play(['hunt', 'spell'])
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        TX.MQ_CAST_WAIT, TX.MQ_HUNT_BUDGET = 5.0, 5.0
+        r, _ = self.play(['cast', 'spell'], cast_ok=False)
+        self.assertEqual((r.status, 'no spell was cast' in r.detail), (TX.SKIP, True))
+        r, _ = self.play(['hunt', 'spell'], hunt_ok=False)
+        self.assertEqual((r.status, 'kills_magic monster died' in r.detail), (TX.SKIP, True))
+
+    def test_vael_has_his_own_check(self):
+        r, _ = self.play(['vael'])
+        self.assertEqual((r.status, 'vael_walk' in r.detail), (TX.SKIP, True))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -494,16 +494,41 @@ do
 		end
 	end
 	check((kinds.talk or 0) >= 1 and (kinds.visit or 0) >= 1 and (kinds.kill or 0) >= 5 and (kinds.skip or 0) >= 1, "botPlan: the quest has talk, visit, kill and skip steps")
+	-- O650: the later steps: a bring, a Go button, the daily, a cast, a hunt stat, Vael
+	check((kinds.bring or 0) >= 5 and (kinds.go or 0) >= 10 and (kinds.daily or 0) >= 1 and (kinds.cast or 0) >= 1 and (kinds.hunt or 0) >= 2 and (kinds.vael or 0) == 1,
+		"botPlan: the quest has bring, go, daily, cast, hunt and vael steps")
 	local boss
 	for _, st in ipairs(cfg.steps) do
 		if st.conds[1] and st.conds[1].c == "boss" then boss = st end
 	end
-	check(boss and K.botPlan(boss).action == "skip" and K.botPlan(boss).reason:find("boss", 1, true), "botPlan: Vael is not played (no testers' instance)")
+	local bp = boss and K.botPlan(boss)
+	check(bp and bp.action == "vael" and bp.reason:find("!tester vael", 1, true), "botPlan: Vael is the TEST ONLY door of the helper")
 	eq(K.botPlan(nil).action, "skip", "botPlan: no step")
-	eq(K.botPlan({conds = {{c = "talk", bring = "tusks"}}}).action, "skip", "botPlan: a bring step waits for the drops")
+	local bring = K.botPlan({conds = {{c = "talk", bring = "tusks"}}, where = {k = "npc", name = "A"}})
+	check(bring.action == "bring" and bring.label == "A" and bring.flag == "tusks", "botPlan: a bring step is walked to the NPC")
+	eq(K.botPlan({conds = {{c = "talk", bring = "tusks"}}}).action, "skip", "botPlan: a bring step with no NPC")
 	eq(K.botPlan({conds = {{c = "talk"}}, where = {k = "npc", name = "A"}}).action, "talk", "botPlan: a talk with an NPC")
 	eq(K.botPlan({conds = {{c = "talk"}}}).action, "skip", "botPlan: a talk with no NPC")
 	eq(K.botPlan({conds = {{c = "count", mons = {"Troll"}, target = 3}}}).action, "skip", "botPlan: a kill with no place")
+	local go = K.botPlan({conds = {{c = "flag", key = "pets"}}})
+	check(go.action == "go" and go.flag == "pets", "botPlan: a flag of the Go button")
+	eq(K.botPlan({conds = {{c = "flag", key = "daily"}}}).action, "daily", "botPlan: the daily flag is the daily claim")
+	local nogo = K.botPlan({conds = {{c = "flag", key = "market"}}})
+	check(nogo.action == "skip" and nogo.reason:find("'market'", 1, true), "botPlan: a flag of a hook the bots do not play: named")
+	eq(K.botPlan({conds = {{c = "spell"}}}).action, "cast", "botPlan: a spell step")
+	local hs = K.botPlan({conds = {{c = "stat", stat = "kills_magic", target = 1}}})
+	check(hs.action == "hunt" and hs.stat == "kills_magic" and hs.target == 1, "botPlan: a tier kill stat is hunted")
+	check(K.botPlan({conds = {{c = "stat", stat = "kills_legendary", target = 1}}}).action == "skip", "botPlan: a legendary kill is not hunted for")
+	check(K.botPlan({conds = {{c = "stat", stat = "tower_floor", target = 1}}}).reason:find("tower_floor", 1, true), "botPlan: another stat is named")
+	check(K.botPlan({conds = {{c = "gear"}}}).reason:find("gear", 1, true), "botPlan: a gear step is named")
+	-- several conditions: the first one that does not hold yet
+	local two = {conds = {{c = "flag", key = "daily"}, {c = "flag", key = "market"}}}
+	eq(K.botPlan(two).cond, 1, "botPlan: without facts the first condition")
+	local after = K.botPlan(two, {flags = {daily = true}})
+	check(after.cond == 2 and after.action == "skip" and after.reason:find("'market'", 1, true), "botPlan: the daily is claimed: the next condition is planned")
+	eq(K.botPlan(two, {flags = {daily = true, market = true}}).cond, 1, "botPlan: all hold: the first")
+	check(K.condDone({c = "stat", stat = "kills_rare", target = 2}, {stats = {kills_rare = 2}}), "condDone: a stat that reached its target")
+	check(not K.condDone({c = "stat", stat = "kills_rare", target = 2}, {stats = {kills_rare = 1}}), "condDone: not yet")
 end
 -- the talk: the NPC script sets the flag (its own Lua state does it with K.talk)
 sweep.onThink(1000)

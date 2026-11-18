@@ -507,4 +507,52 @@ do
 	end
 end
 
+
+-- ---------------------------------------------------------------- the elite and boss contracts for the tester bots (O650)
+do
+	local marks = {
+		{k = "hunt", x = 100, y = 100, z = 7, n = "Hunting: Rat, Cave Rat (level 1-10)"},
+		{k = "boss", x = 200, y = 200, z = 8, n = "The Collector (boss lair)"},
+		{k = "boss", x = 300, y = 300, z = 7, n = "Ssylvath the Corruptor (raid boss)"},
+		{k = "boss", x = 400, y = 400, z = 5, n = "Thalador the Stormbringer (island boss)"},
+		{k = "boss", x = 450, y = 450, z = 5, n = "Thalador the Stormbringer (island boss)"},
+		{k = "temple", x = 1, y = 1, z = 7, n = "The Collector (boss lair)"},
+		{k = "boss", x = 500, y = 500, z = 7, n = "no kind in the name"}
+	}
+	eq(#B.bossMarks(marks, "The Collector"), 1, "bossMarks: a boss lair")
+	eq(B.bossMarks(marks, "the collector")[1].kind, "boss lair", "bossMarks: any case, the kind of the place")
+	eq(#B.bossMarks(marks, "Ssylvath the Corruptor"), 0, "bossMarks: a raid boss is not met in the world")
+	eq(#B.bossMarks(marks, "Thalador the Stormbringer"), 2, "bossMarks: an island boss, every mark")
+	eq(#B.bossMarks(marks, "Rat"), 0, "bossMarks: a hunt is not a boss mark")
+	eq(#B.bossMarks(nil, "The Collector"), 0, "bossMarks: no marks")
+	local contracts = {
+		{key = "1-1", type = "hunt", name = "Rat", level = 4, count = 80},
+		{key = "1-3", type = "elite", name = "Rat", level = 4, count = 5, tier = "magic"},
+		{key = "1-4", type = "elite", name = "Dragon", level = 4, count = 2, tier = "rare"},
+		{key = "1-5", type = "boss", name = "The Collector", level = 16, count = 1},
+		{key = "1-6", type = "boss", name = "Ssylvath the Corruptor", level = 16, count = 1},
+		{key = "1-7", type = "boss", name = "Thalador the Stormbringer", level = 90, count = 1}
+	}
+	local at = {x = 100, y = 100, z = 7}
+	local hunt = B.testerCandidates(contracts, {}, marks, 100, at)
+	eq(#hunt, 1, "candidates: the default is still the hunt contracts")
+	local elite = B.testerCandidates(contracts, {}, marks, 100, at, "elite")
+	assert(#elite == 1 and elite[1].key == "1-3" and elite[1].tier == "magic" and elite[1].kind == "elite", "elite: a tier contract on a hunt mark (a monster no mark lists is left out)")
+	local boss = B.testerCandidates(contracts, {}, marks, 100, at, "boss")
+	eq(#boss, 2, "boss: the boss contracts with an open boss mark")
+	local keys = {}
+	for _, c in ipairs(boss) do keys[c.key] = true end
+	assert(keys["1-5"] and keys["1-7"] and not keys["1-6"], "boss: a raid boss contract is not offered")
+	assert(B.testerCandidates(contracts, {}, marks, 50, at, "boss")[1].key == "1-5" and #B.testerCandidates(contracts, {}, marks, 50, at, "boss") == 1, "boss: below the boss level none is offered")
+	eq(#B.testerCandidates(contracts, {["1-3"] = true}, marks, 100, at, "elite"), 0, "elite: a contract taken today is not offered again")
+	-- the guide: a boss the players are at is left to them
+	local e = {name = "The Collector", progress = 0, required = 1, status = 0}
+	local gc = B.guide({active = e, pos = at, mark = {x = 200, y = 200, z = 8}, crowded = true})
+	assert(gc.mode == "wait" and gc.area == "crowd" and gc.why:find("the players'", 1, true), "guide: a player near the boss: wait")
+	local gb = B.guide({active = e, pos = at, monster = {x = 103, y = 100, z = 7}, crowded = false})
+	assert(gb.mode == "fight" and gb.area == "monster", "guide: nobody near: the same as a hunt")
+	local gd = B.guide({active = {name = "X", status = 1}, pos = at, crowded = true})
+	eq(gd.why, "the contract is done", "guide: a done contract first")
+end
+
 print("bounty: all asserts passed")

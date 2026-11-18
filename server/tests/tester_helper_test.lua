@@ -2143,6 +2143,150 @@ do
 	talks["!tester"].onSay(t9, "!tester", "mainquest #192")
 	check(last(t9):find("no main quest system", 1, true), "mainquest: no system, the reason")
 	ChaosMainQuest = realW
+	-- ---- the Nemesis, the daily, the Chronicle, Vael, the goblin and the invasions (O650)
+	for _, c in ipairs({"nemesis", "daily", "chronicle", "vael", "goblin", "invasion"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parseNemesis(nil), "state", "nemesis: no word is state")
+	eq(H.parseNemesis("BORN"), "born", "nemesis: born (any case)")
+	eq(H.parseNemesis("appear"), "appear", "nemesis: appear")
+	local wn, un = H.parseNemesis("kill")
+	check(wn == nil and un == "usage: nemesis [state | born | appear | path | close]", "nemesis: an unknown word is the usage: " .. tostring(un))
+	check(H.parseNemesis("born now") == nil, "nemesis: a word takes no argument")
+	eq(H.parseDaily("state"), "state", "daily: state")
+	check(H.parseDaily("claim") == nil, "daily: claim is the window's word")
+	check(H.parseChronicle("open") == nil, "chronicle: open is the window's word")
+	eq(H.parseVael("enter"), "enter", "vael: enter")
+	check(H.parseVael("win") == nil and select(2, H.parseVael("win")) == "usage: vael [state | enter | path | close]", "vael: the usage")
+	eq(H.parseGoblin("spawn"), "spawn", "goblin: spawn")
+	eq(H.parseInvasion("path"), "path", "invasion: path")
+	check(H.parseInvasion("start") == nil, "invasion: start is a staff word, never the helper's")
+	-- the answer is the probe cut down
+	local ans = H.cutAnswer({level = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, f = function() end, text = ("t"):rep(200), nested = {a = {b = {c = {d = 1}}}},
+		list = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, guide = {mode = "walk", goal = {x = 5, y = 6, z = 7, junk = 1}, reach = {1, 5}, why = ("w"):rep(100), junk = 1}},
+		{done = true})
+	check(ans.level == 100 and ans.pos.junk == nil and ans.f == nil and #ans.text == 90 and #ans.list == 12 and ans.nested.a.b.c == nil and ans.done == true,
+		"cutAnswer: scalars kept, strings and lists bounded, three levels")
+	check(ans.guide.mode == "walk" and ans.guide.goal.junk == nil and #ans.guide.why == 60 and ans.guide.junk == nil and ans.guide.reach[2] == 5,
+		"cutAnswer: the guide as for the other systems")
+	check(H.cutAnswer(nil).guide == nil, "cutAnswer: nothing known")
+	local realNE, realDY, realCH, realB2, realTG, realIV, realTT2 = ChaosNemesis, ChaosDaily, ChaosChronicle, ChaosMainQuestBoss, ChaosTreasureGoblin, ChaosInvasion, ChaosTrials
+	-- nemesis
+	local born, appeared, closed2 = 0, 0, 0
+	ChaosNemesis = {probe = function(p)
+		return {has = born > 0, level = 200, pos = p:getPosition(), guide = born > 1 and {mode = "walk", goal = {x = 40, y = 41, z = 7}, reach = {1, 5}, area = "nemesis"} or {mode = "wait", why = "no Nemesis"}}
+	end, testerBorn = function() if born > 0 then return nil, "the bot has a Nemesis already" end born = born + 1 return {} end,
+		testerAppear = function() appeared = appeared + 1 born = 2 return true end, testerClose = function() closed2 = closed2 + 1 born = 0 return true end}
+	talks["!tester"].onSay(t9, "!tester", "nemesis #200")
+	check(last(t9):find('"has":false', 1, true) and last(t9):find('"seq":200', 1, true), "nemesis state")
+	talks["!tester"].onSay(t9, "!tester", "nemesis born #201")
+	check(born == 1 and last(t9):find('"born":true', 1, true) and last(t9):find('"has":true', 1, true), "nemesis born: the grant, then the record")
+	talks["!tester"].onSay(t9, "!tester", "nemesis born #202")
+	check(last(t9):find("the bot has a Nemesis already", 1, true), "nemesis born: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "nemesis appear #203")
+	check(appeared == 1 and last(t9):find('"appear":true', 1, true), "nemesis appear")
+	talks["!tester"].onSay(t9, "!tester", "nemesis path #204")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 40 and t9.pathAsked.maxD == 5, "nemesis path: on foot to it, within reach")
+	talks["!tester"].onSay(t9, "!tester", "nemesis close #205")
+	check(closed2 == 1 and last(t9):find('"closed":true', 1, true), "nemesis close")
+	talks["!tester"].onSay(t9, "!tester", "nemesis kill #206")
+	check(last(t9):find("usage: nemesis", 1, true), "nemesis: an unknown word")
+	ChaosNemesis = nil
+	talks["!tester"].onSay(t9, "!tester", "nemesis #207")
+	check(last(t9):find("no nemesis system", 1, true), "nemesis: no system, the reason")
+	ChaosNemesis = realNE
+	-- daily and chronicle
+	ChaosDaily = {probe = function() return {taken = false, slot = 3, value = 1, reward = {itemId = 2160, count = 2, clientId = 3031, held = 5}} end}
+	talks["!tester"].onSay(t9, "!tester", "daily #210")
+	check(last(t9):find('"slot":3', 1, true) and last(t9):find('"value":1', 1, true) and last(t9):find('"held":5', 1, true) and last(t9):find('"seq":210', 1, true),
+		"daily state: the slot, the value and the reward")
+	ChaosDaily = nil
+	talks["!tester"].onSay(t9, "!tester", "daily #211")
+	check(last(t9):find("no daily system", 1, true), "daily: no system")
+	ChaosDaily = realDY
+	ChaosChronicle = {probe = function() return {running = true, tester = true, counted = false, testersListed = 0, goals = {{label = "Raids", progress = 1, target = 5}}} end}
+	talks["!tester"].onSay(t9, "!tester", "chronicle #212")
+	check(last(t9):find('"counted":false', 1, true) and last(t9):find('"testersListed":0', 1, true) and last(t9):find('"target":5', 1, true), "chronicle state")
+	ChaosChronicle = nil
+	talks["!tester"].onSay(t9, "!tester", "chronicle #213")
+	check(last(t9):find("no chronicle system", 1, true), "chronicle: no system")
+	ChaosChronicle = realCH
+	-- vael
+	local entered, trialCloses = 0, 0
+	ChaosMainQuestBoss = {probe = function(p)
+		if p.inVael then
+			return {inside = true, level = 500, pos = p:getPosition(), family = "warrior", run = {phase = "fight", boss = "alive", bossHp = 90, spell = true},
+				won = false, tries = 1, door = "door_closed", guide = {mode = "walk", goal = {x = 90, y = 91, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = false, level = 500, minLevel = 500, pos = p:getPosition(), family = "warrior", won = false, tries = 0, door = "door_closed", pz = true}
+	end, testerEnter = function(p)
+		if p.vaelRefuse then return nil, "Vael's door opens from level 500" end
+		entered = entered + 1
+		p.inVael = true
+		return true
+	end}
+	ChaosTrials = {testerClose = function(p) trialCloses = trialCloses + 1 p.inVael = nil return true end}
+	t9.inVael, t9.vaelRefuse = nil, true
+	talks["!tester"].onSay(t9, "!tester", "vael #220")
+	check(last(t9):find('"inside":false', 1, true) and last(t9):find('"door":"door_closed"', 1, true) and last(t9):find('"won":false', 1, true), "vael state: the door's facts")
+	talks["!tester"].onSay(t9, "!tester", "vael enter #221")
+	check(entered == 0 and last(t9):find("opens from level 500", 1, true), "vael enter: the reason of the refusal")
+	t9.vaelRefuse = nil
+	talks["!tester"].onSay(t9, "!tester", "vael enter #222")
+	check(entered == 1 and last(t9):find('"entered":true', 1, true) and last(t9):find('"inside":true', 1, true) and last(t9):find('"bossHp":90', 1, true),
+		"vael enter: inside, the boss and its health")
+	talks["!tester"].onSay(t9, "!tester", "vael enter #223")
+	check(entered == 1 and last(t9):find("already inside a trial", 1, true), "vael enter: never twice")
+	talks["!tester"].onSay(t9, "!tester", "vael path #224")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 90, "vael path: on foot to the boss")
+	talks["!tester"].onSay(t9, "!tester", "vael close #225")
+	check(trialCloses == 1 and last(t9):find('"closed":true', 1, true), "vael close: the Leave button")
+	talks["!tester"].onSay(t9, "!tester", "vael path #226")
+	check(last(t9):find("not inside the trial", 1, true), "vael path outside: the reason")
+	ChaosMainQuestBoss, ChaosTrials = nil, nil
+	talks["!tester"].onSay(t9, "!tester", "vael #227")
+	check(last(t9):find("no main quest boss", 1, true), "vael: no system")
+	ChaosMainQuestBoss, ChaosTrials = realB2, realTT2
+	-- goblin
+	local spawned, gcloses = 0, 0
+	ChaosTreasureGoblin = {probe = function(p)
+		return {killed = 0, world = 1, goblin = spawned > 0 and {hp = 100, hit = false} or nil,
+			guide = spawned > 0 and {mode = "walk", goal = {x = 70, y = 71, z = 7}, reach = {1, 5}, area = "goblin"} or {mode = "wait", why = "no goblin of its own"}}
+	end, testerSpawn = function() if spawned > 0 then return nil, "the bot has a goblin already" end spawned = spawned + 1 return {} end,
+		testerClose = function() gcloses = gcloses + 1 spawned = 0 return true end}
+	talks["!tester"].onSay(t9, "!tester", "goblin spawn #230")
+	check(spawned == 1 and last(t9):find('"spawned":true', 1, true) and last(t9):find('"hp":100', 1, true), "goblin spawn: the grant, then the goblin")
+	talks["!tester"].onSay(t9, "!tester", "goblin spawn #231")
+	check(last(t9):find("the bot has a goblin already", 1, true), "goblin spawn: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "goblin path #232")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70, "goblin path: on foot to it")
+	talks["!tester"].onSay(t9, "!tester", "goblin close #233")
+	check(gcloses == 1 and last(t9):find('"closed":true', 1, true), "goblin close")
+	ChaosTreasureGoblin = nil
+	talks["!tester"].onSay(t9, "!tester", "goblin #234")
+	check(last(t9):find("no treasure goblin system", 1, true), "goblin: no system")
+	ChaosTreasureGoblin = realTG
+	-- invasion
+	ChaosInvasion = {probe = function(p)
+		return {phase = "running", running = true, level = 300, pos = p:getPosition(), credited = false, cancelled = 3,
+			invader = {x = 80, y = 81, z = 7, name = "Orc Raider", hp = 40}, guide = {mode = "walk", goal = {x = 80, y = 81, z = 7}, reach = {1, 5}, area = "invader"}}
+	end}
+	talks["!tester"].onSay(t9, "!tester", "invasion #240")
+	check(last(t9):find('"credited":false', 1, true) and last(t9):find('"cancelled":3', 1, true) and last(t9):find('"name":"Orc Raider"', 1, true),
+		"invasion state: the invader, no credit, the hits cancelled")
+	talks["!tester"].onSay(t9, "!tester", "invasion path #241")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 80, "invasion path: on foot to the invader")
+	talks["!tester"].onSay(t9, "!tester", "invasion start #242")
+	check(last(t9):find("usage: invasion", 1, true), "invasion: start is a staff word")
+	ChaosInvasion = nil
+	talks["!tester"].onSay(t9, "!tester", "invasion #243")
+	check(last(t9):find("no invasion system", 1, true), "invasion: no system")
+	ChaosInvasion = realIV
+	-- a player's words go on and get no answer
+	local civ5 = creature(994, "Ana Nemesis", {store = {}})
+	local n5 = #civ5.log.msgs
+	check(talks["!tester"].onSay(civ5, "!tester", "nemesis born #3") == true and talks["!tester"].onSay(civ5, "!tester", "vael enter #4") == true and #civ5.log.msgs == n5,
+		"nemesis / vael: a player's words go on and get no answer")
 	ChaosTrials = nil
 	talks["!tester"].onSay(t9, "!tester", "trial #154")
 	check(last(t9):find("no trial system", 1, true), "trial: no trial system, the reason")

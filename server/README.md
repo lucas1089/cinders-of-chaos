@@ -9909,7 +9909,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10125,20 +10125,19 @@ wield, the reward chest, the cursed chest, Auto setup, the spell quest, the craf
 wave families and the own hideout (open, O595: step 7 below)**. Everything with an extended opcode is also opened and used by the random requests
 (`gen_tester_scenarios.py`). What is left, by what a person does there and why no bot does it yet (O595 did the first four bullets of the old list and the
 guards of the last two):
-- **Ascended arenas and Omen keys** (`uber.lua`, `rift.lua` omen): done in O599, step 8 below. **The Nemesis** (`nemesis.lua`) is left: its birth is a
-  chance on a death and its appearance a chance on a kill, so a check needs a TEST ONLY birth and appearance (`NE.appear`, a `chaos_nemesis` row) that
-  are not built; it never touches a player (it appears for its victim only, its damage to anyone but the victim's party is cancelled, nobody else can
-  damage it, the leaderboard skips testers, nothing is broadcast), so nothing here needs a separation rule.
-- **The main quest and its boss**: the first steps are done in O599 (step 8: talk, walk to a place, kill the named monsters). Left: the steps that ask
-  for a spell, a window, a stat, a flag, a resistance, a gear piece or the bring step of the drops, and **Vael Ashmourn**, the solo boss, which is the
-  spell trial of the trials engine (`T.hookFor`): a testers' instance of it is not built, so the check says SKIP with that reason.
-- **Bounty contracts** are done in O599 (step 8: where a monster spawns, accept, walk, kill a few, the counter moves). Left: the elite and boss contracts
-  (a tier or a boss fight), the claims of the daily, the weekly challenges, the tasks, the season journey and pass (the windows answer, the claims are
-  not made), and the Chronicle. The Chronicle needs no rule: it already drops testers from every member list (`chronicle.lua` `tester(guid)`), and the
-  daily claim is a row of the bot's own account (a login-streak title broadcast naming a tester is dropped by `ChaosTestersCore.mentions`).
+- **Ascended arenas and Omen keys** (`uber.lua`, `rift.lua` omen): done in O599, step 8 below. **The Nemesis** (`nemesis.lua`): done in O650, step 9
+  below (a TEST ONLY birth and call; it never touches a player, so it needs no separation rule).
+- **The main quest and its boss**: the first steps are done in O599 (step 8: talk, walk to a place, kill the named monsters). O650 (step 9) adds the
+  bring step, the Go button, the daily flag, the spell step, the tier kill stats and **Vael Ashmourn** (the TEST ONLY door of `!tester vael`). Left: the
+  flags a hook sets (potion, sell, autoloot, market, loadout, bank, stash, salvage, portal, teleports, gambler, weekly), the other stats, the gear step,
+  the resistance steps and the storage step, each named by the check.
+- **Bounty contracts** are done in O599 (step 8: where a monster spawns, accept, walk, kill a few, the counter moves); the elite and boss contracts, the
+  claim of the daily and the Chronicle are done in O650 (step 9). Left: the weekly challenges, the tasks, the season journey and pass (the windows
+  answer, the claims are not made).
 - **Memorial** (`memorial.lua`): the candles are not played; the window is asked by the random requests. Hideout visits are now closed by side (step 7).
-- **Shared world events**: see "Shared world events and the world boss (O595)" in step 7: the world boss is closed to the testers; harvest, goblin,
-  invasion and conquest are left, with the reason.
+- **Shared world events**: see "Shared world events and the world boss (O595)" in step 7: the world boss is closed to the testers; the goblin, the
+  invasions and the harvest are done in O650 (step 9: the monsters of a world event are the players', a tester's hit on them is cancelled); conquest has
+  nothing to separate.
 - **PvP between testers**: kills in the siege (20 points), the Marches and the arena are never played: the bots do not target players. That needs the
   bot's targeting (a creature id in the attack packet) and a rule for who may be hit.
 - **Mentor, referral, creator codes, store payments, orb exchange, community, reports**: out of scope on purpose (real accounts, real money, or a queue players read).
@@ -10208,7 +10207,7 @@ Shared world events and the world boss (O595):
   it.", tested in `worldboss_test.lua`). A testers' event started by the helper, as the siege has, is not built: the event builds one arena and its portals
   next to every temple, and a second, hidden one would need its own slot grid and its own schedule. The role titles and the broadcast need no work
   for testers any more: no tester is in the arena.
-- **Harvest event, treasure goblin, invasions** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`): left. A treasure goblin or an invader is a
+- **Harvest event, treasure goblin, invasions** (`harvest_event.lua`, `treasure_goblin.lua`, `invasion.lua`): left in O595, done in O650 (step 9). A treasure goblin or an invader is a
   monster the first killer takes the reward of, so a bot hunting next to it takes it from a player, and the harvest event keeps shared counters. No
   rule that keeps a bot out of them exists without touching what the players hunt; the only safe change is to make those monsters ignore testers (no
   damage from a tester), which is an engine-side rule (`onTargetCombat`, the monster is a player-side target) and not done here.
@@ -10272,6 +10271,85 @@ Ascended Omen at level 1000 (`ASC_BUDGET` 420 s against the 840 s limit), the hu
 contract monster that no mark lists is simply not offered), whether the monster of a contract is in sight at the nearest mark, the quest's think sweep
 (`MQ_STEP_WAIT` 14 s), the NPC `path npc Warden Ysolde` of a bot in the hub.
 
+##### 9. Nemesis, elite and boss contracts, the daily, the Chronicle, Vael, the goblin, the invasions and the harvest (O650)
+
+Owner 2026-11-17 (translated): "the bots have to do the complete content of the game, in the most human way possible". Open checks again (no closed
+mode needed). Helper v18 (`HELPER_VERSION`, bumped once for the whole task): `!tester nemesis | daily | chronicle | vael | goblin | invasion`.
+Tests: `nemesis_test.lua`, `bounty_test.lua`, `daily_test.lua`, `chronicle_test.lua`, `mainquest_test.lua`, `mainquest_boss_test.lua`, `testers_test.lua`,
+`treasure_goblin_tester_test.lua`, `invasion_test.lua`, `harvest_event_test.lua`, `tester_helper_test.lua`, `tester_checks_test.py`.
+
+Server rules and probes:
+- **Nemesis** (`nemesis.lua`, `nemesis_core.lua` `K.guide`, `nemesis_config.lua` `tester`): the Nemesis is personal (it appears for its victim only, hurts the
+  victim and the victim's party only, nobody else can damage it, the leaderboard skips testers, nothing is broadcast), so it needs no separation rule. A bot
+  cannot earn one (a chance on a death, a chance on a kill). `NE.testerBorn(player)` is the TEST ONLY birth: a tester only, logged, the type of the nearest
+  regular monster within `sight` 7 tiles (`K.eligible`'s own rules: no boss, summon, goblin, event monster, weak one), the dice skipped, the bot's own
+  cooldown cleared. `NE.testerAppear(player)` is the call (the same warning and arrival as a kill's roll, no dice). `NE.probe(player)`: the record, the
+  monster in sight, the Nemesis in the world (place, health), the avenged count and the guide (fight within 5 tiles, else walk). `NE.testerClose(player)`
+  takes the monster and the record away. The row is the bot's own (`chaos_nemesis.player_id`: `testers cleanup` deletes it); the trophy, the title and
+  the gold are its own.
+- **Elite and boss contracts** (`bounty_core.lua` `B.testerCandidates(..., kind)`, `B.bossMarks`, `bounty.lua` `B.probe`): `candidates` (hunt), `elite` and
+  `boss` lists. An elite contract is on a hunt mark of its monster (the tier to kill is `tier`); the guide prefers a monster of that tier or better in
+  sight. A boss contract is on a boss mark of the map (`data/chaos_poi.lua`, kind `boss`, "Name (boss lair)" or "(island boss)"; a raid boss is left out:
+  it comes with a raid). The boss is the players': the probe counts the players (not testers) within 40 tiles of the boss or the bot, and the guide
+  says `wait` / `crowd` then (`B.guide` `crowded`).
+- **Daily** (`daily.lua` `DY.probe`): taken today, the slot, the streak, `value` (the number the window's `calim` sends for the slot: the client's map
+  inverted), the reward and how many of it the bot holds. The claim is the window's request; the row is the bot's own account's
+  (`chaos_daily_account.account_id`); a milestone title's broadcast naming a tester is dropped by `testers.lua`. The random request
+  `daily_claim_sets_day` proves the taken flag only.
+- **Chronicle** (`chronicle.lua` `X.probe`): the season, the open chapter and its goals, the points of the asker, `counted` (would an event of this character
+  enter a chapter: false for a tester, `memberList` drops it) and `testersListed` (testers in the books: 0).
+- **Vael Ashmourn** (`mainquest_boss.lua` `B.testerEnter`, `B.probe`): the door asks for a quest at its last step and four safe resistances, which a bot
+  cannot make by play. `!tester vael enter` is the TEST ONLY door: a tester only, logged, from level 500, the same `ChaosTrials.enter(player, nil, {spell
+  = "mq"})` as the NPC's (a protection zone, no fight, the chambers kept for the players, one chamber at a time), the quest step and the resistances left
+  out. The reward (gold, orbs, Vigil reputation, the achievement) is the tester's own, once per character. `B.probe` is the Trials' probe with the door's
+  facts (`door`, `won`, `tries`, `puzzle`). The real door stays shut to a character that is not on the boss step.
+- **Main quest, later steps** (`mainquest_core.lua` `M.botPlan(step, facts, cfg)`): the plan is made from the first condition that does not hold yet:
+  `bring` (a bring step: the bot walks to the NPC and says the words; the drops come from the kill step before it), `go` (a flag the Go button marks, `acks`:
+  `goals` `mqGo {step}`), `daily` (the daily flag: a claim), `cast` (a spell step: the bot's own rotation at its hunt), `hunt` (`kills_magic`, `kills_rare`),
+  `vael` (the boss step: `vael_walk`), `skip` with the reason (a flag from a hook, another stat, gear, a resistance, a storage). `W.probe` reports the plan
+  of the condition planned (`cond`, `flag`, `stat`).
+- **Monsters of a world event** (`testers_core.lua` `K.worldBlocked`, `testers.lua` `X.markWorld`, `X.worldHit`, the creature event
+  `ChaosTestersWorldTaken`): a monster of a shared event belongs to one side. A world treasure goblin, an invader and the Harvest King are the players':
+  a tester's hit on them is cancelled (counted for the bot's probe: `worldCancelled`), so a tester takes no hoard, no kill, no share. The guard is
+  registered before the event's own health event, so a cancelled hit wakes nothing and credits nobody. An invasion's contribution book also refuses a tester
+  (`creditPlayer`: healing counts as contribution too): the shares divide a pool among the players.
+- **Treasure goblin of its own** (`treasure_goblin.lua` `TG.testerSpawn`, `TG.probe`, `TG.testerClose`, `treasure_goblin_config.lua` `tester`): TEST ONLY, a
+  tester only, logged, only while no player is within `clearRadius` 30 tiles (nobody sees it), 5-6 tiles from the bot, at most one. It is the testers' (a
+  player's hit on it is cancelled), says nothing to anybody, and its hoard is the bot's own corpse (the leaderboard skips testers). The probe gives the
+  goblin (place, health, hit, seconds left before it escapes), the kills and the guide.
+- **Invasions** (`invasion.lua` `V.probe`, `invasion_core.lua` `I.guide`): the phase, the area and its breach point, the invader nearest, `credited` (false for
+  a tester), the hits of the bot that were cancelled, and the guide (fight within 5 tiles, else walk to the invader, else to the breach point).
+- **Harvest event** (`harvest_event.lua`): the pumpkins, graves, coffins, cauldrons, the bell, the key and the candle of the circle change a node for everybody
+  and the circle keeps a shared counter that lights a portal for the realm: a tester is refused at every one of them (`shut(player)`: "The Haunted Harvest
+  is the players' event: the testers stay out of it.", pt-BR in `i18n_strings.lua`), and the Hollow King takes no hit of a tester.
+
+How the bots play them (helper v18; the window's own requests are the bot's, the helper reads the screen and gives the engine path):
+1. `bounty_elite_walk` / `bounty_boss_walk`: `bounty_play`, the loop of `bounty_walk` (accept through the window, walk to the monster or the mark, fight with the
+   bot's own rotation, abandon after). The elite needs one counted kill (`BOUNTY_NEED`); the boss one kill and a wait of at most 40 s at a lair with no boss
+   in sight, 20 s while a player is near it, then the bot leaves.
+2. `daily_claim`: `daily open`, then `daily calim <value>`; the helper's `!tester daily` before and after: taken, the reward arrived, the streak.
+3. `chronicle_walk`: `chronicle open`, the helper's read, `chronicle close`.
+4. `chase_play`, the loop of `nemesis_walk`, `goblin_walk` and `invasion_walk`: a look every second, the engine path to the guide's goal, the fight is the bot's
+   own (target, rotation, potions, loot). `nemesis_walk`: waits for a monster in sight (60 s), `born`, `appear`, waits for the arrival (12 s), fights (240 s);
+   `close` after. `goblin_walk`: `spawn`, chases (180 s), `close` after. `invasion_walk`: SKIP when no invasion runs; else walks and fights (150 s).
+5. `vael_walk`: the temple on foot, `vael enter`, `solo_play` (the loop of the tower, the descent and the trials) with `system = "vael"`, `vael close` after.
+6. `mainquest_walk`: the new actions as described above; a step that does not move after the bot's own action is a BUG (the Go button, the daily claim, the words
+   of a bring step when the kill step was played in this run), a cast or a tier kill that does not come in 60 s / 300 s is a SKIP.
+
+Left with the reason:
+- **The harvest event** has no bot play: every node is shared (the first user takes it from a player), so the testers are refused. A testers' village would
+  need its own copy of the two areas and a second window. The rule is tested (`harvest_event_test.lua`).
+- **A goblin or a Hollow King of the world** is never hit by a bot; the testers' goblin is the play. `goblin_walk` proves the testers' side, `invasion_walk` the
+  players' side when an invasion runs.
+- **Raid bosses** of a boss contract (they come with a raid event), a boss with no open boss mark, and the contracts of a band the bot's level does not open.
+- **The weekly challenges, the tasks, the season journey and pass**: the windows answer, the claims are not made.
+- **Main quest steps** for a flag a hook sets, the other stats, the gear step, the resistances and the storage step.
+
+Needs a live run: the engine's path to a Nemesis that stalks (the Stalker trait steps next to its victim), the goblin's flee against a bot's speed (the fake world
+has no blinks), the boss marks as places where a boss stands (a lair or an island boss may not be spawned yet), the elite rate (one counted kill per about 12 of
+the type), the Chronicle window's chunked state through the bots' connection, Vael's floor telegraphs against a bot that does not dodge (its lives decide),
+`Chaos.isTester` on a bot that logs in during an invasion.
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):
@@ -10292,8 +10370,16 @@ the system is not installed): never faked. A death in the middle drops the check
 | `waystone_run` | all | a run on the game's own code, for one tier of each band (2, 8, 14): `!tester waystone N` writes a Rare waystone (`WM.write`), uses and takes it as the device does (`WM.choose`, `WM.take`) and starts the run (`WT.startRun`) on a map of the band. BUG when the item does not read back as tier N with its modifiers and Rare, when the take does not remove exactly one waystone, when the run is not registered with the tier and the modifier count, when the map does not count at tier N, when a map monster in range is not at the tier's level (1100 + 100 a tier) or its health is off the level and modifier factor by more than 3 %. A busy map (a live run or a player in it) is a note, not a result. The pads, the teleport and the map's device are base code and are not walked; the map is put back as it was |
 | `ascended_walk` | all, level 900 and up | O599: walks to the temple (a protection zone), `!tester ascended sigil` (the TEST ONLY grant: the highest Omen the level opens), uses the sigil, walks to the Ascended boss by the engine's path and fights it. PASS: the boss hurt (health and phase reported). BUG: a player in the run, a run not marked as the testers', 150 s in reach with the boss untouched, still inside after the close. SKIP: the arenas kept for the players, the arena did not open, the boss did not come, a blocked walk, a fall. Closed after, always |
 | `omen_walk` | all, level 800 and up | O599: the same for an Omen Key (`!tester omen key`, a rift slot, the guardian). Same verdicts |
+| `bounty_elite_walk` | all | O650: accepts an elite contract (a tier monster of the type: magic or rare) whose monster a hunt mark lists, hunts the type, PASS: the counter moved 1 (about 12 kills of the type per counted elite kill). Same verdicts as `bounty_walk` |
+| `bounty_boss_walk` | all | O650: accepts a boss contract whose boss has an open boss mark (a lair or an island: a raid boss comes with a raid), walks to the place, fights the boss when it is there. The boss is the players': a player within 40 tiles of it and the bot waits 20 s, then leaves (SKIP). PASS: the boss fell, the counter moved. No FAIL for a long fight (SKIP: it did not fall in 150 s, no boss there in 40 s) |
+| `daily_claim` | all | O650: `!tester daily` (the slot, the number the window sends for it), the Daily window's `open` and `calim`. PASS: the day is taken, the reward is in the backpack, the streak is one up. BUG: the day left open, the reward or the streak wrong. SKIP: the account's daily is taken today |
+| `chronicle_walk` | all | O650: opens the Chronicle window, reads `!tester chronicle`. PASS: the bot is not counted, no tester in a book, a top list or the season record, no points of the bot. BUG: any of them. SKIP: no season runs |
+| `nemesis_walk` | all, level 50 and up | O650: waits for a regular monster in sight at the hunt, `!tester nemesis born` (TEST ONLY: the type of that monster, no dice) and `appear` (the warning and the arrival of a kill's roll), then fights it by the engine's path. PASS: slain (avenged, the record gone) or hurt. BUG: 150 s in reach with its health untouched, the record still there after the kill. SKIP: no monster in sight, it did not arrive in 12 s, a fall, it faded. The record and the monster go after the run |
+| `goblin_walk` | all | O650: `!tester goblin spawn` (TEST ONLY: a treasure goblin of the bot's own, only while no player is within 30 tiles), chases it by the engine's path. PASS: killed or hit. BUG: 150 s in reach and not hit. SKIP: a player near, a blocked walk, a fall |
+| `vael_walk` | all, level 500 and up | O650: the temple on foot (a protection zone), `!tester vael enter` (TEST ONLY: Vael's spell trial with the quest step and the resistances left out), the thralls and Vael by the engine's path. PASS: Vael hurt or a thrall killed. BUG: 150 s with no kill, still inside after the close. SKIP: below level 500, the chambers kept for the players, a puzzle first stage, a fall |
+| `invasion_walk` | all | O650: while an invasion runs: walks to the invader nearest or the breach point (`!tester invasion path`) and fights. PASS: a hit of the bot was cancelled (the invasion is the players'). BUG: the bot is in the contribution book, 150 s in reach and no hit cancelled. SKIP: no invasion runs (most of the time) |
 | `bounty_walk` | all | O599: accepts the smallest hunt contract a hunt mark lists (or hunts one it holds), walks to the monster or the hunt, kills. PASS: the counter moved 3. BUG: the contract left the list, 150 s in reach with the counter not moving. SKIP: no contract with a known hunt, the accept refused, no monster in sight for 120 s. Abandons the contract after |
-| `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named; Vael Ashmourn: no testers' instance), no way, the quest not running |
+| `mainquest_walk` | all | O599: up to 3 steps of the main quest: talk to Warden Ysolde, walk to a place, kill the named monsters. PASS: the step number rose or the kill counter moved. BUG: a talk or a visit the quest did not credit in 14 s. SKIP: a step the bots do not play (named), no way, the quest not running. O650 adds the bring step, the Go button (`goals` `mqGo`), the daily flag, the spell step, the tier kill stats; Vael has `vael_walk` |
 | `rift_walk` | all, level 100 and up | O592: walks to the temple (`!tester path temple`; a bot in a protection zone walks nowhere; the helper's teleport to the temple is the counted fallback), `!tester rift key` puts a key of the highest tier the level opens into the backpack, the bot uses it like a hotkey and plays the rift on foot: the nearest pack monster of its floor, then the guardian, by `!tester rift path` (the engine's path); the loot after a kill; `rift close` and back to the hunt in every case. PASS: a kill or the guardian hurt. BUG: the key was given and the backpack holds none, 150 s of fighting with no kill. SKIP: a full bag, a rift that did not open in 12 s, a walk blocked for 30 s, a goal on another floor (the stairs are not walked yet), a death before a kill (section "The rift by walking (O592)") |
 | `tower_walk` | all, level 100 and up | O595: walks to the temple, opens the Infinity Tower from its window (`infinitytower enter`) and plays floors by the engine's path (`!tester tower path`) with its own rotation, calls "Next floor now" between floors, and leaves (`tower close`). PASS: 2 floors cleared. BUG: a player in the run, a cleared floor whose gold (floor x 50) did not reach the bank, 150 s in reach with no floor cleared, still inside after the close. SKIP: level, the try cooldown, the arenas kept for the players, the walk blocked, a fall before a floor (section "Infinity Tower, Ember Descent, the trials and the hideout for the bots (O595)") |
 | `descent_walk` | all, level 100 and up | O595: walks to the temple (a protection zone), starts the Ember Descent from its window (the free run of the day, else a sigil from `!tester descent sigil`), answers every boon choice with the first card, leaves rooms of rest with Continue and fights by the engine's path. PASS: a room cleared. BUG: a player in the run, a choice that stays open after 3 answers, 150 s with no room, still inside after the close. SKIP: level, no free run and no sigil, the halls kept for the players, the walk blocked, a fall before a room |

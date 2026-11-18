@@ -170,6 +170,10 @@ return {
 	-- experience: the replaced monster's experience x mult, capped by area level x capPerLevel (modest on purpose)
 	experience = {mult = 3, min = 50, capPerLevel = 60},
 
+	-- tester bots (O650, server/README.md "Tester bots", step 9): a goblin of its own for a tester (TG.testerSpawn), made only while no player is
+	-- within clearRadius tiles; reach = the tiles within which the bot's guide says fight
+	tester = {clearRadius = 30, reach = 5},
+
 	-- optional hooks (guarded; nothing is created here)
 	leaderboard = {board = "goblin", mode = "add"} -- ChaosLeaderboard.record when Chaos.leaderboardConfig has it
 }

@@ -48,6 +48,12 @@
 --     hunt mark lists, "where does monster X spawn" from the hunt marks) and the path on foot to the contract's monster or hunt
 --   * "!tester mainquest [state]" (O599): the open step of the main quest, its condition, progress, where to go and what a bot can play of it
 --     (ChaosMainQuest.probe); the bot walks, talks and kills itself
+--   * "!tester nemesis [state | born | appear | path | close]", "!tester daily", "!tester chronicle", "!tester vael [state | enter | path | close]",
+--     "!tester goblin [state | spawn | path | close]", "!tester invasion [state | path]" (O650): the Nemesis, the daily reward, the Ashen Chronicle,
+--     Vael Ashmourn, the treasure goblin and the invasions as a person sees them (ChaosNemesis.probe, ChaosDaily.probe, ChaosChronicle.probe,
+--     ChaosMainQuestBoss.probe, ChaosTreasureGoblin.probe, ChaosInvasion.probe); `nemesis born | appear`, `vael enter` and `goblin spawn` are the
+--     TEST ONLY grants (a tester only, logged), `path` the way on foot to the guide's goal, `close` the end of the bot's own run; the fights and the
+--     claim are the bot's own
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -80,7 +86,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 17
+HELPER_VERSION = 18
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1529,6 +1535,166 @@ function commands.mainquest(player, arg)
 		return
 	end
 	tell(player, "mainquest", H.mainQuestAnswer(W.probe(player)))
+end
+
+-- ---------------------------------------------------------------- O650 the Nemesis, the daily, the Chronicle, Vael, the goblin, the invasions
+-- "!tester nemesis [state | born | appear | path | close]": reads ChaosNemesis.probe. `born` is the TEST ONLY birth (the type of a regular monster in
+-- sight, the dice skipped), `appear` the TEST ONLY call (the warning and the arrival of a kill's roll), `path` the engine's path to its Nemesis,
+-- `close` takes it and its record away. The fight is the bot's own.
+function commands.nemesis(player, arg)
+	local what, usage = H.parseNemesis(arg)
+	if not what then
+		tell(player, "nemesis", {err = usage})
+		return
+	end
+	local NE = ChaosNemesis
+	if not (NE and NE.probe) then
+		tell(player, "nemesis", {err = "no nemesis system"})
+		return
+	end
+	if what == "close" then
+		local closed = NE.testerClose and NE.testerClose(player) or false
+		tell(player, "nemesis", H.cutAnswer(NE.probe(player), {closed = closed and true or false}))
+	elseif what == "born" or what == "appear" then
+		local fn = what == "born" and NE.testerBorn or NE.testerAppear
+		local ok, why = nil, "no such grant"
+		if fn then
+			ok, why = fn(player)
+		end
+		tell(player, "nemesis", H.cutAnswer(NE.probe(player), ok and {[what] = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = NE.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "nemesis", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "nemesis", H.cutAnswer(NE.probe(player)))
+	end
+end
+
+-- "!tester daily [state]": reads ChaosDaily.probe: the daily of the account (taken, slot, `value` for the window's own "calim", the reward and how
+-- many of it the bot holds). Nothing is claimed here: the claim is the window's request, sent by the bot.
+function commands.daily(player, arg)
+	local what, usage = H.parseDaily(arg)
+	if not what then
+		tell(player, "daily", {err = usage})
+		return
+	end
+	local DY = ChaosDaily
+	if not (DY and DY.probe) then
+		tell(player, "daily", {err = "no daily system"})
+		return
+	end
+	tell(player, "daily", H.cutAnswer(DY.probe(player)))
+end
+
+-- "!tester chronicle [state]": reads ChaosChronicle.probe: the season, the open chapter, `counted` (would an event of the bot enter the chapter:
+-- false) and `testersListed` (testers in the books: 0). The window's `open` is the bot's own request.
+function commands.chronicle(player, arg)
+	local what, usage = H.parseChronicle(arg)
+	if not what then
+		tell(player, "chronicle", {err = usage})
+		return
+	end
+	local X = ChaosChronicle
+	if not (X and X.probe) then
+		tell(player, "chronicle", {err = "no chronicle system"})
+		return
+	end
+	tell(player, "chronicle", H.cutAnswer(X.probe(player)))
+end
+
+-- "!tester vael [state | enter | path | close]": reads ChaosMainQuestBoss.probe (the Trials' probe of the run with the door's facts). `enter` is
+-- the TEST ONLY door of Vael's spell trial (a tester from level 500, logged: the quest step and the resistances left out), `path` the engine's
+-- path to the guide's goal inside, `close` the Leave button. The fight is the bot's own.
+function commands.vael(player, arg)
+	local what, usage = H.parseVael(arg)
+	if not what then
+		tell(player, "vael", {err = usage})
+		return
+	end
+	local B = ChaosMainQuestBoss
+	if not (B and B.probe and B.testerEnter) then
+		tell(player, "vael", {err = "no main quest boss"})
+		return
+	end
+	local function answer(probe, extra)
+		local out = H.trialAnswer(probe, extra)
+		out.won, out.tries, out.door = probe.won, probe.tries, probe.door and tostring(probe.door):sub(1, 40) or nil
+		return out
+	end
+	if what == "close" then
+		local closed = ChaosTrials and ChaosTrials.testerClose and ChaosTrials.testerClose(player) or false
+		tell(player, "vael", answer(B.probe(player), {closed = closed and true or false}))
+	elseif what == "enter" then
+		local probe = B.probe(player)
+		if probe.inside then
+			tell(player, "vael", answer(probe, {err = "already inside a trial"}))
+			return
+		end
+		local ok, why = B.testerEnter(player)
+		tell(player, "vael", answer(B.probe(player), ok and {entered = true} or {err = tostring(why or "refused"):sub(1, 90)}))
+	elseif what == "path" then
+		local probe = B.probe(player)
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside the trial"
+		end
+		tell(player, "vael", answer(probe, got or {err = why}))
+	else
+		tell(player, "vael", answer(B.probe(player)))
+	end
+end
+
+-- "!tester goblin [state | spawn | path | close]": reads ChaosTreasureGoblin.probe. `spawn` is a goblin of the bot's own (TEST ONLY, logged, only while
+-- no player is near: only the testers can hurt it), `path` the engine's path to it, `close` takes it away. A goblin of the world is the players'.
+function commands.goblin(player, arg)
+	local what, usage = H.parseGoblin(arg)
+	if not what then
+		tell(player, "goblin", {err = usage})
+		return
+	end
+	local TG = ChaosTreasureGoblin
+	if not (TG and TG.probe and TG.testerSpawn) then
+		tell(player, "goblin", {err = "no treasure goblin system"})
+		return
+	end
+	if what == "close" then
+		tell(player, "goblin", H.cutAnswer(TG.probe(player), {closed = TG.testerClose(player) and true or false}))
+	elseif what == "spawn" then
+		local m, why = TG.testerSpawn(player)
+		tell(player, "goblin", H.cutAnswer(TG.probe(player), m and {spawned = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = TG.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "goblin", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "goblin", H.cutAnswer(TG.probe(player)))
+	end
+end
+
+-- "!tester invasion [state | path]": reads ChaosInvasion.probe (the phase, the area and its target point, the invader nearest, `credited`: false for a
+-- tester, the hits of the bot that were cancelled) and the path on foot to the guide's goal. A tester's hits on an invader are cancelled
+-- (the invasion is the players'): the bot walks there and proves the rule.
+function commands.invasion(player, arg)
+	local what, usage = H.parseInvasion(arg)
+	if not what then
+		tell(player, "invasion", {err = usage})
+		return
+	end
+	local V = ChaosInvasion
+	if not (V and V.probe) then
+		tell(player, "invasion", {err = "no invasion system"})
+		return
+	end
+	local probe = V.probe(player)
+	if what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "invasion", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "invasion", H.cutAnswer(probe))
+	end
 end
 
 -- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest

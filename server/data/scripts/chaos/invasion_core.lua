@@ -635,6 +635,33 @@ function I.score(e, w, unit)
 		+ (e.presence or 0) / 60 * (w.presence or 0) * (unit or 0)
 end
 
+-- What a tester bot does next while an invasion runs (O650, `!tester invasion`). a = {running, pos, monster ({x, y, z}: the nearest invader within
+-- 25 tiles), target (the breach point), reach} -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, area, why}
+function I.guide(a)
+	if not a.running then
+		return {mode = "wait", why = "no invasion is running"}
+	end
+	local reach = a.reach or 5
+	local function dist(p)
+		return a.pos and p and p.z == a.pos.z and math.max(math.abs(a.pos.x - p.x), math.abs(a.pos.y - p.y)) or nil
+	end
+	if a.monster then
+		local d = dist(a.monster)
+		if d and d <= reach then
+			return {mode = "fight", goal = a.monster, area = "invader", why = "in reach of an invader"}
+		end
+		return {mode = "walk", goal = a.monster, reach = {1, reach}, area = "invader", why = "to an invader"}
+	end
+	if a.target then
+		local d = dist(a.target)
+		if d and d <= 12 then
+			return {mode = "wait", area = "breach", why = "at the breach point, waiting for the next wave"}
+		end
+		return {mode = "walk", goal = a.target, reach = {1, 12}, area = "target", why = "to the breach point"}
+	end
+	return {mode = "wait", why = "no target point"}
+end
+
 -- eligible players (score >= minPoints, not excluded), sorted by score, with share and rank
 function I.shares(contrib, w, unit, minPoints, excluded)
 	excluded = excluded or {}

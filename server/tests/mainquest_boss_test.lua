@@ -209,5 +209,45 @@ do
 	T.runs[700] = nil
 end
 
+-- the tester bots (O650): the TEST ONLY door and what a bot sees of the chamber
+do
+	local savedEnter, savedProbe = T.enter, T.probe
+	local entered, asked = {}, nil
+	T.enter = function(pl, tierIdx, opts)
+		entered[#entered + 1] = {pl = pl, tier = tierIdx, spell = opts and opts.spell, needNpc = opts and opts.needNpc}
+		return asked == nil, asked
+	end
+	T.probe = function(pl) return {level = pl.level, family = "warrior", inside = false} end
+	local function tester(id, level)
+		local pl = newPlayer(id, level)
+		pl.store[Chaos.storage.tester] = 1
+		function pl:getName() return "Tester " .. self.id end
+		return pl
+	end
+	local human = newPlayer(950, 600)
+	local r1, why1 = B.testerEnter(human)
+	ok(r1 == nil and why1 == "not a tester" and #entered == 0, "a player never takes the TEST ONLY door")
+	local low = tester(951, cfg.boss.minLevel - 1)
+	local r2, why2 = B.testerEnter(low)
+	ok(r2 == nil and why2:find("opens from level " .. cfg.boss.minLevel, 1, true) and #entered == 0, "below the door's level: refused")
+	local bot = tester(952, cfg.boss.minLevel)
+	local r3 = B.testerEnter(bot)
+	ok(r3 == true and #entered == 1 and entered[1].pl == bot and entered[1].spell == cfg.boss.tier and entered[1].tier == nil and not entered[1].needNpc,
+		"a tester at the level enters the spell trial of the boss, with no keeper and no quest step asked")
+	eq(bot.store[key("tries")], 1, "the try is counted as at the NPC's door")
+	bot.store[key("state")] = cfg.states.active
+	bot.store[key("step")] = 1
+	ok(B.doorProblem(bot) ~= nil, "the real door stays shut to a character on the quest before its last step: the bots' door is not that one")
+	asked = "You cannot enter a trial in combat."
+	local r4, why4 = B.testerEnter(bot)
+	ok(r4 == nil and why4 == "You cannot enter a trial in combat." and bot.store[key("tries")] == 1, "the trials' own refusal comes through, no try counted")
+	asked = nil
+	local pr = B.probe(bot)
+	ok(pr.minLevel == cfg.boss.minLevel and pr.won == false and pr.tries == 1 and pr.door ~= nil and pr.family == "warrior" and pr.inside == false, "probe: the door's facts")
+	bot.store[key("won")] = 1
+	eq(B.probe(bot).won, true, "probe: the reward is taken")
+	T.enter, T.probe = savedEnter, savedProbe
+end
+
 if fails > 0 then print("mainquest_boss_test: " .. fails .. " failure(s)"); os.exit(1) end
 print(string.format("mainquest_boss_test: %d checks ok", checks))

@@ -103,6 +103,53 @@ function startup.onStartup()
 end
 startup:register()
 
+-- ---------------------------------------------------------------- world event monsters (O650)
+-- X.markWorld(monster, side) puts a monster of a shared world event under the rule of ChaosTestersCore.worldBlocked: a tester's damage to a
+-- monster of the players is cancelled, a player's damage to a monster of the testers' own is cancelled. The guard event must come BEFORE the
+-- event's own health event (treasure_goblin.lua, invasion.lua call it first), so a cancelled hit wakes nothing and credits nobody.
+X.world = X.world or {} -- creature id -> "players" | "testers"
+X.worldCancelled = X.worldCancelled or {} -- tester player id -> hits cancelled (the bots' probe: the rule held)
+
+function X.markWorld(monster, side)
+	if not monster or not K.WORLD_SIDES[side] then
+		return false
+	end
+	X.world[monster:getId()] = side
+	monster:registerEvent("ChaosTestersWorldTaken")
+	return true
+end
+
+function X.worldSide(creature)
+	return creature and X.world[creature:getId()] or nil
+end
+
+-- true when a hit of `attacker` (a creature; a summon counts as its master) on a monster of `side` is cancelled (ChaosTestersCore.worldBlocked);
+-- a tester's cancelled hits are counted for the bots' probe. Monsters of a world event that is not marked (the Harvest King) ask it directly.
+function X.worldHit(attacker, side)
+	local who = testerOf(attacker)
+	if not who then
+		return false
+	end
+	local t = Chaos.isTester(who)
+	if not K.worldBlocked(side, t) then
+		return false
+	end
+	if t then
+		X.worldCancelled[who:getId()] = (X.worldCancelled[who:getId()] or 0) + 1
+	end
+	return true
+end
+
+local worldTaken = CreatureEvent("ChaosTestersWorldTaken")
+function worldTaken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	local side = X.world[creature:getId()]
+	if side and primaryType ~= COMBAT_HEALING and X.worldHit(attacker, side) then
+		return 0, primaryType, 0, secondaryType
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+worldTaken:register()
+
 -- ---------------------------------------------------------------- closed test mode (O582)
 X.closed = K.closedOn
 

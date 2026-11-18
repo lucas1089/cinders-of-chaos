@@ -651,6 +651,37 @@ check(tutor.msgs[1] and tutor.msgs[1]:find("season 2, arc s1: chapter 1 of 5"), 
 talks["/chronicle"].onSay(tutor, "/chronicle", "complete")
 check(tutor.msgs[#tutor.msgs]:find("needs group 5"), "complete needs group 5")
 eq(X.state.chapter, 1, "nothing written by a counsellor")
+-- what a tester bot sees and the rule it is held to (O650): its events never enter a chapter, no tester is in a book, a player's probe counts
+do
+	local human = mkPlayer("Probe Human", 951, 1, 400)
+	local bot = mkPlayer("Tester Chr", 952, 1, 400)
+	function bot:getStorageValue(k) return k == Chaos.storage.tester and 1 or -1 end
+	function human:getStorageValue() return -1 end
+	Chaos.testerGuids[952] = bot.name
+	local pr = X.probe(human)
+	check(pr.enabled and pr.running and pr.tester == false and pr.counted == true and pr.season == X.state.season, "probe: a player counts in the running season")
+	check(pr.chapters >= 1 and pr.chapter == X.state.chapter and #pr.goals >= 1 and pr.goals[1].target >= 1 and pr.testersListed == 0, "probe: the open chapter and its goals")
+	local pb = X.probe(bot)
+	check(pb.tester == true and pb.counted == false, "probe: a tester is not counted")
+	-- an event of both: only the player's points are booked
+	local ci = X.state.chapter
+	local before = X.state.contrib[ci][952]
+	X.add({kind = "event", event = "invasion"}, {bot, human})
+	X.event("invasion", {bot})
+	check(X.state.contrib[ci][952] == before and X.state.contrib[ci][952] == nil, "a tester's event enters no book")
+	eq(X.probe(bot).mine, 0, "probe: no points of a tester")
+	eq(X.probe(bot).testersListed, 0, "probe: no tester in the books")
+	-- a book that held a tester (a row from before the rule) is reported
+	X.state.contrib[ci][952] = {name = bot.name, points = 3}
+	eq(X.probe(bot).testersListed, 1, "probe: a tester row in a book is the bug the check names")
+	eq(X.probe(bot).mine, 3, "probe: and its points")
+	X.state.contrib[ci][952] = nil
+	local saved = X.state
+	X.state = nil
+	local off = X.probe(human)
+	check(off.running == false and off.season == nil, "probe: no season is running")
+	X.state = saved
+end
 -- a broken hook never breaks the wrapped function
 local ok = pcall(ChaosRecords.submit, {board = "rift_tier", value = "nonsense", members = {{}}})
 check(ok, "a strange run does not raise")
