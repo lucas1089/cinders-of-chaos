@@ -7207,14 +7207,14 @@ class AscIO(FakeIO):
         self.moves.append(place)
         return True
 
-    async def said_and_heard(self, text, wait=1.5):
+    async def said_and_heard(self, text, wait=1.5, kind=1):
         w = self.w
         w.said.append(text)
         if text == 'ascension' and w.stage == 0:
             w.stage = 1
         return []
 
-    async def say_modal(self, text, ids, wait=5.0):
+    async def say_modal(self, text, ids, wait=5.0, kind=1):
         w = self.w
         if text == 'trial' and w.stage == 2 and not w.no_trial_window:
             return {'id': 7101, 'title': 'The Trial of Ascension', 'message': 'm', 'buttons': [(1, 'Enter'), (2, 'Not yet')], 'choices': [], 'escape': 2, 'enter': 1}, []
@@ -7356,7 +7356,7 @@ class SpellIO(FakeIO):
     def class_spells(self):
         return self.list
 
-    async def said_and_heard(self, text, wait=1.5):
+    async def said_and_heard(self, text, wait=1.5, kind=1):
         self.cast.append(text)
         return self.by_words.get(text, [])
 
@@ -7417,7 +7417,8 @@ class TalesIO(FakeIO):
         super().__init__(answers=dict({'path npc Archivist Maelis': {'here': True}}, **(answers or {})))
         self.listing, self.tale, self.pressed = listing, tale, []
 
-    async def say_modal(self, text, ids, wait=5.0):
+    async def say_modal(self, text, ids, wait=5.0, kind=1):
+        self.kind_said = kind   # O656: the words after the greeting go in the NPC channel
         return self.listing, ['She looks up.']
 
     async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
@@ -7440,6 +7441,8 @@ class TalesRead(unittest.TestCase):
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertIn('Read opened "The Hollow Road"', r.detail)
         self.assertEqual(io.pressed[0], (7170, 1, 1), 'Read with the first tale')
+        self.assertEqual(io.kind_said, TX.NPC_CHANNEL, 'O656: "tales" goes in the NPC channel (12), a plain say after the greeting is ignored by the NPC library')
+        self.assertEqual(TX.NPC_CHANNEL, 12)
         self.assertEqual(io.pressed[1], (7171, 2, 255), 'the tale closed with its escape button')
         self.assertEqual(io.pressed[2][:2], (7170, 2), 'the list closed')
 

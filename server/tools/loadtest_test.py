@@ -183,7 +183,7 @@ VOCS = """<vocations>
 	</vocation>
 </vocations>"""
 v = lt.parse_vocations(VOCS)
-eq(v, {'Elementalist': {'id': 5, 'hp': 5, 'mana': 30}, 'Berserker': {'id': 14, 'hp': 14, 'mana': 6}}, 'vocations, comments skipped')
+eq(v, {'Elementalist': {'id': 5, 'hp': 5, 'mana': 30, 'cap': 10}, 'Berserker': {'id': 14, 'hp': 14, 'mana': 6, 'cap': 20}}, 'vocations, comments skipped (gaincap 20 when the file has none, O656)')
 
 SPELLS = """<spells>
 	<!-- <instant group="attack" name="Gone" words="gone" level="1" /> -->

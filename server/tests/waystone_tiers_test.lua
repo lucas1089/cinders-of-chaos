@@ -407,7 +407,7 @@ do
 	named[bot.name] = bot
 	local human = person("Real Walt", 1500, false)
 	named[human.name] = human
-	-- refusals
+	-- refusals (the cases below start from no arrival: tcfg.arrivals was emptied above)
 	local got, why = WT.testerEnter(human, 11)
 	check(got == nil and why == "not a tester", "a player never enters this way")
 	bot.level = 900

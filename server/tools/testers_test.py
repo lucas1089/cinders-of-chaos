@@ -261,6 +261,9 @@ ok("VALUES ('tstbot0123456789', 'HASH', '', 1)" in st[0], 'the account: type 1 (
 ok("SELECT 'Tester Aaa', `id`, 1, 4, 100" in st[1], 'the character: group 1 (a player), never staff')
 ok("SELECT `id`, 7102900, 1 FROM `players` WHERE `name` = 'Tester Aaa'" in st[2], 'the tester storage')
 eq(len(st), 6, 'account, character, marker and hunt spot rows')
+ok(', 3000, 1, 100, 200, 7' in st[1], 'O656: a bot with no cap keeps the old 3000')
+st2 = T.setup_statements([dict(bot, cap=17970 + 92 * 25)], lambda b: 'HASH')
+ok(', 20270, 1, 100, 200, 7' in st2[1], 'O656: the capacity of the bot is the real one of its level (17970 + gaincap a level)')
 try:
     T.setup_statements([dict(bot, name="Tester A'a")], lambda b: 'HASH')
     eq(True, False, 'a bad name never reaches SQL')

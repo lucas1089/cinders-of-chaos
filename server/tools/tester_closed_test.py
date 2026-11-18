@@ -79,6 +79,7 @@ joined = '\n'.join(st)
 eq(sum(1 for s in st if s.startswith('INSERT INTO `guilds`')), 2, 'two guilds')
 eq(sum(1 for s in st if s.startswith('INSERT INTO `guild_ranks`')), 6, 'three ranks each')
 eq(sum(1 for s in st if s.startswith('INSERT INTO `guild_membership`')), 6, 'six members')
+ok(all('NOT EXISTS' in s for s in st if s.startswith('INSERT INTO `guild_ranks`')), 'O656: a rank the schema trigger made is not made twice (one rank per level, else a member joins twice)')
 ok("'Tester Guild Alfa'" in joined and "'Tester Guild Bravo'" in joined, 'the names')
 ok(all('`level` = 3' in s for s in st if "WHERE `p`.`name` = '%s'" % names[0] in s), 'the leader has the leader rank')
 try:

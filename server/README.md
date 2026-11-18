@@ -10413,7 +10413,7 @@ Left with the reason (a later task, each needs a live look first):
 
 Needs a live run: the pass window's `claimed` string for a tester below the pass level, the state of the faction window through the chunked packets, the
 `near` flag of Osric and the Gambler (the walk ends within 3 tiles), the Rune Shards in the bench state (`salvage.shards`), the backpack index of a stack
-that a gem or an orb used up (the check looks again after the orbs and uses one gem).
+that a gem or an orb used up (the check looks again after the orbs and uses one gem). O656 live: the faction, pass, chests and Osric windows answer as written (step 15); the Gambler, the Broker trade, the bench's shards and the gem stack stayed SKIP (no drops, no gold).
 ##### 11. The levelling journey on foot (O654, `testers.py --journey`, `tools/tester_journey.py`, `!tester journey`)
 
 Owner 2026-11-18 (translated): "can do all the points". The biggest gap of the audit: the Python bots are made at a fixed level and teleported to a hunt by
@@ -10699,7 +10699,7 @@ Left with the reason (O657, step 15, took flaying, angling, the dummy, mounts, t
 
 Needs a live run: the 0xFA window layout of the server (the parser follows the protocol of the base server and the Unity client's `ModalWindows`), the 0xF9
 answer, whether the Oracle's focus holds between "hi" and the next word (the check says hi before each word), the stack position of a node (the index of the
-item in the tile), the Material Broker's trade window for a bot with a bank balance, the text of the Gambler's reroll price against `K.rerollPrice`.
+item in the tile), the Material Broker's trade window for a bot with a bank balance, the text of the Gambler's reroll price against `K.rerollPrice`. O656 live: the Oracle's focus held once the words went in the NPC channel and the bots took turns; the 0xFA window of the tales and the Calling / Proof answered; the Broker's trade window opened for a bot with a bank balance and sold the tool once its capacity was real; the node's stack position and the reroll price stayed open (step 15).
 
 ##### 15. Waystone arrivals, the stash moved, the dummy, the mount, flaying, angling and kill task kills (O657)
 
@@ -10764,6 +10764,69 @@ Left with the reason:
 Needs a live run: the mount button's packet (0xD4 with one byte, as the base server's `parseToggleMount`), `Player:setCurrentMount` / `getCurrentMount` / `toggleMount`
 in the engine build, the hotkey use-with (0x83 from 0xFFFF 0 0) finding the tool in the backpack, the ground's fluid source of the water tiles (`ItemType:getFluidSource`),
 the `Stash` request's item id and count rules (`Core.sameItem`) for the kit item, whether the stash tab list has room for a weapon, the use-with range of the rod.
+
+##### 16. The live run of steps 10 to 14 (O656)
+
+Owner 2026-11-18 (translated): "continue with the other tasks": the checks of O651 to O655 were proved on mocks only. They ran once against the local test server
+(the installed server of the scratchpad: `install_all.py` of main on the old files, a SQL dump first, MariaDB, the engine binary built earlier: it lacks
+src-patches 0088 to 0092, which none of these checks needs), with 4 to 10 testers of levels 100 to 2000 per run, `testers.py run --checks --closed --only KEYS`
+and a 12 minute `--journey` run. New: `testers.py run --only a,b,c` runs just those checks (the closed ones too; the list is `KEYS` and `CLOSED_KEYS`).
+Tests: `tester_checks_test.py`, `testers_test.py` (setup cap), `tester_closed_test.py` (guild ranks), `waystone_tiers_test.lua` (arrivals).
+
+Bugs found by the bots and fixed:
+- **Closed mode did not start on the base schema** (`tester_closed.py guild_statements`): the base trigger `oncreate_guilds` makes the three ranks of a new guild, the tool
+  made them again, and the member insert (a join on the rank level) wrote two rows of one player: `Duplicate entry for key PRIMARY`, no guild, no closed run. A rank is made only
+  when its level is missing now.
+- **Words to a greeted NPC went in the wrong channel** (`CheckIO.shop_window`, `say_modal`, `said_and_heard`): the NPC library takes a keyword from a focused player only from the
+  NPC channel (TALKTYPE_PRIVATE_PN, 12), as `do_shop` knew since the first live run. `tales_read`, `ascension_walk` and the broker's trade window of `gather_walk` said it as a plain
+  say and got no answer ("Another page left blank", or nothing). They use the NPC channel now; the greeting waits for the NPC's answer and a pause (the talk limit,
+  "You are exhausted").
+- **Several bots at one NPC**: ten bots said "hi" to the same Archivist in the same seconds; the base library has one focus, so the rest got the walk-away line or nothing. A bot
+  talks to one NPC at a time (`npc_talk_begin` / `npc_talk_end`, says bye and lets the next one in). A talk walk ends next to the NPC (`chore_walk(..., near=1)`, the hub's NPCs
+  stand 6 apart and the nearest one answers a greeting, `chaos_npc_focus.lua`; 3 tiles away it was Mordecai or Cassian).
+- **The rate limits of the windows** (`pouch_rules`, `autosell_rules`): `pouches.set` answers once in 200 ms and `pouches.autosell` once in 250 ms; the put-back came at once and got
+  no answer (a FAIL "the rules were put back and the window shows None"). The check waits half a second.
+- **A tester's capacity** (`testers.py setup`): every bot was made with `cap` 3000; each death takes a level and the class's `gaincap` (20 to 25), so a bot made at level 1000
+  had a capacity of 0 after 150 deaths and "You do not have enough capacity" for a 20 gold sickle (`gather_walk` FAIL "bought and the backpack holds no tool"). The cap is the
+  real one of the level now: 17970 + `gaincap` x (level - 8).
+- **No arrival tile for the waystone maps** (`waystone_tiers_config.lua` `arrivals` was empty): `wsmap_walk` said SKIP for every bot. The twelve tiles are read from the base map
+  (`audit_waystone_maps.py BASE --arrivals`) and committed.
+- `rift_walk` closes a rift the coverage layer left the bot in (a person walks out of a rift he does not play); the arena, tales and broker SKIPs say what the bot heard / saw.
+
+Live results (check: PASS / FAIL / SKIP; a SKIP names the cause, none is faked):
+| check | live | why / what it proved |
+|---|---|---|
+| `tales_read` | PASS (all classes) | the list (7 tales at level 100 to 18 at 1000), Read opened "Teeth in the Cellars", windows closed |
+| `kill_task` | PASS | an offer accepted, listed active, abandoned (humanoids, constructs, beasts, chaos, aquatic) |
+| `spell_support` | PASS | 4 to 6 of 6 support spells cast, the quest spells refused where they are locked; a spell "held back by mana" is not a refusal |
+| `pouch_rules` | PASS | one rule turned and back, 8 others kept (after the wait) |
+| `autosell_rules` | PASS | locked for a bot without the store item, the switch refused with the notice |
+| `stash_window` | PASS | tabs, withdraw, deposit, the item search found 4 |
+| `chore_faction`, `chore_pass`, `chore_chests`, `chore_candlemarks` | PASS | windows answer, 4 factions and 12 contracts, tier 0 and nothing to claim, 0 chest for a tester, 64 offers and a balance of 0 |
+| `ascension_walk` | PASS for base classes | the Calling and the Proof (TEST ONLY credit) credited, the Oracle's stage moved to 2; the Trial fight is lost by a bot with no gear (a SKIP: "the guardian was not broken" / "fell in the trial"); an ascended class is a SKIP |
+| `wsmap_walk` | PASS | after the arrivals were committed: 3 monsters of map 4 fell at tier 1 (level 1100) |
+| `boss_copy_walk` | PASS | the copy of Malgrath, the Drowned Crown, and of Kaelgor the Infernal Warlord hurt to 98 and 99 percent, a warning seen and a dodge made; a bot in the temple whose hunt spot is the temple has no copy (SKIP) |
+| `closed_pvp_fight` | PASS | a foe tester hurt to 85 percent in the Marches, the roster testers only |
+| `gather_walk` | SKIP | the broker sells the tool now (capacity fixed); the engine path to the nearest node says "no path" (the search is bounded) |
+| `pocket_walk` | SKIP | the bot reaches the pocket and hurts Ul'thazmor to 99 percent; a bot with a plain weapon and no gear does not kill it (even at level 2000) or falls |
+| `chore_gamble`, `gamble_reroll` | SKIP | 14 pieces / 32200 to 970300 gold for a reroll: the bots keep 20000 gold |
+| `chore_trade`, `chore_salvage`, `craft_found`, `gear_chase` | SKIP | the bot holds nothing gathered / rolled / dropped: a bot that dies every minute loots nothing |
+| `dungeon_difficulty`, `weekly_challenge` | SKIP | the dungeon queue refused (level, cooldown) or the bot was a party member of another bot's run; level 800 for the Weekly Challenge |
+| `rift_walk` | SKIP | died before a kill, or "walk blocked" inside the rift (tier 7, level 625) |
+| `closed_arena_fight`, `closed_battleground_match` | SKIP | the two queued bots were not matched in 40 s; 1 to 2 of the 10 testers a battleground needs were queued at a time |
+| the journey (12 minutes, 4 bots from level 8) | ran | levels 8 to 11, 13, 16 and 18 (6 logins, 2 deaths); first hunt in a minute, "moves on: outgrew Wasp" at level 14; 69 stuck events: "no path" to the hunt teleports, the camp portal, Veyra, the Loot Buyer, the depot locker, each answered by the counted helper jump (21); the engine path to a tile in the hall is bounded |
+
+What the run showed about the environment, for the next run: a bot made at level 100 to 2000 with a plain weapon and no gear dies within seconds on its hunt (the first run counted
+274 deaths in 15 minutes), each death takes a level, so the level gates of the walks (level 800 for the Weekly Challenge, 1000 for waystone maps) fell away within minutes; the checks
+run at the first login, so a bot has dropped and found nothing yet. A longer run that lets the bots hunt first, or gear for the test characters, would settle `craft_found`, `gear_chase`,
+`chore_salvage`, `chore_trade`, the Trial of the ascension and the pocket bosses. The old checks `craft_orbs` ("Orb of Upheaval: modifiers 2 -> 1: a reroll keeps both"), `craft_gems`
+("gems in the sockets 1 -> 1") and `hideout` ("no tile of the room took Ashen Throne") failed once each in the first run and are not looked at here.
+
+One crash: during the second full run the engine (`tfs`, built without src-patches 0088 to 0092) died with a segfault in `Creature::getCreatureEvents` (a null creature event in a creature's list) a few seconds after a copy of Malgrath was made for a tester, while ten bots died and logged in again every few seconds. Two later runs under gdb (boss copies, the same check list, the journey) did not repeat it, so the cause is open; a CreatureEvent registered a second time under one name deletes the first one while creatures still hold it, which is the first thing to look at (`registerEvent` of the copy, `ChaosTestersBossDeath`).
+
+Still needs a live run: `dungeon_difficulty` and `weekly_challenge` (a free dungeon at the bot's level, a party that is not a member), `closed_arena_fight` and `closed_battleground_match`
+with ten bots queued together, the pocket and boss kills with gear, the node path of `gather_walk`, the first Trial of the ascension, `rift_walk` past the first floor, the
+engine's path to a hall teleport (the bounded search; the journey falls back to the helper's jump after `GATE_TRIES`).
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
