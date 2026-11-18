@@ -1,0 +1,25 @@
+key,name,tier,role,float,new,tiles,disp,idle,idle_ms,walk,walk_ms,pixels,src,pl
+imp,Cinder Imp,1,roamer,0,3531,2x2,-16:0,4,300,8,100,42161,023f19335732,c1756262
+thrall,Ashbound Thrall,1,roamer,0,3532,2x2,-16:0,4,300,8,100,31318,70803138f004,d7e6c9aa
+arbalist,Soot Arbalist,1,roamer,0,3533,2x2,-16:0,4,300,8,100,51006,7a962e1ea914,e96acc12
+hound,Scorch Hound,1,chaser,0,3534,2x2,-16:0,8,200,8,100,89154,8fd28565f70f,bbec016c
+wisp,Ember Wisp,1,chaser,1,3535,2x2,-16:0,8,200,8,100,16408,aa65dfdda417,8af6e44a
+crawler,Cinder Crawler,1,roamer,0,3536,2x2,-16:-2,8,200,8,100,45951,4a4138e4630d,7ba957dc
+penitent,Hollow Penitent,1,roamer,0,3537,2x2,-16:0,4,300,8,100,31806,c3681e69a904,bf7dd0c9
+maw,Magma Maw,2,sniper,1,3538,2x2,-16:0,8,200,8,100,95979,a17c3fb08d65,2cbc62da
+brute,Slag Brute,2,roamer,0,3539,3x3,-32:0,4,300,8,100,80374,2334145260cb,a8c619aa
+stalker,Gloom Stalker,2,chaser,0,3540,3x3,-32:-2,8,200,8,100,89452,819003474a4e,318d39e3
+lancer,Bone Lancer,2,hunter,0,3541,3x3,-32:0,4,300,8,100,56145,c3205bbea0dc,940dc5f8
+bloat,Pyre Bloat,2,roamer,0,3542,3x3,-32:0,4,300,8,100,81212,54acbca222e4,9bf0e7e3
+bat,Cinder Bat,2,chaser,1,3543,2x2,-16:0,8,200,8,100,56844,d49e60bc3817,9fd269fd
+ogre,Furnace Ogre,3,roamer,0,3544,3x3,-32:0,4,300,8,100,90027,d023a2d15696,f3e8d63b
+inquisitor,Brand Inquisitor,3,roamer,0,3545,3x3,-32:0,4,300,8,100,80337,b23e62de31bb,08cf3643
+ravager,Obsidian Ravager,3,chaser,0,3546,3x3,-32:0,15,100,8,100,154895,3f675269ad33,e39faae5
+fiend,Soot Fiend,3,hunter,0,3547,3x3,-32:0,4,300,8,100,68869,8fde28b4c29f,aab4abee
+broodsac,Ember Broodsac,3,sniper,1,3548,2x2,-16:0,8,200,8,100,80159,2c1d095ff420,b02fd3af
+knight,Obsidian Knight,3,chaser,0,3549,3x3,-32:0,4,300,8,100,100955,dc7f82726aec,2f786938
+warlord,Ashen Warlord,4,hunter,0,3550,3x3,-32:-1,4,300,8,100,83267,e510d81a9d12,744e1936
+colossus,Molten Colossus,4,roamer,0,3551,3x3,-32:-1,4,300,8,100,119811,10dc98b623a4,7b5d0e24
+prophet,Pyre Prophet,4,sniper,0,3552,3x3,-32:0,4,300,8,100,89837,b7ea08ea71f2,f5f5b481
+broodqueen,Ashen Brood Queen,4,hunter,0,3553,3x3,-32:-4,8,200,8,100,172252,fb7f02677edd,299b3d8d
+veilwitch,Veil Witch,4,sniper,1,3554,3x3,-32:1,8,200,8,100,127782,54b4b709b356,a1bd56f5

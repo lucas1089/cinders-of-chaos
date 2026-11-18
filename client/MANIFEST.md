@@ -7690,3 +7690,83 @@ effect strip). The pack files are read by script only, never viewed, never sent 
   name the built pair's outfits (`outfit_anchors.lua`, `info_lifts.lua`, `head_centres.lua`, `foot_marks.lua`, `outfit_centre.csv`, unity `InfoLiftData.cs`)
   are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet: it reads windows-assets, which holds pair 73.
   Not seen in a client.
+
+## PixelLab monsters (O640; `tools/sprites/gen_pixellab_monsters.py`, `art_import/pixellab_monsters.csv`, `art_import/pixellab_monsters/`; owner 2026-11-18, "Aprovados"; joins pair 74)
+The owner approved the 24 original monsters of the prototypes O629 (four, one a tier) and O630 (twenty more, seven in tier 1, six in tier 2, six in
+tier 3, five in tier 4; the videos `monsters4.mp4` and `tier1-4.mp4`). They are built into pair 74 as outfits 3531 to 3554 and worn by 24 hunt monsters
+(server/README.md "PixelLab monsters (O640)"). The art is ours: PixelLab characters (14 of v3, three of the pro flash with a dog, cat or bear template: hound, stalker, ravager) and
+objects (seven: maw, wisp, bat, crawler, broodsac, brood queen, veil witch; animated by `animate_object` v3), high top-down view, 8 directions,
+drawn from our own words alone (docs/CREDITS.md, Tools; no picture of anyone's was uploaded), four directions kept
+(south, east, north, west), a breathing idle (a bob for what floats) and a walk of 8 pictures. The sheets are committed like those of O618
+(`art_import/pixellab_monsters/KEY.png`, 4.3 MB in all) so a built pair can be held to them byte for byte. The tool draws nothing: it places.
+
+- **Pictures.** Every picture of the four directions, idle and walk, in the order PixelLab gave it: never sampled, never mirrored, no pixel changed or
+  dropped (1,936,001 opaque pixels in all, source and sheet equal, held by `art`). The alpha is cut at 128 (the sources only have 0 and 255).
+- **Size.** The smallest canvas of whole tiles that holds the box of every picture, and **no sampling down**: the sources are 28 to 95 px, ten fit 2x2
+  (64 px), fourteen are **3x3** (96 px: the figure is over 64 px tall or wide, up to 95 tall and 82 wide; nearest 2:1 would halve it and the owner's
+  videos show the figure at full size). The canvas is the figure's, the tile is where the dat displacement puts it.
+- **Place (the O585 rule).** One shift for all pictures of an outfit (a turn on the spot stays on the spot). The standing point is the median feet of the
+  four directions (first idle picture, `gen_outfit_anchors.measure`), put on the point x 16.5 of the creature's tile and y 24 (2x2) or 21 (3x3): the
+  median feet of the stock monster looks of those sizes (`outfit_centre.csv`: 24.0 for 637 monsters of 2x2, 21.0 for 80 of 3x3), so the monsters stand
+  4 px lower than players, as the stock ones. A figure whose lowest pixel would hang more than 4 rows under the tile stands higher by the rest (the
+  Ashen Brood Queen's legs: y 18). A floating thing has no feet: its box is centred and its lowest pixel on tile row 29. The dat displacement is the
+  one nearest (-(16 N - 16), 0) that lets the figure fit the canvas and is the outfit's only flag (it is negative, as the stock donor B looks 1541 and
+  1548, 3x3 hunt monsters at (-32, 0), and the boss looks: the client has `GameNegativeOffset` on). `check` and `live` hold the standing point to 1 px.
+- **Frames.** Idle 4, 8 or 15 phases (the Obsidian Ravager's idle-long), walk 8, in every direction. A phase lasts what the approved videos showed:
+  idle 300 ms (4 pictures), 200 ms (8), 100 ms (15); walk 100 ms. Every idle direction shows 2 or more different pictures (the O533 rule: a hunt monster moves while it stands).
+
+  | outfit | key | name | tier, role | size | displacement | idle x ms | walk x ms | opaque px |
+  |---|---|---|---|---|---|---|---|---|
+  | 3531 | imp | Cinder Imp | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 42,161 |
+  | 3532 | thrall | Ashbound Thrall | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 31,318 |
+  | 3533 | arbalist | Soot Arbalist | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 51,006 |
+  | 3534 | hound | Scorch Hound | 1, chaser | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 89,154 |
+  | 3535 | wisp | Ember Wisp | 1, chaser, floats | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 16,408 |
+  | 3536 | crawler | Cinder Crawler | 1, roamer | 2x2 | -16, -2 | 8 x 200 | 8 x 100 | 45,951 |
+  | 3537 | penitent | Hollow Penitent | 1, roamer | 2x2 | -16, 0 | 4 x 300 | 8 x 100 | 31,806 |
+  | 3538 | maw | Magma Maw | 2, sniper, floats | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 95,979 |
+  | 3539 | brute | Slag Brute | 2, roamer | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 80,374 |
+  | 3540 | stalker | Gloom Stalker | 2, chaser | 3x3 | -32, -2 | 8 x 200 | 8 x 100 | 89,452 |
+  | 3541 | lancer | Bone Lancer | 2, hunter | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 56,145 |
+  | 3542 | bloat | Pyre Bloat | 2, roamer | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 81,212 |
+  | 3543 | bat | Cinder Bat | 2, chaser, floats | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 56,844 |
+  | 3544 | ogre | Furnace Ogre | 3, roamer | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 90,027 |
+  | 3545 | inquisitor | Brand Inquisitor | 3, roamer | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 80,337 |
+  | 3546 | ravager | Obsidian Ravager | 3, chaser | 3x3 | -32, 0 | 15 x 100 | 8 x 100 | 154,895 |
+  | 3547 | fiend | Soot Fiend | 3, hunter | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 68,869 |
+  | 3548 | broodsac | Ember Broodsac | 3, sniper, floats | 2x2 | -16, 0 | 8 x 200 | 8 x 100 | 80,159 |
+  | 3549 | knight | Obsidian Knight | 3, chaser | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 100,955 |
+  | 3550 | warlord | Ashen Warlord | 4, hunter | 3x3 | -32, -1 | 4 x 300 | 8 x 100 | 83,267 |
+  | 3551 | colossus | Molten Colossus | 4, roamer | 3x3 | -32, -1 | 4 x 300 | 8 x 100 | 119,811 |
+  | 3552 | prophet | Pyre Prophet | 4, sniper | 3x3 | -32, 0 | 4 x 300 | 8 x 100 | 89,837 |
+  | 3553 | broodqueen | Ashen Brood Queen | 4, hunter | 3x3 | -32, -4 | 8 x 200 | 8 x 100 | 172,252 |
+  | 3554 | veilwitch | Veil Witch | 4, sniper, floats | 3x3 | -32, 1 | 8 x 200 | 8 x 100 | 127,782 |
+
+- **Sheet and table.** A sheet is N x N tile cells (32 N px), columns north, east, south, west (engine order), rows the idle pictures then the walk
+  pictures. `art_import/pixellab_monsters.csv`: key, name, tier, role, float, outfit id, size, displacement, idle and walk phases and ms, opaque pixels,
+  `src` (12 hex digits of the sheet file), `pl` (8 hex digits of the PixelLab character or object id). `art_import/pixellab_monsters.sums`: the digest
+  of every outfit (group shapes, animator, every sprite slot) by id, to hold a built pair to.
+- **Pair step.** The 24 outfits are appended after the 3,530 outfits of pair 74's start (pair 73's 3,529 and Malgrath, 3530, O637). The step needs
+  exactly those in its input and **refuses a pair that ends at 3529** with a message that names `gen_malgrath_boss.py build`. Nothing is replaced. An
+  outfit is an idle group (gtype 0) and a walk group (gtype 1), NxN, one layer, 4 directions; the append and its checks are `gen_wst_outfits.build`
+  (old things byte identical, every slot read back, `check_append_only`). It joins pair 74 with Malgrath and the decor flames; the order of the steps is free.
+- **Tool.** `check` (CI: table, sums, every sheet, the monster map against the pool), `art --src DIR [--src DIR] [--write]` (the PixelLab downloads
+  `DIR/KEY` or `DIR/t3_KEY`, `DIR/t4_KEY` -> sheets, table and sums), `looks [--check]` (-> `server/data/monster/monster_pixellab_looks.csv` from the
+  `pixellab` rows of `monster_looks/picks.csv`), `numbers`, `build DAT SPR OUT`, `live DAT SPR`, `preview OUT --dat D --spr S` (`monsters_ingame.mp4`
+  from the pair, one page a tier: the south idle and the walk of the four directions at 2x, then every monster at 1x on dark stone with its tile
+  outlined; never committed). `gen_pixellab_monsters_test.py` (CI, the fx venv) runs `load_source`, `fit` (every size, a floater, a low tail, a figure too big
+  refused), `art`, `build` and `live` on synthetic downloads and a synthetic pair, with a failing case for every rule.
+- **Rehearsal on the real pair 73** (2026-11-18, RAM disk, not pushed; Malgrath's sources are not here, so `build` ran on pair 73 with a placeholder 1x1
+  outfit 3530 in the place of Malgrath: dat md5 cb77a833..., spr 598199b9...). Output dat **9472b1e24a9c1ce18fcbf8795279753c** (9,497,308 bytes), spr
+  **ffff173134694f1931408a494c00b409** (1,231,634,644 bytes): 3,554 outfits, 5,325 effects, 1,063,813 sprites (6,847 records appended, 50 slots reuse a
+  sprite of the input), 9,180 sprite slots and 1,340 frames read back as drawn in 12 s. `live` 0 problems; `check_pair.py --old --new-only`: 0 errors, 0
+  warnings (`sprite-zero-slots` info), 53,568 old things and 1,056,966 old sprites unchanged. A real build puts Malgrath's outfit in the place of the
+  placeholder: the md5s of the 24 outfits' digests do not depend on it, the pair's do. Preview `monsters_ingame.mp4` (1536 x 1256, 20 fps, 16 s, libx264
+  crf 18 yuv420p faststart): four pages (tier 1 to 4). Never committed.
+- **Not done.** Pair 74 is not built for real and not pushed (`PAIR_ASSETS` stays 73): it joins Malgrath (O637) and the decor flames (O623) and waits for
+  the owner. The knock-on tables that name the built pair's outfits (`outfit_anchors.lua`, `info_lifts.lua`, `head_centres.lua`, `foot_marks.lua`,
+  `outfit_centre.csv`, unity `InfoLiftData.cs`) are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet (it
+  reads windows-assets, which holds pair 73). Not seen in a client. The O625 quality bar rows made for painted art (colours, local deviation, banding, outline
+  hue) are not met by hand-made pixel art and were not chased (O629 / O630 reports); the loops and the outline are PixelLab's, as given.
+  The prototype's thrall is named "Ashbound Thrall", the name of an Embergut Rift monster (AutoSprite art, docs/CREDITS.md) that keeps its own look: the new
+  look is worn by the Novice of the Cult (the table names are the art's, not the monsters').

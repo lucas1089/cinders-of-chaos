@@ -294,6 +294,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                3530 in place of the stock look its repository file keeps (client pair 74, data/monster/monster_malgrath_looks.csv); the
                installed monster file gets the new look; waits for config.lua chaosClientPair >= 74, README "Client pair guard" and
                "Malgrath, the Drowned Crown (O637)"; after monsterswaplooks
+  monsterpixellablooks tools/install_monster_pixellab_looks.py  24 hunt monsters (Lesser Fire Devil, Novice of the Cult, Hunter, ... Thornhex
+               Crone) wear the original monsters made with PixelLab (O640; client pair 74, outfits 3531-3554, data/monster/
+               monster_pixellab_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
+               chaosClientPair >= 74, README "Client pair guard" and "PixelLab monsters (O640)"; after monstermalgrathlook
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1348,6 +1352,15 @@ def step_monstermalgrathlook(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monsterswaplooks') + 1, 'monstermalgrathlook')  # Malgrath's outfit (pair 74) goes after the look swaps
+
+
+def step_monsterpixellablooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 74) is in the tool; its warning reaches the report
+    args = [tool('install_monster_pixellab_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_pixellab_looks.py'))
+
+
+STEPS.insert(STEPS.index('monstermalgrathlook') + 1, 'monsterpixellablooks')  # the PixelLab monsters (pair 74) go over every earlier look
 
 
 def step_monsterresists(server, data, ctx):

@@ -765,7 +765,8 @@ for msg in rift_looks.problems(open(RIFT_CFG, encoding='utf-8').read(), BLANK_OU
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'server', 'tools'))
 import audit_shared_looks
 import client_pair
-for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE):
+for _pair in (client_pair.PAIR_RECOLOUR - 1, client_pair.PAIR_RECOLOUR, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE,
+              client_pair.PAIR_PIXELLAB):
     for msg in audit_shared_looks.check_pool(pair=_pair):
         fail(f'server/data/monster/shared_looks_allow.csv: [look.shared] at client pair {_pair}: {msg}')
 # the recolour map: one row per monster, the copies are consecutive outfits right after pair 68's 3370 and inside the pair, never blank,
@@ -924,12 +925,42 @@ for _l in sorted(_mount_old):
         fail(f'server/data/monster/o619_look_facts.csv: old mount look {_l} fails nothing')
     if _l in _pl_src:
         fail(f'server/data/monster/player_looks.csv: look {_l} is no mount any more (O619) but is a look of {sorted(_pl_src[_l])}')
+# the PixelLab map (O640, server/data/monster/monster_pixellab_looks.csv, client pair 74, which is not built for real yet): 24 hunt monsters, one on each of
+# the outfits 3531..3554 (client/tools/sprites/gen_pixellab_monsters.py; the rows are the `pixellab` rows of monster_looks/picks.csv, in the level band of
+# the tier of the look, boss-like looks on monsters of level 500 and more). Each monster wears the old look in its file when it is ours and in the committed
+# pool (it is a hunt monster of it), is in no map of an earlier pair, no new look is a player look or worn by a monster outside the map, and (checked
+# above at pair 74) a hunt monster on one moves while it stands and no look is shared
+sys.path.insert(0, 'client/tools/sprites')
+import gen_pixellab_monsters as pixellab
+_xmap = audit_shared_looks.load_pixellab()
+_xcount = {}
+_earlier_maps = (_rmap, _dmap, _wmap, _cmap, _smap)
+for _n, (_o, _nl) in sorted(_xmap.items()):
+    _xcount.setdefault(_nl, []).append(_n)
+    if _n in _own and _own[_n] != _o:
+        fail(f'server/data/monster/monster_pixellab_looks.csv: {_n}: the map says look {_o}, the monster file says {_own[_n]}')
+    if _prow.get(_n) != _o:
+        fail(f'server/data/monster/monster_pixellab_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow.get(_n)}')
+    if any(_n in _m for _m in _earlier_maps):
+        fail(f'server/data/monster/monster_pixellab_looks.csv: {_n} is in the map of an earlier pair as well')
+    if _nl in _splayer:
+        fail(f'server/data/monster/monster_pixellab_looks.csv: {_n}: look {_nl} is a look a player can wear (player_looks.csv)')
+    if _sworn.get(_nl, set()):
+        fail(f'server/data/monster/monster_pixellab_looks.csv: {_n}: look {_nl} is worn by {sorted(_sworn[_nl])} already')
+if sorted(_xcount) != list(range(3531, 3531 + len(_xcount))) or len(_xcount) != 24:
+    fail('server/data/monster/monster_pixellab_looks.csv: the new looks must be the 24 outfits 3531..3554, every one worn')
+for _nl, _ns in sorted(_xcount.items()):
+    if len(_ns) != 1:
+        fail(f'server/data/monster/monster_pixellab_looks.csv: look {_nl} is on {len(_ns)} monsters ({", ".join(_ns)}): one hunt monster each (O529)')
+for msg in pixellab.map_problems() + pixellab.write_map(check=True):
+    fail(f'server/data/monster/monster_pixellab_looks.csv: {msg}')
 # a hunt monster moves while it stands (O533): the bounty pool hunt list, each look read in server/data/monster/look_idle.csv (written
 # from the live dat by tools/audit_idle_looks.py --write-idle): an idle frame group with 2 or more phases, or animateAlways. A look
 # without one needs a row of server/data/monster/no_idle_allow.csv with its reason; the list may only shrink.
 import audit_idle_looks
 for msg in (audit_idle_looks.check_pool() + audit_idle_looks.check_pool(pair=client_pair.PAIR_DONOR)
-            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PURCHASED) + audit_idle_looks.check_pool(pair=client_pair.PAIR_CREATURE)):
+            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PURCHASED) + audit_idle_looks.check_pool(pair=client_pair.PAIR_CREATURE)
+            + audit_idle_looks.check_pool(pair=client_pair.PAIR_PIXELLAB)):
     fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.idle] {msg}')
 # the walk in place list of game_bossanimate (O534): generated from look_idle.csv and player_looks.csv, up to date, and no look a
 # player can wear (a mount or an outfit must not walk in place)
@@ -940,7 +971,7 @@ if not _player:
     fail('server/data/monster/player_looks.csv: [look.walk] empty (run tools/audit_idle_looks.py --write-player-looks DATA_DIR)')
 for _l in sorted(audit_idle_looks.load_walklist() & set(_player)):
     fail(f'client/overlay/modules/game_bossanimate/idle_walk_looks.lua: [look.walk] look {_l} is a player look ({_player[_l]})')
-for _p in (None, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pairs 70, 71 and 73
+for _p in (None, client_pair.PAIR_DONOR, client_pair.PAIR_PURCHASED, client_pair.PAIR_CREATURE, client_pair.PAIR_PIXELLAB):   # at most 2 hunt monsters on one look (owner 2026-11-12), as drawn below and at pairs 70, 71, 73 and 74
     for msg in audit_idle_looks.check_crowded(pair=_p):
         fail(f'server/data/scripts/chaos/bounty_pool.lua: [look.crowded] {msg}')
 for key in sorted(set(ALLOW) - allow_used):

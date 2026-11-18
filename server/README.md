@@ -35190,3 +35190,64 @@ The step writes the items.otb nodes and an items.xml block (markers, rewritten w
 waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` stays 73 because pair 74 is not built). Below it a WARNING
 line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
 `server/tools/install_decor_flames_test.py`.
+
+## PixelLab monsters (O640; `data/monster/monster_pixellab_looks.csv`, install step `monsterpixellablooks`, client pair 74)
+
+Owner 2026-11-18: the 24 original monsters made with PixelLab (O629, O630) are approved; build them into pair 74 and give them to hunt monsters. The
+outfits 3531 to 3554 are made by `client/tools/sprites/gen_pixellab_monsters.py` (client/MANIFEST.md "PixelLab monsters (O640)"); this section is the
+server side: which hunt monster wears which one. Pair 74 is not built for real, so nothing of it shows yet.
+
+- **The picks.** One hunt monster of the bounty pool (at least 6 spawns on the map) for each look, 24 monsters, none in the map of an earlier pair
+  (recolour, donor, purchased, creature, swap). By name and theme first (cinders, ash, ember, bone, shadow: a fire devil for the imp, a mummy for the
+  bandaged penitent, a spider brood for the brood queen), then by level band, then the most re-used looks: of the 24, eight leave a look that another
+  hunt monster still wore at pair 73 (look 129 had five, 133 four, 65 three, 528, 448, 298 and 987 two each). At pair 73 153 hunt monsters in 68 groups
+  share a look, at pair 74 140 in 63 (the groups of 528, 448, 298, 987 and 65 are gone); the largest stays at five (the Books of look 989, the humans of 129).
+  The bands: tier 1 up to level 30, tier 2 31 to 150, tier 3 151 to 499, tier 4 (the five boss-like looks: warlord, colossus, prophet, brood queen, veil
+  witch) level 500 and more. `gen_pixellab_monsters.py check` and `check_content.py` hold each monster to its band, the pool and the file it has.
+
+  | outfit | art | tier | monster | level | old look | why |
+  |---|---|---|---|---|---|---|
+  | 3531 | Cinder Imp | 1 | Lesser Fire Devil | 17 | 40 | a small fire devil for a hunched ember imp |
+  | 3532 | Ashbound Thrall | 1 | Novice of the Cult | 16 | 133 | a cultist (look 133 was shared by four monsters) for a scorched cultist thrall |
+  | 3533 | Soot Arbalist | 1 | Hunter | 20 | 129 | a ranged hooded soldier (look 129 was shared by five) for a crossbow soldier |
+  | 3534 | Scorch Hound | 1 | Gnarlhound | 12 | 3182 | a gnarled hound for a charred hound |
+  | 3535 | Ember Wisp | 1 | Dawnfly | 9 | 528 | a winged fly (look 528 was shared with the Emerald Damselfly) for a winged ember |
+  | 3536 | Cinder Crawler | 1 | Ladybug | 13 | 448 | a six-legged beetle (look 448 was shared with the Lady bug) for a cracked-abdomen beetle |
+  | 3537 | Hollow Penitent | 1 | Mummy | 20 | 65 | a bandaged mummy (look 65 was shared by three) for a bandaged penitent |
+  | 3538 | Magma Maw | 2 | Gorgemaw | 119 | 584 | a maw for a floating jaw |
+  | 3539 | Slag Brute | 2 | Ogre Brute | 45 | 3355 | a brute for a slag-plated brute |
+  | 3540 | Gloom Stalker | 2 | Nightstalker | 36 | 320 | a night stalker for a shadow panther |
+  | 3541 | Bone Lancer | 2 | Skeleton Elite Warrior | 130 | 298 | a skeleton warrior (look 298 was shared with the Skeleton Warrior) for a skeleton knight with a spear |
+  | 3542 | Pyre Bloat | 2 | Elder Mummy | 38 | 65 | the bigger mummy (look 65) for a swollen corpse-giant |
+  | 3543 | Cinder Bat | 2 | Vicious Manbat | 55 | 3012 | a manbat for a bone-faced bat |
+  | 3544 | Furnace Ogre | 3 | Butcher Ogre | 226 | 3025 | an ogre for an iron-harnessed ogre |
+  | 3545 | Brand Inquisitor | 3 | Hellflayer | 233 | 856 | a flayer for an inquisitor with a branding iron |
+  | 3546 | Obsidian Ravager | 3 | Cinderclaw | 308 | 1124 | a clawed cinder beast for an obsidian lizard-bear |
+  | 3547 | Soot Fiend | 3 | Shadowgeist | 263 | 1483 | a shadow geist for a smoke fiend |
+  | 3548 | Ember Broodsac | 3 | Brain Squid | 300 | 987 | a tentacled squid (look 987 was shared with the Squid Warden) for a tentacled flesh sac |
+  | 3549 | Obsidian Knight | 3 | Blackblade | 275 | 1127 | a black blade for an obsidian knight |
+  | 3550 | Ashen Warlord | 4 | Ashmaw Warlord | 630 | 2289 | an ash warlord for the Ashen Warlord |
+  | 3551 | Molten Colossus | 4 | Inferno Juggernaut | 612 | 1423 | an inferno juggernaut for a lava colossus |
+  | 3552 | Pyre Prophet | 4 | Pyrrhaxis Master | 657 | 1371 | a pyre master for a pyre prophet |
+  | 3553 | Ashen Brood Queen | 4 | Shroud Brood | 770 | 579 | a spider brood (look 579 was shared with the Webbound Crawler) for a spider queen |
+  | 3554 | Veil Witch | 4 | Thornhex Crone | 570 | 2660 | a hexing crone for a veiled witch |
+
+- **The step.** `monsterpixellablooks` (`tools/install_monster_pixellab_looks.py`, after `monstermalgrathlook`, in `install_all.py`). Only when
+  config.lua `chaosClientPair` is 74 or more (`client_pair.PAIR_PIXELLAB`; `PAIR_ASSETS` stays 73): the look of each monster's installed file (XML or Lua,
+  ours and the base server's) and its row of the installed bounty pool become the new look; the colour fields stay (the outfits have no colour mask and
+  ignore them). A monster of an earlier look map would move on from the look that map gave it (none is one today). Below pair 74 a WARNING line and
+  nothing written; a second run changes nothing; `--dry-run` writes nothing; a monster with no file, or on a look none of the maps knows, stops the
+  step. `gen_bounty_pool.py` turns a new look back to the old one: the committed pool stays the same.
+- **The repository files keep the old looks** (no client below pair 74 sees a change; the XML files of the monsters are the base server's, installed by
+  `install_all.py`, and ours).
+- **The audits read the map.** `audit_shared_looks.py` (`load_pixellab`, `look_at_pair`: the look at a client pair, from 74 the PixelLab look, last of
+  the chain), `audit_idle_looks.py` (`donor_rows`, `write_idle`) and `check_content.py` read it at pair 74 next to pairs 69 to 73: no look is shared
+  without a row of `shared_looks_allow.csv`, no look is worn by more than 2 hunt monsters without a row of `crowded_looks_allow.csv`, every hunt monster
+  on one of the 24 looks moves while it stands. `look_idle.csv` has the 24 rows (an idle group of 4, 8 or 15 phases), written from the rehearsal pair.
+  `check_content.py` also holds the map: the 24 outfits 3531 to 3554, one monster each, the old look the file or the committed pool has, the level
+  band, not a player look, not worn by another monster. The `pixellab` rows of `client/tools/sprites/monster_looks/picks.csv` are the source
+  (`gen_pixellab_monsters.py looks` writes the map).
+- **VPS.** Nothing to run now: the gate opens when the pair record is raised to 74, and pair 74 is not built. Admin app first: README "Client pair
+  guard". Fallback: `chaos-ctl.sh client-pair set 74`.
+- **Open.** Not seen in a client. The 14 bigger monsters are 3x3 (96 px), the first hunt monsters of the 3x3 class beyond the donor B ones; whether the
+  bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
