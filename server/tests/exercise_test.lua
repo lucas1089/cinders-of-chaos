@@ -633,6 +633,102 @@ if type(shopCfg) == "table" then
 	end
 end
 
+-- ------------------------------------------------------------------ O657: what a person sees (the tester bots' `!tester dummy`)
+do
+	assert(E.probe and E.testerGive and E.testerClear, "the probe and the two TEST ONLY calls exist")
+	CONST_SLOT_BACKPACK, RETURNVALUE_NOERROR = 3, 0
+	local realItemType = ItemType
+	function ItemType(id) return {getCharges = function() return itemTypes[id] or 0 end, getClientId = function() return id - 20000 end} end
+	local function bagOf(p)
+		local bag = {list = {}}
+		function bag:getSize() return #self.list end
+		function bag:getItem(i) return self.list[i + 1] end
+		p.bag = bag
+		function p:getSlotItem(slot) return slot == CONST_SLOT_BACKPACK and self.bag or nil end
+		function p:getName() return "Tester Dum" end
+		function p:getLevel() return 100 end
+		function p:getSkillLevel(s) return self.levels[s] or 10 end
+		function p:getSkillTries(s) return self.tries[s] or 0 end
+		function p:getManaSpent() return self.mana end
+		function p:addItemEx(item) bag.list[#bag.list + 1] = item; item.removed = false; return RETURNVALUE_NOERROR end
+		return bag
+	end
+	local testerOn = true
+	Chaos.isTester = function() return testerOn end
+	local made = {}
+	Game = {createItem = function(id)
+		local it = newItem(id)
+		it.custom = {}
+		function it:setCustomAttribute(k, v) self.custom[k] = v end
+		function it:getCustomAttribute(k) return self.custom[k] end
+		function it:remove() self.removed = true; for i, x in ipairs(made.bag.list) do if x == self then table.remove(made.bag.list, i) break end end end
+		return it
+	end}
+	local function setupBag(vocation)
+		tiles = {}
+		E.chains = {}
+		addTile(100, 100, 7, true)
+		local p = newPlayer(vocation)
+		made.bag = bagOf(p)
+		return p
+	end
+	-- no weapon, no dummy: the reasons
+	local p = setupBag(17)
+	local pr = E.probe(p)
+	eq(pr.enabled, true, "probe: enabled"); eq(pr.pz, true, "probe: the temple tile is a protection zone"); eq(pr.weapon, nil, "probe: no weapon")
+	eq(pr.guide.mode, "wait", "probe: wait"); ok(pr.guide.why:find("no exercise weapon", 1, true), "probe: the reason is the weapon")
+	-- a TEST ONLY weapon of the class: a Monk gets the fist weapon (the lowest id of the kind), once
+	local gave, why = E.testerGive(p)
+	ok(gave == true and #p.bag.list == 1 and p.bag.list[1].id == 27733, "give: the Monk's fist weapon of 500 charges: " .. tostring(why))
+	eq(p.bag.list[1].custom.tester_give, "dummy", "give: the weapon is marked")
+	E.testerGive(p)
+	eq(#p.bag.list, 1, "give: a bot that carries one gets no second")
+	local warrior = setupBag(4)
+	E.testerGive(warrior)
+	eq(warrior.bag.list[1].id, 27732, "give: the Warrior's sword weapon")
+	local mystic = setupBag(1)
+	E.testerGive(mystic)
+	ok(mystic.bag.list[1].id == 27735 or mystic.bag.list[1].id == 27736 or mystic.bag.list[1].id == 27737, "give: the Mystic's ranged, rod or wand weapon")
+	testerOn = false
+	eq(select(2, E.testerGive(setupBag(4))), "a tester only", "give: refused for a player")
+	testerOn = true
+	-- the weapon is read (slot, client id, charges, the skill it trains)
+	p = setupBag(17)
+	p.levels = {[SKILL_FIST] = 33}
+	p.tries = {[SKILL_FIST] = 120}
+	E.testerGive(p)
+	pr = E.probe(p)
+	eq(pr.weapon.index, 0, "probe: the slot of the weapon"); eq(pr.weapon.clientId, 27733 - 20000, "probe: its client id"); eq(pr.weapon.kind, "fist", "probe: its kind")
+	eq(pr.weapon.charges, 0, "probe: the charges read the item type's (the mock has none)")
+	eq(pr.skill.skill, "fist", "probe: the Monk's weapon trains fist"); eq(pr.skill.level, 33, "probe: the skill level"); eq(pr.skill.tries, 120, "probe: the tries")
+	eq(pr.guide.why, "no training dummy within 40 tiles on this floor", "probe: no dummy near")
+	-- a dummy two tiles away: walk next to it (a melee weapon reaches one tile), the nearest of two
+	addTile(102, 100, 7, true, 27751)
+	addTile(100, 106, 7, true, 5787)
+	for _, t in pairs(tiles) do t.getThingIndex = function() return 2 end end
+	pr = E.probe(p)
+	eq(pr.dummy.pos.x, 102, "probe: the nearest dummy"); eq(pr.dummy.d, 2, "probe: its distance"); eq(pr.dummy.kind, "bonus", "probe: a house dummy gives the bonus")
+	eq(pr.dummy.stackpos, 2, "probe: the stack position of the use packet"); eq(pr.dummy.clientId, 27751 - 20000, "probe: the client id")
+	eq(pr.guide.mode, "walk", "probe: walk to it"); eq(pr.guide.reach[2], 1, "probe: next to it for a melee weapon")
+	p.pos = Position(101, 100, 7)
+	addTile(101, 100, 7, true)
+	pr = E.probe(p)
+	eq(pr.guide.mode, "use", "probe: next to the dummy: use the weapon")
+	-- a ranged weapon works from afar: use it from where the bot is
+	local ranger = setupBag(3)
+	E.testerGive(ranger)
+	addTile(104, 100, 7, true, 27751)
+	for _, t in pairs(tiles) do t.getThingIndex = function() return 1 end end
+	eq(E.probe(ranger).guide.mode, "use", "probe: a bow reaches 4 tiles")
+	-- a chain running: wait
+	ranger.store[37100] = 1
+	eq(E.probe(ranger).guide.mode, "wait", "probe: the chain is running")
+	-- the clear: the marked weapon goes, the chain ends, the flag is cleared
+	eq(E.testerClear(ranger), 1, "clear: one weapon taken"); eq(#ranger.bag.list, 0, "clear: the bag holds none"); eq(ranger.store[37100], 0, "clear: the flag is cleared")
+	eq(E.testerClear(ranger), 0, "clear: nothing left to take")
+	ItemType = realItemType
+end
+
 -- the Ancestral Store hides the retired chests (commands_ui_core.lua)
 dofile("data/scripts/chaos/commands_ui_core.lua")
 local K = ChaosCommandsCore

@@ -534,6 +534,41 @@ do
 	eq(X.addRerolls(buyer, 0), false, "zero refused")
 	eq(X.addRerolls(buyer, "x"), false, "junk refused")
 	eq(st[cfg.rerollStorage], 2, "kept in its storage")
+	-- O657: what a person sees (the tester bots' `!tester task`): the tasks held, the monster to hunt, the nearest living one, the hunt mark, the guide
+	dofile("data/scripts/chaos/bounty_core.lua")
+	X.catalogue = {byKey = {rat = {name = "Rat", key = "rat", cat = "beast", level = 1}},
+		list = {{name = "Cave Rat", key = "cave rat", cat = "beast", level = 2, spawns = 9}, {name = "Wolf", key = "wolf", cat = "beast", level = 9, spawns = 99}}}
+	ChaosPoi = {all = {{k = "hunt", x = 120, y = 100, z = 7, n = "Hunting: Rat, Sewer Rat (level 1-8)"}, {k = "boss", x = 5, y = 5, z = 7, n = "Hunting: Rat (level 1-8)"}}}
+	local near = {}
+	local at = {x = 100, y = 100, z = 7}
+	local pr = {getGuid = function() return 91 end, getLevel = function() return 5 end, getPosition = function() return at end,
+		getStorageValue = function() return -1 end}
+	Position = function(x, y, z) return {x = x, y = y, z = z} end
+	Game.getSpectators = function() return near end
+	Chaos.monsterTypeName = function(c) return c.typeName end
+	local today = C.day(os.time(), cfg)
+	X.players[91] = {guid = 91, day = today, kills = {rat = 4}, tasks = {
+		["h:rat"] = {key = "h:rat", at = 1, kind = "hunt", target = "rat", label = "Rat", progress = 2, required = 10, status = 0},
+		["f:beast"] = {key = "f:beast", at = 2, kind = "family", target = "beast", label = "Beasts", lo = 1, hi = 20, progress = 0, required = 30, status = 0},
+		["h:done"] = {key = "h:done", at = 3, kind = "hunt", target = "rat", label = "Rat", progress = 10, required = 10, status = 1}}}
+	local p = X.probe(pr)
+	eq(#p.active, 2, "O657 probe: the two tasks held, not the finished one")
+	eq(p.active[1].key, "h:rat", "O657 probe: the oldest first"); eq(p.active[1].progress, 2, "O657 probe: progress")
+	eq(p.active[1].monster, "Rat", "O657 probe: a hunt task names its monster"); eq(p.active[1].kills, 4, "O657 probe: the bestiary kills of it")
+	eq(p.active[2].monster, "Wolf", "O657 probe: a family task: its most common monster of the window")
+	eq(p.target, "h:rat", "O657 probe: the task to hunt")
+	eq(p.guide.mode, "walk", "O657 probe: no monster in sight: walk to its hunt"); eq(p.guide.goal.x, 120, "O657 probe: the hunt mark that lists it")
+	near[1] = {typeName = "Rat", isMonster = function() return true end, getMaster = function() return nil end, getPosition = function() return {x = 110, y = 100, z = 7} end}
+	p = X.probe(pr)
+	eq(p.guide.mode, "walk", "O657 probe: a rat in sight: walk to it"); eq(p.guide.goal.x, 110, "O657 probe: the monster, not the mark")
+	near[1].getPosition = function() return {x = 102, y = 100, z = 7} end
+	eq(X.probe(pr).guide.mode, "fight", "O657 probe: within reach: fight")
+	near[1].typeName = "Wolf"
+	eq(X.probe(pr).guide.mode, "walk", "O657 probe: another monster is not the task's")
+	X.players[91].tasks = {}
+	p = X.probe(pr)
+	eq(#p.active, 0, "O657 probe: no task held"); eq(p.guide, nil, "O657 probe: no guide without a task")
+	X.players[91] = nil
 	setmetatable(_G, nil)
 end
 

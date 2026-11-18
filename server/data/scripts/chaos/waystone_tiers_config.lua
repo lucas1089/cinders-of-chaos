@@ -103,11 +103,24 @@ return {
 	-- tester bots (O651; `!tester wsmap`, tools/tester_checks.py wsmap_walk): a map is the shared base map, not a copy per run, so a tester walks
 	-- one only while nobody else is in it, and leaves the moment a player steps into its rectangle (WT.testerGuard, every guardSeconds) or after
 	-- maxSeconds. minLevel: the level a bot needs for monsters of the first tier (1100). `arrivals` is the tile the base device's teleport puts a
-	-- group on, per entry of `maps` ({x, y, z}), read from the base file by `tools/audit_waystone_maps.py BASE --arrivals` and pasted here: the
+	-- group on, per entry of `maps` ({x, y, z}), read from the base file by `tools/audit_waystone_maps.py BASE --arrivals` and pasted here (O657, all 12 pasted): the
 	-- pads and the teleport are base code (data/scripts/customs/waystone_system/tier_maps.lua, not in the repository), so a map without an
 	-- arrival here is never entered by a tester.
 	tester = {minLevel = 1000, maxSeconds = 600, guardSeconds = 2, kills = 3},
-	arrivals = {},
+	arrivals = {
+		[1] = {x = 33597, y = 33141, z = 8}, -- Underground: Map 3 Water
+		[2] = {x = 32877, y = 33496, z = 7}, -- Floor: Map 6 Cave
+		[3] = {x = 33324, y = 33069, z = 7}, -- Floor: Map 2
+		[4] = {x = 33258, y = 33117, z = 8}, -- Underground: Map 2 Cave
+		[5] = {x = 33047, y = 33229, z = 7}, -- Floor: Map 3
+		[6] = {x = 32994, y = 33159, z = 8}, -- Underground: Map 1 Cave
+		[7] = {x = 33123, y = 33232, z = 7}, -- Floor: Map 4 (forest)
+		[8] = {x = 33197, y = 33332, z = 8}, -- Underground: Map 5
+		[9] = {x = 33445, y = 33246, z = 7}, -- Floor: Map 5 (desert)
+		[10] = {x = 32956, y = 33030, z = 7}, -- Floor: Map 1 (Ice)
+		[11] = {x = 32976, y = 33353, z = 8}, -- Underground: Map 4 Undead cave
+		[12] = {x = 33322, y = 33394, z = 7}, -- Floor: Map 7 (forest & desert)
+	},
 
 	-- the layout audit (tools/audit_waystone_maps.py, run on an installed base server; tests/waystone_layouts_test.lua keeps
 	-- this table and the maps above in step). One row per entry of `maps`: status "ok" (arrival, levers, boss room and

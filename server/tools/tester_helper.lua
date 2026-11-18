@@ -62,6 +62,11 @@
 --     that is ready for the bot: ChaosProfessions.probe) as a person sees them; `ascend proof` is the TEST ONLY credit of the proof (a tester only,
 --     logged), `path` the way on foot to the guardian inside the trial / next to the node, `ascend close` the end of the bot's own trial. The talk with
 --     the Oracle (the modal windows), the fight, the choice, the use of the node and the buying of a tool are the bot's own
+--   * "!tester dummy [state | path | give | clear]", "!tester mount [state | give | clear]", "!tester task [state | where NAME | path]", and "!tester gather
+--     corpse | water" (O657): the exercise weapon and the nearest training dummy (ChaosExercise.probe), the mount and the speed, the Bestiary's kill tasks
+--     with the monster to hunt (ChaosBestiary.probe) and the nearest fresh corpse for the knife / fishable water for the rod; `dummy give` and `mount give`
+--     are TEST ONLY grants (a tester only, logged), `clear` takes them back. The use of the weapon, the mount toggle (0xD4), the walk and the fight are
+--     the bot's own
 --   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
 --     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
 --     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
@@ -103,7 +108,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 23
+HELPER_VERSION = 24
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -2045,11 +2050,132 @@ function commands.gather(player, arg)
 		return
 	end
 	local probe = P.probe(player)
-	if what == "path" then
+	if what == "corpse" or what == "water" then
+		-- O657: the way on foot to the nearest fresh corpse (the knife) or the nearest fishable water (the rod): the guide of that tool answers
+		probe.guide = what == "corpse" and probe.flayGuide or probe.angleGuide
+		local got, why = goalPath(player, probe)
+		tell(player, "gather", H.cutAnswer(probe, got or {err = why}))
+	elseif what == "path" then
 		local got, why = goalPath(player, probe)
 		tell(player, "gather", H.cutAnswer(probe, got or {err = why}))
 	else
 		tell(player, "gather", H.cutAnswer(probe))
+	end
+end
+
+-- ---------------------------------------------------------------- O657 the exercise dummy, the mount and the kill task
+-- "!tester dummy [state | path | give | clear]": ChaosExercise.probe (the weapon, the dummy, the skill and its tries, `guide`), the engine's path next to the
+-- dummy; `give` / `clear` are the TEST ONLY weapon (a tester only, logged). The use of the weapon on the dummy is the bot's own packet.
+function commands.dummy(player, arg)
+	local what, usage = H.parseDummy(arg)
+	if not what then
+		tell(player, "dummy", {err = usage})
+		return
+	end
+	local E = ChaosExercise
+	if not (E and E.probe and E.testerGive) then
+		tell(player, "dummy", {err = "no exercise weapons"})
+		return
+	end
+	if what == "give" then
+		local ok, why = E.testerGive(player)
+		tell(player, "dummy", H.cutAnswer(E.probe(player), ok and {granted = true} or {err = tostring(why or "refused")}))
+	elseif what == "clear" then
+		local n = E.testerClear(player)
+		tell(player, "dummy", H.cutAnswer(E.probe(player), {cleared = n}))
+	elseif what == "path" then
+		local probe = E.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "dummy", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "dummy", H.cutAnswer(E.probe(player)))
+	end
+end
+
+-- "!tester task [state | where NAME | path]": ChaosBestiary.probe (the kill tasks held, the monster to hunt, the guide); `where NAME` is the bounty
+-- board's "where does it spawn" (ChaosBounty.probe), `path` the engine's path to the guide's goal. Nothing here accepts, moves or fights.
+function commands.task(player, arg)
+	local want, usage = H.parseTask(arg)
+	if not want then
+		tell(player, "task", {err = usage})
+		return
+	end
+	local X = ChaosBestiary
+	if not (X and X.probe) then
+		tell(player, "task", {err = "no bestiary"})
+		return
+	end
+	if want.what == "where" then
+		local B = ChaosBounty
+		local probe = B and B.probe and B.probe(player, want.name)
+		tell(player, "task", H.bountyAnswer({where = probe and probe.where, pos = player:getPosition(), level = player:getLevel()}))
+		return
+	end
+	local probe = X.probe(player)
+	if want.what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "task", H.cutAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "task", H.cutAnswer(probe))
+end
+
+-- "!tester mount [state | give | clear]": the mount as a person sees it: mounted or not (the outfit's mount), the speed, the base speed, whether the
+-- tile is a protection zone (a mount is refused there), the mount given. `give` is a TEST ONLY mount (the cheapest free one of the store's list:
+-- Player:addMount, set as the current mount; a tester only, logged), `clear` dismounts and takes the given mount back. The toggle is the bot's own
+-- packet (0xD4), the same a click on the mount button sends.
+local mountGiven = {}
+local function mountState(player)
+	local tile = Tile(player:getPosition())
+	local out = {pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false, level = player:getLevel()}
+	local okO, outfit = pcall(function() return player:getOutfit() end)
+	out.lookMount = okO and type(outfit) == "table" and tonumber(outfit.lookMount) or 0
+	out.mounted = out.lookMount ~= 0
+	out.speed = player:getSpeed()
+	local okB, base = pcall(function() return player:getBaseSpeed() end)
+	out.baseSpeed = okB and base or nil
+	local okC, cur = pcall(function() return player:getCurrentMount() end)
+	out.current = okC and tonumber(cur) or nil
+	out.granted = mountGiven[player:getId()]
+	return out
+end
+
+function commands.mount(player, arg)
+	local what, usage = H.parseMount(arg)
+	if not what then
+		tell(player, "mount", {err = usage})
+		return
+	end
+	if what == "give" then
+		local okS, shop = pcall(dofile, "data/scripts/chaos/shop_cosmetics.lua")
+		local pick = H.pickMount(okS and type(shop) == "table" and shop.mounts or nil)
+		if not pick then
+			tell(player, "mount", {err = "no mount in the store's list"})
+			return
+		end
+		local ok, err = pcall(function()
+			if not player:hasMount(pick.id) then
+				player:addMount(pick.id)
+			end
+			player:setCurrentMount(pick.id)
+		end)
+		if not ok then
+			tell(player, "mount", {err = "the engine refused the mount: " .. tostring(err):sub(1, 60)})
+			return
+		end
+		mountGiven[player:getId()] = pick.id
+		print(string.format("[tester-helper] %s: TEST ONLY mount %d (%s) given", player:getName(), pick.id, pick.name))
+		tell(player, "mount", H.cutAnswer(mountState(player), {name = pick.name}))
+	elseif what == "clear" then
+		local id = mountGiven[player:getId()]
+		pcall(function() player:toggleMount(false) end)
+		if id then
+			pcall(function() player:removeMount(id) end)
+			mountGiven[player:getId()] = nil
+		end
+		tell(player, "mount", H.cutAnswer(mountState(player), {cleared = id and true or false}))
+	else
+		tell(player, "mount", H.cutAnswer(mountState(player)))
 	end
 end
 

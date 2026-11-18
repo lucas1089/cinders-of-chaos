@@ -942,6 +942,31 @@ class CheckIO(KeyIO):
                 bot.waiters.remove(waiter)
         return keep.items
 
+    # ---- O657: a tool used on a thing of the map and the mount button, as the client sends them
+    async def use_item_with(self, client_id, pos, target_client_id, target_stackpos=0, wait=1.5):
+        """uses a tool the character carries (by its client id, the hotkey place 0xFFFF 0 0: the server finds it in the backpack) on a thing that lies on
+        the map (a corpse, a water tile; 0x83): the server's text lines of the next `wait` seconds"""
+        if not self.alive() or not client_id or not isinstance(pos, dict):
+            return []
+        n0 = self.bot.recent_n
+        self.bot.conn.send(TC.use_with_packet((0xFFFF, 0, 0), int(client_id), 0, (int(pos['x']), int(pos['y']), int(pos['z'])),
+                                              int(target_client_id or 0), int(target_stackpos or 0)))
+        await self.bot.conn.w.drain()
+        await asyncio.sleep(wait)
+        new = min(self.bot.recent_n - n0, len(self.bot.recent))
+        return list(self.bot.recent[-new:]) if new > 0 else []
+
+    async def toggle_mount(self, on, wait=2.5):
+        """the mount button (0xD4, u8 1 = mount, 0 = dismount): the server's text lines of the next `wait` seconds"""
+        if not self.alive():
+            return []
+        n0 = self.bot.recent_n
+        self.bot.conn.send(b'\xD4' + (b'\x01' if on else b'\x00'))
+        await self.bot.conn.w.drain()
+        await asyncio.sleep(wait)
+        new = min(self.bot.recent_n - n0, len(self.bot.recent))
+        return list(self.bot.recent[-new:]) if new > 0 else []
+
     async def partner(self, min_level=0):
         # a bot that is in no other party check: the checks of all bots start together, and when every bot picked the
         # same partner (the lowest id) only one party formed and the others read 0 members (local run 2026-10-31)

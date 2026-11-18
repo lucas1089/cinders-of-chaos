@@ -260,6 +260,180 @@ far:allowFarUse(true)
 near:register()
 far:register()
 
+-- ---------------------------------------------------------------- what a person sees (the tester bots, O657)
+-- For the tester bots' `!tester dummy` (tools/tester_helper.lua checks that the asker is a tester). Reads only: whether the bot stands in a protection
+-- zone, the exercise weapon it carries (its slot in the backpack, its client id, the charges), the skill that weapon trains for its class with the
+-- level and the tries now (a rise of either is what the dummy gave), the nearest training dummy on its floor (looked for ring by ring up to
+-- DUMMY_REACH tiles), whether the chain is running, and `guide` (walk next to the dummy, use the weapon on it, wait while it trains, or why not).
+-- The use itself (the weapon on the dummy) is the bot's own packet, the same a click sends.
+local DUMMY_REACH = 40
+local KIND_ORDER = {"melee", "fist", "ranged", "rod", "wand"}
+
+local dummyList
+local function dummyIds()
+	if not dummyList then
+		dummyList = {}
+		for _, list in pairs(cfg.dummies) do
+			for _, id in ipairs(list) do
+				dummyList[#dummyList + 1] = id
+			end
+		end
+		table.sort(dummyList)
+	end
+	return dummyList
+end
+
+local function dummyOn(x, y, z)
+	local tile = Tile(Position(x, y, z))
+	if not tile then
+		return nil
+	end
+	for _, id in ipairs(dummyIds()) do
+		local item = tile:getItemById(id)
+		if item then
+			return item, id, tile
+		end
+	end
+	return nil
+end
+
+-- the nearest dummy of the floor: the rings of the Chebyshev distance 0, 1, 2 ... (a dummy in a hall is rarely far from the temple)
+local function nearestDummy(pos)
+	for d = 0, DUMMY_REACH do
+		for dx = -d, d do
+			for dy = -d, d do
+				if math.max(math.abs(dx), math.abs(dy)) == d then
+					local item, id, tile = dummyOn(pos.x + dx, pos.y + dy, pos.z)
+					if item then
+						local it = ItemType(id)
+						return {id = id, clientId = it and it:getClientId() or 0, pos = {x = pos.x + dx, y = pos.y + dy, z = pos.z}, d = d,
+							stackpos = tile:getThingIndex(item), kind = E.dummyKind(id)}
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- the first exercise weapon of the backpack's own slots: item, slot
+local function weaponInBag(player)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		return nil
+	end
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item and E.kindOf(item:getId()) then
+			return item, i
+		end
+	end
+	return nil
+end
+
+local function skillNow(player, skill)
+	if skill == "magic" then
+		return {skill = "magic", level = player:getMagicLevel(), tries = player.getManaSpent and player:getManaSpent() or 0}
+	end
+	local id = SKILL_ID[skill]
+	return {skill = skill, level = player:getSkillLevel(id), tries = player.getSkillTries and player:getSkillTries(id) or 0}
+end
+
+function E.probe(player)
+	local pos = player:getPosition()
+	local vocation = player:getVocation():getId()
+	local out = {enabled = true, level = player:getLevel(), pos = {x = pos.x, y = pos.y, z = pos.z}, pz = inProtectionZone(pos),
+		training = player:getStorageValue(TRAINING_STORAGE) == 1, locked = restricted(player), reach = DUMMY_REACH}
+	local item, index = weaponInBag(player)
+	local kind
+	if item then
+		kind = E.kindOf(item:getId())
+		local it = ItemType(item:getId())
+		out.weapon = {id = item:getId(), clientId = it and it:getClientId() or 0, index = index, charges = chargesOf(item), kind = kind,
+			allowed = E.allowed(kind, vocation) and true or false}
+		local levels, percents
+		if kind == "melee" then
+			levels, percents = meleeFacts(player)
+		end
+		local skill = E.skillFor(kind, vocation, levels, percents)
+		out.skill = skill and skillNow(player, skill) or nil
+	end
+	local dummy = nearestDummy(pos)
+	out.dummy = dummy
+	if not item then
+		out.guide = {mode = "wait", why = "no exercise weapon in the backpack"}
+	elseif out.locked then
+		out.guide = {mode = "wait", why = "the class is locked"}
+	elseif not dummy then
+		out.guide = {mode = "wait", why = "no training dummy within " .. DUMMY_REACH .. " tiles on this floor"}
+	else
+		local range = (cfg.kinds[kind] or {}).range or 1
+		local reachable = E.reach(kind, dummy.pos.x - pos.x, dummy.pos.y - pos.y, dummy.pos.z - pos.z)
+		if out.training then
+			out.guide = {mode = "wait", why = "the chain is running"}
+		elseif reachable then
+			out.guide = {mode = "use", goal = dummy.pos, why = "within reach of the dummy"}
+		else
+			out.guide = {mode = "walk", goal = dummy.pos, reach = {1, math.max(1, range - ((range > 1) and 1 or 0))}, why = "to the nearest dummy"}
+		end
+	end
+	return out
+end
+
+-- TEST ONLY (`!tester dummy give`): the lowest exercise weapon (500 charges) the bot's class may train with, put into the backpack, marked so
+-- `testerClear` takes it again. A tester only (the helper checks), logged; nothing when the bot carries a weapon already. -> true, or nil and the reason
+function E.testerGive(player)
+	if not Chaos.isTester(player) then
+		return nil, "a tester only"
+	end
+	if weaponInBag(player) then
+		return true
+	end
+	local vocation = player:getVocation():getId()
+	for _, kind in ipairs(KIND_ORDER) do
+		if E.allowed(kind, vocation) then
+			local best
+			for id, k in pairs(cfg.items) do
+				if k == kind and (not best or id < best) then
+					best = id
+				end
+			end
+			local item = best and Game.createItem(best, 1)
+			if item then
+				item:setCustomAttribute("tester_give", "dummy")
+				local rc = player:addItemEx(item, false)
+				if rc ~= nil and rc ~= RETURNVALUE_NOERROR then
+					return nil, "no room for the weapon"
+				end
+				print(string.format("[exercise] %s: TEST ONLY exercise weapon %d given (kind %s)", player:getName(), best, kind))
+				return true
+			end
+		end
+	end
+	return nil, "no exercise weapon for this class"
+end
+
+-- TEST ONLY (`!tester dummy clear`): the marked weapons go again, the chain ends. -> the count taken
+function E.testerClear(player)
+	E.endChain(player:getId())
+	player:setStorageValue(TRAINING_STORAGE, 0)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	local taken = 0
+	if bag then
+		for i = bag:getSize() - 1, 0, -1 do
+			local item = bag:getItem(i)
+			if item and E.kindOf(item:getId()) then
+				local okAttr, v = pcall(function() return item:getCustomAttribute("tester_give") end)
+				if okAttr and v == "dummy" then
+					item:remove()
+					taken = taken + 1
+				end
+			end
+		end
+	end
+	return taken
+end
+
 -- the flag the Idle Hall reads: never left at 1 after a logout or a restart (no chain survives either)
 local logout = CreatureEvent("ChaosExerciseLogout")
 function logout.onLogout(player)

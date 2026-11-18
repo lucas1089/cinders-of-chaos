@@ -1061,6 +1061,56 @@ do
 	eq(P.probe(g).node, nil, "probe: no node on another floor"); eq(P.probe(g).guide.mode, "wait", "probe: wait")
 end
 
+-- ------------------------------------------------------------------ O657: flaying and angling as a person sees them (`!tester gather corpse | water`)
+do
+	local g = newPlayer(51, 150, 500, 500)
+	events.ChaosProfessionsLogin.onLogin(g)
+	g.inv[5908], g.inv[2580] = 1, 1
+	local pr = P.probe(g)
+	eq(pr.tools.flaying, true, "O657 probe: the knife is carried"); eq(pr.tools.angling, true, "O657 probe: the rod is carried")
+	eq(pr.prof.flaying.level, 1, "O657 probe: the flaying level"); eq(pr.prof.angling.xp, 0, "O657 probe: the angling experience")
+	eq(pr.fishing.level, nil, "O657 probe: no Fishing skill on the mock (the real engine has one)")
+	eq(pr.corpse, nil, "O657 probe: no corpse"); eq(pr.flayGuide.mode, "wait", "O657 probe: wait for a corpse")
+	check(pr.flayGuide.why:find("fresh corpse", 1, true) ~= nil, "O657 probe: the reason")
+	eq(pr.water, nil, "O657 probe: no water"); eq(pr.angleGuide.mode, "wait", "O657 probe: wait for water")
+	-- a tagged corpse three tiles away: walk next to it; the tag's tier and the place in the tile are read
+	local tile = Tile({x = 503, y = 501, z = 7})
+	local corpse = Game.createItem(2300, 1, Position(503, 501, 7))
+	corpse.custom["chaos_flay"] = 3 * 10 + 2
+	pr = P.probe(g)
+	check(pr.corpse ~= nil, "O657 probe: the tagged corpse is seen")
+	eq(pr.corpse.tier, 2, "O657 probe: its tier"); eq(pr.corpse.d, 3, "O657 probe: its distance"); eq(pr.corpse.stackpos, tile:getThingIndex(corpse), "O657 probe: the place in the tile")
+	eq(pr.corpse.clientId, 2300 - 30000, "O657 probe: the client id")
+	eq(pr.flayGuide.mode, "walk", "O657 probe: walk"); eq(pr.flayGuide.reach[2], 1, "O657 probe: next to it"); eq(pr.flayGuide.goal.x, 503, "O657 probe: to the corpse")
+	g.pos = {x = 503, y = 502, z = 7}
+	eq(P.probe(g).flayGuide.mode, "use", "O657 probe: next to the corpse: use the knife")
+	-- a flayed corpse, and one that belongs to another character, are not offered
+	corpse.custom["chaos_flayed"] = 1
+	eq(P.probe(g).corpse, nil, "O657 probe: a flayed corpse is not offered")
+	corpse.custom["chaos_flayed"] = nil
+	corpse.owner = 99
+	eq(P.probe(g).corpse, nil, "O657 probe: another character's corpse is not offered")
+	corpse.owner = 0
+	-- water: the ground's fluid source decides; the stock cast is used with the ground (stack place 0)
+	g.pos = {x = 500, y = 500, z = 7}
+	local realIT = ItemType
+	ItemType = function(id)
+		local t = realIT(id)
+		t.getFluidSource = function() return id == 4608 and 1 or 0 end
+		return t
+	end
+	local ground = newItem(4608, {x = 506, y = 500, z = 7})
+	Tile({x = 506, y = 500, z = 7}).getGround = function() return ground end
+	pr = P.probe(g)
+	check(pr.water ~= nil, "O657 probe: the water is seen")
+	eq(pr.water.d, 6, "O657 probe: its distance"); eq(pr.water.stackpos, 0, "O657 probe: the ground is the first thing of the tile")
+	eq(pr.water.clientId, 4608 - 30000, "O657 probe: the client id of the ground")
+	eq(pr.angleGuide.mode, "walk", "O657 probe: walk to the water"); eq(pr.angleGuide.reach[2], 2, "O657 probe: within two tiles")
+	g.pos = {x = 504, y = 500, z = 7}
+	eq(P.probe(g).angleGuide.mode, "use", "O657 probe: at the water: cast")
+	ItemType = realIT
+end
+
 print(string.format("professions_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

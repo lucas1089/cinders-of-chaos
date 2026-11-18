@@ -808,6 +808,47 @@ local function payTask(player, st, t)
 	end
 end
 
+-- ---------------------------------------------------------------- what a person sees (the tester bots, O657)
+-- For the tester bots' `!tester task` (tools/tester_helper.lua checks that the asker is a tester). Reads only: the kill tasks the character holds with their
+-- progress, and for the first one with a monster to hunt (a hunt task names it, a family task has its most common monster in the level window) the
+-- kills of that monster in the bestiary, the nearest living one within 20 tiles and the nearest hunt mark that lists it (the bounty board's marks,
+-- ChaosBounty.spawnMarks), and `guide` as the bounty board's: fight, walk to the monster, walk to its hunt, or wait. The accept, the abandon, the walk
+-- and the kills are the bot's own.
+function X.probe(player)
+	local st = stateOf(player)
+	local pos = player:getPosition()
+	local at = {x = pos.x, y = pos.y, z = pos.z}
+	local out = {level = player:getLevel(), pos = at, maxActive = cfg.maxActive, active = {}}
+	local first
+	for _, t in ipairs(taskList(st)) do
+		local e = t.kind == "hunt" and X.cat().byKey[t.target] or familyFace(t)
+		local row = {key = t.key, kind = t.kind, label = t.label, progress = t.progress or 0, required = t.required, status = t.status,
+			monster = e and e.name or nil, kills = e and (st.kills[e.key] or 0) or nil}
+		out.active[#out.active + 1] = row
+		if not first and row.monster then
+			first = row
+		end
+	end
+	local B = ChaosBounty
+	if first and B and B.guide and B.spawnMarks then
+		local mark = B.nearestMark(B.spawnMarks(ChaosPoi and ChaosPoi.all or {}, first.monster), at)
+		local monster, bd
+		for _, cr in ipairs(Game.getSpectators(Position(pos.x, pos.y, pos.z), false, false, 20, 20, 20, 20) or {}) do
+			if cr:isMonster() and not cr:getMaster() and typeNameOf(cr):lower() == first.monster:lower() then
+				local p = cr:getPosition()
+				local d = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))
+				if p.z == pos.z and (not bd or d < bd) then
+					monster, bd = {x = p.x, y = p.y, z = p.z}, d
+				end
+			end
+		end
+		out.target = first.key
+		out.guide = B.guide({active = {name = first.monster, progress = first.progress, required = first.required, status = 0}, pos = at,
+			mark = mark, monster = monster, reach = 5})
+	end
+	return out
+end
+
 -- ---------------------------------------------------------------- kills
 -- direct: the player made the kill (a party member's credit counts for tasks only by C.partyCountsTask)
 local function creditKill(player, e, direct)

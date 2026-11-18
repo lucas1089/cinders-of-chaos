@@ -7704,5 +7704,469 @@ class Settings(unittest.TestCase):
         self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
 
 
+# ------------------------------------------------------------------------------------------------ O657: stash moves, dummy, mount, knife, rod, kill task kills
+class ToolIO(ChoreIO):
+    """a mocked game for the O657 checks: scripted helper answers (lists are popped in order, the last one stays), the packets the checks send are kept"""
+
+    def __init__(self, helper=None, replies=None, collects=None):
+        super().__init__(replies=replies)
+        self.script = {k: (list(v) if isinstance(v, list) else v) for k, v in (helper or {}).items()}
+        self.collect_fn = collects
+        self.used, self.toggled, self.stepped, self.collected, self.bought, self.shop_items = [], [], [], [], [], None
+        self.use_texts, self.mount_texts = [], []
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds = getattr(self, 'cmds', []) + [command]
+        v = self.script.get(command, self.answers.get(command))
+        if isinstance(v, list):
+            return v.pop(0) if len(v) > 1 else v[0]
+        return v(self) if callable(v) else v
+
+    async def collect(self, opname, action, datas, wait=3.0):
+        self.collected.append((opname, action, datas))
+        return self.collect_fn(datas) if self.collect_fn else []
+
+    async def use_item_with(self, client_id, pos, target_client_id, target_stackpos=0, wait=1.5):
+        self.used.append((client_id, pos, target_client_id, target_stackpos))
+        return list(self.use_texts)
+
+    async def toggle_mount(self, on, wait=2.5):
+        self.toggled.append(on)
+        return list(self.mount_texts)
+
+    async def step(self, dx, dy):
+        self.stepped.append((dx, dy))
+
+    async def shop_window(self, npc, wait=5.0):
+        return self.shop_items
+
+    def shop_close(self):
+        pass
+
+    async def buy(self, item_id, amount=1):
+        self.bought.append(item_id)
+
+    async def loot(self):
+        pass
+
+    def raid_mode(self, names, on, keep_flee=False):
+        pass
+
+
+def smsg(**d):
+    return {'action': 'Stash', 'data': d}
+
+
+class StashWorld:
+    """the stash of a mocked server: the units of one item type, a deposit adds the dragged unit, a Redeem gives it back"""
+
+    def __init__(self, item=777, stored=True, closed=None, lose=False, keep=False):
+        self.item, self.stored, self.closed, self.lose, self.keep = item, stored, closed, lose, keep
+        self.units, self.row = 0, None
+
+    def list(self):
+        ents = []
+        if self.units:
+            ents.append({'id': self.item, 'count': self.units, 'row': self.row} if self.row is not None else {'id': self.item, 'count': self.units})
+        return [smsg(make='tabs', tabs=[{'name': 'General', 'used': 1, 'size': 30}], canWithdraw=True, canDeposit=not self.closed, depositWhy=self.closed),
+                smsg(make='addItems', isFirst=True, isLast=True, items=ents)]
+
+    def __call__(self, datas):
+        out = []
+        for d in datas:
+            if d['make'] == 'SendItems':
+                out += self.list()
+            elif d['make'] == 'Stash':
+                if self.closed:
+                    out.append(smsg(make='access', canDeposit=False))
+                elif not self.keep:
+                    self.units += 1
+                    self.row = 41 if self.stored else None
+            elif d['make'] == 'Redeem' and not self.lose:
+                self.units = max(0, self.units - 1)
+                if self.stored:
+                    self.row = None
+        return out
+
+
+def stash_io(world, back=True, give=None):
+    give = give if give is not None else {'what': 'item', 'id': 777, 'clientId': 3100, 'index': 4, 'bagClientId': 2853, 'count': 1}
+    bag = {'used': 3, 'rows': [{'i': 0, 'id': 7618}, {'i': 1, 'id': 777}, {'i': 2, 'id': 7620}] if back else [{'i': 0, 'id': 7618}, {'i': 1, 'id': 7620}, {'i': 2, 'id': 7618}]}
+    return ToolIO(helper={'give item': give, 'bag': bag, 'path temple': {'here': True}}, collects=world)
+
+
+class StashMove(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_stash_move(io, 'Tester Sta', 'Ninja', 100))
+
+    def test_a_stored_item_goes_in_and_comes_out(self):
+        w = StashWorld()
+        io = stash_io(w)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a stored item', r.detail)
+        self.assertIn('0 -> 1 -> 0', r.detail)
+        dep = next(d for c in io.collected for d in c[2] if d['make'] == 'Stash')
+        self.assertEqual(dep['Pos'], {'x': 65535, 'y': 64, 'z': 4, 'stackpos': 4}, 'the place in the open backpack (container 0, the slot)')
+        self.assertEqual((dep['ItemId'], dep['Count'], dep['UpdateList']), (3100, 1, True))
+        red = next(d for c in io.collected for d in c[2] if d['make'] == 'Redeem')
+        self.assertEqual(red, {'make': 'Redeem', 'row': 41}, 'a stored item is taken out by its row')
+        self.assertEqual(io.moves[-1], 'hunt', 'the bot goes back to its hunt')
+
+    def test_a_plain_stack_is_taken_out_by_its_type(self):
+        w = StashWorld(stored=False)
+        io = stash_io(w)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a stack', r.detail)
+        red = next(d for c in io.collected for d in c[2] if d['make'] == 'Redeem')
+        self.assertEqual(red, {'make': 'Redeem', 'item': 777, 'count': 1})
+
+    def test_the_faults(self):
+        r = self.go(stash_io(StashWorld(keep=True)))
+        self.assertEqual((r.status, 'expected one more' in r.detail), (TX.FAIL, True), 'the drag changed nothing and no reason came')
+        r = self.go(stash_io(StashWorld(lose=True)))
+        self.assertEqual((r.status, 'took item 777 out of the stash' in r.detail), (TX.FAIL, True), 'the withdrawal left the unit in the stash')
+        r = self.go(stash_io(StashWorld(), back=False))
+        self.assertEqual((r.status, 'the stash lost it' in r.detail), (TX.FAIL, True), 'the stash gave it up and the backpack has none')
+
+    def test_a_closed_stash_is_a_skip(self):
+        r = self.go(stash_io(StashWorld(closed='depot')))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('takes no deposit', r.detail)
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(ToolIO()).status, TX.SKIP)
+        r = self.go(ToolIO(helper={'give item': {'err': 'no room for the item'}}))
+        self.assertEqual((r.status, 'no room' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'give item': {'what': 'item'}}))
+        self.assertEqual((r.status, 'no item or slot' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'give item': {'id': 7, 'clientId': 8, 'index': 0, 'bagClientId': 1}, 'path temple': {'err': 'no path'}, 'enter temple': {'err': 'no'}}))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        r = self.go(ToolIO(helper={'give item': {'id': 7, 'clientId': 8, 'index': 0, 'bagClientId': 1}, 'path temple': {'here': True}}, collects=lambda d: []))
+        self.assertEqual((r.status, 'no item list' in r.detail), (TX.SKIP, True), 'a stash that sends no list')
+
+    def test_the_readers(self):
+        msgs = [smsg(make='addItems', items=[{'id': 7, 'count': 3}, {'id': 7, 'count': 2, 'row': 9}, {'id': 8, 'count': 1}])]
+        self.assertEqual(TX.stash_units(msgs, 7), (5, [9]))
+        self.assertEqual(TX.stash_units([], 7), (None, []))
+        self.assertEqual(TX.stash_units([smsg(make='tabs')], 7), (None, []))
+        self.assertIn('closed', TX.stash_closed([smsg(make='tabs', canDeposit=False, depositWhy='depot')]))
+        self.assertIsNone(TX.stash_closed([smsg(make='tabs', canDeposit=True)]))
+
+
+def dstate(charges=500, tries=100, level=30, pz=True, guide='use', weapon=True, dummy=True, **kw):
+    out = {'enabled': True, 'pz': pz, 'level': 100, 'training': False, 'locked': False,
+           'skill': {'skill': 'fist', 'level': level, 'tries': tries}, 'guide': {'mode': guide, 'why': 'x'}}
+    if weapon:
+        out['weapon'] = {'id': 27733, 'clientId': 7733, 'index': 2, 'charges': charges, 'kind': 'fist', 'allowed': True}
+    if dummy:
+        out['dummy'] = {'id': 27751, 'clientId': 7751, 'pos': {'x': 9, 'y': 8, 'z': 7}, 'd': 1, 'stackpos': 2, 'kind': 'bonus'}
+    out.update(kw)
+    return out
+
+
+class DummyTrain(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_dummy_train(io, 'Tester Dum', 'Monk', 100))
+
+    def test_the_weapon_trains_on_the_dummy(self):
+        io = ToolIO(helper={'dummy state': [dstate(), dstate(494, 400)]})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('6 charge(s) spent', r.detail)
+        self.assertEqual(io.used, [(7733, {'x': 9, 'y': 8, 'z': 7}, 7751, 2)], 'the weapon by its client id on the dummy by its place')
+        self.assertEqual(io.stepped, [(1, 0)], 'a step off the dummy ends the chain')
+        self.assertNotIn('dummy clear', io.cmds, 'a weapon the bot owned is not taken')
+
+    def test_a_granted_weapon_is_taken_back(self):
+        io = ToolIO(helper={'dummy state': [dstate(weapon=False, guide='wait'), dstate(494, 400)], 'dummy give': dstate(), 'dummy clear': {'cleared': 1}})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.cmds.count('dummy give'), 1)
+        self.assertEqual(io.cmds[-1], 'dummy clear', 'the TEST ONLY weapon goes at the end')
+
+    def test_a_walk_to_the_dummy(self):
+        io = ToolIO(helper={'dummy state': [dstate(guide='walk'), dstate(guide='use'), dstate(494, 400)], 'dummy path': {'here': True, 'dist': 0}})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('dummy path', io.cmds)
+
+    def test_the_verdicts(self):
+        a = dstate()
+        self.assertEqual(TX.dummy_verdict(a, dstate(494, 400))[0], TX.PASS)
+        self.assertEqual(TX.dummy_verdict(a, dstate(494, 100))[0], TX.FAIL, 'charges spent and the skill did not rise')
+        self.assertEqual(TX.dummy_verdict(a, dstate(500, 400))[0], TX.FAIL, 'the skill rose and no charge was spent')
+        self.assertEqual(TX.dummy_verdict(a, dstate(500, 100))[0], TX.SKIP, 'nothing happened')
+        self.assertEqual(TX.dummy_verdict(a, dstate(500, 5, level=31))[0], TX.FAIL, 'a level up resets the tries: still a rise, but no charge')
+        self.assertEqual(TX.dummy_verdict(a, dstate(494, 5, level=31))[0], TX.PASS, 'a level up resets the tries: a rise')
+        self.assertEqual(TX.dummy_verdict(a, None)[0], TX.SKIP)
+        gone = dstate(weapon=False, tries=400)
+        self.assertEqual(TX.dummy_verdict(a, gone)[0], TX.PASS, 'the last charge: the weapon is gone')
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(ToolIO()).status, TX.SKIP)
+        self.assertEqual(self.go(ToolIO(helper={'dummy state': {'err': 'no exercise weapons'}})).status, TX.SKIP)
+        r = self.go(ToolIO(helper={'dummy state': dstate(locked=True)}))
+        self.assertEqual((r.status, 'locked' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'dummy state': dstate(weapon=False), 'dummy give': {'err': 'no exercise weapon for this class'}}))
+        self.assertEqual((r.status, 'no exercise weapon' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'dummy state': dstate(dummy=False, guide='wait', pz=False)}))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        r = self.go(ToolIO(helper={'dummy state': dstate(pz=False)}))
+        self.assertEqual((r.status, 'outside a protection zone' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'dummy state': dstate(guide='walk'), 'dummy path': {'err': 'no path'}}))
+        self.assertEqual((r.status, 'no way on foot' in r.detail), (TX.SKIP, True))
+        self.assertEqual(ToolIO().stepped, [], 'no weapon use, no step')
+
+
+def mstate(mounted=False, speed=220, pz=False, **kw):
+    out = {'mounted': mounted, 'lookMount': 368 if mounted else 0, 'speed': speed + (20 if mounted else 0), 'baseSpeed': speed, 'pz': pz, 'granted': 7, 'current': 7}
+    out.update(kw)
+    return out
+
+
+class MountRide(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_mount_ride(io, 'Tester Mnt', 'Ninja', 100))
+
+    def test_on_and_off(self):
+        io = ToolIO(helper={'mount state': [mstate(), mstate(), mstate(True), mstate()], 'mount give': mstate(), 'mount clear': mstate()})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('speed 220 -> 240', r.detail)
+        self.assertEqual(io.toggled, [True, False], 'the mount button on, then off')
+        self.assertEqual(io.cmds[-1], 'mount clear', 'the TEST ONLY mount goes at the end')
+
+    def test_the_verdicts(self):
+        b = mstate()
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': mstate(True), 'off': mstate()})[0], TX.PASS)
+        st, text = TX.mount_verdict({'before': b, 'on': mstate(), 'texts_on': ['Only premium accounts can use mounts.']})
+        self.assertEqual((st, 'premium' in text), (TX.SKIP, True), 'the server said why')
+        st, text = TX.mount_verdict({'before': b, 'on': mstate()})
+        self.assertEqual((st, 'not mounted' in text), (TX.FAIL, True), 'no mount and no word')
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': mstate(pz=True)})[0], TX.SKIP, 'a protection zone refuses a mount')
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': dict(mstate(True), speed=200)})[0], TX.FAIL, 'mounted and slower')
+        st, text = TX.mount_verdict({'before': b, 'on': mstate(True), 'off': mstate(True)})
+        self.assertEqual((st, 'still mounted' in text), (TX.FAIL, True))
+        st, text = TX.mount_verdict({'before': b, 'on': mstate(True), 'off': dict(mstate(), speed=240)})
+        self.assertEqual((st, 'speed stays' in text), (TX.FAIL, True), 'dismounted and the mount speed stays')
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': mstate(True), 'off': None})[0], TX.SKIP)
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': None})[0], TX.SKIP)
+        mount_without_speed = dict(mstate(True), speed=220)
+        self.assertEqual(TX.mount_verdict({'before': b, 'on': mount_without_speed, 'off': mstate()})[0], TX.PASS, 'a mount that adds no speed is fine')
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(ToolIO()).status, TX.SKIP)
+        r = self.go(ToolIO(helper={'mount state': mstate(), 'mount give': {'err': 'the engine refused the mount: no such call'}}))
+        self.assertEqual((r.status, 'refused the mount' in r.detail), (TX.SKIP, True))
+        r = self.go(ToolIO(helper={'mount state': [mstate(), mstate(pz=True), mstate(pz=True)], 'mount give': mstate(), 'mount clear': mstate()}))
+        self.assertEqual((r.status, 'protection zone' in r.detail), (TX.SKIP, True))
+        io = ToolIO(helper={'mount state': mstate(), 'mount give': mstate(), 'mount clear': mstate()})
+        io.mount_texts = ['You are exhausted.']
+        r = self.go(io)
+        self.assertEqual((r.status, 'exhausted' in r.detail), (TX.SKIP, True))
+        self.assertEqual(io.toggled, [True], 'a refused mount is not toggled off')
+
+
+def fstate(xp=0, level=1, held=0, corpse=True, tools=True, gathering=False, water=False, d=1, tries=10, flvl=5, **kw):
+    out = {'enabled': True, 'levelOk': True, 'level': 100, 'minLevel': 20, 'held': held, 'gathering': gathering, 'bank': 900,
+           'tools': {'delving': False, 'wortcunning': False, 'flaying': tools, 'angling': tools},
+           'buy': [{'id': 5908, 'clientId': 5908, 'price': 600}, {'id': 2580, 'clientId': 2580, 'price': 150}],
+           'prof': {'flaying': {'level': level, 'xp': xp, 'gathered': 0}, 'angling': {'level': level, 'xp': xp, 'gathered': 0}},
+           'fishing': {'level': flvl, 'tries': tries}, 'flayGuide': {'mode': 'wait', 'why': 'no fresh corpse of a beast or reptile within 10 tiles'},
+           'angleGuide': {'mode': 'wait', 'why': 'no fishable water within 30 tiles'}}
+    if corpse:
+        out['corpse'] = {'tag': 32, 'tier': 2, 'pos': {'x': 9, 'y': 9, 'z': 7}, 'd': d, 'clientId': 2300, 'stackpos': 1}
+        out['flayGuide'] = {'mode': 'use' if d <= 1 else 'walk', 'why': 'x'}
+    if water:
+        out['water'] = {'pos': {'x': 4, 'y': 4, 'z': 7}, 'd': d, 'clientId': 4608, 'stackpos': 0}
+        out['angleGuide'] = {'mode': 'use' if d <= 2 else 'walk', 'why': 'x'}
+    out.update(kw)
+    return out
+
+
+class FlayAndAngle(unittest.TestCase):
+    def flay(self, io):
+        return run(TX.check_flay_walk(io, 'Tester Fla', 'Ninja', 100))
+
+    def angle(self, io):
+        return run(TX.check_angle_walk(io, 'Tester Ang', 'Ninja', 100))
+
+    def test_the_knife_on_a_corpse(self):
+        io = ToolIO(helper={'gather state': [fstate(), fstate(), fstate(), fstate(xp=40, held=1, corpse=False)]})
+        r = self.flay(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('flayed a tier 2 corpse', r.detail)
+        self.assertEqual(io.used, [(5908, {'x': 9, 'y': 9, 'z': 7}, 2300, 1)], 'the knife by its client id on the corpse by its place')
+        self.assertEqual(io.bought, [], 'the bot has a knife')
+
+    def test_a_walk_and_a_knife_from_the_broker(self):
+        io = ToolIO(helper={'gather state': [fstate(tools=False, d=4), fstate(tools=True, d=4), fstate(d=4), fstate(d=1), fstate(d=1), fstate(xp=40, corpse=False)],
+                            'gather corpse': {'here': True, 'dist': 0}})
+        io.shop_items = [{'id': 5908, 'name': 'obsidian knife', 'buy': 600}]
+        r = self.flay(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.bought, [5908], 'the knife from the Material Broker')
+        self.assertIn('gather corpse', io.cmds)
+
+    def test_the_verdicts(self):
+        a = fstate()
+        self.assertEqual(TX.flay_verdict(a, fstate(xp=30), False, [])[0], TX.PASS)
+        self.assertEqual(TX.flay_verdict(a, fstate(held=2), False, [])[0], TX.PASS, 'the materials rose')
+        self.assertEqual(TX.flay_verdict(a, fstate(level=2), False, [])[0], TX.PASS, 'a level up')
+        self.assertEqual(TX.flay_verdict(a, fstate(), True, [])[0], TX.SKIP, 'interrupted')
+        st, text = TX.flay_verdict(a, fstate(), False, ['This corpse was flayed already.'])
+        self.assertEqual((st, 'flayed already' in text), (TX.SKIP, True))
+        self.assertEqual(TX.flay_verdict(a, fstate(corpse=False), False, [])[0], TX.SKIP, 'the corpse decayed')
+        self.assertEqual(TX.flay_verdict(a, fstate(), False, [])[0], TX.FAIL, 'a fresh corpse, the knife, no word and no channel')
+        self.assertEqual(TX.flay_verdict(a, None, False, [])[0], TX.SKIP)
+
+    def test_the_flay_skips(self):
+        self.assertEqual(self.flay(ToolIO()).status, TX.SKIP)
+        self.assertEqual(self.flay(ToolIO(helper={'gather state': {'err': 'no professions'}})).status, TX.SKIP)
+        r = self.flay(ToolIO(helper={'gather state': fstate(levelOk=False, level=5)}))
+        self.assertEqual((r.status, 'open at level 20' in r.detail), (TX.SKIP, True))
+        io = ToolIO(helper={'gather state': fstate(corpse=False)})
+        r = self.flay(io)
+        self.assertEqual((r.status, 'no fresh corpse' in r.detail), (TX.SKIP, True))
+        self.assertGreaterEqual(io.t, 90, 'the bot waited at its hunt for a corpse')
+        r = self.flay(ToolIO(helper={'gather state': fstate(tools=False, bank=5)}))
+        self.assertEqual((r.status, 'gold in the bank' in r.detail), (TX.SKIP, True))
+        io = ToolIO(helper={'gather state': fstate(tools=False)})
+        io.shop_items = []
+        self.assertEqual((self.flay(io).status), TX.SKIP, 'no window')
+        io = ToolIO(helper={'gather state': fstate(d=3), 'gather corpse': {'err': 'no path'}})
+        r = self.flay(io)
+        self.assertEqual((r.status, 'no way on foot' in r.detail), (TX.SKIP, True))
+
+    def test_the_rod_at_the_water(self):
+        io = ToolIO(helper={'gather state': [fstate(water=True, d=1, corpse=False), fstate(water=True, d=1, corpse=False),
+                                             fstate(water=True, d=1, corpse=False, tries=11)]})
+        r = self.angle(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('after 1 cast(s)', r.detail)
+        self.assertEqual(io.used, [(2580, {'x': 4, 'y': 4, 'z': 7}, 4608, 0)], 'the rod by its client id at the water tile (the ground: place 0)')
+
+    def test_casts_until_the_line_works(self):
+        seq = [fstate(water=True, corpse=False)] * 4 + [fstate(water=True, corpse=False, xp=5, held=1)]
+        io = ToolIO(helper={'gather state': seq})
+        r = self.angle(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(len(io.used), 3, 'cast again until a result came')
+
+    def test_the_angle_verdicts(self):
+        a = fstate(water=True)
+        self.assertEqual(TX.angle_verdict(a, fstate(water=True, tries=11), 1, [])[0], TX.PASS)
+        self.assertEqual(TX.angle_verdict(a, fstate(water=True, flvl=6, tries=0), 1, [])[0], TX.PASS, 'a Fishing level up')
+        self.assertEqual(TX.angle_verdict(a, fstate(water=True, xp=3), 2, [])[0], TX.PASS)
+        self.assertEqual(TX.angle_verdict(a, fstate(water=True, held=1), 2, [])[0], TX.FAIL, 'a material and no Angling experience')
+        self.assertEqual(TX.angle_verdict(a, fstate(water=True, held=1, xp=3), 2, [])[0], TX.PASS)
+        st, text = TX.angle_verdict(a, fstate(water=True), 6, ['You need worms.'])
+        self.assertEqual((st, 'worms' in text), (TX.SKIP, True))
+        st, text = TX.angle_verdict(a, fstate(water=True), 6, [])
+        self.assertEqual((st, '6 cast(s)' in text), (TX.SKIP, True))
+        self.assertEqual(TX.angle_verdict(a, None, 1, [])[0], TX.SKIP)
+
+    def test_the_angle_skips(self):
+        self.assertEqual(self.angle(ToolIO()).status, TX.SKIP)
+        r = self.angle(ToolIO(helper={'gather state': fstate(corpse=False)}))
+        self.assertEqual((r.status, 'no fishable water' in r.detail), (TX.SKIP, True))
+        r = self.angle(ToolIO(helper={'gather state': fstate(water=True, d=9, tools=True, corpse=False), 'gather water': {'err': 'no path'}}))
+        self.assertEqual((r.status, 'no way on foot' in r.detail), (TX.SKIP, True))
+        io = ToolIO(helper={'gather state': fstate(water=True, tools=False, corpse=False)})
+        io.shop_items = [{'id': 2580, 'name': 'fishing rod', 'buy': 150}]
+        r = self.angle(io)
+        self.assertEqual(io.bought, [2580], 'the rod from the broker')
+        self.assertEqual((r.status, 'holds none' in r.detail or r.status == TX.FAIL), (TX.FAIL, True), 'bought and the backpack holds none')
+
+
+def tboard(offers=(), tasks=()):
+    return {'action': 'board', 'data': {'offers': list(offers), 'tasks': list(tasks)}}
+
+
+def toffer(key='h:rat', kind='hunt', required=20, state='open'):
+    return {'key': key, 'kind': kind, 'label': 'Rat', 'required': required, 'state': state, 'lo': 0, 'hi': 0}
+
+
+def tprobe(progress=0, kills=4, mode='fight', why='x', x=1, area=None, key='h:rat', monster='Rat'):
+    return {'level': 100, 'pos': {'x': 10, 'y': 10, 'z': 7}, 'active': [{'key': key, 'kind': 'hunt', 'label': monster, 'progress': progress, 'required': 20, 'status': 0,
+                                                                          'monster': monster, 'kills': kills}],
+            'guide': {'mode': mode, 'goal': {'x': 10 + x, 'y': 10, 'z': 7}, 'reach': [1, 5], 'why': why, 'area': area}}
+
+
+class KillTaskKills(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_kill_task_kills(io, 'Tester Tsk', 'Ninja', 100))
+
+    def io(self, probes, board=None, accept=None, abandon=None):
+        accepted = accept if accept is not None else tboard([toffer(state='active')], [{'key': 'h:rat', 'progress': 0, 'required': 20}])
+        return ToolIO(helper={'task state': probes, 'task path': {'path': [1, 1], 'dist': 2}},
+                      replies={('bestiary', 'board'): board or tboard([toffer()]), ('bestiary', 'accept'): accepted,
+                               ('bestiary', 'abandon'): abandon or tboard([toffer()])})
+
+    def test_the_counters_rise(self):
+        io = self.io([tprobe(0, 4, 'walk'), tprobe(0, 4, 'walk'), tprobe(1, 5, 'fight'), tprobe(2, 6, 'fight'), tprobe(3, 7, 'fight')])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('the task counter went from 0 to 3 of 20', r.detail)
+        self.assertIn('4 to 7 kills', r.detail)
+        self.assertTrue(any(a[1] == 'abandon' for a in io.asked), 'the task goes back')
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_the_bestiary_must_count_too(self):
+        io = self.io([tprobe(0, 4, 'walk'), tprobe(0, 4, 'walk'), tprobe(3, 4, 'fight')])
+        r = self.go(io)
+        self.assertEqual((r.status, 'bestiary entry' in r.detail), (TX.FAIL, True), 'the task moved and the entry did not')
+
+    def test_a_fight_with_no_kill_is_a_fault(self):
+        io = self.io([tprobe(0, 4, 'walk'), tprobe(0, 4, 'walk')] + [tprobe(0, 4, 'fight')] * 200)
+        r = self.go(io)
+        self.assertEqual((r.status, 'counter moved 0' in r.detail), (TX.FAIL, True))
+
+    def test_waiting_at_the_hunt_is_a_skip(self):
+        io = self.io([tprobe(0, 4, 'walk'), tprobe(0, 4, 'walk')] + [tprobe(0, 4, 'wait', area='spawn')] * 200)
+        r = self.go(io)
+        self.assertEqual((r.status, 'in sight at its hunt' in r.detail), (TX.SKIP, True))
+
+    def test_a_task_that_leaves_the_list(self):
+        io = self.io([tprobe(0, 4, 'walk'), tprobe(0, 4, 'walk'), {'level': 100, 'pos': {'x': 1, 'y': 1, 'z': 7}, 'active': []}])
+        r = self.go(io)
+        self.assertEqual((r.status, 'left the list' in r.detail), (TX.FAIL, True))
+
+    def test_an_offer_with_no_known_hunt_is_left_for_the_next(self):
+        no = tprobe(0, 4, 'wait', why='no hunt lists Rat')
+        io = self.io([no, no], board=tboard([toffer('h:rat'), toffer('f:beast', 'family', 30)]))
+        r = self.go(io)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('no open kill task with a monster that a hunt mark lists', r.detail)
+        self.assertGreaterEqual(sum(1 for a in io.asked if a[1] == 'abandon'), 1, 'each task the bot took is given back')
+
+    def test_the_pick(self):
+        board = tboard([toffer('f:a', 'family', 5), toffer('h:b', 'hunt', 30), toffer('h:c', 'hunt', 10), toffer('h:d', 'hunt', 1, 'done')])['data']
+        self.assertEqual(TX.task_hunt_pick(board, 100)['key'], 'h:c', 'a single monster first, the fewest kills first')
+        self.assertEqual(TX.task_hunt_pick(board, 100, {'h:c'})['key'], 'h:b')
+        self.assertEqual(TX.task_hunt_pick(board, 100, {'h:b', 'h:c'})['key'], 'f:a', 'then a family')
+        self.assertIsNone(TX.task_hunt_pick(board, 100, {'h:b', 'h:c', 'f:a'}))
+        self.assertIsNone(TX.task_hunt_pick(None, 100))
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(ToolIO()).status, TX.SKIP)
+        r = self.go(self.io([tprobe()], board=tboard([])))
+        self.assertEqual((r.status, 'no open kill task' in r.detail), (TX.SKIP, True))
+        r = self.go(self.io([tprobe()], accept=tboard([], [])))
+        self.assertEqual(r.status, TX.SKIP, 'the board did not take the task')
+
+
+class NewKeys(unittest.TestCase):
+    def test_the_keys(self):
+        for k in ('stash_move', 'dummy_train', 'mount_ride', 'flay_walk', 'angle_walk', 'kill_task_kills'):
+            self.assertIn(k, TX.KEYS)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
+        self.assertLess(TX.KEYS.index('stash_move'), TX.KEYS.index('rift_walk'), 'before the long rift walk')
+        self.assertEqual(TX.KEYS[-1], 'ascension_walk', 'the class change stays last')
+
+
 if __name__ == '__main__':
     unittest.main()

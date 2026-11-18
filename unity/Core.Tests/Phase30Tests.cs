@@ -178,7 +178,8 @@ namespace Chaos.Core.Tests
             "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk",
             "bounty_elite_walk", "bounty_boss_walk", "daily_claim", "chronicle_walk", "nemesis_walk", "goblin_walk", "vael_walk", "invasion_walk",
             "craft_found", "gear_chase", "chore_faction", "chore_pass", "chore_chests", "chore_candlemarks", "chore_gamble", "chore_trade", "chore_salvage", "boss_copy_walk", "pocket_walk", "wsmap_walk",
-            "spell_support", "tales_read", "kill_task", "gather_walk", "pouch_rules", "autosell_rules", "stash_window", "gamble_reroll", "ascension_walk" };
+            "spell_support", "tales_read", "kill_task", "gather_walk", "pouch_rules", "autosell_rules", "stash_window", "gamble_reroll", "ascension_walk",
+            "stash_move", "dummy_train", "mount_ride", "flay_walk", "angle_walk", "kill_task_kills" };
 
         static void Coverage(Action<bool, string> check)
         {
