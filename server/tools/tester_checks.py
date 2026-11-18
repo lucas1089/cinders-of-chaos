@@ -4727,6 +4727,538 @@ async def check_vael_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ economy, crafting and progression chores (O653)
+# What a person does with what the game gave it, played with the windows' own requests and read back from the windows' own answers: no helper grant of
+# an item (`!tester found` only READS the backpack and the worn gear). The server side is closed so that a tester never shares a board or a reward
+# pool with a player (season ladders skip testers, the weekly chest gives a tester nothing); the checks prove the rest by play.
+FOUND_PIECES = 3      # backpack pieces the bot spends its orbs on at most
+FOUND_ORBS = 8        # orbs spent on one piece at most
+CHORE_NEAR = 3        # tiles from an NPC the walk may end (the shop windows need the NPC near)
+
+
+def found_next_orb(st, counts):
+    """the orb a person spends next on the piece the bench shows (st: the bench's item) from the orbs it holds (counts: orb key -> number):
+    (orb key, label) or None. A normal piece gets Gilding or Awakening, a piece with room gets Grafting, then the Whetstone up to the quality cap,
+    then Sockets up to the maximum. A unique, a ruined or a corrupted piece gets nothing."""
+    if not isinstance(st, dict) or st.get('unique') or st.get('corrupted') or st.get('ruined'):
+        return None
+    counts = counts if isinstance(counts, dict) else {}
+
+    def have(k):
+        return int(counts.get(k) or 0) > 0
+    rarity = int(st.get('rarity') or 0)
+    mods, room = len(st.get('mods') or []), int(st.get('maxMods') or 0)
+    if rarity == 0:
+        if have('alchemy'):
+            return 'alchemy', 'Orb of Gilding'
+        if have('transmutation'):
+            return 'transmutation', 'Orb of Awakening'
+    elif 0 < rarity <= 2 and mods < room and have('exalted'):
+        return 'exalted', 'Orb of Grafting'
+    if int(st.get('quality') or 0) < int(st.get('qualityCap') or 0) and have('whetstone'):
+        return 'whetstone', 'Whetstone'
+    socks = st.get('sockets') if isinstance(st.get('sockets'), dict) else {}
+    if int(socks.get('count') or 0) < int(socks.get('max') or 0) and have('sockets'):
+        return 'sockets', 'Orb of Sockets'
+    return None
+
+
+def found_totals(rep):
+    """(orbs {key: n}, gems, runes) the bot holds, from the answer of `!tester found`"""
+    orbs = {str(k): int(v or 0) for k, v in ((rep or {}).get('orbs') or {}).items()}
+    gems = sum(int(d.get('n') or 1) for d in (rep or {}).get('drops') or [] if d.get('k') == 'gem')
+    runes = sum(int(d.get('n') or 1) for d in (rep or {}).get('drops') or [] if d.get('k') == 'rune')
+    return orbs, gems, runes
+
+
+async def found_look(io):
+    """`!tester found`: (answer, None) or (None, the reason)"""
+    a = await io.helper('found', 'found', HELPER_WAIT)
+    if not isinstance(a, dict):
+        return None, 'no answer to !tester found (old helper file)'
+    if a.get('err'):
+        return None, str(a['err'])[:80]
+    return a, None
+
+
+def craft_found_verdict(t):
+    """(status, text) from the trace {'faults', 'orbs' [label], 'gems', 'runes', 'notes', 'had'}"""
+    if t['faults']:
+        return FAIL, '; '.join(t['faults'][:3])
+    if t['orbs'] or t['gems'] or t['runes']:
+        parts = []
+        if t['orbs']:
+            parts.append('%d orb(s) (%s)' % (len(t['orbs']), ', '.join(sorted(set(t['orbs'])))))
+        if t['gems']:
+            parts.append('%d gem(s) socketed' % t['gems'])
+        if t['runes']:
+            parts.append('%d rune(s) into a spell' % t['runes'])
+        return PASS, 'spent what it found: %s; the tooltip and the bench agree, every orb used was counted off%s' % (
+            ', '.join(parts), ' (%s)' % '; '.join(t['notes'][:2]) if t['notes'] else '')
+    return SKIP, 'nothing could be spent: %s' % ('; '.join(t['notes'][:3]) or 'no piece in the backpack takes what the bot holds')
+
+
+async def check_craft_found(io, name, cls, level):
+    """the orbs, gems and runes the bot dropped, spent on pieces in its backpack by the windows' own requests (the bench takes no worn piece:
+    a person takes the piece off, crafts it and wears it again; gear_chase wears it). SKIP while the bot has dropped nothing to spend."""
+    key = 'craft_found'
+    bench = Bench(io, name, cls, key)
+    rep, why = await found_look(io)
+    if rep is None:
+        return bench.skip(why)
+    orbs, gems, runes = found_totals(rep)
+    t = {'faults': [], 'orbs': [], 'gems': 0, 'runes': 0, 'notes': [], 'had': (orbs, gems, runes)}
+    if not (sum(orbs.values()) or gems or runes):
+        return bench.skip('the bot has dropped no orbs, gems or runes yet (it is given none: the check spends only what it found)')
+    pieces = sorted((p for p in rep.get('pieces') or [] if not p.get('unique')), key=lambda p: -int(p.get('chase') or 0))[:FOUND_PIECES]
+    await io.open_bag(rep.get('bagClientId'))
+    await io.sleep(1.0)
+    for p in pieces if sum(orbs.values()) else []:
+        item = {'index': p['i'], 'id': p['id'], 'clientId': p['cid']}
+        before, st = await bench.view(item)
+        if before is None:
+            t['notes'].append('no tooltip or bench answer for the piece in slot %s' % p['i'])
+            continue
+        for _ in range(FOUND_ORBS):
+            step = found_next_orb(st, bench.counts)
+            if not step:
+                break
+            orb, label = step
+            held = int(bench.counts.get(orb) or 0)
+            res = await bench.apply(orb, item, st)
+            if res is None:
+                t['notes'].append('no answer to the %s' % label)
+                break
+            if not res.get('ok'):
+                t['notes'].append('%s refused: %s' % (label, str(res.get('text'))[:50]))
+                break
+            after, st2 = await bench.view(item)
+            if after is None:
+                t['notes'].append('no tooltip or bench answer after the %s' % label)
+                break
+            problems = orb_problems(orb, before, after)
+            if orb != 'sockets' and after['tip'] == before['tip']:
+                problems.append('the tooltip did not change')
+            if int(bench.counts.get(orb) or 0) != held - 1:
+                problems.append('the bench counts %s %s after one was spent, it held %d' % (bench.counts.get(orb), orb, held))
+            if problems:
+                t['faults'].append('%s: %s' % (label, '; '.join(problems[:3])))
+                return Result(key, name, cls, *craft_found_verdict(t))
+            t['orbs'].append(label)
+            before, st = after, st2
+    if gems:
+        again, _ = await found_look(io)
+        gem = next((d for d in (again or {}).get('drops') or [] if d.get('k') == 'gem'), None)
+        ranked = sorted((again or {}).get('pieces') or [], key=lambda p: -int(p.get('chase') or 0))[:FOUND_PIECES] if gem else []
+        for p in ranked:
+            item = {'index': p['i'], 'id': p['id'], 'clientId': p['cid']}
+            before, st = await bench.view(item)
+            if before is None or before['sockets'] <= before['socketed']:
+                continue
+            await io.use_with(gem['i'], gem['cid'], p['i'], p['cid'])
+            await io.sleep(1.5)
+            after, _ = await bench.view(item)
+            if after is None:
+                t['notes'].append('no tooltip or bench answer after the gem')
+            elif after['socketed'] != before['socketed'] + 1:
+                t['faults'].append('gems in the sockets %d -> %d after the use-with: expected one more' % (before['socketed'], after['socketed']))
+            elif after['tip'] == before['tip']:
+                t['faults'].append('the gem sits in the socket but the tooltip did not change')
+            else:
+                t['gems'] += 1
+            break
+        else:
+            t['notes'].append('no gem drop met a piece with a free socket')
+    if runes:
+        ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
+        spells = [s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict)]
+        spell = next((s for s in spells if int(s.get('count') or 0) < int(s.get('max') or 0)), None)
+        rune = next((d for d in rep.get('drops') or [] if d.get('k') == 'rune'), None)
+        if spell and rune:
+            res = await io.request('supports', 'socket', {'spell': spell['id'], 'rune': rune['id']}, ('result',), ANSWER)
+            data = (res or {}).get('data') or {}
+            if res is None:
+                t['notes'].append('no answer to the rune')
+            elif not data.get('ok'):
+                t['notes'].append('the rune was refused: %s' % str(data.get('text'))[:50])
+            else:
+                ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
+                now = next((s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict) and s.get('id') == spell['id']), None)
+                if now is not None and int(now.get('count') or 0) != int(spell.get('count') or 0) + 1:
+                    t['faults'].append('spell %s holds %s runes after the socket, expected %d' % (
+                        spell.get('name') or spell['id'], now.get('count'), int(spell.get('count') or 0) + 1))
+                else:
+                    t['runes'] += 1
+        else:
+            t['notes'].append('no spell with a free support socket')
+    return Result(key, name, cls, *craft_found_verdict(t))
+
+
+def chase_pick(rep):
+    """the piece `!tester found` ranks first: the row of `pieces` that is the answer's `best` (the chase score knows sets, uniques and jewelry),
+    or None when nothing beats what is worn"""
+    best = (rep or {}).get('best')
+    return next((p for p in (rep or {}).get('pieces') or [] if p.get('i') == best), None) if best is not None else None
+
+
+def chase_kind(p):
+    return 'a set piece (%s)' % p['set'] if p.get('set') else 'a unique' if p.get('unique') else 'a jewel' if p.get('jewelry') else 'a better piece'
+
+
+def gear_chase_verdict(p, a, b):
+    """(status, text) for the wear of piece p: a / b the answers of `!tester found` before and after"""
+    if not isinstance(b, dict):
+        return SKIP, 'no answer to !tester found after the wear'
+    slot = p.get('s')
+    wn = next((w for w in b.get('worn') or [] if w.get('s') == slot), None)
+    wb = next((w for w in a.get('worn') or [] if w.get('s') == slot), None)
+    still = next((q for q in b.get('pieces') or [] if q.get('id') == p.get('id') and q.get('i') == p.get('i')), None)
+    if still is not None and wn == wb:
+        return SKIP, 'the server kept %s in the bag (a level or class rule: not a fault)' % chase_kind(p)
+    if wn is None:
+        return FAIL, 'the slot %s is empty after %s was moved there' % (slot, chase_kind(p))
+    if p.get('set') and (b.get('sets') or {}).get(p['set'], 0) < (a.get('sets') or {}).get(p['set'], 0):
+        return FAIL, 'the worn pieces of the set %s fell from %s to %s after one was worn' % (
+            p['set'], (a.get('sets') or {}).get(p['set'], 0), (b.get('sets') or {}).get(p['set'], 0))
+    return PASS, 'wore %s (chase %s, score %s over %s)%s' % (
+        chase_kind(p), p.get('chase'), p.get('sc'), (wb or {}).get('sc', 0),
+        ', the set counts %s' % (b.get('sets') or {}).get(p['set']) if p.get('set') else '')
+
+
+async def check_gear_chase(io, name, cls, level):
+    """the piece whose score knows sets, uniques and jewelry beats the worn one: wear it as a person drags it onto the paper doll"""
+    key = 'gear_chase'
+    a, why = await found_look(io)
+    if a is None:
+        return Result(key, name, cls, SKIP, why)
+    p = chase_pick(a)
+    if p is None:
+        return Result(key, name, cls, SKIP, 'no piece in the backpack beats what the bot wears (%d piece(s) looked at)' % len(a.get('pieces') or []))
+    await io.wear(p['i'], p['cid'], p['s'])
+    await io.sleep(1.5)
+    b, _ = await found_look(io)
+    status, text = gear_chase_verdict(p, a, b)
+    return Result(key, name, cls, status, text)
+
+
+# the daily chores of a character, each played in its window to a result the window shows. A tester is on no season board and gets no chest from the
+# pool (the server's rules, tested in Lua); here is the bot's own side: what its windows show and what its requests do.
+def faction_verdict(a, b, turned):
+    """(status, text) from the faction windows before (a) and after (b) a turn-in of `turned` = (faction key, tokens held) or None"""
+    fa = (a or {}).get('factions') or []
+    if not fa:
+        return SKIP, 'the faction window listed no faction'
+    contracts = (a or {}).get('contracts') or []
+    for f in fa:
+        if f.get('rep') is not None and int(f['rep']) < 0:
+            return FAIL, 'faction %s shows %s reputation' % (f.get('k'), f['rep'])
+    for c in contracts:
+        if int(c.get('p') or 0) > int(c.get('n') or 0) > 0:
+            return FAIL, 'contract %s shows %s of %s' % (c.get('key'), c.get('p'), c.get('n'))
+    if turned:
+        k, held = turned
+        fb = next((f for f in (b or {}).get('factions') or [] if f.get('k') == k), None)
+        fo = next((f for f in fa if f.get('k') == k), None)
+        if fb is None or fo is None:
+            return SKIP, 'no answer after the turn-in'
+        if int(fb.get('tok') or 0) >= held:
+            return FAIL, 'the %s tokens were not taken by the turn-in (%s held before, %s after)' % (k, held, fb.get('tok'))
+        if int(fb.get('rep') or 0) <= int(fo.get('rep') or 0) and int(fb.get('wk') or 0) < int(fb.get('wc') or 0):
+            return FAIL, 'the turn-in of %s tokens to %s gave no reputation (%s -> %s)' % (held, k, fo.get('rep'), fb.get('rep'))
+        return PASS, '%s tokens of %s turned in: reputation %s -> %s, rank %s; %d contract(s) listed' % (
+            held, k, fo.get('rep'), fb.get('rep'), fb.get('rn'), len(contracts))
+    return PASS, 'the faction window lists %d factions and %d contract(s); nothing to turn in yet' % (len(fa), len(contracts))
+
+
+async def check_chore_faction(io, name, cls, level):
+    """the reputation window: factions, ranks, contracts; the tokens the bot holds are turned in and the reputation must rise"""
+    key = 'chore_faction'
+    reply = await io.request('factions', 'open', {}, ('state',), ANSWER)
+    a = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no state in the faction window (not open at this level, or no answer)')
+    turned = next(((f['k'], int(f['tok'])) for f in a.get('factions') or [] if int(f.get('tok') or 0) > 0 and f.get('k')), None)
+    b = a
+    try:
+        if turned:
+            await io.request('factions', 'turnin', {'f': turned[0]}, ('state',), ANSWER)
+            await io.sleep(1.0)
+            again = await io.request('factions', 'open', {'f': turned[0]}, ('state',), ANSWER)
+            b = (again or {}).get('data') if isinstance(again, dict) else None
+    finally:
+        await io.request('factions', 'close', {}, [], ANSWER)
+    status, text = faction_verdict(a, b, turned)
+    return Result(key, name, cls, status, text)
+
+
+def pass_claimable(st):
+    """the free tiers a character has reached and not claimed, from the season pass state: [tier]"""
+    if not isinstance(st, dict) or not (st.get('season') or {}).get('id'):
+        return []
+    claimed = (st.get('claimed') or ['', ''])[0] or ''
+    return [t for t in range(1, int(st.get('tier') or 0) + 1) if t <= len(claimed) and claimed[t - 1] == '0']
+
+
+def chore_pass_verdict(a, b):
+    """(status, text) from the season pass state before (a) and after (b) a claimAll"""
+    if not isinstance(a, dict) or not (a.get('season') or {}).get('id'):
+        return SKIP, 'no season pass runs (or the character is under its level)'
+    todo = pass_claimable(a)
+    if not todo:
+        return PASS, 'tier %s reached, every free tier claimed (the window answered, nothing to claim yet)' % a.get('tier')
+    if not isinstance(b, dict) or not (b.get('season') or {}).get('id'):
+        return SKIP, 'no state after the claim'
+    left = pass_claimable(b)
+    if len(left) >= len(todo):
+        return FAIL, 'claimAll left %d of %d reachable free tier(s) unclaimed' % (len(left), len(todo))
+    return PASS, 'claimed %d free tier(s) of %d reachable (tier %s)' % (len(todo) - len(left), len(todo), a.get('tier'))
+
+
+async def check_chore_pass(io, name, cls, level):
+    """the season pass: open, claim what the tier reached holds, read it back; the seasonal journey is a season character's (a tester walks none)"""
+    key = 'chore_pass'
+    reply = await io.request('seasonPass', 'open', {}, ('state',), ANSWER)
+    a = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no state in the season pass window (below its level, or no answer)')
+    b = a
+    if pass_claimable(a):
+        await io.request('seasonPass', 'claimAll', {}, ('state',), ANSWER)
+        await io.sleep(1.0)
+        again = await io.request('seasonPass', 'open', {}, ('state',), ANSWER)
+        b = (again or {}).get('data') if isinstance(again, dict) else None
+    status, text = chore_pass_verdict(a, b)
+    return Result(key, name, cls, status, text)
+
+
+def chests_verdict(week, cache):
+    """(status, text) from the Weekly Chest state and the Ember Cache state. A tester never gets the Weekly Chest (the pool is the players'): the
+    window opens and shows nothing given and no chest count; the Ember Cache is the bot's own and its book must answer"""
+    if not isinstance(week, dict):
+        return SKIP, 'no state in the Weekly Chest window'
+    if (week.get('chest') or {}).get('given') or int(week.get('chests') or 0) > 0:
+        return FAIL, "a tester has a Weekly Chest (given %s, %s opened): the reward pool is the players'" % (
+            (week.get('chest') or {}).get('given'), week.get('chests'))
+    if int(week.get('got') or 0) > 0:
+        return FAIL, 'a tester has %s activities marked in the Weekly Chest' % week.get('got')
+    if not isinstance(cache, dict):
+        return SKIP, 'the Weekly Chest gave a tester nothing, as it must; no state in the Ember Cache window'
+    return PASS, 'Weekly Chest: nothing for a tester (0 of %s activities); Ember Cache window answered (week %s)' % (week.get('need'), cache.get('week'))
+
+
+async def check_chore_chests(io, name, cls, level):
+    key = 'chore_chests'
+    try:
+        w = await io.request('weeklyChest', 'open', {}, ('state',), ANSWER)
+        c = await io.request('emberCache', 'open', {}, ('state',), ANSWER)
+    finally:
+        await io.request('weeklyChest', 'close', {}, [], ANSWER)
+        await io.request('emberCache', 'close', {}, [], ANSWER)
+    status, text = chests_verdict((w or {}).get('data') if isinstance(w, dict) else None, (c or {}).get('data') if isinstance(c, dict) else None)
+    return Result(key, name, cls, status, text)
+
+
+def candle_pick(st, level):
+    """the offer a person buys with its candlemarks: the cheapest item offer it can pay, has the level for, and has not used up this week"""
+    if not isinstance(st, dict):
+        return None
+    bal = int(st.get('balance') or 0)
+    cands = [o for o in st.get('offers') or [] if o.get('kind') == 'item' and not o.get('own') and 0 < int(o.get('p') or 0) <= bal
+             and int(o.get('l') or 0) <= int(level or 0) and (int(o.get('w') or 0) == 0 or int(o.get('u') or 0) < int(o.get('w') or 0))]
+    cands.sort(key=lambda o: (int(o['p']), str(o.get('k'))))
+    return cands[0] if cands else None
+
+
+def candle_verdict(offer, a, b, res):
+    """(status, text) for a purchase: the balance must fall by the price and the window says it worked"""
+    d = (res or {}).get('data') if isinstance(res, dict) else None
+    if res is None:
+        return SKIP, 'no answer to the Candlemarks purchase'
+    if isinstance(d, dict) and d.get('ok') is False:
+        return SKIP, 'the shop refused %s: %s' % (offer.get('k'), str(d.get('text'))[:60])
+    if not isinstance(b, dict):
+        return SKIP, 'no state after the purchase'
+    spent = int(a.get('balance') or 0) - int(b.get('balance') or 0)
+    if spent != int(offer['p']):
+        return FAIL, 'bought %s for %s candlemarks and the balance fell by %s (%s -> %s)' % (offer.get('k'), offer['p'], spent, a.get('balance'), b.get('balance'))
+    return PASS, 'bought %s for %s candlemarks, balance %s -> %s' % (offer.get('k'), offer['p'], a.get('balance'), b.get('balance'))
+
+
+async def chore_walk(io, name, npc):
+    """on foot to an NPC for a shop window; (None, fallbacks) or (the reason, [])"""
+    how, got, note = await walk_to_place(io, {'name': name, 'lead': True}, 'npc ' + npc, None, CHORE_NEAR)
+    if how not in ('foot', 'helper'):
+        return how[:110], []
+    return None, [note] if note else []
+
+
+async def check_chore_candlemarks(io, name, cls, level):
+    """Osric the Chandler: the window, the cheapest item offer the bot can pay (the candlemarks come from time online: a new bot may have none)"""
+    key = 'chore_candlemarks'
+    why, fallbacks = await chore_walk(io, name, 'Osric the Chandler')
+    if why:
+        return Result(key, name, cls, SKIP, why)
+    try:
+        reply = await io.request('candlemarks', 'open', {}, ('state',), ANSWER)
+        a = (reply or {}).get('data') if isinstance(reply, dict) else None
+        if not isinstance(a, dict):
+            return Result(key, name, cls, SKIP, 'no state in the Candlemarks window', fallbacks)
+        offer = candle_pick(a, level)
+        if offer is None:
+            return Result(key, name, cls, PASS if a.get('offers') else SKIP,
+                          'the shop lists %d offer(s); the balance of %s buys none (the marks come with time online)' % (
+                              len(a.get('offers') or []), a.get('balance')), fallbacks)
+        res = await io.request('candlemarks', 'buy', {'k': offer['k']}, ('result',), ANSWER)
+        await io.sleep(1.0)
+        again = await io.request('candlemarks', 'open', {}, ('state',), ANSWER)
+        status, text = candle_verdict(offer, a, (again or {}).get('data') if isinstance(again, dict) else None, res)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.request('candlemarks', 'close', {}, [], ANSWER)
+
+
+def gamble_pick(st):
+    """the cheapest unsold piece of the Gambler's stock the bot can pay: the row of `items`, or None"""
+    if not isinstance(st, dict):
+        return None
+    money = int(st.get('money') or 0)
+    rows = [e for e in st.get('items') or [] if not e.get('sold') and 0 < int(e.get('p') or 0) <= money]
+    rows.sort(key=lambda e: (int(e['p']), int(e.get('i') or 0)))
+    return rows[0] if rows else None
+
+
+def gamble_verdict(row, a, b, used_before, used_after):
+    """(status, text) for a purchase: the money falls by the price, the row is marked sold, the backpack holds one more thing"""
+    if not isinstance(b, dict):
+        return SKIP, 'no state after the purchase'
+    spent = int(a.get('money') or 0) - int(b.get('money') or 0)
+    if spent != int(row['p']):
+        return FAIL, 'bought stock %s for %s gold and the money fell by %s (%s -> %s)' % (row.get('i'), row['p'], spent, a.get('money'), b.get('money'))
+    now = next((e for e in b.get('items') or [] if e.get('i') == row.get('i')), None)
+    if now is not None and not now.get('sold'):
+        return FAIL, 'stock %s was paid for and is not marked sold' % row.get('i')
+    if used_before is not None and used_after is not None and used_after <= used_before:
+        return FAIL, 'stock %s (%s) was paid for and the backpack holds no new item (%s -> %s slots)' % (row.get('i'), row.get('n'), used_before, used_after)
+    return PASS, 'bought %s (%s) for %s gold: marked sold, the bag holds it' % (row.get('n'), row.get('sn'), row['p'])
+
+
+async def check_chore_gamble(io, name, cls, level):
+    """Mordecai Ashwager, the Gambler: the cheapest sealed piece the bot can pay, bought through the window; the item must be in the bag"""
+    key = 'chore_gamble'
+    why, fallbacks = await chore_walk(io, name, 'Mordecai Ashwager')
+    if why:
+        return Result(key, name, cls, SKIP, why)
+    try:
+        reply = await io.request('gamble', 'open', {}, ('state',), ANSWER)
+        a = (reply or {}).get('data') if isinstance(reply, dict) else None
+        if not isinstance(a, dict):
+            return Result(key, name, cls, SKIP, 'no state in the Gambler window (under its level, or no answer)', fallbacks)
+        row = gamble_pick(a)
+        if row is None:
+            return Result(key, name, cls, SKIP, 'the Gambler has %d piece(s); the bot has %s gold for none' % (len(a.get('items') or []), a.get('money')), fallbacks)
+        bag0 = await io.helper('bag', 'bag', HELPER_WAIT)
+        await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
+        await io.sleep(1.0)
+        again = await io.request('gamble', 'open', {}, ('state',), ANSWER)
+        bag1 = await io.helper('bag', 'bag', HELPER_WAIT)
+        status, text = gamble_verdict(row, a, (again or {}).get('data') if isinstance(again, dict) else None,
+                                      (bag0 or {}).get('used') if isinstance(bag0, dict) else None,
+                                      (bag1 or {}).get('used') if isinstance(bag1, dict) else None)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.request('gamble', 'close', {}, [], ANSWER)
+
+
+def trade_verdict(a, b, res):
+    """(status, text) from the Professions state before (a) and after (b) `sellAll` at a Material Broker; res: the window's result"""
+    if not isinstance(a, dict):
+        return SKIP, 'no state in the Professions window'
+    held = sum(int(r.get('h') or 0) for r in a.get('demand') or [])
+    if held <= 0:
+        return SKIP, 'the bot holds no gathered material to sell (the gathering with a pick, sickle, knife or rod is not played: README O653)'
+    left = sum(int(r.get('h') or 0) for r in (b or {}).get('demand') or []) if isinstance(b, dict) else None
+    d = (res or {}).get('data') if isinstance(res, dict) else None
+    if isinstance(d, dict) and d.get('ok') is False:
+        return FAIL, 'the Material Broker refused %s material(s): %s' % (held, str(d.get('text'))[:60])
+    if left is None:
+        return SKIP, 'no state after the sale'
+    if left >= held:
+        return FAIL, 'sellAll left all %s material(s) unsold' % held
+    return PASS, 'sold %s of %s gathered material(s) to the Material Broker' % (held - left, held)
+
+
+async def check_chore_trade(io, name, cls, level):
+    """the Material Broker: sell what the bot gathered (sellAll); the held count of the window must fall"""
+    key = 'chore_trade'
+    why, fallbacks = await chore_walk(io, name, 'Material Broker')
+    if why:
+        return Result(key, name, cls, SKIP, why)
+    try:
+        reply = await io.request('professions', 'open', {}, ('state',), ANSWER)
+        a = (reply or {}).get('data') if isinstance(reply, dict) else None
+        res, b = None, None
+        if isinstance(a, dict) and sum(int(r.get('h') or 0) for r in a.get('demand') or []) > 0:
+            res = await io.request('professions', 'sellAll', {}, ('result',), ANSWER)
+            await io.sleep(1.0)
+            again = await io.request('professions', 'open', {}, ('state',), ANSWER)
+            b = (again or {}).get('data') if isinstance(again, dict) else None
+        status, text = trade_verdict(a, b, res)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.request('professions', 'close', {}, [], ANSWER)
+
+
+def salvage_pick(rep, items):
+    """a rolled piece of no use to the bot, from the bench's list: no better than what it wears (chase 0 or less in `!tester found`), not a unique, not
+    locked, with a rarity; the first one listed, or None"""
+    useless = {str(p['i']) for p in (rep or {}).get('pieces') or [] if int(p.get('chase') or 0) <= 0 and not p.get('unique')}
+    for it in items or []:
+        if str(it.get('path')) in useless and int(it.get('rarity') or 0) >= 1 and not it.get('unique') and not it.get('locked'):
+            return it
+    return None
+
+
+def salvage_verdict(item, a, b, res):
+    """(status, text) from the bench state before (a) and after (b) the salvage of `item`; res: the window's result"""
+    d = (res or {}).get('data') if isinstance(res, dict) else None
+    if res is None:
+        return SKIP, 'no answer to the salvage'
+    if isinstance(d, dict) and d.get('ok') is False:
+        return SKIP, 'the bench refused %s: %s' % (item.get('name'), str(d.get('text'))[:60])
+    if not isinstance(b, dict):
+        return SKIP, 'no bench state after the salvage'
+    n0, n1 = len(a.get('items') or []), len(b.get('items') or [])
+    s0, s1 = int((a.get('salvage') or {}).get('shards') or 0), int((b.get('salvage') or {}).get('shards') or 0)
+    if n1 != n0 - 1:
+        return FAIL, 'salvaged %s and the bench lists %d items, it listed %d before: expected one less' % (item.get('name'), n1, n0)
+    if s1 < s0:
+        return FAIL, 'salvaged %s and the Rune Shards fell from %d to %d' % (item.get('name'), s0, s1)
+    return PASS, 'salvaged %s (rarity %s): the list shrank by one, shards %d -> %d' % (item.get('name'), item.get('rarityName') or item.get('rarity'), s0, s1)
+
+
+async def check_chore_salvage(io, name, cls, level):
+    """what a person does with a rolled piece it will not wear: break it down at the bench (Salvage) for Rune Shards; the item is the bot's own drop"""
+    key = 'chore_salvage'
+    rep, why = await found_look(io)
+    if rep is None:
+        return Result(key, name, cls, SKIP, why)
+    await io.open_bag(rep.get('bagClientId'))
+    reply = await io.request('crafting', 'open', {}, ('state',), ANSWER)
+    a = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if not isinstance(a, dict) or not (a.get('salvage') or {}).get('installed', True):
+        return Result(key, name, cls, SKIP, 'no bench state with a Salvage mode')
+    item = salvage_pick(rep, a.get('items'))
+    if item is None:
+        return Result(key, name, cls, SKIP, 'no rolled piece in the backpack that the bot would not wear (%d piece(s) looked at)' % len(rep.get('pieces') or []))
+    sel = await io.request('crafting', 'select', {'path': str(item['path']), 'id': item['id']}, ('state',), ANSWER)
+    sig = (((sel or {}).get('data') or {}).get('item') or {}).get('sig')
+    res = await io.request('crafting', 'salvage', {'path': str(item['path']), 'id': item['id'], 'sig': sig}, ('result',), ANSWER)
+    await io.sleep(1.0)
+    again = await io.request('crafting', 'open', {}, ('state',), ANSWER)
+    status, text = salvage_verdict(item, a, (again or {}).get('data') if isinstance(again, dict) else None, res)
+    return Result(key, name, cls, status, text)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -4787,6 +5319,15 @@ CHECKS = [
     ('goblin_walk', check_goblin_walk, lambda c: True),   # O650: a treasure goblin of the bot's own (TEST ONLY), chased and hit
     ('vael_walk', check_vael_walk, lambda c: True),   # O650: Vael Ashmourn through the TEST ONLY door, from level 500
     ('invasion_walk', check_invasion_walk, lambda c: True),   # O650: while an invasion runs: the hits of a tester are cancelled, no share
+    ('craft_found', check_craft_found, lambda c: True),   # O653: the orbs, gems and runes the bot dropped, spent on backpack pieces (no helper grant)
+    ('gear_chase', check_gear_chase, lambda c: True),   # O653: wears the piece whose score knows sets, uniques and jewelry
+    ('chore_faction', check_chore_faction, lambda c: True),   # O653: the reputation window: ranks, contracts, tokens turned in
+    ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
+    ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
+    ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
+    ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
+    ('chore_trade', check_chore_trade, lambda c: True),   # O653: the Material Broker: sell what was gathered
+    ('chore_salvage', check_chore_salvage, lambda c: True),   # O653: a rolled piece the bot will not wear, broken down at the bench
     ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
 ]
 KEYS = tuple(k for k, _, _ in CHECKS)

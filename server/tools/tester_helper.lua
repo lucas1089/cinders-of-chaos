@@ -54,6 +54,9 @@
 --     ChaosMainQuestBoss.probe, ChaosTreasureGoblin.probe, ChaosInvasion.probe); `nemesis born | appear`, `vael enter` and `goblin spawn` are the
 --     TEST ONLY grants (a tester only, logged), `path` the way on foot to the guide's goal, `close` the end of the bot's own run; the fights and the
 --     claim are the bot's own
+--   * "!tester found" (O653): what the bot's own drops can do (read only): the orbs, whetstones, sockets orbs, gems, runes, charms and cards in its
+--     backpack, the pieces it could wear with a score that knows sets, uniques and jewelry (H.chaseScore), what it wears. Nothing is given or moved;
+--     the crafting, the socketing and the wearing are the bot's own packets (tester_checks.py craft_found, gear_chase)
 --   * "!tester raid [state | path | portal | close]" (O588, closed test mode): the raid as a person sees it (position, entrance, the next
 --     goal and what to do there), the path on foot to the entrance (the engine's own pathfinding), the step next to the entrance
 --     portal when there is none (the bot walks the last step into it itself) and the close of the testers' own raid; the walk,
@@ -86,7 +89,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 18
+HELPER_VERSION = 19
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -3221,6 +3224,87 @@ local function step()
 	end
 end
 T.step_fn = step
+
+-- ---------------------------------------------------------------- O653 what the bot's own drops can do
+-- "!tester found": reads the backpack and the worn gear (never gives or moves anything). Orbs by key (ChaosCrafting.orbByKey), gems, runes, charms,
+-- cards, and the pieces with their set, unique and jewelry facts; H.foundReport scores them (H.chaseScore knows sets). The crafting window, the
+-- use-with of a gem and the move to a worn slot are the bot's own packets.
+local function flag(f)
+	local ok, v = pcall(f)
+	return ok and v and true or false
+end
+
+local function foundRows(player, bag)
+	local orbOf = {}
+	for key, orb in pairs((ChaosCrafting and ChaosCrafting.orbByKey) or {}) do
+		if type(orb) == "table" and orb.id then
+			orbOf[orb.id] = key
+		end
+	end
+	local cardOf = {}
+	local okC, cards = pcall(function() return ChaosCardsCore and ChaosCardsCore.cardIds and ChaosCardsCore.cardIds() end)
+	for _, id in ipairs(okC and cards or {}) do
+		cardOf[id] = true
+	end
+	local rows = {}
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		if item then
+			local id = item:getId()
+			local it = ItemType(id)
+			local slot = bagSlotOf(it)
+			local row = {i = i, id = id, cid = it:getClientId(), n = item:getCount(), slot = slot, orb = orbOf[id],
+				gem = flag(function() return ChaosGems and ChaosGems.isGem and ChaosGems.isGem(id) end),
+				rune = flag(function() return ChaosSupports and ChaosSupports.isRune and ChaosSupports.isRune(id) end),
+				charm = flag(function() return ChaosCharms and ChaosCharms.isCharm and ChaosCharms.isCharm(item) end),
+				card = cardOf[id] or nil}
+			if slot then
+				row.score = pieceScore(item, it)
+				local okS, set = pcall(function() return ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) end)
+				row.set = okS and set and set.key or nil
+				row.unique = flag(function() return item:getCustomAttribute("chaos_unique") ~= nil end)
+				row.jewelry = slot == CONST_SLOT_NECKLACE or slot == CONST_SLOT_RING
+			end
+			rows[#rows + 1] = row
+		end
+	end
+	return rows
+end
+
+function commands.found(player, arg)
+	local what, usage = H.parseFound(arg)
+	if not what then
+		tell(player, "found", {err = usage})
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "found", {err = "no backpack"})
+		return
+	end
+	local worn, state = {}, {sets = {}, size = {}}
+	for _, e in ipairs(BAG_SLOTS) do
+		local item = player:getSlotItem(e[2])
+		if item then
+			local okS, set = pcall(function() return ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) end)
+			worn[e[2]] = {score = pieceScore(item, ItemType(item:getId())), set = okS and set and set.key or nil,
+				unique = flag(function() return item:getCustomAttribute("chaos_unique") ~= nil end) or nil}
+		end
+	end
+	local okT, st = pcall(function() return ChaosItemSets and ChaosItemSets.stateOf and ChaosItemSets.stateOf(player) end)
+	for key, v in pairs(okT and st and st.sets or {}) do
+		state.sets[key] = v.count or 0
+	end
+	for _, set in pairs((ChaosItemSets and ChaosItemSets.sets) or {}) do
+		if type(set) == "table" and set.key and type(set.pieces) == "table" then
+			state.size[set.key] = #set.pieces
+		end
+	end
+	local report = H.foundReport(foundRows(player, bag), worn, state)
+	report.bagClientId = ItemType(bag:getId()):getClientId()
+	report.level = player:getLevel()
+	tell(player, "found", report)
+end
 
 T.FILE = "data/scripts/zz_tester_helper.lua"
 function T.present()

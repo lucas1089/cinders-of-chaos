@@ -518,6 +518,31 @@ do
 	eq(X.worldCancelled[1], 3, "worldHit counts a tester's cancelled hit too")
 end
 
+-- ------------------------------------------------------------------ O653: a tester is on no season board and takes no chest from the pool
+do
+	local function source(path)
+		local f = io.open(path, "r")
+		local text = f and f:read("*a") or ""
+		if f then f:close() end
+		return text
+	end
+	local season = source("data/scripts/chaos/season.lua")
+	local onRecord = season:match("function S%.onRecord%(board, who, value%)(.-)\nend\n") or ""
+	check(onRecord:find("Chaos.isTesterGuid(guid)", 1, true) ~= nil, "season.lua S.onRecord skips a tester guid: no season stat row, no milestone")
+	check((onRecord:find("isTesterGuid", 1, true) or 0) > 0 and (onRecord:find("isTesterGuid", 1, true) or 0) < (onRecord:find("INSERT INTO", 1, true) or 0),
+		"the tester guard comes before the database write")
+	local ladder = season:match("local function ladderWhere%(g, seasonId%)(.-)\nend\n") or ""
+	check(ladder:find('Chaos.notTesterSql("p")', 1, true) ~= nil, "season.lua ladderWhere leaves the testers out of the season ladder (the mode ladders share it)")
+	local modes = source("data/scripts/chaos/season_modes.lua")
+	check(modes:find("S.ladderHelpers.where(g, season.id)", 1, true) ~= nil, "the mode ladders read the same where clause")
+	local chest = source("data/scripts/chaos/weeklychest.lua")
+	local credit = chest:match("function W%.credit%(player, key%)(.-)\nend\n") or ""
+	check(credit:find("Chaos.isTesterGuid(player:getGuid())", 1, true) ~= nil, "the Weekly Chest credits a tester nothing: it is not marked and the chest is not given")
+	-- the leaderboard record the season and the pass hook into already skips a tester
+	local lb = source("data/scripts/chaos/leaderboard.lua")
+	check(lb:find("Chaos.isTesterGuid(guid)", 1, true) ~= nil, "the leaderboard record skips a tester")
+end
+
 print = origPrint
 print(string.format("testers_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

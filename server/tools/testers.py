@@ -753,6 +753,12 @@ class CheckIO(KeyIO):
                                                   (0xFFFF, 0x40, to_slot), int(to_sprite), to_slot))
             await self.bot.conn.w.drain()
 
+    async def wear(self, index, client_id, slot):
+        """moves the backpack item in slot `index` to the equipment slot `slot` (a person drags a piece onto the paper doll, O653)"""
+        if self.alive():
+            self.bot.conn.send(TC.move_packet((0xFFFF, 0x40, int(index)), int(client_id), int(index), (0xFFFF, int(slot), 0), 1))
+            await self.bot.conn.w.drain()
+
     async def say(self, text):
         if self.alive():
             self.bot.say(text)

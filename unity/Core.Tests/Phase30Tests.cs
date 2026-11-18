@@ -176,7 +176,8 @@ namespace Chaos.Core.Tests
         static readonly string[] NotMirrored = { "craft_orbs", "craft_whetstone", "craft_sockets", "craft_gems", "craft_supports", "craft_charms", "craft_cards",
             "rift_walk", "tower_walk", "descent_walk", "trial_walk", "hideout",
             "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk",
-            "bounty_elite_walk", "bounty_boss_walk", "daily_claim", "chronicle_walk", "nemesis_walk", "goblin_walk", "vael_walk", "invasion_walk" };
+            "bounty_elite_walk", "bounty_boss_walk", "daily_claim", "chronicle_walk", "nemesis_walk", "goblin_walk", "vael_walk", "invasion_walk",
+            "craft_found", "gear_chase", "chore_faction", "chore_pass", "chore_chests", "chore_candlemarks", "chore_gamble", "chore_trade", "chore_salvage" };
 
         static void Coverage(Action<bool, string> check)
         {

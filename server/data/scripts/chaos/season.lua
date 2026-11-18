@@ -642,6 +642,9 @@ function S.onRecord(board, who, value)
 	if not guid or S.realmOfGuid(guid) ~= season.id then
 		return
 	end
+	if Chaos.isTesterGuid and Chaos.isTesterGuid(guid) then
+		return -- a tester bot never enters a season stat, so no season board (O653)
+	end
 	value = math.max(0, math.floor(tonumber(value) or 0))
 	local expr = mode == "max" and string.format("GREATEST(`value`, %d)", value)
 		or (mode == "count" and "`value` + 1" or string.format("`value` + %d", value))
@@ -1023,7 +1026,8 @@ end
 local function ladderWhere(g, seasonId)
 	return string.format("p.`vocation` IN (%s) AND p.`group_id` < %d AND p.`deletion` = 0 AND sp.`season` = %d AND " ..
 		"sp.`migrated_at` = 0", table.concat(g.ids, ","), cfg.ladder.staffGroup, seasonId) ..
-		(ChaosAntibot and ChaosAntibot.heldClause and ChaosAntibot.heldClause("p.") or "") -- anti-bot review holds (antibot.lua)
+		(ChaosAntibot and ChaosAntibot.heldClause and ChaosAntibot.heldClause("p.") or "") .. -- anti-bot review holds (antibot.lua)
+		" AND " .. Chaos.notTesterSql("p") -- a tester bot is on no season ladder (O653)
 end
 
 local function seasonLadderRows(g, seasonId)

@@ -10350,6 +10350,69 @@ has no blinks), the boss marks as places where a boss stands (a lair or an islan
 the type), the Chronicle window's chunked state through the bots' connection, Vael's floor telegraphs against a bot that does not dodge (its lives decide),
 `Chaos.isTester` on a bot that logs in during an invasion.
 
+##### 10. Economy, crafting and progression chores (O653)
+
+Owner 2026-11-18 (translated): "do all the points": the bots spend what they found, play the daily chores to a result and keep the closed rules. Open checks
+(no closed mode needed). Helper v19 (`HELPER_VERSION`): `!tester found`. Tests: `tester_helper_test.lua` (section O653), `testers_test.lua` (section O653),
+`tester_checks_test.py` (`CraftFound`, `GearChase`, `Chores`, `ChoreSalvage`).
+
+Server rules:
+- **No season board for a tester** (`season.lua`): `S.onRecord` returns for a tester guid before the database write (no season stat row, no milestone), and
+  `ladderWhere` adds `Chaos.notTesterSql("p")`, so the class ladders and the mode ladders (`season_modes.lua` shares the clause) list no tester. The
+  leaderboard record, which the season and the pass hook into, skipped testers already. The seasonal journey belongs to a season character: a tester is a
+  standard character and walks none (the window answers `none`), so there is nothing to claim and nothing to close.
+- **Weekly Chest**: `W.credit` gives a tester nothing (no activity mark, no chest, no bonus roll; the pool is the players'). The check proves the window shows
+  0 given.
+
+`!tester found` (helper, read only): the orbs by key (`ChaosCrafting.orbByKey`), the drops (orbs, gems, runes, charms, cards: row, client id, count), the
+wearable pieces of the backpack (slot, score, set key, unique, jewelry, `chase`), the worn gear and the worn pieces of each set, `best` (the piece that gains
+the most) and the backpack's client id. `H.chaseScore` (core): the plain gain over the worn piece of its slot, plus 40 for each worn piece of the set it joins
+(10 for the first), 30 for a unique over a worn non unique, 50 for a ring or necklace in an empty slot; a full set adds nothing and a piece of the set worn in
+the same slot adds no piece. Nothing is given or moved: the crafting, the use-with, the socketing and the wear are the bot's own packets (`io.wear` is the
+move to the equipment slot, the drag onto the paper doll).
+
+How the bots play it:
+1. `craft_found`: SKIP while the bot has dropped no orbs, gems or runes (nothing is given: `!tester give` stays for the O584 checks). With drops: the pieces by
+   chase score (three at most, never a unique); `found_next_orb` picks what a person would spend (Gilding or Awakening on a normal piece, Grafting while a
+   Common or Uncommon piece has room, the Whetstone up to the quality cap, Sockets up to the maximum); each orb goes through the bench (`select`, `apply`)
+   and is proved by the same tooltip and bench agreement as `craft_orbs` plus the count: the bench must count the orb off. A gem is used on a piece with a
+   free socket (use-with) and the socket count must rise and the tooltip change; a rune goes into a spell with a free support socket and the spell must hold
+   one more. FAIL: an effect the orb does not have, an orb not counted off, a gem or rune that did not land. The bench works on the backpack only, so the
+   worn piece is crafted by taking it off first; the bot crafts the pieces it has not worn yet and wears the best one (next check).
+2. `gear_chase`: wears the piece `best` names (a set piece of a set the bot wears, a unique, a jewel for an empty slot, a plain gain). PASS: the slot holds
+   something else afterwards and the sets worn did not fall. SKIP: nothing beats the worn gear, or the server kept the piece in the bag (a class or level rule).
+3. `chore_faction` (Reputation window): open, every faction listed, no negative reputation, no contract past its count; tokens the bot holds are turned in
+   (`turnin {f}`) and the tokens must go and the reputation rise (unless the weekly cap is reached). SKIP when the window does not answer.
+4. `chore_pass` (Season Pass): open, the free tiers reached and unclaimed (`claimed` string) are claimed with `claimAll`; the claimed string must change. PASS
+   also when every reachable tier is claimed already. SKIP below the pass level or with no season.
+5. `chore_chests`: the Weekly Chest window shows 0 activities and 0 chests for a tester (FAIL when a tester holds a chest: the pool is the players'); the Ember
+   Cache window answers.
+6. `chore_candlemarks` (Osric the Chandler, on foot): the cheapest item offer the bot can pay and has the level for; the balance must fall by the price. PASS
+   with a note when the balance buys nothing (the marks come with time online).
+7. `chore_gamble` (Mordecai Ashwager, on foot): the cheapest unsold piece the bot can pay; money must fall by the price, the row must be marked sold, the
+   backpack must hold one more slot (`!tester bag` `used`). SKIP when the bot has no gold for the stock.
+8. `chore_trade` (Material Broker, on foot): `sellAll` for the gathered materials the window lists as held; the held count must fall. SKIP while the bot holds none.
+9. `chore_salvage`: a rolled piece of the backpack that is no better than the worn gear, not a unique, not locked: the bench's Salvage (`salvage {path, id,
+   sig}`); the list must shrink by one and the Rune Shards must not fall.
+
+Left with the reason (a later task, each needs a live look first):
+- **Class ascension at level 100** (`ascension_quest.lua`: the Ascendant Oracle, the Calling, the Proof of Strength, the Trial, the Choice): needs a base class
+  tester made at level 100 for it (testers.py setup), a probe of the quest step and an NPC dialogue plan like `M.botPlan`, and the Trial fight; nothing of it
+  can be proved without a server. Plan: `ChaosAscensionQuest.probe` (step, where, what) plus `ascension_walk` on the pattern of `mainquest_walk`.
+- **Spell learning below level 500** (`needlearn` spells: `loadtest.rotation_for` still skips them): the way a player learns them (the Spellbook window or an NPC)
+  is not read yet; plan: a probe of the learnable spells of the character and a buy / learn request, then `rotation_for` takes the learned buffs and utility spells.
+- **Tales (Archivist Maelis) and the NPC quests, the base kill tasks, the unique window**: no probe and no plan yet (the tales are NPC dialogue with keywords the
+  bot cannot read from the screen; the kill tasks run on the bestiary opcode). Plan: probes that list the open tale or task and where to go, like `bounty`.
+- **Professions gathering** (pick, sickle, knife, rod on nodes, corpses and water), **autosell, smartloot, stash, pouches, the exercise dummy and mounts**: the
+  gathering needs the node positions (`harvest_places`, the state's `areas`) and a use-with on a tile; the others are settings windows whose effect shows over
+  a hunt. Plan: `!tester nodes` (the nearest node of a profession) and a `gather` loop on `chase_play`; the settings checks read the window, change a rule and
+  read it back.
+- **Gambler reroll and the premium track of the pass**: the reroll costs gold that the bot may need for supplies, and the premium track is bought with coins.
+
+Needs a live run: the pass window's `claimed` string for a tester below the pass level, the state of the faction window through the chunked packets, the
+`near` flag of Osric and the Gambler (the walk ends within 3 tiles), the Rune Shards in the bench state (`salvage.shards`), the backpack index of a stack
+that a gem or an orb used up (the check looks again after the orbs and uses one gem).
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):

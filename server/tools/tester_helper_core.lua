@@ -1419,4 +1419,82 @@ function H.parseGive(arg)
 	return {what = what, key = key, n = math.max(1, math.min(H.GIVE_MAX, n))}
 end
 
+-- ---------------------------------------------------------------- O653: `!tester found`: what the bot's own drops can do
+-- The bot reads its backpack and what it wears (no grant: everything in it was dropped, bought or won by the bot) so that it can spend its orbs,
+-- gems, whetstones and runes (tester_checks.py craft_found) and wear a better piece (gear_chase). Rows (built by tester_helper.lua):
+--   {i, id, cid, n, slot, score, orb = KEY, gem = true, rune = true, charm = true, card = true, set = KEY, unique = true, jewelry = true}
+-- worn = {[slot] = {score, set, unique}}; state = {sets = {[set key] = worn pieces}, size = {[set key] = pieces of the set}}.
+H.COMMANDS.found = true
+H.CHASE_SET = 40      -- a piece of a set the bot wears already: each worn piece of the set is worth this much more
+H.CHASE_SET_NEW = 10  -- the first piece of a set
+H.CHASE_UNIQUE = 30   -- a unique is rare: chased over a plain piece of the same score
+H.CHASE_JEWELRY = 50  -- a ring or a necklace for an empty slot
+H.FOUND_MAX = 16      -- rows of each list of the answer
+
+function H.parseFound(arg)
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if what == nil then
+		return nil, "usage: found"
+	end
+	what = what:lower()
+	if what == "" or what == "state" then
+		return "state"
+	end
+	return nil, "usage: found"
+end
+
+-- the score of a piece that knows sets: the plain gain over what is worn in its slot, plus a share of the set it would join, a unique, a jewel
+-- for an empty slot. A set piece that is worn already in another slot of the same set counts the pieces worn; a full set adds nothing.
+function H.chaseScore(row, worn, state)
+	local w = (worn or {})[row.slot] or {}
+	local gain = (row.score or 0) - (w.score or 0)
+	local score = gain
+	if row.set then
+		local have = ((state or {}).sets or {})[row.set] or 0
+		local size = ((state or {}).size or {})[row.set] or 99
+		if w.set == row.set then
+			have = have - 1 -- it replaces a piece of the same set: no gain from the set
+		end
+		if have < size then
+			score = score + (have > 0 and H.CHASE_SET * have or H.CHASE_SET_NEW)
+		end
+	end
+	if row.unique and not w.unique then
+		score = score + H.CHASE_UNIQUE
+	end
+	if row.jewelry and (w.score or 0) == 0 then
+		score = score + H.CHASE_JEWELRY
+	end
+	return score
+end
+
+-- the answer: orbs = {key = count}, drops (what can be crafted with: orb, gem, rune, charm, card), pieces (wearable, with `chase`),
+-- `best` (the backpack slot of the piece that gains the most, or nil: it must beat the worn one by EQUIP_MARGIN)
+function H.foundReport(rows, worn, state)
+	local orbs, drops, pieces = {}, {}, {}
+	local best, gain = nil, H.EQUIP_MARGIN - 1
+	for _, r in ipairs(rows or {}) do
+		if r.orb then
+			orbs[r.orb] = (orbs[r.orb] or 0) + (r.n or 1)
+		end
+		local kind = r.orb and "orb" or (r.gem and "gem") or (r.rune and "rune") or (r.charm and "charm") or (r.card and "card") or nil
+		if kind and #drops < H.FOUND_MAX then
+			drops[#drops + 1] = {i = r.i, id = r.id, cid = r.cid, n = r.n, k = kind, key = r.orb}
+		elseif r.slot and not kind and #pieces < H.FOUND_MAX then
+			local c = H.chaseScore(r, worn, state)
+			pieces[#pieces + 1] = {i = r.i, id = r.id, cid = r.cid, s = r.slot, sc = r.score, set = r.set, unique = r.unique and true or nil,
+				jewelry = r.jewelry and true or nil, chase = c}
+			if c > gain then
+				best, gain = r.i, c
+			end
+		end
+	end
+	local out = {}
+	for slot, w in pairs(worn or {}) do
+		out[#out + 1] = {s = slot, sc = w.score, set = w.set, unique = w.unique and true or nil}
+	end
+	table.sort(out, function(a, b) return a.s < b.s end)
+	return {orbs = orbs, drops = drops, pieces = pieces, best = best, worn = out, sets = (state or {}).sets or {}}
+end
+
 return H

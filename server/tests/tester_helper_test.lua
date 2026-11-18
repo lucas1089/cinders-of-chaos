@@ -2299,6 +2299,103 @@ do
 		and #civ4.log.msgs == n4, "tower / descent: a player's words go on and get no answer")
 end
 
+-- ------------------------------------------------------------------ O653: `!tester found` (what the bot's own drops can do)
+do
+	local H = ChaosTesterHelperCore
+	check(H.COMMANDS.found and H.parseCommand("found #1") == "found", "found is a registered command")
+	eq(H.parseFound(nil), "state", "found: no word is state")
+	eq(H.parseFound("state"), "state", "found: state")
+	check(H.parseFound("give") == nil and select(2, H.parseFound("give")) == "usage: found", "found: it takes no grant word")
+	-- the chase score knows sets, uniques and jewelry
+	local worn = {[1] = {score = 30}, [2] = {score = 0}, [8] = {score = 40, set = "ashen"}}
+	local state = {sets = {ashen = 2, other = 0}, size = {ashen = 4, other = 4, full = 2}}
+	eq(H.chaseScore({slot = 1, score = 50}, worn, state), 20, "chase: the plain gain only")
+	eq(H.chaseScore({slot = 1, score = 50, set = "ashen"}, worn, state), 20 + H.CHASE_SET * 2, "chase: a set piece joins the 2 worn pieces of its set")
+	eq(H.chaseScore({slot = 1, score = 50, set = "other"}, worn, state), 20 + H.CHASE_SET_NEW, "chase: the first piece of a set")
+	eq(H.chaseScore({slot = 8, score = 45, set = "ashen"}, worn, state), 5 + H.CHASE_SET, "chase: a piece of the same set as the worn one adds no piece")
+	eq(H.chaseScore({slot = 1, score = 50, set = "full"}, worn, {sets = {full = 2}, size = {full = 2}}), 20, "chase: a full set adds nothing")
+	eq(H.chaseScore({slot = 1, score = 50, unique = true}, worn, state), 20 + H.CHASE_UNIQUE, "chase: a unique")
+	eq(H.chaseScore({slot = 1, score = 50, unique = true}, {[1] = {score = 30, unique = true}}, state), 20, "chase: no bonus over a unique already worn")
+	eq(H.chaseScore({slot = 2, score = 5, jewelry = true}, worn, state), 5 + H.CHASE_JEWELRY, "chase: a jewel for an empty slot")
+	eq(H.chaseScore({slot = 2, score = 5, jewelry = true}, {[2] = {score = 4}}, state), 1, "chase: a jewel for a worn slot is a plain gain")
+	-- the report: drops, pieces, the best one
+	local rows = {
+		{i = 0, id = 7618, cid = 1, n = 90},
+		{i = 1, id = 24691, cid = 2, n = 3, orb = "alchemy"},
+		{i = 2, id = 24692, cid = 3, n = 2, orb = "alchemy"},
+		{i = 3, id = 32006, cid = 4, n = 1, gem = true},
+		{i = 4, id = 33001, cid = 5, n = 1, rune = true},
+		{i = 5, id = 3001, cid = 6, n = 1, slot = 1, score = 40},
+		{i = 6, id = 3002, cid = 7, n = 1, slot = 1, score = 50, set = "ashen"},
+		{i = 7, id = 3003, cid = 8, n = 1, slot = 2, score = 6, jewelry = true},
+	}
+	local rep = H.foundReport(rows, worn, state)
+	eq(rep.orbs.alchemy, 5, "found: the orbs by key, stacks added")
+	eq(#rep.drops, 4, "found: two orb rows, a gem and a rune are drops")
+	check(rep.drops[3].k == "gem" and rep.drops[4].k == "rune" and rep.drops[1].key == "alchemy", "found: the kinds of the drops")
+	eq(#rep.pieces, 3, "found: three wearable pieces (a potion is none)")
+	eq(rep.best, 6, "found: the piece of a set with 2 worn pieces wins (100 over the jewel 56 and the plain 10)")
+	eq(H.foundReport({rows[8], rows[6]}, worn, state).best, 7, "found: a jewel for the empty slot wins over a plain gain")
+	eq(rep.pieces[2].chase, 20 + H.CHASE_SET * 2, "found: the set piece is scored with its set")
+	eq(rep.pieces[2].set, "ashen", "found: the set key")
+	eq(rep.sets.ashen, 2, "found: the sets worn")
+	eq(#rep.worn, 3, "found: the worn slots")
+	eq(H.foundReport({{i = 0, id = 3001, cid = 6, n = 1, slot = 1, score = 20}}, worn, state).best, nil, "found: nothing beats the worn piece")
+	local many = {}
+	for i = 1, 40 do
+		many[i] = {i = i, id = 1000 + i, cid = i, n = 1, orb = "chaos"}
+	end
+	eq(#H.foundReport(many, {}, {}).drops, H.FOUND_MAX, "found: the lists are bounded")
+
+	-- the command on a mock backpack: nothing is given or moved
+	T.present = function() return true end
+	local saved = ItemType
+	local types = {[3001] = {slot = 1, armor = 4, def = 0, atk = 0}, [3002] = {slot = 1, armor = 5, def = 0, atk = 0}, [24691] = {slot = 0, armor = 0, def = 0, atk = 0},
+		[32006] = {slot = 0, armor = 0, def = 0, atk = 0}}
+	function ItemType(id)
+		local t = types[id] or {slot = 0, armor = 0, def = 0, atk = 0}
+		return {getClientId = function() return id + 10000 end, getName = function() return "item " .. id end,
+			isStackable = function() return false end, getSlotPosition = function() return t.slot end,
+			getArmor = function() return t.armor end, getDefense = function() return t.def end, getAttack = function() return t.atk end}
+	end
+	local function it(id, n, uniq)
+		return {getId = function() return id end, getCount = function() return n or 1 end, isContainer = function() return false end,
+			getCustomAttribute = function(_, k) if k == "chaos_unique" and uniq then return 1 end return nil end}
+	end
+	local items = {[0] = it(24691, 4), [1] = it(32006, 1), [2] = it(3001), [3] = it(3002, 1, true)}
+	local realC, realG, realS, realSets = ChaosCrafting, ChaosGems, ChaosSupports, ChaosItemSets
+	ChaosCrafting = {orbByKey = {alchemy = {id = 24691}}}
+	ChaosGems = {isGem = function(id) return id == 32006 end}
+	ChaosSupports = {isRune = function() return false end}
+	ChaosItemSets = {pieceOf = function(item) if item:getId() == 3002 then return {key = "ashen"} end return nil end,
+		stateOf = function() return {sets = {ashen = {count = 1}}} end, sets = {ashen = {key = "ashen", pieces = {1, 2, 3, 4}}}}
+	local fb = creature(268435495, "Tester Fnd", {store = {[ST] = 1}})
+	local gave = 0
+	fb.slots = {[CONST_SLOT_HEAD] = it(3001), [CONST_SLOT_BACKPACK] = {
+		getSize = function() return 4 end, getItem = function(_, i) return items[i] end, getCapacity = function() return 20 end, getId = function() return 1988 end,
+		addItem = function() gave = gave + 1 end}}
+	function fb:getLevel() return 300 end
+	fb.addItemEx = function() gave = gave + 1 end
+	check(talks["!tester"].onSay(fb, "!tester", "found #7") == false, "found: consumed")
+	local line = fb.log.msgs[#fb.log.msgs]
+	check(line:find("[tester-helper] found ", 1, true) ~= nil and line:find('"seq":7', 1, true) ~= nil, "found: the numbered answer line: " .. tostring(line))
+	check(line:find('"alchemy":4', 1, true) ~= nil, "found: the orb stack by key: " .. tostring(line))
+	check(line:find('"k":"gem"', 1, true) ~= nil and line:find('"k":"orb"', 1, true) ~= nil, "found: the gem and the orb are drops")
+	check(line:find('"set":"ashen"', 1, true) ~= nil and line:find('"unique":true', 1, true) ~= nil, "found: the set and unique facts of the piece")
+	check(line:find('"best":3', 1, true) ~= nil, "found: the unique set piece of armour 5 is the best: " .. tostring(line))
+	check(line:find('"bagClientId":11988', 1, true) ~= nil and line:find('"level":300', 1, true) ~= nil, "found: the backpack id and the level")
+	eq(gave, 0, "found: nothing is given")
+	check(talks["!tester"].onSay(fb, "!tester", "found give #8") == false and fb.log.msgs[#fb.log.msgs]:find("usage: found", 1, true) ~= nil, "found: a grant word is the usage")
+	fb.slots[CONST_SLOT_BACKPACK] = nil
+	talks["!tester"].onSay(fb, "!tester", "found #9")
+	check(fb.log.msgs[#fb.log.msgs]:find("no backpack", 1, true) ~= nil, "found: no backpack, the reason")
+	local civ6 = creature(268435496, "Ana Found", {store = {}})
+	local n6 = #civ6.log.msgs
+	check(talks["!tester"].onSay(civ6, "!tester", "found #1") == true and #civ6.log.msgs == n6, "found: a player's words go on and get no answer")
+	ItemType = saved
+	ChaosCrafting, ChaosGems, ChaosSupports, ChaosItemSets = realC, realG, realS, realSets
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

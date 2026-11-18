@@ -5798,5 +5798,374 @@ class MainQuestLater(unittest.TestCase):
         self.assertEqual((r.status, 'vael_walk' in r.detail), (TX.SKIP, True))
 
 
+# ---------------------------------------------------------------- economy, crafting and progression chores (O653)
+class FoundIO(FakeIO):
+    """a mocked backpack of a bot that dropped things: one plain piece in slot 0, the bot's orbs, a gem, a rune; the crafting window and the tooltip
+    answer from it. `uncounted`: an orb the window forgets to count off; `piece`: the facts of the piece"""
+
+    def __init__(self, orbs=None, gems=0, runes=0, uncounted=None, piece=None, err=None, chase=5):
+        FakeIO.__init__(self)
+        self.orbs, self.gems, self.runes, self.uncounted, self.err = dict(orbs or {}), gems, runes, uncounted, err
+        self.item = dict({'rarity': 0, 'mods': [], 'quality': 0, 'qcap': 2, 'sockets': 0, 'max': 2, 'socketed': 0, 'unique': False, 'maxMods': 4}, **(piece or {}))
+        self.chase, self.uses, self.support = chase, [], {'id': 9, 'name': 'Fire Bolt', 'count': 0, 'max': 2}
+        self.worn, self.sets, self.wore = {4: {'s': 4, 'sc': 10}}, {}, None
+        self.piece = {'i': 0, 'id': 2400, 'cid': 3300, 's': 4, 'sc': 20, 'chase': chase}
+
+    async def open_bag(self, client_id):
+        return None
+
+    async def use_with(self, a, ac, b, bc):
+        self.uses.append((a, b))
+        if self.gems and self.item['socketed'] < self.item['sockets']:
+            self.item['socketed'] += 1
+            self.gems -= 1
+
+    async def wear(self, index, client_id, slot):
+        self.wore = (index, slot)
+        if self.chase > 0 and not self.err:
+            self.worn[slot] = {'s': slot, 'sc': self.piece['sc'], 'set': self.piece.get('set')}
+            self.piece = None
+
+    def found(self):
+        if self.err:
+            return {'err': self.err}
+        drops = []
+        if self.gems:
+            drops.append({'i': 1, 'id': 32006, 'cid': 3400, 'n': self.gems, 'k': 'gem'})
+        if self.runes:
+            drops.append({'i': 2, 'id': 33001, 'cid': 3500, 'n': self.runes, 'k': 'rune'})
+        pieces = [dict(self.piece, unique=True if self.item['unique'] else None)] if self.piece else []
+        return {'orbs': dict(self.orbs), 'drops': drops, 'pieces': pieces, 'best': self.piece['i'] if self.piece and self.chase > 0 else None,
+                'worn': [dict(w) for w in self.worn.values()], 'sets': dict(self.sets), 'bagClientId': 1988}
+
+    async def helper(self, command, kind, wait=4.0):
+        return self.found() if command == 'found' else None
+
+    def state_item(self):
+        it = self.item
+        return {'rarity': it['rarity'], 'mods': [{'key': m, 'group': m} for m in it['mods']], 'quality': it['quality'], 'qualityCap': it['qcap'],
+                'maxMods': it['maxMods'], 'unique': it['unique'], 'sig': 'sig',
+                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{}] * it['socketed']}}
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        it = self.item
+        if opname == 'crafting' and action == 'select':
+            return {'action': 'state', 'data': {'counts': dict(self.orbs), 'item': self.state_item()}}
+        if opname == 'itemTooltip':
+            tip = {'name': 'a piece', 'rarity': it['rarity'], 'mods': [{'k': m} for m in it['mods']], 'q': it['quality'], 'sk': it['socketed'], 'sc': it['sockets']}
+            return {'action': 'tips', 'data': {'items': [{'pos': data['items'][0]['pos'], 'tip': tip}]}}
+        if opname == 'crafting' and action == 'apply':
+            orb = data['orb']
+            if self.orbs.get(orb, 0) < 1:
+                return {'action': 'result', 'data': {'ok': False, 'text': 'none'}}
+            if orb != self.uncounted:
+                self.orbs[orb] -= 1
+            if orb == 'alchemy':
+                it['rarity'], it['mods'] = 3, ['a', 'b']
+            elif orb == 'whetstone':
+                it['quality'] += 1
+            elif orb == 'sockets':
+                it['sockets'] = it['max']
+            return {'action': 'result', 'data': {'ok': True, 'text': 'done'}}
+        if opname == 'supports' and action == 'open':
+            return {'action': 'state', 'data': {'spells': [dict(self.support)]}}
+        if opname == 'supports' and action == 'socket':
+            self.support['count'] += 1
+            self.runes -= 1
+            return {'action': 'result', 'data': {'ok': True}}
+        return None
+
+
+class CraftFound(unittest.TestCase):
+    def go(self, io, fn=None):
+        return run((fn or TX.check_craft_found)(io, 'Tester Fnd', 'Ninja', 300))
+
+    def test_the_orb_plan_follows_the_piece(self):
+        n = {'alchemy': 1, 'transmutation': 1, 'exalted': 1, 'whetstone': 1, 'sockets': 1}
+        base = {'rarity': 0, 'mods': [], 'quality': 0, 'qualityCap': 2, 'maxMods': 4, 'sockets': {'count': 0, 'max': 2}}
+        self.assertEqual(TX.found_next_orb(base, n)[0], 'alchemy')
+        self.assertEqual(TX.found_next_orb(base, {'transmutation': 1})[0], 'transmutation')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=1, mods=['a']), n)[0], 'exalted', 'room for a modifier on a Common piece')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=3, mods=['a', 'b']), n)[0], 'whetstone', 'a Magic piece gets the Whetstone, not Grafting')
+        self.assertEqual(TX.found_next_orb(dict(base, rarity=3, quality=2), n)[0], 'sockets', 'the quality cap is reached')
+        self.assertIsNone(TX.found_next_orb(dict(base, rarity=3, quality=2, sockets={'count': 2, 'max': 2}), n))
+        self.assertIsNone(TX.found_next_orb(dict(base, unique=True), n), 'a unique gets nothing')
+        self.assertIsNone(TX.found_next_orb(dict(base, corrupted=True), n))
+        self.assertIsNone(TX.found_next_orb(base, {}), 'an empty hand')
+
+    def test_what_the_bot_dropped_is_spent_and_counted_off(self):
+        io = FoundIO(orbs={'alchemy': 1, 'whetstone': 2, 'sockets': 1}, gems=1, runes=1)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.item['rarity'], 3)
+        self.assertEqual(io.item['quality'], 2)
+        self.assertEqual(io.item['sockets'], 2)
+        self.assertEqual((io.item['socketed'], io.gems, io.support['count']), (1, 0, 1), 'the gem sits in a socket and the rune in the spell')
+        self.assertEqual(io.uses[0], (1, 0), 'the gem (slot 1) is used on the piece (slot 0)')
+        self.assertEqual(io.orbs, {'alchemy': 0, 'whetstone': 0, 'sockets': 0})
+        self.assertIn('Orb of Gilding', r.detail)
+        self.assertIn('gem(s) socketed', r.detail)
+        self.assertIn('rune(s) into a spell', r.detail)
+        self.assertNotIn('give', [a[1] for a in io.asked], 'no helper grant')
+
+    def test_it_is_a_skip_while_nothing_dropped(self):
+        r = self.go(FoundIO())
+        self.assertEqual((r.status, 'dropped no orbs' in r.detail), (TX.SKIP, True))
+        r = self.go(FoundIO(err='no backpack'))
+        self.assertEqual((r.status, r.detail), (TX.SKIP, 'no backpack'))
+        r = self.go(FoundIO(orbs={'alchemy': 1}, piece={'unique': True}))
+        self.assertEqual(r.status, TX.SKIP, 'a unique takes no orb')
+
+    def test_an_orb_the_window_does_not_count_off_is_a_bug(self):
+        r = self.go(FoundIO(orbs={'whetstone': 3}, uncounted='whetstone'))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the bench counts', r.detail)
+        self.assertIn('BUG craft_found', r.bug_line())
+
+    def test_the_checks_are_in_the_run(self):
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        for k in ('craft_found', 'gear_chase', 'chore_faction', 'chore_pass', 'chore_chests', 'chore_candlemarks', 'chore_gamble', 'chore_trade', 'chore_salvage'):
+            self.assertIn(k, keys)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertLess(keys.index('gear_chase'), keys.index('rift_walk'), 'the rift stays the longest, last')
+
+
+class GearChase(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_gear_chase(io, 'Tester Gch', 'Ninja', 300))
+
+    def test_the_best_piece_is_worn(self):
+        io = FoundIO()
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.wore, (0, 4))
+        self.assertIn('a better piece', r.detail)
+
+    def test_a_set_piece_is_named_and_counted(self):
+        io = FoundIO()
+        io.piece['set'] = 'ashen_vow'
+        io.sets = {'ashen_vow': 1}
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('a set piece (ashen_vow)', r.detail)
+        io = FoundIO()
+        io.piece['jewelry'] = True
+        r = self.go(io)
+        self.assertIn('a jewel', r.detail)
+
+    def test_nothing_better_and_the_servers_refusal_are_skips(self):
+        r = self.go(FoundIO(chase=0))
+        self.assertEqual((r.status, 'beats what the bot wears' in r.detail), (TX.SKIP, True))
+
+        class Refuses(FoundIO):
+            async def wear(self, index, client_id, slot):
+                self.wore = (index, slot)
+        r = self.go(Refuses())
+        self.assertEqual((r.status, 'level or class rule' in r.detail), (TX.SKIP, True))
+
+    def test_a_worn_slot_that_is_empty_is_a_bug(self):
+        class Vanishes(FoundIO):
+            async def wear(self, index, client_id, slot):
+                self.wore = (index, slot)
+                self.piece = None
+                self.worn.pop(slot, None)
+        r = self.go(Vanishes())
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('is empty', r.detail)
+
+
+class ChoreIO(FakeIO):
+    """scripted windows: the replies of (opname, action) are dicts, lists (popped in order, the last one stays) or callables of the data"""
+
+    def __init__(self, replies=None, answers=None):
+        FakeIO.__init__(self, answers=dict({'path npc Osric the Chandler': {'here': True}, 'path npc Mordecai Ashwager': {'here': True},
+                                            'path npc Material Broker': {'here': True}}, **(answers or {})), replies=replies)
+
+    async def open_bag(self, client_id):
+        return None
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        r = self.replies.get((opname, action))
+        if isinstance(r, list):
+            return r.pop(0) if len(r) > 1 else r[0]
+        return r(data) if callable(r) else r
+
+
+def st(data):
+    return {'action': 'state', 'data': data}
+
+
+class Chores(unittest.TestCase):
+    def go(self, fn, io, level=300):
+        return run(fn(io, 'Tester Chr', 'Ninja', level))
+
+    def test_the_faction_window_turns_tokens_into_reputation(self):
+        def f(rep, tok):
+            return {'k': 'ash', 'rep': rep, 'tok': tok, 'rn': 'Friend', 'wk': 0, 'wc': 50}
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)], 'contracts': [{'key': 'c1', 'p': 1, 'n': 5}]}), st({'factions': [f(50, 0)], 'contracts': []})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('factions', 'turnin', {'f': 'ash'}), io.asked)
+        self.assertIn('reputation 10 -> 50', r.detail)
+        self.assertEqual(io.asked[-1][:2], ('factions', 'close'), 'the window is closed again')
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)]}), st({'factions': [f(10, 4)]})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('were not taken', r.detail)
+        io = ChoreIO({('factions', 'open'): [st({'factions': [f(10, 4)]}), st({'factions': [f(10, 0)]})]})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual((r.status, 'gave no reputation' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(TX.check_chore_faction, ChoreIO()).status, TX.SKIP)
+        io = ChoreIO({('factions', 'open'): st({'factions': [f(10, 0)], 'contracts': [{'key': 'c1', 'p': 9, 'n': 5}]})})
+        r = self.go(TX.check_chore_faction, io)
+        self.assertEqual((r.status, 'contract c1 shows 9 of 5' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('factions', 'open'): st({'factions': [f(10, 0)], 'contracts': [{'key': 'c1', 'p': 1, 'n': 5}]})})
+        self.assertEqual(self.go(TX.check_chore_faction, io).status, TX.PASS)
+
+    def test_the_season_pass_claims_what_the_tier_holds(self):
+        base = {'season': {'id': 3}, 'tier': 3}
+        io = ChoreIO({('seasonPass', 'open'): [st(dict(base, claimed=['000', ''])), st(dict(base, claimed=['110', '']))]})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('seasonPass', 'claimAll', {}), io.asked)
+        self.assertIn('claimed 2 free tier(s) of 3', r.detail)
+        io = ChoreIO({('seasonPass', 'open'): st(dict(base, claimed=['000', '']))})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual((r.status, 'left 3 of 3' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('seasonPass', 'open'): st(dict(base, claimed=['111', '']))})
+        r = self.go(TX.check_chore_pass, io)
+        self.assertEqual(r.status, TX.PASS)
+        self.assertNotIn('claimAll', [a[1] for a in io.asked])
+        io = ChoreIO({('seasonPass', 'open'): st({'season': None})})
+        self.assertEqual(self.go(TX.check_chore_pass, io).status, TX.SKIP)
+        self.assertEqual(self.go(TX.check_chore_pass, ChoreIO()).status, TX.SKIP)
+        self.assertEqual(TX.pass_claimable({'season': {'id': 1}, 'tier': 5, 'claimed': ['101', '']}), [2], 'a tier beyond the string is not claimable')
+
+    def test_a_tester_has_no_weekly_chest(self):
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'need': 5, 'chest': {'given': 0}, 'chests': 0}), ('emberCache', 'open'): st({'week': 4})})
+        r = self.go(TX.check_chore_chests, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual({a[0] for a in io.asked if a[1] == 'close'}, {'weeklyChest', 'emberCache'})
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 2, 'need': 5, 'chest': {'given': 0}}), ('emberCache', 'open'): st({'week': 4})})
+        self.assertEqual(self.go(TX.check_chore_chests, io).status, TX.FAIL)
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'chest': {'given': 1}, 'chests': 1}), ('emberCache', 'open'): st({'week': 4})})
+        r = self.go(TX.check_chore_chests, io)
+        self.assertEqual((r.status, "the reward pool is the players'" in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('weeklyChest', 'open'): st({'got': 0, 'chest': {'given': 0}, 'chests': 0})})
+        self.assertEqual(self.go(TX.check_chore_chests, io).status, TX.SKIP)
+        self.assertEqual(self.go(TX.check_chore_chests, ChoreIO()).status, TX.SKIP)
+
+    def test_candlemarks_buy_the_cheapest_offer_it_can_pay(self):
+        offers = [{'k': 'big', 'p': 90, 'l': 1, 'kind': 'item'}, {'k': 'low', 'p': 20, 'l': 1, 'kind': 'item'}, {'k': 'hi', 'p': 5, 'l': 900, 'kind': 'item'},
+                  {'k': 'cos', 'p': 1, 'l': 1, 'kind': 'cosmetic'}, {'k': 'ownd', 'p': 2, 'l': 1, 'kind': 'item', 'own': True}]
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('candlemarks', 'open'): [st({'balance': 50, 'offers': offers}), st({'balance': 30, 'offers': offers})], ('candlemarks', 'buy'): ok})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('candlemarks', 'buy', {'k': 'low'}), io.asked, 'the cheapest item offer for its level, not a cosmetic, an owned one or a high level one')
+        io = ChoreIO({('candlemarks', 'open'): [st({'balance': 50, 'offers': offers}), st({'balance': 50, 'offers': offers})], ('candlemarks', 'buy'): ok})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'the balance fell by 0' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('candlemarks', 'open'): st({'balance': 3, 'offers': offers})})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'buys none' in r.detail), (TX.PASS, True))
+        self.assertNotIn('buy', [a[1] for a in io.asked])
+        io = ChoreIO({('candlemarks', 'open'): st({'balance': 50, 'offers': offers}), ('candlemarks', 'buy'): {'action': 'result', 'data': {'ok': False, 'text': 'walk to Osric'}}})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'walk to Osric' in r.detail), (TX.SKIP, True))
+        io = ChoreIO(answers={'path npc Osric the Chandler': {'err': 'no way'}, 'enter npc Osric the Chandler': {'err': 'no npc'}})
+        r = self.go(TX.check_chore_candlemarks, io)
+        self.assertEqual((r.status, 'no way to npc Osric' in r.detail), (TX.SKIP, True))
+
+    def test_the_gambler_sells_a_piece_that_reaches_the_bag(self):
+        def stock(sold, money):
+            return {'w': 7, 'money': money, 'items': [{'i': 1, 'id': 2400, 'n': 'Sealed Sword', 'sn': 'weapon', 'p': 300, 'sold': sold or None},
+                                                      {'i': 2, 'id': 2401, 'n': 'Dear', 'p': 99999}]}
+        bags = [{'used': 10}, {'used': 11}]
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 700))]})
+        io.answers['bag'] = lambda self: bags.pop(0)
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('gamble', 'buy', {'i': 1, 'w': 7, 'id': 2400}), io.asked)
+        bags[:] = [{'used': 10}, {'used': 10}]
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 700))]})
+        io.answers['bag'] = lambda self: bags.pop(0)
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'no new item' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(False, 700))]})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'not marked sold' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): [st(stock(False, 1000)), st(stock(True, 1000))]})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'the money fell by 0' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('gamble', 'open'): st(stock(False, 10))})
+        r = self.go(TX.check_chore_gamble, io)
+        self.assertEqual((r.status, 'for none' in r.detail), (TX.SKIP, True))
+
+    def test_the_broker_buys_what_was_gathered(self):
+        def dem(*h):
+            return {'demand': [{'id': 1, 'h': n} for n in h]}
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('professions', 'open'): [st(dem(3, 2)), st(dem(0, 0))], ('professions', 'sellAll'): ok})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'sold 5 of 5' in r.detail), (TX.PASS, True))
+        io = ChoreIO({('professions', 'open'): [st(dem(3)), st(dem(3))], ('professions', 'sellAll'): ok})
+        self.assertEqual(self.go(TX.check_chore_trade, io).status, TX.FAIL)
+        io = ChoreIO({('professions', 'open'): st(dem(3)), ('professions', 'sellAll'): {'action': 'result', 'data': {'ok': False, 'text': 'no broker near'}}})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'no broker near' in r.detail), (TX.FAIL, True))
+        io = ChoreIO({('professions', 'open'): st(dem(0, 0))})
+        r = self.go(TX.check_chore_trade, io)
+        self.assertEqual((r.status, 'no gathered material' in r.detail), (TX.SKIP, True))
+        self.assertNotIn('sellAll', [a[1] for a in io.asked])
+
+
+class ChoreSalvage(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_chore_salvage(io, 'Tester Slv', 'Ninja', 300))
+
+    @staticmethod
+    def io(items_after, shards=(4, 9), rep=None, ok=True):
+        items = [{'path': '0', 'id': 2400, 'name': 'Old Axe', 'rarity': 2, 'rarityName': 'Uncommon'}, {'path': '1', 'id': 2401, 'name': 'Fine Axe', 'rarity': 3},
+                 {'path': '2', 'id': 2402, 'name': 'Grey Axe', 'rarity': 0}]
+        rep = rep if rep is not None else {'pieces': [{'i': 0, 'id': 2400, 'chase': -5}, {'i': 1, 'id': 2401, 'chase': 30}, {'i': 2, 'id': 2402, 'chase': -9}],
+                                           'bagClientId': 1988}
+        first = {'items': items, 'salvage': {'installed': True, 'shards': shards[0]}}
+        second = {'items': items[:items_after], 'salvage': {'installed': True, 'shards': shards[1]}}
+        return ChoreIO({('crafting', 'open'): [st(first), st(second)], ('crafting', 'select'): st({'item': {'sig': 's1'}}),
+                        ('crafting', 'salvage'): {'action': 'result', 'data': {'ok': ok, 'text': 'no'}}},
+                       answers={'found': rep})
+
+    def test_a_piece_the_bot_will_not_wear_is_salvaged(self):
+        io = self.io(2)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('crafting', 'salvage', {'path': '0', 'id': 2400, 'sig': 's1'}), io.asked, 'the first useless rolled piece, with its signature')
+        self.assertIn('shards 4 -> 9', r.detail)
+
+    def test_the_pick_leaves_what_the_bot_wants(self):
+        items = [{'path': '1', 'id': 2401, 'rarity': 3}, {'path': '0', 'id': 2400, 'rarity': 0}, {'path': '2', 'id': 2402, 'rarity': 2, 'locked': True},
+                 {'path': '3', 'id': 2403, 'rarity': 2, 'unique': True}]
+        rep = {'pieces': [{'i': 0, 'chase': -1}, {'i': 1, 'chase': 20}, {'i': 2, 'chase': -1}, {'i': 3, 'chase': -1, 'unique': True}]}
+        self.assertIsNone(TX.salvage_pick(rep, items), 'a better piece, a normal one, a locked one and a unique are kept')
+        items.append({'path': '4', 'id': 2404, 'rarity': 1})
+        rep['pieces'].append({'i': 4, 'chase': 0})
+        self.assertEqual(TX.salvage_pick(rep, items)['path'], '4')
+
+    def test_the_bugs_and_the_skips(self):
+        r = self.go(self.io(3))
+        self.assertEqual((r.status, 'expected one less' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(2, shards=(9, 4)))
+        self.assertEqual((r.status, 'Rune Shards fell' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(2, ok=False))
+        self.assertEqual((r.status, 'the bench refused Old Axe' in r.detail), (TX.SKIP, True))
+        r = self.go(self.io(2, rep={'pieces': [{'i': 1, 'id': 2401, 'chase': 30}], 'bagClientId': 1}))
+        self.assertEqual((r.status, 'would not wear' in r.detail), (TX.SKIP, True))
+        r = self.go(ChoreIO(answers={'found': {'err': 'no backpack'}}))
+        self.assertEqual((r.status, r.detail), (TX.SKIP, 'no backpack'))
+
+
 if __name__ == '__main__':
     unittest.main()
