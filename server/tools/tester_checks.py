@@ -3581,6 +3581,10 @@ async def solo_play(io, r, trace, c):
         if trace['faults'] or c['done'](trace) or (c.get('stop') and c['stop'](s, trace)):
             break
         g = s.get('guide') or {}
+        spent = await retreat_check(io, r, s, trace, g)   # O658: under 30 % health the bot heals and steps back before it goes on
+        if spent:
+            elapsed += spent
+            continue
         m = c['mark'](s)
         if m != mark:
             mark, fight_since = m, None
@@ -4238,6 +4242,10 @@ async def bounty_play(io, name, cls, level, key, kind):
             if trace['progress'] - trace['base'] >= trace['need'] or mine.get('status') == 1:
                 break
             g = s.get('guide') or {}
+            spent = await retreat_check(io, r, s, trace, g)   # O658: under 30 % health the bot heals and steps back before it goes on
+            if spent:
+                elapsed += spent
+                continue
             mode = g.get('mode')
             if mode == 'fight':
                 fight_since = elapsed if fight_since is None else fight_since
@@ -4589,6 +4597,10 @@ async def chase_play(io, r, trace, c):
         if c['look'](s, trace):
             break
         g = s.get('guide') or {}
+        spent = await retreat_check(io, r, s, trace, g)   # O658: under 30 % health the bot heals and steps back before it goes on
+        if spent:
+            elapsed += spent
+            continue
         mode = g.get('mode')
         if mode == 'fight':
             fight_since = elapsed if fight_since is None else fight_since
@@ -5764,6 +5776,10 @@ async def boss_copy_play(io, r, trace, budget):
         if boss_copy_look(s, trace):
             break
         g = s.get('guide') or {}
+        spent = await retreat_check(io, r, s, trace, g)   # O658: under 30 % health the bot heals and steps back before it goes on
+        if spent:
+            elapsed += spent
+            continue
         mode = g.get('mode')
         if mode == 'fight':
             fight_since = elapsed if fight_since is None else fight_since
@@ -7511,11 +7527,352 @@ CHECKS = [
 KEYS = tuple(k for k, _, _ in CHECKS)
 
 
+# ------------------------------------------------------------------------------------------------ gear up, level gates, retreat (O658)
+# The O656 live run: a bot made at level 100 to 2000 with the kit weapon and nothing else died within seconds of every hard check, so the
+# fights, the Trial, the pocket bosses and the rifts SKIPped ("died before a kill") and the level gates fell away with the deaths. A person
+# gears up before a hard fight: wears the best piece he owns, buys potions at the Apothecary and a missing basic piece at the Gambler, and
+# leaves a fight that goes badly. The bot does the same, before the checks of FIGHT_KEYS:
+#   gear_up      wear the best pieces of the backpack (`!tester found`, the chase score); buy health and mana potions at Veyra the Apothecary
+#                (on foot, the trade window, the Buy packet) when the backpack holds fewer than POTION_BUY_BELOW; buy a piece for each empty basic
+#                slot (helmet, armor, legs, boots) at the Gambler (on foot, its window); wear them. One `gear_up` result per login in the report.
+#   gold         the purchases pay from the bank. A bot that cannot pay is topped up by the helper (`!tester gold to N`, TEST ONLY, never a player):
+#                every grant is a named fallback of the result and has its own line in the report.
+#   level gates  LEVEL_GATES: a check whose content opens above the bot's level says SKIP "level" before it walks or gears up.
+#   retreat      retreat_check in the play loops: under RETREAT_AT percent health the bot drinks or casts a heal (CheckIO.heal_now), steps back
+#                the way it came and waits until it is over RETREAT_BACK percent (at most RETREAT_WAIT seconds), RETREAT_MAX times a loop.
+#                A death still ends the check as a SKIP that says the bot died (and what the gear-up did).
+FIGHT_KEYS = frozenset([
+    'closed_dungeon', 'dungeon_difficulty', 'weekly_challenge', 'closed_siege', 'closed_guildboss', 'closed_raid',
+    'closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match',
+    'rift_walk', 'tower_walk', 'descent_walk', 'trial_walk', 'ascended_walk', 'omen_walk', 'bounty_walk', 'bounty_elite_walk',
+    'bounty_boss_walk', 'mainquest_walk', 'nemesis_walk', 'pocket_walk', 'wsmap_walk', 'goblin_walk', 'vael_walk', 'boss_copy_walk',
+    'kill_task_kills', 'ascension_walk',
+])
+# the level each content opens at (a floor: the helper's own `minLevel` answers still apply after it). Read from the configs by
+# tester_checks_test.py (`test_level_gates_hold_the_configs`): a number that drifts fails the test, not a live run.
+LEVEL_GATES = {
+    'closed_dungeon': 150,       # the first base dungeon (bossspawns_config.lua dungeons[1].level)
+    'dungeon_difficulty': 150,
+    'weekly_challenge': 800,     # weekly_challenge_config.lua minLevel
+    'closed_siege': 100,         # siege_config.lua minLevel
+    'closed_guildboss': 150,     # guildboss_config.lua minLevel
+    'closed_raid': 800,          # raid_config.lua minLevel
+    'rift_walk': 100,            # rift_config.lua tiers[1].minLevel
+    'tower_walk': 100,           # weeklychest_config.lua activities: the Infinity Tower run minLevel
+    'descent_walk': 100,         # descent_config.lua minLevel
+    'trial_walk': 100,           # trials_config.lua normal minLevel
+    'nemesis_walk': 50,          # nemesis_config.lua minLevel
+    'pocket_walk': 150,          # pocketboss_config.lua raid minLevel (the lowest boss a pocket opens)
+    'wsmap_walk': 1000,          # waystone_tiers_config.lua tester.minLevel
+    'vael_walk': 500,            # the Oath Chamber (trials_config.lua mq minLevel)
+    'ascension_walk': 100,       # Chaos.classes.ascension.minLevel
+}
+GEAR_SLOTS = {1: 'Helmet', 4: 'Armor', 7: 'Legs', 8: 'Boots'}   # CONST_SLOT_* of the basic pieces -> the Gambler's slot name
+GEAR_WEAR_MAX = 8            # pieces worn in one gear-up
+POTION_WANT = 100            # the stock the helper keeps (SUPPLIES of tester_helper.lua)
+POTION_BUY_BELOW = 90        # the bot walks to the Apothecary when it holds fewer health potions than this
+POTION_PRICE_CAP = 100       # gold: the health potion of the stock costs 45; a bot never pays more for one
+GAMBLE_MIN = 40              # gamble_config.lua minLevel
+GEAR_GRANT_CAP = 3000000     # gold the helper may add to the bank in one gear-up
+GEAR_PIECE_CAP = 1500000     # gold for one piece at the Gambler: a dearer piece is left (the bot keeps what it wears)
+GEAR_RESERVE = 5000          # gold kept in the bank after the purchases
+RETREAT_AT = 30              # percent health: under it the bot heals and steps back
+RETREAT_BACK = 50            # percent health the bot waits for before it goes on
+RETREAT_WAIT = 12.0          # seconds a retreat waits for the health at most
+RETREAT_MAX = 6              # retreats of one play loop
+RETREAT_TRAIL = 12           # positions of the loop kept to step back along
+
+
+def level_gate(key, level):
+    """the SKIP text when the check's content opens above `level`, else None (nothing is walked, nothing is bought)"""
+    need = LEVEL_GATES.get(key)
+    if need is not None and int(level or 0) < need:
+        return 'level %d: %s opens at level %d (not walked: a person does not walk to a door he cannot open)' % (int(level or 0), key, need)
+    return None
+
+
+def slot_gaps(found):
+    """the basic slots {slot: Gambler name} with no worn piece in the `!tester found` answer"""
+    worn = {int(w.get('s')) for w in (found or {}).get('worn') or [] if isinstance(w, dict) and w.get('s') is not None}
+    return {slot: name for slot, name in GEAR_SLOTS.items() if slot not in worn}
+
+
+def gear_pieces_for(rows, names, cap=GEAR_PIECE_CAP):
+    """from the Gambler's stock the piece to buy for each name of `names` (a set of slot names): the cheapest unsold one under `cap` gold;
+    -> [row] by price"""
+    out = []
+    for name in sorted(names):
+        cands = [e for e in rows or [] if isinstance(e, dict) and not e.get('sold') and e.get('sn') == name and 0 < int(e.get('p') or 0) <= cap]
+        cands.sort(key=lambda e: (int(e['p']), int(e.get('i') or 0)))
+        if cands:
+            out.append(cands[0])
+    out.sort(key=lambda e: (int(e['p']), int(e.get('i') or 0)))
+    return out
+
+
+def potion_plan(report):
+    """(health to buy, mana to buy) from the `!tester bag` answer's `potions`; (0, 0) when the answer has none"""
+    p = (report or {}).get('potions') if isinstance(report, dict) else None
+    if not isinstance(p, dict):
+        return 0, 0
+    h, m = int(p.get('health') or 0), int(p.get('mana') or 0)
+    return (POTION_WANT - h if h < POTION_BUY_BELOW else 0), (POTION_WANT - m if m < POTION_BUY_BELOW else 0)
+
+
+def potion_rows(shop):
+    """the rows of Veyra's window that are the stock health and mana potion (by name): (health row, mana row)"""
+    hp = mp = None
+    for i in shop or []:
+        n = str(i.get('name') or '').lower()
+        if int(i.get('buy') or 0) <= 0:
+            continue
+        if n == 'health potion':
+            hp = i
+        elif n == 'mana potion':
+            mp = i
+    return hp, mp
+
+
+async def gold_bank(io):
+    """the bank balance of `!tester gold`, or None"""
+    a = await io.helper('gold', 'gold', HELPER_WAIT)
+    return int(a['bank']) if isinstance(a, dict) and not a.get('err') and a.get('bank') is not None else None
+
+
+async def gold_enough(io, g, need, why):
+    """True when the bank holds `need` gold: a bot that is short is topped up by the helper (`!tester gold to N`, TEST ONLY: the named
+    fallback of the gear-up, counted in the result and in the report); False when it cannot be had"""
+    bank = await gold_bank(io)
+    if bank is None:
+        g['notes'].append('no answer to !tester gold (old helper file)')
+        return False
+    if bank >= need:
+        return True
+    if g['granted'] + (need - bank) > GEAR_GRANT_CAP:
+        g['notes'].append('%s: %d gold needed, the bank holds %d and the grant limit of a gear-up is used up' % (why, need, bank))
+        return False
+    a = await io.helper('gold to %d' % need, 'gold', HELPER_WAIT)
+    given = int((a or {}).get('granted') or 0) if isinstance(a, dict) else 0
+    if given > 0:
+        g['granted'] += given
+        g['fallbacks'].append('grant %d gold (%s; the bank held %d)' % (given, why, bank))
+    if given <= 0 and not (isinstance(a, dict) and int(a.get('bank') or 0) >= need):
+        g['notes'].append('%s: no gold (%s)' % (why, str((a or {}).get('refused') or (a or {}).get('err') or 'no answer')[:60]))
+        return False
+    return True
+
+
+async def gear_wear(io, g, refused):
+    """wears the best piece of the backpack, again and again until none beats what is worn (a person drags it onto the paper doll; the server's
+    class and level rules decide: a piece it keeps in the bag is not worn twice). -> the last `!tester found` answer, None when it gave none"""
+    for _ in range(GEAR_WEAR_MAX):
+        if not io.alive():
+            return None
+        a, why = await found_look(io)
+        if a is None:
+            g['notes'].append(why)
+            return None
+        p = chase_pick(a)
+        if p is None or (p.get('id'), p.get('i')) in refused:
+            return a
+        await io.wear(p['i'], p['cid'], p['s'])
+        await io.sleep(1.2)
+        b, _ = await found_look(io)
+        status, text = gear_chase_verdict(p, a, b)
+        refused.add((p.get('id'), p.get('i')))
+        if status == PASS:
+            g['worn'] += 1
+            g['pieces'].append(chase_kind(p))
+        elif status == FAIL:
+            g['notes'].append(text)
+    return None
+
+
+async def gear_potions(io, name, g):
+    """potions at Veyra the Apothecary: on foot, the trade window, the Buy packet; the backpack count must rise"""
+    bag = await io.helper('bag', 'bag', HELPER_WAIT)
+    want_h, want_m = potion_plan(bag)
+    if not (want_h or want_m):
+        if isinstance(bag, dict) and isinstance(bag.get('potions'), dict):
+            g['potions'] = 'held (%s health, %s mana)' % (bag['potions'].get('health'), bag['potions'].get('mana'))
+        return
+    npc = 'Veyra the Apothecary'
+    why, falls = await chore_walk(io, name, npc)
+    g['fallbacks'].extend(falls)
+    if why:
+        g['notes'].append('no walk to %s: %s' % (npc, why))
+        return
+    await npc_talk_begin(io, npc)
+    try:
+        shop = await io.shop_window(npc)
+        hp, mp = potion_rows(shop)
+        if not (hp or mp):
+            g['notes'].append('%s: no trade window or no potions in it' % npc)
+            return
+        for row, n, label in ((hp, want_h, 'health'), (mp, want_m, 'mana')):
+            if row is None or n <= 0:
+                continue
+            if int(row['buy']) > POTION_PRICE_CAP:
+                g['notes'].append('the %s potion costs %s gold: not bought' % (label, row['buy']))
+                continue
+            if not await gold_enough(io, g, n * int(row['buy']) + GEAR_RESERVE, 'potions'):
+                continue
+            await io.buy(row['id'], n)
+            g['bought'].append('%d %s potion(s)' % (n, label))
+    finally:
+        if hasattr(io, 'shop_close'):
+            io.shop_close()
+        await npc_talk_end(io)
+    after = await io.helper('bag', 'bag', HELPER_WAIT)
+    if isinstance(after, dict) and isinstance(after.get('potions'), dict) and isinstance(bag, dict) and isinstance(bag.get('potions'), dict):
+        g['potions'] = 'health %s -> %s, mana %s -> %s' % (bag['potions'].get('health'), after['potions'].get('health'),
+                                                             bag['potions'].get('mana'), after['potions'].get('mana'))
+
+
+async def gear_pieces(io, name, g, found, level):
+    """a piece for each empty basic slot at the Gambler (Mordecai Ashwager): on foot, the window's Buy; wearing it is the next gear_wear"""
+    gaps = slot_gaps(found)
+    if not gaps:
+        return
+    if int(level or 0) < GAMBLE_MIN:
+        g['notes'].append('level %d: the Gambler opens at level %d' % (int(level or 0), GAMBLE_MIN))
+        return
+    npc = 'Mordecai Ashwager'
+    why, falls = await chore_walk(io, name, npc)
+    g['fallbacks'].extend(falls)
+    if why:
+        g['notes'].append('no walk to %s: %s' % (npc, why))
+        return
+    try:
+        reply = await io.request('gamble', 'open', {}, ('state',), ANSWER)
+        a = (reply or {}).get('data') if isinstance(reply, dict) else None
+        if not isinstance(a, dict):
+            g['notes'].append('no state in the Gambler window')
+            return
+        for row in gear_pieces_for(a.get('items'), set(gaps.values()), GEAR_PIECE_CAP):
+            if not io.alive():
+                break
+            if not await gold_enough(io, g, int(row['p']) + GEAR_RESERVE, 'a %s of the Gambler' % row.get('sn')):
+                continue
+            await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
+            await io.sleep(1.0)
+            again = await io.request('gamble', 'open', {}, ('state',), ANSWER)
+            b = (again or {}).get('data') if isinstance(again, dict) else None
+            now = next((e for e in (b or {}).get('items') or [] if e.get('i') == row.get('i')), None) if isinstance(b, dict) else None
+            if now is not None and now.get('sold'):
+                g['bought'].append('%s for %d gold' % (row.get('sn'), int(row['p'])))
+                a = b
+            else:
+                g['notes'].append('the %s of the Gambler was not sold (%s)' % (row.get('sn'), 'no answer' if b is None else 'refused'))
+    finally:
+        await io.request('gamble', 'close', {}, [], ANSWER)
+
+
+async def heal_rule_ready(io, g):
+    """the heal rule of the bot (keep_alive) drinks the stock health potion by its client id from `!tester info`: make sure it is known"""
+    bot = getattr(io, 'bot', None)
+    have = (((getattr(bot, 'helper', None) or {}).get('info') or {}).get('potions') or {}).get('health') if bot is not None else None
+    if not have:
+        a = await io.helper('info', 'info', HELPER_WAIT)
+        have = ((a or {}).get('potions') or {}).get('health') if isinstance(a, dict) else None
+    g['heal'] = 'health potion %s on the heal rule' % have if have else None
+    if not have:
+        g['notes'].append('the heal rule knows no potion id')
+
+
+async def gear_up(io, name, cls, level):
+    """the gear-up before a hard check: -> the Result 'gear_up' (PASS: what was done, or nothing was needed; SKIP: a step that could not be done,
+    with its reason) with the fallbacks (walks by the helper, gold grants) named"""
+    key = 'gear_up'
+    g = {'worn': 0, 'pieces': [], 'bought': [], 'potions': None, 'granted': 0, 'notes': [], 'fallbacks': [], 'heal': None}
+    refused = set()
+    found = await gear_wear(io, g, refused)
+    if io.alive():
+        await gear_potions(io, name, g)
+    if io.alive() and found is not None:
+        found, _ = await found_look(io)
+        if found is not None:
+            await gear_pieces(io, name, g, found, level)
+            if io.alive():
+                await gear_wear(io, g, refused)
+    if io.alive():
+        await heal_rule_ready(io, g)
+    parts = []
+    if g['pieces']:
+        parts.append('wore %d piece(s) (%s)' % (g['worn'], ', '.join(g['pieces'][:3])))
+    if g['bought']:
+        parts.append('bought ' + ', '.join(g['bought']))
+    if g['potions']:
+        parts.append('potions ' + g['potions'])
+    if g['heal']:
+        parts.append(g['heal'])
+    if not parts:
+        parts.append('nothing to wear or buy')
+    text = '; '.join(parts)
+    if g['granted']:
+        text += '; TEST ONLY gold grant %d' % g['granted']
+    if g['notes']:
+        text += '; open: ' + '; '.join(dict.fromkeys(g['notes']))[:200]
+    status = SKIP if g['notes'] and not (g['worn'] or g['bought']) else PASS
+    return Result(key, name, cls, status, text, g['fallbacks'])
+
+
+def retreat_step(trail, pos, goal=None):
+    """one walk step (dx, dy) away from the danger: back toward a position of the trail a few looks ago, else away from the guide's goal; None
+    when neither says"""
+    if not isinstance(pos, dict):
+        return None
+    old = next((t for t in reversed(trail[:-1]) if (t[0], t[1]) != (pos['x'], pos['y'])), None) if len(trail) >= 2 else None
+    dx = dy = 0
+    if old is not None:
+        dx, dy = old[0] - pos['x'], old[1] - pos['y']
+    elif isinstance(goal, dict):
+        dx, dy = pos['x'] - goal['x'], pos['y'] - goal['y']
+    if abs(dx) >= abs(dy) and dx:
+        return (1 if dx > 0 else -1, 0)
+    if dy:
+        return (0, 1 if dy > 0 else -1)
+    return None
+
+
+async def retreat_check(io, r, s, trace, g=None):
+    """O658: under RETREAT_AT percent health the bot drinks or casts a heal, steps back and waits for RETREAT_BACK percent; -> the seconds
+    spent (0.0 when it did not retreat). The trail of looks lives in `r`; a loop retreats at most RETREAT_MAX times"""
+    pos = s.get('pos') if isinstance(s, dict) else None
+    trail = r.setdefault('trail', [])
+    if isinstance(pos, dict) and 'x' in pos and 'y' in pos:
+        if not trail or (trail[-1][0], trail[-1][1]) != (pos['x'], pos['y']):
+            trail.append((pos['x'], pos['y']))
+            del trail[:-RETREAT_TRAIL]
+    hp = getattr(io, 'health', None)
+    heal = getattr(io, 'heal_now', None)
+    if hp is None or heal is None or hp >= RETREAT_AT or not io.alive() or trace.get('retreats', 0) >= RETREAT_MAX:
+        return 0.0
+    trace['retreats'] = trace.get('retreats', 0) + 1
+    io.retreats = getattr(io, 'retreats', 0) + 1
+    spent = 0.0
+    how = await heal()
+    step = retreat_step(trail, pos, (g or {}).get('goal'))
+    if step is not None:
+        await raid_walk(io, r, step)
+        trace['steps'] = trace.get('steps', 0) + 1
+        await io.sleep(RAID_STEP)
+        spent += RAID_STEP
+    trace.setdefault('retreat_heals', []).append(how or 'none')
+    while io.alive() and spent < RETREAT_WAIT and (getattr(io, 'health', None) or 100) < RETREAT_BACK:
+        await io.sleep(1.0)
+        spent += 1.0
+        await heal()
+    return max(spent, 1.0)
+
+
 class CheckRun:
     """the checks of one bot; results go on after a death (a check cut off by it is done again) like the keystone scenario"""
 
-    def __init__(self, name, cls, level, only=None, closed=False):
+    def __init__(self, name, cls, level, only=None, closed=False, gear=True):
         self.name, self.cls, self.level = name, cls, level
+        self.gear = gear       # O658: gear up before the checks of FIGHT_KEYS (once per login)
+        self.geared = False    # the creature id of the login that was geared up (None for an io with no bot)
         self.only = set(only) if only else None
         self.table = CHECKS + (CLOSED_CHECKS if closed else [])   # the closed-mode checks only in a --closed run (O582)
         self.done = set()
@@ -7532,16 +7889,42 @@ class CheckRun:
                 continue
             if not io.alive():
                 return False
+            lvl = int(getattr(getattr(io, 'bot', None), 'level', 0) or 0) or self.level   # O658: the level now (a death takes some)
+            gated = level_gate(key, lvl)
+            if gated:   # O658: the content opens above the bot's level: no walk, no gear-up, no death to find it out
+                self.results.append(Result(key, self.name, self.cls, SKIP, gated))
+                self.done.add(key)
+                continue
+            if self.gear and key in FIGHT_KEYS and self.gear_due(io):
+                await self.gear_once(io, lvl)
+                if not io.alive():
+                    return False
             try:
-                r = await fn(io, self.name, self.cls, self.level)
+                r = await fn(io, self.name, self.cls, lvl)
             except Exception as e:  # noqa: BLE001 - a check that breaks is a result, not a crash of the run
                 r = Result(key, self.name, self.cls, SKIP, 'the check broke: %s' % e)
+            if r.status == SKIP and key in FIGHT_KEYS and getattr(io, 'retreats', 0):
+                r.detail += ' (the bot retreated %d time(s) to heal)' % io.retreats
             await npc_talk_end(io, bye=False)   # O656: a check that ended with the NPC's focus held lets go of it
             if not io.alive() and r.status != PASS:
                 return False   # cut off by the bot's own death: not a result, done again after the next login
             self.results.append(r)
             self.done.add(key)
         return not any(r.status == FAIL for r in self.results)
+
+    def gear_due(self, io):
+        """O658: true until this login (the creature id of the bot) has been geared up"""
+        return not (self.geared is not False and self.geared == getattr(getattr(io, 'bot', None), 'cid', None))
+
+    async def gear_once(self, io, level):
+        """O658: the gear-up of this login, its result in the list (a gear-up cut off by the bot's death is done again after the next login)"""
+        try:
+            r = await gear_up(io, self.name, self.cls, level)
+        except Exception as e:  # noqa: BLE001 - a gear-up that breaks is a result, not a crash of the run
+            r = Result('gear_up', self.name, self.cls, SKIP, 'the gear-up broke: %s' % e)
+        if io.alive():
+            self.geared = getattr(getattr(io, 'bot', None), 'cid', None)
+            self.results.append(r)
 
     @property
     def finished(self):
@@ -7569,10 +7952,15 @@ def report_lines(results):
             skips[(r['check'], r['detail'])] += 1
     for (key, why), n in sorted(skips.items()):
         L.append('  skip %-14s %3dx %s' % (key, n, why[:100]))
-    tele = {}
+    tele, grants = {}, {}
     for r in results:
         for f in r.get('fallbacks') or []:
-            tele[(r['check'], f)] = tele.get((r['check'], f), 0) + 1
+            into = grants if f.startswith('grant ') else tele   # O658: a gold grant of the gear-up is not a teleport
+            into[(r['check'], f)] = into.get((r['check'], f), 0) + 1
+    if grants:
+        L.append('  gold granted by the helper (TEST ONLY fallback of gear_up: the bank was short): %d grant(s)' % sum(grants.values()))
+        for (key, f), n in sorted(grants.items()):
+            L.append('    %-18s %3dx %s' % (key, n, f[:100]))
     if tele:
         L.append('  helper teleports in place of walking: %d (a person walks; the path failed or did not arrive)' % sum(tele.values()))
         for (key, f), n in sorted(tele.items()):

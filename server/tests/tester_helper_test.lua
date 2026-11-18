@@ -3016,6 +3016,44 @@ do
 	check(HELPER_VERSION >= 24, "the helper is version 24 or later (O657: new commands)")
 end
 
+-- ---------------------------------------------------------------- O658: `!tester gold [to N]`
+do
+	local lastOf = function(p) return p.log.msgs[#p.log.msgs] end
+	eq(H.parseGold(nil).to, nil, "gold: no word reads the state")
+	eq(H.parseGold("to 5000").to, 5000, "gold: to N")
+	eq(H.parseGold("to 99999999999").to, H.GOLD_CAP, "gold: to N is capped")
+	check(H.parseGold("to") == nil and H.parseGold("give 5") == nil and H.parseGold("to 0") == nil, "gold: other words are refused")
+	eq(H.goldPlan(100, 50, 0), 0, "gold plan: a bank over the wish gets nothing")
+	eq(H.goldPlan(100, 1100, 0), 1000, "gold plan: the difference")
+	eq(H.goldPlan(0, H.GOLD_CAP, 0), H.GOLD_STEP, "gold plan: one call is at most the step")
+	local give, why = H.goldPlan(0, 1000, H.GOLD_CAP)
+	check(give == 0 and why and why:find("used up", 1, true), "gold plan: the lifetime limit of a bot")
+	eq(H.goldPlan(0, 1000, H.GOLD_CAP - 400), 400, "gold plan: the rest of the allowance")
+	local g = creature(268435700, "Tester Gld", {store = {[ST] = 1}})
+	local before = #g.log.msgs
+	talks["!tester"].onSay(g, "!tester", "gold #500")
+	local l = lastOf(g)
+	check(l:find('"bank":0', 1, true) and l:find('"total":0', 1, true) and l:find('"seq":500', 1, true) and not l:find('"granted"', 1, true), "gold state: the bank, nothing granted: " .. l)
+	talks["!tester"].onSay(g, "!tester", "gold to 250000 #501")
+	l = lastOf(g)
+	check(g.bank == 250000 and l:find('"granted":250000', 1, true) and l:find('"total":250000', 1, true), "gold to: the bank is topped up and the grant counted: " .. l)
+	talks["!tester"].onSay(g, "!tester", "gold to 250000 #502")
+	check(g.bank == 250000 and lastOf(g):find('"granted":0', 1, true), "gold to: a bank at the wish gets nothing more")
+	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #503")
+	check(g.bank == 250000 + H.GOLD_STEP and lastOf(g):find('"granted":' .. H.GOLD_STEP, 1, true), "gold to: one call is at most the step")
+	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #504")
+	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #505")
+	l = lastOf(g)
+	check(g.bank == H.GOLD_CAP and l:find('"granted":0', 1, true), "gold to: no wish goes past the cap of a bot: " .. l)
+	talks["!tester"].onSay(g, "!tester", "gold maybe #506")
+	check(lastOf(g):find("usage: gold", 1, true), "gold: an unknown word")
+	-- a player's words go on and get no answer, no gold
+	local civ = creature(268435701, "Ana Gold", {store = {}})
+	local n = #civ.log.msgs
+	check(talks["!tester"].onSay(civ, "!tester", "gold to 1000000 #1") == true and #civ.log.msgs == n and (civ.bank or 0) == 0, "gold: a player gets no answer and no gold")
+	check(HELPER_VERSION >= 25, "the helper is version 25 or later (O658: gold)")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

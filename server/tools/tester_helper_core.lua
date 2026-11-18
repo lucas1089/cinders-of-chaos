@@ -1905,4 +1905,40 @@ function H.journeyAnswer(probe, extra)
 	return out
 end
 
+-- ---------------------------------------------------------------- O658 `!tester gold [to N]`: the gold of a bot that gears up
+-- `gold` reads the bank balance and the gold in the backpack. `gold to N` is a TEST ONLY top-up of the BANK to N, the fallback of the gear-up
+-- of tester_checks.py (a bot that cannot pay for the potions and the basic pieces it buys at the shops): at most GOLD_STEP a call and GOLD_CAP
+-- for a bot until the helper is reloaded; the bot counts every grant in its report. Only a tester character gets it (the guard of every
+-- command, `eligible`); a player's words are left alone.
+H.COMMANDS.gold = true
+H.GOLD_STEP = 3000000
+H.GOLD_CAP = 6000000
+
+function H.parseGold(arg)
+	local usage = "usage: gold [to N]"
+	local s = tostring(arg or "")
+	if s:match("^%s*$") then
+		return {}
+	end
+	local n = s:match("^%s*[Tt][Oo]%s+(%d+)%s*$")
+	n = tonumber(n)
+	if not n or n < 1 then
+		return nil, usage
+	end
+	return {to = math.min(n, H.GOLD_CAP)}
+end
+
+-- gold to add to the bank: -> give, reason (reason only when nothing is given for a rule)
+function H.goldPlan(bank, want, given)
+	bank, given = tonumber(bank) or 0, tonumber(given) or 0
+	if want <= bank then
+		return 0, nil
+	end
+	local left = H.GOLD_CAP - given
+	if left <= 0 then
+		return 0, "the grant limit of this bot is used up"
+	end
+	return math.min(want - bank, H.GOLD_STEP, left), nil
+end
+
 return H

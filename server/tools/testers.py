@@ -50,6 +50,8 @@ before the bots log in; the bots then run the closed checks (arena, battleground
 lock, the guards the server runs) among themselves, never with a player, and play the raid like a party of people (walk, fight, loot,
 leave: closed_raid, O588). The guilds, wars, tester market book, arena records and raid rows
 of the run are removed when it ends, and by cleanup.
+--no-gear (O658): the checks run without the gear-up (tester_checks.py gear_up: before the hard checks a bot wears its best pieces, buys potions
+and basic pieces at the shops on foot, a TEST ONLY gold grant as the named fallback); the gearless run of before, for a comparison.
 """
 import asyncio
 import base64
@@ -897,6 +899,36 @@ class CheckIO(KeyIO):
 
     def shop_close(self):
         self.bot.shop_npc = None
+
+    # ---- O658: what the retreat of the play loops reads and does (tester_checks.py retreat_check)
+    @property
+    def health(self):
+        """the bot's own health in percent (its creature's health updates), None while none was seen"""
+        return self.bot.health if self.bot.health_at is not None else None
+
+    async def heal_now(self):
+        """a person under a third of his health drinks or casts a heal: the bot's own heal spell when it is ready, else the stock health potion
+        (the packet of the heal rule, keep_alive), whatever the health threshold of the rule; 'spell', 'potion' or None when both are on cooldown"""
+        bot, now = self.bot, time.monotonic()
+        if not (self.alive() and bot.cid):
+            return None
+        if bot.heal and bot.ready.get('heal', 0) <= now and bot.ready.get(bot.heal['group'], 0) <= now:
+            bot.say(bot.heal['words'])
+            bot.ready['heal'] = now + max(1.0, bot.heal['cooldown'] / 1000.0)
+            bot.ready[bot.heal['group']] = now + bot.heal['groupcooldown'] / 1000.0 + 0.1
+            bot.results.behaviour('heal_spell', 'tried')
+            bot.pending.setdefault('heal_spell', now + HEAL_SEEN)
+            await bot.conn.w.drain()
+            return 'spell'
+        pot = (bot.helper.get('info') or {}).get('potions', {}).get('health')
+        if pot and bot.ready.get('potion', 0) <= now:
+            bot.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0) + struct.pack('<I', bot.cid))
+            bot.ready['potion'] = now + 1.1
+            bot.results.behaviour('potion', 'tried')
+            bot.pending.setdefault('potion', now + HEAL_SEEN)
+            await bot.conn.w.drain()
+            return 'potion'
+        return None
 
     async def buy(self, item_id, amount=1):
         """buys from the NPC whose trade window is open (a person presses Buy)"""
@@ -2080,7 +2112,7 @@ class TesterBot(LT.Bot):
         first = self.checks is None
         if first:
             closed = bool(getattr(self.args, 'closed', False))
-            self.checks = TX.CheckRun(self.name, self.cls, self.level, closed=closed,
+            self.checks = TX.CheckRun(self.name, self.cls, self.level, closed=closed, gear=not getattr(self.args, 'no_gear', False),
                                       only=(([k for k in str(getattr(self.args, 'only', '') or '').split(',') if k] or None)   # O656: --only a,b runs just those checks
                                             if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS))
         run = self.checks
@@ -2450,7 +2482,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': ''}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False, '--no-gear': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -2472,6 +2504,7 @@ def parse(argv):
     a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
     a.closed = flags['--closed']
     a.journey = flags['--journey']
+    a.no_gear = flags['--no-gear']   # O658: no gear-up before the hard checks (the old gearless run, for a comparison)
     if a.journey and (a.keystones or a.checks or a.closed):
         sys.exit('--journey is a run of its own: not with --keystones, --checks or --closed (server/README.md "The levelling journey on foot (O654)")')
     if a.journey and a.cmd == 'setup':
