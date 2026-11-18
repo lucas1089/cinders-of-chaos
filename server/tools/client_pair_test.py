@@ -229,7 +229,7 @@ mods = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules')
 for rel in ('client_chaos_charselect/outfit_anchors.lua', 'client_chaos_infolift/info_lifts.lua'):
     with open(os.path.join(mods, rel), encoding='utf-8') as f:
         head = f.read(4000)
-    check(C.PAIR_ASSETS_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS' % rel)
+    check(C.PAIR_ASSETS_DAT_MD5 in head or C.PAIR_BUILT_DAT_MD5 in head, '%s names the dat md5 of PAIR_ASSETS or of the built, unpublished pair' % rel)
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets')
 check(rc == 0 and out.strip() == str(C.PAIR_ASSETS), 'assets prints PAIR_ASSETS (%s)' % out.strip())
 rc, out = run(os.path.join(HERE, 'client_pair.py'), 'assets-md5')
