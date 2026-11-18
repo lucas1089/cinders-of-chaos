@@ -120,7 +120,7 @@ check(I.check_pool(pair=C.PAIR_CREATURE) == [], 'every hunt monster moves while 
 check(I.check_crowded(pair=C.PAIR_CREATURE) == [], 'no crowded look at pair 73')
 idle = I.load_idle()
 check(all(idle.get(n, (False,))[0] and idle[n][3] == 'idle group' for n in range(3527, 3530)), 'look_idle.csv: the three looks have an idle group that moves')
-check(not [n for n in range(3530, 3536) if n in idle], 'look_idle.csv: the six outfits of O605 that are gone have no row')
+check(3530 not in idle, 'look_idle.csv: outfit 3530 (Malgrath, O637, no hunt monster) has no row; the six outfits of O605 that are gone left their ids to Malgrath and the PixelLab monsters (O640)')
 _swapped = set(S.load_swap())   # the look swaps of O619 ride with pair 73 as well: they are not this map's monsters
 check([r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_CREATURE)[0] if r['name'] not in _swapped]
       == [r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_FUN)[0] if r['name'] not in _swapped],

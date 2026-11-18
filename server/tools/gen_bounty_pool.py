@@ -83,6 +83,7 @@ DONOR = _donor_looks()
 PURCHASED = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_wst_looks.csv'))   # O540, client pair 71: the same shape
 CREATURE = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_creature_looks.csv'))   # O605, client pair 73: the same shape
 SWAP = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_o619_looks.csv'))   # O619, client pair 73: the same shape
+PIXELLAB = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_pixellab_looks.csv'))   # O640, client pair 74: the same shape
 
 
 def committed_look(name, look):
@@ -102,7 +103,10 @@ def committed_look(name, look):
     if k and look == k[1]:
         return k[0]
     s = SWAP.get(name)          # O619: from client pair 73 the step `monsterswaplooks` writes the swapped look the same way
-    return s[0] if s and look == s[1] else look
+    if s and look == s[1]:
+        return s[0]
+    x = PIXELLAB.get(name)      # O640: from client pair 74 the step `monsterpixellablooks` writes the PixelLab look the same way
+    return x[0] if x and look == x[1] else look
 
 
 def attr(tag, name):

@@ -147,6 +147,9 @@ jobs:
           # Malgrath, the Drowned Crown (O637, joins pair 74): table, sums, geometry from the boxes, ids file (the art is never in git); the test cuts synthetic sheets and builds / checks a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_malgrath_boss.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_malgrath_boss_test.py
+          # the 24 PixelLab monsters 3531-3554 (O640, joins pair 74): our own PixelLab art, committed as placed sheets (art_import/pixellab_monsters); table, sums, sheets (hard alpha, four directions, idle and walk that move, the O585 standing point), the monster map against the pool; the test places synthetic downloads and builds / checks a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pixellab_monsters_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pixellab_monsters.py check
           # animated decor flames from pixelfx (O623, joins pair 74): table, sums, manifest, strips held to the bar and to style_check (the raw render is never in git); the test fits a synthetic sheet and builds / checks a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames_test.py
@@ -1663,6 +1666,9 @@ jobs:
 
       - name: Malgrath's outfit moves its boss at pair 74 (install_monster_malgrath_look.py, monstermalgrathlook step, O637)
         run: python3 -I server/tools/install_monster_malgrath_look_test.py
+
+      - name: PixelLab looks move 24 hunt monsters at pair 74 (install_monster_pixellab_looks.py, monsterpixellablooks step, O640)
+        run: python3 -I server/tools/install_monster_pixellab_looks_test.py
 
       - name: Fun costumes, the new Dusk Moth and the round Rune Seal appear at pair 72 (install_fun_looks.py, install_auras.py, O566)
         run: python3 -I server/tools/install_fun_looks_test.py
