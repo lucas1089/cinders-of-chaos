@@ -7637,3 +7637,56 @@ picture or pixel of it in the repository); `docs/SPRITE_STYLE.md` "Quality bar (
   Most failed rows: outfit (32 sheets) colours 30, 3x3 deviation 24, ramp steps 15, ramp hue turn 15, highlight size 12; item (5)
   colours 4, flat tiles 4; boss (5) colours 5, ramp steps 4, outline hue and selective outline 4 each, deviation 3, highlight size 3.
   Warnings on almost all: black outline (hue share), hard alpha (no soft rim or glow).
+
+## Malgrath, the Drowned Crown (O637; `tools/sprites/gen_malgrath_boss.py`, `art_import/malgrath_boss.csv`; owner 2026-11-18; joins pair 74)
+Owner 2026-11-18, option 1 for the new boss pack (O633 survey): "an arena boss that always faces the front". The pack is one purchased giant
+boss with one view only, 28 animations and 5 palette variants (docs/CREDITS.md names it; the licence allows commercial use and changes, credit
+optional, no resale, no redistribution). No pixel of it is in the repository: committed are the tool, `art_import/malgrath_boss.csv` (ids,
+frame counts, timing, offsets, boxes, 12 hex digits of every source file) and `art_import/malgrath_boss.sums` (a digest of the outfit and of every
+effect strip). The pack files are read by script only, never viewed, never sent to a web or AI service.
+
+- **Source.** Every sheet is a crop of one 400 x 360 canvas at a fixed offset (measured on the pack's layered file, no mismatch), body and effect
+  layers both in the composite sheets. Alpha is 0 or 255 apart from a ground shadow baked at 110: dropped by the cut at 128 (35,617 pixels in
+  Idle and Move), nothing else touched; any other alpha level is refused. `Color (1)` is imported. `Color (2)` to `Color (5)` are `variant` rows of
+  the table (a digest of each Idle sheet), not imported, for later.
+- **Outfit 3530**, 7x7 tiles (224 px), displacement (-96, 0). The figure of Idle and Move is 188 x 199 px; the smallest square is 7x7. An odd
+  count makes the displacement a whole number of tiles (3), so canvas column 3 is the boss's own tile and the effects below join the outfit on
+  the same pixel grid. One shift for every frame, (-88, -74) from the pack canvas: the lowest opaque pixel on the last row, the middle of the
+  box on the middle column. Idle 16 phases of 110 ms (335,422 opaque pixels), walk 12 phases of 105 ms (250,539), every frame, never sampled,
+  the same frames in all four directions (the owner's choice). `gen_creature_outfits.pixel_problems` and `foot_problems` hold every built frame.
+- **Eight effects** 5326 to 5333 (after the 5,325 effects of pair 73; the bolt from the sky ends at 5325). An attack cannot play in an outfit, so
+  each is the composite of the attack (body and effect layers) at the outfit's own shift, in the smallest window of whole tiles that holds every
+  frame. `win` is the tiles added left, right, top and bottom of the 7x7 canvas; `send` the send offset (the art's bottom-right tile is the
+  boss's tile plus send, dx = 3 + right, dy = bottom).
+
+  | id | name | attack | frames x ms | size | win | send | opaque px |
+  |---|---|---|---|---|---|---|---|
+  | 5326 | mg_ground_slam | Ground Slam | 22 x 90 | 11x9 | 2:2:0:2 | 5:2 | 482,279 |
+  | 5327 | mg_lightning_rain | Lightning Rain | 26 x 85 | 13x10 | 3:3:1:2 | 6:2 | 699,090 |
+  | 5328 | mg_eye_laser | Eye Laser | 24 x 80 | 7x9 | 0:0:0:2 | 3:2 | 514,410 |
+  | 5329 | mg_crown_inferno | Crown Inferno | 20 x 95 | 9x9 | 1:1:0:2 | 4:2 | 483,209 |
+  | 5330 | mg_summon | Summon | 20 x 100 | 9x9 | 1:1:0:2 | 4:2 | 456,274 |
+  | 5331 | mg_earthquake_stomp | Earthquake Stomp | 20 x 90 | 7x9 | 0:0:0:2 | 3:2 | 436,040 |
+  | 5332 | mg_death | Death | 32 x 100 | 9x9 | 1:1:1:1 | 4:1 | 500,568 |
+  | 5333 | mg_spawn_rise | Spawn Rise | 24 x 100 | 9x8 | 1:1:0:1 | 4:1 | 335,833 |
+
+- **The join.** Measured on the built pair: the first frame of each attack differs from the closest Idle frame in 205 to 208 of 21,028 opaque
+  pixels, the last in 280 to 638 (the attack's own movement). Death starts 2,547 off (12%) and Spawn Rise ends 1,597 off, as they should. The
+  server hides the boss while an attack plays, so the swap does not jump.
+- **Source flaws, not ours.** Three attacks (Lightning Rain, Eye Laser, Earthquake Stomp) reach the last row of the pack's canvas (row 359):
+  the pack's frame ends there, so a beam or a crack may be cut at its end. The other 20 animations (the claws, the charge, the grab, the orbs,
+  the warps, hit, stunned, Taunt, Roar, Shield Barrier, Heavy Charge, Fury Combo of 87 frames, Apocalypse Ultimate of 110) are not imported.
+- **Tool.** `check` (CI, no pair: table, sums, geometry re-derived from the boxes, ids file), `table --src DIR [--write]`, `sums --src DIR`, `ids
+  [--check]` (-> `server/data/lib/chaos_malgrath_fx_ids.lua`), `build DAT SPR OUT --src DIR` (outfit by `gen_wst_outfits.build`, effects by
+  `import_fx_art.py`, read back before the rename, the strips deleted), `live DAT SPR`, `preview OUT --dat D --spr S` (`malgrath.mp4` from the pair).
+  `gen_malgrath_boss_test.py` (CI) runs all of it on synthetic sheets and a synthetic pair. Server side: server/README.md "Malgrath, the Drowned Crown (O637)".
+- **Rehearsal on the real pair 73** (2026-11-18, RAM disk, not pushed): 16 s. Input dat d4bc7cef..., spr 4147c8d0... (3,529 outfits, 5,325 effects,
+  253 missiles). Output dat **dba114650f2c3378a11cc300e9af1358** (9,544,286 bytes), spr **e9c9ec7a3de1fc23dfe049afad8d7440** (1,238,073,742 bytes):
+  3,530 outfits, 5,333 effects, 1,063,571 sprites (833 records for the outfit, 5,775 for the effects). `live` 0 problems; `check_pair.py --old pair 73
+  --new-only`: 0 errors, 8 warnings (`size-large` for the eight effects, 7x9 to 13x10 tiles), 53,567 old things and 1,056,963 old sprites unchanged.
+  Preview `malgrath.mp4` (544 x 416, 50 fps, libx264 crf 18 yuv420p faststart, 36 s, 3.1 MB): arrival, idle, walking, the six attacks as the server plays them,
+  death. Never committed.
+- **Not done.** Pair 74 is not built for real and not pushed: it joins the decor flames (O623) and waits for the owner. The knock-on tables that
+  name the built pair's outfits (`outfit_anchors.lua`, `info_lifts.lua`, `head_centres.lua`, `foot_marks.lua`, `outfit_centre.csv`, unity `InfoLiftData.cs`)
+  are rewritten by the real build, as at O621. The `live` step is not in the job "Live sprite pair" yet: it reads windows-assets, which holds pair 73.
+  Not seen in a client.

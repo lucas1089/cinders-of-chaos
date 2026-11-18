@@ -1,0 +1,15 @@
+kind,name,id,src,sheet,frames,ms,ox,oy,bx0,by0,bx1,by1,tiles,win,send,pixels,pics
+idle,malgrath_idle,3530,bc984c6f662a,Idle,16,110,109,99,109,99,290,297,7x7,,,335422,16
+walk,malgrath_walk,3530,1beb3a814e2e,Move,12,105,106,100,106,100,293,296,7x7,,,250539,12
+effect,mg_ground_slam,5326,c835f64374e8,Ground Slam,22,90,49,93,49,93,351,340,11x9,2:2:0:2,5:2,482279,22
+effect,mg_lightning_rain,5327,2eb9a327511f,Lightning Rain,26,85,8,66,8,66,388,359,13x10,3:3:1:2,6:2,699090,26
+effect,mg_eye_laser,5328,09627ba4c06a,Eye Laser,24,80,105,97,105,97,295,359,7x9,0:0:0:2,3:2,514410,24
+effect,mg_crown_inferno,5329,5ba32abb06d0,Crown Inferno,20,95,67,87,67,87,332,356,9x9,1:1:0:2,4:2,483209,20
+effect,mg_summon,5330,2b29bcfef492,Summon,20,100,72,97,72,97,328,353,9x9,1:1:0:2,4:2,456274,20
+effect,mg_earthquake_stomp,5331,52e526e47aad,Earthquake Stomp,20,90,89,96,89,96,305,359,7x9,0:0:0:2,3:2,436040,20
+effect,mg_death,5332,5ea6492cd359,Death,32,100,71,53,71,53,328,307,9x9,1:1:1:1,4:1,500568,32
+effect,mg_spawn_rise,5333,2ec1a218a385,Spawn Rise,24,100,77,91,77,91,321,300,9x8,1:1:0:1,4:1,335833,24
+variant,color_2,,a64f462df5dc,Idle,,,,,,,,,,,,,
+variant,color_3,,e39bd434acb1,Idle,,,,,,,,,,,,,
+variant,color_4,,1298be1282b2,Idle,,,,,,,,,,,,,
+variant,color_5,,33d96bca9689,Idle,,,,,,,,,,,,,

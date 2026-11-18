@@ -32,6 +32,17 @@ ok(1.0 < e1 < 1.6 and 1.0 < e5 < 1.6 and d1 > 1000 and d5 > d1, 'the rift fit is
 health, factor = B.omen_factor()
 ok(abs(health - (B.one_target(1000) * 0.75 - 380) * 318) < 1e-6 and factor > 1, 'the Omen guardian has 318 s at level 1000')
 ok(B.problems() == [], 'the committed numbers are the derivation: %s' % B.problems()[:3])
+# the arena boss (O637): Malgrath's health is 360 s for five typical characters of level 800, and its ref is the same numbers
+ok([a[0] for a in B.ARENA_BOSSES] == ['malgrath_the_drowned_crown.xml'] and B.ARENA_BOSSES[0][2:] == (800, 5, 360, 0.85, 400), 'the arena bosses table')
+ah = B.arena_health(800, 5, 360, 0.85, 400)
+ok(abs(ah - 360 * (5 * B.one_target(800) * 0.85 - 400)) < 1e-6 and 5.2e6 < ah < 5.3e6, 'the arena health is 360 s of five characters (%.0f)' % ah)
+ok(B.committed_health(B.CHAOS_MONSTERS)['malgrath_the_drowned_crown.xml'] == 5240000, 'the XML health is the derivation rounded to 10,000')
+ok(B.committed_arena('malgrath, the drowned crown') == (5240000, 400, 17600, 0.85, 5) and B.committed_arena('nobody') is None, 'the ref of the profile')
+ok(abs(B.xml_heal('<defense name="healing" interval="2000" chance="8" min="8000" max="12000">') - 400) < 1e-9 and B.xml_heal('') == 0.0, 'the heal a second of a healing defense')
+real_arena = B.ARENA_BOSSES
+B.ARENA_BOSSES = (('malgrath_the_drowned_crown.xml', 'malgrath, the drowned crown', 800, 5, 400, 0.85, 400),)
+ok(any('arena boss malgrath_the_drowned_crown.xml health' in b for b in B.problems()), 'a boss at 400 s instead of 360 is reported')
+B.ARENA_BOSSES = real_arena
 # a number off by more than the tolerance is found
 real = B.committed_mults
 B.committed_mults = lambda: dict(real(), vault=real()['vault'] * 1.1)

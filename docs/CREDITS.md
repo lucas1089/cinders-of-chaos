@@ -179,6 +179,9 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **UNMAKE - Death, Dissolve & Disintegration VFX**
   - Licence: purchased; commercial use, modified, recoloured and retimed; no credit needed; no redistribution of the image files, no asset store, never AI training data
   - Used for: the ground overlays of five kill dissolves of pair 73 (O597): a pool, broken earth, bones, vapour and rubble, with the pack's body removed; the art is only in the sprite pair, not in the repository
+- **Giant Boss Pack 7, Abyssal King (Top-Down)**
+  - Licence: purchased; commercial use and modification; credit optional; no resale and no redistribution of the files
+  - Used for: Malgrath, the Drowned Crown, an arena boss of pair 74 (O637, client/tools/sprites/gen_malgrath_boss.py): its outfit (idle and walk, the front view in all four directions) and eight attack, arrival and death effects that carry its body; the art is only in the sprite pair, not in the repository
 - **Dark Fantasy RPG UI Kit Full Pack**
   - Author: ZSS Game Lab (itch.io)
   - Licence: purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand

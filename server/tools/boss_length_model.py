@@ -12,6 +12,9 @@ numbers that give the bosses their planned length again, and --check holds the c
   rift guardian    55 s: rift_config.lua density.model dps1 / dps5 and their exponents, fitted to the same damage over the tiers'
                    minimum levels (the guardian's health follows: guardianSeconds x dps1 x guardianUptime; the packs keep their 225 s:
                    packSeconds, the same model on dps5)
+  arena bosses     360 s for a party at its level (O637, Malgrath, the Drowned Crown: five typical characters of level 800, 85% uptime, 400
+                   healed a second): ARENA_BOSSES, the XML health is seconds x (players x typical damage x uptime - heal), and the `ref` of its
+                   row of boss_mechanics_config.lua (health, dps, heal, uptime, players) is the same numbers
   Omen guardian    5:18 solo at level 1000 (318 s with 380 healed a second at 75% uptime): the XML health of the three Omen guardians;
                    the Ascended Omens and the Cinderheart (XML health) and the models that fight them (uber_config.lua and
                    raid_config.lua refDps) and the five raid bosses (XML health) move by the same factor, so their documented times hold
@@ -46,6 +49,8 @@ PVP = os.path.join(CHAOS, 'pvp_balance_config.lua')
 OMENS = os.path.join(SERVER, 'data', 'monster', 'monsters', 'chaos', 'omens')
 ASCENDED = os.path.join(SERVER, 'data', 'monster', 'monsters', 'chaos', 'ascended')
 RAIDS = os.path.join(SERVER, 'data', 'monster', 'monsters', 'chaos', 'raid')
+CHAOS_MONSTERS = os.path.join(SERVER, 'data', 'monster', 'monsters', 'chaos')
+MECHANICS = os.path.join(CHAOS, 'boss_mechanics_config.lua')
 RAID_OLD = {'gravewarden_ulthar.xml': 4000000, 'morwen_the_ash_sister.xml': 4400000, 'the_marrow_colossus.xml': 4800000,
             'vhoss_the_hexmaw.xml': 5000000, 'varkhul_the_ashen_sovereign.xml': 7200000}   # the XML health before O475
 
@@ -59,6 +64,9 @@ OMEN_OLD = 500000           # the XML health before O475
 ASCENDED_OLD, CINDER_OLD = 1200000, 1650000
 REFDPS_OLD = 3000           # uber_config.lua / raid_config.lua model.refDps before O475
 GEAR = 1.15                 # rift_config.lua density.model gear
+# the arena bosses (O637): file under monsters/chaos, the key of its profile in boss_mechanics_config.lua, level, players, seconds to kill, uptime,
+# heal a second (the XML's healing defense): a party of five typical characters, 360 s
+ARENA_BOSSES = (('malgrath_the_drowned_crown.xml', 'malgrath, the drowned crown', 800, 5, 360, 0.85, 400),)
 # the five generated dungeons: id, player level (dungeon level + 25), boss level, file health (the monster file's, README "Solo kill times")
 DUNGEON_BOSSES = (('vault', 825, 900, 14800), ('marrow', 1025, 1100, 15000), ('crucible', 1325, 1400, 15500),
                   ('sanctum', 1625, 1700, 16000), ('throne', 2025, 2100, 16000))
@@ -124,6 +132,11 @@ def rift_fit():
     return fit([one_target(l) for l in lv], lv), fit([area(l) for l in lv], lv)
 
 
+def arena_health(level, players, seconds, uptime, heal):
+    """the XML health of an arena boss: seconds x (players x typical damage on one boss x uptime - heal a second)"""
+    return seconds * (players * one_target(level) * uptime - heal)
+
+
 def omen_factor():
     health = (one_target(1000) * OMEN_UPTIME - OMEN_HEAL) * OMEN_SECONDS
     return health, health / OMEN_OLD
@@ -164,6 +177,20 @@ def committed_refdps():
     return float(re.search(r'refDps = (\d+)', read(UBER)).group(1)), float(re.search(r'refDps = (\d+)', read(RAID)).group(1))
 
 
+def committed_arena(profile):
+    """(health, heal, dps, uptime, players) of the `ref` of a profile of boss_mechanics_config.lua"""
+    text = read(MECHANICS)
+    m = re.search(r'\["%s"\] = \{.*?ref = \{health = (\d+), heal = (\d+), dps = (\d+), uptime = ([0-9.]+), players = (\d+)' % re.escape(profile),
+                  text, re.S)
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)), float(m.group(4)), int(m.group(5))) if m else None
+
+
+def xml_heal(text):
+    """the healing a second of the XML's healing defense: chance x the middle of min and max / the interval"""
+    m = re.search(r'<defense name="healing" interval="(\d+)" chance="(\d+)" min="(\d+)" max="(\d+)"', text)
+    return int(m.group(2)) / 100.0 * (int(m.group(3)) + int(m.group(4))) / 2.0 / (int(m.group(1)) / 1000.0) if m else 0.0
+
+
 def lua_rows(rows):
     return '{' + ', '.join('{%d, %d}' % (lv, round(v)) for lv, v in rows) + '}'
 
@@ -179,6 +206,10 @@ def derive():
     (d1, e1), (d5, e5) = rift_fit()
     print('\nrift model: dps1 = %.0f, dps1Exp = %.2f, dps5 = %.0f, dps5Exp = %.2f (gear %.2f, tier levels %s)' % (
         d1, e1, d5, e5, GEAR, rift_levels()))
+    print('\narena bosses (a party of typical characters):')
+    for fname, profile, level, players, seconds, uptime, heal in ARENA_BOSSES:
+        print('  %-34s level %d, %d players, %d s: health %.0f, party damage %.0f a second' % (
+            fname, level, players, seconds, arena_health(level, players, seconds, uptime, heal), players * one_target(level)))
     h, f = omen_factor()
     print('\nOmen guardian health %.0f (x%.3f of %d): Ascended %.0f, Cinderheart %.0f, refDps %.0f' % (
         h, f, OMEN_OLD, ASCENDED_OLD * f, CINDER_OLD * f, REFDPS_OLD * f))
@@ -219,6 +250,22 @@ def problems():
     for f, v in committed_health(RAIDS).items():
         if f in RAID_OLD and abs(v / (RAID_OLD[f] * factor) - 1) > 0.005:
             bad.append('raid boss %s health %d, the derivation %.0f' % (f, v, RAID_OLD[f] * factor))
+    for fname, profile, level, players, seconds, uptime, heal in ARENA_BOSSES:
+        want = arena_health(level, players, seconds, uptime, heal)
+        have = committed_health(CHAOS_MONSTERS).get(fname)
+        if have is None or abs(have / want - 1) > 0.015:
+            bad.append('arena boss %s health %s, the derivation %.0f (%d s for %d characters of level %d)' % (fname, have, want, seconds, players, level))
+        ref = committed_arena(profile)
+        if ref is None:
+            bad.append('arena boss %s: no profile %s with a ref in boss_mechanics_config.lua' % (fname, profile))
+            continue
+        for what, got, exp in (('health', ref[0], have or 0), ('heal', ref[1], heal), ('dps', ref[2], players * one_target(level)), ('uptime', ref[3], uptime),
+                               ('players', ref[4], players)):
+            if exp and abs(got / float(exp) - 1) > (0.001 if what in ('health', 'heal', 'uptime', 'players') else 0.015):
+                bad.append('arena boss %s: ref %s is %s, it must be %s' % (profile, what, got, exp))
+        got_heal = xml_heal(read(os.path.join(CHAOS_MONSTERS, fname)))
+        if abs(got_heal / heal - 1) > 0.01:
+            bad.append('arena boss %s: its healing defense heals %.0f a second, the model has %d' % (fname, got_heal, heal))
     for name, v in zip(('uber', 'raid'), committed_refdps()):
         if abs(v / (REFDPS_OLD * factor) - 1) > 0.015:
             bad.append('%s refDps is %.0f, the derivation %.0f' % (name, v, REFDPS_OLD * factor))
@@ -233,8 +280,8 @@ def main(argv):
         for b in bad:
             print('FAIL ' + b)
         if not bad:
-            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, from the typical damage after the round)' % (
-                BOSS_SECONDS, GUARDIAN_SECONDS, OMEN_SECONDS))
+            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, arena bosses %s s, from the typical damage after the round)' % (
+                BOSS_SECONDS, GUARDIAN_SECONDS, OMEN_SECONDS, '/'.join(str(a[4]) for a in ARENA_BOSSES)))
         return 1 if bad else 0
     return derive()
 

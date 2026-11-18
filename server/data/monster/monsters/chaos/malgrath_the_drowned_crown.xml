@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Malgrath, the Drowned Crown (O637): an arena boss for a party of five at level 800 (band 700-900), spawned in its own lair (bosslair_config.lua, rooms/drowned_throne.json), open from client pair 74. A crowned drowned king that always faces the front; its attacks play as effects that carry its body (data/lib/chaos_malgrath_fx.lua, README "Malgrath, the Drowned Crown (O637)"). Health is boss_length_model.py ARENA_BOSSES: 360 s for five typical characters of level 800. The telegraphed mechanics are boss_mechanics_config.lua. The repository keeps the old look (1473); install step monstermalgrathlook moves it to outfit 3530 at pair 74. -->
+<monster name="Malgrath, the Drowned Crown" nameDescription="Malgrath, the Drowned Crown" race="undead" experience="5240000" speed="260" manacost="0">
+	<health now="5240000" max="5240000" />
+	<look type="1473" corpse="6068" />
+	<targetchange interval="5000" chance="10" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1800" max="-3600" />
+		<!-- Drowned Reach: a wave of cold dead water in front -->
+		<attack name="ice" interval="2000" chance="20" length="6" spread="2" min="-2200" max="-3800">
+			<attribute key="areaEffect" value="icearea" />
+		</attack>
+		<!-- Crownbolt on a target -->
+		<attack name="death" interval="2000" chance="15" range="7" target="1" min="-2000" max="-3600">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="95" defense="95">
+		<defense name="healing" interval="2000" chance="8" min="8000" max="12000">
+			<attribute key="areaEffect" value="greenshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="10" />
+		<element firePercent="-10" />
+		<element energyPercent="-15" />
+		<element earthPercent="20" />
+		<element icePercent="30" />
+		<element holyPercent="-20" />
+		<element deathPercent="40" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The tide keeps what it takes." yell="1" />
+		<voice sentence="Kneel to the drowned crown." yell="1" />
+	</voices>
+	<loot>
+		<item id="2152" countmax="100" chance="100000" /><!-- platinum coin -->
+		<item id="2160" countmax="20" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="4" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="1" chance="50000" /><!-- Orb of Fate -->
+		<item id="8890" chance="3000" /><!-- robe of the underworld -->
+		<item id="8918" chance="3000" /><!-- spellbook of dark mysteries -->
+		<item id="7418" chance="3000" /><!-- nightmare blade -->
+		<item id="6300" chance="5000" /><!-- death ring -->
+		<item id="29861" chance="2000" /><!-- Myst Regalia Helmet -->
+		<item id="29862" chance="1500" /><!-- Myst Regalia Mantle -->
+		<item id="29866" chance="1500" /><!-- Myst Regalia Wand -->
+		<item id="29868" chance="1000" /><!-- Myst Regalia Ring -->
+	</loot>
+</monster>

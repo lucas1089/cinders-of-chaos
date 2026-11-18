@@ -48,6 +48,10 @@ PAIR_SWAP = 73      # the look swaps of O619: 24 monsters leave a look that fail
 PAIR_DECOR = 74     # the four animated decor flames 44560-44563 (O623, install_decor_flames.py, step `decorflames`); the torch 44544 of pair 60
                     # is animated in place and needs no step. Pair 74 is not built yet, PAIR_ASSETS stays 73 until it is
 
+PAIR_MALGRATH = 74  # Malgrath, the Drowned Crown (O637): outfit 3530 and its eight attack effects 5326-5333 (gen_malgrath_boss.py; the lair and the
+                    # boss only exist from this pair: install_monster_malgrath_look.py, step `monstermalgrathlook`, bosslair_config.lua,
+                    # data/lib/chaos_malgrath_fx.lua). Pair 74 is not built for real yet, PAIR_ASSETS stays 73 until it is
+
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
