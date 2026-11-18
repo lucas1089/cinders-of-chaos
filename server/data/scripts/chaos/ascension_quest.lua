@@ -236,7 +236,7 @@ function ChaosAscension.ascend(player, word, opts)
 		"You have ascended: you are now %s. The choice is final; only the store's Vocation Change can undo it.",
 		newVoc:getDescription()))
 	toast(player, Chaos.t(player, "You have ascended: %s.", newVoc:getName()))
-	if not opts.quiet then
+	if not opts.quiet and not Chaos.isTester(player) then -- O655: a tester's ascension is no news for the players
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, C().broadcast, player:getName(), newVoc:getName())
 	end
 	if ChaosNameplate and ChaosNameplate.refresh then
@@ -864,6 +864,12 @@ function S.enterTrial(player)
 	for _ in pairs(S.trials) do
 		running = running + 1
 	end
+	if ChaosTesters and ChaosTesters.soloRefusal and Chaos.isTester(player) then -- O655: a tester keeps `reserve` chambers free for the players
+		local why = ChaosTesters.soloRefusal({player}, (C().trial.limits.maxRuns or C().trial.grid.slots) - running, C().trial.tester.reserve)
+		if why then
+			return false, Chaos.t(player, why)
+		end
+	end
 	local IL = ChaosInstanceLimits
 	local lim = C().trial.limits
 	local slot = not (IL and IL.capped("ascension", running, lim)) and freeSlot() or nil
@@ -1014,6 +1020,91 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 	return true
 end
 modal:register()
+
+-- ======================================================================== what a person sees (the tester bots, O655)
+-- For the tester bots' `!tester ascend` (tools/tester_helper.lua checks that the asker is a tester). Reads only: the stage of the quest, the proof, the
+-- trial (cooldown, chambers free), the two choices and whether the account may use them (the class lock), inside a trial the guardian and `guide`.
+function S.probe(player)
+	local pos = player:getPosition()
+	local voc = player:getVocation():getId()
+	local ok, code = Q.eligibility(voc, player:getLevel(), "en")
+	local running = 0
+	for _ in pairs(S.trials) do
+		running = running + 1
+	end
+	local base = Q.baseOf(voc)
+	local tile = Tile(pos)
+	local out = {enabled = C().enabled and true or false, level = player:getLevel(), minLevel = Chaos.classes.ascension.minLevel,
+		pos = {x = pos.x, y = pos.y, z = pos.z}, voc = voc, vocName = vocName(voc), base = base and vocName(base) or nil, eligible = ok and true or false,
+		why = (not ok) and code or nil, ascended = Q.isAscendedId(voc) and true or false, stage = stageOf(player),
+		proof = math.max(0, getS(player, K().proof)), needed = C().proof.needed, wait = math.max(0, getS(player, K().cooldown) - now()),
+		attempts = math.max(0, getS(player, K().attempts)), oracle = S.oracleNear(player) and true or false,
+		pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false, inside = false, fight = inCombat(player),
+		free = (C().trial.limits.maxRuns or C().trial.grid.slots) - running, reserve = C().trial.tester.reserve, tester = Chaos.isTester(player)}
+	if ok and base then
+		out.choices = {}
+		for i, c in ipairs(Q.choicesOf(base) or {}) do
+			local allowed, why = true, nil
+			if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
+				allowed, why = ChaosClassUnlocks.canUseVocation(player, c.id)
+			end
+			out.choices[#out.choices + 1] = {i = i, word = c.word, id = c.id, name = vocName(c.id), allowed = allowed and true or false,
+				why = (not allowed) and tostring(why or ""):sub(1, 60) or nil}
+		end
+	end
+	local tr = S.trials[player:getId()]
+	if not tr or tr.over then
+		return out
+	end
+	out.inside = true
+	local g = tr.guardianId and Monster(tr.guardianId)
+	local gpos = g and g:getPosition()
+	local adds = 0
+	for _ in pairs(tr.adds or {}) do
+		adds = adds + 1
+	end
+	out.run = {state = tr.phase, boss = g and "alive" or nil, bossHp = g and math.floor(g:getHealth() * 100 / math.max(1, g:getMaxHealth())) or nil,
+		bossPos = gpos and {x = gpos.x, y = gpos.y, z = gpos.z} or nil, left = tr.deadline and math.max(0, math.floor((tr.deadline - mnow()) / 1000)) or nil,
+		adds = adds, players = 1, testers = Chaos.isTester(player) and 1 or 0, tester = Chaos.isTester(player), kind = tr.guardian.name}
+	if tr.phase ~= "fight" or not gpos then
+		out.guide = {mode = "wait", why = "the countdown runs"}
+	elseif gpos.z == pos.z and math.max(math.abs(gpos.x - pos.x), math.abs(gpos.y - pos.y)) <= 5 then
+		out.guide = {mode = "fight", goal = {x = gpos.x, y = gpos.y, z = gpos.z}, area = "boss", why = "in reach of the guardian"}
+	else
+		out.guide = {mode = "walk", goal = {x = gpos.x, y = gpos.y, z = gpos.z}, reach = {1, 5}, area = "boss", why = "to the guardian"}
+	end
+	return out
+end
+
+-- TEST ONLY (`!tester ascend proof`): the Proof of Strength through its own credit rule, as the kills of rare monsters at the bot's level would give it
+-- (S.creditProof with a legendary monster of the bot's level, until the stage moves). A rare monster does not come when a check asks; the proof is the
+-- one step of the quest a bot cannot make happen. A tester only (the helper checks), logged. -> true, or nil and the reason
+function S.testerProof(player)
+	if not Chaos.isTester(player) then
+		return nil, "a tester only"
+	end
+	if stageOf(player) ~= Q.STAGE.PROOF then
+		return nil, "the Proof of Strength is not open (stage " .. stageOf(player) .. ")"
+	end
+	for _ = 1, (C().proof.needed or 10) do
+		S.creditProof(player, "legendary", player:getLevel())
+		if stageOf(player) ~= Q.STAGE.PROOF then
+			break
+		end
+	end
+	log(string.format("%s: TEST ONLY proof credited (stage %d)", player:getName(), stageOf(player)))
+	return stageOf(player) ~= Q.STAGE.PROOF or nil, "the proof did not complete"
+end
+
+-- TEST ONLY (`!tester ascend close`): the bot's own trial ends as if it left it (a failed attempt: the cooldown, nothing lost)
+function S.testerClose(player)
+	local tr = S.trials[player:getId()]
+	if not tr or tr.over then
+		return false
+	end
+	S.finish(player:getId(), "left", "You left the Trial.")
+	return true
+end
 
 -- ======================================================================== login / logout
 local login = CreatureEvent("ChaosAscensionLogin")

@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -835,6 +835,19 @@ function H.pvpTarget(origin, list, range)
 		end
 	end
 	return best and best.c or nil
+end
+
+-- O655: the class ascension and the gathering as a person sees them.
+--   !tester ascend [state | proof | path | close]   the Ascendant Oracle's quest (stage, proof, trial, the choices and the class lock); `proof` is the TEST ONLY
+--                                                   credit of the Proof of Strength (a tester only, logged), `path` the way to the guardian inside the trial,
+--                                                   `close` the end of the bot's own trial
+--   !tester gather [state | path]                   the gathering tools the bot carries, the nearest node that is ready for it, the way on foot next to it
+function H.parseAscend(arg)
+	return parseWords(arg, "ascend", {"state", "proof", "path", "close"})
+end
+
+function H.parseGather(arg)
+	return parseWords(arg, "gather", {"state", "path"})
 end
 
 -- a value cut down for a text line: scalars only, strings at most 90 characters, tables up to `depth` levels and 12 rows a list

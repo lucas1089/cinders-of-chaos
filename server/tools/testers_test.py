@@ -1265,6 +1265,52 @@ try:
 finally:
     asyncio.sleep = _real_sleep
 
+# ---------------------------------------------------------------- O655: modal windows, the buy packet, the text lines a check reads
+eq(TC.buy_packet(2405, 0, 1), b'\x7a' + struct.pack('<HBBBB', 2405, 0, 1, 0, 0), 'the buy packet')
+eq(TC.buy_packet(2405, 0, 500)[4], 100, 'the buy amount is at most 100')
+eq(TC.modal_answer_packet(7101, 1, 0), b'\xf9' + struct.pack('<IBB', 7101, 1, 0), 'the modal answer packet: window, button, choice')
+eq(TC.modal_answer_packet(7170, 2, 255)[-1], 255, 'no choice is 255')
+
+
+def modal_bytes(wid, title, message, buttons, choices, escape, enter):
+    out = b'\xfa' + struct.pack('<I', wid) + LT.string(title) + LT.string(message) + bytes([len(buttons)])
+    for bid, text in buttons:
+        out += LT.string(text) + bytes([bid])
+    out += bytes([len(choices)])
+    for cid, text in choices:
+        out += LT.string(text) + bytes([cid])
+    return out + bytes([escape, enter, 0])
+
+
+win = modal_bytes(7170, 'Tales', 'Pick one', [(1, 'Read'), (2, 'Close')], [(1, 'The Hollow Road'), (2, 'Ash')], 2, 1)
+got = T.parse_modal(b'\x10\x20' + win + b'\x30', T.MODAL_IDS)
+eq(len(got), 1, 'a modal window of a known id is found in the middle of a message')
+eq((got[0]['id'], got[0]['title'], got[0]['message']), (7170, 'Tales', 'Pick one'), 'its id, title and text')
+eq(got[0]['buttons'], [(1, 'Read'), (2, 'Close')], 'the buttons: id and text')
+eq(got[0]['choices'], [(1, 'The Hollow Road'), (2, 'Ash')], 'the choices: id and text')
+eq((got[0]['escape'], got[0]['enter']), (2, 1), 'the escape and the enter button')
+eq(T.parse_modal(win, (7171,)), [], 'another id is not looked for')
+eq(T.parse_modal(win[:-9], T.MODAL_IDS), [], 'a window cut short is no window')
+two = modal_bytes(7101, 'Trial', 'x', [(1, 'Enter'), (2, 'Not yet')], [], 2, 1) + modal_bytes(7102, 'Choice', 'y', [(1, 'Choose')], [(1, 'A'), (2, 'B')], 1, 1)
+eq([w['id'] for w in T.parse_modal(two, T.MODAL_IDS)], [7101, 7102], 'two windows of one message')
+ok(7101 in T.MODAL_IDS and 7102 in T.MODAL_IDS and 7125 in T.MODAL_IDS and 7170 in T.MODAL_IDS and 7171 in T.MODAL_IDS and 7110 not in T.MODAL_IDS,
+   'the ids: the Oracle trial, choice and confirm windows (7111-7149), the tales')
+
+# the bot keeps the windows and the text lines for the checks
+mb = T.TesterBot(0, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None, 'all': [{'words': 'exura', 'level': 1}]})
+mb.read(win)
+eq([w['id'] for w in mb.modals], [7170], 'the bot keeps the window the server opened')
+n0 = mb.recent_n
+for i in range(70):
+    mb.on_text('line %d' % i)
+eq((len(mb.recent), mb.recent[-1], mb.recent_n - n0), (60, 'line 69', 70), 'the last 60 text lines, and how many came in all')
+eq(mb.all_spells, [{'words': 'exura', 'level': 1}], 'the spells of the class for the support check')
+eq(T.TesterBot(1, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None}).all_spells, [], 'a bot made without the list has none')
+eq([s['words'] for s in T.class_spells([{'words': 'a', 'name': 'a', 'group': 'support', 'level': 5, 'needlearn': False, 'params': False, 'vocations': {'Knight'}},
+                                       {'words': 'b', 'name': 'b', 'group': 'support', 'level': 5, 'needlearn': False, 'params': False, 'vocations': {'Mystic'}},
+                                       {'words': 'c', 'name': 'c', 'group': 'support', 'level': 500, 'needlearn': False, 'params': False, 'vocations': set()}],
+                                      {}, 'Knight', 60)['all']], ['a'], 'class_spells: `all` holds the class\'s spells at the level (a spell of every vocation too)')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

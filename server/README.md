@@ -9910,7 +9910,7 @@ Owner 2026-11-16 (translated): "the bots must play the game's full content and i
 plan of O588 (the list above). The steps, in order; each is a closed system (`K.CLOSED_SYSTEMS`), a side of its own, `X.probe` (what a
 person sees), a pure guide in a `*_core.lua`, a bot that walks and fights with its own rotation, rewards only to testers, no broadcast,
 ranking or Discord, clean-up in `tester_closed.py`, SKIP with the reason when bots or level are missing. Every helper command of the
-task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O653 to v19, step 10; O654 to v20, step 11; O652 to v21, step 12; O651 to v22, step 13).
+task is in helper v14 (`HELPER_VERSION`, bumped once for the whole task; O592 bumped it once more, to v15, for the siege, the guild boss and the rift; O595 once more, to v16, for the tower, the descent and the trials; O599 to v17; O650 to v18, step 9; O653 to v19, step 10; O654 to v20, step 11; O652 to v21, step 12; O651 to v22, step 13; O655 to v23, step 14).
 
 ##### 1. Dungeons (`dungeons.lua`, `dungeons_core.lua`, `tests/dungeons_closed_test.lua`, `closed_dungeon`)
 
@@ -10625,6 +10625,81 @@ check `wsmap_walk`):
 
 Left in the O589 list after step 10: PvP between testers (kills in the siege, the Marches, the arena), the weekly challenges of the tasks window, the season journey and pass,
 the main quest steps a hook sets, the harvest event, raid bosses of a contract, and everything marked out of scope in step 6.
+
+##### 14. Ascension, support spells, tales, tasks, gathering and settings (O655)
+
+Owner 2026-11-18 (translated): "do all the points" of step 10. Open checks (no closed mode needed). Helper v23 (`HELPER_VERSION`): `!tester ascend`,
+`!tester gather`. Tests: `tester_checks_test.py` (`AscensionWalk`, `SpellSupport`, `TalesRead`, `KillTask`, `GatherWalk`, `Settings`), `testers_test.py`
+(section O655: the modal window parser, the packets, the text lines), `tester_helper_test.lua` (section O655), `ascension_quest_test.lua` and `professions_test.lua`
+(sections O655: the probes and the closed rules). Unity: the nine new keys are in `Phase30Tests.cs` `NotMirrored`.
+
+What the bot learned to do like a person:
+- **Modal windows**: the server's 0xFA window of a known id (`testers.py` `MODAL_IDS`: the Oracle's trial 7101, choice 7102, confirm 7111-7149, the tales 7170
+  and 7171) is parsed (`parse_modal`: title, text, buttons, choices, escape and enter button) and answered with the 0xF9 packet a button press sends
+  (`TC.modal_answer_packet`). The ids are the settings' (`ascension_quest_config.lua` `modal`, `tales_config.lua` `modal`).
+- **Text lines**: `Bot.recent` keeps the last 60 lines the server sent; `CheckIO.said_and_heard(words)` says something and returns what came back in the next
+  seconds (a spell's refusal, an NPC's answer). `CheckIO.use_at(pos, client id, stackpos)` uses an item that lies on the map (0x82 with a map position).
+- **Buying**: `TC.buy_packet` (0x7A) and `CheckIO.shop_window` / `buy` (hi, trade, the window's items, the purchase).
+- `class_spells` gives each bot the list of its class (`all`: the spells at its level for its vocation) for the spell check.
+
+Server rules (closed so a tester never shares a run, a board, a broadcast or a reward pool):
+- **Ascension** (`ascension_quest.lua`): a tester's Trial is refused while fewer than `trial.tester.reserve` (2) of the 8 chambers would stay free
+  (`ChaosTesters.soloRefusal`, as the Trials and the Ember Descent); the broadcast "X has passed the Trial of Ascension" is not sent for a tester
+  (`opts.quiet` or `Chaos.isTester`). The Trial is solo and runtime-built per player: a tester never shares it. The class lock is the account's
+  (`ChaosClassUnlocks.canUseVocation`), the same for a tester.
+- **Gathering** (`professions.lua`): a node's cooldown is per player, so a tester takes nothing a player could gather; the weekly board skips testers
+  (`leaderboard.lua`, step 10); the materials are the bot's own.
+- Tales, the kill tasks, the Gambler, the pouch rules, the Auto Seller and the stash are per character and have no board of players.
+
+`!tester ascend [state | proof | path | close]` (helper): `ChaosAscensionQuest.probe` (the stage, the proof, the trial cooldown, the chambers free and
+reserved, the Oracle near, the choices with `allowed` and the lock's reason, inside the trial the guardian, its health, its adds, `run.players` and `testers`,
+`guide`). `proof` is a **TEST ONLY** credit (`S.testerProof`, a tester only, logged): it feeds `S.creditProof` legendary kills of the bot's own level until the
+Proof of Strength completes, because a rare monster does not come when a check asks. `path` is the engine's path to the guardian, `close` ends the bot's own
+trial (a failed attempt, the cooldown, nothing lost). `!tester gather [state | path]`: `ChaosProfessions.probe` (the tools carried, the materials held,
+`gathering`, the bank, the tools the broker sells with their client ids, the nearest node that is ready for the bot with its client id and stack position,
+`guide`: shop, walk, use or wait) and the engine's path next to the node. Both read only.
+
+How the bots play it:
+1. `ascension_walk` (last of the open checks: the class changes): SKIP for an ascended class, under level 100 or a quest done. Else on foot to the Ascendant Oracle
+   (3 tiles): hi, "ascension" (the Calling: the stage must be 1), `ascend proof` (stage 2), hi and "trial", the trial window answered with Enter, the bot walks to
+   the guardian by the engine's path and fights it with its own rotation until the stage is 3 (the guardian dead); then hi and "choice", the choice window
+   answered with the class the account has **locked** first (the confirm window's Ascend must be refused and the class unchanged: FAIL when the Oracle
+   ascends the bot to a locked class), then with the first open class (the stage must be 4 and the vocation the chosen one). The window's choice list must
+   have as many classes as the quest. Stopped steps are a note ("stopped: ..."): the trial closed after a fall, the chambers kept for the players.
+2. `spell_support`: the support and healing spells of the class that a person casts by hand (no attack, no parameter, no target, no learning, at the level:
+   six at most) are said; the server's lines after each cast must not say unknown, another vocation or premium (FAIL); mana, exhausted and level are held
+   back, not failures. The spells only a quest teaches (`needlearn`: the line quest spells) are tried too and must be refused as not learned (a note when
+   they are cast without a word: silence is not proof).
+3. `tales_read` (Archivist Maelis, on foot): hi, "tales", the list window (7170) must have a title and the buttons Read and Close; Read on the first tale opens
+   the tale window (7171, a title and a text); both are closed with their escape buttons. PASS also when no tale is open at the level.
+4. `kill_task`: the Bestiary board: the open offer whose level window holds the bot (the fewest kills) is accepted, must be in the active list with 0 of its
+   kills and its offer must read active, then abandoned and gone from the list. The kills themselves come with the bot's own hunts.
+5. `gather_walk`: a bot with no pick or sickle goes to the Material Broker, hi, trade, buys the cheapest (the sickle) and the backpack must hold it (FAIL
+   when the sale gave none); then the nearest ready node (a pick finds a vein, a sickle an herb patch, within 150 tiles on the floor) by the engine's path,
+   the use of the node item on its tile, and within 10 s the materials held must rise (PASS), or the channel started and was interrupted, or the server
+   said why (SKIP), else FAIL (the use started no gather and no word came).
+6. `pouch_rules`: the Loot Pouch rules window: one rule turned over, read back (the others unchanged) and put back (the rules are put back even when the
+   answer is lost). `autosell_rules`: the Auto Seller window: a bot without the store unlock must be refused (the pause switch unmoved and a notice); one with
+   it turns the corpse selling over and back. `stash_window`: the stash tabs, items and the item search "potion" as the window asks them (every message of
+   the opcode is collected): at least one tab, no tab over its size, the search answered. `gamble_reroll` (Mordecai Ashwager, on foot): when the window's
+   reroll price leaves the bot 5000 gold, the reroll must raise the count by one, cost money and change the stock.
+
+Left with the reason:
+- **The Proof of Strength itself**: a rare or legendary monster at the bot's level does not come on demand; the credit is the TEST ONLY `ascend proof`.
+  The kill credit rules (party range, damage map, the nameplate level) stay under `tests/ascension_quest_test.lua`.
+- **Flaying and angling** (the knife on a fresh corpse, the rod on water): the corpse is tagged at the death and the water tile is not in any probe yet; plan:
+  `!tester gather` reports the nearest tagged corpse (`P.findCorpse`) and the nearest water tile. **The kill counts of a kill task and of a tale** wait for
+  the bot's own hunts (a `kill` message of the bestiary opcode); a later check can read the task list after a long run.
+- **Smartloot, the unique window and the exercise dummy**: smartloot and the unique window (`unique_window_core.lua`) are drop rules with no window and no
+  opcode; they are proved by their tests and by `!tester found` over a run. The exercise dummy needs an exercise weapon (charges) and a dummy in a house or
+  hall; plan: a `!tester dummy` probe of the nearest dummy and a use-with. Mounts are the stock outfit window (no Chaos opcode): a later check needs the 0xD3
+  outfit packet.
+- **The deposit and the withdrawal of the stash** (drag an item to the window, Redeem): they need the backpack position packet of a junk item; the window and
+  the search are proved here. **The premium track of the pass** is bought with coins.
+
+Needs a live run: the 0xFA window layout of the server (the parser follows the protocol of the base server and the Unity client's `ModalWindows`), the 0xF9
+answer, whether the Oracle's focus holds between "hi" and the next word (the check says hi before each word), the stack position of a node (the index of the
+item in the tile), the Material Broker's trade window for a bot with a bank balance, the text of the Gambler's reroll price against `K.rerollPrice`.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

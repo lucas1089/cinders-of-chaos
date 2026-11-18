@@ -57,6 +57,11 @@
 --   * "!tester found" (O653): what the bot's own drops can do (read only): the orbs, whetstones, sockets orbs, gems, runes, charms and cards in its
 --     backpack, the pieces it could wear with a score that knows sets, uniques and jewelry (H.chaseScore), what it wears. Nothing is given or moved;
 --     the crafting, the socketing and the wearing are the bot's own packets (tester_checks.py craft_found, gear_chase)
+--   * "!tester ascend [state | proof | path | close]", "!tester gather [state | path]" (O655): the Ascendant Oracle's quest (stage, Proof of Strength,
+--     the Trial, the Choice and the class lock: ChaosAscensionQuest.probe) and the gathering with a pick or a sickle (the tools carried, the nearest node
+--     that is ready for the bot: ChaosProfessions.probe) as a person sees them; `ascend proof` is the TEST ONLY credit of the proof (a tester only,
+--     logged), `path` the way on foot to the guardian inside the trial / next to the node, `ascend close` the end of the bot's own trial. The talk with
+--     the Oracle (the modal windows), the fight, the choice, the use of the node and the buying of a tool are the bot's own
 --   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
 --     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
 --     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
@@ -98,7 +103,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 22
+HELPER_VERSION = 23
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1992,6 +1997,59 @@ function commands.boss(player, arg)
 		tell(player, "boss", H.cutAnswer(probe, got or {err = why}))
 	else
 		tell(player, "boss", H.cutAnswer(B.probe(player)))
+	end
+end
+
+-- ---------------------------------------------------------------- O655 the class ascension and the gathering
+-- "!tester ascend [state | proof | path | close]": reads ChaosAscensionQuest.probe (the stage, the proof, the trial, the choices with the class lock,
+-- inside the trial the guardian and `guide`). `proof` is the TEST ONLY credit of the Proof of Strength through its own rule (a tester only, logged: a
+-- rare monster does not come when a check asks), `path` the engine's path to the guardian inside, `close` the end of the bot's own trial. The talk
+-- with the Oracle, the modal windows, the fight and the choice are the bot's own.
+function commands.ascend(player, arg)
+	local what, usage = H.parseAscend(arg)
+	if not what then
+		tell(player, "ascend", {err = usage})
+		return
+	end
+	local A = ChaosAscensionQuest
+	if not (A and A.probe) then
+		tell(player, "ascend", {err = "no ascension quest"})
+		return
+	end
+	if what == "close" then
+		local closedNow = A.testerClose(player) and true or false -- the close first: the record shows the bot outside
+		tell(player, "ascend", H.cutAnswer(A.probe(player), {closed = closedNow}))
+	elseif what == "proof" then
+		local ok, why = A.testerProof(player)
+		tell(player, "ascend", H.cutAnswer(A.probe(player), ok and {proofed = true} or {err = tostring(why or "refused")}))
+	elseif what == "path" then
+		local probe = A.probe(player)
+		local got, why = goalPath(player, probe)
+		tell(player, "ascend", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "ascend", H.cutAnswer(A.probe(player)))
+	end
+end
+
+-- "!tester gather [state | path]": reads ChaosProfessions.probe (the tools, the materials held, the nearest ready node and `guide`) and the engine's path to
+-- the node's tile. The use, the channel and the wait are the bot's own.
+function commands.gather(player, arg)
+	local what, usage = H.parseGather(arg)
+	if not what then
+		tell(player, "gather", {err = usage})
+		return
+	end
+	local P = ChaosProfessions
+	if not (P and P.probe) then
+		tell(player, "gather", {err = "no professions"})
+		return
+	end
+	local probe = P.probe(player)
+	if what == "path" then
+		local got, why = goalPath(player, probe)
+		tell(player, "gather", H.cutAnswer(probe, got or {err = why}))
+	else
+		tell(player, "gather", H.cutAnswer(probe))
 	end
 end
 

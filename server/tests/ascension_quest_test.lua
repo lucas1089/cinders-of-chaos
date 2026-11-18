@@ -497,4 +497,85 @@ do
 	eq(marks(who(0, 300)), nil, "no class, none")
 end
 
+-- ------------------------------------------------------------------ O655: the tester bots' probe, the credit, the closed rules
+do
+	local AQ = ChaosAscensionQuest
+	local STAGE = ChaosAscensionQuestCore.STAGE
+	local K = cfg.storage
+	assert(AQ.probe and AQ.testerProof and AQ.testerClose and cfg.trial.tester.reserve == 2, "the probe, the TEST ONLY credit, the close and the reserve exist")
+	local store, messages, broadcasts, applied = {}, {}, {}, {}
+	local function who(voc, level, tester)
+		local p = {_voc = voc, _name = tester and "Tester Asc" or "Ana Asc"}
+		function p:getVocation() return {getId = function() return self._voc end, getName = function() return "voc" .. self._voc end} end
+		function p:getLevel() return level end
+		function p:getName() return self._name end
+		function p:getId() return tester and 901 or 902 end
+		function p:getStorageValue(k)
+			if k == Chaos.storage.tester then return tester and 1 or -1 end
+			return store[k] or -1
+		end
+		function p:setStorageValue(k, v) store[k] = v end
+		function p:isPzLocked() return false end
+		function p:getPosition() return {x = 50, y = 50, z = 7, sendMagicEffect = function() end} end
+		function p:save() end
+		function p:sendTextMessage(_, text) messages[#messages + 1] = text end
+		function p:sendExtendedOpcode() end
+		return p
+	end
+	local savedTile, savedVoc, savedGame, savedClasses, savedB = Tile, Vocation, Game.getSpectators, ChaosClasses, Chaos.broadcast
+	Tile = function() return {hasFlag = function() return true end} end
+	TILESTATE_PROTECTIONZONE = TILESTATE_PROTECTIONZONE or 1
+	Vocation = function(id) return {getId = function() return id end, getName = function() return "voc" .. id end, getDescription = function() return "a voc" .. id end} end
+	Game.getSpectators = function() return {{isNpc = function() return true end, getName = function() return "Ascendant Oracle" end}} end
+	ChaosClasses = {applyVocation = function(p, v) applied[#applied + 1] = v:getId() p._voc = v:getId() end}
+	Chaos.broadcast = function(_, key, name, voc) broadcasts[#broadcasts + 1] = name end
+	local savedUnlocks = ChaosClassUnlocks
+	ChaosClassUnlocks = {canUseVocation = function(_, id) if id == 14 then return false, "That class is locked. Unlock it in the store." end return true end}
+
+	local t = who(4, 100, true)
+	local pr = AQ.probe(t)
+	eq(pr.stage, STAGE.NONE, "probe: stage none"); eq(pr.eligible, true, "probe: a base class at the level"); eq(pr.tester, true, "probe: a tester")
+	eq(pr.inside, false, "probe: outside"); eq(pr.oracle, true, "probe: the Oracle is near"); eq(pr.pz, true, "probe: a protection zone")
+	eq(pr.free, cfg.trial.limits.maxRuns, "probe: the chambers free"); eq(pr.reserve, 2, "probe: the reserve of the chambers")
+	eq(#pr.choices, 2, "probe: the two choices"); eq(pr.choices[1].word, "berserker", "probe: in the Oracle window's order"); eq(pr.choices[1].allowed, false, "probe: a locked class")
+	assert(pr.choices[1].why and pr.choices[1].why:find("locked"), "probe: the lock's reason"); eq(pr.choices[2].allowed, true, "probe: an open class")
+	eq(pr.choices[1].i, 1, "probe: the index the window answers with"); eq(pr.choices[2].i, 2)
+	eq(AQ.probe(who(4, 99, true)).eligible, false, "probe: under the level"); eq(AQ.probe(who(4, 99, true)).why, "level")
+	local asc = AQ.probe(who(14, 300, true))
+	eq(asc.ascended, true, "probe: an ascended class"); eq(asc.eligible, false)
+	-- the credit
+	local ok, why = AQ.testerProof(who(4, 100, false))
+	eq(ok, nil, "credit: a player is refused"); assert(why:find("tester"), why)
+	ok, why = AQ.testerProof(t)
+	eq(ok, nil, "credit: not before the Calling"); assert(why:find("not open"), why)
+	store[K.stage], store[K.proof] = STAGE.PROOF, 0
+	ChaosTierOf = ChaosTierOf or function() return "normal" end
+	ok = AQ.testerProof(t)
+	eq(ok, true, "credit: the proof completes through its own rule"); eq(store[K.stage], STAGE.TRIAL, "credit: the Trial is open"); assert(store[K.proof] >= cfg.proof.needed, "credit: the points")
+	eq(AQ.probe(t).stage, STAGE.TRIAL, "probe: the stage after the credit"); eq(AQ.probe(t).proof >= cfg.proof.needed, true)
+	-- the reserve: a tester keeps chambers free for the players, a player does not
+	ChaosTesters = {soloRefusal = function(players, free, reserve) if free - 1 < reserve then return "The chambers are kept for the players." end end}
+	store[K.stage], store[K.cooldown] = STAGE.TRIAL, 0
+	for i = 1, cfg.trial.limits.maxRuns - 1 do AQ.trials[1000 + i] = {over = true} end
+	local okE, text = AQ.enterTrial(t)
+	eq(okE, false, "reserve: a tester is refused with one chamber free"); assert(text:find("kept for the players"), tostring(text))
+	for i = 1, cfg.trial.limits.maxRuns - 1 do AQ.trials[1000 + i] = nil end
+	eq(AQ.probe(t).inside, false, "probe: not inside after a refusal")
+	eq(AQ.testerClose(t), false, "close: no trial of its own, nothing to close")
+	-- no broadcast for a tester's ascension; a player's is told
+	store[K.stage] = STAGE.CHOICE
+	local done, reason = ChaosAscension.ascend(t, pr.choices[2].word)
+	eq(done, true, "ascend: a tester takes an open class: " .. tostring(reason)); eq(#broadcasts, 0, "ascend: no broadcast naming a tester")
+	eq(applied[#applied], pr.choices[2].id, "ascend: the vocation changed"); eq(store[K.stage], STAGE.DONE)
+	local pl = who(4, 100, false)
+	local stage0 = store[K.stage]
+	store[K.stage] = STAGE.CHOICE
+	done = ChaosAscension.ascend(pl, pr.choices[2].word)
+	eq(done, true, "ascend: a player takes an open class"); eq(#broadcasts, 1, "ascend: a player's ascension is broadcast"); eq(broadcasts[1], "Ana Asc")
+	store[K.stage] = STAGE.CHOICE
+	local locked, lockText = ChaosAscension.ascend(who(4, 100, true), "berserker")
+	eq(locked, false, "ascend: a locked class is refused for a tester too"); assert(lockText:find("locked"), tostring(lockText))
+	Tile, Vocation, Game.getSpectators, ChaosClasses, Chaos.broadcast, ChaosClassUnlocks, ChaosTesters = savedTile, savedVoc, savedGame, savedClasses, savedB, savedUnlocks, nil
+end
+
 print("ascension_quest_test: OK")

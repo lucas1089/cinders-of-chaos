@@ -2794,6 +2794,93 @@ do
 	ITEM_TYPE_TELEPORT, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE_DOWN, ChaosPoi = saved[1], saved[2], saved[3], saved[4]
 end
 
+-- ------------------------------------------------------------------ O655: `!tester ascend` and `!tester gather`
+do
+	local H = ChaosTesterHelperCore
+	for _, c in ipairs({"ascend", "gather"}) do
+		check(H.COMMANDS[c] and H.parseCommand(c .. " state #1") == c, c .. " is a registered command")
+	end
+	eq(H.parseAscend(nil), "state", "ascend: no word is state")
+	eq(H.parseAscend("PROOF"), "proof", "ascend: proof (any case)")
+	eq(H.parseAscend("close"), "close", "ascend: close")
+	check(H.parseAscend("win") == nil and select(2, H.parseAscend("win")) == "usage: ascend [state | proof | path | close]", "ascend: the usage")
+	check(H.parseAscend("proof now") == nil, "ascend: a word takes no argument")
+	eq(H.parseGather("path"), "path", "gather: path")
+	check(H.parseGather("sell") == nil and select(2, H.parseGather("sell")) == "usage: gather [state | path]", "gather: the usage")
+	local realAQ, realPF = ChaosAscensionQuest, ChaosProfessions
+	local lastOf = function(p) return p.log.msgs[#p.log.msgs] end
+	local t = creature(268435560, "Tester Asc", {store = {[ST] = 1}})
+	t.pos = {x = 60, y = 60, z = 7}
+	t.getPathTo = function(self, pos, minD, maxD)
+		t.pathAsked = {pos = pos, minD = minD, maxD = maxD}
+		return {2, 2, 3}
+	end
+	local credited, closed = 0, 0
+	local inside = false
+	ChaosAscensionQuest = {probe = function(p)
+		local out = {enabled = true, level = 100, minLevel = 100, stage = credited > 0 and 2 or 1, proof = credited > 0 and 10 or 0, needed = 10, eligible = true,
+			ascended = false, oracle = true, wait = 0, free = 8, reserve = 2, tester = true, vocName = "Warrior",
+			choices = {{i = 1, word = "berserker", id = 14, name = "Berserker", allowed = false, why = "locked", junk = 1}, {i = 2, word = "paladin", id = 15, name = "Paladin Lord", allowed = true}}}
+		if inside then
+			out.inside = true
+			out.run = {state = "fight", boss = "alive", bossHp = 80, adds = 1, players = 1, testers = 1, tester = true, kind = "Warden of Iron"}
+			out.guide = {mode = "walk", goal = {x = 90, y = 91, z = 7}, reach = {1, 5}, area = "boss"}
+		end
+		return out
+	end, testerProof = function(p)
+		if credited > 0 then return nil, "the Proof of Strength is not open (stage 2)" end
+		credited = credited + 1
+		return true
+	end, testerClose = function() closed = closed + 1 inside = false return true end}
+	talks["!tester"].onSay(t, "!tester", "ascend #300")
+	local l = lastOf(t)
+	check(l:find('"stage":1', 1, true) and l:find('"seq":300', 1, true) and l:find('"vocName":"Warrior"', 1, true) and l:find('"allowed":false', 1, true),
+		"ascend state: the stage and the choices with the class lock: " .. l)
+	talks["!tester"].onSay(t, "!tester", "ascend proof #301")
+	check(credited == 1 and lastOf(t):find('"proofed":true', 1, true) and lastOf(t):find('"stage":2', 1, true), "ascend proof: the credit, then the record")
+	talks["!tester"].onSay(t, "!tester", "ascend proof #302")
+	check(lastOf(t):find("not open", 1, true) and credited == 1, "ascend proof: the reason of the refusal")
+	talks["!tester"].onSay(t, "!tester", "ascend path #303")
+	check(lastOf(t):find('"err":"no goal"', 1, true), "ascend path outside the trial: no goal")
+	inside = true
+	talks["!tester"].onSay(t, "!tester", "ascend path #304")
+	check(lastOf(t):find('"path":[2,2,3]', 1, true) and t.pathAsked.pos.x == 90 and t.pathAsked.maxD == 5, "ascend path: on foot to the guardian, within reach")
+	check(lastOf(t):find('"bossHp":80', 1, true) and lastOf(t):find('"adds":1', 1, true) and lastOf(t):find('"testers":1', 1, true), "ascend: the guardian, its adds, the run's players")
+	talks["!tester"].onSay(t, "!tester", "ascend close #305")
+	check(closed == 1 and lastOf(t):find('"closed":true', 1, true) and lastOf(t):find('"inside"', 1, true) == nil, "ascend close: the bot's own trial ends")
+	talks["!tester"].onSay(t, "!tester", "ascend kill #306")
+	check(lastOf(t):find("usage: ascend", 1, true), "ascend: an unknown word")
+	ChaosAscensionQuest = nil
+	talks["!tester"].onSay(t, "!tester", "ascend #307")
+	check(lastOf(t):find("no ascension quest", 1, true), "ascend: no system, the reason")
+	ChaosAscensionQuest = realAQ
+	-- gather
+	ChaosProfessions = {probe = function(p)
+		return {enabled = true, level = 100, minLevel = 20, levelOk = true, tools = {delving = true, wortcunning = false}, held = 2, gathering = false, bank = 900,
+			buy = {{id = 2553, clientId = 2553, price = 50}},
+			node = {prof = "delving", tier = 2, id = 100, clientId = 4000, pos = {x = 70, y = 71, z = 7}, stackpos = 1, d = 12},
+			guide = {mode = "walk", goal = {x = 70, y = 71, z = 7}, reach = {1, 1}, area = "mine", why = "to the nearest delving node"}}
+	end}
+	talks["!tester"].onSay(t, "!tester", "gather #310")
+	l = lastOf(t)
+	check(l:find('"clientId":4000', 1, true) and l:find('"stackpos":1', 1, true) and l:find('"delving":true', 1, true) and l:find('"held":2', 1, true) and l:find('"seq":310', 1, true),
+		"gather state: the tools, the node's client id and stack position: " .. l)
+	talks["!tester"].onSay(t, "!tester", "gather path #311")
+	check(lastOf(t):find('"path":[2,2,3]', 1, true) and t.pathAsked.pos.x == 70 and t.pathAsked.minD == 1 and t.pathAsked.maxD == 1, "gather path: on foot next to the node")
+	talks["!tester"].onSay(t, "!tester", "gather sell #312")
+	check(lastOf(t):find("usage: gather", 1, true), "gather: an unknown word")
+	ChaosProfessions = nil
+	talks["!tester"].onSay(t, "!tester", "gather #313")
+	check(lastOf(t):find("no professions", 1, true), "gather: no system, the reason")
+	ChaosProfessions = realPF
+	-- a player's words go on and get no answer
+	local civ = creature(268435561, "Ana Ascend", {store = {}})
+	local n = #civ.log.msgs
+	check(talks["!tester"].onSay(civ, "!tester", "ascend proof #1") == true and talks["!tester"].onSay(civ, "!tester", "gather #2") == true and #civ.log.msgs == n,
+		"ascend / gather: a player's words go on and get no answer")
+	check(HELPER_VERSION >= 20, "the helper is version 20 or later (O655: a new command)")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

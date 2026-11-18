@@ -7147,5 +7147,562 @@ class WaystoneMapWalk(unittest.TestCase):
         self.assertIn('only 0 of 3', r.detail)
 
 
+# ------------------------------------------------------------------------------------------------ O655: ascension, spells, tales, tasks, gathering, settings
+class AscWorld:
+    """the Oracle, the Proof, the Trial and the Choice of one base class tester: words, modal windows and the helper's `ascend` answers"""
+
+    def __init__(self, stage=0, voc=4, locked=(), free=8, reserve=2, wait=0, no_trial_window=False, trial_never_opens=False, grant_locked=False,
+                 enter_stays=False, level=100, deadly=False):
+        self.stage, self.voc, self.ascended, self.inside, self.looks = stage, voc, False, False, 0
+        self.locked, self.free, self.reserve, self.wait = set(locked), free, reserve, wait
+        self.no_trial_window, self.trial_never_opens, self.grant_locked = no_trial_window, trial_never_opens, grant_locked
+        self.enter_stays, self.level, self.deadly = enter_stays, level, False
+        self.choices = [{'i': 1, 'word': 'berserker', 'id': 14, 'name': 'Berserker'}, {'i': 2, 'word': 'paladin', 'id': 15, 'name': 'Paladin Lord'}]
+        self.said, self.answers = [], []
+        self.cooldown_after_fail = deadly
+
+    def probe(self, **extra):
+        out = {'enabled': True, 'level': self.level, 'minLevel': 100, 'voc': self.voc, 'vocName': {4: 'Warrior', 14: 'Berserker', 15: 'Paladin Lord'}[self.voc],
+               'eligible': not self.ascended, 'ascended': self.ascended, 'stage': self.stage, 'wait': self.wait, 'needed': 10, 'proof': 10 if self.stage >= 2 else 0,
+               'inside': self.inside, 'free': self.free, 'reserve': self.reserve, 'tester': True, 'pos': {'x': 5, 'y': 5, 'z': 7},
+               'choices': [dict(c, allowed=c['id'] not in self.locked) for c in self.choices]}
+        if self.ascended:
+            out['why'] = 'ascended'
+        if self.inside:
+            hp = max(0, 100 - 40 * self.looks)
+            out['run'] = {'state': 'fight', 'boss': 'alive', 'bossHp': hp, 'adds': 0, 'players': 1, 'testers': 1, 'tester': True}
+            out['guide'] = {'mode': 'fight', 'goal': {'x': 6, 'y': 5, 'z': 7}, 'area': 'boss'}
+        out.update(extra)
+        return out
+
+    def answer(self, command):
+        if command == 'path npc Ascendant Oracle':
+            return {'here': True}
+        if command == 'ascend proof':
+            if self.stage != 1:
+                return {'err': 'the Proof of Strength is not open (stage %d)' % self.stage}
+            self.stage = 2
+            return self.probe(proofed=True)
+        if command == 'ascend close':
+            return self.probe(closed=False)
+        if command == 'ascend state':
+            if self.inside:
+                self.looks += 1
+                if self.looks >= 3 and not self.trial_never_opens:
+                    self.inside, self.stage = False, 3
+            return self.probe()
+        return None
+
+
+class AscIO(FakeIO):
+    def __init__(self, world, **kw):
+        super().__init__(**kw)
+        self.w, self.modes, self.cmds, self.looted = world, [], [], 0
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        return self.w.answer(command)
+
+    async def go(self, place):
+        self.moves.append(place)
+        return True
+
+    async def said_and_heard(self, text, wait=1.5):
+        w = self.w
+        w.said.append(text)
+        if text == 'ascension' and w.stage == 0:
+            w.stage = 1
+        return []
+
+    async def say_modal(self, text, ids, wait=5.0):
+        w = self.w
+        if text == 'trial' and w.stage == 2 and not w.no_trial_window:
+            return {'id': 7101, 'title': 'The Trial of Ascension', 'message': 'm', 'buttons': [(1, 'Enter'), (2, 'Not yet')], 'choices': [], 'escape': 2, 'enter': 1}, []
+        if text == 'choice' and w.stage == 3:
+            return {'id': 7102, 'title': 'The Choice', 'message': 'm', 'buttons': [(1, 'Choose'), (2, 'Not yet')],
+                    'choices': [(1, 'Berserker'), (2, 'Paladin Lord')], 'escape': 2, 'enter': 1}, []
+        return None, ['You are not ready.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        w = self.w
+        w.answers.append((window_id, button, choice))
+        if window_id == 7101 and button == 1:
+            w.inside, w.looks = True, 0
+            return None, []
+        if window_id == 7102:
+            c = w.choices[choice - 1]
+            return {'id': 7110 + c['id'], 'title': 'Ascend?', 'message': 'm', 'buttons': [(1, 'Ascend'), (2, 'Cancel')], 'choices': [], 'escape': 2, 'enter': 1}, []
+        if window_id > 7110 and button == 1:
+            vid = window_id - 7110
+            if vid in w.locked and not w.grant_locked:
+                return None, ['That class is locked. Unlock it in the store.']
+            w.voc, w.ascended, w.stage = vid, True, 4
+            return None, ['You have ascended.']
+        return None, []
+
+    async def step(self, dx, dy):
+        pass
+
+    async def loot(self):
+        self.looted += 1
+
+    def raid_mode(self, names, on, keep_flee=False):
+        self.modes.append((list(names), on, keep_flee))
+
+
+class AscensionWalk(unittest.TestCase):
+    def setUp(self):
+        self.keep = (TX.ASC_TRIAL_BUDGET, TX.ASC_ENTER_WAIT, TX.ASC_BACK_WAIT)
+
+    def tearDown(self):
+        TX.ASC_TRIAL_BUDGET, TX.ASC_ENTER_WAIT, TX.ASC_BACK_WAIT = self.keep
+
+    def play(self, **kw):
+        w = AscWorld(**kw)
+        io = AscIO(w)
+        return run(TX.check_ascension_walk(io, 'Tester Asc', 'Warrior', w.level)), io, w
+
+    def test_the_whole_quest_with_a_locked_class(self):
+        r, io, w = self.play(locked=(14,))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('steps: calling, proof, trial, locked, choice', r.detail)
+        self.assertIn('the class lock refused Berserker', r.detail)
+        self.assertIn('Warrior became Paladin Lord', r.detail)
+        self.assertEqual((w.voc, w.stage, w.ascended), (15, 4, True))
+        self.assertEqual(w.answers[0], (7101, 1, 0), 'Enter pressed in the trial window')
+        self.assertIn((7102, 1, 1), w.answers, 'the locked class was chosen first, in the window\'s own order')
+        self.assertIn((7102, 1, 2), w.answers)
+        self.assertEqual(w.said.count('ascension'), 1)
+        self.assertIn('ascend proof', io.cmds)
+        self.assertEqual(io.cmds.count('ascend close') >= 2, True, 'the bot\'s own trial is closed after the play and in the finally')
+        self.assertEqual(io.modes[0][1:], (True, True))
+        self.assertEqual(io.modes[-1][1], False)
+        self.assertEqual(io.moves[-1], 'hunt')
+
+    def test_an_open_line_walks_to_the_first_class(self):
+        r, io, w = self.play()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('locked', r.detail.split(';')[0])
+        self.assertEqual((w.voc, w.ascended), (14, True))
+
+    def test_a_locked_class_that_is_granted_is_a_bug(self):
+        r, _, w = self.play(locked=(14,), grant_locked=True)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('is locked for the account and the Oracle ascended the bot to it', r.detail)
+
+    def test_every_class_locked_proves_the_refusal_only(self):
+        r, _, w = self.play(locked=(14, 15))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('locked', r.detail)
+        self.assertIn('every class of the line is locked', r.detail)
+        self.assertEqual((w.voc, w.stage), (4, 3))
+
+    def test_the_stages_are_resumed(self):
+        r, io, w = self.play(stage=2)
+        self.assertEqual(r.status, TX.PASS)
+        self.assertIn('steps: trial, choice', r.detail)
+        self.assertNotIn('ascend proof', io.cmds)
+        r, io, w = self.play(stage=3)
+        self.assertIn('steps: choice', r.detail)
+
+    def test_the_stops_and_the_skips(self):
+        r, _, _ = self.play(stage=2, wait=300)
+        self.assertEqual((r.status, 'closed for 300 s' in r.detail), (TX.SKIP, True))
+        r, _, _ = self.play(stage=2, free=2)
+        self.assertEqual((r.status, 'kept for the players' in r.detail), (TX.SKIP, True))
+        r, _, _ = self.play(stage=2, no_trial_window=True)
+        self.assertEqual((r.status, 'opened no trial window' in r.detail), (TX.SKIP, True))
+        TX.ASC_TRIAL_BUDGET = 6.0
+        r, _, w = self.play(stage=2, trial_never_opens=True)
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('not broken', r.detail)
+
+    def test_the_refusals(self):
+        self.assertEqual(TX.ascension_refusal(None)[0], TX.SKIP)
+        self.assertEqual(TX.ascension_refusal({'err': 'no ascension quest'})[1], 'no ascension quest')
+        self.assertIn('level 50', TX.ascension_refusal({'enabled': True, 'eligible': False, 'why': 'level', 'level': 50, 'minLevel': 100})[1])
+        self.assertIn('ascended class already', TX.ascension_refusal({'enabled': True, 'ascended': True, 'vocName': 'Berserker'})[1])
+        self.assertIn('no ascension', TX.ascension_refusal({'enabled': True, 'eligible': False, 'why': 'noline'})[1])
+        self.assertIn('done already', TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 4})[1])
+        self.assertIn('inside a trial', TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 2, 'inside': True})[1])
+        self.assertIsNone(TX.ascension_refusal({'enabled': True, 'eligible': True, 'stage': 0}))
+        for a in ({'enabled': False}, ):
+            self.assertEqual(TX.ascension_refusal(a)[0], TX.SKIP)
+        self.assertEqual(run(TX.check_ascension_walk(FakeIO(), 'a', 'Warrior', 100)).status, TX.SKIP)
+
+    def test_the_choice_plan_and_the_verdicts(self):
+        locked, allowed = TX.asc_choice_plan([{'i': 1, 'id': 14, 'allowed': False}, {'i': 2, 'id': 15, 'allowed': True}, {'bad': 1}])
+        self.assertEqual(([c['id'] for c in locked], [c['id'] for c in allowed]), ([14], [15]))
+        self.assertEqual(TX.asc_choice_plan(None), ([], []))
+        self.assertEqual(TX.ascension_verdict({'faults': ['x']})[0], TX.FAIL)
+        self.assertEqual(TX.ascension_verdict({'done': [], 'why': 'nothing'})[0], TX.SKIP)
+        st, text = TX.ascension_verdict({'done': ['calling'], 'why': 'no proof', 'fallbacks': ['enter npc']})
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('(stopped: no proof)', text)
+        self.assertIn('enter npc', text)
+
+    def test_it_runs_last_and_is_an_open_check(self):
+        self.assertIn('ascension_walk', TX.KEYS)
+        self.assertNotIn('ascension_walk', TX.CLOSED_KEYS)
+        self.assertEqual(TX.KEYS[-1], 'ascension_walk', 'the class changes: after every other check')
+        self.assertLess(TX.KEYS.index('rift_walk'), TX.KEYS.index('ascension_walk'))
+
+
+class SpellIO(FakeIO):
+    def __init__(self, spells, replies_by_words=None, **kw):
+        super().__init__(**kw)
+        self.list, self.by_words, self.cast = spells, replies_by_words or {}, []
+
+    def class_spells(self):
+        return self.list
+
+    async def said_and_heard(self, text, wait=1.5):
+        self.cast.append(text)
+        return self.by_words.get(text, [])
+
+
+def spell(words, group='support', level=8, **kw):
+    return dict({'words': words, 'name': words, 'group': group, 'level': level, 'needlearn': False, 'params': False, 'needtarget': False}, **kw)
+
+
+class SpellSupport(unittest.TestCase):
+    LIST = [spell('utani hur'), spell('exura', 'healing', 1), spell('exori', 'attack', 1), spell('utevo res', params=True), spell('exeta', needtarget=True),
+            spell('vok aeg', 'attack', 10, needlearn=True, needtarget=True), spell('far', level=900)]
+
+    def go(self, io, level=50):
+        return run(TX.check_spell_support(io, 'Tester Spl', 'Ninja', level))
+
+    def test_the_pick(self):
+        self.assertEqual([s['words'] for s in TX.spell_support_pick(self.LIST, 50)], ['utani hur', 'exura'], 'no attack, parameter, target, learning or level')
+        self.assertEqual(len(TX.spell_support_pick([spell('w%d' % i, level=i) for i in range(1, 20)], 50, 3)), 3)
+        self.assertEqual([s['words'] for s in TX.spell_learn_pick(self.LIST, 50)], ['vok aeg'])
+        self.assertEqual(TX.spell_learn_pick(self.LIST, 5), [])
+        self.assertEqual(TX.spell_support_pick([spell('a'), spell('a')], 50), [spell('a')], 'one row per words')
+
+    def test_the_refusal_kinds(self):
+        for text, kind in (('You must learn this spell first.', 'unknown'), ('Your vocation cannot use this spell.', 'vocation'), ('You need a premium account.', 'premium'),
+                           ('You do not have enough level.', 'level'), ('You do not have enough mana.', 'mana'), ('You are exhausted.', 'exhausted')):
+            self.assertEqual(TX.spell_refusal([text]), kind)
+        self.assertIsNone(TX.spell_refusal(['You see a rat.']))
+        self.assertIsNone(TX.spell_refusal([]))
+
+    def test_the_support_spells_are_cast_and_the_learned_one_is_refused(self):
+        io = SpellIO(self.LIST, {'vok aeg': ['You must learn this spell first.']})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.cast, ['utani hur', 'exura', 'vok aeg'])
+        self.assertIn('2 of 2 support spell(s) cast with no refusal', r.detail)
+        self.assertIn('1 of 1 learned-spell(s) refused', r.detail)
+
+    def test_a_listed_spell_that_is_refused_is_a_bug(self):
+        for text, kind in (('You must learn this spell first.', 'unknown'), ('Your vocation cannot use this spell.', 'vocation')):
+            r = self.go(SpellIO(self.LIST, {'utani hur': [text]}))
+            self.assertEqual(r.status, TX.FAIL)
+            self.assertIn('utani hur (%s)' % kind, r.detail)
+
+    def test_mana_holds_a_cast_back_and_silence_on_a_learned_spell_is_a_note(self):
+        r = self.go(SpellIO(self.LIST, {'exura': ['You do not have enough mana.']}))
+        self.assertEqual((r.status, '1 held back by mana' in r.detail, '1 cast without a word' in r.detail), (TX.PASS, True, True))
+        r = self.go(SpellIO(self.LIST, {'utani hur': ['You are exhausted.'], 'exura': ['You do not have enough mana.']}))
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_skips(self):
+        self.assertEqual(self.go(SpellIO([])).status, TX.SKIP)
+        self.assertEqual(self.go(SpellIO([spell('exori', 'attack', 1)])).status, TX.SKIP)
+        self.assertIn('spell_support', TX.KEYS)
+
+
+class TalesIO(FakeIO):
+    def __init__(self, listing, tale=None, answers=None):
+        super().__init__(answers=dict({'path npc Archivist Maelis': {'here': True}}, **(answers or {})))
+        self.listing, self.tale, self.pressed = listing, tale, []
+
+    async def say_modal(self, text, ids, wait=5.0):
+        return self.listing, ['She looks up.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        self.pressed.append((window_id, button, choice))
+        return (self.tale if window_id == 7170 and 7171 in ids else None), []
+
+
+def tales_window(choices=((1, 'The Hollow Road'),), buttons=((1, 'Read'), (2, 'Close')), title='Tales of the Ash'):
+    return {'id': 7170, 'title': title, 'message': 'pick', 'buttons': list(buttons), 'choices': list(choices), 'escape': 2, 'enter': 1}
+
+
+class TalesRead(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_tales_read(io, 'Tester Tal', 'Ninja', 300))
+
+    def test_read_opens_a_tale_and_the_windows_close(self):
+        tale = {'id': 7171, 'title': 'The Hollow Road', 'message': 'Once...', 'buttons': [(2, 'Close')], 'choices': [], 'escape': 2, 'enter': 2}
+        io = TalesIO(tales_window(), tale)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Read opened "The Hollow Road"', r.detail)
+        self.assertEqual(io.pressed[0], (7170, 1, 1), 'Read with the first tale')
+        self.assertEqual(io.pressed[1], (7171, 2, 255), 'the tale closed with its escape button')
+        self.assertEqual(io.pressed[2][:2], (7170, 2), 'the list closed')
+
+    def test_the_bugs_and_the_skips(self):
+        self.assertEqual((self.go(TalesIO(tales_window(), None)).status), TX.FAIL)
+        self.assertIn('no tale window came', self.go(TalesIO(tales_window(), None)).detail)
+        r = self.go(TalesIO(tales_window(buttons=((1, 'Go'),)), None))
+        self.assertEqual((r.status, 'not Read and Close' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(TalesIO(tales_window(title=''), None)).status, TX.FAIL)
+        r = self.go(TalesIO(tales_window(choices=()), None))
+        self.assertEqual((r.status, 'no tale open' in r.detail), (TX.PASS, True))
+        r = self.go(TalesIO(None))
+        self.assertEqual((r.status, 'opened no list of tales' in r.detail, 'She looks up' in r.detail), (TX.SKIP, True, True))
+        tale = {'id': 7171, 'title': '', 'message': '', 'buttons': [], 'choices': [], 'escape': 0, 'enter': 0}
+        self.assertEqual(self.go(TalesIO(tales_window(), tale)).status, TX.FAIL)
+        io = TalesIO(None, answers={'path npc Archivist Maelis': {'err': 'no way'}})
+        io.answers['enter npc Archivist Maelis'] = {'err': 'no npc'}
+        self.assertEqual(run(TX.check_tales_read(io, 'a', 'Ninja', 300)).status, TX.SKIP)
+
+
+class KillTaskIO(ChoreIO):
+    pass
+
+
+def board(offers=(), tasks=()):
+    return {'action': 'board', 'data': {'offers': list(offers), 'tasks': list(tasks)}}
+
+
+class KillTask(unittest.TestCase):
+    def go(self, io, level=300):
+        return run(TX.check_kill_task(io, 'Tester Kil', 'Ninja', level))
+
+    OFFERS = [{'key': 'fam:bug:1', 'kind': 'family', 'state': 'done', 'required': 5, 'lo': 1, 'hi': 50},
+              {'key': 'fam:rat:2', 'kind': 'family', 'state': 'open', 'required': 40, 'lo': 250, 'hi': 350, 'label': 'rats'},
+              {'key': 'hunt:troll', 'kind': 'hunt', 'state': 'open', 'required': 20, 'lo': 10, 'hi': 20, 'label': 'trolls'},
+              {'key': 'fam:ant:3', 'kind': 'family', 'state': 'open', 'required': 30, 'lo': 200, 'hi': 400, 'label': 'ants'}]
+
+    def test_accept_listed_active_abandon(self):
+        held = {'key': 'fam:ant:3', 'required': 30, 'progress': 0}
+        io = KillTaskIO({('bestiary', 'board'): board(self.OFFERS),
+                         ('bestiary', 'accept'): board([dict(o, state='active') if o['key'] == 'fam:ant:3' else o for o in self.OFFERS], [held]),
+                         ('bestiary', 'abandon'): board(self.OFFERS)})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('bestiary', 'accept', {'key': 'fam:ant:3'}), io.asked, 'an open offer whose level window holds the bot, the fewest kills')
+        self.assertEqual(io.asked[-1][:2], ('bestiary', 'abandon'))
+
+    def test_the_bugs(self):
+        held = {'key': 'fam:ant:3', 'required': 30, 'progress': 0}
+        act = [dict(o, state='active') if o['key'] == 'fam:ant:3' else o for o in self.OFFERS]
+        active = board(act, [held])
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): active, ('bestiary', 'abandon'): active}))
+        self.assertEqual((r.status, 'still in the active list' in r.detail), (TX.FAIL, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(self.OFFERS, [dict(held, progress=4)]),
+                                ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'shows 4 of 30' in r.detail), (TX.FAIL, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(self.OFFERS), ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'did not take' in r.detail), (TX.SKIP, True))
+        r = self.go(KillTaskIO({('bestiary', 'board'): board(self.OFFERS), ('bestiary', 'accept'): board(
+            [dict(o, state='open') for o in self.OFFERS], [held]), ('bestiary', 'abandon'): board(self.OFFERS)}))
+        self.assertEqual((r.status, 'not active' in r.detail), (TX.FAIL, True))
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(KillTaskIO()).status, TX.SKIP)
+        r = self.go(KillTaskIO({('bestiary', 'board'): board([dict(self.OFFERS[0])])}))
+        self.assertEqual((r.status, 'no open kill task' in r.detail), (TX.SKIP, True))
+        self.assertIsNone(TX.kill_task_pick(None, 10))
+
+
+class GatherIO(ChoreIO):
+    def __init__(self, probes, shop=None):
+        super().__init__()
+        self.probes, self.used, self.bought, self.shop_items = list(probes), [], [], shop
+        self.answers['path npc Material Broker'] = {'here': True}
+
+    async def helper(self, command, kind, wait=4.0):
+        if command == 'gather state':
+            return self.probes.pop(0) if len(self.probes) > 1 else self.probes[0]
+        if command == 'gather path':
+            return {'here': True, 'dist': 0}
+        return self.answers.get(command)
+
+    async def shop_window(self, npc, wait=5.0):
+        return self.shop_items
+
+    def shop_close(self):
+        pass
+
+    async def buy(self, item_id, amount=1):
+        self.bought.append(item_id)
+
+    async def use_at(self, pos, client_id, stackpos=0, wait=1.5):
+        self.used.append((pos, client_id, stackpos))
+        return list(self.texts)
+
+    texts = []
+
+    async def step(self, dx, dy):
+        pass
+
+    def raid_mode(self, names, on, keep_flee=False):
+        pass
+
+
+def gprobe(held=0, tools=True, node=True, gathering=False, d=0, **kw):
+    out = {'enabled': True, 'levelOk': True, 'level': 100, 'minLevel': 20, 'held': held, 'gathering': gathering, 'bank': 500,
+           'tools': {'delving': tools, 'wortcunning': False}, 'buy': [{'id': 2553, 'clientId': 2553, 'price': 50}, {'id': 2405, 'clientId': 2405, 'price': 20}, {'id': 5908, 'clientId': 5908, 'price': 600}]}
+    if node:
+        out['node'] = {'prof': 'delving', 'tier': 2, 'id': 100, 'clientId': 4000, 'pos': {'x': 9, 'y': 9, 'z': 7}, 'stackpos': 1, 'd': d}
+    out.update(kw)
+    return out
+
+
+class GatherWalk(unittest.TestCase):
+    def go(self, io, level=100):
+        return run(TX.check_gather_walk(io, 'Tester Gat', 'Ninja', level))
+
+    def test_the_node_is_used_and_the_material_comes(self):
+        io = GatherIO([gprobe(0), gprobe(0), gprobe(0), gprobe(3, gathering=True)])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('gathered 3 material(s) from a delving node of tier 2', r.detail)
+        self.assertEqual(io.used[0], ({'x': 9, 'y': 9, 'z': 7}, 4000, 1))
+        self.assertEqual(io.bought, [], 'the bot has a pick: nothing to buy')
+
+    def test_a_bot_without_a_tool_buys_the_cheapest_at_the_broker(self):
+        io = GatherIO([gprobe(0, tools=False, node=False), gprobe(0), gprobe(0), gprobe(0), gprobe(2)], shop=[{'id': 2405, 'name': 'sickle', 'buy': 20}, {'id': 2553, 'name': 'pick', 'buy': 50}])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.bought, [2405], 'the sickle: the cheapest')
+        io = GatherIO([gprobe(0, tools=False, node=False)], shop=[{'id': 2405, 'name': 'sickle', 'buy': 20}])
+        r = self.go(io)
+        self.assertEqual((r.status, 'holds no pick or sickle' in r.detail), (TX.FAIL, True))
+        r = self.go(GatherIO([gprobe(0, tools=False, node=False)], shop=None))
+        self.assertEqual((r.status, 'no window' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, tools=False, node=False, bank=5)], shop=[]))
+        self.assertEqual((r.status, 'gold in the bank' in r.detail), (TX.SKIP, True))
+
+    def test_the_verdicts(self):
+        a, b = gprobe(0), gprobe(0)
+        self.assertEqual(TX.gather_verdict(a, gprobe(2), False, [])[0], TX.PASS)
+        self.assertEqual(TX.gather_verdict(a, b, True, [])[0], TX.SKIP)
+        st, text = TX.gather_verdict(a, b, False, ['Stand next to it.'])
+        self.assertEqual((st, 'Stand next to it' in text), (TX.SKIP, True))
+        st, text = TX.gather_verdict(a, b, False, [])
+        self.assertEqual((st, 'no gather started' in text), (TX.FAIL, True))
+        self.assertEqual(TX.gather_verdict(a, None, False, [])[0], TX.SKIP)
+
+    def test_the_skips(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
+        self.assertEqual(self.go(GatherIO([{'err': 'no professions'}])).status, TX.SKIP)
+        r = self.go(GatherIO([gprobe(0, levelOk=False, level=5)]))
+        self.assertEqual((r.status, 'open at level 20' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, node=False, guide={'mode': 'wait', 'why': 'no node within 150 tiles'})]))
+        self.assertEqual((r.status, 'no node within' in r.detail), (TX.SKIP, True))
+        r = self.go(GatherIO([gprobe(0, d=5)]))
+        self.assertEqual((r.status, 'tiles from the node' in r.detail), (TX.SKIP, True))
+
+
+class SettingsIO(ChoreIO):
+    pass
+
+
+def settings(rules):
+    return {'action': 'settings', 'data': {'rules': rules}}
+
+
+class Settings(unittest.TestCase):
+    def test_pouch_rules_turn_over_and_back(self):
+        a = {'orbs': True, 'runes': False, 'minRarity': 2}
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False)), settings(a)]})
+        r = run(TX.check_pouch_rules(io, 'Tester Pou', 'Ninja', 100))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('rule orbs turned True and back', r.detail)
+        self.assertEqual(io.asked[1][2]['rules']['orbs'], False)
+        self.assertEqual(io.asked[2][2]['rules']['orbs'], True, 'put back')
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(a), settings(a)]})
+        self.assertEqual((run(TX.check_pouch_rules(io, 'a', 'Ninja', 1)).status), TX.FAIL)
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False, runes=True)), settings(a)]})
+        r = run(TX.check_pouch_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'changed runes as well' in r.detail), (TX.FAIL, True))
+        io = SettingsIO({('pouches', 'open'): settings(a), ('pouches', 'set'): [settings(dict(a, orbs=False)), settings(dict(a, orbs=False))]})
+        r = run(TX.check_pouch_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'put back' in r.detail), (TX.FAIL, True))
+        self.assertEqual(run(TX.check_pouch_rules(SettingsIO(), 'a', 'Ninja', 1)).status, TX.SKIP)
+        io = SettingsIO({('pouches', 'open'): settings(a)})
+        self.assertEqual(run(TX.check_pouch_rules(io, 'a', 'Ninja', 1)).status, TX.SKIP)
+        self.assertEqual(io.asked[-1][:2], ('pouches', 'set'), 'the rules are put back even when no answer came')
+
+    def test_the_auto_seller(self):
+        def a(paused, unlocked, notice=None):
+            return {'action': 'autoseller', 'data': {'paused': paused, 'unlocked': unlocked, 'notice': notice}}
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(False, False, 'Needs the Auto Seller (Store).')})
+        r = run(TX.check_autosell_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'locked for the bot' in r.detail), (TX.PASS, True))
+        self.assertEqual(sum(1 for x in io.asked if x[1] == 'aspause'), 1, 'a locked window is asked once')
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(True, False, 'x')})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(False, False), ('pouches', 'aspause'): a(False, False)})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): [a(False, True), a(True, True)]})
+        r = run(TX.check_autosell_rules(io, 'a', 'Ninja', 1))
+        self.assertEqual((r.status, 'switched on and back' in r.detail), (TX.PASS, True))
+        self.assertEqual([x[2] for x in io.asked if x[1] == 'aspause'], [{'on': True}, {'on': False}])
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): a(True, True)})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        io = SettingsIO({('pouches', 'as_open'): a(True, True), ('pouches', 'aspause'): [a(False, True), a(False, True)]})
+        self.assertEqual(run(TX.check_autosell_rules(io, 'a', 'Ninja', 1)).status, TX.FAIL)
+        self.assertEqual(run(TX.check_autosell_rules(SettingsIO(), 'a', 'Ninja', 1)).status, TX.SKIP)
+
+    def test_the_stash_window(self):
+        def m(**d):
+            return {'action': 'Stash', 'data': d}
+        tabs = m(make='tabs', tabs=[{'name': 'General', 'used': 3, 'size': 30}, {'name': 'Weapons', 'used': 0, 'size': 25}], canWithdraw=True, canDeposit=True)
+        r = TX.stash_verdict([m(make='addCategorys'), tabs, m(make='found', total=4)])
+        self.assertEqual((r[0], '2 tab(s)' in r[1], 'search found 4' in r[1]), (TX.PASS, True, True))
+        self.assertEqual(TX.stash_verdict([tabs])[0], TX.PASS)
+        self.assertEqual(TX.stash_verdict([m(make='found', total=1)])[0], TX.SKIP)
+        self.assertEqual(TX.stash_verdict([m(make='tabs', tabs=[])])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([m(make='tabs', tabs=[{'name': 'G', 'used': 31, 'size': 30}])])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([tabs, m(make='found', error='boom')])[0], TX.FAIL)
+        self.assertEqual(TX.stash_verdict([tabs, m(make='found', error='short')])[0], TX.PASS)
+        self.assertEqual(TX.stash_verdict(None)[0], TX.SKIP)
+
+        class CollectIO(FakeIO):
+            async def collect(self, opname, action, datas, wait=3.0):
+                self.asked.append((opname, action, datas))
+                return [tabs]
+        io = CollectIO()
+        r = run(TX.check_stash_window(io, 'a', 'Ninja', 1))
+        self.assertEqual(r.status, TX.PASS)
+        self.assertEqual([d['make'] for d in io.asked[0][2]], ['SendCategories', 'SendItems', 'Find'])
+
+    def test_the_gambler_reroll(self):
+        def stock(money, rerolls, ids, price=400):
+            return st({'w': 3, 'money': money, 'rerolls': rerolls, 'reroll': price, 'items': [{'i': i, 'id': 2400 + i, 'p': 10} for i in ids]})
+        ok = {'action': 'result', 'data': {'ok': True}}
+        io = ChoreIO({('gamble', 'open'): [stock(9000, 0, [1, 2]), stock(8600, 1, [5, 6])], ('gamble', 'reroll'): ok})
+        r = run(TX.check_gamble_reroll(io, 'Tester Gam', 'Ninja', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('for 400 gold', r.detail)
+        self.assertIn(('gamble', 'reroll', {'w': 3}), io.asked)
+        self.assertEqual(io.asked[-1][:2], ('gamble', 'close'))
+        for after, want in ((stock(9000, 1, [5, 6]), 'the money did not fall'), (stock(8600, 0, [5, 6]), 'the count went'), (stock(8600, 1, [1, 2]), 'the stock is the same')):
+            io = ChoreIO({('gamble', 'open'): [stock(9000, 0, [1, 2]), after], ('gamble', 'reroll'): ok})
+            r = run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300))
+            self.assertEqual((r.status, want in r.detail), (TX.FAIL, True), r.detail)
+        io = ChoreIO({('gamble', 'open'): stock(9000, 0, [1], price=None)})
+        self.assertIn('no more fresh crates', run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300)).detail)
+        io = ChoreIO({('gamble', 'open'): stock(5200, 0, [1])})
+        r = run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300))
+        self.assertEqual((r.status, 'keeps 5000 for supplies' in r.detail), (TX.SKIP, True))
+        self.assertNotIn('reroll', [a[1] for a in io.asked])
+        io = ChoreIO({('gamble', 'open'): stock(9000, 0, [1]), ('gamble', 'reroll'): {'action': 'result', 'data': {'ok': False, 'text': 'Fresh crates cost 400 gold.'}}})
+        self.assertEqual(run(TX.check_gamble_reroll(io, 'a', 'Ninja', 300)).status, TX.SKIP)
+        self.assertEqual(run(TX.check_gamble_reroll(ChoreIO(), 'a', 'Ninja', 300)).status, TX.SKIP)
+
+    def test_the_keys(self):
+        for k in ('spell_support', 'tales_read', 'kill_task', 'gather_walk', 'pouch_rules', 'autosell_rules', 'stash_window', 'gamble_reroll', 'ascension_walk'):
+            self.assertIn(k, TX.KEYS)
+            self.assertNotIn(k, TX.CLOSED_KEYS)
+        self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
+
+
 if __name__ == '__main__':
     unittest.main()

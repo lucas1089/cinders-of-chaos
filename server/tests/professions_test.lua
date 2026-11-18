@@ -505,6 +505,14 @@ local function newTile(x, y, z)
 	function t:hasProperty() return false end
 	function t:getItems() return self.items end
 	function t:getTopCreature() return nil end
+	function t:getThingIndex(thing)
+		for i, it in ipairs(self.items) do
+			if it == thing then
+				return i
+			end
+		end
+		return -1
+	end
 	function t:getItemById(id)
 		for _, it in ipairs(self.items) do
 			if it.id == id then
@@ -1000,6 +1008,57 @@ do
 	end
 	eq(inHunt, cfg.huntNodes.nodes.delving + cfg.huntNodes.nodes.wortcunning, "nodes placed in the base hunt")
 	ChaosHuntTeleports = nil
+end
+
+-- ------------------------------------------------------------------ O655: what a person sees (the tester bots' `!tester gather`)
+do
+	assert(P.probe, "the probe exists")
+	local g = newPlayer(41, 150, 500, 500)
+	events.ChaosProfessionsLogin.onLogin(g)
+	local pr = P.probe(g)
+	eq(pr.enabled, true, "probe: enabled"); eq(pr.levelOk, true, "probe: the level opens the professions"); eq(pr.minLevel, cfg.minLevel, "probe: the minimum level")
+	eq(pr.tools.delving, false, "probe: no pick"); eq(pr.tools.wortcunning, false, "probe: no sickle"); eq(pr.held, 0, "probe: no materials")
+	eq(pr.gathering, false, "probe: not gathering"); eq(pr.node, nil, "probe: no node without a tool")
+	eq(pr.guide.mode, "shop", "probe: buy a tool first"); assert(pr.guide.why:find("Material Broker"), "probe: the broker sells them")
+	local sold = {}
+	for _, t in ipairs(pr.buy) do sold[t.id] = t.price end
+	eq(sold[2553], 50, "probe: the pick's price"); eq(sold[2405], 20, "probe: the sickle's price")
+	check(pr.buy[1].clientId ~= 0, "probe: the client id of a tool for the buy packet")
+	g.inv[2553] = 1
+	pr = P.probe(g)
+	eq(pr.tools.delving, true, "probe: the pick is carried")
+	check(pr.node ~= nil, "probe: a node that is ready")
+	eq(pr.node.prof, "delving", "probe: a pick finds a delving node (a sickle's nodes are not offered)")
+	local nodeItem = Tile({x = pr.node.pos.x, y = pr.node.pos.y, z = pr.node.pos.z}):getItemById(pr.node.id)
+	check(nodeItem ~= nil, "probe: the node lies where the probe says")
+	eq(pr.node.stackpos, Tile(pr.node.pos):getThingIndex(nodeItem), "probe: the stack position of the use packet")
+	eq(pr.node.clientId, pr.node.id - 30000, "probe: the client id")
+	eq(pr.node.d, math.max(math.abs(pr.node.pos.x - 500), math.abs(pr.node.pos.y - 500)), "probe: the distance on the floor")
+	local nearest = pr.node.d
+	for _, nd in pairs(P.nodes) do
+		if nd.prof == "delving" and nd.pos.z == 7 then
+			check(math.max(math.abs(nd.pos.x - 500), math.abs(nd.pos.y - 500)) >= nearest, "probe: no delving node is nearer than " .. nearest)
+		end
+	end
+	if pr.node.d <= 1 then
+		eq(pr.guide.mode, "use", "probe: next to the node: use it")
+	else
+		eq(pr.guide.mode, "walk", "probe: to the node"); eq(pr.guide.reach[2], 1, "probe: next to it"); eq(pr.guide.goal.x, pr.node.pos.x)
+	end
+	-- a gathered node is on the bot's own cooldown: the next one is offered
+	local first = pr.node
+	g.pos = {x = first.pos.x, y = first.pos.y + 1, z = 7}
+	P.onTool(g, {getId = function() return 2553 end}, nodeItem, first.pos)
+	run(3500)
+	local after = P.probe(g)
+	check(after.held >= 1, "probe: the material is counted (" .. tostring(after.held) .. ")")
+	check(after.node == nil or after.node.pos.x ~= first.pos.x or after.node.pos.y ~= first.pos.y, "probe: the node on cooldown is not offered again")
+	-- under the level: the window is closed
+	local low = newPlayer(42, 5, 500, 500)
+	eq(P.probe(low).levelOk, false, "probe: under the professions' level")
+	-- another floor: no node on this floor
+	g.pos = {x = 500, y = 500, z = 8}
+	eq(P.probe(g).node, nil, "probe: no node on another floor"); eq(P.probe(g).guide.mode, "wait", "probe: wait")
 end
 
 print(string.format("professions_test: %d checks, %d failures", count, failures))

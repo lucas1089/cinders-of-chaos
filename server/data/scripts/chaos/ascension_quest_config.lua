@@ -58,6 +58,9 @@ return {
 		-- every 30 s; at most maxRuns trials at once (the grid's 8 rooms); a player who finds them all in use waits in
 		-- line and is told when one frees up. Solo: a logout ends it at once.
 		limits = {maxRuns = 8, waitlist = true},
+		-- tester bots (O655): a trial of a tester is refused while fewer than `reserve` of the `limits.maxRuns` chambers would stay free
+		-- (ChaosTesters.soloRefusal, as the Trials and the Ember Descent)
+		tester = {reserve = 2},
 		countdownSeconds = 3, -- the guardian appears after this
 		cooldownSeconds = 600, -- after a failed attempt
 		winExitSeconds = 6, -- after the victory, back to the Oracle
