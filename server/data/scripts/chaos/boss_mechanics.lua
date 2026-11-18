@@ -77,6 +77,22 @@ local function skyHeavy(name)
 	return ChaosLightningFx and ChaosLightningFx.boss(name) or name
 end
 
+-- O637: a telegraph or an adds phase that names a `pose` (a profile row of boss_mechanics_config.lua) plays the boss's attack as an
+-- effect that carries its body, so that it ends with the warning: the boss is hidden while it plays (data/lib/chaos_malgrath_fx.lua,
+-- client pair 74). Below the pair, or without the lib, nothing happens and the boss stands as it always did.
+local function pose(f, spec, warnMs)
+	if not (spec and spec.pose) then
+		return
+	end
+	if ChaosMalgrathFx == nil then
+		ChaosMalgrathFx = false
+		pcall(dofile, "data/lib/chaos_malgrath_fx.lua")
+	end
+	if ChaosMalgrathFx and ChaosMalgrathFx.live() then
+		pcall(ChaosMalgrathFx.pose, f.id, spec.pose, warnMs or 0)
+	end
+end
+
 -- an effect by name (chaos_vfx, pack and big ids), else the stock constant named `fallback`
 local function fx(pos, name, fallback, who)
 	if not pos then
@@ -320,6 +336,7 @@ local function spawnAdds(f, spec)
 	end
 	local n = G.addsCount(spec, f.st.players)
 	local hp = G.addsHealth(spec, f.st.players)
+	pose(f, spec, 0)
 	for _ = 1, n do
 		local m = spawnNamed(f, spec.type, spec.name, hp, boss:getPosition())
 		if m then
@@ -375,6 +392,7 @@ local function telegraph(f, spec, warnMs)
 		return
 	end
 	sendCast(f, spec.label, warnMs, "telegraph")
+	pose(f, spec, warnMs)
 	local id, token = f.id, f.token
 	-- the floor mark of game_telegraph (O549): the area once now, again when a follow circle moves; the sprite pulses below
 	-- go only to the players near it that do not have the module

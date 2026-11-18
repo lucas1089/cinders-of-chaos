@@ -212,6 +212,10 @@ return {
 		{key = "lair_talath", category = "lair", name = "Talath", monster = "Talath", minPair = 73, level = 650,
 			loc = "The Shard Hollow", note = "A rift in the Glacial Col of the Frostvein Reach",
 			pos = {x = 15880, y = 15517, z = 7}, radius = 24, rule = {type = "timer", seconds = 14400}},
+		-- O637: Malgrath, the Drowned Crown, a boss for a party of five at level 800; its lair opens from client pair 74
+		{key = "lair_malgrath", category = "lair", name = "Malgrath, the Drowned Crown", monster = "Malgrath, the Drowned Crown", minPair = 74,
+			level = 800, loc = "The Drowned Throne", note = "A tide on the Hollow Shelf of the Nightrend Abyss",
+			pos = {x = 16641, y = 16021, z = 11}, radius = 24, rule = {type = "timer", seconds = 14400}},
 
 		-- ------------------------------------------------------------------ rifts and omens (rift_config.lua)
 		{key = "rift_guardian", category = "omen", name = "Rift Guardian", loc = "Rift (instance)", level = 100,

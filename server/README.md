@@ -12003,6 +12003,7 @@ so are the monster tiers, the trash before a boss and moving out of telegraphs e
 | World bosses (group only) | 15-24M, heals 1,200-3,200/s | health / dps | 45:00 | solo 3-4 h or never (Vharok heals more than one player deals); 10 players 10:06-17:33; 20 players 4:56-8:12 | group content, as designed |
 | Raid bosses (5+) | 4.0-7.2M, +18% per raider over 5 | raid_core.lua K.killTime | enrage 9 / 10 / 11 / 11 / 16 min (was 8 / 8 / 8 / 8:30 / 13), session 150 min | 5 at 3,000: 6:26-11:36; 5 at 2,600: 7:26-13:23; 5 at 1,950: 9:55-17:51 | 5 at 2,600 finish 18-23% before the enrage; at 1,950 they meet it, and the five fights take about 63 of the session's 150 minutes |
 | Donor bosses (dormant) | 18-22M after, see "Monster lint" | health / dps | none | solo 3.6-4.4 h; 20 players 5:54-7:13 | before: never (heals above any damage) |
+| Malgrath, the Drowned Crown (5, level 800: 3,519 each) | 5.24M, heals 400/s | `boss_length_model.py` `ARENA_BOSSES`, `G.balance` | 15:00 | 6:00 (7:56 with the mechanics before the health factor 0.725) | party arena boss in its own lair from pair 74 (O637, "Malgrath, the Drowned Crown (O637)"); solo about 30 minutes |
 | Legendary Warrior (dormant) | 1.0M (was 7.0M) | health / dps | none | 7:45 (was 54:16) | a solo boss now |
 
 **The generated dungeons (the Hollow Vault and the deep dungeons 6-9): runs of 10-15 minutes** (owner, 2026-10-14; since
@@ -34724,6 +34725,71 @@ Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics 
   Fallback: `chaos-ctl.sh update-apply`. Nothing else to run. The lair is placed at any pair. It opens at pair 73.
 - **Pair 73**: the boss outfits 3527 to 3529 are built into pair 73 (O621, 2026-11-17, not yet published; client/MANIFEST.md "Pair 73, the real build"). The lair opens when the pair is shipped and `chaosClientPair` is 73.
 - **Not done**: not placed on a real map, not seen in a client. Talath has 21 million health: it is a group boss. No extra loot rule, no announcement.
+
+## Malgrath, the Drowned Crown (O637; `scripts/chaos/malgrath.lua`, `data/lib/chaos_malgrath_fx.lua`, `boss_mechanics_config.lua`, `bosslair_config.lua`, `tools/areaplan/rooms/drowned_throne.json`)
+
+Owner 2026-11-18, option 1 for the new boss pack: "an arena boss that always faces the front". Malgrath, the Drowned Crown is a crowned drowned
+king for a party of five at level 800, with a lair of its own built like Talath's. Its outfit 3530 and its eight attack effects 5326 to 5333 are client
+pair 74 (client/MANIFEST.md "Malgrath, the Drowned Crown (O637)"). Pair 74 is not built for real, so nothing of it opens yet.
+
+- **Numbers** (`malgrath_the_drowned_crown.xml`, `boss_length_model.py` `ARENA_BOSSES`): level band 700 to 900, the mechanics fair for level 800
+  (`fair.refLevel`, the Nightrend Abyss hunt is 785 to 900), the portal lets level 700 in. Health 5,240,000, experience 5,240,000 (one per health, as
+  the world bosses), speed 260, armor 95, a heal of 400 a second (8% every 2 s, 8,000 to 12,000). The strongest XML hit is 3,800. The health is 360 s for
+  five typical characters of level 800: 3,519 each on one boss (the median class after the boss armour), 17,593 together, 85% uptime, less the heal.
+  `boss_length_model.py --check` holds the XML health (1.5%), the `ref` of the profile (health, heal, dps, uptime, players) and the XML's heal to
+  that. The mechanics cost time (a telegraph every 10 s, the immune adds): 6:00 would become 7:56, so `boss_mechanics.lua` attaches the boss with its
+  health times 0.725 (3.80M) and the fight stays at 6:00 (`G.balance`; the limit is 15:00).
+- **Six mechanics** (profile `malgrath, the drowned crown`, element death, size 2, warning 2.5 to 3 s). Five telegraphs and one adds phase, each with its
+  attack effect (`pose`):
+
+  | attack | kind | share | effect | what to do |
+  |---|---|---|---|---|
+  | Tidebreak Slam | circle, radius 3 | 0.40 | 5326 Ground Slam | back off 3 sqm |
+  | Stormcrown Rain | puddles, 6 (5 on players) | 0.30 | 5327 Lightning Rain | bolts fall under five players and round the hall: step off |
+  | Drowned Gaze | line, 3 wide, 14 long | 0.45 | 5328 Eye Laser | sidestep the beam |
+  | Crown Inferno | ring, 3 to 8 | 0.40 | 5329 Crown Inferno | hug it or run out |
+  | Faultline Stomp | cross, 3 wide | 0.40 | 5331 Earthquake Stomp | stand on a diagonal |
+  | Summon (at 65% health) | 3 Drowned Acolytes, immune until they die | | 5330 Summon | break the three |
+
+  The hit effects are the ones the other bosses use (`blunt_smash`, `lightning_strike` with the heavy bolt of O614, `shadow_hit`, `big_nova_fire_9`,
+  `shadow_eruption`). The warnings have pt-BR in `i18n_strings.lua`.
+- **How an attack plays (the mechanism).** The body poses of an attack cannot play in an outfit, so each attack is an effect of the pair that draws the
+  boss itself (body and effect layers together) at the pixel grid of its outfit, and the server **hides the boss while it plays**. `boss_mechanics.lua`
+  calls `ChaosMalgrathFx.pose(id, effect, warnMs)` right after the cast bar of a telegraph (and at the start of the adds phase). The effect starts
+  `warnMs - its length` later (at once when it is longer), so it ends with the warning, which is when the hit lands. Then `chaos_malgrath_fx.lua`
+  sends it with `Vfx(pos, name, true)` at the boss's tile plus the send offset (the generated `chaos_malgrath_fx_ids.lua` is merged into `ChaosVfx`),
+  hides the boss (`setOutfit({lookType = 0, lookTypeEx = 0})`, kept for the restore), freezes it on its tile (`changeSpeed` to 0, so it does not
+  walk off the effect), and `addEvent` shows it again 40 ms after the last frame. One effect at a time: a pose that starts while another plays is dropped.
+  A boss that dies or vanishes meanwhile has nothing to restore. Measured on the built pair, the first frame of an attack is within 1% of the nearest
+  Idle frame, so the swap does not jump. No other mechanism was needed, and none was used: no look swap (the engine has none), no extra effect over the
+  standing body.
+- **Arrival and death.** `malgrath.lua` registers two creature events on the boss at its spawn (only when the gate is open): its first think plays the
+  rise (5333, 2.4 s, the boss hidden), its death plays the collapse (5332, 3.2 s) on its tile (the engine has removed the boss, nothing is hidden). A boss
+  killed in the middle of an attack plays the collapse over the end of that effect; not handled.
+- **Gate.** `config.lua chaosClientPair` 74 or more (`client_pair.PAIR_MALGRATH`, README "Client pair guard"), read at load by the lib, the lair and the
+  boss list. Below it the lib answers nothing, the lair is closed and the engine's spawn of the boss is refused, so a client without outfit 3530 never
+  meets it.
+- **Lair** (`bosslair_config.lua` entry `malgrath`, plan `rooms/drowned_throne.json`): The Drowned Throne, an abyss area of its own, 72 x 84 tiles, origin
+  16600, 16000, 11 in the annex row. One protected Tide Ledge in the south (arrival 16631, 16071, 11), one Throne Hall 36 x 30 in the north (the boss at
+  16641, 16021, 11), 319 walkable tiles in the hall. The way in is a magic forcefield on a bare tile of the Hollow Shelf of the Nightrend Abyss, 17494, 14568,
+  11 (the abyss hunt of levels 785 to 900; free ground all round, three tiles or more from every spawn); the way back lands two tiles south. Level 700 enters.
+  Respawn 4 hours (the plan's boss block). The Boss Spawns window lists it from pair 74 (`lair_malgrath`). `boss_lair_test.py` has the Malgrath rules
+  (an abyss lair off an abyss hunt, the portal on the Hollow Shelf, pair 74, the band holds the fair level).
+- **Loot**: the table of the other lair boss (Talath): platinum and crystal coins, the orbs 29856 and 29857, the Myst Regalia pieces and the rare
+  equipment, all existing items; no new loot rule.
+- **Look step** `monstermalgrathlook` (`tools/install_monster_malgrath_look.py`, after `monsterswaplooks`, map `data/monster/monster_malgrath_looks.csv`).
+  The repository file keeps the old look 1473 (Talath's old look; Talath is on 3529 from pair 73 and the lair is closed below 74, so the two never meet
+  on one pair); at pair 74 the installed file gets look 3530. Below pair 74 it prints a WARNING line and changes nothing; a second run changes nothing; a
+  file with another look or no file stops it. The name has a comma: the map is quoted.
+- **Tests**: `tests/malgrath_fx_test.lua` (gate, ids, timing, hide and show, one at a time, arrival, death, the files that use it, every pose of the profile
+  is an effect that ends with the warning), `tests/bosslair_test.lua` and `tools/boss_lair_test.py` (the second lair), `tests/boss_mechanics_test.lua`
+  (the profile: fairness simulation, kill time), `python3 -I server/tools/install_monster_malgrath_look_test.py`, `python3 -I server/tools/boss_length_model_test.py`.
+- **Switch on**: build pair 74 with `gen_malgrath_boss.py build` (and the decor flames), push it to windows-assets, ship the client. Then admin app Comandos >
+  "Par do cliente" > Gravar 74. Fallback: `chaos-ctl.sh client-pair set 74`. Then update the server (Painel > Atualizar servidor): the update runs
+  `monstermalgrathlook` and `contentareas`, which places the lair.
+- **Not done**: not placed on a real map, not seen in a client, not played with a party. The six mechanics were checked by the fairness simulation and the
+  kill time model only. Attacks that were not made into effects (the claws, the charge, the grab, the orb attacks, Roar, Taunt, Shield Barrier, Heavy
+  Charge, Hit, Stunned, the warps, the two long combos) stay in the pack for later.
 
 ## Fun costumes, the new Dusk Moth and the round Rune Seal (O566; `data/lib/chaos_fun_costumes.lua`, install steps `outfits`, `funlooks`, `auras`)
 Owner, 2026-11-14 (pt-BR): "coloque mais costumes divertidas. como personagens, coisas inusitadas (como lata de energético, maço de cigarro e coisas diferentes assim)", and two more items for the same client pair: the Rune Seal aura as a round ring, and a Dusk Moth pet with a stronger animation.

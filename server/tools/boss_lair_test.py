@@ -150,6 +150,13 @@ def main():
                   % (hunt['level'], ref))
             check(hz == ['glacial_col'], 'talath: the portal stands in the Glacial Col')
             check(r['pair'] == 73, 'talath: open from client pair 73')
+        if k == 'malgrath':
+            element, ref = fair_level('malgrath, the drowned crown')
+            check(element == 'death' and plan['biome'] == 'abyss' and hunt['biome'] == 'abyss', 'malgrath: an abyss lair off an abyss hunt for the drowned king')
+            check(ref is not None and hunt['level'][0] <= ref <= hunt['level'][1], 'malgrath: the hunt\'s band %s holds the level its mechanics are fair for (%s)'
+                  % (hunt['level'], ref))
+            check(hz == ['hollow_shelf'], 'malgrath: the portal stands on the Hollow Shelf')
+            check(r['pair'] == 74, 'malgrath: open from client pair 74')
     print('boss_lair_test: %d failure(s)' % len(failures))
     return 1 if failures else 0
 

@@ -476,6 +476,32 @@ return {
 			ref = {health = 2210000, dps = 7000, uptime = 0.75, players = 5, limit = 780}
 		},
 
+		-- ================================================================ lair boss (a party of five, level 800)
+		-- O637: Malgrath, the Drowned Crown (bosslair_config.lua, README "Malgrath, the Drowned Crown (O637)"). `pose` names the
+		-- effect of client pair 74 that plays the attack with the boss's body (data/lib/chaos_malgrath_fx_ids.lua): it ends with
+		-- the warning and the boss is hidden while it plays. ref: 5 x the typical damage on one boss at level 800 (3,519 x 5, boss_length_model.py).
+		["malgrath, the drowned crown"] = {
+			label = "Malgrath", size = 2, element = "death", difficulty = 0.25, every = 10000, fair = {refLevel = 800},
+			telegraphs = {
+				{key = "tidebreak_slam", label = "Tidebreak Slam", kind = "circle", radius = 3, share = 0.4, pose = "mg_ground_slam",
+					hit = "blunt_smash", fallback = "CONST_ME_GROUNDSHAKER", tip = "Back off 3 sqm: the slam is round."},
+				{key = "stormcrown_rain", label = "Stormcrown Rain", kind = "puddles", count = 6, onPlayers = 5, radius = 1, share = 0.3,
+					pose = "mg_lightning_rain", hit = "lightning_strike", fallback = "CONST_ME_ENERGYAREA",
+					tip = "Bolts fall under five players and round the hall: step off the marks."},
+				{key = "drowned_gaze", label = "Drowned Gaze", kind = "line", halfWidth = 1, length = 14, share = 0.45,
+					pose = "mg_eye_laser", hit = "shadow_hit", fallback = "CONST_ME_MORTAREA", tip = "A three-wide beam from its eyes at its target: sidestep."},
+				{key = "crown_inferno", label = "Crown Inferno", kind = "ring", inner = 3, outer = 8, share = 0.4,
+					pose = "mg_crown_inferno", hit = "big_nova_fire_9", fallback = "CONST_ME_FIREAREA", tip = "A ring of fire round the crown: hug it or run out."},
+				{key = "faultline_stomp", label = "Faultline Stomp", kind = "cross", halfWidth = 1, share = 0.4,
+					pose = "mg_earthquake_stomp", hit = "shadow_eruption", fallback = "CONST_ME_GROUNDSHAKER",
+					tip = "Cracks run through it wall to wall: stand on a diagonal."}
+			},
+			adds = {{at = 0.65, mode = "immune", type = WARD, name = "Drowned Acolyte", count = 3, health = 250000,
+				healthPerExtra = 0.05, pose = "mg_summon", text = "%s calls the drowned: break the 3 Drowned Acolytes!",
+				doneText = "The drowned fall silent.", tip = "At 65% immune until 3 Drowned Acolytes die."}},
+			ref = {health = 5240000, heal = 400, dps = 17600, uptime = 0.85, players = 5, limit = 900}
+		},
+
 		-- ================================================================ donor bosses (dormant: no spawn yet)
 		["ormathulak"] = {
 			label = "Ormathulak", size = 2, element = "fire", difficulty = 0.25, every = 10000, fair = {refLevel = 650},

@@ -290,6 +290,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                monster_o619_looks.csv); the installed files, the installed bounty pool and the quest and trial tables that name an old look
                get the new one; waits for config.lua chaosClientPair >= 73, README "Client pair guard" and "Look swaps (O619)"; after
                monstercreaturelooks
+  monstermalgrathlook tools/install_monster_malgrath_look.py  Malgrath, the Drowned Crown (O637, an arena boss in its own lair) wears its 7x7 outfit
+               3530 in place of the stock look its repository file keeps (client pair 74, data/monster/monster_malgrath_looks.csv); the
+               installed monster file gets the new look; waits for config.lua chaosClientPair >= 74, README "Client pair guard" and
+               "Malgrath, the Drowned Crown (O637)"; after monsterswaplooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1335,6 +1339,15 @@ def step_monsterswaplooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monstercreaturelooks') + 1, 'monsterswaplooks')  # the look swaps of O619 (pair 73) go over every earlier look
+
+
+def step_monstermalgrathlook(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 74) is in the tool; its warning reaches the report
+    args = [tool('install_monster_malgrath_look.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_malgrath_look.py'))
+
+
+STEPS.insert(STEPS.index('monsterswaplooks') + 1, 'monstermalgrathlook')  # Malgrath's outfit (pair 74) goes after the look swaps
 
 
 def step_monsterresists(server, data, ctx):

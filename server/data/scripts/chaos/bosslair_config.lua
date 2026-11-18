@@ -36,6 +36,26 @@ return {
 			minLevel = 500, -- the portal lets nobody in below it: the boss's weakest hit is over 5,000
 			respawn = 14400, -- seconds; the plan's boss block (4 hours, like Vharzul the Verdant Eye)
 			text = "A rift of frost. Beyond it Talath waits in the Shard Hollow."
+		},
+		-- Malgrath, the Drowned Crown (O637, owner 2026-11-18: "an arena boss that always faces the front"). A boss for a party of
+		-- five at level 800: 5.24M health (boss_length_model.py ARENA_BOSSES: 360 s for five typical characters of level 800),
+		-- the six mechanics of boss_mechanics_config.lua. Its lair hangs off the Hollow Shelf of the Nightrend Abyss, the abyss
+		-- hunt of levels 785-900. Its outfit 3530 and its eight attack effects are client pair 74 (gen_malgrath_boss.py).
+		{
+			key = "malgrath",
+			monster = "Malgrath, the Drowned Crown",
+			name = "The Drowned Throne",
+			pair = 74, -- look 3530 is an outfit of client pair 74 (install step monstermalgrathlook)
+			plan = "drowned_throne", -- server/tools/areaplan/rooms/drowned_throne.json
+			at = {x = 16600, y = 16000, z = 11}, -- the plan's origin
+			arrival = {31, 71, 0}, -- the arrival tile's offset from the origin (the protected Tide Ledge)
+			boss = {41, 21, 0}, -- the boss's spawn point, offset from the origin (the Throne Hall)
+			hunt = "nightrend_abyss", -- server/tools/areaplan/plans/nightrend_abyss.json
+			portal = {x = 17494, y = 14568, z = 11}, -- the way in: a bare tile on the Hollow Shelf
+			back = {x = 17494, y = 14570, z = 11}, -- where the lair's exit portal leads (the plan's exit.to)
+			minLevel = 700, -- the portal lets nobody in below it: the mechanics are fair for level 800
+			respawn = 14400, -- seconds; the plan's boss block (4 hours, like Talath)
+			text = "A tide that does not fall. Beyond it Malgrath waits in the Drowned Throne."
 		}
 	}
 }

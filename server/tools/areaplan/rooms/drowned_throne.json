@@ -1,0 +1,74 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "drowned_throne",
+  "name": "The Drowned Throne",
+  "biome": "abyss",
+  "size": [
+    72,
+    84
+  ],
+  "floors": 1,
+  "level": [
+    785,
+    900
+  ],
+  "seed": 63711,
+  "origin": {
+    "x": 16600,
+    "y": 16000,
+    "z": 11
+  },
+  "decoration": "sparse",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "tide_ledge",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "throne_hall",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "north",
+      "role": "boss"
+    }
+  ],
+  "paths": [
+    {
+      "from": "tide_ledge",
+      "to": "throne_hall",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "tide_ledge",
+    "from_world": {
+      "x": 17494,
+      "y": 14568,
+      "z": 11
+    }
+  },
+  "exit": {
+    "zone": "tide_ledge",
+    "to": {
+      "x": 17494,
+      "y": 14570,
+      "z": 11
+    }
+  },
+  "spawns": [],
+  "boss": {
+    "zone": "throne_hall",
+    "monster": "Malgrath, the Drowned Crown",
+    "respawn": 14400,
+    "title": "Malgrath"
+  },
+  "notes": "Malgrath's lair (O637, owner 2026-11-18: an arena boss that always faces the front): a fixed area of the rooms folder, placed by contentareas at its own origin in the annex row, with no hall teleport, built like Talath's lair (O616). One protected ledge where players arrive and one boss hall with a single way in. The way in is a runtime portal on the Hollow Shelf of the Nightrend Abyss (levels 785-900, the abyss hunt of the level Malgrath's mechanics are fair for), placed by bosslair.lua only while config.lua chaosClientPair is 74 or more (bosslair_config.lua; tools/boss_lair_test.py holds its tiles to this plan and to nightrend_abyss.json). Malgrath respawns 4 hours after its death, like Talath."
+}

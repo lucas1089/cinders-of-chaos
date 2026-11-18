@@ -40,7 +40,7 @@ eq(L.parsePair(nil), nil, "no text")
 eq(L.recordedPair("no/such/config.lua"), nil, "no config file")
 
 local talath = cfg.lairs[1]
-eq(#cfg.lairs, 1, "one lair")
+eq(#cfg.lairs, 2, "two lairs: Talath and Malgrath")
 eq(talath.monster, "Talath", "Talath's lair")
 eq(talath.pair, 73, "open from client pair 73, where look 3529 exists")
 check(not L.open(talath, 72) and not L.open(talath, nil) and L.open(talath, 73) and L.open(talath, 80), "open at 73 and above only")
@@ -148,6 +148,48 @@ for lit in src:gmatch('t%(player, "([^"]+)"') do
 	check(pt[lit] ~= nil, "pt-BR for \"" .. lit .. "\"")
 end
 eq(texts, 3, "three player texts")
+
+-- ---------------------------------------------------------------- Malgrath, the Drowned Crown (O637)
+local mal = cfg.lairs[2]
+eq(mal.key, "malgrath", "the second lair is Malgrath's")
+eq(mal.monster, "Malgrath, the Drowned Crown", "Malgrath's lair")
+eq(mal.pair, 74, "open from client pair 74, where outfit 3530 and its eight attack effects exist")
+check(not L.open(mal, 73) and not L.open(mal, nil) and L.open(mal, 74), "open at 74 and above only")
+check(not L.allowSpawn(cfg, "Malgrath, the Drowned Crown", 73) and L.allowSpawn(cfg, "Malgrath, the Drowned Crown", 74), "Malgrath spawns at pair 74 only")
+check(not L.allowSpawn(cfg, "malgrath, the drowned crown", nil), "nor without a recorded pair")
+check(L.allowSpawn(cfg, "Talath", 73), "Talath still spawns at 73")
+eq(L.byMonster(cfg, "MALGRATH, THE DROWNED CROWN"), mal, "by monster, any case")
+eq(L.enter(mal, 73, 900), "closed", "the portal of a closed lair lets nobody in")
+eq(L.enter(mal, 74, mal.minLevel - 1), "level", "too low a level")
+check(mal.back.x == mal.portal.x and mal.back.y == mal.portal.y + 2, "the way back lands two tiles south of the portal")
+check(mal.portal.x ~= talath.portal.x or mal.portal.y ~= talath.portal.y, "two portals on two tiles")
+local mplan = read("tools/areaplan/rooms/" .. mal.plan .. ".json")
+eq(mplan:match('"boss"%s*:%s*{[^}]-"monster"%s*:%s*"([^"]+)"'), mal.monster, "the plan's boss")
+eq(tonumber(mplan:match('"boss"%s*:%s*{[^}]-"respawn"%s*:%s*(%d+)')), mal.respawn, "the plan's respawn is the config's")
+check(mplan:find('"biome"%s*:%s*"abyss"') ~= nil, "an abyss area")
+local mx, my, mz = mplan:match('"origin"%s*:%s*{%s*"x"%s*:%s*(%d+),%s*"y"%s*:%s*(%d+),%s*"z"%s*:%s*(%d+)')
+eq(mx .. "," .. my .. "," .. mz, mal.at.x .. "," .. mal.at.y .. "," .. mal.at.z, "the config's `at` is the plan's origin")
+local mxml = read("data/monster/monsters/chaos/malgrath_the_drowned_crown.xml")
+eq(mxml:match('<monster name="([^"]+)"'), mal.monster, "the monster file's name")
+eq(tonumber(mxml:match('<look type="(%d+)"')), 1473, "the repository file keeps the old look (step monstermalgrathlook moves it at pair 74)")
+local mlooks = read("data/monster/monster_malgrath_looks.csv")
+check(mlooks:find('"Malgrath, the Drowned Crown",1473,3530', 1, true) ~= nil, "look 3530 from pair 74")
+local mm = find(mech, "malgrath, the drowned crown", 0)
+check(mm and mm.element == "death" and mm.fair.refLevel == 800, "Malgrath's mechanics are death, fair for level 800")
+local mentry
+for _, e in ipairs(bcfg.bosses) do
+	if e.key == "lair_malgrath" then mentry = e end
+end
+check(mentry ~= nil and mentry.minPair == 74 and mentry.category == "lair" and mentry.level == 800, "the Boss Spawns window has Malgrath from pair 74")
+local mbp = L.bossPos(mal)
+eq(mentry.pos.x .. "," .. mentry.pos.y .. "," .. mentry.pos.z, mbp.x .. "," .. mbp.y .. "," .. mbp.z, "tracked at the boss's spawn point")
+eq(mentry.rule.seconds, mal.respawn, "the window's timer is the respawn")
+do
+	local idx73 = K.build(bcfg, {clientPair = 73})
+	local idx74 = K.build(bcfg, {clientPair = 74})
+	check(idx73.byKey.lair_malgrath == nil and idx73.byKey.lair_talath ~= nil, "pair 73: Malgrath is not listed, Talath is")
+	check(idx74.byKey.lair_malgrath ~= nil and #idx74.problems == 0, "pair 74: listed")
+end
 
 -- ---------------------------------------------------------------- bosslair.lua on a mocked engine
 local tiles, created, events = {}, {}, {}
