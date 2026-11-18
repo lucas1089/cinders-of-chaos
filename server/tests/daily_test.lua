@@ -376,4 +376,36 @@ eq(#events, 1, "a second start while one is pending is ignored")
 events[1].fn(table.unpack and table.unpack(events[1].args) or unpack(events[1].args))
 eq(order[1], "first", "after the tutorial the queue opens")
 ChaosNewPlayer = nil
+-- ---------------------------------------------------------------- what a tester bot sees and sends (O650)
+do
+	ItemType = ItemType or function(id) return {getClientId = function() return id + 1000 end, getName = function() return nm(id) end} end
+	local bot = mkPlayer(40)
+	function bot:getItemCount(id) return self.items[id] or 0 end
+	dbRows = {}
+	registry["ChaosDailyLogin"].onLogin(bot)
+	local pr = DY.probe(bot)
+	assert(pr.taken == false and pr.slot == 1 and pr.streak == 0 and pr.next == 1, "probe: a fresh account can claim day 1")
+	assert(pr.today == TODAY, "probe: the day of the daily clock")
+	eq(pr.value, map[pr.slot], "probe: `value` is what the window sends for the slot")
+	assert(pr.reward.itemId == cfg.rewards[1].itemId and pr.reward.count == cfg.rewards[1].count and pr.reward.clientId == pr.reward.itemId + 1000
+		and pr.reward.held == 0, "probe: the reward of the slot")
+	-- the value of every slot is what the client's map gives, and the claim takes it
+	for slot = 1, 7 do
+		DY.accounts[40] = {streak = slot - 1, best = slot - 1, grace = 0, last = slot == 1 and 0 or TODAY - 1, claims = slot - 1}
+		local q = DY.probe(bot)
+		eq(q.slot, slot, "probe: slot " .. slot)
+		eq(q.value, map[slot], "probe: the value of slot " .. slot)
+	end
+	-- the claim by that value: the reward arrives, the probe says taken and the holdings went up
+	DY.accounts[40] = nil
+	dbRows = {}
+	bot.items = {}
+	local before = DY.probe(bot)
+	call(bot, "calim", before.value)
+	local after = DY.probe(bot)
+	assert(after.taken == true and after.streak == 1 and after.reward.held == before.reward.held + cfg.rewards[1].count, "claim by the probed value: taken, paid")
+	call(bot, "calim", after.value)
+	assert(bot.cancel and bot.cancel:find("already collected", 1, true), "a second claim the same day is refused")
+end
+
 print("daily_test: OK")

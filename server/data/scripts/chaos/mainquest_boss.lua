@@ -134,6 +134,55 @@ function B.enter(player)
 	return true, vael(player, "enter")
 end
 
+-- ---------------------------------------------------------------- the tester bots (O650)
+-- The door of Vael asks for a quest at its last step and four safe resistances: a character the bots cannot make by play (the quest is a walk
+-- from level 8 to 500, the resistances come from gear). `!tester vael enter` is the TEST ONLY door: a tester only, logged, from the door's
+-- level, the same Vocation Trials entry as the NPC's (a protection zone, no fight, the chambers kept for the players, one chamber a time), with
+-- the quest step and the resistances left out. The fight is the bot's own. The reward (gold, orbs, Vigil reputation, the achievement) is the
+-- tester's own, once per character, as for anybody; the trials' record board skips testers.
+function B.testerEnter(player)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	local c = C()
+	if not c.enabled then
+		return nil, "the main quest is switched off"
+	end
+	if player:getLevel() < c.boss.minLevel then
+		return nil, string.format("Vael's door opens from level %d", c.boss.minLevel)
+	end
+	if not (ChaosTrials and ChaosTrials.enter) then
+		return nil, "no trials engine"
+	end
+	local ok, text = ChaosTrials.enter(player, nil, {spell = c.boss.tier})
+	if not ok then
+		return nil, tostring(text or "the door stayed shut")
+	end
+	set(player, "tries", math.max(0, get(player, "tries")) + 1)
+	log(string.format("TEST ONLY: tester %s enters Vael's chamber (level %d)", player:getName(), player:getLevel()))
+	return true
+end
+
+-- what a person sees (`!tester vael`): the Trials' own probe of the run (the stage, the monsters, the lives, the boss and its health, the
+-- guide) with the door's facts: the level, the quest state, whether the family's first stage is a puzzle the bots do not play
+function B.probe(player)
+	local c = C()
+	local out = ChaosTrials and ChaosTrials.probe and ChaosTrials.probe(player) or {}
+	out.minLevel = c.boss.minLevel
+	out.won = get(player, "won") == 1
+	out.tries = math.max(0, get(player, "tries"))
+	out.door = B.doorProblem(player)
+	local M = ChaosTrialsCore
+	if M and M.family and M.spellStages and out.family then
+		for _, st in ipairs(M.spellStages(out.family, c.boss.tier) or {}) do
+			if st.kind == "seals" or st.kind == "marks" then
+				out.puzzle = true
+			end
+		end
+	end
+	return out
+end
+
 -- the door flag set by Ysolde's script (own Lua state): one look per sweep
 function B.sweepDoor(player)
 	local c = C()

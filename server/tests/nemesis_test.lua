@@ -1046,6 +1046,121 @@ eq(NE.tr(varek, "warning"), "Você sente um ódio familiar observando você...",
 Chaos.lang = nil
 eq(NE.tr(varek, "warning"), "You feel a familiar hatred watching you...", "nothing known: English")
 
+-- ================================================================ the tester bots (O650)
+-- K.guide (pure), then the TEST ONLY birth and appearance, the probe and the close on the mocked engine: a tester only, a regular monster in
+-- sight, the dice skipped and every other rule kept, the row is the bot's own, the fight pays the bot's own corpse and nobody else
+do
+	local at, nm = {x = 10, y = 10, z = 7}, {x = 14, y = 12, z = 7}
+	local g1 = K.guide({pos = at, monster = nm})
+	ok(g1.mode == "fight" and g1.area == "nemesis", "guide: within 5 tiles, fight")
+	local g2 = K.guide({pos = at, monster = {x = 30, y = 10, z = 7}})
+	ok(g2.mode == "walk" and g2.reach[1] == 1 and g2.reach[2] == 5 and g2.goal.x == 30, "guide: farther, walk to it")
+	eq(K.guide({pos = at, monster = {x = 11, y = 10, z = 6}}).mode, "walk", "guide: another floor is not in reach")
+	eq(K.guide({pos = at, pending = true}).why, "the warning runs: it is coming", "guide: the warning runs")
+	eq(K.guide({pos = at, has = true}).why, "no Nemesis in the world yet", "guide: nothing yet")
+	eq(K.guide({pos = at}).why, "no Nemesis", "guide: no record")
+	ok(cfg.tester and cfg.tester.sight >= 1 and cfg.tester.reach >= 1, "config: the bots' numbers")
+
+	local spectators = {}
+	Game.getSpectators = function() return spectators end
+	local function bot(name, guid, level)
+		local b = player(name, guid, {level = level or 200})
+		b.storage[Chaos.storage.tester] = 1
+		return b
+	end
+	local bot1 = bot("Tester Aaa", 301)
+	local human = player("Ana", 302, {level = 200})
+	local rows0 = #rows
+	local rec1, why1 = NE.testerBorn(human)
+	ok(rec1 == nil and why1 == "not a tester" and #rows == rows0 and NE.records[302] == nil, "birth: never for a player")
+	local rec2, why2 = NE.testerBorn(bot1)
+	ok(rec2 == nil and why2 == "no regular monster in sight", "birth: a monster in sight is needed")
+	local p0 = NE.probe(bot1)
+	ok(p0.has == false and p0.sight == nil and p0.guide.mode == "wait" and p0.minLevel == cfg.birth.minLevel, "probe: nothing yet")
+	local lowbot = bot("Tester Low", 303, 30)
+	local rec3, why3 = NE.testerBorn(lowbot)
+	ok(rec3 == nil and why3:find("from level", 1, true) ~= nil, "birth: below the level")
+	-- what is in sight: a boss, a summon, a renamed event monster, a weak one are never the type
+	local bossM = monster("Ghoul", {boss = true, pos = {x = 101, y = 100, z = 7}})
+	local summonM = monster("Ghoul", {master = human})
+	local eventM = monster("Ghoul", {name = "Rift Ghoul"})
+	local weakM = monster("Rat", {maxHealth = 20})
+	local otherFloor = monster("Ghoul", {pos = {x = 101, y = 100, z = 6}})
+	spectators = {bossM, summonM, eventM, weakM, otherFloor}
+	ok(NE.testerBorn(bot1) == nil and NE.probe(bot1).sight == nil, "birth: boss, summon, event monster, weak and other floor are left out")
+	local far = monster("Wyrm", {pos = {x = 106, y = 100, z = 7}, maxHealth = 2000})
+	local near = monster("Ghoul", {pos = {x = 102, y = 100, z = 7}})
+	spectators = {far, near, bossM}
+	local ps = NE.probe(bot1)
+	ok(ps.sight and ps.sight.name == "Ghoul" and ps.sight.distance == 2, "probe: the nearest regular monster in sight")
+	-- the birth: the dice are skipped, the row is the bot's own
+	cfgLive.birth.chance = 1
+	local rec = NE.testerBorn(bot1)
+	ok(rec ~= nil and NE.records[301] == rec and rec.monster == "Ghoul" and rec.victim == 301, "birth: a record of the monster in sight (a chance of 1 percent does not matter: no dice)")
+	ok(#rows == rows0 + 1 and rows[#rows].player_id == 301, "birth: one row, the bot's own player_id")
+	ok(bot1.events.ChaosNemesisKill, "birth: the kill event is on")
+	local pb = NE.probe(bot1)
+	ok(pb.has and pb.nemesis.monster == "Ghoul" and pb.nemesis.level == rec.level and #pb.nemesis.traits == 1 and pb.sight == nil, "probe: the record")
+	local again, whyA = NE.testerBorn(bot1)
+	ok(again == nil and whyA == "the bot has a Nemesis already", "birth: one at a time")
+	-- the cooldown of a nemesis that ended does not hold a bot back
+	cfgLive.birth.chance = 100
+	-- the appearance: the warning, the arrival after the delay
+	local pzB = bot("Tester Pz", 304)
+	pzTiles["100:100:7"] = true
+	local noPz, whyPz = NE.testerAppear(human)
+	ok(noPz == nil and whyPz == "not a tester", "appear: never for a player")
+	local noRec, whyNr = NE.testerAppear(pzB)
+	ok(noRec == nil and whyNr == "the bot has no Nemesis", "appear: needs a record")
+	local inPz, whyIn = NE.testerAppear(bot1)
+	ok(inPz == nil and whyIn == "the bot stands in a protection zone", "appear: not in a protection zone")
+	pzTiles["100:100:7"] = nil
+	queue = {}
+	eq(NE.testerAppear(bot1), true, "appear: the warning runs")
+	ok(lastMsg(bot1):find("familiar hatred", 1, true) ~= nil, "appear: the bot is warned")
+	ok(NE.probe(bot1).pending and NE.probe(bot1).guide.why == "the warning runs: it is coming", "probe: the warning runs")
+	local twice, whyTw = NE.testerAppear(bot1)
+	ok(twice == nil and whyTw == "it is here already", "appear: once")
+	local e = table.remove(queue, 1)
+	ok(e ~= nil and e.fn == NE.appear and e.delay == cfg.appear.delayMs, "appear: the arrival is scheduled as a kill's would")
+	e.fn((table.unpack or unpack)(e.args, 1, e.args.n))
+	local nemM = created[#created]
+	ok(NE.byVictim[301] == nemM.id and NE.alive[nemM.id].victim == 301, "appear: the Nemesis is in the world")
+	local pw = NE.probe(bot1)
+	ok(pw.world and pw.world.hp == 100 and pw.world.level == rec.level and pw.guide.mode == "fight" and pw.guide.area == "nemesis", "probe: it is near, fight")
+	nemM.pos = {x = 120, y = 100, z = 7}
+	eq(NE.probe(bot1).guide.mode, "walk", "probe: it is far, walk")
+	nemM.pos = {x = 103, y = 100, z = 7}
+	nemM.health = math.floor(nemM.maxHealth / 2)
+	eq(NE.probe(bot1).world.hp, 50, "probe: its health")
+	-- nobody else can hurt it and it hurts nobody else (the rules of the Nemesis stand for a tester too)
+	ok(not K.canHurt(301, 302, {}) and K.canHurt(301, 301, {}), "a Nemesis of a tester hurts its victim only")
+	-- the fight: the bot kills it, its own corpse pays
+	local corpse2 = {items = {}, addItem = function(self, id, count) self.items[#self.items + 1] = {id = id, count = count} return true end}
+	local trophies0, broadcasts0 = #trophies, #sent
+	local kind = NE.onNemesisDeath(nemM, corpse2, bot1, bot1)
+	eq(kind, "avenge", "the bot slays its Nemesis: avenged")
+	ok(#trophies == trophies0 + 1 and trophies[#trophies].to == bot1, "its own trophy")
+	ok(NE.records[301] == nil and NE.byVictim[301] == nil and bot1.storage[NE.S_AVENGED + (ChaosNemesisConfig.storage)] == 1, "the record is gone, the counter is up")
+	eq(NE.probe(bot1).avenged, 1, "probe: avenged")
+	-- the close: a Nemesis in the world and its record go, a second close does nothing
+	cfgLive.birth.chance = 1
+	local bot2 = bot("Tester Bbb", 305)
+	ok(NE.testerBorn(bot2) ~= nil, "birth: another bot")
+	queue = {}
+	NE.testerAppear(bot2)
+	local e2 = table.remove(queue, 1)
+	e2.fn((table.unpack or unpack)(e2.args, 1, e2.args.n))
+	local nem2 = created[#created]
+	ok(NE.byVictim[305] == nem2.id, "a second Nemesis is in the world")
+	eq(NE.testerClose(human), false, "close: a player's close does nothing")
+	eq(NE.testerClose(bot2), true, "close: the bot's Nemesis goes")
+	ok(NE.byVictim[305] == nil and NE.records[305] == nil and nem2.removed == true, "close: the world and the record are clean")
+	ok(not bot2.events.ChaosNemesisKill, "close: the kill event is off")
+	eq(NE.testerClose(bot2), false, "close: nothing to close twice")
+	cfgLive.birth.chance = 100
+end
+
 print(string.format("nemesis_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

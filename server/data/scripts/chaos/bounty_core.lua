@@ -594,6 +594,23 @@ function B.spawnMarks(marks, monster)
 	return out
 end
 
+-- the boss marks of the map (data/chaos_poi.lua, kind "boss", named "Ssylvath the Corruptor (raid boss)") that list a boss: only the ones
+-- a character may walk to and meet in the world, the "boss lair" and the "island boss" (a raid boss comes with a raid event, O650)
+B.OPEN_BOSS_KINDS = {["boss lair"] = true, ["island boss"] = true}
+function B.bossMarks(marks, monster)
+	local want = tostring(monster or ""):lower()
+	local out = {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == "boss" and m.x and m.y and m.z then
+			local name, kind = tostring(m.n or ""):match("^(.-) %((.-)%)$")
+			if name and name:lower() == want and B.OPEN_BOSS_KINDS[kind] then
+				out[#out + 1] = {x = m.x, y = m.y, z = m.z, n = m.n, kind = kind}
+			end
+		end
+	end
+	return out
+end
+
 -- the distance used to pick the nearest mark: tiles (Chebyshev) plus 1000 for every floor apart
 function B.markDistance(pos, mark)
 	return math.max(math.abs(pos.x - mark.x), math.abs(pos.y - mark.y)) + 1000 * math.abs((pos.z or 0) - (mark.z or 0))
@@ -614,13 +631,17 @@ end
 -- ({key, type, name, level, count}), taken: a set {key = true} of contracts already accepted today, marks: ChaosPoi.all, level: the character's.
 -- A contract qualifies when it is a hunt (not an elite or a boss: those are tier or boss fights), its level is at most the character's and a hunt
 -- mark lists its monster. -> {{key, name, count, level, mark, distance}}
-function B.testerCandidates(contracts, taken, marks, level, pos)
+-- O650: `kind` "elite" lists the elite contracts (the tier to kill in `tier`: the same hunt marks) and "boss" the boss contracts (the boss marks of
+-- B.bossMarks); the default is the hunt contracts above.
+function B.testerCandidates(contracts, taken, marks, level, pos, kind)
 	local out = {}
+	kind = kind or "hunt"
 	for _, c in ipairs(contracts or {}) do
-		if c.type == "hunt" and not (taken and taken[c.key]) and (tonumber(c.level) or 0) <= (tonumber(level) or 0) then
-			local mark, d = B.nearestMark(B.spawnMarks(marks, c.name), pos or {x = 0, y = 0, z = 7})
+		if c.type == kind and not (taken and taken[c.key]) and (tonumber(c.level) or 0) <= (tonumber(level) or 0) then
+			local list = kind == "boss" and B.bossMarks(marks, c.name) or B.spawnMarks(marks, c.name)
+			local mark, d = B.nearestMark(list, pos or {x = 0, y = 0, z = 7})
 			if mark then
-				out[#out + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, mark = mark, distance = d}
+				out[#out + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, mark = mark, distance = d, tier = c.tier, kind = kind}
 			end
 		end
 	end
@@ -637,7 +658,8 @@ function B.testerCandidates(contracts, taken, marks, level, pos)
 end
 
 -- What a person does next with an accepted hunt contract. a = {active (the contract entry {name, progress, required, status} or nil),
--- pos, mark ({x, y, z}), monster ({x, y, z}: the nearest living monster of that name in sight, or nil), reach}
+-- pos, mark ({x, y, z}), monster ({x, y, z}: the nearest living monster of that name in sight, or nil), reach, crowded (O650: a boss contract
+-- while a player is near the boss: the bots leave a boss that players hunt to them)}
 -- -> {mode = "wait" | "walk" | "fight", goal, reach = {min, max}, why, area}
 function B.guide(a)
 	local e = a.active
@@ -646,6 +668,9 @@ function B.guide(a)
 	end
 	if e.status ~= 0 then
 		return {mode = "wait", why = "the contract is done"}
+	end
+	if a.crowded then
+		return {mode = "wait", area = "crowd", why = "a player is near the " .. tostring(e.name) .. ": the boss is the players'"}
 	end
 	local reach = a.reach or 5
 	local function near(p)

@@ -95,6 +95,7 @@ C.messages = {
 	opened = "The Haunted Harvest has begun! Harvest Portals stand next to the temples.",
 	closed = "The Haunted Harvest is over. The village sleeps until next year.",
 	shut = "The Haunted Harvest is not open now.",
+	testers = "The Haunted Harvest is the players' event: the testers stay out of it.",
 	notRipe = "The pumpkin is not ripe yet.",
 	harvested = "You harvest the pumpkin: %d hollow candy.",
 	capped = "You harvested enough pumpkins today; the field gives you nothing more.",

@@ -479,6 +479,45 @@ do
 		"the reserve text has pt-BR")
 end
 
+-- ------------------------------------------------------------------ monsters of a world event (O650)
+do
+	check(K.worldBlocked("players", true) and not K.worldBlocked("players", false), "players' monster: a tester's hit is cancelled, a player's lands")
+	check(K.worldBlocked("testers", false) and not K.worldBlocked("testers", true), "testers' monster: a player's hit is cancelled, a tester's lands")
+	check(not K.worldBlocked(nil, true) and not K.worldBlocked("other", false) and not K.worldBlocked("players", nil), "no side, an unknown side: nothing is cancelled; nil is a player")
+	local registered = {}
+	local function mon(id)
+		local m = {}
+		function m:getId() return id end
+		function m:isPlayer() return false end
+		function m:getMaster() return nil end
+		function m:registerEvent(n) registered[#registered + 1] = id .. ":" .. n end
+		return m
+	end
+	local X = ChaosTesters
+	local goblin, invader, ownGoblin = mon(900), mon(901), mon(902)
+	check(X.markWorld(goblin, "players") and X.markWorld(ownGoblin, "testers"), "markWorld: both sides")
+	check(not X.markWorld(invader, "nonsense") and X.world[901] == nil, "markWorld: an unknown side is refused")
+	check(registered[1] == "900:ChaosTestersWorldTaken" and registered[2] == "902:ChaosTestersWorldTaken" and #registered == 2, "the guard event is registered on the marked monsters")
+	eq(X.worldSide(goblin), "players", "worldSide")
+	eq(X.worldSide(invader), nil, "worldSide: unmarked")
+	local guard = events.ChaosTestersWorldTaken.onHealthChange
+	COMBAT_HEALING, COMBAT_PHYSICALDAMAGE = 99, 1
+	local pd, pt, sd, st = guard(goblin, tester, 500, COMBAT_PHYSICALDAMAGE, 40, 2)
+	check(pd == 0 and sd == 0 and pt == COMBAT_PHYSICALDAMAGE and st == 2, "a tester's hit on a world monster is cancelled")
+	eq(X.worldCancelled[1], 1, "and counted for the bot's probe (its creature id)")
+	eq(guard(goblin, ana, 500, COMBAT_PHYSICALDAMAGE, 40, 2), 500, "a player's hit on it lands")
+	eq(guard(goblin, summon(tester), 500, COMBAT_PHYSICALDAMAGE, 0, 2), 0, "a tester's summon counts as its master: cancelled")
+	eq(X.worldCancelled[1], 2, "and counted")
+	eq(guard(goblin, monster(), 500, COMBAT_PHYSICALDAMAGE, 0, 2), 500, "another monster's hit (no master): unchanged")
+	eq(guard(goblin, nil, 500, COMBAT_PHYSICALDAMAGE, 0, 2), 500, "no attacker (a field): unchanged")
+	eq(guard(goblin, tester, -300, COMBAT_HEALING, 0, 2), -300, "healing passes")
+	eq(guard(ownGoblin, ana, 500, COMBAT_PHYSICALDAMAGE, 0, 2), 0, "a player's hit on a testers' goblin is cancelled")
+	eq(guard(ownGoblin, tester, 500, COMBAT_PHYSICALDAMAGE, 0, 2), 500, "a tester's hit on it lands")
+	eq(guard(invader, tester, 500, COMBAT_PHYSICALDAMAGE, 0, 2), 500, "an unmarked monster is nobody's: unchanged")
+	check(X.worldHit(tester, "players") and not X.worldHit(ana, "players") and X.worldHit(ana, "testers") and not X.worldHit(nil, "players"), "worldHit: the same rule for the scripts that ask directly")
+	eq(X.worldCancelled[1], 3, "worldHit counts a tester's cancelled hit too")
+end
+
 print = origPrint
 print(string.format("testers_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

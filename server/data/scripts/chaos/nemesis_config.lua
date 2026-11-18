@@ -90,6 +90,10 @@ return {
 		leashRange = 30 -- farther than this from its victim (or another floor): it vanishes
 	},
 
+	-- tester bots (O650, server/README.md "Tester bots", step 9): the TEST ONLY birth takes a regular monster within `sight` tiles; the guide
+	-- says fight within `reach` tiles
+	tester = {sight = 7, reach = 5},
+
 	-- ------------------------------------------------------------------ rewards
 	-- The victim slays it: the trophy (once per nemesis; the nemesis is gone after), the title, the loot bonus
 	-- (gold in the corpse, once per avengeCooldownSeconds). Someone else of the victim's party slays it: the bounty

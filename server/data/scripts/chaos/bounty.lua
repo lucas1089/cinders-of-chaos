@@ -640,7 +640,9 @@ function B.probe(player, name)
 	for key, e in pairs(st.entries) do
 		if e.day == board.day then
 			taken[key] = true
-			local row = {key = key, name = e.monster, progress = e.progress, required = e.required, status = e.status}
+			local held = board.byKey[key]
+			local row = {key = key, name = e.monster, progress = e.progress, required = e.required, status = e.status,
+				type = held and held.type or nil, tier = held and held.tier or nil}
 			out.active[#out.active + 1] = row
 			if e.status == 0 and not first then
 				first = row
@@ -648,34 +650,59 @@ function B.probe(player, name)
 		end
 	end
 	table.sort(out.active, function(a, b) return a.key < b.key end)
-	for i, c in ipairs(B.testerCandidates(contracts, taken, marks, player:getLevel(), at)) do
-		if i > 6 then
-			break
+	for _, kind in ipairs({"hunt", "elite", "boss"}) do
+		local list = kind == "hunt" and out.candidates or {}
+		for i, c in ipairs(B.testerCandidates(contracts, taken, marks, player:getLevel(), at, kind)) do
+			if i > 6 then
+				break
+			end
+			list[#list + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, distance = c.distance, tier = c.tier,
+				mark = {x = c.mark.x, y = c.mark.y, z = c.mark.z, n = c.mark.n}}
 		end
-		out.candidates[#out.candidates + 1] = {key = c.key, name = c.name, count = c.count, level = c.level, distance = c.distance,
-			mark = {x = c.mark.x, y = c.mark.y, z = c.mark.z, n = c.mark.n}}
+		if kind ~= "hunt" then
+			out[kind] = list -- out.elite, out.boss (O650)
+		end
 	end
-	local function nearestMonster(monsterName, center, radius)
-		local best, bd
+	-- the nearest living monster of a name within `radius` tiles on the bot's floor; with `rank` the ones of that tier or better come first (an
+	-- elite contract); `crowd` counts the players (not testers) within 40 tiles of it
+	local function nearestMonster(monsterName, center, radius, rank)
+		local best, bd, bestRank
 		for _, cr in ipairs(Game.getSpectators(Position(center.x, center.y, center.z), false, false, radius, radius, radius, radius) or {}) do
 			if cr:isMonster() and not cr:getMaster() and typeNameOf(cr):lower() == monsterName:lower() then
 				local p = cr:getPosition()
 				if p.z == pos.z then
 					local d = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))
-					if not bd or d < bd then
-						best, bd = {x = p.x, y = p.y, z = p.z}, d
+					local good = rank == nil or (B.TIER_RANK[(ChaosTierOf and ChaosTierOf(cr)) or "normal"] or 0) >= rank
+					if not bd or (good and not bestRank) or (good == bestRank and d < bd) then
+						best, bd, bestRank = {x = p.x, y = p.y, z = p.z}, d, good
 					end
 				end
 			end
 		end
-		return best
+		return best, bestRank
+	end
+	local function playersNear(center, radius)
+		local n = 0
+		for _, cr in ipairs(Game.getSpectators(Position(center.x, center.y, center.z), false, true, radius, radius, radius, radius) or {}) do
+			if cr:isPlayer() and cr ~= player and cr:getId() ~= player:getId() and not (Chaos.isTester and Chaos.isTester(cr)) then
+				n = n + 1
+			end
+		end
+		return n
 	end
 	if first then
 		table.sort(out.active, function(a, b) return a.key < b.key end)
-		local mark = B.nearestMark(B.spawnMarks(marks, first.name), at)
-		local monster = nearestMonster(first.name, at, 20)
-		out.guide = B.guide({active = first, pos = at, mark = mark, monster = monster, reach = 5})
+		local isBoss = first.type == "boss"
+		local mark = B.nearestMark(isBoss and B.bossMarks(marks, first.name) or B.spawnMarks(marks, first.name), at)
+		local monster, elite = nearestMonster(first.name, at, 20, first.type == "elite" and (B.TIER_RANK[first.tier] or 1) or nil)
+		local crowded
+		if isBoss then
+			local c = monster or mark
+			crowded = c ~= nil and playersNear(c, 40) > 0 or playersNear(at, 40) > 0
+		end
+		out.guide = B.guide({active = first, pos = at, mark = mark, monster = monster, reach = 5, crowded = crowded})
 		out.target = first.key
+		out.eliteInSight = first.type == "elite" and elite or nil
 	end
 	if type(name) == "string" and name ~= "" then
 		local list = B.spawnMarks(marks, name)

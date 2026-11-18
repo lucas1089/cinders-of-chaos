@@ -881,6 +881,39 @@ function X.send(player)
 	Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = X.payload(player)}))
 end
 
+-- What a person sees of the Chronicle, for `!tester chronicle` (tools/tester_helper.lua checks that the asker is a tester): the season and
+-- arc, the open chapter and its goals, the points of the asker, and the two proofs the bots hold the rule to: `counted` (would an event of this
+-- character enter the chapter: false for a tester, memberList drops it) and `testersListed` (how many members of the books, the top lists
+-- and the season record are testers: 0). Reads only (O650).
+function X.probe(player)
+	local st = X.state
+	local out = {enabled = cfg.enabled and true or false, running = st ~= nil, tester = Chaos.isTester and Chaos.isTester(player) == true,
+		counted = #memberList({player}) > 0, testersListed = 0, level = player:getLevel()}
+	if not st then
+		return out
+	end
+	out.season, out.arc, out.chapter, out.chapters = st.season, st.arc, st.chapter, #K.chapters(cfg, st.arc)
+	out.done = K.doneCount(cfg, st)
+	local guid = player:getGuid()
+	local ch = K.chapters(cfg, st.arc)[st.chapter]
+	out.goals = {}
+	for gi, g in ipairs(ch and ch.goals or {}) do
+		out.goals[gi] = {label = K.goalLabel(cfg, g), progress = (st.progress[st.chapter] or {})[gi] or 0, target = g.target}
+	end
+	out.mine = 0
+	for ci = 1, #K.chapters(cfg, st.arc) do
+		for g, e in pairs(st.contrib[ci] or {}) do
+			if g == guid then
+				out.mine = out.mine + (e.points or 0)
+			end
+			if Chaos.isTesterGuid and Chaos.isTesterGuid(g) then
+				out.testersListed = out.testersListed + 1
+			end
+		end
+	end
+	return out
+end
+
 local ext = CreatureEvent("ChaosChronicleExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then

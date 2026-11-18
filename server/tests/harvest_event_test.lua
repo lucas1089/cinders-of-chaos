@@ -464,6 +464,38 @@ eq(d2, 1000, "the ward halves the next hit")
 local h2 = health.onHealthChange(boss, pl, 500, COMBAT_HEALING, 0, 0)
 eq(h2, 500, "healing passes")
 
+-- the testers stay out of it (O650): the shared nodes and the Hollow King
+do
+	local bot = newPlayer()
+	bot.st[Chaos.storage.tester] = 1
+	local nodes = {S.pumpkin_growth["5"], S.grave.mound, S.coffin_up.closed, S.cauldron.treat, S.cursed_bell.still}
+	local ids = {}
+	for _, id in ipairs(nodes) do
+		local item = Game.createItem(id, 1, places.pumpkins[1])
+		local msgs0, candy0 = #bot.msgs, bot.items[cfg.items.candy] or 0
+		findAction(id).onUse(bot, item)
+		check(bot.msgs[#bot.msgs] == cfg.messages.testers and #bot.msgs == msgs0 + 1 and (bot.items[cfg.items.candy] or 0) == candy0 and item.id == id,
+			"a tester uses no shared node of the event: " .. id)
+	end
+	local tool = findAction(cfg.items.candle)
+	local circleCount = X.circleCount
+	local target = Game.createItem(S.ritual_circle.dormant, 1, places.circle.anchor)
+	local candle = newItem(cfg.items.candle, bot.pos)
+	check(tool.onUse(bot, candle, nil, target) == true and X.circleCount == circleCount and target.id == S.ritual_circle.dormant, "a tester lights no candle of the shared circle")
+	-- the same player, not a tester: the node works as before (the player pl above did it)
+	-- the Hollow King: a tester's hit is cancelled, a player's lands
+	local was = ChaosTesters
+	local cancelled = 0
+	ChaosTesters = {worldHit = function(attacker, side) if attacker and attacker.st and attacker.st[Chaos.storage.tester] == 1 then cancelled = cancelled + 1 return true end return false end}
+	boss.hp = 40000
+	local before = #monsters
+	local dt, _, dt2 = health.onHealthChange(boss, bot, 3000, COMBAT_PHYSICALDAMAGE, 500, 0)
+	check(dt == 0 and dt2 == 0 and cancelled == 1 and #monsters == before, "the Hollow King takes no hit of a tester: no damage, no phase")
+	local dp = health.onHealthChange(boss, pl, 100, COMBAT_PHYSICALDAMAGE, 0, 0)
+	check(dp > 0 and cancelled == 1, "a player's hit on it lands")
+	ChaosTesters = was
+end
+
 -- the charm
 local granted = {}
 ChaosCosmetics = {owns = function() return false end, grant = function(acc, k, src) granted[#granted + 1] = k .. ":" .. src return true end}

@@ -628,6 +628,155 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 end
 death:register()
 
+-- ------------------------------------------------------------------ the tester bots (O650)
+-- The Nemesis is personal: it appears for its victim only, hurts the victim and the victim's party only, and nobody else can damage it (nothing
+-- to separate from a player). The only thing a bot cannot do is to earn one (a chance on a death, a chance on a kill). `!tester nemesis born`
+-- is the TEST ONLY birth (a tester only, logged: the type of a regular monster in sight, the dice skipped, every other rule kept, the cooldown
+-- cleared) and `appear` the TEST ONLY call (the same warning and arrival as a kill's, the dice skipped). The bot then fights it like a person.
+-- Its row is the bot's own (chaos_nemesis.player_id: `testers cleanup` deletes it); the trophy, the title and the gold are its own; the
+-- leaderboard skips testers and nothing is broadcast.
+local function isTesterPlayer(player)
+	return player ~= nil and Chaos.isTester ~= nil and Chaos.isTester(player) == true
+end
+
+-- the nearest regular monster within `radius` tiles on the bot's floor that could have killed it (K.eligible's own rules)
+local function sightMonster(player, radius)
+	local pos = player:getPosition()
+	local best, bd
+	for _, cr in ipairs(Game.getSpectators(pos, false, false, radius, radius, radius, radius) or {}) do
+		if cr:isMonster() and not isNemesis(cr) and not try(function() return cr:getMaster() end) and cr:getPosition().z == pos.z then
+			local p = cr:getPosition()
+			local d = math.max(math.abs(p.x - pos.x), math.abs(p.y - pos.y))
+			local info = {victimLevel = 1e9, active = 0, endedAt = 0, serverActive = 0,
+				killer = {monster = true, name = Chaos.monsterTypeName(cr), shown = cr:getName(), maxHealth = cr:getMaxHealth(), boss = isBossMonster(cr),
+				goblin = ChaosTreasureGoblin and ChaosTreasureGoblin.isGoblinName
+					and try(ChaosTreasureGoblin.isGoblinName, Chaos.monsterTypeName(cr)) or false}}
+			if K.eligible(cfg(), info, now()) and (not bd or d < bd) then
+				best, bd = cr, d
+			end
+		end
+	end
+	return best, bd
+end
+
+function NE.testerBorn(player)
+	if not isTesterPlayer(player) then
+		return nil, "not a tester"
+	end
+	local c = cfg()
+	if not c.enabled then
+		return nil, "the Nemesis is switched off"
+	end
+	local guid = player:getGuid()
+	if NE.records[guid] then
+		return nil, "the bot has a Nemesis already"
+	end
+	if player:getLevel() < (c.birth.minLevel or 0) then
+		return nil, string.format("a Nemesis is born from level %d", c.birth.minLevel or 0)
+	end
+	local k = sightMonster(player, (c.tester and c.tester.sight) or 7)
+	if not k then
+		return nil, "no regular monster in sight"
+	end
+	local info = birthInfo(player, k, nil)
+	info.endedAt = 0 -- the bot's own cooldown does not apply: it is made again for each run
+	local ok, why = K.eligible(c, info, now())
+	if not ok then
+		return nil, why
+	end
+	local rec = K.newRecord(c, {victim = guid, monster = info.killer.name, monsterLevel = monsterLevel(k), maxHealth = info.killer.maxHealth,
+		hc = isHardcore(player)}, now(), rand)
+	if not insertRecord(rec) then
+		return nil, "the row could not be written"
+	end
+	NE.records[guid] = rec
+	NE.serverActive = NE.serverActive + 1
+	player:registerEvent("ChaosNemesisKill")
+	log(string.format("TEST ONLY: a Nemesis of %s born for tester %s (level %d)", info.killer.name, player:getName(), player:getLevel()))
+	return rec
+end
+
+-- the warning and the arrival, as a kill's roll would have called them (no dice, no hunt match); true, or nil and the reason
+function NE.testerAppear(player)
+	if not isTesterPlayer(player) then
+		return nil, "not a tester"
+	end
+	local guid = player:getGuid()
+	if not NE.records[guid] then
+		return nil, "the bot has no Nemesis"
+	end
+	if NE.byVictim[guid] or NE.pending[guid] then
+		return nil, "it is here already"
+	end
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(const("TILESTATE_PROTECTIONZONE", 0)) then
+		return nil, "the bot stands in a protection zone"
+	end
+	if Chaos.inAnyInstance and Chaos.inAnyInstance(player) then
+		return nil, "the bot is inside an instance"
+	end
+	NE.pending[guid] = true
+	NE.lastAppear[guid] = now()
+	tell(player, "warning")
+	addEvent(NE.appear, cfg().appear.delayMs, player:getId())
+	return true
+end
+
+-- what a person sees (`!tester nemesis`): the record, a monster in sight it could be born from, the Nemesis in the world and the guide
+function NE.probe(player)
+	local guid = player:getGuid()
+	local pos = player:getPosition()
+	local at = {x = pos.x, y = pos.y, z = pos.z}
+	local c = cfg()
+	local tile = Tile(pos)
+	local out = {enabled = c.enabled and true or false, level = player:getLevel(), minLevel = c.birth.minLevel, pos = at,
+		pz = tile and tile:hasFlag(const("TILESTATE_PROTECTIONZONE", 0)) or false, avenged = counters(player).avenged, hunted = counters(player).hunted,
+		pending = NE.pending[guid] and true or false, instance = Chaos.inAnyInstance and Chaos.inAnyInstance(player) and true or false}
+	local rec = NE.records[guid]
+	out.has = rec ~= nil
+	if rec then
+		out.nemesis = {name = rec.name, monster = rec.monster, level = rec.level, kills = rec.kills, traits = {}}
+		for i, key in ipairs(rec.traits or {}) do
+			out.nemesis.traits[i] = key
+		end
+	else
+		local k, d = sightMonster(player, (c.tester and c.tester.sight) or 7)
+		if k then
+			out.sight = {name = Chaos.monsterTypeName(k), distance = d}
+		end
+	end
+	local cid = NE.byVictim[guid]
+	local m = cid and Monster(cid)
+	local goal
+	if m then
+		local mp = m:getPosition()
+		goal = {x = mp.x, y = mp.y, z = mp.z}
+		out.world = {pos = goal, hp = math.floor(m:getHealth() * 100 / math.max(1, m:getMaxHealth())), level = rec and rec.level, name = m:getName()}
+	end
+	out.guide = K.guide({pos = at, monster = goal, pending = out.pending, has = out.has, reach = (c.tester and c.tester.reach) or 5})
+	return out
+end
+
+-- TEST ONLY (`!tester nemesis close`): the Nemesis goes from the world and its record is deleted (the run is over; the next one is born again)
+function NE.testerClose(player)
+	if not isTesterPlayer(player) then
+		return false
+	end
+	local guid = player:getGuid()
+	local rec = NE.records[guid]
+	local cid = NE.byVictim[guid]
+	if cid then
+		despawn(cid)
+	end
+	if not rec then
+		return false
+	end
+	deleteRecord(rec)
+	NE.records[guid], NE.pending[guid], NE.lastAppear[guid] = nil, nil, nil
+	pcall(function() player:unregisterEvent("ChaosNemesisKill") end)
+	return true
+end
+
 -- ------------------------------------------------------------------ the victim's kills call it
 function NE.onVictimKill(player, target)
 	local guid = player:getGuid()

@@ -175,7 +175,8 @@ namespace Chaos.Core.Tests
         // the crafting checks (O584) and the solo walks of O592 / O595 run in the Python bots only (Unity work on hold)
         static readonly string[] NotMirrored = { "craft_orbs", "craft_whetstone", "craft_sockets", "craft_gems", "craft_supports", "craft_charms", "craft_cards",
             "rift_walk", "tower_walk", "descent_walk", "trial_walk", "hideout",
-            "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk" };
+            "ascended_walk", "omen_walk", "bounty_walk", "mainquest_walk",
+            "bounty_elite_walk", "bounty_boss_walk", "daily_claim", "chronicle_walk", "nemesis_walk", "goblin_walk", "vael_walk", "invasion_walk" };
 
         static void Coverage(Action<bool, string> check)
         {
