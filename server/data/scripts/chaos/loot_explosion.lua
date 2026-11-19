@@ -230,15 +230,24 @@ local function guardMove(pkey)
 	end
 	pending[pkey] = nil
 	local tile = Tile(Position(row.pos.x, row.pos.y, row.pos.z))
+	-- the item is found again by its id and its count (a plain stack of the same id may lie on the tile: live run O671, 7 gold of a test took the record of
+	-- the 100 gold that stayed); without a match on the count, the first of its id with no record
+	local pick
 	for _, item in ipairs(tile and tile:getItems() or {}) do
 		if item:getId() == row.id and customAttr(item, X.ATTR) == nil then
-			item:setCustomAttribute(X.ATTR, row.raw)
-			if row.kill ~= nil then
-				item:setCustomAttribute(X.KILL_ATTR, row.kill)
+			if row.count and item:getCount() == row.count then
+				pick = item
+				break
 			end
-			watchTile(row.pos)
-			return
+			pick = pick or item
 		end
+	end
+	if pick then
+		pick:setCustomAttribute(X.ATTR, row.raw)
+		if row.kill ~= nil then
+			pick:setCustomAttribute(X.KILL_ATTR, row.kill)
+		end
+		watchTile(row.pos)
 	end
 end
 function X.pendingCount()
@@ -279,7 +288,8 @@ function X.onMoveItem(player, item, count, fromPosition, toPosition, fromCylinde
 			-- before the move, so it stacks with its like in the backpack. If the move then fails (no room, no capacity) the engine
 			-- fires no onItemMoved: the record is put back by guardMove below, so a refused item is never left free
 			local pkey = key(fromPosition) .. "/" .. item:getId()
-			pending[pkey] = {raw = raw, kill = customAttr(item, X.KILL_ATTR), id = item:getId(), pos = {x = fromPosition.x, y = fromPosition.y, z = fromPosition.z}}
+			pending[pkey] = {raw = raw, kill = customAttr(item, X.KILL_ATTR), id = item:getId(), count = item:getCount(),
+				pos = {x = fromPosition.x, y = fromPosition.y, z = fromPosition.z}}
 			X.release(item)
 			addEvent(function()
 				local ok, err = pcall(guardMove, pkey)
@@ -623,12 +633,52 @@ end
 -- (opcode 230) and probes again. Both are only reached by the helper, which answers for "Tester" characters only.
 local TEST_ITEMS = {{2148, 100}, {2148, 50}, {7618, 3}, {7620, 2}, {2376, 1, 3}, {2376, 1, 5}}
 
+X.testerOrigins = X.testerOrigins or {}
+
+-- TEST ONLY: the nearest free tile (within 20) with at least 12 free tiles in its 5 x 5 square and no creature on it, outside a protection zone: where a bot that
+-- stands in the temple can drop its test loot (the rule keeps loot out of a protection zone; a bot in its hunt walks into fights and picks the loot up)
+local function openSpot(from)
+	local best, bestD
+	for dx = -20, 20 do
+		for dy = -20, 20 do
+			local pos = Position(from.x + dx, from.y + dy, from.z)
+			local tile = Tile(pos)
+			local d = math.max(math.abs(dx), math.abs(dy))
+			if (not bestD or d < bestD) and tileFree(tile) and tile:getCreatureCount() == 0 and from:isSightClear(pos, true) then
+				local free = 0
+				for ex = -2, 2 do
+					for ey = -2, 2 do
+						if tileFree(Tile(Position(pos.x + ex, pos.y + ey, pos.z))) then
+							free = free + 1
+						end
+					end
+				end
+				if free >= 12 then
+					best, bestD = pos, d
+				end
+			end
+		end
+	end
+	return best
+end
+
 function X.testerRun(player)
 	if not X.active(cfg, corpseCfg) then
 		return nil, "the loot explosion is off"
 	end
 	local pos = player:getPosition()
 	local tile = Tile(pos)
+	local moved
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) and Chaos.isTester and Chaos.isTester(player) then
+		local spot = openSpot(pos)
+		if spot then
+			player:teleportTo(spot)
+			pos = player:getPosition()
+			tile = Tile(pos)
+			moved = true
+			print(string.format("[Chaos loot explosion] TEST ONLY: tester %s stepped out of a protection zone to %d,%d,%d", player:getName(), pos.x, pos.y, pos.z))
+		end
+	end
 	local bag = tile and Game.createItem(corpseCfg.bagId, 1)
 	if not bag then
 		return nil, "no bag"
@@ -646,26 +696,71 @@ function X.testerRun(player)
 		end
 	end
 	local before = bag:getSize()
+	local seq0 = X.seq
 	explode(nil, bag)
+	-- the death tile and the drop numbers (one per tile): the probe measures the rings from the tile and reads only this run's loot, whatever the bot did since (O671)
+	X.testerOrigins[player:getId()] = {x = pos.x, y = pos.y, z = pos.z, seqFrom = seq0 + 1, seqTo = X.seq}
 	if not X.isExploded(bag) then
 		bag:remove()
 		return nil, "not exploded (a cap, an instance, a tile with nothing free or the owner is not the bot)"
 	end
-	return {items = before, expected = #TEST_ITEMS}
+	return {items = before, expected = #TEST_ITEMS, moved = moved}
+end
+
+-- TEST ONLY (`!tester explode join NAME`, O671): this tester stands on a free tile beside the tester NAME, the stranger of the loot test that drags
+-- the owner's loot with its own hands. Testers only, both online on one floor; a player is never moved. -> {x, y, z, of} or nil + why
+function X.testerJoin(player, name)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	local other = name and Player(name)
+	if not other or other:getId() == player:getId() or not (Chaos.isTester and Chaos.isTester(other)) then
+		return nil, "no such tester online"
+	end
+	local at = other:getPosition()
+	for r = 1, 2 do
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local pos = Position(at.x + dx, at.y + dy, at.z)
+					local tile = Tile(pos)
+					if tileFree(tile) and tile:getCreatureCount() == 0 and at:isSightClear(pos, true) then
+						player:teleportTo(pos)
+						print(string.format("[Chaos loot explosion] TEST ONLY: tester %s joined tester %s", player:getName(), other:getName()))
+						return {x = pos.x, y = pos.y, z = pos.z, of = other:getId()}
+					end
+				end
+			end
+		end
+	end
+	return nil, "no free tile beside " .. name
 end
 
 function X.testerProbe(player)
-	local me = player:getPosition()
-	local out = {loose = 0, mine = 0, tiles = 0, maxRing = 0, strict = 0, foreign = 0, bagItems = 0, watched = X.watched(), expiry = nil}
+	local here = player:getPosition()
+	local me = here
+	local home = X.testerOrigins[player:getId()]
+	-- a bot walks on while the loot flies and lies (a hunting bot took a step in the first live run: ring 3 of its new tile): the rings are read from the death
+	-- tile of its last `explode run` while it stands within 4 tiles of it
+	local seqFrom, seqTo -- the drop numbers of that run: with them only the loot of that explosion is the asker's to read (ten bots share a temple and a hunt spot)
+	if home and home.z == here.z and math.max(math.abs(home.x - here.x), math.abs(home.y - here.y)) <= 4 then
+		me = Position(home.x, home.y, home.z)
+		seqFrom, seqTo = home.seqFrom, home.seqTo
+	end
+	local out = {loose = 0, mine = 0, tiles = 0, maxRing = 0, strict = 0, foreign = 0, bagItems = 0, watched = X.watched(), expiry = nil, list = {},
+		at = {x = here.x, y = here.y, z = here.z}}
 	local seen = {}
 	for dx = -4, 4 do
 		for dy = -4, 4 do
 			local tile = Tile(Position(me.x + dx, me.y + dy, me.z))
 			for _, item in ipairs(tile and tile:getItems() or {}) do
-				if item:getId() == corpseCfg.bagId and item:isContainer() then
-					out.bagItems = out.bagItems + item:getSize()
+				if item:getId() == corpseCfg.bagId and item:isContainer() and (not seqFrom or item:getCorpseOwner() == player:getId()) then
+					out.bagItems = out.bagItems + item:getSize() -- with a run on record only the asker's own bags (a neighbour's bag is not its fault)
 				end
 				local info = X.infoOf(item)
+				if info and seqFrom and (info.owner ~= player:getId() or info.seq < seqFrom or info.seq > seqTo) then
+					info = nil -- the loot of another run (an older one of this bot, or another bot's beside it) is not read
+				end
 				if info then
 					out.loose = out.loose + 1
 					if info.owner == player:getId() then
@@ -674,6 +769,14 @@ function X.testerProbe(player)
 						out.foreign = out.foreign + 1
 					end
 					out.strict = out.strict + (info.strict and 1 or 0)
+					-- the loose items by place, what a drag names (O671): the tile, the item, its place in the tile's stack. A drag takes the top item
+					-- of a tile (the engine's STACKPOS_MOVE), so only the top one of each tile is listed
+					local top = tile.getTopDownItem and tile:getTopDownItem() or item
+					if #out.list < 8 and top == item then
+						local itp = ItemType(item:getId())
+						out.list[#out.list + 1] = {x = me.x + dx, y = me.y + dy, z = me.z, id = item:getId(), cid = itp and itp:getClientId() or 0,
+							sp = tile.getThingIndex and tile:getThingIndex(item) or 1, n = item:getCount(), mine = info.owner == player:getId() or nil}
+					end
 					local k = (me.x + dx) .. "," .. (me.y + dy)
 					if not seen[k] then
 						seen[k] = true

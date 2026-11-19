@@ -3282,6 +3282,146 @@ RIFT_STUCK = 30.0
 RIFT_MISSES = 6
 
 
+# ------------------------------------------------------------------------------------------------ the Greater Rift, opened sealed and failed (O671)
+GREATER_MIN_LEVEL = 1025      # rift_config.lua greater.key.minLevel: the level of the tier 15 key
+GREATER_G = 2                 # the key the helper gives: Greater tier 2 = shown tier 17
+GREATER_OUT_WAIT = 60.0       # seconds from the end of a run to the bot out of it with the next key in its backpack
+
+
+def greater_rift_verdict(t):
+    """(status, text) for the Greater Rift as a bot plays it (O671). t: g, opened (the run's own greater number), sealed (the run ended 'success'),
+    secs, key_sealed (the shown tier of the key after the seal), key_failed (after the failed one), fault list. The seal climbs the key 1 to 3 tiers
+    (the clock), a failure drops it one."""
+    shown = 15 + int(t.get('g') or 0)
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    if not t.get('opened'):
+        return SKIP, t.get('why') or 'the Greater Rift did not open'
+    if t.get('opened') != t.get('g'):
+        return FAIL, 'a Greater tier %s key opened a run of Greater %s' % (shown, t.get('opened'))
+    if not t.get('sealed'):
+        return SKIP, 'the run was not sealed in %d s (the bot struck every monster of it; a slot was busy or the guardian did not come)' % int(t.get('secs') or 0)
+    k = t.get('key_sealed')
+    if k is None:
+        return SKIP, 'sealed in %s s; the key left behind was not read (the bag was full: it goes to the inbox)' % t.get('secs')
+    if not shown < int(k) <= shown + 3:
+        return FAIL, 'a sealed tier %s run left a key of tier %s (it must climb 1 to 3)' % (shown, k)
+    text = 'tier %s sealed in %s s, the key climbed to %s' % (shown, t.get('secs'), k)
+    kf = t.get('key_failed')
+    if kf is None:
+        return PASS, text + '; the failed run was not read'
+    if int(kf) != int(k) - 1:
+        return FAIL, text + '; a failed tier %s run left a key of tier %s (it must fall one)' % (k, kf)
+    return PASS, text + ', a failed run at %s dropped it to %s' % (k, kf)
+
+
+async def greater_open(io, trace, command):
+    """the helper gives a key (`command`), the bot uses it, waits to stand inside; the run's Greater number or None, the key reply"""
+    k = await io.helper(command, 'rift', HELPER_WAIT)
+    if not isinstance(k, dict) or k.get('err'):
+        trace['why'] = '%s: %s' % (command, str((k or {}).get('err') or 'no answer')[:80])
+        return None, k
+    if k.get('held') is False:
+        trace['why'] = 'the bag is full: the key went to the inbox (by design)' if k.get('bagFull') else 'a key was given, the backpack holds none'
+        return None, k
+    opened, waited = None, 0.0
+    while waited <= RIFT_OPEN_WAIT and io.alive():
+        if waited in (0.0, 5.0, 9.0):
+            await io.use_item(k.get('keyClientId'))
+        await io.sleep(1.0)
+        waited += 1.0
+        opened = await io.helper('rift state', 'rift', ANSWER)
+        if isinstance(opened, dict) and opened.get('inside'):
+            break
+    if not (isinstance(opened, dict) and opened.get('inside')):
+        trace['why'] = 'the rift did not open in %d s (a slot is busy or being built, or the bot is in a fight)' % int(RIFT_OPEN_WAIT)
+        return None, k
+    return int(((opened.get('run') or {}).get('greater')) or 0), k
+
+
+async def greater_wait_out(io, limit):
+    """waits for the bot to stand outside every run; the last `rift state`"""
+    s, waited = None, 0.0
+    while waited < limit and io.alive():
+        s = await io.helper('rift state', 'rift', ANSWER)
+        if isinstance(s, dict) and not s.get('inside'):
+            return s
+        await io.sleep(3.0)
+        waited += 3.0 + 0.2
+    return s
+
+
+async def check_greater_rift(io, name, cls, level):
+    """a Greater Rift Key of tier 17 (TEST ONLY, `rift greater 2`) opened like any key, sealed (`rift seal`: every monster struck through the real death
+    events), the key it leaves climbs; then that key opened and the run failed (`rift fail`): the key drops one tier (rift_config.lua `greater`, O668)"""
+    key = 'greater_rift'
+    a = await io.helper('rift state', 'rift', ANSWER)
+    if not isinstance(a, dict):
+        return Result(key, name, cls, SKIP, 'no answer to !tester rift (old helper file)')
+    if a.get('err'):
+        return Result(key, name, cls, SKIP, str(a['err'])[:80])
+    if int(a.get('level') or 0) < GREATER_MIN_LEVEL:
+        return Result(key, name, cls, SKIP, 'level %s: a Greater Rift Key needs level %d' % (a.get('level'), GREATER_MIN_LEVEL))
+    if a.get('inside'):
+        await io.helper('rift close', 'rift', ANSWER)
+        await io.sleep(1.5)
+        a = await io.helper('rift state', 'rift', ANSWER) or a
+        if a.get('inside'):
+            return Result(key, name, cls, SKIP, 'the bot is inside a rift already')
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    trace = {'faults': [], 'g': GREATER_G, 'secs': 0}
+    fallbacks = []
+    await io.helper('bag wipe', 'bag', 8.0)   # room for the key (a full backpack sends it to the inbox: the bots' bags are full most of the time)
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        if not a.get('pz'):
+            how, got, note = await walk_to_place(io, r, 'temple')
+            if how not in ('foot', 'helper'):
+                return Result(key, name, cls, SKIP, how[:110])
+            if note:
+                fallbacks.append(note)
+            await io.sleep(SETTLE)
+            a = await io.helper('rift state', 'rift', ANSWER)
+            if not (isinstance(a, dict) and a.get('pz')):
+                return Result(key, name, cls, SKIP, 'the bot stands at the temple but not in a protection zone: a rift cannot be opened there', fallbacks)
+        g, k = await greater_open(io, trace, 'rift greater %d' % GREATER_G)
+        if g is None:
+            return Result(key, name, cls, *greater_rift_verdict(trace), fallbacks)
+        trace['opened'] = g
+        if int(k.get('tier') or 0) != 15 + GREATER_G:
+            trace['faults'].append('the helper gave a key of tier %s for Greater %d (tier %d expected)' % (k.get('tier'), GREATER_G, 15 + GREATER_G))
+        sealing = await io.helper('rift seal', 'rift', ANSWER)
+        if not isinstance(sealing, dict) or sealing.get('err'):
+            return Result(key, name, cls, SKIP, 'rift seal: %s' % str((sealing or {}).get('err') or 'no answer')[:80], fallbacks)
+        waited = 0.0
+        while waited < RIFT_BUDGET and io.alive():
+            await io.sleep(3.0)
+            waited += 3.2
+            s = await io.helper('rift state', 'rift', ANSWER)
+            run = (s or {}).get('run') or {}
+            if isinstance(s, dict) and (run.get('state') == 'success' or not s.get('inside')):
+                trace['sealed'] = run.get('state') == 'success' or bool(s.get('held'))
+                break
+        trace['secs'] = int(waited)
+        s = await greater_wait_out(io, GREATER_OUT_WAIT)   # the exit delay, then the temple with the next key
+        trace['key_sealed'] = (s or {}).get('keyShown') if isinstance(s, dict) and not s.get('bagFull') else None
+        if not trace.get('sealed'):
+            return Result(key, name, cls, *greater_rift_verdict(trace), fallbacks)
+        if trace['key_sealed']:
+            await io.sleep(SETTLE)
+            g2, _ = await greater_open(io, {}, 'rift state')   # the key the seal left is used as it lies in the bag
+            if g2 is not None:
+                await io.helper('rift fail', 'rift', ANSWER)
+                await io.sleep(SETTLE)
+                s2 = await greater_wait_out(io, GREATER_OUT_WAIT)
+                trace['key_failed'] = (s2 or {}).get('keyShown') if isinstance(s2, dict) else None
+        return Result(key, name, cls, *greater_rift_verdict(trace), fallbacks)
+    finally:
+        await io.helper('rift close', 'rift', ANSWER)   # the keys left in the backpack go
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
 def rift_walk_verdict(t):
     """(status, text) from the trace of a walked rift: faults, kills (kills made), boss_seen, hp (the guardian's lowest health percent), came
     ('foot' / 'helper'), steps, secs, fought, stuck, floor (a goal on another floor: the stairs are not walked), died, tier, theme, fallbacks"""
@@ -5349,10 +5489,27 @@ def explode_verdict(run, mid, end, answer):
         mid.get('loose'), mid.get('tiles'), mid.get('maxRing'), got.get('n'))
 
 
+async def explode_run(io):
+    """`!tester explode run`; a bot that stands in a protection zone (the temple, where the closed checks leave it) has no free tile for the loot: the rule
+    keeps the loot out of a protection zone, so the bot goes to its hunt first and asks again (live run O671: 3 of 3 bots were in the temple)"""
+    await io.helper('bag wipe', 'bag', 8.0)   # room in the backpack: Loot all and a drag onto it need some (the bots' bags are full most of the time)
+    await io.helper('town', 'town', 6.0)      # the temple: no fight, no autoloot of its own; the run steps out of the protection zone onto open ground
+    await io.sleep(1.5)
+    run = await io.helper('explode run', 'explode', ANSWER)
+    if isinstance(run, dict) and 'not exploded' in str(run.get('err') or ''):
+        await io.go('hunt')
+        for _ in range(3):   # the walk or the teleport to the hunt takes a few seconds: ask again until the bot stands in the open
+            await io.sleep(SETTLE)
+            run = await io.helper('explode run', 'explode', ANSWER)
+            if not (isinstance(run, dict) and 'not exploded' in str(run.get('err') or '')):
+                break
+    return run
+
+
 async def check_loot_explosion(io, name, cls, level):
     """the loot of a kill flies out onto the ground around it, owned by the killer; Loot all picks it up (O669). A loot bag of the bot's own (TEST ONLY)"""
     key = 'loot_explosion'
-    run = await io.helper('explode run', 'explode', ANSWER)
+    run = await explode_run(io)
     if not isinstance(run, dict) or run.get('err'):
         return Result(key, name, cls, *explode_verdict(run, None, None, None))
     await io.sleep(3.0)   # the last item leaves after 14 x 80 ms and flies at most 200 ms
@@ -5361,6 +5518,133 @@ async def check_loot_explosion(io, name, cls, level):
     await io.sleep(1.0)
     end = await io.helper('explode state', 'explode', ANSWER)
     return Result(key, name, cls, *explode_verdict(run, mid, end, answer))
+
+
+LOOT_REFUSAL = 'belongs to someone else'   # the words of loot_explosion.lua `onMoveItem`: "That loot belongs to someone else for 42 more seconds."
+
+
+def loot_stranger_verdict(t):
+    """(status, text) for the loot explosion's ownership with two bots (O671). t: items (the owner's loose items after the flight), refusal (the server's
+    line to the stranger's drag, or None), stranger_lines / owner_lines / party_lines (the text lines after each drag), stranger_after / owner_after /
+    party_after (loose items of the owner left after each drag), party (a party of the two formed). FAIL only on what the loot rule did: the stranger took
+    the loot, the owner or a party member was told it is someone else's. A drag that did nothing and heard nothing of the rule (a path blocked, a
+    monster in the way, a full backpack) is a SKIP with what the server said."""
+    if not t.get('items'):
+        return SKIP, t.get('why') or 'no loot lay on the ground to drag'
+    n = int(t['items'])
+
+    def said(key):
+        return ' | '.join(str(l)[:60] for l in (t.get(key) or [])[:3]) or 'nothing'
+
+    def refused(key):
+        return any(LOOT_REFUSAL in str(l) for l in t.get(key) or [])
+    after = t.get('stranger_after')
+    if after is None:
+        return SKIP, 'no state after the stranger\'s drag'
+    if int(after) < n:
+        return FAIL, 'a stranger dragged the owner\'s loot into its backpack before the owner time ran out (%s of %s items left)' % (after, n)
+    if not t.get('refusal'):
+        return SKIP, 'the stranger\'s drag did not reach the rule (no "%s" line; the server said: %s)' % (LOOT_REFUSAL, said('stranger_lines'))
+    owner = t.get('owner_after')
+    if owner is None:
+        return SKIP, 'the stranger was refused (%s); no state after the owner\'s drag' % t['refusal'][:60]
+    if int(owner) >= int(after):
+        if refused('owner_lines'):
+            return FAIL, 'the owner was told its own loot belongs to someone else (%s)' % said('owner_lines')
+        return SKIP, 'the stranger was refused; the owner\'s drag took nothing (%s items before, %s after; the server said: %s)' % (after, owner, said('owner_lines'))
+    text = 'stranger refused ("%s"), owner took 1 of %s' % (t['refusal'][:60], n)
+    if t.get('party'):
+        pa = t.get('party_after')
+        if pa is None:
+            return SKIP, text + '; no state after the party member\'s drag'
+        if int(pa) >= int(owner):
+            if refused('party_lines'):
+                return FAIL, 'a member of the owner\'s party was told the loot belongs to someone else (%s)' % said('party_lines')
+            return SKIP, text + '; the party member\'s drag took nothing (the server said: %s)' % said('party_lines')
+        text += ', a party member took 1'
+    else:
+        text += '; no party formed (the party rule was not read)'
+    return PASS, text
+
+
+async def loot_stranger_open_bags(io, name, other):
+    """both bots have their backpack open as container 0, the target of a drag onto the first slot (a drag onto a container that is not open is dropped by the
+    server with no word). `found` says whether it is open (`bagOpen`, O662): up to three tries each"""
+    for who in (name, other):
+        for _ in range(3):
+            f = await (io.helper('found', 'found', ANSWER) if who == name else io.helper_of(who, 'found', 'found', ANSWER))
+            if not isinstance(f, dict) or f.get('bagOpen'):
+                break
+            await (io.open_bag(f.get('bagClientId')) if who == name else io.open_bag_of(who, f.get('bagClientId')))
+            await io.sleep(1.0)
+
+
+def loot_rows(state, near=None):
+    """the owner's loose items a drag can name: tile, client id, place in the tile's stack, count. `near` (x, y): the ones beside that tile first (a bot
+    that has no way to an item the server cannot walk to says "There is no way.": the item next to it needs no walk)"""
+    rows = [r for r in (state or {}).get('list') or [] if r.get('mine') and r.get('cid')]
+    if near:
+        rows.sort(key=lambda r: max(abs(int(r['x']) - int(near[0])), abs(int(r['y']) - int(near[1]))))
+    return rows
+
+
+async def check_loot_stranger(io, name, cls, level):
+    """the loot explosion with two bots (O671): the owner's loot is dragged by a stranger (refused, with the server's words), by the owner and by a party
+    member (taken), the packets a client sends. The second bot is moved next to the loot by the helper (`explode join`): TEST ONLY, testers only"""
+    key = 'loot_stranger'
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game (none online, or all in another party check)')
+    t = {'items': 0, 'refusal': None, 'party': False}
+    io.raid_mode([name, other], True, keep_flee=True)   # both stand still: a bot that wanders off walks the loot out of its own reach
+    try:
+        run = await explode_run(io)
+        if not isinstance(run, dict) or run.get('err'):
+            return Result(key, name, cls, SKIP, str((run or {}).get('err') or 'no answer to !tester explode')[:100])
+        await io.sleep(3.0)
+        mid = await io.helper('explode state', 'explode', ANSWER)
+        rows = loot_rows(mid)
+        if not rows or int((mid or {}).get('mine') or 0) < 3:
+            t['why'] = 'the loot did not land (%s of the owner\'s items on the ground)' % ((mid or {}).get('mine'),)
+            return Result(key, name, cls, *loot_stranger_verdict(t))
+        t['items'] = int(mid.get('mine') or 0)
+        joined = await io.helper_of(other, 'explode join %s' % name, 'explode', ANSWER)
+        if not isinstance(joined, dict) or joined.get('err'):
+            return Result(key, name, cls, SKIP, 'the second bot could not stand beside the loot: %s' % str((joined or {}).get('err') or 'no answer')[:80])
+        await loot_stranger_open_bags(io, name, other)
+        rows = loot_rows(mid, (joined.get('x'), joined.get('y')))
+        r1 = rows[0]
+        lines = await io.drag_of(other, (r1['x'], r1['y'], r1['z']), r1['cid'], r1['sp'], count=int(r1.get('n') or 1), wait=6.0, until_text=LOOT_REFUSAL)
+        t['refusal'] = next((l for l in lines or [] if LOOT_REFUSAL in str(l)), None)
+        t['stranger_lines'] = list(lines or [])
+        state = await io.helper('explode state', 'explode', ANSWER)
+        t['stranger_after'] = int((state or {}).get('mine') or 0)
+        at = ((state or {}).get('at') or {})
+        rows = loot_rows(state, (at.get('x'), at.get('y')) if at else None)
+        if rows:
+            r2 = rows[0]
+            got = await io.drag_of(name, (r2['x'], r2['y'], r2['z']), r2['cid'], r2['sp'], count=int(r2.get('n') or 1), wait=3.0, until_text=LOOT_REFUSAL)
+            state = await io.helper('explode state', 'explode', ANSWER)
+            t['owner_after'] = int((state or {}).get('mine') or 0)
+            t['owner_lines'] = list(got or [])
+        if t.get('owner_after') is not None and t['owner_after'] < t['stranger_after']:
+            if await io.party('form', other):
+                await io.sleep(SETTLE)
+                p = await io.helper('party', 'party', ANSWER)
+                t['party'] = bool(isinstance(p, dict) and int(p.get('size') or 0) >= 2)
+                rows = loot_rows(state, (joined.get('x'), joined.get('y')))
+                if t['party'] and rows:
+                    r3 = rows[0]
+                    t['party_lines'] = list(await io.drag_of(other, (r3['x'], r3['y'], r3['z']), r3['cid'], r3['sp'], count=int(r3.get('n') or 1), wait=3.0, until_text=LOOT_REFUSAL) or [])
+                    t['party_after'] = int(((await io.helper('explode state', 'explode', ANSWER)) or {}).get('mine') or 0)
+                await io.party('leave', other)
+        return Result(key, name, cls, *loot_stranger_verdict(t))
+    finally:
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)   # what is left of the owner's loot
+        io.raid_mode([name, other], False)
+        free = getattr(io, 'release_partner', None)   # the two names are free for the next party check
+        if free is not None:
+            free(name, other)
 
 
 def chests_verdict(week, cache):
@@ -7788,7 +8072,8 @@ CHECKS = [
     ('gear_chase', check_gear_chase, lambda c: True),   # O653: wears the piece whose score knows sets, uniques and jewelry
     ('chore_faction', check_chore_faction, lambda c: True),   # O653: the reputation window: ranks, contracts, tokens turned in
     ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
-    ('loot_explosion', check_loot_explosion, lambda c: True),   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
+    ('loot_explosion', check_loot_explosion, lambda c: True),
+    ('loot_stranger', check_loot_stranger, lambda c: True),   # O671: the loot of a kill dragged by a stranger (refused), the owner and a party member (taken): two bots   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
     ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
@@ -7810,6 +8095,7 @@ CHECKS = [
     ('autosell_rules', check_autosell_rules, lambda c: True),   # O655: the Auto Seller window: locked without the store unlock, else the corpse switch turned and back
     ('stash_window', check_stash_window, lambda c: True),   # O655: the stash window: tabs, items, the item search
     ('gamble_reroll', check_gamble_reroll, lambda c: True),   # O655: the Gambler's fresh crates for gold: the count, the money and the stock move
+    ('greater_rift', check_greater_rift, lambda c: True),   # O671: a Greater Rift Key opened, sealed (TEST ONLY strike) and failed: the key climbs, then drops one
     ('rift_walk', check_rift_walk, lambda c: True),   # O592: the rift on foot, the longest of the open checks: last
     ('ascension_walk', check_ascension_walk, lambda c: True),   # O655: the Oracle's quest on foot: the Calling, the Proof (TEST ONLY credit), the Trial, the Choice and the class lock; changes the class: after every other check
 ]

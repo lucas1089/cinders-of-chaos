@@ -884,6 +884,49 @@ do
 	ChaosCursedChest, t2.getGuid = nil, realGuid
 end
 
+-- ------------------------------------------------------------------ O671: the rift's greater, seal and fail words on a mocked ChaosRift
+do
+	local savedRF, savedCfg, savedCore, savedIT = ChaosRift, ChaosRiftConfig, ChaosRiftCore, ItemType
+	local held, sealed, failed, keyBack = false, 0, 0, nil
+	ChaosRiftConfig = {maxTier = 15, key = {itemId = 10155}}
+	ChaosRiftCore = {tierInfo = function() return {minLevel = 100} end}
+	ChaosRift = {
+		probe = function(p) return {inside = false, level = 1500, pz = p.inPz ~= false, held = held, keyShown = held and 17 or nil} end,
+		giveKey = function() return nil end,
+		testerGreaterKey = function(p, g) held = not keyBack return 15 + g, keyBack end,
+		testerSeal = function(p) sealed = sealed + 1 return true end,
+		testerFail = function(p) failed = failed + 1 return true end,
+	}
+	function ItemType(id) return {getClientId = function() return 4000 + id end} end
+	local gt = creature(268435493, "Tester Grr", {store = {[ST] = 1}})
+	gt.getItemById = function() return held and {remove = function() end} or nil end
+	local function sayR(cmd)
+		talks["!tester"].onSay(gt, "!tester", "rift " .. cmd)
+		return gt.log.msgs[#gt.log.msgs]
+	end
+	local line = sayR("greater 3")
+	check(line:find('"tier":18', 1, true) and line:find('"greater":3', 1, true) and line:find('"held":true', 1, true), "rift greater 3: the key of tier 18 is in the backpack: " .. tostring(line))
+	check(line:find('"keyClientId":14155', 1, true), "rift greater: the client id of the key to use")
+	check(line:find('"keyShown":17', 1, true), "rift greater: the answer carries the key shown now")
+	held, keyBack = false, true
+	line = sayR("greater 2")
+	check(line:find('"bagFull":true', 1, true) and line:find('"held":false', 1, true), "rift greater with a full backpack: the key went to the inbox, and the answer says so: " .. tostring(line))
+	gt.inPz = false
+	line = sayR("greater 2")
+	check(line:find("not in a protection zone", 1, true), "rift greater outside a protection zone: refused")
+	gt.inPz = true
+	eq(sealed, 0, "no seal asked yet")
+	line = sayR("seal")
+	check(line:find('"sealing":true', 1, true) and sealed == 1, "rift seal: started: " .. tostring(line))
+	line = sayR("fail")
+	check(line:find('"failed":true', 1, true) and failed == 1, "rift fail: done: " .. tostring(line))
+	ChaosRift.testerSeal = function() return nil, "not inside a running rift" end
+	check(sayR("seal"):find("not inside a running rift", 1, true), "rift seal: the engine's reason comes back")
+	ChaosRift.testerGreaterKey = nil
+	check(sayR("greater 1"):find("no Greater Rift", 1, true), "rift greater: an engine with no such function says so")
+	ChaosRift, ChaosRiftConfig, ChaosRiftCore, ItemType = savedRF, savedCfg, savedCore, savedIT
+end
+
 -- ------------------------------------------------------------------ the line spell quests (!tester spellquest)
 do
 	local sq = H.parseSpellQuest
@@ -1663,6 +1706,28 @@ do
 	check(H.parseRift("key 99") == nil and H.parseRift("key 0") == nil and H.parseRift("state 3") == nil and H.parseRift("open") == nil,
 		"rift: a bad tier, a number after another word, an unknown word")
 	eq(H.parseRift(nil).what, "state", "rift: no word is state")
+	-- O671: the Greater Rift Key, the seal and the fail of a tester's own run
+	r = H.parseRift("greater 3")
+	check(r and r.what == "greater" and r.greater == 3, "rift: greater with a number")
+	r = H.parseRift("greater")
+	check(r and r.what == "greater" and r.greater == 1, "rift: greater alone is the first one (tier 16)")
+	check(H.parseRift("greater 0") == nil and H.parseRift("greater 100") == nil and H.parseRift("greater x") == nil, "rift: a bad Greater number")
+	check(H.parseRift("seal").what == "seal" and H.parseRift("FAIL").what == "fail" and H.parseRift("seal 2") == nil, "rift: seal and fail take no number")
+	eq(H.riftAnswer({run = {id = 1, greater = 3}}).run.greater, 3, "rift: the answer carries the Greater number of the run")
+	eq(H.riftAnswer({keyShown = 20}).keyShown, 20, "rift: the answer carries the shown tier of the key held")
+	-- O671: every command the helper defines is a word the dispatcher knows (explode and wsendgame were missing: "unknown command" in the first live run)
+	do
+		local f = io.open("tools/tester_helper.lua", "r")
+		local src = f and f:read("*a") or ""
+		if f then f:close() end
+		local n, missing = 0, {}
+		for name in src:gmatch("\nfunction commands%.(%w+)") do
+			n = n + 1
+			if not H.COMMANDS[name] then missing[#missing + 1] = name end
+		end
+		check(n > 40 and #missing == 0, "every commands.X of the helper is in H.COMMANDS (" .. n .. " read; missing: " .. table.concat(missing, ", ") .. ")")
+	end
+	check(HELPER_VERSION >= 28, "the helper is version 28 or later (O671: rift greater, seal, fail)")
 	-- the answers cut the probes down
 	local a = H.siegeAnswer({inside = true, level = 900, minLevel = 100, pos = {x = 1, y = 2, z = 7, junk = 1}, on = true, running = true, phase = "match",
 		side = "tester", guild = "Tester Guild Alfa", signed = true, left = 90, where = "arena", bracket = 1, center = {x = 5, y = 5, z = 7},
@@ -2161,7 +2226,10 @@ do
 	eq(H.parseGoblin("spawn"), "spawn", "goblin: spawn")
 	eq(H.parseExplode("run"), "run", "explode: run (O669)")
 	eq(H.parseExplode("state"), "state", "explode: state")
-	check(H.parseExplode("steal") == nil and select(2, H.parseExplode("steal")) == "usage: explode [state | run]", "explode: the usage")
+	check(H.parseExplode("steal") == nil and select(2, H.parseExplode("steal")) == "usage: explode [state | run | join NAME]", "explode: the usage")
+	local jw, jn = H.parseExplode("join Tester Aab")
+	check(jw == "join" and jn == "Tester Aab", "explode: join takes the name of the owner bot (O671)")
+	check(H.parseExplode("join") == nil and H.parseExplode("join   ") == nil, "explode: join needs a name")
 	eq(H.parseInvasion("path"), "path", "invasion: path")
 	check(H.parseInvasion("start") == nil, "invasion: start is a staff word, never the helper's")
 	-- the answer is the probe cut down
@@ -2466,8 +2534,10 @@ do
 	check(ws and ws.what == "enter" and ws.tier == 11, "wsmap: enter a tier")
 	eq(H.parseWsMap("enter").tier, nil, "wsmap: enter without a tier")
 	eq(H.parseWsMap(nil).what, "state", "wsmap: no word is state")
-	w, usage = H.parseWsMap("enter 16")
-	check(w == nil and usage:find("usage: wsmap", 1, true), "wsmap: a tier above 15")
+	w = H.parseWsMap("enter 25")
+	check(w and w.tier == 25, "wsmap: the deep band's tiers 16 to 25 open for a tester (O671)")
+	w, usage = H.parseWsMap("enter 26")
+	check(w == nil and usage:find("usage: wsmap", 1, true), "wsmap: a tier above 25")
 	w = H.parseWsMap("state 3")
 	eq(w, nil, "wsmap: state takes no number")
 	local wa = H.wsmapAnswer({inside = true, level = 1500, pos = {x = 1, y = 2, z = 7, junk = 1}, minLevel = 1000, kills = 3, arrivals = 4, free = true, freeTier = 6,

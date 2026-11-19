@@ -145,7 +145,9 @@ function K.rollClear(cfg, source, info, level, focus, rand)
 	if not boss then
 		return out
 	end
-	if roll(row.chance or 0, rand) then
+	-- the Endgame Atlas rank of the waystone's opener (O666 `fragmentChance`, percent points) adds to the chance of the waystone's own kind
+	local extra = source == "waystone" and math.max(0, tonumber(info and info.fragmentChance) or 0) or 0
+	if roll((row.chance or 0) + extra, rand) then
 		out[#out + 1] = {boss = boss, kind = row.kind}
 	end
 	if roll(row.anyChance or 0, rand) then

@@ -487,6 +487,17 @@ function Tile(a, b, c)
 			return function(_, f) return t.flags[f] == true end
 		elseif name == "addItemEx" then
 			return function(_, item) attach(item, t) return RETURNVALUE_NOERROR end
+		elseif name == "getThingIndex" then
+			return function(_, item)
+				for i, x in ipairs(t.items) do
+					if x == item then return i end
+				end
+				return -1
+			end
+		elseif name == "getTopDownItem" then
+			return function() return t.items[#t.items] end
+		elseif name == "getCreatureCount" then
+			return function() return t.creatures or 0 end
 		end
 	end})
 end
@@ -531,8 +542,17 @@ function PlayerMT:getPosition() return self.pos end
 function PlayerMT:sendCancelMessage(t) self.cancel[#self.cancel + 1] = t end
 function PlayerMT:sendTextMessage(_, t) self.texts[#self.texts + 1] = t end
 function Player(id)
+	if type(id) == "string" then -- by name (O671: the tester join)
+		for _, p in pairs(players) do
+			if p.name == id then return p end
+		end
+		return nil
+	end
 	return players[id]
 end
+function ItemType(id) return {getClientId = function() return id + 1000 end} end
+function PlayerMT:getName() return self.name or ("Player" .. self.id) end
+function PlayerMT:teleportTo(pos) self.pos = pos end
 local function newPlayer(id, x, y)
 	local p = setmetatable({id = id, cancel = {}, texts = {}, pos = Position(x or 100, y or 100, 7), bp = newItem(2854, 1, {container = true})}, PlayerMT)
 	p.bp.kind = "bag"
@@ -544,7 +564,7 @@ local function party(leader, members)
 	return par
 end
 
-Chaos = {isStaff = function(p) return p.staff == true end, tx = function(_, t) return t end, instanceAt = function() return world.instance end}
+Chaos = {isTester = function(p) return p.tester == true end, isStaff = function(p) return p.staff == true end, tx = function(_, t) return t end, instanceAt = function() return world.instance end}
 dofile("data/lib/chaos_rarity.lua")
 ChaosLootFilter = {
 	killOf = function(corpse) return corpse:getCustomAttribute("lf_kill") end,
@@ -782,6 +802,26 @@ do
 	eq(log.touched[#log.touched], 41, "the loot filter re-reads the kill the item came from")
 	runEvents(clock.ms + 500)
 	ok(item.attrs.chaos_loot == nil, "and the record stays off")
+end
+-- O671: a plain stack of the same id lies on the tile (live run: 7 gold of a test took the record of the 100 gold that stayed)
+do
+	local fx, fy = 98, 98
+	local tile = world.tiles[fx .. "," .. fy .. ",7"]
+	local plain = newItem(2148, 7, {stackable = true})
+	attach(plain, tile)
+	local loot = newItem(2148, 100, {stackable = true})
+	loot.attrs.chaos_loot = X.encode({owner = 1, ownUntil = 0, expiry = 9999999999, strict = false, seq = 78})
+	loot.stackable = true
+	tile.items[#tile.items + 1] = loot
+	loot.parent = tile
+	local at = {x = fx, y = fy, z = 7}
+	eq(X.onMoveItem(owner, loot, 100, at, toBp), RETURNVALUE_NOERROR, "the owner starts to drag the 100 gold")
+	ok(loot.attrs.chaos_loot == nil, "its record is off")
+	runEvents(clock.ms + 250)
+	ok(loot.attrs.chaos_loot ~= nil, "the move failed: the record is back on the 100 gold")
+	ok(plain.attrs.chaos_loot == nil, "and not on the plain 7 gold beside it")
+	plain:remove()
+	loot:remove()
 end
 -- an item with no record or a broken one
 local plain = newItem(2400)
@@ -1039,12 +1079,93 @@ eq(probe.foreign, 0, "none of another")
 eq(probe.bagItems, 0, "nothing left in the bag")
 ok(probe.maxRing <= 2, "within 2 tiles")
 ok(probe.tiles >= 5, "on at least five tiles (the gold shares one)")
+ok(#probe.list >= 5 and probe.list[1].cid and probe.list[1].sp and probe.list[1].x and probe.list[1].mine == true, "the list names the items by tile, client id and stack place (O671)")
+eq(probe.at.x, 800, "and where the asker stands")
 eq(probe.strangerRefused, true, "a stranger is refused")
 eq(probe.ownerAllowed, true, "the owner is allowed")
 ok(probe.expiry and probe.expiry > 0, "a vanish time")
+-- O671: a bot in the temple (a protection zone) is put on an open tile first; a player or a bot already in the open stays where it is
+do
+	local zone = newPlayer(20, 900, 900)
+	zone.name, zone.tester = "Tester Zone", true
+	for dx = -3, 3 do
+		for dy = -3, 3 do
+			newTile(900 + dx, 900 + dy, 7, {flags = {[TILESTATE_PROTECTIONZONE] = true}})
+		end
+	end
+	openGround(908, 900, 4)   -- free ground just outside the zone, to the east
+	local r = X.testerRun(zone)
+	ok(r and r.moved == true, "a tester in a protection zone steps out first")
+	ok(not world.tiles[zone.pos.x .. "," .. zone.pos.y .. ",7"].flags[TILESTATE_PROTECTIONZONE], "onto a tile outside the zone")
+	ok(zone.pos.x > 903, "the nearest open ground: " .. zone.pos.x)
+	runEvents(clock.ms + 4000)
+	eq(X.testerProbe(zone).mine, X.testerProbe(zone).loose, "and its loot lies there")
+	ok(X.testerProbe(zone).loose >= 5, "all of it")
+	local open = newPlayer(21, 800, 800)
+	open.name, open.tester = "Tester Open", true
+	local r2 = X.testerRun(open)
+	ok(r2 and not r2.moved and open.pos.x == 800, "a bot in the open is not moved")
+	local plain = newPlayer(22, 900, 900)
+	plain.name = "Plain Walker"
+	local r3 = X.testerRun(plain)
+	ok(r3 == nil and plain.pos.x == 900, "a player in a protection zone is never moved: nothing explodes")
+	for _, id in ipairs({20, 21, 22}) do
+		X.testerOrigins[id] = nil
+	end
+end
+
+-- O671: a hunting bot walks on while the loot flies; the rings are read from the death tile of its last run
+bot.pos = Position(802, 800, 7)
+local drift = X.testerProbe(bot)
+eq(drift.loose, probe.loose, "a bot two tiles off still finds all its loot (the first live run read ring 3 of its new tile)")
+ok(drift.maxRing <= 2, "and the rings are the death tile's: " .. tostring(drift.maxRing))
+eq(drift.at.x, 802, "the asker's place is where it stands now")
+bot.pos = Position(812, 800, 7)
+eq(X.testerProbe(bot).loose, 0, "a bot far from the death tile reads only what lies around itself")
+bot.pos = Position(800, 800, 7)
+-- ten bots share a hunt spot: the loot of another bot's run beside it, and an older run of its own, are not its state
+do
+	local other = newPlayer(9, 801, 801)
+	other.name, other.tester = "Tester Neighbour", true
+	local before = X.testerProbe(bot).loose
+	ok(X.testerRun(other) ~= nil, "a neighbour's loot flies beside the bot")
+	runEvents(clock.ms + 4000)
+	local after = X.testerProbe(bot)
+	eq(after.loose, before, "the neighbour's loot is not counted in the bot's state")
+	eq(after.foreign, 0, "and is not 'another's loot' in it")
+	local theirBag = makeBag(803, 803, 9, {{id = 2148, count = 3, stackable = true}})
+	eq(X.testerProbe(bot).bagItems, 0, "a neighbour's bag with things in it is not the bot's loot left in the bag")
+	theirBag:remove()
+	ok(after.maxRing <= 2, "nor does it stretch the rings: " .. tostring(after.maxRing))
+	eq(X.testerProbe(other).mine, X.testerProbe(other).loose, "the neighbour's own state is its own run")
+	local older = X.testerRun(bot)
+	ok(older ~= nil, "a second run of the bot")
+	runEvents(clock.ms + 4000)
+	eq(X.testerProbe(bot).loose, older.items, "after it the state holds that run's items and not the first run's")
+	for _, p in ipairs({other, bot}) do
+		X.testerOrigins[p:getId()] = nil
+	end
+end
+-- O671: the stranger stands beside the owner's loot (TEST ONLY join): only a tester next to a tester
+local stranger = newPlayer(2, 900, 900)
+stranger.name = "Tester Bbb"
+bot.name = "Tester Aaa"
+local noJoin, noWhy = X.testerJoin(stranger, "Tester Aaa")
+eq(noJoin, nil, "join: a player that is no tester is not moved")
+ok(noWhy == "not a tester", "join: says so")
+bot.tester, stranger.tester = true, true
+local joined = X.testerJoin(stranger, "Tester Aaa")
+ok(joined and math.max(math.abs(stranger.pos.x - 800), math.abs(stranger.pos.y - 800)) == 1, "join: the stranger stands on a tile next to the owner")
+local sprobe = X.testerProbe(stranger)
+ok(sprobe.foreign >= 5 and sprobe.mine == 0, "the stranger reads the owner's loot as another's")
+eq(X.testerJoin(stranger, "Tester Nobody"), nil, "join: no such tester")
+eq(X.testerJoin(stranger, "Tester Bbb"), nil, "join: not itself")
+local ply = newPlayer(3, 800, 801)
+ply.name = "Plain"
+eq(X.testerJoin(stranger, "Plain"), nil, "join: never a player")
 local took2, failed2 = X.lootAll(bot)
-eq(took2, 6, "Loot all takes what the helper put there")
-eq(X.testerProbe(bot).loose, 0, "and nothing lies there after it")
+eq(took2, 12, "Loot all takes what the helper put there: both runs of the bot")
+eq(X.testerProbe(bot).mine, 0, "and nothing of the bot's lies there after it (the neighbour's loot does)")
 Chaos.lootExplosionConfig.enabled = false
 local none, whyNot = X.testerRun(bot)
 eq(none, nil, "off: the helper's bag does not explode")

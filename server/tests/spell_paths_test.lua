@@ -154,7 +154,7 @@ do
 		Probe.set({voc = CASTER_VOC[sp.key], lvl = level, ml = ml, wtype = "none", hpNow = 3000})
 		local res = Probe.cast(sp.script)
 		if sp.callback then -- the mock's Combat:execute does not run the target callback: call it for the one target
-			res = Probe.record(function() _G[sp.callback](Probe.caster, Probe.target) end)
+			res = Probe.record(function() __spellCallbacks[sp.callback](Probe.caster, Probe.target) end)
 		end
 		return res
 	end

@@ -1023,6 +1023,47 @@ class CheckIO(KeyIO):
         new = min(self.bot.recent_n - n0, len(self.bot.recent))
         return list(self.bot.recent[-new:]) if new > 0 else []
 
+    def release_partner(self, name, other):
+        """O671: the two names a partner() call took are free again (a check that ends with no party leave)"""
+        release_party(name, other)
+
+    async def helper_of(self, name, command, kind, wait=4.0):
+        """O671: the helper's answer for ANOTHER bot in game (the stranger of the loot test is a bot of its own): None when it is not in game"""
+        b = self._bot(name)
+        if b is None:
+            return None
+        return await b.helper_says(command, kind, wait)
+
+    async def open_bag_of(self, name, client_id):
+        """O671: the backpack of another bot opened as container 0 (the target of its drag)"""
+        b = self._bot(name)
+        if b is not None and client_id:
+            b.conn.send(TC.use_packet((0xFFFF, 3, 0), int(client_id)))
+            await b.conn.w.drain()
+
+    async def drag_of(self, name, src, client_id, stackpos, dst=(0xFFFF, 0x40, 0), count=1, wait=1.5, until_text=None):
+        """O671: the move item packet of the bot `name` (this one or another in game): a thing on the map tile `src` (x, y, z) with its client id and place
+        in the tile's stack onto `dst` (the first slot of its open backpack when none is given). -> the server's text lines of the next `wait` seconds
+        (a refusal arrives as one; a bot that is not next to the item first walks there, so `until_text` ends the wait at the first line with that text),
+        None when the bot is not in game"""
+        b = self._bot(name)
+        if b is None:
+            return None
+        n0 = b.recent_n
+
+        def lines():
+            new = min(b.recent_n - n0, len(b.recent))
+            return list(b.recent[-new:]) if new > 0 else []
+
+        b.conn.send(TC.move_packet((int(src[0]), int(src[1]), int(src[2])), int(client_id), int(stackpos), tuple(int(v) for v in dst), int(count)))
+        await b.conn.w.drain()
+        end = time.monotonic() + wait
+        while time.monotonic() < end and b.alive:
+            await asyncio.sleep(0.25)
+            if until_text and any(until_text in str(l) for l in lines()):
+                break
+        return lines()
+
     async def toggle_mount(self, on, wait=2.5):
         """the mount button (0xD4, u8 1 = mount, 0 = dismount): the server's text lines of the next `wait` seconds"""
         if not self.alive():

@@ -2677,6 +2677,10 @@ function RF.probe(player)
 	local out = {level = player:getLevel(), pos = plain(pos), pz = inProtectionZone(player), inside = false}
 	local key = cfg.key and cfg.key.itemId and player:getItemById(cfg.key.itemId, true) or nil
 	out.held = key ~= nil
+	if key then -- O671: the shown tier of the key held (a Greater key climbs and falls: the tester check reads it)
+		local okk, k = pcall(RF.readKey, key)
+		out.keyShown = okk and k and R.shownTier(cfg, k) or nil
+	end
 	local run = RF.runOf[player:getId()]
 	if not run then
 		return out
@@ -2711,7 +2715,7 @@ function RF.probe(player)
 		end
 	end
 	out.run = {id = run.id, tier = run.key and run.key.tier, theme = run.themeName, kind = run.L and run.L.kind, state = run.state, boss = run.boss,
-		omen = run.omen or nil,
+		omen = run.omen or nil, greater = run.greater,
 		killed = run.killed, total = run.total, bossAt = run.bossAt, left = R.timeLeft(run, os.time()), lives = run.lives, players = run.size,
 		floors = run.L and #run.L.floors or 1, entry = plain(RF.entryOf(run)), monsters = mons,
 		bossPos = boss and plain(boss:getPosition()) or nil,
@@ -2768,6 +2772,84 @@ function RF.testerClose(player)
 		return false
 	end
 	return RF.interrupt(run) and true or false
+end
+
+-- TEST ONLY (`!tester rift greater [g]`, O671): a Greater Rift Key of g for a TESTER (the staff command `/rift greater` is for administrators; a bot has
+-- none). Never for a player, never inside a run; one console line. -> the key's shown tier, or nil + why
+function RF.testerGreaterKey(player, g)
+	local cfg = C()
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	if not R.greaterOn(cfg) then
+		return nil, "the Greater Rift is off"
+	end
+	if RF.runOf[player:getId()] then
+		return nil, "already inside a run"
+	end
+	g = math.max(1, math.min(cfg.greater.maxShownTier - cfg.maxTier, math.floor(tonumber(g) or 1)))
+	local inbox = RF.giveKey(player, R.greaterKey(cfg, g, rand), "TEST ONLY greater key")
+	print(string.format("[ChaosRift] TEST ONLY: a Greater Rift Key (g %d) given to tester %s (level %d)", g, player:getName(), player:getLevel()))
+	return cfg.maxTier + g, inbox
+end
+
+-- TEST ONLY (`!tester rift fail`, O671): the failure of the asker's own run (the time-out rule: everyone out, no chest; a Greater run's key one tier down)
+function RF.testerFail(player)
+	local run = RF.runOf[player:getId()]
+	if not (Chaos.isTester and Chaos.isTester(player)) or not run or run.state ~= "running" then
+		return false
+	end
+	fail(run, "A gamemaster closed the rift.") -- the words of `/rift fail` (a string with a pt-BR)
+	return true
+end
+
+-- TEST ONLY (`!tester rift seal`, O671): the asker's own run sealed through the real death events: the bot strikes every monster of the run for its
+-- whole health (the guardian appears after the pack kills and dies the same way; a hit cap is struck again), the run counts, loots and ends as a played
+-- one does. -> true once started, or nil + why. Stops by itself after 3 minutes
+function RF.testerSeal(player)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	local run = RF.runOf[player:getId()]
+	if not run or run.state ~= "running" then
+		return nil, "not inside a running rift"
+	end
+	local pid, rounds, struck = player:getId(), 0, {}
+	local function strike()
+		rounds = rounds + 1
+		local pl = Player(pid)
+		if not pl or RF.runOf[pid] ~= run or run.state ~= "running" or rounds > 600 then
+			return
+		end
+		-- a guardian that was struck and is gone while the run still lists it never reached riftDeath (live run O671: a guardian killed by a script
+		-- strike left no death event, the pack monsters killed the same way did): the helper runs that death path itself so the rest of the seal can be read
+		for bid in pairs(run.bossIds or {}) do
+			if struck[bid] and not Monster(bid) and RF._riftDeath and RF.monsterRun[bid] == run then
+				print(string.format("[ChaosRift] TEST ONLY: the guardian %d of run %d is gone and its death event never came: the helper runs the death path", bid, run.id))
+				run.testerForcedDeath = true
+				RF._riftDeath(bid, nil, nil)
+			end
+		end
+		local ids = {}
+		for mid in pairs(run.aliveIds or {}) do
+			ids[#ids + 1] = mid
+		end
+		for bid in pairs(run.bossIds or {}) do
+			ids[#ids + 1] = bid
+			struck[bid] = true
+		end
+		for i = 1, math.min(#ids, 30) do
+			local m = Monster(ids[i])
+			if m then
+				local hp = m:getMaxHealth()
+				doTargetCombatHealth(pid, m, COMBAT_PHYSICALDAMAGE, -hp, -hp, CONST_ME_NONE)
+			end
+		end
+		addEvent(strike, 300)
+	end
+	addEvent(strike, 100)
+	print(string.format("[ChaosRift] TEST ONLY: tester %s seals its own run %d", player:getName(), run.id))
+	return true
 end
 
 Chaos.registerInstance("rift", {label = "a rift", inside = RF.isInside, at = function(pos)
@@ -3062,6 +3144,7 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	return true
 end
 monsterDeath:register()
+RF._riftDeath = riftDeath
 
 -- a husk's death: the kill event of the player who killed it (or whose summon did; registered on the run's players)
 local playerKill = CreatureEvent("ChaosRiftPlayerKill")

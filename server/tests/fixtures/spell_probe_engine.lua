@@ -189,7 +189,16 @@ local function Combat() return setmetatable({params = {}, cb = {}, formula = nil
 Cmt.__index = {
 	setParameter = function(self, k, v) self.params[k] = v end, getParameter = function(self, k) return self.params[k] end,
 	setArea = function(self, a) self.area = a end,
-	setCallback = function(self, k, name) self.cb[k] = name end,
+	-- the engine's LuaScriptInterface::getEvent keeps the global function in a registry slot and sets the global to nil (O671): a script
+	-- that calls onGetFormulaValues by name after setCallback gets a nil value
+	setCallback = function(self, k, name)
+		self.cbfn = self.cbfn or {}
+		self.cbfn[k] = rawget(_G, name)
+		_G.__spellCallbacks = rawget(_G, "__spellCallbacks") or {}
+		_G.__spellCallbacks[name] = self.cbfn[k]   -- what a test calls in place of the nil global
+		_G[name] = nil
+		self.cb[k] = name
+	end,
 	setFormula = function(self, ftype, a, b, c, d) self.formula = {ftype, a, b, c, d} end,
 	addCondition = function(self, c) self.cond = c end, setOrigin = function(self, o) self.origin = o end, setCondition = function() end,
 	execute = function(self, creature, variant)
@@ -197,11 +206,11 @@ Cmt.__index = {
 		local ctype = self.params[K.COMBAT_PARAM_TYPE]
 		local f1, f2 = self.cb[K.CALLBACK_PARAM_LEVELMAGICVALUE], self.cb[K.CALLBACK_PARAM_SKILLVALUE]
 		if f1 then
-			local fn = rawget(_G, f1)
+			local fn = self.cbfn[K.CALLBACK_PARAM_LEVELMAGICVALUE]
 			lo, hi = fn(creature, P.lvl, P.ml)
 			via = "cb:levelmagic"
 		elseif f2 then
-			local fn = rawget(_G, f2)
+			local fn = self.cbfn[K.CALLBACK_PARAM_SKILLVALUE]
 			local sk = P.wtype == "none" and P.fist or ({sword = P.sword, club = P.club, axe = P.axe, distance = P.dist, wand = P.ml})[P.wtype]
 			local atk = P.wtype == "none" and 7 or P.atk
 			lo, hi = fn(creature, sk, atk, 1.0)
