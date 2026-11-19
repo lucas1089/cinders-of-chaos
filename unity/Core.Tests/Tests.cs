@@ -99,6 +99,7 @@ namespace Chaos.Core.Tests
             FakeModulesP14Tests.Run,
             Phase17Tests.Run,
             WalkTourTests.Run,
+            LootTourTests.Run,
             Phase29Tests.Run,
             Phase30Tests.Run,
             JourneyTests.Run,

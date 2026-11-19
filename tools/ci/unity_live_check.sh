@@ -17,6 +17,7 @@
 #   UL_LOGIN_PORT, UL_GAME_PORT, UL_DB_PORT   default 17171, 17172, 13306
 #   UL_IDENTITIES   default extended,chaos
 #   UL_GROUPS       default newplayer,temple,shop,shared,death,market,tester (the rift groups run last: its slots build a minute after the start)
+#   UL_LOOT_TESTER=1  --serve-only also makes a tester character and writes CHAOS_LOOT_* into the env files (the loot explosion video, O675)
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
@@ -25,7 +26,8 @@
 #                   UL_IDENTITIES, plus one more character per identity that never logged in (new_newbie, level 1), writes
 #                   WORK/client-IDENTITY.env (mode 600, `export NAME=value` lines: CHAOS_LIVE_HOST, _PORT, _ACCOUNT, _PASSWORD,
 #                   _CHARACTER, _IDENTITY, CHAOS_LIVE_NEW_ACCOUNT, _NEW_PASSWORD, _NEW_CHARACTER (the player smoke's new player first
-#                   minute), CHAOS_CLIENT_KEY, CHAOS_RSA_PUBLIC; the player and Core.LiveCheck read those) and leaves tfs and MariaDB running detached (pid files in WORK/run). No secret is printed: only the paths of
+#                   minute), CHAOS_LOOT_ACCOUNT, _PASSWORD, _CHARACTER only with UL_LOOT_TESTER=1 (a tester "Tester Xxx" of level 1500
+#                   at the temple for the loot explosion video, -chaosLootTour, O675; the TEST ONLY helper is installed by the default groups), CHAOS_CLIENT_KEY, CHAOS_RSA_PUBLIC; the player and Core.LiveCheck read those) and leaves tfs and MariaDB running detached (pid files in WORK/run). No secret is printed: only the paths of
 #                   the files. UL_OUT is not needed. A second call on the same UL_WORK is not supported (use a new folder).
 #   --stop          stops what --serve-only started (tfs, then MariaDB) and deletes the env files and the database password. Needs UL_WORK only.
 #
@@ -493,18 +495,24 @@ run_groups() {
 }
 
 # ---------------------------------------------------------------------------------------------------- 6b. --serve-only: accounts and env files
-# serve_clients: one fresh account and character per identity (the first of each pair new_chars makes; the partner is not used) and one more that never logged in
+# serve_clients: one fresh account and character per identity (the first of each pair new_chars makes; the partner is not used), a tester (new_testers, the first of
+# its pair: CHAOS_LOOT_*, the loot explosion video) and one more that never logged in
 # (new_newbie, level 1: the player smoke logs it in first, CHAOS_LIVE_NEW_*), each in a
 # client-IDENTITY.env of mode 600 that a client sources (set -a). Values are written with printf %q; nothing goes to the terminal but the paths.
 serve_clients() {
   log "accounts and env files (one per identity: $IDENTITIES)"
-  dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %');
-                DELETE FROM players WHERE name LIKE 'Live %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%';"
+  dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Live %' OR name LIKE 'Tester %');
+                DELETE FROM players WHERE name LIKE 'Live %' OR name LIKE 'Tester %'; DELETE FROM accounts WHERE name LIKE 'lcp%' OR name LIKE 'lcq%' OR name LIKE 'lcn%' OR name LIKE 'lct%' OR name LIKE 'lcu%';"
   local id file
   for id in ${IDENTITIES//,/ }; do
     case "$id" in extended|chaos) ;; *) die "unknown identity $id" ;; esac
     new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
     local main_a=$PA main_n=$PN main_p=$PP
+    local loot_a="" loot_n="" loot_p=""
+    if [ "${UL_LOOT_TESTER:-0}" = 1 ]; then
+      new_testers "$id"   # the tester of the loot explosion video (-chaosLootTour, O675): "Tester Xxx", level 1500, at the temple; the helper (install_tester_helper) answers for it; the partner is not used
+      loot_a=$PA; loot_n=$PN; loot_p=$PP
+    fi
     new_newbie "$id"   # one more, never logged in (the new player first minute of the player smoke, O433); it sets PA PN PP, the normal ones are kept above
     file="$WORK/client-$id.env"
     (
@@ -518,6 +526,11 @@ serve_clients() {
         printf 'export CHAOS_LIVE_NEW_ACCOUNT=%q\n' "$PA"
         printf 'export CHAOS_LIVE_NEW_PASSWORD=%q\n' "$PP"
         printf 'export CHAOS_LIVE_NEW_CHARACTER=%q\n' "$PN"
+        if [ -n "$loot_n" ]; then
+          printf 'export CHAOS_LOOT_ACCOUNT=%q\n' "$loot_a"
+          printf 'export CHAOS_LOOT_PASSWORD=%q\n' "$loot_p"
+          printf 'export CHAOS_LOOT_CHARACTER=%q\n' "$loot_n"
+        fi
         printf 'export CHAOS_LIVE_IDENTITY=%q\n' "$id"
         printf 'export CHAOS_CLIENT_KEY=%q\n' "$GUARD_KEY"
         printf 'export CHAOS_RSA_PUBLIC=%q\n' "$RSA_PUBLIC"
