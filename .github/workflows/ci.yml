@@ -1337,6 +1337,11 @@ jobs:
           python3 -I server/tools/journey_setup_test.py
           shellcheck tools/ci/journey_bots.sh
 
+      - name: 'Loot video scripts (O676, manual workflow loot-video.yml: syntax and shellcheck; the module logic test is in the client loop)'
+        run: |
+          bash -n tools/ci/unity_live_check.sh
+          shellcheck tools/ci/loot_video.sh
+
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
 

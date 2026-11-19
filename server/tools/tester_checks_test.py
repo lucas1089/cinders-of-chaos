@@ -57,6 +57,9 @@ class FakeIO:
     async def partner(self, min_level=0):
         return self.partner_name
 
+    def raid_mode(self, names, on, keep_flee=False):
+        pass
+
     def autosetup(self):
         return self.table
 
@@ -5990,6 +5993,37 @@ class LootExplosion(unittest.TestCase):
         r = self.go(self.io(end={'mine': 3}, lootall={'action': 'lootall', 'data': {'n': 4, 'f': 3, 's': 7}}))
         self.assertEqual((r.status, 'did not fit' in r.detail), (TX.SKIP, True))
 
+    def test_the_backpack_is_cleared_of_junk_first(self):
+        asked = []
+        io = self.io()
+        real = io.helper
+
+        async def spy(command, kind, wait=4.0):
+            asked.append(command)
+            return await real(command, kind, wait)
+        io.helper = spy
+        self.assertEqual(self.go(io).status, TX.PASS)
+        self.assertLess(asked.index('bag wipe'), asked.index('explode run'), 'room first: a bot with a full backpack could not take the loot')
+        self.assertLess(asked.index('town'), asked.index('explode run'), 'the temple first: a bot in a fight loots its own loot (live run O671)')
+
+    def test_a_bot_in_the_temple_goes_to_its_hunt_and_asks_again(self):
+        runs = [{'err': 'not exploded (a cap, an instance, a tile with nothing free or the owner is not the bot)'}, {'items': 6, 'expected': 6}]
+        io = self.io()
+        io.answers['explode run'] = lambda me: runs.pop(0)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.moves, ['hunt'], 'a protection zone keeps the loot out: the bot stands in the open for the second ask')
+        self.assertEqual(runs, [])
+        io = self.io()
+        io.answers['explode run'] = {'err': 'not exploded (a cap, an instance, a tile with nothing free or the owner is not the bot)'}
+        self.assertEqual(self.go(io).status, TX.SKIP, 'still nothing in the open: a skip with the reason')
+        self.assertEqual(io.moves, ['hunt'], 'one walk to the hunt, then the asks')
+        runs = [{'err': 'not exploded (a cap)'}, {'err': 'not exploded (a cap)'}, {'items': 6, 'expected': 6}]
+        io = self.io()
+        io.answers['explode run'] = lambda me: runs.pop(0)
+        self.assertEqual(self.go(io).status, TX.PASS, 'the bot needs a few seconds to stand in the open: it asks again')
+        self.assertEqual(runs, [])
+
     def test_no_helper_or_the_rule_off_is_a_skip(self):
         self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
         self.assertEqual(self.go(self.io(run={'err': 'the loot explosion is off'})).status, TX.SKIP)
@@ -6004,6 +6038,241 @@ class LootExplosion(unittest.TestCase):
         keys = TX.CheckRun('t', 'Ninja', 100).todo()
         self.assertIn('loot_explosion', keys)
         self.assertNotIn('loot_explosion', TX.CLOSED_KEYS)
+
+
+class LootStranger(unittest.TestCase):
+    """O671: the loot explosion's ownership with two bots: a stranger's drag is refused with the server's words, the owner's and a party member's work"""
+
+    ROWS = [{'x': 800, 'y': 801, 'z': 7, 'id': 2160, 'cid': 3043, 'sp': 1, 'n': 100, 'mine': True},
+            {'x': 801, 'y': 800, 'z': 7, 'id': 2666, 'cid': 2666, 'sp': 1, 'n': 3, 'mine': True}]
+
+    class IO(FakeIO):
+        def __init__(self, left, refusal='That loot belongs to someone else for 42 more seconds.', **kw):
+            FakeIO.__init__(self, **kw)
+            self.left = list(left)       # the owner's loose items after: the flight, the stranger's drag, the owner's, the party member's
+            self.drags, self.helped, self.bags, self.freed, self.stays, self.waits = [], [], [], [], [], []
+            self.refusal = refusal
+
+        async def helper(self, command, kind, wait=4.0):
+            if command == 'explode state':
+                n = self.left.pop(0) if len(self.left) > 1 else self.left[0]
+                return {'mine': n, 'loose': n, 'list': [dict(r) for r in LootStranger.ROWS] if n else []}
+            if command == 'found':
+                return {'bagClientId': 2854, 'bagOpen': bool(self.bags)}   # open once the bot has sent the packet
+            return await FakeIO.helper(self, command, kind, wait)
+
+        async def helper_of(self, name, command, kind, wait=4.0):
+            self.helped.append((name, command))
+            if command.startswith('explode join'):
+                return {'x': 799, 'y': 800, 'z': 7}
+            return {'bagClientId': 2854, 'bagOpen': any(b[0] == name for b in self.bags)}
+
+        async def open_bag(self, client_id):
+            self.bags.append(('own', client_id))
+
+        async def open_bag_of(self, name, client_id):
+            self.bags.append((name, client_id))
+
+        def raid_mode(self, names, on, keep_flee=False):
+            self.stays.append((tuple(names), on))
+
+        async def drag_of(self, name, src, client_id, stackpos, dst=(0xFFFF, 0x40, 0), count=1, wait=1.5, until_text=None):
+            self.drags.append((name, src, client_id, stackpos, dst, count))
+            self.waits.append((wait, until_text))
+            return [self.refusal] if name == self.partner_name and len(self.drags) == 1 and self.refusal else []
+
+        def release_partner(self, name, other):
+            self.freed.append((name, other))
+
+    def io(self, left=(7, 7, 6, 5), **kw):
+        io = self.IO(left, answers={'explode run': {'items': 7, 'expected': 6}, 'party': {'size': 2}},
+                     replies={('groundLoot', 'lootall'): {'action': 'lootall', 'data': {'n': 5, 'f': 0, 's': 5}}}, **kw)
+        return io
+
+    def go(self, io):
+        return run(TX.check_loot_stranger(io, 'Tester Own', 'Ninja', 300))
+
+    def test_a_stranger_is_refused_the_owner_and_a_party_member_take_it(self):
+        io = self.io()
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('stranger refused', r.detail)
+        self.assertIn('party member', r.detail)
+        self.assertEqual([d[0] for d in io.drags], ['Tester Bbb', 'Tester Own', 'Tester Bbb'], 'the stranger first, then the owner, then the party member')
+        self.assertEqual(io.drags[0][1:3], ((800, 801, 7), 3043), 'the packet names the tile and the sprite of the item')
+        self.assertIn(('Tester Bbb', 'explode join Tester Own'), io.helped, 'the second bot is put beside the loot')
+        self.assertEqual(io.partied, [('form', 'Tester Bbb'), ('leave', 'Tester Bbb')])
+        self.assertEqual(io.freed, [('Tester Own', 'Tester Bbb')], 'both names are free again')
+        self.assertIn(('groundLoot', 'lootall', {}), io.asked, 'what is left is picked up')
+        self.assertIn(('Tester Bbb', 2854), io.bags, 'the stranger has its backpack open for the drag')
+        self.assertEqual(io.bags.count(('Tester Bbb', 2854)), 1, 'opened once: `found` said it was open after that')
+        self.assertEqual(io.stays, [(('Tester Own', 'Tester Bbb'), True), (('Tester Own', 'Tester Bbb'), False)], 'both stand still for the check and walk again after')
+        self.assertEqual(io.waits[0], (6.0, TX.LOOT_REFUSAL), 'a stranger that must walk to the item is waited for until the refusal comes')
+
+    def test_a_stranger_who_takes_the_loot_is_a_bug(self):
+        r = self.go(self.io(left=(7, 6, 5, 4), refusal=None))
+        self.assertEqual((r.status, 'stranger dragged' in r.detail), (TX.FAIL, True))
+        self.assertIn('BUG loot_stranger', r.bug_line())
+
+    def test_a_stranger_that_never_reached_the_rule_is_a_skip_with_what_the_server_said(self):
+        r = self.go(self.io(refusal=None))
+        self.assertEqual((r.status, 'did not reach the rule' in r.detail), (TX.SKIP, True))
+        r = TX.loot_stranger_verdict({'items': 7, 'refusal': None, 'stranger_after': 7, 'stranger_lines': ['Sorry, not possible.']})
+        self.assertEqual(r[0], TX.SKIP)
+        self.assertIn('Sorry, not possible.', r[1], 'what the server did say is in the report')
+
+    def test_the_owner_told_its_loot_is_someone_elses_is_a_bug(self):
+        told = {'items': 7, 'refusal': 'That loot belongs to someone else', 'stranger_after': 7, 'owner_after': 7,
+                'owner_lines': ['That loot belongs to someone else for 12 more seconds.']}
+        r = TX.loot_stranger_verdict(told)
+        self.assertEqual((r[0], 'its own loot belongs to someone else' in r[1]), (TX.FAIL, True))
+        quiet = dict(told, owner_lines=['Sorry, not possible.'])
+        r = TX.loot_stranger_verdict(quiet)
+        self.assertEqual((r[0], 'Sorry, not possible.' in r[1]), (TX.SKIP, True), 'a drag that never reached the rule is no fault of the loot')
+        r = self.go(self.io(left=(7, 7, 7, 7)))
+        self.assertEqual(r.status, TX.SKIP, 'the mock owner heard nothing: a skip')
+
+    def test_a_party_member_told_it_is_a_stranger_is_a_bug(self):
+        base = {'items': 7, 'refusal': 'That loot belongs to someone else', 'stranger_after': 7, 'owner_after': 6, 'party': True, 'party_after': 6}
+        r = TX.loot_stranger_verdict(dict(base, party_lines=['That loot belongs to someone else for 9 more seconds.']))
+        self.assertEqual((r[0], 'party was told' in r[1]), (TX.FAIL, True))
+        r = TX.loot_stranger_verdict(dict(base, party_lines=[]))
+        self.assertEqual((r[0], 'party member\'s drag took nothing' in r[1]), (TX.SKIP, True))
+        self.assertEqual(self.go(self.io(left=(7, 7, 6, 6))).status, TX.SKIP)
+
+    def test_no_party_is_a_note_not_a_failure(self):
+        io = self.io()
+        io.answers['party'] = {'size': 1}
+        r = self.go(io)
+        self.assertEqual((r.status, 'no party formed' in r.detail), (TX.PASS, True))
+
+    def test_a_bot_in_the_temple_goes_to_its_hunt_first(self):
+        runs = [{'err': 'not exploded (a cap)'}, {'items': 7, 'expected': 6}]
+        io = self.io()
+        io.answers['explode run'] = lambda me: runs.pop(0)
+        r = self.go(io)
+        self.assertEqual((r.status, io.moves), (TX.PASS, ['hunt']), r.detail)
+
+    def test_skips_say_why(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP, 'no helper answer')
+        io = self.io()
+        io.partner_name = None
+        self.assertEqual(self.go(io).status, TX.SKIP, 'no second bot')
+        r = self.go(self.io(left=(0, 0)))
+        self.assertEqual((r.status, 'did not land' in r.detail), (TX.SKIP, True))
+        io = self.io()
+        io.answers['explode run'] = {'err': 'the loot explosion is off'}
+        self.assertEqual(self.go(io).status, TX.SKIP)
+
+    def test_the_item_beside_the_bot_is_dragged_first(self):
+        state = {'list': [{'x': 805, 'y': 805, 'z': 7, 'cid': 1, 'sp': 1, 'mine': True}, {'x': 801, 'y': 800, 'z': 7, 'cid': 2, 'sp': 1, 'mine': True},
+                          {'x': 802, 'y': 802, 'z': 7, 'cid': 3, 'sp': 1, 'mine': False}, {'x': 803, 'y': 800, 'z': 7, 'cid': 0, 'sp': 1, 'mine': True}]}
+        self.assertEqual([r['cid'] for r in TX.loot_rows(state, (800, 800))], [2, 1], 'the nearest first; the foreign and the nameless are no targets')
+        self.assertEqual([r['cid'] for r in TX.loot_rows(state)], [1, 2], 'with no place the order of the list')
+
+    def test_the_verdict_and_the_run(self):
+        base = {'items': 7, 'refusal': 'That loot belongs to someone else', 'stranger_after': 7, 'owner_after': 6}
+        self.assertEqual(TX.loot_stranger_verdict(base)[0], TX.PASS)
+        self.assertEqual(TX.loot_stranger_verdict(dict(base, owner_after=7))[0], TX.SKIP, 'a drag that took nothing and heard nothing of the rule is no fault')
+        r = TX.loot_stranger_verdict(dict(base, owner_after=7, owner_lines=['You cannot carry that.']))
+        self.assertEqual((r[0], 'You cannot carry that.' in r[1]), (TX.SKIP, True), 'what the server said is in the report')
+        self.assertEqual(TX.loot_stranger_verdict({})[0], TX.SKIP)
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        self.assertIn('loot_stranger', keys)
+        self.assertNotIn('loot_stranger', TX.CLOSED_KEYS)
+        self.assertIn('belongs to someone else', TX.LOOT_REFUSAL, 'the words of loot_explosion.lua')
+        with open(os.path.join(HERE, '..', 'data', 'scripts', 'chaos', 'loot_explosion.lua')) as f:
+            src = f.read()
+        self.assertIn('That loot belongs to someone else for %d more seconds.', src)
+
+
+class GreaterRift(unittest.TestCase):
+    """O671: a Greater Rift Key opened, sealed and failed by a bot: the key it leaves climbs, then falls one tier"""
+
+    class IO(FakeIO):
+        def __init__(self, script, **kw):
+            FakeIO.__init__(self, **kw)
+            self.script, self.commands, self.used = script, [], []
+
+        async def helper(self, command, kind, wait=4.0):
+            self.commands.append(command)
+            f = self.script.get(command)
+            if isinstance(f, list):
+                return f.pop(0) if len(f) > 1 else f[0]
+            return f(self) if callable(f) else f
+
+        async def use_item(self, client_id):
+            self.used.append(client_id)
+            return True
+
+        def raid_mode(self, names, on, keep_flee=False):
+            pass
+
+    OUT = {'inside': False, 'level': 1500, 'pz': True, 'held': True, 'keyShown': 20, 'keyClientId': 10155}
+    INSIDE = {'inside': True, 'level': 1500, 'pz': True, 'run': {'greater': 2, 'state': 'running', 'tier': 15}}
+    SEALED = {'inside': True, 'level': 1500, 'pz': True, 'run': {'greater': 2, 'state': 'success', 'tier': 15}}
+
+    def script(self, **over):
+        sc = {'rift state': [dict(self.OUT, keyShown=None, held=False), self.INSIDE, self.SEALED, self.OUT, self.OUT, self.INSIDE, dict(self.OUT, keyShown=19)],
+              'rift greater 2': {'tier': 17, 'greater': 2, 'held': True, 'keyClientId': 10155},
+              'rift seal': {'sealing': True}, 'rift fail': {'failed': True}, 'rift close': {'closed': True}}
+        sc.update(over)
+        return sc
+
+    def go(self, io, level=1500):
+        return run(TX.check_greater_rift(io, 'Tester Gre', 'Ninja', level))
+
+    def test_sealed_then_failed(self):
+        io = self.IO(self.script())
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('climbed to 20', r.detail)
+        self.assertIn('dropped it to 19', r.detail)
+        self.assertEqual(io.commands[io.commands.index('rift seal') - 1] == 'rift state', True)
+        self.assertIn('rift fail', io.commands)
+        self.assertEqual(io.commands[-1], 'rift close', 'the keys left in the backpack go')
+        self.assertEqual(io.used[0], 10155, 'the key is used by its client id')
+
+    def test_a_key_that_does_not_climb_is_a_bug(self):
+        sc = self.script()
+        sc['rift state'][3] = dict(self.OUT, keyShown=17)
+        r = self.go(self.IO(sc))
+        self.assertEqual((r.status, 'must climb' in r.detail), (TX.FAIL, True))
+        self.assertIn('BUG greater_rift', r.bug_line())
+
+    def test_a_failed_run_that_keeps_the_tier_is_a_bug(self):
+        sc = self.script()
+        sc['rift state'][6] = dict(self.OUT, keyShown=20)
+        r = self.go(self.IO(sc))
+        self.assertEqual((r.status, 'must fall one' in r.detail), (TX.FAIL, True))
+
+    def test_a_run_of_another_greater_number_is_a_bug(self):
+        sc = self.script()
+        sc['rift state'][1] = dict(self.INSIDE, run={'greater': 1, 'state': 'running'})
+        r = self.go(self.IO(sc))
+        self.assertEqual((r.status, 'opened a run of Greater 1' in r.detail), (TX.FAIL, True))
+
+    def test_skips_say_why(self):
+        self.assertEqual(self.go(self.IO({})).status, TX.SKIP, 'no helper')
+        r = self.go(self.IO(self.script(**{'rift state': [dict(self.OUT, level=900)]})))
+        self.assertEqual((r.status, 'needs level 1025' in r.detail), (TX.SKIP, True))
+        r = self.go(self.IO(self.script(**{'rift greater 2': {'err': 'the Greater Rift is off'}})))
+        self.assertEqual((r.status, 'Greater Rift is off' in r.detail), (TX.SKIP, True))
+        r = self.go(self.IO(self.script(**{'rift greater 2': {'tier': 17, 'held': False, 'bagFull': True}})))
+        self.assertEqual((r.status, 'bag is full' in r.detail), (TX.SKIP, True))
+
+    def test_the_verdict_and_the_gate(self):
+        t = {'g': 2, 'opened': 2, 'sealed': True, 'secs': 30, 'key_sealed': 19}
+        self.assertEqual(TX.greater_rift_verdict(t)[0], TX.PASS)
+        self.assertEqual(TX.greater_rift_verdict(dict(t, key_sealed=21, key_failed=21))[0], TX.FAIL)
+        self.assertEqual(TX.greater_rift_verdict(dict(t, sealed=False))[0], TX.SKIP)
+        self.assertEqual(TX.greater_rift_verdict(dict(t, faults=['the helper gave a key of tier 9']))[0], TX.FAIL)
+        self.assertIn('greater_rift', TX.CheckRun('t', 'Ninja', 100).todo())
+        with open(os.path.join(HERE, '..', 'data', 'scripts', 'chaos', 'rift_config.lua')) as f:
+            cfg = f.read()
+        tiers = [int(m) for m in re.findall(r'\{minLevel = (\d+), pick', cfg)]
+        step = int(re.search(r'beyond = \{minLevelStep = (\d+)', cfg).group(1))
+        self.assertEqual(TX.GREATER_MIN_LEVEL, tiers[-1] + step * (15 - len(tiers)), 'the level of the tier 15 key (tiers above the list add a step each)')
 
 
 class GearChase(unittest.TestCase):

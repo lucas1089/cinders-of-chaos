@@ -18,6 +18,10 @@
 #   UL_IDENTITIES   default extended,chaos
 #   UL_GROUPS       default newplayer,temple,shop,shared,death,market,tester (the rift groups run last: its slots build a minute after the start)
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
+#   UL_GUARD_KEY    64 hex digits: the guard key of tfs, instead of one made here (O676: the main client is built before the server starts and bakes the same
+#                   key in; the workflow makes it with openssl rand and masks it, no repository secret)
+#   UL_LOOT_TESTER=1  (--serve-only) the main character of each identity is a "Tester Xxx" (new_testers: level 1500, the helper's storage marker) and the TEST ONLY
+#                   tester helper is installed, so `!tester explode run` works for the client of .github/workflows/loot-video.yml (O676)
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
 #   (none)          the run above: Core.LiveCheck plays, reports, summary, the server goes down at the end
@@ -235,7 +239,7 @@ install_chaos() {
 # install_tester_helper: the TEST ONLY helper of the tester bots into data/scripts, as chaos-ctl.sh testers start does, only when the group `tester` runs. It acts for a character
 # named "Tester Xxx" with the storage 7102900 = 1 and for no other (tester_helper_core.lua H.eligible), and it is never part of install_all.py.
 install_tester_helper() {
-  case ",$GROUPS_TO_RUN," in *,tester,*) ;; *) return 0 ;; esac
+  case ",$GROUPS_TO_RUN," in *,tester,*) ;; *) [ "${UL_LOOT_TESTER:-0}" = 1 ] || return 0 ;; esac
   [ -f "$REPO/server/tools/tester_helper.lua" ] && [ -f "$REPO/server/tools/tester_helper_core.lua" ] || die "server/tools/tester_helper.lua is missing"
   cp "$REPO/server/tools/tester_helper.lua" "$SERVER/data/scripts/zz_tester_helper.lua"
   cp "$REPO/server/tools/tester_helper_core.lua" "$SERVER/data/scripts/zz_tester_helper_core.lua"
@@ -280,7 +284,8 @@ fetch_engine() {
 GUARD_KEY=""
 start_tfs() {
   log "tfs"
-  GUARD_KEY=$(rand_hex 32)
+  GUARD_KEY=${UL_GUARD_KEY:-$(rand_hex 32)}
+  [[ "$GUARD_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || die "UL_GUARD_KEY must be 64 hex digits"
   if [ "$MODE" = serve ]; then
     CHAOS_CLIENT_KEY="$GUARD_KEY" setsid bash -c 'cd "$1" && exec ./tfs' _ "$SERVER" > "$WORK/tfs.log" 2>&1 < /dev/null &
   else
@@ -503,7 +508,7 @@ serve_clients() {
   local id file
   for id in ${IDENTITIES//,/ }; do
     case "$id" in extended|chaos) ;; *) die "unknown identity $id" ;; esac
-    new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
+    if [ "${UL_LOOT_TESTER:-0}" = 1 ]; then new_testers "$id"; else new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"; fi   # O676: a tester main character for the loot video
     local main_a=$PA main_n=$PN main_p=$PP
     new_newbie "$id"   # one more, never logged in (the new player first minute of the player smoke, O433); it sets PA PN PP, the normal ones are kept above
     file="$WORK/client-$id.env"

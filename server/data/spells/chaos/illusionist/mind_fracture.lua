@@ -20,6 +20,9 @@ function onGetFormulaValues(player, level, magicLevel)
 	return -min, -max
 end
 
+-- the engine keeps the function in its own slot and clears the global on setCallback (LuaScriptInterface::getEvent): the script
+-- reads its own numbers through a local (live run O671: calling the global in onCastSpell was a nil value)
+local formulaValues = onGetFormulaValues
 combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
 
 function onCastSpell(creature, variant, isHotkey)
@@ -51,7 +54,7 @@ function onCastSpell(creature, variant, isHotkey)
 		-- not taken off); the rest moves on when the target dies. Against a player the old 5 ticks 2 s apart of what the condition
 		-- dealt (magic level x 0.3 + 4).
 		local D = ChaosDot
-		local lo, hi = onGetFormulaValues(creature, creature:getLevel(), creature:getMagicLevel())
+		local lo, hi = formulaValues(creature, creature:getLevel(), creature:getMagicLevel())
 		local side = D.cfg().side
 		local old = math.max(3, math.floor(creature:getMagicLevel() * 0.3) + 4) * ChaosSpell.casterShare(creature) -- O472
 		ChaosSpell.scriptedDot(creature:getId(), target:getId(), "shatteredpsyche", COMBAT_DEATHDAMAGE, side.ticks, side.tickMs,

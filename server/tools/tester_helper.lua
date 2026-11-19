@@ -113,7 +113,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 27
+HELPER_VERSION = 28
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1258,7 +1258,7 @@ function commands.guildboss(player, arg)
 	tell(player, "guildboss", H.guildBossAnswer(probe))
 end
 
--- "!tester rift [state | key [tier] | path | close]": reads ChaosRift.probe. `key` puts a key into the backpack where the bot stands (the
+-- "!tester rift [state | key [tier] | greater [g] | seal | fail | path | close]": reads ChaosRift.probe. `key` puts a key into the backpack where the bot stands (the
 -- highest tier its level opens when none is named): it must be in a protection zone, as a player opening a rift must; the bot uses the key
 -- itself. `path` is the way on foot to the guide's goal inside (the guardian, else the nearest pack monster of the floor); `close` ends the
 -- bot's own run and takes a refunded key out of the backpack again.
@@ -1310,6 +1310,42 @@ function commands.rift(player, arg)
 			bagFull = (key == nil and inbox == true) or nil}))
 		return
 	end
+	if want.what == "greater" then -- O671: a Greater Rift Key (tier 15 + g), used by the bot like any key
+		if probe.inside then
+			tell(player, "rift", H.riftAnswer(probe, {err = "already inside a rift"}))
+			return
+		end
+		if not probe.pz then
+			tell(player, "rift", H.riftAnswer(probe, {err = "not in a protection zone", greater = want.greater}))
+			return
+		end
+		local shown, inbox
+		if RF.testerGreaterKey then -- two results: no `a and f()` here, it keeps one
+			shown, inbox = RF.testerGreaterKey(player, want.greater)
+		end
+		if not shown then
+			tell(player, "rift", H.riftAnswer(probe, {err = tostring(inbox or "no Greater Rift on this server")}))
+			return
+		end
+		local key = player:getItemById(cfg.key.itemId, true)
+		local it = ItemType(cfg.key.itemId)
+		tell(player, "rift", H.riftAnswer(RF.probe(player), {tier = shown, greater = want.greater, held = key ~= nil, keyClientId = it and it:getClientId() or 0,
+			bagFull = (key == nil and inbox == true) or nil}))
+		return
+	end
+	if want.what == "seal" then
+		local ok, why = false, "no such helper"
+		if RF.testerSeal then
+			ok, why = RF.testerSeal(player)
+		end
+		tell(player, "rift", H.riftAnswer(RF.probe(player), ok and {sealing = true} or {err = tostring(why)}))
+		return
+	end
+	if want.what == "fail" then
+		local ok = RF.testerFail and RF.testerFail(player) or false
+		tell(player, "rift", H.riftAnswer(RF.probe(player), ok and {failed = true} or {err = "not inside a running rift"}))
+		return
+	end
 	if want.what == "path" then
 		local got, why
 		if probe.inside then
@@ -1320,7 +1356,8 @@ function commands.rift(player, arg)
 		tell(player, "rift", H.riftAnswer(probe, got or {err = why}))
 		return
 	end
-	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf()}))
+	local itk = ItemType(cfg.key.itemId)
+	tell(player, "rift", H.riftAnswer(probe, {tier = tierOf(), keyClientId = itk and itk:getClientId() or 0})) -- O671: the key the bag holds is used by its client id
 end
 
 -- ---------------------------------------------------------------- O651 the pocket bosses
@@ -1816,17 +1853,21 @@ end
 -- by opcode 230 and reads `state` again. TEST ONLY, a tester only, as every command of this file.
 function commands.explode(player, arg)
 	local what, usage = H.parseExplode(arg)
+	local who = usage
 	if not what then
 		tell(player, "explode", {err = usage})
 		return
 	end
 	local LE = ChaosLootExplosion
-	if not (LE and LE.testerRun and LE.testerProbe) then
+	if not (LE and LE.testerRun and LE.testerProbe and LE.testerJoin) then
 		tell(player, "explode", {err = "no loot explosion"})
 		return
 	end
 	if what == "run" then
 		local r, why = LE.testerRun(player)
+		tell(player, "explode", r or {err = tostring(why or "refused")})
+	elseif what == "join" then
+		local r, why = LE.testerJoin(player, who)
 		tell(player, "explode", r or {err = tostring(why or "refused")})
 	else
 		tell(player, "explode", LE.testerProbe(player))

@@ -264,6 +264,9 @@ function PN.onWaystoneCleared(...)
 			list = {a}
 		end
 	end
+	-- O671: the real call (ChaosWaystoneEndgame `fire`, O666) also carries `fragmentChance`, the opener's Endgame Atlas rank in percent points:
+	-- it adds to the chance of the waystone's own kind (K.rollClear)
+	local info = type(args[1]) == "table" and not args[1].getStorageValue and args[1] or nil
 	if not tier or type(list) ~= "table" then
 		return 0
 	end
@@ -276,7 +279,7 @@ function PN.onWaystoneCleared(...)
 			p = playerOfFinisher(f)
 		end
 		if p then
-			n = n + (try("grant clear", PN.grantClear, p, "waystone", {tier = tier}) or 0)
+			n = n + (try("grant clear", PN.grantClear, p, "waystone", {tier = tier, fragmentChance = info and tonumber(info.fragmentChance) or nil}) or 0)
 		end
 	end
 	return n

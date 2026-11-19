@@ -360,11 +360,12 @@ function H.guildBossAnswer(probe, extra)
 	return out
 end
 
--- !tester rift [state | key [tier] | path | close] (O592): a rift opened and walked like a person's. `key` puts a key of the tier (the highest the
+-- !tester rift [state | key [tier] | greater [g] | seal | fail | path | close] (O592; greater, seal and fail O671, TEST ONLY: a Greater Rift Key of g
+-- (tier 15 + g), the bot's own run sealed by killing everything in it through the real death events, the bot's own run failed): a rift opened and walked like a person's. `key` puts a key of the tier (the highest the
 -- level may open when none is named) into the backpack where the bot stands (it must be in a protection zone, as for a player); the bot
 -- uses it itself; `state` is what the screen shows; `path` the way on foot to the guide's goal; `close` ends the bot's own run
 function H.parseRift(arg)
-	local usage = "usage: rift [state | key [tier] | path | close]"
+	local usage = "usage: rift [state | key [tier] | greater [g] | seal | fail | path | close]"
 	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
 	if not what then
 		return nil, usage
@@ -380,7 +381,14 @@ function H.parseRift(arg)
 		end
 		return {what = "key", tier = tier}
 	end
-	if rest ~= "" or (what ~= "state" and what ~= "path" and what ~= "close") then
+	if what == "greater" then   -- O671: a Greater Rift Key of g (1 = tier 16)
+		local g = rest ~= "" and tonumber(rest) or 1
+		if g < 1 or g > H.GREATER_MAX then
+			return nil, usage
+		end
+		return {what = "greater", greater = g}
+	end
+	if rest ~= "" or (what ~= "state" and what ~= "path" and what ~= "close" and what ~= "seal" and what ~= "fail") then
 		return nil, usage
 	end
 	return {what = what}
@@ -389,12 +397,12 @@ end
 function H.riftAnswer(probe, extra)
 	probe = type(probe) == "table" and probe or {}
 	local out = {inside = probe.inside and true or false, level = probe.level, pos = xyz(probe.pos), pz = probe.pz and true or false,
-		held = probe.held, keyClientId = probe.keyClientId, tier = probe.tier}
+		held = probe.held, keyClientId = probe.keyClientId, tier = probe.tier, keyShown = probe.keyShown}
 	local r = probe.run
 	if type(r) == "table" then
 		out.run = {id = r.id, tier = r.tier, theme = r.theme and tostring(r.theme):sub(1, 30) or nil, kind = r.kind, state = r.state, boss = r.boss,
 			killed = r.killed, total = r.total, bossAt = r.bossAt, left = r.left, lives = r.lives, players = r.players, floors = r.floors,
-			entry = xyz(r.entry), bossPos = xyz(r.bossPos), monsters = r.monsters, bossHp = r.bossHp, links = r.links}
+			entry = xyz(r.entry), bossPos = xyz(r.bossPos), monsters = r.monsters, bossHp = r.bossHp, links = r.links, greater = r.greater}
 	end
 	local g = probe.guide
 	if type(g) == "table" then
@@ -713,8 +721,18 @@ function H.parseGoblin(arg)
 	return parseWords(arg, "goblin", {"state", "spawn", "path", "close"})
 end
 
+-- !tester explode [state | run | join NAME] (O669; join O671): `join NAME` puts this tester on a free tile next to the tester NAME (the stranger of the
+-- loot test stands beside the owner's loot); a name that is not a tester is refused by the engine side
 function H.parseExplode(arg)
-	return parseWords(arg, "explode", {"state", "run"})
+	local who = tostring(arg or ""):match("^%s*[jJ][oO][iI][nN]%s+(.-)%s*$")
+	if who and who ~= "" then
+		return "join", who
+	end
+	local what = parseWords(arg, "explode", {"state", "run"})
+	if not what then
+		return nil, "usage: explode [state | run | join NAME]"
+	end
+	return what
 end
 
 function H.parsePocket(arg)
@@ -783,6 +801,7 @@ end
 
 -- !tester wsmap [state | enter [tier] | path | close] (O651): a waystone map walked by a bot. `enter` is the TEST ONLY stand-in of the device's pads and
 -- teleport (base code): a plain run of the tier on a free map and the bot on its arrival tile
+H.WSMAP_MAX = 25   -- O671: the waystone tiers of O666 (XVI-XXV, the deep band) are maps a tester may open
 function H.parseWsMap(arg)
 	local usage = "usage: wsmap [state | enter [tier] | path | close]"
 	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
@@ -792,7 +811,7 @@ function H.parseWsMap(arg)
 	what = what == "" and "state" or what:lower()
 	if what == "enter" then
 		local tier = tonumber(rest)
-		if tier and (tier < 1 or tier > 15) then
+		if tier and (tier < 1 or tier > H.WSMAP_MAX) then
 			return nil, usage
 		end
 		return {what = "enter", tier = tier}
@@ -1020,6 +1039,7 @@ end
 H.PLACE_KINDS = {temple = true, depot = true, craft = true, bank = true, bless = true, travel = true, shop = true,
 	boss = true, hunt = true, npc = true, portal = true, dungeon = true}
 H.RIFT_MAX = 15
+H.GREATER_MAX = 99   -- O671: the biggest Greater Rift Key a tester is given (the engine's own cap is 984)
 
 -- items = {{id, count}, ...} (the backpack's own slots); want = {[itemId] = number} (the supplies a tester keeps);
 -- held = {[itemId] = number} (carried in all, nested bags too). Returns the indexes of `items` to remove and the
@@ -2004,6 +2024,8 @@ end
 -- for a bot until the helper is reloaded; the bot counts every grant in its report. Only a tester character gets it (the guard of every
 -- command, `eligible`); a player's words are left alone.
 H.COMMANDS.gold = true
+H.COMMANDS.explode = true     -- O671: O669 and O666 added the commands and not these two words: the bots read "unknown command"
+H.COMMANDS.wsendgame = true
 H.GOLD_STEP = 3000000
 H.GOLD_CAP = 16000000
 

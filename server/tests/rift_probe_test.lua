@@ -313,5 +313,83 @@ do
 	RF.runs[3], RF.runOf[a.id] = nil, nil
 end
 
+-- the Greater Rift key, the seal and the fail of a tester (O671, helper `!tester rift greater | seal | fail`)
+do
+	restart()
+	local t = newPlayer(41, "Tester Grt")
+	t.storage[Chaos.storage.tester] = 1
+	t.getLevel = function() return 1500 end
+	local held
+	t.getItemById = function() return held end
+	local shown, inbox = RF.testerGreaterKey(t, 3)
+	eq(shown, cfg.maxTier + 3, "a tester gets a Greater key: the tier shown is 15 + g")
+	local key = t.items[#t.items]
+	ok(key and key.id == cfg.key.itemId and key.attrs.rift_greater == 3 and key.attrs.rift_tier == cfg.maxTier, "the key is a tier 15 key with rift_greater = 3")
+	held = key
+	eq(RF.probe(t).keyShown, cfg.maxTier + 3, "the probe reads the shown tier of the key held")
+	eq(RF.probe(t).held, true, "and that a key is held")
+	local plain = newPlayer(42, "Plain Player")
+	plain.getLevel = function() return 1500 end
+	local none, why = RF.testerGreaterKey(plain, 1)
+	ok(none == nil and why == "not a tester" and #plain.items == 0, "a player never gets one")
+	-- the number is kept in range
+	local top = RF.testerGreaterKey(t, 5000)
+	eq(top, cfg.greater.maxShownTier, "a number past the end is the last tier")
+	local low = RF.testerGreaterKey(t, -4)
+	eq(low, cfg.maxTier + 1, "and below one is the first")
+	-- inside a run: refused
+	local c = R.slotCenter(cfg, 4)
+	local L = {start = {x = c.x, y = c.y, z = c.z}, kind = "rooms", floors = {1}}
+	local run = R.newRun(cfg, os.time(), 10, 8, R.effects(cfg, {}, 15))
+	run.id, run.slot, run.L, run.key, run.greater = 4, 4, L, {tier = cfg.maxTier, mods = {}, greater = 2}, 2
+	run.themeName, run.players, run.size, run.lives = "ash", {[t.id] = {id = t.id, guid = t.guid, name = t.name, entry = pos(1, 1, 7)}}, 1, 3
+	run.openerGuid, run.state, run.boss, run.killed, run.total, run.bossAt = t.guid, "running", "waiting", 0, 10, 8
+	run.aliveIds, run.bossIds = {[801] = true, [802] = true}, {[900] = true}
+	RF.runs[4], RF.runOf[t.id] = run, run
+	t.at = pos(c.x, c.y, c.z)
+	local inRun, whyIn = RF.testerGreaterKey(t, 1)
+	ok(inRun == nil and whyIn == "already inside a run", "no key while inside a run")
+	eq(RF.probe(t).run.greater, 2, "the probe of a Greater run names its number")
+	-- the seal: every monster of the run is struck by the bot, the guardian too, and it stops when the run is over
+	local struck = {}
+	for _, id in ipairs({801, 802, 900}) do
+		local m = monster(id, c.x + 3, c.y, c.z, 50, 77)
+		m.id = id
+	end
+	doTargetCombatHealth = function(cid, m, ctype, lo, hi) struck[#struck + 1] = {cid = cid, id = m.id, lo = lo, hi = hi} return true end
+	COMBAT_PHYSICALDAMAGE, CONST_ME_NONE = 1, 0
+	local queued = {}
+	local realAdd = addEvent
+	addEvent = function(fn) queued[#queued + 1] = fn return #queued end
+	local sealing, whySeal = RF.testerSeal(plain)
+	ok(sealing == nil and whySeal == "not a tester", "a player's run is never sealed this way")
+	local other = newPlayer(43, "Tester Idle")
+	other.storage[Chaos.storage.tester] = 1
+	local noRun, whyNone = RF.testerSeal(other)
+	ok(noRun == nil and whyNone == "not inside a running rift", "no run: nothing to seal")
+	eq(RF.testerSeal(t), true, "the tester's own run starts to be sealed")
+	eq(#queued, 1, "a first round is queued")
+	queued[1]()
+	table.sort(struck, function(a, b) return a.id < b.id end)
+	eq(#struck, 3, "the first round strikes the pack and the guardian")
+	ok(struck[1].cid == t.id and struck[1].lo == -77 and struck[1].hi == -77, "each strike is the bot's and as big as the monster's health: " .. tostring(struck[1].lo))
+	eq(#queued, 2, "the next round is queued")
+	-- O674: the helper no longer runs a death path of its own (tests/rift_guardian_death_test.lua holds the tick's sweep of a vanished guardian)
+	ok(run.testerForcedDeath == nil, "the helper marks no forced death")
+	local nStruck = #struck
+	run.state = "success"
+	queued[2]()
+	eq(#struck, nStruck, "a run that is over is not struck again")
+	eq(#queued, 2, "and no round is queued after it")
+	addEvent = realAdd
+	-- the fail: only a running run of a tester
+	run.state = "running"
+	eq(RF.testerFail(plain), false, "a player's run is never failed this way")
+	eq(RF.testerFail(other), false, "no run: false")
+	run.state = "success"
+	eq(RF.testerFail(t), false, "a run that is over is not failed")
+	RF.runs[4], RF.runOf[t.id] = nil, nil
+end
+
 print(string.format("rift_probe_test: %d checks, %d failures", checks, fails))
 os.exit(fails == 0 and 0 or 1)

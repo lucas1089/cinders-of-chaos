@@ -76,6 +76,9 @@ end
 bad(function(c) c.bagId = 0 end, "bag id 0")
 bad(function(c) c.bagId = 70000 end, "bag id over 65535")
 bad(function(c) c.bagId = 6068.5 end, "bag id not whole")
+bad(function(c) c.lootBagIds = {6068} end, "the bag listed as another bag")
+bad(function(c) c.lootBagIds = {0} end, "a loot bag id of 0")
+bad(function(c) c.lootBagIds = {cfg.keepIds[1]} end, "a keep id listed as a loot bag")
 bad(function(c) c.seconds = 3000 end, "a bag that lasts over 5 minutes")
 bad(function(c) c.slots = 0 end, "no slots")
 bad(function(c) c.name = "" end, "no name")
@@ -109,6 +112,13 @@ end
 eq(C.corpseFor(cfg, nil, 3058), 3058, "an unknown kind is not changed")
 eq(C.corpseFor(cfg, "npc", 3058), 3058, "an NPC is not changed")
 ok(C.isBag(cfg, 6068) and not C.isBag(cfg, 3058), "isBag")
+-- O674: the stock loot bag that the imported Lua monsters name as their corpse is a loot bag too
+ok(#cfg.lootBagIds >= 1, "the config lists the stock loot bag ids")
+for _, id in ipairs(cfg.lootBagIds) do
+	ok(C.isBag(cfg, id), "isBag reads the list: " .. id)
+	ok(id ~= cfg.bagId, "the list is not the bag itself: " .. id)
+end
+ok(not C.isBag(cfg, nil) and not C.isBag(nil, 6068), "isBag of nothing")
 
 -- ---------------------------------------------------------------- part 2: the engine glue
 local function run(config, opts)

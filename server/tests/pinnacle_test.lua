@@ -240,6 +240,11 @@ r = K.rollClear(cfg, "omen", {omen = true}, 2500, 1, fixed({0.1, 0.9}))
 eq(#r, 1, "only the own kind")
 eq(r[1].kind, 3, "the Omen kind")
 eq(#K.rollClear(cfg, "waystone", {tier = 5}, 2500, 1, fixed({0})), 0, "a low waystone tier gives nothing")
+-- O671: the opener's Endgame Atlas rank (fragmentChance, percent points) adds to the waystone's own kind and to no other source
+local base = src.waystone.chance
+eq(#K.rollClear(cfg, "waystone", {tier = 15}, 2500, 2, fixed({(base + 1) / 100 + 0.0001, 0.99})), 0, "just over the waystone's chance: a miss")
+eq(#K.rollClear(cfg, "waystone", {tier = 15, fragmentChance = 8}, 2500, 2, fixed({(base + 1) / 100 + 0.0001, 0.99})), 1, "the atlas rank lifts the same roll to a hit")
+eq(#K.rollClear(cfg, "rift", {tier = 15, fragmentChance = 8}, 2500, 2, fixed({(src.rift.chance + 1) / 100 + 0.0001, 0.99})), 0, "and no other source")
 eq(#K.rollClear(cfg, "rift", {tier = 15}, 800, 0, fixed({0})), 0, "a low level gives nothing")
 -- the rates over many clears
 math.randomseed(7)
@@ -650,6 +655,21 @@ for _ = 1, 80 do
 	got = got + PN.onWaystoneCleared({tier = 15, finishers = {[e:getGuid()] = {name = e:getName()}}})
 end
 ok(got > 0, "finishers as a map")
+-- O671: the call the waystone endgame really makes (waystone_endgame.lua `fire`, read live): a map, the opener, the percent of its rank and the players in
+-- the map (info.players); the rank adds to the chance of the fragment
+local realInfo = function(extra)
+	local i = {map = 9, tier = 25, level = 3500, band = false, boss = "Hollow Colossus", opener = 105, fragmentChance = 8, corrupted = false, firstClears = 0, chest = false,
+		bandBoss = true, players = {e}}
+	for k, v in pairs(extra or {}) do i[k] = v end
+	return i
+end
+local viaReal = 0
+for _ = 1, 80 do
+	viaReal = viaReal + PN.onWaystoneCleared(realInfo())
+end
+ok(viaReal > 0, "the real call hands a fragment to a character standing in the map (" .. viaReal .. " of 80 clears)")
+eq(PN.onWaystoneCleared(realInfo({tier = 5})), 0, "a tier under the waystone minimum: nothing")
+eq(PN.onWaystoneCleared(realInfo({players = {}})), 0, "an empty map: nothing")
 -- a level under every boss gets none
 local low = newPlayer(6, 1500)
 for _ = 1, 40 do

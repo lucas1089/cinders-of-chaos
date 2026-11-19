@@ -4,7 +4,7 @@
 --   ChaosCorpse.engineArgs(cfg, itemOk)  bagId, keepIds for Game.setMonsterLootBag: bagId 0 when off or invalid
 --   ChaosCorpse.corpseFor(cfg, kind, id) the corpse item a creature of kind ("monster" | "player") leaves when its own
 --                                        corpse is id; the same rule as the engine (src-patch 0089, chaoslootbag.h)
---   ChaosCorpse.isBag(cfg, id)           the id is the bag
+--   ChaosCorpse.isBag(cfg, id)           the id is the bag, or one of cfg.lootBagIds (the stock loot bag, O674)
 --   ChaosCorpse.itemXml(cfg, text)       items.xml text with the bag's entry set (tools/patch_monster_corpses.py mirrors it)
 -- The empty bag decay (O565; engine glue corpse_empty.lua, tests/corpse_bag_test.lua):
 --   ChaosCorpse.emptyMs(cfg)             milliseconds an emptied bag has left, nil when the shortcut is off
@@ -62,6 +62,19 @@ function C.validate(cfg)
 	if ne and ne > 0 and (type(nb) ~= "number" or nb < 1 or nb > 30 or nb ~= math.floor(nb)) then
 		out[#out + 1] = "necroMaxBags must be a whole number 1-30"
 	end
+	for i, id in ipairs(cfg.lootBagIds or {}) do
+		if not isId(id) then
+			out[#out + 1] = "lootBagIds[" .. i .. "] is no item id"
+		elseif id == cfg.bagId then
+			out[#out + 1] = "lootBagIds[" .. i .. "] is the bag itself"
+		else
+			for _, k in ipairs(cfg.keepIds or {}) do
+				if k == id then
+					out[#out + 1] = "lootBagIds[" .. i .. "] is also in keepIds"
+				end
+			end
+		end
+	end
 	for i, id in ipairs(cfg.keepIds or {}) do
 		if not isId(id) then
 			out[#out + 1] = "keepIds[" .. i .. "] is no item id"
@@ -86,7 +99,18 @@ function C.engineArgs(cfg, itemOk)
 end
 
 function C.isBag(cfg, id)
-	return type(cfg) == "table" and cfg.bagId == id
+	if type(cfg) ~= "table" or id == nil then
+		return false
+	end
+	if cfg.bagId == id then
+		return true
+	end
+	for _, other in ipairs(cfg.lootBagIds or {}) do
+		if other == id then
+			return true
+		end
+	end
+	return false
 end
 
 -- what the engine does (chaoslootbag.h corpseOf, called from Monster::getLookCorpse only). A player never gets the bag:

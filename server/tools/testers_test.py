@@ -1351,6 +1351,56 @@ try:
 finally:
     asyncio.sleep = _real_sleep
 
+# ---------------------------------------------------------------- O671: another bot's hands (the stranger of the loot test)
+class _OB:
+    """a bot in game as the loot check sees the other one: a name, a socket, the text lines, the helper"""
+    def __init__(self, name, cid):
+        self.name, self.cid = name, cid
+        self.conn, self.alive, self.died = _WConn(), True, False
+        self.recent, self.recent_n = [], 0
+        self.said = []
+
+    async def helper_says(self, command, kind, wait=4.0):
+        self.said.append((command, kind))
+        return {'ok': command}
+
+
+_ob_a, _ob_b = _OB('Tester Own', 7001), _OB('Tester Str', 7002)
+_ob_io = T.CheckIO(_ob_a, {'stop': False})
+T.ONLINE[7001], T.ONLINE[7002] = _ob_a, _ob_b
+asyncio.sleep = _no_sleep
+try:
+    eq(asyncio.run(_ob_io.helper_of('Tester Str', 'explode join Tester Own', 'explode')), {'ok': 'explode join Tester Own'}, 'helper_of: the helper of the other bot answers')
+    eq(_ob_b.said, [('explode join Tester Own', 'explode')], 'helper_of: it is the other bot that says it')
+    eq(_ob_a.said, [], 'helper_of: not this one')
+    eq(asyncio.run(_ob_io.helper_of('Tester Nobody', 'info', 'info')), None, 'helper_of: a bot that is not in game answers nothing')
+    asyncio.run(_ob_io.open_bag_of('Tester Str', 2854))
+    eq(_ob_b.conn.out[-1], TC.use_packet((0xFFFF, 3, 0), 2854), 'open_bag_of: the other bot opens its backpack as container 0')
+    eq(len(_ob_a.conn.out), 0, 'open_bag_of: nothing is sent by this bot')
+    lines = asyncio.run(_ob_io.drag_of('Tester Str', (800, 801, 7), 3043, 1, count=100, wait=0.2))
+    eq(_ob_b.conn.out[-1], TC.move_packet((800, 801, 7), 3043, 1, (0xFFFF, 0x40, 0), 100), 'drag_of: the move item packet from the tile onto the first backpack slot')
+    eq(lines, [], 'drag_of: no text line, no answer')
+    _ob_b.recent, _ob_b.recent_n = ['That loot belongs to someone else for 42 more seconds.'], 1
+    # the refusal arrives while the packet is being sent: the lines of the wait are the ones that came after it
+    _real_drag_sleep = asyncio.sleep
+
+    async def _arrive(seconds):
+        _ob_b.recent = _ob_b.recent + ['That loot belongs to someone else for 42 more seconds.']
+        _ob_b.recent_n += 1
+    asyncio.sleep = _arrive
+    lines = asyncio.run(_ob_io.drag_of('Tester Str', (1, 2, 7), 5, 1, wait=5.0, until_text='belongs to someone else'))
+    eq(lines, ['That loot belongs to someone else for 42 more seconds.'], 'drag_of: the lines that came after the drag, and the wait ends at the text asked for')
+    asyncio.sleep = _no_sleep
+    eq(asyncio.run(_ob_io.drag_of('Tester Nobody', (1, 2, 7), 5, 1)), None, 'drag_of: a bot that is not in game sends nothing')
+    T.PARTY_BUSY.update(('Tester Own', 'Tester Str'))
+    ok('Tester Own' in T.PARTY_BUSY and 'Tester Str' in T.PARTY_BUSY, 'release_partner: both names are busy after partner()')
+    _ob_io.release_partner('Tester Own', 'Tester Str')
+    ok('Tester Own' not in T.PARTY_BUSY and 'Tester Str' not in T.PARTY_BUSY, 'release_partner: both names are free again')
+finally:
+    asyncio.sleep = _real_sleep
+    T.ONLINE.pop(7001, None)
+    T.ONLINE.pop(7002, None)
+
 # ---------------------------------------------------------------- O658: the retreat's reads and heals, --no-gear
 _r8 = T.Results(1)
 _hb = T.TesterBot(13, dict(bot), A(), 1, _r8, {'rotation': [], 'heal': {'words': 'exura', 'group': 2, 'cooldown': 1000, 'groupcooldown': 1000}})
