@@ -29,6 +29,7 @@ mocked server. Standard library only.
 """
 import asyncio
 import json
+import time
 
 PASS, FAIL, SKIP = 'pass', 'fail', 'skip'
 STATUSES = (FAIL, PASS, SKIP)
@@ -2321,8 +2322,7 @@ async def dungeon_play(io, name, cls, a, dg, partners, key='closed_dungeon', dif
     # queue, each bot from its own window; the run starts when the group is full or the solo wait is over
     for r in squad:
         data = {'id': dg['id'], 'difficulty': difficulty}
-        reply = await (io.request('dungeons', 'queue', data, ['queue'], ANSWER) if r['lead']
-                       else io.request_of(r['name'], 'dungeons', 'queue', data, ['queue'], ANSWER))
+        reply, _calm = await queue_dungeon_calm(io, r, data)   # O661: a bot in a fight waits at the door and asks again
         if reply is not None and (reply.get('data') or {}).get('joined') is False and r['lead']:
             said = str((reply.get('data') or {}).get('text') or (reply.get('data') or {}).get('why') or '') or recent_text(io, 2)   # O660: the server's own words
             return Result(key, name, cls, SKIP, 'the queue refused the bot (level, a cooldown, a fight or the dungeon\'s own rule)%s' % (
@@ -3344,7 +3344,7 @@ async def check_rift_walk(io, name, cls, level):
             a = await io.helper('rift state', 'rift', ANSWER)
             if not (isinstance(a, dict) and a.get('pz')):
                 return Result(key, name, cls, SKIP, 'the bot stands at the temple but not in a protection zone: a rift cannot be opened there', fallbacks)
-        k = await io.helper('rift key', 'rift', HELPER_WAIT)
+        k = await io.helper(rift_key_command(a.get('level')), 'rift', HELPER_WAIT)   # O661: the tier the level warning allows, as a person picks it
         if not isinstance(k, dict):
             return Result(key, name, cls, SKIP, 'no answer to !tester rift key', fallbacks)
         if k.get('err'):
@@ -4204,6 +4204,8 @@ def bounty_walk_verdict(t):
     how = 'level %s, %d step(s) in %d s%s' % (t.get('level'), t.get('steps', 0), t.get('secs', 0),
                                               ('; teleport in place of walking: ' + ', '.join(t['fallbacks'])) if t.get('fallbacks') else '')
     moved = (t.get('progress') or 0) - (t.get('base') or 0)
+    if t.get('no_way') and moved < t.get('need', BOUNTY_KILLS):   # O661: the hunt is far and no teleport leads there: the reason, not a bug
+        return SKIP, 'the hunt of %s is far from the bot and has no way there: %s (%s)' % (t.get('name'), t['no_way'], how)
     kind = t.get('kind') or 'hunt'
     if moved >= t.get('need', BOUNTY_KILLS):
         return PASS, '%s: the counter went from %s to %s of %s (%s)' % (t.get('name'), t.get('base'), t.get('progress'), t.get('required'), how)
@@ -4264,6 +4266,11 @@ async def bounty_play(io, name, cls, level, key, kind):
     row, held = bounty_pick(a, kind)
     if row is None:
         return Result(key, name, cls, SKIP, held)
+    if kind == 'hunt' and not held and bounty_far(a.get('pos'), (row.get('mark') or {})):   # O661: the contract whose hunt a teleport leads to
+        near_row, why = await bounty_near_row(io, a)
+        if near_row is None:
+            return Result(key, name, cls, SKIP, why)
+        row = near_row
     r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
     fallbacks = []
     trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'waited': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
@@ -4314,6 +4321,11 @@ async def bounty_play(io, name, cls, level, key, kind):
                 elapsed += spent
                 continue
             mode = g.get('mode')
+            if mode == 'walk' and trace.get('travel') is None and bounty_far(s.get('pos'), g.get('goal')):   # O661: a hunt far away: the journey's legs
+                elapsed += await bounty_travel_leg(io, r, g['goal'], trace, fallbacks)
+                if trace.get('travel') != 'foot':
+                    break
+                continue
             if mode == 'fight':
                 fight_since = elapsed if fight_since is None else fight_since
                 trace['fought'] = max(trace['fought'], elapsed - fight_since)
@@ -5993,6 +6005,9 @@ def pocket_problems(s, trace):
         trace['boss_seen'] = True
         if isinstance(run.get('bossHp'), int):
             trace['hp'] = run['bossHp'] if trace.get('hp') is None else min(trace['hp'], run['bossHp'])
+            series = trace.setdefault('series', [])   # O661: the boss's health at each look, to tell a fight that was lost from a boss that heals
+            if len(series) < 60:
+                series.append(run['bossHp'])
     if run.get('boss') == 'dead' or run.get('state') == 'success':
         trace['won'] = True
         trace['hp'] = 0
@@ -6014,7 +6029,8 @@ def pocket_walk_verdict(t):
             extra = ', the boss point was held already'
         return PASS, '%s fell in %d s%s (%s)' % (t.get('boss') or 'the boss', t.get('secs', 0), extra, how)
     if t.get('boss_seen') and t.get('hp') is not None and t['hp'] < 100:
-        return SKIP, '%s was hurt to %s%% and did not fall in %d s (%s)' % (t.get('boss') or 'the boss', t['hp'], t.get('secs', 0), how)
+        return SKIP, '%s was hurt to %s%% and did not fall in %d s (%s)%s' % (t.get('boss') or 'the boss', t['hp'], t.get('secs', 0), how,
+                                                                             (' [boss health per look: %s]' % ','.join(str(v) for v in t['series'][:30])) if t.get('series') else '')
     if t.get('fought', 0) >= SOLO_FIGHT_MIN:
         return FAIL, 'fought %d s at the boss of the pocket and took none of its health (damage, targets or the boss)' % t['fought']
     if t.get('stuck'):
@@ -6039,6 +6055,9 @@ async def check_pocket_walk(io, name, cls, level):
     if refused:
         return Result(key, name, cls, refused[0], refused[1])
     pick = pocket_pick(a)
+    unfit = pocket_unfit(pick, a.get('level') or level)   # O661: a boss above the bot's level is not played
+    if unfit:
+        return Result(key, name, cls, SKIP, unfit)
     r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
     fallbacks = []
     trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks, 'level': a.get('level'),
@@ -7875,6 +7894,8 @@ async def gear_up(io, name, cls, level):
     found = await gear_wear(io, g, refused)
     if io.alive():
         await gear_potions(io, name, g)
+    if io.alive():
+        await gear_tree(io, g)   # O661: the free passive points on the Defense build, as a person does
     if io.alive() and found is not None:
         found, _ = await found_look(io)
         if found is not None:
@@ -7892,6 +7913,8 @@ async def gear_up(io, name, cls, level):
         parts.append('potions ' + g['potions'])
     if g['heal']:
         parts.append(g['heal'])
+    if g.get('tree'):
+        parts.append(g['tree'])
     if not parts:
         parts.append('nothing to wear or buy')
     text = '; '.join(parts)
@@ -8399,3 +8422,246 @@ def slot_after_use(used, item, count):
         out['index'] = int(item['index']) - 1
         out['path'] = str(out['index'])
     return out
+
+
+# ------------------------------------------------------------------------------------------------ the passive tree, spent (O661)
+# A person who dies in a pack of his level opens the passive tree window and presses Auto build, Defense. The bots never did: a character made
+# at level 1400 held its points and had 0 resistance to every element (the death recap: `res r 0`, 12 hits in 1.5 s), while the survival model
+# (survival_model.py) reads the tank role of the tree. The gear-up spends the free points on the Defense focus build (`autobuildApply`, mode
+# `add`: free, takes nothing back, a build is cut to the points the character owns).
+TREE_BUILD = 'focus_defense'
+TREE_DONE = ('autobuildApplied', 'autobuildError')
+
+
+def tree_build_text(ans, build=TREE_BUILD):
+    """-> (done, text) from the answer of autobuildApply: done is True when nodes were taken, text names the server's words"""
+    if not isinstance(ans, dict):
+        return False, 'passive tree: no answer'
+    d = ans.get('data') if isinstance(ans.get('data'), dict) else {}
+    if ans.get('action') == 'autobuildApplied':
+        return True, 'passive tree %s: %s' % (build, str(d.get('message') or 'applied')[:80])
+    return False, 'passive tree %s: %s' % (build, str(d.get('message') or 'refused')[:80])
+
+
+async def gear_tree(io, g, build=TREE_BUILD):
+    """spend the free passive points on the Defense build once per gear-up; the result text goes in g['tree'], a refusal in g['notes'] only when it is
+    not "nothing would change" (no free point is not a fault)"""
+    ans = await io.request('passivetree', 'autobuildApply', {'build': build, 'mode': 'add', 'cost': 0}, TREE_DONE, ANSWER)
+    done, text = tree_build_text(ans, build)
+    g['tree'] = text if done else None
+    if not done and 'Nothing would change' not in text and 'no answer' not in text:
+        g['notes'].append(text)
+    return done
+
+
+# ------------------------------------------------------------------------------------------------ the rift tier a person picks (O661)
+# The rift key the helper gives is of the highest tier the level OPENS (rift_config.lua `tiers` minLevel), and the game warns a solo player below
+# the RECOMMENDED level of that tier (`warn.levels`: the guardian's biggest hit stays under 60 % of the pool from there). A level 700 character
+# opens tier 8 and is told to be 760. A person reads the warning and takes a lower key; the bot does the same: the highest tier whose
+# recommended level it has reached, tier 1 when none.
+RIFT_WARN_LEVELS = (180, 240, 290, 420, 520, 640, 740, 760, 860, 990, 990, 990, 990, 1000, 1025)
+
+
+def rift_tier_for(level):
+    """-> the highest tier whose recommended solo level (RIFT_WARN_LEVELS) is at most `level`; 1 when the level is below all of them"""
+    try:
+        lv = int(level)
+    except (TypeError, ValueError):
+        return None
+    tier = 1
+    for t, need in enumerate(RIFT_WARN_LEVELS, 1):
+        if lv >= need:
+            tier = t
+    return tier
+
+
+def rift_key_command(level):
+    """the helper command for the rift key: `rift key N` for the tier the level warning allows, the plain `rift key` when the level is unknown"""
+    tier = rift_tier_for(level)
+    return 'rift key' if tier is None else 'rift key %d' % tier
+
+
+# ------------------------------------------------------------------------------------------------ a dungeon queue out of a fight (O661)
+# O660 left closed_dungeon at 1 of 10: the queue refused 9 bots. The server's words (carried by the SKIP since O659) were "You cannot enter a
+# dungeon while you are in a fight." (dungeons.lua: the run teleports from wherever the player stands, so a fight cannot be left by queueing; Chaos.inCombat:
+# a pz lock, or the fight condition outside a protection zone). The bots come to the entrance straight from a hunt, a pocket or a trial. A person
+# waits at the door until the fight is over and asks again; the bot does the same: the refusal is asked again every DUNGEON_CALM_GAP seconds until it
+# says something else, at most DUNGEON_CALM_WAIT (the condition lasts 60 s).
+DUNGEON_CALM_WAIT = 75.0
+DUNGEON_CALM_GAP = 5.0
+DUNGEON_CALM_TEMPLE = 10.0   # seconds of refusals before the bot walks back to the temple (a protection zone) and asks from there
+IN_A_FIGHT = 'while you are in a fight'
+
+
+def queue_refusal(reply):
+    """-> the server's refusal text of a dungeon queue answer ('' when the bot joined, or there is no answer)"""
+    d = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if isinstance(d, dict) and d.get('joined') is False:
+        return str(d.get('text') or d.get('why') or '')
+    return ''
+
+
+async def queue_dungeon_calm(io, r, data):
+    """the dungeon queue request of the squad member `r`; a refusal because the bot is in a fight is asked again after a pause (the bot stands still).
+    -> (reply, waited seconds)"""
+    waited, at_temple = 0.0, False
+    while True:
+        reply = await (io.request('dungeons', 'queue', data, ['queue'], ANSWER) if r['lead']
+                       else io.request_of(r['name'], 'dungeons', 'queue', data, ['queue'], ANSWER))
+        # the queue answer is {id, joined: false}: the words come as the cancel message of the server (dungeons.lua), the last lines the bot read
+        said = queue_refusal(reply) or (recent_text(io, 3) if isinstance(reply, dict) and (reply.get('data') or {}).get('joined') is False else '')
+        if IN_A_FIGHT not in said or waited >= DUNGEON_CALM_WAIT or not io.alive():
+            return reply, waited
+        if not at_temple and waited >= DUNGEON_CALM_TEMPLE:
+            # the bot at the door goes on fighting what is near it (its rotation, the helper's target): the fight condition never runs out there. A person
+            # steps back into the temple, where a fight does not count (Chaos.inCombat: a protection zone), and asks from there
+            at_temple = True
+            await walk_to_place(io, r, 'temple')
+        await io.sleep(DUNGEON_CALM_GAP)
+        waited += DUNGEON_CALM_GAP
+
+
+# ------------------------------------------------------------------------------------------------ the pocket boss of the bot's own level (O661)
+def pocket_unfit(pick, level):
+    """O661: the SKIP text when the pocket the helper sorted first has a boss above the bot's level (`bl`: the level the boss is spawned with; the
+    helper puts the bosses at or under the level first, so this means none fits), else None. A pocket of the raid category opens at level 150 whatever
+    the boss: Ul'thazmor (level 2400) carried a level 600 bot out by a lethal hit within 10 s, the boss at 99 %"""
+    try:
+        bl, lv = int(pick.get('bl')), int(level)
+    except (TypeError, ValueError, AttributeError):
+        return None
+    if bl > lv:
+        return 'no pocket boss at or under level %d is open today (the lowest is %s, level %d): a person does not walk into it' % (lv, pick.get('name'), bl)
+    return None
+
+
+# ------------------------------------------------------------------------------------------------ the way to a bounty hunt (O661)
+# O660: the contract's hunt is about 1300 tiles from the temple (`!tester bounty state`: mark at x 33007, y 33360, the temple at x 32957, y 32076): the
+# engine's path search is bounded ("no path"), the bot walked 0 steps in 480 s and the loop had no jump. A hunt of the map is reached through the
+# temple's great teleport, the hall and the hunt's own teleport (the levelling journey does exactly that). The bounty loop does the same now: when the
+# guide's goal is far, the bot goes by the journey's legs to the hunt whose arrival is nearest to the goal (`!tester journey near X Y Z`, the hunts the
+# level may enter), the helper's jump only as the journey's own counted fallback; a hunt no teleport leads to is a SKIP with the reason.
+BOUNTY_NEAR = 150          # tiles: a goal farther than this is no walk on foot (the engine path search is bounded)
+BOUNTY_TRAVEL_BUDGET = 240.0   # seconds the legs to the hunt may take
+BOUNTY_TRAVEL_MAX = 25     # tiles from the hunt's arrival to the goal that still count as "the hunt of the contract"
+
+
+def bounty_far(pos, goal):
+    """True when the goal is too far for a walk on foot (the larger axis, or another floor with a long way: > BOUNTY_NEAR)"""
+    if not (isinstance(pos, dict) and isinstance(goal, dict)):
+        return False
+    try:
+        return max(abs(int(pos['x']) - int(goal['x'])), abs(int(pos['y']) - int(goal['y']))) > BOUNTY_NEAR
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def travel_command(goal):
+    """-> `journey near X Y Z` for the goal {x, y, z}"""
+    return 'journey near %d %d %d' % (int(goal['x']), int(goal['y']), int(goal['z']))
+
+
+class _Clocked:
+    """an io with a clock (`now`), for the journey's legs inside a check: everything else is the check's own io"""
+
+    def __init__(self, io):
+        self._io = io
+
+    def now(self):
+        return time.monotonic()
+
+    def __getattr__(self, name):
+        return getattr(self._io, name)
+
+
+async def bounty_travel_leg(io, r, goal, trace, fallbacks):
+    """the journey's legs from where the bot stands to the hunt nearest to `goal`: the temple first (on foot, the helper's teleport is a counted
+    fallback), then the temple teleport, the hall and the hunt's teleport. Sets trace['travel'] to 'foot' (arrived) or 'no way' (trace['no_way'] says why)
+    -> seconds spent"""
+    import tester_journey as TJ   # lazily: tester_journey imports this module
+    t0 = time.monotonic()
+    cio = _Clocked(io)
+    near = (int(goal['x']), int(goal['y']), int(goal['z']))
+
+    class Travel(TJ.Journey):
+        async def look(self, io_):
+            s = await io_.helper(travel_command(goal), 'journey', TJ.ANSWER)
+            if not isinstance(s, dict) or s.get('err') or TJ.pos_of(s.get('pos')) is None:
+                self.misses += 1
+                if self.misses >= TJ.MISSES:
+                    self.note('no answer of the helper to `journey near`: %s' % ((s or {}).get('err', 'none') if isinstance(s, dict) else 'none'))
+                    return False
+                await io_.sleep(TJ.LOOK)
+                return None
+            self.misses = 0
+            now = io_.now()
+            self.seen(now)
+            self.arrive(s, now)
+            return s
+
+    j = Travel(r['name'], 'bounty', int(trace.get('level') or 0))
+    trace['travel'] = None
+    while io.alive() and time.monotonic() - t0 < BOUNTY_TRAVEL_BUDGET:
+        s = await j.look(cio)
+        if s is False:
+            trace['travel'], trace['no_way'] = 'no way', 'the helper gave no answer to `journey near` (an old helper file)'
+            break
+        if s is None:
+            continue
+        pick = s.get('pick') if isinstance(s.get('pick'), dict) else None
+        if pick is None or not pick.get('t'):
+            trace['travel'], trace['no_way'] = 'no way', 'no hunt of the teleport room is open to level %s' % trace.get('level')
+            break
+        arrival = pick.get('a')
+        if isinstance(arrival, dict) and max(abs(arrival['x'] - near[0]), abs(arrival['y'] - near[1])) > BOUNTY_TRAVEL_MAX and not j.hunt:
+            trace['travel'], trace['no_way'] = 'no way', 'no hunt teleport leads to (%d, %d): the nearest, %s, arrives %d tiles away' % (
+                near[0], near[1], pick.get('n'), max(abs(arrival['x'] - near[0]), abs(arrival['y'] - near[1])))
+            break
+        if s.get('zone') == 'other' and j.hunt:
+            trace['travel'] = 'foot'
+            break
+        if s.get('zone') == 'other' and not j.hunt:
+            # standing somewhere else already (a street, a hunt): the way to the temple first, as a person does
+            how, _got, note = await walk_to_place(io, r, 'temple')
+            if note:
+                fallbacks.append(note)
+            if how not in ('foot', 'helper'):
+                trace['travel'], trace['no_way'] = 'no way', 'no way to the temple: %s' % how[:60]
+                break
+            continue
+        await j.act(cio, s)
+    if trace.get('travel') is None:
+        trace['travel'], trace['no_way'] = 'no way', 'the legs to the hunt took more than %d s' % int(BOUNTY_TRAVEL_BUDGET)
+    trace['steps'] = trace.get('steps', 0) + j.steps
+    for f in j.fallbacks:
+        fallbacks.append(f)
+    return time.monotonic() - t0
+
+
+async def bounty_near_row(io, a):
+    """O661: of the hunt contracts a board lists (`candidates`, each with the mark of the hunt that lists its monster), the one whose mark is nearest to
+    the arrival of a hunt teleport the bot's level may enter (`journey near X Y Z` answers that hunt and its arrival): a person takes the contract he can
+    walk to. -> (row, None) with row['arrival'] the tiles from the arrival to the mark, or (None, text) when no mark is within BOUNTY_TRAVEL_MAX of an
+    arrival (the text names the nearest)"""
+    best, near_text, seen = None, None, 0
+    for c in a.get('candidates') or []:
+        m = c.get('mark') if isinstance(c, dict) else None
+        if not (isinstance(m, dict) and all(isinstance(m.get(k), int) for k in ('x', 'y', 'z'))):
+            continue
+        got = await io.helper(travel_command(m), 'journey', ANSWER)
+        pick = got.get('pick') if isinstance(got, dict) else None
+        arr = pick.get('a') if isinstance(pick, dict) else None
+        if not isinstance(arr, dict):
+            continue
+        seen += 1
+        d = max(abs(arr['x'] - m['x']), abs(arr['y'] - m['y'])) + (1000 if arr.get('z') != m['z'] else 0)
+        if near_text is None or d < near_text[0]:
+            near_text = (d, c.get('name'), pick.get('n'))
+        if d <= BOUNTY_TRAVEL_MAX and (best is None or d < best['arrival']):
+            best = dict(c, arrival=d)
+    if best is not None:
+        return best, None
+    if not seen:
+        return None, 'no hunt teleport is open to level %s, or an old helper file' % a.get('level')
+    return None, 'none of the %d hunt contract(s) has a hunt a teleport leads to (the nearest: %s, %s arrives %d tiles from its hunt)' % (
+        seen, near_text[1], near_text[2], near_text[0])

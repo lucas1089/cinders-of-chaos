@@ -2615,7 +2615,7 @@ do
 	o = H.parseJourney("state keep camp_1 skip a-b,c.d")
 	check(o.keep == "camp_1" and o.skip["a-b"] and o.skip["c.d"], "journey: keep and skip")
 	local bad, usage = H.parseJourney("teleport")
-	check(bad == nil and usage == "usage: journey [state | jump | hall] [keep ID] [skip ID,ID]", "journey: an unknown word is the usage")
+	check(bad == nil and usage == "usage: journey [state | jump | hall] [keep ID] [skip ID,ID] [near X Y Z]", "journey: an unknown word is the usage")
 	check(H.parseJourney("keep") == nil and H.parseJourney("skip") == nil, "journey: keep and skip need an id")
 	check(H.parseJourney("keep a;b") == nil and H.parseJourney("keep " .. ("x"):rep(49)) == nil, "journey: an id is plain and short")
 	local many = {}
@@ -2637,6 +2637,29 @@ do
 	check(pk and pk.id == "rats" and pk.widen > 0, "pick: level 8 widens the window until the first hunt fits (and may enter)")
 	pk = H.journeyPick(ports, 70, {})
 	eq(pk.id, "bog", "pick: level 70: bog (middle 65) is the one inside the window 56-77")
+	-- O661: near X Y Z: the hunt whose arrival is nearest to a place among the ones the level may enter
+	local nearOpts = H.parseJourney("state near 5090 60 7")
+	check(nearOpts and nearOpts.near and nearOpts.near.x == 5090 and nearOpts.near.y == 60 and nearOpts.near.z == 7, "journey: near X Y Z")
+	check(H.parseJourney("near 1 2") == nil and H.parseJourney("near 1 2 x") == nil and H.parseJourney("near 1 2 3 4") == nil, "journey: near needs three numbers")
+	check(H.parseJourney("near 1 2 99999") == nil, "journey: near numbers are map numbers")
+	pk = H.journeyPick(ports, 100, {near = {x = 5090, y = 60, z = 7}})
+	check(pk and pk.id == "ruin" and pk.stay == true and pk.d == 0 and pk.a.x == 5090, "near: level 100 takes the hunt whose arrival is at the place (ruin, 90)")
+	pk = H.journeyPick(ports, 30, {near = {x = 5090, y = 60, z = 7}})
+	check(pk and pk.id == "cave", "near: ruin needs level 90, level 30 takes the nearest hunt it may enter (cave, 15)")
+	pk = H.journeyPick(ports, 1000, {near = {x = 5300, y = 60, z = 6}})
+	check(pk and pk.id == "deep" and pk.d == 1000, "near: an arrival on another floor counts 1000 tiles more (the place is x 5300 on floor 6, the arrivals are on floor 7)")
+	check(H.journeyNear({}, 100, {x = 1, y = 1, z = 7}) == nil and H.journeyNear(ports, 100, nil) == nil, "near: no hunt, no place")
+	pk = H.journeyPick(ports, 100, {near = {x = 1, y = 1, z = 7}, keep = "keep"})
+	check(pk and pk.id == "rats", "near: the place wins over keep (a bounty walk goes to its hunt)")
+	local answer = H.journeyAnswer({level = 100, zone = "temple", pick = H.journeyNear(ports, 100, {x = 5090, y = 60, z = 7})})
+	check(answer.pick.id == "ruin" and answer.pick.d == 0 and answer.pick.a.x == 5090, "journey answer: the pick carries d and the arrival")
+	-- O661: the pockets of a level the boss is not above come first
+	local pb = H.pocketAnswer({level = 700, bosses = {
+		{key = "raid_ul", name = "Ul'thazmor", category = "raid", level = 150, bl = 2400, left = 1, ok = true, point = {id = 10, got = false}},
+		{key = "raid_lo", name = "Lowbie", category = "raid", level = 150, bl = 300, left = 1, ok = true, point = {id = 3, got = true}},
+		{key = "raid_mid", name = "Middling", category = "raid", level = 150, bl = 650, left = 1, ok = true, point = {id = 4, got = true}}}})
+	check(pb.bosses[1].key == "raid_mid" and pb.bosses[2].key == "raid_lo" and pb.bosses[3].key == "raid_ul" and pb.bosses[1].bl == 650,
+		"pocket answer: a boss at or under the bot's level first, the highest of them; a point it lacks does not outweigh a boss above it")
 	-- the hunt it is at stays while it fits (never a hop between two equal hunts)
 	pk = H.journeyPick(ports, 70, {keep = "bog"})
 	check(pk.id == "bog" and pk.stay == true, "pick: keep: the hunt it is at stays while it fits")
