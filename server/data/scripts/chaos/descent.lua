@@ -68,6 +68,7 @@ end
 X.runs = X.runs or {} -- slot -> run
 X.runOf = X.runOf or {} -- player id -> run
 X.monsterRun = X.monsterRun or {} -- monster id -> run
+X.monsterDamage = X.monsterDamage or {} -- monster id -> its damage factor (descent_core.lua D.paceScale, O664)
 X.built = X.built or {}
 X.bad = X.bad or {}
 X.rows = X.rows or {} -- guid -> {best, bestClear, freeDay, freeWeek, runs, clears, week, weekBest}
@@ -431,6 +432,7 @@ local function cleanSlot(L)
 			for _, c in ipairs(tile:getCreatures() or {}) do
 				if c:isMonster() then
 					X.monsterRun[c:getId()] = nil
+					X.monsterDamage[c:getId()] = nil
 					c:remove()
 				end
 			end
@@ -484,6 +486,19 @@ end
 
 -- ======================================================================== monster pool
 local rawPool = dofile("data/scripts/chaos/bounty_pool.lua")
+-- O664: the pool entry of a monster type by name, and the pace layer's curves: a Descent monster has the health and damage of the
+-- same monster in a hunt (descent_core.lua D.paceScale, config `pace`)
+if not ChaosPaceCore then
+	dofile("data/scripts/chaos/pace_core.lua")
+end
+local poolByName = {}
+for _, e in ipairs(rawPool.hunt) do
+	poolByName[e.name:lower()] = e
+end
+local function paceFactors(name)
+	local pc = ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
+	return DC.paceScale(C(), ChaosPaceCore, pc, poolByName[name:lower()])
+end
 local knownCache = {}
 local function known(name)
 	local k = name:lower()
@@ -732,7 +747,9 @@ local function spawnOne(run, name, pos, tier, opts)
 	if tier and ChaosApplyTier then
 		ChaosApplyTier(m, tier)
 	end
-	local hp = math.floor(m:getMaxHealth() * run.esc.health * (opts.healthMult or 1))
+	local paceHealth, paceDamage = paceFactors(name)
+	local hp = math.max(1, math.floor(m:getMaxHealth() * run.esc.health * (opts.healthMult or 1) * paceHealth))
+	X.monsterDamage[m:getId()] = paceDamage * (opts.damage or 1)
 	if hp > 0 and hp ~= m:getMaxHealth() then
 		m:setMaxHealth(hp)
 		m:setHealth(hp)
@@ -787,7 +804,7 @@ local function spawnBoss(run)
 	for i = #run.types, 1, -1 do
 		local e = run.types[i]
 		local m = spawnOne(run, e.name, run.L.center, b.tier,
-			{shown = name, look = b.looks[th.name], healthMult = DC.bossHealth(C(), aliveCount(run))})
+			{shown = name, look = b.looks[th.name], healthMult = DC.bossHealth(C(), aliveCount(run)), damage = b.damage})
 		if m then
 			run.bossId = m:getId()
 			run.bossName = name
@@ -1244,6 +1261,7 @@ finish = function(run, result)
 	for mid, r in pairs(X.monsterRun) do
 		if r == run then
 			X.monsterRun[mid] = nil
+			X.monsterDamage[mid] = nil
 		end
 	end
 	local rid, slot = run.id, run.slot
@@ -1581,6 +1599,7 @@ function mdeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	local mid = creature:getId()
 	local run = X.monsterRun[mid]
 	X.monsterRun[mid] = nil
+	X.monsterDamage[mid] = nil
 	if not run or run.ended or not run.monsters[mid] then
 		return true
 	end
@@ -1657,7 +1676,8 @@ function phit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	local fromMonster = attacker and X.monsterRun[attacker:getId()] == run
 	local p, s = math.abs(pd), (st == COMBAT_HEALING) and 0 or math.abs(sd)
 	if fromMonster and run.esc then
-		p, s = math.floor(p * run.esc.damage), math.floor(s * run.esc.damage)
+		local k = run.esc.damage * (X.monsterDamage[attacker:getId()] or 1)
+		p, s = math.floor(p * k), math.floor(s * k)
 	end
 	local total = p + s
 	if total > 0 then

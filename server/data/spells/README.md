@@ -4600,7 +4600,7 @@ measured ones (the factors are interpolated between 100, 500 and 1000) and level
 nearer each other there) were not re-measured: a re-run of the same test after the next server install is the proof. The dummies
 have no resistances or monster levels, the stat window and the tree are optimistic (20 in every stat, all points in one damage
 build), no gems, runes, orbs or uniques. The extra target factor reaches the real hunt: a pack of monsters is the 5 target case.
-The best sets and quest numbers of `rotation_sim.py` do not include it; since O444 `pack_model.py`, `boss_model.py` and `tower_model.py` read `class_dps_model.py`, which does.
+The best sets and quest numbers of `rotation_sim.py` do not include it; since O444 `pack_model.py`, `boss_model.py` and `tower_model.py` read `class_dps_model.py`, which does (and, since O664, `descent_model.py`).
 
 ### One truth for the balance models (O444, 2026-11-09; computed, not measured)
 
