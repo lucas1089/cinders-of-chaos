@@ -289,7 +289,22 @@ function E.payload(player, msg)
 	for t = 1, #TC().tiers do
 		paid[#paid + 1] = K.tierPaid(st.mask, t) and 1 or 0
 	end
-	return {points = st.points, spent = st.spent, free = st.free, stats = stats, paid = paid, respec = cfg.atlas.respecGold, msg = msg}
+	-- O670 (client panel): the level of every tier, the first tier of the deep band and the band bosses (tier of the band's last map)
+	local levels, deepFrom = {}, nil
+	for t, row in ipairs(TC().tiers) do
+		levels[t] = row.level
+	end
+	for _, b in ipairs(TC().bands) do
+		if b.name == "deep" then
+			deepFrom = b.first
+		end
+	end
+	local bosses = {}
+	for _, b in ipairs(cfg.bandBosses) do
+		bosses[#bosses + 1] = {tier = b.tier, name = b.monster}
+	end
+	return {points = st.points, spent = st.spent, free = st.free, stats = stats, paid = paid, respec = cfg.atlas.respecGold, msg = msg,
+		levels = levels, deepFrom = deepFrom or 16, bosses = bosses}
 end
 
 local function send(player, msg)

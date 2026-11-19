@@ -239,6 +239,7 @@ namespace Chaos.Client
         {
             var a = St(app);
             if (a == null) return;
+            if (a.EgPage && a.IsWaystone) { DrawEndgame(app, a, inner); return; }
             float sideW = 270;
             var map = new Rect(inner.x + 4, inner.y + 2, inner.width - sideW - 12, inner.height - 30);
             ChaosApp.Fill(map, new Color(0f, 0f, 0f, 0.55f));
@@ -248,7 +249,56 @@ namespace Chaos.Client
             if (Eu.Button(new Rect(map.xMax - 190, map.yMax + 3, 28, 22), "-")) a.ZoomBy(-1);
             if (Eu.Button(new Rect(map.xMax - 158, map.yMax + 3, 28, 22), "+")) a.ZoomBy(1);
             if (Eu.Button(new Rect(map.xMax - 126, map.yMax + 3, 126, 22), Loc.T("Center"))) a.Center();
+            if (a.IsWaystone && Eu.Button(new Rect(map.x, map.yMax + 3, 90, 22), Loc.T("Endgame"))) { a.ToggleEndgame(); confirm = ""; }
             DrawSide(app, a, new Rect(map.xMax + 6, inner.y + 2, sideW, inner.height - 4));
+        }
+
+        // the endgame page of the Waystone Atlas (O670): points to spend, ranks of four stats, the deep tiers and the band bosses
+        void DrawEndgame(ChaosApp app, AtlasState a, Rect inner)
+        {
+            var m = a.EgModel;
+            float x = inner.x + 4, y = inner.y + 2, w = inner.width - 8;
+            Eu.Label(app, new Rect(x, y, 300, 24), Loc.T("Points: {0}", m.Free), Eu.Bright, 17, true);
+            Eu.Label(app, new Rect(x + 300, y + 4, w - 300, 18), m.EarnedLine(), Eu.Dim, 11);
+            y += 28;
+            Eu.Wrap(app, x, y, w, Loc.T("The first kill of a deep tier's map boss gives one point, once for every character. Ranks shape the runs you open. Not every stat can be full."), Eu.Dim, 11);
+            y += 34;
+            float leftW = w * 0.58f, rx = x + leftW + 16, rw = w - leftW - 16;
+            float sy = y;
+            foreach (var st in m.Stats)
+            {
+                Eu.Panel(new Rect(x, sy, leftW, 62), 0.06f);
+                Eu.Label(app, new Rect(x + 6, sy + 3, 140, 18), AtlasEndgame.StatName(st.Key, st.Key), Eu.Gold, 12, true);
+                Eu.Label(app, new Rect(x + 150, sy + 3, 60, 18), AtlasEndgame.RankText(st), Eu.Bright, 12, true);
+                Eu.Label(app, new Rect(x + 214, sy + 3, 120, 18), AtlasEndgame.NowText(st), "#7fd07f", 11);
+                Eu.Wrap(app, x + 6, sy + 22, leftW - 100, AtlasEndgame.StatDescription(st), Eu.Dim, 11);
+                bool can = m.CanSpend(st.Key, out _);
+                if (Eu.Button(new Rect(x + leftW - 84, sy + 18, 76, 24), Loc.T("Spend"), can)) a.EgSpend(st.Key);
+                sy += 66;
+            }
+            m.DeepCount(out int done, out int total);
+            float ry = y;
+            Eu.Label(app, new Rect(rx, ry, rw, 18), Loc.T("Deep tiers: first clears {0} / {1}", done, total), Eu.Gold, 12, true);
+            ry += 20;
+            foreach (var r in m.DeepRows())
+            {
+                Eu.Label(app, new Rect(rx, ry, rw, 16), AtlasEndgame.TierLine(r) + "   " + AtlasEndgame.TierStatus(r), r.Paid ? "#7fd07f" : Eu.Dim, 11);
+                ry += 17;
+            }
+            ry += 8;
+            Eu.Label(app, new Rect(rx, ry, rw, 18), Loc.T("Band bosses"), Eu.Gold, 12, true);
+            ry += 20;
+            foreach (var b in m.BossRows()) ry += Eu.Wrap(app, rx, ry, rw, AtlasEndgame.BossLine(b), b.Paid ? "#f6cf72" : Eu.Text, 11) + 2;
+            float by = inner.yMax - 28;
+            Eu.Label(app, new Rect(x, by + 2, w - 380, 20), a.StatusText, Eg.Hex(a.StatusColor, Eu.Bright), 12);
+            if (confirm == "egreset")
+            {
+                Eu.Label(app, new Rect(x + w - 600, by + 2, 300, 20), m.ResetConfirm(), "#f6cf72", 11);
+                if (GUI.Button(new Rect(x + w - 290, by, 60, 24), Loc.T("Yes"))) { a.EgReset(); confirm = ""; }
+                if (GUI.Button(new Rect(x + w - 226, by, 60, 24), Loc.T("Cancel"))) confirm = "";
+            }
+            else if (Eu.Button(new Rect(x + w - 290, by, 180, 24), m.ResetText(), m.CanReset)) confirm = "egreset";
+            if (Eu.Button(new Rect(x + w - 100, by, 100, 24), Loc.T("Back to map"))) { a.ToggleEndgame(); confirm = ""; }
         }
 
         void DrawMap(ChaosApp app, AtlasState a, Rect map)

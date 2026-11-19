@@ -342,6 +342,12 @@ do
 	eq(EG.fxOfPlayer(a).density, 12, "the effect: 2 ranks x 6%")
 	check(EG.onAction(a, "eg_open", {}) and sent[#sent].action == "eg_state", "eg_open answers eg_state")
 	eq(sent[#sent].data.points, 2, "the state: two tiers paid (12 and 25)")
+	local pl = sent[#sent].data
+	eq(#pl.levels, 25, "O670: the payload carries the level of every tier")
+	eq(pl.levels[16], 2600, "O670: tier XVI is level 2600")
+	eq(pl.deepFrom, 16, "O670: the deep band starts at tier XVI")
+	eq(#pl.bosses, 4, "O670: four band bosses")
+	eq(pl.bosses[4].name, "Vharkul the Embered Tyrant", "O670: the last band boss")
 	check(EG.onAction(a, "eg_reset", {}), "eg_reset")
 	eq(EG.state(a).spent, 0, "a reset gives the ranks back")
 	eq(a.gold, 10000000 - cfg.atlas.respecGold, "and costs the respec gold")

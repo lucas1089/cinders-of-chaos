@@ -1,9 +1,9 @@
 Module
   name: game_riftatlas
-  description: Rift Atlas - the rift progression tree, its completion grid and the respec (server atlas.lua, extended opcode 210), and the Waystone Atlas in the same window (server waystone_atlas.lua, extended opcode 159)
+  description: Rift Atlas - the rift progression tree, its completion grid and the respec (server atlas.lua, extended opcode 210), and the Waystone Atlas in the same window (server waystone_atlas.lua, extended opcode 159; its Endgame page shows the points of the first clears of the deep tiers)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ riftatlasview, riftatlas ]
+  scripts: [ riftatlasview, waystoneegview, riftatlas ]
   dependencies:
     - client_chaos_theme
     - game_interface
