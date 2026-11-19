@@ -646,6 +646,49 @@ for _, c in ipairs(cfg.curses) do
 	ok(w == 26 and hh == 26, "icon of the curse " .. c.key)
 end
 
+-- ====================================================================== O664: a Descent monster is a hunt monster of its level
+-- the pace layer never marks the instanced modes; paceScale gives the monster the hunt's own health and damage factor of its pool entry
+dofile("data/scripts/chaos/pace_core.lua")
+local PCfg = dofile("data/scripts/chaos/pace_config.lua")
+local PC = ChaosPaceCore
+local pool664 = dofile("data/scripts/chaos/bounty_pool.lua")
+local byName664 = {}
+for _, m in ipairs(pool664.hunt) do
+	byName664[m.name] = m
+end
+do
+	local bag = byName664["Mystic Baguemage"]
+	local h, d = D.paceScale(cfg, PC, PCfg, bag)
+	local lvl, scaled = PC.entryLevel(PCfg, bag)
+	local f = PC.factors(PCfg, lvl, scaled)
+	eq(h, f.health * cfg.pace.health, "paceScale: the hunt's health factor of the pool entry times the config number")
+	eq(d, f.damage * cfg.pace.damage, "paceScale: the hunt's damage factor times the config number")
+	ok(h > 0.05 and h < 0.15, "a level 416 stock monster keeps about a tenth of its health (" .. h .. ")")
+	ok(d > 0.35 and d < 0.65, "and about half its damage (" .. d .. ")")
+	local seer = byName664["Geode Seer"]
+	local sh, sd = D.paceScale(cfg, PC, PCfg, seer)
+	local slvl, sscaled = PC.entryLevel(PCfg, seer)
+	ok(sscaled and slvl == 1000, "a level-scaled monster uses the scaled curves at its own level")
+	ok(sh < 0.1 and sd < 0.5, "Geode Seer keeps " .. sh .. " of its health and " .. sd .. " of its damage")
+	local off = {pace = {enabled = false}, escalation = cfg.escalation}
+	local oh, od = D.paceScale(off, PC, PCfg, bag)
+	ok(oh == 1 and od == 1, "pace.enabled = false: the numbers of before O664")
+	local nh, nd = D.paceScale({}, PC, PCfg, bag)
+	ok(nh == 1 and nd == 1, "a config without the rule: factor 1")
+	local uh, ud = D.paceScale(cfg, PC, PCfg, nil)
+	ok(uh == 1 and ud == 1, "an unknown pool entry: factor 1")
+	local th, td = D.paceScale({pace = {health = 2, damage = 0.5}}, PC, PCfg, bag)
+	eq(th, f.health * 2, "the config numbers multiply the health")
+	eq(td, f.damage * 0.5, "and the damage")
+	eq(#D.validate({boons = cfg.boons, curses = cfg.curses, rooms = cfg.rooms, spawn = cfg.spawn, rewards = cfg.rewards, pace = {health = 0}}), 1,
+		"validate: a pace number of 0 is refused")
+end
+ok(cfg.boss.damage and cfg.boss.damage > 0, "the boss has a damage number")
+-- the balance config of the model (tools/descent_model.py)
+local balance = dofile("data/scripts/chaos/descent_balance_config.lua")
+ok(balance.limits and balance.limits.room1 and balance.limits.growth and balance.limits.boss, "descent_balance_config.lua has its limits")
+eq(balance.parties[#balance.parties], cfg.maxPlayers, "the model's full party is the Descent's maxPlayers")
+
 if fails > 0 then
 	print(string.format("descent_test: %d of %d checks FAILED", fails, checks))
 	os.exit(1)

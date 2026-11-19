@@ -11127,6 +11127,15 @@ Before: 5 minutes of the code of step 21 (the number after "(" is the share of t
 Tests: `testers_test.py` (the stats packet, `hold_attack`, `mana_potion_due`, the spell the mana cannot pay, the keep_alive beat with the heal on cooldown and the mana potion, `preset_rotation` and `class_spells` with the table), `tester_checks_test.py` (`Live663`: the rules file, `equip_fits`, the pick and the held weapon with the rule, the gear-up buys the weapon the class wears, leftovers, the tidy, no drop without a position, no crate without a slot, a slot made first, `weapon_rejects`; `Reroll663`: one reroll when sold out, none while a weapon can be bought, none at the gate, none when the stock has none), `loadtest_test.py`, `tester_closed_test.py`, `tester_journey_test.py`, the server Lua loop (luajit and lua5.3), `check_names.py`, `check_content.py`.
 Needs a live run to confirm: a run of the same code twice per class for the spread, the inbox weapons fetched by a bot, the Juggernaut / Thief / Deadeye / Elementalist band.
 
+##### 23. Ember Descent room 1: the model and the pace fix (O664)
+O662 and O663 left Ember Descent room 1 falling to every bot (level 592 Warrior: 2,611 damage a second, 1,053 healed, 7 of 10 bots fled at 20%).
+It was not the bots' fight loop: the pace layer never marks the Descent, so its monsters had the full health and damage of their pool entry, 7-16 times
+the health and 1.3-2.5 times the damage of the same monster in a hunt. New `tools/descent_model.py` (`--check` in CI, the numbers in
+`data/scripts/chaos/descent_balance_config.lua`) holds every room to the hunt pack of the level; the Descent's monsters now carry the hunt's own factors
+(`descent_config.lua` `pace`, `descent_core.lua` `paceScale`, `descent.lua` `spawnOne`) and the boss hits 1.25 x. Room 1 clears in 12-17 s instead of 42-113 s
+for the median class at levels 100 / 500 / 1000 / 1500. Method, numbers before and after, limits: "Ember Descent model (O664)". Not run live yet: re-run
+`descent_walk` with a few bots (`!tester descent`) after the install; the bots' own rotation is what that run would add.
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):
@@ -28000,6 +28009,8 @@ treasure / shrine / merchant twice in a row).
 | Merchant | Ember Draught (full health and mana, 20 + 3 x depth embers), Boon Cache (a choice, 55 + 5 x depth), Ash Cleanse (the newest curse and its bonus, 40 + 4 x depth), Cinder Shell (a ward of 25% max health, 15 + 2 x depth) |
 | Boss | the strongest type of the room's window, legendary, health x(6 + 2 per extra player), the rift guardian look of the theme and a name of its own (Hollow Archon, Obsidian Tyrant, Pyre Lich, Blighted Matriarch) |
 
+O664: a monster of the Descent has the health and damage factors of a hunt monster of its level (`pace`, the boss hits 1.25 x on top); "Ember Descent model (O664)".
+
 Monster types come from the bounty pool (`bounty_pool.lua`), three per room, in the level window party level x
 (0.55 + 0.05 x depth) .. x (0.8 + 0.05 x depth), clamped to 20-1500 and widened when too few. Health x(1 + 0.08 x
 (depth - 1)), damage to players x(1 + 0.06 x (depth - 1)); the tier mix (monster_tiers.lua) magic 8 + 3 x depth %, rare
@@ -33116,6 +33127,66 @@ Keeper 700), it takes too much damage; is the Thief line's defence normal? Compu
   median class heals at least `sustainMin` (1.2) x the pack, at hunts 670 / 750 / 850 / 1000. Tests:
   `tools/survival_model_test.py` (formulas, parsers, both interpreters, the guard read from `classes.lua`, the state before
   fails on the Ninja only), `tests/ninja_guard_test.lua` (the reduction by level, the hook on a mock engine).
+- **Install:** reload scripts (or restart). No engine, client, database or map change.
+
+## Ember Descent model (O664) (`tools/descent_model.py`, `tools/descent_numbers.lua`, `chaos/descent_balance_config.lua`; the factors in `descent_core.lua` `paceScale`, `descent.lua` `spawnOne`)
+Measured live in O663: room 1 of the Descent is 2 waves of 4 monsters at 0.60-0.85 of the party level. A level 592 Warrior took
+2,611 damage a second (29% of its health), healed 1,053 a second, and 7 of 10 bots fled at 20%. The Mystic Baguemage hits 1,300-2,000.
+Computed, not measured in game.
+- **Cause.** `pace.lua` never marks the instanced modes, so a Descent monster kept the full health and the full damage of its pool entry.
+  The same monster in a hunt has 0.06-0.14 of the health and 0.40-0.75 of the damage (`pace_config.lua` `base` and `scaled`, `damage`).
+  A level 416 Mystic Baguemage had 27,500 health and hits of 1,200 against 2,450 and 530 in a hunt (factors 0.089 and 0.442). The pool health of a level-scaled
+  monster also carries the engine's x(1 + 0.0074 L): Geode Seer 22,500 x 8.4 = 189k, unpaced.
+- **Model.** `python3 -I server/tools/descent_model.py [--levels 100,500] [--party 1,4] [--legacy] [--detail] [--boons] [--curses] [--hunt] [--check]`.
+  Per class, party level (100 / 500 / 1000 / 1500), party size (solo and 4, the Descent's `maxPlayers`; a party of 5 does not exist),
+  depth and room kind (combat, elite, boss): seconds to clear, damage a second after the player's layers, healing, damage over healing
+  (pressure), seconds to die with no healing at the start of a wave (burst), health kept. The real functions of the Lua side give the
+  window, the waves, the sizes, the tiers and the pace factors (`descent_numbers.lua`). The monsters are the pool entries of the window as
+  `pickTypes` draws them (the model takes the mean of them, and each one alone for the hardest tenth). Their damage is the XML of the
+  level-scaled ones (`survival_model.py`) and, for the stock ones that have no XML in the repo, `hitRate` (0.45) x the melee and the spell
+  mean of `data/spells/guardian_hits.csv` (fitted on the 130 monsters that have both; the Baguemage gets 540 a second, the guardian model's
+  stock line has 544). The class damage is `class_dps_model.py` (1 and 5 targets, no pack cleave: pace.lua does not mark the Descent),
+  toughness, healing and potions are `survival_model.py` (the potion tier the level may drink, the self heal scaled by level under 300),
+  the hunt pack of the level (`pack_model.py` size) is the yardstick. Healing counts `healUse` 0.4 of the ideal (O663: 1,053 a second against
+  2,940 modelled for that Warrior). The boons of a run are a seeded Monte Carlo on the real boon table (best of three offers, 0.85 picks a room).
+  Not in it: monster armour and resistances, party heals, kiting, the shrine and the merchant, Ward, Thornmail, Pyre Burst, curses unless asked.
+- **Change (small, named).**
+  1. `descent_config.lua` `pace = {enabled = true, health = 1.0, damage = 1.0}`: a Descent monster is a hunt monster of its level. `descent_core.lua`
+     `paceScale(cfg, paceCore, paceCfg, entry)` returns the hunt's health and damage factor of the pool entry (`pace_core.lua` `entryLevel`,
+     `factors`) times the two numbers. `descent.lua` `spawnOne` multiplies the monster's maximum health by the first and keeps the second in
+     `X.monsterDamage[id]`, which `ChaosDescentPlayerHit` multiplies into every hit of that monster (with the depth's `esc.damage`). `pace.enabled = false`
+     is the state before.
+  2. `descent_config.lua` `boss.damage = 1.25` (new, 1 before): the boss is one monster where a hunt pack is 6-7. With the pace factor alone it pressed
+     the median class at 0.3-0.8 x its healing.
+  No other number moved: the depth growth (window +0.05 a depth, health +8%, damage +6%, tiers), waves, sizes, boss health, boons, curses, rewards.
+- **Before / after** (solo, median class of the 21 by pressure; clear seconds, pressure = damage over healing, 1 = the room wears it down):
+
+  | Level | 100 | 500 | 1000 | 1500 |
+  |---|---|---|---|---|
+  | Hunt pack of the level, burst s | 3.6 | 5.5 | 7.7 | 6.2 |
+  | Room 1 clear s | 42 -> 14 | 53 -> 12 | 79 -> 12 | 113 -> 17 |
+  | Room 1 pressure | 0.88 -> 0.64 | 0.92 -> 0.44 | 0.88 -> 0.40 | 2.04 -> 0.82 |
+  | Room 1 burst s | 6.4 -> 4.7 | 8.6 -> 17.7 | 8.2 -> 25.3 | 7.7 -> 19.2 |
+  | Room 1, hardest tenth of the picks, health kept | 0% -> 81% | 0% -> 100% | 0% -> 100% | 0% -> 100% |
+  | Room 5 (Ashwalker) health kept | 0% -> 88% | 0% -> 100% | 0% -> 93% | 0% -> 94% |
+  | Room 10 pressure | 3.67 -> 2.47 | 3.74 -> 1.69 | 4.56 -> 1.82 | 4.11 -> 1.64 |
+  | Boss at depth 8, clear s / pressure | 738 / 1.29 -> 78 / 1.10 | 1509 / 1.32 -> 177 / 0.74 | 1334 / 1.54 -> 103 / 0.77 | 1989 / 1.72 -> 128 / 0.86 |
+
+  The hardest tenth before were Wyrmblood Warmaster, Tomb Guardian, Glacial Hellcharger and Veiled Crawler alone in the room; the worst class
+  at level 500-1500 kept 0% (Shadowfist, Inquisitor), 90-100% now. A party of 4 shares the damage: room 1 presses at 0.34 / 0.24 / 0.22 / 0.45 and
+  room 10 at 1.03 / 0.73 / 0.79 / 0.71 after, 1.5-2.0 before. The shape is the design of the titles: the median class solo keeps the Ashwalker
+  depth (5), presses past 1 at depth 9 (the Emberdelver depth needs boons, a party or play) and the boss costs a run's last health.
+- **Check (CI):** `descent_model.py --check` (`descent_balance_config.lua` `limits`, the reason of each in the file). Room 1, solo and party,
+  at the four levels: the median class keeps 60% of its health, the worst class 30%, clears in 8-60 s, takes 0.15-1.0 x its healing, lives at least
+  1.0 x the burst seconds it has in the hunt pack of its level, the hardest tenth of the picks leaves it 30%. Growth (solo): a deeper room never
+  presses less (slack 0.3), room 10 at least 1.6 x room 1, the Ashwalker depth keeps 50%, the Emberdelver depth presses at least 1.3. Boss: killed in
+  60-240 s, pressure 0.7-1.4. A party of 4 takes 0.4-1.5 x the solo clear time of room 1. Swarm and Frailty together at depth 4 leave 25%.
+  Before O664 the check fails 8+ times (`descent_model.py --legacy` prints the old table; the test asserts it).
+  Tests: `tools/descent_model_test.py` (formulas, the candidates against the real `pickTypes`, the dump under luajit and lua5.3, the pace factors,
+  one room by hand, the shipped config inside the limits, the state before outside), `tests/descent_test.lua` (`paceScale`, the config).
+- **Open.** A party of 4 is 2-3 times easier per player than a solo run for the same reward (the damage is shared, the room grows by 2 monsters a
+  player); a party size term in `esc.damage` would close it and is not part of this change. Not seen live: run `chaos-ctl` or the tester
+  `descent_walk` after the install (README "The rest of the closed audit (O589)" step 23).
 - **Install:** reload scripts (or restart). No engine, client, database or map change.
 
 ## PvP model (O444) (`tools/pvp_model.py`, `chaos/pvp_balance_config.lua`)

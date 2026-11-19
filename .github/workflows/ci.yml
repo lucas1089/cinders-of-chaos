@@ -1248,6 +1248,9 @@ jobs:
       - name: Rift level warning, guardian hit chain, guardian hit cap in the model and the snapshot of the guardian hits (guardian_model_test.py, survey_guardian_hits_test.py; O476, O478)
         run: python3 -I server/tools/guardian_model_test.py && python3 -I server/tools/survey_guardian_hits_test.py
 
+      - name: Ember Descent rooms against the hunt pack of the level, room 1 cleared with healing left, the rooms grow, the boss is a fight (descent_model.py --check and its test; descent_balance_config.lua, O664)
+        run: python3 -I server/tools/descent_model.py --check && python3 -I server/tools/descent_model_test.py
+
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 

@@ -9,6 +9,7 @@
 --   ChaosDescentCore.generate(cfg, seed, themeCount) the rooms of a run {seed, count, rooms = {{index, type, theme}}}
 --   ChaosDescentCore.roomRng(seed, room, salt)       the generator of one room (spawns, offers)
 --   ChaosDescentCore.escalation(cfg, depth, level)   level window, health / damage scaling, tier mix of a depth
+--   ChaosDescentCore.paceScale(cfg, paceCore, paceCfg, entry)       health and damage factor of a pool entry (O664)
 --   ChaosDescentCore.rollTier(esc, r) / eliteTier(cfg, depth, r)
 --   ChaosDescentCore.pickTypes(cfg, pool, window, known, r)          the monster types of a room (never empty while the
 --                                                    pool has one valid monster, whatever the level window)
@@ -178,6 +179,22 @@ function D.escalation(cfg, depth, level)
 	end
 	return {window = {lo, hi}, health = round2(1 + e.health * (depth - 1)), damage = round2(1 + e.damage * (depth - 1)),
 		tiers = tiers}
+end
+
+-- O664: a Descent monster is a hunt monster of its level. The pace layer (pace.lua) never marks the instanced modes, so the
+-- monsters of a room kept their full base health (x1 where a hunt monster of the level has 0.06-0.14 of it) and their full
+-- damage (x1 where a hunt monster deals 0.40-0.75): a level 500 party met 27,500 health Mystic Baguemages with hits of 1,200-
+-- 2,000 and died in 4 seconds. This returns the health and damage factor of the pool entry `entry` ({level, exp, health}) from
+-- the pace curves (paceCore.factors, paceCfg = pace_config.lua), times cfg.pace.health / damage; 1, 1 when the rule is off.
+-- descent.lua applies the first to the monster's maximum health and the second to every hit the monster deals.
+function D.paceScale(cfg, paceCore, paceCfg, entry)
+	local p = cfg.pace
+	if not p or p.enabled == false or not paceCore or not paceCfg or not entry then
+		return 1, 1
+	end
+	local level, scaled = paceCore.entryLevel(paceCfg, entry)
+	local f = paceCore.factors(paceCfg, level, scaled)
+	return (f.health or 1) * (p.health or 1), (f.damage or 1) * (p.damage or 1)
 end
 
 -- the tier of one monster (nil = normal)
@@ -746,6 +763,9 @@ function D.validate(cfg)
 	end
 	if cfg.rooms.min < 3 or cfg.rooms.max < cfg.rooms.min then
 		bad("rooms")
+	end
+	if cfg.pace and (cfg.pace.enabled ~= false) and ((cfg.pace.health or 1) <= 0 or (cfg.pace.damage or 1) <= 0) then
+		bad("pace: health and damage above 0")
 	end
 	if not cfg.spawn or (cfg.spawn.retries or -1) < 0 or (cfg.spawn.retrySeconds or 0) <= 0 then
 		bad("spawn: retries, retrySeconds")

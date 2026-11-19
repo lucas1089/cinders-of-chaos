@@ -114,9 +114,17 @@ return {
 		health = 0.08, damage = 0.06,
 		tiers = {magic = {8, 3}, rare = {2, 1.5}, legendary = {-3.2, 0.8}}},
 
+	-- O664: the pace layer (pace.lua) never marks the monsters of the instanced modes, so a Descent monster had the full base health and
+	-- damage of its pool entry, 7-16 times the health and 1.3-2.5 times the damage of the same monster in a hunt. The monsters of a room
+	-- now carry the hunt's own factors of their pool entry (pace_config.lua health and damage curves, base or level-scaled), times these
+	-- two numbers (1 = a hunt monster of the level). The model (tools/descent_model.py, limits descent_balance_config.lua) sets them.
+	-- enabled = false: the numbers of before O664.
+	pace = {enabled = true, health = 1.0, damage = 1.0},
+
 	-- the final boss: the strongest monster type of the boss room's window, legendary, with the rift guardian look of the
-	-- room's theme and its own name; health x (healthMult + perExtraPlayer x (players - 1)) on top of the depth scaling
-	boss = {healthMult = 6, perExtraPlayer = 2, tier = "legendary",
+	-- room's theme and its own name; health x (healthMult + perExtraPlayer x (players - 1)) on top of the depth scaling; damage x `damage`
+	-- (O664: on top of the pace factor of its pool entry and the depth scaling)
+	boss = {healthMult = 6, perExtraPlayer = 2, damage = 1.25, tier = "legendary",
 		names = {["Abyssal Rift"] = "Hollow Archon", ["Obsidian Hall"] = "Obsidian Tyrant",
 			["Ashen Crypt"] = "Pyre Lich", ["Forsaken Sanctum"] = "Blighted Matriarch"},
 		looks = {["Abyssal Rift"] = 2103, ["Obsidian Hall"] = 2107, ["Ashen Crypt"] = 2111, ["Forsaken Sanctum"] = 2115},
