@@ -2159,6 +2159,9 @@ do
 	eq(H.parseVael("enter"), "enter", "vael: enter")
 	check(H.parseVael("win") == nil and select(2, H.parseVael("win")) == "usage: vael [state | enter | path | close]", "vael: the usage")
 	eq(H.parseGoblin("spawn"), "spawn", "goblin: spawn")
+	eq(H.parseExplode("run"), "run", "explode: run (O669)")
+	eq(H.parseExplode("state"), "state", "explode: state")
+	check(H.parseExplode("steal") == nil and select(2, H.parseExplode("steal")) == "usage: explode [state | run]", "explode: the usage")
 	eq(H.parseInvasion("path"), "path", "invasion: path")
 	check(H.parseInvasion("start") == nil, "invasion: start is a staff word, never the helper's")
 	-- the answer is the probe cut down

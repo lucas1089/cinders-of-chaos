@@ -5310,6 +5310,59 @@ async def check_chore_pass(io, name, cls, level):
     return Result(key, name, cls, status, text)
 
 
+def explode_verdict(run, mid, end, answer):
+    """(status, text) for the loot explosion (O669, loot_explosion.lua). run = the `!tester explode run` answer, mid = `explode state` after the loot
+    landed, end = `explode state` after Loot all (opcode 230), answer = the `lootall` answer {n, f, s}. FAIL: loot stuck in the bag, past ring 2, owned by
+    another, a stranger not refused, Loot all leaving loot of the bot's behind (when it all fitted). SKIP: the helper or the rule is off or refused"""
+    if not isinstance(run, dict):
+        return SKIP, 'no answer to !tester explode (old helper file)'
+    if run.get('err'):
+        return SKIP, str(run['err'])[:100]
+    if not isinstance(mid, dict) or not isinstance(end, dict):
+        return SKIP, 'no state after the explosion'
+    if int(mid.get('loose') or 0) < 1:
+        return FAIL, 'the loot of a kill did not land on the ground: %s items, none loose, %s left in the bag' % (run.get('items'), mid.get('bagItems'))
+    if int(mid.get('bagItems') or 0) > 0:
+        return FAIL, '%s items stayed in the bag after the flight (a cap of 14 and a free place: they must lie around)' % mid.get('bagItems')
+    if int(mid.get('maxRing') or 0) > 2:
+        return FAIL, 'loot landed %s tiles from the death tile (the radius is 2)' % mid.get('maxRing')
+    if int(mid.get('foreign') or 0) > 0:
+        return FAIL, '%s loose items belong to another player than the killer' % mid.get('foreign')
+    if int(mid.get('mine') or 0) != int(mid.get('loose') or 0):
+        return FAIL, 'only %s of %s loose items are the killer\'s' % (mid.get('mine'), mid.get('loose'))
+    if mid.get('strangerRefused') is not True:
+        return FAIL, 'a stranger may take the killer\'s loot before the owner time ran out'
+    if mid.get('ownerAllowed') is not True:
+        return FAIL, 'the killer may not take their own loot'
+    if int(mid.get('strict') or 0) > int(mid.get('loose') or 0):
+        return FAIL, 'more strict items than loose ones'
+    if not isinstance(answer, dict) or not isinstance(answer.get('data'), dict):
+        return SKIP, 'the loot landed (%s items on %s tiles); no answer to Loot all' % (mid.get('loose'), mid.get('tiles'))
+    got = answer['data']
+    if int(got.get('f') or 0) > 0:
+        return SKIP, 'the loot landed; Loot all took %s, %s did not fit (a full backpack)' % (got.get('n'), got.get('f'))
+    if int(got.get('n') or 0) < 1:
+        return FAIL, 'Loot all took nothing of %s loose items of the killer\'s' % mid.get('loose')
+    if int(end.get('mine') or 0) > 0:
+        return FAIL, 'Loot all took %s but %s items of the bot\'s lie there still' % (got.get('n'), end.get('mine'))
+    return PASS, '%s items on %s tiles (ring %s at most), owned by the killer, a stranger refused; Loot all took %s' % (
+        mid.get('loose'), mid.get('tiles'), mid.get('maxRing'), got.get('n'))
+
+
+async def check_loot_explosion(io, name, cls, level):
+    """the loot of a kill flies out onto the ground around it, owned by the killer; Loot all picks it up (O669). A loot bag of the bot's own (TEST ONLY)"""
+    key = 'loot_explosion'
+    run = await io.helper('explode run', 'explode', ANSWER)
+    if not isinstance(run, dict) or run.get('err'):
+        return Result(key, name, cls, *explode_verdict(run, None, None, None))
+    await io.sleep(3.0)   # the last item leaves after 14 x 80 ms and flies at most 200 ms
+    mid = await io.helper('explode state', 'explode', ANSWER)
+    answer = await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+    await io.sleep(1.0)
+    end = await io.helper('explode state', 'explode', ANSWER)
+    return Result(key, name, cls, *explode_verdict(run, mid, end, answer))
+
+
 def chests_verdict(week, cache):
     """(status, text) from the Weekly Chest state and the Ember Cache state. A tester never gets the Weekly Chest (the pool is the players'): the
     window opens and shows nothing given and no chest count; the Ember Cache is the bot's own and its book must answer"""
@@ -7735,6 +7788,7 @@ CHECKS = [
     ('gear_chase', check_gear_chase, lambda c: True),   # O653: wears the piece whose score knows sets, uniques and jewelry
     ('chore_faction', check_chore_faction, lambda c: True),   # O653: the reputation window: ranks, contracts, tokens turned in
     ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
+    ('loot_explosion', check_loot_explosion, lambda c: True),   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
     ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag

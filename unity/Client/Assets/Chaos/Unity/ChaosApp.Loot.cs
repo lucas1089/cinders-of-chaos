@@ -45,6 +45,8 @@ namespace Chaos.Client
             using var _slow = SlowCalls.Scope("DrawGroundLabels", "OnGUI");
             var loot = FindWindow<LootWindow>();
             if (loot == null || loot.Ground == null || loot.Filter == null || session == null || world?.Player == null) return;
+            var key = Event.current;
+            if (key != null && key.type == EventType.KeyDown && key.control && key.shift && key.keyCode == KeyCode.L) { loot.Ground.LootAll(); key.Use(); } // O669: Loot all
             var settings = loot.Ground.Settings;
             if (!settings.Enabled) return;
             var e = Event.current;

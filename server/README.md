@@ -33374,6 +33374,74 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
 
+## Loot explosion (O669) (`loot_explosion_config.lua`, `loot_explosion_core.lua`, `loot_explosion.lua`, `tools/patch_loot_explosion.py`, client `game_groundlabels`)
+
+Owner 2026-11-19 (pt-BR): "em vez dos monstros dropar o loot no corpo, da pra fazer eles dropar no chao em volta, uma explosao de loot". Roadmap O669.
+The loot bag of "Loot bag instead of corpses" (O435) stays: it is where every loot step still works. At the end of the chain what is left in it flies out onto
+the ground around the death tile. `enabled = false` in `loot_explosion_config.lua` and a `/reload` give the bag back, no rebuild.
+
+* **Where it runs.** An `EventCallback` `onDropLoot` at index **98** (config `index`): after the loot layer (1), the auto seller (2), the pouches (2.7), the base
+  autoloot (3), the Rarity Autoloot (3.5), the loot filter's finish (4.5, the loot channel row is made) and the globes (8); before the empty bag check (99) and the loot
+  line (100). So the autoloot and the Loot Bag take their items from the bag first, as before (they pick up "around the player" in the sense that nothing of theirs
+  waits on the ground), the loot filter's rules and the loot line are unchanged, and only what nobody took flies. Core `loot_explosion_core.lua` (pure, tested),
+  config, engine glue `loot_explosion.lua`.
+* **Which kills.** A loot bag (`corpse_config.lua` `bagId`) with a corpse owner that is a player online. Not: a bag nobody owns, a player's corpse, a kill inside
+  an instance (`Chaos.instanceAt`: rift, dungeon, tower, arena, raid, boss rooms: the instance clears its area when it ends and the floor loot would go with it;
+  `inInstances = true` lifts it), a kill over a cap, a death tile with no free tile in sight. They keep the bag, as before.
+* **The spread** (`X.pickTiles`, `X.plan`). Free tiles within `radius` (2): a ground, no wall / water / lava / stairs / teleport / magic field / protection zone /
+  house / depot / mailbox / trash, and in line of sight of the death tile (no loot behind a wall). Each drop takes the cheapest tile: its ring (ring 2 costs 0.35 more),
+  the items already there (1.0 each), the drops of this kill already sent there (2.0 each), a random 0 .. 0.6. So 14 drops fill the 8 ring 1 tiles, then 6 of ring 2, and
+  nothing is piled before every free tile has one. The death tile costs 6: a last resort. **Gold** (all its stacks) is one drop on one tile. Items leave in rank order,
+  gold and plain first, **the rarest last** (a unique last), 50 to 80 ms apart (`staggerMinMs`, `staggerMaxMs`), each with a distance effect from the death tile
+  (`missiles`: stone for gold and plain, energy for Magic / Rare / Legendary / Divine, fire for a unique), `flightBaseMs` + 40 ms a tile in the air, and a landing sparkle
+  for the rare groups (`land`); a poff on the death tile when it starts (`burst`). The items stay in the bag until they land and are found there again by a drop number
+  (no Lua object is held over the delay). The loot beams are the client's (O569, per ground tile): nothing is sent for them.
+* **Ownership** (the rule of the bag's corpse owner, same timings). Every loose item carries the custom attribute `chaos_loot` = owner id, owner time, vanish time, strict,
+  drop number (`X.encode`). The killer and their party take it; a stranger is refused ("That loot belongs to someone else for 42 more seconds.") by `X.onMoveItem`, which
+  `tools/patch_loot_explosion.py` (install step `lootexplosion`, idempotent, marker comment) calls first in `Player:onMoveItem`, as the season isolation does (a script
+  callback cannot refuse a move there: the base dispatcher keeps only the last callback's value). The bag's owner rule never ended before its life (180 s), so
+  `ownerSeconds = nil` means the same here; a number frees the plain items to anyone after that many seconds. **Strict** items keep the owner rule for their whole
+  life whatever `ownerSeconds` says: a unique, a set piece (`chaos_set`), a main quest item (`chaos_mq`), the ids of `strictIds`. Staff take anything. The
+  attributes the loot layers write on the bag, the season realm (`chaos_realm`) and the Self-Found owner (`chaos_owner`), are copied onto every item, so the season
+  isolation holds for a loose item as for one in the bag. The attribute leaves the item before it enters a container (the hook, for the full count; the
+  `onItemMoved` callback cleans a part of a stack after the move), so it stacks with its like in the backpack. Not covered: using an item (a potion, food) from the ground
+  without picking it up.
+* **Vanishing.** The engine decays no loose item (`canDecay` is false without a decay id) so one sweeper (`sweepSeconds` 2, a timer that only runs while a tile is
+  watched) removes the items whose vanish time ran out: `decaySeconds` (nil = the bag's `seconds`, 180). It only ever touches items with `chaos_loot`. The labels get the
+  timer from `X.expiryLeft` (the row's `e`). State is in memory: after a restart items already lying keep their attribute and are not swept (they are not saved with the
+  map either, only houses are).
+* **Caps** (`X.gateTake`, `X.plan`). At most `maxItems` (14) things per kill on the ground (gold counts as one), the rarest fly, **the rest stays in the bag on the death
+  tile** (the small bag, with its own empty / necro decay of "Empty bags go fast"); at most `maxPerAreaSecond` (40) items per `areaSize` x `areaSize` (8 x 8) tiles per
+  second and `maxPerSecond` (160) on the map: a kill over the cap leaves everything in the bag. What other scripts add to the bag after the loot step (death events:
+  treasure goblin coins that came late, the cursed chest) stays in the bag.
+* **Pickup.** By hand as ever: click a label, drag, the engine walks to it. **Loot all**: extended opcode 230 `lootall {}` (`groundloot.lua` -> `X.lootAll`): every item
+  of the player's (owner or party, not another's, not out of sight) within `reachX` x `reachY` (7 x 5) tiles goes into the backpack (a store pouch that collects it first,
+  `ChaosPouches.stow`, else `ChaosLootFilter.intoBags`), at most `lootAllMax` (40), nearest first; what does not fit stays with its record; answer
+  `lootall {n, f, s}` and a status line ("You picked up 4 items.", pt-BR in `i18n_strings.lua`). Client key **Ctrl+Shift+L** and a button in the Ground Labels window.
+  The ground labels (`groundloot.lua` `describeTile`) no longer show the items of another player's kill (as a corpse's contents were not shown), and carry the timer.
+* **The loot filter and the loot channel.** `lootfilter.lua` made the kill's row at 4.5, before the explosion. `ChaosLootFilter.onExploded(killId, origin, tiles)` flips
+  the kill: its click to loot (`take`) and the greying of the row read the loose items (they carry `lf_loot` = the kill id; the tiles are remembered) as one object that
+  answers like a corpse (`groundOf`), the kill beam (opcode 238) is switched off (the client beams the ground rows), and a pickup by hand re-reads the kill
+  (`onItemMoved`). A part that does not fit goes back with its record.
+* **Main quest.** `giveQuestItem` puts a quest item in the bag only while its loot did not fly (`ChaosLootExplosion.isExploded`); after an explosion it goes to the
+  backpack, else the inbox, as without a bag.
+* **Both clients.** Main client: `game_groundlabels` (the labels, the timers and `game_lootbeams`' per-tile beams were per ground row already; Loot all key and button, pt-BR
+  texts, `groundlabelslogic.lua` `LOOT_ALL_KEY`, `countLoot`, `lootAllReady`). Unity: `GroundLabelsModel.LootAll()` (cooldown 0.5 s) and Ctrl+Shift+L in
+  `ChaosApp.Loot.cs`; the scattered items are ground rows there too. `check_unity_opcodes.py` is unchanged (opcode 230 was handled).
+* **Testers.** Helper v27 `!tester explode [state | run]` (TEST ONLY, a tester only): `run` puts a loot bag of the bot's own with known loot (150 gold in two stacks, 3 + 2
+  potions, a Magic and a Legendary sword) on its tile and explodes it by the real rule; `state` reads what lies within 4 tiles (owner, ring, tiles, the bag, a stranger
+  refused). Check `loot_explosion` (`tester_checks.py`, every class): the loot lands, none left in the bag, within 2 tiles, all the bot's, a stranger refused; then Loot all
+  by opcode 230 and the ground holds nothing of the bot's. FAIL: stuck in the bag, past ring 2, another's owner, a stranger allowed, Loot all leaving loot behind; SKIP: no
+  helper, the rule off, a full backpack. The bots' own looting (`do_loot`: the loot channel's `take`) works on the items on the ground (the proxy above).
+* **Storage, tables, opcodes.** None new: the state is in memory and on the items (custom attributes `chaos_loot`, `lf_loot`, and `chaos_exploded` on the bag); `lootall` is a new action of opcode 230 (no new opcode, no collision).
+* **Tests.** `tests/loot_explosion_test.lua` (the core: config, spread, order, stagger, cap, fallbacks, area and second caps, encode / decode, the ownership matrix; the glue
+  on a mocked engine: a kill flies and lands, gold in one stack, the attributes, the season attributes, the switch, no owner, an instance, no free tile, no sight, the cap, the
+  pull over the cap, the sweeper, `onMoveItem` for a stranger / the owner / the party / staff, a part of a stack, Loot all with a full backpack and the reach, the tester
+  probes), `tools/patch_loot_explosion_test.py`, client `groundlabels_test.lua`, Unity `HelperTests`, `tester_checks_test.py` (`LootExplosion`), `tester_helper_test.lua`.
+* **Not verified live.** The `Player:onMoveItem` hook on a real server (a stranger's drag refused, the owner's accepted); that the missiles, the burst and the sparkles read as an
+  explosion in the client; the labels and beams over 14 scattered items; `Item:moveTo(position)` onto a tile with creatures; the loot channel's click on a scattered item; two
+  players at once on one tile.
+
 ## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
 
 Review of the animations 2026-11-10, owner approved: a monster died and appeared with no effect of its own (the loot bag of O435 replaced

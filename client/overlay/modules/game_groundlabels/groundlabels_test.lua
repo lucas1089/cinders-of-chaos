@@ -262,5 +262,31 @@ eq(GL.style({ highlight = true }, '#ffd040').plate, nil, 'no accent: no plate')
 eq(GL.style({ highlight = false }, '#ffd040').plate, nil, 'a label that does not glow has none')
 eq(GL.plateFor('#123456f0'), nil, 'an unknown accent') eq(GL.plateFor(nil), nil, 'no accent')
 
+-- ---------------------------------------------------------------- Loot all (O669)
+eq(GL.LOOT_ALL_KEY, 'Ctrl+Shift+L', 'the Loot all key')
+eq(GL.countLoot(nil), 0, 'no tiles, no loot')
+eq(GL.countLoot({}), 0, 'an empty list')
+eq(GL.countLoot({ { rows = { { c = 1, nm = 'sword' }, { c = 20, nm = 'gold coin' }, { k = 1, n = 3 } } }, { rows = {} }, { rows = { { c = 2 } } } }), 3,
+  'item rows are counted, a corpse row is not')
+eq(GL.countLoot({ { rows = 'junk' }, { } }), 0, 'bad rows count nothing')
+eq(GL.lootAllReady(nil, 100), true, 'the first request goes out')
+eq(GL.lootAllReady(100, 100.2), false, 'not twice within the cooldown')
+eq(GL.lootAllReady(100, 100.5), true, 'after the cooldown')
+local function readSrc(path)
+  local f = assert(io.open(path, 'r'))
+  local t = f:read('*a')
+  f:close()
+  return t
+end
+local src = readSrc(dir .. 'groundlabels.lua')
+eq(src:find("send('lootall'", 1, true) ~= nil, true, 'the module sends lootall')
+eq(src:find('GL.LOOT_ALL_KEY, lootAll', 1, true) ~= nil, true, 'the key is bound to it')
+eq(readSrc(dir .. 'groundlabels.otui'):find('id: lootAll', 1, true) ~= nil, true, 'the settings window has the button')
+-- a scattered item keeps its despawn timer like any ground item (the server sends e for the sweeper's clock)
+do
+  local row = { s = 1, id = 100, c = 1, nm = 'dagger', r = 4, e = 150, at = 10 }
+  eq(GL.secondsLeft(row, 40), 120, 'the timer counts down from what the server said')
+end
+
 print(string.format('groundlabels_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

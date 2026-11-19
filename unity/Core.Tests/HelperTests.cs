@@ -843,6 +843,17 @@ namespace Chaos.Core.Tests
             check(labels.Count == 2 && labels[0].Row.Corpse && labels[0].Text.StartsWith("Corpse: 1 item") && labels[1].Text == "Rare Fire Sword" && labels[0].Decision.Highlight, "labels: a corpse with a Legendary and a Rare sword, corpse first");
             now2 = 20;
             check(gm.Scan(w, center) == 0, "labels scan: answered tiles are left alone");
+            // Loot all (O669, groundlabels_test.lua): one request, not twice within the cooldown, the answer only wakes the scan
+            sent2.Clear();
+            check(gm.LootAll() && sent2.Count == 1 && sent2[0].Contains("\"lootall\""), "labels: Loot all sends lootall");
+            now2 = 20.2;
+            check(!gm.LootAll() && sent2.Count == 1, "labels: Loot all not twice within the cooldown");
+            now2 = 20.6;
+            check(gm.LootAll() && sent2.Count == 2, "labels: Loot all again after the cooldown");
+            gm.Dirty = false;
+            ext2.Receive(230, "{\"action\":\"lootall\",\"data\":{\"n\":3,\"f\":0,\"s\":3}}");
+            check(gm.Dirty && GroundLabelRules.LootAllKey == "Ctrl+Shift+L", "labels: the answer of lootall marks the labels dirty; the key is the client's");
+            now2 = 20;
             // the tile changes: the rows are dropped and it is asked again
             put(center.Offset(1, 0), sword, 3265, 1);
             check(gm.Scan(w, center) == 1 && gm.Dirty && gm.Labels(center, filter, false).Count == 1, "labels scan: a changed tile loses its rows and is asked again");

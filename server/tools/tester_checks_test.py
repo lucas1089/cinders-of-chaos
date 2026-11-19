@@ -5933,6 +5933,79 @@ class CraftFound(unittest.TestCase):
         self.assertLess(keys.index('gear_chase'), keys.index('rift_walk'), 'the rift stays the longest, last')
 
 
+class LootExplosion(unittest.TestCase):
+    """O669: a loot bag of the bot's own explodes onto the ground (owned, within 2 tiles, nothing left in the bag); Loot all (opcode 230) picks it up"""
+
+    GOOD = {'loose': 7, 'mine': 7, 'tiles': 6, 'maxRing': 2, 'strict': 0, 'foreign': 0, 'bagItems': 0, 'watched': 6, 'expiry': 170,
+            'strangerRefused': True, 'ownerAllowed': True}
+    DONE = dict(GOOD, loose=0, mine=0, tiles=0, maxRing=0)
+
+    def io(self, mid=None, end=None, run=None, lootall=None):
+        states = [dict(self.GOOD, **(mid or {})), dict(self.DONE, **(end or {}))]
+        io = FakeIO(answers={'explode run': {'items': 6, 'expected': 6} if run is None else run,
+                             'explode state': lambda me: states.pop(0) if len(states) > 1 else states[0]},
+                    replies={('groundLoot', 'lootall'): {'action': 'lootall', 'data': {'n': 7, 'f': 0, 's': 7}} if lootall is None else lootall})
+        return io
+
+    def go(self, io):
+        return run(TX.check_loot_explosion(io, 'Tester Lex', 'Ninja', 300))
+
+    def test_the_loot_lands_owned_and_loot_all_takes_it(self):
+        io = self.io()
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Loot all took 7', r.detail)
+        self.assertIn(('groundLoot', 'lootall', {}), io.asked)
+        self.assertGreaterEqual(io.t, 3.0, 'the bot waits for the flight before it looks')
+
+    def test_loot_left_in_the_bag_is_a_bug(self):
+        r = self.go(self.io(mid={'bagItems': 3}))
+        self.assertEqual((r.status, 'stayed in the bag' in r.detail), (TX.FAIL, True))
+        self.assertIn('BUG loot_explosion', r.bug_line())
+
+    def test_nothing_on_the_ground_is_a_bug(self):
+        r = self.go(self.io(mid={'loose': 0, 'mine': 0}))
+        self.assertEqual((r.status, 'did not land' in r.detail), (TX.FAIL, True))
+
+    def test_loot_past_the_radius_is_a_bug(self):
+        r = self.go(self.io(mid={'maxRing': 4}))
+        self.assertEqual((r.status, 'radius is 2' in r.detail), (TX.FAIL, True))
+
+    def test_loot_of_another_owner_is_a_bug(self):
+        self.assertEqual(self.go(self.io(mid={'foreign': 1, 'mine': 6})).status, TX.FAIL)
+        self.assertEqual(self.go(self.io(mid={'mine': 5})).status, TX.FAIL)
+
+    def test_a_stranger_who_may_take_it_is_a_bug(self):
+        r = self.go(self.io(mid={'strangerRefused': False}))
+        self.assertEqual((r.status, 'stranger may take' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(self.io(mid={'ownerAllowed': False})).status, TX.FAIL)
+
+    def test_loot_all_that_leaves_loot_behind_is_a_bug(self):
+        r = self.go(self.io(end={'mine': 2}))
+        self.assertEqual((r.status, 'lie there still' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(lootall={'action': 'lootall', 'data': {'n': 0, 'f': 0, 's': 0}}))
+        self.assertEqual((r.status, 'took nothing' in r.detail), (TX.FAIL, True))
+
+    def test_a_full_backpack_is_no_fault_of_the_game(self):
+        r = self.go(self.io(end={'mine': 3}, lootall={'action': 'lootall', 'data': {'n': 4, 'f': 3, 's': 7}}))
+        self.assertEqual((r.status, 'did not fit' in r.detail), (TX.SKIP, True))
+
+    def test_no_helper_or_the_rule_off_is_a_skip(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
+        self.assertEqual(self.go(self.io(run={'err': 'the loot explosion is off'})).status, TX.SKIP)
+        self.assertEqual(self.go(self.io(run={'err': 'no loot explosion'})).status, TX.SKIP)
+        r = self.go(self.io(lootall=None, mid={}))
+        self.assertEqual(r.status, TX.PASS)
+        io = self.io()
+        io.replies = {}
+        self.assertEqual(self.go(io).status, TX.SKIP, 'no answer to Loot all: the landing was checked, the verdict waits')
+
+    def test_the_check_is_in_the_run(self):
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        self.assertIn('loot_explosion', keys)
+        self.assertNotIn('loot_explosion', TX.CLOSED_KEYS)
+
+
 class GearChase(unittest.TestCase):
     def go(self, io):
         return run(TX.check_gear_chase(io, 'Tester Gch', 'Ninja', 300))

@@ -9,6 +9,8 @@
 //                       corpse {s, id, k = 1, n (items in it), i = [{c, nm, r, u, o, pw, g, t}], e}     (e: seconds until it decays)
 //                     raise {p, s, id, c, iid}   put an item lower in a pile on top (then it is moved as usual)
 //                     raised {p, id[, err]}      answer to raise: err far | sight | gone | fixed
+//                     lootall {}                 pick up every item of mine within reach (Ctrl+Shift+L; the loot of a kill flies out onto
+//                                                the tiles around it, O669: server loot_explosion.lua); answer lootall {n, f, s}, the server also sends a message line
 // A left click on an item label picks it up (GroundPick, GroundLabelsModel.Activate): the top of a pile moves into the backpack at once
 // (0xFFFF, slot 3), an item lower down is raised by the server first. Phase 7 track Y: the tooltips (tip), the label accent cosmetic. A click
 // on a corpse label opens the corpse (Unity side). Tests: Core.Tests/HelperTests.cs (mirrors groundlabels_test.lua).
@@ -121,6 +123,8 @@ namespace Chaos.Core
         public const string TextColor = "#d8cfbf", DimColor = "#8c8478", HighlightBackground = "#100c0ef0", PlainBackground = "#0c0a0cd8";
         public const double VerifyMs = 1000;
         public const int ServerRangeX = 8, ServerRangeY = 6, MaxAsk = 30;
+        public const double LootAllCooldown = 0.5;   // seconds between two Loot all requests (game_groundlabels GL.LOOT_ALL_COOLDOWN)
+        public const string LootAllKey = "Ctrl+Shift+L";
         public const double RetrySeconds = 3, ScanMs = 400, MoveScanMs = 60;
         public static readonly string[] SizeOrder = { "small", "normal", "large" };
 
@@ -443,6 +447,18 @@ namespace Chaos.Core
             return i;
         }
 
+        double lastLootAll = double.NegativeInfinity;
+
+        /// <summary>Loot all (O669): the server takes every item of the player's within reach into the backpack. Not twice within the cooldown.</summary>
+        public bool LootAll()
+        {
+            double now = Clock();
+            if (now - lastLootAll < GroundLabelRules.LootAllCooldown) return false;
+            lastLootAll = now;
+            ext.Send(Opcode, "lootall", new Dictionary<string, object>());
+            return true;
+        }
+
         /// <summary>A left click on an item label (not a corpse): pick it up. The top of a pile moves at once, a lower one is raised by the server first.</summary>
         public void Activate(Pos tilePos, GroundRow row)
         {
@@ -520,6 +536,7 @@ namespace Chaos.Core
         void OnMessage(ExtMessage m)
         {
             if (m.Action == "raised") { OnRaised(m.Data); return; }
+            if (m.Action == "lootall") { Dirty = true; return; }
             if (m.Action == "tip") { OnTip(m.Data); return; }
             if (m.Action != "tiles") return;
             double now = Clock();

@@ -22,7 +22,7 @@ GroundLabelsCheck < ChaosCheckBox
 
 GroundLabelsWindow < ChaosMainWindow
   id: groundLabelsWindow
-  size: 400 292
+  size: 400 336
   !text: tr('Ground Labels')
   @onEscape: modules.game_groundlabels.hideSettings()
 
@@ -79,6 +79,15 @@ GroundLabelsWindow < ChaosMainWindow
     anchors.left: sizeLabel.right
     margin-left: 12
     size: 110 22
+
+  ChaosButton
+    id: lootAll
+    anchors.top: sizeLabel.bottom
+    anchors.left: parent.left
+    margin-top: 20
+    size: 250 24
+    !text: tr('Pick up my loot (Ctrl+Shift+L)')
+    !tooltip: tr('Monsters throw their loot onto the ground around them. This picks up everything of yours within reach into your backpack, in one go.')
 
   ChaosButton
     id: closeButton

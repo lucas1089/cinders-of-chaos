@@ -7,6 +7,7 @@
 -- client -> server  look {t = [[x, y, z], ...]}           up to 30 tiles (same floor, within 8 x 6 squares)
 --                   tip {p = [x, y, z], s, id}            rich tooltip of one ground item (s = index on the tile)
 --                   raise {p, s, id, c, iid}              put that item on top of its pile (the client then moves it)
+--                   lootall {}                            take every item of mine within reach into the backpack (O669)
 -- server -> client  tiles {t = [{p = [x, y, z], i = [item | corpse, ...]}]}   every asked tile is answered (i may be [])
 --                       item   {s, id (client id), c, nm, r, u, o, pw, g, t, il, e}
 --                       corpse {s, id, k = 1, n (items in it), i = [{c, nm, r, u, o, pw, g, t}, ...], e}
@@ -14,6 +15,7 @@
 --                       are still containers summed; absent when it does not decay)
 --                   tip {p, s, id, tip} | {p, s, id, gone = 1}   (tip as item_tooltip.lua builds it)
 --                   raised {p, id} | {p, id, err = "far" | "sight" | "gone" | "fixed"}
+--                   lootall {n, f, s}   taken, did not fit, seen (loot_explosion.lua)
 --
 -- What is never revealed: tiles outside the player's view or on another floor, items in a house the player does not
 -- own, and the contents of a corpse the player may not open (another player's kill outside the party, the same rule
@@ -47,6 +49,12 @@ local function attr(item, key)
 end
 
 local function expiryOf(item)
+	-- a loose item of a loot explosion (O669, loot_explosion.lua) vanishes by the sweeper's clock, not the engine's decay
+	local LE = ChaosLootExplosion
+	local left = LE and LE.expiryLeft and LE.expiryLeft(item)
+	if left then
+		return left
+	end
 	if not ITEM_ATTRIBUTE_DECAYSTATE then
 		return nil
 	end
@@ -122,7 +130,11 @@ local function describeTile(player, pos)
 				end
 			end
 		elseif itemType:isPickupable() and itemType:isMovable() then
-			out[#out + 1] = G.wireItem(F.itemInfo(item), s, expiryOf(item))
+			-- the loot of another player's kill (O669): no label, as a corpse's contents were not shown either
+			local LE = ChaosLootExplosion
+			if not (LE and LE.visibleTo) or LE.visibleTo(player, item) then
+				out[#out + 1] = G.wireItem(F.itemInfo(item), s, expiryOf(item))
+			end
 		end
 	end
 	return out
@@ -302,6 +314,34 @@ local function raise(player, data)
 	Chaos.send(player, OPCODE, "raised", reply)
 end
 
+-- ---------------------------------------------------------------- loot all (O669)
+-- lootall {}: everything of the player's that a loot explosion left within reach goes into the backpack (loot_explosion.lua
+-- X.lootAll). Answer: lootall {n = taken, f = did not fit, s = seen}. Costs 4 of the request budget.
+local function lootAll(player)
+	local LE = ChaosLootExplosion
+	local pid = player:getId()
+	budget[pid] = budget[pid] or {}
+	if not G.allow(budget[pid], nowMs(), 4) then
+		return
+	end
+	if not LE or not LE.lootAll then
+		return
+	end
+	local took, failed, seen = LE.lootAll(player)
+	local text
+	if took == 0 and failed == 0 then
+		text = "Nothing of yours to pick up here."
+	elseif failed > 0 then
+		text = string.format("Picked up %d, %d did not fit.", took, failed)
+	elseif took == 1 then
+		text = "You picked up 1 item."
+	else
+		text = string.format("You picked up %d items.", took)
+	end
+	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.tx and Chaos.tx(player, text) or text)
+	Chaos.send(player, OPCODE, "lootall", {n = took, f = failed, s = seen})
+end
+
 local ext = CreatureEvent("ChaosGroundLootExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
@@ -318,6 +358,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			tip(player, msg.data)
 		elseif msg.action == "raise" then
 			raise(player, msg.data)
+		elseif msg.action == "lootall" then
+			lootAll(player)
 		end
 	end)
 	if not ok then

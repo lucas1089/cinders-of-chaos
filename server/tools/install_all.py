@@ -535,6 +535,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                held to, read from the installed movements.xml and weapons.xml; the item tooltip names those classes (O490, README
                "Equip rules in the tooltip (O490)"; nothing about who can wear what changes; after every step that writes
                movements.xml or weapons.xml)
+  lootexplosion tools/patch_loot_explosion.py    Player:onMoveItem asks ChaosLootExplosion.onMoveItem first: the loose loot of a kill (the loot
+               explosion, O669, README "Loot explosion (O669)") is taken only by its killer and party until the owner time ran out
+               (after the steps that edit events/scripts/player.lua)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1969,6 +1972,14 @@ def step_equiprules(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'equiprules')  # after every step that writes movements.xml or weapons.xml (it reads both)
+
+
+def step_lootexplosion(server, data, ctx):
+    args = [tool('patch_loot_explosion.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_loot_explosion.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'lootexplosion')  # O669: the ownership call in Player:onMoveItem, after the steps that edit player.lua
 
 
 def step_autoloot(server, data, ctx):

@@ -337,7 +337,7 @@ end
 
 ChaosLootFilter.canLoot = canLoot -- also the ground labels' rule for showing what a corpse holds (groundloot.lua)
 
-local function findCorpse(kill)
+local function findBag(kill)
 	local tile = Tile(kill.pos)
 	if not tile then
 		return nil
@@ -348,6 +348,42 @@ local function findCorpse(kill)
 		end
 	end
 	return nil
+end
+
+-- The loot of an exploded kill (O669, loot_explosion.lua): what is still in the bag and the loose items of the kill on their
+-- tiles (they carry the kill id in `lf_loot`), as an object that answers like a corpse: getItems, getCorpseOwner. Nil when
+-- nothing of the kill is left anywhere.
+local function groundOf(kill)
+	local bag = findBag(kill)
+	local items = {}
+	if bag then
+		for _, item in ipairs(bag:getItems()) do
+			items[#items + 1] = item
+		end
+	end
+	for _, p in ipairs(kill.tiles or {}) do
+		local tile = Tile(Position(p.x, p.y, p.z))
+		for _, item in ipairs(tile and tile:getItems() or {}) do
+			if tonumber(customAttr(item, "lf_loot")) == kill.id then
+				items[#items + 1] = item
+			end
+		end
+	end
+	if #items == 0 and not bag then
+		return nil
+	end
+	return {
+		ground = true,
+		getItems = function() return items end,
+		getCorpseOwner = function() return kill.ownerId end,
+	}
+end
+
+local function findCorpse(kill)
+	if kill.exploded then
+		return groundOf(kill)
+	end
+	return findBag(kill)
 end
 
 local function presentOf(corpse)
@@ -405,8 +441,8 @@ end
 
 local function sendBeam(kill)
 	local c = cfg()
-	if not c.beams then
-		return
+	if not c.beams or kill.exploded then
+		return -- an exploded kill's items beam where they lie: the client draws those from the ground rows (O669)
 	end
 	local list = F.beamItems(kill.entries, kill.left, c)
 	local sig = table.concat(list, ",")
@@ -779,6 +815,11 @@ step("finish", finish, cfg().finishIndex)
 -- items taken out of (or put into) a tracked corpse by hand, by another script or by another party member
 local moved = EventCallback
 moved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+	-- a loose item of an exploded kill picked up by hand (its kill id is still on it unless it was released first)
+	local lootKill = item and tonumber(customAttr(item, "lf_loot"))
+	if lootKill and state.kills[lootKill] then
+		pcall(refresh, state.kills[lootKill])
+	end
 	for _, cyl in ipairs({fromCylinder, toCylinder}) do
 		if cyl and cyl.isContainer and cyl:isContainer() then
 			local id = tonumber(customAttr(cyl, cfg().corpseAttribute))
@@ -790,6 +831,42 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 	end
 end
 moved:register(11)
+
+-- O669 (loot_explosion.lua): the kill id of a bag, the explosion of a kill's loot onto the tiles around it, a re-read of a kill
+-- after something of it was taken by script, the backpack placement
+function F.killOf(corpse)
+	return tonumber(customAttr(corpse, cfg().corpseAttribute))
+end
+
+function F.onExploded(id, origin, tiles)
+	local kill = state.kills[id]
+	if not kill then
+		return
+	end
+	local seen, list = {}, {}
+	local function add(p)
+		local k = p.x .. "," .. p.y .. "," .. p.z
+		if not seen[k] then
+			seen[k] = true
+			list[#list + 1] = {x = p.x, y = p.y, z = p.z}
+		end
+	end
+	add(origin)
+	for _, p in ipairs(tiles) do
+		add(p)
+	end
+	kill.exploded, kill.tiles, kill.fp = true, list, nil
+	beamOff(kill)
+end
+
+function F.touchKill(id)
+	local kill = state.kills[id]
+	if kill then
+		refresh(kill)
+	end
+end
+
+F.intoBags = intoBags
 
 -- ---------------------------------------------------------------- click to loot
 local function reply(player, text)
@@ -846,11 +923,29 @@ local function take(player, data)
 			return reply(player, "Sorry, not possible.")
 		end
 	end
+	-- a loose item of an exploded kill (O669) leaves its ground attributes before the move (it stacks with its like), and gets
+	-- them back when it does not fit
+	local LE = ChaosLootExplosion
+	local raw, lootKill
+	if corpse.ground and LE and LE.release then
+		raw, lootKill = customAttr(moving, LE.ATTR), customAttr(moving, LE.KILL_ATTR)
+		LE.release(moving)
+	end
 	-- a carried store pouch that collects this kind of item first (pouches.lua), else the backpack
 	local ok = (ChaosPouches and ChaosPouches.stow and ChaosPouches.stow(player, moving)) or intoBags(player, moving)
 	if not ok then
+		if raw ~= nil then
+			moving:setCustomAttribute(LE.ATTR, raw)
+			if lootKill ~= nil then
+				moving:setCustomAttribute(LE.KILL_ATTR, lootKill)
+			end
+		end
 		if moving ~= item then
-			moving:moveTo(corpse) -- the split part goes back onto its stack
+			if corpse.ground then
+				moving:moveTo(item:getPosition()) -- the split part goes back onto its stack
+			else
+				moving:moveTo(corpse) -- the split part goes back onto its stack
+			end
 		end
 		reply(player, "You do not have enough capacity or room.")
 	end

@@ -403,7 +403,8 @@ function W.settleItems(player, i, lang)
 	end
 end
 
--- one quest item into the world of a character: the loot bag of the kill when the character owns it, else the backpack, else the
+-- one quest item into the world of a character: the loot bag of the kill when the character owns it (and its loot did not fly out:
+-- loot explosion, O669), else the backpack, else the
 -- inbox. The item is created and marked first, then placed (a plain copy of the stock id never takes it into its stack).
 -- Returns "bag" | "pack" | "inbox" | nil
 function W.giveQuestItem(player, step, cond, corpse, lang)
@@ -414,7 +415,13 @@ function W.giveQuestItem(player, step, cond, corpse, lang)
 	end
 	K.markItem(c, item, step, cond, player, lang)
 	local where
-	if corpse and corpse.addItemEx then
+	-- O669: a loot bag whose loot flew out onto the ground (loot_explosion.lua) holds no quest item: it goes to the backpack
+	local exploded = false
+	if corpse and ChaosLootExplosion and ChaosLootExplosion.isExploded then
+		local okE, yes = pcall(ChaosLootExplosion.isExploded, corpse)
+		exploded = okE and yes == true
+	end
+	if corpse and corpse.addItemEx and not exploded then
 		local okO, owner = pcall(function() return corpse:getCorpseOwner() end)
 		if okO and owner == player:getId() then
 			local okA, ret = pcall(function() return corpse:addItemEx(item) end)

@@ -10,7 +10,7 @@
   "closed": 15,
   "opcode": 73,
   "out": 24,
-  "passive": 112,
+  "passive": 113,
   "place": 15,
   "staff": 19
  },
@@ -9649,6 +9649,7 @@
    "actions": [
     "look",
     "tip",
+    "lootall",
     "raise"
    ],
    "client": [
@@ -12689,6 +12690,15 @@
     "loadouts"
    ],
    "talkactions": []
+  },
+  "loot_explosion": {
+   "files": [
+    "loot_explosion.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "lootfilter": {
    "files": [
