@@ -1258,6 +1258,9 @@ jobs:
       - name: Ember Descent rooms against the hunt pack of the level, room 1 cleared with healing left, the rooms grow, the boss is a fight (descent_model.py --check and its test; descent_balance_config.lua, O664)
         run: python3 -I server/tools/descent_model.py --check && python3 -I server/tools/descent_model_test.py
 
+      - name: Greater Rift (rift tier 16 and up, O668) - the tier the median class reaches at levels 1500 / 2000 / 2500, seconds per tier, the guardian against healing, no wall and no free tier (greater_rift_model.py --check and its test; greater_balance_config.lua)
+        run: python3 -I server/tools/greater_rift_model.py --check && python3 -I server/tools/greater_rift_model_test.py
+
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 

@@ -24,7 +24,7 @@ local STAFF = {
 	["/challenge"] = "weekly_challenge.lua", ["/weeklyclass"] = "weekly_class.lua", ["/buildtrends"] = "build_trends.lua", ["/descent"] = "descent.lua", ["/exclusive"] = "exclusives.lua", ["/faction"] = "factions.lua",
 	["/gamble"] = "gamble.lua", ["/guild"] = "guild.lua", ["/guildboss"] = "guildboss.lua",
 	["/guildwar"] = "guildwar.lua", ["/harvest"] = "harvest_event.lua", ["/weekend"] = "weekend.lua", ["/hideout"] = "hideout.lua", ["/towerrun"] = "infinitytower.lua",
-	["/towerseason"] = "infinitytower.lua", ["/instances"] = "instance_limits.lua", ["/invasion"] = "invasion.lua",
+	["/towerseason"] = "infinitytower.lua", ["/greaterseason"] = "greater_ladder.lua", ["/instances"] = "instance_limits.lua", ["/invasion"] = "invasion.lua",
 	["/itemfinder"] = "itemfinder.lua", ["/leaderboard"] = "leaderboard.lua", ["/market"] = "market.lua",
 	["/memorial"] = "memorial.lua", ["/mentor"] = "mentor.lua", ["/newplayerkit"] = "newplayer.lua",
 	["/gmnotify"] = "notifications.lua", ["/orbx"] = "orbexchange.lua", ["/pack30gallery"] = "admin/actions_pack30_gallery.lua", ["/pact"] = "pact.lua",

@@ -7617,6 +7617,51 @@ async def check_gamble_reroll(io, name, cls, level):
 
 
 
+# ------------------------------------------------------------------------------------------------ the Greater Rift ladder (O668)
+# The Greater Rift (rift tier 16 and up, rift_config.lua `greater`) has a ladder per class, season and mode (greater_ladder.lua) and two weekly
+# boards in the Leaderboards window (greater_solo, greater_party). A tester bot is on no ladder: greater_ladder.lua G.record skips a tester guid and the
+# ladder query leaves a tester out (Chaos.notTesterSql), the weekly record skips one too (leaderboard.lua). The closed check reads the two boards
+# the way a player does and holds that to it: both boards exist, no row carries a tester's name. The run itself (a Greater key from the helper,
+# the climb) is for the live run: the helper has no `rift greater` command yet.
+GREATER_BOARDS = ('greater_solo', 'greater_party')
+
+
+def greater_boards_verdict(meta, boards, bot):
+    """(status, text) from the Leaderboards meta answer (its `boards` list) and the answers of the two boards ({key: data}): both boards
+    listed, no row with the name of the bot or of any tester (a name that starts with 'Tester ')"""
+    listed = [b.get('key') for b in (meta or {}).get('boards') or [] if isinstance(b, dict)]
+    missing = [k for k in GREATER_BOARDS if k not in listed]
+    if missing:
+        return SKIP, 'the Leaderboards window lists no %s (the Greater Rift is not installed on this server)' % ' / '.join(missing)
+    rows_seen = 0
+    for key in GREATER_BOARDS:
+        data = boards.get(key)
+        if not isinstance(data, dict):
+            return SKIP, 'no answer for the %s board' % key
+        for row in data.get('rows') or []:
+            if not isinstance(row, dict):
+                continue
+            rows_seen += 1
+            who = str(row.get('name') or '')
+            if who == bot or who.startswith('Tester '):
+                return FAIL, 'a tester bot (%s) is on the %s board: a tester never ranks' % (who, key)
+    return PASS, 'both Greater Rift boards answer (%d row(s) of players, no tester on them)' % rows_seen
+
+
+async def check_closed_greater(io, name, cls, level):
+    """the Greater Rift boards of the Leaderboards window exist and hold no tester bot (closed mode: a tester is on no ladder)"""
+    key = 'closed_greater'
+    meta = await io.request('leaderboard', 'open', {}, ['meta'], ANSWER)
+    if meta is None:
+        return Result(key, name, cls, SKIP, 'no answer from the Leaderboards window')
+    answers = {}
+    for board in GREATER_BOARDS:
+        reply = await io.request('leaderboard', 'get', {'board': board}, ['board'], ANSWER)
+        answers[board] = (reply or {}).get('data') if isinstance(reply, dict) else None
+    status, text = greater_boards_verdict((meta or {}).get('data'), answers, name)
+    return Result(key, name, cls, status, text)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -7636,6 +7681,7 @@ CLOSED_CHECKS = [
     ('closed_arena_fight', check_closed_arena_fight, lambda c: True),   # O652: two testers fight in the arena, a foe hurt, no season row
     ('closed_pvp_fight', check_closed_pvp_fight, lambda c: True),   # O652: two testers fight in the Marches, only testers inside
     ('closed_battleground_match', check_closed_battleground_match, lambda c: True),   # O652: a match of testers only when 10 queue
+    ('closed_greater', check_closed_greater, lambda c: True),   # O668: the Greater Rift boards exist and hold no tester bot
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)

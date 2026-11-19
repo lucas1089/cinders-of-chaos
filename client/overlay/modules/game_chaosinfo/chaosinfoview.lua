@@ -78,7 +78,14 @@ V.PAGES = {
     } },
   { id = 'rift', title = 'Rift Keys',
     text = 'The rift you are in and every Rift Key you carry, with its modifiers. Use a key to open its rift.',
-    auto = { 'rift' } },
+    auto = { 'rift' },
+    -- the Greater Rift (rift tier 16 and up, server greater_ladder.lua, command id greater): the season ladder of your class,
+    -- and a Greater Rift Key bound from omen fragments
+    rows = {
+      { buttons = { { text = 'Greater Ladder', id = 'greater', hint = 'The Greater Rift season ladder of your class.' },
+                    { text = 'Bind Greater Key', id = 'greater', param = 'key',
+                      hint = 'Bind a Greater Rift Key (tier 16) from omen fragments.' } } },
+    } },
   { id = 'events', title = 'Events',
     text = 'Server events running today, world buffs and the world boss.',
     auto = { 'events', 'worldbuffs', 'worldboss' },

@@ -319,7 +319,10 @@ function R.unpackMod(cfg, n)
 	return {key = def.key, value = clamp(n % 1000, def.range[1], def.range[2])}
 end
 
-function R.keyName(cfg, tier)
+function R.keyName(cfg, tier, greater)
+	if greater and greater > 0 and cfg.greater then
+		return string.format(cfg.greater.key.nameFormat, R.shownTier(cfg, {tier = tier, greater = greater}))
+	end
 	return string.format(cfg.key.nameFormat, tier)
 end
 
@@ -410,6 +413,10 @@ function R.describe(cfg, key)
 	end
 	local t = R.tierInfo(cfg, key.tier)
 	local rec = R.warnLevel(cfg, key.tier) -- O476: one line with the recommended solo level, none when the warning is off
+	if (key.greater or 0) > 0 then
+		return R.describeGreater(cfg, key, #lines > 0 and table.concat(lines, "; ") or "none",
+			#bonus > 0 and table.concat(bonus, ", ") or "normal")
+	end
 	return string.format("Modifiers: %s. Rewards: %s. Opens a rift of tier %d (level %d+).%s Use it in a protection zone; your party within %d sqm comes along.",
 		#lines > 0 and table.concat(lines, "; ") or "none", #bonus > 0 and table.concat(bonus, ", ") or "normal",
 		key.tier, t.minLevel, rec and string.format(" Recommended: level %d alone, or a party.", rec) or "", cfg.partyRange)
@@ -973,9 +980,12 @@ end
 -- the level shown after a rift monster's name ("[level]", monster_levels.lua, engine patches 0040 / 0044): a density run
 -- sizes every pack monster and its guardian for a player of the tier's level (R.packHealth, R.guardianBase), so they
 -- show that level; nil (their own) without density and for an Omen guardian (its own health x omen.healthMult)
-function R.displayLevel(cfg, tier, dense, omenGuardian)
+function R.displayLevel(cfg, tier, dense, omenGuardian, greater)
 	if not dense or omenGuardian then
 		return nil
+	end
+	if (greater or 0) > 0 and cfg.greater then
+		return R.greaterInfo(cfg, greater).level -- O668: the tier 15 level + levelStep x g
 	end
 	return R.tierInfo(cfg, tier).minLevel
 end
@@ -991,17 +1001,22 @@ end
 
 -- the model's time of a run in seconds (packs up to the guardian, then the guardian) for `players` with `dps` times a
 -- typical player's damage in total (the party model: 4.98 for five), no modifiers
-function R.clearSeconds(cfg, tier, players, dps, walkable, route)
+function R.clearParts(cfg, tier, players, dps, walkable, route)
 	local m = cfg.density.model
 	local t = R.tierInfo(cfg, tier)
 	local area, single = R.refDps(cfg, t.minLevel)
 	local d = R.density(cfg, t.tier, players, nil, walkable)
-	local ps = R.party(cfg, players)
 	local packs = d.count * cfg.bossAt / 100 * R.packHealth(cfg, t.tier, walkable) * R.eliteHealthAvg(cfg, t.tier, d.share)
 		* t.health * R.partyMonsterHealth(cfg, t.tier, players)
 	local guardian = R.guardianBase(cfg, t.tier) * R.guardianHealthMult(cfg, {health = t.health}, players)
 	dps = dps or 1
-	return packs / (area * m.uptime * dps) + guardian / (single * m.guardianUptime * dps) + R.walkSeconds(cfg, t.tier, route)
+	return {packs = packs / (area * m.uptime * dps), guardian = guardian / (single * m.guardianUptime * dps),
+		walk = R.walkSeconds(cfg, t.tier, route)}
+end
+
+function R.clearSeconds(cfg, tier, players, dps, walkable, route)
+	local p = R.clearParts(cfg, tier, players, dps, walkable, route)
+	return p.packs + p.guardian + p.walk
 end
 
 -- the run's base time limit (before Waning Veil and charms): the band's (layout.sizes), else timeLimit
@@ -1875,6 +1890,158 @@ function R.atlasNote(am, lang)
 		return nil
 	end
 	return T(lang, "Atlas: %s", table.concat(parts, ", "))
+end
+
+-- ===================================================================== Greater Rift (O668)
+-- rift_config.lua `greater`. A Greater Rift Key stores rift_tier = cfg.maxTier and rift_greater = g (1, 2, ...); the tier shown
+-- is maxTier + g. Every lookup of a run by tier keeps the tier 15 row, g only adds the rule below.
+function R.greaterOn(cfg)
+	return cfg ~= nil and cfg.greater ~= nil and cfg.greater.enabled ~= false
+end
+
+-- the tier shown for a key {tier, greater}
+function R.shownTier(cfg, key)
+	local g = key and key.greater or 0
+	if g > 0 and R.greaterOn(cfg) then
+		return math.min(cfg.greater.maxShownTier or 999, cfg.maxTier + g)
+	end
+	return key and key.tier or 1
+end
+
+-- g of a shown tier (0 up to maxTier), at most what maxShownTier allows
+function R.greaterOf(cfg, shown)
+	shown = floor(tonumber(shown) or 0)
+	if not R.greaterOn(cfg) or shown <= cfg.maxTier then
+		return 0
+	end
+	return math.min(shown, cfg.greater.maxShownTier or 999) - cfg.maxTier
+end
+
+-- what Greater tier g (>= 1) does: monster health and damage (compounded), the shown monster level, the reward factor
+function R.greaterInfo(cfg, g)
+	g = math.max(0, floor(tonumber(g) or 0))
+	local r = cfg.greater.rule
+	local base = R.tierInfo(cfg, cfg.maxTier)
+	return {g = g, shown = cfg.maxTier + g, health = (1 + r.health) ^ g, damage = (1 + r.damage) ^ g,
+		level = base.minLevel + r.levelStep * g, reward = math.min(r.rewardCap or 3, 1 + r.reward * g)}
+end
+
+-- the key's effects with the rule applied (after R.effects): every rift monster and guardian. Changes and returns fx.
+function R.applyGreater(cfg, fx, g)
+	if (g or 0) > 0 and R.greaterOn(cfg) then
+		local i = R.greaterInfo(cfg, g)
+		fx.health = (fx.health or 1) * i.health
+		fx.damage = (fx.damage or 1) * i.damage
+		fx.greater = g
+	end
+	return fx
+end
+
+-- a finisher's chest x the tier's reward factor: gold and orbs (fractions a chance of one more). Changes and returns r.
+function R.greaterReward(cfg, r, g, rand)
+	if (g or 0) <= 0 or not R.greaterOn(cfg) then
+		return r
+	end
+	local m = R.greaterInfo(cfg, g).reward
+	r.gold = floor((r.gold or 0) * m)
+	r.chaos = R.roundChance((r.chaos or 0) * m, rand)
+	r.divine = R.roundChance((r.divine or 0) * m, rand)
+	r.greaterMult = m
+	return r
+end
+
+-- the run's clock in seconds from the layout band's limit
+function R.greaterClock(cfg, limit)
+	return math.max(1, floor((limit or cfg.timeLimit) * (cfg.greater.clock.mult or 1)))
+end
+
+-- tiers a sealed run climbs: the first clock step the run fits (secs <= fraction x limit), 0 when none
+function R.greaterUp(cfg, secs, limit)
+	if not limit or limit <= 0 then
+		return 0
+	end
+	for _, st in ipairs(cfg.greater.clock.steps) do
+		if secs <= st.fraction * limit then
+			return st.up
+		end
+	end
+	return 0
+end
+
+-- the key a sealed (ok) or failed Greater run leaves: the new g (0 = a plain tier maxTier key); a key never goes under 0
+function R.greaterNext(cfg, g, ok, secs, limit)
+	g = math.max(0, floor(tonumber(g) or 0))
+	local nxt
+	if ok then
+		nxt = g + math.max(1, R.greaterUp(cfg, secs, limit))
+	else
+		nxt = g - (cfg.greater.clock.failDrop or 1)
+	end
+	local top = (cfg.greater.maxShownTier or 999) - cfg.maxTier
+	return math.max(0, math.min(top, nxt))
+end
+
+-- a fresh Greater key of g (modifiers rolled as a tier maxTier key's); g 0 is a plain tier maxTier key
+function R.greaterKey(cfg, g, rand, better)
+	local key = R.rollKey(cfg, cfg.maxTier, rand, better)
+	if (g or 0) > 0 then
+		key.greater = g
+	end
+	return key
+end
+
+-- the key's look text (R.describe) for a Greater key
+function R.describeGreater(cfg, key, mods, bonus)
+	local i = R.greaterInfo(cfg, key.greater)
+	local t = R.tierInfo(cfg, cfg.maxTier)
+	return string.format("Greater Rift tier %d: monsters have x%.2f health and x%.2f damage (level %d). Clock %d minutes; sealed in half of it the key climbs 3 tiers, in three quarters 2, in time 1; a failed rift drops it %d tier. Modifiers: %s. Rewards: %s. Needs level %d. Use it in a protection zone; your party within %d sqm comes along.",
+		i.shown, i.health, i.damage, i.level, floor(R.greaterClock(cfg, R.timeLimit(cfg, cfg.maxTier)) / 60 + 0.5),
+		cfg.greater.clock.failDrop or 1, mods, bonus, t.minLevel, cfg.partyRange)
+end
+
+-- the crash refund marker holds the shown tier; above maxTier it is a Greater key (Omen markers start at R.omenMarker)
+function R.markerGreater(cfg, value)
+	value = floor(tonumber(value) or 0)
+	if R.greaterOn(cfg) and value > cfg.maxTier and value <= (cfg.greater.maxShownTier or 999) and value < R.omenMarker then
+		return value - cfg.maxTier
+	end
+	return nil
+end
+
+-- true when a sealed tier maxTier rift leaves a Greater key: chance percent, always at the pity'th in a row
+function R.greaterDrop(cfg, pity, rand)
+	local d = R.greaterOn(cfg) and cfg.greater.key.drop
+	if not d then
+		return false
+	end
+	if (pity or 0) + 1 >= (d.pity or 1000000) then
+		return true
+	end
+	return chance(d.chance, rand)
+end
+
+-- personal best: pays for every shown tier in (oldBest, newBest], at most rewards.maxPerRun of the highest. Returns a list of
+-- {tier, fate, upheaval, gold, fragments} (empty when newBest is not above oldBest)
+function R.greaterBestRewards(cfg, oldBest, newBest)
+	local rw = cfg.greater.rewards
+	local out = {}
+	newBest = floor(tonumber(newBest) or 0)
+	local first = math.max(floor(oldBest or 0) + 1, cfg.greater.firstTier, newBest - rw.maxPerRun + 1)
+	for t = first, newBest do
+		local n = t - cfg.greater.firstTier
+		local b = rw.best
+		out[#out + 1] = {tier = t, fate = floor(b.orbFate.base + b.orbFate.perTier * n),
+			upheaval = floor(b.orbUpheaval.base + b.orbUpheaval.perTier * n), gold = floor(b.gold.base + b.gold.perTier * n),
+			fragments = floor(b.fragments.base + b.fragments.perTier * n)}
+	end
+	return out
+end
+
+-- the chance (percent) of a pinnacle fragment for a sealed run of this shown tier
+function R.greaterPinnacleChance(cfg, shown)
+	local p = cfg.greater.rewards.pinnacle
+	local k = math.min(p.cap, math.max(0, (shown - cfg.maxTier) / p.perTiers))
+	return p.chance * k
 end
 
 return R

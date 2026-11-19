@@ -12,7 +12,7 @@
   "out": 24,
   "passive": 112,
   "place": 15,
-  "staff": 18
+  "staff": 19
  },
  "effects": [
   {
@@ -10892,6 +10892,7 @@
    "dataKeys": [
     "bonus",
     "boss",
+    "greater",
     "key",
     "name",
     "notes",
@@ -12303,6 +12304,17 @@
     "goals"
    ],
    "talkactions": []
+  },
+  "greater_ladder": {
+   "files": [
+    "greater_ladder.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/greaterseason"
+   ],
+   "why": "staff command only (/greaterseason); testers are never staff"
   },
   "groundloot": {
    "files": [

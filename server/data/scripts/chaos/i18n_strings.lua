@@ -9440,5 +9440,42 @@ return {
 			"Seu atlas do fim de jogo está vazio.",
 		["Every rank refunded."] =
 			"Todos os níveis foram devolvidos.",
+		-- Greater Rift (rift.lua, greater_ladder.lua, O668)
+		["%s The Greater Rift collapses and the key drops a tier."] =
+			"%s O Greater Rift desaba e a chave cai um tier.",
+		["Greater Rift tier %d sealed in %d:%02d. The key climbs to tier %d."] =
+			"Greater Rift tier %d selado em %d:%02d. A chave sobe para o tier %d.",
+		["The Greater Rift is closed."] =
+			"O Greater Rift está fechado.",
+		["Omen fragments are not installed on this server."] =
+			"Os fragmentos de omen não estão instalados neste servidor.",
+		["You bound %d Greater Rift Keys today; try again tomorrow."] =
+			"Você já forjou %d Greater Rift Keys hoje; tente de novo amanhã.",
+		["You need %d omen fragments to bind a Greater Rift Key (you carry %d)."] =
+			"Você precisa de %d fragmentos de omen para forjar uma Greater Rift Key (você tem %d).",
+		["A Greater Rift Key needs level %d."] =
+			"Uma Greater Rift Key exige nível %d.",
+		["Greater Rift: a tier %d guardian may leave a Greater Rift Key, or %d omen fragments bind one. The ladder and the key are on the Rift Keys page of the Info window."] =
+			"Greater Rift: um guardião de tier %d pode deixar uma Greater Rift Key, ou %d fragmentos de omen forjam uma. O ranking e a chave estão na página Rift Keys da janela Info.",
+		["Greater Rift tier %d, a new personal best: %s."] =
+			"Greater Rift tier %d, novo recorde pessoal: %s.",
+		["Greater Rift season %d has ended: %s, place %d, tier %d. %s."] =
+			"A temporada %d do Greater Rift acabou: %s, posição %d, tier %d. %s.",
+		["Greater Rift, season %d."] =
+			"Greater Rift, temporada %d.",
+		["Your best, solo: tier %d in %s."] =
+			"Seu melhor, solo: tier %d em %s.",
+		["Your best, party: tier %d in %s."] =
+			"Seu melhor, grupo: tier %d em %s.",
+		["You have not sealed a Greater Rift this season. A tier 15 guardian may leave a Greater Rift Key, or %d omen fragments bind one (Bind Greater Key)."] =
+			"Você ainda não selou um Greater Rift nesta temporada. Um guardião de tier 15 pode deixar uma Greater Rift Key, ou %d fragmentos de omen forjam uma (Bind Greater Key).",
+		["Top, solo, your class:"] =
+			"Melhores, solo, sua classe:",
+		["Top, party, your class:"] =
+			"Melhores, grupo, sua classe:",
+		["The season ends in %d days."] =
+			"A temporada termina em %d dias.",
+		["Greater Rift season %d has ended. Season %d begins."] =
+			"A temporada %d do Greater Rift acabou. A temporada %d começa.",
 	},
 }

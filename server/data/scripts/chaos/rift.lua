@@ -230,15 +230,21 @@ function RF.readKey(item)
 	if not tier then
 		return nil
 	end
-	return {tier = R.clampTier(C(), tier), mods = R.decodeMods(C(), item:getCustomAttribute("rift_mods") or "")}
+	-- Greater Rift Key (O668): rift_tier stays maxTier, rift_greater is the climb above it
+	local g = math.floor(tonumber(item:getCustomAttribute("rift_greater")) or 0)
+	return {tier = R.clampTier(C(), tier), mods = R.decodeMods(C(), item:getCustomAttribute("rift_mods") or ""),
+		greater = (g > 0 and R.greaterOn(C())) and g or nil}
 end
 
 function RF.applyKey(item, key)
 	local cfg = C()
 	item:setActionId(cfg.key.actionId)
 	item:setCustomAttribute("rift_tier", key.tier)
+	if (key.greater or 0) > 0 then
+		item:setCustomAttribute("rift_greater", key.greater)
+	end
 	item:setCustomAttribute("rift_mods", R.encodeMods(key.mods))
-	item:setAttribute(ITEM_ATTRIBUTE_NAME, R.keyName(cfg, key.tier))
+	item:setAttribute(ITEM_ATTRIBUTE_NAME, R.keyName(cfg, key.tier, key.greater))
 	item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, "a")
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, R.describe(cfg, key))
 	return item
@@ -260,7 +266,7 @@ function RF.giveKey(player, key, why)
 	end
 	local inbox = giveEx(player, item)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: %s (%s).%s", why or "You received a key",
-		R.keyName(C(), key.tier), #key.mods > 0 and R.encodeMods(key.mods):gsub(",", ", ") or "no modifiers",
+		R.keyName(C(), key.tier, key.greater), #key.mods > 0 and R.encodeMods(key.mods):gsub(",", ", ") or "no modifiers",
 		inbox and " It is in your inbox." or ""))
 	return inbox
 end
@@ -315,7 +321,7 @@ end
 
 -- ======================================================================== crash refund marker
 local function setMarker(player, key)
-	player:setStorageValue(ST, key.omen and R.markerTier(C(), key.omen) or key.tier)
+	player:setStorageValue(ST, key.omen and R.markerTier(C(), key.omen) or R.shownTier(C(), key)) -- a Greater key: its shown tier (O668)
 	for i = 1, 3 do
 		player:setStorageValue(ST + i, key.mods[i] and R.packMod(C(), key.mods[i]) or 0)
 	end
@@ -361,7 +367,8 @@ local function refundMarker(player, why)
 	if omen then
 		RF.giveOmenKey(player, omen, why or "Your last omen arena was interrupted by a server restart, so its key is returned")
 	else
-		RF.giveKey(player, {tier = R.clampTier(C(), tier), mods = mods},
+		local g = R.markerGreater(C(), tier) -- O668: the marker held a Greater key's shown tier
+		RF.giveKey(player, {tier = g and C().maxTier or R.clampTier(C(), tier), mods = mods, greater = g},
 			why or "Your last rift was interrupted by a server restart, so its key is returned")
 	end
 	player:save()
@@ -746,7 +753,7 @@ local function hudData(run)
 		local am = run.atlasRun
 		notes[#notes + 1] = am and function(lang) return R.atlasNote(am, lang) end or run.atlasNote -- Rift Atlas
 	end
-	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
+	return {tier = R.shownTier(C(), run.key), theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
 		bossName = R.nameOf(run.looks, run.plan.boss, true) or run.plan.boss, -- the name the guardian shows
 		mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
@@ -902,7 +909,7 @@ finishExit = function(run)
 				else
 					RF.pending[guid] = RF.pending[guid] or {}
 					table.insert(RF.pending[guid], {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
-						omen = run.omen, theme = run.themeName, atlasRun = run.atlasRun}) -- theme, atlasRun: Rift Atlas
+						omen = run.omen, theme = run.themeName, atlasRun = run.atlasRun, greater = run.greater}) -- theme, atlasRun: Rift Atlas
 				end
 			end
 		end
@@ -939,13 +946,119 @@ end
 
 local function fail(run, text)
 	run.state = "failed"
-	run.endMsg = ChaosI18n.msg(run.omen and "%s The arena collapses and the key is lost." or
-		"%s The rift collapses and the key is lost.", ChaosI18n.msg(text))
+	if run.greater and not run.omen then
+		-- O668: a failed Greater Rift does not lose the key: the opener gets one tier lower (RF.greaterSettle)
+		run.endMsg = ChaosI18n.msg("%s The Greater Rift collapses and the key drops a tier.", ChaosI18n.msg(text))
+	else
+		run.endMsg = ChaosI18n.msg(run.omen and "%s The arena collapses and the key is lost." or
+			"%s The rift collapses and the key is lost.", ChaosI18n.msg(text))
+	end
 	run.endText = tostring(run.endMsg)
 	say(run, run.endMsg or run.endText)
+	if run.greater and not run.omen then
+		RF.greaterSettle(run, false)
+	end
 	finishExit(run)
 end
 RF._fail = fail
+
+-- ======================================================================== Greater Rift (O668)
+-- The opener of a run online: the run's players first, else any online character with the guid
+local function onlineByGuid(run, guid)
+	for id, e in pairs(run.players or {}) do
+		if e.guid == guid then
+			local p = Player(id)
+			if p then
+				return p
+			end
+		end
+	end
+	for _, p in ipairs(Game.getPlayers()) do
+		if p:getGuid() == guid then
+			return p
+		end
+	end
+	return nil
+end
+
+-- A Greater run ends: sealed (ok) the opener gets the key `greaterNext` tiers up (1-3 by the clock), failed one tier down (never
+-- under a plain tier 15 key, its modifiers re-rolled); the ladder, the personal best and the pinnacle roll for a sealed run
+-- (greater_ladder.lua). Once per run. An opener who is offline at a failure loses the key (as a rift left by logging out).
+function RF.greaterSettle(run, ok)
+	local cfg = C()
+	if run.settled or not run.greater or run.omen then
+		return nil
+	end
+	run.settled = true
+	local secs = os.time() - run.startTime
+	local nextG = R.greaterNext(cfg, run.greater, ok, secs, run.limit)
+	local opener = onlineByGuid(run, run.openerGuid)
+	if opener then
+		local key = R.greaterKey(cfg, nextG, rand, ok)
+		RF.giveKey(opener, key, ok and "The Greater Rift leaves a key behind" or "The Greater Rift spits your key back, weaker")
+	end
+	local out = {next = nextG, secs = secs, opener = opener ~= nil}
+	if ok then
+		local finishers = {}
+		for guid, f in pairs(run.finishers or {}) do
+			finishers[guid] = {name = f.name, player = onlineByGuid(run, guid)}
+		end
+		local shown = R.shownTier(cfg, run.key)
+		out.shown = shown
+		if ChaosGreater and ChaosGreater.record then
+			local okc, res = pcall(ChaosGreater.record, {tier = shown, secs = secs, players = run.size, finishers = finishers})
+			out.record = okc and res or nil
+			if not okc then
+				print("[ChaosRift] greater ladder record failed: " .. tostring(res))
+			end
+		end
+		say(run, ChaosI18n.msg("Greater Rift tier %d sealed in %d:%02d. The key climbs to tier %d.", shown, math.floor(secs / 60),
+			secs % 60, cfg.maxTier + nextG))
+	end
+	run.greaterOut = out
+	return out
+end
+
+-- 150 omen fragments (greater.key.fragmentCost) bind a tier 16 Greater Rift Key, boughtPerDay a day
+function RF.buyGreaterKey(player)
+	local cfg = C()
+	local g = cfg.greater
+	if not R.greaterOn(cfg) then
+		player:sendCancelMessage(Chaos.t(player, "The Greater Rift is closed."))
+		return false
+	end
+	local fragment = cfg.omen.fragment.id
+	if not omenItemReady(fragment) then
+		player:sendCancelMessage(Chaos.t(player, "Omen fragments are not installed on this server."))
+		return false
+	end
+	local today = tonumber(os.date("%Y%m%d"))
+	local key = g.key
+	local bought = player:getStorageValue(key.boughtStorage + 1) == today and math.max(0, player:getStorageValue(key.boughtStorage)) or 0
+	if bought >= key.boughtPerDay then
+		player:sendCancelMessage(Chaos.t(player, "You bound %d Greater Rift Keys today; try again tomorrow.", key.boughtPerDay))
+		return false
+	end
+	local have = player:getItemCount(fragment)
+	if have < key.fragmentCost then
+		player:sendCancelMessage(Chaos.t(player, "You need %d omen fragments to bind a Greater Rift Key (you carry %d).",
+			key.fragmentCost, have))
+		return false
+	end
+	if player:getLevel() < R.tierInfo(cfg, cfg.maxTier).minLevel then
+		player:sendCancelMessage(Chaos.t(player, "A Greater Rift Key needs level %d.", R.tierInfo(cfg, cfg.maxTier).minLevel))
+		return false
+	end
+	if not player:removeItem(fragment, key.fragmentCost) then
+		player:sendCancelMessage(Chaos.t(player, "The fragments could not be bound."))
+		return false
+	end
+	player:setStorageValue(key.boughtStorage, bought + 1)
+	player:setStorageValue(key.boughtStorage + 1, today)
+	RF.giveKey(player, R.greaterKey(cfg, 1, rand, false), string.format("%d omen fragments bind together", key.fragmentCost))
+	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
+	return true
+end
 
 -- ======================================================================== clean shutdown / server save
 -- A shutdown (onShutdown below, SIGTERM, /closeserver shutdown, the server save) or a closed server (/closeserver, the
@@ -1040,7 +1153,7 @@ end
 function RF.deliver(player, run, auto)
 	local cfg = C()
 	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
-		omen = run.omen} or run
+		omen = run.omen, greater = run.greater} or run
 	local r = data.omen and R.omenReward(cfg, player:getLevel()) or R.reward(cfg, data.tier, data.bonus, rand)
 	-- Conquest Tokens (conquest.lua) for a sealed rift, by its tier; the Omen guardian's come with its kill
 	if not data.omen and ChaosConquest and ChaosConquest.reward then
@@ -1053,6 +1166,7 @@ function RF.deliver(player, run, auto)
 	end
 	-- the party bonus (rift_config.lua party): every finisher, by the players who entered
 	R.partyReward(cfg, r, run.size, rand)
+	R.greaterReward(cfg, r, data.greater, rand) -- O668: the Greater tier factor on gold and orbs
 	local asTier = data.omen and cfg.omen.reward.asTier or data.tier
 	local inbox = false
 	if r.gold > 0 then
@@ -1208,7 +1322,7 @@ local function success(run, pos)
 				pcall(ChaosAchievements.progress, p, "omen_" .. run.omen, 1)
 			end
 		elseif ChaosLeaderboard and ChaosLeaderboard.record then
-			pcall(ChaosLeaderboard.record, "rift", Player(id) or {guid = e.guid, name = e.name}, run.key.tier) -- weekly Rifts board
+			pcall(ChaosLeaderboard.record, "rift", Player(id) or {guid = e.guid, name = e.name}, R.shownTier(cfg, run.key)) -- weekly Rifts board (a Greater Rift: its shown tier)
 		end
 		if not run.omen and ChaosCharms and ChaosCharms.onSource and Player(id) then -- a charm drop (charms.lua)
 			pcall(ChaosCharms.onSource, Player(id), "rift", {tier = run.key.tier})
@@ -1264,9 +1378,16 @@ local function success(run, pos)
 	end
 	local pityKey = ST + 5 -- sealed rifts in a row without a stronger key (R.keyGuarantee)
 	local who = target and {level = target:getLevel(), pity = math.max(0, target:getStorageValue(pityKey))} or nil
-	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun, who) or nil
-	if target then
-		target:setStorageValue(pityKey, (drop and drop.tier > run.key.tier) and 0 or ((who and who.pity or 0) + 1))
+	local drop = not run.omen and not run.greater and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun, who) or nil
+	-- O668: a sealed tier 15 rift (a plain one) may leave a Greater Rift Key as well, always at the pity'th in a row
+	local greaterDrop = not run.omen and not run.greater and run.key.tier >= cfg.maxTier
+		and R.greaterDrop(cfg, who and who.pity or 0, rand) or false
+	if target and not run.greater then
+		target:setStorageValue(pityKey, ((drop and drop.tier > run.key.tier) or greaterDrop) and 0 or ((who and who.pity or 0) + 1))
+	end
+	if greaterDrop and target then
+		RF.giveKey(target, R.greaterKey(cfg, 1, rand, true), "The guardian leaves a Greater Rift Key behind")
+		say(run, ChaosI18n.msg("%s found a %s!", target:getName(), R.keyName(cfg, cfg.maxTier, 1)))
 	end
 	if drop then
 		if target then
@@ -1291,6 +1412,9 @@ local function success(run, pos)
 	if run.omen then
 		say(run, ChaosI18n.msg("The %s guardian falls in %d:%02d. %s", R.omenKind(cfg, run.omen).name, math.floor(secs / 60),
 			secs % 60, run.endMsg or run.endText))
+	elseif run.greater then
+		RF.greaterSettle(run, true) -- O668: the next key, the ladder, the personal best
+		say(run, run.endMsg or run.endText)
 	else
 		say(run, ChaosI18n.msg("Rift tier %d sealed in %d:%02d. %s", run.key.tier, math.floor(secs / 60), secs % 60, run.endMsg or run.endText))
 	end
@@ -1320,7 +1444,7 @@ local function spawnOne(run, name, pos, tier, boss, opts)
 	local shown = variant and variant.name or R.nameOf(run.looks, name, boss)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	-- the level the run scales it to, shown after the name (monster_levels.lua)
-	local level = run.key and R.displayLevel(C(), run.key.tier, run.density ~= nil, boss and run.omen) or nil
+	local level = run.key and R.displayLevel(C(), run.key.tier, run.density ~= nil, boss and run.omen, run.greater) or nil
 	local m = create(name, P(pos), true, false, shown, level) or create(name, P(pos), true, true, shown, level)
 	if not m then
 		return nil
@@ -2371,9 +2495,14 @@ function RF.open(player, item)
 	local am = R.atlasMods(player, {theme = th.name, tier = key.tier})
 	R.applyAtlasFx(fx, am)
 	R.applyParty(cfg, fx, #group, key.tier) -- party scaling: monster health share, damage, rewards
+	R.applyGreater(cfg, fx, key.greater) -- O668: a Greater Rift key's health and damage rule
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand, {first = first, area = L.walkable})
 	local baseLimit = cfg.layout.sizes[L.band] and cfg.layout.sizes[L.band][3] or cfg.timeLimit
+	if key.greater then
+		baseLimit = R.greaterClock(cfg, baseLimit)
+	end
 	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx, baseLimit)
+	run.greater = key.greater
 	-- the Rift Time of the opener's placed charms (charms.lua)
 	local charmSec = ChaosCharms and ChaosCharms.riftSeconds and ChaosCharms.riftSeconds(player) or 0
 	if charmSec > 0 then
@@ -2431,7 +2560,7 @@ function RF.open(player, item)
 		names[#names + 1] = R.modLabel(cfg, m) .. ": " .. R.modText(cfg, m)
 	end
 	say(run, ChaosI18n.msg("Rift tier %d (%s, %s of %d x %d%s): %d monsters, the guardian waits in the %s after %d kills. %d minutes, %d shared lives. Modifiers: %s.",
-		key.tier, th.name, RF.kindName(L.kind), L.side, L.side, #L.floors > 1 and ", two floors" or "", run.total,
+		R.shownTier(cfg, key), th.name, RF.kindName(L.kind), L.side, L.side, #L.floors > 1 and ", two floors" or "", run.total,
 		compass(L.start, L.bossSpawn), run.bossAt, math.floor(run.limit / 60), run.lives,
 		#names > 0 and table.concat(names, "; ") or "none"))
 	local partyNote = R.partyNote(fx.party, fx.party.health)
@@ -2446,7 +2575,7 @@ function RF.open(player, item)
 	run.hudAt = os.time() + cfg.hudEvery
 	addEvent(tick, 1000, slot, run.id)
 	print(string.format("[ChaosRift] %s opened run %d: slot %d, tier %d, %s, %d player(s), %d monsters (%s), layout %s %s %dx%d seed %d",
-		player:getName(), run.id, slot, key.tier, R.encodeMods(key.mods), #group, run.total,
+		player:getName(), run.id, slot, R.shownTier(cfg, key), R.encodeMods(key.mods), #group, run.total,
 		table.concat(run.typeNames, "/"), th.name, L.kind, L.side, L.side, L.seed))
 	if run.total == 0 then
 		run.killed, run.bossAt = 0, 0
@@ -3499,7 +3628,7 @@ local function onRift(player, words, param)
 	end
 	local gm = player:getGroup():getAccess()
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): keys, omen keys and fragments need an administrator
-	if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments")
+	if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments" or args[1] == "greater")
 			and not Chaos.staffCommand(player, words, param, true) then
 		return false
 	end
@@ -3514,6 +3643,11 @@ local function onRift(player, words, param)
 			key = R.rollKey(cfg, tier, rand)
 		end
 		RF.giveKey(player, key, "GM key")
+		return false
+	elseif gm and args[1] == "greater" then
+		-- /rift greater [g]: a Greater Rift Key of g (1 = tier 16), administrators only (O668)
+		local g = math.max(1, math.min(cfg.greater and cfg.greater.maxShownTier - cfg.maxTier or 1, math.floor(tonumber(args[2]) or 1)))
+		RF.giveKey(player, R.greaterKey(cfg, g, rand), "GM greater key")
 		return false
 	elseif gm and args[1] == "status" then
 		local n = 0
@@ -3586,7 +3720,7 @@ local function onRift(player, words, param)
 			lines[#lines + 1] = Chaos.t(player, "... and %d more key(s).", #keys - 5)
 			break
 		end
-		lines[#lines + 1] = R.keyName(cfg, k.tier) .. ": " .. R.describe(cfg, k)
+		lines[#lines + 1] = R.keyName(cfg, k.tier, k.greater) .. ": " .. R.describe(cfg, k)
 	end
 	if #keys == 0 then
 		lines[#lines + 1] = Chaos.t(player, "You carry no Rift Key. Tier 1 keys drop from monsters of your level and from bounties; a sealed rift may leave a key of its tier or the next.")
@@ -3595,6 +3729,10 @@ local function onRift(player, words, param)
 	if omenItemReady(o.fragment.id) then
 		lines[#lines + 1] = Chaos.t(player, "Omen fragments: %d / %d (rifts of tier %d+ give them; use %d to bind an Omen Key that opens a guardian's arena).",
 			player:getItemCount(o.fragment.id), o.keyCost, o.minTier, o.keyCost)
+	end
+	if R.greaterOn(cfg) then
+		lines[#lines + 1] = Chaos.t(player, "Greater Rift: a tier %d guardian may leave a Greater Rift Key, or %d omen fragments bind one. The ladder and the key are on the Rift Keys page of the Info window.",
+			cfg.maxTier, cfg.greater.key.fragmentCost)
 	end
 	player:showTextDialog(cfg.key.itemId, table.concat(lines, "\n\n"))
 	return false

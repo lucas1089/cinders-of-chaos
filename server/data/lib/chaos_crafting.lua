@@ -1940,7 +1940,9 @@ end
 -- {tier, mods = {{key, value}, ...}}
 function C.readKey(item)
 	local R, cfg = rift()
-	return {tier = R.clampTier(cfg, num(custom(item, "rift_tier")) or 1), mods = R.decodeMods(cfg, custom(item, "rift_mods") or "")}
+	local g = num(custom(item, "rift_greater")) or 0 -- Greater Rift Key (O668): the tier is maxTier, g the climb above it
+	return {tier = R.clampTier(cfg, num(custom(item, "rift_tier")) or 1), mods = R.decodeMods(cfg, custom(item, "rift_mods") or ""),
+		greater = g > 0 and g or nil}
 end
 
 function C.writeKey(item, key)
@@ -2231,7 +2233,8 @@ function C.signature(item)
 		return string.format("%d;ws;%s", item:getId(), tostring(ok and mods or ""))
 	end
 	if C.isRiftKey(item) then
-		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
+		return string.format("%d;key;%s;%s%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")),
+			custom(item, "rift_greater") and (";g" .. tostring(custom(item, "rift_greater"))) or "")
 	end
 	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item)),
 		"q" .. M.qualityOf(item) .. (M.isRuined(item) and "r" or "") .. (M.isCorrupted(item) and "c" or "")

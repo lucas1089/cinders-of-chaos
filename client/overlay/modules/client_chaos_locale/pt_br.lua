@@ -3481,6 +3481,18 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Weekly Experience"] = "Experiência Semanal",
   ["Tireless"] = "Incansável",
   ["Class Ladder"] = "Ranking de classes",
+  -- the Greater Rift buttons of the Rift Keys page (game_chaosinfo, server greater_ladder.lua, O668)
+  ["Greater Ladder"] = "Ranking Greater",
+  ["Bind Greater Key"] = "Forjar Greater Key",
+  ["The Greater Rift season ladder of your class."] = "O ranking da temporada do Greater Rift da sua classe.",
+  ["Bind a Greater Rift Key (tier 16) from omen fragments."] = "Forja uma Greater Rift Key (tier 16) com fragmentos de omen.",
+  -- the Greater Rift boards (server leaderboard_config.lua, O668)
+  ["Greater Rift Solo"] = "Greater Rift Solo",
+  ["Greater Rift Party"] = "Greater Rift em Grupo",
+  ["Greater Delver"] = "Greater Delver",
+  ["Greater Company"] = "Greater Company",
+  ["Highest Greater Rift tier sealed alone this week."] = "Maior tier de Greater Rift selado sozinho nesta semana.",
+  ["Highest Greater Rift tier sealed in a party of 2-5 this week."] = "Maior tier de Greater Rift selado em grupo de 2-5 nesta semana.",
   -- game_hunt: the Restock button (server restock.lua)
   ["Restock"] = "Reabastecer",
   ["In town: buy back the potions, runes and spears this session used, at NPC prices plus a small fee, from your gold and bank."] = "Na cidade: compra de volta as poções, runas e lanças que esta sessão usou, a preço de NPC mais uma pequena taxa, com seu ouro e banco.",

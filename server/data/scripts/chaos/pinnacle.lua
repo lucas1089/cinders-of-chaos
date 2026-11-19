@@ -209,6 +209,20 @@ function PN.grantClear(player, source, info)
 	return got
 end
 
+-- one fragment already rolled by its source (the Greater Rift, O668: greater_ladder.lua rolls its own chance): the keystone kind
+-- of the focus boss, or of an open boss. Returns true when it was added.
+function PN.grantFragment(player, source, info)
+	local cfg = C()
+	if not cfg.enabled or not player then
+		return false
+	end
+	local boss = K.dropBoss(cfg, player:getLevel(), PN.focus(player), rand)
+	if not boss then
+		return false
+	end
+	return PN.grant(player, boss, 4)
+end
+
 local function playerOfFinisher(f)
 	if type(f) == "userdata" or (type(f) == "table" and f.getStorageValue) then
 		return f

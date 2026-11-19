@@ -318,6 +318,8 @@ Chaos.tables = {
 	dungeonRunPlayers = "chaos_dungeon_run_players",
 	towerPlayers = "chaos_tower_players",
 	towerSeasonRewards = "chaos_tower_season_rewards", -- season-end top 3 chests, one row per season and character
+	greaterRift = "chaos_greater_rift", -- Greater Rift best tier and time per season, character and mode (greater_ladder.lua, O668)
+	greaterRiftRewards = "chaos_greater_rift_rewards", -- personal best and season-end rewards waiting for the inbox (O668)
 	shopCoins = "chaos_shop_coins",
 	shopHistory = "chaos_shop_history",
 	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)

@@ -639,5 +639,63 @@ return {
 			[2115] = 2211, -- Sanctum Warden: moss golem, 8-frame walk (was 3 phases)
 			[2118] = 2212 -- Thalcyra the Stormbound Seer (Omen): storm seer, 3x3 -> 4x4 repaint, 8-frame walk (was 4)
 		}
+	},
+
+	-- ------------------------------------------------------------------ Greater Rift (O668, owner 2026-11-19)
+	-- The rift past tier 15, endless. A Greater Rift Key opens "tier 16 and up": the tier shown is maxTier + g, g = 1, 2, 3...
+	-- (rift_core.lua R.greaterInfo; a key stores rift_tier = maxTier and rift_greater = g, so every other tier lookup of a run
+	-- (layout band, monster pool, loot, atlas, key chances) is the tier 15 one). Rules in rift_core.lua (R.greater*), glue in
+	-- rift.lua (RF.greaterSettle), ladder and rewards in greater_ladder.lua, limits in greater_balance_config.lua, the model
+	-- tools/greater_rift_model.py. server/README.md "Greater Rift (O668)".
+	--   rule     per Greater tier g: every rift monster and guardian has health x (1 + health)^g and hits x (1 + damage)^g, the
+	--            shown monster level is the tier 15 level + levelStep x g (the engine adds 0.15% damage a level, patch 0090),
+	--            every finisher's chest gold and orbs x (1 + reward x g), at most rewardCap.
+	--   clock    the run's time is the layout band's limit x mult (the tier 15 band). Sealed in at most `fraction` of it (the
+	--            first row that fits) the key goes up `up` tiers (1-3); a failed rift (time up, no lives, nobody back) gives the
+	--            opener a key `failDrop` tiers lower (g never under 0: a tier 15 key, mods kept).
+	--   key      nameFormat (the shown tier); fragmentCost omen fragments bind a tier 16 key (`/greater key`, the Info menu
+	--            entry "greater"), at most boughtPerDay a day (storage boughtStorage, +1 the day). drop: a sealed tier 15 rift
+	--            (not an Omen arena) leaves one with `chance` percent, and always at the `pity`th sealed tier 15 rift in a row
+	--            without one (the rift's own pity counter: a tier 15 key cannot drop a stronger one).
+	--   ladder   best shown tier, then least seconds, per character, mode (solo / party of 2-5), season (windows of seasonDays
+	--            from the launch, the tower's epoch) and class (the leaderboard class groups). Tester bots never rank. The weekly
+	--            boards greater_solo / greater_party of leaderboard_config.lua carry the tier too (the client's Leaderboards).
+	--   rewards  personal best: every shown tier above the character's best of the season, at most `maxPerRun` tiers a run,
+	--            pays `best` (orbs, gold to the bank, omen fragments) scaled base + perTier x (shown - firstTier). Season end:
+	--            the place of the (mode, class) board picks a bracket of `brackets` (first row with place <= upTo; a minTier
+	--            row pays everybody who reached it), once per character and mode, into the inbox (the tower's delivery).
+	--            pinnacle: a sealed Greater Rift gives every finisher `chance` percent x min(cap, (shown - maxTier) / perTiers)
+	--            of a pinnacle fragment through ChaosPinnacle.onSource(player, source, {tier, players}) when that system is
+	--            installed (O667), else nothing.
+	greater = {
+		enabled = true,
+		firstTier = 16,
+		maxShownTier = 999, -- the crash refund marker holds the shown tier and Omen markers start at 1000
+		rule = {levelStep = 25, health = 0.06, damage = 0.03, reward = 0.04, rewardCap = 3.0},
+		clock = {mult = 1.0, steps = {{fraction = 0.50, up = 3}, {fraction = 0.75, up = 2}, {fraction = 1.00, up = 1}}, failDrop = 1},
+		key = {nameFormat = "Greater Rift Key (Tier %d)", fragmentCost = 150, boughtPerDay = 3, boughtStorage = 7103150,
+			drop = {chance = 12, pity = 8}},
+		ladder = {
+			seasonDays = 30,
+			checkSeconds = 60,
+			rows = 10,
+			staffGroup = 4,
+			configKey = "chaos_greater_rift_season_done",
+			boards = {solo = "greater_solo", party = "greater_party"}
+		},
+		rewards = {
+			maxPerRun = 3,
+			best = {orbFate = {id = 29857, base = 1, perTier = 0.25}, orbUpheaval = {id = 29856, base = 2, perTier = 0.5},
+				gold = {base = 150000, perTier = 25000}, fragments = {id = 32071, base = 10, perTier = 2}},
+			brackets = {
+				{upTo = 1, name = "Greater Champion", fate = 40, upheaval = 80, fragments = 150},
+				{upTo = 3, name = "Greater Vanguard", fate = 25, upheaval = 50, fragments = 100},
+				{upTo = 10, name = "Greater Delver", fate = 15, upheaval = 30, fragments = 60},
+				{upTo = 50, name = "Greater Seeker", fate = 8, upheaval = 16, fragments = 30},
+				{minTier = 20, name = "Greater Rifter", fate = 3, upheaval = 6, fragments = 10}
+			},
+			pinnacle = {chance = 2.0, perTiers = 5, cap = 3, source = "greater_rift"}
+		}
 	}
+
 }

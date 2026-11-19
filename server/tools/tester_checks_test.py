@@ -10482,5 +10482,61 @@ class PinnacleRead(unittest.TestCase):
         self.assertIn(7490, __import__('testers').MODAL_IDS, 'the modal parser knows the window')
 
 
+class GreaterRiftClosed(unittest.TestCase):
+    """O668: the Greater Rift boards exist and hold no tester bot (closed mode)"""
+    META = {'data': {'boards': [{'key': 'rift'}, {'key': 'greater_solo'}, {'key': 'greater_party'}]}}
+
+    def play(self, replies):
+        io = FakeIO(replies=replies)
+        return run(TX.check_closed_greater(io, 'Tester Aaa', 'Warrior', 1500)), io
+
+    def board(self, *names):
+        return {'data': {'rows': [{'name': n, 'value': 20 + i} for i, n in enumerate(names)]}}
+
+    def test_registered_in_closed_mode_only(self):
+        self.assertIn('closed_greater', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_greater', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_greater'), TX.CLOSED_KEYS.index('closed_raid'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')                      # the longest check stays last
+
+    def test_boards_without_a_tester_pass(self):
+        r, io = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Real One', 'Real Two')})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('no tester', r.detail)
+        self.assertEqual([a[2].get('board') for a in io.asked if a[1] == 'get'], ['greater_solo', 'greater_party'])
+
+    def test_empty_boards_pass(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): {'data': {'rows': []}}})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def test_a_tester_on_a_board_is_a_bug(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Real One', 'Tester Bbb')})
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('never ranks', r.detail)
+        self.assertIn('BUG closed_greater', r.bug_line())
+
+    def test_the_bot_itself_on_a_board_is_a_bug(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Tester Aaa')})
+        self.assertEqual(r.status, TX.FAIL)
+
+    def test_no_boards_is_a_skip(self):
+        r, _ = self.play({('leaderboard', 'open'): {'data': {'boards': [{'key': 'rift'}]}}})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('not installed', r.detail)
+
+    def test_no_window_and_no_board_answer_are_skips(self):
+        r, _ = self.play({})
+        self.assertEqual(r.status, TX.SKIP)
+        r, _ = self.play({('leaderboard', 'open'): self.META})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no answer for the greater_solo board', r.detail)
+
+    def test_the_verdict_alone(self):
+        self.assertEqual(TX.greater_boards_verdict(None, {}, 'Tester Aaa')[0], TX.SKIP)
+        st, _ = TX.greater_boards_verdict(self.META['data'], {'greater_solo': {'rows': ['x', None]}, 'greater_party': {'rows': []}},
+                                          'Tester Aaa')
+        self.assertEqual(st, TX.PASS)
+
+
 if __name__ == '__main__':
     unittest.main()

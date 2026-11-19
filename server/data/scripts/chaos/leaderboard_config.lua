@@ -88,7 +88,13 @@ return {
 		-- tab gets Conquest Tokens, a broadcast line and a Discord post (weekly_class_config.lua)
 		{key = "weekly_xp", name = "Weekly Experience", mode = "add", value = "Experience", title = "Tireless",
 			byClass = true, classAwards = true, noReward = true,
-			info = "Experience from monsters this week. Ranked per class: the top 3 of every class are rewarded at the reset."}
+			info = "Experience from monsters this week. Ranked per class: the top 3 of every class are rewarded at the reset."},
+		-- the Greater Rift (rift_config.lua greater, greater_ladder.lua, O668): the highest shown tier (16 and up) sealed this week,
+		-- alone or in a party of 2-5 (class tabs). noReward: the title only; the season ladder pays (brackets, personal bests)
+		{key = "greater_solo", name = "Greater Rift Solo", mode = "max", value = "Highest Tier", count = "Runs",
+			title = "Greater Delver", noReward = true, info = "Highest Greater Rift tier sealed alone this week."},
+		{key = "greater_party", name = "Greater Rift Party", mode = "max", value = "Highest Tier", count = "Runs",
+			title = "Greater Company", noReward = true, info = "Highest Greater Rift tier sealed in a party of 2-5 this week."}
 	},
 	-- class tabs (O409): every weekly board has them ("All classes" first, then one per base class with its ascensions),
 	-- except a board with noClassTabs = true (a guild or gathering score that no class does better). byClass keeps its
