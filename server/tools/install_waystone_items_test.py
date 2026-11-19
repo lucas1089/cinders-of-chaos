@@ -42,7 +42,8 @@ for t, (lv, it) in enumerate(tiers, 1):
         check(it == W.NEW[t][0], 'tier %d item %d' % (t, it))
 rows = W.rows()
 check([r['name'] for r in rows][0] == 'Waystone Tier VII' and rows[-1]['name'] == 'Waystone Tier XXV', 'names VII..XXV')
-check('monster level 3500' in rows[-1]['description'], 'the level in the description')
+check('monster level 2500' in rows[-1]['description'] and 'harder step (10 of 10)' in rows[-1]['description'], 'the level and the step in the description')
+check('3500' not in ' '.join(r['description'] for r in rows), 'no level above the cap in any description')
 
 d = tempfile.mkdtemp()
 try:

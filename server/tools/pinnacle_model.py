@@ -3,8 +3,8 @@
 
 usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check]
 
-Four Ascended versions of existing key bosses (Malgrath, Vhoss the Hexmaw, Talath, Varkhul the Ashen Sovereign), shown at level 2000 /
-2500 / 3000 / 3500, a private fight alone or with five, opened by a set of four fragments the top content drops. The model answers
+Four Ascended versions of existing key bosses (Malgrath, Vhoss the Hexmaw, Talath, Varkhul the Ashen Sovereign), shown at level 1900 /
+2100 / 2300 / 2500 (the player cap is 2500, owner 2026-11-19; O672), a private fight alone or with five, opened by a set of four fragments the top content drops. The model answers
 what the owner asked: how long the fight is for the median class alone and in a party, how hard the boss hits against the median
 class's healing, and how many fragments an hour of top content gives (hours for a set, for the exclusive unique).
 
@@ -218,8 +218,22 @@ def check():
     lim, tol = bal['limits'], bal['tolerance']
     errors = []
     rs = rows()
-    if [r['boss']['level'] for r in rs] != [2000, 2500, 3000, 3500]:
-        errors.append('the bosses are shown at 2000 / 2500 / 3000 / 3500: %s' % [r['boss']['level'] for r in rs])
+    # O672 (owner 2026-11-19): the player cap is 2500; the ladder of the bosses lies inside it, every boss planned for the level it is shown at
+    if [r['boss']['level'] for r in rs] != lim['ladder']:
+        errors.append('the bosses are shown at %s: %s' % (' / '.join(str(x) for x in lim['ladder']), [r['boss']['level'] for r in rs]))
+    for r in rs:
+        b = r['boss']
+        if b['level'] > bal['levelCap'] or b['refLevel'] > bal['levelCap'] or b['minLevel'] > bal['levelCap']:
+            errors.append('%s: a level above the player cap %d (level %d, planned %d, from %d)' % (
+                b['name'], bal['levelCap'], b['level'], b['refLevel'], b['minLevel']))
+        if b['refLevel'] != b['level']:
+            errors.append('%s: planned for %d, shown at %d (the ladder plans every fight for the level it is shown at)' % (
+                b['name'], b['refLevel'], b['level']))
+        if b['refLevel'] - b['minLevel'] != lim['openBelow']:
+            errors.append('%s: opens from %d, %d under the planned level %d, asked %d' % (
+                b['name'], b['minLevel'], b['refLevel'] - b['minLevel'], b['refLevel'], lim['openBelow']))
+    if [r['boss']['refLevel'] for r in rs] != sorted(set(r['boss']['refLevel'] for r in rs)):
+        errors.append('the planned levels do not rise from boss to boss')
     uniques = S.read(UNIQUES)
     prev = None
     for r in rs:

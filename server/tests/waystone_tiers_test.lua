@@ -24,13 +24,19 @@ local K = ChaosWaystoneTiersCore
 local cfg = dofile("data/scripts/chaos/waystone_tiers_config.lua")
 local idx = K.index(cfg)
 
-eq(K.tierCount(cfg), 25, "twenty-five tiers (O666: the fourth band, 2600-3500)")
+eq(K.tierCount(cfg), 25, "twenty-five tiers (O666: the fourth band, O672: at the cap level)")
 eq(K.tierLevel(cfg, 1), 1100, "the first waystone: level 1100 (owner 2026-10-23)")
 eq(K.tierLevel(cfg, 15), 2500, "the last of the third band: level 2500")
-eq(K.tierLevel(cfg, 16), 2600, "the fourth band opens at 2600")
-eq(K.tierLevel(cfg, 25), 3500, "the last: level 3500")
-for t = 2, 25 do
+eq(K.tierLevel(cfg, 16), 2500, "the fourth band opens at the cap level 2500 (O672, owner 2026-11-19)")
+eq(K.tierLevel(cfg, 25), 2500, "the last: still level 2500, the player cap")
+for t = 2, 15 do
 	eq(K.tierLevel(cfg, t) - K.tierLevel(cfg, t - 1), 100, "a gradual rise: +100 at tier " .. t)
+end
+for t = 16, 25 do
+	eq(K.tierLevel(cfg, t), 2500, "the deep tier " .. t .. " is at the cap, no level above 2500")
+end
+for t = 1, 25 do
+	check(K.tierLevel(cfg, t) <= 2500, "no tier above the player cap: " .. t)
 end
 eq(K.tierLevel(cfg, 26), nil, "no tier XXVI")
 eq(#cfg.monsters, 6, "monsters of six base tiers")

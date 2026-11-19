@@ -124,7 +124,7 @@ def main():
     code, text = check_out(slow)
     eq(code, 1, 'a unique at 2% with a bad-luck count of sixty kills takes far too many hours')
     code, text = check_out(bumped(['cfg', 'bosses', 3, 'level'], 3400))
-    eq(code, 1, 'the levels 2000 / 2500 / 3000 / 3500 are asked')
+    eq(code, 1, 'the ladder 1900 / 2100 / 2300 / 2500 is asked')
     code, text = check_out(bumped(['bal', 'uptime'], 0.7))
     eq(code, 1, 'a changed uptime without the health following is caught')
     code, text = check_out(bumped(['cfg', 'bosses', 2, 'fragments'], ['a', 'b', 'c']))

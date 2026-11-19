@@ -8580,14 +8580,9 @@ def cut_verdict(run, key, io, r):
 
 
 def upheaval_count_only(orb, before, after, problems):
-    """O660: the Orb of Upheaval rolls the rarity's own count of modifiers again (data/lib/chaos_crafting.lua C.forge: M.modCount(rarity)): an item the Orb
-    of Grafting had filled up loses the extra one. The rarity stays and at least one modifier is there. The check's old rule ("a reroll keeps both")
-    failed on every run; the description of the orb ("rerolls every modifier that is not bound") and the comment of C.upheave ("an extra slot stays")
-    do not agree with the code: a question for the owner (README step 19), not a bug of the bot. True when that is the only problem"""
-    if orb != 'chaos' or not problems or any('a reroll keeps both' not in p and 'tooltip' not in p for p in problems):
-        return False
-    nb, na = len(before.get('mods') or []), len(after.get('mods') or [])
-    return after.get('rarity') == before.get('rarity') and 1 <= na < nb
+    """O660 asked the owner whether the Orb of Upheaval may drop the Grafting extra modifier. Decision 2026-11-19 (O672): it keeps it
+    (data/lib/chaos_crafting.lua C.apply "chaos" rolls the extra one again). A lost modifier is a bug now, so this exception never applies"""
+    return False
 
 
 def upheaval_note(before, after):

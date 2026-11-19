@@ -91,7 +91,7 @@ end
 function E.levelOf(m, t)
   local l = m and m.levels and m.levels[t]
   if l and l > 0 then return l end
-  return 1000 + 100 * t -- the config's ladder (waystone_tiers_config.lua: tier I is 1100, +100 a tier)
+  return math.min(2500, 1000 + 100 * t) -- the config's ladder (waystone_tiers_config.lua: tier I is 1100, +100 a tier, XVI-XXV at the cap 2500, O672)
 end
 
 function E.rankText(stat)

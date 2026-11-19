@@ -93,7 +93,7 @@ end
 
 -- ======================================================================== band bosses
 -- an entry (waystone_tiers_core.lua K.classify's shape) for a spawned band boss, or nil. native: the level of the tier the file's
--- health was made for (K.factors scales from it to the run's level); boss: it counts as a boss for every hook
+-- health was made for (K.factors scales from it to the run's level), nativeTier its tier (O672: and by the deep factors of the run); boss: it counts as a boss for every hook
 function E.bandEntry(monster)
 	local info = monster and E.bandIds[monster:getId()]
 	if not info then
@@ -102,7 +102,7 @@ function E.bandEntry(monster)
 	local tcfg = TC()
 	local m = tcfg.maps[info.map]
 	return {tier = m and m.tier or 1, boss = true, band = true, map = info.map, run = info.run,
-		native = ChaosWaystoneTiersCore.tierLevel(tcfg, info.row.tier), row = info.row}
+		native = ChaosWaystoneTiersCore.tierLevel(tcfg, info.row.tier), nativeTier = info.row.tier, row = info.row}
 end
 
 local function spawnTile(pos)

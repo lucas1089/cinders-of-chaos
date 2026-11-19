@@ -2,7 +2,8 @@
 -- Plain table: ChaosWaystoneEndgame.config = dofile("data/scripts/chaos/waystone_endgame_config.lua"). Lua 5.1 / LuaJIT and 5.3.
 --
 -- Owner 2026-11-19: "players from level 1500-2000 have little to do; maybe raise the waystone tiers". So the waystones go on past
--- level 2500: tiers XVI-XXV (levels 2600-3500, waystone_tiers_config.lua `tiers` / `bands`), a band boss at the end of each band, a
+-- tier XV: tiers XVI-XXV (waystone_tiers_config.lua `tiers` / `bands`; O672, owner 2026-11-19: the player cap stays 2500, so these ten tiers
+-- run at monster level 2500 and rise by the `deep` factors, ten steps of difficulty at the cap), a band boss at the end of each band, a
 -- corrupted waystone (the Void Orb, 32260) and a point of the endgame atlas for the first clear of each tier. The balance model is
 -- tools/waystone_endgame_model.py (limits and reasons: waystone_endgame_balance_config.lua).
 return {

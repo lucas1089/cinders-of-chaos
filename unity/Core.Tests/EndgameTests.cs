@@ -364,7 +364,7 @@ namespace Chaos.Core.Tests
             check(r2.Last() == "159 {\"action\":\"open\",\"data\":{\"tree\":false}}", "atlas: a second open does not ask for the tree again");
             // the endgame page of the Waystone Atlas (O670): eg_state from waystone_endgame.lua E.payload
             var lv = new List<string>(); var pd = new List<string>();
-            for (int t = 1; t <= 25; t++) { lv.Add((1000 + 100 * t).ToString()); pd.Add(t == 12 || t == 25 ? "1" : "0"); }
+            for (int t = 1; t <= 25; t++) { lv.Add(Math.Min(2500, 1000 + 100 * t).ToString()); pd.Add(t == 12 || t == 25 ? "1" : "0"); }
             string egJson = "{\"action\":\"eg_state\",\"data\":{\"points\":2,\"spent\":1,\"free\":1,\"respec\":500000,\"msg\":\"Rank bought.\",\"deepFrom\":16,"
                 + "\"levels\":[" + string.Join(",", lv) + "],\"paid\":[" + string.Join(",", pd) + "],"
                 + "\"stats\":[{\"key\":\"density\",\"rank\":1,\"max\":5,\"per\":6,\"text\":\"+6%\"},{\"key\":\"bossChance\",\"rank\":0,\"max\":5,\"per\":8,\"text\":\"\"},"
@@ -376,9 +376,9 @@ namespace Chaos.Core.Tests
             check(eg.CanSpend("density", out _) && !eg.CanSpend("chestChance", out string why1) && why1 == "maxed" && !eg.CanSpend("nope", out string why2) && why2 == "unknown", "atlas endgame: spend rules");
             var deep = eg.DeepRows();
             eg.DeepCount(out int egDone, out int egTotal);
-            check(deep.Count == 10 && deep[0].Roman == "XVI" && deep[0].Level == 2600 && deep[9].Roman == "XXV" && deep[9].Level == 3500 && deep[9].Paid && !deep[0].Paid && egDone == 1 && egTotal == 10, "atlas endgame: the deep tiers and their first clears");
+            check(deep.Count == 10 && deep[0].Roman == "XVI" && deep[0].Level == 2500 && deep[9].Roman == "XXV" && deep[9].Level == 2500 && deep[9].Paid && !deep[0].Paid && egDone == 1 && egTotal == 10, "atlas endgame: the deep tiers and their first clears");
             var bosses = eg.BossRows();
-            check(bosses.Count == 2 && bosses[0].Name == "Gravewatch Ulrim" && bosses[1].Level == 3500 && AtlasEndgame.BossLine(bosses[1]) == "Vharkul the Embered Tyrant (tier XXV, level 3500)", "atlas endgame: band bosses sorted with the tier's level");
+            check(bosses.Count == 2 && bosses[0].Name == "Gravewatch Ulrim" && bosses[1].Level == 2500 && AtlasEndgame.BossLine(bosses[1]) == "Vharkul the Embered Tyrant (tier XXV, level 2500)", "atlas endgame: band bosses sorted with the tier's level");
             check(eg.ResetText() == "Reset ranks (500k gold)" && eg.EarnedLine() == "2 first clears, 1 points spent" && AtlasEndgame.NowText(eg.Stats[0]) == "Now: +6%", "atlas endgame: the lines");
             r2.Sent.Clear();
             check(w2.EgSpend("density") && r2.Last() == "159 {\"action\":\"eg_spend\",\"data\":{\"key\":\"density\"}}", "atlas endgame: spend is sent");

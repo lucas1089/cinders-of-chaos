@@ -193,7 +193,7 @@ end
 -- the factors of a classified monster: a monster from its hunting level `base` to the run's level; a boss from the
 -- level of its band's first tier to the run's level (nil: no base level for a monster). A band boss (e.native: its own
 -- level) scales from that level, so its file's health is the health it has. From the deep tiers on the run's extra
--- multipliers (K.deep) are on top; a band boss has them in its file already.
+-- multipliers (K.deep) are on top; a band boss has them in its file already (its `nativeTier`: only the ratio to the run's).
 function K.factors(cfg, e, base)
 	if not e then
 		return nil
@@ -201,7 +201,15 @@ function K.factors(cfg, e, base)
 	local target = K.level(cfg, e)
 	local f
 	if e.native then
-		return K.scale(cfg, num(e.native) or target, target)
+		f = K.scale(cfg, num(e.native) or target, target)
+		-- O672: the deep tiers share one level (the player cap), so a band boss made for tier `nativeTier` also scales by the deep
+		-- factors of the run's tier against its own tier's (a lower deep run has less health and hits softer, as a lower level did)
+		local nt = tonumber(e.nativeTier)
+		if nt then
+			local x, y = K.deep(cfg, e.run), K.deep(cfg, nt)
+			f.health, f.damage, f.experience = f.health * x.health / y.health, f.damage * x.damage / y.damage, f.experience * x.experience / y.experience
+		end
+		return f
 	elseif e.boss then
 		f = K.scale(cfg, K.tierLevel(cfg, K.defaultTier(cfg, e.map)) or target, target)
 	else

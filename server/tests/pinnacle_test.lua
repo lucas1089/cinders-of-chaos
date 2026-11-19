@@ -82,7 +82,10 @@ for i, b in ipairs(cfg.bosses) do
 		ok(found.pinnacle, b.key .. ": marked")
 	end
 end
-eq(table.concat(levels, ","), "2000,2500,3000,3500", "shown at 2000 / 2500 / 3000 / 3500")
+eq(table.concat(levels, ","), "1900,2100,2300,2500", "shown at 1900 / 2100 / 2300 / 2500 (the player cap is 2500, O672)")
+for _, b in ipairs(cfg.bosses) do
+	ok(b.level <= 2500 and b.refLevel <= 2500 and b.minLevel <= 2500, b.key .. ": no level above the player cap 2500 (O672)")
+end
 local mech = dofile("data/scripts/chaos/boss_mechanics_config.lua")
 for _, b in ipairs(cfg.bosses) do
 	local p = mech.profiles[b.name:lower()]
@@ -219,7 +222,7 @@ eq(src.omen.kind, 3, "omen drops kind 3")
 
 -- which boss a level opens
 eq(#K.openBosses(cfg, 1000), 0, "a low level opens none")
-eq(#K.openBosses(cfg, 1900), 1, "1900 opens the first")
+eq(#K.openBosses(cfg, 1800), 1, "1800 opens the first")
 eq(#K.openBosses(cfg, 2500), 4, "2500 opens all four")
 eq(K.dropBoss(cfg, 1000, 0, fixed({0})), nil, "no fragment under every minimum")
 eq(K.dropBoss(cfg, 2500, 3, fixed({0})), 3, "the focus when it is open")
@@ -697,7 +700,7 @@ eq(run.falls, 0, "deathless so far")
 advance(pcfg.startDelay + 1)
 local bossM = Monster(run.bossId)
 ok(bossM, "the boss appeared")
-eq(bossM.spawnLevel, 2000, "shown at the boss's level")
+eq(bossM.spawnLevel, 1900, "shown at the boss's level")
 eq(bossM.name, "Ascended Malgrath", "the type of its name")
 eq(bossM.maxHp, math.floor(pcfg.bosses[1].health * 0.8 + 0), "the health is the fight's x the mechanics factor")
 ok(bossM.events.ChaosPinnacleDeath, "death event")
@@ -761,7 +764,7 @@ advance(pcfg.exitDelay + 1)
 tokens = {}
 local b2, c2, far = newPlayer(20, 2500), newPlayer(21, 2500), newPlayer(22, 2500)
 local weak = newPlayer(23, 1000)
-local lead = newPlayer(24, 2100)
+local lead = newPlayer(24, 1900)
 registry.ChaosPinnacleLogin.onLogin(lead)
 local party = {getLeader = function() return lead end, getMembers = function() return {b2, c2, far, weak} end}
 lead.party, b2.party, c2.party, far.party, weak.party = party, party, party, party, party
@@ -769,8 +772,8 @@ b2.pos, c2.pos, far.pos, weak.pos = pos(102, 100, 7), pos(103, 101, 7), pos(300,
 giveSet(lead, 2)
 NOW = NOW + pcfg.enterCooldown + 1
 okE, text = PN.enter(lead, "vhoss")
-eq(okE, false, "level 2200 for Vhoss")
-lead.level = 2300
+eq(okE, false, "level 1900 for Vhoss")
+lead.level = 2100
 okE, text = PN.enter(lead, "vhoss")
 eq(okE, true, "party fight: " .. tostring(text))
 run = PN.runOf[lead:getId()]

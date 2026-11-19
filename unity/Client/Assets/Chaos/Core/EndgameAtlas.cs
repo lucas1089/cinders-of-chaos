@@ -407,7 +407,7 @@ namespace Chaos.Core
         }
 
         public int TierCount => Levels.Count > 0 ? Levels.Count : Tiers;
-        public int LevelOf(int t) => Levels.TryGetValue(t, out int l) && l > 0 ? l : 1000 + 100 * t;
+        public int LevelOf(int t) => Levels.TryGetValue(t, out int l) && l > 0 ? l : System.Math.Min(2500, 1000 + 100 * t);
         public bool IsPaid(int t) => Paid.TryGetValue(t, out bool p) && p;
 
         /// <summary>Can the stat take a point? why: points | maxed | unknown.</summary>

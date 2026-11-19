@@ -3,7 +3,7 @@
 -- Plain data, no engine calls (tests/pinnacle_test.lua and tools/pinnacle_model.py read it). Lua 5.1 / LuaJIT and Lua 5.3.
 --
 -- Four Ascended versions of existing key bosses (Malgrath, Vhoss the Hexmaw, Talath, Varkhul the Ashen Sovereign), shown at
--- level 2000 / 2500 / 3000 / 3500, each a private fight in a runtime-built arena (the pocket boss grid layout), alone or with a
+-- level 1900 / 2100 / 2300 / 2500 (the player cap 2500, O672), each a private fight in a runtime-built arena (the pocket boss grid layout), alone or with a
 -- party of up to 5. Each is opened by a set of 4 fragments (one of each kind) that the top content drops; the Keeper of the
 -- Pinnacle takes the set and opens the arena. Rewards: an exclusive unique, Conquest Tokens, orbs, a title for the first kill
 -- of each season and a "deathless" title. The limits of the fight (kill time, boss damage against healing, fragments per hour
@@ -92,19 +92,19 @@ return {
 	-- player and kill; orbs = per player and kill {chaos (Orb of Upheaval), divine (Orb of Fate), exalted}; unique = the exclusive
 	-- unique's name (data/lib/chaos_unique_items.lua) and its base id; title = the short name of the titles.
 	bosses = {
-		{key = "malgrath", name = "Ascended Malgrath", short = "Malgrath", level = 2000, minLevel = 1900, refLevel = 2000,
-			health = 3713000, perExtra = 0.663, tokens = 8, orbs = {chaos = 24, divine = 12, exalted = 2},
+		{key = "malgrath", name = "Ascended Malgrath", short = "Malgrath", level = 1900, minLevel = 1800, refLevel = 1900,
+			health = 3475000, perExtra = 0.664, tokens = 8, orbs = {chaos = 24, divine = 12, exalted = 2},
 			fragments = {"Drowned Crown Shard", "Tidebroken Pearl", "Saltwrit Sigil", "Tidal Keystone"},
 			unique = {name = "Signet of the Drowned Crown", id = 2216}},
-		{key = "vhoss", name = "Ascended Vhoss", short = "Vhoss", level = 2500, minLevel = 2200, refLevel = 2300,
-			health = 4244000, perExtra = 0.664, tokens = 10, orbs = {chaos = 32, divine = 16, exalted = 3},
+		{key = "vhoss", name = "Ascended Vhoss", short = "Vhoss", level = 2100, minLevel = 2000, refLevel = 2100,
+			health = 3876000, perExtra = 0.666, tokens = 10, orbs = {chaos = 32, divine = 16, exalted = 3},
 			fragments = {"Hexmaw Fang", "Veiled Hex Scrap", "Whispering Idol Chip", "Hex Keystone"},
 			unique = {name = "Seventh Hex Amulet", id = 2196}},
-		{key = "talath", name = "Ascended Talath", short = "Talath", level = 3000, minLevel = 2300, refLevel = 2400,
-			health = 4415000, perExtra = 0.665, tokens = 12, orbs = {chaos = 40, divine = 20, exalted = 4},
+		{key = "talath", name = "Ascended Talath", short = "Talath", level = 2300, minLevel = 2200, refLevel = 2300,
+			health = 4231000, perExtra = 0.666, tokens = 12, orbs = {chaos = 40, divine = 20, exalted = 4},
 			fragments = {"Rime Crown Splinter", "Frozen Oath Shard", "Winterglass Tear", "Rime Keystone"},
 			unique = {name = "Helm of the Unthawed", id = 5461}},
-		{key = "varkhul", name = "Ascended Varkhul", short = "Varkhul", level = 3500, minLevel = 2400, refLevel = 2500,
+		{key = "varkhul", name = "Ascended Varkhul", short = "Varkhul", level = 2500, minLevel = 2400, refLevel = 2500,
 			health = 4587000, perExtra = 0.666, tokens = 14, orbs = {chaos = 48, divine = 24, exalted = 5},
 			fragments = {"Ashen Sovereign Cinder", "Sepulchre Seal", "Embered Oath Sliver", "Ash Keystone"},
 			unique = {name = "Ring of the Last Verdict", id = 7708}}

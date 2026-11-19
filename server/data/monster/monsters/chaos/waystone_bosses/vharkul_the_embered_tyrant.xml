@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Band boss of the waystone maps (O666, ChaosWaystoneEndgame, README "Waystone endgame (O666)"): it appears when the map's boss dies in
-     the last tier of band deep (tier 25, monster level 3500). Its outfit is an existing boss's (591). Health and attacks
+     the last tier of band deep (tier 25, monster level 2500). Its outfit is an existing boss's (591). Health and attacks
      are written by tools/waystone_endgame_model.py (write-bosses: the median class kills it in 240 s and lives 34 s under its
      hits at the tier's level); the loot of its drop table is in content_rewards.lua (branch band), so this file lists a coin only. -->
-<monster name="Vharkul the Embered Tyrant" nameDescription="Vharkul the Embered Tyrant" race="undead" experience="3529000" speed="260" manacost="0">
-	<health now="3323000" max="3323000" />
+<monster name="Vharkul the Embered Tyrant" nameDescription="Vharkul the Embered Tyrant" race="undead" experience="2694000" speed="260" manacost="0">
+	<health now="2389000" max="2389000" />
 	<look type="591" corpse="6068" />
 	<targetchange interval="8000" chance="5" />
 	<flags>
@@ -25,8 +25,8 @@
 		<flag canwalkonpoison="1" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-2850" max="-5700" />
-		<attack name="death" interval="2000" chance="14" length="5" spread="2" min="-2300" max="-4600">
+		<attack name="melee" interval="2000" min="-2750" max="-5500" />
+		<attack name="death" interval="2000" chance="14" length="5" spread="2" min="-2200" max="-4400">
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
 	</attacks>
