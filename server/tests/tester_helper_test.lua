@@ -2981,23 +2981,23 @@ do
 	m.getOutfit = function() return {lookType = 128, lookMount = mounted and 368 or 0} end
 	m.getSpeed = function() return mounted and speed + 20 or speed end
 	m.getBaseSpeed = function() return speed end
-	m.getCurrentMount = function() return current end
+	-- O660: the engine (TFS 1.4.2) has no Player:getCurrentMount / setCurrentMount / toggleMount in Lua: the current mount is a player storage (10002011)
 	m.hasMount = function(_, id) return mounts[id] == true end
 	m.addMount = function(_, id) mounts[id] = true return true end
 	m.removeMount = function(_, id) mounts[id] = nil return true end
-	m.setCurrentMount = function(_, id) current = id return true end
-	m.toggleMount = function(_, on) mounted = on and true or false return true end
 	talks["!tester"].onSay(m, "!tester", "mount #430")
 	l = lastOf(m)
 	check(l:find('"mounted":false', 1, true) and l:find('"speed":220', 1, true) and l:find('"baseSpeed":220', 1, true) and l:find('"seq":430', 1, true), "mount state: not mounted, the speed: " .. l)
 	talks["!tester"].onSay(m, "!tester", "mount give #431")
 	l = lastOf(m)
 	local pick = H.pickMount(realMounts)
+	current = m:getStorageValue(10002011)
 	check(mounts[pick.id] == true and current == pick.id and l:find('"current":' .. pick.id, 1, true) and l:find('"granted":' .. pick.id, 1, true), "mount give: the cheapest free mount, owned and current: " .. l)
 	mounted = true
 	talks["!tester"].onSay(m, "!tester", "mount state #432")
 	l = lastOf(m)
 	check(l:find('"mounted":true', 1, true) and l:find('"speed":240', 1, true), "mount state: mounted, the speed is higher: " .. l)
+	mounted = false -- the bot dismounts with the mount button's packet (0xD4), as a person does; Lua cannot
 	talks["!tester"].onSay(m, "!tester", "mount clear #433")
 	l = lastOf(m)
 	check(mounted == false and next(mounts) == nil and l:find('"cleared":true', 1, true) and l:find('"mounted":false', 1, true), "mount clear: dismounted, the mount taken back: " .. l)
@@ -3041,8 +3041,9 @@ do
 	check(g.bank == 250000 and lastOf(g):find('"granted":0', 1, true), "gold to: a bank at the wish gets nothing more")
 	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #503")
 	check(g.bank == 250000 + H.GOLD_STEP and lastOf(g):find('"granted":' .. H.GOLD_STEP, 1, true), "gold to: one call is at most the step")
-	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #504")
-	talks["!tester"].onSay(g, "!tester", "gold to 99999999 #505")
+	for i = 1, math.ceil(H.GOLD_CAP / H.GOLD_STEP) + 1 do -- O660: the cap is 16M, five steps of 3M and a rest; the calls go on until it is reached
+		talks["!tester"].onSay(g, "!tester", "gold to 99999999 #" .. (504 + i))
+	end
 	l = lastOf(g)
 	check(g.bank == H.GOLD_CAP and l:find('"granted":0', 1, true), "gold to: no wish goes past the cap of a bot: " .. l)
 	talks["!tester"].onSay(g, "!tester", "gold maybe #506")

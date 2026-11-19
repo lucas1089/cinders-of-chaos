@@ -1368,6 +1368,85 @@ eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks']).no_gea
 eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks', '--no-gear']).no_gear, True, '--no-gear is a flag of run')
 ok(T.TX.CheckRun('Tester Aaa', 'Warrior', 100).gear is True, 'a CheckRun gears up by default')
 
+# ---------------------------------------------------------------- O660: the checks run from the temple, a dead bot rests
+class A660:
+    host = '10.0.0.1'
+    ops = {'lootfilter': 238}
+    after_login = ''
+    on_answer = None
+    checks = True
+    closed = False
+    journey = False
+    keystones = False
+
+
+_b660 = T.TesterBot(14, dict(bot), A660(), 1, T.Results(1), {'rotation': [], 'heal': None})
+ok(_b660.checks_stay(), 'a checks run keeps the bot in town while checks are left')
+_b660.checks_done = True
+ok(not _b660.checks_stay(), 'no checks left: the bot hunts again')
+_b660.checks_done = False
+A660.closed, A660.checks = True, False
+ok(_b660.checks_stay(), 'a closed-only run is a checks run too')
+A660.journey = True
+ok(not _b660.checks_stay(), 'a journey is its own run: it walks, the checks do not hold the bot')
+A660.journey, A660.keystones = False, True
+ok(not _b660.checks_stay(), 'the keystone round keeps its own place first')
+_b660.keytest_done = True
+ok(_b660.checks_stay(), 'after the keystone round the checks hold the bot in town')
+A660.closed, A660.checks, A660.keystones = False, True, False
+
+_real_sleep660 = asyncio.sleep
+_ticks660 = []
+
+
+async def _fake_sleep660(seconds, *a, **k):
+    _ticks660.append(seconds)
+    _b660.back_at = None   # the rest is over after the first wait
+    await _real_sleep660(0)
+
+asyncio.sleep = _fake_sleep660
+try:
+    _b660.alive, _b660.died = True, False
+    _b660.back_at = _time.monotonic() + 100
+    asyncio.run(_b660.check_rest())
+    eq(_ticks660, [1.0], 'a dead bot waits in the temple until its rest is over')
+    _ticks660.clear()
+    _b660.back_at = None
+    asyncio.run(_b660.check_rest())
+    eq(_ticks660, [], 'no rest: no wait')
+    _b660.back_at = _time.monotonic() + 100
+    _b660.died = True
+    asyncio.run(_b660.check_rest())
+    eq(_ticks660, [], 'a bot that died again does not wait here: the next login does')
+finally:
+    asyncio.sleep = _real_sleep660
+
+# a request that follows another of the same window within the server's rate limit is dropped unanswered: the bot waits like a person
+_b661 = T.TesterBot(15, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+_b661.conn, _b661.cid, _b661.alive, _b661.died = KC(), 0x1000000e, True, False
+_b661.args.ops = {'gamble': 240, 'hideout': 192}
+_io661 = T.KeyIO(_b661, {'stop': False})
+_slept661 = []
+_real_sleep661 = asyncio.sleep
+
+
+async def _fake_sleep661(seconds, *a, **k):
+    _slept661.append(round(seconds, 2))
+    await _real_sleep661(0)
+
+asyncio.sleep = _fake_sleep661
+try:
+    asyncio.run(_io661.request('gamble', 'open', {}, [], 1.0))
+    eq(_slept661, [], 'the first request of a window goes at once')
+    asyncio.run(_io661.request('gamble', 'buy', {}, [], 1.0))
+    ok(len(_slept661) == 1 and 0.0 < _slept661[0] <= T.REQUEST_GAP, 'the next request of the same window waits for the gap: %s' % _slept661)
+    _slept661.clear()
+    asyncio.run(_io661.request('hideout', 'open', {}, [], 1.0))
+    eq(_slept661, [], 'another window is not held back')
+    ok(T.REQUEST_GAP > 0.30, 'the gap is above the 300 ms rate limit of the Gambler')
+finally:
+    asyncio.sleep = _real_sleep661
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

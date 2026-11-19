@@ -3,6 +3,7 @@
 server. Every check has a passing run, a failing run that prints a BUG line, and a skip; the Auto setup rows are checked
 against the real client data (every class, every preset)."""
 import asyncio
+import copy
 import os
 import re
 import sys
@@ -1220,7 +1221,7 @@ class CraftIO(FakeIO):
         self.orbs = {}
         self.opened = False
         self.use_withs = []
-        self.supports = [{'id': 7, 'name': 'Fire Bolt', 'count': 0, 'max': 2}]
+        self.supports = [{'id': 7, 'name': 'Fire Bolt', 'count': 2, 'max': 3, 'runes': []}]
         self.charm_bag, self.charm_placed = [], []
         self.rnd = 0
 
@@ -1271,7 +1272,7 @@ class CraftIO(FakeIO):
         if opname == 'crafting' and action == 'select':
             return {'action': 'state', 'data': {'counts': dict(self.orbs), 'item': {
                 'path': data['path'], 'rarity': it['rarity'], 'mods': self.mods_state(), 'quality': it['quality'], 'sig': 'sig',
-                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{}] * it['socketed']}}}}
+                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{'id': 32006, 'index': i + 1} for i in range(it['socketed'])] + [{'id': 0, 'index': it['socketed'] + 1 + j} for j in range(it['sockets'] - it['socketed'])]}}}}
         if opname == 'itemTooltip':
             pos = data['items'][0]['pos']
             slot = self.slots[pos['z']]
@@ -1283,12 +1284,12 @@ class CraftIO(FakeIO):
         if opname == 'crafting' and action == 'apply':
             return self.apply(data['orb'])
         if opname == 'supports' and action == 'open':
-            return {'action': 'state', 'data': {'spells': [dict(s) for s in self.supports]}}
+            return {'action': 'state', 'data': {'spells': [copy.deepcopy(s) for s in self.supports]}}
         if opname == 'supports' and action == 'socket':
             if self.refuse:
                 return {'action': 'result', 'data': {'ok': False, 'text': self.refuse}}
             if self.bug != 'supports':
-                self.supports[0]['count'] += 1
+                self.supports[0]['runes'].append({'slot': len(self.supports[0]['runes']) + 1})
             return {'action': 'result', 'data': {'ok': True, 'text': 'ok'}}
         if opname == 'charms' and action == 'open':
             return {'action': 'state', 'data': {'bag': list(self.charm_bag), 'placed': list(self.charm_placed),
@@ -5807,7 +5808,7 @@ class FoundIO(FakeIO):
         FakeIO.__init__(self)
         self.orbs, self.gems, self.runes, self.uncounted, self.err = dict(orbs or {}), gems, runes, uncounted, err
         self.item = dict({'rarity': 0, 'mods': [], 'quality': 0, 'qcap': 2, 'sockets': 0, 'max': 2, 'socketed': 0, 'unique': False, 'maxMods': 4}, **(piece or {}))
-        self.chase, self.uses, self.support = chase, [], {'id': 9, 'name': 'Fire Bolt', 'count': 0, 'max': 2}
+        self.chase, self.uses, self.support = chase, [], {'id': 9, 'name': 'Fire Bolt', 'count': 2, 'max': 3, 'runes': []}
         self.worn, self.sets, self.wore = {4: {'s': 4, 'sc': 10}}, {}, None
         self.piece = {'i': 0, 'id': 2400, 'cid': 3300, 's': 4, 'sc': 20, 'chase': chase}
 
@@ -5845,7 +5846,7 @@ class FoundIO(FakeIO):
         it = self.item
         return {'rarity': it['rarity'], 'mods': [{'key': m, 'group': m} for m in it['mods']], 'quality': it['quality'], 'qualityCap': it['qcap'],
                 'maxMods': it['maxMods'], 'unique': it['unique'], 'sig': 'sig',
-                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{}] * it['socketed']}}
+                'sockets': {'count': it['sockets'], 'max': it['max'], 'list': [{'id': 32006, 'index': i + 1} for i in range(it['socketed'])] + [{'id': 0, 'index': it['socketed'] + 1 + j} for j in range(it['sockets'] - it['socketed'])]}}
 
     async def request(self, opname, action, data, expect, timeout):
         self.asked.append((opname, action, data))
@@ -5869,9 +5870,9 @@ class FoundIO(FakeIO):
                 it['sockets'] = it['max']
             return {'action': 'result', 'data': {'ok': True, 'text': 'done'}}
         if opname == 'supports' and action == 'open':
-            return {'action': 'state', 'data': {'spells': [dict(self.support)]}}
+            return {'action': 'state', 'data': {'spells': [copy.deepcopy(self.support)]}}
         if opname == 'supports' and action == 'socket':
-            self.support['count'] += 1
+            self.support['runes'].append({'slot': len(self.support['runes']) + 1})
             self.runes -= 1
             return {'action': 'result', 'data': {'ok': True}}
         return None
@@ -5901,7 +5902,7 @@ class CraftFound(unittest.TestCase):
         self.assertEqual(io.item['rarity'], 3)
         self.assertEqual(io.item['quality'], 2)
         self.assertEqual(io.item['sockets'], 2)
-        self.assertEqual((io.item['socketed'], io.gems, io.support['count']), (1, 0, 1), 'the gem sits in a socket and the rune in the spell')
+        self.assertEqual((io.item['socketed'], io.gems, len(io.support['runes'])), (1, 0, 1), 'the gem sits in a socket and the rune in the spell')
         self.assertEqual(io.uses[0], (1, 0), 'the gem (slot 1) is used on the piece (slot 0)')
         self.assertEqual(io.orbs, {'alchemy': 0, 'whetstone': 0, 'sockets': 0})
         self.assertIn('Orb of Gilding', r.detail)
@@ -8943,6 +8944,367 @@ class GearGap(unittest.TestCase):
         io = GearIO(bank=10 ** 7, pieces=[], worn={1: 5, 4: 5, 7: 5, 8: 5}, stock=gstock(), potions=(100, 100))
         r = run(TX.gear_up(io, 'Tester Aaa', 'Mage', 300))
         self.assertNotIn('stay empty', r.detail)
+
+
+# ---------------------------------------------------------------- the live run fixes (O660)
+class Live660Io(FakeIO):
+    """a bot with a backpack of `size` slots of which `used` are taken; `do_keep` frees `keep_frees` slots a round; time passes in `t`"""
+
+    def __init__(self, size=20, used=20, keep_frees=3):
+        super().__init__()
+        self.size, self.used, self.keep_frees, self.kept = size, used, keep_frees, 0
+        self.clock = 'clock'
+        io = self
+
+        class Bot:
+            level = 600
+
+            async def do_keep(self, clock):
+                io.kept += 1
+                io.used = max(0, io.used - io.keep_frees)
+                return True
+
+        self.bot = Bot()
+
+    async def helper(self, command, kind, wait=4.0):
+        if command == 'bag':
+            return {'used': self.used, 'size': self.size}
+        return None
+
+
+class Live660(unittest.TestCase):
+    def test_a_refused_purchase_has_the_servers_words(self):
+        self.assertTrue(TX.gamble_refused({'data': {'ok': False, 'text': 'You need 5 gold for that crate.'}}))
+        self.assertFalse(TX.gamble_refused({'data': {'ok': True}}))
+        self.assertFalse(TX.gamble_refused(None))
+        self.assertEqual(TX.gamble_refusal({'data': {'ok': False, 'text': 'You need 5 gold for that crate.'}}, None), 'refused: You need 5 gold for that crate.')
+        self.assertEqual(TX.gamble_refusal(None, None), 'no answer')
+        self.assertIn('not marked sold', TX.gamble_refusal(None, {'items': []}))
+        self.assertEqual(TX.gamble_refusal({'data': {'ok': False}}, {}), 'refused')
+
+    def test_the_gambler_check_reads_a_refusal_as_a_skip_not_a_free_purchase(self):
+        row = {'i': 14, 'p': 111100, 'id': 7, 'n': 'Cuirass', 'sn': 'Armor'}
+        a = {'money': 147630, 'items': [dict(row)]}
+        same = {'money': 147630, 'items': [dict(row)]}
+        self.assertEqual(TX.gamble_verdict(row, a, same, 3, 3)[0], TX.FAIL, 'the old reading: the money did not fall')
+
+        class GIO(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.bank = 147630
+                self.walked = []
+
+            async def request(self, opname, action, data, expect, timeout):
+                if action == 'open':
+                    return {'action': 'state', 'data': {'w': 1, 'money': self.bank, 'items': [dict(row, sold=False)]}}
+                if action == 'buy':
+                    return {'action': 'result', 'data': {'ok': False, 'text': 'You are too far from Mordecai.'}}
+                return None
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'used': 3, 'size': 20}
+
+        walked, TX.chore_walk = TX.chore_walk, walked_stub
+        try:
+            r = run(TX.check_chore_gamble(GIO(), 'Tester Aaa', 'Mage', 300))
+        finally:
+            TX.chore_walk = walked
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('refused the purchase: refused: You are too far from Mordecai.', r.detail)
+
+    def test_free_slots_and_the_keep_rounds(self):
+        self.assertEqual(TX.bag_free({'used': 18, 'size': 20}), 2)
+        self.assertIsNone(TX.bag_free({}))
+        self.assertIsNone(TX.bag_free(None))
+        io = Live660Io(size=20, used=20, keep_frees=3)
+        free = run(TX.make_room(io, 'craft_orbs'))
+        self.assertEqual(io.kept, 2, 'two rounds at most (ROOM_ROUNDS)')
+        self.assertEqual(free, 6)
+        io = Live660Io(size=20, used=18, keep_frees=3)
+        self.assertEqual(run(TX.make_room(io, 'craft_orbs')), 5)
+        self.assertEqual(io.kept, 1, 'one round was enough: 4 slots free')
+        io = Live660Io(size=20, used=10)
+        self.assertEqual(run(TX.make_room(io, 'craft_orbs')), 10)
+        self.assertEqual(io.kept, 0, 'a roomy bag is left alone')
+        io = Live660Io(size=20, used=20)
+        self.assertIsNone(run(TX.make_room(io, 'party')), 'a check that is given nothing does not tidy')
+        self.assertEqual(io.kept, 0)
+        self.assertIsNone(run(TX.make_room(FakeIO(), 'craft_orbs')), 'no bag report: nothing to do')
+
+    def test_the_keys_that_need_room_are_checks(self):
+        for k in TX.ROOM_KEYS - {'gear_up'}:
+            self.assertIn(k, TX.KEYS + TX.CLOSED_KEYS, k)
+        self.assertIn('daily_claim', TX.ROOM_KEYS)
+
+    def test_the_run_makes_room_before_a_craft_check_and_waits_in_town_between_checks(self):
+        io = Live660Io(size=20, used=20)
+        seen = []
+        cr = TX.CheckRun('Tester Aaa', 'Ninja', 600, only=['craft_orbs', 'party'])
+
+        async def fake_orbs(i, name, cls, level):
+            seen.append(('craft_orbs', i.kept, list(i.moves)))
+            return TX.Result('craft_orbs', name, cls, TX.PASS, 'ok')
+
+        async def fake_party(i, name, cls, level):
+            seen.append(('party', i.kept, list(i.moves)))
+            return TX.Result('party', name, cls, TX.PASS, 'ok')
+
+        cr.table = [('craft_orbs', fake_orbs, lambda c: True), ('party', fake_party, lambda c: True)]
+        self.assertTrue(run(cr.run(io)))
+        self.assertEqual(seen[0][1], 2, 'the bag was cleared before the check asked for items')
+        self.assertEqual(seen[0][2], ['town'])
+        self.assertEqual(seen[1][2], ['town', 'town'], 'in town before every check that is not a fight')
+
+    def test_a_fight_check_is_not_pulled_back_to_town(self):
+        io = Live660Io()
+        self.assertFalse(run(TX.settle_in_town(io, 'rift_walk')))
+        self.assertEqual(io.moves, [])
+        self.assertTrue(run(TX.settle_in_town(io, 'pets')))
+        self.assertEqual(io.moves, ['town'])
+        self.assertFalse(run(TX.settle_in_town(type('I', (), {'alive': lambda self: True})(), 'pets')), 'an io with no go')
+
+    def test_the_third_death_in_one_check_gives_it_up_with_the_count(self):
+        class Dying(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                self.up = False
+                return None
+
+        cr = TX.CheckRun('Tester Aaa', 'Beastmaster', 100, only=['beastmaster_wolf'])
+        for n in (1, 2):
+            io = Dying()
+            self.assertFalse(run(cr.run(io)))
+            self.assertEqual(cr.results, [], 'death %d: not a result yet' % n)
+            self.assertFalse(cr.finished)
+        io = Dying()
+        self.assertFalse(run(cr.run(io)))
+        self.assertEqual([(r.check, r.status) for r in cr.results], [('beastmaster_wolf', TX.SKIP)])
+        self.assertIn('the bot died 3 times in this check (level 100, no gear-up)', cr.results[0].detail)
+        self.assertTrue(cr.finished, 'the check is done: the next pass goes on to the next one')
+
+    def test_a_death_count_is_per_check(self):
+        cr = TX.CheckRun('Tester Aaa', 'Ninja', 100)
+        io = FakeIO()
+        r = TX.Result('x', 'a', 'b', TX.SKIP, 'why')
+        self.assertIsNone(TX.cut_verdict(cr, 'pets', io, r))
+        self.assertIsNone(TX.cut_verdict(cr, 'rift', io, r))
+        self.assertIsNone(TX.cut_verdict(cr, 'pets', io, r))
+        self.assertIsNotNone(TX.cut_verdict(cr, 'pets', io, r))
+        self.assertIsNone(TX.cut_verdict(cr, 'rift', io, r))
+
+    def test_the_daily_reward_that_did_not_fit_is_a_skip(self):
+        io = LaneIO(DailyWorld(claim_ok=False))
+        io.bot = type('B', (), {'recent': ['You do not have enough room or capacity for the reward.']})()
+        r = run(TX.check_daily_claim(io, 'Tester Aaa', 'Warrior', 100))
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('did not fit the backpack', r.detail)
+        r = run(TX.check_daily_claim(LaneIO(DailyWorld(claim_ok=False)), 'Tester Aaa', 'Warrior', 100))
+        self.assertEqual(r.status, TX.FAIL, 'no word of room: still a bug')
+        self.assertTrue(TX.no_room_said(type('I', (), {'bot': type('B', (), {'recent': ['Your backpack is full: it went to your inbox.']})()})()))
+        self.assertFalse(TX.no_room_said(object()))
+
+    def test_the_hideout_waits_between_edits_and_between_reads(self):
+        class Timed(HideoutIO):
+            def __init__(self):
+                super().__init__()
+                self.stamps = {}
+
+            async def request(self, opname, action, data, expect, timeout):
+                self.stamps.setdefault(action, []).append(self.t)
+                if action == 'place' and len(self.stamps['place']) <= 2:   # the first two tiles are refused: the next try must wait
+                    return {'action': 'result', 'data': {'ok': False, 'text': 'That tile is taken.'}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        io = Timed()
+        r = run(TX.check_hideout(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        place = io.stamps['place']
+        self.assertEqual(len(place), 3, 'two tiles refused, the third took it')
+        for a, b in zip(place, place[1:]):
+            self.assertGreaterEqual(b - a, 0.25, 'the window drops an edit that comes sooner than 250 ms')
+        gets = io.stamps['get']
+        self.assertGreaterEqual(len(gets), 3)
+        for a, b in zip(gets, gets[1:]):
+            self.assertGreaterEqual(b - a, 1.0, 'the window answers `get` once a second')
+
+    def test_a_hideout_that_refuses_says_every_distinct_word(self):
+        class Words(HideoutIO):
+            async def request(self, opname, action, data, expect, timeout):
+                if action == 'place':
+                    self.tries += 1
+                    text = 'At most 2 x Rug per hideout.' if self.tries > 3 else 'That tile is taken.'
+                    return {'action': 'result', 'data': {'ok': False, 'text': text}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        r = run(TX.check_hideout(Words(), 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('That tile is taken. | At most 2 x Rug per hideout.', r.detail)
+        self.assertIn('the catalogue said 0 of 3 placed', r.detail)
+
+    def test_a_new_room_is_read_again_after_the_bot_entered_it(self):
+        class Fresh(HideoutIO):
+            """a hideout never entered: the catalogue counts no decoration; entering builds the room with its two thrones (placed 2 of 2)"""
+
+            def __init__(self):
+                super().__init__()
+                self.gets_inside = 0
+
+            def catalogue(self):
+                throne = {'key': 'throne', 'name': 'Throne', 'layer': 'object', 'owned': True, 'max': 2, 'placed': 2 if self.gets_inside else 0}
+                rug = {'key': 'rug', 'name': 'Rug', 'layer': 'floor', 'owned': True, 'max': 3, 'placed': len([p for p in self.placed if p['key'] == 'rug'])}
+                return [throne, rug]
+
+            async def request(self, opname, action, data, expect, timeout):
+                if action == 'get' and self.inside:
+                    self.gets_inside += 1   # the room is built by the time of the first read inside; the answer to `enter` came before
+                if action == 'place' and data['key'] == 'throne':
+                    self.sent.append((action, data))
+                    return {'action': 'result', 'data': {'ok': False, 'text': 'At most 2 x Throne per hideout.'}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        io = Fresh()
+        r = run(TX.check_hideout(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        placed = [d for a, d in io.sent if a == 'place']
+        self.assertEqual({d['key'] for d in placed}, {'rug'}, 'the throne that the room holds twice is not tried: the pick was made again inside')
+
+    def test_a_socket_without_a_gem_is_not_a_gem_in_the_socket(self):
+        st = {'sockets': {'count': 2, 'max': 3, 'list': [{'id': 0, 'index': 1}, {'id': 32006, 'index': 2, 'name': 'Flawed Ruby'}]}}
+        v = TX.item_view({}, st)
+        self.assertEqual((v['sockets'], v['socketed']), (2, 1), 'the bench lists every socket; only the one with a gem id holds a gem')
+        v = TX.item_view({}, {'sockets': {'count': 1, 'max': 1, 'list': [{'id': 0, 'index': 1}]}})
+        self.assertEqual(v['socketed'], 0)
+
+    def test_a_gem_used_up_moves_the_item_one_slot_forward(self):
+        class Strict(CraftIO):
+            """the bench answers only for the slot the item really sits in (the gem leaves its slot when it is used up)"""
+
+            async def request(self, opname, action, data, expect, timeout):
+                if opname == 'crafting' and action == 'select' and int(data['path']) != self.index_of('item'):
+                    self.asked.append((opname, action, data))
+                    return {'action': 'state', 'data': {'counts': dict(self.orbs), 'item': None}}
+                if opname == 'itemTooltip' and int(data['items'][0]['pos']['z']) != self.index_of('item'):
+                    self.asked.append((opname, action, data))
+                    return {'action': 'tips', 'data': {'items': []}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        io = Strict()
+        r = run(TX.check_craft_gems(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(TX.slot_after_use({'index': 0}, {'index': 1, 'path': '1'}, 1), {'index': 0, 'path': '0'})
+        self.assertEqual(TX.slot_after_use({'index': 0}, {'index': 1}, 3)['index'], 1, 'a stack of three keeps its slot')
+        self.assertEqual(TX.slot_after_use({'index': 5}, {'index': 1}, 1)['index'], 1, 'a slot behind the item does not move it')
+
+    def test_a_placement_whose_answer_never_came_is_read_from_the_room(self):
+        class Lost(HideoutIO):
+            """the window places the decoration and its answer is lost (the live run: two thrones placed, no answer, then 'At most 2')"""
+
+            def __init__(self):
+                super().__init__()
+                self.dropped = 0
+
+            async def request(self, opname, action, data, expect, timeout):
+                reply = await super().request(opname, action, data, expect, timeout)
+                if action == 'place' and reply and reply['data'].get('ok') and self.dropped == 0:
+                    self.dropped += 1
+                    return None
+                return reply
+
+        io = Lost()
+        r = run(TX.check_hideout(io, 'Tester Aaa', 'Warrior', 900))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('the answer to the place never came: the room listed it', r.detail)
+        self.assertEqual(io.placed, [], 'the one decoration is removed again, the room is as it was')
+        self.assertEqual(len([1 for a, d in io.sent if a == 'place']), 1, 'the room listed it: no second decoration is placed after the lost answer')
+
+    def test_upheaval_that_rolls_the_rarity_own_count_is_a_note_and_the_chain_goes_on(self):
+        b = {'rarity': 1, 'mods': ['a', 'b'], 'bench_mods': ['a', 'b'], 'tip': 'x'}
+        a = {'rarity': 1, 'mods': ['c'], 'bench_mods': ['c'], 'tip': 'y'}
+        problems = TX.orb_problems('chaos', b, a)
+        self.assertTrue(TX.upheaval_count_only('chaos', b, a, problems))
+        self.assertIn('2 -> 1', TX.upheaval_note(b, a))
+        other = dict(a, rarity=2)
+        self.assertFalse(TX.upheaval_count_only('chaos', b, other, TX.orb_problems('chaos', b, other)), 'a changed rarity is a bug')
+        none = dict(a, mods=[], bench_mods=[])
+        self.assertFalse(TX.upheaval_count_only('chaos', b, none, TX.orb_problems('chaos', b, none)), 'no modifier left is a bug')
+        more = dict(a, mods=['c', 'd', 'e'], bench_mods=['c', 'd', 'e'])
+        self.assertFalse(TX.upheaval_count_only('chaos', b, more, TX.orb_problems('chaos', b, more)), 'more modifiers than before is a bug')
+        self.assertFalse(TX.upheaval_count_only('annulment', b, a, ['modifiers 2 -> 1: expected one less']))
+
+    def test_the_gem_failure_names_what_the_bench_listed(self):
+        self.assertEqual(TX.sock_names({'sockets': {'list': [{'name': 'Flawed Ruby'}, {'id': 5}]}}), 'Flawed Ruby, 5')
+        self.assertEqual(TX.sock_names({}), 'none')
+        self.assertEqual(TX.sock_names(None), 'none')
+
+    def test_a_rune_that_fits_the_second_spell_is_socketed_there(self):
+        class Shapes(CraftIO):
+            def __init__(self, fits):
+                super().__init__()
+                self.fits = fits
+                self.supports = [{'id': 7, 'name': 'Fire Bolt', 'count': 2, 'max': 3, 'runes': []}, {'id': 8, 'name': 'Ice Wave', 'count': 2, 'max': 3, 'runes': []}]
+                self.tried = []
+
+            async def request(self, opname, action, data, expect, timeout):
+                if (opname, action) == ('supports', 'socket'):
+                    self.tried.append(data['spell'])
+                    if data['spell'] not in self.fits:
+                        return {'action': 'result', 'data': {'ok': False, 'text': 'That support does not fit this spell (single target, area).'}}
+                    for sp in self.supports:
+                        if sp['id'] == data['spell']:
+                            sp['runes'].append({'slot': len(sp['runes']) + 1})
+                    return {'action': 'result', 'data': {'ok': True, 'text': 'ok'}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        io = Shapes(fits=[8])
+        r = run(TX.check_craft_supports(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.tried, [7, 8], 'the first spell refused the shape, the second took the rune')
+        self.assertIn('Ice Wave', r.detail)
+        io = Shapes(fits=[])
+        r = run(TX.check_craft_supports(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('fits none of the 2 spell(s) tried', r.detail)
+
+    def test_a_spell_with_its_open_sockets_full_is_not_free(self):
+        full = {'id': 1, 'count': 2, 'max': 3, 'runes': [{'slot': 1}, {'slot': 2}]}
+        free = {'id': 2, 'count': 2, 'max': 3, 'runes': [{'slot': 1}]}
+        self.assertFalse(TX.spell_has_room(full), 'count is the sockets open, not the runes: 2 runes in 2 sockets is full though 2 < max 3')
+        self.assertTrue(TX.spell_has_room(free))
+        self.assertTrue(TX.spell_has_room({'id': 3, 'count': 1, 'max': 3}))
+        self.assertFalse(TX.spell_has_room({'id': 4, 'count': 0, 'max': 3, 'runes': []}), 'a spell under the level of its first socket')
+        self.assertEqual((TX.spell_runes(full), TX.spell_runes(None), TX.spell_runes({})), (2, 0, 0))
+        class ById(CraftIO):
+            async def request(self, opname, action, data, expect, timeout):
+                if (opname, action) == ('supports', 'socket'):
+                    self.asked.append((opname, action, data))
+                    sp = next(s for s in self.supports if s['id'] == data['spell'])
+                    sp['runes'].append({'slot': len(sp['runes']) + 1})
+                    return {'action': 'result', 'data': {'ok': True, 'text': 'ok'}}
+                return await super().request(opname, action, data, expect, timeout)
+
+        io = ById()
+        io.supports = [full, free]
+        r = run(TX.check_craft_supports(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        socketed = [x[2]['spell'] for x in io.asked if x[:2] == ('supports', 'socket')]
+        self.assertEqual(socketed, [2], 'the full spell is not tried')
+
+    def test_the_windows_are_opened_from_town(self):
+        class Where(CraftIO):
+            async def go(self, place):
+                self.moves.append(place)
+                return True
+
+        io = Where()
+        run(TX.check_craft_supports(io, 'Tester Aaa', 'Mage', 300))
+        run(TX.check_craft_charms(io, 'Tester Aaa', 'Mage', 300))
+        run(TX.check_craft_orbs(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(set(io.moves), {'town'}, 'the crafting windows are opened from the temple, never from a hunt of a bot with no gear')
+
+    def test_the_piece_cap_reaches_the_armor_of_a_level_1700_bot(self):
+        self.assertGreaterEqual(TX.GEAR_PIECE_CAP, 1840000, 'the live Gambler asked 1.84M for an Armor at level 1692')
+        rows = [{'i': 1, 'sn': 'Armor', 'p': 1840000}, {'i': 2, 'sn': 'Armor', 'p': 2600000}, {'i': 3, 'sn': 'Legs', 'p': 5000000}]
+        got = TX.gear_pieces_for(rows, {'Armor', 'Legs'})
+        self.assertEqual([r['i'] for r in got], [1], 'the cheapest Armor, and no Legs over the cap')
 
 
 if __name__ == '__main__':

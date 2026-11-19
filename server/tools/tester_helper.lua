@@ -24,7 +24,7 @@
 --     assert (both clean up: the map is put back, the rift closed); "!tester party" also reports the shared experience, "!tester party kill" adds a real shared kill and a solo kill; "!tester unique" wears a unique and
 --     measures its passive on a real hit
 --   * "!tester bag": tops the potions up and reports the backpack (O584: it removes nothing; "bag wipe" is the last resort); "!tester shop Loot Buyer" goes to that trader; "!tester give item | orb KEY | gem | rune | charm | card" gives the crafting checks their items
---   * "!tester gold [to N]" (O658): the bank balance and the gold in the backpack; `to N` is the TEST ONLY top-up of the bank (3,000,000 a call, 6,000,000 a
+--   * "!tester gold [to N]" (O658): the bank balance and the gold in the backpack; `to N` is the TEST ONLY top-up of the bank (3,000,000 a call, 16,000,000 a
 --     bot) that the gear-up of tester_checks.py counts as a fallback when a bot cannot pay for its potions and basic pieces; "bag" also reports the potions held
 --   * "!tester path <kind> [N] | npc <name> | pos X Y Z" (O589): the way on foot to a map mark, an NPC or a position, the engine's own
 --     pathfinding (Creature:getPathTo) as directions the bot walks; the helper's teleport (`enter`) stays only as the fallback
@@ -2129,6 +2129,9 @@ end
 -- Player:addMount, set as the current mount; a tester only, logged), `clear` dismounts and takes the given mount back. The toggle is the bot's own
 -- packet (0xD4), the same a click on the mount button sends.
 local mountGiven = {}
+-- O660: this engine (TFS 1.4.2) has Player:addMount / removeMount / hasMount and no setCurrentMount / getCurrentMount / toggleMount in Lua; the
+-- current mount is the player storage the engine reads itself (const.h PSTRG_MOUNTS_CURRENTMOUNT = PSTRG_RESERVED_RANGE_START + 2001 + 10)
+local MOUNT_CURRENT = 10002011
 local function mountState(player)
 	local tile = Tile(player:getPosition())
 	local out = {pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE) or false, level = player:getLevel()}
@@ -2138,7 +2141,7 @@ local function mountState(player)
 	out.speed = player:getSpeed()
 	local okB, base = pcall(function() return player:getBaseSpeed() end)
 	out.baseSpeed = okB and base or nil
-	local okC, cur = pcall(function() return player:getCurrentMount() end)
+	local okC, cur = pcall(function() return player:getStorageValue(MOUNT_CURRENT) end)
 	out.current = okC and tonumber(cur) or nil
 	out.granted = mountGiven[player:getId()]
 	return out
@@ -2161,10 +2164,10 @@ function commands.mount(player, arg)
 			if not player:hasMount(pick.id) then
 				player:addMount(pick.id)
 			end
-			player:setCurrentMount(pick.id)
+			player:setStorageValue(MOUNT_CURRENT, pick.id)
 		end)
 		if not ok then
-			tell(player, "mount", {err = "the engine refused the mount: " .. tostring(err):sub(1, 60)})
+			tell(player, "mount", {err = "the engine refused the mount: " .. tostring(err):gsub("^.-:%d+: ", ""):sub(1, 80)}) -- O660: the words of the error, not the script path
 			return
 		end
 		mountGiven[player:getId()] = pick.id
@@ -2175,6 +2178,7 @@ function commands.mount(player, arg)
 		pcall(function() player:toggleMount(false) end)
 		if id then
 			pcall(function() player:removeMount(id) end)
+			pcall(function() player:setStorageValue(MOUNT_CURRENT, 0) end)
 			mountGiven[player:getId()] = nil
 		end
 		tell(player, "mount", H.cutAnswer(mountState(player), {cleared = id and true or false}))
