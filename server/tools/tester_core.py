@@ -652,3 +652,75 @@ def proof_lines(cov):
     L.append('  (%d systems reached: %d with REAL proof, %d with ANS only, %d with HELP only)' % (
         len(rows), sum(1 for r in rows if r[1]), only(2), only(3)))
     return L
+
+
+# ------------------------------------------------------------------------------------------------ the fight a person plays (O663)
+# O662 measured the bots at the pocket boss: the casters at 0.46-0.55 of class_dps_model's median, the melee classes at 0.03-0.09. The bot's
+# fight loop (testers.py keep_alive) had two habits no player has: under 50 % health with a heal it cast NO attack at all (a bot hit every second
+# healed every second and never hit back, the heal and the attack are two spell groups), and it never watched its mana (the Illusionist's
+# spells cost 540-780, so a long fight ran dry and the bot stood still; a person drinks a mana potion). Both are the bot's, not the game's.
+MANA_POTION_AT = 40    # percent mana under which a bot drinks a mana potion (a health potion first when the health is under HEAL_POTION_AT)
+HEAL_POTION_AT = 40    # percent health under which the health potion goes first (testers.py keep_alive)
+STATS_HEAD = 1 + 4 * 4 + 8      # 0xA0, u32 health, max health, free capacity, capacity, u64 experience (the level follows)
+STATS_MANA = STATS_HEAD + 2 + 1 + 10   # level u16, level percent u8, 10 bytes (the experience rates), then u32 mana and u32 max mana
+STATS_LEN = STATS_MANA + 8
+
+
+def parse_stats(plain):
+    """(mana, max mana) from the last player stats packet (0xA0) of a server message, else None. The packet is in the middle of a message, so every
+    0xA0 byte is tried and one must read as a stats packet: health under its maximum, free capacity under capacity, mana under its maximum,
+    a level of 1 to 5000 (cast_relay.py op_stats has the same layout)"""
+    best = None
+    i = plain.find(b'\xa0')
+    while i != -1:
+        if i + STATS_LEN <= len(plain):
+            hp, mhp, free, cap = struct.unpack_from('<IIII', plain, i + 1)
+            level = struct.unpack_from('<H', plain, i + STATS_HEAD)[0]
+            mana, mana_max = struct.unpack_from('<II', plain, i + STATS_MANA)
+            if 0 < mhp <= 10 ** 7 and hp <= mhp and free <= cap and 1 <= level <= 5000 and 0 < mana_max <= 10 ** 7 and mana <= mana_max:
+                best = (mana, mana_max)
+        i = plain.find(b'\xa0', i + 1)
+    return best
+
+
+def hold_attack(health, heal, heal_ready):
+    """True when the bot spends this beat on its heal and not on an attack spell: under 50 % health with a heal spell that is ready (or was cast
+    this beat). The heal and the attack are two spell groups with their own cooldowns: with the heal on cooldown the bot attacks, as a player does"""
+    return bool(heal) and health < 50 and bool(heal_ready)
+
+
+def mana_potion_due(health, mana, mana_max):
+    """True when the bot should drink a mana potion now: its mana is known, under MANA_POTION_AT percent, and the health does not need the potion
+    (the health potion and the mana potion share one exhaust)"""
+    if mana is None or not mana_max or health < HEAL_POTION_AT:
+        return False
+    return mana * 100 < MANA_POTION_AT * mana_max
+
+
+def preset_rotation(row, level, names, by_name, base):
+    """the rotation of a player who switched on Auto setup (O663): the preset of the class at the level from autorotation_data.lua (`row`: {'presets':
+    [{'level', 'spells': [id]}], 'extras': [id], 'ultimate': id}), its spells first spell first, the class's ultimate ahead of them when it is ready, the attack
+    spells no preset holds last. `names` {spell id: name}, `by_name` {name: spell of loadtest.parse_spells}; `base` is loadtest.rotation_for's list: its support
+    spells (the pet, the rage) stay in front. The measured table the balance models rest on (class_dps_measured.csv) was cast by this rotation. -> the
+    new list, or `base` when the class has no row or no spell of the preset can be told on the server"""
+    if not row or not row.get('presets'):
+        return base
+    preset = None
+    for p in row['presets']:
+        if p['level'] <= level:
+            preset = p
+    if preset is None:
+        return base
+    ids = ([row['ultimate']] if row.get('ultimate') else []) + list(preset['spells']) + list(row.get('extras') or [])
+    base_by_words = {s['words']: s for s in base}
+    attack, seen = [], set()
+    for sid in ids:
+        s = by_name.get(names.get(sid))
+        if s is None or s['words'] in seen or s['level'] > level or s['needlearn'] or s['params']:
+            continue
+        seen.add(s['words'])
+        attack.append(dict(base_by_words.get(s['words']) or s, group=s['group']))
+    if not attack:
+        return base
+    return [s for s in base if s['group'] == 'support'] + attack
+

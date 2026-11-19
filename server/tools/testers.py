@@ -1165,6 +1165,10 @@ class CheckIO(KeyIO):
     def spells(self):
         return getattr(self.bot.args, 'checks_spells', None) or {}
 
+    def equip_rules(self):
+        """O663: the parsed data/lib/chaos_equip_rules.lua of the server (tester_checks.parse_equip_rules), or None"""
+        return getattr(self.bot.args, 'checks_equip', None)
+
     def timers(self):
         return getattr(self.bot.args, 'checks_timers', None)
 
@@ -1338,6 +1342,7 @@ class TesterBot(LT.Bot):
         self.sched = TC.Scheduler(index)
         self.last = 'login'
         self.health = 100
+        self.mana, self.mana_max = None, None   # O663: from the player stats packet (0xA0), None until one is seen
         self.health_at = None  # monotonic time of the last health update of its own creature (None: none seen yet)
         self.deaths_at = []  # monotonic times of its deaths (TC.death_rest)
         self.helper = {}
@@ -1404,6 +1409,7 @@ class TesterBot(LT.Bot):
         self.results.d['logins'] += 1
         self.results.log(self, 'login', 'in game')
         self.alive, self.died, self.health, self.health_at = True, False, 100, None
+        self.mana, self.mana_max = None, None
         self.hunt_since, self.flee_check = time.monotonic(), None  # the login spot is the hunt spot
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
@@ -1483,6 +1489,10 @@ class TesterBot(LT.Bot):
                     for kind in self.pending:  # the heal or the potion worked
                         self.results.behaviour(kind, 'ok', self)
                     self.pending.clear()
+        if b'\xa0' in plain:   # O663: the mana of the stats packet, for the mana potion and the spells the bot can pay
+            stats = TC.parse_stats(plain)
+            if stats is not None:
+                self.mana, self.mana_max = stats
         if self.shop_npc and SPEAK_RE.search(plain) and self.shop_npc.encode('latin-1', 'replace') in plain:
             self.npc_spoke = True
         if self.shop_npc and b'carry nothing I buy' in plain:
@@ -1840,8 +1850,10 @@ class TesterBot(LT.Bot):
         if self.back_at and now >= self.back_at and not self.stay:
             self.back_at = None
             self.say('!tester hunt')
+        healed = False   # O663: the heal went this beat
         if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now \
                 and self.ready.get(self.heal['group'], 0) <= now:
+            healed = True
             self.say(self.heal['words'])
             self.ready['heal'] = now + max(1.0, self.heal['cooldown'] / 1000.0)
             self.ready[self.heal['group']] = now + self.heal['groupcooldown'] / 1000.0 + 0.1
@@ -1855,6 +1867,11 @@ class TesterBot(LT.Bot):
                 self.ready['potion'] = now + 1.1
                 self.results.behaviour('potion', 'tried')
                 self.pending.setdefault('potion', now + HEAL_SEEN)
+        pot = (self.helper.get('info') or {}).get('potions', {}).get('mana')
+        if pot and self.cid and self.ready.get('potion', 0) <= now and TC.mana_potion_due(self.health, self.mana, self.mana_max):
+            self.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0) + struct.pack('<I', self.cid))   # O663: a person drinks a mana potion
+            self.ready['potion'] = now + 1.1
+            self.results.log(self, 'do', 'mana potion at %d %% mana' % (100 * self.mana // max(1, self.mana_max)))
         if self.health <= FLEE_AT and not self.in_raid and not self.back_at and self.ready.get('flee', 0) <= now \
                 and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
             self.helper.pop('town', None)
@@ -1865,8 +1882,9 @@ class TesterBot(LT.Bot):
             self.results.behaviour('flee', 'tried')
             self.results.log(self, 'do', 'flee at %d %% health' % self.health)
             return
-        if self.rotation and not (self.health < 50 and self.heal):
-            spell = LT.next_spell(self.rotation, self.ready, now)
+        if self.rotation and not TC.hold_attack(self.health, self.heal, healed or (
+                self.heal and self.ready.get('heal', 0) <= now and self.ready.get(self.heal['group'], 0) <= now)):   # O663: the heal on cooldown, the attack goes
+            spell = LT.next_spell(self.rotation, self.ready, now, mana=self.mana)
             if spell:
                 self.say(spell['words'])
                 self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + 0.1
@@ -2237,9 +2255,12 @@ class TesterBot(LT.Bot):
 
 
 # ------------------------------------------------------------------------------------------------ run
-def class_spells(spells, model, vocation, level):
-    """{'rotation': attack and support spells (loadtest.rotation_for), 'heal': the best healing spell (or None)}"""
+def class_spells(spells, model, vocation, level, auto=None):
+    """{'rotation': attack and support spells (loadtest.rotation_for), 'heal': the best healing spell (or None)}. `auto` (O663): (the Auto setup table of
+    autorotation_data.lua, {spell id: name}): the attack spells are then the preset of the class and level, as a player with Auto setup casts them"""
     rot = LT.rotation_for(spells, model, vocation, level)
+    if auto and auto[0]:
+        rot = TC.preset_rotation(auto[0].get(vocation), level, auto[1], {s['name']: s for s in spells}, rot)
     heals = [s for s in spells if s['group'] == 'healing' and s['level'] <= level and not s['needlearn']
              and not s['params'] and (not s['vocations'] or vocation in s['vocations'])]
     heals.sort(key=lambda s: (-s['level'], s['words']))
@@ -2281,7 +2302,8 @@ async def run_bots(a, entries):
     bots = []
     seen_class = {}
     for i, e in enumerate(entries):
-        bots.append(TesterBot(i, e, a, n, results, class_spells(spells, model, by_id.get(e['vocation'], ''), e['level'])))
+        bots.append(TesterBot(i, e, a, n, results, class_spells(spells, model, by_id.get(e['vocation'], ''), e['level'],
+                                                               (getattr(a, 'auto_table', None), getattr(a, 'auto_names', None) or {}))))
         bots[-1].class_index = seen_class.get(e.get('class'), 0)
         seen_class[e.get('class')] = bots[-1].class_index + 1
     saver = asyncio.ensure_future(save_results_loop(a, results))
@@ -2356,6 +2378,8 @@ def run(a):
     a.keytest_table = {}
     a.checks_rotation = None
     a.checks_spells = {}
+    a.checks_equip = None
+    a.auto_table, a.auto_names = None, {}   # O663: the Auto setup rotation the bots cast (autorotation_data.lua), set below
     a.checks_timers = None
     if a.checks:
         rot = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
@@ -2366,6 +2390,15 @@ def run(a):
             a.checks_timers = TX.load_timer_ids(sup)
         vocs = LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))
         a.checks_spells = load_check_spells(a.server_dir, vocs)
+        a.checks_equip = TX.load_equip_rules(a.server_dir)   # O663: the weapons a class may wear
+    rot663 = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
+    if os.path.exists(rot663) and a.server_dir:   # O663: the bots cast the preset of Auto setup, like the player the balance models measured
+        try:
+            a.auto_table = TX.load_table(rot663)
+            a.auto_names = {sid: s['name'] for sid, s in load_check_spells(
+                a.server_dir, LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))).items()}
+        except (OSError, ValueError):
+            a.auto_table, a.auto_names = None, {}
     a.backpack_client_id = 0
     a.after_login = ''
     a.closed_plan = {'guilds': [], 'of': {}}

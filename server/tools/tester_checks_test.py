@@ -10154,5 +10154,237 @@ class Pocket662(unittest.TestCase):
         self.assertEqual((trace['series_abs'], trace['boss_max'], len(trace['series_t'])), ([4950, 4900], 5000, 2))
 
 
+# ------------------------------------------------------------------------------------------------ O663
+EQUIP663 = """return {
+	sets = {
+		{"Mystic", "Elementalist", "Illusionist"},
+		{"Warrior", "Juggernaut", "Samurai"},
+	},
+	rules = {
+		[2175] = {0, 1}, [100] = {400, 2}, [101] = {250, 1}, [102] = {1750, 2},
+		[103] = {50, 0},
+	},
+}
+"""
+
+
+class TidyBot(GearBot):
+    """the bot of a gear-up with a drop: what Bot.drop does is the move packet; here the rows are only noted"""
+
+    def __init__(self, **kw):
+        GearBot.__init__(self, **kw)
+        self.dropped = []
+        self.io = None
+
+    async def drop(self, row, report):
+        self.dropped.append((row['i'], row['id']))
+        if self.io is not None:   # the item is gone from the backpack
+            self.io.bag_weapons = [w for w in self.io.bag_weapons if w['i'] != row['i']]
+        return True
+
+
+class TidyIO(WeaponIO):
+    """a WeaponIO whose bot can drop, whose bag answer carries the position, and that holds the equip rules of the server"""
+
+    def __init__(self, rules=None, slots_free=None, **kw):
+        WeaponIO.__init__(self, **kw)
+        self.bot = TidyBot(level=kw.get('level', 300))
+        self.bot.io = self
+        self.rules = rules
+        self.slots_free = slots_free
+
+    def equip_rules(self):
+        return self.rules
+
+    async def helper(self, command, kind, wait=4.0):
+        if command == 'bag':
+            out = {'used': 1, 'potions': dict(self.potions), 'pos': {'x': 100, 'y': 100, 'z': 7}}
+            if self.slots_free is not None:
+                out.update(size=20, used=20 - self.slots_free)
+            return out
+        return await WeaponIO.helper(self, command, kind, wait)
+
+
+class Live663(unittest.TestCase):
+    """O663: a weapon the class or the level may not wear is never bought, tried on or kept; the unworn weapons leave the bag"""
+
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+        self.rules = TX.parse_equip_rules(EQUIP663)
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+        TX.set_equip_rules(None)
+
+    def test_the_rules_file_is_read_as_the_server_writes_it(self):
+        self.assertEqual(self.rules['sets'], [['Mystic', 'Elementalist', 'Illusionist'], ['Warrior', 'Juggernaut', 'Samurai']])
+        self.assertEqual(self.rules['rule'][100], (400, 2))
+        self.assertEqual(self.rules['rule'][2175], (0, 1))
+        self.assertIsNone(TX.parse_equip_rules('return {}'))
+        self.assertIsNone(TX.parse_equip_rules(None))
+
+    def test_the_rule_of_an_item(self):
+        f = TX.equip_fits
+        self.assertTrue(f(self.rules, 100, 'Warrior', 400))
+        self.assertFalse(f(self.rules, 100, 'Warrior', 399), 'a level under the rule')
+        self.assertFalse(f(self.rules, 100, 'Mystic', 900), 'a class that is not on the list (a wand is not for a Warrior and an axe not for a Mystic)')
+        self.assertTrue(f(self.rules, 103, 'Mystic', 50), 'class list 0: every class')
+        self.assertIsNone(f(self.rules, 8209, 'Warrior', 1), 'no rule for the id: every class and level')
+        self.assertIsNone(f(None, 100, 'Warrior', 400), 'no rules file: no opinion')
+        self.assertFalse(f(self.rules, 102, 'Samurai', 1340), 'the axe of level 1750 for a Samurai of 1340')
+
+    def test_the_real_rules_file_of_the_live_server_parses(self):
+        import os
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'lib', 'chaos_equip_rules.lua')
+        if not os.path.exists(path):
+            self.skipTest('the file is written by the install step equiprules: not in the repository')
+        rules = TX.parse_equip_rules(open(path, encoding='latin-1').read())
+        self.assertTrue(rules and len(rules['rule']) > 100 and len(rules['sets']) > 5)
+
+    def test_the_pick_leaves_a_weapon_the_class_may_not_wear(self):
+        stock = [{'i': 1, 'id': 101, 'sn': 'Weapon', 'p': 900000, 'l': 130, 'n': 'wand'}, {'i': 2, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'n': 'axe'}]
+        fits = TX.equip_fitter(TidyIO(rules=self.rules, stock=stock), 'Warrior', 800)
+        self.assertEqual(TX.weapon_pick(stock, 0)['id'], 101, 'without the rule the highest item level wins, a wand for a Warrior')
+        self.assertEqual(TX.weapon_pick(stock, 0, fits=fits)['id'], 100, 'with it the axe')
+        low = TX.equip_fitter(TidyIO(rules=self.rules, stock=stock), 'Warrior', 300)
+        self.assertIsNone(TX.weapon_pick(stock, 0, fits=low), 'a Warrior of 300 may wear neither: nothing is bought')
+
+    def test_a_held_weapon_the_class_may_not_wear_is_not_tried_on(self):
+        hands = {'bag': [{'i': 1, 'id': 101, 'cid': 1, 'il': 200}, {'i': 2, 'id': 100, 'cid': 2, 'il': 100}], 'worn': []}
+        fits = TX.equip_fitter(TidyIO(rules=self.rules), 'Warrior', 800)
+        self.assertEqual(TX.weapon_held(hands, 0)['id'], 101)
+        self.assertEqual(TX.weapon_held(hands, 0, fits=fits)['id'], 100)
+
+    def test_the_gear_up_buys_the_weapon_the_class_wears_not_the_best_item_level(self):
+        stock = [{'i': 1, 'id': 101, 'sn': 'Weapon', 'p': 900000, 'l': 130, 'n': 'wand'}, {'i': 2, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'n': 'axe'}]
+        io = TidyIO(rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.hand['id'], 100, r.detail)
+        self.assertEqual([e['i'] for e in io.stock if e.get('sold')], [2], 'the wand stays in the crate')
+
+    def test_leftovers_are_the_weapons_that_cannot_be_used(self):
+        fits = TX.equip_fitter(TidyIO(rules=self.rules), 'Samurai', 1340)
+        worn = {'s': 6, 'id': 9, 'il': 100}
+        hands = {'bag': [{'i': 1, 'id': 8209, 'cid': 8209, 'il': 0},          # the kit weapon a better one replaced
+                         {'i': 2, 'id': 2405, 'cid': 2405, 'il': 100},          # as good as the worn one: kept
+                         {'i': 3, 'id': 102, 'cid': 102, 'il': 150},            # above the level: cannot be worn
+                         {'i': 4, 'id': 101, 'cid': 101, 'il': 300},            # a wand for a Samurai
+                         {'i': 5, 'id': 100, 'cid': 100, 'il': 90}], 'worn': [worn]}   # worse than the worn one
+        got = TX.weapon_leftovers(hands, worn, fits)
+        self.assertEqual([w['i'] for w in got], [1, 5, 3], 'the weakest first, at most three')
+        self.assertEqual([w['i'] for w in TX.weapon_leftovers(hands, worn, fits, cap=10)], [1, 5, 3, 4])
+        self.assertEqual(TX.weapon_leftovers(hands, None, fits), [], 'nothing goes while the hand holds no weapon')
+
+    def test_the_tidy_drops_them_highest_slot_first_and_the_text_says_so(self):
+        io = TidyIO(rules=self.rules, hand_il=100, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=[], level=1340)
+        io.bag_weapons.extend([{'i': 1, 'id': 8209, 'cid': 8209, 'wt': 1, 'il': 0, 'sc': 30}, {'i': 4, 'id': 102, 'cid': 102, 'wt': 3, 'il': 150, 'sc': 30},
+                               {'i': 2, 'id': 2405, 'cid': 2405, 'wt': 1, 'il': 100, 'sc': 30}])
+        r = run(TX.gear_up(io, 'Tester Aaj', 'Samurai', 1340))
+        self.assertEqual(io.bot.dropped, [(4, 102), (1, 8209)], 'the axe of 1750 and the old kit weapon; the as-good sword stays')
+        self.assertIn('dropped 2 weapon(s) it cannot use', r.detail)
+
+    def test_no_drop_without_the_bag_position_or_a_drop_function(self):
+        io = TidyIO(rules=self.rules, hand_il=100, level=1340)
+        io.bag_weapons.append({'i': 1, 'id': 8209, 'cid': 8209, 'wt': 1, 'il': 0, 'sc': 30})
+        g = {'cls': 'Samurai'}
+
+        async def no_pos(command, kind, wait=4.0):
+            return {'used': 1} if command == 'bag' else await WeaponIO.helper(io, command, kind, wait)
+        io.helper = no_pos
+        self.assertEqual(run(TX.gear_weapon_tidy(io, g, 1340)), 0, 'no position, no drop')
+        plain = WeaponIO(hand_il=100)
+        plain.bag_weapons.append({'i': 1, 'id': 8209, 'cid': 8209, 'wt': 1, 'il': 0, 'sc': 30})
+        self.assertEqual(run(TX.gear_weapon_tidy(plain, {'cls': 'Samurai'}, 1340)), 0, 'an io with no bot drop does nothing')
+
+    def test_the_no_weapon_text_says_why(self):
+        fits = TX.equip_fitter(TidyIO(rules=self.rules), 'Warrior', 800)
+        rows = [{'i': 1, 'id': 100, 'sn': 'Weapon', 'p': 100, 'l': 50, 'sold': True}, {'i': 2, 'id': 100, 'sn': 'Weapon', 'p': TX.GEAR_WEAPON_CAP + 1, 'l': 90},
+                {'i': 3, 'id': 101, 'sn': 'Weapon', 'p': 100, 'l': 90}, {'i': 4, 'id': 100, 'sn': 'Weapon', 'p': 100, 'l': 10}]
+        self.assertEqual(TX.weapon_rejects(rows, 20, fits), ', 1 sold, 1 over the gold cap, 1 the class or level may not wear (item 101), 1 not above the worn item level')
+        self.assertEqual(TX.weapon_rejects([], 0, fits), '')
+        io = TidyIO(rules=self.rules, hand_il=200, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=rows, level=800)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertIn('no better weapon in the Gambler\'s stock (4 weapon row(s), worn item level 200, 1 sold, 1 over the gold cap, 1 the class or level may not wear (item 101), 1 not above the worn item level)', r.detail)
+
+    def test_no_crate_is_paid_for_when_the_backpack_has_no_slot(self):
+        stock = [{'i': 2, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'n': 'axe'}]
+        io = TidyIO(rules=self.rules, slots_free=0, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual([e for e in io.stock if e.get('sold')], [], 'nothing is bought: it would go to the inbox')
+        self.assertIn('no free backpack slot', r.detail)
+        io = TidyIO(rules=self.rules, slots_free=3, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual([e['i'] for e in io.stock if e.get('sold')], [2], 'with a slot the crate is bought')
+
+    def test_a_slot_is_made_before_the_crate_is_bought(self):
+        stock = [{'i': 2, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'n': 'axe'}]
+        io = TidyIO(rules=self.rules, hand_il=50, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        io.bag_weapons.append({'i': 1, 'id': 8209, 'cid': 8209, 'wt': 1, 'il': 0, 'sc': 30})
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.bot.dropped[0], (1, 8209), 'the old kit weapon is dropped before the purchase')
+
+
+class RerollIO(TidyIO):
+    """a Gambler whose crates are all sold and who rerolls once for 500,000 gold into `fresh`"""
+
+    def __init__(self, fresh=None, **kw):
+        TidyIO.__init__(self, **kw)
+        self.fresh, self.rerolls = fresh or [], 0
+
+    async def request(self, opname, action, data, expect, timeout):
+        if opname == 'gamble' and action == 'reroll':
+            if self.rerolls == 0 and self.bank >= 500000:
+                self.bank -= 500000
+                self.rerolls = 1
+                self.stock = [dict(e) for e in self.fresh]
+            return {'action': 'result', 'data': {'ok': True}}
+        out = await TidyIO.request(self, opname, action, data, expect, timeout)
+        if opname == 'gamble' and action == 'open' and isinstance(out, dict):
+            out['data'] = dict(out['data'], w=1, gate=130, reroll=500000 if self.rerolls == 0 else None)
+        return out
+
+
+class Reroll663(unittest.TestCase):
+    """O663: every crate sold: the bot pays for a reroll, as a player does, and buys from the fresh stock"""
+
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+        self.rules = TX.parse_equip_rules(EQUIP663)
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+
+    def test_a_sold_out_stock_is_rerolled_once_and_the_fresh_weapon_is_bought(self):
+        sold = [{'i': 1, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'sold': True}]
+        fresh = [{'i': 1, 'id': 100, 'sn': 'Weapon', 'p': 900000, 'l': 125}]
+        io = RerollIO(fresh=fresh, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=sold, level=800)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.rerolls, 1)
+        self.assertEqual(io.hand['id'], 100, r.detail)
+        self.assertIn('a reroll for 500000 gold', r.detail)
+
+    def test_no_reroll_while_a_weapon_can_be_bought(self):
+        stock = [{'i': 1, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120}]
+        io = RerollIO(fresh=[], rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.rerolls, 0)
+        self.assertEqual(io.hand['id'], 100)
+
+    def test_a_weapon_at_the_gate_of_the_level_is_not_rerolled_for(self):
+        sold = [{'i': 1, 'id': 100, 'sn': 'Weapon', 'p': 800000, 'l': 120, 'sold': True}]
+        io = RerollIO(fresh=[], rules=self.rules, hand_il=130, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=sold, level=800)
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.rerolls, 0, 'the hand holds an item level at the gate (130 of 130): fresh crates cannot help')
+
+    def test_a_reroll_the_stock_has_none_of_is_not_asked(self):
+        io = RerollIO(fresh=[], rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=[], level=800)
+        io.rerolls = 1
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertIn('no better weapon', r.detail)
+        self.assertNotIn('reroll for', r.detail)
+
+
 if __name__ == '__main__':
     unittest.main()
