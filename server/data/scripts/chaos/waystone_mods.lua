@@ -69,7 +69,16 @@ function WM.read(item)
 		return nil
 	end
 	local ok, text = pcall(function() return item:getCustomAttribute(C().attribute) end)
-	return {tier = t, mods = W.decode(C(), ok and text or "")}
+	local ws = {tier = t, mods = W.decode(C(), ok and text or "")}
+	-- O666: the corrupted modifiers (waystone_endgame.lua; the attribute is written once, by the Void Orb)
+	local EC, EG = ChaosWaystoneEndgameCore, ChaosWaystoneEndgame
+	if EC and EG and EG.config then
+		local okC, ctext = pcall(function() return item:getCustomAttribute(EG.config.corrupt.attribute) end)
+		if okC and ctext and ctext ~= "" then
+			ws.corrupt = EC.decode(EG.config, ctext, function(k) return (ChaosRiftCore.modDef(C(), k)) end)
+		end
+	end
+	return ws
 end
 
 function WM.write(item, ws)
@@ -81,6 +90,9 @@ function WM.write(item, ws)
 		return item
 	end
 	item:setCustomAttribute(cfg.attribute, W.encode(ws.mods))
+	if ws.corrupt and #ws.corrupt > 0 and ChaosWaystoneEndgame then
+		item:setCustomAttribute(ChaosWaystoneEndgame.config.corrupt.attribute, ChaosWaystoneEndgameCore.encode(ws.corrupt))
+	end
 	item:setAttribute(ITEM_ATTRIBUTE_NAME, W.itemName(cfg, ws))
 	if ITEM_ATTRIBUTE_ARTICLE then
 		item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, "a")
@@ -187,6 +199,12 @@ function WM.take(player, sid)
 	if not pick:remove(1) then
 		return false, {}
 	end
+	-- O666: a corrupted waystone brings its strong modifiers and its bonus (WM.begin reads mods.corrupted)
+	local EC = ChaosWaystoneEndgameCore
+	if EC and ws.corrupt and #ws.corrupt > 0 then
+		ws.mods = EC.merge(ws.mods, ws.corrupt)
+		ws.mods.corrupted = true
+	end
 	ws.mods.opener = guid -- the map's opener (waystone_atlas.lua: their atlas shapes the run)
 	if ChaosGapFx then -- O606
 		ChaosGapFx.on(player, "waystone")
@@ -232,6 +250,11 @@ function WM.begin(i, t, mods)
 	local cfg = C()
 	local run = {map = i, tier = t, mods = mods, fx = W.effects(cfg, mods, t), bonus = W.bonuses(cfg, mods, t),
 		untilAt = os.time() + (cfg.runSeconds or 1860), players = {}, hazards = {}, breachAlive = 0}
+	if mods.corrupted and ChaosWaystoneEndgame then -- O666: the corruption's own bonus, on top of the caps
+		for k, v in pairs(ChaosWaystoneEndgame.bonus()) do
+			run.bonus[k] = (run.bonus[k] or 0) + v
+		end
+	end
 	-- the opener's Waystone Atlas (waystone_atlas.lua, begun before this): x its modifier reward bonus
 	local am = ChaosWaystoneAtlas and ChaosWaystoneAtlas.fxOfMap and ChaosWaystoneAtlas.fxOfMap(i)
 	local mult = am and tonumber(am.modRewardMult) or 1

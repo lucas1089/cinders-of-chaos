@@ -568,6 +568,90 @@ return {
 			debuff = {key = "sundered", label = "Sundered", perStack = 0.03, max = 8, everyMs = 2500, decayMs = 6000,
 				tip = "His hits stack Sundered (+3% damage taken): step away now and then."},
 			ref = {health = 1000000, heal = 450, dps = 2600, uptime = 1, players = 1, solo = true}
+		},
+
+		-- ================================================================ pinnacle bosses (O667, pinnacle_config.lua)
+		-- The Ascended versions of four key bosses, a private fight alone or with a party of five (README "Pinnacle bosses (O667)").
+		-- Each plays one or two mechanics the boss did not have: a spread mark under every player (`marks`), the half or the whole room
+		-- bar a calm eye (`half`, `eye`), lines across the hall (`lines`). `ref` is the solo fight of tools/pinnacle_model.py: the
+		-- median class at the planned level (damage on one boss) at 85% uptime, the health the XML holds, the boss's own heal. The health
+		-- of the run is the profile's hpMult x that (the mechanics' downtime, boss_mechanics_core.lua G.balance), x the party curve.
+		-- The soak asks for a group only (groupOnly): alone it never comes.
+		["ascended malgrath"] = {
+			label = "Malgrath", size = 2, element = "death", difficulty = 0.35, every = 9000, fair = {refLevel = 2000},
+			telegraphs = {
+				{key = "tidal_collapse", label = "Tidal Collapse", kind = "ring", inner = 3, outer = 8, share = 0.45,
+					hit = "ice_shatter", fallback = "CONST_ME_ICEAREA", tip = "A ring of water round the crown: hug it or run far out."},
+				{key = "drowning_marks", label = "Drowning Marks", kind = "marks", radius = 2, share = 0.4,
+					hit = "frost_nova", fallback = "CONST_ME_ICEAREA",
+					tip = "A mark settles under every player: spread out, the circles do not follow once they lock."}
+			},
+			timed = {
+				{key = "undertow", label = "Undertow", kind = "soak", radius = 2, total = 1.8, min = 3, missShare = 0.55, every = 45000,
+					below = 0.85, groupOnly = true, hit = "big_nova_void_7", fallback = "CONST_ME_MORTAREA",
+					text = "%s drags the room into an Undertow! Stand in the circle together!",
+					tip = "A circle opens: three or more stand in it to split the hit; nobody in it hurts everyone."}
+			},
+			adds = {
+				{at = 0.5, mode = "shield", reduce = 0.7, type = WARD, name = "Drowned Anchor", count = 2, health = 150000,
+					healthPerExtra = 0.05, text = "%s hangs on two Drowned Anchors! Break them!",
+					doneText = "The anchors break: %s can be hurt again!", tip = "At 50% he takes 70% less until the 2 Drowned Anchors die."}
+			},
+			ref = {health = 3713000, heal = 250, dps = 10694, uptime = 0.85, players = 1, limit = 1200}
+		},
+		["ascended vhoss"] = {
+			label = "Vhoss", size = 2, element = "death", difficulty = 0.4, every = 9000, fair = {refLevel = 2300},
+			telegraphs = {
+				{key = "hex_lines", label = "Hexlines", kind = "lines", count = 3, share = 0.4, hit = "shadow_eruption",
+					fallback = "CONST_ME_MORTAREA", tip = "Rows and columns of hex cross the hall: stand between them."},
+				{key = "maw_cone", label = "Hexmaw Cone", kind = "cone", length = 8, spread = 3, share = 0.45, hit = "shadow_hit",
+					fallback = "CONST_ME_MORTAREA", tip = "A cone at his target: step to his side."}
+			},
+			timed = {
+				{key = "hexbind", label = "Hexbind", kind = "channel", channelMs = 8000, every = 70000, below = 0.6,
+					totemType = WARD, totemName = "Hex Idol", totemHealth = 50000, totemPerExtra = 0.05, share = 0.6,
+					hit = "big_nova_void_7", fallback = "CONST_ME_MORTAREA", text = "%s channels a Hexbind! Destroy the Hex Idol!",
+					tip = "Kill the Hex Idol before the cast ends."}
+			},
+			adds = {
+				{at = 0.5, mode = "empower", perAdd = 0.12, type = WARD, name = "Whispering Idol", count = 3, health = 110000,
+					healthPerExtra = 0.05, text = "Whispering Idols rise: they feed %s's hits!",
+					doneText = "The idols fall silent.", tip = "At 50% each living Whispering Idol makes his hits 12% harder."}
+			},
+			ref = {health = 4244000, heal = 300, dps = 12240, uptime = 0.85, players = 1, limit = 1200}
+		},
+		["ascended talath"] = {
+			label = "Talath", size = 2, element = "ice", difficulty = 0.4, every = 9000, fair = {refLevel = 2400},
+			telegraphs = {
+				{key = "whiteout", label = "Whiteout", kind = "eye", safe = 2, share = 0.5, hit = "big_shock_frost_7",
+					fallback = "CONST_ME_ICEAREA", tip = "The whole hall freezes but one calm eye: run into it."},
+				{key = "glacier_fall", label = "Glacier Fall", kind = "half", share = 0.45, hit = "ice_shatter",
+					fallback = "CONST_ME_ICEAREA", tip = "One half of the hall falls away from him: cross to the other."}
+			},
+			debuff = {key = "frostbite", label = "Frostbite", perStack = 0.04, max = 8, everyMs = 2000, decayMs = 6000,
+				tip = "His hits stack Frostbite (+4% damage taken): swap tanks or step away for a few seconds."},
+			adds = {
+				{at = 0.55, mode = "shield", reduce = 0.7, type = WARD, name = "Rime Pillar", count = 2, health = 150000,
+					healthPerExtra = 0.05, text = "%s hides behind two Rime Pillars! Break them!",
+					doneText = "The pillars shatter: %s can be hurt again!", tip = "At 55% he takes 70% less until the 2 Rime Pillars die."}
+			},
+			ref = {health = 4415000, heal = 330, dps = 12756, uptime = 0.85, players = 1, limit = 1200}
+		},
+		["ascended varkhul"] = {
+			label = "Varkhul", size = 2, element = "fire", difficulty = 0.45, every = 9000, fair = {refLevel = 2500},
+			telegraphs = {
+				{key = "ashen_verdict", label = "Ashen Verdict", kind = "half", share = 0.5, hit = "fire_explosion",
+					fallback = "CONST_ME_FIREAREA", tip = "One side of the hall burns: cross at once."},
+				{key = "cinder_lines", label = "Cinder Lines", kind = "lines", count = 4, share = 0.35, hit = "big_nova_fire_9",
+					fallback = "CONST_ME_FIREAREA", tip = "Four lines of cinder cross the hall: stand between them."}
+			},
+			adds = {
+				{at = 0.5, mode = "empower", perAdd = 0.12, type = WARD, name = "Ash Idol", count = 3, health = 120000,
+					healthPerExtra = 0.05, text = "Ash Idols rise: they feed %s's hits!",
+					doneText = "The idols crumble.", tip = "At 50% each living Ash Idol makes his hits 12% harder."}
+			},
+			softEnrage = {at = 600, perMin = 0.08, maxMult = 1.8, text = "%s burns hotter with every minute!"},
+			ref = {health = 4587000, heal = 360, dps = 13271, uptime = 0.85, players = 1, limit = 1200}
 		}
 	}
 }

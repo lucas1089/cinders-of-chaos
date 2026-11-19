@@ -54,6 +54,77 @@ RiftAtlasTotal < UILabel
 RiftAtlasZoomButton < ChaosButton
   size: 26 22
 
+// Waystone endgame page (O670, waystoneegview.lua): one row a stat, one line a tier or band boss
+RiftAtlasEgStat < ChaosPanel
+  height: 66
+  margin-bottom: 4
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-auto-resize: true
+    phantom: true
+
+  UILabel
+    id: rank
+    anchors.top: parent.top
+    anchors.left: name.right
+    margin-left: 10
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-auto-resize: true
+    phantom: true
+
+  UILabel
+    id: now
+    anchors.top: parent.top
+    anchors.left: rank.right
+    margin-left: 10
+    font: verdana-11px-antialised
+    color: #7fd07f
+    text-auto-resize: true
+    phantom: true
+
+  UILabel
+    id: desc
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: spend.left
+    margin-top: 3
+    margin-right: 8
+    height: 30
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+    text-wrap: true
+    phantom: true
+
+  ChaosButton
+    id: spend
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 70
+    !text: tr('Spend')
+
+RiftAtlasEgLine < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  height: 17
+  text-align: left
+  phantom: true
+
+RiftAtlasEgBoss < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  height: 30
+  margin-bottom: 2
+  text-align: left
+  text-wrap: true
+  phantom: true
+
 ChaosMainWindow
   id: riftAtlasWindow
   size: 980 620
@@ -346,12 +417,23 @@ ChaosMainWindow
   UILabel
     id: statusLabel
     anchors.left: parent.left
-    anchors.right: resetButton.left
+    anchors.right: egButton.left
     anchors.verticalCenter: closeButton.verticalCenter
     margin-right: 8
     font: verdana-11px-antialised
     color: #8c8070
     text-align: left
+
+  ChaosButton
+    id: egButton
+    anchors.right: resetButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 100
+    visible: false
+    !text: tr('Endgame')
+    !tooltip: tr('The endgame atlas of the waystones: points of first clears and the deep tiers')
+    @onClick: modules.game_riftatlas.toggleEndgame()
 
   ChaosButton
     id: resetButton
@@ -369,3 +451,123 @@ ChaosMainWindow
     width: 80
     !text: tr('Close')
     @onClick: modules.game_riftatlas.hide()
+
+  // the endgame page of the Waystone Atlas: covers the map and the side column while it shows (O670)
+  ChaosPanelDark
+    id: egPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    visible: false
+
+    ChaosTitlePlate
+      id: egPlate
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 34
+
+      $mobile:
+        height: 28
+
+      UILabel
+        id: egPointsValue
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 12
+        font: sans-bold-16px
+        color: #f6cf72
+        text-auto-resize: true
+        phantom: true
+
+      UILabel
+        id: egPointsText
+        anchors.left: egPointsValue.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 8
+        font: verdana-11px-rounded
+        color: #e8b84a
+        text-auto-resize: true
+        phantom: true
+        !text: tr('endgame atlas points to spend')
+
+    ChaosLabelDim
+      id: egEarned
+      anchors.top: egPlate.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      margin-left: 4
+      text-auto-resize: true
+
+    ChaosLabelDim
+      id: egHelp
+      anchors.top: egEarned.bottom
+      anchors.left: parent.left
+      width: 520
+      margin-top: 4
+      margin-left: 4
+      height: 44
+      text-wrap: true
+      text-align: left
+      !text: tr('The first kill of a deep tier\'s map boss gives one point, once for every character. Ranks shape the runs you open. Not every stat can be full.')
+
+      $mobile:
+        height: 30
+
+    UIWidget
+      id: egStats
+      anchors.top: egHelp.bottom
+      anchors.left: parent.left
+      width: 520
+      margin-top: 6
+      margin-left: 4
+      height: 280
+      layout:
+        type: verticalBox
+      phantom: false
+
+      $mobile:
+        height: 274
+
+    ChaosLabel
+      id: egTiersTitle
+      anchors.top: egEarned.top
+      anchors.left: egStats.right
+      margin-left: 24
+      text-auto-resize: true
+      color: #e8b84a
+
+    UIWidget
+      id: egTiers
+      anchors.top: egTiersTitle.bottom
+      anchors.left: egTiersTitle.left
+      anchors.right: parent.right
+      margin-top: 4
+      margin-right: 4
+      height: 172
+      layout:
+        type: verticalBox
+      phantom: true
+
+    ChaosLabel
+      id: egBossTitle
+      anchors.top: egTiers.bottom
+      anchors.left: egTiersTitle.left
+      margin-top: 8
+      text-auto-resize: true
+      color: #e8b84a
+      !text: tr('Band bosses')
+
+    UIWidget
+      id: egBosses
+      anchors.top: egBossTitle.bottom
+      anchors.left: egTiersTitle.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-right: 4
+      layout:
+        type: verticalBox
+      phantom: true

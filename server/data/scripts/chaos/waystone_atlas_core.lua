@@ -54,7 +54,8 @@ function WC.cells(cfg, tcfg)
 	local P = cfg.points
 	local bm = WC.bandMaps(tcfg)
 	for bi, b in ipairs(tcfg.bands or {}) do
-		for t = b.first, b.last do
+		-- O666: the tiers past cfg.tiers (the deep band) have no cells here: their first clears are the endgame atlas's
+		for t = b.first, math.min(b.last, cfg.tiers) do
 			for slot, i in ipairs(bm[bi]) do
 				list[#list + 1] = {key = "m" .. i .. "." .. t, kind = "map", map = i, slot = slot, tier = t, points = P.map}
 			end

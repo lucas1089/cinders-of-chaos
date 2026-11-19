@@ -10,9 +10,9 @@
   "closed": 15,
   "opcode": 73,
   "out": 24,
-  "passive": 111,
+  "passive": 113,
   "place": 15,
-  "staff": 17
+  "staff": 19
  },
  "effects": [
   {
@@ -8643,6 +8643,13 @@
   },
   {
    "keywords": [
+    "pinnacle",
+    "fragments"
+   ],
+   "npc": "Keeper of the Pinnacle"
+  },
+  {
+   "keywords": [
     "trade",
     "appraise"
    ],
@@ -9642,6 +9649,7 @@
    "actions": [
     "look",
     "tip",
+    "lootall",
     "raise"
    ],
    "client": [
@@ -10885,6 +10893,7 @@
    "dataKeys": [
     "bonus",
     "boss",
+    "greater",
     "key",
     "name",
     "notes",
@@ -12297,6 +12306,17 @@
    ],
    "talkactions": []
   },
+  "greater_ladder": {
+   "files": [
+    "greater_ladder.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/greaterseason"
+   ],
+   "why": "staff command only (/greaterseason); testers are never staff"
+  },
   "groundloot": {
    "files": [
     "groundloot.lua"
@@ -12670,6 +12690,15 @@
     "loadouts"
    ],
    "talkactions": []
+  },
+  "loot_explosion": {
+   "files": [
+    "loot_explosion.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "lootfilter": {
    "files": [
@@ -13129,6 +13158,17 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "pinnacle": {
+   "files": [
+    "pinnacle.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/pinnacle"
+   ],
+   "why": "staff command only (/pinnacle); testers are never staff"
   },
   "player_defence": {
    "files": [
@@ -13954,6 +13994,15 @@
     "waystoneAtlas"
    ],
    "talkactions": []
+  },
+  "waystone_endgame": {
+   "files": [
+    "waystone_endgame.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "waystone_mods": {
    "files": [

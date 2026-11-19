@@ -724,3 +724,107 @@ def preset_rotation(row, level, names, by_name, base):
         return base
     return [s for s in base if s['group'] == 'support'] + attack
 
+
+# ------------------------------------------------------------------------------------------------ the rotation the helper builds (O665)
+# O663 gave the bots the preset of Auto setup. The button does more than copy the preset (client game_helperrotation autorotation.lua A.select): the
+# spells of the preset the character cannot cast are left out and the five are TOPPED UP from the other presets (the earlier ones newest first, then
+# the later ones), then from the class's extras, never more than MAX_ROTATION; the area spells go first (an area spell casts on one monster too);
+# the class's ultimate comes first when it can be cast. The bots have no line spell quests, so the Deadeye (Moonshard Rain, level 500), the Thief
+# (Last Breath, level 500) and the Elementalist lost their strongest slot and cast 4 of the 5; a player's button fills it from an earlier preset.
+MAX_ROTATION = 5   # A.MAX_SPELLS: attack spells in a rotation, the ultimate not counted
+
+# The cadence. The bot looked at its spells four times a second and held a spell 0.1 s longer than its cooldown, so an attack went off every 2.25 s
+# where the group cooldown is 2.0 s (the helper of the client casts the moment the group allows it, and the models rest on that: rotation_sim.py gap 2.0),
+# 11 % of every class's spell damage. A spell is sent CAST_SLOP after its cooldown and the guard wakes up when the attack group is ready.
+CAST_SLOP = 0.03      # seconds after a cooldown a spell is tried (a try a hair early only costs "You are exhausted.", an expected text)
+CAST_WAIT_MAX = 3.0   # the longest a wandering bot waits for its own cast-time spell to end (the longest cast is 2 s, ChaosCasting maxMs 5000)
+
+
+def cast_bar(text):
+    """('start', ms) for the cast bar's start message of the bot's own cast-time spell (client opcode 231, ChaosCasting: {"action":"start","data":{"ms":1500,
+    "id":..}}), ('end', 0) for its end message, None for any other text. The keys come in any order (the server writes them from a Lua table)"""
+    if not text.startswith('{') or '"action":"' not in text or '"data"' not in text:
+        return None
+    try:
+        msg = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(msg, dict) or not isinstance(msg.get('data'), dict):
+        return None
+    if msg.get('action') == 'start' and isinstance(msg['data'].get('ms'), int) and 'c' not in msg['data']:
+        return ('start', msg['data']['ms'])
+    if msg.get('action') == 'end' and 'c' not in msg['data']:
+        return ('end', 0)
+    return None
+BEAT_MAX = 0.25       # the longest sleep of the guard loop
+BEAT_MIN = 0.02       # the shortest
+
+
+def beat_delay(now, ready):
+    """seconds the guard sleeps: until the attack group is ready when that comes before the usual beat, else BEAT_MAX. `ready` is the bot's table of
+    times; the attack group's key is 'attack'"""
+    wait = ready.get('attack', 0) - now   # the attack group's time already holds CAST_SLOP (keep_alive)
+    if 0 < wait < BEAT_MAX:
+        return max(BEAT_MIN, wait)
+    return BEAT_MAX
+
+
+def load_area(path):
+    """{spell id: True} of the area spells in autorotation_data.lua (`spells[id].area`), {} when the file cannot be read"""
+    try:
+        with open(path, encoding='utf-8') as f:
+            text = f.read()
+    except OSError:
+        return {}
+    _, _, tail = text.partition('  spells = {')
+    return {int(m.group(1)): True for m in re.finditer(r'\[(\d+)\] = \{ name = "[^"]*", words = "[^"]*"[^\n]*? area = true', tail)}
+
+
+def helper_rotation(row, level, names, by_name, base, area=None):
+    """the rotation the Auto setup button writes for a character that can cast what `by_name` holds at `level`: the same arguments as `preset_rotation`
+    plus `area` {spell id: True} (the `area` flag of autorotation_data.lua `spells`; none: no spell is area). The support spells of `base` stay in front.
+    -> the new list, or `base` when the class has no row or no spell of it can be told on the server"""
+    if not row or not row.get('presets'):
+        return base
+    index = None
+    for i, p in enumerate(row['presets']):
+        if p['level'] <= level:
+            index = i
+    if index is None:
+        return base
+    area = area or {}
+    base_by_words = {s['words']: s for s in base}
+
+    def castable(sid):
+        s = by_name.get(names.get(sid))
+        return s if s is not None and s['level'] <= level and not s['needlearn'] and not s['params'] else None
+
+    ids, words = [], set()
+
+    def add(sid):
+        s = castable(sid)
+        if s is not None and s['words'] not in words:
+            words.add(s['words'])
+            ids.append(sid)
+
+    for sid in row['presets'][index]['spells']:
+        add(sid)
+    for j in list(range(index - 1, -1, -1)) + list(range(index + 1, len(row['presets']))):
+        for sid in row['presets'][j]['spells']:
+            if len(ids) < MAX_ROTATION:
+                add(sid)
+    for sid in row.get('extras') or []:
+        if len(ids) < MAX_ROTATION:
+            add(sid)
+    ids = [i for i in ids if area.get(i)] + [i for i in ids if not area.get(i)]
+    ultimate = row.get('ultimate')
+    if ultimate and castable(ultimate) is not None and castable(ultimate)['words'] not in words:
+        ids.insert(0, ultimate)
+    attack = []
+    for sid in ids:
+        s = castable(sid)
+        attack.append(dict(base_by_words.get(s['words']) or s, group=s['group']))
+    if not attack:
+        return base
+    return [s for s in base if s['group'] == 'support'] + attack
+

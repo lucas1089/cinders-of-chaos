@@ -5,7 +5,9 @@
 --   client -> server  look {t = [[x, y, z], ...]}    the tiles whose items changed (at most 30 per message)
 --                     tip {p = [x, y, z], s, id}     the rich tooltip of one ground item
 --                     raise {p, s, id, c, iid}       put an item lower in a pile on top (then it is moved as usual)
---   server -> client  tiles {t = [{p, i = [rows]}]}   tip {p, s, id, tip | gone}   raised {p, id[, err]}
+--                     lootall {}                     pick up every item of mine within reach (Ctrl+Shift+L, the button of the
+--                                                    settings window; the loot of a kill flies out onto the tiles around it, O669)
+--   server -> client  tiles {t = [{p, i = [rows]}]}   tip {p, s, id, tip | gone}   raised {p, id[, err]}   lootall {n, f, s}
 -- The rules (what gets a label, text, colour, timer, priority, layout) are in groundlabelslogic.lua.
 --
 -- How it is drawn: the engine has no Lua callback for tile changes, so the tiles in view are scanned on a light timer
@@ -537,6 +539,17 @@ local function topOf(t)
 end
 
 local pendingPick -- {key, row, at}: asked the server to put this item on top of its pile
+local lastLootAll -- when the last Loot all request went out
+
+-- Loot all: the server takes every item of mine within reach into the backpack and answers with a message line
+function lootAll()
+  if not g_game.isOnline() then return false end
+  local t = now()
+  if not GL.lootAllReady(lastLootAll, t) then return false end
+  lastLootAll = t
+  send('lootall', {})
+  return true
+end
 
 local function pickUp(thing)
   local player = g_game.getLocalPlayer()
@@ -684,6 +697,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   if msg.action == 'tiles' then onTiles(msg.data)
   elseif msg.action == 'tip' then onTip(msg.data)
   elseif msg.action == 'raised' then onRaised(msg.data)
+  elseif msg.action == 'lootall' then rowsVersion = rowsVersion + 1 -- the server told it in a message line; the labels re-scan
   end
 end
 
@@ -804,12 +818,14 @@ function init()
       window[k].onCheckChange = safe('ui', onUiChange)
     end
     window.sizeCombo.onOptionChange = safe('ui', onUiChange)
+    window.lootAll.onClick = safe('lootall', lootAll)
   else
     g_logger.warning('[groundlabels] settings window not loaded: ' .. tostring(ui))
   end
   mapPanel = modules.game_interface.getMapPanel()
   if mapPanel then connect(mapPanel, handlers.map, true) end
   ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)
+  if g_keyboard and g_keyboard.bindKeyDown then pcall(g_keyboard.bindKeyDown, GL.LOOT_ALL_KEY, lootAll) end
   connect(g_game, handlers.game)
   connect(LocalPlayer, handlers.player)
   -- the loops run from the start (offline they only check g_game.isOnline()): the game start signal is not a
@@ -824,6 +840,7 @@ function terminate()
   disconnect(g_game, handlers.game)
   disconnect(LocalPlayer, handlers.player)
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  if g_keyboard and g_keyboard.unbindKeyDown then pcall(g_keyboard.unbindKeyDown, GL.LOOT_ALL_KEY, lootAll) end
   if window then window:destroy() window = nil end
   handlers = {}
 end

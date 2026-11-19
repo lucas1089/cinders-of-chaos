@@ -115,8 +115,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   harvestevent tools/install_harvest_event.py    the Haunted Harvest's items (hollow candy, sexton's key, ritual candle,
                hollow charm: copies of stock items, server ids 41620..41623) in items.otb / items.xml and Widow Hessa
                in data/npc (README "Haunted Harvest")
-  waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XV items (copies of the base tablets' nodes, server ids
-               41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
+  waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XXV items (copies of the base tablets' nodes, server ids
+               41951..41969, monster level 1700-3500; O666 added XVI-XXV) in items.otb / items.xml (README "Waystone tiers")
   cursedchest  tools/install_cursed_chest.py     the Cursed Chest's looks (copies of the Sealed Coffer chest's node with client ids
                38642..38644, server ids 32281..32283; a chest rolls only 32281, one tile since pair 53, the others are legacy) in
                items.otb / items.xml (README "Cursed Chest")
@@ -171,6 +171,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (ChaosInvasion.npcPrice; invasion_config.lua occupation; README "Invasions and world events")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
                clerk) and their shared dialogue in data/npc (README "Service NPCs")
+  pinnacle     tools/install_pinnacle.py         the Keeper of the Pinnacle NPC (opens the arenas of the four Ascended pinnacle bosses) in
+               data/npc (README "Pinnacle bosses (O667)"; the bosses' monsters come with the `monsters` step)
   apothecary   tools/install_apothecary.py      Veyra the Apothecary, the hub's supplies seller (potions, runes, rope, shovel,
                torch, backpack), in data/npc (README "The Apothecary"; before runes, potions and itemprices)
   conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
@@ -533,6 +535,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                held to, read from the installed movements.xml and weapons.xml; the item tooltip names those classes (O490, README
                "Equip rules in the tooltip (O490)"; nothing about who can wear what changes; after every step that writes
                movements.xml or weapons.xml)
+  lootexplosion tools/patch_loot_explosion.py    Player:onMoveItem asks ChaosLootExplosion.onMoveItem first: the loose loot of a kill (the loot
+               explosion, O669, README "Loot explosion (O669)") is taken only by its killer and party until the owner time ran out
+               (after the steps that edit events/scripts/player.lua)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1085,6 +1090,13 @@ def step_servicenpcs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs (their stalls in the hub), after Osric
+
+
+def step_pinnacle(server, data, ctx):
+    return tool_result(run_tool([tool('install_pinnacle.py'), data], 'install_pinnacle.py'))
+
+
+STEPS.insert(STEPS.index('servicenpcs') + 1, 'pinnacle')  # the Keeper of the Pinnacle NPC (O667), after the service NPCs
 
 
 def step_apothecary(server, data, ctx):
@@ -1960,6 +1972,14 @@ def step_equiprules(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'equiprules')  # after every step that writes movements.xml or weapons.xml (it reads both)
+
+
+def step_lootexplosion(server, data, ctx):
+    args = [tool('patch_loot_explosion.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_loot_explosion.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'lootexplosion')  # O669: the ownership call in Player:onMoveItem, after the steps that edit player.lua
 
 
 def step_autoloot(server, data, ctx):

@@ -98,7 +98,7 @@ local function addUniques(L, corpse, owner, monster, rolls, find, level, bonus, 
 end
 
 local function waystoneKill(monster, corpse, owner, ctx, L, bonus)
-	local t, isBoss = waystoneTier(monster)
+	local t, isBoss, entry = waystoneTier(monster)
 	if not t then
 		return false
 	end
@@ -109,6 +109,19 @@ local function waystoneKill(monster, corpse, owner, ctx, L, bonus)
 	local c = cfg().waystone
 	if isBoss then
 		local plan = K.waystoneBoss(cfg(), t, quantity, rand)
+		-- O666: a band boss (waystone_endgame.lua) has its own table on top: pieces, unique rolls, Void Orbs and orbs
+		local EG, EC = ChaosWaystoneEndgame, ChaosWaystoneEndgameCore
+		if entry and entry.band and entry.row and EG and EC then
+			local bp = EC.bandPlan(EG.config, entry.row, rand)
+			plan.pieces = plan.pieces + bp.pieces
+			plan.uniqueRolls = plan.uniqueRolls + bp.uniqueRolls
+			for _, o in ipairs(bp.orbs) do
+				plan.orbs[#plan.orbs + 1] = o
+			end
+			if bp.void > 0 then
+				plan.orbs[#plan.orbs + 1] = {id = EG.config.voidOrb.id, name = EG.config.voidOrb.name, count = bp.void}
+			end
+		end
 		local divine = (c.rarityPerTier.divine or 0) * (t - 1)
 		for _ = 1, plan.pieces do
 			local name = addPiece(L, corpse, runLevel, c.boss.rarity, divine)

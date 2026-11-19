@@ -1207,6 +1207,11 @@ jobs:
       - name: Bosses at their planned length for the typical damage after the round (boss_length_model.py --check and its test; dungeons_difficulty.lua, rift_config.lua, the Omen, Ascended, Cinderheart and raid boss health; O475)
         run: python3 -I server/tools/boss_length_model.py --check && python3 -I server/tools/boss_length_model_test.py
 
+      - name: Pinnacle bosses (O667) kill in 420 s alone and 300 s with five for the median class, hit within the healing limits, and a set of fragments takes 2.5-7 hours of top content (pinnacle_model.py --check and its test; pinnacle_config.lua, pinnacle_balance_config.lua, the XML of the four bosses, their boss_mechanics_config.lua profiles)
+        run: |
+          python3 -I server/tools/pinnacle_model.py --check
+          python3 -I server/tools/pinnacle_model_test.py
+
       - name: Main quest (O551) is paid within its budget and its boss can be soloed by all 21 classes (mainquest_model.lua, mainquest_boss_model.py and tests; the pt-BR script is generated from the config)
         run: |
           cd server
@@ -1227,6 +1232,8 @@ jobs:
         run: python3 -I server/tools/class_dps_model.py --check && python3 -I server/tools/class_dps_model_test.py
       - name: Weapon families keep the class damage, each within 3% on one target, the axe under 5% of a class on 5 targets (weapon_family_model.py --check and its test; weapon_families_config.lua, class_dps_measured.csv; O454)
         run: python3 -I server/tools/weapon_family_model.py --check && python3 -I server/tools/weapon_family_model_test.py
+      - name: Waystone endgame, tiers XVI-XXV to level 3500, clear time, survival and experience against the hunt, band bosses, corrupted waystone and the first-clear atlas, computed and not measured (waystone_endgame_model.py --check and its test; waystone_endgame_config.lua, waystone_endgame_balance_config.lua, waystone_tiers_config.lua deep; O666)
+        run: python3 -I server/tools/waystone_endgame_model.py --check && python3 -I server/tools/waystone_endgame_model_test.py
       - name: PvP model, computed and not measured, no one shot or unkillable class or class that wins nearly every duel left unnamed (pvp_model.py --check and its test; pvp_balance_config.lua, class_dps_model.py, survival_model.py, healing_rules_core.lua, arena_config.lua; O444)
         run: python3 -I server/tools/pvp_model.py --check && python3 -I server/tools/pvp_model_test.py
       - name: Card sets stay small, damage parts at most 6%, a set within 10% of the best mixed build and never half a point ahead of it, computed and not measured (card_set_model.py --check and its test; cards_config.lua sets; O453)
@@ -1250,6 +1257,9 @@ jobs:
 
       - name: Ember Descent rooms against the hunt pack of the level, room 1 cleared with healing left, the rooms grow, the boss is a fight (descent_model.py --check and its test; descent_balance_config.lua, O664)
         run: python3 -I server/tools/descent_model.py --check && python3 -I server/tools/descent_model_test.py
+
+      - name: Greater Rift (rift tier 16 and up, O668) - the tier the median class reaches at levels 1500 / 2000 / 2500, seconds per tier, the guardian against healing, no wall and no free tier (greater_rift_model.py --check and its test; greater_balance_config.lua)
+        run: python3 -I server/tools/greater_rift_model.py --check && python3 -I server/tools/greater_rift_model_test.py
 
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
@@ -1587,6 +1597,9 @@ jobs:
 
       - name: "Deck items out of the base data: loot, trade and reward lines, CRLF, idempotence (O570)"
         run: python3 -I server/tools/patch_remove_decks_test.py
+
+      - name: "Loot explosion: the ownership call in Player:onMoveItem, LF and CRLF, idempotence, the install step (O669)"
+        run: python3 -I server/tools/patch_loot_explosion_test.py
 
       - name: "Equip rules in the tooltip: the chip reading, the rules of movements.xml and weapons.xml, every mismatch kind, the install step (O490)"
         run: python3 -I server/tools/audit_equip_tooltips_test.py

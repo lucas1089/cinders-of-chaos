@@ -347,6 +347,14 @@
    "action": "wipe",
    "reason": "goal progress of beta characters"
   },
+  "chaos_greater_rift": {
+   "action": "wipe",
+   "reason": "Greater Rift ladder of beta characters"
+  },
+  "chaos_greater_rift_rewards": {
+   "action": "wipe",
+   "reason": "Greater Rift rewards of beta characters"
+  },
   "chaos_guild": {
    "action": "wipe",
    "reason": "guild levels, banks, halls and depots (guilds are wiped, BETA.md section 3)"

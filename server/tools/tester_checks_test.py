@@ -5933,6 +5933,79 @@ class CraftFound(unittest.TestCase):
         self.assertLess(keys.index('gear_chase'), keys.index('rift_walk'), 'the rift stays the longest, last')
 
 
+class LootExplosion(unittest.TestCase):
+    """O669: a loot bag of the bot's own explodes onto the ground (owned, within 2 tiles, nothing left in the bag); Loot all (opcode 230) picks it up"""
+
+    GOOD = {'loose': 7, 'mine': 7, 'tiles': 6, 'maxRing': 2, 'strict': 0, 'foreign': 0, 'bagItems': 0, 'watched': 6, 'expiry': 170,
+            'strangerRefused': True, 'ownerAllowed': True}
+    DONE = dict(GOOD, loose=0, mine=0, tiles=0, maxRing=0)
+
+    def io(self, mid=None, end=None, run=None, lootall=None):
+        states = [dict(self.GOOD, **(mid or {})), dict(self.DONE, **(end or {}))]
+        io = FakeIO(answers={'explode run': {'items': 6, 'expected': 6} if run is None else run,
+                             'explode state': lambda me: states.pop(0) if len(states) > 1 else states[0]},
+                    replies={('groundLoot', 'lootall'): {'action': 'lootall', 'data': {'n': 7, 'f': 0, 's': 7}} if lootall is None else lootall})
+        return io
+
+    def go(self, io):
+        return run(TX.check_loot_explosion(io, 'Tester Lex', 'Ninja', 300))
+
+    def test_the_loot_lands_owned_and_loot_all_takes_it(self):
+        io = self.io()
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Loot all took 7', r.detail)
+        self.assertIn(('groundLoot', 'lootall', {}), io.asked)
+        self.assertGreaterEqual(io.t, 3.0, 'the bot waits for the flight before it looks')
+
+    def test_loot_left_in_the_bag_is_a_bug(self):
+        r = self.go(self.io(mid={'bagItems': 3}))
+        self.assertEqual((r.status, 'stayed in the bag' in r.detail), (TX.FAIL, True))
+        self.assertIn('BUG loot_explosion', r.bug_line())
+
+    def test_nothing_on_the_ground_is_a_bug(self):
+        r = self.go(self.io(mid={'loose': 0, 'mine': 0}))
+        self.assertEqual((r.status, 'did not land' in r.detail), (TX.FAIL, True))
+
+    def test_loot_past_the_radius_is_a_bug(self):
+        r = self.go(self.io(mid={'maxRing': 4}))
+        self.assertEqual((r.status, 'radius is 2' in r.detail), (TX.FAIL, True))
+
+    def test_loot_of_another_owner_is_a_bug(self):
+        self.assertEqual(self.go(self.io(mid={'foreign': 1, 'mine': 6})).status, TX.FAIL)
+        self.assertEqual(self.go(self.io(mid={'mine': 5})).status, TX.FAIL)
+
+    def test_a_stranger_who_may_take_it_is_a_bug(self):
+        r = self.go(self.io(mid={'strangerRefused': False}))
+        self.assertEqual((r.status, 'stranger may take' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(self.io(mid={'ownerAllowed': False})).status, TX.FAIL)
+
+    def test_loot_all_that_leaves_loot_behind_is_a_bug(self):
+        r = self.go(self.io(end={'mine': 2}))
+        self.assertEqual((r.status, 'lie there still' in r.detail), (TX.FAIL, True))
+        r = self.go(self.io(lootall={'action': 'lootall', 'data': {'n': 0, 'f': 0, 's': 0}}))
+        self.assertEqual((r.status, 'took nothing' in r.detail), (TX.FAIL, True))
+
+    def test_a_full_backpack_is_no_fault_of_the_game(self):
+        r = self.go(self.io(end={'mine': 3}, lootall={'action': 'lootall', 'data': {'n': 4, 'f': 3, 's': 7}}))
+        self.assertEqual((r.status, 'did not fit' in r.detail), (TX.SKIP, True))
+
+    def test_no_helper_or_the_rule_off_is_a_skip(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
+        self.assertEqual(self.go(self.io(run={'err': 'the loot explosion is off'})).status, TX.SKIP)
+        self.assertEqual(self.go(self.io(run={'err': 'no loot explosion'})).status, TX.SKIP)
+        r = self.go(self.io(lootall=None, mid={}))
+        self.assertEqual(r.status, TX.PASS)
+        io = self.io()
+        io.replies = {}
+        self.assertEqual(self.go(io).status, TX.SKIP, 'no answer to Loot all: the landing was checked, the verdict waits')
+
+    def test_the_check_is_in_the_run(self):
+        keys = TX.CheckRun('t', 'Ninja', 100).todo()
+        self.assertIn('loot_explosion', keys)
+        self.assertNotIn('loot_explosion', TX.CLOSED_KEYS)
+
+
 class GearChase(unittest.TestCase):
     def go(self, io):
         return run(TX.check_gear_chase(io, 'Tester Gch', 'Ninja', 300))
@@ -10345,6 +10418,197 @@ class RerollIO(TidyIO):
         return out
 
 
+ITEMS665 = '''<?xml version="1.0"?>
+<items>
+	<item id="8209" name="kit sword"><attribute key="weaponType" value="sword"/><attribute key="attack" value="12"/></item>
+	<item id="900" name="sanguine blade"><attribute key="weaponType" value="sword"/><attribute key="elementfire" value="73"/><attribute key="attack" value="13"/></item>
+	<item id="901" name="deathlord blade"><attribute key="weaponType" value="sword"/><attribute key="attack" value="85"/></item>
+	<item id="902" name="soulbleeder"><attribute key="weaponType" value="distance"/><attribute key="attack" value="103"/></item>
+	<item id="903" name="eldritch wand"><attribute key="weaponType" value="wand"/><attribute key="range" value="4"/></item>
+	<item id="904" name="arodis wand"><attribute key="weaponType" value="wand"/></item>
+	<item id="905" name="stone"><attribute key="weight" value="5"/></item>
+</items>
+'''
+WEAPONS665 = '''<?xml version="1.0"?>
+<weapons>
+	<wand id="903" level="250" mana="22" min="106" max="130" type="fire"> <!-- Eldritch Wand --> </wand>
+	<wand id="904" level="400" mana="28" min="191" max="219" type="energy"> <!-- Arodis Wand --> </wand>
+</weapons>
+'''
+
+
+class PowerIO(TidyIO):
+    """a TidyIO that knows the weapon numbers of the server (CheckIO.weapon_stats)"""
+
+    def __init__(self, stats=None, **kw):
+        TidyIO.__init__(self, **kw)
+        self.stats = stats
+
+    def weapon_stats(self):
+        return self.stats
+
+
+class PowerRerollIO(RerollIO):
+    """a RerollIO (a Gambler that rerolls once for 500,000 gold) that knows the weapon numbers of the server"""
+
+    def __init__(self, stats=None, **kw):
+        RerollIO.__init__(self, **kw)
+        self.stats = stats
+
+    def weapon_stats(self):
+        return self.stats
+
+
+class Power665(unittest.TestCase):
+    """O665: the bot ranks a weapon by what its class's spells read (the physical attack, the wand's damage), not by item level: the melee sets of
+    level 600 to 999 are mostly element and cast with skill x 20"""
+
+    def setUp(self):
+        import tempfile
+        import tester_weapons as W
+        self.W = W
+        self.dir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.dir, 'data', 'items'))
+        os.makedirs(os.path.join(self.dir, 'data', 'weapons'))
+        with open(os.path.join(self.dir, 'data', 'items', 'items.xml'), 'w') as f:
+            f.write(ITEMS665)
+        with open(os.path.join(self.dir, 'data', 'weapons', 'weapons.xml'), 'w') as f:
+            f.write(WEAPONS665)
+        self.stats = W.load_weapon_stats(self.dir)
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+        self.rules = TX.parse_equip_rules(EQUIP663)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.dir)
+        TX.chore_walk = self._walk
+        TX.set_weapon_stats(None)
+
+    def test_the_files_are_read(self):
+        self.assertEqual(self.stats[900], {'type': 'sword', 'attack': 13, 'wand': 0.0})
+        self.assertEqual(self.stats[902]['type'], 'distance')
+        self.assertEqual(self.stats[903]['wand'], 118.0, 'the mean of the wand\'s min and max')
+        self.assertNotIn(905, self.stats, 'an item that is no weapon')
+        self.assertEqual(self.W.load_weapon_stats(os.path.join(self.dir, 'nothing')), {})
+
+    def test_what_a_weapon_is_worth_to_a_class(self):
+        p = self.W.weapon_power
+        self.assertEqual(p(self.stats, 900, 'Juggernaut'), 20.0, 'attack 13 and a fire element: a spell reads 20 (the floor)')
+        self.assertEqual(p(self.stats, 901, 'Juggernaut'), 85.0)
+        self.assertEqual(p(self.stats, 902, 'Deadeye'), 103.0)
+        self.assertEqual(p(self.stats, 902, 'Warrior'), 0.0, 'a bow in the hand of a Warrior')
+        self.assertEqual(p(self.stats, 904, 'Elementalist'), 205.0)
+        self.assertEqual(p(self.stats, 901, 'Elementalist'), 0.0, 'a sword for a caster')
+        self.assertIsNone(p(self.stats, 901, 'Monk'), 'the fist classes have no rule: item level')
+        self.assertIsNone(p(self.stats, 12345, 'Juggernaut'), 'an id the files do not list')
+        self.assertIsNone(p(None, 901, 'Juggernaut'))
+        self.assertTrue(self.W.weapon_beats(86.0, 77.0))
+        self.assertFalse(self.W.weapon_beats(80.0, 77.0), 'under the 10 % margin: the weapon in the hand stays')
+        self.assertIsNone(self.W.weapon_beats(None, 77.0))
+
+    def test_the_pick_takes_the_physical_weapon_not_the_higher_item_level(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=self.stats)
+        power = TX.weapon_power_fn(io, 'Juggernaut')
+        self.assertEqual(TX.weapon_pick(stock, 100)['id'], 900, 'by item level the element sword wins (O663)')
+        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=20.0)['id'], 901, 'by power the physical one')
+        self.assertIsNone(TX.weapon_pick(stock, 100, power=power, worn_power=85.0), 'nothing stronger than an attack of 85: nothing is bought')
+        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=None)['id'], 901, 'the worn weapon is not known: the item level lets both in, the power ranks them')
+        self.assertIsNone(TX.weapon_pick(stock, 200, power=power, worn_power=None), 'and the item level still says nothing is better than 200')
+        unknown = [{'i': 1, 'id': 777, 'sn': 'Weapon', 'p': 800000, 'l': 130}]
+        self.assertEqual(TX.weapon_pick(unknown, 100, power=power, worn_power=20.0)['id'], 777, 'a weapon the files do not list: item level')
+
+    def test_a_held_weapon_of_more_power_is_worn_and_one_of_less_is_not(self):
+        hands = {'bag': [{'i': 1, 'id': 900, 'cid': 900, 'il': 200}, {'i': 2, 'id': 901, 'cid': 901, 'il': 100}], 'worn': []}
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        self.assertEqual(TX.weapon_held(hands, 50, power=power, worn_power=20.0)['id'], 901)
+        self.assertIsNone(TX.weapon_held(hands, 50, power=power, worn_power=85.0), 'neither is stronger than the worn weapon')
+        self.assertEqual(TX.weapon_held(hands, 50)['id'], 900, 'without the power: the item level as before')
+
+    def test_leftovers_keep_the_stronger_weapon_even_at_a_lower_item_level(self):
+        fits = TX.equip_fitter(TidyIO(rules=self.rules), 'Juggernaut', 800)
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        worn = {'s': 6, 'id': 900, 'il': 130}
+        hands = {'bag': [{'i': 1, 'id': 901, 'cid': 901, 'il': 90}, {'i': 2, 'id': 900, 'cid': 900, 'il': 100}], 'worn': [worn]}
+        self.assertEqual([w['i'] for w in TX.weapon_leftovers(hands, worn, fits)], [1, 2], 'by item level both go')
+        self.assertEqual([w['i'] for w in TX.weapon_leftovers(hands, worn, fits, power=power, worn_power=20.0)], [2],
+                         'by power the stronger weapon stays and the equal one goes')
+
+    def test_the_gear_up_buys_the_weapon_that_casts(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=self.stats, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        io.hand['id'] = 900
+        io.hand['il'] = 100
+        r = run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 800))
+        self.assertEqual(io.hand['id'], 901, r.detail)
+        self.assertEqual([e['i'] for e in io.stock if e.get('sold')], [2])
+        self.assertIn('power', r.detail, 'the text says the power of the weapon it bought')
+
+    def test_without_the_files_the_gear_up_goes_by_item_level_as_before(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=None, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 800))
+        self.assertEqual(io.hand['id'], 900)
+
+    def test_the_plan_of_the_level(self):
+        W = self.W
+        self.assertAlmostEqual(W.plan_power(500, 'Juggernaut'), 81 * 0.65, 6, 'melee: the physical part of the plan (the sets give 35 % as an element)')
+        self.assertAlmostEqual(W.plan_power(817, 'Warrior'), (94 + (118 - 94) * (817 - 700) / 150.0) * 0.65, 6, 'straight between the anchors')
+        self.assertEqual(W.plan_power(574, 'Deadeye'), 111 + (125 - 111) * 74 / 200.0, 'a launcher counts whole')
+        self.assertEqual(W.plan_power(8, 'Elementalist'), 16.0)
+        self.assertEqual(W.plan_power(5000, 'Elementalist'), 398.0, 'flat above 2000')
+        self.assertIsNone(W.plan_power(500, 'Monk'), 'no rule for a fist class')
+        self.assertTrue(W.power_short(20.0, 817, 'Juggernaut'), 'attack 20 at level 817 is under half of the plan')
+        self.assertFalse(W.power_short(73.0, 817, 'Juggernaut'), 'a set weapon of level 800 is not')
+        self.assertFalse(W.power_short(None, 817, 'Juggernaut'))
+        self.assertFalse(W.power_short(20.0, 817, 'Monk'))
+
+    def _reroll_io(self, hand_id, hand_il, stock, fresh, level=817):
+        io = PowerRerollIO(fresh=fresh, stats=self.stats, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=level,
+                           hand_il=hand_il)
+        io.hand['id'] = hand_id
+        return io
+
+    def test_a_hand_under_half_the_plan_with_no_better_weapon_in_the_stock_pays_for_fresh_crates(self):
+        TX.POWER_REROLLS.clear()
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'}]
+        fresh = [{'i': 1, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 128, 'n': 'deathlord blade'}]
+        io = self._reroll_io(900, 130, stock, fresh)
+        r = run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 1, r.detail)
+        self.assertEqual(io.hand['id'], 901, r.detail)
+        self.assertIn('a reroll for 500000 gold', r.detail)
+        self.assertEqual(TX.POWER_REROLLS['Tester Aaf'], 1)
+
+    def test_no_reroll_when_the_hand_holds_a_weapon_of_the_plan_or_the_cap_is_met(self):
+        TX.POWER_REROLLS.clear()
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'}]
+        io = self._reroll_io(901, 130, stock, [])
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'attack 85 in the hand: the plan of level 817 is 70')
+        io = self._reroll_io(900, 130, stock, [])
+        TX.POWER_REROLLS['Tester Aaf'] = TX.POWER_REROLL_MAX
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'the bot has paid for its share of rerolls in this run')
+        TX.POWER_REROLLS.clear()
+        io = self._reroll_io(900, 130, stock, [])
+        io.stats = None
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'without the weapon files the rule is the item level of O663: the hand is at the gate')
+
+    def test_the_no_weapon_text_names_the_reason_by_power(self):
+        rows = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130}]
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        self.assertIn('no stronger than the worn weapon', TX.weapon_rejects(rows, 100, None, power=power, worn_power=85.0))
+        self.assertIn('not above the worn item level', TX.weapon_rejects(rows, 200, None))
+        self.assertEqual(TX.weapon_power_text(85.4), '; worn power 85')
+        self.assertEqual(TX.weapon_power_text(None), '')
+
+
 class Reroll663(unittest.TestCase):
     """O663: every crate sold: the bot pays for a reroll, as a player does, and buys from the fresh stock"""
 
@@ -10384,6 +10648,158 @@ class Reroll663(unittest.TestCase):
         r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
         self.assertIn('no better weapon', r.detail)
         self.assertNotIn('reroll for', r.detail)
+
+
+class WsEndgame(unittest.TestCase):
+    """O666: the closed-mode check of the waystone endgame reads the helper's answer"""
+
+    GOOD = {'tiers': 25, 'bands': 4, 'hook': True, 'corrupt': {'pool': 16, 'known': 16, 'orbLoaded': True},
+            'bossTypes': [{'tier': t, 'name': 'B%d' % t, 'loaded': True} for t in (5, 10, 15, 25)], 'atlas': {'points': 2, 'free': 1}}
+
+    def test_a_complete_answer_passes(self):
+        self.assertEqual(TX.wsendgame_verdict(self.GOOD)[0], TX.PASS)
+
+    def test_a_boss_type_the_engine_did_not_load_fails(self):
+        a = copy.deepcopy(self.GOOD)
+        a['bossTypes'][2]['loaded'] = False
+        status, text = TX.wsendgame_verdict(a)
+        self.assertEqual(status, TX.FAIL)
+        self.assertIn('B15', text)
+
+    def test_the_other_faults_fail(self):
+        for key, value, word in (('tiers', 15, 'tiers'), ('hook', False, 'onRunCleared')):
+            a = copy.deepcopy(self.GOOD)
+            a[key] = value
+            status, text = TX.wsendgame_verdict(a)
+            self.assertEqual(status, TX.FAIL, key)
+            self.assertIn(word, text)
+        a = copy.deepcopy(self.GOOD)
+        a['corrupt']['known'] = 15
+        self.assertEqual(TX.wsendgame_verdict(a)[0], TX.FAIL)
+        a = copy.deepcopy(self.GOOD)
+        a['corrupt']['orbLoaded'] = False
+        self.assertIn('Void Orb', TX.wsendgame_verdict(a)[1])
+
+    def test_no_answer_or_an_error_is_a_skip(self):
+        self.assertEqual(TX.wsendgame_verdict(None)[0], TX.SKIP)
+        self.assertEqual(TX.wsendgame_verdict({'err': 'no waystone endgame'})[0], TX.SKIP)
+
+    def test_the_check_is_in_the_list(self):
+        self.assertIn('wsendgame', [c[0] for c in TX.CHECKS])
+# ------------------------------------------------------------------------------------------------ O667: the Keeper of the Pinnacle
+class PinnacleIO(FakeIO):
+    def __init__(self, listing, refusal=(), answers=None):
+        super().__init__(answers=dict({'path npc Keeper of the Pinnacle': {'here': True}}, **(answers or {})))
+        self.listing, self.refusal, self.pressed = listing, list(refusal), []
+
+    async def say_modal(self, text, ids, wait=5.0, kind=1):
+        self.kind_said = kind
+        return self.listing, ['The Keeper bows.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        self.pressed.append((window_id, button, choice))
+        return None, (self.refusal if button == 1 else [])
+
+
+def pinnacle_window(choices=((1, 'Ascended Malgrath'), (2, 'Ascended Vhoss'), (3, 'Ascended Talath'), (4, 'Ascended Varkhul')),
+                    buttons=((1, 'Open'), (2, 'Focus'), (3, 'Close')), title='The Pinnacle'):
+    return {'id': 7490, 'title': title, 'message': 'Four Ascended bosses wait', 'buttons': list(buttons), 'choices': list(choices), 'escape': 3, 'enter': 1}
+
+
+class PinnacleRead(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_pinnacle_read(io, 'Tester Pin', 'Ninja', 2500))
+
+    def test_the_window_is_read_open_is_refused_and_the_window_closes(self):
+        io = PinnacleIO(pinnacle_window(), ['The set is not whole. Missing: Drowned Crown Shard.'])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('lists four bosses', r.detail)
+        self.assertIn('refused', r.detail)
+        self.assertEqual(io.pressed[0], (7490, 1, 1), 'Open with the first boss')
+        self.assertEqual(io.pressed[1][:2], (7490, 3), 'the window closed with its escape button')
+        self.assertEqual(io.kind_said, TX.NPC_CHANNEL)
+        self.assertEqual(TX.PINNACLE_MODAL, 7490)
+
+    def test_the_bugs_and_the_skips(self):
+        refused = ['You cannot open it in a fight.']
+        r = self.go(PinnacleIO(pinnacle_window(buttons=((1, 'Go'),)), refused))
+        self.assertEqual((r.status, 'not Open, Focus and Close' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(PinnacleIO(pinnacle_window(title=''), refused)).status, TX.FAIL)
+        r = self.go(PinnacleIO(pinnacle_window(choices=((1, 'a'), (2, 'b'))), refused))
+        self.assertEqual((r.status, 'four are asked' in r.detail), (TX.FAIL, True))
+        r = self.go(PinnacleIO(None))
+        self.assertEqual((r.status, 'opened no window' in r.detail, 'bows' in r.detail), (TX.SKIP, True, True))
+        r = self.go(PinnacleIO(pinnacle_window(), []))
+        self.assertEqual((r.status, 'said nothing' in r.detail), (TX.SKIP, True))
+        r = self.go(PinnacleIO(pinnacle_window(), ['You gained 10 experience.']))
+        self.assertEqual((r.status, 'no refusal' in r.detail), (TX.FAIL, True))
+        io = PinnacleIO(None, answers={'path npc Keeper of the Pinnacle': {'err': 'no way'}})
+        io.answers['enter npc Keeper of the Pinnacle'] = {'err': 'no npc'}
+        self.assertEqual(run(TX.check_pinnacle_read(io, 'a', 'Ninja', 2500)).status, TX.SKIP)
+
+    def test_the_key(self):
+        self.assertIn('pinnacle_read', TX.KEYS)
+        self.assertNotIn('pinnacle_read', TX.CLOSED_KEYS)
+        self.assertNotIn('pinnacle_read', TX.FIGHT_KEYS, 'a window check does not need a gear-up')
+        self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
+        self.assertIn(7490, __import__('testers').MODAL_IDS, 'the modal parser knows the window')
+
+
+class GreaterRiftClosed(unittest.TestCase):
+    """O668: the Greater Rift boards exist and hold no tester bot (closed mode)"""
+    META = {'data': {'boards': [{'key': 'rift'}, {'key': 'greater_solo'}, {'key': 'greater_party'}]}}
+
+    def play(self, replies):
+        io = FakeIO(replies=replies)
+        return run(TX.check_closed_greater(io, 'Tester Aaa', 'Warrior', 1500)), io
+
+    def board(self, *names):
+        return {'data': {'rows': [{'name': n, 'value': 20 + i} for i, n in enumerate(names)]}}
+
+    def test_registered_in_closed_mode_only(self):
+        self.assertIn('closed_greater', TX.CLOSED_KEYS)
+        self.assertNotIn('closed_greater', TX.KEYS)
+        self.assertLess(TX.CLOSED_KEYS.index('closed_greater'), TX.CLOSED_KEYS.index('closed_raid'))
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')                      # the longest check stays last
+
+    def test_boards_without_a_tester_pass(self):
+        r, io = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Real One', 'Real Two')})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('no tester', r.detail)
+        self.assertEqual([a[2].get('board') for a in io.asked if a[1] == 'get'], ['greater_solo', 'greater_party'])
+
+    def test_empty_boards_pass(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): {'data': {'rows': []}}})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+
+    def test_a_tester_on_a_board_is_a_bug(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Real One', 'Tester Bbb')})
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('never ranks', r.detail)
+        self.assertIn('BUG closed_greater', r.bug_line())
+
+    def test_the_bot_itself_on_a_board_is_a_bug(self):
+        r, _ = self.play({('leaderboard', 'open'): self.META, ('leaderboard', 'get'): self.board('Tester Aaa')})
+        self.assertEqual(r.status, TX.FAIL)
+
+    def test_no_boards_is_a_skip(self):
+        r, _ = self.play({('leaderboard', 'open'): {'data': {'boards': [{'key': 'rift'}]}}})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('not installed', r.detail)
+
+    def test_no_window_and_no_board_answer_are_skips(self):
+        r, _ = self.play({})
+        self.assertEqual(r.status, TX.SKIP)
+        r, _ = self.play({('leaderboard', 'open'): self.META})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no answer for the greater_solo board', r.detail)
+
+    def test_the_verdict_alone(self):
+        self.assertEqual(TX.greater_boards_verdict(None, {}, 'Tester Aaa')[0], TX.SKIP)
+        st, _ = TX.greater_boards_verdict(self.META['data'], {'greater_solo': {'rows': ['x', None]}, 'greater_party': {'rows': []}},
+                                          'Tester Aaa')
+        self.assertEqual(st, TX.PASS)
 
 
 if __name__ == '__main__':

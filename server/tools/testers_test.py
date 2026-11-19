@@ -1528,6 +1528,118 @@ eq([s['name'] for s in _cs663['rotation']][:3], ['Big One', 'Area Slam', 'Single
 _cs663 = T.class_spells(_spells663, {}, 'Warrior', 400)
 eq('Learned Only' in [s['name'] for s in _cs663['rotation']], False, 'class_spells without the table: the old rotation (a quest spell is left out as before)')
 
+# ---------------------------------------------------------------- the rotation the helper builds and the cadence (O665)
+# a Deadeye of level 574: the preset of level 500 holds a quest spell (Moonshard Rain, id 149) the bot has not learned
+_sp665 = [_sp663('p', 'Area Big', 400), _sp663('q', 'Single Hit', 100), _sp663('r', 'Quest Spell', 500, needlearn=True), _sp663('s', 'Old Area', 200),
+          _sp663('t', 'Old Single', 50), _sp663('u', 'Filler', 8), _sp663('v', 'Extra Jab', 10), _sp663('w', 'Ultimate', 1200, needlearn=True),
+          _sp663('x', 'Rage Cry', 5, group='support')]
+_names665 = {1: 'Area Big', 2: 'Single Hit', 3: 'Quest Spell', 4: 'Old Area', 5: 'Old Single', 6: 'Filler', 7: 'Extra Jab', 8: 'Ultimate', 9: 'Rage Cry'}
+_by665 = {s['name']: s for s in _sp665}
+_base665 = [dict(_sp665[8], group='support'), dict(_sp665[1], t5=1.0)]
+_row665 = {'presets': [{'level': 8, 'spells': [6]}, {'level': 50, 'spells': [5, 6]}, {'level': 200, 'spells': [4, 5, 6]}, {'level': 300, 'spells': [2, 4, 5, 6]},
+                       {'level': 500, 'spells': [3, 1, 2, 4, 6]}, {'level': 1000, 'spells': [3, 1, 2, 4, 5]}], 'extras': [7], 'ultimate': 8}
+_area665 = {1: True, 4: True}
+_got665 = TC.helper_rotation(_row665, 574, _names665, _by665, _base665, _area665)
+eq([s['name'] for s in _got665], ['Rage Cry', 'Area Big', 'Old Area', 'Single Hit', 'Filler', 'Old Single'],
+   'level 574: the quest spell is left out and the five are topped up from the earlier presets (newest first), the area spells first')
+eq(len([s for s in _got665 if s['group'] == 'attack']), 5, 'five attack spells, as the button writes them')
+_got665 = TC.helper_rotation(_row665, 1200, _names665, _by665, _base665, _area665)
+eq([s['name'] for s in _got665][:2], ['Rage Cry', 'Area Big'], 'the ultimate that must be learned is left out')
+_row665b = dict(_row665, presets=[{'level': 8, 'spells': [6]}, {'level': 50, 'spells': [5, 6]}])
+_got665 = TC.helper_rotation(_row665b, 60, _names665, _by665, _base665, {})
+eq([s['name'] for s in _got665], ['Rage Cry', 'Old Single', 'Filler', 'Extra Jab'], 'a short preset: the extras come last, only while there are fewer than five')
+_row665c = dict(_row665b, ultimate=1, presets=[{'level': 8, 'spells': [6]}, {'level': 50, 'spells': [5, 6]}])
+_got665 = TC.helper_rotation(_row665c, 450, _names665, _by665, _base665, {})
+eq([s['name'] for s in _got665][1], 'Area Big', 'the class ultimate comes first when it can be cast (it takes no slot)')
+eq(TC.helper_rotation(None, 574, _names665, _by665, _base665, _area665), _base665, 'a class with no row: the old rotation')
+eq(TC.helper_rotation(_row665, 5, _names665, _by665, _base665, _area665), _base665, 'under the first preset: the old rotation')
+eq(TC.helper_rotation({'presets': [{'level': 1, 'spells': [99]}]}, 574, _names665, _by665, _base665, {}), _base665, 'no spell of the preset on the server: the old rotation')
+_data665 = tempfile.mkdtemp()
+_file665 = os.path.join(_data665, 'autorotation_data.lua')
+with open(_file665, 'w') as _f665:
+    _f665.write('ChaosAutoRotationData = {\n  classes = {\n  },\n  spells = {\n    [2] = { name = "Gorehook", words = "kah sang hrak", cooldown = 12000, groupCooldown = 2000, '
+                'secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },\n    [225] = { name = "Colossus Fall", words = "kah gal vas tyr", cooldown = 10000, '
+                'groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 1000, area = true, chi = false },\n  }\n}\n')
+eq(TC.load_area(_file665), {225: True}, 'load_area: the area spells of the data file')
+eq(TC.load_area(os.path.join(_data665, 'nothing.lua')), {}, 'load_area: no file, no area spells')
+shutil.rmtree(_data665)
+_cs665 = T.class_spells(_sp665, {}, 'Warrior', 574, ({'Warrior': _row665}, _names665, _area665))
+eq([s['name'] for s in _cs665['rotation']][:3], ['Area Big', 'Old Area', 'Single Hit'], 'class_spells with the area table builds the rotation of the button')
+# state.json keeps the level of the setup (800 to 2000), the character has lost and won levels since: the rotation is rebuilt for the real level
+_args665 = A()
+_args665.rotation_ctx = (_sp665, {}, {7: 'Deadeye'}, ({'Deadeye': _row665}, _names665, _area665))
+_entry665 = dict(bot, level=1200, vocation=7, **{'class': 'Deadeye'})
+_r665 = T.TesterBot(19, _entry665, _args665, 1, T.Results(1), T.class_spells(_sp665, {}, 'Deadeye', 1200, ({'Deadeye': _row665}, _names665, _area665)))
+eq([s['name'] for s in _r665.rotation if s['group'] == 'attack'], ['Area Big', 'Old Area', 'Single Hit', 'Old Single', 'Filler'],
+   'the bot of the setup level 1200 starts with the rotation of the preset of level 1000 (the quest spell topped up from the earlier preset)')
+eq(_r665.refresh_rotation(), False, 'the level is the one the rotation was built for: nothing changes')
+_r665.on_text('[tester-helper] info {"cid":777,"level":300}')
+eq(_r665.level, 300, 'the helper answer carries the level the character has now')
+eq([s['name'] for s in _r665.rotation if s['group'] == 'attack'], ['Old Area', 'Single Hit', 'Old Single', 'Filler', 'Extra Jab'],
+   'the rotation is the one of level 300 (Area Big needs level 400; the extras fill the fifth slot)')
+eq(_r665.rotation_level, 300, 'and it is remembered')
+_r665.on_text('[tester-helper] info {"cid":777,"level":300}')
+eq(_r665.rotation_level, 300, 'a second answer of the same level rebuilds nothing')
+eq(T.TesterBot(20, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None}).refresh_rotation(), False, 'no context (a mocked run): the rotation is left as it is')
+# the cadence: an attack goes off when its group is ready (2.0 s + a hair), not on a 0.25 s grid
+ok(abs(TC.beat_delay(100.0, {'attack': 100.1}) - 0.1) < 1e-9, 'the attack group is ready in 0.1 s: the guard wakes up then')
+eq(TC.beat_delay(100.0, {'attack': 101.5}), TC.BEAT_MAX, 'the attack group is far off: the usual beat')
+eq(TC.beat_delay(100.0, {}), TC.BEAT_MAX, 'no cast yet: the usual beat')
+eq(TC.beat_delay(100.0, {'attack': 99.0}), TC.BEAT_MAX, 'the group is ready already (nothing to cast: no mana): the usual beat')
+eq(TC.beat_delay(100.0, {'attack': 100.001}), TC.BEAT_MIN, 'never a busy loop')
+_k665 = T.TesterBot(17, dict(bot), A(), 1, T.Results(1), {'rotation': [dict(_hit663, cooldown=9000), _cheap663], 'heal': None})
+_k665.conn, _k665.cid = C(), 0x10000011
+_said665 = []
+_k665.say = lambda text, kind=1: _said665.append(text)
+_k665.keep_alive(300.0)
+eq(_said665, ['exori big'], 'the first attack of the rotation')
+ok(abs(_k665.ready['attack'] - 302.03) < 1e-9, 'the attack group is ready 2.0 s + %.2f s later (it was 2.1 s before O665)' % TC.CAST_SLOP)
+_k665.keep_alive(301.5)
+eq(_said665, ['exori big'], 'nothing is cast inside the group cooldown')
+_k665.keep_alive(302.04)
+eq(_said665[-1], 'exori small', 'the next attack the moment the group allows it')
+# the cast bar: a wandering bot does not step off its own cast-time spell
+eq(TC.cast_bar('{"action":"start","data":{"ms":1000,"id":225,"s":10,"n":"Colossus Fall"}}'), ('start', 1000), 'the start message of the own cast bar')
+eq(TC.cast_bar('{"data":{"n":"Doomtide","ms":1500,"id":152,"s":3},"action":"start"}'), ('start', 1500), 'the keys come in any order')
+eq(TC.cast_bar('{"action":"end","data":{"r":"done","s":10}}'), ('end', 0), 'the end message')
+eq(TC.cast_bar('{"data":{"ms":1500,"c":268435462,"n":"Primordial Squall"},"action":"other"}'), None, 'the cast of another player in view is not the bot\'s')
+eq(TC.cast_bar('{"data":{"r":"done","c":268435462},"action":"otherEnd"}'), None, 'nor is the end of his')
+eq(TC.cast_bar('{"action":"play","data":"heal_1.ogg"}'), None, 'a sound message')
+eq(TC.cast_bar('You moved: the spell is interrupted.'), None, 'a plain text')
+eq(TC.cast_bar('{"broken'), None, 'a broken line')
+_w665 = T.TesterBot(18, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+_w665.conn, _w665.cid = C(), 0x10000012
+_w665.alive = True
+eq(_w665.casting(_time.monotonic()), False, 'no cast on the bar at the start')
+_w665.on_text('{"action":"start","data":{"ms":1500,"id":152,"s":3,"n":"Doomtide"}}')
+eq(_w665.casting(_time.monotonic()), True, 'the bar is up')
+_w665.on_text('{"action":"end","data":{"r":"done","s":3}}')
+eq(_w665.casting(_time.monotonic()), False, 'the bar ended: the bot may walk')
+_w665.on_text('{"action":"start","data":{"ms":1500,"id":152,"s":3,"n":"Doomtide"}}')
+_walks665 = []
+_w665.walk = lambda steps: _walks665.append(steps)
+_slept665 = []
+_real_sleep665 = asyncio.sleep
+
+
+async def _fake_sleep665(seconds, *a, **k):
+    _slept665.append(round(seconds, 2))
+    if len(_slept665) == 3:
+        _w665.on_text('{"action":"end","data":{"r":"done","s":3}}')   # the cast ends while the bot waits
+    await _real_sleep665(0)
+
+asyncio.sleep = _fake_sleep665
+try:
+    asyncio.run(_w665.do_wander({}))
+finally:
+    asyncio.sleep = _real_sleep665
+eq(_slept665, [0.1, 0.1, 0.1], 'a wandering bot waits (0.1 s a look) while its cast-time spell runs')
+eq(len(_walks665), 1, 'and then takes its steps')
+_walks665.clear()
+_slept665.clear()
+asyncio.run(_w665.do_wander({}))
+eq((len(_walks665), _slept665), (1, []), 'no cast: no wait')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

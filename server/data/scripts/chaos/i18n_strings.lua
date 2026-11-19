@@ -6,6 +6,117 @@
 
 return {
 	["pt-BR"] = {
+		-- Pinnacle bosses (O667: pinnacle.lua, pinnacle_core.lua, the Keeper of the Pinnacle)
+		["The anchors break: %s can be hurt again!"] =
+			"As âncoras se quebram: %s volta a sofrer dano!",
+		["%s hangs on two Drowned Anchors! Break them!"] =
+			"%s se prende a duas Drowned Anchors! Quebre-as!",
+		["%s drags the room into an Undertow! Stand in the circle together!"] =
+			"%s arrasta a sala para uma Undertow! Fiquem juntos no círculo!",
+		["The idols fall silent."] =
+			"Os ídolos se calam.",
+		["Whispering Idols rise: they feed %s's hits!"] =
+			"Whispering Idols surgem: eles alimentam os golpes de %s!",
+		["%s channels a Hexbind! Destroy the Hex Idol!"] =
+			"%s canaliza um Hexbind! Destrua o Hex Idol!",
+		["The pillars shatter: %s can be hurt again!"] =
+			"Os pilares se despedaçam: %s volta a sofrer dano!",
+		["%s hides behind two Rime Pillars! Break them!"] =
+			"%s se esconde atrás de dois Rime Pillars! Quebre-os!",
+		["The idols crumble."] =
+			"Os ídolos desmoronam.",
+		["Ash Idols rise: they feed %s's hits!"] =
+			"Ash Idols surgem: eles alimentam os golpes de %s!",
+		["You found a %s of %s, but you hold %d of them already."] =
+			"Você achou um(a) %s de %s, mas já tem %d deles.",
+		["You found a %s of %s: %d of 4 kinds held."] =
+			"Você achou um(a) %s de %s: %d de 4 tipos em mãos.",
+		["You left the fight."] =
+			"Você saiu da luta.",
+		["Everyone left the fight."] =
+			"Todos saíram da luta.",
+		["The fight ends."] =
+			"A luta termina.",
+		["The server is restarting: the fight closes and your set is given back."] =
+			"O servidor vai reiniciar: a luta fecha e seu conjunto é devolvido.",
+		["%s falls in %s%s. The arena closes in %d seconds: leave through the forcefield by the arrival."] =
+			"%s cai em %s%s. A arena fecha em %d segundos: saia pelo campo de força perto da chegada.",
+		["The boss did not answer; your set is given back."] =
+			"O chefe não respondeu; seu conjunto é devolvido.",
+		["A gamemaster closed the fight."] =
+			"Um gamemaster fechou a luta.",
+		["%s falls and is carried out of the arena."] =
+			"%s cai e é levado para fora da arena.",
+		["%s comes in %d seconds. Deathless means nobody falls; the way out is in the room to the south."] =
+			"%s chega em %d segundos. Sem mortes quer dizer que ninguém cai; a saída fica na sala ao sul.",
+		["You stay behind from the fight with %s: %s."] =
+			"Você fica de fora da luta com %s: %s.",
+		["Every pinnacle arena is in use. Try again in a moment."] =
+			"Todas as arenas do Pináculo estão em uso. Tente de novo em instantes.",
+		["This arena is not yours: you were sent to your temple."] =
+			"Esta arena não é sua: você foi mandado ao seu templo.",
+		["Spoils of %s: %d Orbs of Upheaval, %d Orbs of Fate, %d Exalted Orbs, %d Conquest Tokens%s%s.%s"] =
+			"Espólios de %s: %d Orbs of Upheaval, %d Orbs of Fate, %d Exalted Orbs, %d Conquest Tokens%s%s.%s",
+		["New title: %s."] =
+			"Novo título: %s.",
+		["Your fragments now drop for %s."] =
+			"Seus fragmentos agora caem para %s.",
+		["%s opens from level %d."] =
+			"%s abre a partir do nível %d.",
+		["Your set of fragments is given back: the fight did not finish."] =
+			"Seu conjunto de fragmentos foi devolvido: a luta não terminou.",
+		["%s: fragments of %s given."] =
+			"%s: fragmentos de %s entregues.",
+		["%s: the pinnacle rows are cleared."] =
+			"%s: os registros do Pináculo foram limpos.",
+		["The pinnacle bosses are closed for now."] =
+			"Os chefes do Pináculo estão fechados por enquanto.",
+		["There is no such pinnacle boss."] =
+			"Não existe esse chefe do Pináculo.",
+		["You are in %s already."] =
+			"Você já está em %s.",
+		["Open it from a protection zone."] =
+			"Abra de uma zona de proteção.",
+		["You cannot open it in a fight."] =
+			"Você não pode abrir em combate.",
+		["Wait %d seconds before you open another."] =
+			"Espere %d segundos antes de abrir outro.",
+		["The set is not whole. Missing: %s."] =
+			"O conjunto não está completo. Faltam: %s.",
+		["level %d is needed"] =
+			"é preciso o nível %d",
+		["in %s"] =
+			"em %s",
+		["in a fight"] =
+			"em combate",
+		["too far"] =
+			"longe demais",
+		["the arena is full"] =
+			"a arena está cheia",
+		["Welcome, |PLAYERNAME|. Four Ascended bosses wait on the {pinnacle}. Bring me a whole set of {fragments} and I will open the way."] =
+			"Bem-vindo, |PLAYERNAME|. Quatro chefes Ascended aguardam no {pinnacle}. Traga-me um conjunto completo de {fragments} e abrirei o caminho.",
+		["The pinnacle will wait, |PLAYERNAME|."] =
+			"O pináculo esperará, |PLAYERNAME|.",
+		["The pinnacle waits without you."] =
+			"O pináculo espera sem você.",
+		["%s (from level %d)%s: %s"] =
+			"%s (a partir do nível %d)%s: %s",
+		[" [focus]"] =
+			" [foco]",
+		["Four Ascended bosses wait on the pinnacle. Each opens with a whole set of four fragments, one of each kind. A waystone map of tier %d or higher, a rift of tier %d and an Omen guardian each drop one kind; any of the three may drop the keystone.\n\n%s\n\nOpen spends a set and takes your party within reach along. Focus makes your fragments drop for the chosen boss."] =
+			"Quatro chefes Ascended aguardam no pináculo. Cada um abre com um conjunto completo de quatro fragmentos, um de cada tipo. Um mapa de waystone de tier %d ou mais, uma rift de tier %d e um guardião de Omen soltam um tipo cada; qualquer um dos três pode soltar a pedra-chave.\n\n%s\n\nAbrir gasta um conjunto e leva seu grupo que estiver por perto. Foco faz seus fragmentos caírem para o chefe escolhido.",
+		["The Pinnacle"] =
+			"O Pináculo",
+		["Open"] =
+			"Abrir",
+		["Focus"] =
+			"Foco",
+		["Close"] =
+			"Fechar",
+		["The pinnacle is closed for now. Come back later."] =
+			"O pináculo está fechado por enquanto. Volte mais tarde.",
+		["Choose a boss. A whole set of fragments opens its arena: alone, or with a party of up to %d."] =
+			"Escolha um chefe. Um conjunto completo de fragmentos abre a arena: sozinho, ou com um grupo de até %d.",
 		-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_tracker_core.lua, Archivist Odrenna)
 		["Your trial awaits."] =
 			"Sua prova aguarda.",
@@ -5946,6 +6057,12 @@ return {
 		["The corpse is too far away."] = "O corpo está longe demais.",
 		["Already looted."] = "Já saqueado.",
 		["Sorry, not possible."] = "Desculpe, não é possível.",
+		["That loot belongs to someone else."] = "Esse loot é de outra pessoa.",
+		["That loot belongs to someone else for %d more seconds."] = "Esse loot é de outra pessoa por mais %d segundos.",
+		["Nothing of yours to pick up here."] = "Nada seu para pegar por aqui.",
+		["Picked up %d, %d did not fit."] = "Pegou %d, %d não couberam.",
+		["You picked up 1 item."] = "Você pegou 1 item.",
+		["You picked up %d items."] = "Você pegou %d itens.",
 		["You do not have enough capacity or room."] = "Você não tem capacidade ou espaço suficiente.",
 		["Refunded for free: %s."] = "Devolvido de graça: %s.",
 		["%d node that left the tree"] = "%d nó que saiu da árvore",
@@ -9310,5 +9427,61 @@ return {
 			"Blightbrand queima com luz de sepulcro, não com veneno",
 		["Soulrend Beam opens a rift of arcane light"] =
 			"Soulrend Beam abre uma fenda de luz arcana",
+		-- Waystone endgame (O666, waystone_endgame.lua)
+		["Waystone endgame: first clear of tier %d, +1 atlas point (%d to spend)."] =
+			"Fim de jogo das waystones: primeira conclusão do tier %d, +1 ponto do atlas (%d para gastar).",
+		["The map boss leaves a chest: %s."] =
+			"O chefe do mapa deixa um baú: %s.",
+		["%s answers the fall of the map's boss."] =
+			"%s responde à queda do chefe do mapa.",
+		["Rank bought."] =
+			"Nível comprado.",
+		["You have no atlas point to spend."] =
+			"Você não tem ponto do atlas para gastar.",
+		["That stat is at its top rank."] =
+			"Esse atributo está no nível máximo.",
+		["No such stat."] =
+			"Esse atributo não existe.",
+		["Your endgame atlas is empty."] =
+			"Seu atlas do fim de jogo está vazio.",
+		["Every rank refunded."] =
+			"Todos os níveis foram devolvidos.",
+		-- Greater Rift (rift.lua, greater_ladder.lua, O668)
+		["%s The Greater Rift collapses and the key drops a tier."] =
+			"%s O Greater Rift desaba e a chave cai um tier.",
+		["Greater Rift tier %d sealed in %d:%02d. The key climbs to tier %d."] =
+			"Greater Rift tier %d selado em %d:%02d. A chave sobe para o tier %d.",
+		["The Greater Rift is closed."] =
+			"O Greater Rift está fechado.",
+		["Omen fragments are not installed on this server."] =
+			"Os fragmentos de omen não estão instalados neste servidor.",
+		["You bound %d Greater Rift Keys today; try again tomorrow."] =
+			"Você já forjou %d Greater Rift Keys hoje; tente de novo amanhã.",
+		["You need %d omen fragments to bind a Greater Rift Key (you carry %d)."] =
+			"Você precisa de %d fragmentos de omen para forjar uma Greater Rift Key (você tem %d).",
+		["A Greater Rift Key needs level %d."] =
+			"Uma Greater Rift Key exige nível %d.",
+		["Greater Rift: a tier %d guardian may leave a Greater Rift Key, or %d omen fragments bind one. The ladder and the key are on the Rift Keys page of the Info window."] =
+			"Greater Rift: um guardião de tier %d pode deixar uma Greater Rift Key, ou %d fragmentos de omen forjam uma. O ranking e a chave estão na página Rift Keys da janela Info.",
+		["Greater Rift tier %d, a new personal best: %s."] =
+			"Greater Rift tier %d, novo recorde pessoal: %s.",
+		["Greater Rift season %d has ended: %s, place %d, tier %d. %s."] =
+			"A temporada %d do Greater Rift acabou: %s, posição %d, tier %d. %s.",
+		["Greater Rift, season %d."] =
+			"Greater Rift, temporada %d.",
+		["Your best, solo: tier %d in %s."] =
+			"Seu melhor, solo: tier %d em %s.",
+		["Your best, party: tier %d in %s."] =
+			"Seu melhor, grupo: tier %d em %s.",
+		["You have not sealed a Greater Rift this season. A tier 15 guardian may leave a Greater Rift Key, or %d omen fragments bind one (Bind Greater Key)."] =
+			"Você ainda não selou um Greater Rift nesta temporada. Um guardião de tier 15 pode deixar uma Greater Rift Key, ou %d fragmentos de omen forjam uma (Bind Greater Key).",
+		["Top, solo, your class:"] =
+			"Melhores, solo, sua classe:",
+		["Top, party, your class:"] =
+			"Melhores, grupo, sua classe:",
+		["The season ends in %d days."] =
+			"A temporada termina em %d dias.",
+		["Greater Rift season %d has ended. Season %d begins."] =
+			"A temporada %d do Greater Rift acabou. A temporada %d começa.",
 	},
 }

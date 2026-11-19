@@ -5,6 +5,8 @@
 -- Payload fields: riftatlasview.lua. Opened from Adventure > Rift Atlas and from the button of the rift HUD (game_rift).
 -- Waystone mode: the same window shows the Waystone Atlas (server waystone_atlas.lua, extended opcode 159, the same
 -- protocol; the grid comes as rows). Each mode keeps its own tree and state; Adventure > Waystone Atlas opens it.
+-- Endgame page (O670, waystoneegview.lua): in Waystone mode the Endgame button shows the points of the first clears of the deep
+-- tiers (server waystone_endgame.lua): eg_open | eg_spend {key} | eg_reset, answer eg_state.
 
 local OPCODES = { rift = 210, waystone = 159 }
 local TITLES = { rift = 'Rift Atlas', waystone = 'Waystone Atlas' }
@@ -16,6 +18,7 @@ local function rewardText(m)
   return tr('Rifts pay in crafting currency: orbs from the kills (Upheaval, Fate, the waystone orbs), a burst from the guardian, and a stronger key when you seal a rift. Low rifts are a fast step for a high level character.')
 end
 local V = RiftAtlasView
+local EG = WaystoneEgView
 
 local mode = 'rift'
 local stash = { rift = {}, waystone = {} }
@@ -32,6 +35,7 @@ local dragFrom
 local handlers = {}
 local reported = {}
 local box
+local egView, egModel = false, nil
 
 local function safe(name, fn)
   return function(...)
@@ -324,12 +328,79 @@ local function render()
   if not window or not state then return end
   window.pointsPlate.pointsValue:setText(V.pointsLine(state))
   window.earnedLabel:setText(V.earnedLine(state))
-  window.resetButton:setEnabled(next(alloc) ~= nil)
+  refreshReset()
   for id in pairs(nodeWidgets) do styleNode(id) end
   styleLinks()
   buildGrid()
   buildTotals()
   updatePanel()
+end
+
+-- ---------------------------------------------------------------- the endgame page (Waystone mode)
+local function refreshReset()
+  if not window then return end
+  if egView then
+    window.resetButton:setWidth(170)
+    window.resetButton:setText(EG.resetText(egModel))
+    window.resetButton:setEnabled(EG.canReset(egModel))
+  else
+    window.resetButton:setWidth(90)
+    window.resetButton:setText(tr('Reset all'))
+    window.resetButton:setEnabled(next(alloc) ~= nil)
+  end
+end
+
+local function renderEndgame()
+  if not window or not egView then return end
+  local m = egModel or EG.parse(nil)
+  local p = window.egPanel
+  p.egPlate.egPointsValue:setText(EG.pointsLine(m))
+  p.egEarned:setText(EG.earnedLine(m))
+  p.egStats:destroyChildren()
+  for _, stat in ipairs(m.stats) do
+    local row = g_ui.createWidget('RiftAtlasEgStat', p.egStats)
+    row.name:setText(EG.statName(stat.key, stat.key))
+    row.rank:setText(EG.rankText(stat))
+    row.now:setText(EG.nowText(stat))
+    row.desc:setText(EG.statDescription(stat))
+    row.spend:setEnabled(EG.canSpend(m, stat.key) and true or false)
+    local key = stat.key
+    row.spend.onClick = function() send('eg_spend', { key = key }) end
+  end
+  local done, total = EG.deepCount(m)
+  p.egTiersTitle:setText(tr('Deep tiers: first clears %d / %d', done, total))
+  p.egTiers:destroyChildren()
+  for _, r in ipairs(EG.deepRows(m)) do
+    local l = g_ui.createWidget('RiftAtlasEgLine', p.egTiers)
+    l:setText(EG.tierLine(r) .. '   ' .. EG.tierStatus(r))
+    l:setColor(r.paid and '#7fd07f' or '#8c8070')
+  end
+  p.egBosses:destroyChildren()
+  for _, r in ipairs(EG.bossRows(m)) do
+    local l = g_ui.createWidget('RiftAtlasEgBoss', p.egBosses)
+    l:setText(EG.bossLine(r))
+    l:setColor(r.paid and '#f6cf72' or '#d6c9ae')
+  end
+  refreshReset()
+end
+
+local function setEndgame(on)
+  egView = (on and mode == 'waystone') and true or false
+  if not window then return end
+  window.egPanel:setVisible(egView)
+  window.egButton:setVisible(mode == 'waystone')
+  window.egButton:setText(EG.toggleText(egView))
+  if egView then
+    window.egPanel:raise()
+    renderEndgame()
+    send('eg_open')
+  else
+    refreshReset()
+  end
+end
+
+function toggleEndgame()
+  setEndgame(not egView)
 end
 
 -- ---------------------------------------------------------------- actions (called from the .otui)
@@ -360,6 +431,13 @@ function refundSelected(pay)
 end
 
 function resetAll()
+  if egView then
+    if not EG.canReset(egModel) then return end
+    confirm(tr('Reset the endgame atlas'), EG.resetConfirm(egModel),
+      { { text = tr('Reset'), callback = function() send('eg_reset') end },
+        { text = tr('Cancel'), callback = function() end } })
+    return
+  end
   if not state or next(alloc) == nil then return end
   local r = state.reset or {}
   confirm(tr('Reset the atlas'), tr('Refund every node of your atlas for %s gold or %d %s?', V.short(r.gold), tonumber(r.orbs) or 0,
@@ -424,9 +502,19 @@ local function stashMessage(m, msg)
   end
 end
 
+local function onEndgame(d)
+  egModel = EG.parse(d)
+  if egModel.msg ~= '' then setStatus(egModel.msg, '#f6cf72') end
+  renderEndgame()
+end
+
 local function onMessage(protocol, opcode, msg)
   if type(msg) ~= 'table' or type(msg.data) ~= 'table' then return end
   local m = opcode == OPCODES.waystone and 'waystone' or 'rift'
+  if m == 'waystone' and msg.action == 'eg_state' then
+    onEndgame(msg.data)
+    return
+  end
   if m ~= mode then
     stashMessage(m, msg)
     return
@@ -461,12 +549,14 @@ local function switchMode(m)
   if window then
     window:setText(tr(TITLES[m]))
     window.rewardNote:setText(rewardText(m))
+    window.egButton:setVisible(m == 'waystone')
   end
   if m == mode then return end
   closeBox()
   stash[mode] = { tree = tree, ix = ix, world = world, state = state, alloc = alloc, done = done, selected = selected,
     panX = panX, panY = panY }
   mode = m
+  if m ~= 'waystone' then setEndgame(false) end
   local s = stash[m] or {}
   tree, ix, world, state = s.tree, s.ix, s.world, s.state
   alloc, done, selected = s.alloc or {}, s.done or {}, s.selected
@@ -488,6 +578,7 @@ function show()
   window:focus()
   setStatus('')
   send('open', { tree = tree == nil })
+  if egView then send('eg_open') end
 end
 
 -- Adventure > Rift Atlas / Waystone Atlas: open that atlas, close the window when it already shows it
@@ -540,6 +631,8 @@ end
 local function onGameStart()
   tree, ix, world, state, alloc, done, selected = nil, nil, nil, nil, {}, {}, nil
   stash = { rift = {}, waystone = {} }
+  egModel = nil
+  setEndgame(false)
   clearMap()
   addMenu()
 end

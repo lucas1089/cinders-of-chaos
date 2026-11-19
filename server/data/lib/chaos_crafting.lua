@@ -1940,7 +1940,9 @@ end
 -- {tier, mods = {{key, value}, ...}}
 function C.readKey(item)
 	local R, cfg = rift()
-	return {tier = R.clampTier(cfg, num(custom(item, "rift_tier")) or 1), mods = R.decodeMods(cfg, custom(item, "rift_mods") or "")}
+	local g = num(custom(item, "rift_greater")) or 0 -- Greater Rift Key (O668): the tier is maxTier, g the climb above it
+	return {tier = R.clampTier(cfg, num(custom(item, "rift_tier")) or 1), mods = R.decodeMods(cfg, custom(item, "rift_mods") or ""),
+		greater = g > 0 and g or nil}
 end
 
 function C.writeKey(item, key)
@@ -2231,7 +2233,8 @@ function C.signature(item)
 		return string.format("%d;ws;%s", item:getId(), tostring(ok and mods or ""))
 	end
 	if C.isRiftKey(item) then
-		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
+		return string.format("%d;key;%s;%s%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")),
+			custom(item, "rift_greater") and (";g" .. tostring(custom(item, "rift_greater"))) or "")
 	end
 	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item)),
 		"q" .. M.qualityOf(item) .. (M.isRuined(item) and "r" or "") .. (M.isCorrupted(item) and "c" or "")
@@ -2394,6 +2397,11 @@ function C.waystoneApply(orbKey, item)
 	local okT, top = pcall(function() return item:getTopParent() end)
 	local player = okT and top and top.isPlayer and top:isPlayer() and top or nil
 	item = WM.single(item, player)
+	if res.broken then -- O666: a Void Orb that breaks the waystone
+		local name = W.itemName(cfg, res)
+		item:remove()
+		return true, {item = nil, text = name .. " shatters: the corruption broke it.", corrupted = true, broken = true}
+	end
 	WM.write(item, res)
 	local b = W.bonuses(cfg, res.mods, res.tier)
 	local parts = {}
@@ -2402,7 +2410,7 @@ function C.waystoneApply(orbKey, item)
 	end
 	local text = string.format("%s: %s. Rewards: %s.", W.itemName(cfg, res),
 		#parts > 0 and table.concat(parts, "; ") or "no modifiers", W.rewardText(b))
-	return true, {item = item, text = text, waystone = res}
+	return true, {item = item, text = text, waystone = res, corrupted = (res.corrupt and #res.corrupt > 0) or nil}
 end
 
 function C.describeWaystone(item, opts)
@@ -2414,6 +2422,10 @@ function C.describeWaystone(item, opts)
 	for _, m in ipairs(ws.mods) do
 		local def = R.modDef(cfg, m.key)
 		list[#list + 1] = {group = "waystone", key = tostring(m.key), text = W.modText(cfg, m), side = def and def.side}
+	end
+	for _, m in ipairs(ws.corrupt or {}) do -- O666: the corrupted modifiers
+		local def = R.modDef(cfg, m.key)
+		list[#list + 1] = {group = "waystone", key = tostring(m.key), text = W.modText(cfg, m) .. " (corrupted)", side = def and def.side}
 	end
 	local orbs, preview = {}, {}
 	for _, orb in ipairs(C.config.orbs) do

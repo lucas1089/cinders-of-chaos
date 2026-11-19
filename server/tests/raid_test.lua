@@ -260,7 +260,8 @@ if #files > 0 then
 		local users = 0
 		for _, f in ipairs(files) do
 			local s = readAll(f) or ""
-			if tonumber(s:match('<look type="(%d+)"')) == look then
+			-- O667: the Ascended pinnacle bosses (monsters/chaos/pinnacle) wear the look of the boss they are the ascended version of
+			if tonumber(s:match('<look type="(%d+)"')) == look and not f:find("/pinnacle/", 1, true) then
 				users = users + 1
 			end
 		end

@@ -24,13 +24,15 @@ local K = ChaosWaystoneTiersCore
 local cfg = dofile("data/scripts/chaos/waystone_tiers_config.lua")
 local idx = K.index(cfg)
 
-eq(K.tierCount(cfg), 15, "fifteen tiers")
+eq(K.tierCount(cfg), 25, "twenty-five tiers (O666: the fourth band, 2600-3500)")
 eq(K.tierLevel(cfg, 1), 1100, "the first waystone: level 1100 (owner 2026-10-23)")
-eq(K.tierLevel(cfg, 15), 2500, "the last: level 2500")
-for t = 2, 15 do
+eq(K.tierLevel(cfg, 15), 2500, "the last of the third band: level 2500")
+eq(K.tierLevel(cfg, 16), 2600, "the fourth band opens at 2600")
+eq(K.tierLevel(cfg, 25), 3500, "the last: level 3500")
+for t = 2, 25 do
 	eq(K.tierLevel(cfg, t) - K.tierLevel(cfg, t - 1), 100, "a gradual rise: +100 at tier " .. t)
 end
-eq(K.tierLevel(cfg, 16), nil, "no tier XVI")
+eq(K.tierLevel(cfg, 26), nil, "no tier XXVI")
 eq(#cfg.monsters, 6, "monsters of six base tiers")
 eq(#cfg.bosses, 6, "six bosses")
 eq(#cfg.maps, 12, "two maps per base tier")
@@ -49,8 +51,9 @@ for bi, bnd in ipairs(cfg.bands) do
 	end
 	local scenarios = 0
 	for _, bt in ipairs(bnd.maps) do
-		check(not mapBand[bt], "base tier " .. bt .. " maps in one band")
-		mapBand[bt] = bi
+		-- the deep band (4) reuses the maps of bands 2 and 3 on purpose; the first three keep one band per base tier
+		check(bi == 4 or not mapBand[bt], "base tier " .. bt .. " maps in one band")
+		mapBand[bt] = mapBand[bt] or bi
 		for _, m in ipairs(cfg.maps) do
 			if m.tier == bt then
 				scenarios = scenarios + 1
@@ -132,10 +135,12 @@ eq(K.dropTier(cfg, 4, 1), 4, "in a run: its tier (60%)")
 eq(K.dropTier(cfg, 4, 60), 4, "60 still its tier")
 eq(K.dropTier(cfg, 4, 61), 5, "then the next (30%)")
 eq(K.dropTier(cfg, 4, 91), 6, "then two up (10%)")
-eq(K.dropTier(cfg, 15, 100), 15, "never above XV")
-eq(K.dropTier(cfg, 14, 95), 15, "capped")
+eq(K.dropTier(cfg, 25, 100), 25, "never above XXV")
+eq(K.dropTier(cfg, 24, 95), 25, "capped")
+eq(K.dropTier(cfg, 15, 100), 17, "a XV run drops up to XVII")
 eq(K.bossDrop(cfg, 7), 8, "the boss adds the next tier")
-eq(K.bossDrop(cfg, 15), 15, "the last tier's boss: XV")
+eq(K.bossDrop(cfg, 15), 16, "the boss of XV adds XVI")
+eq(K.bossDrop(cfg, 25), 25, "the last tier's boss: XXV")
 eq(K.bossDrop(cfg, nil), nil, "no run: none")
 local p, s = K.shielded(cfg, 1000, 401)
 eq(p, 250, "shielded keeps the share (primary)")
@@ -298,7 +303,7 @@ local function corpse(list)
 		local cc = self
 		return {getId = function() return it.id end, getCount = function() return 1 end,
 			remove = function() for i, x in ipairs(cc.items) do if x == it then table.remove(cc.items, i) break end end end,
-			isWaystoneItem = it.id >= 29845 and it.id <= 29850 or (it.id >= 41951 and it.id <= 41959)}
+			isWaystoneItem = it.id >= 29845 and it.id <= 29850 or (it.id >= 41951 and it.id <= 41969)}
 	end
 	function c:addItem(id) self.items[#self.items + 1] = {id = id} return true end
 	return c
@@ -314,13 +319,13 @@ local realRandom = math.random
 math.random = function() return 1 end -- luacheck: ignore
 local c = corpse({2160, 29849})
 eq(WT.retierDrops(c, m, isW), 1, "a waystone in a Tier XV run")
-eq(ids(c), "2160,41959", "becomes a Tier XV")
+eq(ids(c), "2160,41959", "becomes a Tier XV (roll 1: its own tier)")
 c = corpse({29846})
 eq(WT.retierDrops(c, rat, isW), 1, "outside the maps")
 eq(ids(c), "29845", "a Tier I")
 c = corpse({2160})
 eq(WT.retierDrops(c, boss, isW), 1, "the run's boss")
-eq(ids(c), "2160,41959", "adds the next tier (capped at XV)")
+eq(ids(c), "2160,41960", "adds the next tier (XVI after XV)")
 WT.active[9] = 11
 c = corpse({})
 WT.retierDrops(c, boss, isW)

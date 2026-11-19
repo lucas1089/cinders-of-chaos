@@ -885,6 +885,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
+| 7106400 - 7106459 | pinnacle bosses (`pinnacle_config.lua` `storage`, O667): +0 .. +15 fragments held (boss index 0-3 x 4 + kind 0-3), +16 the focus (boss index + 1, 0 none), +20 .. +23 first kills (a bit per season, `season id % 30`), +24 .. +27 deathless (1 once), +28 .. +31 kills, +32 .. +35 kills since the last unique (the bad-luck count), +36 a run in progress (boss index + 1, given back at the next login after a crash), +37 when it opened, +38 the last opening; +39 .. +59 free |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
@@ -932,8 +933,10 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103070 - 7103079 | Wandering Merchant (`invasion_config.lua` `worldEvents.merchant.storageBase`, O399): +0..+9 the stop + 1 in which the character bought the item at that place of `items` (one of each per stop) |
 | 7103080 - 7103089 | player defence (`player_defence_config.lua` `storage`, O464): +0 the last level the character was told about the resistance penalty (once per level); +1..9 free |
 | 7103090 - 7103099 | the first unique line (`unique_intro_config.lua` `storage`, O467): +0 is 1 once the character read what a unique is; +1..9 free |
+| 7103300 - 7103309 | the waystone endgame (`Chaos.storage.waystoneEndgame`, `waystone_endgame_config.lua` `storage`, O666): +0 bit mask of the tiers whose first clear was paid (tiers 1-25, one atlas point each; at most 30 tiers fit an int32), +1 the ranks bought (one decimal place a stat, in `atlas.stats` order), +2 the number of first clears; +3..9 free |
 | 7103110 | the damage over time tick flag (`dot_config.lua storage`, O474): the id of the creature a scripted tick hits, -1 outside a tick; written by the spells (`ChaosDot.run`), read by the damage events |
 | 7103120 - 7103129 | effect owner marks (`Chaos.storage.fxOwner`, `data/lib/chaos_fx_owner.lua`, O567): +0 is 1 while the player's client wants the marks of its own effects (set at the client's `hello`, -1 at login and logout); +1..+9 free |
+| 7103150 - 7103159 | Greater Rift (`rift_config.lua` `greater.key.boughtStorage`, O668): +0 Greater Rift Keys bound with omen fragments today, +1 the day (YYYYMMDD); +2..+9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -11125,7 +11128,7 @@ Before: 5 minutes of the code of step 21 (the number after "(" is the share of t
 5. **`Creature::getCreatureEvents` crash.** Watched under gdb through all runs of this step (about 1.5 hours of tfs, 10 bots, pocket, descent, probe, gear-ups, rerolls, text traces): no signal, no backtrace (only the SIGTERM of the shutdowns). Nothing to keep; the note of step 19 stands (build with `-g`, `ulimit -c unlimited`).
 
 Tests: `testers_test.py` (the stats packet, `hold_attack`, `mana_potion_due`, the spell the mana cannot pay, the keep_alive beat with the heal on cooldown and the mana potion, `preset_rotation` and `class_spells` with the table), `tester_checks_test.py` (`Live663`: the rules file, `equip_fits`, the pick and the held weapon with the rule, the gear-up buys the weapon the class wears, leftovers, the tidy, no drop without a position, no crate without a slot, a slot made first, `weapon_rejects`; `Reroll663`: one reroll when sold out, none while a weapon can be bought, none at the gate, none when the stock has none), `loadtest_test.py`, `tester_closed_test.py`, `tester_journey_test.py`, the server Lua loop (luajit and lua5.3), `check_names.py`, `check_content.py`.
-Needs a live run to confirm: a run of the same code twice per class for the spread, the inbox weapons fetched by a bot, the Juggernaut / Thief / Deadeye / Elementalist band.
+Needs a live run to confirm: a run of the same code twice per class for the spread, the inbox weapons fetched by a bot, the Juggernaut / Thief / Deadeye / Elementalist band. Read in step 24 (O665): the spread (4 %), the four classes' band and the cause per class.
 
 ##### 23. Ember Descent room 1: the model and the pace fix (O664)
 O662 and O663 left Ember Descent room 1 falling to every bot (level 592 Warrior: 2,611 damage a second, 1,053 healed, 7 of 10 bots fled at 20%).
@@ -11135,6 +11138,40 @@ the health and 1.3-2.5 times the damage of the same monster in a hunt. New `tool
 (`descent_config.lua` `pace`, `descent_core.lua` `paceScale`, `descent.lua` `spawnOne`) and the boss hits 1.25 x. Room 1 clears in 12-17 s instead of 42-113 s
 for the median class at levels 100 / 500 / 1000 / 1500. Method, numbers before and after, limits: "Ember Descent model (O664)". Not run live yet: re-run
 `descent_walk` with a few bots (`!tester descent`) after the install; the bots' own rotation is what that run would add.
+
+##### 24. Four classes under the median: the bot's own faults and the weapon (O665)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650 / O658 / O659 / O660 / O661 / O662): "the bots have to do the complete content of the game, in the most human way possible". Step 22 left four classes far under `class_dps_model.py`'s median: Juggernaut 0.16, Thief 0.15, Deadeye 0.26, Elementalist 0.35. This step ran on the local test server of steps 19 to 23 (current main with O664 installed by `install_all.py`, helper v25 copied in before tfs starts, closed switch on, the same 10 testers, MariaDB on 127.0.0.1, tfs without gdb: about 3 hours up, no crash). Bot code: `tester_core.py` (block "the rotation the helper builds (O665)": `helper_rotation`, `load_area`, `CAST_SLOP`, `beat_delay`, `cast_bar`), new `tester_weapons.py` (`load_weapon_stats`, `weapon_power`, `weapon_beats`, `plan_power`, `power_short`), `tester_checks.py` (block "the weapon the class's spells read (O665)": `weapon_better`, `weapon_power_fn`, `weapon_leftover`, `POWER_REROLLS`; `weapon_pick`, `weapon_held`, `weapon_leftovers`, `weapon_rejects`, `gear_weapon` take the power), `testers.py` (`refresh_rotation`, `class_spells` takes the area table, `casting`, `do_wander`, `CheckIO.weapon_stats`, `a.auto_area`, `a.checks_weapons`, `a.rotation_ctx`). No helper change (v25 stays), no new `!tester` command, no new check key (Unity `NotMirrored` unchanged), no CLAUDE.md Commands line (the tests are in the files the CI already runs).
+
+**The yardstick of step 22 was wrong, and is not used here.** The probe put a Demon of 10,000,000 health next to each bot in its hunt and read the damage from the Demon's health. Bots of level 450 to 730 share one hunt spot, so the area spells of a neighbour hit the Demon too (the trace of this step: two pairs of bots with the identical damage total on "a demon", 1,112,769 and 542,205), and a bot in a hunt also walks (`do_wander`: 2 to 5 random steps, which cancels a cast-time spell: "You moved: the spell is interrupted", 8 of 17 casts of the Deadeye), flees and fights the hunt's own monsters. The clean probe of this step (a Lua file in the scratchpad, never committed): every tester stands at its own hunt spot 25 tiles from the next, every monster near it is removed each second except the probes' Demons, the Demon is idle next to the bot, the bot has it as its target, health topped up each second; the bot runs only its fight loop (the guard of `keep_alive`: rotation, heal, potions), no shop, no wander. Damage a second against `median_dps(level)[0]`. Same character twice (same code, two runs of 217 to 330 s): Elementalist 2,493 / 2,438, Deadeye 2,211 / 2,136, Juggernaut 1,821 / 1,783, Mystic 2,569 / 2,560, Ninja 8,161 / 8,068, Samurai 8,809 / 8,694: the spread is 4 %, against 4x in a hunt. The "Warrior 1.11" and "Mystic 0.92" of step 22 were cross fire: clean, the Warrior was 0.24 to 0.32 and the Mystic 0.93 to 1.11.
+
+| Class | Level | Median | Step 22 (a hunt) | Clean, code of O663 | Clean, rotation list and cadence of O665 (two runs) | Clean, all of O665 (weapon bought by the rule, rotation of the real level) |
+|---|---:|---:|---:|---:|---|---|
+| Juggernaut | 817 / 813 | 6,127 / 6,065 | 0.16 | 0.27 (1,683) | 0.30 (1,821), 0.29 (1,783) | 0.49 (2,977) |
+| Thief | 721 / 714 | 4,897 / 4,818 | 0.15 | not read (probe fault) | 0.49 (2,422) | 0.85 (4,094) |
+| Deadeye | 574 / 561 | 3,732 / 3,637 | 0.26 | 0.60 (2,226) | 0.59 (2,211), 0.57 (2,136) | 0.78 (2,849) |
+| Elementalist | 650 / 647 | 4,290 / 4,268 | 0.35 | 0.51 (2,191) | 0.58 (2,493), 0.57 (2,438) | 0.69 (2,957) |
+| Warrior (control) | 585 / 586 | 3,812 / 3,820 | 1.11 | not read | 0.24 to 0.32 (922 to 1,203) | 0.88 (3,377) |
+
+The rest of the ten in the last column: Mystic 1.33 (level 442), Ranger 1.17 (535), Illusionist 1.12 (599), Samurai 0.75 (1,274), Ninja 0.59 (1,415).
+
+1. **What the bot cast, against the row of the model.** The rows of `class_dps_measured.csv` were cast by the helper's Auto setup rotation, one attack spell on each 2.0 s of the attack group. Four faults of the bot, all fixed, none a class fault:
+   - **The rotation was built for the level of the setup.** `state.json` holds the level the testers had when `testers.py setup` made them (800 for the Mystic up to 2,000 for the Samurai); the real levels are 442 to 1,415 (deaths of earlier runs, level loss). `class_spells` took `entry['level']`, so a Deadeye of 574 cast the preset of level 1,200 (Phantom Javelin, the filler of 2 s, 58 casts of 485 against 14 casts of Twin Verdict at 3,874) and a Mystic of 442 the preset of level 800. `TesterBot.refresh_rotation` rebuilds the rotation, the heal and the spell list from the level the helper's `info` answer carries (and after a level up). Measured with no weapon change (nothing stronger was on offer for them): Deadeye 2,211 to 2,849 (+29 %), Mystic 2,569 to 3,581 (+39 %).
+   - **The rotation was the bare preset.** `A.select` of the client (`game_helperrotation/autorotation.lua`) does more than copy the preset: a spell the character cannot cast is left out and the five are topped up from the other presets (earlier ones newest first), then the extras, at most five, the area spells first, the ultimate first. The bots have no line spell quests, so the Deadeye lost Moonshard Rain (level 500) and the Thief Last Breath, and the bot cast 4 of the 5. `TC.helper_rotation` builds the list the button writes (Deadeye: Gale Volley comes in, Thief: Crescent Cut, Elementalist: Crimson Covenant, Juggernaut: Bastion Cry). The cap of five takes casts from a class that has many spells (the Mystic 3,034 to 2,569 before the level fix): it is what the player's button does, and what the measured rows rest on.
+   - **The cadence.** The guard looked four times a second and held a spell 0.1 s past its cooldown, so an attack went off each 2.25 s: 11 % of every class's spell damage. `TC.CAST_SLOP` 0.03 s and `TC.beat_delay` (the guard wakes when the attack group is ready): the cast log says a median gap of 2.03 s now. Together with the list: Elementalist 2,191 to 2,493 (+14 %), Juggernaut 1,683 to 1,821 (+8 %), Samurai 8,039 to 8,809 (+10 %).
+   - **A wandering bot stepped off its own cast.** The strongest spells of the Deadeye (Hail of Dawn 1 s, Twin Verdict), the Elementalist (Doomtide 1.5 s, Glacial Doom 2 s, Frozen Crypt) and the Juggernaut (Colossus Fall 1 s) are cast-time spells and a move cancels them (`chaos_casting.lua`: the cost comes back, the damage does not). `do_wander` waits (at most 3 s, `TC.CAST_WAIT_MAX`) while the cast bar of the bot's own spell is up (`TC.cast_bar`: the start and end messages of opcode 231, the keys in any order). The clean probe has no wander, so this fix is the difference between the hunt number and the clean number of the Deadeye (0.26 and 0.59) and is not in the last column.
+2. **Per class: what the clean runs say** (before the weapon and the level fix unless said). Spell hits are the ones of `rotation_model.csv` for the character (the Juggernaut's Rift Cleaver 1,631 a cast against 1,664 typical, Scything Arc 1,120 against 720; mana full, 4,829 of 4,829; the Juggernaut has no rage or other resource), so the spells are right and the gap is the character.
+   - **Juggernaut**: spells 686 a second (38 %), auto attack 1,139 (62 %). It wore a sanguine hatchet: `items.xml` attack 13, fire 73. A weapon spell reads `skill x max(20, physical attack)` (`_common.lua` `meleeAttack`, the element is not in it): 129 x 20 against the plan's 129 x 70. With a plain Deathlord Blade (attack 85, level 400, put in by hand in the local database, not a code path) 1,783 to 2,903 (+63 %). With the weapon the new rule bought (attack 73, rolled): spells 1,906 a second, Colossus Fall 6,415 a cast (2,019), Rift Cleaver 4,518 (1,631), total 3,087 at the first read and 2,977 in the last column.
+   - **Thief**: spells 939 a second (61 %), auto 598; its five are Smoke Bomb, Blade Flurry, Razor Rain, Crescent Cut (the top-up), Shuriken Toss; no stack or combo is in this rotation (the stealth ambush opens after Smoke Bomb). A plain sword of attack 85 changed nothing (2,268); the rolled weapon of attack 61 the Gambler sold (one reroll of 643,500 gold) made Blade Flurry 12,069 a cast (1,716) and the Thief 4,157: the roll of the item (the Gambler's rarity: shock, bleed, attack speed) counts as much as the base attack. Not separated here.
+   - **Deadeye**: bow attack 117, distance skill 125 (the plan: 116), so the power term is above the model's; spells 597 a second (27 %), auto 1,624 (73 %). The Demon stood next to the bot, so range and line of sight did not enter (in the hunt "You can only use it on creatures" came in 1 of 40 casts and a move cancelled 8 of 17 channels). The hunt number (0.26) was the filler of the wrong preset and the cancelled channels; the clean 0.57 to 0.60 the same bot with the filler, 0.78 with the preset of its own level.
+   - **Elementalist**: spells 1,212 a second (47 %), auto 1,364. Doomtide 11,668 a cast, Glacial Doom 4,242; Falling Pyre 63 to 1,148 (its damage lands after the 1.5 s window, the log shows 3 to 16 hits). Mana was not the limit (11,000 to 13,000 of 28,000 left at the end of the runs). The wand: Eldritch Wand 118 mean against the plan's 165 at the level; with the wand of 189 / 205 the caster factor `1 + (W - 1) x min(1.2, wand / mean)` rises: 2,438 to 2,658 / 2,930.
+3. **The weapon: the bot's pick, and what the game offers.** The pick went by item level. The rows of one stock have the same item level (`gate - rand(0, spread)`), so the highest level and the cheaper decided by chance. Now `tester_weapons.weapon_power` reads the numbers of the server's own `items.xml` / `weapons.xml` (melee: the physical attack, floor 20; bow: the attack; wand: the mean of min and max; another kind: 0; a fist class or an unknown id: no rule, the item level as before) and the pick takes the stronger weapon by 10 % (`weapon_pick`, `weapon_held`, `weapon_leftovers`: a stronger weapon in the bag is kept even at a lower item level, `weapon_rejects`: "no stronger than the worn weapon; worn power 20"). When the stock has none and the hand is under half of the plan of the level (`plan_power`: the gear sets' `WEAPON_CURVES`, melee x 0.65 because the sets give 35 % as an element) the bot pays for fresh crates, at most 2 a run (`POWER_REROLL_MAX`), the window's own price, the TEST ONLY gold top-up of O658 the only grant (named in the text). Seen live: Juggernaut 819, rerolls of 709,900 and 1,419,800 gold, bought attack 73 (item level 104, 1,555,000); Thief 722, one reroll of 643,500 gold, a TEST ONLY grant of 1,842,874; Warrior 586, bought attack 73 (1,219,700); Elementalist 652, a wand of 189 (1,334,400).
+   - **The game: melee weapon spells at levels 600 to 999 (for the owner, not changed).** The stock melee weapons of that band carry attack 8 to 13 and an element of 50 to 73 (12 base weapons: soul and sanguine families); a spell reads 20 of them. The bands around it: 0 to 99: attack 53; 100 to 299: 58; 300 to 599: 60 (85 installed after the growth, Deathlord Blade); 600 to 999: 10 plus element; 1000 and up: 71 (157 to 171 installed, Dawnforged). The equipment sets give a physical part of about 65 % of the plan: Bloodmoon 650: 59 to 61, Rimewraith 725: 64 to 66, Azure Vigil 800: 71 to 73, Rimewraith 1000: 96 to 97. A level 817 Juggernaut that finds no set weapon in the Gambler (3 weapon rows, none stronger than 20) deals 0.29 of the median; with the best physical stock weapon 0.47 and with a set weapon 0.51 (first read, before the level fix). `class_dps_measured.csv` was measured at 100, 500 and 1000 only, so the dip of the band 600 to 999 is in no row of the model. Either the band's stock weapons need a physical attack of about 70 (the Gambler's `candidates` take the 4 highest levels of the pool, which are these), or the spell reads the element too. Same for the Thief line in this band (blades read the blade's attack).
+4. **Ember Descent after O664** (`descent_walk` with `--closed`, the gear-up first, the helper put the bot at the temple, the free descent of the day; before O664 no bot cleared room 1: step 22 item 4, 7 of 10 fled). Round 1 (the rotation of the setup level): Mystic 449 cleared room 2 in 31 s; Thief 721 room 1 in 42 s; Elementalist 650 room 2 in 52 s; Juggernaut 817 room 2 in 95 s (weapon power 20); the Warrior 585 (power 73) and the Ranger 552 retreated once and fell; Deadeye, Illusionist and Samurai: "the halls are kept for the players (2 free, 2 reserved)"; Ninja: no sigil. Round 2 (the reroll rule): Juggernaut 819 room 3 in 72 s; Thief 722, Elementalist 647 and Ranger 547 fell in room 1. Round 3 (all fixes): Mystic 442 room 2 in 38 s, Illusionist 594 room 2 in 30 s, Thief 714 room 1 in 33 s, Ranger 535 room 2 in 59 s, Juggernaut 813 room 2 in 65 s, Deadeye 561 room 2 in 83 s: all six that entered cleared at least room 1 (Warrior and Elementalist found the free descent used, Ninja and Samurai the halls kept). A fall in the earlier rounds was a flee at 14 to 20 % health after one heal; no death in the runs. The model's median class clears room 1 in 12 to 17 s, the bots in 30 to 95 s.
+5. **After the gear-up** (tree builds and weapons by power, clean probe, 210 s, before the level fix): Mystic 0.85, Ranger 0.98, Warrior 0.91, Elementalist 0.68, Deadeye 0.55, Juggernaut 0.28 (the weapon was not bought yet), Illusionist 0.93, Thief 0.54, Ninja 0.61, Samurai 0.71. The Ninja and the Samurai lost 10 to 15 % against before the gear-up: the Defense build of the free points takes the place of damage nodes (`gear_tree`, then `focus_damage` for what is left).
+
+Tests: `testers_test.py` (`helper_rotation`: the top-up from the earlier presets newest first, five attack spells, the area spells first, a spell that must be learned left out, the ultimate, the extras only below five, no row / no preset / no spell on the server keeps the old rotation, `load_area`, `class_spells` with the area table, `refresh_rotation` from a setup level of 1,200 to the real 300 and no change at the same level or without the context, `beat_delay`, the cadence of `keep_alive` (the attack group ready 2.0 s + 0.03 s later), `cast_bar` (start and end of the own bar in any key order, the cast of another player, plain text), `do_wander` waits for the bar and takes its steps after), `tester_checks_test.py` (`Power665`: the server files read, the power of a weapon per class, the pick by power and by item level where it is not known, the held weapon, the leftovers that keep the stronger weapon, the gear-up buys the weapon that casts, no files: item level as before, the reasons by power, the plan of the level, the power reroll once, none when the hand holds a weapon of the plan or the cap is met), `tester_closed_test.py`, `tester_journey_test.py`, `loadtest_test.py`, the server Lua loop (luajit and lua5.3), `check_names.py`, `check_content.py`.
+Left with the reason: the in-hunt number of the four classes with the wander fix (the probe in a hunt has the cross fire; a clean hunt run needs one hunt spot a bot); the roll of an item against its base attack (the Thief); the character without a damage tree, gems, runes and cards (the model's reference wears the gear plan and the tree: Juggernaut 0.49 and Elementalist 0.69 remain under the median by that and by the band of item 3); the owner's choice for the band 600 to 999 (item 3); a party of 4 in the Descent (O664); Warrior, Ranger, Thief and Elementalist falling in round 1 and 2 of item 4 were not read for their cause (the rotation of the setup level was in force).
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
@@ -17618,12 +17655,12 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 
 | Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
-| Helmet | Ranger, Deadeye, Beastmaster | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 11/171 | 5/100 | 11/145 | 6/117 | 7/129 |
-| Helmet | Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 12/160 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
+| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 9/111 |
+| Helmet | Ranger, Deadeye, Beastmaster | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 11/171 | 5/100 | 11/145 | 6/117 | 8/129 |
+| Helmet | Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 12/160 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 9/111 |
 | Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
 | Armor | Ranger, Deadeye, Beastmaster | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
 | Armor | Mystic, Elementalist, Illusionist | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 19/114 | 7/100 | 5/109 | 7/112 |
@@ -17643,12 +17680,12 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 | Spellbook | Mystic, Elementalist, Illusionist | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 7/100 | 7/100 | 8/106 | 7/100 |
 | Spellbook | Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 8/100 | 7/100 | 8/106 | 7/100 |
 | Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Amulet | Ranger, Deadeye, Beastmaster | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Amulet | Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 8 | 10 | 7 | 10 |
-| Amulet | Necromancer, Lich, Bone Lord | 16 | 8 | 15 | 14 | 10 | 8 | 7 | 10 | 7 | 10 |
-| Ring | Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 10 |
-| Ring | Necromancer, Lich, Bone Lord | 21 | 5 | 7 | 13 | 8 | 8 | 8 | 11 | 7 | 10 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 11 |
+| Amulet | Ranger, Deadeye, Beastmaster | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 11 |
+| Amulet | Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 8 | 10 | 7 | 11 |
+| Amulet | Necromancer, Lich, Bone Lord | 16 | 8 | 15 | 14 | 10 | 8 | 7 | 10 | 7 | 11 |
+| Ring | Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 12 |
+| Ring | Necromancer, Lich, Bone Lord | 21 | 5 | 7 | 13 | 8 | 8 | 8 | 11 | 7 | 12 |
 
 <!-- gear-coverage:end -->
 
@@ -20282,6 +20319,7 @@ middle and high levels. So:
 | low | I-V | 1100-1500 | 4: the water cave and the cave (base I), the plain and the cave (base II) |
 | mid | VI-X | 1600-2000 | 4: the plain and the cave (base III), the forest and the underground (base IV) |
 | high | XI-XV | 2100-2500 | 4: the desert and the ice (base V), the undead cave and the forest & desert (base VI) |
+| deep | XVI-XXV | 2600-3500 | 6: the forest and the underground (base IV), the desert and the ice (base V), the undead cave and the forest & desert (base VI); O666, "Waystone endgame (O666)" |
 
 Each tier is +100 levels (`tiers` in the config). Tier I-VI are the base items (29845-29850); VII-XV are new items
 41951-41959 (`tools/install_waystone_items.py`, install step `waystoneitems`: copies of the base tablet nodes with their
@@ -20384,6 +20422,26 @@ Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rol
 
 Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
 game.
+
+## Waystone endgame (O666) (`waystone_endgame.lua`, `waystone_endgame_core.lua`, `waystone_endgame_config.lua`, `waystone_endgame_balance_config.lua`, `tools/waystone_endgame_model.py`, `data/monster/monsters/chaos/waystone_bosses`)
+
+Owner 2026-11-19: "players from level 1500-2000 have little to do; maybe raise the waystone tiers; do what you recommended". The leveling model, the hunt pool, the weapon bands and the class damage anchors all end at level 2000-2200, so a character past 2200 has no hunt of its level. The waystones carry on.
+
+**Tiers XVI-XXV (levels 2600-3500).** `waystone_tiers_config.lua` `tiers` has 25 rows now (items 41960-41969, `tools/install_waystone_items.py`, the look of base VI, no client pair) and a fourth band `deep` (tiers 16-25). Maps: **no new map and no generated one**: the band reuses the six base maps of base tiers IV, V and VI (forest, underground, desert, ice, undead cave, forest & desert) in a new combination. A map that two bands open counts at the first tier of the first band that lists it until its first run; a run sets its tier (`K.bandOfMap`). The monsters of a map are still the base tier's own (`classify` by name and map), at the run's level. `deep` (config, `K.deep`) multiplies health, damage and experience on top of the engine's level formulas from tier XVI: health x2.65, damage x1.85, experience x22.6 rising 0.87 a tier. They are derived (`tools/waystone_endgame_model.py --derive`): a plain run of 10 minutes for the median class, the class healing 1.8 x the pack's damage, and experience an hour equal to the hunt's (12 minutes a level, the progression model), because no hunt exists above level 2000. The experience factor is large because the base maps' monsters pay little after the pace layer; **first guess, to be measured live**. Waystone drops stop at XXV; the old Waystone Atlas (waystone_atlas_config.lua `tiers = 15`) keeps its 75 cells and ignores tiers above XV.
+
+**Limits at level 3500** (`waystone_endgame_model.py` prints them, `--check` holds them): the experience to level 3508 is 7.2e11 (a Lua double holds 9e15; the engine's uint64 more); the biggest class health or mana at that level is about 105,000 (int32); a deep boss has under 3 million health (`K.health` clamps at int32); the display level is an int32 (src-patch 0044); the experience stage is x13 from level 951 and open ended (`late_game.py`); the item level curve of drops reaches 142-145 at monster levels 3000-6000 (`chaos_item_mods.lua` `itemLevel`, cap 150). **Not held**: the set pieces of the waystone gear table stop at item level 2050 (`chaos_gear_sets_items.lua`; `CR.pickPiece` takes the highest pieces when none lies in the window, so tiers XVI-XXV drop level 1575-2050 pieces, no worse than tier XV); the class damage model keeps its line above 2000 (median 1 target about 30,800 at 3500, an extrapolation) and the pace curves are flat above 2000; the weapon bands (2200) and the leveling model (2200) end below. The engine source is not in the repository, so a player level cap or an overflow in it is read from TFS 1.4.2 (level uint32, experience uint64, health int32) and not proved here.
+
+**Band bosses.** The last tier of each band (V, X, XV, XXV) brings the band boss when the map's own boss dies: `Gravewatch Ulrim`, `Sister Morvane of Cinders`, `The Hollow Colossus`, `Vharkul the Embered Tyrant` (files in `data/monster/monsters/chaos/waystone_bosses`, outfits 2234, 229, 204 and 591 of the bounty pool's bosses, no new art). A lower tier of the band can bring it with the opener's atlas `bossChance`. It appears on the map boss's tile (`E.spawnBandBoss`), takes the run's level (`WT.entryOf` asks `E.bandEntry`; health scales from its own tier's level, so a lower run has less; no `bossDamage` of the base tier), and leaves after 10 minutes when nobody is in the map. Its health and attacks are written by `waystone_endgame_model.py --write-bosses` (the median class kills it in 170 / 190 / 210 / 240 s and lives 40 / 38 / 36 / 34 s under its hits at the tier's level; `--check` holds the files). Its own drop table (`content_rewards.lua`, entry `band`): the map boss's table plus 2 / 3 / 4 / 6 pieces and unique rolls, Orbs of Fate, Upheaval and Gilding, and **Void Orbs** (30 / 45 / 60 / 90% for 1-3), the orb that corrupts waystones.
+
+**Corrupted waystone.** The Void Orb (32260, `chaos_orbs.lua`) on a Magic or Rare waystone (`W.orbCheck` / `W.orbApply` "void"): 15% the waystone breaks (gone), else it is corrupted for good: 2 (70%) or 3 modifiers from a corrupted pool (`corrupt.pool`: the key of a normal modifier at 1.3-1.4 x the top of its range, never a key the waystone holds, no conflicting group; custom attribute `ws_corrupt`), plus +35% item quantity, +30% rarity and +20% experience for the run on top of the caps (`WM.begin`). The name says Corrupted and the description lists the modifiers. No orb changes a corrupted waystone (reason `corrupted`). The device merges the corrupted modifiers into the run's list (`WM.take`, `mods.corrupted`); a Normal waystone refuses (`wsNoMods`). The model bounds the break chance (25) and the quantity (1.35 x a Rare waystone's cap).
+
+**Endgame atlas.** The first kill of a tier's map boss gives every character in the map one point (storage +0, once per tier and character); points buy ranks (one point each, 5 ranks a stat, 25 points for 20 ranks, so not every stat can be full) of `density` (+6% a rank chance a dead map monster is replaced by one more, at most 40 alive), `bossChance` (+8%: the band boss of the run's band), `chestChance` (+6%: a chest of Upheaval, Fate and Gilding orbs for everyone in the map) and `fragmentChance` (+4%: read by O667). The opener's ranks shape the run (`E.openerOf`: the atlas's `opener`, online). Actions on opcode 159: `eg_open`, `eg_spend {key}`, `eg_reset` (500,000 gold), answer `eg_state {points, spent, free, stats, paid, respec, msg, levels, deepFrom, bosses}` (`levels`: the monster level of each tier, `deepFrom`: the first deep tier, `bosses`: `{tier, name}` of the four band bosses; the last three are O670, for the client page). Client: the Endgame page of the Waystone Atlas window (`game_riftatlas`, `waystoneegview.lua`) and the Unity `WaystoneAtlasWindow` (`AtlasEndgame`), O670.
+
+**Hook for O667.** `ChaosWaystoneTiers.onRunCleared(info)` runs when a map's boss or a band boss dies (info: `map`, `tier`, `level`, `band`, `boss`, `opener` guid, `fragmentChance` percent of the opener's rank, `corrupted`, `firstClears`, `chest`, `bandBoss`); `ChaosWaystoneTiers.addClearListener(fn)` registers a reader, `ChaosWaystoneTiers.lastClear[map]` keeps the last one. `ChaosWaystoneEndgame.fragmentChance(map)` is the same number. Nothing here drops a fragment.
+
+**Model** (`tools/waystone_endgame_model.py`, limits and reasons in `waystone_endgame_balance_config.lua`): per tier the clear time (sweep of 240 monsters + the map boss + the walk), the seconds the median class lives in the pack and its healing against the damage, the weakest class against the median (0.45), and the experience an hour against the hunt. Numbers (first guesses): tiers I-XV run 5 to 6 minutes and pay 0.05 to 0.22 x the hunt's experience an hour (they pay in gear and orbs; unchanged), tiers XVI-XXV run 10 minutes, burst 13 s, sustain 1.8, experience 1.0 x the hunt (12 minutes a level). `--derive` prints the deep factors and the band bosses' health, `--write-bosses` the files, `--check` (CI) holds all of it. Assumptions to measure live: 240 monsters on a base map (`audit_waystone_maps.py`), the pace layer acting on waystone monsters by their run level, a base boss health of 300k-1M.
+
+Tests: `tests/waystone_endgame_test.lua` (config, deep factors, band bosses, corruption, atlas, the engine file on a mocked engine), `tools/waystone_endgame_model_test.py`, `tools/tester_checks_test.py` (`wsendgame`), `tests/waystone_tiers_test.lua`, `tools/install_waystone_items_test.py`. Testers: `!tester wsendgame` (helper v26) and the closed-mode check `wsendgame` ask the helper whether the engine loaded the four band boss types, the corruption pool, the Void Orb and the hook. Not run in game.
 
 ## Content rewards (`content_rewards.lua`, `content_rewards_core.lua`, `content_rewards_config.lua`, `tools/content_reward_model.lua`, `tools/audit_waystone_maps.py`)
 
@@ -21506,6 +21564,21 @@ lists every change that actually shipped to the server or the client (owner 2026
 
 Not verified in game: the tab, the chunked answer in the real client, the layout in pt-BR, the kit's shallow deepening on
 the VPS.
+
+## Greater Rift (O668) (`rift_config.lua` `greater`, `rift_core.lua` `R.greater*`, `rift.lua` `RF.greaterSettle`, `greater_ladder.lua`, `greater_ladder_core.lua`, `sql/chaos_greater_rift.sql`, `tools/greater_rift_model.py`)
+
+Owner 2026-11-19 ("do what you recommended"): the rift past tier 15, endless, with a ladder by class and season. No new opcode, no new client module, no new item, no new art.
+
+- **Keys.** A Greater Rift Key is the rift key item (10155, action id 47401) with `rift_tier` = 15 and a new custom attribute `rift_greater` = g (1, 2, ...). The tier shown is 15 + g ("Greater Rift Key (Tier 18)"). Every other lookup of a run by tier (layout band, monster pool, loot, Atlas, key odds) is the tier 15 row, so nothing else in the rifts changed. Sources: a sealed tier 15 rift (not an Omen arena) leaves a key of tier 16 with `key.drop.chance` 12%, always at the 8th sealed tier 15 rift in a row without one (the rift's own pity counter, storage `riftRun + 5`, which a tier 15 key could not use before); and the Bind Greater Key button of the Rift Keys page of the Info window (`ChaosCommands` id `greater`, param `key`) binds one for 150 omen fragments (the rift currency), 3 a day (storages 7103150 / 7103151), level 1025 or more. `item_codec.lua`, `guild_config.lua` (guild depot) and `chaos_crafting.lua` (`readKey`, the signature) carry `rift_greater` too. Staff: `/rift greater [g]` (administrators only, like `/rift key`).
+- **The rule** (`greater.rule`, per Greater tier g): every rift monster and guardian has health x 1.06^g and hits x 1.03^g (`R.applyGreater` on the run's effects, so the pack and the guardian both take it, the party scaling and the modifiers stay on top); the shown monster level is 1025 + 25 g (`R.displayLevel`; the engine adds 0.15% damage a level, patch 0090, which the model counts); every finisher's chest gold and orbs x min(3, 1 + 0.04 g). The pack and guardian budgets stay the tier 15 ones (sized for the tier 15 level), so the curve is one number: the health step.
+- **The clock** (`greater.clock`): the run's time is the layout band's limit of tier 15 (21 minutes). Sealed in at most 50% of it the key goes up 3 tiers, in 75% up 2, in time up 1 (`R.greaterUp`, `R.greaterNext`). A failed rift (time up, no lives, nobody back in time) does not lose the key: the opener, if online, gets one 1 tier lower (never under a plain tier 15 key; modifiers are rolled again; a sealed run rolls the count as a better key). Leaving a run by hand or by logging out spends the key as in any rift. A crash or a clean shutdown refunds it through the run marker (storage `riftRun`, which holds the shown tier; Omen markers start at 1000, so Greater tiers are capped at 999). `maxShownTier` 999 is the only end.
+- **Ladder** (`greater_ladder.lua`, tables `chaos_greater_rift`, `chaos_greater_rift_rewards`): per season (the Infinity Tower's windows, `Chaos.tower` epoch, 30 days), character, mode (solo, party of 2-5) and class: the best shown tier, then the least seconds, with the vocation of that run. Equal tier and time share a place. Staff groups and anti-bot held accounts are left out. **Testers never rank**: `G.record` skips `Chaos.isTesterGuid` and a tester player, the ladder query uses `Chaos.notTesterSql`, `ChaosLeaderboard.record` skips testers too. The client shows the tier in two new weekly boards of `leaderboard_config.lua`, `greater_solo` and `greater_party` (class tabs by the window's own rule, title only, `noReward`; board names have pt-BR in `client_chaos_locale`); the season ladder of your class and the key purchase are read with the Greater Ladder button of the same page (a text window; the website reads the two tables); a chat command is not offered to players. The rift's own weekly board "Rifts" now takes the shown tier of a Greater run.
+- **Rewards** (`greater.rewards`): *personal best*: every shown tier above the character's best of the season over both modes, at most 3 a run, pays Orbs of Fate and Upheaval, gold to the bank and omen fragments (base + perTier x (tier - 16)); a row of `chaos_greater_rift_rewards` (kind `pb`, slot = the tier) is written once, delivered at once to a character online and at the next login otherwise (marked before the items are made, as the tower). *Season end*: `ChaosGreater.checkSeasons` (startup and every 60 s; server_config `chaos_greater_rift_season_done`; one season, oldest first) ranks every (mode, class) board and writes one row per character and mode (kind `season`): place 1 Greater Champion (40 / 80 orbs, 150 fragments), 2-3 Greater Vanguard, 4-10 Greater Delver, 11-50 Greater Seeker, anybody at tier 20 or more Greater Rifter. *Pinnacle fragment* (O667): each finisher of a sealed run rolls 2% x min(3, (shown - 15) / 5); on a win `ChaosPinnacle.grantFragment(player, "greater_rift", {tier, players})` is called through `pcall` when that system exists; without it nothing happens. The contract is named here so O667 can adopt it or rename it.
+- **Staff.** `/greaterseason status | pay` (group 4+): the season, its end, the last season paid; `pay` runs the check now (idempotent).
+- **Storage and tables.** Storage 7103150 - 7103159 (`greater.key.boughtStorage`): +0 keys bought today, +1 the day (YYYYMMDD); +2..9 free. Tables `chaos_greater_rift`, `chaos_greater_rift_rewards` (in `launch_wipe_tables.json`: wipe). No opcode.
+- **Model** (`python3 -I server/tools/greater_rift_model.py --check`, `greater_balance_config.lua`, test `greater_rift_model_test.py`; computed, not measured). The median class's damage (`class_dps_model.py median_dps`, 1 target for the guardian, 5 for the packs, to level 2500) against the typical player of the tier 15 rift model (`R.clearParts`: 394 s packs + 96 s guardian + 62 s walk = 552 s of the 1260 s clock at level 1025), the packs and guardian x the health step; the clock is the wall. Against the guardian: its tier 15 damage (`guardian_model.py`) x the rule x the engine level bonus against the median class's pool and healing at the player's level. Reached tier (solo = party of 5, a rift scales its total health with the party): level 1025 tier 30, 1500 tier 36, 2000 tier 42, 2500 tier 46 (9 to 14 runs of +1 / +2 / +3 from the first key). Tier 16 costs 33% of the clock at level 1500 (581 s at the entry level), each tier 5.4-5.9% more seconds than the one before (limits 3-10%: no wall, no free tier), the guardian deals 0.80 x the median healing at tier 16 and 1.70 x at tier 36 (a median class dies in 7.6 s then 3.4 s with no healing; the 60% hit cap of the rift guardians is not counted), growing at most 6% a tier; a party of 5 takes 1.37 x the solo pressure per head. The limits and the reason of each are in `greater_balance_config.lua`; `--detail --level N` prints every tier. Not modelled: key modifiers (they add difficulty and reward on top of the tier), gear beyond the median class, the Atlas's time bonus and charms (they only add seconds).
+- **Tests.** `tests/greater_rift_test.lua` (luajit and lua5.3): the config, the rule, the clock steps and the climb, the key attributes and name, the refund marker (crash and shutdown), the key a sealed or failed run leaves (+3 / +2 / +1, one down, a plain key at the bottom, a plain rift still loses it, an offline opener, once), the purchase (cost, level, the day's limit), the ladder (merge, ties, class boards, brackets, season windows), `greater_ladder.lua` on a scripted database (personal best rows once, the weekly board, testers skipped, the pinnacle call guarded, delivery marked first, the season end once); `tools/greater_rift_model_test.py`; the closed tester check `closed_greater` (`tester_checks.py`: both boards exist and hold no tester bot; the bots play a Greater run only when the helper gets a `rift greater` command: not done).
+- **Not run live.** The engine calls (`Game.createItem`, the key attributes, `GlobalEvent`, the text window, `player:setBankBalance`) are the ones the rifts and the tower already use, but this has only run against the mock. To check on a server: `/rift greater 3`, use the key in a protection zone, watch the HUD tier and the chat lines, `/rift fail` for the key one tier down, the two buttons of the Rift Keys page, `/greaterseason status`. Client: the two buttons are new rows of `chaosinfoview.lua` (game_chaosinfo), pt-BR in `client_chaos_locale`.
 
 ## Rift Atlas (`atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql`, client `game_riftatlas`)
 
@@ -33335,6 +33408,74 @@ monstros". Player corpses stay exactly as they are (owner, same day). Roadmap O4
   (CI builds the header cut out of the patch). The patch applies on top of 0079-0087 of an already patched tree (luascript.cpp with
   fuzz 2). **Not tested:** a full build with the patch, a kill in a game, decay and loot timing, the look of the bag, the client labels on a live corpse.
 
+## Loot explosion (O669) (`loot_explosion_config.lua`, `loot_explosion_core.lua`, `loot_explosion.lua`, `tools/patch_loot_explosion.py`, client `game_groundlabels`)
+
+Owner 2026-11-19 (pt-BR): "em vez dos monstros dropar o loot no corpo, da pra fazer eles dropar no chao em volta, uma explosao de loot". Roadmap O669.
+The loot bag of "Loot bag instead of corpses" (O435) stays: it is where every loot step still works. At the end of the chain what is left in it flies out onto
+the ground around the death tile. `enabled = false` in `loot_explosion_config.lua` and a `/reload` give the bag back, no rebuild.
+
+* **Where it runs.** An `EventCallback` `onDropLoot` at index **98** (config `index`): after the loot layer (1), the auto seller (2), the pouches (2.7), the base
+  autoloot (3), the Rarity Autoloot (3.5), the loot filter's finish (4.5, the loot channel row is made) and the globes (8); before the empty bag check (99) and the loot
+  line (100). So the autoloot and the Loot Bag take their items from the bag first, as before (they pick up "around the player" in the sense that nothing of theirs
+  waits on the ground), the loot filter's rules and the loot line are unchanged, and only what nobody took flies. Core `loot_explosion_core.lua` (pure, tested),
+  config, engine glue `loot_explosion.lua`.
+* **Which kills.** A loot bag (`corpse_config.lua` `bagId`) with a corpse owner that is a player online. Not: a bag nobody owns, a player's corpse, a kill inside
+  an instance (`Chaos.instanceAt`: rift, dungeon, tower, arena, raid, boss rooms: the instance clears its area when it ends and the floor loot would go with it;
+  `inInstances = true` lifts it), a kill over a cap, a death tile with no free tile in sight. They keep the bag, as before.
+* **The spread** (`X.pickTiles`, `X.plan`). Free tiles within `radius` (2): a ground, no wall / water / lava / stairs / teleport / magic field / protection zone /
+  house / depot / mailbox / trash, and in line of sight of the death tile (no loot behind a wall). Each drop takes the cheapest tile: its ring (ring 2 costs 0.35 more),
+  the items already there (1.0 each), the drops of this kill already sent there (2.0 each), a random 0 .. 0.6. So 14 drops fill the 8 ring 1 tiles, then 6 of ring 2, and
+  nothing is piled before every free tile has one. The death tile costs 6: a last resort. **Gold** (all its stacks) is one drop on one tile. Items leave in rank order,
+  gold and plain first, **the rarest last** (a unique last), 50 to 80 ms apart (`staggerMinMs`, `staggerMaxMs`), each with a distance effect from the death tile
+  (`missiles`: stone for gold and plain, energy for Magic / Rare / Legendary / Divine, fire for a unique), `flightBaseMs` + 40 ms a tile in the air, and a landing sparkle
+  for the rare groups (`land`); a poff on the death tile when it starts (`burst`). The items stay in the bag until they land and are found there again by a drop number
+  (no Lua object is held over the delay). The loot beams are the client's (O569, per ground tile): nothing is sent for them.
+* **Ownership** (the rule of the bag's corpse owner, same timings). Every loose item carries the custom attribute `chaos_loot` = owner id, owner time, vanish time, strict,
+  drop number (`X.encode`). The killer and their party take it; a stranger is refused ("That loot belongs to someone else for 42 more seconds.") by `X.onMoveItem`, which
+  `tools/patch_loot_explosion.py` (install step `lootexplosion`, idempotent, marker comment) calls first in `Player:onMoveItem`, as the season isolation does (a script
+  callback cannot refuse a move there: the base dispatcher keeps only the last callback's value). The bag's owner rule never ended before its life (180 s), so
+  `ownerSeconds = nil` means the same here; a number frees the plain items to anyone after that many seconds. **Strict** items keep the owner rule for their whole
+  life whatever `ownerSeconds` says: a unique, a set piece (`chaos_set`), a main quest item (`chaos_mq`), the ids of `strictIds`. Staff take anything. The
+  attributes the loot layers write on the bag, the season realm (`chaos_realm`) and the Self-Found owner (`chaos_owner`), are copied onto every item, so the season
+  isolation holds for a loose item as for one in the bag. The attribute leaves the item before it enters a container (the hook, for the full count; the
+  `onItemMoved` callback cleans a part of a stack after the move), so it stacks with its like in the backpack. Not covered: using an item (a potion, food) from the ground
+  without picking it up.
+* **Vanishing.** The engine decays no loose item (`canDecay` is false without a decay id) so one sweeper (`sweepSeconds` 2, a timer that only runs while a tile is
+  watched) removes the items whose vanish time ran out: `decaySeconds` (nil = the bag's `seconds`, 180). It only ever touches items with `chaos_loot`. The labels get the
+  timer from `X.expiryLeft` (the row's `e`). State is in memory: after a restart items already lying keep their attribute and are not swept (they are not saved with the
+  map either, only houses are).
+* **Caps** (`X.gateTake`, `X.plan`). At most `maxItems` (14) things per kill on the ground (gold counts as one), the rarest fly, **the rest stays in the bag on the death
+  tile** (the small bag, with its own empty / necro decay of "Empty bags go fast"); at most `maxPerAreaSecond` (40) items per `areaSize` x `areaSize` (8 x 8) tiles per
+  second and `maxPerSecond` (160) on the map: a kill over the cap leaves everything in the bag. What other scripts add to the bag after the loot step (death events:
+  treasure goblin coins that came late, the cursed chest) stays in the bag.
+* **Pickup.** By hand as ever: click a label, drag, the engine walks to it. **Loot all**: extended opcode 230 `lootall {}` (`groundloot.lua` -> `X.lootAll`): every item
+  of the player's (owner or party, not another's, not out of sight) within `reachX` x `reachY` (7 x 5) tiles goes into the backpack (a store pouch that collects it first,
+  `ChaosPouches.stow`, else `ChaosLootFilter.intoBags`), at most `lootAllMax` (40), nearest first; what does not fit stays with its record; answer
+  `lootall {n, f, s}` and a status line ("You picked up 4 items.", pt-BR in `i18n_strings.lua`). Client key **Ctrl+Shift+L** and a button in the Ground Labels window.
+  The ground labels (`groundloot.lua` `describeTile`) no longer show the items of another player's kill (as a corpse's contents were not shown), and carry the timer.
+* **The loot filter and the loot channel.** `lootfilter.lua` made the kill's row at 4.5, before the explosion. `ChaosLootFilter.onExploded(killId, origin, tiles)` flips
+  the kill: its click to loot (`take`) and the greying of the row read the loose items (they carry `lf_loot` = the kill id; the tiles are remembered) as one object that
+  answers like a corpse (`groundOf`), the kill beam (opcode 238) is switched off (the client beams the ground rows), and a pickup by hand re-reads the kill
+  (`onItemMoved`). A part that does not fit goes back with its record.
+* **Main quest.** `giveQuestItem` puts a quest item in the bag only while its loot did not fly (`ChaosLootExplosion.isExploded`); after an explosion it goes to the
+  backpack, else the inbox, as without a bag.
+* **Both clients.** Main client: `game_groundlabels` (the labels, the timers and `game_lootbeams`' per-tile beams were per ground row already; Loot all key and button, pt-BR
+  texts, `groundlabelslogic.lua` `LOOT_ALL_KEY`, `countLoot`, `lootAllReady`). Unity: `GroundLabelsModel.LootAll()` (cooldown 0.5 s) and Ctrl+Shift+L in
+  `ChaosApp.Loot.cs`; the scattered items are ground rows there too. `check_unity_opcodes.py` is unchanged (opcode 230 was handled).
+* **Testers.** Helper v27 `!tester explode [state | run]` (TEST ONLY, a tester only): `run` puts a loot bag of the bot's own with known loot (150 gold in two stacks, 3 + 2
+  potions, a Magic and a Legendary sword) on its tile and explodes it by the real rule; `state` reads what lies within 4 tiles (owner, ring, tiles, the bag, a stranger
+  refused). Check `loot_explosion` (`tester_checks.py`, every class): the loot lands, none left in the bag, within 2 tiles, all the bot's, a stranger refused; then Loot all
+  by opcode 230 and the ground holds nothing of the bot's. FAIL: stuck in the bag, past ring 2, another's owner, a stranger allowed, Loot all leaving loot behind; SKIP: no
+  helper, the rule off, a full backpack. The bots' own looting (`do_loot`: the loot channel's `take`) works on the items on the ground (the proxy above).
+* **Storage, tables, opcodes.** None new: the state is in memory and on the items (custom attributes `chaos_loot`, `lf_loot`, and `chaos_exploded` on the bag); `lootall` is a new action of opcode 230 (no new opcode, no collision).
+* **Tests.** `tests/loot_explosion_test.lua` (the core: config, spread, order, stagger, cap, fallbacks, area and second caps, encode / decode, the ownership matrix; the glue
+  on a mocked engine: a kill flies and lands, gold in one stack, the attributes, the season attributes, the switch, no owner, an instance, no free tile, no sight, the cap, the
+  pull over the cap, the sweeper, `onMoveItem` for a stranger / the owner / the party / staff, a part of a stack, Loot all with a full backpack and the reach, the tester
+  probes), `tools/patch_loot_explosion_test.py`, client `groundlabels_test.lua`, Unity `HelperTests`, `tester_checks_test.py` (`LootExplosion`), `tester_helper_test.lua`.
+* **Not verified live.** The `Player:onMoveItem` hook on a real server (a stranger's drag refused, the owner's accepted); that the missiles, the burst and the sparkles read as an
+  explosion in the client; the labels and beams over 14 scattered items; `Item:moveTo(position)` onto a tile with creatures; the loot channel's click on a scattered item; two
+  players at once on one tile.
+
 ## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
 
 Review of the animations 2026-11-10, owner approved: a monster died and appeared with no effect of its own (the loot bag of O435 replaced
@@ -36215,3 +36356,144 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   guard". Fallback: `chaos-ctl.sh client-pair set 74`.
 - **Open.** Not seen in a client. The 14 bigger monsters are 3x3 (96 px), the first hunt monsters of the 3x3 class beyond the donor B ones; whether the
   bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
+
+
+## Pinnacle bosses (O667: `pinnacle.lua`, `pinnacle_core.lua`, `pinnacle_config.lua`, `pinnacle_balance_config.lua`, `tools/pinnacle_model.py`, NPC Keeper of the Pinnacle)
+
+Owner 2026-11-19 ("do what you recommended"): the top of the game gets four **Ascended versions of existing key bosses**, shown at level
+**2000 / 2500 / 3000 / 3500**, each a private fight alone or with a party of up to 5, opened by **a set of four fragments** that the top content
+drops. Rewards: an exclusive unique per boss, Conquest Tokens, orbs, a title for the first kill of each season and a "deathless" title.
+
+| Boss (monster type) | shown at | planned for (`refLevel`) | opens from | looks and defences of | new mechanics (`boss_mechanics_config.lua`) | unique (base id, level) |
+|---|---|---|---|---|---|---|
+| Ascended Malgrath | 2000 | 2000 | 1900 | Malgrath, the Drowned Crown | `marks` (Drowning Marks under every player), a ring, the Undertow soak (a group only), a shield phase (2 Drowned Anchors) | Signet of the Drowned Crown (ring 2216, 2000) |
+| Ascended Vhoss | 2500 | 2300 | 2200 | Vhoss the Hexmaw | `lines` (Hexlines), a cone, the Hexbind channel (a Hex Idol), an empower phase (3 Whispering Idols) | Seventh Hex Amulet (necklace 2196, 2300) |
+| Ascended Talath | 3000 | 2400 | 2300 | Talath | `eye` (Whiteout: all but a calm eye), `half` (Glacier Fall), Frostbite stacks, a shield phase (2 Rime Pillars) | Helm of the Unthawed (head 5461, 2400) |
+| Ascended Varkhul | 3500 | 2500 | 2400 | Varkhul the Ashen Sovereign | `half` (Ashen Verdict), `lines` (Cinder Lines), an empower phase (3 Ash Idols), a soft enrage from 10 minutes | Ring of the Last Verdict (ring 7708, 2500) |
+
+The monster files are `data/monster/monsters/chaos/pinnacle/*.xml` (installed by the `monsters` step; the looks are the old ones of the base bosses, no new
+art; the repository keeps them as the base files do). Their health is the **solo fight**; the run sets the health of the party. The level is the level the
+engine's bonus reads (damage x (1 + 0.0015 x level), `ChaosLoot.monsterLevel`) and the level shown after the name. The planned character level is lower than the
+boss's for the last three: the player cap of the game's top content is 2500 (`waystone_tiers_config.lua`, `maxLevel` 2500), so the fight at 3500 is a level 2500
+character against a monster that hits as one of 3500.
+
+### Fragments
+
+Four kinds a boss, stored per character (storage block above, no item, no art). Kind 1 drops from a **waystone map** of tier `minTier` (12) or higher, kind 2 from a
+**rift of tier 15**, kind 3 from an **Omen guardian**, kind 4 (the **keystone**) from any of the three. Per clear and per character in the party (each finisher
+rolls): `chance` percent (25) for the source's own kind and `anyChance` percent (8) for the keystone, two rolls. The fragment is of the **focus** boss (chosen at
+the Keeper, 0 = none), else of one of the bosses the character's level opens, at random; a character under every boss's `minLevel` earns none. At most `cap` (6) of
+a kind are held. Names (items of the game, English in both languages):
+
+| Boss | waystone | rift | Omen | keystone |
+|---|---|---|---|---|
+| Malgrath | Drowned Crown Shard | Tidebroken Pearl | Saltwrit Sigil | Tidal Keystone |
+| Vhoss | Hexmaw Fang | Veiled Hex Scrap | Whispering Idol Chip | Hex Keystone |
+| Talath | Rime Crown Splinter | Frozen Oath Shard | Winterglass Tear | Rime Keystone |
+| Varkhul | Ashen Sovereign Cinder | Sepulchre Seal | Embered Oath Sliver | Ash Keystone |
+
+Where the clears come from (all guarded, so every part works without the others):
+- **Rift tier 15 and the Omen guardian**: `rift.lua` already calls `ChaosAscended.onRiftSealed(info)` for the Ascended Shards (`info = {tier, omen, finishers =
+  {[guid] = {name}}, players}`). `pinnacle.lua` wraps that function at startup and at every login (`ChaosPinnacle.wrapHooks`, once: `_wrapRift`), calls the
+  original first and then `ChaosPinnacle.onRiftSealed(info)`. `rift.lua` is not touched.
+- **Waystone maps (O666)**: `fragments.hook.waystone = "onRunCleared"` names the function of `ChaosWaystoneTiers` that O666 adds. `wrapHooks` wraps it when it is
+  a function (the original runs first and its results are kept) and calls `ChaosPinnacle.onWaystoneCleared(...)` with the same arguments. The arguments are read as
+  they come: a table with `tier` and `players` / `finishers` / `party` (a list of players, of ids, or `{[guid] = {name}}`), or a tier number and a list. A call it
+  cannot read gives nothing. Until the hook exists nothing happens, and a coordinator that names the hook otherwise calls `ChaosPinnacle.onWaystoneCleared({tier =
+  T, players = {...}})` itself (the one door: `ChaosPinnacle.grantClear(player, "waystone", {tier = T})` for one character).
+- Staff: `/pinnacle give, NAME, BOSSKEY, [KIND]` gives a fragment or a whole set; `/pinnacle clear, NAME`; `/pinnacle end`; `/pinnacle` lists the open fights.
+
+### The Keeper and the fight
+
+**Keeper of the Pinnacle** (`data/npc/Keeper of the Pinnacle.xml`, script `keeper_of_the_pinnacle.lua`; installed by `tools/install_pinnacle.py`, the `pinnacle` step
+of `install_all.py`; placed next to the five temples at startup like Osric the Chandler). Words: pinnacle, fragments, set, boss, open, focus. The NPC's modal window
+(id `modal.list` 7490: the four bosses with the four kinds held, the focus marked) has the buttons **Open**, **Focus** and **Close**; `pinnacle.lua` answers it
+(`ChaosPinnacle.modalAnswer`, the `ChaosPinnacleModal` creature event, registered at login). No new opcode: the window is a server modal and the fight's HUD is the
+rift HUD (opcode 228). No talkaction opens a fight.
+
+- **Open** (`ChaosPinnacle.enter`): from a protection zone, out of a fight, in no other instance, the level of the boss's `minLevel`, `enterCooldown` 10 s since the
+  last opening, **a whole set** (one of each kind). The opener's set is **spent and written before anyone moves**; the party members within 8 sqm (same floor, at most 5
+  in all) who meet the level and are free come along and **pay no set** (they are rewarded alone; the others are told why they stay behind). A run marker
+  (`+36`) gives the set back at the next login after a crash; a server restart (shutdown, `refundOnRestart`) and a boss that did not come give it back at once; a
+  logout, a death or a time-out never do.
+- **The arena**: the runtime-built slot layout of the pocket boss arenas (`uber_core.lua`, `arenalook_core.lua`), a grid of its own: x 11520-11711, y 10112-10207, z 7,
+  8 slots of 48 (below the pocket boss grid x 11520-11903 y 10000-10095; free map, see "Rifts"), `maxRuns` 8; the way out has action id 47630 (47630-47639 reserved).
+  `Chaos.registerInstance("pinnacle")` makes it an instance (`/instances`, the sweep of strangers, the Town Portal rules).
+- **The boss** appears `startDelay` 8 s after the arrival, `minutes` 20 to kill it. Its health is `health x (1 + perExtra x (players - 1))` of its row times the
+  factor `ChaosBossMech.attach` returns (the mechanics' downtime, `boss_mechanics_core.lua` G.balance: the profile's `ref` is the solo fight of the model); its hits and
+  its adds' hits on players x `damage` (solo 1, +0.06 a player, at most 1.3). `catchLethal`: a hit that would kill carries the player out of the arena, healed, with no
+  death and no loss; **that fight is no longer deathless**. The others fight on, the last one out ends it. `exitDelay` 45 s after the kill, then everyone is sent back.
+- **Mechanics**: the four profiles use the shapes that no profile used before (`marks`, `lines`, `eye`, `half`; `boss_mechanics_core.lua` G.SHAPES), so each fight asks
+  for something the boss did not ask in its first life. The mechanics test (`tests/boss_mechanics_test.lua`) holds them to the fairness rules (a safe tile in reach in
+  time, a warning of 1.5 s or more) and to the kill time (`ref`, the factor 0.6-1).
+
+### Rewards
+
+Per player still in the arena at the kill (a player carried out earlier gets nothing): **Conquest Tokens** (`pinnacle:<key>`: 8 / 10 / 12 / 14),
+**orbs** (Orb of Upheaval, Orb of Fate, Exalted Orb: 24 + 12 + 2 / 32 + 16 + 3 / 40 + 20 + 4 / 48 + 24 + 5), and **the exclusive unique** of the boss: a roll of `unique.chance`
+22% x the character's item find (at most x1.5, `ChaosLoot.itemFindMult`), and the kill that is the 8th since the last unique (`unique.pity`) always gives it (storage
+`+32 ..`). The unique is a copy of an unused stock item that has no other drop (`data/lib/chaos_unique_items.lua`, `bossOnly = true, pinnacle = true`, the monster list
+names the boss: the corpse owner's extra roll is the entry's `chance` 1 x the boss tier; the corpse itself carries no loot). Specs: `chaos_items.xml` and the generated
+files (`tools/gen_unique_specs.py`, codex, wiki, Unity info data, pt-BR texts, `unique_flavor_pt.tsv`), each with a passive (`unique_passives_config.lua`: the
+Ascended uniques' families with their own names; `tools/unique_passives_model.lua --check` holds them) and an equip rule of the unique's level (every class).
+
+| Unique | base (stock id) | level | mods | passive |
+|---|---|---|---|---|
+| Signet of the Drowned Crown | ring 2216 | 2000 | bossdamage 24, execute 8, cdr 8, deathblast 24 | Tide Takes Its Crown: a death nova on a kill (W P M) |
+| Seventh Hex Amulet | necklace 2196 | 2300 | dot 28, elepen 12, manacost 12, lastbreath 44 | Seventh Hex Falls: a poison nova on a critical hit (M N K) |
+| Helm of the Unthawed | head 5461 | 2400 | bossdamage 20, attackspeed 9, itemfind 14, bloodrush 5 | Thaw Denied: overflow (M N P) |
+| Ring of the Last Verdict | ring 7708 | 2500 | execute 9, lifeonkill 70, rarityfind 26, lastbreath 46 | Last Verdict Stands: opener (W T K P) |
+
+**Titles** (`ChaosTitles` source `pinnacle`, gold plate frame): "<Boss> Bane [S<n>]" (Malgrath Bane [S1]) for a character's **first kill of that boss in each season**
+(a bit of storage `+20 ..` per season, `season id % 30`, season 0 while no season runs), "Deathless <Boss>" for a kill in which nobody fell (once, kept for good). Both
+stay on the character for good and are listed by `!title` like any title. "The first kill per season" is read per character; a server-wide "first in the world per
+season" would need a table (`chaos_*`) and a launch-wipe row, and is not built.
+
+### The model (`tools/pinnacle_model.py --check`, `pinnacle_balance_config.lua`)
+
+Computed, not measured in game. Inputs: `class_dps_model.py` through `boss_length_model.py` (the median class's damage on one boss), the survival model through
+`guardian_model.py` (the median class's pool, armour, absorbs and healing at the planned level), the XML of each boss, the marked attacks of its profile and the
+fragment chances. `--derive` prints the numbers to commit, `--check` (CI) holds them, with the reason of each limit in `pinnacle_balance_config.lua`.
+
+| Boss | level (planned) | health | kill solo / five (median class) | weakest class alone | seconds to die, no healing | damage / healing, solo / five |
+|---|---|---|---|---|---|---|
+| Ascended Malgrath | 2000 (2000) | 3,713,000 | 420 s / 300 s | 565 s | 6.9 | 0.95 / 1.21 |
+| Ascended Vhoss | 2500 (2300) | 4,244,000 | 420 s / 300 s | 566 s | 6.4 | 1.05 / 1.30 |
+| Ascended Talath | 3000 (2400) | 4,415,000 | 420 s / 300 s | 566 s | 5.9 | 1.15 / 1.43 |
+| Ascended Varkhul | 3500 (2500) | 4,587,000 | 420 s / 300 s | 566 s | 5.5 | 1.25 / 1.55 |
+
+- **Length**: health = seconds x (players x damage x uptime - the boss's heal a second), uptime 0.85, solo 420 s, five 300 s; the party curve `perExtra` 0.663-0.666. The
+  weakest class (0.75 of the median, `class_dps_model.py` keeps every class within 25%) kills alone in about 565 s, inside 60% of the 20 minute limit.
+- **Damage against healing**: the boss's XML attacks through the engine's level bonus and the level pace (`survival_model.monster_dps`) plus the marks of its
+  telegraphs, against the median class's layers: 5.5-6.9 s to die with no healing (limit 4-13), damage 0.95-1.25 x the healing alone (limit 0.8-1.4), rising with the
+  level (a higher boss is a harder fight, at most x1.5 from the first to the last), at most 1.75 with the damage curve in a party of five (the party heals each other).
+  The XML attacks were solved for these targets: the melee hit rolls 6,200-12,300 on the first boss and about the same x1.03 on the others (the donors' numbers x4.1-4.2, the engine's level bonus and the pace come on top).
+- **Fragments**: waystone 15, rift 13, Omen 12 minutes a clear, so 4.0 / 4.6 / 5.0 clears an hour; the fragments an hour of mixed top content are 1.50
+  (the own kind 1.00 / 1.15 / 1.25 and the keystone 0.32 / 0.37 / 0.40 on top). A **whole set takes 2.77 hours** of top content (the three specific kinds in turn,
+  2.67 h, the keystone comes along: 0.96 of one on the way; limit 2.5-7). The unique takes 3.92 kills on average (22% a kill, sure on the 8th) = **10.9 hours** of top
+  content (limit 8-45); one set a kill alone, a party's members come free.
+- `pinnacle_model_test.py`: the formulas on synthetic numbers, the committed numbers pass, and each kind of drift (health, the party curve, a fragment chance, a keystone on
+  every clear, a unique that drops every time or never, the boss levels, the uptime, a fifth fragment kind, a long title, a unique missing from the drop table, a boss that
+  hits four times as hard or hardly at all) fails `--check`.
+
+### Files, numbers and checks
+
+- New: `pinnacle.lua`, `pinnacle_core.lua`, `pinnacle_config.lua`, `pinnacle_balance_config.lua`, the four monster files, `data/npc/Keeper of the Pinnacle.xml` and
+  `data/npc/scripts/keeper_of_the_pinnacle.lua`, `tools/install_pinnacle.py` (the `pinnacle` step of `install_all.py`), `tools/pinnacle_model.py`, `tools/pinnacle_numbers.lua`,
+  `tools/pinnacle_model_test.py`, `tests/pinnacle_test.lua`; the profiles of the four bosses in `boss_mechanics_config.lua`; the four uniques in `chaos_items.xml`,
+  `chaos_unique_items.lua`, `unique_passives_config.lua`, `unique_flavor_pt.tsv` and the files `gen_unique_specs.py`, `gen_codex_data.lua`, `gen_wiki_data.lua` and the Unity
+  info generators write; pt-BR texts at the start of the `pt-BR` table of `i18n_strings.lua`; the check `pinnacle_read` of `tools/tester_checks.py` (the modal id in `testers.py`).
+- **No new opcode** (the window is a server modal, the HUD the rift HUD), **no new DB table** (every row is a storage key: the launch wipe policy is untouched), **one new
+  storage block** (7106400 - 7106459), modal window id 7490 (the Keeper's list), action id 47630 (47630 - 47639 reserved), the grid
+  above, one NPC, one instance key (`pinnacle`), one ChaosTitles source (`pinnacle`), one mana shield provider (`pinnacle`), the events `ChaosPinnacleHit`,
+  `ChaosPinnaclePrepareDeath`, `ChaosPinnacleDeath`, `ChaosPinnacleModal`, `ChaosPinnacleLogin`, `ChaosPinnacleLogout`, `ChaosPinnacleShutdown`, `ChaosPinnacleStartup`.
+- Tests: `tests/pinnacle_test.lua` (the core rules with the real config, the storage block and the modal ids against every other config, the grid against the other runtime
+  areas, the monsters and profiles, then `pinnacle.lua` on a mocked engine: the rift and Omen hooks through the wrap, the waystone hook through a guarded call, the Keeper's
+  answers, a solo and a party fight, the damage curve, a lethal hit, the kill and its rewards and titles, logout, restart, crash, a boss that does not come, the cooldown,
+  the pt-BR texts), `tools/pinnacle_model_test.py`, `tools/tester_checks_test.py` (`PinnacleRead`), `tests/npc_review_test.lua` (the Keeper placed by `pinnacle_config.lua`).
+- **Not run live** (no server was started): the arena build on the real map, the fight in a client, the NPC window in the client's modal, the real waystone hook of O666
+  (its arguments are read as they come), the mechanics' warnings on the telegraph effects, the unique's tooltip and the title on the plate. The damage the XML attacks
+  deal is the model's (computed with the engine's level bonus as the other models do: the guardian model counts it once; the live engine ran it twice on 2026-11-10, see
+  "Rifts", Guardian hit cap), so the first live fight decides the XML scale: `tools/pinnacle_model.py --derive` and the `scale` in the XML comment are the way back.
+- **Art that would help** (none needed, nothing blocks): an item look for each fragment (the four kinds x four bosses are plain storage counters now, shown by name in the Keeper's
+  window), a look for the four Ascended bosses apart from the old ones (a recolour of the base bosses' outfits), and a portal or altar sprite for the Keeper's place.

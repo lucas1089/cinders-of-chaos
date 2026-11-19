@@ -268,6 +268,18 @@ ChaosUniqueItems = {
 	  bossOnly = true, ascended = true, monsters = {"Ascended Thalcyra", "Ysgrath the Cinderheart"} },
 	{ name = "Cinderheart Signet", id = 2123, minTier = "boss", chance = 8, level = 1000, slot = "ring",
 	  bossOnly = true, ascended = true, monsters = {"Ysgrath the Cinderheart"} },
+	-- the pinnacle uniques (O667, pinnacle.lua, server/README.md "Pinnacle bosses (O667)"): one for each Ascended boss of the Keeper of the
+	-- Pinnacle. The fight rolls them for every player at the kill (pinnacle_config.lua unique: a chance and a bad-luck count); the
+	-- corpse of the boss has no loot of its own, so the entry's own chance is the small extra roll of the corpse owner. bossOnly keeps them
+	-- out of every other pool; pinnacle = true marks them (the Conquest vendor sells one a character has seen, as every boss unique).
+	{ name = "Signet of the Drowned Crown", id = 2216, minTier = "boss", chance = 1, level = 2000, slot = "ring",
+	  bossOnly = true, pinnacle = true, monsters = {"Ascended Malgrath"} },
+	{ name = "Seventh Hex Amulet", id = 2196, minTier = "boss", chance = 1, level = 2300, slot = "necklace",
+	  bossOnly = true, pinnacle = true, monsters = {"Ascended Vhoss"} },
+	{ name = "Helm of the Unthawed", id = 5461, minTier = "boss", chance = 1, level = 2400, slot = "head",
+	  bossOnly = true, pinnacle = true, monsters = {"Ascended Talath"} },
+	{ name = "Ring of the Last Verdict", id = 7708, minTier = "boss", chance = 1, level = 2500, slot = "ring",
+	  bossOnly = true, pinnacle = true, monsters = {"Ascended Varkhul"} },
 	-- Gear coverage round (server/README.md "Gear coverage", tools/gear_coverage.lua): the gaps of the slot audit. Quivers
 	-- for the Ranger line at every band, the first and the last spellbook, one ring, two amulets and the top-band helmets,
 	-- armor and legs. Normal-tier kills never drop uniques, the chance is the usual one before the tier multiplier.

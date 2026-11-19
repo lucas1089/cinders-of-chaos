@@ -5310,6 +5310,59 @@ async def check_chore_pass(io, name, cls, level):
     return Result(key, name, cls, status, text)
 
 
+def explode_verdict(run, mid, end, answer):
+    """(status, text) for the loot explosion (O669, loot_explosion.lua). run = the `!tester explode run` answer, mid = `explode state` after the loot
+    landed, end = `explode state` after Loot all (opcode 230), answer = the `lootall` answer {n, f, s}. FAIL: loot stuck in the bag, past ring 2, owned by
+    another, a stranger not refused, Loot all leaving loot of the bot's behind (when it all fitted). SKIP: the helper or the rule is off or refused"""
+    if not isinstance(run, dict):
+        return SKIP, 'no answer to !tester explode (old helper file)'
+    if run.get('err'):
+        return SKIP, str(run['err'])[:100]
+    if not isinstance(mid, dict) or not isinstance(end, dict):
+        return SKIP, 'no state after the explosion'
+    if int(mid.get('loose') or 0) < 1:
+        return FAIL, 'the loot of a kill did not land on the ground: %s items, none loose, %s left in the bag' % (run.get('items'), mid.get('bagItems'))
+    if int(mid.get('bagItems') or 0) > 0:
+        return FAIL, '%s items stayed in the bag after the flight (a cap of 14 and a free place: they must lie around)' % mid.get('bagItems')
+    if int(mid.get('maxRing') or 0) > 2:
+        return FAIL, 'loot landed %s tiles from the death tile (the radius is 2)' % mid.get('maxRing')
+    if int(mid.get('foreign') or 0) > 0:
+        return FAIL, '%s loose items belong to another player than the killer' % mid.get('foreign')
+    if int(mid.get('mine') or 0) != int(mid.get('loose') or 0):
+        return FAIL, 'only %s of %s loose items are the killer\'s' % (mid.get('mine'), mid.get('loose'))
+    if mid.get('strangerRefused') is not True:
+        return FAIL, 'a stranger may take the killer\'s loot before the owner time ran out'
+    if mid.get('ownerAllowed') is not True:
+        return FAIL, 'the killer may not take their own loot'
+    if int(mid.get('strict') or 0) > int(mid.get('loose') or 0):
+        return FAIL, 'more strict items than loose ones'
+    if not isinstance(answer, dict) or not isinstance(answer.get('data'), dict):
+        return SKIP, 'the loot landed (%s items on %s tiles); no answer to Loot all' % (mid.get('loose'), mid.get('tiles'))
+    got = answer['data']
+    if int(got.get('f') or 0) > 0:
+        return SKIP, 'the loot landed; Loot all took %s, %s did not fit (a full backpack)' % (got.get('n'), got.get('f'))
+    if int(got.get('n') or 0) < 1:
+        return FAIL, 'Loot all took nothing of %s loose items of the killer\'s' % mid.get('loose')
+    if int(end.get('mine') or 0) > 0:
+        return FAIL, 'Loot all took %s but %s items of the bot\'s lie there still' % (got.get('n'), end.get('mine'))
+    return PASS, '%s items on %s tiles (ring %s at most), owned by the killer, a stranger refused; Loot all took %s' % (
+        mid.get('loose'), mid.get('tiles'), mid.get('maxRing'), got.get('n'))
+
+
+async def check_loot_explosion(io, name, cls, level):
+    """the loot of a kill flies out onto the ground around it, owned by the killer; Loot all picks it up (O669). A loot bag of the bot's own (TEST ONLY)"""
+    key = 'loot_explosion'
+    run = await io.helper('explode run', 'explode', ANSWER)
+    if not isinstance(run, dict) or run.get('err'):
+        return Result(key, name, cls, *explode_verdict(run, None, None, None))
+    await io.sleep(3.0)   # the last item leaves after 14 x 80 ms and flies at most 200 ms
+    mid = await io.helper('explode state', 'explode', ANSWER)
+    answer = await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+    await io.sleep(1.0)
+    end = await io.helper('explode state', 'explode', ANSWER)
+    return Result(key, name, cls, *explode_verdict(run, mid, end, answer))
+
+
 def chests_verdict(week, cache):
     """(status, text) from the Weekly Chest state and the Ember Cache state. A tester never gets the Weekly Chest (the pool is the players'): the
     window opens and shows nothing given and no chest count; the Ember Cache is the bot's own and its book must answer"""
@@ -6193,6 +6246,40 @@ def wsmap_walk_verdict(t):
     return SKIP, 'only %d of %d monster(s) fell in %d s (%s)' % (t.get('kills', 0), WSMAP_NEED, t.get('secs', 0), how)
 
 
+def wsendgame_verdict(a):
+    """(status, text) from the answer of `!tester wsendgame` (O666, closed mode): 25 tiers in 4 bands, the four band bosses' monster types loaded
+    by the engine, the corruption pool known to the waystone modifiers, the Void Orb registered, the onRunCleared hook there"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester wsendgame'
+    if a.get('err'):
+        return SKIP, 'wsendgame: %s' % str(a['err'])[:80]
+    faults = []
+    if a.get('tiers') != 25 or a.get('bands') != 4:
+        faults.append('%s tiers in %s bands (want 25 in 4)' % (a.get('tiers'), a.get('bands')))
+    bosses = a.get('bossTypes') or []
+    missing = [b.get('name') for b in bosses if not b.get('loaded')]
+    if len(bosses) != 4 or missing:
+        faults.append('band boss monster types not loaded: %s' % (', '.join(str(m) for m in missing) or 'none listed'))
+    c = a.get('corrupt') or {}
+    if not c.get('pool') or c.get('known') != c.get('pool'):
+        faults.append('corruption pool: %s of %s keys known to the waystone modifiers' % (c.get('known'), c.get('pool')))
+    if not c.get('orbLoaded'):
+        faults.append('the Void Orb is not a crafting orb')
+    if not a.get('hook'):
+        faults.append('ChaosWaystoneTiers.onRunCleared is missing')
+    if faults:
+        return FAIL, '; '.join(faults[:3])
+    at = a.get('atlas') or {}
+    return PASS, '25 tiers, 4 band bosses loaded, %d corruption keys, Void Orb, hook (atlas: %s points, %s free)' % (c.get('pool', 0), at.get('points'), at.get('free'))
+
+
+async def check_wsendgame(io, name, cls, level):
+    """O666, closed mode: asks the helper what the waystone endgame holds (reads only; nothing is walked or changed)"""
+    a = await io.helper('wsendgame', 'wsendgame', ANSWER)
+    status, text = wsendgame_verdict(a)
+    return Result('wsendgame', name, cls, status, text)
+
+
 async def check_wsmap_walk(io, name, cls, level):
     """walks to the temple, enters a free waystone map (the TEST ONLY stand-in of the pads), clears monsters by the engine's path, leaves"""
     key = 'wsmap_walk'
@@ -6623,6 +6710,55 @@ async def check_tales_read(io, name, cls, level):
     elif listing is not None:
         await io.modal_answer(TALES_LIST_MODAL, listing.get('escape') or 2, 255, 0.5)
     status, text = tales_verdict(listing, tale, heard)
+    return Result(key, name, cls, status, text, fallbacks)
+
+
+# the Keeper of the Pinnacle (O667): the window of the four Ascended bosses (7490, pinnacle_config.lua modal.list), Open without a whole set, Close
+PINNACLE_NPC = 'Keeper of the Pinnacle'
+PINNACLE_MODAL = 7490
+PINNACLE_REFUSALS = ('not whole', 'opens from level', 'protection zone', 'cannot open', 'closed for now', 'Wait ')
+
+
+def pinnacle_verdict(listing, refusal, heard):
+    """(status, text) from the Keeper's window (a parse_modal dict or None), the text lines after Open was pressed with no set (or None when it was not pressed)
+    and the lines heard at the greeting"""
+    if listing is None:
+        return SKIP, 'the Keeper opened no window (%s)' % (' | '.join(str(h)[:70] for h in heard[:4]) if heard else 'he said nothing')
+    names = [str(t).lower() for _, t in listing.get('buttons') or []]
+    if not listing.get('title'):
+        return FAIL, 'the pinnacle window has no title'
+    if not (any('open' in n or 'abrir' in n for n in names) and any('focus' in n or 'foco' in n for n in names) and any('close' in n or 'fechar' in n for n in names)):
+        return FAIL, 'the pinnacle window has the buttons %s, not Open, Focus and Close' % ', '.join(names) if names else 'the pinnacle window has no buttons'
+    if len(listing.get('choices') or []) != 4:
+        return FAIL, 'the pinnacle window lists %d boss(es), four are asked' % len(listing.get('choices') or [])
+    if not listing.get('message'):
+        return FAIL, 'the pinnacle window has no text'
+    if refusal is None:
+        return PASS, 'the Keeper lists four bosses with Open, Focus and Close'
+    text = ' | '.join(str(r) for r in refusal)
+    if not any(w.lower() in text.lower() for w in PINNACLE_REFUSALS):
+        return SKIP if not refusal else FAIL, ('Open was pressed with no set and the server said nothing' if not refusal else
+                                              'Open was pressed with no set and the answer is no refusal: %s' % text[:90])
+    return PASS, 'the Keeper lists four bosses; Open with no whole set is refused (%s)' % text[:70]
+
+
+async def check_pinnacle_read(io, name, cls, level):
+    """walks to the Keeper of the Pinnacle, says hi and pinnacle, reads the window of the four bosses, presses Open on the first (a tester holds no set: it is
+    refused with a reason) and closes the window"""
+    key = 'pinnacle_read'
+    why, fallbacks = await chore_walk(io, name, PINNACLE_NPC, 1)
+    if why:
+        return Result(key, name, cls, SKIP, why)
+    await asc_greet(io, PINNACLE_NPC)
+    listing, heard = await io.say_modal('pinnacle', (PINNACLE_MODAL,), 5.0, NPC_CHANNEL)
+    await npc_talk_end(io)
+    refusal = None
+    if listing is not None and listing.get('choices'):
+        opened = next((b for b, t in listing.get('buttons') or [] if 'open' in str(t).lower() or 'abrir' in str(t).lower()), listing.get('enter') or 1)
+        _, refusal = await io.modal_answer(PINNACLE_MODAL, opened, listing['choices'][0][0], 2.0)
+    if listing is not None:
+        await io.modal_answer(PINNACLE_MODAL, listing.get('escape') or 3, 255, 0.5)
+    status, text = pinnacle_verdict(listing, refusal, heard)
     return Result(key, name, cls, status, text, fallbacks)
 
 
@@ -7534,6 +7670,51 @@ async def check_gamble_reroll(io, name, cls, level):
 
 
 
+# ------------------------------------------------------------------------------------------------ the Greater Rift ladder (O668)
+# The Greater Rift (rift tier 16 and up, rift_config.lua `greater`) has a ladder per class, season and mode (greater_ladder.lua) and two weekly
+# boards in the Leaderboards window (greater_solo, greater_party). A tester bot is on no ladder: greater_ladder.lua G.record skips a tester guid and the
+# ladder query leaves a tester out (Chaos.notTesterSql), the weekly record skips one too (leaderboard.lua). The closed check reads the two boards
+# the way a player does and holds that to it: both boards exist, no row carries a tester's name. The run itself (a Greater key from the helper,
+# the climb) is for the live run: the helper has no `rift greater` command yet.
+GREATER_BOARDS = ('greater_solo', 'greater_party')
+
+
+def greater_boards_verdict(meta, boards, bot):
+    """(status, text) from the Leaderboards meta answer (its `boards` list) and the answers of the two boards ({key: data}): both boards
+    listed, no row with the name of the bot or of any tester (a name that starts with 'Tester ')"""
+    listed = [b.get('key') for b in (meta or {}).get('boards') or [] if isinstance(b, dict)]
+    missing = [k for k in GREATER_BOARDS if k not in listed]
+    if missing:
+        return SKIP, 'the Leaderboards window lists no %s (the Greater Rift is not installed on this server)' % ' / '.join(missing)
+    rows_seen = 0
+    for key in GREATER_BOARDS:
+        data = boards.get(key)
+        if not isinstance(data, dict):
+            return SKIP, 'no answer for the %s board' % key
+        for row in data.get('rows') or []:
+            if not isinstance(row, dict):
+                continue
+            rows_seen += 1
+            who = str(row.get('name') or '')
+            if who == bot or who.startswith('Tester '):
+                return FAIL, 'a tester bot (%s) is on the %s board: a tester never ranks' % (who, key)
+    return PASS, 'both Greater Rift boards answer (%d row(s) of players, no tester on them)' % rows_seen
+
+
+async def check_closed_greater(io, name, cls, level):
+    """the Greater Rift boards of the Leaderboards window exist and hold no tester bot (closed mode: a tester is on no ladder)"""
+    key = 'closed_greater'
+    meta = await io.request('leaderboard', 'open', {}, ['meta'], ANSWER)
+    if meta is None:
+        return Result(key, name, cls, SKIP, 'no answer from the Leaderboards window')
+    answers = {}
+    for board in GREATER_BOARDS:
+        reply = await io.request('leaderboard', 'get', {'board': board}, ['board'], ANSWER)
+        answers[board] = (reply or {}).get('data') if isinstance(reply, dict) else None
+    status, text = greater_boards_verdict((meta or {}).get('data'), answers, name)
+    return Result(key, name, cls, status, text)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -7553,6 +7734,7 @@ CLOSED_CHECKS = [
     ('closed_arena_fight', check_closed_arena_fight, lambda c: True),   # O652: two testers fight in the arena, a foe hurt, no season row
     ('closed_pvp_fight', check_closed_pvp_fight, lambda c: True),   # O652: two testers fight in the Marches, only testers inside
     ('closed_battleground_match', check_closed_battleground_match, lambda c: True),   # O652: a match of testers only when 10 queue
+    ('closed_greater', check_closed_greater, lambda c: True),   # O668: the Greater Rift boards exist and hold no tester bot
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -7598,6 +7780,7 @@ CHECKS = [
     ('nemesis_walk', check_nemesis_walk, lambda c: True),   # O650: a Nemesis born from a monster in sight (TEST ONLY), the fight
     ('pocket_walk', check_pocket_walk, lambda c: True),   # O651: a pocket boss through the Boss Spawns window: the boss falls, the charge is spent, the boss point comes
     ('wsmap_walk', check_wsmap_walk, lambda c: True),   # O651: a waystone map on a free arrival tile: monsters of the run's tier fall, a player sends the tester out
+    ('wsendgame', check_wsendgame, lambda c: True),   # O666: closed mode: the waystone endgame's band bosses, corruption pool, Void Orb and hook are loaded
     ('goblin_walk', check_goblin_walk, lambda c: True),   # O650: a treasure goblin of the bot's own (TEST ONLY), chased and hit
     ('vael_walk', check_vael_walk, lambda c: True),   # O650: Vael Ashmourn through the TEST ONLY door, from level 500
     ('invasion_walk', check_invasion_walk, lambda c: True),   # O650: while an invasion runs: the hits of a tester are cancelled, no share
@@ -7605,6 +7788,7 @@ CHECKS = [
     ('gear_chase', check_gear_chase, lambda c: True),   # O653: wears the piece whose score knows sets, uniques and jewelry
     ('chore_faction', check_chore_faction, lambda c: True),   # O653: the reputation window: ranks, contracts, tokens turned in
     ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
+    ('loot_explosion', check_loot_explosion, lambda c: True),   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
     ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
@@ -7619,6 +7803,7 @@ CHECKS = [
     ('boss_copy_walk', check_boss_copy_walk, lambda c: True),   # O652: a copy of a key boss of its own: walk, fight, step off the marks, loot
     ('spell_support', check_spell_support, lambda c: True),   # O655: the support and healing spells of the class cast by their words; the spells only a quest teaches are refused
     ('tales_read', check_tales_read, lambda c: True),   # O655: Archivist Maelis: the list of tales, Read on one, the windows closed
+    ('pinnacle_read', check_pinnacle_read, lambda c: True),   # O667: the Keeper of the Pinnacle: the window of the four Ascended bosses, Open refused without a set, Close
     ('kill_task', check_kill_task, lambda c: True),   # O655: the kill task board: accept an offer, it is active, abandon it
     ('gather_walk', check_gather_walk, lambda c: True),   # O655: a pick or a sickle from the Material Broker, the nearest ready node on foot, the material in the bag
     ('pouch_rules', check_pouch_rules, lambda c: True),   # O655: the Loot Pouch rules window: one rule turned and back
@@ -8721,13 +8906,14 @@ def hand_weapon(hands):
     return next((w for w in worn if w.get('s') == HAND_SLOT), None) or (worn[0] if worn else None)
 
 
-def weapon_pick(rows, worn_il, cap=GEAR_WEAPON_CAP, fits=None):
+def weapon_pick(rows, worn_il, cap=GEAR_WEAPON_CAP, fits=None, power=None, worn_power=None):
     """from the Gambler's stock the weapon to buy: the unsold 'Weapon' row of the highest item level above the worn weapon's, under `cap` gold
     (the cheaper on a tie); None when none is better. The window lists only what the class and the level may wear; `fits` (O663: equip_fitter) is
-    the bot's own second look at that rule, so a weapon the class may not wear is never paid for"""
+    the bot's own second look at that rule, so a weapon the class may not wear is never paid for. O665: `power(row)` and `worn_power` (weapon_power_fn)
+    rank by what the class's spells read (the physical attack, the wand's damage), the item level only for a row whose power is not known"""
     cands = [e for e in rows or [] if isinstance(e, dict) and not e.get('sold') and e.get('sn') == 'Weapon'
-             and 0 < int(e.get('p') or 0) <= cap and int(e.get('l') or 0) > int(worn_il or 0) and (fits is None or fits(e))]
-    cands.sort(key=lambda e: (-int(e.get('l') or 0), int(e['p']), int(e.get('i') or 0)))
+             and 0 < int(e.get('p') or 0) <= cap and weapon_better(e, worn_il, power, worn_power, 'l') and (fits is None or fits(e))]
+    cands.sort(key=lambda e: (-(power(e) or 0) if power is not None else 0, -int(e.get('l') or 0), int(e['p']), int(e.get('i') or 0)))
     return cands[0] if cands else None
 
 
@@ -8745,12 +8931,13 @@ def weapon_worn_text(before, after, row):
     return False, 'the weapon stayed in the bag (a level, class or two-handed rule: not a fault)'
 
 
-def weapon_held(hands, worn_il, skip=(), fits=None):
+def weapon_held(hands, worn_il, skip=(), fits=None, power=None, worn_power=None):
     """the best weapon the backpack holds already (an earlier login's purchase, a drop) that is above the worn weapon's item level, or None; `skip`
-    holds the (id, index) of rows already tried; `fits` (O663) leaves out a weapon the class or the level may not wear"""
-    rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and int(w.get('il') or 0) > int(worn_il or 0) and (w.get('id'), w.get('i')) not in skip
+    holds the (id, index) of rows already tried; `fits` (O663) leaves out a weapon the class or the level may not wear; `power` / `worn_power` (O665)
+    judge by what the class's spells read, as `weapon_pick` does"""
+    rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and weapon_better(w, worn_il, power, worn_power, 'il') and (w.get('id'), w.get('i')) not in skip
             and (fits is None or fits(w))]
-    rows.sort(key=lambda w: (-int(w.get('il') or 0), -int(w.get('sc') or 0), int(w.get('i') or 0)))
+    rows.sort(key=lambda w: (-(power(w) or 0) if power is not None else 0, -int(w.get('il') or 0), -int(w.get('sc') or 0), int(w.get('i') or 0)))
     return rows[0] if rows else None
 
 
@@ -8797,7 +8984,9 @@ async def gear_weapon(io, name, g, found, level):
     worn = hand_weapon(hands)
     have = int((worn or {}).get('il') or 0)
     fit = equip_fitter(io, g.get('cls'), level)   # O663: only a weapon the class and the level may wear is worn or bought
-    held = weapon_held(hands, have, fits=fit)
+    power = weapon_power_fn(io, g.get('cls'))     # O665: what the class's spells read (the physical attack, the wand's damage), None: item level
+    worn_power = power(worn) if power is not None and worn else None
+    held = weapon_held(hands, have, fits=fit, power=power, worn_power=worn_power)
     if held is not None and await wear_weapon(io, g, held, worn):
         return
     if int(level or 0) < GAMBLE_MIN or not io.alive():
@@ -8819,15 +9008,23 @@ async def gear_weapon(io, name, g, found, level):
         if not isinstance(a, dict):
             g['notes'].append('no state in the Gambler window')
             return
-        row = weapon_pick(a.get('items'), have, fits=fit)
+        row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
         if row is None and a.get('reroll') is not None and int(a.get('gate') or 0) > have:   # O663: no weapon of the stock fits and the hand is under the gate of the level: a player pays for fresh crates
             fresh = await weapon_reroll(io, g, a)
             if fresh is not None:
                 a = fresh
-                row = weapon_pick(a.get('items'), have, fits=fit)
+                row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
+        while row is None and power is not None and TW is not None and TW.power_short(worn_power, level, g.get('cls')) and a.get('reroll') is not None \
+                and POWER_REROLLS.get(name, 0) < POWER_REROLL_MAX:   # O665: the hand is under half of what a set weapon of the level gives and the stock has none
+            POWER_REROLLS[name] = POWER_REROLLS.get(name, 0) + 1
+            fresh = await weapon_reroll(io, g, a)
+            if fresh is None:
+                break
+            a = fresh
+            row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
         if row is None:
             mine = [e for e in a.get('items') or [] if isinstance(e, dict) and e.get('sn') == 'Weapon']
-            g['weapon'] = 'no better weapon in the Gambler\'s stock (%d weapon row(s), worn item level %d%s)' % (len(mine), have, weapon_rejects(mine, have, fit))
+            g['weapon'] = 'no better weapon in the Gambler\'s stock (%d weapon row(s), worn item level %d%s)' % (len(mine), have, weapon_rejects(mine, have, fit, power=power, worn_power=worn_power) + weapon_power_text(worn_power))
             return
         if not await gold_enough(io, g, int(row['p']) + GEAR_RESERVE, 'a weapon of the Gambler'):
             row = None
@@ -8842,7 +9039,7 @@ async def gear_weapon(io, name, g, found, level):
             g['notes'].append('the weapon of the Gambler was not sold (%s)' % gamble_refusal(bought, b))
             row = None
             return
-        g['bought'].append('a weapon (item level %s) for %d gold' % (row.get('l'), int(row['p'])))
+        g['bought'].append('a weapon (item level %s%s) for %d gold' % (row.get('l'), weapon_power_text(power(row) if power is not None else None, ', power '), int(row['p'])))
     finally:
         await io.request('gamble', 'close', {}, [], ANSWER)
     if row is None or not io.alive():
@@ -9041,6 +9238,61 @@ def pocket_dps_text(t):
     return '' if d is None else ' [bot damage about %d a second: %d health in %d s]' % (round(d[0]), round(d[2]), round(d[1]))
 
 
+# ------------------------------------------------------------------------------------------------ the weapon the class's spells read (O665)
+# The pick below went by item level. A weapon spell reads the physical attack of the weapon in the hand (a caster's, the wand's damage), and the melee sets
+# from level 600 to 999 are mostly element (tester_weapons.py), so the bot ranks by that number where it knows it (items.xml and weapons.xml of the server)
+# and by item level where it does not (a fist class, an item the files do not list).
+try:
+    import tester_weapons as TW
+except ImportError:   # the tests of other tools load this file alone
+    TW = None
+WEAPON_STATS = [None]     # {item id: stats} of tester_weapons.load_weapon_stats (set_weapon_stats); None: no files, item level only
+POWER_REROLL_MAX = 2      # fresh crates a bot pays for in one run to find a weapon its spells can use (the price of each is the window's own)
+POWER_REROLLS = {}        # bot name -> rerolls paid for that reason in this run
+
+
+def set_weapon_stats(stats):
+    WEAPON_STATS[0] = stats
+
+
+def weapon_power_fn(io, cls):
+    """the function that says what a weapon row is worth to the class's spells (None for a row it cannot tell), or None when the bot has no weapon files
+    or the class has no rule: the pick then goes by item level as before O665"""
+    stats = None
+    getter = getattr(io, 'weapon_stats', None)
+    if callable(getter):
+        stats = getter()
+    stats = stats or WEAPON_STATS[0]
+    if not stats or TW is None or cls not in TW.WEAPON_KIND:
+        return None
+    return lambda row: TW.weapon_power(stats, row.get('id'), cls)
+
+
+def weapon_better(row, worn_il, power, worn_power, il_key):
+    """True when the row is a better weapon than the one in the hand: by power when both are known (TW.WEAPON_MARGIN over it), else by item level
+    (`il_key`: 'l' for a row of the Gambler, 'il' for a row of the backpack)"""
+    if power is not None and TW is not None:
+        verdict = TW.weapon_beats(power(row), worn_power)
+        if verdict is not None:
+            return verdict
+    return int(row.get(il_key) or 0) > int(worn_il or 0)
+
+
+def weapon_leftover(row, have, power, worn_power):
+    """True when a weapon of the backpack is no use next to the worn one: not stronger by power where both are known (a weapon that is stronger is
+    kept), else under the worn item level (the rule of O663)"""
+    if power is not None and TW is not None:
+        verdict = TW.weapon_beats(power(row), worn_power)
+        if verdict is not None:
+            return not verdict
+    return int(row.get('il') or 0) < have
+
+
+def weapon_power_text(value, prefix='; worn power '):
+    """', power 85' style text of a weapon power, '' when it is not known"""
+    return '' if value is None else '%s%d' % (prefix, round(value))
+
+
 # ------------------------------------------------------------------------------------------------ the weapon the class can wear (O663)
 # O662: "the melee bots deal 5 % of the median" and "unworn weapons pile up in the bag". The bag held kit weapons that a better one had replaced, the
 # junk swords of the loot ("sickle" four times in a Deadeye's bag), drops above the level (a Samurai of 1,340 with two axes of level 1,750) and
@@ -9108,14 +9360,14 @@ def equip_fitter(io, cls, level):
     return lambda row: equip_fits(rules, row.get('id'), cls, level) is not False
 
 
-def weapon_leftovers(hands, worn, fits, cap=WEAPON_DROPS):
+def weapon_leftovers(hands, worn, fits, cap=WEAPON_DROPS, power=None, worn_power=None):
     """the backpack weapon rows of `hands` that go: one the class or the level may not wear, or one that is no better than the weapon in the hand
     (the kit weapon a better one replaced, loot swords); the weakest first, at most `cap`. Nothing goes while the hand holds no weapon"""
     if worn is None:
         return []
     have = int(worn.get('il') or 0)
     rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and isinstance(w.get('i'), int) and w.get('cid')
-            and (not fits(w) or int(w.get('il') or 0) < have)]
+            and (not fits(w) or weapon_leftover(w, have, power, worn_power))]
     rows.sort(key=lambda w: (int(w.get('il') or 0), int(w.get('i'))))
     return rows[:cap]
 
@@ -9130,7 +9382,10 @@ async def gear_weapon_tidy(io, g, level=0):
     hands = (found or {}).get('hands') if isinstance(found, dict) else None
     if not isinstance(hands, dict):
         return 0
-    rows = weapon_leftovers(hands, hand_weapon(hands), equip_fitter(io, g.get('cls'), level))
+    _power = weapon_power_fn(io, g.get('cls'))
+    _worn = hand_weapon(hands)
+    rows = weapon_leftovers(hands, _worn, equip_fitter(io, g.get('cls'), level), power=_power,
+                            worn_power=_power(_worn) if _power is not None and _worn else None)
     if not rows:
         return 0
     bag = await io.helper('bag', 'bag', HELPER_WAIT)
@@ -9147,7 +9402,7 @@ async def gear_weapon_tidy(io, g, level=0):
     return gone
 
 
-def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP):
+def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP, power=None, worn_power=None):
     """O663: why none of the Gambler's weapon rows was bought, in words: ', 2 sold, 1 over the gold cap, 2 the class or level may not wear, 1 not above
     the worn item level' (only the reasons that hold); '' when there is no row. A row counts under the first reason that holds"""
     n = {'sold': 0, 'dear': 0, 'unfit': 0, 'low': 0}
@@ -9162,9 +9417,10 @@ def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP):
         elif fits is not None and not fits(e):
             n['unfit'] += 1
             unfit.append(str(e.get('id')))
-        elif int(e.get('l') or 0) <= int(worn_il or 0):
+        elif not weapon_better(e, worn_il, power, worn_power, 'l'):   # O665: by power where it is known
             n['low'] += 1
-    words = (('sold', '%d sold'), ('dear', '%d over the gold cap'), ('unfit', '%d the class or level may not wear'), ('low', '%d not above the worn item level'))
+    words = (('sold', '%d sold'), ('dear', '%d over the gold cap'), ('unfit', '%d the class or level may not wear'),
+             ('low', '%d not above the worn item level' if power is None or worn_power is None else '%d no stronger than the worn weapon'))
     parts = [w % n[k] for k, w in words if n[k]]
     if unfit:
         parts = [p + (' (item %s)' % ', '.join(unfit[:3]) if 'may not wear' in p else '') for p in parts]

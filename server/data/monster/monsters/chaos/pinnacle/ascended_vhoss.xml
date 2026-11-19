@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ascended Vhoss (O667, pinnacle_config.lua): the hexmaw, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 2500; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2300); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended vhoss"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Vhoss the Hexmaw. Numbers: server/README.md "Pinnacle bosses (O667)". -->
+<monster name="Ascended Vhoss" nameDescription="Ascended Vhoss" race="undead" experience="0" speed="250" manacost="0">
+	<health now="4244000" max="4244000" />
+	<look type="2130" corpse="6068" />
+	<targetchange interval="5000" chance="10" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-6325" max="-12650" />
+		<attack name="death" interval="2000" chance="20" length="7" spread="3" min="-7165" max="-12650">
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+		<attack name="earth" interval="2000" chance="15" range="7" target="1" min="-6325" max="-11805">
+			<attribute key="shootEffect" value="poison" />
+			<attribute key="areaEffect" value="greenspark" />
+		</attack>
+		<attack name="death" interval="2000" chance="12" radius="5" target="0" min="-5900" max="-10960">
+			<attribute key="areaEffect" value="blackspark" />
+		</attack>
+	</attacks>
+	<defenses armor="3" defense="3">
+		<defense name="healing" interval="2000" chance="10" min="4800" max="7200">
+			<attribute key="areaEffect" value="greenshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="15" />
+		<element firePercent="-10" />
+		<element energyPercent="10" />
+		<element earthPercent="25" />
+		<element icePercent="0" />
+		<element holyPercent="-25" />
+		<element deathPercent="40" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hex upon hex upon hex." yell="1" />
+		<voice sentence="The seventh hex is yours." yell="1" />
+	</voices>
+</monster>

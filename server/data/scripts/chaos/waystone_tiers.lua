@@ -53,6 +53,12 @@ function WT.entryOf(monster, pos)
 		if not monster:isMonster() or monster:getMaster() then
 			return nil
 		end
+		-- O666: a band boss the endgame spawned counts as a boss of its run (waystone_endgame.lua)
+		local E = ChaosWaystoneEndgame
+		local band = E and E.bandEntry and E.bandEntry(monster)
+		if band then
+			return band
+		end
 		return K.classify(WT.config, WT.index, typeName(monster), pos or monster:getPosition(), WT.active)
 	end)
 	return ok and e or nil
@@ -154,6 +160,34 @@ local function applyMods(monster, e, first)
 			print("[ChaosWaystoneTiers] modifiers: " .. tostring(err))
 		end
 	end
+end
+
+-- O666: the hook of a cleared run (the map's boss, or a band boss, died): `info` = {map, tier, level, band = bool, boss = name, opener = guid,
+-- fragmentChance = percent (the opener's endgame atlas rank, ChaosWaystoneEndgame), corrupted = bool, firstClears, chest, bandBoss}. The
+-- pinnacle fragments (O667) call WT.addClearListener(fn) and read the info; nothing here drops a fragment. The last one is kept per map.
+WT.clearListeners = WT.clearListeners or {}
+WT.lastClear = WT.lastClear or {}
+function WT.addClearListener(fn)
+	if type(fn) == "function" then
+		WT.clearListeners[#WT.clearListeners + 1] = fn
+	end
+end
+
+function WT.onRunCleared(info)
+	if type(info) ~= "table" then
+		return 0
+	end
+	WT.lastClear[info.map or 0] = info
+	local n = 0
+	for _, fn in ipairs(WT.clearListeners) do
+		local ok, err = pcall(fn, info)
+		if ok then
+			n = n + 1
+		else
+			print("[ChaosWaystoneTiers] clear listener: " .. tostring(err))
+		end
+	end
+	return n
 end
 
 -- the pads of a run opened (tier_maps.lua, after the waystone was taken): the map of `area` counts at the waystone's
@@ -358,14 +392,20 @@ if CreatureEvent then
 	local death = CreatureEvent(DEATH)
 	function death.onDeath(creature)
 		WT.applied[creature:getId()] = nil
+		local e = WT.entryOf(creature)
 		-- a map's boss: the Waystone Atlas credits everyone inside (waystone_atlas.lua)
-		if ChaosWaystoneAtlas and ChaosWaystoneAtlas.onBossDeath then
-			local e = WT.entryOf(creature)
-			if e and e.boss then
-				local ok, err = pcall(ChaosWaystoneAtlas.onBossDeath, e)
-				if not ok then
-					print("[ChaosWaystoneTiers] atlas: " .. tostring(err))
-				end
+		if ChaosWaystoneAtlas and ChaosWaystoneAtlas.onBossDeath and e and e.boss and not e.band then
+			local ok, err = pcall(ChaosWaystoneAtlas.onBossDeath, e)
+			if not ok then
+				print("[ChaosWaystoneTiers] atlas: " .. tostring(err))
+			end
+		end
+		-- O666: the endgame (waystone_endgame.lua): first clear, chest, band boss, onRunCleared; density for the other monsters
+		local EG = ChaosWaystoneEndgame
+		if EG and e then
+			local ok, err = pcall(e.boss and EG.onMapBossDeath or EG.onMonsterDeath, e, creature)
+			if not ok then
+				print("[ChaosWaystoneTiers] endgame: " .. tostring(err))
 			end
 		end
 		return true
@@ -573,7 +613,7 @@ function WT.probe(player)
 	if not i then
 		-- the lowest tier of each band, in order: the first whose band has a free map (the bot enters at that tier)
 		local why
-		for _, tier in ipairs({1, 6, 11}) do
+		for _, tier in ipairs({1, 6, 11, 16}) do
 			local free, w = WT.testerMapFor(tier)
 			if free then
 				out.free, out.freeTier, out.freeTierLevel = true, tier, cfg.tiers[tier].level

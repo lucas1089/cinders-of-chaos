@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Band boss of the waystone maps (O666, ChaosWaystoneEndgame, README "Waystone endgame (O666)"): it appears when the map's boss dies in
+     the last tier of band mid (tier 10, monster level 2000). Its outfit is an existing boss's (229). Health and attacks
+     are written by tools/waystone_endgame_model.py (write-bosses: the median class kills it in 190 s and lives 38 s under its
+     hits at the tier's level); the loot of its drop table is in content_rewards.lua (branch band), so this file lists a coin only. -->
+<monster name="Sister Morvane of Cinders" nameDescription="Sister Morvane of Cinders" race="undead" experience="66000" speed="260" manacost="0">
+	<health now="1529000" max="1529000" />
+	<look type="229" corpse="6068" />
+	<targetchange interval="8000" chance="5" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-2350" max="-4700" />
+		<attack name="fire" interval="2000" chance="14" length="5" spread="2" min="-1850" max="-3700">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+	</attacks>
+	<defenses armor="53" defense="53" />
+	<elements>
+		<element physicalPercent="15" />
+		<element firePercent="5" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="5" />
+		<element holyPercent="-15" />
+		<element deathPercent="30" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<loot>
+		<item id="2160" countmax="5" chance="100000" /><!-- crystal coin -->
+	</loot>
+</monster>

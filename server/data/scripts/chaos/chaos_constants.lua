@@ -269,6 +269,9 @@ Chaos.storage.wardrobe = 7102000
 -- TEST ONLY helper), +2/+3/+4 its hunt position x/y/z, +5 the day (days since 1970) of the
 -- respec waiver (respec.lua R.testerWaived), +6 the waivers used that day; +7..9 free
 Chaos.storage.tester = 7102900
+-- 7103300 - 7103309 reserved (O666, waystone_endgame_config.lua `storage`): +0 bit mask of the waystone tiers whose first clear the character was paid
+-- for (tiers 1-25, one atlas point each), +1 the ranks bought in the endgame atlas (decimal places, one a stat), +2 the number of first clears
+Chaos.storage.waystoneEndgame = 7103300
 Chaos.testerGuids = Chaos.testerGuids or {} -- guid -> name of every tester character (testers.lua fills it)
 
 -- a tester bot: the storage, as the engine reads it
@@ -315,6 +318,8 @@ Chaos.tables = {
 	dungeonRunPlayers = "chaos_dungeon_run_players",
 	towerPlayers = "chaos_tower_players",
 	towerSeasonRewards = "chaos_tower_season_rewards", -- season-end top 3 chests, one row per season and character
+	greaterRift = "chaos_greater_rift", -- Greater Rift best tier and time per season, character and mode (greater_ladder.lua, O668)
+	greaterRiftRewards = "chaos_greater_rift_rewards", -- personal best and season-end rewards waiting for the inbox (O668)
 	shopCoins = "chaos_shop_coins",
 	shopHistory = "chaos_shop_history",
 	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)

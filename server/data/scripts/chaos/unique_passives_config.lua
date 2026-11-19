@@ -289,6 +289,10 @@ ChaosUniquePassivesConfig = {
 	[2171] = {lv = 1000, name = "Seer's Last Sight", family = "nova", lines = "MNT", on = "crit", elem = "energy", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Eye of the Unbroken Storm
 	[2408] = {lv = 1000, name = "Drinks Before You", family = "ward", lines = "ALL", onHit = 14, onKill = 5, cap = 30, healLess = 45}, -- Sanguine Crescent
 	[2493] = {lv = 1000, name = "Nothing Inside", family = "overflow", lines = "MN", at = 75, bonus = 55, malusAt = 40, malus = 9}, -- Hollow Crown of Morvane
+	[2216] = {lv = 2000, name = "Tide Takes Its Crown", family = "nova", lines = "WPM", on = "kill", elem = "death", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Signet of the Drowned Crown
+	[2196] = {lv = 2300, name = "Seventh Hex Falls", family = "nova", lines = "MNK", on = "crit", elem = "poison", base = 90, perLevel = 1.2, targets = 7, icdMs = 3000, selfCost = 0.6}, -- Seventh Hex Amulet
+	[5461] = {lv = 2400, name = "Thaw Denied", family = "overflow", lines = "MNP", at = 75, bonus = 55, malusAt = 40, malus = 9}, -- Helm of the Unthawed
+	[7708] = {lv = 2500, name = "Last Verdict Stands", family = "opener", lines = "WTKP", side = "below", at = 30, bonus = 80, malusAt = 85, malus = 0}, -- Ring of the Last Verdict
 	[2646] = {lv = 1200, name = "Endless Road", family = "statscale", lines = "WRTK", stat = "speed", from = 200, per = 6, bonusPer = 1, cap = 40, origin = "any"}, -- Greaves of the Endless Road
 	[27686] = {lv = 1200, name = "Never Fewer Than You Need", family = "extra", lines = "R", origin = "ranged", pct = 54, targets = 3, radius = 3, cost = "health", costPct = 0.7, icdMs = 600}, -- Nightglass Quiver
 	[2411] = {lv = 1250, name = "Opens Once After Dark", family = "spread", lines = "T", elem = "poison", targets = 4, radius = 3, share = 94, ticks = 5, dealtLess = 14}, -- Nightbloom Stiletto

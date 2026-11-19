@@ -109,7 +109,7 @@ eq(src("pact.lua"):find('Chaos.staffCommand(player, words, param, sub ~= nil and
 -- staff never give value (docs/GM_HANDBOOK.md section 2, decided): every staff command that hands something out needs
 -- an administrator; what only looks, tests or takes away stays at group 4
 local valueGuards = {
-	["rift.lua"] = 'if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments")\n\t\t\tand not Chaos.staffCommand(player, words, param, true) then',
+	["rift.lua"] = 'if gm and (args[1] == "key" or args[1] == "omen" or args[1] == "fragments" or args[1] == "greater")\n\t\t\tand not Chaos.staffCommand(player, words, param, true) then',
 	["uber.lua"] = 'Chaos.staffCommand(player, words, param, cmd == "sigil" or cmd == "relic" or cmd == "shards")',
 	["newplayer.lua"] = 'local value = what == "" or what == "kit" or what:match("^milestone") ~= nil or what == "reset"\n\tif not Chaos.staffCommand(player, words, param, value) then',
 	["guild.lua"] = 'local value = sub == "bank" or sub == "xp" or (sub == "rent" and (arg or ""):lower():match("^%s*paid") ~= nil)\n\tif not Chaos.staffCommand(player, words, param, value) then',

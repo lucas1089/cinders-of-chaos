@@ -173,21 +173,47 @@ function K.scale(cfg, native, target)
 	}
 end
 
+-- O666: the deep tiers' extra multipliers {health, damage, experience} of run tier t (1 below cfg.deep.from; base + perTier x steps)
+function K.deep(cfg, t)
+	local d = cfg and cfg.deep
+	t = tonumber(t)
+	local out = {health = 1, damage = 1, experience = 1}
+	if not d or not t or t < (num(d.from) or math.huge) then
+		return out
+	end
+	for _, k in ipairs({"health", "damage", "experience"}) do
+		local row = d[k]
+		if row then
+			out[k] = math.max(0.01, (num(row.base) or 1) + (num(row.perTier) or 0) * (t - d.from))
+		end
+	end
+	return out
+end
+
 -- the factors of a classified monster: a monster from its hunting level `base` to the run's level; a boss from the
--- level of its band's first tier to the run's level (nil: no base level for a monster)
+-- level of its band's first tier to the run's level (nil: no base level for a monster). A band boss (e.native: its own
+-- level) scales from that level, so its file's health is the health it has. From the deep tiers on the run's extra
+-- multipliers (K.deep) are on top; a band boss has them in its file already.
 function K.factors(cfg, e, base)
 	if not e then
 		return nil
 	end
 	local target = K.level(cfg, e)
-	if e.boss then
-		return K.scale(cfg, K.tierLevel(cfg, K.defaultTier(cfg, e.map)) or target, target)
+	local f
+	if e.native then
+		return K.scale(cfg, num(e.native) or target, target)
+	elseif e.boss then
+		f = K.scale(cfg, K.tierLevel(cfg, K.defaultTier(cfg, e.map)) or target, target)
+	else
+		base = num(base)
+		if not base or base <= 0 then
+			return nil
+		end
+		f = K.scale(cfg, base, target)
 	end
-	base = num(base)
-	if not base or base <= 0 then
-		return nil
-	end
-	return K.scale(cfg, base, target)
+	local x = K.deep(cfg, e.run)
+	f.health, f.damage, f.experience = f.health * x.health, f.damage * x.damage, f.experience * x.experience
+	return f
 end
 
 -- the damage multiplier of a classified monster (from its hunting level `base`) or boss
@@ -196,7 +222,7 @@ function K.damageMult(cfg, e, base)
 	if not f then
 		return 1
 	end
-	if e.boss then
+	if e.boss and not e.native then
 		return (num(cfg and cfg.bossDamage and cfg.bossDamage[e.tier]) or 1) * f.damage
 	end
 	return f.damage

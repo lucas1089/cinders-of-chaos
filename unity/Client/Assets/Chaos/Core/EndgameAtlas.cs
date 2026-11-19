@@ -4,6 +4,8 @@
 //   server -> client  tree {nodes, branches, start, keystoneMax, grid, max}   (once per login, on the first open; may come chunked)
 //                     state {earned, spent, points, max, alloc, done, refund, reset, orb, totals, msg}
 //                     credit {cells = [names], points}
+//   Waystone Atlas only, the endgame page (O670, server waystone_endgame.lua; client waystoneegview.lua): client -> server eg_open | eg_spend {key} | eg_reset,
+//   server -> client eg_state {points, spent, free, stats = [{key, rank, max, per, text}], paid = [0|1 per tier], respec, msg, levels, deepFrom, bosses = [{tier, name}]}
 // The graph rules (what can be allocated or refunded, status of a node, the world and pan maths) are the main client's.
 using System;
 using System.Collections.Generic;
@@ -361,6 +363,145 @@ namespace Chaos.Core
         }
     }
 
+    public sealed class AtlasEgStat { public string Key = "", Text = ""; public int Rank, Max = 1, Per; }
+    public sealed class AtlasEgTier { public int Tier, Level; public string Roman = ""; public bool Paid; }
+    public sealed class AtlasEgBoss { public int Tier, Level; public string Roman = "", Name = ""; public bool Paid; }
+
+    /// <summary>The Waystone Atlas endgame page: points of the first clears of the deep tiers, ranks of four stats, the band bosses (main client waystoneegview.lua).</summary>
+    public sealed class AtlasEndgame
+    {
+        public static readonly string[] Roman = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV" };
+        public const int DeepFromDefault = 16, Tiers = 25;
+        public int Points, Spent, Free, Respec, DeepFrom = DeepFromDefault;
+        public string Msg = "";
+        public readonly List<AtlasEgStat> Stats = new List<AtlasEgStat>();
+        public readonly Dictionary<int, bool> Paid = new Dictionary<int, bool>();
+        public readonly Dictionary<int, int> Levels = new Dictionary<int, int>();
+        public readonly List<KeyValuePair<int, string>> BossList = new List<KeyValuePair<int, string>>();
+
+        public static string RomanOf(int t) => t >= 1 && t <= Roman.Length ? Roman[t - 1] : t.ToString(CultureInfo.InvariantCulture);
+
+        public static AtlasEndgame Parse(object d)
+        {
+            var m = new AtlasEndgame();
+            if (!(d is Dictionary<string, object>)) return m;
+            m.Points = Json.Int(d, "points"); m.Spent = Json.Int(d, "spent"); m.Free = Json.Int(d, "free"); m.Respec = Json.Int(d, "respec");
+            m.Msg = Json.Text(d, "msg");
+            if (Json.Int(d, "deepFrom") >= 1) m.DeepFrom = Json.Int(d, "deepFrom");
+            foreach (object o in Json.List(d, "stats"))
+            {
+                string key = Json.Text(o, "key");
+                if (key.Length == 0) continue;
+                m.Stats.Add(new AtlasEgStat { Key = key, Rank = Json.Int(o, "rank"), Max = Math.Max(1, Json.Int(o, "max")), Per = Json.Int(o, "per"), Text = Json.Text(o, "text") });
+            }
+            int t = 0;
+            foreach (object o in Json.List(d, "paid")) { t++; m.Paid[t] = o is double pv && pv > 0; }
+            t = 0;
+            foreach (object o in Json.List(d, "levels")) { t++; m.Levels[t] = o is double lv ? (int)lv : 0; }
+            foreach (object o in Json.List(d, "bosses"))
+            {
+                string name = Json.Text(o, "name");
+                if (name.Length > 0) m.BossList.Add(new KeyValuePair<int, string>(Json.Int(o, "tier"), name));
+            }
+            return m;
+        }
+
+        public int TierCount => Levels.Count > 0 ? Levels.Count : Tiers;
+        public int LevelOf(int t) => Levels.TryGetValue(t, out int l) && l > 0 ? l : 1000 + 100 * t;
+        public bool IsPaid(int t) => Paid.TryGetValue(t, out bool p) && p;
+
+        /// <summary>Can the stat take a point? why: points | maxed | unknown.</summary>
+        public bool CanSpend(string key, out string why)
+        {
+            why = "";
+            foreach (var s in Stats)
+            {
+                if (s.Key != key) continue;
+                if (s.Rank >= s.Max) { why = "maxed"; return false; }
+                if (Free < 1) { why = "points"; return false; }
+                return true;
+            }
+            why = "unknown";
+            return false;
+        }
+
+        public static string ReasonText(string why) =>
+            why == "points" ? Loc.T("You have no atlas point to spend.") : why == "maxed" ? Loc.T("That stat is at its top rank.") : Loc.T("No such stat.");
+
+        public bool CanReset => Spent > 0;
+
+        public static string StatName(string key, string fallback)
+        {
+            switch (key)
+            {
+                case "density": return Loc.T("Density");
+                case "bossChance": return Loc.T("Band boss");
+                case "chestChance": return Loc.T("Boss chest");
+                case "fragmentChance": return Loc.T("Fragments");
+                default: return string.IsNullOrEmpty(fallback) ? key : fallback;
+            }
+        }
+
+        public static string StatDescription(AtlasEgStat s)
+        {
+            switch (s.Key)
+            {
+                case "density": return Loc.T("A dead map monster is replaced by one more. Each rank adds {0}% chance.", s.Per);
+                case "bossChance": return Loc.T("Chance the band boss of the run's band appears; it always appears at the last tier of the band. Each rank adds {0}%.", s.Per);
+                case "chestChance": return Loc.T("Chance the map boss leaves a chest of orbs for every player in the map. Each rank adds {0}%.", s.Per);
+                case "fragmentChance": return Loc.T("Fragment chance of a cleared run, for the pinnacle bosses. Each rank adds {0}%.", s.Per);
+                default: return s.Text;
+            }
+        }
+
+        public static string RankText(AtlasEgStat s) => s.Rank + " / " + s.Max;
+        public static string NowText(AtlasEgStat s) => Loc.T("Now: +{0}%", s.Per * s.Rank);
+
+        public List<AtlasEgTier> DeepRows()
+        {
+            var rows = new List<AtlasEgTier>();
+            for (int t = DeepFrom; t <= TierCount; t++) rows.Add(new AtlasEgTier { Tier = t, Roman = RomanOf(t), Level = LevelOf(t), Paid = IsPaid(t) });
+            return rows;
+        }
+
+        public void DeepCount(out int done, out int total)
+        {
+            done = 0;
+            var rows = DeepRows();
+            total = rows.Count;
+            foreach (var r in rows) if (r.Paid) done++;
+        }
+
+        public int FirstClears()
+        {
+            int n = 0;
+            for (int t = 1; t <= TierCount; t++) if (IsPaid(t)) n++;
+            return n;
+        }
+
+        public string EarnedLine() => Loc.T("{0} first clears, {1} points spent", FirstClears(), Spent);
+        public string ResetText() => Loc.T("Reset ranks ({0} gold)", Short(Respec));
+        public string ResetConfirm() => Loc.T("Refund every rank of your endgame atlas for {0} gold?", Short(Respec));
+        public static string TierLine(AtlasEgTier r) => Loc.T("Tier {0}  level {1}", r.Roman, r.Level);
+        public static string TierStatus(AtlasEgTier r) => r.Paid ? Loc.T("First clear done") : Loc.T("First clear open");
+        public static string BossLine(AtlasEgBoss b) => Loc.T("{0} (tier {1}, level {2})", b.Name, b.Roman, b.Level);
+
+        public List<AtlasEgBoss> BossRows()
+        {
+            var rows = new List<AtlasEgBoss>();
+            foreach (var b in BossList) rows.Add(new AtlasEgBoss { Tier = b.Key, Roman = RomanOf(b.Key), Level = LevelOf(b.Key), Name = b.Value, Paid = IsPaid(b.Key) });
+            rows.Sort((a, b) => a.Tier.CompareTo(b.Tier));
+            return rows;
+        }
+
+        static string Short(int n)
+        {
+            if (n >= 1000000) return (n / 1000000.0).ToString("0.#", CultureInfo.InvariantCulture) + "M";
+            if (n >= 1000) return (n / 1000.0).ToString("0.#", CultureInfo.InvariantCulture) + "k";
+            return n.ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
     public sealed class AtlasState : EgModule
     {
         public const byte RiftOpcode = 210, WaystoneOpcode = 159;
@@ -380,6 +521,9 @@ namespace Chaos.Core
         public double PanX, PanY;
         public string StatusText = "", StatusColor = "#f6cf72";
         public bool PanDirty;
+        // the endgame page of the Waystone Atlas (O670): shown in place of the map while EgPage is set
+        public AtlasEndgame EgModel = new AtlasEndgame();
+        public bool EgPage;
 
         public AtlasState(ExtOpcodes e, byte op) : base(e) { opcode = op; ext.On(op, m => Handle(m.Action, Eg.DataOf(m))); }
 
@@ -395,6 +539,7 @@ namespace Chaos.Core
         {
             Visible = true;
             Send("open", D("tree", Tree == null));
+            if (EgPage && IsWaystone) Send("eg_open");
             Changed();
         }
 
@@ -418,6 +563,11 @@ namespace Chaos.Core
                 Done = AtlasView.DoneSet(d);
                 string msg = Json.Text(d, "msg");
                 if (msg.Length > 0) { StatusText = msg; StatusColor = "#f6cf72"; }
+            }
+            else if (action == "eg_state" && IsWaystone)
+            {
+                EgModel = AtlasEndgame.Parse(d);
+                if (EgModel.Msg.Length > 0) { StatusText = EgModel.Msg; StatusColor = "#f6cf72"; }
             }
             else if (action == "credit")
             {
@@ -464,10 +614,28 @@ namespace Chaos.Core
             return Send("refund", D("id", Selected, "pay", pay == "orb" ? "orb" : "gold"));
         }
 
+        /// <summary>Shows or hides the endgame page (Waystone Atlas only); showing it asks the server for the state.</summary>
+        public void ToggleEndgame()
+        {
+            if (!IsWaystone) return;
+            EgPage = !EgPage;
+            if (EgPage) Send("eg_open");
+            Changed();
+        }
+
+        public bool EgSpend(string key)
+        {
+            if (!IsWaystone || !EgModel.CanSpend(key, out _)) return false;
+            return Send("eg_spend", D("key", key));
+        }
+
+        public bool EgReset() { if (!IsWaystone || !EgModel.CanReset) return false; return Send("eg_reset"); }
+
         public bool Reset(string pay) { if (Alloc.Count == 0) return false; return Send("reset", D("pay", pay == "orb" ? "orb" : "gold")); }
 
         public void Clear()
         {
+            EgPage = false; EgModel = new AtlasEndgame();
             Visible = false; Tree = null; Ix = new AtlasIndex(); State = null; Alloc = new HashSet<int>(); Done = new HashSet<string>(); Selected = 0;
             ZoomIndex = AtlasView.DefaultZoom; PanX = PanY = 0; StatusText = "";
         }

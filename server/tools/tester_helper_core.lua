@@ -713,6 +713,10 @@ function H.parseGoblin(arg)
 	return parseWords(arg, "goblin", {"state", "spawn", "path", "close"})
 end
 
+function H.parseExplode(arg)
+	return parseWords(arg, "explode", {"state", "run"})
+end
+
 function H.parsePocket(arg)
 	return parseWords(arg, "pocket", {"state", "path", "close"})
 end

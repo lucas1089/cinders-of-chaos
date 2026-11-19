@@ -4,8 +4,9 @@
 -- and look from here too, and the client's ground labels (game_groundlabels, groundlabelslogic.lua CORPSE_BAG_ID and
 -- LOOT_BAG_LOOK) carry the same numbers (tests/corpse_bag_test.lua checks both). The empty bag decay (corpse_empty.lua,
 -- O565) reads emptySeconds.
--- Owner 2026-11-08 (pt-BR): "remover os corpos de criaturas mortos do jogo e deixar so aquela bagzinha". Lua 5.1 /
--- LuaJIT compatible.
+-- Owner 2026-11-08 (pt-BR): "remover os corpos de criaturas mortos do jogo e deixar so aquela bagzinha". Since O669 (2026-11-19)
+-- what is left in the bag at the end of the loot chain flies out onto the ground around it (loot_explosion_config.lua); the
+-- bag stays for the items over the caps and for kills the explosion skips. Lua 5.1 / LuaJIT compatible.
 return {
 	-- the switch: false = every monster leaves its own corpse again (a reload is enough, no rebuild)
 	enabled = true,

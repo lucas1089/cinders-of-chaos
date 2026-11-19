@@ -69,6 +69,9 @@
 --     with the monster to hunt (ChaosBestiary.probe) and the nearest fresh corpse for the knife / fishable water for the rod; `dummy give` and `mount give`
 --     are TEST ONLY grants (a tester only, logged), `clear` takes them back. The use of the weapon, the mount toggle (0xD4), the walk and the fight are
 --     the bot's own
+--   * "!tester explode [state | run]" (O669): the loot explosion (loot_explosion.lua): `run` puts a loot bag of the bot's own on its tile with known
+--     loot and explodes it by the real rule, `state` reads what lies within 4 tiles (owner, ring, tiles, the bag) and whether a stranger would be
+--     refused; Loot all is the bot's own packet (opcode 230 `lootall`; tester_checks.py loot_explosion). TEST ONLY, a tester only
 --   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
 --     teleport room (hunt_teleports.lua ports, the window of progression_config.lua), the temple's great teleport, the stairs of the hall, the town
 --     portal beside the bot, the depot locker and the nearest monster, as a person sees them; the walk is `path pos`, the steps onto a teleport are
@@ -110,7 +113,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 25
+HELPER_VERSION = 27
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1397,6 +1400,19 @@ function commands.wsmap(player, arg)
 	tell(player, "wsmap", H.wsmapAnswer(probe))
 end
 
+-- ---------------------------------------------------------------- O666 the waystone endgame (closed mode)
+-- "!tester wsendgame": reads ChaosWaystoneEndgame.probe (tiers, the band bosses' monster types loaded, the corruption pool, the asker's atlas,
+-- the onRunCleared hook). Nothing is changed.
+function commands.wsendgame(player, arg)
+	local EG = ChaosWaystoneEndgame
+	if not (EG and EG.probe) then
+		tell(player, "wsendgame", {err = "no waystone endgame"})
+		return
+	end
+	local ok, got = pcall(EG.probe, player)
+	tell(player, "wsendgame", ok and got or {err = tostring(got)})
+end
+
 -- ---------------------------------------------------------------- O595 the Infinity Tower and the Ember Descent
 -- "!tester tower [state | path | close]": reads ChaosTowerRun.probe; `path` is the engine's path to the guide's goal (the nearest monster of the
 -- floor, within reach of it); `close` is the Leave button without the countdown. Nothing here enters, moves inside or fights.
@@ -1791,6 +1807,29 @@ function commands.goblin(player, arg)
 		tell(player, "goblin", H.cutAnswer(probe, got or {err = why}))
 	else
 		tell(player, "goblin", H.cutAnswer(TG.probe(player)))
+	end
+end
+
+-- "!tester explode [state | run]" (O669, loot_explosion.lua testerRun / testerProbe): `run` puts a loot bag of the bot's own on its tile
+-- with known loot and explodes it by the real rule (gold in one stack, the items on free tiles within 2, owned by the bot); `state` reads what lies
+-- within 4 tiles (the owner, the farthest ring, the tiles, what is left in a bag) and whether a stranger would be refused. The bot then asks Loot all
+-- by opcode 230 and reads `state` again. TEST ONLY, a tester only, as every command of this file.
+function commands.explode(player, arg)
+	local what, usage = H.parseExplode(arg)
+	if not what then
+		tell(player, "explode", {err = usage})
+		return
+	end
+	local LE = ChaosLootExplosion
+	if not (LE and LE.testerRun and LE.testerProbe) then
+		tell(player, "explode", {err = "no loot explosion"})
+		return
+	end
+	if what == "run" then
+		local r, why = LE.testerRun(player)
+		tell(player, "explode", r or {err = tostring(why or "refused")})
+	else
+		tell(player, "explode", LE.testerProbe(player))
 	end
 end
 

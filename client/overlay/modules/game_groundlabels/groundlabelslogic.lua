@@ -213,6 +213,27 @@ function GL.showTimer(row, d, s)
   return d.kind == 'corpse' or d.highlight or isRarePlus(row)
 end
 
+-- Loot all (O669, server loot_explosion.lua: the loot of a kill flies out onto the tiles around it): one key picks up every
+-- item of yours within reach (extended opcode 230 `lootall`). The server only labels what you may take, so the rows the
+-- server sent for the tiles in view are your loot; GL.countLoot counts the item rows (a corpse row is not an item).
+GL.LOOT_ALL_KEY = 'Ctrl+Shift+L'
+GL.LOOT_ALL_COOLDOWN = 0.5 -- seconds between two requests (the server's budget is 4 of 60 a second)
+
+function GL.countLoot(tilesList)
+  local n = 0
+  for _, t in ipairs(tilesList or {}) do
+    for _, row in ipairs(type(t.rows) == 'table' and t.rows or {}) do
+      if not flag(row.k) then n = n + (tonumber(row.c) and 1 or 0) end
+    end
+  end
+  return n
+end
+
+-- may a Loot all request go out now (lastAt = when the last one did, nil = never)
+function GL.lootAllReady(lastAt, now)
+  return lastAt == nil or (now - lastAt) >= GL.LOOT_ALL_COOLDOWN
+end
+
 function GL.itemText(row)
   local count = tonumber(row.c) or 1
   local name = GL.titleCase(row.nm)
