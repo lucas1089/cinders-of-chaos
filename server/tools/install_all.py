@@ -115,8 +115,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   harvestevent tools/install_harvest_event.py    the Haunted Harvest's items (hollow candy, sexton's key, ritual candle,
                hollow charm: copies of stock items, server ids 41620..41623) in items.otb / items.xml and Widow Hessa
                in data/npc (README "Haunted Harvest")
-  waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XV items (copies of the base tablets' nodes, server ids
-               41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
+  waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XXV items (copies of the base tablets' nodes, server ids
+               41951..41969, monster level 1700-3500; O666 added XVI-XXV) in items.otb / items.xml (README "Waystone tiers")
   cursedchest  tools/install_cursed_chest.py     the Cursed Chest's looks (copies of the Sealed Coffer chest's node with client ids
                38642..38644, server ids 32281..32283; a chest rolls only 32281, one tile since pair 53, the others are legacy) in
                items.otb / items.xml (README "Cursed Chest")

@@ -9310,5 +9310,24 @@ return {
 			"Blightbrand queima com luz de sepulcro, não com veneno",
 		["Soulrend Beam opens a rift of arcane light"] =
 			"Soulrend Beam abre uma fenda de luz arcana",
+		-- Waystone endgame (O666, waystone_endgame.lua)
+		["Waystone endgame: first clear of tier %d, +1 atlas point (%d to spend)."] =
+			"Fim de jogo das waystones: primeira conclusão do tier %d, +1 ponto do atlas (%d para gastar).",
+		["The map boss leaves a chest: %s."] =
+			"O chefe do mapa deixa um baú: %s.",
+		["%s answers the fall of the map's boss."] =
+			"%s responde à queda do chefe do mapa.",
+		["Rank bought."] =
+			"Nível comprado.",
+		["You have no atlas point to spend."] =
+			"Você não tem ponto do atlas para gastar.",
+		["That stat is at its top rank."] =
+			"Esse atributo está no nível máximo.",
+		["No such stat."] =
+			"Esse atributo não existe.",
+		["Your endgame atlas is empty."] =
+			"Seu atlas do fim de jogo está vazio.",
+		["Every rank refunded."] =
+			"Todos os níveis foram devolvidos.",
 	},
 }

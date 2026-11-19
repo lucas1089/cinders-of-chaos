@@ -6193,6 +6193,40 @@ def wsmap_walk_verdict(t):
     return SKIP, 'only %d of %d monster(s) fell in %d s (%s)' % (t.get('kills', 0), WSMAP_NEED, t.get('secs', 0), how)
 
 
+def wsendgame_verdict(a):
+    """(status, text) from the answer of `!tester wsendgame` (O666, closed mode): 25 tiers in 4 bands, the four band bosses' monster types loaded
+    by the engine, the corruption pool known to the waystone modifiers, the Void Orb registered, the onRunCleared hook there"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester wsendgame'
+    if a.get('err'):
+        return SKIP, 'wsendgame: %s' % str(a['err'])[:80]
+    faults = []
+    if a.get('tiers') != 25 or a.get('bands') != 4:
+        faults.append('%s tiers in %s bands (want 25 in 4)' % (a.get('tiers'), a.get('bands')))
+    bosses = a.get('bossTypes') or []
+    missing = [b.get('name') for b in bosses if not b.get('loaded')]
+    if len(bosses) != 4 or missing:
+        faults.append('band boss monster types not loaded: %s' % (', '.join(str(m) for m in missing) or 'none listed'))
+    c = a.get('corrupt') or {}
+    if not c.get('pool') or c.get('known') != c.get('pool'):
+        faults.append('corruption pool: %s of %s keys known to the waystone modifiers' % (c.get('known'), c.get('pool')))
+    if not c.get('orbLoaded'):
+        faults.append('the Void Orb is not a crafting orb')
+    if not a.get('hook'):
+        faults.append('ChaosWaystoneTiers.onRunCleared is missing')
+    if faults:
+        return FAIL, '; '.join(faults[:3])
+    at = a.get('atlas') or {}
+    return PASS, '25 tiers, 4 band bosses loaded, %d corruption keys, Void Orb, hook (atlas: %s points, %s free)' % (c.get('pool', 0), at.get('points'), at.get('free'))
+
+
+async def check_wsendgame(io, name, cls, level):
+    """O666, closed mode: asks the helper what the waystone endgame holds (reads only; nothing is walked or changed)"""
+    a = await io.helper('wsendgame', 'wsendgame', ANSWER)
+    status, text = wsendgame_verdict(a)
+    return Result('wsendgame', name, cls, status, text)
+
+
 async def check_wsmap_walk(io, name, cls, level):
     """walks to the temple, enters a free waystone map (the TEST ONLY stand-in of the pads), clears monsters by the engine's path, leaves"""
     key = 'wsmap_walk'
@@ -7598,6 +7632,7 @@ CHECKS = [
     ('nemesis_walk', check_nemesis_walk, lambda c: True),   # O650: a Nemesis born from a monster in sight (TEST ONLY), the fight
     ('pocket_walk', check_pocket_walk, lambda c: True),   # O651: a pocket boss through the Boss Spawns window: the boss falls, the charge is spent, the boss point comes
     ('wsmap_walk', check_wsmap_walk, lambda c: True),   # O651: a waystone map on a free arrival tile: monsters of the run's tier fall, a player sends the tester out
+    ('wsendgame', check_wsendgame, lambda c: True),   # O666: closed mode: the waystone endgame's band bosses, corruption pool, Void Orb and hook are loaded
     ('goblin_walk', check_goblin_walk, lambda c: True),   # O650: a treasure goblin of the bot's own (TEST ONLY), chased and hit
     ('vael_walk', check_vael_walk, lambda c: True),   # O650: Vael Ashmourn through the TEST ONLY door, from level 500
     ('invasion_walk', check_invasion_walk, lambda c: True),   # O650: while an invasion runs: the hits of a tester are cancelled, no share

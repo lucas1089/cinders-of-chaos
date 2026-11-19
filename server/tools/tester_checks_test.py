@@ -10386,5 +10386,43 @@ class Reroll663(unittest.TestCase):
         self.assertNotIn('reroll for', r.detail)
 
 
+class WsEndgame(unittest.TestCase):
+    """O666: the closed-mode check of the waystone endgame reads the helper's answer"""
+
+    GOOD = {'tiers': 25, 'bands': 4, 'hook': True, 'corrupt': {'pool': 16, 'known': 16, 'orbLoaded': True},
+            'bossTypes': [{'tier': t, 'name': 'B%d' % t, 'loaded': True} for t in (5, 10, 15, 25)], 'atlas': {'points': 2, 'free': 1}}
+
+    def test_a_complete_answer_passes(self):
+        self.assertEqual(TX.wsendgame_verdict(self.GOOD)[0], TX.PASS)
+
+    def test_a_boss_type_the_engine_did_not_load_fails(self):
+        a = copy.deepcopy(self.GOOD)
+        a['bossTypes'][2]['loaded'] = False
+        status, text = TX.wsendgame_verdict(a)
+        self.assertEqual(status, TX.FAIL)
+        self.assertIn('B15', text)
+
+    def test_the_other_faults_fail(self):
+        for key, value, word in (('tiers', 15, 'tiers'), ('hook', False, 'onRunCleared')):
+            a = copy.deepcopy(self.GOOD)
+            a[key] = value
+            status, text = TX.wsendgame_verdict(a)
+            self.assertEqual(status, TX.FAIL, key)
+            self.assertIn(word, text)
+        a = copy.deepcopy(self.GOOD)
+        a['corrupt']['known'] = 15
+        self.assertEqual(TX.wsendgame_verdict(a)[0], TX.FAIL)
+        a = copy.deepcopy(self.GOOD)
+        a['corrupt']['orbLoaded'] = False
+        self.assertIn('Void Orb', TX.wsendgame_verdict(a)[1])
+
+    def test_no_answer_or_an_error_is_a_skip(self):
+        self.assertEqual(TX.wsendgame_verdict(None)[0], TX.SKIP)
+        self.assertEqual(TX.wsendgame_verdict({'err': 'no waystone endgame'})[0], TX.SKIP)
+
+    def test_the_check_is_in_the_list(self):
+        self.assertIn('wsendgame', [c[0] for c in TX.CHECKS])
+
+
 if __name__ == '__main__':
     unittest.main()

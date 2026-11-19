@@ -323,6 +323,8 @@ function WA.onOpcode(player, buffer)
 			onRefund(player, data)
 		elseif msg.action == "reset" then
 			onReset(player, data)
+		elseif ChaosWaystoneEndgame and ChaosWaystoneEndgame.onAction and type(msg.action) == "string" and msg.action:sub(1, 3) == "eg_" then
+			ChaosWaystoneEndgame.onAction(player, msg.action, data) -- O666: the endgame atlas (waystone_endgame.lua)
 		end
 	end)
 	if not ok then

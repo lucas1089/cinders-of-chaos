@@ -269,6 +269,9 @@ Chaos.storage.wardrobe = 7102000
 -- TEST ONLY helper), +2/+3/+4 its hunt position x/y/z, +5 the day (days since 1970) of the
 -- respec waiver (respec.lua R.testerWaived), +6 the waivers used that day; +7..9 free
 Chaos.storage.tester = 7102900
+-- 7103300 - 7103309 reserved (O666, waystone_endgame_config.lua `storage`): +0 bit mask of the waystone tiers whose first clear the character was paid
+-- for (tiers 1-25, one atlas point each), +1 the ranks bought in the endgame atlas (decimal places, one a stat), +2 the number of first clears
+Chaos.storage.waystoneEndgame = 7103300
 Chaos.testerGuids = Chaos.testerGuids or {} -- guid -> name of every tester character (testers.lua fills it)
 
 -- a tester bot: the storage, as the engine reads it

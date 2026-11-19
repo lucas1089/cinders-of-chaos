@@ -33,7 +33,7 @@ def otb(nodes):
 # the config agrees: ids and levels of every tier
 cfg = open(os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'waystone_tiers_config.lua'), encoding='utf-8').read()
 tiers = [(int(lv), int(it)) for lv, it in re.findall(r'\{level = (\d+), item = (\d+)', cfg)]
-check(len(tiers) == 15, 'fifteen tiers in the config (%d)' % len(tiers))
+check(len(tiers) == 25, 'twenty-five tiers in the config (%d)' % len(tiers))
 for t, (lv, it) in enumerate(tiers, 1):
     check(lv == W.level(t), 'tier %d level %d' % (t, lv))
     if t <= 6:
@@ -41,8 +41,8 @@ for t, (lv, it) in enumerate(tiers, 1):
     else:
         check(it == W.NEW[t][0], 'tier %d item %d' % (t, it))
 rows = W.rows()
-check([r['name'] for r in rows][0] == 'Waystone Tier VII' and rows[-1]['name'] == 'Waystone Tier XV', 'names VII..XV')
-check('monster level 2500' in rows[-1]['description'], 'the level in the description')
+check([r['name'] for r in rows][0] == 'Waystone Tier VII' and rows[-1]['name'] == 'Waystone Tier XXV', 'names VII..XXV')
+check('monster level 3500' in rows[-1]['description'], 'the level in the description')
 
 d = tempfile.mkdtemp()
 try:
@@ -54,9 +54,10 @@ try:
     data = open(os.path.join(d, 'items', 'items.otb'), 'rb').read()
     kids, _ = scan(data)
     by = {k[2]: k for k in kids}
-    check(len(kids) == 16, 'nine nodes added (%d)' % len(kids))
+    check(len(kids) == 26, 'nineteen nodes added (%d)' % len(kids))
     check(by[41951][3] == 27191, 'VII looks like III')
     check(by[41959][3] == 27194 and by[41959][5] == 96, 'XV looks like VI, same flags')
+    check(by[41969][3] == 27194 and by[41969][5] == 96, 'XXV looks like VI, same flags')
     check(os.path.exists(os.path.join(d, 'items', 'items.otb.bak')), 'backup')
     xml = open(os.path.join(d, 'items', 'items.xml')).read()
     check(xml.count(W.XML_BEGIN) == 1 and '<item id="41959" name="Waystone Tier XV">' in xml, 'items.xml block')

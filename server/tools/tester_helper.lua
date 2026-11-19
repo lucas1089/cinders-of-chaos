@@ -110,7 +110,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 25
+HELPER_VERSION = 26
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1395,6 +1395,19 @@ function commands.wsmap(player, arg)
 		return
 	end
 	tell(player, "wsmap", H.wsmapAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O666 the waystone endgame (closed mode)
+-- "!tester wsendgame": reads ChaosWaystoneEndgame.probe (tiers, the band bosses' monster types loaded, the corruption pool, the asker's atlas,
+-- the onRunCleared hook). Nothing is changed.
+function commands.wsendgame(player, arg)
+	local EG = ChaosWaystoneEndgame
+	if not (EG and EG.probe) then
+		tell(player, "wsendgame", {err = "no waystone endgame"})
+		return
+	end
+	local ok, got = pcall(EG.probe, player)
+	tell(player, "wsendgame", ok and got or {err = tostring(got)})
 end
 
 -- ---------------------------------------------------------------- O595 the Infinity Tower and the Ember Descent

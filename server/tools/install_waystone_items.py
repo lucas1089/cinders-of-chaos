@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Install the Waystone Tier VII-XV items into a base server (server/README.md "Waystone tiers").
+"""Install the Waystone Tier VII-XXV items into a base server (server/README.md "Waystone tiers").
 
 usage: python3 -I install_waystone_items.py DATA_DIR [--dry-run]
 
-Owner 2026-10-23: waystones from monster level 1100 to 2500, +100 a tier. The base server has Waystone Tier I-VI
-(29845-29850, level 1100-1600 now); VII-XV (41951-41959, level 1700-2500) are new. data/scripts/chaos/
+Owner 2026-10-23: waystones from monster level 1100 to 2500, +100 a tier; O666 (2026-11-19) added XVI-XXV up to 3500. The base server has
+Waystone Tier I-VI (29845-29850, level 1100-1600 now); VII-XV (41951-41959, level 1700-2500) and XVI-XXV (41960-41969,
+level 2600-3500) are new. The marker comments keep their old text (a block is found by it). data/scripts/chaos/
 waystone_tiers_config.lua lists every tier with its item; tools/patch_waystone_hideout.py part 3 lets the base device
 take them.
 
@@ -30,11 +31,15 @@ import install_harvest_event as H  # noqa: E402
 
 XML_BEGIN = '\t<!-- Chaos Waystone Tier VII-XV (server/tools/install_waystone_items.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos Waystone Tier VII-XV -->\n'
-ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV']
+ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII',
+         'XIX', 'XX', 'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV']
 BASE_IDS = (29845, 29846, 29847, 29848, 29849, 29850)
 # tier -> (server id, the base tier whose look it copies); levels as waystone_tiers_config.lua (1100 + 100 a tier)
 NEW = {7: (41951, 3), 8: (41952, 4), 9: (41953, 4), 10: (41954, 4), 11: (41955, 5), 12: (41956, 5),
-       13: (41957, 6), 14: (41958, 6), 15: (41959, 6)}
+       13: (41957, 6), 14: (41958, 6), 15: (41959, 6),
+       # O666: the fourth band, levels 2600-3500; the look of base VI as XIII-XV (no client pair)
+       16: (41960, 6), 17: (41961, 6), 18: (41962, 6), 19: (41963, 6), 20: (41964, 6), 21: (41965, 6), 22: (41966, 6),
+       23: (41967, 6), 24: (41968, 6), 25: (41969, 6)}
 WEIGHT = 4000  # the base tablets' weight
 
 

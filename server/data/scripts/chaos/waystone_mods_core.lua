@@ -246,7 +246,8 @@ end
 function W.itemName(cfg, ws)
 	local r = W.rarityOf(cfg, ws.mods)
 	local base = "Waystone Tier " .. (W.ROMAN[ws.tier] or tostring(ws.tier))
-	return r == 1 and base or (W.rarityName(cfg, r) .. " " .. base)
+	local name = r == 1 and base or (W.rarityName(cfg, r) .. " " .. base)
+	return (ws.corrupt and #ws.corrupt > 0) and ("Corrupted " .. name) or name
 end
 
 function W.rewardText(b)
@@ -276,6 +277,13 @@ function W.describe(cfg, ws, level)
 	if #suf > 0 then
 		out = out .. " Suffixes: " .. table.concat(suf, "; ") .. "."
 	end
+	if ws.corrupt and #ws.corrupt > 0 then
+		local cor = {}
+		for _, m in ipairs(ws.corrupt) do
+			cor[#cor + 1] = W.modText(cfg, m)
+		end
+		out = out .. " Corrupted: " .. table.concat(cor, "; ") .. ". No orb can change it."
+	end
 	if #ws.mods > 0 then
 		out = out .. " Rewards: " .. W.rewardText(W.bonuses(cfg, ws.mods, ws.tier)) .. "."
 	end
@@ -289,6 +297,10 @@ end
 -- modifiers of the same rarity), Unmaking = annulment (one off), Erasure = scouring (Normal again).
 -- Returns ok, reason code (chaos_crafting.lua C.reasons)
 function W.orbCheck(cfg, orb, ws)
+	-- O666: a corrupted waystone is final: no orb changes it (chaos_crafting.lua C.reasons.corrupted)
+	if ws.corrupt and #ws.corrupt > 0 then
+		return false, "corrupted"
+	end
 	local n = #ws.mods
 	local r = W.rarityOf(cfg, ws.mods)
 	if orb == "transmutation" or orb == "alchemy" then
@@ -308,6 +320,14 @@ function W.orbCheck(cfg, orb, ws)
 		end
 	elseif orb == "sockets" then
 		return false, "wsSockets"
+	elseif orb == "void" then
+		-- O666: the Void Orb corrupts a Magic or Rare waystone (waystone_endgame.lua E.voidApply)
+		if not (ChaosWaystoneEndgame and ChaosWaystoneEndgame.voidApply) then
+			return false, "wsOrb"
+		end
+		if n == 0 then
+			return false, "wsNoMods"
+		end
 	else
 		return false, "wsOrb"
 	end
@@ -349,6 +369,10 @@ function W.orbApply(cfg, orb, ws, rand)
 		table.remove(ws.mods, rand(1, #ws.mods))
 	elseif orb == "scouring" then
 		ws.mods = {}
+	elseif orb == "void" then
+		local res = ChaosWaystoneEndgame.voidApply(cfg, ws, function(k) return (R.modDef(cfg, k)) end, R.modConflict)
+		ws.broken = res.broken or nil
+		ws.corrupt = res.corrupt
 	end
 	return true, ws
 end
@@ -370,6 +394,8 @@ function W.orbPreview(cfg, orb, ws)
 		return string.format("%d -> %d modifiers", #ws.mods, #ws.mods - 1)
 	elseif orb == "scouring" then
 		return "-> Normal, no modifiers"
+	elseif orb == "void" then
+		return "corrupted for good: 2-3 strong modifiers and more rewards, a small chance the waystone breaks"
 	end
 	return ""
 end

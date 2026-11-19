@@ -2394,6 +2394,11 @@ function C.waystoneApply(orbKey, item)
 	local okT, top = pcall(function() return item:getTopParent() end)
 	local player = okT and top and top.isPlayer and top:isPlayer() and top or nil
 	item = WM.single(item, player)
+	if res.broken then -- O666: a Void Orb that breaks the waystone
+		local name = W.itemName(cfg, res)
+		item:remove()
+		return true, {item = nil, text = name .. " shatters: the corruption broke it.", corrupted = true, broken = true}
+	end
 	WM.write(item, res)
 	local b = W.bonuses(cfg, res.mods, res.tier)
 	local parts = {}
@@ -2402,7 +2407,7 @@ function C.waystoneApply(orbKey, item)
 	end
 	local text = string.format("%s: %s. Rewards: %s.", W.itemName(cfg, res),
 		#parts > 0 and table.concat(parts, "; ") or "no modifiers", W.rewardText(b))
-	return true, {item = item, text = text, waystone = res}
+	return true, {item = item, text = text, waystone = res, corrupted = (res.corrupt and #res.corrupt > 0) or nil}
 end
 
 function C.describeWaystone(item, opts)
@@ -2414,6 +2419,10 @@ function C.describeWaystone(item, opts)
 	for _, m in ipairs(ws.mods) do
 		local def = R.modDef(cfg, m.key)
 		list[#list + 1] = {group = "waystone", key = tostring(m.key), text = W.modText(cfg, m), side = def and def.side}
+	end
+	for _, m in ipairs(ws.corrupt or {}) do -- O666: the corrupted modifiers
+		local def = R.modDef(cfg, m.key)
+		list[#list + 1] = {group = "waystone", key = tostring(m.key), text = W.modText(cfg, m) .. " (corrupted)", side = def and def.side}
 	end
 	local orbs, preview = {}, {}
 	for _, orb in ipairs(C.config.orbs) do
