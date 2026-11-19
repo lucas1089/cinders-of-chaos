@@ -1955,6 +1955,18 @@ function R.greaterClock(cfg, limit)
 	return math.max(1, floor((limit or cfg.timeLimit) * (cfg.greater.clock.mult or 1)))
 end
 
+-- the run's base time limit by the key and the layout it was given (before Waning Veil and charms). A plain run: the layout band's limit (a slot of
+-- another size band than the key's is taken when none of its own is ready, and the layout decides). A Greater run (O674): the limit of the KEY's band,
+-- 1260 s, whatever layout it got (live run O671: a tier 17 key given a small layout of the first band ran on 1000 s, while the model, the climb
+-- fractions and the ladder all count the tier 15 clock)
+function R.runLimit(cfg, key, layoutBand)
+	if key and key.greater then
+		return R.greaterClock(cfg, R.timeLimit(cfg, key.tier))
+	end
+	local row = layoutBand and cfg.layout and cfg.layout.sizes and cfg.layout.sizes[layoutBand]
+	return row and row[3] or cfg.timeLimit
+end
+
 -- tiers a sealed run climbs: the first clock step the run fits (secs <= fraction x limit), 0 when none
 function R.greaterUp(cfg, secs, limit)
 	if not limit or limit <= 0 then

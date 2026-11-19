@@ -143,6 +143,14 @@ do
 	eq(R.greaterNext(cfg, 0, true, 100, limit), 3, "a first Greater clear in time: +3")
 	eq(R.greaterNext(cfg, G.maxShownTier - cfg.maxTier, true, 1, limit), G.maxShownTier - cfg.maxTier, "the top of the numbers holds")
 	eq(R.greaterClock(cfg, 1260), math.floor(1260 * G.clock.mult), "the clock of a band")
+	-- O674: the run's limit. A Greater run keeps the key's band clock (tier 15: 1260 s, 21 minutes) on a layout of any band; a plain run follows the layout
+	eq(cfg.layout.sizes[3][3], 1260, "the tier 15 band is 1260 s")
+	for band = 1, #cfg.layout.sizes do
+		eq(R.runLimit(cfg, {tier = cfg.maxTier, greater = 2}, band), math.floor(1260 * G.clock.mult), "a Greater key on a layout of band " .. band .. ": the tier 15 clock")
+		eq(R.runLimit(cfg, {tier = cfg.maxTier}, band), cfg.layout.sizes[band][3], "a plain key follows the layout's band " .. band)
+	end
+	eq(R.runLimit(cfg, {tier = 3}, nil), cfg.timeLimit, "no layout band: the config's limit")
+	eq(R.runLimit(cfg, {tier = cfg.maxTier, greater = 1}, 1), R.greaterClock(cfg, R.timeLimit(cfg, cfg.maxTier)), "the Greater limit is the model's (greater_numbers.lua)")
 	-- a key of every g: the name, the description, the marker
 	local rnd = function(a, b) return a end
 	local key = R.greaterKey(cfg, 7, rnd, true)

@@ -2189,6 +2189,37 @@ RF._groundTick, RF._stormTick, RF._wrathTick, RF._breach, RF._wither = groundTic
 -- ======================================================================== tick
 local riftDeath -- below (the monsters' deaths)
 
+-- Monsters of the run that are gone while the run still lists them: the pack monsters (a husk has no death event, see riftDeath) and, since
+-- O674, the guardians. A guardian that leaves the game with no death event (live run O671: three runs, a script strike took it from full health to
+-- gone and `riftDeath` never ran, so the run was never sealed; not reproduced on a clean install, cause not found) is counted as killed here, a
+-- second after, as a pack monster is, instead of leaving the run "running" until the clock fails it. The engine runs a death event before it removes
+-- a creature, so a guardian that is gone and still listed never had one; riftDeath counts each monster once (RF.dead), so a late event is harmless.
+-- -> true when a monster was counted
+function RF._sweepGone(run)
+	local gone, guardians = {}, {}
+	for mid in pairs(run.aliveIds or {}) do
+		if not Monster(mid) then
+			gone[#gone + 1] = mid
+		end
+	end
+	for bid in pairs(run.bossIds or {}) do
+		if not Monster(bid) and RF.monsterRun[bid] == run then
+			gone[#gone + 1] = bid
+			guardians[bid] = true
+		end
+	end
+	for _, mid in ipairs(gone) do
+		if guardians[mid] then
+			print(string.format("[ChaosRift] run %s: guardian %d is gone and its death event never came: counted as killed", tostring(run.id), mid))
+		end
+		riftDeath(mid, nil, nil)
+		if run.ended then
+			break
+		end
+	end
+	return #gone > 0
+end
+
 local function tick(slot, rid)
 	local run = RF.runs[slot]
 	if not run or run.id ~= rid or run.ended then
@@ -2232,17 +2263,8 @@ local function tick(slot, rid)
 		end
 	end
 	-- monsters gone without a death this script saw (a husk nobody of the run killed): counted as dead
-	local gone = {}
-	for mid in pairs(run.aliveIds or {}) do
-		if not Monster(mid) then
-			gone[#gone + 1] = mid
-		end
-	end
-	for _, mid in ipairs(gone) do
-		riftDeath(mid, nil, nil)
-		if run.ended then
-			return
-		end
+	if RF._sweepGone(run) and run.ended then
+		return
 	end
 	if run.state == "running" then
 		reinforce(run) -- density: queued packs
@@ -2497,10 +2519,7 @@ function RF.open(player, item)
 	R.applyParty(cfg, fx, #group, key.tier) -- party scaling: monster health share, damage, rewards
 	R.applyGreater(cfg, fx, key.greater) -- O668: a Greater Rift key's health and damage rule
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand, {first = first, area = L.walkable})
-	local baseLimit = cfg.layout.sizes[L.band] and cfg.layout.sizes[L.band][3] or cfg.timeLimit
-	if key.greater then
-		baseLimit = R.greaterClock(cfg, baseLimit)
-	end
+	local baseLimit = R.runLimit(cfg, key, L.band) -- a Greater run: the key's band whatever layout the slot gave (O674)
 	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx, baseLimit)
 	run.greater = key.greater
 	-- the Rift Time of the opener's placed charms (charms.lua)
@@ -2805,7 +2824,8 @@ end
 
 -- TEST ONLY (`!tester rift seal`, O671): the asker's own run sealed through the real death events: the bot strikes every monster of the run for its
 -- whole health (the guardian appears after the pack kills and dies the same way; a hit cap is struck again), the run counts, loots and ends as a played
--- one does. -> true once started, or nil + why. Stops by itself after 3 minutes
+-- one does. A guardian that is gone with no death event is counted by the tick's sweep (RF._sweepGone), not by this helper (O674). -> true once started,
+-- or nil + why. Stops by itself after 3 minutes
 function RF.testerSeal(player)
 	if not (Chaos.isTester and Chaos.isTester(player)) then
 		return nil, "not a tester"
@@ -2814,21 +2834,12 @@ function RF.testerSeal(player)
 	if not run or run.state ~= "running" then
 		return nil, "not inside a running rift"
 	end
-	local pid, rounds, struck = player:getId(), 0, {}
+	local pid, rounds = player:getId(), 0
 	local function strike()
 		rounds = rounds + 1
 		local pl = Player(pid)
 		if not pl or RF.runOf[pid] ~= run or run.state ~= "running" or rounds > 600 then
 			return
-		end
-		-- a guardian that was struck and is gone while the run still lists it never reached riftDeath (live run O671: a guardian killed by a script
-		-- strike left no death event, the pack monsters killed the same way did): the helper runs that death path itself so the rest of the seal can be read
-		for bid in pairs(run.bossIds or {}) do
-			if struck[bid] and not Monster(bid) and RF._riftDeath and RF.monsterRun[bid] == run then
-				print(string.format("[ChaosRift] TEST ONLY: the guardian %d of run %d is gone and its death event never came: the helper runs the death path", bid, run.id))
-				run.testerForcedDeath = true
-				RF._riftDeath(bid, nil, nil)
-			end
 		end
 		local ids = {}
 		for mid in pairs(run.aliveIds or {}) do
@@ -2836,7 +2847,6 @@ function RF.testerSeal(player)
 		end
 		for bid in pairs(run.bossIds or {}) do
 			ids[#ids + 1] = bid
-			struck[bid] = true
 		end
 		for i = 1, math.min(#ids, 30) do
 			local m = Monster(ids[i])

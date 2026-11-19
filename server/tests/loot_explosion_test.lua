@@ -612,8 +612,8 @@ local function runDrop(corpse)
 	end
 end
 
-local function makeBag(x, y, ownerId, contents)
-	local bag = newItem(6068, 1, {container = true, owner = ownerId})
+local function makeBag(x, y, ownerId, contents, bagId)
+	local bag = newItem(bagId or 6068, 1, {container = true, owner = ownerId})
 	local tile = world.tiles[x .. "," .. y .. ",7"]
 	attach(bag, tile)
 	for _, c in ipairs(contents) do
@@ -1207,6 +1207,29 @@ ok(lf:find("kill.exploded", 1, true), "an exploded kill draws no kill beam (the 
 local gl = readFile("data/scripts/chaos/groundloot.lua")
 ok(gl:find('msg.action == "lootall"', 1, true), "the ground labels' opcode answers lootall")
 ok(gl:find("LE.expiryLeft", 1, true) and gl:find("LE.visibleTo", 1, true), "the labels carry the timer and hide other players' loot")
+
+-- 6. O674 (live run O671: 192 of 803 kills of the waystone maps' monsters left the stock Loot Bag 26691, the corpse their Lua files name, and
+-- nothing flew): every id the corpse config counts as a loot bag explodes, read from the config and not written here
+reset()
+openGround(100, 100, 4)
+load()
+newPlayer(1)
+ok(#corpseCfg.lootBagIds >= 1, "the corpse config lists the stock loot bag ids")
+for _, id in ipairs(corpseCfg.lootBagIds) do
+	ok(id ~= corpseCfg.bagId, "the list holds the other ids only: " .. id)
+	local before = #loose()
+	local stock = makeBag(100, 100, 1, {{id = 2148, count = 40, stackable = true}, {id = 2400, attrs = {rarity = 1}}, {id = 2401, attrs = {rarity = 2}}}, id)
+	stock:setCustomAttribute("lf_kill", 77)
+	runDrop(stock)
+	ok(X.isExploded(stock), "a loot bag of id " .. id .. " is marked exploded")
+	runEvents(clock.ms + 3000)
+	eq(stock:getSize(), 0, "id " .. id .. ": everything is out of the bag")
+	eq(#loose() - before, 3, "id " .. id .. ": the gold and the two items lie on the ground")
+end
+local notBag = makeBag(101, 100, 1, {{id = 2148, count = 5, stackable = true}}, 2590)
+runDrop(notBag)
+ok(not X.isExploded(notBag), "a container that is no loot bag id of the config does not explode")
+eq(notBag:getSize(), 1, "and keeps its content")
 
 os.time = realTime
 print("loot_explosion_test: " .. checks .. " checks ok")

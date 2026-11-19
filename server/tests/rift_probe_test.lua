@@ -374,20 +374,13 @@ do
 	eq(#struck, 3, "the first round strikes the pack and the guardian")
 	ok(struck[1].cid == t.id and struck[1].lo == -77 and struck[1].hi == -77, "each strike is the bot's and as big as the monster's health: " .. tostring(struck[1].lo))
 	eq(#queued, 2, "the next round is queued")
-	-- the guardian struck and gone with no death event (the live finding): the helper runs the death path once
-	local deaths = {}
-	RF._riftDeath = function(id) deaths[#deaths + 1] = id end
-	RF.monsterRun[900] = run
-	monsters[900] = nil
-	queued[2]()
-	eq(#deaths, 1, "a struck guardian that vanished without a death event: the death path is run for it")
-	eq(deaths[1], 900, "for that guardian")
-	eq(run.testerForcedDeath, true, "and the run says so")
+	-- O674: the helper no longer runs a death path of its own (tests/rift_guardian_death_test.lua holds the tick's sweep of a vanished guardian)
+	ok(run.testerForcedDeath == nil, "the helper marks no forced death")
 	local nStruck = #struck
 	run.state = "success"
-	queued[3]()
+	queued[2]()
 	eq(#struck, nStruck, "a run that is over is not struck again")
-	eq(#queued, 3, "and no round is queued after it")
+	eq(#queued, 2, "and no round is queued after it")
 	addEvent = realAdd
 	-- the fail: only a running run of a tester
 	run.state = "running"

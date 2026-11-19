@@ -16,6 +16,12 @@ return {
 	-- (ItemType:isCorpse, the corpse owner, loot, auto loot, ground labels, Necromancer corpse spells) takes it as one.
 	bagId = 6068,
 
+	-- the other items that count as a loot bag (O674). Item 26691 is the stock "Loot Bag" that 357 imported Lua monsters (the
+	-- waystone map monsters among them) name as their own corpse: with engine src-patch 0089 they leave bagId like every monster,
+	-- without it (or when a script makes the corpse) the stock bag stays. Everything that treats a bag as the bag (the loot
+	-- explosion, O669) asks ChaosCorpse.isBag, which reads bagId and this list. Not in keepIds, not bagId.
+	lootBagIds = {26691},
+
 	-- how the bag looks (O565, owner 2026-11-14: "deveriam ser aquelas bags basicas mais genericas"). The stock client item of
 	-- server 6068 is the dark horned lump of a demon corpse, which read as a blob of the monster's own body. look is the
 	-- CLIENT item id of a plain leather loot pouch of the current pair (client 19202, a container the dat does not let a

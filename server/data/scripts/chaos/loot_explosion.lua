@@ -21,6 +21,9 @@ end
 if not ChaosLootExplosion or not ChaosLootExplosion.plan then
 	dofile("data/scripts/chaos/loot_explosion_core.lua")
 end
+if not ChaosCorpse or not ChaosCorpse.isBag then
+	dofile("data/scripts/chaos/corpse_core.lua")
+end
 Chaos.corpseConfig = Chaos.corpseConfig or dofile("data/scripts/chaos/corpse_config.lua")
 Chaos.lootExplosionConfig = dofile("data/scripts/chaos/loot_explosion_config.lua")
 local cfg = Chaos.lootExplosionConfig
@@ -385,7 +388,7 @@ local function findBags(pos)
 	local out = {}
 	if tile then
 		for _, item in ipairs(tile:getItems() or {}) do
-			if item:getId() == corpseCfg.bagId and item:isContainer() then
+			if ChaosCorpse.isBag(corpseCfg, item:getId()) and item:isContainer() then
 				out[#out + 1] = item
 			end
 		end
@@ -450,7 +453,7 @@ local function launch(origin, target, seq, group, flight)
 end
 
 local function explode(monster, corpse)
-	if not X.active(cfg, corpseCfg) or not corpse or corpse:getId() ~= corpseCfg.bagId or not corpse.isContainer
+	if not X.active(cfg, corpseCfg) or not corpse or not ChaosCorpse.isBag(corpseCfg, corpse:getId()) or not corpse.isContainer
 		or not corpse:isContainer() or corpse:getSize() == 0 then
 		return
 	end
@@ -754,7 +757,7 @@ function X.testerProbe(player)
 		for dy = -4, 4 do
 			local tile = Tile(Position(me.x + dx, me.y + dy, me.z))
 			for _, item in ipairs(tile and tile:getItems() or {}) do
-				if item:getId() == corpseCfg.bagId and item:isContainer() and (not seqFrom or item:getCorpseOwner() == player:getId()) then
+				if ChaosCorpse.isBag(corpseCfg, item:getId()) and item:isContainer() and (not seqFrom or item:getCorpseOwner() == player:getId()) then
 					out.bagItems = out.bagItems + item:getSize() -- with a run on record only the asker's own bags (a neighbour's bag is not its fault)
 				end
 				local info = X.infoOf(item)
