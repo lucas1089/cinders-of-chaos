@@ -555,11 +555,14 @@ class Bot:
             await asyncio.sleep(0.1)
 
 
-def next_spell(rotation, ready, now, attack=True):
+def next_spell(rotation, ready, now, attack=True, mana=None):
     """the first spell of the rotation whose own cooldown and group cooldown are over (the area spells come first in
-    it); attack=False: only the support spells (a lure)"""
+    it); attack=False: only the support spells (a lure); mana (O663): the bot's mana when it knows it, a spell that costs more is left
+    for a cheaper one (a player does not press a spell he cannot pay)"""
     for s in rotation:
         if s['group'] == 'attack' and not attack:
+            continue
+        if mana is not None and int(s.get('mana') or 0) > mana:
             continue
         if ready.get(s['group'], 0) <= now and ready.get(s['words'], 0) <= now:
             return s

@@ -1455,6 +1455,79 @@ try:
 finally:
     asyncio.sleep = _real_sleep661
 
+# ---------------------------------------------------------------- the fight a person plays (O663): attack with the heal on cooldown, the mana potion, the mana read from the stats packet
+_stats663 = b'\x00\x01' + b'\xa0' + struct.pack('<IIII', 150, 200, 12345, 40000) + struct.pack('<Q', 999) + struct.pack('<H', 30) + b'\x32' + bytes(10) \
+    + struct.pack('<II', 70, 90) + bytes(20)
+eq(TC.parse_stats(_stats663), (70, 90), 'the mana and the max mana of the stats packet (cast_relay.py op_stats layout)')
+eq(TC.parse_stats(b'\xa0\x01\x02'), None, 'a short or foreign 0xA0 byte is not a stats packet')
+eq(TC.parse_stats(b'\xa0' + struct.pack('<IIII', 300, 200, 1, 2) + bytes(40)), None, 'health above its maximum: not a stats packet')
+eq(TC.hold_attack(35, {'words': 'x'}, True), True, 'under 50 % with the heal ready: the beat is the heal')
+eq(TC.hold_attack(35, {'words': 'x'}, False), False, 'under 50 % with the heal on cooldown: the attack goes (two spell groups)')
+eq(TC.hold_attack(35, None, True), False, 'no heal spell: the attack goes')
+eq(TC.hold_attack(80, {'words': 'x'}, True), False, 'over 50 %: the attack')
+eq(TC.mana_potion_due(100, 30, 100), True, 'under 40 % mana: the potion')
+eq(TC.mana_potion_due(100, 40, 100), False, 'at 40 % mana: not yet')
+eq(TC.mana_potion_due(30, 10, 100), False, 'the health needs the potion first')
+eq(TC.mana_potion_due(100, None, None), False, 'mana unknown: no mana rule (the old behaviour)')
+_hit663 = {'words': 'exori big', 'group': 'attack', 'cooldown': 2000, 'groupcooldown': 2000, 'mana': 500}
+_cheap663 = {'words': 'exori small', 'group': 'attack', 'cooldown': 2000, 'groupcooldown': 2000, 'mana': 20}
+eq(LT.next_spell([_hit663, _cheap663], {}, 10.0, mana=100)['words'], 'exori small', 'a spell the mana cannot pay is left for a cheaper one')
+eq(LT.next_spell([_hit663, _cheap663], {}, 10.0)['words'], 'exori big', 'mana unknown: the first ready spell as before')
+_r663 = T.Results(1)
+_k663 = T.TesterBot(16, dict(bot), A(), 1, _r663, {'rotation': [_hit663, _cheap663], 'heal': heal})
+_k663.conn, _k663.cid = C(), 0x10000010
+_k663.helper['info'] = {'potions': {'health': 266, 'mana': 268}}
+_said663 = []
+_k663.say = lambda text, kind=1: _said663.append(text)
+_k663.read(b'\x8c' + struct.pack('<I', _k663.cid) + b'\x1e')   # 30 %
+_k663.keep_alive(200.0)
+eq(_said663, ['exura x'], 'under 50 %, the heal ready: the heal, no attack this beat')
+_k663.read(b'\x8c' + struct.pack('<I', _k663.cid) + b'\x2d')   # 45 %: the heal is on cooldown for a second, the potion too
+_k663.keep_alive(200.3)
+eq(_said663[-1], 'exori big', 'the heal on cooldown at 45 %: the attack goes (before O663 the bot never attacked under 50 %)')
+_k663.read(b'\x8c' + struct.pack('<I', _k663.cid) + b'\x64')
+_k663.read(_stats663)   # 70 of 90 mana: 77 %
+_k663.keep_alive(205.0)
+eq(len(_k663.conn.sent), 1, 'mana at 77 %: no mana potion (the one packet is the health potion of the 30 % beat)')
+_k663.mana, _k663.mana_max = 20, 100
+_k663.ready.pop('potion', None)
+_sent663 = len(_k663.conn.sent)
+_k663.keep_alive(210.0)
+eq(len(_k663.conn.sent), _sent663 + 1, 'mana at 20 %, health full: a mana potion')
+eq(struct.unpack('<H', _k663.conn.sent[-1][6:8])[0], 268, 'it is the mana potion of the helper info')
+_k663.ready.pop('potion', None)
+_k663.mana, _k663.mana_max = 20, 100
+_said663.clear()
+_k663.ready.clear()
+_k663.keep_alive(220.0)
+eq(_said663[-1], 'exori small', 'with 20 mana the spell of 500 is left and the cheap one is cast')
+
+# ---------------------------------------------------------------- the Auto setup rotation (O663): the bots cast the preset a player with Auto setup casts
+def _sp663(words, name, level=1, group='attack', needlearn=False, cooldown=2000, mana=10):
+    return {'words': words, 'name': name, 'group': group, 'level': level, 'needlearn': needlearn, 'params': False, 'cooldown': cooldown,
+            'groupcooldown': 2000, 'mana': mana, 'needtarget': False, 'vocations': set()}
+
+
+_spells663 = [_sp663('a', 'Area Slam', 20), _sp663('b', 'Single Cut', 8), _sp663('c', 'Big One', 300), _sp663('d', 'Learned Only', 100, needlearn=True),
+              _sp663('e', 'Extra Jab', 10), _sp663('f', 'Rage Cry', 5, group='support'), _sp663('g', 'Ultimate', 1200, needlearn=True)]
+_names663 = {1: 'Area Slam', 2: 'Single Cut', 3: 'Big One', 4: 'Learned Only', 5: 'Extra Jab', 6: 'Rage Cry', 7: 'Ultimate'}
+_by_name663 = {s['name']: s for s in _spells663}
+_base663 = [dict(_spells663[5], group='support'), dict(_spells663[0], t5=5.0), dict(_spells663[1], t5=1.0), dict(_spells663[4], t5=1.0)]
+_row663 = {'presets': [{'level': 8, 'spells': [2]}, {'level': 20, 'spells': [1, 2]}, {'level': 300, 'spells': [3, 4, 1, 2]}], 'extras': [5], 'ultimate': 7}
+_got663 = TC.preset_rotation(_row663, 20, _names663, _by_name663, _base663)
+eq([s['name'] for s in _got663], ['Rage Cry', 'Area Slam', 'Single Cut', 'Extra Jab'], 'level 20: the support spell stays in front, the preset in its order, the extras last')
+_got663 = TC.preset_rotation(_row663, 400, _names663, _by_name663, _base663)
+eq([s['name'] for s in _got663], ['Rage Cry', 'Big One', 'Area Slam', 'Single Cut', 'Extra Jab'], 'level 400: a spell that must be learned (the quest spell, the ultimate under its level) is left out')
+eq([s['name'] for s in TC.preset_rotation(_row663, 8, _names663, _by_name663, _base663)], ['Rage Cry', 'Single Cut'], 'level 8: the first preset (the extra of level 10 is not open yet)')
+eq(TC.preset_rotation(_row663, 5, _names663, _by_name663, _base663), _base663, 'under the first preset: the old rotation')
+eq(TC.preset_rotation(None, 400, _names663, _by_name663, _base663), _base663, 'a class with no row: the old rotation')
+eq(TC.preset_rotation({'presets': [{'level': 1, 'spells': [99]}]}, 400, _names663, _by_name663, _base663), _base663, 'no spell of the preset on the server: the old rotation')
+eq(_got663[2]['t5'], 5.0, 'a spell the old rotation held keeps its fields')
+_cs663 = T.class_spells(_spells663, {}, 'Warrior', 400, ({'Warrior': _row663}, _names663))
+eq([s['name'] for s in _cs663['rotation']][:3], ['Big One', 'Area Slam', 'Single Cut'], 'class_spells casts the preset when it has the table')
+_cs663 = T.class_spells(_spells663, {}, 'Warrior', 400)
+eq('Learned Only' in [s['name'] for s in _cs663['rotation']], False, 'class_spells without the table: the old rotation (a quest spell is left out as before)')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))
