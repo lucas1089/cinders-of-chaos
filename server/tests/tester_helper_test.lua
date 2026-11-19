@@ -2387,6 +2387,9 @@ do
 	local pin = H.pocketAnswer({inside = true, run = {id = 3, key = "world_1", name = "Kaelgor", state = "running", boss = "alive", left = 500, players = 1,
 		testers = 1, bossHp = 70, bossPos = {x = 5, y = 5, z = 7, junk = 1}, inArena = true, tester = true, junk = 1}, guide = {mode = "fight", goal = {x = 5, y = 5, z = 7}, area = "boss"}})
 	check(pin.run.bossHp == 70 and pin.run.testers == 1 and pin.run.bossPos.junk == nil and pin.run.junk == nil and pin.guide.mode == "fight", "pocket answer: the run and the guide")
+	-- O662: the exact health, for the bots' damage meter
+	local pdm = H.pocketAnswer({inside = true, run = {id = 3, key = "world_1", state = "running", boss = "alive", bossHp = 99, bossMax = 16000000, bossNow = 15840000}})
+	check(pdm.run.bossMax == 16000000 and pdm.run.bossNow == 15840000, "pocket answer: the boss's health and its maximum")
 	local realPB = ChaosPocketBoss
 	local pclose, ppath = 0, nil
 	ChaosPocketBoss = {probe = function(p)
@@ -2591,6 +2594,12 @@ do
 	check(line:find('"set":"ashen"', 1, true) ~= nil and line:find('"unique":true', 1, true) ~= nil, "found: the set and unique facts of the piece")
 	check(line:find('"best":3', 1, true) ~= nil, "found: the unique set piece of armour 5 is the best: " .. tostring(line))
 	check(line:find('"bagClientId":11988', 1, true) ~= nil and line:find('"level":300', 1, true) ~= nil, "found: the backpack id and the level")
+	check(line:find('"bagOpen":false', 1, true) ~= nil, "found: a backpack that is no open container 0 says so (O662): " .. tostring(line))
+	local bagOf = fb.slots[CONST_SLOT_BACKPACK]
+	function fb:getContainerById(id) return id == 0 and bagOf or nil end
+	talks["!tester"].onSay(fb, "!tester", "found #8")
+	check(fb.log.msgs[#fb.log.msgs]:find('"bagOpen":true', 1, true) ~= nil, "found: the open backpack says so (O662)")
+	fb.getContainerById = nil
 	eq(gave, 0, "found: nothing is given")
 	check(talks["!tester"].onSay(fb, "!tester", "found give #8") == false and fb.log.msgs[#fb.log.msgs]:find("usage: found", 1, true) ~= nil, "found: a grant word is the usage")
 	fb.slots[CONST_SLOT_BACKPACK] = nil
@@ -3076,6 +3085,31 @@ do
 	local n = #civ.log.msgs
 	check(talks["!tester"].onSay(civ, "!tester", "gold to 1000000 #1") == true and #civ.log.msgs == n and (civ.bank or 0) == 0, "gold: a player gets no answer and no gold")
 	check(HELPER_VERSION >= 25, "the helper is version 25 or later (O658: gold)")
+end
+
+-- O662: the weapons of `!tester found` (`hands`): only weapon types, best score first, the worn hands named, a shield and an ammunition left out
+do
+	local rows = {
+		{i = 0, id = 100, cid = 1, wt = 1, il = 10, sc = 50},
+		{i = 1, id = 101, cid = 2, wt = 4, il = 99, sc = 900},   -- a shield is not a weapon
+		{i = 2, id = 102, cid = 3, wt = 3, il = 700, sc = 400, two = true},
+		{i = 3, id = 103, cid = 4, wt = 7, il = 5, sc = 90},      -- an ammunition
+		{i = 4, id = 104, cid = 5, wt = 0, il = 5, sc = 90},      -- no weapon
+		{i = 5, id = 105, cid = 6, wt = 6, il = 700, sc = 400},   -- a tie on the score: the lower slot first
+	}
+	local rep = H.handReport(rows, {{s = 6, id = 90, cid = 9, wt = 1, il = 0, sc = 30}, {s = 5, id = 91, cid = 8, wt = 4, il = 0, sc = 10}})
+	eq(#rep.bag, 3, "hands: three weapons of the six rows")
+	eq(rep.bag[1].id, 102, "hands: the best score first")
+	eq(rep.bag[1].two, true, "hands: a two-handed weapon says so")
+	eq(rep.bag[2].id, 105, "hands: a tie goes to the lower backpack slot")
+	eq(rep.bag[3].id, 100, "hands: the plain sword last")
+	eq(#rep.worn, 2, "hands: both hands named")
+	eq(rep.worn[1].s, 5, "hands: the worn list is by slot")
+	eq(rep.worn[2].id, 90, "hands: the worn weapon")
+	local many = {}
+	for k = 0, 20 do many[#many + 1] = {i = k, id = 200 + k, cid = 1, wt = 2, il = 0, sc = k} end
+	eq(#H.handReport(many, {}).bag, H.HAND_MAX, "hands: at most HAND_MAX rows")
+	eq(#H.handReport(nil, nil).bag, 0, "hands: nothing in, nothing out")
 end
 
 print = origPrint

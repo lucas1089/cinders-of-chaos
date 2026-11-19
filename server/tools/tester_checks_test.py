@@ -9609,5 +9609,550 @@ class Live661(unittest.TestCase):
             self.assertIn('near = opts.near', f.read())
 
 
+
+# ------------------------------------------------------------------------------------------------ O662
+class WeaponIO(GearIO):
+    """a mocked bot with a weapon hand: the kit weapon worn, the Gambler's weapons in the stock; a bought weapon lands in the backpack"""
+
+    def __init__(self, hand_il=0, **kw):
+        GearIO.__init__(self, **kw)
+        self.hand = {'s': 6, 'id': 8209, 'cid': 8209, 'wt': 1, 'il': hand_il, 'sc': 30}
+        self.bag_weapons = []
+        self.worn_slots = []
+        self.refuse_slots = ()
+        self.bag_open = None   # None: an old helper that does not say; False: the backpack is not container 0 yet
+        self.opened = []
+
+    def found(self):
+        out = GearIO.found(self)
+        out['hands'] = {'bag': [dict(w) for w in self.bag_weapons], 'worn': [dict(self.hand)]}
+        out['bagClientId'] = 2854
+        if self.bag_open is not None:
+            out['bagOpen'] = self.bag_open
+        return out
+
+    async def open_bag(self, client_id):
+        self.opened.append(client_id)
+        self.bag_open = True
+
+    async def wear(self, index, client_id, slot):
+        w = next((x for x in self.bag_weapons if x['i'] == index), None)
+        if w is None:
+            return await GearIO.wear(self, index, client_id, slot)
+        self.worn_slots.append(slot)
+        if self.refuse_wear or slot in self.refuse_slots or self.bag_open is False:
+            return   # a drag from a backpack that is not open finds no item: "Sorry, not possible."
+        self.bag_weapons.remove(w)
+        self.bag_weapons.append(dict(self.hand, i=index))
+        self.hand = dict(w, s=slot)
+
+    async def request(self, opname, action, data, expect, timeout):
+        if opname == 'gamble' and action == 'buy':
+            row = next((e for e in self.stock if e['i'] == data['i']), None)
+            if row and row['sn'] == 'Weapon' and self.bank >= row['p'] and not row.get('sold'):
+                self.bank -= row['p']
+                row['sold'] = True
+                self.bag_weapons.append({'i': 50 + row['i'], 'id': row['id'], 'cid': row['id'], 'wt': 1, 'il': row['l'], 'sc': 400, 'two': False})
+                return {'action': 'result', 'data': {'ok': True}}
+        return await GearIO.request(self, opname, action, data, expect, timeout)
+
+
+def wstock():
+    return [{'i': 1, 'id': 11, 'sn': 'Weapon', 'p': 500000, 'l': 120, 'n': 'blade'}, {'i': 2, 'id': 12, 'sn': 'Weapon', 'p': 900000, 'l': 130, 'n': 'dear blade'},
+            {'i': 3, 'id': 13, 'sn': 'Weapon', 'p': TX.GEAR_WEAPON_CAP + 1, 'l': 500, 'n': 'too dear'}, {'i': 4, 'id': 14, 'sn': 'Armor', 'p': 10, 'l': 999}]
+
+
+class Live662(unittest.TestCase):
+    """O662: the weapon of the Gambler, the rest of the passive points, the second retreat scenario, the dungeon box, the waypoints"""
+
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+        TX.set_retreat_at(0)
+
+    # ---- the weapon
+    def test_the_pick_is_the_highest_item_level_under_the_cap(self):
+        row = TX.weapon_pick(wstock(), 0)
+        self.assertEqual(row['id'], 12, 'item level 130 beats 120; the 500 one is over the gold cap; an armour is no weapon')
+        self.assertIsNone(TX.weapon_pick(wstock(), 130), 'nothing above the worn weapon: nothing is bought')
+        self.assertEqual(TX.weapon_pick(wstock(), 125)['id'], 12)
+        sold = wstock()
+        sold[1]['sold'] = True
+        self.assertEqual(TX.weapon_pick(sold, 0)['id'], 11, 'a sold crate is left')
+        self.assertIsNone(TX.weapon_pick([], 0))
+        same = [{'i': 1, 'id': 1, 'sn': 'Weapon', 'p': 900, 'l': 50}, {'i': 2, 'id': 2, 'sn': 'Weapon', 'p': 700, 'l': 50}]
+        self.assertEqual(TX.weapon_pick(same, 0)['id'], 2, 'the cheaper on a tie of the item level')
+
+    def test_the_gear_up_buys_and_wears_the_weapon_with_a_named_grant(self):
+        io = WeaponIO(bank=0, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.hand['id'], 12, 'the weapon of the Gambler is in the hand')
+        self.assertTrue(any(w['id'] == 8209 for w in io.bag_weapons), 'the kit weapon went to the backpack')
+        self.assertIn('wore a weapon (item level 130 over 0)', r.detail)
+        self.assertIn('a weapon (item level 130) for 900000 gold', r.detail)
+        self.assertTrue(r.fallbacks and all(f.startswith('grant ') for f in r.fallbacks), 'the gold is the only grant, named')
+        self.assertIn('TEST ONLY gold grant', r.detail)
+        self.assertEqual([e['i'] for e in io.stock if e.get('sold')], [2], 'one weapon is bought')
+
+    def test_no_second_weapon_is_bought_when_the_hand_holds_a_better_one(self):
+        io = WeaponIO(hand_il=500, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.hand['id'], 8209)
+        self.assertEqual([e for e in io.stock if e.get('sold')], [])
+        self.assertIn('no better weapon', r.detail)
+
+    def test_a_weapon_the_server_keeps_in_the_bag_is_a_note_not_a_fault(self):
+        io = WeaponIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock(), refuse_wear=True)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertNotEqual(r.status, TX.FAIL)
+        self.assertIn('not worn after 3 tries', r.detail)
+        self.assertEqual([a for a in io.worn_slots if a not in (6,)], [5], 'the same hand twice, then the other hand')
+
+    def test_a_weapon_that_does_not_move_in_the_first_hand_goes_to_the_other(self):
+        io = WeaponIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        io.refuse_slots = (6,)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.worn_slots, [6, 6, 5])
+        self.assertIn('the weapon moved at try 3 (slot 5)', r.detail)
+
+    def test_a_better_weapon_the_backpack_holds_is_worn_and_none_is_bought(self):
+        io = WeaponIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        io.bag_weapons.append({'i': 3, 'id': 77, 'cid': 77, 'wt': 1, 'il': 90, 'sc': 300})
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.hand['id'], 77, 'the weapon of an earlier login is worn')
+        self.assertEqual([e for e in io.stock if e.get('sold')], [], 'nothing is bought for a weapon the bot carries')
+        self.assertNotIn('Mordecai Ashwager', io.walked, 'no walk to the Gambler')
+        self.assertIn('wore a weapon', r.detail)
+
+    def test_the_weapon_the_backpack_holds_is_read_by_item_level(self):
+        hands = {'bag': [{'i': 1, 'id': 5, 'il': 40, 'sc': 900}, {'i': 2, 'id': 6, 'il': 80, 'sc': 10}, {'i': 3, 'id': 7, 'il': 0, 'sc': 999}]}
+        self.assertEqual(TX.weapon_held(hands, 30)['id'], 6)
+        self.assertEqual(TX.weapon_held(hands, 80), None)
+        self.assertEqual(TX.weapon_held(hands, 30, skip={(6, 2)})['id'], 5)
+
+    def test_a_helper_that_reads_no_weapons_leaves_the_kit_weapon(self):
+        io = GearIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual([e for e in io.stock if e.get('sold')], [])
+
+    def test_a_backpack_that_is_not_open_is_opened_before_the_drag(self):
+        io = WeaponIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        io.bag_open = False
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.opened, [2854], 'the use packet of the backpack, once')
+        self.assertEqual(io.hand['id'], 12, 'the weapon is worn')
+        self.assertEqual(io.worn_slots, [6], 'at the first try')
+        self.assertIn('wore a weapon', r.detail)
+
+    def test_an_open_backpack_is_left_alone(self):
+        io = WeaponIO(bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=wstock())
+        io.bag_open = True
+        run(TX.gear_up(io, 'Tester Aaa', 'Warrior', 800))
+        self.assertEqual(io.opened, [], 'using an open backpack would close it')
+
+    def test_the_weapon_hand_and_the_bag_row(self):
+        hands = {'worn': [{'s': 5, 'id': 1, 'il': 0}, {'s': 6, 'id': 2, 'il': 7}], 'bag': [{'i': 3, 'id': 9, 'sc': 5}, {'i': 4, 'id': 9, 'sc': 50}]}
+        self.assertEqual(TX.hand_weapon(hands)['id'], 2, 'the weapon hand is slot 6')
+        self.assertEqual(TX.weapon_in_bag(hands, 9)['i'], 4, 'the better of two copies')
+        self.assertIsNone(TX.weapon_in_bag(hands, 77))
+        self.assertIsNone(TX.hand_weapon({}))
+
+    # ---- the rest of the tree
+    def test_the_rest_of_the_points_goes_on_the_damage_build(self):
+        io = Live661Io(replies={('passivetree', 'autobuildApply'): {'action': 'autobuildApplied', 'data': {'message': 'Auto build: 40 nodes added'}}})
+        g = {'notes': [], 'tree': 'passive tree focus_defense: Auto build: 158 nodes added, 158 in all.'}
+        self.assertTrue(run(TX.gear_tree_rest(io, g)))
+        self.assertEqual(io.asked[0], ('passivetree', 'autobuildApply', {'build': 'focus_damage', 'mode': 'add', 'cost': 0}))
+        self.assertIn('focus_damage', g['tree_rest'])
+
+    def test_no_points_left_asks_nothing(self):
+        io = Live661Io()
+        g = {'notes': [], 'tree': 'passive tree focus_defense: Auto build: 158 nodes added, 158 in all. 90 more nodes of the build need more points.'}
+        self.assertFalse(run(TX.gear_tree_rest(io, g)))
+        self.assertEqual(io.asked, [], 'the Defense build used every point: nothing is asked')
+
+    def test_the_damage_focus_build_exists_in_the_server(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'passive_builds_config.lua'), encoding='utf-8') as f:
+            self.assertIn('{key = "damage"', f.read(), 'the focus theme the build id focus_damage is made from')
+
+    # ---- the second retreat scenario
+    def test_the_retreat_threshold_is_the_scenarios(self):
+        self.assertEqual(TX.retreat_at(), TX.RETREAT_AT)
+        TX.set_retreat_at(90)
+        self.assertEqual(TX.retreat_at(), 90)
+        TX.set_retreat_at(0)
+        self.assertEqual(TX.retreat_at(), TX.RETREAT_AT, 'an option of 0 is the usual 30 percent')
+
+    def test_a_bot_at_80_percent_retreats_only_in_the_scenario(self):
+        class Io(FakeIO):
+            health = 80
+
+            async def heal_now(self):
+                self.health = 100
+                return 'potion'
+
+        r, trace = {'lead': True, 'name': 'Tester Aaa'}, {}
+        self.assertEqual(run(TX.retreat_check(Io(), r, {'pos': {'x': 1, 'y': 1, 'z': 7}}, trace)), 0.0)
+        TX.set_retreat_at(90)
+        self.assertGreater(run(TX.retreat_check(Io(), r, {'pos': {'x': 1, 'y': 1, 'z': 7}}, trace)), 0.0)
+        self.assertEqual(trace.get('retreats'), 1)
+
+    def test_the_run_option_sets_the_threshold(self):
+        import testers
+        a = testers.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--retreat-at', '85'])
+        self.assertEqual(a.retreat_at, 85)
+        self.assertEqual(TX.retreat_at(), 85)
+        TX.set_retreat_at(0)
+        with self.assertRaises(SystemExit):
+            testers.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--retreat-at', '120'])
+        TX.set_retreat_at(0)
+        a = testers.parse(['run', '--server-dir', '/x', '--key-file', '/k'])
+        self.assertEqual(a.retreat_at, 0)
+        self.assertEqual(TX.retreat_at(), TX.RETREAT_AT)
+
+    # ---- the dungeon queue from inside the box
+    def test_a_bot_inside_the_dungeon_box_asks_again_from_the_temple(self):
+        walks = []
+
+        async def walked(io_, r, kind, n=None, near=1):
+            walks.append((kind, io_.t))
+            return 'foot', None, None
+
+        io = Live661Io([queue_answer('You cannot queue from inside the dungeon.'), queue_answer('', joined=True)])
+        old = TX.walk_to_place
+        TX.walk_to_place = walked
+        try:
+            reply, waited = run(TX.queue_dungeon_calm(io, {'lead': True, 'name': 'Tester Aaa'}, {'id': 5}))
+        finally:
+            TX.walk_to_place = old
+        self.assertEqual(walks, [('temple', 0.0)], 'the bot leaves the box at once, no waiting for a fight to end')
+        self.assertTrue(reply['data']['joined'])
+        self.assertEqual(waited, 0.0)
+
+    def test_the_box_refusal_text_is_the_servers(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'dungeons.lua'), encoding='utf-8') as f:
+            self.assertIn('You cannot queue ' + TX.IN_THE_BOX + '.', f.read())
+
+    # ---- the waypoints
+    def test_the_waypoint_table_is_the_base_scripts_eighteen_towns(self):
+        self.assertEqual(len(TX.WAYPOINTS), 18)
+        self.assertEqual(TX.waypoint_beside({'x': 32957, 'y': 32076, 'z': 7})[0], 'Mirewake', 'the portal beside the temple of Mirewake')
+        self.assertEqual(TX.waypoint_beside({'x': 33213, 'y': 32453, 'z': 1})[0], 'Scorchveil', 'a bot of another town stands beside its own portal')
+        self.assertIsNone(TX.waypoint_beside({'x': 32957, 'y': 32076, 'z': 6}), 'another floor')
+        self.assertIsNone(TX.waypoint_beside({'x': 20000, 'y': 20000, 'z': 7}))
+        self.assertIsNone(TX.waypoint_beside(None))
+        self.assertEqual(len({w[0] for w in TX.WAYPOINTS}), 18)
+
+    def test_the_nearest_waypoint_of_a_mark(self):
+        wp = TX.waypoint_for({'x': 32700, 'y': 31640, 'z': 7})
+        self.assertEqual((wp[0], wp[4], wp[5]), ('Gloamroot', 15, 5))
+        self.assertIsNone(TX.waypoint_for({'x': 33007, 'y': 33360, 'z': 3}), 'no waypoint on that floor')
+        self.assertIsNone(TX.waypoint_for(None))
+        self.assertEqual(TX.waypoint_for({'x': 32954, 'y': 32074, 'z': 7})[4], 0)
+
+    def test_the_waypoint_choice_by_town(self):
+        win = {'choices': [(2, 'Cinderhold'), (5, 'Gloamroot'), (6, 'Kindle Isle')]}
+        self.assertEqual(TX.waypoint_choice(win, 'gloamroot'), 5)
+        self.assertIsNone(TX.waypoint_choice(win, 'Mirewake'))
+        self.assertIsNone(TX.waypoint_choice(None, 'Mirewake'))
+
+    def test_a_contract_a_waypoint_leads_to_is_taken_with_the_way_named(self):
+        mark = {'x': 32700, 'y': 31640, 'z': 7}
+
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                if command.startswith('journey near'):
+                    return {'pick': {'id': 'h1', 'n': 'Wasp Nest', 'a': {'x': 31000, 'y': 31000, 'z': 7}}}
+                return None
+
+        a = {'level': 300, 'candidates': [{'key': 'k1', 'name': 'Gloam Wolves', 'mark': mark}]}
+        row, why = run(TX.bounty_near_row(Io(), a))
+        self.assertIsNone(why)
+        self.assertEqual((row['via'], row['arrival']), ('waypoint', 15))
+
+    def test_a_mark_near_an_arrival_is_walked_on_foot(self):
+        mark = {'x': 16000, 'y': 14800, 'z': 9}
+
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                return {'pick': {'id': 'h1', 'n': 'Hollowbell Mausoleum', 'a': {'x': 16047, 'y': 14800, 'z': 9}}}
+
+        row, why = run(TX.bounty_near_row(Io(), {'level': 900, 'candidates': [{'key': 'k1', 'name': 'Dawn Strayer', 'mark': mark}]}))
+        self.assertIsNone(why, '47 tiles from the arrival is a walk, not a skip (it was 25 tiles before O662)')
+        self.assertEqual((row['via'], row['arrival']), ('teleport', 47))
+
+    def test_no_way_at_all_names_the_nearest(self):
+        mark = {'x': 33007, 'y': 33360, 'z': 5}
+
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                return {'pick': {'id': 'h1', 'n': 'Ashen Gate', 'a': {'x': 33007, 'y': 32776, 'z': 5}}}
+
+        row, why = run(TX.bounty_near_row(Io(), {'level': 900, 'candidates': [{'key': 'k1', 'name': 'Pitlord', 'mark': mark}]}))
+        self.assertIsNone(row)
+        self.assertIn('Ashen Gate arrives 584 tiles from its hunt', why)
+
+    def test_the_waypoint_leg_walks_to_the_portal_opens_the_window_and_checks_the_arrival(self):
+        class Bot:
+            modals = []
+            level = 300
+
+        class Io(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.bot = Bot()
+                self.answered = []
+                self.pos = {'x': 32957, 'y': 32076, 'z': 7}
+
+            async def helper(self, command, kind, wait=4.0):
+                if command == 'bounty state':
+                    return {'pos': self.pos}
+                return None
+
+            async def step(self, dx, dy):
+                self.pos = {'x': 32954, 'y': 32074, 'z': 7}   # the step onto the portal opens the window
+                self.bot.modals = [{'id': 5000, 'choices': [(i, w[0]) for i, w in enumerate(TX.WAYPOINTS, 1)], 'buttons': [(110, 'Select')]}]
+
+            async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+                self.answered.append((window_id, button, choice))
+                self.pos = {'x': 32715, 'y': 31631, 'z': 7}
+                return None, []
+
+        walked = []
+
+        async def to_place(io, r, kind, n=None, near=1):
+            walked.append(kind)
+            return 'foot', None, None
+
+        async def by_path(io, r, command, kind, near=1, rounds=0):
+            walked.append(command)
+            return 'foot', {}
+
+        old = (TX.walk_to_place, TX.walk_by_path)
+        TX.walk_to_place, TX.walk_by_path = to_place, by_path
+        io, trace = Io(), {}
+        try:
+            run(TX.bounty_waypoint_leg(io, {'name': 'Tester Aaa', 'lead': True}, {'x': 32700, 'y': 31640, 'z': 7}, trace, []))
+        finally:
+            TX.walk_to_place, TX.walk_by_path = old
+        self.assertEqual(walked, ['temple', 'path pos 32954 32074 7'])
+        self.assertEqual(io.answered, [(5000, 110, 5)], 'Select, the fifth town of the base script list: Gloamroot')
+        self.assertEqual(trace['travel'], 'foot')
+        self.assertEqual(trace['waypoints'], ['Mirewake -> Gloamroot'])
+
+    def test_the_last_step_is_onto_the_portal(self):
+        """the path answer says `here` at one tile: the window opens only when the bot steps onto the portal (live: 10 of 10 bots stood beside it)"""
+        class Bot:
+            modals = []
+
+        class Io(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.bot = Bot()
+                self.pos = {'x': 32957, 'y': 32076, 'z': 7}
+                self.stepped = []
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'pos': self.pos} if command == 'bounty state' else None
+
+            async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+                return None, []
+
+        stepped = []
+
+        async def to_place(io, r, kind, n=None, near=1):
+            return 'foot', None, None
+
+        async def by_path(io, r, command, kind, near=1, rounds=0):
+            return 'foot', {'pos': {'x': 32955, 'y': 32075, 'z': 7}, 'dest': {'x': 32954, 'y': 32074, 'z': 7}, 'here': True, 'dist': 1}
+
+        async def walk(io, r, step):
+            stepped.append(step)
+            io.bot.modals = [{'id': 5000, 'choices': [(1, 'Mirewake'), (5, 'Gloamroot')], 'buttons': [(110, 'Select')]}]
+
+        old = (TX.walk_to_place, TX.walk_by_path, TX.raid_walk)
+        TX.walk_to_place, TX.walk_by_path, TX.raid_walk = to_place, by_path, walk
+        try:
+            run(TX.bounty_waypoint_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 32700, 'y': 31640, 'z': 7}, {}, []))
+        finally:
+            TX.walk_to_place, TX.walk_by_path, TX.raid_walk = old
+        self.assertEqual(len(stepped), 1, 'one step: onto the portal tile')
+
+    def test_the_step_onto_a_busy_portal_is_tried_again(self):
+        class Bot:
+            modals = []
+
+        class Io(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.bot = Bot()
+                self.steps = 0
+                self.pos = {'x': 32955, 'y': 32075, 'z': 7}
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'pos': self.pos} if command == 'bounty state' else None
+
+            async def step(self, dx, dy):
+                self.steps += 1
+                if self.steps >= 3:   # the first two steps find another bot on the portal
+                    self.bot.modals = [{'id': 5000, 'choices': [(5, 'Gloamroot')], 'buttons': [(110, 'Select')]}]
+
+            async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+                self.pos = {'x': 32715, 'y': 31631, 'z': 7}
+                return None, []
+
+        async def to_place(io, r, kind, n=None, near=1):
+            return 'foot', None, None
+
+        async def by_path(io, r, command, kind, near=1, rounds=0):
+            return 'foot', {}
+
+        old = (TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT, TX.waypoint_beside)
+        TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT = to_place, by_path, 0.05
+        TX.waypoint_beside = lambda pos: ('Mirewake', 32954, 32074, 7, 1)
+        io, trace = Io(), {}
+        try:
+            run(TX.bounty_waypoint_leg(io, {'name': 'Tester Aaa', 'lead': True}, {'x': 32700, 'y': 31640, 'z': 7}, trace, []))
+        finally:
+            TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT, TX.waypoint_beside = old
+        self.assertGreaterEqual(io.steps, 3, 'asked again: a diagonal is two steps, the window came at the third')
+        self.assertEqual(trace['travel'], 'foot')
+
+    def test_a_waypoint_window_that_does_not_open_is_no_way(self):
+        class Bot:
+            modals = []
+
+        class Io(FakeIO):
+            bot = Bot()
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'pos': {'x': 32957, 'y': 32076, 'z': 7}} if command == 'bounty state' else None
+
+            async def step(self, dx, dy):
+                pass
+
+        async def to_place(io, r, kind, n=None, near=1):
+            return 'foot', None, None
+
+        async def by_path(io, r, command, kind, near=1, rounds=0):
+            return 'foot', {}
+
+        old = (TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT)
+        TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT = to_place, by_path, 0.0
+        trace = {}
+        try:
+            run(TX.bounty_waypoint_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 32700, 'y': 31640, 'z': 7}, trace, []))
+        finally:
+            TX.walk_to_place, TX.walk_by_path, TX.WAYPOINT_WAIT = old
+        self.assertEqual(trace['travel'], 'no way')
+        self.assertIn('opened no window', trace['no_way'])
+
+    def test_a_bot_whose_temple_town_is_the_nearest_needs_no_portal(self):
+        class Io(FakeIO):
+            bot = type('B', (), {'modals': []})()
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'pos': {'x': 32957, 'y': 32076, 'z': 7}} if command == 'bounty state' else None
+
+        async def to_place(io, r, kind, n=None, near=1):
+            return 'foot', None, None
+
+        old = TX.walk_to_place
+        TX.walk_to_place = to_place
+        trace = {}
+        try:
+            run(TX.bounty_waypoint_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 32950, 'y': 32060, 'z': 7}, trace, []))
+        finally:
+            TX.walk_to_place = old
+        self.assertEqual(trace['travel'], 'foot')
+        self.assertNotIn('waypoints', trace, 'no window, no teleport')
+
+    def test_a_bot_at_no_temple_has_no_portal_beside_it(self):
+        class Io(FakeIO):
+            bot = type('B', (), {'modals': []})()
+
+            async def helper(self, command, kind, wait=4.0):
+                return {'pos': {'x': 20000, 'y': 20000, 'z': 7}} if command == 'bounty state' else None
+
+        async def to_place(io, r, kind, n=None, near=1):
+            return 'foot', None, None
+
+        old = TX.walk_to_place
+        TX.walk_to_place = to_place
+        trace = {}
+        try:
+            run(TX.bounty_waypoint_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 32700, 'y': 31640, 'z': 7}, trace, []))
+        finally:
+            TX.walk_to_place = old
+        self.assertEqual(trace['travel'], 'no way')
+        self.assertIn('no waypoint portal beside', trace['no_way'])
+
+    def test_the_travel_goes_by_the_way_the_contract_was_picked_for(self):
+        calls = []
+
+        async def wp(io, r, goal, trace, falls):
+            calls.append('waypoint')
+            return 0.0
+
+        async def jr(io, r, goal, trace, falls):
+            calls.append('journey')
+            return 0.0
+
+        old = (TX.bounty_waypoint_leg, TX.bounty_travel_leg)
+        TX.bounty_waypoint_leg, TX.bounty_travel_leg = wp, jr
+        try:
+            run(TX.bounty_travel(FakeIO(), {}, {}, {'via': 'waypoint'}, []))
+            run(TX.bounty_travel(FakeIO(), {}, {}, {'via': 'teleport'}, []))
+            run(TX.bounty_travel(FakeIO(), {}, {}, {}, []))
+        finally:
+            TX.bounty_waypoint_leg, TX.bounty_travel_leg = old
+        self.assertEqual(calls, ['waypoint', 'journey', 'journey'])
+
+    def test_the_verdict_names_the_waypoint(self):
+        t = {'faults': [], 'name': 'Gloam Wolves', 'base': 0, 'progress': 10, 'required': 50, 'need': 3, 'steps': 40, 'secs': 90, 'level': 300,
+             'waypoints': ['Mirewake -> Gloamroot'], 'fallbacks': []}
+        status, text = TX.bounty_walk_verdict(t)
+        self.assertEqual(status, TX.PASS)
+        self.assertIn('by the waypoint Mirewake -> Gloamroot', text)
+
+
+class Pocket662(unittest.TestCase):
+    """O662: the bot's damage a second at the pocket boss"""
+
+    def test_damage_from_the_percent_looks(self):
+        t = {'series': [100, 99, 98, 96], 'series_t': [0.0, 10.0, 20.0, 40.0], 'boss_max': 16000000}
+        dps, secs, lost = TX.pocket_dps(t)
+        self.assertEqual((round(secs), round(lost)), (40, 640000))
+        self.assertEqual(round(dps), 16000)
+
+    def test_exact_health_beats_the_percent(self):
+        t = {'series': [100, 100], 'series_t': [0.0, 20.0], 'boss_max': 16000000, 'series_abs': [16000000, 15990000]}
+        self.assertEqual(round(TX.pocket_dps(t)[0]), 500, 'a percent hides 10,000 health; the exact health shows it')
+
+    def test_a_boss_that_heals_or_a_short_fight_has_no_number(self):
+        self.assertIsNone(TX.pocket_dps({'series': [100, 100], 'series_t': [0.0, 20.0], 'boss_max': 10 ** 6}))
+        self.assertIsNone(TX.pocket_dps({'series': [100, 90], 'series_t': [0.0, 2.0], 'boss_max': 10 ** 6}), 'under 5 seconds')
+        self.assertIsNone(TX.pocket_dps({'series': [100, 90], 'series_t': [0.0, 20.0]}), 'an old helper gives no maximum')
+        self.assertEqual(TX.pocket_dps_text({}), '')
+
+    def test_the_verdict_carries_the_damage(self):
+        t = {'faults': [], 'boss': 'Kaelgor', 'boss_seen': True, 'hp': 90, 'secs': 300, 'level': 900, 'series': [100, 90], 'series_t': [0.0, 100.0],
+             'boss_max': 1000000, 'fallbacks': []}
+        status, text = TX.pocket_walk_verdict(t)
+        self.assertEqual(status, TX.SKIP)
+        self.assertIn('bot damage about 1000 a second', text)
+
+    def test_the_probe_records_the_exact_health(self):
+        trace = {}
+        TX.pocket_problems({'run': {'bossHp': 99, 'bossMax': 5000, 'bossNow': 4950, 'boss': 'alive'}}, trace)
+        TX.pocket_problems({'run': {'bossHp': 98, 'bossMax': 5000, 'bossNow': 4900, 'boss': 'alive'}}, trace)
+        self.assertEqual((trace['series_abs'], trace['boss_max'], len(trace['series_t'])), ([4950, 4900], 5000, 2))
+
+
 if __name__ == '__main__':
     unittest.main()

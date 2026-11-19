@@ -768,7 +768,7 @@ function H.pocketAnswer(probe, extra)
 	if type(r) == "table" then
 		out.run = {id = r.id, key = r.key and tostring(r.key):sub(1, 40) or nil, name = r.name and tostring(r.name):sub(1, 40) or nil,
 			category = r.category, state = r.state, boss = r.boss, left = r.left, players = r.players, testers = r.testers, slot = r.slot,
-			bossPos = xyz(r.bossPos), bossHp = r.bossHp, inArena = r.inArena and true or false, tester = r.tester and true or false}
+			bossPos = xyz(r.bossPos), bossHp = r.bossHp, bossMax = r.bossMax, bossNow = r.bossNow, inArena = r.inArena and true or false, tester = r.tester and true or false}
 	end
 	out.guide = soloGuide(probe.guide)
 	for k, v in pairs(extra or {}) do
@@ -1704,6 +1704,37 @@ function H.foundReport(rows, worn, state)
 	end
 	table.sort(out, function(a, b) return a.s < b.s end)
 	return {orbs = orbs, drops = drops, pieces = pieces, best = best, worn = out, sets = (state or {}).sets or {}}
+end
+
+-- ---------------------------------------------------------------- O662 the weapon of the bot's own level
+-- `!tester found` also answers `hands`: the weapons of the backpack and the weapon in each hand, so the bot can wear the one it bought at the
+-- Gambler (the hands are not in BAG_SLOTS: the kit weapon stays there for the checks that never gear up). The helper reads, the bot wears.
+-- rows: {i, id, cid, wt (weapon type), il (item level), sc (score), two (two-handed)}; worn: the same plus s (the slot).
+H.HAND_WEAPON_TYPES = {[1] = true, [2] = true, [3] = true, [5] = true, [6] = true} -- sword, club, axe, distance, wand (4 is the shield, 7 the ammunition)
+H.HAND_MAX = 8
+
+function H.handReport(rows, worn)
+	local bag = {}
+	for _, r in ipairs(rows or {}) do
+		if H.HAND_WEAPON_TYPES[r.wt] then
+			bag[#bag + 1] = {i = r.i, id = r.id, cid = r.cid, wt = r.wt, il = r.il or 0, sc = r.sc or 0, two = r.two and true or nil}
+		end
+	end
+	table.sort(bag, function(a, b)
+		if a.sc ~= b.sc then
+			return a.sc > b.sc
+		end
+		return a.i < b.i
+	end)
+	while #bag > H.HAND_MAX do
+		table.remove(bag)
+	end
+	local out = {}
+	for _, w in ipairs(worn or {}) do
+		out[#out + 1] = {s = w.s, id = w.id, cid = w.cid, wt = w.wt, il = w.il or 0, sc = w.sc or 0, two = w.two and true or nil}
+	end
+	table.sort(out, function(a, b) return a.s < b.s end)
+	return {bag = bag, worn = out}
 end
 
 -- ---------------------------------------------------------------- O654 the levelling journey on foot

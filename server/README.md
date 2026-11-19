@@ -11025,6 +11025,66 @@ Tests: `tester_checks_test.py` (class `Live661`: the tree, the tier against the 
 After the fixes of 4: `closed_dungeon` 2 PASS (The Marrow Crypts, Rootmaw), `dungeon_difficulty` 1 PASS (Bones Dungeon at difficulty 6, 119 of 119 monsters scaled), `closed_raid` 1 PASS; the other bots say "You cannot queue from inside the dungeon" (dungeon 5) or play as a member.
 Left with the reason: a build for the bots (weapon and set; the Gambler sells none) decides the descent, the pocket kill and the deeper rift; a way by boat or waystone to a hunt no teleport reaches; the raid's Leave button and the Town Portal refusal inside a dungeon are not seen live yet (see the last live paragraph); owner question of step 19 (Orb of Upheaval) is still open.
 
+##### 21. The weapon, the tree, a second retreat seen, the last leg to a hunt, the dungeon box (O662)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650 / O658 / O659 / O660 / O661): "the bots have to do the complete content of the game, in the most human way possible". Step 20 left five items. They ran on the local test
+server of steps 19 and 20 (current main installed with `install_all.py`, the helper copied in before tfs starts, closed switch on, the same 10 testers, tfs under gdb; the levels of the bots had fallen from 800 to 2000 to 520 to 1600 by the deaths
+of earlier runs). Twelve runs of 4 to 16 minutes, `testers.py run --checks [--closed] --only KEYS`. Bot code: blocks "the weapon and the tree of the bot's level (O662)", "a retreat scenario (O662)", "the way to a hunt no teleport reaches (O662)",
+"the bot's damage a second at the pocket boss (O662)" of `tester_checks.py`; `testers.py` (`--retreat-at N`, the waypoint window id); helper (no new command, so v25 stays): `!tester found` answers `hands` and `bagOpen`, the pocket probe
+carries `bossMax` and `bossNow` (`pocketboss.lua`). No new check key (Unity `NotMirrored` unchanged), no CLAUDE.md Commands line.
+
+1. **Bot damage: a weapon of the class and level band, the rest of the tree.** `gear_weapon` (after the basic pieces of `gear_up`): the best weapon the backpack holds above the worn item level (`weapon_held`: an earlier login's purchase), else
+   the best weapon of the Gambler's stock (`weapon_pick`: the window lists only what the class and the level may wear, the base of the highest level band, an item level of the gate of the level; the highest item level above the worn weapon's, under
+   6,000,000 gold, the cheaper on a tie). The gold comes from the bank; a short bank is topped up by the TEST ONLY gold grant of O658 (`gold_enough`: the named fallback, the 8,000,000 limit of a gear-up unchanged). No item is ever granted and no new item path exists. It is
+   dragged onto the weapon hand (`wear_weapon`: a free slot in the backpack first, `make_room`; the backpack opened when the helper says it is not container 0; slot 6 twice, then slot 5). The kit weapon goes to the bag. Whatever is left of the passive points after the
+   Defense build goes on `focus_damage` (`gear_tree_rest`, 1.3 s after the first request: the window refuses a second one inside 1000 ms with "Too fast"; no second request when the Defense build said it needed more points than the character has).
+   Helper: `!tester found` answers `hands` (`H.handReport`: the weapons of the backpack and the weapon in each hand, with item level, score and the two-hand bit) and `bagOpen` (`Player:getContainerById(0)` is the backpack).
+   - **Why the first purchases stayed in the bag.** The drag names the backpack as container 0 (`0xFFFF, 0x40, i`); `Game::internalGetThing` finds the item only when that container is open, else the answer is "Sorry, not possible." with no other word. A GM client that sent the drag with
+     the backpack closed got exactly that. `bagOpen` says it, the bot opens the backpack (a use of the backpack, which toggles: only when it is closed) before the drag. Two more things seen: a weapon the class may not dress ("You cannot dress this object there", a grown copy of an earlier
+     login: "Your level is too low") is a named note and the bot goes on to the next candidate; the Gambler's stock is the same for 4 hours, so a bot whose crates are sold (by earlier logins) says "no better weapon in the Gambler's stock (N weapon row(s), worn item level 0)".
+   - **Measured** (run 09:30, `pocket_walk,descent_walk`, 9 bots; damage a second of the pocket boss fight, `pocket_dps`: the boss's exact health lost between its highest and lowest look over the seconds between them; retreats and flees are inside the time, so it is a lower bound)
+     against `class_dps_model.py` `median_dps` at the level, 1 target:
+
+     | Bot | Level | Bot damage a second | Median of the level | Share |
+     |---|---:|---:|---:|---:|
+     | Elementalist | 759 | 2,932 | 5,333 | 0.55 |
+     | Mystic | 540 | 1,590 | 3,485 | 0.46 |
+     | Ninja | 1,572 | 3,705 | 13,411 | 0.28 |
+     | Samurai | 1,596 | 1,175 | 13,600 | 0.09 |
+     | Deadeye | 746 | 437 | 5,182 | 0.08 |
+     | Warrior | 637 | 280 | 4,194 | 0.07 |
+     | Juggernaut | 911 | 315 | 7,584 | 0.04 |
+     | Illusionist | 770 | 158 | 5,462 | 0.03 |
+     | Thief | 972 | 276 | 8,465 | 0.03 |
+
+     The kit-weapon runs of the same morning (08:39, level 555 to 1165): 957, 1,700, 302, 239, 332, 126 a second, so the weapon alone changed little. The Ninja killed the pocket boss (Nyxareth the Void Archon, 273,514 health) in 76 s, the first pocket kill of a bot; the others
+     were hurt to 87 to 99 % and fell back or died. Ember Descent room 1 ended the same way for all 8 bots that started it ("the bot fell before a room was cleared"; the 2 others: "the halls are kept for the players"). The casters reach about half of the median, the melee
+     classes about 5 %: the weapon is not what holds them. Not found, left: the bots' fight loop (a retreat and flee loop of 1 to 6 retreats a fight, the helper's target, the boss armour of O462 against a melee auto attack) against what the model counts.
+2. **The second retreat, seen live.** `testers.py run --retreat-at N` (`retreat_at()` in `retreat_check`, `retreat_or_home`, `home_verdict`): the bots retreat under N percent health instead of 30, a timid player, so the second retreat of one loop comes at the first hits. Run 09:42,
+   `--closed --retreat-at 90 --only closed_raid,closed_dungeon,dungeon_difficulty`:
+   - **The raid's Leave button**: Tester Aah (level 902 Thief), `closed_raid`: "retreated home (2 retreat(s) under 90 % health, out by the raid's Leave button; restock: pass: ... the content allows no return)". The server answered the `raid leave` request with `end`.
+   - **The Town Portal refusal inside a dungeon**: Tester Aae (level 702 Deadeye), `closed_dungeon`: "the bot tried to go home after 2 retreat(s): the Town Portal opened no portal (the content holds the bot)". The cast is the probe, the dungeon holds the bot, the plain retreat went on.
+   Three `closed_dungeon` PASS in the same run (Rootmaw, Forbidden Chevalier, The Iron Crucible), all three by the helper's `enter dungeon` and queued without a refusal.
+3. **Bounty walks: the last leg on foot, the waypoints.** Of the 299 hunt marks, 67 lie in the planned zone (x 14000 to 18000) the hunt teleports lead to; of the 232 hunts of the world map 9 are within 120 tiles of a waypoint on the same floor and 1 more of a boat port (the 14 ports of Captain
+   Brinehook's list; the other captains' lists were not read), so waypoints and boats together reach 10 of 232 (`python3` over `chaos_poi.lua`, the numbers of step 20: the marks of the contracts were 584 and 377 tiles from a hunt teleport's arrival, the nearest waypoint 303 to 609).
+   - **On foot.** `BOUNTY_TRAVEL_MAX` is 120 tiles now (25 before): a mark within 120 tiles of an arrival or a waypoint is walked by the engine path (its search covers 150), not skipped. The 47 tiles of Hollowbell Mausoleum to Dawn Strayer qualify (a test); not seen live: the two
+     bots of level 1400 and more that could enter that hunt never got to the check (a full backpack, "not enough room", repeated at the end of run 10:26: the weapons bought and not worn pile up in the bag, a loose end of item 1).
+   - **By waypoint** (`bounty_waypoint_leg`, `waypoint_for`, `waypoint_beside`; the 18 towns of the base script `customs/waypoints/waypoint.lua`, every waypoint open for everyone, `waypoints_config.lua` `unlockAll`): the temple, the portal of the bot's own town beside it (the testers' town is Scorchveil, not Mirewake:
+     found by the first live try, the table is read at the bot's place), the last step onto the portal (the path answer says `here` one tile short, so the window never opened for 10 of 10 bots), up to 5 tries (a bot on the portal blocks it for the others), the modal window 5000 answered with button 110
+     and the choice of the town (its place in the base script's list), the arrival checked. The table is the base script's own (the base tree is not in git); a bot that arrives elsewhere says so in its SKIP. `MODAL_IDS` of `testers.py` knows window 5000.
+   - **Seen live** (a forced goal at Gloamroot, a local patch that is not in the commit, to see the window work for every bot): "by the waypoint Scorchveil -> Gloamroot" for 3 of the 4 bots that had reported at 10:24 (Aad, Aaa, Aaf; the fourth found the portal busy for its 5 tries: "the portal of Scorchveil opened no window"), before the retry of the last step it was 0 of 10. The real contracts the board listed (runs 10:00 and 10:26) were all SKIP with the reason:
+     "none of the 1 hunt contract(s) has a hunt a teleport leads to (the nearest: Hellhunter Pyrarch, Frost Dragon arrives 584 tiles from its hunt)" and "the hunt of Dawn Strayer ... no hunt teleport leads to (16902, 14819): the nearest, Dreadmourn Crypt, arrives 377 tiles away" (a hunt of level 930 to 1000 that a level 720 to 840 bot may not enter).
+     The text names the nearest of the three ways now ("the waypoint of Dunescar is 514 tiles from its hunt").
+   - **Boats not added.** The ports add 1 hunt of 232 (and the captains stand in their own harbours: Captain Brinehook at Cinderhold, 600 tiles from the temples the bots start at); a leg of talk, price and a harbour walk for 0.4 % of the hunts. Left with that reason. The walk of
+     hundreds of tiles over the world map, as a person does it, would need a chain of path legs (the engine path search is bounded): not here.
+4. **Dungeon 5 "cannot queue from inside the dungeon".** `queue_dungeon_calm` leaves at once: a refusal that says "from inside the dungeon" (`IN_THE_BOX`, `dungeons.lua` `inBox`) makes the bot walk to the temple (outside the dungeon's box) and ask again from there, without waiting 10 seconds first.
+   The text is held to `dungeons.lua` by a test. Not seen again live: the 3 `enter dungeon` arrivals of run 09:42 queued without that refusal.
+5. **`Creature::getCreatureEvents` crash.** Watched under gdb through all the runs of this step (about 1.7 hours of tfs, up to 10 bots; pocket, descent, dungeon, raid, bounty and the gear-up in the market): no signal, no backtrace (only the SIGTERM of the shutdowns). Nothing to keep; the note of step 19 stands (build with `-g`, `ulimit -c unlimited`).
+
+Tests: `tester_checks_test.py` (`Live662`: the weapon pick, buy and wear with a named grant, no second weapon, a weapon kept in the bag, the other hand, a weapon the backpack holds, the backpack opened and left alone, the tree rest, the retreat threshold and the run option, the box refusal, the waypoint table, `waypoint_for`,
+`waypoint_beside`, the window choice, the contract picked for a waypoint, 47 tiles from an arrival, no way at all, the leg end to end, the last step, the busy portal, no window, the verdict; `Pocket662`: the damage a second), `tester_helper_test.lua` (`hands`, `bagOpen`, `bossMax`), the server Lua loop (luajit and lua5.3), `check_names.py`, `check_content.py`.
+Left with the reason: why the melee bots deal 5 % of the median (item 1); Ember Descent room 1 and the pocket boss fall to the bots' fight loop, not to a missing weapon; the world map hunts beyond 120 tiles of a waypoint (a chain of path legs or boats).
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):

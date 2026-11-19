@@ -1240,6 +1240,7 @@ function PB.probe(player)
 	out.run = {id = run.id, key = run.boss.key, name = run.boss.name, category = run.boss.category, state = run.state, boss = run.bossState,
 		left = timeLeft(run, mnow()), players = players, testers = testers, slot = run.slot, bossPos = bossPos,
 		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		bossMax = boss and boss:getMaxHealth() or nil, bossNow = boss and boss:getHealth() or nil, -- O662: the bots' damage meter (tester_checks.py pocket_dps): the health lost over the seconds it took
 		inArena = U.inArena(run.L, pos) and true or false, tester = Chaos.isTester and Chaos.isTester(player) and true or false}
 	out.guide = K.guide({state = run.state, boss = run.bossState, pos = out.pos, bossPos = bossPos, inArena = out.run.inArena, reach = 5})
 	return out
