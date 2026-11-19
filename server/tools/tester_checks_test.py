@@ -9294,7 +9294,7 @@ class Live660(unittest.TestCase):
         b = {'rarity': 1, 'mods': ['a', 'b'], 'bench_mods': ['a', 'b'], 'tip': 'x'}
         a = {'rarity': 1, 'mods': ['c'], 'bench_mods': ['c'], 'tip': 'y'}
         problems = TX.orb_problems('chaos', b, a)
-        self.assertTrue(TX.upheaval_count_only('chaos', b, a, problems))
+        self.assertFalse(TX.upheaval_count_only('chaos', b, a, problems), 'O672: the owner keeps the Grafting extra, a lost one is a bug')
         self.assertIn('2 -> 1', TX.upheaval_note(b, a))
         other = dict(a, rarity=2)
         self.assertFalse(TX.upheaval_count_only('chaos', b, other, TX.orb_problems('chaos', b, other)), 'a changed rarity is a bug')

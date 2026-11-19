@@ -3,7 +3,7 @@
 
 usage: python3 -I server/tools/waystone_endgame_model.py [--derive] [--check] [--write-bosses] [--tiers 1,10,25]
 
-Owner 2026-11-19: the waystones go on past level 2500 (tiers XVI-XXV, levels 2600-3500). For every tier the model gives, for the median
+Owner 2026-11-19: the waystones go on past tier XV (tiers XVI-XXV); O672 (owner 2026-11-19: the player cap stays 2500): all at monster level 2500, ten steps of difficulty by factors, never a level above the cap. For every tier the model gives, for the median
 class of the tier's level and a plain run (no modifiers): the clear time (sweep of the map + its boss + the walk), the seconds the median
 class lives in the pack with no healing and how much it heals against the pack's damage, the experience a run pays against the hunt of
 the level (minutes a level in waystones against the 12 of a hunt), and then the four band bosses, the corrupted waystone and the atlas.
@@ -84,6 +84,21 @@ def native_pool(assume):
     return statistics.median(r[2] for r in rows), statistics.median(r[1] for r in rows), rows
 
 
+def player_level(num, L):
+    """the median character of a run at monster level L: the survival model's gap above it, never above the level cap (O672, owner
+    2026-11-19: the player cap stays 2500, balance config `playerCap`)"""
+    gap = cached('gap', lambda: S.dump([1000])['balance']['gap'])
+    return min(L + gap, num['bal']['assume']['playerCap'])
+
+
+def deep_target(num, t, key):
+    """the target of the balance config for deep tier t (16-25): its {first, last} pair, straight between the two"""
+    pair = num['bal']['limits'][key]
+    d = num['tiers']['deep']
+    last = len(num['tiers']['tiers'])
+    return pair[0] + (pair[1] - pair[0]) * (t - d['from']) / float(last - d['from'])
+
+
 def deep_factor(cfg, t, key):
     d = cfg['tiers']['deep']
     if t < d['from']:
@@ -110,8 +125,7 @@ def run_row(num, t, deep=None):
     tc, eg, bal = num['tiers'], num['endgame'], num['bal']
     a = bal['assume']
     L = tc['tiers'][t - 1]['level']
-    gap = cached('gap', lambda: S.dump([1000])['balance']['gap'])
-    P = L + gap
+    P = player_level(num, L)
     hf, df, xf = deep or (deep_factor(num, t, 'health'), deep_factor(num, t, 'damage'), deep_factor(num, t, 'experience'))
     h0, e0, _ = cached('native', lambda: native_pool(a))
     n0 = a['native']['level']
@@ -155,16 +169,17 @@ def run_row(num, t, deep=None):
 
 
 def derive_deep(num, t):
-    """the deep factors (health, damage, experience) of tier t that put a plain run on the targets of the balance config: clear time
-    `deepClearSeconds`, the median class's sustain `deepSustain`, experience an hour `deepExpRatio` x the hunt of the level. Closed forms:
-    the sweep and the boss are linear in the health factor, the pack's damage in the damage factor, the experience in the experience factor"""
-    a, lim = num['bal']['assume'], num['bal']['limits']
+    """the deep factors (health, damage, experience) of tier t that put a plain run on the targets of the balance config for that tier: clear
+    time `deepClearSeconds`, the median class's sustain `deepSustain`, experience an hour `deepExpRatio` x the hunt of the level (each a
+    {tier XVI, tier XXV} pair, straight between). Closed forms: the sweep and the boss are linear in the health factor, the pack's damage
+    in the damage factor, the experience in the experience factor"""
+    a = num['bal']['assume']
     base = run_row(num, t, (1.0, 1.0, 1.0))
     work = base['clear'] - a['walkSeconds'] - a['bossMapSeconds']
-    hf = max(1.0, (lim['deepClearSeconds'] - a['walkSeconds'] - a['bossMapSeconds']) / work)
-    df = base['sustain'] / lim['deepSustain']
+    hf = max(1.0, (deep_target(num, t, 'deepClearSeconds') - a['walkSeconds'] - a['bossMapSeconds']) / work)
+    df = base['sustain'] / deep_target(num, t, 'deepSustain')
     at = run_row(num, t, (hf, df, 1.0))
-    xf = lim['deepExpRatio'] / at['ratio']
+    xf = deep_target(num, t, 'deepExpRatio') / at['ratio']
     return hf, df, xf
 
 
@@ -183,8 +198,7 @@ def band_row(num, b):
     t = b['tier']
     tc = num['tiers']
     L = tc['tiers'][t - 1]['level']
-    gap = cached('gap', lambda: S.dump([1000])['balance']['gap'])
-    P = L + gap
+    P = player_level(num, L)
     dps1 = CD.median_dps(P)[0] * BL.kept('boss')
     want_hp = b['seconds'] * dps1 * a['bossUptime']
     out = {'tier': t, 'level': L, 'monster': b['monster'], 'wantHealth': want_hp}
@@ -287,7 +301,7 @@ def boss_xml(num, b, hp, scale_):
 def die_seconds(num, b, text):
     a = S.parse_monster(text)[1]
     L = num['tiers']['tiers'][b['tier'] - 1]['level']
-    P = L + cached('gap', lambda: S.dump([1000])['balance']['gap'])
+    P = player_level(num, L)
     d = cached(('dump', P), lambda: S.dump([P]))
     one = S.monster_dps(d, dict(d['balance'], tierMean=1.0), L, a)
     pack = {'melee': one['melee'], 'physical': one['physical'], 'element': one['element'], 'meleeHits': 0.5}
@@ -357,15 +371,38 @@ def check(num, rows, bands):
     errs = []
     for r in rows:
         t = r['tier']
-        lo_c = lim['deepClearSeconds'] * 0.8 if t >= 16 else lim['clearSeconds'][0]
+        lo_c = deep_target(num, t, 'deepClearSeconds') * (1 - lim['deepClearTol']) if t >= 16 else lim['clearSeconds'][0]
         if not lo_c <= r['clear'] <= lim['clearSeconds'][1]:
             errs.append('tier %d: a plain run takes %.0f s, outside %d-%d' % (t, r['clear'], lo_c, lim['clearSeconds'][1]))
+        if t >= 16:
+            want = deep_target(num, t, 'deepClearSeconds')
+            if abs(r['clear'] - want) > lim['deepClearTol'] * want:
+                errs.append('tier %d: a plain run takes %.0f s, the target is %.0f s (tolerance %.0f%%)' % (t, r['clear'], want, lim['deepClearTol'] * 100))
+            if r['level'] > num['bal']['assume']['playerCap'] or r['player'] > num['bal']['assume']['playerCap']:
+                errs.append('tier %d: level %d (player %d) is above the cap %d' % (t, r['level'], r['player'], num['bal']['assume']['playerCap']))
         if r['sustain'] < lim['sustainMin']:
             errs.append('tier %d: the median class heals %.2f x the pack damage, under %.2f' % (t, r['sustain'], lim['sustainMin']))
         if r['worst'] < lim['burstShare']:
             errs.append('tier %d: the weakest class lives %.2f x the median, under %.2f' % (t, r['worst'], lim['burstShare']))
         if t >= 16 and not lim['expRatio'][0] <= r['ratio'] <= lim['expRatio'][1]:
             errs.append('tier %d: a plain run pays %.2f x the hunt experience, outside %.2f-%.2f' % (t, r['ratio'], lim['expRatio'][0], lim['expRatio'][1]))
+    # O672: every tier is at most at the cap, and the ten deep tiers are a curve at the cap: each harder than the one before (a longer run,
+    # a lower sustain), no step a wall, tier XVI harder than XV (no free first step), none harder than the last tier's target
+    cap = num['bal']['assume']['playerCap']
+    for t, e in enumerate(num['tiers']['tiers'], 1):
+        if e['level'] > cap:
+            errs.append('tier %d: monster level %d is above the player cap %d' % (t, e['level'], cap))
+    for t in range(16, len(num['tiers']['tiers']) + 1):
+        a0, a1 = rows[t - 2], rows[t - 1]
+        if not a1['clear'] > a0['clear']:
+            errs.append('tier %d: a plain run (%.0f s) is not longer than tier %d (%.0f s)' % (t, a1['clear'], t - 1, a0['clear']))
+        if not a1['sustain'] < a0['sustain']:
+            errs.append('tier %d: sustain %.2f is not under tier %d (%.2f)' % (t, a1['sustain'], t - 1, a0['sustain']))
+        if t > 16 and a1['clear'] > a0['clear'] * lim['deepStepClear']:
+            errs.append('tier %d: a plain run grows %.2f x from tier %d, over %.2f x (a wall)' % (t, a1['clear'] / a0['clear'], t - 1, lim['deepStepClear']))
+        if t > 16 and a0['sustain'] - a1['sustain'] > lim['deepStepSustain'] * a0['sustain']:
+            errs.append('tier %d: sustain falls %.0f%% from tier %d (%.2f to %.2f), over %.0f%% (a wall)' % (
+                t, 100 * (1 - a1['sustain'] / a0['sustain']), t - 1, a0['sustain'], a1['sustain'], 100 * lim['deepStepSustain']))
     for b in bands:
         if not b['xml']:
             errs.append('band boss %s (tier %d): no file in waystone_bosses' % (b['monster'], b['tier']))
@@ -391,13 +428,12 @@ def check(num, rows, bands):
 
 
 def limits(num):
-    """what the engine and our formulas do at the top level (3500 + the gap): returns (lines, errors). The numbers that could overflow:
+    """what the engine and our formulas do at the top level (the cap 2500, the median class at the cap): returns (lines, errors). The numbers that could overflow:
     the experience of the level (Lua doubles and the engine's uint64), a monster's health after the level factor (int32, K.health clamps),
     a class's health and mana (int32), the display level (src-patch 0044: int32), the experience stage (open ended)"""
     tc = num['tiers']
     top = tc['tiers'][-1]['level']
-    gap = cached('gap', lambda: S.dump([1000])['balance']['gap'])
-    P = top + gap
+    P = player_level(num, top)
     lines, errs = [], []
     exp = exp_for_level(P + 1)
     lines.append('experience to level %d: %.3e (a double holds 9e15, the engine uint64 1.8e19)' % (P + 1, exp))

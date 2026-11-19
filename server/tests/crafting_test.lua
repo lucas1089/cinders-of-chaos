@@ -397,6 +397,20 @@ ok, res = C.apply("chaos", ch)
 eq(C.rarityOf(res.item), 5, "chaos keeps the rarity (an old Eternal is stored as Legendary, 5)")
 eq(C.levelOf(res.item), 42, "and the item level")
 eq(#C.readMods(res.item), M.modCount(9), "a new set of five")
+-- a grafted item keeps its extra modifier through the Orb of Upheaval (owner decision 2026-11-19, O672)
+do
+	dice = {}
+	local _, r1 = C.apply("chaos", rareItem(2466, 3, {}))
+	local g = r1.item
+	local n = #C.readMods(g)
+	eq(n, M.modCount(3), "upheaval: the rarity's own count (three of four places)")
+	local okg = C.apply("exalted", g)
+	eq(okg, true, "grafting adds one more")
+	eq(#C.readMods(g), n + 1, "grafted: one over the rarity's count")
+	local _, r2 = C.apply("chaos", g)
+	eq(#C.readMods(r2.item), n + 1, "upheaval keeps the grafted count")
+	eq(C.rarityOf(r2.item), 3, "and the rarity")
+end
 ok, res = C.apply("divine", rareItem(2400, 4, {}))
 eq(C.rarityOf(res.item), 5, "the Orb of Fate raises Rare to Legendary")
 eq(C.levelOf(res.item), 42, "the level stays")

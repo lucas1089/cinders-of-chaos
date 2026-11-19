@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Ascended Varkhul (O667, pinnacle_config.lua): the Ashen Sovereign, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 3500; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2500); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended varkhul"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Varkhul the Ashen Sovereign. Numbers: server/README.md "Pinnacle bosses (O667)". -->
+<!-- Ascended Varkhul (O667, pinnacle_config.lua): the Ashen Sovereign, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 2500; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2500); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended varkhul"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Varkhul the Ashen Sovereign. Numbers: server/README.md "Pinnacle bosses (O667)". -->
 <monster name="Ascended Varkhul" nameDescription="Ascended Varkhul" race="undead" experience="0" speed="260" manacost="0">
 	<health now="4587000" max="4587000" />
 	<look type="2131" corpse="6068" />
@@ -22,15 +22,15 @@
 		<flag canwalkonpoison="1" />
 	</flags>
 	<attacks>
-		<attack name="melee" interval="2000" min="-6370" max="-12735" />
-		<attack name="fire" interval="2000" chance="20" length="7" spread="3" min="-7215" max="-12735">
+		<attack name="melee" interval="2000" min="-8280" max="-16555" />
+		<attack name="fire" interval="2000" chance="20" length="7" spread="3" min="-9375" max="-16555">
 			<attribute key="areaEffect" value="firearea" />
 		</attack>
-		<attack name="death" interval="2000" chance="15" range="7" target="1" min="-6370" max="-11885">
+		<attack name="death" interval="2000" chance="15" range="7" target="1" min="-8280" max="-15455">
 			<attribute key="shootEffect" value="suddendeath" />
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
-		<attack name="fire" interval="2000" chance="12" radius="5" target="0" min="-5945" max="-11035">
+		<attack name="fire" interval="2000" chance="12" radius="5" target="0" min="-7725" max="-14345">
 			<attribute key="areaEffect" value="firearea" />
 		</attack>
 	</attacks>

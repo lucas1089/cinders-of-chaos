@@ -32,8 +32,16 @@ local bal = dofile("data/scripts/chaos/waystone_endgame_balance_config.lua")
 
 -- ================================================================== the deep tiers
 eq(#tcfg.tiers, 25, "25 tiers")
-eq(tcfg.tiers[16].level, 2600, "XVI at 2600")
-eq(tcfg.tiers[25].level, 3500, "XXV at 3500")
+eq(tcfg.tiers[16].level, 2500, "XVI at the cap level 2500 (O672)")
+eq(tcfg.tiers[25].level, 2500, "XXV at the cap level 2500 (O672)")
+for t = 1, 25 do
+	check(tcfg.tiers[t].level <= 2500, "tier " .. t .. " not above the player cap 2500")
+end
+-- the deep factors climb tier by tier (the level no longer does)
+for t = 17, 25 do
+	local a, b = TK.deep(tcfg, t - 1), TK.deep(tcfg, t)
+	check(b.health > a.health and b.damage > a.damage and b.experience > a.experience, "deep factors rise at tier " .. t)
+end
 eq(#tcfg.bands, 4, "four bands")
 eq(tcfg.bands[4].name, "deep", "the fourth band")
 local ids = {}
@@ -56,16 +64,20 @@ check(TK.deep(tcfg, 25).experience > TK.deep(tcfg, 16).experience, "the experien
 -- a monster of a deep run: the engine's level formula x the deep factors
 local mon = {tier = 5, boss = false, map = 9, run = 25}
 local f = TK.factors(tcfg, mon, 540)
-local plain = TK.scale(tcfg, 540, 3500)
+local plain = TK.scale(tcfg, 540, 2500)
 check(math.abs(f.health - plain.health * TK.deep(tcfg, 25).health) < 1e-9, "monster health x the deep factor")
 check(math.abs(f.experience - plain.experience * TK.deep(tcfg, 25).experience) < 1e-9, "experience x the deep factor")
 local mon15 = {tier = 5, boss = false, map = 9, run = 15}
 check(math.abs(TK.factors(tcfg, mon15, 540).health - TK.scale(tcfg, 540, 2500).health) < 1e-9, "tier XV unchanged")
 -- a band boss scales from its own level: its file's health at its own tier, a lower tier gets less
-local band = {tier = 6, boss = true, band = true, map = 12, run = 25, native = 3500}
+local band = {tier = 6, boss = true, band = true, map = 12, run = 25, native = 2500, nativeTier = 25}
 check(math.abs(TK.factors(tcfg, band, nil).health - 1) < 1e-9, "band boss at its tier: factor 1")
-local low = {tier = 6, boss = true, band = true, map = 12, run = 20, native = 3500}
-check(TK.factors(tcfg, low, nil).health < 1, "band boss of a lower run: less health")
+local low = {tier = 6, boss = true, band = true, map = 12, run = 20, native = 2500, nativeTier = 25}
+check(TK.factors(tcfg, low, nil).health < 1, "band boss of a lower run: less health (the deep factors, the level is the same, O672)")
+check(TK.factors(tcfg, low, nil).damage < 1 and TK.factors(tcfg, low, nil).experience < 1, "and softer hits and less experience")
+check(math.abs(TK.factors(tcfg, low, nil).health - TK.deep(tcfg, 20).health / TK.deep(tcfg, 25).health) < 1e-9, "the ratio of the deep factors")
+local oldBand = {tier = 6, boss = true, band = true, map = 12, run = 25, native = 2500}
+check(math.abs(TK.factors(tcfg, oldBand, nil).health - 1) < 1e-9, "a band boss entry without nativeTier scales by level alone")
 check(math.abs(TK.damageMult(tcfg, band, nil) - 1) < 1e-9, "band boss: no base-tier boss damage factor")
 check(TK.damageMult(tcfg, {tier = 6, boss = true, map = 12, run = 25}, nil) > 1.5, "a map boss keeps bossDamage")
 -- drops stop at XXV
@@ -324,7 +336,7 @@ do
 	eq(#created, 1, "tier XXV: the band boss appears")
 	eq(created[1].name, "Vharkul the Embered Tyrant", "the tier XXV boss")
 	local be = EG.bandEntry(created[1])
-	check(be and be.boss and be.band and be.run == 25 and be.native == 3500, "the band boss is an entry of the run at its own level")
+	check(be and be.boss and be.band and be.run == 25 and be.native == 2500 and be.nativeTier == 25, "the band boss is an entry of the run at its own level")
 	eq(be.tier, tcfg.maps[MAP].tier, "its base tier is the map's")
 	-- its death clears the run again, flagged band
 	EG.onMapBossDeath(be, created[1])
@@ -344,7 +356,7 @@ do
 	eq(sent[#sent].data.points, 2, "the state: two tiers paid (12 and 25)")
 	local pl = sent[#sent].data
 	eq(#pl.levels, 25, "O670: the payload carries the level of every tier")
-	eq(pl.levels[16], 2600, "O670: tier XVI is level 2600")
+	eq(pl.levels[16], 2500, "O670: tier XVI is level 2500 (O672)")
 	eq(pl.deepFrom, 16, "O670: the deep band starts at tier XVI")
 	eq(#pl.bosses, 4, "O670: four band bosses")
 	eq(pl.bosses[4].name, "Vharkul the Embered Tyrant", "O670: the last band boss")

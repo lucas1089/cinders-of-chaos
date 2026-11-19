@@ -11,7 +11,7 @@ local E = WaystoneEgView
 
 -- the server's payload (waystone_endgame.lua E.payload): 25 tiers from level 1100, tiers 12 and 25 paid
 local levels, paid = {}, {}
-for t = 1, 25 do levels[t] = 1000 + 100 * t; paid[t] = (t == 12 or t == 25) and 1 or 0 end
+for t = 1, 25 do levels[t] = math.min(2500, 1000 + 100 * t); paid[t] = (t == 12 or t == 25) and 1 or 0 end
 local payload = {
   points = 2, spent = 1, free = 1, respec = 500000, msg = 'Rank bought.', deepFrom = 16, levels = levels, paid = paid,
   stats = {
@@ -50,14 +50,14 @@ eq(E.resetConfirm(m), 'Refund every rank of your endgame atlas for 500k gold?', 
 local rows = E.deepRows(m)
 eq(#rows, 10, 'ten deep tiers')
 eq(rows[1].roman, 'XVI', 'first deep tier')
-eq(rows[1].level, 2600, 'its level')
+eq(rows[1].level, 2500, 'its level (the cap, O672)')
 eq(rows[10].roman, 'XXV', 'last deep tier')
-eq(rows[10].level, 3500, 'its level')
+eq(rows[10].level, 2500, 'its level')
 eq(rows[10].paid, true, 'tier XXV paid')
 eq(rows[1].paid, false, 'tier XVI open')
 eq(select(1, E.deepCount(m)), 1, 'one deep first clear (tier 12 is not deep)')
 eq(select(2, E.deepCount(m)), 10, 'of ten')
-eq(E.tierLine(rows[1]), 'Tier XVI  level 2600', 'tier line')
+eq(E.tierLine(rows[1]), 'Tier XVI  level 2500', 'tier line')
 eq(E.tierStatus(rows[10]), 'First clear done', 'status done')
 eq(E.tierStatus(rows[1]), 'First clear open', 'status open')
 eq(E.earnedLine(m), '2 first clears, 1 points spent', 'earned line')
@@ -67,13 +67,13 @@ local b = E.bossRows(m)
 eq(#b, 4, 'four band bosses')
 eq(b[1].name, 'Gravewatch Ulrim', 'sorted: first')
 eq(b[4].name, 'Vharkul the Embered Tyrant', 'sorted: last')
-eq(b[4].level, 3500, 'boss level')
-eq(E.bossLine(b[4]), 'Vharkul the Embered Tyrant (tier XXV, level 3500)', 'boss line')
+eq(b[4].level, 2500, 'boss level')
+eq(E.bossLine(b[4]), 'Vharkul the Embered Tyrant (tier XXV, level 2500)', 'boss line')
 
 -- defaults for an old or empty payload
 local empty = E.parse(nil)
 eq(#E.deepRows(empty), 10, 'default tiers when the server sends no levels')
-eq(E.deepRows(empty)[1].level, 2600, 'default level of tier XVI')
+eq(E.deepRows(empty)[1].level, 2500, 'default level of tier XVI')
 eq(#E.bossRows(empty), 0, 'no bosses')
 local junk = E.parse({ stats = { 5, { key = 3 }, { key = 'density' } }, paid = 'x', bosses = { 'x', {} }, points = 'many' })
 eq(#junk.stats, 1, 'junk stats dropped')

@@ -13,6 +13,12 @@
 --   fragments a whole set is four kinds, three from one content each and the keystone from any: the hours of top content for a set
 --             and, with the unique's roll and its bad-luck count, for a unique.
 return {
+	-- O672 (owner 2026-11-19): the player's level cap is 2500, so no boss is shown, planned or opened at a level above it. The first
+	-- version (O667) had 2000 / 2500 / 3000 / 3500 with planned levels 2000-2500; the ladder is now 1900 / 2100 / 2300 / 2500: even steps
+	-- of 200 under the cap, so a capped character meets the last boss at its own level and the first is one the 1800-1900 characters of
+	-- the waystone tier XII+ fragments can reach. Each fight is planned for the level it is shown at (`refLevel` = `level`) and opens
+	-- 100 levels below it (`minLevel`, `openBelow`), as the first version did.
+	levelCap = 2500,
 	-- the planned fight
 	seconds = {solo = 420, party = 300},
 	players = 5,
@@ -36,6 +42,8 @@ return {
 
 	-- limits of --check (the boss at its planned level, the median class)
 	limits = {
+		ladder = {1900, 2100, 2300, 2500},
+		openBelow = 100,
 		-- seconds to die with no healing, solo (the Omen guardian: 3-10, the rift guardians 1.2-16)
 		burst = {min = 4.0, max = 13.0},
 		-- the boss's damage against the median class's healing, solo: above it the healer loses without dodging, far below it the boss is

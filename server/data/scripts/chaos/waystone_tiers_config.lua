@@ -34,17 +34,18 @@ return {
 		{level = 2300, item = 41957},
 		{level = 2400, item = 41958},
 		{level = 2500, item = 41959},
-		-- O666 (owner 2026-11-19): the fourth band, 2600-3500, items 41960-41969 (tools/install_waystone_items.py)
-		{level = 2600, item = 41960},
-		{level = 2700, item = 41961},
-		{level = 2800, item = 41962},
-		{level = 2900, item = 41963},
-		{level = 3000, item = 41964},
-		{level = 3100, item = 41965},
-		{level = 3200, item = 41966},
-		{level = 3300, item = 41967},
-		{level = 3400, item = 41968},
-		{level = 3500, item = 41969}
+		-- O666 (owner 2026-11-19): the fourth band, items 41960-41969 (tools/install_waystone_items.py). O672 (owner 2026-11-19: the
+		-- player cap stays 2500): the ten deep tiers run at the cap level, 2500, and rise by the `deep` factors below instead of by level
+		{level = 2500, item = 41960},
+		{level = 2500, item = 41961},
+		{level = 2500, item = 41962},
+		{level = 2500, item = 41963},
+		{level = 2500, item = 41964},
+		{level = 2500, item = 41965},
+		{level = 2500, item = 41966},
+		{level = 2500, item = 41967},
+		{level = 2500, item = 41968},
+		{level = 2500, item = 41969}
 	},
 
 	-- the bands: tiers first..last open a map of the base tiers `maps` (each base tier has two maps, see `maps` below)
@@ -56,7 +57,7 @@ return {
 		{name = "mid", first = 6, last = 10, maps = {3, 4}},
 		{name = "high", first = 11, last = 15, maps = {5, 6}},
 		-- O666: the deep band reuses the base maps in a new combination (no generated map): the six maps of the three strongest base
-		-- tiers (forest, underground, desert, ice, undead cave, forest & desert), at levels 2600-3500. A map that two bands open
+		-- tiers (forest, underground, desert, ice, undead cave, forest & desert), all at level 2500 (O672). A map that two bands open
 		-- counts at the first tier of the FIRST band that lists it until its first run (K.bandOfMap); a run sets its tier.
 		{name = "deep", first = 16, last = 25, maps = {4, 5, 6}}
 	},
@@ -69,16 +70,19 @@ return {
 		bossNext = true
 	},
 
-	-- O666: from tier `from` (XVI, level 2600) the monsters of a run get these multipliers on top of the engine's level formulas below:
+	-- O666: from tier `from` (XVI) the monsters of a run get these multipliers on top of the engine's level formulas below:
 	-- base + perTier x (tier - from). No hunt exists above level 2000 (the pool ends there), so a deep run is the content of its level.
-	-- Derived by tools/waystone_endgame_model.py --derive (targets in waystone_endgame_balance_config.lua: a plain run of 10 minutes, the
-	-- median class's healing 1.8 x the pack's damage, experience an hour equal to the hunt's 12 minutes a level) and held to it by --check.
+	-- O672 (owner 2026-11-19: the player cap stays 2500): the ten deep tiers all run at monster level 2500, so the climb is these
+	-- factors alone: health x1.62 to x3.56, damage x1.33 to x2.31 (the engine's level formulas are flat between them), experience x13.8
+	-- to x32.5. Derived by tools/waystone_endgame_model.py --derive (the line through the ten tiers; targets in
+	-- waystone_endgame_balance_config.lua, per tier XVI to XXV: a plain run of 7 to 13 minutes, the median class's healing 2.4 to 1.4 x the
+	-- pack's damage, experience an hour 0.9 to 1.2 x the hunt's 12 minutes a level) and held to it by --check.
 	-- The experience factor is large because the base maps' monsters pay little (pace layer): first guess, to be measured live.
 	deep = {
 		from = 16,
-		health = {base = 2.65, perTier = 0.0},
-		damage = {base = 1.85, perTier = 0.0},
-		experience = {base = 22.6, perTier = 0.87}
+		health = {base = 1.62, perTier = 0.216},
+		damage = {base = 1.33, perTier = 0.109},
+		experience = {base = 13.83, perTier = 2.077}
 	},
 
 	-- the engine's level factors (config.lua monsterBonus*: the same numbers areagen_core.lua A.levelScale uses)

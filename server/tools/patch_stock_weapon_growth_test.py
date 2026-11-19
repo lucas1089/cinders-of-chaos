@@ -15,6 +15,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import patch_stock_weapon_growth as P  # noqa: E402
+import stock_weapon_physical as SP  # noqa: E402
 import survey_base_weapons as SV  # noqa: E402
 import weapon_growth as WG  # noqa: E402
 
@@ -182,6 +183,9 @@ if shutil.which('luajit'):
         if P.grows(kind, level, charges):
             attack = int(attack * a + 0.5) if attack > 0 else attack
             element = int(element * a + 0.5) if element > 0 else element
+            if SP.applies(kind, level, charges):
+                attack, e = SP.split(attack, {'e': element})
+                element = e['e']
         if kind == 'wand' and P.wand_grows(level):
             wmin, wmax = int(wmin * a + 0.5), int(wmax * a + 0.5)
         if lua[wid] != (attack, element, wmin, wmax):

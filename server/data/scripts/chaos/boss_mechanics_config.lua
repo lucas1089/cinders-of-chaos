@@ -578,7 +578,7 @@ return {
 		-- of the run is the profile's hpMult x that (the mechanics' downtime, boss_mechanics_core.lua G.balance), x the party curve.
 		-- The soak asks for a group only (groupOnly): alone it never comes.
 		["ascended malgrath"] = {
-			label = "Malgrath", size = 2, element = "death", difficulty = 0.35, every = 9000, fair = {refLevel = 2000},
+			label = "Malgrath", size = 2, element = "death", difficulty = 0.35, every = 9000, fair = {refLevel = 1900},
 			telegraphs = {
 				{key = "tidal_collapse", label = "Tidal Collapse", kind = "ring", inner = 3, outer = 8, share = 0.45,
 					hit = "ice_shatter", fallback = "CONST_ME_ICEAREA", tip = "A ring of water round the crown: hug it or run far out."},
@@ -597,10 +597,10 @@ return {
 					healthPerExtra = 0.05, text = "%s hangs on two Drowned Anchors! Break them!",
 					doneText = "The anchors break: %s can be hurt again!", tip = "At 50% he takes 70% less until the 2 Drowned Anchors die."}
 			},
-			ref = {health = 3713000, heal = 250, dps = 10694, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 3475000, heal = 250, dps = 10027, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended vhoss"] = {
-			label = "Vhoss", size = 2, element = "death", difficulty = 0.4, every = 9000, fair = {refLevel = 2300},
+			label = "Vhoss", size = 2, element = "death", difficulty = 0.4, every = 9000, fair = {refLevel = 2100},
 			telegraphs = {
 				{key = "hex_lines", label = "Hexlines", kind = "lines", count = 3, share = 0.4, hit = "shadow_eruption",
 					fallback = "CONST_ME_MORTAREA", tip = "Rows and columns of hex cross the hall: stand between them."},
@@ -618,10 +618,10 @@ return {
 					healthPerExtra = 0.05, text = "Whispering Idols rise: they feed %s's hits!",
 					doneText = "The idols fall silent.", tip = "At 50% each living Whispering Idol makes his hits 12% harder."}
 			},
-			ref = {health = 4244000, heal = 300, dps = 12240, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 3876000, heal = 300, dps = 11210, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended talath"] = {
-			label = "Talath", size = 2, element = "ice", difficulty = 0.4, every = 9000, fair = {refLevel = 2400},
+			label = "Talath", size = 2, element = "ice", difficulty = 0.4, every = 9000, fair = {refLevel = 2300},
 			telegraphs = {
 				{key = "whiteout", label = "Whiteout", kind = "eye", safe = 2, share = 0.5, hit = "big_shock_frost_7",
 					fallback = "CONST_ME_ICEAREA", tip = "The whole hall freezes but one calm eye: run into it."},
@@ -635,7 +635,7 @@ return {
 					healthPerExtra = 0.05, text = "%s hides behind two Rime Pillars! Break them!",
 					doneText = "The pillars shatter: %s can be hurt again!", tip = "At 55% he takes 70% less until the 2 Rime Pillars die."}
 			},
-			ref = {health = 4415000, heal = 330, dps = 12756, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 4231000, heal = 330, dps = 12240, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended varkhul"] = {
 			label = "Varkhul", size = 2, element = "fire", difficulty = 0.45, every = 9000, fair = {refLevel = 2500},

@@ -31,6 +31,7 @@ import install_relic_sets as RS  # noqa: E402
 import install_fist_weapons as FW  # noqa: E402
 import weapon_growth as WG  # noqa: E402
 import patch_stock_weapon_growth as SG  # noqa: E402
+import stock_weapon_physical as SP  # noqa: E402
 
 DATA = os.path.join(os.path.dirname(HERE), 'data')
 OUT = os.path.join(DATA, 'lib', 'chaos_weapon_growth.lua')
@@ -56,8 +57,13 @@ def stock_rows():
     with open(STOCK_CSV, newline='', encoding='utf-8') as f:
         for r in csv.DictReader(f):
             level, attack = int(r['level']), int(r['attack'])
-            if attack > 0 and SG.grows(r['kind'], level, int(r['charges'])):
-                grown = WG.grown(attack, level)
+            if SG.grows(r['kind'], level, int(r['charges'])) and (attack > 0 or (SP.applies(r['kind'], level, int(r['charges']))
+                                                                                    and int(r['element']) > 0)):
+                grown = WG.grown(attack, level) if attack > 0 else 0
+                if SP.applies(r['kind'], level, int(r['charges'])):
+                    # O673: the element damage of a melee weapon is at most 35% of its total, the rest is attack
+                    element = int(int(r['element']) * WG.weapon_a(level) + 0.5)
+                    grown = SP.split(grown, {'e': element})[0]
                 if grown != attack:
                     out[int(r['id'])] = (attack, grown)
     return out

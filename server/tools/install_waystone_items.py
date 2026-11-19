@@ -3,9 +3,10 @@
 
 usage: python3 -I install_waystone_items.py DATA_DIR [--dry-run]
 
-Owner 2026-10-23: waystones from monster level 1100 to 2500, +100 a tier; O666 (2026-11-19) added XVI-XXV up to 3500. The base server has
+Owner 2026-10-23: waystones from monster level 1100 to 2500, +100 a tier; O666 (2026-11-19) added XVI-XXV, which O672 (owner 2026-11-19:
+the player cap stays 2500) put at level 2500, ten steps of difficulty at the cap. The base server has
 Waystone Tier I-VI (29845-29850, level 1100-1600 now); VII-XV (41951-41959, level 1700-2500) and XVI-XXV (41960-41969,
-level 2600-3500) are new. The marker comments keep their old text (a block is found by it). data/scripts/chaos/
+level 2500, harder by tier) are new. The marker comments keep their old text (a block is found by it). data/scripts/chaos/
 waystone_tiers_config.lua lists every tier with its item; tools/patch_waystone_hideout.py part 3 lets the base device
 take them.
 
@@ -37,22 +38,25 @@ BASE_IDS = (29845, 29846, 29847, 29848, 29849, 29850)
 # tier -> (server id, the base tier whose look it copies); levels as waystone_tiers_config.lua (1100 + 100 a tier)
 NEW = {7: (41951, 3), 8: (41952, 4), 9: (41953, 4), 10: (41954, 4), 11: (41955, 5), 12: (41956, 5),
        13: (41957, 6), 14: (41958, 6), 15: (41959, 6),
-       # O666: the fourth band, levels 2600-3500; the look of base VI as XIII-XV (no client pair)
+       # O666: the fourth band, level 2500 (O672); the look of base VI as XIII-XV (no client pair)
        16: (41960, 6), 17: (41961, 6), 18: (41962, 6), 19: (41963, 6), 20: (41964, 6), 21: (41965, 6), 22: (41966, 6),
        23: (41967, 6), 24: (41968, 6), 25: (41969, 6)}
 WEIGHT = 4000  # the base tablets' weight
 
 
 def level(tier):
-    return 1000 + 100 * tier
+    """the monster level of a tier: 1100 + 100 a tier up to XV; XVI-XXV (O666) all at the player cap 2500 (O672)"""
+    return min(2500, 1000 + 100 * tier)
 
 
 def rows():
     out = []
     for tier, (sid, look) in sorted(NEW.items()):
+        text = ('Use this waystone on the waystone device in your hideout or house to open a map of monster level %d.' % level(tier))
+        if tier > 15:
+            text = text[:-1] + ', a harder step (%d of 10) at the level cap.' % (tier - 15)
         out.append({'id': sid, 'source_id': BASE_IDS[look - 1], 'tier': tier, 'name': 'Waystone Tier %s' % ROMAN[tier - 1],
-                    'description': 'Use this waystone on the waystone device in your hideout or house to open a map of '
-                                   'monster level %d.' % level(tier)})
+                    'description': text})
     return out
 
 

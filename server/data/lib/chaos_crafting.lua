@@ -1734,14 +1734,18 @@ function C.upheave(item, rand)
 	rand = rand or C.random
 	local rarity, level = C.rarityOf(item), C.orbLevel(item)
 	local kept = 0
-	for _, m in ipairs(C.readMods(item)) do
+	-- the count the item has, never less than the rarity's own: a grafted extra modifier is rolled again, not lost
+	-- (owner decision 2026-11-19, O672)
+	local mods = C.readMods(item)
+	local count = math.max(M.modCount(rarity), #mods)
+	for _, m in ipairs(mods) do
 		if m.bound then
 			kept = kept + 1
 		else
 			C.removeMod(item, m)
 		end
 	end
-	local added = C.rollAffixes(item, rarity, level, math.max(0, M.modCount(rarity) - kept), rand)
+	local added = C.rollAffixes(item, rarity, level, math.max(0, count - kept), rand)
 	C.rewriteDescription(item)
 	return added
 end
@@ -1866,9 +1870,19 @@ function C.apply(orbKey, item, opts)
 			C.rarityName(rarity)), rarity = rarity}
 	end
 	local level = C.orbLevel(item)
+	local oldCount = #C.readMods(item)
 	local newItem, err = C.recreate(item, rarity, level)
 	if not newItem then
 		return false, err
+	end
+	-- the Orb of Upheaval keeps the count of a grafted item: its extra modifier is rolled again, not lost (owner decision
+	-- 2026-11-19, O672)
+	if orbKey == "chaos" and rarity > 0 then
+		local extra = oldCount - #C.readMods(newItem)
+		if extra > 0 then
+			C.rollAffixes(newItem, rarity, level, extra, C.random)
+			C.rewriteDescription(newItem)
+		end
 	end
 	local text
 	if rarity > 0 then

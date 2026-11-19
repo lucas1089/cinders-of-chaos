@@ -1,5 +1,5 @@
 -- Pinnacle bosses (O667): four Ascended versions of existing key bosses (Malgrath, Vhoss the Hexmaw, Talath, Varkhul the Ashen
--- Sovereign), shown at level 2000 / 2500 / 3000 / 3500. A private fight in a runtime-built arena (the pocket boss grid layout),
+-- Sovereign), shown at level 1900 / 2100 / 2300 / 2500 (the player cap, O672). A private fight in a runtime-built arena (the pocket boss grid layout),
 -- alone or with a party of up to 5, opened by a whole set of four fragments at the Keeper of the Pinnacle.
 -- Settings: pinnacle_config.lua (Chaos.pinnacleConfig). Pure logic: pinnacle_core.lua (tests/pinnacle_test.lua). Balance:
 -- tools/pinnacle_model.py. Overview: server/README.md "Pinnacle bosses (O667)".
