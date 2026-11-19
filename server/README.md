@@ -33556,7 +33556,16 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
 * **Verified live (O671, "The rest of the closed audit (O589)" step 25).** The `Player:onMoveItem` hook on a real server: a stranger's drag refused with the words above, the owner's and a
   party member's accepted (`loot_stranger`, two bots); `Item:moveTo(position)` onto a tile with a creature; the failed-move guard (and its same-id stack fault, fixed); the vanishing at 180 s;
   Loot all; a kill in a rift keeps the bag. **Not verified:** that the missiles, the burst and the sparkles read as an explosion in the client; the labels and beams over 14 scattered
-  items; the loot channel's click on a scattered item; two players at once on one tile. **Found:** the waystone maps' monsters leave a Loot Bag of id 26691, not the `bagId`: no explosion for them (192 of 803 kills).
+  items; the loot channel's click on a scattered item; two players at once on one tile.
+* **The video (O676).** The manual workflow `.github/workflows/loot-video.yml` records the explosion from the MAIN client (not Unity) on a real server, to read the missiles, the
+  burst, the sparkles, the labels and the beams on a screen. It builds the Linux client (`CHAOS_RMLUI=OFF`, the sprite pair of `windows-assets`), starts the server of
+  `tools/ci/unity_live_check.sh --serve-only` with `UL_LOOT_TESTER=1` (a `Tester Xxx` character, the TEST ONLY helper in that run's server only) and `UL_GUARD_KEY` (the guard key
+  made in the run, also baked into the client; no secret), then `tools/ci/loot_video.sh` runs the client under Xvfb at 1280x720 and records 20 s with ffmpeg x11grab (libx264 crf 18,
+  yuv420p, +faststart). The client module `test_loottour` (client/MANIFEST.md, armed only by `CHAOS_LOOTTOUR=1`, no window, no hub card) logs in, enters, says `!tester explode run`
+  twice 6 s apart, lets the loot lie 5.5 s, presses Loot all (opcode 230), waits 4.5 s and exits; the recording starts on its `loottour: ready` log line. Artifact `loot-video`:
+  `loot_explosion.mp4` and the client log with the account, the password and the guard key cut out; no frame, no sprite file and no database is uploaded, nothing is committed.
+  Inputs: `client_build`, `seconds`; secrets: none (the repository's default token reads `windows-assets` and the `winpkg` releases). Logic and timeline:
+  `test_loottour/loottourlogic.lua`, `loottourlogic_test.lua` in the client loop. Not run yet (the coordinator dispatches it). **Found:** the waystone maps' monsters leave a Loot Bag of id 26691, not the `bagId`: no explosion for them (192 of 803 kills).
 
 ## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
 
