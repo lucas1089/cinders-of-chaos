@@ -12,7 +12,7 @@
 --   ChaosGroundLoot.wireCorpse(s, id, infos, e) one lootable corpse for the client (contents in short)
 --   ChaosGroundLoot.clip(text, n)               text safe for the label (no control characters), at most n bytes
 --   ChaosGroundLoot.pack(tiles, encode, max)    the tile answers split into JSON payloads of at most max bytes
--- info = ChaosLootFilter.itemInfo(item): {clientId, count, name, rarity, unique, orb, power, category, bestTier, level}
+-- info = ChaosLootFilter.itemInfo(item): {clientId, count, name, rarity, unique, set, orb, power, category, bestTier, level}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosGroundLoot = ChaosGroundLoot or {}
@@ -170,6 +170,7 @@ end
 local function flags(info, t)
 	t.r = (tonumber(info.rarity) or 0) > 0 and info.rarity or nil
 	t.u = info.unique and 1 or nil
+	t.st = info.set and 1 or nil -- a set piece (O677: the loot beam group "set")
 	t.o = info.orb and 1 or nil
 	t.pw = info.power and 1 or nil
 	t.g = info.category or "other"

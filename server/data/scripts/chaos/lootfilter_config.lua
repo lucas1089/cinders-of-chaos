@@ -22,9 +22,10 @@ ChaosLootFilterConfig = {
 	-- (client game_lootbeams; the colour, the player's loot filter, height and intensity are the client's).
 	-- Sent as "beam" on this opcode to the players allowed to loot the corpse (the owner and the party at the kill).
 	beams = true,
-	beamMinRarity = 1,       -- items from this base rarity may beam (the client's loot filter then decides)
+	-- O677 (owner 2026-11-19): only Legendary, Divine, set pieces and uniques beam; Common .. Rare and orbs never do
+	-- (lootfilter_core.lua F.beamCandidate: F.BEAM_MIN_RARITY 5 is the floor of beamMinRarity)
+	beamMinRarity = 5,       -- items from this base rarity may beam (the client's loot filter then decides)
 	beamUniques = true,
-	beamOrbs = true,         -- orbs may beam too (the client shows them only when its "Beams for orbs" is on)
 
 	-- loot rays (the old beam: a map effect resent every second, drawn over the creatures and the next tiles).
 	-- Off since the loot beams: rayEffects = true sends them again (for a client without game_lootbeams).

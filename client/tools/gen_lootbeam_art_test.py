@@ -42,7 +42,9 @@ def mean_diff(a, b):
 # ---------------------------------------------------------------- shape of a strip
 ok(G.W == 64 and G.H == 128, 'frames are 64 x 128')
 eq(G.FRAMES, 18, '6 burst frames and 12 loop frames')
-eq(len(G.GROUPS), 6, 'six tier groups')
+eq(len(G.GROUPS), 4, 'four groups beam: Legendary, Divine, set, Unique (O677)')
+ok(not any(g in G.GROUPS for g in ('white', 'blue', 'orb')), 'no white, blue or orb strips any more')
+eq(len(set(G.SEED_SLOT.values())), len(G.SEED_SLOT), 'every group has its own seed slot')
 eq(sorted(G.GROUPS), sorted(G.GROUP_ORDER), 'the order names every group')
 eq(G.STYLES, ('a', 'b', 'c'), 'three styles')
 strips = {}
@@ -58,7 +60,8 @@ again = G.strip('b', 'orange')
 ok(np.array_equal(again, strips[('b', 'orange')]), 'the same strip twice')
 ok(not np.array_equal(strips[('a', 'orange')], strips[('b', 'orange')]), 'style a and b differ')
 ok(not np.array_equal(strips[('a', 'orange')], strips[('c', 'orange')]), 'style a and c differ')
-ok(not np.array_equal(strips[('a', 'white')], strips[('a', 'blue')]), 'tiers differ')
+ok(not np.array_equal(strips[('a', 'orange')], strips[('a', 'set')]), 'tiers differ')
+ok(not np.array_equal(strips[('a', 'set')], strips[('a', 'unique')]), 'set and unique differ')
 
 
 def frames_of(arr):
@@ -149,11 +152,9 @@ def band_light(arr, lo, hi):
 for st in G.STYLES:
     # total light a frame gives out: the tiers grow richer up to Legendary, Divine is the loudest of all by a clear margin
     tot = {g: float(np.mean([alpha(f).sum() for f in frames_of(strips[(st, g)])[G.BURST:]])) for g in G.GROUP_ORDER}
-    ok(tot['orange'] > tot['white'] * 0.95, '%s: Legendary is not poorer than Common' % st)
-    ok(tot['white'] < tot['blue'] < tot['orange'] < tot['unique'], '%s: the other tiers keep their order (%s)' % (st, tot))
-    ok(tot['orb'] < tot['blue'], '%s: Orbs stay calm' % st)
+    ok(tot['orange'] < tot['set'] < tot['unique'], '%s: the other tiers keep their order, a set piece between Legendary and Unique (%s)' % (st, tot))
     ok(tot['divine'] > max(tot[g] for g in others) * 1.3, '%s: Divine gives out 30%% more light than any other tier (%s)' % (st, tot))
-    ok(tot['divine'] < tot['white'] * 5, '%s: and is still not a wall of light (%s)' % (st, tot))
+    ok(tot['divine'] < tot['orange'] * 3, '%s: and is still not a wall of light (%s)' % (st, tot))
     # the body of the column is brighter along its height, and it reaches higher
     body = {g: float(np.mean(band_light(strips[(st, g)], 10, 90))) for g in G.GROUP_ORDER}
     ok(body['divine'] > max(body[g] for g in others), '%s: the column of Divine is the brightest (%s)' % (st, body))
@@ -168,8 +169,8 @@ for st in G.STYLES:
     ok(move['divine'] > max(move[g] for g in others) * 1.25, '%s: Divine has its own, livelier pulse (%s)' % (st, move))
 
 # more motes in the higher tiers
-ok(G.GROUPS['white']['motes'] < G.GROUPS['blue']['motes'] < G.GROUPS['orange']['motes'] < G.GROUPS['divine']['motes'], 'motes grow with the tier')
-ok(G.GROUPS['white']['col'] < G.GROUPS['orange']['col'] <= G.GROUPS['unique']['col'], 'the column grows with the tier')
+ok(G.GROUPS['orange']['motes'] < G.GROUPS['set']['motes'] < G.GROUPS['unique']['motes'] < G.GROUPS['divine']['motes'], 'motes grow with the tier')
+ok(G.GROUPS['orange']['col'] < G.GROUPS['set']['col'] <= G.GROUPS['unique']['col'], 'the column grows with the tier')
 ok(G.GROUPS['divine']['col'] <= G.FOOT_Y, 'the column fits in the frame')
 ok(G.GROUPS['divine']['col'] > max(G.GROUPS[g]['col'] for g in others), 'Divine is the tallest')
 ok(G.GROUPS['divine']['motes'] > max(G.GROUPS[g]['motes'] for g in others), 'Divine has the most motes')
@@ -201,11 +202,11 @@ eq(len(G.RUNES) >= 5, True, 'at least five glyph shapes')
 
 # ---------------------------------------------------------------- check / write
 with tempfile.TemporaryDirectory() as tmp:
-    arr = strips[('a', 'white')]
-    path = os.path.join(tmp, 'a_white.png')
+    arr = strips[('a', 'set')]
+    path = os.path.join(tmp, 'a_set.png')
     G.save(path, arr)
     ok(np.array_equal(G.load(path), arr), 'a strip written and read back is the same')
-    eq(G.strip_name('c', 'orb'), 'c_orb.png', 'file name')
+    eq(G.strip_name('c', 'set'), 'c_set.png', 'file name')
 
 # the committed strips are what the generator draws (the same as --check, on the pictures this test already drew)
 bad = []

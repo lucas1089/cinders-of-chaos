@@ -7,7 +7,7 @@ picture is a sum of smooth light fields (additive energy) turned into straight a
 burns towards white the way a real light does. Everything is drawn here from shapes and noise with a fixed seed (no reference
 art, nothing third-party).
 
-One strip per style and tier group: images/<style>_<group>.png, style a | b | c, group white | blue | orange | divine | unique | orb
+One strip per style and tier group: images/<style>_<group>.png, style a | b | c, group orange | divine | set | unique
 (the rarity colours of game_lootbeams/lootbeamslogic.lua LB.GROUPS, which the test keeps in step). A strip is one row of 64 x 128 px
 frames, left to right:
 
@@ -23,9 +23,10 @@ in Loot Beams > Style; A is the default):
   b  twisted twin strands  two strands winding round each other, the front one brighter, glints where they cross
   c  rune column         a slim column with small glyphs rising beside it, tick marks round the ground ring
 
-The tiers are richer upwards, not brighter (the peak is the same) up to Legendary: Common / Uncommon stand low with a plain ring and
-three motes; Magic / Rare add a travelling glint on the ring; Legendary has the full set; Uniques stand tall with a pillar halo,
-an inner ring and twinkles; Orbs are short and calm. Divine is the loudest of all (O576, owner: it must be the most striking): the
+Only four things beam (O677, owner 2026-11-19: only Legendary, Divine, set and unique): Legendary has the full set of parts; a set
+piece is a green gold column a little taller, with a glint on the ring and two twinkles; Uniques stand tall with a pillar halo, an
+inner ring and twinkles. (The white, blue and orb strips of before O677 are gone; the group slots of the random seed are kept, so the
+strips that remain are the pictures they were.) Divine is the loudest of all (O576, owner: it must be the most striking): the
 tallest and widest column, hotter, with a second aura layer, a faster double pulse with two bright rings travelling up, 18 motes,
 6 twinkles and an outer ground ring. The module draws the strip as ONE widget over the tile (Tile:addOverlayWidget,
 base patch 0041) scaled with the map, so the ring and the column are one picture.
@@ -64,8 +65,6 @@ STYLES = ('a', 'b', 'c')
 # beam height of the group), motes, halo = (sigma px, energy) of the pillar halo, ring = gain of the ground ring, glint = a
 # travelling highlight on the ring, inner = an inner ring, stars = twinkles, glyphs = runes of style c, amp = the strands of style b
 GROUPS = {
-    'white':  dict(color='#eef3f8', col=75, motes=3, halo=(9.0, 0.17), ring=0.55, glint=False, inner=False, stars=0, glyphs=2, amp=4.5),
-    'blue':   dict(color='#3d8bff', col=85, motes=5, halo=(10.0, 0.20), ring=0.70, glint=True, inner=False, stars=0, glyphs=3, amp=5.5),
     'orange': dict(color='#ff8c1a', col=100, motes=8, halo=(11.0, 0.24), ring=0.80, glint=True, inner=False, stars=1, glyphs=4, amp=6.5),
     'unique': dict(color='#2bff7a', col=110, motes=12, halo=(15.0, 0.25), ring=0.85, glint=True, inner=True, stars=3, glyphs=5, amp=7.0),
     # Divine is the most striking beam of all (owner 2026-11-14: "o divine precisa ser o mais chamativo deles"): the tallest column,
@@ -74,9 +73,13 @@ GROUPS = {
     # ground ring turning against the inner one (outer). The keys are optional: a group without them is drawn as before.
     'divine': dict(color='#7fe3ff', col=112, motes=18, halo=(16.0, 0.30), ring=1.0, glint=True, inner=True, stars=6, glyphs=6, amp=8.0,
                    fade=0.95, burn=1.3, aura=(21.0, 0.07), pulse=(2, 0.38), rings=2, outer=True),
-    'orb':    dict(color='#39e0c8', col=80, motes=4, halo=(9.0, 0.17), ring=0.60, glint=False, inner=False, stars=0, glyphs=3, amp=5.0),
+    # a set piece (O677): between Legendary and Unique in richness, green gold (the group colour of lootbeamslogic.lua)
+    'set':    dict(color='#c8e04a', col=106, motes=10, halo=(12.5, 0.245), ring=0.82, glint=True, inner=False, stars=2, glyphs=4, amp=6.8),
 }
-GROUP_ORDER = ('white', 'blue', 'orange', 'divine', 'unique', 'orb')
+GROUP_ORDER = ('orange', 'divine', 'set', 'unique')
+# the slot of a group in the random seed (the order of before O677, white and blue and orb gone, set added): a slot never moves, so a
+# strip that stays is the picture it was
+SEED_SLOT = {'orange': 2, 'divine': 3, 'unique': 4, 'set': 6}
 DEFAULT_FADE, DEFAULT_PULSE = 1.35, (1, 0.22)
 
 # ---------------------------------------------------------------- the light kit (float energy, RGB)
@@ -340,7 +343,7 @@ def burst_parts(E, g, u):
 def frame(style, name, k):
     """frame k (0..FRAMES - 1) of the strip of a style and group, straight RGBA uint8"""
     g = GROUPS[name]
-    seed = SEED + STYLES.index(style) * 1000 + GROUP_ORDER.index(name) * 37
+    seed = SEED + STYLES.index(style) * 1000 + SEED_SLOT[name] * 37
     E = np.zeros((H, W, 3), np.float32)
     if k < BURST:
         u = (k + 1) / float(BURST + 1)

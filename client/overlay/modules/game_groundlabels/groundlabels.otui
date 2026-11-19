@@ -22,7 +22,7 @@ GroundLabelsCheck < ChaosCheckBox
 
 GroundLabelsWindow < ChaosMainWindow
   id: groundLabelsWindow
-  size: 400 336
+  size: 400 362
   !text: tr('Ground Labels')
   @onEscape: modules.game_groundlabels.hideSettings()
 
@@ -65,9 +65,15 @@ GroundLabelsWindow < ChaosMainWindow
     !text: tr('Show despawn timers')
     !tooltip: tr('Time until a corpse (with its loot) or a decaying item is gone. Items lying on the floor do not vanish on their own.')
 
+  GroundLabelsCheck
+    id: burst
+    anchors.top: timers.bottom
+    !text: tr('Loot burst animation')
+    !tooltip: tr('The loot of a kill flies out of it in an arc and lands around it, with a flash, a shadow and a trail on the rare items. Off: the plain game effects.')
+
   ChaosLabel
     id: sizeLabel
-    anchors.top: timers.bottom
+    anchors.top: burst.bottom
     anchors.left: parent.left
     margin-top: 14
     text-auto-resize: true

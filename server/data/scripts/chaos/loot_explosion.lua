@@ -11,6 +11,10 @@
 --     item never free up). The item leaves the attribute the moment it leaves the ground, so it stacks again.
 --   * vanishing: the engine decays no loose item; one sweeper looks at the tiles that hold loot and removes what ran out.
 --   * Loot all: opcode 230 `lootall` (groundloot.lua) takes everything of the player's within reach into the backpack.
+--   * the client animation (O677): a player whose client draws the burst (game_lootburst: opcode 230 `burst {on = 1}`, X.setAnim) gets one
+--     `explode` message with every flight (X.explodePayload) and none of the stock distance effects, landing sparkles and the poff; the
+--     other players who see the tile keep those. The flights, delays and landings are the same for both: the real item lands exactly when
+--     the client's flight ends.
 -- What stays in the bag: the items over the per-kill cap, a kill over the per-area cap, a kill with no free tile, a kill inside
 -- an instance, a kill nobody owns, what other scripts add to the bag after the loot step (death events). Players' corpses are
 -- never touched. enabled = false in the config and a /reload give the bag back. Lua 5.1 / LuaJIT compatible.
@@ -148,9 +152,22 @@ local function rankOf(item)
 	return 0
 end
 
+local function isSetPiece(item)
+	if customAttr(item, "chaos_set") ~= nil then
+		return true
+	end
+	local sets = ChaosItemSets
+	if sets and sets.setKeyOf then
+		local ok, key = pcall(sets.setKeyOf, item)
+		return ok and key ~= nil and key ~= false and key ~= ""
+	end
+	return false
+end
+
 local function dropOf(item)
 	local drop = {id = item:getId(), rank = rankOf(item), unique = customAttr(item, "chaos_unique") ~= nil, attrs = {}}
 	drop.gold = X.GOLD[drop.id] == true
+	drop.set = isSetPiece(item)
 	for _, name in ipairs(cfg.strictAttributes or {}) do
 		if customAttr(item, name) ~= nil then
 			drop.attrs[name] = true
@@ -411,7 +428,77 @@ local function itemsOfDrop(origin, seq)
 	return out
 end
 
-local function land(origin, target, seq, group)
+-- ---------------------------------------------------------------- who draws the burst on the client (O677)
+-- player id -> true while the client says it draws the animation (opcode 230 `burst {on = 1}`, groundloot.lua); forgotten at logout
+X.anim = X.anim or {}
+
+function X.setAnim(player, on)
+	X.anim[player:getId()] = on and true or nil
+end
+
+function X.clearAnim(player)
+	X.anim[player:getId()] = nil
+end
+
+-- the owner and the party members who see the death tile and draw the burst: {[player id] = true}
+local function animViewers(origin, ownerId)
+	if cfg.clientAnim ~= true or next(X.anim) == nil then
+		return {}
+	end
+	local cands, seen = {}, {}
+	local function add(p)
+		if p and not seen[p:getId()] then
+			seen[p:getId()] = true
+			local pp = p:getPosition()
+			cands[#cands + 1] = {id = p:getId(), x = pp.x, y = pp.y, z = pp.z}
+		end
+	end
+	local owner = Player(ownerId)
+	add(owner)
+	local party = owner and owner.getParty and owner:getParty()
+	if party then
+		add(party:getLeader())
+		for _, member in ipairs(party:getMembers() or {}) do
+			add(member)
+		end
+	end
+	return X.animViewers(cfg, cands, X.anim, origin)
+end
+
+-- the stock effects go to the players who see the tile and do not draw the burst themselves (skip = {[player id] = true}); with no
+-- skip set the effect goes to everyone as before
+local function stockSpectators(pos, skip)
+	local out = {}
+	local ok, list = pcall(Game.getSpectators, Position(pos.x, pos.y, pos.z), false, true, 9, 9, 7, 7)
+	for _, p in ipairs(ok and type(list) == "table" and list or {}) do
+		if not skip[p:getId()] then
+			out[#out + 1] = p
+		end
+	end
+	return out
+end
+
+local function sendMagic(pos, effect, skip)
+	if not skip then
+		pos:sendMagicEffect(effect)
+		return
+	end
+	for _, p in ipairs(stockSpectators(pos, skip)) do
+		pos:sendMagicEffect(effect, p)
+	end
+end
+
+local function sendDistance(from, to, ani, skip)
+	if not skip then
+		from:sendDistanceEffect(to, ani)
+		return
+	end
+	for _, p in ipairs(stockSpectators(from, skip)) do
+		from:sendDistanceEffect(to, ani, p)
+	end
+end
+
+local function land(origin, target, seq, group, skip)
 	local items = itemsOfDrop(origin, seq)
 	if #items == 0 then
 		return
@@ -432,20 +519,20 @@ local function land(origin, target, seq, group)
 		watchTile(dest)
 		local effect = constant(cfg.land[group])
 		if effect then
-			dest:sendMagicEffect(effect)
+			sendMagic(dest, effect, skip)
 		end
 	end
 end
 
-local function launch(origin, target, seq, group, flight)
+local function launch(origin, target, seq, group, flight, skip)
 	local from = Position(origin.x, origin.y, origin.z)
 	local to = Position(target.x, target.y, target.z)
 	local ani = constant(cfg.missiles[group])
 	if ani then
-		from:sendDistanceEffect(to, ani)
+		sendDistance(from, to, ani, skip)
 	end
 	addEvent(function()
-		local ok, err = pcall(land, origin, target, seq, group)
+		local ok, err = pcall(land, origin, target, seq, group, skip)
 		if not ok then
 			print("[Chaos loot explosion] landing: " .. tostring(err))
 		end
@@ -505,6 +592,7 @@ local function explode(monster, corpse)
 	end
 	local tiles = {}
 	local schedule = {}
+	local flights = {}
 	for _, d in ipairs(plan.drops) do
 		X.seq = X.seq + 1
 		local seq = X.seq
@@ -527,22 +615,50 @@ local function explode(monster, corpse)
 		local target = {x = origin.x + f.dx, y = origin.y + f.dy, z = origin.z}
 		tiles[#tiles + 1] = target
 		schedule[#schedule + 1] = {delay = d.delay, flight = d.flight, target = target, seq = seq, group = group}
+		-- what the client draws: the item (the highest coin of a gold drop), its count, the beam group of the best item of the drop
+		local lead, beam = byKey[d.keys[1]].item, nil
+		for _, k in ipairs(d.keys) do
+			local it = byKey[k].item
+			if d.gold and it:getId() > lead:getId() then
+				lead = it
+			end
+			beam = beam or X.beamGroup(cfg, byKey[k].drop)
+		end
+		local itype = ItemType(lead:getId())
+		flights[#flights + 1] = {id = itype and itype:getClientId() or lead:getId(), c = lead:getCount(), to = target, d = d.delay,
+			fl = d.flight, g = beam}
 	end
 	corpse:setCustomAttribute("chaos_exploded", 1)
 	if ChaosLootFilter and ChaosLootFilter.onExploded and killId then
 		pcall(ChaosLootFilter.onExploded, killId, {x = origin.x, y = origin.y, z = origin.z}, tiles)
 	end
+	local o = {x = origin.x, y = origin.y, z = origin.z}
+	-- the players whose client draws the burst get the one message and no stock effect; with none, the effects go to everyone as before
+	local skip = animViewers(o, ownerId)
+	if next(skip) == nil then
+		skip = nil
+	else
+		local payload = X.explodePayload(cfg, o, killId, flights)
+		for id in pairs(skip) do
+			local p = Player(id)
+			if payload and p then
+				local sent, serr = pcall(Chaos.send, p, (ChaosOpcodes and ChaosOpcodes.groundLoot) or 230, "explode", payload)
+				if not sent then
+					print("[Chaos loot explosion] explode message: " .. tostring(serr))
+				end
+			end
+		end
+	end
 	local burst = constant(cfg.burst)
 	if burst then
-		origin:sendMagicEffect(burst)
+		sendMagic(origin, burst, skip)
 	end
-	local o = {x = origin.x, y = origin.y, z = origin.z}
 	for _, s in ipairs(schedule) do
 		if s.delay <= 0 then
-			launch(o, s.target, s.seq, s.group, s.flight)
+			launch(o, s.target, s.seq, s.group, s.flight, skip)
 		else
 			addEvent(function()
-				local ok, err = pcall(launch, o, s.target, s.seq, s.group, s.flight)
+				local ok, err = pcall(launch, o, s.target, s.seq, s.group, s.flight, skip)
 				if not ok then
 					print("[Chaos loot explosion] launch: " .. tostring(err))
 				end
@@ -634,7 +750,7 @@ end
 -- and a Legendary sword), exploded at once by the real rule. testerProbe(player): what lies within 4 tiles of the player, read
 -- off the items (the owner, the ring, the tiles, the bag), and whether a stranger would be refused. The bot then asks Loot all
 -- (opcode 230) and probes again. Both are only reached by the helper, which answers for "Tester" characters only.
-local TEST_ITEMS = {{2148, 100}, {2148, 50}, {7618, 3}, {7620, 2}, {2376, 1, 3}, {2376, 1, 5}}
+local TEST_ITEMS = {{2148, 100}, {2148, 50}, {7618, 3}, {7620, 2}, {2376, 1, 5}, {2376, 1, 10}} -- a Legendary and a Divine sword (O677: the burst shows both)
 
 X.testerOrigins = X.testerOrigins or {}
 

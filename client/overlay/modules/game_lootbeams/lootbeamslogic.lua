@@ -2,7 +2,7 @@
 -- Which tier gets which beam colour, which items of a corpse or a tile may beam under the player's loot filter, the
 -- best one per tile, the cap (nearest and best first) and the engine calls that turn the drawn set into the wanted one.
 -- The filter rules are game_lootfilter's LootFilterLogic, handed in with LB.setFilterLogic.
--- info = {r = rarity 0..15, u = unique, o = orb, pw = legendary power, g = category, t = best modifier tier}
+-- info = {r = rarity 0..15, u = unique, st = set piece, o = orb, pw = legendary power, g = category, t = best modifier tier}
 
 LootBeamsLogic = {}
 local LB = LootBeamsLogic
@@ -12,24 +12,22 @@ function LB.setFilterLogic(logic)
   LF = logic
 end
 
--- The rarities are grouped into four beam colours, so a beam reads at a glance; uniques and orbs have their own. (Until
--- 2026-10-18 there were 15 rarities in six colours; red and violet went with Mythic .. Transcendent.)
--- height: share of the chosen beam height (low tiers stand shorter); order: which group wins on a tile.
+-- Only four things beam (owner 2026-11-19, O677: "deixe so de lendario, divino, set e unique"): Legendary (orange), Divine, a set
+-- piece and a unique. Common, Uncommon, Magic, Rare and orbs never beam, whatever the loot filter or an old setting says. (Until
+-- 2026-10-18 there were 15 rarities in six colours; until O677 white, blue and orb beams existed.)
+-- height: share of the chosen beam height; order: which group wins on a tile (a set piece over a divine one, a unique over both).
 LB.GROUPS = {
-  white  = { color = '#eef3f8', height = 0.75, order = 1 },
-  blue   = { color = '#3d8bff', height = 0.85, order = 2 },
-  orange = { color = '#ff8c1a', height = 1.00, order = 3 },
-  divine = { color = '#7fe3ff', height = 1.20, order = 4 },
-  unique = { color = '#2bff7a', height = 1.15, order = 5 },
-  orb    = { color = '#39e0c8', height = 0.80, order = 0 },
+  orange = { color = '#ff8c1a', height = 1.00, order = 1 },
+  divine = { color = '#7fe3ff', height = 1.20, order = 2 },
+  set    = { color = '#c8e04a', height = 1.15, order = 3 },
+  unique = { color = '#2bff7a', height = 1.15, order = 4 },
 }
-LB.GROUP_ORDER = { 'white', 'blue', 'orange', 'divine', 'unique', 'orb' }
+LB.GROUP_ORDER = { 'orange', 'divine', 'set', 'unique' }
 
--- rarity id 1..15 -> group (an id of today: 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; the others only
--- exist on items saved before the seven rarities and go with the rarity they became)
+-- rarity id 1..15 -> group (an id of today: 5 Legendary, 10 Divine; the others only exist on items saved before the seven
+-- rarities and go with the rarity they became). 1 .. 4 (Common .. Rare) have no beam.
 LB.TIER_GROUP = {
-  'white', 'white',                          -- Common, Uncommon
-  'blue', 'blue',                            -- Magic, Rare
+  false, false, false, false,                -- Common, Uncommon, Magic, Rare: no beam
   'orange', 'orange', 'orange', 'orange', 'orange', -- Legendary (5, and the old 6 .. 9)
   'divine', 'divine', 'divine', 'divine', 'divine', 'divine', -- Divine (10, and the old 11 .. 15)
 }
@@ -50,11 +48,14 @@ LB.MAX_BEAMS = 24 -- the engine caps at 64; a big pull of 10 corpses stays well 
 -- docs/CREDITS.md), one per group, added to the tile again every EFFECT_MS while the beam stands; the ids are the
 -- beam_* effects of server/data/lib/chaos_pack36_fx_ids.lua (lootbeams_test.lua checks them against that file).
 -- A pair without them: the engine pillar of base patch 0069 as before (height and intensity apply only to it).
+-- The table keeps its six rows (the Unity mirror reads all six, unity/Core.Tests Phase8CTests); white, blue and orb no longer have a group
+-- (O677) so their rows are not used. A set piece has no effect of its own in the pair: it uses the unique one (LB.EFFECT_ALIAS).
 LB.EFFECTS = {
   white = 4101, blue = 4098, orange = 4095, divine = 4097, unique = 4092, orb = 4090,
 }
 LB.EFFECT_NAMES = { white = 'beam_silver_metal', blue = 'beam_rare', orange = 'beam_orange_fire',
   divine = 'beam_rainbow_prismatic', unique = 'beam_green_nature', orb = 'beam_ancient' }
+LB.EFFECT_ALIAS = { set = 'unique' }
 LB.EFFECT_MS = 1750 -- one play: 25 frames of 70 ms (the strip's 24 and an empty one)
 
 -- Pair 65 (O522, owner 2026-11-12: "ours still looks like just a few strokes") draws the beams at full size: a frame
@@ -75,7 +76,7 @@ end
 
 -- the effect id of a group's beam, or nil
 function LB.effectFor(group)
-  local id = LB.EFFECTS[group]
+  local id = LB.EFFECTS[LB.EFFECT_ALIAS[group] or group]
   return id and id > 0 and id or nil
 end
 
@@ -158,10 +159,10 @@ end
 -- ---------------------------------------------------------------- settings (g_settings node "lootBeams")
 -- enabled  beams at all
 -- height   short | normal | tall      intensity  soft | normal | bright
--- orbs     orbs get a beam too        ground     items lying on the ground (not in a corpse) get one (Ground Labels)
+-- ground   items lying on the ground (not in a corpse) get one (Ground Labels). (The `orbs` setting went with O677: orbs never beam.)
 -- style    a | b | c   the look of the beam pictures (O569): a soft light pillar, b twisted twin strands, c rune column
 function LB.defaults()
-  return { enabled = true, height = 'normal', intensity = 'normal', orbs = false, ground = true, style = 'a' }
+  return { enabled = true, height = 'normal', intensity = 'normal', ground = true, style = 'a' }
 end
 
 function LB.normalize(t)
@@ -171,21 +172,21 @@ function LB.normalize(t)
     enabled = bool(t.enabled, d.enabled),
     height = LB.HEIGHTS[t.height] and t.height or d.height,
     intensity = LB.INTENSITIES[t.intensity] and t.intensity or d.intensity,
-    orbs = bool(t.orbs, d.orbs),
     ground = bool(t.ground, d.ground),
     style = LB.styleOf(t.style),
   }
 end
 
 -- ---------------------------------------------------------------- tiers and colours
--- the group of one item, or nil when it has no beam colour (no rarity, not unique, not an orb)
+-- the group of one item, or nil when it has no beam: only Legendary, Divine, a set piece and a unique beam. A set piece is a set
+-- piece whatever its rarity (and also when it is a unique: the set group wins, it is the more specific one).
 function LB.groupOf(info)
   if type(info) ~= 'table' then return nil end
+  if flag(info.st) then return 'set' end
   if flag(info.u) then return 'unique' end
   local r = tonumber(info.r) or 0
   if LB.TIER_GROUP[r] then return LB.TIER_GROUP[r] end
   if flag(info.pw) then return 'orange' end -- a legendary power on gear without a rarity
-  if flag(info.o) then return 'orb' end
   return nil
 end
 
@@ -194,24 +195,21 @@ function LB.tierColor(r)
   return g and LB.GROUPS[g].color or nil
 end
 
--- higher wins on a tile: uniques, then the rarity (a power counts as Legendary), orbs last
+-- higher wins on a tile: uniques, then set pieces, then the rarity (a power counts as Legendary)
 function LB.rank(info)
-  if flag(info.u) then return 100 end
+  if flag(info.u) and not flag(info.st) then return 100 end
+  if flag(info.st) then return 50 end
   local r = tonumber(info.r) or 0
   if r >= 1 then return r + (flag(info.pw) and 0.5 or 0) end
   if flag(info.pw) then return 5 end
-  if flag(info.o) then return 0.5 end
   return 0
 end
 
--- does this item give its tile a beam: the loot filter makes it glow (a legendary power always does); orbs only when
--- the player wants orb beams
+-- does this item give its tile a beam: it has a group (Legendary, Divine, set, unique) and the loot filter makes it glow; a
+-- legendary power and a set piece always glow. Orbs and Common .. Rare never beam, whatever the filter says.
 function LB.wants(info, filter, s)
   if type(info) ~= 'table' or not LB.groupOf(info) then return false end
-  if flag(info.o) and not flag(info.u) and (tonumber(info.r) or 0) < 1 then
-    return s.orbs and true or false
-  end
-  if flag(info.pw) then return true end
+  if flag(info.pw) or flag(info.st) then return true end
   return LF.classify(info, filter) == 'highlight'
 end
 

@@ -5,6 +5,12 @@
 --   X.active(cfg, corpseCfg)           true when the explosion may run (switch on, config valid)
 --   X.ownerSeconds(cfg, corpseCfg), X.decaySeconds(cfg, corpseCfg)   the two times, in seconds
 --   X.groupOf(cfg, drop)               "gold" | "plain" | "rare" | "epic" | "unique": the effect group of an item
+--   X.groupOfRank(cfg, rank, gold)     the same from a rank (a unique counts 100)
+--   X.beamGroup(cfg, drop)             "set" | "unique" | "divine" | "orange" | nil: the loot beam group the client draws a burst in (O677)
+--   X.flightMs(cfg, group, ring)       how long an item of that group flies to a tile of that ring
+--   X.explodePayload(cfg, origin, killId, flights)   the one opcode 230 `explode` message of a kill (O677)
+--   X.parseAnim(data)                  the client's `burst {on}` capability message -> true | false
+--   X.animViewers(cfg, cands, flagged, origin)       ids of the owner / party members who see the death tile and draw the burst
 --   X.isStrict(cfg, drop)              true: the owner rule holds for the item's whole life
 --   X.pickTiles(cfg, facts, n, rng)    the tile (index into facts) of each of n drops: cheapest first, spread before piled
 --   X.plan(cfg, items, facts, rng)     the whole kill: which items fly where and when, which stay in the bag
@@ -21,6 +27,9 @@ local X = ChaosLootExplosion
 X.ATTR = "chaos_loot"      -- the custom attribute of a loose item (X.encode)
 X.KILL_ATTR = "lf_loot"    -- the loot filter's kill id on an item that left the bag (lootfilter.lua)
 X.GOLD = {[2148] = true, [2152] = true, [2160] = true}
+X.MAX_FLIGHT_MS = 1500     -- the longest flight the animation message may carry (the client clamps to it too)
+X.MAX_DELAY_MS = 3000      -- the latest start of a flight in the message
+X.BEAM_GROUPS = {orange = true, divine = true, set = true, unique = true} -- the loot beam groups of the client (game_lootbeams)
 
 local floor, max, min = math.floor, math.max, math.min
 
@@ -64,11 +73,40 @@ function X.validate(cfg, corpseCfg)
 	range("lootAllMax", 1, 200, true)
 	range("rareRank", 1, 20, true)
 	range("epicRank", 1, 20, true)
+	range("divineRank", 1, 20, true)
+	range("viewX", 1, 15, true)
+	range("viewY", 1, 15, true)
+	if type(cfg.clientAnim) ~= "boolean" then
+		out[#out + 1] = "clientAnim must be true or false"
+	end
+	if type(cfg.flightMul) ~= "table" then
+		out[#out + 1] = "flightMul must be a table"
+	else
+		for _, g in ipairs({"gold", "plain", "rare", "epic", "unique"}) do
+			local m = cfg.flightMul[g]
+			if type(m) ~= "number" or m < 0.5 or m > 4 then
+				out[#out + 1] = "flightMul." .. g .. " must be a number 0.5-4"
+			end
+		end
+	end
 	if type(cfg.staggerMinMs) == "number" and type(cfg.staggerMaxMs) == "number" and cfg.staggerMaxMs < cfg.staggerMinMs then
 		out[#out + 1] = "staggerMaxMs must not be below staggerMinMs"
 	end
 	if type(cfg.rareRank) == "number" and type(cfg.epicRank) == "number" and cfg.epicRank < cfg.rareRank then
 		out[#out + 1] = "epicRank must not be below rareRank"
+	end
+	if type(cfg.divineRank) == "number" and type(cfg.epicRank) == "number" and cfg.divineRank < cfg.epicRank then
+		out[#out + 1] = "divineRank must not be below epicRank"
+	end
+	-- the longest flight (the biggest multiplier, ring 2) must stay inside what the payload and the client allow (X.MAX_FLIGHT_MS)
+	if type(cfg.flightBaseMs) == "number" and type(cfg.flightPerTileMs) == "number" and type(cfg.flightMul) == "table" then
+		local top = 0
+		for _, m in pairs(cfg.flightMul) do
+			top = max(top, tonumber(m) or 0)
+		end
+		if (cfg.flightBaseMs + cfg.flightPerTileMs * 2) * top > X.MAX_FLIGHT_MS then
+			out[#out + 1] = "the longest flight must stay under " .. X.MAX_FLIGHT_MS .. " ms"
+		end
 	end
 	if type(cfg.maxItems) == "number" and type(cfg.maxPerAreaSecond) == "number" and cfg.maxPerAreaSecond < cfg.maxItems then
 		out[#out + 1] = "maxPerAreaSecond must hold at least one kill (maxItems)"
@@ -132,6 +170,52 @@ function X.groupOf(cfg, drop)
 		return "rare"
 	end
 	return "plain"
+end
+
+-- the effect group of a rank (the plan knows only ranks: a unique counts 100)
+function X.groupOfRank(cfg, rank, gold)
+	if gold then
+		return "gold"
+	end
+	local r = num(rank, 0)
+	if r >= 100 then
+		return "unique"
+	end
+	if r >= cfg.epicRank then
+		return "epic"
+	end
+	if r >= cfg.rareRank then
+		return "rare"
+	end
+	return "plain"
+end
+
+-- the loot beam group of an item (client game_lootbeams): only Legendary, Divine, a set piece and a unique have one (O677); the
+-- burst draws its trail and landing ring in that colour. A set piece is "set" whatever its rarity. drop = {rank, unique, set, gold}
+function X.beamGroup(cfg, drop)
+	if drop.gold then
+		return nil
+	end
+	if drop.set then
+		return "set"
+	end
+	if drop.unique then
+		return "unique"
+	end
+	local r = num(drop.rank, 0)
+	if r >= (cfg.divineRank or 6) then
+		return "divine"
+	end
+	if r >= cfg.epicRank then
+		return "orange"
+	end
+	return nil
+end
+
+-- how long an item of the group flies to a tile of the ring (ring 0 and 1 count as 1): the base and the per tile time, times the group
+function X.flightMs(cfg, group, ring)
+	local mul = cfg.flightMul and cfg.flightMul[group] or 1
+	return floor((cfg.flightBaseMs + cfg.flightPerTileMs * max(1, ring or 1)) * mul + 0.5)
 end
 
 function X.isStrict(cfg, drop)
@@ -251,11 +335,94 @@ function X.plan(cfg, items, facts, rng)
 		d.tile = tiles[i]
 		d.ring = f.ring
 		d.delay = at
-		d.flight = cfg.flightBaseMs + cfg.flightPerTileMs * max(1, f.ring)
+		d.group = X.groupOfRank(cfg, d.rank, d.gold)
+		d.flight = X.flightMs(cfg, d.group, f.ring)
 		at = at + rng(cfg.staggerMinMs, cfg.staggerMaxMs)
 		plan.drops[#plan.drops + 1] = d
 	end
 	return plan
+end
+
+-- ---------------------------------------------------------------- the client animation (O677)
+-- One opcode 230 message, action "explode", before the first item flies, to the owner and the party members who see the death tile
+-- and told the server their client draws the burst (opcode 230 `burst {on = 1}`):
+--   {o = [x, y, z] the death tile, k = the loot filter's kill id, f = [{id = client id, c = count (1 if not stackable),
+--    to = [x, y, z] the landing tile, d = ms from now until it leaves, fl = ms of the flight, g = beam group "orange" | "divine" | "set" |
+--    "unique" (absent for a plain item)}, ...]}
+-- At most cfg.maxItems flights (14), each about 70 bytes: far under the 8192 byte limit of one extended opcode message, so no chunking.
+-- flights = [{id, c, to = {x, y, z}, d, fl, g}] in the order they leave.
+local function clampInt(v, lo, hi, d)
+	v = floor(num(v, d))
+	if v < lo then
+		return lo
+	end
+	if v > hi then
+		return hi
+	end
+	return v
+end
+
+local function pos3(p)
+	if type(p) ~= "table" then
+		return nil
+	end
+	local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
+	if not x or not y or not z or x ~= x or y ~= y or z ~= z then
+		return nil
+	end
+	return {floor(x), floor(y), floor(z)}
+end
+
+function X.explodePayload(cfg, origin, killId, flights)
+	local o = pos3(origin)
+	if not o or type(flights) ~= "table" then
+		return nil
+	end
+	local f = {}
+	for _, fl in ipairs(flights) do
+		if #f >= cfg.maxItems then
+			break
+		end
+		local to = pos3(fl.to)
+		local id = clampInt(fl.id, 0, 65535, 0)
+		if to and id >= 1 then
+			local e = {id = id, c = clampInt(fl.c, 1, 65535, 1), to = to, d = clampInt(fl.d, 0, X.MAX_DELAY_MS, 0),
+				fl = clampInt(fl.fl, 1, X.MAX_FLIGHT_MS, 1)}
+			if X.BEAM_GROUPS[fl.g] then
+				e.g = fl.g
+			end
+			f[#f + 1] = e
+		end
+	end
+	if #f == 0 then
+		return nil
+	end
+	local k = tonumber(killId)
+	return {o = o, k = k and floor(k) or nil, f = f}
+end
+
+-- the capability message of the client: {on = 1 | true | "1"} -> true, anything else -> false
+function X.parseAnim(data)
+	if type(data) ~= "table" then
+		return false
+	end
+	local v = data.on
+	return v == true or v == 1 or v == "1"
+end
+
+-- cands = [{id, x, y, z}] (the owner and the party members online), flagged = {[id] = true} (told us they draw the burst), origin = the
+-- death tile. Returns {[id] = true} of those on the death tile's floor within cfg.viewX / viewY squares (they see it)
+function X.animViewers(cfg, cands, flagged, origin)
+	local out = {}
+	if cfg.clientAnim ~= true or type(cands) ~= "table" or type(flagged) ~= "table" or type(origin) ~= "table" then
+		return out
+	end
+	for _, c in ipairs(cands) do
+		if flagged[c.id] and c.z == origin.z and math.abs(c.x - origin.x) <= (cfg.viewX or 9) and math.abs(c.y - origin.y) <= (cfg.viewY or 7) then
+			out[c.id] = true
+		end
+	end
+	return out
 end
 
 -- ---------------------------------------------------------------- the caps
