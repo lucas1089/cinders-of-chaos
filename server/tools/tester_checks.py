@@ -4324,6 +4324,168 @@ async def check_omen_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ the pinnacle bosses, fought (O678)
+# The four Ascended bosses (O667) opened at the Keeper of the Pinnacle: the bot gets a whole set of fragments from the TEST ONLY grant of the helper
+# (`!tester pinnacle set [boss]`: the top content that drops them is hours of play), walks to the Keeper, says hi and pinnacle and presses Open on the
+# boss, then fights it by the engine's path with its own rotation until the boss falls, the bot is carried out (a lethal hit is caught) or the clock
+# of the fight (20 minutes) ends. Unlike the other boss checks the fight is played to the end: the trace is the measurement (seconds from the boss's
+# arrival to its death, its health at each look, the falls).
+PINNACLE_BUDGET = 1500.0    # seconds the fight is played at most (the clock of the fight is 1,200 s after the boss comes)
+PINNACLE_OPEN_WAIT = 12.0   # seconds from Open to standing inside
+PINNACLE_SERIES_EVERY = 15  # seconds between two points of the boss health series kept in the trace
+
+
+def pinnacle_problems(s, trace):
+    """[text] for one inside-the-arena answer: a player in the testers' run. Keeps the boss's health series, the falls and the clock in the trace"""
+    out = []
+    run = s.get('run') or {}
+    if run.get('players') is not None and run.get('testers') is not None and run['players'] != run['testers']:
+        out.append('a player is in the pinnacle fight of the testers (%s of %s are testers)' % (run['testers'], run['players']))
+    if run.get('boss') == 'alive' and isinstance(run.get('bossHp'), int):
+        trace['boss_seen'] = True
+        trace['hp'] = run['bossHp'] if trace.get('hp') is None else min(trace['hp'], run['bossHp'])
+        since = run.get('sinceBoss')
+        if isinstance(since, int):
+            trace['since'] = since
+            series = trace.setdefault('series', [])
+            if not series or since - series[-1][0] >= PINNACLE_SERIES_EVERY:
+                series.append((since, run['bossHp'], run.get('bossHealth')))
+        if run.get('bossMax'):
+            trace['boss_max'] = run['bossMax']
+    if run.get('boss') == 'dead' or run.get('state') == 'success':
+        trace['killed'] = True
+        if isinstance(run.get('sinceBoss'), int):
+            trace['kill_secs'] = trace.get('kill_secs') or run['sinceBoss']
+    if isinstance(run.get('falls'), int):
+        trace['falls'] = run['falls']
+    if run.get('size') is not None:
+        trace['size'] = run['size']
+    if run.get('kind') is not None:
+        trace['boss'] = run['kind']
+    return out
+
+
+def pinnacle_walk_verdict(t):
+    """(status, text) from the trace of a fought pinnacle boss: faults, killed, kill_secs (seconds from the boss's arrival to its death), hp (its lowest
+    health percent), falls (players carried out), size, boss, series, fought, stuck, died, came, steps, secs, level, fallbacks. FAIL: a player in the run,
+    a boss fought 150 s in reach with none of its health taken. PASS: the boss fell, or was hurt"""
+    if t.get('faults'):
+        return FAIL, '; '.join(t['faults'][:3])
+    how = solo_text(t, 'pinnacle')
+    if t.get('killed'):
+        return PASS, '%s down in %s s, %d fall(s), %d player(s), level %s, %s' % (
+            t.get('boss') or 'the boss', t.get('kill_secs', '?'), int(t.get('falls') or 0), int(t.get('size') or 1), t.get('level'), how)
+    if t.get('boss_seen') and t.get('hp') is not None and t['hp'] < BOSS_STOP_HP:
+        return PASS, '%s hurt to %s%% in %s s, not down (%d fall(s), level %s, %s)' % (
+            t.get('boss') or 'the boss', t['hp'], t.get('since', '?'), int(t.get('falls') or 0), t.get('level'), how)
+    if t.get('fought', 0) >= SOLO_FIGHT_MIN:
+        return FAIL, 'fought %d s at the pinnacle boss and took none of its health (damage, targets or the boss)' % t['fought']
+    if t.get('stuck'):
+        return SKIP, 'the walk was blocked at (%d, %d) for %d s (%s)' % (t['stuck'][0], t['stuck'][1], SOLO_STUCK, how)
+    if t.get('died'):
+        return SKIP, 'the bot fell before the boss was hurt (level %s)' % t.get('level', '?')
+    if not t.get('boss_seen'):
+        return SKIP, 'the boss did not come in %d s (%s)' % (t.get('secs', 0), how)
+    return SKIP, 'the boss was not hurt in %d s (%s)' % (t.get('secs', 0), how)
+
+
+def pinnacle_refusal(a, level=0):
+    """(status, text) when this bot must not play the check, else None: from its `!tester pinnacle` answer"""
+    if not isinstance(a, dict):
+        return SKIP, 'no answer to !tester pinnacle (old helper file)'
+    if a.get('err'):
+        return SKIP, str(a['err'])[:80]
+    if a.get('enabled') is False:
+        return SKIP, 'the pinnacle bosses are closed'
+    have = int(a.get('level') or level or 0)
+    levels = [int(b.get('minLevel') or 0) for b in a.get('bosses') or []]
+    if not levels:
+        return SKIP, 'the server lists no pinnacle boss'
+    if have < min(levels):
+        return SKIP, 'level %d: the pinnacle bosses need level %d' % (have, min(levels))
+    if a.get('inside'):
+        return SKIP, 'the bot is inside a pinnacle fight already'
+    if a.get('free') is not None and a.get('reserve') is not None and int(a['free']) - 1 < int(a['reserve']):
+        return SKIP, 'the arenas are kept for the players (%s free, %s reserved)' % (a['free'], a['reserve'])
+    return None
+
+
+def pinnacle_choice(listing, index):
+    """the choice id of the Keeper's window for the boss at place `index` (1-4): the window's choices are the bosses in order (their ids are the places)"""
+    rows = (listing or {}).get('choices') or []
+    for cid, _ in rows:
+        if int(cid) == int(index):
+            return int(cid)
+    return int(rows[index - 1][0]) if 0 < index <= len(rows) else None
+
+
+async def check_pinnacle_walk(io, name, cls, level):
+    """walks to the Keeper of the Pinnacle with a whole set of fragments (TEST ONLY grant), opens the fight of the highest boss the level opens, fights it by the
+    engine's path until it falls or the bot is carried out, leaves. The seconds to the kill and the health series are the model's measurement"""
+    key = 'pinnacle_walk'
+    a = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+    refused = pinnacle_refusal(a, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    fallbacks = []
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'boss_seen': False, 'hp': None}
+    io.raid_mode([name], True)   # the pinnacle catches a lethal hit as the raid does (the player is carried out, no death): no flight to the temple at low health
+    try:
+        g = await io.helper('pinnacle set', 'pinnacle', HELPER_WAIT)
+        if not isinstance(g, dict):
+            return Result(key, name, cls, SKIP, 'no answer to !tester pinnacle set', fallbacks)
+        if g.get('err'):
+            return Result(key, name, cls, SKIP, 'pinnacle set: %s' % str(g['err'])[:80], fallbacks)
+        trace['boss'] = g.get('kind')
+        keys = [str(b.get('key')) for b in g.get('bosses') or []]
+        if g.get('kind') not in keys:
+            return Result(key, name, cls, SKIP, 'the helper named a boss the window does not list (%s)' % g.get('kind'), fallbacks)
+        index = keys.index(g['kind']) + 1
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='pinnacle')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'the Keeper'), fallbacks)
+        why, more = await chore_walk(io, name, PINNACLE_NPC, 1)
+        if why:
+            return Result(key, name, cls, SKIP, why, fallbacks)
+        fallbacks.extend(more)
+        await asc_greet(io, PINNACLE_NPC)
+        listing, heard = await io.say_modal('pinnacle', (PINNACLE_MODAL,), 5.0, NPC_CHANNEL)
+        await npc_talk_end(io)
+        if listing is None:
+            return Result(key, name, cls, SKIP, 'the Keeper opened no window (%s)' % (' | '.join(str(h)[:60] for h in heard[:3]) if heard else 'he said nothing'), fallbacks)
+        choice = pinnacle_choice(listing, index)
+        if choice is None:
+            return Result(key, name, cls, FAIL, "the Keeper's window has no choice for boss %d" % index, fallbacks)
+        opened = next((b for b, t in listing.get('buttons') or [] if 'open' in str(t).lower() or 'abrir' in str(t).lower()), listing.get('enter') or 1)
+        _, lines = await io.modal_answer(PINNACLE_MODAL, opened, choice, 2.0)
+        s, waited = None, 0.0
+        while waited <= PINNACLE_OPEN_WAIT and io.alive():
+            s = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+            if isinstance(s, dict) and s.get('inside'):
+                break
+            await io.sleep(1.0)
+            waited += 1.0
+        if not (isinstance(s, dict) and s.get('inside')):
+            return Result(key, name, cls, SKIP, 'the fight did not open in %d s (the Keeper said: %s)' % (
+                int(PINNACLE_OPEN_WAIT), ' | '.join(str(l)[:70] for l in lines[:3]) or 'nothing'), fallbacks)
+        await solo_play(io, r, trace, {
+            'system': 'pinnacle', 'budget': PINNACLE_BUDGET, 'problems': pinnacle_problems,
+            'done': lambda t: bool(t.get('killed')), 'made': lambda t: bool(t.get('boss_seen')),
+            'mark': lambda s: ((s.get('run') or {}).get('boss'), (s.get('run') or {}).get('falls'))})
+        await io.helper('pinnacle close', 'pinnacle', ANSWER)
+        again = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+        if isinstance(again, dict) and again.get('inside'):
+            trace['faults'].append('the bot is still inside the pinnacle fight after the close')
+        status, text = pinnacle_walk_verdict(trace)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        await io.helper('pinnacle close', 'pinnacle', ANSWER)
+        io.raid_mode([name], False)
+        await io.go('hunt')
+
+
 # ------------------------------------------------------------------------------------------------ the bounty board, hunted (O599)
 # The bot reads the board with `!tester bounty` (the hunt contracts of its band that a hunt mark lists: "where does monster X spawn" comes from the
 # marks of the map, bounty_core.lua B.spawnMarks), accepts the smallest through the window's own `accept`, walks to the hunt by the engine's
@@ -5645,6 +5807,245 @@ async def check_loot_stranger(io, name, cls, level):
         free = getattr(io, 'release_partner', None)   # the two names are free for the next party check
         if free is not None:
             free(name, other)
+
+
+# ------------------------------------------------------------------------------------------------ the loot burst on the wire (O678)
+# O677 gave the loot explosion a client animation: a client that says `burst {on = 1}` (opcode 230) gets ONE `explode` message per kill with every flight
+# (client id, count, landing tile, start delay, flight, beam group) and none of the stock effects; every other player who sees the tile keeps the stock
+# distance effects, the landing sparkles and the poff. The check proves it against the packets of a real server: two bots (the owner and a stranger that
+# stands beside it), the owner's `explode run` three times (capability on, capability off, and with a set piece lying among the loot / in the bag).
+BURST_BOX_X = 11          # the tap's box: a little over the view of the client (9 tiles each way, 7 up and down)
+BURST_BOX_Y = 9
+BURST_TOL = 0.10          # seconds: a landing or a launch within this of the message's own numbers (start delay + flight)
+BURST_MAX_ROWS = 14       # loot_explosion_config.lua maxItems
+BURST_POFF = 3            # CONST_ME_POFF (loot_explosion_config.lua burst = "ME_POFF")
+BURST_ANIS = (4, 5, 10)   # the stock loot missiles: CONST_ANI_FIRE, CONST_ANI_ENERGY, CONST_ANI_SMALLSTONE (loot_explosion_config.lua missiles); a bot's own arrows
+                          # and spell shots fly from the death tile too (the owner stands on it)
+
+
+def burst_rows(msg):
+    """the flight rows of an explode message payload, or []"""
+    rows = (msg or {}).get('f') if isinstance(msg, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict) and isinstance(r.get('to'), (list, tuple)) and len(r['to']) == 3]
+
+
+def burst_landings(rows, t0, events, origin):
+    """the rows of one explode message (read at the monotonic time t0) against the item packets the bot read: -> (matched, missing, ids, worst) with
+    matched = rows that have an item packet on their landing tile (or the death tile: a landing falls back to it) within BURST_TOL of
+    t0 + (start delay + flight) / 1000, missing = the client ids of the rows with none, ids = matched rows whose client id was in no packet of that
+    window, worst = the largest deviation in seconds of the nearest packet of a matched row"""
+    matched, missing, ids, worst = 0, [], 0, 0.0
+    for r in rows:
+        due = t0 + (int(r.get('d') or 0) + int(r.get('fl') or 0)) / 1000.0
+        tiles = {tuple(int(v) for v in r['to']), tuple(int(v) for v in origin)}
+        near = [e for e in events if e[1] == 'item' and tuple(e[2]) in tiles and abs(e[0] - due) <= BURST_TOL]
+        if not near:
+            missing.append(r.get('id'))
+            continue
+        matched += 1
+        worst = max(worst, min(abs(e[0] - due) for e in near))
+        if not any(e[3] == int(r.get('id') or 0) for e in near):
+            ids += 1
+    return matched, missing, ids, worst
+
+
+def burst_near(a, b, slack=1):
+    return max(abs(int(a[0]) - int(b[0])), abs(int(a[1]) - int(b[1]))) <= slack and int(a[2]) == int(b[2])
+
+
+def burst_flights(events, origin, t0=None):
+    """the stock distance effects of the death tile: the 0x85 packets of the loot missiles (BURST_ANIS) whose start lies within one tile of it (the engine's effect centring, src-patch 0060,
+    moves the start and the end of some missiles by a tile: the live run of O678 read the stone of a gold or plain item one tile off the death tile), and
+    with `t0` those from 0.1 s before to 1.8 s after it (the loot of the next kill of a hunting bot is not this burst's)"""
+    out = [e for e in events if e[1] == 'distance' and burst_near(e[2], origin) and e[3][1] in BURST_ANIS]
+    if t0 is not None:
+        out = [e for e in out if t0 - 0.1 <= e[0] <= t0 + 1.8]
+    return sorted(out, key=lambda e: e[0])
+
+
+def burst_launches(rows, t0, events, origin):
+    """the stock distance effects a bystander read against the rows: -> (count, matched, worst). count = the flights of the death tile (burst_flights);
+    a row is matched by the first unused flight within BURST_TOL of t0 + the row's start delay / 1000 that ends within one tile of the row's tile. A
+    place that other bots' bursts share (the helper puts every bot on the open ground nearest to the temple) has flights of its own, so only the
+    pairing with the rows tells this burst's flights apart"""
+    flights = burst_flights(events, origin, t0)
+    used, matched, worst = set(), 0, 0.0
+    for r in sorted(rows, key=lambda r: int(r.get('d') or 0)):
+        due = t0 + int(r.get('d') or 0) / 1000.0
+        for i, e in enumerate(flights):
+            if i not in used and abs(e[0] - due) <= BURST_TOL and burst_near(e[3][0], r['to']):
+                used.add(i)
+                matched += 1
+                worst = max(worst, abs(e[0] - due))
+                break
+    return len(flights), matched, worst
+
+
+def burst_set_rows(tiles_msgs):
+    """from the `tiles` answers of groundloot.lua: (ground item rows read, ground rows with st, corpse rows read, corpse rows listing a set piece)"""
+    items = st_items = corpses = st_corpses = 0
+    for data in tiles_msgs:
+        for tile in (data or {}).get('t') or []:
+            for row in tile.get('i') or []:
+                if not isinstance(row, dict):
+                    continue
+                if row.get('k'):
+                    corpses += 1
+                    st_corpses += 1 if any(isinstance(i, dict) and i.get('st') for i in row.get('i') or []) else 0
+                else:
+                    items += 1
+                    st_items += 1 if row.get('st') else 0
+    return items, st_items, corpses, st_corpses
+
+
+def loot_burst_verdict(t):
+    """(status, text) for the loot burst on a real server. t: origin (x, y, z), on = {msgs [(t0, payload)], a (events of the owner), b (events of the
+    stranger or None), b_msgs (explode messages of the stranger or None), ran}, off = {msgs, a, b}, ground = (items, with st, corpses, with st) or None,
+    corpse = the same for the bag or None. FAIL: not one message with the capability on, a stock effect for the owner while it is on, a message with
+    it off or without it, no stock effect then, rows that do not match the landings or the launches within 100 ms, a set piece with no `st`"""
+    on, off = t.get('on') or {}, t.get('off') or {}
+    origin = on.get('origin') or t.get('origin')
+    if not on.get('msgs') and on.get('ran') is False:
+        return SKIP, t.get('why') or 'the loot of the test bag did not fly (a cap, an instance, no free tile)'
+    if len(on.get('msgs') or []) != 1:
+        return FAIL, 'with burst on the owner read %d explode messages, one per kill is the rule' % len(on.get('msgs') or [])
+    t0, payload = on['msgs'][0]
+    rows = burst_rows(payload)
+    if not rows or len(rows) > BURST_MAX_ROWS:
+        return FAIL, 'the explode message has %d flight rows (1 to %d)' % (len(rows), BURST_MAX_ROWS)
+    if origin and list(payload.get('o') or []) != list(origin):
+        return FAIL, 'the explode message names the death tile %s, the owner stood on %s' % (payload.get('o'), list(origin))
+    far = [r for r in rows if max(abs(int(r['to'][0]) - origin[0]), abs(int(r['to'][1]) - origin[1])) > 2 or int(r['to'][2]) != origin[2]]
+    if far:
+        return FAIL, '%d flight(s) land more than 2 tiles from the death tile' % len(far)
+    n_a, hit_a, _ = burst_launches(rows, t0, on.get('a') or [], origin)
+    if hit_a * 2 >= len(rows):   # a neighbour's flight can pair with one row by chance; the stock effects of this burst would pair with most of them
+        return FAIL, 'the owner draws the burst itself and still read %d stock distance effects of its %d flights' % (hit_a, len(rows))
+    if any(e[1] == 'magic' and e[3] == BURST_POFF and tuple(e[2]) == tuple(origin) and abs(e[0] - t0) <= BURST_TOL for e in on.get('a') or []):
+        return FAIL, 'the owner draws the burst itself and still read the stock poff on the death tile'
+    matched, missing, ids, worst = burst_landings(rows, t0, on.get('a') or [], origin)
+    if missing:
+        return FAIL, '%d of %d flights have no item landing on their tile within %d ms of start + flight (ids %s)' % (
+            len(missing), len(rows), int(BURST_TOL * 1000), ','.join(str(m) for m in missing[:4]))
+    if ids:
+        return FAIL, '%d landings carry another client id than the explode row' % ids
+    parts = ['one explode message, %d rows, every landing within %d ms (worst %d)' % (len(rows), int(BURST_TOL * 1000), int(worst * 1000))]
+    if on.get('b') is not None:
+        if on.get('b_msgs'):
+            return FAIL, 'a stranger who never sent the capability read %d explode messages' % on['b_msgs']
+        n, hit, bw = burst_launches(rows, t0, on['b'], origin)
+        if hit != len(rows):
+            return FAIL, "only %d of %d stock launches fell within %d ms of the row's start delay" % (hit, len(rows), int(BURST_TOL * 1000))
+        if not any(e[1] == 'magic' and tuple(e[2]) == tuple(origin) and e[3] == BURST_POFF and abs(e[0] - t0) <= BURST_TOL for e in on['b']):
+            return FAIL, 'a stranger read no poff on the death tile'
+        parts.append('the stranger got %d stock flights for the %d rows (launch worst %d ms) and the poff, no message' % (n, len(rows), int(bw * 1000)))
+    if off:
+        if off.get('msgs'):
+            return FAIL, 'with burst off the owner read %d explode messages' % len(off['msgs'])
+        stock = burst_flights(off.get('a') or [], off.get('origin') or origin, off.get('t0'))
+        if len(stock) < len(rows):
+            return FAIL, 'with burst off the owner read %d stock distance effects for a burst of %d flights: the loot flew unseen' % (len(stock), len(rows))
+        parts.append('burst off: %d stock flights, no message' % len(stock))
+    for key, label in (('ground', 'ground'), ('corpse', 'corpse')):
+        got = t.get(key)
+        if got is None:
+            parts.append('no %s rows read' % label)
+            continue
+        seen, st = (got[0], got[1]) if key == 'ground' else (got[2], got[3])
+        if seen < 1:
+            parts.append('no %s row read' % label)
+        elif st < 1:
+            return FAIL, 'a set piece lay among the loot and no %s row carries st (%d rows read)' % (label, seen)
+        else:
+            parts.append('%s rows: set piece st = 1' % label)
+    return PASS, '; '.join(parts)
+
+
+async def burst_phase(io, name, other, on, origin):
+    """the capability set, the taps on, one `explode run` of the owner, the taps off: -> {msgs, a, b, b_msgs, ran, run}"""
+    await io.request('groundLoot', 'burst', {'on': 1 if on else 0}, (), ANSWER)
+    await io.sleep(0.6)
+    box = (origin[0] - BURST_BOX_X, origin[1] - BURST_BOX_Y, origin[0] + BURST_BOX_X, origin[1] + BURST_BOX_Y, origin[2])
+    io.tap_of(name, box)
+    if other:
+        io.tap_of(other, box)
+    since = time.monotonic()
+    run = await io.helper('explode run', 'explode', ANSWER)
+    await io.sleep(4.0)   # the last item leaves after 14 x 80 ms and flies at most 1.5 s
+    ran = isinstance(run, dict) and not run.get('err')
+    if ran and all(isinstance(run.get(k), int) for k in 'xyz'):
+        origin = (run['x'], run['y'], run['z'])   # the tile of the bag: another bot's `explode join` or a step may have moved the owner since the state was read
+    out = {'run': run, 'ran': ran, 'a': io.tap_of(name) or [], 't0': since, 'origin': tuple(origin)}
+    out['b'] = (io.tap_of(other) or []) if other else None
+    # a hunting bot kills on while the check runs: its next kill's message names another death tile, it is not this burst's
+    here = list(origin)
+    out['msgs'] = [(t, d) for t, d in io.msgs_of(name, 'groundLoot', 'explode', since) if isinstance(d, dict) and list(d.get('o') or []) == here]
+    out['b_msgs'] = len([1 for _, d in io.msgs_of(other, 'groundLoot', 'explode', since) if isinstance(d, dict) and list(d.get('o') or []) == here]) if other else None
+    return out
+
+
+async def burst_rows_read(io, name, origin, mode):
+    """`explode set` (the set piece among the flying loot) or `explode bag` (it stays in the bag), then a `look` at the tiles round the death tile:
+    -> burst_set_rows of the answers, or None when the helper refused"""
+    run = await io.helper('explode %s' % mode, 'explode', ANSWER)
+    if not isinstance(run, dict) or run.get('err'):
+        return None
+    if all(isinstance(run.get(k), int) for k in 'xyz'):
+        origin = (run['x'], run['y'], run['z'])   # the tile of the bag, wherever the owner was moved to since
+    await io.sleep(4.0)
+    since = time.monotonic()
+    ring = 0 if mode == 'bag' else 2
+    tiles = [[origin[0] + dx, origin[1] + dy, origin[2]] for dx in range(-ring, ring + 1) for dy in range(-ring, ring + 1)]
+    await io.request('groundLoot', 'look', {'t': tiles}, ('tiles',), ANSWER)
+    await io.sleep(1.5)
+    return burst_set_rows([d for _, d in io.msgs_of(name, 'groundLoot', 'tiles', since)])
+
+
+async def check_loot_burst(io, name, cls, level):
+    """the loot burst of O677 on the wire: the owner with `burst {on = 1}` reads one explode message whose rows are the landings and no stock effect, a
+    stranger beside it reads the stock flights and the poff and no message, the owner with `burst {on = 0}` reads the stock flights; a set piece among the
+    loot and in the bag reaches the ground and corpse rows with st (TEST ONLY loot of `!tester explode`)"""
+    key = 'loot_burst'
+    other = await io.partner()
+    names = [name] + ([other] if other else [])
+    io.raid_mode(names, True, keep_flee=True)   # both stand still: a bot that wanders off walks out of the tap's box
+    t = {}
+    try:
+        run = await explode_run(io)   # the owner on open ground outside the protection zone
+        if not isinstance(run, dict) or run.get('err'):
+            return Result(key, name, cls, SKIP, str((run or {}).get('err') or 'no answer to !tester explode')[:100])
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+        state = await io.helper('explode state', 'explode', ANSWER)
+        at = (state or {}).get('at') or {}
+        if not at:
+            return Result(key, name, cls, SKIP, 'no position in the answer of !tester explode state')
+        origin = (int(at['x']), int(at['y']), int(at['z']))
+        t['origin'] = origin
+        if other:
+            joined = await io.helper_of(other, 'explode join %s' % name, 'explode', ANSWER)
+            if not isinstance(joined, dict) or joined.get('err'):
+                other = None   # no stranger beside the loot: the owner's phases still run
+        await io.sleep(1.0)
+        t['on'] = await burst_phase(io, name, other, True, origin)
+        if not t['on']['ran']:
+            t['why'] = str((t['on'].get('run') or {}).get('err') or 'no answer')[:100]
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+        t['off'] = await burst_phase(io, name, other, False, origin)
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+        t['ground'] = await burst_rows_read(io, name, origin, 'set')
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+        t['corpse'] = await burst_rows_read(io, name, origin, 'bag')
+        status, text = loot_burst_verdict(t)
+        return Result(key, name, cls, status, text + ('' if other else '; no stranger beside: the stock flights of a bystander were not read'))
+    finally:
+        await io.request('groundLoot', 'burst', {'on': 0}, (), ANSWER)
+        await io.request('groundLoot', 'lootall', {}, ('lootall',), ANSWER)
+        for n in names:
+            io.tap_of(n)
+        io.raid_mode(names, False)
+        free = getattr(io, 'release_partner', None)
+        if free is not None and len(names) == 2:
+            free(names[0], names[1])
 
 
 def chests_verdict(week, cache):
@@ -8055,6 +8456,7 @@ CHECKS = [
     ('hideout', check_hideout, lambda c: True),   # O595: the own hideout: enter, place a decoration, remove it, leave
     ('ascended_walk', check_ascended_walk, lambda c: True),   # O599: the Ascended arena on foot, a sigil from the helper, the boss hurt
     ('omen_walk', check_omen_walk, lambda c: True),   # O599: the omen arena on foot, an Omen Key from the helper, the guardian hurt
+    ('pinnacle_walk', check_pinnacle_walk, lambda c: True),   # O678: a pinnacle boss opened at the Keeper (TEST ONLY set of fragments), fought to its end by the engine's path
     ('bounty_walk', check_bounty_walk, lambda c: True),   # O599: the smallest hunt contract with a known hunt: accept, walk, kill, the counter moves
     ('mainquest_walk', check_mainquest_walk, lambda c: True),   # O599: the first steps of the main quest: talk, walk, kill; O650: the later steps (bring, Go, daily, cast, hunt)
     ('bounty_elite_walk', check_bounty_elite_walk, lambda c: True),   # O650: an elite contract: a tier monster of the type falls, the counter moves
@@ -8074,6 +8476,7 @@ CHECKS = [
     ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
     ('loot_explosion', check_loot_explosion, lambda c: True),
     ('loot_stranger', check_loot_stranger, lambda c: True),   # O671: the loot of a kill dragged by a stranger (refused), the owner and a party member (taken): two bots   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
+    ('loot_burst', check_loot_burst, lambda c: True),   # O678: the loot burst on the wire: explode message vs landings, stock effects for a stranger and with burst off, st rows
     ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay
     ('chore_gamble', check_chore_gamble, lambda c: True),   # O653: the Gambler: the cheapest sealed piece, the item in the bag
@@ -8119,7 +8522,7 @@ KEYS = tuple(k for k, _, _ in CHECKS)
 FIGHT_KEYS = frozenset([
     'closed_dungeon', 'dungeon_difficulty', 'weekly_challenge', 'closed_siege', 'closed_guildboss', 'closed_raid',
     'closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match',
-    'rift_walk', 'tower_walk', 'descent_walk', 'trial_walk', 'ascended_walk', 'omen_walk', 'bounty_walk', 'bounty_elite_walk',
+    'rift_walk', 'tower_walk', 'descent_walk', 'trial_walk', 'ascended_walk', 'omen_walk', 'pinnacle_walk', 'bounty_walk', 'bounty_elite_walk',
     'bounty_boss_walk', 'mainquest_walk', 'nemesis_walk', 'pocket_walk', 'wsmap_walk', 'goblin_walk', 'vael_walk', 'boss_copy_walk',
     'kill_task_kills', 'ascension_walk',
 ])
@@ -8140,6 +8543,7 @@ LEVEL_GATES = {
     'pocket_walk': 150,          # pocketboss_config.lua raid minLevel (the lowest boss a pocket opens)
     'wsmap_walk': 1000,          # waystone_tiers_config.lua tester.minLevel
     'vael_walk': 500,            # the Oath Chamber (trials_config.lua mq minLevel)
+    'pinnacle_walk': 1800,       # pinnacle_config.lua bosses[1].minLevel (Ascended Malgrath)
     'ascension_walk': 100,       # Chaos.classes.ascension.minLevel
 }
 GEAR_SLOTS = {1: 'Helmet', 4: 'Armor', 7: 'Legs', 8: 'Boots'}   # CONST_SLOT_* of the basic pieces -> the Gambler's slot name

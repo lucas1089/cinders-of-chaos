@@ -723,7 +723,7 @@ local function deliver(run, player)
 	local r = K.reward(cfg, boss)
 	local inbox = false
 	if r.tokens > 0 and ChaosConquest and ChaosConquest.grant then
-		pcall(ChaosConquest.grant, player, "pinnacle:" .. boss.key, r.tokens)
+		pcall(ChaosConquest.grant, player, "pinnacle", r.tokens, boss.key)
 	end
 	inbox = giveStack(player, cfg.orbs.chaos, r.chaos) or inbox
 	inbox = giveStack(player, cfg.orbs.divine, r.divine) or inbox
@@ -1063,17 +1063,87 @@ end, close = function(id)
 	return false, "No pinnacle run " .. tostring(id) .. "."
 end})
 
--- what a person sees (the tester bots, `!tester`-style checks read it): the bosses with the fragments held and what blocks
+-- what a person sees (the tester bots, `!tester`-style checks read it): the bosses with the fragments held and what blocks. Inside a run (O678):
+-- the run (boss health percent, clock, falls, who is in it) and `guide` (U.guide: the same recipe as the Ascended arenas) for the walk to the boss
 function PN.probe(player)
-	local out = {level = player:getLevel(), focus = PN.focus(player), bosses = {}}
+	local cfg = C()
+	local out = {level = player:getLevel(), focus = PN.focus(player), bosses = {}, enabled = cfg.enabled, pz = inProtectionZone(player),
+		fight = inCombat(player) and true or false, pos = {x = player:getPosition().x, y = player:getPosition().y, z = player:getPosition().z}}
 	for _, b in ipairs(PN.index().list) do
 		local have = PN.have(player, b.index)
 		out.bosses[#out.bosses + 1] = {key = b.key, name = b.name, minLevel = b.minLevel, have = have, ready = K.setReady(have),
 			open = player:getLevel() >= b.minLevel, kills = sget(player, S().kills + b.index - 1)}
 	end
+	local running = 0
+	for _ in pairs(PN.runs) do
+		running = running + 1
+	end
+	out.free = (cfg.limits.maxRuns or 8) - running
+	out.reserve = (cfg.tester or {}).reserve or 2
 	local run = PN.runOf[player:getId()]
 	out.inside = run and run.boss.key or nil
+	if not run or run.ended then
+		return out
+	end
+	local boss = bossOf(run)
+	local members, testers = 0, 0
+	for pid in pairs(run.players) do
+		members = members + 1
+		local p = Player(pid)
+		if p and Chaos.isTester and Chaos.isTester(p) then
+			testers = testers + 1
+		end
+	end
+	local pos = out.pos
+	local bossPos = boss and {x = boss:getPosition().x, y = boss:getPosition().y, z = boss:getPosition().z} or nil
+	out.run = {id = run.id, slot = run.slot, kind = run.boss.key, boss = run.bossState, state = run.state, lives = nil, players = members,
+		testers = testers, size = run.size, falls = run.falls, left = timeLeft(run, mnow()), bossPos = bossPos,
+		bossHp = boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or nil,
+		bossHealth = boss and boss:getHealth() or nil, bossMax = boss and boss:getMaxHealth() or nil,
+		sinceBoss = run.bossAt and math.floor((mnow() - run.bossAt) / 1000) or nil,
+		gate = {x = run.L.portal and run.L.portal.x or 0, y = run.L.portal and run.L.portal.y or 0, z = run.L.portal and run.L.portal.z or 0}}
+	out.guide = U.guide({inside = true, state = run.state, boss = run.bossState, down = false, pos = pos, bossPos = bossPos,
+		reach = 5})
 	return out
+end
+
+-- TEST ONLY (`!tester pinnacle set [boss]`, O678): a whole set of fragments (one of each kind) of the boss for a TESTER: the top content that drops them
+-- (a waystone map of tier 12, a rift of tier 15, an Omen guardian) is hours of play a check cannot repeat. The boss is the named one, else the highest
+-- the level opens. Never for a player, never inside a run, one console line each. -> the boss key, or nil + why
+function PN.testerSet(player, want)
+	if not (Chaos.isTester and Chaos.isTester(player)) then
+		return nil, "not a tester"
+	end
+	if PN.runOf[player:getId()] then
+		return nil, "already inside a pinnacle fight"
+	end
+	local boss
+	if want and want ~= "" then
+		boss = PN.index().byKey[want]
+		if not boss then
+			return nil, "no pinnacle boss named " .. tostring(want)
+		end
+		if player:getLevel() < boss.minLevel then
+			return nil, string.format("level %d: %s opens from level %d", player:getLevel(), boss.name, boss.minLevel)
+		end
+	else
+		for _, b in ipairs(PN.index().list) do
+			if player:getLevel() >= b.minLevel and (not boss or b.minLevel > boss.minLevel) then
+				boss = b
+			end
+		end
+		if not boss then
+			return nil, string.format("level %d opens no pinnacle boss", player:getLevel())
+		end
+	end
+	local have = PN.have(player, boss.index)
+	for kind = 1, 4 do
+		if (have[kind] or 0) < 1 then
+			PN.grant(player, boss.index, kind, true)
+		end
+	end
+	log(string.format("TEST ONLY: a whole set of %s given to tester %s (level %d)", boss.key, player:getName(), player:getLevel()))
+	return boss.key
 end
 
 function PN.testerClose(player)

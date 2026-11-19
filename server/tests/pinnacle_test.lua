@@ -502,8 +502,16 @@ Chaos.giveItem = function(player, id, count)
 end
 Chaos.heal = function(c, amount) c.hp = math.min(c.maxHp, c.hp + amount) end
 local tokens = {}
-ChaosConquest = {grant = function(p, source, amount)
-	tokens[#tokens + 1] = {name = p:getName(), source = source, amount = amount}
+-- O678: the real source table of conquest.lua: a source it does not list pays nothing (the call named "pinnacle:<boss>" and no kill ever paid a token)
+local conquestCfg = dofile("data/scripts/chaos/conquest_config.lua")
+local refused = {}
+ChaosConquest = {grant = function(p, source, amount, detail)
+	if not conquestCfg.sources[source] then
+		refused[#refused + 1] = source
+		return 0
+	end
+	tokens[#tokens + 1] = {name = p:getName(), source = source, amount = amount, detail = detail}
+	return amount
 end}
 ChaosMakeUnique = function(item) item.unique = true end
 local titleSources = {}
@@ -741,7 +749,10 @@ registry.ChaosPinnacleDeath.onDeath(bossM)
 advance(0)
 eq(run.state, "success", "success")
 eq(#tokens, 1, "Conquest Tokens")
-eq(tokens[1].source, "pinnacle:malgrath", "the token source")
+eq(tokens[1].source, "pinnacle", "the token source is one the Conquest table lists")
+eq(tokens[1].detail, "malgrath", "the log row names the boss")
+eq(#refused, 0, "the Conquest table refused no source")
+ok(conquestCfg.sources.pinnacle.cap >= 5 * 14 and conquestCfg.sources.pinnacle.amount >= 14, "the daily cap pays five kills of the dearest boss")
 eq(tokens[1].amount, pcfg.bosses[1].tokens, "the token amount")
 eq(pb.items[pcfg.orbs.chaos], pcfg.bosses[1].orbs.chaos, "orbs of upheaval")
 eq(pb.items[pcfg.orbs.divine], pcfg.bosses[1].orbs.divine, "orbs of fate")
@@ -809,6 +820,26 @@ eq(bossM.maxHp, math.floor(K.bossHealth(pcfg.bosses[2], 3) * 0.8), "health for t
 eq(attached[#attached].opts.solo, false, "the mechanics know it is a party fight")
 local hit2 = hit(b2, bossM, -1000, 1, 0, 1, 0)
 eq(hit2, math.floor(-1000 * K.scale(pcfg.damage, 3)), "the damage curve for three")
+-- O678: the probe inside a fight: the run, the boss's health and the guide of the walk to it (the tester bots' `!tester pinnacle`)
+do
+	local inside = PN.probe(lead)
+	eq(inside.inside, "vhoss", "probe: the boss of the fight")
+	eq(inside.run.boss, "alive", "probe: the boss is up")
+	eq(inside.run.kind, "vhoss", "probe: the run's boss")
+	eq(inside.run.size, 3, "probe: the size of the party")
+	eq(inside.run.players, 3, "probe: the players in it")
+	eq(inside.run.bossHp, 100, "probe: the boss's health percent")
+	eq(inside.run.bossMax, bossM.maxHp, "probe: the boss's maximum health")
+	eq(inside.run.falls, 0, "probe: no fall yet")
+	ok(inside.run.left > 0 and inside.run.sinceBoss ~= nil, "probe: the clock and the seconds since the boss came")
+	eq(inside.guide.mode, "walk", "probe: far from the boss, the guide walks")
+	eq(inside.guide.goal.x, bossM.pos.x, "probe: to the boss")
+	ok(inside.free >= 0 and inside.reserve == pcfg.tester.reserve, "probe: the arenas free and kept for players")
+	lead.pos = pos(bossM.pos.x + 2, bossM.pos.y, bossM.pos.z)
+	eq(PN.probe(lead).guide.mode, "fight", "probe: in reach, the guide fights")
+	bossM.hp = bossM.maxHp * 25 / 100
+	eq(PN.probe(lead).run.bossHp, 25, "probe: the health follows the boss")
+end
 -- a lethal hit: caught, out, healed; the fight is no longer deathless
 b2.hp = 100
 local p1 = hit(b2, bossM, -50000, 1, 0, 1, 0)
@@ -829,7 +860,8 @@ ok(stor(lead, S.first + 1) > 0, "the first kill title still comes")
 eq(stor(lead, S.kills + 1), 1, "the kill counted for the right boss")
 ok(#tokens >= 1, "the survivors are rewarded")
 for _, t in ipairs(tokens) do
-	eq(t.source, "pinnacle:vhoss", "token source")
+	eq(t.source, "pinnacle", "token source")
+	eq(t.detail, "vhoss", "token detail")
 end
 advance(pcfg.exitDelay + 1)
 eq(PN.runs[run.slot], nil, "closed")
@@ -896,6 +928,41 @@ eq(#pr.bosses, 4, "four rows")
 eq(pr.bosses[1].key, "malgrath", "first row")
 ok(pr.bosses[1].open, "open at level 2500")
 eq(pr.bosses[1].kills, 2, "kills")
+
+-- O678: the TEST ONLY set of a tester (`!tester pinnacle set`): a whole set of the boss the level opens, never for a player, never inside a fight
+do
+	Chaos.isTester = function(p) return p.tester == true end
+	local tb = newPlayer(70, 2150)
+	tb.tester = true
+	local plain = newPlayer(71, 2150)
+	eq(select(2, PN.testerSet(plain)), "not a tester", "a player gets no set")
+	for kind = 1, 4 do
+		eq(fragOf(plain, 2, kind), 0, "nothing was written for the player")
+	end
+	local key = PN.testerSet(tb)
+	eq(key, "vhoss", "the highest boss the level opens (level 2150 opens Vhoss, 2000)")
+	for kind = 1, 4 do
+		eq(fragOf(tb, 2, kind), 1, "one fragment of kind " .. kind)
+	end
+	PN.testerSet(tb)
+	eq(fragOf(tb, 2, 1), 1, "asked again: a kind that is held is not given twice")
+	eq(PN.testerSet(tb, "malgrath"), "malgrath", "a named boss the level opens")
+	eq(fragOf(tb, 1, 4), 1, "its set")
+	local nk, why = PN.testerSet(tb, "talath")
+	ok(nk == nil and why:find("opens from level 2200", 1, true), "a boss above the level: the reason " .. tostring(why))
+	nk, why = PN.testerSet(tb, "nonsense")
+	ok(nk == nil and why:find("no pinnacle boss named nonsense", 1, true), "an unknown boss: the reason")
+	local low = newPlayer(72, 1500)
+	low.tester = true
+	nk, why = PN.testerSet(low)
+	ok(nk == nil and why:find("opens no pinnacle boss", 1, true), "a level that opens none: the reason " .. tostring(why))
+	ok(PN.probe(tb).bosses[2].ready, "the probe says the set is ready")
+	local okO, textO = PN.enter(tb, "vhoss")
+	eq(okO, true, "the set opens the fight through the Keeper's own call: " .. tostring(textO))
+	local n2, why2 = PN.testerSet(tb)
+	ok(n2 == nil and why2:find("already inside", 1, true), "never inside a fight")
+	ok(PN.testerClose(tb) == true and not PN.isInside(tb), "the bot's own way out")
+end
 
 -- every text the engine says has a pt-BR entry
 local src2 = readFile("data/scripts/chaos/pinnacle.lua")

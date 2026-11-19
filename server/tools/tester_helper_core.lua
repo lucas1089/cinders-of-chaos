@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -569,6 +569,36 @@ function H.ascendedAnswer(probe, extra)
 	return out
 end
 
+-- !tester pinnacle [state | set [boss] | path | close] (O678): the pinnacle bosses as a person sees them (ChaosPinnacle.probe)
+function H.parsePinnacle(arg)
+	return parseGrant(arg, "pinnacle", "set")
+end
+
+function H.pinnacleAnswer(probe, extra)
+	probe = type(probe) == "table" and probe or {}
+	local out = {inside = probe.inside, level = probe.level, pos = xyz(probe.pos), pz = probe.pz and true or false, fight = probe.fight and true or false,
+		free = probe.free, reserve = probe.reserve, enabled = probe.enabled ~= false, focus = probe.focus}
+	if type(probe.bosses) == "table" then
+		out.bosses = {}
+		for i = 1, math.min(#probe.bosses, 6) do
+			local b = probe.bosses[i]
+			out.bosses[#out.bosses + 1] = {key = tostring(b.key):sub(1, 20), minLevel = b.minLevel, ready = b.ready and true or false,
+				open = b.open and true or false, kills = b.kills, have = type(b.have) == "table" and {b.have[1], b.have[2], b.have[3], b.have[4]} or nil}
+		end
+	end
+	local r = probe.run
+	if type(r) == "table" then
+		out.run = {id = r.id, kind = r.kind, boss = r.boss, state = r.state, tester = true, players = r.players, testers = r.testers, size = r.size,
+			falls = r.falls, left = r.left, bossPos = xyz(r.bossPos), bossHp = r.bossHp, bossHealth = r.bossHealth, bossMax = r.bossMax,
+			sinceBoss = r.sinceBoss, gate = xyz(r.gate)}
+	end
+	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
 -- the omen answer is the rift's (the arena is a rift slot) with the omen kind of the run
 function H.omenAnswer(probe, extra)
 	local out = H.riftAnswer(probe, extra)
@@ -728,9 +758,9 @@ function H.parseExplode(arg)
 	if who and who ~= "" then
 		return "join", who
 	end
-	local what = parseWords(arg, "explode", {"state", "run"})
+	local what = parseWords(arg, "explode", {"state", "run", "set", "bag"})
 	if not what then
-		return nil, "usage: explode [state | run | join NAME]"
+		return nil, "usage: explode [state | run | set | bag | join NAME]"
 	end
 	return what
 end

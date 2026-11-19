@@ -7,6 +7,7 @@ import copy
 import os
 import re
 import sys
+import time
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -8779,6 +8780,7 @@ class Pure658(unittest.TestCase):
             'dungeon_difficulty': first('bossspawns_config.lua', r'\[1\] = \{name = "[^"]+", level = (\d+)'),
             'weekly_challenge': first('weekly_challenge_config.lua', r'Hollow Vault \(level (\d+)\)'),
             'ascension_walk': first('chaos_constants.lua', r'ascension = \{\s*minLevel = (\d+)'),
+            'pinnacle_walk': first('pinnacle_config.lua', r'key = "malgrath".*?minLevel = (\d+)'),
         }
         for key, level in want.items():
             self.assertEqual(TX.LEVEL_GATES[key], level, '%s: the config says level %d' % (key, level))
@@ -11069,6 +11071,402 @@ class GreaterRiftClosed(unittest.TestCase):
         st, _ = TX.greater_boards_verdict(self.META['data'], {'greater_solo': {'rows': ['x', None]}, 'greater_party': {'rows': []}},
                                           'Tester Aaa')
         self.assertEqual(st, TX.PASS)
+
+
+BURST_ORIGIN = (800, 800, 7)
+BURST_ROWS = [{'id': 3043, 'c': 100, 'to': [801, 800, 7], 'd': 0, 'fl': 300, 'g': None},
+              {'id': 2666, 'c': 3, 'to': [799, 801, 7], 'd': 60, 'fl': 360},
+              {'id': 3031, 'c': 1, 'to': [802, 802, 7], 'd': 130, 'fl': 520, 'g': 'divine'}]
+
+
+def burst_events(t0, stock, dev=0.0, land=True):
+    """the packets a bot reads for one burst at the monotonic time t0: the landings (0x6A) and, for a bot that draws no animation, the stock flights"""
+    out = []
+    for r in BURST_ROWS:
+        to = tuple(r['to'])
+        if stock:
+            out.append((t0 + r['d'] / 1000.0 + dev, 'distance', BURST_ORIGIN, (to, 5)))
+        if land:
+            out.append((t0 + (r['d'] + r['fl']) / 1000.0 + dev, 'item', to, r['id']))
+    if stock:
+        out.append((t0, 'magic', BURST_ORIGIN, TX.BURST_POFF))
+    return out
+
+
+class LootBurst(unittest.TestCase):
+    """O678: the loot burst of O677 on the wire: one explode message with the capability, the stock flights without it, landings and launches within 100 ms"""
+
+    def trace(self, **kw):
+        t0 = 100.0
+        t = {'origin': BURST_ORIGIN,
+             'on': {'ran': True, 'msgs': [(t0, {'o': list(BURST_ORIGIN), 'k': 5, 'f': [dict(r) for r in BURST_ROWS]})], 'a': burst_events(t0, False),
+                    'b': burst_events(t0, True), 'b_msgs': 0},
+             'off': {'ran': True, 'msgs': [], 'a': burst_events(200.0, True), 'b': None},
+             'ground': (6, 1, 0, 0), 'corpse': (0, 0, 1, 1)}
+        t.update(kw)
+        return t
+
+    def test_the_whole_burst_passes(self):
+        st, text = TX.loot_burst_verdict(self.trace())
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('one explode message, 3 rows', text)
+        self.assertIn('the stranger got 3 stock flights', text)
+        self.assertIn('burst off: 3 stock flights', text)
+        self.assertIn('ground rows: set piece st = 1', text)
+        self.assertIn('corpse rows: set piece st = 1', text)
+
+    def test_what_is_a_bug(self):
+        def verdict(**kw):
+            return TX.loot_burst_verdict(self.trace(**kw))
+        t = self.trace()
+        t['on']['msgs'] = []
+        self.assertEqual(verdict(on=t['on'])[0], TX.FAIL, 'the capability is on and no message came')
+        t = self.trace()
+        t['on']['msgs'] = t['on']['msgs'] * 2
+        self.assertEqual(verdict(on=t['on'])[0], TX.FAIL, 'two messages for one kill')
+        t = self.trace()
+        t['on']['a'] = t['on']['a'] + burst_events(100.0, True)
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'stock distance effects' in text), (TX.FAIL, True), 'the owner that draws the burst must not read the stock flights')
+        t = self.trace()
+        t['on']['a'] = burst_events(100.0, False, dev=0.25)
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'no item landing on their tile' in text), (TX.FAIL, True), 'a landing 250 ms off the row is a bug')
+        t = self.trace()
+        t['on']['a'] = burst_events(100.0, False, land=False)
+        self.assertEqual(verdict(on=t['on'])[0], TX.FAIL, 'a row that never lands')
+        t = self.trace()
+        t['on']['a'] = [(e[0], e[1], e[2], 9999) if e[1] == 'item' else e for e in t['on']['a']]
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'another client id' in text), (TX.FAIL, True), 'a landing of another item')
+        t = self.trace()
+        t['on']['b_msgs'] = 1
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'never sent the capability' in text), (TX.FAIL, True))
+        t = self.trace()
+        t['on']['b'] = [e for e in t['on']['b'] if e[1] != 'distance']
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'stock launches' in text), (TX.FAIL, True), 'a stranger with no stock flights')
+        t = self.trace()
+        t['on']['b'] = burst_events(100.3, True)
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'stock launches' in text), (TX.FAIL, True), 'a launch 300 ms late')
+        t = self.trace()
+        t['on']['b'] = [e for e in t['on']['b'] if e[1] != 'magic']
+        st, text = verdict(on=t['on'])
+        self.assertEqual((st, 'poff' in text), (TX.FAIL, True))
+        t = self.trace()
+        t['off']['msgs'] = [(200.0, {'f': []})]
+        self.assertEqual(verdict(off=t['off'])[0], TX.FAIL, 'a message with the capability off')
+        t = self.trace()
+        t['off']['a'] = []
+        st, text = verdict(off=t['off'])
+        self.assertEqual((st, 'flew unseen' in text), (TX.FAIL, True))
+        self.assertEqual(verdict(ground=(6, 0, 0, 0))[0], TX.FAIL, 'a set piece among the loot and no st on the ground rows')
+        self.assertEqual(verdict(corpse=(0, 0, 1, 0))[0], TX.FAIL, 'a set piece in the bag and no st on the corpse row')
+        far = self.trace()
+        far['on']['msgs'][0][1]['f'][0]['to'] = [803, 800, 7]
+        self.assertEqual(verdict(on=far['on'])[0], TX.FAIL, 'a landing three tiles from the death tile')
+        other = self.trace()
+        other['on']['msgs'][0][1]['o'] = [1, 2, 3]
+        self.assertEqual(verdict(on=other['on'])[0], TX.FAIL, "a death tile that is not the bot's")
+        many = self.trace()
+        many['on']['msgs'][0][1]['f'] = [dict(BURST_ROWS[0]) for _ in range(15)]
+        self.assertEqual(verdict(on=many['on'])[0], TX.FAIL, 'more flights than the cap of 14')
+
+    def test_a_landing_on_the_death_tile_is_the_fallback_of_the_rule(self):
+        t = self.trace()
+        t['on']['a'] = [(e[0], e[1], BURST_ORIGIN, e[3]) if e[1] == 'item' else e for e in t['on']['a']]
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.PASS, 'a tile that was not free at the landing: the item falls back to the death tile')
+
+    def test_skips(self):
+        t = self.trace()
+        t['on'] = {'ran': False, 'msgs': []}
+        t['why'] = 'not exploded (a cap)'
+        self.assertEqual(TX.loot_burst_verdict(t), (TX.SKIP, 'not exploded (a cap)'))
+        st, text = TX.loot_burst_verdict(self.trace(ground=None, corpse=None))
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('no ground rows read', text)
+        t = self.trace()
+        t['on']['b'], t['on']['b_msgs'] = None, None
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.PASS, 'no stranger: the owner side alone')
+
+    def test_the_helpers(self):
+        self.assertEqual(len(TX.burst_rows({'f': [{'to': [1, 2, 3]}, {'to': [1, 2]}, 'x', {'id': 1}]})), 1)
+        self.assertEqual(TX.burst_rows(None), [])
+        data = [{'t': [{'p': [1, 1, 7], 'i': [{'s': 1, 'id': 1, 'st': 1}, {'s': 2, 'id': 2}, {'s': 3, 'id': 3, 'k': 1, 'i': [{'c': 1}, {'c': 1, 'st': 1}]},
+                                              {'s': 4, 'id': 4, 'k': 1, 'i': [{'c': 1}]}]}]}]
+        self.assertEqual(TX.burst_set_rows(data), (2, 1, 2, 1))
+        self.assertEqual(TX.burst_set_rows([None, {}]), (0, 0, 0, 0))
+        n, hit, worst = TX.burst_launches(BURST_ROWS, 10.0, burst_events(10.0, True, dev=0.04), BURST_ORIGIN)
+        self.assertEqual((n, hit), (3, 3))
+        self.assertLess(abs(worst - 0.04), 1e-9)
+        m, missing, ids, worst = TX.burst_landings(BURST_ROWS, 10.0, burst_events(10.0, False, dev=-0.05), BURST_ORIGIN)
+        self.assertEqual((m, missing, ids), (3, [], 0))
+
+    def test_a_neighbours_flight_that_pairs_with_one_row_is_no_stock_effect_of_the_owner(self):
+        t = self.trace()
+        t['on']['a'] = t['on']['a'] + [(100.0, 'distance', BURST_ORIGIN, ((801, 800, 7), 10))]
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.PASS, 'one of three rows paired by chance')
+        t['on']['a'] = t['on']['a'] + [(100.062, 'distance', BURST_ORIGIN, ((799, 801, 7), 10))]
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.FAIL, 'two of three rows: the owner was sent the stock flights')
+
+    def test_the_death_tile_is_the_tile_of_the_run(self):
+        t = self.trace()
+        t['origin'] = (1, 1, 7)
+        t['on']['origin'] = BURST_ORIGIN
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.PASS, 'the owner was moved after the state was read: the run names the tile')
+
+    def test_a_bots_own_missiles_are_no_loot_flights(self):
+        own = burst_events(100.0, False) + [(100.4, 'distance', BURST_ORIGIN, ((801, 801, 7), 49)), (100.9, 'distance', BURST_ORIGIN, ((798, 800, 7), 139))]
+        self.assertEqual(TX.burst_flights(own, BURST_ORIGIN, 100.0), [], 'an arrow or a spell shot of the owner (it stands on the death tile)')
+        t = self.trace()
+        t['on']['a'] = own
+        self.assertEqual(TX.loot_burst_verdict(t)[0], TX.PASS)
+
+    def test_the_engine_centring_moves_a_flight_by_a_tile(self):
+        # the live run of O678: src-patch 0060 moves the start and the end of a stone by one tile, the loot burst's rows name the real tiles
+        moved = [(e[0], e[1], (e[2][0] + 1, e[2][1] + 1, e[2][2]), ((e[3][0][0] + 1, e[3][0][1] + 1, e[3][0][2]), e[3][1])) if e[1] == 'distance' else e
+                 for e in burst_events(10.0, True)]
+        n, hit, worst = TX.burst_launches(BURST_ROWS, 10.0, moved, BURST_ORIGIN)
+        self.assertEqual((n, hit), (3, 3), 'one tile off is the same flight')
+        far = [(e[0], e[1], (e[2][0] + 3, e[2][1], e[2][2]), e[3]) if e[1] == 'distance' else e for e in burst_events(10.0, True)]
+        self.assertEqual(TX.burst_launches(BURST_ROWS, 10.0, far, BURST_ORIGIN)[0], 0, 'a flight that starts three tiles away is another kill\'s')
+        late = [e for e in burst_events(10.0, True)] + [(14.0, 'distance', BURST_ORIGIN, ((801, 800, 7), 5))]
+        self.assertEqual(TX.burst_launches(BURST_ROWS, 10.0, late, BURST_ORIGIN)[0], 3, 'a flight seconds later is the next kill\'s')
+        t = self.trace()
+        t['on']['a'] = t['on']['a'] + [(100.0, 'magic', BURST_ORIGIN, TX.BURST_POFF)]
+        st, text = TX.loot_burst_verdict(t)
+        self.assertEqual((st, 'stock poff' in text), (TX.FAIL, True), 'the owner that draws the burst must not read the poff either')
+
+    class IO(FakeIO):
+        """the owner and a stranger on a mocked wire: the taps return the packets the server would have sent for the capability the owner set last"""
+
+        def __init__(self, stranger=True, refuse_set=False, **kw):
+            FakeIO.__init__(self, **kw)
+            self.on, self.t0, self.cmds, self.taps = False, 0.0, [], {}
+            self.stranger, self.refuse_set, self.runs, self.mode = stranger, refuse_set, 0, None
+            self.stays, self.freed = [], []
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append(command)
+            if command == 'explode state':
+                return {'at': {'x': 800, 'y': 800, 'z': 7}, 'mine': 3, 'loose': 3}
+            if command in self.answers:
+                return await FakeIO.helper(self, command, kind, wait)
+            if command == 'explode run':
+                self.runs += 1
+                self.t0 = time.monotonic()
+                self.mode = 'run'
+                return {'items': 6, 'expected': 6, 'x': 800, 'y': 800, 'z': 7}
+            if command in ('explode set', 'explode bag'):
+                self.mode = command.split()[1]
+                return None if self.refuse_set else {'items': 7, 'x': 800, 'y': 800, 'z': 7}
+            return await FakeIO.helper(self, command, kind, wait)
+
+        async def helper_of(self, name, command, kind, wait=4.0):
+            self.cmds.append(name + ':' + command)
+            return {'x': 801, 'y': 799, 'z': 7} if self.stranger else {'err': 'no free tile beside'}
+
+        async def request(self, opname, action, data, expect, timeout):
+            self.asked.append((opname, action, data))
+            if (opname, action) == ('groundLoot', 'burst'):
+                self.on = bool(data.get('on'))
+            return self.replies.get((opname, action))
+
+        def tap_of(self, name, box=None):
+            if box is not None:
+                self.taps[name] = box
+                return []
+            if not self.taps.pop(name, None) or self.mode != 'run':
+                return None if name not in self.taps and self.mode != 'run' else []
+            return burst_events(self.t0, (not self.on) or name != 'Tester Own')
+
+        def msgs_of(self, name, op_name, action, since):
+            if op_name == 'groundLoot' and action == 'explode':
+                if name == 'Tester Own' and self.on and self.mode == 'run':
+                    return [(self.t0, {'o': [800, 800, 7], 'k': 1, 'f': [dict(r) for r in BURST_ROWS]}),
+                            (self.t0 + 1.0, {'o': [790, 795, 7], 'k': 2, 'f': [dict(BURST_ROWS[0])]})]   # the next kill of a hunting bot
+                return []
+            if op_name == 'groundLoot' and action == 'tiles':
+                row = ({'s': 3, 'id': 2854, 'k': 1, 'n': 2, 'i': [{'c': 1, 'st': 1}]} if self.mode == 'bag' else {'s': 1, 'id': 2376, 'c': 1, 'st': 1})
+                return [(0, {'t': [{'p': [800, 800, 7], 'i': [row]}]})]
+            return []
+
+        def raid_mode(self, names, on, keep_flee=False):
+            self.stays.append((tuple(names), on))
+
+        def release_partner(self, name, other):
+            self.freed.append((name, other))
+
+    def go(self, io):
+        return run(TX.check_loot_burst(io, 'Tester Own', 'Ninja', 300))
+
+    def test_the_check_on_a_mocked_wire(self):
+        io = self.IO(replies={('groundLoot', 'lootall'): {'action': 'lootall', 'data': {'n': 5, 'f': 0, 's': 5}}})
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        bursts = [a[2]['on'] for a in io.asked if a[:2] == ('groundLoot', 'burst')]
+        self.assertEqual(bursts, [1, 0, 0], 'on for the first run, off for the second, off again at the end')
+        self.assertIn('Tester Bbb:explode join Tester Own', io.cmds, 'the stranger stands beside the owner')
+        self.assertEqual(io.cmds.count('explode run'), 3, 'the first run puts the owner on open ground, then one run with the capability and one without')
+        self.assertIn('explode set', io.cmds)
+        self.assertIn('explode bag', io.cmds)
+        looks = [a for a in io.asked if a[:2] == ('groundLoot', 'look')]
+        self.assertEqual(len(looks), 2, 'the ground rows and the corpse row are asked')
+        self.assertEqual(len(looks[0][2]['t']), 25, 'the 5 x 5 tiles round the death tile')
+        self.assertEqual(looks[1][2]['t'], [[800, 800, 7]], 'the bag lies on the death tile')
+        self.assertEqual(io.freed, [('Tester Own', 'Tester Bbb')])
+        self.assertEqual(io.stays[-1], (('Tester Own', 'Tester Bbb'), False))
+
+    def test_no_stranger_is_a_note(self):
+        r = self.go(self.IO(stranger=False))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('no stranger beside', r.detail)
+
+    def test_the_helper_refuses_the_set_loot(self):
+        r = self.go(self.IO(refuse_set=True))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('no ground rows read', r.detail)
+
+    def test_skips_say_why(self):
+        io = self.IO(answers={'explode run': None})
+        self.assertEqual(self.go(io).status, TX.SKIP, 'no helper answer')
+        io = self.IO()
+        io.answers['explode run'] = {'err': 'the loot explosion is off'}
+        self.assertEqual(self.go(io).status, TX.SKIP)
+
+    def test_it_is_a_check_of_the_list(self):
+        self.assertIn('loot_burst', TX.KEYS)
+        self.assertNotIn('loot_burst', TX.CLOSED_KEYS)
+        self.assertEqual((TX.BURST_POFF, TX.BURST_MAX_ROWS), (3, 14), 'the numbers of loot_explosion_config.lua')
+        self.assertEqual(TX.BURST_ANIS, (4, 5, 10), 'fire, energy and the small stone of the loot missiles')
+        with open(os.path.join(HERE, '..', 'data', 'scripts', 'chaos', 'loot_explosion_config.lua')) as f:
+            src = f.read()
+        self.assertIn('maxItems = %d' % TX.BURST_MAX_ROWS, src)
+        self.assertIn('burst = "ME_POFF"', src)
+
+
+class PinnacleWalk(unittest.TestCase):
+    """O678: a pinnacle boss opened at the Keeper (a TEST ONLY set of fragments) and fought to its end by a bot"""
+
+    BOSSES = [{'key': 'malgrath', 'minLevel': 1800}, {'key': 'vhoss', 'minLevel': 2000}, {'key': 'talath', 'minLevel': 2200}, {'key': 'varkhul', 'minLevel': 2400}]
+
+    def test_the_verdicts(self):
+        base = {'level': 2000, 'came': 'foot', 'steps': 12, 'secs': 400, 'boss_seen': True, 'hp': 40, 'since': 380, 'boss': 'vhoss', 'falls': 0, 'size': 1}
+        self.assertEqual(TX.pinnacle_walk_verdict(dict(base, faults=['x']))[0], TX.FAIL)
+        st, text = TX.pinnacle_walk_verdict(dict(base, killed=True, kill_secs=433))
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('down in 433 s', text)
+        st, text = TX.pinnacle_walk_verdict(base)
+        self.assertEqual((st, 'hurt to 40% in 380 s, not down' in text), (TX.PASS, True))
+        self.assertEqual(TX.pinnacle_walk_verdict(dict(base, hp=100, fought=TX.SOLO_FIGHT_MIN))[0], TX.FAIL)
+        self.assertEqual(TX.pinnacle_walk_verdict(dict(base, hp=100, stuck=(1, 2)))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_walk_verdict(dict(base, hp=100, died=True))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_walk_verdict(dict(base, hp=100))[0], TX.SKIP)
+        self.assertIn('did not come', TX.pinnacle_walk_verdict(dict(base, hp=None, boss_seen=False))[1])
+        self.assertIn('enter temple (no path)', TX.pinnacle_walk_verdict(dict(base, killed=True, fallbacks=['enter temple (no path)']))[1])
+
+    def test_the_problems_keep_the_measurement(self):
+        t = {}
+        self.assertEqual(TX.pinnacle_problems({'run': {'players': 2, 'testers': 1}}, t)[0][:18], 'a player is in the')
+        t = {}
+        run_ = {'players': 1, 'testers': 1, 'boss': 'alive', 'bossHp': 90, 'sinceBoss': 20, 'bossHealth': 3000000, 'bossMax': 3300000, 'falls': 0, 'size': 1,
+                'kind': 'malgrath'}
+        self.assertEqual(TX.pinnacle_problems({'run': run_}, t), [])
+        TX.pinnacle_problems({'run': dict(run_, bossHp=85, sinceBoss=25)}, t)
+        TX.pinnacle_problems({'run': dict(run_, bossHp=70, sinceBoss=40)}, t)
+        self.assertEqual((t['boss_seen'], t['hp'], t['boss'], t['boss_max']), (True, 70, 'malgrath', 3300000))
+        self.assertEqual([s[0] for s in t['series']], [20, 40], 'one point every 15 seconds')
+        TX.pinnacle_problems({'run': dict(run_, boss='dead', state='success', bossHp=None, sinceBoss=300, falls=1)}, t)
+        self.assertEqual((t['killed'], t['kill_secs'], t['falls']), (True, 300, 1))
+
+    def test_the_refusals(self):
+        ok_ = {'level': 2000, 'bosses': self.BOSSES, 'free': 8, 'reserve': 2}
+        self.assertIsNone(TX.pinnacle_refusal(ok_))
+        self.assertEqual(TX.pinnacle_refusal(None)[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal({'err': 'no pinnacle system'})[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal(dict(ok_, enabled=False))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal(dict(ok_, level=1500))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal(dict(ok_, bosses=[]))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal(dict(ok_, inside='malgrath'))[0], TX.SKIP)
+        self.assertEqual(TX.pinnacle_refusal(dict(ok_, free=2))[0], TX.SKIP)
+
+    def test_the_choice_is_the_place_of_the_boss(self):
+        listing = {'choices': [(1, 'Malgrath'), (2, 'Vhoss'), (3, 'Talath'), (4, 'Varkhul')]}
+        self.assertEqual([TX.pinnacle_choice(listing, i) for i in (1, 2, 4)], [1, 2, 4])
+        self.assertIsNone(TX.pinnacle_choice(listing, 5))
+        self.assertEqual(TX.pinnacle_choice({'choices': [(10, 'a'), (11, 'b')]}, 2), 11, 'ids that are not the places: the order of the list')
+
+    def test_the_check_opens_the_boss_the_helper_named(self):
+        keep = (TX.solo_to_temple, TX.chore_walk, TX.asc_greet, TX.npc_talk_end, TX.solo_play)
+        played = []
+
+        async def to_temple(io, r, trace, fallbacks, need_pz=False, system=None):
+            return None
+
+        async def walk(io, name, npc, near=1):
+            return None, []
+
+        async def greet(io, npc=None):
+            return []
+
+        async def bye(io, bye=True):
+            return None
+
+        async def play(io, r, trace, c):
+            played.append(c['system'])
+            trace.update(boss_seen=True, hp=0, killed=True, kill_secs=410, falls=0, size=1, boss='vhoss')
+
+        class IO(FakeIO):
+            def __init__(self):
+                FakeIO.__init__(self)
+                self.cmds, self.answered, self.inside = [], [], False
+
+            async def helper(self, command, kind, wait=4.0):
+                self.cmds.append(command)
+                bosses = [dict(b, ready=True) for b in PinnacleWalk.BOSSES]
+                if command == 'pinnacle state':
+                    return {'level': 2050, 'enabled': True, 'bosses': bosses, 'free': 8, 'reserve': 2, 'inside': 'vhoss' if self.inside else None, 'pz': True}
+                if command == 'pinnacle set':
+                    return {'given': True, 'kind': 'vhoss', 'level': 2050, 'bosses': bosses}
+                if command == 'pinnacle close':
+                    self.inside = False
+                return None
+
+            async def say_modal(self, text, ids, wait=5.0, kind=1):
+                return {'id': 7490, 'title': 'Pinnacle', 'buttons': [(1, 'Open'), (2, 'Focus'), (3, 'Close')], 'choices': [(i, b['key']) for i, b in enumerate(PinnacleWalk.BOSSES, 1)],
+                        'escape': 3}, []
+
+            async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+                self.answered.append((window_id, button, choice))
+                if button == 1:
+                    self.inside = True
+                return None, []
+
+            def raid_mode(self, names, on, keep_flee=False):
+                pass
+
+        TX.solo_to_temple, TX.chore_walk, TX.asc_greet, TX.npc_talk_end, TX.solo_play = to_temple, walk, greet, bye, play
+        try:
+            io = IO()
+            r = run(TX.check_pinnacle_walk(io, 'Tester Aaa', 'Ninja', 2050))
+        finally:
+            TX.solo_to_temple, TX.chore_walk, TX.asc_greet, TX.npc_talk_end, TX.solo_play = keep
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.answered[0], (7490, 1, 2), 'Open on the second boss of the window (vhoss), the place the helper named')
+        self.assertEqual(played, ['pinnacle'])
+        self.assertEqual(io.cmds[:2], ['pinnacle state', 'pinnacle set'], 'the grant comes from the helper, before the walk')
+        self.assertIn('pinnacle close', io.cmds, 'the bot leaves through the helper at the end')
+        self.assertIn('down in 410 s', r.detail)
+
+    def test_it_is_a_fight_check_with_a_level_gate(self):
+        self.assertIn('pinnacle_walk', TX.KEYS)
+        self.assertIn('pinnacle_walk', TX.FIGHT_KEYS)
+        self.assertNotIn('pinnacle_walk', TX.CLOSED_KEYS)
+        self.assertEqual(TX.LEVEL_GATES['pinnacle_walk'], 1800)
+        self.assertIsNotNone(TX.level_gate('pinnacle_walk', 1500))
+        self.assertIsNone(TX.level_gate('pinnacle_walk', 1800))
 
 
 if __name__ == '__main__':

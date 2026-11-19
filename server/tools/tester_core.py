@@ -683,6 +683,55 @@ def parse_stats(plain):
     return best
 
 
+# ---------------------------------------------------------------- what the server draws on the map (O678)
+# The packets a client turns into pictures and items on the floor: 0x83 magic effect (position, u8 effect), 0x85 distance effect (from, to, u8 missile),
+# 0x6A add a thing to a tile and 0x6B update a thing of a tile (position, u8 stack place, u16 client id). A decrypted server message holds
+# several packets and the bot reads none of them in order, so every lead byte is tried and a hit must read as a packet: positions on the floor
+# of the box (the death tile of a loot burst, nine tiles each way), a known effect byte. The loot burst check (O678, tester_checks.py) sorts the
+# stock flights of the loot explosion from the real landings with them.
+WORLD_LEADS = (0x83, 0x85, 0x6A, 0x6B)
+
+
+def _pos_in(box, x, y, z, slack=0):
+    x0, y0, x1, y1, bz = box
+    return z == bz and x0 - slack <= x <= x1 + slack and y0 - slack <= y <= y1 + slack
+
+
+def scan_world(plain, box):
+    """[(kind, a, b)] of a decrypted server message, in byte order: ('magic', (x, y, z), effect), ('distance', (x, y, z) from, (x, y, z) to, missile) as
+    ('distance', from, (to, missile)), ('item', (x, y, z), client id) for 0x6A and 0x6B. `box` = (x0, y0, x1, y1, z): only packets whose positions lie in
+    it (a distance effect: from and to within two tiles of it) are read"""
+    out = []
+    for i, byte in enumerate(plain):
+        if byte not in WORLD_LEADS:
+            continue
+        if byte == 0x83 and i + 7 <= len(plain):
+            x, y, z, effect = struct.unpack_from('<HHBB', plain, i + 1)
+            if _pos_in(box, x, y, z):
+                out.append(('magic', (x, y, z), effect))
+        elif byte == 0x85 and i + 12 <= len(plain):
+            x, y, z, tx, ty, tz, ani = struct.unpack_from('<HHBHHBB', plain, i + 1)
+            if _pos_in(box, x, y, z, 2) and _pos_in(box, tx, ty, tz, 2):
+                out.append(('distance', (x, y, z), ((tx, ty, tz), ani)))
+        elif byte in (0x6A, 0x6B) and i + 9 <= len(plain):
+            x, y, z, _place, cid = struct.unpack_from('<HHBBH', plain, i + 1)
+            if _pos_in(box, x, y, z) and cid >= 100:
+                out.append(('item', (x, y, z), cid))
+    return out
+
+
+class WorldTap:
+    """the packets of the map a bot read since the tap began: events [(seconds, kind, a, b)] from scan_world in the arrival order of the messages"""
+
+    def __init__(self, box):
+        self.box = tuple(box)
+        self.events = []
+
+    def feed(self, at, plain):
+        for kind, a, b in scan_world(plain, self.box):
+            self.events.append((at, kind, a, b))
+
+
 def hold_attack(health, heal, heal_ready):
     """True when the bot spends this beat on its heal and not on an attack spell: under 50 % health with a heal spell that is ready (or was cast
     this beat). The heal and the attack are two spell groups with their own cooldowns: with the heal on cooldown the bot attacks, as a player does"""

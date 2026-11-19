@@ -60,6 +60,10 @@ C.sources = {
 	-- Next Goals (H5's goals system): ChaosConquest.reward(player, "goals", {tier = band}); band 1 = the first level band
 	-- (3 + 2 = 5 tokens), each band above +2, at most 15
 	goals = {slot = 21, base = 3, perTier = 2, max = 15, cap = 60, label = "goal"},
+	-- the Pinnacle bosses (pinnacle.lua deliver, O667; the source was never in this table until the live run of O678: the call named
+	-- "pinnacle:<boss>", conquest.lua refused it with 0 and no kill ever paid a token). The caller passes the boss's amount (8 to 14); a
+	-- whole set is hours of top content (pinnacle_balance_config.lua), so the cap is a day of five or six kills
+	pinnacle = {slot = 22, amount = 14, cap = 84, label = "Pinnacle boss"},
 	-- salvaged uniques (salvage.lua): a share of the vendor price, see `salvage`
 	salvage = {slot = 20, amount = 25, cap = 400, label = "salvage"}
 }

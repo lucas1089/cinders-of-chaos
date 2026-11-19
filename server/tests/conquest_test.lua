@@ -93,6 +93,19 @@ eq(p.used, 12, "the counter starts again")
 eq(K.grantPlan(cfg, "nope", 5, 1, 1, 0).give, 0, "unknown source gives nothing")
 eq(K.grantPlan(cfg, "boss_world", -5, 1, 1, 0).give, 0, "negative gives nothing")
 
+-- O678: the Pinnacle bosses' source (pinnacle.lua names it; the live run found the call refused: "pinnacle:<boss>" is no key of this table)
+do
+	local s = cfg.sources.pinnacle
+	check(s ~= nil and s.slot == 22 and s.cap >= 5 * 14, "the pinnacle source: its own slot, a cap of five kills of the dearest boss")
+	check(K.amount(cfg, "pinnacle") == s.amount, "its default amount")
+	check(cfg.sources["pinnacle:malgrath"] == nil, "no source named like the old call")
+	local slots = {}
+	for key, src in pairs(cfg.sources) do
+		check(not slots[src.slot], "the slot of " .. key .. " is its own")
+		slots[src.slot] = key
+	end
+end
+
 -- ---------------------------------------------------------------- boss sources
 local src, n = K.bossSource(cfg, "Varkhul the Ashen Sovereign", "sepulchre", true)
 eq(src, "boss_sepulchre", "the raid's final boss")
