@@ -10868,6 +10868,39 @@ Left with the reason: the numbers of a real run. Not run on a live server (no se
 with a rolled rarity, not a build), whether the Gambler's stock always holds a piece for each empty slot (a slot with none stays empty and is said in `open:`), and whether a retreat of one
 tile is enough against a pack (the next live run reads `retreated N time(s)` and the SKIP reasons; a plan: step to the temple's protection zone by the Town Portal after the second retreat of a loop).
 
+##### 18. Retreat in every fight loop, home, empty slots (O659)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650 / O658): "the bots have to do the complete content of the game, in the most human way possible". O658 (step 17) gave
+four play loops the retreat and left a plan: a bot that retreats twice goes home. O659 finishes it (`tester_checks.py` block "retreat in every fight loop, home, empty slots (O659)"; new
+functions and new blocks only, no helper change: `!tester journey` already answers the portal beside the bot, so the helper stays v25).
+
+1. **Retreat in the rest of the fight loops.** `retreat_or_home` (it calls `retreat_check` for the plain retreat) is in `rift_walk_play`, `dungeon_walk_all` (so `closed_dungeon`,
+   `dungeon_difficulty` and `weekly_challenge`) and `raid_walk_all` (not while the raid's own leave is under way). The leader's health is the one the loop reads (`CheckIO.health`); a
+   squad member keeps the heal rule of its own bot. The siege (`siege_walk_all`) and guild boss (`guildboss_walk`) loops are not wired in O659 (not asked; the same call fits them, left); the arena,
+   battleground and PvP checks are not: a PvP fight is not a retreat for a bot that must fight.
+2. **A second retreat of one loop goes home** (`retreat_home`, `HOME_RULES`). The way is the journey's (`tester_journey.py` `leave`): heal, cast the Town Portal words (`ash domh`, 3.6 s), look at
+   the portal beside the bot (`!tester journey`), walk into it. The server refuses that spell inside a rift, a dungeon and an instance (`townportal_core.lua`: "A rift holds you ...", "A dungeon
+   holds you ...", the raid is an instance), so in these three contents the cast is the probe and the content's own door is the way out:
+   - **Raid**: the Leave button (`raid leave`, refused in the middle of a boss fight: then the content holds the bot).
+   - **Rift and dungeons**: no Leave button (the exit teleport comes after the boss). The content holds the bot: the refusal is a named fact (`trace['home_refused']`, the SKIP says "the bot tried
+     to go home after N retreat(s): the Town Portal opened no portal"), the content is asked once a loop, and the plain retreat goes on.
+   A bot that got out restocks with the O658 `gear_up` (wear, potions, a piece for an empty slot; its grants are named fallbacks of the result) and walks back when the content has a way back
+   (`HOME_RULES[...]['back']`, an async function; none of the three has one: a raid the bot left is its own run no more, a left rift is closed and needs a new key). Without a way back the
+   check ends as SKIP "retreated home (N retreat(s) under 30 % health, out by ...; restock: ...; the content allows no return)" (`home_verdict`; a fault stays a FAIL). A content with a way back
+   goes on after the restock, up to `HOME_MAX` (2) trips a loop. A dungeon or raid party: the leader goes home and the loop ends, the testers' run is closed by the helper as at any end.
+3. **The Gambler gap.** `gear_pieces` now says why a slot stays empty (`gear_gap_why`): the stock window lists only what the character may wear (class and level rule), so no row of the slot name
+   is "no Boots in the Gambler's stock for a level 300 Mage"; also "every Boots of the stock is sold", "the cheapest Armor costs N gold (limit 1,500,000)", "the Gambler opens at level 40". The
+   `gear_up` result ends with "N basic slot(s) stay empty: Boots (reason), ..." from the last `!tester found` after the wear steps (`gear_gap_text`). No gear is granted: only gold for the
+   purchases, as before (the TEST ONLY grant stays a named fallback).
+
+Tests: `tester_checks_test.py` (`HomeRetreat`: the first retreat plain, the second by the Town Portal with the restock and the named grant, the verdict, a content that holds the bot asked once, the
+raid's Leave button and its refusal in a boss fight, a way back, a restock that breaks, a member and a loop with no rule; the rules read against `townportal_core.lua` and `raid.lua`; the words equal
+`tester_journey.py`'s; `HomeLoops`: the rift, dungeon and raid loops end to end on a scripted bot; `GearGap`: a missing slot, sold, dear, under the Gambler's level, a full set).
+
+Left with the reason: not run on a live server (no server here). The Town Portal cast inside a rift, a dungeon and the raid is the probe of a refusal that the config proves, not yet seen on a
+live run; the SKIP lines of the next run say how many bots got out and by what. The siege and guild boss loops stay without the retreat (the call fits them; a plan for the next round). A
+way back into a rift or a dungeon would need a new server rule (a rejoin of the bot's own run), not a tester change.
+
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 
 `testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):

@@ -1937,6 +1937,7 @@ async def raid_walk_all(io, name, cls, a, squad, trace):
     elapsed, misses = 0.0, 0
     leaving, leave_at = False, None
     fight_since, progress = None, None
+    home = home_rule(key, name, cls, (a or {}).get('level'))   # O659: the way home of a second retreat
     while io.alive():
         looks = {}
         for r in squad:
@@ -1959,6 +1960,13 @@ async def raid_walk_all(io, name, cls, a, squad, trace):
             break
         run = lead.get('run') or {}
         guide = lead.get('guide') or {}
+        spent = await retreat_or_home(io, squad[0], lead, trace, guide, home) if not leaving else 0.0   # O659: the retreat of the raid loop
+        if trace.get('gone'):
+            trace['left'] = 'retreated home'
+            break
+        if spent:
+            elapsed += spent
+            continue
         trace['reached'].add(str(guide.get('where') or 'hall'))
         if run.get('killed', 0) > trace['killed']:
             trace['killed'] = int(run['killed'])
@@ -2028,6 +2036,7 @@ async def raid_walk_all(io, name, cls, a, squad, trace):
     if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
         trace['left'] = 'a close by the helper'
     status, text = raid_verdict(trace)
+    status, text = home_verdict(trace, status, text)   # O659
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
@@ -2334,6 +2343,7 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
     key = trace.get('key', 'closed_dungeon')
     elapsed, misses = 0.0, 0
     fight_since, progress, boss_seen, looted = None, None, False, 0.0
+    home = home_rule(key, name, cls, trace.get('level'))   # O659: the way home of a second retreat
     while io.alive():
         looks = {}
         for r in squad:
@@ -2357,6 +2367,13 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
             break
         run = lead.get('run') or {}
         guide = lead.get('guide') or {}
+        spent = await retreat_or_home(io, squad[0], lead, trace, guide, home)   # O659: the retreat of the dungeon loop; a second one goes home
+        if trace.get('gone'):
+            trace['left'] = 'retreated home'
+            break
+        if spent:
+            elapsed += spent
+            continue
         pct = int(run.get('percent') or 0)
         if pct > trace['percent']:
             trace['percent'] = pct
@@ -2421,6 +2438,7 @@ async def dungeon_walk_all(io, name, cls, squad, trace):
     if trace['left'] == '?' and isinstance(closed, dict) and closed.get('closed'):
         trace['left'] = 'a close by the helper'
     status, text = dungeon_verdict(trace)
+    status, text = home_verdict(trace, status, text)   # O659
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
@@ -3345,6 +3363,7 @@ async def rift_walk_play(io, name, cls, r, trace):
     elapsed, misses, fight_since, last_kills, looted = 0.0, 0, None, None, 0.0
     first_kills = None
     budget = RIFT_BUDGET
+    home = home_rule('rift_walk', name, cls, trace.get('level'))   # O659: the way home of a second retreat
     while io.alive() and elapsed < budget:
         s = await io.helper('rift state', 'rift', ANSWER)
         if not isinstance(s, dict):
@@ -3384,6 +3403,12 @@ async def rift_walk_play(io, name, cls, r, trace):
             if hp is not None:
                 trace['hp'] = hp if trace['hp'] is None else min(trace['hp'], hp)
         g = s.get('guide') or {}
+        spent = await retreat_or_home(io, r, s, trace, g, home)   # O659: the retreat of the rift loop; a second one goes home
+        if trace.get('gone'):
+            break
+        if spent:
+            elapsed += spent
+            continue
         if g.get('mode') == 'fight':
             fight_since = elapsed if fight_since is None else fight_since
             trace['fought'] = max(trace['fought'], elapsed - fight_since)
@@ -3429,6 +3454,7 @@ async def rift_walk_play(io, name, cls, r, trace):
         trace['secs'] = int(elapsed)
     trace['secs'] = int(elapsed)
     status, text = rift_walk_verdict(trace)
+    status, text = home_verdict(trace, status, text)   # O659
     return Result(key, name, cls, status, text, trace.get('fallbacks'))
 
 
@@ -7736,6 +7762,7 @@ async def gear_pieces(io, name, g, found, level):
         return
     if int(level or 0) < GAMBLE_MIN:
         g['notes'].append('level %d: the Gambler opens at level %d' % (int(level or 0), GAMBLE_MIN))
+        g['gap_why'].update({n: 'the Gambler opens at level %d' % GAMBLE_MIN for n in gaps.values()})   # O659
         return
     npc = 'Mordecai Ashwager'
     why, falls = await chore_walk(io, name, npc)
@@ -7749,6 +7776,10 @@ async def gear_pieces(io, name, g, found, level):
         if not isinstance(a, dict):
             g['notes'].append('no state in the Gambler window')
             return
+        for n in sorted(set(gaps.values())):   # O659: the slots the stock cannot fill, with the reason
+            w = gear_gap_why(a.get('items'), n, level, g.get('cls'))
+            if w:
+                g['gap_why'][n] = w
         for row in gear_pieces_for(a.get('items'), set(gaps.values()), GEAR_PIECE_CAP):
             if not io.alive():
                 break
@@ -7784,7 +7815,8 @@ async def gear_up(io, name, cls, level):
     """the gear-up before a hard check: -> the Result 'gear_up' (PASS: what was done, or nothing was needed; SKIP: a step that could not be done,
     with its reason) with the fallbacks (walks by the helper, gold grants) named"""
     key = 'gear_up'
-    g = {'worn': 0, 'pieces': [], 'bought': [], 'potions': None, 'granted': 0, 'notes': [], 'fallbacks': [], 'heal': None}
+    g = {'worn': 0, 'pieces': [], 'bought': [], 'potions': None, 'granted': 0, 'notes': [], 'fallbacks': [], 'heal': None,
+         'cls': cls, 'gap_why': {}, 'after': None}
     refused = set()
     found = await gear_wear(io, g, refused)
     if io.alive():
@@ -7794,7 +7826,7 @@ async def gear_up(io, name, cls, level):
         if found is not None:
             await gear_pieces(io, name, g, found, level)
             if io.alive():
-                await gear_wear(io, g, refused)
+                g['after'] = await gear_wear(io, g, refused)
     if io.alive():
         await heal_rule_ready(io, g)
     parts = []
@@ -7811,6 +7843,9 @@ async def gear_up(io, name, cls, level):
     text = '; '.join(parts)
     if g['granted']:
         text += '; TEST ONLY gold grant %d' % g['granted']
+    gap = gear_gap_text(g, g['after'])   # O659: the slots no piece fits, named; no gear is ever granted
+    if gap:
+        text += '; ' + gap
     if g['notes']:
         text += '; open: ' + '; '.join(dict.fromkeys(g['notes']))[:200]
     status = SKIP if g['notes'] and not (g['worn'] or g['bought']) else PASS
@@ -7903,7 +7938,7 @@ class CheckRun:
                 r = await fn(io, self.name, self.cls, lvl)
             except Exception as e:  # noqa: BLE001 - a check that breaks is a result, not a crash of the run
                 r = Result(key, self.name, self.cls, SKIP, 'the check broke: %s' % e)
-            if r.status == SKIP and key in FIGHT_KEYS and getattr(io, 'retreats', 0):
+            if r.status == SKIP and key in FIGHT_KEYS and getattr(io, 'retreats', 0) and 'retreated home' not in r.detail:
                 r.detail += ' (the bot retreated %d time(s) to heal)' % io.retreats
             await npc_talk_end(io, bye=False)   # O656: a check that ended with the NPC's focus held lets go of it
             if not io.alive() and r.status != PASS:
@@ -7983,6 +8018,177 @@ def load_table(path):
                            'extras': [int(x) for x in (m.group(4) or '').split(',') if x.strip()],
                            'ultimate': int(m.group(5)) if m.group(5) else None}
     return out
+
+
+# ------------------------------------------------------------------------------------------------ retreat in every fight loop, home, empty slots (O659)
+# O658 gave four play loops the retreat (a bot under 30 % health heals and steps back). O659 adds it to the rift loop, the dungeon loops
+# (closed_dungeon, dungeon_difficulty, weekly_challenge) and the raid loop, and a second step: a bot that must retreat a second time in one loop
+# goes home like a person who has had enough. The way home is the one the journey takes (tester_journey.py leave): the Town Portal spell
+# (the portal beside the bot is walked into). The server refuses that spell inside a rift, a dungeon and an instance (townportal_core.lua), so in
+# these three contents the cast is the probe and the content's own door is the way out: the raid has a Leave button (`raid leave`, refused in the
+# middle of a boss fight); a rift and a dungeon have none (the exit teleport comes after the boss), so the content holds the bot: the answer is
+# named in the result and the plain retreat goes on. A bot that got out restocks with the gear-up of O658 (wear, potions, a piece for an empty
+# slot; a gold grant is a named TEST ONLY fallback) and walks back when the content has a way back (`back` of HOME_RULES: none of the three has
+# one: a run the bot left is closed for it); else the check ends as SKIP "retreated home" with the count. Nothing is granted but gold for the
+# purchases, never a piece of gear.
+HOME_AT = 2                 # the retreat of one loop that goes home (the second)
+HOME_MAX = 2                # trips home of one loop (a content with a way back)
+HOME_WORDS = 'ash domh'     # the Town Portal words (spells_chaos.xml), every class from level 1 (tester_journey.TOWN_WORDS)
+HOME_CAST = 3.6             # seconds of the channel (tester_journey.PORTAL_CAST)
+HOME_LOOKS = 3              # looks at the portal beside the bot after the cast
+
+
+async def home_look_rift(io, r):
+    return await hcmd(io, r, 'rift state', 'rift')
+
+
+async def home_leave_raid(io, r):
+    """the raid's Leave button (a person's way out): (True, None) when the server ended the bot's raid, else (False, its text)"""
+    reply = await (io.request('raid', 'leave', {}, ['end', 'msg'], ANSWER) if r['lead']
+                   else io.request_of(r['name'], 'raid', 'leave', {}, ['end', 'msg'], ANSWER))
+    if isinstance(reply, dict) and reply.get('action') == 'end':
+        return True, None
+    text = ((reply or {}).get('data') or {}).get('text') if isinstance(reply, dict) else None
+    return False, str(text or 'no answer to the Leave button')[:60]
+
+
+# what each content allows: `look` the state ({inside}), `leave` the content's own door (None when it has none), `back` the walk back into the
+# content after a trip home (None: the run the bot left is closed for it), `why` the reason for the README and the result
+HOME_RULES = {
+    'rift_walk': {'look': home_look_rift, 'leave': None, 'back': None,
+                  'why': 'a rift has no Leave button and the Town Portal is refused inside; a run left is closed and needs a new key'},
+    'closed_dungeon': {'look': dungeon_look, 'leave': None, 'back': None,
+                       'why': 'a dungeon has no Leave button and the Town Portal is refused inside; the exit teleport comes after the boss'},
+    'closed_raid': {'look': raid_look, 'leave': home_leave_raid, 'back': None,
+                    'why': 'the raid has a Leave button (not in a boss fight); a raid the bot left is its own run no more'},
+}
+HOME_RULES['dungeon_difficulty'] = HOME_RULES['weekly_challenge'] = HOME_RULES['closed_dungeon']
+
+
+def home_rule(key, name, cls, level):
+    """the way home of content `key` for this bot, or None (no retreat home: only the plain retreat)"""
+    rule = HOME_RULES.get(key)
+    if rule is None:
+        return None
+    return dict(rule, key=key, name=name, cls=cls, level=level)
+
+
+async def home_inside(home, io, r):
+    """True / False from the content's state, None when it gave no answer"""
+    s = await home['look'](io, r)
+    return bool(s.get('inside')) if isinstance(s, dict) else None
+
+
+async def home_portal(io, r, s, home):
+    """the Town Portal: cast, walk into the portal beside the bot; -> (out, seconds, why): out is True when the bot left the content"""
+    spent = 0.0
+    await io.say(HOME_WORDS)
+    await io.sleep(HOME_CAST)
+    spent += HOME_CAST
+    for _ in range(HOME_LOOKS):
+        a = await io.helper('journey', 'journey', ANSWER)
+        portal = a.get('portal') if isinstance(a, dict) else None
+        if not isinstance(portal, dict):
+            return False, spent, 'the Town Portal opened no portal (the content holds the bot)'
+        for step in raid_plan((a or {}).get('pos') or (s or {}).get('pos'), portal, 8):
+            await raid_walk(io, r, step)
+            await io.sleep(RAID_STEP)
+            spent += RAID_STEP
+        await io.sleep(1.0)
+        spent += 1.0
+        if await home_inside(home, io, r) is False:
+            return True, spent, None
+    return False, spent, 'the portal beside the bot did not take it'
+
+
+async def retreat_home(io, r, s, trace, home):
+    """O659: the second retreat of a loop goes home. -> the seconds spent (0.0 when nothing was tried); sets trace['gone'] when the bot is out
+    and stays out, trace['home_log'] (one row per trip: how, the gear-up text, whether it came back), trace['home_refused'] (why not)"""
+    heal = getattr(io, 'heal_now', None)
+    if heal is not None:
+        await heal()   # a person heals before he casts a channel of 3 seconds
+    out, spent, why = await home_portal(io, r, s, home)
+    how = 'the Town Portal'
+    if not out and home.get('leave') is not None and io.alive():
+        out, text = await home['leave'](io, r)
+        how = "the raid's Leave button"
+        why = None if out else '%s; %s' % (why, text)
+    if not out:
+        trace['home_refused'] = why or 'no way out'
+        return spent
+    trace['retreats'] = trace.get('retreats', 0) + 1
+    io.retreats = getattr(io, 'retreats', 0) + 1
+    row = {'how': how, 'gear': None, 'back': None}
+    trace.setdefault('home_log', []).append(row)
+    if io.alive():
+        lvl = int(getattr(getattr(io, 'bot', None), 'level', 0) or 0) or int(home.get('level') or 0)
+        try:
+            res = await gear_up(io, home['name'], home['cls'], lvl)
+            row['gear'] = '%s: %s' % (res.status, res.detail[:160])
+            if isinstance(trace.get('fallbacks'), list):
+                trace['fallbacks'].extend(res.fallbacks or [])
+        except Exception as e:  # noqa: BLE001 - a restock that breaks is a line of the result, not a crash
+            row['gear'] = 'the gear-up broke: %s' % e
+    if io.alive() and home.get('back') is not None:
+        row['back'] = bool(await home['back'](io, r, home, trace))
+    trace['gone'] = not row['back']
+    return spent + 1.0
+
+
+async def retreat_or_home(io, r, s, trace, g=None, home=None):
+    """O659: the retreat of a fight loop: the plain one (retreat_check) for the first, the way home for the second; a content that holds the
+    bot is asked once a loop, then the plain retreat goes on. -> the seconds spent (0.0 when the bot did not retreat)"""
+    hp = getattr(io, 'health', None)
+    spent = 0.0
+    if (home is not None and r.get('lead') and hp is not None and hp < RETREAT_AT and io.alive() and trace.get('retreats', 0) >= HOME_AT - 1
+            and not trace.get('home_refused') and len(trace.get('home_log') or []) < HOME_MAX):
+        trips = len(trace.get('home_log') or [])
+        spent = await retreat_home(io, r, s, trace, home)
+        if len(trace.get('home_log') or []) > trips:   # the bot was out (and came back, or stays out): the look of this round is stale
+            return spent
+    return spent + await retreat_check(io, r, s, trace, g or None)
+
+
+def home_verdict(trace, status, text):
+    """O659: the result of a loop that went home or was held: a bot that is out and stays out ends as SKIP "retreated home" with the count (a FAIL
+    stays); a bot that came back says so; a content that held it says so on a SKIP"""
+    log = trace.get('home_log') or []
+    n = trace.get('retreats', 0)
+    if trace.get('gone') and log and status != FAIL:
+        return SKIP, 'retreated home (%d retreat(s) under %d %% health, out by %s; restock: %s; the content allows no return)' % (
+            n, RETREAT_AT, log[-1]['how'], log[-1]['gear'] or 'none')
+    if log and status != FAIL:
+        text += '; went home %d time(s) and came back (%d retreat(s))' % (len(log), n)
+    if trace.get('home_refused') and status == SKIP:
+        text += ' (the bot tried to go home after %d retreat(s): %s)' % (n, trace['home_refused'][:100])
+    return status, text
+
+
+def gear_gap_why(rows, name, level, cls, cap=GEAR_PIECE_CAP):
+    """O659: why no piece of the Gambler's stock can fill the empty slot `name` for this class and level, or None when one can. The window lists
+    only what the character may wear (class and level rule), so an empty list is the gap; nothing is granted"""
+    mine = [e for e in rows or [] if isinstance(e, dict) and e.get('sn') == name]
+    if not mine:
+        return "no %s in the Gambler's stock for a level %d %s" % (name, int(level or 0), cls or 'bot')
+    free = [e for e in mine if not e.get('sold')]
+    if not free:
+        return 'every %s of the stock is sold' % name
+    cheapest = min(int(e.get('p') or 0) for e in free)
+    if cheapest > cap:
+        return 'the cheapest %s costs %d gold (limit %d)' % (name, cheapest, cap)
+    return None
+
+
+def gear_gap_text(g, final):
+    """O659: the empty basic slots left after the gear-up, with the reason known for each: -> the text, or None when none is empty.
+    `final` is the last `!tester found` answer (None: unknown, nothing is said)"""
+    if final is None:
+        return None
+    left = slot_gaps(final)
+    if not left:
+        return None
+    why = g.get('gap_why') or {}
+    return '%d basic slot(s) stay empty: %s' % (len(left), ', '.join('%s (%s)' % (n, why.get(n) or 'not bought, see open') for n in sorted(left.values())))
 
 
 if __name__ == '__main__':

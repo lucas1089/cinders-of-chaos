@@ -8631,5 +8631,319 @@ class Retreat(unittest.TestCase):
         self.assertEqual(src.count('await retreat_check(io, r, s, trace, g)'), 4, 'solo_play, chase_play, boss_copy_play, bounty_play')
 
 
+
+# ---------------------------------------------------------------- retreat in every fight loop, home, empty slots (O659)
+class HomeIO(RetreatIO):
+    """a bot in a content: `inside` per the state, a portal the Town Portal opens (or not), the raid's Leave button (or a refusal). Health stays
+    low unless `heals`; every call is logged"""
+
+    def __init__(self, health=15, portal=True, takes=True, leave=None, heals=False, content='rift'):
+        RetreatIO.__init__(self, health=health)
+        self.portal, self.takes, self.leave_reply, self.content = portal, takes, leave, content
+        self.heals_on = heals
+        self.inside = True
+        self.cast = False
+        self.walked = []
+        self.log = []
+        self.pos = (10, 10)
+
+    async def heal_now(self):
+        self.heals.append(self.health)
+        if self.heals_on:
+            self.health = min(100, self.health + 20)
+            return 'potion'
+        return None
+
+    async def say(self, text):
+        self.said.append(text)
+        self.cast = text == TX.HOME_WORDS and self.portal
+
+    async def step(self, dx, dy):
+        self.steps.append((dx, dy))
+        self.pos = (self.pos[0] + dx, self.pos[1] + dy)
+        if self.cast and self.takes and self.pos == (13, 10):
+            self.inside = False   # the step onto the portal took the bot out
+
+    def state(self):
+        return {'inside': self.inside, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}, 'guide': {'mode': 'wait'},
+                'run': {'state': 'running', 'killed': 0, 'players': 1, 'side': 'tester', 'slot': 1}}
+
+    async def helper(self, command, kind, wait=4.0):
+        self.log.append(command)
+        if command == 'journey':
+            return {'portal': {'x': 13, 'y': 10, 'z': 7}, 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}} if self.cast else {'zone': 'rift'}
+        if command in ('rift state', 'dungeon state', 'raid state'):
+            return self.state()
+        return None
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        if (opname, action) == ('raid', 'leave') and self.leave_reply is not None:
+            if self.leave_reply == 'end':
+                self.inside = False
+            return {'action': self.leave_reply, 'data': {'text': 'Not in the middle of a boss fight.'}}
+        return None
+
+
+def home_stub(status=None, detail='wore 1 piece(s) (helmet)'):
+    """gear_up replaced by a recorder (the restock itself is tested in GearUp)"""
+    calls = []
+
+    async def gear(io, name, cls, level):
+        calls.append((name, cls, level))
+        return TX.Result('gear_up', name, cls, status or TX.PASS, detail, ['grant 40000 gold (potions; the bank held 0)'])
+
+    return gear, calls
+
+
+class HomeRetreat(unittest.TestCase):
+    def setUp(self):
+        self._gear = TX.gear_up
+        self.gear, self.calls = home_stub()
+        TX.gear_up = self.gear
+
+    def tearDown(self):
+        TX.gear_up = self._gear
+
+    def call(self, io, key='rift_walk', trace=None, pos=None, home=None):
+        r = {'name': 'Tester Aaa', 'lead': True, 'trail': [(7, 10), (9, 10)]}
+        trace = {'fallbacks': []} if trace is None else trace
+        pos = pos or {'x': io.pos[0], 'y': io.pos[1], 'z': 7}
+        h = home if home is not None else TX.home_rule(key, 'Tester Aaa', 'Warrior', 900)
+        spent = run(TX.retreat_or_home(io, r, {'pos': pos}, trace, {}, h))
+        return spent, trace
+
+    def test_the_first_retreat_is_the_plain_one(self):
+        io = HomeIO(heals=True)
+        spent, trace = self.call(io)
+        self.assertGreater(spent, 0)
+        self.assertEqual((io.said, trace.get('home_log'), trace.get('gone')), ([], None, None), 'no cast, no way home')
+        self.assertEqual(trace['retreats'], 1)
+
+    def test_the_second_retreat_goes_home_by_the_town_portal_and_restocks(self):
+        io = HomeIO()
+        spent, trace = self.call(io, trace={'retreats': 1, 'fallbacks': []})
+        self.assertEqual(io.said, [TX.HOME_WORDS], 'the Town Portal words of the journey')
+        self.assertFalse(io.inside, 'the step onto the portal took the bot out')
+        self.assertTrue(trace['gone'])
+        self.assertEqual(io.retreats, 1)
+        self.assertEqual(trace['retreats'], 2)
+        self.assertEqual(self.calls, [('Tester Aaa', 'Warrior', 900)], 'the O658 gear-up ran once')
+        row = trace['home_log'][0]
+        self.assertEqual(row['how'], 'the Town Portal')
+        self.assertIn('wore 1 piece', row['gear'])
+        self.assertEqual(trace['fallbacks'], ['grant 40000 gold (potions; the bank held 0)'], 'the grant of the restock is named')
+        self.assertGreaterEqual(spent, TX.HOME_CAST)
+        self.assertEqual(io.steps, [(1, 0)] * 3, 'walked three tiles into the portal')
+
+    def test_the_verdict_of_a_bot_that_stays_out_is_a_skip_with_the_count(self):
+        io = HomeIO()
+        _, trace = self.call(io, trace={'retreats': 1, 'fallbacks': []})
+        status, text = TX.home_verdict(trace, TX.PASS, 'x')
+        self.assertEqual(status, TX.SKIP)
+        self.assertIn('retreated home (2 retreat(s) under 30 % health', text)
+        self.assertIn('out by the Town Portal', text)
+        self.assertIn('restock: pass: wore 1 piece', text)
+        self.assertEqual(TX.home_verdict(trace, TX.FAIL, 'bug')[0], TX.FAIL, 'a fault stays a fault')
+        self.assertEqual(TX.home_verdict({}, TX.PASS, 'x'), (TX.PASS, 'x'), 'no trip: nothing changes')
+
+    def test_a_content_that_holds_the_bot_is_asked_once_then_the_plain_retreat_goes_on(self):
+        io = HomeIO(portal=False)
+        spent, trace = self.call(io, trace={'retreats': 1, 'fallbacks': []})
+        self.assertEqual(io.said, [TX.HOME_WORDS], 'the cast is the probe')
+        self.assertIn('holds the bot', trace['home_refused'])
+        self.assertFalse(trace.get('gone'))
+        self.assertTrue(io.inside)
+        self.assertEqual(trace['retreats'], 2, 'the plain retreat counted')
+        self.assertEqual(self.calls, [], 'no restock for a bot that did not get out')
+        self.call(io, trace=trace)
+        self.assertEqual(io.said, [TX.HOME_WORDS], 'not asked again in the loop')
+        status, text = TX.home_verdict(trace, TX.SKIP, 'no kill')
+        self.assertEqual(status, TX.SKIP)
+        self.assertIn('tried to go home after 3 retreat(s)', text)
+
+    def test_the_raid_leave_button_is_the_way_out_when_the_portal_is_refused(self):
+        io = HomeIO(portal=False, leave='end')
+        _, trace = self.call(io, key='closed_raid', trace={'retreats': 1, 'fallbacks': []})
+        self.assertTrue(trace['gone'])
+        self.assertEqual(trace['home_log'][0]['how'], "the raid's Leave button")
+        self.assertIn(('raid', 'leave', {}), io.asked)
+        self.assertIn('Leave button', TX.home_verdict(trace, TX.PASS, 'x')[1])
+
+    def test_a_boss_fight_keeps_the_bot_in_the_raid(self):
+        io = HomeIO(portal=False, leave='msg')
+        _, trace = self.call(io, key='closed_raid', trace={'retreats': 1, 'fallbacks': []})
+        self.assertFalse(trace.get('gone'))
+        self.assertIn('Not in the middle of a boss fight', trace['home_refused'])
+
+    def test_a_content_with_a_way_back_sends_the_bot_back(self):
+        io = HomeIO()
+        back = []
+
+        async def come_back(io_, r, home, trace):
+            back.append(home['key'])
+            io_.inside = True
+            return True
+
+        home = dict(TX.home_rule('rift_walk', 'Tester Aaa', 'Warrior', 900), back=come_back)
+        _, trace = self.call(io, trace={'retreats': 1, 'fallbacks': []}, home=home)
+        self.assertEqual(back, ['rift_walk'])
+        self.assertFalse(trace['gone'], 'the loop goes on')
+        self.assertTrue(trace['home_log'][0]['back'])
+        self.assertIn('went home 1 time(s) and came back (2 retreat(s))', TX.home_verdict(trace, TX.PASS, 'x')[1])
+
+    def test_a_broken_restock_is_a_line_not_a_crash(self):
+        async def boom(io, name, cls, level):
+            raise RuntimeError('boom')
+
+        TX.gear_up = boom
+        io = HomeIO()
+        _, trace = self.call(io, trace={'retreats': 1, 'fallbacks': []})
+        self.assertTrue(trace['gone'])
+        self.assertIn('the gear-up broke: boom', trace['home_log'][0]['gear'])
+
+    def test_a_loop_with_no_rule_or_a_member_keeps_the_plain_retreat(self):
+        io = HomeIO()
+        _, trace = self.call(io, key='tower_walk', trace={'retreats': 1, 'fallbacks': []}, home=None)
+        self.assertEqual(io.said, [])
+        io = HomeIO()
+        r = {'name': 'Tester Bbb', 'lead': False, 'trail': []}
+        run(TX.retreat_or_home(io, r, {'pos': {'x': 1, 'y': 1, 'z': 7}}, {'retreats': 1}, {}, TX.home_rule('rift_walk', 'Tester Bbb', 'Warrior', 900)))
+        self.assertEqual(io.said, [], 'only the leader (the io of the loop) goes home')
+
+    def test_the_rules_hold_the_server(self):
+        chaos = os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos')
+        with open(os.path.join(chaos, 'townportal_core.lua'), encoding='utf-8') as f:
+            core = f.read()
+        for flag in ('rift', 'dungeon', 'instance'):
+            self.assertRegex(core, r'if f\.%s then' % flag, 'the Town Portal is refused in %s: the cast is the probe, not the way out' % flag)
+        with open(os.path.join(chaos, 'raid.lua'), encoding='utf-8') as f:
+            raid = f.read()
+        self.assertIn('elseif a == "leave" then', raid, 'the raid has the Leave button')
+        self.assertIn('Not in the middle of a boss fight', raid)
+        self.assertEqual(set(TX.HOME_RULES), {'rift_walk', 'closed_dungeon', 'dungeon_difficulty', 'weekly_challenge', 'closed_raid'})
+        self.assertTrue(set(TX.HOME_RULES) <= TX.FIGHT_KEYS)
+        self.assertEqual([k for k, v in TX.HOME_RULES.items() if v['leave'] is not None], ['closed_raid'])
+        self.assertEqual([k for k, v in TX.HOME_RULES.items() if v['back'] is not None], [], 'no content of the three has a way back')
+
+    def test_the_words_are_the_journeys(self):
+        import tester_journey as TJ
+        self.assertEqual((TX.HOME_WORDS, TX.HOME_CAST), (TJ.TOWN_WORDS, TJ.PORTAL_CAST))
+
+    def test_the_three_loops_are_wired(self):
+        with open(os.path.join(HERE, 'tester_checks.py'), encoding='utf-8') as f:
+            src = f.read()
+        self.assertEqual(src.count('await retreat_or_home(io, '), 3, 'rift_walk_play, dungeon_walk_all, raid_walk_all')
+        self.assertEqual(src.count('status, text = home_verdict(trace, status, text)'), 3)
+        self.assertEqual(src.count('await retreat_check(io, r, s, trace, g)'), 4, 'the four loops of O658 are as they were')
+
+
+def rift_trace(level=900):
+    return {'faults': [], 'steps': 0, 'kills': 0, 'boss_seen': False, 'hp': None, 'fought': 0.0, 'stuck': None, 'floor': False, 'died': False,
+            'secs': 0, 'came': 'foot', 'tier': 3, 'theme': None, 'fallbacks': [], 'level': level}
+
+
+class HomeLoops(unittest.TestCase):
+    def setUp(self):
+        self._gear = TX.gear_up
+        TX.gear_up, self.calls = home_stub()
+        self.keep = TX.RIFT_BUDGET
+        TX.RIFT_BUDGET = 90.0
+
+    def tearDown(self):
+        TX.gear_up = self._gear
+        TX.RIFT_BUDGET = self.keep
+
+    def test_the_rift_loop_goes_home_on_the_second_retreat(self):
+        io = HomeIO()
+        r = {'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker(), 'inside': True}
+        trace = rift_trace()
+        res = run(TX.rift_walk_play(io, 'Tester Aaa', 'Warrior', r, trace))
+        self.assertEqual(res.status, TX.SKIP, res.detail)
+        self.assertIn('retreated home (2 retreat(s)', res.detail)
+        self.assertEqual(trace['retreats'], 2)
+        self.assertEqual(len(self.calls), 1)
+        self.assertIn('grant 40000 gold', ' '.join(res.fallbacks), 'the grant of the restock is in the result')
+        self.assertFalse(io.inside)
+
+    def test_the_rift_that_holds_the_bot_says_so_and_ends_by_its_budget(self):
+        io = HomeIO(portal=False)
+        r = {'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker(), 'inside': True}
+        trace = rift_trace()
+        res = run(TX.rift_walk_play(io, 'Tester Aaa', 'Warrior', r, trace))
+        self.assertEqual(res.status, TX.SKIP, res.detail)
+        self.assertIn('tried to go home', res.detail)
+        self.assertIn('holds the bot', res.detail)
+        self.assertEqual(io.said.count(TX.HOME_WORDS), 1, 'asked once')
+        self.assertLessEqual(trace['retreats'], TX.RETREAT_MAX)
+        self.assertEqual(self.calls, [])
+
+    def test_the_dungeon_loop_retreats_and_goes_home(self):
+        io = HomeIO(content='dungeon')
+        squad = [{'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker(), 'inside': True}]
+        trace = {'faults': [], 'steps': 0, 'percent': 0, 'unlocked': False, 'won': False, 'fought': 0.0, 'stuck': None, 'secs': 0, 'left': '?',
+                 'members': 1, 'title': 'The Hollow Vault', 'died': False, 'level': 300, 'came': 'foot', 'size': 1, 'fallbacks': [],
+                 'key': 'closed_dungeon', 'difficulty': 1, 'asked': 1, 'scaled': 0, 'monsters': 0}
+        res = run(TX.dungeon_walk_all(io, 'Tester Aaa', 'Warrior', squad, trace))
+        self.assertEqual(res.status, TX.SKIP, res.detail)
+        self.assertIn('retreated home (2 retreat(s)', res.detail)
+        self.assertEqual(trace['left'], 'retreated home')
+        self.assertEqual(self.calls, [('Tester Aaa', 'Warrior', 300)])
+
+    def test_the_weekly_challenge_and_the_difficulties_use_the_same_rule(self):
+        for key in ('dungeon_difficulty', 'weekly_challenge'):
+            self.assertIsNotNone(TX.home_rule(key, 'Tester Aaa', 'Warrior', 900))
+
+    def test_the_raid_loop_leaves_by_the_button_and_goes_home(self):
+        io = HomeIO(portal=False, leave='end', content='raid')
+        squad = [{'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker(), 'inside': True}]
+        trace = {'faults': [], 'reached': set(), 'killed': 0, 'bosses': 3, 'trash': 0, 'kills': 0, 'fought': 0.0, 'stuck': None, 'steps': 0,
+                 'secs': 0, 'left': '?', 'members': 1, 'came': 'foot', 'fallbacks': []}
+        res = run(TX.raid_walk_all(io, 'Tester Aaa', 'Warrior', {'slot': 1, 'level': 900}, squad, trace))
+        self.assertEqual(res.status, TX.SKIP, res.detail)
+        self.assertIn("out by the raid's Leave button", res.detail)
+        self.assertEqual(self.calls, [('Tester Aaa', 'Warrior', 900)])
+
+    def test_a_bot_with_health_over_the_line_plays_on_untouched(self):
+        io = HomeIO(health=80)
+        r = {'name': 'Tester Aaa', 'lead': True, 'walker': TX.RaidWalker(), 'inside': True}
+        trace = rift_trace()
+        run(TX.rift_walk_play(io, 'Tester Aaa', 'Warrior', r, trace))
+        self.assertEqual((trace.get('retreats'), io.said, self.calls), (None, [], []))
+
+
+class GearGap(unittest.TestCase):
+    def setUp(self):
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+
+    def tearDown(self):
+        TX.chore_walk = self._walk
+
+    def test_a_slot_the_stock_cannot_fill_is_named_with_its_reason_and_nothing_is_granted(self):
+        stock = [e for e in gstock() if e['sn'] != 'Boots']   # no boots in the window for this class and level
+        io = GearIO(bank=10 ** 7, pieces=[], worn={}, stock=stock, potions=(100, 100))
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Mage', 300))
+        self.assertEqual(sorted(io.worn), [1, 4, 7], 'helmet, armor and legs bought and worn; the boots slot stays empty')
+        self.assertIn('1 basic slot(s) stay empty: Boots (no Boots in the Gambler\'s stock for a level 300 Mage)', r.detail)
+        self.assertEqual(io.grants, [], 'no gold grant was needed, and no gear is ever granted')
+
+    def test_sold_and_dear_stock_say_why(self):
+        self.assertIn('sold', TX.gear_gap_why([{'sn': 'Boots', 'sold': True, 'p': 5}], 'Boots', 300, 'Mage'))
+        self.assertIn('costs 9000000 gold', TX.gear_gap_why([{'sn': 'Armor', 'p': 9000000}], 'Armor', 300, 'Mage'))
+        self.assertIsNone(TX.gear_gap_why([{'sn': 'Helmet', 'p': 10}], 'Helmet', 300, 'Mage'))
+
+    def test_a_low_level_names_the_gambler_level(self):
+        io = GearIO(bank=10 ** 7, pieces=[], worn={}, stock=gstock(), potions=(100, 100), level=20)
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Mage', 20))
+        self.assertIn('4 basic slot(s) stay empty', r.detail)
+        self.assertIn('the Gambler opens at level 40', r.detail)
+
+    def test_a_full_set_says_nothing_of_gaps(self):
+        io = GearIO(bank=10 ** 7, pieces=[], worn={1: 5, 4: 5, 7: 5, 8: 5}, stock=gstock(), potions=(100, 100))
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Mage', 300))
+        self.assertNotIn('stay empty', r.detail)
+
+
 if __name__ == '__main__':
     unittest.main()
