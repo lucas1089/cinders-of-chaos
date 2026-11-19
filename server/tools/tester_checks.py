@@ -8906,13 +8906,14 @@ def hand_weapon(hands):
     return next((w for w in worn if w.get('s') == HAND_SLOT), None) or (worn[0] if worn else None)
 
 
-def weapon_pick(rows, worn_il, cap=GEAR_WEAPON_CAP, fits=None):
+def weapon_pick(rows, worn_il, cap=GEAR_WEAPON_CAP, fits=None, power=None, worn_power=None):
     """from the Gambler's stock the weapon to buy: the unsold 'Weapon' row of the highest item level above the worn weapon's, under `cap` gold
     (the cheaper on a tie); None when none is better. The window lists only what the class and the level may wear; `fits` (O663: equip_fitter) is
-    the bot's own second look at that rule, so a weapon the class may not wear is never paid for"""
+    the bot's own second look at that rule, so a weapon the class may not wear is never paid for. O665: `power(row)` and `worn_power` (weapon_power_fn)
+    rank by what the class's spells read (the physical attack, the wand's damage), the item level only for a row whose power is not known"""
     cands = [e for e in rows or [] if isinstance(e, dict) and not e.get('sold') and e.get('sn') == 'Weapon'
-             and 0 < int(e.get('p') or 0) <= cap and int(e.get('l') or 0) > int(worn_il or 0) and (fits is None or fits(e))]
-    cands.sort(key=lambda e: (-int(e.get('l') or 0), int(e['p']), int(e.get('i') or 0)))
+             and 0 < int(e.get('p') or 0) <= cap and weapon_better(e, worn_il, power, worn_power, 'l') and (fits is None or fits(e))]
+    cands.sort(key=lambda e: (-(power(e) or 0) if power is not None else 0, -int(e.get('l') or 0), int(e['p']), int(e.get('i') or 0)))
     return cands[0] if cands else None
 
 
@@ -8930,12 +8931,13 @@ def weapon_worn_text(before, after, row):
     return False, 'the weapon stayed in the bag (a level, class or two-handed rule: not a fault)'
 
 
-def weapon_held(hands, worn_il, skip=(), fits=None):
+def weapon_held(hands, worn_il, skip=(), fits=None, power=None, worn_power=None):
     """the best weapon the backpack holds already (an earlier login's purchase, a drop) that is above the worn weapon's item level, or None; `skip`
-    holds the (id, index) of rows already tried; `fits` (O663) leaves out a weapon the class or the level may not wear"""
-    rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and int(w.get('il') or 0) > int(worn_il or 0) and (w.get('id'), w.get('i')) not in skip
+    holds the (id, index) of rows already tried; `fits` (O663) leaves out a weapon the class or the level may not wear; `power` / `worn_power` (O665)
+    judge by what the class's spells read, as `weapon_pick` does"""
+    rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and weapon_better(w, worn_il, power, worn_power, 'il') and (w.get('id'), w.get('i')) not in skip
             and (fits is None or fits(w))]
-    rows.sort(key=lambda w: (-int(w.get('il') or 0), -int(w.get('sc') or 0), int(w.get('i') or 0)))
+    rows.sort(key=lambda w: (-(power(w) or 0) if power is not None else 0, -int(w.get('il') or 0), -int(w.get('sc') or 0), int(w.get('i') or 0)))
     return rows[0] if rows else None
 
 
@@ -8982,7 +8984,9 @@ async def gear_weapon(io, name, g, found, level):
     worn = hand_weapon(hands)
     have = int((worn or {}).get('il') or 0)
     fit = equip_fitter(io, g.get('cls'), level)   # O663: only a weapon the class and the level may wear is worn or bought
-    held = weapon_held(hands, have, fits=fit)
+    power = weapon_power_fn(io, g.get('cls'))     # O665: what the class's spells read (the physical attack, the wand's damage), None: item level
+    worn_power = power(worn) if power is not None and worn else None
+    held = weapon_held(hands, have, fits=fit, power=power, worn_power=worn_power)
     if held is not None and await wear_weapon(io, g, held, worn):
         return
     if int(level or 0) < GAMBLE_MIN or not io.alive():
@@ -9004,15 +9008,23 @@ async def gear_weapon(io, name, g, found, level):
         if not isinstance(a, dict):
             g['notes'].append('no state in the Gambler window')
             return
-        row = weapon_pick(a.get('items'), have, fits=fit)
+        row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
         if row is None and a.get('reroll') is not None and int(a.get('gate') or 0) > have:   # O663: no weapon of the stock fits and the hand is under the gate of the level: a player pays for fresh crates
             fresh = await weapon_reroll(io, g, a)
             if fresh is not None:
                 a = fresh
-                row = weapon_pick(a.get('items'), have, fits=fit)
+                row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
+        while row is None and power is not None and TW is not None and TW.power_short(worn_power, level, g.get('cls')) and a.get('reroll') is not None \
+                and POWER_REROLLS.get(name, 0) < POWER_REROLL_MAX:   # O665: the hand is under half of what a set weapon of the level gives and the stock has none
+            POWER_REROLLS[name] = POWER_REROLLS.get(name, 0) + 1
+            fresh = await weapon_reroll(io, g, a)
+            if fresh is None:
+                break
+            a = fresh
+            row = weapon_pick(a.get('items'), have, fits=fit, power=power, worn_power=worn_power)
         if row is None:
             mine = [e for e in a.get('items') or [] if isinstance(e, dict) and e.get('sn') == 'Weapon']
-            g['weapon'] = 'no better weapon in the Gambler\'s stock (%d weapon row(s), worn item level %d%s)' % (len(mine), have, weapon_rejects(mine, have, fit))
+            g['weapon'] = 'no better weapon in the Gambler\'s stock (%d weapon row(s), worn item level %d%s)' % (len(mine), have, weapon_rejects(mine, have, fit, power=power, worn_power=worn_power) + weapon_power_text(worn_power))
             return
         if not await gold_enough(io, g, int(row['p']) + GEAR_RESERVE, 'a weapon of the Gambler'):
             row = None
@@ -9027,7 +9039,7 @@ async def gear_weapon(io, name, g, found, level):
             g['notes'].append('the weapon of the Gambler was not sold (%s)' % gamble_refusal(bought, b))
             row = None
             return
-        g['bought'].append('a weapon (item level %s) for %d gold' % (row.get('l'), int(row['p'])))
+        g['bought'].append('a weapon (item level %s%s) for %d gold' % (row.get('l'), weapon_power_text(power(row) if power is not None else None, ', power '), int(row['p'])))
     finally:
         await io.request('gamble', 'close', {}, [], ANSWER)
     if row is None or not io.alive():
@@ -9226,6 +9238,61 @@ def pocket_dps_text(t):
     return '' if d is None else ' [bot damage about %d a second: %d health in %d s]' % (round(d[0]), round(d[2]), round(d[1]))
 
 
+# ------------------------------------------------------------------------------------------------ the weapon the class's spells read (O665)
+# The pick below went by item level. A weapon spell reads the physical attack of the weapon in the hand (a caster's, the wand's damage), and the melee sets
+# from level 600 to 999 are mostly element (tester_weapons.py), so the bot ranks by that number where it knows it (items.xml and weapons.xml of the server)
+# and by item level where it does not (a fist class, an item the files do not list).
+try:
+    import tester_weapons as TW
+except ImportError:   # the tests of other tools load this file alone
+    TW = None
+WEAPON_STATS = [None]     # {item id: stats} of tester_weapons.load_weapon_stats (set_weapon_stats); None: no files, item level only
+POWER_REROLL_MAX = 2      # fresh crates a bot pays for in one run to find a weapon its spells can use (the price of each is the window's own)
+POWER_REROLLS = {}        # bot name -> rerolls paid for that reason in this run
+
+
+def set_weapon_stats(stats):
+    WEAPON_STATS[0] = stats
+
+
+def weapon_power_fn(io, cls):
+    """the function that says what a weapon row is worth to the class's spells (None for a row it cannot tell), or None when the bot has no weapon files
+    or the class has no rule: the pick then goes by item level as before O665"""
+    stats = None
+    getter = getattr(io, 'weapon_stats', None)
+    if callable(getter):
+        stats = getter()
+    stats = stats or WEAPON_STATS[0]
+    if not stats or TW is None or cls not in TW.WEAPON_KIND:
+        return None
+    return lambda row: TW.weapon_power(stats, row.get('id'), cls)
+
+
+def weapon_better(row, worn_il, power, worn_power, il_key):
+    """True when the row is a better weapon than the one in the hand: by power when both are known (TW.WEAPON_MARGIN over it), else by item level
+    (`il_key`: 'l' for a row of the Gambler, 'il' for a row of the backpack)"""
+    if power is not None and TW is not None:
+        verdict = TW.weapon_beats(power(row), worn_power)
+        if verdict is not None:
+            return verdict
+    return int(row.get(il_key) or 0) > int(worn_il or 0)
+
+
+def weapon_leftover(row, have, power, worn_power):
+    """True when a weapon of the backpack is no use next to the worn one: not stronger by power where both are known (a weapon that is stronger is
+    kept), else under the worn item level (the rule of O663)"""
+    if power is not None and TW is not None:
+        verdict = TW.weapon_beats(power(row), worn_power)
+        if verdict is not None:
+            return not verdict
+    return int(row.get('il') or 0) < have
+
+
+def weapon_power_text(value, prefix='; worn power '):
+    """', power 85' style text of a weapon power, '' when it is not known"""
+    return '' if value is None else '%s%d' % (prefix, round(value))
+
+
 # ------------------------------------------------------------------------------------------------ the weapon the class can wear (O663)
 # O662: "the melee bots deal 5 % of the median" and "unworn weapons pile up in the bag". The bag held kit weapons that a better one had replaced, the
 # junk swords of the loot ("sickle" four times in a Deadeye's bag), drops above the level (a Samurai of 1,340 with two axes of level 1,750) and
@@ -9293,14 +9360,14 @@ def equip_fitter(io, cls, level):
     return lambda row: equip_fits(rules, row.get('id'), cls, level) is not False
 
 
-def weapon_leftovers(hands, worn, fits, cap=WEAPON_DROPS):
+def weapon_leftovers(hands, worn, fits, cap=WEAPON_DROPS, power=None, worn_power=None):
     """the backpack weapon rows of `hands` that go: one the class or the level may not wear, or one that is no better than the weapon in the hand
     (the kit weapon a better one replaced, loot swords); the weakest first, at most `cap`. Nothing goes while the hand holds no weapon"""
     if worn is None:
         return []
     have = int(worn.get('il') or 0)
     rows = [w for w in (hands or {}).get('bag') or [] if isinstance(w, dict) and isinstance(w.get('i'), int) and w.get('cid')
-            and (not fits(w) or int(w.get('il') or 0) < have)]
+            and (not fits(w) or weapon_leftover(w, have, power, worn_power))]
     rows.sort(key=lambda w: (int(w.get('il') or 0), int(w.get('i'))))
     return rows[:cap]
 
@@ -9315,7 +9382,10 @@ async def gear_weapon_tidy(io, g, level=0):
     hands = (found or {}).get('hands') if isinstance(found, dict) else None
     if not isinstance(hands, dict):
         return 0
-    rows = weapon_leftovers(hands, hand_weapon(hands), equip_fitter(io, g.get('cls'), level))
+    _power = weapon_power_fn(io, g.get('cls'))
+    _worn = hand_weapon(hands)
+    rows = weapon_leftovers(hands, _worn, equip_fitter(io, g.get('cls'), level), power=_power,
+                            worn_power=_power(_worn) if _power is not None and _worn else None)
     if not rows:
         return 0
     bag = await io.helper('bag', 'bag', HELPER_WAIT)
@@ -9332,7 +9402,7 @@ async def gear_weapon_tidy(io, g, level=0):
     return gone
 
 
-def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP):
+def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP, power=None, worn_power=None):
     """O663: why none of the Gambler's weapon rows was bought, in words: ', 2 sold, 1 over the gold cap, 2 the class or level may not wear, 1 not above
     the worn item level' (only the reasons that hold); '' when there is no row. A row counts under the first reason that holds"""
     n = {'sold': 0, 'dear': 0, 'unfit': 0, 'low': 0}
@@ -9347,9 +9417,10 @@ def weapon_rejects(rows, worn_il, fits, cap=GEAR_WEAPON_CAP):
         elif fits is not None and not fits(e):
             n['unfit'] += 1
             unfit.append(str(e.get('id')))
-        elif int(e.get('l') or 0) <= int(worn_il or 0):
+        elif not weapon_better(e, worn_il, power, worn_power, 'l'):   # O665: by power where it is known
             n['low'] += 1
-    words = (('sold', '%d sold'), ('dear', '%d over the gold cap'), ('unfit', '%d the class or level may not wear'), ('low', '%d not above the worn item level'))
+    words = (('sold', '%d sold'), ('dear', '%d over the gold cap'), ('unfit', '%d the class or level may not wear'),
+             ('low', '%d not above the worn item level' if power is None or worn_power is None else '%d no stronger than the worn weapon'))
     parts = [w % n[k] for k, w in words if n[k]]
     if unfit:
         parts = [p + (' (item %s)' % ', '.join(unfit[:3]) if 'may not wear' in p else '') for p in parts]

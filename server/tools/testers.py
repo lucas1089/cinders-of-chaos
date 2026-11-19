@@ -80,6 +80,7 @@ import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario,
 import tester_checks as TX  # noqa: E402  (the system checks, O110)
 import tester_closed as TCL  # noqa: E402  (closed test mode, O582)
 import tester_journey as TJ  # noqa: E402  (the levelling journey on foot, O654)
+import tester_weapons as TW  # noqa: E402  (what a weapon is worth to a class's spells, O665)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -1173,6 +1174,10 @@ class CheckIO(KeyIO):
     def timers(self):
         return getattr(self.bot.args, 'checks_timers', None)
 
+    def weapon_stats(self):
+        """O665: {item id: attack / wand damage} of the server's items.xml and weapons.xml (tester_weapons.load_weapon_stats), or None"""
+        return getattr(self.bot.args, 'checks_weapons', None)
+
 
 def load_check_spells(server_dir, vocs):
     """{spell id: {name, level, vocations: [vocation ids]}} of the Chaos spells (spells_chaos.xml) and the stock ones
@@ -1339,6 +1344,8 @@ class TesterBot(LT.Bot):
         self.rotation = spells['rotation']
         self.all_spells = spells.get('all') or []   # O655: every spell of the class at its level (the support and learned-spell checks)
         self.heal = spells['heal']
+        self.vocation = entry.get('vocation')   # O665: the rotation is rebuilt for the level the character really has (refresh_rotation)
+        self.rotation_level = self.level
         self.ready = {}
         self.sched = TC.Scheduler(index)
         self.last = 'login'
@@ -1534,6 +1541,9 @@ class TesterBot(LT.Bot):
             self.results.anomaly(rule, self, health_before=self.health)
 
     def on_text(self, text):
+        bar = TC.cast_bar(text)   # O665: the cast bar of the bot's own cast-time spell
+        if bar:
+            self.cast_until = time.monotonic() + bar[1] / 1000.0 + TC.CAST_SLOP if bar[0] == 'start' else 0.0
         self.recent.append(text)
         self.recent_n += 1
         del self.recent[:-60]
@@ -1553,6 +1563,7 @@ class TesterBot(LT.Bot):
                 self.hunt_since = None
             if hk == 'info':
                 self.level = data.get('level', self.level)
+                self.refresh_rotation()   # O665: state.json holds the level of the setup; deaths and levelling moved the real one
                 cid = data.get('cid')
                 if isinstance(cid, int) and cid > 0 and cid != self.cid:
                     # the login answer may come after other messages (the client guard's challenge first): without
@@ -1597,6 +1608,7 @@ class TesterBot(LT.Bot):
                 self.results.anomaly(rule, self, monster=detail[0], gold=detail[1])
         elif kind == 'advance':
             self.level = detail[1]
+            self.refresh_rotation()   # O665: a new level may open a spell (and the preset of the level)
             self.results.log(self, 'advance', text)
         elif kind == 'death':
             self.on_death()
@@ -1830,7 +1842,7 @@ class TesterBot(LT.Bot):
                 self.keep_alive(now)
             except (ConnectionError, OSError):
                 return
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(TC.beat_delay(time.monotonic(), self.ready))   # O665: awake when the attack group is ready, not on a 0.25 s grid
 
     def keep_alive(self, now):
         """heal by spell under 60 %, by potion (hotkey: use with creature at 0xFFFF on its own id) under 40 %; under
@@ -1888,8 +1900,8 @@ class TesterBot(LT.Bot):
             spell = LT.next_spell(self.rotation, self.ready, now, mana=self.mana)
             if spell:
                 self.say(spell['words'])
-                self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + 0.1
-                self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
+                self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + TC.CAST_SLOP   # O665: 0.03 s, not 0.1 s
+                self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + TC.CAST_SLOP
 
     async def helper_says(self, command, kind, wait=4.0):
         """say `!tester <command> #N` and wait for the answer of that kind that carries N (the helper echoes it). The helper's own
@@ -1933,8 +1945,32 @@ class TesterBot(LT.Bot):
         return True if outcome == 'ok' else None
 
     async def do_wander(self, clock):
+        # O665: a person does not step off while his own cast-time spell runs (a move cancels it and the mana comes back: the bar says "You moved:
+        # the spell is interrupted."); the strongest spells of the Deadeye, the Elementalist and the Juggernaut are such casts
+        waited = 0.0
+        while self.casting(time.monotonic()) and waited < TC.CAST_WAIT_MAX and self.alive and not self.died:
+            await asyncio.sleep(0.1)
+            waited += 0.1
         self.walk(random.randint(2, 5))
         return True
+
+    def refresh_rotation(self):
+        """O665: the rotation, the heal and the spell list of the level the character really has. `entry['level']` is the level of the setup (800 to 2000 for
+        the ten testers) and the bots lose and win levels: a Deadeye of 574 cast the preset of level 1000 and a Mystic of 447 the preset of level 800. -> True when
+        the lists changed"""
+        ctx = getattr(self.args, 'rotation_ctx', None)
+        level = self.level
+        if not ctx or not isinstance(level, int) or level <= 0 or level == self.rotation_level:
+            return False
+        spells, model, by_id, auto = ctx
+        cs = class_spells(spells, model, by_id.get(self.vocation, ''), level, auto)
+        self.rotation, self.heal, self.all_spells = cs['rotation'], cs['heal'], cs.get('all') or []
+        self.rotation_level = level
+        return True
+
+    def casting(self, now):
+        """True while a cast-time spell of the bot is on the cast bar (the bar's own start message, ChaosCasting; `cast_until` is set in on_text)"""
+        return now < getattr(self, 'cast_until', 0.0)
 
     def failed(self, behaviour, r):
         """False, and why in the failure list: no helper answer, or the helper's own err"""
@@ -2261,7 +2297,10 @@ def class_spells(spells, model, vocation, level, auto=None):
     autorotation_data.lua, {spell id: name}): the attack spells are then the preset of the class and level, as a player with Auto setup casts them"""
     rot = LT.rotation_for(spells, model, vocation, level)
     if auto and auto[0]:
-        rot = TC.preset_rotation(auto[0].get(vocation), level, auto[1], {s['name']: s for s in spells}, rot)
+        if len(auto) > 2 and auto[2] is not None:   # O665: the rotation the button writes (top-up to five, area first), not the bare preset
+            rot = TC.helper_rotation(auto[0].get(vocation), level, auto[1], {s['name']: s for s in spells}, rot, auto[2])
+        else:
+            rot = TC.preset_rotation(auto[0].get(vocation), level, auto[1], {s['name']: s for s in spells}, rot)
     heals = [s for s in spells if s['group'] == 'healing' and s['level'] <= level and not s['needlearn']
              and not s['params'] and (not s['vocations'] or vocation in s['vocations'])]
     heals.sort(key=lambda s: (-s['level'], s['words']))
@@ -2302,9 +2341,11 @@ async def run_bots(a, entries):
             pass
     bots = []
     seen_class = {}
+    a.rotation_ctx = (spells, model, by_id, (getattr(a, 'auto_table', None), getattr(a, 'auto_names', None) or {}, getattr(a, 'auto_area', None)))   # O665
     for i, e in enumerate(entries):
         bots.append(TesterBot(i, e, a, n, results, class_spells(spells, model, by_id.get(e['vocation'], ''), e['level'],
-                                                               (getattr(a, 'auto_table', None), getattr(a, 'auto_names', None) or {}))))
+                                                               (getattr(a, 'auto_table', None), getattr(a, 'auto_names', None) or {},
+                                                                getattr(a, 'auto_area', None)))))
         bots[-1].class_index = seen_class.get(e.get('class'), 0)
         seen_class[e.get('class')] = bots[-1].class_index + 1
     saver = asyncio.ensure_future(save_results_loop(a, results))
@@ -2380,6 +2421,7 @@ def run(a):
     a.checks_rotation = None
     a.checks_spells = {}
     a.checks_equip = None
+    a.checks_weapons = None   # O665
     a.auto_table, a.auto_names = None, {}   # O663: the Auto setup rotation the bots cast (autorotation_data.lua), set below
     a.checks_timers = None
     if a.checks:
@@ -2392,10 +2434,12 @@ def run(a):
         vocs = LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))
         a.checks_spells = load_check_spells(a.server_dir, vocs)
         a.checks_equip = TX.load_equip_rules(a.server_dir)   # O663: the weapons a class may wear
+        a.checks_weapons = TW.load_weapon_stats(a.server_dir) or None   # O665: what a weapon is worth to the class's spells
     rot663 = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
     if os.path.exists(rot663) and a.server_dir:   # O663: the bots cast the preset of Auto setup, like the player the balance models measured
         try:
             a.auto_table = TX.load_table(rot663)
+            a.auto_area = TC.load_area(rot663)   # O665: which spells the button puts first
             a.auto_names = {sid: s['name'] for sid, s in load_check_spells(
                 a.server_dir, LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))).items()}
         except (OSError, ValueError):

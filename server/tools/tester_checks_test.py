@@ -10418,6 +10418,197 @@ class RerollIO(TidyIO):
         return out
 
 
+ITEMS665 = '''<?xml version="1.0"?>
+<items>
+	<item id="8209" name="kit sword"><attribute key="weaponType" value="sword"/><attribute key="attack" value="12"/></item>
+	<item id="900" name="sanguine blade"><attribute key="weaponType" value="sword"/><attribute key="elementfire" value="73"/><attribute key="attack" value="13"/></item>
+	<item id="901" name="deathlord blade"><attribute key="weaponType" value="sword"/><attribute key="attack" value="85"/></item>
+	<item id="902" name="soulbleeder"><attribute key="weaponType" value="distance"/><attribute key="attack" value="103"/></item>
+	<item id="903" name="eldritch wand"><attribute key="weaponType" value="wand"/><attribute key="range" value="4"/></item>
+	<item id="904" name="arodis wand"><attribute key="weaponType" value="wand"/></item>
+	<item id="905" name="stone"><attribute key="weight" value="5"/></item>
+</items>
+'''
+WEAPONS665 = '''<?xml version="1.0"?>
+<weapons>
+	<wand id="903" level="250" mana="22" min="106" max="130" type="fire"> <!-- Eldritch Wand --> </wand>
+	<wand id="904" level="400" mana="28" min="191" max="219" type="energy"> <!-- Arodis Wand --> </wand>
+</weapons>
+'''
+
+
+class PowerIO(TidyIO):
+    """a TidyIO that knows the weapon numbers of the server (CheckIO.weapon_stats)"""
+
+    def __init__(self, stats=None, **kw):
+        TidyIO.__init__(self, **kw)
+        self.stats = stats
+
+    def weapon_stats(self):
+        return self.stats
+
+
+class PowerRerollIO(RerollIO):
+    """a RerollIO (a Gambler that rerolls once for 500,000 gold) that knows the weapon numbers of the server"""
+
+    def __init__(self, stats=None, **kw):
+        RerollIO.__init__(self, **kw)
+        self.stats = stats
+
+    def weapon_stats(self):
+        return self.stats
+
+
+class Power665(unittest.TestCase):
+    """O665: the bot ranks a weapon by what its class's spells read (the physical attack, the wand's damage), not by item level: the melee sets of
+    level 600 to 999 are mostly element and cast with skill x 20"""
+
+    def setUp(self):
+        import tempfile
+        import tester_weapons as W
+        self.W = W
+        self.dir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.dir, 'data', 'items'))
+        os.makedirs(os.path.join(self.dir, 'data', 'weapons'))
+        with open(os.path.join(self.dir, 'data', 'items', 'items.xml'), 'w') as f:
+            f.write(ITEMS665)
+        with open(os.path.join(self.dir, 'data', 'weapons', 'weapons.xml'), 'w') as f:
+            f.write(WEAPONS665)
+        self.stats = W.load_weapon_stats(self.dir)
+        self._walk = TX.chore_walk
+        TX.chore_walk = walked_stub
+        self.rules = TX.parse_equip_rules(EQUIP663)
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.dir)
+        TX.chore_walk = self._walk
+        TX.set_weapon_stats(None)
+
+    def test_the_files_are_read(self):
+        self.assertEqual(self.stats[900], {'type': 'sword', 'attack': 13, 'wand': 0.0})
+        self.assertEqual(self.stats[902]['type'], 'distance')
+        self.assertEqual(self.stats[903]['wand'], 118.0, 'the mean of the wand\'s min and max')
+        self.assertNotIn(905, self.stats, 'an item that is no weapon')
+        self.assertEqual(self.W.load_weapon_stats(os.path.join(self.dir, 'nothing')), {})
+
+    def test_what_a_weapon_is_worth_to_a_class(self):
+        p = self.W.weapon_power
+        self.assertEqual(p(self.stats, 900, 'Juggernaut'), 20.0, 'attack 13 and a fire element: a spell reads 20 (the floor)')
+        self.assertEqual(p(self.stats, 901, 'Juggernaut'), 85.0)
+        self.assertEqual(p(self.stats, 902, 'Deadeye'), 103.0)
+        self.assertEqual(p(self.stats, 902, 'Warrior'), 0.0, 'a bow in the hand of a Warrior')
+        self.assertEqual(p(self.stats, 904, 'Elementalist'), 205.0)
+        self.assertEqual(p(self.stats, 901, 'Elementalist'), 0.0, 'a sword for a caster')
+        self.assertIsNone(p(self.stats, 901, 'Monk'), 'the fist classes have no rule: item level')
+        self.assertIsNone(p(self.stats, 12345, 'Juggernaut'), 'an id the files do not list')
+        self.assertIsNone(p(None, 901, 'Juggernaut'))
+        self.assertTrue(self.W.weapon_beats(86.0, 77.0))
+        self.assertFalse(self.W.weapon_beats(80.0, 77.0), 'under the 10 % margin: the weapon in the hand stays')
+        self.assertIsNone(self.W.weapon_beats(None, 77.0))
+
+    def test_the_pick_takes_the_physical_weapon_not_the_higher_item_level(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=self.stats)
+        power = TX.weapon_power_fn(io, 'Juggernaut')
+        self.assertEqual(TX.weapon_pick(stock, 100)['id'], 900, 'by item level the element sword wins (O663)')
+        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=20.0)['id'], 901, 'by power the physical one')
+        self.assertIsNone(TX.weapon_pick(stock, 100, power=power, worn_power=85.0), 'nothing stronger than an attack of 85: nothing is bought')
+        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=None)['id'], 901, 'the worn weapon is not known: the item level lets both in, the power ranks them')
+        self.assertIsNone(TX.weapon_pick(stock, 200, power=power, worn_power=None), 'and the item level still says nothing is better than 200')
+        unknown = [{'i': 1, 'id': 777, 'sn': 'Weapon', 'p': 800000, 'l': 130}]
+        self.assertEqual(TX.weapon_pick(unknown, 100, power=power, worn_power=20.0)['id'], 777, 'a weapon the files do not list: item level')
+
+    def test_a_held_weapon_of_more_power_is_worn_and_one_of_less_is_not(self):
+        hands = {'bag': [{'i': 1, 'id': 900, 'cid': 900, 'il': 200}, {'i': 2, 'id': 901, 'cid': 901, 'il': 100}], 'worn': []}
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        self.assertEqual(TX.weapon_held(hands, 50, power=power, worn_power=20.0)['id'], 901)
+        self.assertIsNone(TX.weapon_held(hands, 50, power=power, worn_power=85.0), 'neither is stronger than the worn weapon')
+        self.assertEqual(TX.weapon_held(hands, 50)['id'], 900, 'without the power: the item level as before')
+
+    def test_leftovers_keep_the_stronger_weapon_even_at_a_lower_item_level(self):
+        fits = TX.equip_fitter(TidyIO(rules=self.rules), 'Juggernaut', 800)
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        worn = {'s': 6, 'id': 900, 'il': 130}
+        hands = {'bag': [{'i': 1, 'id': 901, 'cid': 901, 'il': 90}, {'i': 2, 'id': 900, 'cid': 900, 'il': 100}], 'worn': [worn]}
+        self.assertEqual([w['i'] for w in TX.weapon_leftovers(hands, worn, fits)], [1, 2], 'by item level both go')
+        self.assertEqual([w['i'] for w in TX.weapon_leftovers(hands, worn, fits, power=power, worn_power=20.0)], [2],
+                         'by power the stronger weapon stays and the equal one goes')
+
+    def test_the_gear_up_buys_the_weapon_that_casts(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=self.stats, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        io.hand['id'] = 900
+        io.hand['il'] = 100
+        r = run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 800))
+        self.assertEqual(io.hand['id'], 901, r.detail)
+        self.assertEqual([e['i'] for e in io.stock if e.get('sold')], [2])
+        self.assertIn('power', r.detail, 'the text says the power of the weapon it bought')
+
+    def test_without_the_files_the_gear_up_goes_by_item_level_as_before(self):
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
+                 {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
+        io = PowerIO(stats=None, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=800)
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 800))
+        self.assertEqual(io.hand['id'], 900)
+
+    def test_the_plan_of_the_level(self):
+        W = self.W
+        self.assertAlmostEqual(W.plan_power(500, 'Juggernaut'), 81 * 0.65, 6, 'melee: the physical part of the plan (the sets give 35 % as an element)')
+        self.assertAlmostEqual(W.plan_power(817, 'Warrior'), (94 + (118 - 94) * (817 - 700) / 150.0) * 0.65, 6, 'straight between the anchors')
+        self.assertEqual(W.plan_power(574, 'Deadeye'), 111 + (125 - 111) * 74 / 200.0, 'a launcher counts whole')
+        self.assertEqual(W.plan_power(8, 'Elementalist'), 16.0)
+        self.assertEqual(W.plan_power(5000, 'Elementalist'), 398.0, 'flat above 2000')
+        self.assertIsNone(W.plan_power(500, 'Monk'), 'no rule for a fist class')
+        self.assertTrue(W.power_short(20.0, 817, 'Juggernaut'), 'attack 20 at level 817 is under half of the plan')
+        self.assertFalse(W.power_short(73.0, 817, 'Juggernaut'), 'a set weapon of level 800 is not')
+        self.assertFalse(W.power_short(None, 817, 'Juggernaut'))
+        self.assertFalse(W.power_short(20.0, 817, 'Monk'))
+
+    def _reroll_io(self, hand_id, hand_il, stock, fresh, level=817):
+        io = PowerRerollIO(fresh=fresh, stats=self.stats, rules=self.rules, bank=10 ** 7, worn={1: 5, 4: 5, 7: 5, 8: 5}, potions=(100, 100), stock=stock, level=level,
+                           hand_il=hand_il)
+        io.hand['id'] = hand_id
+        return io
+
+    def test_a_hand_under_half_the_plan_with_no_better_weapon_in_the_stock_pays_for_fresh_crates(self):
+        TX.POWER_REROLLS.clear()
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'}]
+        fresh = [{'i': 1, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 128, 'n': 'deathlord blade'}]
+        io = self._reroll_io(900, 130, stock, fresh)
+        r = run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 1, r.detail)
+        self.assertEqual(io.hand['id'], 901, r.detail)
+        self.assertIn('a reroll for 500000 gold', r.detail)
+        self.assertEqual(TX.POWER_REROLLS['Tester Aaf'], 1)
+
+    def test_no_reroll_when_the_hand_holds_a_weapon_of_the_plan_or_the_cap_is_met(self):
+        TX.POWER_REROLLS.clear()
+        stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'}]
+        io = self._reroll_io(901, 130, stock, [])
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'attack 85 in the hand: the plan of level 817 is 70')
+        io = self._reroll_io(900, 130, stock, [])
+        TX.POWER_REROLLS['Tester Aaf'] = TX.POWER_REROLL_MAX
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'the bot has paid for its share of rerolls in this run')
+        TX.POWER_REROLLS.clear()
+        io = self._reroll_io(900, 130, stock, [])
+        io.stats = None
+        run(TX.gear_up(io, 'Tester Aaf', 'Juggernaut', 817))
+        self.assertEqual(io.rerolls, 0, 'without the weapon files the rule is the item level of O663: the hand is at the gate')
+
+    def test_the_no_weapon_text_names_the_reason_by_power(self):
+        rows = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130}]
+        power = TX.weapon_power_fn(PowerIO(stats=self.stats), 'Juggernaut')
+        self.assertIn('no stronger than the worn weapon', TX.weapon_rejects(rows, 100, None, power=power, worn_power=85.0))
+        self.assertIn('not above the worn item level', TX.weapon_rejects(rows, 200, None))
+        self.assertEqual(TX.weapon_power_text(85.4), '; worn power 85')
+        self.assertEqual(TX.weapon_power_text(None), '')
+
+
 class Reroll663(unittest.TestCase):
     """O663: every crate sold: the bot pays for a reroll, as a player does, and buys from the fresh stock"""
 
