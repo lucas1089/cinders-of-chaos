@@ -3784,6 +3784,48 @@ local function foundRows(player, bag)
 	return rows
 end
 
+-- O662: the weapon rows of the backpack and of the hands (read only; the weapon type 4 is a shield, 7 an ammunition, 0 no weapon)
+local function handRow(item)
+	local it = ItemType(item:getId())
+	local wt = it:getWeaponType() or 0
+	if not H.HAND_WEAPON_TYPES[wt] then
+		return nil
+	end
+	local bits = it:getSlotPosition() or 0
+	local ilvl = 0
+	if ChaosCrafting and ChaosCrafting.levelOf then
+		local ok, v = pcall(function() return ChaosCrafting.levelOf(item) end)
+		ilvl = ok and tonumber(v) or 0
+	end
+	return {id = item:getId(), cid = it:getClientId(), wt = wt, il = ilvl, sc = pieceScore(item, it), two = math.floor(bits / 2048) % 2 == 1}
+end
+
+function H.handRows(bag)
+	local rows = {}
+	for i = 0, bag:getSize() - 1 do
+		local item = bag:getItem(i)
+		local row = item and handRow(item)
+		if row then
+			row.i = i
+			rows[#rows + 1] = row
+		end
+	end
+	return rows
+end
+
+function H.handWorn(player)
+	local worn = {}
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local item = player:getSlotItem(slot)
+		local row = item and handRow(item)
+		if row then
+			row.s = slot
+			worn[#worn + 1] = row
+		end
+	end
+	return worn
+end
+
 function commands.found(player, arg)
 	local what, usage = H.parseFound(arg)
 	if not what then
@@ -3816,6 +3858,10 @@ function commands.found(player, arg)
 	local report = H.foundReport(foundRows(player, bag), worn, state)
 	report.bagClientId = ItemType(bag:getId()):getClientId()
 	report.level = player:getLevel()
+	local okB, bagOpen = pcall(function() local c = player:getContainerById(0); return c ~= nil and c:getId() == bag:getId() end)
+	report.bagOpen = okB and bagOpen or false -- O662: the move packet names the backpack as container 0: only when it is open does a drag onto a slot find the item
+	local okH, hands = pcall(function() return H.handReport(H.handRows(bag), H.handWorn(player)) end) -- O662: the weapons, so the bot can wear what it bought
+	report.hands = okH and hands or nil
 	tell(player, "found", report)
 end
 
