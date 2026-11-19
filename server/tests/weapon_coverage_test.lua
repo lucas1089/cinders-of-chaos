@@ -286,4 +286,94 @@ do
 	eq(C.familyText(cfg, rows):find("Sentinel", 1, true) ~= nil, true, "the plain table")
 end
 
+-- ---------------------------------------------------------------- the physical attack the weapon spells read (O673)
+do
+	-- the stock rule: the total is kept, the element damage is at most 35% of it (tools/stock_weapon_physical.py is the same rule)
+	eq(cfg.stockPhysical.share, 0.35, "the share of the sets")
+	local function stock(kind, level, attack, element, charges)
+		local a, e = C.stockGrowth({kind = kind, level = tostring(level), attack = tostring(attack), element = tostring(element),
+			charges = tostring(charges or 0)}, cfg)
+		return a, e
+	end
+	local a0, e0 = stock("sword", 600, 8, 46)
+	local a1, e1 = stock("sword", 100, 8, 46)
+	eq(a1 + e1, 54, "a weapon of level 100 does not grow and is not split")
+	eq(e1, 46, "level 100 keeps its element")
+	eq(a0 + e0, 86, "a sword of level 600: the total after the growth, 13 + 73")
+	eq(e0, 30, "the element is 35% of 86")
+	eq(a0, 56, "the rest is physical attack")
+	local a2, e2 = stock("axe", 400, 60, 0)
+	eq(a2 .. "/" .. e2, "85/0", "a plain physical weapon stays")
+	local a3, e3 = stock("club", 400, 40, 12)
+	eq(e3 <= math.floor((a3 + e3) * 0.35 + 0.5), true, "a small element stays under the cap")
+	local a4, e4 = stock("sword", 330, 0, 50)
+	eq(a4 > 0 and a4 + e4 == 67, true, "an attack of 0 becomes physical: total 67")
+	local a5, e5 = stock("bow", 600, 8, 46)
+	eq(a5 .. "/" .. e5, "13/73", "a bow is not split")
+	local a6, e6 = stock("sword", 600, 8, 46, 5)
+	eq(a6 .. "/" .. e6, "8/46", "a weapon with charges is left alone")
+
+	-- the audit on synthetic weapons
+	local D = {weapons = {
+		{id = 1, family = "melee", kind = "sword", hands = 1, level = 650, phys = 13, physRatio = 13 / 91, obtainable = true, origin = "stock"},
+		{id = 2, family = "melee", kind = "sword", hands = 1, level = 650, phys = 59, physRatio = 59 / 91, obtainable = true, origin = "set:x"},
+		{id = 3, family = "melee", kind = "axe", hands = 1, level = 650, phys = 59, physRatio = 59 / 91, obtainable = true, origin = "set:x"},
+		{id = 4, family = "melee", kind = "axe", hands = 1, level = 650, phys = 80, physRatio = 80 / 91, obtainable = false, origin = "stock"},
+		{id = 5, family = "wand", kind = "wand", hands = 1, level = 650, power = 100, ratio = 1, obtainable = true, origin = "stock"}
+	}}
+	local rows = C.physAudit(cfg, D)
+	local jug
+	for _, r in ipairs(rows) do
+		if r.class == "Juggernaut" then
+			jug = r
+		end
+		eq(r.class ~= "Mystic" and r.class ~= "Ranger", true, "only the melee classes are audited")
+	end
+	local cell = jug.cells[6]
+	eq(cell.total, 3, "three obtainable melee weapons in the band (the unobtainable one and the wand do not count)")
+	eq(cell.n, 2, "two have a physical attack of 60% of the tier or more")
+	eq(C.physFlag(cfg, cell), "ONE", "two are too few")
+	eq(C.physFlag(cfg, {n = 0}), "ZERO", "none")
+	eq(C.physFlag(cfg, {n = 3}), nil, "three pass")
+	eq(#C.physFailures(cfg, rows) > 0, true, "the failures list the bands")
+	local stockRows = C.physAudit(cfg, D, "stock")
+	for _, r in ipairs(stockRows) do
+		if r.class == "Juggernaut" then
+			eq(r.cells[6].total, 1, "only the stock weapon counts with an origin")
+			eq(r.cells[6].n, 0, "and its physical attack is 14% of the tier")
+		end
+	end
+
+	-- the shipped data: every melee class, the Thief and Monk lines included, has the options in every band up to 2400+
+	local data = C.load(cfg)
+	local real = C.physAudit(cfg, data)
+	local seen = {}
+	for _, r in ipairs(real) do
+		seen[r.class] = true
+		for i, c in ipairs(r.cells) do
+			eq(c.n >= cfg.minOptions, true, r.class .. " band " .. cfg.bands[i][3] .. ": " .. c.n .. " weapons with a physical attack of " .. cfg.physMin)
+		end
+	end
+	for _, name in ipairs({"Warrior", "Juggernaut", "Berserker", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage",
+			"Templar", "Inquisitor", "Sentinel"}) do
+		eq(seen[name], true, name .. " is audited")
+	end
+	eq(#C.physFailures(cfg, real), 0, "the shipped data passes")
+	-- no stock melee weapon that grows has more than the share as element
+	for _, w in ipairs(data.weapons) do
+		if w.origin == "stock" and w.family == "melee" and w.charges == 0 and w.level > cfg.stockGrowth.fromLevel then
+			local total = w.power
+			eq(w.phys >= total - math.floor(total * cfg.stockPhysical.share + 0.5), true, "stock weapon " .. w.id .. ": the element is at most 35%")
+		end
+	end
+	-- the Juggernaut's stock weapons of the levels 600 to 999 read a physical attack of 56 or more (before O673: 13 to 16)
+	local best = 0
+	for _, w in ipairs(data.weapons) do
+		if w.origin == "stock" and w.family == "melee" and w.level == 600 then
+			best = math.max(best, w.phys)
+		end
+	end
+	eq(best >= 60, true, "the best stock weapon of level 600 has a physical attack of 60 or more: " .. best)
+end
+
 print("weapon_coverage_test: " .. n .. " checks ok")

@@ -246,7 +246,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                and element damage of a sword, axe, club, bow or crossbow, min and max of a wand or rod, of a level above 100,
                times the weapon growth a(level) (items.xml, weapons.xml; the numbers before are kept in a comment, so a second
                run changes nothing and survey_base_weapons.py still reads the stock snapshot; after archery, whose launcher
-               attack it grows)
+               attack it grows; O673: a sword, axe or club keeps its total and has at most 35% of it as element damage, the
+               rest is the physical attack a weapon spell reads, tools/stock_weapon_physical.py, README "Physical attack of
+               the melee weapons (O673)")
   uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
                equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
                movements.xml check the looser rule and a movement script holds each copy to its own (unique or

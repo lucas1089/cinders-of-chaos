@@ -11166,7 +11166,7 @@ The rest of the ten in the last column: Mystic 1.33 (level 442), Ranger 1.17 (53
    - **Deadeye**: bow attack 117, distance skill 125 (the plan: 116), so the power term is above the model's; spells 597 a second (27 %), auto 1,624 (73 %). The Demon stood next to the bot, so range and line of sight did not enter (in the hunt "You can only use it on creatures" came in 1 of 40 casts and a move cancelled 8 of 17 channels). The hunt number (0.26) was the filler of the wrong preset and the cancelled channels; the clean 0.57 to 0.60 the same bot with the filler, 0.78 with the preset of its own level.
    - **Elementalist**: spells 1,212 a second (47 %), auto 1,364. Doomtide 11,668 a cast, Glacial Doom 4,242; Falling Pyre 63 to 1,148 (its damage lands after the 1.5 s window, the log shows 3 to 16 hits). Mana was not the limit (11,000 to 13,000 of 28,000 left at the end of the runs). The wand: Eldritch Wand 118 mean against the plan's 165 at the level; with the wand of 189 / 205 the caster factor `1 + (W - 1) x min(1.2, wand / mean)` rises: 2,438 to 2,658 / 2,930.
 3. **The weapon: the bot's pick, and what the game offers.** The pick went by item level. The rows of one stock have the same item level (`gate - rand(0, spread)`), so the highest level and the cheaper decided by chance. Now `tester_weapons.weapon_power` reads the numbers of the server's own `items.xml` / `weapons.xml` (melee: the physical attack, floor 20; bow: the attack; wand: the mean of min and max; another kind: 0; a fist class or an unknown id: no rule, the item level as before) and the pick takes the stronger weapon by 10 % (`weapon_pick`, `weapon_held`, `weapon_leftovers`: a stronger weapon in the bag is kept even at a lower item level, `weapon_rejects`: "no stronger than the worn weapon; worn power 20"). When the stock has none and the hand is under half of the plan of the level (`plan_power`: the gear sets' `WEAPON_CURVES`, melee x 0.65 because the sets give 35 % as an element) the bot pays for fresh crates, at most 2 a run (`POWER_REROLL_MAX`), the window's own price, the TEST ONLY gold top-up of O658 the only grant (named in the text). Seen live: Juggernaut 819, rerolls of 709,900 and 1,419,800 gold, bought attack 73 (item level 104, 1,555,000); Thief 722, one reroll of 643,500 gold, a TEST ONLY grant of 1,842,874; Warrior 586, bought attack 73 (1,219,700); Elementalist 652, a wand of 189 (1,334,400).
-   - **The game: melee weapon spells at levels 600 to 999 (for the owner, not changed).** The stock melee weapons of that band carry attack 8 to 13 and an element of 50 to 73 (12 base weapons: soul and sanguine families); a spell reads 20 of them. The bands around it: 0 to 99: attack 53; 100 to 299: 58; 300 to 599: 60 (85 installed after the growth, Deathlord Blade); 600 to 999: 10 plus element; 1000 and up: 71 (157 to 171 installed, Dawnforged). The equipment sets give a physical part of about 65 % of the plan: Bloodmoon 650: 59 to 61, Rimewraith 725: 64 to 66, Azure Vigil 800: 71 to 73, Rimewraith 1000: 96 to 97. A level 817 Juggernaut that finds no set weapon in the Gambler (3 weapon rows, none stronger than 20) deals 0.29 of the median; with the best physical stock weapon 0.47 and with a set weapon 0.51 (first read, before the level fix). `class_dps_measured.csv` was measured at 100, 500 and 1000 only, so the dip of the band 600 to 999 is in no row of the model. Either the band's stock weapons need a physical attack of about 70 (the Gambler's `candidates` take the 4 highest levels of the pool, which are these), or the spell reads the element too. Same for the Thief line in this band (blades read the blade's attack).
+   - **The game: melee weapon spells at levels 600 to 999 (for the owner; fixed in O673, "Physical attack of the melee weapons (O673)": the stock melee weapons keep at most 35% as element, a level 600 one reads 56 to 63).** The stock melee weapons of that band carry attack 8 to 13 and an element of 50 to 73 (12 base weapons: soul and sanguine families); a spell reads 20 of them. The bands around it: 0 to 99: attack 53; 100 to 299: 58; 300 to 599: 60 (85 installed after the growth, Deathlord Blade); 600 to 999: 10 plus element; 1000 and up: 71 (157 to 171 installed, Dawnforged). The equipment sets give a physical part of about 65 % of the plan: Bloodmoon 650: 59 to 61, Rimewraith 725: 64 to 66, Azure Vigil 800: 71 to 73, Rimewraith 1000: 96 to 97. A level 817 Juggernaut that finds no set weapon in the Gambler (3 weapon rows, none stronger than 20) deals 0.29 of the median; with the best physical stock weapon 0.47 and with a set weapon 0.51 (first read, before the level fix). `class_dps_measured.csv` was measured at 100, 500 and 1000 only, so the dip of the band 600 to 999 is in no row of the model. Either the band's stock weapons need a physical attack of about 70 (the Gambler's `candidates` take the 4 highest levels of the pool, which are these), or the spell reads the element too. Same for the Thief line in this band (blades read the blade's attack).
 4. **Ember Descent after O664** (`descent_walk` with `--closed`, the gear-up first, the helper put the bot at the temple, the free descent of the day; before O664 no bot cleared room 1: step 22 item 4, 7 of 10 fled). Round 1 (the rotation of the setup level): Mystic 449 cleared room 2 in 31 s; Thief 721 room 1 in 42 s; Elementalist 650 room 2 in 52 s; Juggernaut 817 room 2 in 95 s (weapon power 20); the Warrior 585 (power 73) and the Ranger 552 retreated once and fell; Deadeye, Illusionist and Samurai: "the halls are kept for the players (2 free, 2 reserved)"; Ninja: no sigil. Round 2 (the reroll rule): Juggernaut 819 room 3 in 72 s; Thief 722, Elementalist 647 and Ranger 547 fell in room 1. Round 3 (all fixes): Mystic 442 room 2 in 38 s, Illusionist 594 room 2 in 30 s, Thief 714 room 1 in 33 s, Ranger 535 room 2 in 59 s, Juggernaut 813 room 2 in 65 s, Deadeye 561 room 2 in 83 s: all six that entered cleared at least room 1 (Warrior and Elementalist found the free descent used, Ninja and Samurai the halls kept). A fall in the earlier rounds was a flee at 14 to 20 % health after one heal; no death in the runs. The model's median class clears room 1 in 12 to 17 s, the bots in 30 to 95 s.
 5. **After the gear-up** (tree builds and weapons by power, clean probe, 210 s, before the level fix): Mystic 0.85, Ranger 0.98, Warrior 0.91, Elementalist 0.68, Deadeye 0.55, Juggernaut 0.28 (the weapon was not bought yet), Illusionist 0.93, Thief 0.54, Ninja 0.61, Samurai 0.71. The Ninja and the Samurai lost 10 to 15 % against before the gear-up: the Defense build of the free points takes the place of damage nodes (`gear_tree`, then `focus_damage` for what is left).
 
@@ -17575,6 +17575,53 @@ Owner question: does every class have enough weapons? The audit answers it from 
 | Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/114 | 27/113 | 14/100 | 24/125 | 21/114 | 29/113 |
 
 <!-- weapon-coverage:end -->
+
+### Physical attack of the melee weapons (O673)
+Owner decision 2026-11-19: the Juggernaut's weapons go up to level 2500 like the other classes'. The audit above counts attack plus element
+damage ("power"), and its Juggernaut row is the Warrior's, 3 or more weapons and 100% of the tier in every band. A weapon spell reads
+`skill x max(20, physical attack)` only (`ChaosSpell.meleeAttack`, `data/spells/chaos/_common.lua`: the element damage is not in it), so the
+rows hid the dip of O665 (step 24 of "The rest of the closed audit (O589)"): the stock sword, axe and club of the levels 180 to 600
+(soul and sanguine families, 44 weapons) carry an attack of 0 to 29 and an element of 29 to 85 after the growth (a physical share of 0 to 50%, mostly 15%), and
+the Gambler's pool has nothing else for the levels 600 to 999 (a set piece is 20% of the picks). A level 817 Juggernaut cast with an attack
+of 20: 0.29 of the median class (0.47 to 0.51 with an attack-85 sword or a set weapon).
+- **The audit.** `luajit tools/weapon_coverage.lua --phys` (and `--phys stock`, only the stock weapons, what the Gambler's pool, the shops
+  and the recipes offer) counts, per melee class (Warrior, Thief and Templar lines, Monk line; the Berserker two-handed) and band, the
+  obtainable melee weapons whose physical attack alone is at least `physMin` (60%) of the tier, and the best physical share. The sets give
+  65% (`install_gear_sets.py` `ELEMENT_SHARE` 0.35), so 60% is the limit. `--check` fails on fewer than `minOptions` (3) in a band for any
+  melee class, the Thief and Monk lines too (no `handledElsewhere` here). The table is in the README block below (`--write`).
+- **The fix.** `tools/stock_weapon_physical.py` holds the rule, `patch_stock_weapon_growth.py` (install step `weapongrowth`) applies it
+  after the growth: a stock sword, axe or club of a level above 100 without charges keeps its total (attack plus element damage), its
+  element damage is at most 35% of it (the share of the sets), the rest is attack. 44 weapons change (17 of the levels 101 to 300, 27 of
+  301 to 600, the twelve of level 600 among them); the others have a smaller element share already. An item without an attack line gets one.
+  The numbers before the step stay in the marker comment, so a second run changes nothing and the survey keeps the stock snapshot
+  (`base_weapons.csv`). `tools/weapon_coverage.lua` `stockPhysical` applies the same rule to the snapshot (`stock_weapon_physical_test.py`
+  holds the three equal), `gen_weapon_growth.py` puts the new attack in `data/lib/chaos_weapon_growth.lua` (a rolled copy not yet touched
+  follows by the difference; one touched before O673 keeps the attack it has, the beta data is wiped before launch). No new item, no new art.
+- **Same dip for the other classes.** Every melee class reads the same stock rows (the Warrior, Berserker, Templar, Thief, Monk lines: the
+  class lists of the stock weapons are the whole melee list), so the one rule fixes all of them. The casters read the wand's damage, the
+  Ranger line the bow's attack: no element in those (`weapon_sim.py --power`, "Auto attack power"). The fist weapons of the Monk line are
+  untouched.
+- **Up to 2500.** Weapons exist up to level 2200 for every class (sets to 2050, uniques to 2200); the top band is judged at level 2400 and
+  holds 28 to 30 options at 111 to 113%. No class has a weapon of its own between 2200 and 2500, the Juggernaut as little as the others.
+
+<!-- weapon-physical:begin (luajit tools/weapon_coverage.lua --write) -->
+
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
+| Juggernaut | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
+| Berserker | 6/147 | 29/136 | 34/121 | 18/135 | 22/111 | 11/66 | 8/65 | 12/125 | 8/110 | 11/111 |
+| Thief | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 28/113 | 14/65 | 25/125 | 20/114 | 28/113 |
+| Ninja | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 28/113 | 14/65 | 25/125 | 20/114 | 28/113 |
+| Samurai | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 28/113 | 14/65 | 25/125 | 20/114 | 28/113 |
+| Monk | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 20/114 | 27/113 |
+| Shadowfist | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 20/114 | 27/113 |
+| Iron Sage | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 20/114 | 27/113 |
+| Templar | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
+| Inquisitor | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
+| Sentinel | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
+
+<!-- weapon-physical:end -->
 
 ## Gear coverage (`tools/gear_coverage.lua`, `gear_coverage_config.lua`, `data/lib/chaos_class_loot.lua`, `chaos/class_loot.lua`, 2026-10-22)
 Owner request: review all the loot and make sure it is well distributed for every class, from level 1. The weapon audit

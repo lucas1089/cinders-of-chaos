@@ -82,7 +82,17 @@ function C.stockGrowth(row, cfg)
 		v = tonumber(v)
 		return v > 0 and math.floor(v * a + 0.5) or v
 	end
-	return grown(row.attack), grown(row.element)
+	local attack, element = grown(row.attack), grown(row.element)
+	-- O673: a sword, axe or club keeps its total and its element damage is at most `share` of it, the rest is physical attack (a weapon
+	-- spell reads that); tools/stock_weapon_physical.py is the same rule, tools/stock_weapon_physical_test.py holds them equal
+	local ph = cfg and cfg.stockPhysical
+	if ph and ph.kinds[row.kind] and element > 0 then
+		local cap = math.floor((attack + element) * ph.share + 0.5)
+		if element > cap then
+			attack, element = attack + element - cap, cap
+		end
+	end
+	return attack, element
 end
 
 -- the stock weapons of base_weapons.csv with the growth applied to attack and element, and to the damage of a wand or rod of a level
@@ -253,14 +263,15 @@ function C.load(cfg)
 			classes = set(splitBar(r.classes))
 		end
 		local kind = r.kind
-		local power
+		local power, phys
 		if kind == "wand" then
 			power = (tonumber(r.wmin) + tonumber(r.wmax)) / 2
 		else
 			power = tonumber(r.attack) + tonumber(r.element)
+			phys = tonumber(r.attack)
 		end
 		local w = newWeapon({id = id, name = names[id] or ("#" .. id), kind = kind, family = FAMILY[kind],
-			hands = tonumber(r.hands), level = tonumber(r.level), power = power, classes = classes, origin = "stock",
+			hands = tonumber(r.hands), level = tonumber(r.level), power = power, phys = phys, classes = classes, origin = "stock",
 			mana = tonumber(r.mana), charges = tonumber(r.charges)})
 		local v = values[id]
 		if v then
@@ -336,7 +347,8 @@ function C.load(cfg)
 					+ (p.stats.elementHoly or 0)
 			end
 			local w = newWeapon({id = p.id, name = p.name, kind = fam, rodOrWand = kind, family = FAMILY[fam], hands = hands,
-				level = p.level, power = power, classes = set(p.classes), origin = "set:" .. p.set})
+				level = p.level, power = power, phys = fam ~= "wand" and (p.stats.attack or 0) or nil, classes = set(p.classes),
+				origin = "set:" .. p.set})
 			local drop = dropOf[p.id]
 			-- level gear (chaos_gear_sets.lua M.levelDrop): any monster hunted near the piece's level may drop it
 			local ld = D.gearOn and G.levelDrop and G.levelDrop(p)
@@ -391,9 +403,10 @@ function C.load(cfg)
 				else
 					power = atk or b.power
 				end
+				local phys = b.kind ~= "wand" and (atk or b.phys) or nil
 				local lvl = (equip and equip.level) or u.level or b.level
 				local w = newWeapon({id = u.id, name = u.name, kind = b.kind, family = b.family, hands = b.hands, level = lvl,
-					power = power, classes = classes, origin = "unique", unique = true})
+					power = power, phys = phys, classes = classes, origin = "unique", unique = true})
 				if archery.launchers[u.id] then
 					w.kind = archery.launchers[u.id][1]
 					w.family = "launcher"
@@ -443,7 +456,8 @@ function C.load(cfg)
 		end
 		local hands = (W8KIND[it.type] or kind == "bow" or kind == "crossbow") and 2 or 1
 		local w = newWeapon({id = id, name = it.name, kind = kind, rodOrWand = it.type, family = FAMILY[kind], hands = hands,
-			level = it.level, power = power, classes = set(it.classes), origin = "weapons800"})
+			level = it.level, power = power, phys = kind ~= "wand" and (st.attack or 0) or nil, classes = set(it.classes),
+			origin = "weapons800"})
 		local d = w8Drop[id]
 		if d and d.chance >= cfg.minDropChance then
 			w.sources.drop = d
@@ -453,6 +467,7 @@ function C.load(cfg)
 
 	for _, w in ipairs(D.weapons) do
 		w.ratio = w.power / C.tier(cfg, w.kind, w.hands, math.max(w.level, 1))
+		w.physRatio = w.phys and w.phys / C.tier(cfg, w.kind, w.hands, math.max(w.level, 1)) or nil
 		w.obtainable = next(w.sources) ~= nil
 	end
 	return D
@@ -619,6 +634,120 @@ function C.failures(cfg, A)
 		end
 	end
 	return out
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- the physical attack the weapon spells read (O673)
+-- A weapon spell of a melee class reads skill x max(20, physical attack) (data/spells/chaos/_common.lua meleeAttack): the element
+-- damage of a weapon is not in it. The audit above counts attack + element ("power"), so a band whose weapons are mostly element
+-- looks fine there and leaves a spell class at a fraction of the damage. This audit counts, per melee class and band, the
+-- obtainable melee weapons whose physical attack alone is at least `physMin` of the tier, and the best physical share.
+-- physical[i] = {n, best, bestRatio, total} (`total` = the weapons of the band the class could use, any physical share). With an
+-- `origin` ("stock") only the weapons of that origin count: the stock weapons are what the Gambler's pool, the shops and the recipes offer
+-- ---------------------------------------------------------------------------------------------------------------
+function C.isMelee(class)
+	for _, f in ipairs(class.families) do
+		if f == "melee" then
+			return true
+		end
+	end
+	return false
+end
+
+function C.physAudit(cfg, D, origin)
+	local rows = {}
+	for _, l in ipairs(cfg.lines) do
+		for _, class in ipairs(l.classes) do
+			if C.isMelee(class) then
+				local row = {line = l.line, class = class.name, cells = {}}
+				for i = 1, #cfg.bands do
+					row.cells[i] = {n = 0, total = 0}
+				end
+				for _, w in ipairs(D.weapons) do
+					if w.obtainable and w.family == "melee" and w.physRatio and C.suits(class, w) and (not origin or w.origin == origin) then
+						local cell = row.cells[C.bandOf(cfg, w.level)]
+						cell.total = cell.total + 1
+						if w.physRatio >= cfg.physMin then
+							cell.n = cell.n + 1
+						end
+						if not cell.best or w.physRatio > cell.bestRatio then
+							cell.best, cell.bestRatio = w, w.physRatio
+						end
+					end
+				end
+				rows[#rows + 1] = row
+			end
+		end
+	end
+	return rows
+end
+
+-- "ZERO", "ONE" or "WEAK" (the best physical share under physMin, which is only possible with no option at all): nil = fine
+function C.physFlag(cfg, cell)
+	if cell.n == 0 then
+		return "ZERO"
+	end
+	if cell.n < cfg.minOptions then
+		return "ONE"
+	end
+	return nil
+end
+
+function C.physFailures(cfg, rows)
+	local out = {}
+	for _, row in ipairs(rows) do
+		for i, cell in ipairs(row.cells) do
+			local f = C.physFlag(cfg, cell)
+			if f then
+				out[#out + 1] = {class = row.class, band = cfg.bands[i][3], flag = f, n = cell.n, total = cell.total,
+					best = cell.bestRatio}
+			end
+		end
+	end
+	return out
+end
+
+function C.physText(cfg, rows)
+	local out = {}
+	local head = string.format("%-12s", "class")
+	for _, b in ipairs(cfg.bands) do
+		head = head .. string.format(" %11s", b[3])
+	end
+	out[#out + 1] = head
+	for _, row in ipairs(rows) do
+		local s = string.format("%-12s", row.class)
+		for i, cell in ipairs(row.cells) do
+			local t = string.format("%d/%d", cell.n, cell.bestRatio and floor(cell.bestRatio * 100 + 0.5) or 0)
+			local f = C.physFlag(cfg, cell)
+			s = s .. string.format(" %11s", t .. (f and ("!" .. f:sub(1, 1)) or ""))
+		end
+		out[#out + 1] = s
+	end
+	out[#out + 1] = ""
+	out[#out + 1] = "cell = melee weapons with a physical attack of at least " .. floor(cfg.physMin * 100) .. "% of the tier / best physical attack"
+	out[#out + 1] = "in % of the tier (the part a weapon spell reads); !Z zero, !O fewer than " .. cfg.minOptions .. " options"
+	return table.concat(out, "\n") .. "\n"
+end
+
+function C.physMarkdown(cfg, rows)
+	local head, sep = {"Class"}, {"---"}
+	for _, b in ipairs(cfg.bands) do
+		head[#head + 1] = b[3]
+		sep[#sep + 1] = "---:"
+	end
+	local lines = {"| " .. table.concat(head, " | ") .. " |", "|" .. table.concat(sep, "|") .. "|"}
+	for _, row in ipairs(rows) do
+		local cells = {row.class}
+		for i, cell in ipairs(row.cells) do
+			local t = string.format("%d/%d", cell.n, cell.bestRatio and floor(cell.bestRatio * 100 + 0.5) or 0)
+			if C.physFlag(cfg, cell) then
+				t = "**" .. t .. "!**"
+			end
+			cells[#cells + 1] = t
+		end
+		lines[#lines + 1] = "| " .. table.concat(cells, " | ") .. " |"
+	end
+	return table.concat(lines, "\n") .. "\n"
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -821,6 +950,8 @@ C.BEGIN = "<!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write)
 C.END = "<!-- weapon-coverage:end -->"
 C.FAM_BEGIN = "<!-- weapon-families:begin (luajit tools/weapon_coverage.lua --write) -->"
 C.FAM_END = "<!-- weapon-families:end -->"
+C.PHYS_BEGIN = "<!-- weapon-physical:begin (luajit tools/weapon_coverage.lua --write) -->"
+C.PHYS_END = "<!-- weapon-physical:end -->"
 
 function C.readmeBlock(cfg, A)
 	return C.BEGIN .. "\n\n" .. C.markdown(cfg, A) .. "\n" .. C.END
@@ -852,6 +983,19 @@ function C.familyReplace(text, block)
 	return text:sub(1, a - 1) .. block .. text:sub(bEnd + 1)
 end
 
+function C.physBlock(cfg, rows)
+	return C.PHYS_BEGIN .. "\n\n" .. C.physMarkdown(cfg, rows) .. "\n" .. C.PHYS_END
+end
+
+function C.physReplace(text, block)
+	local a = plainFind(text, C.PHYS_BEGIN)
+	local _, bEnd = plainFind(text, C.PHYS_END, a or 1)
+	if not a or not bEnd then
+		return nil
+	end
+	return text:sub(1, a - 1) .. block .. text:sub(bEnd + 1)
+end
+
 function C.main(args)
 	local cfg = dofile("tools/weapon_coverage_config.lua")
 	local D = C.load(cfg)
@@ -864,6 +1008,8 @@ function C.main(args)
 		for _, r in ipairs(C.stockWeapons(cfg)) do
 			io.write(string.format("%s %s %s %s %s\n", r.id, r.attack, r.element, r.wmin, r.wmax))
 		end
+	elseif mode == "--phys" then
+		io.write(C.physText(cfg, C.physAudit(cfg, D, args[2] == "stock" and "stock" or nil)))
 	elseif mode == "--access" then
 		local list = C.accessProblems(cfg, D)
 		io.write(table.concat(list, "\n") .. (#list > 0 and "\n" or ""))
@@ -885,11 +1031,17 @@ function C.main(args)
 			io.stderr:write("server/README.md has no weapon-families block (markers " .. C.FAM_BEGIN .. ")\n")
 			os.exit(1)
 		end
+		local physRows = C.physAudit(cfg, D)
+		new = C.physReplace(new, C.physBlock(cfg, physRows))
+		if not new then
+			io.stderr:write("server/README.md has no weapon-physical block (markers " .. C.PHYS_BEGIN .. ")\n")
+			os.exit(1)
+		end
 		if mode == "--write" then
 			local f = assert(io.open(C.README, "wb"))
 			f:write(new)
 			f:close()
-			io.write("server/README.md weapon coverage and weapon families tables written\n")
+			io.write("server/README.md weapon coverage, weapon families and weapon physical attack tables written\n")
 			return
 		end
 		local bad = false
@@ -898,13 +1050,18 @@ function C.main(args)
 			io.stderr:write(string.format("weapon coverage: %s, levels %s: %s (%d option(s)%s)\n", f.class, f.band, f.flag, f.n,
 				f.best and string.format(", best %d%% of the tier", floor(f.best * 100 + 0.5)) or ""))
 		end
+		for _, f in ipairs(C.physFailures(cfg, physRows)) do
+			bad = true
+			io.stderr:write(string.format("weapon physical attack: %s, levels %s: %s (%d weapon(s) with a physical attack of %d%% of the tier or more, best %d%%)\n",
+				f.class, f.band, f.flag, f.n, floor(cfg.physMin * 100), floor((f.best or 0) * 100 + 0.5)))
+		end
 		for _, f in ipairs(C.familyFailures(cfg, famRows)) do
 			bad = true
 			io.stderr:write(string.format("weapon families: %s, levels %s: %s\n", f.class, f.band, f.text))
 		end
 		if new ~= text then
 			bad = true
-			io.stderr:write("server/README.md weapon coverage or weapon families table is out of date: luajit tools/weapon_coverage.lua --write\n")
+			io.stderr:write("server/README.md weapon coverage, weapon families or weapon physical attack table is out of date: luajit tools/weapon_coverage.lua --write\n")
 		end
 		for _, n in ipairs(D.notes) do
 			bad = true

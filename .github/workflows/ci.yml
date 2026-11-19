@@ -1102,6 +1102,8 @@ jobs:
           # upgrade on touch, the stock weapons' install step (and the Lua audit's rule), the generated table
           python3 -I server/tools/weapon_growth_test.py
           python3 -I server/tools/patch_stock_weapon_growth_test.py
+          python3 -I server/tools/stock_weapon_physical_test.py  # O673: element damage at most 35% of a stock melee weapon
+          python3 -I server/tools/stock_weapon_physical.py --check
           python3 -I server/tools/gen_weapon_growth.py --check  # data/lib/chaos_weapon_growth.lua
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py

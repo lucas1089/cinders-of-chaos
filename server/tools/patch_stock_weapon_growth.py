@@ -10,7 +10,8 @@ among them (tools/gear_coverage.lua --fairness). So this step gives them the sam
 
   items.xml     a sword, axe, club, bow or crossbow (a launcher's attack already holds its ammunition, patch_base_archery.py) with a
                 weapons.xml level above 100 and no charges: attack and every element damage attribute = the number before the step
-                times a(level), rounded half up
+                times a(level), rounded half up; O673: a sword, axe or club keeps its total, its element damage is at most 35% of it (the
+                share of the equipment sets, tools/stock_weapon_physical.py) and the rest is physical attack, which a weapon spell reads
   weapons.xml   a wand or rod with a level above 100: min and max the same way
 
 The numbers BEFORE the step are kept in one marker comment at the end of each file (id, attack, element damage; id, min, max). Every run
@@ -28,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weapon_growth as WG  # noqa: E402
 import survey_base_weapons as SV  # noqa: E402
+import stock_weapon_physical as SP  # noqa: E402
 
 KINDS = ('sword', 'axe', 'club', 'bow', 'crossbow')
 FROM_LEVEL = 100          # a weapon of a level above this grows
@@ -81,6 +83,15 @@ def set_attr(body, key, value):
     return rx.sub(lambda m: m.group(1) + m.group(2) + m.group(3) + str(value) + m.group(5), body, count=1)
 
 
+def add_attr(body, key, value):
+    """the body with a new attribute line after the last attribute (or at the start of an empty body)"""
+    at = body.rfind('<attribute')
+    if at < 0:
+        return '\n\t\t<attribute key="%s" value="%d" />' % (key, value) + body
+    end = body.index('>', at) + 1
+    return body[:end] + '\n\t\t<attribute key="%s" value="%d" />' % (key, value) + body[end:]
+
+
 def patch_items(text, rows):
     """(new text, note, number of items grown): `rows` are survey rows (the numbers before the step, levels, kinds)"""
     kept = read_items_block(text)
@@ -102,11 +113,19 @@ def patch_items(text, rows):
         block[wid] = (attack, elem)
         a = WG.weapon_a(r['level'])
         new = body
-        if attack > 0:
-            new = set_attr(new, 'attack', int(attack * a + 0.5))
-        for k, v in elem.items():
-            if v > 0:
-                new = set_attr(new, k, int(v * a + 0.5))
+        g_attack = int(attack * a + 0.5) if attack > 0 else attack
+        g_elem = {k: int(v * a + 0.5) if v > 0 else v for k, v in elem.items()}
+        if SP.applies(r['kind'], r['level'], r['charges']):
+            # O673: the element damage of a melee weapon is at most 35% of its total, the rest is physical attack (a weapon spell reads that)
+            g_attack, g_elem = SP.split(g_attack, g_elem)
+        if g_attack > 0 or attack > 0:
+            if re.search(r'key\s*=\s*"attack"', new, re.I):
+                new = set_attr(new, 'attack', g_attack)
+            elif g_attack > 0:
+                new = add_attr(new, 'attack', g_attack)
+        for k, v in g_elem.items():
+            if elem.get(k, 0) > 0 or v > 0:
+                new = set_attr(new, k, v)
         if new != body:
             changed += 1
         return m.group(1) + new + m.group(5)

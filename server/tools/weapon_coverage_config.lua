@@ -18,6 +18,10 @@ return {
 	-- required level is in the band, and the best of them at least `minPower` of the tier at the top of the band.
 	minOptions = 3,
 	minPower = 0.80,
+	-- O673: a weapon spell reads the physical attack only (meleeAttack); a melee class's band needs at least `minOptions` weapons whose
+	-- physical attack is at least `physMin` of the tier (`--phys`, README "Physical attack of the melee weapons (O673)"). The sets give
+	-- 65% as physical (install_gear_sets.py ELEMENT_SHARE 0.35), so the limit sits a little under that
+	physMin = 0.60,
 	-- a drop must be at least this likely to count as a way to get the weapon (loot chance per 100000: 20 = 0.02%)
 	minDropChance = 20,
 
@@ -69,6 +73,9 @@ return {
 	-- before): the audit applies the same rule. A weapon of these kinds, no charges, required level above fromLevel (attack and element
 	-- damage); with `wands`, a wand or rod of a level above fromLevel (min and max damage)
 	stockGrowth = {fromLevel = 100, kinds = {sword = true, axe = true, club = true, bow = true, crossbow = true}, wands = true},
+	-- O673: after the growth a stock sword, axe or club that grows has at most `share` of its total as element damage, the rest is
+	-- physical attack (tools/stock_weapon_physical.py ELEMENT_SHARE = install_gear_sets.py ELEMENT_SHARE, the share of the sets)
+	stockPhysical = {share = 0.35, kinds = {sword = true, axe = true, club = true}},
 
 	-- the classes (docs/CLASSES.md): line, class, weapon families it uses, and a restriction
 	--   melee = sword, axe, club (one melee skill); launcher = bow, crossbow; wand = wands and rods; fist; throw
