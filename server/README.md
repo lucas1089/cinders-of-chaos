@@ -10864,9 +10864,9 @@ Tests: `tester_checks_test.py` (gear-up with a short bank, a full bank, potions 
 the gates against the configs; the gate before any helper call; the gear-up once per login and before the first fight check; a gear-up that breaks; a death inside it; the retreat in the
 loops; the report), `testers_test.py` (`CheckIO.health`, `heal_now`, `--no-gear`), `tester_helper_test.lua`.
 
-Left with the reason: the numbers of a real run. Not run on a live server (no server here): how many deaths the gear-up saves (the pieces the Gambler sells at a bot's level are a basic base
-with a rolled rarity, not a build), whether the Gambler's stock always holds a piece for each empty slot (a slot with none stays empty and is said in `open:`), and whether a retreat of one
-tile is enough against a pack (the next live run reads `retreated N time(s)` and the SKIP reasons; a plan: step to the temple's protection zone by the Town Portal after the second retreat of a loop).
+Left with the reason: O660 ran it live (step 19), so the numbers are known. The gear-up works (16 of 16, 27 basic pieces, the server wears them) and saves no death: 56 deaths with it, 55 without. The Gambler's stock lacked a
+piece for an empty slot in 8 of 16 gear-ups (the class and level rule of its window, said in `open:`). A retreat of one tile did not decide a fight: a hit is 12 to 25 % of the health and a pack takes the rest in seconds. Still needs a live
+run: a bot with a build (the Gambler sells none) and a loop that lives to a second retreat, the plan of the Town Portal after it.
 
 ##### 18. Retreat in every fight loop, home, empty slots (O659)
 
@@ -10897,9 +10897,98 @@ Tests: `tester_checks_test.py` (`HomeRetreat`: the first retreat plain, the seco
 raid's Leave button and its refusal in a boss fight, a way back, a restock that breaks, a member and a loop with no rule; the rules read against `townportal_core.lua` and `raid.lua`; the words equal
 `tester_journey.py`'s; `HomeLoops`: the rift, dungeon and raid loops end to end on a scripted bot; `GearGap`: a missing slot, sold, dear, under the Gambler's level, a full set).
 
-Left with the reason: not run on a live server (no server here). The Town Portal cast inside a rift, a dungeon and the raid is the probe of a refusal that the config proves, not yet seen on a
-live run; the SKIP lines of the next run say how many bots got out and by what. The siege and guild boss loops stay without the retreat (the call fits them; a plan for the next round). A
-way back into a rift or a dungeon would need a new server rule (a rejoin of the bot's own run), not a tester change.
+Left with the reason: O660 ran the rift, dungeon and raid loops live (step 19, 10 bots of level 800 to 2000): `closed_raid` and `dungeon_difficulty` one PASS each, `rift_walk` 0 of 10 (a bot is dead within 2 to 15 s of the first monsters),
+no bot retreated twice in one loop, so `retreat_home`, the raid's Leave button and the Town Portal refusal inside a rift, a dungeon and the raid were not seen; the refusal is still the probe of the config. The siege and guild boss loops stay without
+the retreat (the call fits them; a plan for the next round). A way back into a rift or a dungeon would need a new server rule (a rejoin of the bot's own run), not a tester change.
+
+##### 19. The live run of steps 17 and 18 (O660)
+
+Owner standing ask (translated; O589 / O595 / O599 / O650 / O658 / O659): "the bots have to do the complete content of the game, in the most human way possible". Steps 17 and 18
+(gear-up, level gates, retreat, home) were proved on mocks only. They ran against the local test server of step 16: current main installed with `install_all.py` (a SQL dump first,
+`--mysql mariadb`, MariaDB on 127.0.0.1), the helper copied into `data/scripts` and the server started (the helper loads at a server start), closed switch on, 10 testers of
+levels 150 to 2000 (`testers.py setup --count 10 --levels 150,300,500,800,1000,1000,1200,1500,1800,2000`), `testers.py run --checks --closed`, the engine under gdb.
+The engine binary is the one of step 16: no src-patch changed since its build (the last one is 0092 of 2026-11-11), so there was no rebuild. It lacks 0088 to 0092; none of the checks needs them.
+
+What the first run showed (10 bots, 38 minutes, gear-up on, code of step 18): 515 logins, 511 deaths. A bot died within 3 to 5 seconds of nearly every login. Causes, all in the bots:
+1. **The checks ran at the hunt spot.** A check that ends puts the bot back at its hunt (`io.go('hunt')`), the first check of every pass (`pets`) walks there, and `testers.py` sent a bot
+   there after every rest. A bot with the kit weapon and no gear dies there in seconds (a level 727 character takes 25 % of its health per hit from a hunt monster of its level, 5 hits in 3 s).
+   A death cuts the check, so the same check ran again at the next login: a death loop (one Mystic died 35 times in the pets check), and each death took a level, so the level gates fell away.
+2. **A full backpack.** The helper hands out a plain item, an orb or a rune for each try of a check; the backpack held 10 crimson swords. 60 checks said "no room for the item", the
+   Ascended sigil and the Omen key went to the inbox, and the daily claim FAILed 9 of 9 times (the server said "You do not have enough room or capacity for the reward", the bot read it as a bug).
+3. **Requests that came too fast.** The windows drop a request that follows another of the same window within their rate limit (`Chaos.limited` 300 ms for the Gambler, `ChaosRateLimit`
+   250 ms for the hideout edits and 1 s for its reads, 150 ms for the supports), and send no answer. The bot waited 6 s for each and read a missing answer as a refusal: the Gambler "refused" every
+   gear-up purchase ("the money fell by 0"), the hideout said "no answer", the support window "no state".
+
+Fixes (bots; `tester_checks.py` block "live run fixes (O660)" and `testers.py`):
+- `checks_stay` / `check_rest` (`testers.py`): while system checks are left the bot waits in the temple (`stay`, `!tester town` at login and at the start of each pass), also between the passes of an unfinished run,
+  and honours the rest of the death rule (20 s, doubling to 300) before it goes on. A check that needs the hunt asks for it (`io.go('hunt')`), as before.
+- `settle_in_town` (before each check that is not in `FIGHT_KEYS`) and the crafting windows (`bench_with_item`, `craft_supports`, `craft_charms`) work from the temple: a window needs no hunt.
+- `cut_verdict` (`CUT_MAX` = 3): the third death inside one check ends it as SKIP "the bot died 3 times in this check (level N, geared up | no gear-up); last: ...". A person does not walk into the same pack for ever.
+- `make_room` (`ROOM_KEYS`, `ROOM_NEED` = 4, `ROOM_ROUNDS` = 2): before a check that is given items or whose reward needs the bag, the bot clears its backpack as a person does (`Bot.do_keep`: sell at the Loot Buyer, wear a better piece, drop junk).
+  `no_room_said`: a daily reward that did not fit is SKIP with the server's words, not a bug.
+- `KeyIO.request` waits `REQUEST_GAP` (0.35 s) after a request of the same opcode: a person clicks no faster than a window answers. The hideout and Gambler checks also name their own gaps
+  (`HIDEOUT_EDIT_GAP`, `HIDEOUT_LIST_GAP`, `GAMBLE_GAP`). A refused purchase now says the server's words (`gamble_refusal`): SKIP, never "the money fell by 0".
+- `GEAR_PIECE_CAP` 1.5M to 4M gold (the Gambler asks 1.2M to 1.8M for a basic piece from level 900), `GEAR_GRANT_CAP` 3M to 8M, helper `H.GOLD_CAP` 6M to 16M (a full basic set costs about 6M at level 1000; the grant stays a named TEST ONLY fallback).
+- `hideout`: the pick of the decoration is made again inside the room (a hideout never entered shows no decoration; entering builds it with two Ashen Thrones, the limit of that piece), and the check
+  says every distinct refusal. `craft_supports` tries the next spell when the rune does not fit the spell's shape and reads `runes`, not `count` (`count` is the open sockets of the spell,
+  `spell_has_room`, `spell_runes`; the same fault was in `craft_found`). `craft_gems` counts only sockets that hold a gem (`item_view` `socketed`: the bench lists every socket, an empty one has gem id 0).
+  `craft_orbs`: the Orb of Upheaval rolls the rarity's own count of modifiers, so an item the Orb of Grafting had filled up loses the extra one (`C.forge`: `M.modCount(rarity)`). The description of the orb
+  ("rerolls every modifier that is not bound") and the comment of `C.upheave` ("an extra slot stays") say otherwise. That is a rule, not a bug of the bot: the check says it in its text
+  (`upheaval_note`) and goes on with the rest of the chain (it stopped at the first problem before). **Owner question: should Upheaval keep the number of modifiers an item has?**
+- Helper (v25, no new command): `!tester mount give` used `Player:setCurrentMount`, `getCurrentMount` and `toggleMount`, which this engine (TFS 1.4.2) does not have in Lua (`mount_ride` SKIPped on every bot since O657,
+  the mock had them). The current mount is the storage the engine reads itself (10002011, const.h `PSTRG_MOUNTS_CURRENTMOUNT`). The error text is the words now, not the script path. `tests/tester_helper_test.lua` mocks the real engine.
+- Diagnostics where the cause is still open: `craft_gems` and `stash_move` name what the bench listed and what the server said (`sock_names`, `recent_text`).
+With gear and without (the same 10 bots of levels 150 to 2000, the same checks, the same code, `--checks --closed`, stopped by hand after 21 minutes each; the first two rows are the runs before and after the fixes of the bots, the last two are the comparison):
+
+| run | minutes | logins | deaths | deaths per bot-hour | all checks pass / fail / skip | fight checks pass / fail / skip | level-gate skips | died-in-the-check skips |
+|---|---|---|---|---|---|---|---|---|
+| first, before the fixes (gear-up on) | 38 | 515 | 511 | 81 | 196 / 34 / 296 | 15 / 1 / 120 | 29 | 11 |
+| after the fixes (gear-up on) | 43 | 101 | 101 | 14 | 234 / 27 / 232 | 21 / 0 / 94 | 20 | 12 |
+| **with gear-up** | 21 | 61 | 56 | 16 | 193 / 27 / 104 | 16 / 0 / 55 | 8 | 9 |
+| **`--no-gear`** | 21 | 59 | 55 | 16 | 182 / 26 / 108 | 18 / 0 / 60 | 8 | 9 |
+
+The failures of the last two rows are the same three open ones (below: gems, supports and hideout, all fixed after those two runs). What the comparison says:
+- **The fixes of the bots moved the deaths, the gear-up did not.** 511 deaths in 38 minutes became 56 in 21 (the level gates stopped falling away with the levels: 29 skips of 120 became 8 of 55). The gear-up moved nothing: 56 deaths with it, 55 without.
+- **The gear-up works.** 16 of 16 gear-ups were PASS: 27 basic pieces bought at the Gambler on foot (helmet, armor, legs, boots, 1.2M to 1.9M gold each from level 900), 81 potions at Veyra, 5 gold grants (6.5M, each named in the report).
+  The server wears the pieces itself: the Gambler's delivery (`player:addItemEx`) puts a wearable piece into its empty slot, so `gear_wear` had nothing left to do and "wore N piece(s)" never shows; the DB after a run lists helmet, armor, legs and boots on the bots.
+  A slot can stay empty: 8 of 16 gear-ups said "no Helmet in the Gambler's stock for a level 996 Deadeye" (the window lists only what the class may wear, `gear_gap_text`). `gear_chase` has no piece to chase after that ("0 piece(s) looked at": the pieces sit in the slots, not in the bag).
+- **The deaths are the game's, not the bots'.** The killers are the hunt monsters of the bot's own level (Cinderhorn Juggernaut at level 1700, Gnawbone Swarm 1800, Bonepicker 1500: 5 to 8 hits of 12 to 25 % of the health each, within 3 to 60 s).
+  A plain piece rolled at the bot's level changed nothing of that. Not measured here why (the player defence layer reads worn armour and resistances, `defence_config.lua`; a basic piece carries little of both), but the survival model
+  (`survival_model.py`) assumes a hunting set that a bot cannot buy. The next step for the bots is a build, not more shopping; the Gambler sells no build.
+- **The fight checks that ran** (with gear / without): `ascended_walk` 5 / 6 PASS, `omen_walk` 3 / 5, `tower_walk` 3 / 1, `trial_walk` 3 / 4, `mainquest_walk` 1 / 1, `wsmap_walk` 1 / 1; `descent_walk` 0 of 8 / 0 of 8 ("fell before a room was
+  cleared", also at level 1793 and 1921: the first room of the Ember Descent kills a bot of every level, with and without the basic set); `pocket_walk` 0 of 3 / 0 of 4 (the boss is hurt to 99 % and does not fall in 10 to 94 s).
+  The bounty walks stay at 0: the contract's hunt is far from the temple (`!tester bounty state`: `distance` 2284, mark at x 33007, y 33360 against the temple at x 32957, y 32076), the engine's path search is bounded ("no path"), the bot walks 0 steps in
+  480 s and the loop has no jump to a hunt as the journey has (`tester_journey.py`).
+- **Retreat** (`retreat_check`): 13 SKIPs say "the bot retreated N time(s) to heal" with gear and 9 without (20 and 13 in the two runs before). It is not what decides a fight: a hit is 12 to 25 % of the health and a pack takes it all in a few seconds, so the bot is dead
+  before the second look. The plan of step 17 (a step to the temple after the second retreat) would need a loop that lives to a second retreat.
+
+Retreat in the rift, dungeon and raid loops (O659, a 20 minute run of 10 bots of levels 800 to 2000, `--closed --only rift_walk,closed_dungeon,dungeon_difficulty,weekly_challenge,closed_raid`: 132 logins, 116 deaths): `rift_walk` 0 of 10 (every bot died within 2 to 15 s of the rift's first monsters,
+tier 13 to 15 rifts at levels 800 to 2000, 5 of them with one retreat said); `closed_dungeon` 0 of 10 (the queue refused 9 bots: the SKIP carries the server's words from now on; one bot died 3 times); `dungeon_difficulty` 1 PASS and `weekly_challenge` 0 (another bot plays it, member of a party, queue refused);
+`closed_raid` 1 PASS (the testers have one raid slot: one bot played it, the others skip by design). No bot retreated twice in one loop, so `retreat_home`, the raid's Leave button and the Town Portal refusal inside a rift, a dungeon and the raid were not seen live.
+
+Live results of the fixes of this step (a SKIP names its cause, none is faked):
+| check | live | what it showed |
+|---|---|---|
+| `gear_up` | PASS 16 of 16 | see above |
+| `craft_orbs`, `craft_sockets`, `craft_whetstone`, `craft_gems` | PASS (4 of 4 in the last run) | the chain goes on past Upheaval; the gem is socketed by use-with (the item moves one slot forward when a gem stack of one is used up: `slot_after_use`) |
+| `craft_supports`, `craft_charms` | PASS | after the rate-limit gap and the right reading of `runes` / `count` |
+| `daily_claim` | PASS | the day's reward arrives, streak 1; without room it is a SKIP with the server's words |
+| `stash_move`, `hideout` | PASS | the hideout's first successful `place` gets no answer in the bot (3 of 3 fresh rooms): the room lists the decoration, the check reads it from the room and says so in its text. Cause open: a manual probe sees the answer, the bot's read does not take it. Two decorations placed this way stayed in a room and made the next pass fail; the stash check after it failed too (its server lines named the hideout) |
+| `mount_ride` | SKIP "not permitted in a protection zone" | the mount works on this engine now; that bot's hunt spot was a protection zone |
+| `chore_gamble`, `gamble_reroll` | SKIP | the cheapest piece and the reroll (913k to 960k gold) cost more than the bank; the bots keep their gold for the gear-up |
+| `pets` | SKIP "rests: a protection zone" or "the bot died 3 times" | the pet check goes to the hunt, where a bot without a build does not live |
+
+Still needs a live run: the Trial of the ascension, `descent_walk` past room 1, the pocket and boss kills, `rift_walk` past the first monsters, `retreat_home` (a loop that lives to a second retreat), the ten-bot arena and battleground matches (`closed_arena_fight`, `closed_battleground_match`),
+the node path of `gather_walk` ("no path": the engine's search is bounded), the bounty walks (a jump to the contract's hunt), and a build for the bots in place of the Gambler's basic pieces.
+Owner question: Orb of Upheaval keeps or drops the extra modifier of a grafted item (see above).
+
+Engine crash (`Creature::getCreatureEvents`, step 16): it did not come back. Seven runs under gdb (about 3 hours, 4 to 10 bots, about 520 logins, 2 boss copies, pocket bosses, dungeons and a raid) and the first run of this step without gdb (the O656 storm: 515 logins and 511 deaths in 38 minutes, 3 boss copies)
+ran without a crash, on the old binary (function names, no debug information). The cause stays open and no src-patch is made. The source (`creature.cpp`) is the stock one: `getCreatureEvents` walks `eventsList`, a list of raw `CreatureEvent*` that the map `CreatureEvents` owns, so a crash there means a freed creature or a freed event.
+A `CreatureEvent` registered twice under one name cannot do it (`registerLuaEvent` keeps the old one), which leaves a creature freed while the engine still walks its events (a `Monster:remove()` of a boss copy during its death events, `ChaosTestersBossDeath`, or a creature released while `Game::checkCreatures` ran it). Next time: build with `-g` and keep the core
+(`ulimit -c unlimited`, `gdb tfs core`); a backtrace with the creature's name would end it.
+
+Tests: `tester_checks_test.py` (class `Live660` and the changed mocks: `make_room`, `settle_in_town`, `cut_verdict` through `CheckRun`, the Gambler's refusal, the hideout gaps, the fresh room, the lost answer, the supports shapes and `runes`, `item_view` sockets, `slot_after_use`,
+the daily reward that did not fit, the piece cap), `testers_test.py` (`checks_stay`, `check_rest`, the request gap), `tests/tester_helper_test.lua` (the mount on the real engine, the gold cap). No new check key and no new `!tester` command: the helper stays v25 and `NotMirrored` of Unity Phase30Tests is unchanged.
 
 ### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
 

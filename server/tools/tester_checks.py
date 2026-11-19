@@ -1080,7 +1080,7 @@ def item_view(tip, state_item):
         'quality': int(st.get('quality') or 0),
         'sockets': int(socks.get('count') or 0),
         'sockets_max': int(socks.get('max') or 0),
-        'socketed': len(socks.get('list') or []),
+        'socketed': sum(1 for g in (socks.get('list') or []) if not isinstance(g, dict) or g.get('id')),   # O660: the list names every socket: an empty one has no gem id
         'tip': json.dumps(tip, sort_keys=True),
     }
 
@@ -1178,7 +1178,7 @@ async def bench_with_item(io, name, cls, check, orbs):
     """a Bench with the orbs given first and a plain item last (so it sits in slot 0), the backpack open as container 0;
     (bench, item) or (None, a SKIP Result)"""
     bench = Bench(io, name, cls, check)
-    if not await io.go('hunt'):
+    if not await io.go('town'):   # O660: the bench is a window: no need to stand in a hunt of a bot with no gear
         return None, bench.skip(not_at_hunt(io))
     for orb, n in orbs:
         if not await bench.give('orb:' + orb, 'orb %s %d' % (orb, n)):
@@ -1215,6 +1215,9 @@ async def orb_chain(io, name, cls, check, steps, start_rarity_zero=True):
         problems = orb_problems(orb, before, after)
         if orb != 'sockets' and after['tip'] == before['tip']:
             problems.append('the tooltip did not change')
+        if upheaval_count_only(orb, before, after, problems):   # O660: a rule the owner decides, said in the text; the chain goes on
+            notes.append(upheaval_note(before, after))
+            problems = [p for p in problems if 'a reroll keeps both' not in p]
         if problems:
             return bench.fail('%s: %s' % (label, '; '.join(problems[:3])))
         done.append(label)
@@ -1294,11 +1297,13 @@ async def check_craft_gems(io, name, cls, level):
         return bench.fail('five Orbs of Sockets and no socket')
     await io.use_with(gem['index'], gem['clientId'], item['index'], item['clientId'])
     await io.sleep(1.5)
+    item = slot_after_use(gem, item, gem.get('count'))   # O660: a gem used up leaves its slot: the item behind it moves one slot forward
     after, st2 = await bench.view(item)
     if after is None:
         return bench.skip('no tooltip or bench answer after the gem')
     if after['socketed'] != before['socketed'] + 1:
-        return bench.fail('gems in the sockets %d -> %d after the use-with: expected one more' % (before['socketed'], after['socketed']))
+        return bench.fail('gems in the sockets %d -> %d after the use-with: expected one more (item slot %s, gem slot %s; before %s, after %s)' % (
+            before['socketed'], after['socketed'], item.get('index'), gem.get('index'), sock_names(st), sock_names(st2)))   # O660: what the bench listed
     if after['tip'] == before['tip']:
         return bench.fail('the gem sits in the socket but the tooltip did not change')
     return Result('craft_gems', name, cls, PASS, 'a gem socketed by use-with (%d of %d sockets), the tooltip shows it' % (
@@ -1308,20 +1313,29 @@ async def check_craft_gems(io, name, cls, level):
 async def check_craft_supports(io, name, cls, level):
     """a support rune into a spell of the class through the support window: the spell lists it afterwards"""
     bench = Bench(io, name, cls, 'craft_supports')
-    if not await io.go('hunt'):
+    if not await io.go('town'):   # O660: a window: no hunt for a bot with no gear
         return bench.skip(not_at_hunt(io))
     ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
     spells = [s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict)]
     if not spells:
         return bench.skip('no state or no spell in the support window')
-    spell = next((s for s in spells if int(s.get('count') or 0) < int(s.get('max') or 0)), None)
-    if spell is None:
+    free = [s for s in spells if spell_has_room(s)]
+    if not free:
         return bench.skip('every spell has its sockets full')
     rune = await bench.give('rune', 'rune')
     if not rune:
         return bench.skip('no rune from the helper (%s)' % bench.err)
-    res = await io.request('supports', 'socket', {'spell': spell['id'], 'rune': rune['id']}, ('result',), ANSWER)
-    data = (res or {}).get('data') or {}
+    spell, res, data, tried = None, None, {}, 0
+    for cand in free[:SUPPORT_TRIES]:   # O660: a rune fits some spells only (single target, area ...): the bot tries the next spell, as a person does
+        tried += 1
+        res = await io.request('supports', 'socket', {'spell': cand['id'], 'rune': rune['id']}, ('result',), ANSWER)
+        data = (res or {}).get('data') or {}
+        if res is None or data.get('ok') or 'does not fit' not in str(data.get('text')):
+            spell = cand
+            break
+        await io.sleep(SUPPORT_GAP)
+    else:
+        return bench.skip('the rune fits none of the %d spell(s) tried: %s' % (tried, str(data.get('text'))[:60]))
     if res is None:
         return bench.skip('no answer to the rune')
     if not data.get('ok'):
@@ -1330,16 +1344,16 @@ async def check_craft_supports(io, name, cls, level):
     now = next((s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict) and s.get('id') == spell['id']), None)
     if now is None:
         return bench.skip('no state after the rune')
-    if int(now.get('count') or 0) != int(spell.get('count') or 0) + 1:
+    if spell_runes(now) != spell_runes(spell) + 1:   # O660: `count` is the sockets the spell has open, `runes` the runes inside
         return bench.fail('spell %s holds %s runes after the socket, expected %d' % (
-            spell.get('name') or spell['id'], now.get('count'), int(spell.get('count') or 0) + 1))
-    return Result('craft_supports', name, cls, PASS, 'a rune socketed into %s: %s runes now' % (spell.get('name') or spell['id'], now.get('count')))
+            spell.get('name') or spell['id'], spell_runes(now), spell_runes(spell) + 1))
+    return Result('craft_supports', name, cls, PASS, 'a rune socketed into %s: %s runes now' % (spell.get('name') or spell['id'], spell_runes(now)))
 
 
 async def check_craft_charms(io, name, cls, level):
     """a charm into the grid and out again: the bag, the grid and the totals move one by one"""
     bench = Bench(io, name, cls, 'craft_charms')
-    if not await io.go('hunt'):
+    if not await io.go('town'):   # O660: a window: no hunt for a bot with no gear
         return bench.skip(not_at_hunt(io))
     charm = await bench.give('charm', 'charm')
     if not charm:
@@ -2310,7 +2324,9 @@ async def dungeon_play(io, name, cls, a, dg, partners, key='closed_dungeon', dif
         reply = await (io.request('dungeons', 'queue', data, ['queue'], ANSWER) if r['lead']
                        else io.request_of(r['name'], 'dungeons', 'queue', data, ['queue'], ANSWER))
         if reply is not None and (reply.get('data') or {}).get('joined') is False and r['lead']:
-            return Result(key, name, cls, SKIP, 'the queue refused the bot (level, a cooldown, a fight or the dungeon\'s own rule)', fallbacks)
+            said = str((reply.get('data') or {}).get('text') or (reply.get('data') or {}).get('why') or '') or recent_text(io, 2)   # O660: the server's own words
+            return Result(key, name, cls, SKIP, 'the queue refused the bot (level, a cooldown, a fight or the dungeon\'s own rule)%s' % (
+                ': ' + said[:90] if said else ''), fallbacks)
     waited, state = 0.0, None
     while waited <= DUNGEON_QUEUE_WAIT and io.alive():
         state = await dungeon_look(io, squad[0])
@@ -3745,14 +3761,37 @@ async def check_hideout(io, name, cls, level):
                 return Result(key, name, cls, SKIP, 'the room did not open: %s' % (hideout_text(reply) or 'no text'))
         inside_room = True
         count0 = int(((entered or st).get('hideout') or {}).get('count') or 0)
-        placed, tile, last = None, None, None
+        # O660: a hideout that was never entered has no decoration in the catalogue's count: the room is built (with its two Ashen Thrones) when the
+        # bot enters. The pick is made again from the state of the room, as a person reads the window that is open in front of him.
+        await io.sleep(HIDEOUT_LIST_GAP)   # the answer to Enter still carries the catalogue of before the room was built: read the room again
+        inside_state, _ = await hideout_state(io, 'get')
+        again_deco = hideout_pick((inside_state or {}).get('catalogue')) if isinstance(inside_state, dict) and inside_state.get('catalogue') else deco
+        if again_deco is None:
+            return Result(key, name, cls, SKIP, 'every decoration of the catalogue is placed to its limit in the new room')
+        deco = again_deco
+        await io.sleep(HIDEOUT_EDIT_GAP)
+        placed, tile, last, lost = None, None, None, False
+        refusals = []   # O660: the distinct words of the refusals, in order
+        ids0 = {p.get('id') for p in ((inside_state or {}).get('placed') or []) if isinstance(p, dict)}
         for (x, y) in cells:
             last = await io.request('hideout', 'place', {'key': deco['key'], 'x': x, 'y': y, 'r': 0}, ['result'], ANSWER)
             if isinstance(last, dict) and (last.get('data') or {}).get('ok'):
                 placed, tile = last, (x, y)
                 break
+            if last is None:   # O660: no answer at all: the live run saw the window place a decoration and the answer never come; the room says
+                await io.sleep(HIDEOUT_LIST_GAP)
+                now, _ = await hideout_state(io, 'get')
+                new = [p for p in ((now or {}).get('placed') or []) if isinstance(p, dict) and p.get('key') == deco['key'] and p.get('id') not in ids0]
+                if new:
+                    placed, tile, lost = {'data': {'ok': True, 'text': 'the answer was lost'}}, (new[0].get('x'), new[0].get('y')), True
+                    break
+            if hideout_text(last) not in refusals:
+                refusals.append(hideout_text(last))
+            await io.sleep(HIDEOUT_EDIT_GAP)   # O660: the window answers one edit in 250 ms; the next try came at once and was dropped unanswered
         if placed is None:
-            return Result(key, name, cls, FAIL, 'no tile of the room took %s in %d tries: %s' % (deco.get('name') or deco['key'], len(cells), hideout_text(last) or 'no answer'))
+            return Result(key, name, cls, FAIL, 'no tile of the room took %s in %d tries: %s (the catalogue said %s of %s placed)' % (
+                deco.get('name') or deco['key'], len(cells), ' | '.join(r or 'no answer' for r in refusals[:4]) or 'no answer', deco.get('placed'), deco.get('max')))
+        await io.sleep(HIDEOUT_LIST_GAP)   # O660: `get` answers once a second (cfg.requestMs.list)
         after, _ = await hideout_state(io, 'get')
         rows = [p for p in ((after or {}).get('placed') or []) if isinstance(p, dict) and p.get('key') == deco['key'] and (p.get('x'), p.get('y')) == tile]
         count1 = int((((after or {}).get('hideout')) or {}).get('count') or 0)
@@ -3760,17 +3799,19 @@ async def check_hideout(io, name, cls, level):
             return Result(key, name, cls, FAIL, '%s was placed at %s and the room lists %d such decoration(s), the count went %s to %s' % (
                 deco['key'], tile, len(rows), count0, count1))
         gone = await io.request('hideout', 'remove', {'id': rows[0].get('id')}, ['result'], ANSWER)
+        await io.sleep(HIDEOUT_LIST_GAP)
         again, _ = await hideout_state(io, 'get')
         count2 = int((((again or {}).get('hideout')) or {}).get('count') or 0)
         if not (isinstance(gone, dict) and (gone.get('data') or {}).get('ok')) or count2 != count0:
             return Result(key, name, cls, FAIL, 'the decoration was removed and the room counts %s, it counted %s before: %s' % (count2, count0, hideout_text(gone) or 'no text'))
         await io.request('hideout', 'leave', {}, ['state', 'result'], ANSWER)
-        await io.sleep(1.0)
+        await io.sleep(HIDEOUT_LIST_GAP)
         outside, _ = await hideout_state(io, 'get')
         inside_room = bool(isinstance(outside, dict) and outside.get('inside'))
         if inside_room:
             return Result(key, name, cls, FAIL, 'Leave did not bring the bot out of its hideout')
-        return Result(key, name, cls, PASS, '%s placed at %s, listed, removed; the room was entered and left' % (deco.get('name') or deco['key'], tile))
+        return Result(key, name, cls, PASS, '%s placed at %s, listed, removed; the room was entered and left%s' % (
+            deco.get('name') or deco['key'], tile, ' (the answer to the place never came: the room listed it)' if lost else ''))
     finally:
         if inside_room:
             await io.request('hideout', 'leave', {}, ['state', 'result'], ANSWER)
@@ -4548,6 +4589,8 @@ async def daily_claim_do(io):
     await io.sleep(1.0)
     b = await io.helper('daily state', 'daily', ANSWER)
     status, text = daily_verdict(a, b, reply)
+    if status == FAIL and no_room_said(io):   # O660: the reward did not fit the backpack: the server said so, no bug of the claim
+        status, text = SKIP, 'the reward of day %s did not fit the backpack or the capacity (the server said so)' % a.get('slot')
     return {PASS: 'claimed', FAIL: 'fail', SKIP: 'skip'}[status], text
 
 
@@ -5076,6 +5119,7 @@ async def check_craft_found(io, name, cls, level):
                 continue
             await io.use_with(gem['i'], gem['cid'], p['i'], p['cid'])
             await io.sleep(1.5)
+            item = slot_after_use({'index': gem['i']}, item, gem.get('n'))   # O660: see check_craft_gems
             after, _ = await bench.view(item)
             if after is None:
                 t['notes'].append('no tooltip or bench answer after the gem')
@@ -5091,7 +5135,7 @@ async def check_craft_found(io, name, cls, level):
     if runes:
         ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
         spells = [s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict)]
-        spell = next((s for s in spells if int(s.get('count') or 0) < int(s.get('max') or 0)), None)
+        spell = next((s for s in spells if spell_has_room(s)), None)
         rune = next((d for d in rep.get('drops') or [] if d.get('k') == 'rune'), None)
         if spell and rune:
             res = await io.request('supports', 'socket', {'spell': spell['id'], 'rune': rune['id']}, ('result',), ANSWER)
@@ -5103,9 +5147,9 @@ async def check_craft_found(io, name, cls, level):
             else:
                 ans = await io.request('supports', 'open', {}, ('state',), ANSWER)
                 now = next((s for s in (((ans or {}).get('data') or {}).get('spells') or []) if isinstance(s, dict) and s.get('id') == spell['id']), None)
-                if now is not None and int(now.get('count') or 0) != int(spell.get('count') or 0) + 1:
+                if now is not None and spell_runes(now) != spell_runes(spell) + 1:
                     t['faults'].append('spell %s holds %s runes after the socket, expected %d' % (
-                        spell.get('name') or spell['id'], now.get('count'), int(spell.get('count') or 0) + 1))
+                        spell.get('name') or spell['id'], spell_runes(now), spell_runes(spell) + 1))
                 else:
                     t['runes'] += 1
         else:
@@ -5378,13 +5422,16 @@ async def check_chore_gamble(io, name, cls, level):
         if row is None:
             return Result(key, name, cls, SKIP, 'the Gambler has %d piece(s); the bot has %s gold for none' % (len(a.get('items') or []), a.get('money')), fallbacks)
         bag0 = await io.helper('bag', 'bag', HELPER_WAIT)
-        await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
+        await io.sleep(GAMBLE_GAP)   # O660: the window answers one request in 300 ms (cfg.requestMs): a buy right after the open is dropped, unanswered
+        bought = await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
         await io.sleep(1.0)
         again = await io.request('gamble', 'open', {}, ('state',), ANSWER)
         bag1 = await io.helper('bag', 'bag', HELPER_WAIT)
         status, text = gamble_verdict(row, a, (again or {}).get('data') if isinstance(again, dict) else None,
                                       (bag0 or {}).get('used') if isinstance(bag0, dict) else None,
                                       (bag1 or {}).get('used') if isinstance(bag1, dict) else None)
+        if status == FAIL and gamble_refused(bought):   # O660: the server said no and charged nothing: a refusal, not a free purchase
+            status, text = SKIP, 'the Gambler refused the purchase: %s' % gamble_refusal(bought, None)
         return Result(key, name, cls, status, text, fallbacks)
     finally:
         await io.request('gamble', 'close', {}, [], ANSWER)
@@ -6819,6 +6866,8 @@ async def check_stash_move(io, name, cls, level):
         t['row'] = new[0] if new else None
         if t['units0'] is None or t['units1'] != t['units0'] + 1:
             status, text = stash_move_verdict(t)
+            if status == FAIL:   # O660: what the server said to the drag (a slot that holds another item, a full tab ...)
+                text += ' (server lines: %s; bag slot %s of item %s)' % (recent_text(io) or 'none', index, item_id)
             return Result(key, name, cls, status, text, fallbacks)
         ask = {'make': 'Redeem', 'row': new[0]} if new else {'make': 'Redeem', 'item': int(item_id), 'count': 1}
         await io.collect('stash', 'Stash', [ask], STASH_WAIT)
@@ -7446,6 +7495,7 @@ async def check_gamble_reroll(io, name, cls, level):
             return Result(key, name, cls, SKIP, 'no more fresh crates before the next stock (%s rerolls used)' % a.get('rerolls'), fallbacks)
         if int(a.get('money') or 0) - int(price) < 5000:
             return Result(key, name, cls, SKIP, 'the reroll costs %s gold and the bot has %s: it keeps 5000 for supplies' % (price, a.get('money')), fallbacks)
+        await io.sleep(GAMBLE_GAP)   # O660: see gear_pieces
         res = await io.request('gamble', 'reroll', {'w': a.get('w')}, ('result',), ANSWER)
         await io.sleep(1.0)
         again = await io.request('gamble', 'open', {}, ('state',), ANSWER)
@@ -7599,8 +7649,8 @@ POTION_WANT = 100            # the stock the helper keeps (SUPPLIES of tester_he
 POTION_BUY_BELOW = 90        # the bot walks to the Apothecary when it holds fewer health potions than this
 POTION_PRICE_CAP = 100       # gold: the health potion of the stock costs 45; a bot never pays more for one
 GAMBLE_MIN = 40              # gamble_config.lua minLevel
-GEAR_GRANT_CAP = 3000000     # gold the helper may add to the bank in one gear-up
-GEAR_PIECE_CAP = 1500000     # gold for one piece at the Gambler: a dearer piece is left (the bot keeps what it wears)
+GEAR_GRANT_CAP = 8000000     # gold the helper may add to the bank in one gear-up (O660: 3M paid two basic pieces at level 1000; four cost 6M)
+GEAR_PIECE_CAP = 4000000     # gold for one piece at the Gambler: a dearer piece is left (the bot keeps what it wears; O660: 1.5M left every armor of a level 900+ bot out)
 GEAR_RESERVE = 5000          # gold kept in the bank after the purchases
 RETREAT_AT = 30              # percent health: under it the bot heals and steps back
 RETREAT_BACK = 50            # percent health the bot waits for before it goes on
@@ -7785,7 +7835,8 @@ async def gear_pieces(io, name, g, found, level):
                 break
             if not await gold_enough(io, g, int(row['p']) + GEAR_RESERVE, 'a %s of the Gambler' % row.get('sn')):
                 continue
-            await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
+            await io.sleep(GAMBLE_GAP)   # O660: the Gambler's window drops a request that follows another within 300 ms
+            bought = await io.request('gamble', 'buy', {'i': row['i'], 'w': a.get('w'), 'id': row.get('id')}, ('state', 'result'), ANSWER)
             await io.sleep(1.0)
             again = await io.request('gamble', 'open', {}, ('state',), ANSWER)
             b = (again or {}).get('data') if isinstance(again, dict) else None
@@ -7794,7 +7845,7 @@ async def gear_pieces(io, name, g, found, level):
                 g['bought'].append('%s for %d gold' % (row.get('sn'), int(row['p'])))
                 a = b
             else:
-                g['notes'].append('the %s of the Gambler was not sold (%s)' % (row.get('sn'), 'no answer' if b is None else 'refused'))
+                g['notes'].append('the %s of the Gambler was not sold (%s)' % (row.get('sn'), gamble_refusal(bought, b)))   # O660: the server's own words
     finally:
         await io.request('gamble', 'close', {}, [], ANSWER)
 
@@ -7818,6 +7869,9 @@ async def gear_up(io, name, cls, level):
     g = {'worn': 0, 'pieces': [], 'bought': [], 'potions': None, 'granted': 0, 'notes': [], 'fallbacks': [], 'heal': None,
          'cls': cls, 'gap_why': {}, 'after': None}
     refused = set()
+    free = await make_room(io, 'gear_up')   # O660: a purchase that finds the backpack full goes to the inbox (gamble.lua deliver), and a piece there is never worn
+    if free is not None and free < ROOM_NEED:
+        g['notes'].append('the backpack has %d free slot(s): a piece bought now may go to the inbox' % free)
     found = await gear_wear(io, g, refused)
     if io.alive():
         await gear_potions(io, name, g)
@@ -7934,6 +7988,9 @@ class CheckRun:
                 await self.gear_once(io, lvl)
                 if not io.alive():
                     return False
+            await settle_in_town(io, key)   # O660: the bot waits in the temple between the checks
+            if key in ROOM_KEYS:   # O660: room in the backpack before the helper hands items out
+                await make_room(io, key)
             try:
                 r = await fn(io, self.name, self.cls, lvl)
             except Exception as e:  # noqa: BLE001 - a check that breaks is a result, not a crash of the run
@@ -7942,6 +7999,10 @@ class CheckRun:
                 r.detail += ' (the bot retreated %d time(s) to heal)' % io.retreats
             await npc_talk_end(io, bye=False)   # O656: a check that ended with the NPC's focus held lets go of it
             if not io.alive() and r.status != PASS:
+                give_up = cut_verdict(self, key, io, r)   # O660: the same check killed the bot CUT_MAX times: SKIP with the count, go on
+                if give_up is not None:
+                    self.results.append(give_up)
+                    self.done.add(key)
                 return False   # cut off by the bot's own death: not a result, done again after the next login
             self.results.append(r)
             self.done.add(key)
@@ -8193,3 +8254,148 @@ def gear_gap_text(g, final):
 
 if __name__ == '__main__':
     print(json.dumps({'checks': list(KEYS)}))
+
+
+# ------------------------------------------------------------------------------------------------ live run fixes (O660)
+# The first live run with the gear-up (README step 19) showed what a person would never do: the checks ran at the hunt spot of a bot with
+# no gear (a pack killed it within seconds, 511 deaths in 515 logins), the backpack filled with the plain items the helper hands out for
+# each retry ("no room for the item" in 60 checks), and a refused purchase was read as "the money did not fall".
+#   gamble_refused / gamble_refusal   the server's own words of a refused Gambler purchase (the `result` of the window)
+#   make_room                         before a check that is given items (or whose reward needs the bag), the bot clears the bag as a person does:
+#                                     sell at the Loot Buyer, wear what is better, drop junk (`Bot.do_keep`), at most ROOM_ROUNDS times
+ROOM_KEYS = frozenset([
+    'craft_orbs', 'craft_whetstone', 'craft_sockets', 'craft_gems', 'craft_supports', 'craft_charms', 'craft_cards', 'craft_found',
+    'stash_move', 'dummy_train', 'ascended_walk', 'omen_walk', 'chore_gamble', 'daily_claim', 'chore_salvage', 'gear_chase', 'angle_walk', 'mount_ride',
+    'gear_up',   # not a check of the list: gear_up asks for the room itself, before it buys
+])
+ROOM_NEED = 4       # free backpack slots a check of ROOM_KEYS wants before it asks the helper for items
+ROOM_ROUNDS = 2     # keep rounds (sell, wear, drop) the bot makes to get them
+
+
+def gamble_refused(reply):
+    """true when the Gambler's `result` message of a buy says ok = false"""
+    d = (reply or {}).get('data') if isinstance(reply, dict) else None
+    return isinstance(d, dict) and d.get('ok') is False
+
+
+def gamble_refusal(reply, state):
+    """the words of a refused purchase: the server's text, else what the window state shows"""
+    d = (reply or {}).get('data') if isinstance(reply, dict) else None
+    if isinstance(d, dict) and d.get('text'):
+        return 'refused: %s' % str(d.get('text'))[:80]
+    if reply is None:
+        return 'no answer' if state is None else 'no answer to the buy, the stock row is not marked sold'
+    return 'refused'
+
+
+def bag_free(report):
+    """free backpack slots from a `!tester bag` answer; None when it has no size"""
+    if not isinstance(report, dict) or not report.get('size'):
+        return None
+    return int(report.get('size') or 0) - int(report.get('used') or 0)
+
+
+async def make_room(io, key):
+    """O660: before a check of ROOM_KEYS the bot clears its backpack like a person (`Bot.do_keep`: the Loot Buyer, a better piece worn, junk
+    dropped) until ROOM_NEED slots are free, at most ROOM_ROUNDS rounds; -> the free slots at the end (None: no bag report, nothing to do).
+    A bag it cannot clear is left to the check, which says SKIP "no room"."""
+    if key not in ROOM_KEYS or not io.alive():
+        return None
+    keep = getattr(getattr(io, 'bot', None), 'do_keep', None)
+    free = None
+    for n in range(ROOM_ROUNDS + 1):
+        rep = await io.helper('bag', 'bag', HELPER_WAIT)
+        free = bag_free(rep)
+        if free is None or free >= ROOM_NEED or n >= ROOM_ROUNDS or keep is None or not io.alive():
+            break
+        await keep(getattr(io, 'clock', None))
+    return free
+
+
+async def settle_in_town(io, key):
+    """O660: between two checks the bot waits in the temple (a protection zone), the way a person waits for the next errand; the checks that
+    need the hunt ask for it themselves. Nothing for an io with no `go`"""
+    go = getattr(io, 'go', None)
+    if go is None or not io.alive() or key in FIGHT_KEYS:
+        return False
+    return bool(await go('town'))
+
+
+def no_room_said(io):
+    """true when one of the last server lines the bot read says the backpack or the capacity could not take something"""
+    lines = getattr(getattr(io, 'bot', None), 'recent', None) or []
+    return any(('room or capacity' in str(l)) or ('enough room' in str(l)) or ('Your backpack is full' in str(l)) for l in list(lines)[-8:])
+
+
+GAMBLE_GAP = 0.4          # seconds between two requests to the Gambler's window (gamble_config.lua requestMs = 300: the next one is dropped)
+HIDEOUT_EDIT_GAP = 0.3    # seconds between two edits of the hideout window (hideout_config.lua requestMs.edit = 250 ms; a faster one is dropped)
+HIDEOUT_LIST_GAP = 1.1    # seconds between two `get` / `open` of it (requestMs.list = 1000 ms)
+SUPPORT_TRIES = 6         # spells the rune of the helper is tried on (it fits some by their shape only)
+SUPPORT_GAP = 0.5         # seconds between two tries (the window answers a request every few hundred ms)
+CUT_MAX = 3         # deaths inside one check before it is given up (SKIP with the count): a person does not walk into the same pack for ever
+
+
+def cut_verdict(run, key, io, r):
+    """O660: a check the bot's death cut off is done again after the next login; the CUT_MAX-th death in the same check ends it: -> the SKIP
+    Result (what it was doing, the deaths, the level now), else None. The counts live on the CheckRun"""
+    cuts = run.__dict__.setdefault('cuts', {})
+    cuts[key] = cuts.get(key, 0) + 1
+    if cuts[key] < CUT_MAX:
+        return None
+    lvl = int(getattr(getattr(io, 'bot', None), 'level', 0) or 0) or run.level
+    why = str(getattr(r, 'detail', '') or '')[:100]
+    return Result(key, run.name, run.cls, SKIP, 'the bot died %d times in this check (level %d, %s)%s' % (
+        cuts[key], lvl, 'geared up' if getattr(run, 'geared', False) not in (False, None) else 'no gear-up', ('; last: ' + why) if why else ''))
+
+
+def upheaval_count_only(orb, before, after, problems):
+    """O660: the Orb of Upheaval rolls the rarity's own count of modifiers again (data/lib/chaos_crafting.lua C.forge: M.modCount(rarity)): an item the Orb
+    of Grafting had filled up loses the extra one. The rarity stays and at least one modifier is there. The check's old rule ("a reroll keeps both")
+    failed on every run; the description of the orb ("rerolls every modifier that is not bound") and the comment of C.upheave ("an extra slot stays")
+    do not agree with the code: a question for the owner (README step 19), not a bug of the bot. True when that is the only problem"""
+    if orb != 'chaos' or not problems or any('a reroll keeps both' not in p and 'tooltip' not in p for p in problems):
+        return False
+    nb, na = len(before.get('mods') or []), len(after.get('mods') or [])
+    return after.get('rarity') == before.get('rarity') and 1 <= na < nb
+
+
+def upheaval_note(before, after):
+    return 'Upheaval rolled the rarity\'s own count: modifiers %d -> %d, the Grafting extra is lost (owner question)' % (
+        len(before.get('mods') or []), len(after.get('mods') or []))
+
+
+def sock_names(st):
+    """the gems the bench lists in an item's sockets: 'name, name' or 'none' (a diagnostic of the failure text)"""
+    socks = (st or {}).get('sockets') if isinstance(st, dict) else None
+    rows = (socks or {}).get('list') if isinstance(socks, dict) else None
+    names = [str(g.get('name') or g.get('id') or sorted(g)[:3]) if isinstance(g, dict) else repr(g)[:30] for g in (rows or [])]   # a row that is no object is shown as it is
+    return ', '.join(names[:3]) or 'none'
+
+
+def recent_text(io, n=3):
+    """the last `n` server text lines the bot read, joined (a diagnostic for a failure text); '' for an io with no bot"""
+    lines = getattr(getattr(io, 'bot', None), 'recent', None) or []
+    return ' | '.join(str(l)[:80] for l in list(lines)[-n:])
+
+
+def spell_runes(s):
+    """the runes inside a spell of the Supports window (`runes`: one row per socketed rune)"""
+    return len((s or {}).get('runes') or [])
+
+
+def spell_has_room(s):
+    """true when a spell of the Supports window has a free open socket: `count` is the number of sockets the spell has open for the character's
+    level (supports.lua spellView), `runes` what sits in them. O660: the checks read `count` as the runes inside and compared it to `max`: a spell
+    with all its open sockets full still looked free, and a rune that went in did not move the count the check watched"""
+    return spell_runes(s) < int((s or {}).get('count') or 0)
+
+
+def slot_after_use(used, item, count):
+    """O660: the backpack slot of `item` after one unit of the stack `used` was used on it: a stack of one leaves its slot, so everything behind
+    it moves one slot forward. The live run read the gem's socket from the old slot (the bench said "no sockets" there) and FAILed craft_gems on
+    every bot. -> a copy of item with the new index"""
+    out = dict(item)
+    if int(count or 1) <= 1 and int(used.get('index', 0)) < int(item.get('index', 0)):
+        out['index'] = int(item['index']) - 1
+        out['path'] = str(out['index'])
+    return out

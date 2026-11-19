@@ -1912,7 +1912,7 @@ end
 -- command, `eligible`); a player's words are left alone.
 H.COMMANDS.gold = true
 H.GOLD_STEP = 3000000
-H.GOLD_CAP = 6000000
+H.GOLD_CAP = 16000000
 
 function H.parseGold(arg)
 	local usage = "usage: gold [to N]"

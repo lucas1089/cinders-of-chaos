@@ -757,6 +757,13 @@ class KeyIO:
         op = bot.args.ops.get(opname)
         if op is None or not self.alive():
             return None
+        # O660: a person clicks no faster than the windows answer: the server drops a request that follows another of the same window within
+        # its rate limit (Chaos.limited / ChaosRateLimit: 250 to 300 ms for the Gambler, the hideout edits, the supports ...), unanswered
+        sent = bot.__dict__.setdefault('req_at', {})
+        late = sent.get(op, -999.0) + REQUEST_GAP - time.monotonic()
+        if late > 0:
+            await asyncio.sleep(late)
+        sent[op] = time.monotonic()
         fut = asyncio.get_event_loop().create_future()
         waiter = (op, set(expect), fut)
         if expect:
@@ -773,6 +780,9 @@ class KeyIO:
         finally:
             if waiter in bot.waiters:
                 bot.waiters.remove(waiter)
+
+
+REQUEST_GAP = 0.35   # O660: seconds between two requests of the same opcode (one window): above the 250 and 300 ms rate limits of the windows
 
 
 STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68}   # the walk packets: north, east, south, west
@@ -1387,6 +1397,9 @@ class TesterBot(LT.Bot):
         guard = asyncio.ensure_future(self.guard())
         self.conn.send(b'\xA0\x01\x01\x01\x00')  # offensive, chase on, secure mode on (never a player)
         self.say('!tester info')
+        if self.checks_stay():   # O660: the checks run from the temple, not from a hunt spot of a bot with no gear
+            self.stay = True
+            self.say('!tester town')
         if self.after_death:  # a dead tester wakes in the temple and rests there before it goes back to its hunt
             self.after_death = False
             rest = TC.death_rest(self.deaths_at, time.monotonic())
@@ -2118,11 +2131,15 @@ class TesterBot(LT.Bot):
         run = self.checks
         io = CheckIO(self, clock)
         await asyncio.sleep(10 if first else 3)
+        await self.check_rest()   # O660: after a death the bot rests in the temple as long as the death rule says
+        if self.checks_stay():   # O660: a person does his errands in town; a check that needs the hunt asks for it (io.go('hunt'))
+            self.stay = True
+            await io.go('town')
         mark = len(run.results)
         try:
             await run.run(io)
         finally:
-            self.stay = False
+            self.stay = self.checks_stay() and not run.finished   # O660: stays in town between the passes of an unfinished check run
             for r in run.results[mark:]:
                 self.results.log(self, 'CHECK', '%s %s%s' % (r.status.upper(), r.check, ': ' + r.detail if r.detail else ''))
                 line = r.bug_line()
@@ -2132,6 +2149,19 @@ class TesterBot(LT.Bot):
             self.flush_checks()
             return not any(r.status == TX.FAIL for r in run.results)
         return True
+
+    async def check_rest(self):
+        """O660: a bot that died waits in the temple for the rest of the death rule (TC.death_rest: 20 s, doubling to 300) before the checks go
+        on: a person does not walk back into the pack that just killed him. Only while the checks hold the bot in town (checks_stay)"""
+        while self.checks_stay() and self.back_at and time.monotonic() < self.back_at and self.alive and not self.died:
+            await asyncio.sleep(1.0)
+
+    def checks_stay(self):
+        """O660: true while this run still has system checks to do (not a journey, not a keystone round): the bot waits in the temple, as a
+        person does between errands, instead of standing at its hunt spot until a monster pack kills a bot that has no gear"""
+        a = self.args
+        return bool((getattr(a, 'checks', False) or getattr(a, 'closed', False)) and not getattr(a, 'journey', False)
+                    and not self.checks_done and not (getattr(a, 'keystones', False) and not self.keytest_done))
 
     def flush_checks(self):
         run = self.checks
