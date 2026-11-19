@@ -733,11 +733,24 @@ function H.pocketAnswer(probe, extra)
 			usable[#usable + 1] = b
 		end
 	end
+	-- O661: the boss's own level (`bl`, pocketboss.lua probe) against the bot's: a level 600 bot was sent into a level 2400 boss (the pockets of the
+	-- raid category all open at 150) and was carried out by a lethal hit 10 s later. A boss at or under the bot's level first, the highest of them
+	-- first (the fairest fight), then a point it lacks; a row with no `bl` (an old probe) sorts as before
+	local lvl = tonumber(probe.level)
+	local function over(e)
+		return (lvl and tonumber(e.bl) and tonumber(e.bl) > lvl) and 1 or 0
+	end
 	table.sort(usable, function(a, b)
+		if over(a) ~= over(b) then
+			return over(a) < over(b)
+		end
 		local am = a.point and not a.point.got and 0 or 1
 		local bm = b.point and not b.point.got and 0 or 1
 		if am ~= bm then
 			return am < bm
+		end
+		if tonumber(a.bl) and tonumber(b.bl) and a.bl ~= b.bl then
+			return a.bl > b.bl
 		end
 		if (a.level or 0) ~= (b.level or 0) then
 			return (a.level or 0) < (b.level or 0)
@@ -747,7 +760,7 @@ function H.pocketAnswer(probe, extra)
 	out.bosses = {}
 	for i = 1, math.min(#usable, H.POCKET_ROWS) do
 		local b = usable[i]
-		out.bosses[#out.bosses + 1] = {key = tostring(b.key):sub(1, 40), name = tostring(b.name):sub(1, 40), category = b.category, level = b.level,
+		out.bosses[#out.bosses + 1] = {key = tostring(b.key):sub(1, 40), name = tostring(b.name):sub(1, 40), category = b.category, level = b.level, bl = tonumber(b.bl),
 			left = b.left, point = b.point and {id = b.point.id, got = b.point.got and true or false} or nil}
 	end
 	out.usable = #usable
@@ -1707,7 +1720,7 @@ H.PORTAL_AID = 47810 -- townportal_config.lua aid.field: the town portal beside 
 H.JOURNEY_WORDS = {state = true, jump = true, hall = true}
 
 function H.parseJourney(arg)
-	local usage = "usage: journey [state | jump | hall] [keep ID] [skip ID,ID]"
+	local usage = "usage: journey [state | jump | hall] [keep ID] [skip ID,ID] [near X Y Z]"
 	local out = {what = "state", skip = {}}
 	local want
 	for tok in tostring(arg or ""):gmatch("%S+") do
@@ -1727,6 +1740,20 @@ function H.parseJourney(arg)
 				out.skip[id] = true
 			end
 			want = nil
+		elseif want == "near" then
+			-- O661: near X Y Z (three numbers, one word each): the hunt whose arrival is nearest to a place (the bounty walks)
+			local n = tonumber(tok)
+			if not n or n ~= n or math.abs(n) > 70000 then
+				return nil, usage
+			end
+			out.nearList = out.nearList or {}
+			out.nearList[#out.nearList + 1] = math.floor(n)
+			if #out.nearList == 3 then
+				out.near = {x = out.nearList[1], y = out.nearList[2], z = out.nearList[3]}
+				out.nearList, want = nil, nil
+			end
+		elseif low == "near" and not out.near then
+			want = "near"
 		elseif low == "keep" or low == "skip" then
 			want = low
 		elseif H.JOURNEY_WORDS[low] then
@@ -1755,6 +1782,31 @@ local function journeyEntry(e, k)
 	return {id = e.i, n = e.n, lo = e.l[1], hi = e.l[2], t = xyz(e.t), f = xyz(e.f), a = xyz(e.a), b = xyz(e.b), widen = k}
 end
 
+-- O661: the hunt of the teleport room whose arrival is nearest to `near` {x, y, z} among the ones the level may enter (the bounty walks: a contract's
+-- hunt mark is a place of the map, the way there is the temple's teleport, the hall and that hunt's teleport). -> entry (stay = true), distance `d`
+-- (tiles, the larger axis; a hunt on another floor counts 1000 more), or nil when no hunt has an arrival
+function H.journeyNear(ports, level, near)
+	if type(near) ~= "table" then
+		return nil
+	end
+	local best, bd
+	for _, e in ipairs(ports or {}) do
+		if type(e) == "table" and type(e.i) == "string" and type(e.t) == "table" and type(e.a) == "table" and type(e.l) == "table"
+			and type(e.l[1]) == "number" and e.l[1] <= (tonumber(level) or 0) then
+			local d = math.max(math.abs(e.a.x - near.x), math.abs(e.a.y - near.y)) + (e.a.z ~= near.z and 1000 or 0)
+			if not bd or d < bd or (d == bd and e.i < best.i) then
+				best, bd = e, d
+			end
+		end
+	end
+	if not best then
+		return nil
+	end
+	local out = journeyEntry(best, 0)
+	out.stay, out.d = true, bd
+	return out
+end
+
 -- the hunt a character of `level` goes to next: ports = ChaosHuntTeleports.ports() rows {i, n, l = {lo, hi}, t, f, a, b}; opts = {keep = id
 -- (the hunt it is at: kept while it still fits), skip = {id = true} (hunts that hurt it), seed = number (turns the choice so a hundred
 -- bots do not share one hunt)}. -> entry {id, n, lo, hi, t, f, a, b, widen, stay}, or nil when the room lists no hunt; `above` is set
@@ -1763,6 +1815,12 @@ function H.journeyPick(ports, level, opts)
 	opts = opts or {}
 	level = tonumber(level) or 0
 	local J = H.JOURNEY
+	if opts.near then
+		local e = H.journeyNear(ports, level, opts.near)
+		if e then
+			return e
+		end
+	end
 	local function pool(useSkip)
 		local list = {}
 		for _, e in ipairs(ports or {}) do
@@ -1896,7 +1954,7 @@ function H.journeyAnswer(probe, extra)
 		local p = probe.pick
 		if type(p) == "table" then
 			out.pick = {id = p.id, n = type(p.n) == "string" and p.n:sub(1, 40) or nil, lo = p.lo, hi = p.hi, t = xyz(p.t), f = xyz(p.f),
-				a = xyz(p.a), b = xyz(p.b), widen = p.widen, z = p.t and p.t.z or nil}
+				a = xyz(p.a), b = xyz(p.b), widen = p.widen, d = p.d, z = p.t and p.t.z or nil}
 		end
 	end
 	for k, v in pairs(extra or {}) do

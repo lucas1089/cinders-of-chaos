@@ -3512,7 +3512,7 @@ class RiftWorld:
             self.teleports += 1
             self.pos = (self.TEMPLE - 1, 5)
             return {'kind': 'temple', 'pos': {'x': self.pos[0], 'y': self.pos[1], 'z': 7}}
-        if command == 'rift key':
+        if command.startswith('rift key'):   # O661: `rift key N`, the tier of the level warning
             if self.key_err:
                 return dict(self.facts(), err=self.key_err)
             if not self.pz():
@@ -3613,8 +3613,9 @@ class RiftWalk(unittest.TestCase):
         self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
         self.assertGreater(io.looted, 0)
         cmds = io.cmds
-        self.assertLess(cmds.index('path temple'), cmds.index('rift key'))
-        self.assertLess(cmds.index('rift key'), cmds.index('rift path'))
+        key = next(c for c in cmds if c.startswith('rift key'))
+        self.assertLess(cmds.index('path temple'), cmds.index(key))
+        self.assertLess(cmds.index(key), cmds.index('rift path'))
 
     def test_a_bot_in_the_zone_walks_nowhere(self):
         r, io = self.play(RiftWorld(in_zone=True))
@@ -9305,6 +9306,307 @@ class Live660(unittest.TestCase):
         rows = [{'i': 1, 'sn': 'Armor', 'p': 1840000}, {'i': 2, 'sn': 'Armor', 'p': 2600000}, {'i': 3, 'sn': 'Legs', 'p': 5000000}]
         got = TX.gear_pieces_for(rows, {'Armor', 'Legs'})
         self.assertEqual([r['i'] for r in got], [1], 'the cheapest Armor, and no Legs over the cap')
+
+
+class Live661Io(FakeIO):
+    """a mocked bot for O661: scripted queue replies in order, the helper answers by command"""
+
+    def __init__(self, replies_in_order=None, **kw):
+        super().__init__(**kw)
+        self.queue_replies = list(replies_in_order or [])
+
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        if (opname, action) == ('dungeons', 'queue') and self.queue_replies:
+            return self.queue_replies.pop(0)
+        return self.replies.get((opname, action))
+
+
+def queue_answer(text, joined=False):
+    return {'action': 'queue', 'data': {'id': 4, 'joined': joined, 'text': text}}
+
+
+class Live661(unittest.TestCase):
+    """O661: the passive tree spent, the rift tier of the warning, a dungeon queue out of a fight, the pocket boss of the bot's level, the way to a
+    bounty hunt"""
+
+    # ---- the passive tree
+    def test_the_gear_up_spends_the_free_passive_points_on_the_defense_build(self):
+        io = Live661Io(replies={('passivetree', 'autobuildApply'): {'action': 'autobuildApplied', 'data': {'message': 'Auto build: 158 nodes added'}}})
+        g = {'notes': []}
+        self.assertTrue(run(TX.gear_tree(io, g)))
+        self.assertEqual(io.asked[0], ('passivetree', 'autobuildApply', {'build': 'focus_defense', 'mode': 'add', 'cost': 0}),
+                         'the free "add" mode of the Auto build window: it takes nothing back and costs nothing')
+        self.assertIn('158 nodes added', g['tree'])
+        self.assertEqual(g['notes'], [])
+
+    def test_no_free_point_is_no_fault_a_refusal_is_a_note(self):
+        none = {'action': 'autobuildError', 'data': {'message': 'Nothing would change: you already have this build, or you have no free points.'}}
+        g = {'notes': []}
+        self.assertFalse(run(TX.gear_tree(Live661Io(replies={('passivetree', 'autobuildApply'): none}), g)))
+        self.assertEqual(g['notes'], [], 'a tree that is spent already is not a fault')
+        odd = {'action': 'autobuildError', 'data': {'message': 'That build is not for your class.'}}
+        g = {'notes': []}
+        run(TX.gear_tree(Live661Io(replies={('passivetree', 'autobuildApply'): odd}), g))
+        self.assertEqual(len(g['notes']), 1)
+        self.assertIn('not for your class', g['notes'][0], "the server's own words")
+
+    def test_the_gear_up_result_names_the_tree(self):
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                return {'potions': {'health': 266, 'mana': 100}} if command in ('bag', 'info') else None
+
+        io = Io(replies={('passivetree', 'autobuildApply'): {'action': 'autobuildApplied', 'data': {'message': 'Auto build: 12 nodes added'}}})
+        r = run(TX.gear_up(io, 'Tester Aaa', 'Mage', 300))
+        self.assertIn('passive tree focus_defense: Auto build: 12 nodes added', r.detail)
+
+    def test_the_defense_focus_build_exists_in_the_server(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'passive_builds_config.lua'), encoding='utf-8') as f:
+            text = f.read()
+        self.assertIn('{key = "defense", name = "Defense"', text, 'the focus theme the build id is made from')
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'passive_builds_core.lua'), encoding='utf-8') as f:
+            core = f.read()
+        self.assertIn('themes["focus_" .. theme.key]', core, 'the id of a focus build is focus_<key>')
+
+    # ---- the rift tier
+    def test_the_rift_tier_follows_the_level_warning(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'rift_config.lua'), encoding='utf-8') as f:
+            m = re.search(r'levels = \{([0-9, ]+)\}', f.read())
+        self.assertIsNotNone(m)
+        self.assertEqual(TX.RIFT_WARN_LEVELS, tuple(int(v) for v in m.group(1).split(',')), 'the warn levels of rift_config.lua')
+        self.assertEqual(TX.rift_tier_for(100), 1)
+        self.assertEqual(TX.rift_tier_for(179), 1)
+        self.assertEqual(TX.rift_tier_for(180), 1)
+        self.assertEqual(TX.rift_tier_for(240), 2)
+        self.assertEqual(TX.rift_tier_for(700), 6)
+        self.assertEqual(TX.rift_tier_for(800), 8)
+        self.assertEqual(TX.rift_tier_for(1000), 14)
+        self.assertEqual(TX.rift_tier_for(2000), 15)
+        self.assertIsNone(TX.rift_tier_for(None))
+        self.assertEqual(TX.rift_key_command(800), 'rift key 8')
+        self.assertEqual(TX.rift_key_command('x'), 'rift key')
+
+    def test_the_tier_is_one_the_level_opens(self):
+        chaos = os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'rift_config.lua')
+        with open(chaos, encoding='utf-8') as f:
+            text = f.read()
+        mins = [int(v) for v in re.findall(r'\{minLevel = (\d+), pick', text)]
+        step = int(re.search(r'minLevelStep = (\d+)', text).group(1))
+        for level in range(100, 2100, 5):
+            t = TX.rift_tier_for(level)
+            need = mins[t - 1] if t <= len(mins) else mins[-1] + (t - len(mins)) * step
+            self.assertLessEqual(need, level, 'level %d: the key of tier %d needs level %d' % (level, t, need))
+
+    def test_the_rift_check_asks_for_the_tier_of_the_warning(self):
+        class Io(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.cmds = []
+
+            def raid_mode(self, *a, **k):
+                pass
+
+            async def helper(self, command, kind, wait=4.0):
+                self.cmds.append(command)
+                if command == 'rift state':
+                    return {'inside': False, 'tier': 8, 'level': 700, 'pz': True}
+                if command == 'rift key 6':
+                    return {'err': 'stop here'}
+                return {}
+
+        io = Io()
+        r = run(TX.check_rift_walk(io, 'Tester Aaa', 'Mage', 700))
+        self.assertIn('rift key 6', io.cmds, 'a level 700 bot (opens tier 8, warned at 760) takes the key of tier 6')
+        self.assertNotIn('rift key', io.cmds)
+        self.assertIn('stop here', r.detail)
+
+    # ---- the dungeon queue
+    def test_a_queue_refused_in_a_fight_is_asked_again(self):
+        io = Live661Io([queue_answer('You cannot enter a dungeon while you are in a fight.'),
+                        queue_answer('You cannot enter a dungeon while you are in a fight.'), queue_answer('', joined=True)])
+        reply, waited = run(TX.queue_dungeon_calm(io, {'lead': True, 'name': 'Tester Aaa'}, {'id': 4, 'difficulty': 1}))
+        self.assertTrue(reply['data']['joined'])
+        self.assertEqual(len([a for a in io.asked if a[1] == 'queue']), 3)
+        self.assertEqual(waited, 2 * TX.DUNGEON_CALM_GAP)
+        self.assertEqual(io.t, 2 * TX.DUNGEON_CALM_GAP, 'the bot stood still between the asks')
+
+    def test_the_refusal_words_come_as_a_text_line_not_in_the_answer(self):
+        """the live answer is {id, joined: false} and the words arrive as the cancel message: the bot reads them from its last text lines"""
+        class Bot:
+            recent = []
+
+        class Io(Live661Io):
+            def __init__(self, replies):
+                super().__init__(replies)
+                self.bot = Bot()
+
+            async def request(self, opname, action, data, expect, timeout):
+                reply = await super().request(opname, action, data, expect, timeout)
+                if reply is not None and not reply['data']['joined']:
+                    self.bot.recent = ['You cannot enter a dungeon while you are in a fight.']
+                else:
+                    self.bot.recent = []
+                return reply
+
+        no = {'action': 'queue', 'data': {'id': 4, 'joined': False}}
+        yes = {'action': 'queue', 'data': {'id': 4, 'joined': True}}
+        io = Io([no, no, yes])
+        reply, waited = run(TX.queue_dungeon_calm(io, {'lead': True, 'name': 'Tester Aaa'}, {'id': 4}))
+        self.assertTrue(reply['data']['joined'])
+        self.assertEqual(waited, 2 * TX.DUNGEON_CALM_GAP)
+
+    def test_another_refusal_is_not_asked_again(self):
+        io = Live661Io([queue_answer('You need level 150.')])
+        reply, waited = run(TX.queue_dungeon_calm(io, {'lead': True, 'name': 'Tester Aaa'}, {'id': 4}))
+        self.assertEqual(waited, 0)
+        self.assertEqual(TX.queue_refusal(reply), 'You need level 150.')
+
+    def test_a_fight_that_does_not_end_gives_up_after_a_step_back_to_the_temple(self):
+        io = Live661Io([queue_answer('You cannot enter a dungeon while you are in a fight.')] * 40)
+        walks = []
+
+        async def walked(io_, r, kind, n=None, near=1):
+            walks.append((kind, r['name'], io_.t))
+            return 'foot', None, None
+
+        old = TX.walk_to_place
+        TX.walk_to_place = walked
+        try:
+            reply, waited = run(TX.queue_dungeon_calm(io, {'lead': True, 'name': 'Tester Aaa'}, {'id': 4}))
+        finally:
+            TX.walk_to_place = old
+        self.assertEqual(walks, [('temple', 'Tester Aaa', TX.DUNGEON_CALM_TEMPLE)], 'one walk back to the temple, after the first refusals')
+        self.assertGreaterEqual(waited, TX.DUNGEON_CALM_WAIT)
+        self.assertIn(TX.IN_A_FIGHT, TX.queue_refusal(reply))
+
+    def test_the_refusal_text_is_the_servers(self):
+        with open(os.path.join(ROOT, 'server', 'data', 'scripts', 'chaos', 'dungeons.lua'), encoding='utf-8') as f:
+            self.assertIn('You cannot enter a dungeon ' + TX.IN_A_FIGHT + '.', f.read())
+        self.assertEqual(TX.queue_refusal(None), '')
+        self.assertEqual(TX.queue_refusal(queue_answer('', joined=True)), '')
+
+    # ---- the pocket boss
+    def test_a_pocket_boss_above_the_level_is_not_played(self):
+        self.assertIsNone(TX.pocket_unfit({'name': 'Raid A', 'bl': 600}, 700))
+        self.assertIsNone(TX.pocket_unfit({'name': 'Old helper'}, 700), 'a row with no boss level (an old probe) is played as before')
+        text = TX.pocket_unfit({'name': "Ul'thazmor", 'bl': 2400}, 631)
+        self.assertIn('level 631', text)
+        self.assertIn("Ul'thazmor", text)
+
+    def test_the_check_skips_a_boss_above_the_bot_before_it_walks(self):
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                return {'level': 631, 'enabled': True, 'free': 12, 'reserve': 4, 'bosses': [{'key': 'raid_ul', 'name': "Ul'thazmor", 'bl': 2400, 'level': 150}]}
+
+        io = Io()
+        r = run(TX.check_pocket_walk(io, 'Tester Aaa', 'Mage', 631))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertEqual(io.moves, [], 'no walk, no charge spent')
+
+    # ---- the way to a bounty hunt
+    def test_far_goals_are_not_walked(self):
+        pos = {'x': 32957, 'y': 32076, 'z': 7}
+        self.assertTrue(TX.bounty_far(pos, {'x': 33007, 'y': 33360, 'z': 7}))
+        self.assertFalse(TX.bounty_far(pos, {'x': 32990, 'y': 32100, 'z': 7}))
+        self.assertFalse(TX.bounty_far(None, {'x': 1, 'y': 1, 'z': 7}))
+        self.assertEqual(TX.travel_command({'x': 33007, 'y': 33360, 'z': 7}), 'journey near 33007 33360 7')
+
+    def test_no_teleport_to_the_hunt_is_a_skip_with_the_reason(self):
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                if command.startswith('journey near'):
+                    return {'zone': 'temple', 'pos': {'x': 32957, 'y': 32076, 'z': 7},
+                            'pick': {'id': 'h1', 'n': 'Wasp Nest', 't': {'x': 1, 'y': 1, 'z': 7}, 'a': {'x': 31000, 'y': 31000, 'z': 7}}}
+                return None
+
+        trace, fb = {'level': 600, 'steps': 0}, []
+        spent = run(TX.bounty_travel_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 33007, 'y': 33360, 'z': 7}, trace, fb))
+        self.assertGreaterEqual(spent, 0)
+        self.assertEqual(trace['travel'], 'no way')
+        self.assertIn('Wasp Nest', trace['no_way'])
+        self.assertIn('tiles away', trace['no_way'])
+        status, text = TX.bounty_walk_verdict(dict(trace, faults=[], name='Rotworm', need=3, secs=5, fallbacks=fb, progress=0, base=0))
+        self.assertEqual(status, TX.SKIP)
+        self.assertIn('has no way there', text)
+
+    def test_no_hunt_open_to_the_level_is_a_skip(self):
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                return {'zone': 'temple', 'pos': {'x': 32957, 'y': 32076, 'z': 7}, 'pick': None}
+
+        trace, fb = {'level': 600, 'steps': 0}, []
+        run(TX.bounty_travel_leg(Io(), {'name': 'Tester Aaa', 'lead': True}, {'x': 33007, 'y': 33360, 'z': 7}, trace, fb))
+        self.assertEqual(trace['travel'], 'no way')
+        self.assertIn('no hunt of the teleport room is open to level 600', trace['no_way'])
+
+    def test_the_arrival_at_the_hunt_ends_the_travel(self):
+        class Io(FakeIO):
+            def __init__(self):
+                super().__init__()
+                self.zone = 'temple'
+                self.steps = []
+
+            async def helper(self, command, kind, wait=4.0):
+                pick = {'id': 'h1', 'n': 'Wasp Nest', 't': {'x': 5, 'y': 5, 'z': 7}, 'a': {'x': 33000, 'y': 33350, 'z': 7}}
+                if command.startswith('journey near'):
+                    return {'zone': self.zone, 'pos': {'x': 32957, 'y': 32076, 'z': 7}, 'pick': pick}
+                return None
+
+        io = Io()
+        calls = []
+
+        class Boom(Exception):
+            pass
+
+        orig = TX.bounty_travel_leg
+
+        # the legs themselves are the journey's (tester_journey_test.py); here the arrival flips the zone after the first act
+        import tester_journey as TJ
+        old_act = TJ.Journey.act
+
+        async def act(self, io_, s):
+            calls.append(s['zone'])
+            self.target = s['pick']
+            io.zone = 'other'
+
+        TJ.Journey.act = act
+        try:
+            trace, fb = {'level': 600, 'steps': 0}, []
+            run(orig(io, {'name': 'Tester Aaa', 'lead': True}, {'x': 33007, 'y': 33360, 'z': 7}, trace, fb))
+        finally:
+            TJ.Journey.act = old_act
+        self.assertEqual(trace['travel'], 'foot')
+        self.assertEqual(calls, ['temple'])
+
+    def test_the_contract_whose_hunt_a_teleport_leads_to_is_taken(self):
+        arrivals = {(100, 100, 7): {'x': 105, 'y': 98, 'z': 7}, (900, 900, 7): {'x': 100, 'y': 100, 'z': 7}}
+
+        class Io(FakeIO):
+            async def helper(self, command, kind, wait=4.0):
+                x, y, z = (int(v) for v in command.split()[2:5])
+                return {'zone': 'temple', 'pick': {'id': 'h', 'n': 'Hunt %d' % x, 'a': arrivals[(x, y, z)]}}
+
+        a = {'level': 600, 'candidates': [{'key': 'far', 'name': 'Far One', 'mark': {'x': 900, 'y': 900, 'z': 7}},
+                                          {'key': 'near', 'name': 'Near One', 'mark': {'x': 100, 'y': 100, 'z': 7}}, {'key': 'nomark', 'name': 'None'}]}
+        row, why = run(TX.bounty_near_row(Io(), a))
+        self.assertIsNone(why)
+        self.assertEqual(row['key'], 'near')
+        self.assertEqual(row['arrival'], 5)
+        a['candidates'] = a['candidates'][:1]
+        row, why = run(TX.bounty_near_row(Io(), a))
+        self.assertIsNone(row)
+        self.assertIn('none of the 1 hunt contract(s)', why)
+        self.assertIn('Far One', why)
+        row, why = run(TX.bounty_near_row(FakeIO(), {'level': 9, 'candidates': a['candidates']}))
+        self.assertIn('no hunt teleport is open to level 9', why)
+
+    def test_the_helper_part_is_in_the_helper_files(self):
+        with open(os.path.join(HERE, 'tester_helper_core.lua'), encoding='utf-8') as f:
+            core = f.read()
+        self.assertIn('function H.journeyNear', core)
+        self.assertIn('[near X Y Z]', core)
+        with open(os.path.join(HERE, 'tester_helper.lua'), encoding='utf-8') as f:
+            self.assertIn('near = opts.near', f.read())
 
 
 if __name__ == '__main__':

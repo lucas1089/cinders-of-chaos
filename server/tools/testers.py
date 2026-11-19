@@ -592,11 +592,21 @@ EXT_RE = re.compile(rb'\x32([\x00-\xff])([\x00-\xff]{2})')
 def extended_messages(plain):
     """[(opcode, text)] of the extended opcode messages (0x32, u8 opcode, string) in a decrypted message"""
     out = []
-    for m in EXT_RE.finditer(plain):
+    at = 0
+    while True:
+        m = EXT_RE.search(plain, at)
+        if m is None:
+            break
         n = struct.unpack('<H', m.group(2))[0]
         body = plain[m.end():m.end() + n]
         if n and len(body) == n and body[:1] in (b'{', b'[', b'S', b'P', b'E'):
             out.append((m.group(1)[0], body.decode('latin-1')))
+            at = m.end() + n
+        else:
+            # O661: a 0x32 byte of another message (an item id of a map update) is no header; the scan goes on one byte after it. It went on after the
+            # four bytes of the false header (finditer), which swallowed the real header that followed a 0x32: the first answer of a window that
+            # came right after a map update was lost for the bots (the hideout's first `place`, 3 of 3 fresh rooms)
+            at = m.start() + 1
     return out
 
 

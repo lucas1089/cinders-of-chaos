@@ -329,6 +329,14 @@ eq([(i['buy'], i['sell'], i['unset']) for i in items2], [(50, 0, True), (0, 8, T
 eq([i['unset'] for i in items], [False, False], 'a clean window is not flagged')
 payload = json.dumps({'action': 'kill', 'data': {'k': 3, 'items': [{'id': 1, 'n': 1}]}})
 eq(T.extended_messages(b'\x32\xee' + LT.string(payload)), [(0xee, payload)], 'an extended opcode message')
+# O661: a 0x32 byte that ends a map update (an item id) right before a real message must not swallow its header
+res = json.dumps({'action': 'result', 'data': {'ok': True, 'text': 'Ashen Throne placed.'}})
+eq(T.extended_messages(b'\x6a\x10\x00\x20\x00\x07\x01\x55\x32' + b'\x32\xc0' + LT.string(res)), [(0xc0, res)],
+   'a real extended message right after a stray 0x32 byte is found')
+eq(T.extended_messages(b'\x32\x32\x32\xc0' + LT.string(res)), [(0xc0, res)], 'two stray 0x32 bytes before it')
+two = json.dumps({'action': 'state', 'data': {'n': 2}})
+eq(T.extended_messages(b'\x32\xc0' + LT.string(res) + b'\x32\xc0' + LT.string(two)), [(0xc0, res), (0xc0, two)], 'two messages in one packet')
+eq(T.extended_messages(b'\x32\xc0\xff\x7f{'), [], 'a header whose length runs past the packet is no message')
 
 
 class A:

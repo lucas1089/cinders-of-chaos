@@ -1211,6 +1211,10 @@ function PB.probe(player)
 	for _, b in ipairs(PB.index().list) do
 		local s = view.bosses[b.key] or {}
 		local row = {key = b.key, name = b.name, category = b.category, level = b.minLevel, left = s.l, max = s.m, ok = s.ok == 1}
+		-- O661: the level the boss is spawned with (spawnBoss): the tester bots pick a boss that is not above their own level
+		local okl, bl = pcall(K.bossLevel, b, ChaosLoot and ChaosLoot.typeLevel and Chaos.huntingLevel(ChaosLoot.typeLevel(b.monster)),
+			ChaosMonsterLevelsCore and ChaosMonsterLevelsCore.maxEstimate)
+		row.bl = okl and bl or nil
 		if BP and BP.pointOf then
 			row.point = BP.pointOf(player, b.monster or b.name)
 		end

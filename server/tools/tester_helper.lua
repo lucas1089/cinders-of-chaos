@@ -1871,7 +1871,7 @@ local function journeyProbe(player, opts)
 	local zone = H.journeyZone(pos, tpl)
 	local ports = ChaosHuntTeleports and ChaosHuntTeleports.ports and ChaosHuntTeleports.ports() or {}
 	local seed = player.getGuid and player:getGuid() or player:getId()
-	local probe = {level = level, pos = pos, zone = zone, pick = H.journeyPick(ports, level, {keep = opts.keep, skip = opts.skip, seed = seed})}
+	local probe = {level = level, pos = pos, zone = zone, pick = H.journeyPick(ports, level, {keep = opts.keep, skip = opts.skip, seed = seed, near = opts.near})}
 	probe.stay = probe.pick and probe.pick.stay or nil
 	probe.above = probe.pick and probe.pick.above or nil
 	local tile = Tile(ppos)
