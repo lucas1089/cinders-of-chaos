@@ -16,7 +16,7 @@
 --   ChaosLootFilter.packSound / unpackSound   sound per rule, volume, mute, hunt tracker flag <-> one int32 storage value
 --   ChaosLootFilter.pickSound(hits, snd)      the alert sound of a kill;  resetPlan(scope, rule)  what a reset clears
 --   ChaosLootFilter.look(outfit, shaders, fallback) / parseShaders(xml)   the monster icon of a loot row (client outfit table)
--- info = {id, rarity = 0 or a stored id of data/lib/chaos_rarity.lua (1, 2, 3, 4, 5, 10), unique = bool, orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
+-- info = {id, rarity = 0 or a stored id of data/lib/chaos_rarity.lua (1, 2, 3, 4, 5, 10), unique = bool, set = bool (a set piece, O677), orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
 --         level = item level, bestTier = the best modifier tier on it (0 = none)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -236,11 +236,11 @@ end
 
 -- cfg = {rayUniques = bool, rayMinRarity = n, rayUniqueEffect = name, rayBands = {{from = n, effect = name}, ...}}
 function F.rayEffect(info, cfg)
-	if info.unique then
+	if info.unique or info.set then -- a set piece rays as a unique does (O677: only Legendary, Divine, set and unique)
 		return cfg.rayUniques and cfg.rayUniqueEffect or nil
 	end
 	local r = F.id(info.rarity)
-	if r < 1 or r < (cfg.rayMinRarity or math.huge) then
+	if r < 1 or r < math.max(F.BEAM_MIN_RARITY or 5, cfg.rayMinRarity or math.huge) then
 		return nil
 	end
 	local best, bestFrom
@@ -254,10 +254,16 @@ end
 
 -- Loot beams (client game_lootbeams): the client draws a light pillar over a corpse, coloured by the best item still
 -- inside that the player's own loot filter makes glow. The server only says which items may beam; the filter, the
--- colour and the look are the client's. cfg = {beamMinRarity = n, beamUniques = bool, beamOrbs = bool}
+-- colour and the look are the client's. Only Legendary and Divine, a set piece and a unique beam (O677, owner 2026-11-19); Common,
+-- Uncommon, Magic, Rare and orbs never do, whatever the config says (F.BEAM_MIN_RARITY is the floor of beamMinRarity).
+-- cfg = {beamMinRarity = n, beamUniques = bool}
+F.BEAM_MIN_RARITY = 5
 function F.beamCandidate(info, cfg)
 	if type(info) ~= "table" then
 		return false
+	end
+	if info.set then
+		return true -- a set piece, whatever its rarity
 	end
 	if info.unique then
 		return cfg.beamUniques ~= false
@@ -266,10 +272,10 @@ function F.beamCandidate(info, cfg)
 		return true -- a legendary power always glows
 	end
 	if info.orb then
-		return cfg.beamOrbs and true or false
+		return false
 	end
 	local r = F.id(info.rarity)
-	return r >= 1 and r >= (tonumber(cfg.beamMinRarity) or 1)
+	return r >= F.BEAM_MIN_RARITY and r >= (tonumber(cfg.beamMinRarity) or F.BEAM_MIN_RARITY)
 end
 
 -- entries = {{info, count}, ...} as tracked; left = {remaining count per entry}. Returns {i, ...} in entry order.

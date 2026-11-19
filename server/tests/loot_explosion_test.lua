@@ -211,7 +211,99 @@ for i, d in ipairs(plan.drops) do
 		local gap = d.delay - plan.drops[i - 1].delay
 		ok(gap >= cfg.staggerMinMs and gap <= cfg.staggerMaxMs, "a stagger of 50-80 ms between two: " .. gap)
 	end
-	eq(d.flight, cfg.flightBaseMs + cfg.flightPerTileMs * math.max(1, facts[d.tile].ring), "flight time by distance")
+	eq(d.flight, X.flightMs(cfg, X.groupOfRank(cfg, d.rank, d.gold), facts[d.tile].ring), "flight time by group and distance")
+end
+
+do -- O677: the flight by group and distance, the beam group, the one `explode` message of the client animation
+eq(X.groupOfRank(cfg, 0, true), "gold", "gold has its group")
+eq(X.groupOfRank(cfg, 1, false), "plain", "Common is plain")
+eq(X.groupOfRank(cfg, 3, false), "rare", "Magic is rare")
+eq(X.groupOfRank(cfg, 5, false), "epic", "Legendary is epic")
+eq(X.groupOfRank(cfg, 6, false), "epic", "Divine is epic")
+eq(X.groupOfRank(cfg, 100, false), "unique", "a unique counts 100")
+for i, d in ipairs(plan.drops) do
+	eq(d.group, X.groupOfRank(cfg, d.rank, d.gold), "the plan names the group of drop " .. i)
+end
+ok(X.flightMs(cfg, "unique", 2) > X.flightMs(cfg, "plain", 2), "a unique flies longer than a plain item")
+ok(X.flightMs(cfg, "epic", 2) > X.flightMs(cfg, "rare", 2) and X.flightMs(cfg, "rare", 2) > X.flightMs(cfg, "plain", 2), "the rarer, the longer")
+ok(X.flightMs(cfg, "plain", 2) > X.flightMs(cfg, "plain", 1), "a farther tile takes longer")
+eq(X.flightMs(cfg, "plain", 0), X.flightMs(cfg, "plain", 1), "ring 0 counts as ring 1")
+ok(X.flightMs(cfg, "plain", 1) >= 200, "even the shortest flight is long enough to read as an arc")
+ok(X.flightMs(cfg, "unique", 2) <= X.MAX_FLIGHT_MS, "the longest flight is inside what the message allows")
+eq(X.beamGroup(cfg, {rank = 1}), nil, "Common: no beam group")
+eq(X.beamGroup(cfg, {rank = 3}), nil, "Magic: no beam group")
+eq(X.beamGroup(cfg, {rank = 4}), nil, "Rare: no beam group")
+eq(X.beamGroup(cfg, {rank = 5}), "orange", "Legendary: orange")
+eq(X.beamGroup(cfg, {rank = 6}), "divine", "Divine: divine")
+eq(X.beamGroup(cfg, {rank = 100, unique = true}), "unique", "a unique: unique")
+eq(X.beamGroup(cfg, {rank = 4, set = true}), "set", "a set piece of Rare: set")
+eq(X.beamGroup(cfg, {rank = 100, unique = true, set = true}), "set", "a set piece that is a unique: set")
+eq(X.beamGroup(cfg, {rank = 5, gold = true}), nil, "gold never has a group")
+eq(X.beamGroup(cfg, {rank = 2, orb = true}), nil, "an orb has none")
+local flights = {}
+for i = 1, 20 do
+	flights[i] = {id = 3000 + i, c = i, to = {x = 100 + i % 3, y = 100, z = 7}, d = i * 60, fl = 250, g = (i % 2 == 0) and "orange" or nil}
+end
+local payload = X.explodePayload(cfg, {x = 100, y = 100, z = 7}, 55, flights)
+eq(#payload.f, cfg.maxItems, "at most maxItems flights in the message")
+eq(payload.k, 55, "the kill id")
+eq(payload.o[1], 100, "the origin as [x, y, z]")
+eq(payload.o[3], 7, "the floor")
+eq(payload.f[2].g, "orange", "the beam group is kept")
+eq(payload.f[1].g, nil, "a plain item has none")
+eq(payload.f[3].id, 3003, "the client id")
+eq(payload.f[3].c, 3, "the count")
+eq(payload.f[3].to[1], 100, "the landing tile")
+eq(payload.f[3].d, 180, "the delay")
+eq(payload.f[3].fl, 250, "the flight")
+local odd = X.explodePayload(cfg, {x = 1, y = 2, z = 3}, nil, {{id = 5, c = 0, to = {x = 1, y = 2, z = 3}, d = -5, fl = 99999, g = "red"},
+	{id = 0, to = {x = 1, y = 2, z = 3}}, {id = 7}, {id = 8, c = "x", to = {x = 1, y = 2, z = 3}, d = 9999999, fl = 0}})
+eq(#odd.f, 2, "an item with no id or no tile is left out")
+eq(odd.f[1].c, 1, "a count of 0 is 1")
+eq(odd.f[1].d, 0, "a negative delay is 0")
+eq(odd.f[1].fl, X.MAX_FLIGHT_MS, "a flight is clamped")
+eq(odd.f[1].g, nil, "an unknown beam group is dropped")
+eq(odd.f[2].d, X.MAX_DELAY_MS, "a delay is clamped")
+eq(odd.f[2].fl, 1, "a flight of 0 is 1")
+eq(odd.f[2].c, 1, "a count that is no number is 1")
+eq(odd.k, nil, "no kill id: none")
+eq(X.explodePayload(cfg, {x = 1, y = 2, z = 3}, 1, {}), nil, "no flights: no message")
+eq(X.explodePayload(cfg, nil, 1, flights), nil, "no origin: no message")
+eq(X.explodePayload(cfg, {x = 1, y = 2, z = 3}, 1, "junk"), nil, "junk flights: no message")
+local jsonOk, jsonLib = pcall(function() return require("json") end)
+local enc = jsonOk and jsonLib and jsonLib.encode
+if enc then
+	ok(#enc(payload) < 4000, "the message is far under the 8192 byte limit")
+end
+eq(X.parseAnim({on = 1}), true, "burst on = 1")
+eq(X.parseAnim({on = true}), true, "burst on = true")
+eq(X.parseAnim({on = "1"}), true, "burst on = '1'")
+eq(X.parseAnim({on = 0}), false, "burst off")
+eq(X.parseAnim({}), false, "no on: off")
+eq(X.parseAnim("junk"), false, "junk: off")
+eq(X.parseAnim(nil), false, "nil: off")
+do
+	local cands = {{id = 1, x = 100, y = 100, z = 7}, {id = 2, x = 110, y = 100, z = 7}, {id = 3, x = 100, y = 100, z = 8},
+		{id = 4, x = 108, y = 106, z = 7}, {id = 5, x = 101, y = 99, z = 7}}
+	local v = X.animViewers(cfg, cands, {[1] = true, [2] = true, [3] = true, [4] = true}, {x = 100, y = 100, z = 7})
+	eq(v[1], true, "a flagged player on the tile sees it")
+	eq(v[2], nil, "one 10 tiles away does not see it")
+	eq(v[3], nil, "another floor does not")
+	eq(v[4], true, "8 x 6 squares away still sees it")
+	eq(v[5], nil, "a player who did not say they draw the burst keeps the stock effects")
+	local off = {}
+	for k, val in pairs(cfg) do
+		off[k] = val
+	end
+	off.clientAnim = false
+	eq(next(X.animViewers(off, cands, {[1] = true}, {x = 100, y = 100, z = 7})), nil, "clientAnim off: nobody")
+	eq(next(X.animViewers(cfg, nil, {}, {x = 1, y = 1, z = 1})), nil, "no candidates: nobody")
+end
+eq(cfg.clientAnim, true, "the client animation is on in the shipped config")
+bad("clientAnim", "yes", "clientAnim must be true or false")
+bad("flightMul", 3, "flightMul must be a table")
+bad("divineRank", 2, "divineRank must not be below epicRank")
+bad("flightBaseMs", 1400, "a flight too long for the message")
 end
 
 -- the cap
@@ -329,11 +421,11 @@ end
 
 local PosMT = {}
 PosMT.__index = {
-	sendMagicEffect = function(self, e)
-		log.effects[#log.effects + 1] = {pos = posKey(self), effect = e}
+	sendMagicEffect = function(self, e, pl)
+		log.effects[#log.effects + 1] = {pos = posKey(self), effect = e, to = pl and pl:getId() or nil}
 	end,
-	sendDistanceEffect = function(self, to, a)
-		log.missiles[#log.missiles + 1] = {from = posKey(self), to = posKey(to), ani = a}
+	sendDistanceEffect = function(self, to, a, pl)
+		log.missiles[#log.missiles + 1] = {from = posKey(self), to = posKey(to), ani = a, toPlayer = pl and pl:getId() or nil}
 	end,
 	isSightClear = function(self, to)
 		return not world.noSight[posKey(to)]
@@ -534,6 +626,16 @@ EventCallback = {register = function(self, prio)
 end}
 
 local players
+Game.getSpectators = function(pos, _, _, x1, _, y1)
+	local out = {}
+	for _, p in pairs(players) do
+		if p.pos.z == pos.z and math.abs(p.pos.x - pos.x) <= x1 and math.abs(p.pos.y - pos.y) <= y1 then
+			out[#out + 1] = p
+		end
+	end
+	table.sort(out, function(a, b) return a.id < b.id end)
+	return out
+end
 local PlayerMT = {}
 PlayerMT.__index = PlayerMT
 function PlayerMT:getId() return self.id end
@@ -564,7 +666,8 @@ local function party(leader, members)
 	return par
 end
 
-Chaos = {isTester = function(p) return p.tester == true end, isStaff = function(p) return p.staff == true end, tx = function(_, t) return t end, instanceAt = function() return world.instance end}
+Chaos = {send = function(p, op, action, data) log.sent[#log.sent + 1] = {to = p:getId(), op = op, action = action, data = data} end,
+	isTester = function(p) return p.tester == true end, isStaff = function(p) return p.staff == true end, tx = function(_, t) return t end, instanceAt = function() return world.instance end}
 dofile("data/lib/chaos_rarity.lua")
 ChaosLootFilter = {
 	killOf = function(corpse) return corpse:getCustomAttribute("lf_kill") end,
@@ -581,7 +684,7 @@ ChaosLootFilter = {
 
 local function reset()
 	world = {tiles = {}, noSight = {}}
-	log = {effects = {}, missiles = {}, exploded = {}, touched = {}}
+	log = {effects = {}, missiles = {}, exploded = {}, touched = {}, sent = {}}
 	queue, callbacks, players = {}, {}, {}
 	events = nil
 	clock.ms = 1000000
@@ -1230,6 +1333,158 @@ local notBag = makeBag(101, 100, 1, {{id = 2148, count = 5, stackable = true}}, 
 runDrop(notBag)
 ok(not X.isExploded(notBag), "a container that is no loot bag id of the config does not explode")
 eq(notBag:getSize(), 1, "and keeps its content")
+
+
+-- 7. O677: the client animation. A viewer whose client draws the burst gets one `explode` message and none of the stock effects; the
+-- others who see the tile keep them; the items land exactly when the message says
+do
+	reset()
+	openGround(100, 100, 4)
+	local c = load()
+	ok(c.clientAnim == true, "the animation is on")
+	local killer = newPlayer(1, 100, 101)
+	local mate = newPlayer(2, 103, 100)
+	local other = newPlayer(3, 98, 100)
+	local far = newPlayer(4, 100 + 12, 100)
+	killer.party = party(killer, {mate})
+	mate.party = killer.party
+	other.name = "Other"
+	X.anim = {}
+	local function kill(contents)
+		local bag = makeBag(100, 100, 1, contents)
+		bag:setCustomAttribute("lf_kill", 88)
+		runDrop(bag)
+		return bag
+	end
+	local contents = {{id = 2148, count = 100, stackable = true}, {id = 2400, attrs = {rarity = 1}}, {id = 2401, attrs = {rarity = 5}},
+		{id = 2402, attrs = {rarity = 10}}, {id = 2403, attrs = {chaos_unique = "x", rarity = 4}},
+		{id = 2404, attrs = {chaos_set = "embers", rarity = 4}}}
+	-- nobody said they draw the burst: the stock effects for everyone, no message
+	local bag1 = kill(contents)
+	eq(#log.sent, 0, "no capability: no explode message")
+	eq(#log.effects, 1, "the poff goes to everyone")
+	eq(log.effects[1].to, nil, "as one broadcast")
+	runEvents(clock.ms + 3000)
+	eq(#log.missiles, 6, "one distance effect per drop")
+	eq(log.missiles[1].toPlayer, nil, "broadcast too")
+	eq(bag1:getSize(), 0, "the loot landed")
+	-- the killer and the mate say yes
+	log.effects, log.missiles, log.sent = {}, {}, {}
+	X.setAnim(killer, true)
+	X.setAnim(mate, true)
+	X.setAnim(far, true)
+	X.setAnim(other, false)
+	local bag2 = kill(contents)
+	eq(#log.sent, 2, "the killer and the party member get the message (the far one does not see the tile, the other did not ask)")
+	local to = {}
+	for _, m in ipairs(log.sent) do
+		to[m.to] = m
+		eq(m.action, "explode", "the action")
+		eq(m.op, 230, "on opcode 230")
+	end
+	ok(to[1] and to[2], "to ids 1 and 2")
+	local data = to[1].data
+	eq(data.k, 88, "the kill id")
+	eq(data.o[1] == 100 and data.o[2] == 100 and data.o[3] == 7, true, "the death tile")
+	eq(#data.f, 6, "six flights: the gold and five items")
+	local groups = {}
+	local lastD = -1
+	for _, f in ipairs(data.f) do
+		groups[f.g or "-"] = (groups[f.g or "-"] or 0) + 1
+		ok(f.d >= lastD, "the flights leave in order")
+		lastD = f.d
+		ok(f.fl >= 200, "a flight of at least 200 ms: " .. f.fl)
+		ok(math.max(math.abs(f.to[1] - 100), math.abs(f.to[2] - 100)) <= 2, "the landing is within 2 tiles")
+		ok(f.id > 1000, "a client id (the mock adds 1000)")
+	end
+	eq(groups.orange, 1, "one Legendary: orange")
+	eq(groups.divine, 1, "one Divine: divine")
+	eq(groups.unique, 1, "one unique: unique")
+	eq(groups.set, 1, "one set piece: set")
+	eq(groups["-"], 2, "gold and the Common item: no group")
+	eq(data.f[1].id, 2148 + 1000, "the gold leaves first, as the client id of the coin")
+	eq(data.f[1].c, 100, "with its count")
+	eq(data.f[#data.f].g, "unique", "the unique leaves last")
+	-- the real items land exactly at delay + flight of the message: the last one is still in the bag a millisecond before
+	local last = 0
+	for _, f in ipairs(data.f) do
+		last = math.max(last, f.d + f.fl)
+	end
+	local t0 = clock.ms
+	runEvents(t0 + last - 1)
+	ok(bag2:getSize() >= 1, "the last item is still in the bag before its flight ends")
+	runEvents(t0 + last + 1)
+	eq(bag2:getSize(), 0, "and out of it when it ends")
+	runEvents(t0 + last + 3000)
+	-- the stock effects: not for the two, kept for the others who see the tile (the one at 98,100); the far one is out of sight
+	local reached = {}
+	for _, e in ipairs(log.effects) do
+		ok(e.to ~= nil, "an effect goes to a named player, not to everyone")
+		reached[e.to] = (reached[e.to] or 0) + 1
+	end
+	eq(reached[1], nil, "the killer gets no poff or sparkle")
+	eq(reached[2], nil, "nor the party member")
+	ok(reached[3] and reached[3] >= 1, "the other player who sees the tile still gets the poff")
+	eq(reached[4], nil, "one out of sight gets nothing")
+	local missileTo = {}
+	for _, m in ipairs(log.missiles) do
+		ok(m.toPlayer ~= nil, "a distance effect goes to a named player")
+		missileTo[m.toPlayer] = (missileTo[m.toPlayer] or 0) + 1
+	end
+	eq(missileTo[1], nil, "no missile for the killer")
+	eq(missileTo[2], nil, "none for the party member")
+	eq(missileTo[3], 6, "the other player sees all six missiles")
+	for _, f in ipairs(data.f) do
+		local row = world.tiles[f.to[1] .. "," .. f.to[2] .. "," .. f.to[3]]
+		local found = false
+		for _, it in ipairs(row.items) do
+			if it.id + 1000 == f.id then
+				found = true
+			end
+		end
+		ok(found, "the item of flight " .. f.id .. " lies on the tile the message named")
+	end
+	-- the option off: the stock effects come back and no message goes
+	log.effects, log.missiles, log.sent = {}, {}, {}
+	X.setAnim(killer, false)
+	X.setAnim(mate, false)
+	kill(contents)
+	eq(#log.sent, 0, "the player turned it off: no message")
+	eq(#log.effects, 1, "and the poff is the broadcast again")
+	runEvents(clock.ms + 3000)
+	eq(log.effects[1].to, nil, "to everyone")
+	-- logout forgets it
+	X.setAnim(killer, true)
+	X.clearAnim(killer)
+	eq(X.anim[1], nil, "clearAnim forgets the capability")
+	-- the switch in the config: nothing sent, the effects for all
+	log.effects, log.missiles, log.sent = {}, {}, {}
+	X.setAnim(killer, true)
+	Chaos.lootExplosionConfig.clientAnim = false
+	kill(contents)
+	eq(#log.sent, 0, "clientAnim = false: no message")
+	eq(log.effects[1].to, nil, "the stock effects for everyone")
+	runEvents(clock.ms + 3000)
+	Chaos.lootExplosionConfig.clientAnim = true
+	-- the tester run (the video's `!tester explode run`) holds a Legendary and a Divine sword
+	log.sent = {}
+	X.setAnim(killer, true)
+	killer.tester = true
+	local ranT = X.testerRun(killer)
+	ok(ranT ~= nil, "the tester's bag explodes")
+	eq(#log.sent, 1, "and the tester's client gets its burst")
+	local gs = {}
+	for _, f in ipairs(log.sent[1].data.f) do
+		gs[f.g or "-"] = true
+	end
+	ok(gs.orange and gs.divine, "a Legendary and a Divine flight in the test bag")
+end
+
+-- the files
+local glue2 = readFile("data/scripts/chaos/loot_explosion.lua")
+ok(glue2:find("X.explodePayload", 1, true) and glue2:find("animViewers", 1, true), "the glue sends the burst message")
+local gl2 = readFile("data/scripts/chaos/groundloot.lua")
+ok(gl2:find('msg.action == "burst"', 1, true) and gl2:find("LE.clearAnim", 1, true), "the ground labels' opcode takes the capability and forgets it at logout")
 
 os.time = realTime
 print("loot_explosion_test: " .. checks .. " checks ok")

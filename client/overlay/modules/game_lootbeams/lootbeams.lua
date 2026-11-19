@@ -1,5 +1,6 @@
 -- Loot beams: a thin light pillar over a corpse (or an item on the ground) that holds loot your loot filter makes
--- glow, in the colour of the best tier inside, with a soft glow pool at its base. It replaces the old loot ray map
+-- glow, in the colour of the best tier inside, with a soft glow pool at its base. Only Legendary, Divine, set pieces and uniques
+-- beam (O677); Common .. Rare and orbs never do. It replaces the old loot ray map
 -- effects (server lootfilter_config.lua rayEffects, now off).
 --
 -- Where the data comes from:
@@ -87,7 +88,7 @@ local function hasWidgets()
     widgetsOk = type(Tile) == 'table' and Tile.addOverlayWidget ~= nil and Tile.hasOverlayWidget ~= nil
       and Tile.removeOverlayWidget ~= nil and type(g_ui) ~= 'nil' and type(g_map) ~= 'nil' and g_map.getTile ~= nil
     if widgetsOk and g_resources and g_resources.fileExists then
-      widgetsOk = g_resources.fileExists(LB.artPath('a', 'white')) and true or false
+      widgetsOk = g_resources.fileExists(LB.artPath('a', 'orange')) and true or false
     end
     if not widgetsOk then
       g_logger.info('[lootbeams] no tile overlay widgets or no beam pictures: the older beams are drawn')
@@ -100,7 +101,7 @@ end
 local function hasEffects()
   if effectsOk == nil then
     effectsOk = false
-    local id = LB.effectFor('white')
+    local id = LB.effectFor('orange')
     if id and type(Effect) == 'table' and Effect.create and g_map and g_map.addThing and g_things then
       local ok, valid = pcall(function()
         if g_things.isValidDatId then return g_things.isValidDatId(id, ThingCategoryEffect) end
@@ -343,8 +344,7 @@ end
 -- ---------------------------------------------------------------- settings window
 -- names are looked up when the window is filled (tr follows the language picked at login)
 local function groupNames()
-  return { white = tr('Common, Uncommon'), blue = tr('Magic, Rare'), orange = tr('Legendary'),
-    divine = tr('Divine'), unique = tr('Uniques'), orb = tr('Orbs') }
+  return { orange = tr('Legendary'), divine = tr('Divine'), set = tr('Set pieces'), unique = tr('Uniques') }
 end
 
 local function heightNames()
@@ -382,7 +382,6 @@ local function refreshWindow()
   if not window then return end
   updatingUi = true
   window.enabled:setChecked(settings.enabled)
-  window.orbs:setChecked(settings.orbs)
   window.ground:setChecked(settings.ground)
   fillCombo(window.heightCombo, LB.HEIGHT_ORDER, heightNames(), settings.height)
   fillCombo(window.intensityCombo, LB.INTENSITY_ORDER, intensityNames(), settings.intensity)
@@ -393,7 +392,6 @@ end
 local function onUiChange()
   if updatingUi or not window then return end
   settings.enabled = window.enabled:isChecked()
-  settings.orbs = window.orbs:isChecked()
   settings.ground = window.ground:isChecked()
   local h = window.heightCombo:getCurrentOption()
   settings.height = h and LB.HEIGHTS[h.data] and h.data or settings.height
@@ -455,7 +453,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
-    for _, id in ipairs({ 'enabled', 'orbs', 'ground' }) do window[id].onCheckChange = safe('ui', onUiChange) end
+    for _, id in ipairs({ 'enabled', 'ground' }) do window[id].onCheckChange = safe('ui', onUiChange) end
     window.heightCombo.onOptionChange = safe('ui', onUiChange)
     window.intensityCombo.onOptionChange = safe('ui', onUiChange)
     window.styleCombo.onOptionChange = safe('ui', onUiChange)

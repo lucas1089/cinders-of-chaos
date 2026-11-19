@@ -8,14 +8,19 @@
 --                   tip {p = [x, y, z], s, id}            rich tooltip of one ground item (s = index on the tile)
 --                   raise {p, s, id, c, iid}              put that item on top of its pile (the client then moves it)
 --                   lootall {}                            take every item of mine within reach into the backpack (O669)
+--                   burst {on = 1 | 0}                    my client draws the loot burst animation (game_lootburst, O677): sent at login and when
+--                                                         the option changes; 1 = the server sends `explode` and skips the stock effects for me
 -- server -> client  tiles {t = [{p = [x, y, z], i = [item | corpse, ...]}]}   every asked tile is answered (i may be [])
---                       item   {s, id (client id), c, nm, r, u, o, pw, g, t, il, e}
---                       corpse {s, id, k = 1, n (items in it), i = [{c, nm, r, u, o, pw, g, t}, ...], e}
+--                       item   {s, id (client id), c, nm, r, u, st (set piece), o, pw, g, t, il, e}
+--                       corpse {s, id, k = 1, n (items in it), i = [{c, nm, r, u, st, o, pw, g, t}, ...], e}
 --                       (e = seconds until it decays, for a corpse until its loot is gone: the decay stages that
 --                       are still containers summed; absent when it does not decay)
 --                   tip {p, s, id, tip} | {p, s, id, gone = 1}   (tip as item_tooltip.lua builds it)
 --                   raised {p, id} | {p, id, err = "far" | "sight" | "gone" | "fixed"}
 --                   lootall {n, f, s}   taken, did not fit, seen (loot_explosion.lua)
+--                   explode {o = [x, y, z], k, f = [{id, c, to = [x, y, z], d, fl, g}]}   one loot burst: the death tile, the kill id and
+--                       every flight (client id, count, landing tile, start delay ms, flight ms, beam group); only to a client that said
+--                       `burst {on = 1}`, the owner and the party who see the death tile (loot_explosion_core.lua X.explodePayload, O677)
 --
 -- What is never revealed: tiles outside the player's view or on another floor, items in a house the player does not
 -- own, and the contents of a corpse the player may not open (another player's kill outside the party, the same rule
@@ -360,6 +365,11 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			raise(player, msg.data)
 		elseif msg.action == "lootall" then
 			lootAll(player)
+		elseif msg.action == "burst" then
+			local LE = ChaosLootExplosion
+			if LE and LE.setAnim then
+				LE.setAnim(player, LE.parseAnim(msg.data))
+			end
 		end
 	end)
 	if not ok then
@@ -381,6 +391,10 @@ login:register()
 local logout = CreatureEvent("ChaosGroundLootLogout")
 function logout.onLogout(player)
 	budget[player:getId()] = nil
+	local LE = ChaosLootExplosion
+	if LE and LE.clearAnim then
+		LE.clearAnim(player)
+	end
 	return true
 end
 logout:type("logout")

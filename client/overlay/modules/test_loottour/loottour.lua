@@ -2,7 +2,7 @@
 -- Armed only by the environment variable CHAOS_LOOTTOUR=1 (loottourlogic.lua parseEnv): then it logs in with the account of
 -- CHAOS_LIVE_ACCOUNT / CHAOS_LIVE_PASSWORD (a "Tester Xxx" character, so the test helper answers), enters the game with the
 -- character of CHAOS_LIVE_CHARACTER, writes "loottour: ready" (the workflow starts the recording on that line), says
--- `!tester explode run` twice, presses Loot all, writes "loottour: done" and exits. Without the variable init() returns at once:
+-- `!tester explode run` twice (the loot burst animation of game_lootburst flies it out, O677; the log says whether it drew), presses Loot all, writes "loottour: done" and exits. Without the variable init() returns at once:
 -- no window, no hotkey, no hub card. The password is never logged.
 ChaosLootTour = {}
 local T = ChaosLootTour
@@ -119,6 +119,21 @@ local function enter(nextFn)
   end)
 end
 
+-- the loot burst animation (game_lootburst, O677) is what the video shows: the log says whether it was on and drawing, so a video
+-- without it can be told from one with
+local function logBurst(when)
+  local lb = modules.game_lootburst
+  if lb and type(lb.getStats) == 'function' then
+    local ok, s = pcall(lb.getStats)
+    if ok and type(s) == 'table' then
+      log(('burst %s: enabled %s capable %s bursts %d widgets %d effects %d'):format(when, tostring(s.enabled), tostring(s.capable),
+        s.bursts or 0, s.widgets or 0, s.effects or 0))
+      return
+    end
+  end
+  log('burst ' .. when .. ': no game_lootburst')
+end
+
 local function lootAll()
   local gl = modules.game_groundlabels
   if gl and type(gl.lootAll) == 'function' then
@@ -149,6 +164,7 @@ local function tour()
       if step['do'] == 'say' then
         log('say ' .. step.text)
         g_game.talk(step.text)
+        later(900, function() logBurst('after the say') end) -- the burst is in the air (the loot flies for about 2 s)
       elseif step['do'] == 'lootall' then
         lootAll()
       else

@@ -19992,9 +19992,14 @@ stayed in the corpse; after buying (Strict) it was picked up and a Common list s
 - Owner request: the old rays (below) read as a red splash over the corpse that covered the next tiles and the
   creatures on them. Now the client draws a thin light pillar with a glow pool (client `game_lootbeams`, base patch
   0069; client/MANIFEST.md). The server only says which items in a tracked corpse may beam: `beam {k, p = [x, y, z],
-  i = [{r, u, o, pw, g, t}]}` on opcode 238, the entries still inside with `F.beamCandidate` (base rarity >=
-  `beamMinRarity` (1), uniques (`beamUniques`), legendary powers, orbs (`beamOrbs`; the client shows them only with its
-  orb option)). The client picks the best one its loot filter makes glow and colours the pillar by tier.
+  i = [{r, u, o, st, pw, g, t}]}` on opcode 238, the entries still inside with `F.beamCandidate`. **Only Legendary, Divine, set
+  pieces and uniques beam (O677, owner 2026-11-19: "deixe so de lendario, divino, set e unique")**: base rarity >= `beamMinRarity`
+  (5, and `F.BEAM_MIN_RARITY` 5 is a floor the config cannot go under), uniques (`beamUniques`), legendary powers, and a set piece
+  whatever its rarity (`st = 1`, `info.set`: the set key of `ChaosItemSets.setKeyOf`, else the `chaos_set` attribute). Common, Uncommon,
+  Magic, Rare and orbs never beam (`beamOrbs` is gone). The ground labels' rows (`groundloot_core.lua` `flags`) carry the same `st`.
+  The old ray effect (`F.rayEffect`, `rayEffects = false`, the pair 27 trial pack beam of `emitRay`) follows the same rule: a set piece rays
+  as a unique, nothing below Legendary rays. The client picks the best one its loot filter makes glow (a set piece and a legendary
+  power always glow) and colours the pillar by group (orange, divine, set, unique).
 - Since pair 36 (2026-10-22, owner: "Use as spells, level up e loot beams") the client draws the beam as the animated
   loot beam effect of the purchased beam pack, one per colour group (effects 4090-4101, `beam_*` of
   `data/lib/chaos_pack36_fx_ids.lua`; client/MANIFEST.md "game_lootbeams"). The server messages did not change. Pair 65
@@ -33519,7 +33524,7 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   the items already there (1.0 each), the drops of this kill already sent there (2.0 each), a random 0 .. 0.6. So 14 drops fill the 8 ring 1 tiles, then 6 of ring 2, and
   nothing is piled before every free tile has one. The death tile costs 6: a last resort. **Gold** (all its stacks) is one drop on one tile. Items leave in rank order,
   gold and plain first, **the rarest last** (a unique last), 50 to 80 ms apart (`staggerMinMs`, `staggerMaxMs`), each with a distance effect from the death tile
-  (`missiles`: stone for gold and plain, energy for Magic / Rare / Legendary / Divine, fire for a unique), `flightBaseMs` + 40 ms a tile in the air, and a landing sparkle
+  (`missiles`: stone for gold and plain, energy for Magic / Rare / Legendary / Divine, fire for a unique), `flightBaseMs` + `flightPerTileMs` a tile (times the group's `flightMul`, O677) in the air, and a landing sparkle
   for the rare groups (`land`); a poff on the death tile when it starts (`burst`). The items stay in the bag until they land and are found there again by a drop number
   (no Lua object is held over the delay). The loot beams are the client's (O569, per ground tile): nothing is sent for them.
 * **Ownership** (the rule of the bag's corpse owner, same timings). Every loose item carries the custom attribute `chaos_loot` = owner id, owner time, vanish time, strict,
@@ -33577,6 +33582,24 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   `loot_explosion.mp4` and the client log with the account, the password and the guard key cut out; no frame, no sprite file and no database is uploaded, nothing is committed.
   Inputs: `client_build`, `seconds`; secrets: none (the repository's default token reads `windows-assets` and the `winpkg` releases). Logic and timeline:
   `test_loottour/loottourlogic.lua`, `loottourlogic_test.lua` in the client loop. Not run yet (the coordinator dispatches it). **Found:** the waystone maps' monsters leave a Loot Bag of id 26691, not the `bagId`: no explosion for them (192 of 803 kills).
+
+* **The client animation (O677).** Owner 2026-11-19 (pt-BR): "Faça uma animação legal no Loot Explosion, por favor, deixe mais bonito". The stock distance effects and a
+  poff looked cheap, so the main client draws the burst itself (client `game_lootburst`, client/MANIFEST.md "Loot burst (O677)"). **Wire:** opcode 230 (no new opcode), two actions.
+  Client to server `burst {on = 1 | 0}`: this client draws the animation (sent about 0.8 s after the game starts and whenever the option "Loot burst animation" of the
+  Ground Labels window changes; `X.setAnim`, forgotten at logout by `groundloot.lua`; a client without the module never says it, so it keeps the stock effects). Server to
+  client `explode {o = [x, y, z] the death tile, k = the loot filter's kill id, f = [{id = client id, c = count (1 if not stackable), to = [x, y, z] landing tile,
+  d = ms from now until it leaves, fl = ms of the flight, g = "orange" | "divine" | "set" | "unique" or none}]}`, built by `X.explodePayload` (pure, tested: at most
+  `maxItems` 14 flights, every number clamped, about 70 bytes a flight so far under 8192 and never chunked) and sent ONCE before the first item flies, to the owner and the
+  party members who see the death tile (`viewX` 9, `viewY` 7) and said `burst on` (`X.animViewers`). **Those viewers get no stock effect:** the poff, every distance
+  effect and the landing sparkles go instead to the players who see the tile and do not draw the burst (`Game.getSpectators` and the `player` argument of
+  `sendMagicEffect` / `sendDistanceEffect`); with nobody flagged the effects go to everyone as before. A gold drop is one flight (the highest coin, its count). The beam group
+  of a flight: `X.beamGroup` (a set piece "set" whatever its rarity, a unique "unique", rank 6 "divine", rank 5 "orange", nothing else; the same colours as the loot beams).
+  `clientAnim = false` in the config sends nothing and keeps the stock effects for all. **Timing:** the stagger (50 to 80 ms) and the landing are unchanged and the message
+  carries them, so the real item lands exactly when the client's flight ends. What did change: a flight is long enough to read as an arc, `flightBaseMs` 180 + `flightPerTileMs`
+  45 a tile (was 80 + 40), times `flightMul` of the group (gold and plain 1, Magic / Rare 1.15, Legendary / Divine 1.4, unique 1.75), 225 to 495 ms, so the items of a kill
+  land a little later than before and a viewer without the module sees the stock missile arrive earlier than the item (cosmetic). The tester bag (`!tester explode run`) holds a
+  Legendary and a Divine sword now (was Magic and Legendary), so the video shows both; still six things. Tests: `tests/loot_explosion_test.lua` (core builders, the glue on a mocked
+  engine: who gets the message and who keeps the effects, landing exactly at `d + fl`, the option off, the switch, logout).
 
 ## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
 

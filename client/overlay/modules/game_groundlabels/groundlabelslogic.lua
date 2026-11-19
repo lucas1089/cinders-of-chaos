@@ -80,16 +80,17 @@ end
 -- altAll    holding Alt shows every item on the ground, the ones the filter hides too (dimmed)
 -- corpses   "Corpse: 2 items" over a corpse you may loot that holds items the filter makes glow
 -- timers    the time until a label's item or corpse decays
+-- burst     the loot burst animation (game_lootburst, O677): the loot of a kill flies out in an arc; off = the server's stock effects
 -- size      small | normal | large
 function GL.defaults()
-  return { enabled = true, rarePlus = true, altAll = true, corpses = true, timers = true, size = 'normal' }
+  return { enabled = true, rarePlus = true, altAll = true, corpses = true, timers = true, burst = true, size = 'normal' }
 end
 
 function GL.normalize(t)
   local d = GL.defaults()
   if type(t) ~= 'table' then return d end
   local out = {}
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers' }) do
+  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
     out[k] = bool(t[k], d[k])
   end
   out.size = GL.SIZES[t.size] and t.size or d.size

@@ -698,6 +698,9 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'tip' then onTip(msg.data)
   elseif msg.action == 'raised' then onRaised(msg.data)
   elseif msg.action == 'lootall' then rowsVersion = rowsVersion + 1 -- the server told it in a message line; the labels re-scan
+  elseif msg.action == 'explode' then -- the loot burst of a kill (game_lootburst draws it, O677)
+    local lb = modules.game_lootburst
+    if lb and lb.onExplode then lb.onExplode(msg.data) end
   end
 end
 
@@ -707,7 +710,7 @@ local updatingUi = false
 local function refreshWindow()
   if not window then return end
   updatingUi = true
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers' }) do
+  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
     window[k]:setChecked(settings[k])
   end
   local combo = window.sizeCombo
@@ -721,12 +724,14 @@ end
 
 local function onUiChange()
   if updatingUi or not window then return end
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers' }) do
+  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
     settings[k] = window[k]:isChecked()
   end
   local opt = window.sizeCombo:getCurrentOption()
   settings.size = opt and GL.SIZES[opt.data] and opt.data or settings.size
   saveSettings()
+  local burst = modules.game_lootburst -- the animation switch (the server leaves its stock effects out while it is on)
+  if burst and burst.setEnabled then burst.setEnabled(settings.burst) end
   startLoops()
   for _, t in pairs(tiles) do t.render = nil end
   if settings.enabled and g_game.isOnline() then
@@ -768,6 +773,16 @@ function getLabels()
       kind = l.d.kind, dim = l.d.dim, highlight = l.d.highlight, rect = l.label and l.label:getRect() }
   end
   return out
+end
+
+-- for game_lootburst (O677): send a message on this module's opcode (`burst {on}` tells the server this client draws the loot burst) and
+-- read the switch of the animation (the checkbox of this window; game_lootburst loads after this module and asks for it)
+function sendAction(action, data)
+  send(action, data)
+end
+
+function getBurstSetting()
+  return settings.burst ~= false
 end
 
 -- for game_lootbeams: the server rows of the tiles in view {{pos, rows}} (corpse rows included, it leaves them out)
@@ -814,7 +829,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
-    for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers' }) do
+    for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
       window[k].onCheckChange = safe('ui', onUiChange)
     end
     window.sizeCombo.onOptionChange = safe('ui', onUiChange)

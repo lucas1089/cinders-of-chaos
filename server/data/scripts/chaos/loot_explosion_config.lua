@@ -40,8 +40,11 @@ return {
 	-- death tile when the loot flies. Names are the engine constants without the CONST_ prefix (a missing name = no effect).
 	staggerMinMs = 50,
 	staggerMaxMs = 80,
-	flightBaseMs = 80,
-	flightPerTileMs = 40,
+	-- O677: a flight is long enough to read as an arc (the client animation, game_lootburst, draws it): flightBaseMs + flightPerTileMs per
+	-- tile, times the group's `flightMul` (the rarer, the higher and longer it flies). The real item lands exactly when it ends.
+	flightBaseMs = 180,
+	flightPerTileMs = 45,
+	flightMul = {gold = 1.0, plain = 1.0, rare = 1.15, epic = 1.4, unique = 1.75},
 	burst = "ME_POFF",
 	-- the distance effect by group: gold, plain (rarity Common / Uncommon / none), rare (Magic and Rare), epic (Legendary and
 	-- Divine), unique. The landing sparkle of the rare groups is the `land` row, the beam over them is the client's (O569)
@@ -50,6 +53,15 @@ return {
 	-- the rank (ChaosRarity.rank of the item's rarity, 1 Common .. 6 Divine; a unique counts 100) from which an item is in the
 	-- rare group (Magic) and the epic group (Legendary)
 	rareRank = 3, epicRank = 5,
+	-- the rank of Divine (ChaosRarity.rank 6): the client's beam group "divine" (the epic group is Legendary and Divine together)
+	divineRank = 6,
+
+	-- the client animation (O677, game_lootburst; opcode 230 action "explode"): true = a player whose client says it draws the burst
+	-- (opcode 230 `burst {on = 1}`, sent at login and when the option changes) gets ONE message with every flight of the kill, and the
+	-- stock distance effects, the landing sparkles and the poff are left out for that player (the others keep them). false = the stock
+	-- effects for everyone, nothing sent. viewX / viewY: who sees the death tile (the owner and the party members within these squares).
+	clientAnim = true,
+	viewX = 9, viewY = 7,
 
 	-- ownership. The killer and the party (the corpse owner rule, as the bag had it) may take the items; no other player may
 	-- while the rule lasts. ownerSeconds: how long that is for plain items (nil = the bag's whole life, corpse_config.lua

@@ -1,6 +1,6 @@
 -- luajit lootbeams_test.lua && lua5.3 lootbeams_test.lua (from any folder)
 -- Loot beam rules with the real loot filter rules (game_lootfilter/lootfilterlogic.lua): settings, tier -> colour
--- (the rarity ids in four colours, uniques and orbs apart), the filter, the best item per tile, the server's beam messages
+-- (only Legendary, Divine, set pieces and uniques beam: O677), the filter, the best item per tile, the server's beam messages
 -- (start, change, looted empty), ground items, the cap with many corpses, and the engine calls of a change.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. '../game_lootfilter/lootfilterlogic.lua')
@@ -23,13 +23,13 @@ local d = LB.defaults()
 eq(d.enabled, true, 'on by default')
 eq(d.height, 'normal', 'normal height')
 eq(d.intensity, 'normal', 'normal intensity')
-eq(d.orbs, false, 'no orb beams by default')
+eq(d.orbs, nil, 'no orb setting any more (O677)')
 eq(d.ground, true, 'ground items by default')
 local s = LB.normalize({ enabled = 'false', height = 'huge', intensity = 'bright', orbs = 'true' })
+eq(s.orbs, nil, 'an old orbs setting is dropped')
 eq(s.enabled, false, 'g_settings strings: false')
 eq(s.height, 'normal', 'unknown height')
 eq(s.intensity, 'bright', 'bright')
-eq(s.orbs, true, 'g_settings strings: true')
 eq(LB.normalize(nil).ground, true, 'nil = defaults')
 eq(LB.HEIGHTS.short < LB.HEIGHTS.normal and LB.HEIGHTS.normal < LB.HEIGHTS.tall, true, 'heights grow')
 eq(LB.HEIGHTS.normal >= 3 and LB.HEIGHTS.normal <= 4, true, 'normal is 3-4 tiles')
@@ -40,20 +40,40 @@ eq(#LB.TIER_GROUP, #L.RARITY, 'as many ids as the loot filter')
 local groups = {}
 for r = 1, 15 do
   local g = LB.TIER_GROUP[r]
-  eq(LB.GROUPS[g] ~= nil, true, 'tier ' .. r .. ' group exists')
-  groups[g] = true
-  eq(LB.tierColor(r), LB.GROUPS[g].color, 'tier ' .. r .. ' colour')
+  if r <= 4 then
+    eq(g, false, 'tier ' .. r .. ' (Common .. Rare) has no beam')
+    eq(LB.tierColor(r), nil, 'tier ' .. r .. ' has no colour')
+  else
+    eq(LB.GROUPS[g] ~= nil, true, 'tier ' .. r .. ' group exists')
+    groups[g] = true
+    eq(LB.tierColor(r), LB.GROUPS[g].color, 'tier ' .. r .. ' colour')
+  end
 end
-eq(count(groups), 4, 'four beam colours for the rarities')
+eq(count(groups), 2, 'two beam colours for the rarities: Legendary and Divine')
 eq(groups.unique, nil, 'uniques are not a tier colour')
+eq(groups.set, nil, 'set pieces are not a tier colour')
+eq(count(LB.GROUPS), 4, 'four groups beam: orange, divine, set, unique')
+eq(LB.GROUPS.white, nil, 'no white group (O677)') eq(LB.GROUPS.blue, nil, 'no blue group (O677)') eq(LB.GROUPS.orb, nil, 'no orb group (O677)')
 eq(LB.TIER_GROUP[5], 'orange', 'Legendary is orange')
 eq(LB.TIER_GROUP[7], 'orange', 'an old Mythic is Legendary: orange')
 eq(LB.TIER_GROUP[10], 'divine', 'Divine')
-eq(LB.TIER_GROUP[1], 'white', 'Common is white')
-eq(LB.TIER_GROUP[3], 'blue', 'Magic is blue') eq(LB.TIER_GROUP[4], 'blue', 'Rare is blue')
 eq(LB.TIER_GROUP[15], 'divine', 'an old Transcendent is Divine')
 eq(LB.groupOf({ u = 1, r = 5 }), 'unique', 'a unique has its own colour, whatever its rarity')
-eq(LB.groupOf({ o = 1 }), 'orb', 'orbs')
+eq(LB.groupOf({ o = 1 }), nil, 'orbs never beam')
+eq(LB.groupOf({ o = 1, r = 0, g = 'currency' }), nil, 'an orb has no group')
+-- O677: Common / Magic / Rare / orb -> no beam, Legendary -> orange, Divine -> divine, set Rare -> set, unique -> unique
+eq(LB.groupOf({ r = 1, g = 'equipment' }), nil, 'Common: no beam')
+eq(LB.groupOf({ r = 2, g = 'equipment' }), nil, 'Uncommon: no beam')
+eq(LB.groupOf({ r = 3, g = 'equipment' }), nil, 'Magic: no beam')
+eq(LB.groupOf({ r = 4, g = 'equipment' }), nil, 'Rare: no beam')
+eq(LB.groupOf({ r = 5, g = 'equipment' }), 'orange', 'Legendary: orange')
+eq(LB.groupOf({ r = 10, g = 'equipment' }), 'divine', 'Divine: divine')
+eq(LB.groupOf({ r = 4, st = 1, g = 'equipment' }), 'set', 'a set piece of Rare: set')
+eq(LB.groupOf({ r = 1, st = 1, g = 'equipment' }), 'set', 'a set piece of Common: set')
+eq(LB.groupOf({ r = 5, st = true }), 'set', 'a set piece of Legendary: set (a set piece is a set piece)')
+eq(LB.groupOf({ u = 1, st = 1 }), 'set', 'a set piece that is a unique: set')
+eq(LB.groupOf({ u = 1, r = 0, g = 'equipment' }), 'unique', 'a unique: unique')
+eq(LB.groupOf({ st = 0, r = 4 }), nil, 'a st of 0 is no set piece')
 eq(LB.groupOf({ pw = 1 }), 'orange', 'a power on plain gear: legendary colour')
 eq(LB.groupOf({ g = 'currency' }), nil, 'coins: no beam colour')
 eq(LB.groupOf(nil), nil, 'nothing')
@@ -66,20 +86,31 @@ for _, key in ipairs(LB.GROUP_ORDER) do
   eq(colours[c], nil, key .. ' colour is its own')
   colours[c] = true
 end
-eq(LB.GROUPS.white.height < LB.GROUPS.divine.height, true, 'higher tiers stand taller')
+eq(LB.GROUPS.orange.height < LB.GROUPS.divine.height, true, 'higher tiers stand taller')
+eq(LB.GROUPS.set.height, 1.15, 'a set beam stands as tall as a unique one')
+eq(LB.GROUPS.divine.order < LB.GROUPS.set.order and LB.GROUPS.set.order < LB.GROUPS.unique.order, true, 'set sits between divine and unique')
+eq(LB.GROUPS.set.color, '#c8e04a', 'set is green gold')
 eq(LB.rank({ u = 1 }) > LB.rank({ r = 15 }), true, 'a unique beats every tier')
 eq(LB.rank({ r = 10 }) > LB.rank({ r = 5 }), true, 'higher rarity wins')
-eq(LB.rank({ r = 1 }) > LB.rank({ o = 1 }), true, 'orbs rank last')
+eq(LB.rank({ u = 1 }) > LB.rank({ u = 1, st = 1 }), true, 'a plain unique beats a set piece')
+eq(LB.rank({ st = 1, r = 4 }) > LB.rank({ r = 10 }), true, 'a set piece beats Divine')
 
 -- ---------------------------------------------------------------- the loot filter decides
 local filter = L.defaults() -- glow on gear from Rare (3)
 local gear = function(r) return { r = r, g = 'equipment' } end
-eq(LB.wants(gear(3), filter, d), true, 'Rare glows under the default filter: beam')
+eq(LB.wants(gear(3), filter, d), false, 'Magic: no beam (O677)')
 eq(LB.wants(gear(2), filter, d), false, 'Uncommon does not glow: no beam')
 eq(LB.wants({ u = 1, g = 'equipment' }, filter, d), true, 'uniques always glow')
 eq(LB.wants({ pw = 1, r = 1, g = 'equipment' }, filter, d), true, 'a legendary power always glows')
-eq(LB.wants({ o = 1, g = 'currency' }, filter, d), false, 'orbs: off by default')
-eq(LB.wants({ o = 1, g = 'currency' }, filter, LB.normalize({ orbs = true })), true, 'orbs when wanted')
+eq(LB.wants({ o = 1, g = 'currency' }, filter, d), false, 'orbs never beam')
+eq(LB.wants({ o = 1, g = 'currency' }, filter, LB.normalize({ orbs = true })), false, 'orbs never beam, an old setting changes nothing')
+eq(LB.wants(gear(1), filter, d), false, 'Common: no beam')
+eq(LB.wants(gear(3), filter, d), false, 'Magic: no beam, whatever the filter says')
+eq(LB.wants(gear(4), L.normalize({ highlight = 1 }), d), false, 'Rare: no beam even when the filter glows for every rarity')
+eq(LB.wants({ r = 4, t = 8, g = 'equipment' }, L.normalize({ highlight = 0, tier = 1 }), d), false, 'a good modifier tier does not make a Rare beam')
+eq(LB.wants(gear(5), filter, d), true, 'Legendary beams')
+eq(LB.wants({ st = 1, r = 4, g = 'equipment' }, filter, d), true, 'a set piece of Rare beams')
+eq(LB.wants({ st = 1, r = 1, g = 'equipment' }, L.normalize({ highlight = 0 }), d), true, 'a set piece always glows, whatever the filter')
 eq(LB.wants({ g = 'currency' }, filter, d), false, 'coins never')
 local strict = L.normalize({ highlight = 10 })
 eq(LB.wants(gear(5), strict, d), false, 'a stricter filter: Legendary no longer beams')
@@ -88,7 +119,7 @@ local off = L.normalize({ highlight = 0 })
 eq(LB.wants(gear(10), off, d), false, 'rarity glow off: no rarity beams')
 eq(LB.wants({ u = 1 }, off, d), true, 'uniques still beam')
 local tiered = L.normalize({ highlight = 0, tier = 6 })
-eq(LB.wants({ r = 1, t = 7, g = 'equipment' }, tiered, d), true, 'a modifier tier the filter glows for')
+eq(LB.wants({ r = 5, t = 7, g = 'equipment' }, tiered, d), true, 'a modifier tier the filter glows for (a Legendary one)')
 
 local b = LB.beamOf({ gear(3), gear(6), gear(2) }, filter, d)
 eq(b.group, 'orange', 'the best item inside wins (an old Exotic is Legendary)')
@@ -104,12 +135,12 @@ eq(LB.beamOf(nil, filter, d), nil, 'no items')
 -- ---------------------------------------------------------------- lifecycle: server messages
 local st = LB.newState()
 local player = { x = 100, y = 100, z = 7 }
-eq(LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { { r = 7, g = 'equipment' }, { r = 3, g = 'equipment' } } }), true, 'beam starts')
+eq(LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { { r = 7, g = 'equipment' }, { r = 6, g = 'equipment' } } }), true, 'beam starts')
 local want = LB.resolve(st, filter, d, player)
 eq(count(want), 1, 'one beam')
 eq(want['101,100,7'].group, 'orange', 'Mythic is Legendary orange')
-eq(LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { { r = 3, g = 'equipment' } } }), true, 'the Mythic was looted')
-eq(LB.resolve(st, filter, d, player)['101,100,7'].group, 'blue', 'the beam turns to the next best (Magic blue)')
+eq(LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { { r = 10, g = 'equipment' } } }), true, 'the Mythic was looted')
+eq(LB.resolve(st, filter, d, player)['101,100,7'].group, 'divine', 'the beam turns to the next best (Divine)')
 eq(LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = {} }), true, 'looted empty')
 eq(count(LB.resolve(st, filter, d, player)), 0, 'the beam is gone')
 eq(LB.onBeam(st, { k = 1, i = {} }), false, 'ending an unknown beam changes nothing')
@@ -140,15 +171,15 @@ eq(LB.resolve(st, filter, d, player)['99,99,7'], nil, 'picked up: gone')
 -- ---------------------------------------------------------------- an AoE kill: many corpses, the cap
 st = LB.newState()
 for i = 1, 40 do
-  LB.onBeam(st, { k = i, p = { 100 + (i % 8) - 4, 100 + math.floor(i / 8) - 2, 7 }, i = { gear(3 + (i % 3)) } })
+  LB.onBeam(st, { k = i, p = { 100 + (i % 8) - 4, 100 + math.floor(i / 8) - 2, 7 }, i = { gear(i % 2 == 0 and 5 or 10) } })
 end
 LB.onBeam(st, { k = 99, p = { 110, 110, 7 }, i = { { u = 1 } } })
 want = LB.resolve(st, filter, d, player, 10)
 eq(count(want), 10, 'capped')
-eq(want['110,110,7'] ~= nil, true, 'a far unique is kept over near blue ones')
+eq(want['110,110,7'] ~= nil, true, 'a far unique is kept over near Legendary ones')
 local groupsKept = {}
 for _, w in pairs(want) do groupsKept[w.group] = (groupsKept[w.group] or 0) + 1 end
-eq(groupsKept.blue, nil, 'the cap drops the lowest colour first')
+eq(groupsKept.divine ~= nil and groupsKept.orange == nil, true, 'the cap drops the lowest colour first (no Legendary while Divine fill it)')
 eq(count(LB.resolve(st, filter, d, player)), LB.MAX_BEAMS, 'the default cap')
 
 -- ---------------------------------------------------------------- engine calls
@@ -163,12 +194,12 @@ eq(#calls.remove, 0, 'nothing to remove')
 calls, drawn = LB.diff(drawn, LB.resolve(st, filter, d, player))
 eq(#calls.set + #calls.remove, 0, 'no change: no engine call')
 LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = {} })
-LB.onBeam(st, { k = 2, p = { 102, 100, 7 }, i = { gear(3) } })
+LB.onBeam(st, { k = 2, p = { 102, 100, 7 }, i = { gear(10) } })
 calls, drawn = LB.diff(drawn, LB.resolve(st, filter, d, player))
 eq(#calls.remove, 1, 'the looted one is removed')
 eq(calls.remove[1].x, 101, 'by its position')
 eq(#calls.set, 1, 'the changed one is set again')
-eq(calls.set[1].color, LB.GROUPS.blue.color, 'in its new colour')
+eq(calls.set[1].color, LB.GROUPS.divine.color, 'in its new colour')
 calls, drawn = LB.diff(drawn, LB.resolve(st, filter, LB.normalize({ intensity = 'bright' }), player))
 eq(#calls.set, 1, 'a new intensity resets the beam')
 calls, drawn = LB.diff(drawn, {})
@@ -187,21 +218,27 @@ local seen = {}
 for _, g in ipairs(LB.GROUP_ORDER) do
   local id = LB.effectFor(g)
   eq(id ~= nil, true, 'group ' .. g .. ' has a beam effect')
-  eq(id, ids[LB.EFFECT_NAMES[g]], 'group ' .. g .. ' is ' .. LB.EFFECT_NAMES[g] .. ' of chaos_pack36_fx_ids.lua')
-  eq(seen[id or -1], nil, 'group ' .. g .. ' has its own effect')
-  if id then seen[id] = true end
+  if g == 'set' then
+    eq(id, LB.EFFECTS.unique, 'a set piece has no effect of its own in the pair: it uses the unique one')
+    eq(LB.EFFECT_NAMES.set, nil, 'and no name of its own')
+  else
+    eq(id, ids[LB.EFFECT_NAMES[g]], 'group ' .. g .. ' is ' .. tostring(LB.EFFECT_NAMES[g]) .. ' of chaos_pack36_fx_ids.lua')
+    eq(seen[id or -1], nil, 'group ' .. g .. ' has its own effect')
+    if id then seen[id] = true end
+  end
 end
 eq(LB.EFFECT_MS > 1000, true, 'one play of a beam lasts over a second')
 eq(LB.effectFor('nothing'), nil, 'no group, no effect')
+eq(LB.EFFECTS.white ~= nil and LB.EFFECTS.blue ~= nil and LB.EFFECTS.orb ~= nil, true, 'the six rows stay (the Unity mirror reads them)')
 st = LB.newState()
 LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { gear(5) } })
-LB.onBeam(st, { k = 2, p = { 102, 100, 7 }, i = { gear(3) } })
+LB.onBeam(st, { k = 2, p = { 102, 100, 7 }, i = { gear(10) } })
 calls, drawn = LB.diff({}, LB.resolve(st, filter, d, player))
 local pulse = LB.pulse(drawn)
 eq(#pulse, 2, 'every drawn beam is added again')
 eq(pulse[1].pos.x, 101, 'in tile order')
 eq(pulse[1].id, LB.EFFECTS.orange, 'a Legendary beam')
-eq(pulse[2].id, LB.EFFECTS.blue, 'a Rare beam')
+eq(pulse[2].id, LB.EFFECTS.divine, 'a Divine beam')
 
 -- pair 65: a beam at full size (3 x 5 tiles) is added at the tile + (1, 1), the halved 1 x 2 one on the tile
 local on = { x = 100, y = 200, z = 7 }
@@ -225,11 +262,11 @@ do
     end
     sf:close()
     for _, g in ipairs(LB.GROUP_ORDER) do
-      local sp = specs[LB.EFFECT_NAMES[g]]
-      eq(sp ~= nil, true, 'the beam spec has ' .. LB.EFFECT_NAMES[g])
+      local sp = specs[LB.EFFECT_NAMES[LB.EFFECT_ALIAS[g] or g]]
+      eq(sp ~= nil, true, 'the beam spec has ' .. tostring(LB.EFFECT_NAMES[LB.EFFECT_ALIAS[g] or g]))
       if sp then
         eq(sp[1] == LB.FULL_SIZE.w and sp[2] == LB.FULL_SIZE.h and sp[3] == LB.FULL_SIZE.dx and sp[4] == LB.FULL_SIZE.dy, true,
-          LB.EFFECT_NAMES[g] .. ' is cut at the size and offset the module adds it for')
+          tostring(LB.EFFECT_NAMES[LB.EFFECT_ALIAS[g] or g]) .. ' is cut at the size and offset the module adds it for')
       end
     end
   end
@@ -253,7 +290,9 @@ for _, st in ipairs(LB.STYLE_ORDER) do eq(LB.STYLES[st], true, 'style ' .. st ..
 -- paths and clips
 eq(LB.artPath('a', 'orange'), '/modules/game_lootbeams/images/a_orange.png', 'art path')
 eq(LB.artPath('C', 'unique'), '/modules/game_lootbeams/images/c_unique.png', 'art path of style c')
-eq(LB.artPath('x', 'white'), '/modules/game_lootbeams/images/a_white.png', 'an unknown style draws style a')
+eq(LB.artPath('x', 'set'), '/modules/game_lootbeams/images/a_set.png', 'an unknown style draws style a')
+eq(LB.artPath('a', 'white'), nil, 'no strip for the old white group')
+eq(LB.artPath('a', 'orb'), nil, 'no strip for the old orb group')
 eq(LB.artPath('a', 'purple'), nil, 'no strip for an unknown group')
 eq(LB.clip(0), '0 0 64 128', 'clip of frame 0')
 eq(LB.clip(7), '448 0 64 128', 'clip of frame 7')
@@ -346,7 +385,7 @@ do
   local want = {}
   for i = 1, 20 do
     local key = 'k' .. string.format('%02d', i)
-    want[key] = { group = (i <= 3) and 'orange' or 'white', dist = i, key = key }
+    want[key] = { group = (i <= 3) and 'divine' or 'orange', dist = i, key = key }
   end
   want.kU = { group = 'unique', dist = 30, key = 'kU' }
   local rich = LB.richKeys(want, LB.RICH_CAP)
@@ -354,9 +393,9 @@ do
   for _ in pairs(rich) do n = n + 1 end
   eq(n, LB.RICH_CAP, 'RICH_CAP beams animate')
   eq(rich.kU, true, 'a Unique beam animates however far')
-  eq(rich.k01 and rich.k02 and rich.k03, true, 'then the Legendary ones')
+  eq(rich.k01 and rich.k02 and rich.k03, true, 'then the Divine ones')
   eq(rich.k04, true, 'then the nearest of the rest')
-  eq(rich.k09, nil, 'a far common beam stands still')
+  eq(rich.k09, nil, 'a far Legendary beam stands still')
   eq(rich.k20, nil, 'the farthest stands still')
   local all = LB.richKeys(want, 100)
   n = 0

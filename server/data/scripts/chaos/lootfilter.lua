@@ -18,7 +18,7 @@
 --                         hits = {rule = items} and counts = {session, total} when a rule matched (the client plays the sound)}
 --                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
---                   beam {k, p, i = [{r, u, o, pw, g, t}]}   the items still in the corpse that may beam; i = [] ends it
+--                   beam {k, p, i = [{r, u, o, st, pw, g, t}]}   the items still in the corpse that may beam (only Legendary, Divine, set, unique: O677); i = [] ends it
 --                         (to the owner and the party at the kill; the client game_lootbeams draws the pillar)
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 2 auto seller, 2.5 SNAPSHOT + hold back list items
@@ -227,6 +227,14 @@ local function itemInfo(item)
 		rarity = F.id(customAttr(item, "rarity")), -- a stored id; an old id (6 .. 15) counts as the rarity it became
 		unique = customAttr(item, "chaos_unique") ~= nil
 	}
+	-- a set piece (O677): the set key of ChaosItemSets (the chaos_set attribute, or an open set's base id), else the attribute alone
+	local okSet, setKey = pcall(function()
+		if ChaosItemSets and ChaosItemSets.setKeyOf then
+			return ChaosItemSets.setKeyOf(item)
+		end
+		return customAttr(item, "chaos_set")
+	end)
+	info.set = (okSet and setKey ~= nil and setKey ~= false and setKey ~= "") or nil
 	local orbs = sets()
 	local lname = (info.name or ""):lower()
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()
@@ -408,7 +416,7 @@ local function sameList(a, b)
 end
 
 -- ---------------------------------------------------------------- loot beams (client game_lootbeams)
--- beam {k, p = [x, y, z], i = [{r, u, o, pw, g, t}]}: the items still in the corpse that may beam (F.beamItems); the
+-- beam {k, p = [x, y, z], i = [{r, u, o, st, pw, g, t}]}: the items still in the corpse that may beam (only Legendary, Divine, set, unique: O677) (F.beamItems); the
 -- client draws the pillar of the best one its loot filter makes glow. i = [] ends the beam (looted, decayed, dropped
 -- from the history). Sent to the owner and the party members at the kill (the players allowed to loot it).
 local function beamViewerIds(owner)
@@ -460,7 +468,7 @@ local function sendBeam(kill)
 	local items = {}
 	for _, i in ipairs(list) do
 		local info = kill.entries[i].info
-		items[#items + 1] = {r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0,
+		items[#items + 1] = {r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0, st = info.set and 1 or nil,
 			pw = info.power and 1 or nil, g = info.category, t = (info.bestTier or 0) > 0 and info.bestTier or nil}
 	end
 	sendBeamData(kill, items)

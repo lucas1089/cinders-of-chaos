@@ -33,7 +33,7 @@ LootBeamsLegendRow < UIWidget
 
 LootBeamsWindow < ChaosMainWindow
   id: lootBeamsWindow
-  size: 420 490
+  size: 420 440
   !text: tr('Loot Beams')
   @onEscape: modules.game_lootbeams.hideSettings()
 
@@ -45,7 +45,7 @@ LootBeamsWindow < ChaosMainWindow
     height: 42
     text-wrap: true
     text-align: topLeft
-    !text: tr('A light pillar over a corpse that holds loot your loot filter makes glow, in the colour of the best item inside.')
+    !text: tr('A light pillar over a corpse that holds a Legendary, Divine, set or unique item, in the colour of the best one inside.')
 
   LootBeamsCheck
     id: enabled
@@ -58,14 +58,9 @@ LootBeamsWindow < ChaosMainWindow
     !text: tr('Beams over items on the ground')
     !tooltip: tr('Items lying outside a corpse get a beam too. Needs the Ground Labels on (they know what lies there).')
 
-  LootBeamsCheck
-    id: orbs
-    anchors.top: ground.bottom
-    !text: tr('Beams for orbs')
-
   ChaosLabel
     id: heightLabel
-    anchors.top: orbs.bottom
+    anchors.top: ground.bottom
     anchors.left: parent.left
     margin-top: 14
     width: 150
@@ -125,7 +120,7 @@ LootBeamsWindow < ChaosMainWindow
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6
-    height: 144
+    height: 80
     phantom: true
     layout:
       type: verticalBox
