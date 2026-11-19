@@ -2409,4 +2409,74 @@
 		<attribute key="equipLines" value="Thief" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- 2216: stock ring (client id as the base item), the Ascended Malgrath's unique (O667) -->
+	<item id="2216" article="the" name="Signet of the Drowned Crown">
+		<attribute key="weight" value="60" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentIce" value="10" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="skillAxe" value="4" />
+		<attribute key="skillClub" value="4" />
+		<attribute key="skillDist" value="4" />
+		<attribute key="skillFist" value="4" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="mods" value="bossdamage:24,execute:8,cdr:8,deathblast:24" />
+		<attribute key="equipLevel" value="2000" />
+		<attribute key="description" value="The tide gave the crown back, and it still drips. (Requires level 2000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2196: stock necklace, the Ascended Vhoss's unique (O667) -->
+	<item id="2196" article="the" name="Seventh Hex Amulet">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="7" />
+		<attribute key="magicPoints" value="6" />
+		<attribute key="skillSword" value="5" />
+		<attribute key="skillAxe" value="5" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="skillDist" value="5" />
+		<attribute key="skillFist" value="5" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="mods" value="dot:28,elepen:12,manacost:12,lastbreath:44" />
+		<attribute key="equipLevel" value="2300" />
+		<attribute key="description" value="Six hexes were never enough. The seventh is worn, not cast. (Requires level 2300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 5461: stock helmet, the Ascended Talath's unique (O667) -->
+	<item id="5461" article="the" name="Helm of the Unthawed">
+		<attribute key="weight" value="2500" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="20" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentIce" value="12" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="mods" value="bossdamage:20,attackspeed:9,itemfind:14,bloodrush:5" />
+		<attribute key="equipLevel" value="2400" />
+		<attribute key="description" value="Winter's last helm. Whoever wears it never thaws. (Requires level 2400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7708: stock ring, the Ascended Varkhul's unique (O667) -->
+	<item id="7708" article="the" name="Ring of the Last Verdict">
+		<attribute key="weight" value="60" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentFire" value="12" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="criticalHitChance" value="7" />
+		<attribute key="criticalHitAmount" value="35" />
+		<attribute key="lifeLeechChance" value="7" />
+		<attribute key="lifeLeechAmount" value="7" />
+		<attribute key="skillSword" value="5" />
+		<attribute key="skillAxe" value="5" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="skillDist" value="5" />
+		<attribute key="skillFist" value="5" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="mods" value="execute:9,lifeonkill:70,rarityfind:26,lastbreath:46" />
+		<attribute key="equipLevel" value="2500" />
+		<attribute key="description" value="The Sovereign passed his last verdict, and it was this. (Requires level 2500.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

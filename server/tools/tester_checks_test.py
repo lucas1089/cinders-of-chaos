@@ -10422,6 +10422,64 @@ class WsEndgame(unittest.TestCase):
 
     def test_the_check_is_in_the_list(self):
         self.assertIn('wsendgame', [c[0] for c in TX.CHECKS])
+# ------------------------------------------------------------------------------------------------ O667: the Keeper of the Pinnacle
+class PinnacleIO(FakeIO):
+    def __init__(self, listing, refusal=(), answers=None):
+        super().__init__(answers=dict({'path npc Keeper of the Pinnacle': {'here': True}}, **(answers or {})))
+        self.listing, self.refusal, self.pressed = listing, list(refusal), []
+
+    async def say_modal(self, text, ids, wait=5.0, kind=1):
+        self.kind_said = kind
+        return self.listing, ['The Keeper bows.']
+
+    async def modal_answer(self, window_id, button, choice, wait=1.5, ids=()):
+        self.pressed.append((window_id, button, choice))
+        return None, (self.refusal if button == 1 else [])
+
+
+def pinnacle_window(choices=((1, 'Ascended Malgrath'), (2, 'Ascended Vhoss'), (3, 'Ascended Talath'), (4, 'Ascended Varkhul')),
+                    buttons=((1, 'Open'), (2, 'Focus'), (3, 'Close')), title='The Pinnacle'):
+    return {'id': 7490, 'title': title, 'message': 'Four Ascended bosses wait', 'buttons': list(buttons), 'choices': list(choices), 'escape': 3, 'enter': 1}
+
+
+class PinnacleRead(unittest.TestCase):
+    def go(self, io):
+        return run(TX.check_pinnacle_read(io, 'Tester Pin', 'Ninja', 2500))
+
+    def test_the_window_is_read_open_is_refused_and_the_window_closes(self):
+        io = PinnacleIO(pinnacle_window(), ['The set is not whole. Missing: Drowned Crown Shard.'])
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('lists four bosses', r.detail)
+        self.assertIn('refused', r.detail)
+        self.assertEqual(io.pressed[0], (7490, 1, 1), 'Open with the first boss')
+        self.assertEqual(io.pressed[1][:2], (7490, 3), 'the window closed with its escape button')
+        self.assertEqual(io.kind_said, TX.NPC_CHANNEL)
+        self.assertEqual(TX.PINNACLE_MODAL, 7490)
+
+    def test_the_bugs_and_the_skips(self):
+        refused = ['You cannot open it in a fight.']
+        r = self.go(PinnacleIO(pinnacle_window(buttons=((1, 'Go'),)), refused))
+        self.assertEqual((r.status, 'not Open, Focus and Close' in r.detail), (TX.FAIL, True))
+        self.assertEqual(self.go(PinnacleIO(pinnacle_window(title=''), refused)).status, TX.FAIL)
+        r = self.go(PinnacleIO(pinnacle_window(choices=((1, 'a'), (2, 'b'))), refused))
+        self.assertEqual((r.status, 'four are asked' in r.detail), (TX.FAIL, True))
+        r = self.go(PinnacleIO(None))
+        self.assertEqual((r.status, 'opened no window' in r.detail, 'bows' in r.detail), (TX.SKIP, True, True))
+        r = self.go(PinnacleIO(pinnacle_window(), []))
+        self.assertEqual((r.status, 'said nothing' in r.detail), (TX.SKIP, True))
+        r = self.go(PinnacleIO(pinnacle_window(), ['You gained 10 experience.']))
+        self.assertEqual((r.status, 'no refusal' in r.detail), (TX.FAIL, True))
+        io = PinnacleIO(None, answers={'path npc Keeper of the Pinnacle': {'err': 'no way'}})
+        io.answers['enter npc Keeper of the Pinnacle'] = {'err': 'no npc'}
+        self.assertEqual(run(TX.check_pinnacle_read(io, 'a', 'Ninja', 2500)).status, TX.SKIP)
+
+    def test_the_key(self):
+        self.assertIn('pinnacle_read', TX.KEYS)
+        self.assertNotIn('pinnacle_read', TX.CLOSED_KEYS)
+        self.assertNotIn('pinnacle_read', TX.FIGHT_KEYS, 'a window check does not need a gear-up')
+        self.assertEqual(len(TX.KEYS), len(set(TX.KEYS)))
+        self.assertIn(7490, __import__('testers').MODAL_IDS, 'the modal parser knows the window')
 
 
 if __name__ == '__main__':

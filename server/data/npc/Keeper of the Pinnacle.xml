@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Keeper of the Pinnacle (O667): takes a whole set of four fragments and opens the arena of an Ascended pinnacle boss
+     (server/data/scripts/chaos/pinnacle.lua, pinnacle_config.lua; server/README.md "Pinnacle bosses (O667)"). Placed next to the temples at
+     startup; installed by server/tools/install_pinnacle.py. The Keeper of the Pinnacle opens the window. -->
+<npc name="Keeper of the Pinnacle" script="keeper_of_the_pinnacle.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="130" head="115" body="95" legs="94" feet="77" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. Four Ascended bosses wait on the {pinnacle}. Bring me a whole set of {fragments} and I will open the way." />
+		<parameter key="message_farewell" value="The pinnacle will wait, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The pinnacle waits without you." />
+	</parameters>
+</npc>

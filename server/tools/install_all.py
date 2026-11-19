@@ -171,6 +171,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (ChaosInvasion.npcPrice; invasion_config.lua occupation; README "Invasions and world events")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
                clerk) and their shared dialogue in data/npc (README "Service NPCs")
+  pinnacle     tools/install_pinnacle.py         the Keeper of the Pinnacle NPC (opens the arenas of the four Ascended pinnacle bosses) in
+               data/npc (README "Pinnacle bosses (O667)"; the bosses' monsters come with the `monsters` step)
   apothecary   tools/install_apothecary.py      Veyra the Apothecary, the hub's supplies seller (potions, runes, rope, shovel,
                torch, backpack), in data/npc (README "The Apothecary"; before runes, potions and itemprices)
   conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
@@ -1085,6 +1087,13 @@ def step_servicenpcs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs (their stalls in the hub), after Osric
+
+
+def step_pinnacle(server, data, ctx):
+    return tool_result(run_tool([tool('install_pinnacle.py'), data], 'install_pinnacle.py'))
+
+
+STEPS.insert(STEPS.index('servicenpcs') + 1, 'pinnacle')  # the Keeper of the Pinnacle NPC (O667), after the service NPCs
 
 
 def step_apothecary(server, data, ctx):

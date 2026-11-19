@@ -885,6 +885,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
+| 7106400 - 7106459 | pinnacle bosses (`pinnacle_config.lua` `storage`, O667): +0 .. +15 fragments held (boss index 0-3 x 4 + kind 0-3), +16 the focus (boss index + 1, 0 none), +20 .. +23 first kills (a bit per season, `season id % 30`), +24 .. +27 deathless (1 once), +28 .. +31 kills, +32 .. +35 kills since the last unique (the bad-luck count), +36 a run in progress (boss index + 1, given back at the next login after a crash), +37 when it opened, +38 the last opening; +39 .. +59 free |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
@@ -17619,12 +17620,12 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 
 | Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
-| Helmet | Ranger, Deadeye, Beastmaster | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 11/171 | 5/100 | 11/145 | 6/117 | 7/129 |
-| Helmet | Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 12/160 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 8/117 |
-| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 8/103 |
+| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/127 | 6/100 | 13/114 | 7/105 | 9/111 |
+| Helmet | Ranger, Deadeye, Beastmaster | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/133 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 11/171 | 5/100 | 11/145 | 6/117 | 8/129 |
+| Helmet | Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 12/160 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/133 | 6/100 | 13/123 | 7/119 | 9/125 |
+| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/127 | 6/100 | 13/114 | 7/105 | 9/111 |
 | Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 19/100 | 9/100 | 7/100 | 8/106 |
 | Armor | Ranger, Deadeye, Beastmaster | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 19/100 | 9/100 | 7/109 | 7/100 |
 | Armor | Mystic, Elementalist, Illusionist | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 19/114 | 7/100 | 5/109 | 7/112 |
@@ -17644,12 +17645,12 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 | Spellbook | Mystic, Elementalist, Illusionist | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 7/100 | 7/100 | 8/106 | 7/100 |
 | Spellbook | Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 8/100 | 7/100 | 8/106 | 7/100 |
 | Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Amulet | Ranger, Deadeye, Beastmaster | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 10 |
-| Amulet | Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 8 | 10 | 7 | 10 |
-| Amulet | Necromancer, Lich, Bone Lord | 16 | 8 | 15 | 14 | 10 | 8 | 7 | 10 | 7 | 10 |
-| Ring | Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 10 |
-| Ring | Necromancer, Lich, Bone Lord | 21 | 5 | 7 | 13 | 8 | 8 | 8 | 11 | 7 | 10 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 7 | 10 | 7 | 11 |
+| Amulet | Ranger, Deadeye, Beastmaster | 16 | 8 | 15 | 15 | 10 | 7 | 7 | 10 | 7 | 11 |
+| Amulet | Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 8 | 10 | 7 | 11 |
+| Amulet | Necromancer, Lich, Bone Lord | 16 | 8 | 15 | 14 | 10 | 8 | 7 | 10 | 7 | 11 |
+| Ring | Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 21 | 5 | 7 | 13 | 8 | 8 | 7 | 11 | 7 | 12 |
+| Ring | Necromancer, Lich, Bone Lord | 21 | 5 | 7 | 13 | 8 | 8 | 8 | 11 | 7 | 12 |
 
 <!-- gear-coverage:end -->
 
@@ -36237,3 +36238,144 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   guard". Fallback: `chaos-ctl.sh client-pair set 74`.
 - **Open.** Not seen in a client. The 14 bigger monsters are 3x3 (96 px), the first hunt monsters of the 3x3 class beyond the donor B ones; whether the
   bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
+
+
+## Pinnacle bosses (O667: `pinnacle.lua`, `pinnacle_core.lua`, `pinnacle_config.lua`, `pinnacle_balance_config.lua`, `tools/pinnacle_model.py`, NPC Keeper of the Pinnacle)
+
+Owner 2026-11-19 ("do what you recommended"): the top of the game gets four **Ascended versions of existing key bosses**, shown at level
+**2000 / 2500 / 3000 / 3500**, each a private fight alone or with a party of up to 5, opened by **a set of four fragments** that the top content
+drops. Rewards: an exclusive unique per boss, Conquest Tokens, orbs, a title for the first kill of each season and a "deathless" title.
+
+| Boss (monster type) | shown at | planned for (`refLevel`) | opens from | looks and defences of | new mechanics (`boss_mechanics_config.lua`) | unique (base id, level) |
+|---|---|---|---|---|---|---|
+| Ascended Malgrath | 2000 | 2000 | 1900 | Malgrath, the Drowned Crown | `marks` (Drowning Marks under every player), a ring, the Undertow soak (a group only), a shield phase (2 Drowned Anchors) | Signet of the Drowned Crown (ring 2216, 2000) |
+| Ascended Vhoss | 2500 | 2300 | 2200 | Vhoss the Hexmaw | `lines` (Hexlines), a cone, the Hexbind channel (a Hex Idol), an empower phase (3 Whispering Idols) | Seventh Hex Amulet (necklace 2196, 2300) |
+| Ascended Talath | 3000 | 2400 | 2300 | Talath | `eye` (Whiteout: all but a calm eye), `half` (Glacier Fall), Frostbite stacks, a shield phase (2 Rime Pillars) | Helm of the Unthawed (head 5461, 2400) |
+| Ascended Varkhul | 3500 | 2500 | 2400 | Varkhul the Ashen Sovereign | `half` (Ashen Verdict), `lines` (Cinder Lines), an empower phase (3 Ash Idols), a soft enrage from 10 minutes | Ring of the Last Verdict (ring 7708, 2500) |
+
+The monster files are `data/monster/monsters/chaos/pinnacle/*.xml` (installed by the `monsters` step; the looks are the old ones of the base bosses, no new
+art; the repository keeps them as the base files do). Their health is the **solo fight**; the run sets the health of the party. The level is the level the
+engine's bonus reads (damage x (1 + 0.0015 x level), `ChaosLoot.monsterLevel`) and the level shown after the name. The planned character level is lower than the
+boss's for the last three: the player cap of the game's top content is 2500 (`waystone_tiers_config.lua`, `maxLevel` 2500), so the fight at 3500 is a level 2500
+character against a monster that hits as one of 3500.
+
+### Fragments
+
+Four kinds a boss, stored per character (storage block above, no item, no art). Kind 1 drops from a **waystone map** of tier `minTier` (12) or higher, kind 2 from a
+**rift of tier 15**, kind 3 from an **Omen guardian**, kind 4 (the **keystone**) from any of the three. Per clear and per character in the party (each finisher
+rolls): `chance` percent (25) for the source's own kind and `anyChance` percent (8) for the keystone, two rolls. The fragment is of the **focus** boss (chosen at
+the Keeper, 0 = none), else of one of the bosses the character's level opens, at random; a character under every boss's `minLevel` earns none. At most `cap` (6) of
+a kind are held. Names (items of the game, English in both languages):
+
+| Boss | waystone | rift | Omen | keystone |
+|---|---|---|---|---|
+| Malgrath | Drowned Crown Shard | Tidebroken Pearl | Saltwrit Sigil | Tidal Keystone |
+| Vhoss | Hexmaw Fang | Veiled Hex Scrap | Whispering Idol Chip | Hex Keystone |
+| Talath | Rime Crown Splinter | Frozen Oath Shard | Winterglass Tear | Rime Keystone |
+| Varkhul | Ashen Sovereign Cinder | Sepulchre Seal | Embered Oath Sliver | Ash Keystone |
+
+Where the clears come from (all guarded, so every part works without the others):
+- **Rift tier 15 and the Omen guardian**: `rift.lua` already calls `ChaosAscended.onRiftSealed(info)` for the Ascended Shards (`info = {tier, omen, finishers =
+  {[guid] = {name}}, players}`). `pinnacle.lua` wraps that function at startup and at every login (`ChaosPinnacle.wrapHooks`, once: `_wrapRift`), calls the
+  original first and then `ChaosPinnacle.onRiftSealed(info)`. `rift.lua` is not touched.
+- **Waystone maps (O666)**: `fragments.hook.waystone = "onRunCleared"` names the function of `ChaosWaystoneTiers` that O666 adds. `wrapHooks` wraps it when it is
+  a function (the original runs first and its results are kept) and calls `ChaosPinnacle.onWaystoneCleared(...)` with the same arguments. The arguments are read as
+  they come: a table with `tier` and `players` / `finishers` / `party` (a list of players, of ids, or `{[guid] = {name}}`), or a tier number and a list. A call it
+  cannot read gives nothing. Until the hook exists nothing happens, and a coordinator that names the hook otherwise calls `ChaosPinnacle.onWaystoneCleared({tier =
+  T, players = {...}})` itself (the one door: `ChaosPinnacle.grantClear(player, "waystone", {tier = T})` for one character).
+- Staff: `/pinnacle give, NAME, BOSSKEY, [KIND]` gives a fragment or a whole set; `/pinnacle clear, NAME`; `/pinnacle end`; `/pinnacle` lists the open fights.
+
+### The Keeper and the fight
+
+**Keeper of the Pinnacle** (`data/npc/Keeper of the Pinnacle.xml`, script `keeper_of_the_pinnacle.lua`; installed by `tools/install_pinnacle.py`, the `pinnacle` step
+of `install_all.py`; placed next to the five temples at startup like Osric the Chandler). Words: pinnacle, fragments, set, boss, open, focus. The NPC's modal window
+(id `modal.list` 7490: the four bosses with the four kinds held, the focus marked) has the buttons **Open**, **Focus** and **Close**; `pinnacle.lua` answers it
+(`ChaosPinnacle.modalAnswer`, the `ChaosPinnacleModal` creature event, registered at login). No new opcode: the window is a server modal and the fight's HUD is the
+rift HUD (opcode 228). No talkaction opens a fight.
+
+- **Open** (`ChaosPinnacle.enter`): from a protection zone, out of a fight, in no other instance, the level of the boss's `minLevel`, `enterCooldown` 10 s since the
+  last opening, **a whole set** (one of each kind). The opener's set is **spent and written before anyone moves**; the party members within 8 sqm (same floor, at most 5
+  in all) who meet the level and are free come along and **pay no set** (they are rewarded alone; the others are told why they stay behind). A run marker
+  (`+36`) gives the set back at the next login after a crash; a server restart (shutdown, `refundOnRestart`) and a boss that did not come give it back at once; a
+  logout, a death or a time-out never do.
+- **The arena**: the runtime-built slot layout of the pocket boss arenas (`uber_core.lua`, `arenalook_core.lua`), a grid of its own: x 11520-11711, y 10112-10207, z 7,
+  8 slots of 48 (below the pocket boss grid x 11520-11903 y 10000-10095; free map, see "Rifts"), `maxRuns` 8; the way out has action id 47630 (47630-47639 reserved).
+  `Chaos.registerInstance("pinnacle")` makes it an instance (`/instances`, the sweep of strangers, the Town Portal rules).
+- **The boss** appears `startDelay` 8 s after the arrival, `minutes` 20 to kill it. Its health is `health x (1 + perExtra x (players - 1))` of its row times the
+  factor `ChaosBossMech.attach` returns (the mechanics' downtime, `boss_mechanics_core.lua` G.balance: the profile's `ref` is the solo fight of the model); its hits and
+  its adds' hits on players x `damage` (solo 1, +0.06 a player, at most 1.3). `catchLethal`: a hit that would kill carries the player out of the arena, healed, with no
+  death and no loss; **that fight is no longer deathless**. The others fight on, the last one out ends it. `exitDelay` 45 s after the kill, then everyone is sent back.
+- **Mechanics**: the four profiles use the shapes that no profile used before (`marks`, `lines`, `eye`, `half`; `boss_mechanics_core.lua` G.SHAPES), so each fight asks
+  for something the boss did not ask in its first life. The mechanics test (`tests/boss_mechanics_test.lua`) holds them to the fairness rules (a safe tile in reach in
+  time, a warning of 1.5 s or more) and to the kill time (`ref`, the factor 0.6-1).
+
+### Rewards
+
+Per player still in the arena at the kill (a player carried out earlier gets nothing): **Conquest Tokens** (`pinnacle:<key>`: 8 / 10 / 12 / 14),
+**orbs** (Orb of Upheaval, Orb of Fate, Exalted Orb: 24 + 12 + 2 / 32 + 16 + 3 / 40 + 20 + 4 / 48 + 24 + 5), and **the exclusive unique** of the boss: a roll of `unique.chance`
+22% x the character's item find (at most x1.5, `ChaosLoot.itemFindMult`), and the kill that is the 8th since the last unique (`unique.pity`) always gives it (storage
+`+32 ..`). The unique is a copy of an unused stock item that has no other drop (`data/lib/chaos_unique_items.lua`, `bossOnly = true, pinnacle = true`, the monster list
+names the boss: the corpse owner's extra roll is the entry's `chance` 1 x the boss tier; the corpse itself carries no loot). Specs: `chaos_items.xml` and the generated
+files (`tools/gen_unique_specs.py`, codex, wiki, Unity info data, pt-BR texts, `unique_flavor_pt.tsv`), each with a passive (`unique_passives_config.lua`: the
+Ascended uniques' families with their own names; `tools/unique_passives_model.lua --check` holds them) and an equip rule of the unique's level (every class).
+
+| Unique | base (stock id) | level | mods | passive |
+|---|---|---|---|---|
+| Signet of the Drowned Crown | ring 2216 | 2000 | bossdamage 24, execute 8, cdr 8, deathblast 24 | Tide Takes Its Crown: a death nova on a kill (W P M) |
+| Seventh Hex Amulet | necklace 2196 | 2300 | dot 28, elepen 12, manacost 12, lastbreath 44 | Seventh Hex Falls: a poison nova on a critical hit (M N K) |
+| Helm of the Unthawed | head 5461 | 2400 | bossdamage 20, attackspeed 9, itemfind 14, bloodrush 5 | Thaw Denied: overflow (M N P) |
+| Ring of the Last Verdict | ring 7708 | 2500 | execute 9, lifeonkill 70, rarityfind 26, lastbreath 46 | Last Verdict Stands: opener (W T K P) |
+
+**Titles** (`ChaosTitles` source `pinnacle`, gold plate frame): "<Boss> Bane [S<n>]" (Malgrath Bane [S1]) for a character's **first kill of that boss in each season**
+(a bit of storage `+20 ..` per season, `season id % 30`, season 0 while no season runs), "Deathless <Boss>" for a kill in which nobody fell (once, kept for good). Both
+stay on the character for good and are listed by `!title` like any title. "The first kill per season" is read per character; a server-wide "first in the world per
+season" would need a table (`chaos_*`) and a launch-wipe row, and is not built.
+
+### The model (`tools/pinnacle_model.py --check`, `pinnacle_balance_config.lua`)
+
+Computed, not measured in game. Inputs: `class_dps_model.py` through `boss_length_model.py` (the median class's damage on one boss), the survival model through
+`guardian_model.py` (the median class's pool, armour, absorbs and healing at the planned level), the XML of each boss, the marked attacks of its profile and the
+fragment chances. `--derive` prints the numbers to commit, `--check` (CI) holds them, with the reason of each limit in `pinnacle_balance_config.lua`.
+
+| Boss | level (planned) | health | kill solo / five (median class) | weakest class alone | seconds to die, no healing | damage / healing, solo / five |
+|---|---|---|---|---|---|---|
+| Ascended Malgrath | 2000 (2000) | 3,713,000 | 420 s / 300 s | 565 s | 6.9 | 0.95 / 1.21 |
+| Ascended Vhoss | 2500 (2300) | 4,244,000 | 420 s / 300 s | 566 s | 6.4 | 1.05 / 1.30 |
+| Ascended Talath | 3000 (2400) | 4,415,000 | 420 s / 300 s | 566 s | 5.9 | 1.15 / 1.43 |
+| Ascended Varkhul | 3500 (2500) | 4,587,000 | 420 s / 300 s | 566 s | 5.5 | 1.25 / 1.55 |
+
+- **Length**: health = seconds x (players x damage x uptime - the boss's heal a second), uptime 0.85, solo 420 s, five 300 s; the party curve `perExtra` 0.663-0.666. The
+  weakest class (0.75 of the median, `class_dps_model.py` keeps every class within 25%) kills alone in about 565 s, inside 60% of the 20 minute limit.
+- **Damage against healing**: the boss's XML attacks through the engine's level bonus and the level pace (`survival_model.monster_dps`) plus the marks of its
+  telegraphs, against the median class's layers: 5.5-6.9 s to die with no healing (limit 4-13), damage 0.95-1.25 x the healing alone (limit 0.8-1.4), rising with the
+  level (a higher boss is a harder fight, at most x1.5 from the first to the last), at most 1.75 with the damage curve in a party of five (the party heals each other).
+  The XML attacks were solved for these targets: the melee hit rolls 6,200-12,300 on the first boss and about the same x1.03 on the others (the donors' numbers x4.1-4.2, the engine's level bonus and the pace come on top).
+- **Fragments**: waystone 15, rift 13, Omen 12 minutes a clear, so 4.0 / 4.6 / 5.0 clears an hour; the fragments an hour of mixed top content are 1.50
+  (the own kind 1.00 / 1.15 / 1.25 and the keystone 0.32 / 0.37 / 0.40 on top). A **whole set takes 2.77 hours** of top content (the three specific kinds in turn,
+  2.67 h, the keystone comes along: 0.96 of one on the way; limit 2.5-7). The unique takes 3.92 kills on average (22% a kill, sure on the 8th) = **10.9 hours** of top
+  content (limit 8-45); one set a kill alone, a party's members come free.
+- `pinnacle_model_test.py`: the formulas on synthetic numbers, the committed numbers pass, and each kind of drift (health, the party curve, a fragment chance, a keystone on
+  every clear, a unique that drops every time or never, the boss levels, the uptime, a fifth fragment kind, a long title, a unique missing from the drop table, a boss that
+  hits four times as hard or hardly at all) fails `--check`.
+
+### Files, numbers and checks
+
+- New: `pinnacle.lua`, `pinnacle_core.lua`, `pinnacle_config.lua`, `pinnacle_balance_config.lua`, the four monster files, `data/npc/Keeper of the Pinnacle.xml` and
+  `data/npc/scripts/keeper_of_the_pinnacle.lua`, `tools/install_pinnacle.py` (the `pinnacle` step of `install_all.py`), `tools/pinnacle_model.py`, `tools/pinnacle_numbers.lua`,
+  `tools/pinnacle_model_test.py`, `tests/pinnacle_test.lua`; the profiles of the four bosses in `boss_mechanics_config.lua`; the four uniques in `chaos_items.xml`,
+  `chaos_unique_items.lua`, `unique_passives_config.lua`, `unique_flavor_pt.tsv` and the files `gen_unique_specs.py`, `gen_codex_data.lua`, `gen_wiki_data.lua` and the Unity
+  info generators write; pt-BR texts at the start of the `pt-BR` table of `i18n_strings.lua`; the check `pinnacle_read` of `tools/tester_checks.py` (the modal id in `testers.py`).
+- **No new opcode** (the window is a server modal, the HUD the rift HUD), **no new DB table** (every row is a storage key: the launch wipe policy is untouched), **one new
+  storage block** (7106400 - 7106459), modal window id 7490 (the Keeper's list), action id 47630 (47630 - 47639 reserved), the grid
+  above, one NPC, one instance key (`pinnacle`), one ChaosTitles source (`pinnacle`), one mana shield provider (`pinnacle`), the events `ChaosPinnacleHit`,
+  `ChaosPinnaclePrepareDeath`, `ChaosPinnacleDeath`, `ChaosPinnacleModal`, `ChaosPinnacleLogin`, `ChaosPinnacleLogout`, `ChaosPinnacleShutdown`, `ChaosPinnacleStartup`.
+- Tests: `tests/pinnacle_test.lua` (the core rules with the real config, the storage block and the modal ids against every other config, the grid against the other runtime
+  areas, the monsters and profiles, then `pinnacle.lua` on a mocked engine: the rift and Omen hooks through the wrap, the waystone hook through a guarded call, the Keeper's
+  answers, a solo and a party fight, the damage curve, a lethal hit, the kill and its rewards and titles, logout, restart, crash, a boss that does not come, the cooldown,
+  the pt-BR texts), `tools/pinnacle_model_test.py`, `tools/tester_checks_test.py` (`PinnacleRead`), `tests/npc_review_test.lua` (the Keeper placed by `pinnacle_config.lua`).
+- **Not run live** (no server was started): the arena build on the real map, the fight in a client, the NPC window in the client's modal, the real waystone hook of O666
+  (its arguments are read as they come), the mechanics' warnings on the telegraph effects, the unique's tooltip and the title on the plate. The damage the XML attacks
+  deal is the model's (computed with the engine's level bonus as the other models do: the guardian model counts it once; the live engine ran it twice on 2026-11-10, see
+  "Rifts", Guardian hit cap), so the first live fight decides the XML scale: `tools/pinnacle_model.py --derive` and the `scale` in the XML comment are the way back.
+- **Art that would help** (none needed, nothing blocks): an item look for each fragment (the four kinds x four bosses are plain storage counters now, shown by name in the Keeper's
+  window), a look for the four Ascended bosses apart from the old ones (a recolour of the base bosses' outfits), and a portal or altar sprite for the Keeper's place.

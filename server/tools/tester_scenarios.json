@@ -10,9 +10,9 @@
   "closed": 15,
   "opcode": 73,
   "out": 24,
-  "passive": 111,
+  "passive": 112,
   "place": 15,
-  "staff": 17
+  "staff": 18
  },
  "effects": [
   {
@@ -8643,6 +8643,13 @@
   },
   {
    "keywords": [
+    "pinnacle",
+    "fragments"
+   ],
+   "npc": "Keeper of the Pinnacle"
+  },
+  {
+   "keywords": [
     "trade",
     "appraise"
    ],
@@ -13130,6 +13137,17 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "pinnacle": {
+   "files": [
+    "pinnacle.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/pinnacle"
+   ],
+   "why": "staff command only (/pinnacle); testers are never staff"
+  },
   "player_defence": {
    "files": [
     "player_defence.lua"
@@ -13954,6 +13972,15 @@
     "waystoneAtlas"
    ],
    "talkactions": []
+  },
+  "waystone_endgame": {
+   "files": [
+    "waystone_endgame.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "waystone_mods": {
    "files": [

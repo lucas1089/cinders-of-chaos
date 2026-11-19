@@ -151,6 +151,10 @@ end
 local function fire(info)
 	local WT = ChaosWaystoneTiers
 	if WT and WT.onRunCleared then
+		-- the players in the map, for the pinnacle fragments (O667 reads info.players)
+		if type(info) == "table" and info.players == nil and info.map then
+			info.players = playersOf(info.map)
+		end
 		local ok, err = pcall(WT.onRunCleared, info)
 		if not ok then
 			log("onRunCleared: " .. tostring(err))

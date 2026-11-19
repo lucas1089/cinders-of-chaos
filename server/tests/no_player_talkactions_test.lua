@@ -28,7 +28,7 @@ local STAFF = {
 	["/itemfinder"] = "itemfinder.lua", ["/leaderboard"] = "leaderboard.lua", ["/market"] = "market.lua",
 	["/memorial"] = "memorial.lua", ["/mentor"] = "mentor.lua", ["/newplayerkit"] = "newplayer.lua",
 	["/gmnotify"] = "notifications.lua", ["/orbx"] = "orbexchange.lua", ["/pack30gallery"] = "admin/actions_pack30_gallery.lua", ["/pact"] = "pact.lua",
-	["/patchnotes"] = "patchnotes.lua", ["/pet"] = "pets.lua", ["/pocketboss"] = "pocketboss.lua",
+	["/patchnotes"] = "patchnotes.lua", ["/pet"] = "pets.lua", ["/pocketboss"] = "pocketboss.lua", ["/pinnacle"] = "pinnacle.lua",
 	["/poi"] = "poi.lua", ["/professions"] = "professions.lua", ["/marches"] = "pvpzone.lua", ["/raid"] = "raid.lua",
 	["/records"] = "records.lua", ["/rumours"] = "rumours.lua", ["/referral"] = "referral.lua", ["/reports"] = "reports.lua", ["/rift"] = "rift.lua",
 	["/season"] = "season.lua", ["/journey"] = "season_journey.lua", ["/seasonpass"] = "seasonpass.lua",

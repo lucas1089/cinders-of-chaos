@@ -6660,6 +6660,55 @@ async def check_tales_read(io, name, cls, level):
     return Result(key, name, cls, status, text, fallbacks)
 
 
+# the Keeper of the Pinnacle (O667): the window of the four Ascended bosses (7490, pinnacle_config.lua modal.list), Open without a whole set, Close
+PINNACLE_NPC = 'Keeper of the Pinnacle'
+PINNACLE_MODAL = 7490
+PINNACLE_REFUSALS = ('not whole', 'opens from level', 'protection zone', 'cannot open', 'closed for now', 'Wait ')
+
+
+def pinnacle_verdict(listing, refusal, heard):
+    """(status, text) from the Keeper's window (a parse_modal dict or None), the text lines after Open was pressed with no set (or None when it was not pressed)
+    and the lines heard at the greeting"""
+    if listing is None:
+        return SKIP, 'the Keeper opened no window (%s)' % (' | '.join(str(h)[:70] for h in heard[:4]) if heard else 'he said nothing')
+    names = [str(t).lower() for _, t in listing.get('buttons') or []]
+    if not listing.get('title'):
+        return FAIL, 'the pinnacle window has no title'
+    if not (any('open' in n or 'abrir' in n for n in names) and any('focus' in n or 'foco' in n for n in names) and any('close' in n or 'fechar' in n for n in names)):
+        return FAIL, 'the pinnacle window has the buttons %s, not Open, Focus and Close' % ', '.join(names) if names else 'the pinnacle window has no buttons'
+    if len(listing.get('choices') or []) != 4:
+        return FAIL, 'the pinnacle window lists %d boss(es), four are asked' % len(listing.get('choices') or [])
+    if not listing.get('message'):
+        return FAIL, 'the pinnacle window has no text'
+    if refusal is None:
+        return PASS, 'the Keeper lists four bosses with Open, Focus and Close'
+    text = ' | '.join(str(r) for r in refusal)
+    if not any(w.lower() in text.lower() for w in PINNACLE_REFUSALS):
+        return SKIP if not refusal else FAIL, ('Open was pressed with no set and the server said nothing' if not refusal else
+                                              'Open was pressed with no set and the answer is no refusal: %s' % text[:90])
+    return PASS, 'the Keeper lists four bosses; Open with no whole set is refused (%s)' % text[:70]
+
+
+async def check_pinnacle_read(io, name, cls, level):
+    """walks to the Keeper of the Pinnacle, says hi and pinnacle, reads the window of the four bosses, presses Open on the first (a tester holds no set: it is
+    refused with a reason) and closes the window"""
+    key = 'pinnacle_read'
+    why, fallbacks = await chore_walk(io, name, PINNACLE_NPC, 1)
+    if why:
+        return Result(key, name, cls, SKIP, why)
+    await asc_greet(io, PINNACLE_NPC)
+    listing, heard = await io.say_modal('pinnacle', (PINNACLE_MODAL,), 5.0, NPC_CHANNEL)
+    await npc_talk_end(io)
+    refusal = None
+    if listing is not None and listing.get('choices'):
+        opened = next((b for b, t in listing.get('buttons') or [] if 'open' in str(t).lower() or 'abrir' in str(t).lower()), listing.get('enter') or 1)
+        _, refusal = await io.modal_answer(PINNACLE_MODAL, opened, listing['choices'][0][0], 2.0)
+    if listing is not None:
+        await io.modal_answer(PINNACLE_MODAL, listing.get('escape') or 3, 255, 0.5)
+    status, text = pinnacle_verdict(listing, refusal, heard)
+    return Result(key, name, cls, status, text, fallbacks)
+
+
 # the kill task board of the Bestiary: accept the first open offer, see it in the active list and the tracker, abandon it
 def kill_task_pick(board, level):
     """the offer a person takes: an open one (not held, not done), the level window of a family task round the bot's level first, then the fewest kills"""
@@ -7654,6 +7703,7 @@ CHECKS = [
     ('boss_copy_walk', check_boss_copy_walk, lambda c: True),   # O652: a copy of a key boss of its own: walk, fight, step off the marks, loot
     ('spell_support', check_spell_support, lambda c: True),   # O655: the support and healing spells of the class cast by their words; the spells only a quest teaches are refused
     ('tales_read', check_tales_read, lambda c: True),   # O655: Archivist Maelis: the list of tales, Read on one, the windows closed
+    ('pinnacle_read', check_pinnacle_read, lambda c: True),   # O667: the Keeper of the Pinnacle: the window of the four Ascended bosses, Open refused without a set, Close
     ('kill_task', check_kill_task, lambda c: True),   # O655: the kill task board: accept an offer, it is active, abandon it
     ('gather_walk', check_gather_walk, lambda c: True),   # O655: a pick or a sickle from the Material Broker, the nearest ready node on foot, the material in the bag
     ('pouch_rules', check_pouch_rules, lambda c: True),   # O655: the Loot Pouch rules window: one rule turned and back

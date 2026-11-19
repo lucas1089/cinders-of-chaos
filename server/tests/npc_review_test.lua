@@ -478,7 +478,7 @@ local placedBy = {
 	["Archivist Maelis"] = "tales_config.lua", ["Wandering Merchant"] = "invasion_config.lua",
 	["Widow Hessa"] = "harvest_event_config.lua", ["Cantor Velith"] = "factions_config.lua",
 	["Elder Bramwyn"] = "factions_config.lua", ["Forgemaster Brannoc"] = "factions_config.lua",
-	["Warden Ysolde"] = "factions_config.lua"
+	["Warden Ysolde"] = "factions_config.lua", ["Keeper of the Pinnacle"] = "pinnacle_config.lua"
 }
 for _, name in ipairs(names) do
 	local where

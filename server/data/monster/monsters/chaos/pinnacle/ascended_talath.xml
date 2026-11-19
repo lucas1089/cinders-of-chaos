@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ascended Talath (O667, pinnacle_config.lua): the frost lord, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 3000; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2400); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended talath"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Talath. Numbers: server/README.md "Pinnacle bosses (O667)". -->
+<monster name="Ascended Talath" nameDescription="Ascended Talath" race="undead" experience="0" speed="280" manacost="0">
+	<health now="4415000" max="4415000" />
+	<look type="1473" corpse="6068" />
+	<targetchange interval="5000" chance="10" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-6300" max="-12605" />
+		<attack name="ice" interval="2000" chance="20" length="8" spread="0" min="-7145" max="-12605">
+			<attribute key="areaEffect" value="icearea" />
+		</attack>
+		<attack name="energy" interval="2000" chance="15" range="7" target="1" min="-6300" max="-11765">
+			<attribute key="shootEffect" value="energy" />
+			<attribute key="areaEffect" value="energyarea" />
+		</attack>
+		<attack name="ice" interval="2000" chance="12" radius="6" target="0" min="-5880" max="-10925">
+			<attribute key="areaEffect" value="icearea" />
+		</attack>
+	</attacks>
+	<defenses armor="3" defense="3">
+		<defense name="healing" interval="2000" chance="10" min="5280" max="7920">
+			<attribute key="areaEffect" value="greenshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="20" />
+		<element firePercent="-20" />
+		<element energyPercent="10" />
+		<element earthPercent="10" />
+		<element icePercent="50" />
+		<element holyPercent="0" />
+		<element deathPercent="20" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Winter keeps what it takes." yell="1" />
+		<voice sentence="The thaw never comes." yell="1" />
+	</voices>
+</monster>

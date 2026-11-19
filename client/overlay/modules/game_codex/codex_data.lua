@@ -9702,6 +9702,52 @@ CodexData = {
 					items = {16111}
 				},
 				{
+					id = "unique:5461",
+					name = "Helm of the Unthawed",
+					color = "#ff9c3a",
+					sub = "Helmet, level 2400. Armor 20, Ice Absorb +12%, Magic Level +4, Physical Absorb +6%, Damage to Elites and Bosses +20%, Attack Speed +9%, Item Find +14%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
+					f = {class = {"mystic", "necromancer", "templar"}, kind = {"helmet"}, level = 2400, source = "boss"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Winter's last helm. Whoever wears it never thaws. Thaw Denied: At 75% mana or more you deal +10% increased damage (at most 10 for one unique power, 40 for all). At 40% mana or less you deal 9% less. For: Mystic, Necromancer, Templar. (Requires level 2400.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Armor 20", "Ice Absorb +12%", "Magic Level +4", "Physical Absorb +6%", "Damage to Elites and Bosses +20%", "Attack Speed +9%", "Item Find +14%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Helmet"},
+								{"Required level", "2400"},
+								{"Power works for", "Mystic, Necromancer, Templar"},
+								{"Drops from", "Boss (bosses only)"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Boss monsters: per kill Boss 0.06% (x item find)."},
+								{"Bosses", "Ascended Talath."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "8200 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 820 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {5461}
+				},
+				{
 					id = "unique:8872",
 					name = "Hem of the Last Word",
 					color = "#ff9c3a",
@@ -12253,6 +12299,57 @@ CodexData = {
 					items = {41640}
 				},
 				{
+					id = "unique:7708",
+					name = "Ring of the Last Verdict",
+					color = "#ff9c3a",
+					sub = "Ring, level 2500. Melee +5, Melee +5, Ranged +5, Fire Absorb +12%, Fist +5, Life Leech: chance +7%, amount +7%, Magic Level +5, Physical Absorb +6%, Melee +5, Executes Monsters below 9% Health, Life on Kill +70, Rarity Find +26%, Last Breath: a lethal hit leaves you at 46% health (once per 5 minutes)",
+					f = {
+						class = {"warrior", "thief", "monk", "templar"},
+						kind = {"jewel"},
+						level = 2500,
+						source = "boss"
+					},
+					sections = {
+						{
+							h = "Description",
+							p = {"The Sovereign passed his last verdict, and it was this. Last Verdict Stands: Against targets at 30% health or less you deal +10% increased damage (at most 10 for one unique power, 40 for all). For: Warrior, Thief, Monk, Templar. (Requires level 2500.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Melee +5", "Melee +5", "Ranged +5", "Fire Absorb +12%", "Fist +5", "Life Leech: chance +7%, amount +7%", "Magic Level +5", "Physical Absorb +6%", "Melee +5", "Executes Monsters below 9% Health", "Life on Kill +70", "Rarity Find +26%", "Last Breath: a lethal hit leaves you at 46% health (once per 5 minutes)"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "2500"},
+								{"Power works for", "Warrior, Thief, Monk, Templar"},
+								{"Drops from", "Boss (bosses only)"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Boss monsters: per kill Boss 0.06% (x item find)."},
+								{"Bosses", "Ascended Varkhul."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "8500 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2450. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 850 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {7708}
+				},
+				{
 					id = "unique:21691",
 					name = "Rotbloom Phial",
 					color = "#ff9c3a",
@@ -12345,6 +12442,52 @@ CodexData = {
 						}
 					},
 					items = {2408}
+				},
+				{
+					id = "unique:2196",
+					name = "Seventh Hex Amulet",
+					color = "#ff9c3a",
+					sub = "Amulet, level 2300. Armor 7, Melee +5, Melee +5, Death Absorb +8%, Ranged +5, Fist +5, Magic Level +6, Melee +5, Damage over Time +28%, Elemental Penetration +12%, Mana Cost Reduction +12%, Last Breath: a lethal hit leaves you at 44% health (once per 5 minutes)",
+					f = {class = {"mystic", "monk", "necromancer"}, kind = {"jewel"}, level = 2300, source = "boss"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Six hexes were never enough. The seventh is worn, not cast. Seventh Hex Falls: On a critical hit, a poison nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Mystic, Necromancer, Monk. (Requires level 2300.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Armor 7", "Melee +5", "Melee +5", "Death Absorb +8%", "Ranged +5", "Fist +5", "Magic Level +6", "Melee +5", "Damage over Time +28%", "Elemental Penetration +12%", "Mana Cost Reduction +12%", "Last Breath: a lethal hit leaves you at 44% health (once per 5 minutes)"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "2300"},
+								{"Power works for", "Mystic, Monk, Necromancer"},
+								{"Drops from", "Boss (bosses only)"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Boss monsters: per kill Boss 0.06% (x item find)."},
+								{"Bosses", "Ascended Vhoss."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "7900 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 2250. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 790 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {2196}
 				},
 				{
 					id = "unique:26756",
@@ -12480,6 +12623,52 @@ CodexData = {
 						}
 					},
 					items = {7697}
+				},
+				{
+					id = "unique:2216",
+					name = "Signet of the Drowned Crown",
+					color = "#ff9c3a",
+					sub = "Ring, level 2000. Melee +4, Melee +4, Death Absorb +8%, Ranged +4, Fist +4, Ice Absorb +10%, Magic Level +4, Melee +4, Damage to Elites and Bosses +24%, Executes Monsters below 8% Health, Cooldown Reduction +8%, Death Blast: 24% chance on kill to explode",
+					f = {class = {"warrior", "mystic", "templar"}, kind = {"jewel"}, level = 2000, source = "boss"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The tide gave the crown back, and it still drips. Tide Takes Its Crown: On a kill, a death nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Warrior, Templar, Mystic. (Requires level 2000.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Melee +4", "Melee +4", "Death Absorb +8%", "Ranged +4", "Fist +4", "Ice Absorb +10%", "Magic Level +4", "Melee +4", "Damage to Elites and Bosses +24%", "Executes Monsters below 8% Health", "Cooldown Reduction +8%", "Death Blast: 24% chance on kill to explode"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "2000"},
+								{"Power works for", "Warrior, Mystic, Templar"},
+								{"Drops from", "Boss (bosses only)"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Boss monsters: per kill Boss 0.06% (x item find)."},
+								{"Bosses", "Ascended Malgrath."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "7000 Conquest Tokens (Iselde Varrow): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Boss uniques: every miss gives +10% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 700 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {2216}
 				},
 				{
 					id = "unique:27695",
@@ -13953,7 +14142,7 @@ CodexData = {
 						{"400", "Level 400 or lower"},
 						{"800", "Level 800 or lower"},
 						{"1600", "Level 1600 or lower"},
-						{"2400", "Level 2400 or lower"}
+						{"2500", "Level 2500 or lower"}
 					}
 				},
 				{

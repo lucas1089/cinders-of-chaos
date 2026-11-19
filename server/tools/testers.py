@@ -653,6 +653,7 @@ def parse_modal(plain, ids):
 
 MODAL_IDS = (7101, 7102) + tuple(range(7111, 7150)) + (7170, 7171)   # O655: the Oracle's trial, choice and confirm windows (ascension_quest_config.lua modal), the tales (tales_config.lua)
 MODAL_IDS = MODAL_IDS + (5000,)   # O662: the waypoint window of the base script (customs/waypoints/waypoint.lua: choices by town, button 110 Select)
+MODAL_IDS = MODAL_IDS + (7490,)   # O667: the Keeper of the Pinnacle's window of the four bosses (pinnacle_config.lua modal.list)
 
 ACTIVITY_MAX = 300000  # lines of one run's activity log (100 testers, 60 minutes: about 40,000)
 

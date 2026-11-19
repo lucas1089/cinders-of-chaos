@@ -6,6 +6,117 @@
 
 return {
 	["pt-BR"] = {
+		-- Pinnacle bosses (O667: pinnacle.lua, pinnacle_core.lua, the Keeper of the Pinnacle)
+		["The anchors break: %s can be hurt again!"] =
+			"As âncoras se quebram: %s volta a sofrer dano!",
+		["%s hangs on two Drowned Anchors! Break them!"] =
+			"%s se prende a duas Drowned Anchors! Quebre-as!",
+		["%s drags the room into an Undertow! Stand in the circle together!"] =
+			"%s arrasta a sala para uma Undertow! Fiquem juntos no círculo!",
+		["The idols fall silent."] =
+			"Os ídolos se calam.",
+		["Whispering Idols rise: they feed %s's hits!"] =
+			"Whispering Idols surgem: eles alimentam os golpes de %s!",
+		["%s channels a Hexbind! Destroy the Hex Idol!"] =
+			"%s canaliza um Hexbind! Destrua o Hex Idol!",
+		["The pillars shatter: %s can be hurt again!"] =
+			"Os pilares se despedaçam: %s volta a sofrer dano!",
+		["%s hides behind two Rime Pillars! Break them!"] =
+			"%s se esconde atrás de dois Rime Pillars! Quebre-os!",
+		["The idols crumble."] =
+			"Os ídolos desmoronam.",
+		["Ash Idols rise: they feed %s's hits!"] =
+			"Ash Idols surgem: eles alimentam os golpes de %s!",
+		["You found a %s of %s, but you hold %d of them already."] =
+			"Você achou um(a) %s de %s, mas já tem %d deles.",
+		["You found a %s of %s: %d of 4 kinds held."] =
+			"Você achou um(a) %s de %s: %d de 4 tipos em mãos.",
+		["You left the fight."] =
+			"Você saiu da luta.",
+		["Everyone left the fight."] =
+			"Todos saíram da luta.",
+		["The fight ends."] =
+			"A luta termina.",
+		["The server is restarting: the fight closes and your set is given back."] =
+			"O servidor vai reiniciar: a luta fecha e seu conjunto é devolvido.",
+		["%s falls in %s%s. The arena closes in %d seconds: leave through the forcefield by the arrival."] =
+			"%s cai em %s%s. A arena fecha em %d segundos: saia pelo campo de força perto da chegada.",
+		["The boss did not answer; your set is given back."] =
+			"O chefe não respondeu; seu conjunto é devolvido.",
+		["A gamemaster closed the fight."] =
+			"Um gamemaster fechou a luta.",
+		["%s falls and is carried out of the arena."] =
+			"%s cai e é levado para fora da arena.",
+		["%s comes in %d seconds. Deathless means nobody falls; the way out is in the room to the south."] =
+			"%s chega em %d segundos. Sem mortes quer dizer que ninguém cai; a saída fica na sala ao sul.",
+		["You stay behind from the fight with %s: %s."] =
+			"Você fica de fora da luta com %s: %s.",
+		["Every pinnacle arena is in use. Try again in a moment."] =
+			"Todas as arenas do Pináculo estão em uso. Tente de novo em instantes.",
+		["This arena is not yours: you were sent to your temple."] =
+			"Esta arena não é sua: você foi mandado ao seu templo.",
+		["Spoils of %s: %d Orbs of Upheaval, %d Orbs of Fate, %d Exalted Orbs, %d Conquest Tokens%s%s.%s"] =
+			"Espólios de %s: %d Orbs of Upheaval, %d Orbs of Fate, %d Exalted Orbs, %d Conquest Tokens%s%s.%s",
+		["New title: %s."] =
+			"Novo título: %s.",
+		["Your fragments now drop for %s."] =
+			"Seus fragmentos agora caem para %s.",
+		["%s opens from level %d."] =
+			"%s abre a partir do nível %d.",
+		["Your set of fragments is given back: the fight did not finish."] =
+			"Seu conjunto de fragmentos foi devolvido: a luta não terminou.",
+		["%s: fragments of %s given."] =
+			"%s: fragmentos de %s entregues.",
+		["%s: the pinnacle rows are cleared."] =
+			"%s: os registros do Pináculo foram limpos.",
+		["The pinnacle bosses are closed for now."] =
+			"Os chefes do Pináculo estão fechados por enquanto.",
+		["There is no such pinnacle boss."] =
+			"Não existe esse chefe do Pináculo.",
+		["You are in %s already."] =
+			"Você já está em %s.",
+		["Open it from a protection zone."] =
+			"Abra de uma zona de proteção.",
+		["You cannot open it in a fight."] =
+			"Você não pode abrir em combate.",
+		["Wait %d seconds before you open another."] =
+			"Espere %d segundos antes de abrir outro.",
+		["The set is not whole. Missing: %s."] =
+			"O conjunto não está completo. Faltam: %s.",
+		["level %d is needed"] =
+			"é preciso o nível %d",
+		["in %s"] =
+			"em %s",
+		["in a fight"] =
+			"em combate",
+		["too far"] =
+			"longe demais",
+		["the arena is full"] =
+			"a arena está cheia",
+		["Welcome, |PLAYERNAME|. Four Ascended bosses wait on the {pinnacle}. Bring me a whole set of {fragments} and I will open the way."] =
+			"Bem-vindo, |PLAYERNAME|. Quatro chefes Ascended aguardam no {pinnacle}. Traga-me um conjunto completo de {fragments} e abrirei o caminho.",
+		["The pinnacle will wait, |PLAYERNAME|."] =
+			"O pináculo esperará, |PLAYERNAME|.",
+		["The pinnacle waits without you."] =
+			"O pináculo espera sem você.",
+		["%s (from level %d)%s: %s"] =
+			"%s (a partir do nível %d)%s: %s",
+		[" [focus]"] =
+			" [foco]",
+		["Four Ascended bosses wait on the pinnacle. Each opens with a whole set of four fragments, one of each kind. A waystone map of tier %d or higher, a rift of tier %d and an Omen guardian each drop one kind; any of the three may drop the keystone.\n\n%s\n\nOpen spends a set and takes your party within reach along. Focus makes your fragments drop for the chosen boss."] =
+			"Quatro chefes Ascended aguardam no pináculo. Cada um abre com um conjunto completo de quatro fragmentos, um de cada tipo. Um mapa de waystone de tier %d ou mais, uma rift de tier %d e um guardião de Omen soltam um tipo cada; qualquer um dos três pode soltar a pedra-chave.\n\n%s\n\nAbrir gasta um conjunto e leva seu grupo que estiver por perto. Foco faz seus fragmentos caírem para o chefe escolhido.",
+		["The Pinnacle"] =
+			"O Pináculo",
+		["Open"] =
+			"Abrir",
+		["Focus"] =
+			"Foco",
+		["Close"] =
+			"Fechar",
+		["The pinnacle is closed for now. Come back later."] =
+			"O pináculo está fechado por enquanto. Volte mais tarde.",
+		["Choose a boss. A whole set of fragments opens its arena: alone, or with a party of up to %d."] =
+			"Escolha um chefe. Um conjunto completo de fragmentos abre a arena: sozinho, ou com um grupo de até %d.",
 		-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_tracker_core.lua, Archivist Odrenna)
 		["Your trial awaits."] =
 			"Sua prova aguarda.",
