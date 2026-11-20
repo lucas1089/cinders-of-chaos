@@ -89,6 +89,14 @@ Presentes esperam por você nos níveis {{newplayer.giftLevelsPt}}: poções, or
 - Caçadas: Gloomsilt Mire (1800-2200) e Pyrecrown Caldera (1900-2100).
 - Conquest Tokens compram os únicos que a sorte não deu.
 
+## Nível 1500-2500: Waystones, o Greater Rift e o pinnacle
+
+O nível máximo é 2500. O último trecho tem conteúdo próprio:
+
+- **Waystones dos tiers XVI a XXV** são feitos para os níveis mais altos. Uma corrida simples leva de 7 a 13 minutos; a primeira vitória em cada tier dá um ponto do Atlas; o último tier de cada faixa tem um chefe de faixa. O Void Orb corrompe um waystone Magic ou Rare com modificadores finais mais fortes, e 15% de chance de quebrá-lo.
+- **O Greater Rift** começa onde o tier 15 termina e não acaba mais. A chave vem de um guardião do tier 15, ou de 150 Omen Fragments. Uma vitória rápida sobe a chave de um a três tiers.
+- **Os chefes pinnacle** são o Malgrath Ascendido (nível 1900), o Vhoss (2100), o Talath (2300) e o Varkhul (2500). Um conjunto de quatro fragmentos de waystones do tier 12 para cima, do rift tier 15 e dos guardiões Omen abre uma luta numa arena privada, sozinho ou com até cinco jogadores. Cada chefe tem um único exclusivo.
+
 ## Sorte e esforço
 
 Toda chance de drop do jogo é pública: o Item Finder mostra cada uma por monstro, as páginas de [Únicos](wiki:tab:uniques) mostram o esforço esperado ("~1 em 500 abates lendários") e as páginas de [Monstros](wiki:tab:monsters) mostram cada tabela de saque. Quando a sorte não vem, o vendedor Conquest vende o que você já viu a preço fixo, e a proteção contra azar aumenta sua chance a cada falha.

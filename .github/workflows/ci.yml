@@ -1348,6 +1348,7 @@ jobs:
         run: |
           bash -n tools/ci/unity_live_check.sh
           shellcheck tools/ci/loot_video.sh
+          shellcheck tools/ci/clip_tour.sh  # the mechanics clip recorder of the website (O687)
 
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
@@ -1903,6 +1904,12 @@ jobs:
           python3 -I website/tools/gen_calendar_data.py --check
           python3 -I website/tools/gen_calendar_data_test.py
           python3 -I website/tools/gen_media_kit.py --check
+
+      - name: Website news page data and mechanics clips (O687; gen_changelog.py: the data of the news page from the patch notes and the curated entries; the clip slots of gen_site_media.py, media_lib.php and test_cliptour)
+        run: |
+          python3 -I website/tools/gen_changelog.py --check
+          python3 -I website/tools/gen_changelog_test.py
+          python3 -I website/tools/gen_site_media_clips_test.py
 
       - name: Attack speed lanes of the passive tree are in classlanes.lua (gen_class_lanes.lua --attack-speed)
         run: |

@@ -12,15 +12,17 @@ $sections = array(
 	'tree' => array('Passive tree and Paragon', array(
 		'<strong>Passive tree:</strong> over 600 nodes, with points from levels and not enough to take everything, so every build is a choice. Class keystones change how you play: <em>Cleaving Arc</em> (two-handed hits strike everything around you), <em>Ricochet</em> (arrows bounce to another target), <em>Arcane Echo</em> (spells can cast a second time) and the Illusionist party auras.',
 		'<strong>Build codes:</strong> export your tree as a short code (the passive tree\'s Build Code panel) and import someone else\'s. The tree previews it first.',
+		'<strong>Keystones:</strong> a character can hold at most three keystones at a time, so the choice of the three is part of the build.',
 		'<strong>Respec:</strong> right-click a node to refund just that node, or reset the whole tree; both are priced by your level. Resets are free below level 50 and once after a class change.',
-		'<strong>Paragon:</strong> after level 1000 every level gives a Paragon point for small, capped bonuses in four categories.',
+		'<strong>Paragon:</strong> after level 1000 every level gives a Paragon point (one every sixth level after 1100) for small, capped bonuses in four categories.',
 	)),
 	'items' => array('Items and loot', array(
 		'<strong>7 rarities:</strong> Common, Uncommon, Magic, Rare, Legendary, Divine and Unique.',
-		'<strong>Item levels and modifiers:</strong> elemental damage, absorbs, skills, critical hits, life and mana leech. About 50 uniques with fixed, build-defining stats; some only drop from bosses.',
+		'<strong>Item levels and modifiers:</strong> elemental damage, absorbs, skills, critical hits, life and mana leech. Over 180 uniques with fixed, build-defining stats; some only drop from bosses.',
 		'<strong>Monster tiers:</strong> every spawn can roll Magic, Rare or Legendary, with modifiers such as <em>Blazing, Chilling, Venomous, Vampiric</em> or <em>Berserker</em>. Killing one can trigger an ambush.',
-		'<strong>Treasure goblins:</strong> a very rare, cowardly goblin that flees, blinks away and escapes 18 seconds after the first hit. Catch it in time for a hoard.',
+		'<strong>Treasure goblins:</strong> a very rare, cowardly goblin that flees, blinks away and escapes 30 seconds after the first hit. Catch it in time for a hoard.',
 		'<strong>Loot filter</strong> (Hunt > Loot Filter), a loot channel with clickable item icons, loot rays for the best drops, Rarity Autoloot, autoloot, auto seller, bank and stash.',
+		'<strong>Loot explosion:</strong> a kill throws its loot out onto the ground around the monster, item by item. The owner rules stay: you and your party pick it up first. Beams of light mark only the rarest drops: Legendary, Divine, set pieces and uniques. Both are set in the Ground Labels window.',
 	)),
 	'crafting' => array('Crafting', array(
 		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (Economy > Crafting Bench): Awakening and Gilding turn normal items magic, Grafting adds a modifier, Unmaking removes one, Erasure makes an item normal again, Upheaval rerolls it with the same rarity and Fate with a new one. Tempering, Binding, Excision, Reforging, Ruin and Whetstones let you aim: new values, bind or cut a modifier of your choice, a risky gamble, and item quality.',
@@ -29,8 +31,11 @@ $sections = array(
 	'endgame' => array('Endgame', array(
 		'<strong>World bosses:</strong> a portal opens at every temple and one of five colossal bosses appears: Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon or Vharok the Blood Colossus. Everyone who does real damage gets a reward.',
 		'<strong>Bounty board</strong> (Adventure > Bounty Board): daily "kill X in Y" contracts per level band that pay orbs; seven in a week earn the weekly bounty chest.',
-		'<strong>Rifts</strong> (Adventure > Rifts): a Rift Key opens a 10-minute instance for you and up to 3 party members. Keys have a tier (1-15) and 1-3 modifiers; harder modifiers raise the rewards. Kill the Guardian to seal the rift. A crash refunds your key.',
-		'<strong>Infinity Tower</strong> (Adventure > Infinity Tower) alone or with a party, <strong>dungeons</strong>, and 17 level-scaled Chaos monsters (levels 650-1000) in the deepest hunting grounds.',
+		'<strong>Rifts</strong> (Adventure > Rifts): a Rift Key opens a generated map for you and up to 4 party members, with a 12 to 15 minute limit by the size of the map. Keys have a tier (1-15) and 1-3 modifiers; harder modifiers raise the rewards. Kill the Guardian to seal the rift. A crash refunds your key.',
+		'<strong>Greater Rift:</strong> past tier 15 the rift never ends. A Greater Rift Key (from a tier 15 guardian, or 150 Omen Fragments) opens tier 16 and up; a fast clear moves the key up one to three tiers, a failed run drops it one. The season ladder ranks every class, alone and in a party.',
+		'<strong>Waystone Atlas:</strong> waystones open maps from tier I to XXV. Tiers XVI to XXV are made for levels near the cap; the first clear of each tier gives an atlas point, the last tier of each band has a band boss, and the Void Orb corrupts a Magic or Rare waystone for stronger final modifiers (and a 15% chance to break it).',
+		'<strong>Pinnacle bosses:</strong> the Ascended versions of Malgrath (level 1900), Vhoss (2100), Talath (2300) and Varkhul (2500). A set of four fragments from the top content opens a private arena through the Keeper of the Pinnacle, alone or with up to four others. Each boss has an exclusive unique: 22% a kill, sure on the eighth.',
+		'<strong>Infinity Tower</strong> (Adventure > Infinity Tower) alone or with a party, <strong>dungeons</strong> (the deep ones for levels 1000 to 2000), the <strong>Ember Descent</strong> (Adventure > Ember Descent: ten rooms with boons and curses, a boss at the end) and hunting grounds for every level up to 2000.',
 		'<strong>Events:</strong> Blood Moon weekends (+50% experience), Chaos Rift Wednesdays (double tiered spawns), Loot Frenzy Fridays, and a daily boosted creature and boss.',
 	)),
 	'seasons' => array('Seasons', array(
@@ -60,9 +65,9 @@ $sections = array(
 		<tbody>
 			<tr><th>Client</th><td>Our own client (protocol 10.98) with a custom skin, a top menu and a window for every system</td></tr>
 			<tr><th>Classes</th><td>7 class lines, each with 2 ascensions (14 ascended classes); the Necromancer, Monk and Templar unlock for the whole account once any of its characters reaches level 200</td></tr>
-			<tr><th>Level cap</th><td>1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting</td></tr>
-			<tr><th>Items</th><td>7 rarities, item levels, random modifiers, about 50 uniques</td></tr>
-			<tr><th>Endgame</th><td>World bosses, bounties, rifts, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards</td></tr>
+			<tr><th>Level cap</th><td>2500. Reaching 1000 takes roughly 115 hours of hunting; every level after 1000 is a Paragon point, and the Waystone Atlas, the Greater Rift and the pinnacle bosses are made for the last 1500 levels</td></tr>
+			<tr><th>Items</th><td>7 rarities, item levels, random modifiers, over 180 uniques</td></tr>
+			<tr><th>Endgame</th><td>World bosses, bounties, rifts and the Greater Rift, the Waystone Atlas, pinnacle bosses, the Infinity Tower, dungeons, the Ember Descent, arena, guild siege, weekly leaderboards</td></tr>
 			<tr><th>Fair play</th><td>Multi-client rules; staff characters are left out of every leaderboard. Read the <a href="page?p=rules">rules</a>.</td></tr>
 		</tbody>
 	</table>

@@ -263,6 +263,8 @@ $out .= "menu: Starter Builds\n";
 $world = $menu('The World', 'serverinfo?world', 'fa-fire', 15);
 $menu('Server Info', 'serverinfo', 'fa-book', 1, $world);
 $menu('Patch Notes', 'page?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);
+// the news page (plugins/chaos/pages/news.php, O687): the changes of the game by week, from the patch notes and the curated entries
+$menu('What is New', 'page?plugin=chaos&p=news', 'fa-newspaper-o', 2, $world);
 $menu('Leaderboards', 'page?plugin=chaos&p=leaderboards', 'fa-trophy', 3, $world);
 // the most played builds of every class (plugins/chaos/pages/trends.php, O409; the game's chaos_build_trends)
 $menu('Trending Builds', 'page?plugin=chaos&p=trends', 'fa-line-chart', 3, $world);

@@ -1,0 +1,300 @@
+{
+ "note": "Curated player-facing entries of the news page (website/tools/gen_changelog.py). id = a slug; ref = the ROADMAP row it came from (never shown); match = the commit subject text that dates it (default: the ref and a colon), the latest commit with it counts. Words for players only: no file names, no internal tooling, no roadmap numbers.",
+ "recent_weeks": 8,
+ "entries": [
+  {
+   "id": "launcher",
+   "ref": "O552",
+   "kind": "new",
+   "en": {
+    "title": "A launcher that installs the game",
+    "text": "The game now has its own launcher and setup. It installs the game in your own folder with no administrator rights, shows the news and the changelog next to the Play button, repairs only the pieces that changed and has a Verify files button."
+   },
+   "pt-BR": {
+    "title": "Um launcher que instala o jogo",
+    "text": "O jogo agora tem launcher e instalador próprios. Instala na sua pasta, sem precisar de administrador, mostra as novidades e o changelog ao lado do botão Jogar, repara só os pedaços que mudaram e tem um botão Verificar arquivos."
+   },
+   "match": "O552 phase D"
+  },
+  {
+   "id": "hub-menu",
+   "ref": "O550",
+   "kind": "change",
+   "en": {
+    "title": "A tidier top menu",
+    "text": "The top menu is now a set of six hubs with icons. Every window sits on a card of one hub, so a system is two clicks away instead of a long list."
+   },
+   "pt-BR": {
+    "title": "Um menu do topo mais limpo",
+    "text": "O menu do topo agora é um conjunto de seis hubs com ícones. Cada janela fica num cartão de um hub, então qualquer sistema fica a dois cliques em vez de uma lista longa."
+   },
+   "match": "O550 hub menu"
+  },
+  {
+   "id": "customise",
+   "ref": "O562",
+   "kind": "change",
+   "en": {
+    "title": "Customise window fixes, kill dissolves and spell skins",
+    "text": "Capes are now seen from the back, outlines have their own tiles, name plate frames and outfit shaders were reworked and chat colours can animate. New dissolve kill effects and spell skins come with previews in the window."
+   },
+   "pt-BR": {
+    "title": "Janela Customise: correções, dissolves de abate e skins de magia",
+    "text": "As capas agora aparecem de costas, os contornos têm tiles próprios, as molduras de nome e os shaders de outfit foram refeitos e as cores do chat podem animar. Novos efeitos de dissolução ao matar e skins de magia vêm com pré-visualização na janela."
+   },
+   "match": "O562: Customise window fixes"
+  },
+  {
+   "id": "legendary-loot",
+   "ref": "O575",
+   "kind": "change",
+   "en": {
+    "title": "Legendary monsters always drop good loot",
+    "text": "A Legendary monster now always leaves at least one piece of gear of Rare quality or better. The chance of something better is unchanged."
+   },
+   "pt-BR": {
+    "title": "Monstros lendários sempre dropam loot bom",
+    "text": "Um monstro Legendary agora sempre deixa pelo menos uma peça de equipamento Rare ou melhor. A chance de algo melhor continua a mesma."
+   },
+   "match": "O575:"
+  },
+  {
+   "id": "ground-auras",
+   "ref": "O577",
+   "kind": "new",
+   "en": {
+    "title": "Golden Ki and Crimson Blaze auras",
+    "text": "Two new ground auras, Golden Ki and Crimson Blaze, seen at an angle like the game itself, with flames that rise behind the character and in front of it."
+   },
+   "pt-BR": {
+    "title": "Auras Golden Ki e Crimson Blaze",
+    "text": "Duas novas auras de chão, Golden Ki e Crimson Blaze, vistas em ângulo como o resto do jogo, com chamas que sobem atrás e na frente do personagem."
+   },
+   "match": "O577:"
+  },
+  {
+   "id": "costumes",
+   "ref": "O578",
+   "kind": "change",
+   "en": {
+    "title": "The fun costumes, redone",
+    "text": "The fun costumes were redrawn at a higher quality, and the Dusk Moth now flaps through 28 phases."
+   },
+   "pt-BR": {
+    "title": "Os costumes divertidos, refeitos",
+    "text": "Os costumes divertidos foram redesenhados com mais qualidade, e a Dusk Moth agora bate as asas em 28 fases."
+   },
+   "match": "O578:"
+  },
+  {
+   "id": "hollow-crypt",
+   "ref": "O574",
+   "kind": "fix",
+   "en": {
+    "title": "The Hollow Crypt looks right",
+    "text": "The Hollow Crypt hunt was cleaned up: one slate floor, no wooden coffins left in the rooms and no lone blocks in the middle of a room."
+   },
+   "pt-BR": {
+    "title": "A Hollow Crypt com a cara certa",
+    "text": "A caçada da Hollow Crypt foi arrumada: um piso de ardósia só, sem caixões de madeira nas salas e sem blocos soltos no meio delas."
+   },
+   "match": "O574:"
+  },
+  {
+   "id": "vael-attacks",
+   "ref": "O554",
+   "kind": "new",
+   "en": {
+    "title": "Vael Ashmourn fights with real attacks",
+    "text": "The boss of the main quest has six named attacks: Cinder Breath, Ember Rain, Ashen Ring, Oath Lance, Warden's Cross and, in the last phase, Final Oath. Each one is marked on the floor before it lands, so you can step out of it. Below 30% health he is faster and harder."
+   },
+   "pt-BR": {
+    "title": "Vael Ashmourn luta com ataques de verdade",
+    "text": "O chefe da quest principal tem seis ataques com nome: Cinder Breath, Ember Rain, Ashen Ring, Oath Lance, Warden's Cross e, na última fase, Final Oath. Cada um é marcado no chão antes de acertar, então dá para sair da frente. Abaixo de 30% de vida ele fica mais rápido e mais forte."
+   },
+   "match": "(O554)"
+  },
+  {
+   "id": "wings",
+   "ref": "O583",
+   "kind": "change",
+   "en": {
+    "title": "Every wing, redrawn",
+    "text": "All 121 wings were redrawn in a cleaner, matching style, and they now fit any outfit: the wings find the character's back and sit on it."
+   },
+   "pt-BR": {
+    "title": "Todas as asas, redesenhadas",
+    "text": "As 121 asas foram redesenhadas num estilo mais limpo e uniforme, e agora servem em qualquer outfit: as asas encontram as costas do personagem e se encaixam nelas."
+   },
+   "match": "O583:"
+  },
+  {
+   "id": "spell-effects",
+   "ref": "O607",
+   "kind": "new",
+   "en": {
+    "title": "Better spell effects",
+    "text": "Area spells have real bursts and beams, status effects have their own layer on the character, effects now exist for roles that had none, and a lightning bolt falls from the sky onto its target."
+   },
+   "pt-BR": {
+    "title": "Efeitos de magia melhores",
+    "text": "As magias de área têm explosões e feixes de verdade, os status têm uma camada própria no personagem, passaram a existir efeitos para funções que não tinham nenhum, e um raio cai do céu sobre o alvo."
+   },
+   "match": "O614:"
+  },
+  {
+   "id": "new-looks",
+   "ref": "O640",
+   "kind": "new",
+   "en": {
+    "title": "New looks for bosses and monsters",
+    "text": "Three bosses, The Rotmother, Vhoss the Hexmaw and Talath, now have bigger, fully animated bodies, and 24 hunt monsters wear new looks of their own."
+   },
+   "pt-BR": {
+    "title": "Visuais novos para chefes e monstros",
+    "text": "Três chefes, The Rotmother, Vhoss the Hexmaw e Talath, agora têm corpos maiores e totalmente animados, e 24 monstros de caçada usam visuais novos."
+   },
+   "match": "O640: the 24"
+  },
+  {
+   "id": "malgrath",
+   "ref": "O637",
+   "kind": "new",
+   "en": {
+    "title": "Malgrath, the Drowned Crown",
+    "text": "A new arena boss, Malgrath, the Drowned Crown, with a seven by seven body that always faces you."
+   },
+   "pt-BR": {
+    "title": "Malgrath, a Coroa Afogada",
+    "text": "Um novo chefe de arena, Malgrath, a Coroa Afogada, com um corpo de sete por sete que sempre fica de frente para você."
+   },
+   "match": "O637:"
+  },
+  {
+   "id": "footprints",
+   "ref": "O649",
+   "kind": "new",
+   "en": {
+    "title": "Twenty footprint effects",
+    "text": "The store has 20 new footprint effects: prints and glows that follow your steps."
+   },
+   "pt-BR": {
+    "title": "Vinte efeitos de pegadas",
+    "text": "A loja tem 20 novos efeitos de pegadas: marcas e brilhos que seguem os seus passos."
+   },
+   "match": "O649: pair 75, the 20"
+  },
+  {
+   "id": "descent-balance",
+   "ref": "O664",
+   "kind": "balance",
+   "en": {
+    "title": "Ember Descent, balanced",
+    "text": "Monsters of the Ember Descent had far too much health and damage for their level. They now have the health and damage of the hunt monsters of their level, and each room asks a little more than the one before."
+   },
+   "pt-BR": {
+    "title": "Ember Descent, balanceado",
+    "text": "Os monstros do Ember Descent tinham vida e dano demais para o nível. Agora têm a vida e o dano dos monstros de caçada do nível deles, e cada sala pede um pouco mais que a anterior."
+   },
+   "match": "O664:"
+  },
+  {
+   "id": "waystone-endgame",
+   "ref": "O666",
+   "kind": "new",
+   "en": {
+    "title": "Waystones up to tier XXV",
+    "text": "Ten new waystone tiers, XVI to XXV, for the top levels. A plain run takes 7 to 13 minutes, the first clear of each tier gives an Atlas point, and the last tier of each band has a band boss. The Void Orb corrupts a Magic or Rare waystone for stronger, final modifiers, with a 15% chance to break it. The Waystone Atlas window has a new page for all of it."
+   },
+   "pt-BR": {
+    "title": "Waystones até o tier XXV",
+    "text": "Dez novos tiers de waystone, do XVI ao XXV, para os níveis mais altos. Uma corrida simples leva de 7 a 13 minutos, a primeira vitória em cada tier dá um ponto do Atlas e o último tier de cada faixa tem um chefe de faixa. O Void Orb corrompe um waystone Magic ou Rare com modificadores finais mais fortes, com 15% de chance de quebrá-lo. A janela do Waystone Atlas ganhou uma página nova para tudo isso."
+   },
+   "match": "O666:"
+  },
+  {
+   "id": "pinnacle",
+   "ref": "O667",
+   "kind": "new",
+   "en": {
+    "title": "Pinnacle bosses",
+    "text": "Four Ascended bosses for the top of the game: Malgrath (level 1900), Vhoss (2100), Talath (2300) and Varkhul (2500). A set of four fragments from the best content opens a fight in a private arena, alone or with up to five players. Each boss has an exclusive unique: 22% a kill, sure on the eighth."
+   },
+   "pt-BR": {
+    "title": "Chefes pinnacle",
+    "text": "Quatro chefes Ascendidos para o topo do jogo: Malgrath (nível 1900), Vhoss (2100), Talath (2300) e Varkhul (2500). Um conjunto de quatro fragmentos do melhor conteúdo abre uma luta numa arena privada, sozinho ou com até cinco jogadores. Cada chefe tem um único exclusivo: 22% por abate, certo no oitavo."
+   },
+   "match": "O667:"
+  },
+  {
+   "id": "greater-rift",
+   "ref": "O668",
+   "kind": "new",
+   "en": {
+    "title": "The Greater Rift",
+    "text": "The rift past tier 15, with no end. The key comes from a tier 15 guardian or costs 150 Omen Fragments. A fast clear moves the key up one to three tiers, a failed run drops it one. There is a ladder for every class each season, and two weekly boards."
+   },
+   "pt-BR": {
+    "title": "O Greater Rift",
+    "text": "O rift depois do tier 15, sem fim. A chave vem de um guardião do tier 15 ou custa 150 Omen Fragments. Uma vitória rápida sobe a chave de um a três tiers, uma corrida falha desce um. Há um ranking para cada classe a cada temporada, e dois quadros semanais."
+   },
+   "match": "O668:"
+  },
+  {
+   "id": "loot-explosion",
+   "ref": "O669",
+   "kind": "new",
+   "en": {
+    "title": "Loot explosion",
+    "text": "A kill no longer leaves its loot in a bag. The loot flies out onto the ground around the monster, item by item, with a small arc and a landing spark. You and your party pick it up first, and Loot all gathers what lies near. Beams of light now mark only Legendary, Divine, set and unique drops."
+   },
+   "pt-BR": {
+    "title": "Explosão de loot",
+    "text": "Um abate não deixa mais o loot numa bolsa. O loot voa para o chão ao redor do monstro, item por item, num pequeno arco e com uma faísca no pouso. Você e o seu grupo pegam primeiro, e o Loot all recolhe o que está por perto. Os raios de luz agora marcam só os drops Legendary, Divine, de conjunto e únicos."
+   },
+   "match": "O677:"
+  },
+  {
+   "id": "cap-2500",
+   "ref": "O672",
+   "kind": "change",
+   "en": {
+    "title": "Level 2500 is the cap",
+    "text": "The level cap stays at 2500, and the new endgame is made to fit inside it. The Orb of Upheaval keeps the Grafted modifier when it rerolls an item."
+   },
+   "pt-BR": {
+    "title": "O nível 2500 é o limite",
+    "text": "O nível máximo continua 2500, e o novo endgame foi feito para caber nele. O Orb of Upheaval mantém o modificador Grafted quando refaz um item."
+   },
+   "match": "O672:"
+  },
+  {
+   "id": "melee-weapons",
+   "ref": "O679",
+   "kind": "balance",
+   "en": {
+    "title": "Melee weapons hit with their element",
+    "text": "The spells of melee weapons now count the weapon's element damage as well as its physical attack, as the auto attack always did. Stock melee weapons of level 100 and up keep their total attack, with at most 35% of it as element damage, and the Juggernaut's weapons go up to level 2500 like the other classes'."
+   },
+   "pt-BR": {
+    "title": "Armas corpo a corpo batem com o elemento",
+    "text": "As magias de armas corpo a corpo agora contam o dano elemental da arma além do ataque físico, como o ataque automático sempre fez. As armas corpo a corpo comuns do nível 100 para cima mantêm o ataque total, com no máximo 35% dele em dano elemental, e as armas do Juggernaut vão até o nível 2500 como as das outras classes."
+   },
+   "match": "O679:"
+  },
+  {
+   "id": "heals",
+   "ref": "O682",
+   "kind": "fix",
+   "en": {
+    "title": "Heals that did nothing now heal",
+    "text": "Fourteen effects that were meant to heal or hurt did nothing: the leech and holy heal of cards, a spell refund, snare drains, the Vigils' health give-back and three boss mechanics. They work now. In an invasion, the invaders now really fight each other."
+   },
+   "pt-BR": {
+    "title": "Curas que não faziam nada agora curam",
+    "text": "Catorze efeitos que deviam curar ou ferir não faziam nada: a cura de leech e sagrada das cartas, um reembolso de magia, os drenos de snare, a devolução de vida dos Vigils e três mecânicas de chefe. Agora funcionam. Numa invasão, os invasores agora lutam de verdade entre si."
+   },
+   "match": "O682:"
+  }
+ ]
+}

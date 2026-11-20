@@ -20,10 +20,17 @@ if (!function_exists('chaos_t')) {
 if (!function_exists('chaos_media_trailer_html') && is_file(dirname(__DIR__, 3) . '/plugins/chaos/media_lib.php')) {
 	require_once dirname(__DIR__, 3) . '/plugins/chaos/media_lib.php';
 }
+if (!function_exists('chaos_news_home_html') && is_file(dirname(__DIR__, 3) . '/plugins/chaos/news_lib.php')) {
+	require_once dirname(__DIR__, 3) . '/plugins/chaos/news_lib.php';
+}
 // trailer, shorts and screenshots (plugins/chaos/media_lib.php): '' without the plugin or its media files
 $mediaTrailer = function_exists('chaos_media_trailer_html') ? chaos_media_trailer_html() : '';
 $mediaShorts = function_exists('chaos_media_shorts_html') ? chaos_media_shorts_html() : '';
-$mediaGallery = function_exists('chaos_media_gallery_html') ? chaos_media_gallery_html() : '';
+// the mechanics clips (O687); the stills they show instead of a clip not yet recorded are left out of the gallery
+$mediaActions = function_exists('chaos_media_actions') ? chaos_media_actions() : array('html' => '', 'stills' => array());
+$mediaGallery = function_exists('chaos_media_gallery_html') ? chaos_media_gallery_html(null, null, $mediaActions['stills']) : '';
+// the newest entries of the news page (plugins/chaos/news_lib.php, O687): '' without the plugin or its data
+$newsHome = function_exists('chaos_news_home_html') ? chaos_news_home_html() : '';
 $plugin = function_exists('chaos_class_lines');
 $lines = $plugin ? chaos_class_lines() : array();
 $icon = static function (string $name): string {
@@ -31,9 +38,9 @@ $icon = static function (string $name): string {
 };
 $features = array(
 	chaos_t('Passive tree and Paragon') => array(chaos_t('Over 600 nodes, and never enough points for all of them'), chaos_t('Class keystones: Cleaving Arc, Ricochet, Arcane Echo, party auras'), chaos_t('Build codes to share; respec priced by your level'), chaos_t('Paragon points for every level after 1000')),
-	chaos_t('Items and loot') => array(chaos_t('7 rarities from Common to Divine, and the uniques'), chaos_t('Item levels and random modifiers; about 50 uniques'), chaos_t('Monsters roll Magic, Rare or Legendary affixes'), chaos_t('Loot filter, loot rays and treasure goblins')),
+	chaos_t('Items and loot') => array(chaos_t('7 rarities from Common to Divine, and the uniques'), chaos_t('Item levels and random modifiers; over 180 uniques'), chaos_t('Monsters roll Magic, Rare or Legendary affixes'), chaos_t('Loot bursts out of kills; beams mark the rarest drops')),
 	chaos_t('Crafting orbs') => array(chaos_t('Awakening and Gilding make magic items'), chaos_t('Grafting adds a modifier, Unmaking removes one'), chaos_t('Upheaval and Fate reroll; Erasure starts over'), chaos_t('All at the Crafting Bench (Alt+C)')),
-	chaos_t('Endgame') => array(chaos_t('Five colossal world bosses with phases'), chaos_t('Rifts: keys with tiers 1-15 and modifiers'), chaos_t('Infinity Tower, dungeons and the bounty board'), chaos_t('17 level-scaled monsters in the deepest grounds')),
+	chaos_t('Endgame') => array(chaos_t('Five colossal world bosses with phases'), chaos_t('Rifts to tier 15, then the endless Greater Rift'), chaos_t('Infinity Tower, dungeons and the bounty board'), chaos_t('Waystone tiers to XXV and four pinnacle bosses, up to level 2500')),
 	chaos_t('Seasons and PvP') => array(chaos_t('Fresh season characters with their own ladder'), chaos_t('Season uniques and an account-wide reward track'), chaos_t('Ranked arena 1v1 and 2v2 with Elo ratings'), chaos_t('Weekly Guild Siege for the Chaos Obelisk')),
 	chaos_t('Quality of life') => array(chaos_t('One-click Auto setup and a starter kit per class'), chaos_t('Hunt tracker: experience and profit per hour'), chaos_t('Daily rewards with login streaks and titles'), chaos_t('Patch notes right in the client')),
 );
@@ -58,7 +65,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 			</div>
 		</div>
 		<dl class="chaos-hero__facts">
-			<div><dt><?= $h(chaos_t('Classes')) ?></dt><dd>7</dd></div>
+			<div><dt><?= $h(chaos_t('Classes and ascensions')) ?></dt><dd>21</dd></div>
 			<div><dt><?= $h(chaos_t('Passive nodes')) ?></dt><dd>600+</dd></div>
 			<div><dt><?= $h(chaos_t('Item rarities')) ?></dt><dd>7</dd></div>
 			<div><dt><?= $h(chaos_t('World bosses')) ?></dt><dd>5</dd></div>
@@ -67,6 +74,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 
 	<?= $mediaTrailer ?>
 	<?= $mediaShorts ?>
+	<?= $newsHome ?>
 
 	<?php if ($lines): ?>
 	<section class="chaos-box">
@@ -103,8 +111,9 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		<a class="chaos-btn chaos-btn--ghost chaos-features__more" href="page?plugin=chaos&amp;p=wiki"><?= $h(chaos_t('Read the guide')) ?></a>
 	</section>
 
+	<?= $mediaActions['html'] ?>
 	<?= $mediaGallery ?>
-	<?= function_exists('chaos_media_script_html') ? chaos_media_script_html($mediaTrailer . $mediaGallery) : '' ?>
+	<?= function_exists('chaos_media_script_html') ? chaos_media_script_html($mediaTrailer . $mediaActions['html'] . $mediaGallery) : '' ?>
 
 	<?php $community = function_exists('chaos_community_state') ? chaos_community_block_html(chaos_community_state(time())) : ''; ?>
 	<?php if ($community !== ''): // the community goal and the week's world modifiers (plugins/chaos/community_lib.php) ?>

@@ -3,6 +3,7 @@
 // muted and looped while it is on screen, without controls, unless the visitor asked for less motion or less data;
 // a click gives it sound and controls and starts it over. Screenshots: a[data-chaos-shot] opens a lightbox (arrows,
 // Escape, swipe, a click outside closes); the links still open the picture without script.
+// The looping clips of the "mechanics in action" section play only while on screen (O687).
 // No inline script and no library (the site's Content-Security-Policy).
 (function () {
 	'use strict';
@@ -68,6 +69,35 @@
 			video.currentTime = 0;
 			tryPlay();
 		});
+	}
+
+	// Mechanics clips (O687): video[data-chaos-clip] is a short muted loop. With script it plays while it is on screen and
+	// stops when it leaves, without controls; without script, or when the visitor asked for less motion or data, it
+	// keeps its controls and its poster and plays on a tap.
+	function setUpClip(video) {
+		if (video.getAttribute('data-chaos-ready') === '1') {
+			return;
+		}
+		video.setAttribute('data-chaos-ready', '1');
+		if (lessMotionOrData() || typeof video.play !== 'function' || !('IntersectionObserver' in window)) {
+			return;
+		}
+		video.removeAttribute('controls');
+		video.muted = true;
+		new IntersectionObserver(function (entries) {
+			entries.forEach(function (e) {
+				if (e.isIntersecting) {
+					var p = video.play();
+					if (p && typeof p.catch === 'function') {
+						p.catch(function () {
+							video.setAttribute('controls', '');
+						});
+					}
+				} else {
+					video.pause();
+				}
+			});
+		}, { threshold: 0.35 }).observe(video);
 	}
 
 	var box = null;
@@ -156,7 +186,7 @@
 		build();
 		links = Array.prototype.slice.call(document.querySelectorAll('a[data-chaos-shot]'));
 		opener = a;
-		var sec = a.closest ? a.closest('.chaos-gallery') : null;
+		var sec = a.closest ? a.closest('.chaos-gallery, .chaos-action') : null;
 		if (sec) {
 			[['close', 'chaos-lightbox__close'], ['prev', 'chaos-lightbox__prev'], ['next', 'chaos-lightbox__next']].forEach(function (p) {
 				var text = sec.getAttribute('data-l-' + p[0]);
@@ -182,6 +212,7 @@
 
 	function init() {
 		Array.prototype.forEach.call(document.querySelectorAll('video[data-chaos-trailer]'), setUpTrailer);
+		Array.prototype.forEach.call(document.querySelectorAll('video[data-chaos-clip]'), setUpClip);
 		Array.prototype.forEach.call(document.querySelectorAll('a[data-chaos-shot]'), function (a) {
 			a.addEventListener('click', function (e) {
 				if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) {

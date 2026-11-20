@@ -8,7 +8,12 @@ The recordings are not in git (docs/PROMO.md): --build reads them from a source 
 and `rec/clips/` (the raw 1920x1080 recordings the gallery frames come from). --check needs none of that.
 
   python3 -I website/tools/gen_site_media.py --build SRC_DIR    encode, grab the frames, write the manifest (ffmpeg)
+  python3 -I website/tools/gen_site_media.py --build-clips SRC_DIR   the looping mechanics clips (O687) from SRC_DIR/rec/loops/<id>.mp4
   python3 -I website/tools/gen_site_media.py --check            files exist, sizes under budget, sha256 as in the manifest
+
+The mechanics clips (O687, website/README.md "Mechanics clips") are short muted loops, one per slot of CLIPS, recorded
+by tools/ci/clip_tour.sh. They are optional: a clip not recorded yet is "planned" and is not an error; a clip that is
+there (clip-<id>.mp4 and its poster clip-<id>.jpg) must be in the manifest, under budget and with the manifest's sha256.
 
 The music of the trailer and the shorts is the game's own (client/tools/gen_music.py, docs/CREDITS.md); the clips are
 recordings of the game itself, so nothing third-party is in the committed media.
@@ -33,7 +38,25 @@ SHORTS = (
     ("short-boss", "short-boss-1080x1920.%s.mp4", 720, 1280, 30, 640, 8.0),
     ("short-rift", "short-rift-1080x1920.%s.mp4", 720, 1280, 30, 640, 12.0),
 )
-POSTER_WIDTH = {"trailer": 1280, "short": 540}
+POSTER_WIDTH = {"trailer": 1280, "short": 540, "clip": 960}
+# mechanics clips (O687): (id, start s in the recording, length s, poster second inside the cut). The ids are the slots of
+# plugins/chaos/media_lib.php chaos_media_action_slots() and the shots of client/overlay/modules/test_cliptour (SHOTS);
+# gen_site_media_clips_test.py holds the three lists equal. No sound; 960x540, 24 frames a second, H.264 main.
+CLIPS = (
+    ("loot-explosion", 0.0, 8.0, 3.0),
+    ("loot-beams", 0.0, 7.0, 3.0),
+    ("rift", 0.0, 8.0, 4.0),
+    ("pinnacle", 0.0, 8.0, 4.0),
+    ("passive-tree", 0.0, 7.0, 3.0),
+    ("ember-descent", 0.0, 8.0, 4.0),
+    ("infinity-tower", 0.0, 8.0, 4.0),
+    ("dungeon-cards", 0.0, 7.0, 3.0),
+    ("cosmetics", 0.0, 8.0, 4.0),
+    ("spell-effects", 0.0, 7.0, 3.0),
+)
+CLIP_SIZE = (960, 540)
+CLIP_CRF = 32
+CLIP_MAXRATE = 480  # k
 # gallery: (name, clip in SRC/rec/clips, second). The page's captions are in plugins/chaos/media_lib.php.
 GALLERY = (
     ("shot-boss", "boss_s.mp4", 11.2),
@@ -57,7 +80,12 @@ BUDGET_SHORT = 3 * 1000 * 1000
 BUDGET_POSTER = 160 * 1000
 BUDGET_SHOT_MIN = 60 * 1000
 BUDGET_SHOT_MAX = 300 * 1000
-BUDGET_TOTAL = 25 * 1000 * 1000
+BUDGET_TOTAL = 25 * 1000 * 1000  # trailer, shorts, posters and the gallery
+# the clips (O687): ten loops of 7 to 8 seconds at about 480 kb/s are about 450 KB each, so a loop may take 700 KB and a
+# poster 90 KB; the ten together at most 9 MB on top of the 25 MB above (the page stays under 34 MB)
+BUDGET_CLIP = 700 * 1000
+BUDGET_CLIP_POSTER = 90 * 1000
+BUDGET_CLIPS_TOTAL = 9 * 1000 * 1000
 
 
 def sha256(path):
@@ -82,6 +110,15 @@ def expected():
     return out
 
 
+def planned_clips():
+    """name -> (kind, size budget in bytes, minimum size) of every file a clip may have (optional files)."""
+    out = {}
+    for cid, _start, _len, _poster in CLIPS:
+        out["clip-%s.mp4" % cid] = ("clip", BUDGET_CLIP, 20 * 1000)
+        out["clip-%s.jpg" % cid] = ("clip-poster", BUDGET_CLIP_POSTER, 5 * 1000)
+    return out
+
+
 def check():
     problems = []
     try:
@@ -95,6 +132,17 @@ def check():
         print("gen_site_media: manifest.json has no 'files' table")
         return 1
     want = expected()
+    planned = planned_clips()
+    # a clip is there or planned: a half pair (video without poster) is a problem, a pair is a required file
+    recorded = 0
+    for cid, _s, _l, _p in CLIPS:
+        have = [n for n in ("clip-%s.mp4" % cid, "clip-%s.jpg" % cid) if os.path.isfile(os.path.join(MEDIA, n)) or n in files]
+        if len(have) == 2:
+            recorded += 1
+            for n in have:
+                want[n] = planned[n]
+        elif have:
+            problems.append("clip-%s: %s without its pair" % (cid, have[0]))
     for name in sorted(set(want) | set(files)):
         if name not in want:
             problems.append("%s: in the manifest but not in the generator" % name)
@@ -103,6 +151,7 @@ def check():
             problems.append("%s: not in the manifest" % name)
             continue
     total = 0
+    clip_total = 0
     for name, (kind, budget, minimum) in sorted(want.items()):
         path = os.path.join(MEDIA, name)
         if not os.path.isfile(path):
@@ -110,6 +159,8 @@ def check():
             continue
         size = os.path.getsize(path)
         total += size
+        if kind in ("clip", "clip-poster"):
+            clip_total += size
         if size > budget:
             problems.append("%s: %d bytes, budget %d" % (name, size, budget))
         if size < minimum:
@@ -120,11 +171,13 @@ def check():
                 problems.append("%s: manifest size %s, file %d" % (name, entry.get("size"), size))
             if entry.get("sha256") != sha256(path):
                 problems.append("%s: sha256 differs from the manifest (run --build)" % name)
-    extra = sorted(n for n in os.listdir(MEDIA) if n != "manifest.json" and n not in want) if os.path.isdir(MEDIA) else []
+    extra = sorted(n for n in os.listdir(MEDIA) if n != "manifest.json" and n not in want and n not in planned) if os.path.isdir(MEDIA) else []
     for n in extra:
         problems.append("%s: committed but not made by the generator" % n)
-    if total > BUDGET_TOTAL:
-        problems.append("total %d bytes, budget %d" % (total, BUDGET_TOTAL))
+    if total - clip_total > BUDGET_TOTAL:
+        problems.append("total %d bytes, budget %d" % (total - clip_total, BUDGET_TOTAL))
+    if clip_total > BUDGET_CLIPS_TOTAL:
+        problems.append("clips total %d bytes, budget %d" % (clip_total, BUDGET_CLIPS_TOTAL))
     if manifest.get("total") != total and not problems:
         problems.append("manifest total %s, files %d" % (manifest.get("total"), total))
     if problems:
@@ -132,7 +185,9 @@ def check():
         for p in problems:
             print("  " + p)
         return 1
-    print("gen_site_media: %d files, %.1f MB of %.0f MB, manifest matches" % (len(want), total / 1e6, BUDGET_TOTAL / 1e6))
+    print("gen_site_media: %d files, %.1f MB of %.0f MB (+ clips %.1f MB of %.0f MB: %d of %d recorded), manifest matches"
+          % (len(want) - 2 * recorded, (total - clip_total) / 1e6, BUDGET_TOTAL / 1e6, clip_total / 1e6, BUDGET_CLIPS_TOTAL / 1e6,
+             recorded, len(CLIPS)))
     return 0
 
 
@@ -183,9 +238,16 @@ def build(srcdir):
             sys.exit("missing source: " + src)
         print("grab", name)
         grab(src, os.path.join(MEDIA, name + ".jpg"), second, GALLERY_WIDTH, GALLERY_QUALITY, NAME_BOXES)
+    return write_manifest()
+
+
+def write_manifest():
+    """manifest.json from the files that are there: every file of expected() and every recorded clip pair."""
     files = {}
     total = 0
-    for name in sorted(expected()):
+    names = sorted(expected())
+    names += sorted(n for n in planned_clips() if os.path.isfile(os.path.join(MEDIA, n)))
+    for name in names:
         path = os.path.join(MEDIA, name)
         size = os.path.getsize(path)
         total += size
@@ -197,11 +259,47 @@ def build(srcdir):
     return check()
 
 
+def encode_clip(src, dst, start, length):
+    """A mechanics loop: no sound, 960x540, the name of the recorded test character blurred (the boxes of the gallery)."""
+    chain = ""
+    last = "0:v"
+    for i, (x, y, w, h) in enumerate(NAME_BOXES):
+        chain += "[%s]split[a%d][b%d];[b%d]crop=%d:%d:%d:%d,boxblur=6:3[c%d];[a%d][c%d]overlay=%d:%d[o%d];" % (
+            last, i, i, i, w, h, x, y, i, i, i, x, y, i)
+        last = "o%d" % i
+    chain += "[%s]scale=%d:%d:flags=lanczos,fps=24[out]" % (last, CLIP_SIZE[0], CLIP_SIZE[1])
+    run(["ffmpeg", "-loglevel", "error", "-y", "-ss", "%.2f" % start, "-t", "%.2f" % length, "-i", src,
+         "-filter_complex", chain, "-map", "[out]", "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(CLIP_CRF),
+         "-maxrate", "%dk" % CLIP_MAXRATE, "-bufsize", "%dk" % (CLIP_MAXRATE * 2), "-pix_fmt", "yuv420p", "-profile:v", "main",
+         "-map_metadata", "-", "-movflags", "+faststart", dst])
+
+
+def build_clips(srcdir):
+    loops = os.path.join(srcdir, "rec", "loops")
+    os.makedirs(MEDIA, exist_ok=True)
+    made = 0
+    for cid, start, length, poster_at in CLIPS:
+        src = os.path.join(loops, cid + ".mp4")
+        if not os.path.isfile(src):
+            print("not recorded: %s" % cid)
+            continue
+        out = os.path.join(MEDIA, "clip-%s.mp4" % cid)
+        print("encode", os.path.basename(out))
+        encode_clip(src, out, start, length)
+        grab(src, os.path.join(MEDIA, "clip-%s.jpg" % cid), start + poster_at, POSTER_WIDTH["clip"], 8, NAME_BOXES)
+        made += 1
+    if made == 0:
+        sys.exit("no recorded loop in " + loops)
+    return write_manifest()
+
+
 def main(argv):
     if argv == ["--check"]:
         return check()
     if len(argv) == 2 and argv[0] == "--build":
         return build(argv[1])
+    if len(argv) == 2 and argv[0] == "--build-clips":
+        return build_clips(argv[1])
     print(__doc__)
     return 2
 

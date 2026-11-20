@@ -30,6 +30,10 @@ Os [orbes](wiki:tab:orbs) mudam itens. Use o orbe no item, ou abra Economy > Cra
 
 > [tip] Itens únicos têm atributos fixos: nenhum orbe muda. Crie em itens com raridade.
 
+## Explosão de loot e raios
+
+Um abate lança o loot no chão ao redor do monstro, item por item, com um pequeno voo e uma faísca no pouso. Você e o seu grupo pegam primeiro; Loot all recolhe o que está por perto. Raios de luz marcam só os drops mais raros: Legendary, Divine, peças de conjunto e únicos. As duas coisas se ajustam na janela Ground Labels.
+
 ## Gemas e suportes
 
 Itens podem ter até {{gem.maxSockets}} [encaixes](wiki:gem:sockets) para [gemas](wiki:tab:gems). Suas magias aceitam [suportes](wiki:tab:supports), até {{support.sockets}} por magia, que mudam como elas funcionam.

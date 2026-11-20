@@ -27,6 +27,10 @@ Rifts are the main endgame content. Every rift is a new map, generated on the sp
 
 Rifts of tier {{rift.omenMinTier}} or more give fragments. {{rift.omenKeyCost}} fragments make an Omen Key, which opens an Omen guardian's arena. See [Omens](wiki:rift:omens). Above them are the [Ascended Omens](wiki:boss:ascended).
 
+## The Greater Rift
+
+Past tier {{rift.maxTier}} the rift never ends. A Greater Rift Key opens tier 16 and up. It drops from a tier {{rift.maxTier}} guardian or costs 150 Omen Fragments. The clock decides what the key becomes: a fast clear raises it by one to three tiers, a failed run lowers it by one. Every season keeps a ladder per class, alone and in a party, and the weekly boards list the best.
+
 ## The Atlas
 
 The [Rift Atlas](wiki:rift:atlas) is a map of bonuses for your rifts. Points come only from first completions: each theme and tier sealed, each tier without a death, each tier within its Swift time and each Omen guardian. That is {{atlas.points}} points in all. Spend them on small nodes, notables and one keystone.

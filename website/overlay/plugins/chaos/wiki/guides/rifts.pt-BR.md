@@ -27,6 +27,10 @@ Rifts são o principal conteúdo de fim de jogo. Cada rift é um mapa novo, gera
 
 Rifts de tier {{rift.omenMinTier}} ou mais dão fragmentos. {{rift.omenKeyCost}} fragmentos formam uma Omen Key, que abre a arena de um guardião Omen. Veja [Omens](wiki:rift:omens). Acima deles ficam os [Ascended Omens](wiki:boss:ascended).
 
+## O Greater Rift
+
+Depois do tier {{rift.maxTier}} o rift não acaba. Uma Greater Rift Key abre o tier 16 e acima. Ela cai de um guardião do tier {{rift.maxTier}} ou custa 150 Omen Fragments. O relógio decide no que a chave vira: uma vitória rápida sobe de um a três tiers, uma corrida falha desce um. Cada temporada tem um ranking por classe, solo e em grupo, e os quadros semanais mostram os melhores.
+
 ## O Atlas
 
 O [Rift Atlas](wiki:rift:atlas) é um mapa de bônus para os seus rifts. Os pontos vêm só de primeiras vezes: cada tema e tier vencido, cada tier sem morte, cada tier dentro do tempo Swift e cada guardião Omen. São {{atlas.points}} pontos no total. Gaste-os em nós pequenos, notáveis e um keystone.

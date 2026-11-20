@@ -30,6 +30,10 @@ There are {{item.uniques}} [uniques](wiki:tab:uniques), with fixed stats that no
 
 > [tip] Uniques have fixed stats: no orb changes them. Craft on items with a rarity.
 
+## Loot explosion and beams
+
+A kill throws its loot out onto the ground around the monster, item by item, with a small flight and a landing spark. You and your party pick it up first; Loot all gathers what lies near. Beams of light mark only the rarest drops: Legendary, Divine, set pieces and uniques. Both are set in the Ground Labels window.
+
 ## Gems and supports
 
 Gear can have up to {{gem.maxSockets}} [sockets](wiki:gem:sockets) for [gems](wiki:tab:gems). Your spells take [supports](wiki:tab:supports), up to {{support.sockets}} per spell, that change how they work.

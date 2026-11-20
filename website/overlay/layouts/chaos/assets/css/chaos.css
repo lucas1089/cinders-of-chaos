@@ -645,6 +645,32 @@ ol.chaos-build__spells { list-style: decimal inside; }
   .chaos-lightbox__next { right: 4px; }
   .chaos-lightbox__btn { background: rgba(23,20,26,.8); }
 }
+/* ---------------------------------------------------------------- news page and front page block (O687, plugins/chaos/news_lib.php) */
+.chaos-newsweek { margin: 0 0 24px; }
+.chaos-newsitem { padding: 12px 0 14px; border-bottom: 1px solid rgba(87,77,82,.35); }
+.chaos-newsitem__meta { font-size: 13px; color: var(--c-muted); margin-bottom: 4px; }
+.chaos-newsitem__kind { display: inline-block; padding: 0 8px; margin-right: 6px; font-size: 12px; line-height: 20px; color: var(--c-gold3);
+  background: var(--c-iron1); box-shadow: inset 0 0 0 1px var(--c-gold0); }
+.chaos-newsitem--fix .chaos-newsitem__kind { color: var(--c-text2); box-shadow: inset 0 0 0 1px var(--c-iron4); }
+.chaos-newsitem--balance .chaos-newsitem__kind { color: var(--c-text); box-shadow: inset 0 0 0 1px var(--c-iron4); }
+.chaos-newsitem--patch .chaos-newsitem__kind { color: var(--c-text); box-shadow: inset 0 0 0 1px var(--c-blood2); }
+.chaos-newsitem__title { font-size: 19px; margin: 0 0 6px; }
+.chaos-newsitem__text { margin: 0 0 6px; }
+.chaos-newsitem__points { margin: 0 0 6px; padding-left: 20px; color: var(--c-text2); }
+.chaos-newsitem__more { margin: 0; }
+.chaos-newsarchive > summary { cursor: pointer; font-family: var(--c-display); font-size: 18px; color: var(--c-gold3); padding: 8px 0; }
+.chaos-newshome__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.chaos-newshome__item .chaos-newsitem__text { color: var(--c-text2); }
+@media (max-width: 900px) { .chaos-newshome__list { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+
+/* ---------------------------------------------------------------- mechanics in action: short muted loops (O687, plugins/chaos/media_lib.php) */
+.chaos-action__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.chaos-clip { margin: 0; position: relative; background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron3); overflow: hidden; }
+.chaos-clip video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--c-black); object-fit: cover; }
+.chaos-clip figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; line-height: 1.25; font-size: 13px; color: var(--c-text);
+  background: linear-gradient(to top, rgba(5,4,5,.9), rgba(5,4,5,0)); pointer-events: none; }
+@media (max-width: 900px) { .chaos-action__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .chaos-action__grid { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
 @media (prefers-reduced-motion: reduce) {
   .chaos-shot img { transition: none; }
   .chaos-shot:hover img, .chaos-shot:focus-visible img { transform: none; }

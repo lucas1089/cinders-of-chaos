@@ -13,6 +13,8 @@ Ready-to-paste post texts are in pt-BR and en. Related: docs/BETA.md (the beta i
 | Server list banners, social share image, class and feature images | `.../assets/img/`; media kit `art/` | `gen_site_art.py` |
 | Media kit zip with a fact sheet (pt-BR, en) | `<site>/press/`, linked from the Creators page | `gen_media_kit.py` at install |
 | Web trailer (1280x720), 3 shorts (720x1280) and 8 screenshots for the front page, pt-BR and en | `.../assets/media/`; shown on the front page, `og:video` in link previews (O425) | `gen_site_media.py --build` from the montages and clips |
+| 10 looping mechanics clips (960x540, muted, 7 to 8 s) with posters for the front page section "The game in action" | `.../assets/media/clip-<id>.mp4` (planned, O687: not recorded yet) | `tools/ci/clip_tour.sh` records them, `gen_site_media.py --build-clips` encodes them (website/README.md "Mechanics clips (O687)") |
+| News page "Novidades" (the changes by week, pt-BR and en) | `page?plugin=chaos&p=news`, a block on the front page (O687) | `gen_changelog.py` from the patch notes and `website/tools/changelog_source.json` |
 | Creator program, creator codes, referral link | site Creators page; game | O320, referral |
 | Trailer 60 s (16:9 and 9:16), class short, world short (pt-BR, en) | built on demand, not committed (too big); see below | `website/tools/gen_promo_video.py` |
 

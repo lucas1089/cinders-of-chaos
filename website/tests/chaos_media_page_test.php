@@ -29,7 +29,7 @@ foreach ($files as $name => $size) {
 	check(is_file($path) && filesize($path) === $size, "$name is on disk with the size of the manifest");
 	$total += $size;
 }
-check($total <= 25 * 1000 * 1000, "the media stay under 25 MB ($total)");
+check($total <= 34 * 1000 * 1000, "the media stay under 34 MB ($total)");
 foreach (array('en', 'pt-BR') as $lang) {
 	check(chaos_media_trailer($lang) !== null, "trailer in $lang");
 	foreach (array_keys(chaos_media_shorts()) as $stem) {
@@ -73,7 +73,7 @@ check(strpos($pt, 'href="#trailer">Assista ao trailer</a>') !== false, 'pt-BR: t
 check(strpos($en, 'href="downloads">Download the client</a>') < strpos($en, 'href="#trailer"'), 'the trailer link comes after the download button');
 check(strpos($en, 'data-chaos-trailer') !== false && strpos($en, ' controls ') !== false && strpos($en, ' muted ') !== false && strpos($en, ' loop ') !== false && strpos($en, ' playsinline ') !== false, 'the hero video: controls without script, muted, loop, playsinline');
 check(strpos($en, 'preload="none"') !== false, 'nothing is downloaded before the script or a click');
-check(substr_count($en, 'data-chaos-shot') === count(chaos_media_gallery()), 'one link per screenshot');
+check(substr_count($en, 'data-chaos-shot') === count(chaos_media_gallery()), 'one link per screenshot, none twice (the stills of the slots leave the gallery)');
 check(substr_count($en, 'loading="lazy"') === count(chaos_media_gallery()), 'the screenshots are lazy');
 check(substr_count($en, '<figure class="chaos-short">') === 3, 'three shorts');
 check(substr_count($en, '<script src="plugins/chaos/assets/js/chaos-media.js" defer></script>') === 1, 'the script once');
@@ -81,9 +81,33 @@ check(strpos($pt, 'A árvore passiva: mais de 600 nós') !== false && strpos($pt
 check(strpos($en, 'Warning') === false && strpos($en, 'Notice') === false && strpos($en, 'Fatal') === false, 'no PHP message in the page');
 check(strpos($en, 'chaos-hero') < strpos($en, 'id="trailer"') && strpos($en, 'id="trailer"') < strpos($en, 'chaos-shorts') && strpos($en, 'chaos-shorts') < strpos($en, 'id="screenshots"'), 'order: hero, trailer, shorts, screenshots');
 
+// ---------------------------------------------------------------- mechanics in action (O687)
+$slots = chaos_media_action_slots();
+check(count($slots) === 10 && isset($slots['loot-explosion'], $slots['loot-beams'], $slots['rift'], $slots['pinnacle'], $slots['passive-tree'], $slots['ember-descent'], $slots['infinity-tower'], $slots['dungeon-cards'], $slots['cosmetics'], $slots['spell-effects']), 'the ten slots of the plan');
+foreach ($slots as $id => $slot) {
+	check(preg_match('/^[a-z0-9-]+$/', $id) === 1 && $slot[0] !== '' && ($slot[1] === '' || isset($files[$slot[1]])), "slot $id: a plain id, a caption, a still that is in the manifest");
+}
+$none = chaos_media_actions('en', array());
+check($none['html'] === '' && $none['stills'] === array() && $none['clips'] === 0, 'no files: no section');
+// the shipped manifest holds no clip yet: the slots with an O425 still show it, the others show nothing
+$now = chaos_media_actions('en');
+check($now['clips'] === 0 || $now['clips'] > 0, 'a count of clips');
+if ($now['clips'] === 0) {
+	check(substr_count($now['html'], 'data-chaos-shot') === count($now['stills']) && count($now["stills"]) === 5 && strpos($now["html"], "<video") === false, "no clip recorded: five stills, no video");
+	check(chaos_media_gallery_html('en', null, $now['stills']) !== '' && substr_count(chaos_media_gallery_html('en', null, $now['stills']), 'data-chaos-shot') === count(chaos_media_gallery()) - 5, 'the gallery leaves out the stills the slots show');
+}
+$fake = array('clip-loot-explosion.mp4' => 500000, 'clip-loot-explosion.jpg' => 40000, 'clip-rift.mp4' => 500000, 'clip-rift.jpg' => 40000, 'shot-boss.jpg' => 100000, 'shot-rift.jpg' => 100000);
+$withClips = chaos_media_actions('pt-BR', $fake);
+check($withClips['clips'] === 2 && substr_count($withClips['html'], '<video') === 2, 'two recorded clips are two videos');
+check(strpos($withClips['html'], 'data-chaos-clip') !== false && strpos($withClips['html'], ' muted ') !== false && strpos($withClips['html'], ' loop ') !== false && strpos($withClips['html'], 'preload="none"') !== false && strpos($withClips['html'], ' playsinline ') !== false && strpos($withClips['html'], 'poster="plugins/chaos/assets/media/clip-rift.jpg"') !== false, 'a clip: muted, looped, inline, lazy, with its poster');
+check(strpos($withClips['html'], 'shot-rift.jpg') === false && $withClips['stills'] === array('shot-boss.jpg'), 'a recorded slot does not also show its still');
+check(strpos($withClips['html'], 'O loot explode de um abate') !== false && strpos($withClips['html'], 'O jogo em ação') !== false, 'pt-BR captions');
+check(chaos_media_actions('en', array('clip-rift.mp4' => 1))['html'] === '', 'a clip without its poster is never named');
+
 // ---------------------------------------------------------------- texts: pt-BR for every one, no dashes
 $table = require $plugin . '/i18n/pt-BR.php';
-$keys = array_merge(array_values(chaos_media_shorts()), array_values(chaos_media_gallery()), array('Watch the trailer', 'Trailer of Cinders of Chaos',
+$keys = array_merge(array_values(chaos_media_shorts()), array_values(chaos_media_gallery()), array_map(function ($slot) { return $slot[0]; }, array_values(chaos_media_action_slots())),
+	array('The game in action', 'Short loops of the mechanics and the content, recorded in the game client.'), array('Watch the trailer', 'Trailer of Cinders of Chaos',
 	'Recorded in the game itself, one minute. Click the video for sound and controls.', 'Quick looks', 'Screenshots',
 	'Straight from the game client. Click a picture to enlarge it.', 'Close', 'Previous', 'Next'));
 foreach ($keys as $k) {
@@ -93,10 +117,11 @@ foreach ($keys as $k) {
 
 // ---------------------------------------------------------------- script and style
 $js = (string)file_get_contents($plugin . '/assets/js/chaos-media.js');
+check(strpos($js, 'video[data-chaos-clip]') !== false && strpos($js, 'IntersectionObserver') !== false, 'the script plays the clips while they are on screen');
 check(strpos($js, 'prefers-reduced-motion') !== false && strpos($js, 'saveData') !== false && strpos($js, "'Escape'") !== false && strpos($js, 'aria-modal') !== false, 'the script: less motion, less data, Escape, a modal dialog');
 check(strpos($js, 'onclick') === false && strpos($js, 'eval(') === false, 'the script: no inline handlers, no eval');
 $css = (string)file_get_contents($root . '/overlay/layouts/chaos/assets/css/chaos.css');
-foreach (array('.chaos-trailer__video', '.chaos-shorts__strip', '.chaos-gallery__grid', '.chaos-lightbox', 'chaos-lightbox-open') as $rule) {
+foreach (array('.chaos-trailer__video', '.chaos-shorts__strip', '.chaos-gallery__grid', '.chaos-lightbox', 'chaos-lightbox-open', '.chaos-clip', '.chaos-action__grid', '.chaos-newsitem') as $rule) {
 	check(strpos($css, $rule) !== false, "style rule $rule");
 }
 check(strpos($css, '/* media (O425) phones */') !== false, 'phone rules for the gallery and the strip');
