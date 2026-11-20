@@ -25,7 +25,9 @@ return {
 	-- utility; counted power: the mean gain of all Form I rows and of all Form II rows is +3% each, within `countedTol`
 	formBand = {one = {-0.05, 0.08}, five = {-0.05, 0.12}, best = 0.08, utilityBelow = -0.03, twinGap = 0.02, counted = 0.03, countedTol = 0.015},
 	-- combos (design 4.1, owner 2026-11-20: 10% to 20% a combo): the typical rotation gains `total`, opening at the average rank
-	-- `fromRank` (design 4.2: a class combo opens at rank 5, an element reaction is free) and full at `toRank`
+	-- `fromRank` (design 4.2: a class combo opens at rank 5, an element reaction is free) and full at `toRank`. Phase 6: the model COUNTS
+	-- the gain from the rows of spell_combos_config.lua (triggerShare 0.40 x the mean bonus of the 13 rows = +6.0%); `total` here is the
+	-- number the committed health curve was derived with, and --check fails when the two differ by more than 0.3 points
 	combos = {total = 0.06, fromRank = 3, toRank = 10},
 	-- awakening (design 3.1): spells awakened on the typical character at a level (a straight line between the points, 0 below the first), +3% damage each
 	awakening = {perSpell = 0.03, {1900, 0}, {2100, 1}, {2300, 1.5}, {2500, 2}},

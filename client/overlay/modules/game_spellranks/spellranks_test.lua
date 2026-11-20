@@ -28,7 +28,8 @@ local sent, events = {}, {}
 local online = true
 _G.tr = function(s, ...) if select('#', ...) > 0 then return string.format(s, ...) end return s end
 _G.json = { encode = function(t) return t end, decode = function(s) return s end }
-_G.g_clock = { seconds = function() return 1000 end }
+local nowMs = 5000
+_G.g_clock = { seconds = function() return 1000 end, millis = function() return nowMs end }
 _G.g_ui = { importStyle = function() end, createWidget = function(style, parent) local c = widget() parent.children[#parent.children + 1] = c return c end }
 _G.g_game = {
   isOnline = function() return online end,
@@ -38,7 +39,8 @@ _G.g_game = {
 local handler
 _G.ProtocolGame = { registerExtendedJSONOpcode = function(op, fn) handler = fn end, unregisterExtendedJSONOpcode = function() end }
 _G.connect, _G.disconnect = function() end, function() end
-_G.scheduleEvent = function(fn, ms) events[#events + 1] = fn return #events end
+local eventMs = {}
+_G.scheduleEvent = function(fn, ms) events[#events + 1] = fn eventMs[#eventMs + 1] = ms return #events end
 _G.removeEvent = function() end
 _G.AnchorHorizontalCenter = 1
 local boxes = {}
@@ -51,6 +53,7 @@ _G.modules.game_spellbook = { onRanksChanged = function() book = book + 1 end }
 
 dofile(here .. 'forms_data.lua')
 dofile(here .. 'ranklogic.lua')
+dofile(here .. 'combologic.lua')
 dofile(here .. 'spellranks.lua')
 
 init()
@@ -130,6 +133,66 @@ eq(#sent, 1, 'the chosen Form is already chosen: nothing sent') -- pick 1 of tie
 -- the switch goes off again: everything hides
 msg('pick', { ok = false, why = 'off' })
 eq(isOn(), false, 'an off answer switches the tab off') eq(getPickableCount(), 0, 'badge 0')
+
+-- combos (phase 6): the label on the engine's animated text and one of two chimes, the throttle, the translation
+local texts, plays, mapAdds, warnings = {}, {}, {}, {}
+_G.g_logger = { warning = function(m) warnings[#warnings + 1] = m end }
+_G.AnimatedText = { create = function()
+  local t = { }
+  function t:setText(v) self.text = v end
+  function t:setColor(v) self.color = v end
+  texts[#texts + 1] = t
+  return t
+end }
+_G.g_map = { addAnimatedText = function(t, pos) mapAdds[#mapAdds + 1] = { t = t, pos = pos } end }
+_G.SoundChannels = { Effect = 1 }
+_G.g_resources = { fileExists = function(f) return not f:find('missing', 1, true) end }
+local channel = { play = function(self, file, loops, gain) plays[#plays + 1] = { file = file, gain = gain } return {} end }
+_G.g_sounds = { getChannel = function() return channel end }
+local savedTr = _G.tr
+_G.tr = function(s, ...) if s == 'Steam Burst' then return 'Explosão de Vapor' end return savedTr(s, ...) end
+nowMs = 20000
+msg('combo', { id = 'steam_burst', n = 'Steam Burst', x = 1000, y = 1001, z = 7 })
+eq(#mapAdds, 1, 'a label was added to the map') eq(mapAdds[1].pos.x, 1000, 'over the target tile') eq(mapAdds[1].pos.z, 7, 'on its floor')
+eq(mapAdds[1].t.text, 'Explosão de Vapor', 'the text is the pt-BR name through tr()') eq(mapAdds[1].t.color, 143, 'the colour of the combo')
+eq(#plays, 1, 'a chime played') eq(plays[1].file, '/modules/game_spellranks/sounds/combo_a.ogg', 'the reaction chime')
+nowMs = 20100
+msg('combo', { id = 'meat_grinder', n = 'Meat Grinder', x = 1000, y = 1001, z = 7 })
+eq(#mapAdds, 1, 'a second label within 200 ms is thrown away') eq(#plays, 1, 'and its chime')
+nowMs = 20400
+msg('combo', { id = 'meat_grinder', n = 'Meat Grinder', x = 1000, y = 1001, z = 7 })
+eq(#mapAdds, 2, 'a label 300 ms later shows') eq(plays[2].file, '/modules/game_spellranks/sounds/combo_b.ogg', 'the signature chime')
+nowMs = 21000
+msg('combo', { id = 5, x = 1, y = 1, z = 7 })
+msg('combo', 'junk')
+eq(#mapAdds, 2, 'junk shows nothing') eq(#plays, 2, 'and plays nothing')
+-- a client with no animated text or no sound: no error, the other half still works
+local savedAnim = _G.AnimatedText
+_G.AnimatedText = nil
+nowMs = 22000
+msg('combo', { id = 'overload', x = 5, y = 6, z = 7 })
+eq(#mapAdds, 2, 'no AnimatedText: no label') eq(#plays, 3, 'but the chime plays')
+_G.AnimatedText = savedAnim
+local savedSounds = _G.g_sounds
+_G.g_sounds = nil
+nowMs = 23000
+msg('combo', { id = 'overload', x = 5, y = 6, z = 7 })
+eq(#mapAdds, 3, 'no sound support: the label shows') eq(#plays, 3, 'no chime') eq(#warnings, 1, 'one warning, once')
+nowMs = 24000
+msg('combo', { id = 'overload', x = 9, y = 6, z = 7 })
+eq(#warnings, 1, 'the warning is not repeated')
+_G.g_sounds = savedSounds
+-- an engine that throws: nothing escapes
+_G.g_map.addAnimatedText = function() error('boom') end
+nowMs = 25000
+msg('combo', { id = 'overload', x = 1, y = 6, z = 7 })
+eq(#plays, 4, 'a failing label does not stop the chime') eq(#warnings, 2, 'and is logged')
+_G.tr = savedTr
+
+-- the timer asks rarely: the server pushes ranks now
+local longest = 0
+for _, ms in ipairs(eventMs) do if ms > longest then longest = ms end end
+eq(longest >= 300000, true, 'the fallback poll is every 5 minutes or more (the server pushes `rank`)')
 
 -- logout clears
 terminate()

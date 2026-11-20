@@ -237,6 +237,27 @@ local mon3 = newMonster(511, 1000, 100)
 kill(mon3, {[200] = 1000}, 100, 1e15)
 near(st.sp[200] - before, 0.05, 1e-9, "a boss kill pays at most 3 minutes of K")
 
+-- phase 6: a rank-up is pushed to the client at once, with the switch on only (the client polls `open` rarely)
+sent = {}
+st.sp[200], st.rank[200] = P.cumCost(9, cfg) - 1e-6, 8
+kill(newMonster(514, 1000, 100), {[200] = 1000}, 100, 1e12)
+ok(st.rank[200] >= 9, "the rank rose again")
+eq(#sent, 0, "switch off: no rank message")
+cfg.enabled = true
+sent = {}
+st.sp[200], st.rank[200] = P.cumCost(10, cfg) - 1e-6, 9
+kill(newMonster(515, 1000, 100), {[200] = 1000}, 100, 1e12)
+cfg.enabled = false
+eq(#sent, 1, "switch on: one rank message for the one rank-up")
+eq(sent[1].action, "rank", "a rank message")
+eq(sent[1].opcode, 168, "on opcode 168")
+local pushed = sent[1].data.s[1]
+eq(pushed[1], 200, "of Bolt")
+eq(pushed[2], st.rank[200], "its new rank")
+local _, intoNow, costNow = P.rankOf(st.sp[200], R.catalog[200].scale, cfg)
+near(pushed[3], intoNow, 0.001, "SP into the rank, as the state message gives it")
+near(pushed[4], costNow, 0.001, "SP the next rank costs")
+
 -- catch-up: a spell 5 ranks under the best of its weight earns double
 st.sp[201], st.rank[201] = 0, 0 -- Wave weight band2
 local waveBefore = st.sp[201]

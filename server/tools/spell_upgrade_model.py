@@ -21,7 +21,7 @@ THE MODEL. The typical character hunts at the rate of progression_model.lua (min
 (16%) of the hunt damage, so it earns SP at 0.16 an hour of hunting (an SP is one hour of kill value at full share), and a rank costs
 c x r^1.5 SP (42 SP for 20 ranks, spell_ranks_config.lua). The rank of the rotation's average spell is `avgRank` of that. A rank gives
 +0.9% damage and a cooldown cut worth `cooldownWorth` of itself; Forms give 0.3% an average rank (6% at 20); combos give `combos.total`
-from the average rank 3 to 10; awakening gives 3% a spell by level. P is their product. A class has `share` of its damage as spell
+(counted from the rows of spell_combos_config.lua: the share of the spell damage on a combo hit x the mean row bonus) from the average rank 3 to 10; awakening gives 3% a spell by level. P is their product. A class has `share` of its damage as spell
 damage (class_dps_model.py's measured table), so its damage grows by 1 + share x (P - 1); H = 1 + classShare x (P - 1) so the median
 class meets today's kill times. Checked against the design table of 5.3 (the old derivation script was never committed): rank, P and H
 of every row to the digits of the table, except where the owner's 10-20% combos (design 4.2) moved P by about 1%.
@@ -45,6 +45,7 @@ SERVER = os.path.normpath(os.path.join(HERE, '..'))
 REPO = os.path.normpath(os.path.join(SERVER, '..'))
 RANKS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_ranks_config.lua')
 BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_upgrade_balance_config.lua')
+COMBOS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_combos_config.lua')
 PROGRESSION = os.path.join('tools', 'progression_model.lua')
 MEASURED = os.path.join(SERVER, 'data', 'spells', 'class_dps_measured.csv')
 LEVELS = (100, 500, 1000)
@@ -191,6 +192,63 @@ def ranks_config(path=RANKS):
     return _CACHE[key]
 
 
+def combos_config(path=COMBOS):
+    """the combo rows of spell_combos_config.lua (O686 phase 6): [(id, bonus, weight)], the band, and the model block. The typical gain of
+    the combos is counted from them: triggerShare x the mean bonus weighted by `weight`"""
+    key = ('combos', path)
+    if key not in _CACHE:
+        t = _read(path)
+        rows = []
+        for chunk in t.split('{id = "')[1:]:  # one chunk a row: the id, then (past the nested spell lists) the bonus and the weight
+            m = re.search(r'bonus = ([0-9.]+), weight = ([0-9.]+)', chunk)
+            rows.append((chunk.split('"', 1)[0], float(m.group(1)), float(m.group(2))))
+        model = _block(t, 'model')
+        band = _block(t, 'band')
+
+        def num(body, name):
+            return float(re.search(r'\b' + name + r' = (-?[0-9.]+)', body).group(1))
+        _CACHE[key] = {
+            'rows': rows,
+            'band': (num(band, 'min'), num(band, 'max')),
+            'model': {k: num(model, k) for k in ('triggerShare', 'typicalMax', 'bestMax')},
+        }
+    return _CACHE[key]
+
+
+def combos_total(path=COMBOS):
+    """the typical rotation's gain from the combos: the share of its spell damage on a combo hit x the mean bonus of the rows"""
+    c = combos_config(path)
+    w = sum(r[2] for r in c['rows'])
+    mean = sum(r[1] * r[2] for r in c['rows']) / w
+    return c['model']['triggerShare'] * mean
+
+
+def combos_best(path=COMBOS):
+    c = combos_config(path)
+    return c['model']['triggerShare'] * max(r[1] for r in c['rows'])
+
+
+def combos_problems(path=COMBOS):
+    bad = []
+    c = combos_config(path)
+    lo, hi = c['band']
+    if len(c['rows']) != 13:
+        bad.append('combos: %d rows in spell_combos_config.lua, the design has 13' % len(c['rows']))
+    for rid, bonus, weight in c['rows']:
+        if not lo - 1e-9 <= bonus <= hi + 1e-9:
+            bad.append('combo %s: bonus %.0f%% is outside %.0f%% to %.0f%% (owner 2026-11-20)' % (rid, bonus * 100, lo * 100, hi * 100))
+    typical, best = combos_total(path), combos_best(path)
+    if typical > c['model']['typicalMax'] + 1e-9:
+        bad.append('combos: the typical rotation gains %.1f%%, the limit is %.1f%%' % (typical * 100, c['model']['typicalMax'] * 100))
+    if best > c['model']['bestMax'] + 1e-9:
+        bad.append('combos: the best legal rotation gains %.1f%%, the limit is %.1f%%' % (best * 100, c['model']['bestMax'] * 100))
+    expected = balance_config()['combos']['expected']
+    if abs(typical - expected) > 0.003:
+        bad.append('combos: the rows count %.2f%% for the typical rotation, spell_upgrade_balance_config.lua `combos.total` says %.2f%% (within 0.3 points); '
+                   'the health curve was derived from the second: change one and run --derive' % (typical * 100, expected * 100))
+    return bad
+
+
 def balance_config(path=BALANCE):
     key = ('balance', path)
     if key not in _CACHE:
@@ -209,7 +267,10 @@ def balance_config(path=BALANCE):
             'avg': {k: num(avg, k) for k in ('from', 'to', 'fromLevel', 'toLevel')},
             'cooldownWorth': num(t, 'cooldownWorth'),
             'formsTotal': num(_block(t, 'forms'), 'total'),
-            'combos': {k: num(comb, k) for k in ('total', 'fromRank', 'toRank')},
+            # `total` is counted from the combo rows (spell_combos_config.lua, phase 6); the balance config's own number is what the
+            # committed health curve was derived with (`expected`) and --check holds the two together
+            'combos': dict({k: num(comb, k) for k in ('fromRank', 'toRank')}, expected=num(comb, 'total'),
+                           total=combos_total() if os.path.exists(COMBOS) else num(comb, 'total')),
             'awakening': {'perSpell': num(awake, 'perSpell'), 'steps': _pairs(awake)},
             'classShare': num(t, 'classShare'), 'shareTol': num(t, 'shareTol'), 'healthStep': num(t, 'healthStep'),
             'limits': {k: num(lim, k) for k in ('killTime', 'killTimeOneTarget', 'killTimeFiveTargets', 'healthTol', 'refXpTol',
@@ -679,6 +740,8 @@ def problems():
             bad.append('refXpPerHour at level %d: %d in spell_ranks_config.lua, progression_model.lua says %d' % (lv, v, d))
     # the Form band of the design (2.1), from the real planner and forms.csv
     bad.extend(form_problems())
+    # the combos (design 4.1 and 4.2, phase 6): every row 10-20%, the typical and the best rotation inside their limits
+    bad.extend(combos_problems())
     # the no-upgrades character as the design states
     for lv, pct in b['noUpgradesXp']:
         d = no_upgrades_xp(int(lv))

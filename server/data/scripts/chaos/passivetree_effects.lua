@@ -541,6 +541,14 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if ranks and ranks.enabled and ranks.enabled() then
 			f1 = f1 * ranks.hitFactor(attacker, creature, origin, primaryType)
 			f2 = f2 * ranks.hitFactor(attacker, creature, origin, secondaryType)
+			-- O686 phase 6: a spell combo (spell_combos.lua) gives the first hit of the second spell +10% to +20% of the ranked hit
+			local combos = rawget(_G, "ChaosSpellCombos")
+			if combos and combos.hitFactor then
+				local cf = combos.hitFactor(attacker, creature, origin, primaryType, secondaryType, primaryDamage, secondaryDamage)
+				if cf ~= 1 then
+					f1, f2 = f1 * cf, f2 * cf
+				end
+			end
 		end
 		if f1 ~= 1 then
 			primaryDamage = scale(primaryDamage, f1)

@@ -58,6 +58,34 @@ b['combos']['total'] = saved
 near(SU.power(2500) / SU.power(2500, {'rank': True, 'forms': True, 'combos': True, 'awakening': False}), 1.06, 0.001, 'awakening at 2500 is 6%')
 near(SU.parts_at(2500)['rank'], 1.246, 0.005, 'rank part at the cap is +24.6%')
 near(SU.parts_at(2500)['forms'], 1.06, 1e-9, 'Forms part at the cap is +6%')
+
+# ---- the combos are counted from spell_combos_config.lua (phase 6)
+cb = SU.combos_config()
+check(len(cb['rows']) == 13, '13 combo rows are read')
+check(all(cb['band'][0] - 1e-9 <= bonus <= cb['band'][1] + 1e-9 for _, bonus, _ in cb['rows']), 'every row is 10% to 20%')
+near(SU.combos_total(), 0.06, 0.003, 'the rows count +6% for the typical rotation (design 5.1)')
+near(SU.combos_best(), 0.08, 1e-9, 'the best legal rotation gains +8% (design 4.1)')
+near(SU.parts_at(2500)['combos'], 1 + SU.combos_total(), 1e-9, 'the combos part at the cap is the counted total')
+near(SU.parts_at(100)['combos'], 1.0, 1e-9, 'no combos at the first levels (average rank under 3)')
+check(SU.combos_problems() == [], 'the committed combo rows pass: %s' % SU.combos_problems())
+import tempfile  # noqa: E402
+text = open(SU.COMBOS, encoding='utf-8').read()
+with tempfile.TemporaryDirectory() as tmp:
+    def broken(name, old, new):
+        path = os.path.join(tmp, name)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text.replace(old, new, 1))
+        return SU.combos_problems(path)
+    check(any('steam_burst' in x and 'outside' in x for x in broken('a.lua', 'bonus = 0.10, weight = 3', 'bonus = 0.25, weight = 3')),
+          'a 25% row fails --check')
+    check(any('steam_burst' in x and 'outside' in x for x in broken('b.lua', 'bonus = 0.10, weight = 3', 'bonus = 0.05, weight = 3')),
+          'a 5% row fails --check')
+    check(any('typical rotation' in x for x in broken('c.lua', 'triggerShare = 0.40', 'triggerShare = 0.50')),
+          'a trigger share of 50% makes the typical gain too big')
+    check(any('best legal' in x for x in broken('d.lua', 'triggerShare = 0.40', 'triggerShare = 0.50')),
+          'and the best rotation too')
+    check(any('rows count' in x for x in broken('f.lua', 'weight = 3,', 'weight = 30,')),
+          'weights that move the counted gain away from the committed one fail')
 for lv in (100, 500, 1000, 2500):
     check(SU.power(lv, {'rank': True, 'forms': False, 'combos': False, 'awakening': False}) <= SU.power(lv), 'parts only add at level %d' % lv)
     check(SU.derived_health(lv, {'rank': True, 'forms': True, 'combos': False, 'awakening': False}) <= SU.derived_health(lv), 'fewer parts, not more H')

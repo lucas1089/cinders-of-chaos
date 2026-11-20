@@ -5,7 +5,8 @@
 --   server -> client  state {on, v, s = [[spell id, rank, SP into the rank, SP the next rank costs (0 at the top)], ...]}
 --                     forms {v, f = [[spell id, Form I pick, Form II pick], ...]}   (picks 0 / 1 / 2, only spells with a pick)
 --                     pick {ok, why, price, spell, tier, pick, f1, f2}
---                     rank {...}  one spell changed (same entry as a state row, or {s = [...]}); the server sends none yet
+--                     rank {...}  one spell changed (same entry as a state row, or {s = [...]}); sent at a rank-up since phase 6
+--                     combo {id, n, x, y, z}  a spell combo fired (combologic.lua)
 -- The switch: spell_ranks_config.lua `enabled`. `state.on` false, no state at all, or a pick answered `off` means the
 -- switch is off: the client shows nothing new (ChaosRankLogic.isOn). Design: docs/SPELL_UPGRADES.md sections 1.5, 2.4, 6.
 -- Plain Lua 5.1 / LuaJIT / 5.3, no globals but ChaosRankLogic.

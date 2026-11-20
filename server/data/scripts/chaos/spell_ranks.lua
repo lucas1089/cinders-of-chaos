@@ -21,6 +21,8 @@
 -- Protocol (JSON {action, data}) on ChaosOpcodes.spellRanks = 168, read only:
 --   client -> server  open
 --   server -> client  state {on, v, s = [[spell id, rank, SP into the rank, SP the next rank costs], ...]}  (spells with SP only)
+--                     rank {s = [[spell id, rank, into, cost]]}  at a rank-up, with the switch on (phase 6: the client polls `open` rarely)
+--                     forms {v, f}, pick {...} (spell_forms.lua), combo {id, n, x, y, z} (spell_combos.lua, phase 6)
 -- Assumed engine API (TFS 1.4.2): CreatureEvent login/logout/extendedopcode, EventCallback onGainExperience, GlobalEvent
 -- startup/think, TalkAction, Player:get/setStorageValue/getAccountId/getLevel/sendTextMessage, Creature:getMaxHealth/getMaster,
 -- db.query/asyncQuery/storeQuery. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -249,6 +251,12 @@ local function rankUp(player, st, sid, newRank)
 	end
 	if not st.tester then
 		echoWrite(st.accountId, sid, newRank)
+	end
+	-- phase 6: the client hears of a rank-up at once (the Upgrades tab and the rank bars), so it polls `open` rarely (README "Spell combos")
+	if cfg.enabled == true and Chaos.send then
+		local m = R.catalog[sid]
+		local rank, into, nextCost = P.rankOf(st.sp[sid] or 0, m.scale, cfg)
+		Chaos.send(player, OPCODE, "rank", {s = {{sid, rank, floor(into * 1000) / 1000, floor(nextCost * 1000) / 1000}}})
 	end
 end
 

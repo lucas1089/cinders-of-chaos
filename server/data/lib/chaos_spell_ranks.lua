@@ -79,7 +79,8 @@ function R.hitFactor(attacker, creature, origin, ctype)
 	if not spellId then
 		return 1
 	end
-	local pvp = creature and creature.isPlayer and creature:isPlayer() and creature ~= attacker
+	-- PvP is a hit on another player; a heal on an ally (a player too) is no PvP and keeps the whole rank (phase 6 fix)
+	local pvp = ctype ~= COMBAT_HEALING and creature and creature.isPlayer and creature:isPlayer() and creature ~= attacker
 	return R.factor(attacker, spellId, ctype == COMBAT_HEALING, pvp)
 end
 

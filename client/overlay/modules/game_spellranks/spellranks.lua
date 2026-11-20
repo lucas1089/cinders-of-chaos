@@ -10,12 +10,17 @@
 --   fill(panel, spell)          draws the Upgrades tab into the SpellUpgrades widget of the details panel
 --   ask(force)                  asks the server for the state (on opening the Spellbook), at most every few seconds
 -- The hub menu's Spellbook card shows getPickableCount() (client_chaos_topbar CARD_POINTS): the spells with a Form to pick.
+-- Combos (phase 6): the server's `combo {id, n, x, y, z}` becomes a short label over the target (the engine's animated text, in the
+-- colour of the combo) and one of two chimes (sounds/combo_a.ogg for an element reaction, combo_b.ogg for a signature combo, from
+-- tools/gen_combo_sounds.py). The rules and the throttle are combologic.lua (tested). A rank-up arrives as a `rank` message, so the
+-- timer below only asks again now and then, as a fallback.
 
 local L = ChaosRankLogic
+local CL = ChaosComboLogic
 local OPCODE = L.OPCODE
 
 local ASK_GAP = 5          -- seconds between two asks from the client (the server allows one per 2 s)
-local POLL_SECONDS = 60    -- while the switch is on: ranks move with every kill, the server sends no push yet
+local POLL_SECONDS = 300   -- while the switch is on: a fallback only, the server pushes a `rank` message at every rank-up (phase 6)
 local START_DELAY = 6000   -- ms after login before the first ask
 
 local state                -- L.cleanState of the last `state`, nil before it (or the switch is off)
@@ -29,6 +34,8 @@ local askedAt = -100
 local pollEvent, startEvent
 local lastBadge = -1
 local onPickClick      -- a click on a Form button (below)
+local comboGate = CL.newGate()
+local soundWarned = false
 
 local GOLD, DIM, GOOD, BAD = '#e8b84a', '#8c8070', '#4fd07f', '#e03a1e'
 local CELL_ON, CELL_OFF = '#e8b84a', '#1a1416'
@@ -103,6 +110,55 @@ local function refreshBadge()
   lastBadge = n
   local top = modules and modules.client_chaos_topbar
   if top and top.ChaosTopBar and top.ChaosTopBar.refresh then pcall(top.ChaosTopBar.refresh) end
+end
+
+-- ---------------------------------------------------------------- combos (phase 6)
+-- the label over the target: the engine's animated text, the same path as the damage numbers (no new engine call). false when the client
+-- has no such text (the label is skipped, the chime still plays)
+local function drawLabel(c, text)
+  if not (AnimatedText and AnimatedText.create and g_map and g_map.addAnimatedText) then return false end
+  local ok, err = pcall(function()
+    local t = AnimatedText.create()
+    t:setText(text)
+    t:setColor(c.color)
+    g_map.addAnimatedText(t, c.pos)
+  end)
+  if not ok and g_logger then g_logger.warning('[spellranks] combo label: ' .. tostring(err)) end
+  return ok
+end
+
+-- one of the two chimes on the Effect channel (as the loot filter plays its rule sounds; needs base patch 0032, else silence)
+local function playCombo(file)
+  if not g_sounds then
+    if not soundWarned and g_logger then
+      soundWarned = true
+      g_logger.warning('[spellranks] this client has no sound support (g_sounds): combo chimes are not played')
+    end
+    return false
+  end
+  if g_resources and g_resources.fileExists then
+    local ok, there = pcall(g_resources.fileExists, file)
+    if ok and not there then return false end
+  end
+  local channel = g_sounds.getChannel and SoundChannels and g_sounds.getChannel(SoundChannels.Effect)
+  local ok
+  if channel then
+    ok = pcall(channel.play, channel, file, 0, 1.0)
+  else
+    ok = pcall(g_sounds.play, file, 0, 1.0)
+  end
+  return ok
+end
+
+-- a `combo` message: label and chime. The server only sends it while the switch is on, so no state is needed. true when it showed.
+function showCombo(data)
+  local c = CL.clean(data)
+  if not c then return false end
+  local ms = g_clock and g_clock.millis and g_clock.millis() or 0
+  if not CL.allow(comboGate, c, ms) then return false end
+  drawLabel(c, CL.labelText(c, tr))
+  playCombo(c.sound)
+  return true
 end
 
 -- ---------------------------------------------------------------- the Upgrades tab
@@ -343,6 +399,8 @@ local function onExtendedOpcode(protocol, opcode, buffer)
       local book = modules and modules.game_spellbook
       if book and book.onRanksChanged then pcall(book.onRanksChanged) end
     end
+  elseif msg.action == 'combo' then
+    showCombo(data)
   elseif msg.action == 'pick' then
     local res = L.cleanPick(data)
     if not res then return end
@@ -383,6 +441,7 @@ end
 local function onGameEnd()
   state, picks, lastPick, message, panel, shownSpell, shownId = nil, {}, nil, nil, nil, nil, nil
   askedAt, lastBadge = -100, -1
+  comboGate = CL.newGate()
   if startEvent then removeEvent(startEvent); startEvent = nil end
   if pollEvent then removeEvent(pollEvent); pollEvent = nil end
 end

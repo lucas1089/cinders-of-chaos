@@ -1,6 +1,6 @@
 # Spell upgrades: design, O686 phase 1
 
-Status: design written, owner answered 2026-11-20. Phase 2 (rank core), phase 3 (monster health curve H and the balance models) and phase 4 (Forms) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3 or 4 moved a number of the first design, the text says so ("Phase 3" and "Phase 4" notes).
+Status: design written, owner answered 2026-11-20. Phase 2 (rank core), phase 3 (monster health curve H and the balance models), phase 4 (Forms), phase 5 (client) and phase 6 (combos) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3, 4 or 6 moved a number of the first design, the text says so ("Phase 3", "Phase 4" and "Phase 6" notes).
 
 Owner 2026-11-20, translated: "upgrade of spells, raise the strength and whatever else of the spells. Think of something cool." Four paths were shown. The owner chose three: Rank by use, now Rank by monster experience, plus Forms; Awakening in the endgame; Combos between spells. Not chosen: tradeable spell tomes. Strength: total spell power gain per character of 50% or more, knowing the endgame must be rebalanced and that a player without upgrades falls far behind.
 
@@ -14,7 +14,7 @@ Answers of 2026-11-20. They replace the defaults of section 9 where they differ.
 2. **Existing characters start from zero.** No launch grant. The 70% grant of 1.6 is removed.
 3. **Monster health rises from level 100**, the H curve of 5.3 as designed.
 4. **Any spell at rank 20 can be awakened**, 1 to 3 per character.
-5. **Combos hit 10% to 20% more** (owner, translated: "Make the combos, like ice and fire, hit 10 to 20% more."). Each element reaction and class combo gives +10% to +20% damage on the hit it triggers, see 4.2. Combos stay off in PvP. Combos are a later phase, no code yet.
+5. **Combos hit 10% to 20% more** (owner, translated: "Make the combos, like ice and fire, hit 10 to 20% more."). Each element reaction and class combo gives +10% to +20% damage on the hit it triggers, see 4.2. Combos stay off in PvP. Combos: phase 6, built (README "Spell combos (O686 phase 6)").
 6. Defaults taken, the owner may change them: buffs, shields, summons and conjures later phase; rank XP is the base experience before stage, boost and rested (see the A1 note in 1.2); account echo yes, half the best rank, at most 10; Form change costs gold only; heals +12%; the 3 minute clamp per kill kept.
 
 ## 0. The design in one page
@@ -501,6 +501,8 @@ Where the tree or supports open more: no support touches combos in phase 1, so a
 - The element of a hit is the one after a Form conversion. A Form that converts to ice opens the ice reactions.
 - The pending combo expires after 1 s without a hit, for a spell that missed.
 
+Phase 6 note (built, README "Spell combos (O686 phase 6)"): the 13 rows of 4.2 are in `spell_combos_config.lua` with the owner's 10-20% (10, 12, 12, 15, 10, 15 for the six reactions; 20, 20, 18, 20, 18, 20 for the six signature combos; 15 for the heal combo). The hit hook is `ChaosPassiveDealt` (not `_supports.lua`), right after the rank factor, so the bonus is a share of the ranked hit; a Form's extra hits run inside the proc guard and never combo. The detection is one `cast` handler plus the first hit of the cast; the ring keeps the spell id, time, target and tile of the last four casts. The riders of 4.2 (a burst, brittle, a slow, a guaranteed critical, a stun, a renewed hex, a heal over time) are NOT built: the rows keep the text in `rider`, the bonus is the whole effect. The model counts the combos from the rows: 0.40 of the spell damage on a combo hit x the mean row bonus 0.151 = +6.04% typical, +8.0% best legal rotation. Phase 6b (combo masteries) is not built.
+
 ### 4.4 Client
 
 - The server sends `combo {id, x, y, z}` on opcode 168. The client shows a short label over the target for 0.8 s, "Steam Burst", and plays a short sound. The label is drawn like the ground labels of O669, no new engine call.
@@ -746,7 +748,7 @@ Working days of one agent session each, with tests and docs. Total about 37 days
 | 3 | `spell_upgrade_model.py`, the health curve and the factor in `pace`, dungeons, rifts, tower, descent, waystones, pinnacle, greater rift, raid, with each model's step and test. Switched with phase 2. **Built 2026-11-20**, README "Monster health curve and the models (O686 phase 3)": `spell_upgrade_model.py` (rank per level, P, H, `--check`), `Chaos.healthFactor` / `Chaos.scaleHealth` and every health path behind it (`check_health_paths.py`), every balance model with `--upgrades`, PvP at the half rule; still off | 6 |
 | 4 | Forms: 8 + 8 + 8 kinds in the engine, the table for all 21 classes, `check_spell_forms.py`, probe per Form, `spell_fx_forms.csv`, the model band check. **Built 2026-11-20**, README "Spell Forms (O686 phase 4)": 9 + 8 + 8 kinds, `forms.csv` 596 rows, `spell_forms_core.lua` / `spell_forms.lua`, element rule in the probe (381 Form runs), the band in `spell_upgrade_model.py`, client data `forms_data.lua`; the numbers of 2.2 recalibrated to hold the band | 9 |
 | 5 | Client: opcode 168, spellbook tabs, Form picker, rank bars, pt-BR, hub badge, tests, mobile layout. **Built 2026-11-20**, client/MANIFEST.md `game_spellranks`: the Upgrades tab is a button of the Spellbook that swaps the details panel (no new window, no new hub card), rank bars on the rows, the Form block, the pt-BR messages of every `why`, the hub badge by `CARD_POINTS`; not in this phase: the Awakening and Combos tabs (phases 7 and 6), the action bar pip, the hours estimate of the tab (the server sends no pace), the account echo floor as its own number (the server's rank already includes it; the tab explains it in a tooltip) | 5 |
-| 6 | Combos: core, config, the hit hook, label and sounds, Codex page, 6b combo masteries | 4 |
+| 6 | Combos: core, config, the hit hook, label and sounds, Codex page, 6b combo masteries. **Built 2026-11-20** (6b not), README "Spell combos (O686 phase 6)": `spell_combos_core.lua` / `spell_combos_config.lua` / `spell_combos.lua`, 13 rows at 10-20%, the hook in `ChaosPassiveDealt`, `combo` on opcode 168, the label and two chimes in `game_spellranks`, the Codex page `basics:combos`, the model counts the combos from the rows, the `rank` push on a rank-up; the riders and 6b open | 4 |
 | 7 | Awakening: Seals from the three contents, costs, slots, signature effects, the kit art tool, UI tab | 6 |
 | 8 | Live pass: the tester bots climb ranks, kill times against the models, tune the curve and H, wipe policy, docs | 3 |
 
