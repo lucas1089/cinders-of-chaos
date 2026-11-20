@@ -4460,14 +4460,14 @@ async def pinnacle_gear(io, r, fallbacks):
     level, a Rare piece of item level = the level each, worn at once). The model's median class wears the level's set gear (survival_model.py,
     install_gear_sets.py CURVES) and a bot's own drops and the Gambler's stock do not reach it at level 1900 to 2500. -> the text for the result;
     a grant is a named fallback of the result"""
-    g = await hcmd(io, r, 'gear set', 'gear', HELPER_WAIT)
+    g = await hcmd(io, r, 'gear set %d' % PINNACLE_RARITY if PINNACLE_COMPLETE[0] else 'gear set', 'gear', HELPER_WAIT)   # O685: Divine pieces for the complete characters
     if not isinstance(g, dict):
         return 'no answer to !tester gear set (old helper file)'
     if g.get('err'):
         return 'gear set: %s' % str(g['err'])[:60]
     given = [str(s) for s in g.get('given') or []]
     if given:
-        fallbacks.append(fallback_note('gear set', 'TEST ONLY: the level\'s set gear (%s)' % ', '.join(given)))
+        fallbacks.append(fallback_note('gear set', 'TEST ONLY: set gear (%s)' % ', '.join(given)))
     text = 'set gear: %s' % (', '.join(given) or 'none')
     pots = g.get('potions')
     if isinstance(pots, dict) and pots.get('health'):
@@ -4523,7 +4523,19 @@ async def check_pinnacle_walk(io, name, cls, level):
              'level': a.get('level'), 'boss_seen': False, 'hp': None}
     io.raid_mode([name], True)   # the pinnacle catches a lethal hit as the raid does (the player is carried out, no death): no flight to the temple at low health
     try:
+        complete = ''
+        if PINNACLE_COMPLETE[0]:   # O685: the complete character: ascended, the trials, the node picks, the Recommended build
+            ASC_WANT.update(plan_ascensions([(name, cls)]))
+            cls, complete = await complete_character(io, name, cls, level, fallbacks)
+            if io.alive() and recommended_build(cls):
+                held = {'notes': []}
+                await gear_tree_recommended(io, held, recommended_build(cls))
+                complete += ', ' + (held.get('tree') or 'passive tree: ' + '; '.join(held['notes'])[:80])
+        if PINNACLE_COMPLETE[0] and io.alive():
+            complete += ', ' + await pinnacle_loadout(io, name, cls, fallbacks)
         trace['gear'] = await pinnacle_gear(io, r, fallbacks)   # O681: the level's set gear (TEST ONLY), as the model's median class wears it
+        if complete:
+            trace['gear'] = '%s: %s; %s' % (cls, complete, trace['gear'])
         g = await io.helper('pinnacle set', 'pinnacle', HELPER_WAIT)
         if not isinstance(g, dict):
             return Result(key, name, cls, SKIP, 'no answer to !tester pinnacle set', fallbacks)
@@ -4565,6 +4577,262 @@ async def check_pinnacle_walk(io, name, cls, level):
         await io.go('hunt')
 
 
+# ------------------------------------------------------------------------------------------------ complete characters for the pinnacle fights (O685)
+# O684's party was Mystic, Ranger, Warrior (base classes that never ascended at level 1900), Juggernaut and Samurai: no vocation trial nodes, the tree spent
+# by the Defense focus build then the damage build. The model's median character (pinnacle_model.py, survival_model.py, class_dps_model.py) is an ASCENDED
+# class with its tree. So the bots of a pinnacle fight are complete characters: the class ascended through the Oracle (the real quest of check_ascension_walk;
+# the Proof of Strength credit is its TEST ONLY step), the three tiers of the vocation's trial played on foot (TEST ONLY `!tester trial clear` only for the
+# families whose trial is a puzzle the bots do not play: seals, marks), one node of each pair held (TRIAL_PICKS), the Recommended build of the class.
+ASC_LINES = {'Mystic': ('Elementalist', 'Illusionist'), 'Warrior': ('Juggernaut', 'Berserker'), 'Ranger': ('Deadeye', 'Beastmaster'),
+             'Thief': ('Ninja', 'Samurai'), 'Necromancer': ('Lich', 'Bone Lord'), 'Monk': ('Shadowfist', 'Iron Sage'),
+             'Templar': ('Inquisitor', 'Sentinel')}   # docs/CLASSES.md: the two ascended classes of a base class
+PINNACLE_PLAN = ('Illusionist', 'Juggernaut', 'Deadeye', 'Elementalist', 'Samurai')   # O685: the party: a healer, a tank, a single target, an area caster, an off-tank
+ASC_WANT = {}   # bot name -> the class the Oracle's Choice takes (plan_ascensions); a bot with no entry takes the first open class
+TRIAL_TRIES = 2         # runs of one tier before the rest is granted
+TRIAL_FAIL_WAIT = 65.0  # seconds after a failed run (trials_config.lua enter.failCooldownSeconds is 60)
+
+# The node of each pair a pinnacle bot holds (side 1 = the A node, 2 = the B node; trials_nodes.lua). The boss's untelegraphed hits are 40 to 82% of the
+# maximum health (O684), the party lives by health, healing and defence, then by damage; the picks follow the role of the class:
+TRIAL_PICKS = {
+    # tank: less damage taken, more health, a survived lethal hit. Bulwark of Ages (-10% damage taken) / Steelblood (vitality) / Immortal Stand (last stand)
+    'Juggernaut': (1, 2, 1),
+    # single target: crit, an echo of a shot, the execute. Dead Center / Hair Trigger (18% echo of 60%; Marksman's Patience only counts above 90% boss health) /
+    # Final Verdict (+40% under 30%; Ghost Quiver heals on kills, a boss fight has few)
+    'Deadeye': (1, 2, 1),
+    # area caster: damage only (its survival is the mana shield): Pyromania, Stormcaller (energy) and Cataclysm (+25% spells)
+    'Elementalist': (1, 1, 1),
+    # healer: Mender's Gift (+20% healing out), Warding Veil (-10% damage taken), Grand Illusion (survives a lethal hit: a dead healer heals nobody)
+    'Illusionist': (1, 1, 2),
+    # off-tank duelist: Way of the Counter (reflect), Parry Master (evade 12%), Heavenly Strike (+28% melee)
+    'Samurai': (2, 2, 1),
+}
+
+
+def trial_pick_sides(cls):
+    return TRIAL_PICKS.get(cls, (1, 1, 1))
+
+
+# the first Recommended build of each class (passive_builds_config.lua roles; the id is `<class key>_<role id>`, the build the Auto build list offers first and
+# the website's Starter Builds name first). tester_checks_test.py reads the config and holds this table to it.
+RECOMMENDED_BUILDS = {
+    'Warrior': 'warrior_slayer', 'Juggernaut': 'juggernaut_unbreakable', 'Berserker': 'berserker_rage_engine',
+    'Ranger': 'ranger_sharpshooter', 'Deadeye': 'deadeye_marked_target', 'Beastmaster': 'beastmaster_pack_leader',
+    'Mystic': 'mystic_arcanist', 'Elementalist': 'elementalist_overloaded', 'Illusionist': 'illusionist_support_weaver',
+    'Thief': 'thief_venomblade', 'Ninja': 'ninja_twin_fangs', 'Samurai': 'samurai_duelist',
+    'Necromancer': 'necromancer_grave_caller', 'Lich': 'lich_rot_curser', 'Bone Lord': 'bonelord_bone_army',
+    'Monk': 'monk_iron_body', 'Shadowfist': 'shadowfist_hundred_fists', 'Iron Sage': 'ironsage_chi_healer',
+    'Templar': 'templar_zealot', 'Inquisitor': 'inquisitor_judge', 'Sentinel': 'sentinel_bastion',
+}
+TREE_RESET_COST = 10 ** 9   # the price the bot accepts for "Reset and apply" (the window's own cost check: a reset that costs more than the preview showed is refused)
+
+
+def recommended_build(cls):
+    return RECOMMENDED_BUILDS.get(cls)
+
+
+def plan_ascensions(bots, plan=PINNACLE_PLAN):
+    """{bot name: the class of `plan` its Oracle's Choice takes} for the bots of base classes: [(name, class)] in order, a class of the plan that is a bot's
+    own already is taken, and each base class takes the first class of the plan its line offers that no other bot has (two Mystics: the first becomes
+    the plan's first Mystic class, the second the next one). A base class whose line offers none is not in the answer"""
+    taken = {c: n for n, c in bots if c in plan}
+    out = {}
+    for name, cls in bots:
+        if cls in plan:
+            continue
+        for c in plan:
+            if c in ASC_LINES.get(cls, ()) and c not in taken:
+                out[name] = c
+                taken[c] = name
+                break
+    return out
+
+
+def asc_choice_order(allowed, want):
+    """the open classes of the Oracle's window with the wanted one first (the others keep their order)"""
+    return sorted(allowed or [], key=lambda c: 0 if want and c.get('name') == want else 1)
+
+
+async def trial_look(io):
+    a = await io.helper('trial state', 'trial', ANSWER)
+    return a if isinstance(a, dict) and not a.get('err') else None
+
+
+async def trial_tier_run(io, name, a, fallbacks):
+    """one run of the next tier of the bot's trial as check_trial_walk plays it (temple, the tree window's Enter, the waves and the guardian by the engine's path),
+    but played to its end: the win, the loss or the clock, not the first hurt guardian. -> None, or the reason the run did not play"""
+    r = {'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False}
+    trace = {'faults': [], 'steps': 0, 'killed': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'tier': a.get('tier'), 'family': a.get('family'), 'boss_seen': False, 'hp': None}
+    io.raid_mode([name], True, keep_flee=True)
+    try:
+        why = await solo_to_temple(io, r, trace, fallbacks, need_pz=True, system='trial')
+        if why:
+            return why.replace('the descent', 'the trial')
+        s = await solo_enter(io, r, trace, 'trial', 'passivetree', 'trialEnter', {'tier': a.get('tier')}, ['trialState', 'sendMessage'])
+        if not (isinstance(s, dict) and s.get('inside')):
+            return 'the trial did not open in %d s (a fight, the cooldown or the chambers kept for the players)' % int(SOLO_ENTER_WAIT)
+        await solo_play(io, r, trace, {
+            'system': 'trial', 'budget': TRIAL_BUDGET, 'problems': trial_problems, 'stop': trial_stop, 'done': lambda t: False,
+            'made': lambda t: t.get('killed', 0) > 0,
+            'mark': lambda s: ((s.get('run') or {}).get('stageIdx'), (s.get('run') or {}).get('killed'), (s.get('run') or {}).get('monsters'))})
+        await io.helper('trial close', 'trial', ANSWER)   # a bot still inside leaves (nothing after a win: the run is over)
+        return None
+    finally:
+        io.raid_mode([name], True)
+
+
+async def trial_complete(io, name, cls, fallbacks):
+    """the three tiers of the trial of the bot's class: played on foot (each tier twice at most), a family whose trial is a puzzle (seals, marks) or a tier the bot
+    could not clear granted with the TEST ONLY `!tester trial clear` (a counted fallback). -> the text for the report"""
+    a = await trial_look(io)
+    if a is None:
+        return 'trials: no answer'
+    if not a.get('family'):
+        return 'trials: %s has no trial' % cls
+    top = int(a.get('maxTier') or 3)
+    start, played, tries, why = int(a.get('cleared') or 0), [], 0, None
+    while io.alive() and int(a.get('cleared') or 0) < top:
+        cleared = int(a.get('cleared') or 0)
+        if a.get('puzzle') or tries >= TRIAL_TRIES * (top - start):
+            kinds = '/'.join(sorted(set(k for k in a.get('kinds') or [] if k in ('seals', 'marks')))) or 'seals or marks'
+            reason = '%s puzzle: the bots do not play it' % kinds if a.get('puzzle') else '%d runs failed: %s' % (tries, str(why or 'no reason')[:40])
+            g = await io.helper('trial clear %d' % top, 'trial', HELPER_WAIT)
+            ok = isinstance(g, dict) and not g.get('err')
+            fallbacks.append('grant trial clear (TEST ONLY %s tiers %d-%d: %s%s)' % (cls, cleared + 1, top, reason, '' if ok else ', REFUSED: %s' % str((g or {}).get('err') or 'no answer')[:30]))
+            b = await trial_look(io)
+            if not ok or b is None or int(b.get('cleared') or 0) <= cleared:
+                return 'trials: %d of %d cleared; the grant failed' % (cleared, top)
+            a = b
+            break
+        why = await trial_tier_run(io, name, a, fallbacks)
+        tries += 1
+        b = await trial_look(io)
+        if b is not None and int(b.get('cleared') or 0) > cleared:
+            played.append(int(b['cleared']))
+            a = b
+            continue
+        if b is not None:
+            a = b
+        why = why or 'the guardian was not broken'
+        if io.alive():
+            await io.sleep(TRIAL_FAIL_WAIT)
+    got = int(a.get('cleared') or 0)
+    text = 'trials %d/%d' % (got, top)
+    if played:
+        text += ' played tier(s) %s' % ','.join(str(t) for t in played)
+    if got > start + len(played):
+        text += ' TEST ONLY grant'
+    return text
+
+
+async def trial_pick(io, name, cls):
+    """one node of each cleared pair, by TRIAL_PICKS (the first pick of a pair is free): the tree window's own request. A pair that holds the other node is kept
+    (changing it costs a Trial Token and gold). -> the text for the report"""
+    a = await trial_look(io)
+    if a is None or not a.get('family'):
+        return 'node picks: no trial'
+    sides = trial_pick_sides(cls)
+    picks = list(a.get('picks') or [0, 0, 0])
+    b = a
+    for attempt in range(4):   # a bot that has just won leaves the room 6 s later, and no node is chosen inside a trial: it asks again after it is out
+        for pair in range(1, min(3, int(b.get('cleared') or 0)) + 1):
+            if picks[pair - 1] == 0:
+                await io.request('passivetree', 'trialChoose', {'pair': pair, 'side': sides[pair - 1]}, ['trialState'], ANSWER)
+                await io.sleep(0.6)   # the window answers a choice once in 400 ms
+        b = await trial_look(io) or b
+        picks = list(b.get('picks') or [0, 0, 0])
+        if all(picks[i] != 0 for i in range(min(3, int(b.get('cleared') or 0)))) or not io.alive():
+            break
+        await io.sleep(6.0)
+    held = list(b.get('picks') or [0, 0, 0])
+    return 'nodes %s (wanted %s)' % ('/'.join(str(h) for h in held), '/'.join(str(x) for x in sides))
+
+
+async def asc_complete(io, name, cls, level, fallbacks):
+    """the Oracle's quest to the class ASC_WANT names (check_ascension_walk, twice at most: a trial that was lost has a cooldown); the helper's Proof of Strength credit
+    is a named fallback. -> the text for the report; the class the bot is now is io.class_of(name) (the `info` answer carries its vocation)"""
+    parts = []
+    for attempt in range(2):
+        a = await io.helper('ascend state', 'ascend', ANSWER)
+        if not isinstance(a, dict) or a.get('err') or a.get('ascended') or not a.get('eligible'):
+            break
+        r = await check_ascension_walk(io, name, io.class_of(name) or cls, level)
+        fallbacks.extend(r.fallbacks or [])
+        if 'proof' in r.detail:
+            fallbacks.append(fallback_note('grant ascend proof', 'TEST ONLY: the Proof of Strength credit, a rare monster does not come on demand'))
+        parts.append('ascension %s: %s' % (r.status, r.detail[:90]))
+        io.raid_mode([name], True)
+        await io.helper('info', 'info', ANSWER)   # the class it is now
+        a = await io.helper('ascend state', 'ascend', ANSWER)
+        if not isinstance(a, dict) or a.get('ascended') or not io.alive():
+            break
+        wait = int((a or {}).get('wait') or 0)
+        if attempt == 0 and wait > 0:
+            await io.sleep(min(wait + 2.0, 200.0))
+    return '; '.join(parts) or 'ascended already (%s)' % (io.class_of(name) or cls)
+
+
+# What a well-built player of the level carries besides class, nodes and tree (owner, O685): the cards of the class's best set, the support runes on the
+# spells it casts most, the best gear rarity a player can reach. The table is per class and says why. Cards: card_set_model.py's best set of the class
+# (`python3 -I server/tools/card_set_model.py`: Juggernaut earth, Deadeye fire, Elementalist holy, Illusionist and Samurai death), three or more cards of
+# the element on (cards_config.lua sets.need 3, 5 slots). Supports: Mythic runes (the highest of the five levels); two sockets a spell (the third opens
+# with an Orb of Sockets: not spent). A single-target boss fight: Keen Edge (crit) and Echo (a second strike) on a damage spell, the brand of the set's element
+# where the set has one (earth has no brand); the healer's heals get Quickening and Thrift (cooldown and mana). Masteries and the tree's keystones are the
+# Recommended build's own (passive_builds_config.lua `masteries`, `targets`).
+PINNACLE_RARITY = 10   # Divine (stored id 10): the best a craft or a drop gives (Legendary 5 is under it); a TEST ONLY grant, a counted fallback
+PINNACLE_LOADOUT = {
+    'Juggernaut': ('Earth', ('keenedge', 'echo'), 'rotation'),     # slams and one target; the Earth set is its best (+8.4%, no earth brand)
+    'Deadeye': ('Fire', ('emberbrand', 'keenedge'), 'rotation'),   # the Fire set (+10.3%), an Emberbrand for the same element
+    'Elementalist': ('Holy', ('dawnbrand', 'echo'), 'rotation'),   # the Holy set (+14.1%, the class's best), Dawnbrand
+    'Illusionist': ('Death', ('quickening', 'thrift'), 'heals'),   # the healer: the Death set (+11.0%), its heals cast sooner and cheaper
+    'Samurai': ('Death', ('gravebrand', 'keenedge'), 'rotation'),  # the Death set (+9.8%), Gravebrand
+}
+PINNACLE_LOADOUT_DEFAULT = ('Fire', ('keenedge', 'echo'), 'rotation')
+PINNACLE_HEAL_WORDS = ('saen spek', 'reth vas spek', 'saen qhal')   # Mirror Mend, Lucid Reverie, Kindled Breath: PINNACLE_HEAL_SPELLS
+
+
+def loadout_row(cls):
+    return PINNACLE_LOADOUT.get(cls, PINNACLE_LOADOUT_DEFAULT)
+
+
+async def pinnacle_loadout(io, name, cls, fallbacks):
+    """cards of the class's best set (the Deck's own toggle) and Mythic support runes on its main spells (the supports window's own socket): both through the
+    helper's TEST ONLY `!tester loadout`, named grants. -> the text for the report: what is on, real or fallback"""
+    element, keys, which = loadout_row(cls)
+    parts = []
+    c = await io.helper('loadout cards %s' % element, 'loadout', HELPER_WAIT)
+    if not isinstance(c, dict) or c.get('err'):
+        parts.append('cards: %s' % str((c or {}).get('err') or 'no answer (old helper file)')[:60])
+    else:
+        on = [x for x in c.get('cards') or [] if isinstance(x, dict)]
+        fallbacks.append('grant cards (TEST ONLY: %d %s cards of the class\'s best set, turned on by the Deck\'s own toggle)' % (len(on), element))
+        parts.append('cards %s x%d%s (%s)' % (element, len(on), ' set' if c.get('set') else ' no set', ', '.join(str(x.get('spell')) for x in on)[:80]))
+    words = list(PINNACLE_HEAL_WORDS) if which == 'heals' else list(io.rotation_words(3) if hasattr(io, 'rotation_words') else [])
+    if words:
+        sp = await io.helper('loadout support %s %s' % (','.join(keys), ';'.join(words)), 'loadout', HELPER_WAIT)
+        if not isinstance(sp, dict) or sp.get('err'):
+            parts.append('supports: %s' % str((sp or {}).get('err') or 'no answer (old helper file)')[:60])
+        else:
+            rows = [x for x in sp.get('supports') or [] if isinstance(x, dict) and x.get('put')]
+            put = sum(len(x['put']) for x in rows)
+            if put:
+                fallbacks.append('grant support runes (TEST ONLY: %d Mythic runes, %s)' % (put, '/'.join(keys)))
+            parts.append('supports %s on %s' % ('/'.join(keys), ', '.join('%s %s' % (x.get('name'), '+'.join(x['put'])) for x in rows)[:120] or 'none (all refused)'))
+    return ', '.join(parts)
+
+
+async def complete_character(io, name, cls, level, fallbacks):
+    """O685: ascension, the three trials, the node picks of the class. Each step is idempotent (a character that has it does nothing). -> (the class now, the text)"""
+    parts = [await asc_complete(io, name, cls, level, fallbacks)]
+    now = io.class_of(name) or cls
+    if io.alive():
+        parts.append(await trial_complete(io, name, now, fallbacks))
+        io.raid_mode([name], True)
+    if io.alive():
+        parts.append(await trial_pick(io, name, now))
+    return now, ', '.join(parts)
+
+
 # ------------------------------------------------------------------------------------------------ the pinnacle bosses, fought by a party of five (O681)
 # O678 walked one bot in and the bot fell in 3 to 29 s: the gear of its old level, no party. The party check plays the fight the model plans
 # (pinnacle_model.py: the median class kills a boss in 420 s alone and 300 s with five): five bots of different classes at the boss's level, each
@@ -4579,7 +4847,14 @@ PINNACLE_GATHER_NEAR = 3    # tiles from the opener a member stops at (party.ran
 PINNACLE_MEMBER_WAIT = 2400.0   # seconds a member waits for its leader at most
 PINNACLE_HEAL_AT = (90, 80, 40)   # O683: health percent under which the heal spell is cast / the potion drunk in a pinnacle fight (O681: 75 / 55: a burst of 25k came on 31k);
 #                                  O684: and under which a bot casts no attack while its heal or its potion is ready (a person at 40% stops hitting and heals)
-PINNACLE_HEALERS = frozenset(['Mystic'])   # O684: the class whose heal (Purifying Wellspring: the caster and the party within 3 tiles) the party plays as a healer
+PINNACLE_HEALERS = frozenset(['Illusionist', 'Iron Sage'])   # O685: the classes that play the party's healer (O684 had the Mystic's Wellspring: the model's healers are the two healer classes)
+# the heals of a healer class, in the order they are cast: (spell words, reach in tiles, health percent under which a member in reach makes it cast). Mirror Mend
+# heals the most hurt party member within 7 sqm (2 s), Lucid Reverie the caster and every party member within 7 sqm for 5 pulses (20 s), Kindled Breath the most
+# hurt party member within 5 sqm (8 s); data/spells/README.md. A class of PINNACLE_HEALERS with no row casts the bot's own heal spell (the Mystic's Wellspring)
+PINNACLE_HEAL_SPELLS = {
+    'Illusionist': (('saen spek', 7, 70), ('reth vas spek', 7, 85)),
+    'Iron Sage': (('saen qhal', 5, 70),),
+}
 PINNACLE_ALLY_HEAL_AT = 70     # O684: health percent under which a member is the healer's patient (the lowest one first)
 PINNACLE_HEAL_NEAR = 2         # O684: tiles from the patient the healer walks to (the heal reaches 3)
 PINNACLE_HEAL_REACH = 3        # O684: tiles from the patient the healer casts from
@@ -4658,6 +4933,25 @@ def spread_step(pos, mates, boss, reach=PINNACLE_FIGHT_REACH, crowd=1):
     return best[1] if best and best[0][0] < here else None
 
 
+def healer_ranges(cls):
+    """(near, reach) of a healer class: how close it walks to its patient and how far its heals reach (the shortest of its spells; near keeps two tiles inside it)"""
+    rows = PINNACLE_HEAL_SPELLS.get(cls)
+    if not rows:
+        return PINNACLE_HEAL_NEAR, PINNACLE_HEAL_REACH
+    reach = min(r for _, r, _ in rows)
+    return max(2, reach - 2), reach
+
+
+def healer_casts(cls, pos, members):
+    """[words] a healer class casts now, in order: members = [(position, health percent or None)], the healer's own tile among them. A spell is cast when a member
+    within its reach is under its percent (PINNACLE_HEAL_SPELLS)"""
+    out = []
+    for words, reach, under in PINNACLE_HEAL_SPELLS.get(cls, ()):
+        if any(h is not None and h < under and p is not None and _cheb(pos, p) <= reach for p, h in members):
+            out.append(words)
+    return out
+
+
 def healer_step(pos, boss, patient, near=PINNACLE_HEAL_NEAR, reach=PINNACLE_HEAL_REACH, keeps=PINNACLE_HEALER_KEEPS):
     """O684: (step, cast) of the party's healer. With a patient (the lowest member under the heal threshold): a step toward him until he is `near` tiles away
     (never onto the boss's body), and a cast when he is within `reach` (the Wellspring heals the party within 3 tiles). Without one: a step away from
@@ -4696,8 +4990,14 @@ async def pinnacle_roles(io, squad, inside, trace, elapsed=0.0):
         if classes.get(n) in PINNACLE_HEALERS:
             weak = [(health[m], m) for m in names if m != n and health.get(m) is not None and health[m] < PINNACLE_ALLY_HEAL_AT and pos.get(m) is not None]
             patient = pos[min(weak)[1]] if weak else None
-            step, cast = healer_step(pos[n], boss, patient)
-            if cast and patient is not None and hasattr(io, 'heal_spell_of') and await io.heal_spell_of(n):
+            near, reach = healer_ranges(classes.get(n))
+            step, cast = healer_step(pos[n], boss, patient, near, reach)
+            if classes.get(n) in PINNACLE_HEAL_SPELLS:   # O685: the heal spells of the class (Mirror Mend, Lucid Reverie, Kindled Breath), by who is hurt and in reach
+                members = [(pos[m], health.get(m)) for m in names if pos.get(m) is not None]
+                for words in healer_casts(classes.get(n), pos[n], members):
+                    if hasattr(io, 'cast_words_of') and await io.cast_words_of(n, words):
+                        trace['ally_heals'] = trace.get('ally_heals', 0) + 1
+            elif cast and patient is not None and hasattr(io, 'heal_spell_of') and await io.heal_spell_of(n):
                 trace['ally_heals'] = trace.get('ally_heals', 0) + 1
             if step and not pending and mode in ('fight', 'walk', 'wait', 'hold', None) and elapsed - r.get('healer_at', -99.0) >= PINNACLE_ROLE_EVERY:
                 r['healer_at'] = elapsed
@@ -4737,11 +5037,29 @@ async def pinnacle_shield(io):
     return True
 
 
+PINNACLE_COMPLETE = [True]   # O685: the bots of a pinnacle fight are complete characters (complete_character); False = the O684 bots (the class as it is, the focus builds)
+
+
 async def pinnacle_prep(io, name, cls, level, fallbacks):
-    """one bot of the party before the fight: the gear-up of the fight checks, the set gear, potions. -> the text for the report"""
+    """one bot of the party before the fight: O685 the complete character (ascension, trials, node picks), then the gear-up of the fight checks with the class's
+    Recommended build, the set gear, potions. -> the text for the report"""
     parts = []
-    r = await gear_up(io, name, cls, level)
+    if PINNACLE_COMPLETE[0]:
+        # a weapon first: the trials of the Oracle and of the vocation are fought, and a bot with bare fists breaks no guardian (the first run: "need weapon",
+        # a lost trial and its cooldown). The tree is left alone in this first gear-up: the Recommended build of the class it becomes is the one it takes
+        first = await gear_up(io, name, cls, level, tree=False)
+        fallbacks.extend(first.fallbacks or [])
+        parts.append('gear-up %s' % first.status)
+        if io.alive():
+            parts.append('first ' + await pinnacle_gear(io, {'name': name, 'lead': True}, fallbacks))   # a melee class's weapon is the set's (the Gambler's gold is not enough at this level)
+        cls, text = await complete_character(io, name, cls, level, fallbacks)
+        parts.append(text)
+    r = await gear_up(io, name, cls, level, tree=recommended_build(cls) if PINNACLE_COMPLETE[0] else None)
     parts.append('gear-up %s' % r.status)
+    if r.detail and PINNACLE_COMPLETE[0]:
+        parts.append(r.detail[:120])
+    if PINNACLE_COMPLETE[0] and io.alive():
+        parts.append(await pinnacle_loadout(io, name, cls, fallbacks))   # O685: the cards and the supports
     fallbacks.extend(r.fallbacks or [])
     if io.alive():
         parts.append(await pinnacle_gear(io, {'name': name, 'lead': True}, fallbacks))
@@ -4924,6 +5242,8 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         squad.append({'name': p, 'lead': False, 'walker': RaidWalker(), 'inside': False, 'io': io.io_of(p)})
     names = [r['name'] for r in squad]
     classes = [cls] + [io.class_of(p) or '?' for p in partners]
+    if PINNACLE_COMPLETE[0]:
+        ASC_WANT.update(plan_ascensions(list(zip(names, classes))))   # O685: who becomes which class of the plan
     io.hold_party(names)
     io.raid_mode(names, True)
     # the gear: every bot through the gear-up and the set gear at once (each on its own bot)
@@ -4935,11 +5255,13 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         jobs.append(pinnacle_prep(mio, r['name'], io.class_of(r['name']) or cls, int((await hcmd(io, r, 'pinnacle state', 'pinnacle') or {}).get('level') or level),
                                   fallbacks))
     prepped = await asyncio.gather(*jobs, return_exceptions=True)
-    prep_text = [str(p)[:90] for p in prepped]
+    prep_text = [str(p)[:420] for p in prepped]
     if not io.alive():
         return Result(key, name, cls, SKIP, 'the leader left the game while the party geared up')
+    classes = [io.class_of(r['name']) or c for r, c in zip(squad, classes)]   # O685: the classes the bots are now (an ascension in the prep)
+    cls = classes[0]
     trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
-             'level': a.get('level'), 'boss_seen': False, 'hp': None, 'classes': classes, 'gear': '; '.join(prep_text)[:300]}
+             'level': a.get('level'), 'boss_seen': False, 'hp': None, 'classes': classes, 'gear': '; '.join(prep_text)[:2200]}
     # to the Keeper: the opener on foot, the others on foot to the opener
     lead = squad[0]
     g = await io.helper('pinnacle set %s' % boss.get('key'), 'pinnacle', HELPER_WAIT)
@@ -7776,6 +8098,7 @@ async def check_ascension_walk(io, name, cls, level):
             return Result(key, name, cls, status, text, fallbacks)
         # 4 the Choice: the classes the account has locked are refused first, then the first open one is taken
         locked, allowed = asc_choice_plan(a.get('choices'))
+        allowed = asc_choice_order(allowed, ASC_WANT.get(name))   # O685: a pinnacle bot takes the class of the plan
         await asc_look(io)
         for kind, c in [('locked', x) for x in locked[:1]] + [('allowed', x) for x in allowed[:1]]:
             why, notes = await chore_walk(io, name, ASC_ORACLE, 1)
@@ -9328,9 +9651,10 @@ async def heal_rule_ready(io, g):
         g['notes'].append('the heal rule knows no potion id')
 
 
-async def gear_up(io, name, cls, level):
+async def gear_up(io, name, cls, level, tree=None):
     """the gear-up before a hard check: -> the Result 'gear_up' (PASS: what was done, or nothing was needed; SKIP: a step that could not be done,
-    with its reason) with the fallbacks (walks by the helper, gold grants) named"""
+    with its reason) with the fallbacks (walks by the helper, gold grants) named. `tree` (O685, a pinnacle bot): the id of the class's Recommended build, applied
+    with "Reset and apply" in place of the Defense and damage focus builds (those stay the fallback when it is refused); tree=False takes no tree step at all"""
     key = 'gear_up'
     g = {'worn': 0, 'pieces': [], 'bought': [], 'potions': None, 'granted': 0, 'notes': [], 'fallbacks': [], 'heal': None,
          'cls': cls, 'gap_why': {}, 'after': None}
@@ -9341,9 +9665,12 @@ async def gear_up(io, name, cls, level):
     found = await gear_wear(io, g, refused)
     if io.alive():
         await gear_potions(io, name, g)
-    if io.alive():
+    placed = tree is False   # O685: False = no tree this time (a gear-up before the class is complete)
+    if io.alive() and tree:
+        placed = await gear_tree_recommended(io, g, tree)   # O685: the Recommended build of the class, as the Auto build window's Reset and apply
+    if io.alive() and not placed:
         await gear_tree(io, g)   # O661: the free passive points on the Defense build, as a person does
-    if io.alive():
+    if io.alive() and not placed:
         await gear_tree_rest(io, g)   # O662: what is left of the points goes on the damage build
     if io.alive() and found is not None:
         found, _ = await found_look(io)
@@ -10298,6 +10625,22 @@ async def gear_weapon(io, name, g, found, level):
         g['notes'].append('the bought weapon is not in the backpack (%s)' % (why or 'it may lie in the inbox'))
         return
     await wear_weapon(io, g, mine, worn, row)
+
+
+async def gear_tree_recommended(io, g, build):
+    """O685: the Recommended build `build` of the class by the Auto build window's request: "Reset and apply" first (the bot accepts the price, TREE_RESET_COST),
+    then "add" when the reset is refused (no gold). A tree that holds the build already answers "Nothing would change": done. -> True when the tree holds the
+    build (nodes taken or nothing to change), False when both were refused (the caller takes the focus builds); the server's words go in g['tree']"""
+    for mode, cost in (('reset', TREE_RESET_COST), ('add', 0)):
+        ans = await io.request('passivetree', 'autobuildApply', {'build': build, 'mode': mode, 'cost': cost}, TREE_DONE, ANSWER)
+        done, text = tree_build_text(ans, build)
+        if done or 'Nothing would change' in text:
+            g['tree'] = ('passive tree %s (%s): %s' % (build, mode, text.split(': ', 1)[-1])) if done else 'passive tree %s: already held' % build
+            return True
+        g['notes'].append('%s (%s)' % (text, mode))
+        if io.alive():
+            await io.sleep(TREE_GAP)
+    return False
 
 
 async def gear_tree_rest(io, g, build=TREE_REST):

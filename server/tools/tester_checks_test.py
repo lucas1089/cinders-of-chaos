@@ -11356,6 +11356,12 @@ class LootBurst(unittest.TestCase):
 class PinnacleWalk(unittest.TestCase):
     """O678: a pinnacle boss opened at the Keeper (a TEST ONLY set of fragments) and fought to its end by a bot"""
 
+    def setUp(self):
+        TX.PINNACLE_COMPLETE[0] = False   # O685: these tests play the O684 bots (the class as it is); PinnacleComplete tests the complete character
+
+    def tearDown(self):
+        TX.PINNACLE_COMPLETE[0] = True
+
     BOSSES = [{'key': 'malgrath', 'minLevel': 1800}, {'key': 'vhoss', 'minLevel': 2000}, {'key': 'talath', 'minLevel': 2200}, {'key': 'varkhul', 'minLevel': 2400}]
 
     def test_the_verdicts(self):
@@ -11493,7 +11499,7 @@ class PinnacleGear(unittest.TestCase):
 
     def test_a_grant_is_a_named_fallback(self):
         text, fb, io = self.go({'given': ['helmet', 'armor', 'legs', 'weapon'], 'refused': [{'slot': 'weapon', 'why': 'refused (3)'}], 'level': 2100})
-        self.assertEqual(io.cmds, [('gear set', 'gear')])
+        self.assertEqual(io.cmds, [('gear set 10', 'gear')], 'O685: the complete characters wear Divine pieces (stored rarity 10)')
         self.assertIn('set gear: helmet, armor, legs, weapon', text)
         self.assertIn('refused: weapon refused (3)', text)
         self.assertEqual(len(fb), 1)
@@ -11512,6 +11518,12 @@ class PinnacleGear(unittest.TestCase):
 
 class PinnacleParty(unittest.TestCase):
     """O681: five bots of different classes, the level's set gear, one party, a pinnacle boss fought to its end"""
+
+    def setUp(self):
+        TX.PINNACLE_COMPLETE[0] = False   # O685: these tests play the O684 bots (the class as it is); PinnacleComplete tests the complete character
+
+    def tearDown(self):
+        TX.PINNACLE_COMPLETE[0] = True
 
     BOSSES = PinnacleWalk.BOSSES
     NAMES = ['Tester Aaa', 'Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']
@@ -11770,7 +11782,7 @@ class PinnacleParty(unittest.TestCase):
             calls['fight'].append([r['name'] for r in squad])
             trace.update(boss_seen=True, hp=0, killed=True, kill_secs=287, falls=1, size=len(squad), boss='vhoss', out=[('Tester Aac', 90)])
 
-        async def up(io_, name, cls, level):
+        async def up(io_, name, cls, level, tree=None):
             calls['up'].append((name, cls, level))
             return TX.Result('gear_up', name, cls, TX.PASS, 'ok', [])
 
@@ -12014,11 +12026,17 @@ class PinnacleRoles(unittest.TestCase):
         def health_of(self, name):
             return self.health.get(name)
 
+        CLASSES = dict(PinnacleParty.CLASSES, **{'Tester Aaa': 'Illusionist'})   # O685: the healer classes are the Illusionist and the Iron Sage
+
         def class_of(self, name):
-            return PinnacleParty.CLASSES.get(name, '')
+            return self.CLASSES.get(name, '')
 
         async def heal_spell_of(self, name):
             self.cast.append(name)
+            return True
+
+        async def cast_words_of(self, name, words, gap=2.0):
+            self.cast.append((name, words))
             return True
 
     def roles(self, io):
@@ -12028,20 +12046,46 @@ class PinnacleRoles(unittest.TestCase):
         moved = run(TX.pinnacle_roles(io, squad, inside, t))
         return moved, t
 
-    def test_the_mystic_casts_at_the_weakest_and_walks_to_him(self):
-        # Aaa Mystic far back, Aac Warrior at 30% health in front
-        pos = {'Tester Aaa': (10, 14), 'Tester Aab': (6, 12), 'Tester Aac': (10, 7), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
-        io = self.RoleIO({'Tester Aaa': 90, 'Tester Aab': 80, 'Tester Aac': 30, 'Tester Aad': 60, 'Tester Aae': 95}, pos)
+    def test_the_illusionist_casts_at_the_weakest_and_walks_to_him(self):
+        # Aaa Illusionist far back, Aac Warrior at 30% health in front
+        pos = {'Tester Aaa': (10, 16), 'Tester Aab': (6, 12), 'Tester Aac': (10, 7), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
+        io = self.RoleIO({'Tester Aaa': 90, 'Tester Aab': 95, 'Tester Aac': 30, 'Tester Aad': 95, 'Tester Aae': 95}, pos)
         moved, t = self.roles(io)
-        self.assertEqual(io.cast, [], 'seven tiles away: not in reach of the heal yet')
+        self.assertEqual(io.cast, [], 'nine tiles away: not in reach of its heals (7) yet')
         self.assertIn('Tester Aaa', moved)
-        self.assertIn(('lead', 0, -1), io.stepped, 'a step toward the lowest member (Aac, not Aad at 60%)')
+        self.assertIn(('lead', 0, -1), io.stepped, 'a step toward the only member that is hurt (Aac)')
         pos['Tester Aaa'] = (10, 9)
         moved, t = self.roles(io)
-        self.assertEqual(io.cast, ['Tester Aaa'], 'two tiles from him: the heal is cast')
-        self.assertEqual(t['ally_heals'], 1)
+        self.assertEqual(io.cast, [('Tester Aaa', 'saen spek'), ('Tester Aaa', 'reth vas spek')], 'two tiles from him: Mirror Mend, then Lucid Reverie (the party is under 85%)')
+        self.assertEqual(t['ally_heals'], 2)
 
-    def test_nobody_under_the_threshold_the_mystic_keeps_back(self):
+    def test_the_iron_sage_casts_kindled_breath_within_five_tiles(self):
+        pos = {'Tester Aaa': (10, 12), 'Tester Aab': (6, 12), 'Tester Aac': (10, 7), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
+        io = self.RoleIO({'Tester Aaa': 90, 'Tester Aab': 95, 'Tester Aac': 30, 'Tester Aad': 95, 'Tester Aae': 95}, pos)
+        io.CLASSES = dict(io.CLASSES, **{'Tester Aaa': 'Iron Sage'})
+        moved, t = self.roles(io)
+        self.assertEqual(io.cast, [('Tester Aaa', 'saen qhal')], 'five tiles from the patient: Kindled Breath reaches')
+        pos['Tester Aaa'] = (10, 14)
+        io.cast[:] = []
+        self.roles(io)
+        self.assertEqual(io.cast, [], 'seven tiles away: out of its reach')
+
+    def test_the_healer_casts_follow_who_is_hurt_in_reach(self):
+        me = (10, 10)
+        near, far = (12, 10), (20, 10)
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, 100), (near, 69)]), ['saen spek', 'reth vas spek'])
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, 100), (near, 80)]), ['reth vas spek'], 'under 85 only: Lucid Reverie, no Mirror Mend')
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, 100), (near, 90)]), [])
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, 100), (far, 10)]), [], 'a member 10 tiles away is out of reach')
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, 60), (far, 90)]), ['saen spek', 'reth vas spek'], 'the healer itself counts')
+        self.assertEqual(TX.healer_casts('Illusionist', me, [(me, None), (near, None)]), [], 'no health seen, no cast')
+        self.assertEqual(TX.healer_casts('Warrior', me, [(me, 10)]), [])
+        self.assertEqual(TX.healer_ranges('Illusionist'), (5, 7))
+        self.assertEqual(TX.healer_ranges('Iron Sage'), (3, 5))
+        self.assertEqual(TX.healer_ranges('Mystic'), (TX.PINNACLE_HEAL_NEAR, TX.PINNACLE_HEAL_REACH))
+        self.assertEqual(TX.PINNACLE_HEALERS, frozenset(['Illusionist', 'Iron Sage']), 'the model\'s healers are the two healer classes')
+
+    def test_nobody_under_the_threshold_the_healer_keeps_back(self):
         pos = {'Tester Aaa': (10, 7), 'Tester Aab': (6, 12), 'Tester Aac': (10, 9), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
         io = self.RoleIO({n: 90 for n in self.NAMES}, pos)
         moved, t = self.roles(io)
@@ -12087,6 +12131,394 @@ class PinnacleRoles(unittest.TestCase):
 
     def test_the_heal_thresholds(self):
         self.assertEqual(TX.PINNACLE_HEAL_AT, (90, 80, 40))
+
+
+class PinnacleComplete(unittest.TestCase):
+    """O685: the bots of a pinnacle fight are complete characters: ascended, the three trials, one node of each pair, the Recommended build"""
+
+    ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+
+    def test_each_base_class_takes_the_plan_class_of_its_line(self):
+        bots = [('Aaa', 'Mystic'), ('Aab', 'Ranger'), ('Aac', 'Warrior'), ('Aad', 'Mystic'), ('Aae', 'Thief')]
+        self.assertEqual(TX.plan_ascensions(bots), {'Aaa': 'Illusionist', 'Aab': 'Deadeye', 'Aac': 'Juggernaut', 'Aad': 'Elementalist', 'Aae': 'Samurai'},
+                         'two Mystics: the first becomes the first Mystic class of the plan, the second the next')
+        self.assertEqual(TX.plan_ascensions([('Aaa', 'Illusionist'), ('Aab', 'Mystic'), ('Aac', 'Juggernaut')]), {'Aab': 'Elementalist'},
+                         'a bot that is an Illusionist already keeps the place: the Mystic takes the other class')
+        self.assertEqual(TX.plan_ascensions([('Aaa', 'Necromancer'), ('Aab', 'Ninja')]), {}, 'a line the plan names nothing of: no want, the first open class')
+        self.assertEqual(TX.plan_ascensions([('Aaa', 'Mystic'), ('Aab', 'Mystic'), ('Aac', 'Mystic')]), {'Aaa': 'Illusionist', 'Aab': 'Elementalist'},
+                         'a third Mystic has no class of the plan left')
+
+    def test_the_oracles_window_offers_the_wanted_class_first(self):
+        allowed = [{'name': 'Elementalist', 'id': 5, 'i': 0}, {'name': 'Illusionist', 'id': 10, 'i': 1}]
+        self.assertEqual([c['name'] for c in TX.asc_choice_order(allowed, 'Illusionist')], ['Illusionist', 'Elementalist'])
+        self.assertEqual([c['name'] for c in TX.asc_choice_order(allowed, None)], ['Elementalist', 'Illusionist'], 'no want: the order of the window')
+        self.assertEqual([c['name'] for c in TX.asc_choice_order(allowed[:1], 'Illusionist')], ['Elementalist'], 'a wanted class that is locked: the open one')
+
+    def test_every_class_has_the_first_recommended_build_of_the_config(self):
+        with open(os.path.join(self.ROOT, 'data', 'scripts', 'chaos', 'passive_builds_config.lua'), encoding='utf-8') as f:
+            text = f.read()
+        body = text[text.index('\troles = {'):]
+        first = dict((m.group(1), m.group(2)) for m in re.finditer(r'^\t\t(\w+) = \{\n\t\t\t\{id = "(\w+)"', body, re.M))
+        self.assertEqual(len(first), 21)
+        keys = {name: name.lower().replace(' ', '') for name in TX.RECOMMENDED_BUILDS}
+        self.assertEqual(sorted(TX.RECOMMENDED_BUILDS.values()), sorted('%s_%s' % (k, role) for k, role in first.items()),
+                         'the table is the first Recommended build of each of the 21 classes of passive_builds_config.lua')
+        for name, build in TX.RECOMMENDED_BUILDS.items():
+            self.assertEqual(build, '%s_%s' % (keys[name], first[keys[name]]), name)
+        self.assertEqual(TX.recommended_build('Illusionist'), 'illusionist_support_weaver')
+        self.assertIsNone(TX.recommended_build('Nobody'))
+
+    def test_the_node_picks_name_a_side_of_each_pair_for_every_class_of_the_plan(self):
+        for cls in TX.PINNACLE_PLAN:
+            sides = TX.trial_pick_sides(cls)
+            self.assertEqual(len(sides), 3, cls)
+            self.assertTrue(all(x in (1, 2) for x in sides), cls)
+        self.assertEqual(TX.trial_pick_sides('Warrior'), (1, 1, 1), 'a class with no row takes the A nodes')
+        with open(os.path.join(self.ROOT, 'data', 'scripts', 'chaos', 'trials_nodes.lua'), encoding='utf-8') as f:
+            nodes = f.read()
+        # the Illusionist is the healer: its first pair is Mender's Gift (A), its last Grand Illusion (B: a survived lethal hit)
+        ill = nodes[nodes.index('[10] = { -- Illusionist'):nodes.index('[13] = { -- Samurai')]
+        self.assertLess(ill.index("Mender's Gift"), ill.index('Lucid Mind'))
+        self.assertLess(ill.index('Wellspring'), ill.index('Grand Illusion'))
+        self.assertEqual(TX.trial_pick_sides('Illusionist'), (1, 1, 2))
+
+    class TrialIO(FakeIO):
+        """a bot's trial state: `cleared` moves up by the helper's `trial clear`, `picks` by the window's trialChoose"""
+
+        def __init__(self, family='warrior', puzzle=False, cleared=0, picks=None):
+            FakeIO.__init__(self)
+            self.family, self.puzzle, self.cleared, self.picks = family, puzzle, cleared, list(picks or [0, 0, 0])
+            self.cmds, self.chose, self.refuse_clear = [], [], False
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append(command)
+            if command.startswith('trial clear'):
+                if self.refuse_clear:
+                    return {'err': 'the vocation has no trial'}
+                self.cleared = int(command.split()[-1])
+                return {'set': self.cleared}
+            if command == 'trial state':
+                a = {'family': self.family, 'cleared': self.cleared, 'maxTier': 3, 'tier': min(3, self.cleared + 1), 'level': 1900, 'picks': list(self.picks),
+                     'kinds': ['seals', 'wave', 'boss'] if self.puzzle else ['wave', 'boss']}
+                if self.puzzle:
+                    a['puzzle'] = True
+                return a
+            return None
+
+        async def request(self, opname, action, data, expect, timeout):
+            self.asked.append((opname, action, data))
+            if action == 'trialChoose' and self.picks[data['pair'] - 1] == 0 and data['pair'] <= self.cleared:
+                self.picks[data['pair'] - 1] = data['side']
+                self.chose.append((data['pair'], data['side']))
+            return {'action': 'trialState', 'data': {}}
+
+    def test_a_puzzle_family_gets_the_counted_grant(self):
+        io = self.TrialIO(family='mystic', puzzle=True)
+        fb = []
+        text = run(TX.trial_complete(io, 'Tester Aaa', 'Illusionist', fb))
+        self.assertIn('trial clear 3', io.cmds)
+        self.assertEqual(io.cleared, 3)
+        self.assertIn('trials 3/3', text)
+        self.assertIn('TEST ONLY grant', text)
+        self.assertEqual(len(fb), 1)
+        self.assertTrue(fb[0].startswith('grant trial clear'), 'a grant of the report, not a teleport: %s' % fb[0])
+        self.assertIn('seals', fb[0])
+        self.assertIn('seals puzzle', fb[0])
+
+    def test_the_tiers_of_a_fighting_family_are_played_one_by_one(self):
+        io = self.TrialIO()
+        keep = TX.trial_tier_run
+        ran = []
+
+        async def tier(io_, name, a, fallbacks):
+            ran.append(a['tier'])
+            io_.cleared += 1
+            return None
+        TX.trial_tier_run = tier
+        try:
+            fb = []
+            text = run(TX.trial_complete(io, 'Tester Aac', 'Juggernaut', fb))
+        finally:
+            TX.trial_tier_run = keep
+        self.assertEqual(ran, [1, 2, 3])
+        self.assertIn('trials 3/3 played tier(s) 1,2,3', text)
+        self.assertNotIn('grant', text)
+        self.assertEqual(fb, [])
+        self.assertFalse([c for c in io.cmds if c.startswith('trial clear')], 'no grant when the bot cleared them all')
+        again = run(TX.trial_complete(io, 'Tester Aac', 'Juggernaut', []))
+        self.assertEqual(again, 'trials 3/3', 'a character with the trials done does nothing')
+
+    def test_a_tier_the_bot_cannot_clear_is_granted_after_two_runs_each(self):
+        io = self.TrialIO(cleared=1)
+        keep = TX.trial_tier_run
+        ran = []
+
+        async def tier(io_, name, a, fallbacks):
+            ran.append(a['tier'])
+            return 'the guardian was not broken'
+        TX.trial_tier_run = tier
+        try:
+            fb = []
+            text = run(TX.trial_complete(io, 'Tester Aac', 'Juggernaut', fb))
+        finally:
+            TX.trial_tier_run = keep
+        self.assertEqual(ran, [2, 2, 2, 2], 'two runs a tier left: four runs in all, then the rest is granted')
+        self.assertEqual(io.cleared, 3)
+        self.assertIn('TEST ONLY grant', text)
+        self.assertEqual(len(fb), 1)
+        self.assertIn('4 runs failed: the guardian was not broken', fb[0])
+        self.assertIn('tiers 2-3', fb[0])
+
+    def test_a_refused_grant_is_reported_not_hidden(self):
+        io = self.TrialIO(puzzle=True)
+        io.refuse_clear = True
+        fb = []
+        text = run(TX.trial_complete(io, 'Tester Aaa', 'Illusionist', fb))
+        self.assertIn('the grant failed', text)
+        self.assertIn('REFUSED', fb[0])
+
+    def test_a_class_with_no_trial_is_named(self):
+        self.assertEqual(run(TX.trial_complete(self.TrialIO(family=None), 'Tester Aaa', 'Nobody', [])), 'trials: Nobody has no trial')
+
+    def test_one_node_of_each_cleared_pair_is_picked_by_the_table(self):
+        io = self.TrialIO(cleared=3)
+        text = run(TX.trial_pick(io, 'Tester Aaa', 'Illusionist'))
+        self.assertEqual(io.chose, [(1, 1), (2, 1), (3, 2)])
+        self.assertEqual(text, 'nodes 1/1/2 (wanted 1/1/2)')
+        self.assertTrue(all(a[:2] == ('passivetree', 'trialChoose') for a in io.asked))
+        io2 = self.TrialIO(cleared=2, picks=[2, 0, 0])
+        text = run(TX.trial_pick(io2, 'Tester Aac', 'Juggernaut'))
+        self.assertEqual(io2.chose, [(2, 2)], 'pair 3 is not open; pair 1 holds the other node: kept (a change costs a token and gold)')
+        self.assertEqual(text, 'nodes 2/2/0 (wanted 1/2/1)')
+
+    def test_the_recommended_build_is_reset_and_applied_else_added(self):
+        class IO(FakeIO):
+            def __init__(self, replies):
+                FakeIO.__init__(self)
+                self.script = list(replies)
+
+            async def request(self, opname, action, data, expect, timeout):
+                self.asked.append((opname, action, data))
+                return self.script.pop(0) if self.script else None
+
+        ok = {'action': 'autobuildApplied', 'data': {'message': 'Auto build: 120 nodes now allocated, 30 taken back.'}}
+        no = {'action': 'autobuildError', 'data': {'message': 'You need 4,000,000 gold coins (carried or in the bank) to reset your tree first.'}}
+        same = {'action': 'autobuildError', 'data': {'message': 'Nothing would change: you already have this build, or you have no free points.'}}
+        io = IO([ok])
+        g = {'notes': []}
+        self.assertTrue(run(TX.gear_tree_recommended(io, g, 'juggernaut_unbreakable')))
+        self.assertEqual(io.asked[0][2], {'build': 'juggernaut_unbreakable', 'mode': 'reset', 'cost': TX.TREE_RESET_COST})
+        self.assertIn('juggernaut_unbreakable (reset)', g['tree'])
+        io = IO([no, ok])
+        g = {'notes': []}
+        self.assertTrue(run(TX.gear_tree_recommended(io, g, 'juggernaut_unbreakable')))
+        self.assertEqual([a[2]['mode'] for a in io.asked], ['reset', 'add'], 'no gold for the reset: the build is added to the tree')
+        self.assertEqual(len(g['notes']), 1)
+        io = IO([same])
+        g = {'notes': []}
+        self.assertTrue(run(TX.gear_tree_recommended(io, g, 'juggernaut_unbreakable')))
+        self.assertEqual(len(io.asked), 1, 'a tree that holds the build already: done at once')
+        self.assertIn('already held', g['tree'])
+        io = IO([no, no])
+        g = {'notes': []}
+        self.assertFalse(run(TX.gear_tree_recommended(io, g, 'juggernaut_unbreakable')), 'both refused: the focus builds are the fallback')
+        self.assertEqual(len(g['notes']), 2)
+
+    def test_the_gear_up_takes_the_recommended_build_in_place_of_the_focus_builds(self):
+        keep = (TX.gear_wear, TX.gear_potions, TX.gear_tree, TX.gear_tree_rest, TX.gear_tree_recommended, TX.make_room, TX.found_look, TX.heal_rule_ready)
+        calls = []
+
+        async def wear(io, g, refused):
+            return None
+
+        async def pots(io, name, g):
+            pass
+
+        async def focus(io, g, build=TX.TREE_BUILD):
+            calls.append('focus')
+
+        async def rest(io, g, build=TX.TREE_REST):
+            calls.append('rest')
+
+        async def rec(io, g, build):
+            calls.append(('rec', build))
+            return build != 'nope'
+
+        async def room(io, key):
+            return 20
+
+        async def heal(io, g):
+            pass
+        TX.gear_wear, TX.gear_potions, TX.gear_tree, TX.gear_tree_rest, TX.gear_tree_recommended, TX.make_room, TX.heal_rule_ready = wear, pots, focus, rest, rec, room, heal
+        try:
+            run(TX.gear_up(FakeIO(), 'Tester Aaa', 'Juggernaut', 1900, tree='juggernaut_unbreakable'))
+            self.assertEqual(calls, [('rec', 'juggernaut_unbreakable')], 'the Recommended build only')
+            del calls[:]
+            run(TX.gear_up(FakeIO(), 'Tester Aaa', 'Juggernaut', 1900, tree='nope'))
+            self.assertEqual(calls, [('rec', 'nope'), 'focus', 'rest'], 'refused: the old path is the fallback')
+            del calls[:]
+            run(TX.gear_up(FakeIO(), 'Tester Aaa', 'Juggernaut', 1900))
+            self.assertEqual(calls, ['focus', 'rest'], 'no tree asked for: the old path')
+            del calls[:]
+            run(TX.gear_up(FakeIO(), 'Tester Aaa', 'Juggernaut', 1900, tree=False))
+            self.assertEqual(calls, [], 'tree=False: no tree step at all (the first gear-up of a pinnacle bot)')
+        finally:
+            TX.gear_wear, TX.gear_potions, TX.gear_tree, TX.gear_tree_rest, TX.gear_tree_recommended, TX.make_room, TX.found_look, TX.heal_rule_ready = keep
+
+    class AscIO(FakeIO):
+        def __init__(self, cls, line_ok=True):
+            FakeIO.__init__(self)
+            self.cls_now, self.ascended, self.cmds, self.line_ok = cls, False, [], line_ok
+
+        def class_of(self, name):
+            return self.cls_now
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append(command)
+            if command == 'ascend state':
+                return {'ascended': self.ascended, 'eligible': self.line_ok and not self.ascended, 'stage': 0, 'wait': 0}
+            if command == 'info':
+                return {'voc': 10}
+            return None
+
+    def test_the_ascension_is_the_real_quest_with_the_proof_as_a_named_grant(self):
+        keep = TX.check_ascension_walk
+        asked = []
+
+        async def walk(io, name, cls, level):
+            asked.append((name, cls, TX.ASC_WANT.get(name)))
+            io.ascended, io.cls_now = True, 'Illusionist'
+            return TX.Result('ascension_walk', name, cls, TX.PASS, 'steps: calling, proof, trial, choice; Mystic became Illusionist', ['enter temple (x)'])
+        TX.check_ascension_walk = walk
+        TX.ASC_WANT['Tester Aaa'] = 'Illusionist'
+        try:
+            io = self.AscIO('Mystic')
+            fb = []
+            text = run(TX.asc_complete(io, 'Tester Aaa', 'Mystic', 1900, fb))
+        finally:
+            TX.check_ascension_walk = keep
+            TX.ASC_WANT.clear()
+        self.assertEqual(asked, [('Tester Aaa', 'Mystic', 'Illusionist')])
+        self.assertIn('ascension pass', text)
+        self.assertIn('enter temple (x)', fb)
+        self.assertTrue(any(f.startswith('grant ascend proof') and 'TEST ONLY' in f for f in fb), 'the Proof of Strength credit is a named TEST ONLY grant: %s' % fb)
+        self.assertIn('info', io.cmds, 'the class it is now is read back (the bot follows its vocation)')
+        done = run(TX.asc_complete(self.AscIO('Juggernaut', line_ok=False), 'Tester Aac', 'Juggernaut', 1900, []))
+        self.assertEqual(done, 'ascended already (Juggernaut)')
+
+    def test_the_complete_character_runs_ascension_trials_and_picks_in_order(self):
+        keep = (TX.asc_complete, TX.trial_complete, TX.trial_pick)
+        order = []
+
+        async def asc(io, name, cls, level, fb):
+            order.append('asc')
+            io.cls_now = 'Illusionist'
+            return 'ascension pass'
+
+        async def trials(io, name, cls, fb):
+            order.append(('trials', cls))
+            return 'trials 3/3'
+
+        async def picks(io, name, cls):
+            order.append(('picks', cls))
+            return 'nodes 1/1/2'
+        TX.asc_complete, TX.trial_complete, TX.trial_pick = asc, trials, picks
+        try:
+            now, text = run(TX.complete_character(self.AscIO('Mystic'), 'Tester Aaa', 'Mystic', 1900, []))
+        finally:
+            TX.asc_complete, TX.trial_complete, TX.trial_pick = keep
+        self.assertEqual(order, ['asc', ('trials', 'Illusionist'), ('picks', 'Illusionist')], 'the trials and the picks are the class it became')
+        self.assertEqual(now, 'Illusionist')
+        self.assertEqual(text, 'ascension pass, trials 3/3, nodes 1/1/2')
+
+    def test_the_party_prep_completes_then_gears_with_the_recommended_build(self):
+        keep = (TX.complete_character, TX.gear_up, TX.pinnacle_gear)
+        seen = []
+
+        async def complete(io, name, cls, level, fb):
+            seen.append(('complete', cls))
+            return 'Illusionist', 'ascension pass, trials 3/3, nodes 1/1/2'
+
+        async def up(io, name, cls, level, tree=None):
+            seen.append(('up', cls, tree))
+            return TX.Result('gear_up', name, cls, TX.PASS, 'passive tree illusionist_support_weaver (reset): ok', [])
+
+        async def gear(io, r, fb):
+            return 'set gear: helmet'
+        TX.complete_character, TX.gear_up, TX.pinnacle_gear = complete, up, gear
+        try:
+            text = run(TX.pinnacle_prep(FakeIO(), 'Tester Aaa', 'Mystic', 1900, []))
+            self.assertEqual(seen, [('up', 'Mystic', False), ('complete', 'Mystic'), ('up', 'Illusionist', 'illusionist_support_weaver')],
+                             'a weapon first (no tree), then the complete character, then the Recommended build of the class it became')
+            self.assertIn('trials 3/3', text)
+            self.assertIn('set gear: helmet', text)
+            del seen[:]
+            TX.PINNACLE_COMPLETE[0] = False
+            run(TX.pinnacle_prep(FakeIO(), 'Tester Aaa', 'Mystic', 1900, []))
+            self.assertEqual(seen, [('up', 'Mystic', None)], 'the O684 bots: no completion, the focus builds')
+        finally:
+            TX.complete_character, TX.gear_up, TX.pinnacle_gear = keep
+            TX.PINNACLE_COMPLETE[0] = True
+
+    class LoadIO(FakeIO):
+        def __init__(self, cards=None, supports=None):
+            FakeIO.__init__(self)
+            self.cmds, self.cards, self.supports = [], cards, supports
+
+        def rotation_words(self, n=3):
+            return ['exori a', 'exori b', 'exori c'][:n]
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append((command, kind))
+            if command.startswith('loadout cards'):
+                return self.cards
+            if command.startswith('loadout support'):
+                return self.supports
+            return None
+
+    def test_every_class_of_the_plan_has_a_loadout_with_a_best_set(self):
+        for cls, element in (('Juggernaut', 'Earth'), ('Deadeye', 'Fire'), ('Elementalist', 'Holy'), ('Illusionist', 'Death'), ('Samurai', 'Death')):
+            self.assertEqual(TX.loadout_row(cls)[0], element, cls)
+        self.assertEqual(TX.loadout_row('Nobody'), TX.PINNACLE_LOADOUT_DEFAULT)
+        self.assertEqual(TX.PINNACLE_LOADOUT['Illusionist'][2], 'heals', 'the healer socketed its heals')
+        self.assertEqual(TX.PINNACLE_RARITY, 10, 'Divine')
+        with open(os.path.join(self.ROOT, 'data', 'lib', 'chaos_supports_config.lua'), encoding='utf-8') as f:
+            text = f.read()
+        keys = set(re.findall(r'\{key = "(\w+)", name = ', text))
+        for cls, (element, ks, which) in TX.PINNACLE_LOADOUT.items():
+            self.assertTrue(set(ks) <= keys, '%s: support keys of the supports config: %s' % (cls, ks))
+        for words in TX.PINNACLE_HEAL_WORDS:
+            self.assertEqual(sum(1 for c in TX.PINNACLE_HEAL_SPELLS.values() for w, _, _ in c if w == words), 1)
+
+    def test_the_loadout_is_asked_and_named_as_a_grant(self):
+        io = self.LoadIO({'element': 'Earth', 'cards': [{'id': 1, 'spell': 'Earthbreaker'}, {'id': 2, 'spell': 'Reaping Gyre'}, {'id': 3, 'spell': 'x'}], 'set': True},
+                         {'supports': [{'name': 'Earthbreaker', 'put': ['keenedge', 'echo'], 'refused': []}, {'name': 'Colossus Fall', 'put': ['keenedge'], 'refused': ['echo: x']}]})
+        fb = []
+        text = run(TX.pinnacle_loadout(io, 'Tester Aac', 'Juggernaut', fb))
+        self.assertEqual([c[0] for c in io.cmds], ['loadout cards Earth', 'loadout support keenedge,echo exori a;exori b;exori c'])
+        self.assertIn('cards Earth x3 set', text)
+        self.assertIn('supports keenedge/echo on Earthbreaker keenedge+echo, Colossus Fall keenedge', text)
+        self.assertEqual(len(fb), 2)
+        self.assertTrue(fb[0].startswith('grant cards') and 'TEST ONLY' in fb[0], fb[0])
+        self.assertTrue(fb[1].startswith('grant support runes') and '3 Mythic' in fb[1], fb[1])
+
+    def test_the_healer_socketed_its_heals_not_its_attacks(self):
+        io = self.LoadIO({'cards': [], 'set': False}, {'supports': []})
+        run(TX.pinnacle_loadout(io, 'Tester Aaa', 'Illusionist', []))
+        self.assertEqual(io.cmds[1][0], 'loadout support quickening,thrift saen spek;reth vas spek;saen qhal')
+
+    def test_an_old_helper_or_a_refusal_is_reported(self):
+        io = self.LoadIO({'err': 'no cards system'}, None)
+        fb = []
+        text = run(TX.pinnacle_loadout(io, 'Tester Aac', 'Juggernaut', fb))
+        self.assertIn('cards: no cards system', text)
+        self.assertIn('supports: no answer', text)
+        self.assertEqual(fb, [], 'nothing was granted: no fallback named')
+
+    def test_the_complete_characters_are_the_default(self):
+        self.assertTrue(TX.PINNACLE_COMPLETE[0])
+        self.assertEqual(TX.PINNACLE_PLAN, ('Illusionist', 'Juggernaut', 'Deadeye', 'Elementalist', 'Samurai'))
+        self.assertTrue(TX.PINNACLE_HEALERS <= set(TX.RECOMMENDED_BUILDS))
 
 
 if __name__ == '__main__':

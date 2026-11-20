@@ -1457,6 +1457,7 @@ function T.probe(player)
 		local cleared = T.tierCleared(player, voc)
 		local tier = math.min(#c.tiers, cleared + 1)
 		out.cleared, out.tier, out.minLevel, out.maxTier = cleared, tier, c.tiers[tier].minLevel, #c.tiers
+		out.picks = T.picks(player, voc) -- O685: the held node of each pair (0 none, 1 the A node, 2 the B node)
 		out.problem = M.enterProblem(tier, player:getLevel(), cleared, os.time(), getS(player, S().cooldown), "en")
 		out.kinds = {}
 		for _, st in ipairs(M.stages(famKey, tier)) do
@@ -1500,6 +1501,26 @@ end
 -- TEST ONLY (`!tester trial close`): the asker leaves as by the Leave button (a failed run with no cooldown, "Nothing is lost")
 function T.testerClose(player)
 	return T.leave(player) and true or false
+end
+
+-- TEST ONLY (`!tester trial clear [N]`, O685): the cleared tier of the asker's vocation set to N (0 to the last tier, default the last) as /trial clear
+-- does. Only for a family whose trial the bots cannot play (seals and marks stages are puzzles): a counted fallback of the harness, never a game rule.
+-- -> the tier now, or nil + why
+function T.testerClear(player, tier)
+	local voc = vocId(player)
+	if not M.family(voc) then
+		return nil, "the vocation has no trial"
+	end
+	if T.runs[player:getId()] then
+		return nil, "inside a trial"
+	end
+	local t = tier == nil and #C().tiers or Chaos.toInt(tier, 0, #C().tiers)
+	if t == nil then
+		return nil, "the tier is 0 to " .. #C().tiers
+	end
+	player:setStorageValue(S().tierBase + voc, t)
+	T.refresh(player)
+	return t
 end
 
 -- ======================================================================== opcode actions (the tree window)

@@ -1069,6 +1069,24 @@ class CheckIO(KeyIO):
         await b.conn.w.drain()
         return True
 
+    def rotation_words(self, n=3):
+        """O685: the words of the first `n` attack spells of the bot's rotation (the spells a support rune goes into)"""
+        return [s['words'] for s in (getattr(self.bot, 'rotation', None) or []) if s.get('group') == 'attack'][:n]
+
+    async def cast_words_of(self, name, words, gap=2.0):
+        """O685: the bot casts the spell of `words` of its own class now when it is ready (a healer's Mirror Mend, Lucid Reverie, Kindled Breath: no
+        target word, the spell picks the most hurt party member). The cooldown is the spell's own, the group cooldown the spell's group. -> True when it was cast"""
+        b, now = self._bot(name), time.monotonic()
+        spell = next((s for s in (getattr(b, 'all_spells', None) or []) if s.get('words') == words and not s.get('needlearn')), None) if b is not None else None
+        if b is None or spell is None or b.ready.get(words, 0) > now or b.ready.get(spell['group'], 0) > now:
+            return False
+        b.say(words)
+        b.ready[words] = now + max(gap, spell['cooldown'] / 1000.0)
+        b.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
+        b.results.behaviour('support_cast', 'tried')
+        await b.conn.w.drain()
+        return True
+
     def set_potions(self, health, mana):
         """O681: the potions the heal rule drinks (client ids; `!tester info` answers the same once the bot carries the flasks)"""
         info = self.bot.helper.setdefault('info', {})
@@ -1751,6 +1769,7 @@ class TesterBot(LT.Bot):
                 self.hunt_since = None
             if hk == 'info':
                 self.level = data.get('level', self.level)
+                self.follow_vocation(data.get('voc'))   # O685: an ascension in the run changes the class
                 self.refresh_rotation()   # O665: state.json holds the level of the setup; deaths and levelling moved the real one
                 cid = data.get('cid')
                 if isinstance(cid, int) and cid > 0 and cid != self.cid:
@@ -2147,6 +2166,18 @@ class TesterBot(LT.Bot):
             await asyncio.sleep(0.1)
             waited += 0.1
         self.walk(random.randint(2, 5))
+        return True
+
+    def follow_vocation(self, voc):
+        """O685: the class the character is now (the helper's `info` carries its vocation id): an ascension in a run (the Oracle's Choice) makes a Mystic an
+        Illusionist, and its rotation, heal and spell list are the new class's. -> True when the class changed"""
+        ctx = getattr(self.args, 'rotation_ctx', None)
+        if not ctx or isinstance(voc, bool) or not isinstance(voc, int) or voc <= 0 or voc == self.vocation:
+            return False
+        name = ctx[2].get(voc)
+        if not name:
+            return False
+        self.vocation, self.cls, self.rotation_level = voc, name, None
         return True
 
     def refresh_rotation(self):

@@ -1730,6 +1730,40 @@ eq(_r665.rotation_level, 300, 'and it is remembered')
 _r665.on_text('[tester-helper] info {"cid":777,"level":300}')
 eq(_r665.rotation_level, 300, 'a second answer of the same level rebuilds nothing')
 eq(T.TesterBot(20, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None}).refresh_rotation(), False, 'no context (a mocked run): the rotation is left as it is')
+# O685: an ascension in the run makes the bot the class it became (the helper's info carries the vocation id): its class, rotation and heal are the new class's
+_args685 = A()
+_args685.rotation_ctx = (_sp665, {}, {1: 'Mystic', 10: 'Illusionist'}, ({'Mystic': _row665}, _names665, _area665))
+_r685 = T.TesterBot(21, dict(bot, level=1900, vocation=1, **{'class': 'Mystic'}), _args685, 1, T.Results(1), T.class_spells(_sp665, {}, 'Mystic', 1900, ({'Mystic': _row665}, _names665, _area665)))
+eq((_r685.cls, _r685.vocation), ('Mystic', 1), 'O685: the bot starts as the Mystic of the state file')
+eq(_r685.follow_vocation(1), False, 'the same vocation: nothing changes')
+eq(_r685.follow_vocation(None), False, 'no vocation in the answer: nothing changes')
+eq(_r685.follow_vocation(True), False, 'a boolean is no vocation id')
+eq(_r685.follow_vocation(99), False, 'a vocation the run does not know: nothing changes')
+_r685.on_text('[tester-helper] info {"cid":778,"level":1900,"voc":10}')
+eq((_r685.cls, _r685.vocation), ('Illusionist', 10), 'O685: the info answer made the bot an Illusionist')
+eq(_r685.rotation_level, 1900, 'and its rotation was built again for the new class')
+# a healer class casts its heal spells by their words: the cooldown of the spell and of its group are the spell's
+_mend = {'name': 'Mirror Mend', 'words': 'saen spek', 'group': 'healing', 'level': 60, 'cooldown': 2000, 'groupcooldown': 1000, 'needlearn': False, 'params': True}
+_lucid = {'name': 'Lucid Reverie', 'words': 'reth vas spek', 'group': 'healing', 'level': 120, 'cooldown': 20000, 'groupcooldown': 1000, 'needlearn': False, 'params': False}
+_h685 = T.TesterBot(22, dict(bot, level=1900), A(), 1, T.Results(1), {'rotation': [], 'heal': None, 'all': [_mend, _lucid]})
+_h685.conn, _h685.cid, _h685.alive = C(), 0x10000016, True
+_h685.conn.w = type('W', (), {'drain': staticmethod(lambda: asyncio.sleep(0))})()
+_said685 = []
+_h685.say = lambda text, kind=1: _said685.append(text)
+T.ONLINE.clear()
+T.ONLINE[_h685.cid] = _h685
+_io685 = T.CheckIO.__new__(T.CheckIO)
+_io685.bot, _io685.clock = _h685, {'stop': False}
+eq(asyncio.run(_io685.cast_words_of(_h685.name, 'saen spek')), True, 'cast_words_of: Mirror Mend is cast by its words')
+eq(_said685, ['saen spek'], 'with its words, no name')
+eq(asyncio.run(_io685.cast_words_of(_h685.name, 'saen spek')), False, 'on cooldown (and the group): nothing')
+eq(asyncio.run(_io685.cast_words_of(_h685.name, 'reth vas spek')), False, 'the group cooldown of the first cast holds the second')
+_h685.ready.clear()
+eq(asyncio.run(_io685.cast_words_of(_h685.name, 'reth vas spek')), True, 'Lucid Reverie when the group is ready')
+eq(asyncio.run(_io685.cast_words_of(_h685.name, 'nothing here')), False, 'a spell the class does not list: nothing')
+eq(asyncio.run(_io685.cast_words_of('Tester Nobody', 'saen spek')), False, 'a bot that is not in game: nothing')
+T.ONLINE.clear()
+
 # the cadence: an attack goes off when its group is ready (2.0 s + a hair), not on a 0.25 s grid
 ok(abs(TC.beat_delay(100.0, {'attack': 100.1}) - 0.1) < 1e-9, 'the attack group is ready in 0.1 s: the guard wakes up then')
 eq(TC.beat_delay(100.0, {'attack': 101.5}), TC.BEAT_MAX, 'the attack group is far off: the usual beat')

@@ -193,5 +193,37 @@ do
 	for i = 1, cfg.limits.maxRuns - cfg.tester.reserve + 1 do T.runs[100 + i] = nil end
 end
 
+-- O685: the held nodes in the probe, and the TEST ONLY clear of the tier of a family whose trial is a puzzle (`!tester trial clear`)
+do
+	local mystic = newPlayer(30, "Tester Fff", true, vocOf("mystic"))
+	local pr = T.probe(mystic)
+	ok(pr.picks and pr.picks[1] == 0 and pr.picks[2] == 0 and pr.picks[3] == 0, "the probe lists the held node of each pair: none yet")
+	local t, why = T.testerClear(mystic)
+	eq(t, 3, "testerClear: the last tier by default")
+	eq(mystic.storage[M.cfg().storage.tierBase + mystic.voc], 3, "the tier is stored for the vocation of the asker")
+	pr = T.probe(mystic)
+	ok(pr.cleared == 3 and pr.tier == 3 and pr.maxTier == 3, "the probe reads the cleared tiers")
+	t = T.testerClear(mystic, 1)
+	eq(t, 1, "testerClear 1: the tier asked")
+	eq(T.probe(mystic).cleared, 1, "one tier cleared")
+	t, why = T.testerClear(mystic, 4)
+	ok(t == nil and why:find("0 to 3", 1, true), "testerClear: a tier above the last is refused with the reason")
+	eq(T.probe(mystic).cleared, 1, "and nothing changed")
+	t, why = T.testerClear(newPlayer(31, "Tester Ggg", true, 0))
+	ok(t == nil and why:find("no trial", 1, true), "testerClear: a vocation with no trial")
+	local busy = newPlayer(32, "Tester Hhh", true, vocOf("warrior"))
+	T.runs[busy.id] = {pid = busy.id, over = false}
+	t, why = T.testerClear(busy)
+	ok(t == nil and why:find("inside", 1, true), "testerClear: not inside a trial")
+	T.runs[busy.id] = nil
+	-- a pick is a held node: the probe shows it after the window's own choose
+	local warrior = newPlayer(33, "Tester Iii", true, vocOf("warrior"))
+	T.testerClear(warrior, 2)
+	local okc = T.choose(warrior, 2, 2)
+	ok(okc, "the window's choose takes the B node of the second pair")
+	local picks = T.probe(warrior).picks
+	ok(picks[1] == 0 and picks[2] == 2 and picks[3] == 0, "the probe shows the held node: pair 2, side B")
+end
+
 print(string.format("trials_probe_test: %d checks, %d failures", checks, fails))
 os.exit(fails == 0 and 0 or 1)
