@@ -1385,6 +1385,11 @@ jobs:
           shellcheck tools/ci/loot_video.sh
           shellcheck tools/ci/clip_tour.sh  # the mechanics clip recorder of the website (O687)
 
+      - name: 'Boss fight video (O689, manual workflow boss-video.yml: the report and redaction tool, the party table against pinnacle_config.lua, the workflow rules, the script run with a fake client and fake bots when Xvfb and ffmpeg exist; shellcheck; the module logic test is in the client loop)'
+        run: |
+          python3 -I tools/ci/boss_video_test.py
+          shellcheck tools/ci/boss_video.sh
+
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
 

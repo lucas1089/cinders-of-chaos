@@ -125,7 +125,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 35
+HELPER_VERSION = 36
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1826,11 +1826,21 @@ end
 
 local function loadoutCards(player, element)
 	local C, D, S = ChaosCardsConfig, ChaosCardDeck, ChaosSupports
-	if not (C and C.cards and D and D.add and ChaosCards and ChaosCards.toggle and S and S.spellInfo) then
+	if not (C and C.cards and D and D.add and ChaosCards and ChaosCards.toggle) then
 		return {err = "no cards system"}
 	end
 	local voc, level = player:getVocation():getId(), player:getLevel()
+	-- O689: a convert line is cast by the classes of ChaosCardsConfig.lineClasses (ChaosCardsCore.castsLine); the Frostfall Rune line is no
+	-- attack spell of ChaosSupports.spellInfo and every class casts it, so the old spellInfo test never picked it (4 of 5 O685 bots had 2 cards)
+	local Core = ChaosCardsCore
+	local className = Core and Core.classNameOf and Core.classNameOf(voc)
 	local function castable(card)
+		if className and Core.castsLine and C.lineClasses then
+			return Core.castsLine(className, card)
+		end
+		if not (S and S.spellInfo) then
+			return false
+		end
 		for _, sp in ipairs(card.spells or {}) do
 			local info = S.spellInfo(sp[2])
 			if info and info.level <= level and (info.vocations[voc] or next(info.vocations) == nil) then

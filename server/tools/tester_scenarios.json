@@ -11117,10 +11117,11 @@
   "spellRanks": {
    "actions": [
     "pick",
-    "open",
-    "clear"
+    "open"
    ],
-   "client": [],
+   "client": [
+    "game_spellranks"
+   ],
    "dataKeys": [],
    "files": [
     "spell_ranks.lua"

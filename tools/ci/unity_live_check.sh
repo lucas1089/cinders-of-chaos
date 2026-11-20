@@ -22,6 +22,12 @@
 #                   key in; the workflow makes it with openssl rand and masks it, no repository secret)
 #   UL_LOOT_TESTER=1  (--serve-only) the main character of each identity is a "Tester Xxx" (new_testers: level 1500, the helper's storage marker) and the TEST ONLY
 #                   tester helper is installed, so `!tester explode run` works for the client of .github/workflows/loot-video.yml (O676)
+#   UL_PINNACLE_PARTY=1  (--serve-only, one identity) the boss fight video of .github/workflows/boss-video.yml (O689): the main character of the identity is a
+#                   SPECTATOR (a staff character, group 6, 2,000,000 health, made in this run's database only), five complete party testers are made for the
+#                   pinnacle fight of server/tools/tester_checks.py (Mystic, Ranger, Warrior, Mystic, Thief, all at the level of the boss: the checks make an
+#                   Illusionist, Deadeye, Juggernaut, Elementalist and Samurai of them), the TEST ONLY tester helper is installed and the closed switch
+#                   (data/chaos_testers_closed) is put on. WORK/party.env (mode 600) holds what tools/ci/boss_video.sh needs, the database login of the run
+#                   included. UL_PINNACLE_BOSS malgrath (default) | vhoss | talath | varkhul picks the level (1900 / 2100 / 2300 / 2500)
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
 #   (none)          the run above: Core.LiveCheck plays, reports, summary, the server goes down at the end
@@ -81,7 +87,7 @@ if [ "$MODE" = stop ]; then
     fi
     echo "database stopped"
   fi
-  rm -f "$W"/client-*.env "$W/.db-user"
+  rm -f "$W"/client-*.env "$W/.db-user" "$W/party.env" "$W/run/tester-key"
   echo "env files and database password removed"
   exit 0
 fi
@@ -239,7 +245,7 @@ install_chaos() {
 # install_tester_helper: the TEST ONLY helper of the tester bots into data/scripts, as chaos-ctl.sh testers start does, only when the group `tester` runs. It acts for a character
 # named "Tester Xxx" with the storage 7102900 = 1 and for no other (tester_helper_core.lua H.eligible), and it is never part of install_all.py.
 install_tester_helper() {
-  case ",$GROUPS_TO_RUN," in *,tester,*) ;; *) [ "${UL_LOOT_TESTER:-0}" = 1 ] || return 0 ;; esac
+  case ",$GROUPS_TO_RUN," in *,tester,*) ;; *) [ "${UL_LOOT_TESTER:-0}" = 1 ] || [ "${UL_PINNACLE_PARTY:-0}" = 1 ] || return 0 ;; esac
   [ -f "$REPO/server/tools/tester_helper.lua" ] && [ -f "$REPO/server/tools/tester_helper_core.lua" ] || die "server/tools/tester_helper.lua is missing"
   cp "$REPO/server/tools/tester_helper.lua" "$SERVER/data/scripts/zz_tester_helper.lua"
   cp "$REPO/server/tools/tester_helper_core.lua" "$SERVER/data/scripts/zz_tester_helper_core.lua"
@@ -423,6 +429,89 @@ INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7100252, 101 F
 SQL
 }
 
+# new_spectator: the camera of the boss fight video (O689, UL_PINNACLE_PARTY=1): one staff character, group 6 on an account of type 6 like the staff of new_chars, level 1500,
+# 2,000,000 health and mana so that nothing the boss or an add does can take it, at the temple stair. It is not a tester (no storage marker, no "Tester" name): the pinnacle arena
+# lets staff stand in it (Chaos.sweepIntruders skips staff), `/ghost` hides it from the monsters, `/goto NAME` takes it to a party member, `/instances pinnacle` tells it when the
+# fight opens and ends. Sets PA PN PP like new_chars.
+new_spectator() {
+  RUN_NO=$((RUN_NO + 1))
+  PA="lcs$RUN_NO$(rand_hex 3)"
+  local k=$((RUN_NO - 1)) tail_letter=(A B C D E F G H I J K L)
+  PN="Live ${PRIM_NAMES[$((k % 12))]} ${tail_letter[$((k / 12))]}"
+  PP=$(rand_hex 12)
+  ALL_SECRETS+=("$PP")
+  local px py pz exp
+  IFS=, read -r px py pz <<< "$TEMPLE_AT"
+  exp=$(python3 -I -c 'L = 1500; print(50 * (L ** 3 - 6 * L ** 2 + 17 * L - 12) // 3)')
+  dbq chaos <<SQL
+INSERT INTO accounts (name, password, type, creation) VALUES ('$PA', SHA1('$PP'), 6, UNIX_TIMESTAMP());
+INSERT INTO players (name, group_id, account_id, vocation, level, experience, health, healthmax, mana, manamax, cap, soul,
+                     sex, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons, town_id, posx, posy, posz, lastlogin)
+  SELECT '$PN', 6, id, 4, 1500, $exp, 2000000, 2000000, 2000000, 2000000, 400000, 100, 1, 128, 78, 68, 58, 76, 3, 2, $px, $py, $pz, 0 FROM accounts WHERE name = '$PA';
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7100252, 101 FROM players WHERE name = '$PN';
+SQL
+}
+
+# pinnacle_level BOSS: the character level that opens that pinnacle boss (pinnacle_config.lua refLevel; tools/ci/boss_video_test.py holds this table to the config)
+pinnacle_level() {
+  case "$1" in
+    malgrath) echo 1900 ;;
+    vhoss) echo 2100 ;;
+    talath) echo 2300 ;;
+    varkhul) echo 2500 ;;
+    *) die "UL_PINNACLE_BOSS: malgrath, vhoss, talath or varkhul" ;;
+  esac
+}
+
+# setup_pinnacle_party: the five testers of the fight (O689, UL_PINNACLE_PARTY=1), made by server/tools/testers.py setup in this run's private database, the way the local runs of O684 and
+# O685 had them: base classes (the checks ascend them: Illusionist, Deadeye, Juggernaut, Elementalist, Samurai, PINNACLE_PLAN), the level of the boss, health, mana and capacity of
+# a hunter of that level (loadtest.class_stats). The accounts get a stock SHA-1 like every other account of this script (the server re-hashes at the first login). Writes the
+# closed switch, the guard key file the testers read (never an argument) and WORK/party.env for tools/ci/boss_video.sh. Nothing secret is printed.
+setup_pinnacle_party() {
+  local boss=${UL_PINNACLE_BOSS:-malgrath} level state="$WORK/testers" keyfile="$RUN/tester-key"
+  level=$(pinnacle_level "$boss")
+  log "pinnacle party ($boss, level $level): five complete testers, the closed switch, the key file"
+  printf 'on\n' > "$SERVER/data/chaos_testers_closed"
+  (umask 077; printf '%s\n' "$GUARD_KEY" > "$keyfile")
+  export CHAOS_DB_HOST=127.0.0.1 CHAOS_DB_PORT="$DB_PORT" CHAOS_DB_USER=chaos CHAOS_DB_PASS="$DBPASS" CHAOS_DB_NAME=chaos
+  python3 -I "$REPO/server/tools/testers.py" setup --count 5 --levels "$level,$level,$level,$level,$level" \
+    --classes Mystic:1,Ranger:1,Warrior:1,Mystic:1,Thief:1 --server-dir "$SERVER" --state "$state" --town 1 | sed 's/^/   /'
+  python3 -I - "$state/state.json" <<'PY' | dbq chaos
+import json, sys
+for b in json.load(open(sys.argv[1]))['bots']:
+    assert all(c.isalnum() or c in '-_' for c in b['password']) and all(c.isalnum() for c in b['account'])
+    print("UPDATE accounts SET password = SHA1('%s') WHERE name = '%s';" % (b['password'], b['account']))
+PY
+  local names
+  names=$(python3 -I - "$state/state.json" <<'PY'
+import json, sys
+print(','.join(b['name'] for b in json.load(open(sys.argv[1]))['bots']))
+PY
+)
+  [ "$(printf '%s' "$names" | tr ',' '\n' | wc -l)" = 5 ] || die "the pinnacle party has not five testers: $names"
+  (
+    umask 077
+    {
+      printf 'export PARTY_NAMES=%q\n' "$names"
+      printf 'export PARTY_BOSS=%q\n' "$boss"
+      printf 'export PARTY_LEVEL=%q\n' "$level"
+      printf 'export TESTERS_STATE=%q\n' "$state"
+      printf 'export TESTERS_KEY_FILE=%q\n' "$keyfile"
+      printf 'export TESTERS_SERVER_DIR=%q\n' "$SERVER"
+      printf 'export TESTERS_TFS_LOG=%q\n' "$WORK/tfs.log"
+      printf 'export TESTERS_HOST=%q\n' 127.0.0.1
+      printf 'export TESTERS_PORT=%q\n' "$LOGIN_PORT"
+      printf 'export CHAOS_DB_HOST=%q\n' 127.0.0.1
+      printf 'export CHAOS_DB_PORT=%q\n' "$DB_PORT"
+      printf 'export CHAOS_DB_USER=%q\n' chaos
+      printf 'export CHAOS_DB_PASS=%q\n' "$DBPASS"
+      printf 'export CHAOS_DB_NAME=%q\n' chaos
+    } > "$WORK/party.env"
+  )
+  chmod 600 "$WORK/party.env"
+  echo "   party: $names (state $state, env $WORK/party.env)"
+}
+
 # live_run GROUP IDENTITY SCENARIOS [extra Core.LiveCheck arguments]  (characters made by new_chars first)
 live_run() {
   local group=$1 identity=$2 scenarios=$3; shift 3
@@ -508,7 +597,9 @@ serve_clients() {
   local id file
   for id in ${IDENTITIES//,/ }; do
     case "$id" in extended|chaos) ;; *) die "unknown identity $id" ;; esac
-    if [ "${UL_LOOT_TESTER:-0}" = 1 ]; then new_testers "$id"; else new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"; fi   # O676: a tester main character for the loot video
+    if [ "${UL_PINNACLE_PARTY:-0}" = 1 ]; then new_spectator   # O689: the camera of the boss fight video
+    elif [ "${UL_LOOT_TESTER:-0}" = 1 ]; then new_testers "$id"   # O676: a tester main character for the loot video
+    else new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"; fi
     local main_a=$PA main_n=$PN main_p=$PP
     new_newbie "$id"   # one more, never logged in (the new player first minute of the player smoke, O433); it sets PA PN PP, the normal ones are kept above
     file="$WORK/client-$id.env"
@@ -531,6 +622,7 @@ serve_clients() {
     chmod 600 "$file"
     echo "   $id: $file"
   done
+  if [ "${UL_PINNACLE_PARTY:-0}" = 1 ]; then setup_pinnacle_party; fi   # O689
 }
 
 # ---------------------------------------------------------------------------------------------------- 7. summary

@@ -2161,6 +2161,18 @@ do
 		check(#toggled == 2 and toggled[1] == 100 and toggled[2] == 102, "loadout cards: one Earth card of each family the class casts (the Fire card, the heal of another class and the spell above the level are left)")
 		check(owned[100] == 1 and owned[102] == 1 and owned[101] == nil, "loadout cards: the cards are put in the Deck first")
 		check(last(lp):find('"set":false', 1, true), "loadout cards: two cards are no set (the set needs three)")
+		-- O689: with the cards core, a line is picked by lineClasses (the Frostfall Rune line is no attack spell of ChaosSupports and every class casts it)
+		toggled, owned, on = {}, {}, {}
+		lp.storage[9100], lp.storage[9102] = nil, nil
+		ChaosCardsConfig.lineClasses = {["Earthbreaker"] = {"Juggernaut"}, ["Reaping Gyre"] = {"Warrior"}, ["Frostfall Rune"] = {"Warrior", "Juggernaut"}}
+		ChaosCardsConfig.cards[105] = {storage = 9105, kind = "convert", family = 5, element = "Earth", spell = "Frostfall Rune", spells = {}}
+		ChaosCardsCore = {classNameOf = function() return "Juggernaut" end,
+			castsLine = function(name, fam) for _, n in ipairs(ChaosCardsConfig.lineClasses[fam.spell] or {}) do if n == name then return true end end return false end}
+		talks["!tester"].onSay(lp, "!tester", "loadout cards earth #183")
+		local got = {}
+		for _, id in ipairs(toggled) do got[id] = true end
+		check(got[100] and got[105] and not got[102] and not got[103], "loadout cards: the Frostfall Rune card is picked (every class casts it) and a line of another class is not (lineClasses)")
+		ChaosCardsCore = nil
 		ChaosCardsConfig, ChaosCardDeck, ChaosCards, ChaosSupports = nil, nil, nil, nil
 		talks["!tester"].onSay(lp, "!tester", "loadout support keenedge,echo kah ael #182")
 		check(last(lp):find("no supports system", 1, true), "loadout support: no supports system, the reason")
