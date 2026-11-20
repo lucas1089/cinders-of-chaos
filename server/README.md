@@ -17761,6 +17761,59 @@ character, same weapon, same tree in every row below; only the named thing chang
   only), the Defense-first tree of the bot (left: the bot dies without it; 18% of its damage). PvP: melee weapon spells of a set-weapon wearer rise toward
   what `pvp_model.py` already assumes (the model never had the 0.64); the arena was not run. Owner switch: `weaponElement = 0` restores the rule of before.
 
+### Live check of the other melee lines and PvP (O680)
+Same rig as O679 (local test server with current main installed, probe of O665: one idle Demon of 10,000,000 health a bot, `clear`, mana refilled, 270 s,
+damage = health the Demon lost a second, mean of eight 30 s windows after the first). Seven characters at level 813 with one weapon each (Azure Vigil blade
+71 + 39 element, the Berserker the Gravewrought greatsword 79 + 42), no armour, the same tree (`focus_damage`, `reset`: 201 nodes), `weaponElement` 0 then 1 with a
+restart between. Two things the O679 rig did not guard, fixed here: a rare or legendary Demon (health x2.5 to x5, armour x2) now gets replaced by a plain
+one, and the Demon's own resists are taken off by damage type (physical 25, holy -12, death 20, earth 40) from the type mix of each class. Median 6,065.
+
+| Class | Before | After | Change | Resist-free before, of the median | Resist-free after, of the median | After against the model's own value |
+|---|---:|---:|---:|---|---|---|
+| Juggernaut (control, as O679) | 3,715 | 4,482 | +21% | 4,661 (0.77) | 5,664 (0.93) | 0.85 |
+| Berserker | 2,267 | 2,189 | -3% | 2,993 (0.49) | 2,887 (0.48) | 0.52 |
+| Templar | 6,529 | 7,767 | +19% | 6,307 (1.04) | 7,425 (1.22) | 1.39 |
+| Inquisitor | 7,303 | 8,639 | +18% | 6,730 (1.11) | 7,927 (1.31) | 1.51 |
+| Thief | 2,821 | 3,050 | +8% | 3,581 (0.59) | 3,914 (0.65) | 0.56 |
+| Ninja | 3,813 | 4,072 | +7% | 4,901 (0.81) | 5,269 (0.87) | 0.77 |
+| Samurai | 5,059 | 5,713 | +13% | 6,493 (1.07) | 7,361 (1.21) | 1.08 |
+
+- **Berserker: no change, no double count.** `chaosAtk` went 79 to 121 and the damage did not move (-3%, noise). Its attack spells (Skyfall Cleave, Rampage
+  Leap, Colossus Fall) take the attack the engine hands to their formula, not `meleeAttack`; only the `weaponStrike` spells (Gorehook, Rift Cleaver, Bastion Cry)
+  read it, and the live result shows the others did not move. The two-handed x1.5 applies to weapon hits and the element joins no weapon hit, so the 79 + 42 weapon is read once. Its 0.48 of the median
+  is the class factor 0.568 on one target, not this switch (area class, README "Class identity").
+- **Templar line: the rule works as written, the line sits above its model.** The spells of the Templar and Inquisitor rose +26 to +32% (the melee auto
+  did not move: 1,808 to 1,791 and 2,497 to 2,570), the power term (skill x attack) being about half of a hit. Inquisitor 1.31 is above the 1.25 flag, Templar
+  1.22 and Samurai 1.21 are inside and near it. Both Templar-line classes were already above `class_dps_model.py` before the switch (Inquisitor 6,730
+  against 5,257, 1.28; Templar 6,307 against 5,355, 1.18) while holding a weapon of 71 where the model has 120, so the gap is not the element. The inputs of one
+  hit are as designed: `TemplarSpell.power` and `AttackKit.power` read skill x `meleeAttack` once, no spell of the line adds the element a second way
+  (`getElementDamage` is read in `meleeAttack` only), `bladePower` is the Thief line's and moved +7 to +13%. Candidates for the gap that were not isolated: the
+  line's holy pool (Templar: holy 182, factor 2.76 against 134 and 2.34 physical), the bot's full-time casting of Judgement (+20% holy damage taken for 8 s), and
+  the Demon's -12% holy resist taken off by the rule above. **No game change**: a double count was looked for and not found, and the one lever left is the
+  Templar line's own spell coefficients, a retune of a class for the owner, not a fix of O679. Spread of the live rig against the model on this run: 0.52 to 1.51,
+  so a live single-target figure is a screen, not a ranking.
+- **Thief line.** Thief 0.65, Ninja 0.87, Samurai 1.21 of the median after the switch. The bot casts mostly area and utility spells on the Thief and Ninja, whose
+  blade hits are tagged melee (origin 3: Thief 2,148 a second melee, 244 spells), so the figure is below the model's 6,930 and 6,807 for the bot, not for the class.
+- **PvP, closed arena on the same server** (`closed_arena_fight`, two testers at 813, 1v1, the fight played on past the first hurt and secure mode off as the
+  client does in the arena; the unmodified check leaves at the first hurt and its bots land only the auto attack: with secure mode on a spell of a player is
+  refused with "You may not attack this person"). Elementalist (wand, 18,120 health) as the foe, her own healing on:
+
+| Duel | `weaponElement` | Seconds to kill, first hit to the lethal hit | Damage dealt (spells / melee) | Damage taken |
+|---|---:|---:|---|---:|
+| Templar | 0 | 7 | 24,690 (17,501 / 7,189) | 1,472 |
+| Templar | 1 | 7 | 27,967 (22,933 / 5,034) | 1,472 |
+| Juggernaut | 0 | 11 | 26,661 (13,157 / 13,504) | 9,563 |
+| Juggernaut | 1 | 11 | 25,772 (15,212 / 10,560) | 14,814 |
+
+  One match each: the kill time is whole seconds and the cast mix moves the split between spells and melee, so no difference in seconds to kill is shown. The
+  spells did rise with the switch (+31% Templar, +16% Juggernaut, as in the hunt). Against `pvp_model.py --levels 813 --detail`: the model kills the median
+  pool (17,963) in 10.3 s with the Templar, 8.3 s with the Juggernaut. Live is 7 s and 11 s, 1.5x faster and 0.75x as fast: the same signs as the hunt gaps
+  above, so the model and the engine diverge about as much in PvP as in a hunt, and the Templar line is the one the model undercounts. `pvp_model.py --check` and
+  `class_dps_model.py --check` pass unchanged (the model was not touched).
+- **Not verified.** Sentinel, Warrior, Monk-line melee, rolled or dropped weapons, an armoured target, a party, other levels (813 only), more than one
+  duel each way, the Templar-line gap isolated by a probe of the holy pool and Judgement uptime. The rig, kept local: probe scripts and runners in the
+  session scratch folder `o680`.
+
 ## Gear coverage (`tools/gear_coverage.lua`, `gear_coverage_config.lua`, `data/lib/chaos_class_loot.lua`, `chaos/class_loot.lua`, 2026-10-22)
 Owner request: review all the loot and make sure it is well distributed for every class, from level 1. The weapon audit
 above does the weapons. This audit does the rest of the slots and adds a fairness check of the weapon drops.
