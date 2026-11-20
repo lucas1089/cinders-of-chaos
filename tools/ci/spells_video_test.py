@@ -178,12 +178,12 @@ class SpellsVideoRun(unittest.TestCase):
         self.secrets = [self.key]
         for i, c in enumerate(('elementalist', 'deadeye')):
             path = os.path.join(self.d, 'spell-%s.env' % c)
-            account, password = 'lcw%d0abc12' % (i + 1), 'Pw0rdSecret%d9' % i
-            self.secrets += [account, password]
+            account, phrase = 'lcw%d0abc12' % (i + 1), 'Pw0rdSecret%d9' % i  # fake test value of a temp file
+            self.secrets += [account, phrase]
             with open(path, 'w') as f:
                 f.write("export CHAOS_LIVE_HOST=127.0.0.1\nexport CHAOS_LIVE_ACCOUNT=%s\nexport CHAOS_LIVE_PASSWORD=%s\n"
                         "export CHAOS_LIVE_CHARACTER='Showcase %s'\nexport CHAOS_SPELLTOUR_CLASS=%s\nexport CHAOS_CLIENT_KEY=%s\n"
-                        % (account, password, c.title(), c, self.key))
+                        % (account, phrase, c.title(), c, self.key))
             self.envs.append(path)
         self.out = os.path.join(self.d, 'out')
 
