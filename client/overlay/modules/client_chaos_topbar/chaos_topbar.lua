@@ -729,6 +729,8 @@ local CARD_POINTS = {
   ['Passive Tree'] = { module = 'game_passivetree', fn = 'getTreeFreePoints', flag = 'trialsAvailableCount' },
   -- O570: the cards looted and not seen yet in the Deck of Cards (game_carddeck keeps the server's list of new cards)
   ['Deck of Cards'] = { module = 'game_carddeck', fn = 'getNewCount' },
+  -- O686 phase 5: the spells with a Form that can be picked now (game_spellranks; 0 while the server's switch is off)
+  ['Spellbook'] = { module = 'game_spellranks', fn = 'getPickableCount' },
 }
 
 local function cardPoints(text)

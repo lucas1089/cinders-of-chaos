@@ -1,10 +1,13 @@
 Module
   name: game_spellranks
-  description: Spell ranks and Forms (O686). Phase 4 ships only the generated Forms data (forms_data.lua: the Forms of every attack and heal spell, their kinds, English names and sentences, the pick rules); the rank bars and the Form picker of the spellbook (opcode 168) come in phase 5. Static data, no window, no opcode yet
+  description: Spell ranks and Forms (O686). The rank bars, the Upgrades tab and the Form picker of the Spellbook (game_spellbook), the hub badge of the Spellbook card; extended opcode 168. Behind the server's switch: nothing shows while the server reports it off. Also the generated Forms data (forms_data.lua)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ forms_data ]
+  scripts: [ forms_data, ranklogic, spellranks ]
   dependencies:
     - client_chaos_locale
+    - client_chaos_theme
   autoload: true
-  autoload-priority: 1150
+  autoload-priority: 999
+  @onLoad: init()
+  @onUnload: terminate()

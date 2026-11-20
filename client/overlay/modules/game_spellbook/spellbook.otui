@@ -36,12 +36,26 @@ SpellbookRow < UIWidget
     phantom: true
     visible: false
 
+  // O686 phase 5: the rank of the spell (game_spellranks, only while the server's switch is on): a number at the right of the
+  // name, width 0 when there is none, and a thin bar of the SP to the next rank at the bottom of the row
+  UILabel
+    id: rank
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 2
+    margin-right: 4
+    width: 0
+    text-align: right
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
   // the name has the whole width (cut with "..." when longer, full name in the row's tooltip); the state (level,
   // "Learn" or the cooldown left) sits on the second line, beside the words
   UILabel
     id: name
     anchors.left: icon.right
-    anchors.right: parent.right
+    anchors.right: rank.left
     anchors.top: parent.top
     margin-left: 6
     margin-right: 4
@@ -87,6 +101,18 @@ SpellbookRow < UIWidget
     font: verdana-11px-antialised
     color: #8c8070
     phantom: true
+
+  SpellRankTrack
+    id: rankTrack
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    margin-right: 4
+
+  SpellRankFill
+    id: rankFill
+    anchors.fill: rankTrack
 
 SpellbookStat < UIWidget
   height: 15
@@ -374,6 +400,16 @@ ChaosMainWindow
       text-auto-resize: true
       visible: false
 
+    // O686 phase 5: the Upgrades tab (styles and logic of game_spellranks), shown instead of the details by the Upgrades button
+    SpellUpgrades
+      id: upgrades
+      anchors.top: headerSeparator.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      visible: false
+
   ChaosButton
     id: closeButton
     anchors.right: parent.right
@@ -390,3 +426,15 @@ ChaosMainWindow
     !text: tr('Supports')
     !tooltip: tr('Support runes of the shown spell (Spell Supports window)')
     @onClick: if modules.game_spellsupports then modules.game_spellsupports.openFor() end
+
+  // O686 phase 5: only while the server's spell upgrade switch is on and the shown spell has ranks or Forms
+  ChaosButton
+    id: upgradesButton
+    anchors.right: supportsButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 90
+    visible: false
+    !text: tr('Upgrades')
+    !tooltip: tr('Rank and Forms of the shown spell')
+    @onClick: modules.game_spellbook.toggleUpgrades()
