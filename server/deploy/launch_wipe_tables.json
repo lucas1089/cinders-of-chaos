@@ -760,6 +760,10 @@
    "action": "wipe",
    "reason": "guild siege results and sign-ups of the beta"
   },
+  "chaos_spell_ranks": {
+   "action": "wipe",
+   "reason": "best spell ranks of the accounts of the beta; characters start from rank 0 at launch (O686, owner 2026-11-20: no grant), so the echo starts clean"
+  },
   "chaos_stash": {
    "action": "wipe",
    "reason": "stash items of beta characters"

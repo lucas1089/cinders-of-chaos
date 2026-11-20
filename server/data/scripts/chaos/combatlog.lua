@@ -156,6 +156,7 @@ end
 
 -- the spell running now between the engine's onSpellPreCast and onSpellCast (patch 0008)
 local precast = {} -- player id -> source
+local precastId = {} -- player id -> spell id of that precast (O686: the spell ranks credit damage by spell id)
 if not ChaosTimerGuard then -- O579: the guarded addEvent (data/lib/chaos_timer_guard.lua) is the one kept below
 	pcall(dofile, "data/lib/chaos_timer_guard.lua")
 end
@@ -163,6 +164,7 @@ local rawAddEvent = addEvent
 local function clearPrecast(pid, s)
 	if precast[pid] == s then
 		precast[pid] = nil
+		precastId[pid] = nil
 	end
 end
 
@@ -174,11 +176,14 @@ if ChaosSpellEvents and ChaosSpellEvents.set then
 		local s = castSrcByName(name)
 		local pid = player:getId()
 		precast[pid] = s
+		local entry = type(name) == "string" and spellIndex().byName[name:lower()] or nil
+		precastId[pid] = entry and entry.id or nil
 		-- a cast that fails (or a later precast handler that cancels) never reaches onSpellCast
 		rawAddEvent(clearPrecast, 0, pid, s)
 	end)
 	ChaosSpellEvents.set("cast", "combatlog", function(player)
 		precast[player:getId()] = nil
+		precastId[player:getId()] = nil
 	end)
 end
 
@@ -217,6 +222,23 @@ local function castOf(pid)
 	end
 	return precast[pid]
 end
+
+-- O686: the spell id of the same context (a spell id of spells.xml), nil outside every cast. Same order as castOf.
+local function castIdOf(pid)
+	local id = named[pid]
+	if id then
+		return id
+	end
+	local W = ChaosSupportsSpell
+	if W and W.cast then
+		local cpid, spellId = W.cast()
+		if cpid == pid and spellId then
+			return spellId
+		end
+	end
+	return precastId[pid]
+end
+CL.castIdOf = castIdOf
 
 -- O505: does a hit of this player belong to a spell it is casting right now? Any of the three sources of castOf: the supports' cast context
 -- (a wrapped spell and its delayed callbacks), a snare's or a mine's burst named with CL.asSpell, the engine's precast of a spell that has
@@ -456,6 +478,11 @@ local function dealt(creature, attacker, amount, ptype, origin, critical, now, m
 			pcall(dh, owner, amount)
 		end
 		-- a training monster measures the damage of the player (trainer_meter.lua, O573): the same source and element
+		-- O686: the spell ranks take the damage of a character to a monster by the spell id (spell_ranks.lua)
+		local sph = CL.spellHook
+		if sph and isMonster then
+			pcall(sph, owner, summon, creature, amount, castIdOf(owner:getId()))
+		end
 		local ith, th = CL.isTrainer, CL.trainerHook
 		if th and isMonster and ith and ith(creature) then
 			pcall(th, owner, creature, src, amount, el, critical, now)
@@ -486,6 +513,11 @@ local function healed(creature, attacker, raw, origin, critical, now, exact)
 		a.sessionOn = huntRunning(healer)
 		src = classifyFor(healer, summon, HEAL, origin, nil)
 		CL.add(a, now, HEAL, src, eff, critical, over)
+		-- O686: a heal that reached a player feeds the heal pool of the spell ranks (spell_ranks.lua)
+		local hsh = CL.healSpellHook
+		if hsh and eff > 0 and creature:isPlayer() then
+			pcall(hsh, healer, creature, eff, castIdOf(healer:getId()), now)
+		end
 	end
 	if creature:isPlayer() then
 		local a = actorOf(creature)

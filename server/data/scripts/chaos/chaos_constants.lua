@@ -2346,6 +2346,15 @@ Chaos.storage.fxOwner = 7103120
 -- reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode collision
 -- check"; tests/status_vfx_test.lua). No storage, no table.
 ChaosOpcodes.statusVfx = 165
+-- Spell ranks (O686 phase 2; spell_ranks_core.lua, spell_ranks_config.lua, spell_ranks.lua, data/lib/chaos_spell_ranks.lua; docs/SPELL_UPGRADES.md):
+-- the rank of every damage and heal spell, earned from the experience of monster kills by the damage share of each spell.
+-- Read only on the wire in this phase: server -> client `state {on, ranks, ...}`, client -> server `open`. 168 is free in the
+-- reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode collision check";
+-- tests/spell_ranks_test.lua; 172 stays the retired card border). Storage block 7107000 - 7108099 (README "Storage keys"), table
+-- chaos_spell_ranks (the account echo, server/sql/chaos_spell_ranks.sql). Switched off: spell_ranks_config.lua `enabled`.
+ChaosOpcodes.spellRanks = 168
+Chaos.tables.spellRanks = "chaos_spell_ranks"
+Chaos.storage.spellRanks = 7107000
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

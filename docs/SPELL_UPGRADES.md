@@ -6,6 +6,17 @@ Owner 2026-11-20, translated: "upgrade of spells, raise the strength and whateve
 
 Owner correction 2026-11-20, translated: "The spell upgrade is not by how much you use it. It is by how much experience you earn from monsters, or how many monsters you kill with each spell. To compensate, we raise the health of all monsters along the game." Section 1 and section 5 follow it. There is no experience per cast and no experience per hit.
 
+## Owner decisions
+
+Answers of 2026-11-20. They replace the defaults of section 9 where they differ.
+
+1. **PvP: half, no awakening.** Rank and Form numbers count at 50% in PvP. Awakening signature effects and combos are off in PvP.
+2. **Existing characters start from zero.** No launch grant. The 70% grant of 1.6 is removed.
+3. **Monster health rises from level 100**, the H curve of 5.3 as designed.
+4. **Any spell at rank 20 can be awakened**, 1 to 3 per character.
+5. **Combos hit 10% to 20% more** (owner, translated: "Make the combos, like ice and fire, hit 10 to 20% more."). Each element reaction and class combo gives +10% to +20% damage on the hit it triggers, see 4.2. Combos stay off in PvP. Combos are a later phase, no code yet.
+6. Defaults taken, the owner may change them: buffs, shields, summons and conjures later phase; rank XP is the base experience before stage, boost and rested (see the A1 note in 1.2); account echo yes, half the best rank, at most 10; Form change costs gold only; heals +12%; the 3 minute clamp per kill kept.
+
 ## 0. The design in one page
 
 - Every damage and heal spell has a **rank** 0 to 20. A rank grows with **Spell Points**, SP. SP come from the experience of monster kills, split between the spells by the damage each spell dealt to that monster. Nothing else gives SP.
@@ -13,7 +24,7 @@ Owner correction 2026-11-20, translated: "The spell upgrade is not by how much y
 - At rank **10** and **20** the player picks a **Form** of the spell, one of two each. A Form changes how the spell plays: split, chain, ground, pull, delayed burst, element conversion, and more. Full Form tables for seven classes below, a template for the rest.
 - At rank 20, in the endgame, up to **3 spells** per character can be **awakened** with Seals from pinnacle bosses, Greater Rift and waystone tiers XVI to XXV. An awakened spell has a new name, a new look and a signature effect.
 - **Combos**: two spells inside 4 s give a bonus hit. Element reactions are free for everyone. Each class has signature combos that open at rank 5.
-- Full upgrade is about **+51%** spell power: rank +25%, Forms +6%, awakening +9%, combos +5%, multiplied.
+- Full upgrade is about **+53%** spell power: rank +25%, Forms +6%, awakening +9%, combos +6%, multiplied.
 - The compensation is **monster health**, a curve by level: x1.02 at level 100, x1.20 at 1000, x1.38 at 2500. A typical player meets today's kill times. A player with no upgrades kills 17% slower at level 1000 and 27% slower at the cap.
 - One storage block 7107000 to 7108099, one opcode 168, one DB table `chaos_spell_ranks` for the account echo. Build in 8 phases, about 37 working days.
 
@@ -42,14 +53,16 @@ Everything else that pays experience counts: hunts, rifts, dungeons, the tower, 
 
 One SP is one hour of on-level hunting at 100% damage share. Reference hour: the median experience per hour of the hunts a character of that level farms, from `progression_model.lua` before the stage factor.
 
-For a kill the character receives base experience E from the engine. E is read in the experience callback of `pace.lua`, `onGainExperience` index -9, just after the pace curve and the multikill chain at -10 and before the stage, the boosts and the rested bonus. So boosts, stage and rested time do not buy rank. If the build finds that this order cannot be held, E is divided by the stage and boost factors read from the same layers. This is assumption A1, to be verified in phase 2.
+For a kill the character receives base experience E from the engine. E is the kill's base experience: the engine's own experience of the kill (`rawExp`) x the monster level factor x the monster tier x the pace curve, and the experience stage of the player's level. Boosts, stamina, the store potion, rested time and the multikill chain do not buy rank.
+
+**A1, verified in phase 2: the first reading did not hold.** The design said the callback at index -9 runs before the stage. It does not: base `player.lua` multiplies the level factor, the stage, stamina and the store potion first and runs the script callbacks after (`patch_base_events.py` puts the dispatch before the pet share), so `exp` at any index already holds them. The read point is still an `onGainExperience` callback at index -9 (after the pace curve at -10, before every bonus), but E is rebuilt the way `xpcap.lua` rebuilds the base of a kill, `ChaosXpCap.baseOf` (`rawExp` x level factor x stage x tier x the pace curve), never taken from `exp`. In a party the engine gives each member its own `rawExp`, so K is read from what the engine paid that member. When `baseOf` or `rawExp` is missing the callback falls back to `exp` at that index. The callback never changes the experience.
 
 ```
 K  = E / refXpPerHour(player level)          kill value in hours, about 1/1100 on level
 SP = K x share of the spell
 ```
 
-`refXpPerHour` is a table of points by level in `spell_ranks_config.lua`, generated from the progression model and held by `spell_upgrade_model.py --check`. It uses the player level, never the monster level. A level 1500 character killing level 700 monsters earns about a tenth, because those kills are worth little experience at level 1500. No extra rule against farming weak monsters is needed.
+`refXpPerHour` is a table of points by level in `spell_ranks_config.lua`, generated from the progression model (experience to the next level x 60 / minutes a level, `progression_model.lua --curve-json`, stage and multikill included, so it matches E) and, in phase 3, held by `spell_upgrade_model.py --check`. It uses the player level, never the monster level. A level 1500 character killing level 700 monsters earns about a tenth, because those kills are worth little experience at level 1500. No extra rule against farming weak monsters is needed.
 
 Clamp: K is at most 0.05 hours, 3 minutes, per kill. A boss that pays a huge kill cannot skip ranks. Bosses keep a large reward by giving many pieces of the share, not by one jump.
 
@@ -149,7 +162,7 @@ Stacking with supports, masteries and quests, all multiplicative at the point na
 - **Retired spell.** SP and rank stay in storage under the id. A retired spell is not castable, so it does nothing. If a retired id is reused by a new spell, `spell_ranks_config.lua` `reassigned` lists the id with a version. At login a stored version below it clears the rank, SP, Forms, and refunds the Form change gold paid. The existing `patch_spell_ids` step has the list of ids.
 - **Ascension or class change.** Ranks are per spell id, not per class. A spell shared by the old and new class keeps its rank and Forms. A spell the new class does not know is dormant, its rank is kept, and returns when the spell is learned again. This follows how `ChaosSpellQuest.sync` relearns quest spells. An awakened spell that is dormant frees its slot at once. The Seals spent are not returned. Awakening the slot again costs Seals again.
 - **Reset.** The passive tree reset does not touch ranks. The tutorial reset clears the block 7107000 to 7108099. A Form can be changed for gold, see 2.4. There is no rank refund. Rank is earned play time.
-- **Launch.** On the first login after the system is on, each known damage and heal spell gets 70% of the typical SP of the character's level, from the curve in 5.2. The wipe at launch makes this matter for test characters only. See open question 8.
+- **Launch.** No grant (owner 2026-11-20). Existing characters start from rank 0 on every spell and earn SP from the first kill after the system is on. The storage `+503` stays reserved and unused.
 
 ### 1.7 New characters of an old account: the account echo
 
@@ -444,33 +457,35 @@ Limits that keep it a reward and not a must-press rotation:
 - the same combo does not fire on the same target again for 6 s
 - a global pause of 1.2 s between combos of a player
 - the bonus hits are extra hits: proc guard, ORIGIN_SPELL, monsters only
-- the target of `spell_upgrade_model.py --check`: the best legal rotation gains at most +6% from combos, and the typical rotation +5%. If the model finds more, the numbers drop
-- no combos in PvP
+- the target of `spell_upgrade_model.py --check`: the best legal rotation gains at most +8% from combos, and the typical rotation +6%. If the model finds more, the numbers drop. (Owner 2026-11-20 raised the bonus to 10-20% a combo. The old caps were +6% and +5%. With a typical 40% of spell damage on combo-triggered hits at a mean bonus near 15%, the typical gain is +6%.)
+- no combos in PvP; with the PvP half rule combos stay off, nothing is scaled
 
 ### 4.2 Which combos
+
+Owner 2026-11-20: every combo gives **+10% to +20% damage on the hit it triggers** (the second hit; the heal for Echoing Mend). The easier and more frequent a combo, the nearer 10%; the harder, the nearer 20%. The value is the first part of the Bonus column. The text after it is a rider with no damage of its own.
 
 Free for every class, element reactions, by the element of the two hits, the first then the second:
 
 | Combo | Pair | Bonus |
 |---|---|---|
-| Steam Burst | ice then fire | a burst in 1 sqm of 15% of the second hit |
-| Thermal Shock | fire then ice | the second hit on the target is +15%, and the target is brittle for 3 s |
-| Overload | energy then fire | 15% of the second hit as energy to 3 enemies near |
-| Pyre of the Dead | death then fire | enemies that die in the next 3 s burst for 20% of the second hit |
-| Mudslide | earth then ice | the target is slowed 30% for 3 s, the second hit +10% |
-| Consecrated Ash | fire then holy | the target takes 15% more holy for 3 s |
+| Steam Burst | ice then fire | +10%, and a burst in 1 sqm |
+| Thermal Shock | fire then ice | +12%, and the target is brittle for 3 s |
+| Overload | energy then fire | +12%, and the same energy to 3 enemies near |
+| Pyre of the Dead | death then fire | +15%, and enemies that die in the next 3 s burst |
+| Mudslide | earth then ice | +10%, and the target is slowed 30% for 3 s |
+| Consecrated Ash | fire then holy | +15%, and the target takes 15% more holy for 3 s |
 
 Signature combos, one to three per class line, open when both spells are at rank 5 or more. Nothing is paid.
 
 | Combo | Pair | Bonus |
 |---|---|---|
-| Pinned Shot, Deadeye and Ranger | Snare Trap or Seeker Mine, then Final Verdict, Twin Verdict or Sunspear | the second hit is a guaranteed critical |
-| Meat Grinder, Berserker | Gorehook, then Reaping Gyre, Butcher's Gyre or Earthbreaker | enemies the hook pulled take the area hit +25% |
-| Anvil Chain, Iron Sage | Iron Chain, then Quaking Stomp | +25%, and the stomp stuns 0.5 s |
-| Backstab, Ninja | Shadow Step, then Gutting Slash or Death Between Heartbeats | the second hit crits for +50% crit damage |
-| Rotting Curse, Lich | Withering Curse, then Soul Rot, Blightbrand or Corpse Explosion | the curse bursts for 25% of the second hit |
-| Psychic Shatter, Illusionist | Bewitching Hex, then Shattered Psyche or Dreamrot | the second hit +20%, and the hex time is renewed |
-| Echoing Mend, Illusionist | Mirror Mend, then Lucid Reverie | the party's heal over time ticks +25% for 6 s |
+| Pinned Shot, Deadeye and Ranger | Snare Trap or Seeker Mine, then Final Verdict, Twin Verdict or Sunspear | +20%, and the second hit is a guaranteed critical |
+| Meat Grinder, Berserker | Gorehook, then Reaping Gyre, Butcher's Gyre or Earthbreaker | +20% on the enemies the hook pulled |
+| Anvil Chain, Iron Sage | Iron Chain, then Quaking Stomp | +18%, and the stomp stuns 0.5 s |
+| Backstab, Ninja | Shadow Step, then Gutting Slash or Death Between Heartbeats | +20%, and the second hit crits for +50% crit damage |
+| Rotting Curse, Lich | Withering Curse, then Soul Rot, Blightbrand or Corpse Explosion | +18%, and the curse bursts with the hit |
+| Psychic Shatter, Illusionist | Bewitching Hex, then Shattered Psyche or Dreamrot | +20%, and the hex time is renewed |
+| Echoing Mend, Illusionist | Mirror Mend, then Lucid Reverie | +15% on the heal, and the party's heal over time ticks +15% for 6 s |
 
 Where the tree or supports open more: no support touches combos in phase 1, so a rune never adds a combo. A **combo mastery** can join the seven mastery nodes of O451 as an extra choice, for example window +1.5 s, or the repeat pause -2 s. The node list is at the cap of 7 choices, `maxMasteryChoices`, so this needs the same compatible change as O451 and waits for phase 6b.
 
@@ -478,7 +493,7 @@ Where the tree or supports open more: no support touches combos in phase 1, so a
 
 - `ChaosSpellEvents` already gives a `cast` handler: `fn(player, name, id, group, aggressive, mana, health)`. A new handler `spellcombos` keeps a ring of the last four casts per player, spell id, time in ms, target id, position, and the element of the hit.
 - A pure core, `spell_combos_core.lua`, takes the ring and the config rows and answers the combo id, or none. Tests `dofile` it on a mock.
-- The cast event comes before the hit. The handler writes a pending combo for the player. The first damage event of the second spell, in the same place where `_supports.lua` runs its hit effects, reads and clears it, and runs the bonus with the proc guard. The bonus is a share of the ranked hit that was just dealt, so it grows with rank.
+- The cast event comes before the hit. The handler writes a pending combo for the player. The first damage event of the second spell, in the same place where `_supports.lua` runs its hit effects, reads and clears it, and runs the bonus with the proc guard. The bonus is a percent (10% to 20%, see 4.2) of the ranked hit that was just dealt, so it grows with rank.
 - The element of a hit is the one after a Form conversion. A Form that converts to ice opens the ice reactions.
 - The pending combo expires after 1 s without a hit, for a spell that missed.
 
@@ -499,18 +514,18 @@ All factors multiply, spell power of a full rotation at full upgrade:
 | Rank 20 | +24.6% | damage +18%, cooldown -10% worth +5.6% |
 | Forms | +6.0% | Form I +3%, Form II +3% |
 | Awakening | +9.0% | three spells, +3% of class damage each |
-| Combos | +5.0% | the typical rotation |
-| **Total** | **+51%** | 1.246 x 1.06 x 1.09 x 1.05 = 1.511 |
+| Combos | +6.0% | the typical rotation, 10-20% a combo (owner 2026-11-20) |
+| **Total** | **+53%** | 1.246 x 1.06 x 1.09 x 1.06 = 1.526 |
 
-Without awakening, which is almost every player under level 1900, the total is +39%. That is the owner's "50% or more" at the cap, and the part of it that every player owns, rank and Forms, comes without end content.
+Without awakening, which is almost every player under level 1900, the total is +40%. That is the owner's "50% or more" at the cap, and the part of it that every player owns, rank and Forms, comes without end content.
 
-These are spell power of the spell part of the damage. The class total is lower: auto attacks, weapons and pets are not ranked. The models use a spell share of 80% of a median class's damage, and each class its own, read from `class_dps_measured.csv`. So the class total at full upgrade is about +41%.
+These are spell power of the spell part of the damage. The class total is lower: auto attacks, weapons and pets are not ranked. The models use a spell share of 80% of a median class's damage, and each class its own, read from `class_dps_measured.csv`. So the class total at full upgrade is about +42%.
 
 Where the power goes by role:
 
 | Role | Rank 20 | Forms | Awakening | Combos |
 |---|---|---|---|---|
-| Damage | +18% hit, -10% cooldown | shape, +3% and +3% | +10% and a signature | +5% |
+| Damage | +18% hit, -10% cooldown | shape, +3% and +3% | +10% and a signature | +6% |
 | Heal | +12% heal, -15% cooldown, -25% mana | shape, utility, +3% and +3% | +10% and a signature | echoing mends only |
 | Shield, buffs, supports | none in phase 1 | none | none | none |
 
@@ -530,7 +545,7 @@ The alternative is to **normalise** the arena and the battleground to rank 10 fo
 
 The owner's rule: raise the health of all monsters along the game, so that a typical player, with the typical rank at that level, meets the kill times of today.
 
-Derivation, `spell_upgrade_model.py`. The rank of a main rotation spell at a level comes from the hunting hours of the progression model and the SP curve of section 1.4. The rotation's average rank is 0.88 of it, because spells join later, going to 1.0 at level 2500. Forms count 3% at average rank 10 and 3% more by 20. Combos count 5% from average rank 3 to 10. Awakening: 0 at level 1900, 1 spell at 2100, 1.5 at 2300, 2 at 2500, which is 3% each. Class share of the spell part: 0.80. The health factor is `H = 1 + 0.80 x (P - 1)`, where P is the spell power. The monster's health is multiplied by H, the player's damage by 1 + 0.80 x (P - 1) too, so the kill time stays today's.
+Derivation, `spell_upgrade_model.py`. The rank of a main rotation spell at a level comes from the hunting hours of the progression model and the SP curve of section 1.4. The rotation's average rank is 0.88 of it, because spells join later, going to 1.0 at level 2500. Forms count 3% at average rank 10 and 3% more by 20. Combos count 5% from average rank 3 to 10 as first derived. With the owner's 10-20% combos it is 6%, which lifts P by about 1% and H by about 0.01 from level 700 up (level 1000 1.21, level 2500 1.39). Combos are a later phase, so the committed `health` curve keeps the numbers of the table below, and `spell_upgrade_model.py` takes the 0.01 in when combos ship. Awakening: 0 at level 1900, 1 spell at 2100, 1.5 at 2300, 2 at 2500, which is 3% each. Class share of the spell part: 0.80. The health factor is `H = 1 + 0.80 x (P - 1)`, where P is the spell power. The monster's health is multiplied by H, the player's damage by 1 + 0.80 x (P - 1) too, so the kill time stays today's.
 
 | Level | Hunting hours in | Rank, main spell | P, spell power | H, monster health x |
 |---|---|---|---|---|
@@ -618,7 +633,7 @@ A median class with no upgrades kills Ascended Varkhul alone in about 580 s. The
 
 New characters of an old account: the account echo of 1.7 gives them a floor of rank 10 on spells the account maxed. At level 500 the alt has about the typical power, so the factor does not block it. Forms and awakening are earned again.
 
-Existing characters at the switch: see the launch grant in 1.6.
+Existing characters at the switch: they start from zero, no grant (owner decision 2).
 
 ## 6. UI
 
@@ -649,12 +664,12 @@ Free block: **7107000 to 7108099** in the 7100000 to 7127999 range. Checked agai
 | +500 | version of the block |
 | +501 | awakened spells held, 0 to 3 |
 | +502 | Form changes made |
-| +503 | the last launch grant version |
+| +503 | reserved, unused: the launch grant was removed (owner 2026-11-20) |
 | +510 | Waystone Seals held |
 | +511 | Rift Seals held |
 | +512 | Pinnacle Seals held |
 | +520 .. +529 | awakened spell ids by slot, 3 used |
-| +600 .. +1099 | SP in hundredths of an SP for the spell with that id |
+| +600 .. +1099 | SP in ten-thousandths of an SP (`spUnit` 10000, built in phase 2: a kill gives about 0.0001 SP, hundredths would lose it) for the spell with that id. The glue keeps the fraction in memory and writes at most every 30 s and at logout |
 
 Spell ids are below 500, the supports block already holds that range. A test checks the largest id.
 
@@ -693,6 +708,8 @@ Data and lib:
 - `data/spells/spell_fx_forms.csv`: element conversions with reasons
 - `data/lib/chaos_awakened_fx_ids.lua`
 
+Phase 2 note: the built hook is one place, `ChaosPassiveDealt` (`passivetree_effects.lua`), which already multiplies every ORIGIN_SPELL hit of a player; it asks `ChaosSpellRanks.hitFactor`, which reads the spell id of the cast context (`ChaosSupportsSpell.cast`, the storage the supports use) and the packed rank of the spell. That covers every spell path, scripted ticks and delayed pulses of the spell included, with no edit of the O468 helpers; a proc inside the keystone guard keeps its share of the ranked hit. The paths below stay the fallback if a hit is found that ChaosPassiveDealt does not see. The cost and cooldown go through `ChaosSpellEvents` (handler key `spellranks`).
+
 Hooks, where the factor is read. These are the paths of the O468 table: `AttackKit.rawValues`, `ChaosSpell.weaponStrike`, `ChaosSpell.weaponFormula`, `MonkSpell.strike`, `MonkSpell.values`, `MonkSpell.rawValues`, the Kindled Breath and Mantra of Stone heals, the wolf and companion bite helpers, snares and mines at placement. Plus `chaos_supports.lua` `spellEffects` for the Form hit share, and `_supports.lua` for the cooldown and cost handlers on `ChaosSpellEvents`. Plus `pace.lua` and each content system for the health factor.
 
 Tools and checks:
@@ -717,7 +734,7 @@ Working days of one agent session each, with tests and docs. Total about 37 days
 | Phase | Work | Days |
 |---|---|---|
 | 1 | This design, owner review | done |
-| 2 | Rank core: SP credit at death, the per monster damage table, the experience callback, storage, the factor in every O468 path, cooldown and cost handlers, login, echo table and SQL, launch grant, `/spellrank`. Switched off by `enabled = false`. Tests and the path test | 6 |
+| 2 | Rank core: SP credit at death, the per monster damage table, the experience callback, storage, the rank factor in the passive tree's hit event (one place, see 7.4 note), cooldown and cost handlers, login, echo table and SQL, `/spellrank`. Switched off by `enabled = false`. Tests. **Built 2026-11-20**, README "Spell ranks (O686 phase 2)"; the launch grant is gone, the per-path test `spell_ranks_paths_test.lua` moved to phase 3 with the switch | 6 |
 | 3 | `spell_upgrade_model.py`, the health curve and the factor in `pace`, dungeons, rifts, tower, descent, waystones, pinnacle, greater rift, raid, with each model's step and test. Switched with phase 2 | 6 |
 | 4 | Forms: 8 + 8 + 8 kinds in the engine, the table for all 21 classes, `check_spell_forms.py`, probe per Form, `spell_fx_forms.csv`, the model band check | 9 |
 | 5 | Client: opcode 168, spellbook tabs, Form picker, rank bars, pt-BR, hub badge, tests, mobile layout | 5 |
@@ -729,13 +746,13 @@ Phases 2 and 3 ship together, dark. Phase 4 and 5 can overlap. The health factor
 
 ## 9. Open questions for the owner
 
-1. **PvP.** Ranks and Form numbers at 50% in PvP, awakening effects and combos off, as the default. Or the arena and the battleground normalise every character to rank 10. Or full power in PvP.
-2. **Buffs, shields, summons and conjures.** Rank them in a later phase, default, or never. Their share and credit rule would be new.
-3. **Rank experience source.** Default: base experience before the stage, boosts and rested bonus, so a boost does not buy rank. Or all experience, so a boost also speeds ranks.
-4. **Account echo.** Alts start at half the best rank, at most 10. Yes or no, and the size.
-5. **Form change price.** Gold, `max(10 000, 150 x level)`, first 30 minutes free. Or a token item as well.
-6. **Awakenable spells.** Any spell at rank 20, default, or a fixed list of five per class so the art and the balance are smaller.
-7. **Where the health factor starts.** Default from level 100, factor 1.02. Or from 300, so low levels are not touched at all.
-8. **Existing characters at the switch.** 70% of the typical SP as a grant, default, or everyone starts at zero since the launch wipe is near.
-9. **Heal gain.** Heals get +12% at rank 20 on purpose. Is that enough, or should healers have the same +18% and the monsters' damage rise to match.
-10. **The 3 minute clamp on a kill.** A boss then gives a small share of rank. Keep, or let bosses give a rank bonus.
+1. **PvP.** *Answered 2026-11-20: half, no awakening.* Ranks and Form numbers at 50% in PvP, awakening effects and combos off, as the default. Or the arena and the battleground normalise every character to rank 10. Or full power in PvP.
+2. **Buffs, shields, summons and conjures.** *Default taken, owner may change.* Rank them in a later phase, default, or never. Their share and credit rule would be new.
+3. **Rank experience source.** *Default taken, owner may change.* Default: base experience before the stage, boosts and rested bonus, so a boost does not buy rank. Or all experience, so a boost also speeds ranks.
+4. **Account echo.** *Default taken, owner may change.* Alts start at half the best rank, at most 10. Yes or no, and the size.
+5. **Form change price.** *Default taken (gold only), owner may change.* Gold, `max(10 000, 150 x level)`, first 30 minutes free. Or a token item as well.
+6. **Awakenable spells.** *Answered 2026-11-20: any spell at rank 20.* Any spell at rank 20, default, or a fixed list of five per class so the art and the balance are smaller.
+7. **Where the health factor starts.** *Answered 2026-11-20: from level 100.* Default from level 100, factor 1.02. Or from 300, so low levels are not touched at all.
+8. **Existing characters at the switch.** *Answered 2026-11-20: everyone starts at zero, no grant.* 70% of the typical SP as a grant, default, or everyone starts at zero since the launch wipe is near.
+9. **Heal gain.** *Default taken (+12%), owner may change.* Heals get +12% at rank 20 on purpose. Is that enough, or should healers have the same +18% and the monsters' damage rise to match.
+10. **The 3 minute clamp on a kill.** *Default taken (kept), owner may change.* A boss then gives a small share of rank. Keep, or let bosses give a rank bonus.
