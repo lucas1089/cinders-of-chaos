@@ -9484,5 +9484,10 @@ return {
 			"A temporada termina em %d dias.",
 		["Greater Rift season %d has ended. Season %d begins."] =
 			"A temporada %d do Greater Rift acabou. A temporada %d começa.",
+		-- Spell awakening (O686 phase 7, spell_awakening.lua)
+		["%s +%d (%d held)."] =
+			"%s +%d (%d em mãos).",
+		["%s awakens: %s."] =
+			"%s desperta: %s.",
 	},
 }

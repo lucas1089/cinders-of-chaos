@@ -211,7 +211,7 @@ end
 
 -- the shield a Form gives (Ward, Cleanse): player id -> {amount, until}
 FE.shields = FE.shields or {}
-local function addShield(target, amount)
+local function addShield(target, amount, secs)
 	local id = target:getId()
 	local s = FE.shields[id]
 	local t = nowMs()
@@ -220,7 +220,8 @@ local function addShield(target, amount)
 		FE.shields[id] = s
 	end
 	s.amount = s.amount + floor(amount)
-	s.untilMs = t + 10000
+	-- `secs` (the awakening signature, O686 phase 7): how long this shield lasts, at most the 10 s of the Forms; the later end holds
+	s.untilMs = max(s.untilMs or 0, t + (secs and min(10000, secs * 1000) or 10000))
 end
 
 local function removeOneDebuff(target)
@@ -423,6 +424,10 @@ local function shortenCooldown(player, spellId, pct)
 end
 FE.shortenCooldown = shortenCooldown
 
+-- the helpers the awakening signature runs on (spell_awakening.lua, O686 phase 7): the same guard, cast context, hits and shield as a Form's
+FE.ops = {guarded = guarded, withContext = withContext, dealHit = dealHit, dealHeal = dealHeal, addShield = addShield, foesNear = foesNear,
+	alliesNear = alliesNear, copyPos = copyPos}
+
 -- ---------------------------------------------------------------- the end of a cast
 local function lineBehind(player, main, foes)
 	local pp, mp = player:getPosition(), main.pos
@@ -487,6 +492,12 @@ flush = function(pid)
 	end)
 	if plan.cooldownCutPct then
 		shortenCooldown(player, b.spellId, plan.cooldownCutPct)
+	end
+	-- O686 phase 7: the signature effect of an awakened spell (spell_awakening.lua), after the Forms, from the same hit buffer
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if AW and AW.onCast then
+		try("awakening", AW.onCast, player, b, {heal = heal == true, pvp = pvp, hits = hits, element = element, ctype = ctype, mainId = main.id,
+			mainPos = main.pos, allies = allies})
 	end
 end
 FE.flush = flush

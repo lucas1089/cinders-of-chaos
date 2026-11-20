@@ -15,7 +15,7 @@ end
 -- word -> file (relative to data/scripts/chaos). Staff only: each one checks the group, the access flag, the account
 -- type or Chaos.staffCommand first.
 local STAFF = {
-	["/achievements"] = "achievements.lua", ["/spellrank"] = "spell_ranks.lua", ["/testkit"] = "admin/testkit.lua", ["/areagen"] = "areagen.lua",
+	["/achievements"] = "achievements.lua", ["/spellrank"] = "spell_ranks.lua", ["/spellseal"] = "spell_awakening.lua", ["/testkit"] = "admin/testkit.lua", ["/areagen"] = "areagen.lua",
 	["/arena"] = "arena.lua", ["/ascendset"] = "ascension_quest.lua", ["/atlas"] = "atlas.lua",
 	["/bg"] = "battleground.lua", ["/blessing"] = "blessings.lua", ["/botreview"] = "botreview.lua", ["/cursedchest"] = "cursedchest.lua",
 	["/candlemarks"] = "candlemarks.lua", ["/charm"] = "charms.lua", ["/chronicle"] = "chronicle.lua",

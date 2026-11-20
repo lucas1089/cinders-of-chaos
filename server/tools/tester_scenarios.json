@@ -12,7 +12,7 @@
   "out": 24,
   "passive": 115,
   "place": 15,
-  "staff": 19
+  "staff": 20
  },
  "effects": [
   {
@@ -11117,6 +11117,7 @@
   "spellRanks": {
    "actions": [
     "pick",
+    "awaken",
     "open"
    ],
    "client": [
@@ -13661,6 +13662,17 @@
    "opcodes": [],
    "talkactions": [],
    "why": "the owner's live view in the admin app (chaos-ctl.sh spectate), not a player action"
+  },
+  "spell_awakening": {
+   "files": [
+    "spell_awakening.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/spellseal"
+   ],
+   "why": "staff command only (/spellseal); testers are never staff"
   },
   "spell_combos": {
    "files": [

@@ -797,6 +797,11 @@ local function success(run)
 		local p = Player(id)
 		if p then
 			try("deliver", deliver, run, p)
+			-- O686 phase 7: the Pinnacle Seals, 2 for every member of the party (spell_awakening.lua; a no-op while the upgrades are off)
+			local AW = rawget(_G, "ChaosSpellAwakening")
+			if AW and AW.onPinnacleKill then
+				try("pinnacle seals", AW.onPinnacleKill, p)
+			end
 			if ChaosMetrics and ChaosMetrics.firstUse then
 				pcall(ChaosMetrics.firstUse, p, "pinnacle")
 			end

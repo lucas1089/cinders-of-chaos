@@ -375,7 +375,14 @@ do
 	local run = openRun(a, {b}, {tier = 15, greater = 6, mods = {}}, 400, 1260)
 	run.finishers = {[a.guid] = {name = a.name}, [b.guid] = {name = b.name}}
 	recorded = {}
+	-- O686 phase 7: the Rift Seals hook (spell_awakening.lua): every player of the run, the shown tier, climbed when sealed
+	local sealCalls = {}
+	_G.ChaosSpellAwakening = {onRiftRun = function(p, tier, climbed) sealCalls[#sealCalls + 1] = {p.guid, tier, climbed} return 1 end}
 	local out = RF.greaterSettle(run, true)
+	eq(#sealCalls, 2, "seals: the hook runs for both players of the run")
+	eq(sealCalls[1][2], 21, "seals: the shown tier")
+	eq(sealCalls[1][3], true, "seals: a sealed run climbs")
+	_G.ChaosSpellAwakening = nil
 	eq(out.next, 9, "sealed in time: the key climbs 3 tiers")
 	eq(#keysOf(a), 1, "the opener gets a key"); eq(lastKey(a).greater, 9, "a Greater key of g 9")
 	eq(#keysOf(b), 0, "the friend gets none")

@@ -54,6 +54,17 @@ local paintedMap        -- words -> painted icon file / false, built once
 local areaCells = {}    -- pooled cells of the area grid
 local tab = 'details'   -- 'details' or 'upgrades' (O686 phase 5, game_spellranks; the tab exists only while the server's switch is on)
 local applyTab          -- below showDetails' helpers
+
+-- the name of a spell as the Spellbook shows it: the awakened name while the spell is awakened (O686 phase 7, game_spellranks), else its own
+local function nameOf(spell)
+  local m = modules and modules.game_spellranks
+  local id = spell and tonumber(spell.id)
+  if m and m.awakenedName and id then
+    local ok, v = pcall(m.awakenedName, id)
+    if ok and type(v) == 'string' and v ~= '' then return v end
+  end
+  return spell and spell.name or '?'
+end
 local DETAIL_IDS = { 'icon', 'name', 'words', 'headerSeparator', 'stats', 'areaTitle', 'areaBox', 'legend', 'areaNote', 'descSeparator', 'description' }
 
 -- ---------------------------------------------------------------- helpers
@@ -352,7 +363,7 @@ local function showDetails(spell)
 
   local ctx = context()
   setIcon(d.icon, d.item, spell)
-  d.name:setText(spell.name or '?')
+  d.name:setText(nameOf(spell))
   if spell.words and spell.words ~= '' then
     d.words:setText(spell.words)
   elseif spell.rune then
@@ -495,7 +506,10 @@ function onRanksChanged()
   if not window then return end
   if window:isVisible() then
     for i, row in ipairs(rows) do
-      if spells[i] then updateRowRank(row, spells[i]) end
+      if spells[i] then
+        updateRowRank(row, spells[i])
+        row.name:setText(nameOf(spells[i])) -- an awakened spell shows its new name
+      end
     end
     fittedGen = 0 -- the names are cut again: the rank number took some of their width
     addEvent(fitNames)
@@ -558,7 +572,7 @@ local function updateRowState(row, spell, ctx, now)
   end
   -- Alt (O372): what the spell is for, its target, element and cooldowns (game_chaosspells spellhelp.lua); the shared
   -- poll (client_chaos_theme althelp.lua) puts the long text on the hovered row while Alt is held
-  local short = (spell.name or '?') .. '\n' .. stateTip(status, spell)
+  local short = nameOf(spell) .. '\n' .. stateTip(status, spell)
   local rankTip = updateRowRank(row, spell)
   if rankTip then short = short .. '\n' .. rankTip end
   row.altTip = function(down) return spellTip(short, spell, down) end
@@ -620,7 +634,7 @@ fitNames = function()
   if not (window and window:isVisible()) or fittedGen == buildGen then return end
   fittedGen = buildGen
   for i, row in ipairs(rows) do
-    if row.name then fitLabel(row.name, spells[i].name or '?') end
+    if row.name then fitLabel(row.name, nameOf(spells[i])) end
   end
 end
 
@@ -642,7 +656,7 @@ local function buildList()
     row.spellIndex = i
     row:setVisible(true)
     setIcon(row.icon, row.item, spell)
-    row.name:setText(spell.name or '?')
+    row.name:setText(nameOf(spell))
     row.name:setColor(spell.element and elementColor(spell.element) or '#d6c9ae')
     row.aoe:setText(Core.isAoE(spell) and tr('AoE') or '')
     row.words:setText((spell.words and spell.words ~= '') and spell.words or (spell.rune and tr('Rune') or ''))

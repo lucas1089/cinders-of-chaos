@@ -13,6 +13,12 @@ being what the cast shows: the effect names of the spell are swapped by the Form
 effects are sent after the cast. ASCEND:weakest is run six times, once per element it can pick. A Form that does not convert sends
 the spell's own element, as before. What a Form may send beyond that is a row of server/data/spells/spell_fx_forms.csv with its reason.
 
+O686 phase 7: the awakened version of every probed spell is run too (rank 20, both Forms picked, bit 9 of the packed state, the picks that do not
+convert the element when the spell has such picks): the cast, the Forms' effects and the signature effects of server/data/spells/awakened.csv
+(data/lib/chaos_spell_awakening.lua fxProbe) send effects of the element the cast shows, as for a Form. Until the kit art of the awakened looks
+(design 3.4) an awakened spell plays the normal effects of its element, so there is nothing to allow: a row of spell_fx_allow.csv that the spell has
+is accepted, as it is for a Form that does not convert.
+
 What a spell sends is measured, not read from names: tools/ci/spell_fx_probe.lua runs the real script of every chaos
 spell against a recording mock of the engine, once per vocation of the spell, with the real libraries (so the swap
 layers of the effects pass, pair 29, pair 36 and the class effects decide the ids, as in the game). Spells whose cast
@@ -41,6 +47,7 @@ TAGS = os.path.join(ROOT, 'server/data/spells/spell_fx_elements.csv')
 ALLOW = os.path.join(ROOT, 'server/data/spells/spell_fx_allow.csv')
 FORMS = os.path.join(ROOT, 'server/data/spells/forms.csv')
 FORM_ALLOW = os.path.join(ROOT, 'server/data/spells/spell_fx_forms.csv')
+AWAKENED = os.path.join(ROOT, 'server/data/spells/awakened.csv')
 PROBE = os.path.join(ROOT, 'tools/ci/spell_fx_probe.lua')
 
 ELEMENTS = ('physical', 'fire', 'ice', 'energy', 'earth', 'holy', 'death', 'arcane')
@@ -133,6 +140,20 @@ def form_cases(kinds, tier, pick):
     return [(state, '', conv)]
 
 
+def awaken_case(kinds):
+    """(packed state, weakest element or '', expected element or None) of the awakened spell: rank 20, both Forms picked (the ones that do not
+    convert the element when there are such), bit 9 (512); expected None: the spell's own element"""
+    def conv(k):
+        return k.split(':')[1] if k.startswith(('SHIFT:', 'ASCEND:')) else None
+    f1 = next((p for p in (1, 2) if conv(kinds[(1, p)]) is None), 1)
+    f2 = next((p for p in (1, 2) if conv(kinds[(2, p)]) is None), 1)
+    c = conv(kinds[(2, f2)]) or conv(kinds[(1, f1)])
+    weak = ''
+    if c == 'weakest':
+        weak, c = 'fire', 'fire'
+    return 20 + 32 * f1 + 128 * f2 + 512, weak, c
+
+
 def element_ok(spell_element, effect_element):
     return effect_element == ANY or effect_element == spell_element
 
@@ -162,6 +183,7 @@ def make_root():
     for sub in ('data/scripts', 'data/spells/scripts'):
         os.makedirs(os.path.join(root, sub))
     os.symlink(FORMS, os.path.join(root, 'data/spells/forms.csv'))
+    os.symlink(AWAKENED, os.path.join(root, 'data/spells/awakened.csv'))
     os.symlink(os.path.join(ROOT, 'server/data/lib'), os.path.join(root, 'data/lib'))
     os.symlink(os.path.join(ROOT, 'server/data/scripts/chaos'), os.path.join(root, 'data/scripts/chaos'))
     os.symlink(os.path.join(ROOT, 'server/data/spells/chaos'), os.path.join(root, 'data/spells/scripts/chaos'))
@@ -222,6 +244,47 @@ def probe_forms(spells, wanted, forms):
         return {(j[0]['id'], j[1], j[2], j[4], j[5]): r for j, r in zip(jobs, results)}
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+def load_awakened(path=AWAKENED):
+    """{spell id: kind} of server/data/spells/awakened.csv"""
+    return {int(r['id']): r['kind'] for r in read_csv(path)}
+
+
+def probe_awakened(spells, wanted, forms, awakened):
+    """{spell id: (weakest element, expected element, effect ids)} of the awakened version of the wanted spells"""
+    root = make_root()
+    try:
+        jobs = []
+        for s in spells:
+            if s['id'] in wanted and s['id'] in forms and s['id'] in awakened:
+                state, weak, want = awaken_case(forms[s['id']])
+                jobs.append((s, state, weak, want))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2]), jobs))
+        return {j[0]['id']: (j[2], j[3], r) for j, r in zip(jobs, results)}
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def awakened_violations(sent, spells, tags, awakened, base_allow=None):
+    """sent: {spell id: (weakest, expected element, effect ids)}. The awakened spell sends the element it shows (a conversion's, else its own;
+    a spell that does not convert also keeps the reasons of spell_fx_allow.csv). Returns the errors"""
+    errors = []
+    base_allow = base_allow or {}
+    for sid in sorted(sent):
+        weak, want, ids = sent[sid]
+        name, element = spells[sid]
+        shown = want or element
+        for eid in sorted(ids):
+            tag = tags.get(eid)
+            where = 'awakened %s (%d) %s' % (name, sid, awakened[sid])
+            if tag is None:
+                errors.append('%s: effect %d has no element tag in spell_fx_elements.csv' % (where, eid))
+            elif not element_ok(shown, tag[1]) and not (want is None and (sid, eid) in base_allow):
+                errors.append('%s sends %s (%d, %s) but shows %s: its signature must use the effects of the spell\'s element' % (
+                    where, tag[0], eid, tag[1], shown))
+    return errors
 
 
 def form_violations(sent, spells, tags, allow, forms, base_allow=None):
@@ -303,6 +366,11 @@ def main(argv):
     form_sent = probe_forms(spells, set(elements), forms)
     form_errors, form_used = form_violations(form_sent, elements, tags, form_allow, forms, allow)
     problems.extend(form_errors)
+    awakened = load_awakened()
+    awake_sent = probe_awakened(spells, set(elements), forms, awakened)
+    problems.extend(awakened_violations(awake_sent, elements, tags, awakened, allow))
+    for sid in sorted(set(forms) - set(awakened)):
+        problems.append('spell %d has Forms but no row in awakened.csv' % sid)
     for key in sorted(set(form_allow) - form_used):
         problems.append('Form allow row %d / %d / %d / %d is not needed any more: remove it' % key)
     if len(unprobed) > UNPROBED_MAX:
@@ -318,8 +386,8 @@ def main(argv):
             print('  ' + p)
         return 1
     print('check_spell_fx: ok (%d spells with an element, %d probed, %d not probed, %d effect ids tagged, %d reasons; %d Form runs, '
-          '%d Form reasons)' % (len(elements), len(elements) - len(unprobed), len(unprobed), len(tags), len(allow), len(form_sent),
-                                 len(form_allow)))
+          '%d Form reasons; %d awakened runs)' % (len(elements), len(elements) - len(unprobed), len(unprobed), len(tags), len(allow),
+                                                   len(form_sent), len(form_allow), len(awake_sent)))
     return 0
 
 

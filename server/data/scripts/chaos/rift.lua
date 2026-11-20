@@ -991,6 +991,21 @@ function RF.greaterSettle(run, ok)
 	end
 	run.settled = true
 	local secs = os.time() - run.startTime
+	-- O686 phase 7: the Rift Seals (spell_awakening.lua; a no-op while the spell upgrades are off): every player of a run that ends at tier
+	-- 16+ gets one, one more when the run is sealed and the key climbs
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if AW and AW.onRiftRun then
+		local shownTier = R.shownTier(cfg, run.key)
+		for id in pairs(run.players or {}) do
+			local sp = Player(id)
+			if sp then
+				local okS, errS = pcall(AW.onRiftRun, sp, shownTier, ok == true)
+				if not okS then
+					print("[ChaosRift] rift seals failed: " .. tostring(errS))
+				end
+			end
+		end
+	end
 	local nextG = R.greaterNext(cfg, run.greater, ok, secs, run.limit)
 	local opener = onlineByGuid(run, run.openerGuid)
 	if opener then

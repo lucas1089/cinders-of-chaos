@@ -9939,6 +9939,41 @@
 					"icon": "wiki/i/top-help.png"
 				},
 				{
+					"id": "basics:awakening",
+					"name": "Spell awakening",
+					"sub": "A spell at rank 20 with both Forms can wake into a new name and a signature effect.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "The rule",
+							"p": [
+								"A spell at rank 20 with both Forms picked can be awakened in the Upgrades tab of the Spellbook, up to 3 spells for each character. An awakened spell has a new name, hits or heals 10% more and gets a signature effect: a ring that pulses, a line, a mark, a reflect, a shield or a cooldown cut.",
+								"Any spell with Forms can be awakened. Its Forms stay and still apply to its hits.",
+								"Between players the signature effect is off and the bonus is halved."
+							]
+						},
+						{
+							"h": "Seals",
+							"p": [
+								"Awakening is paid in Seals: three counters on your character that cannot be traded or stolen.",
+								"Waystone Seals: 1 for each waystone map of tier XVI to XXV you clear, and 1 more for the first clear of a tier.",
+								"Rift Seals: 1 for each Greater Rift run that ends at tier 16 or higher, and 1 more when the run climbs.",
+								"Pinnacle Seals: 2 for each member of the party at the kill of an Ascended boss."
+							]
+						},
+						{
+							"h": "Slots",
+							"p": [
+								"Each new awakening takes the lowest free slot and costs more Seals. A spell the character no longer knows is dormant and gives its slot back; the Seals spent are not returned."
+							],
+							"cols": ["Slot", "Waystone", "Rift", "Pinnacle"],
+							"w": [22, 26, 26, 26],
+							"rows": [["1", "40", "36", "16"], ["2", "70", "60", "28"], ["3", "100", "90", "40"]]
+						}
+					],
+					"icon": "wiki/i/top-help.png"
+				},
+				{
 					"id": "basics:conquest",
 					"name": "Conquest Tokens",
 					"sub": "The sure path: tokens for every boss and clear, any item you have seen for sale.",

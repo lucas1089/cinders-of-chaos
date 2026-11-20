@@ -7,6 +7,8 @@
 -- for the caster with the spell ranks switched on, so the cast runs with the Form of the pick: an element conversion swaps the effect
 -- names (data/lib/chaos_spell_forms.lua) and the Form's own effects are sent after the cast (fxProbe). WEAKEST: the element the
 -- target resists least, for ASCEND:weakest. The state is a spell's own, the caster holds no other.
+-- O686 phase 7: a state of 512 or more is an awakened spell (rank 20, both Forms, bit 9): the signature effects of
+-- data/spells/awakened.csv are sent after the Forms' (ChaosSpellAwakening.fxProbe).
 -- Output lines (tab separated):  ME id tx ty (abs pos minus target pos) cx cy (minus caster pos) delay via
 --                                ANI id from_dx to_dx ...
 --                                COMBAT effect distance cells w h
@@ -257,6 +259,9 @@ if formState and formState > 0 then
 		cfg2.enabled = true
 		STORE[cfg2.storage.rankBase + spellId] = formState
 		local okf = pcall(dofile, "data/lib/chaos_spell_forms.lua")
+		-- O686 phase 7: the packed state may carry the awakened bit (512): the signature effects of the spell
+		-- (data/lib/chaos_spell_awakening.lua)
+		pcall(dofile, "data/lib/chaos_spell_awakening.lua")
 		if okf and ChaosSpellForms and weakestEl and weakestEl ~= "" then
 			ChaosSpellForms.resistOf = function() return function(el) return el == weakestEl and 0 or 50 end end
 		end
@@ -288,5 +293,12 @@ end
 if formState and formState > 0 and rawget(_G, "ChaosSpellForms") and ChaosSpellForms.fxProbe then
 	local okp, errp = pcall(ChaosSpellForms.fxProbe, caster, spellId, Position(TARGET_POS))
 	if not okp then rec("FORMFAIL", tostring(errp):sub(1, 160)) end
+end
+-- the awakened spell (bit 9 of FORM_STATE): the effects its signature sends after the Forms' own
+if formState and formState >= 512 and rawget(_G, "ChaosSpellAwakening") and ChaosSpellAwakening.fxProbe then
+	local oka, erra = pcall(function()
+		if ChaosSpellAwakening.isAwakened(caster, spellId) then ChaosSpellAwakening.fxProbe(caster, spellId, Position(TARGET_POS)) end
+	end)
+	if not oka then rec("AWAKENFAIL", tostring(erra):sub(1, 160)) end
 end
 print(table.concat(out, "\n"))

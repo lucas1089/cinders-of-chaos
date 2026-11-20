@@ -1,9 +1,9 @@
 Module
   name: game_spellranks
-  description: Spell ranks, Forms and combos (O686). The rank bars, the Upgrades tab and the Form picker of the Spellbook (game_spellbook), the hub badge of the Spellbook card, the combo label and chime; extended opcode 168. Behind the server's switch: nothing shows while the server reports it off. Also the generated Forms data (forms_data.lua)
+  description: Spell ranks, Forms, combos and awakening (O686). The rank bars, the Upgrades tab (Forms and Awakening views) and the Form picker of the Spellbook (game_spellbook), the awakened spell names, the hub badge of the Spellbook card, the combo label and chime; extended opcode 168. Behind the server's switch: nothing shows while the server reports it off. Also the generated Forms data (forms_data.lua) and awakened names and signatures (awakened_data.lua)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ forms_data, ranklogic, combologic, spellranks ]
+  scripts: [ forms_data, awakened_data, ranklogic, combologic, awakelogic, spellranks ]
   dependencies:
     - client_chaos_locale
     - client_chaos_theme

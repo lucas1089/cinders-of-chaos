@@ -16,6 +16,10 @@ usage: python3 -I server/tools/spell_upgrade_model.py [--check] [--derive] [--ta
 --forms        the Form band (design 2.1, phase 4): per kind the worst and best gain of one cast with the Form on one enemy and on five,
                from the real planner (tools/forms_numbers.lua over data/spells/forms.csv); --check fails when a row leaves the band
                (limits: spell_upgrade_balance_config.lua `formBand`)
+--awakening    the Seal rates (design 3.2, phase 7): the clears an hour of the waystone, Greater Rift and pinnacle models against the rates
+               the slot costs were set for (spell_awakening_config.lua `rates`), the hours of each slot, the signature of every
+               awakened.csv row (about +5% of the spell) and the +3% of a class's damage each; --check fails when a model moves a rate by
+               more than `tol` (20%) or a number leaves its band. The awakening part of P (`awakening.perSpell`) is not touched by it.
 
 THE MODEL. The typical character hunts at the rate of progression_model.lua (minutes a level). A main rotation spell has `mainShare`
 (16%) of the hunt damage, so it earns SP at 0.16 an hour of hunting (an SP is one hour of kill value at full share), and a rank costs
@@ -46,6 +50,7 @@ REPO = os.path.normpath(os.path.join(SERVER, '..'))
 RANKS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_ranks_config.lua')
 BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_upgrade_balance_config.lua')
 COMBOS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_combos_config.lua')
+AWAKENING_LUA = os.path.join('tools', 'awakening_numbers.lua')
 PROGRESSION = os.path.join('tools', 'progression_model.lua')
 MEASURED = os.path.join(SERVER, 'data', 'spells', 'class_dps_measured.csv')
 LEVELS = (100, 500, 1000)
@@ -247,6 +252,151 @@ def combos_problems(path=COMBOS):
         bad.append('combos: the rows count %.2f%% for the typical rotation, spell_upgrade_balance_config.lua `combos.total` says %.2f%% (within 0.3 points); '
                    'the health curve was derived from the second: change one and run --derive' % (typical * 100, expected * 100))
     return bad
+
+
+# ---- awakening (design 3.1 to 3.3, phase 7) ----------------------------------------------------------------------------------
+def awakening_numbers():
+    """({config name: value}, {spell id: (value, output, utility, kind)}): spell_awakening_config.lua and the value of every row of
+    data/spells/awakened.csv, from the one implementation (tools/awakening_numbers.lua)"""
+    if 'awakening' not in _CACHE:
+        out, last = None, None
+        for exe in ('luajit', 'lua5.3'):
+            try:
+                r = subprocess.run([exe, AWAKENING_LUA], cwd=SERVER, capture_output=True, text=True, timeout=120)
+            except FileNotFoundError:
+                continue
+            if r.returncode == 0:
+                out = r.stdout
+                break
+            last = r.stderr
+        if out is None:
+            raise RuntimeError('awakening_numbers.lua needs luajit or lua5.3: %s' % last)
+        cfg, rows = {}, {}
+        for line in out.strip().split('\n'):
+            f = line.split('\t')
+            if f[0] == 'cfg':
+                cfg[f[1]] = f[2]
+            elif f[0] == 'row':
+                rows[int(f[1])] = (float(f[2]), float(f[3]), float(f[4]), f[5])
+        _CACHE['awakening'] = (cfg, rows)
+    return _CACHE['awakening']
+
+
+def awakening_rates():
+    """what the three models say about the sources of the Seals: {'waystoneMinutes': a cleared deep map and the walk to the next one, as
+    the pinnacle model plays it; 'waystoneIdeal': the waystone endgame model's clear time of tiers 16-25 plus the overhead, in minutes;
+    'riftSeconds': a Greater run at the tier the median class reaches (greater_rift_model.py, levels 2000 and 2500, solo); 'pinnacleHours':
+    the hours of top content of a whole set of fragments}. The models are imported here, not at the top: they import this module"""
+    if 'awakeningRates' not in _CACHE:
+        sys.modules.setdefault('spell_upgrade_model', sys.modules[__name__])
+        import pinnacle_model as PM
+        import greater_rift_model as GM
+        import waystone_endgame_model as WM
+        n = PM.numbers()
+        cfg, bal = n['cfg'], n['bal']
+        hours = PM.set_hours(cfg, bal)[0]
+        num = WM.numbers()
+        a = num['bal']['assume']
+        deep = [WM.deep_target(num, tier, 'deepClearSeconds') + a['overheadSeconds'] for tier in range(16, 26)]
+        res = GM.compute([2000, 2500])
+        secs = [r['secsReach'] for r in res['rows']]
+        _CACHE['awakeningRates'] = {'waystoneMinutes': bal['minutes']['waystone'], 'waystoneIdeal': sum(deep) / len(deep) / 60.0,
+                                    'riftSeconds': sum(secs) / len(secs), 'pinnacleHours': hours}
+    return _CACHE['awakeningRates']
+
+
+def awakening_check(nums, rates):
+    """the problems of the awakening against the models (empty when sound). nums: awakening_numbers(), rates: awakening_rates().
+    Design 3.2: the slot costs were set for 4 Waystone Seals an hour (a 15 minute clear), 3 Rift Seals an hour (a 1200 s run) and 0.72
+    Pinnacle Seals an hour (2 a kill, a set of fragments in 2.77 hours); a model that moves one of them by more than `tol` (20%) fails the
+    check and the costs are retuned. The signature of every row is about +5% of the spell; with the +10% a spell is +3% of a class's damage"""
+    cfg, rows = nums
+    bad = []
+
+    def f(name):
+        return float(cfg[name])
+    tol = f('tol')
+
+    def within(label, got, want, unit):
+        if abs(got / want - 1) > tol:
+            bad.append('awakening: %s is %.2f %s in the models, the Seal costs were set for %.2f (%+.0f%%, limit +-%.0f%%): retune '
+                       'spell_awakening_config.lua `slots` / `rates`' % (label, got, unit, want, (got / want - 1) * 100, tol * 100))
+    # the rates the config states are the ones its own table is made of
+    near_rates = (('rates.waystonePerHour', 60.0 / f('rates.waystoneMinutes'), 'waystonePerHour and waystoneMinutes'),
+                  ('rates.riftPerHour', 3600.0 / f('rates.riftSeconds'), 'riftPerHour and riftSeconds'))
+    for key, want, what in near_rates:
+        if abs(f(key) - want) > 0.05 * want:
+            bad.append('awakening: %s are not one rate: %.2f against %.2f' % (what, f(key), want))
+    # the models
+    within('a waystone clear and the walk to the next map (pinnacle_model.py minutes.waystone)', rates['waystoneMinutes'],
+           f('rates.waystoneMinutes'), 'minutes')
+    within('a deep waystone clear of tiers XVI-XXV and its overhead (waystone_endgame_model.py) x %.1f real efficiency' % f('rates.efficiency'),
+           rates['waystoneIdeal'] * f('rates.efficiency'), f('rates.waystoneMinutes'), 'minutes')
+    within('a Greater Rift run at the tier the median class reaches (greater_rift_model.py)', rates['riftSeconds'], f('rates.riftSeconds'),
+           'seconds')
+    within('the Pinnacle Seals an hour (2 a kill, a set of fragments in %.2f hours: pinnacle_model.py)' % rates['pinnacleHours'],
+           f('perKillPinnacle') / rates['pinnacleHours'], f('rates.pinnacleSealsPerHour'), 'Seals an hour')
+    # the three Seals of a slot come at the same time: the pinnacle hours of a slot against the waystone + rift hours
+    slots = [tuple(int(x) for x in cfg['slot%d' % i].split(',')) for i in (1, 2, 3)]
+    for i, (w, r, p) in enumerate(slots, 1):
+        hours = w / f('rates.waystonePerHour') + r / f('rates.riftPerHour')
+        pin = p / f('rates.pinnacleSealsPerHour')
+        if abs(pin / hours - 1) > tol:
+            bad.append('awakening: slot %d: the Pinnacle Seals take %.1f hours, the Waystone and Rift Seals %.1f (limit +-%.0f%%): the three '
+                       'kinds must come together' % (i, pin, hours, tol * 100))
+        if i > 1 and not (w > slots[i - 2][0] and r > slots[i - 2][1] and p > slots[i - 2][2]):
+            bad.append('awakening: slot %d does not cost more of every Seal than slot %d' % (i, i - 1))
+    # the signature of every awakened spell and the +3% of a class's damage each
+    lo, hi, target = f('bandMin'), f('bandMax'), f('target')
+    for sid, (v, out, util, kind) in sorted(rows.items()):
+        if not lo - 1e-9 <= v <= hi + 1e-9:
+            bad.append('awakening: spell %d (%s) signature is worth %.1f%% of the spell, the band is %.0f%% to %.0f%%' % (
+                sid, kind, v * 100, lo * 100, hi * 100))
+    if rows:
+        mean = sum(v[0] for v in rows.values()) / len(rows)
+        if abs(mean - target) > 0.005:
+            bad.append('awakening: the mean signature is %.2f%% of the spell, the target is %.0f%%' % (mean * 100, target * 100))
+        perspell = (f('bonus') + mean) * f('classShare')
+        if abs(perspell - f('perSpell')) > 0.005:
+            bad.append('awakening: (+%.0f%% and a %.1f%% signature) x a %.0f%% share is +%.2f%% of the class damage, the design says +%.0f%%' % (
+                f('bonus') * 100, mean * 100, f('classShare') * 100, perspell * 100, f('perSpell') * 100))
+    else:
+        bad.append('awakening: data/spells/awakened.csv has no rows')
+    # the awakening part of P is the one of the balance config, unchanged: 3% a spell
+    if abs(balance_config()['awakening']['perSpell'] - f('perSpell')) > 1e-9:
+        bad.append('awakening: spell_upgrade_balance_config.lua awakening.perSpell is %.3f, spell_awakening_config.lua perSpell %.3f' % (
+            balance_config()['awakening']['perSpell'], f('perSpell')))
+    return bad
+
+
+def awakening_problems():
+    return awakening_check(awakening_numbers(), awakening_rates())
+
+
+def awakening_table():
+    cfg, rows = awakening_numbers()
+    rates = awakening_rates()
+    f = lambda k: float(cfg[k])  # noqa: E731
+    lines = ['| Source | in the models | the costs were set for |', '|---|---|---|',
+             '| Waystone clear and walk (pinnacle_model.py) | %.1f min | %.1f min = %.1f an hour |' % (
+                 rates['waystoneMinutes'], f('rates.waystoneMinutes'), f('rates.waystonePerHour')),
+             '| Deep waystone clear, tiers XVI-XXV (waystone_endgame_model.py) x %.1f | %.1f min | %.1f min |' % (
+                 f('rates.efficiency'), rates['waystoneIdeal'] * f('rates.efficiency'), f('rates.waystoneMinutes')),
+             '| Greater Rift run (greater_rift_model.py, 2000 / 2500) | %.0f s | %.0f s = %.1f an hour |' % (
+                 rates['riftSeconds'], f('rates.riftSeconds'), f('rates.riftPerHour')),
+             '| Pinnacle Seals an hour (a set of fragments in %.2f h) | %.2f | %.2f |' % (
+                 rates['pinnacleHours'], 2.0 / rates['pinnacleHours'], f('rates.pinnacleSealsPerHour')), '',
+             '| Slot | Waystone | Rift | Pinnacle | hours (Waystone / 4 + Rift / 3) | hours of the Pinnacle Seals |', '|---:|---:|---:|---:|---:|---:|']
+    for i in (1, 2, 3):
+        w, r, p = (int(x) for x in cfg['slot%d' % i].split(','))
+        lines.append('| %d | %d | %d | %d | %.1f | %.1f |' % (i, w, r, p, w / f('rates.waystonePerHour') + r / f('rates.riftPerHour'),
+                                                             p / f('rates.pinnacleSealsPerHour')))
+    vs = [v[0] for v in rows.values()]
+    lines += ['', 'The signature of %d awakened spells: %.1f%% to %.1f%% of the spell, mean %.2f%% (target %.0f%%); with the +%.0f%% a spell is '
+              '+%.2f%% of a class\'s damage (the design: +%.0f%% each, +%.0f%% with three).' % (
+                  len(vs), min(vs) * 100, max(vs) * 100, sum(vs) / len(vs) * 100, f('target') * 100, f('bonus') * 100,
+                  (f('bonus') + sum(vs) / len(vs)) * f('classShare') * 100, f('perSpell') * 100, f('perSpell') * 300)]
+    return '\n'.join(lines)
 
 
 def balance_config(path=BALANCE):
@@ -742,6 +892,8 @@ def problems():
     bad.extend(form_problems())
     # the combos (design 4.1 and 4.2, phase 6): every row 10-20%, the typical and the best rotation inside their limits
     bad.extend(combos_problems())
+    # the awakening (design 3.2 and 3.3, phase 7): the Seal rates against the waystone, Greater Rift and pinnacle models, the signatures
+    bad.extend(awakening_problems())
     # the no-upgrades character as the design states
     for lv, pct in b['noUpgradesXp']:
         d = no_upgrades_xp(int(lv))
@@ -804,6 +956,11 @@ def main(argv):
     if '--no-upgrades' in argv:
         print(no_upgrades_table())
         return 0
+    if '--awakening' in argv:
+        print(awakening_table())
+        for x in awakening_problems():
+            print('FAIL ' + x)
+        return 1 if awakening_problems() else 0
     if '--forms' in argv:
         print(form_table())
         for x in form_problems():

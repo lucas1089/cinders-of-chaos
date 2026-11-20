@@ -549,6 +549,14 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 					f1, f2 = f1 * cf, f2 * cf
 				end
 			end
+			-- O686 phase 7: an awakened spell's hit or heal +10% (+5% in PvP) and a mark spent (spell_awakening.lua), after the combo
+			local awake = rawget(_G, "ChaosSpellAwakening")
+			if awake and awake.hitFactor then
+				local af = awake.hitFactor(attacker, creature, origin, primaryType, secondaryType)
+				if af ~= 1 then
+					f1, f2 = f1 * af, f2 * af
+				end
+			end
 		end
 		if f1 ~= 1 then
 			primaryDamage = scale(primaryDamage, f1)
