@@ -11755,7 +11755,7 @@ class PinnacleParty(unittest.TestCase):
                 return {'given': ['helmet'], 'level': 2100}
             return None
 
-    def play(self, io, fight=None, member=None, turn=None):
+    def play(self, io, fight=None, member=None, turn=None, place_fn=None, video=False):
         keep = (TX.solo_to_temple, TX.chore_walk, TX.walk_to_place, TX.walk_by_path, TX.pinnacle_open, TX.pinnacle_fight, TX.gear_up)
         calls = {'fight': [], 'up': [], 'open': []}
 
@@ -11767,6 +11767,8 @@ class PinnacleParty(unittest.TestCase):
 
         async def to_place(io_, r, kind, n=None, near=1):
             calls.setdefault('paths', []).append((r['name'], kind, near))
+            if place_fn is not None:
+                return place_fn(r, calls)
             return 'foot', {}, None
 
         async def by_path(io_, r, command, kind, near=1, rounds=0):
@@ -11791,11 +11793,14 @@ class PinnacleParty(unittest.TestCase):
         try:
             if turn:
                 TX.PINNACLE_TURN['by'] = turn
+            if video:
+                TX.set_video(True, 120)
             r = run(TX.check_pinnacle_party(io, 'Tester Aaa', 'Mystic', 2100))
         finally:
             TX.solo_to_temple, TX.chore_walk, TX.walk_to_place, TX.walk_by_path, TX.pinnacle_open, TX.pinnacle_fight, TX.gear_up = keep
             TX.PINNACLE_TURN['by'] = None
             TX.PINNACLE_MEMBERS.clear()
+            TX.set_video(False)
         return r, calls
 
     def test_the_check_forms_five_gears_them_and_opens_the_boss_of_the_level(self):
@@ -11887,6 +11892,313 @@ class PinnacleParty(unittest.TestCase):
             src = f.read()
         self.assertIn('party = {max = %d,' % TX.PINNACLE_PARTY, src, 'the arena takes as many as the check forms')
 
+
+class PinnacleVideo(unittest.TestCase):
+    """O689, the second video run: the gather tried again, members waited for, no hunt, the prep that survives a death, the check of the audit unchanged"""
+
+    NAMES = PinnacleParty.NAMES
+    play = PinnacleParty.play
+
+    def setUp(self):
+        TX.PINNACLE_COMPLETE[0] = False
+        TX.set_video(False)
+
+    def tearDown(self):
+        TX.PINNACLE_COMPLETE[0] = True
+        TX.set_video(False)
+        TX.PINNACLE_VIDEO['prep_s'] = 7200.0
+
+    class VIO(PinnacleParty.PartyIO):
+        """a party io that logs the notes, counts the time that passes, and lets members be dead for a while: dead[name] = the time (io.t) until which it is gone"""
+
+        def __init__(self, dead=None, **kw):
+            PinnacleParty.PartyIO.__init__(self, **kw)
+            self.notes = []
+            self.dead = dict(dead or {})
+
+        def note(self, text):
+            self.notes.append(text)
+
+        def io_of(self, name):
+            if self.dead.get(name, 0) > self.t:
+                return None
+            return PinnacleParty.PartyIO.io_of(self, name)
+
+    def test_it_is_off_unless_asked(self):
+        self.assertFalse(TX.video_on())
+        self.assertEqual(TX.member_wait_limit(), TX.PINNACLE_MEMBER_WAIT)
+        TX.set_video(True, 90)
+        self.assertTrue(TX.video_on())
+        self.assertEqual(TX.PINNACLE_VIDEO['prep_s'], 5400.0)
+        self.assertGreater(TX.member_wait_limit(), 5400 + TX.PINNACLE_BUDGET, 'a member outwaits the preparation and the fight, not 40 minutes')
+        TX.set_video(True, 0)
+        self.assertEqual(TX.PINNACLE_VIDEO['prep_s'], 7200.0)
+
+    def test_the_gather_is_tried_again_and_the_fight_opens(self):
+        io = self.VIO()
+        fails = {'n': 0}
+
+        def place(r, calls):
+            if r['name'] == 'Tester Aad' and fails['n'] < 2:
+                fails['n'] += 1
+                return 'no way to npc Keeper of the Pinnacle: another floor; the teleport: no answer', {}, None
+            return 'foot', {}, None
+        r, calls = self.play(io, place_fn=place, video=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(fails['n'], 2, 'two tries failed at the member that was dead, the third came')
+        self.assertEqual(calls['open'], [2], 'the fight opened once')
+        self.assertEqual(len(io.notes), 2, 'each retry is a line of the activity log')
+        self.assertIn('try 1 of %d did not open the fight' % TX.PINNACLE_TRIES, io.notes[0])
+        self.assertIn('the member Aad did not come to the Keeper', io.notes[0])
+        self.assertGreaterEqual(io.t, 2 * TX.PINNACLE_RETRY_PAUSE, 'a pause in the temple between the tries')
+        self.assertEqual(io.grouped.count(['Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']), 1, 'the party is formed once, after the members came')
+
+    def test_without_the_video_a_failed_gather_is_one_skip_as_before(self):
+        io = self.VIO()
+
+        def place(r, calls):
+            return 'no way to npc: x', {}, None
+        r, calls = self.play(io, place_fn=place)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('did not come to the Keeper', r.detail)
+        self.assertNotIn('tries', r.detail)
+        self.assertEqual(io.notes, [])
+        self.assertEqual(len([p for p in calls['paths'] if p[0] == 'Tester Aab']), 1, 'one try')
+        self.assertEqual(io.moves, ['hunt'], 'the audit still ends at the hunt')
+
+    def test_every_try_ends_in_the_skip_after_the_tries(self):
+        io = self.VIO()
+
+        def place(r, calls):
+            return 'no way to npc: x', {}, None
+        r, calls = self.play(io, place_fn=place, video=True)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertTrue(r.detail.startswith('after %d of %d tries: the member' % (TX.PINNACLE_TRIES, TX.PINNACLE_TRIES)), r.detail)
+        self.assertEqual(len(io.notes), TX.PINNACLE_TRIES - 1)
+        self.assertEqual(calls['fight'], [])
+
+    def test_the_tries_stop_at_the_end_of_the_prep_time(self):
+        io = self.VIO()
+
+        def place(r, calls):
+            return 'no way to npc: x', {}, None
+        old = TX.set_video
+
+        def set_video(on, minutes=0):
+            old(on, minutes)
+            TX.PINNACLE_VIDEO['prep_s'] = -1.0   # no time left
+        TX.set_video = set_video
+        try:
+            r, calls = self.play(io, place_fn=place, video=True)
+        finally:
+            TX.set_video = old
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('after 1 of', r.detail, 'one try, the time was over')
+        self.assertEqual(io.notes, [])
+
+    def test_a_member_that_is_dead_is_waited_for_then_walked(self):
+        io = self.VIO(dead={'Tester Aad': 40.0})   # gone until 40 s of the time the check waits
+        r, calls = self.play(io, video=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertGreaterEqual(io.t, 40.0, 'the check waited for the member to be back')
+        self.assertIn(('Tester Aad', 'npc Keeper of the Pinnacle', TX.PINNACLE_GATHER_NEAR), calls['paths'], 'then it walked')
+        self.assertEqual(calls['fight'], [self.NAMES])
+
+    def test_a_member_that_never_comes_back_is_a_skip_with_the_reason(self):
+        io = self.VIO(dead={'Tester Aad': 10 ** 9})
+        old = TX.PINNACLE_ALIVE_WAIT
+        TX.PINNACLE_ALIVE_WAIT = 30.0
+        try:
+            r, calls = self.play(io, video=True)
+        finally:
+            TX.PINNACLE_ALIVE_WAIT = old
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('the member Aad is not alive in the game after 30 s', r.detail)
+        self.assertEqual(calls['fight'], [])
+        self.assertEqual(calls['open'], [])
+
+    def test_the_video_run_sends_nobody_to_a_hunt(self):
+        io = self.VIO()
+        r, calls = self.play(io, video=True)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertNotIn('hunt', io.moves)
+        self.assertEqual(io.moves[-1], 'town', 'the leader ends in the temple')
+        self.assertEqual(io.moves[0], 'town', 'and starts there: the bots are in the temple before the gather')
+
+    def test_a_member_waits_for_its_leader_past_the_old_limit(self):
+        io = self.VIO()
+        TX.PINNACLE_MEMBERS['Tester Aaa'] = 'Tester Zzz'
+        slept = []
+
+        async def sleep(seconds):
+            slept.append(seconds)
+            if sum(slept) >= 3000.0:
+                TX.PINNACLE_MEMBERS.pop('Tester Aaa', None)
+        io.sleep = sleep
+        TX.set_video(True, 120)
+        try:
+            r = run(TX.check_pinnacle_party(io, 'Tester Aaa', 'Mystic', 2100))
+        finally:
+            TX.PINNACLE_MEMBERS.clear()
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('played as a member of the party of Tester Zzz', r.detail)
+        self.assertGreaterEqual(sum(slept), 3000.0, 'the 2,400 s of the audit would have released it')
+        # the audit's own member is released at 2,400 s
+        TX.set_video(False)
+        TX.PINNACLE_MEMBERS['Tester Aaa'] = 'Tester Zzz'
+        slept2 = []
+
+        async def sleep2(seconds):
+            slept2.append(seconds)
+        io2 = self.VIO()
+        io2.sleep = sleep2
+        try:
+            r2 = run(TX.check_pinnacle_party(io2, 'Tester Aaa', 'Mystic', 2100))
+        finally:
+            TX.PINNACLE_MEMBERS.clear()
+        self.assertEqual(r2.status, TX.SKIP)
+        self.assertLessEqual(sum(slept2), TX.PINNACLE_MEMBER_WAIT + 2.0)
+
+    class DyingMember(FakeIO):
+        def __init__(self):
+            FakeIO.__init__(self)
+            self.bot = type('B', (), {'cid': 11})()
+
+    def test_the_prep_of_a_member_that_dies_goes_on_after_its_next_login(self):
+        lead = self.VIO()
+        member = self.DyingMember()
+        runs = []
+
+        async def prep(mio, name, cls, level, fallbacks):
+            runs.append(name)
+            if len(runs) == 1:
+                mio.up = False   # the bot died in its prep
+                return 'cut'
+            return 'complete'
+
+        def io_of(name):
+            if not member.up:
+                member.up = True     # its own loop logged it in again
+                member.bot.cid = 12
+            return member
+        lead.io_of = io_of
+        r = {'name': 'Tester Aad', 'lead': False, 'io': member}
+        keep = TX.pinnacle_prep
+        TX.pinnacle_prep = prep
+        TX.set_video(True, 120)
+        try:
+            text = run(TX.pinnacle_prep_run(lead, r, 'Elementalist', 1900, []))
+        finally:
+            TX.pinnacle_prep = keep
+        self.assertEqual(runs, ['Tester Aad', 'Tester Aad'], 'the prep ran again')
+        self.assertEqual(text, 'complete')
+        self.assertTrue(any('prep of Aad was cut by its death' in n for n in lead.notes))
+
+    def test_a_death_and_a_login_inside_the_prep_is_a_cut_too(self):
+        lead = self.VIO()
+        member = self.DyingMember()
+        runs = []
+
+        async def prep(mio, name, cls, level, fallbacks):
+            runs.append(name)
+            if len(runs) == 1:
+                mio.bot.cid = 99   # it died and logged in again while the prep waited: the up flag is true again
+            return 'x'
+        lead.io_of = lambda name: member
+        r = {'name': 'Tester Aad', 'lead': False, 'io': member}
+        keep = TX.pinnacle_prep
+        TX.pinnacle_prep = prep
+        TX.set_video(True, 120)
+        try:
+            run(TX.pinnacle_prep_run(lead, r, 'Elementalist', 1900, []))
+        finally:
+            TX.pinnacle_prep = keep
+        self.assertEqual(len(runs), 2)
+
+    def test_the_prep_of_the_audit_is_not_run_again(self):
+        lead = self.VIO()
+        member = self.DyingMember()
+        runs = []
+
+        async def prep(mio, name, cls, level, fallbacks):
+            runs.append(name)
+            mio.up = False
+            return 'cut'
+        r = {'name': 'Tester Aad', 'lead': False, 'io': member}
+        keep = TX.pinnacle_prep
+        TX.pinnacle_prep = prep
+        try:
+            text = run(TX.pinnacle_prep_run(lead, r, 'Elementalist', 1900, []))
+        finally:
+            TX.pinnacle_prep = keep
+        self.assertEqual((runs, text), (['Tester Aad'], 'cut'))
+
+    def test_the_prep_gives_up_when_the_member_does_not_come_back(self):
+        lead = self.VIO()
+        member = self.DyingMember()
+
+        async def prep(mio, name, cls, level, fallbacks):
+            mio.up = False
+            return 'cut'
+        lead.io_of = lambda name: None
+        r = {'name': 'Tester Aad', 'lead': False, 'io': member}
+        keep, old = TX.pinnacle_prep, TX.PINNACLE_ALIVE_WAIT
+        TX.pinnacle_prep, TX.PINNACLE_ALIVE_WAIT = prep, 20.0
+        TX.set_video(True, 120)
+        try:
+            text = run(TX.pinnacle_prep_run(lead, r, 'Elementalist', 1900, []))
+        finally:
+            TX.pinnacle_prep, TX.PINNACLE_ALIVE_WAIT = keep, old
+        self.assertEqual(text, 'cut (not back in time)')
+
+    def test_the_trials_of_the_prep_are_granted_not_fought(self):
+        io = PinnacleComplete.TrialIO(family='juggernaut', puzzle=False)
+        TX.set_video(True, 120)
+        fb = []
+        text = run(TX.trial_complete(io, 'Tester Aac', 'Juggernaut', fb))
+        self.assertIn('trial clear 3', io.cmds)
+        self.assertIn('TEST ONLY grant', text)
+        self.assertIn('the boss video run plays no trial', fb[0])
+
+    def test_the_leader_may_die_more_often_in_the_video_run(self):
+        run_ = TX.CheckRun('Tester Aaa', 'Mystic', 1900)
+        io = FakeIO()
+        r = TX.Result('pinnacle_party', 'Tester Aaa', 'Mystic', TX.SKIP, 'cut')
+        got = [TX.cut_verdict(run_, 'pinnacle_party', io, r) for _ in range(TX.CUT_MAX)]
+        self.assertIsNotNone(got[-1], 'the audit gives up at the third death')
+        run2 = TX.CheckRun('Tester Aaa', 'Mystic', 1900)
+        TX.set_video(True, 120)
+        got = [TX.cut_verdict(run2, 'pinnacle_party', io, r) for _ in range(TX.VIDEO_CUT_MAX)]
+        self.assertTrue(all(g is None for g in got[:-1]))
+        self.assertIsNotNone(got[-1])
+        self.assertGreater(TX.VIDEO_CUT_MAX, TX.CUT_MAX)
+
+    def test_the_enter_of_a_member_is_asked_again_in_the_video_run(self):
+        answers = []
+
+        class WIO(FakeIO):
+            async def helper_of(self, name, command, kind, wait=4.0):
+                answers.append(command)
+                if command.startswith('enter'):
+                    return None if len([a for a in answers if a.startswith('enter')]) < 3 else {'ok': True}
+                return {'dist': 1, 'here': True} if command.startswith('path') else None
+
+        async def by_path(io_, r, command, kind, near=1, rounds=0):
+            return 'err', {'err': 'another floor'}
+        keep = TX.walk_by_path
+        TX.walk_by_path = by_path
+        try:
+            r = {'name': 'Tester Aad', 'lead': False}
+            TX.set_video(True, 120)
+            how, got, note = run(TX.walk_to_place(WIO(), r, 'npc Keeper of the Pinnacle', None, 3))
+            self.assertEqual(how, 'helper', 'the third ask answered')
+            answers.clear()
+            TX.set_video(False)
+            how2, _, _ = run(TX.walk_to_place(WIO(), r, 'npc Keeper of the Pinnacle', None, 3))
+            self.assertTrue(how2.startswith('no way to npc Keeper'), 'the audit asks once')
+            self.assertEqual(len([a for a in answers if a.startswith('enter')]), 1)
+        finally:
+            TX.walk_by_path = keep
 
 class PinnacleDodge(unittest.TestCase):
     """O683: the bot steps off a telegraph in time: diagonal steps, all at once, no chase back into the mark, no retreat step in the fight"""

@@ -5,11 +5,14 @@
            carried out when), what the spectator's client log saw (the fight states of /instances, the boss health samples), all with no account,
            password, key or database login in it
   redact   a log with the same secrets cut out (the client log)
+  console  the last lines of the server console (tfs log) with the secrets cut and every line that could carry one dropped: the evidence of a death nobody
+           explained (second run, O689: a hundred deaths "while town")
   level    the character level that opens a pinnacle boss (the table of tools/ci/unity_live_check.sh pinnacle_level, held to pinnacle_config.lua by the test)
 
   python3 -I tools/ci/boss_video_report.py report --boss malgrath --level 1900 --party "Tester Aka,..." --activity FILE --client-log FILE \
       --secrets-file FILE [--state-json FILE] [--seconds N] --out FILE
   python3 -I tools/ci/boss_video_report.py redact --in FILE --secrets-file FILE [--state-json FILE] --out FILE
+  python3 -I tools/ci/boss_video_report.py console --in FILE --secrets-file FILE [--state-json FILE] [--lines N] --out FILE
 
 The secrets file has one value a line (made by boss_video.sh, mode 600, never an argument). --state-json is the state.json of testers.py: its accounts and
 passwords are cut too. Anything shaped like a tester account (tstbot + 10 hex digits), a guard key (64 hex digits) or a made-up live account of
@@ -23,9 +26,14 @@ import sys
 BOSS_LEVELS = {'malgrath': 1900, 'vhoss': 2100, 'talath': 2300, 'varkhul': 2500}
 SHAPES = (re.compile(r'tstbot[0-9a-f]{10}'), re.compile(r'\b[0-9a-fA-F]{64}\b'), re.compile(r'\blc[pqnstuw]\d+[0-9a-f]{6}\b'))
 REMOVED = '<removed>'
-FIGHT_KINDS = ('CHECK', 'BUG', 'DEATH')
+FIGHT_KINDS = ('CHECK', 'BUG', 'DEATH', 'RETRY')
 MAX_LINES = 60
 MAX_LINE = 900
+MAX_DEATH_LINES = 12     # the first deaths are listed, the rest are counted
+CONSOLE_LINES = 300      # the tail of the server console
+# a console line with one of these words is dropped whole: it may carry an account, a password, a key or a token in a shape the secrets list does not know
+SENSITIVE = re.compile(r'passw|passwd|secret|token|api[_-]?key|private|credential|rsa|account|login:|auth|\bkey\b|\bsql\b.*\buser\b|mysql|mariadb|database|bearer|cookie', re.I)
+IP_RE = re.compile(r'\b\d{1,3}(?:\.\d{1,3}){3}\b')
 
 
 def secrets_of(path, state_json=None):
@@ -59,7 +67,7 @@ def fight_lines(activity):
     activity log's line is `HH:MM:SS Tester Xxx (L1900 Class) KIND text`"""
     out = []
     for raw in activity.splitlines():
-        m = re.match(r'^\d\d:\d\d:\d\d .*? \(L\d+ [^)]*\) (\S+) ', raw)
+        m = re.match(r'^\d\d:\d\d:\d\d .*? \(L\d+ [^)]*\) (\S+)\s+', raw)
         if m and m.group(1) in FIGHT_KINDS:
             out.append(raw[:MAX_LINE])
     return out
@@ -70,7 +78,7 @@ def verdict_of(lines):
     The texts are tester_checks.pinnacle_walk_verdict and pinnacle_party_verdict"""
     best = None
     for line in lines:
-        m = re.search(r' CHECK (PASS|FAIL|SKIP) pinnacle_party: (.*)$', line)
+        m = re.search(r' CHECK +(PASS|FAIL|SKIP) +pinnacle_party: (.*)$', line)
         if m and not m.group(2).startswith('played as a member'):
             best = (m.group(1), m.group(2))
     if best is None:
@@ -90,6 +98,59 @@ def verdict_of(lines):
         for name, secs in re.findall(r'(Tester [A-Z][a-z]{2}) at (\d+) s', c.group(1)):
             v['out'].append((name, int(secs)))
     return v
+
+
+def death_facts(lines):
+    """the deaths among `lines` (DEATH lines of the activity log): {'n', 'per_bot': {name: n}, 'while': {behaviour: n}, 'killers': {name: n}, 'unseen': n}. A line reads
+    `... (L1900 Class) DEATH    died while town; killed by a Dragon 912, ... (3 last hit(s)); last helper move hunt 15 s before` (testers.py death_facts)"""
+    out = {'n': 0, 'per_bot': {}, 'while': {}, 'killers': {}, 'unseen': 0, 'move': {}}
+    for line in lines:
+        m = re.match(r'^\d\d:\d\d:\d\d (Tester [A-Z][a-z]{2}) \(L\d+ [^)]*\) DEATH +died while (\S+)(.*)$', line)
+        if not m:
+            continue
+        out['n'] += 1
+        out['per_bot'][m.group(1)] = out['per_bot'].get(m.group(1), 0) + 1
+        out['while'][m.group(2).rstrip(';')] = out['while'].get(m.group(2).rstrip(';'), 0) + 1
+        rest = m.group(3)
+        k = re.search(r'killed by (.*?) \(\d+ last hit', rest)
+        if k:
+            first = re.sub(r' \d+$', '', k.group(1).split(', ')[0])   # the attacker with the most damage
+            out['killers'][first] = out['killers'].get(first, 0) + 1
+        elif 'no damage line seen' in rest:
+            out['unseen'] += 1
+        mv = re.search(r'last helper move (\w+) (\d+) s before', rest)
+        if mv:
+            out['move'][mv.group(1)] = out['move'].get(mv.group(1), 0) + 1
+    return out
+
+
+def death_text(d):
+    """the lines of the report about the deaths: how many, who, in which behaviour they were counted, who killed (the server's own damage lines), the helper moves"""
+    if not d['n']:
+        return []
+    top = lambda m, n=6: ', '.join('%s %d' % (k, v) for k, v in sorted(m.items(), key=lambda kv: (-kv[1], kv[0]))[:n])  # noqa: E731
+    out = ['deaths: %d (%s)' % (d['n'], top(d['per_bot'])),
+           'the behaviour a death was counted in (the last one the bot started, not the place it died in): %s' % top(d['while'])]
+    if d['killers']:
+        out.append('the attacker that did the most damage in the last hits, per death: %s' % top(d['killers']))
+    out.append('deaths with no damage line before them: %d of %d' % (d['unseen'], d['n']))
+    if d['move']:
+        out.append('the last helper move before a death: %s' % top(d['move']))
+    return out
+
+
+def scrub_console(text, secrets, lines=CONSOLE_LINES):
+    """the last `lines` lines of the server console for the artifact: the secrets and the shapes cut, a line with a word of SENSITIVE dropped whole (its place says
+    how many), addresses cut. The console of a run holds no account of a player, but the bots' accounts and the run's database login pass through it"""
+    kept, dropped = [], 0
+    for raw in text.splitlines()[-max(1, lines):]:
+        raw = redact(raw, secrets)
+        if SENSITIVE.search(raw):
+            dropped += 1
+            continue
+        kept.append(IP_RE.sub('<ip>', raw)[:MAX_LINE])
+    head = ['server console, the last %d lines (secrets cut, %d line(s) with a sensitive word dropped)' % (lines, dropped), '']
+    return '\n'.join(head + kept) + '\n'
 
 
 def client_facts(client_log):
@@ -145,10 +206,19 @@ def build_report(boss, level, party, activity, client_log, seconds=None, secrets
         out.append('the spectator never saw the fight open (no ready line in the client log)')
     if seconds is not None:
         out.append('recorded: %s s' % seconds)
-    out += ['', 'lines of the testers\' activity log (checks, bugs, deaths):']
-    out += ['  ' + l for l in lines[:MAX_LINES]] or ['  none']
-    if len(lines) > MAX_LINES:
-        out.append('  [%d more lines left out]' % (len(lines) - MAX_LINES))
+    d = death_facts(lines)
+    deaths = [l for l in lines if ' DEATH ' in l]
+    key_lines = [l for l in lines if ' DEATH ' not in l]
+    out += [''] + death_text(d)
+    out += ['', 'lines of the testers\' activity log (checks, bugs, retries):']
+    out += ['  ' + l for l in key_lines[:MAX_LINES]] or ['  none']
+    if len(key_lines) > MAX_LINES:
+        out.append('  [%d more lines left out]' % (len(key_lines) - MAX_LINES))
+    if deaths:
+        out += ['', 'the first deaths:']
+        out += ['  ' + l for l in deaths[:MAX_DEATH_LINES]]
+        if len(deaths) > MAX_DEATH_LINES:
+            out.append('  [%d more deaths left out]' % (len(deaths) - MAX_DEATH_LINES))
     return redact('\n'.join(out) + '\n', list(secrets))
 
 
@@ -169,7 +239,7 @@ def _read(path):
 
 
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ('report', 'redact', 'level'):
+    if len(argv) < 2 or argv[1] not in ('report', 'redact', 'level', 'console'):
         print(__doc__)
         return 2
     cmd = argv[1]
@@ -187,6 +257,9 @@ def main(argv):
         return 2
     if cmd == 'redact':
         text = redact(_read(_arg(argv, '--in', '')), secrets)
+    elif cmd == 'console':
+        n = _arg(argv, '--lines', str(CONSOLE_LINES))
+        text = scrub_console(_read(_arg(argv, '--in', '')), secrets, int(n) if str(n).isdigit() else CONSOLE_LINES)
     else:
         seconds = _arg(argv, '--seconds')
         text = build_report(_arg(argv, '--boss', '?'), _arg(argv, '--level', '?'), [n for n in (_arg(argv, '--party', '') or '').split(',') if n],

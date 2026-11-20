@@ -1878,6 +1878,103 @@ T.TesterBot.on_extended(_fake678, 99, '{"action":"x","data":{}}')
 eq([(n, a) for _, n, a, _d in _fake678.msgs], [('groundLoot', 'explode'), ('lootfilter', 'beam')], 'on_extended keeps the messages of the loot windows, no other')
 eq(_fake678.msgs[0][3], {'o': [1, 2, 3], 'f': []}, 'on_extended: the data of the message')
 
+# ---------------------------------------------------------------- O689: the video run (testers.py --video): no hunt, no free activity, the killer in the death line
+eq(TC.death_facts([], None, 0), 'no damage line seen', 'death_facts: a death with no damage line says so')
+eq(TC.death_facts(['You lose 812 hitpoints due to an attack by a Dragon.', 'You lose 100 hitpoints due to an attack by a Dragon.',
+                   'You lose 40 hitpoints due to an attack by a Dragon Hatchling.'], ('hunt', 10.0), 25.0),
+   'killed by a Dragon 912, a Dragon Hatchling 40 (3 last hit(s)); last helper move hunt 15 s before', 'death_facts: attackers by damage, the last helper move')
+ok('last lines: You are dead.' in TC.death_facts(['You are dead.'], None, 0), 'death_facts: a death line of the server is kept')
+_vx = T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks', '--closed', '--only', 'pinnacle_party', '--video', '--prep-minutes', '90'])
+ok(_vx.video and _vx.prep_minutes == 90, '--video and --prep-minutes parse')
+eq((T.TX.PINNACLE_VIDEO['on'], T.TX.PINNACLE_VIDEO['prep_s']), (True, 5400.0), '--video switches the checks module into the video run')
+for _bad in (['--checks', '--closed', '--video'], ['--checks', '--only', 'pinnacle_party', '--video'], ['--video']):
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            T.parse(['run', '--server-dir', '/x', '--key-file', '/k'] + _bad)
+        eq(0, 1, '--video needs --checks --closed --only pinnacle_party: ' + ' '.join(_bad))
+    except SystemExit:
+        eq(1, 1, 'refused')
+T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks'])
+eq(T.TX.PINNACLE_VIDEO['on'], False, 'a run with no --video switches it off again')
+
+
+class AVideo:
+    host = '10.0.0.1'
+    ops = {'lootfilter': 238}
+    after_login = ''
+    on_answer = None
+    checks = True
+    closed = True
+    journey = False
+    keystones = False
+    video = True
+    only = 'pinnacle_party'
+
+
+_bv = T.TesterBot(15, dict(bot), AVideo(), 1, T.Results(1), {'rotation': [], 'heal': None})
+ok(_bv.video(), 'the bot reads the video flag')
+ok(not T.TesterBot(16, dict(bot), A660(), 1, T.Results(1), {'rotation': [], 'heal': None}).video(), 'a plain checks run is no video run')
+_said = []
+_bv.say = lambda text, kind=1: _said.append(text)
+_bv.stay, _bv.back_at, _bv.checks_done = False, _time.monotonic() - 1, True
+_bv.alive, _bv.died, _bv.health = True, False, 100
+_bv.keep_alive(_time.monotonic())
+ok('!tester hunt' not in _said, 'video: the rest after a death never ends at the hunt (keep_alive)')
+_bv.back_at = _time.monotonic() - 1
+_bv.stay = False
+A660.closed = False
+_bn = T.TesterBot(17, dict(bot), A660(), 1, T.Results(1), {'rotation': [], 'heal': None})
+_bn.say = lambda text, kind=1: _said.append(text)
+_bn.stay, _bn.back_at, _bn.alive, _bn.died, _bn.health = False, _time.monotonic() - 1, True, False, 100
+_bn.keep_alive(_time.monotonic())
+ok('!tester hunt' in _said, 'a normal run: the rest ends at the hunt, as before')
+
+_helper_calls = []
+
+
+async def _fake_says(command, kind, wait=4.0):
+    _helper_calls.append(command)
+    _bv.helper[kind] = {}
+    return {}
+
+_bv.helper_says = _fake_says
+_real_sleep689 = asyncio.sleep
+
+
+async def _fast_sleep689(seconds, *a, **k):
+    await _real_sleep689(0)
+
+asyncio.sleep = _fast_sleep689
+try:
+    _bv.helper.pop('town', None)
+    ok(asyncio.run(_bv.do_hold(None)), 'do_hold is a behaviour that succeeds')
+finally:
+    asyncio.sleep = _real_sleep689
+eq(_helper_calls, ['town'], 'do_hold: the temple, nothing else (no hunt, no errand)')
+ok(_bv.stay and _bv.back_at is None, 'do_hold keeps the bot in the temple')
+ok(hasattr(T.TesterBot, 'do_hold'), 'the free loop of a finished run is a behaviour')
+
+# the picking: a finished checks run in a video run asks for `hold`, never one of the free activities
+_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testers.py'), encoding='utf-8').read()
+_pick = _src[_src.index("name = self.sched.next(now) or 'hunt'"):_src.index("self.last = name\n                self.results.behaviour(name, 'tried')")]
+ok("elif self.video():" in _pick and "name = 'hold'" in _pick, 'act(): a video run that has no check left holds, the scheduler is not asked for anything else')
+ok(_pick.index("'checks'") < _pick.index("'hold'"), 'the checks come first, the hold after')
+ok(_src.count("!tester hunt") >= 1 and "and not self.stay and not self.video()" in _src, 'the rest of a death never sends a video bot to its hunt')
+
+# the death line names the last hits and the last helper move, in the format the report of the video reads
+_vres = T.Results(1)
+_vres.activity = io.StringIO()
+_bd = T.TesterBot(18, dict(bot), AVideo(), 1, _vres, {'rotation': [], 'heal': None})
+_bd.recent = ['You lose 900 hitpoints due to an attack by a Dragon.', 'You lose 50 hitpoints due to an attack by a Dragon.']
+_bd.last, _bd.last_move, _bd.died, _bd.health = 'town', ('hunt', _time.monotonic() - 12), False, 40
+_bd.on_death()
+_line = _vres.activity.getvalue().strip().splitlines()[0]
+ok('DEATH    died while town; killed by a Dragon 950 (2 last hit(s)); last helper move hunt 1' in _line, 'the death line carries the killer and the move: ' + _line)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools', 'ci'))
+import boss_video_report as _BVR  # noqa: E402
+_d = _BVR.death_facts([_line])
+eq((_d['n'], _d['killers'], _d['while']), (1, {'a Dragon': 1}, {'town': 1}), 'the report of the video reads the line testers.py writes')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

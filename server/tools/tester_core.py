@@ -217,6 +217,38 @@ def safe_hunts(hunts, level):
     return [h for h in hunts if h[1] == low]
 
 
+HIT_RE = re.compile(r'You lose (\d+) (?:hitpoints|health|mana)\b.*?\bdue to an attack by ([^.]+?)\.?\s*$', re.I)
+DEATH_WORDS = re.compile(r'(you are dead|killed by|you died|you lose \d+ hit|due to an attack|burn|poison|drown|electrif|freez|curse|bleed)', re.I)
+
+
+def death_facts(recent, last_move=None, now=0.0):
+    """O689: what the server said before a bot died, as one short text for its DEATH line: the attackers named by the last damage lines ("You lose 812
+    hitpoints due to an attack by a Dragon.": name, damage taken over the last 12 hits), the last other lines about damage or death, and the last helper move
+    ((kind, monotonic time): 'hunt' or 'town') with its age. '' when there is nothing to say. `recent` is the list of the bot's last server texts"""
+    hits, others = [], []
+    for t in list(recent or [])[-40:]:
+        m = HIT_RE.search(str(t))
+        if m:
+            hits.append((m.group(2).strip(), int(m.group(1))))
+        elif DEATH_WORDS.search(str(t)):
+            others.append(' '.join(str(t).split())[:70])
+    parts = []
+    if hits:
+        last = hits[-12:]
+        total = {}
+        for who, n in last:
+            total[who] = total.get(who, 0) + n
+        top = sorted(total.items(), key=lambda kv: (-kv[1], kv[0]))[:4]
+        parts.append('killed by %s' % ', '.join('%s %d' % (w[:40], n) for w, n in top) + ' (%d last hit(s))' % len(last))
+    if others:
+        parts.append('last lines: ' + ' | '.join(others[-2:]))
+    if last_move:
+        parts.append('last helper move %s %d s before' % (last_move[0], max(0, int(now - last_move[1]))))
+    if not hits and not others:
+        parts.insert(0, 'no damage line seen')
+    return '; '.join(parts)
+
+
 def death_rest(deaths, now):
     """seconds a tester waits in the temple before it goes back to its hunt, from the times (monotonic) of its deaths so
     far (the last one is now): DEATH_REST, doubled for each death within DEATH_WINDOW before it, at most DEATH_REST_MAX
