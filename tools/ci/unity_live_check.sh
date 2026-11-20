@@ -563,7 +563,7 @@ import json, sys
 print(','.join(b['name'] for b in json.load(open(sys.argv[1]))['bots']))
 PY
 )
-  [ "$(printf '%s' "$names" | tr ',' '\n' | wc -l)" = 5 ] || die "the pinnacle party has not five testers: $names"
+  [ "$(printf '%s\n' "$names" | tr ',' '\n' | wc -l)" = 5 ] || die "the pinnacle party has not five testers: $names"
   (
     umask 077
     {
