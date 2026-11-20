@@ -13,7 +13,7 @@
 
 The secrets file has one value a line (made by boss_video.sh, mode 600, never an argument). --state-json is the state.json of testers.py: its accounts and
 passwords are cut too. Anything shaped like a tester account (tstbot + 10 hex digits), a guard key (64 hex digits) or a made-up live account of
-tools/ci/unity_live_check.sh (lcp / lcq / lcn / lct / lcu / lcs + number + 6 hex digits) is cut whether it is listed or not. Standard library only.
+tools/ci/unity_live_check.sh (lcp / lcq / lcn / lct / lcu / lcs / lcw + number + 6 hex digits) is cut whether it is listed or not. Standard library only.
 """
 import json
 import os
@@ -21,7 +21,7 @@ import re
 import sys
 
 BOSS_LEVELS = {'malgrath': 1900, 'vhoss': 2100, 'talath': 2300, 'varkhul': 2500}
-SHAPES = (re.compile(r'tstbot[0-9a-f]{10}'), re.compile(r'\b[0-9a-fA-F]{64}\b'), re.compile(r'\blc[pqnstu]\d+[0-9a-f]{6}\b'))
+SHAPES = (re.compile(r'tstbot[0-9a-f]{10}'), re.compile(r'\b[0-9a-fA-F]{64}\b'), re.compile(r'\blc[pqnstuw]\d+[0-9a-f]{6}\b'))
 REMOVED = '<removed>'
 FIGHT_KINDS = ('CHECK', 'BUG', 'DEATH')
 MAX_LINES = 60

@@ -7530,5 +7530,12 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Rotting Curse"] = "Maldição Apodrecida",
   ["Psychic Shatter"] = "Estilhaço Psíquico",
   ["Echoing Mend"] = "Cura Ecoante",
+
+  -- test_spelltour (O692, TEST ONLY: the captions of the spell showcase video)
+  ["%s, no Form"] = "%s, sem Forma",
+  ["%s, Form I: %s"] = "%s, Forma I: %s",
+  ["%s, Form II: %s, with Form I: %s"] = "%s, Forma II: %s, com a Forma I: %s",
+  ["%s: %s, %s, for the combo"] = "%s: %s, %s, para o combo",
+  ["Combo %s: %s, then %s"] = "Combo %s: %s, depois %s",
 }
 return ChaosLocaleStrings['pt-BR']

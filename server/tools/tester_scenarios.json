@@ -11121,7 +11121,8 @@
     "open"
    ],
    "client": [
-    "game_spellranks"
+    "game_spellranks",
+    "test_spelltour"
    ],
    "dataKeys": [],
    "files": [

@@ -18,10 +18,14 @@ id,name,element
 433,frost_bastion,ice
 452,earth_spikes,physical
 453,fire_explosion,fire
+454,frost_nova,ice
 456,holy_smite,holy
 460,shadow_eruption,death
 464,arcane_hit,arcane
+465,fireball_hit,fire
 467,holy_hit,holy
+468,ice_shatter,ice
+469,lightning_hit,energy
 486,sword_slash_e,physical
 502,thrust_e,physical
 510,claw_rake_e,physical
