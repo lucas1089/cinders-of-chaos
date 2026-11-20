@@ -9330,6 +9330,10 @@
 								[
 									"Storm Rupture",
 									"Prismatic Rupture: +3 increased damage while it is cast. It joins the one damage pool of the tree and gear (at most +12 from masteries)."
+								],
+								[
+									"Lingering Window",
+									"Spell combos: the window between the two casts is 1.5 s longer (5.5 s in all)."
 								]
 							]
 						},
@@ -9366,6 +9370,10 @@
 								[
 									"Splintered Rot",
 									"Blightbrand: enemies next to the target take 15% of the hit. A reduced Shatter rune, free."
+								],
+								[
+									"Lingering Window",
+									"Spell combos: the window between the two casts is 1.5 s longer (5.5 s in all)."
 								]
 							]
 						},
@@ -9403,7 +9411,8 @@
 								[
 									"Hunter's Mark",
 									"Dawnpiercer: monsters it hits take +2% damage from everyone for 4 s. A reduced Hex rune, free."
-								]
+								],
+								["Eager Rhythm", "Spell combos: the wait between two combos is 0.8 s, not 1.2 s."]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
@@ -9440,7 +9449,8 @@
 								[
 									"Quick Heel",
 									"Whirling Heel: its cooldown is 4% shorter. A reduced Quickening rune, free."
-								]
+								],
+								["Eager Rhythm", "Spell combos: the wait between two combos is 0.8 s, not 1.2 s."]
 							]
 						},
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
@@ -9479,6 +9489,10 @@
 								[
 									"Bell of Dawn",
 									"Bell of Reckoning: +3 increased damage while it is cast. It joins the one damage pool of the tree and gear (at most +12 from masteries)."
+								],
+								[
+									"Lingering Window",
+									"Spell combos: the window between the two casts is 1.5 s longer (5.5 s in all)."
 								]
 							]
 						},
@@ -9516,6 +9530,10 @@
 								[
 									"Echoing Flurry",
 									"Blade Flurry: 11% chance that its hits strike again for 50%. A reduced Echo rune, free."
+								],
+								[
+									"Short Memory",
+									"Spell combos: the same combo fires again on the same target after 4 s, not 6 s."
 								]
 							]
 						},
@@ -9553,6 +9571,10 @@
 								[
 									"Wide Cry",
 									"Bastion Cry: enemies it missed within 1 sqm take 26% of its hit. A reduced Breadth rune, free."
+								],
+								[
+									"Short Memory",
+									"Spell combos: the same combo fires again on the same target after 4 s, not 6 s."
 								]
 							]
 						},

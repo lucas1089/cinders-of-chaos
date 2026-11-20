@@ -28,7 +28,7 @@ return {
 	-- `fromRank` (design 4.2: a class combo opens at rank 5, an element reaction is free) and full at `toRank`. Phase 6: the model COUNTS
 	-- the gain from the rows of spell_combos_config.lua (triggerShare 0.40 x the mean bonus of the 13 rows = +6.0%); `total` here is the
 	-- number the committed health curve was derived with, and --check fails when the two differ by more than 0.3 points
-	combos = {total = 0.06, fromRank = 3, toRank = 10},
+	combos = {total = 0.064, fromRank = 3, toRank = 10},
 	-- awakening (design 3.1): spells awakened on the typical character at a level (a straight line between the points, 0 below the first), +3% damage each
 	awakening = {perSpell = 0.03, {1900, 0}, {2100, 1}, {2300, 1.5}, {2500, 2}},
 	-- the share of a median class's damage that is spell damage (design 5.3: 0.80). The model measures it per class and level from
@@ -55,7 +55,9 @@ return {
 		rank20 = {1500, 2000},
 		-- a no-upgrades character (design 5.6): experience an hour is 1 / H, in points of percent against the design table; the
 		-- hours to a level against the design's, in points of percent
-		noUpgradesXpTol = 1.2,
+		-- 1.2 until phase 6b; 1.3 since: the combo riders add 0.4 points to the combos, H rises 0.01 at level 2000 (1.31 to 1.32) and the
+		-- table's -23% there is -24.2% (the design's table is the first design, before the owner's 10-20% combos and the riders)
+		noUpgradesXpTol = 1.3,
 		noUpgradesHoursTol = 2.5,
 		-- the design's table of 5.6: {level, percent less experience an hour}
 		noUpgradesXp = {{100, 2}, {500, 9}, {1000, 17}, {2000, 23}, {2500, 27}},
@@ -69,8 +71,8 @@ return {
 	-- the typical character's damage gain by level, {level, gain} (the blend of 1 and 5 targets of the median class's spell share x (P - 1)):
 	-- what tools/progression_model.lua --upgrades reads, since Lua cannot run the model. `spell_upgrade_model.py --check` holds it to the
 	-- derivation (0.0015), `--derive` prints it
-	typical = {{100, 1.014}, {200, 1.026}, {300, 1.057}, {400, 1.080}, {500, 1.102}, {600, 1.128}, {700, 1.164}, {800, 1.183},
-		{1000, 1.217}, {1300, 1.248}, {1600, 1.290}, {2000, 1.323}, {2200, 1.352}, {2500, 1.397}},
+	typical = {{100, 1.014}, {200, 1.026}, {300, 1.058}, {400, 1.081}, {500, 1.104}, {600, 1.130}, {700, 1.168}, {800, 1.187},
+		{1000, 1.221}, {1300, 1.253}, {1600, 1.294}, {2000, 1.327}, {2200, 1.357}, {2500, 1.402}},
 
 	-- name = {limit = share}: the limit is multiplied by 1 + share in the upgrades mode only (spell_upgrade_model.py widen(name, limit))
 	widen = {

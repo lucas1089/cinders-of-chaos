@@ -3219,6 +3219,9 @@ return {
 		["+1 magic level per point: stronger spells, healing and runes."] =
 			"+1 magic level por ponto: magias, curas e runas mais fortes.",
 		["Spell modifier"] = "Modificador de magia",
+		["Combo modifier"] = "Modificador de combo",
+		["A mastery effect that changes one number of the spell combos for you: a longer window between the two casts, a shorter wait before the same combo fires on the same target again, or a shorter wait between two combos. Never more than one at a time."] =
+			"Um efeito de maestria que muda um número dos combos de magia para você: uma janela maior entre os dois lançamentos, uma espera menor antes de o mesmo combo disparar de novo no mesmo alvo, ou uma espera menor entre dois combos. Nunca mais de um ao mesmo tempo.",
 		["A mastery effect: one named spell gets a free support effect, the effect of a Common support rune at reduced strength. It takes no rune slot and never adds to a real rune of the same support."] =
 			"Um efeito de maestria: uma magia nomeada ganha um efeito de suporte de graça, o efeito de uma runa de suporte Common com força reduzida. Não ocupa slot de runa e nunca soma a uma runa de verdade do mesmo suporte.",
 		["+1 shielding skill level per point: you block more of the hits you take with a shield."] =

@@ -287,7 +287,7 @@ do
 	eq(P.healthFactor(99, cfg), 1, "below 100: x1")
 	near(P.healthFactor(100, cfg), 1.02, 1e-9, "level 100: 1.02")
 	near(P.healthFactor(150, cfg), 1.025, 1e-9, "level 150: between points")
-	near(P.healthFactor(1000, cfg), 1.21, 1e-9, "level 1000: 1.21")
+	near(P.healthFactor(1000, cfg), 1.22, 1e-9, "level 1000: 1.22 (1.21 until the combo riders of phase 6b)")
 	near(P.healthFactor(2500, cfg), 1.39, 1e-9, "level 2500: 1.39")
 	near(P.healthFactor(3000, cfg), 1.39, 1e-9, "above the last: flat")
 	for i = 2, #cfg.health do

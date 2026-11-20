@@ -7537,5 +7537,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["%s, Form II: %s, with Form I: %s"] = "%s, Forma II: %s, com a Forma I: %s",
   ["%s: %s, %s, for the combo"] = "%s: %s, %s, para o combo",
   ["Combo %s: %s, then %s"] = "Combo %s: %s, depois %s",
+  -- combo masteries (O686 phase 6b): the last effect of each mastery node, game_passivetree/treespellmods.lua (treespellmods_test.lua holds the numbers equal to spell_combos_config.lua)
+  ["Spell combos: the window between the two casts is 1.5 s longer (5.5 s in all)."] = "Combos de magias: a janela entre os dois lançamentos é 1,5 s maior (5,5 s no total).",
+  ["Spell combos: the same combo fires again on the same target after 4 s, not 6 s."] = "Combos de magias: o mesmo combo dispara de novo no mesmo alvo depois de 4 s, não 6 s.",
+  ["Spell combos: the wait between two combos is 0.8 s, not 1.2 s."] = "Combos de magias: a espera entre dois combos é de 0,8 s, não 1,2 s.",
 }
 return ChaosLocaleStrings['pt-BR']

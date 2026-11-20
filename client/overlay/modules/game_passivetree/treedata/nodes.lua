@@ -12929,6 +12929,8 @@ function getTreeNodes()
 		--- "Mastery nodes", numbers here only (the generator writes them to passivetree_data.lua `m`).
 		--- O451: 2 or 3 effects were appended to each mastery node (703 to 705 too): `spellMod` = an id of the server's
 		--- data/lib/chaos_spell_masteries_config.lua, one spell gets a free support effect; the words are in treespellmods.lua.
+		--- O686 phase 6b: one more effect on each mastery node, `comboMod` = an id of the server's spell_combos_config.lua `masteries` (the spell
+		--- combos: a longer window, a shorter repeat pause or a shorter pause between combos); the words are in treespellmods.lua.
 		--- Never reorder or insert before the old effects: a saved choice, a build code and a loadout hold the position.
 		--- 665 ---
 		{
@@ -12942,7 +12944,8 @@ function getTreeNodes()
 				{name = "Venom Glands", customStats = {incrementEarth = 6, incrementPhysical = 3}},
 				{name = "Twin Toss", customStats = {spellMod = 9}},
 				{name = "Wide Smoke", customStats = {spellMod = 10}},
-				{name = "Echoing Flurry", customStats = {spellMod = 11}}
+				{name = "Echoing Flurry", customStats = {spellMod = 11}},
+				{name = "Short Memory", customStats = {comboMod = 1}}
 			},
 			inputs = {628}, out = {}
 		},
@@ -12957,7 +12960,8 @@ function getTreeNodes()
 				{name = "Soul Well", customStats = {spirit = 5, absorbDeath = 2}},
 				{name = "Cursed Marrow", customStats = {spellMod = 12}},
 				{name = "Grave Wail", customStats = {spellMod = 13}},
-				{name = "Splintered Rot", customStats = {spellMod = 14}}
+				{name = "Splintered Rot", customStats = {spellMod = 14}},
+				{name = "Lingering Window", customStats = {comboMod = 2}}
 			},
 			inputs = {638}, out = {}
 		},
@@ -12973,7 +12977,8 @@ function getTreeNodes()
 				{name = "Stone Body", customStats = {vitality = 4, absorbPhysical = 2}},
 				{name = "Wide Mist", customStats = {spellMod = 15}},
 				{name = "Splitting Palm", customStats = {spellMod = 16}},
-				{name = "Quick Heel", customStats = {spellMod = 17}}
+				{name = "Quick Heel", customStats = {spellMod = 17}},
+				{name = "Eager Rhythm", customStats = {comboMod = 3}}
 			},
 			inputs = {648}, out = {}
 		},
@@ -12988,7 +12993,8 @@ function getTreeNodes()
 				{name = "Oath of Mercy", customStats = {incrementHealth = 6, vitality = 3}},
 				{name = "Echoing Ground", customStats = {spellMod = 18}},
 				{name = "Marked Cut", customStats = {spellMod = 19}},
-				{name = "Bell of Dawn", customStats = {spellMod = 20}}
+				{name = "Bell of Dawn", customStats = {spellMod = 20}},
+				{name = "Lingering Window", customStats = {comboMod = 4}}
 			},
 			inputs = {658}, out = {}
 		},
@@ -13291,7 +13297,8 @@ function getTreeNodes()
 				{name = "Shield Drill", customStats = {shieldingSkill = 2, absorbPhysical = 2}},
 				{name = "Gore Fork", customStats = {spellMod = 1}},
 				{name = "Echoing Slam", customStats = {spellMod = 2}},
-				{name = "Wide Cry", customStats = {spellMod = 3}}
+				{name = "Wide Cry", customStats = {spellMod = 3}},
+				{name = "Short Memory", customStats = {comboMod = 5}}
 			},
 			inputs = {676}, out = {}
 		},
@@ -13307,7 +13314,8 @@ function getTreeNodes()
 				{name = "Hard Tips", customStats = {incrementPhysical = 5, dexterity = 2}},
 				{name = "Splintering Spear", customStats = {spellMod = 4}},
 				{name = "Hallowed Ground", customStats = {spellMod = 5}},
-				{name = "Hunter's Mark", customStats = {spellMod = 6}}
+				{name = "Hunter's Mark", customStats = {spellMod = 6}},
+				{name = "Eager Rhythm", customStats = {comboMod = 6}}
 			},
 			inputs = {686}, out = {}
 		},
@@ -13322,7 +13330,8 @@ function getTreeNodes()
 				{name = "Storm Touch", customStats = {incrementEnergy = 6, magicSkill = 1}},
 				{name = "Still Mind", customStats = {incrementHealth = 5, spirit = 2}},
 				{name = "Crimson Fork", customStats = {spellMod = 7}},
-				{name = "Storm Rupture", customStats = {spellMod = 8}}
+				{name = "Storm Rupture", customStats = {spellMod = 8}},
+				{name = "Lingering Window", customStats = {comboMod = 7}}
 			},
 			inputs = {696}, out = {}
 		},

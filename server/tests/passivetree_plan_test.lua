@@ -49,7 +49,7 @@ local masteryIds = {}
 for id, node in pairs(tree.nodes) do
 	if C.isMastery(node) then
 		masteryIds[#masteryIds + 1] = id
-		check(#node.m >= 2 and #node.m <= cfg.maxMasteryChoices, "mastery " .. id .. " has 2-" .. cfg.maxMasteryChoices .. " effects (4 before O451, 7 with the spell modifier effects)")
+		check(#node.m >= 2 and #node.m <= cfg.maxMasteryChoices, "mastery " .. id .. " has 2-" .. cfg.maxMasteryChoices .. " effects (4 before O451, 7 with the spell modifier effects, 8 with the combo mastery)")
 		check(node.s == nil and node.v == nil, "mastery " .. id .. " has no own stats")
 		check(node.c ~= nil, "mastery " .. id .. " belongs to a class line")
 		for i, effect in ipairs(node.m) do
@@ -59,7 +59,10 @@ for id, node in pairs(tree.nodes) do
 				check(not stat:match("^ks") and not stat:match("^ct"), "mastery effects are ordinary stats")
 				sum = sum + 1
 			end
-			if effect.spellMod then
+			if effect.comboMod then
+				-- a combo mastery effect (O686 phase 6b) is exactly one stat, the id of a choice of spell_combos_config.lua `masteries`
+				check(sum == 1, "mastery " .. id .. " effect " .. i .. " is a combo mastery and nothing else")
+			elseif effect.spellMod then
 				-- a spell modifier effect (O451) is exactly one stat, the id of a choice of chaos_spell_masteries_config.lua
 				check(sum == 1, "mastery " .. id .. " effect " .. i .. " is a spell modifier and nothing else")
 			else
@@ -72,7 +75,7 @@ table.sort(masteryIds)
 check(table.concat(masteryIds, ",") == "665,666,667,668,703,704,705", "one mastery per class section: " .. table.concat(masteryIds, ","))
 check(C.nodeStats(tree.nodes[665], nil, 2).dexterity == 3, "the chosen effect's stats")
 check(C.nodeStats(tree.nodes[665], nil, nil) == nil, "no effect without a choice")
-check(C.nodeStats(tree.nodes[665], nil, 9) == nil, "no effect for a choice it does not have")
+check(C.nodeStats(tree.nodes[665], nil, 9) == nil, "no effect for a choice it does not have (665 has 8 effects since the combo mastery)")
 check(C.nodeStats(tree.nodes[2], nil, 1).strength == 1, "a plain node keeps its stats")
 check(C.nodeStats(tree.nodes[621], "knight", nil).ksCleavingArc == 1, "a keystone variant")
 
@@ -142,8 +145,8 @@ check(code == "class", "no class: no class nodes")
 -- mastery rules
 r, err, code = plan({626, 627, 628}, {}, {665}, nil, ctx("thief"))
 check(code == "mastery" and err:find("Choose an effect"), "a mastery needs a choice: " .. tostring(err))
-r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 8}}, ctx("thief"))
-check(code == "mastery" and err:find("no effect 8"), "a choice it does not have: " .. tostring(err))
+r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 9}}, ctx("thief"))
+check(code == "mastery" and err:find("no effect 9"), "a choice it does not have: " .. tostring(err))
 r, err, code = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 0}}, ctx("thief"))
 check(code == "mastery", "choice 0 is no effect")
 r = plan({626, 627, 628}, {}, {665}, {{id = 665, choice = 3}}, ctx("thief"))
@@ -171,7 +174,7 @@ ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 1)
 check(not ok and err:find("already"), "the same effect: " .. tostring(err))
 ok, err = C.checkMasteryChange(tree, {626, 627, 628}, {}, 665, 1)
 check(not ok and err:find("not allocated"), "not allocated: " .. tostring(err))
-ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 8)
+ok, err = C.checkMasteryChange(tree, {626, 627, 628, 665}, {[665] = 1}, 665, 9)
 check(not ok and err:find("no such"), "no such effect")
 ok, err = C.checkMasteryChange(tree, {2}, {}, 2, 1)
 check(not ok and err:find("not a mastery"), "not a mastery")

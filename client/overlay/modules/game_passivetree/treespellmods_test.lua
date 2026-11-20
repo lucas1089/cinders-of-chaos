@@ -114,6 +114,59 @@ else
   print('note: server/data not found, the rows were not compared with chaos_spell_masteries_config.lua')
 end
 
+-- O686 phase 6b: the combo masteries. Every comboMod effect of a mastery node has a kind and a text, one a node, and the numbers of the
+-- texts are the server's (spell_combos_config.lua `masteries`)
+local seenCombo, nc = {}, 0
+for id, node in pairs(nodes) do
+  if node.isMastery then
+    local last = node.masteries[#node.masteries]
+    local cm = last and last.customStats and last.customStats.comboMod
+    eq(type(cm), 'number', 'node ' .. id .. ': the last effect is a combo mastery')
+    if cm then
+      nc = nc + 1
+      seenCombo[cm] = true
+      eq(type(T.combo[cm]), 'string', 'node ' .. id .. ': the combo mastery has a kind')
+      eq(type(T.comboText(cm)), 'string', 'node ' .. id .. ': and a text')
+      local one = 0
+      for _ in pairs(last.customStats) do one = one + 1 end
+      eq(one, 1, 'node ' .. id .. ': the combo mastery is the one stat')
+    end
+    local others = 0
+    for _, effect in ipairs(node.masteries) do
+      if effect.customStats and effect.customStats.comboMod then others = others + 1 end
+    end
+    eq(others, 1, 'node ' .. id .. ': one combo mastery')
+  end
+end
+eq(nc, 7, '7 combo masteries in the tree')
+for id in pairs(T.combo) do eq(seenCombo[id], true, 'combo kind ' .. id .. ' is used by a mastery effect') end
+eq(T.comboText(0), nil, 'no combo mastery 0'); eq(T.comboText(8), nil, 'no combo mastery 8'); eq(T.comboText('x'), nil, 'no text for a word'); eq(T.comboText(nil), nil, 'nil')
+has(T.comboText(2), '1.5 s longer (5.5 s in all)', 'window text')
+has(T.comboText(1), 'after 4 s, not 6 s', 'repeat text')
+has(T.comboText(3), '0.8 s, not 1.2 s', 'pause text')
+local cf = io.open(dir .. '../../../../server/data/scripts/chaos/spell_combos_config.lua', 'r')
+if cf then
+  cf:close()
+  local cc = dofile(dir .. '../../../../server/data/scripts/chaos/spell_combos_config.lua')
+  local function secs(ms) return (ms % 1000 == 0) and string.format('%d', ms / 1000) or string.format('%.1f', ms / 1000) end
+  eq(#cc.masteries.choices, 7, 'the server has 7 combo masteries')
+  for _, c in ipairs(cc.masteries.choices) do
+    local kind = c.windowMs and 'window' or (c.repeatMs and 'repeat' or 'pause')
+    eq(T.combo[c.id], kind, c.name .. ': the kind')
+    if kind == 'window' then
+      has(T.comboText(c.id), secs(c.windowMs) .. ' s longer (' .. secs(cc.window.windowMs + c.windowMs) .. ' s in all)', c.name .. ': the window numbers')
+    elseif kind == 'repeat' then
+      has(T.comboText(c.id), 'after ' .. secs(cc.limits.repeatMs + c.repeatMs) .. ' s, not ' .. secs(cc.limits.repeatMs) .. ' s', c.name .. ': the repeat numbers')
+    else
+      has(T.comboText(c.id), secs(cc.limits.globalMs + c.globalMs) .. ' s, not ' .. secs(cc.limits.globalMs) .. ' s', c.name .. ': the pause numbers')
+    end
+    local effect = nodes[c.node].masteries[c.effect]
+    eq(effect and effect.customStats.comboMod, c.id, c.name .. ': its place in node ' .. c.node)
+  end
+else
+  print('note: server/data not found, the combo masteries were not compared with spell_combos_config.lua')
+end
+
 if fails > 0 then
   print(fails .. ' of ' .. count .. ' checks failed')
   os.exit(1)
