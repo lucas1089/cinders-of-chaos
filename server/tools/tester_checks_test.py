@@ -13,6 +13,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import tester_checks as TX  # noqa: E402
+import testers as TS  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 MODULES = os.path.join(ROOT, 'client', 'overlay', 'modules')
@@ -11656,9 +11657,17 @@ class PinnacleParty(unittest.TestCase):
         run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
         self.assertEqual(t['dodged'], 5, 'one dodge for each of the five bots at the one look that had a mark')
         self.assertEqual(sorted({(s[1], s[2]) for s in io.stepped}), [(1, 0)], 'the steps go east, to the safe tile three tiles away')
-        self.assertEqual(len([s for s in io.stepped if s[0] == 'Tester Aac']), TX.BOSS_DODGE_STEPS)
+        self.assertEqual(len([s for s in io.stepped if s[0] == 'Tester Aac']), 3, 'the three steps to the goal, no more (O683: all of them at once)')
         self.assertNotIn(('Tester Aac', 'pinnacle path'), io.cmds, 'no path asked: a dodge is a few quick steps')
         self.assertIn('5 dodge(s)', TX.pinnacle_walk_verdict(dict(t, killed=True, kill_secs=9, size=5, level=1900))[1])
+
+    def test_a_held_bot_does_not_walk_into_the_mark(self):
+        io = self.FightIO(kill_at=2, mode='hold')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertEqual(io.stepped, [], 'no step while the guide says hold (O683)')
+        self.assertEqual(t['held'], 5, 'one hold for each of the five bots at the one look')
+        self.assertIn('held 5 look(s)', TX.pinnacle_walk_verdict(dict(t, killed=True, kill_secs=9, size=5, level=1900))[1])
 
     def test_the_clock_of_the_fight_ends_the_loop(self):
         io = self.FightIO(kill_at=99, extra={'sinceBoss': 1300})
@@ -11866,6 +11875,66 @@ class PinnacleParty(unittest.TestCase):
             src = f.read()
         self.assertIn('party = {max = %d,' % TX.PINNACLE_PARTY, src, 'the arena takes as many as the check forms')
 
+
+class PinnacleDodge(unittest.TestCase):
+    """O683: the bot steps off a telegraph in time: diagonal steps, all at once, no chase back into the mark, no retreat step in the fight"""
+
+    def test_a_dodge_runs_in_a_line_with_diagonal_steps(self):
+        here = {'x': 10, 'y': 10, 'z': 7}
+        self.assertEqual(TX.dodge_plan(here, {'x': 13, 'y': 7, 'z': 7}), [(1, -1)] * 3, 'three tiles off a radius 2 mark are three steps, not six')
+        self.assertEqual(TX.dodge_plan(here, {'x': 8, 'y': 11, 'z': 7}), [(-1, 1), (-1, 0)])
+        self.assertEqual(TX.dodge_plan(here, {'x': 10, 'y': 14, 'z': 7}, 2), [(0, 1), (0, 1)], 'at most n steps')
+        self.assertEqual(TX.dodge_plan(here, here), [])
+        self.assertEqual(TX.dodge_plan(here, {'x': 13, 'y': 7, 'z': 6}), [], 'another floor: no step')
+        self.assertEqual(TX.dodge_plan(None, here), [])
+        self.assertTrue(all(step in TS.STEP_BYTES for step in TX.dodge_plan(here, {'x': 20, 'y': 1, 'z': 7}, 20)), 'every step has a walk packet')
+
+    def test_the_diagonal_walk_packets(self):
+        self.assertEqual(TS.STEP_BYTES[(1, -1)], 0x6A)
+        self.assertEqual(TS.STEP_BYTES[(1, 1)], 0x6B)
+        self.assertEqual(TS.STEP_BYTES[(-1, 1)], 0x6C)
+        self.assertEqual(TS.STEP_BYTES[(-1, -1)], 0x6D)
+
+    def test_a_pending_mark_is_read_from_the_answer(self):
+        self.assertFalse(TX.mark_pending({}))
+        self.assertFalse(TX.mark_pending({'danger': None}))
+        self.assertTrue(TX.mark_pending({'danger': {'labels': ['Tidal Collapse'], 'left': 1200, 'count': 1}}))
+        self.assertFalse(TX.mark_pending(None))
+
+    class ChaseIO(FakeIO):
+        def __init__(self):
+            FakeIO.__init__(self)
+            self.chased = []
+
+        async def chase(self, on):
+            self.chased.append(('lead', on))
+
+        async def chase_of(self, name, on):
+            self.chased.append((name, on))
+
+    def test_the_chase_is_switched_only_when_it_changes(self):
+        io = self.ChaseIO()
+        lead, member = {'name': 'Tester Aaa', 'lead': True}, {'name': 'Tester Aab', 'lead': False}
+        for r, on in ((lead, True), (lead, False), (lead, False), (member, False), (member, False), (lead, True), (member, True)):
+            run(TX.raid_chase(io, r, on))
+        self.assertEqual(io.chased, [('lead', False), ('Tester Aab', False), ('lead', True), ('Tester Aab', True)],
+                         'on at the start: no packet for it; one packet for each change')
+        run(TX.raid_chase(FakeIO(), {'name': 'x', 'lead': True}, False))   # an io with no chase switch: nothing happens
+
+    def test_the_tally_is_a_share_of_marks_taken(self):
+        self.assertEqual(TX.tally_text({}), '')
+        self.assertEqual(TX.tally_text({'tally': {'fired': 0, 'exposed': 0, 'taken': 0, 'by': {}}}), '')
+        text = TX.tally_text({'tally': {'fired': 4, 'exposed': 20, 'taken': 7, 'by': {'Tidal Collapse': {'fired': 2, 'exposed': 10, 'taken': 1},
+                                                                                       'Drowning Marks': {'fired': 2, 'exposed': 10, 'taken': 6}}}})
+        self.assertIn('marks taken 7 of 20 (35%)', text)
+        self.assertIn('Drowning Marks 6/10', text)
+        self.assertIn('marks taken 1 of 2 (50%)', TX.pinnacle_walk_verdict({'faults': [], 'killed': True, 'kill_secs': 9, 'tally': {'exposed': 2, 'taken': 1, 'by': {}},
+                                                                            'level': 1900, 'steps': 0})[1])
+
+    def test_the_tally_is_kept_in_the_trace(self):
+        t = {'faults': []}
+        TX.pinnacle_problems({'run': {}, 'tally': {'fired': 1, 'exposed': 1, 'taken': 0, 'by': {}}}, t)
+        self.assertEqual(t['tally']['fired'], 1)
 
 if __name__ == '__main__':
     unittest.main()

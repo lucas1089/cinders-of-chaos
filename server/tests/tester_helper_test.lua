@@ -2158,6 +2158,15 @@ do
 	check(pn.run.tester and pn.run.bossHp == 77 and pn.run.bossHealth == 2988000 and pn.run.sinceBoss == 40 and pn.run.bossPos.junk == nil and pn.run.junk == nil
 		and #pn.guide.why == 60, "pinnacle answer: the run and the guide")
 	check(H.pinnacleAnswer(nil).run == nil and H.pinnacleAnswer(nil).enabled == true, "pinnacle answer: nothing known")
+	-- O683: the mark pending now and the tally of the telegraphs reach the bot's check
+	local pd = H.pinnacleAnswer({inside = "vhoss", pos = {x = 1, y = 2, z = 7},
+		danger = {left = 1200, labels = {"A", "B", "C", "D", ("x"):rep(40)}, count = 2, here = true, marked = {["1,2"] = true}},
+		tally = {fired = 4, exposed = 9, taken = 2, by = {["Tidal Collapse"] = {fired = 2, exposed = 4, taken = 1, junk = 1}}, junk = 1}})
+	check(pd.danger.left == 1200 and pd.danger.count == 2 and pd.danger.here == true and #pd.danger.labels == 3 and pd.danger.marked == nil, "pinnacle answer: the danger, cut down")
+	check(pd.tally.fired == 4 and pd.tally.exposed == 9 and pd.tally.taken == 2 and pd.tally.junk == nil and pd.tally.by["Tidal Collapse"].taken == 1
+		and pd.tally.by["Tidal Collapse"].junk == nil, "pinnacle answer: the tally, cut down")
+	check(H.pinnacleAnswer({inside = "vhoss"}).danger == nil and H.pinnacleAnswer({inside = "vhoss"}).tally == nil, "pinnacle answer: no danger and no tally when none is up")
+	check(HELPER_VERSION >= 31, "the helper is version 31 or later (O683: the probe's danger and tally)")
 	local realPN = ChaosPinnacle
 	local setFor, closesPN = 0, closes
 	ChaosPinnacle = {probe = function(p)

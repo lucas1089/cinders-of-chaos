@@ -593,6 +593,27 @@ function H.pinnacleAnswer(probe, extra)
 			sinceBoss = r.sinceBoss, gate = xyz(r.gate)}
 	end
 	out.guide = soloGuide(probe.guide)
+	-- O683: the mark pending now (ms to the hit, its names, whether the bot stands on it) and the tally of the telegraphs so far (fired, exposed
+	-- players, taken, per name): the bot's check reads the share of marks taken
+	local d = probe.danger
+	if type(d) == "table" then
+		local labels = {}
+		for i = 1, math.min(#(d.labels or {}), 3) do
+			labels[i] = tostring(d.labels[i]):sub(1, 24)
+		end
+		out.danger = {left = d.left, labels = labels, count = d.count, here = d.here and true or false}
+	end
+	local y = probe.tally
+	if type(y) == "table" then
+		out.tally = {fired = y.fired, exposed = y.exposed, taken = y.taken, by = {}}
+		local n = 0
+		for label, row in pairs(type(y.by) == "table" and y.by or {}) do
+			n = n + 1
+			if n <= 6 then
+				out.tally.by[tostring(label):sub(1, 24)] = {fired = row.fired, exposed = row.exposed, taken = row.taken}
+			end
+		end
+	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v
 	end

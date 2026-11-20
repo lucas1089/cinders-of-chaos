@@ -1109,15 +1109,24 @@ function PN.probe(player)
 	-- O681: what a person sees of the boss's telegraphs (ChaosBossMech.dangerFor, as testers_boss.lua reads them): when a mark covers the bot's tile
 	-- the guide says `dodge` to the nearest safe tile, as a player steps off the warning before the hit
 	local M = rawget(_G, "ChaosBossMech")
+	local dmarked
 	if M and M.dangerFor and run.bossId and boss then
 		local okD, danger = pcall(M.dangerFor, run.bossId, pos)
 		if okD and danger then
+			dmarked = danger.marked
 			out.danger = {left = danger.left, labels = danger.labels, count = danger.count,
 				here = danger.marked and danger.marked[pos.x .. "," .. pos.y] == true or false}
 			if danger.goal then
 				out.guide = {mode = "dodge", goal = {x = danger.goal.x, y = danger.goal.y, z = danger.goal.z}, area = "boss",
 					why = "a mark of " .. tostring(danger.labels and danger.labels[1]) .. " is on the bot's tile"}
 			end
+		end
+	end
+	-- O683: what the telegraphs did so far (fired, exposed players, taken): the share of marks taken the model's `marksTaken` stands for
+	if M and M.tallyFor and run.bossId and boss then
+		local okT, tally = pcall(M.tallyFor, run.bossId)
+		if okT and tally then
+			out.tally = tally
 		end
 	end
 	-- O681: the adds and the totem of the boss's phases (the anchors that shield it, the idols that empower it, the totem a channel is stopped by): the
@@ -1131,6 +1140,23 @@ function PN.probe(player)
 			local near = ap.z == pos.z and math.max(math.abs(ap.x - pos.x), math.abs(ap.y - pos.y)) <= reach
 			out.guide = {mode = near and "fight" or "walk", goal = {x = ap.x, y = ap.y, z = ap.z}, reach = {1, reach}, area = "adds",
 				why = near and "an add of the boss stands in reach" or "to the nearest add of the boss"}
+		end
+	end
+	-- O683: a mark is up, the bot is off it and its walk would end on or next to a marked tile (the boss's feet, an add inside a ring): it holds
+	-- (stays and fights from where it stands) until the hit, as a person waits for the warning to pass. The walk went back into the mark it
+	-- had just left in one dodge of five
+	local g = out.guide
+	if dmarked and g and g.mode == "walk" and g.goal and not (out.danger and out.danger.here) then
+		local near = false
+		for ox = -1, 1 do
+			for oy = -1, 1 do
+				if dmarked[(g.goal.x + ox) .. "," .. (g.goal.y + oy)] then
+					near = true
+				end
+			end
+		end
+		if near then
+			out.guide = {mode = "hold", goal = g.goal, area = g.area, why = "a mark lies on the way: the bot waits for the hit"}
 		end
 	end
 	return out
