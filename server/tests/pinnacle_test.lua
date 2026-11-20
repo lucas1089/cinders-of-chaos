@@ -527,6 +527,8 @@ local dangerAsked, dangerAnswer, addsAnswer, tallyAnswer = {}, nil, nil, nil
 ChaosBossMech = {attach = function(m, key, opts)
 	attached[#attached + 1] = {monster = m, opts = opts}
 	return {hpMult = 0.8}
+end, scriptedHit = function(attacker)   -- O690: a marked attack of the boss is being dealt (boss_mechanics.lua M.scriptedHit)
+	return attacker and attacker.scripted == true
 end, dangerFor = function(bossId, at, who)   -- O681: the marks a person sees (boss_mechanics.lua M.dangerFor; O684: and who asks)
 	dangerAsked[#dangerAsked + 1] = {bossId, at, who}
 	return dangerAnswer
@@ -535,13 +537,15 @@ end, addsFor = function(bossId)   -- O681: the adds and the totem of the phases 
 end, tallyFor = function(bossId)   -- O683: what the telegraphs did so far (boss_mechanics.lua M.tallyFor)
 	return tallyAnswer
 end}
+local capLastCalls = {}
+ChaosRift = {capLast = function(p) capLastCalls[#capLastCalls + 1] = p:getId() end}   -- O690: rift.lua RF.capLast, the cap events go last
 local riftCalls, waystoneCalls = {}, {}
 ChaosAscended = {onRiftSealed = function(info) riftCalls[#riftCalls + 1] = info end}
 ChaosWaystoneTiers = {}
 
 local players = {}
 local function newPlayer(id, level)
-	local p = {id = id, level = level, pos = pos(100, 100, 7), msgs = {}, events = {}, items = {}, hp = 2000, maxHp = 2000, store = {}}
+	local p = {id = id, level = level, pos = pos(100, 100, 7), msgs = {}, events = {}, items = {}, hp = 20000, maxHp = 20000, store = {}}
 	function p:getId() return self.id end
 	function p:getGuid() return 100 + self.id end
 	function p:getName() return "P" .. self.id end
@@ -927,6 +931,84 @@ do
 	eq(PN.probe(lead).guide.mode, "fight", "probe: the guide is the boss's again")
 	Monster = realMonster
 	eq(PN.nearestAdd({getId = function() return 424242 end}), nil, "nearestAdd: a player in no fight")
+end
+-- ---- O690: the hit cap (pinnacle_config.lua hitCap; the rule is the guardian's, hitcap_core.lua; the cap events: rift.lua RF.capLast)
+do
+	COMBAT_HEALING = 128
+	local hc = pcfg.hitCap
+	ok(hc and hc.enabled, "O690: the cap is on")
+	ok(hc.share > 0 and hc.share < 0.5, "O690: under half, so a character of full health survives two plain hits")
+	ok(hc.telegraph > hc.share and hc.telegraph < 1, "O690: a marked attack is cut at a higher share, never at the whole pool")
+	-- the core: which share a hit gets
+	eq(K.hitCapShare(pcfg, false), hc.share, "O690: core: a plain hit")
+	eq(K.hitCapShare(pcfg, true), hc.telegraph, "O690: core: a marked attack")
+	eq(K.hitCapShare({hitCap = {enabled = false, share = 0.4, telegraph = 0.6}}, false), nil, "O690: core: off")
+	eq(K.hitCapShare({}, false), nil, "O690: core: no block")
+	eq(K.hitCapShare({hitCap = {enabled = true, share = 0, telegraph = 0.6}}, false), nil, "O690: core: 0 is no share")
+	eq(K.hitCapShare({hitCap = {enabled = true, share = 1.5, telegraph = 0.6}}, false), nil, "O690: core: over the pool is no share")
+	eq(K.hitCapShare({hitCap = {enabled = true, share = "x", telegraph = 0.6}}, false), nil, "O690: core: not a number")
+	ok(#capLastCalls >= 2, "O690: every player who enters has the cap events moved last (ChaosRift.capLast)")
+	local mult = K.scale(pcfg.damage, 3)
+	local pool = b2:getMaxHealth()
+	local limit = math.floor(hc.share * pool)
+	local tlimit = math.floor(hc.telegraph * pool)
+	-- the source, as the cap events ask it
+	eq(ChaosHitCap.shareOf(bossM, b2), hc.share, "O690: the boss on a player of the run: the plain share")
+	bossM.scripted = true
+	eq(ChaosHitCap.shareOf(bossM, b2), hc.telegraph, "O690: a marked attack of the boss: the telegraph share")
+	bossM.scripted = nil
+	local add = newMonster("Hex Idol", pos(bossM.pos.x + 1, bossM.pos.y, bossM.pos.z))
+	eq(ChaosHitCap.shareOf(add, b2), hc.share, "O690: an add standing in the arena is capped too")
+	eq(ChaosHitCap.shareOf(newMonster("Rat", pos(50, 50, 7)), b2), nil, "O690: a monster outside the run is not")
+	eq(ChaosHitCap.shareOf(bossM, newMonster("Rat2", pos(50, 50, 7))), nil, "O690: monsters are not capped")
+	eq(ChaosHitCap.shareOf(bossM, newPlayer(90, 2500)), nil, "O690: a player of no run is not")
+	eq(ChaosHitCap.shareOf(c2, b2), nil, "O690: a player's hit (PvP) is not")
+	local summon = newMonster("Summon", pos(bossM.pos.x + 1, bossM.pos.y, bossM.pos.z))
+	function summon:getMaster() return b2 end
+	eq(ChaosHitCap.shareOf(summon, b2), nil, "O690: a summon of a player is not")
+	-- the hit event: above the cap cut, below untouched
+	local big = hit(b2, bossM, -30000, 1, 0, 1, 0)
+	eq(big, -limit, "O690: a hit over the cap (after the party curve) is cut to share x pool")
+	local small = hit(b2, bossM, -1000, 1, 0, 1, 0)
+	eq(small, math.floor(-1000 * mult), "O690: a hit under the cap is only scaled")
+	local p2, _, s2 = hit(b2, bossM, -30000, 1, -10000, 1, 0)
+	ok(math.abs(p2) + math.abs(s2) <= limit, "O690: primary and secondary together at most the ceiling")
+	local heal2, _, sec = hit(b2, bossM, -30000, 1, 500, 128, 0)
+	eq(sec, 500, "O690: a healing secondary part is left alone")
+	eq(heal2, -limit, "O690: and the damage part is cut")
+	-- a marked attack: the higher share
+	bossM.scripted = true
+	local tbig = hit(b2, bossM, -40000, 1, 0, 1, 0)
+	eq(tbig, -tlimit, "O690: a marked attack over the telegraph cap is cut to it")
+	ok(tlimit > limit, "O690: and the cap of a marked attack is the higher one")
+	local tmid = hit(b2, bossM, -9000, 1, 0, 1, 0)
+	eq(tmid, math.floor(-9000 * mult), "O690: a marked attack between the two shares is not touched (only the plain cap would cut it)")
+	bossM.scripted = nil
+	-- an add
+	eq(hit(b2, add, -30000, 1, 0, 1, 0), -limit, "O690: an add's hit is cut")
+	-- not capped: a player's own summon, another monster, a player
+	eq(hit(b2, summon, -15000, 1, 0, 1, 0), math.floor(-15000 * mult), "O690: a summon of a player is scaled as before, never capped")
+	eq(hit(b2, newMonster("Rat3", pos(50, 50, 7)), -15000, 1, 0, 1, 0), -15000, "O690: a monster outside the run: untouched")
+	eq(hit(b2, c2, -15000, 1, 0, 1, 0), -15000, "O690: a player's hit: untouched")
+	eq(hit(b2, bossM, 5000, 128, 0, 1, 0), 5000, "O690: healing is not a hit")
+	-- under a mana shield the pre-cut leaves the hit to the cap events (their mana event sees it first)
+	local plain = b2.hasCondition
+	function b2:hasCondition() return true end
+	eq(hit(b2, bossM, -15000, 1, 0, 1, 0), math.floor(-15000 * mult), "O690: under a mana shield the cap events cut")
+	b2.hasCondition = plain
+	-- what the cap events do with the same number (rift.lua's cap, hitcap_core.lua)
+	local cp, _, climit, cut = ChaosHitCapCore.cut(ChaosHitCap.shareOf(bossM, b2), -50000, 0, ChaosHitCapCore.pool(b2:getMaxHealth(), 9000, false), 0)
+	eq(cp, -limit, "O690: the cap events cut the same hit to the same ceiling")
+	eq(climit, limit, "O690: the ceiling")
+	ok(cut, "O690: and say it was cut")
+	eq(ChaosHitCapCore.pool(b2:getMaxHealth(), 9000, true), pool + 9000, "O690: a mana shield adds the maximum mana to the pool the cap is a share of")
+	-- off: nothing is capped
+	hc.enabled = false
+	eq(ChaosHitCap.shareOf(bossM, b2), nil, "O690: switched off: no source")
+	eq(hit(b2, bossM, -15000, 1, 0, 1, 0), math.floor(-15000 * mult), "O690: switched off: scaled only")
+	hc.enabled = true
+	eq(ChaosHitCap.shareOf(bossM, newPlayer(91, 2500)), nil, "O690: a player who is not in the fight")
+	COMBAT_HEALING = nil
 end
 -- a lethal hit: caught, out, healed; the fight is no longer deathless
 b2.hp = 100

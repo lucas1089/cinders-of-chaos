@@ -151,6 +151,78 @@ def main():
     code, text = check_out(xml=scaled_xml(0.05))
     eq(code, 1, 'a boss that hardly hits is caught')
 
+    # O690: the hit cap
+    on, share, tel = PM.cap_settings()
+    eq((on, share, tel), (True, cfg['hitCap']['share'], cfg['hitCap']['telegraph']), 'the cap settings are the committed ones')
+    near(PM.GM.uniform_retention(0, 100, 100), 1.0, 1e-9, 'a roll under the cap is left whole')
+    near(PM.GM.uniform_retention(50, 100, 50), 50 / 75.0, 1e-9, 'a cap at the lowest roll: the cap over the mean')
+    ret = PM.GM.uniform_retention(0, 100, 50)
+    near(ret, (50 * 50 / 2.0 + 50 * 50) / 100 / 50, 1e-9, 'a cap in the middle of an even spread')
+    rs = PM.rows()
+    capped = {r['boss']['key']: r for r in rs}
+    PM.numbers()['_nocap'] = True
+    try:
+        eq(PM.cap_settings(), (False, 0.0, 0.0), '--nocap switches the model off')
+        before = {r['boss']['key']: r for r in PM.rows()}
+    finally:
+        del PM.numbers()['_nocap']
+    for key, r in capped.items():
+        b = before[key]
+        eq(r['m1']['pressure'] < b['m1']['pressure'], True, key + ': the cap lowers the pressure alone')
+        eq(r['press5'] < b['press5'], True, key + ': and with five')
+        eq(r['m1']['pressure'] >= bal['limits']['pressure']['min'], True, key + ': the pressure stays inside the band with the cap')
+        eq(r['press5'] <= bal['limits']['partyPressure'], True, key + ': and the party pressure under its limit')
+        eq(all('ret' in x for x in r['m1']['rows']), True, key + ': every class has its retention')
+        eq(all(0 < min(x['ret'].values()) <= 1.0 for x in r['m5']['rows']), True, key + ': a retention is a share')
+    table = PM.hit_table()
+    eq(len(table), 4, 'the hit table has the four bosses')
+    for row in table:
+        for players, c in row['cells'].items():
+            eq(c['retMean'] >= bal['hitCap']['retention']['mean'], True, row['boss']['key'] + ': the mean damage kept')
+            eq(c['retWorst'] <= c['retMean'], True, row['boss']['key'] + ': the worst class keeps no more than the mean')
+        eq(row['cells'][5]['cut'] >= row['cells'][1]['cut'], True, row['boss']['key'] + ': with five more classes are cut than alone')
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        PM.print_hits(table)
+    eq('hit cap (O690): on' in out.getvalue() and 'Ascended Varkhul' in out.getvalue(), True, '--hits prints the table')
+
+    # each drift of the cap is caught
+    code, text = check_out(bumped(['cfg', 'hitCap', 'enabled'], False))
+    eq(code, 1, 'a cap switched off is caught')
+    eq('enabled' in text, True, 'and named')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'share'], 0.55))
+    eq(code, 1, 'a plain share under which two hits kill is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'share'], 0.12))
+    eq(code, 1, 'a plain share so low the boss is a wall is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'telegraph'], 0.30))
+    eq(code, 1, 'a marked cap under the biggest designed marked hit is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'telegraph'], 0.95))
+    eq(code, 1, 'a marked cap near the whole pool is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'share'], 0.70))
+    eq(code, 1, 'a plain share over the marked one is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'share'], 0.38))
+    eq(code, 1, 'a share that is not the reasoned one is caught')
+    eq('pinnacle_balance_config.lua' in text, True, 'against the balance file')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'extra'], 1))
+    eq(code, 1, 'a key the model does not read is caught')
+    gone = copy.deepcopy(base)
+    del gone['cfg']['hitCap']
+    code, text = check_out(gone)
+    eq(code, 1, 'no hitCap block is caught')
+    code, text = check_out(bumped(['cfg', 'hitCap', 'share'], 'x'))
+    eq(code, 1, 'a share that is no number is caught')
+    wide = copy.deepcopy(base)
+    wide['bal']['hitCap']['cuts']['atLeast'] = 22
+    code, text = check_out(wide)
+    eq(code, 1, 'a cap that touches nobody is caught')
+    wall = copy.deepcopy(base)
+    wall['bal']['hitCap']['retention']['mean'] = 0.995
+    code, text = check_out(wall)
+    eq(code, 1, 'a cap that takes too much of the damage is caught')
+    # the boss that hits so little the cap would take the pressure under the band is caught by the band (the damage is raised, not the cap)
+    code, text = check_out(xml=scaled_xml(0.7))
+    eq(code, 1, 'a weaker boss is still caught under the band, with the cap')
+
     print('pinnacle_model_test: %d checks ok' % CHECKS)
     return 0
 

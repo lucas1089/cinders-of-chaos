@@ -56,6 +56,35 @@ return {
 		rise = 0.0, riseMax = 1.5
 	},
 
+	-- O690 (owner 2026-11-20, "pode por um teto sim"): the cap of one hit of a pinnacle boss on a player (pinnacle_config.lua hitCap; the rule is the
+	-- rift guardian's, O478). The O685 live runs showed hits of 70 to 98% of a character's maximum health (casters of 15 to 17k health), the
+	-- model's rolls reach 60 to 109% of the pool of the weakest classes (tools/pinnacle_model.py --hits). The numbers, and why:
+	--   share      0.40 of the pool (the maximum health, plus the maximum mana under a mana shield) for every plain hit: the boss's spell and melee
+	--              attacks, its adds, after every multiplier. It is the highest share that lets a character of full health take `survives` = 2 hits
+	--              in a row with `left` = 20% of the pool still standing (2 x 0.40 + 0.20 = 1); no hit is a one-shot, a healer has a window.
+	--              The lower end is the retention below: at 0.30 the weakest class keeps 0.42-0.66 of the boss's damage and the average 0.88-0.95
+	--              (the cap starts to feel like a wall of health: the hits that remain are the small ones), at 0.40 0.56-0.84 and 0.93-0.99. The
+	--              median class's biggest roll is 17-48% of its pool (21 to 48 with five), so the cap leaves its ordinary hits alone and cuts the tail.
+	--   telegraph  0.60 for the marked attacks (ring, marks, lines, cone, half, eye, soak, channel: the scripted hit of a share of the victim's health,
+	--              boss_mechanics.lua). Dodging is the point of a telegraph, so standing in it hurts more than a plain hit: 0.60 is the biggest
+	--              share the profiles design (the Vhoss channel, 0.6; the Malgrath soak miss 0.55), so a solo fight is never cut by it and only
+	--              what the party curve (x1.24 with five) adds on top is trimmed. It is still a cap: one marked hit never takes the whole pool.
+	--              Not an exemption: the O685 live Tidal Collapse (101 hits, up to 72% of the health) was one of the one-shots.
+	--              A marked hit and a plain hit in the same moment can still add up (0.6 + 0.4); both are avoidable or healed in between, and
+	--              the lethal catch of the fight (pinnacle_config.lua catchLethal) stays under it.
+	-- The model reads the cap as the damage it leaves (E[min(roll, cap)] / E[roll] of each attack, per class, rolls even between the XML's min and
+	-- max) and the pressure and seconds to die of the median class are computed with it. The limits of --check:
+	hitCap = {
+		share = 0.40, telegraph = 0.60,
+		survives = 2, left = 0.20, -- share x survives <= 1 - left
+		telegraphMax = 0.65, -- the marked cap is above the plain one, at most this, and not under the biggest designed marked share
+		-- the damage the cap leaves, per boss, solo and with five: the mean over the 21 classes at least `mean`, the hardest hit class at least `worst`
+		retention = {mean = 0.90, worst = 0.50},
+		-- with five, the number of classes whose biggest roll is over the plain cap: at least `atLeast` (a cap that touches nobody is no cap) and at most
+		-- `atMost` of the 21 (it is the fight that is hard, not the hit)
+		cuts = {atLeast = 5, atMost = 0.80}
+	},
+
 	-- the fragments: what the top content takes (minutes a clear, solo or a party) and the limits of --check. A waystone map of the
 	-- top tiers and a rift of tier 15 are the size band of the biggest rift (12-15 minutes, rift_config.lua layout.sizes); the Omen
 	-- guardian is its rift (the run, the climb to the guardian and its 5:18 kill, boss_length_model.py OMEN_SECONDS).

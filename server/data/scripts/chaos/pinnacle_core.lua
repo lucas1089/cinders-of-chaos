@@ -176,6 +176,20 @@ function K.scale(curve, players)
 	return f
 end
 
+-- O690 (pinnacle_config.lua hitCap): the share of the victim's pool a hit of the fight takes at most: `telegraph` for the boss's marked
+-- attacks (a scripted hit), `share` for every other hit. nil when the cap is off or the number is not a share in (0, 1].
+function K.hitCapShare(cfg, scripted)
+	local c = cfg and cfg.hitCap
+	if not (c and c.enabled) then
+		return nil
+	end
+	local s = tonumber(scripted and c.telegraph or c.share)
+	if not s or s <= 0 or s > 1 then
+		return nil
+	end
+	return s
+end
+
 -- the health of the fight: the boss's own solo health x (1 + perExtra x (players - 1)), whole
 function K.bossHealth(boss, players)
 	players = max(1, players or 1)
