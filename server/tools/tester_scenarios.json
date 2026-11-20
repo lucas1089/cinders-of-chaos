@@ -10,7 +10,7 @@
   "closed": 15,
   "opcode": 74,
   "out": 24,
-  "passive": 114,
+  "passive": 115,
   "place": 15,
   "staff": 19
  },
@@ -13661,6 +13661,15 @@
    "opcodes": [],
    "talkactions": [],
    "why": "the owner's live view in the admin app (chaos-ctl.sh spectate), not a player action"
+  },
+  "spell_combos": {
+   "files": [
+    "spell_combos.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "spell_factor": {
    "files": [
