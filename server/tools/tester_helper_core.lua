@@ -602,6 +602,13 @@ function H.pinnacleAnswer(probe, extra)
 			labels[i] = tostring(d.labels[i]):sub(1, 24)
 		end
 		out.danger = {left = d.left, labels = labels, count = d.count, here = d.here and true or false}
+		if type(d.steps) == "table" then   -- O684: the way to the goal the server planned, (dx, dy) steps from the bot's tile, at most 12
+			out.danger.steps = {}
+			for i = 1, math.min(#d.steps, 12) do
+				local st = d.steps[i]
+				out.danger.steps[i] = {tonumber(st[1]) or 0, tonumber(st[2]) or 0}
+			end
+		end
 	end
 	local y = probe.tally
 	if type(y) == "table" then

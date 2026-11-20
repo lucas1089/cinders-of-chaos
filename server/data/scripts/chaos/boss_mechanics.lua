@@ -516,10 +516,64 @@ function M.tallyFor(bossId)
 	return {fired = f.tally.fired, exposed = f.tally.exposed, taken = f.tally.taken, by = by}
 end
 
+-- O684 (a party of bots): five players inside one blob of marks each named "the nearest safe tile", the same tile and the same way, and blocked each
+-- other. A bot that asks with its player id (`who`) gets a tile and a way (`route`) that no other asking bot of the fight has taken: the claims of
+-- the others (goal, steps) live until the hit, a goal is kept while it stays free, tiles under another player are no goal and no step. When no such
+-- tile is in reach in the time left the claims are dropped one by one (the way may cross another's, the goal never is another's), then the plain
+-- nearest tile. Only the bots ask this way (the probe passes `who`): a player's own dodge is his own walk, and the fairness step does not use it.
+local function routeFor(f, who, grid, marked, pos, budget, straight, diag, now)
+	f.claims = f.claims or {}
+	local goals, paths, stand, stay = {}, {}, {}, {}
+	for pid, c in pairs(f.claims) do
+		if c.hitAt <= now - 200 then
+			f.claims[pid] = nil
+		elseif pid ~= who then
+			goals[c.goal] = true
+			for k in pairs(c.path) do
+				paths[k] = true
+			end
+		end
+	end
+	for _, p in ipairs(fightPlayers(f)) do
+		if p:getId() ~= who then
+			local pp = p:getPosition()
+			local k = G.key(pp.x, pp.y)
+			stand[k] = true
+			if not marked[k] then
+				stay[k] = true   -- stands on a safe tile and stays: no goal for another, no step over him
+			end
+		end
+	end
+	local mine = f.claims[who]
+	local prefer = mine and mine.goal or nil
+	local function union(a, b)
+		local u = {}
+		for k in pairs(a) do
+			u[k] = true
+		end
+		for k in pairs(b) do
+			u[k] = true
+		end
+		return u
+	end
+	local tiers = {
+		{goals = union(goals, stay), path = union(union(paths, stand), goals), prefer = prefer},
+		{goals = union(goals, stay), path = stay, prefer = prefer},
+	}
+	for _, av in ipairs(tiers) do
+		local tile, ms, route = G.safeRoute(grid, marked, pos, budget, straight, diag, av)
+		if tile then
+			return tile, route, av
+		end
+	end
+	return nil
+end
+
 -- O652 (the tester bots' probe, testers_boss.lua): what a person sees of a boss's telegraphs now. -> {marked = {["x,y"] = true} (every tile any
 -- pending mark covers), left = ms to the first hit, labels = {name...}, goal = the nearest safe tile {x, y, z} of the player when it stands in a
 -- mark (G.safeSpot on the fight's own grid, within the time left), count} or nil when the boss has no fight or no mark is up.
-function M.dangerFor(bossId, pos)
+-- O684: with `who` (a player id) the goal is one the other asking bots did not take and `route` is the tiles to walk, the goal last.
+function M.dangerFor(bossId, pos, who)
 	local f = M.fights[bossId]
 	if not f or not f.danger then
 		return nil
@@ -552,8 +606,28 @@ function M.dangerFor(bossId, pos)
 			end
 			return f.grid.set[k]
 		end})}
-		local tile = G.safeSpot(grid, marked, pos, math.max(300, out.left - 200), straight, diag)
+		local budget = math.max(300, out.left - 200)
+		local tile, route
+		if who then
+			tile, route = routeFor(f, who, grid, marked, pos, budget, straight, diag, now)
+			if tile then
+				local path = {}
+				for _, t in ipairs(route or {}) do
+					path[G.key(t.x, t.y)] = true
+				end
+				f.claims[who] = {goal = G.key(tile.x, tile.y), path = path, hitAt = soonest}
+			end
+		end
+		if not tile then
+			tile = G.safeSpot(grid, marked, pos, budget, straight, diag)
+		end
 		out.goal = tile and {x = tile.x, y = tile.y, z = tile.z or pos.z} or nil
+		if route and #route > 0 then
+			out.route = {}
+			for _, t in ipairs(route) do
+				out.route[#out.route + 1] = {x = t.x, y = t.y, z = t.z or pos.z}
+			end
+		end
 	end
 	return out
 end

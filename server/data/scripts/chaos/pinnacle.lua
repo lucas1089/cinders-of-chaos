@@ -1111,11 +1111,21 @@ function PN.probe(player)
 	local M = rawget(_G, "ChaosBossMech")
 	local dmarked
 	if M and M.dangerFor and run.bossId and boss then
-		local okD, danger = pcall(M.dangerFor, run.bossId, pos)
+		local okD, danger = pcall(M.dangerFor, run.bossId, pos, player:getId())   -- O684: with the player's id: a goal no other bot of the party took
 		if okD and danger then
 			dmarked = danger.marked
 			out.danger = {left = danger.left, labels = danger.labels, count = danger.count,
 				here = danger.marked and danger.marked[pos.x .. "," .. pos.y] == true or false}
+			if danger.route then
+				-- O684: the way to that goal as steps (dx, dy) from the bot's tile (at most 12): the bot walks what the server planned
+				local steps, px, py = {}, pos.x, pos.y
+				for i = 1, math.min(#danger.route, 12) do
+					local t = danger.route[i]
+					steps[i] = {t.x - px, t.y - py}
+					px, py = t.x, t.y
+				end
+				out.danger.steps = steps
+			end
 			if danger.goal then
 				out.guide = {mode = "dodge", goal = {x = danger.goal.x, y = danger.goal.y, z = danger.goal.z}, area = "boss",
 					why = "a mark of " .. tostring(danger.labels and danger.labels[1]) .. " is on the bot's tile"}
