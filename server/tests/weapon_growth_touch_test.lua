@@ -165,6 +165,27 @@ C.upgradeItem(u3)
 eq(u3:getCustomAttribute(M.WEAPON_BASE), 188, "the unique's base moved")
 eq(u3:getAttribute(ITEM_ATTRIBUTE_ATTACK), math.floor(188 * 1.1 + 1e-9), "its attack follows with the 10%")
 
+-- ---------------------------------------------------------------- 6b. a weapon forged AFTER the install: no second growth (O693 review)
+do
+	local fresh = newItem(37030) -- the type carries the grown attack 51 now
+	fresh:setCustomAttribute("rarity", 4); fresh:setCustomAttribute("chaos_ilvl", 120); fresh:setCustomAttribute(M.VERSION, M.config.modVersion)
+	C.applyBaseBonus(fresh, 4, 120)
+	local b = C.qualityBonus(C.baseBonusOf(4, 120), M.qualityOf(fresh))
+	eq(fresh:getAttribute(ITEM_ATTRIBUTE_ATTACK), 51 + b, "forged: the new type attack + the bonus")
+	eq(fresh:getCustomAttribute("chaos_wgrow"), 1, "marked at the forge")
+	C.upgradeItem(fresh)
+	eq(fresh:getAttribute(ITEM_ATTRIBUTE_ATTACK), 51 + b, "the first touch adds nothing: it grew once, at the forge")
+	-- before the install the forge reads the old type: not marked, the touch after the install moves it
+	TYPES[37030].attack = 35
+	local old = newItem(37030)
+	old:setCustomAttribute("rarity", 4); old:setCustomAttribute("chaos_ilvl", 120); old:setCustomAttribute(M.VERSION, M.config.modVersion)
+	C.applyBaseBonus(old, 4, 120)
+	eq(old:getCustomAttribute("chaos_wgrow"), nil, "forged on the old type: not marked")
+	TYPES[37030].attack = 51
+	C.upgradeItem(old)
+	eq(old:getAttribute(ITEM_ATTRIBUTE_ATTACK), 51 + b, "moved once after the install")
+end
+
 -- ---------------------------------------------------------------- 7. what the growth never touches
 local armor = newItem(2466)
 armor:setCustomAttribute("rarity", 3)
