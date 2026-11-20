@@ -52,6 +52,9 @@ local cooldownEnds = {} -- spell id -> g_clock.millis() when its cooldown ends
 local iconCache = {}    -- words -> {folder, clip} / false (no sheet icon)
 local paintedMap        -- words -> painted icon file / false, built once
 local areaCells = {}    -- pooled cells of the area grid
+local tab = 'details'   -- 'details' or 'upgrades' (O686 phase 5, game_spellranks; the tab exists only while the server's switch is on)
+local applyTab          -- below showDetails' helpers
+local DETAIL_IDS = { 'icon', 'name', 'words', 'headerSeparator', 'stats', 'areaTitle', 'areaBox', 'legend', 'areaNote', 'descSeparator', 'description' }
 
 -- ---------------------------------------------------------------- helpers
 -- prefetch: the background fetch after login (the server does not count it as the player opening the window)
@@ -337,12 +340,15 @@ local function showDetails(spell)
   selected = spell
   local d = window.details
   local has = spell ~= nil
-  for _, id in ipairs({ 'icon', 'name', 'words', 'headerSeparator', 'stats', 'areaTitle', 'areaBox', 'legend', 'areaNote', 'descSeparator', 'description' }) do
+  for _, id in ipairs(DETAIL_IDS) do
     d[id]:setVisible(has)
   end
   d.item:setVisible(false)
   d.emptyText:setVisible(not has)
-  if not has then return end
+  if not has then
+    applyTab()
+    return
+  end
 
   local ctx = context()
   setIcon(d.icon, d.item, spell)
@@ -419,6 +425,82 @@ local function showDetails(spell)
     d.description:setTooltip(tip)
   end
   drawArea(spell)
+  applyTab()
+end
+
+-- ---------------------------------------------------------------- spell ranks (O686 phase 5, game_spellranks)
+-- Everything here is behind the server's switch: game_spellranks answers nothing while it is off, so the rows keep no
+-- number and no bar, and the Upgrades button stays hidden.
+local function ranksModule()
+  local m = modules and modules.game_spellranks
+  if m and m.isOn then return m end
+  return nil
+end
+
+-- the rank number and the thin bar of a row; returns the tooltip line (nil when the spell has no rank to show)
+local function updateRowRank(row, spell)
+  local R = ranksModule()
+  local info
+  if R and spell and tonumber(spell.id) then
+    local ok, v = pcall(function() if R.isOn() then return R.rowInfo(tonumber(spell.id)) end end)
+    info = ok and v or nil
+  end
+  if info then
+    row.rank:setText(tostring(info.rank))
+    row.rank:setWidth(info.rank >= 10 and 18 or 10)
+    row.rankTrack:setVisible(true)
+    row.rankFill:setVisible(true)
+    row.rankFill:setPercent(info.percent)
+    return info.tip
+  end
+  if row.rank:getWidth() ~= 0 then
+    row.rank:setText('')
+    row.rank:setWidth(0)
+  end
+  row.rankTrack:setVisible(false)
+  row.rankFill:setVisible(false)
+  return nil
+end
+
+-- the Upgrades button and which of the two tabs of the details shows
+applyTab = function()
+  if not window then return end
+  local d = window.details
+  local R = ranksModule()
+  local can = false
+  if R and selected and R.canShowTab then
+    local ok, v = pcall(R.canShowTab, selected)
+    can = ok and v == true
+  end
+  if not can then tab = 'details' end
+  local up = can and tab == 'upgrades'
+  window.upgradesButton:setVisible(can)
+  window.upgradesButton:setText(up and tr('Details') or tr('Upgrades'))
+  d.upgrades:setVisible(up)
+  if up then
+    for _, id in ipairs(DETAIL_IDS) do d[id]:setVisible(false) end
+    pcall(R.fill, d.upgrades, selected)
+  end
+end
+
+function toggleUpgrades()
+  tab = tab == 'upgrades' and 'details' or 'upgrades'
+  if selected then showDetails(selected) else applyTab() end
+end
+
+-- game_spellranks calls this when the ranks changed (a state or a rank message): the rows and the tab follow
+local buildGen, fittedGen = 0, 0 -- a list build / the build whose names were fitted
+local fitNames
+function onRanksChanged()
+  if not window then return end
+  if window:isVisible() then
+    for i, row in ipairs(rows) do
+      if spells[i] then updateRowRank(row, spells[i]) end
+    end
+    fittedGen = 0 -- the names are cut again: the rank number took some of their width
+    addEvent(fitNames)
+  end
+  applyTab()
 end
 
 -- ---------------------------------------------------------------- list
@@ -477,6 +559,8 @@ local function updateRowState(row, spell, ctx, now)
   -- Alt (O372): what the spell is for, its target, element and cooldowns (game_chaosspells spellhelp.lua); the shared
   -- poll (client_chaos_theme althelp.lua) puts the long text on the hovered row while Alt is held
   local short = (spell.name or '?') .. '\n' .. stateTip(status, spell)
+  local rankTip = updateRowRank(row, spell)
+  if rankTip then short = short .. '\n' .. rankTip end
   row.altTip = function(down) return spellTip(short, spell, down) end
   row:setTooltip(spellTip(short, spell, altShownOn(row)))
   return left ~= nil and left ~= false
@@ -532,8 +616,7 @@ local function refreshState()
   applyFilter()
 end
 
-local buildGen, fittedGen = 0, 0 -- a list build / the build whose names were fitted
-local function fitNames()
+fitNames = function()
   if not (window and window:isVisible()) or fittedGen == buildGen then return end
   fittedGen = buildGen
   for i, row in ipairs(rows) do
@@ -721,6 +804,8 @@ function show()
   addEvent(fitNames)
   stopCooldownTick()
   cooldownTick()
+  local R = ranksModule()
+  if R and R.ask then pcall(R.ask, false) end
   local A = rawget(_G, 'ChaosAltHelp')
   if A then
     A.watch('game_spellbook', function()

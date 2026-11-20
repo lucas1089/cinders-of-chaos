@@ -653,7 +653,11 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critic
 	if amount > 0 then
 		-- the extra hits take the element of the bigger part (a brand may have moved most of it)
 		local ctype = (sd ~= 0 and math.abs(sd) > math.abs(pd)) and st or pt
-		record(attacker:getId(), spellId, serial, creature, amount, ctype, crit, amount >= creature:getHealth(), over)
+		-- O686: the extra hits of a spell Form are hits of the spell for the effects above (Brand, Sunder, Keen Edge, Hex) but are
+		-- never collected for Echo, Fork, Breadth, Shatter, Deathburst, Surge, Bloodthirst or Siphon (spell_forms.lua raises formDepth)
+		if (S.formDepth or 0) == 0 then
+			record(attacker:getId(), spellId, serial, creature, amount, ctype, crit, amount >= creature:getHealth(), over)
+		end
 	end
 	return pd, pt, sd, st
 end

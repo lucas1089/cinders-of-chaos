@@ -16,6 +16,7 @@
 --   the fight   the boss's own monster type at the level of its row, health = the row's x the party curve, its hits x the damage
 --               curve; boss_mechanics.lua attaches the profile of its name (boss_mechanics_config.lua). A lethal hit is caught:
 --               the player goes back out, healed, and the fight is no longer deathless.
+--               O690: one hit of the boss or its fight on a player takes at most hitCap.share (marked attacks: .telegraph) x the pool.
 --   rewards     Conquest Tokens, orbs, a roll of the boss's exclusive unique (chance + a bad-luck count), a title for the first kill
 --               of each season and a "deathless" title (titles.lua).
 -- Exports: ChaosPinnacle.bosses(), .have(player, idx), .grant(player, idx, kind), .onRiftSealed(info), .onWaystoneCleared(...),
@@ -34,6 +35,9 @@ if not ChaosPocketBossCore then
 	dofile("data/scripts/chaos/pocketboss_core.lua") -- K.arenaGate, the way out inside the arena
 end
 dofile("data/scripts/chaos/pinnacle_core.lua")
+if not ChaosHitCap then
+	dofile("data/scripts/chaos/hitcap_core.lua") -- the pool, the cut and the sources of the hit caps (O478, O483; here O690)
+end
 Chaos.pinnacleConfig = dofile("data/scripts/chaos/pinnacle_config.lua")
 pcall(dofile, "data/lib/chaos_dark_paint.lua")
 if not ChaosArenaLook then
@@ -553,6 +557,11 @@ end
 local function eventsOn(player)
 	player:registerEvent("ChaosPinnacleHit")
 	player:registerEvent("ChaosPinnaclePrepareDeath")
+	-- O690: the cap events of rift.lua (O478) go last among the player's health and mana events, behind the two above and every
+	-- event that can raise a hit; they stay on after the fight (they only act for a source that names the attacker)
+	if ChaosRift and ChaosRift.capLast then
+		pcall(ChaosRift.capLast, player)
+	end
 end
 
 local function eventsOff(player)
@@ -1347,6 +1356,42 @@ local function hitMult(creature, attacker)
 	return K.scale(C().damage, run.size)
 end
 
+-- ======================================================================== hit cap (O690)
+-- One hit of the boss, of its adds or of its marked attacks on a player of the run takes at most pinnacle_config.lua hitCap.share (marked
+-- attacks: .telegraph) x the player's pool, as a whole. The rule, the pool and the mana shield bookkeeping are the guardian's
+-- (hitcap_core.lua, rift.lua RF.capLast and the events ChaosRiftHitCapHealth / Mana, O478): this file is a source of ChaosHitCap, "who is
+-- capped and with which share". A player, a summon of a player and a monster outside the run are not capped (nil).
+function PN.capShare(attacker, victim)
+	if not attacker or not victim or not victim.isPlayer or not victim:isPlayer() or not attacker.isMonster or not attacker:isMonster() then
+		return nil
+	end
+	if attacker.getMaster and attacker:getMaster() then
+		return nil -- a summon of a player (or of anyone): a monster of the fight has no master
+	end
+	local run = PN.runOf[victim:getId()]
+	if not run or run.state ~= "running" or PN.isPinnacleMonster(attacker) ~= run then
+		return nil
+	end
+	local scripted = ChaosBossMech and ChaosBossMech.scriptedHit and ChaosBossMech.scriptedHit(attacker) or false
+	return K.hitCapShare(C(), scripted)
+end
+ChaosHitCap.setSource("pinnacle", PN.capShare)
+
+-- the same cut before the lethal catch below, so a hit the cap leaves survivable is not caught as a fall (the cap events run after this one).
+-- A character under a mana shield is left to the cap events: its hit arrives in the mana event first and the rest here.
+local function capped(creature, attacker, pd, pt, sd, st)
+	if creature:hasCondition(CONDITION_MANASHIELD) then
+		return pd, sd
+	end
+	local share = PN.capShare(attacker, creature)
+	if not share then
+		return pd, sd
+	end
+	local pool = ChaosHitCapCore.pool(creature:getMaxHealth(), creature.getMaxMana and creature:getMaxMana() or 0, false)
+	local p, s = ChaosHitCapCore.cut(share, pd, st == COMBAT_HEALING and 0 or sd, pool, 0)
+	return p, st == COMBAT_HEALING and sd or s
+end
+
 local playerHit = CreatureEvent("ChaosPinnacleHit")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local run = PN.runOf[creature:getId()]
@@ -1360,6 +1405,7 @@ function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType
 			secondaryDamage = math.floor(secondaryDamage * mult)
 		end
 	end
+	primaryDamage, secondaryDamage = capped(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	if C().catchLethal then
 		local sign = primaryDamage < 0 and -1 or 1
 		local pool = creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0)

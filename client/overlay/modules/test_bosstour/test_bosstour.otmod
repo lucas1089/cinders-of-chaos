@@ -1,0 +1,12 @@
+Module
+  name: test_bosstour
+  description: TEST ONLY (boss-video.yml, O689) - with the environment variable CHAOS_BOSSTOUR=1 it logs in with the staff character of CHAOS_LIVE_ACCOUNT / _PASSWORD, goes invisible, waits for the pinnacle fight of the tester bots, follows the party through it and exits when the fight ends, so a manual workflow can film it. Without the variable it does nothing, no window, no hotkey, not in the hub menu
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ bosstourlogic, bosstour ]
+  dependencies:
+    - client_entergame
+  autoload: true
+  autoload-priority: 1200
+  @onLoad: ChaosBossTour.init()
+  @onUnload: ChaosBossTour.terminate()

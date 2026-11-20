@@ -4784,15 +4784,25 @@ PINNACLE_LOADOUT = {
     'Juggernaut': ('Earth', ('keenedge', 'echo'), 'rotation'),     # slams and one target; the Earth set is its best (+8.4%, no earth brand)
     'Deadeye': ('Fire', ('emberbrand', 'keenedge'), 'rotation'),   # the Fire set (+10.3%), an Emberbrand for the same element
     'Elementalist': ('Holy', ('dawnbrand', 'echo'), 'rotation'),   # the Holy set (+14.1%, the class's best), Dawnbrand
-    'Illusionist': ('Death', ('quickening', 'thrift'), 'heals'),   # the healer: the Death set (+11.0%), its heals cast sooner and cheaper
-    'Samurai': ('Death', ('gravebrand', 'keenedge'), 'rotation'),  # the Death set (+9.8%), Gravebrand
+    'Illusionist': ('Holy', ('quickening', 'thrift'), 'heals'),    # the healer: O689 the Holy set (the best set per class by the owner's list; was Death), its heals cast sooner and cheaper
+    'Samurai': ('Holy', ('keenedge', 'echo'), 'rotation'),         # O689 the Holy set (was Death, Gravebrand)
 }
 PINNACLE_LOADOUT_DEFAULT = ('Fire', ('keenedge', 'echo'), 'rotation')
+# O689: the best card set of every class (the helper now picks a convert line by ChaosCardsConfig.lineClasses, so the Frostfall Rune line every class casts counts;
+# O691 added Phantom Needles to Rime Bloom and Razor Rain to Frozen Crypt): Earth for the Warrior line and the Beastmaster, Holy for the Elementalist, Illusionist and the
+# Thief line, Fire for the rest
+PINNACLE_CARD_ELEMENT = {
+    **{c: 'Earth' for c in ('Warrior', 'Juggernaut', 'Berserker', 'Beastmaster')},
+    **{c: 'Fire' for c in ('Ranger', 'Deadeye', 'Mystic', 'Necromancer', 'Lich', 'Bone Lord', 'Monk', 'Shadowfist', 'Iron Sage', 'Templar', 'Inquisitor', 'Sentinel')},
+    **{c: 'Holy' for c in ('Elementalist', 'Illusionist', 'Thief', 'Ninja', 'Samurai')},
+}
 PINNACLE_HEAL_WORDS = ('saen spek', 'reth vas spek', 'saen qhal')   # Mirror Mend, Lucid Reverie, Kindled Breath: PINNACLE_HEAL_SPELLS
 
 
 def loadout_row(cls):
-    return PINNACLE_LOADOUT.get(cls, PINNACLE_LOADOUT_DEFAULT)
+    row = PINNACLE_LOADOUT.get(cls, PINNACLE_LOADOUT_DEFAULT)
+    el = PINNACLE_CARD_ELEMENT.get(cls)
+    return (el,) + tuple(row[1:]) if el else row
 
 
 async def pinnacle_loadout(io, name, cls, fallbacks):

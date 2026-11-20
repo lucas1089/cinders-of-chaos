@@ -2,7 +2,12 @@
 """The pinnacle boss model (O667; computed, not measured in game; server/README.md "Pinnacle bosses (O667)").
 O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the four bosses x H at their planned level (pinnacle.lua), the typical damage with the gain: 420 s alone and 300 s with five stay. `--check --upgrades` must pass as `--check` does.
 
-usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check]
+usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check] [--hits] [--nocap] [--upgrades]
+O690 (owner 2026-11-20): one hit of a pinnacle boss, of its adds or of its marked attacks on a player takes at most pinnacle_config.lua
+`hitCap` (40% of the pool, a marked attack 60%; the rule of the rift guardian's O478 cap, hitcap_core.lua). The model's damage is the sustained
+damage x the retention of the cap, E[min(roll, cap)] / E[roll] per attack of the XML, per class (its pool, armour, absorbs, toughness; rolls
+spread evenly between the XML's min and max as guardian_model.py has them), the median over the classes; the marked attacks the same by
+their share of the victim's health. --hits prints the hit table before and after the cap per boss, --nocap the model of before.
 
 Four Ascended versions of existing key bosses (Malgrath, Vhoss the Hexmaw, Talath, Varkhul the Ashen Sovereign), shown at level 1900 /
 2100 / 2300 / 2500 (the player cap is 2500, owner 2026-11-19; O672), a private fight alone or with five, opened by a set of four fragments the top content drops. The model answers
@@ -114,9 +119,10 @@ def warn_seconds(difficulty):
     return max(1.5, 3.0 - 1.5 * min(1.0, difficulty))
 
 
-def marks_share(profile, players):
+def marks_share(profile, players, kept=None):
     """the marked attacks as a share of the victim's max health a second: the mean telegraph share x marksTaken / the cadence, and
-    the timed ones (a soak only for a group) the same way"""
+    the timed ones (a soak only for a group) the same way. `kept(share)` (O690) is the part of a marked hit the telegraph cap leaves (1 without it)"""
+    kept = kept or (lambda share: 1.0)
     bal = numbers()['bal']
     taken = bal['marksTaken']
     diff = profile.get('difficulty', 0.2)
@@ -124,12 +130,12 @@ def marks_share(profile, players):
     tel = profile.get('telegraphs') or []
     out = 0.0
     if tel:
-        out += statistics.mean(t['share'] for t in tel) * taken / every
+        out += statistics.mean(t['share'] * kept(t['share']) for t in tel) * taken / every
     for m in profile.get('timed') or []:
         if m.get('groupOnly') and players == 1:
             continue
         share = m.get('missShare') if m['kind'] == 'soak' else m.get('share', 0)
-        out += (share or 0) * taken / (m.get('every', 40000) / 1000.0)
+        out += (share or 0) * kept(share or 0) * taken / (m.get('every', 40000) / 1000.0)
     return out
 
 
@@ -151,9 +157,123 @@ def boss_damage(boss, text):
     return sum(dps.values()), split_of(hits)
 
 
-def median(boss, text, profile, players=1, scale=1.0):
+def cap_settings(nums=None):
+    """(on, share, telegraph) of pinnacle_config.lua hitCap as the numbers dump has it; (False, 0, 0) when the model runs --nocap"""
+    nums = nums or numbers()
+    c = nums['cfg'].get('hitCap') or {}
+    if nums.get('_nocap'):
+        return False, 0.0, 0.0
+    def num(v):
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+    share, tel = num(c.get('share')), num(c.get('telegraph'))
+    return bool(c.get('enabled')) and share > 0 and tel > 0, share, tel  # a bad number is no cap here: check_cap names it
+
+
+def xml_rolls(text):
+    """[{kind, lo, hi, weight}] of the XML's attacks: the roll spread (min, max) and the weight (its damage a second before the layers)"""
+    block = re.search(r'<attacks>(.*?)</attacks>', text, re.S)
+    out = []
+    for tag in re.findall(r'<attack\s[^>]*>', block.group(1) if block else ''):
+        nm = (S.attr(tag, 'name') or '').lower()
+        lo, hi = abs(int(S.attr(tag, 'min', '0'))), abs(int(S.attr(tag, 'max', '0')))
+        if hi <= 0 and lo <= 0:
+            continue
+        lo, hi = min(lo, hi), max(lo, hi)
+        kind = 'melee' if nm == 'melee' else 'physical' if nm in ('physical', 'bleed') else 'element'
+        chance = 100 if kind == 'melee' else int(S.attr(tag, 'chance', '100'))
+        interval = int(S.attr(tag, 'interval', '2000'))
+        out.append({'name': nm, 'kind': kind, 'lo': float(lo), 'hi': float(hi), 'weight': (lo + hi) / 2.0 * chance / 100.0 / (interval / 1000.0)})
+    return out
+
+
+def hit_base(boss):
+    """(factor from the XML roll to the hit before the player's layers, the late-game boost of melee / physical): the engine's level bonus
+    and the level pace of survival_model.monster_dps (the same base the sustained damage uses)"""
+    d = S.dump([boss['refLevel']])
+    bal = d['balance']
+    base = (1 + bal['engineBonus'] * boss['level']) * S.lin(d['pace']['damage'], boss['level']) * bal['tierMean']
+    boost = S.boost_percent(d['boost']['points'], boss['level']) if d['boost'].get('enabled', True) else 0.0
+    return base, boost, bool(d['boost'].get('elemental'))
+
+
+def layer_factor(row, kind):
+    """what a class's layers leave of a hit of `kind` before the pool: melee and physical armour and absorb, an element its absorb; x toughness"""
+    if kind == 'element':
+        return (1 - row['absorbElem']) * row['toughness']
+    return (1 - row['armourRed']) * (1 - row['absorbPhys']) * row['toughness']
+
+
+def hit_scale(boss, row, atk, mult):
+    """XML roll -> the hit that reaches the class's health: the level base, the boost (melee, physical; an element when the boost is
+    elemental), the party's damage curve `mult`, the class's layers"""
+    base, boost, elemental = hit_base(boss)
+    f = base * layer_factor(row, atk['kind'])
+    if atk['kind'] != 'element' or elemental:
+        f *= 1 + boost / 100.0
+    return f * mult
+
+
+def kind_retention(boss, row, atks, mult, share):
+    """{kind: retention} for a class `row`: the damage-weighted E[min(roll, share x pool)] / E[roll] of the attacks of the kind"""
+    out = {}
+    for kind in ('melee', 'physical', 'element'):
+        items = [a for a in atks if a['kind'] == kind]
+        tot = sum(a['weight'] for a in items)
+        if tot <= 0:
+            out[kind] = 1.0
+            continue
+        v = 0.0
+        for a in items:
+            f = hit_scale(boss, row, a, mult)
+            v += a['weight'] * GM.uniform_retention(a['lo'] * f, a['hi'] * f, share * row['pool'])
+        out[kind] = v / tot
+    return out
+
+
+def marks_kept(profile, players, mult, row, tshare):
+    """the share of the marked attacks' damage the telegraph cap leaves for a class: a marked hit is `share` of the victim's health (x the
+    party curve) against telegraph x pool; the mean over the telegraphs and timed marks as marks_share() weighs them"""
+    def kept(share):
+        hit = share * mult * row['health'] / row['pool']
+        return min(1.0, tshare / hit) if hit > 0 else 1.0
+    return kept
+
+
+def median(boss, text, profile, players=1, scale=1.0, mult=1.0, capped=True):
+    """the median class at the planned level under the boss's hits (and marks); with the cap on the sustained damage is cut by each class's
+    retention (the party curve `mult` raises the rolls the cap sees; the caller multiplies the pressure by it as before)"""
+    on, share, tshare = cap_settings()
     raw, split = boss_damage(boss, text)
-    return GM.median_class(boss['refLevel'], split, raw * scale, marks_share(profile, players))
+    if not (on and capped):
+        return GM.median_class(boss['refLevel'], split, raw * scale, marks_share(profile, players))
+    pl = boss['refLevel']
+    d = S.dump([pl])
+    bal = d['balance']
+    gear, varm = S.gear_curves(), S.vocation_armour()
+    atks = xml_rolls(text)
+    dps = raw * scale
+
+    def pack_of(ret):
+        return {'melee': dps * split['melee'] * ret['melee'], 'physical': dps * split['physical'] * ret['physical'],
+                'element': dps * split['element'] * ret['element'], 'meleeHits': 0.5}
+    rows = []
+    for cls in S.ORDER:
+        full = pack_of({'melee': 1.0, 'physical': 1.0, 'element': 1.0})
+        cands = [(S.survive(d, bal, cls, pl, b, full, gear, varm), b) for b in d['builds'][cls][str(pl)]]
+        cands.sort(key=lambda c: c[0]['burst'])
+        r0, build = cands[len(cands) // 2]
+        ret = kind_retention(boss, r0, atks, mult, share)
+        r = dict(S.survive(d, bal, cls, pl, build, pack_of(ret), gear, varm))
+        r['ret'] = ret
+        kept = marks_kept(profile, players, mult, r, tshare)
+        r['damage'] += marks_share(profile, players, kept) * r['health']
+        r['burst'] = r['pool'] / r['damage'] if r['damage'] > 0 else float('inf')
+        r['sustain'] = r['heal'] / r['damage'] if r['damage'] > 0 else float('inf')
+        r['pressure'] = r['damage'] / r['heal'] if r['heal'] > 0 else float('inf')
+        rows.append(r)
+    med = {k: statistics.median(r[k] for r in rows) for k in ('pool', 'health', 'heal', 'damage', 'burst', 'sustain', 'pressure')}
+    med['rows'] = rows
+    return med
 
 
 # ------------------------------------------------------------------------------------------------ fragments
@@ -199,14 +319,135 @@ def rows():
         profile = n['profiles'].get(boss['name'].lower(), {})
         heal = xml_heal(text)
         health, extra = derive_health(boss, bal, heal)
-        m1 = median(boss, text, profile, 1)
-        m5 = median(boss, text, profile, bal['players'])
         dmg5 = 1 + cfg['damage']['perExtra'] * (bal['players'] - 1)
         dmg5 = min(dmg5, cfg['damage']['max'])
+        m1 = median(boss, text, profile, 1)
+        m5 = median(boss, text, profile, bal['players'], mult=dmg5)
         press5 = m5['pressure'] * dmg5
-        out.append({'boss': boss, 'heal': heal, 'health': health, 'perExtra': extra, 'm1': m1, 'm5': m5, 'press5': press5,
+        out.append({'boss': boss, 'heal': heal, 'health': health, 'perExtra': extra, 'm1': m1, 'm5': m5, 'press5': press5, 'dmg5': dmg5,
                     'dps': typical(boss['refLevel']), 'profile': profile, 'text': text})
     return out
+
+
+def hit_table():
+    """O690: per boss and party size (1, 5) at the planned level: the biggest roll of each plain attack and the biggest marked hit as a share
+    of the pool, the median over the 21 classes and the class it hits hardest, before and after the cap, with the retention"""
+    on, share, tshare = cap_settings()
+    n = numbers()
+    bal = n['bal']
+    out = []
+    for r in rows():
+        b = r['boss']
+        atks = xml_rolls(r['text'])
+        prof = r['profile']
+        row = {'boss': b, 'cells': {}}
+        for players in (1, bal['players']):
+            mult = 1.0 if players == 1 else r['dmg5']
+            med = r['m1'] if players == 1 else r['m5']
+            cls_rows = med['rows']
+            biggest = []
+            for a in atks:
+                shares = [a['hi'] * hit_scale(b, c, a, mult) / c['pool'] for c in cls_rows]
+                biggest.append((a['name'], a['kind'], statistics.median(shares), max(shares)))
+            tel = [t['share'] for t in (prof.get('telegraphs') or [])] + [
+                (m.get('missShare') if m['kind'] == 'soak' else m.get('share', 0)) or 0 for m in (prof.get('timed') or [])
+                if not (m.get('groupOnly') and players == 1)]
+            tmax = max(tel) if tel else 0.0
+            tshares = [tmax * mult * c['health'] / c['pool'] for c in cls_rows]
+            top = max(biggest, key=lambda x: x[2])
+            split = boss_damage(b, r['text'])[1]
+            totals = [sum(split[k] * c['ret'][k] for k in split) if 'ret' in c else 1.0 for c in cls_rows]
+            cells = {'attacks': biggest, 'top': top, 'tel': (statistics.median(tshares), max(tshares)),
+                     'cut': sum(1 for c in cls_rows if max(a['hi'] * hit_scale(b, c, a, mult) for a in atks) > share * c['pool']) if on else 0,
+                     'telCut': sum(1 for v in tshares if v > tshare) if on else 0,
+                     'retMean': statistics.mean(totals), 'retWorst': min(totals),
+                     'retEl': statistics.mean(c['ret']['element'] if 'ret' in c else 1.0 for c in cls_rows),
+                     'retMelee': statistics.mean(c['ret']['melee'] if 'ret' in c else 1.0 for c in cls_rows),
+                     'classes': len(cls_rows), 'pressure': med['pressure'] * mult, 'burst': med['burst']}
+            row['cells'][players] = cells
+        out.append(row)
+    return out
+
+
+def print_hits(rows_):
+    on, share, tshare = cap_settings()
+    print('hit cap (O690): %s; plain hits at most %.0f%% of the pool, marked attacks %.0f%%' % (
+        'on' if on else 'OFF (--nocap)', 100 * share, 100 * tshare))
+    print('biggest roll of each attack after the class layers, as a share of the pool: median class (worst class); the party curve x1.24 for five')
+    for r in rows_:
+        b = r['boss']
+        print('\n%s (level %d)' % (b['name'], b['refLevel']))
+        for players, c in sorted(r['cells'].items()):
+            line = []
+            for name, kind, med, worst in c['attacks']:
+                cap_med, cap_worst = (min(med, share), min(worst, share)) if on else (med, worst)
+                line.append('%s %.0f%% -> %.0f%% (%.0f%% -> %.0f%%)' % (name, 100 * med, 100 * cap_med, 100 * worst, 100 * cap_worst))
+            tm, tw = c['tel']
+            tcm, tcw = (min(tm, tshare), min(tw, tshare)) if on else (tm, tw)
+            print('  %d player%s: %s' % (players, '' if players == 1 else 's', '; '.join(line)))
+            print('             marked, the biggest: %.0f%% -> %.0f%% (%.0f%% -> %.0f%%); classes cut by the plain cap %d of %d, by the marked cap %d' % (
+                100 * tm, 100 * tcm, 100 * tw, 100 * tcw, c['cut'], c['classes'], c['telCut']))
+            print('             damage kept by the cap (mean over the classes; the worst class): melee %.2f, element %.2f, all %.2f (%.2f); '
+                  'median class: pressure %.2f, seconds to die %.1f' % (c['retMelee'], c['retEl'], c['retMean'], c['retWorst'], c['pressure'], c['burst']))
+
+
+def check_cap(n, rs):
+    """O690: the committed cap against pinnacle_balance_config.lua hitCap (the reasons are there)"""
+    errors = []
+    bal = n['bal']['hitCap']
+    c = n['cfg'].get('hitCap')
+    if not isinstance(c, dict):
+        return ['pinnacle_config.lua has no hitCap block']
+    for key in ('share', 'telegraph'):
+        v = c.get(key)
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or not 0 < v <= 1:
+            errors.append('hitCap.%s is %r, not a share of the pool in (0, 1]' % (key, v))
+    if errors:
+        return errors
+    if c.get('enabled') is not True:
+        errors.append('hitCap.enabled is %r: the model, the README and the bots assume the cap' % (c.get('enabled'),))
+    extra = sorted(set(c) - {'enabled', 'share', 'telegraph'})
+    if extra:
+        errors.append('hitCap has keys the model does not read: %s' % extra)
+    share, tel = c['share'], c['telegraph']
+    if abs(share - bal['share']) > 1e-9 or abs(tel - bal['telegraph']) > 1e-9:
+        errors.append('hitCap %s / %s is not pinnacle_balance_config.lua hitCap %s / %s (the reasoned numbers)' % (
+            share, tel, bal['share'], bal['telegraph']))
+    # no one-shot: a character of full health survives `survives` plain hits in a row with `left` of its pool still standing (the upper bound
+    # of the share; the lower bound is the retention below: a cap that is too low turns the boss into a wall of health)
+    if share * bal['survives'] > 1.0 - bal['left'] + 1e-9:
+        errors.append('hitCap.share %s: %d plain hits in a row take %.0f%% of a full pool, %.0f%% must be left' % (
+            share, bal['survives'], 100 * share * bal['survives'], 100 * bal['left']))
+    # a marked attack: never under the biggest share the profiles design (the cap then only trims what the party curve adds), never the pool
+    prof = [t['share'] for p in n['profiles'].values() for t in (p.get('telegraphs') or [])]
+    prof += [(m.get('missShare') if m['kind'] == 'soak' else m.get('share', 0)) or 0 for p in n['profiles'].values() for m in (p.get('timed') or [])]
+    design = max(prof) if prof else 0.0
+    if not share < tel <= bal['telegraphMax']:
+        errors.append('hitCap.telegraph %s is not above the plain share %s and at most %s (a marked attack hurts more than a plain hit, and never one-shots)' % (
+            tel, share, bal['telegraphMax']))
+    if tel < design - 1e-9:
+        errors.append('hitCap.telegraph %s is under the biggest marked hit the profiles design (%s of the health): a solo fight would be cut' % (tel, design))
+    # the cap is no wall: the classes keep most of the boss's damage on average and the hardest hit class most of its own; and it acts
+    lim = bal['retention']
+    if any('ret' not in x for r in rs for x in r['m1']['rows']):
+        return errors + ['the model ran without the cap (--nocap) while hitCap is on']
+    cells = {r['boss']['key']: r for r in hit_table()}
+    for key, r in cells.items():
+        for players, c in sorted(r['cells'].items()):
+            if c['retMean'] < lim['mean']:
+                errors.append('%s, %d player(s): the cap takes %.0f%% of the boss\'s damage away on average (it keeps %.2f, at least %.2f is asked): a wall of health, '
+                              'not a fight: raise the share or the boss\'s uncapped damage' % (key, players, 100 * (1 - c['retMean']), c['retMean'], lim['mean']))
+            if c['retWorst'] < lim['worst']:
+                errors.append('%s, %d player(s): the hardest hit class keeps %.2f of the boss\'s damage, at least %.2f is asked' % (
+                    key, players, c['retWorst'], lim['worst']))
+        top = r['cells'][n['bal']['players']]
+        if top['cut'] < bal['cuts']['atLeast']:
+            errors.append('%s: with five the cap cuts the biggest hit of %d of %d classes, at least %d are asked: a cap that touches nobody is no cap' % (
+                key, top['cut'], top['classes'], bal['cuts']['atLeast']))
+        if top['cut'] > bal['cuts']['atMost'] * top['classes']:
+            errors.append('%s: with five the cap cuts the biggest hit of %d of %d classes, over %.0f%%: it is the hit, not the fight' % (
+                key, top['cut'], top['classes'], 100 * bal['cuts']['atMost']))
+    return errors
 
 
 def committed_ref(profile):
@@ -304,6 +545,7 @@ def check():
         for text in (cfg['titles']['first'] % (b['short'], '[S29]'), cfg['titles']['deathless'] % b['short']):
             if len(text) > 24:
                 errors.append('%s: the title "%s" is %d characters, 24 at most' % (tag, text, len(text)))
+    errors.extend(check_cap(n, rs))
     first, last = rs[0]['m1']['pressure'], rs[-1]['m1']['pressure']
     if last > first * lim['riseMax']:
         errors.append('the last boss presses %.2f, over %.2f x the first (%.2f)' % (last, lim['riseMax'], first))
@@ -374,8 +616,13 @@ def main(argv):
     if SU.active():
         print(SU.banner())
     os.chdir(SERVER)
+    if '--nocap' in argv:  # the model of before O690: no cap
+        numbers()['_nocap'] = True
     if '--check' in argv:
         return check()
+    if '--hits' in argv:
+        print_hits(hit_table())
+        return 0
     if '--derive' in argv:
         derive()
         return 0

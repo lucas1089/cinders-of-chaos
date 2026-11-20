@@ -1,0 +1,597 @@
+id,spell,tier,pick,role,element,kind,over,name_en,name_pt
+1,Minor Mending,I,1,heal,,RIPPLE,,Ripple,Ondulação
+1,Minor Mending,I,2,heal,,BLOOM,,Bloom,Florescer
+1,Minor Mending,II,1,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+1,Minor Mending,II,2,heal,,LINK,,Link,Elo
+2,Gorehook,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+2,Gorehook,I,2,damage,physical,REND,,Rending,Dilacerante
+2,Gorehook,II,1,damage,physical,CASCADE,,Cascade,Cascata
+2,Gorehook,II,2,damage,physical,SIPHON,,Siphon,Sifão
+3,Grand Mending,I,1,heal,,PULSE,,Pulse,Pulso
+3,Grand Mending,I,2,heal,,RIPPLE,,Ripple,Ondulação
+3,Grand Mending,II,1,heal,,CLEANSE,,Cleanse,Purificação
+3,Grand Mending,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+9,Rift Cleaver,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+9,Rift Cleaver,I,2,damage,physical,ECHO,,Echo,Eco
+9,Rift Cleaver,II,1,damage,physical,ASCEND:earth,,Earth Ascension,Ascensão de Terra
+9,Rift Cleaver,II,2,damage,physical,CASCADE,,Cascade,Cascata
+13,Tempest Fan,I,1,damage,fire,PIERCE,,Piercing,Perfurante
+13,Tempest Fan,I,2,damage,fire,PULL,,Gravity Pull,Atração Gravitacional
+13,Tempest Fan,II,1,damage,fire,SEEK,,Seeking,Busca
+13,Tempest Fan,II,2,damage,fire,OVERCHARGE,,Overcharge,Sobrecarga
+19,Sunspear,I,1,damage,holy,PIERCE,,Piercing,Perfurante
+19,Sunspear,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+19,Sunspear,II,1,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+19,Sunspear,II,2,damage,holy,SEEK,,Seeking,Busca
+22,Arrowstorm,I,1,damage,physical,ECHO,,Echo,Eco
+22,Arrowstorm,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+22,Arrowstorm,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+22,Arrowstorm,II,2,damage,physical,ASCEND:holy,,Holy Ascension,Ascensão de Sagrado
+23,Packhunter's Dart,I,1,damage,earth,REND,,Rending,Dilacerante
+23,Packhunter's Dart,I,2,damage,earth,SPLIT,,Splintering,Fragmentado
+23,Packhunter's Dart,II,1,damage,earth,CASCADE,,Cascade,Cascata
+23,Packhunter's Dart,II,2,damage,earth,SEEK,,Seeking,Busca
+24,Phantom Needles,I,1,damage,energy,SPLIT,,Splintering,Fragmentado
+24,Phantom Needles,I,2,damage,energy,PIERCE,,Piercing,Perfurante
+24,Phantom Needles,II,1,damage,energy,TWIN,,Twin Cast,Conjuração Gêmea
+24,Phantom Needles,II,2,damage,energy,SEEK,,Seeking,Busca
+29,Bastion Cry,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+29,Bastion Cry,I,2,damage,physical,ECHO,,Echo,Eco
+29,Bastion Cry,II,1,damage,physical,SIPHON,,Siphon,Sifão
+29,Bastion Cry,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+35,Pack Howl,I,1,damage,,SPLIT,,Splintering,Fragmentado
+35,Pack Howl,I,2,damage,,PULL,,Gravity Pull,Atração Gravitacional
+35,Pack Howl,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+35,Pack Howl,II,2,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+36,Lightbearer's Grace,I,1,heal,,RIPPLE,,Ripple,Ondulação
+36,Lightbearer's Grace,I,2,heal,,BLOOM,,Bloom,Florescer
+36,Lightbearer's Grace,II,1,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+36,Lightbearer's Grace,II,2,heal,,LINK,,Link,Elo
+37,Headsman's Hurl,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+37,Headsman's Hurl,I,2,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+37,Headsman's Hurl,II,1,damage,physical,SEEK,,Seeking,Busca
+37,Headsman's Hurl,II,2,damage,physical,CASCADE,,Cascade,Cascata
+38,Mirror Shards,I,1,damage,ice,SPLIT,,Splintering,Fragmentado
+38,Mirror Shards,I,2,damage,ice,ECHO,,Echo,Eco
+38,Mirror Shards,II,1,damage,ice,AFTERMATH,,Aftermath,Rescaldo
+38,Mirror Shards,II,2,damage,ice,CASCADE,,Cascade,Cascata
+39,Rending Pounce,I,1,damage,,SPLIT,,Splintering,Fragmentado
+39,Rending Pounce,I,2,damage,,GROUND,,Scorched Ground,Chão Marcado
+39,Rending Pounce,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+39,Rending Pounce,II,2,damage,,CASCADE,,Cascade,Cascata
+42,Grave Nova,I,1,damage,death,ECHO,,Echo,Eco
+42,Grave Nova,I,2,damage,death,SPLIT,,Splintering,Fragmentado
+42,Grave Nova,II,1,damage,death,TWIN,,Twin Cast,Conjuração Gêmea
+42,Grave Nova,II,2,damage,death,AFTERMATH,,Aftermath,Rescaldo
+43,Dreamrot,I,1,damage,death,REND,,Rending,Dilacerante
+43,Dreamrot,I,2,damage,death,CHAIN,,Chaining,Corrente
+43,Dreamrot,II,1,damage,death,SPREAD,,Spreading,Contágio
+43,Dreamrot,II,2,damage,death,SIPHON,,Siphon,Sifão
+45,Gutting Slash,I,1,damage,physical,REND,,Rending,Dilacerante
+45,Gutting Slash,I,2,damage,physical,CHAIN,,Chaining,Corrente
+45,Gutting Slash,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+45,Gutting Slash,II,2,damage,physical,SIPHON,,Siphon,Sifão
+53,Bewitching Hex,I,1,damage,death,CHAIN,,Chaining,Corrente
+53,Bewitching Hex,I,2,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+53,Bewitching Hex,II,1,damage,death,SPREAD,,Spreading,Contágio
+53,Bewitching Hex,II,2,damage,death,SIPHON,,Siphon,Sifão
+56,Razor Rain,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+56,Razor Rain,I,2,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+56,Razor Rain,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+56,Razor Rain,II,2,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+57,Venom Spiral,I,1,damage,earth,REND,,Rending,Dilacerante
+57,Venom Spiral,I,2,damage,earth,SPLIT,,Splintering,Fragmentado
+57,Venom Spiral,II,1,damage,earth,SPREAD,,Spreading,Contágio
+57,Venom Spiral,II,2,damage,earth,ASCEND:death,,Death Ascension,Ascensão de Morte
+58,Anvil Fall,I,1,damage,physical,ECHO,,Echo,Eco
+58,Anvil Fall,I,2,damage,physical,SPLIT,,Splintering,Fragmentado
+58,Anvil Fall,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+58,Anvil Fall,II,2,damage,physical,CASCADE,,Cascade,Cascata
+59,Scything Arc,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+59,Scything Arc,I,2,damage,physical,ECHO,,Echo,Eco
+59,Scything Arc,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+59,Scything Arc,II,2,damage,physical,SIPHON,,Siphon,Sifão
+61,Bonebreaker,I,1,damage,physical,CHAIN,,Chaining,Corrente
+61,Bonebreaker,I,2,damage,physical,REND,,Rending,Dilacerante
+61,Bonebreaker,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+61,Bonebreaker,II,2,damage,physical,SIPHON,,Siphon,Sifão
+62,Crescent Cut,I,1,damage,physical,ECHO,,Echo,Eco
+62,Crescent Cut,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+62,Crescent Cut,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+62,Crescent Cut,II,2,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+63,Ashen Fist,I,1,damage,,CHAIN,,Chaining,Corrente
+63,Ashen Fist,I,2,damage,,REND,,Rending,Dilacerante
+63,Ashen Fist,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+63,Ashen Fist,II,2,damage,,SIPHON,,Siphon,Sifão
+64,Sundering Palm,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+64,Sundering Palm,I,2,damage,,REND,,Rending,Dilacerante
+64,Sundering Palm,II,1,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+64,Sundering Palm,II,2,damage,,SIPHON,,Siphon,Sifão
+65,Whirling Heel,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+65,Whirling Heel,I,2,damage,physical,ECHO,,Echo,Eco
+65,Whirling Heel,II,1,damage,physical,CASCADE,,Cascade,Cascata
+65,Whirling Heel,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+66,Kindled Breath,I,1,heal,,RIPPLE,,Ripple,Ondulação
+66,Kindled Breath,I,2,heal,,BLOOM,,Bloom,Florescer
+66,Kindled Breath,II,1,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+66,Kindled Breath,II,2,heal,,SANCTUARY,,Sanctuary,Santuário
+67,Mistborne Strike,I,1,damage,physical,ECHO,,Echo,Eco
+67,Mistborne Strike,I,2,damage,physical,PIERCE,,Piercing,Perfurante
+67,Mistborne Strike,II,1,damage,physical,SIPHON,,Siphon,Sifão
+67,Mistborne Strike,II,2,damage,physical,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+68,Pressure Points,I,1,damage,,REND,,Rending,Dilacerante
+68,Pressure Points,I,2,damage,,SPLIT,,Splintering,Fragmentado
+68,Pressure Points,II,1,damage,,SIPHON,,Siphon,Sifão
+68,Pressure Points,II,2,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+69,Shadowfist Flurry,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+69,Shadowfist Flurry,I,2,damage,,CHAIN,,Chaining,Corrente
+69,Shadowfist Flurry,II,1,damage,,SEEK,,Seeking,Busca
+69,Shadowfist Flurry,II,2,damage,,SPREAD,,Spreading,Contágio
+71,Iron Palm,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+71,Iron Palm,I,2,damage,,CHAIN,,Chaining,Corrente
+71,Iron Palm,II,1,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+71,Iron Palm,II,2,damage,,SIPHON,,Siphon,Sifão
+73,Blade Flurry,I,1,damage,,ECHO,,Echo,Eco
+73,Blade Flurry,I,2,damage,,PULL,,Gravity Pull,Atração Gravitacional
+73,Blade Flurry,II,1,damage,,CASCADE,,Cascade,Cascata
+73,Blade Flurry,II,2,damage,,SIPHON,,Siphon,Sifão
+74,Iaido Sweep,I,1,damage,,ECHO,,Echo,Eco
+74,Iaido Sweep,I,2,damage,,SPLIT,,Splintering,Fragmentado
+74,Iaido Sweep,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+74,Iaido Sweep,II,2,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+80,Last Breath,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+80,Last Breath,I,2,damage,physical,PIERCE,,Piercing,Perfurante
+80,Last Breath,II,1,damage,physical,SIPHON,,Siphon,Sifão
+80,Last Breath,II,2,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+82,Hollow Knuckle,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+82,Hollow Knuckle,I,2,damage,physical,REND,,Rending,Dilacerante
+82,Hollow Knuckle,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+82,Hollow Knuckle,II,2,damage,physical,SEEK,,Seeking,Busca
+84,Quaking Stomp,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+84,Quaking Stomp,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+84,Quaking Stomp,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+84,Quaking Stomp,II,2,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+85,Arcane Ripple,I,1,damage,energy,ECHO,,Echo,Eco
+85,Arcane Ripple,I,2,damage,energy,CHAIN,,Chaining,Corrente
+85,Arcane Ripple,II,1,damage,energy,TWIN,,Twin Cast,Conjuração Gêmea
+85,Arcane Ripple,II,2,damage,energy,SPREAD,,Spreading,Contágio
+87,Chi Lance,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+87,Chi Lance,I,2,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+87,Chi Lance,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+87,Chi Lance,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+88,Cleaving Heel,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+88,Cleaving Heel,I,2,damage,physical,CHAIN,,Chaining,Corrente
+88,Cleaving Heel,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+88,Cleaving Heel,II,2,damage,physical,SPREAD,,Spreading,Contágio
+89,Tidal Palm,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+89,Tidal Palm,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+89,Tidal Palm,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+89,Tidal Palm,II,2,damage,physical,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+90,Skysplitter Fist,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+90,Skysplitter Fist,I,2,damage,physical,CHAIN,,Chaining,Corrente
+90,Skysplitter Fist,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+90,Skysplitter Fist,II,2,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+96,Mirror Mend,I,1,heal,,RIPPLE,,Ripple,Ondulação
+96,Mirror Mend,I,2,heal,,WARD,,Ward,Resguardo
+96,Mirror Mend,II,1,heal,,LINK,,Link,Elo
+96,Mirror Mend,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+97,Lucid Reverie,I,1,heal,,PULSE,,Pulse,Pulso
+97,Lucid Reverie,I,2,heal,,WARD,,Ward,Resguardo
+97,Lucid Reverie,II,1,heal,,SANCTUARY,,Sanctuary,Santuário
+97,Lucid Reverie,II,2,heal,,LINK,,Link,Elo
+98,Shadow Mend,I,1,heal,,WARD,,Ward,Resguardo
+98,Shadow Mend,I,2,heal,,PULSE,,Pulse,Pulso
+98,Shadow Mend,II,1,heal,,SANCTUARY,,Sanctuary,Santuário
+98,Shadow Mend,II,2,heal,,CLEANSE,,Cleanse,Purificação
+99,Snare Trap,I,1,damage,,GROUND,,Scorched Ground,Chão Marcado
+99,Snare Trap,I,2,damage,,PULL,,Gravity Pull,Atração Gravitacional
+99,Snare Trap,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+99,Snare Trap,II,2,damage,,CASCADE,,Cascade,Cascata
+100,Seeker Mine,I,1,damage,,ECHO,,Echo,Eco
+100,Seeker Mine,I,2,damage,,CHAIN,,Chaining,Corrente
+100,Seeker Mine,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+100,Seeker Mine,II,2,damage,,CASCADE,,Cascade,Cascata
+102,Iron Salve,I,1,heal,,WARD,,Ward,Resguardo
+102,Iron Salve,I,2,heal,,PULSE,,Pulse,Pulso
+102,Iron Salve,II,1,heal,,SANCTUARY,,Sanctuary,Santuário
+102,Iron Salve,II,2,heal,,CLEANSE,,Cleanse,Purificação
+103,Rebirth of Flesh,I,1,heal,,PULSE,,Pulse,Pulso
+103,Rebirth of Flesh,I,2,heal,,RIPPLE,,Ripple,Ondulação
+103,Rebirth of Flesh,II,1,heal,,CLEANSE,,Cleanse,Purificação
+103,Rebirth of Flesh,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+105,Butcher's Gyre,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+105,Butcher's Gyre,I,2,damage,physical,REND,,Rending,Dilacerante
+105,Butcher's Gyre,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+105,Butcher's Gyre,II,2,damage,physical,SPREAD,,Spreading,Contágio
+106,Marrow Bolt,I,1,damage,death,CHAIN,,Chaining,Corrente
+106,Marrow Bolt,I,2,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+106,Marrow Bolt,II,1,damage,death,OVERCHARGE,,Overcharge,Sobrecarga
+106,Marrow Bolt,II,2,damage,death,SEEK,,Seeking,Busca
+107,Wraithwind,I,1,damage,death,PIERCE,,Piercing,Perfurante
+107,Wraithwind,I,2,damage,death,PULL,,Gravity Pull,Atração Gravitacional
+107,Wraithwind,II,1,damage,death,AFTERMATH,,Aftermath,Rescaldo
+107,Wraithwind,II,2,damage,death,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+111,Phantom Javelin,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+111,Phantom Javelin,I,2,damage,physical,CHAIN,,Chaining,Corrente
+111,Phantom Javelin,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+111,Phantom Javelin,II,2,damage,physical,SEEK,,Seeking,Busca
+112,Gravewail,I,1,damage,death,GROUND,,Scorched Ground,Chão Marcado
+112,Gravewail,I,2,damage,death,ECHO,,Echo,Eco
+112,Gravewail,II,1,damage,death,AFTERMATH,,Aftermath,Rescaldo
+112,Gravewail,II,2,damage,death,CASCADE,,Cascade,Cascata
+113,Blightbrand,I,1,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+113,Blightbrand,I,2,damage,death,REND,,Rending,Dilacerante
+113,Blightbrand,II,1,damage,death,SPREAD,,Spreading,Contágio
+113,Blightbrand,II,2,damage,death,CASCADE,,Cascade,Cascata
+118,Soulrend Beam,I,1,damage,death,SPLIT,,Splintering,Fragmentado
+118,Soulrend Beam,I,2,damage,death,PULL,,Gravity Pull,Atração Gravitacional
+118,Soulrend Beam,II,1,damage,death,OVERCHARGE,,Overcharge,Sobrecarga
+118,Soulrend Beam,II,2,damage,death,SIPHON,,Siphon,Sifão
+119,Crypt Collapse,I,1,damage,death,SPLIT,,Splintering,Fragmentado
+119,Crypt Collapse,I,2,damage,death,GROUND,,Scorched Ground,Chão Marcado
+119,Crypt Collapse,II,1,damage,death,ASCEND:holy,,Holy Ascension,Ascensão de Sagrado
+119,Crypt Collapse,II,2,damage,death,TWIN,,Twin Cast,Conjuração Gêmea
+120,Ossuary Surge,I,1,damage,death,PULL,,Gravity Pull,Atração Gravitacional
+120,Ossuary Surge,I,2,damage,death,GROUND,,Scorched Ground,Chão Marcado
+120,Ossuary Surge,II,1,damage,death,AFTERMATH,,Aftermath,Rescaldo
+120,Ossuary Surge,II,2,damage,death,CASCADE,,Cascade,Cascata
+121,Hallowed Cut,I,1,damage,holy,CHAIN,,Chaining,Corrente
+121,Hallowed Cut,I,2,damage,holy,PIERCE,,Piercing,Perfurante
+121,Hallowed Cut,II,1,damage,holy,SPREAD,,Spreading,Contágio
+121,Hallowed Cut,II,2,damage,holy,SIPHON,,Siphon,Sifão
+122,Censer Swing,I,1,damage,holy,ECHO,,Echo,Eco
+122,Censer Swing,I,2,damage,holy,SPLIT,,Splintering,Fragmentado
+122,Censer Swing,II,1,damage,holy,TWIN,,Twin Cast,Conjuração Gêmea
+122,Censer Swing,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+123,Battle Salve,I,1,heal,,PULSE,,Pulse,Pulso
+123,Battle Salve,I,2,heal,,RIPPLE,,Ripple,Ondulação
+123,Battle Salve,II,1,heal,,CLEANSE,,Cleanse,Purificação
+123,Battle Salve,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+124,Sanctum Burst,I,1,damage,holy,SPLIT,,Splintering,Fragmentado
+124,Sanctum Burst,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+124,Sanctum Burst,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+124,Sanctum Burst,II,2,damage,holy,SIPHON,,Siphon,Sifão
+125,Dawn's Mending,I,1,heal,,BLOOM,,Bloom,Florescer
+125,Dawn's Mending,I,2,heal,,WARD,,Ward,Resguardo
+125,Dawn's Mending,II,1,heal,,LINK,,Link,Elo
+125,Dawn's Mending,II,2,heal,,SANCTUARY,,Sanctuary,Santuário
+126,Penitent Lash,I,1,damage,holy,ECHO,,Echo,Eco
+126,Penitent Lash,I,2,damage,holy,PULL,,Gravity Pull,Atração Gravitacional
+126,Penitent Lash,II,1,damage,holy,CASCADE,,Cascade,Cascata
+126,Penitent Lash,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+127,Martyr's Pyre,I,1,damage,holy,PIERCE,,Piercing,Perfurante
+127,Martyr's Pyre,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+127,Martyr's Pyre,II,1,damage,holy,SPREAD,,Spreading,Contágio
+127,Martyr's Pyre,II,2,damage,holy,SEEK,,Seeking,Busca
+128,Bell of Reckoning,I,1,damage,holy,PULL,,Gravity Pull,Atração Gravitacional
+128,Bell of Reckoning,I,2,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+128,Bell of Reckoning,II,1,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+128,Bell of Reckoning,II,2,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+129,Lance of Vigil,I,1,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+129,Lance of Vigil,I,2,damage,holy,ECHO,,Echo,Eco
+129,Lance of Vigil,II,1,damage,holy,ASCEND:death,,Death Ascension,Ascensão de Morte
+129,Lance of Vigil,II,2,damage,holy,CASCADE,,Cascade,Cascata
+131,Sanctum Verdict,I,1,damage,holy,CHAIN,,Chaining,Corrente
+131,Sanctum Verdict,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+131,Sanctum Verdict,II,1,damage,holy,CASCADE,,Cascade,Cascata
+131,Sanctum Verdict,II,2,damage,holy,SPREAD,,Spreading,Contágio
+134,Gale Volley,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+134,Gale Volley,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+134,Gale Volley,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+134,Gale Volley,II,2,damage,physical,ASCEND:energy,,Energy Ascension,Ascensão de Energia
+136,Fan of Knives,I,1,damage,,PULL,,Gravity Pull,Atração Gravitacional
+136,Fan of Knives,I,2,damage,,GROUND,,Scorched Ground,Chão Marcado
+136,Fan of Knives,II,1,damage,,CASCADE,,Cascade,Cascata
+136,Fan of Knives,II,2,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+137,Sanctified Ground,I,1,damage,,GROUND,,Scorched Ground,Chão Marcado
+137,Sanctified Ground,I,2,damage,,ECHO,,Echo,Eco
+137,Sanctified Ground,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+137,Sanctified Ground,II,2,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+138,Heretic's Brand,I,1,damage,holy,REND,,Rending,Dilacerante
+138,Heretic's Brand,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+138,Heretic's Brand,II,1,damage,holy,TWIN,,Twin Cast,Conjuração Gêmea
+138,Heretic's Brand,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+139,Zealot's Wrath,I,1,damage,holy,SPLIT,,Splintering,Fragmentado
+139,Zealot's Wrath,I,2,damage,holy,PULL,,Gravity Pull,Atração Gravitacional
+139,Zealot's Wrath,II,1,damage,holy,ASCEND:death,,Death Ascension,Ascensão de Morte
+139,Zealot's Wrath,II,2,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+140,Bulwark Slam,I,1,damage,holy,SPLIT,,Splintering,Fragmentado
+140,Bulwark Slam,I,2,damage,holy,PIERCE,,Piercing,Perfurante
+140,Bulwark Slam,II,1,damage,holy,SIPHON,,Siphon,Sifão
+140,Bulwark Slam,II,2,damage,holy,TWIN,,Twin Cast,Conjuração Gêmea
+141,Rampart Quake,I,1,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+141,Rampart Quake,I,2,damage,holy,SPLIT,,Splintering,Fragmentado
+141,Rampart Quake,II,1,damage,holy,CASCADE,,Cascade,Cascata
+141,Rampart Quake,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+142,Keepfall,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+142,Keepfall,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+142,Keepfall,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+142,Keepfall,II,2,damage,physical,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+144,Twin Verdict,I,1,damage,holy,CHAIN,,Chaining,Corrente
+144,Twin Verdict,I,2,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+144,Twin Verdict,II,1,damage,holy,TWIN,,Twin Cast,Conjuração Gêmea
+144,Twin Verdict,II,2,damage,holy,SIPHON,,Siphon,Sifão
+145,Rampage Leap,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+145,Rampage Leap,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+145,Rampage Leap,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+145,Rampage Leap,II,2,damage,physical,CASCADE,,Cascade,Cascata
+146,Glacial Doom,I,1,damage,ice,ECHO,,Echo,Eco
+146,Glacial Doom,I,2,damage,ice,GROUND,,Scorched Ground,Chão Marcado
+146,Glacial Doom,II,1,damage,ice,OVERCHARGE,,Overcharge,Sobrecarga
+146,Glacial Doom,II,2,damage,ice,ASCEND:fire,,Fire Ascension,Ascensão de Fogo
+147,Pack Frenzy,I,1,damage,,PIERCE,,Piercing,Perfurante
+147,Pack Frenzy,I,2,damage,,SPLIT,,Splintering,Fragmentado
+147,Pack Frenzy,II,1,damage,,SEEK,,Seeking,Busca
+147,Pack Frenzy,II,2,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+148,Judgment of Iron,I,1,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+148,Judgment of Iron,I,2,damage,physical,ECHO,,Echo,Eco
+148,Judgment of Iron,II,1,damage,physical,CASCADE,,Cascade,Cascata
+148,Judgment of Iron,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+149,Moonshard Rain,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+149,Moonshard Rain,I,2,damage,physical,SPLIT,,Splintering,Fragmentado
+149,Moonshard Rain,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+149,Moonshard Rain,II,2,damage,physical,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+151,Dawnbreaker Shot,I,1,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+151,Dawnbreaker Shot,I,2,damage,holy,SPLIT,,Splintering,Fragmentado
+151,Dawnbreaker Shot,II,1,damage,holy,CASCADE,,Cascade,Cascata
+151,Dawnbreaker Shot,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+152,Prismatic Rupture,I,1,damage,energy,SPLIT,,Splintering,Fragmentado
+152,Prismatic Rupture,I,2,damage,energy,DELAY,,Delayed Burst,Explosão Retardada
+152,Prismatic Rupture,II,1,damage,energy,TWIN,,Twin Cast,Conjuração Gêmea
+152,Prismatic Rupture,II,2,damage,energy,ASCEND:weakest,,Weakest Ascension,Ascensão de Elo Fraco
+154,Eclipse of Ruin,I,1,damage,ice,DELAY,,Delayed Burst,Explosão Retardada
+154,Eclipse of Ruin,I,2,damage,ice,ECHO,,Echo,Eco
+154,Eclipse of Ruin,II,1,damage,ice,AFTERMATH,,Aftermath,Rescaldo
+154,Eclipse of Ruin,II,2,damage,ice,CASCADE,,Cascade,Cascata
+155,Eclipse Edge,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+155,Eclipse Edge,I,2,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+155,Eclipse Edge,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+155,Eclipse Edge,II,2,damage,physical,SEEK,,Seeking,Busca
+157,Death Between Heartbeats,I,1,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+157,Death Between Heartbeats,I,2,damage,physical,REND,,Rending,Dilacerante
+157,Death Between Heartbeats,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+157,Death Between Heartbeats,II,2,damage,physical,CASCADE,,Cascade,Cascata
+158,Soulflay Wave,I,1,damage,death,PULL,,Gravity Pull,Atração Gravitacional
+158,Soulflay Wave,I,2,damage,death,PIERCE,,Piercing,Perfurante
+158,Soulflay Wave,II,1,damage,death,SIPHON,,Siphon,Sifão
+158,Soulflay Wave,II,2,damage,death,AFTERMATH,,Aftermath,Rescaldo
+160,Funeral of Kings,I,1,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+160,Funeral of Kings,I,2,damage,death,GROUND,,Scorched Ground,Chão Marcado
+160,Funeral of Kings,II,1,damage,death,CASCADE,,Cascade,Cascata
+160,Funeral of Kings,II,2,damage,death,AFTERMATH,,Aftermath,Rescaldo
+163,Pyre Torrent,I,1,damage,fire,GROUND,,Scorched Ground,Chão Marcado
+163,Pyre Torrent,I,2,damage,fire,REND,,Rending,Dilacerante
+163,Pyre Torrent,II,1,damage,fire,TWIN,,Twin Cast,Conjuração Gêmea
+163,Pyre Torrent,II,2,damage,fire,SIPHON,,Siphon,Sifão
+164,Shuriken Tempest,I,1,damage,,GROUND,,Scorched Ground,Chão Marcado
+164,Shuriken Tempest,I,2,damage,,ECHO,,Echo,Eco
+164,Shuriken Tempest,II,1,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+164,Shuriken Tempest,II,2,damage,,CASCADE,,Cascade,Cascata
+169,Kindling Spark,I,1,damage,fire,CHAIN,,Chaining,Corrente
+169,Kindling Spark,I,2,damage,fire,REND,,Rending,Dilacerante
+169,Kindling Spark,II,1,damage,fire,TWIN,,Twin Cast,Conjuração Gêmea
+169,Kindling Spark,II,2,damage,fire,SPREAD,,Spreading,Contágio
+170,Shield Wave,I,1,damage,,ECHO,,Echo,Eco
+170,Shield Wave,I,2,damage,,SPLIT,,Splintering,Fragmentado
+170,Shield Wave,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+170,Shield Wave,II,2,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+172,Thousand-Echo Palm,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+172,Thousand-Echo Palm,I,2,damage,physical,ECHO,,Echo,Eco
+172,Thousand-Echo Palm,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+172,Thousand-Echo Palm,II,2,damage,physical,CASCADE,,Cascade,Cascata
+174,Heaven's Ninth Gate,I,1,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+174,Heaven's Ninth Gate,I,2,damage,physical,SPLIT,,Splintering,Fragmentado
+174,Heaven's Ninth Gate,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+174,Heaven's Ninth Gate,II,2,damage,physical,CASCADE,,Cascade,Cascata
+175,Salve of Scars,I,1,heal,,PULSE,,Pulse,Pulso
+175,Salve of Scars,I,2,heal,,RIPPLE,,Ripple,Ondulação
+175,Salve of Scars,II,1,heal,,CLEANSE,,Cleanse,Purificação
+175,Salve of Scars,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+177,Pyre of Absolution,I,1,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+177,Pyre of Absolution,I,2,damage,holy,ECHO,,Echo,Eco
+177,Pyre of Absolution,II,1,damage,holy,TWIN,,Twin Cast,Conjuração Gêmea
+177,Pyre of Absolution,II,2,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+181,Bone Spear,I,1,damage,physical,PIERCE,,Piercing,Perfurante
+181,Bone Spear,I,2,damage,physical,SPLIT,,Splintering,Fragmentado
+181,Bone Spear,II,1,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+181,Bone Spear,II,2,damage,physical,SIPHON,,Siphon,Sifão
+182,Withering Curse,I,1,damage,,REND,,Rending,Dilacerante
+182,Withering Curse,I,2,damage,,CHAIN,,Chaining,Corrente
+182,Withering Curse,II,1,damage,,SPREAD,,Spreading,Contágio
+182,Withering Curse,II,2,damage,,AFTERMATH,,Aftermath,Rescaldo
+183,Soul Rot,I,1,damage,death,REND,,Rending,Dilacerante
+183,Soul Rot,I,2,damage,death,CHAIN,,Chaining,Corrente
+183,Soul Rot,II,1,damage,death,SPREAD,,Spreading,Contágio
+183,Soul Rot,II,2,damage,death,SIPHON,,Siphon,Sifão
+184,Life Siphon,I,1,damage,death,CHAIN,,Chaining,Corrente
+184,Life Siphon,I,2,damage,death,REND,,Rending,Dilacerante
+184,Life Siphon,II,1,damage,death,TWIN,,Twin Cast,Conjuração Gêmea
+184,Life Siphon,II,2,damage,death,OVERCHARGE,,Overcharge,Sobrecarga
+185,Corpse Explosion,I,1,damage,death,CHAIN,,Chaining,Corrente
+185,Corpse Explosion,I,2,damage,death,ECHO,,Echo,Eco
+185,Corpse Explosion,II,1,damage,death,CASCADE,,Cascade,Cascata
+185,Corpse Explosion,II,2,damage,death,AFTERMATH,,Aftermath,Rescaldo
+188,Bone Offering,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+188,Bone Offering,I,2,damage,physical,ECHO,,Echo,Eco
+188,Bone Offering,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+188,Bone Offering,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+189,Radiant Smite,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+189,Radiant Smite,I,2,damage,,CHAIN,,Chaining,Corrente
+189,Radiant Smite,II,1,damage,,SEEK,,Seeking,Busca
+189,Radiant Smite,II,2,damage,,SPREAD,,Spreading,Contágio
+190,Consecration,I,1,damage,holy,ECHO,,Echo,Eco
+190,Consecration,I,2,damage,holy,PULL,,Gravity Pull,Atração Gravitacional
+190,Consecration,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+190,Consecration,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+191,Vow of Mending,I,1,heal,,PULSE,,Pulse,Pulso
+191,Vow of Mending,I,2,heal,,RIPPLE,,Ripple,Ondulação
+191,Vow of Mending,II,1,heal,,CLEANSE,,Cleanse,Purificação
+191,Vow of Mending,II,2,heal,,SECONDWIND,,Second Wind,Segundo Fôlego
+193,Splinter Volley,I,1,damage,death,SPLIT,,Splintering,Fragmentado
+193,Splinter Volley,I,2,damage,death,ECHO,,Echo,Eco
+193,Splinter Volley,II,1,damage,death,TWIN,,Twin Cast,Conjuração Gêmea
+193,Splinter Volley,II,2,damage,death,CASCADE,,Cascade,Cascata
+194,Palm Shockwave,I,1,damage,,PULL,,Gravity Pull,Atração Gravitacional
+194,Palm Shockwave,I,2,damage,,ECHO,,Echo,Eco
+194,Palm Shockwave,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+194,Palm Shockwave,II,2,damage,,SPREAD,,Spreading,Contágio
+195,Shadow Ricochet,I,1,damage,,SPLIT,,Splintering,Fragmentado
+195,Shadow Ricochet,I,2,damage,,PULL,,Gravity Pull,Atração Gravitacional
+195,Shadow Ricochet,II,1,damage,,AFTERMATH,,Aftermath,Rescaldo
+195,Shadow Ricochet,II,2,damage,,CASCADE,,Cascade,Cascata
+196,Iron Chain,I,1,damage,,PULL,,Gravity Pull,Atração Gravitacional
+196,Iron Chain,I,2,damage,,CHAIN,,Chaining,Corrente
+196,Iron Chain,II,1,damage,,CASCADE,,Cascade,Cascata
+196,Iron Chain,II,2,damage,,AFTERMATH,,Aftermath,Rescaldo
+197,Bone Shrapnel,I,1,damage,,GROUND,,Scorched Ground,Chão Marcado
+197,Bone Shrapnel,I,2,damage,,SPLIT,,Splintering,Fragmentado
+197,Bone Shrapnel,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+197,Bone Shrapnel,II,2,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+198,Judgement,I,1,damage,,REND,,Rending,Dilacerante
+198,Judgement,I,2,damage,,DELAY,,Delayed Burst,Explosão Retardada
+198,Judgement,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+198,Judgement,II,2,damage,,SIPHON,,Siphon,Sifão
+199,Purging Nova,I,1,damage,holy,SPLIT,,Splintering,Fragmentado
+199,Purging Nova,I,2,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+199,Purging Nova,II,1,damage,holy,ASCEND:death,,Death Ascension,Ascensão de Morte
+199,Purging Nova,II,2,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+200,Rime Bloom,I,1,damage,ice,GROUND,,Scorched Ground,Chão Marcado
+200,Rime Bloom,I,2,damage,ice,ECHO,,Echo,Eco
+200,Rime Bloom,II,1,damage,ice,AFTERMATH,,Aftermath,Rescaldo
+200,Rime Bloom,II,2,damage,ice,ASCEND:fire,,Fire Ascension,Ascensão de Fogo
+201,Witchfire Bolt,I,1,damage,fire,SPLIT,,Splintering,Fragmentado
+201,Witchfire Bolt,I,2,damage,fire,SHIFT:ice,,Ice Shift,Mudança de Gelo
+201,Witchfire Bolt,II,1,damage,fire,SPREAD,,Spreading,Contágio
+201,Witchfire Bolt,II,2,damage,fire,OVERCHARGE,,Overcharge,Sobrecarga
+202,Forked Storm,I,1,damage,energy,CHAIN,,Chaining,Corrente
+202,Forked Storm,I,2,damage,energy,GROUND,,Scorched Ground,Chão Marcado
+202,Forked Storm,II,1,damage,energy,CASCADE,,Cascade,Cascata
+202,Forked Storm,II,2,damage,energy,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+203,Crimson Covenant,I,1,damage,death,CHAIN,,Chaining,Corrente
+203,Crimson Covenant,I,2,damage,death,REND,,Rending,Dilacerante
+203,Crimson Covenant,II,1,damage,death,SIPHON,,Siphon,Sifão
+203,Crimson Covenant,II,2,damage,death,SPREAD,,Spreading,Contágio
+204,Falling Pyre,I,1,damage,fire,SPLIT,,Splintering,Fragmentado
+204,Falling Pyre,I,2,damage,fire,DELAY,,Delayed Burst,Explosão Retardada
+204,Falling Pyre,II,1,damage,fire,AFTERMATH,,Aftermath,Rescaldo
+204,Falling Pyre,II,2,damage,fire,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+205,Frozen Crypt,I,1,damage,ice,PULL,,Gravity Pull,Atração Gravitacional
+205,Frozen Crypt,I,2,damage,ice,GROUND,,Scorched Ground,Chão Marcado
+205,Frozen Crypt,II,1,damage,ice,OVERCHARGE,,Overcharge,Sobrecarga
+205,Frozen Crypt,II,2,damage,ice,ASCEND:death,,Death Ascension,Ascensão de Morte
+206,Doomtide,I,1,damage,fire,ECHO,,Echo,Eco
+206,Doomtide,I,2,damage,fire,PULL,,Gravity Pull,Atração Gravitacional
+206,Doomtide,II,1,damage,fire,AFTERMATH,,Aftermath,Rescaldo
+206,Doomtide,II,2,damage,fire,ASCEND:death,,Death Ascension,Ascensão de Morte
+207,Blightswarm,I,1,damage,earth,SPLIT,,Splintering,Fragmentado
+207,Blightswarm,I,2,damage,earth,GROUND,,Scorched Ground,Chão Marcado
+207,Blightswarm,II,1,damage,earth,TWIN,,Twin Cast,Conjuração Gêmea
+207,Blightswarm,II,2,damage,earth,AFTERMATH,,Aftermath,Rescaldo
+208,Purifying Wellspring,I,1,heal,,PULSE,,Pulse,Pulso
+208,Purifying Wellspring,I,2,heal,,BLOOM,,Bloom,Florescer
+208,Purifying Wellspring,II,1,heal,,SANCTUARY,,Sanctuary,Santuário
+208,Purifying Wellspring,II,2,heal,,CLEANSE,,Cleanse,Purificação
+210,Briar Prison,I,1,damage,earth,ECHO,,Echo,Eco
+210,Briar Prison,I,2,damage,earth,SPLIT,,Splintering,Fragmentado
+210,Briar Prison,II,1,damage,earth,AFTERMATH,,Aftermath,Rescaldo
+210,Briar Prison,II,2,damage,earth,CASCADE,,Cascade,Cascata
+212,Verdant Sanctuary,I,1,heal,,PULSE,,Pulse,Pulso
+212,Verdant Sanctuary,I,2,heal,,BLOOM,,Bloom,Florescer
+212,Verdant Sanctuary,II,1,heal,,SANCTUARY,,Sanctuary,Santuário
+212,Verdant Sanctuary,II,2,heal,,CLEANSE,,Cleanse,Purificação
+213,Primordial Squall,I,1,damage,earth,GROUND,,Scorched Ground,Chão Marcado
+213,Primordial Squall,I,2,damage,earth,PULL,,Gravity Pull,Atração Gravitacional
+213,Primordial Squall,II,1,damage,earth,AFTERMATH,,Aftermath,Rescaldo
+213,Primordial Squall,II,2,damage,earth,ASCEND:ice,,Ice Ascension,Ascensão de Gelo
+214,Dawnpiercer,I,1,damage,holy,PIERCE,,Piercing,Perfurante
+214,Dawnpiercer,I,2,damage,holy,REND,,Rending,Dilacerante
+214,Dawnpiercer,II,1,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+214,Dawnpiercer,II,2,damage,holy,SIPHON,,Siphon,Sifão
+215,Skewering Line,I,1,damage,physical,SPLIT,,Splintering,Fragmentado
+215,Skewering Line,I,2,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+215,Skewering Line,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+215,Skewering Line,II,2,damage,physical,TWIN,,Twin Cast,Conjuração Gêmea
+216,Blessed Earth,I,1,damage,holy,GROUND,,Scorched Ground,Chão Marcado
+216,Blessed Earth,I,2,damage,holy,PULL,,Gravity Pull,Atração Gravitacional
+216,Blessed Earth,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+216,Blessed Earth,II,2,damage,holy,ASCEND:fire,,Fire Ascension,Ascensão de Fogo
+218,Final Verdict,I,1,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+218,Final Verdict,I,2,damage,holy,REND,,Rending,Dilacerante
+218,Final Verdict,II,1,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+218,Final Verdict,II,2,damage,holy,CASCADE,,Cascade,Cascata
+219,Hail of Dawn,I,1,damage,holy,SPLIT,,Splintering,Fragmentado
+219,Hail of Dawn,I,2,damage,holy,ECHO,,Echo,Eco
+219,Hail of Dawn,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+219,Hail of Dawn,II,2,damage,holy,SPREAD,,Spreading,Contágio
+220,Reaping Gyre,I,1,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+220,Reaping Gyre,I,2,damage,physical,ECHO,,Echo,Eco
+220,Reaping Gyre,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+220,Reaping Gyre,II,2,damage,physical,CASCADE,,Cascade,Cascata
+221,Earthbreaker,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+221,Earthbreaker,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+221,Earthbreaker,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+221,Earthbreaker,II,2,damage,physical,ASCEND:earth,,Earth Ascension,Ascensão de Terra
+224,Vaulting Cleave,I,1,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+224,Vaulting Cleave,I,2,damage,physical,PIERCE,,Piercing,Perfurante
+224,Vaulting Cleave,II,1,damage,physical,SIPHON,,Siphon,Sifão
+224,Vaulting Cleave,II,2,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+225,Colossus Fall,I,1,damage,physical,GROUND,,Scorched Ground,Chão Marcado
+225,Colossus Fall,I,2,damage,physical,PULL,,Gravity Pull,Atração Gravitacional
+225,Colossus Fall,II,1,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+225,Colossus Fall,II,2,damage,physical,ASCEND:fire,,Fire Ascension,Ascensão de Fogo
+227,Umbral Stride,I,1,damage,death,PIERCE,,Piercing,Perfurante
+227,Umbral Stride,I,2,damage,death,REND,,Rending,Dilacerante
+227,Umbral Stride,II,1,damage,death,CASCADE,,Cascade,Cascata
+227,Umbral Stride,II,2,damage,death,SPREAD,,Spreading,Contágio
+228,Shattered Psyche,I,1,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+228,Shattered Psyche,I,2,damage,death,CHAIN,,Chaining,Corrente
+228,Shattered Psyche,II,1,damage,death,OVERCHARGE,,Overcharge,Sobrecarga
+228,Shattered Psyche,II,2,damage,death,SIPHON,,Siphon,Sifão
+230,Nightburst,I,1,damage,death,ECHO,,Echo,Eco
+230,Nightburst,I,2,damage,death,GROUND,,Scorched Ground,Chão Marcado
+230,Nightburst,II,1,damage,death,OVERCHARGE,,Overcharge,Sobrecarga
+230,Nightburst,II,2,damage,death,ASCEND:fire,,Fire Ascension,Ascensão de Fogo
+231,Tear in the Weave,I,1,damage,death,PULL,,Gravity Pull,Atração Gravitacional
+231,Tear in the Weave,I,2,damage,death,DELAY,,Delayed Burst,Explosão Retardada
+231,Tear in the Weave,II,1,damage,death,CASCADE,,Cascade,Cascata
+231,Tear in the Weave,II,2,damage,death,AFTERMATH,,Aftermath,Rescaldo
+236,Shuriken Toss,I,1,damage,,SPLIT,,Splintering,Fragmentado
+236,Shuriken Toss,I,2,damage,,CHAIN,,Chaining,Corrente
+236,Shuriken Toss,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+236,Shuriken Toss,II,2,damage,,SEEK,,Seeking,Busca
+237,Hammer of Ember Dawn,I,1,damage,holy,DELAY,,Delayed Burst,Explosão Retardada
+237,Hammer of Ember Dawn,I,2,damage,holy,ECHO,,Echo,Eco
+237,Hammer of Ember Dawn,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+237,Hammer of Ember Dawn,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+240,Shadow Step,I,1,damage,,ECHO,,Echo,Eco
+240,Shadow Step,I,2,damage,,REND,,Rending,Dilacerante
+240,Shadow Step,II,1,damage,,CASCADE,,Cascade,Cascata
+240,Shadow Step,II,2,damage,,AFTERMATH,,Aftermath,Rescaldo
+241,Smoke Bomb,I,1,damage,earth,GROUND,,Scorched Ground,Chão Marcado
+241,Smoke Bomb,I,2,damage,earth,PULL,,Gravity Pull,Atração Gravitacional
+241,Smoke Bomb,II,1,damage,earth,AFTERMATH,,Aftermath,Rescaldo
+241,Smoke Bomb,II,2,damage,earth,ASCEND:death,,Death Ascension,Ascensão de Morte
+242,Shuriken Barrage,I,1,damage,,SPLIT,,Splintering,Fragmentado
+242,Shuriken Barrage,I,2,damage,,ECHO,,Echo,Eco
+242,Shuriken Barrage,II,1,damage,,TWIN,,Twin Cast,Conjuração Gêmea
+242,Shuriken Barrage,II,2,damage,,CASCADE,,Cascade,Cascata
+244,Iaijutsu,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+244,Iaijutsu,I,2,damage,,SPLIT,,Splintering,Fragmentado
+244,Iaijutsu,II,1,damage,,OVERCHARGE,,Overcharge,Sobrecarga
+244,Iaijutsu,II,2,damage,,CASCADE,,Cascade,Cascata
+246,Skyfall Cleave,I,1,damage,physical,DELAY,,Delayed Burst,Explosão Retardada
+246,Skyfall Cleave,I,2,damage,physical,SPLIT,,Splintering,Fragmentado
+246,Skyfall Cleave,II,1,damage,physical,OVERCHARGE,,Overcharge,Sobrecarga
+246,Skyfall Cleave,II,2,damage,physical,AFTERMATH,,Aftermath,Rescaldo
+249,Feral Command,I,1,damage,,DELAY,,Delayed Burst,Explosão Retardada
+249,Feral Command,I,2,damage,,CHAIN,,Chaining,Corrente
+249,Feral Command,II,1,damage,,SEEK,,Seeking,Busca
+249,Feral Command,II,2,damage,,CASCADE,,Cascade,Cascata
+250,Crusader's Sweep,I,1,damage,holy,ECHO,,Echo,Eco
+250,Crusader's Sweep,I,2,damage,holy,SPLIT,,Splintering,Fragmentado
+250,Crusader's Sweep,II,1,damage,holy,AFTERMATH,,Aftermath,Rescaldo
+250,Crusader's Sweep,II,2,damage,holy,OVERCHARGE,,Overcharge,Sobrecarga
+253,Lay on Hands,I,1,heal,,BLOOM,,Bloom,Florescer
+253,Lay on Hands,I,2,heal,,WARD,,Ward,Resguardo
+253,Lay on Hands,II,1,heal,,LINK,,Link,Elo
+253,Lay on Hands,II,2,heal,,SANCTUARY,,Sanctuary,Santuário

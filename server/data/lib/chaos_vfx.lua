@@ -183,9 +183,30 @@ local function skySwap(name)
 	return ChaosLightningFx and ChaosLightningFx.swap(name) or name
 end
 
+-- O686 phase 4: a spell cast with an element conversion Form (SHIFT:E, ASCEND:E) shows the effects of E only: every pack effect the
+-- spell sends is swapped for the element's (data/lib/chaos_spell_forms.lua; nothing while the spell ranks are off)
+local function formSwap(name)
+	local FM = rawget(_G, "ChaosSpellForms")
+	if FM and FM.swapFor and FM.enabled and FM.enabled() then
+		local W = rawget(_G, "ChaosSupportsSpell")
+		local pid, spellId
+		if W and W.cast then
+			pid, spellId = W.cast()
+		end
+		if pid then
+			local ok, alt = pcall(FM.swapFor, pid, spellId, "vfx", name)
+			if ok and alt then
+				return alt
+			end
+		end
+	end
+	return name
+end
+
 function Vfx(pos, name, raw)
 	if not raw then
 		name = skySwap(name)
+		name = formSwap(name)
 	end
 	local e = ChaosVfx[name]
 	if not e or not pos then

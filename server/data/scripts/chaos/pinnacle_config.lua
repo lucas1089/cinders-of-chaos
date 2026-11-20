@@ -84,6 +84,15 @@ return {
 	-- (tools/pinnacle_model.py --derive): the median class kills it in 420 s alone and in 300 s with five.
 	damage = {solo = 1.0, perExtra = 0.06, max = 1.3},
 
+	-- O690 (owner 2026-11-20, "pode por um teto sim"): one hit of the boss or of anything of its fight (adds, strikes) on a player takes at most
+	-- `share` x the player's pool (the maximum health, plus the maximum mana while a mana shield is up: hitcap_core.lua H.pool), as a whole, after the
+	-- party curve above and every other multiplier: the cap events of rift.lua (O478, RF.capLast) are the last health and mana events of the player.
+	-- `telegraph` is the ceiling of the boss's marked attacks (boss_mechanics.lua: ring, marks, lines, cone, half, eye, soak, channel; the
+	-- scripted hit of a share of the victim's health): dodgeable, so they still hurt more than a plain hit and are cut only where a party's
+	-- curve (x1.24 with five) takes the biggest ones (0.5 to 0.6 of the health) over it. Players only (PvP and monsters of players do not enter).
+	-- The reason of each number: pinnacle_balance_config.lua `hitCap`. `enabled = false` switches the cap off.
+	hitCap = {enabled = true, share = 0.40, telegraph = 0.60},
+
 	-- ------------------------------------------------------------------ the bosses
 	-- key; name = the monster type (data/monster/monsters/chaos/pinnacle/); level = the level it is shown at and hits at (the
 	-- engine's level bonus, ChaosLoot.monsterLevel); minLevel = the character level that may open it; refLevel = the character

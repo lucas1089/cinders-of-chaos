@@ -331,6 +331,7 @@ do
 	near(R.hitFactor(pl, other, ORIGIN_SPELL, 5), 1.09, 1e-9, "on: a hit on another player is the PvP half")
 	R.healIds[40] = true
 	near(R.hitFactor(pl, {}, ORIGIN_SPELL, COMBAT_HEALING), 1.12, 1e-9, "on: a heal is +12% at 20")
+	near(R.hitFactor(pl, other, ORIGIN_SPELL, COMBAT_HEALING), 1.12, 1e-9, "on: a heal on another player is no PvP: the whole +12%")
 	eq(R.manaFor(pl, 40, 100), 75, "on: heal mana -25%")
 	eq(R.cooldownFor(pl, 40, 8000), 6800, "on: heal cooldown -15%")
 	near(R.healthFactor(2500), 1.39, 1e-9, "on: health x1.39 at 2500")

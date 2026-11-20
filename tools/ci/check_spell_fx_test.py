@@ -55,6 +55,102 @@ class Rule(unittest.TestCase):
         self.assertEqual(c.parse_probe(lines), [3, 12])
 
 
+class FormRule(unittest.TestCase):
+    """O686 phase 4: the same rule for the Forms of a spell (forms.csv, spell_fx_forms.csv)"""
+    TAGS = {1: ('fire_thing', 'fire'), 2: ('ice_thing', 'ice'), 3: ('smoke', 'any')}
+    SPELLS = {10: ('Test Fire', 'fire')}
+    FORMS = {10: {(1, 1): 'SPLIT', (1, 2): 'SHIFT:ice', (2, 1): 'TWIN', (2, 2): 'ASCEND:weakest'}}
+
+    def test_form_cases(self):
+        f = c.form_cases(self.FORMS[10], 1, 1)
+        self.assertEqual(f, [(10 + 32, '', None)])
+        f = c.form_cases(self.FORMS[10], 1, 2)
+        self.assertEqual(f, [(10 + 64, '', 'ice')])
+        # Form II: a Form I that does not convert is held, the state carries both picks
+        f = c.form_cases(self.FORMS[10], 2, 1)
+        self.assertEqual(f, [(20 + 32 + 128, '', None)])
+
+    def test_weakest_runs_six_elements(self):
+        f = c.form_cases(self.FORMS[10], 2, 2)
+        self.assertEqual([w for _, w, _ in f], list(c.WEAKEST))
+        self.assertEqual([e for _, _, e in f], list(c.WEAKEST))
+
+    def test_a_conversion_shows_its_element(self):
+        # SHIFT:ice sending an ice effect passes, a fire effect fails
+        ok, _ = c.form_violations({(10, 1, 2, '', 'ice'): {2, 3}}, self.SPELLS, self.TAGS, {}, self.FORMS)
+        self.assertEqual(ok, [])
+        bad, _ = c.form_violations({(10, 1, 2, '', 'ice'): {1}}, self.SPELLS, self.TAGS, {}, self.FORMS)
+        self.assertEqual(len(bad), 1)
+        self.assertIn('shows ice', bad[0])
+        self.assertIn('SHIFT:ice', bad[0])
+
+    def test_a_plain_form_shows_the_spells_element(self):
+        bad, _ = c.form_violations({(10, 1, 1, '', None): {2}}, self.SPELLS, self.TAGS, {}, self.FORMS)
+        self.assertEqual(len(bad), 1)
+        self.assertIn('shows fire', bad[0])
+
+    def test_a_plain_form_keeps_the_spells_reasons(self):
+        bad, _ = c.form_violations({(10, 1, 1, '', None): {2}}, self.SPELLS, self.TAGS, {}, self.FORMS, {(10, 2): 'a cold fire'})
+        self.assertEqual(bad, [])
+        # a conversion does not: its element is another one
+        bad, _ = c.form_violations({(10, 1, 2, '', 'ice'): {1}}, self.SPELLS, self.TAGS, {}, self.FORMS, {(10, 1): 'a fire'})
+        self.assertEqual(len(bad), 1)
+
+    def test_a_form_reason_passes_and_is_used(self):
+        bad, used = c.form_violations({(10, 1, 2, '', 'ice'): {1}}, self.SPELLS, self.TAGS, {(10, 1, 2, 1): 'the burn stays'}, self.FORMS)
+        self.assertEqual(bad, [])
+        self.assertEqual(used, {(10, 1, 2, 1)})
+
+    def test_untagged_effect_of_a_form_fails(self):
+        bad, _ = c.form_violations({(10, 1, 1, '', None): {99}}, self.SPELLS, self.TAGS, {}, self.FORMS)
+        self.assertEqual(len(bad), 1)
+        self.assertIn('no element tag', bad[0])
+
+    def test_tables(self):
+        forms = c.load_forms()
+        self.assertEqual(len(forms), 149)
+        self.assertEqual(forms[201][(1, 2)], 'SHIFT:ice')
+        elements = c.spell_elements()
+        for (sid, tier, pick, eid), reason in c.load_form_allow().items():
+            self.assertIn(sid, forms)
+            self.assertGreater(len(reason.strip()), 10)
+
+
+@unittest.skipIf(shutil.which('lua5.3') is None, 'lua5.3 not installed')
+class FormProbe(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = c.make_root()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.root, ignore_errors=True)
+
+    def spell(self, sid):
+        return next(s for s in c.chaos_spells() if s['id'] == sid)
+
+    def test_witchfire_shifted_to_ice_shows_ice(self):
+        # Witchfire Bolt (fire) with Form I SHIFT:ice: no fire effect is left
+        tags = c.load_tags()
+        ids = c.probe_spell(self.root, self.spell(201), 10 + 32 * 2)
+        self.assertTrue(ids)
+        for eid in ids:
+            self.assertTrue(c.element_ok('ice', tags[eid][1]), 'effect %d is %s' % (eid, tags[eid]))
+
+    def test_the_same_spell_without_the_form_shows_fire(self):
+        tags = c.load_tags()
+        ids = c.probe_spell(self.root, self.spell(201))
+        self.assertTrue(any(tags[e][1] == 'fire' for e in ids))
+
+    def test_weakest_follows_the_target(self):
+        # Prismatic Rupture II2 ASCEND:weakest: the effects are those of the element the target resists least
+        tags = c.load_tags()
+        for el in ('earth', 'holy'):
+            ids = c.probe_spell(self.root, self.spell(152), 20 + 32 + 128 * 2, el)
+            for eid in ids:
+                self.assertTrue(c.element_ok(el, tags[eid][1]), '%s: effect %d is %s' % (el, eid, tags[eid]))
+
+
 class Tables(unittest.TestCase):
     def test_tags(self):
         tags = c.load_tags()

@@ -32,7 +32,9 @@ for fam in cfg['families']:
        '%s: four elements, a class list, its own name first' % fam['spell'])
 ok(cfg['lines']['Reaping Gyre'] == ['Warrior', 'Juggernaut', 'Berserker'], 'the lines of Reaping Gyre')
 ok(len(cfg['lines']['Frostfall Rune']) == 21, 'every class casts the Frostfall Rune')
-ok(cfg['families'][1]['spells'] == ['Rime Bloom', 'Marrow Bolt', 'Soulrend Beam'], 'a line with two more spells')
+ok(cfg['families'][1]['spells'] == ['Rime Bloom', 'Marrow Bolt', 'Soulrend Beam', 'Phantom Needles'], 'a line with three more spells (O691: Phantom Needles)')
+ok('Razor Rain' in [f for f in cfg['families'] if f['spell'] == 'Frozen Crypt'][0]['spells'], 'O691: the Thief line spell on Frozen Crypt')
+ok('Illusionist' in cfg['lines']['Rime Bloom'] and 'Samurai' in cfg['lines']['Frozen Crypt'], 'O691: the class lists follow')
 
 data = M.spell_data()
 ok(data['Doomtide'][0] == 'fire' and data['Reaping Gyre'][0] == 'physical' and 5 in data['Doomtide'][1], 'spell elements and vocations')
@@ -69,6 +71,17 @@ for r in rows:
     for i in (0, 1):
         ok(abs((1 + r['set']['v'][i]) / (1 + r['mixed']['v'][i]) - 1) <= M.TOLERANCE, '%s: the set is within 10%% of the mixed build' % r['class'])
     ok(r['set']['cards'] >= 3 or r['set']['element'] is None, '%s: a set takes 3 cards or more' % r['class'])
+# O691: every class reaches the set of two elements or more, and none of them leads the best mixed build by 0.5 points
+for r in rows:
+    ok(len(r['sets']) >= M.MIN_SET_ELEMENTS, '%s reaches %d sets (%s)' % (r['class'], len(r['sets']), ', '.join(sorted(r['sets']))))
+    for el, b in r['sets'].items():
+        for i in (0, 1):
+            ok((1 + b['v'][i]) / (1 + r['mixed']['v'][i]) - 1 <= M.AHEAD, '%s: the %s set does not lead (%d)' % (r['class'], el, i))
+reached = {r['class']: set(r['sets']) for r in rows}
+ok(reached['Illusionist'] == {'fire', 'holy', 'death', 'energy'}, 'Illusionist: four sets (%s)' % sorted(reached['Illusionist']))
+ok(reached['Thief'] == reached['Ninja'] == reached['Samurai'] == {'fire', 'holy', 'death', 'energy'}, 'the Thief line: four sets')
+ok(reached['Warrior'] == {'earth', 'death'} and reached['Monk'] == {'fire', 'death'}, 'the Warrior and Monk lines: two sets each')
+ok(M.MAX_PART == 4.0 and cfg['cap'] <= M.MAX_PART, 'damagePartMax at most 4')
 ok(rows[0]['class'] == 'Warrior' and rows[0]['line'] == 'Warrior', 'the order of the classes')
 # every class line has a class whose set is no better than the best mixed build
 ok(len({r['line'] for r in rows if r['set']['v'][0] <= r['mixed']['v'][0] + 1e-9}) >= 3, 'three class lines have a set that costs something or nothing')
@@ -94,6 +107,38 @@ M.load_config = with_pct(2, 2)
 rows3, mult3, _ = M.class_rows()
 ok(M.problems(rows3, mult3) == [], 'a smaller damage part passes')
 M.load_config = orig
+
+
+def without_class(spell_names, cls):
+    def patched(path=M.CONFIG):
+        c = orig(path)
+        for n in spell_names:
+            c['lines'][n] = [x for x in c['lines'][n] if x != cls]
+        return c
+    return patched
+
+
+# O691: take the Illusionist's 4th line away again (Rime Bloom): it reaches Death only, the check names it
+M.load_config = without_class(['Rime Bloom'], 'Illusionist')
+rows4, mult4, _ = M.class_rows()
+bad4 = M.problems(rows4, mult4)
+ok(any(b.startswith('Illusionist reaches') for b in bad4), 'a class with one set is a problem: %s' % bad4[:2])
+M.load_config = orig
+
+
+def with_cap(cap):
+    def patched(path=M.CONFIG):
+        c = orig(path)
+        c['cap'] = cap
+        return c
+    return patched
+
+
+M.load_config = with_cap(6.0)
+rows5, mult5, _ = M.class_rows()
+ok(any('damagePartMax' in b for b in M.problems(rows5, mult5)), 'a damage part cap above 4 is a problem')
+M.load_config = orig
+ok('| Illusionist | 4 | 4 |' in M.sets_table(rows), 'the table of every reachable set')
 
 print('card_set_model_test: %s' % ('ok' if not fails else '%d failures' % fails))
 sys.exit(1 if fails else 0)

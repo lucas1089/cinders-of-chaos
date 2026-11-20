@@ -1,0 +1,248 @@
+# Boss fight video (O689, server/README.md "Malgrath fight video (O689)"): the MAIN client (Linux build, CHAOS_RMLUI=OFF) films the five complete tester bots
+# fighting a pinnacle boss, Malgrath the Drowned Crown (level 1900) by default, on a real server of this commit. The artifact is `boss-video`: the MP4, the fight
+# report (time to kill or wipe, the boss health taken, who was carried out when) and the client log, with the account, the password, the guard key and the
+# database login cut out. Nothing else is uploaded: no frame, no sprite file, no database, no key, no server log.
+#
+# MANUAL ONLY (workflow_dispatch). About 90 minutes of set-up and preparation at the least: the base client and the sprite pair of the windows-assets branch, the
+# client build (about 15 minutes), the server of tools/ci/unity_live_check.sh --serve-only (the install of the content takes about 12), then the bots gear up,
+# ascend, play their vocation trials on foot and form the party (an hour or more; prep_minutes is the most the run waits for it), then the fight (up to 20 minutes
+# game time; the film is at most `seconds` long).
+#
+# Parts, all reused from the loot video (O676, loot-video.yml):
+#   * client       client/tools/assemble_client.sh on the base client of windows-assets, built as client/LINUX.md "Build" says (Ninja, g++, Ubuntu 24.04,
+#                  as rmlui-client.yml), then the sprite pair of windows-assets/things (client/tools/sprites/spr_shards.py), as the client-linux job of
+#                  windows-package.yml puts it together. The server host stays 127.0.0.1, the ports are the stock 7171 / 7172.
+#   * server       tools/ci/unity_live_check.sh --serve-only with UL_PINNACLE_PARTY=1: the base server of windows-assets, install_all.py of this commit (the
+#                  pinnacle content is a step of it), a private MariaDB, the engine of the newest winpkg release, the closed switch, five party testers made by
+#                  server/tools/testers.py setup (Mystic, Ranger, Warrior, Mystic, Thief at the level of the boss) and ONE SPECTATOR: a staff character of this
+#                  run's database only (group 6, invisible by `/ghost`, never in the party, never a tester). The TEST ONLY helper tester_helper.lua is copied
+#                  into the run's server, never into the install.
+#   * run          tools/ci/boss_video.sh: Xvfb 1280x720; the bots (testers.py run --checks --closed --only pinnacle_party) play their preparation and the
+#                  fight; the test-only client module test_bosstour (client/overlay/modules/test_bosstour, armed only by CHAOS_BOSSTOUR=1) logs the spectator
+#                  in, waits, jumps to a party member when `/instances pinnacle` lists the fight and keeps the camera on it; ffmpeg x11grab records from
+#                  that moment until the boss falls, the fight is gone or the time limit.
+#
+# Secrets: none. The client guard key is made in the run (openssl rand), masked, baked into the client build and given to tfs (UL_GUARD_KEY) and to the bots'
+# key file, so the guard runs in enforce mode with a key nobody else has. The login key (RSA) is the base server's own, public data, written into the client's
+# init.lua (client/tools/set_rsa_key.py). The repository must be able to read its branch windows-assets and its winpkg releases (the default token).
+name: Boss video
+
+on:
+  workflow_dispatch:
+    inputs:
+      boss:
+        description: "The pinnacle boss the party fights"
+        required: false
+        type: choice
+        default: malgrath
+        options:
+          - malgrath
+          - vhoss
+          - talath
+          - varkhul
+      seconds:
+        description: "The longest the fight is filmed, from the moment the fight opens (30 to 900)"
+        required: false
+        default: "480"
+      prep_minutes:
+        description: "The longest the bots may take to gear up and open the fight (30 to 240)"
+        required: false
+        default: "120"
+      client_build:
+        description: "Client build number baked into the client (the server accepts any build here)"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boss-video-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  video:
+    name: Boss fight video (Ubuntu 24.04)
+    runs-on: ubuntu-24.04  # the private MariaDB of tools/ci/unity_live_check.sh does not install on the 26.04 image
+    timeout-minutes: 345
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CLIENT_BUILD: ${{ inputs.client_build }}
+      BOSS: ${{ inputs.boss }}
+      FIGHT_SECONDS: ${{ inputs.seconds }}
+      PREP_MINUTES: ${{ inputs.prep_minutes }}
+    steps:
+      - name: Check the inputs
+        run: |
+          if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
+            echo "::error::client_build must be a number from 1 to 65535"
+            exit 1
+          fi
+          case "$BOSS" in
+            malgrath | vhoss | talath | varkhul) ;;
+            *)
+              echo "::error::boss must be malgrath, vhoss, talath or varkhul"
+              exit 1
+              ;;
+          esac
+          if ! [[ "$FIGHT_SECONDS" =~ ^[0-9]+$ ]] || [ "$FIGHT_SECONDS" -lt 30 ] || [ "$FIGHT_SECONDS" -gt 900 ]; then
+            echo "::error::seconds must be a number from 30 to 900"
+            exit 1
+          fi
+          if ! [[ "$PREP_MINUTES" =~ ^[0-9]+$ ]] || [ "$PREP_MINUTES" -lt 30 ] || [ "$PREP_MINUTES" -gt 240 ]; then
+            echo "::error::prep_minutes must be a number from 30 to 240"
+            exit 1
+          fi
+
+      - name: Keep line endings as they are
+        run: git config --global core.autocrlf false
+
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: windows-assets
+          path: assets
+          sparse-checkout: |
+            server
+            world
+            client
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Install the tools
+        run: |
+          sudo apt-get update -qq
+          # the server (mariadb-server: the private database of the run; numpy and luajit: install step contentareas) and the client
+          # (rmlui-client.yml and client/LINUX.md libraries, Xvfb with Mesa software GL, ffmpeg, file, xz)
+          sudo apt-get install -y -qq --no-install-recommends \
+            mariadb-server mariadb-client python3-numpy luajit \
+            ninja-build cmake g++ git pkg-config file xz-utils patch \
+            libboost-system-dev libboost-filesystem-dev libluajit-5.1-dev libphysfs-dev libssl-dev libzip-dev zlib1g-dev libbz2-dev \
+            libglew-dev libgl1-mesa-dev libglu1-mesa-dev libegl-dev libx11-dev libxrandr-dev libopenal-dev libvorbis-dev libogg-dev \
+            libfreetype-dev libpng-dev libbrotli-dev \
+            xvfb xauth libgl1-mesa-dri ffmpeg
+          # the system service is not used; a profile for /usr/sbin/mariadbd would keep the private data folder out
+          sudo systemctl stop mariadb || true
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mariadbd 2>/dev/null || true
+          # the Ubuntu 24.04 libphysfs.a ships without an archive index
+          sudo ranlib /usr/lib/x86_64-linux-gnu/libphysfs.a
+          ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264
+
+      - name: Make the guard key of the run
+        run: |
+          key=$(openssl rand -hex 32)
+          echo "::add-mask::$key"
+          echo "CHAOS_CLIENT_KEY=$key" >> "$GITHUB_ENV"
+          echo "UL_GUARD_KEY=$key" >> "$GITHUB_ENV"
+
+      - name: Assemble the client (base + client/base-patches + client/overlay)
+        run: |
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir base
+          cat assets/client/base-client.tar.xz.part* | xz -d -T0 | tar -xf - -C base
+          mv base/*/ base-client
+          bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          rm -rf base base-client assets/client
+          # the test only module is part of the overlay and must be in the assembled tree
+          test -f game/modules/test_bosstour/bosstour.lua
+
+      - name: Build the client (CHAOS_RMLUI=OFF, the key baked in)
+        run: |
+          cmake -S game -B game/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DCHAOS_RMLUI=OFF \
+            -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so \
+            -DCHAOS_CLIENT_BUILD="$CLIENT_BUILD"
+          cmake --build game/build
+          n=0
+          while IFS= read -r -d '' f; do
+            if file -b "$f" | grep -q '^ELF 64-bit.*executable'; then
+              cp -p "$f" game/chaos-client
+              n=$((n + 1))
+            fi
+          done < <(find game/build -maxdepth 1 -type f -perm -u+x -print0)
+          if [ "$n" -ne 1 ]; then
+            echo "::error::expected one executable in the build folder, found $n"
+            exit 1
+          fi
+          rm -rf game/build
+
+      - name: Put the sprite pair into the client (it never leaves this job)
+        run: |
+          mkdir -p things game/data/things/1098
+          cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C things
+          test -f things/Tibia.dat
+          test -f things/Tibia.spr
+          # the dat must be the pair the server step records (client_pair.py PAIR_ASSETS)
+          want=$(python3 -I chaos/server/tools/client_pair.py assets-md5)
+          have=$(md5sum things/Tibia.dat | cut -d' ' -f1)
+          if [ "$have" != "$want" ]; then
+            echo "::error::Tibia.dat md5 $have is not the pair of client_pair.py ($want)"
+            exit 1
+          fi
+          find things -maxdepth 1 -type f ! -name Tibia.spr -exec cp -t game/data/things/1098/ {} +
+          python3 -I chaos/client/tools/sprites/spr_shards.py split things/Tibia.spr game/data/things/1098
+          python3 -I chaos/client/tools/sprites/spr_shards.py verify things/Tibia.spr game/data/things/1098
+          rm -rf things assets/things
+          df -h . | tail -n 1
+
+      - name: Start the server with the party and the spectator
+        env:
+          UL_ASSETS: ${{ github.workspace }}/assets
+          UL_WORK: ${{ runner.temp }}/ul
+          UL_IDENTITIES: chaos
+          UL_LOGIN_PORT: "7171"
+          UL_GAME_PORT: "7172"
+          UL_PINNACLE_PARTY: "1"
+          UL_PINNACLE_BOSS: ${{ inputs.boss }}
+        run: |
+          mkdir -p "$UL_WORK"
+          bash chaos/tools/ci/unity_live_check.sh --serve-only
+          test -f "$UL_WORK/client-chaos.env"
+          test -f "$UL_WORK/party.env"
+          # the account and the password of the spectator are not shown in any log
+          ( . "$UL_WORK/client-chaos.env" && echo "::add-mask::$CHAOS_LIVE_ACCOUNT" && echo "::add-mask::$CHAOS_LIVE_PASSWORD" )
+
+      - name: Write the server login key into the client
+        env:
+          UL_WORK: ${{ runner.temp }}/ul
+        run: |
+          # the base server's own RSA modulus (public data); the stock default key is what the client already has
+          modulus=$(. "$UL_WORK/client-chaos.env" && printf '%s' "$CHAOS_RSA_PUBLIC")
+          if CHAOS_RSA_PUBLIC="$modulus" python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC; then
+            echo "the server key is in init.lua"
+          else
+            echo "::warning::the server key is the public default key or not usable: the client keeps the default key"
+            python3 -I chaos/client/tools/set_rsa_key.py game --clear
+          fi
+
+      - name: Record the fight
+        env:
+          UL_WORK: ${{ runner.temp }}/ul
+          BV_SECONDS: ${{ inputs.seconds }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/boss-video"
+          BV_PREP_WAIT=$((PREP_MINUTES * 60)) bash chaos/tools/ci/boss_video.sh game "$UL_WORK/client-chaos.env" "$UL_WORK/party.env" "$RUNNER_TEMP/boss-video"
+
+      - name: Stop the server
+        if: always()
+        env:
+          UL_WORK: ${{ runner.temp }}/ul
+        run: bash chaos/tools/ci/unity_live_check.sh --stop
+
+      - name: Upload the video and the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boss-video
+          # the MP4, the fight report and the client log (account, password, guard key and database login cut out) only
+          path: |
+            ${{ runner.temp }}/boss-video/*_fight.mp4
+            ${{ runner.temp }}/boss-video/fight-report.txt
+            ${{ runner.temp }}/boss-video/client-log.txt
+          if-no-files-found: warn
+          retention-days: 14

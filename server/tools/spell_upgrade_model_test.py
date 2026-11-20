@@ -58,6 +58,34 @@ b['combos']['total'] = saved
 near(SU.power(2500) / SU.power(2500, {'rank': True, 'forms': True, 'combos': True, 'awakening': False}), 1.06, 0.001, 'awakening at 2500 is 6%')
 near(SU.parts_at(2500)['rank'], 1.246, 0.005, 'rank part at the cap is +24.6%')
 near(SU.parts_at(2500)['forms'], 1.06, 1e-9, 'Forms part at the cap is +6%')
+
+# ---- the combos are counted from spell_combos_config.lua (phase 6)
+cb = SU.combos_config()
+check(len(cb['rows']) == 13, '13 combo rows are read')
+check(all(cb['band'][0] - 1e-9 <= bonus <= cb['band'][1] + 1e-9 for _, bonus, _ in cb['rows']), 'every row is 10% to 20%')
+near(SU.combos_total(), 0.06, 0.003, 'the rows count +6% for the typical rotation (design 5.1)')
+near(SU.combos_best(), 0.08, 1e-9, 'the best legal rotation gains +8% (design 4.1)')
+near(SU.parts_at(2500)['combos'], 1 + SU.combos_total(), 1e-9, 'the combos part at the cap is the counted total')
+near(SU.parts_at(100)['combos'], 1.0, 1e-9, 'no combos at the first levels (average rank under 3)')
+check(SU.combos_problems() == [], 'the committed combo rows pass: %s' % SU.combos_problems())
+import tempfile  # noqa: E402
+text = open(SU.COMBOS, encoding='utf-8').read()
+with tempfile.TemporaryDirectory() as tmp:
+    def broken(name, old, new):
+        path = os.path.join(tmp, name)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text.replace(old, new, 1))
+        return SU.combos_problems(path)
+    check(any('steam_burst' in x and 'outside' in x for x in broken('a.lua', 'bonus = 0.10, weight = 3', 'bonus = 0.25, weight = 3')),
+          'a 25% row fails --check')
+    check(any('steam_burst' in x and 'outside' in x for x in broken('b.lua', 'bonus = 0.10, weight = 3', 'bonus = 0.05, weight = 3')),
+          'a 5% row fails --check')
+    check(any('typical rotation' in x for x in broken('c.lua', 'triggerShare = 0.40', 'triggerShare = 0.50')),
+          'a trigger share of 50% makes the typical gain too big')
+    check(any('best legal' in x for x in broken('d.lua', 'triggerShare = 0.40', 'triggerShare = 0.50')),
+          'and the best rotation too')
+    check(any('rows count' in x for x in broken('f.lua', 'weight = 3,', 'weight = 30,')),
+          'weights that move the counted gain away from the committed one fail')
 for lv in (100, 500, 1000, 2500):
     check(SU.power(lv, {'rank': True, 'forms': False, 'combos': False, 'awakening': False}) <= SU.power(lv), 'parts only add at level %d' % lv)
     check(SU.derived_health(lv, {'rank': True, 'forms': True, 'combos': False, 'awakening': False}) <= SU.derived_health(lv), 'fewer parts, not more H')
@@ -167,6 +195,49 @@ for flags in ([], ['--upgrades']):
     r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'boss_model.py'), '--check'] + flags, capture_output=True, text=True, timeout=600)
     check(r.returncode == 0 and 'boss check: ok' in r.stdout, 'boss_model.py --check %s: %s' % (' '.join(flags), (r.stdout + r.stderr)[-300:]))
     check(('spell upgrades: ON' in r.stdout) == bool(flags), 'the banner follows the flag')
+
+# ---- the Form band (O686 phase 4, design 2.1)
+band = SU.form_band_config()
+check(band['one'] == (-0.05, 0.08) and band['five'] == (-0.05, 0.12) and band['best'] == 0.08, 'the band of the design: %s' % (band,))
+rows = SU.form_rows()
+check(len(rows) == 596, '596 Form rows from the real planner: %d' % len(rows))
+check(SU.form_problems() == [], 'the committed Forms are in the band: %s' % SU.form_problems()[:3])
+by_kind = {}
+for r in rows:
+    by_kind.setdefault(r['kind'], []).append(r)
+check(all(0.95 - 1e-9 <= r['g1'] <= 1.08 + 1e-9 and 0.95 - 1e-9 <= r['g5'] <= 1.12 + 1e-9 for r in rows), 'every row: one enemy -5..+8%, five -5..+12%')
+check(max(SU.form_in_situation(r) for r in rows) <= 1.08 + 1e-9, 'the best Form is at most +8% in its situation')
+check(all(r['utility'] for r in rows if r['g1'] < 0.97 and r['g5'] < 0.97), 'a Form under -3% on both names a utility')
+near(sum((r['g1'] + r['g5']) / 2 for r in rows if r['tier'] == 1) / sum(1 for r in rows if r['tier'] == 1), 1.03, 0.015, 'Form I counted +3%')
+near(sum((r['g1'] + r['g5']) / 2 for r in rows if r['tier'] == 2) / sum(1 for r in rows if r['tier'] == 2), 1.03, 0.015, 'Form II counted +3%')
+check('PULL' in by_kind and by_kind['PULL'][0]['utility'], 'the pull names its utility')
+check('| I | SPLIT |' in SU.form_table(), 'the table has a row for each kind')
+
+
+def fake(kind, g1, g5, tier=1, pick=1, sid=1, situation='both', utility=False):
+    return {'id': sid, 'name': 'Fake', 'tier': tier, 'pick': pick, 'kind': kind, 'g1': g1, 'g5': g5, 'situation': situation, 'utility': utility}
+
+
+ok_rows = [fake('A', 1.05, 1.05, pick=1), fake('B', 0.98, 1.08, pick=2)]
+check(SU.form_problems(ok_rows, band) == [] or all('counted power' in b for b in SU.form_problems(ok_rows, band)), 'two good Forms pass the band rules')
+bad = SU.form_problems([fake('A', 1.20, 1.05, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('on one enemy' in b for b in bad), 'a Form +20 percent on one enemy fails: %s' % bad)
+bad = SU.form_problems([fake('A', 1.00, 1.30, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('on five' in b for b in bad), 'a Form +30% on five fails')
+bad = SU.form_problems([fake('A', 1.00, 1.10, pick=1, situation='pack'), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('in the situation' in b for b in bad), 'a pack Form +10% on five is over the best-Form cap')
+bad = SU.form_problems([fake('A', 0.96, 0.96, pick=1), fake('B', 1.04, 1.04, pick=2)], band)
+check(any('no utility named' in b for b in bad), 'a Form under -3% on both with no utility fails')
+bad = SU.form_problems([fake('A', 0.96, 0.96, pick=1, utility=True), fake('B', 1.00, 1.00, pick=2)], band)
+check(not any('no utility named' in b for b in bad), 'the same Form with a named utility passes')
+bad = SU.form_problems([fake('A', 1.06, 1.06, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('beats its twin' in b for b in bad), 'a Form better than its twin on both counts fails')
+bad = SU.form_problems([fake('A', 1.06, 1.06, pick=1), fake('B', 1.00, 1.00, pick=2, utility=True)], band)
+check(not any('beats its twin' in b for b in bad), 'a twin that names a utility is not beaten')
+bad = SU.form_problems([fake('A', 1.06, 1.00, pick=1), fake('B', 1.00, 1.06, pick=2)], band)
+check(not any('beats its twin' in b for b in bad), 'a trade-off is no domination')
+bad = SU.form_problems([fake('A', 1.12, 1.12, pick=1)], dict(band, one=(-0.05, 0.20), five=(-0.05, 0.20), best=0.20))
+check(any('counted power' in b for b in bad), 'a mean gain far from +3% fails the counted power')
 
 print('spell_upgrade_model_test: %s' % ('FAILED %d' % failures if failures else 'ok'))
 sys.exit(1 if failures else 0)

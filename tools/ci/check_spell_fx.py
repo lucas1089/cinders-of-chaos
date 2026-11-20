@@ -7,6 +7,12 @@ energy earth holy death arcane, or `any` for dust, smoke, plain rings and other 
 spell with element X sends only effects tagged X or `any`. The cases that are right by design are rows of
 server/data/spells/spell_fx_allow.csv, each with its reason (a holy fire, a frost and lightning spell, a shadow mist).
 
+O686 phase 4: the same run is made for every Form of every probed spell (server/data/spells/forms.csv: two Form I and two Form II, the
+Form's storage set so the cast runs with it). A Form that converts the element (SHIFT:E, ASCEND:E) must send effects of E only, E
+being what the cast shows: the effect names of the spell are swapped by the Form (data/lib/chaos_spell_forms.lua) and the Form's own
+effects are sent after the cast. ASCEND:weakest is run six times, once per element it can pick. A Form that does not convert sends
+the spell's own element, as before. What a Form may send beyond that is a row of server/data/spells/spell_fx_forms.csv with its reason.
+
 What a spell sends is measured, not read from names: tools/ci/spell_fx_probe.lua runs the real script of every chaos
 spell against a recording mock of the engine, once per vocation of the spell, with the real libraries (so the swap
 layers of the effects pass, pair 29, pair 36 and the class effects decide the ids, as in the game). Spells whose cast
@@ -33,6 +39,8 @@ SPELLDATA = os.path.join(ROOT, 'client/overlay/modules/game_chaosspells/spelldat
 SPELLS_XML = os.path.join(ROOT, 'server/data/spells/chaos/spells_chaos.xml')
 TAGS = os.path.join(ROOT, 'server/data/spells/spell_fx_elements.csv')
 ALLOW = os.path.join(ROOT, 'server/data/spells/spell_fx_allow.csv')
+FORMS = os.path.join(ROOT, 'server/data/spells/forms.csv')
+FORM_ALLOW = os.path.join(ROOT, 'server/data/spells/spell_fx_forms.csv')
 PROBE = os.path.join(ROOT, 'tools/ci/spell_fx_probe.lua')
 
 ELEMENTS = ('physical', 'fire', 'ice', 'energy', 'earth', 'holy', 'death', 'arcane')
@@ -88,6 +96,43 @@ def load_allow(path=ALLOW):
     return out
 
 
+def load_forms(path=FORMS):
+    """{spell id: {(tier, pick): kind}} of server/data/spells/forms.csv (tier 1 or 2)"""
+    out = {}
+    for r in read_csv(path):
+        out.setdefault(int(r['id']), {})[(1 if r['tier'] == 'I' else 2, int(r['pick']))] = r['kind']
+    return out
+
+
+def load_form_allow(path=FORM_ALLOW):
+    """{(spell id, tier, pick, effect id): reason}"""
+    out = {}
+    for r in read_csv(path):
+        out[(int(r['spell_id']), int(r['tier']), int(r['pick']), int(r['effect_id']))] = r['reason']
+    return out
+
+
+WEAKEST = ('fire', 'ice', 'energy', 'earth', 'holy', 'death')
+
+
+def form_cases(kinds, tier, pick):
+    """[(packed state, weakest element or '', expected element or None)] for one Form of a spell: the state is the rank of the tier and
+    the picks that make exactly this Form the one that converts; expected None: the spell's own element"""
+    if tier == 1:
+        state, active = 10 + 32 * pick, [kinds[(1, pick)]]
+    else:
+        # a Form I pick that does not convert, so the conversion measured is this Form's
+        f1 = next((p for p in (1, 2) if not kinds[(1, p)].startswith('SHIFT')), 1)
+        state, active = 20 + 32 * f1 + 128 * pick, [kinds[(1, f1)], kinds[(2, pick)]]
+    conv = None
+    for k in active:
+        if k.startswith('SHIFT:') or k.startswith('ASCEND:'):
+            conv = k.split(':')[1]
+    if conv == 'weakest':
+        return [(state, el, el) for el in WEAKEST]
+    return [(state, '', conv)]
+
+
 def element_ok(spell_element, effect_element):
     return effect_element == ANY or effect_element == spell_element
 
@@ -116,6 +161,7 @@ def make_root():
     root = tempfile.mkdtemp(prefix='spellfx_')
     for sub in ('data/scripts', 'data/spells/scripts'):
         os.makedirs(os.path.join(root, sub))
+    os.symlink(FORMS, os.path.join(root, 'data/spells/forms.csv'))
     os.symlink(os.path.join(ROOT, 'server/data/lib'), os.path.join(root, 'data/lib'))
     os.symlink(os.path.join(ROOT, 'server/data/scripts/chaos'), os.path.join(root, 'data/scripts/chaos'))
     os.symlink(os.path.join(ROOT, 'server/data/spells/chaos'), os.path.join(root, 'data/spells/scripts/chaos'))
@@ -137,26 +183,72 @@ def parse_probe(lines):
     return ids
 
 
-def run_probe(root, spell, voc, dx):
-    p = subprocess.run(['lua5.3', PROBE, str(VOC[voc]), str(spell['id']), spell['script'], '300', str(dx)], cwd=root,
-                       capture_output=True, text=True, timeout=60)
+def run_probe(root, spell, voc, dx, state=0, weakest=''):
+    cmd = ['lua5.3', PROBE, str(VOC[voc]), str(spell['id']), spell['script'], '300', str(dx)]
+    if state:
+        cmd += [str(state), weakest]
+    p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=60)
     return p.stdout.strip().split('\n') if p.stdout.strip() else []
 
 
-def probe_spell(root, spell):
+def probe_spell(root, spell, state=0, weakest=''):
     """effect ids over every vocation of the spell (the class swaps differ by vocation); a target out of reach is
-    tried again close"""
+    tried again close. state / weakest: the Form of the cast (spell_fx_probe.lua)"""
     ids = set()
     for voc in spell['vocs']:
         if voc not in VOC:
             continue
-        lines = run_probe(root, spell, voc, 5)
+        lines = run_probe(root, spell, voc, 5, state, weakest)
         if any(l.startswith('CANCEL') for l in lines):
-            more = run_probe(root, spell, voc, 1)
+            more = run_probe(root, spell, voc, 1, state, weakest)
             if len(parse_probe(more)) > len(parse_probe(lines)):
                 lines = more
         ids.update(parse_probe(lines))
     return ids
+
+
+def probe_forms(spells, wanted, forms):
+    """{(spell id, tier, pick, weakest element, expected element): effect ids} for every Form of the wanted spells"""
+    root = make_root()
+    try:
+        jobs = []
+        for s in spells:
+            if s['id'] in wanted and s['id'] in forms:
+                for (tier, pick) in sorted(forms[s['id']]):
+                    for state, weak, want in form_cases(forms[s['id']], tier, pick):
+                        jobs.append((s, tier, pick, state, weak, want))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+            results = list(ex.map(lambda j: probe_spell(root, j[0], j[3], j[4]), jobs))
+        return {(j[0]['id'], j[1], j[2], j[4], j[5]): r for j, r in zip(jobs, results)}
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def form_violations(sent, spells, tags, allow, forms, base_allow=None):
+    """sent: {(spell id, tier, pick, weakest, expected element): effect ids}. A Form sends the element it shows (the conversion's, else the
+    spell's own; a Form that does not convert also keeps the reasons the spell itself has in spell_fx_allow.csv). Returns (errors, used
+    allow keys)"""
+    errors, used = [], set()
+    base_allow = base_allow or {}
+    for key in sorted(sent, key=lambda k: (k[0], k[1], k[2], k[3], k[4] or '')):
+        sid, tier, pick, weak, want = key
+        name, element = spells[sid]
+        shown = want or element
+        kind = forms[sid][(tier, pick)]
+        for eid in sorted(sent[key]):
+            tag = tags.get(eid)
+            where = '%s (%d) Form %s%d %s%s' % (name, sid, 'I' if tier == 1 else 'II', pick, kind, ' [weakest %s]' % weak if weak else '')
+            if tag is None:
+                errors.append('%s: effect %d has no element tag in spell_fx_elements.csv' % (where, eid))
+            elif not element_ok(shown, tag[1]):
+                if (sid, tier, pick, eid) in allow:
+                    used.add((sid, tier, pick, eid))
+                elif want is None and (sid, eid) in base_allow:
+                    pass
+                else:
+                    errors.append('%s sends %s (%d, %s) but shows %s: pick an effect of that element or add a reason row to '
+                                  'spell_fx_forms.csv' % (where, tag[0], eid, tag[1], shown))
+    return errors, used
 
 
 def probe_all(spells, wanted):
@@ -189,6 +281,15 @@ def main(argv):
             problems.append('allow row of effect %d: no tag' % eid)
         if not reason.strip():
             problems.append('allow row %d / %d: a reason is needed' % (sid, eid))
+    forms = load_forms()
+    form_allow = load_form_allow()
+    for (sid, tier, pick, eid), reason in form_allow.items():
+        if sid not in forms or (tier, pick) not in forms[sid]:
+            problems.append('Form allow row of spell %d Form %d/%d: no such Form' % (sid, tier, pick))
+        if eid not in tags:
+            problems.append('Form allow row of effect %d: no tag' % eid)
+        if not reason.strip():
+            problems.append('Form allow row %d / %d / %d / %d: a reason is needed' % (sid, tier, pick, eid))
     sent = probe_all(spells, set(elements))
     unprobed = sorted(s for s in elements if not sent.get(s))
     if '--ids' in argv:
@@ -199,6 +300,11 @@ def main(argv):
     problems.extend(errors)
     for key in sorted(set(allow) - used):
         problems.append('allow row %d / %d is not needed any more: remove it' % key)
+    form_sent = probe_forms(spells, set(elements), forms)
+    form_errors, form_used = form_violations(form_sent, elements, tags, form_allow, forms, allow)
+    problems.extend(form_errors)
+    for key in sorted(set(form_allow) - form_used):
+        problems.append('Form allow row %d / %d / %d / %d is not needed any more: remove it' % key)
     if len(unprobed) > UNPROBED_MAX:
         problems.append('%d spells send nothing in the probe, at most %d: %s' % (
             len(unprobed), UNPROBED_MAX, ', '.join(elements[s][0] for s in unprobed)))
@@ -211,8 +317,9 @@ def main(argv):
         for p in problems:
             print('  ' + p)
         return 1
-    print('check_spell_fx: ok (%d spells with an element, %d probed, %d not probed, %d effect ids tagged, %d reasons)' % (
-        len(elements), len(elements) - len(unprobed), len(unprobed), len(tags), len(allow)))
+    print('check_spell_fx: ok (%d spells with an element, %d probed, %d not probed, %d effect ids tagged, %d reasons; %d Form runs, '
+          '%d Form reasons)' % (len(elements), len(elements) - len(unprobed), len(unprobed), len(tags), len(allow), len(form_sent),
+                                 len(form_allow)))
     return 0
 
 

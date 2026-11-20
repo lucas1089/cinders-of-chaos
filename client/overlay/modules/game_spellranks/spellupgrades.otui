@@ -1,0 +1,213 @@
+// Upgrades tab of the Spellbook (O686 phase 5, docs/SPELL_UPGRADES.md section 6). The styles are imported by game_spellranks
+// (spellranks.lua, loaded before game_spellbook); game_spellbook puts one SpellUpgrades into its details panel and the module
+// fills it (spellranks.lua). It is a part of the Spellbook window, not a window: the close control is the Spellbook's.
+
+// one of the 20 cells of the rank strip
+SpellRankCell < UIWidget
+  size: 14 8
+  phantom: true
+  background-color: #1a1416
+  border-width: 1
+  border-color: #2a2226
+
+// a thin bar under a Spellbook row (rank progress): the track and the fill
+SpellRankTrack < UIWidget
+  height: 3
+  phantom: true
+  background-color: #0d0b0e
+  visible: false
+
+SpellRankFill < UIProgressBar
+  height: 3
+  phantom: true
+  background-color: #e8b84a
+  visible: false
+
+SpellFormText < UILabel
+  font: verdana-11px-antialised
+  color: #b8ac92
+  text-align: topleft
+  text-wrap: true
+  height: 56
+  phantom: false
+
+SpellFormButton < ChaosButton
+  height: 22
+  padding: 2 6 2 6
+  font: verdana-11px-antialised
+
+  // a phone: a bigger touch target
+  $mobile:
+    height: 30
+
+SpellUpgrades < UIWidget
+  phantom: false
+
+  UILabel
+    id: rankTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-auto-resize: true
+
+  UILabel
+    id: spText
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-auto-resize: true
+
+  ChaosProgressBar
+    id: rankBar
+    anchors.top: rankTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 10
+    background-color: #e8b84a
+    text-offset: 0 0
+
+  UIWidget
+    id: strip
+    anchors.top: rankBar.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    height: 8
+    width: 300
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  UILabel
+    id: effects
+    anchors.top: strip.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 28
+    text-align: topleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+
+  ChaosSeparator
+    id: sep1
+    anchors.top: effects.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+
+  UILabel
+    id: form1Title
+    anchors.top: sep1.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  SpellFormButton
+    id: form1a
+    anchors.top: form1Title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-top: 3
+    margin-right: 3
+
+  SpellFormButton
+    id: form1b
+    anchors.top: form1Title.bottom
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-top: 3
+    margin-left: 3
+
+  SpellFormText
+    id: form1aText
+    anchors.top: form1a.bottom
+    anchors.left: form1a.left
+    anchors.right: form1a.right
+    margin-top: 3
+
+  SpellFormText
+    id: form1bText
+    anchors.top: form1b.bottom
+    anchors.left: form1b.left
+    anchors.right: form1b.right
+    margin-top: 3
+
+  UILabel
+    id: form2Title
+    anchors.top: form1aText.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  SpellFormButton
+    id: form2a
+    anchors.top: form2Title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-top: 3
+    margin-right: 3
+
+  SpellFormButton
+    id: form2b
+    anchors.top: form2Title.bottom
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-top: 3
+    margin-left: 3
+
+  SpellFormText
+    id: form2aText
+    anchors.top: form2a.bottom
+    anchors.left: form2a.left
+    anchors.right: form2a.right
+    margin-top: 3
+
+  SpellFormText
+    id: form2bText
+    anchors.top: form2b.bottom
+    anchors.left: form2b.left
+    anchors.right: form2b.right
+    margin-top: 3
+
+  UILabel
+    id: note
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: message.top
+    margin-bottom: 1
+    height: 26
+    text-align: bottomleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #8c8070
+
+  UILabel
+    id: message
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 14
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+
+  UILabel
+    id: emptyText
+    anchors.centerIn: parent
+    text-auto-resize: true
+    text-align: center
+    font: verdana-11px-antialised
+    color: #8c8070
+    visible: false

@@ -12477,7 +12477,8 @@ class PinnacleComplete(unittest.TestCase):
             return None
 
     def test_every_class_of_the_plan_has_a_loadout_with_a_best_set(self):
-        for cls, element in (('Juggernaut', 'Earth'), ('Deadeye', 'Fire'), ('Elementalist', 'Holy'), ('Illusionist', 'Death'), ('Samurai', 'Death')):
+        for cls, element in (('Juggernaut', 'Earth'), ('Deadeye', 'Fire'), ('Elementalist', 'Holy'), ('Illusionist', 'Holy'), ('Samurai', 'Holy'),
+                                 ('Warrior', 'Earth'), ('Beastmaster', 'Earth'), ('Mystic', 'Fire'), ('Iron Sage', 'Fire'), ('Thief', 'Holy'), ('Ninja', 'Holy')):
             self.assertEqual(TX.loadout_row(cls)[0], element, cls)
         self.assertEqual(TX.loadout_row('Nobody'), TX.PINNACLE_LOADOUT_DEFAULT)
         self.assertEqual(TX.PINNACLE_LOADOUT['Illusionist'][2], 'heals', 'the healer socketed its heals')

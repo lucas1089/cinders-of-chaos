@@ -1239,6 +1239,10 @@ jobs:
 
       - name: Every class within 25% of the level median on 1 and 5 targets at levels 100, 500, 1000 (class_dps_model.py --check; class_dps_measured.csv, class_tree.lua classDamage, spell_factor_config.lua extra; O430)
         run: python3 -I server/tools/class_dps_model.py --check && python3 -I server/tools/class_dps_model_test.py
+      - name: Every attack and heal spell of every class has its Forms (O686 phase 4; check_spell_forms.py and its test, forms.csv, spell_forms_core.lua; the Form band is in spell_upgrade_model.py --check below)
+        run: |
+          python3 -I tools/ci/check_spell_forms.py
+          python3 -I tools/ci/check_spell_forms_test.py
       - name: Spell upgrades (O686 phase 3), the monster health curve H and the balance models with the upgrades on (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades; spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
         run: |
           python3 -I server/tools/spell_upgrade_model.py --check
@@ -1322,6 +1326,9 @@ jobs:
       - name: Region music matches its sources file (gen_music.py, the own tracks of game_chaosmusic, O408)
         run: python3 -I client/tools/gen_music.py --check
 
+      - name: Combo chimes match their generator (gen_combo_sounds.py, game_spellranks, O686 phase 6)
+        run: python3 -I client/tools/gen_combo_sounds.py --check
+
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
 
@@ -1380,6 +1387,11 @@ jobs:
           bash -n tools/ci/unity_live_check.sh
           shellcheck tools/ci/loot_video.sh
           shellcheck tools/ci/clip_tour.sh  # the mechanics clip recorder of the website (O687)
+
+      - name: 'Boss fight video (O689, manual workflow boss-video.yml: the report and redaction tool, the party table against pinnacle_config.lua, the workflow rules, the script run with a fake client and fake bots when Xvfb and ffmpeg exist; shellcheck; the module logic test is in the client loop)'
+        run: |
+          python3 -I tools/ci/boss_video_test.py
+          shellcheck tools/ci/boss_video.sh
 
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
@@ -1900,6 +1912,13 @@ jobs:
           luajit tools/gen_howitworks_data.lua
           lua5.3 tools/gen_howitworks_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_howitworks/howitworks_data.lua
+
+      - name: Spell Forms client data is up to date with forms.csv and the core numbers, every Form text has pt-BR (O686 phase 4; gen_forms_data.lua)
+        run: |
+          cd server
+          luajit tools/gen_forms_data.lua
+          lua5.3 tools/gen_forms_data.lua --check  # Lua 5.3 must write the same bytes
+          git diff --exit-code ../client/overlay/modules/game_spellranks/forms_data.lua
 
       - name: Help search and website beginner guide are up to date with the cards (O373)
         # client game_helpsearch/helpsearch_data.lua and website guide/guide_data.json from the How it works cards,

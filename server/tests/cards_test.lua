@@ -745,9 +745,10 @@ for f, fam in ipairs(C.families) do
 			end
 		end
 		ok(line ~= nil, sp[1] .. ": cast by a class")
-		-- the whole class line casts it, except a spell of the Mystic line that only some ascensions have (O149)
+		-- the whole class line casts it, except a spell of the Mystic line that only some ascensions have (O149; O691: Phantom Needles,
+		-- the Illusionist's)
 		for _, row in ipairs(C.classes) do
-			if row.line == line and not (line == "Mystic" and sp[2] == 228) then
+			if row.line == line and not (line == "Mystic" and (sp[2] == 228 or sp[2] == 24)) then
 				ok(casts(row, sp[2]), sp[1] .. " is cast by " .. row.name)
 			end
 		end
@@ -1026,26 +1027,42 @@ do
 	local tempest, pyre = lineOf("Tempest Fan"), lineOf("Pyre Torrent")
 
 	-- reachability: per class and element the lines that carry it (printed by `luajit tests/cards_test.lua --sets`)
+	-- O691: every class reaches the set of at least two elements, and of at least one element with cards of tier 1 to 3 (the tiers
+	-- the island reward gives by 40 / 30 / 20 / 10; the second element of a 3 line class is a rare tier 4 card); the Illusionist and the Thief line have a 4th line (Phantom Needles on Rime
+	-- Bloom, Razor Rain on Frozen Crypt), the Elementalist 6, the others 3
+	local lineCount = {Elementalist = 6, Illusionist = 4, Thief = 4, Ninja = 4, Samurai = 4}
 	local reach, rows2 = {}, {}
 	for _, row in ipairs(C.classes) do
-		local list, lines = {}, 0
+		local list, easy, lines = {}, {}, 0
 		for _, el in ipairs(S.order) do
-			local n = 0
+			local n, hard = 0, 0
 			for f, fam in ipairs(C.families) do
-				if fam.kind == "convert" and K.castsLine(row.name, fam) and elementCard(f, el) then n = n + 1 end
+				if fam.kind == "convert" and K.castsLine(row.name, fam) then
+					for t = 1, 4 do
+						if C.cards[fam.ids[t]].element == el then
+							n = n + 1
+							-- the lowest tier of this line that has the element
+							if t <= 3 then hard = hard + 1 end
+							break
+						end
+					end
+				end
 			end
 			if n >= S.need then list[#list + 1] = el end
+			if hard >= S.need then easy[#easy + 1] = el end
 			reach[row.name .. el] = n
 		end
 		for _, fam in ipairs(C.families) do
 			if fam.kind == "convert" and K.castsLine(row.name, fam) then lines = lines + 1 end
 		end
-		ok(#list >= 1, row.name .. ": a set is reachable")
+		ok(#list >= 2, row.name .. ": the set of two elements or more is reachable (" .. #list .. ")")
+		ok(#easy >= 1, row.name .. ": an element has a set at tier 1 to 3 (" .. #easy .. ")")
 		ok(K.classNameOf(row.id) == row.name, row.name .. ": the name of the vocation id")
 		ok(reach[row.name .. "Death"] >= S.need, row.name .. ": the Death set is reachable")
-		eq(lines, row.name == "Elementalist" and 6 or 3, row.name .. ": convert lines")
-		rows2[#rows2 + 1] = row.name .. " (" .. lines .. " lines): " .. table.concat(list, ", ")
-		eq(reach[row.name .. "Holy"] >= S.need, row.name == "Elementalist", row.name .. ": Holy set only for the Elementalist")
+		eq(lines, lineCount[row.name] or 3, row.name .. ": convert lines")
+		rows2[#rows2 + 1] = row.name .. " (" .. lines .. " lines): " .. table.concat(list, ", ") .. "  | tier 1-3: " .. table.concat(easy, ", ")
+		eq(reach[row.name .. "Holy"] >= S.need, row.name == "Elementalist" or row.name == "Illusionist" or row.line == "Thief",
+			row.name .. ": Holy set only for the Elementalist, the Illusionist and the Thief line")
 	end
 	if arg and arg[1] == "--sets" then print(table.concat(rows2, "\n")) end
 	eq(K.classNameOf(99), nil, "no class") eq(K.classNameOf(nil), nil, "no vocation")
@@ -1066,6 +1083,29 @@ do
 	eq(K.setState(on(), "Warrior").best, nil, "no card: no progress")
 	eq(K.setState(on(d3, d4, d5), nil).element, nil, "no class: no set")
 	eq(K.setState(on(d3, d4, d5), "Nobody").element, nil, "a name that is no class: no set")
+	-- O691: the Illusionist (Squall, Frostfall, Crypt, Rime Bloom by Phantom Needles) and the Thief line (Doomtide, Squall, Frostfall,
+	-- Frozen Crypt by Razor Rain) have a set with common cards: Fire from tier 1 of three lines, no Death card needed
+	do
+		local squallL = lineOf("Primordial Squall")
+		local iFire = on(card(frost, 1), card(crypt, 1), card(rime, 1))
+		local sI = K.setState(iFire, "Illusionist")
+		eq(sI.element, "Fire", "Illusionist: Fire cards of Frostfall, Frozen Crypt and Rime Bloom (Phantom Needles) are a set") eq(sI.count, 3, "Illusionist: 3 cards")
+		eq(K.setState(iFire, "Mystic").element, "Fire", "the Mystic has the same set (Rime Bloom is its spell)")
+		eq(K.setState(on(card(frost, 1), card(crypt, 1)), "Illusionist").element, nil, "Illusionist: 2 cards are no set")
+		local iHoly = on(card(squallL, 1), card(crypt, 2), card(rime, 2))
+		eq(C.cards[card(crypt, 2)].element, "Holy", "Frozen Crypt tier 2 is Holy") eq(C.cards[card(rime, 2)].element, "Holy", "Rime Bloom tier 2 is Holy")
+		eq(K.setState(iHoly, "Illusionist").element, "Holy", "Illusionist: a Holy set from tier 1 and 2 cards")
+		eq(K.setState(iHoly, "Warrior").element, nil, "a Warrior casts none of these lines")
+		local tFire = on(card(frost, 1), card(doom, 1), card(crypt, 1))
+		for _, cls in ipairs({"Thief", "Ninja", "Samurai"}) do
+			eq(K.setState(tFire, cls).element, "Fire", cls .. ": Fire cards of Frostfall, Doomtide and Frozen Crypt (Razor Rain) are a set")
+			eq(K.setState(on(card(squallL, 1), card(doom, 2), card(crypt, 2)), cls).element, "Holy", cls .. ": a Holy set from tier 1 and 2 cards")
+			eq(K.setState(on(card(squallL, 2), card(frost, 2)), cls).element, nil, cls .. ": no Earth set (two Earth lines only)")
+		end
+		eq(K.setState(tFire, "Illusionist").element, nil, "the Illusionist casts Frostfall and Frozen Crypt, not Doomtide: 2 cards")
+		-- four lines, one legendary: the 4th card is not a second set (one set at a time)
+		eq(#K.setState(on(card(frost, 1), card(crypt, 1), card(rime, 1), card(squallL, 1)), "Illusionist").active, 1, "Illusionist: 4 lines, one set")
+	end
 	-- 4 and 5 cards: one tier only (Elementalist, 6 lines)
 	local e1, e2, e3, e4, e5 = elementCard(rime, "Death"), elementCard(tempest, "Death"), elementCard(frost, "Death"),
 		elementCard(doom, "Death"), elementCard(pyre, "Death")

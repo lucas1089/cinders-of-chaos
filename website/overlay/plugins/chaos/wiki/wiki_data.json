@@ -9882,6 +9882,63 @@
 					"icon": "wiki/i/top-help.png"
 				},
 				{
+					"id": "basics:combos",
+					"name": "Spell combos",
+					"sub": "Two spells in a row hit harder: element reactions and class combos.",
+					"color": "#d6c9ae",
+					"sections": [
+						{
+							"h": "The rule",
+							"p": [
+								"Cast two spells within 4 seconds, on the same target or within 2 tiles of where the first one hit, and the first hit of the second spell deals 10% to 20% more. The bonus is a share of the ranked hit, so it grows with the rank.",
+								"At most one combo fires per cast. The same combo does not fire on the same target again for 6 seconds, and a character waits 1.2 seconds between two combos.",
+								"Combos work against monsters, and the heal combo works on allies. They are off between players.",
+								"A Form that changes the element of a spell changes its combos too: the element after the conversion counts."
+							]
+						},
+						{
+							"h": "Element reactions",
+							"p": [
+								"Element reactions are free for every class. The easier a combo is to fire, the nearer to 10% its bonus is."
+							],
+							"cols": ["Combo", "Order", "Bonus"],
+							"w": [40, 36, 24],
+							"rows": [
+								["Steam Burst", "Ice > Fire", "+10%"],
+								["Thermal Shock", "Fire > Ice", "+12%"],
+								["Overload", "Energy > Fire", "+12%"],
+								["Pyre of the Dead", "Death > Fire", "+15%"],
+								["Mudslide", "Earth > Ice", "+10%"],
+								["Consecrated Ash", "Fire > Holy", "+15%"]
+							]
+						},
+						{
+							"h": "Class combos",
+							"p": ["A class combo opens when both spells are at rank 5 or more. Nothing is paid."],
+							"cols": ["Combo", "Spells", "Bonus"],
+							"w": [24, 60, 16],
+							"rows": [
+								[
+									"Pinned Shot",
+									"Snare Trap / Seeker Mine > Final Verdict / Twin Verdict / Sunspear",
+									"+20%"
+								],
+								["Meat Grinder", "Gorehook > Reaping Gyre / Butcher's Gyre / Earthbreaker", "+20%"],
+								["Anvil Chain", "Iron Chain > Quaking Stomp", "+18%"],
+								["Backstab", "Shadow Step > Gutting Slash / Death Between Heartbeats", "+20%"],
+								[
+									"Rotting Curse",
+									"Withering Curse > Soul Rot / Blightbrand / Corpse Explosion",
+									"+18%"
+								],
+								["Psychic Shatter", "Bewitching Hex > Shattered Psyche / Dreamrot", "+20%"],
+								["Echoing Mend", "Mirror Mend > Lucid Reverie", "+15%"]
+							]
+						}
+					],
+					"icon": "wiki/i/top-help.png"
+				},
+				{
 					"id": "basics:conquest",
 					"name": "Conquest Tokens",
 					"sub": "The sure path: tokens for every boss and clear, any item you have seen for sale.",

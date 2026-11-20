@@ -2,7 +2,7 @@
 """Card set model (O453): what a card set costs and gives against a mixed build, per class at level 500. Computed, not measured.
 O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): class damage x the typical gain; the sets are shares of the class damage, so nothing moves (the run says so). `--check --upgrades` must pass as `--check` does.
 
-usage: python3 -I server/tools/card_set_model.py [--check] [--level N] [--csv]
+usage: python3 -I server/tools/card_set_model.py [--check] [--sets] [--level N] [--csv]
 
 The set bonus (cards_config.lua `sets`, cards_core.lua, server/README.md "Card sets (O453)"): 3 cards of one element, one per
 convert line the class casts, give one small bonus: Fire damage +5%, Earth poison 5% of the hit, Death leech 1.5%, Holy heal 0.5%
@@ -26,6 +26,8 @@ The model, per class (all inputs are in the repo):
              damage that is of the element at the end; Death, Holy and Energy give a leech, a heal and a slow: no damage, not valued).
   worst case the cap (4% since O473, 6% before: raw percent of the one additive damage pool) of the class's damage per second: if ALL
              its damage were of the set's element.
+O691 (every class reaches a set): the model walks EVERY set a class can reach (one best build per element, `sets` of a row), not only the best one: --check fails when a class reaches fewer than MIN_SET_ELEMENTS (2) elements, when any reachable set leads the best mixed build by AHEAD or more, when the best set is more than 10% away, when a damage part is above
+the cap, and when the cap (damagePartMax) is above MAX_PART (4). `--sets` prints the table of every reachable set per class.
 --check fails when a set is better than the best mixed build of a class by AHEAD (0.7 points since O474, was 0.5) or more (the owner's rule: then lower it;
 below that the lead is inside the model's own guess, and for the classes whose native element is the set's element it cannot be
 lowered away: the bonus is on damage the class deals anyway, the cards cost it nothing), when a class's
@@ -57,6 +59,8 @@ AHEAD = 0.005             # a set may lead the best mixed build by less than thi
 # fire spells (Witchfire Bolt, Falling Pyre): the fire set leads the best mixed build by +0.4% on 1 target and +0.61% on 5 targets
 # (was +0.26% / +0.36%). A native-element lead cannot be lowered away (the header); the limit follows by 0.2 points. Model: card_set_model
 MIN_LINES_WITHIN = 3      # at least 3 class lines show it
+MIN_SET_ELEMENTS = 2      # O691: every class reaches the set of at least two elements
+MAX_PART = 4.0            # O473: a damage part (damage, poison) is at most 4 raw percent of the one damage pool
 PHYS = 'physical'
 ELEMENTS = ('fire', 'ice', 'earth', 'energy', 'holy', 'death', 'drown')
 
@@ -208,6 +212,7 @@ def class_rows(level=LEVEL):
         lines = class_cards(cls, cfg)
         # the other cards of the class that give no damage (Grand Mending, Taunt of Iron) fill free slots at value 0
         best = {'mixed': None, 'set': None}
+        by_element = {}
         options = [[None] + [e for e in f['elements'] if e in cfg['sets'] or e in ('ice', 'drown')] for f in lines]
         for pick in itertools.product(*options):
             cards = sum(1 for e in pick if e)
@@ -231,8 +236,12 @@ def class_rows(level=LEVEL):
                 cur = best[kind_]
                 if cur is None or sum(v) > sum(cur['v']) + 1e-12:
                     best[kind_] = {'v': v, 'choice': choice, 'element': el, 'cards': cards}
+                if el:  # O691: the best build of each element that makes a set
+                    cur = by_element.get(el)
+                    if cur is None or sum(v) > sum(cur['v']) + 1e-12:
+                        by_element[el] = {'v': v, 'choice': choice, 'element': el, 'cards': cards}
         rows.append({'class': cls, 'line': line, 'dps': (d1m, d5m), 'legendary': legendary, 'utility': utility,
-                     'mixed': best['mixed'], 'set': best['set'], 'lines': [f['spell'] for f in lines], 'cfg': cfg,
+                     'mixed': best['mixed'], 'set': best['set'], 'sets': by_element, 'lines': [f['spell'] for f in lines], 'cfg': cfg,
                      'cap': (cfg['cap'] / 100.0 * d1m, cfg['cap'] / 100.0 * d5m)})
     return rows, mult, nmon
 
@@ -243,10 +252,21 @@ def problems(rows, mult=None):
     for el, row in cfg['sets'].items():
         if row['kind'] in ('damage', 'poison') and row['pct'] > cfg['cap']:
             bad.append('%s: the damage part %.1f%% is above the cap %.1f%%' % (el, row['pct'], cfg['cap']))
+    if cfg['cap'] > MAX_PART:
+        bad.append('damagePartMax %.1f is above %.1f' % (cfg['cap'], MAX_PART))
     for r in rows:
         if r['set'] is None or r['mixed'] is None:
             bad.append('%s: no set or no mixed build found' % r['class'])
             continue
+        if len(r['sets']) < MIN_SET_ELEMENTS:
+            bad.append('%s reaches the set of %d element(s) (%s), need %d' % (
+                r['class'], len(r['sets']), ', '.join(sorted(r['sets'])) or 'none', MIN_SET_ELEMENTS))
+        for el, b in sorted(r['sets'].items()):
+            for i, name in ((0, '1 target'), (1, '5 targets')):
+                lead = (1 + b['v'][i]) / (1 + r['mixed']['v'][i]) - 1
+                if lead > AHEAD:
+                    bad.append('%s: the %s set is strictly better than the best mixed build on %s (%+.2f%%): lower it' % (
+                        r['class'], el, name, lead * 100))
         for i, name in ((0, '1 target'), (1, '5 targets')):
             s, m = 1 + r['set']['v'][i], 1 + r['mixed']['v'][i]
             if s > m + AHEAD:
@@ -278,6 +298,19 @@ def table(rows, mult, nmon):
     return '\n'.join(out)
 
 
+def sets_table(rows):
+    """O691: every set a class can reach, against its best mixed build (1 target / 5 targets); `n` = cards of the set"""
+    out = ['| Class | Lines | Sets reached | Set vs best mixed build, 1t / 5t (every reachable set) |', '|---|---:|---:|---|']
+    for r in rows:
+        m = r['mixed']
+        cells = []
+        for el, b in sorted(r['sets'].items(), key=lambda kv: kv[0]):
+            d = ['%+.1f' % (((1 + b['v'][i]) / (1 + m['v'][i]) - 1) * 100) for i in (0, 1)]
+            cells.append('%s %s / %s' % (el.capitalize(), d[0], d[1]))
+        out.append('| %s | %d | %d | %s |' % (r['class'], len(r['lines']), len(r['sets']), '; '.join(cells)))
+    return '\n'.join(out)
+
+
 def main(argv):
     argv = SU.from_argv(argv)
     if SU.active():
@@ -293,6 +326,9 @@ def main(argv):
             ahead = [r['class'] for r in rows if any(r['set']['v'][i] > r['mixed']['v'][i] + 1e-9 for i in (0, 1))]
             print('card set model: ok (21 classes at level %d, no set ahead of its best mixed build by %.1f points, all within %d%%; '
                   'ahead by less: %s)' % (level, AHEAD * 100, TOLERANCE * 100, ', '.join(ahead) or 'none'))
+        return 1 if bad else 0
+    if '--sets' in argv:
+        print(sets_table(rows))
         return 1 if bad else 0
     print(table(rows, mult, nmon))
     if bad:

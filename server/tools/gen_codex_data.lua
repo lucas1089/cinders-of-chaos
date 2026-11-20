@@ -26,7 +26,7 @@ Gen.SOURCES = {
 	"data/scripts/chaos/defence_config.lua", "data/scripts/chaos/player_defence_config.lua",
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
 	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua",
-	"data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
+	"data/scripts/chaos/spell_combos_config.lua", "data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
 	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua", "data/scripts/chaos/dot_config.lua"
 }
 
@@ -311,6 +311,7 @@ function Gen.load()
 	-- the defence numbers (O464): the player's layer and the numbers a monster shares with it
 	D.defence = dofile("data/scripts/chaos/defence_config.lua")
 	D.playerDefence = dofile("data/scripts/chaos/player_defence_config.lua")
+	D.combos = dofile("data/scripts/chaos/spell_combos_config.lua") -- O686 phase 6: the Spell combos page
 	-- Conquest Tokens (conquest.lua): the vendor's price of every unique and set piece, the bad-luck protection
 	dofile("data/scripts/chaos/conquest_core.lua")
 	D.conquest = dofile("data/scripts/chaos/conquest_config.lua")
@@ -2031,6 +2032,40 @@ function Gen.basicsEntries(D)
 						table.concat(marks, ", "), DEF.resistCap, DEF.resistFloor),
 					"You are told at login and when you level up between 240 and 249 and between 490 and 499, and when you cross a mark."}},
 				{h = "Where to read it", p = {"The character sheet (Info & Services > Character Info, and Inspect Player) shows each resistance with its sum, the penalty and the result, the armour, dodge, block and spell suppression."}}})
+		end
+	end
+	-- spell combos (O686 phase 6; spell_combos_config.lua, docs/SPELL_UPGRADES.md section 4): every number and row read from the config
+	do
+		local CB = D.combos
+		if CB then
+			local function pct(v)
+				return "+" .. Gen.num(floor(v * 100 + 0.5)) .. "%"
+			end
+			local function cap(s)
+				return (s:gsub("^%l", string.upper))
+			end
+			local reactions, signatures = {}, {}
+			for _, r in ipairs(CB.rows) do
+				if r.kind == "reaction" then
+					reactions[#reactions + 1] = {r.name, cap(r.first.element) .. " > " .. cap(r.second.element), pct(r.bonus)}
+				else
+					signatures[#signatures + 1] = {r.name, r.show, pct(r.bonus)}
+				end
+			end
+			add("combos", "Spell combos", "Two spells in a row hit harder: element reactions and class combos.", {
+				{h = "The rule", p = {
+					string.format("Cast two spells within %s seconds, on the same target or within %d tiles of where the first one hit, and the first hit of the second spell deals %d%% to %d%% more. The bonus is a share of the ranked hit, so it grows with the rank.",
+						Gen.num(CB.window.windowMs / 1000), CB.window.nearSqm, floor(CB.band.min * 100 + 0.5), floor(CB.band.max * 100 + 0.5)),
+					string.format("At most one combo fires per cast. The same combo does not fire on the same target again for %s seconds, and a character waits %s seconds between two combos.",
+						Gen.num(CB.limits.repeatMs / 1000), Gen.num(CB.limits.globalMs / 1000)),
+					"Combos work against monsters, and the heal combo works on allies. They are off between players.",
+					"A Form that changes the element of a spell changes its combos too: the element after the conversion counts."}},
+				{h = "Element reactions", p = {
+					"Element reactions are free for every class. The easier a combo is to fire, the nearer to 10% its bonus is."},
+					cols = {"Combo", "Order", "Bonus"}, w = {40, 36, 24}, rows = reactions},
+				{h = "Class combos", p = {
+					string.format("A class combo opens when both spells are at rank %d or more. Nothing is paid.", CB.classMinRank)},
+					cols = {"Combo", "Spells", "Bonus"}, w = {24, 60, 16}, rows = signatures}})
 		end
 	end
 	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")
