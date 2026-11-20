@@ -1243,7 +1243,7 @@ jobs:
         run: |
           python3 -I tools/ci/check_spell_forms.py
           python3 -I tools/ci/check_spell_forms_test.py
-      - name: Spell awakening names and signatures (O686 phase 7; gen_awakened.py and its test: data/spells/awakened.csv for every spell with Forms, the design's four examples, every signature inside its band by the Lua value; the Seal rates against the three models are in spell_upgrade_model.py --check below)
+      - name: Spell awakening names and signatures (O686 phase 7; gen_awakened.py and its test hold data/spells/awakened.csv for every spell with Forms, the design's four examples, every signature inside its band by the Lua value; the Seal rates against the three models are in spell_upgrade_model.py --check below)
         run: |
           python3 -I server/tools/gen_awakened.py --check
           python3 -I server/tools/gen_awakened_test.py
