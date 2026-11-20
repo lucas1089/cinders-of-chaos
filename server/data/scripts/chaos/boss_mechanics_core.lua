@@ -471,6 +471,74 @@ function G.safeSpot(g, marked, from, budget, straight, diag)
 	return g.set[bestK], bestC
 end
 
+-- O684: the same nearest safe tile, with the way to it, for a PARTY of bots that dodge one blob of marks (five Drowning Marks lie under five players
+-- who stand together). `av` = {goals = key set (tiles another player runs to: no goal), path = key set (tiles on another's way or under another
+-- player: no goal, not walked over), prefer = key (the goal this player named at the last look: kept when it is still free)}. Same costs and same
+-- tie rule as G.safeSpot; with no `av` it is G.safeSpot. -> tile, ms, steps ({{x, y}, ...} the tiles walked, the goal last); nil when none is in reach
+function G.safeRoute(g, marked, from, budget, straight, diag, av)
+	av = av or {}
+	local goals, block = av.goals or {}, av.path or {}
+	local k0 = key(from.x, from.y)
+	if not g.set[k0] then
+		return nil
+	end
+	local best, prev = {[k0] = 0}, {}
+	local open = {{x = from.x, y = from.y, c = 0}}
+	while #open > 0 do
+		local bi = 1
+		for i = 2, #open do
+			if open[i].c < open[bi].c then
+				bi = i
+			end
+		end
+		local n = table.remove(open, bi)
+		local nk = key(n.x, n.y)
+		if n.c <= (best[nk] or math.huge) then
+			for ox = -1, 1 do
+				for oy = -1, 1 do
+					if ox ~= 0 or oy ~= 0 then
+						local x, y = n.x + ox, n.y + oy
+						local k = key(x, y)
+						if g.set[k] and not block[k] then
+							local c = n.c + ((ox ~= 0 and oy ~= 0) and diag or straight)
+							if c <= budget and c < (best[k] or math.huge) then
+								best[k] = c
+								prev[k] = nk
+								open[#open + 1] = {x = x, y = y, c = c}
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	local bestK, bestC
+	for k, c in pairs(best) do
+		if not marked[k] and not goals[k] and not block[k] then
+			if k == av.prefer then
+				bestK, bestC = k, -1
+				break
+			end
+			if not bestC or c < bestC or (c == bestC and k < bestK) then
+				bestK, bestC = k, c
+			end
+		end
+	end
+	if not bestK then
+		return nil
+	end
+	local steps, at = {}, bestK
+	while at and at ~= k0 do
+		steps[#steps + 1] = g.set[at]
+		at = prev[at]
+	end
+	local rev = {}
+	for i = #steps, 1, -1 do
+		rev[#rev + 1] = steps[i]
+	end
+	return g.set[bestK], best[bestK], rev
+end
+
 -- the players (positions) of a telegraph who have no safe tile in reach: list of positions
 function G.trapped(g, marked, players, budget, straight, diag)
 	local out = {}

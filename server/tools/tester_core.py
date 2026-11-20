@@ -738,6 +738,12 @@ def hold_attack(health, heal, heal_ready):
     return bool(heal) and health < 50 and bool(heal_ready)
 
 
+def heal_first_hold(health, first_at, heal, healed, potion_ready):
+    """O684: True when the bot spends this beat on healing and not on an attack: its health is under `first_at` percent (0 = the rule is off) and the heal
+    spell went this beat (`healed`) or the health potion is ready. With both on cooldown the attack goes, as a person's does"""
+    return bool(first_at) and health is not None and health < first_at and bool((heal and healed) or potion_ready)
+
+
 def mana_potion_due(health, mana, mana_max):
     """True when the bot should drink a mana potion now: its mana is known, under MANA_POTION_AT percent, and the health does not need the potion
     (the health potion and the mana potion share one exhaust)"""

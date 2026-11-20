@@ -1008,6 +1008,49 @@ _lead_io.heal_earlier(['Tester Pa1', 'Tester Pa2'], True)
 eq((_five[0].heal_at, _five[1].heal_at if hasattr(_five[1], 'heal_at') else None), ((75, 55), (75, 55)), 'heal_earlier: the thresholds go up for the named bots')
 _lead_io.heal_earlier(['Tester Pa1', 'Tester Pa2'], False)
 eq(_five[0].heal_at, (60, 40), 'heal_earlier off: the old thresholds')
+# O684: heal first (under 40 % no attack while the heal or the potion is ready), the health of a bot by name, the healer's cast of the heal spell
+_hk = T.TesterBot(9, dict(bot), A(), 1, T.Results(1), {'rotation': [hit], 'heal': heal})
+_hk.conn, _hk.cid = C(), 0x10000009
+_hk.helper['info'] = {'potions': {'health': 266}}
+_hsaid = []
+_hk.say = lambda text, kind=1: _hsaid.append(text)
+_hk.heal_at = (90, 80)
+_hk.ready['heal'] = 10 ** 9   # the heal spell is on cooldown
+_hk.read(b'\x8c' + struct.pack('<I', _hk.cid) + b'\x23')   # 35 %
+_hk.keep_alive(100.0)
+eq(_hsaid, ['exori x'], 'heal first off: the heal on cooldown, the attack goes while the potion is drunk')
+_hk.heal_first = 40
+_hk.ready['potion'] = 0
+_hsaid.clear()
+_hk.keep_alive(100.5)
+eq(_hsaid, [], 'heal first on: under 40 % with the potion ready, no attack this beat')
+eq(len(_hk.conn.sent), 2, 'and the potion is drunk')
+_hk.ready.pop('exori x', None)
+_hk.ready.pop('attack', None)
+_hk.keep_alive(100.7)
+eq(_hsaid, ['exori x'], 'the potion on cooldown (1.1 s) and the heal on cooldown: the attack goes')
+_pio3 = T.CheckIO.__new__(T.CheckIO)
+_pio3.bot, _pio3.clock = _five[0], {'stop': False}
+T.ONLINE.clear()
+T.ONLINE.update({b.cid: b for b in _five})
+for _b in _five:
+    _b.died, _b.alive, _b.health, _b.health_at, _b.heal, _b.ready, _b.pending, _b.results = False, True, 100, None, None, {}, {}, T.Results(1)
+_five[1].health, _five[1].health_at = 55, 1.0
+eq(_pio3.health_of(_five[1].name), 55, 'health_of: the health a bot saw of itself')
+eq(_pio3.health_of(_five[2].name), None, 'health_of: none seen yet')
+eq(_pio3.health_of('Tester Nobody'), None, 'health_of: no such bot')
+_five[3].heal = dict(heal)
+_five[3].conn, _five[3].say = C(), (lambda text, kind=1: _hsaid.append('five3:' + text))
+_five[3].conn.w = type('W', (), {'drain': staticmethod(lambda: asyncio.sleep(0))})()
+_hsaid.clear()
+eq(asyncio.run(_pio3.heal_spell_of(_five[3].name)), True, 'heal_spell_of: the heal spell is cast')
+eq(_hsaid, ['five3:exura x'], 'with its words')
+eq(asyncio.run(_pio3.heal_spell_of(_five[3].name)), False, 'heal_spell_of: on cooldown, nothing')
+eq(asyncio.run(_pio3.heal_spell_of(_five[4].name)) if _five[4].heal is None else False, False, 'heal_spell_of: a bot with no heal spell casts none')
+_pio3.heal_earlier([_five[3].name], True, 90, 80, 40)
+eq((_five[3].heal_at, _five[3].heal_first), ((90, 80), 40), 'heal_earlier: the third number is the heal-first percent')
+_pio3.heal_earlier([_five[3].name], False)
+eq((_five[3].heal_at, _five[3].heal_first), ((60, 40), 0), 'heal_earlier off: both back')
 T.ONLINE.clear(); T.PARTY_BUSY.clear()
 
 # the proof table and the diff against the previous run
@@ -1563,6 +1606,14 @@ eq(TC.hold_attack(35, {'words': 'x'}, True), True, 'under 50 % with the heal rea
 eq(TC.hold_attack(35, {'words': 'x'}, False), False, 'under 50 % with the heal on cooldown: the attack goes (two spell groups)')
 eq(TC.hold_attack(35, None, True), False, 'no heal spell: the attack goes')
 eq(TC.hold_attack(80, {'words': 'x'}, True), False, 'over 50 %: the attack')
+# O684: under the heal-first percent (a pinnacle fight: 40) a bot casts no attack while its heal went this beat or its potion is ready
+eq(TC.heal_first_hold(35, 40, {'words': 'x'}, True, False), True, 'heal first: under 40 % the heal went this beat, no attack')
+eq(TC.heal_first_hold(35, 40, {'words': 'x'}, False, True), True, 'heal first: the heal on cooldown but the potion ready, no attack')
+eq(TC.heal_first_hold(35, 40, {'words': 'x'}, False, False), False, 'heal first: both on cooldown, the attack goes')
+eq(TC.heal_first_hold(45, 40, {'words': 'x'}, True, True), False, 'heal first: over 40 %, the attack')
+eq(TC.heal_first_hold(35, 0, {'words': 'x'}, True, True), False, 'heal first: the rule is off outside a pinnacle fight')
+eq(TC.heal_first_hold(None, 40, {'words': 'x'}, True, True), False, 'heal first: no health seen, no rule')
+eq(TC.heal_first_hold(35, 40, None, True, False), False, 'heal first: no heal spell and no potion, the attack goes')
 eq(TC.mana_potion_due(100, 30, 100), True, 'under 40 % mana: the potion')
 eq(TC.mana_potion_due(100, 40, 100), False, 'at 40 % mana: not yet')
 eq(TC.mana_potion_due(30, 10, 100), False, 'the health needs the potion first')

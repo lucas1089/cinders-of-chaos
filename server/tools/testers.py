@@ -1042,11 +1042,32 @@ class CheckIO(KeyIO):
         b = next((b for b in ONLINE.values() if b.name == name), None)
         return int(getattr(b, 'level', 0) or 0) if b is not None else 0
 
-    def heal_earlier(self, names, on, spell_at=75, potion_at=55):
+    def heal_earlier(self, names, on, spell_at=75, potion_at=55, first_at=0):
         """O681: a person heals earlier against a boss whose hit is a third of his health: the bots' heal spell and potion thresholds
-        (60 / 40 percent) are raised while a pinnacle fight is played, and put back after"""
+        (60 / 40 percent) are raised while a pinnacle fight is played, and put back after. O684: under `first_at` percent the bot casts no attack
+        while its heal spell or its potion is ready (a person at 40% stops hitting and heals)"""
         for b in [b for b in ONLINE.values() if b.name in names]:
             b.heal_at = (spell_at, potion_at) if on else (60, 40)
+            b.heal_first = first_at if on else 0
+
+    def health_of(self, name):
+        """O684: the health in percent of a bot in game as its own creature updates show it (the party's healer picks the lowest), None when unknown"""
+        b = self._bot(name)
+        return b.health if b is not None and b.health_at is not None else None
+
+    async def heal_spell_of(self, name):
+        """O684: the bot's heal spell cast now when it is ready (the Mystic's Purifying Wellspring heals the party within 3 tiles), never the potion.
+        -> True when it was cast"""
+        b, now = self._bot(name), time.monotonic()
+        if b is None or not b.heal or b.ready.get('heal', 0) > now or b.ready.get(b.heal['group'], 0) > now:
+            return False
+        b.say(b.heal['words'])
+        b.ready['heal'] = now + max(1.0, b.heal['cooldown'] / 1000.0)
+        b.ready[b.heal['group']] = now + b.heal['groupcooldown'] / 1000.0 + 0.1
+        b.results.behaviour('heal_spell', 'tried')
+        b.pending.setdefault('heal_spell', now + HEAL_SEEN)
+        await b.conn.w.drain()
+        return True
 
     def set_potions(self, health, mana):
         """O681: the potions the heal rule drinks (client ids; `!tester info` answers the same once the bot carries the flasks)"""
@@ -1551,6 +1572,7 @@ class TesterBot(LT.Bot):
         self.checks_flushed = False
         self.in_raid = False  # inside the testers' raid (O588): the engine catches a lethal hit there, no flight to the temple
         self.heal_at = (60, 40)  # O681: health percent under which the bot casts its heal spell / drinks a potion (a boss fight sets it higher)
+        self.heal_first = 0  # O684: health percent under which the bot casts no attack while its heal spell or its potion is ready (a pinnacle fight: 40)
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -2034,6 +2056,8 @@ class TesterBot(LT.Bot):
             self.back_at = None
             self.say('!tester hunt')
         healed = False   # O663: the heal went this beat
+        pot_ready = bool(self.heal_first and self.cid and self.ready.get('potion', 0) <= now
+                         and (self.helper.get('info') or {}).get('potions', {}).get('health'))   # O684: a potion could go this beat
         if self.health < self.heal_at[0] and self.heal and self.ready.get('heal', 0) <= now \
                 and self.ready.get(self.heal['group'], 0) <= now:
             healed = True
@@ -2066,7 +2090,8 @@ class TesterBot(LT.Bot):
             self.results.log(self, 'do', 'flee at %d %% health' % self.health)
             return
         if self.rotation and not TC.hold_attack(self.health, self.heal, healed or (
-                self.heal and self.ready.get('heal', 0) <= now and self.ready.get(self.heal['group'], 0) <= now)):   # O663: the heal on cooldown, the attack goes
+                self.heal and self.ready.get('heal', 0) <= now and self.ready.get(self.heal['group'], 0) <= now)) \
+                and not TC.heal_first_hold(self.health, self.heal_first, self.heal, healed, pot_ready):   # O663: the heal on cooldown, the attack goes
             spell = LT.next_spell(self.rotation, self.ready, now, mana=self.mana)
             if spell:
                 self.say(spell['words'])

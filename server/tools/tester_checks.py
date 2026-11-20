@@ -3786,7 +3786,7 @@ async def solo_play(io, r, trace, c):
             fight_since = None
         if mode == 'dodge' and c.get('dodge') and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
             trace['dodged'] = trace.get('dodged', 0) + 1   # O681: a mark of the boss on the bot's tile: the steps to the safe tile at once, a quick look after
-            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed)
+            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed, dodge_route(s, g['goal']))
             trace['secs'] = int(elapsed)
             continue
         if mode == 'pick':   # the descent's boon choice: the first card, as when the time runs out
@@ -4404,6 +4404,8 @@ def pinnacle_walk_verdict(t):
         how += ', held %d look(s) at a mark' % t['held']   # O683
     if tally_text(t):
         how += ', ' + tally_text(t)   # O683
+    if t.get('ally_heals') or t.get('spread') or t.get('healer_steps'):   # O684: what the party roles did
+        how += ', roles: %d ally heal(s), %d healer step(s), %d spread step(s)' % (t.get('ally_heals', 0), t.get('healer_steps', 0), t.get('spread', 0))
     if t.get('gear'):
         how += '; ' + t['gear']   # O681: the gear the fight was played with
     if t.get('killed'):
@@ -4575,7 +4577,19 @@ PINNACLE_MEMBERS = {}       # member name -> leader name, while a party plays
 PINNACLE_TURN = {'by': None}   # one fight of bots at a time (the arenas the testers may take are few: tester.reserve)
 PINNACLE_GATHER_NEAR = 3    # tiles from the opener a member stops at (party.range is 8)
 PINNACLE_MEMBER_WAIT = 2400.0   # seconds a member waits for its leader at most
-PINNACLE_HEAL_AT = (90, 80)   # O683: health percent under which the heal spell is cast / the potion drunk in a pinnacle fight (O681: 75 / 55: a burst of 25k came on 31k)
+PINNACLE_HEAL_AT = (90, 80, 40)   # O683: health percent under which the heal spell is cast / the potion drunk in a pinnacle fight (O681: 75 / 55: a burst of 25k came on 31k);
+#                                  O684: and under which a bot casts no attack while its heal or its potion is ready (a person at 40% stops hitting and heals)
+PINNACLE_HEALERS = frozenset(['Mystic'])   # O684: the class whose heal (Purifying Wellspring: the caster and the party within 3 tiles) the party plays as a healer
+PINNACLE_ALLY_HEAL_AT = 70     # O684: health percent under which a member is the healer's patient (the lowest one first)
+PINNACLE_HEAL_NEAR = 2         # O684: tiles from the patient the healer walks to (the heal reaches 3)
+PINNACLE_HEAL_REACH = 3        # O684: tiles from the patient the healer casts from
+PINNACLE_HEALER_KEEPS = 4      # O684: tiles from the boss the healer keeps while nobody needs it
+PINNACLE_ROLE_EVERY = 3.0      # O684: seconds between two role steps of the healer (a step interrupts a cast-time spell: the first run lost most of its damage)
+PINNACLE_SPREAD_EVERY = 8.0    # O684: seconds between two spread steps of a melee bot (three or more next to each other, never a dance)
+PINNACLE_FIGHT_REACH = 5       # O684: the guide's fight reach (PN.probe: the bot fights from 5 tiles)
+PINNACLE_BOSS_SIZE = 2         # O684: the footprint of a pinnacle boss (tiles up and left of its position are its body)
+PINNACLE_MELEE = frozenset(['Warrior', 'Juggernaut', 'Berserker', 'Samurai', 'Ninja', 'Thief', 'Monk', 'Shadowfist', 'Iron Sage', 'Templar', 'Inquisitor',
+                            'Sentinel'])   # O684: the classes that fight at the boss's feet: they do not stack on one tile
 PINNACLE_STEPS = 3          # steps of one bot between two looks (O683: was 6 = 1.8 s without a look, most of a 2.5 s warning)
 PINNACLE_SHIELD_WORDS = 'tor ael'   # Ward of the Mind, the mana shield of the Mystic, Ranger and Necromancer lines (manashield_config.lua): the survival model counts it
 PINNACLE_SHIELD_EVERY = 100.0       # seconds between two casts of it (a cast on a bot that still holds the shield costs a few mana)
@@ -4602,6 +4616,104 @@ def pinnacle_party_verdict(t):
     if t.get('classes'):
         text += '; party: %s' % ', '.join(t['classes'])
     return status, text
+
+
+def _cheb(a, b):
+    return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
+
+
+def _sign(v):
+    return (v > 0) - (v < 0)
+
+
+def _xy(p):
+    return (p['x'], p['y']) if isinstance(p, dict) and isinstance(p.get('x'), int) and isinstance(p.get('y'), int) else None
+
+
+def _in_body(t, boss, size=PINNACLE_BOSS_SIZE):
+    return boss is not None and boss[0] - (size - 1) <= t[0] <= boss[0] and boss[1] - (size - 1) <= t[1] <= boss[1]
+
+
+_NEIGHBOURS = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+
+
+def spread_step(pos, mates, boss, reach=PINNACLE_FIGHT_REACH, crowd=1):
+    """O684: (dx, dy) of a melee bot that stands next to another bot: the free neighbour tile with the fewest bots next to it (then the nearest to the boss),
+    inside the fight reach and not under the boss; None when fewer than `crowd` bots are next to it or no neighbour is less crowded. One tile a bot: five bots on the same
+    spot at the boss's feet blocked each other's steps (O684)"""
+    here = sum(1 for m in mates if _cheb(pos, m) <= 1)
+    if here < crowd:
+        return None
+    best = None
+    for dx, dy in _NEIGHBOURS:
+        t = (pos[0] + dx, pos[1] + dy)
+        if t in mates or _in_body(t, boss):
+            continue
+        if boss is not None and _cheb(t, boss) > reach:
+            continue
+        near = sum(1 for m in mates if _cheb(t, m) <= 1)
+        score = (near, _cheb(t, boss) if boss is not None else 0, dx, dy)
+        if best is None or score < best[0]:
+            best = (score, (dx, dy))
+    return best[1] if best and best[0][0] < here else None
+
+
+def healer_step(pos, boss, patient, near=PINNACLE_HEAL_NEAR, reach=PINNACLE_HEAL_REACH, keeps=PINNACLE_HEALER_KEEPS):
+    """O684: (step, cast) of the party's healer. With a patient (the lowest member under the heal threshold): a step toward him until he is `near` tiles away
+    (never onto the boss's body), and a cast when he is within `reach` (the Wellspring heals the party within 3 tiles). Without one: a step away from
+    the boss while it is nearer than `keeps` tiles, no cast. Either may be None / False"""
+    if patient is not None:
+        d = _cheb(pos, patient)
+        step = None
+        if d > near:
+            step = (_sign(patient[0] - pos[0]), _sign(patient[1] - pos[1]))
+            if _in_body((pos[0] + step[0], pos[1] + step[1]), boss):
+                step = None
+        return step, d <= reach
+    if boss is not None and _cheb(pos, boss) < keeps:
+        step = (_sign(pos[0] - boss[0]) or 0, _sign(pos[1] - boss[1]) or 1)
+        return step, False
+    return None, False
+
+
+async def pinnacle_roles(io, squad, inside, trace, elapsed=0.0):
+    """O684: what the roles of a party add to the fight, once per look: the healer (the Mystic) walks to the lowest member under PINNACLE_ALLY_HEAL_AT and
+    casts its heal there, else keeps PINNACLE_HEALER_KEEPS tiles from the boss; melee bots next to another bot spread to a tile of their own. Never while a
+    mark is pending (a step could enter it) and never for a bot the guide sends elsewhere. -> the names that took a step (the walk loop leaves them)"""
+    names = [r['name'] for r in squad if r['name'] in inside]
+    pos = {n: _xy(inside[n].get('pos')) for n in names}
+    ref = next(iter(inside.values()), {})
+    boss = _xy((ref.get('run') or {}).get('bossPos'))
+    health = {n: (io.health_of(n) if hasattr(io, 'health_of') else None) for n in names}
+    classes = {n: (io.class_of(n) if hasattr(io, 'class_of') else '') for n in names}
+    moves = {}
+    for r in squad:
+        n = r['name']
+        if n not in names or pos.get(n) is None:
+            continue
+        mode = (inside[n].get('guide') or {}).get('mode')
+        pending = mark_pending(inside[n])
+        if classes.get(n) in PINNACLE_HEALERS:
+            weak = [(health[m], m) for m in names if m != n and health.get(m) is not None and health[m] < PINNACLE_ALLY_HEAL_AT and pos.get(m) is not None]
+            patient = pos[min(weak)[1]] if weak else None
+            step, cast = healer_step(pos[n], boss, patient)
+            if cast and patient is not None and hasattr(io, 'heal_spell_of') and await io.heal_spell_of(n):
+                trace['ally_heals'] = trace.get('ally_heals', 0) + 1
+            if step and not pending and mode in ('fight', 'walk', 'wait', 'hold', None) and elapsed - r.get('healer_at', -99.0) >= PINNACLE_ROLE_EVERY:
+                r['healer_at'] = elapsed
+                moves[n] = (r, step)
+                trace['healer_steps'] = trace.get('healer_steps', 0) + 1
+        elif classes.get(n) in PINNACLE_MELEE and mode == 'fight' and not pending:
+            mates = set(pos[m] for m in names if m != n and pos.get(m) is not None)
+            step = spread_step(pos[n], mates, boss, crowd=2) if elapsed - r.get('spread_at', -99.0) >= PINNACLE_SPREAD_EVERY else None
+            if step:
+                r['spread_at'] = elapsed
+                moves[n] = (r, step)
+                trace['spread'] = trace.get('spread', 0) + 1
+    for n, (r, step) in moves.items():
+        await raid_walk(io, r, step)
+        trace['steps'] += 1
+    return set(moves)
 
 
 async def pinnacle_member_wait(io, name):
@@ -4701,7 +4813,7 @@ async def pinnacle_fight(io, squad, trace, budget):
             s = inside.get(r['name'])
             gr = (s or {}).get('guide') or {}
             if s is not None and gr.get('mode') == 'dodge' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
-                dodge[r['name']] = dodge_plan(s['pos'], gr['goal'], BOSS_DODGE_STEPS)
+                dodge[r['name']] = dodge_route(s, gr['goal'], BOSS_DODGE_STEPS)   # O684: the way the server planned for this bot
         if dodge:
             trace['dodged'] = trace.get('dodged', 0) + len(dodge)
             for i in range(BOSS_DODGE_STEPS):
@@ -4720,11 +4832,12 @@ async def pinnacle_fight(io, squad, trace, budget):
             elapsed += BOSS_DODGE_LOOK
             trace['secs'] = int(elapsed)
             continue
+        roled = await pinnacle_roles(io, squad, inside, trace, elapsed)   # O684: the healer's walk and cast, the melee bots' own tiles
         walkers = []
         for r in squad:
             s = inside.get(r['name'])
             gr = (s or {}).get('guide') or {}
-            if s is not None and gr.get('mode') == 'walk' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
+            if s is not None and r['name'] not in roled and gr.get('mode') == 'walk' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
                 walkers.append((r, s, gr))
         for r, s, gr in walkers:
             r['plan'] = r['walker'].steps(s['pos'], gr['goal'], PINNACLE_STEPS, elapsed)
@@ -6965,6 +7078,25 @@ def dodge_plan(pos, goal, n=BOSS_DODGE_STEPS):
     return out
 
 
+def dodge_route(s, goal, n=BOSS_DODGE_STEPS):
+    """O684: the steps [(dx, dy)] of a dodge: the way the server planned (`danger.steps` of a pinnacle answer: the party's bots get goals and ways that
+    do not meet), at most n; else the straight diagonal-first plan of dodge_plan to the goal"""
+    d = (s or {}).get('danger') if isinstance(s, dict) else None
+    raw = d.get('steps') if isinstance(d, dict) else None
+    if isinstance(raw, list) and raw:
+        out = []
+        for st in raw[:n]:
+            if isinstance(st, (list, tuple)) and len(st) == 2 and all(isinstance(v, int) and not isinstance(v, bool) and abs(v) <= 1 for v in st) \
+                    and (st[0] or st[1]):
+                out.append((st[0], st[1]))
+            else:
+                out = []
+                break
+        if out:
+            return out
+    return dodge_plan((s or {}).get('pos'), goal, n)
+
+
 async def raid_chase(io, r, on):
     """O683: the chase switch of the fight mode of one bot, only when it changes (chase walks the bot back into the mark it just left)"""
     if bool(r.get('chase', True)) == bool(on):
@@ -6981,10 +7113,11 @@ def mark_pending(s):
     return bool(isinstance(d, dict) and (d.get('count') or d.get('labels')))
 
 
-async def dodge_walk(io, r, pos, goal, trace, elapsed):
-    """the steps of a dodge to the safe tile the server named, sent at once (BOSS_DODGE_PACE apart), then a short look. -> the seconds it took"""
+async def dodge_walk(io, r, pos, goal, trace, elapsed, steps=None):
+    """the steps of a dodge to the safe tile the server named, sent at once (BOSS_DODGE_PACE apart), then a short look. -> the seconds it took
+    (O684: `steps` the server planned, else the straight plan to the goal)"""
     spent = 0.0
-    for step in dodge_plan(pos, goal):
+    for step in (steps or dodge_plan(pos, goal)):
         await raid_walk(io, r, step)
         trace['steps'] += 1
         await io.sleep(BOSS_DODGE_PACE)
@@ -7050,7 +7183,7 @@ async def boss_copy_play(io, r, trace, budget):
             fight_since = None
         if mode == 'dodge' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
             trace['dodged'] = trace.get('dodged', 0) + 1
-            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed)
+            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed, dodge_route(s, g['goal']))
             trace['secs'] = int(elapsed)
             continue
         plan = []

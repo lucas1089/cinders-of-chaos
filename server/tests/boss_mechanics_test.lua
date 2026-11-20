@@ -326,6 +326,96 @@ eq(trapped, 0, "the dodging bot always reaches a safe tile before the hit (" .. 
 check(sims > 2000, "the simulation ran enough cases (" .. sims .. ")")
 print(string.format("boss_mechanics_test: grid simulation %d dodges, worst walk %d ms", sims, worst))
 
+-- O684: five players stand together and a Drowning Marks circle lies under each (the circles overlap into one blob). Each bot runs to a tile of its own
+-- by a way of its own (G.safeRoute with the goals and the ways of the bots before it and every other player's tile as a wall): every one of the five
+-- reaches a free tile in the warning, in every arena a pinnacle fight or a world boss uses and for rows and clumps of players. Fair as it stands: the
+-- fairness step (G.makeFair) cut no pocket for these marks, so nothing of it changed for players.
+do
+	local pm = cfg.profiles["ascended malgrath"]
+	local fair = {}
+	for k, v in pairs(cfg.fair) do
+		fair[k] = v
+	end
+	for k, v in pairs(pm.fair or {}) do
+		fair[k] = v
+	end
+	local st, dg = G.stepCosts(fair)
+	local spec = pm.telegraphs[2]
+	eq(spec.kind, "marks", "O684: the second telegraph of Malgrath is the Drowning Marks")
+	local warn = G.warnMs(spec, pm.difficulty, fair)
+	local budget = G.budget(warn, fair)
+	local function line(cx, cy, k, dx, dy)
+		local t = {}
+		for i = 1, k do
+			t[i] = {x = cx + (i - 1) * dx, y = cy + (i - 1) * dy, z = 7}
+		end
+		return t
+	end
+	local pin = G.boxGrid({x = 100, y = 100, z = 7}, 11)   -- the pinnacle arena (pinnacle_config.lua arena.half = 11): 23 x 23
+	local rooms = {{"pinnacle arena", pin}}
+	for _, ar in ipairs(arenas()) do
+		rooms[#rooms + 1] = {ar.name, ar.g}
+	end
+	local sets = {
+		{"row", line(98, 102, 5, 1, 0)}, {"column", line(100, 98, 5, 0, 1)}, {"diagonal", line(98, 98, 5, 1, 1)},
+		{"clump", {{x = 100, y = 100, z = 7}, {x = 101, y = 100, z = 7}, {x = 100, y = 101, z = 7}, {x = 101, y = 101, z = 7}, {x = 102, y = 100, z = 7}}},
+		{"two apart", {{x = 99, y = 99, z = 7}, {x = 101, y = 99, z = 7}, {x = 99, y = 101, z = 7}, {x = 101, y = 101, z = 7}, {x = 100, y = 100, z = 7}}},
+	}
+	local cases, joint = 0, 0
+	for _, room in ipairs(rooms) do
+		for _, set in ipairs(sets) do
+			local fight = G.newFight({telegraphs = {spec}, fair = fair}, {now = 0, difficulty = pm.difficulty, size = 2})
+			local players = set[2]
+			local tel = G.planTelegraph(fight, spec, {grid = room[2], boss = {x = 100, y = 95, z = 7}, size = 2, target = players[1], players = players,
+				rand = rng(7)}, 0, warn)
+			local goals, paths, usedGoal = {}, {}, {}
+			for i, pl in ipairs(players) do
+				local walls = {}
+				for k in pairs(paths) do
+					walls[k] = true
+				end
+				for j, q in ipairs(players) do
+					if j ~= i then
+						walls[G.key(q.x, q.y)] = true
+					end
+				end
+				local tile, ms, route = G.safeRoute(room[2], tel.set, pl, budget, st, dg, {goals = goals, path = walls})
+				cases = cases + 1
+				if not tile then
+					joint = joint + 1
+					print(string.format("  no joint route: %s %s player %d", room[1], set[1], i))
+				else
+					check(not tel.set[G.key(tile.x, tile.y)], "O684: the goal is unmarked (" .. room[1] .. " " .. set[1] .. ")")
+					check(not usedGoal[G.key(tile.x, tile.y)], "O684: no two players take one goal (" .. room[1] .. " " .. set[1] .. ")")
+					check(ms <= budget and #route >= 1 and route[#route] == tile, "O684: the way ends on the goal inside the budget")
+					usedGoal[G.key(tile.x, tile.y)] = true
+					goals[G.key(tile.x, tile.y)] = true
+					for _, t in ipairs(route) do
+						check(not walls[G.key(t.x, t.y)], "O684: the way crosses no other player's way or tile")
+						paths[G.key(t.x, t.y)] = true
+					end
+				end
+			end
+		end
+	end
+	eq(joint, 0, "O684: five players in one blob of marks all find a tile of their own in the warning (" .. cases .. " cases)")
+	-- a player outside every mark: G.safeRoute is G.safeSpot without the avoid sets, and names no tile when none is in reach
+	local g = G.boxGrid({x = 100, y = 100, z = 7}, 9)
+	local marked = G.tileSet(g.list)
+	check(G.safeRoute(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg) == nil, "O684: no free tile in reach, no route")
+	marked[G.key(100, 100)] = true
+	local a, c1 = G.safeSpot(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg)
+	marked = {[G.key(100, 100)] = true, [G.key(101, 100)] = true}
+	a, c1 = G.safeSpot(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg)
+	local b, c2, route = G.safeRoute(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg)
+	check(a.x == b.x and a.y == b.y and c1 == c2, "O684: without avoid sets the route's goal is the nearest safe tile of G.safeSpot")
+	eq(#route, 1, "O684: one step to the next tile")
+	local d = G.safeRoute(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg, {goals = {[G.key(b.x, b.y)] = true}})
+	check(d ~= nil and not (d.x == b.x and d.y == b.y), "O684: a goal another player took is not named")
+	local e = G.safeRoute(g, marked, {x = 100, y = 100, z = 7}, 2000, st, dg, {prefer = G.key(103, 100)})
+	check(e.x == 103 and e.y == 100, "O684: the goal named at the last look is kept while it is free")
+end
+
 -- the slowest content walker (level 300) on the biggest shape: a world boss cone towards a player in a corner
 do
 	local g = G.boxGrid({x = 100, y = 100, z = 7}, 15)
@@ -1083,6 +1173,65 @@ do
 	end
 	creatures[cb.id] = nil
 	runTo(T + 500)
+end
+
+-- O684: a party's bots ask dangerFor with their player ids: five players in one blob of marks get five different goals and ways that do not cross; a
+-- caller without an id (a player's own walk, testers_boss.lua) gets the plain nearest tile as before.
+do
+	local G = ChaosBossMechCore
+	cfg.profiles["marks boss"] = {label = "Marker", size = 1, element = "death", difficulty = 0, every = 90000, firstMs = 500, compensate = false,
+		telegraphs = {{key = "marks", label = "Marks", kind = "marks", radius = 2, share = 0.4, hit = "x", fallback = 1}}}
+	local mb = make({name = "Marks Boss", pos = {x = 200, y = 193, z = 7}, hp = 100000})
+	local party = {}
+	for i = 1, 5 do
+		party[i] = make({name = "Bot" .. i, player = true, pos = {x = 199 + i, y = 200, z = 7}, hp = 10000})
+	end
+	mb.target = party[1].id
+	local mf = M.attach(mb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(mf ~= nil, "party marks: attached")
+	runTo(T + 1000)
+	local answers, goals, tiles = {}, {}, {}
+	for i, pl in ipairs(party) do
+		answers[i] = M.dangerFor(mb.id, pl.pos, pl.id)
+		check(answers[i] ~= nil and answers[i].marked[pl.pos.x .. "," .. pl.pos.y], "party marks: bot " .. i .. " stands in a mark")
+		local a = answers[i]
+		check(a ~= nil and a.goal ~= nil and a.route ~= nil and #a.route >= 1, "party marks: bot " .. i .. " gets a goal and a way")
+		if a and a.goal then
+			local gk = a.goal.x .. "," .. a.goal.y
+			check(not a.marked[gk], "party marks: the goal of bot " .. i .. " is unmarked")
+			check(not goals[gk], "party marks: no two bots share a goal (bot " .. i .. ")")
+			goals[gk] = true
+			local last = a.route[#a.route]
+			check(last.x == a.goal.x and last.y == a.goal.y, "party marks: the way of bot " .. i .. " ends on its goal")
+			for _, t in ipairs(a.route) do
+				local k = t.x .. "," .. t.y
+				check(not tiles[k], "party marks: the way of bot " .. i .. " crosses no earlier bot's way at " .. k)
+				for j, other in ipairs(party) do
+					if j ~= i then
+						check(not (other.pos.x == t.x and other.pos.y == t.y), "party marks: the way of bot " .. i .. " does not go over bot " .. j)
+					end
+				end
+			end
+			for _, t in ipairs(a.route) do
+				tiles[t.x .. "," .. t.y] = true
+			end
+		end
+	end
+	-- asked again at the next look (the bots have not moved): each keeps its goal
+	for i, pl in ipairs(party) do
+		local again = M.dangerFor(mb.id, pl.pos, pl.id)
+		check(again.goal.x == answers[i].goal.x and again.goal.y == answers[i].goal.y, "party marks: bot " .. i .. " keeps its goal at the next look")
+	end
+	-- without an id nothing is reserved: the plain nearest safe tile, no route
+	local plain = M.dangerFor(mb.id, party[3].pos)
+	check(plain.goal ~= nil and plain.route == nil, "party marks: no id, no route (the plain nearest tile)")
+	-- after the hit no mark is pending: no danger, no goal
+	runTo(T + 4000)
+	eq(M.dangerFor(mb.id, party[1].pos, party[1].id), nil, "party marks: after the hit no danger is up")
+	creatures[mb.id] = nil
+	for _, pl in ipairs(party) do
+		creatures[pl.id] = nil
+	end
 end
 
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))

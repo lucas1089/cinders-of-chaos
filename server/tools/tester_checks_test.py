@@ -11936,5 +11936,158 @@ class PinnacleDodge(unittest.TestCase):
         TX.pinnacle_problems({'run': {}, 'tally': {'fired': 1, 'exposed': 1, 'taken': 0, 'by': {}}}, t)
         self.assertEqual(t['tally']['fired'], 1)
 
+class PinnacleRoles(unittest.TestCase):
+    """O684: a party's dodge steps are the server's, the healer heals the lowest member, melee bots do not stand on top of each other"""
+
+    NAMES = PinnacleParty.NAMES
+
+    def test_the_dodge_walks_the_way_the_server_planned(self):
+        s = {'pos': {'x': 10, 'y': 10, 'z': 7}, 'danger': {'steps': [[1, 0], [1, 1], [0, 1]]}}
+        goal = {'x': 12, 'y': 12, 'z': 7}
+        self.assertEqual(TX.dodge_route(s, goal), [(1, 0), (1, 1), (0, 1)], 'the planned steps, not the straight diagonal ones')
+        self.assertEqual(TX.dodge_route(s, goal, 2), [(1, 0), (1, 1)], 'at most n')
+        self.assertEqual(TX.dodge_route({'pos': s['pos']}, goal), [(1, 1), (1, 1)], 'no plan: the straight plan to the goal')
+        for bad in ([[2, 0]], [[0, 0]], [['a', 1]], [[1]], 'x', []):
+            self.assertEqual(TX.dodge_route({'pos': s['pos'], 'danger': {'steps': bad}}, goal), [(1, 1), (1, 1)], 'an unusable plan: the straight one: %r' % (bad,))
+        self.assertEqual(TX.dodge_route(None, goal), [])
+
+    def test_five_bots_walk_five_different_ways(self):
+        goals = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1)]
+
+        class IO(PinnacleParty.FightIO):
+            def state(self, name):
+                a = PinnacleParty.FightIO.state(self, name)
+                if a.get('guide') is not None:
+                    i = PinnacleParty.NAMES.index(name)
+                    a['danger'] = {'labels': ['Drowning Marks'], 'left': 2000, 'count': 1, 'here': True, 'steps': [list(goals[i])] * 2}
+                return a
+        io = IO(kill_at=2, mode='dodge')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, [{'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True} for i, n in enumerate(self.NAMES)], t, 1500.0))
+        for i, n in enumerate(self.NAMES):
+            mine = [(st[1], st[2]) for st in io.stepped if st[0] == ('lead' if i == 0 else n)]
+            self.assertEqual(mine, [goals[i]] * 2, '%s walks its own way' % n)
+
+    def test_a_melee_bot_next_to_another_steps_off(self):
+        boss = (10, 5)
+        self.assertIsNone(TX.spread_step((10, 8), {(14, 8)}, boss), 'nobody next to it: it stays')
+        step = TX.spread_step((10, 8), {(11, 8), (9, 8)}, boss)
+        self.assertIsNotNone(step)
+        t = (10 + step[0], 8 + step[1])
+        self.assertNotIn(t, {(11, 8), (9, 8)})
+        self.assertLess(sum(1 for m in ((11, 8), (9, 8)) if TX._cheb(t, m) <= 1), 2, 'a less crowded tile')
+        # the one tile next to the boss's body and the reach: never onto the body, never out of the fight reach
+        far = TX.spread_step((10, 10), {(11, 10)}, boss)
+        self.assertTrue(far is None or TX._cheb((10 + far[0], 10 + far[1]), boss) <= TX.PINNACLE_FIGHT_REACH)
+        body = TX.spread_step((10, 6), {(9, 6), (11, 6), (10, 7)}, (10, 5))
+        self.assertTrue(body is None or not TX._in_body((10 + body[0], 6 + body[1]), (10, 5)), 'no step onto the boss')
+        self.assertTrue(TX._in_body((9, 4), boss) and TX._in_body((10, 5), boss) and not TX._in_body((11, 5), boss), 'a size 2 boss stands up and left of its tile')
+
+    def test_the_healer_goes_to_the_lowest_member_and_keeps_its_distance(self):
+        boss = (10, 5)
+        step, cast = TX.healer_step((10, 12), boss, (10, 6))
+        self.assertEqual((step, cast), ((0, -1), False), 'six tiles away: a step toward him, no cast yet')
+        step, cast = TX.healer_step((10, 9), boss, (10, 6))
+        self.assertEqual((step, cast), ((0, -1), True), 'three tiles: it casts and walks on')
+        step, cast = TX.healer_step((10, 8), boss, (10, 7))
+        self.assertEqual((step, cast), (None, True), 'one tile: it stays and casts')
+        step, cast = TX.healer_step((10, 6), boss, (10, 4))
+        self.assertEqual(cast, True)
+        self.assertTrue(step is None or not TX._in_body((10 + step[0], 6 + step[1]), boss), 'no step onto the boss')
+        self.assertEqual(TX.healer_step((10, 7), boss, None), ((0, 1), False), 'nobody weak, the boss two tiles away: it backs off')
+        self.assertEqual(TX.healer_step((10, 12), boss, None), (None, False), 'far enough: it stays')
+
+    class RoleIO(PinnacleParty.FightIO):
+        def __init__(self, health, pos, mode='fight', pending=False):
+            PinnacleParty.FightIO.__init__(self, kill_at=2, mode=mode)
+            self.health, self.pos, self.pending, self.cast = health, pos, pending, []
+
+        def state(self, name):
+            a = PinnacleParty.FightIO.state(self, name)
+            if a.get('guide') is not None:
+                a['pos'] = {'x': self.pos[name][0], 'y': self.pos[name][1], 'z': 7}
+                a['run']['bossPos'] = {'x': 10, 'y': 5, 'z': 7}
+                if self.pending:
+                    a['danger'] = {'labels': ['Tidal Collapse'], 'left': 1500, 'count': 1, 'here': False}
+            return a
+
+        def health_of(self, name):
+            return self.health.get(name)
+
+        def class_of(self, name):
+            return PinnacleParty.CLASSES.get(name, '')
+
+        async def heal_spell_of(self, name):
+            self.cast.append(name)
+            return True
+
+    def roles(self, io):
+        squad = [{'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True} for i, n in enumerate(self.NAMES)]
+        inside = {n: io.state(n) for n in self.NAMES}
+        t = {'steps': 0}
+        moved = run(TX.pinnacle_roles(io, squad, inside, t))
+        return moved, t
+
+    def test_the_mystic_casts_at_the_weakest_and_walks_to_him(self):
+        # Aaa Mystic far back, Aac Warrior at 30% health in front
+        pos = {'Tester Aaa': (10, 14), 'Tester Aab': (6, 12), 'Tester Aac': (10, 7), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
+        io = self.RoleIO({'Tester Aaa': 90, 'Tester Aab': 80, 'Tester Aac': 30, 'Tester Aad': 60, 'Tester Aae': 95}, pos)
+        moved, t = self.roles(io)
+        self.assertEqual(io.cast, [], 'seven tiles away: not in reach of the heal yet')
+        self.assertIn('Tester Aaa', moved)
+        self.assertIn(('lead', 0, -1), io.stepped, 'a step toward the lowest member (Aac, not Aad at 60%)')
+        pos['Tester Aaa'] = (10, 9)
+        moved, t = self.roles(io)
+        self.assertEqual(io.cast, ['Tester Aaa'], 'two tiles from him: the heal is cast')
+        self.assertEqual(t['ally_heals'], 1)
+
+    def test_nobody_under_the_threshold_the_mystic_keeps_back(self):
+        pos = {'Tester Aaa': (10, 7), 'Tester Aab': (6, 12), 'Tester Aac': (10, 9), 'Tester Aad': (14, 12), 'Tester Aae': (16, 9)}
+        io = self.RoleIO({n: 90 for n in self.NAMES}, pos)
+        moved, t = self.roles(io)
+        self.assertEqual(io.cast, [])
+        self.assertIn('Tester Aaa', moved, 'two tiles from the boss: it backs off')
+        self.assertIn(('lead', 0, 1), io.stepped)
+
+    def test_no_role_step_while_a_mark_is_pending(self):
+        pos = {'Tester Aaa': (10, 14), 'Tester Aab': (6, 12), 'Tester Aac': (10, 7), 'Tester Aad': (14, 12), 'Tester Aae': (11, 7)}
+        io = self.RoleIO({'Tester Aaa': 90, 'Tester Aab': 80, 'Tester Aac': 30, 'Tester Aad': 60, 'Tester Aae': 95}, pos, pending=True)
+        moved, t = self.roles(io)
+        self.assertEqual(moved, set(), 'a step could enter the mark')
+        self.assertEqual(io.stepped, [])
+
+    def test_melee_bots_on_one_spot_spread(self):
+        pos = {'Tester Aaa': (10, 14), 'Tester Aab': (11, 9), 'Tester Aac': (10, 8), 'Tester Aad': (14, 12), 'Tester Aae': (11, 8)}
+        io = self.RoleIO({n: 90 for n in self.NAMES}, pos)
+        moved, t = self.roles(io)
+        self.assertEqual(moved, {'Tester Aac', 'Tester Aae'}, 'the Warrior and the Samurai have two bots next to them: both step off (the Ranger is no melee bot)')
+        self.assertEqual(t['spread'], 2)
+        io1 = self.RoleIO({n: 90 for n in self.NAMES}, dict(pos, **{'Tester Aab': (6, 12)}))
+        self.assertEqual(self.roles(io1)[0], set(), 'only one bot next to a melee bot: no dance')
+        # the Ranger and the Elementalist are no melee bots: they are left where they are
+        pos2 = dict(pos, **{'Tester Aab': (6, 12), 'Tester Aad': (7, 12)})
+        io2 = self.RoleIO({n: 90 for n in self.NAMES}, pos2)
+        moved2, _ = self.roles(io2)
+        self.assertNotIn('Tester Aab', moved2)
+        self.assertNotIn('Tester Aad', moved2)
+
+    def test_a_bot_that_took_a_role_step_does_not_walk_too(self):
+        pos = {'Tester Aaa': (10, 14), 'Tester Aab': (11, 9), 'Tester Aac': (10, 8), 'Tester Aad': (14, 12), 'Tester Aae': (11, 8)}
+        io = self.RoleIO({n: 90 for n in self.NAMES}, pos, mode='fight')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, [{'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True} for i, n in enumerate(self.NAMES)], t, 1500.0))
+        self.assertGreaterEqual(t.get('spread', 0), 1)
+        self.assertIn('Tester Aac', {s[0] for s in io.stepped})
+
+    def test_an_io_without_health_or_classes_plays_no_role(self):
+        io = PinnacleParty.FightIO(kill_at=2, mode='fight')
+        squad = [{'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True} for i, n in enumerate(self.NAMES)]
+        inside = {n: io.state(n) for n in self.NAMES}
+        self.assertEqual(run(TX.pinnacle_roles(io, squad, inside, {'steps': 0})), set())
+
+    def test_the_heal_thresholds(self):
+        self.assertEqual(TX.PINNACLE_HEAL_AT, (90, 80, 40))
+
+
 if __name__ == '__main__':
     unittest.main()

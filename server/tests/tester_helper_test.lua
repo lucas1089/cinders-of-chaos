@@ -2167,6 +2167,16 @@ do
 		and pd.tally.by["Tidal Collapse"].junk == nil, "pinnacle answer: the tally, cut down")
 	check(H.pinnacleAnswer({inside = "vhoss"}).danger == nil and H.pinnacleAnswer({inside = "vhoss"}).tally == nil, "pinnacle answer: no danger and no tally when none is up")
 	check(HELPER_VERSION >= 31, "the helper is version 31 or later (O683: the probe's danger and tally)")
+	-- O684: the planned way to the safe tile, cut to 12 steps of (dx, dy)
+	local steps = {}
+	for i = 1, 15 do
+		steps[i] = {-1, 1, junk = 1}
+	end
+	local pw = H.pinnacleAnswer({inside = "vhoss", danger = {left = 900, labels = {"A"}, count = 1, here = true, steps = steps}})
+	eq(#pw.danger.steps, 12, "pinnacle answer: at most 12 steps of the way to the safe tile")
+	check(pw.danger.steps[1][1] == -1 and pw.danger.steps[1][2] == 1 and pw.danger.steps[1].junk == nil, "pinnacle answer: a step is (dx, dy)")
+	check(H.pinnacleAnswer({inside = "vhoss", danger = {left = 900, labels = {}, count = 1}}).danger.steps == nil, "pinnacle answer: no steps when the server planned none")
+	check(HELPER_VERSION >= 32, "the helper is version 32 or later (O684: the planned way to the safe tile)")
 	local realPN = ChaosPinnacle
 	local setFor, closesPN = 0, closes
 	ChaosPinnacle = {probe = function(p)

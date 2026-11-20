@@ -527,8 +527,8 @@ local dangerAsked, dangerAnswer, addsAnswer, tallyAnswer = {}, nil, nil, nil
 ChaosBossMech = {attach = function(m, key, opts)
 	attached[#attached + 1] = {monster = m, opts = opts}
 	return {hpMult = 0.8}
-end, dangerFor = function(bossId, at)   -- O681: the marks a person sees (boss_mechanics.lua M.dangerFor)
-	dangerAsked[#dangerAsked + 1] = {bossId, at}
+end, dangerFor = function(bossId, at, who)   -- O681: the marks a person sees (boss_mechanics.lua M.dangerFor; O684: and who asks)
+	dangerAsked[#dangerAsked + 1] = {bossId, at, who}
 	return dangerAnswer
 end, addsFor = function(bossId)   -- O681: the adds and the totem of the phases (boss_mechanics.lua M.addsFor)
 	return addsAnswer
@@ -867,6 +867,14 @@ do
 	eq(on.guide.goal.x, lp.x - 3, "probe: to the safe tile the mechanics name")
 	eq(on.danger.here, true, "probe: the bot stands in the mark")
 	ok(on.guide.why:find("Tidal Surge", 1, true) ~= nil, "probe: the guide says which mark")
+	-- O684: the probe asks with the player's id (a party's bots get different goals) and turns the planned route into (dx, dy) steps from the bot's tile
+	eq(dangerAsked[#dangerAsked][3], lead:getId(), "probe: the danger is asked with the player's id")
+	dangerAnswer = {marked = {[lp.x .. "," .. lp.y] = true}, left = 900, labels = {"Tidal Surge"}, count = 1, goal = {x = lp.x - 2, y = lp.y + 1, z = lp.z},
+		route = {{x = lp.x - 1, y = lp.y + 1, z = lp.z}, {x = lp.x - 2, y = lp.y + 1, z = lp.z}}}
+	local rt = PN.probe(lead)
+	eq(#rt.danger.steps, 2, "probe: the route is two steps")
+	ok(rt.danger.steps[1][1] == -1 and rt.danger.steps[1][2] == 1 and rt.danger.steps[2][1] == -1 and rt.danger.steps[2][2] == 0,
+		"probe: the steps are (dx, dy) from the tile before")
 	dangerAnswer = nil
 	eq(PN.probe(lead).guide.mode, "fight", "probe: no mark, no dodge")
 	eq(PN.probe(lead).danger, nil, "probe: no danger field without a mark")
