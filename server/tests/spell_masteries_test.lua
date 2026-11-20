@@ -51,7 +51,7 @@ for node, line in pairs(nodeLine) do
 	ok(rows and #rows >= 2 and #rows <= 3, line .. ": two or three spell modifier choices")
 	eq(lines[line], #rows, line .. ": every row of the line is on its node")
 	ok(tree.nodes[node] and Core.isMastery(tree.nodes[node]), node .. " is a mastery node")
-	eq(#tree.nodes[node].m, oldCount[node] + #rows, node .. ": the old effects stay, the choices are added")
+	eq(#tree.nodes[node].m, oldCount[node] + #rows + 1, node .. ": the old effects stay, the choices are added, then the combo mastery (O686 phase 6b)")
 	for k, c in ipairs(rows) do
 		eq(c.line, line, c.name .. ": the line of the node")
 		eq(c.effect, oldCount[node] + k, c.name .. ": appended after the old effects, in order")
@@ -67,7 +67,40 @@ for node, line in pairs(nodeLine) do
 end
 eq(nodes, 7, "seven mastery nodes, seven lines")
 ok(#tree.nodes[665].m <= ptCfg.maxMasteryChoices, "within the node limit")
-eq(ptCfg.maxMasteryChoices, 7, "the effects per node: 4 before O451, 7 now")
+eq(ptCfg.maxMasteryChoices, 8, "the effects per node: 4 before O451, 7 with the spell modifiers, 8 with the combo mastery (O686 phase 6b)")
+for node in pairs(nodeLine) do
+	ok(#tree.nodes[node].m <= ptCfg.maxMasteryChoices, node .. ": within the node limit")
+end
+
+-- ---------------------------------------------------------------- the combo masteries (O686 phase 6b): spell_combos_config.lua `masteries`
+local combo = dofile("data/scripts/chaos/spell_combos_config.lua").masteries
+eq(#combo.choices, 7, "one combo mastery for each mastery node")
+local comboNodes = {}
+for i, c in ipairs(combo.choices) do
+	eq(c.id, i, "combo mastery ids 1.. in order")
+	eq(nodeLine[c.node], c.line, c.name .. ": the line of the node")
+	ok(not comboNodes[c.node], c.name .. ": one combo mastery a node")
+	comboNodes[c.node] = true
+	-- the effect sits after every old effect and every spell modifier of its node, and is one stat: comboMod = id
+	eq(c.effect, oldCount[c.node] + #byNode[c.node] + 1, c.name .. ": appended last")
+	eq(c.effect, #tree.nodes[c.node].m, c.name .. ": the last effect of the node")
+	local effect = tree.nodes[c.node].m[c.effect]
+	local n = 0
+	for stat, value in pairs(effect) do
+		n = n + 1
+		eq(stat, "comboMod", c.name .. ": the one stat")
+		eq(value, c.id, c.name .. ": the id")
+	end
+	eq(n, 1, c.name .. ": nothing else")
+	eq(Core.nodeStats(tree.nodes[c.node], nil, c.effect).comboMod, c.id, c.name .. ": the chosen effect's stat")
+end
+for node in pairs(nodeLine) do
+	ok(comboNodes[node], node .. ": has a combo mastery")
+end
+-- the spell modifier and the build planner ignore the new stat
+local ids = {}
+for _, c in ipairs(combo.choices) do ids[#ids + 1] = c.id end
+eq(table.concat(ids, ","), "1,2,3,4,5,6,7", "the combo mastery ids")
 -- a character holds one choice per mastery node: a spell modifier is one effect of a node, whatever the id
 for _, c in ipairs(M.choices) do
 	local stats = Core.nodeStats(tree.nodes[c.node], nil, c.effect)
@@ -252,6 +285,11 @@ if f then
 		local effect = cnodes[c.node].masteries[c.effect]
 		eq(effect.name, c.name, c.name .. ": the client's name")
 		eq(effect.customStats.spellMod, c.id, c.name .. ": the client's stat")
+	end
+	for _, c in ipairs(combo.choices) do
+		local effect = cnodes[c.node].masteries[c.effect]
+		eq(effect.name, c.name, c.name .. ": the client's name of the combo mastery")
+		eq(effect.customStats.comboMod, c.id, c.name .. ": the client's combo stat")
 	end
 else
 	print("note: client data not found, the client's names were not compared")

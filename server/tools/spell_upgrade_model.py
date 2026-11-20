@@ -50,6 +50,7 @@ REPO = os.path.normpath(os.path.join(SERVER, '..'))
 RANKS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_ranks_config.lua')
 BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_upgrade_balance_config.lua')
 COMBOS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_combos_config.lua')
+COMBO_LUA = os.path.join(SERVER, 'tools', 'combo_numbers.lua')
 AWAKENING_LUA = os.path.join('tools', 'awakening_numbers.lua')
 PROGRESSION = os.path.join('tools', 'progression_model.lua')
 MEASURED = os.path.join(SERVER, 'data', 'spells', 'class_dps_measured.csv')
@@ -220,33 +221,78 @@ def combos_config(path=COMBOS):
     return _CACHE[key]
 
 
+def combos_numbers(path=COMBOS):
+    """the numbers of the combo rows from the one implementation (tools/combo_numbers.lua, spell_combos_core.lua), phase 6b: {'cfg': {name:
+    value}, 'rows': [(id, bonus, weight, riderKind, riderGain)], 'masteries': [(id, name, gain, shareGain)], 'bad': [text]}. The riders'
+    counted damage is on top of the bonus (design 4.2)"""
+    key = ('comboNumbers', path)
+    if key not in _CACHE:
+        out, last = None, None
+        for exe in ('luajit', 'lua5.3'):
+            try:
+                r = subprocess.run([exe, COMBO_LUA, path], cwd=SERVER, capture_output=True, text=True, timeout=120)
+            except FileNotFoundError:
+                continue
+            if r.returncode == 0:
+                out = r.stdout
+                break
+            last = r.stderr
+        if out is None:
+            raise RuntimeError('combo_numbers.lua needs luajit or lua5.3: %s' % last)
+        res = {'cfg': {}, 'rows': [], 'masteries': [], 'bad': []}
+        for line in out.strip().split('\n'):
+            f = line.split('\t')
+            if f[0] == 'cfg':
+                res['cfg'][f[1]] = float(f[2])
+            elif f[0] == 'row':
+                res['rows'].append((f[1], float(f[2]), float(f[3]), f[4], float(f[5])))
+            elif f[0] == 'mastery':
+                res['masteries'].append((int(f[1]), f[2], float(f[3]), float(f[4])))
+            elif f[0] == 'bad':
+                res['bad'].append(f[1])
+        _CACHE[key] = res
+    return _CACHE[key]
+
+
 def combos_total(path=COMBOS):
-    """the typical rotation's gain from the combos: the share of its spell damage on a combo hit x the mean bonus of the rows"""
-    c = combos_config(path)
-    w = sum(r[2] for r in c['rows'])
-    mean = sum(r[1] * r[2] for r in c['rows']) / w
-    return c['model']['triggerShare'] * mean
+    """the typical rotation's gain from the combos: the share of its spell damage on a combo hit x (the mean bonus of the rows + the mean
+    counted damage of their riders)"""
+    return combos_numbers(path)['cfg']['typical']
+
+
+def combos_bonus_only(path=COMBOS):
+    """the same without the riders (phase 6: the owner's 10-20% alone)"""
+    return combos_numbers(path)['cfg']['bonusOnly']
 
 
 def combos_best(path=COMBOS):
-    c = combos_config(path)
-    return c['model']['triggerShare'] * max(r[1] for r in c['rows'])
+    """the best legal rotation, one target: every counted hit a combo of the best row; the riders that hit other enemies count 0 there"""
+    return combos_numbers(path)['cfg']['best']
 
 
 def combos_problems(path=COMBOS):
     bad = []
     c = combos_config(path)
+    n = combos_numbers(path)
     lo, hi = c['band']
     if len(c['rows']) != 13:
         bad.append('combos: %d rows in spell_combos_config.lua, the design has 13' % len(c['rows']))
     for rid, bonus, weight in c['rows']:
         if not lo - 1e-9 <= bonus <= hi + 1e-9:
             bad.append('combo %s: bonus %.0f%% is outside %.0f%% to %.0f%% (owner 2026-11-20)' % (rid, bonus * 100, lo * 100, hi * 100))
+    bad.extend('combos: ' + x for x in n['bad'])
     typical, best = combos_total(path), combos_best(path)
     if typical > c['model']['typicalMax'] + 1e-9:
-        bad.append('combos: the typical rotation gains %.1f%%, the limit is %.1f%%' % (typical * 100, c['model']['typicalMax'] * 100))
+        bad.append('combos: the typical rotation gains %.2f%% with the riders, the limit is %.1f%%' % (typical * 100, c['model']['typicalMax'] * 100))
     if best > c['model']['bestMax'] + 1e-9:
         bad.append('combos: the best legal rotation gains %.1f%%, the limit is %.1f%%' % (best * 100, c['model']['bestMax'] * 100))
+    # phase 6b: no rider may deal more than its row's bonus (checked by the core) and the bonuses stay the owner's: the riders are the
+    # only thing that may move when the total is over
+    if n['cfg']['bonusOnly'] > c['model']['typicalMax'] + 1e-9:
+        bad.append('combos: the owner\'s bonuses alone gain %.2f%%, over the limit' % (n['cfg']['bonusOnly'] * 100))
+    for mid, name, gain, share in n['masteries']:
+        if gain > n['cfg']['masteryMax'] + 1e-9:
+            bad.append('combo mastery %d %s: counts +%.2f%% of the spell damage, the limit is %.1f%%' % (mid, name, gain * 100, n['cfg']['masteryMax'] * 100))
     expected = balance_config()['combos']['expected']
     if abs(typical - expected) > 0.003:
         bad.append('combos: the rows count %.2f%% for the typical rotation, spell_upgrade_balance_config.lua `combos.total` says %.2f%% (within 0.3 points); '

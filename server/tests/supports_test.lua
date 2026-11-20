@@ -695,6 +695,11 @@ eq(a, 100, "physical part stays whole"); eq(b, 20, "fire part added after the fi
 me.storage[cfg.storageContext] = nil
 local other = newCreature({player = true, level = 50, pos = {x = 53, y = 50, z = 7}, health = 100})
 eq((hit(demon, other, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "hexed: +6% from everyone (a Mythic hex counts as Legendary: O471)")
+-- O686 phase 6b (Psychic Shatter): a live hex is renewed, a target with no hex has nothing to renew
+eq(S.renewHex(demon), true, "renewHex: a live hex lasts its full time again")
+eq(S.renewHex(newCreature({pos = {x = 54, y = 50, z = 7}, health = 5000})), false, "renewHex: a monster with no hex")
+eq(S.renewHex(nil), false, "renewHex: no creature")
+eq((hit(demon, other, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "renewed: still +6%")
 -- no context: no brand
 eq((hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "weapon hit: only the hex")
 -- Keen Edge crits

@@ -428,6 +428,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 704,
@@ -868,6 +875,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 703,
@@ -1289,6 +1303,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 666,
@@ -1686,6 +1707,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -2127,6 +2155,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 705,
@@ -2496,6 +2531,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 705,
@@ -2857,6 +2899,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -3328,6 +3377,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 667,
@@ -3678,6 +3734,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -4100,6 +4163,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 666,
@@ -4482,6 +4552,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 667,
@@ -4814,6 +4891,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -5163,6 +5247,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -5546,6 +5637,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 665,
@@ -5865,6 +5963,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -6309,6 +6414,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 665,
@@ -6604,6 +6716,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -7073,6 +7192,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 667,
@@ -7420,6 +7546,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 7,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],
@@ -7889,6 +8022,13 @@
        "other": [
         "spellMod"
        ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
+       ]
       }
      ],
      "id": 665,
@@ -8175,6 +8315,13 @@
        "observable": {},
        "other": [
         "spellMod"
+       ]
+      },
+      {
+       "choice": 8,
+       "observable": {},
+       "other": [
+        "comboMod"
        ]
       }
      ],

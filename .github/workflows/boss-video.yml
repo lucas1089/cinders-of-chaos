@@ -1,7 +1,8 @@
 # Boss fight video (O689, server/README.md "Malgrath fight video (O689)"): the MAIN client (Linux build, CHAOS_RMLUI=OFF) films the five complete tester bots
 # fighting a pinnacle boss, Malgrath the Drowned Crown (level 1900) by default, on a real server of this commit. The artifact is `boss-video`: the MP4, the fight
-# report (time to kill or wipe, the boss health taken, who was carried out when) and the client log, with the account, the password, the guard key and the
-# database login cut out. Nothing else is uploaded: no frame, no sprite file, no database, no key, no server log.
+# report (time to kill or wipe, the boss health taken, who was carried out when, the deaths and who killed), the client log and the last 300 lines of the server
+# console (the tail only, a line with a sensitive word dropped), with the account, the password, the guard key and the database login cut out. Nothing else is
+# uploaded: no frame, no sprite file, no database, no key, no whole server log.
 #
 # MANUAL ONLY (workflow_dispatch). About 90 minutes of set-up and preparation at the least: the base client and the sprite pair of the windows-assets branch, the
 # client build (about 15 minutes), the server of tools/ci/unity_live_check.sh --serve-only (the install of the content takes about 12), then the bots gear up,
@@ -239,10 +240,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: boss-video
-          # the MP4, the fight report and the client log (account, password, guard key and database login cut out) only
+          # the MP4, the fight report, the client log and the tail of the server console (account, password, guard key and database login cut out) only
           path: |
             ${{ runner.temp }}/boss-video/*_fight.mp4
             ${{ runner.temp }}/boss-video/fight-report.txt
             ${{ runner.temp }}/boss-video/client-log.txt
+            ${{ runner.temp }}/boss-video/server-console-tail.txt
           if-no-files-found: warn
           retention-days: 14

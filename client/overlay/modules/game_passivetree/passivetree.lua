@@ -2414,6 +2414,14 @@ function getCustomStatString(t, withKeystones)
 		end
 	end
 
+	-- a combo mastery effect (O686 phase 6b): the spell combos' window or pauses (treespellmods.lua)
+	if t.comboMod and TreeSpellMods then
+		local line = TreeSpellMods.comboText(t.comboMod)
+		if line then
+			table.insert(texts, line)
+		end
+	end
+
 	if t.strength then
 		table.insert(texts, tr("+%.1f strength.", t.strength/1))
 	end

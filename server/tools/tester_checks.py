@@ -2121,6 +2121,11 @@ async def walk_to_place(io, r, kind, n=None, near=1):
         return 'foot', got, None
     why = (got or {}).get('err') or 'the walk did not arrive'
     moved = await hcmd(io, r, 'enter ' + place, 'enter', HELPER_WAIT)
+    for _ in range(2 if video_on() else 0):   # O689 (video run): no answer (the bot died, the server was busy) or a refusal: asked again, the bot is in the temple
+        if isinstance(moved, dict) and not moved.get('err'):
+            break
+        await io.sleep(3.0)
+        moved = await hcmd(io, r, 'enter ' + place, 'enter', HELPER_WAIT)
     if not isinstance(moved, dict) or moved.get('err'):
         return 'no way to %s: %s; the teleport: %s' % (place, why, str((moved or {}).get('err') or 'no answer')[:50]), got, None
     again = await hcmd(io, r, 'path ' + place, 'path')
@@ -4693,9 +4698,10 @@ async def trial_complete(io, name, cls, fallbacks):
     start, played, tries, why = int(a.get('cleared') or 0), [], 0, None
     while io.alive() and int(a.get('cleared') or 0) < top:
         cleared = int(a.get('cleared') or 0)
-        if a.get('puzzle') or tries >= TRIAL_TRIES * (top - start):
+        if a.get('puzzle') or tries >= TRIAL_TRIES * (top - start) or video_on():
             kinds = '/'.join(sorted(set(k for k in a.get('kinds') or [] if k in ('seals', 'marks')))) or 'seals or marks'
-            reason = '%s puzzle: the bots do not play it' % kinds if a.get('puzzle') else '%d runs failed: %s' % (tries, str(why or 'no reason')[:40])
+            reason = ('%s puzzle: the bots do not play it' % kinds if a.get('puzzle') else 'the boss video run plays no trial: a lost one costs the bot a death and levels'
+                      if video_on() and tries < TRIAL_TRIES * (top - start) else '%d runs failed: %s' % (tries, str(why or 'no reason')[:40]))
             g = await io.helper('trial clear %d' % top, 'trial', HELPER_WAIT)
             ok = isinstance(g, dict) and not g.get('err')
             fallbacks.append('grant trial clear (TEST ONLY %s tiers %d-%d: %s%s)' % (cls, cleared + 1, top, reason, '' if ok else ', REFUSED: %s' % str((g or {}).get('err') or 'no answer')[:30]))
@@ -4855,6 +4861,38 @@ PINNACLE_MEMBERS = {}       # member name -> leader name, while a party plays
 PINNACLE_TURN = {'by': None}   # one fight of bots at a time (the arenas the testers may take are few: tester.reserve)
 PINNACLE_GATHER_NEAR = 3    # tiles from the opener a member stops at (party.range is 8)
 PINNACLE_MEMBER_WAIT = 2400.0   # seconds a member waits for its leader at most
+# O689 (the second video run): the boss video run (`testers.py --video --prep-minutes N`, tools/ci/boss_video.sh) has no hunting, no free activities, a gather that is tried
+# again and a prep that survives a death. The first run ended at the gather: a member waited 40 minutes (PINNACLE_MEMBER_WAIT), then it was released to the free
+# activity loop, hunted at level 1900 and died; the leader found a dead member at the Keeper and its SKIP ended the check for good. The normal closed audit is unchanged.
+PINNACLE_VIDEO = {'on': False, 'prep_s': 7200.0}
+PINNACLE_TRIES = 8              # video: tries of the gather (walk to the Keeper, party, Open) inside prep_s
+PINNACLE_RETRY_PAUSE = 20.0     # video: seconds in the temple between two tries
+PINNACLE_ALIVE_WAIT = 600.0     # video: seconds a member may be dead or logging in again before a try is given up
+PINNACLE_PREP_TRIES = 3         # video: runs of one bot's prep (a death in it ends the run; the prep is idempotent, the bot waits for its next login and goes on)
+VIDEO_CUT_MAX = 12              # video: deaths of the leader inside the check before it is given up (CUT_MAX is 3)
+
+
+def set_video(on, prep_minutes=0):
+    """O689: the run of the boss video (testers.py --video): the retry, the wait for members, the prep that survives a death, no hunt. prep_minutes is the longest
+    the whole preparation may take (tools/ci/boss_video.sh gives PREP / 60); 0 = 120"""
+    PINNACLE_VIDEO['on'] = bool(on)
+    PINNACLE_VIDEO['prep_s'] = float(prep_minutes) * 60.0 if prep_minutes and prep_minutes > 0 else 7200.0
+
+
+def video_on():
+    return bool(PINNACLE_VIDEO['on'])
+
+
+def member_wait_limit():
+    """seconds a member waits for its leader: the preparation, the fight and a quarter of an hour in the video run, PINNACLE_MEMBER_WAIT otherwise"""
+    return PINNACLE_VIDEO['prep_s'] + PINNACLE_BUDGET + 900.0 if video_on() else PINNACLE_MEMBER_WAIT
+
+
+def video_note(io, text):
+    """one line of the activity log (`RETRY`) from a check: what the video run tries again and why. Nothing for an io with no `note`"""
+    note = getattr(io, 'note', None)
+    if note is not None:
+        note(text)
 PINNACLE_HEAL_AT = (90, 80, 40)   # O683: health percent under which the heal spell is cast / the potion drunk in a pinnacle fight (O681: 75 / 55: a burst of 25k came on 31k);
 #                                  O684: and under which a bot casts no attack while its heal or its potion is ready (a person at 40% stops hitting and heals)
 PINNACLE_HEALERS = frozenset(['Illusionist', 'Iron Sage'])   # O685: the classes that play the party's healer (O684 had the Mystic's Wellspring: the model's healers are the two healer classes)
@@ -5029,7 +5067,8 @@ async def pinnacle_roles(io, squad, inside, trace, elapsed=0.0):
 async def pinnacle_member_wait(io, name):
     """a bot taken into a party waits for its leader (its own check list goes on after the fight, never into it)"""
     waited = 0.0
-    while name in PINNACLE_MEMBERS and io.alive() and waited < PINNACLE_MEMBER_WAIT:
+    limit = member_wait_limit()
+    while name in PINNACLE_MEMBERS and io.alive() and waited < limit:
         hold = getattr(io, 'hold_party', None)
         if hold is not None:
             hold([name])
@@ -5233,9 +5272,68 @@ async def check_pinnacle_party(io, name, cls, level):
         io.raid_mode([name] + partners, False)
 
 
+def login_of(mio):
+    """the creature id of the bot's login (None for an io with no bot): it changes when the bot died and came back"""
+    return getattr(getattr(mio, 'bot', None), 'cid', None)
+
+
+async def pinnacle_wait_alive(io, r):
+    """O689 (video run): waits until the squad member `r` is alive in the game (a dead bot wakes in the temple, logs in again; its own loop does that) and
+    takes its new io into r['io']. -> True when it is there, False after PINNACLE_ALIVE_WAIT seconds or when the leader is gone"""
+    waited = 0.0
+    while io.alive():
+        mio = io if r['lead'] else io.io_of(r['name'])
+        if mio is not None and mio.alive():
+            r['io'] = mio
+            if waited:
+                await io.sleep(3.0)   # a bot that has just logged in has no creature id for a moment (the `info` answer)
+            return True
+        if waited >= PINNACLE_ALIVE_WAIT:
+            return False
+        await io.sleep(5.0)
+        waited += 5.0
+    return False
+
+
+async def pinnacle_regroup(io, squad):
+    """O689 (video run): before a try of the gather every bot of the squad is alive and in the temple (`!tester town`: a protection zone, nothing there attacks
+    it). -> (True, '') or (False, why)"""
+    for r in squad:
+        if not await pinnacle_wait_alive(io, r):
+            return False, 'the member %s is not alive in the game after %d s' % (r['name'][-3:], PINNACLE_ALIVE_WAIT)
+    for r in squad:
+        mio = r['io']
+        if mio is not None and hasattr(mio, 'go'):
+            await mio.go('town')
+    await io.sleep(SETTLE)
+    return True, ''
+
+
+async def pinnacle_prep_run(io, r, cls, level, fallbacks):
+    """pinnacle_prep of one bot. The video run: a member that dies in it waits for its next login and its prep goes on (every step is idempotent), at most
+    PINNACLE_PREP_TRIES runs; the leader's own death ends the check as before (the CheckRun does it again after the login)"""
+    mio = r['io']
+    cid = login_of(mio)
+    text = await pinnacle_prep(mio, r['name'], cls, level, fallbacks)
+    if not video_on() or r['lead']:
+        return text
+    for run_no in range(2, PINNACLE_PREP_TRIES + 1):
+        if not io.alive() or (mio.alive() and login_of(mio) == cid):
+            return text
+        video_note(io, 'the prep of %s was cut by its death: waits for its next login, run %d of %d' % (r['name'][-3:], run_no, PINNACLE_PREP_TRIES))
+        if not await pinnacle_wait_alive(io, r):
+            return text + ' (not back in time)'
+        mio = r['io']
+        cid = login_of(mio)
+        cls = io.class_of(r['name']) or cls
+        text = await pinnacle_prep(mio, r['name'], cls, level, fallbacks)
+    return text
+
+
 async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
     key = 'pinnacle_party'
     fallbacks = []
+    t0 = time.monotonic()
     min_level = int(boss.get('minLevel') or 0)
     for other in await io.partners(PINNACLE_PARTY - 1, min_level=min_level):
         PINNACLE_MEMBERS[other] = name
@@ -5257,13 +5355,16 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
     io.hold_party(names)
     io.raid_mode(names, True)
     # the gear: every bot through the gear-up and the set gear at once (each on its own bot)
+    for r in squad:
+        if r['io'] is None and video_on() and not await pinnacle_wait_alive(io, r):   # O689: a member that died since the party was taken comes back first
+            return Result(key, name, cls, SKIP, 'the member %s is not alive in the game after %d s' % (r['name'][-3:], PINNACLE_ALIVE_WAIT))
+        if r['io'] is None:
+            return Result(key, name, cls, SKIP, 'the bot %s left the game before the fight' % r['name'][-3:])
     jobs = []
     for r in squad:
         mio = r['io']
-        if mio is None:
-            return Result(key, name, cls, SKIP, 'the bot %s left the game before the fight' % r['name'][-3:])
-        jobs.append(pinnacle_prep(mio, r['name'], io.class_of(r['name']) or cls, int((await hcmd(io, r, 'pinnacle state', 'pinnacle') or {}).get('level') or level),
-                                  fallbacks))
+        jobs.append(pinnacle_prep_run(io, r, io.class_of(r['name']) or cls, int((await hcmd(io, r, 'pinnacle state', 'pinnacle') or {}).get('level') or level),
+                                      fallbacks))
     prepped = await asyncio.gather(*jobs, return_exceptions=True)
     prep_text = [str(p)[:420] for p in prepped]
     if not io.alive():
@@ -5278,7 +5379,10 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
     if not isinstance(g, dict) or g.get('err'):
         return Result(key, name, cls, SKIP, 'pinnacle set: %s' % (str((g or {}).get('err') or 'no answer')[:80]), fallbacks)
     trace['boss'] = g.get('kind')
-    try:
+    state = {'opened': False}
+
+    async def gather():
+        """one try: the leader to the Keeper, the members to it, the party, Open, the fight. A SKIP before the fight opened can be tried again (the video run)"""
         why = await solo_to_temple(io, lead, trace, fallbacks, need_pz=True, system='pinnacle')
         if why:
             return Result(key, name, cls, SKIP, why.replace('the descent', 'the Keeper'), fallbacks)
@@ -5301,6 +5405,7 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         opened = await pinnacle_open(io, place)
         if opened is not None:
             return Result(key, name, cls, opened[0], opened[1], fallbacks)
+        state['opened'] = True
         for r in squad:   # the members that came along
             s = await hcmd(io, r, 'pinnacle state', 'pinnacle')
             r['inside'] = bool(isinstance(s, dict) and s.get('inside'))
@@ -5312,13 +5417,35 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         if trace['members_in'] < PINNACLE_PARTY:
             text += '; only %d of %d came along' % (trace['members_in'], PINNACLE_PARTY)
         return Result(key, name, cls, status, text, fallbacks)
+
+    try:
+        tries = PINNACLE_TRIES if video_on() else 1
+        last, attempt = None, 0
+        while attempt < tries:
+            attempt += 1
+            res = None
+            if video_on():   # O689: every bot alive and in the temple before a try: a member that died waits for its next login
+                ok, why = await pinnacle_regroup(io, squad)
+                if not ok:
+                    res = Result(key, name, cls, SKIP, why, fallbacks)
+            if res is None:
+                res = await gather()
+            if not video_on() or res.status != SKIP or state['opened'] or not io.alive():
+                return res
+            last = res
+            if attempt >= tries or time.monotonic() - t0 + PINNACLE_RETRY_PAUSE > PINNACLE_VIDEO['prep_s']:
+                break
+            video_note(io, 'pinnacle_party try %d of %d did not open the fight (%s): the bots wait in the temple, then it is tried again' % (attempt, tries, res.detail[:150]))
+            await io.sleep(PINNACLE_RETRY_PAUSE)
+        last.detail = 'after %d of %d tries: %s' % (attempt, tries, last.detail)
+        return last
     finally:
         if hasattr(io, 'heal_earlier'):
             io.heal_earlier(names, False)
         for r in squad:
             await hcmd(io, r, 'pinnacle close', 'pinnacle')
         await io.party_group_leave(partners)
-        await io.go('hunt')
+        await io.go('town' if video_on() else 'hunt')   # O689: the video run never sends a bot to a hunt (the first run's bots died there, level 1900 on the base map)
 
 
 # ------------------------------------------------------------------------------------------------ the bounty board, hunted (O599)
@@ -10161,7 +10288,7 @@ def cut_verdict(run, key, io, r):
     Result (what it was doing, the deaths, the level now), else None. The counts live on the CheckRun"""
     cuts = run.__dict__.setdefault('cuts', {})
     cuts[key] = cuts.get(key, 0) + 1
-    if cuts[key] < CUT_MAX:
+    if cuts[key] < (VIDEO_CUT_MAX if video_on() and key == 'pinnacle_party' else CUT_MAX):
         return None
     lvl = int(getattr(getattr(io, 'bot', None), 'level', 0) or 0) or run.level
     why = str(getattr(r, 'detail', '') or '')[:100]

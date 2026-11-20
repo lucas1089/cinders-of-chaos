@@ -80,6 +80,7 @@ ChaosPassiveStatsConfig = {
 		distanceSkill = {"Distance skill", "+1 distance skill level per point: bow, crossbow and throwing damage and accuracy."},
 		magicSkill = {"Magic level", "+1 magic level per point: stronger spells, healing and runes."},
 		spellMod = {"Spell modifier", "A mastery effect: one named spell gets a free support effect, the effect of a Common support rune at reduced strength. It takes no rune slot and never adds to a real rune of the same support."},
+		comboMod = {"Combo modifier", "A mastery effect that changes one number of the spell combos for you: a longer window between the two casts, a shorter wait before the same combo fires on the same target again, or a shorter wait between two combos. Never more than one at a time."},
 		shieldingSkill = {"Shielding", "+1 shielding skill level per point: you block more of the hits you take with a shield."},
 		skillShield = {"Shielding", "+1 shielding skill level per point: you block more of the hits you take with a shield."},
 		criticalHitChance = {"Crit chance", "Percent chance that a hit is critical, rolled once against the sum of tree, gear and gems."},

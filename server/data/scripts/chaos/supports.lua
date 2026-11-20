@@ -293,6 +293,17 @@ local function setHex(creature, pct)
 	end
 end
 
+-- O686 phase 6b (Psychic Shatter, spell_combos.lua): the Hex of a monster lasts its full time again. True when it had a live hex.
+function S.renewHex(creature)
+	local h = creature and hexes[creature:getId()]
+	local t = now()
+	if h and h.untilTime >= t then
+		h.untilTime = t + E.hexDuration
+		return true
+	end
+	return false
+end
+
 -- ---------------------------------------------------------------- per cast state and the hit buffer
 local casts = {} -- pid -> {serial, healed, mana, echo, burst, surge}
 local buffers = {} -- pid -> {spellId, serial, hits = {}, index = {}, total}

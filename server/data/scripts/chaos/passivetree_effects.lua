@@ -611,6 +611,11 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if m2 ~= 1 then
 			secondaryDamage = scale(secondaryDamage, m2)
 		end
+		-- O686 phase 6b: the rider of a combo that fired in this hit, and a kill inside a death burst window, with the final amounts
+		local riders = rawget(_G, "ChaosSpellCombos")
+		if riders and riders.afterHit then
+			riders.afterHit(attacker, creature, origin, primaryDamage, primaryType, secondaryDamage, secondaryType)
+		end
 	elseif attacker and not procActive then
 		-- a summon or a companion of a player that hits a player follows its owner's level (monsters of the wild never scale)
 		local owner = ownerOf(attacker)

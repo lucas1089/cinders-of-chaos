@@ -4,7 +4,7 @@
 -- The tree stat of such an effect is spellMod = <id> (treedata/nodes.lua); the server owns the rules and the numbers
 -- (server/data/lib/chaos_spell_masteries_config.lua, data/lib/chaos_supports.lua freeEffect). This file only words each choice:
 -- the spell, the support and its numbers, as the picker and the node tooltip show them (passivetree.lua getCustomStatString).
--- Pure, no client API (tested by treespellmods_test.lua, which pins every row to the server's numbers).
+-- Pure, no client API (tested by treespellmods_test.lua, which pins every row to the server's numbers). Phase 6b adds the combo masteries below.
 --   TreeSpellMods.rows[id]   {spell, support, a, b}: the spell's name, the support key, the numbers of its text
 --   TreeSpellMods.text(id)   the line in the player's language, or nil for an id that is no choice
 local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -55,6 +55,27 @@ function T.text(id)
     return tr('%s: its cooldown is %d%% shorter. A reduced Quickening rune, free.', r.spell, r.a)
   elseif k == 'dawnbrand' or k == 'gravebrand' or k == 'stormbrand' then
     return tr('%s: +%d increased damage while it is cast. It joins the one damage pool of the tree and gear (at most +12 from masteries).', r.spell, r.a)
+  end
+  return nil
+end
+
+-- O686 phase 6b: the combo masteries, the last effect of each mastery node (tree stat comboMod = id; the server owns the rules and the
+-- numbers: server/data/scripts/chaos/spell_combos_config.lua `masteries`, held equal by treespellmods_test.lua)
+--   TreeSpellMods.combo[id]      the kind of the choice: 'window' (the window between the two casts), 'repeat' (the wait before the same
+--                                combo fires again on the same target), 'pause' (the wait between two combos)
+--   TreeSpellMods.comboText(id)  the line in the player's language, or nil for an id that is no choice
+T.combo = {
+  [1] = 'repeat', [2] = 'window', [3] = 'pause', [4] = 'window', [5] = 'repeat', [6] = 'pause', [7] = 'window'
+}
+
+function T.comboText(id)
+  local k = T.combo[tonumber(id) or -1]
+  if k == 'window' then
+    return tr('Spell combos: the window between the two casts is 1.5 s longer (5.5 s in all).')
+  elseif k == 'repeat' then
+    return tr('Spell combos: the same combo fires again on the same target after 4 s, not 6 s.')
+  elseif k == 'pause' then
+    return tr('Spell combos: the wait between two combos is 0.8 s, not 1.2 s.')
   end
   return nil
 end

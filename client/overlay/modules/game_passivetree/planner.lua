@@ -197,8 +197,13 @@ function openMasteryChoice(node, saved)
   choiceWindow.hint:setText(saved and tr('Pick another effect. A change costs the single-node refund price.') or
     tr('Pick one effect. You can change it for free until you apply the plan.'))
   local list = choiceWindow.effects
+  local rows = 130
   for i, effect in ipairs(node.masteries or {}) do
     local button = g_ui.createWidget('MasteryEffectButton', list)
+    -- a combo mastery (O686 phase 6b) is a short two-line text: its button is lower, so eight effects still fit a 540 px screen
+    local combo = effect.customStats and effect.customStats.comboMod
+    button:setHeight(combo and 34 or 46)
+    rows = rows + (combo and 40 or 52)
     button:setText(string.format('%s%s\n%s', effect.name or ('Effect ' .. i), current == i and '  (chosen)' or '', effectText(effect)))
     button:setOn(current == i)
     button.onClick = function()
@@ -218,7 +223,7 @@ function openMasteryChoice(node, saved)
       end
     end
   end
-  choiceWindow:setHeight(130 + 52 * #(node.masteries or {})) -- up to 7 effects since O451: three lines of text each
+  choiceWindow:setHeight(rows) -- up to 7 effects of three lines since O451, and a low combo mastery button since O686 phase 6b
   local remove = choiceWindow.removeButton
   remove:setVisible(not saved)
   remove.onClick = function()

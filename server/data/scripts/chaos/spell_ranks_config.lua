@@ -134,8 +134,8 @@ return {
 	-- (owner 2026-11-20) raised them by 0.01 from level 700 up against the first design table, 0.02 at 1600, and the awakening is a line between
 	-- its points (0.5 spells at 2000): 2000 and 2200 are 0.02 and 0.01 above it.
 	health = {
-		{100, 1.02}, {200, 1.03}, {300, 1.06}, {400, 1.08}, {500, 1.10}, {600, 1.12}, {700, 1.16}, {800, 1.18},
-		{1000, 1.21}, {1300, 1.24}, {1600, 1.28}, {2000, 1.31}, {2200, 1.34}, {2500, 1.39},
+		{100, 1.02}, {200, 1.03}, {300, 1.06}, {400, 1.08}, {500, 1.10}, {600, 1.13}, {700, 1.16}, {800, 1.18},
+		{1000, 1.22}, {1300, 1.25}, {1600, 1.29}, {2000, 1.32}, {2200, 1.35}, {2500, 1.39},
 	},
 
 	-- the client state message (opcode 168 `state`, read only in this phase)

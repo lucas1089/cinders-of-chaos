@@ -29,13 +29,13 @@ def read(*parts):
 
 
 ACTIVITY = """\
-10:00:00 Tester Aka (L1900 Mystic) login in game
-10:41:02 Tester Aka (L1900 Illusionist) CHECK PASS pinnacle_party: Ascended Malgrath down in 301 s, 2 fall(s), 5 player(s), level 1900, 4 dodge(s), marks taken 3 of 20 (15%); gear x; 3 teleport/grant fallback(s) named in the result; carried out: Tester Bel at 86 s, Tester Cor at 172 s; party: Illusionist, Juggernaut, Deadeye, Elementalist, Samurai
-10:41:03 Tester Bel (L1900 Juggernaut) CHECK SKIP pinnacle_party: played as a member of the party of Tester Aka (its result is the party's)
-10:41:04 Tester Cor (L1900 Deadeye) DEATH died while hunting
-10:41:05 Tester Dun (L1900 Samurai) login in game
+10:00:00 Tester Aka (L1900 Mystic) login    in game
+10:41:02 Tester Aka (L1900 Illusionist) CHECK    PASS pinnacle_party: Ascended Malgrath down in 301 s, 2 fall(s), 5 player(s), level 1900, 4 dodge(s), marks taken 3 of 20 (15%); gear x; 3 teleport/grant fallback(s) named in the result; carried out: Tester Bel at 86 s, Tester Cor at 172 s; party: Illusionist, Juggernaut, Deadeye, Elementalist, Samurai
+10:41:03 Tester Bel (L1900 Juggernaut) CHECK    SKIP pinnacle_party: played as a member of the party of Tester Aka (its result is the party's)
+10:41:04 Tester Cor (L1900 Deadeye) DEATH    died while hunting
+10:41:05 Tester Dun (L1900 Samurai) login    in game
 """
-HURT = ("10:41:02 Tester Aka (L1900 Illusionist) CHECK PASS pinnacle_party: Ascended Malgrath hurt to 12% in 412 s, not down (5 fall(s), level 1900, x); "
+HURT = ("10:41:02 Tester Aka (L1900 Illusionist) CHECK    PASS pinnacle_party: Ascended Malgrath hurt to 12% in 412 s, not down (5 fall(s), level 1900, x); "
         "carried out: Tester Aka at 20 s, Tester Bel at 33 s; party: Illusionist, Juggernaut\n")
 CLIENT = """\
 [info] bosstour: armed: account lcs1abc123, boss Malgrath, party of 5, 480 s of fight, 7200 s of waiting at most
@@ -97,12 +97,12 @@ class Report(unittest.TestCase):
         self.assertEqual(v['out'], [('Tester Aka', 20), ('Tester Bel', 33)])
 
     def test_skip_and_nothing(self):
-        line = "10:00:00 Tester Aka (L1900 Mystic) CHECK SKIP pinnacle_party: the party could not be formed (a bot left the game)\n"
+        line = "10:00:00 Tester Aka (L1900 Mystic) CHECK    SKIP pinnacle_party: the party could not be formed (a bot left the game)\n"
         v = R.verdict_of(R.fight_lines(line))
         self.assertEqual(v['result'], 'not killed')
         self.assertEqual(v['status'], 'SKIP')
         self.assertEqual(R.verdict_of([])['result'], 'unknown')
-        member = "10:00:00 Tester Bel (L1900 Mystic) CHECK SKIP pinnacle_party: played as a member of the party of Tester Aka (its result is the party's)\n"
+        member = "10:00:00 Tester Bel (L1900 Mystic) CHECK    SKIP pinnacle_party: played as a member of the party of Tester Aka (its result is the party's)\n"
         self.assertEqual(R.verdict_of(R.fight_lines(member))['result'], 'unknown', 'a member line is not the leader\'s verdict')
 
     def test_client_facts(self):
@@ -147,9 +147,81 @@ class Report(unittest.TestCase):
             self.assertNotIn('ab', got, 'a value under six characters would cut ordinary words')
 
     def test_report_reaches_no_secret(self):
-        act = ACTIVITY + '10:41:06 Tester Aka (L1900 Mystic) CHECK PASS other: dbpass=Sup3rDBpass here\n'
+        act = ACTIVITY + '10:41:06 Tester Aka (L1900 Mystic) CHECK    PASS other: dbpass=Sup3rDBpass here\n'
         text = R.build_report('malgrath', 1900, ['Tester Aka'], act, CLIENT, 5, ['Sup3rDBpass'])
         self.assertNotIn('Sup3rDBpass', text)
+
+
+    def test_the_kind_column_is_padded_like_testers_py(self):
+        """the second run: testers.py writes '%s %s %-8s %s', so the verdict line reads `CHECK    SKIP pinnacle_party:`; the report and the grep of the script
+        did not match it (the fixtures here had one space). The line below is made with the same format string"""
+        who = 'Tester Aaa (L1900 Illusionist)'
+        line = '%s %s %-8s %s' % ('20:37:50', who, 'CHECK', 'SKIP pinnacle_party: the member Aad did not come to the Keeper: no way to npc Keeper of the Pinnacle: another floor')
+        self.assertIn('CHECK    SKIP', line)
+        v = R.verdict_of(R.fight_lines(line + '\n'))
+        self.assertEqual((v['status'], v['result']), ('SKIP', 'not killed'))
+        self.assertIn('the member Aad did not come to the Keeper', v['text'])
+        text = R.build_report('malgrath', 1900, ['Tester Aaa'], line + '\n', '')
+        self.assertIn('the boss was NOT killed', text)
+        self.assertNotIn('result: unknown', text)
+        sh = read('tools', 'ci', 'boss_video.sh')
+        pattern = re.search(r"grep -qP '([^']*pinnacle_party:[^']*)'", sh).group(1)
+        self.assertTrue(re.search(pattern.replace('(?!played as a member)', '(?!played as a member)'), line))
+        self.assertFalse(re.search(pattern, '%s %s %-8s %s' % ('20:36:31', who, 'CHECK', "SKIP pinnacle_party: played as a member of the party of Tester Aaa")))
+
+    def test_retry_lines_are_in_the_report(self):
+        act = ('20:30:00 Tester Aaa (L1900 Illusionist) RETRY    pinnacle_party try 1 of 8 did not open the fight (the member Aad did not come): the bots wait in the temple\n'
+               '20:40:00 Tester Aaa (L1900 Illusionist) CHECK    PASS pinnacle_party: Ascended Malgrath down in 301 s, 2 fall(s)\n')
+        text = R.build_report('malgrath', 1900, ['Tester Aaa'], act, '[info] bosstour: ready\n')
+        self.assertIn('RETRY    pinnacle_party try 1 of 8', text)
+        self.assertIn('killed in 301 s', text)
+
+    def test_deaths_are_summed_with_their_killers(self):
+        rows = []
+        for i, (who, wh, tail) in enumerate([
+                ('Aad', 'town', '; killed by a Dragon 912, a Dragon Hatchling 40 (3 last hit(s)); last helper move hunt 15 s before'),
+                ('Aad', 'depot', '; killed by a Dragon 100 (1 last hit(s)); last helper move hunt 9 s before'),
+                ('Aaa', 'hunt', '; no damage line seen; last helper move town 400 s before'),
+                ('Aaa', 'shop', '; killed by a Wyrm 77 (2 last hit(s))')]):
+            rows.append('20:%02d:00 Tester %s (L1900 Elementalist) %-8s died while %s%s' % (i, who, 'DEATH', wh, tail))
+        d = R.death_facts(rows)
+        self.assertEqual(d['n'], 4)
+        self.assertEqual(d['per_bot'], {'Tester Aad': 2, 'Tester Aaa': 2})
+        self.assertEqual(d['while'], {'town': 1, 'depot': 1, 'hunt': 1, 'shop': 1})
+        self.assertEqual(d['killers'], {'a Dragon': 2, 'a Wyrm': 1})
+        self.assertEqual(d['unseen'], 1)
+        self.assertEqual(d['move'], {'hunt': 2, 'town': 1})
+        text = R.build_report('malgrath', 1900, ['Tester Aad'], '\n'.join(rows) + '\n', '')
+        self.assertIn('deaths: 4 (Tester Aaa 2, Tester Aad 2)', text)
+        self.assertIn('not the place it died in', text)
+        self.assertIn('a Dragon 2', text)
+        self.assertIn('deaths with no damage line before them: 1 of 4', text)
+
+    def test_many_deaths_do_not_bury_the_verdict(self):
+        rows = ['20:%02d:%02d Tester Aad (L1900 Elementalist) %-8s died while town' % (i // 60, i % 60, 'DEATH') for i in range(100)]
+        act = '\n'.join(rows) + '\n20:59:00 Tester Aaa (L1900 Illusionist) CHECK    FAIL pinnacle_party: Ascended Malgrath hurt to 40% in 400 s, not down (3 fall(s))\n'
+        text = R.build_report('malgrath', 1900, ['Tester Aaa'], act, '')
+        self.assertIn('deaths: 100', text)
+        self.assertIn('[88 more deaths left out]', text)
+        self.assertIn('NOT killed after 400 s', text)
+        self.assertLess(text.count(' DEATH '), 14)
+
+    def test_console_tail_is_scrubbed(self):
+        secrets = ['Sup3rDBpass', 'lcs1abc123']
+        lines = ['[2026-11-20 20:00:00] boot line %d' % i for i in range(500)]
+        lines += ['[x] Tester Aad has logged in from 10.1.2.3',
+                  '[x] mysql connect user=chaos password=Sup3rDBpass',
+                  '[x] account lcs1abc123 entered', '[x] guard key ' + 'ab' * 32,
+                  '[x] tstbot0123456789 was here',
+                  '[x] Tester Aad lost 912 hitpoints to a Dragon']
+        out = R.scrub_console('\n'.join(lines) + '\n', secrets, 300)
+        for gone in ('Sup3rDBpass', 'lcs1abc123', 'ab' * 32, 'tstbot0123456789', '10.1.2.3', 'password'):
+            self.assertNotIn(gone, out)
+        self.assertIn('<ip>', out)
+        self.assertIn('Tester Aad lost 912 hitpoints to a Dragon', out, 'a plain line stays')
+        self.assertLessEqual(len(out.splitlines()), 300 + 2)
+        self.assertIn('line(s) with a sensitive word dropped', out)
+        self.assertNotIn('boot line 0\n', out, 'only the tail')
 
 
 class Static(unittest.TestCase):
@@ -191,7 +263,8 @@ class Static(unittest.TestCase):
                 self.assertNotIn(': ', m.group(1), 'a step name with ": " breaks the YAML: ' + m.group(1))
         up = wf[wf.index('actions/upload-artifact'):]
         paths = re.findall(r'\$\{\{ runner\.temp \}\}/boss-video/(\S+)', up)
-        self.assertEqual(sorted(paths), ['*_fight.mp4', 'client-log.txt', 'fight-report.txt'], 'only the mp4, the report and the client log are uploaded')
+        self.assertEqual(sorted(paths), ['*_fight.mp4', 'client-log.txt', 'fight-report.txt', 'server-console-tail.txt'],
+                         'only the mp4, the report, the client log and the tail of the server console are uploaded')
         self.assertIn('name: boss-video', up)
         self.assertIn('UL_PINNACLE_PARTY: "1"', wf)
         self.assertIn('tools/ci/boss_video.sh', wf)
@@ -213,7 +286,10 @@ class Static(unittest.TestCase):
         self.assertIn('-c:v libx264', sh)
         self.assertIn('-crf 23', sh)
         self.assertIn('-movflags +faststart', sh)
-        self.assertIn('--checks --closed --only pinnacle_party', sh)
+        self.assertIn('--checks --closed --only pinnacle_party --video --prep-minutes', sh)
+        # O689: the bots' kind column is padded (testers.py '%-8s'): every grep of the activity log allows the spaces
+        self.assertNotIn(' CHECK [A-Z]+ pinnacle_party', sh)
+        self.assertEqual(sh.count(' CHECK +[A-Z]+ +pinnacle_party'), 3)
         # the database login goes to the bots only, the client gets the spectator's account only
         client = sh[sh.index('export CHAOS_BOSSTOUR=1'):]
         self.assertNotIn('PARTYF', client[:client.index('exec ./chaos-client')])
@@ -259,7 +335,7 @@ if os.environ.get('CHAOS_BOSSTOUR'):
     print('LEAK: the bots got the client switch')
 os.makedirs(os.path.join(state, 'runs'), exist_ok=True)
 with open(os.path.join(state, 'runs', 'run-20261120-100000.log'), 'a', buffering=1) as f:
-    f.write('10:00:00 Tester Aka (L1900 Mystic) login in game\\n')
+    f.write('10:00:00 Tester Aka (L1900 Mystic) login    in game\\n')
     time.sleep(%(delay)s)
     f.write(%(line)r + '\\n')
     signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))
@@ -268,9 +344,9 @@ with open(os.path.join(state, 'runs', 'run-20261120-100000.log'), 'a', buffering
         time.sleep(0.5)
 '''
 
-VERDICT = ("10:01:00 Tester Aka (L1900 Illusionist) CHECK PASS pinnacle_party: Ascended Malgrath down in 301 s, 2 fall(s), 5 player(s), level 1900; "
+VERDICT = ("10:01:00 Tester Aka (L1900 Illusionist) CHECK    PASS pinnacle_party: Ascended Malgrath down in 301 s, 2 fall(s), 5 player(s), level 1900; "
            "carried out: Tester Bel at 86 s; party: Illusionist, Juggernaut, Deadeye, Elementalist, Samurai")
-SKIPPED = "10:01:00 Tester Aka (L1900 Mystic) CHECK SKIP pinnacle_party: the party could not be formed (a bot left the game)"
+SKIPPED = "10:01:00 Tester Aka (L1900 Mystic) CHECK    SKIP pinnacle_party: the party could not be formed (a bot left the game)"
 
 
 @unittest.skipUnless(shutil.which('Xvfb') and shutil.which('ffmpeg') and shutil.which('ffprobe'), 'needs Xvfb, ffmpeg and ffprobe')
@@ -293,12 +369,16 @@ class BossVideoRun(unittest.TestCase):
         os.makedirs(self.state)
         with open(os.path.join(self.state, 'state.json'), 'w') as f:
             json.dump({'bots': [{'name': 'Tester Aka', 'account': 'tstbot0123456789', 'password': 'BotPw-secret_12345'}]}, f)
+        self.tfs = os.path.join(self.d, 'tfs.log')
+        with open(self.tfs, 'w') as f:
+            f.write('>> Loading map\n>> Tester Aka has logged in from 10.0.0.9\n>> db login DbPassSecret77 for tstbot0123456789\n'
+                    '>> Tester Cor died: killed by a Dragon\n>> rsa key file loaded\n')
         self.partyf = os.path.join(self.d, 'party.env')
         with open(self.partyf, 'w') as f:
             f.write("export PARTY_NAMES='Tester Aka,Tester Bel,Tester Cor,Tester Dun,Tester Eld'\nexport PARTY_BOSS=malgrath\nexport PARTY_LEVEL=1900\n"
                     "export TESTERS_STATE=%s\nexport TESTERS_KEY_FILE=/nonexistent\nexport TESTERS_SERVER_DIR=/nonexistent\n"
-                    "export TESTERS_TFS_LOG=/nonexistent\nexport TESTERS_HOST=127.0.0.1\nexport TESTERS_PORT=7171\n"
-                    "export CHAOS_DB_PASS=DbPassSecret77\n" % self.state)
+                    "export TESTERS_TFS_LOG=%s\nexport TESTERS_HOST=127.0.0.1\nexport TESTERS_PORT=7171\n"
+                    "export CHAOS_DB_PASS=DbPassSecret77\n" % (self.state, self.tfs))
         self.out = os.path.join(self.d, 'out')
 
     def run_script(self, line, delay=3, extra=None, timeout=180):
@@ -315,7 +395,11 @@ class BossVideoRun(unittest.TestCase):
     def test_a_fight_is_filmed_and_reported(self):
         p, secs = self.run_script(VERDICT)
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        self.assertEqual(sorted(os.listdir(self.out)), ['client-log.txt', 'fight-report.txt', 'malgrath_fight.mp4'], 'nothing but the three files is left')
+        self.assertEqual(sorted(os.listdir(self.out)), ['client-log.txt', 'fight-report.txt', 'malgrath_fight.mp4', 'server-console-tail.txt'], 'nothing but the four files is left')
+        tail = read_path(os.path.join(self.out, 'server-console-tail.txt'))
+        self.assertIn('Tester Cor died: killed by a Dragon', tail)
+        for gone in ('DbPassSecret77', 'tstbot0123456789', '10.0.0.9', 'rsa key'):
+            self.assertNotIn(gone, tail)
         video = os.path.join(self.out, 'malgrath_fight.mp4')
         probe = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,pix_fmt,width,height',
                                 '-of', 'csv=p=0', video], capture_output=True, text=True).stdout.strip()
@@ -330,7 +414,7 @@ class BossVideoRun(unittest.TestCase):
         self.assertIn('bosstour: done ok boss dead', clog)
         self.assertIn('follow Tester Aka,Tester Bel,Tester Cor,Tester Dun,Tester Eld boss Malgrath seconds 30', clog)
         for secret in ('lcs1abc123', 'Pw0rdSecret99', self.key, 'DbPassSecret77', 'tstbot0123456789', 'BotPw-secret_12345'):
-            for name, text in (('client log', clog), ('report', report), ('stdout', p.stdout), ('stderr', p.stderr)):
+            for name, text in (('client log', clog), ('report', report), ('stdout', p.stdout), ('stderr', p.stderr), ('console tail', tail)):
                 self.assertNotIn(secret, text, '%s shows %s' % (name, secret[:4]))
         self.assertNotIn('LEAK', clog + p.stdout)
 

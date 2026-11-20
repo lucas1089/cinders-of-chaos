@@ -6,7 +6,7 @@
 #   GAME_DIR   the assembled and built client (init.lua, data, modules, the executable as chaos-client), RSA key and server host already set
 #   ENV_FILE   client-chaos.env of `tools/ci/unity_live_check.sh --serve-only` with UL_PINNACLE_PARTY=1: the account of the SPECTATOR (a staff character)
 #   PARTY_ENV  party.env of the same run: the five testers' names, their state folder, the key file, the database login of the run (never given to the client)
-#   OUT_DIR    gets malgrath_fight.mp4 (the file is named after the boss), fight-report.txt and client-log.txt (account, password, key and database login cut out)
+#   OUT_DIR    gets malgrath_fight.mp4 (the file is named after the boss), fight-report.txt, client-log.txt and server-console-tail.txt (account, password, key and database login cut out)
 # Needs Xvfb, ffmpeg, ffprobe, python3. Software OpenGL, no sound device, the updater off (CHAOS_UPDATE_OFF).
 #
 # Two programs play at once. The tester bots (server/tools/testers.py run --checks --closed --only pinnacle_party) gear up, form a party at the Keeper of the
@@ -15,6 +15,11 @@
 # on that line (x11grab of the virtual screen, libx264 crf 23, yuv420p, +faststart, an even size) and stops when the client writes "bosstour: done ..." (the boss
 # fell, the fight is gone, or BV_SECONDS ran out) and exits; the only picture that leaves this script is that MP4: no frame, no screenshot, no sprite file.
 # Then the bots are stopped and the fight report is written from their activity log and the client log.
+#
+# The bots run with --video (O689, second run): no hunting, no free activities (a bot whose check is done waits in the temple), the gather tried again inside the
+# preparation time, members that wait for the leader to the end. The second run ended with the party never at the Keeper: the activity log pads the kind to 8 characters
+# (`CHECK    SKIP`), so the grep for the bots' verdict below never matched and the run waited the two hours out. OUT_DIR also gets server-console-tail.txt: the
+# last 300 lines of the server console (tfs log of party.env TESTERS_TFS_LOG) with the secrets cut and every line with a sensitive word dropped.
 #
 #   BV_SECONDS      the longest the fight is filmed, from the ready line (default 480, 30 to 900)
 #   BV_PREP_WAIT    seconds from the start of the bots to the fight opening (default 7200: gear, trials, ascensions on foot, the party)
@@ -85,6 +90,7 @@ BOSS=$(envvalue "$PARTYF" PARTY_BOSS)
 LEVEL=$(envvalue "$PARTYF" PARTY_LEVEL)
 NAMES=$(envvalue "$PARTYF" PARTY_NAMES)
 STATE=$(envvalue "$PARTYF" TESTERS_STATE)
+TFS_LOG=$(envvalue "$PARTYF" TESTERS_TFS_LOG)
 if [ -z "$BOSS" ] || [ -z "$NAMES" ] || [ -z "$STATE" ]; then
   echo "party.env names no boss, party or state folder" >&2
   exit 2
@@ -111,6 +117,9 @@ write_logs() {
   local sj=()
   [ -f "$STATE/state.json" ] && sj=(--state-json "$STATE/state.json")
   python3 -I "$REPORTER" redact --in "$CLOG" --secrets-file "$SECRETS" ${sj[@]+"${sj[@]}"} --out "$OUT/client-log.txt" || true
+  if [ -n "$TFS_LOG" ] && [ -f "$TFS_LOG" ]; then
+    python3 -I "$REPORTER" console --in "$TFS_LOG" --lines 300 --secrets-file "$SECRETS" ${sj[@]+"${sj[@]}"} --out "$OUT/server-console-tail.txt" || true
+  fi
   python3 -I "$REPORTER" report --boss "$BOSS" --level "$LEVEL" --party "$NAMES" --activity "${activity:-/nonexistent}" --client-log "$CLOG" \
     --secrets-file "$SECRETS" ${sj[@]+"${sj[@]}"} ${secs:+--seconds "$secs"} --out "$OUT/fight-report.txt" || true
 }
@@ -141,7 +150,7 @@ MINUTES=$(( (PREP + SECS + 900) / 60 + 1 ))
   . "$PARTYF"
   set +a
   exec python3 -I "$TESTERS" run --key-file "$TESTERS_KEY_FILE" --server-dir "$TESTERS_SERVER_DIR" --state "$TESTERS_STATE" \
-    --host "$TESTERS_HOST" --port "$TESTERS_PORT" --log "$TESTERS_TFS_LOG" --checks --closed --only pinnacle_party --minutes "$MINUTES"
+    --host "$TESTERS_HOST" --port "$TESTERS_PORT" --log "$TESTERS_TFS_LOG" --checks --closed --only pinnacle_party --video --prep-minutes "$((PREP / 60))" --minutes "$MINUTES"
 ) > "$TOUT" 2>&1 &
 TESTERS_PID=$!
 PIDS+=("$TESTERS_PID")
@@ -172,9 +181,9 @@ for i in $(seq 1 $(((PREP + 300) / 2))); do
   if grep -q 'bosstour: done' "$CLOG" 2>/dev/null; then fail "the tour stopped before the fight opened"; fi
   # the bots' check can end without a fight (the party could not form, a bot could not play): the verdict line is in their activity log
   act=$(newest_activity || true)
-  if [ -n "$act" ] && grep -qP ' CHECK [A-Z]+ pinnacle_party: (?!played as a member)' "$act" 2>/dev/null; then
+  if [ -n "$act" ] && grep -qP ' CHECK +[A-Z]+ +pinnacle_party: (?!played as a member)' "$act" 2>/dev/null; then
     since_check=${since_check:-$i}
-    if [ $((i - since_check)) -gt $((GRACE / 2)) ]; then fail "the bots' check ended and no fight opened: $(grep -P ' CHECK [A-Z]+ pinnacle_party: (?!played as a member)' "$act" | head -n 1 | cut -c1-300)"; fi
+    if [ $((i - since_check)) -gt $((GRACE / 2)) ]; then fail "the bots' check ended and no fight opened: $(grep -P ' CHECK +[A-Z]+ +pinnacle_party: (?!played as a member)' "$act" | head -n 1 | cut -c1-300)"; fi
   fi
   if [ $((i % 150)) = 0 ]; then echo "   still preparing: $((i * 2)) s"; fi
   sleep 2
@@ -211,7 +220,7 @@ echo "recorded about $RECORDED s"
 # the bots' verdict comes after the fight (they leave the arena and walk off first): give it time, then stop them (they log out and write their report)
 for _ in $(seq 1 120); do
   act=$(newest_activity || true)
-  if [ -n "$act" ] && grep -qP ' CHECK [A-Z]+ pinnacle_party: (?!played as a member)' "$act" 2>/dev/null; then break; fi
+  if [ -n "$act" ] && grep -qP ' CHECK +[A-Z]+ +pinnacle_party: (?!played as a member)' "$act" 2>/dev/null; then break; fi
   kill -0 "$TESTERS_PID" 2>/dev/null || break
   sleep 2
 done

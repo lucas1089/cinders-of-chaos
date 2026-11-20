@@ -52,6 +52,10 @@ leave: closed_raid, O588). The guilds, wars, tester market book, arena records a
 of the run are removed when it ends, and by cleanup.
 --no-gear (O658): the checks run without the gear-up (tester_checks.py gear_up: before the hard checks a bot wears its best pieces, buys potions
 and basic pieces at the shops on foot, a TEST ONLY gold grant as the named fallback); the gearless run of before, for a comparison.
+--video [--prep-minutes N] (O689, tools/ci/boss_video.sh; with --checks --closed --only pinnacle_party): the run of the boss fight video. The bots never hunt and never run
+the free activities (a bot whose check is done waits in the temple), a member waits for its leader to the end, the leader tries the gather again (every bot alive and in
+the temple first) inside N minutes (default 120), a member that dies in the prep waits for its next login and its prep goes on, the trials of the prep are the
+helper's TEST ONLY grant, not a fight. A death line names the last hits the server sent. The normal closed audit is unchanged.
 --retreat-at N (O662): the bots retreat under N percent health instead of 30 (a timid player): the scenario that forces a second retreat in a loop, so the
 raid's Leave button and the Town Portal refusal inside a dungeon are asked live (tester_checks.py retreat_at).
 """
@@ -905,6 +909,10 @@ class CheckIO(KeyIO):
         new = min(self.bot.recent_n - n0, len(self.bot.recent))
         return found, (list(self.bot.recent[-new:]) if new > 0 else [])
 
+    def note(self, text):
+        """O689: a line of the activity log (kind RETRY) from a check: what the video run tries again and why"""
+        self.bot.results.log(self.bot, 'RETRY', text)
+
     def class_spells(self):
         """the spells of this bot's class as parsed from the spell file (words, name, group, level, needlearn, params, needtarget): what the class lists"""
         return list(getattr(self.bot, 'all_spells', None) or [])
@@ -1569,6 +1577,7 @@ class TesterBot(LT.Bot):
         self.jams = 0  # keep rounds in a row that ended with a jammed bag
         self.hunt_since = None  # when the bot came to its hunt spot (login, `!tester hunt`); None: away from it (O584)
         self.last_progress = None  # the last experience or loot message (TC.hunt_outcome)
+        self.last_move = None  # O689: (helper move 'hunt' / 'town', monotonic time) of the last answer, for the death line
         self.flee_check = None  # (when to judge it, health at the flee) of the flee under way (TC.flee_outcome)
         self.npc_spoke = False
         self.nothing_to_sell = False
@@ -1628,7 +1637,7 @@ class TesterBot(LT.Bot):
         guard = asyncio.ensure_future(self.guard())
         self.conn.send(b'\xA0\x01\x01\x01\x00')  # offensive, chase on, secure mode on (never a player)
         self.say('!tester info')
-        if self.checks_stay():   # O660: the checks run from the temple, not from a hunt spot of a bot with no gear
+        if self.checks_stay() or self.video():   # O660: the checks run from the temple, not from a hunt spot of a bot with no gear; O689: the video run never hunts
             self.stay = True
             self.say('!tester town')
         if self.after_death:  # a dead tester wakes in the temple and rests there before it goes back to its hunt
@@ -1740,11 +1749,18 @@ class TesterBot(LT.Bot):
         self.deaths_at.append(time.monotonic())
         del self.deaths_at[:-20]
         self.results.d['deaths'] += 1
-        self.results.log(self, 'DEATH', 'died while %s' % self.last)
+        self.results.log(self, 'DEATH', 'died while %s%s' % (self.last, self.death_facts()))
         age = None if self.health_at is None else time.monotonic() - self.health_at
         rule = TC.health_anomaly(self.health, 0, True, age, self.health_at is not None)
         if rule:
             self.results.anomaly(rule, self, health_before=self.health)
+
+    def death_facts(self):
+        """O689: what the server said before the death, for the activity log: the attackers named in the last damage lines ("You lose 812 hitpoints due to an
+        attack by a Dragon."), the last other lines about damage or death, the last helper move (hunt / town) and how long ago. The second video run lost a
+        level 1900 bot about a hundred times with only "died while town" to show for it: that name is the last behaviour started, not the place"""
+        facts = TC.death_facts(self.recent, self.last_move, time.monotonic())
+        return '; ' + facts if facts else ''
 
     def on_text(self, text):
         bar = TC.cast_bar(text)   # O665: the cast bar of the bot's own cast-time spell
@@ -1763,6 +1779,8 @@ class TesterBot(LT.Bot):
                 self.results.helper_answer('late')
                 return
             self.helper[hk] = data
+            if hk in ('hunt', 'town') and not data.get('err'):
+                self.last_move = (hk, time.monotonic())   # O689: for the death line
             if hk == 'hunt' and not data.get('err'):
                 self.hunt_since = time.monotonic()
             elif hk == 'town':
@@ -2013,6 +2031,8 @@ class TesterBot(LT.Bot):
                     name = 'checks'  # then the system checks (tester_checks.py)
                 elif getattr(self.args, 'journey', False):
                     name = 'journey'  # O654: the levelling journey on foot, the only thing this run does
+                elif self.video():
+                    name = 'hold'  # O689: the checks are done (a verdict or a member's wait is over): the bot waits in the temple, no hunt, no errand that ends at a hunt
                 self.last = name
                 self.results.behaviour(name, 'tried')
                 try:
@@ -2071,7 +2091,7 @@ class TesterBot(LT.Bot):
             if now > until:
                 del self.pending[kind]
                 self.results.behaviour(kind, 'failed', self)
-        if self.back_at and now >= self.back_at and not self.stay:
+        if self.back_at and now >= self.back_at and not self.stay and not self.video():
             self.back_at = None
             self.say('!tester hunt')
         healed = False   # O663: the heal went this beat
@@ -2157,6 +2177,20 @@ class TesterBot(LT.Bot):
             self.hunt_since = time.monotonic()  # judged again after the next window, not at every pick
             return False
         return True if outcome == 'ok' else None
+
+    def video(self):
+        """O689: the run of the boss video (--video): no hunt, no free activity"""
+        return bool(getattr(self.args, 'video', False))
+
+    async def do_hold(self, clock):
+        """O689 (video run): the free activity loop of a bot whose check is done. The second run's bots fell into it, walked errands that end with `!tester hunt`
+        (town, depot, shop) and died at their hunts at level 1900. Now: the temple, nothing else"""
+        self.stay = True
+        self.back_at = None
+        if self.helper.get('town') is None:
+            await self.helper_says('town', 'town')
+        await asyncio.sleep(5)
+        return True
 
     async def do_wander(self, clock):
         # O665: a person does not step off while his own cast-time spell runs (a move cancels it and the mana comes back: the bar says "You moved:
@@ -2433,7 +2467,7 @@ class TesterBot(LT.Bot):
         try:
             await run.run(io)
         finally:
-            self.stay = self.checks_stay() and not run.finished   # O660: stays in town between the passes of an unfinished check run
+            self.stay = (self.checks_stay() and not run.finished) or self.video()   # O689: the video run stays in the temple for good; O660: stays in town between the passes of an unfinished check run
             for r in run.results[mark:]:
                 self.results.log(self, 'CHECK', '%s %s%s' % (r.status.upper(), r.check, ': ' + r.detail if r.detail else ''))
                 line = r.bug_line()
@@ -2826,10 +2860,10 @@ def parse(argv):
     defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
                 '--levels': ','.join(str(v) for v in LEVELS), '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
                 '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
-                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': '', '--retreat-at': 0}
-    types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int, '--retreat-at': int}
+                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': '', '--retreat-at': 0, '--prep-minutes': 0}
+    types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int, '--retreat-at': int, '--prep-minutes': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False, '--no-gear': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False, '--no-gear': False, '--video': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -2851,6 +2885,12 @@ def parse(argv):
     a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
     a.closed = flags['--closed']
     a.journey = flags['--journey']
+    a.video = flags['--video']
+    if a.video and not (a.checks and a.closed and a.only == 'pinnacle_party'):
+        sys.exit('--video is the run of the boss video: with --checks --closed --only pinnacle_party (server/README.md "Malgrath fight video (O689)")')
+    if not 0 <= a.prep_minutes <= 1440:
+        sys.exit('--prep-minutes 1..1440 (0 or no option is 120)')
+    TX.set_video(a.video, a.prep_minutes)   # O689: the retry, the wait for members, no hunt
     if not 0 <= a.retreat_at <= 99:
         sys.exit('--retreat-at 1..99 (percent health; 0 or no option is the usual 30)')
     TX.set_retreat_at(a.retreat_at)   # O662: the scenario of a second retreat (0 = the usual 30 percent)

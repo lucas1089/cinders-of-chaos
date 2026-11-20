@@ -527,6 +527,11 @@ effect that gives **one named spell a free support effect**. No luck needed.
 - **O473 (2026-11-10): the brands are increased damage.** The four brand choices (Hallowed Ground, Storm Rupture, Grave Wail, Bell
   of Dawn) give no free brand any more. While their spell is cast they add +3 to the one additive damage pool (at most 12 for
   masteries). The table below says "no free rune" for them. The other 16 choices are unchanged.
+- **O686 phase 6b: a combo mastery.** Each mastery node got one more effect after the spell modifiers, a choice for the spell
+  combos (Spell upgrades): **Lingering Window** (Necromancer, Templar, Mystic: the window between the two casts is 1.5 s longer),
+  **Short Memory** (Thief, Warrior: the same combo fires again on the same target after 4 s, not 6 s) and **Eager Rhythm** (Monk,
+  Ranger: 0.8 s between two combos, not 1.2 s). The stat is `comboMod`. A node still holds one effect, so it competes with the
+  spell modifiers. It does nothing while the spell upgrades are off.
 - The tree stat is `spellMod`. The tree listener writes the held choice to one storage and the spells read it where they read
   their supports. No new opcode, no engine patch, no new art. Numbers and choices: `server/data/lib/chaos_spell_masteries_config.lua`.
 - Saved trees, build codes and loadouts stay valid: the effects are appended, so an old id means the same. No version bump, no

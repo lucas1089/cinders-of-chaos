@@ -205,7 +205,7 @@ end
 
 -- the best row of the casts before `cur` against the hit h = {spell, now, element, heal, target, pos}; rankOf(spellId) -> rank
 function C.find(state, cfg, cur, h, rankOf)
-	local best
+	local best, bestEntry
 	for _, row in ipairs(cfg.rows) do
 		if (not best or row.bonus > best.bonus) and isSecond(row, h) then
 			local rankOk = row.kind == "reaction" or rankOf(h.spell) >= cfg.classMinRank
@@ -213,14 +213,14 @@ function C.find(state, cfg, cur, h, rankOf)
 				for _, e in ipairs(state.ring) do
 					if e ~= cur and e.t <= cur.t and cur.t - e.t <= cfg.window.windowMs and isFirst(row, e) and C.near(cfg, e, h)
 							and (row.kind == "reaction" or rankOf(e.spell) >= cfg.classMinRank) then
-						best = row
+						best, bestEntry = row, e
 						break
 					end
 				end
 			end
 		end
 	end
-	return best
+	return best, bestEntry
 end
 
 -- The first hit of a cast. h = {spell, now, element, heal, target, pos, pvp, rankOf}. Returns the row that fired (or nil) and the
@@ -234,12 +234,12 @@ function C.onHit(state, cfg, h)
 	if h.pvp then
 		return nil, 1
 	end
-	local row = C.find(state, cfg, cur, h, h.rankOf or function() return 0 end)
+	local row, first = C.find(state, cfg, cur, h, h.rankOf or function() return 0 end)
 	if not row then
 		return nil, 1
 	end
 	C.fire(state, cfg, row, h.target, h.now)
-	return row, 1 + row.bonus
+	return row, 1 + row.bonus, first
 end
 
 -- a damage value (negative) or a heal (positive) scaled by a factor, rounded to a whole number away from zero by half
@@ -249,6 +249,266 @@ function C.apply(amount, factor)
 	end
 	local v = amount * factor
 	return v < 0 and -floor(-v + 0.5) or floor(v + 0.5)
+end
+
+-- ---------------------------------------------------------------- riders (O686 phase 6b)
+-- row.fx = {kind = ..., ...} (spell_combos_config.lua `riders`): what a fired row does besides the bonus. The engine side is
+-- spell_combos.lua; this file holds the rules that need no engine: the checks of the config, the counted gain, the amplifier factor of a
+-- marked monster, the hooked set, the death burst budget, the heal over time window.
+C.DAMAGE_KINDS = {burst = true, chain = true, deathburst = true}
+C.KINDS = {burst = true, chain = true, deathburst = true, brittle = true, holyamp = true, slow = true, stun = true, hooked = true,
+	hexrenew = true, hot = true, text = true}
+
+-- the problems of the riders of a config (empty when sound): every row has a known kind, a damage rider is at most its row's bonus and
+-- at most riders.maxShare, the timed ones have a time
+function C.checkRiders(cfg)
+	local bad = {}
+	local R = cfg.riders
+	if type(R) ~= "table" then
+		return {"riders block missing"}
+	end
+	for _, row in ipairs(cfg.rows or {}) do
+		local what = "row " .. tostring(row.id)
+		local fx = row.fx
+		if type(fx) ~= "table" or not C.KINDS[fx.kind] then
+			bad[#bad + 1] = what .. ": fx kind " .. tostring(fx and fx.kind)
+		else
+			if C.DAMAGE_KINDS[fx.kind] then
+				if type(fx.share) ~= "number" or fx.share <= 0 or fx.share > row.bonus + 1e-9 or fx.share > R.maxShare + 1e-9 then
+					bad[#bad + 1] = what .. ": a damage rider is at most the row's bonus and " .. tostring(R.maxShare) .. " of the hit"
+				end
+				if fx.kind ~= "chain" and type(fx.cap) ~= "number" then
+					bad[#bad + 1] = what .. ": a burst needs a cap"
+				end
+				if type(fx.radius) ~= "number" or fx.radius < 1 or fx.radius > 3 then
+					bad[#bad + 1] = what .. ": radius 1 to 3"
+				end
+			end
+			if (fx.kind == "brittle" or fx.kind == "holyamp" or fx.kind == "slow" or fx.kind == "stun" or fx.kind == "hot"
+					or fx.kind == "deathburst") and type(fx.ms) ~= "number" then
+				bad[#bad + 1] = what .. ": a timed rider needs ms"
+			end
+			if (fx.kind == "brittle" or fx.kind == "holyamp" or fx.kind == "hot") and (type(fx.pct) ~= "number" or fx.pct <= 0) then
+				bad[#bad + 1] = what .. ": pct"
+			end
+			if fx.kind == "text" and not (R.why and R.why[fx.why]) then
+				bad[#bad + 1] = what .. ": a text rider names its reason in riders.why"
+			end
+		end
+	end
+	return bad
+end
+
+-- the other enemies within `radius` of a target, as the model pictures a hunt (riders.model.near, radius 1..3)
+local function nearCount(cfg, radius)
+	local n = cfg.riders.model.near
+	return n[max(1, math.min(3, floor(radius)))] or 0
+end
+
+-- the extra damage a row's rider counts for the typical rotation, in hits of the triggering hit (0.01 = 1% of that hit). Only what is
+-- built counts; a text rider, a slow, a stun, a hex renewal and a heal over time add no damage to the model.
+function C.riderGain(cfg, row)
+	local fx, m = row.fx, cfg.riders.model
+	if not fx then
+		return 0
+	end
+	local k = fx.kind
+	if k == "burst" then
+		return fx.share * math.min(fx.cap, nearCount(cfg, fx.radius))
+	elseif k == "chain" then
+		return fx.share * math.min(fx.targets, nearCount(cfg, fx.radius))
+	elseif k == "deathburst" then
+		return fx.share * math.min(fx.cap, m.killsPerSecond * fx.ms / 1000) * math.min(fx.targets or 3, nearCount(cfg, fx.radius))
+	elseif k == "brittle" then
+		return fx.pct * (fx.ms / m.hitEveryMs)
+	elseif k == "holyamp" then
+		return fx.pct * (fx.ms / m.hitEveryMs) * m.holyShare
+	end
+	return 0
+end
+
+-- the weighted mean of the riders' counted gain over the rows
+function C.meanRider(cfg)
+	local sum, w = 0, 0
+	for _, r in ipairs(cfg.rows) do
+		sum = sum + C.riderGain(cfg, r) * r.weight
+		w = w + r.weight
+	end
+	return w > 0 and sum / w or 0
+end
+
+-- the typical rotation's gain with the riders (bonus and riders on the combo hits)
+function C.typicalWithRiders(cfg)
+	return cfg.model.triggerShare * (C.meanBonus(cfg) + C.meanRider(cfg))
+end
+
+-- the best legal rotation fights one target: a rider that hits other enemies counts 0, an amplifier counts, a text rider counts 0
+function C.bestWithRiders(cfg)
+	local top = 0
+	for _, r in ipairs(cfg.rows) do
+		local k = r.fx and r.fx.kind
+		local extra = (k == "brittle" or k == "holyamp") and C.riderGain(cfg, r) or 0
+		top = max(top, r.bonus + extra)
+	end
+	return cfg.model.triggerShare * top
+end
+
+-- the amount of a rider hit: `share` of the triggering hit (a whole number, at least 1 for a hit that deals anything)
+function C.riderAmount(share, hit)
+	hit = abs(hit or 0)
+	if hit <= 0 or not share or share <= 0 then
+		return 0
+	end
+	return max(1, floor(hit * share + 0.5))
+end
+
+-- ---------------------------------------------------------------- the marks on a monster (brittle, holy)
+-- marks = {brittle = {untilMs, pct}, holy = {untilMs, pct}} -> the factor of one damage part (`isHoly`: it is holy damage) at `now`;
+-- an expired mark is dropped
+function C.markFactor(marks, now, isHoly)
+	if not marks then
+		return 1
+	end
+	local f = 1
+	for _, key in ipairs({"brittle", "holy"}) do
+		local m = marks[key]
+		if m then
+			if m.untilMs < now then
+				marks[key] = nil
+			elseif key == "brittle" or isHoly then
+				f = f * (1 + m.pct)
+			end
+		end
+	end
+	return f
+end
+
+-- sets a mark; a stronger or later one replaces, the same time never stacks
+function C.setMark(marks, key, now, ms, pct)
+	local m = marks[key]
+	if not m or m.untilMs < now or pct >= m.pct then
+		marks[key] = {untilMs = now + ms, pct = pct}
+	end
+end
+
+-- ---------------------------------------------------------------- the hooked set, the death marks, the heal over time
+-- the ids of every enemy the first spell hit, noted on its ring entry (at most 8)
+function C.noteHit(state, spellId, now, targetId, windowMs)
+	for i = #state.ring, 1, -1 do
+		local e = state.ring[i]
+		if e.spell == spellId then
+			if targetId and now - e.t <= windowMs and now >= e.t then
+				e.ids = e.ids or {}
+				if #e.ids < 8 then
+					e.ids[#e.ids + 1] = targetId
+				end
+			end
+			return
+		end
+	end
+end
+
+-- a fired `hooked` row remembers the enemies the first cast hit: its entry's ids and target, the second spell, until `now + ms`
+function C.hook(state, row, firstEntry, secondSpell, now, ms)
+	local ids = {}
+	for _, id in ipairs(firstEntry.ids or {}) do
+		ids[id] = true
+	end
+	if firstEntry.target then
+		ids[firstEntry.target] = true
+	end
+	state.hooked = {row = row, ids = ids, spell = secondSpell, untilMs = now + ms}
+end
+
+-- the factor of a later hit of the second spell on an enemy the hook hit (once for each enemy); 1 when none
+function C.hookedFactor(state, spellId, targetId, now)
+	local h = state.hooked
+	if not h then
+		return 1
+	end
+	if now > h.untilMs then
+		state.hooked = nil
+		return 1
+	end
+	if h.spell == spellId and targetId and h.ids[targetId] then
+		h.ids[targetId] = nil
+		return 1 + h.row.bonus
+	end
+	return 1
+end
+
+-- a death mark: the next `fx.ms` of kills burst, at most `fx.cap` bursts. Returns the mark.
+function C.deathMark(state, fx, now, amount, ctype)
+	state.death = {untilMs = now + fx.ms, left = fx.cap, share = fx.share, radius = fx.radius, targets = fx.targets or 3, amount = amount, ctype = ctype}
+	return state.death
+end
+
+-- a kill inside the window: the mark when a burst is due (and one is used), else nil
+function C.deathDue(state, now)
+	local d = state.death
+	if not d then
+		return nil
+	end
+	if now > d.untilMs or d.left <= 0 then
+		state.death = nil
+		return nil
+	end
+	d.left = d.left - 1
+	return d
+end
+
+-- a heal over time window: the second spell's heals are x(1 + pct) until `now + fx.ms`
+function C.hotStart(state, row, spellId, now)
+	state.hot = {spell = spellId, untilMs = now + row.fx.ms, pct = row.fx.pct}
+end
+
+function C.hotFactor(state, spellId, now)
+	local h = state.hot
+	if not h then
+		return 1
+	end
+	if now > h.untilMs then
+		state.hot = nil
+		return 1
+	end
+	return h.spell == spellId and (1 + h.pct) or 1
+end
+
+-- ---------------------------------------------------------------- combo masteries (O686 phase 6b)
+-- the choice row of an id (nil for none or an unknown id)
+function C.masteryChoice(cfg, id)
+	id = tonumber(id)
+	if not id then
+		return nil
+	end
+	for _, c in ipairs(cfg.masteries.choices) do
+		if c.id == id then
+			return c
+		end
+	end
+	return nil
+end
+
+-- a config as one player has it with a combo mastery: the window, the repeat pause and the pause between combos moved, never under
+-- masteries.floor. Without a choice the config itself.
+function C.effective(cfg, choice)
+	if not choice then
+		return cfg
+	end
+	local fl = cfg.masteries.floor
+	local eff = {}
+	for k, v in pairs(cfg) do
+		eff[k] = v
+	end
+	eff.window = {windowMs = cfg.window.windowMs + (choice.windowMs or 0), nearSqm = cfg.window.nearSqm}
+	eff.limits = {repeatMs = max(fl.repeatMs, cfg.limits.repeatMs + (choice.repeatMs or 0)),
+		globalMs = max(fl.globalMs, cfg.limits.globalMs + (choice.globalMs or 0))}
+	return eff
+end
+
+-- the model's count of one mastery: the typical gain with the riders x the relative share it adds
+function C.masteryGain(cfg, choice)
+	return C.typicalWithRiders(cfg) * choice.shareGain
 end
 
 return C
