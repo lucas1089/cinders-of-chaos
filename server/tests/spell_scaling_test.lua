@@ -97,6 +97,11 @@ do
 	near(hi, -200 * k, 1e-9, "weaponFormula max is negative and scaled")
 end
 
+-- O679: the element damage of a melee weapon joins the attack its spells read (the numbers of the cast: tests/weapon_element_attack_test.lua)
+ok(ChaosSpellScalingConfig.weaponElement == 1, "the whole element damage joins the weapon attack")
+near(S.spellAttack(71, 39), 110, 1e-9, "Azure Vigil blade: attack 71 + element 39")
+near(S.spellAttack(71, 39, {weaponElement = 0}), 71, 1e-9, "share 0: the physical attack alone")
+
 if fails > 0 then
 	error("spell_scaling_test: " .. fails .. " failure(s)")
 end

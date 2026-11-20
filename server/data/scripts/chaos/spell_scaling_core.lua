@@ -152,6 +152,14 @@ function S.wolfFactor(level, attack, c)
 	return 1 + (S.weaponW(level, c) - 1) * math.min(c.caster.cap or 1.2, attack / mean)
 end
 
+-- O679: the attack a melee weapon spell reads: the physical attack plus `weaponElement` x the element damage of the item type
+-- (spell_scaling_config.lua). Without the config the physical attack alone, as before.
+function S.spellAttack(attack, element, c)
+	c = c or ChaosSpellScalingConfig
+	local share = c and tonumber(c.weaponElement) or 0
+	return math.max(0, tonumber(attack) or 0) + share * math.max(0, tonumber(element) or 0)
+end
+
 -- the best attack of a bow or melee weapon in a player's hands (the item's own attribute, else its type's), nil without one
 function S.equippedWeaponAttack(player)
 	if not player or not player.getSlotItem or not rawget(_G, "ItemType") then

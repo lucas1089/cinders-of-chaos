@@ -1002,7 +1002,14 @@ function ChaosSpell.meleeAttack(player)
 		if it then
 			local wt = it:getWeaponType()
 			if wt == WEAPON_SWORD or wt == WEAPON_CLUB or wt == WEAPON_AXE then
-				return math.max(20, itemAttack(item))
+				-- O679: the element damage of the weapon joins the attack (spell_scaling_config.lua weaponElement), as it does in the
+				-- engine's own auto attack hit and in the tooltip's Estimated DPS
+				local attack = itemAttack(item)
+				local S = ChaosSpellScaling
+				if S and S.spellAttack and it.getElementDamage then
+					attack = S.spellAttack(attack, it:getElementDamage())
+				end
+				return math.max(20, attack)
 			end
 		end
 	end

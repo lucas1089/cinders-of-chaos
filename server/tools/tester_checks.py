@@ -9595,7 +9595,7 @@ def weapon_pick(rows, worn_il, cap=GEAR_WEAPON_CAP, fits=None, power=None, worn_
     """from the Gambler's stock the weapon to buy: the unsold 'Weapon' row of the highest item level above the worn weapon's, under `cap` gold
     (the cheaper on a tie); None when none is better. The window lists only what the class and the level may wear; `fits` (O663: equip_fitter) is
     the bot's own second look at that rule, so a weapon the class may not wear is never paid for. O665: `power(row)` and `worn_power` (weapon_power_fn)
-    rank by what the class's spells read (the physical attack, the wand's damage), the item level only for a row whose power is not known"""
+    rank by what the class's spells read (the attack plus the element damage, the wand's damage), the item level only for a row whose power is not known"""
     cands = [e for e in rows or [] if isinstance(e, dict) and not e.get('sold') and e.get('sn') == 'Weapon'
              and 0 < int(e.get('p') or 0) <= cap and weapon_better(e, worn_il, power, worn_power, 'l') and (fits is None or fits(e))]
     cands.sort(key=lambda e: (-(power(e) or 0) if power is not None else 0, -int(e.get('l') or 0), int(e['p']), int(e.get('i') or 0)))
@@ -9669,7 +9669,7 @@ async def gear_weapon(io, name, g, found, level):
     worn = hand_weapon(hands)
     have = int((worn or {}).get('il') or 0)
     fit = equip_fitter(io, g.get('cls'), level)   # O663: only a weapon the class and the level may wear is worn or bought
-    power = weapon_power_fn(io, g.get('cls'))     # O665: what the class's spells read (the physical attack, the wand's damage), None: item level
+    power = weapon_power_fn(io, g.get('cls'))     # O665: what the class's spells read (the attack plus the element damage, the wand's damage), None: item level
     worn_power = power(worn) if power is not None and worn else None
     held = weapon_held(hands, have, fits=fit, power=power, worn_power=worn_power)
     if held is not None and await wear_weapon(io, g, held, worn):
@@ -9924,8 +9924,8 @@ def pocket_dps_text(t):
 
 
 # ------------------------------------------------------------------------------------------------ the weapon the class's spells read (O665)
-# The pick below went by item level. A weapon spell reads the physical attack of the weapon in the hand (a caster's, the wand's damage), and the melee sets
-# from level 600 to 999 are mostly element (tester_weapons.py), so the bot ranks by that number where it knows it (items.xml and weapons.xml of the server)
+# The pick below went by item level. A weapon spell reads the attack of the weapon in the hand (a melee weapon's element damage too since O679; a caster's, the
+# wand's damage), and the melee sets from level 600 to 999 are mostly element (tester_weapons.py), so the bot ranks by that number where it knows it (items.xml and weapons.xml of the server)
 # and by item level where it does not (a fist class, an item the files do not list).
 try:
     import tester_weapons as TW

@@ -17667,6 +17667,7 @@ Owner question: does every class have enough weapons? The audit answers it from 
 <!-- weapon-coverage:end -->
 
 ### Physical attack of the melee weapons (O673)
+O679 (2026-11-20) changed the reading below: a melee weapon spell now reads the attack plus the element damage, so the physical bar here is a stricter floor, not the cause of a short Juggernaut (next section, "Weapon element in the spell attack").
 Owner decision 2026-11-19: the Juggernaut's weapons go up to level 2500 like the other classes'. The audit above counts attack plus element
 damage ("power"), and its Juggernaut row is the Warrior's, 3 or more weapons and 100% of the tier in every band. A weapon spell reads
 `skill x max(20, physical attack)` only (`ChaosSpell.meleeAttack`, `data/spells/chaos/_common.lua`: the element damage is not in it), so the
@@ -17712,6 +17713,53 @@ of 20: 0.29 of the median class (0.47 to 0.51 with an attack-85 sword or a set w
 | Sentinel | 45/164 | 66/136 | 69/121 | 41/135 | 47/111 | 27/113 | 14/65 | 24/125 | 21/114 | 29/113 |
 
 <!-- weapon-physical:end -->
+
+### Weapon element in the spell attack (O679) (`spell_scaling_config.lua` `weaponElement`, `spell_scaling_core.lua` `spellAttack`, `data/spells/chaos/_common.lua` `meleeAttack`, `tools/tester_weapons.py`, `tests/weapon_element_attack_test.lua`)
+Question: why does the Juggernaut deal about half of the median live (O665 run E6: level 813, 2,977 of 6,065 = 0.49; Warrior 586 0.88, Thief 714 0.85),
+when `class_dps_model.py --check` has every class within 25%. Ran on the local test server (current main installed by `install_all.py`, probe of O665: an
+idle Demon of 10,000,000 health next to the bot, damage = health lost a second, one bot a spot, the bot's fight loop only, 270 to 300 s). Same
+character, same weapon, same tree in every row below; only the named thing changes.
+- **Not the class.** Juggernaut and Warrior at level 813 with the same Azure Vigil blade (level 800, attack 71, element 39), the same damage tree (201
+  nodes, `focus_damage` reset), no armour: Juggernaut 3,985, Warrior 3,453 (class factors 0.91 and 0.76 at 800). Both about 0.6 of the median. The Warrior
+  of E6 was at level 586, where the weapon it bought (attack 73) beat the physical part of the plan (86 x 0.65 = 56).
+- **Not the rotation, not the cadence, not a refused spell.** The five spells of the helper (Scything Arc, Colossus Fall, Bastion Cry, Gorehook, Rift
+  Cleaver) go off every 2.03 s. The hit is the formula: `rotation_sim.py` raw 730 a second at skill 142, attack 71, times the pool 3.06, the stat
+  multiplier 1.44 and the class factor 0.91 = 2,929, times 0.75 for the Demon's physical resistance = 2,197; live spells 2,060 a second.
+- **The weapon term is the cause.** The model's typical Juggernaut at 813 has an attack of 120 (ANCHORS 62.7 x a(813) 1.92). Cast with 120 the same
+  formula gives 1,162 x 4.01 = 4,660 a second of spells, the model's own 4,990. So engine and model agree, when the attack is the whole tier. The best
+  weapon of the level has the tier (111) as attack 71 plus element 39: the equipment sets give 35% of the tier as element (`install_gear_sets.py`
+  `ELEMENT_SHARE`), the stock weapons of the levels 600 to 999 are mostly element (attack 8 to 13, element 50 to 73). A spell read the physical attack
+  only (`ChaosSpell.meleeAttack`), 71 of 111 = 0.64. The auto attack was never short (about 1,900 a second, the model's share): the engine rolls the element
+  of a weapon as a second hit, with the element value as its attack (`Weapon::getElementDamage`), and the tooltip's Estimated DPS adds both. The rows of
+  the model (the rig of 2026-11-06 and O459) came from stock weapons that are all attack (Deathlord Blade 85, Dawnforged 157) and the growth of O472
+  multiplies them, so nothing in the model knew. O673 lifted the physical part of the stock weapons to 65% of their total, which cannot reach the tier.
+- **Two more causes, not the game's.** The bot spends its free points on the Defense build first (`tester_checks.py` `gear_tree`): pool 2.575 x stat 1.405
+  against 3.062 x 1.44 of the damage build, 18% less damage. The probe's Demon resists physical 25% (fire 30, earth and energy 40, death 20), the
+  median is for a target with no defence. The Defense-first tree on the 0.66 case is about 0.54; E6 had 0.49 with the rolled weapon the bot bought (attack 73).
+- **The fix.** A melee weapon spell reads the attack of the weapon plus its element damage (`spell_scaling_config.lua` `weaponElement` 1: the share of the
+  element that joins; 0 is the rule of before; `ChaosSpellScaling.spellAttack`). The same words as the engine's auto attack and the tooltip, one
+  change point (`meleeAttack` serves the Warrior, Berserker, Templar and Thief lines, `bladePower`, the Attack Kit). An amber weapon (attack 0, element
+  only) no longer reads the floor of 20. The bot (`tester_weapons.py`) ranks a melee weapon by attack plus element and the plan of the level is the whole
+  tier (`PLAN_PHYSICAL` melee 1.0, was 0.65). No item, no data file, no model number changed: `weapon_coverage.lua --check` (its 60% physical bar of O673
+  stays as a stricter floor), `gear_coverage.lua --check`, `class_dps_model.py`, `pvp_model.py`, `survival_model.py` and the boss, pack, tower, descent,
+  waystone, pinnacle and Greater Rift models read the model, not the engine, and pass unchanged.
+- **Before and after, live** (one server run each, the only change `weaponElement` 0 to 1, restart between, level 813, median 6,065 at that level; spells
+  = the damage of the owner's spells a second, mean of nine 30 s windows):
+
+| Character | Before | After | Spells before | Spells after | Of the median before, after |
+|---|---:|---:|---:|---:|---|
+| Juggernaut 813 | 3,985 | 4,571 | 2,060 | 2,580 | 0.66, 0.75 (1.0 against the Demon's 25%) |
+| Warrior 813 (control, same line) | 3,453 | 3,869 | 1,670 | 2,100 | 0.57, 0.64 |
+| Mystic 362 (control, a caster: nothing to read) | 1,910 | 1,898 | 1,910 | 1,899 | 0.91, 0.91 of 2,096 |
+
+  The formula says +38 to +49% a cast for Colossus Fall, Rift Cleaver and Scything Arc (the level term of a hit does not scale); live the spells rose
+  25% and the whole character 12 to 15%, because half of its damage is the auto attack (not moved). Why the spells gave 25% and not 40% was not separated
+  (a part of the kit that does not read the weapon, the cast mix of nine windows).
+  Resistance-free, the Juggernaut after the fix is 4,571 / 0.75 = 6,095 against the median 6,065 and the model's own 6,653.
+- **Not verified.** Other lines live (Templar, Berserker: a two-handed set weapon is attack 79 plus element 42, the attack term x1.5), real drops
+  and rolled weapons (a rolled element modifier has no item type value: only the type's element counts), a party, the bots' gear-up on the new power (tests
+  only), the Defense-first tree of the bot (left: the bot dies without it; 18% of its damage). PvP: melee weapon spells of a set-weapon wearer rise toward
+  what `pvp_model.py` already assumes (the model never had the 0.64); the arena was not run. Owner switch: `weaponElement = 0` restores the rule of before.
 
 ## Gear coverage (`tools/gear_coverage.lua`, `gear_coverage_config.lua`, `data/lib/chaos_class_loot.lua`, `chaos/class_loot.lua`, 2026-10-22)
 Owner request: review all the loot and make sure it is well distributed for every class, from level 1. The weapon audit

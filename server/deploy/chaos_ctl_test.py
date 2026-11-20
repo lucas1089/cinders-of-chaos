@@ -1287,7 +1287,8 @@ def test_testers():
             check(out.get('online_server') == '4', 'testers status: the helper\'s last console count: ' + r.stdout)
             r = run('testers', 'start', '5', '2')
             check(r.returncode != 0 and 'already running' in r.stderr, 'a second start is refused')
-            r = run('testers', 'cleanup', '--yes', extra={'CHAOS_TESTERS_STOP_WAIT': '1'})
+            # a wait of 5 s: the stop itself can take over a second on a slow runner, and the wait counts from the stop
+            r = run('testers', 'cleanup', '--yes', extra={'CHAOS_TESTERS_STOP_WAIT': '5'})
             check(r.returncode == 0 and 'waiting' in r.stdout, 'cleanup right after a stop waits, then deletes: '
                   + r.stdout + r.stderr)
             check(not os.path.exists(helper), 'cleanup stopped the run and removed the helper')
