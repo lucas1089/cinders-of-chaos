@@ -3780,6 +3780,17 @@ async def solo_play(io, r, trace, c):
             trace['fought'] = max(trace['fought'], elapsed - fight_since)
         elif mode != 'wait':
             fight_since = None
+        if mode == 'dodge' and c.get('dodge') and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
+            trace['dodged'] = trace.get('dodged', 0) + 1   # O681: a mark of the boss on the bot's tile: the steps to the safe tile at once, a quick look after
+            for step in raid_plan(s['pos'], g['goal'], BOSS_DODGE_STEPS):
+                await raid_walk(io, r, step)
+                trace['steps'] += 1
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+            await io.sleep(BOSS_DODGE_LOOK)
+            elapsed += BOSS_DODGE_LOOK
+            trace['secs'] = int(elapsed)
+            continue
         if mode == 'pick':   # the descent's boon choice: the first card, as when the time runs out
             oid = g.get('offer')
             tries[oid] = tries.get(oid, 0) + 1
@@ -4372,6 +4383,10 @@ def pinnacle_walk_verdict(t):
     if t.get('faults'):
         return FAIL, '; '.join(t['faults'][:3])
     how = solo_text(t, 'pinnacle')
+    if t.get('dodged'):
+        how += ', %d dodge(s)' % t['dodged']   # O681
+    if t.get('gear'):
+        how += '; ' + t['gear']   # O681: the gear the fight was played with
     if t.get('killed'):
         return PASS, '%s down in %s s, %d fall(s), %d player(s), level %s, %s' % (
             t.get('boss') or 'the boss', t.get('kill_secs', '?'), int(t.get('falls') or 0), int(t.get('size') or 1), t.get('level'), how)
@@ -4419,6 +4434,60 @@ def pinnacle_choice(listing, index):
     return int(rows[index - 1][0]) if 0 < index <= len(rows) else None
 
 
+async def pinnacle_gear(io, r, fallbacks):
+    """O681: the TEST ONLY grant of the level's set gear (`!tester gear set`: helmet, armour, legs, weapon of the equipment sets that fit the class and
+    level, a Rare piece of item level = the level each, worn at once). The model's median class wears the level's set gear (survival_model.py,
+    install_gear_sets.py CURVES) and a bot's own drops and the Gambler's stock do not reach it at level 1900 to 2500. -> the text for the result;
+    a grant is a named fallback of the result"""
+    g = await hcmd(io, r, 'gear set', 'gear', HELPER_WAIT)
+    if not isinstance(g, dict):
+        return 'no answer to !tester gear set (old helper file)'
+    if g.get('err'):
+        return 'gear set: %s' % str(g['err'])[:60]
+    given = [str(s) for s in g.get('given') or []]
+    if given:
+        fallbacks.append(fallback_note('gear set', 'TEST ONLY: the level\'s set gear (%s)' % ', '.join(given)))
+    text = 'set gear: %s' % (', '.join(given) or 'none')
+    pots = g.get('potions')
+    if isinstance(pots, dict) and pots.get('health'):
+        setter = getattr(io, 'set_potions', None)
+        if setter is not None:
+            setter(pots.get('health'), pots.get('mana'))   # the heal rule drinks the flask of the model's tier (everfull, 12 % of the pool and a roll)
+        text += ', tier 4 potions'
+    elif g.get('flaskWhy'):
+        text += ', no tier 4 potions (%s)' % str(g['flaskWhy'])[:90]
+    refused = ['%s %s' % (x.get('slot'), x.get('why')) for x in g.get('refused') or [] if isinstance(x, dict)]
+    if refused:
+        text += ' (refused: %s)' % '; '.join(refused[:3])
+    return text
+
+
+async def pinnacle_open(io, index):
+    """at the Keeper (the bot stands next to him): hi, pinnacle, the window, Open on the boss at place `index`, then wait until the bot reads inside.
+    -> None when it is inside, else (status, text) for the result"""
+    await asc_greet(io, PINNACLE_NPC)
+    listing, heard = await io.say_modal('pinnacle', (PINNACLE_MODAL,), 5.0, NPC_CHANNEL)
+    await npc_talk_end(io)
+    if listing is None:
+        return SKIP, 'the Keeper opened no window (%s)' % (' | '.join(str(h)[:60] for h in heard[:3]) if heard else 'he said nothing')
+    choice = pinnacle_choice(listing, index)
+    if choice is None:
+        return FAIL, "the Keeper's window has no choice for boss %d" % index
+    opened = next((b for b, t in listing.get('buttons') or [] if 'open' in str(t).lower() or 'abrir' in str(t).lower()), listing.get('enter') or 1)
+    _, lines = await io.modal_answer(PINNACLE_MODAL, opened, choice, 2.0)
+    s, waited = None, 0.0
+    while waited <= PINNACLE_OPEN_WAIT and io.alive():
+        s = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+        if isinstance(s, dict) and s.get('inside'):
+            break
+        await io.sleep(1.0)
+        waited += 1.0
+    if not (isinstance(s, dict) and s.get('inside')):
+        return SKIP, 'the fight did not open in %d s (the Keeper said: %s)' % (
+            int(PINNACLE_OPEN_WAIT), ' | '.join(str(l)[:70] for l in lines[:3]) or 'nothing')
+    return None
+
+
 async def check_pinnacle_walk(io, name, cls, level):
     """walks to the Keeper of the Pinnacle with a whole set of fragments (TEST ONLY grant), opens the fight of the highest boss the level opens, fights it by the
     engine's path until it falls or the bot is carried out, leaves. The seconds to the kill and the health series are the model's measurement"""
@@ -4433,6 +4502,7 @@ async def check_pinnacle_walk(io, name, cls, level):
              'level': a.get('level'), 'boss_seen': False, 'hp': None}
     io.raid_mode([name], True)   # the pinnacle catches a lethal hit as the raid does (the player is carried out, no death): no flight to the temple at low health
     try:
+        trace['gear'] = await pinnacle_gear(io, r, fallbacks)   # O681: the level's set gear (TEST ONLY), as the model's median class wears it
         g = await io.helper('pinnacle set', 'pinnacle', HELPER_WAIT)
         if not isinstance(g, dict):
             return Result(key, name, cls, SKIP, 'no answer to !tester pinnacle set', fallbacks)
@@ -4450,28 +4520,14 @@ async def check_pinnacle_walk(io, name, cls, level):
         if why:
             return Result(key, name, cls, SKIP, why, fallbacks)
         fallbacks.extend(more)
-        await asc_greet(io, PINNACLE_NPC)
-        listing, heard = await io.say_modal('pinnacle', (PINNACLE_MODAL,), 5.0, NPC_CHANNEL)
-        await npc_talk_end(io)
-        if listing is None:
-            return Result(key, name, cls, SKIP, 'the Keeper opened no window (%s)' % (' | '.join(str(h)[:60] for h in heard[:3]) if heard else 'he said nothing'), fallbacks)
-        choice = pinnacle_choice(listing, index)
-        if choice is None:
-            return Result(key, name, cls, FAIL, "the Keeper's window has no choice for boss %d" % index, fallbacks)
-        opened = next((b for b, t in listing.get('buttons') or [] if 'open' in str(t).lower() or 'abrir' in str(t).lower()), listing.get('enter') or 1)
-        _, lines = await io.modal_answer(PINNACLE_MODAL, opened, choice, 2.0)
-        s, waited = None, 0.0
-        while waited <= PINNACLE_OPEN_WAIT and io.alive():
-            s = await io.helper('pinnacle state', 'pinnacle', ANSWER)
-            if isinstance(s, dict) and s.get('inside'):
-                break
-            await io.sleep(1.0)
-            waited += 1.0
-        if not (isinstance(s, dict) and s.get('inside')):
-            return Result(key, name, cls, SKIP, 'the fight did not open in %d s (the Keeper said: %s)' % (
-                int(PINNACLE_OPEN_WAIT), ' | '.join(str(l)[:70] for l in lines[:3]) or 'nothing'), fallbacks)
+        opened = await pinnacle_open(io, index)
+        if opened is not None:
+            return Result(key, name, cls, opened[0], opened[1], fallbacks)
+        if hasattr(io, 'heal_earlier'):
+            io.heal_earlier([name], True)   # O681: a person heals earlier against a boss whose hit is a third of his health
+        trace['shields'] = 1 if await pinnacle_shield(io) else 0   # O681: and casts the mana shield of his class before the boss comes
         await solo_play(io, r, trace, {
-            'system': 'pinnacle', 'budget': PINNACLE_BUDGET, 'problems': pinnacle_problems,
+            'system': 'pinnacle', 'budget': PINNACLE_BUDGET, 'problems': pinnacle_problems, 'dodge': True,
             'done': lambda t: bool(t.get('killed')), 'made': lambda t: bool(t.get('boss_seen')),
             'mark': lambda s: ((s.get('run') or {}).get('boss'), (s.get('run') or {}).get('falls'))})
         await io.helper('pinnacle close', 'pinnacle', ANSWER)
@@ -4481,8 +4537,317 @@ async def check_pinnacle_walk(io, name, cls, level):
         status, text = pinnacle_walk_verdict(trace)
         return Result(key, name, cls, status, text, fallbacks)
     finally:
+        if hasattr(io, 'heal_earlier'):
+            io.heal_earlier([name], False)
         await io.helper('pinnacle close', 'pinnacle', ANSWER)
         io.raid_mode([name], False)
+        await io.go('hunt')
+
+
+# ------------------------------------------------------------------------------------------------ the pinnacle bosses, fought by a party of five (O681)
+# O678 walked one bot in and the bot fell in 3 to 29 s: the gear of its old level, no party. The party check plays the fight the model plans
+# (pinnacle_model.py: the median class kills a boss in 420 s alone and 300 s with five): five bots of different classes at the boss's level, each
+# through the gear-up of the other fight checks (potions, the passive tree, a weapon of the band, the basic pieces from the Gambler) and then the
+# level's set gear (`!tester gear set`, TEST ONLY), one party, the opener's whole set of fragments (`!tester pinnacle set`, TEST ONLY), the Keeper's
+# Open with the four others next to the opener, then the fight played to its end: the boss falls (seconds from its arrival to its death are the
+# measurement), every bot is carried out, or the clock of the fight ends. The lead's result is the party's; the others wait as members.
+PINNACLE_PARTY = 5          # bots in the party (pinnacle_config.lua party.max)
+PINNACLE_MEMBERS = {}       # member name -> leader name, while a party plays
+PINNACLE_TURN = {'by': None}   # one fight of bots at a time (the arenas the testers may take are few: tester.reserve)
+PINNACLE_GATHER_NEAR = 3    # tiles from the opener a member stops at (party.range is 8)
+PINNACLE_MEMBER_WAIT = 2400.0   # seconds a member waits for its leader at most
+PINNACLE_STEPS = 6          # steps of one bot between two looks
+PINNACLE_SHIELD_WORDS = 'tor ael'   # Ward of the Mind, the mana shield of the Mystic, Ranger and Necromancer lines (manashield_config.lua): the survival model counts it
+PINNACLE_SHIELD_EVERY = 100.0       # seconds between two casts of it (a cast on a bot that still holds the shield costs a few mana)
+
+
+def pinnacle_target(a, level):
+    """(the boss row of a `!tester pinnacle` answer, its place 1-4 in the window) for a character of `level`: the highest boss its level opens"""
+    best, place = None, 0
+    for i, b in enumerate((a or {}).get('bosses') or [], 1):
+        if isinstance(b, dict) and int(b.get('minLevel') or 0) <= int(level or 0):
+            best, place = b, i
+    return best, place
+
+
+def pinnacle_party_verdict(t):
+    """(status, text) of a party fight: pinnacle_walk_verdict of the trace, with the party's own facts: the classes, who was carried out when"""
+    fallbacks = t.get('fallbacks') or []
+    status, text = pinnacle_walk_verdict(dict(t, fallbacks=[]))   # five bots name dozens of teleports and grants: the result lists them (`fallbacks`), the text counts them
+    if fallbacks:
+        text += '; %d teleport/grant fallback(s) named in the result' % len(fallbacks)
+    out = t.get('out') or []
+    if out:
+        text += '; carried out: %s' % ', '.join('%s at %d s' % (n, s) for n, s in out[:5])
+    if t.get('classes'):
+        text += '; party: %s' % ', '.join(t['classes'])
+    return status, text
+
+
+async def pinnacle_member_wait(io, name):
+    """a bot taken into a party waits for its leader (its own check list goes on after the fight, never into it)"""
+    waited = 0.0
+    while name in PINNACLE_MEMBERS and io.alive() and waited < PINNACLE_MEMBER_WAIT:
+        hold = getattr(io, 'hold_party', None)
+        if hold is not None:
+            hold([name])
+        await io.sleep(2.0)
+        waited += 2.0
+
+
+async def pinnacle_shield(io):
+    """the mana shield of the bot's class (Ward of the Mind), cast by its words as a person casts it before a boss hits: -> True when the class has it"""
+    spells = io.class_spells() if hasattr(io, 'class_spells') else []
+    spell = next((s for s in spells or [] if s.get('words') == PINNACLE_SHIELD_WORDS and not s.get('needlearn')), None)
+    if spell is None:
+        return False
+    await io.say(PINNACLE_SHIELD_WORDS)
+    return True
+
+
+async def pinnacle_prep(io, name, cls, level, fallbacks):
+    """one bot of the party before the fight: the gear-up of the fight checks, the set gear, potions. -> the text for the report"""
+    parts = []
+    r = await gear_up(io, name, cls, level)
+    parts.append('gear-up %s' % r.status)
+    fallbacks.extend(r.fallbacks or [])
+    if io.alive():
+        parts.append(await pinnacle_gear(io, {'name': name, 'lead': True}, fallbacks))
+    if io.alive():
+        await io.helper('bag', 'bag', HELPER_WAIT)
+    return '%s: %s' % (name[-3:], ', '.join(parts))
+
+
+async def pinnacle_fight(io, squad, trace, budget):
+    """the play loop of the party: one look at every bot, then up to PINNACLE_STEPS steps each by the engine's path to the goal the guide names. The
+    fight itself is each bot's own (its rotation, its heals). Ends when the boss falls, a fault, every bot is out, or the budget"""
+    elapsed, misses, fight_since, mark = 0.0, 0, None, None
+    was_in, shielded = {}, -PINNACLE_SHIELD_EVERY
+    while io.alive() and elapsed < budget:
+        if elapsed - shielded >= PINNACLE_SHIELD_EVERY:
+            shielded = elapsed
+            for r in squad:
+                if r.get('io') is not None and (was_in.get(r['name']) is not False):
+                    trace['shields'] = trace.get('shields', 0) + (1 if await pinnacle_shield(r['io']) else 0)
+        hold = getattr(io, 'hold_party', None)
+        if hold is not None:
+            hold([r['name'] for r in squad])
+        # one look at every bot at once (each on its own connection): a mark gives 1.5 to 3 s, five looks one after the other were too slow to dodge it
+        answers = await asyncio.gather(*[hcmd(io, r, 'pinnacle state', 'pinnacle') for r in squad])
+        looks = {r['name']: a for r, a in zip(squad, answers)}
+        good = {n: s for n, s in looks.items() if isinstance(s, dict) and not s.get('err')}
+        if not good:
+            misses += 1
+            if misses >= SOLO_MISSES:
+                break
+            await io.sleep(RAID_LOOK)
+            elapsed += RAID_LOOK
+            continue
+        misses = 0
+        inside = {n: s for n, s in good.items() if s.get('inside')}
+        for n, s in good.items():
+            if was_in.get(n) and not s.get('inside') and n not in [o[0] for o in trace.setdefault('out', [])]:
+                trace['out'].append((n, int(elapsed)))   # the lethal hit was caught: the bot is out, healed, a fall
+            was_in[n] = was_in.get(n) or bool(s.get('inside'))
+        if not inside:
+            trace['all_out'] = True
+            trace['died'] = not trace.get('boss_seen')
+            break
+        ref = inside.get(squad[0]['name']) or next(iter(inside.values()))
+        for p in pinnacle_problems(ref, trace):
+            if p not in trace['faults']:
+                trace['faults'].append(p)
+        if trace['faults'] or trace.get('killed'):
+            break
+        run_ = ref.get('run') or {}
+        if isinstance(run_.get('sinceBoss'), int) and run_['sinceBoss'] > 1210:
+            break   # the clock of the fight (20 minutes) is over: the server ends the run
+        m = (run_.get('boss'), run_.get('falls'))
+        if m != mark:
+            mark, fight_since = m, None
+        modes = [(inside[r['name']].get('guide') or {}).get('mode') for r in squad if r['name'] in inside]
+        if 'fight' in modes:
+            fight_since = elapsed if fight_since is None else fight_since
+            trace['fought'] = max(trace['fought'], elapsed - fight_since)
+        elif 'wait' not in modes:
+            fight_since = None
+        dodge = {}
+        for r in squad:   # O681: a mark on a bot's tile: the steps to the safe tile at once, before anything else, and a quick look after
+            s = inside.get(r['name'])
+            gr = (s or {}).get('guide') or {}
+            if s is not None and gr.get('mode') == 'dodge' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
+                dodge[r['name']] = raid_plan(s['pos'], gr['goal'], BOSS_DODGE_STEPS)
+        if dodge:
+            trace['dodged'] = trace.get('dodged', 0) + len(dodge)
+            for i in range(BOSS_DODGE_STEPS):
+                moved = False
+                for r in squad:
+                    plan = dodge.get(r['name']) or []
+                    if i < len(plan):
+                        await raid_walk(io, r, plan[i])
+                        trace['steps'] += 1
+                        moved = True
+                if not moved:
+                    break
+                await io.sleep(RAID_STEP)
+                elapsed += RAID_STEP
+            await io.sleep(BOSS_DODGE_LOOK)
+            elapsed += BOSS_DODGE_LOOK
+            trace['secs'] = int(elapsed)
+            continue
+        walkers = []
+        for r in squad:
+            s = inside.get(r['name'])
+            gr = (s or {}).get('guide') or {}
+            if s is not None and gr.get('mode') == 'walk' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
+                walkers.append((r, s, gr))
+        for r, s, gr in walkers:
+            r['plan'] = r['walker'].steps(s['pos'], gr['goal'], PINNACLE_STEPS, elapsed)
+            if r['lead'] and r['walker'].stuck(elapsed) >= SOLO_STUCK:
+                trace['stuck'] = (s['pos']['x'], s['pos']['y'])
+        asking = [(r, s) for r, s, gr in walkers if not r['walker'].blocked]   # the engine's path first (walls, pillars); the side step only when blocked
+        paths = await asyncio.gather(*[hcmd(io, r, 'pinnacle path', 'pinnacle') for r, s in asking])
+        for (r, s), got in zip(asking, paths):
+            steps = raid_path_steps((got or {}).get('path')) if isinstance(got, dict) and not got.get('err') else []
+            r['plan'] = steps[:PINNACLE_STEPS] or r['plan']
+        if trace.get('stuck'):
+            break
+        sent = {r['name']: r['plan'] for r, s, gr in walkers}
+        for i in range(PINNACLE_STEPS):
+            moved = False
+            for r in squad:
+                plan = sent.get(r['name']) or []
+                if i < len(plan):
+                    await raid_walk(io, r, plan[i])
+                    trace['steps'] += 1
+                    moved = True
+            if not moved:
+                break
+            await io.sleep(RAID_STEP)
+            elapsed += RAID_STEP
+        await io.sleep(RAID_LOOK)
+        elapsed += RAID_LOOK
+        trace['secs'] = int(elapsed)
+    trace['secs'] = int(elapsed)
+
+
+async def check_pinnacle_party(io, name, cls, level):
+    """five bots of different classes at the level of a pinnacle boss: each geared (gear-up, then the level's set gear, TEST ONLY), one party, the
+    opener's set of fragments (TEST ONLY), the Keeper's Open, the fight played until the boss falls or the bots are carried out. The seconds to the
+    kill and the health series are the model's measurement (300 s with five)"""
+    key = 'pinnacle_party'
+    if name in PINNACLE_MEMBERS:
+        leader = PINNACLE_MEMBERS[name]
+        await pinnacle_member_wait(io, name)
+        return Result(key, name, cls, SKIP, 'played as a member of the party of %s (its result is the party\'s)' % leader)
+    a = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+    if name in PINNACLE_MEMBERS:   # the leader of another party took this bot while the answer was on its way
+        leader = PINNACLE_MEMBERS[name]
+        await pinnacle_member_wait(io, name)
+        return Result(key, name, cls, SKIP, 'played as a member of the party of %s (its result is the party\'s)' % leader)
+    refused = pinnacle_refusal(a, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    boss, place = pinnacle_target(a, a.get('level') or level)
+    if boss is None:
+        return Result(key, name, cls, SKIP, 'level %s opens no pinnacle boss' % (a.get('level') or level))
+    if PINNACLE_TURN['by'] not in (None, name):
+        return Result(key, name, cls, SKIP, 'one party fights at a time: %s is in the arena' % PINNACLE_TURN['by'])
+    PINNACLE_TURN['by'] = name
+    partners = []
+    try:
+        return await pinnacle_party_play(io, name, cls, level, a, boss, place, partners)
+    finally:
+        PINNACLE_TURN['by'] = None
+        for p in list(partners):
+            PINNACLE_MEMBERS.pop(p, None)
+            r = getattr(io, 'release_partner', None)
+            if r is not None:
+                r(name, p)
+        io.raid_mode([name] + partners, False)
+
+
+async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
+    key = 'pinnacle_party'
+    fallbacks = []
+    min_level = int(boss.get('minLevel') or 0)
+    for other in await io.partners(PINNACLE_PARTY - 1, min_level=min_level):
+        PINNACLE_MEMBERS[other] = name
+        partners.append(other)
+    if len(partners) + 1 < PINNACLE_PARTY:
+        return Result(key, name, cls, SKIP, 'a party of %d needs %d bots of level %d and %d are free' % (
+            PINNACLE_PARTY, PINNACLE_PARTY, min_level, len(partners) + 1))
+    squad = [{'name': name, 'lead': True, 'walker': RaidWalker(), 'inside': False, 'io': io}]
+    for p in list(partners):
+        m = await io.helper_of(p, 'pinnacle state', 'pinnacle', ANSWER)
+        no = pinnacle_refusal(m, 0)
+        if no is not None or int((m or {}).get('level') or 0) < min_level:
+            return Result(key, name, cls, SKIP, 'the party member %s cannot play: %s' % (p[-3:], no[1] if no else 'level under %d' % min_level))
+        squad.append({'name': p, 'lead': False, 'walker': RaidWalker(), 'inside': False, 'io': io.io_of(p)})
+    names = [r['name'] for r in squad]
+    classes = [cls] + [io.class_of(p) or '?' for p in partners]
+    io.hold_party(names)
+    io.raid_mode(names, True)
+    # the gear: every bot through the gear-up and the set gear at once (each on its own bot)
+    jobs = []
+    for r in squad:
+        mio = r['io']
+        if mio is None:
+            return Result(key, name, cls, SKIP, 'the bot %s left the game before the fight' % r['name'][-3:])
+        jobs.append(pinnacle_prep(mio, r['name'], io.class_of(r['name']) or cls, int((await hcmd(io, r, 'pinnacle state', 'pinnacle') or {}).get('level') or level),
+                                  fallbacks))
+    prepped = await asyncio.gather(*jobs, return_exceptions=True)
+    prep_text = [str(p)[:90] for p in prepped]
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the leader left the game while the party geared up')
+    trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
+             'level': a.get('level'), 'boss_seen': False, 'hp': None, 'classes': classes, 'gear': '; '.join(prep_text)[:300]}
+    # to the Keeper: the opener on foot, the others on foot to the opener
+    lead = squad[0]
+    g = await io.helper('pinnacle set %s' % boss.get('key'), 'pinnacle', HELPER_WAIT)
+    if not isinstance(g, dict) or g.get('err'):
+        return Result(key, name, cls, SKIP, 'pinnacle set: %s' % (str((g or {}).get('err') or 'no answer')[:80]), fallbacks)
+    trace['boss'] = g.get('kind')
+    try:
+        why = await solo_to_temple(io, lead, trace, fallbacks, need_pz=True, system='pinnacle')
+        if why:
+            return Result(key, name, cls, SKIP, why.replace('the descent', 'the Keeper'), fallbacks)
+        why, more = await chore_walk(io, name, PINNACLE_NPC, 1)
+        if why:
+            return Result(key, name, cls, SKIP, why, fallbacks)
+        fallbacks.extend(more)
+        for r in squad[1:]:   # the members stand within PINNACLE_GATHER_NEAR tiles of the Keeper too (party.range is 8 from the opener): on foot, else the helper's `enter npc`
+            how, got, note = await walk_to_place(io, r, 'npc ' + PINNACLE_NPC, None, PINNACLE_GATHER_NEAR)
+            if how not in ('foot', 'helper'):
+                return Result(key, name, cls, SKIP, 'the member %s did not come to the Keeper: %s' % (r['name'][-3:], how[:90]), fallbacks)
+            if note:
+                fallbacks.append(note)
+        if not await io.party_group(partners):
+            return Result(key, name, cls, SKIP, 'the party could not be formed (a bot left the game)', fallbacks)
+        await io.sleep(SETTLE)
+        p = await io.helper('party', 'party', ANSWER)
+        if not isinstance(p, dict) or int(p.get('size') or 0) < PINNACLE_PARTY:
+            return Result(key, name, cls, SKIP, 'the party has %s member(s), %d are asked' % ((p or {}).get('size'), PINNACLE_PARTY), fallbacks)
+        opened = await pinnacle_open(io, place)
+        if opened is not None:
+            return Result(key, name, cls, opened[0], opened[1], fallbacks)
+        for r in squad:   # the members that came along
+            s = await hcmd(io, r, 'pinnacle state', 'pinnacle')
+            r['inside'] = bool(isinstance(s, dict) and s.get('inside'))
+        trace['members_in'] = sum(1 for r in squad if r['inside'])
+        if hasattr(io, 'heal_earlier'):
+            io.heal_earlier(names, True)
+        await pinnacle_fight(io, [r for r in squad if r['inside']] or [lead], trace, PINNACLE_BUDGET)
+        status, text = pinnacle_party_verdict(trace)
+        if trace['members_in'] < PINNACLE_PARTY:
+            text += '; only %d of %d came along' % (trace['members_in'], PINNACLE_PARTY)
+        return Result(key, name, cls, status, text, fallbacks)
+    finally:
+        if hasattr(io, 'heal_earlier'):
+            io.heal_earlier(names, False)
+        for r in squad:
+            await hcmd(io, r, 'pinnacle close', 'pinnacle')
+        await io.party_group_leave(partners)
         await io.go('hunt')
 
 
@@ -8456,6 +8821,7 @@ CHECKS = [
     ('hideout', check_hideout, lambda c: True),   # O595: the own hideout: enter, place a decoration, remove it, leave
     ('ascended_walk', check_ascended_walk, lambda c: True),   # O599: the Ascended arena on foot, a sigil from the helper, the boss hurt
     ('omen_walk', check_omen_walk, lambda c: True),   # O599: the omen arena on foot, an Omen Key from the helper, the guardian hurt
+    ('pinnacle_party', check_pinnacle_party, lambda c: True),   # O681: five bots of different classes, the level's set gear (TEST ONLY), one party, the boss fought to its end
     ('pinnacle_walk', check_pinnacle_walk, lambda c: True),   # O678: a pinnacle boss opened at the Keeper (TEST ONLY set of fragments), fought to its end by the engine's path
     ('bounty_walk', check_bounty_walk, lambda c: True),   # O599: the smallest hunt contract with a known hunt: accept, walk, kill, the counter moves
     ('mainquest_walk', check_mainquest_walk, lambda c: True),   # O599: the first steps of the main quest: talk, walk, kill; O650: the later steps (bring, Go, daily, cast, hunt)

@@ -237,6 +237,22 @@ check(pr.danger.here == true and pr.danger.count == 1 and #pr.danger.tiles == 9 
 bot.pos = {x = dg.goal.x, y = dg.goal.y, z = 7}
 pr = B.probe(bot)
 check(pr.guide.mode == "fight" and pr.danger.here == false, "probe: off the mark: fight again, the mark still shows")
+-- O681: the adds and the totem of a fight (M.addsFor, read by the pinnacle probe): the live ones, sorted, a gone one is not listed
+do
+	local live = {}
+	local realMonster = Monster
+	Monster = function(id) return live[id] or realMonster(id) end
+	live[9003], live[9001], live[9007] = {id = 9003}, {id = 9001}, {id = 9007}
+	M.fights[boss:getId()].adds = {[9003] = true, [9001] = true, [9005] = true}
+	M.fights[boss:getId()].channel = {totem = 9007}
+	local ids = M.addsFor(boss:getId())
+	check(ids and #ids == 3 and ids[1] == 9001 and ids[2] == 9003 and ids[3] == 9007, "addsFor: the live adds and the totem, sorted; 9005 is gone")
+	live[9007] = nil
+	M.fights[boss:getId()].adds = {}
+	check(M.addsFor(boss:getId()) == nil, "addsFor: the totem is gone and no add: nothing")
+	check(M.addsFor(999) == nil, "addsFor: no fight, nothing")
+	Monster = realMonster
+end
 -- no safe tile within the time left: no goal, the bot fights on
 M.fights[boss:getId()].grid = G.grid({{x = bot.pos.x, y = bot.pos.y, z = 7}})
 M.fights[boss:getId()].danger[1].tel.set = {[G.key(bot.pos.x, bot.pos.y)] = true}

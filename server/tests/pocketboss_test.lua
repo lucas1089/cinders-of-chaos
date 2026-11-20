@@ -408,7 +408,11 @@ local function newMonster(name, p)
 	function m:getHealth() return self.hp end
 	function m:getMaxHealth() return self.maxHp end
 	function m:setMaxHealth(v) self.maxHp = v end
-	function m:addHealth(v) self.hp = self.hp + v end
+	function m:addHealth(kind, v)   -- this engine: (damage type, amount); a one-argument addHealth(amount) does nothing (chaos_constants.lua Chaos.heal)
+		if type(kind) == "string" and type(v) == "number" then
+			self.hp = math.min(self.maxHp, self.hp + v)
+		end
+	end
 	function m:getPosition() return self.pos end
 	function m:registerEvent(e) self.events[e] = true end
 	function m:getTarget() return {} end
@@ -648,6 +652,7 @@ ok(c.msgs[#c.msgs]:find("no charges left", 1, true), "told why")
 advance(pcfg.startDelay + 1)
 bossM = Monster(run.bossId)
 eq(bossM.maxHp, math.floor(1000000 * K.scale(pcfg.categories.island.health, 2)), "health for two")
+eq(bossM.hp, bossM.maxHp, "O681: the party's boss starts at its full health (the engine's addHealth takes a damage type: the one-argument call healed nothing)")
 -- a logout inside: out, the charge stays spent
 registry.ChaosPocketBossLogout.onLogout(b)
 ok(not PB.isInside(b), "logout: out")

@@ -50,6 +50,9 @@
 --     fragments held, inside a fight the boss's health, the clock, the guide); `set` is the TEST ONLY grant of a whole set of fragments (a tester
 --     only, logged: the top content that drops them is hours of play), the Keeper's window opens the fight (the bot presses Open itself), `path` is
 --     the engine's path to the guide's goal inside, `close` the bot's own way out
+--   * "!tester gear [state | set]" (O681): the helmet, armour, legs and weapon of the equipment sets that fit the bot's class and level (`state` reads,
+--     `set` is the TEST ONLY grant of a Rare piece of item level = the level for each slot, worn at once, a tester only, logged, never inside a pinnacle
+--     fight): the gear the pinnacle checks need, which the Gambler's stock and a bot's own drops do not give at level 1900 to 2500
 --   * "!tester bounty [state | where NAME | path]" (O599): the bounty board as a person sees it (ChaosBounty.probe: the contracts held, the ones a
 --     hunt mark lists, "where does monster X spawn" from the hunt marks) and the path on foot to the contract's monster or hunt
 --   * "!tester mainquest [state]" (O599): the open step of the main quest, its condition, progress, where to go and what a bot can play of it
@@ -117,7 +120,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 29
+HELPER_VERSION = 30
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -156,10 +159,29 @@ local function posOf(p)
 	return {x = p.x, y = p.y, z = p.z}
 end
 
+-- O681: the Everfull potions of the tier the survival model plans with (survival_balance_config.lua potionTier 4: the supreme health and mana potion)
+local POTION_TIER = 4
+local function tierPotions()
+	local out = {}
+	for _, e in ipairs(ChaosPotionsConfig and ChaosPotionsConfig.everfull or {}) do
+		if e.tier == POTION_TIER and (e.line == "health" or e.line == "mana") then
+			out[e.line] = e
+		end
+	end
+	return out
+end
+
 local function info(player)
 	local hp, mp = ItemType(7618), ItemType(7620)
 	local data = {cid = player:getId(), level = player:getLevel(), pos = posOf(player:getPosition()),
 		potions = {health = hp and hp:getClientId() or 0, mana = mp and mp:getClientId() or 0}}
+	for line, e in pairs(tierPotions()) do -- O681: a flask of the model's tier that the bot carries is the potion it drinks
+		local okC, n = pcall(function() return player:getItemCount(e.id) end)
+		local it = okC and n and n > 0 and ItemType(e.id) or nil
+		if it then
+			data.potions[line] = it:getClientId()
+		end
+	end
 	local ever = ChaosPotionsConfig and ChaosPotionsConfig.everfull or {}
 	for _, e in ipairs(ever) do
 		if (e.tier or 1) <= 1 then -- the starting flasks; the O245 tiers share their key
@@ -1721,6 +1743,139 @@ function commands.pinnacle(player, arg)
 		return
 	end
 	tell(player, "pinnacle", H.pinnacleAnswer(probe))
+end
+
+-- ---------------------------------------------------------------- O681 the gear of the level
+-- "!tester gear [state | set]": the pieces of the equipment sets (ChaosGearSets.items.pieces) that fit the bot's class and level (H.gearPlan). `state`
+-- reads what is worn and the plan. `set` is the TEST ONLY grant of the pinnacle checks (a tester only, one console line, never inside a fight): a Rare
+-- piece of item level = the level for each slot of the plan, worn at once (the old piece goes to the backpack; a piece the Equip event refuses is
+-- removed and the old one stays). The model's median class wears "the level's set gear" (survival_model.py, install_gear_sets.py CURVES).
+local GEAR_SLOTS = {helmet = CONST_SLOT_HEAD, armor = CONST_SLOT_ARMOR, legs = CONST_SLOT_LEGS, weapon = CONST_SLOT_LEFT}
+local GEAR_ORDER = {"helmet", "armor", "legs", "weapon"}
+local GEAR_RARITY = 3 -- Rare: the drop the model's gear step prices (class_dps_model.py step_gear)
+
+local function gearWorn(player)
+	local worn = {}
+	for _, name in ipairs(GEAR_ORDER) do
+		local item = player:getSlotItem(GEAR_SLOTS[name])
+		if item then
+			local il = 0
+			pcall(function() il = ChaosCrafting.levelOf(item) or 0 end)
+			worn[name] = {id = item:getId(), il = il}
+		end
+	end
+	return worn
+end
+
+function commands.gear(player, arg)
+	local want, usage = H.parseGear(arg)
+	if not want then
+		tell(player, "gear", {err = usage})
+		return
+	end
+	local G = ChaosGearSets
+	local pieces = G and G.items and G.items.pieces
+	if type(pieces) ~= "table" then
+		tell(player, "gear", {err = "no equipment sets"})
+		return
+	end
+	local level = player:getLevel()
+	local className = player:getVocation():getName()
+	local plan = H.gearPlan(pieces, className, level)
+	local base = {level = level, class = className}
+	if want.what == "state" then
+		tell(player, "gear", H.gearAnswer(plan, gearWorn(player), base))
+		return
+	end
+	if ChaosPinnacle and ChaosPinnacle.isInside and ChaosPinnacle.isInside(player) then
+		tell(player, "gear", H.gearAnswer(plan, gearWorn(player), {err = "not inside a fight", level = level}))
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "gear", H.gearAnswer(plan, gearWorn(player), {err = "no backpack", level = level}))
+		return
+	end
+	local capWas = player:getCapacity()
+	player:setCapacity(capWas + 10000000) -- a piece of the level is heavy: the move is not refused for the weight
+	local given, refused = {}, {}
+	for _, name in ipairs(GEAR_ORDER) do
+		local p = plan[name]
+		local slot = GEAR_SLOTS[name]
+		if p then
+			local ok, why = pcall(function()
+				local old = player:getSlotItem(slot)
+				if old and old:getId() == p.id then
+					local il = 0
+					pcall(function() il = ChaosCrafting.levelOf(old) or 0 end)
+					if il >= level then
+						return "worn" -- the piece of the plan, at this level, is on already
+					end
+				end
+				local item
+				if ChaosCrafting and ChaosCrafting.createItem then
+					item = ChaosCrafting.createItem(p.id, GEAR_RARITY, level)
+				else
+					item = Game.createItem(p.id, 1)
+				end
+				if not item then
+					return "the piece could not be made"
+				end
+				if name == "weapon" and p.fit == "2" then
+					local off = player:getSlotItem(CONST_SLOT_RIGHT)
+					if off and off:moveTo(bag) == false then
+						item:remove()
+						return "the off hand could not be emptied"
+					end
+				end
+				if old and old:moveTo(bag) == false then
+					item:remove()
+					return "the worn piece could not be put away"
+				end
+				local rv = player:addItemEx(item, false, slot)
+				if rv ~= RETURNVALUE_NOERROR then
+					item:remove()
+					if old and not player:getSlotItem(slot) then
+						local c = old:clone()
+						if player:addItemEx(c, false, slot) == RETURNVALUE_NOERROR then
+							old:remove()
+						else
+							c:remove()
+						end
+					end
+					return "refused (" .. tostring(rv) .. ")"
+				end
+				return "ok"
+			end)
+			if ok and (why == "ok" or why == "worn") then
+				given[#given + 1] = name
+			else
+				refused[#refused + 1] = {slot = name, why = tostring(why):sub(1, 60)}
+			end
+		end
+	end
+	local flasks, flaskWhy = {}, {}
+	for line, e in pairs(tierPotions()) do -- the flask of the model's potion tier (it never empties; one a character)
+		local okC, n = pcall(function() return player:getItemCount(e.id) end)
+		local added
+		if okC and (n or 0) == 0 then
+			local okA, got = pcall(function() return player:addItem(e.id, 1) end)
+			added = okA and got ~= nil and got ~= false
+			okC, n = pcall(function() return player:getItemCount(e.id) end)
+		end
+		if okC and (n or 0) > 0 then
+			local it = ItemType(e.id)
+			flasks[line] = it and it:getClientId() or nil
+		end
+		if not flasks[line] then
+			flaskWhy[#flaskWhy + 1] = line .. " " .. tostring(e.id) .. " count " .. tostring(n) .. (added == false and ", addItem refused" or "")
+		end
+	end
+	player:setCapacity(capWas)
+	print(string.format("[tester-helper] gear set for %s (level %d, %s): %s%s%s", player:getName(), level, className, table.concat(given, ","),
+		#refused > 0 and (" refused " .. #refused) or "", flasks.health and (" + everfull tier " .. POTION_TIER .. " potions") or ""))
+	tell(player, "gear", H.gearAnswer(plan, gearWorn(player), {level = level, class = className, given = given, refused = refused,
+		potions = flasks.health and {health = flasks.health, mana = flasks.mana} or nil, flaskWhy = #flaskWhy > 0 and table.concat(flaskWhy, "; "):sub(1, 90) or nil}))
 end
 
 -- ---------------------------------------------------------------- O599 the bounty board
@@ -3806,6 +3961,16 @@ local function stepBody()
 			if not player or not eligible(player) then
 				T.ids[id] = nil -- gone, or not a tester: never acted on
 			else
+				if ChaosPinnacle and ChaosPinnacle.priorityTarget then
+					-- O681: inside a pinnacle fight the add that shields, empowers or channels comes before the boss ("Break them!"), as a person aims
+					local okP, add = pcall(ChaosPinnacle.priorityTarget, player)
+					local cur = player:getTarget()
+					if okP and add and (not cur or cur:getId() ~= add:getId()) then
+						add:registerEvent("TesterHelperDealt")
+						player:setTarget(add)
+						player:setDirection(H.directionTo(player:getPosition(), add:getPosition()))
+					end
+				end
 				if not player:getTarget() then
 					pcall(pvpAim, player) -- O652: a foe tester inside a PvP place first
 				end

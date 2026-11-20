@@ -11461,7 +11461,7 @@ class PinnacleWalk(unittest.TestCase):
         self.assertEqual(r.status, TX.PASS, r.detail)
         self.assertEqual(io.answered[0], (7490, 1, 2), 'Open on the second boss of the window (vhoss), the place the helper named')
         self.assertEqual(played, ['pinnacle'])
-        self.assertEqual(io.cmds[:2], ['pinnacle state', 'pinnacle set'], 'the grant comes from the helper, before the walk')
+        self.assertEqual(io.cmds[:3], ['pinnacle state', 'gear set', 'pinnacle set'], 'the grants come from the helper, before the walk')
         self.assertIn('pinnacle close', io.cmds, 'the bot leaves through the helper at the end')
         self.assertIn('down in 410 s', r.detail)
 
@@ -11472,6 +11472,399 @@ class PinnacleWalk(unittest.TestCase):
         self.assertEqual(TX.LEVEL_GATES['pinnacle_walk'], 1800)
         self.assertIsNotNone(TX.level_gate('pinnacle_walk', 1500))
         self.assertIsNone(TX.level_gate('pinnacle_walk', 1800))
+
+
+class PinnacleGear(unittest.TestCase):
+    """O681: the TEST ONLY grant of the level's set gear for the pinnacle checks"""
+
+    class IO(FakeIO):
+        def __init__(self, answer):
+            FakeIO.__init__(self)
+            self.answer, self.cmds = answer, []
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append((command, kind))
+            return self.answer
+
+    def go(self, answer):
+        io, fb = self.IO(answer), []
+        return run(TX.pinnacle_gear(io, {'name': 'Tester Aaa', 'lead': True}, fb)), fb, io
+
+    def test_a_grant_is_a_named_fallback(self):
+        text, fb, io = self.go({'given': ['helmet', 'armor', 'legs', 'weapon'], 'refused': [{'slot': 'weapon', 'why': 'refused (3)'}], 'level': 2100})
+        self.assertEqual(io.cmds, [('gear set', 'gear')])
+        self.assertIn('set gear: helmet, armor, legs, weapon', text)
+        self.assertIn('refused: weapon refused (3)', text)
+        self.assertEqual(len(fb), 1)
+        self.assertTrue(fb[0].startswith('gear set ('), fb)
+        self.assertIn('TEST ONLY', fb[0])
+
+    def test_no_grant_no_fallback(self):
+        text, fb, _ = self.go({'given': [], 'level': 100})
+        self.assertEqual((text, fb), ('set gear: none', []))
+
+    def test_the_reasons(self):
+        self.assertIn('old helper file', self.go(None)[0])
+        self.assertEqual(self.go({'err': 'not inside a fight'})[0], 'gear set: not inside a fight')
+        self.assertEqual(self.go({'err': 'x'})[1], [])
+
+
+class PinnacleParty(unittest.TestCase):
+    """O681: five bots of different classes, the level's set gear, one party, a pinnacle boss fought to its end"""
+
+    BOSSES = PinnacleWalk.BOSSES
+    NAMES = ['Tester Aaa', 'Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']
+    CLASSES = {'Tester Aaa': 'Mystic', 'Tester Aab': 'Ranger', 'Tester Aac': 'Warrior', 'Tester Aad': 'Elementalist', 'Tester Aae': 'Samurai'}
+
+    def test_the_boss_of_a_level(self):
+        a = {'bosses': self.BOSSES}
+        self.assertEqual(TX.pinnacle_target(a, 1900)[1], 1)
+        self.assertEqual(TX.pinnacle_target(a, 2050)[1], 2)
+        self.assertEqual(TX.pinnacle_target(a, 2500)[0]['key'], 'varkhul')
+        self.assertEqual(TX.pinnacle_target(a, 1799), (None, 0))
+        self.assertEqual(TX.pinnacle_target(None, 2500), (None, 0))
+
+    def test_the_verdict_names_the_party(self):
+        t = {'level': 2100, 'came': 'foot', 'steps': 5, 'secs': 400, 'boss_seen': True, 'hp': 0, 'boss': 'vhoss', 'falls': 2, 'size': 5, 'killed': True,
+             'kill_secs': 311, 'out': [('Tester Aac', 80), ('Tester Aab', 150)], 'classes': ['Mystic', 'Ranger'], 'gear': 'set gear: helmet'}
+        st, text = TX.pinnacle_party_verdict(t)
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('down in 311 s', text)
+        self.assertIn('2 fall(s), 5 player(s)', text)
+        self.assertIn('carried out: Tester Aac at 80 s, Tester Aab at 150 s', text)
+        self.assertIn('party: Mystic, Ranger', text)
+        self.assertIn('set gear: helmet', text)
+        self.assertNotIn('teleport', text)
+        st, text = TX.pinnacle_party_verdict(dict(t, fallbacks=['enter temple (x)'] * 40))
+        self.assertIn('40 teleport/grant fallback(s) named in the result', text)
+        self.assertNotIn('enter temple', text, 'the list is the result\'s, not the text\'s')
+        st, text = TX.pinnacle_party_verdict(dict(t, killed=False, hp=100, out=[], fought=0.0, died=True, boss_seen=False))
+        self.assertEqual(st, TX.SKIP)
+
+    class FightIO(FakeIO):
+        """five bots; the boss loses 20% a look; `out` names bots that are carried out at a look"""
+
+        def __init__(self, kill_at=5, out=None, extra=None, mode='walk'):
+            FakeIO.__init__(self)
+            self.looks, self.kill_at, self.out, self.extra, self.mode = 0, kill_at, out or {}, extra or {}, mode
+            self.cmds, self.stepped = [], []
+
+        def state(self, name):
+            n = self.looks
+            if n >= self.out.get(name, 10 ** 6):
+                return {'inside': None, 'level': 2100}
+            run_ = {'players': 5, 'testers': 5, 'size': 5, 'kind': 'vhoss', 'boss': 'alive', 'state': 'running', 'falls': len(self.out), 'bossHp': max(1, 100 - 20 * n),
+                    'sinceBoss': 10 * n, 'bossMax': 3000000, 'bossHealth': 3000000}
+            if n >= self.kill_at:
+                run_.update(boss='dead', state='success', bossHp=None, sinceBoss=10 * n)
+            run_.update(self.extra)
+            return {'inside': 'vhoss', 'level': 2100, 'pos': {'x': 10, 'y': 10, 'z': 7}, 'run': run_,
+                    'guide': {'mode': self.mode, 'goal': {'x': 13, 'y': 10, 'z': 7}}}
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append(('lead', command))
+            if command == 'pinnacle state':
+                self.looks += 1
+                return self.state('Tester Aaa')
+            return None
+
+        async def helper_of(self, name, command, kind, wait=4.0):
+            self.cmds.append((name, command))
+            return self.state(name) if command == 'pinnacle state' else None
+
+        async def step(self, dx, dy):
+            self.stepped.append(('lead', dx, dy))
+
+        async def step_of(self, name, dx, dy):
+            self.stepped.append((name, dx, dy))
+
+    def squad(self):
+        return [{'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True} for i, n in enumerate(self.NAMES)]
+
+    def test_the_fight_is_played_to_the_kill(self):
+        io = self.FightIO(kill_at=4)
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertTrue(t['killed'])
+        self.assertEqual(t['kill_secs'], 40)
+        self.assertEqual((t['size'], t['boss']), (5, 'vhoss'))
+        self.assertEqual(t['hp'], 40, 'the lowest health the boss showed')
+        self.assertEqual(t['faults'], [])
+        self.assertEqual({s[0] for s in io.stepped}, {'lead'} | set(self.NAMES[1:]), 'every bot walks to the goal by its own steps')
+        self.assertIn(('Tester Aad', 'pinnacle state'), io.cmds)
+        self.assertIn(('Tester Aae', 'pinnacle path'), io.cmds)
+
+    def test_a_bot_carried_out_is_named(self):
+        io = self.FightIO(kill_at=6, out={'Tester Aac': 3, 'Tester Aab': 4})
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertEqual([n for n, _ in t['out']], ['Tester Aac', 'Tester Aab'])
+        self.assertTrue(t['killed'])
+        self.assertEqual(t['falls'], 2)
+
+    def test_everybody_out_ends_the_fight(self):
+        io = self.FightIO(kill_at=99, out={n: 3 for n in self.NAMES})
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertTrue(t['all_out'])
+        self.assertFalse(t.get('killed'))
+        self.assertTrue(t['boss_seen'])
+        self.assertEqual(len(t['out']), 5)
+        st, text = TX.pinnacle_party_verdict(t)
+        self.assertEqual(st, TX.PASS, 'the boss was hurt before the party was out: a measurement, not a failure')
+        self.assertIn('carried out', text)
+
+    def test_a_player_in_the_run_is_a_fault(self):
+        io = self.FightIO(kill_at=99, extra={'players': 6})
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertIn('a player is in the pinnacle fight', t['faults'][0])
+
+    class ShieldIO(FakeIO):
+        def __init__(self, spells):
+            FakeIO.__init__(self)
+            self.spells = spells
+
+        def class_spells(self):
+            return self.spells
+
+    def test_the_mana_shield_is_cast_by_the_classes_that_have_it(self):
+        mage = self.ShieldIO([{'words': 'tor ael', 'name': 'Ward of the Mind'}, {'words': 'drai ondr', 'name': 'x'}])
+        self.assertTrue(run(TX.pinnacle_shield(mage)))
+        self.assertEqual(mage.said, ['tor ael'], 'the words of Ward of the Mind, nothing else')
+        knight = self.ShieldIO([{'words': 'kah ti'}])
+        self.assertFalse(run(TX.pinnacle_shield(knight)))
+        self.assertEqual(knight.said, [])
+        self.assertFalse(run(TX.pinnacle_shield(self.ShieldIO([{'words': 'tor ael', 'needlearn': 1}]))), 'a spell a quest teaches is not cast')
+        self.assertFalse(run(TX.pinnacle_shield(FakeIO())), 'an io with no spell list')
+
+    def test_the_fight_recasts_the_shield_every_hundred_seconds(self):
+        mage, knight = self.ShieldIO([{'words': 'tor ael'}]), self.ShieldIO([{'words': 'kah ti'}])
+        squad = self.squad()[:2]
+        squad[0]['io'], squad[1]['io'] = mage, knight
+        io = self.FightIO(kill_at=10 ** 6, extra={'sinceBoss': 5}, mode='fight')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, squad, t, 215.0))
+        self.assertGreaterEqual(len(mage.said), 3, 'at the start and every hundred seconds: %s' % mage.said)
+        self.assertEqual(set(mage.said), {'tor ael'})
+        self.assertEqual(knight.said, [], 'a class with no shield casts none')
+        self.assertEqual(t['shields'], len(mage.said))
+
+    def test_a_mark_on_a_bot_sends_it_to_the_safe_tile(self):
+        io = self.FightIO(kill_at=2, mode='dodge')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertEqual(t['dodged'], 5, 'one dodge for each of the five bots at the one look that had a mark')
+        self.assertEqual(sorted({(s[1], s[2]) for s in io.stepped}), [(1, 0)], 'the steps go east, to the safe tile three tiles away')
+        self.assertEqual(len([s for s in io.stepped if s[0] == 'Tester Aac']), TX.BOSS_DODGE_STEPS)
+        self.assertNotIn(('Tester Aac', 'pinnacle path'), io.cmds, 'no path asked: a dodge is a few quick steps')
+        self.assertIn('5 dodge(s)', TX.pinnacle_walk_verdict(dict(t, killed=True, kill_secs=9, size=5, level=1900))[1])
+
+    def test_the_clock_of_the_fight_ends_the_loop(self):
+        io = self.FightIO(kill_at=99, extra={'sinceBoss': 1300})
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertEqual(io.looks, 1, 'one look past the 20 minutes and the loop is over')
+
+    class PartyIO(FakeIO):
+        def __init__(self, free=4, level=2100, bot_level=2100):
+            FakeIO.__init__(self)
+            self.free = ['Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae'][:free]
+            self.level, self.bot_level = level, bot_level
+            self.cmds, self.grouped, self.left, self.released, self.stays, self.holds = [], [], [], [], [], []
+            self.party_size = 5
+            self.inside = set()
+
+        def pstate(self, name):
+            return {'level': self.bot_level if name != 'Tester Aaa' else self.level, 'enabled': True, 'bosses': [dict(b) for b in PinnacleParty.BOSSES], 'free': 8, 'reserve': 2,
+                    'pz': True, 'inside': 'vhoss' if name in self.inside else None, 'pos': {'x': 5, 'y': 6, 'z': 7}}
+
+        async def partners(self, n, min_level=0):
+            self.cmds.append(('partners', n, min_level))
+            out, self.free = self.free[:n], self.free[n:]
+            return out
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append(('Tester Aaa', command))
+            if command == 'pinnacle state':
+                return self.pstate('Tester Aaa')
+            if command.startswith('pinnacle set'):
+                return {'given': True, 'kind': command.split()[-1], 'bosses': [dict(b) for b in PinnacleParty.BOSSES]}
+            if command == 'party':
+                return {'size': self.party_size}
+            if command == 'gear set':
+                return {'given': ['helmet', 'armor', 'legs', 'weapon'], 'level': self.level}
+            return None
+
+        async def helper_of(self, name, command, kind, wait=4.0):
+            self.cmds.append((name, command))
+            return self.pstate(name) if command == 'pinnacle state' else None
+
+        def io_of(self, name):
+            io = PinnacleParty.MemberIO(self, name)
+            return io
+
+        def class_of(self, name):
+            return PinnacleParty.CLASSES.get(name, '')
+
+        def hold_party(self, names):
+            self.holds.append(list(names))
+
+        async def party_group(self, others):
+            self.grouped.append(list(others))
+            return True
+
+        async def party_group_leave(self, others):
+            self.left.append(list(others))
+
+        def release_partner(self, name, other):
+            self.released.append(other)
+
+        def raid_mode(self, names, on, keep_flee=False):
+            self.stays.append((len(names), on))
+
+    class MemberIO(FakeIO):
+        def __init__(self, lead, name):
+            FakeIO.__init__(self)
+            self.lead, self.name = lead, name
+
+        async def helper(self, command, kind, wait=4.0):
+            self.lead.cmds.append((self.name, command))
+            if command == 'gear set':
+                return {'given': ['helmet'], 'level': 2100}
+            return None
+
+    def play(self, io, fight=None, member=None, turn=None):
+        keep = (TX.solo_to_temple, TX.chore_walk, TX.walk_to_place, TX.walk_by_path, TX.pinnacle_open, TX.pinnacle_fight, TX.gear_up)
+        calls = {'fight': [], 'up': [], 'open': []}
+
+        async def to_temple(io_, r, trace, fallbacks, need_pz=False, system=None):
+            return None
+
+        async def walk(io_, name, npc, near=1):
+            return None, []
+
+        async def to_place(io_, r, kind, n=None, near=1):
+            calls.setdefault('paths', []).append((r['name'], kind, near))
+            return 'foot', {}, None
+
+        async def by_path(io_, r, command, kind, near=1, rounds=0):
+            return 'foot', {}
+
+        async def open_(io_, index):
+            calls['open'].append(index)
+            for n in PinnacleParty.NAMES:
+                io.inside.add(n)
+            return None
+
+        async def fight_(io_, squad, trace, budget):
+            calls['fight'].append([r['name'] for r in squad])
+            trace.update(boss_seen=True, hp=0, killed=True, kill_secs=287, falls=1, size=len(squad), boss='vhoss', out=[('Tester Aac', 90)])
+
+        async def up(io_, name, cls, level):
+            calls['up'].append((name, cls, level))
+            return TX.Result('gear_up', name, cls, TX.PASS, 'ok', [])
+
+        TX.solo_to_temple, TX.chore_walk, TX.walk_to_place, TX.walk_by_path, TX.pinnacle_open, TX.pinnacle_fight, TX.gear_up = (
+            to_temple, walk, to_place, by_path, open_, fight or fight_, up)
+        try:
+            if turn:
+                TX.PINNACLE_TURN['by'] = turn
+            r = run(TX.check_pinnacle_party(io, 'Tester Aaa', 'Mystic', 2100))
+        finally:
+            TX.solo_to_temple, TX.chore_walk, TX.walk_to_place, TX.walk_by_path, TX.pinnacle_open, TX.pinnacle_fight, TX.gear_up = keep
+            TX.PINNACLE_TURN['by'] = None
+            TX.PINNACLE_MEMBERS.clear()
+        return r, calls
+
+    def test_the_check_forms_five_gears_them_and_opens_the_boss_of_the_level(self):
+        io = self.PartyIO()
+        r, calls = self.play(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('down in 287 s', r.detail)
+        self.assertIn('party: Mystic, Ranger, Warrior, Elementalist, Samurai', r.detail)
+        self.assertIn('carried out: Tester Aac at 90 s', r.detail)
+        self.assertEqual([c for c in io.cmds if c[0] == 'partners'], [('partners', 4, 2000)], 'four partners at once, of the level the boss opens at')
+        self.assertEqual(io.grouped, [['Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']])
+        self.assertEqual(calls['open'], [2], 'Open on the second boss of the window (Vhoss: level 2100)')
+        self.assertIn(('Tester Aaa', 'pinnacle set vhoss'), io.cmds, 'the set is the opener\'s, named')
+        self.assertEqual(sorted(u[0] for u in calls['up']), sorted(self.NAMES), 'every bot of the party goes through the gear-up')
+        self.assertEqual(sum(1 for c in io.cmds if c[1] == 'gear set'), 5, 'and gets the level\'s set gear')
+        self.assertEqual(len(r.fallbacks), 5, 'a TEST ONLY gear grant for each bot is a named fallback')
+        self.assertEqual(calls['fight'], [self.NAMES], 'the five that came along play the fight')
+        self.assertEqual([p[0] for p in calls['paths']], self.NAMES[1:], 'the members walk to the Keeper, the opener stands there')
+        self.assertEqual({p[1:] for p in calls['paths']}, {('npc Keeper of the Pinnacle', TX.PINNACLE_GATHER_NEAR)}, 'within reach of him, not on his tile')
+        self.assertEqual(io.left, [['Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']])
+        self.assertEqual(io.stays[0], (5, True))
+        self.assertEqual(io.stays[-1], (5, False))
+        self.assertEqual(sorted(io.released), sorted(self.NAMES[1:]))
+        for n in self.NAMES:
+            self.assertIn((n, 'pinnacle close'), io.cmds, 'every bot leaves by its own way out')
+        self.assertEqual(io.moves, ['hunt'])
+        self.assertEqual(TX.PINNACLE_MEMBERS, {})
+        self.assertIsNone(TX.PINNACLE_TURN['by'])
+
+    def test_too_few_bots_is_a_skip_with_the_count(self):
+        r, calls = self.play(self.PartyIO(free=2))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('needs 5 bots of level 2000 and 3 are free', r.detail)
+        self.assertEqual(calls['fight'], [])
+
+    def test_a_member_under_the_level_is_a_skip(self):
+        r, calls = self.play(self.PartyIO(bot_level=1500))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('cannot play', r.detail)
+        self.assertEqual(calls['up'], [])
+
+    def test_a_small_party_is_no_party(self):
+        io = self.PartyIO()
+        io.party_size = 3
+        r, calls = self.play(io)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('the party has 3 member(s), 5 are asked', r.detail)
+        self.assertEqual(calls['fight'], [])
+        self.assertEqual(io.left, [['Tester Aab', 'Tester Aac', 'Tester Aad', 'Tester Aae']], 'the party is left on every way out')
+
+    def test_one_party_fights_at_a_time(self):
+        r, _ = self.play(self.PartyIO(), turn='Tester Zzz')
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('Tester Zzz is in the arena', r.detail)
+
+    def test_a_level_that_opens_nothing_is_a_skip(self):
+        io = self.PartyIO(level=1500)
+        r, _ = self.play(io)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('level 1500', r.detail)
+
+    def test_a_member_waits_for_its_leader_and_plays_nothing(self):
+        io = self.PartyIO()
+        TX.PINNACLE_MEMBERS['Tester Aaa'] = 'Tester Zzz'
+        slept = []
+
+        async def sleep(seconds):
+            slept.append(seconds)
+            if len(slept) == 3:
+                TX.PINNACLE_MEMBERS.pop('Tester Aaa', None)   # the leader is done
+        io.sleep = sleep
+        try:
+            r = run(TX.check_pinnacle_party(io, 'Tester Aaa', 'Mystic', 2100))
+        finally:
+            TX.PINNACLE_MEMBERS.clear()
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('played as a member of the party of Tester Zzz', r.detail)
+        self.assertEqual(len(slept), 3)
+        self.assertEqual(io.cmds, [], 'a member asks the server nothing')
+        self.assertEqual(io.holds, [['Tester Aaa']] * 3, 'the member keeps itself named busy while it waits')
+
+    def test_it_is_a_check_of_the_list(self):
+        self.assertIn('pinnacle_party', TX.KEYS)
+        self.assertNotIn('pinnacle_party', TX.CLOSED_KEYS)
+        self.assertNotIn('pinnacle_party', TX.FIGHT_KEYS, 'the check gears every bot of the party itself (the gear-up of each, in turn, would race the leader)')
+        self.assertNotIn('pinnacle_party', TX.LEVEL_GATES)
+        self.assertEqual(TX.PINNACLE_PARTY, 5)
+        with open(os.path.join(HERE, '..', 'data', 'scripts', 'chaos', 'pinnacle_config.lua')) as f:
+            src = f.read()
+        self.assertIn('party = {max = %d,' % TX.PINNACLE_PARTY, src, 'the arena takes as many as the check forms')
 
 
 if __name__ == '__main__':

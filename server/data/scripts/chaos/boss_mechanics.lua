@@ -527,6 +527,28 @@ function M.dangerFor(bossId, pos)
 	return out
 end
 
+-- O681 (the tester bots, pinnacle.lua PN.probe): the adds and the channel's totem a boss's fight holds now, as a person sees them in the battle
+-- list: {monster id, ...} of those still alive (the shield, empower and heal phases of the adds, the totem a channel is stopped by), sorted; nil when
+-- the boss has no fight or nothing of that is up. A person breaks them when the boss says so ("Break them!").
+function M.addsFor(bossId)
+	local f = M.fights[bossId]
+	if not f then
+		return nil
+	end
+	local out = {}
+	for id in pairs(f.adds or {}) do
+		if Monster(id) then
+			out[#out + 1] = id
+		end
+	end
+	local tid = f.channel and f.channel.totem
+	if tid and Monster(tid) then
+		out[#out + 1] = tid
+	end
+	table.sort(out)
+	return #out > 0 and out or nil
+end
+
 -- ======================================================================== timed mechanics
 local function channel(f, spec, warnMs)
 	local boss = Monster(f.id)

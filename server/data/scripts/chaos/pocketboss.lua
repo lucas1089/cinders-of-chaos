@@ -919,7 +919,9 @@ end
 local function setHealth(monster, hp)
 	hp = math.max(1, math.floor(hp))
 	monster:setMaxHealth(hp)
-	monster:addHealth(hp - monster:getHealth())
+	-- O681: this engine's Creature:addHealth takes (damage type, amount): the one-argument call healed nothing (a party's boss kept the health of a
+	-- solo fight). Chaos.heal covers both signatures
+	Chaos.heal(monster, hp - monster:getHealth())
 end
 
 local function spawnBoss(run)

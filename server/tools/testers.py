@@ -1027,6 +1027,69 @@ class CheckIO(KeyIO):
         """O671: the two names a partner() call took are free again (a check that ends with no party leave)"""
         release_party(name, other)
 
+    def io_of(self, name):
+        """O681: the io of ANOTHER bot in game (the gear-up of a party member runs on its own bot), None when it is not in game"""
+        b = next((b for b in ONLINE.values() if b.name == name and b.alive and not b.died), None)
+        return CheckIO(b, self.clock) if b is not None else None
+
+    def class_of(self, name):
+        """O681: the class of a bot in game (a party of mixed classes), '' when it is not in game"""
+        b = next((b for b in ONLINE.values() if b.name == name), None)
+        return str(getattr(b, 'cls', '') or '') if b is not None else ''
+
+    def level_of(self, name):
+        b = next((b for b in ONLINE.values() if b.name == name), None)
+        return int(getattr(b, 'level', 0) or 0) if b is not None else 0
+
+    def heal_earlier(self, names, on, spell_at=75, potion_at=55):
+        """O681: a person heals earlier against a boss whose hit is a third of his health: the bots' heal spell and potion thresholds
+        (60 / 40 percent) are raised while a pinnacle fight is played, and put back after"""
+        for b in [b for b in ONLINE.values() if b.name in names]:
+            b.heal_at = (spell_at, potion_at) if on else (60, 40)
+
+    def set_potions(self, health, mana):
+        """O681: the potions the heal rule drinks (client ids; `!tester info` answers the same once the bot carries the flasks)"""
+        info = self.bot.helper.setdefault('info', {})
+        pots = info.setdefault('potions', {})
+        if health:
+            pots['health'] = health
+        if mana:
+            pots['mana'] = mana
+
+    def hold_party(self, names):
+        """O681: the bots of a long party fight stay named busy (PARTY_HOLD_S is 120 s, a pinnacle fight lasts up to 20 minutes): no random party step
+        of theirs, no other check takes them as a partner"""
+        PARTY_BUSY.update([n for n in names if n])
+
+    async def party_group(self, others):
+        """O681: one party of this bot (the leader) and all of `others`: everybody leaves the old party, the leader invites each (0xA3), each joins
+        (0xA4). False when a bot is gone"""
+        bots = [next((b for b in ONLINE.values() if b.name == n and b.alive and not b.died), None) for n in others]
+        bot = self.bot
+        if not self.alive() or not bot.cid or any(b is None or not b.cid for b in bots):
+            return False
+        for b in [bot] + bots:
+            await b.helper_says('party leave', 'party')
+        for b in bots:
+            bot.conn.send(b'\xA3' + struct.pack('<I', b.cid))      # invite
+            await bot.conn.w.drain()
+            await asyncio.sleep(0.8)
+            b.conn.send(b'\xA4' + struct.pack('<I', bot.cid))       # join the leader
+            await b.conn.w.drain()
+            await asyncio.sleep(0.4)
+        return True
+
+    async def party_group_leave(self, others):
+        """O681: the party of party_group ends: every bot leaves (the helper takes a bot out that is in a fight, as party('leave') does)"""
+        names = [self.bot.name] + list(others)
+        asyncio.get_running_loop().call_later(PARTY_RELEASE_S, release_party, *names)
+        for b in [b for b in ONLINE.values() if b.name in names and b.alive and not b.died]:
+            b.conn.send(b'\xA7')
+            await b.conn.w.drain()
+        await asyncio.sleep(0.5)
+        for b in [b for b in ONLINE.values() if b.name in names and b.alive and not b.died]:
+            await b.helper_says('party leave', 'party')
+
     async def helper_of(self, name, command, kind, wait=4.0):
         """O671: the helper's answer for ANOTHER bot in game (the stranger of the loot test is a bot of its own): None when it is not in game"""
         b = self._bot(name)
@@ -1109,6 +1172,31 @@ class CheckIO(KeyIO):
                         return other.name
             if time.monotonic() >= end or not self.alive():
                 return None
+            await asyncio.sleep(min(2.0, max(0.05, end - time.monotonic())))
+
+    async def partners(self, n, min_level=0):
+        """O681: up to `n` other bots in no party check, taken at once (partner() called again would wait: the first call named this bot busy). Waits up to
+        PARTNER_WAIT_S for all n; takes what is free then. Different classes first (a party of mixed classes). -> [names] (empty when none)"""
+        end = time.monotonic() + PARTNER_WAIT_S
+        while True:
+            if self.bot.name not in PARTY_BUSY:
+                free = [o for cid, o in sorted(ONLINE.items()) if cid != self.bot.cid and o is not self.bot and o.alive and not o.died
+                        and o.name not in PARTY_BUSY and (getattr(o, 'level', 0) or 0) >= min_level]
+                if len(free) >= n or (free and time.monotonic() >= end):
+                    seen, picked, rest = {str(getattr(self.bot, 'cls', ''))}, [], []
+                    for o in free:
+                        c = str(getattr(o, 'cls', ''))
+                        if c not in seen and len(picked) < n:
+                            seen.add(c)
+                            picked.append(o)
+                        else:
+                            rest.append(o)
+                    picked += rest[:max(0, n - len(picked))]
+                    names = [o.name for o in picked]
+                    PARTY_BUSY.update([self.bot.name] + names)
+                    return names
+            if time.monotonic() >= end or not self.alive():
+                return []
             await asyncio.sleep(min(2.0, max(0.05, end - time.monotonic())))
 
     async def party(self, action, other_name):
@@ -1449,6 +1537,7 @@ class TesterBot(LT.Bot):
         self.checks_done = False
         self.checks_flushed = False
         self.in_raid = False  # inside the testers' raid (O588): the engine catches a lethal hit there, no flight to the temple
+        self.heal_at = (60, 40)  # O681: health percent under which the bot casts its heal spell / drinks a potion (a boss fight sets it higher)
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -1932,7 +2021,7 @@ class TesterBot(LT.Bot):
             self.back_at = None
             self.say('!tester hunt')
         healed = False   # O663: the heal went this beat
-        if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now \
+        if self.health < self.heal_at[0] and self.heal and self.ready.get('heal', 0) <= now \
                 and self.ready.get(self.heal['group'], 0) <= now:
             healed = True
             self.say(self.heal['words'])
@@ -1940,7 +2029,7 @@ class TesterBot(LT.Bot):
             self.ready[self.heal['group']] = now + self.heal['groupcooldown'] / 1000.0 + 0.1
             self.results.behaviour('heal_spell', 'tried')
             self.pending.setdefault('heal_spell', now + HEAL_SEEN)
-        if self.health < 40 and self.ready.get('potion', 0) <= now and self.cid:
+        if self.health < self.heal_at[1] and self.ready.get('potion', 0) <= now and self.cid:
             pot = (self.helper.get('info') or {}).get('potions', {}).get('health')
             if pot:
                 self.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0)
