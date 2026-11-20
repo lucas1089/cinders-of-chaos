@@ -74,7 +74,7 @@ check(strpos($en, 'href="downloads">Download the client</a>') < strpos($en, 'hre
 check(strpos($en, 'data-chaos-trailer') !== false && strpos($en, ' controls ') !== false && strpos($en, ' muted ') !== false && strpos($en, ' loop ') !== false && strpos($en, ' playsinline ') !== false, 'the hero video: controls without script, muted, loop, playsinline');
 check(strpos($en, 'preload="none"') !== false, 'nothing is downloaded before the script or a click');
 check(substr_count($en, 'data-chaos-shot') === count(chaos_media_gallery()), 'one link per screenshot, none twice (the stills of the slots leave the gallery)');
-check(substr_count($en, 'loading="lazy"') === count(chaos_media_gallery()), 'the screenshots are lazy');
+check(substr_count((string)preg_replace('#<section class="chaos-box chaos-novelty".*?</section>#s', '', $en), 'loading="lazy"') === count(chaos_media_gallery()), 'the screenshots are lazy (the O688 banner has its own lazy pictures)');
 check(substr_count($en, '<figure class="chaos-short">') === 3, 'three shorts');
 check(substr_count($en, '<script src="plugins/chaos/assets/js/chaos-media.js" defer></script>') === 1, 'the script once');
 check(strpos($pt, 'A árvore passiva: mais de 600 nós') !== false && strpos($pt, 'Capturas de tela') !== false && strpos($pt, 'data-l-close="Fechar"') !== false, 'pt-BR: captions, heading, lightbox labels');

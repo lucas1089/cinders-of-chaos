@@ -100,9 +100,10 @@ function render_news(string $lang, ?string $file): string {
 $en = render_news('en', null);
 $pt = render_news('pt-BR', null);
 check(strpos($en, '<h1 class="chaos-heading">What is new</h1>') !== false && strpos($pt, '<h1 class="chaos-heading">Novidades</h1>') !== false, 'the heading in both languages');
-check(substr_count($en, '<section class="chaos-newsweek"') === count($d['weeks']), 'every week is on the page');
-check(substr_count($en, '<article ') === count($ids), 'every entry is on the page once');
-check((strpos($en, 'chaos-newsarchive') !== false) === (count($d['weeks']) > $d['recent']), 'the archive only when there are more weeks than the recent ones');
+$dLive = chaos_news_live($d, '2026-11-20', array()); // the gated entries (O688) are not on the page while their flags are off
+check(substr_count($en, '<section class="chaos-newsweek"') === count($dLive['weeks']), 'every week is on the page');
+check(substr_count($en, '<article ') === array_sum(array_map(static function (array $w): int { return count($w['entries']); }, $dLive['weeks'])), 'every live entry is on the page once');
+check((strpos($en, 'chaos-newsarchive') !== false) === (count($dLive['weeks']) > $dLive['recent']), 'the archive only when there are more weeks than the recent ones');
 check(strpos($pt, 'Semana de ') !== false && strpos($pt, 'Week of') === false && strpos($en, 'Week of ') !== false, 'week headings follow the language');
 check(strpos($en, 'Warning') === false && strpos($en, 'Notice') === false && strpos($en, 'Fatal') === false && strpos($pt, 'Fatal') === false, 'no PHP message');
 $small = render_news('en', $tmp);

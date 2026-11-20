@@ -88,6 +88,28 @@ def entry(eid, ref, en_title="A thing", text="Players can do a thing now.", matc
     return e
 
 
+def featured(e, clip="rift", target="guide:rift", rank=None, headline="A headline", pitch="One line for players."):
+    """A curated entry made featured, with a feature block."""
+    fb = {"en": {"headline": headline, "pitch": pitch}, "pt-BR": {"headline": "Uma manchete", "pitch": "Uma linha para jogadores."}}
+    if clip:
+        fb["clip"] = clip
+    if target:
+        fb["target"] = target
+    if rank is not None:
+        fb["rank"] = rank
+    e["featured"] = True
+    e["feature"] = fb
+    return e
+
+
+def gated(eid, ref, when, date=None, **kw):
+    e = entry(eid, ref, **kw)
+    e["live_when"] = when
+    if date:
+        e["date"] = date
+    return e
+
+
 ROADMAP = """| # | Item | Status | Notes |
 |---|---|---|---|
 | O101 | one | done in code and tests | x |
@@ -95,6 +117,7 @@ ROADMAP = """| # | Item | Status | Notes |
 | O103 | three | in progress | z |
 | O104 | four | phases a, b done | w |
 | O105 | five | superseded by O104 | v |
+| O106 | six | design written, waits for review | u |
 """
 
 
@@ -196,6 +219,94 @@ def main():
         del bad["pt-BR"]
         refuses([bad], "empty", "a missing pt-BR block")
 
+        # featured news and gates (O688)
+        write(src, json.dumps(source([featured(entry("first-thing", "O101"), rank=7), entry("second-thing", "O102")])))
+        d4 = g.build(**kw)
+        by = {e["id"]: e for w in d4["weeks"] for e in w["entries"]}
+        check(by["first-thing"]["featured"] is True and by["first-thing"]["feature"] == {
+            "clip": "rift", "target": "guide:rift", "rank": 7,
+            "headline": {"en": "A headline", "pt-BR": "Uma manchete"}, "pitch": {"en": "One line for players.", "pt-BR": "Uma linha para jogadores."}},
+            "a featured entry carries its feature block into the data")
+        check("featured" not in by["second-thing"] and "feature" not in by["second-thing"] and "live_when" not in by["second-thing"], "a plain entry gets none of the new keys")
+        check(d4["featured_days"] == 30 and d4["featured_max"] == 3, "the window defaults: 30 days, 3 cards")
+        src_cfg = source([entry("first-thing", "O101")])
+        src_cfg["featured_days"] = 14
+        src_cfg["featured_max"] = 2
+        write(src, json.dumps(src_cfg))
+        d5 = g.build(**kw)
+        check(d5["featured_days"] == 14 and d5["featured_max"] == 2, "featured_days and featured_max come from the source file")
+        for key, val in (("featured_days", 0), ("featured_days", 121), ("featured_max", 0), ("featured_max", 7)):
+            bad_cfg = source([entry("first-thing", "O101")])
+            bad_cfg[key] = val
+            write(src, json.dumps(bad_cfg))
+            try:
+                g.build(**kw)
+                check(False, "%s %s refused" % (key, val))
+            except g.Error as e:
+                check("featured_days" in str(e), "%s %s refused" % (key, val))
+        # a featured entry needs its headline and pitch; a block without featured is refused
+        plain_feat = entry("first-thing", "O101")
+        plain_feat["featured"] = True
+        write(src, json.dumps(source([plain_feat])))
+        try:
+            g.build(**kw)
+            check(False, "featured with no feature block: headline refused")
+        except g.Error as e:
+            check("headline" in str(e), "featured with no feature block needs its headline and pitch (%s)" % str(e)[:60])
+        loose = entry("first-thing", "O101")
+        loose["feature"] = featured(entry("x", "O101"))["feature"]
+        refuses([loose], "featured: true", "a feature block without featured")
+        e1 = featured(entry("first-thing", "O101"))
+        e1["featured"] = "yes"
+        refuses([e1], "true or false", "featured as text")
+        refuses([featured(entry("x1", "O101"), clip="no-such-clip")], "not a clip slot", "an unknown clip")
+        refuses([featured(entry("x1", "O101"), target="guide:no-such-card")], "no guide card", "an unknown guide card")
+        refuses([featured(entry("x1", "O101"), target="serverinfo:nothing")], "no guide card", "an unknown server info section")
+        refuses([featured(entry("x1", "O101"), target="wiki:start")], "no guide card", "another kind of target")
+        refuses([featured(entry("x1", "O101"), rank=0)], "rank", "rank 0")
+        refuses([featured(entry("x1", "O101"), rank=100)], "rank", "rank 100")
+        refuses([featured(entry("x1", "O101"), headline="h" * 61)], "characters", "a headline over 60")
+        refuses([featured(entry("x1", "O101"), pitch="p" * 141)], "characters", "a pitch over 140")
+        refuses([featured(entry("x1", "O101"), pitch="See server/tools/x.py")], "internal", "a file name in the pitch")
+        refuses([featured(entry("x1", "O101"), headline="O687 news")], "internal", "a roadmap number in the headline")
+        nopt = featured(entry("x1", "O101"))
+        del nopt["feature"]["pt-BR"]
+        refuses([nopt], "empty", "a feature block without pt-BR")
+        odd = featured(entry("x1", "O101"))
+        odd["feature"]["colour"] = "red"
+        refuses([odd], "feature key", "an unknown feature key")
+        none = featured(entry("x1", "O101"), clip=None, target=None)
+        write(src, json.dumps(source([none])))
+        check("clip" not in g.build(**kw)["weeks"][0]["entries"][0]["feature"], "a feature block may have no clip and no target")
+
+        # gated entries: the row must exist, not be built; a flag needs the day it was written, a date gate dates the entry
+        write(src, json.dumps(source([gated("future", "O106", "flag:spell_upgrades", date="2026-11-20"), entry("second-thing", "O102")])))
+        d6 = g.build(**kw)
+        by6 = {e["id"]: e for w in d6["weeks"] for e in w["entries"]}
+        check(by6["future"]["live_when"] == "flag:spell_upgrades" and by6["future"]["date"] == "2026-11-20", "a flag gated entry keeps its written date and its gate")
+        check(by6["second-thing"]["date"] == "2026-11-19", "the others are still dated by git")
+        write(src, json.dumps(source([gated("dated", "O106", "date:2026-12-01")])))
+        check(g.build(**kw)["weeks"][0]["entries"][0]["date"] == "2026-12-01", "a date gate dates the entry by its gate")
+        write(src, json.dumps(source([gated("future", "O103", "flag:spell_upgrades", date="2026-11-20")])))
+        check(g.build(**kw)["weeks"][0]["entries"][0]["id"] == "future", "a gated entry may name a row that is not done yet")
+        refuses([gated("future", "O999", "flag:spell_upgrades", date="2026-11-20")], "no row O999", "a gated entry still needs its row")
+        refuses([gated("future", "O106", "flag:spell_upgrades")], "needs `date`", "a flag gate without a date")
+        refuses([gated("future", "O106", "flag:spell_upgrades", date="20-11-2026")], "needs `date`", "a flag gate with a bad date")
+        refuses([gated("future", "O106", "flag:spell_upgrades", date="2026-13-45")], "not a date", "a flag gate with an impossible date")
+        refuses([gated("future", "O106", "date:2026-12-01", date="2026-11-20")], "drop `date`", "a date gate with a date")
+        refuses([gated("future", "O106", "date:2026-02-31")], "not a date", "a date gate with an impossible date")
+        refuses([gated("future", "O106", "soon", date="2026-11-20")], "live_when", "a gate that is neither flag nor date")
+        refuses([gated("future", "O106", "flag:Bad Name", date="2026-11-20")], "live_when", "a bad flag name")
+        refuses([gated("future", "O106", "flag:x", date="2026-11-20")], "live_when", "a one letter flag name")
+        refuses([entry("x1", "O101"), dict(entry("x2", "O102"), date="2026-11-20")], "only for a gated", "a date on an ungated entry")
+        refuses([gated("future", "O106", "flag:spell_upgrades", date="2026-11-20", text="Opcode 168 carries it.")], "internal", "a gated entry is held to the player words too")
+        # a clean check with gated entries: no commit is asked for them, the file is what the build gives
+        write(src, json.dumps(source([gated("future", "O106", "flag:spell_upgrades", date="2026-11-20"), featured(gated("gfeat", "O106", "date:2026-12-01"), rank=3), entry("second-thing", "O102")])))
+        blob2 = g.encode(g.build(**kw))
+        write(out, blob2)
+        check(g.check(**kw) == [], "a gated entry needs no commit subject (check passes)")
+        write(out, blob)
+
         # the archive: weeks past recent_weeks
         write(src, json.dumps(source([entry("first-thing", "O101"), entry("second-thing", "O102")], recent=2)))
         d3 = g.build(**kw)
@@ -226,6 +337,25 @@ def main():
                 for s in [e["title"][lang], e["text"][lang]] + e["points"][lang]:
                     check(not g.INTERNAL.search(s) and not g.NAME_HIT(s) and "—" not in s and "–" not in s, "%s (%s) reads as player words: %s" % (e["id"], lang, s[:50]))
     check(len(ids) == len(set(ids)) and len(ids) >= 20, "at least twenty distinct entries (%d)" % len(ids))
+    # O688: the featured and gated entries of the real source
+    entries = {e["id"]: e for w in real["weeks"] for e in w["entries"]}
+    check(real["featured_days"] == 30 and real["featured_max"] == 3, "the shipped window: 30 days, 3 cards")
+    for eid in ("loot-explosion", "pinnacle", "greater-rift", "waystone-endgame"):
+        check(entries[eid].get("featured") is True and "live_when" not in entries[eid], "%s is featured and live" % eid)
+    gate_ids = [i for i, e in entries.items() if "live_when" in e]
+    check(sorted(gate_ids) == ["spell-awakening", "spell-combos", "spell-forms", "spell-ranks"], "the four spell entries are the gated ones: %s" % gate_ids)
+    for eid in gate_ids:
+        check(entries[eid]["live_when"] == "flag:spell_upgrades" and g.DATE.match(entries[eid]["date"]), "%s: flag spell_upgrades and a written date" % eid)
+    for eid, e in entries.items():
+        if not e.get("featured"):
+            continue
+        fb = e["feature"]
+        check(set(fb) <= {"clip", "target", "rank", "headline", "pitch"} and "headline" in fb and "pitch" in fb, "%s: feature block keys" % eid)
+        for lang in g.LANGS:
+            check(0 < len(fb["headline"][lang]) <= g.MAX_HEADLINE and 0 < len(fb["pitch"][lang]) <= g.MAX_PITCH, "%s (%s): headline and pitch fit" % (eid, lang))
+            for t in (fb["headline"][lang], fb["pitch"][lang]):
+                check(not g.INTERNAL.search(t) and not g.NAME_HIT(t) and "—" not in t and "–" not in t, "%s (%s) feature reads as player words: %s" % (eid, lang, t[:50]))
+        check(fb["headline"]["en"] != fb["headline"]["pt-BR"], "%s: the headline is translated" % eid)
     check(real["weeks"][0]["entries"][0]["date"] == real["latest"], "the newest entry is the latest date")
     print("gen_changelog_test: %d checks, %d failed" % (checks, failed))
     return 1 if failed else 0

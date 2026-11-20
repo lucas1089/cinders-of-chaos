@@ -427,7 +427,17 @@ function chaos_seo_output(string $buffer): string {
 			}
 		}
 		$ctx = chaos_seo_context();
-		return chaos_seo_rewrite($buffer, chaos_seo_page($ctx), $ctx['site']);
+		$seo = chaos_seo_page($ctx);
+		$html = chaos_seo_rewrite($buffer, $seo, $ctx['site']);
+		// the NEW badge on the menu item "Novidades" while a featured entry is fresh (news_lib.php, O688)
+		if (empty($seo['admin']) && function_exists('chaos_news_menu_badge')) {
+			try {
+				$html = chaos_news_menu_badge($html, (string)$ctx['lang']);
+			} catch (Throwable $e) {
+				error_log('[chaos news badge] ' . $e->getMessage());
+			}
+		}
+		return $html;
 	} catch (Throwable $e) {
 		error_log('[chaos seo] ' . $e->getMessage());
 		return $buffer;

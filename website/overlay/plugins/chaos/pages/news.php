@@ -10,7 +10,8 @@ require_once __DIR__ . '/../i18n_lib.php';
 $GLOBALS['page_title'] = chaos_t('What is new');
 
 $self = 'page?plugin=chaos&p=news';
-$data = chaos_news_data(isset($GLOBALS['chaos_news_file']) ? (string)$GLOBALS['chaos_news_file'] : null); // the tests set the file
+$data = chaos_news_live_data(); // gated entries that are not live are left out (O688); the tests set the file in $GLOBALS['chaos_news_file']
+$newIds = chaos_news_fresh_ids($data); // the NEW badge of the fresh featured entries (O688)
 $split = chaos_news_split($data);
 $lang = chaos_lang();
 ?>
@@ -23,13 +24,13 @@ $lang = chaos_lang();
 			<p class="chaos-empty"><?= chaos_h(chaos_t('No news yet.')) ?></p>
 		<?php else: ?>
 			<?php foreach ($split['recent'] as $week): ?>
-				<?= chaos_news_week_html($week, $lang) ?>
+				<?= chaos_news_week_html($week, $lang, $newIds) ?>
 			<?php endforeach; ?>
 			<?php if ($split['archive']): ?>
 				<details class="chaos-newsarchive" id="chaos-news-archive">
 					<summary><?= chaos_h(chaos_t('Archive')) ?> <span class="chaos-muted">(<?= (int)count($split['archive']) ?>)</span></summary>
 					<?php foreach ($split['archive'] as $week): ?>
-						<?= chaos_news_week_html($week, $lang) ?>
+						<?= chaos_news_week_html($week, $lang, $newIds) ?>
 					<?php endforeach; ?>
 				</details>
 			<?php endif; ?>

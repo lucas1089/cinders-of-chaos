@@ -3,6 +3,11 @@
  * Server info: the game, written for players (from the repository's README.md). Static text; edit it here.
  */
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
+// sections a fresh featured news entry points at get a "Novo" tag (plugins/chaos/news_lib.php, O688)
+if (!function_exists('chaos_news_fresh_targets') && is_file(dirname(__DIR__, 3) . '/plugins/chaos/news_lib.php')) {
+	require_once dirname(__DIR__, 3) . '/plugins/chaos/news_lib.php';
+}
+$freshSections = function_exists('chaos_news_fresh_targets') ? chaos_news_fresh_targets() : array();
 $sections = array(
 	'start' => array('Your first steps', array(
 		'<strong>Tutorial island.</strong> New characters start on a small island with five stations: fight, cast your first spell, spend a passive point, use an Orb of Upheaval, and learn about keystones, bounties and the store. Each station opens the next gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.',
@@ -98,7 +103,7 @@ $sections = array(
 
 <?php foreach ($sections as $id => $s): ?>
 <div class="chaos-box" id="<?= $h($id) ?>">
-	<h2 class="chaos-heading"><?= $h($s[0]) ?></h2>
+	<h2 class="chaos-heading"><?= $h($s[0]) ?><?= isset($freshSections['serverinfo:' . $id]) ? ' ' . chaos_news_badge_html(null, 'tag') : '' ?></h2>
 	<div class="chaos-feature" style="box-shadow:none;background:none;border:0;padding:0">
 		<ul><?php foreach ($s[1] as $p): ?><li><?= $p /* static, trusted text written above */ ?></li><?php endforeach; ?></ul>
 	</div>

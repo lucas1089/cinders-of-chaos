@@ -31,6 +31,8 @@ $mediaActions = function_exists('chaos_media_actions') ? chaos_media_actions() :
 $mediaGallery = function_exists('chaos_media_gallery_html') ? chaos_media_gallery_html(null, null, $mediaActions['stills']) : '';
 // the newest entries of the news page (plugins/chaos/news_lib.php, O687): '' without the plugin or its data
 $newsHome = function_exists('chaos_news_home_html') ? chaos_news_home_html() : '';
+// the "Novidade" banner under the hero: fresh featured entries that are live (news_lib.php, O688)
+$novelty = function_exists('chaos_news_banner_html') ? chaos_news_banner_html() : '';
 $plugin = function_exists('chaos_class_lines');
 $lines = $plugin ? chaos_class_lines() : array();
 $icon = static function (string $name): string {
@@ -72,6 +74,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		</dl>
 	</section>
 
+	<?= $novelty ?>
 	<?= $mediaTrailer ?>
 	<?= $mediaShorts ?>
 	<?= $newsHome ?>

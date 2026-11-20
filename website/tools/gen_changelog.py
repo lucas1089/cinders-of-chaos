@@ -12,6 +12,13 @@ Writes website/overlay/plugins/chaos/news/news_data.json, the one data file the 
      colon). A clone without that history (CI checks out one commit) keeps the date the data file already has, so
      `--check` needs no history; with the history it also holds every date to git.
 
+A curated entry may also be featured (O688, website/README.md "Featured news (O688)"): `featured: true` and an optional
+`feature` block (headline, one-line pitch in both languages, a `clip` slot id of the mechanics clips, a `target` section
+of the guide or the server info page, a `rank` 1..99 that orders entries of the same day, lower first). The site shows a fresh featured entry as a banner, a NEW badge and a tag on its
+target section. `live_when` gates an entry: `flag:<key>` (the site reads the key, off until the owner switches the
+system on) or `date:YYYY-MM-DD`; a gated entry is in the file but the site hides it until the gate opens, and its ROADMAP
+row need only exist (the system may not be built yet).
+
 Entries are grouped by week (Monday to Sunday), newest first. The page shows the last `recent_weeks` weeks and puts the
 older ones in an archive. Player words only: a text with a file name, a roadmap number, an opcode, the tester bots, an
 address or a name that check_names.py refuses is an error (a patch note bullet that breaks the rule is left out).
@@ -45,10 +52,20 @@ OUT = os.path.join(REPO, "website", "overlay", "plugins", "chaos", "news", "news
 SOURCE = os.path.join(HERE, "changelog_source.json")
 NOTES = os.path.join(REPO, "server", "data", "patchnotes")
 ROADMAP = os.path.join(REPO, "ROADMAP.md")
+GUIDE = os.path.join(REPO, "website", "overlay", "plugins", "chaos", "guide", "guide_data.json")
+SERVERINFO = os.path.join(REPO, "website", "overlay", "layouts", "chaos", "views", "serverinfo.php")
+MEDIA = os.path.join(HERE, "gen_site_media.py")
+MAX_HEADLINE = 60
+MAX_PITCH = 140
+DEFAULT_FEATURED_DAYS = 30
+DEFAULT_FEATURED_MAX = 3
 
 NOTE_ID = re.compile(r"^(\d{4}-\d{2}-\d{2})\.md$")
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,48}$")
 REF = re.compile(r"^O\d{2,4}$")
+DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TARGET = re.compile(r"^(guide|serverinfo):([a-z0-9_-]{2,40})$")
+LIVE_WHEN = re.compile(r"^(?:date:(\d{4}-\d{2}-\d{2})|flag:([a-z][a-z0-9_]{1,40}))$")
 # words for the team, not for players
 INTERNAL = re.compile(
     r"\b[\w-]+\.(?:lua|py|json|md|php|sh|otui|otmod|xml|csv|patch|sql|ya?ml|rs|java|cpp|h|txt)\b|\bO\d{2,4}\b|"
@@ -225,8 +242,74 @@ def monday(date):
     return (d - datetime.timedelta(days=d.weekday())).isoformat()
 
 
+# ---------------------------------------------------------------- featured news (O688)
+def feature_refs(guide_path=GUIDE, serverinfo_path=SERVERINFO, media_path=MEDIA):
+    """What a feature block may point at: guide card keys, server info section ids, mechanics clip ids."""
+    with open(guide_path, encoding="utf-8") as f:
+        guide = set((json.load(f).get("cards") or {}).keys())
+    with open(serverinfo_path, encoding="utf-8") as f:
+        info = set(re.findall(r"^\t'([a-z0-9_]+)' => array\(", f.read(), re.M))
+    with open(media_path, encoding="utf-8") as f:
+        text = f.read()
+    block = text[text.index("CLIPS = ("):]
+    block = block[:block.index("\n)")]
+    clips = set(re.findall(r'^\s+\("([a-z0-9-]+)",', block, re.M))
+    return {"guide": guide, "serverinfo": info, "clips": clips}
+
+
+def gate(eid, raw):
+    """(live_when text or None, gate date or None) of a source entry."""
+    live = raw.get("live_when")
+    if live is None:
+        return None, None
+    m = LIVE_WHEN.match(live) if isinstance(live, str) else None
+    if not m:
+        raise Error("%s: live_when must be flag:<key> or date:YYYY-MM-DD" % eid)
+    if m.group(1):
+        try:
+            datetime.date.fromisoformat(m.group(1))
+        except ValueError:
+            raise Error("%s: live_when date %s is not a date" % (eid, m.group(1)))
+    return live, m.group(1)
+
+
+def feature_block(eid, raw, refs):
+    """The `feature` block of the data file: {clip, target, headline, pitch}; clip and target only when given."""
+    fb = raw.get("feature") or {}
+    if not isinstance(fb, dict):
+        raise Error("%s: feature must be an object" % eid)
+    for k in fb:
+        if k not in ("clip", "target", "rank", "en", "pt-BR"):
+            raise Error("%s: feature key %r" % (eid, k))
+    out = {}
+    if fb.get("clip") is not None:
+        if fb["clip"] not in refs["clips"]:
+            raise Error("%s: feature clip %r is not a clip slot (%s)" % (eid, fb["clip"], ", ".join(sorted(refs["clips"]))))
+        out["clip"] = fb["clip"]
+    if fb.get("target") is not None:
+        m = TARGET.match(fb["target"]) if isinstance(fb["target"], str) else None
+        if not m or m.group(2) not in refs[m.group(1)]:
+            raise Error("%s: feature target %r is no guide card or server info section" % (eid, fb.get("target")))
+        out["target"] = fb["target"]
+    if fb.get("rank") is not None:
+        if isinstance(fb["rank"], bool) or not isinstance(fb["rank"], int) or not 1 <= fb["rank"] <= 99:
+            raise Error("%s: feature rank is a whole number 1..99 (lower shows first on the same day)" % eid)
+        out["rank"] = fb["rank"]
+    headline, pitch = {}, {}
+    for lang in LANGS:
+        block = fb.get(lang) or {}
+        where = "%s feature (%s)" % (eid, lang)
+        headline[lang] = player_text(block.get("headline"), where + " headline")
+        pitch[lang] = player_text(block.get("pitch"), where + " pitch")
+        if len(headline[lang]) > MAX_HEADLINE or len(pitch[lang]) > MAX_PITCH:
+            raise Error("%s: headline over %d or pitch over %d characters" % (where, MAX_HEADLINE, MAX_PITCH))
+    out["headline"] = headline
+    out["pitch"] = pitch
+    return out
+
+
 # ---------------------------------------------------------------- build
-def curated_entries(source, roadmap, subjects, cached, shallow):
+def curated_entries(source, roadmap, subjects, cached, shallow, refs=None):
     entries = []
     seen = set()
     for raw in source.get("entries", []):
@@ -239,16 +322,34 @@ def curated_entries(source, roadmap, subjects, cached, shallow):
         status = roadmap.get(ref)
         if status is None:
             raise Error("%s: ROADMAP has no row %s" % (eid, ref))
-        if status.startswith(NOT_DONE):
+        live_when, gate_date = gate(eid, raw)
+        # a gated entry is written before its system is built: its row need only exist
+        if live_when is None and status.startswith(NOT_DONE):
             raise Error("%s: ROADMAP row %s is not done (%s)" % (eid, ref, status[:40]))
         if kind not in KINDS or kind == "patch":
             raise Error("%s: kind %r" % (eid, kind))
-        match = raw.get("match") or ref + ":"
-        git_date = next((d for d, s in subjects if match in s), None)
-        # a shallow clone sees only the newest commits: the date the data file has is the truth there
-        date = cached.get(eid) if shallow and eid in cached else (git_date or cached.get(eid))
-        if date is None:
-            raise Error("%s: no commit subject holds %r and the data file has no date for it" % (eid, match))
+        explicit = raw.get("date")
+        if live_when is None:
+            if explicit is not None:
+                raise Error("%s: date is only for a gated entry (the others are dated by git)" % eid)
+            match = raw.get("match") or ref + ":"
+            git_date = next((d for d, s in subjects if match in s), None)
+            # a shallow clone sees only the newest commits: the date the data file has is the truth there
+            date = cached.get(eid) if shallow and eid in cached else (git_date or cached.get(eid))
+            if date is None:
+                raise Error("%s: no commit subject holds %r and the data file has no date for it" % (eid, match))
+        elif gate_date:
+            if explicit is not None:
+                raise Error("%s: a date: gate dates the entry, drop `date`" % eid)
+            date = gate_date
+        else:
+            if not isinstance(explicit, str) or not DATE.match(explicit):
+                raise Error("%s: a flag: gate needs `date` (YYYY-MM-DD, the day it was written)" % eid)
+            try:
+                datetime.date.fromisoformat(explicit)
+            except ValueError:
+                raise Error("%s: date %s is not a date" % (eid, explicit))
+            date = explicit
         entry = {"id": eid, "date": date, "kind": kind, "patch": None, "title": {}, "text": {}, "points": {}}
         for lang in LANGS:
             block = raw.get(lang) or {}
@@ -258,11 +359,22 @@ def curated_entries(source, roadmap, subjects, cached, shallow):
             if len(entry["title"][lang]) > MAX_TITLE or len(entry["text"][lang]) > MAX_TEXT:
                 raise Error("%s: title over %d or text over %d characters" % (where, MAX_TITLE, MAX_TEXT))
             entry["points"][lang] = []
+        featured = raw.get("featured", False)
+        if not isinstance(featured, bool):
+            raise Error("%s: featured is true or false" % eid)
+        if raw.get("feature") is not None and not featured:
+            raise Error("%s: a feature block needs featured: true" % eid)
+        if featured:
+            entry["featured"] = True
+            entry["feature"] = feature_block(eid, raw, refs or feature_refs())
+        if live_when is not None:
+            entry["live_when"] = live_when
         entries.append(entry)
     return entries
 
 
-def build(repo=REPO, notes_dir=NOTES, source_path=SOURCE, roadmap_path=ROADMAP, out_path=OUT):
+def build(repo=REPO, notes_dir=NOTES, source_path=SOURCE, roadmap_path=ROADMAP, out_path=OUT, guide_path=GUIDE,
+          serverinfo_path=SERVERINFO, media_path=MEDIA):
     with open(source_path, encoding="utf-8") as f:
         source = json.load(f)
     cached = {}
@@ -275,7 +387,8 @@ def build(repo=REPO, notes_dir=NOTES, source_path=SOURCE, roadmap_path=ROADMAP, 
         except (OSError, ValueError, KeyError, TypeError):
             cached = {}
     subjects = git_subjects(repo)
-    entries = note_entries(notes_dir) + curated_entries(source, roadmap_status(roadmap_path), subjects, cached, is_shallow(repo))
+    refs = feature_refs(guide_path, serverinfo_path, media_path)
+    entries = note_entries(notes_dir) + curated_entries(source, roadmap_status(roadmap_path), subjects, cached, is_shallow(repo), refs)
     # a patch note and a curated entry of the same id cannot clash (prefix), the order is date, then the file order
     entries = [e for _, e in sorted(enumerate(entries), key=lambda p: (p[1]["date"], -p[0]), reverse=True)]
     weeks = []
@@ -287,7 +400,12 @@ def build(repo=REPO, notes_dir=NOTES, source_path=SOURCE, roadmap_path=ROADMAP, 
     recent = int(source.get("recent_weeks", DEFAULT_RECENT))
     if not 1 <= recent <= 26:
         raise Error("recent_weeks must be 1..26")
-    return {"format": FORMAT, "recent_weeks": recent, "latest": entries[0]["date"] if entries else "", "weeks": weeks}
+    days = int(source.get("featured_days", DEFAULT_FEATURED_DAYS))
+    most = int(source.get("featured_max", DEFAULT_FEATURED_MAX))
+    if not 1 <= days <= 120 or not 1 <= most <= 6:
+        raise Error("featured_days must be 1..120 and featured_max 1..6")
+    return {"format": FORMAT, "recent_weeks": recent, "featured_days": days, "featured_max": most,
+            "latest": entries[0]["date"] if entries else "", "weeks": weeks}
 
 
 def encode(data):
@@ -312,6 +430,8 @@ def check(repo=REPO, **kw):
             source = json.load(f)
         subjects = git_subjects(repo)
         for raw in source.get("entries", []):
+            if raw.get("live_when"):
+                continue  # a gated entry is dated by its gate, not by a commit
             match = raw.get("match") or raw["ref"] + ":"
             if not any(match in s for _, s in subjects):
                 problems.append("%s: no commit subject holds %r" % (raw["id"], match))

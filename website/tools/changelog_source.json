@@ -1,5 +1,5 @@
 {
- "note": "Curated player-facing entries of the news page (website/tools/gen_changelog.py). id = a slug; ref = the ROADMAP row it came from (never shown); match = the commit subject text that dates it (default: the ref and a colon), the latest commit with it counts. Words for players only: no file names, no internal tooling, no roadmap numbers.",
+ "note": "Curated player-facing entries of the news page (website/tools/gen_changelog.py). id = a slug; ref = the ROADMAP row it came from (never shown); match = the commit subject text that dates it (default: the ref and a colon), the latest commit with it counts. Words for players only: no file names, no internal tooling, no roadmap numbers. featured: true marks an entry for the banner of the front page (fresh for featured_days, at most featured_max shown); the optional feature block has a headline and a one-line pitch in both languages, a clip slot id, a target (guide:<card> or serverinfo:<section>) and a rank (lower first on the same day). live_when (flag:<key> or date:YYYY-MM-DD) hides an entry until the site reads the key as on; a flag: gate needs date.",
  "recent_weeks": 8,
  "entries": [
   {
@@ -210,6 +210,19 @@
     "title": "Waystones até o tier XXV",
     "text": "Dez novos tiers de waystone, do XVI ao XXV, para os níveis mais altos. Uma corrida simples leva de 7 a 13 minutos, a primeira vitória em cada tier dá um ponto do Atlas e o último tier de cada faixa tem um chefe de faixa. O Void Orb corrompe um waystone Magic ou Rare com modificadores finais mais fortes, com 15% de chance de quebrá-lo. A janela do Waystone Atlas ganhou uma página nova para tudo isso."
    },
+   "featured": true,
+   "feature": {
+    "target": "serverinfo:endgame",
+    "rank": 40,
+    "en": {
+     "headline": "Waystone tiers XVI to XXV",
+     "pitch": "Ten new tiers, band bosses and the Void Orb for the top levels."
+    },
+    "pt-BR": {
+     "headline": "Tiers de waystone do XVI ao XXV",
+     "pitch": "Dez tiers novos, chefes de faixa e o Void Orb para os níveis mais altos."
+    }
+   },
    "match": "O666:"
   },
   {
@@ -223,6 +236,20 @@
    "pt-BR": {
     "title": "Chefes pinnacle",
     "text": "Quatro chefes Ascendidos para o topo do jogo: Malgrath (nível 1900), Vhoss (2100), Talath (2300) e Varkhul (2500). Um conjunto de quatro fragmentos do melhor conteúdo abre uma luta numa arena privada, sozinho ou com até cinco jogadores. Cada chefe tem um único exclusivo: 22% por abate, certo no oitavo."
+   },
+   "featured": true,
+   "feature": {
+    "clip": "pinnacle",
+    "target": "guide:bosses",
+    "rank": 20,
+    "en": {
+     "headline": "Four Ascended pinnacle bosses",
+     "pitch": "Malgrath, Vhoss, Talath and Varkhul wait at the top, from level 1900 to 2500."
+    },
+    "pt-BR": {
+     "headline": "Quatro chefes Ascendidos pinnacle",
+     "pitch": "Malgrath, Vhoss, Talath e Varkhul esperam no topo, do nível 1900 ao 2500."
+    }
    },
    "match": "O667:"
   },
@@ -238,6 +265,20 @@
     "title": "O Greater Rift",
     "text": "O rift depois do tier 15, sem fim. A chave vem de um guardião do tier 15 ou custa 150 Omen Fragments. Uma vitória rápida sobe a chave de um a três tiers, uma corrida falha desce um. Há um ranking para cada classe a cada temporada, e dois quadros semanais."
    },
+   "featured": true,
+   "feature": {
+    "clip": "rift",
+    "target": "guide:rift",
+    "rank": 30,
+    "en": {
+     "headline": "The Greater Rift has no end",
+     "pitch": "Past tier 15 the rift keeps climbing, with a ladder for every class."
+    },
+    "pt-BR": {
+     "headline": "O Greater Rift não tem fim",
+     "pitch": "Depois do tier 15 o rift continua subindo, com um ranking para cada classe."
+    }
+   },
    "match": "O668:"
   },
   {
@@ -251,6 +292,20 @@
    "pt-BR": {
     "title": "Explosão de loot",
     "text": "Um abate não deixa mais o loot numa bolsa. O loot voa para o chão ao redor do monstro, item por item, num pequeno arco e com uma faísca no pouso. Você e o seu grupo pegam primeiro, e o Loot all recolhe o que está por perto. Os raios de luz agora marcam só os drops Legendary, Divine, de conjunto e únicos."
+   },
+   "featured": true,
+   "feature": {
+    "clip": "loot-explosion",
+    "target": "guide:autoloot",
+    "rank": 10,
+    "en": {
+     "headline": "Loot bursts out of every kill",
+     "pitch": "Items fly out onto the ground, and beams of light mark only the rarest drops."
+    },
+    "pt-BR": {
+     "headline": "O loot explode de cada abate",
+     "pitch": "Os itens voam para o chão, e raios de luz marcam só os drops mais raros."
+    }
    },
    "match": "O677:"
   },
@@ -295,6 +350,94 @@
     "text": "Catorze efeitos que deviam curar ou ferir não faziam nada: a cura de leech e sagrada das cartas, um reembolso de magia, os drenos de snare, a devolução de vida dos Vigils e três mecânicas de chefe. Agora funcionam. Numa invasão, os invasores agora lutam de verdade entre si."
    },
    "match": "O682:"
+  },
+  {
+   "id": "spell-ranks",
+   "ref": "O686",
+   "kind": "new",
+   "live_when": "flag:spell_upgrades",
+   "date": "2026-11-20",
+   "en": {
+    "title": "Spells now have ranks",
+    "text": "Every damage and heal spell now has a rank from 0 to 20. Kill monsters and each spell earns Spell Points from the experience of the kills, in proportion to the damage it dealt. A rank 20 spell hits about 25% harder, with a shorter cooldown and a lower mana cost. To balance it, monsters get more health as you climb."
+   },
+   "pt-BR": {
+    "title": "As magias agora têm ranks",
+    "text": "Toda magia de dano e de cura agora tem um rank de 0 a 20. Mate monstros e cada magia ganha Spell Points com a experiência dos abates, na proporção do dano que causou. Uma magia no rank 20 bate cerca de 25% mais forte, com recarga menor e custo de mana menor. Para equilibrar, os monstros ganham mais vida conforme você avança."
+   },
+   "featured": true,
+   "feature": {
+    "target": "guide:spellbook",
+    "rank": 5,
+    "en": {
+     "headline": "Spell ranks: your spells grow",
+     "pitch": "Every spell earns ranks from the monsters it helps kill. Rank 20 is about 25% stronger."
+    },
+    "pt-BR": {
+     "headline": "Ranks de magia: suas magias crescem",
+     "pitch": "Cada magia ganha ranks com os monstros que ajuda a matar. O rank 20 é cerca de 25% mais forte."
+    }
+   }
+  },
+  {
+   "id": "spell-forms",
+   "ref": "O686",
+   "kind": "new",
+   "live_when": "flag:spell_upgrades",
+   "date": "2026-11-20",
+   "en": {
+    "title": "Forms: a spell plays a new way",
+    "text": "At rank 10 and again at rank 20 you pick a Form for each spell, one of two. A Form changes how the spell plays: it splits, chains, pierces, leaves fire on the ground, pulls enemies in or turns the spell to another element. There are four Forms for every spell, so the same class can play in new ways."
+   },
+   "pt-BR": {
+    "title": "Forms: a magia passa a jogar de outro jeito",
+    "text": "No rank 10 e de novo no rank 20 você escolhe uma Form para cada magia, uma de duas. Uma Form muda como a magia joga: ela divide, encadeia, perfura, deixa fogo no chão, puxa os inimigos ou troca o elemento da magia. São quatro Forms por magia, então a mesma classe pode jogar de jeitos novos."
+   }
+  },
+  {
+   "id": "spell-awakening",
+   "ref": "O686",
+   "kind": "new",
+   "live_when": "flag:spell_upgrades",
+   "date": "2026-11-20",
+   "en": {
+    "title": "Awakened spells",
+    "text": "At rank 20, with both Forms chosen, up to three spells per character can be awakened. An awakened spell gets a new name, a new look, about 10% more damage or healing and a signature effect. The Seals that awaken it come only from the top content: pinnacle bosses, the Greater Rift and waystone tiers XVI to XXV."
+   },
+   "pt-BR": {
+    "title": "Magias despertas",
+    "text": "No rank 20, com as duas Forms escolhidas, até três magias por personagem podem ser despertadas. Uma magia desperta ganha novo nome, novo visual, cerca de 10% mais dano ou cura e um efeito de assinatura. Os Seals que a despertam vêm só do conteúdo de topo: chefes pinnacle, o Greater Rift e os tiers de waystone XVI ao XXV."
+   }
+  },
+  {
+   "id": "spell-combos",
+   "ref": "O686",
+   "kind": "new",
+   "live_when": "flag:spell_upgrades",
+   "date": "2026-11-20",
+   "en": {
+    "title": "Spell combos",
+    "text": "Cast two spells within 4 seconds and the second one gets a bonus. Every class has the element combos: ice then fire is a Steam Burst, fire then ice a Thermal Shock, and there are Overload, Pyre of the Dead, Mudslide and Consecrated Ash. Each adds 10% to 20% to the hit, or a burst of that size. Classes also have signature combos that open at spell rank 5. Combos work against monsters, not players."
+   },
+   "pt-BR": {
+    "title": "Combos de magia",
+    "text": "Lance duas magias em até 4 segundos e a segunda ganha um bônus. Toda classe tem os combos de elemento: gelo e depois fogo é um Steam Burst, fogo e depois gelo é um Thermal Shock, e há Overload, Pyre of the Dead, Mudslide e Consecrated Ash. Cada um soma de 10% a 20% ao golpe, ou uma explosão desse tamanho. As classes também têm combos de assinatura, que abrem no rank 5 da magia. Os combos valem contra monstros, não contra jogadores."
+   },
+   "featured": true,
+   "feature": {
+    "target": "guide:spellbook",
+    "rank": 6,
+    "en": {
+     "headline": "Spell combos: ice then fire, and more",
+     "pitch": "Cast two spells within 4 seconds for a bonus of 10% to 20% on the hit."
+    },
+    "pt-BR": {
+     "headline": "Combos de magia: gelo e depois fogo",
+     "pitch": "Lance duas magias em até 4 segundos e ganhe de 10% a 20% no golpe."
+    }
+   }
   }
- ]
+ ],
+ "featured_days": 30,
+ "featured_max": 3
 }
