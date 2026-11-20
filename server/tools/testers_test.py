@@ -1690,6 +1690,61 @@ _slept665.clear()
 asyncio.run(_w665.do_wander({}))
 eq((len(_walks665), _slept665), (1, []), 'no cast: no wait')
 
+# ---------------------------------------------------------------- O678 the effects and items of the map around a loot burst
+import struct as _st678
+import types as _ty678
+
+
+def _pos678(x, y, z):
+    return _st678.pack('<HHB', x, y, z)
+
+
+_box678 = (990, 991, 1010, 1009, 7)
+_magic678 = b'\x83' + _pos678(1000, 1000, 7) + bytes([3])
+_dist678 = b'\x85' + _pos678(1000, 1000, 7) + _pos678(1002, 999, 7) + bytes([6])
+_add678 = b'\x6a' + _pos678(1002, 999, 7) + bytes([1]) + _st678.pack('<H', 3043)
+_upd678 = b'\x6b' + _pos678(1001, 1001, 7) + bytes([2]) + _st678.pack('<H', 3031)
+_noise678 = b'\x00\x83' + _pos678(1000, 1000, 6) + bytes([3]) + b'\x6a' + _pos678(5, 5, 7) + bytes([1]) + _st678.pack('<H', 3043)
+eq(TC.scan_world(_magic678, _box678), [('magic', (1000, 1000, 7), 3)], 'scan_world: a magic effect on a tile of the box')
+eq(TC.scan_world(_dist678, _box678), [('distance', (1000, 1000, 7), ((1002, 999, 7), 6))], 'scan_world: a distance effect, from and to')
+eq(TC.scan_world(_add678 + _upd678, _box678), [('item', (1002, 999, 7), 3043), ('item', (1001, 1001, 7), 3031)], 'scan_world: an add and an update of a tile thing')
+eq(TC.scan_world(_noise678, _box678), [], 'scan_world: another floor or a tile outside the box is no packet of the burst')
+eq(TC.scan_world(b'\x83' + _pos678(1000, 1000, 7), _box678), [], 'scan_world: a packet cut short is not read')
+eq(TC.scan_world(b'\x4d' + _magic678[1:3], _box678), [], 'scan_world: a lead byte alone')
+_tap678 = TC.WorldTap(_box678)
+_tap678.feed(5.0, _noise678 + _magic678)
+_tap678.feed(5.2, _dist678)
+eq(_tap678.events, [(5.0, 'magic', (1000, 1000, 7), 3), (5.2, 'distance', (1000, 1000, 7), ((1002, 999, 7), 6))], 'WorldTap: the events with the time of their message')
+
+
+class _TB678(_OB):
+    def __init__(self, name, cid):
+        _OB.__init__(self, name, cid)
+        self.tap, self.msgs = None, []
+
+
+_tb_a, _tb_b = _TB678('Tester Own', 7101), _TB678('Tester Str', 7102)
+_tb_io = T.CheckIO(_tb_a, {'stop': False})
+T.ONLINE[7101], T.ONLINE[7102] = _tb_a, _tb_b
+eq(_tb_io.tap_of('Tester Str', _box678), [], 'tap_of: a tap starts on another bot')
+ok(_tb_b.tap is not None and _tb_a.tap is None, 'tap_of: only the bot asked reads the map')
+_tb_b.tap.feed(1.0, _magic678)
+eq(_tb_io.tap_of('Tester Str'), [(1.0, 'magic', (1000, 1000, 7), 3)], 'tap_of: stopping returns the events')
+eq((_tb_b.tap, _tb_io.tap_of('Tester Str')), (None, None), 'tap_of: stopped, nothing more to return')
+eq(_tb_io.tap_of('Tester Nobody', _box678), None, 'tap_of: a bot that is not in game')
+_tb_a.msgs = [(1.0, 'groundLoot', 'explode', {'k': 1}), (2.0, 'groundLoot', 'tiles', {'t': []}), (3.0, 'groundLoot', 'explode', {'k': 2}),
+              (3.5, 'lootfilter', 'beam', {'k': 3})]
+eq(_tb_io.msgs_of('Tester Own', 'groundLoot', 'explode', 1.5), [(3.0, {'k': 2})], 'msgs_of: the messages of one window and action after a time')
+eq(_tb_io.msgs_of('Tester Own', 'lootfilter', 'beam', 0), [(3.5, {'k': 3})], 'msgs_of: the beam of the loot filter')
+eq(_tb_io.msgs_of('Tester Nobody', 'groundLoot', 'explode', 0), [], 'msgs_of: a bot that is not in game')
+
+_fake678 = _ty678.SimpleNamespace(args=_ty678.SimpleNamespace(ops={'groundLoot': 230, 'lootfilter': 238}), chunks={}, kills=[], waiters=[], msgs=[])
+T.TesterBot.on_extended(_fake678, 230, '{"action":"explode","data":{"o":[1,2,3],"f":[]}}')
+T.TesterBot.on_extended(_fake678, 238, '{"action":"beam","data":{"k":1,"i":[]}}')
+T.TesterBot.on_extended(_fake678, 99, '{"action":"x","data":{}}')
+eq([(n, a) for _, n, a, _d in _fake678.msgs], [('groundLoot', 'explode'), ('lootfilter', 'beam')], 'on_extended keeps the messages of the loot windows, no other')
+eq(_fake678.msgs[0][3], {'o': [1, 2, 3], 'f': []}, 'on_extended: the data of the message')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

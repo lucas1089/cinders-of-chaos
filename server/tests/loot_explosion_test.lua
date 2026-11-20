@@ -1174,6 +1174,9 @@ local bot = newPlayer(1, 800, 800)
 local ran, why = X.testerRun(bot)
 ok(ran ~= nil, "the helper's bag explodes: " .. tostring(why))
 eq(ran.items, 6, "six things in the test bag")
+eq(ran.x, 800, "the answer names the tile of the bag (O678: the check reads the death tile from it)")
+eq(ran.y, 800, "and its row")
+eq(ran.z, 7, "and its floor")
 runEvents(clock.ms + 4000)
 local probe = X.testerProbe(bot)
 eq(probe.loose, 6, "six loose items (the two gold stacks, three potions, two swords: gold merges to 150 in two stacks of 100 and 50)")
@@ -1215,6 +1218,62 @@ do
 	for _, id in ipairs({20, 21, 22}) do
 		X.testerOrigins[id] = nil
 	end
+end
+
+-- O678: `explode set` puts a set piece among the flying loot, `explode bag` leaves a bag with a set piece and a Legendary sword on the tile
+do
+	reset()
+	openGround(800, 800, 6)
+	load()
+	local setBot = newPlayer(41, 800, 800)
+	local ranSet = X.testerRun(setBot, "set")
+	ok(ranSet ~= nil, "the set loot explodes")
+	eq(ranSet.items, 7, "the six things of the test bag and the set piece")
+	runEvents(clock.ms + 4000)
+	local pieces = 0
+	for key, tile in pairs(world.tiles) do
+		for _, item in ipairs(tile.items) do
+			if item.attrs.chaos_set == "tester_set" then
+				pieces = pieces + 1
+				ok(item.attrs.chaos_loot ~= nil, "the set piece flew like the rest: it carries the owner record (strict for its whole life)")
+			end
+		end
+	end
+	eq(pieces, 1, "one set piece lies on the ground")
+	eq(X.testerProbe(setBot).loose, 7, "seven loose items in the state")
+	-- the bag mode: nothing flies
+	reset()
+	openGround(800, 800, 6)
+	load()
+	local bagBot = newPlayer(42, 800, 800)
+	local ranBag = X.testerRun(bagBot, "bag")
+	ok(ranBag ~= nil and ranBag.bag == true, "the bag mode answers")
+	eq(ranBag.items, 8, "the six things, the set piece and a Legendary sword")
+	eq(ranBag.x, 800, "and the tile of the bag")
+	runEvents(clock.ms + 4000)
+	local bagTile, bagOnTile = world.tiles["800,800,7"], nil
+	for _, item in ipairs(bagTile.items) do
+		if item.container then
+			bagOnTile = item
+		end
+	end
+	ok(bagOnTile ~= nil, "the bag stays on the tile")
+	eq(bagOnTile:getSize(), 8, "with all its items: nothing flew")
+	ok(not X.isExploded(bagOnTile), "it is not marked as exploded")
+	eq(bagOnTile:getCorpseOwner(), 42, "the bot's own bag (the corpse row of groundloot.lua lists it for the owner)")
+	local sets = 0
+	for _, item in ipairs(bagOnTile.children) do
+		if item.attrs.chaos_set then
+			sets = sets + 1
+		end
+	end
+	eq(sets, 1, "one set piece in it")
+	reset()
+	openGround(800, 800, 6)
+	load()
+	bot = newPlayer(1, 800, 800)
+	ran = X.testerRun(bot)
+	runEvents(clock.ms + 4000)
 end
 
 -- O671: a hunting bot walks on while the loot flies; the rings are read from the death tile of its last run

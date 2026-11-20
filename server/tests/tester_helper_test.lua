@@ -2103,6 +2103,58 @@ do
 	talks["!tester"].onSay(t9, "!tester", "ascended close #166")
 	check(closes == c1 + 1 and last(t9):find('"closed":true', 1, true), "ascended close: the bot's own run")
 	ChaosAscended = nil
+	-- ---- the pinnacle bosses (O678)
+	check(HELPER_VERSION >= 29, "the helper is version 29 or later (O678: pinnacle)")
+	check(H.COMMANDS.pinnacle and H.parseCommand("pinnacle set vhoss #170") == "pinnacle", "pinnacle is a registered command")
+	local pp = H.parsePinnacle("set Vhoss")
+	check(pp.what == "set" and pp.kind == "vhoss", "pinnacle: set with a boss (lower case)")
+	eq(H.parsePinnacle(nil).what, "state", "pinnacle: no word is state")
+	eq(H.parsePinnacle("path").what, "path", "pinnacle: path")
+	w, usage = H.parsePinnacle("open")
+	check(w == nil and usage:find("usage: pinnacle", 1, true), "pinnacle: open is the Keeper's button, never the helper's")
+	local pn = H.pinnacleAnswer({inside = "vhoss", level = 2100, pos = {x = 1, y = 2, z = 7, junk = 1}, pz = false, free = 7, reserve = 2, enabled = true, focus = 2,
+		bosses = {{key = "malgrath", minLevel = 1800, ready = true, open = true, kills = 3, have = {1, 1, 1, 1}, junk = 1}, {key = "vhoss", minLevel = 2000}},
+		run = {id = 5, kind = "vhoss", boss = "alive", state = "running", players = 1, testers = 1, size = 1, falls = 0, left = 900, bossPos = {x = 5, y = 5, z = 7, junk = 1},
+			bossHp = 77, bossHealth = 2988000, bossMax = 3876000, sinceBoss = 40, gate = {x = 1, y = 1, z = 7}, junk = 1},
+		guide = {mode = "walk", goal = {x = 5, y = 5, z = 7}, reach = {1, 5}, area = "boss", why = ("w"):rep(90)}, junk = 1})
+	check(pn.inside == "vhoss" and pn.level == 2100 and pn.free == 7 and pn.junk == nil and pn.pos.junk == nil and pn.bosses[1].junk == nil and #pn.bosses == 2, "pinnacle answer: the facts, cut down")
+	check(pn.bosses[1].have[4] == 1 and pn.bosses[1].ready and pn.bosses[1].kills == 3, "pinnacle answer: the fragments held")
+	check(pn.run.tester and pn.run.bossHp == 77 and pn.run.bossHealth == 2988000 and pn.run.sinceBoss == 40 and pn.run.bossPos.junk == nil and pn.run.junk == nil
+		and #pn.guide.why == 60, "pinnacle answer: the run and the guide")
+	check(H.pinnacleAnswer(nil).run == nil and H.pinnacleAnswer(nil).enabled == true, "pinnacle answer: nothing known")
+	local realPN = ChaosPinnacle
+	local setFor, closesPN = 0, closes
+	ChaosPinnacle = {probe = function(p)
+		if p.inPinnacle then
+			return {inside = "vhoss", level = 2100, pos = p:getPosition(), run = {boss = "alive", state = "running"},
+				guide = {mode = "walk", goal = {x = 44, y = 55, z = 7}, reach = {1, 5}, area = "boss"}}
+		end
+		return {inside = nil, level = 2100, pos = p:getPosition(), pz = true, free = 8, reserve = 2, bosses = {{key = "vhoss", minLevel = 2000, ready = setFor > 0}}}
+	end, testerClose = function() closes = closes + 1 return true end, testerSet = function(_, kind)
+		if kind == "nonsense" then return nil, "no pinnacle boss named nonsense" end
+		setFor = setFor + 1
+		return kind or "vhoss"
+	end}
+	talks["!tester"].onSay(t9, "!tester", "pinnacle #170")
+	check(last(t9):find('"inside":null', 1, true) == nil and last(t9):find('"pz":true', 1, true) and last(t9):find('"seq":170', 1, true), "pinnacle state: outside")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle set #171")
+	check(setFor == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"kind":"vhoss"', 1, true) and last(t9):find('"ready":true', 1, true), "pinnacle set: given, then ready")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle set nonsense #172")
+	check(setFor == 1 and last(t9):find("no pinnacle boss named nonsense", 1, true), "pinnacle set: the reason of the refusal")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle path #173")
+	check(last(t9):find("not inside a pinnacle fight", 1, true), "pinnacle path outside: the reason")
+	t9.inPinnacle = true
+	talks["!tester"].onSay(t9, "!tester", "pinnacle set #174")
+	check(setFor == 1 and last(t9):find("already inside a fight", 1, true), "pinnacle set: never inside a run")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle path #175")
+	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 44 and t9.pathAsked.maxD == 5, "pinnacle path: on foot to the boss, within reach")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle close #176")
+	check(closes == closesPN + 1 and last(t9):find('"closed":true', 1, true), "pinnacle close: the bot's own way out")
+	ChaosPinnacle = nil
+	talks["!tester"].onSay(t9, "!tester", "pinnacle #177")
+	check(last(t9):find("no pinnacle system", 1, true), "pinnacle: no system, the reason")
+	ChaosPinnacle = realPN
+	t9.inPinnacle = nil
 	talks["!tester"].onSay(t9, "!tester", "ascended #167")
 	check(last(t9):find("no ascended system", 1, true), "ascended: no system, the reason")
 	-- the omen arena
@@ -2226,7 +2278,9 @@ do
 	eq(H.parseGoblin("spawn"), "spawn", "goblin: spawn")
 	eq(H.parseExplode("run"), "run", "explode: run (O669)")
 	eq(H.parseExplode("state"), "state", "explode: state")
-	check(H.parseExplode("steal") == nil and select(2, H.parseExplode("steal")) == "usage: explode [state | run | join NAME]", "explode: the usage")
+	eq(H.parseExplode("set"), "set", "explode: set (a set piece among the loot, O678)")
+	eq(H.parseExplode("bag"), "bag", "explode: bag (the loot stays in the bag, O678)")
+	check(H.parseExplode("steal") == nil and select(2, H.parseExplode("steal")) == "usage: explode [state | run | set | bag | join NAME]", "explode: the usage")
 	local jw, jn = H.parseExplode("join Tester Aab")
 	check(jw == "join" and jn == "Tester Aab", "explode: join takes the name of the owner bot (O671)")
 	check(H.parseExplode("join") == nil and H.parseExplode("join   ") == nil, "explode: join needs a name")

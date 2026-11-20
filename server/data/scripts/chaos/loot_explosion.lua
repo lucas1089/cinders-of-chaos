@@ -781,7 +781,9 @@ local function openSpot(from)
 	return best
 end
 
-function X.testerRun(player)
+-- mode "set" (O678): a set piece lies among the loot (the `chaos_set` attribute), so the ground rows of groundloot.lua show it with `st`; mode "bag": the same
+-- loot (a Legendary sword and a set piece) stays in the bag on the tile, not exploded: the corpse row of groundloot.lua lists it with `st`
+function X.testerRun(player, mode)
 	if not X.active(cfg, corpseCfg) then
 		return nil, "the loot explosion is off"
 	end
@@ -814,6 +816,21 @@ function X.testerRun(player)
 			item:setCustomAttribute("rarity", row[3])
 		end
 	end
+	if mode == "set" or mode == "bag" then
+		local piece = bag:addItem(2376, 1)
+		if piece then
+			piece:setCustomAttribute("rarity", 4)
+			piece:setCustomAttribute("chaos_set", "tester_set")
+		end
+	end
+	if mode == "bag" then
+		-- an extra Legendary sword beside the set piece; the bag stays as a corpse the owner may read
+		local legendary = bag:addItem(2376, 1)
+		if legendary then
+			legendary:setCustomAttribute("rarity", 5)
+		end
+		return {items = bag:getSize(), bag = true, x = pos.x, y = pos.y, z = pos.z, moved = moved}
+	end
 	local before = bag:getSize()
 	local seq0 = X.seq
 	explode(nil, bag)
@@ -823,7 +840,7 @@ function X.testerRun(player)
 		bag:remove()
 		return nil, "not exploded (a cap, an instance, a tile with nothing free or the owner is not the bot)"
 	end
-	return {items = before, expected = #TEST_ITEMS, moved = moved}
+	return {items = before, expected = #TEST_ITEMS, moved = moved, x = pos.x, y = pos.y, z = pos.z}
 end
 
 -- TEST ONLY (`!tester explode join NAME`, O671): this tester stands on a free tile beside the tester NAME, the stranger of the loot test that drags

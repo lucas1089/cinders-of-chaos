@@ -4481,6 +4481,7 @@ return {
 		["Raid unique"] = "Único de raid",
 		["Raid uniques"] = "Únicos de raid",
 		["Sepulchre boss"] = "chefe do Sepulcro",
+		["Pinnacle boss"] = "chefe do Ápice",
 		["Set piece"] = "Peça de set",
 		["Normal"] = "Normal",
 		["Set pieces"] = "Peças de set",

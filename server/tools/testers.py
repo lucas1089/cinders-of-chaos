@@ -1064,6 +1064,25 @@ class CheckIO(KeyIO):
                 break
         return lines()
 
+    def tap_of(self, name, box=None):
+        """O678: starts (box given) or stops (box None) reading the map's effects and items for the bot `name` (this one or another in game); stopping
+        returns the events [(seconds, kind, a, b)] of the tap, None when the bot is not in game or no tap ran"""
+        b = self._bot(name)
+        if b is None:
+            return None
+        if box is not None:
+            b.tap = TC.WorldTap(box)
+            return []
+        tap, b.tap = b.tap, None
+        return list(tap.events) if tap is not None else None
+
+    def msgs_of(self, name, op_name, action, since):
+        """O678: the extended messages of window `op_name` with `action` that the bot `name` read after the monotonic time `since`: [(seconds, data)]"""
+        b = self._bot(name)
+        if b is None:
+            return []
+        return [(t, d) for t, n, a, d in b.msgs if n == op_name and a == action and t >= since]
+
     async def toggle_mount(self, on, wait=2.5):
         """the mount button (0xD4, u8 1 = mount, 0 = dismount): the server's text lines of the next `wait` seconds"""
         if not self.alive():
@@ -1399,6 +1418,8 @@ class TesterBot(LT.Bot):
         self.shop = None
         self.kills = []
         self.chunks = {}
+        self.tap = None        # O678: a TC.WorldTap while a check reads the effects and items of the map around a loot burst
+        self.msgs = []         # O678: the last extended messages of the loot windows: (seconds, opcode name, action, data)
         self.died = False
         self.after_death = False
         self.fails = 0
@@ -1526,6 +1547,8 @@ class TesterBot(LT.Bot):
         if plain[:1] == b'\x28':  # the death window
             self.on_death()
             return
+        if self.tap is not None:
+            self.tap.feed(time.monotonic(), plain)
         if self.cid:
             for m in re.finditer(re.escape(b'\x8c' + struct.pack('<I', self.cid)) + rb'([\x00-\x64])', plain):
                 before, self.health = self.health, m.group(1)[0]
@@ -1671,6 +1694,10 @@ class TesterBot(LT.Bot):
             return
         if not isinstance(msg, dict):
             return
+        for name in ('groundLoot', 'lootfilter'):   # O678: the explode, tiles and beam messages the loot burst check reads
+            if op == self.args.ops.get(name):
+                self.msgs.append((time.monotonic(), name, msg.get('action'), msg.get('data')))
+                del self.msgs[:-300]
         if op == self.args.ops.get('lootfilter') and msg.get('action') == 'kill':
             data = msg.get('data') or {}
             if data.get('items'):

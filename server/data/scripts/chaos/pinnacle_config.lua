@@ -119,7 +119,7 @@ return {
 	-- titles (titles.lua source "pinnacle"): `first` the first kill of a boss by a character in each season (the season's tag
 	-- after it), `deathless` a kill in which nobody fell. At most 24 characters.
 	titles = {source = "pinnacle", first = "%s Bane %s", deathless = "Deathless %s", color = "#C8A04A", frame = "gold"},
-	-- the character's Conquest Tokens (conquest.lua) come as "pinnacle:<key>"
+	-- the character's Conquest Tokens (conquest.lua) come from the source "pinnacle" (conquest_config.lua; the detail of the log row is the boss's key)
 
 	staffGroup = 4 -- /pinnacle
 }

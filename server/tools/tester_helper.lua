@@ -46,6 +46,10 @@
 --     arenas and the Omen Key arenas as a person sees them (ChaosAscended.probe, ChaosRift.probe); `sigil` / `key` is the TEST ONLY grant
 --     (a tester only, logged), the path on foot to the guide's goal inside and the close of the bot's own run; the bot uses the sigil or
 --     key itself and fights the boss itself
+--   * "!tester pinnacle [state | set [boss] | path | close]" (O678): the four Ascended pinnacle bosses as a person sees them (ChaosPinnacle.probe: the
+--     fragments held, inside a fight the boss's health, the clock, the guide); `set` is the TEST ONLY grant of a whole set of fragments (a tester
+--     only, logged: the top content that drops them is hours of play), the Keeper's window opens the fight (the bot presses Open itself), `path` is
+--     the engine's path to the guide's goal inside, `close` the bot's own way out
 --   * "!tester bounty [state | where NAME | path]" (O599): the bounty board as a person sees it (ChaosBounty.probe: the contracts held, the ones a
 --     hunt mark lists, "where does monster X spawn" from the hunt marks) and the path on foot to the contract's monster or hunt
 --   * "!tester mainquest [state]" (O599): the open step of the main quest, its condition, progress, where to go and what a bot can play of it
@@ -69,7 +73,7 @@
 --     with the monster to hunt (ChaosBestiary.probe) and the nearest fresh corpse for the knife / fishable water for the rod; `dummy give` and `mount give`
 --     are TEST ONLY grants (a tester only, logged), `clear` takes them back. The use of the weapon, the mount toggle (0xD4), the walk and the fight are
 --     the bot's own
---   * "!tester explode [state | run]" (O669): the loot explosion (loot_explosion.lua): `run` puts a loot bag of the bot's own on its tile with known
+--   * "!tester explode [state | run | set | bag | join NAME]" (O669; O678: `set` puts a set piece among the loot, `bag` leaves a bag with a set piece and a Legendary on the tile) (O669): the loot explosion (loot_explosion.lua): `run` puts a loot bag of the bot's own on its tile with known
 --     loot and explodes it by the real rule, `state` reads what lies within 4 tiles (owner, ring, tiles, the bag) and whether a stranger would be
 --     refused; Loot all is the bot's own packet (opcode 230 `lootall`; tester_checks.py loot_explosion). TEST ONLY, a tester only
 --   * "!tester journey [state | jump | hall] [keep ID] [skip ID,ID]" (O654): the levelling journey on foot: the next hunt of the level from the
@@ -113,7 +117,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 28
+HELPER_VERSION = 29
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1669,6 +1673,56 @@ function commands.omen(player, arg)
 	tell(player, "omen", H.omenAnswer(probe, {level = player:getLevel(), minLevel = cfg.omen.minLevel}))
 end
 
+-- ---------------------------------------------------------------- O678 the pinnacle bosses
+-- "!tester pinnacle [state | set [boss] | path | close]": reads ChaosPinnacle.probe; `set` is the TEST ONLY grant of a whole set of fragments (the highest
+-- boss the level opens, or the named one; a tester only, logged); `path` the engine's path to the guide's goal inside the arena; `close` the bot's own
+-- way out (the set stays spent, as when a person leaves). The Keeper's Open button is the bot's own.
+function commands.pinnacle(player, arg)
+	local want, usage = H.parsePinnacle(arg)
+	if not want then
+		tell(player, "pinnacle", {err = usage})
+		return
+	end
+	local PN = ChaosPinnacle
+	if not (PN and PN.probe) then
+		tell(player, "pinnacle", {err = "no pinnacle system"})
+		return
+	end
+	if want.what == "close" then
+		local closed = PN.testerClose and PN.testerClose(player) or false
+		tell(player, "pinnacle", H.pinnacleAnswer(PN.probe(player), {closed = closed and true or false}))
+		return
+	end
+	local probe = PN.probe(player)
+	if want.what == "set" then
+		if probe.inside then
+			tell(player, "pinnacle", H.pinnacleAnswer(probe, {err = "already inside a fight"}))
+			return
+		end
+		local kind, why = nil, nil
+		if PN.testerSet then
+			kind, why = PN.testerSet(player, want.kind)
+		end
+		if not kind then
+			tell(player, "pinnacle", H.pinnacleAnswer(probe, {err = why or "the set could not be made"}))
+			return
+		end
+		tell(player, "pinnacle", H.pinnacleAnswer(PN.probe(player), {given = true, kind = kind}))
+		return
+	end
+	if want.what == "path" then
+		local got, why
+		if probe.inside then
+			got, why = goalPath(player, probe)
+		else
+			why = "not inside a pinnacle fight"
+		end
+		tell(player, "pinnacle", H.pinnacleAnswer(probe, got or {err = why}))
+		return
+	end
+	tell(player, "pinnacle", H.pinnacleAnswer(probe))
+end
+
 -- ---------------------------------------------------------------- O599 the bounty board
 -- "!tester bounty [state | where NAME | path]": reads ChaosBounty.probe (the contracts held, the ones a hunt mark lists, "where does monster X
 -- spawn"); `path` is the engine's path to the guide's goal (the monster of the contract in sight, else its hunt). Nothing here accepts, moves
@@ -1863,8 +1917,8 @@ function commands.explode(player, arg)
 		tell(player, "explode", {err = "no loot explosion"})
 		return
 	end
-	if what == "run" then
-		local r, why = LE.testerRun(player)
+	if what == "run" or what == "set" or what == "bag" then
+		local r, why = LE.testerRun(player, what ~= "run" and what or nil)
 		tell(player, "explode", r or {err = tostring(why or "refused")})
 	elseif what == "join" then
 		local r, why = LE.testerJoin(player, who)
