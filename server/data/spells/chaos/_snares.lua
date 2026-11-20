@@ -13,6 +13,24 @@
 -- combatlog.lua): Snare Trap, Seeker Mine, Detonate Mines for the mines it sets off.
 -- Targets: monsters that are not a player's summon (ChaosSpell.isEnemy), never players.
 
+-- O682: heal a creature by `amount`. This engine's Creature:addHealth takes (damage type, amount); a one-argument call heals
+-- nothing. The spells state does not load Chaos.heal (chaos_constants.lua), so the same rule here; the second call covers the stock signature.
+local function heal(creature, amount)
+	if Chaos and Chaos.heal then
+		return Chaos.heal(creature, amount)
+	end
+	amount = math.min(math.floor(amount), creature:getMaxHealth() - creature:getHealth())
+	if amount <= 0 then
+		return 0
+	end
+	local before = creature:getHealth()
+	creature:addHealth("healing", amount)
+	if creature:getHealth() == before then
+		creature:addHealth(amount)
+	end
+	return creature:getHealth() - before
+end
+
 -- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
 local function tr(player, key, ...)
 	if Chaos and Chaos.t then
@@ -260,12 +278,12 @@ local function burst(snare)
 		print("[ChaosSnares] burst: " .. tostring(err))
 	end
 	if drained > 0 and owner:getHealth() > 0 then
-		owner:addHealth(drained)
+		heal(owner, drained)
 	end
 	if holy and #targets > 0 then
 		for _, ally in ipairs(ChaosSpell.alliesAround(owner, center, holy.radius, false)) do
 			if ally:isPlayer() and ally:getHealth() > 0 then
-				ally:addHealth(math.floor(ally:getMaxHealth() * holy.holy))
+				heal(ally, math.floor(ally:getMaxHealth() * holy.holy))
 				packFx(ally:getPosition(), "snare_holy_heal", CONST_ME_MAGIC_BLUE or CONST_ME_POFF)
 			end
 		end

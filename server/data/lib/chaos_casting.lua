@@ -151,7 +151,11 @@ local function giveBack(player, cast, r, withCooldown)
 		player:addMana(mana)
 	end
 	if health > 0 then
-		player:addHealth(health)
+		if Chaos and Chaos.heal then -- O682: this engine's one-argument addHealth heals nothing
+			Chaos.heal(player, health)
+		else
+			player:addHealth("healing", health)
+		end
 	end
 	if withCooldown and cast.spellId and CONDITION_SPELLCOOLDOWN then
 		local c = player:getCondition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT, cast.spellId)

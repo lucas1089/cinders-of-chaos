@@ -74,8 +74,8 @@ function C:getPosition() return Position(self.pos.x, self.pos.y, self.pos.z) end
 function C:getMaster() return nil end
 function C:getHealth() return self.health end
 function C:getMaxHealth() return self.maxHealth end
-function C:setMaxHealth(v) self.maxHealth = v end
-function C:addHealth(v) self.health = self.health + v end
+function C:setMaxHealth(v) self.maxHealth = v self.health = math.min(self.health, v) end -- the engine cuts the health to the new maximum
+function C:addHealth(kind, v) if type(kind) == "string" and type(v) == "number" then self.health = self.health + v end end -- O682: this engine: (damage type, amount); a one-argument call does nothing
 function C:registerEvent(name) self.events[#self.events + 1] = name end
 function C:getStorageValue(k) return self.storage[k] or -1 end
 function C:remove() creatures[self.id] = nil self.removed = true end
@@ -92,7 +92,8 @@ Game = {getSpectators = function() return spectators end, getPlayers = function(
 function Game.createMonster(typeName, pos, extended, force)
 	made[#made + 1] = {name = typeName, creating = ChaosTestersBoss and ChaosTestersBoss.creating, force = force}
 	if typeName == "Missing Boss" then return nil end
-	return new("monster", {name = typeName, pos = {x = pos.x, y = pos.y, z = pos.z}, maxHealth = 1000000})
+	-- O682: health below the copy's new maximum: the copy must be raised to it (the one-argument addHealth heals nothing on this engine)
+	return new("monster", {name = typeName, pos = {x = pos.x, y = pos.y, z = pos.z}, maxHealth = 1000000, health = 5000})
 end
 ChaosTitles = {register = function() end}
 

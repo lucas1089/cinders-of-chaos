@@ -552,7 +552,8 @@ function Cr:getPosition() return Position(self.pos) end
 function Cr:getHealth() return self.hp end
 function Cr:getMaxHealth() return self.maxHp end
 function Cr:setMaxHealth(v) self.maxHp = v; self.hp = math.min(self.hp, v) end
-function Cr:addHealth(v) self.hp = math.max(0, math.min(self.maxHp, self.hp + v)) end
+function Cr:addHealth(kind, v) if type(kind) == "string" and type(v) == "number" then self.hp = math.max(0, math.min(self.maxHp, self.hp + v)) end end -- O682: this engine: (damage type, amount); a one-argument call does nothing
+function Cr:setHealth(v) self.hp = math.min(v, self.maxHp) end
 function Cr:isPlayer() return self.player == true end
 function Cr:isMonster() return not self.player end
 function Cr:getMaster() return nil end
@@ -622,7 +623,9 @@ function doTargetCombat(cid, target, ctype, mn)
 	target.hp = target.hp + mn
 end
 json = {encode = function(t) return "{" .. tostring(t.action) .. ":" .. tostring(t.data and t.data.label) .. "}" end}
-Chaos = {percentBase = function(p) return p.maxHp end}
+Chaos = {percentBase = function(p) return p.maxHp end,
+	-- O682: Chaos.heal as chaos_constants.lua makes it: at most the missing health, through the (damage type, amount) call
+	heal = function(c, n) n = math.min(math.floor(n), c:getMaxHealth() - c:getHealth()) if n > 0 then c:addHealth("healing", n) end return n end}
 function Chaos.send(p, op, action, data) p:sendExtendedOpcode(op, json.encode({action = action, data = data})); return true end
 Chaos.createMonsterNamed = function(t, p, e, f, shown) local m = Game.createMonster(t, p); m.name = shown or t; return m end
 ChaosOpcodes = {monsterbar = 125}
@@ -985,6 +988,60 @@ do
 	creatures[mb.id] = nil
 	runTo(T + 500)
 	ChaosTelegraph = nil
+end
+
+-- O682: this engine's one-argument addHealth heals nothing, so an add with more health than the mock monster's 5000, the heal of
+-- the heal adds on the boss, and a damaged boss whose health is cut by the balance factor go through Chaos.heal / setHealth
+do
+	cfg.profiles["heal boss"] = {label = "Healer", size = 1, element = "fire", difficulty = 0, every = 900000, firstMs = 900000,
+		compensate = false,
+		adds = {{at = 0.9, mode = "heal", type = "Hex Effigy", name = "Siphon", count = 2, health = 9000, perAdd = 0.01,
+			text = "%s feeds!", doneText = "free"}}}
+	for _, c in pairs(creatures) do
+		if c.player then c.pos = {x = 300, y = 300, z = 7} end
+	end
+	local hb = make({name = "Heal Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+	local hp1 = make({name = "Healed", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+	hb.target = hp1.id
+	hb.hp = 80000
+	local hf = M.attach(hb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(hf ~= nil, "O682: the heal boss is attached")
+	runTo(T + 700)
+	local siphons, hpOk = 0, true
+	for id in pairs(hf.adds) do
+		siphons = siphons + 1
+		hpOk = hpOk and creatures[id].hp == 9000 and creatures[id].maxHp == 9000
+	end
+	eq(siphons, 2, "O682: two siphons")
+	check(hpOk, "O682: an add made with more health than the monster had starts at its full health")
+	runTo(T + 6000)
+	check(hb.hp > 80000, "O682: the heal adds give the boss health (" .. tostring(hb.hp) .. ")")
+	creatures[hb.id] = nil
+end
+do
+	local name
+	for n, p in pairs(cfg.profiles) do
+		if p.ref and p.compensate ~= false and not name then
+			name = n
+		end
+	end
+	local prof = cfg.profiles[name]
+	local ref = {}
+	for k, v in pairs(prof.ref) do
+		ref[k] = v
+	end
+	local b0 = G.balance(prof, ref)
+	check(b0.hpMult < 1, "O682: the compensating profile cuts the health (" .. tostring(name) .. " x" .. tostring(b0.hpMult) .. ")")
+	local cb = make({name = "Comp Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+	cb.hp = 50000
+	cb.mechName = name
+	local cm = make({name = "Compp", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+	cb.target = cm.id
+	local cf = M.attach(cb, name, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(cf ~= nil, "O682: the compensated fight is attached")
+	check(cb.maxHp < 100000, "O682: the maximum health is cut")
+	check(math.abs(cb.hp / cb.maxHp - 0.5) < 0.001, "O682: a boss at half health stays at half health (" .. cb.hp .. " / " .. cb.maxHp .. ")")
+	creatures[cb.id] = nil
 end
 
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))

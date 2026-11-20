@@ -1184,7 +1184,10 @@ do
 		p.health, p.maxHealth = 1000, 20000
 		p.getHealth = function(self) return self.health end
 		p.getMaxHealth = function(self) return self.maxHealth end
-		p.addHealth = function(self, n) self.healed = (self.healed or 0) + n self.health = self.health + n end
+		p.addHealth = function(self, kind, n) -- O682: this engine: (damage type, amount); a one-argument call does nothing
+			if type(kind) ~= "string" or type(n) ~= "number" then return end
+			self.healed = (self.healed or 0) + n self.health = self.health + n
+		end
 		Deck.unlock(p)
 		for _, id in ipairs(ids) do D.add(p, id, 1) end
 		return p, nil, ids
@@ -1319,6 +1322,7 @@ do
 	hitOf(w, mon, -1000, COMBAT_FIREDAMAGE, 0, 0)
 	eq(w.healed, nil, "a Fire hit does not leech")
 	w.maxHealth = 1000
+	w.health = 100 -- O682: a heal stops at the missing health (Chaos.heal)
 	hitOf(w, mon, -100000, COMBAT_DEATHDAMAGE, 0, 0)
 	eq(w.healed, 10, "the leech stops at 1% of the maximum health")
 	w.health = 0

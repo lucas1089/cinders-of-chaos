@@ -167,6 +167,9 @@ local function mk(opt)
 	function m:getMana() return c.mana end
 	function m:getMaxMana() return c.maxMana + stat(CONDITION_PARAM_STAT_MAXMANAPOINTS) end
 	function m:addMana(v) c.mana = math.min(m:getMaxMana(), c.mana + v) end
+	function m:addHealth(kind, v) -- this engine: (damage type, amount); a one-argument call does nothing (O682)
+		if type(kind) == "string" and type(v) == "number" then c.hp = math.min(m:getMaxHealth(), c.hp + v) end
+	end
 	function m:getStorageValue(k) return c.storage[k] or -1 end
 	function m:setStorageValue(k, v) c.storage[k] = v end
 	function m:getParty() return c.party end
@@ -341,6 +344,18 @@ registered.ChaosVigilsThink.onThink(1000)
 eq(holder:getMaxMana(), 2400, "Iron Tithe: the mana stays free")
 eq(holder:getMaxHealth(), 5000 - math.floor(5000 * 0.7 * 0.6), "Iron Tithe: 42% of the health reserved")
 check(M.covered[holder:getId()] and not M.covered[friend:getId()], "Iron Tithe: the holder alone")
+-- O682: the same give-back for the health pool (Iron Tithe): the cut health comes back through the engine's (damage type, amount)
+-- addHealth, a one-argument call heals nothing
+holder.c.maxHp = 5500
+registered.ChaosVigilsThink.onThink(1000)
+holder.c.hp = holder:getMaxHealth()
+registered.ChaosVigilsThink.onThink(1000)
+local reservedHp = 5500 - holder:getMaxHealth()
+holder.c.maxHp = 5000
+holder.c.hp = 5000 - reservedHp -- the engine's cut to the lowered maximum (the old reservation still on)
+registered.ChaosVigilsThink.onThink(1000)
+check(holder.c.hp == holder:getMaxHealth() and holder.c.hp > 5000 - reservedHp,
+	"Iron Tithe: the cut health comes back, up to the new maximum (" .. holder.c.hp .. " / " .. holder:getMaxHealth() .. ")")
 near(M.dealt(holder), 1.075, "wrath x1.5 on the holder")
 near(M.taken(holder), 0.91, "iron x1.5 on the holder")
 hr = rows(holder)

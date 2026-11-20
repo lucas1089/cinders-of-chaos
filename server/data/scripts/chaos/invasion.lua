@@ -726,7 +726,7 @@ local function clashHit(id, info, foeId, dist, cl)
 		pcall(function() foe:setDropLoot(false) end) -- no player touched it: no loot pile for nobody
 	end
 	foeInfo.clashDamage = (foeInfo.clashDamage or 0) + math.min(dmg, health)
-	pcall(function() foe:addHealth(-dmg) end)
+	pcall(function() foe:addHealth("physical", -dmg) end) -- O682: (damage type, amount); the one-argument call did nothing
 end
 
 local function clashLoop(token)

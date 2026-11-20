@@ -174,7 +174,7 @@ function B.testerSpawn(player, which)
 	monster:registerEvent("ChaosTestersBossDeath")
 	local max = math.max(1000, math.floor(monster:getMaxHealth() * cfg.healthShare))
 	monster:setMaxHealth(max)
-	monster:addHealth(max - monster:getHealth())
+	Chaos.heal(monster, max - monster:getHealth()) -- O682
 	local M = MM()
 	if M and M.attach then
 		pcall(M.attach, monster, nil, {center = spot, radius = cfg.arenaRadius, solo = true,

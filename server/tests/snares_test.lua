@@ -222,7 +222,7 @@ local function mk(kind, opt)
 	function m:getPlayer() return c.kind == "player" and self or nil end
 	function m:getHealth() return c.hp end
 	function m:getMaxHealth() return c.maxHp end
-	function m:addHealth(v) c.hp = math.min(c.maxHp, c.hp + v) end
+	function m:addHealth(kind, v) if type(kind) == "string" and type(v) == "number" then c.hp = math.min(c.maxHp, c.hp + v) end end -- O682: this engine: (damage type, amount); a one-argument call does nothing
 	function m:getPosition() return Position(c.pos) end
 	function m:getDirection() return c.dir end
 	function m:getTarget() return c.target end
@@ -421,6 +421,14 @@ advance(700)
 local drain = S.elementEffect("death", math.floor((G.state.list[1] or {min = 0, max = 0}).min)).drain
 check(thief.c.hp > 1000, "death drains health (" .. thief.c.hp .. ")")
 eq(dealt[1].min, select(1, S.damage(300, 110 * 45, "trap", "death", {})), "the best power (the bow's here)")
+-- O682: holy heals the allies around the burst (here the caster) through the engine's (damage type, amount) addHealth
+reset()
+local priest = mk("player", {hp = 1000, maxHp = 3000, pos = P(100, 100)})
+target = mk("monster", {hp = 90000, pos = P(102, 100)})
+priest.c.target = target
+cast(priest, "trap", "holy")
+advance(700)
+check(priest.c.hp > 1000, "holy heals the allies around the burst (" .. priest.c.hp .. ")")
 
 -- mines: thrown, armed, detonated together; the fuse; the keystone and the charm
 reset()

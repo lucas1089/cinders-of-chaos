@@ -322,7 +322,7 @@ local function spawnNamed(f, typeName, shownName, health, near)
 	end
 	if health and health > 0 then
 		m:setMaxHealth(health)
-		m:addHealth(health)
+		Chaos.heal(m, health) -- O682: a one-argument addHealth heals nothing on this engine
 	end
 	M.addOf[m:getId()] = f.id
 	fx(pos, C().totemEffect, CONST_ME_TELEPORT)
@@ -795,7 +795,7 @@ local function tick(id, token)
 		f.nextHeal = now + 5000
 		local heal = G.addsHeal(f.st, live, boss:getMaxHealth())
 		if heal > 0 then
-			boss:addHealth(heal)
+			Chaos.heal(boss, heal)
 			fx(boss:getPosition(), "tick_regen", CONST_ME_MAGIC_GREEN)
 		end
 	end
@@ -874,7 +874,7 @@ function M.attach(monster, key, opts)
 			local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
 			local hp = math.max(1, math.floor(monster:getMaxHealth() * b.hpMult))
 			monster:setMaxHealth(hp)
-			monster:addHealth(math.floor(hp * share) - monster:getHealth())
+			monster:setHealth(math.max(1, math.floor(hp * share))) -- O682: the one-argument addHealth did nothing; setHealth clamps to the maximum
 		end
 		f.hpMult = b.hpMult
 	end

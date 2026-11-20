@@ -990,7 +990,11 @@ end
 function NP.fillUp(player)
 	local h = player:getMaxHealth() - player:getHealth()
 	if h > 0 then
-		player:addHealth(h)
+		if rawget(_G, "Chaos") and Chaos.heal then -- O682: this engine's one-argument addHealth heals nothing
+			Chaos.heal(player, h)
+		else
+			player:addHealth("healing", h)
+		end
 	end
 	local m = player:getMaxMana() - player:getMana()
 	if m ~= 0 then
