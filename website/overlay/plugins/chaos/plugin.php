@@ -54,6 +54,8 @@ require_once __DIR__ . '/community_lib.php';
 require_once __DIR__ . '/sprite_lib.php';
 // trailer, shorts and screenshots of the front page (media_lib.php, README "Trailer, gallery and shorts")
 require_once __DIR__ . '/media_lib.php';
+// the news page "Novidades" and its block on the front page (news_lib.php, README "News and changelog (O687)")
+require_once __DIR__ . '/news_lib.php';
 // SEO and link previews (README "SEO and social previews"): the page renders into this buffer and chaos_seo_output()
 // rewrites its <head> at the end; JSON, images and redirects pass through unchanged
 require_once __DIR__ . '/seo_lib.php';

@@ -1713,6 +1713,45 @@ function Chaos.heal(creature, amount)
 	return creature:getHealth() - before
 end
 
+-- The monster health factor H of the spell ranks (O686 phase 3, docs/SPELL_UPGRADES.md 5.3 and 5.4): the ONE door every place that
+-- sets a monster's health goes through (tests/health_paths_test.lua holds every setMaxHealth of the scripts to it). The level is the
+-- monster's hunting level for a hunt, the planned level for fixed content. 1 while spell_ranks_config.lua `enabled` is false, below
+-- level 100 and for a missing level, so play does not change until the switch. Never throws.
+function Chaos.healthFactor(level)
+	level = tonumber(level)
+	if not level then
+		return 1
+	end
+	local R = rawget(_G, "ChaosSpellRanks")
+	if (not R or not R.healthFactor) and not Chaos.healthLibFailed then
+		local ok = pcall(dofile, "data/lib/chaos_spell_ranks.lua")
+		if not ok then
+			ok = pcall(dofile, "server/data/lib/chaos_spell_ranks.lua")
+		end
+		Chaos.healthLibFailed = not ok
+		R = ok and rawget(_G, "ChaosSpellRanks") or nil
+	end
+	if not R or not R.healthFactor then
+		return 1
+	end
+	local ok, f = pcall(R.healthFactor, level)
+	f = ok and tonumber(f) or 1
+	if f ~= f or f <= 0 then
+		return 1
+	end
+	return f
+end
+
+-- a maximum health after H: rounded, at least 1; the value itself while H is 1 (a decimal or a huge number is not touched)
+function Chaos.scaleHealth(hp, level)
+	local f = Chaos.healthFactor(level)
+	if f == 1 or type(hp) ~= "number" then
+		return hp
+	end
+	-- never past the engine's 32 bit health (the tower's `beyond.engineMaxHealth` guard value), a value that was above it stays
+	return math.max(1, math.min(math.floor(hp * f + 0.5), math.max(2147000000, math.floor(hp))))
+end
+
 -- The base of a "share of the maximum health" hit on a player (rift ground and storms, raid and Ascended / guild boss
 -- telegraphs): the maximum health, or for a Hollow Vessel health + maximum energy shield (archetypes.lua percentBase),
 -- so its fixed 100 health is no way around them. Without the archetypes module: the maximum health.
@@ -2346,6 +2385,15 @@ Chaos.storage.fxOwner = 7103120
 -- reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode collision
 -- check"; tests/status_vfx_test.lua). No storage, no table.
 ChaosOpcodes.statusVfx = 165
+-- Spell ranks (O686 phase 2; spell_ranks_core.lua, spell_ranks_config.lua, spell_ranks.lua, data/lib/chaos_spell_ranks.lua; docs/SPELL_UPGRADES.md):
+-- the rank of every damage and heal spell, earned from the experience of monster kills by the damage share of each spell.
+-- Read only on the wire in this phase: server -> client `state {on, ranks, ...}`, client -> server `open`. 168 is free in the
+-- reference server, the base client's ExtendedIds, every Chaos script and every client module (README "Opcode collision check";
+-- tests/spell_ranks_test.lua; 172 stays the retired card border). Storage block 7107000 - 7108099 (README "Storage keys"), table
+-- chaos_spell_ranks (the account echo, server/sql/chaos_spell_ranks.sql). Switched off: spell_ranks_config.lua `enabled`.
+ChaosOpcodes.spellRanks = 168
+Chaos.tables.spellRanks = "chaos_spell_ranks"
+Chaos.storage.spellRanks = 7107000
 -- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_config.lua; server/README.md "Line spell quests"): three
 -- quests per class line, 10 storages each from 7101040 (7101040 - 7101069). Quest n (1..3) base = spellQuest + 10 x (n - 1):
 -- +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 counted kills, +2 fragments, +3 pity counter, +4 trial attempts,

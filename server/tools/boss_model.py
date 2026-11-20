@@ -2,7 +2,8 @@
 """The boss model: damage per second of every class on one boss, against the median class of the level (computed, not measured;
 server/data/spells/README.md "Boss damage per class"). The mirror of pack_model.py.
 
-usage: python3 -I server/tools/boss_model.py [--levels 300,800,1000,1200] [--check]
+usage: python3 -I server/tools/boss_model.py [--levels 300,800,1000,1200] [--check] [--upgrades]
+--upgrades  O686 phase 3: the spell upgrades on (class damage x the typical gain; ratios to the median class move with each class's spell share)
 
 O444 (2026-11-09): one truth. A class's damage is class_dps_model.py's, through pack_model.damage(): the measured table of
 2026-11-06 (every class at levels 100, 500 and 1000, Auto setup rotation on dummies) moved by the class factors, the extra target
@@ -31,6 +32,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import pack_model as PM  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 CONFIG = PM.BALANCE
 DEFAULT_LEVELS = (300, 500, 800, 1000, 1200)
@@ -106,6 +108,9 @@ def report(levels):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     if '--check' in argv:
         return check()
     levels = DEFAULT_LEVELS

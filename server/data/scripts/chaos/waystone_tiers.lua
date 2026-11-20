@@ -137,8 +137,16 @@ local function rescale(monster, e, target)
 	if not f then
 		return false
 	end
+	-- O686 phase 3: x H of the spell ranks at the map's level (1 while off). A map monster the pace layer already took H for at its own
+	-- level (pace.lua: a plain map spawn) only moves from that level to the map's; a boss or a band boss was never paced
+	local hf = Chaos.healthFactor(target)
+	if from then
+		hf = hf / Chaos.healthFactor(from)
+	elseif not (e.boss or e.native) then
+		hf = hf / Chaos.healthFactor(baseLevel(monster))
+	end
 	local max = monster:getMaxHealth()
-	local hp = K.health(max, f.health)
+	local hp = K.health(max, f.health * hf)
 	if hp and hp ~= max then
 		local okH, now = pcall(function() return monster:getHealth() end)
 		now = okH and tonumber(now) or max

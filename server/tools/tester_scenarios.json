@@ -8,7 +8,7 @@
  ],
  "counts": {
   "closed": 15,
-  "opcode": 73,
+  "opcode": 74,
   "out": 24,
   "passive": 113,
   "place": 15,
@@ -11114,6 +11114,24 @@
     "siege"
    ]
   },
+  "spellRanks": {
+   "actions": [
+    "open",
+    "clear"
+   ],
+   "client": [],
+   "dataKeys": [],
+   "files": [
+    "spell_ranks.lua"
+   ],
+   "opcode": 168,
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
+   "systems": [
+    "spell_ranks"
+   ]
+  },
   "spellbook": {
    "actions": [
     "open"
@@ -13651,6 +13669,19 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_ranks": {
+   "files": [
+    "chaos_constants.lua",
+    "spell_ranks.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "spellRanks"
+   ],
+   "talkactions": [
+    "/spellrank"
+   ]
   },
   "spell_scaling": {
    "files": [

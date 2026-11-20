@@ -156,11 +156,43 @@ end
 step:aid(cfg.aid)
 step:register()
 
+-- O686 phase 3: the lair boss takes H of the spell ranks (Chaos.healthFactor, 1 while the ranks are off) at the level its lair is planned
+-- for (`healthLevel` of bosslair_config.lua), once, at its first think (the pace layer skips bosses; boss_mechanics.lua scales the maximum
+-- by a factor of its own, so the two multiply whichever runs first)
+local function lairOfMonster(name)
+	name = tostring(name):lower()
+	for _, lair in ipairs(cfg.lairs or {}) do
+		if tostring(lair.monster):lower() == name then
+			return lair
+		end
+	end
+	return nil
+end
+
+local lairHealth = CreatureEvent("ChaosBossLairHealth")
+function lairHealth.onThink(creature, interval)
+	creature:unregisterEvent("ChaosBossLairHealth")
+	local lair = creature:isMonster() and lairOfMonster(creature:getName()) or nil
+	if lair then
+		local max = creature:getMaxHealth()
+		local want = Chaos.scaleHealth(max, lair.healthLevel)
+		if want ~= max then
+			creature:setMaxHealth(want)
+			Chaos.heal(creature, want - creature:getHealth())
+		end
+	end
+	return true
+end
+lairHealth:register()
+
 -- the boss of a closed lair does not spawn (the engine tries again at the spawn's next turn)
 local spawn = EventCallback
 spawn.onSpawn = function(self, position, startup, artificial)
 	if not L.allowSpawn(cfg, self:getName(), X.pair) then
 		return false
+	end
+	if lairOfMonster(self:getName()) then
+		self:registerEvent("ChaosBossLairHealth")
 	end
 	return true
 end

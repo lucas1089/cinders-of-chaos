@@ -65,7 +65,7 @@ function chaos_seo_private_pages(): array {
 function chaos_seo_bilingual_pages(): array {
 	return array('page_chaos_wiki', 'page_chaos_legal', 'page_chaos_credits', 'page_chaos_coins', 'page_chaos_bazaar',
 		'page_chaos_creator', 'page_chaos_leaderboards', 'page_chaos_fairplay', 'page_chaos_calendar', 'page_chaos_creators',
-		'page_chaos_guide', 'page_chaos_starterbuilds');
+		'page_chaos_guide', 'page_chaos_starterbuilds', 'page_chaos_news');
 }
 
 /** Title (English key) and description key of the stock pages; the plugin pages set $page_title themselves. */
@@ -104,6 +104,7 @@ function chaos_seo_descriptions(): array {
 		'guildwar' => 'The guild wars of %s.',
 		'page_rules' => 'The rules of %s.',
 		'page_chaos_patchnotes' => 'The patch notes of %s: every change to the game, newest first.',
+		'page_chaos_news' => 'What is new in %s: the changes of the game week by week, newest first.',
 		'page_chaos_leaderboards' => 'The weekly boards and all-time records of %s, by class.',
 		'page_chaos_seasons' => 'The seasons of %s: fresh ladders, season uniques and the reward track.',
 		'page_chaos_community' => 'The community goal and this week\'s world modifiers of %s.',
@@ -426,7 +427,17 @@ function chaos_seo_output(string $buffer): string {
 			}
 		}
 		$ctx = chaos_seo_context();
-		return chaos_seo_rewrite($buffer, chaos_seo_page($ctx), $ctx['site']);
+		$seo = chaos_seo_page($ctx);
+		$html = chaos_seo_rewrite($buffer, $seo, $ctx['site']);
+		// the NEW badge on the menu item "Novidades" while a featured entry is fresh (news_lib.php, O688)
+		if (empty($seo['admin']) && function_exists('chaos_news_menu_badge')) {
+			try {
+				$html = chaos_news_menu_badge($html, (string)$ctx['lang']);
+			} catch (Throwable $e) {
+				error_log('[chaos news badge] ' . $e->getMessage());
+			}
+		}
+		return $html;
 	} catch (Throwable $e) {
 		error_log('[chaos seo] ' . $e->getMessage());
 		return $buffer;

@@ -841,7 +841,7 @@ local function spawnBoss(run)
 	local hpMult = 1
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
-		local okA, f = pcall(ChaosBossMech.attach, m, nil, {tiles = run.L.floorList, size = run.size, solo = run.size == 1,
+		local okA, f = pcall(ChaosBossMech.attach, m, nil, {level = run.boss.refLevel or run.boss.level, tiles = run.L.floorList, size = run.size, solo = run.size == 1,
 			players = function()
 				local r = PN.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}
@@ -850,7 +850,8 @@ local function spawnBoss(run)
 			hpMult = f.hpMult -- the mechanics' downtime: the health that keeps the planned kill time (boss_mechanics_core G.balance)
 		end
 	end
-	setHealth(m, K.bossHealth(run.boss, run.size) * hpMult)
+	-- O686 phase 3: x H of the spell ranks at the character level the boss is planned for (1 while off)
+	setHealth(m, Chaos.scaleHealth(K.bossHealth(run.boss, run.size) * hpMult, run.boss.refLevel or run.boss.level))
 	m:registerEvent("ChaosPinnacleDeath")
 	run.bossState = "alive"
 	run.bossAt = mnow()

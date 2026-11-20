@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true, gear = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true, gear = true, loadout = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -442,7 +442,13 @@ function H.parseDescent(arg)
 	return parseSolo(arg, "descent", {state = true, path = true, close = true, sigil = true})
 end
 
+-- "trial [state | path | close | clear [N]]": `clear` (O685, TEST ONLY) sets the cleared tier of the family whose trial the bots cannot play
+-- (a seals or marks stage); N is 0 to 3, the last tier by default. -> the word, and N for `clear`
 function H.parseTrial(arg)
+	local word, n = tostring(arg or ""):match("^%s*(clear)%s*(%d*)%s*$")
+	if word then
+		return "clear", n ~= "" and tonumber(n) or nil
+	end
 	return parseSolo(arg, "trial", {state = true, path = true, close = true})
 end
 
@@ -478,6 +484,9 @@ function H.trialAnswer(probe, extra)
 		fight = probe.fight and true or false, free = probe.free, reserve = probe.reserve, bank = probe.bank, family = probe.family,
 		familyName = probe.familyName and tostring(probe.familyName):sub(1, 40) or nil, cleared = probe.cleared, tier = probe.tier, maxTier = probe.maxTier,
 		problem = probe.problem and tostring(probe.problem):sub(1, 90) or nil, puzzle = probe.puzzle and true or nil}
+	if type(probe.picks) == "table" then -- O685: the held node of each pair
+		out.picks = {tonumber(probe.picks[1]) or 0, tonumber(probe.picks[2]) or 0, tonumber(probe.picks[3]) or 0}
+	end
 	if type(probe.kinds) == "table" then
 		out.kinds = {}
 		for i = 1, math.min(#probe.kinds, 12) do
@@ -632,8 +641,8 @@ end
 -- Rare piece of item level = the level for the helmet, armour, legs and the weapon slot, worn at once. Boots, jewellery and the bows and wands of
 -- the casters and archers stay with the Gambler (the gear-up): the sets list holds none.
 function H.parseGear(arg)
-	local usage = "usage: gear [state | set]"
-	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	local usage = "usage: gear [state | set [rarity]]"
+	local what, num = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
 	if not what then
 		return nil, usage
 	end
@@ -641,7 +650,15 @@ function H.parseGear(arg)
 	if what ~= "state" and what ~= "set" then
 		return nil, usage
 	end
-	return {what = what}
+	local rarity = num ~= "" and tonumber(num) or nil
+	if num ~= "" and what == "state" then
+		return nil, usage
+	end
+	-- O685: the stored rarity id of the pieces `set` makes (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; data/lib/chaos_rarity.lua), default 3
+	if rarity and not (rarity >= 1 and rarity <= 5 or rarity == 10) then
+		return nil, usage
+	end
+	return {what = what, rarity = rarity}
 end
 
 H.GEAR_ARMOUR = {helmet = true, armor = true, legs = true}

@@ -92,7 +92,8 @@ return {
 	-- supportShare of the damage
 	-- O475 (2026-11-10): refDps 3000 -> 6900, the Omen guardian factor x2.30 (tools/boss_length_model.py); the raid bosses keep their health
 	-- and so fight 2.3 times shorter in the model: the enrage times stay above them (README "Final re-fit of the balance round (O475)")
-	model = {refDps = 6900, uptime = 0.75, supportEvery = 5, supportShare = 0.6},
+	-- refLevel (O686 phase 3): the level the numbers are planned for, where the spell ranks' monster health factor H is read (Chaos.healthFactor)
+	model = {refDps = 6900, uptime = 0.75, supportEvery = 5, supportShare = 0.6, refLevel = 1000},
 
 	-- ------------------------------------------------------------------ fallen players
 	-- a lethal hit inside the raid is caught: the player lands in the entry hall, healed, and cannot come back into a

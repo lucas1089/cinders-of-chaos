@@ -34,6 +34,7 @@ return {
 			portal = {x = 16794, y = 14352, z = 7}, -- the way in: a bare tile in the middle of the Glacial Col
 			back = {x = 16794, y = 14354, z = 7}, -- where the lair's exit portal leads (the plan's exit.to)
 			minLevel = 500, -- the portal lets nobody in below it: the boss's weakest hit is over 5,000
+			healthLevel = 650, -- O686 phase 3: the level the fight is planned for, where H of the spell ranks is read (Chaos.healthFactor)
 			respawn = 14400, -- seconds; the plan's boss block (4 hours, like Vharzul the Verdant Eye)
 			text = "A rift of frost. Beyond it Talath waits in the Shard Hollow."
 		},
@@ -54,6 +55,7 @@ return {
 			portal = {x = 17494, y = 14568, z = 11}, -- the way in: a bare tile on the Hollow Shelf
 			back = {x = 17494, y = 14570, z = 11}, -- where the lair's exit portal leads (the plan's exit.to)
 			minLevel = 700, -- the portal lets nobody in below it: the mechanics are fair for level 800
+			healthLevel = 800, -- O686 phase 3: the level the fight is planned for (boss_length_model.py ARENA_BOSSES), where H of the spell ranks is read
 			respawn = 14400, -- seconds; the plan's boss block (4 hours, like Talath)
 			text = "A tide that does not fall. Beyond it Malgrath waits in the Drowned Throne."
 		}

@@ -248,6 +248,11 @@ local function spawnPoint(point, noForce)
 	end
 	local sc = A.levelScale(native > 0 and native or point.level, point.level)
 	local hp = math.floor(m:getMaxHealth() * sc.health * (point.healthMult or 1))
+	if point.boss then
+		-- O686 phase 3: x H at the point's level. A plain point of a generated area is paced (pace.lua PC.apply takes H there); a
+		-- boss point is skipped by the pace layer, so it is here
+		hp = Chaos.scaleHealth(hp, point.level)
+	end
 	if hp > 0 and hp ~= m:getMaxHealth() then
 		m:setMaxHealth(hp)
 		m:setHealth(hp)

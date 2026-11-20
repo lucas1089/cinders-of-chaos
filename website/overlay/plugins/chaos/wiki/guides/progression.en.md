@@ -89,6 +89,14 @@ Gifts wait for you at levels {{newplayer.giftLevels}}: potions, orbs and, later,
 - Hunts: Gloomsilt Mire (1800-2200) and Pyrecrown Caldera (1900-2100).
 - Conquest Tokens buy the uniques luck has not given you.
 
+## Level 1500-2500: Waystones, the Greater Rift and the pinnacle
+
+The level cap is 2500. The last stretch has its own content:
+
+- **Waystone tiers XVI to XXV** are made for the top levels. A plain run takes 7 to 13 minutes; the first clear of each tier gives an Atlas point; the last tier of each band has a band boss. The Void Orb corrupts a Magic or Rare waystone for stronger final modifiers, and a 15% chance to break it.
+- **The Greater Rift** starts where rift tier 15 ends and never stops. The key comes from a tier 15 guardian, or from 150 Omen Fragments. A fast clear raises the key by one to three tiers.
+- **The pinnacle bosses** are the Ascended Malgrath (level 1900), Vhoss (2100), Talath (2300) and Varkhul (2500). A set of four fragments from waystone tier 12 and up, rift tier 15 and the Omen guardians opens one fight in a private arena, alone or with up to five players. Each boss has an exclusive unique.
+
 ## Luck and effort
 
 Every drop chance in the game is public: the Item Finder lists it per monster, the [Uniques](wiki:tab:uniques) pages show the expected effort ("~1 in 500 legendary kills") and the [Monsters](wiki:tab:monsters) pages show each loot table. When luck does not come, the Conquest vendor sells what you have seen at a fixed price, and bad-luck protection raises your chance after every miss.

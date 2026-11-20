@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The Beastmaster wolves model (O306, O332; computed, not measured in game; server/README.md "Beastmaster companion (O306)"
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the Beastmaster's totals x its gain, the pack's monsters x H; the wolves' shares do not move. `--check --upgrades` must pass as `--check` does.
 and "Wolves as the main damage (O332)").
 
 usage: python3 -I server/tools/companion_model.py [--levels 50,100,400,750] [--legacy] [--compare] [--check]
@@ -37,6 +38,7 @@ sys.path.insert(0, HERE)
 import rotation_sim as R
 import pack_model as P
 import weapon_growth as WG
+import spell_upgrade_model as SU  # the spell upgrades switch (O686 phase 3): the class's damage x its gain, the pack's monsters x H
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CLASS = 'Beastmaster'
@@ -144,7 +146,7 @@ def pack_of(level, d1, d5):
     """(pack size, clear time) of a class with these damages: pack_model.py's rule"""
     cfg, mons = _pack()
     scaled = level >= 1000
-    hp = P.lin(P.SCALED_HEALTH, level) if scaled else P.median_health(mons, level)
+    hp = P.hunt_health(mons, level, scaled)  # x H of the spell ranks with the upgrades on (O686 phase 3)
     m = P.lin(cfg['scaled'] if scaled else cfg['base'], level)
     p0 = next(p for lo, hi, p, w in P.PACK if lo <= level < hi)
     share = max(0.0, (d5 - d1) / d5) if d5 else 0.0
@@ -167,6 +169,7 @@ def uptime(level, legacy=False):
     the clear time (a dead one is called again between packs)"""
     c, bal = conf()
     d1, d5 = P.damage(CLASS, level, tune=False)
+    d1, d5 = d1 * SU.gain(CLASS, level, 1), d5 * SU.gain(CLASS, level, 5)
     n, clear = pack_of(level, d1, d5)
     count = max(1, cap(c, level))
     incoming = bal['huntAttackers'] / count * monster_dps(level) * bal['burst'] * taken(c, bal, legacy) * bal['alive'] * clear
@@ -312,14 +315,22 @@ def totals(level, build='tree'):
     head1 = (raw1 - old + head_bites) * g_head * gw   # the references of before also grow: the limits bound a build against the class
     head5 = (raw5 - old + head_bites) * g_head * gw
     before1 = raw1 * g_old * gw
-    return {'raw1': raw1, 'raw5': raw5, 'old': old, 'bites': bites, 'spell1': spell1, 'spell5': spell5,
-            'wolf1': wolf1, 'wolf5': wolf5, 'top1': s2t1 * top * g_new * gw, 'set': names,
-            'total1': spell1 + bites, 'total5': spell5 + bites, 'total5c': (spell5 + bites) * cleave(level), 'head5c': head5 * cleave(level, head=True),
-            'share': (wolf1 + bites) / (spell1 + bites),
-            'share5': (wolf5 + bites) / (spell5 + bites), 'spellshare': wolf1 / (spell1 + bites),
-            'bitesshare': bites / (spell1 + bites), 'topshare': s2t1 * top * g_new * gw / (spell1 + bites),
-            'head1': head1, 'head5': head5, 'before1': before1, 's2t1': s2t1, 's2t5': s2t5, 'g_new': g_new,
-            'g_head': g_head, 'g_old': g_old, 'cleave': cleave(level)}
+    out = {'raw1': raw1, 'raw5': raw5, 'old': old, 'bites': bites, 'spell1': spell1, 'spell5': spell5,
+           'wolf1': wolf1, 'wolf5': wolf5, 'top1': s2t1 * top * g_new * gw, 'set': names,
+           'total1': spell1 + bites, 'total5': spell5 + bites, 'total5c': (spell5 + bites) * cleave(level), 'head5c': head5 * cleave(level, head=True),
+           'share': (wolf1 + bites) / (spell1 + bites),
+           'share5': (wolf5 + bites) / (spell5 + bites), 'spellshare': wolf1 / (spell1 + bites),
+           'bitesshare': bites / (spell1 + bites), 'topshare': s2t1 * top * g_new * gw / (spell1 + bites),
+           'head1': head1, 'head5': head5, 'before1': before1, 's2t1': s2t1, 's2t5': s2t5, 'g_new': g_new,
+           'g_head': g_head, 'g_old': g_old, 'cleave': cleave(level)}
+    # O686 phase 3: the upgrades on, every damage of the class (wolves and bites are spell damage, the references of before too) x its gain;
+    # the shares and ratios do not move, the totals do (1.0 while off)
+    u1, u5 = SU.gain(CLASS, level, 1), SU.gain(CLASS, level, 5)
+    for k in ('raw1', 'old', 'bites', 'spell1', 'wolf1', 'top1', 'total1', 'head1', 'before1'):
+        out[k] *= u1
+    for k in ('raw5', 'spell5', 'wolf5', 'total5', 'total5c', 'head5c', 'head5'):
+        out[k] *= u5
+    return out
 
 
 def apply(level, tuned, raw):
@@ -419,6 +430,9 @@ def check(levels=None):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     c, bal = conf()
     levels = tuple(int(x) for x in argv[argv.index('--levels') + 1].split(',')) if '--levels' in argv else tuple(bal['levels'])
     if '--check' in argv:

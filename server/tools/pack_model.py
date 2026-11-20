@@ -2,7 +2,8 @@
 """The pack model: experience per hour of every class in packs, against the median class at the same level (computed,
 not measured; server/README.md "Pack combat (pace)", data/spells/README.md "Pack farming for every class").
 
-usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--rounded] [--top] [--reference] [--frames] [--check]
+usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--rounded] [--top] [--reference] [--frames] [--check] [--upgrades]
+--upgrades  O686 phase 3: the spell upgrades on: class damage x the typical gain (class_dps_model.py), monster health x H (spell_upgrade_model.py)
 --frames  O444: the C4 frame of before O444 next to class_dps_model.py's damage, per class at levels 100, 500, 1000
 
 O444 (2026-11-09): class damage is read from class_dps_model.py (`dps()`: the measured table of 2026-11-06 moved by every change
@@ -50,6 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)  # python -I leaves the script's folder out of sys.path
 import class_dps_model as CD  # noqa: E402  the one source of class damage (O444)
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): monster health x H, class damage x the gain
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 PACE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'pace_config.lua')
 POOL = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'bounty_pool.lua')
@@ -218,6 +220,13 @@ def monsters():
     return out
 
 
+def hunt_health(mons, L, scaled):
+    """the health of the pack's monster at hunting level L: a late set's, else the base median, x H of the spell ranks with the
+    upgrades on (O686 phase 3, pace.lua takes it at the hunting level; 1 while off)"""
+    h = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
+    return h * SU.health(L)
+
+
 def median_health(mons, L):
     # no base monster is hunted above the pool's highest level (O285: hunting level = pool level, 657). The base hunt that
     # the late sets are compared with above it is the top one's monsters with their health grown with the level (the
@@ -302,7 +311,7 @@ def spread(levels=((300, False), (800, False), (1000, True)), cleave=True, kit=T
     mons = mons if mons is not None else monsters()
     out = {c: [] for c in C4}
     for L, scaled in levels:
-        health = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
+        health = hunt_health(mons, L, scaled)
         k = {c: kills_per_hour(c, L, scaled, cfg, health, cleave, kit, rounded, True, frame) for c in C4}
         if against == 'reference':
             ref = reference(L, scaled, cfg, health, rounded)
@@ -318,7 +327,7 @@ def pack_clear(L, scaled, cfg, mons, frame='now'):
     class of today (class_dps_model.py damage, the cleave of pace_config.lua). frame='c4': the median class of the state before
     the class identity pass (C4 + KIT numbers, BASE_CLEAVE), the yardstick the pace curves, the late sets and the tower were
     calibrated against until O444"""
-    health = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
+    health = hunt_health(mons, L, scaled)
     old = frame == 'c4'
     base = dict(cfg, cleave=BASE_CLEAVE) if old else cfg
     rows = sorted((kills_per_hour(c, L, scaled, base, health, True, True, False, not old, frame) + (c,) for c in C4))
@@ -418,6 +427,7 @@ def frames_table(levels=(100, 500, 1000)):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
     if '--frames' in argv:
         print(frames_table())
         return 0

@@ -204,7 +204,8 @@ return {
 	-- of a party healerDps; uptime = the share of the fight spent hitting the boss (moving out of telegraphs, adds)
 	-- O475 (2026-11-10): refDps 3000 -> 6900 and healerDps 2000 -> 4600, the Omen guardian factor x2.30 of tools/boss_length_model.py
 	-- (the health of the Ascended Omens 1.2M -> 2.76M and of the Cinderheart 1.65M -> 3.795M moved with it: the targets below hold)
-	model = {refDps = 6900, healerDps = 4600, uptimeSolo = 0.75, uptimeParty = 0.8},
+	-- refLevel (O686 phase 3): the level the numbers are planned for, where the spell ranks' monster health factor H is read (Chaos.healthFactor)
+	model = {refDps = 6900, healerDps = 4600, uptimeSolo = 0.75, uptimeParty = 0.8, refLevel = 1000},
 	-- the targets the health and enrage numbers were set for (seconds); tests/uber_test.lua keeps them in line. Health
 	-- +100% per extra player: a party of 5 (four damage dealers and a healer) takes as long as one player alone.
 	targets = {

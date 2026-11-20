@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The guardian and rift pack model (O427; computed, not measured in game; server/README.md "Rifts", Guardian damage).
 
-usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check] [--hits] [--warn] [--passes N] [--nocap]
+usage: python3 -I server/tools/guardian_model.py [--legacy] [--tiers 1,5,10,15] [--check] [--hits] [--warn] [--passes N] [--nocap] [--upgrades]
+--upgrades  O686 phase 3: the median class's healing x the heal spells' gain (spell_upgrade_model.py); the guardian's damage, `warn` and `hitCap` are not touched
 
 Owner report 2026-11-06: "the rift bosses hit too little, you can solo them with the Necromancer", then "make the Omen
 bosses hit harder", "the rift monsters are weak too, put more monsters". The model answers, per rift tier and for the Omen
@@ -46,6 +47,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import survival_model as S
 import minion_model as M
+import spell_upgrade_model as SU  # the spell upgrades switch (O686 phase 3): the heal spells' gain (survival_model.py), the guardian's damage is not changed
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 BAL = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'guardian_balance_config.lua')
@@ -765,6 +767,9 @@ def report(res):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     tiers = None
     if '--tiers' in argv:
         tiers = [int(x) for x in argv[argv.index('--tiers') + 1].split(',')]

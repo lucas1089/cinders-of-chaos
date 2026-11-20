@@ -3,7 +3,8 @@
 "Necromancer minions (O160)").
 
 usage: python3 -I server/tools/minion_model.py [--levels 50,200,500,1000] [--class necromancer|lich|bonelord] [--check]
-                                               [--legacy]
+                                               [--legacy] [--upgrades]
+--upgrades  O686 phase 3: every class's damage x its gain (spell_upgrade_model.py), the pack's monsters x H
 
 What it answers, per level: what the minions deal (damage per second of each kind, with its two spells, on 1 and on 5
 enemies), how long they live in a hunt (health against the damage a pack deals to them, deaths per hour, the share of the
@@ -41,6 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import rotation_sim as R
 import pack_model as P
+import spell_upgrade_model as SU  # the spell upgrades switch (O686 phase 3): class damage x the gain, monster health x H
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CLASSES = {'necromancer': 'Necromancer', 'lich': 'Lich', 'bonelord': 'Bone Lord'}
@@ -156,7 +158,7 @@ def regen_rates(data, legacy):
 def pack_of(level, damage1, damage5, cfg, mons):
     """(pack size, clear time, walking time, health per monster) for a class with these damages: pack_model.py's rule"""
     scaled = level >= 1000
-    health = lin(P.SCALED_HEALTH, level) if scaled else P.median_health(mons, level)
+    health = P.hunt_health(mons, level, scaled)  # x H of the spell ranks with the upgrades on (O686 phase 3)
     m = lin(cfg['scaled'] if scaled else cfg['base'], level)
     p0, walk = next((p, w) for lo, hi, p, w in P.PACK if lo <= level < hi)
     share = max(0.0, (damage5 - damage1) / damage5) if damage5 else 0.0
@@ -284,22 +286,24 @@ def model_class(key, level, build=None, legacy=False, tree=None, levels=None):
     kappa1, kappa5 = kappa_at(anchor_kappa(key, tree, mdl), level)
     c4 = c4_dps(data, key, level)
     t1, t5 = c4_totals(data, key, level)
+    # O686 phase 3: the upgrades on, the class's damage (spells, wand and minions: all spell damage) x its gain (1.0 while off)
+    u1, u5 = SU.gain(cls, level, 1), SU.gain(cls, level, 5)
     # the clear time depends on the damage, which depends on the time alive: a few passes
     alive = 1.0
     for _ in range(6):
-        d1 = kappa1 * (s1 + wand + tree * nominal1 * alive)
-        d5 = kappa5 * (s5 + wand + tree * nominal5 * alive)
+        d1 = kappa1 * (s1 + wand + tree * nominal1 * alive) * u1
+        d5 = kappa5 * (s5 + wand + tree * nominal5 * alive) * u5
         n, clear, walk, hp = pack_of(level, d1, d5, c['cfg'], c['mons'])
         fl = fight(data, key, level, kinds, clear, n, legacy)
         alive = fl['alive']
-    d1 = kappa1 * (s1 + wand + tree * nominal1 * alive)
-    d5 = kappa5 * (s5 + wand + tree * nominal5 * alive)
-    full1 = kappa1 * (s1 + wand + tree * nominal1)
-    full5 = kappa5 * (s5 + wand + tree * nominal5)
+    d1 = kappa1 * (s1 + wand + tree * nominal1 * alive) * u1
+    d5 = kappa5 * (s5 + wand + tree * nominal5 * alive) * u5
+    full1 = kappa1 * (s1 + wand + tree * nominal1) * u1
+    full5 = kappa5 * (s5 + wand + tree * nominal5) * u5
     # O444: this model rebuilds the Necromancer from the C4 data of 2026-10-11, so the median it compares with is the C4 frame's
     # (pack_model frame='c4'), not class_dps_model.py's; the boss, pack and tower models read the latter
-    med1 = statistics.median(P.damage(n_, level, frame='c4')[0] for n_ in P.C4)
-    med5 = statistics.median(P.damage(n_, level, frame='c4')[1] for n_ in P.C4)
+    med1 = statistics.median(P.damage(n_, level, frame='c4')[0] * (1.0 if n_ == 'Beastmaster' else SU.gain(n_, level, 1)) for n_ in P.C4)
+    med5 = statistics.median(P.damage(n_, level, frame='c4')[1] * (1.0 if n_ == 'Beastmaster' else SU.gain(n_, level, 5)) for n_ in P.C4)
     return {
         'class': key, 'level': level, 'build': build or bal['defaultBuild'], 'kinds': kinds, 'rows': rows,
         'ml': R.stats(cls, level)['ML'], 'spells1': s1, 'spells5': s5, 'wand': wand, 'c4minions': c4,
@@ -317,13 +321,16 @@ def kills_per_hour(cls, level, d1, d5):
     class's damage row replaced"""
     c = context()
     scaled = level >= 1000
-    health = lin(P.SCALED_HEALTH, level) if scaled else P.median_health(c['mons'], level)
+    health = P.hunt_health(c['mons'], level, scaled)
     real = P.damage
 
     def patched(name, L, kit=True, tune=True, frame='c4'):
         if name == cls and L == level:
-            return d1, d5
-        return real(name, L, kit, tune, frame)
+            return d1, d5  # already with the gain
+        a, b = real(name, L, kit, tune, frame)
+        if name == 'Beastmaster':
+            return a, b  # companion_model.apply() has its own gain in it
+        return a * SU.gain(name, L, 1), b * SU.gain(name, L, 5)
     P.damage = patched
     try:
         mine = P.kills_per_hour(cls, level, scaled, c['cfg'], health, frame='c4')[0]
@@ -389,6 +396,9 @@ def check(levels):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     levels = tuple(int(x) for x in argv[argv.index('--levels') + 1].split(',')) if '--levels' in argv else tuple(dump((1,))['balance']['levels'])
     key = argv[argv.index('--class') + 1] if '--class' in argv else 'necromancer'
     legacy = '--legacy' in argv

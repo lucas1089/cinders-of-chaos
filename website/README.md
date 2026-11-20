@@ -96,6 +96,11 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/seo_lib.php` | SEO and link previews: the `<head>` of every page (title, description, canonical, robots, Open Graph / Twitter tags, icons, JSON-LD on the front page), rewritten at the end of the request (see "SEO and social previews") |
 | `overlay/favicon.ico`, `overlay/site.webmanifest`, `setup/write_seo_files.php` | the web root icon and web manifest; the generator of `robots.txt` and `sitemap.xml` (run by `install_site.sh`) |
 | `tests/chaos_seo_test.php` | `php website/tests/chaos_seo_test.php`: the head of the representative pages, escaping, noindex, the rewrite, the icons and the Open Graph image, the manifest, robots.txt and sitemap.xml, the web server rules (php-cli only) |
+| `overlay/plugins/chaos/news_lib.php`, `pages/news.php`, `news/news_data.json` | the news page "Novidades" / "What is new" (O687): the changes of the game by week, the last 8 weeks in full and the older ones in an archive, pt-BR and en, and the block of the three newest entries on the front page (see "News and changelog (O687)") |
+| `tools/gen_changelog.py`, `tools/changelog_source.json`, `tools/gen_changelog_test.py` | write and check `news_data.json` from the patch notes and the curated player-facing entries; `python3 -I website/tools/gen_changelog.py --check` (CI) |
+| `tests/chaos_news_page_test.php` | `php website/tests/chaos_news_page_test.php`: the data, week labels in both languages, the archive split, escaping, the front page block, both languages of the page, the menu, sitemap and description wiring, pt-BR texts (php-cli only) |
+| `tests/chaos_featured_news_test.php` | `php website/tests/chaos_featured_news_test.php`: featured news (O688): the freshness window, the banner under the hero, the NOVO badge on the news page, the front page block and the menu item, the "Novo" tag on guide cards and server info sections, the `live_when` gate (flag from `CHAOS_LIVE_FLAGS` or the server file, date), the spell upgrade entries gated off (see "Featured news (O688)") |
+| `tools/gen_site_media_clips_test.py`, `tools/ci/clip_tour.sh` (repository root), `client/overlay/modules/test_cliptour/` | the mechanics clips (O687): the check of optional clip files, the three lists of clip ids held equal, the recorder and its test-only client module (see "Mechanics clips (O687)") |
 | `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
 | `overlay/chaos_outfit.php`, `overlay/plugins/chaos/sprite_lib.php` | outfit images with the player's colours, addons and mount; item image URLs; the wiki's real sprites (see "Sprite images") |
 | `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli, zlib only): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
@@ -1121,6 +1126,117 @@ On the VPS, `server/deploy/publish_client_update.sh` (or `chaos-ctl.sh publish-u
 from a release's client zip and checks these headers and a Range request afterwards (docs/LAUNCH.md "Publishing a
 client update").
 
+## News and changelog (O687)
+
+Owner 2026-11-20 (translated): "We need to put the changelog on the site with the news." The page is `page?plugin=chaos&p=news`
+(`&l=en` / `&l=pt-BR`; heading "Novidades" in Portuguese, "What is new" in English). Menu: The World > What is New (made by
+`setup/chaos_setup.php`, once; a site that is already installed gets it at the next `install_site.sh`). The front page shows a block with the
+three newest entries under the trailer and the shorts; the sitemap and the link description list the page. The Patch Notes page stays
+(the full weekly notes); this page is the short story by week.
+
+- **Data.** `overlay/plugins/chaos/news/news_data.json`, written by `python3 -I website/tools/gen_changelog.py` and held by
+  `--check` in CI (`gen_changelog_test.py` runs the rules on a throwaway repository). Shape (`format` 1): `recent_weeks` (8), `latest`
+  (the newest date), `weeks` newest first, each `{start (a Monday), entries}`, each entry `{id, date, kind, patch, title, text,
+  points}` with `en` and `pt-BR` inside `title`, `text` and `points`. `kind` is `new`, `change`, `balance`, `fix` or `patch`.
+- **Two sources.** (1) The patch notes `server/data/patchnotes/*.md` and their pt-BR twins: one `patch` entry per note (title, first
+  paragraph, the bold lead words of the first four bullets of the first section; the "Read the full notes" link goes to the Patch
+  Notes page). The Discord bot's notes land in that folder, so they join the page by themselves at the next run of the generator.
+  (2) `tools/changelog_source.json`: curated entries for what reached the game after the last note, written for players in both
+  languages (`id` slug, `ref`, `kind`, `match`, `en` / `pt-BR` title and text; 21 entries now). `ref` is the ROADMAP row the entry comes
+  from: it must exist and must not be todo, in progress, superseded or waiting (a status of those words is refused); it is never
+  shown. The date of an entry is the day of the latest git commit whose subject holds `match` (default `<ref>:`); a clone without
+  that history (CI checks out one commit) keeps the date the data file already has, so `--check` needs no history, and with the whole
+  history it also holds every curated entry to a commit.
+- **Words for players.** The generator refuses a title or text with a file name, a roadmap number, "opcode", the tester bots, an
+  address, tooling words (CI, workflow, git) or a name that `check_names.py` refuses; a patch note bullet that breaks the rule is left
+  out of the points, not an error. Title at most 90 characters, text 520, no em or en dash (the page test).
+- **Weeks.** Monday to Sunday, newest first; the last `recent_weeks` (8) are in full, older weeks go into a closed `<details>` archive
+  (empty today: the notes start on 2026-10-08, 6 weeks). Raise or cut `recent_weeks` in the source file.
+- **To add an entry.** Write it in `changelog_source.json` (English and pt-BR), be sure its ROADMAP row is done and a commit subject holds
+  its `match`, run `python3 -I website/tools/gen_changelog.py`, commit the data file. Nothing to do for a new patch note.
+- **Launcher feed.** Unchanged: it already shows the site news and the patch notes (as the Changelog) in the launcher, so the same
+  weekly notes reach the launcher; the curated entries are not copied there (they are short stories, the notes are the record).
+- **Text and style.** `chaos_t()` keys with pt-BR in `i18n/pt-BR.php`; rules `.chaos-newsitem*`, `.chaos-newsweek`, `.chaos-newshome*`
+  of `chaos.css`. Test: `tests/chaos_news_page_test.php`.
+
+## Featured news (O688)
+
+Owner 2026-11-20 (translated): "When announcing new things on the site, like this spell combo, the spell upgrade and everything, give them a highlight so people see there is something new."
+
+A curated entry of `tools/changelog_source.json` can be featured and can wait for its system. Nothing is edited by hand per release: the front page, the news page, the menu, the guide and the server info page read `news/news_data.json`.
+
+- **Featured.** `featured: true` on an entry, plus a `feature` block: `en` and `pt-BR` `headline` (at most 60 characters) and `pitch` (one line, at most 140), an optional `clip` (a slot id of the mechanics clips: the id list is `CLIPS` of `gen_site_media.py`), an optional `target` (`guide:<card key>` of the beginner guide, or `serverinfo:<section id>`) and an optional `rank` 1 to 99 that orders entries of the same day, lower first. A featured entry with no block shows its title and text. The generator refuses an unknown clip or target, a block without `featured`, a text that is not player words and a text over the limits. It carries `featured_days` (default 30, 1 to 120) and `featured_max` (default 3, 1 to 6) from the source file into the data.
+- **Fresh.** A featured entry is fresh while its date is less than `featured_days` days before today (site time, America/Sao_Paulo). An entry dated tomorrow is not fresh. Everything below follows the same rule, so a highlight ends by itself.
+- **Banner.** `chaos_news_banner_html()` (`news_lib.php`), called by the front page view right under the hero, above the trailer. Fresh featured entries, newest day first, then lower `rank`, then file order, at most `featured_max`. A card has a NOVO / NEW badge in the heading, the date, the headline as a link to the entry on the news page, the pitch, a "Leia mais" button and a link to the guide card or the server info section. The picture is the poster of the entry's clip when it is recorded, else the still of that clip slot, else none: the card is text only, nothing external is loaded. Three columns, one column on a phone (900 px), gold trim and a faint glow from the site's colour tokens. The badge pulse runs only without `prefers-reduced-motion: reduce`.
+- **Badges and tags.** Every fresh featured entry, not only the three of the banner, wears the badge on the news page and in the front page news block. The menu item that leads to the news page gets a small badge while any featured entry is fresh and live: the output callback of `plugin.php` (`chaos_seo_output`) adds it to links to `page?plugin=chaos&p=news` that carry no class of ours (the menu's own links), so nothing is stored in the menu table and no installer step is needed. The guide card (`id="card-<key>"`) and the server info section a fresh featured entry points at get a "Novo" tag on their heading, from `chaos_news_fresh_targets()`.
+- **Gate.** An entry with `live_when` is in the data file but every page leaves it out until the gate opens. `flag:<key>` reads the key from three places: `$config['chaos']['live']` (`CHAOS_LIVE_FLAGS` of `site.env`: `spell_upgrades` or `spell_upgrades=2026-12-05`, written by `setup/write_config.php`), and the server file `data/scripts/chaos/live_flags.lua` of `CHAOS_SERVER_DATA` (lines `name = true` or `name = "2026-12-05"`, so the game server can publish the switch). The config wins, `false` removes the flag. A flag set to a day is live from that day and not before. `date:YYYY-MM-DD` opens on that day. A gate the site cannot read reads as off. A live entry is dated by the later of its own date and its gate, and sits in the week it went live, so a banner entry is fresh from the switch-on day and not from the day it was written. The ROADMAP row of a gated entry only has to exist (the system may not be built yet). A `flag:` gate needs `date`, the day the entry was written; a `date:` gate takes its date from the gate and refuses `date`.
+- **Limit.** The text of a gated entry is in `news_data.json`, which a visitor can fetch by its address. Gating hides it from every page, it does not make it secret. Write nothing in a gated entry that must stay private.
+- **Spell upgrades, gated.** Four entries wait for `flag:spell_upgrades`: `spell-ranks` (rank 0 to 20 from the experience of kills, about 25% at rank 20, monsters get more health), `spell-forms` (a Form at rank 10 and at rank 20), `spell-awakening` (up to three awakened spells, Seals from pinnacle bosses, the Greater Rift and waystone tiers XVI to XXV) and `spell-combos` (two spells inside 4 seconds, Steam Burst and the other element combos, 10% to 20% on the hit, signature combos from rank 5, monsters only). `spell-ranks` and `spell-combos` are featured and point at the guide card `spellbook`. The numbers come from `docs/SPELL_UPGRADES.md`, a design the owner has not approved yet: read the entries against that document before the switch-on and change any number that moved.
+- **Featured today.** `loot-explosion` (rank 10, clip `loot-explosion`, guide card `autoloot`), `pinnacle` (20, `pinnacle`, `bosses`), `greater-rift` (30, `rift`, `rift`) and `waystone-endgame` (40, server info `endgame`). The banner shows the first three; the fourth wears the badge on the news page and the Endgame section of the server info page has its tag.
+- **To feature a release.** (1) Write the entry in `changelog_source.json` as for O687 (both languages, row done, a commit subject holds `match`). (2) Add `"featured": true` and the `feature` block. (3) `python3 -I website/tools/gen_changelog.py`, commit the data file. (4) Deploy the site (`install_site.sh`). The banner, badges and tags appear and leave 30 days after the entry date. To end one early, drop `featured`.
+- **To switch the spell system on.** (1) The game system ships. (2) Read the four entries against the shipped numbers and fix them. (3) Set `CHAOS_LIVE_FLAGS=spell_upgrades` in `site.env` and run `install_site.sh` (or `spell_upgrades = true` in `live_flags.lua` on the server), or set `CHAOS_LIVE_FLAGS=spell_upgrades=YYYY-MM-DD` for a day. (4) Nothing else: the banner, the badges, the menu badge and the Spellbook tag come with it. Without the flag nothing about the system shows.
+- **Tests.** `tests/chaos_featured_news_test.php` (the freshness edges, the order and the cap, the banner card and its escaping, every gate form and the flag sources, the badges, the menu item, the tags, the front page, news, guide and server info pages with the clock and the flags set, the shipped entries, `CHAOS_LIVE_FLAGS`, the pt-BR texts and the stylesheet rules) and `tools/gen_changelog_test.py` (the new keys, every refusal, the gates, a clean `--check` with gated entries and the shipped source). The existing `tests/chaos_news_page_test.php` counts the entries a page shows as the live ones.
+
+## Mechanics clips (O687)
+
+Owner 2026-11-20 (translated): "We also need some GIFs of mechanics and content we have, and photos, to catch players' attention."
+GIFs are bigger and worse than H.264, so the clips are short muted looping MP4 files (7 to 8 seconds, 960x540, 24 frames a second,
+no sound track, about 450 KB each) with a JPG poster; no GIF is needed anywhere (a browser that plays `<video loop muted playsinline>`
+is every browser the site supports).
+
+- **Slots.** The front page has a section "O jogo em ação" / "The game in action" (`#in-action`, `media_lib.php`
+  `chaos_media_action_slots()`) with ten slots, in this order: loot explosion, loot beams, a rift (key to guardian), a pinnacle boss
+  telegraph, the passive tree window, the Ember Descent boons, the Infinity Tower, dungeon cards, cosmetics (wings, outfits, auras),
+  spell effects. A slot shows `clip-<id>.mp4` when the manifest lists it with `clip-<id>.jpg` (the poster); else the O425 still of
+  its slot (the rift, the pinnacle boss, the passive tree, the tower and the spell effects use `shot-rift`, `shot-boss`,
+  `shot-passive-tree`, `shot-tower` and `shot-ice`, which then leave the gallery so no picture shows twice); else nothing. So the page
+  is whole before any clip is recorded, and a missing file never leaves a broken player.
+- **Behaviour.** `assets/js/chaos-media.js`: a clip plays while at least a third of it is on screen and pauses when it leaves, without
+  controls; with reduced motion or data saving, without script or without `IntersectionObserver` it keeps its controls and its poster
+  and plays on a tap. `preload="none"`, so nothing is downloaded before the script needs it. Stills open the lightbox of the gallery.
+- **Files and budget.** `assets/media/clip-<id>.mp4` (at most 700 KB) and `.jpg` (90 KB), ten pairs at most 9 MB, on top of the 25 MB
+  of the trailer, shorts and gallery (the page stays under 34 MB; reason: ten loops at about 480 kb/s). `gen_site_media.py --check`
+  treats a clip pair that is not there as planned, and a half pair, a file over budget, an unknown clip and a wrong hash as problems;
+  `gen_site_media_clips_test.py` runs those cases and holds the ids of `CLIPS`, of the PHP slots and of the recorder equal.
+- **Recording plan (not run yet; the coordinator runs it when the local server is free).** The recorder is `tools/ci/clip_tour.sh GAME_DIR
+  ENV_FILE OUT_DIR` with the test-only client module `test_cliptour` (armed by `CHAOS_CLIPTOUR=1`, the pattern of `loot_video.sh` and
+  `test_loottour`). It needs: the assembled and built main client (`chaos-client`, the stock ports), Xvfb, ffmpeg and ffprobe, and a
+  server of this commit with the test helper (`tools/ci/unity_live_check.sh --serve-only` with `UL_LOOT_TESTER=1` makes the server and
+  `client-chaos.env`; the helper `!tester` lines are the staging: `explode run | set`, `riftrun layout`, `pinnacle set | path`, `descent
+  sigil`, `dummy give | path`; the windows are toggled through their modules). The character should be around level 1900 with the Auto
+  setup done (attack spells on F1 to F4) so the pinnacle and spell shots look right; the test character's name is blurred by the build.
+  The tour logs in, enters, then plays each shot: its helper lines, `cliptour: begin ID SECONDS` (the script starts a 1920x1080 x11grab
+  of that many seconds on that line), the action, `cliptour: end ID`, the cleanup. About 3 minutes of shots plus the login (the first
+  ready line within 8 minutes), 10 to 20 minutes with the start of the client. Six shots are `ready` (their steps are windows and
+  helper lines the loot tour already proved); `rift`, `pinnacle`, `ember-descent` and `spell-effects` are `check`: documented helper
+  lines never filmed. **First run `CLIP_DRY=1 tools/ci/clip_tour.sh ...`**: it plays everything, records nothing and the log says
+  what every line answered; fix a line in `cliptourlogic.lua` `SHOTS` when one says unknown. Then `CLIP_SHOTS=loot-explosion,loot-beams`
+  (or none for all) records `OUT_DIR/<id>.mp4`; copy them to `SRC/rec/loops/` and run `python3 -I website/tools/gen_site_media.py
+  --build-clips SRC` (ffmpeg; cuts `CLIPS`, blurs the name, makes the posters, writes the manifest), then `--check` and commit the
+  `clip-*` files and `manifest.json`. No frame of the sprite pair is viewed or sent anywhere: the only pictures are those MP4 files.
+- **Photos.** Each clip's poster is a still (960 wide) and the gallery keeps the eight screenshots of O425 (1280 wide); a new still
+  needs a source clip in `GALLERY` and a rebuild with `--build`.
+- **Already in the media of O425.** The three shorts (`short-classes`, `short-boss`, `short-rift`) stay in the "Quick looks" strip; the
+  screenshots `shot-rift`, `shot-boss`, `shot-passive-tree`, `shot-tower` and `shot-ice` stand in the slots of the clips until those exist.
+
+## Site facts audit (O687)
+
+Checked 2026-11-20 against the game: max level 2500 (O672), 7 class lines and 14 ascensions (21 vocations), the content list, the
+rates and prices (`docs/PRICES.md`; the coin packs are read from `shop_coins_config.lua`, so the donation page cannot drift), the
+dates (`calendar_data.json` is generated from `season_config.lua`; the launch is still open), the downloads (`downloads.json` and the
+launcher feed are written by the server update). The generated data (wiki, guide, starter builds, calendar, promo and streamer kits,
+credits) was already current; the hand-written texts were not. Stale and fixed: the server info page said level cap 1000 (now 2500),
+"roughly 100 hours" to 1000 (the progression model says 117, now "roughly 115"), "about 50 uniques" (182 in the Codex: "over 180", also
+on the front page and in pt-BR), rift keys "10-minute instance for up to 3 party members" (the maps run 12 to 15 minutes by size and take
+5 players), "17 level-scaled monsters (levels 650-1000)" (hunting grounds now run to level 2000), a treasure goblin that escapes
+"after 18 seconds" (30), the front page's "Rifts: tiers 1-15" (adds the Greater Rift), "7 classes" in the hero facts (21 with the
+ascensions). Missing and added: the Greater Rift, the Waystone Atlas to tier XXV, the pinnacle bosses, the Ember Descent, the loot
+explosion and beams and the three keystone limit (server info page, the progression, rifts and items guides in both languages), the
+news page and the clips. Where a number lives: the level cap and the pinnacle levels in ROADMAP O666 to O672, the hours to level 1000 in
+`server/tools/progression_model.lua`, the uniques in the Uniques tab of `server/tools/gen_codex_data.lua`, the rift limits in
+`rift_config.lua`, the goblin in `treasure_goblin_config.lua`. When one of them changes, change these texts too:
+`layouts/chaos/views/serverinfo.php`, `views/index.php` (and its pt-BR keys), `i18n/pt-BR.php`, the guides under `wiki/guides/`.
+
 ## Launcher feed
 
 The game launcher (`launcher/`, ROADMAP O314) shows News and a Changelog next to the Play button. It reads one public
@@ -1385,7 +1501,7 @@ Test: `tests/chaos_media_page_test.php`.
 - **Files**: `overlay/plugins/chaos/assets/media/`, copied with the rest of the plugin by `install_site.sh` (no extra
   step). `trailer.<lang>.mp4` (1280x720, about 4.8 MB, one minute), `short-classes|boss|rift.<lang>.mp4` (720x1280, 1.3 to
   1.9 MB), a poster `.jpg` for each, `shot-*.jpg` (8 gallery frames, 1280 wide) and `manifest.json` (size and SHA-256).
-  `<lang>` is `en` or `pt-BR`. Total 20.8 MB; the budget is 25 MB, a trailer 6 MB, a short 3 MB.
+  `<lang>` is `en` or `pt-BR`. Total 20.8 MB; the budget is 25 MB, a trailer 6 MB, a short 3 MB. The ten looping clips of O687 have a budget of their own, 9 MB more (see "Mechanics clips (O687)").
 - **Make them**: the recordings are not in git (docs/PROMO.md). `python3 -I website/tools/gen_site_media.py --build SRC`
   needs ffmpeg and a folder `SRC` with `montagens/` (the output of `gen_promo_montage.py`) and `rec/clips/` (the raw
   clips the gallery frames come from). H.264 high, `-crf 30` with a `maxrate` cap, AAC 48 kb/s (the music is the game's

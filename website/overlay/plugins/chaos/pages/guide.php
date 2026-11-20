@@ -7,6 +7,7 @@
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../guide_lib.php';
 require_once __DIR__ . '/../i18n_lib.php';
+require_once __DIR__ . '/../news_lib.php';
 $GLOBALS['page_title'] = chaos_t('Start here');
 
 $self = 'page?plugin=chaos&p=guide';
@@ -14,6 +15,7 @@ $data = chaos_guide_data();
 $sections = chaos_guide_view($data);
 $lang = chaos_lang();
 $headings = $data['headings'];
+$fresh = chaos_news_fresh_targets(); // cards a fresh featured news entry points at get a "Novo" tag (O688)
 ?>
 <div class="chaos-page" id="chaos-guide">
 	<div class="chaos-box">
@@ -40,7 +42,7 @@ $headings = $data['headings'];
 				<?php if ($s['id'] === 'steps'): ?>
 					<ol class="chaos-guide-steps">
 						<?php foreach ($s['groups'][0]['cards'] as $c): ?>
-							<li><?= chaos_guide_card_html($c[0], $c[1], $c[2], $headings, $lang) ?></li>
+							<li><?= chaos_guide_card_html($c[0], $c[1], $c[2], $headings, $lang, isset($fresh['guide:' . $c[0]])) ?></li>
 						<?php endforeach; ?>
 					</ol>
 				<?php else: ?>
@@ -49,7 +51,7 @@ $headings = $data['headings'];
 							<h3 class="chaos-guide-level" id="<?= chaos_h($g['id']) ?>"><?= chaos_h(chaos_t('Opens at level %d', (int)$g['level'])) ?></h3>
 						<?php endif; ?>
 						<div class="chaos-guide-cards">
-							<?php foreach ($g['cards'] as $c): ?><?= chaos_guide_card_html($c[0], $c[1], $c[2], $headings, $lang) ?><?php endforeach; ?>
+							<?php foreach ($g['cards'] as $c): ?><?= chaos_guide_card_html($c[0], $c[1], $c[2], $headings, $lang, isset($fresh['guide:' . $c[0]])) ?><?php endforeach; ?>
 						</div>
 					<?php endforeach; ?>
 				<?php endif; ?>

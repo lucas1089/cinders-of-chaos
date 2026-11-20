@@ -202,6 +202,10 @@ local function setup(monster, data)
 	local pos = monster:getPosition()
 	local level = data.level or G.areaLevel(c, 0, nearbyPlayerLevels(pos, c.level.playerRadius), data.maxHealth or 0)
 	local real = G.realHealth(c, level, data.maxHealth)
+	if real == G.realHealth(c, level, 0) then
+		-- O686 phase 3: the health came from the level, not from the replaced monster (which the pace layer already scaled): x H (1 while off)
+		real = Chaos.scaleHealth(real, level)
+	end
 	local variant = variantOf(data.variant or monster:getName())
 	local st = {
 		id = monster:getId(), level = level, real = real, bornAt = nowMs(), seen = {}, attackers = {},

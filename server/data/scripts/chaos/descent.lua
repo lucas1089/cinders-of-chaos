@@ -748,7 +748,8 @@ local function spawnOne(run, name, pos, tier, opts)
 		ChaosApplyTier(m, tier)
 	end
 	local paceHealth, paceDamage = paceFactors(name)
-	local hp = math.max(1, math.floor(m:getMaxHealth() * run.esc.health * (opts.healthMult or 1) * paceHealth))
+	-- O686 phase 3: x H of the spell ranks at the party's level (rooms and boss: both come through here); 1 while off
+	local hp = math.max(1, math.floor(m:getMaxHealth() * run.esc.health * (opts.healthMult or 1) * paceHealth * Chaos.healthFactor(run.level)))
 	X.monsterDamage[m:getId()] = paceDamage * (opts.damage or 1)
 	if hp > 0 and hp ~= m:getMaxHealth() then
 		m:setMaxHealth(hp)

@@ -28,6 +28,18 @@ function int_list(string $csv): array {
 	return $out;
 }
 
+/** CHAOS_LIVE_FLAGS "spell_upgrades,other=2026-12-05" -> array('spell_upgrades' => true, 'other' => '2026-12-05') (news_lib.php, O688). */
+function live_flags(string $csv): array {
+	$out = array();
+	foreach (explode(',', $csv) as $item) {
+		$item = trim($item);
+		if (preg_match('/^([a-z][a-z0-9_]{1,40})(?:=(\d{4}-\d{2}-\d{2}))?$/', $item, $m)) {
+			$out[$m[1]] = isset($m[2]) ? $m[2] : true;
+		}
+	}
+	return $out;
+}
+
 function export($value): string {
 	return var_export($value, true);
 }
@@ -298,6 +310,7 @@ $out = "<?php\n"
 		'staff_account_type' => 5,
 		'base_classes' => array(4, 3, 1, 11),
 		'depot_boxes' => env('CHAOS_DEPOT_BOXES', '0') === '1',
+		'live' => live_flags(env('CHAOS_LIVE_FLAGS')), // systems switched on for the news gates (plugins/chaos/news_lib.php, O688)
 	)) . ";\n";
 
 echo $out;

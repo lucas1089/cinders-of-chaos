@@ -351,9 +351,12 @@ end
 -- ======================================================================== spawning
 local pendingRename -- set around Game.createMonster; the onSpawn callback below renames before the placement
 
-local function scaleMonster(monster, scale)
-	if scale and scale.hp and scale.hp ~= 1 then
-		local hp = math.max(1, math.floor(monster:getMaxHealth() * scale.hp))
+-- ranked: the monster is new (the invasion's spawn), so it takes H of the spell ranks at the area level (O686 phase 3, 1 while off);
+-- a later scaling of a living invader (the occupation's hpMult) does not take it twice
+local function scaleMonster(monster, scale, ranked)
+	local mult = (scale and scale.hp or 1) * (ranked and Chaos.healthFactor(state.area and state.area.level) or 1)
+	if mult ~= 1 then
+		local hp = math.max(1, math.floor(monster:getMaxHealth() * mult))
 		monster:setMaxHealth(hp)
 		monster:setHealth(hp)
 	end
@@ -394,7 +397,7 @@ local function spawnOne(name, pos, tier, scale, info, rename)
 	if tier and tier ~= "normal" and ChaosApplyTier then
 		ChaosApplyTier(monster, tier)
 	end
-	scaleMonster(monster, scale)
+	scaleMonster(monster, scale, true)
 	info.scale = scale
 	info.typeName = name -- its attack list for the clash (O410)
 	info.side = info.side or state.factionKey
@@ -521,8 +524,9 @@ local function spawnWave(i)
 				local monster = spawnOne(boss.name, bp, boss.tier, {hp = 1, dmg = boss.dmg, xp = boss.xp},
 					{wave = i, boss = true, side = b.side.key}, boss.rename)
 				if monster then
-					monster:setMaxHealth(boss.health)
-					monster:setHealth(boss.health)
+					local bossHealth = Chaos.scaleHealth(boss.health, state.area and state.area.level) -- O686 phase 3: x H at the area level
+					monster:setMaxHealth(bossHealth)
+					monster:setHealth(bossHealth)
 					local id = monster:getId()
 					state.bossIds[id] = b.side.key
 					state.sideBoss[b.side.key] = {name = monster:getName(), hp = 100, alive = true, id = id}

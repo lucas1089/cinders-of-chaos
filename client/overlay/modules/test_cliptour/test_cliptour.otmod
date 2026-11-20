@@ -1,0 +1,12 @@
+Module
+  name: test_cliptour
+  description: TEST ONLY (tools/ci/clip_tour.sh, O687) - with the environment variable CHAOS_CLIPTOUR=1 it logs in with the account of CHAOS_LIVE_ACCOUNT / _PASSWORD, enters the game, plays the shots of CHAOS_CLIPTOUR_SHOTS (helper lines, windows, the map zoom, hotkeys) and writes a begin line for each, so a script can record every mechanics clip of the website. Without the variable it does nothing, no window, no hotkey, not in the hub menu
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ cliptourlogic, cliptour ]
+  dependencies:
+    - client_entergame
+  autoload: true
+  autoload-priority: 1200
+  @onLoad: ChaosClipTour.init()
+  @onUnload: ChaosClipTour.terminate()

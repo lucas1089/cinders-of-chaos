@@ -112,8 +112,10 @@ function PC.apply(m, include)
 		return false
 	end
 	local f = P.factors(c, level, scaled, generated)
-	if f.health ~= 1 then
-		local hp = P.scaleHealth(m:getMaxHealth(), f.health)
+	-- O686 phase 3: x H of the spell ranks at the hunting level (1 while the ranks are off)
+	local health = f.health * Chaos.healthFactor(level)
+	if health ~= 1 then
+		local hp = P.scaleHealth(m:getMaxHealth(), health)
 		m:setMaxHealth(hp)
 		m:setHealth(hp)
 	end

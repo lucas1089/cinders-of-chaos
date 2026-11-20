@@ -125,7 +125,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 32
+HELPER_VERSION = 35
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -178,7 +178,8 @@ end
 
 local function info(player)
 	local hp, mp = ItemType(7618), ItemType(7620)
-	local data = {cid = player:getId(), level = player:getLevel(), pos = posOf(player:getPosition()),
+	local voc = player:getVocation()
+	local data = {cid = player:getId(), level = player:getLevel(), voc = voc and voc:getId() or nil, pos = posOf(player:getPosition()), -- O685: the class changes in a run (ascension)
 		potions = {health = hp and hp:getClientId() or 0, mana = mp and mp:getClientId() or 0}}
 	for line, e in pairs(tierPotions()) do -- O681: a flask of the model's tier that the bot carries is the potion it drinks
 		local okC, n = pcall(function() return player:getItemCount(e.id) end)
@@ -1514,7 +1515,7 @@ function commands.tower(player, arg)
 	tell(player, "tower", H.towerAnswer(probe))
 end
 
--- "!tester trial [state | path | close]": reads ChaosTrials.probe (the family of the vocation, the next tier and its stages, inside the stage, the
+-- "!tester trial [state | path | close | clear [N]]" (`clear` O685, TEST ONLY: the cleared tier of a family whose trial is a puzzle the bots do not play): reads ChaosTrials.probe (the family of the vocation, the next tier and its stages, inside the stage, the
 -- kills, the lives, the guardian); `path` and `close` as for the tower (`close` is the Leave button: a failed run with no cooldown)
 function commands.trial(player, arg)
 	local what, usage = H.parseTrial(arg)
@@ -1525,6 +1526,19 @@ function commands.trial(player, arg)
 	local TT = ChaosTrials
 	if not (TT and TT.probe) then
 		tell(player, "trial", {err = "no trial system"})
+		return
+	end
+	if what == "clear" then
+		-- O685, TEST ONLY: the cleared tier of the family whose trial the bots cannot play (seals, marks), through the trials' own storage, logged
+		local n = select(2, H.parseTrial(arg))
+		local tier, why = nil, "no trial system"
+		if TT.testerClear then
+			tier, why = TT.testerClear(player, n)
+		end
+		if tier then
+			print(string.format("[tester-helper] trial clear: %s tier %d (TEST ONLY)", player:getName(), tier))
+		end
+		tell(player, "trial", H.trialAnswer(TT.probe(player), tier and {set = tier} or {err = why or "refused"}))
 		return
 	end
 	if what == "close" then
@@ -1772,6 +1786,189 @@ local function gearWorn(player)
 	return worn
 end
 
+-- "!tester loadout [cards ELEMENT | support KEY,KEY WORDS;WORDS]" (O685, TEST ONLY): what a well-built player of the level carries besides gear.
+--   cards ELEMENT      the cards of the best set of the class: per spell family the character casts that has a card of the element, one card (up to
+--                      the 5 slots), put in the Deck (the Deck opened: the main quest step is the player's) and turned on by the cards' own toggle
+--   support KEY,KEY W  a Mythic rune of each support key socketed (ChaosSupports.socket, the window's own rule: the kind of the spell, the slots) into each
+--                      spell whose words are named; a rune that does not fit is taken away again
+-- An unknown subcommand answers the state: the cards that are on and the runes of the spells that carry one.
+local function loadoutState(player)
+	local out = {cards = {}, supports = {}}
+	local C = ChaosCardsConfig
+	if C and C.cards then
+		for id, c in pairs(C.cards) do
+			if c.storage and player:getStorageValue(c.storage) == 1 and c.kind ~= "legendary" then
+				out.cards[#out.cards + 1] = {id = id, spell = c.spell, element = c.element}
+			end
+		end
+		table.sort(out.cards, function(a, b) return a.id < b.id end)
+	end
+	local S = ChaosSupports
+	if S and S.catalog and S.read then
+		for id, info in pairs(S.catalog()) do
+			local ok, sock = pcall(S.read, player, id)
+			if ok and sock then
+				local runes = {}
+				for _, r in ipairs(sock.runes or {}) do
+					if r and r > 0 then
+						runes[#runes + 1] = r
+					end
+				end
+				if #runes > 0 then
+					out.supports[#out.supports + 1] = {spell = info.name, words = info.words, runes = runes}
+				end
+			end
+		end
+		table.sort(out.supports, function(a, b) return a.words < b.words end)
+	end
+	return out
+end
+
+local function loadoutCards(player, element)
+	local C, D, S = ChaosCardsConfig, ChaosCardDeck, ChaosSupports
+	if not (C and C.cards and D and D.add and ChaosCards and ChaosCards.toggle and S and S.spellInfo) then
+		return {err = "no cards system"}
+	end
+	local voc, level = player:getVocation():getId(), player:getLevel()
+	local function castable(card)
+		for _, sp in ipairs(card.spells or {}) do
+			local info = S.spellInfo(sp[2])
+			if info and info.level <= level and (info.vocations[voc] or next(info.vocations) == nil) then
+				return true
+			end
+		end
+		return false
+	end
+	local byFamily, order = {}, {}
+	for id, c in pairs(C.cards) do
+		if c.kind == "convert" and c.element == element and castable(c) and not byFamily[c.family] then
+			byFamily[c.family] = id
+			order[#order + 1] = c.family
+		end
+	end
+	table.sort(order)
+	if D.unlock then
+		D.unlock(player)
+	end
+	local picked = {}
+	for _, f in ipairs(order) do
+		if #picked < (C.maxActive or 5) then
+			picked[#picked + 1] = byFamily[f]
+		end
+	end
+	-- the cards that are on and not wanted go off first (a card per convert line: the highest card on decides the line's element)
+	for id, c in pairs(C.cards) do
+		if c.kind ~= "legendary" and c.storage and player:getStorageValue(c.storage) == 1 then
+			local keep = false
+			for _, w in ipairs(picked) do
+				keep = keep or w == id
+			end
+			if not keep then
+				ChaosCards.toggle(player, id)
+			end
+		end
+	end
+	local on = {}
+	for _, id in ipairs(picked) do
+		D.add(player, id, 1)
+		if player:getStorageValue(C.cards[id].storage) ~= 1 then
+			ChaosCards.toggle(player, id)
+		end
+		if player:getStorageValue(C.cards[id].storage) == 1 then
+			on[#on + 1] = {id = id, spell = C.cards[id].spell}
+		end
+	end
+	return {element = element, cards = on, set = #on >= ((C.sets and C.sets.need) or 3)}
+end
+
+local function loadoutSupports(player, keys, wordsList)
+	local S = ChaosSupports
+	local SC = S and (S.config or ChaosSupportsConfig)
+	if not (S and S.catalog and S.socket and S.runeId and SC and SC.supports) then
+		return {err = "no supports system"}
+	end
+	local idx = {}
+	for i, t in ipairs(SC.supports) do
+		idx[t.key] = i
+	end
+	local byWords = {}
+	for _, info in pairs(S.catalog()) do
+		byWords[info.words] = info
+	end
+	local out, capWas = {}, player:getCapacity()
+	player:setCapacity(capWas + 1000000)
+	for _, words in ipairs(wordsList) do
+		local info = byWords[words]
+		local row = {words = words, name = info and info.name, kind = info and info.kind, put = {}, refused = {}}
+		out[#out + 1] = row
+		if info then
+			for _, key in ipairs(keys) do
+				local typ = idx[key]
+				if typ then
+					local rune = S.runeId(typ, SC.levels or 5)
+					local item = player:addItem(rune, 1)
+					local ok, why
+					if item then
+						ok, why = S.socket(player, info.id, rune)
+						if not ok then
+							player:removeItem(rune, 1)
+						end
+					else
+						why = "no room"
+					end
+					if ok then
+						row.put[#row.put + 1] = key
+					else
+						row.refused[#row.refused + 1] = key .. ": " .. tostring(why):sub(1, 50)
+					end
+				end
+			end
+		end
+	end
+	player:setCapacity(capWas)
+	return {supports = out}
+end
+
+function commands.loadout(player, arg)
+	if ChaosPinnacle and ChaosPinnacle.isInside and ChaosPinnacle.isInside(player) then
+		tell(player, "loadout", {err = "not inside a fight"})
+		return
+	end
+	local sub, rest = tostring(arg or ""):match("^%s*(%a*)%s*(.-)%s*$")
+	local ok, got
+	if sub == "cards" and rest ~= "" then
+		ok, got = pcall(loadoutCards, player, rest:sub(1, 1):upper() .. rest:sub(2):lower())
+	elseif sub == "support" and rest ~= "" then
+		local keys, words = rest:match("^([%w,]+)%s+(.+)$")
+		if not keys then
+			tell(player, "loadout", {err = "usage: loadout support KEY,KEY WORDS;WORDS"})
+			return
+		end
+		local list, kl = {}, {}
+		for w in words:gmatch("[^;]+") do
+			list[#list + 1] = w:match("^%s*(.-)%s*$")
+		end
+		for k in keys:gmatch("[^,]+") do
+			kl[#kl + 1] = k
+		end
+		ok, got = pcall(loadoutSupports, player, kl, list)
+	else
+		ok, got = true, nil
+	end
+	if not ok then
+		tell(player, "loadout", {err = "loadout failed: " .. tostring(got):sub(1, 80)})
+		return
+	end
+	if got and not got.err then
+		print(string.format("[tester-helper] loadout %s: %s (TEST ONLY)", player:getName(), tostring(sub)))
+	end
+	local state = loadoutState(player)
+	for k, v in pairs(got or {}) do
+		state[k] = v
+	end
+	tell(player, "loadout", state)
+end
+
 function commands.gear(player, arg)
 	local want, usage = H.parseGear(arg)
 	if not want then
@@ -1811,15 +2008,16 @@ function commands.gear(player, arg)
 			local ok, why = pcall(function()
 				local old = player:getSlotItem(slot)
 				if old and old:getId() == p.id then
-					local il = 0
+					local il, rar = 0, want.rarity or GEAR_RARITY
 					pcall(function() il = ChaosCrafting.levelOf(old) or 0 end)
-					if il >= level then
-						return "worn" -- the piece of the plan, at this level, is on already
+					pcall(function() rar = ChaosCrafting.rarityOf(old) or rar end)
+					if il >= level and rar == (want.rarity or GEAR_RARITY) then
+						return "worn" -- the piece of the plan, at this level and rarity, is on already
 					end
 				end
 				local item
 				if ChaosCrafting and ChaosCrafting.createItem then
-					item = ChaosCrafting.createItem(p.id, GEAR_RARITY, level)
+					item = ChaosCrafting.createItem(p.id, want.rarity or GEAR_RARITY, level)
 				else
 					item = Game.createItem(p.id, 1)
 				end

@@ -666,8 +666,11 @@ local function spawn(run, name, pos, kind, opts)
 	if opts.tier and opts.tier ~= "normal" and ChaosApplyTier then
 		pcall(ChaosApplyTier, m, opts.tier)
 	end
-	if opts.mult and opts.mult ~= 1 then
-		setHealth(m, m:getMaxHealth() * opts.mult)
+	-- O686 phase 3: every monster of the raid, trash and bosses, x H of the spell ranks at the planned level (model.refLevel, 1000);
+	-- bossBase is read after this, so the party curve and the retry keep it. 1 while the ranks are off
+	local hf = Chaos.healthFactor(C().model.refLevel)
+	if (opts.mult and opts.mult ~= 1) or hf ~= 1 then
+		setHealth(m, m:getMaxHealth() * (opts.mult or 1) * hf)
 	end
 	if kind == "boss" and ChaosGapFx then -- O606
 		ChaosGapFx.on(m, "spawn_in")

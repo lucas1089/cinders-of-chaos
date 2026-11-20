@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Spell modifier masteries (O451): what each choice gives, computed, not measured.
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the masteries are on the ranked hit and are shares of the class damage, so nothing moves (the run says so). `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/spell_mastery_model.py [--check] [--table] [--detail CHOICE_ID]
 
@@ -50,6 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
 import rotation_sim as R  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 CONFIG = os.path.join(REPO, 'server', 'data', 'lib', 'chaos_spell_masteries_config.lua')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'damage_pool_config.lua')
@@ -336,6 +338,10 @@ def detail(cid):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
+        print('  (this model holds shares of the class damage: the class gain cancels, no number moves)')
     if '--detail' in argv:
         print(detail(int(argv[argv.index('--detail') + 1])))
         return 0

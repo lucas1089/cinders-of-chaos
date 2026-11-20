@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Class DPS balance (O430): every class within +-25% of the level median on 1 target and on 5 targets (+-30% at level 100).
 
-usage: python3 -I server/tools/class_dps_model.py [--check] [--before | --round-before | --steps | --spread] [--csv]
+usage: python3 -I server/tools/class_dps_model.py [--check] [--upgrades] [--before | --round-before | --steps | --spread] [--csv]
+--upgrades  O686 phase 3: the spell upgrades on, every class's damage x 1 + its spell share x (P - 1) of the typical character (spell_upgrade_model.py)
 
 Owner, 2026-11-06: "balance the classes that are far from the median DPS". The anchor is a measured DPS test of all 21 classes at
 levels 100, 500 and 1000 (server/data/spells/class_dps_measured.csv: one character per class and level, the same gear rule, the
@@ -50,6 +51,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
 import rotation_sim as R  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the switch of the spell upgrades (O686 phase 3): class damage x the typical gain
 
 CSV = os.path.join(REPO, 'server', 'data', 'spells', 'class_dps_measured.csv')
 CLASS_TREE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'class_tree.lua')
@@ -116,7 +118,9 @@ def model(rows=None, damage=None, interval=None, extra=None, rnd=True):
             out[(cls, lv)] = {'1t': one, '5t': five, 'm': m, 'x': x, 'gain': gain, 'pre1': one, 'pre5': five, 'r1': 1.0, 'r5': 1.0}
             if rnd:
                 r1, r5 = round_factor(cls, lv)
-                out[(cls, lv)].update({'1t': one * r1, '5t': five * r5, 'r1': r1, 'r5': r5})
+                # O686 phase 3: the spell upgrades on (`--upgrades`): the class's spell share x the typical power gain (spell_upgrade_model.py)
+                u1, u5 = SU.gain(cls, lv, 1), SU.gain(cls, lv, 5)
+                out[(cls, lv)].update({'1t': one * r1 * u1, '5t': five * r5 * u5, 'r1': r1, 'r5': r5, 'u1': u1, 'u5': u5})
         med[lv] = (statistics.median(out[(c, lv)]['1t'] for c in KEY), statistics.median(out[(c, lv)]['5t'] for c in KEY))
     return out, med
 
@@ -370,9 +374,10 @@ _CACHE = {}
 
 def shipped():
     """(model, medians) of the committed state after the round (O475), computed once"""
-    if 'model' not in _CACHE:
-        _CACHE['model'] = model()
-    return _CACHE['model']
+    key = ('model',) + SU.mode_key()
+    if key not in _CACHE:
+        _CACHE[key] = model()
+    return _CACHE[key]
 
 
 def shipped_before():
@@ -407,7 +412,7 @@ def dps(cls, level, out=None, rnd=True):
     if not rnd or level <= 0:
         return base
     r = round_factor(cls, level)
-    return (base[0] * r[0], base[1] * r[1])
+    return (base[0] * r[0] * SU.gain(cls, level, 1), base[1] * r[1] * SU.gain(cls, level, 5))
 
 
 def median_dps(level, out=None, rnd=True):
@@ -471,6 +476,7 @@ def steps_table():
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
     if '--steps' in argv:
         print(steps_table())
         return 0
@@ -488,6 +494,8 @@ def main(argv):
         return 0
     out, med = model()
     bad = problems(out, med)
+    if SU.active():
+        print(SU.banner())
     if '--check' in argv:
         for b in bad:
             print('FAIL ' + b)

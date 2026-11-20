@@ -2088,6 +2088,85 @@ do
 	check(last(t9):find('"path":[2,2,3]', 1, true) and t9.pathAsked.pos.x == 70, "trial path: on foot to the monster")
 	talks["!tester"].onSay(t9, "!tester", "trial close #153")
 	check(closes == c0 + 1 and last(t9):find('"closed":true', 1, true), "trial close: the bot's own run")
+	-- ---- O685: `trial clear [N]` (TEST ONLY: a family whose trial is a puzzle), the held picks in the state, the vocation in `info`
+	local wc, nc = H.parseTrial("clear")
+	check(wc == "clear" and nc == nil, "trial clear: no number is the last tier")
+	wc, nc = H.parseTrial("clear 2")
+	check(wc == "clear" and nc == 2, "trial clear 2")
+	wc, nc = H.parseTrial(" clear  3 ")
+	check(wc == "clear" and nc == 3, "trial clear: spaces are fine")
+	w, usage = H.parseTrial("clear x")
+	check(w == nil and usage:find("usage: trial", 1, true), "trial clear: a word after it is no number")
+	w, usage = H.parseTrial("clearing")
+	check(w == nil and usage ~= nil, "trial: clearing is no helper word")
+	check(H.trialAnswer({picks = {1, 2, 0, 9}}).picks[3] == 0 and #H.trialAnswer({picks = {1, 2, 0, 9}}).picks == 3, "trial answer: the held node of each pair, three numbers")
+	check(H.trialAnswer({}).picks == nil, "trial answer: no picks known")
+	local clearedWith
+	ChaosTrials.testerClear = function(_, n)
+		clearedWith = n
+		if n == 9 then return nil, "the tier is 0 to 3" end
+		return n or 3
+	end
+	talks["!tester"].onSay(t9, "!tester", "trial clear #170")
+	check(clearedWith == nil and last(t9):find('"set":3', 1, true) and last(t9):find('"seq":170', 1, true), "trial clear: the last tier by default, the answer says what was set")
+	talks["!tester"].onSay(t9, "!tester", "trial clear 2 #171")
+	check(clearedWith == 2 and last(t9):find('"set":2', 1, true), "trial clear 2: the tier asked")
+	talks["!tester"].onSay(t9, "!tester", "trial clear 9 #172")
+	check(last(t9):find("the tier is 0 to 3", 1, true) and not last(t9):find('"set"', 1, true), "trial clear: the server's refusal is the answer")
+	ChaosTrials.testerClear = nil
+	talks["!tester"].onSay(t9, "!tester", "trial clear #173")
+	check(last(t9):find("no trial system", 1, true), "trial clear: an older trials file has no such function: the reason")
+	talks["!tester"].onSay(t9, "!tester", "info #174")
+	check(last(t9):find('"voc":4', 1, true), "info: the vocation id of the bot (the class changes in a run, O685)")
+	check(HELPER_VERSION >= 33, "the helper is version 33 or later (O685: trial clear, voc in info)")
+	-- ---- O685: gear set RARITY, and `loadout` (cards of the best set, support runes), TEST ONLY
+	check(H.COMMANDS.loadout and H.parseCommand("loadout cards Earth #5") == "loadout", "loadout is a registered command")
+	eq(H.parseGear("set").rarity, nil, "gear set: no number, the default rarity")
+	eq(H.parseGear("set 10").rarity, 10, "gear set 10: Divine")
+	eq(H.parseGear("set 5").rarity, 5, "gear set 5: Legendary")
+	w, usage = H.parseGear("set 7")
+	check(w == nil and usage:find("usage: gear", 1, true), "gear set 7: no such stored rarity")
+	w, usage = H.parseGear("state 3")
+	check(w == nil and usage ~= nil, "gear state takes no number")
+	do
+		local lp = creature(268435499, "Tester Abz", {store = {[ST] = 1}})
+		lp.getVocation = function() return {getId = function() return 8 end, getName = function() return "Juggernaut" end} end
+		lp.getLevel = function() return 1900 end
+		lp.getCapacity = function() return 1000 end
+		lp.setCapacity = function() end
+		talks["!tester"].onSay(lp, "!tester", "loadout cards Earth #180")
+		check(last(lp):find("no cards system", 1, true) and last(lp):find('"seq":180', 1, true), "loadout cards: no cards system, the reason")
+		local toggled, owned, on = {}, {}, {}
+		ChaosCardsConfig = {maxActive = 5, sets = {need = 3}, cards = {
+			[100] = {storage = 9100, kind = "convert", family = 1, element = "Earth", spell = "Earthbreaker", spells = {{"Earthbreaker", 221}}},
+			[101] = {storage = 9101, kind = "convert", family = 1, element = "Fire", spell = "Earthbreaker", spells = {{"Earthbreaker", 221}}},
+			[102] = {storage = 9102, kind = "convert", family = 2, element = "Earth", spell = "Reaping Gyre", spells = {{"Reaping Gyre", 220}}},
+			[103] = {storage = 9103, kind = "convert", family = 3, element = "Earth", spell = "Heal", spells = {{"Heal", 5}}},
+			[104] = {storage = 9104, kind = "convert", family = 4, element = "Earth", spell = "Far", spells = {{"Far", 6}}},
+		}}
+		ChaosCardDeck = {add = function(_, id, n) owned[id] = (owned[id] or 0) + n end, unlock = function() end}
+		ChaosCards = {toggle = function(p, id) toggled[#toggled + 1] = id; on[id] = true; p.storage[ChaosCardsConfig.cards[id].storage] = 1 end}
+		ChaosSupports = {
+			spellInfo = function(id)
+				local t = {[221] = {level = 1100, vocations = {[8] = true}}, [220] = {level = 1200, vocations = {[8] = true}}, [5] = {level = 10, vocations = {[10] = true}},
+					[6] = {level = 3000, vocations = {[8] = true}}}
+				return t[id]
+			end,
+			catalog = function() return {} end,
+		}
+		lp.storage = lp.storage or {}
+		lp.getStorageValue = lp.getStorageValue or function(self, k) return self.storage[k] or -1 end
+		lp.setStorageValue = lp.setStorageValue or function(self, k, v) self.storage[k] = v end
+		talks["!tester"].onSay(lp, "!tester", "loadout cards earth #181")
+		check(#toggled == 2 and toggled[1] == 100 and toggled[2] == 102, "loadout cards: one Earth card of each family the class casts (the Fire card, the heal of another class and the spell above the level are left)")
+		check(owned[100] == 1 and owned[102] == 1 and owned[101] == nil, "loadout cards: the cards are put in the Deck first")
+		check(last(lp):find('"set":false', 1, true), "loadout cards: two cards are no set (the set needs three)")
+		ChaosCardsConfig, ChaosCardDeck, ChaosCards, ChaosSupports = nil, nil, nil, nil
+		talks["!tester"].onSay(lp, "!tester", "loadout support keenedge,echo kah ael #182")
+		check(last(lp):find("no supports system", 1, true), "loadout support: no supports system, the reason")
+		talks["!tester"].onSay(lp, "!tester", "loadout support keenedge #183")
+		check(last(lp):find("usage: loadout support", 1, true), "loadout support: the words of the spells are named")
+	end
 	-- ---- the Ascended arenas and the omen arenas (O599)
 	check(H.COMMANDS.ascended and H.COMMANDS.omen and H.parseCommand("ascended sigil bloodmoon #1") == "ascended", "ascended and omen are registered commands")
 	local pa = H.parseAscended("sigil Storm")

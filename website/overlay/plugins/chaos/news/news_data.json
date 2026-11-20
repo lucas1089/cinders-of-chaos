@@ -1,0 +1,822 @@
+{
+ "format": 1,
+ "recent_weeks": 8,
+ "featured_days": 30,
+ "featured_max": 3,
+ "latest": "2026-11-20",
+ "weeks": [
+  {
+   "start": "2026-11-16",
+   "entries": [
+    {
+     "id": "melee-weapons",
+     "date": "2026-11-20",
+     "kind": "balance",
+     "patch": null,
+     "title": {
+      "en": "Melee weapons hit with their element",
+      "pt-BR": "Armas corpo a corpo batem com o elemento"
+     },
+     "text": {
+      "en": "The spells of melee weapons now count the weapon's element damage as well as its physical attack, as the auto attack always did. Stock melee weapons of level 100 and up keep their total attack, with at most 35% of it as element damage, and the Juggernaut's weapons go up to level 2500 like the other classes'.",
+      "pt-BR": "As magias de armas corpo a corpo agora contam o dano elemental da arma além do ataque físico, como o ataque automático sempre fez. As armas corpo a corpo comuns do nível 100 para cima mantêm o ataque total, com no máximo 35% dele em dano elemental, e as armas do Juggernaut vão até o nível 2500 como as das outras classes."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "heals",
+     "date": "2026-11-20",
+     "kind": "fix",
+     "patch": null,
+     "title": {
+      "en": "Heals that did nothing now heal",
+      "pt-BR": "Curas que não faziam nada agora curam"
+     },
+     "text": {
+      "en": "Fourteen effects that were meant to heal or hurt did nothing: the leech and holy heal of cards, a spell refund, snare drains, the Vigils' health give-back and three boss mechanics. They work now. In an invasion, the invaders now really fight each other.",
+      "pt-BR": "Catorze efeitos que deviam curar ou ferir não faziam nada: a cura de leech e sagrada das cartas, um reembolso de magia, os drenos de snare, a devolução de vida dos Vigils e três mecânicas de chefe. Agora funcionam. Numa invasão, os invasores agora lutam de verdade entre si."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "spell-ranks",
+     "date": "2026-11-20",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Spells now have ranks",
+      "pt-BR": "As magias agora têm ranks"
+     },
+     "text": {
+      "en": "Every damage and heal spell now has a rank from 0 to 20. Kill monsters and each spell earns Spell Points from the experience of the kills, in proportion to the damage it dealt. A rank 20 spell hits about 25% harder, with a shorter cooldown and a lower mana cost. To balance it, monsters get more health as you climb.",
+      "pt-BR": "Toda magia de dano e de cura agora tem um rank de 0 a 20. Mate monstros e cada magia ganha Spell Points com a experiência dos abates, na proporção do dano que causou. Uma magia no rank 20 bate cerca de 25% mais forte, com recarga menor e custo de mana menor. Para equilibrar, os monstros ganham mais vida conforme você avança."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "target": "guide:spellbook",
+      "rank": 5,
+      "headline": {
+       "en": "Spell ranks: your spells grow",
+       "pt-BR": "Ranks de magia: suas magias crescem"
+      },
+      "pitch": {
+       "en": "Every spell earns ranks from the monsters it helps kill. Rank 20 is about 25% stronger.",
+       "pt-BR": "Cada magia ganha ranks com os monstros que ajuda a matar. O rank 20 é cerca de 25% mais forte."
+      }
+     },
+     "live_when": "flag:spell_upgrades"
+    },
+    {
+     "id": "spell-forms",
+     "date": "2026-11-20",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Forms: a spell plays a new way",
+      "pt-BR": "Forms: a magia passa a jogar de outro jeito"
+     },
+     "text": {
+      "en": "At rank 10 and again at rank 20 you pick a Form for each spell, one of two. A Form changes how the spell plays: it splits, chains, pierces, leaves fire on the ground, pulls enemies in or turns the spell to another element. There are four Forms for every spell, so the same class can play in new ways.",
+      "pt-BR": "No rank 10 e de novo no rank 20 você escolhe uma Form para cada magia, uma de duas. Uma Form muda como a magia joga: ela divide, encadeia, perfura, deixa fogo no chão, puxa os inimigos ou troca o elemento da magia. São quatro Forms por magia, então a mesma classe pode jogar de jeitos novos."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "live_when": "flag:spell_upgrades"
+    },
+    {
+     "id": "spell-awakening",
+     "date": "2026-11-20",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Awakened spells",
+      "pt-BR": "Magias despertas"
+     },
+     "text": {
+      "en": "At rank 20, with both Forms chosen, up to three spells per character can be awakened. An awakened spell gets a new name, a new look, about 10% more damage or healing and a signature effect. The Seals that awaken it come only from the top content: pinnacle bosses, the Greater Rift and waystone tiers XVI to XXV.",
+      "pt-BR": "No rank 20, com as duas Forms escolhidas, até três magias por personagem podem ser despertadas. Uma magia desperta ganha novo nome, novo visual, cerca de 10% mais dano ou cura e um efeito de assinatura. Os Seals que a despertam vêm só do conteúdo de topo: chefes pinnacle, o Greater Rift e os tiers de waystone XVI ao XXV."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "live_when": "flag:spell_upgrades"
+    },
+    {
+     "id": "spell-combos",
+     "date": "2026-11-20",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Spell combos",
+      "pt-BR": "Combos de magia"
+     },
+     "text": {
+      "en": "Cast two spells within 4 seconds and the second one gets a bonus. Every class has the element combos: ice then fire is a Steam Burst, fire then ice a Thermal Shock, and there are Overload, Pyre of the Dead, Mudslide and Consecrated Ash. Each adds 10% to 20% to the hit, or a burst of that size. Classes also have signature combos that open at spell rank 5. Combos work against monsters, not players.",
+      "pt-BR": "Lance duas magias em até 4 segundos e a segunda ganha um bônus. Toda classe tem os combos de elemento: gelo e depois fogo é um Steam Burst, fogo e depois gelo é um Thermal Shock, e há Overload, Pyre of the Dead, Mudslide e Consecrated Ash. Cada um soma de 10% a 20% ao golpe, ou uma explosão desse tamanho. As classes também têm combos de assinatura, que abrem no rank 5 da magia. Os combos valem contra monstros, não contra jogadores."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "target": "guide:spellbook",
+      "rank": 6,
+      "headline": {
+       "en": "Spell combos: ice then fire, and more",
+       "pt-BR": "Combos de magia: gelo e depois fogo"
+      },
+      "pitch": {
+       "en": "Cast two spells within 4 seconds for a bonus of 10% to 20% on the hit.",
+       "pt-BR": "Lance duas magias em até 4 segundos e ganhe de 10% a 20% no golpe."
+      }
+     },
+     "live_when": "flag:spell_upgrades"
+    },
+    {
+     "id": "descent-balance",
+     "date": "2026-11-19",
+     "kind": "balance",
+     "patch": null,
+     "title": {
+      "en": "Ember Descent, balanced",
+      "pt-BR": "Ember Descent, balanceado"
+     },
+     "text": {
+      "en": "Monsters of the Ember Descent had far too much health and damage for their level. They now have the health and damage of the hunt monsters of their level, and each room asks a little more than the one before.",
+      "pt-BR": "Os monstros do Ember Descent tinham vida e dano demais para o nível. Agora têm a vida e o dano dos monstros de caçada do nível deles, e cada sala pede um pouco mais que a anterior."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "waystone-endgame",
+     "date": "2026-11-19",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Waystones up to tier XXV",
+      "pt-BR": "Waystones até o tier XXV"
+     },
+     "text": {
+      "en": "Ten new waystone tiers, XVI to XXV, for the top levels. A plain run takes 7 to 13 minutes, the first clear of each tier gives an Atlas point, and the last tier of each band has a band boss. The Void Orb corrupts a Magic or Rare waystone for stronger, final modifiers, with a 15% chance to break it. The Waystone Atlas window has a new page for all of it.",
+      "pt-BR": "Dez novos tiers de waystone, do XVI ao XXV, para os níveis mais altos. Uma corrida simples leva de 7 a 13 minutos, a primeira vitória em cada tier dá um ponto do Atlas e o último tier de cada faixa tem um chefe de faixa. O Void Orb corrompe um waystone Magic ou Rare com modificadores finais mais fortes, com 15% de chance de quebrá-lo. A janela do Waystone Atlas ganhou uma página nova para tudo isso."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "target": "serverinfo:endgame",
+      "rank": 40,
+      "headline": {
+       "en": "Waystone tiers XVI to XXV",
+       "pt-BR": "Tiers de waystone do XVI ao XXV"
+      },
+      "pitch": {
+       "en": "Ten new tiers, band bosses and the Void Orb for the top levels.",
+       "pt-BR": "Dez tiers novos, chefes de faixa e o Void Orb para os níveis mais altos."
+      }
+     }
+    },
+    {
+     "id": "pinnacle",
+     "date": "2026-11-19",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Pinnacle bosses",
+      "pt-BR": "Chefes pinnacle"
+     },
+     "text": {
+      "en": "Four Ascended bosses for the top of the game: Malgrath (level 1900), Vhoss (2100), Talath (2300) and Varkhul (2500). A set of four fragments from the best content opens a fight in a private arena, alone or with up to five players. Each boss has an exclusive unique: 22% a kill, sure on the eighth.",
+      "pt-BR": "Quatro chefes Ascendidos para o topo do jogo: Malgrath (nível 1900), Vhoss (2100), Talath (2300) e Varkhul (2500). Um conjunto de quatro fragmentos do melhor conteúdo abre uma luta numa arena privada, sozinho ou com até cinco jogadores. Cada chefe tem um único exclusivo: 22% por abate, certo no oitavo."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "clip": "pinnacle",
+      "target": "guide:bosses",
+      "rank": 20,
+      "headline": {
+       "en": "Four Ascended pinnacle bosses",
+       "pt-BR": "Quatro chefes Ascendidos pinnacle"
+      },
+      "pitch": {
+       "en": "Malgrath, Vhoss, Talath and Varkhul wait at the top, from level 1900 to 2500.",
+       "pt-BR": "Malgrath, Vhoss, Talath e Varkhul esperam no topo, do nível 1900 ao 2500."
+      }
+     }
+    },
+    {
+     "id": "greater-rift",
+     "date": "2026-11-19",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "The Greater Rift",
+      "pt-BR": "O Greater Rift"
+     },
+     "text": {
+      "en": "The rift past tier 15, with no end. The key comes from a tier 15 guardian or costs 150 Omen Fragments. A fast clear moves the key up one to three tiers, a failed run drops it one. There is a ladder for every class each season, and two weekly boards.",
+      "pt-BR": "O rift depois do tier 15, sem fim. A chave vem de um guardião do tier 15 ou custa 150 Omen Fragments. Uma vitória rápida sobe a chave de um a três tiers, uma corrida falha desce um. Há um ranking para cada classe a cada temporada, e dois quadros semanais."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "clip": "rift",
+      "target": "guide:rift",
+      "rank": 30,
+      "headline": {
+       "en": "The Greater Rift has no end",
+       "pt-BR": "O Greater Rift não tem fim"
+      },
+      "pitch": {
+       "en": "Past tier 15 the rift keeps climbing, with a ladder for every class.",
+       "pt-BR": "Depois do tier 15 o rift continua subindo, com um ranking para cada classe."
+      }
+     }
+    },
+    {
+     "id": "loot-explosion",
+     "date": "2026-11-19",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Loot explosion",
+      "pt-BR": "Explosão de loot"
+     },
+     "text": {
+      "en": "A kill no longer leaves its loot in a bag. The loot flies out onto the ground around the monster, item by item, with a small arc and a landing spark. You and your party pick it up first, and Loot all gathers what lies near. Beams of light now mark only Legendary, Divine, set and unique drops.",
+      "pt-BR": "Um abate não deixa mais o loot numa bolsa. O loot voa para o chão ao redor do monstro, item por item, num pequeno arco e com uma faísca no pouso. Você e o seu grupo pegam primeiro, e o Loot all recolhe o que está por perto. Os raios de luz agora marcam só os drops Legendary, Divine, de conjunto e únicos."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     },
+     "featured": true,
+     "feature": {
+      "clip": "loot-explosion",
+      "target": "guide:autoloot",
+      "rank": 10,
+      "headline": {
+       "en": "Loot bursts out of every kill",
+       "pt-BR": "O loot explode de cada abate"
+      },
+      "pitch": {
+       "en": "Items fly out onto the ground, and beams of light mark only the rarest drops.",
+       "pt-BR": "Os itens voam para o chão, e raios de luz marcam só os drops mais raros."
+      }
+     }
+    },
+    {
+     "id": "cap-2500",
+     "date": "2026-11-19",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "Level 2500 is the cap",
+      "pt-BR": "O nível 2500 é o limite"
+     },
+     "text": {
+      "en": "The level cap stays at 2500, and the new endgame is made to fit inside it. The Orb of Upheaval keeps the Grafted modifier when it rerolls an item.",
+      "pt-BR": "O nível máximo continua 2500, e o novo endgame foi feito para caber nele. O Orb of Upheaval mantém o modificador Grafted quando refaz um item."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "new-looks",
+     "date": "2026-11-18",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "New looks for bosses and monsters",
+      "pt-BR": "Visuais novos para chefes e monstros"
+     },
+     "text": {
+      "en": "Three bosses, The Rotmother, Vhoss the Hexmaw and Talath, now have bigger, fully animated bodies, and 24 hunt monsters wear new looks of their own.",
+      "pt-BR": "Três chefes, The Rotmother, Vhoss the Hexmaw e Talath, agora têm corpos maiores e totalmente animados, e 24 monstros de caçada usam visuais novos."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "malgrath",
+     "date": "2026-11-18",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Malgrath, the Drowned Crown",
+      "pt-BR": "Malgrath, a Coroa Afogada"
+     },
+     "text": {
+      "en": "A new arena boss, Malgrath, the Drowned Crown, with a seven by seven body that always faces you.",
+      "pt-BR": "Um novo chefe de arena, Malgrath, a Coroa Afogada, com um corpo de sete por sete que sempre fica de frente para você."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "footprints",
+     "date": "2026-11-18",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Twenty footprint effects",
+      "pt-BR": "Vinte efeitos de pegadas"
+     },
+     "text": {
+      "en": "The store has 20 new footprint effects: prints and glows that follow your steps.",
+      "pt-BR": "A loja tem 20 novos efeitos de pegadas: marcas e brilhos que seguem os seus passos."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "spell-effects",
+     "date": "2026-11-17",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Better spell effects",
+      "pt-BR": "Efeitos de magia melhores"
+     },
+     "text": {
+      "en": "Area spells have real bursts and beams, status effects have their own layer on the character, effects now exist for roles that had none, and a lightning bolt falls from the sky onto its target.",
+      "pt-BR": "As magias de área têm explosões e feixes de verdade, os status têm uma camada própria no personagem, passaram a existir efeitos para funções que não tinham nenhum, e um raio cai do céu sobre o alvo."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "wings",
+     "date": "2026-11-16",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "Every wing, redrawn",
+      "pt-BR": "Todas as asas, redesenhadas"
+     },
+     "text": {
+      "en": "All 121 wings were redrawn in a cleaner, matching style, and they now fit any outfit: the wings find the character's back and sit on it.",
+      "pt-BR": "As 121 asas foram redesenhadas num estilo mais limpo e uniforme, e agora servem em qualquer outfit: as asas encontram as costas do personagem e se encaixam nelas."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    }
+   ]
+  },
+  {
+   "start": "2026-11-09",
+   "entries": [
+    {
+     "id": "hub-menu",
+     "date": "2026-11-14",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "A tidier top menu",
+      "pt-BR": "Um menu do topo mais limpo"
+     },
+     "text": {
+      "en": "The top menu is now a set of six hubs with icons. Every window sits on a card of one hub, so a system is two clicks away instead of a long list.",
+      "pt-BR": "O menu do topo agora é um conjunto de seis hubs com ícones. Cada janela fica num cartão de um hub, então qualquer sistema fica a dois cliques em vez de uma lista longa."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "customise",
+     "date": "2026-11-14",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "Customise window fixes, kill dissolves and spell skins",
+      "pt-BR": "Janela Customise: correções, dissolves de abate e skins de magia"
+     },
+     "text": {
+      "en": "Capes are now seen from the back, outlines have their own tiles, name plate frames and outfit shaders were reworked and chat colours can animate. New dissolve kill effects and spell skins come with previews in the window.",
+      "pt-BR": "As capas agora aparecem de costas, os contornos têm tiles próprios, as molduras de nome e os shaders de outfit foram refeitos e as cores do chat podem animar. Novos efeitos de dissolução ao matar e skins de magia vêm com pré-visualização na janela."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "legendary-loot",
+     "date": "2026-11-14",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "Legendary monsters always drop good loot",
+      "pt-BR": "Monstros lendários sempre dropam loot bom"
+     },
+     "text": {
+      "en": "A Legendary monster now always leaves at least one piece of gear of Rare quality or better. The chance of something better is unchanged.",
+      "pt-BR": "Um monstro Legendary agora sempre deixa pelo menos uma peça de equipamento Rare ou melhor. A chance de algo melhor continua a mesma."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "ground-auras",
+     "date": "2026-11-14",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Golden Ki and Crimson Blaze auras",
+      "pt-BR": "Auras Golden Ki e Crimson Blaze"
+     },
+     "text": {
+      "en": "Two new ground auras, Golden Ki and Crimson Blaze, seen at an angle like the game itself, with flames that rise behind the character and in front of it.",
+      "pt-BR": "Duas novas auras de chão, Golden Ki e Crimson Blaze, vistas em ângulo como o resto do jogo, com chamas que sobem atrás e na frente do personagem."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "costumes",
+     "date": "2026-11-14",
+     "kind": "change",
+     "patch": null,
+     "title": {
+      "en": "The fun costumes, redone",
+      "pt-BR": "Os costumes divertidos, refeitos"
+     },
+     "text": {
+      "en": "The fun costumes were redrawn at a higher quality, and the Dusk Moth now flaps through 28 phases.",
+      "pt-BR": "Os costumes divertidos foram redesenhados com mais qualidade, e a Dusk Moth agora bate as asas em 28 fases."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "hollow-crypt",
+     "date": "2026-11-14",
+     "kind": "fix",
+     "patch": null,
+     "title": {
+      "en": "The Hollow Crypt looks right",
+      "pt-BR": "A Hollow Crypt com a cara certa"
+     },
+     "text": {
+      "en": "The Hollow Crypt hunt was cleaned up: one slate floor, no wooden coffins left in the rooms and no lone blocks in the middle of a room.",
+      "pt-BR": "A caçada da Hollow Crypt foi arrumada: um piso de ardósia só, sem caixões de madeira nas salas e sem blocos soltos no meio delas."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "vael-attacks",
+     "date": "2026-11-14",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "Vael Ashmourn fights with real attacks",
+      "pt-BR": "Vael Ashmourn luta com ataques de verdade"
+     },
+     "text": {
+      "en": "The boss of the main quest has six named attacks: Cinder Breath, Ember Rain, Ashen Ring, Oath Lance, Warden's Cross and, in the last phase, Final Oath. Each one is marked on the floor before it lands, so you can step out of it. Below 30% health he is faster and harder.",
+      "pt-BR": "O chefe da quest principal tem seis ataques com nome: Cinder Breath, Ember Rain, Ashen Ring, Oath Lance, Warden's Cross e, na última fase, Final Oath. Cada um é marcado no chão antes de acertar, então dá para sair da frente. Abaixo de 30% de vida ele fica mais rápido e mais forte."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "patch-2026-11-13",
+     "date": "2026-11-13",
+     "kind": "patch",
+     "patch": "2026-11-13",
+     "title": {
+      "en": "More ways to build, and a better look",
+      "pt-BR": "Mais jeitos de montar a build, e um visual melhor"
+     },
+     "text": {
+      "en": "This note lists what changed since 11 November: more ways to play every class, a limit of three keystones and a round of animation fixes.",
+      "pt-BR": "Esta nota lista o que mudou desde 11 de novembro: mais jeitos de jogar cada classe, um limite de três keystones e uma rodada de correções de animação."
+     },
+     "points": {
+      "en": [
+       "A forge window",
+       "Orbs from your stash at the bench",
+       "Three ways to play every class",
+       "Starter Builds guide"
+      ],
+      "pt-BR": [
+       "Uma janela de forja",
+       "Orbes do seu stash na bancada",
+       "Três jeitos de jogar cada classe",
+       "Guia de Builds iniciais"
+      ]
+     }
+    },
+    {
+     "id": "launcher",
+     "date": "2026-11-13",
+     "kind": "new",
+     "patch": null,
+     "title": {
+      "en": "A launcher that installs the game",
+      "pt-BR": "Um launcher que instala o jogo"
+     },
+     "text": {
+      "en": "The game now has its own launcher and setup. It installs the game in your own folder with no administrator rights, shows the news and the changelog next to the Play button, repairs only the pieces that changed and has a Verify files button.",
+      "pt-BR": "O jogo agora tem launcher e instalador próprios. Instala na sua pasta, sem precisar de administrador, mostra as novidades e o changelog ao lado do botão Jogar, repara só os pedaços que mudaram e tem um botão Verificar arquivos."
+     },
+     "points": {
+      "en": [],
+      "pt-BR": []
+     }
+    },
+    {
+     "id": "patch-2026-11-11",
+     "date": "2026-11-11",
+     "kind": "patch",
+     "patch": "2026-11-11",
+     "title": {
+      "en": "Smoother walking and a tidier hotbar",
+      "pt-BR": "Andar mais fluido e uma hotbar mais arrumada"
+     },
+     "text": {
+      "en": "Thank you for beta weekend 2. This note lists what changed since 7 November: walking that flows, and a round of fixes for the new inventory panel, hotbar and floating chat.",
+      "pt-BR": "Obrigado pelo fim de semana 2 do beta. Esta nota lista o que mudou desde 7 de novembro: um andar que flui, e uma rodada de correções no novo painel de inventário, na hotbar e no chat flutuante."
+     },
+     "points": {
+      "en": [
+       "Walking that flows and eight directions",
+       "Purse button"
+      ],
+      "pt-BR": [
+       "Andar fluido e oito direções",
+       "Botão Purse"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "start": "2026-11-02",
+   "entries": [
+    {
+     "id": "patch-2026-11-07",
+     "date": "2026-11-07",
+     "kind": "patch",
+     "patch": "2026-11-07",
+     "title": {
+      "en": "Beta weekend 2: a gentler start, tougher rifts",
+      "pt-BR": "Beta, fim de semana 2: um começo mais leve, rifts mais duros"
+     },
+     "text": {
+      "en": "Thank you for the first weekend. Your reports shaped most of this note. It lists what changed since 31 October: a much friendlier first hour, new ways to play together, tougher rifts and a new look for the inventory, the chat and the hotbar.",
+      "pt-BR": "Obrigado pelo primeiro fim de semana. Os seus relatos deram forma à maior parte desta nota. Ela lista o que mudou desde 31 de outubro: uma primeira hora bem mais amigável, novas formas de jogar em grupo, rifts mais duros e um visual novo para o inventário, o chat e a hotbar."
+     },
+     "points": {
+      "en": [
+       "A guided start",
+       "Help when you need it",
+       "The Tale of Cinderhold",
+       "Level milestones"
+      ],
+      "pt-BR": [
+       "Um começo guiado",
+       "Ajuda quando você precisa",
+       "O Tale of Cinderhold",
+       "Marcos de level"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "start": "2026-10-26",
+   "entries": [
+    {
+     "id": "patch-2026-10-31",
+     "date": "2026-10-31",
+     "kind": "patch",
+     "patch": "2026-10-31",
+     "title": {
+      "en": "Open Beta: the ash is falling",
+      "pt-BR": "Open Beta: as cinzas estão caindo"
+     },
+     "text": {
+      "en": "Welcome to the Open Beta of Cinders of Chaos, a dark fantasy world on the classic top-down hunt-and-loot game, with the depth of an action RPG: seven classes, a huge passive tree, rolled gear, crafting orbs, rifts, raids and seasons.",
+      "pt-BR": "Bem-vindo ao Open Beta de Cinders of Chaos, um mundo de fantasia sombria no clássico jogo de caçar e saquear em visão de cima, com a profundidade de um RPG de ação: sete classes, uma enorme árvore de passivas, equipamento rolado, orbs de crafting, rifts, raids e temporadas."
+     },
+     "points": {
+      "en": [
+       "Seven classes, fourteen ascensions",
+       "A gentle start",
+       "Builds",
+       "Items"
+      ],
+      "pt-BR": [
+       "Sete classes, quatorze ascensões",
+       "Um começo tranquilo",
+       "Builds",
+       "Itens"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "start": "2026-10-19",
+   "entries": [
+    {
+     "id": "patch-2026-10-22",
+     "date": "2026-10-22",
+     "kind": "patch",
+     "patch": "2026-10-22",
+     "title": {
+      "en": "Wings, crowns and capes",
+      "pt-BR": "Asas, coroas e capas"
+     },
+     "text": {
+      "en": "A cosmetics update and a haunted event. The store gets 89 new wings and two new categories, Head Accessories and Capes. Six of the new pieces are never sold: only bosses drop them. Nothing here changes your power.",
+      "pt-BR": "Uma atualização de cosméticos e um evento assombrado. A loja ganha 89 asas novas e duas categorias novas, Head Accessories e Capes. Seis das peças novas nunca são vendidas: só os bosses as dropam. Nada aqui muda o seu poder."
+     },
+     "points": {
+      "en": [
+       "The Haunted Harvest",
+       "Infinity Tower rebalanced",
+       "23 new tales",
+       "89 new wings"
+      ],
+      "pt-BR": [
+       "The Haunted Harvest",
+       "Infinity Tower rebalanceada",
+       "23 novos tales",
+       "89 asas novas"
+      ]
+     }
+    },
+    {
+     "id": "patch-2026-10-21",
+     "date": "2026-10-21",
+     "kind": "patch",
+     "patch": "2026-10-21",
+     "title": {
+      "en": "Fifteen spells, one ladder",
+      "pt-BR": "Quinze magias, uma só escada"
+     },
+     "text": {
+      "en": "A class pass. Every class now has a tight kit of at most fifteen spells, attack spells wait 2, 4, 6 seconds and up from the weakest to the strongest, and every class gets signature keystones in the passive tree. The client now updates itself.",
+      "pt-BR": "Uma revisão de classes. Cada classe agora tem um kit enxuto de no máximo quinze magias, as magias de ataque esperam 2, 4, 6 segundos e mais, da mais fraca à mais forte, e cada classe ganha keystones de assinatura na árvore de passivas. O cliente agora se atualiza sozinho."
+     },
+     "points": {
+      "en": [
+       "The client updates itself",
+       "Signature keystones for every class",
+       "Ironhold and Wildstride",
+       "Junk orbs for ember points"
+      ],
+      "pt-BR": [
+       "O cliente se atualiza sozinho",
+       "Keystones de assinatura para cada classe",
+       "Ironhold e Wildstride",
+       "Orbs inúteis por pontos de ember"
+      ]
+     }
+    },
+    {
+     "id": "patch-2026-10-20",
+     "date": "2026-10-20",
+     "kind": "patch",
+     "patch": "2026-10-20",
+     "title": {
+      "en": "Fairer fights, one place to hunt",
+      "pt-BR": "Lutas mais justas, um só lugar para caçar"
+     },
+     "text": {
+      "en": "A big balance and quality pass. Area damage is now the same all over its area, the hunt hall is sorted by level, five service NPCs take over menu chores, the passive tree can build itself, and the junk is gone from the loot. Numbers in the balance section are calculated, not measured in game yet.",
+      "pt-BR": "Uma grande revisão de balanceamento e qualidade. O dano em área agora é igual em toda a sua área, o salão de caçadas é organizado por level, cinco NPCs de serviço assumem tarefas dos menus, a árvore de passivas pode se montar sozinha e o lixo saiu do loot."
+     },
+     "points": {
+      "en": [
+       "Service NPCs",
+       "Auto build",
+       "Primary and secondary stats",
+       "Class lanes"
+      ],
+      "pt-BR": [
+       "NPCs de serviço",
+       "Auto build",
+       "Atributos primários e secundários",
+       "Lanes de classe"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "start": "2026-10-05",
+   "entries": [
+    {
+     "id": "patch-2026-10-09",
+     "date": "2026-10-09",
+     "kind": "patch",
+     "patch": "2026-10-09",
+     "title": {
+      "en": "Orbs with a will of their own",
+      "pt-BR": "Orbs com vontade própria"
+     },
+     "text": {
+      "en": "The orbs have new names and six new ones join them: aim at a modifier, bind it, cut it, reforge it, gamble on the whole item, and hone it with quality. Legendary items can now roll powers that change how you fight. Open the Crafting Bench from Economy > Crafting Bench.",
+      "pt-BR": "As orbs têm nomes novos e seis novas se juntam a elas: mire em um modificador, prenda-o, corte-o, refaça-o, aposte no item inteiro e lapide-o com qualidade. Itens Legendary agora podem rolar poderes que mudam o jeito de lutar. Abra a Crafting Bench em Economy > Crafting Bench."
+     },
+     "points": {
+      "en": [
+       "Aim, bind, cut",
+       "Orb of Ruin",
+       "Quality",
+       "Legendary powers"
+      ],
+      "pt-BR": [
+       "Mire, prenda, corte",
+       "Orb of Ruin",
+       "Qualidade",
+       "Poderes legendary"
+      ]
+     }
+    },
+    {
+     "id": "patch-2026-10-08",
+     "date": "2026-10-08",
+     "kind": "patch",
+     "patch": "2026-10-08",
+     "title": {
+      "en": "Four classes, rifts and a golden thief",
+      "pt-BR": "Quatro classes, rifts e um ladrão dourado"
+     },
+     "text": {
+      "en": "The biggest update yet: every character now belongs to one of four classes with two ascensions each, rifts open their doors, guilds fight over the Chaos Obelisk, the ranked arena takes its first duels, and orbs finally let you craft your own gear. Open this window any time from Social > Patch Notes.",
+      "pt-BR": "A maior atualização até agora: todo personagem agora pertence a uma de quatro classes com duas ascensões cada, os rifts abrem suas portas, as guilds disputam o Chaos Obelisk, a arena ranqueada recebe seus primeiros duelos e as orbs finalmente deixam você criar o seu próprio equipamento."
+     },
+     "points": {
+      "en": [
+       "Four classes, eight ascensions",
+       "A new start",
+       "Rifts",
+       "Bounty board"
+      ],
+      "pt-BR": [
+       "Quatro classes, oito ascensões",
+       "Um novo começo",
+       "Rifts",
+       "Bounty board"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

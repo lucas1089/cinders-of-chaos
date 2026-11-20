@@ -536,6 +536,12 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 				and ChaosSpellFactor.additionalTarget(ChaosSpellExtraState, attacker:getId(), creature:getId(), os.mtime()) then
 			f1, f2 = f1 * x1, f2 * x2
 		end
+		-- O686: the rank of the spell that made the hit (data/lib/chaos_spell_ranks.lua; 1 while the ranks are switched off)
+		local ranks = rawget(_G, "ChaosSpellRanks")
+		if ranks and ranks.enabled and ranks.enabled() then
+			f1 = f1 * ranks.hitFactor(attacker, creature, origin, primaryType)
+			f2 = f2 * ranks.hitFactor(attacker, creature, origin, secondaryType)
+		end
 		if f1 ~= 1 then
 			primaryDamage = scale(primaryDamage, f1)
 		end

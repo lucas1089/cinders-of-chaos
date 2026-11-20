@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Weapon families (O454): the damage neutrality of sword, axe and club, computed. Not measured.
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the families are shares of the class damage, so nothing moves (the run says so). `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/weapon_family_model.py [--check] [--table]
 
@@ -35,6 +36,7 @@ REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, HERE)
 import class_dps_model as M  # noqa: E402
 import rotation_sim as R  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'weapon_families_config.lua')
 LIMITS = {
@@ -191,6 +193,10 @@ def table(c=None):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
+        print('  (this model holds shares of the class damage: the class gain cancels, no number moves)')
     c = config()
     if '--table' in argv:
         print(table(c))

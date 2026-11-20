@@ -537,6 +537,8 @@ local function spawnMonster(ev, ch, name, tier, plan, target)
 	end
 	local sc = K.levelScale(cfg(), monsterLevel(m), target)
 	local hp = math.floor(m:getMaxHealth() * sc.health * plan.health)
+	-- O686 phase 3: the pace call above took H at the monster's own level; the husk is a hunt monster of the target level
+	hp = math.floor(hp * Chaos.healthFactor(target) / Chaos.healthFactor(monsterLevel(m)))
 	if hp > 0 and hp ~= m:getMaxHealth() then
 		m:setMaxHealth(hp)
 		m:setHealth(hp)

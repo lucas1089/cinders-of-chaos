@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """The boss lengths of the balance round (O475, owner 2026-11-10: "You can do everything"; computed, not measured).
 
-usage: python3 -I server/tools/boss_length_model.py [--derive] [--check]
+usage: python3 -I server/tools/boss_length_model.py [--derive] [--check] [--upgrades]
+
+--upgrades (O686 phase 3): the typical damage is the median class's with the spell upgrades (class_dps_model.py), and every committed health
+is multiplied by H of the level it is planned for before it is held to the derivation (the committed numbers are today's: the game
+multiplies them by H, ChaosSpellRanks.healthFactor), every committed damage number by the median class's gain; the planned seconds
+(150, 55, 318, 360) stay. The tolerance grows by the distance of the typical kill time from today's at that level (spell_upgrade_model.py
+slack): H is one curve, the median class's gain is not.
 
 After the round (O470 to O474) the typical character deals more than the numbers the boss models were set with (the C4 median:
 913 at level 300, 2,600 at 1000). This tool derives, from class_dps_model.py (the one source of class damage, after the round), the
@@ -36,6 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import class_dps_model as CD  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
@@ -216,6 +223,25 @@ def derive():
     return 0
 
 
+RIFT_UP_TOL = 0.05   # the upgrades mode: a rift guardian or pack at any tier level dies within 5% of today's time (the spread of the spell share
+#                      on one target against five is the same as in spell_upgrade_balance_config.lua limits killTimeFiveTargets)
+HEAL_UP_TOL = 0.03   # the upgrades mode: a boss that heals (its heal is not multiplied by H) takes this much more of the tolerance
+
+
+def _h(level):
+    """what the game multiplies a committed health by at a level (H with the upgrades on, else 1)"""
+    return SU.health(level)
+
+
+def _g(level, targets=1):
+    """what the median class's damage grows by at a level (the upgrades on, else 1)"""
+    return SU.median_gain(level, targets)
+
+
+def _tol(base, level, targets=1):
+    return base + SU.slack(level, targets)
+
+
 def problems():
     bad = []
     rows = dps_table()
@@ -224,42 +250,58 @@ def problems():
         bad.append('D.dps levels are %s, not %s' % ([lv for lv, _ in have], list(DPS_LEVELS)))
     else:
         for (lv, v), (_, c) in zip(rows, have):
-            if abs(c / v - 1) > 0.015:
+            # a damage table of today's model: with the upgrades on the derivation has the gain in it and the table stays as it is (the
+            # game multiplies the monster by H, the players grow by the gain), so it is held in the run of today only
+            if not SU.active() and abs(c / v - 1) > 0.015:
                 bad.append('D.dps at %d is %.0f, the derivation %.0f' % (lv, c, v))
     mults = committed_mults()
     for name, lv, bl, hp in DUNGEON_BOSSES:
-        want = health_mult(have, lv, bl, hp)
-        if name not in mults or abs(mults[name] / want - 1) > 0.015:
-            bad.append('%s healthMult is %s, 150 s on the committed D.dps is %.2f' % (name, mults.get(name), want))
+        want = health_mult(have, lv, bl, hp) * _g(lv)
+        if name not in mults or abs(mults[name] * _h(lv) / want - 1) > _tol(0.015, lv):
+            bad.append('%s healthMult is %s, 150 s on the committed D.dps is %.2f' % (name, mults.get(name), want / _h(lv)))
     (c1, ce1), (c5, ce5) = committed_rift()
     (d1, e1), (d5, e5) = rift_fit()
-    for name, have_v, want_v in (('dps1', c1, d1), ('dps5', c5, d5)):
-        if abs(have_v / want_v - 1) > 0.015:
-            bad.append('rift %s is %.0f, the derivation %.0f' % (name, have_v, want_v))
-    for name, have_v, want_v in (('dps1Exp', ce1, e1), ('dps5Exp', ce5, e5)):
-        if abs(have_v - want_v) > 0.015:
-            bad.append('rift %s is %.2f, the derivation %.2f' % (name, have_v, want_v))
+    if not SU.active():
+        for name, have_v, want_v in (('dps1', c1, d1), ('dps5', c5, d5)):
+            if abs(have_v / want_v - 1) > 0.015:
+                bad.append('rift %s is %.0f, the derivation %.0f' % (name, have_v, want_v))
+        for name, have_v, want_v in (('dps1Exp', ce1, e1), ('dps5Exp', ce5, e5)):
+            if abs(have_v - want_v) > 0.015:
+                bad.append('rift %s is %.2f, the derivation %.2f' % (name, have_v, want_v))
+    else:
+        # the model's damage is today's, the guardian's health is seconds x it x H (rift.lua): the guardian (one target) and the pack (five)
+        # of every tier level die in today's time when H is the typical damage's gain
+        for l in rift_levels():
+            for name, targets in (('guardian', 1), ('pack', 5)):
+                if abs(_h(l) / SU.median_gain(l, targets) - 1) > RIFT_UP_TOL:
+                    bad.append('rift %s at tier level %d: H %.3f against the typical damage gain %.3f, the kill time moves %+.1f%% (limit %.0f%%)' % (
+                        name, l, _h(l), SU.median_gain(l, targets), (_h(l) / SU.median_gain(l, targets) - 1) * 100, RIFT_UP_TOL * 100))
     health, factor = omen_factor()
+    h_omen = _h(1000)
+    heal_tol = HEAL_UP_TOL if SU.active() else 0.0
     for f, v in committed_health(OMENS).items():
-        if abs(v / health - 1) > 0.005:
-            bad.append('Omen %s health %d, the derivation %.0f' % (f, v, health))
+        if abs(v * h_omen / health - 1) > _tol(0.005, 1000) + heal_tol:
+            bad.append('Omen %s health %d x H %.3f, the derivation %.0f' % (f, v, h_omen, health))
     for f, v in committed_health(ASCENDED).items():
         old = {'ysgrath_the_cinderheart.xml': CINDER_OLD}.get(f, ASCENDED_OLD if f.startswith('ascended_') else None)
-        if old and abs(v / (old * factor) - 1) > 0.005:
-            bad.append('%s health %d, the derivation %.0f' % (f, v, old * factor))
+        if old and abs(v * h_omen / (old * factor) - 1) > _tol(0.005, 1000) + heal_tol:
+            bad.append('%s health %d x H %.3f, the derivation %.0f' % (f, v, h_omen, old * factor))
     for f, v in committed_health(RAIDS).items():
-        if f in RAID_OLD and abs(v / (RAID_OLD[f] * factor) - 1) > 0.005:
-            bad.append('raid boss %s health %d, the derivation %.0f' % (f, v, RAID_OLD[f] * factor))
+        if f in RAID_OLD and abs(v * h_omen / (RAID_OLD[f] * factor) - 1) > _tol(0.005, 1000) + heal_tol:
+            bad.append('raid boss %s health %d x H %.3f, the derivation %.0f' % (f, v, h_omen, RAID_OLD[f] * factor))
     for fname, profile, level, players, seconds, uptime, heal in ARENA_BOSSES:
         want = arena_health(level, players, seconds, uptime, heal)
         have = committed_health(CHAOS_MONSTERS).get(fname)
-        if have is None or abs(have / want - 1) > 0.015:
-            bad.append('arena boss %s health %s, the derivation %.0f (%d s for %d characters of level %d)' % (fname, have, want, seconds, players, level))
+        if have is None or abs(have * _h(level) / want - 1) > _tol(0.015, level) + heal_tol:
+            bad.append('arena boss %s health %s x H %.3f, the derivation %.0f (%d s for %d characters of level %d)' % (
+                fname, have, _h(level), want, seconds, players, level))
         ref = committed_arena(profile)
         if ref is None:
             bad.append('arena boss %s: no profile %s with a ref in boss_mechanics_config.lua' % (fname, profile))
             continue
-        for what, got, exp in (('health', ref[0], have or 0), ('heal', ref[1], heal), ('dps', ref[2], players * one_target(level)), ('uptime', ref[3], uptime),
+        with SU.forced(False):  # the ref is the fight's numbers of today: the XML, the model's damage (the game multiplies by H, the players by the gain)
+            today_dps = players * one_target(level)
+        for what, got, exp in (('health', ref[0], have or 0), ('heal', ref[1], heal), ('dps', ref[2], today_dps), ('uptime', ref[3], uptime),
                                ('players', ref[4], players)):
             if exp and abs(got / float(exp) - 1) > (0.001 if what in ('health', 'heal', 'uptime', 'players') else 0.015):
                 bad.append('arena boss %s: ref %s is %s, it must be %s' % (profile, what, got, exp))
@@ -267,12 +309,16 @@ def problems():
         if abs(got_heal / heal - 1) > 0.01:
             bad.append('arena boss %s: its healing defense heals %.0f a second, the model has %d' % (fname, got_heal, heal))
     for name, v in zip(('uber', 'raid'), committed_refdps()):
-        if abs(v / (REFDPS_OLD * factor) - 1) > 0.015:
+        # a damage number of today's model: held in the run of today only (see D.dps above)
+        if not SU.active() and abs(v / (REFDPS_OLD * factor) - 1) > 0.015:
             bad.append('%s refDps is %.0f, the derivation %.0f' % (name, v, REFDPS_OLD * factor))
     return bad
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     if '--derive' in argv:
         return derive()
     bad = problems()

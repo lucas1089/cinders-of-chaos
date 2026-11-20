@@ -1239,6 +1239,37 @@ jobs:
 
       - name: Every class within 25% of the level median on 1 and 5 targets at levels 100, 500, 1000 (class_dps_model.py --check; class_dps_measured.csv, class_tree.lua classDamage, spell_factor_config.lua extra; O430)
         run: python3 -I server/tools/class_dps_model.py --check && python3 -I server/tools/class_dps_model_test.py
+      - name: Spell upgrades (O686 phase 3), the monster health curve H and the balance models with the upgrades on (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades; spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
+        run: |
+          python3 -I server/tools/spell_upgrade_model.py --check
+          python3 -I server/tools/spell_upgrade_model_test.py
+          python3 -I tools/ci/check_health_paths.py
+          python3 -I tools/ci/check_health_paths_test.py
+          python3 -I server/tools/class_dps_model.py --check --upgrades
+          python3 -I server/tools/pack_model.py --check --upgrades
+          python3 -I server/tools/boss_model.py --check --upgrades
+          python3 -I server/tools/boss_length_model.py --check --upgrades
+          python3 -I server/tools/tower_model.py --check --upgrades
+          python3 -I server/tools/guardian_model.py --check --upgrades
+          python3 -I server/tools/survival_model.py --check --upgrades
+          python3 -I server/tools/pvp_model.py --check --upgrades
+          python3 -I server/tools/descent_model.py --check --upgrades
+          python3 -I server/tools/waystone_endgame_model.py --check --upgrades
+          python3 -I server/tools/pinnacle_model.py --check --upgrades
+          python3 -I server/tools/greater_rift_model.py --check --upgrades
+          python3 -I server/tools/minion_model.py --check --upgrades
+          python3 -I server/tools/companion_model.py --check --upgrades
+          python3 -I server/tools/card_set_model.py --check --upgrades
+          python3 -I server/tools/spell_mastery_model.py --check --upgrades
+          python3 -I server/tools/weapon_family_model.py --check --upgrades
+          python3 -I server/tools/mainquest_boss_model.py --check --upgrades
+          cd server
+          luajit tools/rift_layout_model.lua --check --upgrades
+          lua5.3 tools/rift_layout_model.lua --check --upgrades
+          luajit tools/progression_model.lua --check --upgrades
+          lua5.3 tools/progression_model.lua --check --upgrades
+          luajit tools/progression_model.lua --check --no-upgrades
+          lua5.3 tools/progression_model.lua --check --no-upgrades
       - name: Weapon families keep the class damage, each within 3% on one target, the axe under 5% of a class on 5 targets (weapon_family_model.py --check and its test; weapon_families_config.lua, class_dps_measured.csv; O454)
         run: python3 -I server/tools/weapon_family_model.py --check && python3 -I server/tools/weapon_family_model_test.py
       - name: Waystone endgame, tiers XVI-XXV at level 2500 (the cap, ten steps of difficulty), clear time, survival and experience against the hunt, band bosses, corrupted waystone and the first-clear atlas, computed and not measured (waystone_endgame_model.py --check and its test; waystone_endgame_config.lua, waystone_endgame_balance_config.lua, waystone_tiers_config.lua deep; O666)
@@ -1348,6 +1379,7 @@ jobs:
         run: |
           bash -n tools/ci/unity_live_check.sh
           shellcheck tools/ci/loot_video.sh
+          shellcheck tools/ci/clip_tour.sh  # the mechanics clip recorder of the website (O687)
 
       - name: 'Unity live check builds (Core.LiveCheck, O433: it only builds here, the run against a server is manual, unity/README.md "Live check (O433)")'
         run: dotnet build -c Release unity/Core.LiveCheck
@@ -1903,6 +1935,12 @@ jobs:
           python3 -I website/tools/gen_calendar_data.py --check
           python3 -I website/tools/gen_calendar_data_test.py
           python3 -I website/tools/gen_media_kit.py --check
+
+      - name: Website news page data and mechanics clips (O687; gen_changelog.py writes the data of the news page from the patch notes and the curated entries; the clip slots of gen_site_media.py, media_lib.php and test_cliptour)
+        run: |
+          python3 -I website/tools/gen_changelog.py --check
+          python3 -I website/tools/gen_changelog_test.py
+          python3 -I website/tools/gen_site_media_clips_test.py
 
       - name: Attack speed lanes of the passive tree are in classlanes.lua (gen_class_lanes.lua --attack-speed)
         run: |

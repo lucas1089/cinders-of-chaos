@@ -7,6 +7,9 @@
  * the manifest, and it names a file only when the manifest lists it, so a missing file never leaves a broken player.
  * Behaviour (autoplay of the muted hero, sound on click, the lightbox) is assets/js/chaos-media.js; without script
  * the trailer has its controls and the gallery links open the images.
+ * O687 adds the "mechanics in action" section: short muted looping clips (clip-<id>.mp4 with a poster, recorded by
+ * tools/ci/clip_tour.sh, cut by gen_site_media.py --build-clips). A slot whose clip is not in the manifest shows its
+ * O425 still instead (a screenshot of the gallery) or nothing, so the page is whole before the recording is made.
  */
 
 if (!function_exists('chaos_media_lang')) {
@@ -66,6 +69,27 @@ function chaos_media_gallery(): array {
 		'shot-rift.jpg' => 'A rift of the Obsidian Hall',
 		'shot-arena.jpg' => 'The arena, one against one',
 		'shot-inferno.jpg' => 'The boss lair on fire',
+	);
+}
+
+/**
+ * The slots of the "mechanics in action" section, in order: id => array(English caption, still of the O425 gallery shown
+ * while the clip is not recorded, '' for none). The clip of a slot is clip-<id>.mp4 with clip-<id>.jpg as its poster
+ * (website/tools/gen_site_media.py CLIPS and client/overlay/modules/test_cliptour SHOTS hold the same ids, held by
+ * website/tools/gen_site_media_clips_test.py). The pt-BR text is in i18n/pt-BR.php.
+ */
+function chaos_media_action_slots(): array {
+	return array(
+		'loot-explosion' => array('Loot bursts out of a kill', ''),
+		'loot-beams' => array('Beams mark the rarest drops', ''),
+		'rift' => array('A rift, from the key to the guardian', 'shot-rift.jpg'),
+		'pinnacle' => array('A pinnacle boss shows where it will strike', 'shot-boss.jpg'),
+		'passive-tree' => array('The passive tree: over 600 nodes', 'shot-passive-tree.jpg'),
+		'ember-descent' => array('The Ember Descent: choose a boon', ''),
+		'infinity-tower' => array('The Infinity Tower', 'shot-tower.jpg'),
+		'dungeon-cards' => array('Dungeon cards', ''),
+		'cosmetics' => array('Wings, outfits and auras', ''),
+		'spell-effects' => array('Spell effects', 'shot-ice.jpg'),
 	);
 }
 
@@ -138,11 +162,55 @@ function chaos_media_shorts_html(?string $lang = null, ?array $files = null): st
 		. '<div class="chaos-shorts__strip">' . $cards . '</div></section>';
 }
 
-/** The screenshot gallery: lazy thumbnails that link to the picture; assets/js/chaos-media.js adds the lightbox. */
-function chaos_media_gallery_html(?string $lang = null, ?array $files = null): string {
+/**
+ * The "mechanics in action" section (id "in-action"): a looping muted clip per recorded slot (the script plays it while it
+ * is on screen), else the slot's O425 still, else nothing. Returns array('html' => section or '', 'stills' => the gallery
+ * files it showed, which the gallery leaves out so no picture appears twice, 'clips' => number of clips).
+ */
+function chaos_media_actions(?string $lang = null, ?array $files = null): array {
+	$lang = chaos_media_lang($lang);
+	$items = '';
+	$stills = array();
+	$clips = 0;
+	foreach (chaos_media_action_slots() as $id => $slot) {
+		$text = chaos_t_in($lang, $slot[0]);
+		$video = chaos_media_url('clip-' . $id . '.mp4', $files);
+		$poster = chaos_media_url('clip-' . $id . '.jpg', $files);
+		if ($video !== '' && $poster !== '') {
+			$clips++;
+			$items .= '<figure class="chaos-clip" data-clip="' . chaos_media_h($id) . '">'
+				. '<video controls muted loop playsinline preload="none" width="960" height="540" data-chaos-clip poster="' . chaos_media_h($poster) . '"'
+				. ' aria-label="' . chaos_media_h($text) . '"><source src="' . chaos_media_h($video) . '" type="video/mp4"></video>'
+				. '<figcaption>' . chaos_media_h($text) . '</figcaption></figure>';
+			continue;
+		}
+		$still = chaos_media_url($slot[1], $files);
+		if ($slot[1] !== '' && $still !== '') {
+			$stills[] = $slot[1];
+			$items .= '<a class="chaos-shot" href="' . chaos_media_h($still) . '" data-chaos-shot data-caption="' . chaos_media_h($text) . '">'
+				. '<img src="' . chaos_media_h($still) . '" width="1280" height="720" loading="lazy" decoding="async" alt="' . chaos_media_h($text) . '">'
+				. '<span class="chaos-shot__cap">' . chaos_media_h($text) . '</span></a>';
+		}
+	}
+	if ($items === '') {
+		return array('html' => '', 'stills' => array(), 'clips' => 0);
+	}
+	$html = '<section class="chaos-box chaos-action" id="in-action" data-l-close="' . chaos_media_h(chaos_t_in($lang, 'Close')) . '"'
+		. ' data-l-prev="' . chaos_media_h(chaos_t_in($lang, 'Previous')) . '" data-l-next="' . chaos_media_h(chaos_t_in($lang, 'Next')) . '">'
+		. '<h2 class="chaos-heading">' . chaos_media_h(chaos_t_in($lang, 'The game in action')) . '</h2>'
+		. '<p class="chaos-lead">' . chaos_media_h(chaos_t_in($lang, 'Short loops of the mechanics and the content, recorded in the game client.')) . '</p>'
+		. '<div class="chaos-action__grid">' . $items . '</div></section>';
+	return array('html' => $html, 'stills' => $stills, 'clips' => $clips);
+}
+
+/** The screenshot gallery: lazy thumbnails that link to the picture; assets/js/chaos-media.js adds the lightbox. $skip: files shown elsewhere. */
+function chaos_media_gallery_html(?string $lang = null, ?array $files = null, array $skip = array()): string {
 	$lang = chaos_media_lang($lang);
 	$items = '';
 	foreach (chaos_media_gallery() as $file => $caption) {
+		if (in_array($file, $skip, true)) {
+			continue;
+		}
 		$url = chaos_media_url($file, $files);
 		if ($url === '') {
 			continue;

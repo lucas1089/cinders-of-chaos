@@ -67,7 +67,7 @@ function chaos_guide_view(array $data): array {
 }
 
 /** One card: title, level and menu path, the tip of a first step, the rows under their headings. Everything escaped. */
-function chaos_guide_card_html(string $key, array $card, $tip, array $headings, ?string $lang = null): string {
+function chaos_guide_card_html(string $key, array $card, $tip, array $headings, ?string $lang = null, bool $new = false): string {
 	$h = static function ($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
 	$meta = array();
 	if (isset($card['level']) && $card['level'] !== null) {
@@ -76,8 +76,9 @@ function chaos_guide_card_html(string $key, array $card, $tip, array $headings, 
 	if (!empty($card['menu'])) {
 		$meta[] = chaos_t_in($lang, 'In game: %s', (string)$card['menu']);
 	}
-	$out = '<article class="chaos-guide-card" id="card-' . $h($key) . '">';
-	$out .= '<h3 class="chaos-guide-card__title">' . $h(chaos_bi($card['title'] ?? '', $lang)) . '</h3>';
+	// $new: a fresh featured news entry points at this card (news_lib.php, O688): the small "Novo" tag
+	$out = '<article class="chaos-guide-card' . ($new ? ' chaos-guide-card--new' : '') . '" id="card-' . $h($key) . '">';
+	$out .= '<h3 class="chaos-guide-card__title">' . $h(chaos_bi($card['title'] ?? '', $lang)) . ($new && function_exists('chaos_news_badge_html') ? ' ' . chaos_news_badge_html($lang, 'tag') : '') . '</h3>';
 	if ($meta) {
 		$out .= '<p class="chaos-guide-card__meta">' . $h(implode(' · ', $meta)) . '</p>';
 	}
