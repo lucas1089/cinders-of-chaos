@@ -3765,7 +3765,11 @@ async def solo_play(io, r, trace, c):
         if trace['faults'] or c['done'](trace) or (c.get('stop') and c['stop'](s, trace)):
             break
         g = s.get('guide') or {}
-        spent = await retreat_check(io, r, s, trace, g)   # O658: under 30 % health the bot heals and steps back before it goes on
+        if c.get('dodge'):
+            await raid_chase(io, r, not mark_pending(s))   # O683: no chase to the monster while a mark is pending
+        # O658: under 30 % health the bot heals and steps back before it goes on. Not in a boss fight with marks (O683): the step back went into a
+        # mark and the wait for health stood still through the next one; the helper's loop heals at 75 / 55 % there (TesterBot.heal_at)
+        spent = 0.0 if c.get('dodge') else await retreat_check(io, r, s, trace, g)
         if spent:
             elapsed += spent
             continue
@@ -3782,13 +3786,7 @@ async def solo_play(io, r, trace, c):
             fight_since = None
         if mode == 'dodge' and c.get('dodge') and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
             trace['dodged'] = trace.get('dodged', 0) + 1   # O681: a mark of the boss on the bot's tile: the steps to the safe tile at once, a quick look after
-            for step in raid_plan(s['pos'], g['goal'], BOSS_DODGE_STEPS):
-                await raid_walk(io, r, step)
-                trace['steps'] += 1
-                await io.sleep(RAID_STEP)
-                elapsed += RAID_STEP
-            await io.sleep(BOSS_DODGE_LOOK)
-            elapsed += BOSS_DODGE_LOOK
+            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed)
             trace['secs'] = int(elapsed)
             continue
         if mode == 'pick':   # the descent's boon choice: the first card, as when the time runs out
@@ -3807,6 +3805,8 @@ async def solo_play(io, r, trace, c):
             await io.request('infinitytower', 'skip', {}, ['state'], ANSWER)
             trace['skips'] = trace.get('skips', 0) + 1
         plan = []
+        if mode == 'hold':   # O683: a mark lies between the bot and its goal: it stays where it is (fighting) until the hit, as a person does
+            trace['held'] = trace.get('held', 0) + 1
         if mode == 'walk' and isinstance(g.get('goal'), dict):
             plan = r['walker'].steps(s['pos'], g['goal'], SOLO_STEPS, elapsed)
             if not r['walker'].blocked:   # the engine's path first (walls, pillars); the side step only when the way is blocked
@@ -3821,8 +3821,9 @@ async def solo_play(io, r, trace, c):
             trace['steps'] += 1
             await io.sleep(RAID_STEP)
             elapsed += RAID_STEP
-        await io.sleep(RAID_LOOK)
-        elapsed += RAID_LOOK
+        look = c.get('look') or RAID_LOOK
+        await io.sleep(look)
+        elapsed += look
         trace['secs'] = int(elapsed)
     trace['secs'] = int(elapsed)
 
@@ -4373,7 +4374,21 @@ def pinnacle_problems(s, trace):
         trace['size'] = run['size']
     if run.get('kind') is not None:
         trace['boss'] = run['kind']
+    if isinstance(s.get('tally'), dict):
+        trace['tally'] = s['tally']   # O683: the telegraphs so far: fired, exposed (players a mark could hit), taken (standing on it at the hit)
     return out
+
+
+def tally_text(t):
+    """O683: 'marks taken 3 of 20 (15%)' from the trace's tally, '' without one; the model's `marksTaken` is 35%"""
+    y = t.get('tally')
+    if not isinstance(y, dict) or not y.get('exposed'):
+        return ''
+    text = 'marks taken %d of %d (%d%%)' % (y.get('taken', 0), y['exposed'], round(100.0 * y.get('taken', 0) / y['exposed']))
+    by = y.get('by') or {}
+    if by:
+        text += ' [%s]' % ', '.join('%s %d/%d' % (k, v.get('taken', 0), v.get('exposed', 0)) for k, v in sorted(by.items()))
+    return text
 
 
 def pinnacle_walk_verdict(t):
@@ -4385,6 +4400,10 @@ def pinnacle_walk_verdict(t):
     how = solo_text(t, 'pinnacle')
     if t.get('dodged'):
         how += ', %d dodge(s)' % t['dodged']   # O681
+    if t.get('held'):
+        how += ', held %d look(s) at a mark' % t['held']   # O683
+    if tally_text(t):
+        how += ', ' + tally_text(t)   # O683
     if t.get('gear'):
         how += '; ' + t['gear']   # O681: the gear the fight was played with
     if t.get('killed'):
@@ -4524,10 +4543,10 @@ async def check_pinnacle_walk(io, name, cls, level):
         if opened is not None:
             return Result(key, name, cls, opened[0], opened[1], fallbacks)
         if hasattr(io, 'heal_earlier'):
-            io.heal_earlier([name], True)   # O681: a person heals earlier against a boss whose hit is a third of his health
+            io.heal_earlier([name], True, *PINNACLE_HEAL_AT)   # O681: a person heals earlier against a boss whose hit is a third of his health
         trace['shields'] = 1 if await pinnacle_shield(io) else 0   # O681: and casts the mana shield of his class before the boss comes
         await solo_play(io, r, trace, {
-            'system': 'pinnacle', 'budget': PINNACLE_BUDGET, 'problems': pinnacle_problems, 'dodge': True,
+            'system': 'pinnacle', 'budget': PINNACLE_BUDGET, 'problems': pinnacle_problems, 'dodge': True, 'look': PINNACLE_LOOK,
             'done': lambda t: bool(t.get('killed')), 'made': lambda t: bool(t.get('boss_seen')),
             'mark': lambda s: ((s.get('run') or {}).get('boss'), (s.get('run') or {}).get('falls'))})
         await io.helper('pinnacle close', 'pinnacle', ANSWER)
@@ -4556,7 +4575,8 @@ PINNACLE_MEMBERS = {}       # member name -> leader name, while a party plays
 PINNACLE_TURN = {'by': None}   # one fight of bots at a time (the arenas the testers may take are few: tester.reserve)
 PINNACLE_GATHER_NEAR = 3    # tiles from the opener a member stops at (party.range is 8)
 PINNACLE_MEMBER_WAIT = 2400.0   # seconds a member waits for its leader at most
-PINNACLE_STEPS = 6          # steps of one bot between two looks
+PINNACLE_HEAL_AT = (90, 80)   # O683: health percent under which the heal spell is cast / the potion drunk in a pinnacle fight (O681: 75 / 55: a burst of 25k came on 31k)
+PINNACLE_STEPS = 3          # steps of one bot between two looks (O683: was 6 = 1.8 s without a look, most of a 2.5 s warning)
 PINNACLE_SHIELD_WORDS = 'tor ael'   # Ward of the Mind, the mana shield of the Mystic, Ranger and Necromancer lines (manashield_config.lua): the survival model counts it
 PINNACLE_SHIELD_EVERY = 100.0       # seconds between two casts of it (a cast on a bot that still holds the shield costs a few mana)
 
@@ -4653,6 +4673,9 @@ async def pinnacle_fight(io, squad, trace, budget):
             trace['all_out'] = True
             trace['died'] = not trace.get('boss_seen')
             break
+        for r in squad:
+            if r['name'] in inside:
+                await raid_chase(io, r, not mark_pending(inside[r['name']]))   # O683
         ref = inside.get(squad[0]['name']) or next(iter(inside.values()))
         for p in pinnacle_problems(ref, trace):
             if p not in trace['faults']:
@@ -4671,12 +4694,14 @@ async def pinnacle_fight(io, squad, trace, budget):
             trace['fought'] = max(trace['fought'], elapsed - fight_since)
         elif 'wait' not in modes:
             fight_since = None
+        if 'hold' in modes:   # O683: a bot waits for a mark to pass
+            trace['held'] = trace.get('held', 0) + modes.count('hold')
         dodge = {}
         for r in squad:   # O681: a mark on a bot's tile: the steps to the safe tile at once, before anything else, and a quick look after
             s = inside.get(r['name'])
             gr = (s or {}).get('guide') or {}
             if s is not None and gr.get('mode') == 'dodge' and isinstance(gr.get('goal'), dict) and isinstance(s.get('pos'), dict):
-                dodge[r['name']] = raid_plan(s['pos'], gr['goal'], BOSS_DODGE_STEPS)
+                dodge[r['name']] = dodge_plan(s['pos'], gr['goal'], BOSS_DODGE_STEPS)
         if dodge:
             trace['dodged'] = trace.get('dodged', 0) + len(dodge)
             for i in range(BOSS_DODGE_STEPS):
@@ -4689,8 +4714,8 @@ async def pinnacle_fight(io, squad, trace, budget):
                         moved = True
                 if not moved:
                     break
-                await io.sleep(RAID_STEP)
-                elapsed += RAID_STEP
+                await io.sleep(BOSS_DODGE_PACE)
+                elapsed += BOSS_DODGE_PACE
             await io.sleep(BOSS_DODGE_LOOK)
             elapsed += BOSS_DODGE_LOOK
             trace['secs'] = int(elapsed)
@@ -4725,8 +4750,8 @@ async def pinnacle_fight(io, squad, trace, budget):
                 break
             await io.sleep(RAID_STEP)
             elapsed += RAID_STEP
-        await io.sleep(RAID_LOOK)
-        elapsed += RAID_LOOK
+        await io.sleep(PINNACLE_LOOK)
+        elapsed += PINNACLE_LOOK
         trace['secs'] = int(elapsed)
     trace['secs'] = int(elapsed)
 
@@ -4836,7 +4861,7 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
             r['inside'] = bool(isinstance(s, dict) and s.get('inside'))
         trace['members_in'] = sum(1 for r in squad if r['inside'])
         if hasattr(io, 'heal_earlier'):
-            io.heal_earlier(names, True)
+            io.heal_earlier(names, True, *PINNACLE_HEAL_AT)
         await pinnacle_fight(io, [r for r in squad if r['inside']] or [lead], trace, PINNACLE_BUDGET)
         status, text = pinnacle_party_verdict(trace)
         if trace['members_in'] < PINNACLE_PARTY:
@@ -6919,8 +6944,53 @@ async def check_closed_battleground_match(io, name, cls, level):
 # own. The bot walks to it, fights with its own rotation, and when a mark is on its tile it steps to the safe tile the server names (guide `dodge`).
 BOSS_BUDGET = 330.0      # seconds the copy is played at most (its own life is 480 s)
 BOSS_STEPS = 6
-BOSS_DODGE_STEPS = 3     # steps of one dodge (a mark gives 1.5 - 3 s: a person steps, looks, steps)
-BOSS_DODGE_LOOK = 0.4
+BOSS_DODGE_STEPS = 8     # steps of one dodge at most (O683: a mark of radius 2 needs 3 diagonal steps, a ring or a far safe tile more; was 3 axis steps)
+BOSS_DODGE_LOOK = 0.25
+BOSS_DODGE_PACE = 0.2    # seconds between two steps of a dodge (O683: a step of a fast character takes 0.1 to 0.14 s; the walk's 0.3 s wasted a second of 2.5)
+PINNACLE_LOOK = 0.35     # O683: seconds between two looks while a pinnacle boss is fought (was RAID_LOOK, 1 s: a mark was often seen 1 s into its 2.5 s)
+
+
+def dodge_plan(pos, goal, n=BOSS_DODGE_STEPS):
+    """up to n steps [(dx, dy)] from pos to goal, a diagonal step while both axes are left (a person runs off a mark in a straight line; three
+    diagonal steps clear a radius of 2, six axis steps did not fit the warning); [] on another floor or when there (O683)"""
+    if not isinstance(pos, dict) or not isinstance(goal, dict) or pos.get('z') != goal.get('z'):
+        return []
+    x, y = pos['x'], pos['y']
+    out = []
+    while len(out) < n and (x, y) != (goal['x'], goal['y']):
+        dx, dy = goal['x'] - x, goal['y'] - y
+        step = ((dx > 0) - (dx < 0), (dy > 0) - (dy < 0))
+        out.append(step)
+        x, y = x + step[0], y + step[1]
+    return out
+
+
+async def raid_chase(io, r, on):
+    """O683: the chase switch of the fight mode of one bot, only when it changes (chase walks the bot back into the mark it just left)"""
+    if bool(r.get('chase', True)) == bool(on):
+        return
+    r['chase'] = bool(on)
+    f = getattr(io, 'chase', None) if r['lead'] else getattr(io, 'chase_of', None)
+    if f is not None:
+        await (f(on) if r['lead'] else f(r['name'], on))
+
+
+def mark_pending(s):
+    """O683: True when a telegraph is pending in a pinnacle answer (the bot keeps its place until the hit)"""
+    d = (s or {}).get('danger') if isinstance(s, dict) else None
+    return bool(isinstance(d, dict) and (d.get('count') or d.get('labels')))
+
+
+async def dodge_walk(io, r, pos, goal, trace, elapsed):
+    """the steps of a dodge to the safe tile the server named, sent at once (BOSS_DODGE_PACE apart), then a short look. -> the seconds it took"""
+    spent = 0.0
+    for step in dodge_plan(pos, goal):
+        await raid_walk(io, r, step)
+        trace['steps'] += 1
+        await io.sleep(BOSS_DODGE_PACE)
+        spent += BOSS_DODGE_PACE
+    await io.sleep(BOSS_DODGE_LOOK)
+    return spent + BOSS_DODGE_LOOK
 
 
 def boss_copy_look(s, t):
@@ -6980,13 +7050,7 @@ async def boss_copy_play(io, r, trace, budget):
             fight_since = None
         if mode == 'dodge' and isinstance(g.get('goal'), dict) and isinstance(s.get('pos'), dict):
             trace['dodged'] = trace.get('dodged', 0) + 1
-            for step in raid_plan(s['pos'], g['goal'], BOSS_DODGE_STEPS):
-                await raid_walk(io, r, step)
-                trace['steps'] += 1
-                await io.sleep(RAID_STEP)
-                elapsed += RAID_STEP
-            await io.sleep(BOSS_DODGE_LOOK)
-            elapsed += BOSS_DODGE_LOOK
+            elapsed += await dodge_walk(io, r, s['pos'], g['goal'], trace, elapsed)
             trace['secs'] = int(elapsed)
             continue
         plan = []

@@ -10772,7 +10772,7 @@ the `Stash` request's item id and count rules (`Core.sameItem`) for the kit item
 
 Owner 2026-11-18 (translated): "continue with the other tasks": the checks of O651 to O655 were proved on mocks only. They ran once against the local test server
 (the installed server of the scratchpad: `install_all.py` of main on the old files, a SQL dump first, MariaDB, the engine binary built earlier: it lacks
-src-patches 0088 to 0092, which none of these checks needs), with 4 to 10 testers of levels 100 to 2000 per run, `testers.py run --checks --closed --only KEYS`
+src-patches 0088, 0089, 0091 and 0092 and has 0090 (O683), which none of these checks needs), with 4 to 10 testers of levels 100 to 2000 per run, `testers.py run --checks --closed --only KEYS`
 and a 12 minute `--journey` run. New: `testers.py run --only a,b,c` runs just those checks (the closed ones too; the list is `KEYS` and `CLOSED_KEYS`).
 Tests: `tester_checks_test.py`, `testers_test.py` (setup cap), `tester_closed_test.py` (guild ranks), `waystone_tiers_test.lua` (arrivals).
 
@@ -10825,7 +10825,7 @@ run at the first login, so a bot has dropped and found nothing yet. A longer run
 `chore_salvage`, `chore_trade`, the Trial of the ascension and the pocket bosses. The old checks `craft_orbs` ("Orb of Upheaval: modifiers 2 -> 1: a reroll keeps both"), `craft_gems`
 ("gems in the sockets 1 -> 1") and `hideout` ("no tile of the room took Ashen Throne") failed once each in the first run and are not looked at here.
 
-One crash: during the second full run the engine (`tfs`, built without src-patches 0088 to 0092) died with a segfault in `Creature::getCreatureEvents` (a null creature event in a creature's list) a few seconds after a copy of Malgrath was made for a tester, while ten bots died and logged in again every few seconds. Two later runs under gdb (boss copies, the same check list, the journey) did not repeat it, so the cause is open; a CreatureEvent registered a second time under one name deletes the first one while creatures still hold it, which is the first thing to look at (`registerEvent` of the copy, `ChaosTestersBossDeath`).
+One crash: during the second full run the engine (`tfs`, built without src-patches 0088, 0089, 0091 and 0092; it has 0090, O683) died with a segfault in `Creature::getCreatureEvents` (a null creature event in a creature's list) a few seconds after a copy of Malgrath was made for a tester, while ten bots died and logged in again every few seconds. Two later runs under gdb (boss copies, the same check list, the journey) did not repeat it, so the cause is open; a CreatureEvent registered a second time under one name deletes the first one while creatures still hold it, which is the first thing to look at (`registerEvent` of the copy, `ChaosTestersBossDeath`).
 
 Still needs a live run: `dungeon_difficulty` and `weekly_challenge` (a free dungeon at the bot's level, a party that is not a member), `closed_arena_fight` and `closed_battleground_match`
 with ten bots queued together, the pocket and boss kills with gear, the node path of `gather_walk`, the first Trial of the ascension, `rift_walk` past the first floor, the
@@ -10910,7 +10910,7 @@ Owner standing ask (translated; O589 / O595 / O599 / O650 / O658 / O659): "the b
 (gear-up, level gates, retreat, home) were proved on mocks only. They ran against the local test server of step 16: current main installed with `install_all.py` (a SQL dump first,
 `--mysql mariadb`, MariaDB on 127.0.0.1), the helper copied into `data/scripts` and the server started (the helper loads at a server start), closed switch on, 10 testers of
 levels 150 to 2000 (`testers.py setup --count 10 --levels 150,300,500,800,1000,1000,1200,1500,1800,2000`), `testers.py run --checks --closed`, the engine under gdb.
-The engine binary is the one of step 16: no src-patch changed since its build (the last one is 0092 of 2026-11-11), so there was no rebuild. It lacks 0088 to 0092; none of the checks needs them.
+The engine binary is the one of step 16: no src-patch changed since its build (the last one is 0092 of 2026-11-11), so there was no rebuild. It lacks 0088, 0089, 0091 and 0092 (0090 is in it, O683); none of the checks needs them.
 
 What the first run showed (10 bots, 38 minutes, gear-up on, code of step 18): 515 logins, 511 deaths. A bot died within 3 to 5 seconds of nearly every login. Causes, all in the bots:
 1. **The checks ran at the hunt spot.** A check that ends puts the bot back at its hunt (`io.go('hunt')`), the first check of every pass (`pets`) walks there, and `testers.py` sent a bot
@@ -11217,7 +11217,7 @@ Left with the reason: a played fight with the guardian in the arena; a script re
 
 ##### 27. The loot burst on the wire and the pinnacle bosses fought (O678)
 
-What O677 (loot burst) and O667 (pinnacle) had only shown on mocks, run on the local test server of steps 25 and 26: current main installed (`install_all.py --only files,lib,monsters,pinnacle,lootexplosion,sql`), MariaDB on 127.0.0.1, tfs of 2026-11-10 without gdb, **no rebuild** (it has no src-patch 0088 to 0092, disk was 1.7 GB; `lootBagIds` of step 26 still stands in for 0089), the closed switch on, the same ten testers, helper **v29**. Bot code: `tester_core.py` (`scan_world`, `WorldTap`: the 0x83 magic effect, 0x85 distance effect and 0x6A / 0x6B tile thing of a decrypted message, positions inside a box round the death tile), `testers.py` (`CheckIO.tap_of`, `msgs_of`, a bot keeps its `groundLoot` and `lootfilter` messages), `tester_checks.py` (`loot_burst`, `pinnacle_walk`). The levels of four bots were set in the database (TEST ONLY, local data): Ninja 1900, Samurai 2100, Warrior 2300, Juggernaut 2500, their health, mana and capacity scaled by level; skills and gear stayed as they were.
+What O677 (loot burst) and O667 (pinnacle) had only shown on mocks, run on the local test server of steps 25 and 26: current main installed (`install_all.py --only files,lib,monsters,pinnacle,lootexplosion,sql`), MariaDB on 127.0.0.1, tfs of 2026-11-10 without gdb, **no rebuild** (it lacks src-patches 0088, 0089, 0091 and 0092 but has 0090: checked in O683, its `src/game.cpp` carries the `patch 0090` comments and `game.cpp.o` is 25 s newer than the source; disk was 1.7 GB; `lootBagIds` of step 26 still stands in for 0089), the closed switch on, the same ten testers, helper **v29**. Bot code: `tester_core.py` (`scan_world`, `WorldTap`: the 0x83 magic effect, 0x85 distance effect and 0x6A / 0x6B tile thing of a decrypted message, positions inside a box round the death tile), `testers.py` (`CheckIO.tap_of`, `msgs_of`, a bot keeps its `groundLoot` and `lootfilter` messages), `tester_checks.py` (`loot_burst`, `pinnacle_walk`). The levels of four bots were set in the database (TEST ONLY, local data): Ninja 1900, Samurai 2100, Warrior 2300, Juggernaut 2500, their health, mana and capacity scaled by level; skills and gear stayed as they were.
 
 **1. Loot burst (O677) on the real engine.**
 
@@ -18285,6 +18285,57 @@ No number was retuned. Decision for the owner after a bot can dodge: whether the
 **Not verified.** A kill: no pinnacle boss fell to the bots' own spells; the kill time of the model (and with it any "live seconds" for a kill) was not measured, only the wipe time. Talath (2300) and Varkhul (2500) were not fought; the Mystic and Samurai were not run solo; the five classes are one mix; the Defense-first tree and the Auto setup were left as the gear-up makes them; boots, jewellery and shield have no set piece in the bots' gear; the survival model's builds (vitality of the tree, absorbs) are not what the bots' trees give (the Warrior's 44.8k is the model's 40.5k, its absorb layers were not read); the mana shield is cast every 100 s without reading its duration; the Gambler's piece grants (up to 6 million gold a bot) hide the cost of the gear, the grants are named fallbacks.
 
 Tests: `tests/tester_helper_test.lua` (`gear`, the plan by class and level, the grant on a mocked player, the flasks, `info`, the loop's priority target), `tests/pinnacle_test.lua` (dodge, adds, full health), `tests/pocketboss_test.lua`, `tests/testers_boss_test.lua` (`addsFor`), `tools/tester_checks_test.py` (`PinnacleGear`, `PinnacleParty`: the fight loop, carried out, dodge, shield, the party check with fakes, one party at a time, the member's wait), `tools/testers_test.py` (`partners`, `set_potions`, `heal_earlier`).
+
+### Bots dodge the pinnacle telegraphs (O683)
+O681 ended every fight as a wipe and named the telegraphs (Tidal Collapse, Drowning Marks) as the killers. O683 counts the marks the bots take, finds why, fixes the bots (and one server fault) and measures again. Testers only; no boss number changed.
+
+**What is counted.** `ChaosBossMech.tallyFor(bossId)` (boss_mechanics.lua): per fight and per telegraph name, `fired`, `exposed` (one per player in the fight when a telegraph hits) and `taken` (that player stands on a marked tile at the hit). `PN.probe` returns it as `tally`; helper **v31** passes `tally` and `danger` (ms left, names, `here`) in `!tester pinnacle state`; the pinnacle checks print "marks taken N of M (P%)" (`tester_checks.tally_text`). The model's `marksTaken` 0.35 is this same ratio. A telegraph hit that kills is counted at its own hit, the last look of a dead bot may miss it.
+
+**Why the bots stood in marks** (found with a local probe, not in git: every 400 ms the bot's tile against the pending marks, every hit of 12% of the health or more with its origin; and a log of every look with its round trip). The round trip of one look is 0.2 s; the warning is 2.5 s (Malgrath) and 2.4 s (Vhoss).
+1. **A retreat step into the mark.** `retreat_check` (O658) ran in the pinnacle loop: under 30% it healed, took one step back along the trail (into the mark just left) and then waited standing still. It does not run in a pinnacle fight now (the helper's loop heals).
+2. **Chase.** The bots log in with the fight mode "chase on": after a dodge the game walked the bot back to its target, into the mark. The fight mode packet (0xA0) goes out with chase off while a mark is pending and on again after (`raid_chase`, `mark_pending`, `CheckIO.chase`, `chase_of`).
+3. **Three axis steps at 0.3 s.** A mark of radius 2 is three diagonal steps away, six axis steps. The walk packets now include the four diagonals (0x6A to 0x6D, `STEP_BYTES`), a dodge walks up to 8 steps to the safe tile 0.2 s apart and looks 0.25 s after (`dodge_plan`, `dodge_walk`).
+4. **Looks too far apart.** One look a second plus 6 blind steps (1.8 s of a 2.5 s warning): looks every 0.35 s, 3 steps between two (`PINNACLE_LOOK`, `PINNACLE_STEPS`).
+5. **The walk into the mark.** The guide walked the bot back to the boss or an add through the marked tiles. `PN.probe` gives the guide `hold` when a mark is pending, the bot is off it and its walk ends on or next to a marked tile: it stays and fights until the hit (`trace['held']`).
+6. Heals (TEST ONLY harness): spell under 90% and potion under 80% health in a pinnacle fight (O681: 75 / 55); a burst of 25k came on 31k.
+
+**Game bug fixed: the boss's own tiles counted as a safe tile.** A cone leaves the boss's body unmarked (it starts one tile out) and so does a ring, so for a player next to a size 2 boss the nearest "safe" tile (`G.safeSpot`, in `ChaosBossMech.dangerFor` and in the fairness step `G.makeFair` of `G.planTelegraph` / `G.refollow`) was a tile under the boss. The bot's dodge named it, walked into the boss, stood in the cone and took 28.9k of 49k (Vhoss, live: `DF goal=11543,10133` with the boss at 11543,10133). Fix: `G.bodySet(pos, size)` (the footprint, `G.footprint`); `dangerFor` finds the safe tile on a grid without the body (no path over the boss either) and the fairness step adds the body to the tiles it may not use. For players: the check "every player has a safe tile in reach, else a pocket is cut out of the marks" no longer counts a tile under the boss, so a player next to a big boss whose only safe tile was the boss gets a pocket now (rare; every other telegraph is unchanged). Tests: `boss_mechanics_test.lua` (`bodySet`, a cone next to a size 2 boss names a free, unmarked goal).
+No other fault in the game: a mark always left a safe tile in time (the warning is 2.4 to 2.5 s, a mark of radius 2 is 3 diagonal steps of 0.1 to 0.14 s), the safe tile named was safe once the body was left out, the ring leaves the tiles beside the boss free ("hug it").
+
+**Share of marks taken** (Warrior alone at Malgrath 1900 and Vhoss 2100, party of five Mystic, Ranger, Warrior, Juggernaut, Samurai; same gear path as O681):
+
+| Arm | Marks taken |
+|---|---|
+| Model (`marksTaken`) | 35% |
+| Before (O681 code, Malgrath, Warrior alone, one run on the new Lua) | 2 of 10 (20%; a short fight) |
+| Malgrath alone after the bot fixes (5 runs) | 5 of 147 (3%) |
+| Vhoss alone, bot fixes, boss tiles still safe | 3 of 8 (38%: the cone, the fault above) |
+| Vhoss alone, bot fixes and the boss tiles fix | 0 of 31 (0%) |
+| Malgrath party of five (2 runs) | 16 of 123 (13%: Drowning Marks 16 of 58, Tidal Collapse 0 of 65) |
+| Vhoss party of five (the kill) | 29 of 144 (20%: Hexmaw Cone 27 of 71, Hexlines 2 of 73) |
+
+The bots take fewer marks than the model's player. In a party the cone is the one that is taken (it follows the boss's target, the others stand beside him).
+
+**Seconds to kill** against `pinnacle_model.kill_seconds` (Warrior alone: 382 s at Malgrath, 385 s at Vhoss; the party mix: 286 s and 288 s; O681 table). A fight that ends with a fall is projected as seconds / (share of the boss's health taken), a measure, not a kill.
+
+| Boss, who | Model | Live | Falls |
+|---|---|---|---|
+| Malgrath 1900, Warrior alone | 382 s | no kill; five fights fell after 383 s (boss 12% left, 435 s projected), 130 s (71%), 12 s, about 495 s (under 1% left, 497 s projected), 215 s (49%, 421 s projected) | each fight 1 |
+| Vhoss 2100, Warrior alone | 385 s | no kill; 265 s (47% left, 500 s projected, 0 marks of 31) | 1 |
+| Malgrath 1900, party of five | 286 s | no kill; two fights wiped the party: all five out by 137 s (boss 72% left, 489 s projected) and by 143 s (64% left, 5 falls at 35, 47, 78, 111 and 143 s; about 600 s projected) | 5 each |
+| Vhoss 2100, party of five | 288 s | **down in 313 s** (1.09 x), Juggernaut out at 86 s, Ranger at 156 s, Warrior at 172 s, Mystic and Samurai alive | 3 |
+
+**The gap that is left.** Alone, the fights project to 420 to 500 s against 382 s and 385 s (1.1 to 1.3 x, under the 1.5 x of the task). The party at Vhoss killed in 313 s (1.09 x). The party at Malgrath did not: both fights lost bots from 33 s on and projected to 490 to 600 s against 286 s (1.7 to 2.1 x), the one gap over 1.5 x. Causes, in the order of the log:
+1. **Plain attacks, not marks, kill the Warrior alone.** Log of every hit of 12% or more: the boss's melee 6 to 12k, and its spell attacks (`origin` spell) 11 to 29k, up to 52% of the 49k health in one hit, two or three in one tick (melee 9.6k + 18.8k + 18.4k took 47k from 28k in the last tick of one fight). The model plans `pressure` 0.95 to 1.04 alone (incoming mean against the median class's healing), the bots heal about 7k a second, so two or three spells in the tick the potion is on cooldown end a fight the means said was even. The boss mods (`Ruthless`, `Swift`) roll per run and move it.
+2. **Five Drowning Marks in a party.** A mark lies under every player (radius 2) and the five bots stand together at the boss: the marks overlap into one large blob, the bots block each other's steps, and 13 of 34 were taken in the second Malgrath party (38%) against 3 of 24 in the first. The Vhoss cone is the same shape of problem (27 of 71 taken in the kill).
+3. Damage: the party deals 0.58 x of the model while its bots stand (O681), and every bot out lowers it further.
+No number was retuned. Owner: (a) whether the plain spell attacks of the pinnacle bosses (`hitMult`, `pinnacle_config.lua` `damage`) need a cap near 35% of the health a hit, as the rift guardians have (`guardian.hitCap`, O478): they are not telegraphed, so they cannot be dodged; (b) whether Drowning Marks under five players standing together are meant to merge into one blob.
+
+**Not verified.** Talath and Varkhul; other class mixes; the model's builds against the bots' trees; one or two runs per party cell (a run in which a second leader opened a fight of one bot and the party formed with four bots was thrown away); `marks taken` counts each exposure once at the hit, a bot that dodged by luck counts as a dodge; before-numbers are one short run.
+
+Local rig, as O681: `install_all.py --only files,lib,monsters,pinnacle,lootexplosion,sql` from this tree, MariaDB, tfs of 2026-11-10, closed switch on, weaponElement 1, helper v31, the five bots' backpacks emptied between runs (the worn set stays), levels set in the database. A daily server save at 08:00 shuts the local server down (`restart guard`): a run over that hour stops. The local server is stopped, `weaponElement` 1, logs and local data deleted.
+
+Tests: `tools/tester_checks_test.py` (`PinnacleDodge`: diagonal plan, walk packets, pending mark, chase switch, tally text and trace; a held bot walks nowhere; the dodge of five), `tools/testers_test.py` (diagonal packets, chase packets), `tests/tester_helper_test.lua` (the answer's `danger` and `tally`, v31), `tests/pinnacle_test.lua` (`hold`, `tally`), `tests/boss_mechanics_test.lua` (tally, `bodySet`, the cone goal).
 
 ### The Boss Roulette (`boss_roulette_config.lua`, `tools/patch_roulette.py`, `prizes.lua`/`prizes_core.lua`, `tests/boss_roulette_test.lua`)
 

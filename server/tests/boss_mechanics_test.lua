@@ -680,6 +680,15 @@ end
 check(hitStay, "the player left on the mark is hit")
 check(not hitWalker, "the player who walked off is not")
 eq(stay.hp, 6000, "40% of max health")
+-- O683: the tally of the telegraphs: two players were exposed to the one Slam, one stood on it, none of them before the hit
+local ty = M.tallyFor(b.id)
+check(ty ~= nil and ty.fired == 1, "tally: one telegraph fired")
+eq(ty.exposed, 2, "tally: two players could have been hit")
+eq(ty.taken, 1, "tally: one stood on the mark at the hit")
+eq(ty.by["Slam"].taken, 1, "tally: by the telegraph's name")
+ty.by["Slam"].taken = 99
+eq(M.tallyFor(b.id).by["Slam"].taken, 1, "tally: a copy, the fight's own numbers stay")
+eq(M.tallyFor(987654321), nil, "tally: no fight, no tally")
 -- the wardstone phase
 b.hp = 49000
 runTo(T + 300)
@@ -1042,6 +1051,38 @@ do
 	check(cb.maxHp < 100000, "O682: the maximum health is cut")
 	check(math.abs(cb.hp / cb.maxHp - 0.5) < 0.001, "O682: a boss at half health stays at half health (" .. cb.hp .. " / " .. cb.maxHp .. ")")
 	creatures[cb.id] = nil
+end
+
+-- O683: the boss's own tiles are no safe tile. A cone starts one tile out, so the tile under a big boss next to the bot was "safe" and the bot's dodge
+-- (ChaosBossMech.dangerFor) named it: a walk into the boss. The goal is a free tile now, the way to it does not lead over the boss's body.
+do
+	local G = ChaosBossMechCore
+	local body = G.bodySet({x = 300, y = 300, z = 7}, 2)
+	local n = 0
+	for _ in pairs(body) do
+		n = n + 1
+	end
+	eq(n, 4, "bodySet: a size 2 boss stands on four tiles")
+	check(body["299,299"] and body["300,299"] and body["299,300"] and body["300,300"], "bodySet: the footprint ends at the boss's position (G.footprint)")
+	eq(next(G.bodySet({x = 1, y = 1, z = 7}, 1)), "1,1", "bodySet: a size 1 boss stands on one tile")
+	eq(next(G.bodySet(nil, 2)), nil, "bodySet: no position, no tiles")
+	cfg.profiles["cone boss"] = {label = "Coner", size = 2, element = "death", difficulty = 0, every = 90000, firstMs = 500, compensate = false,
+		telegraphs = {{key = "cone", label = "Cone", kind = "cone", length = 6, spread = 2, share = 0.4, hit = "x", fallback = 1}}}
+	local cb = make({name = "Cone Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+	local bot = make({name = "Bot", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+	cb.target = bot.id
+	local cf = M.attach(cb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(cf ~= nil, "cone: attached")
+	runTo(T + 1000)
+	local d = M.dangerFor(cb.id, bot.pos)
+	check(d ~= nil and d.marked["200,201"], "cone: the bot stands in the cone")
+	check(d ~= nil and d.goal ~= nil, "cone: a safe tile is named")
+	if d and d.goal then
+		check(not d.marked[d.goal.x .. "," .. d.goal.y], "cone: the goal is not marked")
+		check(not G.bodySet(cb.pos, 2)[d.goal.x .. "," .. d.goal.y], "cone: the goal is not a tile under the boss")
+	end
+	creatures[cb.id] = nil
+	runTo(T + 500)
 end
 
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))

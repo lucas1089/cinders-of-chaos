@@ -523,7 +523,7 @@ ChaosTitles = {register = function(source, fn) titleSources[source] = fn end}
 ChaosNameplate = {refresh = function() end}
 -- the mechanics glue: the factor the profile keeps the kill time with (G.balance)
 local attached = {}
-local dangerAsked, dangerAnswer, addsAnswer = {}, nil, nil
+local dangerAsked, dangerAnswer, addsAnswer, tallyAnswer = {}, nil, nil, nil
 ChaosBossMech = {attach = function(m, key, opts)
 	attached[#attached + 1] = {monster = m, opts = opts}
 	return {hpMult = 0.8}
@@ -532,6 +532,8 @@ end, dangerFor = function(bossId, at)   -- O681: the marks a person sees (boss_m
 	return dangerAnswer
 end, addsFor = function(bossId)   -- O681: the adds and the totem of the phases (boss_mechanics.lua M.addsFor)
 	return addsAnswer
+end, tallyFor = function(bossId)   -- O683: what the telegraphs did so far (boss_mechanics.lua M.tallyFor)
+	return tallyAnswer
 end}
 local riftCalls, waystoneCalls = {}, {}
 ChaosAscended = {onRiftSealed = function(info) riftCalls[#riftCalls + 1] = info end}
@@ -892,6 +894,21 @@ do
 	local gb = PN.probe(lead)
 	eq(gb.guide.mode, "walk", "probe: only a far add left: walk to it")
 	eq(gb.guide.goal.x, lp.x + 12, "probe: to the far add")
+	-- O683: a mark on or next to the tile the walk ends on, the bot off it: it holds until the hit (the walk went back into the mark it had left)
+	dangerAnswer = {marked = {[(lp.x + 13) .. "," .. (lp.y + 1)] = true}, left = 1200, labels = {"Tidal Surge"}, count = 1}
+	local held = PN.probe(lead)
+	eq(held.guide.mode, "hold", "probe: the walk would end next to a mark: hold")
+	eq(held.guide.goal.x, lp.x + 12, "probe: the hold keeps the goal")
+	eq(held.danger.here, false, "probe: the bot is not on the mark it holds for")
+	dangerAnswer = {marked = {[(lp.x + 20) .. "," .. lp.y] = true}, left = 1200, labels = {"Tidal Surge"}, count = 1}
+	eq(PN.probe(lead).guide.mode, "walk", "probe: a mark far from the goal does not hold the walk")
+	dangerAnswer = nil
+	tallyAnswer = {fired = 3, exposed = 5, taken = 1, by = {["Tidal Surge"] = {fired = 3, exposed = 5, taken = 1}}}
+	local ty = PN.probe(lead).tally
+	eq(ty.taken, 1, "probe: the tally of the telegraphs (O683)")
+	eq(ty.by["Tidal Surge"].exposed, 5, "probe: the tally by name")
+	tallyAnswer = nil
+	eq(PN.probe(lead).tally, nil, "probe: no tally without a telegraph")
 	dangerAnswer = {marked = {[lp.x .. "," .. lp.y] = true}, left = 900, labels = {"Tidal Surge"}, count = 1, goal = {x = lp.x - 3, y = lp.y, z = lp.z}}
 	eq(PN.probe(lead).guide.mode, "dodge", "probe: a mark on the bot's tile comes before the adds")
 	eq(PN.probe(lead).adds.id, 777001, "probe: the add is still named while it dodges")

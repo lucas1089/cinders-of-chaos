@@ -800,7 +800,8 @@ class KeyIO:
 REQUEST_GAP = 0.35   # O660: seconds between two requests of the same opcode (one window): above the 250 and 300 ms rate limits of the windows
 
 
-STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68}   # the walk packets: north, east, south, west
+STEP_BYTES = {(0, -1): 0x65, (1, 0): 0x66, (0, 1): 0x67, (-1, 0): 0x68,   # the walk packets: north, east, south, west
+              (1, -1): 0x6A, (1, 1): 0x6B, (-1, 1): 0x6C, (-1, -1): 0x6D}   # O683: northeast, southeast, southwest, northwest (a dodge runs off a mark in a line)
 
 
 class CheckIO(KeyIO):
@@ -1291,6 +1292,18 @@ class CheckIO(KeyIO):
 
     async def step(self, dx, dy):
         return await self.step_of(self.bot.name, dx, dy)
+
+    async def chase_of(self, other, on):
+        """O683: the fight mode's chase switch of a bot (a person who steps off a mark does not want the game to walk him back to the monster)"""
+        b = self._bot(other)
+        if b is None or not b.alive or b.died:
+            return False
+        b.conn.send(b'\xA0\x01' + (b'\x01' if on else b'\x00') + b'\x01\x00')
+        await b.conn.w.drain()
+        return True
+
+    async def chase(self, on):
+        return await self.chase_of(self.bot.name, on)
 
     async def loot(self):
         if self.alive():

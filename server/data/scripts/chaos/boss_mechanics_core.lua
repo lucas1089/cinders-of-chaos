@@ -67,6 +67,22 @@ function G.footprint(pos, size)
 	return {x1 = pos.x - (size - 1), y1 = pos.y - (size - 1), x2 = pos.x, y2 = pos.y}
 end
 
+-- O683: the tiles under a boss of `size` standing at `pos` (the footprint), key -> true; {} without a position. A player cannot stand there: a
+-- telegraph that leaves the body unmarked (a cone starts one tile out, a ring three) did not make the boss's own tiles a safe place to run to
+function G.bodySet(pos, size)
+	local out = {}
+	if not pos then
+		return out
+	end
+	local b = G.footprint(pos, size)
+	for x = b.x1, b.x2 do
+		for y = b.y1, b.y2 do
+			out[x .. "," .. y] = true
+		end
+	end
+	return out
+end
+
 -- the distance from a tile to a footprint (0 inside)
 function G.distBody(x, y, b)
 	local dx = x < b.x1 and b.x1 - x or (x > b.x2 and x - b.x2 or 0)
@@ -784,6 +800,9 @@ function G.planTelegraph(st, spec, ctx, now, warnMs)
 	end
 	local budget = G.budget(lockMs, fair)
 	local others, first = G.pendingTiles(st, now)
+	for k in pairs(G.bodySet(ctx.boss, ctx.size or st.size)) do
+		others[k] = true   -- O683: the boss's own tiles are no safe tile to run to (the nearest one of a cone, a ring, a line)
+	end
 	if first then
 		-- overlapping: a tile safe from all of them must be reached before the earliest pending hit
 		budget = math.min(budget, G.budget(first - now, fair))
@@ -812,6 +831,9 @@ function G.refollow(st, tel, ctx, now)
 				others[k] = true
 			end
 		end
+	end
+	for k in pairs(G.bodySet(ctx.boss, ctx.size or st.size)) do
+		others[k] = true   -- O683
 	end
 	tiles = G.makeFair(ctx.grid, tiles, ctx.players, budget, straight, diag, ctx.boss, others)
 	tel.tiles, tel.set, tel.plan = tiles, G.tileSet(tiles), G.markPlan(tiles)

@@ -53,6 +53,9 @@
 --   * "!tester gear [state | set]" (O681): the helmet, armour, legs and weapon of the equipment sets that fit the bot's class and level (`state` reads,
 --     `set` is the TEST ONLY grant of a Rare piece of item level = the level for each slot, worn at once, a tester only, logged, never inside a pinnacle
 --     fight): the gear the pinnacle checks need, which the Gambler's stock and a bot's own drops do not give at level 1900 to 2500
+--   * v31 (O683): `!tester pinnacle state` inside a fight also answers `danger` (ms to the first pending mark, its names, whether the bot stands on it) and
+--     `tally` (telegraphs fired, players they could have hit, those standing on a marked tile at the hit: the share of marks taken), and the guide says
+--     `hold` when the walk would end on or next to a pending mark (the bot stays and fights until the hit)
 --   * "!tester bounty [state | where NAME | path]" (O599): the bounty board as a person sees it (ChaosBounty.probe: the contracts held, the ones a
 --     hunt mark lists, "where does monster X spawn" from the hunt marks) and the path on foot to the contract's monster or hunt
 --   * "!tester mainquest [state]" (O599): the open step of the main quest, its condition, progress, where to go and what a bot can play of it
@@ -120,7 +123,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 30
+HELPER_VERSION = 31
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version

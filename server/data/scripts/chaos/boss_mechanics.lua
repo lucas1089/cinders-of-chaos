@@ -485,13 +485,35 @@ local function telegraph(f, spec, warnMs)
 		if ChaosBigFx and ChaosBigFx.bossHit then
 			pcall(ChaosBigFx.bossHit, tel.tiles, fl.profile.element)
 		end
+		-- O683: the tally of what was warned and what was taken (M.tallyFor): one exposure per player a telegraph could have hit
+		local tally = fl.tally or {fired = 0, exposed = 0, taken = 0, by = {}}
+		fl.tally = tally
+		local row = tally.by[spec.label] or {fired = 0, exposed = 0, taken = 0}
+		tally.by[spec.label] = row
+		tally.fired, row.fired = tally.fired + 1, row.fired + 1
 		for _, p in ipairs(fightPlayers(fl)) do
 			local pp = p:getPosition()
+			tally.exposed, row.exposed = tally.exposed + 1, row.exposed + 1
 			if tel.set[G.key(pp.x, pp.y)] then
+				tally.taken, row.taken = tally.taken + 1, row.taken + 1
 				hit(fl, p, tel.share)
 			end
 		end
 	end, warnMs)
+end
+
+-- O683 (the tester bots, pinnacle.lua PN.probe): what the fight's telegraphs did so far: {fired, exposed (players a telegraph could have hit,
+-- summed), taken (of those, the ones standing on a marked tile at the hit), by = {label = {fired, exposed, taken}}}; nil without a fight or a hit
+function M.tallyFor(bossId)
+	local f = M.fights[bossId]
+	if not f or not f.tally then
+		return nil
+	end
+	local by = {}
+	for label, row in pairs(f.tally.by) do
+		by[label] = {fired = row.fired, exposed = row.exposed, taken = row.taken}
+	end
+	return {fired = f.tally.fired, exposed = f.tally.exposed, taken = f.tally.taken, by = by}
 end
 
 -- O652 (the tester bots' probe, testers_boss.lua): what a person sees of a boss's telegraphs now. -> {marked = {["x,y"] = true} (every tile any
@@ -521,7 +543,16 @@ function M.dangerFor(bossId, pos)
 	local out = {marked = marked, left = math.max(0, soonest - now), labels = labels, count = #live}
 	if pos and marked[G.key(pos.x, pos.y)] then
 		local straight, diag = G.stepCosts(f.profile.fair or {})
-		local tile = G.safeSpot(f.grid, marked, pos, math.max(300, out.left - 200), straight, diag)
+		-- O683: not through or onto the boss (a cone leaves its own tiles unmarked, the nearest "safe" tile of a bot next to him was the boss)
+		local boss = Monster(bossId)
+		local body = G.bodySet(boss and boss:getPosition() or nil, (f.st and f.st.size) or 1)
+		local grid = {set = setmetatable({}, {__index = function(_, k)
+			if body[k] then
+				return nil
+			end
+			return f.grid.set[k]
+		end})}
+		local tile = G.safeSpot(grid, marked, pos, math.max(300, out.left - 200), straight, diag)
 		out.goal = tile and {x = tile.x, y = tile.y, z = tile.z or pos.z} or nil
 	end
 	return out
