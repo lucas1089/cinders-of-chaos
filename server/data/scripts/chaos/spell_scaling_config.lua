@@ -24,7 +24,16 @@
 -- `wand` is the mean damage of the wand or rod in the hands (0 without one: factor 1), `wandMean` the mean wand of the
 -- level (the gear sets' wand curve, tools/install_gear_sets.py WEAPON_CURVES 'wand': a wand of the right band gives exactly W,
 -- a better one up to `cap` times the growth).
+-- O679 (the Juggernaut at half the median, live): a melee weapon's element damage counts in the attack its spells read. The engine
+-- rolls the auto attack of such a weapon in two hits, the physical one and the element one with the element value as its attack
+-- (Weapon::getElementDamage), and the tooltip's Estimated DPS adds both, but a weapon spell read the physical attack only
+-- (ChaosSpell.meleeAttack). Every set weapon gives 35% of its tier as element (install_gear_sets.py ELEMENT_SHARE) and the stock
+-- weapons of the levels 600 to 999 carry mostly element (attack 8 to 13, element 50 to 73), while the model rows and weaponGrowth
+-- assume the whole tier is attack: a level 813 Juggernaut with the best weapon of its level (physical 71 of a tier of 111) cast
+-- at 0.64 of what class_dps_model.py counts. `weaponElement` is the share of the weapon's element damage that joins the attack:
+-- 1 = all of it (the engine's own rule for the auto attack), 0 = physical only (the rule before O679).
 ChaosSpellScalingConfig = {
+	weaponElement = 1,
 	mlShare = {
 		per = 300,
 		normalise = true,

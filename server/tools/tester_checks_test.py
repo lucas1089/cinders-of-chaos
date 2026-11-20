@@ -10692,12 +10692,13 @@ class RerollIO(TidyIO):
 ITEMS665 = '''<?xml version="1.0"?>
 <items>
 	<item id="8209" name="kit sword"><attribute key="weaponType" value="sword"/><attribute key="attack" value="12"/></item>
-	<item id="900" name="sanguine blade"><attribute key="weaponType" value="sword"/><attribute key="elementfire" value="73"/><attribute key="attack" value="13"/></item>
+	<item id="900" name="sanguine blade"><attribute key="weaponType" value="sword"/><attribute key="elementfire" value="7"/><attribute key="attack" value="13"/></item>
 	<item id="901" name="deathlord blade"><attribute key="weaponType" value="sword"/><attribute key="attack" value="85"/></item>
 	<item id="902" name="soulbleeder"><attribute key="weaponType" value="distance"/><attribute key="attack" value="103"/></item>
 	<item id="903" name="eldritch wand"><attribute key="weaponType" value="wand"/><attribute key="range" value="4"/></item>
 	<item id="904" name="arodis wand"><attribute key="weaponType" value="wand"/></item>
 	<item id="905" name="stone"><attribute key="weight" value="5"/></item>
+	<item id="906" name="sanguine hatchet"><attribute key="weaponType" value="axe"/><attribute key="elementFire" value="73"/><attribute key="attack" value="13"/></item>
 </items>
 '''
 WEAPONS665 = '''<?xml version="1.0"?>
@@ -10731,8 +10732,8 @@ class PowerRerollIO(RerollIO):
 
 
 class Power665(unittest.TestCase):
-    """O665: the bot ranks a weapon by what its class's spells read (the physical attack, the wand's damage), not by item level: the melee sets of
-    level 600 to 999 are mostly element and cast with skill x 20"""
+    """O665: the bot ranks a weapon by what its class's spells read (the attack, O679: plus the element damage of a melee weapon; the wand's damage), not by
+    item level: a weapon of the level 600 to 999 with a small attack and no element casts with skill x 20"""
 
     def setUp(self):
         import tempfile
@@ -10757,7 +10758,8 @@ class Power665(unittest.TestCase):
         TX.set_weapon_stats(None)
 
     def test_the_files_are_read(self):
-        self.assertEqual(self.stats[900], {'type': 'sword', 'attack': 13, 'wand': 0.0})
+        self.assertEqual(self.stats[900], {'type': 'sword', 'attack': 13, 'element': 7, 'wand': 0.0})
+        self.assertEqual(self.stats[906], {'type': 'axe', 'attack': 13, 'element': 73, 'wand': 0.0}, 'the element key in any letter case (elementFire)')
         self.assertEqual(self.stats[902]['type'], 'distance')
         self.assertEqual(self.stats[903]['wand'], 118.0, 'the mean of the wand\'s min and max')
         self.assertNotIn(905, self.stats, 'an item that is no weapon')
@@ -10765,7 +10767,9 @@ class Power665(unittest.TestCase):
 
     def test_what_a_weapon_is_worth_to_a_class(self):
         p = self.W.weapon_power
-        self.assertEqual(p(self.stats, 900, 'Juggernaut'), 20.0, 'attack 13 and a fire element: a spell reads 20 (the floor)')
+        self.assertEqual(p(self.stats, 900, 'Juggernaut'), 20.0, 'attack 13 and an element of 7: 20 (the floor)')
+        self.assertEqual(p(self.stats, 906, 'Juggernaut'), 86.0, 'O679: attack 13 and fire 73: the spell reads both (it read the floor of 20 before)')
+        self.assertEqual(p(self.stats, 906, 'Warrior'), 86.0)
         self.assertEqual(p(self.stats, 901, 'Juggernaut'), 85.0)
         self.assertEqual(p(self.stats, 902, 'Deadeye'), 103.0)
         self.assertEqual(p(self.stats, 902, 'Warrior'), 0.0, 'a bow in the hand of a Warrior')
@@ -10778,13 +10782,13 @@ class Power665(unittest.TestCase):
         self.assertFalse(self.W.weapon_beats(80.0, 77.0), 'under the 10 % margin: the weapon in the hand stays')
         self.assertIsNone(self.W.weapon_beats(None, 77.0))
 
-    def test_the_pick_takes_the_physical_weapon_not_the_higher_item_level(self):
+    def test_the_pick_takes_the_stronger_weapon_not_the_higher_item_level(self):
         stock = [{'i': 1, 'id': 900, 'sn': 'Weapon', 'p': 800000, 'l': 130, 'n': 'sanguine blade'},
                  {'i': 2, 'id': 901, 'sn': 'Weapon', 'p': 900000, 'l': 120, 'n': 'deathlord blade'}]
         io = PowerIO(stats=self.stats)
         power = TX.weapon_power_fn(io, 'Juggernaut')
         self.assertEqual(TX.weapon_pick(stock, 100)['id'], 900, 'by item level the element sword wins (O663)')
-        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=20.0)['id'], 901, 'by power the physical one')
+        self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=20.0)['id'], 901, 'by power the stronger one')
         self.assertIsNone(TX.weapon_pick(stock, 100, power=power, worn_power=85.0), 'nothing stronger than an attack of 85: nothing is bought')
         self.assertEqual(TX.weapon_pick(stock, 100, power=power, worn_power=None)['id'], 901, 'the worn weapon is not known: the item level lets both in, the power ranks them')
         self.assertIsNone(TX.weapon_pick(stock, 200, power=power, worn_power=None), 'and the item level still says nothing is better than 200')
@@ -10827,14 +10831,15 @@ class Power665(unittest.TestCase):
 
     def test_the_plan_of_the_level(self):
         W = self.W
-        self.assertAlmostEqual(W.plan_power(500, 'Juggernaut'), 81 * 0.65, 6, 'melee: the physical part of the plan (the sets give 35 % as an element)')
-        self.assertAlmostEqual(W.plan_power(817, 'Warrior'), (94 + (118 - 94) * (817 - 700) / 150.0) * 0.65, 6, 'straight between the anchors')
+        self.assertAlmostEqual(W.plan_power(500, 'Juggernaut'), 81.0, 6, 'melee: the whole plan (O679: the spell reads the 35 % element of the sets too; 0.65 of it before)')
+        self.assertAlmostEqual(W.plan_power(817, 'Warrior'), 94 + (118 - 94) * (817 - 700) / 150.0, 6, 'straight between the anchors')
         self.assertEqual(W.plan_power(574, 'Deadeye'), 111 + (125 - 111) * 74 / 200.0, 'a launcher counts whole')
         self.assertEqual(W.plan_power(8, 'Elementalist'), 16.0)
         self.assertEqual(W.plan_power(5000, 'Elementalist'), 398.0, 'flat above 2000')
         self.assertIsNone(W.plan_power(500, 'Monk'), 'no rule for a fist class')
         self.assertTrue(W.power_short(20.0, 817, 'Juggernaut'), 'attack 20 at level 817 is under half of the plan')
-        self.assertFalse(W.power_short(73.0, 817, 'Juggernaut'), 'a set weapon of level 800 is not')
+        self.assertFalse(W.power_short(110.0, 817, 'Juggernaut'), 'a set weapon of level 800 (attack 71 + element 39) is not')
+        self.assertTrue(W.power_short(50.0, 817, 'Juggernaut'), 'half of the plan of 112 is 56')
         self.assertFalse(W.power_short(None, 817, 'Juggernaut'))
         self.assertFalse(W.power_short(20.0, 817, 'Monk'))
 

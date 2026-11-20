@@ -5458,3 +5458,12 @@ The pool step is the least certain: the typical profile of `tools/damage_pool_ta
 
 Bosses for the typical character (`boss_length_model.py`): the damage on one boss is the median class x 0.60 (a boss lets half of the physical half and 70% of the elemental half through):
 295 at 100, 994 at 300, 1,883 at 500, 3,993 at 850, 5,329 at 1000, 10,694 at 2000. A dungeon boss takes 150 s, a rift guardian 53-59 s, the Omen guardian 318 s at level 1000.
+
+### Juggernaut live probe and the weapon element (O679, 2026-11-20; measured, not a model number)
+
+`class_dps_model.py` and `class_dps_measured.csv` are not changed: both read the model's typical attack (a whole tier), and the engine now reads it too. Live, on
+the local test server: an idle Demon of 10,000,000 health next to a bot of level 813 (damage = health lost a second, resists physical 25%), the Azure Vigil blade
+(attack 71, element 39), the damage tree of 201 nodes, no armour, median of the level 6,065. Before the fix a melee weapon spell read the physical attack only
+(71 of the tier 111): Juggernaut 3,985 (0.66), Warrior 3,453 (0.57), Mystic 362 control 1,910. After (`spell_scaling_config.lua` `weaponElement` 1): 4,571 (0.75),
+3,869 (0.64), 1,898. Spells of the Juggernaut 2,060 to 2,580 a second. Without the Demon's 25% the Juggernaut is 6,095 against the median 6,065 and the model's 6,653.
+Cause and method: server/README.md "Weapon element in the spell attack (O679)".

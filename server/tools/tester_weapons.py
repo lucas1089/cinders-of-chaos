@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """The weapon a class hits with (O665; server/README.md "The rest of the closed audit (O589)" step 24). Pure functions, no engine, no database.
 
-The pick of the weapon (tester_checks.py weapon_pick) went by item level. A weapon SPELL reads the physical attack of the weapon in the hand and
-nothing else (data/spells/chaos/_common.lua meleeAttack / distanceAttack: skill x attack, never under 20), a caster's spell reads the wand's mean
-damage (spell_scaling_config.lua: the growth factor x min(1.2, wand / the level's mean wand)). The melee equipment sets from level 600 to 999 carry most
-of their attack as an ELEMENT (sanguine blade: attack 13, fire 73; soulcutter: attack 10, death 64): the auto attack counts it, a spell does not, so a
-bot of level 800 that wears one casts with skill x 20 where a weapon of the level has skill x 112 (install_gear_sets.py WEAPON_CURVES). The bot reads
-the numbers from the server's own files, as it reads the equip rules.
+The pick of the weapon (tester_checks.py weapon_pick) went by item level. A weapon SPELL reads the attack of the weapon in the hand (data/spells/chaos/
+_common.lua meleeAttack / distanceAttack: skill x attack, never under 20), a caster's spell reads the wand's mean damage (spell_scaling_config.lua: the
+growth factor x min(1.2, wand / the level's mean wand)). O679: the attack of a melee weapon is its physical attack PLUS its element damage
+(spell_scaling_config.lua weaponElement 1, ChaosSpellScaling.spellAttack): before it was the physical attack alone, and the melee equipment sets from level
+600 to 999 carry most of their attack as an ELEMENT (sanguine blade: attack 13, fire 73; soulcutter: attack 10, death 64), so a bot of level 800 that wore one
+cast with skill x 20 where a weapon of the level has skill x 112 (install_gear_sets.py WEAPON_CURVES). The bot reads the numbers from the server's own files,
+as it reads the equip rules.
 
 Run the tests: python3 -I server/tools/testers_test.py"""
 import os
@@ -18,11 +19,12 @@ WEAPON_KIND = {'Warrior': 'melee', 'Juggernaut': 'melee', 'Berserker': 'melee', 
 WEAPON_TYPES = {'sword': 'melee', 'axe': 'melee', 'club': 'melee', 'distance': 'distance', 'wand': 'wand'}   # items.xml weaponType -> the kind it serves
 WEAPON_MARGIN = 1.10      # a weapon is better when its power is 10 % over the worn one's (a tie keeps the weapon in the hand)
 WEAPON_FLOOR = 20         # a spell never reads an attack under 20 (an empty hand)
+ELEMENT_SHARE = 1.0       # spell_scaling_config.lua weaponElement: the share of the element damage that joins the attack a melee spell reads (O679)
 
 
 def load_weapon_stats(server_dir):
-    """{item id: {'type': items.xml weaponType, 'attack': items.xml attack, 'wand': mean of the wand's min and max (weapons.xml)}} of the installed
-    server, {} when items.xml cannot be read"""
+    """{item id: {'type': items.xml weaponType, 'attack': items.xml attack, 'element': items.xml element damage (elementfire and the like),
+    'wand': mean of the wand's min and max (weapons.xml)}} of the installed server, {} when items.xml cannot be read"""
     out = {}
     try:
         with open(os.path.join(server_dir, 'data', 'items', 'items.xml'), encoding='latin-1') as f:
@@ -37,7 +39,14 @@ def load_weapon_stats(server_dir):
                 attack = int(attrs.get('attack') or 0)
             except ValueError:
                 attack = 0
-            out[int(m.group(1))] = {'type': wt, 'attack': attack, 'wand': 0.0}
+            element = 0
+            for key, value in attrs.items():
+                if key.startswith('element'):   # elementfire, elementice, elementWater ... (the reader lowers the keys)
+                    try:
+                        element = max(element, int(value))
+                    except ValueError:
+                        pass
+            out[int(m.group(1))] = {'type': wt, 'attack': attack, 'element': element, 'wand': 0.0}
     try:
         with open(os.path.join(server_dir, 'data', 'weapons', 'weapons.xml'), encoding='latin-1') as f:
             wtext = f.read()
@@ -51,7 +60,7 @@ def load_weapon_stats(server_dir):
 
 
 def weapon_power(stats, item_id, cls):
-    """what the weapon is worth to the class's spells: the physical attack for a melee class (a sword, axe or club), the bow's attack for a distance
+    """what the weapon is worth to the class's spells: the attack plus the element damage for a melee class (a sword, axe or club), the bow's attack for a distance
     class, the wand's mean damage for a caster; 0 for a weapon of another kind (a bow in the hand of a Warrior); None when the class has no rule
     (the fist classes) or the weapon is not in `stats`: the bot then goes by item level as before"""
     kind = WEAPON_KIND.get(cls)
@@ -62,7 +71,7 @@ def weapon_power(stats, item_id, cls):
         return 0.0
     if kind == 'wand':
         return float(row.get('wand') or 0.0)
-    return float(max(WEAPON_FLOOR, row.get('attack') or 0))
+    return float(max(WEAPON_FLOOR, (row.get('attack') or 0) + ELEMENT_SHARE * (row.get('element') or 0)))
 
 
 def weapon_beats(power, worn_power):
@@ -74,11 +83,11 @@ def weapon_beats(power, worn_power):
 
 
 # The plan of the gear sets (install_gear_sets.py WEAPON_CURVES, anchors 8 .. 2000): the attack of a one-handed melee weapon, a launcher, the mean damage of
-# a wand. The melee sets give 35 % of that attack as an element (ELEMENT_SHARE), so the physical part a spell reads is 65 % of it.
+# a wand. The melee sets give 35 % of that attack as an element; since O679 the spell reads the element too, so the whole tier counts (before: 65 %).
 PLAN_ANCHORS = (8, 50, 100, 200, 300, 400, 500, 700, 850, 1000, 1500, 2000)
 PLAN_CURVES = {'melee': (16, 40, 46, 57, 67, 75, 81, 94, 118, 147, 168, 199), 'distance': (31, 38, 68, 83, 94, 103, 111, 125, 155, 191, 212, 245),
                'wand': (16, 40, 62, 99, 119, 138, 151, 178, 226, 285, 331, 398)}
-PLAN_PHYSICAL = {'melee': 0.65, 'distance': 1.0, 'wand': 1.0}
+PLAN_PHYSICAL = {'melee': 1.0, 'distance': 1.0, 'wand': 1.0}   # the share of the plan a spell reads (melee 0.65 before O679)
 PLAN_SHARE = 0.5          # a weapon under half of what a set weapon of the level gives is worth fresh crates of the Gambler
 
 
