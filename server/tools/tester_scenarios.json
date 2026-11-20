@@ -10,7 +10,7 @@
   "closed": 15,
   "opcode": 74,
   "out": 24,
-  "passive": 113,
+  "passive": 114,
   "place": 15,
   "staff": 19
  },
@@ -11116,6 +11116,7 @@
   },
   "spellRanks": {
    "actions": [
+    "pick",
     "open",
     "clear"
    ],
@@ -13664,6 +13665,15 @@
    "files": [
     "beastmaster.lua",
     "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_forms": {
+   "files": [
+    "spell_forms.lua"
    ],
    "kind": "passive",
    "opcodes": [],

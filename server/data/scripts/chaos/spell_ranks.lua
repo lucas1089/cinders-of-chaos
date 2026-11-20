@@ -416,6 +416,11 @@ function R.state(player)
 end
 
 function R.receive(player, msg)
+	-- phase 4: the Forms answer `pick` (spell_forms.lua)
+	local FM = rawget(_G, "ChaosSpellForms")
+	if type(msg) == "table" and msg.action == "pick" and FM and FM.receive then
+		return FM.receive(player, msg)
+	end
 	if type(msg) ~= "table" or msg.action ~= "open" then
 		return false
 	end
@@ -424,6 +429,9 @@ function R.receive(player, msg)
 	end
 	R.flush(player)
 	Chaos.send(player, OPCODE, "state", R.state(player))
+	if FM and FM.picksOf then
+		Chaos.send(player, OPCODE, "forms", {v = cfg.version, f = FM.picksOf(player)})
+	end
 	return true
 end
 

@@ -1,6 +1,6 @@
 # Spell upgrades: design, O686 phase 1
 
-Status: design written, owner answered 2026-11-20. Phase 2 (rank core) and phase 3 (monster health curve H and the balance models) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3 moved a number of the first design, the text says so ("Phase 3" notes).
+Status: design written, owner answered 2026-11-20. Phase 2 (rank core), phase 3 (monster health curve H and the balance models) and phase 4 (Forms) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3 or 4 moved a number of the first design, the text says so ("Phase 3" and "Phase 4" notes).
 
 Owner 2026-11-20, translated: "upgrade of spells, raise the strength and whatever else of the spells. Think of something cool." Four paths were shown. The owner chose three: Rank by use, now Rank by monster experience, plus Forms; Awakening in the endgame; Combos between spells. Not chosen: tradeable spell tomes. Strength: total spell power gain per character of 50% or more, knowing the endgame must be rebalanced and that a player without upgrades falls far behind.
 
@@ -189,6 +189,8 @@ A Form changes **how** the spell plays, not how strong it is. The budget, held b
 
 Counted power for the +50%: Form I +3%, Form II +3%, so +6% of a full rotation.
 
+Phase 4 note: "gain per cast" is the damage (heal) of one cast with the Form over the cast without it, on one enemy and on a pack of five, computed by the real planner (`server/tools/forms_numbers.lua` over `forms.csv`, held by `spell_upgrade_model.py --check`, limits `formBand` of `spell_upgrade_balance_config.lua`). "In the situation it is for" is the kind's `situation` (one, pack or both). A twin is "better on both counts" when it is ahead by more than 2 points on both. The mean gain of all Form I rows is +3% and of all Form II rows +3% (within 1.5 points): that is the counted power. `spell_upgrade_model.py --forms` prints the worst and the best gain per kind (server/README.md "Spell Forms (O686 phase 4)").
+
 ### 2.2 Form kinds
 
 Numbers are the standard. A spell row can say a different number in `forms.csv`.
@@ -229,6 +231,8 @@ Heal Form kinds, in the heal rows:
 | WARD | overheal becomes a shield, at most 10% of max health | SANCTUARY | a 5 s ground that heals 3% a second |
 | PULSE | an area heal in 3 sqm at 70% | CLEANSE | removes one debuff and gives a 5% shield |
 
+Phase 4 note: the numbers above could not hold the band of 2.1 (a SPLIT of 45% is -55% on one enemy, a TWIN of 70% is +70%, a CHAIN of 60% and 40% is +100% on five). The kinds are kept as written and the standard numbers were recalibrated so every kind sits in the band: SPLIT 3 hits of 35%; CHAIN main 95%, jumps 7% and 5%; PIERCE main 100%, 3% on up to 2 behind (the range +1 is not built: the range is in the spell file); REND 70% + 40% over 4 s; DELAY 110% after 1.5 s; PULL 95%; GROUND 3% a second; ECHO main 85% + 22%; SHIFT a status of 4% over 3 s; TWIN main 75% + 30%; CASCADE 25% on a kill; AFTERMATH 7.5%; OVERCHARGE 112%; SEEK 102%; SPREAD 2 enemies for 4%; ASCEND hit 102% and a status of 4%; RIPPLE 95% + 6% on 2; BLOOM 75% + 35%; PULSE 95% + 3% on up to 4; SECOND WIND +25% and the cooldown -20%; LINK 30%; SANCTUARY 1.5% a second; CLEANSE a 5% shield. Forms with extra targets act on the main hit (the first hit of the cast); TWIN, ECHO, DELAY, OVERCHARGE, GROUND, PULL, AFTERMATH, REND and the conversions act on every hit. The truth is `ChaosSpellFormsCore.numbers`; the table is also in server/README.md.
+
 ### 2.3 How Forms meet supports, masteries and elements
 
 - **Supports and kind.** Sockets are legal by the spell's base kind. A Form never changes the kind, so no rune is lost when a Form is picked.
@@ -241,7 +245,7 @@ Heal Form kinds, in the heal rows:
 ### 2.4 Choosing and changing
 
 - The first pick of each Form is free, made in the spellbook.
-- A change costs gold: `max(10 000, 150 x character level)`, paid from the bank first. At level 1000 it is 150,000 gold. A change made in the first 30 minutes after a pick is free, for a misclick.
+- A change costs gold: `max(10 000, 150 x character level)`, paid from the bank first. At level 1000 it is 150,000 gold. A change made in the first 30 minutes after a pick is free, for a misclick. Phase 4: only the LAST pick of the character has the free window (two storage keys, 7107504 and 7107505), not every pick; a pick made with the switch off is refused.
 - No token item in phase 1. Gold is the sink, like removing a rune. Open question 5.
 
 ### 2.5 Examples, seven classes
@@ -386,7 +390,7 @@ The Iron Sage's Chi Ward and Mantra of Stone are shield and aura spells, outside
 
 Corpse Explosion needs a corpse, so its Forms are measured by the probe with a corpse given. The probe already does this for it.
 
-Count: 85 attack spell rows and 7 heal rows are written above, the rest of the 21 classes follow the template. A CI check, `tools/ci/check_spell_forms.py`, will hold that every attack and heal spell of every class has a `forms.csv` row, two Form I and two Form II, with a pt-BR name for each.
+Count: 85 attack spell rows and 6 heal rows are written above (the Illusionist's five heals and Kindled Breath; the first count of 7 was a miscount), the rest of the 21 classes follow the template. **Phase 4 built it:** `server/data/spells/forms.csv` has 149 spells (133 attack, 16 heal), 596 rows, every one of the 21 classes covered. A CI check, `tools/ci/check_spell_forms.py`, will hold that every attack and heal spell of every class has a `forms.csv` row, two Form I and two Form II, with a pt-BR name for each.
 
 ## 3. Awakening
 
@@ -666,6 +670,8 @@ Free block: **7107000 to 7108099** in the 7100000 to 7127999 range. Checked agai
 | +500 | version of the block |
 | +501 | awakened spells held, 0 to 3 |
 | +502 | Form changes made |
+| +504 | phase 4: `os.time` of the last Form pick (the free window) |
+| +505 | phase 4: spell id x 10 + tier of that pick |
 | +503 | reserved, unused: the launch grant was removed (owner 2026-11-20) |
 | +510 | Waystone Seals held |
 | +511 | Rift Seals held |
@@ -738,7 +744,7 @@ Working days of one agent session each, with tests and docs. Total about 37 days
 | 1 | This design, owner review | done |
 | 2 | Rank core: SP credit at death, the per monster damage table, the experience callback, storage, the rank factor in the passive tree's hit event (one place, see 7.4 note), cooldown and cost handlers, login, echo table and SQL, `/spellrank`. Switched off by `enabled = false`. Tests. **Built 2026-11-20**, README "Spell ranks (O686 phase 2)"; the launch grant is gone, the per-path test `spell_ranks_paths_test.lua` moved to phase 3 with the switch | 6 |
 | 3 | `spell_upgrade_model.py`, the health curve and the factor in `pace`, dungeons, rifts, tower, descent, waystones, pinnacle, greater rift, raid, with each model's step and test. Switched with phase 2. **Built 2026-11-20**, README "Monster health curve and the models (O686 phase 3)": `spell_upgrade_model.py` (rank per level, P, H, `--check`), `Chaos.healthFactor` / `Chaos.scaleHealth` and every health path behind it (`check_health_paths.py`), every balance model with `--upgrades`, PvP at the half rule; still off | 6 |
-| 4 | Forms: 8 + 8 + 8 kinds in the engine, the table for all 21 classes, `check_spell_forms.py`, probe per Form, `spell_fx_forms.csv`, the model band check | 9 |
+| 4 | Forms: 8 + 8 + 8 kinds in the engine, the table for all 21 classes, `check_spell_forms.py`, probe per Form, `spell_fx_forms.csv`, the model band check. **Built 2026-11-20**, README "Spell Forms (O686 phase 4)": 9 + 8 + 8 kinds, `forms.csv` 596 rows, `spell_forms_core.lua` / `spell_forms.lua`, element rule in the probe (381 Form runs), the band in `spell_upgrade_model.py`, client data `forms_data.lua`; the numbers of 2.2 recalibrated to hold the band | 9 |
 | 5 | Client: opcode 168, spellbook tabs, Form picker, rank bars, pt-BR, hub badge, tests, mobile layout | 5 |
 | 6 | Combos: core, config, the hit hook, label and sounds, Codex page, 6b combo masteries | 4 |
 | 7 | Awakening: Seals from the three contents, costs, slots, signature effects, the kit art tool, UI tab | 6 |

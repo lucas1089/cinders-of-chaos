@@ -18,6 +18,12 @@ return {
 	cooldownWorth = 0.5,
 	-- Forms (design 5.1): +3% a Form, two Forms, spread over the average rank 0 to 20 (a straight line)
 	forms = {total = 0.06},
+	-- the Form band (design 2.1, phase 4): the gain of one cast with a Form over the cast without it, on one enemy and on a pack of five,
+	-- from the real planner (tools/forms_numbers.lua). A Form is -5% to +8% on one, -5% to +12% on five; the best Form of a spell is at
+	-- most +8% in the situation it is for (spell_forms_core.lua `situation`: one, pack, both); a Form under -3% on both counts must name
+	-- a utility (`utility` of the core); a Form of a pair is not better than its twin on both counts by `twinGap` unless the twin names a
+	-- utility; counted power: the mean gain of all Form I rows and of all Form II rows is +3% each, within `countedTol`
+	formBand = {one = {-0.05, 0.08}, five = {-0.05, 0.12}, best = 0.08, utilityBelow = -0.03, twinGap = 0.02, counted = 0.03, countedTol = 0.015},
 	-- combos (design 4.1, owner 2026-11-20: 10% to 20% a combo): the typical rotation gains `total`, opening at the average rank
 	-- `fromRank` (design 4.2: a class combo opens at rank 5, an element reaction is free) and full at `toRank`
 	combos = {total = 0.06, fromRank = 3, toRank = 10},

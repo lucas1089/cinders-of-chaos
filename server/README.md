@@ -726,7 +726,7 @@ collision check") and be added here.
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
 | 165 | `statusVfx` | `status_vfx.lua` (the scan and the wish), `data/lib/chaos_status_vfx.lua` (the rules) | `game_statusfx` | client -> server `hello {on}`, server -> client `cfg {on, e, ms}`, `s {l}` only to a client that asked (O597, README "Status layer (O597)") |
-| 168 | `spellRanks` | `spell_ranks.lua` | none yet (client phase 5) | client -> server `open`, server -> client `state {on, v, s}` (O686 phase 2, README "Spell ranks (O686 phase 2)") |
+| 168 | `spellRanks` | `spell_ranks.lua`, `spell_forms.lua` | none yet (client phase 5) | client -> server `open`, `pick {spell, tier, pick}`, server -> client `state {on, v, s}`, `forms {v, f}`, `pick {ok, why, price, ...}` (O686 phases 2 and 4, README "Spell ranks (O686 phase 2)", "Spell Forms (O686 phase 4)") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
@@ -887,7 +887,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
 | 7106400 - 7106459 | pinnacle bosses (`pinnacle_config.lua` `storage`, O667): +0 .. +15 fragments held (boss index 0-3 x 4 + kind 0-3), +16 the focus (boss index + 1, 0 none), +20 .. +23 first kills (a bit per season, `season id % 30`), +24 .. +27 deathless (1 once), +28 .. +31 kills, +32 .. +35 kills since the last unique (the bad-luck count), +36 a run in progress (boss index + 1, given back at the next login after a crash), +37 when it opened, +38 the last opening; +39 .. +59 free |
-| 7107000 - 7108099 | spell ranks (`spell_ranks_config.lua` `storage`, `Chaos.storage.spellRanks`, O686): +0 .. +499 the packed state of the spell with that id (bits 0-4 rank, 5-6 Form I, 7-8 Form II, 9 awakened), +500 version of the block, +501 awakened spells held, +502 Form changes, +503 reserved (the launch grant was removed), +510 .. +512 Seals (phase 7), +520 .. +529 awakened ids by slot, +600 .. +1099 SP in 1/10000 SP of the spell with that id |
+| 7107000 - 7108099 | spell ranks (`spell_ranks_config.lua` `storage`, `Chaos.storage.spellRanks`, O686): +0 .. +499 the packed state of the spell with that id (bits 0-4 rank, 5-6 Form I, 7-8 Form II, 9 awakened), +500 version of the block, +501 awakened spells held, +502 Form changes, +503 reserved (the launch grant was removed), +504 time of the last Form pick, +505 its spell id x 10 + tier (the free change window, phase 4), +510 .. +512 Seals (phase 7), +520 .. +529 awakened ids by slot, +600 .. +1099 SP in 1/10000 SP of the spell with that id |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
 | 7101070 - 7101079 | the welcome path (`welcomepath_config.lua` `storage`, `Chaos.storage.welcomePath`, O370): +0 state (-1 never seen, 0 on the path, 1 finished, 2 skipped, 3 quiet), +1 current step, +2 kills of the kill step, +3 flags (bit 1: Next Goals opened); +4..9 free. level milestones below |
@@ -36998,3 +36998,83 @@ Design: `docs/SPELL_UPGRADES.md` sections 5.3 to 5.6. Phase 3 puts the monster h
 **Results, both modes.** All `--check` pass with the switch off and with `--upgrades`. Where the numbers moved: tower, reach of level 800 floor 34 -> 33 (limit 30-46), `--derive` 1.00-1.05 x the committed curves; Greater Rift, the tier reached at levels 1025 / 1500 / 2000 / 2500: 30 / 36 / 42 / 46 -> 29 / 36 / 42 / 47 (within 1, as the design said), the climb 9 / 10 / 13 / 14 runs -> 8 / 11 / 12 / 14; pinnacle, the median class kills a boss in 410-415 s alone and 295-298 s with five (420 / 300 today), the weakest class in about 554 s (limit 566), the median class with no upgrades in 547-584 s (the design said about 580 for Varkhul); PvP, three level 100 burst limits that sit on their own exception rows (Beastmaster, Illusionist, Necromancer) are 1.5% looser in the mode (named `widen.pvpBurst`: the half rule gives every class +0.7% at level 100 to +7.7% at 1000 against a player and no defence rises with it, which is what the design asked for); survival and guardian: the heal gain only helps (the median class's healing against the pack's damage rises by up to 6%, `warn` and `hitCap` untouched). No limit of a model needed a change of today's numbers.
 
 **Not in this phase, still needed before the switch goes on.** Forms (phase 4: the Form table, `check_spell_forms.py`, the Form gain is modelled here as +3% and +3% by average rank), the client (phase 5: opcode 168 spellbook tabs, Form picker, rank bars, hub badge), combos (phase 6) and awakening (phase 7) are in the curve as designed; a release that goes on before them sets the parts flags and the curve (see above). The live pass (phase 8: tester bots climb ranks, kill times against the models, tune the curve) follows the switch.
+
+## Spell Forms (O686 phase 4)
+
+Design: `docs/SPELL_UPGRADES.md` section 2. Phase 4 builds the Forms behind the same switch as the ranks: `spell_ranks_config.lua` `enabled = false`, so nothing a player feels changes. A Form acts only with the switch on, the rank of its tier reached (Form I at 10, Form II at 20) and a pick stored in bits 5-6 / 7-8 of the packed state of the spell.
+
+**Files.** `data/spells/forms.csv` (596 rows: id, spell, tier I or II, pick 1 or 2, role, element, kind, `over`, English and pt-BR name), `data/scripts/chaos/spell_forms_core.lua` (pure: kinds, the standard numbers, one planner per kind, PvP half rule, pick / price / bank-first split, `gain` for the model), `spell_forms.lua` (engine), `data/lib/chaos_spell_forms.lua` (`ChaosSpellForms`, the read API of every Lua state: `parse`, `active`, `state`, `conversion`, `swapFor`, `sendFx`, `installCombat`), `tests/spell_forms_test.lua`, `tests/forms_gen_test.lua`, `tools/forms_numbers.lua` (the Lua side of the model), `tools/gen_forms_data.lua` + `tools/forms_text_config.lua` (the client data), `tools/ci/check_spell_forms.py` (+ `_test.py`).
+
+**Rows per class** (every attack and healing spell of a class has 2 Form I and 2 Form II, a shared spell one set; 149 spells, 596 rows; the 85 attack rows and 6 heal rows of design 2.5 are in the csv word for word, `check_spell_forms.py` holds them to the doc, the other 58 spells follow the template of 2.5):
+
+| Class | Attack and heal spells | Form rows |
+|---|---:|---:|
+| Warrior | 16 | 64 |
+| Juggernaut | 16 | 64 |
+| Berserker | 16 | 64 |
+| Ranger | 16 | 64 |
+| Deadeye | 16 | 64 |
+| Beastmaster | 17 | 68 |
+| Mystic | 16 | 64 |
+| Elementalist | 15 | 60 |
+| Illusionist | 18 | 72 |
+| Thief | 14 | 56 |
+| Ninja | 14 | 56 |
+| Samurai | 14 | 56 |
+| Necromancer | 16 | 64 |
+| Lich | 16 | 64 |
+| Bone Lord | 16 | 64 |
+| Monk | 14 | 56 |
+| Shadowfist | 14 | 56 |
+| Iron Sage | 14 | 56 |
+| Templar | 14 | 56 |
+| Inquisitor | 14 | 56 |
+| Sentinel | 15 | 60 |
+
+**Kinds built.** Form I damage: SPLIT, CHAIN, PIERCE, REND, DELAY, PULL, GROUND, ECHO, SHIFT:E (9). Form II damage: TWIN, CASCADE, AFTERMATH, OVERCHARGE, SIPHON, SEEK, SPREAD, ASCEND:E (8, `ASCEND:weakest` once, Prismatic Rupture). Heal I: RIPPLE, BLOOM, WARD, PULSE. Heal II: SECONDWIND, LINK, SANCTUARY, CLEANSE (8). The standard numbers are `ChaosSpellFormsCore.numbers`, a row's `over` column overrides keys of its kind (`pct=20;count=2`); `luajit tools/forms_numbers.lua --kinds` prints them.
+
+**How a Form runs.** `ChaosSpellFormsHit` (a creature event on whatever a player with a Form hits, registered by an `onTargetCombat` callback at index 2, after the supports and the passive tree, so it sees the ranked hit) reads the cast context the supports write (serial x 1000 + spell id). The Forms of the spell give the first hit of the cast its factor (the "main" kinds act on the first hit, the "all" kinds on every hit: `ChaosSpellFormsCore.scope`), an element conversion changes the damage type of the hit, and the hits of the cast are collected. One tick later (`addEvent 0`) the extra hits are planned over all of them (`planAll`) and run: extra hits, damage over time, ground, bursts, pulls, self heal and mana, heals, shields, cleanse, a shorter cooldown. Extra hits are hits OF THE SPELL: they run inside the spell's cast context (`ChaosSupportsSpell.run`) under the proc guard (`ChaosKeystones.depth`: no passive tree bonus twice; `ChaosSpellForms.depth`: no Form again), and `ChaosSupports.formDepth` makes the supports' hit event skip `record`, so Brand, Sunder, Keen Edge and Hex act on them and Echo, Fork, Breadth, Shatter, Deathburst, Surge, Reprisal, Bloodthirst and Siphon never trigger on them; the spell's own supports run once. A mastery keeps its free support. Monsters only; when the main hit was on a player (PvP) the extra targets are players, never a party member, the numbers count at `pvp.forms` (0.5: extra amounts halved, a main factor moves half the way to 1, the shape stays). TWIN adds its 0.4 s to the cooldown through a `ChaosSpellEvents` cooldown handler (`spellforms`); SECONDWIND shortens the cooldown condition after the cast the way Quickening does.
+
+**Pick and change.** Opcode 168 `pick {spell, tier, pick}` answers `pick {ok, why, price, spell, tier, pick, f1, f2}`; `open` also sends `forms {v, f = [[spell id, f1, f2], ...]}`. The first pick of a tier is free (Form II needs a Form I). A change costs `max(10000, 150 x level)` gold, the bank first and then the coins, all or nothing (`F.split`; the rest of the server pays coins first, design 2.4 says bank first). A change of the LAST pick within 30 minutes is free: two storage keys hold it (`lastPickAt` 7107504, `lastPickWhat` 7107505 = spell id x 10 + tier), so only the last pick has the window, not every spell. `formChanges` (7107502) counts paid changes. A pick with the switch off is refused (`off`). Reasons: `off spell rank form1 gold tier pick`.
+
+**Element rule (design 2.3).** A Form that converts (SHIFT:E, ASCEND:E) sends effects of E only. Four layers, all inert while the switch is off: `ChaosSpell.pass` in `data/spells/chaos/_common.lua` asks `ChaosSpellForms.swapFor` first (every `fx`, `vfx` name becomes a ChaosVfx name tagged E: `swapNames`, first one the live pair has), `Vfx()` in `chaos_vfx.lua` swaps the name of any direct send, the wrapped `Fx()` gives the plain stock id of the element, and `ChaosSpellForms.installCombat` wraps `Combat:setParameter` / `Combat:execute` so the combat's own area effect and missile are those of the element for that cast and the element's effect is sent on the target. `ASCEND:weakest` picks the element the target resists least at the hit and at the effects. `tools/ci/spell_fx_probe.lua` takes a packed Form state and the weakest element; `check_spell_fx.py` runs every Form of every probed spell (381 runs; `ASCEND:weakest` once per element) and expects the conversion's element, else the spell's own (the spell's reasons of `spell_fx_allow.csv` still hold for a Form that does not convert); what a Form may send beyond that is a row of `data/spells/spell_fx_forms.csv` with its reason (none needed today: the file holds the header). The Form's own effects (extra hits, ground, burst, status) are sent by `ChaosSpellForms.sendFx` by element and role. Stock spells with no script of the Chaos spell files (Kindling Spark, Tempest Fan ...) are not probed, like their base run.
+
+**The model band (design 2.1), `spell_upgrade_model.py --check` / `--forms`.** `tools/forms_numbers.lua` runs the real planner on one enemy and on a pack of five (the spell hits `t5` of them, from the rotation model) for every row; the gain of a cast with the Form over the cast without it must be -5% to +8% on one enemy, -5% to +12% on five, the best Form of a spell at most +8% in the situation it is for (`situation` of the kind: one, pack, both), a Form under -3% on both counts names a utility (`utility` of the core), a Form is not better than its twin on both counts by more than 2 points unless the twin names a utility, and the mean gain of all Form I rows and of all Form II rows is +3% within 1.5 points (the counted power). Limits: `spell_upgrade_balance_config.lua` `formBand`. The band as built (worst / best per kind over every row; "situation" is the kind's own):
+
+| Form | Kind | Rows | One enemy worst / best | Five enemies worst / best | In its situation, best | Utility |
+|---|---|---:|---|---|---:|---|
+| I | BLOOM | 7 | +6.3% / +6.3% | +6.3% / +6.3% | +6.3% |  |
+| I | CHAIN | 28 | -5.0% / -5.0% | +4.3% / +7.0% | +7.0% |  |
+| I | DELAY | 32 | +4.5% / +4.5% | +4.5% / +4.5% | +4.5% |  |
+| I | ECHO | 41 | +4.8% / +4.8% | +4.8% / +4.8% | +4.8% |  |
+| I | GROUND | 34 | +6.0% / +6.0% | +3.6% / +6.0% | +6.0% |  |
+| I | PIERCE | 20 | +0.0% / +0.0% | +3.0% / +6.0% | +6.0% |  |
+| I | PULL | 37 | -5.0% / -5.0% | -5.0% / -5.0% | -5.0% | yes |
+| I | PULSE | 10 | -5.0% / -5.0% | +7.0% / +7.0% | +7.0% |  |
+| I | REND | 25 | +4.0% / +4.0% | +4.0% / +4.0% | +4.0% |  |
+| I | RIPPLE | 9 | -5.0% / -5.0% | +7.0% / +7.0% | +7.0% |  |
+| I | SHIFT:ice | 1 | +3.3% / +3.3% | +3.3% / +3.3% | +3.3% | yes |
+| I | SPLIT | 48 | +5.0% / +5.0% | +1.0% / +5.0% | +5.0% |  |
+| I | WARD | 6 | +3.0% / +3.0% | +3.0% / +3.0% | +3.0% | yes |
+| II | AFTERMATH | 50 | +6.0% / +6.0% | +3.6% / +6.0% | +6.0% |  |
+| II | ASCEND:death | 7 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:earth | 2 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:energy | 1 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:fire | 5 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:holy | 2 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:ice | 8 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | ASCEND:weakest | 1 | +5.3% / +5.3% | +5.3% / +5.3% | +5.3% | yes |
+| II | CASCADE | 42 | +0.0% / +0.0% | +4.2% / +7.5% | +7.5% |  |
+| II | CLEANSE | 9 | +5.0% / +5.0% | +5.0% / +5.0% | +5.0% | yes |
+| II | LINK | 6 | +7.5% / +7.5% | +7.5% / +7.5% | +7.5% | yes |
+| II | OVERCHARGE | 40 | +4.2% / +4.2% | +4.2% / +4.2% | +4.2% |  |
+| II | SANCTUARY | 8 | +6.0% / +6.0% | +6.0% / +6.0% | +6.0% |  |
+| II | SECONDWIND | 9 | +3.8% / +3.8% | +3.8% / +3.8% | +3.8% | yes |
+| II | SEEK | 15 | +2.0% / +2.0% | +0.5% / +2.0% | +2.0% | yes |
+| II | SIPHON | 28 | +0.0% / +0.0% | +0.0% / +0.0% | +0.0% | yes |
+| II | SPREAD | 20 | +0.0% / +0.0% | +3.2% / +7.2% | +7.2% |  |
+| II | TWIN | 45 | +5.0% / +5.0% | +5.0% / +5.0% | +5.0% |  |
+
+**What moved against the first design numbers (2.2).** The first numbers could not hold the band of 2.1 (a SPLIT of 45% is -55% on one enemy; a TWIN of 70% is +70%), so the standard numbers were recalibrated, the rules of 2.2 kept: SPLIT 3 hits of 35%; CHAIN main 95%, jumps 7% and 5%; PIERCE main 100%, 3% on up to 2 behind; REND 70% + 40% over 4 s; DELAY 110% after 1.5 s; PULL 95%; GROUND 3% a second for 4 s; ECHO main 85% + 22% after 1 s; SHIFT a status of 4% over 3 s; TWIN 75% + 30% after 0.4 s; CASCADE 25% (a kill, 30% of the casts); AFTERMATH 7.5%; OVERCHARGE 112% after 0.6 s; SIPHON 4% / 5% cap and 3% mana; SEEK 102%; SPREAD 2 enemies for 4%; ASCEND hit 102% and a status of 4%; RIPPLE 95% + 6% on 2; BLOOM 75% + 35% over 6 s; PULSE 95% + 3% on up to 4; SECOND WIND +25% under 40% and the cooldown -20%; LINK 30% after 2 s under 50%; SANCTUARY 1.5% a second for 5 s; CLEANSE a 5% shield. The kinds that reach more enemies (CHAIN, PIERCE, SPREAD, RIPPLE, PULSE) scale their extras by the square root of the hits of the cast so an area spell is not diluted. PIERCE's "range +1" is not built (the range is in the spell file); PULL moves monsters only (a tile next to the centre that is free), never players.
+
+**Not built / open.** The missiles a spell script shoots itself (`VfxShoot`, `Fx` missiles) are not swapped by a conversion: only the combat's own missile and every effect name are. The client picker and the rank bars (phase 5; the generated data file `client/overlay/modules/game_spellranks/forms_data.lua` is here, the module has no window yet). A Form on a support, buff, shield or summon spell (those are not ranked). Real-engine checks: `Combat.execute` / `setParameter` are replaced on the engine's `Combat` table (assumed to be the class table of the userdata, as in TFS 1.4); the `Creature:teleportTo(pos, true)` of PULL; `onTargetCombat` index 2 runs after the passive tree's registration so the Form event sees the ranked hit; the timing of Form hits against the 4 s tick of dots; none of this ran on a server (nothing runs while the switch is off). `tests/spell_inputs_test.lua` keeps passing (rank 0, no Form); the per-Form case of O468 is in `spell_forms_test.lua` ("a Form hit is a share of the spell's hit: it grows with level and magic level").

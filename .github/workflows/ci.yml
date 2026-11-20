@@ -1239,6 +1239,10 @@ jobs:
 
       - name: Every class within 25% of the level median on 1 and 5 targets at levels 100, 500, 1000 (class_dps_model.py --check; class_dps_measured.csv, class_tree.lua classDamage, spell_factor_config.lua extra; O430)
         run: python3 -I server/tools/class_dps_model.py --check && python3 -I server/tools/class_dps_model_test.py
+      - name: Every attack and heal spell of every class has its Forms (O686 phase 4; check_spell_forms.py and its test, forms.csv, spell_forms_core.lua; the Form band is in spell_upgrade_model.py --check below)
+        run: |
+          python3 -I tools/ci/check_spell_forms.py
+          python3 -I tools/ci/check_spell_forms_test.py
       - name: Spell upgrades (O686 phase 3), the monster health curve H and the balance models with the upgrades on (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades; spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
         run: |
           python3 -I server/tools/spell_upgrade_model.py --check
@@ -1900,6 +1904,13 @@ jobs:
           luajit tools/gen_howitworks_data.lua
           lua5.3 tools/gen_howitworks_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_howitworks/howitworks_data.lua
+
+      - name: Spell Forms client data is up to date with forms.csv and the core numbers, every Form text has pt-BR (O686 phase 4; gen_forms_data.lua)
+        run: |
+          cd server
+          luajit tools/gen_forms_data.lua
+          lua5.3 tools/gen_forms_data.lua --check  # Lua 5.3 must write the same bytes
+          git diff --exit-code ../client/overlay/modules/game_spellranks/forms_data.lua
 
       - name: Help search and website beginner guide are up to date with the cards (O373)
         # client game_helpsearch/helpsearch_data.lua and website guide/guide_data.json from the How it works cards,

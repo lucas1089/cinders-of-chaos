@@ -2,7 +2,11 @@
 -- mock of the engine and prints every effect it sends, with the real libraries of server/data/lib and
 -- server/data/scripts/chaos (the swap layers: skins, the effects pass, pair 29, 36, class, pair 27).
 -- usage (cwd = a folder with data/lib, data/scripts/chaos and data/spells/scripts/chaos linked in):
---   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX]
+--   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST]
+-- FORM_STATE (O686 phase 4): the packed state of the spell (rank + 32 x Form I pick + 128 x Form II pick, data/lib/chaos_spell_ranks.lua) stored
+-- for the caster with the spell ranks switched on, so the cast runs with the Form of the pick: an element conversion swaps the effect
+-- names (data/lib/chaos_spell_forms.lua) and the Form's own effects are sent after the cast (fxProbe). WEAKEST: the element the
+-- target resists least, for ASCEND:weakest. The state is a spell's own, the caster holds no other.
 -- Output lines (tab separated):  ME id tx ty (abs pos minus target pos) cx cy (minus caster pos) delay via
 --                                ANI id from_dx to_dx ...
 --                                COMBAT effect distance cells w h
@@ -10,6 +14,8 @@
 -- The Monk finisher is given chi (its cast needs a storage the mock does not hold). Nothing is written anywhere.
 local vocId, spellId, script = tonumber(arg[1]), tonumber(arg[2]), arg[3]
 local level = tonumber(arg[4]) or 300
+local formState, weakestEl = tonumber(arg[6]), arg[7]
+local STORE = {}
 local out = {}
 local pname = {}
 local function rec(...) local t = {...}; for i = 1, select('#', ...) do t[i] = tostring(t[i]); if t[i]:match('^10%d%d$') and pname[tonumber(t[i])] then t[i] = pname[tonumber(t[i])] end end; out[#out + 1] = table.concat(t, "\t") end
@@ -115,7 +121,7 @@ local function makeCreature(id, pos, isPlayer)
 		getHealth = function() return 5000 end, getMaxHealth = function() return 10000 end,
 		getMana = function() return 5000 end, getMaxMana = function() return 10000 end,
 		getTarget = function() return not isPlayer and nil or nil end,
-		getStorageValue = function() return -1 end,
+		getStorageValue = function(_, k) local v = STORE[k] if v == nil then return -1 end return v end,
 		getSpeed = function() return 200 end, getBaseSpeed = function() return 200 end,
 		getSex = function() return 1 end,
 		getParty = function() return nil end, getGuild = function() return nil end,
@@ -169,7 +175,7 @@ function Vocation() return Any end
 
 ------------------------------------------------------------------ combat
 local Cmt = {}
-local function Combat()
+local function newCombat()
 	return setmetatable({params = {}, area = nil, callbacks = {}}, Cmt)
 end
 Cmt.__index = {
@@ -192,7 +198,8 @@ Cmt.__index = {
 		return true
 	end,
 }
-_G.Combat = Combat
+-- Combat is a callable table, as in the engine (the Forms wrap Combat.execute / setParameter, data/lib/chaos_spell_forms.lua)
+_G.Combat = setmetatable(Cmt.__index, {__call = function() return newCombat() end})
 function createCombatArea(t, ext)
 	if type(t) == "table" and t._area then return t end
 	local cells, h, w = 0, #t, 0
@@ -242,6 +249,19 @@ if not okc or type(rawget(_G, "Chaos")) ~= "table" then
 end
 function playSound() end
 function doPlaySound() end
+-- the spell Forms (O686 phase 4): switched on for this one spell
+if formState and formState > 0 then
+	local okc2, cfg2 = pcall(dofile, "data/scripts/chaos/spell_ranks_config.lua")
+	if okc2 and type(cfg2) == "table" then
+		ChaosSpellRanksConfig = cfg2
+		cfg2.enabled = true
+		STORE[cfg2.storage.rankBase + spellId] = formState
+		local okf = pcall(dofile, "data/lib/chaos_spell_forms.lua")
+		if okf and ChaosSpellForms and weakestEl and weakestEl ~= "" then
+			ChaosSpellForms.resistOf = function() return function(el) return el == weakestEl and 0 or 50 end end
+		end
+	end
+end
 
 ------------------------------------------------------------------ run
 local base = "data/spells/scripts/"
@@ -264,5 +284,9 @@ if f then
 	end
 else
 	rec("NOCAST")
+end
+if formState and formState > 0 and rawget(_G, "ChaosSpellForms") and ChaosSpellForms.fxProbe then
+	local okp, errp = pcall(ChaosSpellForms.fxProbe, caster, spellId, Position(TARGET_POS))
+	if not okp then rec("FORMFAIL", tostring(errp):sub(1, 160)) end
 end
 print(table.concat(out, "\n"))

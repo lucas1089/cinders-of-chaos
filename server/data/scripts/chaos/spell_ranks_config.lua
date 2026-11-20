@@ -18,6 +18,8 @@ return {
 		awakened = 7107501, -- awakened spells held (phase 7)
 		formChanges = 7107502, -- Form changes made (phase 4)
 		grantVersion = 7107503, -- reserved: the launch grant was removed (owner 2026-11-20), never written
+		lastPickAt = 7107504, -- phase 4: os.time of the last Form pick of the character (the free change window)
+		lastPickWhat = 7107505, -- phase 4: spell id * 10 + tier of that pick (only the last pick has the free window)
 		sealWaystone = 7107510, -- phase 7
 		sealRift = 7107511,
 		sealPinnacle = 7107512,
@@ -113,6 +115,11 @@ return {
 	-- PvP (owner 2026-11-20: half, no awakening): the rank's power counts at this share against another player; awakening
 	-- signature effects and combos are off (phases 6 and 7 read `awakening` and `combos`)
 	pvp = {rank = 0.5, forms = 0.5, awakening = false, combos = false},
+
+	-- Forms (phase 4, design 2.4): Form I at rank `rank1`, Form II at `rank2`; the first pick of a tier is free; a change costs
+	-- max(minPrice, perLevel x level) gold, bank first; a change of the LAST pick within `freeSeconds` is free (a misclick). The numbers of
+	-- the kinds are spell_forms_core.lua `numbers`, the rows data/spells/forms.csv.
+	forms = {rank1 = 10, rank2 = 20, minPrice = 10000, perLevel = 150, freeSeconds = 1800, extraCap = 12, groundCap = 6},
 
 	-- tester characters (storage Chaos.storage.tester, README "tester bots") earn no SP: the bots must not bend the curve
 	testersEarn = false,

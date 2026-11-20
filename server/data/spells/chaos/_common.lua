@@ -155,6 +155,13 @@ end
 if not ChaosFxPass then
 	pcall(dofile, 'data/lib/chaos_fx_pass.lua')
 end
+-- The spell Forms' read API (data/lib/chaos_spell_forms.lua, O686): pass() below asks it for an element conversion
+if not ChaosSpellForms then
+	pcall(dofile, 'data/lib/chaos_spell_forms.lua')
+end
+if ChaosSpellForms and ChaosSpellForms.installCombat then
+	pcall(ChaosSpellForms.installCombat)
+end
 -- The spell VFX pack (data/lib/chaos_spell_vfx.lua, O596 and O600, client pair 73): a spell's own pack effect or projectile for a
 -- name, asked before the effects pass; nil below pair 73, so a pair 72 client keeps today's effects
 if not ChaosSpellVfx then
@@ -168,6 +175,14 @@ local function pass(kind, name)
 	local pid, spellId = W.cast()
 	if not pid then
 		return nil
+	end
+	-- O686: a spell with an element conversion Form (SHIFT:E, ASCEND:E) sends the effects of that element only (data/lib/chaos_spell_forms.lua)
+	local FM = rawget(_G, "ChaosSpellForms")
+	if FM and FM.swapFor then
+		local okf, conv = pcall(FM.swapFor, pid, spellId, kind, name)
+		if okf and conv then
+			return conv
+		end
 	end
 	local V = ChaosSpellVfx
 	if V and V.swapFor then
@@ -261,6 +276,13 @@ local function wrapFx()
 	if Fx and Fx ~= ChaosSpellSkinFx then
 		local raw = Fx
 		ChaosSpellSkinFx = function(name, fallback)
+			local FM = rawget(_G, "ChaosSpellForms")
+			if FM and FM.castConversion and FM.enabled and FM.enabled() then -- O686: a conversion Form shows the element's plain effect
+				local okc, conv = pcall(function() return FM.plainFxId(FM.castConversion()) end)
+				if okc and conv then
+					return conv
+				end
+			end
 			local alt = skinned("fx", name)
 			if alt and ChaosFx and ChaosFx[alt] then
 				return raw(alt, fallback)

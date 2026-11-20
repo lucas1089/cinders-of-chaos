@@ -168,5 +168,48 @@ for flags in ([], ['--upgrades']):
     check(r.returncode == 0 and 'boss check: ok' in r.stdout, 'boss_model.py --check %s: %s' % (' '.join(flags), (r.stdout + r.stderr)[-300:]))
     check(('spell upgrades: ON' in r.stdout) == bool(flags), 'the banner follows the flag')
 
+# ---- the Form band (O686 phase 4, design 2.1)
+band = SU.form_band_config()
+check(band['one'] == (-0.05, 0.08) and band['five'] == (-0.05, 0.12) and band['best'] == 0.08, 'the band of the design: %s' % (band,))
+rows = SU.form_rows()
+check(len(rows) == 596, '596 Form rows from the real planner: %d' % len(rows))
+check(SU.form_problems() == [], 'the committed Forms are in the band: %s' % SU.form_problems()[:3])
+by_kind = {}
+for r in rows:
+    by_kind.setdefault(r['kind'], []).append(r)
+check(all(0.95 - 1e-9 <= r['g1'] <= 1.08 + 1e-9 and 0.95 - 1e-9 <= r['g5'] <= 1.12 + 1e-9 for r in rows), 'every row: one enemy -5..+8%, five -5..+12%')
+check(max(SU.form_in_situation(r) for r in rows) <= 1.08 + 1e-9, 'the best Form is at most +8% in its situation')
+check(all(r['utility'] for r in rows if r['g1'] < 0.97 and r['g5'] < 0.97), 'a Form under -3% on both names a utility')
+near(sum((r['g1'] + r['g5']) / 2 for r in rows if r['tier'] == 1) / sum(1 for r in rows if r['tier'] == 1), 1.03, 0.015, 'Form I counted +3%')
+near(sum((r['g1'] + r['g5']) / 2 for r in rows if r['tier'] == 2) / sum(1 for r in rows if r['tier'] == 2), 1.03, 0.015, 'Form II counted +3%')
+check('PULL' in by_kind and by_kind['PULL'][0]['utility'], 'the pull names its utility')
+check('| I | SPLIT |' in SU.form_table(), 'the table has a row for each kind')
+
+
+def fake(kind, g1, g5, tier=1, pick=1, sid=1, situation='both', utility=False):
+    return {'id': sid, 'name': 'Fake', 'tier': tier, 'pick': pick, 'kind': kind, 'g1': g1, 'g5': g5, 'situation': situation, 'utility': utility}
+
+
+ok_rows = [fake('A', 1.05, 1.05, pick=1), fake('B', 0.98, 1.08, pick=2)]
+check(SU.form_problems(ok_rows, band) == [] or all('counted power' in b for b in SU.form_problems(ok_rows, band)), 'two good Forms pass the band rules')
+bad = SU.form_problems([fake('A', 1.20, 1.05, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('on one enemy' in b for b in bad), 'a Form +20 percent on one enemy fails: %s' % bad)
+bad = SU.form_problems([fake('A', 1.00, 1.30, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('on five' in b for b in bad), 'a Form +30% on five fails')
+bad = SU.form_problems([fake('A', 1.00, 1.10, pick=1, situation='pack'), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('in the situation' in b for b in bad), 'a pack Form +10% on five is over the best-Form cap')
+bad = SU.form_problems([fake('A', 0.96, 0.96, pick=1), fake('B', 1.04, 1.04, pick=2)], band)
+check(any('no utility named' in b for b in bad), 'a Form under -3% on both with no utility fails')
+bad = SU.form_problems([fake('A', 0.96, 0.96, pick=1, utility=True), fake('B', 1.00, 1.00, pick=2)], band)
+check(not any('no utility named' in b for b in bad), 'the same Form with a named utility passes')
+bad = SU.form_problems([fake('A', 1.06, 1.06, pick=1), fake('B', 1.00, 1.00, pick=2)], band)
+check(any('beats its twin' in b for b in bad), 'a Form better than its twin on both counts fails')
+bad = SU.form_problems([fake('A', 1.06, 1.06, pick=1), fake('B', 1.00, 1.00, pick=2, utility=True)], band)
+check(not any('beats its twin' in b for b in bad), 'a twin that names a utility is not beaten')
+bad = SU.form_problems([fake('A', 1.06, 1.00, pick=1), fake('B', 1.00, 1.06, pick=2)], band)
+check(not any('beats its twin' in b for b in bad), 'a trade-off is no domination')
+bad = SU.form_problems([fake('A', 1.12, 1.12, pick=1)], dict(band, one=(-0.05, 0.20), five=(-0.05, 0.20), best=0.20))
+check(any('counted power' in b for b in bad), 'a mean gain far from +3% fails the counted power')
+
 print('spell_upgrade_model_test: %s' % ('FAILED %d' % failures if failures else 'ok'))
 sys.exit(1 if failures else 0)

@@ -3,7 +3,7 @@
 every other balance model reads (computed, not measured; docs/SPELL_UPGRADES.md sections 1.4, 5, README "Monster health curve and
 the models (O686 phase 3)").
 
-usage: python3 -I server/tools/spell_upgrade_model.py [--check] [--derive] [--table] [--no-upgrades] [--parts rank,forms,...]
+usage: python3 -I server/tools/spell_upgrade_model.py [--check] [--derive] [--table] [--no-upgrades] [--forms] [--parts rank,forms,...]
 --check        exit 1 when the committed `health` curve of spell_ranks_config.lua is not the derivation, a limit of
                data/scripts/chaos/spell_upgrade_balance_config.lua fails (typical kill times within 3% of today at every level band,
                the main spell at rank 20 inside 1500 to 2000, refXpPerHour held to progression_model.lua, the no-upgrades
@@ -13,6 +13,9 @@ usage: python3 -I server/tools/spell_upgrade_model.py [--check] [--derive] [--ta
                spell_upgrade_balance_config.lua that progression_model.lua --upgrades reads
 --table        the rank, the power and the health factor per level
 --no-upgrades  the character with no upgrades: experience an hour and hours to a level (design 5.6)
+--forms        the Form band (design 2.1, phase 4): per kind the worst and best gain of one cast with the Form on one enemy and on five,
+               from the real planner (tools/forms_numbers.lua over data/spells/forms.csv); --check fails when a row leaves the band
+               (limits: spell_upgrade_balance_config.lua `formBand`)
 
 THE MODEL. The typical character hunts at the rate of progression_model.lua (minutes a level). A main rotation spell has `mainShare`
 (16%) of the hunt damage, so it earns SP at 0.16 an hour of hunting (an SP is one hour of kill value at full share), and a rank costs
@@ -45,6 +48,7 @@ BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_upgrade_balanc
 PROGRESSION = os.path.join('tools', 'progression_model.lua')
 MEASURED = os.path.join(SERVER, 'data', 'spells', 'class_dps_measured.csv')
 LEVELS = (100, 500, 1000)
+FORMS_LUA = os.path.join('tools', 'forms_numbers.lua')
 PART_NAMES = ('rank', 'forms', 'combos', 'awakening')
 
 # ---- the switch ------------------------------------------------------------------------------------------------------------
@@ -218,6 +222,116 @@ def balance_config(path=BALANCE):
                       for name, body in re.findall(r'\b(\w+) = \{([^{}]*)\}', _block(t, 'widen'))},
         }
     return _CACHE[key]
+
+
+# ---- the Form band (design 2.1, phase 4) -----------------------------------------------------------------------------------
+def form_band_config(path=BALANCE):
+    key = ('formBand', path)
+    if key not in _CACHE:
+        body = _block(_read(path), 'formBand')
+
+        def pair(name):
+            m = re.search(r'\b' + name + r' = \{\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*\}', body)
+            return float(m.group(1)), float(m.group(2))
+
+        def num(name):
+            return float(re.search(r'\b' + name + r' = (-?[0-9.]+)', body).group(1))
+        _CACHE[key] = {'one': pair('one'), 'five': pair('five'), 'best': num('best'), 'utilityBelow': num('utilityBelow'),
+                       'twinGap': num('twinGap'), 'counted': num('counted'), 'countedTol': num('countedTol')}
+    return _CACHE[key]
+
+
+def form_rows():
+    """[{id, name, tier, pick, kind, g1, g5, situation, utility}] of every Form of data/spells/forms.csv: the gain of one cast with the
+    Form, on one enemy and on a pack of five (the real planner, tools/forms_numbers.lua; the spell hits t5 of the five)"""
+    if 'forms' not in _CACHE:
+        import rotation_sim as R
+        model = R.load_model()
+        names, t5 = {}, []
+        for s in R.load_chaos() + R.load_stock():
+            if s['group'] in ('attack', 'healing') and s['vocations'] and s['id'] not in names:
+                names[s['id']] = s['name']
+                m = model.get(s['words'])
+                t5.append('%d\t%s' % (s['id'], m['t5'] if m and s['group'] == 'attack' else 1))
+        out, last = None, None
+        for exe in ('luajit', 'lua5.3'):
+            try:
+                r = subprocess.run([exe, FORMS_LUA], cwd=SERVER, input='\n'.join(t5) + '\n', capture_output=True, text=True, timeout=300)
+            except FileNotFoundError:
+                continue
+            if r.returncode == 0:
+                out = r.stdout
+                break
+            last = r.stderr
+        if out is None:
+            raise RuntimeError('forms_numbers.lua needs luajit or lua5.3: %s' % last)
+        rows = []
+        for line in out.strip().split('\n'):
+            i, tier, pick, kind, g1, g5, sit, util = line.split('\t')
+            rows.append({'id': int(i), 'name': names.get(int(i), '?'), 'tier': int(tier), 'pick': int(pick), 'kind': kind,
+                         'g1': float(g1), 'g5': float(g5), 'situation': sit, 'utility': util == '1'})
+        _CACHE['forms'] = rows
+    return _CACHE['forms']
+
+
+def form_in_situation(r):
+    """the gain of a Form in the situation it is for: pack Forms on five, solo Forms on one, the rest the better of the two"""
+    return r['g5'] if r['situation'] == 'pack' else (r['g1'] if r['situation'] == 'one' else max(r['g1'], r['g5']))
+
+
+def form_problems(rows=None, band=None):
+    bad = []
+    rows = form_rows() if rows is None else rows
+    b = band or form_band_config()
+    for r in rows:
+        where = '%s (%d) Form %s%d %s' % (r['name'], r['id'], 'I' if r['tier'] == 1 else 'II', r['pick'], r['kind'])
+        g1, g5 = r['g1'] - 1, r['g5'] - 1
+        if not b['one'][0] - 1e-9 <= g1 <= b['one'][1] + 1e-9:
+            bad.append('%s: %+.1f%% on one enemy, the band is %+.0f%% to %+.0f%%' % (where, g1 * 100, b['one'][0] * 100, b['one'][1] * 100))
+        if not b['five'][0] - 1e-9 <= g5 <= b['five'][1] + 1e-9:
+            bad.append('%s: %+.1f%% on five, the band is %+.0f%% to %+.0f%%' % (where, g5 * 100, b['five'][0] * 100, b['five'][1] * 100))
+        sit = form_in_situation(r) - 1
+        if sit > b['best'] + 1e-9:
+            bad.append('%s: %+.1f%% in the situation it is for (%s), at most %+.0f%%' % (where, sit * 100, r['situation'], b['best'] * 100))
+        if g1 < b['utilityBelow'] and g5 < b['utilityBelow'] and not r['utility']:
+            bad.append('%s: %+.1f%% on one and %+.1f%% on five and no utility named (spell_forms_core.lua `utility`)' % (where, g1 * 100, g5 * 100))
+    # a Form is not better than its twin on both counts (unless the twin names a utility)
+    by = {}
+    for r in rows:
+        by.setdefault((r['id'], r['tier']), []).append(r)
+    for (sid, tier), pair in sorted(by.items()):
+        if len(pair) != 2:
+            continue
+        for a, c in ((pair[0], pair[1]), (pair[1], pair[0])):
+            if a['g1'] - c['g1'] > b['twinGap'] and a['g5'] - c['g5'] > b['twinGap'] and not c['utility']:
+                bad.append('%s (%d) Form %s: %s (%+.1f%% / %+.1f%%) beats its twin %s (%+.1f%% / %+.1f%%) on both counts' % (
+                    a['name'], sid, 'I' if tier == 1 else 'II', a['kind'], (a['g1'] - 1) * 100, (a['g5'] - 1) * 100, c['kind'],
+                    (c['g1'] - 1) * 100, (c['g5'] - 1) * 100))
+    # counted power: +3% a tier
+    for tier in (1, 2):
+        sel = [r for r in rows if r['tier'] == tier]
+        if sel:
+            mean = sum((r['g1'] + r['g5']) / 2 for r in sel) / len(sel) - 1
+            if abs(mean - b['counted']) > b['countedTol']:
+                bad.append('Form %s counted power: the mean gain is %+.2f%%, the design counts %+.0f%% (tolerance %.1f points)' % (
+                    'I' if tier == 1 else 'II', mean * 100, b['counted'] * 100, b['countedTol'] * 100))
+    return bad
+
+
+def form_table(rows=None):
+    """markdown: per kind, the worst and the best gain on one enemy and on five over every row that has it"""
+    rows = form_rows() if rows is None else rows
+    kinds = {}
+    for r in rows:
+        kinds.setdefault((r['tier'], r['kind']), []).append(r)
+    lines = ['| Form | Kind | Rows | One enemy worst / best | Five enemies worst / best | In its situation, best | Utility |',
+             '|---|---|---:|---|---|---:|---|']
+    for (tier, kind), rs in sorted(kinds.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        lines.append('| %s | %s | %d | %+.1f%% / %+.1f%% | %+.1f%% / %+.1f%% | %+.1f%% | %s |' % (
+            'I' if tier == 1 else 'II', kind, len(rs), (min(r['g1'] for r in rs) - 1) * 100, (max(r['g1'] for r in rs) - 1) * 100,
+            (min(r['g5'] for r in rs) - 1) * 100, (max(r['g5'] for r in rs) - 1) * 100,
+            (max(form_in_situation(r) for r in rs) - 1) * 100, 'yes' if rs[0]['utility'] else ''))
+    return '\n'.join(lines)
 
 
 # ---- the progression curve ---------------------------------------------------------------------------------------------------
@@ -563,6 +677,8 @@ def problems():
         d = ref_xp_per_hour(int(lv))
         if abs(v / d - 1) > lim['refXpTol']:
             bad.append('refXpPerHour at level %d: %d in spell_ranks_config.lua, progression_model.lua says %d' % (lv, v, d))
+    # the Form band of the design (2.1), from the real planner and forms.csv
+    bad.extend(form_problems())
     # the no-upgrades character as the design states
     for lv, pct in b['noUpgradesXp']:
         d = no_upgrades_xp(int(lv))
@@ -625,6 +741,11 @@ def main(argv):
     if '--no-upgrades' in argv:
         print(no_upgrades_table())
         return 0
+    if '--forms' in argv:
+        print(form_table())
+        for x in form_problems():
+            print('FAIL ' + x)
+        return 1 if form_problems() else 0
     bad = problems()
     if '--check' in argv:
         for b in bad:
