@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Vael Ashmourn, the solo boss of the main quest (O551; computed, not measured): can all 21 classes solo it at level 500?
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): Vael Ashmourn x H at the trial's level (trials.lua), class damage x the typical gain. `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/mainquest_boss_model.py [--check]
 
@@ -32,6 +33,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import boss_length_model as BL  # noqa: E402
 import class_dps_model as CD  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 CHAOS = os.path.join(HERE, '..', 'data', 'scripts', 'chaos')
 LEVEL = 500
@@ -164,7 +166,8 @@ def attack_table(t, c):
 
 def health(t, level):
     lvl = max(t['min'], min(t['max'], level))
-    return t['merc_hp'] * t['share'] * (lvl / float(t['min'])) ** t['exp']
+    # O686 phase 3: x H of the spell ranks at the level the trial is scaled to (trials.lua, ascension_quest.lua), 1 while off
+    return t['merc_hp'] * t['share'] * (lvl / float(t['min'])) ** t['exp'] * SU.health(lvl)
 
 
 def seconds(t, level, dps1):
@@ -212,6 +215,9 @@ def problems():
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     out, _, t = table()
     if '--check' not in argv:
         print('health at level %d: %.0f (hpShare %.2f)' % (LEVEL, health(t, LEVEL), t['share']))

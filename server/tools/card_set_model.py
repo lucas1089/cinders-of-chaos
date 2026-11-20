@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Card set model (O453): what a card set costs and gives against a mixed build, per class at level 500. Computed, not measured.
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): class damage x the typical gain; the sets are shares of the class damage, so nothing moves (the run says so). `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/card_set_model.py [--check] [--level N] [--csv]
 
@@ -41,6 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import class_dps_model as CD  # noqa: E402
 import rotation_sim as R  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 REPO = os.path.normpath(os.path.join(HERE, '..', '..'))
 CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'cards_config.lua')
@@ -277,6 +279,10 @@ def table(rows, mult, nmon):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
+        print('  (this model holds shares of the class damage: the class gain cancels, no number moves)')
     level = int(argv[argv.index('--level') + 1]) if '--level' in argv else LEVEL
     rows, mult, nmon = class_rows(level)
     bad = problems(rows, mult)

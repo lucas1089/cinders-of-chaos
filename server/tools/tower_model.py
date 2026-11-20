@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The Infinity Tower model: seconds to clear every floor for the classes, against a base hunt pack of the same level
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): every floor monster x H at the floor's monster level (infinitytower_run.lua), class damage x the typical gain; the clear time of every floor at its own level, the reach of level 800 and the stale curves are held as today. `--check --upgrades` must pass as `--check` does.
 (computed, not measured; server/README.md "Infinity Tower balance and floor rewards", O144).
 
 usage: python3 -I server/tools/tower_model.py [--levels 100,300,500,800,1000] [--floors 1,5,10,...] [--before]
@@ -46,6 +47,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # python -I leaves the script's folder out of sys.path
 import pack_model as PM  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3)
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
@@ -229,12 +231,13 @@ def new_scheme(cfg):
     def mix(f):
         return tuple(lin(cfg[k], f) / 100.0 for k in ('magic', 'rare', 'legendary'))
 
+    # O686 phase 3: x H of the spell ranks at the floor's monster level (infinitytower_run.lua: Chaos.scaleHealth(s.health, s.level)); 1 while off
     def hp(f):
-        return hp_at(cfg, f)
+        return hp_at(cfg, f) * SU.health(level_at(cfg, f))
 
     def boss(f):
         b = cfg['bosses'][(int(f // cfg['bossEvery']) - 1) % len(cfg['bosses'])]
-        return boss_hp_at(cfg, int(f)), b[1]
+        return boss_hp_at(cfg, int(f)) * SU.health(level_at(cfg, f)), b[1]
 
     return {'name': 'now', 'count': count, 'mix': mix, 'hp': hp, 'boss': boss, 'every': int(cfg['bossEvery']),
             'divisor': int(cfg['bossHelperDivisor']), 'dmg': lambda f: dmg_at(cfg, f)}
@@ -409,8 +412,9 @@ def stale(cfg, info):
     """O444: how far the committed `health` and `bossHealth` are from what --derive prints now: [(name, floor, derived / committed)]
     at DERIVE_FLOORS and at the boss floors"""
     pts, bosses = derived_points(cfg, info)
-    out = [('health', f, v / lin(cfg['health'], f)) for f, v in pts]
-    out += [('bossHealth', f, v / cfg['bossHealth'][f]) for f, v in bosses]
+    # the committed curves are today's health: with the upgrades on the game multiplies them by H of the floor's level (SU.health, 1 while off)
+    out = [('health', f, v / (lin(cfg['health'], f) * SU.health(level_at(cfg, f)))) for f, v in pts]
+    out += [('bossHealth', f, v / (cfg['bossHealth'][f] * SU.health(level_at(cfg, f)))) for f, v in bosses]
     return out
 
 
@@ -709,7 +713,7 @@ def endless(cfg, info, floors=None, out=None):
         L = level_at(cfg, f)
         n = int(cfg['count'][-1][1])
         mix = tuple(lin(cfg[k], f) / 100.0 for k in ('magic', 'rare', 'legendary'))
-        t = trend_hp(cfg, f) * cfg['sawtooth'][-1] * tier_factor(mix, info) * n / (player_dps(None, L, n)[0] * cfg['packUptime'])
+        t = trend_hp(cfg, f) * SU.health(L) * cfg['sawtooth'][-1] * tier_factor(mix, info) * n / (player_dps(None, L, n)[0] * cfg['packUptime'])
         if f > start and hp_at(cfg, f) < b['healthMax']:
             if t <= prev:
                 bad.append('floor %d: the clear time at its own level does not climb (%.1f s after %.1f s)' % (f, t, prev))
@@ -754,6 +758,9 @@ def _pool_level(names):
 
 def main(argv):
     global FRAME
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     if '--before' in argv:
         FRAME = 'c4'  # the planner of 2026-10-22 and the C4 numbers of its day
     cfg = balance()

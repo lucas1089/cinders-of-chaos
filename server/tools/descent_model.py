@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The Ember Descent model (O664): seconds to clear each room against seconds to die, per class and level band, solo and in a
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): every room monster and the boss x H at the party's level (descent.lua spawnOne), class damage x the typical gain, the heal spells x the heal gain. `--check --upgrades` must pass as `--check` does.
 full party (computed, not measured; server/README.md "Ember Descent model (O664)").
 
 usage: python3 -I server/tools/descent_model.py [--levels 100,500] [--party 1,4] [--legacy] [--detail] [--boons] [--curses] [--hunt]
@@ -51,6 +52,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import survival_model as S
 import class_dps_model as CD
+import spell_upgrade_model as SU  # the spell upgrades switch (O686 phase 3): monster health x H, class damage x the gain
 import pack_model as PM
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
@@ -350,7 +352,7 @@ def room(ctx, cls, level, n, depth, kind, mon, curses=None, reduction_extra=0.0)
         td *= cfg['boss'].get('damage', 1.0)
     else:
         th, td = tier_mean(esc['tiers'], ranks)
-    h = mon['pace_health'] * esc['health'] * th * hm
+    h = mon['pace_health'] * esc['health'] * th * hm * SU.health(level)  # O686 phase 3: x H at the party's level (descent.lua spawnOne), 1 while off
     dmg = {k: mon['pace_damage'][k] * esc['damage'] * td for k in ('melee', 'physical', 'element')}
     hits = mon['pace_hits']
     waves, size = plan['waves'], plan['size']
@@ -618,6 +620,9 @@ def curses_report(res, curses):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     levels = [int(x) for x in argv[argv.index('--levels') + 1].split(',')] if '--levels' in argv else None
     parties = [int(x) for x in argv[argv.index('--party') + 1].split(',')] if '--party' in argv else None
     bal = BAL()

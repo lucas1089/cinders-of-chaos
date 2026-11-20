@@ -5,7 +5,7 @@ local n = 0
 setmetatable(_G, {__index = function(t, k)
   if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
 end})
-Chaos = {storage = {}, tables = {}, passive = {}, tower = {}}
+Chaos = {storage = {}, tables = {}, passive = {}, tower = {}, healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end}
 ChaosOpcodes = {}
 
 local registry = {}

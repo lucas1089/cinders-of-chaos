@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The pinnacle boss model (O667; computed, not measured in game; server/README.md "Pinnacle bosses (O667)").
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the four bosses x H at their planned level (pinnacle.lua), the typical damage with the gain: 420 s alone and 300 s with five stay. `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check]
 
@@ -41,6 +42,7 @@ sys.path.insert(0, HERE)
 import boss_length_model as BL  # noqa: E402
 import guardian_model as GM  # noqa: E402
 import survival_model as S  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): boss health x H at the planned level
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 PINNACLE = os.path.join(SERVER, 'data', 'monster', 'monsters', 'chaos', 'pinnacle')
@@ -102,7 +104,7 @@ def derive_health(boss, bal, heal):
 def kill_seconds(boss, bal, players, heal, dmg_factor=1.0):
     """seconds for `players` of the median class (or `dmg_factor` of it) to kill the committed fight"""
     d = typical(boss['refLevel']) * dmg_factor
-    health = boss['health'] * (1 + boss['perExtra'] * (players - 1))
+    health = boss['health'] * SU.health(boss['refLevel']) * (1 + boss['perExtra'] * (players - 1))  # x H at the planned level (pinnacle.lua), 1 while off
     return health / (players * d * bal['uptime'] - heal)
 
 
@@ -249,9 +251,11 @@ def check():
                 re.escape(b['unique']['name']), b['unique']['id'], re.escape(b['name'])), uniques):
             errors.append('%s: the unique %s does not list the boss as its monster' % (tag, b['unique']['name']))
         # health and the party curve
-        if abs(b['health'] - r['health']) > tol['health'] * r['health']:
-            errors.append('%s: health %d, derived %d (%.1f%% off, over %.1f%%)' % (
-                tag, b['health'], r['health'], 100 * abs(b['health'] - r['health']) / r['health'], 100 * tol['health']))
+        have_hp = b['health'] * SU.health(b['refLevel'])  # the game multiplies the committed fight by H (pinnacle.lua), 1 while off
+        tol_hp = tol['health'] + SU.slack(b['refLevel'])
+        if abs(have_hp - r['health']) > tol_hp * r['health']:
+            errors.append('%s: health %d x H %.3f, derived %d (%.1f%% off, over %.1f%%)' % (
+                tag, b['health'], SU.health(b['refLevel']), r['health'], 100 * abs(have_hp - r['health']) / r['health'], 100 * tol_hp))
         if abs(b['perExtra'] - r['perExtra']) > tol['perExtra'] * r['perExtra']:
             errors.append('%s: perExtra %.4f, derived %.4f' % (tag, b['perExtra'], r['perExtra']))
         now, mx = xml_health(r['text'])
@@ -265,8 +269,10 @@ def check():
             for key, val in want.items():
                 if abs(ref.get(key, -1) - val) > 1e-9:
                     errors.append('%s: profile ref %s is %s, the model says %s' % (tag, key, ref.get(key), val))
-            if abs(ref.get('dps', 0) - r['dps']) > 0.015 * r['dps']:
-                errors.append('%s: profile ref dps %s, derived %d' % (tag, ref.get('dps'), r['dps']))
+            with SU.forced(False):  # the ref is the fight's numbers of today (the XML health, the damage of the model), the game adds H and the gain
+                today_dps = typical(b['refLevel'])
+            if abs(ref.get('dps', 0) - today_dps) > 0.015 * today_dps:
+                errors.append('%s: profile ref dps %s, derived %d' % (tag, ref.get('dps'), today_dps))
             if abs(ref.get('heal', 0) - r['heal']) > 0.03 * max(1, r['heal']):
                 errors.append('%s: profile ref heal %s, the XML heals %.0f a second' % (tag, ref.get('heal'), r['heal']))
         # lengths
@@ -364,6 +370,9 @@ def report():
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     os.chdir(SERVER)
     if '--check' in argv:
         return check()

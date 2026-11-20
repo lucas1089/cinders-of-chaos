@@ -150,6 +150,10 @@ function M.curve(env, maxLevel)
 		local xph, n = M.xpPerHour(env.hunts, L, env.cfg.window)
 		xph = xph * env.cfg.multikill * M.stage(env.stages, L) * (env.newcomer and env.newcomer(L) or 1)
 		out[L] = {min = xph > 0 and M.expToNext(L) / xph * 60 or math.huge, hunts = n}
+		-- O686 phase 3: a factor on the minutes a level (set by --upgrades / --no-upgrades on the command line, see below)
+		if env.minutesFactor and out[L].min ~= math.huge then
+			out[L].min = out[L].min * env.minutesFactor(L)
+		end
 	end
 	return out
 end
@@ -376,10 +380,33 @@ if ChaosProgressionLib then
 end
 
 -- ---------------------------------------------------------------- command line
-local mode = arg and arg[1]
-local env = M.load({noNewcomer = arg and (arg[1] == "--no-newcomer" or arg[2] == "--no-newcomer")})
-if mode == "--no-newcomer" then
-	mode = arg[2]
+-- Flags in any position: --no-newcomer, and (O686 phase 3, docs/SPELL_UPGRADES.md 5.3 and 5.6; server/README.md "Monster health curve and the
+-- models (O686 phase 3)"):
+--   --upgrades     the typical character with the spell ranks on: the monsters have H (spell_ranks_config.lua `health`), the character's damage
+--                  has the typical gain G (spell_upgrade_balance_config.lua `typical`, held to the derivation by spell_upgrade_model.py), so a
+--                  level takes H / G of the minutes (within 3% of 1: the design's promise) and --check holds the same smoothness limits
+--   --no-upgrades  the character with no ranks, no Forms, no combos, no awakening: the monsters have H and the damage has nothing, a level
+--                  takes H x the minutes; prints the hours to reach levels against the typical character (design 5.6), or with --check the
+--                  same limits on that curve (it is slower, so the "minutes a level" ceilings may not hold: the report says which)
+local flags, args = {}, {}
+for _, a in ipairs(arg or {}) do
+	if a == "--no-newcomer" or a == "--upgrades" or a == "--no-upgrades" then
+		flags[a] = true
+	else
+		args[#args + 1] = a
+	end
+end
+local mode = args[1]
+local env = M.load({noNewcomer = flags["--no-newcomer"]})
+if flags["--upgrades"] or flags["--no-upgrades"] then
+	local ranks = dofile("data/scripts/chaos/spell_ranks_core.lua")
+	local rcfg = dofile("data/scripts/chaos/spell_ranks_config.lua")
+	local bal = dofile("data/scripts/chaos/spell_upgrade_balance_config.lua")
+	local function H(L) return ranks.healthFactor(L, rcfg) end
+	local function G(L) return ranks.interp(bal.typical, L, 1) end
+	env.minutesFactor = flags["--no-upgrades"] and H or function(L) return H(L) / G(L) end
+	print(flags["--no-upgrades"] and "spell upgrades: the character with none (the monsters have H, the damage has no gain)"
+		or "spell upgrades: ON for the typical character (the monsters have H, the damage the typical gain)")
 end
 local problems, curve = M.problems(env)
 if mode == "--spells" then
@@ -400,7 +427,7 @@ if mode == "--spells" then
 end
 if mode == "--curve-json" then
 	-- O542: the expected minutes per level (level L to L + 1) as JSON, for the journey bot report (server/tools/journey_report.py)
-	local maxL = tonumber(arg[2]) or 100
+	local maxL = tonumber(args[2]) or 100
 	local parts = {}
 	for L = 1, maxL do
 		local c = curve[L]
@@ -433,4 +460,17 @@ for i = 1, #cuts - 1 do
 end
 print(string.format("levels %d to 1000: %.1f hours; to %d: %.1f hours", lim.fromLevel, M.hours(curve, lim.fromLevel, 1000),
 	lim.toLevel, M.hours(curve, lim.fromLevel, lim.toLevel)))
+if flags["--no-upgrades"] then
+	-- design 5.6: the hours to a level of the character with no upgrades against the typical one (the monsters have H, the damage nothing)
+	local f = env.minutesFactor
+	env.minutesFactor = nil
+	local base = M.curve(env, lim.toLevel)
+	env.minutesFactor = f
+	print("| Level | Hours, typical | Hours, no upgrades | More | Experience an hour |")
+	print("|---|---|---|---|---|")
+	for _, L in ipairs({100, 500, 1000, 1500, 2000, 2200}) do
+		local a, b = M.hours(base, lim.fromLevel, L), M.hours(curve, lim.fromLevel, L)
+		print(string.format("| %d | %.0f | %.0f | +%.0f%% | -%.0f%% |", L, a, b, (b / a - 1) * 100, (1 - 1 / env.minutesFactor(L)) * 100))
+	end
+end
 for _, p in ipairs(problems) do print("progression: " .. p) end

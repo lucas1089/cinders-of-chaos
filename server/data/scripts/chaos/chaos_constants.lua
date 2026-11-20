@@ -1713,6 +1713,45 @@ function Chaos.heal(creature, amount)
 	return creature:getHealth() - before
 end
 
+-- The monster health factor H of the spell ranks (O686 phase 3, docs/SPELL_UPGRADES.md 5.3 and 5.4): the ONE door every place that
+-- sets a monster's health goes through (tests/health_paths_test.lua holds every setMaxHealth of the scripts to it). The level is the
+-- monster's hunting level for a hunt, the planned level for fixed content. 1 while spell_ranks_config.lua `enabled` is false, below
+-- level 100 and for a missing level, so play does not change until the switch. Never throws.
+function Chaos.healthFactor(level)
+	level = tonumber(level)
+	if not level then
+		return 1
+	end
+	local R = rawget(_G, "ChaosSpellRanks")
+	if (not R or not R.healthFactor) and not Chaos.healthLibFailed then
+		local ok = pcall(dofile, "data/lib/chaos_spell_ranks.lua")
+		if not ok then
+			ok = pcall(dofile, "server/data/lib/chaos_spell_ranks.lua")
+		end
+		Chaos.healthLibFailed = not ok
+		R = ok and rawget(_G, "ChaosSpellRanks") or nil
+	end
+	if not R or not R.healthFactor then
+		return 1
+	end
+	local ok, f = pcall(R.healthFactor, level)
+	f = ok and tonumber(f) or 1
+	if f ~= f or f <= 0 then
+		return 1
+	end
+	return f
+end
+
+-- a maximum health after H: rounded, at least 1; the value itself while H is 1 (a decimal or a huge number is not touched)
+function Chaos.scaleHealth(hp, level)
+	local f = Chaos.healthFactor(level)
+	if f == 1 or type(hp) ~= "number" then
+		return hp
+	end
+	-- never past the engine's 32 bit health (the tower's `beyond.engineMaxHealth` guard value), a value that was above it stays
+	return math.max(1, math.min(math.floor(hp * f + 0.5), math.max(2147000000, math.floor(hp))))
+end
+
 -- The base of a "share of the maximum health" hit on a player (rift ground and storms, raid and Ascended / guild boss
 -- telegraphs): the maximum health, or for a Hollow Vessel health + maximum energy shield (archetypes.lua percentBase),
 -- so its fixed 100 health is no way around them. Without the archetypes module: the maximum health.

@@ -547,7 +547,7 @@ do
 	GlobalEvent, CreatureEvent, MoveEvent, TalkAction = event("global"), event("creature"), event("move"), event("talk")
 	EventCallback = {register = function(self) registered[#registered + 1] = self end}
 	DUNGEON_SYSTEM = {Dungeons = {}}
-	Chaos = {isStaff = function() return false end, dungeons = {extra = {}}}
+	Chaos = {isStaff = function() return false end, dungeons = {extra = {}}, healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end}
 	ChaosRespawnConfig = dofile("data/scripts/chaos/respawn_config.lua")
 	dofile("data/scripts/chaos/areagen.lua")
 	local function find(name)

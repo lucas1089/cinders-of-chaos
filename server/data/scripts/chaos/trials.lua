@@ -515,7 +515,7 @@ local function spawnThrall(tr, pos, hp, opts)
 		return nil
 	end
 	dress(m, f.add.look, f.add.name)
-	setHealth(m, hp)
+	setHealth(m, Chaos.scaleHealth(hp, tr.scale and tr.scale.level)) -- O686 phase 3: x H at the level the trial is scaled to (1 while off)
 	local bonus = f.add.speed or 0
 	if bonus > 0 and tr.stage and (tr.stage.kind == "wave" or (opts and opts.fast)) then
 		m:changeSpeed(bonus * ((opts and opts.fast) and 3 or 2))
@@ -617,7 +617,7 @@ local function startStage(tr)
 			return
 		end
 		dress(m, tr.fam.boss.look, bossName(tr))
-		setHealth(m, T.fast[tr.pid] and 200 or scale.hp)
+		setHealth(m, T.fast[tr.pid] and 200 or Chaos.scaleHealth(scale.hp, scale.level)) -- O686 phase 3: x H (1 while off)
 		m:registerEvent("ChaosTrialMonsterDeath")
 		T.monsterRun[m:getId()] = tr.pid
 		tr.bossId = m:getId()

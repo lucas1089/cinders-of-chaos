@@ -1435,6 +1435,19 @@ end
 
 -- ======================================================================== spawning
 
+-- O686 phase 3: the level the monster health factor H of the spell ranks is read at: an Omen guardian at omen.refLevel, a Greater Rift
+-- monster at greater.healthLevel (a tier serves levels 1500 to 2500), else the tier's level. nil: no key, no factor
+local function healthLevelOf(run)
+	if run.omen then
+		return C().omen and C().omen.refLevel
+	elseif (run.greater or 0) > 0 then
+		return C().greater and C().greater.healthLevel
+	elseif run.key and run.key.tier then
+		return R.tierInfo(C(), run.key.tier).minLevel
+	end
+	return nil
+end
+
 -- opts (optional): {laden = false: a density husk (no loot, no kill credit); extra = true: does not count towards the
 -- guardian (Veilbreach, thralls)}
 local function spawnOne(run, name, pos, tier, boss, opts)
@@ -1482,6 +1495,7 @@ local function spawnOne(run, name, pos, tier, boss, opts)
 	else
 		hp = math.floor(m:getMaxHealth() * run.fx.health * (run.fx.partyHealth or 1)) -- + the party's share (R.applyParty)
 	end
+	hp = Chaos.scaleHealth(hp, healthLevelOf(run)) -- O686 phase 3: x H of the spell ranks (1 while off)
 	if hp ~= m:getMaxHealth() and hp > 0 then
 		m:setMaxHealth(hp)
 		m:setHealth(hp)
@@ -1675,7 +1689,7 @@ function spawnBoss(run) -- the forward-declared local (reinforce)
 					profile.ownTelegraphs = true
 					run.kit = keys
 				end
-				pcall(ChaosBossMech.attach, m, key, {center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
+				pcall(ChaosBossMech.attach, m, key, {level = healthLevelOf(run), center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
 					solo = (run.size or 1) == 1, profile = profile})
 			end
 			first = first or m

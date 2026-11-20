@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The Greater Rift model (O668; computed, not measured in game; server/README.md "Greater Rift (O668)").
 
-usage: python3 -I server/tools/greater_rift_model.py [--check] [--detail] [--level N] [--tiers 16,20,30]
+usage: python3 -I server/tools/greater_rift_model.py [--check] [--detail] [--level N] [--tiers 16,20,30] [--upgrades]
+--upgrades  O686 phase 3: every monster x H (a Greater tier at H(2000) flat, the plain tier 15 at H of its level), class damage x the gain; the reached tier stays within 1
 
 Owner 2026-11-19: the rift past tier 15, endless: a Greater Rift Key opens tier 16 and up, every tier raises the monsters by a
 rule (rift_config.lua `greater`), a clock decides how far a key climbs (1-3 tiers inside it) or falls (1 tier). The model
@@ -34,6 +35,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): monster health x H, class damage x the gain
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 SCAN_MAX = 149  # the numbers script prints rule rows for g 1..SCAN_MAX
@@ -54,7 +56,10 @@ def numbers(levels=None):
 
 # ----------------------------------------------------------------------------------------------- pure maths (tested)
 def hp_of(N, g):
-    return 1.0 if g <= 0 else N['info'][str(g)]['health']
+    """the health of tier g against the tier 15 numbers of the typical player. O686 phase 3: x H of the spell ranks (rift.lua healthLevelOf): a
+    Greater tier (g >= 1) at greater.healthLevel (2000, flat: a tier serves levels 1500 to 2500), the plain tier 15 at its own level; 1 while off"""
+    h = SU.health(N['greater'].get('healthLevel', 2000)) if g > 0 else SU.health(N['tier15']['minLevel'])
+    return h if g <= 0 else N['info'][str(g)]['health'] * h
 
 
 def seconds(N, bal, power, tps, g, n=1):
@@ -151,7 +156,8 @@ def compute(levels=None):
     levels = levels or bal['levels']
     N = numbers(sorted(set(levels + [N15_LEVEL])))
     NUMBERS = N
-    ref = classes().median_dps(N['tier15']['minLevel'])
+    with SU.forced(False):  # the tier 15 clear of greater_numbers.lua is the typical player's of today at the entry level
+        ref = classes().median_dps(N['tier15']['minLevel'])
     out = {'N': N, 'bal': bal, 'rows': [], 'ref': ref}
     t0 = N['tps'][str(N15_LEVEL)]
     for lv in levels:
@@ -292,6 +298,9 @@ def report(res, detail=None, tiers=None):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     detail = None
     tiers = None
     if '--detail' in argv:

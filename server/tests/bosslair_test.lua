@@ -236,6 +236,12 @@ function MoveEvent()
 end
 local spawnCb
 EventCallback = setmetatable({}, {__index = {register = function(self) spawnCb = rawget(self, "onSpawn") end}})
+local creatureEvents = {}
+function CreatureEvent(name)
+	local e = {name = name}
+	function e:register() creatureEvents[name] = self end
+	return e
+end
 Chaos.t = function(_player, text, ...)
 	return select("#", ...) > 0 and string.format(text, ...) or text
 end
@@ -249,7 +255,7 @@ eq(stepEvent.actionId, cfg.aid, "the step event listens on the lairs' action id"
 -- closed: no portal, no spawn
 events.ChaosBossLairStartup.onStartup()
 eq(#created, 0, "pair 72: no portal placed")
-local function mon(name) return {getName = function() return name end} end
+local function mon(name) return {getName = function() return name end, registerEvent = function() end} end
 eq(spawnCb(mon("Talath"), nil, true, false), false, "pair 72: Talath's spawn is refused")
 eq(spawnCb(mon("Mercenary"), nil, true, false), true, "pair 72: the hunt's monsters spawn")
 
@@ -263,6 +269,41 @@ eq(X.placePortal(talath), "kept", "a second startup keeps it")
 eq(#created, 1, "and makes no second one")
 eq(X.placeAll(), 1, "one open lair")
 eq(spawnCb(mon("Talath"), nil, true, false), true, "pair 73: Talath spawns")
+
+-- O686 phase 3: a lair boss takes H of the spell ranks at the level its lair is planned for, once, at its first think
+check(creatureEvents.ChaosBossLairHealth ~= nil, "the lair health event is registered")
+eq(talath.healthLevel, 650, "Talath's fight is planned for level 650")
+local function lairBoss(name, hp)
+	local m = {name = name, max = hp, hp = hp, events = {}, registered = {}}
+	function m:getName() return self.name end
+	function m:isMonster() return true end
+	function m:getMaxHealth() return self.max end
+	function m:getHealth() return self.hp end
+	function m:setMaxHealth(v) self.max = v; self.hp = math.min(self.hp, v) end
+	function m:addHealth(a, b) local n = b or a; self.hp = math.min(self.max, self.hp + n) end
+	function m:registerEvent(e) self.registered[#self.registered + 1] = e end
+	function m:unregisterEvent(e) self.events[e] = true end
+	return m
+end
+local boss = lairBoss("Talath", 21000000)
+eq(spawnCb(boss, nil, true, false), true, "an open lair's boss spawns")
+eq(boss.registered[1], "ChaosBossLairHealth", "and gets the health event")
+local plain = lairBoss("Mercenary", 100)
+spawnCb(plain, nil, true, false)
+eq(#plain.registered, 0, "a hunt monster gets none")
+creatureEvents.ChaosBossLairHealth.onThink(boss, 1000)
+eq(boss.max, 21000000, "the ranks are off: the health is the file's")
+eq(boss.events.ChaosBossLairHealth, true, "the event is one-shot")
+dofile("data/lib/chaos_spell_ranks.lua")
+ChaosSpellRanksConfig.enabled = true
+local boss2 = lairBoss("Talath", 21000000)
+creatureEvents.ChaosBossLairHealth.onThink(boss2, 1000)
+check(math.abs(boss2.max / 21000000 - Chaos.healthFactor(650)) < 1e-6 and boss2.max > 21000000, "the ranks on: x H of level 650")
+eq(boss2.hp, boss2.max, "and the boss is at full health")
+local mboss = lairBoss("Malgrath, the Drowned Crown", 5240000)
+creatureEvents.ChaosBossLairHealth.onThink(mboss, 1000)
+check(math.abs(mboss.max / 5240000 - Chaos.healthFactor(800)) < 1e-6, "Malgrath: x H of level 800")
+ChaosSpellRanksConfig.enabled = false
 
 -- stepping on it
 local function player(level)

@@ -947,13 +947,14 @@ local function spawnBoss(run)
 	run.bossId = m:getId()
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
-		pcall(ChaosBossMech.attach, m, nil, {tiles = run.L.floorList, size = run.size, solo = run.size == 1,
+		pcall(ChaosBossMech.attach, m, nil, {level = level, tiles = run.L.floorList, size = run.size, solo = run.size == 1,
 			players = function()
 				local r = PB.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}
 			end})
 	end
-	setHealth(m, m:getMaxHealth() * K.scale(run.settings.health, run.size))
+	-- O686 phase 3: x H of the spell ranks at the level the pocket is tuned for (1 while off)
+	setHealth(m, Chaos.scaleHealth(m:getMaxHealth() * K.scale(run.settings.health, run.size), level))
 	m:registerEvent("ChaosPocketBossDeath")
 	run.bossState = "alive"
 	run.bossAt = mnow()

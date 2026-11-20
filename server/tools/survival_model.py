@@ -2,7 +2,8 @@
 """The hunt survival model (O367): how long every class lives in a pack of its hunt, against the median class (computed,
 not measured; server/README.md "Hunt survival by class (O367)").
 
-usage: python3 -I server/tools/survival_model.py [--levels 670,750] [--detail] [--monsters] [--legacy] [--check]
+usage: python3 -I server/tools/survival_model.py [--levels 670,750] [--detail] [--monsters] [--legacy] [--check] [--upgrades]
+--upgrades  O686 phase 3: the self heal of every class x the heal spells' gain (spell_upgrade_model.py heal_gain); the monsters' damage is not changed
 
 Owner report 2026-11-02: a level 757 Ninja cannot hunt level 750 monsters, it takes too much damage. The model answers
 "is the class out of line, or is the hunt too hard for everyone".
@@ -46,6 +47,9 @@ party heals, kiting, Shadow Veil, mana spent on spells. They are the same kind o
 import json, math, os, re, statistics, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)  # python -I leaves the script's folder out of sys.path
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): the heal spells' gain
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
 POOL = os.path.join(CHAOS, 'bounty_pool.lua')
@@ -233,7 +237,9 @@ def in_list(bal, key, cls):
 
 def self_heal(bal, cls, line, level):
     row = bal['selfHeal'].get(cls) or bal['selfHeal'].get(line) or [0, 0]
-    return lin([(300, row[0]), (1000, row[1])], level)
+    # O686 phase 3: the heal spells' rank and Forms (spell_upgrade_model.heal_gain: +12% power, -15% cooldown at rank 20; the potions keep
+    # their numbers, the monsters' damage does not rise): 1 while the upgrades are off
+    return lin([(300, row[0]), (1000, row[1])], level) * SU.heal_gain(level)
 
 
 def potion(d, bal, line, pool):
@@ -400,6 +406,9 @@ def monsters_report(res):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     levels = None
     if '--levels' in argv:
         levels = [int(x) for x in argv[argv.index('--levels') + 1].split(',')]

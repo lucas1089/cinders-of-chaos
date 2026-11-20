@@ -287,9 +287,9 @@ do
 	eq(P.healthFactor(99, cfg), 1, "below 100: x1")
 	near(P.healthFactor(100, cfg), 1.02, 1e-9, "level 100: 1.02")
 	near(P.healthFactor(150, cfg), 1.025, 1e-9, "level 150: between points")
-	near(P.healthFactor(1000, cfg), 1.20, 1e-9, "level 1000: 1.20")
-	near(P.healthFactor(2500, cfg), 1.38, 1e-9, "level 2500: 1.38")
-	near(P.healthFactor(3000, cfg), 1.38, 1e-9, "above the last: flat")
+	near(P.healthFactor(1000, cfg), 1.21, 1e-9, "level 1000: 1.21")
+	near(P.healthFactor(2500, cfg), 1.39, 1e-9, "level 2500: 1.39")
+	near(P.healthFactor(3000, cfg), 1.39, 1e-9, "above the last: flat")
 	for i = 2, #cfg.health do
 		ok(cfg.health[i][1] > cfg.health[i - 1][1] and cfg.health[i][2] >= cfg.health[i - 1][2], "health curve rises: " .. i)
 	end
@@ -333,7 +333,7 @@ do
 	near(R.hitFactor(pl, {}, ORIGIN_SPELL, COMBAT_HEALING), 1.12, 1e-9, "on: a heal is +12% at 20")
 	eq(R.manaFor(pl, 40, 100), 75, "on: heal mana -25%")
 	eq(R.cooldownFor(pl, 40, 8000), 6800, "on: heal cooldown -15%")
-	near(R.healthFactor(2500), 1.38, 1e-9, "on: health x1.38 at 2500")
+	near(R.healthFactor(2500), 1.39, 1e-9, "on: health x1.39 at 2500")
 	ChaosSupportsSpell = {cast = function() return 2, 40 end}
 	eq(R.hitFactor(pl, {}, ORIGIN_SPELL, 5), 1, "another player's cast context is not ours")
 	cfg.enabled = false

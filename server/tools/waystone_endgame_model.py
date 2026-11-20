@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The waystone endgame model (O666; computed, not measured in game; server/README.md "Waystone endgame (O666)").
+O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): every map monster and band boss x H at the map's level (waystone_tiers.lua), the committed deep factors x H against the derivation. `--check --upgrades` must pass as `--check` does.
 
 usage: python3 -I server/tools/waystone_endgame_model.py [--derive] [--check] [--write-bosses] [--tiers 1,10,25]
 
@@ -33,6 +34,7 @@ if HERE not in sys.path:
 import class_dps_model as CD  # noqa: E402
 import survival_model as S  # noqa: E402
 import boss_length_model as BL  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): monster health x H at the map's level
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
@@ -126,7 +128,9 @@ def run_row(num, t, deep=None):
     a = bal['assume']
     L = tc['tiers'][t - 1]['level']
     P = player_level(num, L)
-    hf, df, xf = deep or (deep_factor(num, t, 'health'), deep_factor(num, t, 'damage'), deep_factor(num, t, 'experience'))
+    # O686 phase 3: the committed deep factors are today's; the game multiplies a map monster and a boss by H at the map's level (waystone_tiers.lua
+    # rescale; 1 while off). A derived `deep` is the total that is wanted and has no H
+    hf, df, xf = deep or (deep_factor(num, t, 'health') * SU.health(L), deep_factor(num, t, 'damage'), deep_factor(num, t, 'experience'))
     h0, e0, _ = cached('native', lambda: native_pool(a))
     n0 = a['native']['level']
     f = scale(tc, n0, L)
@@ -407,8 +411,10 @@ def check(num, rows, bands):
         if not b['xml']:
             errs.append('band boss %s (tier %d): no file in waystone_bosses' % (b['monster'], b['tier']))
             continue
-        if abs(b['xml']['health'] - b['wantHealth']) > lim['bandKillTol'] * b['wantHealth']:
-            errs.append('band boss %s: XML health %d, derived %d (tolerance %.0f%%)' % (b['monster'], b['xml']['health'], b['wantHealth'], lim['bandKillTol'] * 100))
+        have_hp = b['xml']['health'] * SU.health(b['level'])  # the game multiplies the file by H at the map's level (1 while off)
+        if abs(have_hp - b['wantHealth']) > (lim['bandKillTol'] + SU.slack(b['level'])) * b['wantHealth']:
+            errs.append('band boss %s: XML health %d x H %.3f, derived %d (tolerance %.0f%%)' % (
+                b['monster'], b['xml']['health'], SU.health(b['level']), b['wantHealth'], (lim['bandKillTol'] + SU.slack(b['level'])) * 100))
         if b.get('die', 0) < lim['bandDieMin']:
             errs.append('band boss %s: the median class lives %.1f s under its hits, under %d s' % (b['monster'], b.get('die', 0), lim['bandDieMin']))
     errs += limits(num)[1]
@@ -417,9 +423,9 @@ def check(num, rows, bands):
     errs += e1 + e2
     # the committed deep factors against the derivation, every deep tier
     for t in range(16, len(num['tiers']['tiers']) + 1):
-        for name, have, want in zip(('health', 'damage', 'experience'), (deep_factor(num, t, 'health'), deep_factor(num, t, 'damage'),
-                                    deep_factor(num, t, 'experience')), derive_deep(num, t)):
-            if abs(have - want) > lim['derivedTol'] * want:
+        for name, have, want in zip(('health', 'damage', 'experience'), (deep_factor(num, t, 'health') * SU.health(num['tiers']['tiers'][t - 1]['level']),
+                                    deep_factor(num, t, 'damage'), deep_factor(num, t, 'experience')), derive_deep(num, t)):
+            if abs(have - want) > (lim['derivedTol'] + (SU.slack(num['tiers']['tiers'][t - 1]['level']) if name != 'experience' else 0.0)) * want:
                 errs.append('tier %d: deep %s factor %.3f, derived %.3f (tolerance %.0f%%)' % (t, name, have, want, lim['derivedTol'] * 100))
         r = rows[t - 1]
         if not lim['deepSustainRange'][0] <= r['sustain'] <= lim['deepSustainRange'][1]:
@@ -477,6 +483,9 @@ def report(rows, bands):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner())
     num = numbers()
     tiers = [int(x) for x in argv[argv.index('--tiers') + 1].split(',')] if '--tiers' in argv else list(range(1, len(num['tiers']['tiers']) + 1))
     if '--write-bosses' in argv:

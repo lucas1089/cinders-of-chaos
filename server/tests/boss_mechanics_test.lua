@@ -713,7 +713,7 @@ function doTargetCombat(cid, target, ctype, mn)
 	target.hp = target.hp + mn
 end
 json = {encode = function(t) return "{" .. tostring(t.action) .. ":" .. tostring(t.data and t.data.label) .. "}" end}
-Chaos = {percentBase = function(p) return p.maxHp end,
+Chaos = {healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end, percentBase = function(p) return p.maxHp end,
 	-- O682: Chaos.heal as chaos_constants.lua makes it: at most the missing health, through the (damage type, amount) call
 	heal = function(c, n) n = math.min(math.floor(n), c:getMaxHealth() - c:getHealth()) if n > 0 then c:addHealth("healing", n) end return n end}
 function Chaos.send(p, op, action, data) p:sendExtendedOpcode(op, json.encode({action = action, data = data})); return true end

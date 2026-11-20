@@ -675,7 +675,7 @@ local function spawnGuardian(pid)
 		return
 	end
 	dress(m, tr.guardian.look, tr.guardian.name)
-	setHealth(m, tr.scale.health)
+	setHealth(m, Chaos.scaleHealth(tr.scale.health, tr.scale.level)) -- O686 phase 3: x H at the level the Trial is scaled to (1 while off)
 	m:registerEvent("ChaosAscensionGuardianDeath")
 	S.guardianOf[m:getId()] = pid
 	tr.guardianId = m:getId()
@@ -724,7 +724,7 @@ local function spawnAdds(tr, player)
 		local m = createScaled(t.addMonster, pos, true, tr.scale.level)
 		if m then
 			dress(m, tr.guardian.add and tr.guardian.add.look, tr.guardian.add and tr.guardian.add.name)
-			setHealth(m, tr.scale.addHealth)
+			setHealth(m, Chaos.scaleHealth(tr.scale.addHealth, tr.scale.level)) -- O686 phase 3: x H (1 while off)
 			tr.adds[m:getId()] = true
 			S.guardianOf[m:getId()] = tr.pid
 			m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)

@@ -414,6 +414,7 @@ return {
 	-- (tools/install_omens.py): copies of the stock nodes sourceId (red crystal fragment, stackable; eye of the storm)
 	-- with new server ids, so the client needs no change.
 	omen = {
+		refLevel = 1000, -- O686 phase 3: the level the guardian is planned for (boss_length_model.py), where H of the spell ranks is read
 		minTier = 6,
 		chest = {base = 2, perTier = 1},
 		eliteChance = {rare = 8, legendary = 25},
@@ -669,6 +670,9 @@ return {
 	--            installed (O667), else nothing.
 	greater = {
 		enabled = true,
+		-- O686 phase 3: the level the spell ranks' monster health factor H is read at for every Greater Rift monster (a tier serves levels
+		-- 1500 to 2500, design 5.4: H flat at 2000, 1.31; greater_rift_model.py holds the reached tier)
+		healthLevel = 2000,
 		firstTier = 16,
 		maxShownTier = 999, -- the crash refund marker holds the shown tier and Omen markers start at 1000
 		rule = {levelStep = 25, health = 0.06, damage = 0.03, reward = 0.04, rewardCap = 3.0},

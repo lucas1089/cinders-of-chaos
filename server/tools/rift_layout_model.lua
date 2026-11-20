@@ -121,8 +121,24 @@ end
 
 local cfg = dofile("data/scripts/chaos/rift_config.lua")
 local ag = dofile("data/scripts/chaos/areagen_config.lua")
+-- O686 phase 3: `--upgrades` (any position). A layout is walkable tiles against the monsters planned on them (R.density: counts from the
+-- budget model of rift_config.lua, which the spell ranks do not touch) and walking seconds (speed, not damage): the ranks change a rift
+-- monster's health (x H, rift.lua healthLevelOf) and the players' damage, never the count or the map. So the mode prints the same table and
+-- --check holds the same limits; it is here so every balance model answers the flag, and the line below says why nothing moves
+local mode = arg and arg[1]
+local upgrades = false
+for _, a in ipairs(arg or {}) do
+	if a == "--upgrades" then
+		upgrades = true
+	elseif mode == "--upgrades" then
+		mode = a
+	end
+end
+if upgrades then
+	print("spell upgrades: ON (the layout model counts tiles, monsters planned and walking seconds: no health, no damage in it, so no number moves)")
+end
 local all = M.measureAll(cfg, ag)
-if arg and arg[1] == "--typical" then
+if mode == "--typical" then
 	for band = 1, #cfg.layout.sizes do
 		local n, w, r = 0, 0, 0
 		for _, m in ipairs(all) do
@@ -134,7 +150,7 @@ if arg and arg[1] == "--typical" then
 	end
 	return
 end
-if not (arg and arg[1] == "--check") then
+if mode ~= "--check" then
 	M.report(cfg, all)
 	return
 end

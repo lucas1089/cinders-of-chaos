@@ -2,7 +2,9 @@
 """The PvP model (O444): how fast every class kills the median class and dies to it, and who wins a duel of two classes at the same
 level (COMPUTED, not measured: no PvP DPS test was ever run on a server; server/README.md "PvP model (O444)").
 
-usage: python3 -I server/tools/pvp_model.py [--levels 100,500,1000] [--matrix LEVEL [--heal]] [--detail] [--check | --scale | --round-before]
+usage: python3 -I server/tools/pvp_model.py [--levels 100,500,1000] [--matrix LEVEL [--heal]] [--detail] [--check | --scale | --round-before] [--upgrades]
+--upgrades  O686 phase 3: the half rule (design 5.2): class damage and the heal spells' gain with rank and Forms at 50% (spell_ranks_config.lua pvp),
+            awakening and combos off; the committed damageScale stays the round's
 
 Output, per class and level (100, 500, 1000):
   burst     the damage the class deals in the first 3 seconds of a fight (its best Auto setup rotation from a cold start, rotation_sim.py
@@ -58,6 +60,7 @@ if HERE not in sys.path:
 import class_dps_model as CD  # noqa: E402
 import rotation_sim as R  # noqa: E402
 import survival_model as S  # noqa: E402
+import spell_upgrade_model as SU  # noqa: E402  the spell upgrades switch (O686 phase 3): the half rule in PvP
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
@@ -146,7 +149,7 @@ def burst_factors(levels):
 def layers(levels):
     """{(class, level): layers} from survival_model.survive: pool, health, armour reduction, absorbs, dodge, toughness, guard,
     healing per second. The role build of median burst against a 50 / 50 physical and elemental pack (survival_model.table's rule)"""
-    key = ('layers', tuple(levels))
+    key = ('layers', tuple(levels), SU.active())
     if key not in _CACHE:
         bal = dict(S.dump([1000])['balance'])
         gear, varm = S.gear_curves(), S.vocation_armour()
@@ -156,7 +159,8 @@ def layers(levels):
             d = S.dump([lv])
             for cls in NAMES:
                 ck = KEY[cls]
-                cands = [S.survive(d, bal, ck, lv, b, pack, gear, varm) for b in d['builds'][ck][str(lv)]]
+                with SU.pvp():  # the heal spell's rank and Forms count at half against a player (1 while the upgrades are off)
+                    cands = [S.survive(d, bal, ck, lv, b, pack, gear, varm) for b in d['builds'][ck][str(lv)]]
                 cands.sort(key=lambda r: r['burst'])
                 r = cands[len(cands) // 2]
                 out[(cls, lv)] = {k: r[k] for k in ('pool', 'health', 'armourRed', 'absorbPhys', 'absorbElem', 'dodge', 'toughness',
@@ -168,8 +172,9 @@ def layers(levels):
 def inputs(levels, rnd=True):
     """everything the model reads, once: {'dps': {(class, level): damage per second, 1 target}, 'burst': ..., 'layers': ...}.
     rnd (O475): the class damage after the balance round (class_dps_model.dps); rnd=False is the damage before it"""
-    return {'dps': {(c, lv): CD.dps(c, lv, rnd=rnd)[0] for c in NAMES for lv in levels}, 'burst': burst_factors(levels),
-            'layers': layers(levels)}
+    with SU.pvp():  # O686 phase 3: rank and Forms at half, no awakening, no combos (pvp.rank / pvp.forms of spell_ranks_config.lua)
+        dps = {(c, lv): CD.dps(c, lv, rnd=rnd)[0] for c in NAMES for lv in levels}
+    return {'dps': dps, 'burst': burst_factors(levels), 'layers': layers(levels)}
 
 
 # ------------------------------------------------------------------------------------------------ the formulas
@@ -278,11 +283,12 @@ GENERAL = {'burst': 'burstMax', 'killMin': 'killMin', 'killMax': 'killMax', 'die
 def limit(cfg, cls, metric, level=None):
     """the limit of a metric for a class: its row in `exceptions` ("Class@100" for one level, "Class" for all), else the general
     one (the duel share is of the 20 duels)"""
+    loose = 1 + (SU.widen('pvpBurst', 'burstMax') if metric == 'burst' else 0.0)  # the upgrades mode only (spell_upgrade_balance_config.lua)
     for key in ('%s@%s' % (cls, level), cls):
         own = cfg['exceptions'].get(key, {})
         if metric in own:
-            return own[metric]
-    v = cfg[GENERAL[metric]]
+            return own[metric] * loose
+    v = cfg[GENERAL[metric]] * loose
     return v * 20 if metric in ('wins', 'losses') else v
 
 
@@ -329,7 +335,9 @@ def fit_scale(level):
     """the scale that holds the seconds to kill of the median class where they were before the round: the median class damage
     before / after at the level (one target; the layers of the defender are the same before and after, so the seconds to kill
     move with the damage alone)"""
-    return CD.median_dps(level, rnd=False)[0] / CD.median_dps(level)[0]
+    # the scale is a number of the round of O475 as shipped: the spell upgrades have their own PvP rule (the half), never this table
+    with SU.forced(False):
+        return CD.median_dps(level, rnd=False)[0] / CD.median_dps(level)[0]
 
 
 def scale_problems(cfg):
@@ -418,6 +426,9 @@ def summary(res):
 
 
 def main(argv):
+    argv = SU.from_argv(argv)
+    if SU.active():
+        print(SU.banner() + '; PvP: rank and Forms at 50%, awakening and combos off')
     cfg = config()
     levels = [int(x) for x in argv[argv.index('--levels') + 1].split(',')] if '--levels' in argv else cfg['levels']
     rule = rules()

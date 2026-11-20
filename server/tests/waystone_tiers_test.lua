@@ -157,7 +157,7 @@ p = K.shielded({shieldedShare = 7}, 1000, 0)
 eq(p, 1000, "share capped at 1")
 
 -- ================================================================== the engine file
-Chaos = {spawnLevel = nil, t = function(_, fmt, ...) return string.format(fmt, ...) end}
+Chaos = {spawnLevel = nil, healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end, t = function(_, fmt, ...) return string.format(fmt, ...) end}
 function Chaos.monsterTypeName(m) return m.typeName or m.name end
 local callbacks = {}
 EventCallback = setmetatable({}, {__newindex = function(t, k, v)

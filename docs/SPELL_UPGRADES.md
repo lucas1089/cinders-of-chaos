@@ -1,6 +1,6 @@
 # Spell upgrades: design, O686 phase 1
 
-Status: design written, waits for the owner's review. No game code. Every number below is a proposal, computed from the committed models, never measured in game.
+Status: design written, owner answered 2026-11-20. Phase 2 (rank core) and phase 3 (monster health curve H and the balance models) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3 moved a number of the first design, the text says so ("Phase 3" notes).
 
 Owner 2026-11-20, translated: "upgrade of spells, raise the strength and whatever else of the spells. Think of something cool." Four paths were shown. The owner chose three: Rank by use, now Rank by monster experience, plus Forms; Awakening in the endgame; Combos between spells. Not chosen: tradeable spell tomes. Strength: total spell power gain per character of 50% or more, knowing the endgame must be rebalanced and that a player without upgrades falls far behind.
 
@@ -25,7 +25,7 @@ Answers of 2026-11-20. They replace the defaults of section 9 where they differ.
 - At rank 20, in the endgame, up to **3 spells** per character can be **awakened** with Seals from pinnacle bosses, Greater Rift and waystone tiers XVI to XXV. An awakened spell has a new name, a new look and a signature effect.
 - **Combos**: two spells inside 4 s give a bonus hit. Element reactions are free for everyone. Each class has signature combos that open at rank 5.
 - Full upgrade is about **+53%** spell power: rank +25%, Forms +6%, awakening +9%, combos +6%, multiplied.
-- The compensation is **monster health**, a curve by level: x1.02 at level 100, x1.20 at 1000, x1.38 at 2500. A typical player meets today's kill times. A player with no upgrades kills 17% slower at level 1000 and 27% slower at the cap.
+- The compensation is **monster health**, a curve by level: x1.02 at level 100, x1.21 at 1000, x1.39 at 2500 (phase 3: 1.20 and 1.38 in the first design, before the owner's combos). A typical player meets today's kill times. A player with no upgrades earns 17% less experience an hour at level 1000 and 28% less at the cap.
 - One storage block 7107000 to 7108099, one opcode 168, one DB table `chaos_spell_ranks` for the account echo. Build in 8 phases, about 37 working days.
 
 ## 1. Rank by monster experience
@@ -545,24 +545,26 @@ The alternative is to **normalise** the arena and the battleground to rank 10 fo
 
 The owner's rule: raise the health of all monsters along the game, so that a typical player, with the typical rank at that level, meets the kill times of today.
 
-Derivation, `spell_upgrade_model.py`. The rank of a main rotation spell at a level comes from the hunting hours of the progression model and the SP curve of section 1.4. The rotation's average rank is 0.88 of it, because spells join later, going to 1.0 at level 2500. Forms count 3% at average rank 10 and 3% more by 20. Combos count 5% from average rank 3 to 10 as first derived. With the owner's 10-20% combos it is 6%, which lifts P by about 1% and H by about 0.01 from level 700 up (level 1000 1.21, level 2500 1.39). Combos are a later phase, so the committed `health` curve keeps the numbers of the table below, and `spell_upgrade_model.py` takes the 0.01 in when combos ship. Awakening: 0 at level 1900, 1 spell at 2100, 1.5 at 2300, 2 at 2500, which is 3% each. Class share of the spell part: 0.80. The health factor is `H = 1 + 0.80 x (P - 1)`, where P is the spell power. The monster's health is multiplied by H, the player's damage by 1 + 0.80 x (P - 1) too, so the kill time stays today's.
+Derivation, `spell_upgrade_model.py`. The rank of a main rotation spell at a level comes from the hunting hours of the progression model and the SP curve of section 1.4. The rotation's average rank is 0.88 of it, because spells join later, going to 1.0 at level 2500. Forms count 3% at average rank 10 and 3% more by 20. Combos count 5% from average rank 3 to 10 as first derived. With the owner's 10-20% combos it is 6%, which lifts P by about 1% and H by about 0.01 from level 700 up. **Phase 3 settled it: the committed curve has the combos at 6%** (the release that switches the ranks on ships the whole upgrade, and `parts` of `spell_upgrade_balance_config.lua` names what the curve pays for; `spell_upgrade_model.py --derive --parts rank,forms` writes the curve of a release with fewer parts). Forms count 0.3% an average rank (3% at average rank 10, 6% at 20) and combos 6% from average rank 3 to 10. Awakening: 0 at level 1900, 1 spell at 2100, 1.5 at 2300, 2 at 2500, which is 3% each, **a straight line between these points in phase 3** (a step puts a jump into every curve that reads P: the tower's clear time must climb floor by floor), so 2000 has half a spell and 2200 one and a quarter. Class share of the spell part: 0.80. The health factor is `H = 1 + 0.80 x (P - 1)`, where P is the spell power. The monster's health is multiplied by H, the player's damage by 1 + 0.80 x (P - 1) too, so the kill time stays today's.
 
 | Level | Hunting hours in | Rank, main spell | P, spell power | H, monster health x |
 |---|---|---|---|---|
 | 100 | 1.1 | 1.8 | 1.019 | 1.02 |
-| 200 | 3.8 | 3.2 | 1.035 | 1.03 |
-| 300 | 9 | 4.8 | 1.071 | 1.06 |
-| 400 | 15.8 | 6.2 | 1.095 | 1.08 |
-| 500 | 24.7 | 7.4 | 1.119 | 1.10 |
-| 600 | 38 | 9.0 | 1.147 | 1.12 |
-| 700 | 57 | 10.6 | 1.189 | 1.15 |
-| 800 | 76 | 12.0 | 1.211 | 1.17 |
-| 1000 | 117 | 14.3 | 1.252 | 1.20 |
-| 1300 | 176 | 17.0 | 1.284 | 1.23 |
-| 1600 | 239 | 19.2 | 1.330 | 1.26 |
-| 2000 | 307 | 20 | 1.365 | 1.29 |
-| 2200 | 347 | 20 | 1.411 | 1.33 |
-| 2500 | 406 | 20 | 1.469 | 1.38 |
+| 200 | 3.8 | 3.3 | 1.035 | 1.03 |
+| 300 | 9 | 4.8 | 1.073 | 1.06 |
+| 400 | 15.9 | 6.2 | 1.099 | 1.08 |
+| 500 | 24.8 | 7.5 | 1.124 | 1.10 |
+| 600 | 38.5 | 9.0 | 1.155 | 1.12 |
+| 700 | 57 | 10.6 | 1.200 | 1.16 |
+| 800 | 76 | 12.0 | 1.223 | 1.18 |
+| 1000 | 117 | 14.3 | 1.264 | 1.21 |
+| 1300 | 176 | 17.0 | 1.302 | 1.24 |
+| 1600 | 239 | 19.2 | 1.353 | 1.28 |
+| 2000 | 308 | 20 | 1.393 | 1.31 |
+| 2200 | 347 | 20 | 1.428 | 1.34 |
+| 2500 | 412 | 20 | 1.483 | 1.39 |
+
+Phase 3: this is the committed curve (`spell_ranks_config.lua` `health`, held to `spell_upgrade_model.py` by `--check`). The first design had H 1.15 / 1.17 / 1.20 / 1.23 / 1.26 / 1.29 / 1.33 / 1.38 at 700 / 800 / 1000 / 1300 / 1600 / 2000 / 2200 / 2500: +0.01 from 700 up (combos), +0.02 at 1600 and 2000 (the average rank of the rotation and the line through the awakening points), 0 at 2200.
 
 Below level 100 the factor is 1.00. Between the rows it is linear, like the pace curves. The numbers live in `spell_ranks_config.lua` `health`, one curve, read by every system through `ChaosSpellRanks.healthFactor(level)`.
 
@@ -578,8 +580,8 @@ One place per system, the same function, the same curve. The level is the monste
 | Infinity Tower | the floor health curves x H at the tier level, 800 in the model. `curveTol` already holds the gap |
 | Ember Descent | the room pack and boss health x H at the planned levels 100, 500, 1000, 1500 |
 | Waystone maps | tiers by their level band x H. Tiers XVI to XXV at level 2500: x1.38 over their own factors |
-| Pinnacle bosses | health x H at 1900, 2100, 2300, 2500: 1.28, 1.31, 1.35, 1.38 |
-| Greater Rift | the tier rule `health x1.06` a tier is unchanged. The tier 15 base health x 1.30 flat, since it serves levels 1500 to 2500. The reached tier stays about the same |
+| Pinnacle bosses | health x H at 1900, 2100, 2300, 2500: 1.30, 1.33, 1.36, 1.39 |
+| Greater Rift | the tier rule `health x1.06` a tier is unchanged. Every Greater tier takes H flat at level 2000 (1.31, `greater.healthLevel`), since it serves levels 1500 to 2500; the plain tier 15 takes H of its own level. The reached tier stays about the same |
 | Raid bosses, arena bosses, Malgrath, Omen guardians, the Cinderheart | health x H at the planned level, the lengths of `boss_length_model.py` stay: dungeon bosses 150 s, rift guardian 55 s, Omen guardian 5:18 |
 | Players | no change. Monster damage is unchanged |
 
@@ -587,10 +589,10 @@ Pinnacle health with the factor:
 
 | Boss | Level | Health now | Health with H |
 |---|---|---|---|
-| Ascended Malgrath | 1900 | 3,475,000 | 4,448,000 |
-| Ascended Vhoss | 2100 | 3,876,000 | 5,078,000 |
-| Ascended Talath | 2300 | 4,231,000 | 5,712,000 |
-| Ascended Varkhul | 2500 | 4,587,000 | 6,330,000 |
+| Ascended Malgrath | 1900 | 3,475,000 | 4,526,000 |
+| Ascended Vhoss | 2100 | 3,876,000 | 5,136,000 |
+| Ascended Talath | 2300 | 4,231,000 | 5,740,000 |
+| Ascended Varkhul | 2500 | 4,587,000 | 6,376,000 |
 
 ### 5.5 How each model moves
 
@@ -623,13 +625,13 @@ A character with no ranks, no Forms, no combos and no awakening meets the monste
 |---|---|---|
 | 100 | -2% | x1.02 |
 | 500 | -9% | x1.10 |
-| 1000 | -17% | x1.20 |
-| 2000 | -23% | x1.29 |
-| 2500 | -27% | x1.38 |
+| 1000 | -17% | x1.21 |
+| 2000 | -24% | x1.31 |
+| 2500 | -28% | x1.39 |
 
-Hours to reach a level: level 500, 27 against 26, +6%. Level 1000, 135 against 118, +14%. Level 1500, 259 against 220, +18%. Level 2000, 373 against 309, +21%. About +24% to the cap.
+Hours to reach a level (phase 3, `progression_model.lua --no-upgrades`): level 500, 26 against 25, +6%. Level 1000, 134 against 117, +14%. Level 1500, 258 against 217, +19%. Level 2000, 374 against 308, +22%. +23% at 2200 (the design said +18%, +21%, +24%).
 
-A median class with no upgrades kills Ascended Varkhul alone in about 580 s. The limit of the weakest class is 566 s. So the pinnacle bosses solo need about rank 12 on the main rotation. With a party of five it is fine. This is the owner's "a player without upgrades falls far behind", and it is paid back by the speed of the climb: ranks come by killing, not by a chore. A player who kills falls behind only if he does not use spells.
+A median class with no upgrades kills Ascended Varkhul alone in about 584 s (547 to 584 s over the four bosses, `pinnacle_model.py`). The limit of the weakest class is 566 s. So the pinnacle bosses solo need about rank 12 on the main rotation. With a party of five it is fine. This is the owner's "a player without upgrades falls far behind", and it is paid back by the speed of the climb: ranks come by killing, not by a chore. A player who kills falls behind only if he does not use spells.
 
 New characters of an old account: the account echo of 1.7 gives them a floor of rank 10 on spells the account maxed. At level 500 the alt has about the typical power, so the factor does not block it. Forms and awakening are earned again.
 
@@ -735,7 +737,7 @@ Working days of one agent session each, with tests and docs. Total about 37 days
 |---|---|---|
 | 1 | This design, owner review | done |
 | 2 | Rank core: SP credit at death, the per monster damage table, the experience callback, storage, the rank factor in the passive tree's hit event (one place, see 7.4 note), cooldown and cost handlers, login, echo table and SQL, `/spellrank`. Switched off by `enabled = false`. Tests. **Built 2026-11-20**, README "Spell ranks (O686 phase 2)"; the launch grant is gone, the per-path test `spell_ranks_paths_test.lua` moved to phase 3 with the switch | 6 |
-| 3 | `spell_upgrade_model.py`, the health curve and the factor in `pace`, dungeons, rifts, tower, descent, waystones, pinnacle, greater rift, raid, with each model's step and test. Switched with phase 2 | 6 |
+| 3 | `spell_upgrade_model.py`, the health curve and the factor in `pace`, dungeons, rifts, tower, descent, waystones, pinnacle, greater rift, raid, with each model's step and test. Switched with phase 2. **Built 2026-11-20**, README "Monster health curve and the models (O686 phase 3)": `spell_upgrade_model.py` (rank per level, P, H, `--check`), `Chaos.healthFactor` / `Chaos.scaleHealth` and every health path behind it (`check_health_paths.py`), every balance model with `--upgrades`, PvP at the half rule; still off | 6 |
 | 4 | Forms: 8 + 8 + 8 kinds in the engine, the table for all 21 classes, `check_spell_forms.py`, probe per Form, `spell_fx_forms.csv`, the model band check | 9 |
 | 5 | Client: opcode 168, spellbook tabs, Form picker, rank bars, pt-BR, hub badge, tests, mobile layout | 5 |
 | 6 | Combos: core, config, the hit hook, label and sounds, Codex page, 6b combo masteries | 4 |

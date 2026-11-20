@@ -895,7 +895,7 @@ local function spawnAdds(run, adds)
 	for _ = 1, n do
 		local m = Game.createMonster(run.def.add, freeArenaTile(run, at, 4), false, true)
 		if m then
-			hp = hp or math.floor(m:getMaxHealth() * U.addHealthMult(C(), run.size))
+			hp = hp or Chaos.scaleHealth(math.floor(m:getMaxHealth() * U.addHealthMult(C(), run.size)), C().model.refLevel) -- O686: x H
 			setHealth(m, hp)
 			A.monsterRun[m:getId()] = run
 			run.adds[m:getId()] = true
@@ -1125,7 +1125,8 @@ local function spawnBoss(run)
 		finishExit(run)
 		return
 	end
-	setHealth(m, math.floor(m:getMaxHealth() * U.healthMult(def, run.size)))
+	-- O686 phase 3: x H of the spell ranks at the planned level (model.refLevel, 1000; 1 while off)
+	setHealth(m, Chaos.scaleHealth(math.floor(m:getMaxHealth() * U.healthMult(def, run.size)), C().model.refLevel))
 	m:registerEvent("ChaosAscendedBossDeath")
 	A.monsterRun[m:getId()] = run
 	run.bossId = m:getId()
@@ -1133,7 +1134,7 @@ local function spawnBoss(run)
 	-- their hits go through shareHit (the lethal-hit catch)
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
-		pcall(ChaosBossMech.attach, m, def.boss, {tiles = L.floorList, solo = run.size == 1,
+		pcall(ChaosBossMech.attach, m, def.boss, {level = C().model.refLevel, tiles = L.floorList, solo = run.size == 1,
 			players = function()
 				local r = A.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}

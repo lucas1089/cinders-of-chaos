@@ -446,7 +446,7 @@ do
 	})
 	_G.addEvent = function(fn, ms, ...) local a = {...} fn(unpack and unpack(a) or table.unpack(a)) end
 	_G.MESSAGE_STATUS_DEFAULT = 1
-	_G.Chaos = {}
+	_G.Chaos = {healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end}
 	_G.ChaosLoot = {monsterLevel = function(m) return m._pool or 0 end}
 	_G.ChaosTierConfig = {bosses = {["the boss"] = true}}
 	_G.ChaosTierOf = function(m) return m._tier or "normal" end

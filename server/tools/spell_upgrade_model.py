@@ -1,0 +1,644 @@
+#!/usr/bin/env python3
+"""Spell upgrades model (O686 phase 3): the typical rank per level, the typical power gain, the monster health curve H, and the switch
+every other balance model reads (computed, not measured; docs/SPELL_UPGRADES.md sections 1.4, 5, README "Monster health curve and
+the models (O686 phase 3)").
+
+usage: python3 -I server/tools/spell_upgrade_model.py [--check] [--derive] [--table] [--no-upgrades] [--parts rank,forms,...]
+--check        exit 1 when the committed `health` curve of spell_ranks_config.lua is not the derivation, a limit of
+               data/scripts/chaos/spell_upgrade_balance_config.lua fails (typical kill times within 3% of today at every level band,
+               the main spell at rank 20 inside 1500 to 2000, refXpPerHour held to progression_model.lua, the no-upgrades
+               character as the design states), or a class share is off
+--derive       print the `health` curve as the derivation gives it, ready for spell_ranks_config.lua (use it when a part ships
+               later: --parts rank,forms writes the curve of a release without combos and awakening), and the `typical` gain table of
+               spell_upgrade_balance_config.lua that progression_model.lua --upgrades reads
+--table        the rank, the power and the health factor per level
+--no-upgrades  the character with no upgrades: experience an hour and hours to a level (design 5.6)
+
+THE MODEL. The typical character hunts at the rate of progression_model.lua (minutes a level). A main rotation spell has `mainShare`
+(16%) of the hunt damage, so it earns SP at 0.16 an hour of hunting (an SP is one hour of kill value at full share), and a rank costs
+c x r^1.5 SP (42 SP for 20 ranks, spell_ranks_config.lua). The rank of the rotation's average spell is `avgRank` of that. A rank gives
++0.9% damage and a cooldown cut worth `cooldownWorth` of itself; Forms give 0.3% an average rank (6% at 20); combos give `combos.total`
+from the average rank 3 to 10; awakening gives 3% a spell by level. P is their product. A class has `share` of its damage as spell
+damage (class_dps_model.py's measured table), so its damage grows by 1 + share x (P - 1); H = 1 + classShare x (P - 1) so the median
+class meets today's kill times. Checked against the design table of 5.3 (the old derivation script was never committed): rank, P and H
+of every row to the digits of the table, except where the owner's 10-20% combos (design 4.2) moved P by about 1%.
+
+THE SWITCH. active() is False in the default run and True with `--upgrades` (every balance model's main() calls from_argv()), or when
+spell_ranks_config.lua `enabled` is true. gain(cls, level, targets) is the class damage factor, health(level) is H (the committed
+curve, the one ChaosSpellRanks.healthFactor reads), heal_gain(level) the heal factor, both 1.0 while inactive. pvp_gain() is the half
+rule (design 5.2): rank and Forms at 50%, awakening and combos off.
+"""
+import math
+import os
+import re
+import statistics
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)  # python -I leaves the script's folder out of sys.path
+SERVER = os.path.normpath(os.path.join(HERE, '..'))
+REPO = os.path.normpath(os.path.join(SERVER, '..'))
+RANKS = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_ranks_config.lua')
+BALANCE = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'spell_upgrade_balance_config.lua')
+PROGRESSION = os.path.join('tools', 'progression_model.lua')
+MEASURED = os.path.join(SERVER, 'data', 'spells', 'class_dps_measured.csv')
+LEVELS = (100, 500, 1000)
+PART_NAMES = ('rank', 'forms', 'combos', 'awakening')
+
+# ---- the switch ------------------------------------------------------------------------------------------------------------
+_MODE = {'force': None}
+
+
+_LISTENERS = []
+
+
+def on_mode_change(fn):
+    """a model that caches numbers of the mode registers a function that drops them"""
+    _LISTENERS.append(fn)
+
+
+def set_mode(on):
+    """True: upgrades on; False: today; None: follow spell_ranks_config.lua `enabled`"""
+    changed = _MODE['force'] != on
+    _MODE['force'] = on
+    if changed:
+        for fn in _LISTENERS:
+            fn()
+
+
+def active():
+    if _MODE['force'] is not None:
+        return _MODE['force']
+    if os.environ.get('CHAOS_UPGRADES') in ('1', 'on'):
+        return True
+    return ranks_config()['enabled']
+
+
+class forced(object):
+    """`with forced(False):` the numbers of today inside an upgrades run (and `forced(True)` the other way); the mode is restored"""
+
+    def __init__(self, on):
+        self.on = on
+
+    def __enter__(self):
+        self.old = _MODE['force']
+        set_mode(self.on)
+        return self
+
+    def __exit__(self, *exc):
+        set_mode(self.old)
+        return False
+
+
+_PVP = {'on': False}
+
+
+class pvp(object):
+    """`with pvp():` the numbers against another player (design 5.2, owner 2026-11-20: rank and Forms at 50%, awakening and combos off):
+    gain() and heal_gain() answer the half rule. Only counts while the upgrades are on"""
+
+    def __enter__(self):
+        self.old = _PVP['on']
+        _PVP['on'] = True
+        return self
+
+    def __exit__(self, *exc):
+        _PVP['on'] = self.old
+        return False
+
+
+def pvp_on():
+    return _PVP['on'] and active()
+
+
+def mode_key():
+    """what a model that caches class damage keys it by"""
+    return (active(), pvp_on())
+
+
+def from_argv(argv):
+    """--upgrades sets the mode on, --today off; both are removed from the list that is returned (a model's main() reads the rest)"""
+    out = []
+    for a in argv:
+        if a == '--upgrades':
+            set_mode(True)
+        elif a == '--today':
+            set_mode(False)
+        else:
+            out.append(a)
+    return out
+
+
+def banner():
+    return 'spell upgrades: %s' % ('ON (class damage x the typical gain, monster health x H)' if active() else 'off (today)')
+
+
+# ---- the config files -------------------------------------------------------------------------------------------------------
+_CACHE = {}
+
+
+def _read(path):
+    with open(path, encoding='utf-8') as f:
+        return f.read()
+
+
+def _pairs(body):
+    return [(float(a), float(b)) for a, b in re.findall(r'\{\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*\}', body)]
+
+
+def _block(text, key, open_='{', close='}'):
+    """the text between the braces of `key = {...}` (balanced)"""
+    m = re.search(r'\b' + key + r' = \{', text)
+    if not m:
+        raise KeyError(key)
+    i, depth = m.end(), 1
+    while depth:
+        c = text[i]
+        depth += c == '{'
+        depth -= c == '}'
+        i += 1
+    return text[m.end():i - 1]
+
+
+def ranks_config(path=RANKS):
+    key = ('ranks', path)
+    if key not in _CACHE:
+        t = _read(path)
+        cost = _block(t, 'cost')
+        dmg, heal = _block(_block(t, 'effects'), 'damage'), _block(_block(t, 'effects'), 'heal')
+
+        def num(body, name):
+            return float(re.search(r'\b' + name + r' = (-?[0-9.]+)', body).group(1))
+        pvp = _block(t, 'pvp')
+        _CACHE[key] = {
+            'enabled': re.search(r'\benabled = (true|false)', t).group(1) == 'true',
+            'maxRank': int(num(t, 'maxRank')),
+            'minLevel': int(num(t, 'minLevel')),
+            'costExp': num(cost, 'exp'), 'totalSp': num(cost, 'totalSp'),
+            'refXp': _pairs(_block(t, 'refXpPerHour')),
+            'health': _pairs(_block(t, 'health')),
+            'damage': {'power': num(dmg, 'power'), 'step': num(dmg, 'cooldownPerStep')},
+            'heal': {'power': num(heal, 'power'), 'step': num(heal, 'cooldownPerStep')},
+            'cdRanks': [int(float(x)) for x in _block(_block(t, 'effects'), 'cdRanks').split(',') if x.strip()],
+            'pvp': {'rank': num(pvp, 'rank'), 'forms': num(pvp, 'forms')},
+        }
+    return _CACHE[key]
+
+
+def balance_config(path=BALANCE):
+    key = ('balance', path)
+    if key not in _CACHE:
+        t = _read(path)
+
+        def num(body, name):
+            return float(re.search(r'\b' + name + r' = (-?[0-9.]+)', body).group(1))
+        avg = _block(t, 'avgRank')
+        comb = _block(t, 'combos')
+        awake = _block(t, 'awakening')
+        lim = _block(t, 'limits')
+        parts = _block(t, 'parts')
+        _CACHE[key] = {
+            'parts': {n: re.search(r'\b' + n + r' = (true|false)', parts).group(1) == 'true' for n in PART_NAMES},
+            'mainShare': num(t, 'mainShare'),
+            'avg': {k: num(avg, k) for k in ('from', 'to', 'fromLevel', 'toLevel')},
+            'cooldownWorth': num(t, 'cooldownWorth'),
+            'formsTotal': num(_block(t, 'forms'), 'total'),
+            'combos': {k: num(comb, k) for k in ('total', 'fromRank', 'toRank')},
+            'awakening': {'perSpell': num(awake, 'perSpell'), 'steps': _pairs(awake)},
+            'classShare': num(t, 'classShare'), 'shareTol': num(t, 'shareTol'), 'healthStep': num(t, 'healthStep'),
+            'limits': {k: num(lim, k) for k in ('killTime', 'killTimeOneTarget', 'killTimeFiveTargets', 'healthTol', 'refXpTol',
+                                                  'noUpgradesXpTol', 'noUpgradesHoursTol')},
+            'rank20': tuple(int(float(x)) for x in re.search(r'rank20 = \{([0-9., ]+)\}', lim).group(1).split(',')),
+            'noUpgradesXp': _pairs(_block(lim, 'noUpgradesXp')),
+            'noUpgradesHours': _pairs(_block(lim, 'noUpgradesHours')),
+            'typical': _pairs(_block(t, 'typical')),
+            'widen': {name: {k: float(v) for k, v in re.findall(r'(\w+) = ([0-9.]+)', body)}
+                      for name, body in re.findall(r'\b(\w+) = \{([^{}]*)\}', _block(t, 'widen'))},
+        }
+    return _CACHE[key]
+
+
+# ---- the progression curve ---------------------------------------------------------------------------------------------------
+def minutes_per_level():
+    """{level: minutes a level} of progression_model.lua --curve-json (luajit, else lua5.3), levels 1 to 2250"""
+    if 'minutes' not in _CACHE:
+        import json
+        last = None
+        for exe in ('luajit', 'lua5.3'):
+            try:
+                r = subprocess.run([exe, PROGRESSION, '--curve-json', '2250'], cwd=SERVER, capture_output=True, text=True, timeout=300)
+            except FileNotFoundError:
+                continue
+            if r.returncode == 0:
+                last = json.loads(r.stdout)
+                break
+        if last is None:
+            raise RuntimeError('progression_model.lua --curve-json needs luajit or lua5.3')
+        _CACHE['minutes'] = {int(k): float(v) for k, v in last['levels'].items()}
+    return _CACHE['minutes']
+
+
+def minutes(level):
+    m = minutes_per_level()
+    top = max(m)
+    return m[min(max(int(level), 1), top)]
+
+
+def hours_in(level):
+    """hunting hours from the first level a character earns SP (minLevel) up to `level` (progression_model.lua, the levels past 2250
+    take the last level's pace)"""
+    if ('hours', 0) not in _CACHE:
+        m = minutes_per_level()
+        lo = ranks_config()['minLevel']
+        acc, out = 0.0, {}
+        for L in range(lo, 2601):
+            out[L] = acc
+            acc += minutes(L) / 60.0
+        _CACHE[('hours', 0)] = out
+    t = _CACHE[('hours', 0)]
+    return t[min(max(int(level), min(t)), max(t))]
+
+
+def exp_to_next(L):
+    return 50 * L * L - 150 * L + 200
+
+
+def ref_xp_per_hour(L):
+    """experience an hour with stage and no boosts at level L, from progression_model.lua (what refXpPerHour holds)"""
+    return exp_to_next(L) * 60.0 / minutes(L)
+
+
+# ---- ranks -------------------------------------------------------------------------------------------------------------------
+def rank_costs():
+    c = ranks_config()
+    raw = [r ** c['costExp'] for r in range(1, c['maxRank'] + 1)]
+    k = c['totalSp'] / sum(raw)
+    return [k * v for v in raw]
+
+
+def rank_of_sp(sp):
+    """the fractional rank for sp SP on a spell of weight 1: whole ranks of the cost table, the rest a share of the next rank"""
+    acc = 0.0
+    for r, cost in enumerate(rank_costs(), 1):
+        if sp < acc + cost:
+            return (r - 1) + (sp - acc) / cost
+        acc += cost
+    return float(ranks_config()['maxRank'])
+
+
+def main_rank(level):
+    """the rank of a main rotation spell at a level: mainShare x the hunting hours so far"""
+    b = balance_config()
+    return rank_of_sp(b['mainShare'] * hours_in(level))
+
+
+def _lin(points, x):
+    if x <= points[0][0]:
+        return points[0][1]
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if x <= x1:
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    return points[-1][1]
+
+
+def avg_rank(level):
+    """the rank of the rotation's average spell"""
+    a = balance_config()['avg']
+    t = min(1.0, max(0.0, (level - a['fromLevel']) / float(a['toLevel'] - a['fromLevel'])))
+    return main_rank(level) * (a['from'] + (a['to'] - a['from']) * t)
+
+
+# ---- power -------------------------------------------------------------------------------------------------------------------
+def _cd_worth(a, kind):
+    """damage worth of the cooldown cut at the average rank a (a continuous cut: step per cdRanks gap, averaged over spells)"""
+    c = ranks_config()
+    gap = c['cdRanks'][0]
+    cut = math.floor(min(a, c["maxRank"]) / gap) * c[kind]["step"] / 100.0
+    return balance_config()['cooldownWorth'] * (1.0 / (1.0 - cut) - 1.0)
+
+
+def rank_power(a, kind='damage', pvp=False):
+    c = ranks_config()
+    f = c['pvp']['rank'] if pvp else 1.0
+    return (1 + f * min(a, c['maxRank']) * c[kind]['power'] / 100.0) * (1 + f * _cd_worth(a, kind))
+
+
+def forms_power(a, pvp=False):
+    b = balance_config()
+    f = ranks_config()['pvp']['forms'] if pvp else 1.0
+    return 1 + f * b['formsTotal'] * min(a, ranks_config()['maxRank']) / ranks_config()['maxRank']
+
+
+def combos_power(a):
+    cb = balance_config()['combos']
+    t = min(1.0, max(0.0, (a - cb['fromRank']) / float(cb['toRank'] - cb['fromRank'])))
+    return 1 + cb['total'] * t
+
+
+def awakening_power(level):
+    """a straight line between the points (spells awakened on the typical character), 0 below the first: a step would put a jump into
+    every curve that reads P (the tower's clear time must climb floor by floor)"""
+    aw = balance_config()['awakening']
+    return 1 + aw['perSpell'] * _lin([(lv, c) for lv, c in aw['steps']], level)
+
+
+def parts_at(level, parts=None):
+    """{part: factor} of the typical character's spell power at a level (a part that is switched off is 1)"""
+    on = parts if parts is not None else balance_config()['parts']
+    a = avg_rank(level)
+    return {'rank': rank_power(a) if on.get('rank') else 1.0, 'forms': forms_power(a) if on.get('forms') else 1.0,
+            'combos': combos_power(a) if on.get('combos') else 1.0, 'awakening': awakening_power(level) if on.get('awakening') else 1.0}
+
+
+def power(level, parts=None):
+    """P, the spell power of the typical character's rotation: the product of the parts"""
+    p = 1.0
+    for v in parts_at(level, parts).values():
+        p *= v
+    return p
+
+
+def h_raw(level, parts=None):
+    return 1 + balance_config()['classShare'] * (power(level, parts) - 1)
+
+
+def derived_health(level, parts=None):
+    step = balance_config()['healthStep']
+    return round(h_raw(level, parts) / step) * step
+
+
+def committed_health():
+    return ranks_config()['health']
+
+
+def typical_gain(level):
+    """the typical character's damage gain at a level: the blend of 1 and 5 targets of the median class's spell share (a hunt is both)"""
+    return 1 + spell_share(None, level, 0) * (power(level) - 1)
+
+
+def committed_typical():
+    """spell_upgrade_balance_config.lua `typical`: {level, typical gain}, what progression_model.lua --upgrades reads (Lua cannot run this model)"""
+    return balance_config()['typical']
+
+
+def health(level):
+    """H the games reads (ChaosSpellRanks.healthFactor): the committed curve, 1 below its first point; 1.0 while the switch is off"""
+    if not active():
+        return 1.0
+    return health_committed(level)
+
+
+def health_committed(level):
+    pts = committed_health()
+    if level < pts[0][0]:
+        return 1.0
+    return _lin(pts, level)
+
+
+# ---- the class gain ----------------------------------------------------------------------------------------------------------
+def _shares():
+    """{class: {level: (spell share on 1 target, spell share on 5 targets)}} from class_dps_measured.csv (1 - the auto attack's share)"""
+    if 'shares' not in _CACHE:
+        import csv
+        out = {}
+        with open(MEASURED, encoding='utf-8') as f:
+            for r in csv.DictReader(f):
+                out.setdefault(r['class'], {})[int(r['level'])] = (1 - float(r['auto_share_1t']), 1 - float(r['auto_share_5t']))
+        _CACHE['shares'] = out
+    return _CACHE['shares']
+
+
+def spell_share(cls, level, targets=1):
+    """the class's spell share of its damage at a level: the measured levels, a straight line in between, flat outside. cls None: the median
+    class. targets: 1, 5, or 0 for the blend of the two (a hunt is both)"""
+    sh = _shares()
+    pts = []
+    for lv in LEVELS:
+        if cls is None:
+            a = statistics.median(sh[c][lv][0] for c in sh)
+            b = statistics.median(sh[c][lv][1] for c in sh)
+        else:
+            a, b = sh[cls][lv]
+        pts.append((lv, a if targets == 1 else b if targets == 5 else (a + b) / 2.0))
+    return _lin(pts, level)
+
+
+def gain(cls, level, targets=1, parts=None):
+    """the factor on a class's damage at a level (the typical character): 1 + its spell share x (P - 1). 1.0 while the switch is off.
+    targets 1 / 5 pick the class's share on that many targets"""
+    if not active():
+        return 1.0
+    if _PVP['on']:
+        a = avg_rank(level)
+        return 1 + spell_share(cls, level, 1 if targets <= 1 else 5) * (rank_power(a, pvp=True) * forms_power(a, pvp=True) - 1)
+    return 1 + spell_share(cls, level, 1 if targets <= 1 else 5) * (power(level, parts) - 1)
+
+
+def median_gain(level, targets=1):
+    """what the typical (median) damage of the classes grew by at a level: class_dps_model.median_dps with the upgrades over without
+    (the median of the classes' own gains, which is not the gain of the median class); targets 1 or 5. 1.0 while the switch is off"""
+    if not active():
+        return 1.0
+    import class_dps_model as CD  # a lazy import: class_dps_model reads this module
+    i = 0 if targets <= 1 else 1
+    with forced(False):
+        today = CD.median_dps(level)[i]
+    return CD.median_dps(level)[i] / today
+
+
+def slack(level, targets=1):
+    """how far the typical kill time is from today's at a level, as a share (H against the typical damage's gain): the room a model that
+    holds a derived number to a tolerance needs in the upgrades mode, where the health curve is one number and the gain is not. 0 while off"""
+    if not active():
+        return 0.0
+    return abs(health_committed(level) / median_gain(level, targets) - 1)
+
+
+def widen(name, limit):
+    """how much looser a limit of a model is in the upgrades mode (spell_upgrade_balance_config.lua `widen`, a named row with its reason);
+    0.0 while the switch is off or when there is no row"""
+    if not active():
+        return 0.0
+    return balance_config()['widen'].get(name, {}).get(limit, 0.0)
+
+
+def pvp_gain(level, parts=None):
+    """the factor on a player's damage against another player (design 5.2: rank and Forms at 50%, awakening and combos off), the same for
+    every class (the share is the median class's blend). 1.0 while the switch is off"""
+    if not active():
+        return 1.0
+    a = avg_rank(level)
+    p = rank_power(a, pvp=True) * forms_power(a, pvp=True)
+    return 1 + spell_share(None, level, 0) * (p - 1)
+
+
+def heal_gain(level):
+    """the factor on a heal at a level: the heal spell's rank and Forms (design 1.5: +12% power, cooldown -15%; Forms like a damage
+    spell; no combos, no awakening). 1.0 while the switch is off"""
+    if not active():
+        return 1.0
+    a = avg_rank(level)
+    if _PVP['on']:
+        return rank_power(a, 'heal', pvp=True) * forms_power(a, pvp=True)
+    return rank_power(a, 'heal') * forms_power(a)
+
+
+def kill_time_ratio(level, targets=0):
+    """the typical character's time to kill against today: H over the median class's gain (targets 0: the blend)"""
+    sh = spell_share(None, level, targets)
+    return health_committed(level) / (1 + sh * (power(level) - 1))
+
+
+# ---- the character with no upgrades (design 5.6) ----------------------------------------------------------------------------
+def no_upgrades_xp(level):
+    """percent less experience an hour than the typical character (monsters take H times as long)"""
+    return (1 - 1 / health_committed(level)) * 100
+
+
+def no_upgrades_hours(level):
+    """percent more hours to reach `level` from minLevel than the typical character"""
+    lo = ranks_config()['minLevel']
+    base = sum(minutes(L) for L in range(lo, level))
+    slow = sum(minutes(L) * health_committed(L) for L in range(lo, level))
+    return (slow / base - 1) * 100
+
+
+# ---- check -------------------------------------------------------------------------------------------------------------------
+CHECK_LEVELS = (100, 200, 300, 400, 500, 600, 700, 800, 1000, 1300, 1600, 2000, 2200, 2500)
+
+
+def problems():
+    bad = []
+    b = balance_config()
+    lim = b['limits']
+    c = ranks_config()
+    # the committed curve is the derivation
+    for lv, v in committed_health():
+        d = h_raw(int(lv))
+        if abs(v - d) > lim['healthTol']:
+            bad.append('health at level %d: spell_ranks_config.lua has %.2f, the derivation %.4f (tolerance %.4f); run --derive' % (
+                lv, v, d, lim['healthTol']))
+        if abs(v - derived_health(int(lv))) > 1e-9:
+            bad.append('health at level %d: %.2f is not the derivation rounded to %.2f (%.2f); run --derive' % (
+                lv, v, b['healthStep'], derived_health(int(lv))))
+    # the typical gain table progression_model.lua reads is the derivation
+    pts_t = committed_typical()
+    if [int(lv) for lv, _ in pts_t] != list(CHECK_LEVELS):
+        bad.append('typical: the levels are %s, not %s' % ([int(lv) for lv, _ in pts_t], list(CHECK_LEVELS)))
+    else:
+        for lv, v in pts_t:
+            d = typical_gain(int(lv))
+            if abs(v - d) > 0.0015:
+                bad.append('typical gain at level %d: spell_upgrade_balance_config.lua has %.3f, the derivation %.4f; run --derive' % (lv, v, d))
+    # nothing is written below the first point and the curve never falls
+    pts = committed_health()
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if y1 < y0:
+            bad.append('health falls from level %d to %d' % (x0, x1))
+    # kill times of the typical character against today
+    for lv in CHECK_LEVELS:
+        for targets, key, name in ((0, 'killTime', 'blend of 1 and 5 targets'), (1, 'killTimeOneTarget', 'one target'),
+                                   (5, 'killTimeFiveTargets', 'five targets')):
+            r = kill_time_ratio(lv, targets)
+            if abs(r - 1) > lim[key] + 1e-9:
+                bad.append('kill time of the typical character at level %d, %s: %+.1f%% against today (limit +-%.0f%%)' % (
+                    lv, name, (r - 1) * 100, lim[key] * 100))
+    # the class share H assumes against the measured one
+    for lv in LEVELS:
+        s = spell_share(None, lv, 0)
+        if abs(s - b['classShare']) > b['shareTol']:
+            bad.append('class share at level %d: median class %.2f against the constant %.2f (tolerance %.2f)' % (
+                lv, s, b['classShare'], b['shareTol']))
+    # rank 20 of the main spell inside the window
+    first = next((L for L in range(c['minLevel'], 2600) if main_rank(L) >= c['maxRank'] - 1e-9), None)
+    lo, hi = b['rank20']
+    if first is None or not lo <= first <= hi:
+        bad.append('the main spell reaches rank %d at level %s, the window is %d to %d' % (c['maxRank'], first, lo, hi))
+    # refXpPerHour is progression_model.lua
+    for lv, v in c['refXp']:
+        if lv > 2200 or lv < 8:
+            continue
+        d = ref_xp_per_hour(int(lv))
+        if abs(v / d - 1) > lim['refXpTol']:
+            bad.append('refXpPerHour at level %d: %d in spell_ranks_config.lua, progression_model.lua says %d' % (lv, v, d))
+    # the no-upgrades character as the design states
+    for lv, pct in b['noUpgradesXp']:
+        d = no_upgrades_xp(int(lv))
+        if abs(d - pct) > lim['noUpgradesXpTol']:
+            bad.append('no upgrades, experience an hour at level %d: -%.1f%%, the design says -%d%%' % (lv, d, pct))
+    for lv, pct in b['noUpgradesHours']:
+        d = no_upgrades_hours(int(lv))
+        if abs(d - pct) > lim['noUpgradesHoursTol']:
+            bad.append('no upgrades, hours to level %d: +%.1f%%, the design says +%d%%' % (lv, d, pct))
+    return bad
+
+
+def table():
+    lines = ['| Level | Hunting hours | Main rank | Avg rank | Rank | Forms | Combos | Awakening | P | H raw | H | kill time 1t / blend / 5t | class gain 1t / 5t | heal gain | PvP gain |',
+             '|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---:|---:|']
+    for lv in CHECK_LEVELS:
+        p = parts_at(lv)
+        a = avg_rank(lv)
+        sh = lambda t: spell_share(None, lv, t)  # noqa: E731
+        lines.append('| %d | %.1f | %.1f | %.1f | %.3f | %.3f | %.3f | %.3f | %.3f | %.3f | %.2f | %+.1f%% / %+.1f%% / %+.1f%% | %.3f / %.3f | %.3f | %.3f |' % (
+            lv, hours_in(lv), main_rank(lv), a, p['rank'], p['forms'], p['combos'], p['awakening'], power(lv), h_raw(lv),
+            health_committed(lv), (kill_time_ratio(lv, 1) - 1) * 100, (kill_time_ratio(lv, 0) - 1) * 100,
+            (kill_time_ratio(lv, 5) - 1) * 100, 1 + sh(1) * (power(lv) - 1), 1 + sh(5) * (power(lv) - 1),
+            rank_power(a, 'heal') * forms_power(a), 1 + sh(0) * (rank_power(a, pvp=True) * forms_power(a, pvp=True) - 1)))
+    return '\n'.join(lines)
+
+
+def derive(parts=None):
+    pts = [int(lv) for lv, _ in committed_health()]
+    return ', '.join('{%d, %.2f}' % (lv, derived_health(lv, parts)) for lv in pts)
+
+
+def derive_typical():
+    return ', '.join('{%d, %.3f}' % (lv, typical_gain(lv)) for lv in CHECK_LEVELS)
+
+
+def no_upgrades_table():
+    lines = ['| Level | experience an hour | hours to the level, typical | no upgrades | more |', '|---:|---:|---:|---:|---:|']
+    lo = ranks_config()['minLevel']
+    for lv in (100, 500, 1000, 1500, 2000, 2200):
+        base = sum(minutes(L) for L in range(lo, lv)) / 60.0
+        slow = sum(minutes(L) * health_committed(L) for L in range(lo, lv)) / 60.0
+        lines.append('| %d | -%.0f%% | %.0f | %.0f | +%.0f%% |' % (lv, no_upgrades_xp(lv), base, slow, (slow / base - 1) * 100))
+    return '\n'.join(lines)
+
+
+def main(argv):
+    argv = from_argv(argv)
+    parts = None
+    if '--parts' in argv:
+        names = argv[argv.index('--parts') + 1].split(',')
+        parts = {n: n in names for n in PART_NAMES}
+    if '--derive' in argv:
+        print('health = {%s}' % derive(parts))
+        print('typical = {%s}' % derive_typical())
+        return 0
+    if '--table' in argv:
+        print(table())
+        return 0
+    if '--no-upgrades' in argv:
+        print(no_upgrades_table())
+        return 0
+    bad = problems()
+    if '--check' in argv:
+        for b in bad:
+            print('FAIL ' + b)
+        if not bad:
+            print('spell upgrade check: ok (health curve = derivation, typical kill times within %.0f%% of today at %d levels, the main spell at rank 20 at level %d)' % (
+                balance_config()['limits']['killTime'] * 100, len(CHECK_LEVELS),
+                next(L for L in range(8, 2600) if main_rank(L) >= 20 - 1e-9)))
+        return 1 if bad else 0
+    print(table())
+    for b in bad:
+        print('FAIL ' + b)
+    return 1 if bad else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

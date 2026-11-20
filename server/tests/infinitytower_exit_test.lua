@@ -37,7 +37,7 @@ do
 end
 
 -- ---- the engine file on a mocked engine
-Chaos = {storage = {}, tables = {}, passive = {}, tower = {}}
+Chaos = {storage = {}, tables = {}, passive = {}, tower = {}, healthFactor = function() return 1 end, scaleHealth = function(hp) return hp end}
 ChaosOpcodes = {}
 local registry, moves, talks = {}, {}, {}
 function CreatureEvent(name) local o = {}; function o:register() registry[name] = o end; return o end

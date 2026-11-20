@@ -123,9 +123,12 @@ return {
 
 	-- the monster health factor H by level (design 5.3, owner 2026-11-20: from level 100). 1 below the first point, linear between
 	-- points, flat above the last. Read through ChaosSpellRanks.healthFactor(level), which gives 1 while `enabled` is false.
+	-- Phase 3 (O686): spell_upgrade_model.py --derive writes these and --check holds them to the derivation; the combos of 10-20% a hit
+	-- (owner 2026-11-20) raised them by 0.01 from level 700 up against the first design table, 0.02 at 1600, and the awakening is a line between
+	-- its points (0.5 spells at 2000): 2000 and 2200 are 0.02 and 0.01 above it.
 	health = {
-		{100, 1.02}, {200, 1.03}, {300, 1.06}, {400, 1.08}, {500, 1.10}, {600, 1.12}, {700, 1.15}, {800, 1.17},
-		{1000, 1.20}, {1300, 1.23}, {1600, 1.26}, {2000, 1.29}, {2200, 1.33}, {2500, 1.38},
+		{100, 1.02}, {200, 1.03}, {300, 1.06}, {400, 1.08}, {500, 1.10}, {600, 1.12}, {700, 1.16}, {800, 1.18},
+		{1000, 1.21}, {1300, 1.24}, {1600, 1.28}, {2000, 1.31}, {2200, 1.34}, {2500, 1.39},
 	},
 
 	-- the client state message (opcode 168 `state`, read only in this phase)

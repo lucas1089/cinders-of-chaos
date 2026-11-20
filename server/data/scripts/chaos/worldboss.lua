@@ -1094,8 +1094,9 @@ local function runPhase(token, i)
 			local m = Game.createMonster(phase.adds.name, randomNear(pos, 4), false, true)
 			if m then
 				if phase.adds.health then
-					m:setMaxHealth(phase.adds.health)
-					Chaos.heal(m, phase.adds.health)
+					local addHp = Chaos.scaleHealth(phase.adds.health, C().minLevel) -- O686 phase 3: x H (1 while off)
+					m:setMaxHealth(addHp)
+					Chaos.heal(m, addHp)
 				end
 				state.adds[m:getId()] = true
 				packFx(m:getPosition(), "wb_adds", CONST_ME_TELEPORT)
@@ -1190,8 +1191,14 @@ local function spawnBoss(token)
 		end
 		-- one player alone at the start fights without the group-only mechanics (Event Horizon, the Chorus), like the
 		-- pocket boss copy (owner 2026-10-24: every piece of content can be done solo)
-		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars,
+		pcall(ChaosBossMech.attach, boss, nil, {level = C().minLevel, tiles = floor, players = playersInside, pillars = L.pillars,
 			solo = #playersInside() <= 1})
+	end
+	-- O686 phase 3: x H of the spell ranks at the entry level (1 while off), after the mechanics' factor so it multiplies it
+	local scaledHp = Chaos.scaleHealth(boss:getMaxHealth(), C().minLevel)
+	if scaledHp ~= boss:getMaxHealth() then
+		boss:setMaxHealth(scaledHp)
+		Chaos.heal(boss, scaledHp - boss:getHealth())
 	end
 	state.bossId = boss:getId()
 	state.maxHealth = boss:getMaxHealth()

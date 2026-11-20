@@ -670,6 +670,13 @@ local function scaleMonster(run, monster)
 		hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
 	end
 	hp = math.max(1, math.floor(hp * partyHp + 0.5)) -- group size (solo = x1.0)
+	-- O686 phase 3: x H of the spell ranks at the typical player's level (the dungeon's + 25, as boss_length_model.py); 1 while off.
+	-- A generated dungeon (a trash or boss curve of its own) has it already: its trash is paced (pace.lua) and its boss point takes it
+	-- in areagen.lua, so the difficulty above multiplied a maximum that carries H; a base dungeon's monsters come from the stock files
+	if not (ex.trashHealth or ex.bossHealth) then
+		local dg = baseDungeons()[run.dungeonId]
+		hp = Chaos.scaleHealth(hp, (dg and levelOf(dg) or 0) + 25)
+	end
 	if hp ~= monster:getMaxHealth() then
 		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
 		monster:setMaxHealth(hp)

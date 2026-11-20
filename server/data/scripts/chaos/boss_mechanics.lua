@@ -321,6 +321,8 @@ local function spawnNamed(f, typeName, shownName, health, near)
 		pcall(function() m:unregisterEvent(ev) end)
 	end
 	if health and health > 0 then
+		-- O686 phase 3: adds and totems follow the boss's H of the spell ranks (f.level: the level the host plans the fight for; 1 while off)
+		health = Chaos.scaleHealth(health, f.level)
 		m:setMaxHealth(health)
 		Chaos.heal(m, health) -- O682: a one-argument addHealth heals nothing on this engine
 	end
@@ -957,7 +959,7 @@ function M.attach(monster, key, opts)
 	local tier = opts.tier
 	local difficulty = opts.difficulty or ((profile.difficulty or 0.2) + (profile.tierDifficulty or 0) * math.max(0, (tier or 1) - 1))
 	local players = 1
-	local f = {id = id, name = name, profile = profile, grid = grid, opts = opts, adds = {}, watched = {},
+	local f = {id = id, name = name, profile = profile, grid = grid, opts = opts, adds = {}, watched = {}, level = opts and opts.level,
 		token = (M.token or 0) + 1}
 	M.token = f.token
 	M.fights[id] = f

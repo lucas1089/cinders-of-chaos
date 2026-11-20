@@ -1027,7 +1027,7 @@ local function spawnAdds(run, adds)
 	for _ = 1, n do
 		local m = Game.createMonster(cfg.boss.add, freeArenaTile(run, at, 4), false, true)
 		if m then
-			hp = hp or math.floor(m:getMaxHealth() * B.addHealthMult(cfg, run.size))
+			hp = hp or Chaos.scaleHealth(math.floor(m:getMaxHealth() * B.addHealthMult(cfg, run.size)), cfg.model.refLevel) -- O686: x H
 			setHealth(m, hp)
 			GB.monsterRun[m:getId()] = run
 			run.adds[m:getId()] = true
@@ -1239,7 +1239,8 @@ local function spawnBoss(run)
 		finishExit(run)
 		return
 	end
-	setHealth(m, math.floor(m:getMaxHealth() * B.healthMult(cfg, run.size)))
+	-- O686 phase 3: x H of the spell ranks at the planned level (model.refLevel, 600; 1 while off)
+	setHealth(m, Chaos.scaleHealth(math.floor(m:getMaxHealth() * B.healthMult(cfg, run.size)), cfg.model.refLevel))
 	m:registerEvent("ChaosGuildBossDeath")
 	m:registerEvent("ChaosGuildBossDamage")
 	GB.monsterRun[m:getId()] = run
@@ -1248,7 +1249,7 @@ local function spawnBoss(run)
 	-- the phases; their hits go through shareHit (the lethal-hit catch)
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
-		pcall(ChaosBossMech.attach, m, def.boss, {tiles = run.L.floorList,
+		pcall(ChaosBossMech.attach, m, def.boss, {level = cfg.model.refLevel, tiles = run.L.floorList,
 			players = function()
 				local r = GB.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}

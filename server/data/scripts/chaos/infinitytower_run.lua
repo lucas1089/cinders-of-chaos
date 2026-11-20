@@ -628,14 +628,16 @@ local function spawnPlan(run, plan, rng)
 			dropNaturalRoll(monster)
 			-- the floor's health (infinitytower_balance_config.lua); a tier multiplies on top, by the tower's own
 			-- tierHealth (the stock tier would multiply by its x2 / x3.5 / x6 after it)
-			if s.health and monster.setMaxHealth then
+			-- O686 phase 3: x H of the spell ranks at the floor's monster level (1 while off)
+			local floorHealth = s.health and Chaos.scaleHealth(s.health, s.level)
+			if floorHealth and monster.setMaxHealth then
 				local stock = ChaosTiers and s.tier and ChaosTiers[s.tier] and ChaosTiers[s.tier].hp
-				setHealth(monster, (s.tier and ChaosApplyTier and stock) and B.preTierHealth(BC, s.health, s.tier, stock) or s.health)
+				setHealth(monster, (s.tier and ChaosApplyTier and stock) and B.preTierHealth(BC, floorHealth, s.tier, stock) or floorHealth)
 			end
 			if s.tier and ChaosApplyTier then
 				local applied = ChaosApplyTier(monster, s.tier)
-				if not applied and s.health and monster.setMaxHealth then
-					setHealth(monster, B.tierMaxHealth(BC, s.health, s.tier))
+				if not applied and floorHealth and monster.setMaxHealth then
+					setHealth(monster, B.tierMaxHealth(BC, floorHealth, s.tier))
 				end
 			end
 			spawned = spawned + 1

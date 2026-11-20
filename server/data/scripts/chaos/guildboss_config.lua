@@ -129,7 +129,8 @@ return {
 	},
 
 	-- the balance model (like uber_config.lua): a level 600 character deals refDps; uptime = time on the boss
-	model = {refDps = 1400, uptime = 0.75},
+	-- refLevel (O686 phase 3): the level the numbers are planned for, where the spell ranks' monster health factor H is read (Chaos.healthFactor)
+	model = {refDps = 1400, uptime = 0.75, refLevel = 600},
 	targets = {party1 = 495, party2 = 495, party5 = 420, party10 = 395}, -- seconds the health was set for (tests/guildboss_test.lua)
 	bossHealth = 650000, -- must match the XML (tests/guildboss_test.lua checks it)
 
