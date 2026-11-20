@@ -82,10 +82,14 @@ C.tiers = {"Minor", "Major", "Intense", "Powerful"}
 -- to at least 3 and the Necromancer line to 4: Marrow Bolt and Soulrend Beam on Rime Bloom, Shattered Psyche (Mystic and
 -- Illusionist) on Frozen Crypt, Shuriken Toss on Primordial Squall, Radiant Smite on Dawnpiercer and Palm Shockwave on
 -- Earthbreaker. tests/cards_test.lua keeps the floor (MIN_LINES).
+-- O691 (owner 2026-11-20, "every class reaches a set"): the Illusionist and the Thief line cast only 3 convert lines that share no
+-- element but Death (rare tiers 3 and 4), so they had no common set. One more spell each on a line that already exists: Phantom
+-- Needles (Illusionist) on Rime Bloom, Razor Rain (Thief, Ninja, Samurai) on Frozen Crypt. They now have 4 lines and reach Fire (tier 1
+-- of every line) and Holy at tier 1 to 2 as well (Frozen Crypt, not Dawnpiercer: no Earth set for the Thief line, a lead over its mixed build). No new card, item, art or id: docs/BUILDS.md "Every class reaches a set (O691)".
 local families = {
 	{kind = "convert", spell = "Reaping Gyre", id = 220, how = "hit", elements = {"Earth", "Ice", "Death", "Energy"}},
 	{kind = "convert", spell = "Rime Bloom", id = 200, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"},
-		also = {{"Marrow Bolt", 106}, {"Soulrend Beam", 118}}},
+		also = {{"Marrow Bolt", 106}, {"Soulrend Beam", 118}, {"Phantom Needles", 24}}},
 	{kind = "convert", spell = "Tempest Fan", id = 13, how = "live", elements = {"Holy", "Ice", "Drown", "Death"}},
 	{kind = "convert", spell = "Sanctum Burst", id = 124, how = "live", elements = {"Fire", "Ice", "Earth", "Death"}},
 	{kind = "convert", spell = "Frostfall Rune", id = 115, how = "live", elements = {"Fire", "Earth", "Energy", "Death"}},
@@ -98,7 +102,7 @@ local families = {
 	{kind = "melee", spell = "Bloodlust", id = 133, how = "live", secs = {2, 4, 6, 10}, pct = {2, 4, 6, 7}},
 	{kind = "convert", spell = "Pyre Torrent", id = 163, how = "live", elements = {"Ice", "Holy", "Death", "Energy"}},
 	{kind = "convert", spell = "Frozen Crypt", id = 205, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"},
-		also = {{"Sundering Palm", 64}, {"Shattered Psyche", 228}}},
+		also = {{"Sundering Palm", 64}, {"Shattered Psyche", 228}, {"Razor Rain", 56}}},
 	{kind = "heal", spell = "Grand Mending", id = 3, how = "hit", pct = {10, 20, 30, 40}},
 	{kind = "convert", spell = "Dawnpiercer", id = 214, how = "hit", elements = {"Fire", "Earth", "Death", "Energy"},
 		also = {{"Bone Spear", 181}, {"Radiant Smite", 189}}},
@@ -112,7 +116,7 @@ C.families = families
 -- compares. The Frostfall Rune is a rune every class uses.
 C.lineClasses = {
 	["Reaping Gyre"] = {"Warrior", "Juggernaut", "Berserker"},
-	["Rime Bloom"] = {"Mystic", "Elementalist", "Necromancer", "Lich", "Bone Lord"},
+	["Rime Bloom"] = {"Mystic", "Elementalist", "Illusionist", "Necromancer", "Lich", "Bone Lord"},
 	["Tempest Fan"] = {"Elementalist"},
 	["Sanctum Burst"] = {"Ranger", "Deadeye", "Beastmaster"},
 	["Frostfall Rune"] = {"Warrior", "Juggernaut", "Berserker", "Ranger", "Deadeye", "Beastmaster", "Mystic", "Elementalist",
@@ -123,7 +127,7 @@ C.lineClasses = {
 	["Earthbreaker"] = {"Warrior", "Juggernaut", "Berserker", "Monk", "Shadowfist", "Iron Sage", "Templar", "Inquisitor",
 		"Sentinel"},
 	["Pyre Torrent"] = {"Elementalist"},
-	["Frozen Crypt"] = {"Mystic", "Elementalist", "Illusionist", "Monk", "Shadowfist", "Iron Sage"},
+	["Frozen Crypt"] = {"Mystic", "Elementalist", "Illusionist", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage"},
 	["Dawnpiercer"] = {"Ranger", "Deadeye", "Beastmaster", "Necromancer", "Lich", "Bone Lord", "Templar", "Inquisitor",
 		"Sentinel"},
 }

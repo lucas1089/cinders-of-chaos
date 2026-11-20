@@ -12188,15 +12188,28 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
 - **Facts the design rests on** (`tests/cards_test.lua`, `luajit tests/cards_test.lua --sets`). A character has 5 card slots
   (`maxActive`). The 60 common cards are 15 lines of 4 tiers; only the highest card of a line that is on does anything. Element
   is a property of the 44 cards of the 11 convert lines (`cards_config.lua` families `elements`, one per tier); the other 32
-  cards (heal, melee, widen, bow, 16 legendary) have none. Every class has exactly 3 convert lines it can cast (Frostfall Rune
-  is cast by all; Elementalist 6), listed in `lineClasses` and checked against `spells_chaos.xml`, `stock_spells.csv` and the
+  cards (heal, melee, widen, bow, 16 legendary) have none. Every class has 3 convert lines it can cast (Frostfall Rune
+  is cast by all; Elementalist 6; O691: the Illusionist and the Thief line 4), listed in `lineClasses` and checked against `spells_chaos.xml`, `stock_spells.csv` and the
   spell cap. Cards per element: Fire 7, Earth 6, Ice 6, Death 11, Holy 6, Energy 7, Drown 1. Death is on every line, so a Death
   set is reachable for all 21 classes. Fire needs the Ranger, Mystic, Necromancer, Monk or Templar line or the Elementalist;
-  Earth the Warrior, Ranger or Templar line; Energy the Mystic, the Necromancer line or the Elementalist; Holy the Elementalist
-  only; Ice no class (two lines at most). Ice and Drown have no set. Tiers: Fire is tier 1 on all 7 lines, Holy tier 1 to 2,
+  Earth the Warrior, Ranger or Templar line; Energy the Mystic, the Necromancer line, the Elementalist, the Illusionist or the Thief
+  line; Holy the Elementalist, the Illusionist or the Thief line (O691; the Elementalist only before); Ice no class (two lines at
+  most). Ice and Drown have no set. Every class reaches the set of 2 elements or more (the Warrior and Monk lines exactly 2). Tiers: Fire is tier 1 on all 7 lines, Holy tier 1 to 2,
   Earth tier 1 to 3, Death and Energy tier 3 to 4. The island reward gives tiers by weights 40 / 30 / 20 / 10
   (`pocketboss_config.lua cardTiers`), so Death and Energy sets need the rarer cards. Where else cards drop (the base
   monsters' loot, tasks) is not in the repository: the drop levels of the tiers are not verified.
+- **Every class reaches a set (O691).** Owner 2026-11-20 ("intended?" "no, make alternatives and improve it"). Survey, alternatives
+  (two tiers, count by element, a smaller need, a new line, re-element the Ice cards, one more spell on a line) and the pick are in
+  `docs/BUILDS.md` "Every class reaches a set (O691)". The pick: **one more spell on a card line that exists** (`also`), no
+  new card, item, art, id, opcode, storage, engine patch or client change. `Phantom Needles` (24, Illusionist) joins the Rime Bloom
+  line, `Razor Rain` (56, Thief, Ninja, Samurai) the Frozen Crypt line (hit lines: `ChaosCardsHit` reads the spell of the hit);
+  `lineClasses` follows. The Illusionist and the Thief line have 4 convert lines and reach Fire (tier 1), Holy (tier 2), Energy (4)
+  and Death (3); before, only Death (tier 4 on the Frostfall Rune). Four lines and five slots still hold one set. The O685 result
+  "2 cards of the element" for Juggernaut, Deadeye, Illusionist and Samurai was the test helper (`tester_helper.lua` `loadoutCards`,
+  `castable()` reads `ChaosSupports.spellInfo`, a list of attack spells with no rune: the Frostfall Rune line, cast by all, was
+  never picked); the cards rule had given the Juggernaut, Deadeye and the others 3 lines all along. For the bots: pick by
+  `ChaosCardsConfig.lineClasses` (`K.castsLine`), not by the supports list. Tests: `tests/cards_test.lua` (lines per class, every
+  class 2 or more sets, the new lines, `--sets` prints the table), `tools/card_set_model_test.py`; model: below.
 - **The rule** (`cards_core.lua`). `K.setElement(id)` is the pure element of a card for sets (a convert card whose element has a
   set, else nil). `K.effectiveCards(isOn, className)` takes, per convert line the class casts, the highest card that is on;
   a lower card of the same line counts for nothing, a card of a spell the class cannot cast counts for nothing, a second copy
@@ -12254,6 +12267,10 @@ Aplicar e reiniciar. Shell fallback: `chaos-ctl.sh update-apply`. Nothing was ru
   at 2% it still leads by 0.18%). Worst case
   (all the damage of the set's element): 6% of the class's damage per second, at most 213 (Thief, 1 target) and 549 (Mystic, 5
   targets); the configured damage parts are 4%, two thirds of that. `python3 -I server/tools/card_set_model.py` prints the table.
+  O691: the model also walks every set a class reaches (`--sets` prints them): `--check` fails when a class reaches fewer than 2 sets, when
+  any reachable set leads its best mixed build by 0.5 points or more, or when `damagePartMax` is above 4. Illusionist and Thief line
+  after the change: Illusionist Death -1.4 / -0.4, Energy -1.1 / -0.3, Fire -1.0 / -0.3, Holy 0.0; Thief Death -1.4 / -2.2, Energy
+  -2.1 / -3.4, Fire -1.9 / -3.1, Holy 0.0 (Ninja and Samurai within 0.3 of it); the other 17 classes did not move.
 - **Tests.** `tests/cards_test.lua` (config shape, the cap, smaller than the snares, the PvP constant, `setElement` over all 76 cards,
   `lineClasses` against the spell data, reachability of every class, detection with 2, 3, 4, 5 cards, a card of a spell the class
   cannot cast, the lower card of a line, a second copy, a card in a deck that is off, a loose card, a card that left the decks,

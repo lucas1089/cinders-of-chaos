@@ -281,7 +281,7 @@ until then your cards are kept. Open it from the menu (Hero, Build) to see, filt
 At most five cards are on. Most cards change the element of one spell. Three cards of one element, one for each spell line
 your class casts, make a **card set** with a small bonus: more Fire damage, poison for Earth, a leech for Death, a heal for
 Holy, a short slow for Energy. Four or five cards give the same bonus as three. Character > Character Info names your set and
-shows the progress. The card text says which set it counts for.
+shows the progress. The card text says which set it counts for. Every class can make the set of two elements or more.
 
 ## Items and loot
 

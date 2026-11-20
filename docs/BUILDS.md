@@ -423,16 +423,18 @@ second element is a choice.
   spell your class cannot cast, a card that is off or not in your Deck of Cards: none of them counts.
 - **One tier only.** 4 or 5 cards give the bonus of 3. **One set at a time:** five slots hold no second set of three.
 - A heal, melee, widen, bow or legendary card has no element. Ice (no class has three Ice lines) and Drown have no set.
+- O691: the Illusionist and the Thief line (Thief, Ninja, Samurai) cast 4 card lines now, so every class reaches the set of two
+  elements or more (see "Every class reaches a set (O691)" below).
 - Character Info (Character > Character Info) names the set and shows the progress, for example "2 of 3 cards". Turning a
   card on or off tells you when the set turns on or off. The card text names its set.
 
 | Set | You get | Number | Cards that carry it | Who can reach it |
 |---|---|---|---|---|
-| Fire | Fire hits deal increased damage | +4 raw in the damage pool (O473), for the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist |
+| Fire | Fire hits deal increased damage | +4 raw in the damage pool (O473), for the Fire part of the hit | tier 1 of 7 lines | Ranger, Mystic, Necromancer, Monk and Templar lines, Elementalist, Illusionist, Thief line (O691) |
 | Earth | Earth hits poison | 4% of the hit over 4 s | tier 1 to 3 | Warrior, Ranger and Templar lines |
 | Death | Death hits heal you | 1.5% of the damage, at most 1% of your health a hit | tier 3 to 4 | every class |
-| Holy | Holy hits heal you | 0.5% of your health, once every 3 s | tier 1 to 2 | Elementalist |
-| Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist |
+| Holy | Holy hits heal you | 0.5% of your health, once every 3 s | tier 1 to 2 | Elementalist, Illusionist, Thief line (O691) |
+| Energy | Energy hits slow the target | 15% for 1.5 s | tier 3 to 4 | Mystic, Necromancer line, Elementalist, Illusionist, Thief line (O691) |
 
 Each number is smaller than the snare of the same element (burn 30%, poison 36% over 6 s, leech 4%, party heal 2%, ice slow
 40% for 3 s). A damage part never goes over +4 of its own element (6% before O473: the Fire set is a raw entry of the one damage pool, at most 4; the Fire set itself gives 3.5 since O475) and never touches another element. Damage over time is
@@ -445,6 +447,67 @@ need the rarer tier 3 and 4 cards. In damage the set costs little: against the b
 2.2% to 3.4%; eleven classes are level with it because their card spells are not in their rotation or the bonus is not damage;
 the Beastmaster and Mystic lead by less than half a point. The worst case, all of a class's damage being of the set's
 element, is 4% of its damage per second (6% before O473). Nothing here was measured in game.
+
+### Every class reaches a set (O691)
+
+Owner 2026-11-20, asked whether it was intended that a class could not make a set: "no. make alternatives and improve it". The
+O685 test party (Juggernaut, Deadeye, Illusionist, Samurai) found only 2 cards of their element on, so no set; only the
+Elementalist had one.
+
+**Survey, before** (`luajit server/tests/cards_test.lua --sets`; elements with 3 or more lines, tier of the rarest card in brackets).
+The rule gave all 21 classes a Death set (a card of tier 3 or 4 on every line), so no class was without one. The four classes
+that cast three lines with no other shared element, Illusionist, Thief, Ninja and Samurai, had **only Death**, whose Frostfall
+Rune card is the rarest tier (4: weight 10 of 100 in the island reward). The two cards of the O685 test were the test helper's
+own reading: it asks the supports list for the spells a class casts, that list holds no rune, so the Frostfall Rune line (which
+all 21 classes cast) was missing and a class with 3 lines showed 2.
+
+| Class line | Lines | Sets before | Sets after |
+|---|---:|---|---|
+| Warrior, Juggernaut, Berserker | 3 | Earth (tier 2), Death (4) | the same |
+| Ranger, Deadeye, Beastmaster | 3 | Fire (1), Earth (3), Death (4) | the same |
+| Mystic | 3 | Fire (1), Energy (4), Death (4) | the same |
+| Elementalist | 6 | Fire, Holy, Energy, Death | the same |
+| **Illusionist** | 3 -> 4 | Death (4) | Fire (1), Holy (2), Energy (4), Death (3) |
+| **Thief, Ninja, Samurai** | 3 -> 4 | Death (4) | Fire (1), Holy (2), Energy (4), Death (3) |
+| Necromancer, Lich, Bone Lord | 3 | Fire (1), Energy (4), Death (4) | the same |
+| Monk, Shadowfist, Iron Sage | 3 | Fire (1), Death (4) | the same |
+| Templar, Inquisitor, Sentinel | 3 | Fire (1), Earth (2), Death (4) | the same |
+
+Class and element sets (3 or more cards, of 21 x 5 = 105): 50 before, 62 after. No class has fewer than two elements now.
+
+**Alternatives** (all numbers computed, nothing measured in game):
+
+| | What | Costs | Gives | Risk |
+|---|---|---|---|---|
+| A | **Two tiers:** 2 cards a small set (half the numbers), 3 cards the full one | the rule (`K.setState` tiers, the 5 hooks scale), texts in 2 languages, the Character Info lines, a second number per element, tests; no card, art or id | every class 2 or more elements at 2 cards: 88 of 105 | two numbers to hold per element; a 2-card set costs 2 slots and a native-element class leads its mixed build by the half bonus, so the half must be lowered; players read two sets |
+| B | **Count by element:** every convert card of the element counts, whatever line the class casts | one line of the rule | every class every element (7 cards of Fire, 6 Earth, 11 Death, 6 Holy, 7 Energy) | a card of a spell you cannot cast counts: three dead cards make the set and the other 2 slots keep the useful cards, so the set leads the mixed build by the whole bonus; the bonus would have to fall near 0.5% to pass the model; the rule "one card for each spell you cast" is gone |
+| C | **Smaller need by class:** 2 cards for the 4 classes with one set, at a smaller bonus | a per-class table, the same scaling as A, texts | Illusionist and Thief line: Fire, Holy, Earth, Energy at 2 cards | a class-specific rule (the next class that lacks a set needs a row); the small set of 4 classes is a second balance number |
+| D | **New card line everyone casts** (a second Frostfall Rune) | 4 cards: 4 item ids and names, 4 card storages out of the 37000-37059 block (the base deck system reads it), loot and island tiers, a rune spell, 4 looks, the deck window; the client | every class 4 lines | the most work; 4 new items to balance in drops; the 60 common cards become 64 |
+| E | **Re-element the Ice cards** (6 cards no set uses) so every class shares a second element | 6 existing items change their element (descriptions, drop meaning) | maybe every class | the cards players hold change meaning; tiers move; Ice would have no cards |
+| F | **One more spell on a line that exists** (`also` of `cards_config.lua`): the Illusionist and the Thief line get a 4th line | 2 data entries, 4 class lists, 8 card texts (regenerated), tests, the model; no card, item, art, id, engine or client change | Illusionist and Thief line: Fire (tier 1), Holy (tier 2), Energy, Death: 12 more class and element sets | the card now also changes the element of the added spell: priced by the model |
+
+**The pick: F.** It is the only one that leaves the rule as it is (3 cards of one element, one for each spell you cast, one set
+at a time) and adds nothing to keep: after it every class reaches two or more elements (Warrior and Monk lines exactly two, the
+Elementalist, Illusionist and Thief line four), the cards that make the new Fire and Holy sets are tiers 1 and 2, and no
+class can make a second set: 4 lines and 5 slots hold one set of 3 and one more card, the Elementalist's 6 lines need 6 slots
+for two sets (`maxSets` is 1). A and C change the rule and need a second set of numbers; B breaks the price; D and E touch items.
+
+- **What changed.** `Phantom Needles` (id 24, Illusionist) is on the Rime Bloom line (the Mystic, Elementalist and Necromancer
+  line spell); `Razor Rain` (id 56, Thief, Ninja, Samurai) is on the Frozen Crypt line. Both are hit lines (`how = "hit"`): the
+  card acts when the spell hits, as for Marrow Bolt and Shattered Psyche. Frozen Crypt and not Dawnpiercer for the Thief line:
+  with Dawnpiercer the Ninja got an Earth set (poison) 0.6 points ahead of its best mixed build (its Venom Spiral and Smoke Bomb
+  are Earth), the rule is never 0.5 ahead; with Frozen Crypt the Thief line has no Earth set (2 Earth lines) and its sets are
+  Fire, Holy, Energy and Death.
+- **Texts.** The 8 cards of the two lines name the added spell ("Rime Bloom, Marrow Bolt, Soulrend Beam and Phantom Needles deal
+  Fire damage instead"); `data/items/card_descriptions.csv` is regenerated. No new client text: the set texts are the same.
+- **Price, computed** (`card_set_model.py --check`, plain and `--upgrades`; `--sets` prints every reachable set). The model walks
+  every set a class reaches, not only the best one, and fails when a class reaches fewer than 2 sets, when any reachable set leads
+  its best mixed build by 0.5 points or more, when the best set is more than 10% away, or when a damage part is above
+  `damagePartMax` (4). At level 500, set against the best mixed build on 1 / 5 targets: Illusionist Death -1.4 / -0.4, Energy
+  -1.1 / -0.3, Fire -1.0 / -0.3, Holy 0.0; Thief Death -1.4 / -2.2, Energy -2.1 / -3.4, Fire -1.9 / -3.1, Holy 0.0; Ninja Death
+  -1.2 / -1.4, Energy -2.0 / -2.4, Fire -1.8 / -2.1, Holy 0.0; Samurai Death -1.2 / -2.0, Energy -2.0 / -3.2, Fire -1.8 / -2.9,
+  Holy 0.0 (a Holy set gives no damage part, so it costs nothing in the model). The other 17 classes did not move. Largest lead:
+  Mystic Fire +0.3 / +0.4, Beastmaster Earth +0.4 / +0.1. The worst case is unchanged (4% of the class's damage).
 
 ## Spell modifier masteries (O451)
 
