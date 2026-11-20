@@ -1905,7 +1905,7 @@ jobs:
           python3 -I website/tools/gen_calendar_data_test.py
           python3 -I website/tools/gen_media_kit.py --check
 
-      - name: Website news page data and mechanics clips (O687; gen_changelog.py: the data of the news page from the patch notes and the curated entries; the clip slots of gen_site_media.py, media_lib.php and test_cliptour)
+      - name: Website news page data and mechanics clips (O687; gen_changelog.py writes the data of the news page from the patch notes and the curated entries; the clip slots of gen_site_media.py, media_lib.php and test_cliptour)
         run: |
           python3 -I website/tools/gen_changelog.py --check
           python3 -I website/tools/gen_changelog_test.py
