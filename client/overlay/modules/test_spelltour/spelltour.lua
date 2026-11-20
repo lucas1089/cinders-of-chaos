@@ -271,6 +271,14 @@ function T.init()
     return
   end
   log(('armed: account %s, class %s, at most %d s of film'):format(cfg.account, cfg.class, cfg.seconds))
+  -- game_chaosspells and game_spellranks are sandboxed: their data tables live in modules.<name>, not in _G, where the logic reads them
+  local mods = rawget(_G, 'modules') or {}
+  for name, key in pairs({game_chaosspells = 'ChaosSpellData', game_spellranks = 'ChaosFormsData', client_chaos_locale = 'ChaosLocale'}) do
+    local value = mods[name] and mods[name][key]
+    if rawget(_G, key) == nil and value ~= nil then rawset(_G, key, value) end
+  end
+  if rawget(_G, 'ChaosSpellData') == nil then log('no spell data: game_chaosspells not loaded') end
+  if rawget(_G, 'ChaosFormsData') == nil then log('no Forms data: game_spellranks not loaded') end
   -- the login, the set-up, the film and the outro: the client leaves by itself when a step never came (the script cuts it first)
   later((cfg.seconds + 900) * 1000, function() T.finish('watchdog', false) end)
   later(8000, function() login(function() enter(tour) end) end)
