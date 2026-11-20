@@ -1045,6 +1045,11 @@ jobs:
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
+      - name: No one-argument addHealth in the server Lua (heals through Chaos.heal, O682)
+        run: |
+          python3 -I tools/ci/check_addhealth.py
+          python3 -I tools/ci/check_addhealth_test.py
+
       - name: Attack spell parity (every class and ascension has the same number of attack spells)
         run: |
           python3 -I tools/ci/check_attack_counts.py

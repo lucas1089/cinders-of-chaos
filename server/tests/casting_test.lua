@@ -90,7 +90,7 @@ local function newPlayer(id, name, mana)
 	function p:getHealth() return self.health end
 	function p:getMaxMana() return self.maxMana or 100000 end
 	function p:getMaxHealth() return self.maxHealth or 100000 end
-	function p:addHealth(n) self.health = self.health + n end
+	function p:addHealth(kind, n) if type(kind) == "string" and type(n) == "number" then self.health = self.health + n end end -- O682: this engine: (damage type, amount); a one-argument call does nothing
 	function p:getPosition() return Position(self.pos) end
 	function p:sendCancelMessage(t) self.msgs[#self.msgs + 1] = t end
 	function p:getCondition(t, id, sub)
@@ -138,17 +138,19 @@ dofile("data/scripts/chaos/casting.lua")
 local C, E = ChaosCasting, ChaosSpellEvents
 
 -- the engine's side of a cast: playerSpellCheck .. onCastSpell .. postCastSpell (mana, cooldown) .. onSpellCast
+castHealth = nil -- the health a cast takes (O682: its refund goes through the engine's (damage type, amount) call)
 local function engineCast(player, onCastSpell, spellId, mana, cooldownMs, variant)
 	if not onCastSpell(player, variant) then
 		return false
 	end
 	player.mana = player.mana - mana
+	player.health = player.health - (castHealth or 0)
 	local cd = Condition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT)
 	cd:setParameter(CONDITION_PARAM_SUBID, spellId)
 	cd:setParameter(CONDITION_PARAM_TICKS, cooldownMs)
 	player:addCondition(cd)
 	if E.live then
-		E.onSpellCast(player, "x", spellId, 1, true, mana, 0)
+		E.onSpellCast(player, "x", spellId, 1, true, mana, castHealth or 0)
 	end
 	return true
 end
@@ -222,6 +224,19 @@ eq(cd.ticks, C.cfg.cooldownAfterRefundMs, "cooldown replaced by a short one (the
 eq(lastTo("Ash", "end").data.r, "moved", "end moved"); eq(a.msgs[#a.msgs], C.TEXTS.moved, "moved text")
 ok(not C.interrupt(a, "moved"), "nothing left to interrupt"); eq(a.mana, 3500, "no second refund")
 advance(30000); eq(fired, 1, "never fires after an interrupt")
+a.pos = {x = 100, y = 100, z = 7}
+
+-- O682: a cast that took health gives it back: this engine's one-argument addHealth heals nothing (the mock follows the engine)
+a.conds = {}
+clock = 50000
+castHealth = 300
+engineCast(a, spell, 206, 1500, 45000)
+castHealth = nil
+eq(a.health, 700, "the cast took 300 health")
+advance(50300)
+a.pos = {x = 101, y = 100, z = 7}
+advance(50700)
+eq(a.health, 1000, "moved: the health comes back")
 a.pos = {x = 100, y = 100, z = 7}
 
 -- ---------------------------------------------------------------- 3. death, logout, cancel, another spell, paralysis

@@ -3523,7 +3523,7 @@ function fistEvent.onHealthChange(creature, attacker, primaryDamage, primaryType
 	-- the probe's Demon never dies: a kill would pay experience to the bot's party (live run 2026-11-01: party_xp read
 	-- the share of a Monk's probe kill; the monster level scaling can undo a raised maximum health)
 	if w and creature:getHealth() - (math.abs(primaryDamage) + math.abs(secondaryDamage)) < creature:getMaxHealth() / 2 then
-		creature:addHealth(creature:getMaxHealth())
+		Chaos.heal(creature, creature:getMaxHealth() - creature:getHealth()) -- O682: a one-argument addHealth heals nothing on this engine
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
@@ -3643,7 +3643,7 @@ local function dualProbe(player, spec)
 	pcall(countGate)
 	fistWatch[m:getId()] = w
 	m:registerEvent("TesterHelperDualFist")
-	pcall(function() m:setMaxHealth(10000000) m:addHealth(10000000) end)
+	pcall(function() m:setMaxHealth(10000000) Chaos.heal(m, 10000000) end)
 	-- player:setTarget skips the onTargetCombat callback a client attack runs, which registers the class's combat event
 	-- on the target (monk_combat.lua, thief_combat.lua); without it the hits are the engine's bare ones (live run
 	-- 2026-11-01)

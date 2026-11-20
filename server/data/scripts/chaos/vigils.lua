@@ -73,7 +73,7 @@ end
 -- ------------------------------------------------------------------------------------------------ the reservation
 local KINDS = {
 	mana = {get = "getMaxMana", stat = "CONDITION_PARAM_STAT_MAXMANAPOINTS", pool = "getMana", add = "addMana"},
-	health = {get = "getMaxHealth", stat = "CONDITION_PARAM_STAT_MAXHITPOINTS", pool = "getHealth", add = "addHealth"},
+	health = {get = "getMaxHealth", stat = "CONDITION_PARAM_STAT_MAXHITPOINTS", pool = "getHealth", add = "addHealth", heal = true},
 }
 
 -- O358 (owner log 2026-10-31): the reservation ran away. `base` was the maximum on screen plus what this script believed
@@ -139,7 +139,16 @@ local function syncPool(player, kind, share)
 	if cut and prevPool then
 		local back = math.min(prevPool, player[get](player)) - player[pool](player)
 		if back > 0 then
-			player[KINDS[kind].add](player, back)
+			if KINDS[kind].heal then
+				-- O682: this engine's one-argument addHealth heals nothing (Chaos.heal; the second call is the stock signature)
+				if Chaos and Chaos.heal then
+					Chaos.heal(player, back)
+				else
+					player:addHealth("healing", back)
+				end
+			else
+				player[KINDS[kind].add](player, back)
+			end
 		end
 	end
 	a[kind .. "Pool"] = player[pool](player)

@@ -153,7 +153,7 @@ local function newPlayer(level)
 	function p:setCapacity(v) self.cap = v end
 	function p:getHealth() return self.health end
 	function p:getMana() return self.mana end
-	function p:addHealth(n) self.health = math.min(self.maxHealth, self.health + n) end
+	function p:addHealth(kind, n) if type(kind) == "string" and type(n) == "number" then self.health = math.min(self.maxHealth, self.health + n) end end -- O682: this engine: (damage type, amount); a one-argument call does nothing
 	function p:addMana(n) self.mana = math.max(0, math.min(self.maxMana, self.mana + n)) end
 	function p:getSlotItem(slot) return self.slots[slot] end
 	function p:equip(slot, item) item.owner, item.slot = self, slot; self.slots[slot] = item; return item end

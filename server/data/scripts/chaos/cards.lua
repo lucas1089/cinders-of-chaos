@@ -271,7 +271,7 @@ local function setEffects(attackerId, targetId, element, dealt, attackerFallback
 	elseif b.kind == "leech" then
 		local n = K.setLeech(element, dealt, attacker:getMaxHealth())
 		if n > 0 and attacker:getHealth() > 0 then
-			attacker:addHealth(n)
+			Chaos.heal(attacker, n) -- O682: this engine's one-argument addHealth heals nothing
 		end
 	elseif b.kind == "heal" then
 		local pid = attacker:getId()
@@ -280,7 +280,7 @@ local function setEffects(attackerId, targetId, element, dealt, attackerFallback
 			local n = K.setHeal(element, attacker:getMaxHealth())
 			if n > 0 then
 				M.holyAt[pid] = now
-				attacker:addHealth(n)
+				Chaos.heal(attacker, n)
 			end
 		end
 	end
