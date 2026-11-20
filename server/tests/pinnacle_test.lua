@@ -446,7 +446,11 @@ local function newMonster(name, p)
 	function m:getHealth() return self.hp end
 	function m:getMaxHealth() return self.maxHp end
 	function m:setMaxHealth(v) self.maxHp = v end
-	function m:addHealth(v) self.hp = self.hp + v end
+	function m:addHealth(kind, v)   -- this engine: (damage type, amount); a one-argument addHealth(amount) does nothing (chaos_constants.lua Chaos.heal)
+		if type(kind) == "string" and type(v) == "number" then
+			self.hp = math.min(self.maxHp, self.hp + v)
+		end
+	end
 	function m:getPosition() return self.pos end
 	function m:registerEvent(e) self.events[e] = true end
 	function m:getTarget() return {} end
@@ -519,9 +523,15 @@ ChaosTitles = {register = function(source, fn) titleSources[source] = fn end}
 ChaosNameplate = {refresh = function() end}
 -- the mechanics glue: the factor the profile keeps the kill time with (G.balance)
 local attached = {}
+local dangerAsked, dangerAnswer, addsAnswer = {}, nil, nil
 ChaosBossMech = {attach = function(m, key, opts)
 	attached[#attached + 1] = {monster = m, opts = opts}
 	return {hpMult = 0.8}
+end, dangerFor = function(bossId, at)   -- O681: the marks a person sees (boss_mechanics.lua M.dangerFor)
+	dangerAsked[#dangerAsked + 1] = {bossId, at}
+	return dangerAnswer
+end, addsFor = function(bossId)   -- O681: the adds and the totem of the phases (boss_mechanics.lua M.addsFor)
+	return addsAnswer
 end}
 local riftCalls, waystoneCalls = {}, {}
 ChaosAscended = {onRiftSealed = function(info) riftCalls[#riftCalls + 1] = info end}
@@ -731,6 +741,7 @@ ok(bossM, "the boss appeared")
 eq(bossM.spawnLevel, 1900, "shown at the boss's level")
 eq(bossM.name, "Ascended Malgrath", "the type of its name")
 eq(bossM.maxHp, math.floor(pcfg.bosses[1].health * 0.8 + 0), "the health is the fight's x the mechanics factor")
+eq(bossM.hp, bossM.maxHp, "O681: a solo boss starts at its full health")
 ok(bossM.events.ChaosPinnacleDeath, "death event")
 eq(attached[#attached].opts.solo, true, "the mechanics know it is a solo fight")
 -- its hits x the damage curve
@@ -817,6 +828,7 @@ eq(stor(b2, S.marker), -1, "only the opener has the marker")
 advance(pcfg.startDelay + 1)
 bossM = Monster(run.bossId)
 eq(bossM.maxHp, math.floor(K.bossHealth(pcfg.bosses[2], 3) * 0.8), "health for three x the mechanics factor")
+eq(bossM.hp, bossM.maxHp, "O681: the party's boss starts at its full health (the engine's addHealth takes a damage type: the one-argument call healed nothing and the boss stood at the solo value)")
 eq(attached[#attached].opts.solo, false, "the mechanics know it is a party fight")
 local hit2 = hit(b2, bossM, -1000, 1, 0, 1, 0)
 eq(hit2, math.floor(-1000 * K.scale(pcfg.damage, 3)), "the damage curve for three")
@@ -839,6 +851,57 @@ do
 	eq(PN.probe(lead).guide.mode, "fight", "probe: in reach, the guide fights")
 	bossM.hp = bossM.maxHp * 25 / 100
 	eq(PN.probe(lead).run.bossHp, 25, "probe: the health follows the boss")
+	-- O681: the telegraphs: a mark on the bot's tile turns the guide into a dodge to the safe tile; a mark elsewhere changes nothing but `danger`
+	local lp = lead:getPosition()
+	dangerAnswer = {marked = {[(lp.x + 5) .. "," .. lp.y] = true}, left = 1400, labels = {"Tidal Surge"}, count = 1}
+	local far = PN.probe(lead)
+	eq(far.guide.mode, "fight", "probe: a mark away from the bot leaves the guide alone")
+	eq(far.danger.here, false, "probe: the mark is not on the bot's tile")
+	eq(far.danger.labels[1], "Tidal Surge", "probe: the mark's name")
+	eq(dangerAsked[#dangerAsked][1], run.bossId, "probe: the danger is asked for the run's boss")
+	dangerAnswer = {marked = {[lp.x .. "," .. lp.y] = true}, left = 900, labels = {"Tidal Surge"}, count = 1, goal = {x = lp.x - 3, y = lp.y, z = lp.z}}
+	local on = PN.probe(lead)
+	eq(on.guide.mode, "dodge", "probe: a mark on the bot's tile: dodge")
+	eq(on.guide.goal.x, lp.x - 3, "probe: to the safe tile the mechanics name")
+	eq(on.danger.here, true, "probe: the bot stands in the mark")
+	ok(on.guide.why:find("Tidal Surge", 1, true) ~= nil, "probe: the guide says which mark")
+	dangerAnswer = nil
+	eq(PN.probe(lead).guide.mode, "fight", "probe: no mark, no dodge")
+	eq(PN.probe(lead).danger, nil, "probe: no danger field without a mark")
+	-- O681: the adds of a phase (the anchors that shield the boss): the guide goes to the nearest one, a target for the helper's loop
+	local made = {}
+	local function addAt(id, dx)
+		local a = {id = id, pos = pos(lp.x + dx, lp.y, lp.z)}
+		function a:getId() return self.id end
+		function a:getPosition() return self.pos end
+		made[id] = a
+		return a
+	end
+	addAt(777001, 12)
+	addAt(777002, 3)
+	local realMonster = Monster
+	Monster = function(id) return made[id] or realMonster(id) end
+	addsAnswer = {777001, 777002}
+	local ga = PN.probe(lead)
+	eq(ga.guide.mode, "fight", "probe: an add within reach of the bot: fight it")
+	eq(ga.guide.goal.x, lp.x + 3, "probe: the nearest add of two")
+	eq(ga.guide.area, "adds", "probe: the guide's area is the adds")
+	eq(ga.adds.id, 777002, "probe: the add's id for the helper")
+	eq(PN.priorityTarget(lead):getId(), 777002, "priorityTarget: the nearest add")
+	made[777002] = nil
+	local gb = PN.probe(lead)
+	eq(gb.guide.mode, "walk", "probe: only a far add left: walk to it")
+	eq(gb.guide.goal.x, lp.x + 12, "probe: to the far add")
+	dangerAnswer = {marked = {[lp.x .. "," .. lp.y] = true}, left = 900, labels = {"Tidal Surge"}, count = 1, goal = {x = lp.x - 3, y = lp.y, z = lp.z}}
+	eq(PN.probe(lead).guide.mode, "dodge", "probe: a mark on the bot's tile comes before the adds")
+	eq(PN.probe(lead).adds.id, 777001, "probe: the add is still named while it dodges")
+	dangerAnswer = nil
+	addsAnswer = nil
+	eq(PN.priorityTarget(lead), nil, "priorityTarget: no add up, no priority (the helper aims at the boss)")
+	eq(PN.probe(lead).adds, nil, "probe: no adds field without an add")
+	eq(PN.probe(lead).guide.mode, "fight", "probe: the guide is the boss's again")
+	Monster = realMonster
+	eq(PN.nearestAdd({getId = function() return 424242 end}), nil, "nearestAdd: a player in no fight")
 end
 -- a lethal hit: caught, out, healed; the fight is no longer deathless
 b2.hp = 100

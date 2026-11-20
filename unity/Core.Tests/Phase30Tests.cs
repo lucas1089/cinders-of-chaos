@@ -180,7 +180,7 @@ namespace Chaos.Core.Tests
             "craft_found", "gear_chase", "chore_faction", "chore_pass", "chore_chests", "chore_candlemarks", "chore_gamble", "chore_trade", "chore_salvage", "boss_copy_walk", "pocket_walk", "wsmap_walk",
             "spell_support", "tales_read", "kill_task", "gather_walk", "pouch_rules", "autosell_rules", "stash_window", "gamble_reroll", "ascension_walk",
             "stash_move", "dummy_train", "mount_ride", "flay_walk", "angle_walk", "kill_task_kills",
-            "wsendgame", "pinnacle_read", "loot_explosion", "loot_stranger", "greater_rift", "loot_burst", "pinnacle_walk" };
+            "wsendgame", "pinnacle_read", "loot_explosion", "loot_stranger", "greater_rift", "loot_burst", "pinnacle_walk", "pinnacle_party" };
 
         static void Coverage(Action<bool, string> check)
         {

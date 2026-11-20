@@ -820,7 +820,9 @@ end
 local function setHealth(monster, hp)
 	hp = math.max(1, math.floor(hp))
 	monster:setMaxHealth(hp)
-	monster:addHealth(hp - monster:getHealth())
+	-- O681: this engine's Creature:addHealth takes (damage type, amount): the one-argument call healed nothing, so a party's boss (a maximum above the
+	-- solo health the mechanics' factor left it at) stood at 27% of it in a party of five. Chaos.heal covers both signatures
+	Chaos.heal(monster, hp - monster:getHealth())
 end
 
 local function spawnBoss(run)
@@ -1104,8 +1106,64 @@ function PN.probe(player)
 		gate = {x = run.L.portal and run.L.portal.x or 0, y = run.L.portal and run.L.portal.y or 0, z = run.L.portal and run.L.portal.z or 0}}
 	out.guide = U.guide({inside = true, state = run.state, boss = run.bossState, down = false, pos = pos, bossPos = bossPos,
 		reach = 5})
+	-- O681: what a person sees of the boss's telegraphs (ChaosBossMech.dangerFor, as testers_boss.lua reads them): when a mark covers the bot's tile
+	-- the guide says `dodge` to the nearest safe tile, as a player steps off the warning before the hit
+	local M = rawget(_G, "ChaosBossMech")
+	if M and M.dangerFor and run.bossId and boss then
+		local okD, danger = pcall(M.dangerFor, run.bossId, pos)
+		if okD and danger then
+			out.danger = {left = danger.left, labels = danger.labels, count = danger.count,
+				here = danger.marked and danger.marked[pos.x .. "," .. pos.y] == true or false}
+			if danger.goal then
+				out.guide = {mode = "dodge", goal = {x = danger.goal.x, y = danger.goal.y, z = danger.goal.z}, area = "boss",
+					why = "a mark of " .. tostring(danger.labels and danger.labels[1]) .. " is on the bot's tile"}
+			end
+		end
+	end
+	-- O681: the adds and the totem of the boss's phases (the anchors that shield it, the idols that empower it, the totem a channel is stopped by): the
+	-- nearest one is what a person breaks first ("Break them!"); the guide walks to it and the helper's loop aims at it (PN.priorityTarget)
+	local add = PN.nearestAdd(player)
+	if add then
+		local ap = add:getPosition()
+		out.adds = {id = add:getId(), pos = {x = ap.x, y = ap.y, z = ap.z}}
+		if out.guide.mode ~= "dodge" then
+			local reach = 5
+			local near = ap.z == pos.z and math.max(math.abs(ap.x - pos.x), math.abs(ap.y - pos.y)) <= reach
+			out.guide = {mode = near and "fight" or "walk", goal = {x = ap.x, y = ap.y, z = ap.z}, reach = {1, reach}, area = "adds",
+				why = near and "an add of the boss stands in reach" or "to the nearest add of the boss"}
+		end
+	end
 	return out
 end
+
+-- O681 (the tester bots): the nearest live add or totem of the fight the player is in (ChaosBossMech.addsFor), a Monster, or nil
+function PN.nearestAdd(player)
+	local run = PN.runOf[player:getId()]
+	local M = rawget(_G, "ChaosBossMech")
+	if not (run and not run.ended and run.bossId and M and M.addsFor) then
+		return nil
+	end
+	local okA, ids = pcall(M.addsFor, run.bossId)
+	if not (okA and ids) then
+		return nil
+	end
+	local pos = player:getPosition()
+	local best, bestD
+	for _, id in ipairs(ids) do
+		local m = Monster(id)
+		if m then
+			local mp = m:getPosition()
+			local d = mp.z == pos.z and math.max(math.abs(mp.x - pos.x), math.abs(mp.y - pos.y)) or 999
+			if not bestD or d < bestD then
+				best, bestD = m, d
+			end
+		end
+	end
+	return best
+end
+
+-- the target the tester helper's loop gives a bot inside a fight before the boss: an add that shields, empowers or channels (the same as the guide's)
+PN.priorityTarget = PN.nearestAdd
 
 -- TEST ONLY (`!tester pinnacle set [boss]`, O678): a whole set of fragments (one of each kind) of the boss for a TESTER: the top content that drops them
 -- (a waystone map of tier 12, a rift of tier 15, an Omen guardian) is hours of play a check cannot repeat. The boss is the named one, else the highest

@@ -547,6 +547,42 @@ for _, t in ipairs(tester.log.targets) do
 	check(t.monster and not t.master, "only unowned monsters are ever targeted")
 end
 
+-- O681: inside a pinnacle fight an add of a phase comes before the boss: the loop aims the tester at it (ChaosPinnacle.priorityTarget), then the boss again
+do
+	local add = creature(1073741999, "Drowned Anchor", {player = false, monster = true, pos = {x = 103, y = 100, z = 7}, health = 150000})
+	local realPN = ChaosPinnacle
+	local ask = 0
+	ChaosPinnacle = {priorityTarget = function(p)
+		ask = ask + 1
+		if add.dead then
+			return nil
+		end
+		return add
+	end}
+	tester.target = wolf
+	local n0 = #tester.log.targets
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, add, "pinnacle: the tester aims at the add that shields the boss, not the boss it had")
+	check(ask >= 1 and #tester.log.targets == n0 + 1, "pinnacle: the target is changed once, not every beat")
+	eq(tester.dir, 1, "pinnacle: and it faces the add (east)")
+	add.dead = true
+	tester.target = nil
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, wolf, "pinnacle: the add gone, the loop aims at the nearest monster again")
+	ChaosPinnacle = {priorityTarget = function() error("a probe that breaks") end}
+	tester.target = nil
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, wolf, "pinnacle: a priority call that breaks does not stop the loop")
+	ChaosPinnacle = realPN
+	byId[add.id] = nil
+end
+
 -- once a minute the console gets the count of testers in game
 before = #printed
 for _ = 1, 120 do
@@ -3237,6 +3273,144 @@ do
 	for k = 0, 20 do many[#many + 1] = {i = k, id = 200 + k, cid = 1, wt = 2, il = 0, sc = k} end
 	eq(#H.handReport(many, {}).bag, H.HAND_MAX, "hands: at most HAND_MAX rows")
 	eq(#H.handReport(nil, nil).bag, 0, "hands: nothing in, nothing out")
+end
+
+-- O681: `!tester gear`: the plan of the sets' pieces by class and level, and the grant on a mocked player
+do
+	check(HELPER_VERSION >= 30, "the helper is version 30 or later (O681: gear)")
+	check(H.COMMANDS.gear and H.parseCommand("gear set #5") == "gear", "gear is a registered command")
+	eq(H.parseGear(nil).what, "state", "gear: no word is state")
+	eq(H.parseGear(" SET ").what, "set", "gear: set")
+	local w, usage = H.parseGear("wear")
+	check(w == nil and usage:find("usage: gear", 1, true), "gear: an unknown word")
+	check(H.parseGear("set now") == nil, "gear: nothing after the word")
+	local HEAVY = {"Warrior", "Juggernaut", "Berserker"}
+	local CLOTH = {"Mystic", "Elementalist"}
+	local pieces = {
+		{id = 1, kind = "helmet", fit = "H", level = 1700, name = "low helm", classes = HEAVY, stats = {armor = 40}},
+		{id = 2, kind = "helmet", fit = "H", level = 1875, name = "mid helm", classes = HEAVY, stats = {armor = 50}},
+		{id = 3, kind = "helmet", fit = "H", level = 2050, name = "top helm", classes = HEAVY, stats = {armor = 60}},
+		{id = 4, kind = "helmet", fit = "C", level = 1875, name = "cowl", classes = CLOTH, stats = {armor = 30}},
+		{id = 5, kind = "armor", fit = "H", level = 1700, name = "plate", classes = HEAVY, stats = {armor = 90}},
+		{id = 6, kind = "legs", fit = "H", level = 1700, name = "legs", classes = HEAVY, stats = {armor = 70}},
+		{id = 7, kind = "sword", fit = "1", level = 1875, name = "sword", classes = {"Warrior", "Juggernaut"}, stats = {attack = 40, elementenergy = 30}},
+		{id = 8, kind = "sword", fit = "2", level = 1875, name = "greatsword", classes = HEAVY, stats = {attack = 40, elementenergy = 30}},
+		{id = 9, kind = "axe", fit = "2", level = 1875, name = "greataxe", classes = HEAVY, stats = {attack = 50, elementenergy = 30}},
+		{id = 10, kind = "boots", fit = "A", level = 1875, name = "boots", classes = {}, stats = {armor = 99}},
+		{id = 11, kind = "club", fit = "1", level = 1700, name = "all club", classes = {}, stats = {attack = 99}},
+	}
+	local plan = H.gearPlan(pieces, "Warrior", 2000)
+	eq(plan.helmet.id, 2, "gear plan: the highest level the character may wear, 2050 is above 2000")
+	eq(plan.armor.id, 5, "gear plan: the armour")
+	eq(plan.legs.id, 6, "gear plan: the legs")
+	eq(plan.weapon.id, 11, "gear plan: the weapon of the most power (99 of a club open to everyone) wins")
+	check(plan.boots == nil, "gear plan: the sets' boots are no slot of the plan")
+	plan = H.gearPlan(pieces, "Juggernaut", 2100)
+	eq(plan.helmet.id, 3, "gear plan: the top helmet at 2100")
+	eq(plan.weapon.id, 11, "gear plan: the same power rule")
+	table.remove(pieces)
+	plan = H.gearPlan(pieces, "Warrior", 2100)
+	eq(plan.weapon.id, 9, "gear plan: the two-handed axe of 80 over the one-handed sword of 70")
+	plan = H.gearPlan(pieces, "Berserker", 2100)
+	eq(plan.weapon.id, 9, "gear plan: a Berserker has two-handed weapons only")
+	pieces[9].stats.attack = 40
+	eq(H.gearPlan(pieces, "Warrior", 2100).weapon.id, 7, "gear plan: a one-handed weapon over a two-handed one of the same power 70")
+	plan = H.gearPlan(pieces, "Mystic", 2100)
+	eq(plan.helmet.id, 4, "gear plan: a cloth class takes the cloth piece")
+	check(plan.armor == nil and plan.weapon == nil, "gear plan: no armour or weapon of the sets for a class they do not list")
+	check(next(H.gearPlan(pieces, "Warrior", 1000)) == nil, "gear plan: no piece of the level")
+	check(next(H.gearPlan(nil, "Warrior", 2000)) == nil, "gear plan: no list, no plan")
+	eq(H.gearWeaponPower({attack = 10, elementfire = 5, defense = 99, skillSword = 3}), 15, "gear power: attack and element damage only")
+	local ans = H.gearAnswer({helmet = {id = 2, name = ("n"):rep(60), level = 1875, fit = "H", junk = 1}}, {armor = {id = 5, il = 2000, junk = 1}}, {level = 2000})
+	check(ans.plan.helmet.id == 2 and #ans.plan.helmet.name == 40 and ans.plan.helmet.junk == nil and ans.worn.armor.il == 2000 and ans.worn.armor.junk == nil
+		and ans.level == 2000, "gear answer: the facts, cut down")
+
+	-- the engine side on a mocked player
+	RETURNVALUE_NOERROR = 0
+	local made, moved, removed = {}, {}, {}
+	local function item(id, il)
+		local it = {id = id, il = il or 0}
+		function it:getId() return self.id end
+		function it:remove() removed[#removed + 1] = self.id; self.gone = true end
+		function it:clone() return item(self.id, self.il) end
+		function it:moveTo(bag)
+			moved[#moved + 1] = self.id
+			if self.owner and self.owner.slots[self.slot] == self then self.owner.slots[self.slot] = nil end
+			return true
+		end
+		return it
+	end
+	local savedCrafting, savedSets = ChaosCrafting, ChaosGearSets
+	ChaosCrafting = {levelOf = function(it) return it.il end, createItem = function(id, rarity, level)
+		local it = item(id, level)
+		it.rarity = rarity
+		made[#made + 1] = it
+		return it
+	end}
+	ChaosGearSets = {items = {pieces = pieces}}
+	local gp = creature(268435700, "Tester Aza", {store = {[ST] = 1}})
+	gp.getLevel = function() return 2100 end
+	gp.getVocation = function() return {getId = function() return 4 end, getName = function() return "Warrior" end} end
+	gp.cap = 400
+	function gp:getCapacity() return self.cap end
+	function gp:setCapacity(v) self.cap = v end
+	gp.slots = {[CONST_SLOT_BACKPACK] = {isContainer = function() return true end}, [CONST_SLOT_HEAD] = item(1, 1700), [CONST_SLOT_LEFT] = item(555, 0),
+		[CONST_SLOT_RIGHT] = item(556, 0)}
+	for slot, it in pairs(gp.slots) do it.owner, it.slot = gp, slot end
+	function gp:addItemEx(it, _, slot)
+		if self.slots[slot] then return 1 end
+		self.slots[slot] = it
+		it.owner, it.slot = self, slot
+		return RETURNVALUE_NOERROR
+	end
+	local last = function(p) return p.log.msgs[#p.log.msgs] end
+	local flask = {}
+	function gp:getItemCount(id) return flask[id] or 0 end
+	function gp:addItem(id, n) flask[id] = (flask[id] or 0) + (n or 1) return true end
+	local realPC = ChaosPotionsConfig
+	ChaosPotionsConfig = {everfull = {{id = 32085, tier = 1, line = "health"}, {id = 32267, tier = 4, line = "health"}, {id = 32269, tier = 4, line = "mana"},
+		{id = 32266, tier = 4, line = "spirit"}}}
+	local lines = {}
+	local origP = print
+	print = function(...) lines[#lines + 1] = table.concat({...}, " ") end
+	talks["!tester"].onSay(gp, "!tester", "gear #301")
+	local stateAns, stateMade = last(gp), #made
+	talks["!tester"].onSay(gp, "!tester", "gear set #302")
+	print = origP
+	check(stateAns:find('"plan"', 1, true) and stateAns:find('"seq":301', 1, true) and stateMade == 0, "gear state: reads only, nothing made")
+	check(#made == 4 and made[1].rarity == 3 and made[1].il == 2100, "gear set: four Rare pieces of item level = the level (helmet, armour, legs, weapon)")
+	eq(gp.slots[CONST_SLOT_HEAD].id, 3, "gear set: the top helmet is worn (the old one went to the backpack)")
+	eq(gp.slots[CONST_SLOT_ARMOR].id, 5, "gear set: the armour is worn")
+	eq(gp.slots[CONST_SLOT_LEGS].id, 6, "gear set: the legs are worn")
+	eq(gp.slots[CONST_SLOT_LEFT].id, 7, "gear set: the one-handed weapon in the hand")
+	check(gp.slots[CONST_SLOT_RIGHT] ~= nil and gp.slots[CONST_SLOT_RIGHT].id == 556, "gear set: a one-handed weapon leaves the off hand alone")
+	check(last(gp):find('"given":["helmet","armor","legs","weapon"]', 1, true) and gp.cap == 400, "gear set: the answer names the slots and the capacity is back")
+	check(#lines == 1 and lines[1]:find("[tester-helper] gear set for Tester Aza", 1, true), "gear set: one console line")
+	eq(flask[32267], 1, "gear set: the Everfull health potion of the model's tier 4 is carried")
+	eq(flask[32269], 1, "gear set: and the mana potion of tier 4")
+	check(flask[32266] == nil and flask[32085] == nil, "gear set: no spirit flask, no flask of another tier")
+	check(last(gp):find('"potions":{', 1, true) and last(gp):find('"health":', 1, true), "gear set: the answer names the flasks (client ids)")
+	local before = flask[32267]
+	talks["!tester"].onSay(gp, "!tester", "gear set #3010")
+	eq(flask[32267], before, "gear set again: one flask a character")
+	local nm = #made
+	talks["!tester"].onSay(gp, "!tester", "gear set #303")
+	eq(#made, nm, "gear set again: the pieces at the level are worn already, nothing is made")
+	pieces[9].stats.attack = 60
+	gp.slots[CONST_SLOT_LEFT].il = 0
+	talks["!tester"].onSay(gp, "!tester", "gear set #304")
+	eq(gp.slots[CONST_SLOT_LEFT].id, 9, "gear set: a two-handed weapon replaces the hand")
+	check(gp.slots[CONST_SLOT_RIGHT] == nil, "gear set: the off hand is emptied for a two-handed weapon")
+	local realPN2 = ChaosPinnacle
+	ChaosPinnacle = {isInside = function() return true end}
+	talks["!tester"].onSay(gp, "!tester", "gear set #305")
+	check(last(gp):find("not inside a fight", 1, true), "gear set: never inside a pinnacle fight")
+	ChaosPinnacle = realPN2
+	ChaosGearSets = nil
+	talks["!tester"].onSay(gp, "!tester", "gear #306")
+	check(last(gp):find("no equipment sets", 1, true), "gear: no sets, the reason")
+	ChaosCrafting, ChaosGearSets = savedCrafting, savedSets
+	ChaosPotionsConfig = realPC
 end
 
 print = origPrint

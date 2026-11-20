@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true, gear = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -593,6 +593,98 @@ function H.pinnacleAnswer(probe, extra)
 			sinceBoss = r.sinceBoss, gate = xyz(r.gate)}
 	end
 	out.guide = soloGuide(probe.guide)
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	return out
+end
+
+-- !tester gear [state | set] (O681): the armour and the weapon of the equipment sets that fit the bot's class and level, as a person who farmed the
+-- level's drops wears them. `state` reads (what is worn, what the plan would put on), `set` is the TEST ONLY grant (a tester only, logged): one
+-- Rare piece of item level = the level for the helmet, armour, legs and the weapon slot, worn at once. Boots, jewellery and the bows and wands of
+-- the casters and archers stay with the Gambler (the gear-up): the sets list holds none.
+function H.parseGear(arg)
+	local usage = "usage: gear [state | set]"
+	local what = tostring(arg or ""):match("^%s*(%a*)%s*$")
+	if not what then
+		return nil, usage
+	end
+	what = what == "" and "state" or what:lower()
+	if what ~= "state" and what ~= "set" then
+		return nil, usage
+	end
+	return {what = what}
+end
+
+H.GEAR_ARMOUR = {helmet = true, armor = true, legs = true}
+H.GEAR_WEAPON = {sword = true, axe = true, club = true}
+
+-- the power of a set weapon: attack plus the element damage (spell_scaling_config.lua weaponElement 1, O679), the stats of items.xml
+function H.gearWeaponPower(stats)
+	local power = 0
+	for key, value in pairs(type(stats) == "table" and stats or {}) do
+		if type(value) == "number" and (key == "attack" or tostring(key):sub(1, 7) == "element") then
+			power = power + value
+		end
+	end
+	return power
+end
+
+local function gearClassOk(piece, className)
+	local list = piece.classes
+	if type(list) ~= "table" or #list == 0 then
+		return true
+	end
+	for _, c in ipairs(list) do
+		if c == className then
+			return true
+		end
+	end
+	return false
+end
+
+-- pieces: the rows of chaos_gear_sets_items.lua (id, kind, fit, level, name, classes, stats). -> {helmet = row, armor = row, legs = row, weapon = row}:
+-- per slot the piece of the highest level the character may wear (level <= `level`, class listed), the armour value (a weapon: its power) first,
+-- the level, a one-handed weapon (the quicker attack) over a two-handed of the same power, then the lower id (a fixed answer)
+function H.gearPlan(pieces, className, level)
+	local best, score = {}, {}
+	for _, p in ipairs(type(pieces) == "table" and pieces or {}) do
+		if type(p) == "table" and tonumber(p.level) and p.level <= (tonumber(level) or 0) and gearClassOk(p, className) then
+			local slot = H.GEAR_ARMOUR[p.kind] and p.kind or (H.GEAR_WEAPON[p.kind] and "weapon") or nil
+			if slot then
+				local stats = type(p.stats) == "table" and p.stats or {}
+				local s = slot == "weapon" and H.gearWeaponPower(stats) or (tonumber(stats.armor) or 0)
+				local row = {s, p.level, p.fit == "2" and 0 or 1, -(tonumber(p.id) or 0)}
+				local old = score[slot]
+				local better = false
+				if not old then
+					better = true
+				else
+					for i = 1, 4 do
+						if row[i] ~= old[i] then
+							better = row[i] > old[i]
+							break
+						end
+					end
+				end
+				if better then
+					best[slot], score[slot] = p, row
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- the answer of `gear`: the plan and what is worn, cut down (the worn: {slot name = {id, il}})
+function H.gearAnswer(plan, worn, extra)
+	local out = {plan = {}, worn = {}}
+	for slot, p in pairs(type(plan) == "table" and plan or {}) do
+		out.plan[slot] = {id = p.id, name = tostring(p.name or ""):sub(1, 40), level = p.level, fit = p.fit}
+	end
+	for slot, w in pairs(type(worn) == "table" and worn or {}) do
+		out.worn[slot] = {id = w.id, il = w.il}
+	end
 	for k, v in pairs(extra or {}) do
 		out[k] = v
 	end

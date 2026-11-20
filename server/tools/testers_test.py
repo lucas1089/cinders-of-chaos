@@ -962,6 +962,44 @@ eq(asyncio.run(_pio.partner()), 'Tester Lo1', 'partner(): the old rule, the firs
 T.PARTNER_WAIT_S = _wait2
 T.ONLINE.clear(); T.PARTY_BUSY.clear()
 
+# O681: partners(n): several bots at once for a party fight, different classes first, all named busy with the leader
+_five = []
+for _i, (_n, _c, _l) in enumerate((('Tester Pa1', 'Warrior', 1900), ('Tester Pa2', 'Warrior', 1900), ('Tester Pa3', 'Mystic', 1900), ('Tester Pa4', 'Ranger', 1900),
+                                    ('Tester Pa5', 'Samurai', 1900), ('Tester Pa6', 'Thief', 1200))):
+    _b = _PB(70 + _i, _n)
+    _b.cls, _b.level = _c, _l
+    _five.append(_b)
+T.ONLINE.update({b.cid: b for b in _five})
+_lead_io = T.CheckIO.__new__(T.CheckIO)
+_lead_io.bot, _lead_io.clock = _five[0], {'stop': False}
+_wait3, T.PARTNER_WAIT_S = T.PARTNER_WAIT_S, 0.0
+T.PARTY_BUSY.clear()
+_got = asyncio.run(_lead_io.partners(4, min_level=1800))
+eq(_got, ['Tester Pa3', 'Tester Pa4', 'Tester Pa5', 'Tester Pa2'], 'partners(4): three other classes first, then the second Warrior; the level 1200 bot is not asked')
+eq(sorted(T.PARTY_BUSY), ['Tester Pa1', 'Tester Pa2', 'Tester Pa3', 'Tester Pa4', 'Tester Pa5'], 'partners: the leader and the four are named busy')
+eq(asyncio.run(_lead_io.partners(4, min_level=1800)), [], 'partners: the leader is busy now: nobody, and no wait to the end of the other call')
+T.PARTY_BUSY.clear()
+T.PARTY_BUSY.update(('Tester Pa3', 'Tester Pa4'))
+eq(asyncio.run(_lead_io.partners(4, min_level=1800)), ['Tester Pa5', 'Tester Pa2'], 'partners: what is free when the wait is over (two of four)')
+T.PARTY_BUSY.clear()
+_five[2].died = True
+eq(asyncio.run(_lead_io.partners(2, min_level=1800)), ['Tester Pa4', 'Tester Pa5'], 'partners: a dead bot is not taken')
+T.PARTY_BUSY.clear()
+T.PARTNER_WAIT_S = _wait3
+_pio2 = T.CheckIO.__new__(T.CheckIO)
+_pio2.bot, _pio2.clock = _five[4], {'stop': False}
+_five[4].helper = {}
+_pio2.set_potions(38648, 38652)
+eq(_five[4].helper['info']['potions'], {'health': 38648, 'mana': 38652}, 'set_potions: the potions the heal rule drinks')
+_pio2.set_potions(0, 38700)
+eq(_five[4].helper['info']['potions'], {'health': 38648, 'mana': 38700}, 'set_potions: a zero keeps the old id')
+_five[0].heal_at = (60, 40)
+_lead_io.heal_earlier(['Tester Pa1', 'Tester Pa2'], True)
+eq((_five[0].heal_at, _five[1].heal_at if hasattr(_five[1], 'heal_at') else None), ((75, 55), (75, 55)), 'heal_earlier: the thresholds go up for the named bots')
+_lead_io.heal_earlier(['Tester Pa1', 'Tester Pa2'], False)
+eq(_five[0].heal_at, (60, 40), 'heal_earlier off: the old thresholds')
+T.ONLINE.clear(); T.PARTY_BUSY.clear()
+
 # the proof table and the diff against the previous run
 cov = {'bank': {'tried': 5, 'ok': 4, 'errors': 0, 'real': 2, 'ans': 2, 'help': 0, 'failed': 0, 'refused': 0},
        'rift': {'tried': 3, 'ok': 3, 'errors': 0, 'real': 0, 'ans': 0, 'help': 3, 'failed': 0, 'refused': 0},
