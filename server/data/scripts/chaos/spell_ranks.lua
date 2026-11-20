@@ -429,6 +429,11 @@ function R.receive(player, msg)
 	if type(msg) == "table" and msg.action == "pick" and FM and FM.receive then
 		return FM.receive(player, msg)
 	end
+	-- phase 7: awakening answers `awaken` (spell_awakening.lua)
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if type(msg) == "table" and msg.action == "awaken" and AW and AW.receive then
+		return AW.receive(player, msg)
+	end
 	if type(msg) ~= "table" or msg.action ~= "open" then
 		return false
 	end
@@ -439,6 +444,9 @@ function R.receive(player, msg)
 	Chaos.send(player, OPCODE, "state", R.state(player))
 	if FM and FM.picksOf then
 		Chaos.send(player, OPCODE, "forms", {v = cfg.version, f = FM.picksOf(player)})
+	end
+	if AW and AW.push then
+		AW.push(player)
 	end
 	return true
 end

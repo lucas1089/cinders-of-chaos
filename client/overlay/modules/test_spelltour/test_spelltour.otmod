@@ -1,0 +1,14 @@
+Module
+  name: test_spelltour
+  description: TEST ONLY (spells-video.yml, O692) - with the environment variable CHAOS_SPELLTOUR=1 it logs in with the staff character of CHAOS_LIVE_ACCOUNT / _PASSWORD, sets spell ranks, picks Forms and casts the shown spells and combos of one class with a caption each, and exits, so a manual workflow can film it. Without the variable it does nothing, no window, no hotkey, not in the hub menu
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ spelltourlogic, spelltour ]
+  dependencies:
+    - client_entergame
+    - game_chaosspells
+    - game_spellranks
+  autoload: true
+  autoload-priority: 1200
+  @onLoad: ChaosSpellTour.init()
+  @onUnload: ChaosSpellTour.terminate()

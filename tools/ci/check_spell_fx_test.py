@@ -151,6 +151,68 @@ class FormProbe(unittest.TestCase):
                 self.assertTrue(c.element_ok(el, tags[eid][1]), '%s: effect %d is %s' % (el, eid, tags[eid]))
 
 
+class AwakenedRule(unittest.TestCase):
+    """O686 phase 7: the awakened version of a spell (awakened.csv, rank 20, both Forms, bit 9)"""
+    TAGS = {1: ('fire_thing', 'fire'), 2: ('ice_thing', 'ice'), 3: ('smoke', 'any')}
+    SPELLS = {10: ('Test Fire', 'fire')}
+    AW = {10: 'PULSE'}
+
+    def test_awaken_case_picks_forms_that_do_not_convert(self):
+        kinds = {(1, 1): 'SHIFT:ice', (1, 2): 'SPLIT', (2, 1): 'ASCEND:weakest', (2, 2): 'TWIN'}
+        state, weak, want = c.awaken_case(kinds)
+        self.assertEqual(state, 20 + 32 * 2 + 128 * 2 + 512)
+        self.assertEqual((weak, want), ('', None))
+
+    def test_awaken_case_keeps_a_conversion_when_every_pick_converts(self):
+        kinds = {(1, 1): 'SHIFT:ice', (1, 2): 'SHIFT:earth', (2, 1): 'ASCEND:weakest', (2, 2): 'ASCEND:holy'}
+        state, weak, want = c.awaken_case(kinds)
+        self.assertEqual(state, 20 + 32 + 128 + 512)
+        self.assertEqual((weak, want), ('fire', 'fire'))
+
+    def test_a_signature_of_the_spells_element_passes(self):
+        sent = {10: ('', None, {1, 3})}
+        self.assertEqual(c.awakened_violations(sent, self.SPELLS, self.TAGS, self.AW), [])
+
+    def test_a_signature_of_another_element_fails(self):
+        sent = {10: ('', None, {1, 2})}
+        errors = c.awakened_violations(sent, self.SPELLS, self.TAGS, self.AW)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('ice_thing', errors[0])
+        self.assertIn('awakened Test Fire', errors[0])
+
+    def test_a_reason_of_the_spell_is_kept(self):
+        sent = {10: ('', None, {2})}
+        self.assertEqual(c.awakened_violations(sent, self.SPELLS, self.TAGS, self.AW, {(10, 2): 'a frost and fire spell'}), [])
+
+    def test_an_untagged_effect_fails(self):
+        sent = {10: ('', None, {99})}
+        self.assertIn('no element tag', c.awakened_violations(sent, self.SPELLS, self.TAGS, self.AW)[0])
+
+    def test_every_spell_with_forms_has_a_row(self):
+        self.assertEqual(set(c.load_awakened()), set(c.load_forms()))
+
+
+class AwakenedProbe(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = c.make_root()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.root, ignore_errors=True)
+
+    def test_the_signature_sends_effects_after_the_cast(self):
+        # Final Verdict (holy, Verdict Unbound: a line and a mark): the awakened cast sends an effect the plain Forms cast does not
+        spell = next(s for s in c.chaos_spells() if s['id'] == 218)
+        state, weak, want = c.awaken_case(c.load_forms()[218])
+        awake = c.probe_spell(self.root, spell, state, weak)
+        plain = c.probe_spell(self.root, spell, state - 512, weak)
+        self.assertTrue(awake - plain, 'the awakened cast sends more than the Forms')
+        tags = c.load_tags()
+        for eid in awake:
+            self.assertTrue(c.element_ok(want or 'holy', tags[eid][1]), 'effect %d is %s' % (eid, tags[eid]))
+
+
 class Tables(unittest.TestCase):
     def test_tags(self):
         tags = c.load_tags()

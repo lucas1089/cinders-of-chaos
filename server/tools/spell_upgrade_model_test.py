@@ -239,5 +239,41 @@ check(not any('beats its twin' in b for b in bad), 'a trade-off is no domination
 bad = SU.form_problems([fake('A', 1.12, 1.12, pick=1)], dict(band, one=(-0.05, 0.20), five=(-0.05, 0.20), best=0.20))
 check(any('counted power' in b for b in bad), 'a mean gain far from +3% fails the counted power')
 
+# ---- the awakening (O686 phase 7, design 3.1 to 3.3): the Seal rates against the models (the 20% rule), the signatures
+nums = SU.awakening_numbers()
+good = {'waystoneMinutes': 15.0, 'waystoneIdeal': 11.25, 'riftSeconds': 1200.0, 'pinnacleHours': 2.77}
+check(SU.awakening_check(nums, good) == [], 'the committed awakening passes against the design rates: %s' % SU.awakening_check(nums, good))
+check(len(nums[1]) == 149, '149 awakened rows are counted')
+for name, key, value, word in (('a waystone clear 25% longer', 'waystoneMinutes', 18.8, 'pinnacle_model.py minutes.waystone'),
+                               ('a deep waystone clear 25% longer', 'waystoneIdeal', 14.1, 'waystone_endgame_model.py'),
+                               ('a Greater run 25% longer', 'riftSeconds', 1500.0, 'greater_rift_model.py'),
+                               ('a set of fragments 30% faster', 'pinnacleHours', 1.9, 'pinnacle_model.py')):
+    bad = SU.awakening_check(nums, dict(good, **{key: value}))
+    check(any(word in b for b in bad), '%s fails the 20%% rule: %s' % (name, bad))
+for name, key, value in (('a waystone clear 15% longer', 'waystoneMinutes', 17.2), ('a Greater run 15% shorter', 'riftSeconds', 1020.0),
+                         ('a set 15% slower', 'pinnacleHours', 3.19)):
+    bad = SU.awakening_check(nums, dict(good, **{key: value}))
+    check(bad == [], '%s is inside the 20%%: %s' % (name, bad))
+# the costs of a slot: the three kinds come together
+cfg_, rows_ = nums
+bad = SU.awakening_check((dict(cfg_, slot2='70,60,60'), rows_), good)
+check(any('slot 2' in b and 'Pinnacle Seals take' in b for b in bad), 'a slot whose Pinnacle Seals come much later fails: %s' % bad)
+bad = SU.awakening_check((dict(cfg_, slot2='30,60,28'), rows_), good)
+check(any('does not cost more' in b for b in bad), 'a second slot cheaper than the first fails')
+# a signature out of its band, and the +3% of a class's damage each
+low = dict(rows_)
+low[206] = (0.01, 0.0, 0.0, 'PULSE')
+check(any('spell 206' in b for b in SU.awakening_check((cfg_, low), good)), 'a signature worth 1% fails the band')
+high = {k: (v[0] + 0.01,) + v[1:] for k, v in rows_.items()}
+check(any('mean signature' in b for b in SU.awakening_check((cfg_, high), good)), 'a mean signature 1 point over the target fails')
+check(any('of the class damage' in b for b in SU.awakening_check((dict(cfg_, classShare='0.40'), rows_), good)), 'a class share that makes +6% a spell fails')
+check(any('perSpell' in b for b in SU.awakening_check((dict(cfg_, perSpell='0.04'), rows_), good)), 'the balance config keeps its 3% a spell')
+check(SU.awakening_check((cfg_, {}), good) != [], 'no rows is a problem')
+# the awakening part of P is unchanged: 3% a spell, the step table of the balance config
+check(abs(SU.balance_config()['awakening']['perSpell'] - 0.03) < 1e-12, 'the awakening part of P is still 3% a spell')
+# the real models, once (the three of them run: about 7 seconds)
+real = SU.awakening_problems()
+check(real == [], 'the committed Seal rates hold against waystone_endgame_model, greater_rift_model and pinnacle_model: %s' % real)
+
 print('spell_upgrade_model_test: %s' % ('FAILED %d' % failures if failures else 'ok'))
 sys.exit(1 if failures else 0)

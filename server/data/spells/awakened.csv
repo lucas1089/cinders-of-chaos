@@ -1,0 +1,150 @@
+id,spell,role,element,shape,cooldown,kind,over,name_en,name_pt
+1,Minor Mending,heal,,single,1,REFLECT+SHIELD,REFLECT.pct=0.14;REFLECT.radius=4;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Mending of Embers,Cura das Brasas
+2,Gorehook,damage,physical,single,12,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Gorehook Unchained,Gancho Sanguinário Desacorrentado
+3,Grand Mending,heal,,single,1,PULSE,PULSE.pulses=3;PULSE.pct=0.11;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0;PULSE.radius=3,Mending Eternal,Cura Eterna
+9,Rift Cleaver,damage,physical,line,11,LINE+MARK,LINE.len=7;LINE.pct=0.13;MARK.secs=8;MARK.pct=0.5,Cleaver of the Abyss,Cutelo do Abismo
+13,Tempest Fan,damage,fire,wave,9,LINE+MARK,LINE.len=5;LINE.pct=0.21;MARK.secs=6;MARK.pct=0.5,Tempest Sovereign,Tempestade Soberana
+19,Sunspear,damage,holy,single,10,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=8;MARK.pct=0.5,Sunspear Ascendant,Lança Solar Ascendente
+22,Arrowstorm,damage,physical,circle,10,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Arrowstorm Eternal,Tempestade de Flechas Eterna
+23,Packhunter's Dart,damage,earth,single,12,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Alpha's Dart,Dardo do Alfa
+24,Phantom Needles,damage,energy,single,11,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Needles of the Veil,Agulhas do Véu
+29,Bastion Cry,damage,physical,wave,13,ECHO,ECHO.pct=0.5;ECHO.delay=1500,Bastion Roar,Rugido do Bastião
+35,Pack Howl,damage,,circle,7,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Howl of the Hundred,Uivo dos Cem
+36,Lightbearer's Grace,heal,,single,1,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=2000;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Grace Unending,Graça Interminável
+37,Headsman's Hurl,damage,physical,single,13,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Headsman's Reckoning,Acerto de Contas do Carrasco
+38,Mirror Shards,damage,ice,around,12,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Shattered Reflection,Reflexo Estilhaçado
+39,Rending Pounce,damage,,circle,6,RINGS,RINGS.rings=2;RINGS.pct=0.25,Ravager's Pounce,Salto do Devastador
+42,Grave Nova,damage,death,around,6,RINGS+SHIELD,RINGS.rings=2;RINGS.pct=0.1;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Grave Cataclysm,Cataclismo da Cova
+43,Dreamrot,damage,death,single,13,LINE,LINE.len=6;LINE.pct=0.17,Nightmare Blight,Praga do Pesadelo
+45,Gutting Slash,damage,physical,single,7,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Eviscerating Dusk,Crepúsculo Estripador
+53,Bewitching Hex,damage,death,single,6,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Hex of Ruin,Maldição da Ruína
+56,Razor Rain,damage,physical,circle,8,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.06;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Razor Deluge,Dilúvio de Lâminas
+57,Venom Spiral,damage,earth,single,10,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=6;MARK.pct=0.5,Viper Vortex,Vórtice da Víbora
+58,Anvil Fall,damage,physical,circle,9,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Anvil of the Last Forge,Bigorna da Última Forja
+59,Scything Arc,damage,physical,wave,4,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Reaper's Arc,Arco do Ceifador
+61,Bonebreaker,damage,physical,single,2,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Marrowsplitter,Parte-Tutano
+62,Crescent Cut,damage,physical,wave,9,LINE+SHIELD,LINE.len=5;LINE.pct=0.25;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Eclipse Crescent,Crescente do Eclipse
+63,Ashen Fist,damage,,single,2,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Fist of the Pyre,Punho da Pira
+64,Sundering Palm,damage,,single,11,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Palm of Sundered Worlds,Palma dos Mundos Partidos
+65,Whirling Heel,damage,physical,around,9,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Typhoon Heel,Calcanhar do Tufão
+66,Kindled Breath,heal,,self,8,REFLECT,REFLECT.pct=0.33;REFLECT.radius=4,Breath of the Phoenix,Sopro da Fênix
+67,Mistborne Strike,damage,physical,wave,12,LINE+MARK,LINE.len=5;LINE.pct=0.21;MARK.secs=8;MARK.pct=0.5,Stormmist Strike,Golpe da Névoa Tempestuosa
+68,Pressure Points,damage,,single,7,LINE,LINE.len=6;LINE.pct=0.17,Nerves Unraveled,Nervos Desfeitos
+69,Shadowfist Flurry,damage,,single,13,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Umbral Flurry,Rajada Umbral
+71,Iron Palm,damage,,single,12,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Palm of Black Iron,Palma de Ferro Negro
+73,Blade Flurry,damage,,around,9,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Thousand Cuts,Mil Cortes
+74,Iaido Sweep,damage,,wave,10,ECHO,ECHO.pct=0.5;ECHO.delay=1500,Moonlit Sweep,Varredura ao Luar
+80,Last Breath,damage,physical,single,13,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=8;MARK.pct=0.5,Final Exhale,Expiração Final
+82,Hollow Knuckle,damage,physical,single,6,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Knuckle of the Void,Punho do Vazio
+84,Quaking Stomp,damage,physical,around,7,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Earthshatter Stomp,Pisada Parte-Terra
+85,Arcane Ripple,damage,energy,wave,4,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Arcane Tidal Surge,Maré Arcana
+87,Chi Lance,damage,physical,line,10,LINE,LINE.len=7;LINE.pct=0.36,Lance of Boundless Chi,Lança do Chi Infinito
+88,Cleaving Heel,damage,physical,single,8,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Heel of the Fallen Star,Calcanhar da Estrela Cadente
+89,Tidal Palm,damage,physical,wave,9,LINE+SHIELD,LINE.len=5;LINE.pct=0.23;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Drowning Tide Palm,Palma da Maré Afogadora
+90,Skysplitter Fist,damage,physical,single,13,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Heavenrender Fist,Punho Rasga-Céu
+96,Mirror Mend,heal,,self,2,REFLECT+SHIELD,REFLECT.pct=0.5;REFLECT.radius=4;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Hall of Mends,Salão das Curas
+97,Lucid Reverie,heal,,self,20,REFLECT+CDCUT,REFLECT.pct=0.02;REFLECT.radius=4;CDCUT.cut=1;CDCUT.window=8;CDCUT.cap=4,Reverie Unbroken,Devaneio Ininterrupto
+98,Shadow Mend,heal,,self,1.5,REFLECT+SHIELD,REFLECT.pct=0.13;REFLECT.radius=4;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Umbral Mending,Cura Umbral
+99,Snare Trap,damage,,circle,4,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Jaws of the Warden,Mandíbulas do Guardião
+100,Seeker Mine,damage,,circle,6,RINGS,RINGS.rings=2;RINGS.pct=0.25,Hunter's Detonation,Detonação do Caçador
+102,Iron Salve,heal,,single,1,PULSE,PULSE.pulses=3;PULSE.pct=0.11;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0;PULSE.radius=3,Salve of the Ironclad,Unguento do Blindado
+103,Rebirth of Flesh,heal,,single,6,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=2000;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Flesh Reborn Anew,Carne Renascida
+105,Butcher's Gyre,damage,physical,around,9,RINGS+SHIELD,RINGS.rings=2;RINGS.pct=0.1;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Slaughterhouse Gyre,Redemoinho do Matadouro
+106,Marrow Bolt,damage,death,single,7,LINE,LINE.len=6;LINE.pct=0.17,Bolt of the Ossuary,Dardo do Ossuário
+107,Wraithwind,damage,death,wave,8,LINE+MARK,LINE.len=5;LINE.pct=0.21;MARK.secs=6;MARK.pct=0.5,Banshee Gale,Vendaval da Banshee
+111,Phantom Javelin,damage,physical,line,2,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Javelin of the Dead King,Dardo do Rei Morto
+112,Gravewail,damage,death,circle,8,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Dirge of the Interred,Lamento dos Sepultados
+113,Blightbrand,damage,death,single,12,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Plaguebrand Unbound,Marca da Praga Desatada
+118,Soulrend Beam,damage,death,line,9,LINE+SHIELD,LINE.len=7;LINE.pct=0.15;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Beam of Sundered Souls,Raio das Almas Partidas
+119,Crypt Collapse,damage,death,circle,13,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Necropolis Collapse,Colapso da Necrópole
+120,Ossuary Surge,damage,death,around,11,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Ossuary Tsunami,Tsunami do Ossuário
+121,Hallowed Cut,damage,holy,single,7,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Severance of Dawn,Rompimento da Alvorada
+122,Censer Swing,damage,holy,around,6,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Censer of Dawnfire,Turíbulo do Fogo da Aurora
+123,Battle Salve,heal,,single,1,REFLECT,REFLECT.pct=0.33;REFLECT.radius=4,Warsong Salve,Unguento do Canto de Guerra
+124,Sanctum Burst,damage,holy,circle,7,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Sanctum Nova,Nova do Santuário
+125,Dawn's Mending,heal,,single,1,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.04;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0;PULSE.radius=3;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Dawn's Benediction,Bênção da Aurora
+126,Penitent Lash,damage,holy,wave,8,ECHO,ECHO.pct=0.5;ECHO.delay=1500,Lash of Absolution,Chicote da Absolvição
+127,Martyr's Pyre,damage,holy,single,10,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=8;MARK.pct=0.5,Martyr's Ascension,Ascensão do Mártir
+128,Bell of Reckoning,damage,holy,circle,9,RINGS,RINGS.rings=2;RINGS.pct=0.25,Bell of the Last Hour,Sino da Última Hora
+129,Lance of Vigil,damage,holy,line,11,LINE+MARK,LINE.len=7;LINE.pct=0.13;MARK.secs=8;MARK.pct=0.5,Lance of the Endless Vigil,Lança da Vigília Eterna
+131,Sanctum Verdict,damage,holy,single,13,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Sanctum Decree,Decreto do Santuário
+134,Gale Volley,damage,physical,line,11,LINE,LINE.len=7;LINE.pct=0.36,Hurricane Volley,Saraivada do Furacão
+136,Fan of Knives,damage,,around,10,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Fan of a Hundred Knives,Leque de Cem Facas
+137,Sanctified Ground,damage,,around,4,RINGS+SHIELD,RINGS.rings=2;RINGS.pct=0.1;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Consecrated Dominion,Domínio Consagrado
+138,Heretic's Brand,damage,holy,single,13,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Brand of the Heretic King,Marca do Rei Herege
+139,Zealot's Wrath,damage,holy,around,10,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Zealot's Crusade,Cruzada do Zelote
+140,Bulwark Slam,damage,holy,single,8,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Citadel Slam,Pancada da Cidadela
+141,Rampart Quake,damage,holy,around,10,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Fortress Quake,Tremor da Fortaleza
+142,Keepfall,damage,physical,circle,13,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Siege of Ages,Cerco das Eras
+144,Twin Verdict,damage,holy,single,13,LINE,LINE.len=6;LINE.pct=0.17,Dual Judgment,Duplo Julgamento
+145,Rampage Leap,damage,physical,circle,10,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Titan's Leap,Salto do Titã
+146,Glacial Doom,damage,ice,around,13,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Absolute Zero Doom,Destino do Zero Absoluto
+147,Pack Frenzy,damage,,single,8,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Frenzy of the Wild Hunt,Frenesi da Caçada Selvagem
+148,Judgment of Iron,damage,physical,around,45,RINGS+CDCUT,RINGS.rings=3;RINGS.pct=0.05;CDCUT.cut=1;CDCUT.window=8;CDCUT.cap=5,Iron Reckoning,Ajuste de Contas de Ferro
+149,Moonshard Rain,damage,physical,circle,13,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Starfall of Moonglass,Queda de Vidro Lunar
+151,Dawnbreaker Shot,damage,holy,line,40,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Daybreak Annihilation,Aniquilação do Amanhecer
+152,Prismatic Rupture,damage,energy,circle,13,RINGS,RINGS.rings=2;RINGS.pct=0.25,Spectrum Rupture,Ruptura do Espectro
+154,Eclipse of Ruin,damage,ice,circle,50,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.06;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Black Sun Eclipse,Eclipse do Sol Negro
+155,Eclipse Edge,damage,physical,line,13,LINE+SHIELD,LINE.len=7;LINE.pct=0.15;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Edge of the Black Sun,Gume do Sol Negro
+157,Death Between Heartbeats,damage,physical,single,35,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Death Unseen,Morte Invisível
+158,Soulflay Wave,damage,death,wave,13,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Soulflayer Tide,Maré do Esfolador de Almas
+160,Funeral of Kings,damage,death,circle,50,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Funeral of Empires,Funeral dos Impérios
+163,Pyre Torrent,damage,fire,wave,4,LINE+SHIELD,LINE.len=5;LINE.pct=0.25;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Inferno Torrent,Torrente do Inferno
+164,Shuriken Tempest,damage,,circle,13,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Tempest of Ten Thousand Stars,Tempestade de Dez Mil Estrelas
+169,Kindling Spark,damage,fire,single,2,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=6;MARK.pct=0.5,Spark of the First Flame,Centelha da Primeira Chama
+170,Shield Wave,damage,,wave,4,LINE+MARK,LINE.len=5;LINE.pct=0.21;MARK.secs=8;MARK.pct=0.5,Aegis Wave,Onda da Égide
+172,Thousand-Echo Palm,damage,physical,wave,13,ECHO,ECHO.pct=0.5;ECHO.delay=1500,Palm of Endless Echoes,Palma dos Ecos Infinitos
+174,Heaven's Ninth Gate,damage,physical,single,40,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Gate of the Tenth Heaven,Portal do Décimo Céu
+175,Salve of Scars,heal,,single,1,REFLECT+SHIELD,REFLECT.pct=0.14;REFLECT.radius=4;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Salve of Mended Scars,Unguento das Cicatrizes Curadas
+177,Pyre of Absolution,damage,holy,circle,13,RINGS,RINGS.rings=2;RINGS.pct=0.25,Pyre of Final Absolution,Pira da Absolvição Final
+181,Bone Spear,damage,physical,single,2,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Ivory Impaler,Empalador de Marfim
+182,Withering Curse,damage,,single,7,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Curse of Ashes,Maldição de Cinzas
+183,Soul Rot,damage,death,single,11,LINE,LINE.len=6;LINE.pct=0.17,Soulblight,Praga da Alma
+184,Life Siphon,damage,death,single,6,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Lifedrain Torrent,Torrente de Vida Sugada
+185,Corpse Explosion,damage,death,circle,4,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Charnel Detonation,Detonação Carniçal
+188,Bone Offering,damage,physical,circle,10,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Sacrifice of Marrow,Sacrifício de Tutano
+189,Radiant Smite,damage,,single,2,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Luminous Judgment,Julgamento Luminoso
+190,Consecration,damage,holy,around,12,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Cathedral of Light,Catedral de Luz
+191,Vow of Mending,heal,,self,8,REFLECT+SHIELD,REFLECT.pct=0.14;REFLECT.radius=4;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Vow Eternal,Voto Eterno
+193,Splinter Volley,damage,death,circle,13,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Boneshard Barrage,Barragem de Estilhaços de Osso
+194,Palm Shockwave,damage,,circle,4,RINGS,RINGS.rings=2;RINGS.pct=0.25,Seismic Palm,Palma Sísmica
+195,Shadow Ricochet,damage,,circle,6,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.06;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Nightglass Ricochet,Ricochete de Vidro Noturno
+196,Iron Chain,damage,,circle,6,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Chains of the Forgemaster,Correntes do Mestre da Forja
+197,Bone Shrapnel,damage,,circle,4,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Boneburst Cascade,Cascata de Ossos
+198,Judgement,damage,,single,4,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=6;MARK.pct=0.5,Judgement Absolute,Julgamento Absoluto
+199,Purging Nova,damage,holy,around,6,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Nova of Purification,Nova da Purificação
+200,Rime Bloom,damage,ice,around,4,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Frostbloom Cataclysm,Cataclismo da Flor de Gelo
+201,Witchfire Bolt,damage,fire,single,7,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=1,Witchfire Comet,Cometa de Fogo-Bruxo
+202,Forked Storm,damage,energy,circle,7,RINGS,RINGS.rings=2;RINGS.pct=0.25,Stormfork Wrath,Fúria da Tempestade Bifurcada
+203,Crimson Covenant,damage,death,single,10,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Covenant of Blood and Ash,Pacto de Sangue e Cinzas
+204,Falling Pyre,damage,fire,circle,10,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.07;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Meteoric Pyre,Pira Meteórica
+205,Frozen Crypt,damage,ice,circle,12,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Crypt of Eternal Winter,Cripta do Inverno Eterno
+206,Doomtide,damage,fire,around,13,PULSE,PULSE.pulses=3;PULSE.pct=0.4;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Cataclysm of Cinders,Cataclismo de Cinzas
+207,Blightswarm,damage,earth,around,6,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Swarm of the Blighted Hive,Enxame da Colmeia Corrompida
+208,Purifying Wellspring,heal,,self,6,PULSE,PULSE.pulses=3;PULSE.pct=0.11;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0;PULSE.radius=3,Wellspring of Life,Nascente de Vida
+210,Briar Prison,damage,earth,around,8,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Thornlock Prison,Prisão de Espinhos Eternos
+212,Verdant Sanctuary,heal,,self,30,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=2000;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Sanctuary of the Evergreen,Santuário do Sempre-Verde
+213,Primordial Squall,damage,earth,around,7,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Primordial Maelstrom,Voragem Primordial
+214,Dawnpiercer,damage,holy,single,6,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Dawnpiercer Unleashed,Perfura-Aurora Liberto
+215,Skewering Line,damage,physical,line,8,LINE+MARK,LINE.len=7;LINE.pct=0.13;MARK.secs=8;MARK.pct=0.5,Impaling Meridian,Meridiano Empalador
+216,Blessed Earth,damage,holy,around,9,RINGS+SHIELD,RINGS.rings=2;RINGS.pct=0.1;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Earth Reborn in Light,Terra Renascida em Luz
+218,Final Verdict,damage,holy,single,12,LINE+MARK,LINE.len=6;LINE.pct=1;MARK.secs=6;MARK.pct=0.5,Verdict Unbound,Veredito Desatado
+219,Hail of Dawn,damage,holy,single,13,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Dawnhail Barrage,Barragem de Granizo da Aurora
+220,Reaping Gyre,damage,physical,around,6,ECHO+SHIELD,ECHO.pct=0.19;ECHO.delay=1500;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Harvest Gyre,Redemoinho da Colheita
+221,Earthbreaker,damage,physical,around,7,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Worldbreaker,Quebra-Mundos
+224,Vaulting Cleave,damage,physical,single,7,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=8;MARK.pct=0.5,Skyvault Cleave,Talho do Salto Celeste
+225,Colossus Fall,damage,physical,around,10,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Titanfall,Queda de Titã
+227,Umbral Stride,damage,death,single,10,LINE+MARK,LINE.len=6;LINE.pct=0.06;MARK.secs=8;MARK.pct=0.5,Voidwalker's Stride,Passada do Andarilho do Vazio
+228,Shattered Psyche,damage,death,single,9,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Psyche Annihilated,Psique Aniquilada
+230,Nightburst,damage,death,around,8,RINGS+SHIELD,RINGS.rings=2;RINGS.pct=0.1;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Nightfall Burst,Explosão do Anoitecer
+231,Tear in the Weave,damage,death,around,13,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=3,Weave Unravelled,Trama Desfeita
+236,Shuriken Toss,damage,,single,2,PULSE,PULSE.pulses=3;PULSE.pct=0.08;PULSE.secs=6;PULSE.minHit=2;PULSE.mana=0.03;PULSE.radius=3,Shuriken of the Crescent Moon,Shuriken da Lua Crescente
+237,Hammer of Ember Dawn,damage,holy,circle,45,ECHO+MARK,ECHO.pct=0.18;ECHO.delay=1500;MARK.secs=6;MARK.pct=0.5,Hammer of the Ember Sun,Martelo do Sol de Brasas
+240,Shadow Step,damage,,single,13,ECHO+LEECH,ECHO.pct=0.15;ECHO.delay=1500;LEECH.pct=0.04,Step Between Shadows,Passo Entre Sombras
+241,Smoke Bomb,damage,earth,around,12,PULSE+LEECH,PULSE.pulses=3;PULSE.pct=0.05;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;LEECH.pct=0.04,Smokestorm Bomb,Bomba da Tempestade de Fumaça
+242,Shuriken Barrage,damage,,circle,7,RINGS,RINGS.rings=2;RINGS.pct=0.25,Starfall Barrage,Barragem Estrelada
+244,Iaijutsu,damage,,single,13,LINE,LINE.len=6;LINE.pct=0.17,Iaijutsu Absolute,Iaijutsu Absoluto
+246,Skyfall Cleave,damage,physical,around,8,PULSE,PULSE.pulses=3;PULSE.pct=0.17;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3,Heavenfall Cleave,Talho da Queda do Céu
+249,Feral Command,damage,,single,4,ECHO+SHIELD,ECHO.pct=0.2;ECHO.delay=1500;SHIELD.pct=0.03;SHIELD.secs=4;SHIELD.minHit=1,Primal Command,Comando Primal
+250,Crusader's Sweep,damage,holy,wave,13,PULSE+SHIELD,PULSE.pulses=3;PULSE.pct=0.06;PULSE.secs=6;PULSE.minHit=3;PULSE.mana=0.03;PULSE.radius=3;SHIELD.pct=0.04;SHIELD.secs=5;SHIELD.minHit=3,Sweep of the Holy Host,Varredura da Hoste Sagrada
+253,Lay on Hands,heal,,self,60,REFLECT,REFLECT.pct=0.33;REFLECT.radius=4,Hands of the Redeemer,Mãos do Redentor

@@ -26,7 +26,7 @@ Gen.SOURCES = {
 	"data/scripts/chaos/defence_config.lua", "data/scripts/chaos/player_defence_config.lua",
 	"data/scripts/chaos/lore_data.lua", "data/scripts/chaos/chronicle_text.lua",
 	"data/scripts/chaos/chronicle_config.lua", "data/scripts/chaos/memorial_config.lua",
-	"data/scripts/chaos/spell_combos_config.lua", "data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
+	"data/scripts/chaos/spell_combos_config.lua", "data/scripts/chaos/spell_awakening_config.lua", "data/scripts/chaos/unique_passives_config.lua", "data/scripts/chaos/unique_window_core.lua",
 	"data/scripts/chaos/unique_pace_config.lua", "data/scripts/chaos/retention_loot_config.lua", "data/scripts/chaos/dot_config.lua"
 }
 
@@ -312,6 +312,7 @@ function Gen.load()
 	D.defence = dofile("data/scripts/chaos/defence_config.lua")
 	D.playerDefence = dofile("data/scripts/chaos/player_defence_config.lua")
 	D.combos = dofile("data/scripts/chaos/spell_combos_config.lua") -- O686 phase 6: the Spell combos page
+	D.awakening = dofile("data/scripts/chaos/spell_awakening_config.lua") -- O686 phase 7: the Spell awakening page
 	-- Conquest Tokens (conquest.lua): the vendor's price of every unique and set piece, the bad-luck protection
 	dofile("data/scripts/chaos/conquest_core.lua")
 	D.conquest = dofile("data/scripts/chaos/conquest_config.lua")
@@ -2066,6 +2067,33 @@ function Gen.basicsEntries(D)
 				{h = "Class combos", p = {
 					string.format("A class combo opens when both spells are at rank %d or more. Nothing is paid.", CB.classMinRank)},
 					cols = {"Combo", "Spells", "Bonus"}, w = {24, 60, 16}, rows = signatures}})
+		end
+	end
+	-- spell awakening (O686 phase 7; spell_awakening_config.lua, docs/SPELL_UPGRADES.md section 3): every number read from the config
+	do
+		local AW = D.awakening
+		if AW then
+			local slots = {}
+			for i, s in ipairs(AW.slots) do
+				slots[#slots + 1] = {Gen.num(i), Gen.num(s.waystone), Gen.num(s.rift), Gen.num(s.pinnacle)}
+			end
+			local src = AW.sources
+			add("awakening", "Spell awakening", "A spell at rank 20 with both Forms can wake into a new name and a signature effect.", {
+				{h = "The rule", p = {
+					string.format("A spell at rank 20 with both Forms picked can be awakened in the Upgrades tab of the Spellbook, up to %s spells for each character. An awakened spell has a new name, hits or heals %s%% more and gets a signature effect: a ring that pulses, a line, a mark, a reflect, a shield or a cooldown cut.",
+						Gen.num(AW.maxSlots), Gen.num(floor(AW.bonus * 100 + 0.5))),
+					"Any spell with Forms can be awakened. Its Forms stay and still apply to its hits.",
+					"Between players the signature effect is off and the bonus is halved."}},
+				{h = "Seals", p = {
+					"Awakening is paid in Seals: three counters on your character that cannot be traded or stolen.",
+					string.format("Waystone Seals: %s for each waystone map of tier XVI to XXV you clear, and %s more for the first clear of a tier.",
+						Gen.num(src.waystone.perClear), Gen.num(src.waystone.firstClear)),
+					string.format("Rift Seals: %s for each Greater Rift run that ends at tier %s or higher, and %s more when the run climbs.",
+						Gen.num(src.rift.perRun), Gen.num(src.rift.minTier), Gen.num(src.rift.climb)),
+					string.format("Pinnacle Seals: %s for each member of the party at the kill of an Ascended boss.", Gen.num(src.pinnacle.perKill))}},
+				{h = "Slots", p = {
+					"Each new awakening takes the lowest free slot and costs more Seals. A spell the character no longer knows is dormant and gives its slot back; the Seals spent are not returned."},
+					cols = {"Slot", "Waystone", "Rift", "Pinnacle"}, w = {22, 26, 26, 26}, rows = slots}})
 		end
 	end
 	-- Conquest Tokens (conquest_config.lua, server/README.md "Conquest Tokens, the Conquest vendor and bad-luck protection")

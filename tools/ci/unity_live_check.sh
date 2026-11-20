@@ -28,6 +28,11 @@
 #                   Illusionist, Deadeye, Juggernaut, Elementalist and Samurai of them), the TEST ONLY tester helper is installed and the closed switch
 #                   (data/chaos_testers_closed) is put on. WORK/party.env (mode 600) holds what tools/ci/boss_video.sh needs, the database login of the run
 #                   included. UL_PINNACLE_BOSS malgrath (default) | vhoss | talath | varkhul picks the level (1900 / 2100 / 2300 / 2500)
+#   UL_SPELL_SHOWCASE=1  (--serve-only) the spells video of .github/workflows/spells-video.yml (O692): the spell ranks switch (spell_ranks_config.lua `enabled`) is put
+#                   ON in this run's server copy only (never in the repository), with the monster health factor that comes with it; three staff characters, "Showcase
+#                   Elementalist", "Showcase Deadeye" and "Showcase Illusionist" (group 6, level 1000, mana and health of a hunter, the Illusionist half hurt so that a heal
+#                   lands), stand in the rat cave and the TEST ONLY pack helper (server/tools/spell_showcase.lua) keeps six monsters round whichever one is online.
+#                   WORK/spell-CLASS.env (mode 600, one per class: CHAOS_LIVE_*, CHAOS_SPELLTOUR_CLASS, CHAOS_CLIENT_KEY) is what tools/ci/spells_video.sh needs
 #
 # Modes (O433, the player on the same server: .github/workflows/unity-prototype.yml, unity/README.md "Player on a live server (CI)"):
 #   (none)          the run above: Core.LiveCheck plays, reports, summary, the server goes down at the end
@@ -252,6 +257,23 @@ install_tester_helper() {
   echo "   tester helper installed (TEST ONLY: data/scripts/zz_tester_helper*.lua)"
 }
 
+# install_spell_showcase: the spells video (O692, UL_SPELL_SHOWCASE=1). The spell ranks switch goes ON in the run's own copy of spell_ranks_config.lua (the first `enabled =` line, the
+# top-level switch; the repository's file stays false), and the TEST ONLY pack helper goes into data/scripts. Both before tfs starts.
+install_spell_showcase() {
+  [ "${UL_SPELL_SHOWCASE:-0}" = 1 ] || return 0
+  local cfg="$SERVER/data/scripts/chaos/spell_ranks_config.lua"
+  [ -f "$cfg" ] || die "no $cfg (install_all.py did not put the spell ranks there)"
+  grep -q '^	enabled = false,' "$cfg" || die "spell_ranks_config.lua has no top-level 'enabled = false,' line to switch"
+  sed -i '0,/^	enabled = false,/s//	enabled = true,/' "$cfg"
+  grep -q '^	enabled = true,' "$cfg" || die "the spell ranks switch is not on"
+  if [ ! -f "$REPO/server/tools/spell_showcase.lua" ] || [ ! -f "$REPO/server/tools/spell_showcase_core.lua" ]; then
+    die "server/tools/spell_showcase.lua is missing"
+  fi
+  cp "$REPO/server/tools/spell_showcase.lua" "$SERVER/data/scripts/zz_spell_showcase.lua"
+  cp "$REPO/server/tools/spell_showcase_core.lua" "$SERVER/data/scripts/zz_spell_showcase_core.lua"
+  echo "   spell ranks ON in this run's server only; pack helper installed (TEST ONLY: data/scripts/zz_spell_showcase*.lua)"
+}
+
 # ---------------------------------------------------------------------------------------------------- 4. engine
 ENGINE_FROM=""
 fetch_engine() {
@@ -452,6 +474,59 @@ INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7100252, 101 F
 SQL
 }
 
+# new_showcase CLASS VOCATION HEALTH: one showcase character of the spells video (O692, UL_SPELL_SHOWCASE=1): a staff character (group 6 on an account of type 6) named "Showcase Xxx"
+# (the pack helper's name rule: letters only), level 1000, magic level 60 and skills 130 like the tester characters, 2,000,000 mana, HEALTH of 2,000,000 health, in the rat cave. `/spellrank`
+# needs the staff right. Sets PA PN PP like new_chars.
+SHOWCASE_AT="32369,32214,8"          # the rat cave under Cinderhold, the spot of the tester helper's hunt storage
+new_showcase() {
+  local class=$1 voc=$2 health=$3 title
+  RUN_NO=$((RUN_NO + 1))
+  PA="lcw$RUN_NO$(rand_hex 3)"
+  title="$(printf '%s' "${class:0:1}" | tr '[:lower:]' '[:upper:]')${class:1}"
+  PN="Showcase $title"
+  PP=$(rand_hex 12)
+  ALL_SECRETS+=("$PP")
+  local px py pz exp
+  IFS=, read -r px py pz <<< "$SHOWCASE_AT"
+  exp=$(python3 -I -c 'L = 1000; print(50 * (L ** 3 - 6 * L ** 2 + 17 * L - 12) // 3)')
+  dbq chaos <<SQL
+INSERT INTO accounts (name, password, type, creation) VALUES ('$PA', SHA1('$PP'), 6, UNIX_TIMESTAMP());
+INSERT INTO players (name, group_id, account_id, vocation, level, experience, health, healthmax, mana, manamax, maglevel, skill_fist, skill_club, skill_sword, skill_axe, skill_dist, skill_shielding,
+                     cap, soul, sex, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons, town_id, posx, posy, posz, lastlogin)
+  SELECT '$PN', 6, id, $voc, 1000, $exp, $health, 2000000, 2000000, 2000000, 60, 130, 130, 130, 130, 130, 130, 400000, 100, 1, 128, 78, 68, 58, 76, 3, 2, $px, $py, $pz, 0 FROM accounts WHERE name = '$PA';
+INSERT INTO player_storage (player_id, \`key\`, value) SELECT id, 7100252, 101 FROM players WHERE name = '$PN';
+SQL
+}
+
+# setup_spell_showcase: the three characters of the spells video and their env files (mode 600, `export NAME=value` lines, what the client of tools/ci/spells_video.sh sources): the classes of
+# client/overlay/modules/test_spelltour/spelltourlogic.lua CLASSES (vocation ids: Elementalist 5, Deadeye 7, Illusionist 10, server/data/XML/chaos_vocations.xml).
+setup_spell_showcase() {
+  log "spell showcase: three staff characters (Elementalist, Deadeye, Illusionist), the ranks switch is on"
+  dbq chaos -e "DELETE FROM player_storage WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Showcase %');
+                DELETE FROM players WHERE name LIKE 'Showcase %'; DELETE FROM accounts WHERE name LIKE 'lcw%';"
+  local row class voc health file
+  for row in "elementalist 5 2000000" "deadeye 7 2000000" "illusionist 10 1000000"; do
+    read -r class voc health <<< "$row"
+    new_showcase "$class" "$voc" "$health"
+    file="$WORK/spell-$class.env"
+    (
+      umask 077
+      {
+        printf 'export CHAOS_LIVE_HOST=%q\n' 127.0.0.1
+        printf 'export CHAOS_LIVE_PORT=%q\n' "$LOGIN_PORT"
+        printf 'export CHAOS_LIVE_ACCOUNT=%q\n' "$PA"
+        printf 'export CHAOS_LIVE_PASSWORD=%q\n' "$PP"
+        printf 'export CHAOS_LIVE_CHARACTER=%q\n' "$PN"
+        printf 'export CHAOS_SPELLTOUR_CLASS=%q\n' "$class"
+        printf 'export CHAOS_CLIENT_KEY=%q\n' "$GUARD_KEY"
+        printf 'export CHAOS_RSA_PUBLIC=%q\n' "$RSA_PUBLIC"
+      } > "$file"
+    )
+    chmod 600 "$file"
+    echo "   $class: $file"
+  done
+}
+
 # pinnacle_level BOSS: the character level that opens that pinnacle boss (pinnacle_config.lua refLevel; tools/ci/boss_video_test.py holds this table to the config)
 pinnacle_level() {
   case "$1" in
@@ -623,6 +698,7 @@ serve_clients() {
     echo "   $id: $file"
   done
   if [ "${UL_PINNACLE_PARTY:-0}" = 1 ]; then setup_pinnacle_party; fi   # O689
+  if [ "${UL_SPELL_SHOWCASE:-0}" = 1 ]; then setup_spell_showcase; fi   # O692
 }
 
 # ---------------------------------------------------------------------------------------------------- 7. summary
@@ -716,6 +792,7 @@ if [ "$MODE" != serve ]; then
 fi
 
 install_tester_helper
+install_spell_showcase
 start_tfs; mark "tfs start"
 
 if [ "$MODE" = serve ]; then

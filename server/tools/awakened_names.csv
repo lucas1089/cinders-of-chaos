@@ -1,0 +1,150 @@
+id,spell,name_en,name_pt
+1,Minor Mending,Mending of Embers,Cura das Brasas
+2,Gorehook,Gorehook Unchained,Gancho Sanguinário Desacorrentado
+3,Grand Mending,Mending Eternal,Cura Eterna
+9,Rift Cleaver,Cleaver of the Abyss,Cutelo do Abismo
+13,Tempest Fan,Tempest Sovereign,Tempestade Soberana
+19,Sunspear,Sunspear Ascendant,Lança Solar Ascendente
+22,Arrowstorm,Arrowstorm Eternal,Tempestade de Flechas Eterna
+23,Packhunter's Dart,Alpha's Dart,Dardo do Alfa
+24,Phantom Needles,Needles of the Veil,Agulhas do Véu
+29,Bastion Cry,Bastion Roar,Rugido do Bastião
+35,Pack Howl,Howl of the Hundred,Uivo dos Cem
+36,Lightbearer's Grace,Grace Unending,Graça Interminável
+37,Headsman's Hurl,Headsman's Reckoning,Acerto de Contas do Carrasco
+38,Mirror Shards,Shattered Reflection,Reflexo Estilhaçado
+39,Rending Pounce,Ravager's Pounce,Salto do Devastador
+42,Grave Nova,Grave Cataclysm,Cataclismo da Cova
+43,Dreamrot,Nightmare Blight,Praga do Pesadelo
+45,Gutting Slash,Eviscerating Dusk,Crepúsculo Estripador
+53,Bewitching Hex,Hex of Ruin,Maldição da Ruína
+56,Razor Rain,Razor Deluge,Dilúvio de Lâminas
+57,Venom Spiral,Viper Vortex,Vórtice da Víbora
+58,Anvil Fall,Anvil of the Last Forge,Bigorna da Última Forja
+59,Scything Arc,Reaper's Arc,Arco do Ceifador
+61,Bonebreaker,Marrowsplitter,Parte-Tutano
+62,Crescent Cut,Eclipse Crescent,Crescente do Eclipse
+63,Ashen Fist,Fist of the Pyre,Punho da Pira
+64,Sundering Palm,Palm of Sundered Worlds,Palma dos Mundos Partidos
+65,Whirling Heel,Typhoon Heel,Calcanhar do Tufão
+66,Kindled Breath,Breath of the Phoenix,Sopro da Fênix
+67,Mistborne Strike,Stormmist Strike,Golpe da Névoa Tempestuosa
+68,Pressure Points,Nerves Unraveled,Nervos Desfeitos
+69,Shadowfist Flurry,Umbral Flurry,Rajada Umbral
+71,Iron Palm,Palm of Black Iron,Palma de Ferro Negro
+73,Blade Flurry,Thousand Cuts,Mil Cortes
+74,Iaido Sweep,Moonlit Sweep,Varredura ao Luar
+80,Last Breath,Final Exhale,Expiração Final
+82,Hollow Knuckle,Knuckle of the Void,Punho do Vazio
+84,Quaking Stomp,Earthshatter Stomp,Pisada Parte-Terra
+85,Arcane Ripple,Arcane Tidal Surge,Maré Arcana
+87,Chi Lance,Lance of Boundless Chi,Lança do Chi Infinito
+88,Cleaving Heel,Heel of the Fallen Star,Calcanhar da Estrela Cadente
+89,Tidal Palm,Drowning Tide Palm,Palma da Maré Afogadora
+90,Skysplitter Fist,Heavenrender Fist,Punho Rasga-Céu
+96,Mirror Mend,Hall of Mends,Salão das Curas
+97,Lucid Reverie,Reverie Unbroken,Devaneio Ininterrupto
+98,Shadow Mend,Umbral Mending,Cura Umbral
+99,Snare Trap,Jaws of the Warden,Mandíbulas do Guardião
+100,Seeker Mine,Hunter's Detonation,Detonação do Caçador
+102,Iron Salve,Salve of the Ironclad,Unguento do Blindado
+103,Rebirth of Flesh,Flesh Reborn Anew,Carne Renascida
+105,Butcher's Gyre,Slaughterhouse Gyre,Redemoinho do Matadouro
+106,Marrow Bolt,Bolt of the Ossuary,Dardo do Ossuário
+107,Wraithwind,Banshee Gale,Vendaval da Banshee
+111,Phantom Javelin,Javelin of the Dead King,Dardo do Rei Morto
+112,Gravewail,Dirge of the Interred,Lamento dos Sepultados
+113,Blightbrand,Plaguebrand Unbound,Marca da Praga Desatada
+118,Soulrend Beam,Beam of Sundered Souls,Raio das Almas Partidas
+119,Crypt Collapse,Necropolis Collapse,Colapso da Necrópole
+120,Ossuary Surge,Ossuary Tsunami,Tsunami do Ossuário
+121,Hallowed Cut,Severance of Dawn,Rompimento da Alvorada
+122,Censer Swing,Censer of Dawnfire,Turíbulo do Fogo da Aurora
+123,Battle Salve,Warsong Salve,Unguento do Canto de Guerra
+124,Sanctum Burst,Sanctum Nova,Nova do Santuário
+125,Dawn's Mending,Dawn's Benediction,Bênção da Aurora
+126,Penitent Lash,Lash of Absolution,Chicote da Absolvição
+127,Martyr's Pyre,Martyr's Ascension,Ascensão do Mártir
+128,Bell of Reckoning,Bell of the Last Hour,Sino da Última Hora
+129,Lance of Vigil,Lance of the Endless Vigil,Lança da Vigília Eterna
+131,Sanctum Verdict,Sanctum Decree,Decreto do Santuário
+134,Gale Volley,Hurricane Volley,Saraivada do Furacão
+136,Fan of Knives,Fan of a Hundred Knives,Leque de Cem Facas
+137,Sanctified Ground,Consecrated Dominion,Domínio Consagrado
+138,Heretic's Brand,Brand of the Heretic King,Marca do Rei Herege
+139,Zealot's Wrath,Zealot's Crusade,Cruzada do Zelote
+140,Bulwark Slam,Citadel Slam,Pancada da Cidadela
+141,Rampart Quake,Fortress Quake,Tremor da Fortaleza
+142,Keepfall,Siege of Ages,Cerco das Eras
+144,Twin Verdict,Dual Judgment,Duplo Julgamento
+145,Rampage Leap,Titan's Leap,Salto do Titã
+146,Glacial Doom,Absolute Zero Doom,Destino do Zero Absoluto
+147,Pack Frenzy,Frenzy of the Wild Hunt,Frenesi da Caçada Selvagem
+148,Judgment of Iron,Iron Reckoning,Ajuste de Contas de Ferro
+149,Moonshard Rain,Starfall of Moonglass,Queda de Vidro Lunar
+151,Dawnbreaker Shot,Daybreak Annihilation,Aniquilação do Amanhecer
+152,Prismatic Rupture,Spectrum Rupture,Ruptura do Espectro
+154,Eclipse of Ruin,Black Sun Eclipse,Eclipse do Sol Negro
+155,Eclipse Edge,Edge of the Black Sun,Gume do Sol Negro
+157,Death Between Heartbeats,Death Unseen,Morte Invisível
+158,Soulflay Wave,Soulflayer Tide,Maré do Esfolador de Almas
+160,Funeral of Kings,Funeral of Empires,Funeral dos Impérios
+163,Pyre Torrent,Inferno Torrent,Torrente do Inferno
+164,Shuriken Tempest,Tempest of Ten Thousand Stars,Tempestade de Dez Mil Estrelas
+169,Kindling Spark,Spark of the First Flame,Centelha da Primeira Chama
+170,Shield Wave,Aegis Wave,Onda da Égide
+172,Thousand-Echo Palm,Palm of Endless Echoes,Palma dos Ecos Infinitos
+174,Heaven's Ninth Gate,Gate of the Tenth Heaven,Portal do Décimo Céu
+175,Salve of Scars,Salve of Mended Scars,Unguento das Cicatrizes Curadas
+177,Pyre of Absolution,Pyre of Final Absolution,Pira da Absolvição Final
+181,Bone Spear,Ivory Impaler,Empalador de Marfim
+182,Withering Curse,Curse of Ashes,Maldição de Cinzas
+183,Soul Rot,Soulblight,Praga da Alma
+184,Life Siphon,Lifedrain Torrent,Torrente de Vida Sugada
+185,Corpse Explosion,Charnel Detonation,Detonação Carniçal
+188,Bone Offering,Sacrifice of Marrow,Sacrifício de Tutano
+189,Radiant Smite,Luminous Judgment,Julgamento Luminoso
+190,Consecration,Cathedral of Light,Catedral de Luz
+191,Vow of Mending,Vow Eternal,Voto Eterno
+193,Splinter Volley,Boneshard Barrage,Barragem de Estilhaços de Osso
+194,Palm Shockwave,Seismic Palm,Palma Sísmica
+195,Shadow Ricochet,Nightglass Ricochet,Ricochete de Vidro Noturno
+196,Iron Chain,Chains of the Forgemaster,Correntes do Mestre da Forja
+197,Bone Shrapnel,Boneburst Cascade,Cascata de Ossos
+198,Judgement,Judgement Absolute,Julgamento Absoluto
+199,Purging Nova,Nova of Purification,Nova da Purificação
+200,Rime Bloom,Frostbloom Cataclysm,Cataclismo da Flor de Gelo
+201,Witchfire Bolt,Witchfire Comet,Cometa de Fogo-Bruxo
+202,Forked Storm,Stormfork Wrath,Fúria da Tempestade Bifurcada
+203,Crimson Covenant,Covenant of Blood and Ash,Pacto de Sangue e Cinzas
+204,Falling Pyre,Meteoric Pyre,Pira Meteórica
+205,Frozen Crypt,Crypt of Eternal Winter,Cripta do Inverno Eterno
+206,Doomtide,Cataclysm of Cinders,Cataclismo de Cinzas
+207,Blightswarm,Swarm of the Blighted Hive,Enxame da Colmeia Corrompida
+208,Purifying Wellspring,Wellspring of Life,Nascente de Vida
+210,Briar Prison,Thornlock Prison,Prisão de Espinhos Eternos
+212,Verdant Sanctuary,Sanctuary of the Evergreen,Santuário do Sempre-Verde
+213,Primordial Squall,Primordial Maelstrom,Voragem Primordial
+214,Dawnpiercer,Dawnpiercer Unleashed,Perfura-Aurora Liberto
+215,Skewering Line,Impaling Meridian,Meridiano Empalador
+216,Blessed Earth,Earth Reborn in Light,Terra Renascida em Luz
+218,Final Verdict,Verdict Unbound,Veredito Desatado
+219,Hail of Dawn,Dawnhail Barrage,Barragem de Granizo da Aurora
+220,Reaping Gyre,Harvest Gyre,Redemoinho da Colheita
+221,Earthbreaker,Worldbreaker,Quebra-Mundos
+224,Vaulting Cleave,Skyvault Cleave,Talho do Salto Celeste
+225,Colossus Fall,Titanfall,Queda de Titã
+227,Umbral Stride,Voidwalker's Stride,Passada do Andarilho do Vazio
+228,Shattered Psyche,Psyche Annihilated,Psique Aniquilada
+230,Nightburst,Nightfall Burst,Explosão do Anoitecer
+231,Tear in the Weave,Weave Unravelled,Trama Desfeita
+236,Shuriken Toss,Shuriken of the Crescent Moon,Shuriken da Lua Crescente
+237,Hammer of Ember Dawn,Hammer of the Ember Sun,Martelo do Sol de Brasas
+240,Shadow Step,Step Between Shadows,Passo Entre Sombras
+241,Smoke Bomb,Smokestorm Bomb,Bomba da Tempestade de Fumaça
+242,Shuriken Barrage,Starfall Barrage,Barragem Estrelada
+244,Iaijutsu,Iaijutsu Absolute,Iaijutsu Absoluto
+246,Skyfall Cleave,Heavenfall Cleave,Talho da Queda do Céu
+249,Feral Command,Primal Command,Comando Primal
+250,Crusader's Sweep,Sweep of the Holy Host,Varredura da Hoste Sagrada
+253,Lay on Hands,Hands of the Redeemer,Mãos do Redentor

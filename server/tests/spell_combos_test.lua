@@ -285,6 +285,9 @@ function Chaos.load() end
 ChaosOpcodes = {spellRanks = 168}
 local sent = {}
 function Chaos.send(player, opcode, action, data) sent[#sent + 1] = {opcode = opcode, action = action, data = data} return true end
+-- O692: the burst of a combo, sent by the global Vfx helper (data/lib/chaos_vfx.lua) with the raw flag
+local bursts = {}
+function Vfx(pos, name, raw) bursts[#bursts + 1] = {x = pos.x, y = pos.y, z = pos.z, name = name, raw = raw} return true end
 local registered = {}
 EventCallback = setmetatable({}, {__newindex = function(t, k, v) rawset(t, "_last", {k, v}) end})
 rawset(EventCallback, "register", function(self) local l = rawget(self, "_last"); registered[l[1]] = l[2] end)
@@ -396,6 +399,12 @@ eq(sent[1].data.id, "steam_burst", "its id")
 eq(sent[1].data.n, "Steam Burst", "its English name")
 eq(sent[1].data.x, 101, "the target's x")
 eq(sent[1].data.z, 7, "the target's floor")
+-- O692: the burst on the target tile, existing effects of ice then fire, raw
+eq(#bursts, 2, "Steam Burst: two effects on the target")
+eq(bursts[1].name, "frost_nova", "the ice effect first")
+eq(bursts[2].name, "fire_explosion", "then the fire effect")
+eq(bursts[1].x, 101, "on the target's tile")
+eq(bursts[1].raw, true, "sent raw (no Form swap)")
 -- the credit: the bonus is inside the hit of the second spell, in its cast context; no extra hit exists
 eq(select(2, ChaosSupportsSpell.cast()), 301, "the combat log reads the SECOND spell for the hit (it gets the credit, bonus included)")
 eq(dealtCalls, 0, "no extra hit was dealt (nothing else can be credited)")
@@ -517,6 +526,7 @@ cast(p, 97)
 local h1 = hit(p, ally, COMBAT_HEALING, 1000)
 near(h1, math.floor(1000 * R.factor(p, 97, true, false) * 1.15 + 0.5), 2, "Echoing Mend +15% on the heal")
 eq(sent[#sent].data.id, "echoing_mend", "Echoing Mend")
+eq(bursts[#bursts].name, "aura_burst_gold", "Echoing Mend: a gold burst")
 
 -- a stale ring: a cast that is not followed by a hit within the window is forgotten, and logout clears the state
 tick(10000)
@@ -527,6 +537,35 @@ cast(p, 301)
 eq((hit(p, troll, COMBAT_FIREDAMAGE, -1000)), -1000, "the ice cast is older than 4 s: no combo")
 registered["ChaosSpellCombosLogout"].onLogout(p)
 eq(M.states[900], nil, "logout drops the state")
+
+-- O692: every row has a burst of ChaosVfx names that exist; a reaction row's effects are tagged with its two elements
+do
+	local f = assert(loadfile("data/lib/chaos_vfx.lua"))
+	local saved = rawget(_G, "ChaosVfx")
+	f()
+	local V = rawget(_G, "ChaosVfx")
+	local tags = {}
+	local fh = assert(io.open("data/spells/spell_fx_elements.csv"))
+	for line in fh:lines() do
+		local id, _, el = line:match("^(%d+),([^,]*),([^,]*)$")
+		if id then tags[tonumber(id)] = el end
+	end
+	fh:close()
+	for _, row in ipairs(ChaosSpellCombosConfig.rows) do
+		ok(type(row.burst) == "table" and #row.burst >= 1 and #row.burst <= 2, "row " .. row.id .. " has one or two burst effects")
+		for i, name in ipairs(row.burst or {}) do
+			ok(V[name] ~= nil, "row " .. row.id .. ": effect " .. name .. " is a ChaosVfx name")
+			local tag = V[name] and tags[V[name].id]
+			ok(tag ~= nil, "row " .. row.id .. ": effect " .. name .. " is tagged")
+			if row.kind == "reaction" and tag then
+				local want = (i == 1 and row.first or row.second).element
+				ok(tag == want or tag == "any" or (want == "earth" and tag == "physical"),
+					"row " .. row.id .. ": effect " .. name .. " (" .. tag .. ") is of " .. want)
+			end
+		end
+	end
+	rawset(_G, "ChaosVfx", saved)
+end
 
 print(string.format("spell_combos_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

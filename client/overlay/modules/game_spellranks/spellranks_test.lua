@@ -52,8 +52,10 @@ local book = 0
 _G.modules.game_spellbook = { onRanksChanged = function() book = book + 1 end }
 
 dofile(here .. 'forms_data.lua')
+dofile(here .. 'awakened_data.lua')
 dofile(here .. 'ranklogic.lua')
 dofile(here .. 'combologic.lua')
+dofile(here .. 'awakelogic.lua')
 dofile(here .. 'spellranks.lua')
 
 init()
@@ -129,6 +131,85 @@ boxes[1].buttons[1].callback()
 eq(#sent, 1, 'yes sends') eq(sent[1].msg.data.pick, 2, 'the pick')
 p.form2a.onClick()
 eq(#sent, 1, 'the chosen Form is already chosen: nothing sent') -- pick 1 of tier 2 is the current one? (f2 = 1)
+
+-- awakening (phase 7): the second view of the tab, the Seals, the slots, the confirm box, the answers, the awakened name
+do
+  sent, boxes = {}, {}
+  msg('state', { on = true, v = 1, s = { { 206, 20, 0, 0 } } })
+  msg('forms', { v = 1, f = { { 206, 1, 2 } } })
+  local dm = { id = 206, name = 'Doomtide', type = 'damage' }
+  local q = widget()
+  fill(q, dm)
+  eq(q.awakeTab.visible, false, 'no Awakening button before the server sends the awakened state')
+  eq(awakenedName(206), nil, 'no awakened name yet')
+  local costs = { { 40, 36, 16 }, { 70, 60, 28 }, { 100, 90, 40 } }
+  msg('awakened', { on = true, v = 1, seals = { 3, 2, 1 }, slots = { 0, 0, 0 }, costs = costs, held = 0, bonus = 0.1 })
+  eq(q.awakeTab.visible, true, 'the Awakening button shows') has(q.awakeTab.v_Text, 'Awakening', 'its label')
+  eq(q.awakeTitle.visible, false, 'the Forms view first') eq(q.form1a.visible, true, 'the Forms show')
+  q.awakeTab.onClick()
+  eq(q.awakeTitle.visible, true, 'the Awakening view') eq(q.form1a.visible, false, 'the Forms hide') eq(q.effects.visible, false, 'and the effects line')
+  eq(q.rankTitle.visible, true, 'the rank stays')
+  has(q.awakeTab.v_Text, 'Forms', 'the button goes back to the Forms')
+  has(q.awakeTitle.v_Text, 'Awakens as: Cataclysm of Cinders', 'the name it awakens as')
+  has(q.awakeSeals.v_Text, 'Seals: 3 Waystone, 2 Rift, 1 Pinnacle', 'the Seals')
+  has(q.awakeSeals.v_Tooltip, 'tier XVI to XXV', 'where Seals come from')
+  has(q.awakeSlots.v_Text, 'Slot 1: free, 40 Waystone, 36 Rift, 16 Pinnacle Seals', 'slot 1 and its cost')
+  has(q.awakeSlots.v_Text, 'Slot 3: free, 100 Waystone, 90 Rift, 40 Pinnacle Seals', 'slot 3 and its cost')
+  has(q.awakeText.v_Text, 'A ring stays 6 s and pulses 3 times for 40% of the hit.', 'the signature sentence')
+  has(q.awakeText.v_Text, 'hits or heals 10% more', 'the bonus sentence')
+  has(q.awakeText.v_Text, 'PvP', 'the PvP note')
+  has(q.note.v_Text, 'Awakened spells: 0 of 3', 'the slots held')
+  eq(q.awakeDo.enabled, false, 'the button is off with too few Seals') has(q.awakeDo.v_Tooltip, 'Not enough Seals: 37 Waystone, 34 Rift and 15 Pinnacle more.', 'it says what is missing')
+  -- a spell at rank 19 says the rank
+  msg('state', { on = true, v = 1, s = { { 206, 19, 0.5, 1 } } })
+  eq(q.awakeDo.enabled, false, 'rank 19: off') has(q.awakeDo.v_Tooltip, 'needs rank 20', 'it says the rank')
+  msg('state', { on = true, v = 1, s = { { 206, 20, 0, 0 } } })
+  msg('forms', { v = 1, f = { { 206, 1, 0 } } })
+  has(q.awakeDo.v_Tooltip, 'Pick both Forms', 'no Form II: it says so')
+  msg('forms', { v = 1, f = { { 206, 1, 2 } } })
+  -- enough Seals
+  msg('awakened', { on = true, v = 1, seals = { 40, 36, 16 }, slots = { 0, 0, 0 }, costs = costs, held = 0, bonus = 0.1 })
+  eq(q.awakeDo.enabled, true, 'the button is on') has(q.awakeDo.v_Tooltip, '40 Waystone, 36 Rift and 16 Pinnacle', 'with the cost')
+  q.awakeDo.onClick()
+  eq(#sent, 0, 'a click asks first') eq(#boxes, 1, 'the question') has(boxes[1].title, 'Awaken spell', 'its title')
+  has(boxes[1].text, 'Awaken Doomtide as Cataclysm of Cinders', 'it names both') has(boxes[1].text, '40 Waystone, 36 Rift and 16 Pinnacle Seals and takes slot 1', 'the price and the slot')
+  has(boxes[1].text, 'not returned', 'the dormant warning')
+  boxes[1].buttons[2].callback()
+  eq(#sent, 0, 'Cancel sends nothing')
+  q.awakeDo.onClick()
+  boxes[#boxes].buttons[1].callback()
+  eq(#sent, 1, 'Awaken sends') eq(sent[1].op, 168, 'opcode') eq(sent[1].msg.action, 'awaken', 'action')
+  eq(sent[1].msg.data.spell, 206, 'spell') eq(sent[1].msg.data.slot, 1, 'slot')
+  msg('awaken', { ok = true, why = 'ok', spell = 206, slot = 1, name = 'Cataclysm of Cinders', namePt = 'Cataclismo de Cinzas' })
+  has(q.message.v_Text, 'Awakened: Cataclysm of Cinders', 'the answer') eq(q.message.v_Color, '#4fd07f', 'good colour')
+  msg('awakened', { on = true, v = 1, seals = { 0, 0, 0 }, slots = { 206, 0, 0 }, costs = costs, held = 1, bonus = 0.1 })
+  has(q.awakeTitle.v_Text, 'Awakened: Cataclysm of Cinders', 'now awakened') eq(q.awakeDo.enabled, false, 'the button is off')
+  has(q.awakeDo.v_Tooltip, 'This spell is awakened.', 'and says why')
+  has(q.awakeSlots.v_Text, 'Slot 1: Cataclysm of Cinders', 'the slot holds the spell') has(q.awakeSlots.v_Text, 'Slot 2: free, 70 Waystone', 'slot 2 is next')
+  eq(awakenedName(206), 'Cataclysm of Cinders', 'the Spellbook shows the new name') eq(awakenedName(2), nil, 'another spell keeps its name')
+  eq(book >= 3, true, 'the Spellbook is told at each awakened message')
+  _G.ChaosLocale = { lang = 'pt-BR' }
+  eq(awakenedName(206), 'Cataclismo de Cinzas', 'pt-BR: the pt-BR name')
+  _G.ChaosLocale = nil
+  -- refusals of the server reach the player with the reason
+  for _, row in ipairs({ { 'rank', 'needs rank 20' }, { 'forms', 'Pick both Forms' }, { 'already', 'is awakened' }, { 'slot', 'slots are taken' },
+      { 'unknown', 'do not know' }, { 'spell', 'cannot be awakened' }, { 'off', 'not on yet' } }) do
+    msg('awaken', { ok = false, why = row[1], spell = 206 })
+    has(q.message.v_Text, row[2], 'the answer ' .. row[1]) eq(q.message.v_Color, '#e03a1e', 'bad colour for ' .. row[1])
+  end
+  msg('awaken', { ok = false, why = 'seals', spell = 206, need = { waystone = 5, rift = 0, pinnacle = 1 } })
+  has(q.message.v_Text, 'Not enough Seals: 5 Waystone, 0 Rift and 1 Pinnacle more.', 'the Seals missing')
+  msg('awaken', { ok = false, why = 'nonsense', spell = 206 })
+  has(q.message.v_Text, 'did not accept that awakening', 'an unknown reason')
+  msg('awaken', 'junk')
+  -- another spell with no awakened row: no button
+  local other = widget()
+  fill(other, { id = 777, name = 'Nothing' })
+  eq(other.awakeTab.visible, false, 'a spell with no awakened form has no button')
+  -- the switch off clears the new name
+  msg('state', { on = false, v = 1, s = {} })
+  eq(awakenedName(206), nil, 'switch off: the spell keeps its own name')
+end
 
 -- the switch goes off again: everything hides
 msg('pick', { ok = false, why = 'off' })

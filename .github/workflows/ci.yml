@@ -1243,6 +1243,10 @@ jobs:
         run: |
           python3 -I tools/ci/check_spell_forms.py
           python3 -I tools/ci/check_spell_forms_test.py
+      - name: Spell awakening names and signatures (O686 phase 7; gen_awakened.py and its test hold data/spells/awakened.csv for every spell with Forms, the design's four examples, every signature inside its band by the Lua value; the Seal rates against the three models are in spell_upgrade_model.py --check below)
+        run: |
+          python3 -I server/tools/gen_awakened.py --check
+          python3 -I server/tools/gen_awakened_test.py
       - name: Spell upgrades (O686 phase 3), the monster health curve H and the balance models with the upgrades on (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades; spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
         run: |
           python3 -I server/tools/spell_upgrade_model.py --check
@@ -1919,6 +1923,13 @@ jobs:
           luajit tools/gen_forms_data.lua
           lua5.3 tools/gen_forms_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_spellranks/forms_data.lua
+
+      - name: Spell awakening client data is up to date with awakened.csv and the config, every signature template has pt-BR (O686 phase 7; gen_awakened_data.lua)
+        run: |
+          cd server
+          luajit tools/gen_awakened_data.lua
+          lua5.3 tools/gen_awakened_data.lua --check  # Lua 5.3 must write the same bytes
+          git diff --exit-code ../client/overlay/modules/game_spellranks/awakened_data.lua
 
       - name: Help search and website beginner guide are up to date with the cards (O373)
         # client game_helpsearch/helpsearch_data.lua and website guide/guide_data.json from the How it works cards,

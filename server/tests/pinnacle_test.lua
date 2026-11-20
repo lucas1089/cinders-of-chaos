@@ -762,9 +762,15 @@ eq(msp.hit(pb, bossM, 1000), 1000, "mana shield part: the same curve")
 math.randomseed(2)
 local realRandom = math.random
 pb.store[S.base + S.pity] = 7 -- the kill after seven without: the bad-luck count names it
+-- O686 phase 7: the Pinnacle Seals hook (spell_awakening.lua): every member of the party at the kill, once
+local sealCalls = {}
+_G.ChaosSpellAwakening = {onPinnacleKill = function(p) sealCalls[#sealCalls + 1] = p:getId() return 2 end}
 registry.ChaosPinnacleDeath.onDeath(bossM)
 advance(0)
 eq(run.state, "success", "success")
+eq(#sealCalls, 1, "seals: the hook runs once for the one member")
+eq(sealCalls[1], pb:getId(), "seals: for the member")
+_G.ChaosSpellAwakening = nil
 eq(#tokens, 1, "Conquest Tokens")
 eq(tokens[1].source, "pinnacle", "the token source is one the Conquest table lists")
 eq(tokens[1].detail, "malgrath", "the log row names the boss")

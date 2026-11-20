@@ -14,6 +14,8 @@
 --   The element of the hit is the one after a Form conversion (ChaosSpellForms.conversion), else the combat type of the biggest part.
 -- * The credit. The bonus is part of the hit of the SECOND spell, inside its cast context: the combat log (combatlog.lua spellHook ->
 --   spell_ranks.lua onDamage) credits that spell for the damage it dealt, bonus included. No extra hit exists, so nothing else can credit.
+-- * The burst (O692). The row's `burst` (spell_combos_config.lua: ChaosVfx names of its element(s), raw) is sent on the target tile with the
+--   message, only while the switch is on (announce is reached only by a fired row).
 -- * The client. A `combo` message on opcode 168: {id, n = English name, x, y, z of the target} (the client draws a label and plays a chime).
 -- Assumed engine API (TFS 1.4.2): ChaosSpellEvents cast handler, Player:getTarget/getPosition/getId, Creature:getPosition/isMonster/isPlayer/
 -- getMaster, EventCallback via passivetree_effects.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -194,8 +196,25 @@ function M.hitFactor(attacker, creature, origin, primaryType, secondaryType, pri
 	return factor
 end
 
+-- O692: the burst on the target, from existing effects of the row's element(s) (config `fx`, ChaosVfx names, sent raw: a Form's swap
+-- does not touch it). Nothing for a row without `burst` or a client without the Vfx helper (a mocked engine).
+function M.burst(row, pos)
+	local vfx = rawget(_G, "Vfx")
+	if not vfx or not row.burst or not pos then
+		return 0
+	end
+	local n = 0
+	for _, name in ipairs(row.burst) do
+		if vfx(pos, name, true) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 -- the label and the chime on the client
 function M.announce(player, row, pos)
+	M.burst(row, pos)
 	if Chaos.send then
 		Chaos.send(player, OPCODE, "combo", {id = row.id, n = row.name, x = pos.x, y = pos.y, z = pos.z})
 	end

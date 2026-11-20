@@ -61,6 +61,20 @@ SpellUpgrades < UIWidget
     color: #8c8070
     text-auto-resize: true
 
+  // O686 phase 7: the second view of the tab, Awakening (a part of the tab, shown by this button; only for a spell with an awakened form)
+  SpellFormButton
+    id: awakeTab
+    anchors.top: parent.top
+    anchors.right: spText.left
+    margin-right: 8
+    width: 96
+    height: 16
+    padding: 0 6 0 6
+    visible: false
+
+    $mobile:
+      height: 22
+
   ChaosProgressBar
     id: rankBar
     anchors.top: rankTitle.bottom
@@ -180,6 +194,64 @@ SpellUpgrades < UIWidget
     anchors.left: form2b.left
     anchors.right: form2b.right
     margin-top: 3
+
+  UILabel
+    id: awakeTitle
+    anchors.top: strip.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    visible: false
+
+  UILabel
+    id: awakeSeals
+    anchors.top: awakeTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: false
+    visible: false
+
+  UILabel
+    id: awakeSlots
+    anchors.top: awakeSeals.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 44
+    text-align: topleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #b8ac92
+    visible: false
+
+  UILabel
+    id: awakeText
+    anchors.top: awakeSlots.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 88
+    text-align: topleft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: false
+    visible: false
+
+  SpellFormButton
+    id: awakeDo
+    anchors.top: awakeText.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    width: 120
+    visible: false
 
   UILabel
     id: note

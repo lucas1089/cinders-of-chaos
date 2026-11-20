@@ -314,11 +314,17 @@ do
 	function boss:getName() return self.name end
 	function boss:getPosition() return POS end
 	local entry = {tier = 5, boss = true, map = MAP, run = 12}
+	-- O686 phase 7: the Waystone Seals hook (spell_awakening.lua): every player in the map, `first` for the first clear of the tier by that player
+	local sealCalls = {}
+	_G.ChaosSpellAwakening = {onWaystoneClear = function(p, tier, first) sealCalls[#sealCalls + 1] = {p.guid, tier, first} return 1 end}
 	EG.onMapBossDeath(entry, boss)
 	eq(EG.state(a).points, 1, "the first clear: a point")
 	eq(EG.state(b).points, 1, "for everyone in the map")
 	check(a.msgs[1] and a.msgs[1]:find("first clear of tier 12", 1, true), "the message names the tier")
 	EG.onMapBossDeath(entry, boss)
+	eq(#sealCalls, 4, "seals: the hook runs on every clear, for both players")
+	eq(sealCalls[1][3], true, "seals: first clear of the tier")
+	eq(sealCalls[3][3], false, "seals: the second clear is not a first one")
 	eq(EG.state(a).points, 1, "the same tier pays once")
 	eq(#cleared, 2, "onRunCleared fires on every clear")
 	eq(cleared[1].tier, 12, "the info: tier")
@@ -330,6 +336,10 @@ do
 	-- a deep run: the band boss always
 	entry = {tier = 5, boss = true, map = MAP, run = 25}
 	EG.onMapBossDeath(entry, boss)
+	eq(#sealCalls, 6, "seals: the hook is called for every player in the map on the tier XXV clear too")
+	eq(sealCalls[5][2], 25, "seals: the tier of the clear")
+	eq(sealCalls[5][3], true, "seals: the first clear of tier XXV")
+	_G.ChaosSpellAwakening = nil
 	for _, s in ipairs(scheduled) do
 		if s.ms == 1500 then s.fn(unpack(s.args)) end
 	end

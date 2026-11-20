@@ -176,14 +176,35 @@ end
 -- first clear: a point per player in the map for a tier not paid yet. Returns the number of players credited
 function E.creditFirstClear(map, tier)
 	local n = 0
+	local firsts = {}
 	for _, p in ipairs(playersOf(map)) do
 		local mask = readStorage(p, 0)
 		if not K.tierPaid(mask, tier) then
 			p:setStorageValue(STORE(), K.markPaid(mask, tier))
 			p:setStorageValue(STORE() + 2, readStorage(p, 2) + 1)
 			n = n + 1
+			firsts[p:getId()] = true
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Waystone endgame: first clear of tier %d, +1 atlas point (%d to spend).",
 				tier, K.free(cfg, K.markPaid(mask, tier), K.ranks(cfg, readStorage(p, 1)))))
+		end
+	end
+	return n, firsts
+end
+
+-- O686 phase 7: the Waystone Seals of a cleared map of tier 16-25 (spell_awakening.lua, a no-op while the spell upgrades are off): one for
+-- every player in the map, one more for the first clear of that tier by that character (`firsts`: player id -> true)
+function E.creditSeals(map, tier, firsts)
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if not AW or not AW.onWaystoneClear then
+		return 0
+	end
+	local n = 0
+	for _, p in ipairs(playersOf(map)) do
+		local ok, got = pcall(AW.onWaystoneClear, p, tier, firsts and firsts[p:getId()] == true)
+		if ok then
+			n = n + (got or 0)
+		else
+			log("seals: " .. tostring(got))
 		end
 	end
 	return n
@@ -202,7 +223,8 @@ function E.onMapBossDeath(e, creature)
 	end
 	local opener, guid = E.openerOf(e.map)
 	local fx = E.fxOfPlayer(opener)
-	local credited = E.creditFirstClear(e.map, e.run)
+	local credited, firsts = E.creditFirstClear(e.map, e.run)
+	E.creditSeals(e.map, e.run, firsts)
 	local pos = creature:getPosition()
 	-- the chest of orbs for everyone in the map
 	local chest = false
