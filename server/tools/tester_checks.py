@@ -4411,8 +4411,12 @@ def pinnacle_walk_verdict(t):
         how += ', ' + tally_text(t)   # O683
     if t.get('ally_heals') or t.get('spread') or t.get('healer_steps'):   # O684: what the party roles did
         how += ', roles: %d ally heal(s), %d healer step(s), %d spread step(s)' % (t.get('ally_heals', 0), t.get('healer_steps', 0), t.get('spread', 0))
+    if t.get('buffs'):
+        how += ', %d class buff cast(s)' % t['buffs']   # O693
     if t.get('gear'):
         how += '; ' + t['gear']   # O681: the gear the fight was played with
+    if t.get('food'):
+        how += '; food: ' + t['food']   # O693: the ration each bot ate before the window opened
     if t.get('killed'):
         return PASS, '%s down in %s s, %d fall(s), %d player(s), level %s, %s' % (
             t.get('boss') or 'the boss', t.get('kill_secs', '?'), int(t.get('falls') or 0), int(t.get('size') or 1), t.get('level'), how)
@@ -5086,6 +5090,100 @@ async def pinnacle_shield(io):
     return True
 
 
+# ------------------------------------------------------------------------------------------------ O693 the rest of the gear, food and the buff
+# O685 gave the bots the four set pieces, the cards, the supports and a flask. O693 adds what a geared player of the level also has, each step the game's own function
+# on a piece or a spell, called by the TEST ONLY helper (v37, `!tester gear extras | growth | orbs | gems`, `food`, `buffs learn`) and named as a fallback of the result:
+#   extras  boots, amulet, ring, the off hand (the Juggernaut's shield with a one-handed weapon, a caster's spellbook, an archer's quiver) and the bow, crossbow, wand or
+#           rod of the classes `gear set` has no weapon for, from the same lists of the equipment sets and the archery config, at the rarity and item level of `gear set 10`
+#   growth  the weapon touch the game gives a weapon on every read (ChaosCrafting.upgradeItem), once (the mark)
+#   orbs    a geared character's bench results, not a perfect roll: Whetstones to quality 20, one Orb of Tempering on every piece, an Ember Orb on the weapon and the armour
+#   gems    the sockets of every piece and Perfect gems (the best tier of the level): the element of the class's rotation as damage on the weapon, max health on the armour,
+#           the class's damage or ice resistance on the jewellery (H.gemPlan in tester_helper_core.lua gives the reasons)
+#   food    the store's Everfull Ration and its bite (12 minutes of regeneration), just before the Keeper's window opens
+#   buffs   the level 800 buff of the class's line (quest 2 of the line spell quests; 20 s, cooldown 90 s): the spell is taught (the quest is long), cast by its words when the
+#           fight opens and again each time the cooldown is over
+PINNACLE_BUFF_EVERY = 90.0   # seconds between two casts of the class buff (its cooldown is 90,000 ms: quest_buffs_config.lua cooldownMs)
+PINNACLE_BUFFS = {}          # bot name -> the name of the buff spell the helper taught it (`buffs learn`)
+
+
+async def pinnacle_gear_more(io, name, cls, fallbacks):
+    """the extras, the weapon touch, the bench results and the gems of one bot, one helper step each (TEST ONLY, each a named fallback when it did something).
+    -> the text for the report; an old helper or a refusal is named in it and nothing is granted"""
+    r = {'name': name, 'lead': True}
+    element, keys, which = loadout_row(cls)
+    words = list(io.rotation_words(3)) if which == 'rotation' and hasattr(io, 'rotation_words') else []
+    parts = []
+    e = await hcmd(io, r, 'gear extras %d' % PINNACLE_RARITY, 'gear', HELPER_WAIT)
+    if not isinstance(e, dict) or e.get('err'):
+        parts.append('extras: %s' % str((e or {}).get('err') or 'no answer (old helper file)')[:60])
+    else:
+        given = [str(s) for s in e.get('given') or []]
+        if given:
+            fallbacks.append(fallback_note('gear extras', 'TEST ONLY: %s' % ', '.join(given)))
+        refused = ['%s %s' % (x.get('slot'), x.get('why')) for x in e.get('refused') or [] if isinstance(x, dict)]
+        parts.append('extras %s%s' % (','.join(given) or 'none', ' (refused: %s)' % '; '.join(refused[:2]) if refused else ''))
+    g = await hcmd(io, r, 'gear growth', 'gear', HELPER_WAIT)
+    if not isinstance(g, dict) or g.get('err'):
+        parts.append('growth: %s' % str((g or {}).get('err') or 'no answer (old helper file)')[:60])
+    else:
+        ws = [w for w in g.get('weapons') or [] if isinstance(w, dict)]
+        marked = sum(1 for w in ws if w.get('grown'))
+        fallbacks.append(fallback_note('gear growth', 'TEST ONLY: the weapon touch of %d weapon(s)' % len(ws)))
+        parts.append('growth %d/%d marked' % (marked, len(ws)))
+    o = await hcmd(io, r, 'gear orbs', 'gear', HELPER_WAIT)
+    if not isinstance(o, dict) or o.get('err'):
+        parts.append('orbs: %s' % str((o or {}).get('err') or 'no answer (old helper file)')[:60])
+    else:
+        ap = o.get('applied') if isinstance(o.get('applied'), dict) else {}
+        fallbacks.append(fallback_note('gear orbs', 'TEST ONLY: %s whetstones, %s tempering, %s ember' % (ap.get('whetstone', 0), ap.get('tempering', 0), ap.get('ember', 0))))
+        qs = [int(p.get('quality') or 0) for p in o.get('pieces') or [] if isinstance(p, dict)]
+        parts.append('orbs q%d x%d (w%s t%s e%s)' % (min(qs) if qs else 0, len(qs), ap.get('whetstone', 0), ap.get('tempering', 0), ap.get('ember', 0)))
+    m = await hcmd(io, r, 'gear gems %s' % ';'.join(words) if words else 'gear gems', 'gear', HELPER_WAIT)
+    if not isinstance(m, dict) or m.get('err'):
+        parts.append('gems: %s' % str((m or {}).get('err') or 'no answer (old helper file)')[:60])
+    else:
+        n = int(m.get('socketed') or 0)
+        pcs = [p for p in m.get('pieces') or [] if isinstance(p, dict)]
+        total = sum(len(p.get('gems') or []) for p in pcs)
+        if n:
+            fallbacks.append(fallback_note('gear gems', 'TEST ONLY: %d gems of tier %s, element %s' % (n, m.get('tier'), m.get('element'))))
+        bad = ['%s' % x for x in m.get('refused') or []][:2]
+        parts.append('gems %s T%s x%d in %d pieces%s' % (m.get('element') or 'no element', m.get('tier'), total, len(pcs), ' (refused: %s)' % '; '.join(bad) if bad else ''))
+    return ', '.join(parts)
+
+
+async def pinnacle_buff_learn(io, name, fallbacks):
+    """the class's level 800 buff: `buffs learn` teaches the spell (a TEST ONLY grant, named) and the bot remembers its name for the casts. -> the text"""
+    b = await io.helper('buffs learn', 'buffs', HELPER_WAIT)
+    if not isinstance(b, dict) or b.get('err'):
+        return 'buff: %s' % str((b or {}).get('err') or 'no answer (old helper file)')[:60]
+    spell = str(b.get('spell') or '')
+    if not b.get('learned') or not spell:
+        return 'buff: %s not learned' % (spell or 'none')
+    PINNACLE_BUFFS[name] = spell
+    fallbacks.append(fallback_note('grant buff spell', 'TEST ONLY: %s taught, the line quest is long' % spell))
+    return 'buff %s' % spell
+
+
+async def pinnacle_buff(io, spell):
+    """the class buff cast by its words: -> True when the bot's class lists the spell and the words were said"""
+    spells = io.class_spells() if hasattr(io, 'class_spells') else []
+    found = next((s for s in spells or [] if s.get('name') == spell and s.get('words')), None)
+    if found is None:
+        return False
+    await io.say(found['words'])
+    return True
+
+
+async def pinnacle_food(io, r, fallbacks):
+    """`food`: the store's Everfull Ration (given when the bot has none) and its bites until full, a counted TEST ONLY step. -> the text"""
+    f = await hcmd(io, r, 'food', 'food', HELPER_WAIT)
+    if not isinstance(f, dict) or f.get('err'):
+        return 'food: %s' % str((f or {}).get('err') or 'no answer (old helper file)')[:60]
+    fallbacks.append(fallback_note('food', 'TEST ONLY: the Everfull Ration, %s s of regeneration' % f.get('seconds')))
+    return 'food %s s' % f.get('seconds')
+
+
 PINNACLE_COMPLETE = [True]   # O685: the bots of a pinnacle fight are complete characters (complete_character); False = the O684 bots (the class as it is, the focus builds)
 
 
@@ -5112,6 +5210,10 @@ async def pinnacle_prep(io, name, cls, level, fallbacks):
     fallbacks.extend(r.fallbacks or [])
     if io.alive():
         parts.append(await pinnacle_gear(io, {'name': name, 'lead': True}, fallbacks))
+    if PINNACLE_COMPLETE[0] and io.alive():
+        parts.append(await pinnacle_gear_more(io, name, cls, fallbacks))   # O693: boots, jewellery, off hand, the weapon touch, the bench results, the gems
+    if PINNACLE_COMPLETE[0] and io.alive():
+        parts.append(await pinnacle_buff_learn(io, name, fallbacks))   # O693: the class's level 800 buff, cast when the fight opens
     if io.alive():
         await io.helper('bag', 'bag', HELPER_WAIT)
     return '%s: %s' % (name[-3:], ', '.join(parts))
@@ -5121,8 +5223,14 @@ async def pinnacle_fight(io, squad, trace, budget):
     """the play loop of the party: one look at every bot, then up to PINNACLE_STEPS steps each by the engine's path to the goal the guide names. The
     fight itself is each bot's own (its rotation, its heals). Ends when the boss falls, a fault, every bot is out, or the budget"""
     elapsed, misses, fight_since, mark = 0.0, 0, None, None
-    was_in, shielded = {}, -PINNACLE_SHIELD_EVERY
+    was_in, shielded, buffed = {}, -PINNACLE_SHIELD_EVERY, -PINNACLE_BUFF_EVERY
     while io.alive() and elapsed < budget:
+        if elapsed - buffed >= PINNACLE_BUFF_EVERY and PINNACLE_BUFFS:   # O693: the class buff when the fight opens (the boss comes after startDelay) and each time its cooldown is over
+            buffed = elapsed
+            for r in squad:
+                spell = PINNACLE_BUFFS.get(r['name'])
+                if spell and r.get('io') is not None and (was_in.get(r['name']) is not False):
+                    trace['buffs'] = trace.get('buffs', 0) + (1 if await pinnacle_buff(r['io'], spell) else 0)
         if elapsed - shielded >= PINNACLE_SHIELD_EVERY:
             shielded = elapsed
             for r in squad:
@@ -5366,13 +5474,13 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         jobs.append(pinnacle_prep_run(io, r, io.class_of(r['name']) or cls, int((await hcmd(io, r, 'pinnacle state', 'pinnacle') or {}).get('level') or level),
                                       fallbacks))
     prepped = await asyncio.gather(*jobs, return_exceptions=True)
-    prep_text = [str(p)[:420] for p in prepped]
+    prep_text = [str(p)[:700] for p in prepped]   # O693: the gear steps lengthened the line of a bot
     if not io.alive():
         return Result(key, name, cls, SKIP, 'the leader left the game while the party geared up')
     classes = [io.class_of(r['name']) or c for r, c in zip(squad, classes)]   # O685: the classes the bots are now (an ascension in the prep)
     cls = classes[0]
     trace = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'came': 'foot', 'fallbacks': fallbacks,
-             'level': a.get('level'), 'boss_seen': False, 'hp': None, 'classes': classes, 'gear': '; '.join(prep_text)[:2200]}
+             'level': a.get('level'), 'boss_seen': False, 'hp': None, 'classes': classes, 'gear': '; '.join(prep_text)[:3600]}
     # to the Keeper: the opener on foot, the others on foot to the opener
     lead = squad[0]
     g = await io.helper('pinnacle set %s' % boss.get('key'), 'pinnacle', HELPER_WAIT)
@@ -5402,6 +5510,9 @@ async def pinnacle_party_play(io, name, cls, level, a, boss, place, partners):
         p = await io.helper('party', 'party', ANSWER)
         if not isinstance(p, dict) or int(p.get('size') or 0) < PINNACLE_PARTY:
             return Result(key, name, cls, SKIP, 'the party has %s member(s), %d are asked' % ((p or {}).get('size'), PINNACLE_PARTY), fallbacks)
+        if PINNACLE_COMPLETE[0]:   # O693: the bots eat just before the window opens (the ration's regeneration lasts 20 minutes at most)
+            fed = await asyncio.gather(*[pinnacle_food(io, r, fallbacks) for r in squad], return_exceptions=True)
+            trace['food'] = '; '.join('%s %s' % (r['name'][-3:], str(f)[:30]) for r, f in zip(squad, fed))[:240]
         opened = await pinnacle_open(io, place)
         if opened is not None:
             return Result(key, name, cls, opened[0], opened[1], fallbacks)
