@@ -14,7 +14,10 @@
 --     no id in onSpawn), with a box of `radius` round its spawn as the arena.
 -- opts = {tiles = {pos...} (the arena floor) | center + radius, players = function() -> {Player...}, tier, difficulty,
 --         solo, size, hit = function(player, share) (the system's own hit, e.g. the Ascended lethal-hit catch),
---         pillars = {pos...} (fixed cover for the line-of-sight blasts), compensate = false (keep the health)}
+--         pillars = {pos...} (fixed cover for the line-of-sight blasts), compensate = false (keep the health),
+--         healthScale = the fight's health over the monster's current maximum (O698: the factor is worked out for partySize, else size),
+--         partySize = the players of the fight (the party the factor is for; `size` is the boss footprint),
+--         healScale = the monster's own healing defense x this (O704, the pocket bosses: the file's heal is the event's)}
 -- Assumed engine API (TFS 1.4.2): addEvent, Game.createMonster / createItem / getSpectators, Tile:getGround /
 -- hasFlag / hasProperty / getTopCreature / getItemById, Creature events think / healthchange / death,
 -- EventCallback onSpawn, doTargetCombat, Position:sendMagicEffect, Monster:setMaxHealth / addHealth / say / getTarget.
@@ -139,6 +142,19 @@ function M.profileOf(name)
 		return nil
 	end
 	return C().profiles[name:lower()]
+end
+
+-- O704: the pocket-sized profile of a boss (boss_mechanics_config.lua `pocket`): key, profile; nil when it has none
+function M.pocketOf(name)
+	if type(name) ~= "string" then
+		return nil
+	end
+	local key = (C().pocket and C().pocket.prefix or "pocket ") .. name:lower()
+	local p = C().profiles[key]
+	if p and p.pocket then
+		return key, p
+	end
+	return nil
 end
 
 function M.sizeOf(name)
@@ -970,7 +986,7 @@ function M.attach(monster, key, opts)
 	local difficulty = opts.difficulty or ((profile.difficulty or 0.2) + (profile.tierDifficulty or 0) * math.max(0, (tier or 1) - 1))
 	local players = 1
 	local f = {id = id, name = name, profile = profile, grid = grid, opts = opts, adds = {}, watched = {}, level = opts and opts.level,
-		token = (M.token or 0) + 1}
+		token = (M.token or 0) + 1, healScale = tonumber(opts.healScale)}
 	M.token = f.token
 	M.fights[id] = f
 	players = math.max(1, #fightPlayers(f))
@@ -1021,6 +1037,12 @@ end
 local bossHealth = CreatureEvent("ChaosBossMechHealth")
 function bossHealth.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local f = M.fights[creature:getId()]
+	-- O704: the boss's own healing defense (the engine's heal, attacker = the boss) x the fight's healScale: a pocket boss heals a share of
+	-- the median class's damage, not the event's 1,200-3,200 a second. A heal a script gives (the heal phase's adds) has no attacker: untouched
+	if f and f.healScale and primaryType == COMBAT_HEALING and primaryDamage > 0 and attacker and attacker:getId() == creature:getId() then
+		primaryDamage = math.max(1, math.floor(primaryDamage * f.healScale))
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
 	if f and primaryType ~= COMBAT_HEALING then
 		local m = G.damageTakenMult(f.st, liveAdds(f))
 		if m < 1 then

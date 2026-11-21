@@ -952,7 +952,17 @@ local function spawnBoss(run)
 	end
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
-		pcall(ChaosBossMech.attach, m, nil, {level = level, tiles = run.L.floorList, size = run.size, solo = run.size == 1,
+		-- O704: a pocket is a smaller fight than the event the profile of the boss's name is made for (10 players, 15-24 M health): the
+		-- pocket-sized profile of that boss (boss_mechanics_config.lua `pocket`: adds and totems at the pocket's health, the party curve)
+		-- gets the factor worked out for this size and health (O698 healthScale: the fight's health over the monster's maximum), and the
+		-- monster file's own heal (above the median class's damage) is scaled to the pocket's (healScale). No pocket profile: as before
+		local pkey, pprof = nil, nil
+		if ChaosBossMech.pocketOf then
+			pkey, pprof = ChaosBossMech.pocketOf(m:getName())
+		end
+		pcall(ChaosBossMech.attach, m, pkey, {level = level, tiles = run.L.floorList, partySize = run.size, solo = run.size == 1,
+			healthScale = pprof and K.scale(run.settings.health, run.size) or nil,
+			healScale = pprof and pprof.pocket.healScale or nil,
 			players = function()
 				local r = PB.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}

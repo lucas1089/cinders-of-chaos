@@ -192,6 +192,19 @@ eq(K.memberError({boss = boss, level = 400, noStack = 10, charges = mgood.charge
 	"rewarded by this boss's event within the hour", "member rewarded by the event")
 
 -- ====================================================================== scaling and rewards
+-- O704: the five world pockets have their own curve (fractions of the boss file), the same fight health for all: 223,500 alone, x (1 + 0.673 a player)
+do
+	local files = {world_1 = 18000000, world_2 = 16000000, world_3 = 22000000, world_4 = 15000000, world_5 = 24000000}
+	for key, xml in pairs(files) do
+		local sc = K.settings(cfg, "world", key).health
+		eq(sc.solo ~= cfg.categories.world.health.solo, true, key .. ": its own curve, not the category's")
+		for players = 1, 5 do
+			local want = 223500 * (1 + 0.673 * (players - 1))
+			ok(math.abs(K.scale(sc, players) * xml / want - 1) < 0.003, key .. " x" .. players .. ": " .. math.floor(K.scale(sc, players) * xml) .. " health, planned " .. math.floor(want))
+		end
+		ok(K.scale(sc, 5) <= sc.max + 1e-9 and K.scale(sc, 6) == sc.max, key .. ": the cap is the party of five (the pocket's party)")
+	end
+end
 local w = cfg.categories.world
 eq(K.scale(w.health, 1), 0.03, "world solo health 3%")
 eq(K.scale(w.health, 5), 0.13, "5 players")
@@ -551,6 +564,25 @@ end
 tiles["100,100,7"] = {hasFlag = function() return true end, getGround = function() return 1 end}
 tiles["200,200,7"] = {hasFlag = function() return false end, getGround = function() return 1 end}
 
+-- O704: boss_mechanics.lua is not loaded here: a stand-in that records what spawnBoss hands attach and cuts the maximum by a factor (0.8) as the
+-- real one does, so the order (the mechanics' factor, then the pocket's health curve) is in the numbers
+local mechCfg = dofile("data/scripts/chaos/boss_mechanics_config.lua")
+local mechCalls = {}
+ChaosBossMech = {
+	pocketOf = function(name)
+		local key = mechCfg.pocket.prefix .. name:lower()
+		local p = mechCfg.profiles[key]
+		if p and p.pocket then
+			return key, p
+		end
+		return nil
+	end,
+	attach = function(m, key, opts)
+		mechCalls[#mechCalls + 1] = {key = key, opts = opts, name = m:getName(), max = m:getMaxHealth()}
+		m:setMaxHealth(math.floor(m:getMaxHealth() * 0.8))
+		return {hpMult = 0.8}
+	end
+}
 dofile("data/scripts/chaos/pocketboss.lua")
 local PB = ChaosPocketBoss
 Chaos.pocketBossConfig.darkActive = false
@@ -593,7 +625,15 @@ eq(run.size, 1, "solo")
 advance(pcfg.startDelay + 1)
 local bossM = Monster(run.bossId)
 ok(bossM, "the boss appeared")
-eq(bossM.maxHp, math.floor(1000000 * 0.03), "health x the solo curve")
+local w1 = index.byKey.world_1.settings.health
+eq(bossM.maxHp, math.floor(math.floor(1000000 * 0.8) * K.scale(w1, 1)), "health x the mechanics' factor x the solo curve of the boss (O704: its own curve, not the category's 3%)")
+-- O704: the pocket-sized profile of the boss, for this size and health, and the file's heal scaled to the pocket's
+eq(#mechCalls, 1, "O704: attach was called once")
+eq(mechCalls[1].key, "pocket kaelgor the infernal warlord", "O704: attached by the pocket profile's key, not the event's name")
+eq(mechCalls[1].opts.partySize, 1, "O704: the party size, not the boss footprint (opts.size)")
+eq(mechCalls[1].opts.size, nil, "O704: opts.size is the footprint: left to the profile")
+eq(mechCalls[1].opts.healthScale, K.scale(w1, 1), "O704: the health scale of this size (the fight's health over the file's)")
+eq(mechCalls[1].opts.healScale, 100 / 1200, "O704: the heal scale: 100 a second of the file's 1,200")
 ok(bossM.events.ChaosPocketBossDeath, "death event")
 ok(not (bossM.events.ChaosTierRollBoss or bossM.events.ChaosTierRollMagic or bossM.events.ChaosTierRollRare or bossM.events.ChaosTierRollLegendary),
 	"O694: a pocket boss rolls no tier or boss modifiers (the model knows no Regenerating or Vampiric)")
@@ -656,7 +696,11 @@ eq(ROWS["103:dreadscale"].used, 3, "the one left behind spent none")
 ok(c.msgs[#c.msgs]:find("no charges left", 1, true), "told why")
 advance(pcfg.startDelay + 1)
 bossM = Monster(run.bossId)
-eq(bossM.maxHp, math.floor(1000000 * K.scale(pcfg.categories.island.health, 2)), "health for two")
+eq(bossM.maxHp, math.floor(math.floor(1000000 * 0.8) * K.scale(pcfg.categories.island.health, 2)), "health for two")
+eq(mechCalls[2].key, nil, "O704: a boss with no pocket profile (an island boss) is attached as before: by its name")
+eq(mechCalls[2].opts.healthScale, nil, "O704: and gets no health scale")
+eq(mechCalls[2].opts.healScale, nil, "O704: and no heal scale")
+eq(mechCalls[2].opts.partySize, 2, "O704: the party size is still handed over")
 eq(bossM.hp, bossM.maxHp, "O681: the party's boss starts at its full health (the engine's addHealth takes a damage type: the one-argument call healed nothing)")
 -- a logout inside: out, the charge stays spent
 registry.ChaosPocketBossLogout.onLogout(b)

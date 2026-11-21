@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The boss lengths of the balance round (O475, owner 2026-11-10: "You can do everything"; computed, not measured).
 
-usage: python3 -I server/tools/boss_length_model.py [--derive] [--check] [--party] [--upgrades]
+usage: python3 -I server/tools/boss_length_model.py [--derive] [--pockets] [--check] [--party] [--upgrades]
 
 --upgrades (O686 phase 3): the typical damage is the median class's with the spell upgrades (class_dps_model.py), and every committed health
 is multiplied by H of the level it is planned for before it is held to the derivation (the committed numbers are today's: the game
@@ -25,6 +25,12 @@ numbers that give the bosses their planned length again, and --check holds the c
                    the Ascended Omens and the Cinderheart (XML health) and the models that fight them (uber_config.lua and
                    raid_config.lua refDps) and the five raid bosses (XML health) move by the same factor, so their documented times hold
 
+  pocket bosses    (O704, owner decision 2026-11-21 on O702) the five world bosses fought in a pocket, alone or in a party of up to five, at the
+                   world pocket's level (300): 300 s alone and 200 s for five of the median class (POCKET_SECONDS), the boss heals POCKET_HEAL_SHARE
+                   of the median class's damage (the monster files heal 1,200-3,200 a second, above the 994 the median class deals), adds and totems
+                   at the pocket's health: the `pocket` block and the "pocket <boss>" profiles of boss_mechanics_config.lua, the health curve of
+                   pocketboss_config.lua (overrides world_1 .. world_5) and the kill times of the real boss_mechanics_core.lua (tools/pocket_numbers.lua,
+                   luajit). --pockets prints the table before / after
 O703 (party health curves, owner 2026-11-21): the mechanics' health factor (boss_mechanics_core.lua G.balance) is worked out for the fight's own
 size and health curve, not the profile's own party (the solo one, or the party of five for Gorvath). --party prints the table (tools/
 party_factor_numbers.lua, the real core), --check holds it: the five generated dungeon bosses keep their plan (150 s alone, about 102 s with
@@ -37,11 +43,13 @@ through (BOSS_KEPT: the boss armour takes armourTarget.boss percent of the physi
 half); on a pack it is the 5 target median x NORMAL_KEPT (armourTarget.normal, NORMAL_RES). BOSS_RES and NORMAL_RES are assumptions
 (mean resistance of the monsters; the design's 30 and 15). Not in it: boss mechanics and the uptime, which the configs hold.
 
---derive   print the numbers (the table of D.dps, the five healthMult, the rift model, the Omen factor)
+--derive   print the numbers (the table of D.dps, the five healthMult, the rift model, the Omen factor, the pocket bosses)
+--pockets  print the pocket bosses' kill times before and after O704 (the table of server/README.md "Pocket boss profile (O704)")
 --check    exit 1 when a committed number is more than 1.5% (the Omen XML 0.5%) off its derivation
 """
 import json
 import math
+import json
 import os
 import re
 import subprocess
@@ -83,6 +91,15 @@ GEAR = 1.15                 # rift_config.lua density.model gear
 # the arena bosses (O637): file under monsters/chaos, the key of its profile in boss_mechanics_config.lua, level, players, seconds to kill, uptime,
 # heal a second (the XML's healing defense): a party of five typical characters, 360 s
 ARENA_BOSSES = (('malgrath_the_drowned_crown.xml', 'malgrath, the drowned crown', 800, 5, 360, 0.85, 400),)
+# the pocket bosses (O704): the planned fight of the five world bosses in a pocket for the median class at the pocket's level
+POCKET_SECONDS = (300, 200)   # alone, five characters (boss_mechanics_config.lua pocket.seconds)
+POCKET_PLAYERS = 5            # the pocket's party (pocketboss_config.lua party.max)
+POCKET_UPTIME = 0.85          # the damage lands this share of the time, as the arena and pinnacle bosses (the mechanics' downtime comes on top)
+POCKET_HEAL_SHARE = 0.10      # the boss heals this share of the median class's damage alone (Omen guardian 0.07, pinnacle 0.025)
+POCKET_HEAL_MAX = 0.12        # no pocket boss heals more than this share of it, the file's own or scaled
+POCKET_TOL = 0.03             # the kill time of every size, with the mechanics' factor, within 3% of the plan (the factor's floor and rounding)
+POCKET_WEAK = 0.75            # the weakest class deals this share of the median (class_dps_model.py keeps every class within 25%)
+POCKET_WEAK_SHARE = 0.6       # and finishes alone within this share of the pocket's limit (pocketboss_config.lua minutes x 60)
 # the five generated dungeons: id, player level (dungeon level + 25), boss level, file health (the monster file's, README "Solo kill times")
 DUNGEON_BOSSES = (('vault', 825, 900, 14800), ('marrow', 1025, 1100, 15000), ('crucible', 1325, 1400, 15500),
                   ('sanctum', 1625, 1700, 16000), ('throne', 2025, 2100, 16000))
@@ -207,6 +224,140 @@ def xml_heal(text):
     return int(m.group(2)) / 100.0 * (int(m.group(3)) + int(m.group(4))) / 2.0 / (int(m.group(1)) / 1000.0) if m else 0.0
 
 
+# ------------------------------------------------------------------------------------------------ pocket bosses (O704)
+_pocket = []
+
+
+def lua_bin():
+    return os.environ.get('LUAJIT', 'luajit')
+
+
+def pocket_numbers():
+    """tools/pocket_numbers.lua: the pocket config, the world pocket bosses' files, curves and profiles, the kill times of the real core"""
+    if not _pocket:
+        out = subprocess.run([lua_bin(), os.path.join('tools', 'pocket_numbers.lua')], cwd=SERVER, check=True, capture_output=True, text=True).stdout
+        _pocket.append(json.loads(out))
+    return _pocket[0]
+
+
+def pocket_plan(level, heal, uptime=POCKET_UPTIME, seconds=POCKET_SECONDS, players=POCKET_PLAYERS):
+    """(health alone, perExtra of the party curve): seconds x (players x typical damage x uptime - heal), the same rule as the arena bosses"""
+    d = one_target(level)
+    solo = seconds[0] * (d * uptime - heal)
+    party = seconds[1] * (players * d * uptime - heal)
+    return solo, (party / solo - 1) / (players - 1)
+
+
+def print_pockets():
+    n = pocket_numbers()
+    print('pocket bosses at level %d (the median class kills alone in %d s, five in %d s; limit %d s); before = the event profile, the file\'s heal,\n'
+          'the world curve of 3%% (+2.5%% a player); after = the pocket profile (O704)' % (n['worldLevel'], POCKET_SECONDS[0], POCKET_SECONDS[1], n['limit']))
+    print('%-30s %9s %10s %10s %10s %10s %10s' % ('boss', 'file heal', 'alone b', 'alone a', 'five b', 'five a', 'weak a'))
+    for b in n['bosses']:
+        def sec(v):
+            return '%10s' % ('never' if v is None else '%.0f' % v)
+        print('%-30s %9.0f %s %s %s %s %s' % (b['name'], b['xmlHeal'], sec(b['before'].get('1', {}).get('seconds')), sec(b['after']['1']['seconds']),
+                                              sec(b['before'].get('5', {}).get('seconds')), sec(b['after']['5']['seconds']), sec(b['weak']['1'])))
+    return 0
+
+
+def pocket_problems():
+    """the committed pocket numbers against the plan: the median class's damage at the pocket's level, the heal, the health and the curve (in
+    boss_mechanics_config.lua and as fractions of the files in pocketboss_config.lua), the files' heal and the scale to the pocket's, the adds and
+    totems at the pocket's size, and the kill time of every size with the mechanics' factor (the real core)"""
+    bad = []
+    n = pocket_numbers()
+    P = n['pocket']
+    level = n['worldLevel']
+    if P['level'] != level:
+        bad.append('pocket level %s, the world pocket is tuned for level %s (Chaos.worldBoss.minLevel)' % (P['level'], level))
+    if [P['seconds']['solo'], P['seconds']['party']] != list(POCKET_SECONDS) or P['players'] != POCKET_PLAYERS or P['uptime'] != POCKET_UPTIME:
+        bad.append('pocket plan %s s, %s players, uptime %s: the model asks %s s, %d, %s' % (P['seconds'], P['players'], P['uptime'], POCKET_SECONDS, POCKET_PLAYERS, POCKET_UPTIME))
+    if n['partyMax'] != POCKET_PLAYERS:
+        bad.append('the pocket party is %s, the model plans five (pocketboss_config.lua party.max)' % n['partyMax'])
+    with SU.forced(False):  # the ref and the heal are the fight's numbers of today: the model's damage (the game multiplies the monster by H, the players grow by the gain)
+        today = one_target(level)
+    if abs(P['dps'] / today - 1) > 0.015:
+        bad.append('pocket dps is %s, the median class on one boss at level %d deals %.0f' % (P['dps'], level, today))
+    if abs(P['heal'] / (today * POCKET_HEAL_SHARE) - 1) > 0.05 or abs(P['healShare'] - POCKET_HEAL_SHARE) > 1e-9:
+        bad.append('pocket heal is %s a second (share %s), %.0f%% of %.0f is %.0f' % (P['heal'], P['healShare'], POCKET_HEAL_SHARE * 100, today, today * POCKET_HEAL_SHARE))
+    heal_tol = HEAL_UP_TOL if SU.active() else 0.0
+    want_solo, want_extra = pocket_plan(level, P['heal'])
+    if abs(P['health'] * _h(level) / want_solo - 1) > _tol(0.015, level) + heal_tol:
+        bad.append('pocket health alone is %s x H %.3f, %d s of the median class (heal %s) is %.0f' % (P['health'], _h(level), POCKET_SECONDS[0], P['heal'], want_solo))
+    have5 = P['health'] * (1 + P['perExtra'] * (POCKET_PLAYERS - 1))
+    want5 = want_solo * (1 + want_extra * (POCKET_PLAYERS - 1))
+    if abs(have5 * _h(level) / want5 - 1) > _tol(0.015, level) + heal_tol:
+        bad.append('pocket health for five is %.0f x H %.3f (perExtra %s), %d s of five characters is %.0f' % (have5, _h(level), P['perExtra'], POCKET_SECONDS[1], want5))
+    limit = n['limit']
+    for b in n['bosses']:
+        name = b['name']
+        prof = b['profile']
+        if not prof:
+            bad.append('%s: no pocket profile "%s%s" in boss_mechanics_config.lua' % (name, P['prefix'], name.lower()))
+            continue
+        # the file: its health and heal are what the profile and the curve are written against
+        if b['xmlHealth'] <= 0:
+            bad.append('%s: no monster file health read' % name)
+            continue
+        px = prof['pocket']
+        if abs(px['xmlHeal'] / b['xmlHeal'] - 1) > 0.01:
+            bad.append('%s: pocket.xmlHeal %s, the monster file heals %.0f a second' % (name, px['xmlHeal'], b['xmlHeal']))
+        scaled = b['xmlHeal'] * px['healScale']
+        if abs(scaled / P['heal'] - 1) > 0.01:
+            bad.append('%s: the file heals %.0f a second x healScale %.4f is %.0f, the pocket heal is %s' % (name, b['xmlHeal'], px['healScale'], scaled, P['heal']))
+        if scaled > POCKET_HEAL_MAX * today:
+            bad.append('%s: heals %.0f a second against the median class\'s %.0f (%.0f%%, over %.0f%%)' % (name, scaled, today, scaled / today * 100, POCKET_HEAL_MAX * 100))
+        # the curve of pocketboss_config.lua (fractions of the file) is the profile's health and party curve
+        st = b['settings']
+        for size in range(1, POCKET_PLAYERS + 1):
+            frac = min(st['solo'] + st['perExtra'] * (size - 1), st.get('max', 9e9))
+            want = P['health'] * (1 + P['perExtra'] * (size - 1))
+            if abs(frac * b['xmlHealth'] / want - 1) > 0.003:
+                bad.append('%s x%d: pocketboss_config.lua health curve gives %.0f, the pocket health is %.0f' % (name, size, frac * b['xmlHealth'], want))
+        ref = prof['ref']
+        if ref['health'] != P['health'] or ref['heal'] != P['heal'] or ref['dps'] != P['dps'] or ref['uptime'] != P['uptime'] or ref['players'] != 1:
+            bad.append('%s: the profile ref %s is not the pocket fight (health %s, heal %s, dps %s, uptime %s, alone)' % (name, ref, P['health'], P['heal'], P['dps'], P['uptime']))
+        if ref.get('limit') != limit:
+            bad.append('%s: the profile ref limit %s, the pocket lasts %s s' % (name, ref.get('limit'), limit))
+        # the adds and totems are the event's x the pocket's health over the event's, and grow with the boss
+        raid = b['event']
+        if raid['health'] <= P['health'] * 10:
+            bad.append('%s: the event ref health %s is not an event fight' % (name, raid['health']))
+        for ph in prof.get('adds', []):
+            if ph.get('healthPerExtra') != P['perExtra']:
+                bad.append('%s: adds %s grow by %s a player, the boss by %s' % (name, ph.get('name'), ph.get('healthPerExtra'), P['perExtra']))
+            if ph['health'] * ph.get('count', 1) > 0.15 * P['health']:
+                bad.append('%s: adds %s of the pocket have %s health in all, over 15%% of the pocket boss' % (name, ph.get('name'), ph['health'] * ph.get('count', 1)))
+        for m in prof.get('timed', []):
+            if 'totemHealth' in m:
+                if m.get('totemPerExtra') != P['perExtra']:
+                    bad.append('%s: totem %s grows by %s a player, the boss by %s' % (name, m.get('totemName'), m.get('totemPerExtra'), P['perExtra']))
+                if m['totemHealth'] > 0.05 * P['health']:
+                    bad.append('%s: the totem %s has %s health, over 5%% of the pocket boss' % (name, m.get('totemName'), m['totemHealth']))
+        # the kill time of every size with the mechanics' factor (the real core), the weakest class alone, no factor on the floor
+        floor_ = prof.get('minHpMult', 0.6)
+        times = []
+        for size in range(1, POCKET_PLAYERS + 1):
+            a = b['after'][str(size)]
+            times.append(a['seconds'])
+            plan = POCKET_SECONDS[0] if size == 1 else (POCKET_SECONDS[1] if size == POCKET_PLAYERS else None)
+            if a['hpMult'] <= floor_ + 1e-9 or a['hpMult'] > 1 + 1e-9:
+                bad.append('%s x%d: the mechanics\' factor %.4f is on the floor %.2f or above 1: the kill time is not kept' % (name, size, a['hpMult'], floor_))
+            if plan and abs(a['seconds'] / plan - 1) > POCKET_TOL:
+                bad.append('%s x%d: the median class kills it in %.0f s, planned %d (%.1f%% off, over %.0f%%)' % (name, size, a['seconds'], plan, abs(a['seconds'] / plan - 1) * 100, POCKET_TOL * 100))
+            if a['seconds'] > limit:
+                bad.append('%s x%d: %.0f s, over the %d s limit' % (name, size, a['seconds'], limit))
+        if any(later > earlier * 1.001 for earlier, later in zip(times, times[1:])):
+            bad.append('%s: a bigger party takes longer: %s' % (name, ['%.0f' % t for t in times]))
+        weak = b['weak']['1']
+        if weak is None or weak > POCKET_WEAK_SHARE * limit:
+            bad.append('%s: the weakest class (x%.2f) alone takes %s s, over %.0f%% of the %d s limit' % (name, POCKET_WEAK, weak, POCKET_WEAK_SHARE * 100, limit))
+    if len(n['bosses']) != 5:
+        bad.append('%d world bosses, the model holds five' % len(n['bosses']))
+    return bad
+
+
 def lua_rows(rows):
     return '{' + ', '.join('{%d, %d}' % (lv, round(v)) for lv, v in rows) + '}'
 
@@ -226,6 +377,10 @@ def derive():
     for fname, profile, level, players, seconds, uptime, heal in ARENA_BOSSES:
         print('  %-34s level %d, %d players, %d s: health %.0f, party damage %.0f a second' % (
             fname, level, players, seconds, arena_health(level, players, seconds, uptime, heal), players * one_target(level)))
+    pn = pocket_numbers()
+    solo, extra = pocket_plan(pn['worldLevel'], pn['pocket']['heal'])
+    print('\npocket bosses (level %d, %d s alone / %d s for five, heal %d a second): health %.0f, perExtra %.3f (committed %s / %s)' % (
+        pn['worldLevel'], POCKET_SECONDS[0], POCKET_SECONDS[1], pn['pocket']['heal'], solo, extra, pn['pocket']['health'], pn['pocket']['perExtra']))
     h, f = omen_factor()
     print('\nOmen guardian health %.0f (x%.3f of %d): Ascended %.0f, Cinderheart %.0f, refDps %.0f' % (
         h, f, OMEN_OLD, ASCENDED_OLD * f, CINDER_OLD * f, REFDPS_OLD * f))
@@ -404,6 +559,7 @@ def problems():
         got_heal = xml_heal(read(os.path.join(CHAOS_MONSTERS, fname)))
         if abs(got_heal / heal - 1) > 0.01:
             bad.append('arena boss %s: its healing defense heals %.0f a second, the model has %d' % (fname, got_heal, heal))
+    bad.extend(pocket_problems())
     for name, v in zip(('uber', 'raid'), committed_refdps()):
         # a damage number of today's model: held in the run of today only (see D.dps above)
         if not SU.active() and abs(v / (REFDPS_OLD * factor) - 1) > 0.015:
@@ -419,6 +575,8 @@ def main(argv):
         print(SU.banner())
     if '--derive' in argv:
         return derive()
+    if '--pockets' in argv:
+        return print_pockets()
     if '--party' in argv:
         return print_party()
     bad = problems()
@@ -426,8 +584,8 @@ def main(argv):
         for b in bad:
             print('FAIL ' + b)
         if not bad:
-            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, arena bosses %s s, from the typical damage after the round; the party factor of each size, O703)' % (
-                BOSS_SECONDS, GUARDIAN_SECONDS, OMEN_SECONDS, '/'.join(str(a[4]) for a in ARENA_BOSSES)))
+            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, arena bosses %s s, pocket bosses %d / %d s, from the typical damage after the round; the party factor of each size, O703)' % (
+                BOSS_SECONDS, GUARDIAN_SECONDS, OMEN_SECONDS, '/'.join(str(a[4]) for a in ARENA_BOSSES), POCKET_SECONDS[0], POCKET_SECONDS[1]))
         return 1 if bad else 0
     return derive()
 

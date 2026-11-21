@@ -1290,6 +1290,98 @@ do
 	creatures[ob.id] = nil
 end
 
+-- O704 (owner decision 2026-11-21 on O702): the five world bosses have a pocket-sized profile for the pocket fight (pocketboss.lua): the event's
+-- telegraphs, adds and totems at the pocket's health, the party curve, the heal scaled to the pocket's (opts.healScale). The median class (994 a
+-- second at level 300 on one boss, tools/boss_length_model.py) kills it in 300 s alone and 200 s with five
+do
+	local P = cfg.pocket
+	check(P ~= nil and P.prefix == "pocket " and P.seconds.solo == 300 and P.seconds.party == 200 and P.players == 5, "O704: the pocket plan is in the config")
+	eq(M.pocketOf("Nobody"), nil, "O704: no pocket profile for an unknown boss")
+	eq(M.pocketOf(nil), nil, "O704: no name, no pocket profile")
+	eq(M.pocketOf("Sangrith the Bloodmoon Herald"), nil, "O704: only the world bosses have one")
+	local names = {"Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"}
+	for _, name in ipairs(names) do
+		local key, pp = M.pocketOf(name)
+		eq(key, "pocket " .. name:lower(), "O704: the key of " .. name)
+		local raid = cfg.profiles[name:lower()]
+		check(pp ~= nil and pp ~= raid and M.profileOf(name) == raid, "O704: " .. name .. ": the monster's own name is still the event profile")
+		check(pp and pp.pocket and pp.pocket.of == name:lower(), "O704: " .. name .. ": pocket.of names the event profile")
+		check(pp.ref.players == 1 and pp.ref.health == P.health and pp.ref.dps == P.dps and pp.ref.heal == P.heal and pp.ref.uptime == P.uptime,
+			"O704: " .. name .. ": the ref is the pocket fight alone")
+		check(pp.ref.heal <= 0.12 * P.dps, "O704: " .. name .. ": the heal is at most 12% of the median class's damage")
+		check(raid.ref.heal > P.dps and pp.pocket.xmlHeal > P.dps and math.abs(pp.pocket.xmlHeal * pp.pocket.healScale - P.heal) < 0.01,
+			"O704: " .. name .. ": the file's heal is above the median class's damage, the scale brings it to the pocket's")
+		check(math.abs(pp.pocket.xmlHeal / raid.ref.heal - 1) < 0.05, "O704: " .. name .. ": the file's heal is the event ref's (within 5%)")
+		-- the same mechanics, other sizes
+		eq(#(pp.telegraphs or {}), #(raid.telegraphs or {}), "O704: " .. name .. ": the same telegraphs")
+		eq(#(pp.adds or {}), #(raid.adds or {}), "O704: " .. name .. ": the same adds phases")
+		eq(#(pp.timed or {}), #(raid.timed or {}), "O704: " .. name .. ": the same timed attacks")
+		eq(pp.size, raid.size, "O704: " .. name .. ": the same footprint")
+		local k = P.health / raid.ref.health
+		for i, ph in ipairs(pp.adds or {}) do
+			check(ph.health <= raid.adds[i].health * k * 1.001 + 1 and ph.health >= raid.adds[i].health * k * 0.999 - 1,
+				"O704: " .. name .. ": the adds have the event's share of the fight (" .. ph.health .. " of " .. raid.adds[i].health .. ")")
+			check(ph.health * (ph.count or 1) < 0.1 * P.health, "O704: " .. name .. ": the adds are under a tenth of the pocket boss")
+			eq(ph.healthPerExtra, P.perExtra, "O704: " .. name .. ": the adds grow with the boss")
+		end
+		for i, t in ipairs(pp.timed or {}) do
+			if t.totemHealth then
+				check(t.totemHealth * 100 < P.health and t.totemHealth < raid.timed[i].totemHealth * k * 1.001 + 1, "O704: " .. name .. ": the totem is at the pocket's size ("
+					.. t.totemHealth .. ")")
+				eq(t.totemPerExtra, P.perExtra, "O704: " .. name .. ": the totem grows with the boss")
+			end
+		end
+		-- the kill time of each size with the factor of THAT size (opts.size and opts.healthScale): 300 s alone, 200 s with five of the median class
+		local last = math.huge
+		for size = 1, P.players do
+			local health = P.health * (1 + P.perExtra * (size - 1))
+			local ref = G.refFor(pp.ref, size, health)
+			local b = G.balance(pp, ref)
+			check(b.hpMult > (pp.minHpMult or 0.6) + 1e-9 and b.hpMult < 1, "O704: " .. name .. " x" .. size .. ": the factor is off the floor (" .. string.format("%.4f", b.hpMult) .. ")")
+			check(math.abs(b.final - b.base) / b.base < 0.01, "O704: " .. name .. " x" .. size .. ": the kill time stays ("
+				.. G.clockText(b.base) .. " -> " .. G.clockText(b.final) .. ")")
+			local want = size == 1 and P.seconds.solo or (size == P.players and P.seconds.party or nil)
+			if want then
+				check(math.abs(b.base - want) / want < 0.01, "O704: " .. name .. " x" .. size .. ": " .. want .. " s planned (" .. math.floor(b.base) .. ")")
+			end
+			check(b.final < last + 1e-9, "O704: " .. name .. ": a bigger party is not slower")
+			last = b.final
+		end
+	end
+	-- the engine file: attach by the pocket key with the size and the pocket's health scale cuts the boss by the factor of that fight
+	local name, key = "Kaelgor the Infernal Warlord", nil
+	local pp
+	key, pp = M.pocketOf(name)
+	local xml = 18000000
+	local frac = 0.045845 -- pocketboss_config.lua world_1 with five
+	local kb = make({name = name, pos = {x = 200, y = 200, z = 7}, hp = xml})
+	local kp = make({name = "PocketMan", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+	kb.target = kp.id
+	local want = G.balance(pp, G.refFor(pp.ref, 5, xml * frac)).hpMult
+	local kf = M.attach(kb, key, {center = {x = 200, y = 200, z = 7}, radius = 8, partySize = 5, healthScale = frac, healScale = pp.pocket.healScale})
+	check(kf ~= nil and kf.profile == pp, "O704: the pocket fight is attached with the pocket profile")
+	check(kf and math.abs(kf.hpMult - want) < 1e-9, "O704: the factor is the pocket's for five (" .. tostring(kf and kf.hpMult) .. " against " .. tostring(want) .. ")")
+	local eventWant = G.balance(cfg.profiles[name:lower()], G.refFor(cfg.profiles[name:lower()].ref)).hpMult
+	check(kf and math.abs(kf.hpMult - eventWant) > 0.005, "O704: and not the event's factor " .. string.format("%.4f", eventWant))
+	check(kb.maxHp == math.floor(xml * want), "O704: the monster's maximum is the file's x the factor")
+	-- the heal: the boss's own healing defense (attacker = the boss) x healScale; a script's heal, another creature's heal, damage and a fight with no scale are left
+	local rg = registered.ChaosBossMechHealth
+	local healed = rg.onHealthChange(kb, kb, 30000, COMBAT_HEALING, 0, 0)
+	eq(healed, math.floor(30000 * pp.pocket.healScale), "O704: the file's heal of 30,000 is " .. math.floor(30000 * pp.pocket.healScale) .. " in the pocket")
+	check(healed < 30000 / 10, "O704: a tenth or less of the file's heal")
+	eq((rg.onHealthChange(kb, nil, 30000, COMBAT_HEALING, 0, 0)), 30000, "O704: a heal with no attacker (the heal phase's adds) is left")
+	eq((rg.onHealthChange(kb, kp, 30000, COMBAT_HEALING, 0, 0)), 30000, "O704: a heal another creature gives is left")
+	eq((rg.onHealthChange(kb, kp, -700, COMBAT_FIREDAMAGE, 0, 0)), -700, "O704: damage is left")
+	eq((rg.onHealthChange(kb, kb, 1, COMBAT_HEALING, 0, 0)), 1, "O704: a heal never rounds to nothing")
+	creatures[kb.id] = nil
+	local ob = make({name = name, pos = {x = 200, y = 200, z = 7}, hp = xml})
+	local of = M.attach(ob, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(of ~= nil and of.profile == cfg.profiles[name:lower()], "O704: attached by its name it is still the event fight")
+	eq((rg.onHealthChange(ob, ob, 30000, COMBAT_HEALING, 0, 0)), 30000, "O704: the event boss keeps its heal")
+	creatures[ob.id] = nil
+	creatures[kp.id] = nil
+end
+
 -- O703: the dungeon bosses, the guild boss and the Omen guardians get the factor of their fight's size (the party health is a curve of the size,
 -- not the monster's health at attach time). Seconds are the model's: G.balance final against the plan, no engine
 do

@@ -83,7 +83,8 @@ return {
 	--   tokens     Conquest Tokens per player and kill (ChaosConquest.grant(player, "pocketboss:<key>", n))
 	categories = {
 		world = {xpMult = 0.6, lootMult = 0.6, minutes = 15, tokens = 3,
-			-- the world bosses carry 16-22 M health for up to 40 players: 3% solo (480-660 k)
+			-- the world bosses carry 15-24 M health for up to 40 players: 3% solo (450-720 k) is the default of a world boss with no override;
+			-- the five of today have their own (overrides world_1 .. world_5, O704)
 			health = {solo = 0.03, perExtra = 0.025, max = 0.15},
 			damage = {solo = 0.5, perExtra = 0.1, max = 0.9}},
 		island = {minLevel = 250, xpMult = 0.6, lootMult = 0.6, minutes = 12, tokens = 2,
@@ -95,7 +96,17 @@ return {
 	},
 	-- per boss key (bossspawns_config.lua keys; world bosses world_1 .. world_5): any field of a category above
 	overrides = {
-		raid_moloveth = {minLevel = 250, tokens = 2} -- a boss passive point (bosspoints_config.lua id 7)
+		raid_moloveth = {minLevel = 250, tokens = 2}, -- a boss passive point (bosspoints_config.lua id 7)
+		-- O704 (owner decision 2026-11-21 on O702): a world pocket is a pocket-sized fight, not the event's. Its health is the same for all five
+		-- bosses, 223,500 alone and x (1 + 0.673 x (players - 1)) in a party (the median class kills it in 300 s alone, 200 s with five:
+		-- boss_mechanics_config.lua `pocket`, tools/boss_length_model.py --check), written as the fraction of each boss file's health (K.scale):
+		-- solo = 223,500 / the file's health, perExtra = solo x 0.673, max = the party of five. Adds, totems and the boss's own heal are the
+		-- pocket profile's (pocketboss.lua attaches "pocket <boss>"; server/README.md "Pocket boss profile (O704)")
+		world_1 = {health = {solo = 0.012417, perExtra = 0.008357, max = 0.045845}}, -- Kaelgor, 18 M
+		world_2 = {health = {solo = 0.013969, perExtra = 0.009401, max = 0.051573}}, -- Skaldra, 16 M
+		world_3 = {health = {solo = 0.010159, perExtra = 0.006837, max = 0.037507}}, -- the Rotmother, 22 M
+		world_4 = {health = {solo = 0.0149, perExtra = 0.010028, max = 0.055012}}, -- Nyxareth, 15 M
+		world_5 = {health = {solo = 0.009312, perExtra = 0.006267, max = 0.03438}} -- Vharok, 24 M
 	},
 	-- boss keys left out
 	exclude = {},

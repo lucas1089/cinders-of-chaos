@@ -13188,7 +13188,7 @@ own: the cast bar rides on the monster bar's opcode 125 (`ChaosOpcodes.monsterba
 **Who gets it.** `ChaosBossMech.attach(monster, key, opts)` from the systems that know their arena: `worldboss.lua` (the
 31 x 31 floor, its four pillars count as cover), `uber.lua` and `guildboss.lua` (the arena floor; the hits go through
 their own `shareHit`, so the lethal-hit catch still works), `rift.lua` (the Omen guardians by name, every other guardian
-the light profile `rift_guardian` with the key's tier; the chamber of radius 9 round the boss spawn). Every other monster
+the light profile `rift_guardian` with the key's tier; the chamber of radius 9 round the boss spawn), `pocketboss.lua` (O704: the world bosses by the pocket-sized profile key `"pocket " .. name`, with `partySize`, `healthScale` and `healScale`; "Pocket bosses", "Pocket boss profile (O704)"). Every other monster
 whose shown name has a profile (Vault Keeper Ossrim, the bosses of the deep dungeons 6-9, the Emberdeep Maw, the Ossuary Warden, Cinderwing, the dormant
 donor bosses) is attached at its first think after the spawn (an `onSpawn` EventCallback registers a think event, as
 monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable tiles only). The Ascended bosses, the
@@ -27447,13 +27447,53 @@ Registered with `Chaos.registerInstance("pocketboss")` (`/instances`, the Town P
 swept out every 3 s, a character that logs in inside the grid without a run goes to its temple.
 
 **The fight.** The boss appears `startDelay` (6 s) after the arrival, the boss's own monster type with
-`boss_mechanics.lua`'s profile when it has one (world bosses), health x `health` of its category by party size (world:
-3% solo of the 16-22 M event health, +2.5% per extra player, at most 15%; island 50% +25%, raid 60% +25%, at most 150%),
+`boss_mechanics.lua`'s profile when it has one (world bosses: the pocket-sized profile "pocket <boss>", O704, below), health x
+`health` of its category by party size (world: the five bosses have their own curve since O704, 223,500 alone and +67.3% per
+extra player, as a fraction of the file's health in `overrides` world_1 .. world_5, the category's 3% +2.5% is only the default
+of a world boss with no override; island 50% +25%, raid 60% +25%, at most 150%),
 the hits of the pocket's monsters on players x `damage` (world 0.5 solo +0.1 per extra player; island 0.75, raid 0.8).
 Time limit `minutes` (world 15, island 12, raid 10); the boss walks back to its spot when nobody is in the arena. A lethal
 hit is caught (`catchLethal`): the player goes back where they came from, healed, no death and no loss; the charge stays
 spent. The last one out ends the pocket. After the kill the corpse can be looted for `exitDelay` (30 s), then everyone is
 sent back and the slot is cleaned.
+
+**Pocket boss profile (O704, owner decision 2026-11-21 on O702).** The five world pockets (Kaelgor, Skaldra, the Rotmother,
+Nyxareth, Vharok; Ormathulak and Gloomfire have a profile but no spawn and no pocket, the island and raid pockets have no profile)
+used the event's profile of the boss's name: a factor worked out for 10 players and 15-24 M health, applied to a fight of 3% of
+that health, with the event's adds and totems (400,000 a Wardstone against a 540,000 boss) and the file's own heal (1,200-3,200 a
+second, above the 994 the median class deals at level 300: alone it could not be killed at all). Now `pocketboss.lua` attaches
+the pocket profile `"pocket " .. name` (`ChaosBossMech.pocketOf`, config block `pocket` of `boss_mechanics_config.lua`): the event
+profile's telegraphs, adds phases, totems and debuffs, with
+- **target** (no pocket target was in a config; the O662 note "the models plan 150 s" is the dungeon boss's 150 s): the median class
+  (`class_dps_model.py`, 994 a second on one boss at level 300, uptime 0.85) kills it in **300 s alone and 200 s with five**, limit 900 s;
+- **health** 223,500 alone, x (1 + 0.673 (players - 1)): 825,000 with five. `ref` of the profile is the alone fight; `pocketboss.lua` hands
+  attach `partySize` (the players; `size` is the boss footprint) and `healthScale` (the fight's health over the file's), so the mechanics' factor is the one of that size (O698), then
+  `setHealth` applies the curve. `pocketboss_config.lua` `overrides` world_1 .. world_5 hold the same curve as fractions of each file;
+- **adds and totems** at the pocket's share: the event's health x 223,500 / the event ref's (a Wardstone 4,967, a Plague Heart 3,048,
+  a Blood Idol 3,259, the Void Anchor 1,788), growing 0.673 a player like the boss;
+- **heal** 100 a second for all five (10% of the median class's damage alone; the Omen guardian is 7% (380 of 5,329 at level 1000), the
+  pinnacle bosses 2.5%; the model's limit is 12%): `boss_mechanics.lua` scales the boss's own healing defense (the engine's heal, attacker =
+  the boss) by `healScale` = 100 / the file's heal (Kaelgor, Skaldra 0.0833, the Rotmother 0.04, Nyxareth 0.08, Vharok 0.0312). A heal a
+  script gives (the Rotmother's Plague Hearts, 0.4% of the pocket boss each per 5 s while they live) and the event stay as they were. The
+  scale reads the engine's own heal event (TFS `combatChangeHealth` runs `onHealthChange` for heals with an origin); not seen in a live
+  engine, the mock tests hold the Lua side.
+
+| Boss | file health / heal a second | pocket health alone / five | alone before / after | five before / after | weakest class alone after |
+|---|---|---|---|---|---|
+| Kaelgor the Infernal Warlord | 18 M / 1,200 | 223,500 / 825,200 | never / 300 s | 943 / 200 s | 419 s |
+| Skaldra the Rime Queen | 16 M / 1,200 | 223,500 / 825,200 | never / 300 s | 552 / 200 s | 419 s |
+| The Rotmother | 22 M / 2,500 | 223,500 / 825,200 | never / 300 s | 1,342 / 200 s | 419 s |
+| Nyxareth the Void Archon | 15 M / 1,250 | 223,500 / 825,200 | never / 300 s | 1,172 / 200 s | 428 s |
+| Vharok the Blood Colossus | 24 M / 3,200 | 223,500 / 825,200 | never / 300 s | 2,063 / 200 s | 419 s |
+
+`tools/boss_length_model.py --check` (also `--upgrades`) holds it: the plan, the committed health and curve (both units), the files'
+heal and the scale, adds and totems at the pocket's size, and the kill time of every size 1-5 from the real core (`tools/pocket_numbers.lua`:
+within 3% of 300 / 200, no factor on the floor, a bigger party never slower, the weakest class alone under 60% of the limit);
+`--pockets` prints the table. Before = the event profile, the file's heal, the world curve (3% +2.5%), the model's damage in real units
+("never": the boss heals more than the median class deals; the O702 table below counts the heal in the event's units and gives
+715-1,274 s with five). Tests: `tests/boss_mechanics_test.lua` (profiles, adds, factor of each size, the heal scale), `tests/pocketboss_test.lua`
+(what spawnBoss hands attach, the curves), `tools/boss_length_model_test.py` (the numbers, 12 mutations). Not changed: the pocket's damage
+curve on players, rewards, the event fight.
 
 **Rewards.** Experience x `xpMult` (0.6; `EventCallback onGainExperience` at index -5, rounded at random). The corpse x
 `lootMult` (0.6): `loot.lua` multiplies its pack factor by `ChaosPocketBoss.lootMultOf(monster)`, so the stock loot is
@@ -37148,6 +37188,15 @@ fragment chances. `--derive` prints the numbers to commit, `--check` (CI) holds 
 
   - **Reading.** (1) Real flaws with an effect: the five generated dungeon bosses (a group kills them 9-14% too fast against its own curve, 4 of 5; the fix raises their health with five by 8-18%), the guild boss (alone 575 s against a plan of 495 s, 25 s below the 600 s enrage; a group of two 522 against 495), the Omen Morvane (9% at five; the floor 0.60 binds alone, a separate item: its solo time is 298 against 318). The rift guardians, the Ascended Omens and the Cinderheart have the pattern in the code and no effect, because their curve is 1.0 a player. Check kept: changing their attach call is not needed for balance, only for the day a curve moves. (2) The pocket bosses are not the pinnacle bug: the O698 `healthScale` line puts the four world pockets on the 0.60 floor (health 24% lower, 7-14% shorter), and even then solo is 905-1,664 s and a party of five 613-1,046 s against a 900 s limit, because the adds and totems of a raid profile have absolute health. The factor is not what makes a pocket long; the raid-sized adds are. A real fix is a pocket profile (adds and totem health scaled to the 3% fight) or `noAdds`, not `healthScale`. Also open: the Void Archon file heals about 1,250 a second on average (`world_bosses/nyxareth_the_void_archon.xml` line 49: 25,000 at 10% every 2 s, `ref.heal` 1200), above the 994 a second the median class deals at level 300; the pocket health curve (3%) does not scale it. (3) Rift guardians: the profile ref is 300,000 health at 2,180 damage a second, a 172 s fight, the real guardian is 55 s (96 s at tier 15); the factor differs from the factor of the real numbers by under 1% (0.8636 against 0.8545), so no effect, but `healthScale` with the real health would move the solo fight too until the ref is refreshed as O699 did for the pinnacle bosses.
   - **Options for the owner (nothing is changed).** (a) Pass `size` and a party `healthScale` in the dungeon (auto attach reads the run size from `fightPlayers`), guild and Omen attach calls, with the ref health left in the units of the ref (the party multiplier, not the monster's health, so the solo fight does not move): dungeon bosses then take 102 s with five as the curve says, the guild boss 495 s alone. (b) Leave the dungeons as they are: a group is 9-14% faster than its curve, a quiet buff; change only the guild boss (a ref for the solo size, or a 0.8 x factor for n below five). (c) Pockets: no `healthScale`; first decide the pocket fight's target time, then size its adds. Rift guardian, Ascended Omens, Cinderheart: nothing to do. The numbers come from `G.refFor` and `G.balance` of the core, called as `tools/pinnacle_numbers.lua` calls them; no script is kept.
+  - **pockets: applied (O704, owner decision 2026-11-21).** The world pockets got their own pocket-sized profile (section "Pocket bosses", "Pocket boss profile (O704)"). The O702 table names the world pockets Kaelgor, Nyxareth, Ormathulak, Gloomfire; the five real ones are Kaelgor, Skaldra, the Rotmother, Nyxareth, Vharok (Ormathulak and Gloomfire are dormant donor bosses with no spawn and no pocket, their O702 rows do not apply; the island and raid pockets have no profile, so there is nothing to size). Target (no config had one; the O662 note's "150 s" is the dungeon boss's): the median class kills it in 300 s alone and 200 s with five at level 300, 900 s limit. All five files heal 1,200-3,200 a second, above the median class's 994, so the O702 "alone" times were only true in the event's units; in real units a median character alone could not kill any of them. The heal is scaled to 100 a second (10% of the median class's damage) in the pocket only. Numbers from `python3 -I server/tools/boss_length_model.py --pockets` (the real core through `tools/pocket_numbers.lua`; real units = the file's heal, health 3% +2.5% a player, the event factor, the median class at uptime 0.85):
+
+| World pocket | alone before: O702 / real units | five before: O702 / real units | alone after | five after | weakest class alone after |
+|---|---|---|---|---|---|
+| Kaelgor | 1,697 / never | 715 / 943 | 300 s | 200 s | 419 s |
+| Skaldra | not listed / never | not listed / 552 | 300 s | 200 s | 419 s |
+| The Rotmother | not listed / never | not listed / 1,342 | 300 s | 200 s | 419 s |
+| Nyxareth | 1,012 / never | 877 / 1,172 | 300 s | 200 s | 428 s |
+| Vharok | not listed / never | not listed / 2,063 | 300 s | 200 s | 419 s |
   - **Applied (O703, owner 2026-11-21: option (a) for the dungeon bosses, the guild boss and the Omen guardians; the pocket bosses are another item).** `attach` takes `opts.partySize` and `opts.healthCurve(n)` (the party health multiplier of n players); `G.refForCurve(ref, size, curve)` (core) moves the ref's health from the ref's own party to `size` by `curve(size) / curve(ref.players)` and hands the rest to `G.refFor` (damage and weakest damage of that many players, adds and totems of that size). The ref stays in its own units, so a solo fight of a solo ref (curve 1.0 at one player) does not move. `dungeons.lua` `scaleMonster` leaves the run's size and `DIFF.partyHealth` for the boss with `ChaosBossMech.hint` (generated dungeon bosses only; the auto attach of its first think reads it, once, checks the name); `guildboss.lua` passes `run.size` and `B.healthMult` (the ref is the party of five: `curve(5)` is the unit, a group of 1-4 no longer gets the factor of five); `rift.lua` passes `run.size` and `R.omenHealthMult` for an Omen guardian only (a rift guardian: nothing, its curve is 1.0 a player). Pinnacle and pocket calls are untouched (`opts.size` / `healthScale`). `tools/party_factor_numbers.lua` dumps the real core's rows, `python3 -I server/tools/boss_length_model.py --party` prints them and `--check` holds them (`PARTY_TOL` 1.5% of the plain time of each size, Gorvath within 1% of `guildboss_config.lua` `targets`, 60 s clear of the enrage, Sangrith and Thalcyra equal to their solo factor at every size, the call sites of the four engine files); tests: `tests/boss_mechanics_test.lua` (O703 block, luajit and lua5.3), `boss_length_model_test.py`.
 
 | Fight (O703) | Factor alone / with five before | Factor with five after | Seconds alone | Five before | Five after | Plan alone / five |

@@ -43,6 +43,44 @@ real_arena = B.ARENA_BOSSES
 B.ARENA_BOSSES = (('malgrath_the_drowned_crown.xml', 'malgrath, the drowned crown', 800, 5, 400, 0.85, 400),)
 ok(any('arena boss malgrath_the_drowned_crown.xml health' in b for b in B.problems()), 'a boss at 400 s instead of 360 is reported')
 B.ARENA_BOSSES = real_arena
+# the pocket bosses (O704): 300 s alone and 200 s for five of the median class at level 300, the boss heals a tenth of its damage, adds and totems at
+# the pocket's size, the world curve of the files in pocketboss_config.lua, and the kill time of every size from the real core
+ok(B.POCKET_SECONDS == (300, 200) and B.POCKET_PLAYERS == 5 and B.POCKET_HEAL_SHARE == 0.10, 'the pocket plan: 300 s alone, 200 s for five, heal 10%')
+pn = B.pocket_numbers()
+ok(pn['worldLevel'] == 300 and len(pn['bosses']) == 5 and pn['limit'] == 900, 'five world pocket bosses at level 300, limit 900 s')
+solo, extra = B.pocket_plan(300, 100)
+ok(abs(solo - 300 * (B.one_target(300) * 0.85 - 100)) < 1e-6 and 223000 < solo < 224200 and abs(extra - 0.673) < 0.002, 'the pocket health 223,5xx and the curve 0.673 (%.0f %.4f)' % (solo, extra))
+ok(B.pocket_problems() == [], 'the committed pocket numbers are the plan: %s' % B.pocket_problems()[:3])
+for pb in pn['bosses']:
+    ok(pb['xmlHeal'] > B.one_target(300), '%s: the monster file heals %.0f a second, above the median class (%.0f): the reason for the scale' % (pb['name'], pb['xmlHeal'], B.one_target(300)))
+    ok(pb['before']['1']['seconds'] is None and pb['after']['1']['seconds'] is not None, '%s: alone it could not be killed before (the heal), 300 s after' % pb['name'])
+    ok(abs(pb['after']['1']['seconds'] / 300 - 1) < 0.03 and abs(pb['after']['5']['seconds'] / 200 - 1) < 0.03, '%s: %.0f s alone, %.0f s with five' % (pb['name'], pb['after']['1']['seconds'], pb['after']['5']['seconds']))
+    ok(pb['before']['5']['seconds'] > 540, '%s: five took %.0f s before, over 60%% of the 900 s limit' % (pb['name'], pb['before']['5']['seconds']))
+import copy  # noqa: E402
+real_pocket = list(B._pocket)
+
+
+def mutated(fn):
+    d = copy.deepcopy(real_pocket[0])
+    fn(d)
+    B._pocket[:] = [d]
+    out = B.pocket_problems()
+    B._pocket[:] = real_pocket
+    return out
+
+
+ok(any('pocket health alone' in x for x in mutated(lambda d: d['pocket'].update(health=d['pocket']['health'] * 1.1))), 'a pocket health 10% off is reported')
+ok(any('pocket health for five' in x for x in mutated(lambda d: d['pocket'].update(perExtra=0.4))), 'a party curve of 0.4 is reported')
+ok(any('heals' in x for x in mutated(lambda d: d['bosses'][3]['profile']['pocket'].update(healScale=1.0))), 'a boss that keeps the file heal (Nyxareth, 1,250 a second) is reported')
+ok(any('health curve' in x for x in mutated(lambda d: d['bosses'][0].update(settings=d['bosses'][0]['defaults']))), 'the world curve of 3% on a boss file is reported')
+ok(any('the median class kills it' in x for x in mutated(lambda d: d['bosses'][1]['after']['1'].update(seconds=420))), 'a kill time of 420 s against 300 is reported')
+ok(any('the median class kills it' in x for x in mutated(lambda d: d['bosses'][1]['after']['5'].update(seconds=300))), 'a party of five at 300 s against 200 is reported')
+ok(any('floor' in x for x in mutated(lambda d: d['bosses'][2]['after']['3'].update(hpMult=0.6))), 'a factor on the floor is reported')
+ok(any('weakest class' in x for x in mutated(lambda d: d['bosses'][0]['weak'].update({'1': 600}))), 'a weakest class over the limit is reported')
+ok(any('adds' in x for x in mutated(lambda d: d['bosses'][0]['profile']['adds'][0].update(health=400000))), 'adds of the event\'s size in a pocket are reported')
+ok(any('totem' in x for x in mutated(lambda d: [m.update(totemHealth=120000) for m in d['bosses'][3]['profile']['timed'] if 'totemHealth' in m])), 'a totem of the event\'s size is reported')
+ok(any('no pocket profile' in x for x in mutated(lambda d: d['bosses'][4].update(profile=None))), 'a world boss with no pocket profile is reported')
+ok(any('level' in x for x in mutated(lambda d: d.update(worldLevel=500))), 'a pocket level that is not the world pocket\'s is reported')
 # a number off by more than the tolerance is found
 real = B.committed_mults
 B.committed_mults = lambda: dict(real(), vault=real()['vault'] * 1.1)
