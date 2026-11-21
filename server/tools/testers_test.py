@@ -427,6 +427,46 @@ k.keep_alive(115.7)
 eq('!tester hunt' in said, True, 'back to the hunt after the rest')
 eq(said.count('!tester town'), 1, 'one flee a minute')
 
+# O695: the bot counts what it cast and what the server refused; a boss fight reads the tally through CheckIO.fight_tally
+k.tally.clear()
+k.ready.clear()
+k.read(b'\x8c' + struct.pack('<I', k.cid) + b'\x23')  # 35 %
+k.keep_alive(700.0)
+eq((k.tally.get('cast:heal'), k.tally.get('cast:attack'), k.tally.get('potion:health')), (1, None, 1), 'tally: the heal and the potion the bot sent, no attack under 50 %')
+eq(k.tally.get('beat:held'), 1, 'tally: the beat that went to the heal is a held attack beat')
+k.keep_alive(700.01)
+eq((k.tally.get('cast:attack'), k.tally.get('beat:held')), (1, 1), 'tally: with the heal on cooldown the attack goes, no second held beat')
+k.on_text('You are exhausted.')
+k.on_text('You do not have enough mana.')
+k.on_text('You are exhausted.')
+eq((k.tally.get('refused:exhausted'), k.tally.get('refused:no mana')), (2, 1), 'tally: the refusals of the server by kind')
+k.mana, k.mana_max = 300, 1000
+k.keep_alive(120.0)
+eq(k.mana_low, 30, 'tally: the lowest mana percent seen')
+_kio = T.CheckIO.__new__(T.CheckIO)
+_kio.bot, _kio.clock = k, {'stop': False}
+_snap = _kio.fight_tally()
+eq((_snap['cast:heal'], _snap['refused:exhausted'], _snap['mana_low']), (1, 2, 30), 'fight_tally: a copy of the counts and the lowest mana')
+_snap['cast:heal'] = 99
+eq(k.tally['cast:heal'], 1, 'fight_tally: a copy, not the bot\'s own table')
+_kio.fight_tally(reset=True)
+eq((k.tally, k.mana_low), ({}, None), 'fight_tally: reset starts the count again')
+k.cast_until = 0.0
+eq(_kio.casting(), False, 'casting: no cast on the bar')
+k.cast_until = _time.monotonic() + 5
+eq(_kio.casting(), True, 'casting: a cast-time spell on the bar')
+k.cast_until = 0.0
+k.health = 100
+k.ready.clear()
+k.tally.clear()
+k.keep_alive(500.0)
+eq(k.tally.get('cast:attack'), 1, 'tally: a rotation cast is an attack cast')
+k.ready.clear()
+k.rotation = [dict(hit, mana=5000)]
+k.mana = 100
+k.keep_alive(600.0)
+eq(k.tally.get('beat:no_spell'), 1, 'tally: a beat with the attack group ready and no spell it can pay')
+
 # the shop failure says whether the NPC answered at all (a creature speak packet with its name)
 k.shop_npc, k.npc_spoke = 'Material Broker', False
 k.read(b'\x61' + LT.string('Material Broker'))

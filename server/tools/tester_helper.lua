@@ -112,6 +112,7 @@ local H = ChaosTesterHelperCore
 
 local STORE = H.STORAGE
 local GROUPS, STEP_MS, RANGE = 4, 500, 5
+local BOSS_AIM = 7 -- O695: tiles from the boss of its fight within which a tester is aimed at it (a spell reaches 7; the guide's fight reach is 5)
 local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
 local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
@@ -125,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 37
+HELPER_VERSION = 38
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1761,7 +1762,7 @@ function commands.pinnacle(player, arg)
 		tell(player, "pinnacle", H.pinnacleAnswer(probe, got or {err = why}))
 		return
 	end
-	tell(player, "pinnacle", H.pinnacleAnswer(probe))
+	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = H.dealtRow(T.dealt, player:getId())}))   -- O695: the damage tally of this tester
 end
 
 -- ---------------------------------------------------------------- O681 the gear of the level
@@ -2041,7 +2042,7 @@ local function grantPiece(player, bag, slot, p, rarity, level, emptyOffHand)
 			item = Game.createItem(p.id, 1)
 		end
 		if not item then
-			return "the piece could not be made"
+			return "the piece could not be made (item " .. tostring(p.id) .. " unknown)" -- O695: Game.createItem found no such item
 		end
 		if emptyOffHand then
 			local off = player:getSlotItem(CONST_SLOT_RIGHT)
@@ -2425,14 +2426,33 @@ function commands.gear(player, arg)
 	local capWas = player:getCapacity()
 	player:setCapacity(capWas + 10000000) -- a piece of the level is heavy: the move is not refused for the weight
 	local given, refused = {}, {}
+	local ranked = H.gearRanked(pieces, className, level)
 	for _, name in ipairs(GEAR_ORDER) do
 		local p = plan[name]
 		local slot = GEAR_SLOTS[name]
 		if p then
 			local why = grantPiece(player, bag, slot, p, want.rarity or GEAR_RARITY, level, name == "weapon" and p.fit == "2")
+			-- O695: the best piece is an item this server does not have (the first party video: helmet and armour "could not be made"): the next best piece
+			-- of the slot is tried, in order, and the slot is told with the id of the piece that was worn
+			local tried, firstWhy = 1, why
+			for _, alt in ipairs(ranked[name] or {}) do
+				if why == "ok" or why == "worn" or not tostring(why):find("could not be made", 1, true) then
+					break
+				end
+				if alt.id ~= p.id then
+					tried = tried + 1
+					why = grantPiece(player, bag, slot, alt, want.rarity or GEAR_RARITY, level, name == "weapon" and alt.fit == "2")
+				end
+			end
 			if why == "ok" or why == "worn" then
 				given[#given + 1] = name
+				if tried > 1 then
+					print(string.format("[tester-helper] gear set for %s: %s worn after %d tries (TEST ONLY)", player:getName(), name, tried))
+				end
 			else
+				if tried > 1 and tostring(firstWhy):find("could not be made", 1, true) then
+					why = tostring(firstWhy) .. " +" .. (tried - 1) .. " more" -- the best piece's id, and how many others failed too
+				end
 				refused[#refused + 1] = {slot = name, why = tostring(why):sub(1, 60)}
 			end
 		end
@@ -4404,6 +4424,12 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		end
 		if eligible(p) then
 			local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
+			if dmg > 0 and p:isPlayer() then -- O695: the tally the party fight's report reads
+				local PNb = ChaosPinnacle
+				local okB, isBoss = pcall(function() return PNb and PNb.isBoss and PNb.isBoss(creature) end)
+				T.dealt = T.dealt or {}
+				H.dealtAdd(T.dealt, p:getId(), okB and isBoss and true or false, dmg)
+			end
 			local hit = {kind = "dealt", damage = dmg, level = p:getLevel()}
 			local rule = H.hitAnomaly(hit)
 			if rule then
@@ -4544,14 +4570,32 @@ local function stepBody()
 			if not player or not eligible(player) then
 				T.ids[id] = nil -- gone, or not a tester: never acted on
 			else
+				local addUp = false
 				if ChaosPinnacle and ChaosPinnacle.priorityTarget then
 					-- O681: inside a pinnacle fight the add that shields, empowers or channels comes before the boss ("Break them!"), as a person aims
 					local okP, add = pcall(ChaosPinnacle.priorityTarget, player)
+					addUp = okP and add and true or false
 					local cur = player:getTarget()
 					if okP and add and (not cur or cur:getId() ~= add:getId()) then
 						add:registerEvent("TesterHelperDealt")
 						player:setTarget(add)
 						player:setDirection(H.directionTo(player:getPosition(), add:getPosition()))
+					end
+				end
+				if not addUp then
+					-- O695: inside a pinnacle fight a person hits the boss, not the nearest monster; the loop aimed at the nearest one and kept it (an add of
+					-- a phase, a stray) until it died. The boss also carries the damage event, so the tally sees every hit on it, an area spell included
+					local PNa = ChaosPinnacle
+					if PNa and PNa.bossOf then
+						local okB, boss = pcall(PNa.bossOf, player)
+						if okB and boss then
+							boss:registerEvent("TesterHelperDealt")
+							local cur = player:getTarget()
+							if (not cur or cur:getId() ~= boss:getId()) and H.withinReach(player:getPosition(), boss:getPosition(), BOSS_AIM) then
+								player:setTarget(boss)
+								player:setDirection(H.directionTo(player:getPosition(), boss:getPosition()))
+							end
+						end
 					end
 				end
 				if not player:getTarget() then

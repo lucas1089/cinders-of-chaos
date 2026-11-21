@@ -941,6 +941,12 @@ do
 	eq(PN.priorityTarget(lead), nil, "priorityTarget: no add up, no priority (the helper aims at the boss)")
 	eq(PN.probe(lead).adds, nil, "probe: no adds field without an add")
 	eq(PN.probe(lead).guide.mode, "fight", "probe: the guide is the boss's again")
+	-- O695: the boss of the player's fight and the test of a creature (the helper aims at it and tallies the damage on it)
+	local lb = PN.bossOf(lead)
+	eq(lb ~= nil, true, "bossOf: the live boss of the fight the player is in")
+	eq(PN.isBoss(lb), true, "isBoss: the boss of the fight")
+	eq(PN.isBoss(made[777002]), false, "isBoss: an add is not the boss")
+	eq(PN.bossOf({getId = function() return 424242 end}), nil, "bossOf: a player in no fight")
 	Monster = realMonster
 	eq(PN.nearestAdd({getId = function() return 424242 end}), nil, "nearestAdd: a player in no fight")
 end

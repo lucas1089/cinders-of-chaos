@@ -745,6 +745,39 @@ function H.gearPlan(pieces, className, level)
 	return best
 end
 
+-- O695: every piece that fits the class and level, best first, per slot (the order H.gearPlan picks its best by): the pieces after the first are what
+-- `gear set` tries when the best one cannot be made (an id the installed items do not have)
+function H.gearRanked(pieces, className, level)
+	local by = {}
+	for _, p in ipairs(type(pieces) == "table" and pieces or {}) do
+		if type(p) == "table" and tonumber(p.level) and p.level <= (tonumber(level) or 0) and gearClassOk(p, className) then
+			local slot = H.GEAR_ARMOUR[p.kind] and p.kind or (H.GEAR_WEAPON[p.kind] and "weapon") or nil
+			if slot then
+				local stats = type(p.stats) == "table" and p.stats or {}
+				local sc = slot == "weapon" and H.gearWeaponPower(stats) or (tonumber(stats.armor) or 0)
+				by[slot] = by[slot] or {}
+				by[slot][#by[slot] + 1] = {row = {sc, p.level, p.fit == "2" and 0 or 1, -(tonumber(p.id) or 0)}, p = p}
+			end
+		end
+	end
+	local out = {}
+	for slot, list in pairs(by) do
+		table.sort(list, function(a, b)
+			for i = 1, 4 do
+				if a.row[i] ~= b.row[i] then
+					return a.row[i] > b.row[i]
+				end
+			end
+			return false
+		end)
+		out[slot] = {}
+		for i, e in ipairs(list) do
+			out[slot][i] = e.p
+		end
+	end
+	return out
+end
+
 -- ---------------------------------------------------------------- O693 the rest of the gear (TEST ONLY)
 -- `gear extras`: what a character of the level wears besides the four pieces of `gear set`, from the same list of the equipment sets (and the archery
 -- config's quivers). boots / amulet / ring: the piece of the highest armour the class may wear at the level. offhand: a shield or a spellbook (the
@@ -1597,6 +1630,45 @@ function H.damageOf(primary, primaryType, secondary, secondaryType)
 	end
 	return part(primary, primaryType) + part(secondary, secondaryType)
 end
+-- O695: the damage a tester dealt, counted per tester id: `boss` (what landed on the boss of its pinnacle fight), `other` (any other monster), and the hits.
+-- A TEST ONLY tally the party fight's report reads (`!tester pinnacle state` answers `dealt`): the server's own number, after every event that scaled the hit
+function H.dealtAdd(tally, id, isBoss, damage)
+	damage = tonumber(damage) or 0
+	if type(tally) ~= "table" or id == nil or damage ~= damage or damage <= 0 then
+		return false
+	end
+	local row = tally[id]
+	if not row then
+		row = {boss = 0, bossHits = 0, other = 0, otherHits = 0}
+		tally[id] = row
+	end
+	if isBoss then
+		row.boss = row.boss + math.floor(damage)
+		row.bossHits = row.bossHits + 1
+	else
+		row.other = row.other + math.floor(damage)
+		row.otherHits = row.otherHits + 1
+	end
+	return true
+end
+
+-- the row of one tester for the answer (a copy; zeros when nothing was dealt yet, so the report can tell "no damage" from an old helper)
+function H.dealtRow(tally, id)
+	local row = type(tally) == "table" and tally[id] or nil
+	if not row then
+		return {boss = 0, bossHits = 0, other = 0, otherHits = 0}
+	end
+	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits}
+end
+
+-- O695: true when `to` is on the floor of `from` and within `reach` tiles (a square: the engine's range of a spell)
+function H.withinReach(from, to, reach)
+	if type(from) ~= "table" or type(to) ~= "table" or from.z ~= to.z then
+		return false
+	end
+	return math.max(math.abs(from.x - to.x), math.abs(from.y - to.y)) <= (tonumber(reach) or 0)
+end
+
 H.HIT_KEEP = 40
 
 function H.pushHit(list, now, hit)

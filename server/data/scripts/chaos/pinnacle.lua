@@ -1222,6 +1222,21 @@ end
 -- the target the tester helper's loop gives a bot inside a fight before the boss: an add that shields, empowers or channels (the same as the guide's)
 PN.priorityTarget = PN.nearestAdd
 
+-- O695 (read only, for the TEST ONLY helper): the boss of the live fight a player is in, and whether a creature is a fight's boss (the helper aims its
+-- testers at the boss before the nearest monster and tallies the damage that lands on it)
+function PN.bossOf(player)
+	local run = player and PN.runOf[player:getId()]
+	if not run or run.ended then
+		return nil
+	end
+	return bossOf(run)
+end
+
+function PN.isBoss(creature)
+	local run = creature and PN.monsterRun[creature:getId()]
+	return run ~= nil and run.bossId == creature:getId()
+end
+
 -- TEST ONLY (`!tester pinnacle set [boss]`, O678): a whole set of fragments (one of each kind) of the boss for a TESTER: the top content that drops them
 -- (a waystone map of tier 12, a rift of tier 15, an Omen guardian) is hours of play a check cannot repeat. The boss is the named one, else the highest
 -- the level opens. Never for a player, never inside a run, one console line each. -> the boss key, or nil + why

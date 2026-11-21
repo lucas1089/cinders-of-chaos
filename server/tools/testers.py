@@ -1070,12 +1070,27 @@ class CheckIO(KeyIO):
         if b is None or not b.heal or b.ready.get('heal', 0) > now or b.ready.get(b.heal['group'], 0) > now:
             return False
         b.say(b.heal['words'])
+        getattr(b, 'tally_count', lambda kind: None)('cast:heal')   # O695
         b.ready['heal'] = now + max(1.0, b.heal['cooldown'] / 1000.0)
         b.ready[b.heal['group']] = now + b.heal['groupcooldown'] / 1000.0 + 0.1
         b.results.behaviour('heal_spell', 'tried')
         b.pending.setdefault('heal_spell', now + HEAL_SEEN)
         await b.conn.w.drain()
         return True
+
+    def fight_tally(self, reset=False):
+        """O695: a copy of this bot's tally (casts, refusals, potions, beats) and the lowest mana percent since the last reset; `reset` starts both again. A boss
+        fight reads one snapshot at its start and one at its end"""
+        b = self.bot
+        out = dict(getattr(b, 'tally', None) or {})
+        out['mana_low'] = getattr(b, 'mana_low', None)
+        if reset:
+            b.tally, b.mana_low = {}, None
+        return out
+
+    def casting(self):
+        """O695: True while a cast-time spell of this bot is on the cast bar (a step now would cancel it)"""
+        return bool(self.bot.casting(time.monotonic()))
 
     def rotation_words(self, n=3):
         """O685: the words of the first `n` attack spells of the bot's rotation (the spells a support rune goes into)"""
@@ -1089,6 +1104,7 @@ class CheckIO(KeyIO):
         if b is None or spell is None or b.ready.get(words, 0) > now or b.ready.get(spell['group'], 0) > now:
             return False
         b.say(words)
+        getattr(b, 'tally_count', lambda kind: None)('cast:support')   # O695
         b.ready[words] = now + max(gap, spell['cooldown'] / 1000.0)
         b.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
         b.results.behaviour('support_cast', 'tried')
@@ -1600,6 +1616,8 @@ class TesterBot(LT.Bot):
         self.in_raid = False  # inside the testers' raid (O588): the engine catches a lethal hit there, no flight to the temple
         self.heal_at = (60, 40)  # O681: health percent under which the bot casts its heal spell / drinks a potion (a boss fight sets it higher)
         self.heal_first = 0  # O684: health percent under which the bot casts no attack while its heal spell or its potion is ready (a pinnacle fight: 40)
+        self.tally = {}  # O695: what the bot cast and what the server refused, by kind (tally_count); a boss fight reads the difference of two snapshots
+        self.mana_low = None  # O695: the lowest mana percent seen since the last tally reset
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -1816,6 +1834,7 @@ class TesterBot(LT.Bot):
                 if detail == 'exhausted' or kind_ == 'heal_spell':
                     del self.pending[kind_]
                     self.results.behaviour(kind_, 'expected', self)
+            self.tally_count('refused:' + str(detail)[:24])   # O695: what the server refused, by kind (exhausted, no mana, no target, too far ...)
             self.results.count('failures', detail, self)
         elif kind == 'sold':
             self.results.keep('sold_units', detail[0])
@@ -2075,6 +2094,11 @@ class TesterBot(LT.Bot):
                 return
             await asyncio.sleep(TC.beat_delay(time.monotonic(), self.ready))   # O665: awake when the attack group is ready, not on a 0.25 s grid
 
+    def tally_count(self, kind, n=1):
+        """O695: one more of `kind` in the bot's tally: cast:attack / cast:heal / cast:support / potion:health / potion:mana, refused:<kind of TC.FAILURES>,
+        beat:no_spell (a beat the rotation had no ready spell it could pay), beat:held (an attack held for a heal). Cheap, always on, TEST ONLY bots"""
+        self.tally[kind] = self.tally.get(kind, 0) + n
+
     def keep_alive(self, now):
         """heal by spell under 60 %, by potion (hotkey: use with creature at 0xFFFF on its own id) under 40 %; under
         FLEE_AT % with both on cooldown, back to the temple (as a player's town portal) and to the hunt FLEE_REST
@@ -2094,6 +2118,9 @@ class TesterBot(LT.Bot):
         if self.back_at and now >= self.back_at and not self.stay and not self.video():
             self.back_at = None
             self.say('!tester hunt')
+        if self.mana is not None and self.mana_max:
+            pct = 100 * self.mana // max(1, self.mana_max)
+            self.mana_low = pct if self.mana_low is None else min(self.mana_low, pct)   # O695
         healed = False   # O663: the heal went this beat
         pot_ready = bool(self.heal_first and self.cid and self.ready.get('potion', 0) <= now
                          and (self.helper.get('info') or {}).get('potions', {}).get('health'))   # O684: a potion could go this beat
@@ -2101,6 +2128,7 @@ class TesterBot(LT.Bot):
                 and self.ready.get(self.heal['group'], 0) <= now:
             healed = True
             self.say(self.heal['words'])
+            self.tally_count('cast:heal')
             self.ready['heal'] = now + max(1.0, self.heal['cooldown'] / 1000.0)
             self.ready[self.heal['group']] = now + self.heal['groupcooldown'] / 1000.0 + 0.1
             self.results.behaviour('heal_spell', 'tried')
@@ -2111,12 +2139,14 @@ class TesterBot(LT.Bot):
                 self.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0)
                                + struct.pack('<I', self.cid))
                 self.ready['potion'] = now + 1.1
+                self.tally_count('potion:health')
                 self.results.behaviour('potion', 'tried')
                 self.pending.setdefault('potion', now + HEAL_SEEN)
         pot = (self.helper.get('info') or {}).get('potions', {}).get('mana')
         if pot and self.cid and self.ready.get('potion', 0) <= now and TC.mana_potion_due(self.health, self.mana, self.mana_max):
             self.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0) + struct.pack('<I', self.cid))   # O663: a person drinks a mana potion
             self.ready['potion'] = now + 1.1
+            self.tally_count('potion:mana')
             self.results.log(self, 'do', 'mana potion at %d %% mana' % (100 * self.mana // max(1, self.mana_max)))
         if self.health <= FLEE_AT and not self.in_raid and not self.back_at and self.ready.get('flee', 0) <= now \
                 and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
@@ -2134,8 +2164,13 @@ class TesterBot(LT.Bot):
             spell = LT.next_spell(self.rotation, self.ready, now, mana=self.mana)
             if spell:
                 self.say(spell['words'])
+                self.tally_count('cast:' + ('attack' if spell.get('group') == 'attack' else 'support'))
                 self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + TC.CAST_SLOP   # O665: 0.03 s, not 0.1 s
                 self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + TC.CAST_SLOP
+            elif self.ready.get('attack', 0) <= now:
+                self.tally_count('beat:no_spell')   # O695: the attack group was ready and no spell of the rotation could be paid (mana) or was ready
+        elif self.rotation:
+            self.tally_count('beat:held')   # O695: the beat went to a heal, not to an attack
 
     async def helper_says(self, command, kind, wait=4.0):
         """say `!tester <command> #N` and wait for the answer of that kind that carries N (the helper echoes it). The helper's own
