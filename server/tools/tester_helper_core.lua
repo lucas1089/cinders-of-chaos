@@ -1632,19 +1632,24 @@ function H.damageOf(primary, primaryType, secondary, secondaryType)
 end
 -- O695: the damage a tester dealt, counted per tester id: `boss` (what landed on the boss of its pinnacle fight), `other` (any other monster), and the hits.
 -- A TEST ONLY tally the party fight's report reads (`!tester pinnacle state` answers `dealt`): the server's own number, after every event that scaled the hit
-function H.dealtAdd(tally, id, isBoss, damage)
+-- O697: `kind` (H.hitKind) splits the boss part: `summon` and `dot` hold what a summon of the tester and what a damage over time of its own did
+-- (both are inside `boss` as well); a plain hit of the tester has no part of its own
+function H.dealtAdd(tally, id, isBoss, damage, kind)
 	damage = tonumber(damage) or 0
 	if type(tally) ~= "table" or id == nil or damage ~= damage or damage <= 0 then
 		return false
 	end
 	local row = tally[id]
 	if not row then
-		row = {boss = 0, bossHits = 0, other = 0, otherHits = 0}
+		row = {boss = 0, bossHits = 0, other = 0, otherHits = 0, summon = 0, dot = 0}
 		tally[id] = row
 	end
 	if isBoss then
 		row.boss = row.boss + math.floor(damage)
 		row.bossHits = row.bossHits + 1
+		if kind == "summon" or kind == "dot" then
+			row[kind] = row[kind] + math.floor(damage)
+		end
 	else
 		row.other = row.other + math.floor(damage)
 		row.otherHits = row.otherHits + 1
@@ -1656,9 +1661,93 @@ end
 function H.dealtRow(tally, id)
 	local row = type(tally) == "table" and tally[id] or nil
 	if not row then
-		return {boss = 0, bossHits = 0, other = 0, otherHits = 0}
+		return {boss = 0, bossHits = 0, other = 0, otherHits = 0, summon = 0, dot = 0}
 	end
-	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits}
+	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits, summon = row.summon or 0, dot = row.dot or 0}
+end
+
+-- O697 (O689 party video: the boss lost 10.13M health in 75 s, the tally of O695 counted 4.25M): where a hit on the boss came from.
+-- f = {attacker = there is one, self = the attacker is the creature hit (a reflect), tester = the attacker, or the master of a summon, is a tester
+-- player, summon = the attacker is a summon, dot = the hit's origin is a condition (damage over time)}.
+--   none     no attacker (a script's hit, a tick whose owner is gone)       reflect  the boss hit itself
+--   other    an attacker that is no tester (a monster, a person)             summon   a summon of a tester (counted for its master)
+--   dot      a tester's own damage over time                                  player   a tester's hit
+function H.hitKind(f)
+	if type(f) ~= "table" or not f.attacker then
+		return "none"
+	end
+	if f.self then
+		return "reflect"
+	end
+	if not f.tester then
+		return "other"
+	end
+	if f.summon then
+		return "summon"
+	end
+	if f.dot then
+		return "dot"
+	end
+	return "player"
+end
+
+-- O697: the ledger of one boss, kept by the LAST event of its chain (TesterHelperDealtLate) and the loop. `seen` is every hit's damage at that event (after
+-- every other event of the chain, up to the health left), `lost` is what the boss's health really fell by between two looks at it, `healed` what it rose by.
+-- lost - seen = what no event saw (a hit with no health event: ORIGIN_NONE, a script's addHealth) and what the chain changed after our event.
+-- hp = the health at the last look (before the hit of the event, or the loop's read)
+function H.ledgerNew(bossId)
+	return {boss = bossId, hp = nil, lost = 0, healed = 0, seen = 0, hits = 0, own = 0, none = 0, reflect = 0, other = 0}
+end
+
+-- a look at the boss's health: the fall or the rise since the last look
+function H.ledgerSample(L, hp)
+	hp = tonumber(hp)
+	if type(L) ~= "table" or not hp or hp ~= hp then
+		return false
+	end
+	if L.hp then
+		if hp < L.hp then
+			L.lost = L.lost + (L.hp - hp)
+		elseif hp > L.hp then
+			L.healed = L.healed + (hp - L.hp)
+		end
+	end
+	L.hp = hp
+	return true
+end
+
+-- one hit seen at the last event; hp = the boss's health before it. Returns the damage that landed (at most the health left), 0 for nothing
+function H.ledgerHit(L, hp, damage, kind)
+	damage = tonumber(damage) or 0
+	if type(L) ~= "table" or damage ~= damage or damage <= 0 or not tonumber(hp) then
+		return 0
+	end
+	H.ledgerSample(L, hp)
+	local landed = math.floor(math.min(damage, math.max(0, hp)))
+	L.seen = L.seen + landed
+	L.hits = L.hits + 1
+	if kind == "none" or kind == "reflect" or kind == "other" then
+		L[kind] = L[kind] + landed
+	else
+		L.own = L.own + landed
+	end
+	if landed >= hp then
+		-- the lethal hit: the boss is gone and no look follows, so its fall is counted here
+		L.lost = L.lost + hp
+		L.hp = 0
+	end
+	return landed
+end
+
+-- the ledger for the answer: whole numbers only (the bot's report subtracts the baseline of earlier fights from numbers of a row, so it is a row of its own)
+function H.ledgerRow(L)
+	if type(L) ~= "table" then
+		return nil
+	end
+	local function n(v)
+		return math.floor(tonumber(v) or 0)
+	end
+	return {lost = n(L.lost), healed = n(L.healed), seen = n(L.seen), hits = n(L.hits), own = n(L.own), none = n(L.none), reflect = n(L.reflect), other = n(L.other)}
 end
 
 -- O695: true when `to` is on the floor of `from` and within `reach` tiles (a square: the engine's range of a spell)

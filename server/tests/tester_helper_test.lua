@@ -238,6 +238,15 @@ local function creature(id, name, opts)
 	function cr:setTarget(t) self.target = t; self.log.targets[#self.log.targets + 1] = t end
 	function cr:setDirection(dir) self.dir = dir end
 	function cr:registerEvent(n) self.log.events[#self.log.events + 1] = n end
+	function cr:unregisterEvent(n)
+		for i, e in ipairs(self.log.events) do
+			if e == n then
+				table.remove(self.log.events, i)
+				return true
+			end
+		end
+		return false
+	end
 	function cr:teleportTo(p) self.log.teleports[#self.log.teleports + 1] = p; self.pos = p end
 	function cr:sendTextMessage(kind, text) self.log.msgs[#self.log.msgs + 1] = text end
 	function cr:getSlotItem(slot)
@@ -635,6 +644,118 @@ do
 	TesterHelper.dealt = nil
 	ChaosPinnacle = realPN
 	byId[boss.id], byId[farBoss.id] = nil, nil
+end
+
+-- O697: the late event, the ledger and the kinds of a hit on the boss
+do
+	check(HELPER_VERSION >= 39, "the helper is version 39 or later (O697: the boss's last event and ledger)")
+	check(events.TesterHelperDealtLate ~= nil, "the late damage event is registered")
+	local boss = creature(1073742600, "Ascended Malgrath", {player = false, monster = true, pos = {x = 105, y = 100, z = 7}, health = 1000000})
+	local realPN = ChaosPinnacle
+	ChaosPinnacle = {bossOf = function() return boss end, isBoss = function(c) return c == boss end}
+	tester.target = nil
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	local names = boss.log.events
+	eq(names[#names], "TesterHelperDealtLate", "the boss carries the late event last")
+	local early, late = 0, 0
+	for _, e in ipairs(names) do
+		if e == "TesterHelperDealt" then early = early + 1 elseif e == "TesterHelperDealtLate" then late = late + 1 end
+	end
+	check(early >= 1 and late == 1, "the boss carries the early event and the late event once")
+	-- a later event (what a first hit registers) comes behind the late one; the next round puts the late one back last
+	boss:registerEvent("ChaosPassiveDealt")
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(names[#names], "TesterHelperDealtLate", "after another event was registered the loop puts the late event behind it again")
+	-- the hits
+	TesterHelper.dealt, TesterHelper.dealtLate, TesterHelper.bossLedger = nil, nil, nil
+	local summon = creature(1073742601, "Illusion", {player = false, monster = true})
+	summon.master = tester
+	local stranger = creature(1073742602, "Ashveil Hierarch", {player = false, monster = true})
+	local person = creature(1073742603, "Ana Two", {player = true})
+	local L = events.TesterHelperDealtLate
+	local COND = 7
+	rawset(_G, "ORIGIN_CONDITION", COND)
+	boss.health = 1000000
+	L.onHealthChange(boss, tester, -1000, COMBAT_PHYSICALDAMAGE, -500, COMBAT_PHYSICALDAMAGE, 3)
+	boss.health = 998500
+	L.onHealthChange(boss, summon, -2000, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	boss.health = 996500
+	L.onHealthChange(boss, tester, -300, COMBAT_FIREDAMAGE, 0, 0, COND)
+	boss.health = 996200
+	L.onHealthChange(boss, nil, -700, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	boss.health = 995500
+	L.onHealthChange(boss, boss, -200, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	boss.health = 995300
+	L.onHealthChange(boss, stranger, -100, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	boss.health = 995200
+	L.onHealthChange(boss, person, -50, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	L.onHealthChange(boss, tester, 4000, COMBAT_HEALING, 0, 0, 3)
+	local led = H.ledgerRow(TesterHelper.bossLedger)
+	check(led.seen == 4850 and led.hits == 7 and led.own == 3800 and led.none == 700 and led.reflect == 200 and led.other == 150, "the ledger: every hit by its kind, healing not counted")
+	eq(led.lost, 4800, "the ledger: the fall of the health read between the hits (the last hit is not applied yet)")
+	local row = H.dealtRow(TesterHelper.dealtLate, tester.id)
+	check(row.boss == 3800 and row.bossHits == 3 and row.summon == 2000 and row.dot == 300, "late tally: the tester's hits, its summon's and its dot apart")
+	check(H.dealtRow(TesterHelper.dealtLate, person.id).boss == 0, "late tally: a player that is no tester has no row")
+	-- a hit that does not change the damage
+	local a, b = L.onHealthChange(boss, tester, -10, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	check(a == -10 and b == COMBAT_PHYSICALDAMAGE, "the late event returns the hit as it came")
+	-- an event that breaks does not break the chain
+	local broken = {getHealth = function() error("gone") end, getId = function() return 5 end}
+	local a2 = L.onHealthChange(broken, tester, -10, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	eq(a2, -10, "the late event never throws into the engine")
+	-- the early event carries the kinds too
+	TesterHelper.dealt = nil
+	events.TesterHelperDealt.onHealthChange(boss, summon, -400, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
+	events.TesterHelperDealt.onHealthChange(boss, tester, -100, COMBAT_FIREDAMAGE, 0, 0, COND)
+	local er = H.dealtRow(TesterHelper.dealt, tester.id)
+	check(er.boss == 500 and er.summon == 400 and er.dot == 100, "early tally: a summon's and a dot's part")
+	rawset(_G, "ORIGIN_CONDITION", nil)
+	TesterHelper.dealt, TesterHelper.dealtLate, TesterHelper.bossLedger = nil, nil, nil
+	ChaosPinnacle = realPN
+	byId[boss.id], byId[summon.id], byId[stranger.id], byId[person.id] = nil, nil, nil, nil
+end
+do
+	-- the pure parts
+	local k = H.hitKind
+	eq(k(nil), "none", "hitKind: no table is no attacker")
+	eq(k({attacker = false}), "none", "hitKind: no attacker")
+	eq(k({attacker = true, self = true, tester = true}), "reflect", "hitKind: the boss hit itself")
+	eq(k({attacker = true, tester = false}), "other", "hitKind: an attacker that is no tester")
+	eq(k({attacker = true, tester = true, summon = true, dot = true}), "summon", "hitKind: a summon's dot is the summon's")
+	eq(k({attacker = true, tester = true, dot = true}), "dot", "hitKind: a tester's dot")
+	eq(k({attacker = true, tester = true}), "player", "hitKind: a tester's hit")
+	local L = H.ledgerNew(1)
+	check(H.ledgerSample(L, 1000) and L.lost == 0 and L.hp == 1000, "ledger: the first look sets the health")
+	H.ledgerSample(L, 700)
+	H.ledgerSample(L, 800)
+	check(L.lost == 300 and L.healed == 100 and L.hp == 800, "ledger: a fall and a rise apart")
+	eq(H.ledgerHit(L, 800, 250, "player"), 250, "ledger: a hit lands whole")
+	eq(L.seen, 250, "ledger: seen")
+	eq(H.ledgerHit(L, 500, 900, "summon"), 500, "ledger: a lethal hit lands the health that was left")
+	check(L.lost == 300 + 300 + 500 and L.hp == 0 and L.own == 750, "ledger: the lethal hit counts its fall (the boss is gone, no look follows)")
+	eq(H.ledgerHit(L, 10, 0, "player"), 0, "ledger: no damage, no hit")
+	eq(H.ledgerHit(nil, 10, 5, "player"), 0, "ledger: no ledger, no hit")
+	check(not H.ledgerSample(L, nil) and not H.ledgerSample(nil, 5) and not H.ledgerSample(L, 0 / 0), "ledger: nothing to read")
+	-- the fall and the hits agree when every hit is seen: 1000 -> 0 in three hits
+	local M = H.ledgerNew(2)
+	H.ledgerHit(M, 1000, 300, "player")
+	H.ledgerHit(M, 700, 300, "dot")
+	H.ledgerHit(M, 400, 500, "summon")
+	check(M.lost == 1000 and M.seen == 1000 and M.own == 1000, "ledger: lost and seen agree when no hit is missed")
+	-- a fall with no event shows as lost minus seen
+	local N = H.ledgerNew(3)
+	H.ledgerSample(N, 1000)
+	H.ledgerHit(N, 1000, 100, "player")
+	H.ledgerSample(N, 700)
+	check(N.lost == 300 and N.seen == 100, "ledger: a fall no event saw is lost minus seen")
+	local z = H.ledgerRow(nil)
+	eq(z, nil, "ledgerRow: none for no ledger")
+	local r = H.ledgerRow({lost = 5.9, healed = 0, seen = 4, hits = 2, own = 4})
+	check(r.lost == 5 and r.none == 0 and r.reflect == 0 and r.other == 0, "ledgerRow: whole numbers, zeros for what is not there")
 end
 do
 	local t = {}
@@ -2355,6 +2476,15 @@ do
 	talks["!tester"].onSay(t9, "!tester", "pinnacle #174")
 	check(last(t9):find('"dealt":{', 1, true) and last(t9):find('"other":700', 1, true) and last(t9):find('"seq":174', 1, true), "pinnacle state: the damage tally of the tester")
 	TesterHelper.dealt = nil
+	-- O697: the late tally of the tester and the boss's ledger ride in the answer
+	TesterHelper.bossLedger = ChaosTesterHelperCore.ledgerNew(77)
+	ChaosTesterHelperCore.ledgerHit(TesterHelper.bossLedger, 900, 120, "player")
+	TesterHelper.dealtLate = {}
+	ChaosTesterHelperCore.dealtAdd(TesterHelper.dealtLate, t9.id, true, 120, "summon")
+	talks["!tester"].onSay(t9, "!tester", "pinnacle #175")
+	check(last(t9):find('"late":120', 1, true) and last(t9):find('"lateSummon":120', 1, true) and last(t9):find('"lateHits":1', 1, true), "pinnacle state: the late tally of the tester")
+	check(last(t9):find('"ledger":{', 1, true) and last(t9):find('"seen":120', 1, true) and last(t9):find('"lost":900', 1, true) == nil, "pinnacle state: the ledger of the boss")
+	TesterHelper.bossLedger, TesterHelper.dealtLate = nil, nil
 	talks["!tester"].onSay(t9, "!tester", "pinnacle set #171")
 	check(setFor == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"kind":"vhoss"', 1, true) and last(t9):find('"ready":true', 1, true), "pinnacle set: given, then ready")
 	talks["!tester"].onSay(t9, "!tester", "pinnacle set nonsense #172")

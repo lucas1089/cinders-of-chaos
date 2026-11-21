@@ -5050,6 +5050,9 @@ def pinnacle_bot_line(name, cls, row, boss_secs):
     parts = ['damage_boss=%d (%d a second over %d s, %d hit(s))' % (boss, boss // secs, secs, int(d.get('bossHits') or 0)) if d else 'damage_boss=unknown (no tally from the helper)']
     if d:
         parts.append('damage_other=%d' % int(d.get('other') or 0))
+        if 'late' in d:   # O697: the same tally at the boss's last event, after the events that scale a hit (the first reads before them)
+            parts.append('damage_final=%d (%d a second, %d hit(s); of it summons %d, dots %d)' % (
+                int(d.get('late') or 0), int(d.get('late') or 0) // secs, int(d.get('lateHits') or 0), int(d.get('lateSummon') or 0), int(d.get('lateDot') or 0)))
     parts.append('casts: ' + ', '.join('%d %s' % (int(t.get(k) or 0), label) for k, label in TALLY_SHOW))
     refused = sorted(((k[len('refused:'):], v) for k, v in t.items() if str(k).startswith('refused:') and v), key=lambda kv: (-kv[1], kv[0]))
     parts.append('refused: ' + (', '.join('%s %d' % kv for kv in refused) if refused else 'none'))
@@ -5073,6 +5076,27 @@ def pinnacle_series_line(trace):
         '%d: %s%%%s' % (s, p, ' / %d' % h if isinstance(h, int) else '') for s, p, h in series[:40])
 
 
+def pinnacle_ledger_line(trace, rows):
+    """O697: the boss's health fall against what the tallies counted, '' without a ledger (an old helper). `rows` are the per bot rows of the fight (`dealt` of
+    each, the baseline of earlier fights already taken off). `first` is the sum of the first tally (before the events a hit's first attacker registers on the
+    boss: the damage pool of the tree, gems, supports, charms), `final` the sum at the boss's last event (after them), `events` what that last event saw from
+    anyone (testers, summons, dots, and from the boss itself, no attacker or a stranger), `lost` the fall of the boss's own health. lost - events is what no
+    event saw; events - final is what no tester owns. The O689 party video: lost 10.13M, first 4.25M"""
+    led = trace.get('ledger') if isinstance(trace.get('ledger'), dict) else None
+    if not led:
+        return ''
+    first = sum(int((r.get('dealt') or {}).get('boss') or 0) for r in rows)
+    final = sum(int((r.get('dealt') or {}).get('late') or 0) for r in rows)
+    lost = int(led.get('lost') or 0)
+    seen = int(led.get('seen') or 0)
+
+    def pct(v):
+        return '%d%%' % (100 * v // lost) if lost > 0 else '-'
+    return ('pinnacle_party boss ledger: lost %d, first tally %d (%s), final tally %d (%s), last event saw %d (%s; testers %d, no attacker %d, the boss itself %d, '
+            'strangers %d), no event %d, healed %d' % (lost, first, pct(first), final, pct(final), seen, pct(seen), int(led.get('own') or 0), int(led.get('none') or 0),
+                                                         int(led.get('reflect') or 0), int(led.get('other') or 0), max(0, lost - seen), int(led.get('healed') or 0)))
+
+
 async def pinnacle_fight_finish(io, squad, trace):
     """O695: after the fight: each bot's tally (reset at the start), its row, one report line each (the activity log, kind RETRY) and the boss series line"""
     secs = trace.get('since') if isinstance(trace.get('since'), int) else int(trace.get('secs') or 0)
@@ -5091,6 +5115,9 @@ async def pinnacle_fight_finish(io, squad, trace):
         row['cls'] = cls
         video_note(io, pinnacle_bot_line(r['name'], cls, row, secs))
     line = pinnacle_series_line(trace)
+    if line:
+        video_note(io, line)
+    line = pinnacle_ledger_line(trace, [fight_row(trace, r['name']) for r in squad])
     if line:
         video_note(io, line)
 
@@ -5339,6 +5366,8 @@ async def pinnacle_fight(io, squad, trace, budget):
                 if 'dealt0' not in row:
                     row['dealt0'] = dict(s['dealt'])   # the tally of an earlier fight of this bot is taken off at the end
                 row['dealt'] = s['dealt']
+            if isinstance(s.get('ledger'), dict):
+                trace['ledger'] = s['ledger']   # O697: boss wide, every bot reads the same one
         for n, s in good.items():
             if was_in.get(n) and not s.get('inside') and n not in [o[0] for o in trace.setdefault('out', [])]:
                 trace['out'].append((n, int(elapsed)))   # the lethal hit was caught: the bot is out, healed, a fall

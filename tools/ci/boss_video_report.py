@@ -75,6 +75,17 @@ def fight_lines(activity):
 
 BOT_PREFIX = 'pinnacle_party bot '
 SERIES_PREFIX = 'pinnacle_party boss series'
+LEDGER_PREFIX = 'pinnacle_party boss ledger'   # O697
+
+
+def ledger_line(lines):
+    """the ledger line of the fight (O697, tester_checks.pinnacle_ledger_line): the boss's health fall against the tallies, '' without one (the last one wins)"""
+    out = ''
+    for line in lines:
+        m = re.match(r'^\d\d:\d\d:\d\d .*? \(L\d+ [^)]*\) RETRY\s+(.*)$', line)
+        if m and m.group(1).startswith(LEDGER_PREFIX):
+            out = m.group(1)
+    return out
 
 
 def bot_lines(lines):
@@ -229,12 +240,15 @@ def build_report(boss, level, party, activity, client_log, seconds=None, secrets
     d = death_facts(lines)
     deaths = [l for l in lines if ' DEATH ' in l]
     bots, series = bot_lines(lines)
-    key_lines = [l for l in lines if ' DEATH ' not in l and (BOT_PREFIX not in l and SERIES_PREFIX not in l)]
-    if bots or series:
+    key_lines = [l for l in lines if ' DEATH ' not in l and (BOT_PREFIX not in l and SERIES_PREFIX not in l and LEDGER_PREFIX not in l)]
+    ledger = ledger_line(lines)
+    if bots or series or ledger:
         out += ['', 'what each bot did in the fight (damage_boss is the server\'s own count of what landed on the boss, TEST ONLY):']
         out += ['  ' + b for b in bots]
         if series:
             out += ['  ' + series[len('pinnacle_party '):]]
+        if ledger:
+            out += ['  ' + ledger[len('pinnacle_party '):]]
     out += [''] + death_text(d)
     out += ['', 'lines of the testers\' activity log (checks, bugs, retries):']
     out += ['  ' + l for l in key_lines[:MAX_LINES]] or ['  none']
