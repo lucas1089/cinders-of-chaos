@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 42
+HELPER_VERSION = 43
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -2860,6 +2860,7 @@ end
 -- "!tester pvp [state | path]": reads ChaosTesters.pvpProbe (O652): the PvP place the bot stands in, the closed switch, the foe the rules allow (a tester
 -- in a place, the nearest in sight or the nearest a system lists), the hits a rule cancelled (on a player, outside a place, the switch off), the
 -- arena / battleground / Marches views and `seasonListed` (testers with a row in the season ratings: 0). `path` is the engine's path to the guide's goal.
+local pvpAimNow -- set where pvpAim is defined (phase 8c: `pvp aim` aims the bot at the foe tester at once, even when it has a monster as target)
 function commands.pvp(player, arg)
 	local what, usage = H.parsePvp(arg)
 	if not what then
@@ -2869,6 +2870,11 @@ function commands.pvp(player, arg)
 	local X = ChaosTesters
 	if not (X and X.pvpProbe) then
 		tell(player, "pvp", {err = "no PvP rules for the testers"})
+		return
+	end
+	if what == "aim" then
+		local aimed = pvpAimNow and pvpAimNow(player) or false
+		tell(player, "pvp", H.cutAnswer(X.pvpProbe(player), {aimed = aimed}))
 		return
 	end
 	local probe = X.pvpProbe(player)
@@ -4645,7 +4651,24 @@ local function pvpAim(player)
 	if pick then
 		player:setTarget(pick.c)
 		player:setDirection(H.directionTo(pos, pick.pos))
+		return true
 	end
+	return false
+end
+
+-- phase 8c: `!tester pvp aim`: a bot inside a PvP place takes the foe tester as its target even when it aims at a monster of the zone (the Marches hold monsters:
+-- a spell cast at a monster is no PvP hit). -> true when a foe was picked
+pvpAimNow = function(player)
+	local cur = player:getTarget()
+	if cur and cur:isPlayer() then
+		return true
+	end
+	local X = ChaosTesters
+	if not (X and X.pvpFoe and X.pvpPlace and X.pvpPlace(player)) then
+		return false
+	end
+	local ok, picked = pcall(pvpAim, player)
+	return ok and picked == true
 end
 
 -- one round of the loop. Returns true when the loop ends (the helper file is gone)
@@ -4914,9 +4937,13 @@ end
 -- the record of the Forms (the hits before the Forms, with their main factors, what the planner added), `pick SPELL F1 F2` writes the Forms straight into the
 -- spell's state, `awk [SPELL]` reads the awakened slots, `class NAME` changes the vocation on the game's own path, `source waystone TIER [first] | rift G
 -- [fail] | pinnacle` runs the Seal credit of a content (TEST ONLY: the bot as the only player, no map, run or fight played; the pinnacle kill is the real one).
+-- O686 phase 8c (helper v43): `pvp aim` (the foe tester as the target at once), `spellup mana` (mana to the top), `spellup mob clear`, the `casts` the server ran in `log` and
+-- `fstat`, the plan at an uptime of 1 in an `fstat` row, the rows of hits on a player first in `log`.
 T.spellup = T.spellup or {log = {}, wrapped = false}
 local SU = T.spellup
 SU.lastRow, SU.fires = SU.lastRow or {}, SU.fires or {} -- the combo row that just fired, per bot; the fires of a bot {row id, target id, ms}
+SU.casts = SU.casts or {} -- bot id -> {spell id -> casts the server ran} (phase 8c)
+SU.mobs = SU.mobs or {} -- bot id -> the ids of the Rats of its last `mob` (phase 8c)
 local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
@@ -4974,7 +5001,7 @@ local function suFsCell(pid, sid)
 	end
 	local c = byP[sid]
 	if not c then
-		c = {casts = 0, orig = 0, adj = 0, extra = 0, hits = 0, kinds = ""}
+		c = {casts = 0, orig = 0, adj = 0, extra = 0, full = 0, hits = 0, kinds = ""}
 		byP[sid] = c
 	end
 	return c
@@ -5033,15 +5060,17 @@ local function suWrap2()
 					for _, a in ipairs(plan and plan.actions or {}) do
 						local amt, up = tonumber(a.amount) or 0, tonumber(a.up) or 1
 						local n = suActionTargets(a, cast, FC)
+						local full = 0 -- the same at an uptime of 1 (phase 8c: the Rats of the check never die or move away, the planner's `up` discounts for packs that do)
 						if a.t == "hit" then
-							c.extra = c.extra + amt * up
+							c.extra, full = c.extra + amt * up, amt
 						elseif a.t == "dot" then
-							c.extra = c.extra + amt * (a.ticks or 1) * up
+							c.extra, full = c.extra + amt * (a.ticks or 1) * up, amt * (a.ticks or 1)
 						elseif a.t == "burst" then
-							c.extra = c.extra + amt * n * up
+							c.extra, full = c.extra + amt * n * up, amt * n
 						elseif a.t == "ground" then
-							c.extra = c.extra + amt * n * (a.seconds or 1) * up
+							c.extra, full = c.extra + amt * n * (a.seconds or 1) * up, amt * n * (a.seconds or 1)
 						end
+						c.full = c.full + full
 					end
 				end
 				return plan
@@ -5208,6 +5237,20 @@ local function suWrap()
 			end
 			return f
 		end
+	end
+	-- phase 8c: the casts the server really ran (the cast event of engine patch 0008: after the mana was paid), per bot and spell id; the bot only knows it said the words
+	local SE = rawget(_G, "ChaosSpellEvents")
+	if SE and SE.set then
+		SE.set("cast", "zz_tester_helper_su", function(player, _, id)
+			if player and id and eligible(player) then
+				local byP = SU.casts[player:getId()]
+				if not byP then
+					byP = {}
+					SU.casts[player:getId()] = byP
+				end
+				byP[id] = (byP[id] or 0) + 1
+			end
+		end)
 	end
 	local CL = rawget(_G, "ChaosCombatLog")
 	if CL and CL.spellHook then
@@ -5386,7 +5429,14 @@ function commands.spellup(player, arg)
 				e.combo[3], e.awake[1], e.awake[1] > 0 and e.awake[2] / e.awake[1] or 0, e.hit[1], e.hit[2], e.hit[3],
 				e.awake[1] > 0 and e.awake[3] or 0, e.awake[4]}
 		end
-		table.sort(rows, function(a, b) return a[9] > b[9] end)
+		-- phase 8c: the rows of hits on a player (a negative spell id) come first and are never cut: the combat log does not credit a hit on a player to the spell
+		-- (hit count 0), so sorted by that count they went last and fell off the end of the list
+		table.sort(rows, function(a, b)
+			if (a[1] < 0) ~= (b[1] < 0) then
+				return a[1] < 0
+			end
+			return math.max(a[9], a[2]) > math.max(b[9], b[2])
+		end)
 		while #rows > 14 do
 			rows[#rows] = nil
 		end
@@ -5397,10 +5447,18 @@ function commands.spellup(player, arg)
 		while #fires > 30 do
 			table.remove(fires, 1)
 		end
-		if w.clear then
-			SU.log[pid], SU.fires[pid] = {}, {}
+		local casts = {}
+		for sid, n in pairs(SU.casts[pid] or {}) do
+			casts[#casts + 1] = {sid, n}
 		end
-		tell(player, "spellup", {log = rows, fires = fires, cleared = w.clear or nil})
+		table.sort(casts, function(a, b) return a[1] < b[1] end)
+		while #casts > 20 do
+			casts[#casts] = nil
+		end
+		if w.clear then
+			SU.log[pid], SU.fires[pid], SU.casts[pid] = {}, {}, {}
+		end
+		tell(player, "spellup", {log = rows, fires = fires, casts = casts, cleared = w.clear or nil})
 	elseif w.what == "rank" then
 		local m = R.catalog and R.catalog[w.spell]
 		if not st or not m then
@@ -5412,18 +5470,41 @@ function commands.spellup(player, arg)
 		player:setStorageValue(k.rankBase + w.spell, P.pack(w.rank, f1, f2, aw))
 		R.flush(player, st)
 		tell(player, "spellup", {granted = {w.spell, w.rank}, name = m.name})
+	elseif w.what == "mana" then
+		-- phase 8c, TEST ONLY: mana to the top, so a check that casts a big spell four times is not stopped by "not enough mana" (the bot's rotation and its heal spend it
+		-- between the casts, and a cast that the server refuses leaves no trace: the formgain check read 4 casts said and none run)
+		local gave = player:getMaxMana() - player:getMana()
+		if gave > 0 then
+			player:addMana(gave)
+		end
+		tell(player, "spellup", {mana = player:getMana(), max = player:getMaxMana(), gave = math.max(0, gave)})
 	elseif w.what == "mob" then
 		-- three Rats beside the bot (a monster of the hunt would kill a bot of its own gear), for the casts of a combo that need a target: the helper's
 		-- own loop aims the bot at them. Made with Game.createMonster and left as they are
+		-- phase 8c: `mob clear` removes the Rats of the earlier `mob` of this bot, and the new ones carry 5,000,000 health: the formgain check casts a spell 20 times and a Rat of 200,000
+		-- died in the second variant (the later variants then hit nothing and read as a lost gain)
 		local name = "Rat"
 		local made = 0
+		if w.clear then -- `mob clear`: the Rats of the earlier `mob` go (nothing new is made)
+			for _, old in ipairs(SU.mobs[pid] or {}) do
+				local m = Creature(old)
+				if m then
+					m:remove()
+				end
+			end
+			SU.mobs[pid] = {}
+			tell(player, "spellup", {mob = 0, cleared = true})
+			return
+		end
+		SU.mobs[pid] = SU.mobs[pid] or {}
 		for _ = 1, 3 do
 			local ok, m = pcall(Game.createMonster, name, player:getPosition(), true, true)
 			if ok and m then
 				made = made + 1
+				SU.mobs[pid][#SU.mobs[pid] + 1] = m:getId()
 				pcall(function() -- they must live through two casts 2 s apart, and the first one is the bot's target (a hook or a trap needs one)
-					m:setMaxHealth(200000)
-					m:setHealth(200000)
+					m:setMaxHealth(5000000)
+					m:setHealth(5000000)
 					if made == 1 then
 						player:setTarget(m)
 					end
@@ -5464,23 +5545,32 @@ function commands.spellup(player, arg)
 		tell(player, "spellup", {sig = rows, windows = wins, marks = marks, cleared = w.clear or nil})
 	elseif w.what == "fstat" then
 		-- per spell a Form acted on: {id, casts, hits before the Forms, the same with the Forms' main factors, what the planner added, kinds, hits landed
-		-- (the combat log), the damage they landed}
+		-- (the combat log), the damage they landed, what the planner added at an uptime of 1}
 		local rows = {}
 		for sid, c in pairs(T.fstat[pid] or {}) do
 			local hit = (SU.log[pid] and SU.log[pid][sid] and SU.log[pid][sid].hit) or {0, 0, 0}
-			rows[#rows + 1] = {sid, c.casts, math.floor(c.orig), math.floor(c.adj), math.floor(c.extra), c.kinds, hit[1], hit[2]}
+			rows[#rows + 1] = {sid, c.casts, math.floor(c.orig), math.floor(c.adj), math.floor(c.extra), c.kinds, hit[1], hit[2], math.floor(c.full)}
 		end
 		table.sort(rows, function(a, b) return a[1] < b[1] end)
 		while #rows > 10 do
 			rows[#rows] = nil
+		end
+		local casts = {}
+		for sid, n in pairs(SU.casts[pid] or {}) do
+			casts[#casts + 1] = {sid, n}
+		end
+		table.sort(casts, function(a, b) return a[1] < b[1] end)
+		while #casts > 20 do
+			casts[#casts] = nil
 		end
 		if w.clear then
 			T.fstat[pid] = {}
 			if SU.log[pid] then
 				SU.log[pid] = {}
 			end
+			SU.casts[pid] = {}
 		end
-		tell(player, "spellup", {fstat = rows, cleared = w.clear or nil})
+		tell(player, "spellup", {fstat = rows, casts = casts, cleared = w.clear or nil})
 	elseif w.what == "pick" then
 		-- TEST ONLY: the Forms written into the spell's packed state (no price, no window); the rank stays as it is
 		local m = R.catalog and R.catalog[w.spell]
@@ -5669,7 +5759,7 @@ function commands.spellup(player, arg)
 		for i = 0, 9 do
 			player:setStorageValue(k.awakenedSlots + i, 0)
 		end
-		SU.log[pid], SU.fires[pid], T.sig[pid], T.fstat[pid] = {}, {}, {}, {}
+		SU.log[pid], SU.fires[pid], T.sig[pid], T.fstat[pid], SU.casts[pid] = {}, {}, {}, {}, {}
 		tell(player, "spellup", {cleared = true})
 	end
 end
