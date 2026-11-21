@@ -10180,6 +10180,784 @@ async def check_closed_spell_awaken(io, name, cls, level):
     return Result(key, name, cls, status, text, fb)
 
 
+# ------------------------------------------------------------------------------------------------ the spell upgrades, live pass part 2 (O686 phase 8b)
+# What the phase 8 pass left open (server/README.md "Spell upgrades live pass, part 2 (O686 phase 8b)"): the PvP half rule with the combos, a dormant
+# awakening after a class change, the nine signature kinds, the Seal sources, the Forms' hit gain, the wire state. Helper v42 (`spellup sig | fstat |
+# pick | awk | class | source`, the PvP cell of the log). Every grant is TEST ONLY and a named fallback of the result.
+SPELLUP_PVP_FIGHT = 150.0   # seconds the two bots fight in the Marches after the combo pairs
+PVP_ENTER_TRIES, PVP_ENTER_WAIT = 4, 25.0   # tries to enter the Marches, seconds between two (a bot just out of combat is refused)
+PINNACLE_SEAL_WAIT = 240.0   # seconds the Pinnacle Seal check waits for the arena to open and the boss to come
+RANK_POWER_PCT = 0.9        # spell_ranks_config.lua effects.damage.power: percent a rank adds to a damage hit
+PVP_RANK_SHARE = 0.5        # spell_ranks_config.lua pvp.rank: the share of a rank's power that counts against a player (design 5.2)
+AWAKE_BONUS_PCT = 0.10      # spell_awakening_config.lua bonus
+AWAKE_PVP = 1.0 + AWAKE_BONUS_PCT * PVP_RANK_SHARE   # the awakened hit on a player: the bonus at the PvP half
+SIG_CAP_SHARE = 0.25        # spell_awakening_config.lua signature.capShare: a cast's signature deals at most this share of the cast's own damage
+SIG_CAP_TOL = 0.02          # slack on the cap (rounding of the per-hit amounts)
+SIG_OPS = {'PULSE': 'pulse', 'LINE': 'line', 'MARK': 'mark', 'RINGS': 'rings', 'ECHO': 'echo', 'SHIELD': 'shield', 'CDCUT': 'cdcut', 'LEECH': 'leech',
+           'REFLECT': 'reflect'}   # the kind of awakened.csv -> the action name of spell_awakening_core.lua A.plan
+SIG_KINDS = tuple(SIG_OPS)
+SIG_BATCH, SIG_BATCHES, SIG_CASTS, SIG_WAIT = 3, 4, 2, 9.0   # spells awakened at once (3 slots), batches, casts of each spell, seconds the pulses of a cast run
+SEAL_SOURCES = {'waystone': {'minTier': 16, 'perClear': 1, 'firstClear': 1}, 'rift': {'minTier': 16, 'perRun': 1, 'climb': 1}, 'pinnacle': {'perKill': 2}}
+SEAL_ALL = (210, 186, 84)   # the Seals of the three slots together (spell_awakening_config.lua slots)
+FORM_GAIN_TOL, FORM_GAIN_BAD = 0.20, 0.30   # the live gain against the planned one: a note beyond the first, a failure beyond the second
+FORM_CASTS, FORM_SPELLS, FORM_READY = 4, 1, 40.0   # casts of each variant, spells sampled, seconds to wait for a cooldown
+FORM_VARIANTS = (('none', 0, 0), ('I-1', 1, 0), ('I-2', 2, 0), ('I-1+II-1', 1, 1), ('I-1+II-2', 1, 2))   # (label, Form I pick, Form II pick)
+DORMANT_FAMILY = ('Warrior', 'Juggernaut', 'Berserker', 'Beastmaster')   # a class of these changes to a Mystic, any other to a Warrior
+
+
+async def su_cmd(io, who, command):
+    """a `!tester spellup` command of the check's own bot (who None) or of another bot"""
+    if who is None:
+        return await io.helper(command, 'spellup', ANSWER)
+    return await io.helper_of(who, command, 'spellup', ANSWER)
+
+
+async def su_request(io, who, action, data, expect):
+    if who is None:
+        reply = await io.request('spellRanks', action, data, expect, ANSWER)
+    else:
+        reply = await io.request_of(who, 'spellRanks', action, data, expect, ANSWER)
+    return (reply or {}).get('data') if isinstance(reply, dict) else None
+
+
+async def su_book(io, who=None):
+    """({spell id: name}, {element: [(id, name)]}, {heal ids}) of the bot's book, from `spellup combos`"""
+    f = await su_cmd(io, who, 'spellup combos')
+    by_id, by_el, heal = {}, {}, set()
+    for r in (f or {}).get('spells') or []:
+        if isinstance(r, (list, tuple)) and len(r) >= 3:
+            sid = int(r[0])
+            by_id[sid] = str(r[1])
+            if len(r) > 3 and r[3]:
+                heal.add(sid)
+            elif r[2]:
+                by_el.setdefault(str(r[2]), []).append((sid, str(r[1])))
+    return by_id, by_el, heal
+
+
+async def su_forms_rows(io, who=None):
+    """the rows [id, name, heal, kinds, signature kinds] of the spells of the bot with Forms"""
+    f = await su_cmd(io, who, 'spellup forms')
+    return [r for r in ((f or {}).get('forms') or []) if isinstance(r, (list, tuple)) and len(r) >= 4]
+
+
+async def su_awaken(io, who, sid):
+    """TEST ONLY: rank 20 and both Forms written for the spell, then the awaken request (the bot's own, as the window sends it) -> the answer"""
+    await su_cmd(io, who, 'spellup rank %d 20' % sid)
+    await su_cmd(io, who, 'spellup pick %d 1 1' % sid)
+    await io.sleep(SPELLUP_GAP)
+    return await su_request(io, who, 'awaken', {'spell': sid}, ('awaken',))
+
+
+async def su_when_ready(io, name, words, limit=FORM_READY):
+    """waits (at most `limit` s) until the spell of `words` is off cooldown; -> seconds waited"""
+    ready_in = getattr(io, 'ready_in', None)
+    waited = 0.0
+    while ready_in and io.alive() and waited < limit and (ready_in(name, words) or 0.0) > 0:
+        await io.sleep(1.0)
+        waited += 1.0
+    return waited
+
+
+def su_words(io):
+    return {str(s.get('name')): s.get('words') for s in (io.class_spells() if hasattr(io, 'class_spells') else [])}
+
+
+# ---- 1. combos and awakening in PvP
+def spell_pvp_verdict(bots, tried):
+    """(status, text). bots: [{'name', 'log': the `spellup log` rows, 'sig': the `spellup sig` rows, 'awake': [spell ids], 'ranks': {spell id: rank}}]; tried: the combo
+    pairs cast at the foe [(row id, spell 1, spell 2)]. A PvP row of the log has a negative spell id: the half rule says the rank gives rank x 0.9% x 0.5, an
+    awakened hit +5%, no combo fires, the signature never runs (design 5.2: owner 2026-11-20)"""
+    problems, hits, ranked, awake_n = [], 0, [], 0
+    awake_f = []
+    for b in bots:
+        for r in b.get('log') or []:
+            if len(r) < 13 or int(r[0]) >= 0:
+                continue
+            sid = -int(r[0])
+            hits += max(int(r[8]), int(r[1]))   # the combat log does not credit a hit on a player to the spell: the rank factor calls count it
+            rank = int((b.get('ranks') or {}).get(sid, 0))
+            want = 1.0 + rank * RANK_POWER_PCT / 100.0 * PVP_RANK_SHARE
+            if int(r[1]):
+                ranked.append(float(r[2]))
+                if abs(float(r[2]) - want) > 0.002:
+                    problems.append('%s spell %d: the rank factor on a player is %.3f, rank %d at the PvP half is %.3f' % (b['name'][-3:], sid, float(r[2]), rank, want))
+            if int(r[3]):
+                problems.append('%s spell %d: %d combo proc(s) on a player (combos are off in PvP)' % (b['name'][-3:], sid, int(r[3])))
+            if sid in (b.get('awake') or []):
+                if int(r[6]):
+                    awake_n += int(r[6])
+                    awake_f.append(float(r[7]))
+                    if abs(float(r[7]) - AWAKE_PVP) > 0.002 or float(r[12]) > AWAKE_PVP + 0.001:
+                        problems.append('%s spell %d: the awakened hit on a player is %.3f (best %.3f), the PvP half of +10%% is %.3f' % (
+                            b['name'][-3:], sid, float(r[7]), float(r[12]), AWAKE_PVP))
+            elif int(r[6]):
+                problems.append('%s spell %d: an awakening factor on a spell that is not awakened' % (b['name'][-3:], sid))
+        for r in b.get('sig') or []:
+            if len(r) >= 13 and (int(r[11]) or int(r[12])):
+                problems.append('%s spell %d: the signature ran in PvP (%d action(s), %d damage)' % (b['name'][-3:], int(r[0]), int(r[11]), int(r[12])))
+    if problems:
+        return FAIL, '; '.join(problems[:4])
+    if not hits:
+        return SKIP, 'no spell hit of a bot on the foe tester was logged'
+    if not tried:
+        return SKIP, '%d PvP hit(s) logged but no combo pair could be cast at the foe (the bot\'s book has no reaction pair)' % hits
+    casts = sum(int(r[10]) for b in bots for r in (b.get('sig') or []) if len(r) >= 13)
+    rank_txt = 'rank factor %.3f' % (sum(ranked) / len(ranked)) if ranked else 'no ranked hit'
+    awake_txt = 'awakened hit %.3f (want %.3f)' % (sum(awake_f) / len(awake_f), AWAKE_PVP) if awake_f else 'no awakened hit on the foe'
+    return PASS, '%d PvP hit(s) of %d bot(s): %s at the half rule, %s, 0 combo procs after %d pair(s) cast at the foe %s, signature never ran (%d awakened cast(s) in PvP)' % (
+        hits, len(bots), rank_txt, awake_txt, len(tried), [t[0] for t in tried][:4], casts)
+
+
+async def check_closed_spell_pvp(io, name, cls, level):
+    """two testers fight in the Marches with every attack spell at rank 20, one spell each awakened: the rank factor and the awakened hit on a player are the PvP
+    half, a combo pair cast at the foe makes no combo, the signature does not run"""
+    key = 'closed_spell_pvp'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)']
+    bots, pair_words = [], {}
+    for who in (None, other):
+        nm = name if who is None else other
+        await su_cmd(io, who, 'spellup clear')
+        by_id, by_el, heal = await su_book(io, who)
+        attack = sorted(sid for sid in by_id if sid not in heal)
+        for sid in attack:
+            await su_cmd(io, who, 'spellup rank %d 20' % sid)
+        forms = [r for r in await su_forms_rows(io, who) if not r[2]]
+        rot = getattr(io, 'rotation_names', lambda: [])() if who is None else []
+        pick = next((r for r in forms if str(r[1]).lower() in rot), forms[0] if forms else None)
+        awake = []
+        if pick is not None:
+            await su_cmd(io, who, 'spellup seals 40 36 16')
+            got = await su_awaken(io, who, int(pick[0]))
+            if isinstance(got, dict) and got.get('ok'):
+                awake.append(int(pick[0]))
+        bots.append({'name': nm, 'ranks': {sid: 20 for sid in attack}, 'awake': awake, 'by_el': by_el, 'by_id': by_id, 'log': None, 'sig': None, 'who': who})
+        await su_cmd(io, who, 'spellup log clear')
+        await su_cmd(io, who, 'spellup sig clear')
+    if not any(b['awake'] for b in bots):
+        return Result(key, name, cls, SKIP, 'no spell of the bots could be awakened (no spell with Forms in the book)', fb)
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple', fb)
+    await io.sleep(SETTLE)
+    squad = [pvp_bot(name, True), pvp_bot(other, False)]
+    trace = new_trace({'level': level}, [], was_in=False, both=False, ended=False, foe_hp=None)
+    tried = []
+    io.raid_mode([name, other], True)
+    try:
+        text = ''
+        for attempt in range(PVP_ENTER_TRIES):   # the Marches refuse a bot that is in combat (the lock is about a minute after the last hunt): wait it out in the temple
+            a1 = await io.request('pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+            b1 = await io.request_of(other, 'pvpZone', 'enter', {'accept': True}, ['*'], ANSWER)
+            if a1 is None or b1 is None:
+                return Result(key, name, cls, SKIP, 'no answer from the Marches window (not installed)', fb)
+            if await pvp_wait_inside(io, squad, 'zone', SETTLE * 3):
+                text = ''
+                break
+            text = str(((a1 or {}).get('data') or {}).get('text', '') or ((b1 or {}).get('data') or {}).get('text', ''))[:80]
+            await io.sleep(PVP_ENTER_WAIT)
+        else:
+            return Result(key, name, cls, SKIP, 'both bots were not inside the Marches after %d tries: %s' % (PVP_ENTER_TRIES, text or 'no text'), fb)
+        await pvp_play(io, squad, 'zone', trace, PVP_BUDGET['zone'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100 and t['fought'] >= 10)
+        words = su_words(io)
+        me = bots[0]
+        pause = getattr(io, 'pause_rotation', None)
+        for rid, e1, e2 in COMBO_REACTIONS:   # the lead casts the pairs at the foe: first spell, 2.2 s, the second (the rotation is paused)
+            if e1 not in me['by_el'] or e2 not in me['by_el'] or not io.alive() or len(tried) >= 3:
+                continue
+            s1, s2 = me['by_el'][e1][0], me['by_el'][e2][0]
+            w1, w2 = words.get(s1[1]), words.get(s2[1])
+            if not w1 or not w2:
+                continue
+            await su_when_ready(io, name, w1, 30.0)
+            await su_when_ready(io, name, w2, 30.0)
+            if pause:
+                pause(name, True)
+            try:
+                if await io.cast_words_of(name, w1):
+                    await io.sleep(2.2)
+                    if await io.cast_words_of(name, w2):
+                        tried.append((rid, s1[1], s2[1]))
+                    await io.sleep(1.0)
+            finally:
+                if pause:
+                    pause(name, False)
+        trace['stuck'] = None
+        await pvp_play(io, squad, 'zone', trace, SPELLUP_PVP_FIGHT)
+        for b in bots:
+            lg = await su_cmd(io, b['who'], 'spellup log')
+            sg = await su_cmd(io, b['who'], 'spellup sig')
+            b['log'], b['sig'] = (lg or {}).get('log'), (sg or {}).get('sig')
+        status, text = spell_pvp_verdict(bots, tried)
+        if trace.get('faults'):
+            status, text = FAIL, '; '.join(trace['faults'][:3])
+        if status == SKIP:
+            text += ' [foe health %s%%, fought %d s of %d, both inside %s; log rows %s]' % (
+                trace.get('foe_hp'), int(trace.get('fought') or 0), int(trace.get('secs') or 0), trace.get('both'),
+                [[b['name'][-3:], [(r[0], r[8]) for r in (b['log'] or [])[:6]]] for b in bots])
+        return Result(key, name, cls, status, text, fb)
+    finally:
+        await io.go('town')
+        await io.go_of(other, 'town')
+        io.raid_mode([name, other], False)
+        for b in bots:
+            await su_cmd(io, b['who'], 'spellup clear')
+
+
+# ---- 2. a dormant awakening after a class change
+def su_triple(v):
+    """[waystone, rift, pinnacle] from a list or from the {waystone, rift, pinnacle} table the server sends"""
+    if isinstance(v, dict):
+        return [int(v.get('waystone', 0)), int(v.get('rift', 0)), int(v.get('pinnacle', 0))]
+    return [int(x) for x in (v or [])]
+
+
+def spell_dormant_verdict(t):
+    """(status, text). t: {'before': awk rows [id, name, rank, f1, f2, bit, known, server rank] of the awakened spells, 'after': the same after the class change,
+    'back': the same after the change back, 'seals': [before, after the change, after the change back], 'slots': [before, after the change],
+    'reawaken': the answer of an awaken request for a freed spell, 'class': [from, to], 'cost': the Seals the slot of that request costs}.
+    Design 1.6: a spell the new class does not know is dormant, its slot is free at once, rank and Forms stay, the Seals are not given back; shared
+    spells keep everything; back in the old class rank and Forms are there, the awakening is not, a new awakening costs the Seals of its slot again"""
+    before = {int(r[0]): r for r in t.get('before') or []}
+    after = {int(r[0]): r for r in t.get('after') or []}
+    back = {int(r[0]): r for r in t.get('back') or []}
+    if not before:
+        return SKIP, 'no spell could be awakened'
+    bad, dormant, kept = [], [], []
+    slots_after = [int(x) for x in (t.get('slots') or [[], []])[1] if x]
+    for sid, r in after.items():
+        old = before.get(sid)
+        if old is None:
+            continue
+        if list(map(int, r[2:5])) != list(map(int, old[2:5])):
+            bad.append('spell %d lost its rank or Forms in the class change (%s to %s)' % (sid, list(old[2:5]), list(r[2:5])))
+        if int(r[6]) == 0:
+            dormant.append(sid)
+            if int(r[5]) or sid in slots_after:
+                bad.append('spell %d (%s) is not known by the new class but keeps its awakening slot (design 1.6: freed at once)' % (sid, r[1]))
+        else:
+            kept.append(sid)
+            if not int(r[5]) or sid not in slots_after:
+                bad.append('spell %d (%s) is known by both classes but lost its awakening' % (sid, r[1]))
+    s = t.get('seals') or []
+    if len(s) >= 3 and s[0] and s[1] and s[2] and (list(s[1]) != list(s[0]) or list(s[2]) != list(s[0])):
+        bad.append('the Seals changed with the class (%s, %s, %s): they are not given back and not taken' % (s[0], s[1], s[2]))
+    for sid, r in back.items():
+        old = before.get(sid)
+        if old is not None and list(map(int, r[2:5])) != list(map(int, old[2:5])):
+            bad.append('spell %d: rank and Forms are not back after the change back (%s to %s)' % (sid, list(old[2:5]), list(r[2:5])))
+        if int(r[6]) == 0 and sid in dormant:
+            bad.append('spell %d is not known again after the change back' % sid)
+    re_ = t.get('reawaken')
+    if dormant and isinstance(re_, dict):
+        if not re_.get('ok'):
+            bad.append('a new awakening of the freed spell is refused: %s' % re_.get('why'))
+        elif t.get('cost') and su_triple(re_.get('cost')) != list(t['cost']):
+            bad.append('the new awakening costs %s, the slot %s costs %s' % (re_.get('cost'), re_.get('slot'), list(t['cost'])))
+    if bad:
+        return FAIL, '; '.join(bad[:4])
+    if not dormant:
+        return SKIP, 'the class change to %s left every awakened spell known (%d kept): no dormant case' % ((t.get('class') or ['?', '?'])[1], len(kept))
+    return PASS, 'class %s to %s: %d dormant spell(s) %s freed their slot at once, rank and Forms kept, %d shared spell(s) kept the awakening; Seals unchanged %s; back: rank and Forms there, a new awakening %s' % (
+        (t.get('class') or ['?', '?'])[0], (t.get('class') or ['?', '?'])[1], len(dormant), dormant[:3], len(kept), (s[0] if s else '?'),
+        ('costs %s as slot %s does' % (su_triple((re_ or {}).get('cost')), (re_ or {}).get('slot'))) if isinstance(re_, dict) and re_.get('ok') else 'not tried')
+
+
+async def check_closed_spell_dormant(io, name, cls, level):
+    """three spells awakened on TEST ONLY Seals, then a class change (the game's own path) to a class of another family and back: the slots of the spells the new class
+    does not know are free at once, the rank and Forms stay, the Seals stay spent; shared spells keep their awakening"""
+    key = 'closed_spell_dormant'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup class (TEST ONLY class change, changed back)']
+    rows = [r for r in await su_forms_rows(io) if not r[2]]
+    if len(rows) < 2:
+        return Result(key, name, cls, SKIP, 'the bot has fewer than two attack spells with Forms')
+    rot = getattr(io, 'rotation_names', lambda: [])()
+    rows.sort(key=lambda r: (0 if str(r[1]).lower() in rot else 1, int(r[0])))
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_ALL)
+    awakened = []
+    for r in rows[:3]:
+        got = await su_awaken(io, None, int(r[0]))
+        if isinstance(got, dict) and got.get('ok'):
+            awakened.append(int(r[0]))
+    if not awakened:
+        return Result(key, name, cls, SKIP, 'no awakening was accepted', fb)
+    s0 = await su_cmd(io, None, 'spellup awk')
+    t = {'before': (s0 or {}).get('awk'), 'slots': [(s0 or {}).get('slots') or []], 'seals': [(s0 or {}).get('seals')]}
+    home = str((s0 or {}).get('vocName') or cls)
+    target = 'Mystic' if home in DORMANT_FAMILY else 'Warrior'
+    changed = await su_cmd(io, None, 'spellup class %s' % target)
+    if not isinstance(changed, dict) or changed.get('err') or not changed.get('ok'):
+        return Result(key, name, cls, SKIP, 'the class change was refused: %s' % str((changed or {}).get('err'))[:80], fb)
+    try:
+        t['class'] = [home, target]
+        s1 = await su_cmd(io, None, 'spellup awk')
+        t['slots'].append((s1 or {}).get('slots') or [])
+        t['seals'].append((s1 or {}).get('seals'))
+        after = []
+        for sid in awakened:
+            r = await su_cmd(io, None, 'spellup awk %d' % sid)
+            after.extend((r or {}).get('awk') or [])
+        t['after'] = after
+    finally:
+        await su_cmd(io, None, 'spellup class %s' % home)
+    s2 = await su_cmd(io, None, 'spellup awk')
+    t['seals'].append((s2 or {}).get('seals'))
+    back = []
+    for sid in awakened:
+        r = await su_cmd(io, None, 'spellup awk %d' % sid)
+        back.extend((r or {}).get('awk') or [])
+    t['back'] = back
+    free = next((int(r[0]) for r in t['after'] or [] if int(r[6]) == 0), None)
+    if free is not None:
+        await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_COSTS[-1])   # the Seals of the first awakenings are spent: the new one is paid again (TEST ONLY top-up)
+        await io.sleep(SPELLUP_GAP)
+        t['reawaken'] = await su_request(io, None, 'awaken', {'spell': free}, ('awaken',))
+        slot = int((t['reawaken'] or {}).get('slot') or 0)
+        if 1 <= slot <= len(SEAL_COSTS):
+            t['cost'] = SEAL_COSTS[slot - 1]
+    status, text = spell_dormant_verdict(t)
+    await su_cmd(io, None, 'spellup clear')
+    return Result(key, name, cls, status, text, fb)
+
+
+# ---- 3. the nine signature kinds
+def sig_kinds_of(text):
+    return [k for k in str(text or '').split('+') if k in SIG_OPS]
+
+
+def sig_pick(rows, covered, size=SIG_BATCH):
+    """up to `size` spells of the `spellup forms` rows (the 5th element: the signature kinds) that cover the most kinds not in `covered` (none when all
+    are covered) -> [(id, name, heal, kinds)]"""
+    cands = [(int(r[0]), str(r[1]), bool(r[2]), sig_kinds_of(r[4]) if len(r) > 4 else []) for r in rows]
+    cands = [c for c in cands if c[3]]
+    out, seen = [], set(covered)
+    while cands and len(out) < size:
+        cands.sort(key=lambda c: (-len(set(c[3]) - seen), c[0]))
+        best = cands.pop(0)
+        if not set(best[3]) - seen:
+            break
+        out.append(best)
+        seen |= set(best[3])
+    return out
+
+
+def sig_row_seen(row, kinds, windows=0, marks=0):
+    """the kinds of a spell's signature the engine ran: the action names of the row [id, casts, own, planned, cap, damage, heal, shield, hits, "op=n,..", ...]"""
+    ops = {}
+    for part in str(row[9] if len(row) > 9 else '').split(','):
+        if '=' in part:
+            k, v = part.split('=', 1)
+            ops[k] = int(v)
+    seen = [k for k in kinds if ops.get(SIG_OPS[k])]
+    if 'CDCUT' in kinds and windows and 'CDCUT' not in seen:
+        seen.append('CDCUT')
+    if 'MARK' in kinds and marks and 'MARK' not in seen:
+        seen.append('MARK')
+    return seen, ops
+
+
+def spell_signature_verdict(t):
+    """(status, text). t: {'spells': [{'sid', 'name', 'kinds', 'row': the `spellup sig` row, 'windows', 'marks'}]}. Every awakened spell cast live: its signature actions ran
+    (by kind), the damage the signature dealt stays inside the cap of 25% of the cast's own damage, nothing ran in PvP"""
+    bad, seen_all, lines, shares = [], set(), [], []
+    spells = t.get('spells') or []
+    if not spells:
+        return SKIP, 'no awakened spell was cast'
+    for s in spells:
+        row = s.get('row') or []
+        if len(row) < 15 or not int(row[1]):
+            lines.append('%s: not cast' % s['name'])
+            continue
+        casts, own, planned, limit, dmg, heal, shield = int(row[1]), float(row[2]), float(row[3]), float(row[4]), float(row[5]), float(row[6]), float(row[7])
+        seen, ops = sig_row_seen(row, s['kinds'], s.get('windows', 0), s.get('marks', 0))
+        seen_all |= set(seen)
+        share = dmg / own if own > 0 else 0.0
+        if own > 0 and share > SIG_CAP_SHARE + SIG_CAP_TOL:
+            bad.append('%s: the signature dealt %.1f%% of the cast\'s own damage in %d cast(s) (%d of %d), the cap is %d%%' % (
+                s['name'], share * 100, casts, dmg, own, int(SIG_CAP_SHARE * 100)))
+        if int(row[11]) or int(row[12]):
+            bad.append('%s: the signature ran in PvP' % s['name'])
+        if own > 0 and (dmg or heal):
+            shares.append(share)
+        lines.append('%s %s: %d cast(s), ran %s, own %d, signature damage %d (%.1f%%) heal %d shield %d, planned %d cap %d' % (
+            s['name'], '+'.join(s['kinds']), casts, ','.join('%s=%d' % kv for kv in sorted(ops.items())) or 'nothing', own, dmg, share * 100, heal, shield, planned, limit))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines[:3])
+    if not seen_all:
+        return SKIP, 'no signature action ran in the casts: %s' % '; '.join(lines[:3])
+    return PASS, 'signature kinds run live: %s; every cast inside the %d%% cap (mean share %s); %s' % (
+        ','.join(k for k in SIG_KINDS if k in seen_all), int(SIG_CAP_SHARE * 100), ('%.1f%%' % (100 * sum(shares) / len(shares))) if shares else 'n/a', '; '.join(lines[:12]))
+
+
+async def check_closed_spell_signature(io, name, cls, level):
+    """batches of three awakened spells chosen to cover the signature kinds of the bot's book: each cast at three sturdy Rats, the actions the engine ran and the damage
+    they asked for against the cap of the cast's own damage"""
+    key = 'closed_spell_signature'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup mob (TEST ONLY Rats, the cast target)']
+    rows = await su_forms_rows(io)
+    if not any(len(r) > 4 and r[4] for r in rows):
+        return Result(key, name, cls, SKIP, 'the bot has no spell with an awakening row (an old helper or no Forms)')
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    words = su_words(io)
+    pause = getattr(io, 'pause_rotation', None)
+    covered, results = set(), []
+    for batch in range(SIG_BATCHES):
+        picks = sig_pick(rows, covered)
+        if not picks or not io.alive():
+            break
+        await su_cmd(io, None, 'spellup clear')
+        await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_ALL)
+        live = []
+        for sid, sname, heal, kinds in picks:
+            got = await su_awaken(io, None, sid)
+            if isinstance(got, dict) and got.get('ok'):
+                live.append((sid, sname, heal, kinds))
+            else:
+                covered |= set(kinds)   # a spell that does not awaken is not tried again
+        await su_cmd(io, None, 'spellup sig clear')
+        for sid, sname, heal, kinds in live:
+            w = words.get(sname)
+            if not w:
+                continue
+            for _ in range(SIG_CASTS):
+                if not io.alive():
+                    break
+                await su_when_ready(io, name, w)
+                await su_cmd(io, None, 'spellup mob')
+                if pause:
+                    pause(name, True)
+                try:
+                    await io.cast_words_of(name, w)
+                finally:
+                    if pause:
+                        pause(name, False)
+                await io.sleep(SIG_WAIT)
+        sg = await su_cmd(io, None, 'spellup sig')
+        by_sid = {int(r[0]): r for r in (sg or {}).get('sig') or [] if len(r) >= 15}
+        for sid, sname, heal, kinds in live:
+            row = by_sid.get(sid) or []
+            seen, _ = sig_row_seen(row, kinds, (sg or {}).get('windows', 0), (sg or {}).get('marks', 0)) if row else ([], {})
+            covered |= set(seen) | (set(kinds) if not row else set())
+            results.append({'sid': sid, 'name': sname, 'kinds': kinds, 'row': row, 'windows': (sg or {}).get('windows', 0), 'marks': (sg or {}).get('marks', 0)})
+    await su_cmd(io, None, 'spellup clear')
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the bot died or left during the casts', fb)
+    status, text = spell_signature_verdict({'spells': results})
+    return Result(key, name, cls, status, text, fb)
+
+
+# ---- 4. the Seal sources
+def seal_expect(source, arg, ans):
+    """the Seals (waystone, rift, pinnacle) one credit gives by the config: waystone tiers from 16, +1 for the first clear of the tier; a Greater Rift run that ends
+    at the shown tier 16 or more, +1 when it is sealed; 2 for a pinnacle kill"""
+    c = SEAL_SOURCES[source]
+    if source == 'waystone':
+        if int(arg) < c['minTier']:
+            return (0, 0, 0)
+        return (c['perClear'] + (c['firstClear'] if (ans or {}).get('firstPaid') else 0), 0, 0)
+    if source == 'rift':
+        if int((ans or {}).get('shown') or 0) < c['minTier']:
+            return (0, 0, 0)
+        return (0, c['perRun'] + (c['climb'] if (ans or {}).get('ok') else 0), 0)
+    return (0, 0, c['perKill'])
+
+
+def spell_seals_verdict(steps):
+    """(status, text). steps: [(label, source, arg, answer of `spellup source`)]: after minus before of every answer is what the config says"""
+    if not steps:
+        return SKIP, 'no Seal source ran'
+    bad, lines = [], []
+    for label, source, arg, ans in steps:
+        if not isinstance(ans, dict) or ans.get('err'):
+            bad.append('%s: %s' % (label, (ans or {}).get('err', 'no answer') if isinstance(ans, dict) else 'no answer'))
+            continue
+        b, a = ans.get('before') or [0, 0, 0], ans.get('after') or [0, 0, 0]
+        got = tuple(int(x) - int(y) for x, y in zip(a, b))
+        want = seal_expect(source, arg, ans)
+        lines.append('%s %s' % (label, '+%s' % '/'.join(str(x) for x in got)))
+        if got != want:
+            bad.append('%s gave %s Seals (waystone/rift/pinnacle), the config says %s' % (label, got, want))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines)
+    return PASS, 'Seals by the config at every source (waystone / rift / pinnacle): %s' % '; '.join(lines)
+
+
+async def check_closed_spell_seals(io, name, cls, level):
+    """each content's own credit of Seals, the bot the only player (TEST ONLY: no map, run or fight is played): a waystone tier below and above 16, the first clear, a Greater
+    Rift run that fails and one that is sealed, with the deltas read against the config"""
+    key = 'closed_spell_seals'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup source (TEST ONLY: the content\'s own credit function, the bot as the only player)']
+    await su_cmd(io, None, 'spellup clear')
+    plan = (('waystone tier 15', 'waystone', 15, 'spellup source waystone 15'),
+            ('waystone tier 16, first clear', 'waystone', 16, 'spellup source waystone 16 first'),
+            ('waystone tier 16 again', 'waystone', 16, 'spellup source waystone 16 first'),
+            ('waystone tier 25', 'waystone', 25, 'spellup source waystone 25'),
+            ('Greater Rift tier 16 failed', 'rift', 1, 'spellup source rift 1 fail'),
+            ('Greater Rift tier 18 sealed', 'rift', 3, 'spellup source rift 3'))
+    steps = []
+    for label, source, arg, cmd in plan:
+        steps.append((label, source, arg, await su_cmd(io, None, cmd)))
+        await io.sleep(0.5)
+    status, text = spell_seals_verdict(steps)
+    await su_cmd(io, None, 'spellup clear')
+    return Result(key, name, cls, status, text, fb)
+
+
+async def check_closed_spell_seal_pinnacle(io, name, cls, level):
+    """the Pinnacle Seals at a real kill: the bot opens a pinnacle fight at the Keeper (a TEST ONLY set of fragments), the boss is killed by the helper through the real death
+    event, every member gets the Seals of the config"""
+    key = 'closed_spell_seal_pinnacle'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    pa = await io.helper('pinnacle state', 'pinnacle', ANSWER)
+    refused = pinnacle_refusal(pa, level)
+    if refused:
+        return Result(key, name, cls, refused[0], refused[1])
+    fb = ['spellup source (TEST ONLY: a whole set of fragments, the Keeper\'s own Open call, the boss killed through its real death event)']
+    await su_cmd(io, None, 'spellup clear')
+    io.raid_mode([name], True)
+    try:
+        if not await io.go('town'):
+            return Result(key, name, cls, SKIP, 'the helper did not bring the bot to the temple', fb)
+        await io.sleep(SETTLE)
+        before = ((await su_cmd(io, None, 'spellup state')) or {}).get('seals') or [0, 0, 0]
+        ans, waited, last = None, 0.0, ''
+        while waited <= PINNACLE_SEAL_WAIT and io.alive():
+            ans = await su_cmd(io, None, 'spellup source pinnacle')
+            if isinstance(ans, dict) and ans.get('hit'):
+                break
+            if isinstance(ans, dict) and ans.get('waiting'):   # inside the arena: the boss comes after the start delay
+                await io.sleep(3.0)
+                waited += 3.0
+                continue
+            last = str((ans or {}).get('err', 'no answer') if isinstance(ans, dict) else 'no answer')
+            if 'combat' in last or 'cooldown' in last.lower() or 'wait' in last.lower():   # a bot just out of a fight is refused for a while: wait it out in the temple
+                await io.sleep(PVP_ENTER_WAIT)
+                waited += PVP_ENTER_WAIT
+                continue
+            break
+        if not isinstance(ans, dict) or not ans.get('hit'):
+            return Result(key, name, cls, SKIP, 'no pinnacle boss was killed in %d s: %s' % (int(waited), last[:90] or 'no answer'), fb)
+        await io.sleep(6.0)
+        after = ((await su_cmd(io, None, 'spellup state')) or {}).get('seals') or [0, 0, 0]
+        ans = dict(ans, before=before, after=after)
+        status, text = spell_seals_verdict([('pinnacle boss killed (%s)' % ans.get('boss'), 'pinnacle', 0, ans)])
+        return Result(key, name, cls, status, text, fb)
+    finally:
+        await io.helper('pinnacle close', 'pinnacle', ANSWER)
+        io.raid_mode([name], False)
+        await su_cmd(io, None, 'spellup clear')
+        await io.go('hunt')
+
+
+# ---- 5. the Forms' hit gain against the plan of forms.csv
+def form_gain_rows(variants):
+    """[(label, kinds, casts, landed per cast, planned gain, live gain)] from the variants [{'label', 'row': the `spellup fstat` row}]: the planned gain is what the planner
+    of the Forms made of the real casts (the hits with the Forms' main factors, plus the extra hits, dots, bursts and grounds at the uptime of the kind) over the hits before
+    the Forms; the live one is the landed damage per cast over the one of the first variant (no Form)"""
+    out, base = [], None
+    for v in variants:
+        row = v.get('row') or []
+        if len(row) < 8:
+            continue
+        done = max(1, int(v.get('casts') or 0))
+        per_cast = float(row[7]) / done
+        if base is None:
+            base = per_cast
+            out.append((v['label'], 'none', done, per_cast, 1.0, 1.0))
+            continue
+        orig, adj, extra = float(row[2]), float(row[3]), float(row[4])
+        plan = (adj + extra) / orig if orig > 0 else None
+        live = per_cast / base if base > 0 else None
+        out.append((v['label'], str(row[5]), done, per_cast, plan, live))
+    return out
+
+
+def spell_formgain_verdict(samples):
+    """(status, text). samples: [{'spell': name, 'variants': [{'label', 'casts', 'row'}]}] the first variant of a spell is the one with no Form. A variant whose live gain is
+    more than FORM_GAIN_BAD under its planned one lost hits (the Form plans extras that do not land)"""
+    bad, notes, lines = [], [], []
+    n = 0
+    for s in samples:
+        rows = form_gain_rows(s.get('variants') or [])
+        if len(rows) < 2:
+            continue
+        for label, kinds, casts, per_cast, plan, live in rows[1:]:
+            if plan is None or live is None:
+                continue
+            n += 1
+            lines.append('%s %s [%s]: plan %.2f live %.2f' % (s['spell'], label, kinds, plan, live))
+            if live < plan - FORM_GAIN_BAD:
+                bad.append('%s %s [%s]: plan %.2f, landed %.2f of the Form-less cast' % (s['spell'], label, kinds, plan, live))
+            elif abs(live - plan) > FORM_GAIN_TOL:
+                notes.append('%s %s %.2f vs %.2f' % (s['spell'], label, live, plan))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines[:4])
+    if not n:
+        return SKIP, 'no Form variant was cast with a planned gain'
+    return PASS, '%d Form variant(s), the landed gain of the combat log against the planned one: %s%s' % (
+        n, '; '.join(lines[:8]), ('; off by more than %d%% (inside the noise of %d casts): %s' % (int(FORM_GAIN_TOL * 100), FORM_CASTS, ', '.join(notes[:4]))) if notes else '')
+
+
+async def check_closed_spell_formgain(io, name, cls, level):
+    """two attack spells of the bot at rank 20 cast FORM_CASTS times at six sturdy Rats with no Form, each Form I, then Form II on one: the landed damage per cast of the
+    combat log against the gain the Forms' planner made of the real casts"""
+    key = 'closed_spell_formgain'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms written)', 'spellup mob (TEST ONLY Rats, the cast target)']
+    rows = [r for r in await su_forms_rows(io) if not r[2]]
+    if not rows:
+        return Result(key, name, cls, SKIP, 'the bot has no attack spell with Forms')
+    rot = getattr(io, 'rotation_names', lambda: [])()
+    words = su_words(io)
+    rows = [r for r in rows if words.get(str(r[1]))]
+    rows.sort(key=lambda r: (0 if str(r[1]).lower() in rot else 1, int(r[0])))
+    if not rows:
+        return Result(key, name, cls, SKIP, 'no spell of the bot has words to cast')
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    pause = getattr(io, 'pause_rotation', None)
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup mob')
+    await su_cmd(io, None, 'spellup mob')
+    samples = []
+    for r in rows[:FORM_SPELLS]:
+        sid, sname = int(r[0]), str(r[1])
+        w = words[sname]
+        await su_cmd(io, None, 'spellup rank %d 20' % sid)
+        variants = []
+        for label, f1, f2 in FORM_VARIANTS:
+            if not io.alive():
+                break
+            await su_cmd(io, None, 'spellup pick %d %d %d' % (sid, f1, f2))
+            await su_cmd(io, None, 'spellup fstat clear')
+            done = 0
+            for _ in range(FORM_CASTS):
+                if not io.alive():
+                    break
+                await su_when_ready(io, name, w)
+                if pause:
+                    pause(name, True)
+                try:
+                    if await io.cast_words_of(name, w):
+                        done += 1
+                finally:
+                    if pause:
+                        pause(name, False)
+                await io.sleep(1.0)
+            await io.sleep(5.0)   # the dots and the delayed hits of the last cast land
+            fs = await su_cmd(io, None, 'spellup fstat')
+            lg = await su_cmd(io, None, 'spellup log')
+            row = next((x for x in (fs or {}).get('fstat') or [] if int(x[0]) == sid), None)
+            if row is None:   # no Form acted (the first variant): the landed damage of the combat log is the base
+                hit = next((x for x in (lg or {}).get('log') or [] if int(x[0]) == sid), None)
+                row = [sid, done, 0, 0, 0, 'none', int(hit[8]) if hit else 0, float(hit[9]) if hit else 0.0]
+            variants.append({'label': label, 'casts': done, 'row': row})
+        samples.append({'spell': sname, 'variants': variants})
+    await su_cmd(io, None, 'spellup clear')
+    status, text = spell_formgain_verdict(samples)
+    return Result(key, name, cls, status, text, fb)
+
+
+# ---- 6. the wire state the client reads (opcode 168; game_spellranks ranklogic.lua cleanState / cleanForms / awakelogic.lua)
+def wire_state_problems(wire):
+    """[text] for the opcode 168 messages {'state', 'forms', 'awakened'} against the fields the client logic reads: state {on, s: [[id > 0, rank 0-20, into >= 0, cost >= 0]]},
+    forms {f: [[id, f1 0-2, f2 0-2]]}, awakened {on, seals: [3 numbers], slots: [ids], costs: [[3 numbers] x slots], held, bonus}"""
+    out = []
+    st, fm, aw = (wire or {}).get('state'), (wire or {}).get('forms'), (wire or {}).get('awakened')
+    if not isinstance(st, dict) or st.get('on') is not True or not isinstance(st.get('s'), list):
+        out.append('state: on / s missing')
+    else:
+        for row in st['s'][:200]:
+            if not (isinstance(row, list) and len(row) >= 4 and int(row[0]) > 0 and 0 <= int(row[1]) <= 20 and float(row[2]) >= 0 and float(row[3]) >= 0):
+                out.append('state row %s is not [id, rank, into, cost]' % (row,))
+                break
+    if not isinstance(fm, dict) or not isinstance(fm.get('f'), list):
+        out.append('forms: f missing')
+    else:
+        for row in fm['f'][:200]:
+            if not (isinstance(row, list) and len(row) >= 3 and int(row[0]) > 0 and 0 <= int(row[1]) <= 2 and 0 <= int(row[2]) <= 2):
+                out.append('forms row %s is not [id, f1, f2]' % (row,))
+                break
+    if not isinstance(aw, dict) or aw.get('on') is not True:
+        out.append('awakened: on missing')
+    else:
+        seals, slots, costs = aw.get('seals'), aw.get('slots'), aw.get('costs')
+        if not (isinstance(seals, list) and len(seals) == 3 and all(isinstance(x, (int, float)) for x in seals)):
+            out.append('awakened: seals is not three numbers')
+        if not (isinstance(slots, list) and len(slots) == len(SEAL_COSTS)):
+            out.append('awakened: slots is not a list of %d' % len(SEAL_COSTS))
+        if not (isinstance(costs, list) and [list(c) for c in costs] == [list(c) for c in SEAL_COSTS]):
+            out.append('awakened: costs %s are not the slot costs %s' % (costs, [list(c) for c in SEAL_COSTS]))
+        if not isinstance(aw.get('bonus'), (int, float)) or abs(float(aw['bonus']) - AWAKE_BONUS_PCT) > 1e-6:
+            out.append('awakened: bonus %s is not %s' % (aw.get('bonus'), AWAKE_BONUS_PCT))
+    return out
+
+
+async def check_closed_spell_wire(io, name, cls, level):
+    """the three opcode 168 messages the window reads (state, forms, awakened) after a TEST ONLY rank, Forms and awakening: every field of the client logic is there and
+    in range, and the awakened state names the spell in its slot; the answers are saved to $CHAOS_WIRE_DUMP when it is set (the live pass runs the client's Lua over them)"""
+    key = 'closed_spell_wire'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    rows = [r for r in await su_forms_rows(io) if not r[2]]
+    if not rows:
+        return Result(key, name, cls, SKIP, 'the bot has no attack spell with Forms')
+    fb = ['spellup rank (TEST ONLY rank grant)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)']
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup seals 40 36 16')
+    sid = int(rows[0][0])
+    got = await su_awaken(io, None, sid)
+    wire = {'state': await su_request(io, None, 'open', {}, ('state',))}   # one `open` answers with state, forms and awakened: the first is the reply, the others are read from the bot
+    await io.sleep(0.8)
+    last = getattr(io, 'last_message', None)
+    wire['forms'] = last('spellRanks', 'forms') if last else None
+    wire['awakened'] = last('spellRanks', 'awakened') if last else None
+    problems = wire_state_problems(wire)
+    slots = (wire.get('awakened') or {}).get('slots') if isinstance(wire.get('awakened'), dict) else None
+    if isinstance(got, dict) and got.get('ok') and isinstance(slots, list) and sid not in [int(x) for x in slots if x]:
+        problems.append('the awakened state does not name spell %d in a slot after it awakened' % sid)
+    dump = os.environ.get('CHAOS_WIRE_DUMP')
+    if dump:
+        try:
+            with open(dump, 'w') as f:
+                json.dump(wire, f)
+        except OSError:
+            pass
+    await su_cmd(io, None, 'spellup clear')
+    if problems:
+        return Result(key, name, cls, FAIL, '; '.join(problems[:3]), fb)
+    return Result(key, name, cls, PASS, 'state (%d spell row(s)), forms (%d row(s)) and awakened (seals, %d slots, costs, bonus) hold every field the client logic reads; spell %d in its slot' % (
+        len((wire['state'] or {}).get('s') or []), len((wire['forms'] or {}).get('f') or []), len(SEAL_COSTS), sid), fb)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -10204,6 +10982,13 @@ CLOSED_CHECKS = [
     ('closed_spell_forms', check_closed_spell_forms, lambda c: True),   # O686 phase 8: Form picks on a TEST ONLY rank, the price and the free window, a fight with them
     ('closed_spell_combos', check_closed_spell_combos, lambda c: True),   # O686 phase 8: the element reactions cast, the procs, the band, the repeat guard
     ('closed_spell_awaken', check_closed_spell_awaken, lambda c: True),   # O686 phase 8: an awakening on TEST ONLY Seals: refusals, slot cost, +10%
+    ('closed_spell_pvp', check_closed_spell_pvp, lambda c: True),   # O686 phase 8b: two bots in the Marches, rank and awakening at the PvP half, no combo, no signature
+    ('closed_spell_dormant', check_closed_spell_dormant, lambda c: True),   # O686 phase 8b: a class change (and back): the awakened spells the new class lacks go dormant
+    ('closed_spell_signature', check_closed_spell_signature, lambda c: True),   # O686 phase 8b: the signature kinds cast live against the 25% cap
+    ('closed_spell_seals', check_closed_spell_seals, lambda c: True),   # O686 phase 8b: the Seals of the waystone and Greater Rift credits by the config
+    ('closed_spell_seal_pinnacle', check_closed_spell_seal_pinnacle, lambda c: True),   # O686 phase 8b: the Pinnacle Seals at the death of a real pinnacle boss
+    ('closed_spell_formgain', check_closed_spell_formgain, lambda c: True),   # O686 phase 8b: the Forms' landed gain against the planner's
+    ('closed_spell_wire', check_closed_spell_wire, lambda c: True),   # O686 phase 8b: the opcode 168 messages hold what the client reads
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -10309,7 +11094,8 @@ FIGHT_KEYS = frozenset([
     'closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match',
     'rift_walk', 'tower_walk', 'descent_walk', 'trial_walk', 'ascended_walk', 'omen_walk', 'pinnacle_walk', 'bounty_walk', 'bounty_elite_walk',
     'bounty_boss_walk', 'mainquest_walk', 'nemesis_walk', 'pocket_walk', 'wsmap_walk', 'goblin_walk', 'vael_walk', 'boss_copy_walk',
-    'kill_task_kills', 'ascension_walk', 'closed_spell_ranks', 'closed_spell_forms', 'closed_spell_combos', 'closed_spell_awaken',
+    'kill_task_kills', 'ascension_walk', 'closed_spell_ranks', 'closed_spell_forms', 'closed_spell_combos', 'closed_spell_awaken', 'closed_spell_pvp',
+    'closed_spell_dormant', 'closed_spell_signature', 'closed_spell_seals', 'closed_spell_seal_pinnacle', 'closed_spell_formgain', 'closed_spell_wire',
 ])
 # the level each content opens at (a floor: the helper's own `minLevel` answers still apply after it). Read from the configs by
 # tester_checks_test.py (`test_level_gates_hold_the_configs`): a number that drifts fails the test, not a live run.
@@ -10329,6 +11115,7 @@ LEVEL_GATES = {
     'wsmap_walk': 1000,          # waystone_tiers_config.lua tester.minLevel
     'vael_walk': 500,            # the Oath Chamber (trials_config.lua mq minLevel)
     'pinnacle_walk': 1800,       # pinnacle_config.lua bosses[1].minLevel (Ascended Malgrath)
+    'closed_spell_seal_pinnacle': 1800,   # the same boss
     'ascension_walk': 100,       # Chaos.classes.ascension.minLevel
 }
 GEAR_SLOTS = {1: 'Helmet', 4: 'Armor', 7: 'Legs', 8: 'Boots'}   # CONST_SLOT_* of the basic pieces -> the Gambler's slot name

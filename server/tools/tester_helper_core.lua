@@ -2612,7 +2612,7 @@ end
 -- grant of a rank (0-20) or of Seals (0-999 each), the monster health factor H on two fresh copies of a monster nearby (switch off, then on),
 -- and the log of the factors the hooks of ChaosPassiveDealt applied to the bot's hits. Only a tester character gets it (the guard of every command).
 H.COMMANDS.spellup = true
-H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]]]"
+H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]] | sig [clear] | fstat [clear] | pick SPELL F1 F2 | awk [SPELL] | class VOCATION | source waystone TIER [first] | source rift G [fail] | source pinnacle]"
 
 function H.parseSpellup(arg)
 	local s = tostring(arg or "")
@@ -2640,6 +2640,50 @@ function H.parseSpellup(arg)
 			return nil, H.SPELLUP_USAGE
 		end
 		return {what = "rank", spell = a, rank = b}
+	elseif word == "sig" or word == "fstat" then -- phase 8b: the signature record, the Forms' gain record
+		if rest == "" then
+			return {what = word}
+		elseif rest:lower() == "clear" then
+			return {what = word, clear = true}
+		end
+		return nil, H.SPELLUP_USAGE
+	elseif word == "pick" then -- phase 8b, TEST ONLY: the Form picks written straight into the spell's state (no price, no window)
+		local a, b, c = rest:match("^(%d+)%s+(%d+)%s+(%d+)$")
+		a, b, c = tonumber(a), tonumber(b), tonumber(c)
+		if not a or a > 499 or b > 2 or c > 2 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "pick", spell = a, f1 = b, f2 = c}
+	elseif word == "awk" then -- the awakened slots (or one spell): rank, Forms, awakened bit, known by class
+		if rest == "" then
+			return {what = "awk"}
+		end
+		local a = tonumber(rest:match("^(%d+)$"))
+		if not a or a > 499 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "awk", spell = a}
+	elseif word == "class" then -- phase 8b, TEST ONLY: the vocation changed on the game's own path (ChaosClasses.applyVocation)
+		local a = tonumber(rest:match("^(%d+)$"))
+		if a and a >= 1 and a <= 60 then
+			return {what = "class", voc = a}
+		end
+		if rest:match("^%a[%a ]*$") then -- by name ("Warrior", "Iron Sage")
+			return {what = "class", name = rest:lower()}
+		end
+		return nil, H.SPELLUP_USAGE
+	elseif word == "source" then -- phase 8b, TEST ONLY: the Seal credit of a content, by the content's own credit function
+		local kind, a, b = rest:match("^(%a+)%s*(%d*)%s*(%a*)$")
+		kind = kind and kind:lower()
+		a = tonumber(a)
+		if kind == "waystone" and a and a >= 1 and a <= 25 and (b == "" or b:lower() == "first") then
+			return {what = "source", kind = "waystone", tier = a, first = b ~= ""}
+		elseif kind == "rift" and a and a >= 1 and a <= 60 and (b == "" or b:lower() == "fail") then
+			return {what = "source", kind = "rift", g = a, fail = b ~= ""}
+		elseif kind == "pinnacle" and not a and b == "" then
+			return {what = "source", kind = "pinnacle"}
+		end
+		return nil, H.SPELLUP_USAGE
 	elseif word == "near" then
 		local a = rest:match("^(%d+)$")
 		a = tonumber(a)

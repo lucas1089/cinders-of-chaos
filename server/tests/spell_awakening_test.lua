@@ -1119,6 +1119,39 @@ do
 	storage = {}
 end
 
+-- ---------------------------------------------------------------- B7c. a class change frees the dormant slot at once (O686 phase 8b)
+-- Design 1.6: "an awakened spell that is dormant frees its slot at once". The live pass changed the class of a bot with three awakened spells: the slots of the
+-- spells the new class does not know stayed taken until the next login, because only the login event synced. ascension.lua afterVocationChange calls this.
+do
+	storage = {}
+	setSpell(206, 20, 1, 1, true)
+	setSpell(218, 20, 1, 1, true)
+	storage[RC.storage.awakenedSlots] = 206
+	storage[RC.storage.awakenedSlots + 1] = 218
+	storage[RC.storage.awakened] = 2
+	p.learned = {Doomtide = true, ["Final Verdict"] = true}
+	eq(AW.afterClassChange ~= nil, true, "the class change hook exists")
+	eq(AW.afterClassChange(p), 0, "a class change that keeps both spells frees nothing")
+	p.learned = {Doomtide = true} -- the new class does not know Final Verdict
+	sent = {}
+	eq(AW.afterClassChange(p), 1, "a class change frees the slot of the spell the new class does not know, at once")
+	eq(AW.slots(p)[2], 0, "slot 2 is free")
+	eq(AW.isAwakened(p, 218), false, "its awakened bit is cleared")
+	local _, kf1 = P.unpack(storage[RC.storage.rankBase + 218])
+	eq(kf1, 1, "its rank and Forms stay")
+	eq(AW.isAwakened(p, 206), true, "the shared spell stays awakened")
+	local st = lastSent("awakened")
+	eq(st ~= nil and st.data.slots[2] == 0 and st.data.slots[1] == 206, true, "the client is told the new slots")
+	sent = {}
+	eq(AW.afterClassChange(p), 0, "nothing to free the second time")
+	eq(lastSent("awakened"), nil, "and nothing is pushed")
+	RC.enabled = false
+	p.learned = {}
+	eq(AW.afterClassChange(p), 0, "switch off: nothing")
+	RC.enabled = true
+	storage = {}
+end
+
 -- ---------------------------------------------------------------- B8. the staff command and the logout
 do
 	storage = {}

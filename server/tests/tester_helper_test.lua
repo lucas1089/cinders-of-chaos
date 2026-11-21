@@ -4214,8 +4214,21 @@ do
 	check(H.parseSpellup("seals 1 2 3 4") == nil and H.parseSpellup("seals x") == nil and H.parseSpellup("burn") == nil and select(2, H.parseSpellup("burn")) == H.SPELLUP_USAGE,
 		"spellup: other words are the usage")
 
+	-- phase 8b: the words of the new commands
+	check(H.parseSpellup("sig").what == "sig" and H.parseSpellup("sig clear").clear == true and H.parseSpellup("fstat clear").what == "fstat" and H.parseSpellup("sig x") == nil,
+		"spellup: sig and fstat [clear]")
+	local pk = H.parseSpellup("pick 200 1 2")
+	check(pk.what == "pick" and pk.spell == 200 and pk.f1 == 1 and pk.f2 == 2 and H.parseSpellup("pick 200 3 0") == nil and H.parseSpellup("pick 200 1") == nil, "spellup: pick SPELL F1 F2")
+	check(H.parseSpellup("awk").what == "awk" and H.parseSpellup("awk 200").spell == 200 and H.parseSpellup("awk 500") == nil, "spellup: awk [SPELL]")
+	check(H.parseSpellup("class Warrior").name == "warrior" and H.parseSpellup("class Iron Sage").name == "iron sage" and H.parseSpellup("class 4").voc == 4
+		and H.parseSpellup("class") == nil and H.parseSpellup("class 99") == nil, "spellup: class by name or number")
+	local sw, sr, sp = H.parseSpellup("source waystone 16 first"), H.parseSpellup("source rift 3 fail"), H.parseSpellup("source pinnacle")
+	check(sw.kind == "waystone" and sw.tier == 16 and sw.first == true and sr.kind == "rift" and sr.g == 3 and sr.fail == true and sp.kind == "pinnacle"
+		and H.parseSpellup("source waystone 26") == nil and H.parseSpellup("source rift") == nil and H.parseSpellup("source moon") == nil, "spellup: source waystone | rift | pinnacle")
+	check(HELPER_VERSION >= 42, "the helper is version 42 or later (O686 phase 8b)")
+
 	local saved = {ChaosSpellRanks, ChaosSpellRanksConfig, ChaosSpellRanksCore, ChaosSpellCombos, ChaosSpellAwakening, ChaosCombatLog, ChaosSpellForms, ChaosPace,
-		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators}
+		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators, ChaosSpellFormsCore, ChaosSpellAwakeningCore, ChaosClasses}
 	COMBAT_NONE, ORIGIN_SPELL = 0, 3
 	local cfgS = {enabled = true, track = true, testersEarn = true,
 		storage = {rankBase = 5000, sealWaystone = 6001, sealRift = 6002, sealPinnacle = 6003, awakened = 6004, formChanges = 6005, lastPickAt = 6006,
@@ -4236,10 +4249,22 @@ do
 	local cf = 1
 	ChaosSpellCombos = {hitFactor = function() return cf end, announce = function() end}
 	local af = 1
-	ChaosSpellAwakening = {hitFactor = function() return af end, seals = function(p) return {waystone = 2, rift = 3, pinnacle = 4} end, slots = function() return {0, 0, 0} end}
+	local awSlots, awCast = {0, 0, 0}, nil
+	ChaosSpellAwakening = {hitFactor = function() return af end, seals = function(p) return {waystone = 2, rift = 3, pinnacle = 4} end, slots = function() return awSlots end,
+		-- phase 8b: the signature of an awakened spell (the cast event, the actions, the marks and windows the probe counts)
+		isAwakened = function() return true end, windows = {}, marks = {},
+		entry = function(sid) if sid == 201 then return {parts = {{kind = "PULSE"}, {kind = "MARK"}}} end end,
+		onCast = function(p, b, info) if info.pvp then return end ChaosSpellAwakening.run(p, {}, {op = "pulse"}, {}, 1, b.spellId) ChaosSpellForms.ops.dealHit(p, nil, 1, 120) end,
+		run = function() awCast = (awCast or 0) + 1 end}
 	local spellHits = 0
 	ChaosCombatLog = {spellHook = function() spellHits = spellHits + 1 end}
-	ChaosSpellForms = {picksOf = function() return {{200, 1, 0}} end}
+	local formOps = {dealHit = function() end, dealHeal = function() end, addShield = function() end}
+	ChaosSpellForms = {picksOf = function() return {{200, 1, 0}} end, active = function() return {{kind = "SPLIT"}} end, ops = formOps}
+	ChaosSpellFormsCore = {hitFactor = function(specs, hit) return 1.1 end, dist = function() return 0 end,
+		planAll = function(specs, cast) return {actions = {{t = "hit", amount = 100, up = 0.5}, {t = "dot", amount = 10, ticks = 3}}} end}
+	ChaosSpellAwakeningCore = {plan = function(spec, cast, cfg) return {planned = 300, limit = 250, scaled = 0.83, actions = {{op = "pulse", pulses = 3}}} end}
+	local savedPlayer = Player
+	Player = function(id) if id == sup.id then return sup end return savedPlayer(id) end
 	local hf = 1.05
 	Chaos.healthFactor = function() return hf end
 	local made = {}
@@ -4330,9 +4355,123 @@ do
 	check(ranked.rank[200] == 0 and ranked.sp[201] == 0 and sup.store[6001] == 0 and sup.store[5200] == 0, "spellup clear: ranks, SP and Seals back to nothing")
 	say2("spellup burn #911")
 	check(last(sup):find("usage: spellup", 1, true), "spellup: an unknown word is the usage")
+
+	-- phase 8b: a hit on another player is the PvP cell of the log (the spell id negative); a heal on an ally is no PvP
+	local foe = creature(268436300, "Tester Foe", {store = {[ST] = 1}})
+	spell = 200
+	rf(sup, foe, ORIGIN_SPELL, 1)
+	rf(sup, foe, ORIGIN_SPELL, 1)
+	rf(sup, mon, ORIGIN_SPELL, 1)
+	ChaosSpellAwakening.hitFactor(sup, foe, ORIGIN_SPELL, 1)
+	ChaosSpellCombos.hitFactor(sup, foe, ORIGIN_SPELL, 1)
+	ChaosCombatLog.spellHook(sup, nil, foe, 500, 200)
+	rf(sup, foe, ORIGIN_SPELL, COMBAT_HEALING or 4)
+	say2("spellup log #960")
+	out = last(sup)
+	check(out:find("[-200,2,1.0900,", 1, true) and out:find("[200,", 1, true), "spellup log: a hit on a player has its own row under the negative spell id: " .. out)
+	check(out:find("[-200,2,1.0900,1,1.1500,1.1500,1,1.1000,1,500,500,", 1, true), "spellup log: its combo, awakening and hit numbers are the PvP ones: " .. out)
+	say2("spellup log clear #961")
+
+	-- phase 8b: the Forms' record (the hits before the Forms, with their main factors, what the planner added) and the signature record
+	ChaosSpellForms.active(sup, 201)
+	ChaosSpellFormsCore.hitFactor({{kind = "SPLIT"}}, {id = 1, amount = 1000, player = false})
+	ChaosSpellFormsCore.planAll({{kind = "SPLIT"}}, {hits = {}, foes = {}})
+	ChaosSpellForms.active(sup, 200)
+	ChaosSpellFormsCore.hitFactor({{kind = "TWIN"}}, {id = 1, amount = 500, player = true}) -- a player's hit is not a Form's sample
+	say2("spellup fstat #950")
+	check(last(sup):find('"fstat":[[201,1,1000,1100,80,"SPLIT",0,0]]', 1, true), "spellup fstat: hits, the hits with the Forms' factors, the planned extra (a hit at its uptime, a dot over its ticks): " .. last(sup))
+	say2("spellup fstat clear #951")
+	say2("spellup fstat #952")
+	check(last(sup):find('"fstat":[]', 1, true), "spellup fstat clear: the record is empty after it")
+	spell = 201
+	ChaosSpellAwakeningCore.plan({}, {caster = {id = sup.id}, spellId = 201, pvp = false}, {})
+	ChaosSpellAwakening.onCast(sup, {spellId = 201}, {hits = {{amount = 600}, {amount = 400}}, pvp = false})
+	ChaosSpellAwakening.onCast(sup, {spellId = 201}, {hits = {{amount = 600}}, pvp = true})
+	ChaosSpellAwakening.windows[sup.id] = {{}}
+	ChaosSpellAwakening.marks[7] = {owner = sup.id}
+	say2("spellup sig #953")
+	out = last(sup)
+	check(out:find("[201,1,1000,300,250,120,0,0,1,\"pulse=1\",1,0,0,", 1, true), "spellup sig: the cast, its own damage, the plan and the cap, the signature's damage, the actions, the PvP cast and its run: " .. out)
+	check(out:find('"windows":1', 1, true) and out:find('"marks":1', 1, true), "spellup sig: the cooldown windows and the marks of the bot")
+	say2("spellup sig clear #954")
+	say2("spellup sig #955")
+	check(last(sup):find('"sig":[]', 1, true), "spellup sig clear: the record is empty after it")
+	spell = 200
+	ChaosSpellForms.entry = function(sid)
+		if sid == 200 then return {[1] = {{kind = "ECHO"}, {kind = "BURST"}}, [2] = {{kind = "AREA"}}} end
+		if sid == 201 then return {[1] = {{kind = "A"}}, [2] = {{kind = "B"}}} end
+	end
+	say2("spellup forms #956")
+	check(last(sup):find('[201,"Wave",0,["A","?","B","?"],"PULSE+MARK"]', 1, true), "spellup forms: the signature kinds of a spell with an awakening row are the 5th value: " .. last(sup))
+
+	-- phase 8b: the Form picks written straight in, the awakened slots, a class change, the Seal credits
+	ChaosSpellRanksCore.unpack = function(v) return 20, 1, 1, true end
+	local packed
+	ChaosSpellRanksCore.pack = function(rank, f1, f2, aw) packed = {rank, f1, f2, aw} return rank end
+	say2("spellup pick 200 2 1 #957")
+	check(packed and packed[1] == 20 and packed[2] == 2 and packed[3] == 1 and packed[4] == true and last(sup):find('"picked":[200,20,2,1]', 1, true), "spellup pick: the Forms are written, the rank and the awakened bit stay")
+	say2("spellup pick 300 1 1 #958")
+	check(last(sup):find('"err":', 1, true), "spellup pick: a spell with no rank is an error")
+	awSlots = {200, 0, 0}
+	say2("spellup awk #959")
+	check(last(sup):find('"awk":[[200,"Bolt",20,1,1,1,1,', 1, true) and last(sup):find('"slots":[200,0,0]', 1, true) and last(sup):find('"seals":[2,3,4]', 1, true),
+		"spellup awk: the slot spell, its rank, Forms, awakened bit and known flag, the slots and the Seals: " .. last(sup))
+	say2("spellup awk 201 #962")
+	check(last(sup):find('"awk":[[201,"Wave",', 1, true), "spellup awk SPELL: one spell whatever the slots")
+	local changed
+	ChaosClasses = {applyVocation = function(p, v) changed = v:getId() end}
+	local savedVocation = Vocation
+	Vocation = function(id)
+		if id >= 1 and id <= 60 then
+			return {getId = function() return id end, getName = function() return id == 4 and "Warrior" or "Other" end}
+		end
+	end
+	say2("spellup class warrior #963")
+	check(changed == 4 and last(sup):find('"ok":true', 1, true) and last(sup):find('"name":"Warrior"', 1, true), "spellup class: the game's own applyVocation runs for a class named: " .. last(sup))
+	changed = nil
+	say2("spellup class 7 #964")
+	check(changed == 7, "spellup class: or by number")
+	Vocation = savedVocation
+	-- the Seal credits run the content's own functions with the bot as the only player
+	local atlasMap
+	ChaosWaystoneAtlas = {playersInMap = function(map) return {} end}
+	ChaosWaystoneEndgame = {creditFirstClear = function(map, tier) atlasMap = ChaosWaystoneAtlas.playersInMap(map) return 1, {[sup.id] = true} end,
+		creditSeals = function(map, tier, firsts) return (tier >= 16) and 2 or 0 end}
+	say2("spellup source waystone 16 first #965")
+	check(last(sup):find('"credited":2', 1, true) and last(sup):find('"firstPaid":true', 1, true) and atlasMap and atlasMap[1] == sup
+		and ChaosWaystoneAtlas.playersInMap(99999)[1] == nil, "spellup source waystone: the credit functions see the bot as the map's only player, the atlas is put back: " .. last(sup))
+	local settled
+	ChaosRiftConfig = {greater = {}}
+	ChaosRiftCore = {greaterKey = function(cfg, g) return {greater = g} end, shownTier = function(cfg, key) return 15 + key.greater end}
+	sup.getGuid = function() return 77 end
+	ChaosRift = {greaterSettle = function(run, ok) settled = {run.greater, ok, run.players[sup.id] ~= nil and run.players[sup.id].guid == 77} end}
+	say2("spellup source rift 3 fail #966")
+	check(settled and settled[1] == 3 and settled[2] == false and settled[3] == true and last(sup):find('"shown":18', 1, true), "spellup source rift: a Greater Rift run settles through RF.greaterSettle: " .. last(sup))
+	ChaosPinnacle = {bossOf = function(p) return nil end}
+	say2("spellup source pinnacle #967")
+	check(last(sup):find("not inside a pinnacle fight", 1, true), "spellup source pinnacle: no boss, no kill")
+	local entered, inside = nil, false
+	ChaosPinnacle = {bossOf = function(p) return nil end, isInside = function() return inside end, testerSet = function() return "malgrath" end,
+		enter = function(p, key) entered = key inside = true return true end}
+	say2("spellup source pinnacle #970")
+	check(entered == "malgrath" and last(sup):find('"entered":true', 1, true) and last(sup):find('"waiting":true', 1, true), "spellup source pinnacle: a whole set and the Keeper's own Open call: " .. last(sup))
+	say2("spellup source pinnacle #971")
+	check(last(sup):find('"waiting":true', 1, true) and not last(sup):find('"err"', 1, true), "spellup source pinnacle: inside the arena the boss has not come yet")
+	local struck
+	ChaosPinnacle = {bossOf = function(p) return {getHealth = function() return 5000000 end, setHealth = function(self, v) struck = v end, getName = function() return "Boss" end} end}
+	local savedDo = doTargetCombatHealth
+	doTargetCombatHealth = function() return true end
+	say2("spellup source pinnacle #968")
+	check(struck == 100 and last(sup):find('"boss":"Boss"', 1, true), "spellup source pinnacle: the boss is brought low and struck: " .. last(sup))
+	doTargetCombatHealth = savedDo
+	ChaosPinnacle, ChaosRift, ChaosRiftCore, ChaosRiftConfig, ChaosWaystoneEndgame, ChaosWaystoneAtlas = nil, nil, nil, nil, nil, nil
+	say2("spellup clear #969")
+	spell = 200
+	check(next(TesterHelper.sig[sup.id] or {}) == nil and next(TesterHelper.fstat[sup.id] or {}) == nil, "spellup clear: the signature and Forms records are empty too")
+	Player = savedPlayer
 	print = origP
 	ChaosSpellRanks, ChaosSpellRanksConfig, ChaosSpellRanksCore, ChaosSpellCombos, ChaosSpellAwakening, ChaosCombatLog, ChaosSpellForms, ChaosPace,
-		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators = (table.unpack or unpack)(saved, 1, 13)
+		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators, ChaosSpellFormsCore, ChaosSpellAwakeningCore, ChaosClasses = (table.unpack or unpack)(saved, 1, 16)
 end
 
 print = origPrint

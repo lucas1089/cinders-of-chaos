@@ -151,6 +151,11 @@ function C.afterVocationChange(player)
 	if ChaosClassSpells and ChaosClassSpells.sync then
 		ChaosClassSpells.sync(player)
 	end
+	-- O686 phase 8b: an awakened spell the new class does not know is dormant and frees its slot at once (design 1.6)
+	local awake = rawget(_G, "ChaosSpellAwakening")
+	if awake and awake.afterClassChange then
+		pcall(awake.afterClassChange, player)
+	end
 	-- the Necromancer's minions go when the character leaves the line (necro_minions.lua also trims them to the new
 	-- class's caps on its own every 0.5 s; this makes it immediate)
 	if ChaosNecroMinions and ChaosNecroMinions.onVocationChange then
