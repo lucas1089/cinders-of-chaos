@@ -53,4 +53,49 @@ for _, b in ipairs(cfg.bosses) do
 		profiles[b.name:lower()] = p
 	end
 end
-print(json({cfg = cfg, bal = bal, profiles = profiles, fair = mech.fair}))
+-- O698: the mechanics' health factor of each boss for each party size, from the real core (boss_mechanics_core.lua G.refFor / G.balance, the
+-- numbers pinnacle.lua hands boss_mechanics.lua: the health of the size, the damage of that many players). `solo` is the factor of the profile's
+-- own party, the one the fights used before O698 at every size. Arguments `NAME,HEALTH_SCALE,DPS_SCALE` (lower boss name; the committed health
+-- and the median's damage times these) add `scaled`: the same rows for another health or damage (the options of pinnacle_model.py --options)
+local G = dofile("data/scripts/chaos/boss_mechanics_core.lua")
+local function rowOf(p, boss, n, hs, ds)
+	local ref = G.refFor(p.ref, n, boss.health * (1 + (boss.perExtra or 0) * (n - 1)) * hs)
+	ref.dps = ref.dps * ds
+	if ref.weakDps then
+		ref.weakDps = ref.weakDps * ds
+	end
+	local b = G.balance(p, ref)
+	local solo = G.balance(p, G.refFor(p.ref))
+	local dpsE = ref.dps - (ref.heal or 0) / ref.uptime
+	local oldFinal = ref.health * solo.hpMult / (dpsE * math.max(0.3, ref.uptime - b.downShare)) + b.fixed
+	return {health = ref.health, hpMult = b.hpMult, base = b.base, final = b.final, share = b.downShare, fixed = b.fixed,
+		soloMult = solo.hpMult, soloFinal = oldFinal}
+end
+local factors = {}
+for _, b in ipairs(cfg.bosses) do
+	local p = mech.profiles[b.name:lower()]
+	if p and p.ref then
+		local rows = {}
+		for n = 1, bal.players do
+			rows[tostring(n)] = rowOf(p, b, n, 1, 1)
+		end
+		factors[b.name:lower()] = rows
+	end
+end
+local scaled = {}
+for _, a in ipairs(arg or {}) do
+	local name, hs, ds = a:match("^(.-),([%d.]+),([%d.]+)$")
+	if name then
+		for _, b in ipairs(cfg.bosses) do
+			local p = mech.profiles[b.name:lower()]
+			if p and p.ref and b.name:lower() == name then
+				local rows = {}
+				for _, n in ipairs({1, bal.players}) do
+					rows[tostring(n)] = rowOf(p, b, n, tonumber(hs), tonumber(ds))
+				end
+				scaled[a] = rows
+			end
+		end
+	end
+end
+print(json({cfg = cfg, bal = bal, profiles = profiles, fair = mech.fair, factors = factors, scaled = scaled}))

@@ -971,9 +971,14 @@ function M.attach(monster, key, opts)
 	end
 	-- keep the kill time: the boss's health x the factor the mechanics' downtime asks for (G.balance)
 	if opts.compensate ~= false and profile.ref and profile.compensate ~= false then
-		local ref = {}
-		for k, v in pairs(profile.ref) do
-			ref[k] = v
+		-- O698: a system that gives its fight a party's health (opts.healthScale: the factor on the monster's health at this size,
+		-- pinnacle.lua and pocketboss.lua) gets the factor worked out for that size (the adds, the totems and the damage of that
+		-- many players), not the profile's own party (the solo one for most): the solo factor cut a party of five's boss by 20% too much
+		local ref
+		if opts.healthScale then
+			ref = G.refFor(profile.ref, opts.size or players, monster:getMaxHealth() * opts.healthScale)
+		else
+			ref = G.refFor(profile.ref)
 		end
 		ref.tier = tier or ref.tier
 		local b = G.balance(profile, ref)

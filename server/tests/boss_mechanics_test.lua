@@ -1234,6 +1234,62 @@ do
 	end
 end
 
+-- O698: the health factor is worked out for the fight's size, not for the profile's own party (the solo one): the five bots' Malgrath died in 75 s
+do
+	local r1 = {health = 100, dps = 10, uptime = 1, players = 1, weakDps = 8, heal = 2}
+	local r5 = G.refFor(r1, 5, 400)
+	eq(r5.players, 5, "O698 refFor: the size")
+	eq(r5.dps, 50, "O698 refFor: the damage of that many players")
+	eq(r5.weakDps, 40, "O698 refFor: the weakest damage of that many players")
+	eq(r5.health, 400, "O698 refFor: the health of the size")
+	eq(r5.heal, 2, "O698 refFor: the boss's heal does not grow with the party")
+	eq(r1.players, 1, "O698 refFor: the profile's ref is not changed")
+	local same = G.refFor(r1)
+	check(same.players == 1 and same.dps == 10 and same.health == 100, "O698 refFor: no size, no change")
+	local solo5 = G.refFor({health = 100, dps = 50, players = 5}, 1)
+	check(solo5.players == 1 and solo5.dps == 10, "O698 refFor: a smaller size than the ref's")
+	for _, name in ipairs({"ascended malgrath", "ascended vhoss", "ascended talath", "ascended varkhul"}) do
+		local p = cfg.profiles[name]
+		local h1 = p.ref.health
+		local solo = G.balance(p, G.refFor(p.ref, 1, h1))
+		for n = 2, 5 do
+			local h = h1 * (1 + 0.664 * (n - 1))
+			local ref = G.refFor(p.ref, n, h)
+			local b = G.balance(p, ref)
+			check(math.abs(b.final - b.base) / b.base < 0.005, name .. " x" .. n .. ": the kill time stays with the party's own factor ("
+				.. G.clockText(b.base) .. " -> " .. G.clockText(b.final) .. ")")
+			-- the solo factor on the party's fight (the old way) leaves the kill time off by its difference
+			local dpsE = ref.dps - (p.ref.heal or 0) / ref.uptime
+			local oldWay = h * solo.hpMult / (dpsE * (ref.uptime - b.downShare)) + b.fixed
+			check(math.abs(b.hpMult - solo.hpMult) > 0.001, name .. " x" .. n .. ": the party's factor is its own ("
+				.. string.format("%.4f", b.hpMult) .. " against solo " .. string.format("%.4f", solo.hpMult) .. ", the solo factor would give " .. G.clockText(oldWay) .. ")")
+		end
+	end
+	-- the engine file: attach with a size and a health scale cuts the party's boss by the factor of that size
+	local name = "ascended vhoss"
+	local p = cfg.profiles[name]
+	local scale = 1 + 0.664 * 4
+	local pb = make({name = "Party Vhoss", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
+	local pm = make({name = "PartyMan", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
+	pb.target = pm.id
+	local want = G.balance(p, G.refFor(p.ref, 5, p.ref.health * scale)).hpMult
+	local pf = M.attach(pb, name, {center = {x = 200, y = 200, z = 7}, radius = 8, size = 5, healthScale = scale})
+	check(pf ~= nil, "O698: the party fight is attached")
+	check(pf and math.abs(pf.hpMult - want) < 1e-9, "O698: the engine file uses the factor of five (" .. tostring(pf and pf.hpMult) .. " against " .. tostring(want) .. ")")
+	local soloWant = G.balance(p, G.refFor(p.ref)).hpMult
+	check(pf and math.abs(pf.hpMult - soloWant) > 0.03, "O698: and not the solo factor " .. string.format("%.4f", soloWant))
+	creatures[pb.id] = nil
+	creatures[pm.id] = nil
+	local sb = make({name = "Solo Vhoss", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
+	local sf = M.attach(sb, name, {center = {x = 200, y = 200, z = 7}, radius = 8, size = 1, healthScale = 1})
+	check(sf ~= nil and math.abs(sf.hpMult - soloWant) < 1e-9, "O698: a solo fight keeps the solo factor")
+	local ob = make({name = "Old Vhoss", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
+	local of = M.attach(ob, name, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(of ~= nil and math.abs(of.hpMult - soloWant) < 1e-9, "O698: no health scale (the other systems): the profile's own ref, as before")
+	creatures[sb.id] = nil
+	creatures[ob.id] = nil
+end
+
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)
