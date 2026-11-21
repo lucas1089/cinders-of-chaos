@@ -13,7 +13,9 @@ use cinders_launcher::{choice, fmt, images, launch};
 use eframe::egui::{self, Align2, Color32, Pos2, Rect, Rounding, Sense, Stroke, TextureHandle, Vec2};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
 use std::time::Instant;
 
 enum Msg {
@@ -74,6 +76,8 @@ pub struct App {
     scaled: bool,
     version: &'static str,
     verify_next: bool,
+    /// Ends the thread that reads the game's big files into the file cache (`launch::warm`, O705).
+    warm_stop: Arc<AtomicBool>,
 }
 
 fn tag_color(t: feed::Tag) -> (Color32, Color32) {
@@ -121,6 +125,7 @@ impl App {
             chip_open: false,
             scaled: false,
             verify_next: false,
+            warm_stop: Arc::new(AtomicBool::new(false)),
             version: env!("CARGO_PKG_VERSION"),
             cfg,
         };
@@ -198,8 +203,24 @@ impl App {
         let _ = config::save_settings(&self.cfg.dir, &self.settings);
     }
 
+    /// The update is done and the Play button is live: read the game's big files into the file cache on a thread of its
+    /// own, so the game's own start finds them in memory (O705, `launch::warm`). `CINDERS_NO_WARM=1` turns it off.
+    fn start_warm(&mut self, game: &str) {
+        self.warm_stop.store(true, Ordering::Relaxed); // an earlier run (retry, verify, other client) ends
+        if std::env::var_os("CINDERS_NO_WARM").is_some_and(|v| v == "1") {
+            return;
+        }
+        let stop = Arc::new(AtomicBool::new(false));
+        self.warm_stop = stop.clone();
+        let (dir, game) = (self.active().dir, game.to_string());
+        std::thread::spawn(move || {
+            launch::warm(&dir, &game, &stop);
+        });
+    }
+
     fn play(&mut self, ctx: &egui::Context, game: &str) {
-        // the main client wants a start ticket for the build this run applied (else the last saved one); Unity is exempt
+        self.warm_stop.store(true, Ordering::Relaxed); // the game reads the files itself now
+                                                       // the main client wants a start ticket for the build this run applied (else the last saved one); Unity is exempt
         let package = match &self.phase {
             Phase::Ready(o) => o.package,
             _ => None,
@@ -230,7 +251,10 @@ impl App {
                 }
                 Msg::Ev(Event::Files { done, total }) => (self.files_done, self.files_total) = (done, total),
                 Msg::Ev(Event::File(_)) => {}
-                Msg::Done(Ok(o)) => self.phase = Phase::Ready(o),
+                Msg::Done(Ok(o)) => {
+                    self.start_warm(&o.game);
+                    self.phase = Phase::Ready(o);
+                }
                 Msg::Done(Err(e)) => self.phase = Phase::Failed(e),
             }
         }
@@ -307,7 +331,7 @@ fn small_button(ui: &egui::Ui, art: &Art, cv: Cv, rect: Rect, label: &str, id: &
     } else {
         Color32::WHITE
     };
-    theme::nine(p, &art.btn, rect, 12.0, cv.px(0.6), tint);
+    theme::button_plate(p, art, rect, cv.k, tint);
     p.text(
         rect.center(),
         Align2::CENTER_CENTER,
@@ -352,7 +376,7 @@ impl App {
             Color32::from_rgba_unmultiplied(224, 78, 26, 160),
             cv.px(12.0),
         );
-        p.circle_filled(cv.pt(38.0, 34.0), cv.px(5.0), theme::GOLD);
+        self.art.draw_icon(&p, cv.pt(38.0, 34.0), cv.k);
         let tfont = cv.title(16.0);
         let name = i18n::title(lang);
         let r = p.text(cv.pt(56.0, 34.0), Align2::LEFT_CENTER, name, tfont, theme::TEXT);
@@ -487,12 +511,11 @@ impl App {
                     cv.px(14.0),
                 );
             }
-            theme::nine(
+            theme::button_plate(
                 &p,
-                &self.art.btn,
+                &self.art,
                 rect,
-                12.0,
-                cv.px(0.6),
+                cv.k,
                 if hot {
                     Color32::from_rgb(255, 240, 225)
                 } else {

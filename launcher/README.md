@@ -173,9 +173,11 @@ pouco o visual pra não ficar igual": the layout is our own, built from the game
 - **Window.** Borderless, fixed 1280x800 canvas (`src/layout.rs`, every rectangle in one place, unit tested for overlaps), own title bar:
   ember dot, name, version, PT | EN pill, settings gear, minimize, close; the bar drags the window. A screen smaller than the canvas
   gets `layout::scale_for` (a 1366x768 laptop draws at 0.90). Not resizable.
-- **Art.** The login art as the background, the brand logo in the middle, the game skin's corner ornaments and crest, the login screen's
-  octagon buttons for the link rail and JOGAR (nine-sliced). All of it is embedded from `assets/`, made by `tools/gen_launcher_art.py`
-  from `client/overlay/data/images/chaos/`, `docs/brand/` and `client/fonts-src/` (`--check` in CI: copies byte for byte, pictures within
+- **Art.** The login art as the background, the brand logo in the middle, the game skin's corner ornaments and crest, an iron plate with a
+  gold rim for the link rail and the small buttons (nine-sliced, tiled 1:1). The corners, the crest and the plate are drawn by
+  `client/tools/gen_skin.py` at twice the size the window shows them (O705, "Owner report 2026-11-21" below), not copied from the game's
+  44 px pictures. All of it is embedded from `assets/`, made by `tools/gen_launcher_art.py`
+  from `client/overlay/data/images/chaos/`, `docs/brand/` and `client/fonts-src/` (`--check` in CI: skin pieces and pictures within
   2 of 255). Fonts: Cinzel weight 700 for titles, Alegreya Sans for text (both OFL, in `docs/CREDITS.md`).
 - **Rail, left.** Discord, Site, Wiki, Conta from `launcher.json` `links` (`config::parse_links`: a key left out derives from the site of the
   manifest as `/`, `/wiki`, `/register`, Discord has no default; `""` or a non-https link hides the button). `set_launcher_config.py`
@@ -191,8 +193,8 @@ pouco o visual pra não ficar igual": the layout is our own, built from the game
   where "Tentar de novo" / "Jogar assim mesmo" / "Usar o cliente principal" take the progress place by the same `choice::buttons` rule).
 - **Settings (gear).** Game folder with "Abrir pasta", "Fechar o launcher ao jogar" (on by default, else it minimizes), language, version.
   Saved in `.cinders_launcher/settings.json` (`config::Settings`: `client`, `lang`, `close_on_play`).
-- **Exe icon** is the brand icon too: `assets/app.ico` (9 sizes, `tools/gen_launcher_art.py`), linked as a resource by `build.rs` on Windows (MSVC). The setup program, the installed launcher and its shortcuts show it.
-- **Window icon** is the brand icon. No icon pack and no SVG: the icons are painter shapes (`theme.rs`).
+- **Exe icon** is the brand icon too: `assets/app.ico` (9 sizes, bitmap frames up to 48 px, PNG from 64 px, `tools/gen_launcher_art.py`), linked as a resource by `build.rs` on Windows (MSVC). The setup program, the installed launcher and its shortcuts show it. `windows-package.yml` checks the built exe (`client/tools/check_pe_icon.py`, O705).
+- **Window icon** is the brand icon (`with_icon`), and the same icon is drawn in the title bar of the window, which has no frame of its own. No icon pack and no SVG: the other icons are painter shapes (`theme.rs`).
 - Look at it without Windows: build with the default features and run under `xvfb-run` (needs `libxkbcommon-x11-0` and Mesa), then take the
   root window with ImageMagick `import -window root shot.png`.
 
@@ -298,8 +300,7 @@ Run in a window: `cargo run --release -- --dir PATH_WITH_launcher.json`. Without
   (`mapeditor-build.yml`). The launcher has no installer exe: `CindersLauncher.exe` is the setup (its setup screen), so signing it is the
   installer signing. Not done on purpose: the step needs the secret to exist, and a run without it must keep working.
 - **Install path.** The launcher writes into its own folder. A folder where the player has no write rights (for
-  example `C:\Program Files`) fails with a disk error. Today the zip is extracted by hand (a short path in the user's
-  folder). A per-user installer (`%LOCALAPPDATA%\CindersOfChaos`, no admin rights) is not built.
+  example `C:\Program Files`) fails with a disk error; the setup (above) installs into `%LOCALAPPDATA%\CindersOfChaos`, which needs none, and warns for Program Files.
 - **Not run on Windows.** The swap on Windows (renaming a loaded exe and DLL, a locked file while the game runs) and
   `curl.exe` there are untested. Close the game before the launcher runs. The Linux tests cover the logic.
 - **Pack size.** `chaos.pack` is one file of about 0.9 GB. When it changes, the whole file is downloaded (resumable).
@@ -311,3 +312,57 @@ Run in a window: `cargo run --release -- --dir PATH_WITH_launcher.json`. Without
 
 Crates that ship: eframe and egui, serde_json, sha2 (the shared crate), ed25519-compact (MIT), and their dependencies.
 Listed in `docs/CREDITS.md`.
+
+## Owner report 2026-11-21 (O705)
+
+Four things the owner saw. Each has its cause, what changed and what was measured. Not run on Windows (no Windows machine here): what the
+Linux run, the GNU type check and the checks of CI can show is below, the rest is named.
+
+**1. "The icons' background is low resolution, so is the gold detail in the corner."**
+Cause. The button background was `login/btn_normal.png` of the game's login screen, 54 x 30 px (a picture of a purchased UI kit, see
+`docs/CREDITS.md`), nine-sliced with its 12 px corner shown at 0.6 and loaded with nearest-neighbour: the corner was thrown away to 7 px by
+picking pixels (the blocks in the owner's picture), the middle stretched. The gold corners (`orn_corner_*`, 44 px) were drawn at 54 points
+by picking pixels too; the crest (84 x 30) at 132 x 47. Fix. The three pieces are now drawn at twice the size they are shown at, by
+our own script (`client/tools/gen_skin.py`, `ornament_corner(px=)`, `ornament_crest(px=)`, `button_face(rim_w=)`; the client's own art
+is byte for byte the same, a default `px` of 1), by `launcher/tools/gen_launcher_art.py`: corner 108 px, crest 264 x 94 px, plate 160 x 120 px with a
+14 px corner. A 2x screen shows every pixel, a 1x screen shrinks by exactly 2 with linear filtering. The plate's edges and middle are tiled
+at the same density (`theme::nine`, `axis_spans`), never stretched. The kit's button is gone from the launcher, so it no longer ships a
+copy of purchased art. The 1280x800 background and the 560 px logo are unchanged (the owner named the icons' background and the corner).
+
+**2. "The launcher has no icon."**
+Found. `build.rs` links `assets/app.ico` as the exe's icon resource on Windows MSVC, and the release builds on `windows-2025` (MSVC), so the
+resource is meant to be there. `llvm-cvtres` accepts the `.res` that `build.rs` writes (9 frames, one group). What was missing: the window has no
+frame (`with_decorations(false)`), and its title bar drew a gold dot, not the icon; every frame of the `.ico` was PNG-compressed (some shell
+paths, small sizes of a shortcut and the notification area, read only bitmap frames there); and nothing checked that the finished exe has the
+resource. Fix. The title bar (launcher and setup) draws the brand icon; `app.ico` has bitmap frames up to 48 px and PNG from 64 px
+(`--check` holds it); `windows-package.yml` runs `client/tools/check_pe_icon.py` on the built exe (the RT_GROUP_ICON, every frame it names, a
+frame of 32 px or less and one of 48 px or more) and fails the run without it; the unit test puts the real `app.ico` into a synthetic PE.
+Not seen on a Windows desktop: if the owner's exe still shows the generic icon after the next package, the new check says whether the
+resource is in the file.
+
+**3. "An installer from the site that installs the game and makes a desktop shortcut."**
+What exists end to end (all of it read, none run on Windows): `windows-package.yml` builds `CindersLauncher.exe` with the setup facts; `publish_client_update.sh`
+copies it to `$CHAOS_SITE_DIR/download/Cinders-of-Chaos-Setup.exe` with its `.sha256`; the downloads page shows that file as the Windows button (size,
+SHA-256, pt-BR text, `website/overlay/layouts/chaos/views/downloads.php`, `tests/chaos_downloads_page_test.php`); the setup (`setup.rs`, `setup_ui.rs`,
+`winshell.rs`) asks for a folder, copies the launcher there, writes `launcher.json`, makes the desktop and Start menu shortcuts and the uninstall entry, and
+starts the copy, which downloads the game files. Gaps closed. (a) The desktop and Start menu folders were guessed from `OneDrive\Desktop` and
+`USERPROFILE\Desktop`: on a pt-BR Windows or a OneDrive-redirected desktop ("Area de Trabalho") the shortcut was silently not made. `winshell.rs` now asks Explorer's
+own answer first (`HKCU\...\Explorer\Shell Folders`: `Desktop`, `Programs`) and keeps the old guesses as the fallback. (b) A launcher built without its setup facts
+(an empty `update_manifest` input) would show every new player "launcher.json is missing": the build step now checks that the manifest address is inside the exe.
+(c) This file said a per-user installer was not built (it is). What the owner runs: the workflow "Windows package" (defaults are the live values), then the admin app,
+tab Comandos > card "Site e update do client" > field "Release do client" (winpkg-N) > "Publicar update"; the site's button is the installer from then on.
+
+**4. "After Play the game takes about 10 s to open."**
+Measured here (Linux, release build, 4 cores): the launcher's own Play path (ticket plus starting the program) 0.30 ms median over 30 starts, 1.3 ms worst;
+`ticket::for_launch` is a HMAC and 12 random bytes. The launcher does not hash on Play: the update check at its start uses the size + mtime cache
+(`hashcache.txt`), and hashing is 1.15 GB/s (SHA-256 of 256 MB in 0.22 s, so 0.8 s for the whole pack on a change, once). So the 10 s is the client's own start: it reads
+`chaos.pack` (about 0.9 GB), GCM-decrypts it and inflates it into one buffer before any window exists (`chaospack.h`, base patch 0102). Lua is not it: compiling all 494 module files (8.1 MB)
+takes 0.22 s in LuaJIT. The HD atlases (612 KB) and the minimap swatches (3.8 MB) are decoded when first used. The pack read, decrypt and inflate were done chunk after chunk on one thread:
+read + decrypt + inflate. Two fixes, both ours: (a) the launcher reads the game's big files (`*.pack`, the program) into the operating system's file cache once the update check
+is done and the Play button is live (`launch::warm`, 4 MB reads on a thread of its own, stopped when Play is pressed, `CINDERS_NO_WARM=1` turns it off), so the client's read is a
+memory copy; (b) the client reads and decrypts on one thread and inflates on another (client base patch 0206, `chaospack.h`), so the start takes the longer of the two. Numbers (the
+engine's pack code on a 200 MB sprite-like ZIP, 58 MB pack, per run, `client/tools/chaospack_test.cpp` built with `-pthread`): disk at 120 MB/s 1.32 s -> 0.70 s; disk at 400 MB/s 0.88 s -> 0.74 s;
+file in the cache 0.72 s -> 0.75 s (nothing to overlap). Scaled to the real pack (about 4.5 s of inflate at this speed): a cold hard disk 8.1 s -> 4.5 s, with the launcher's warm-up and a
+warm cache the read part goes to about 0 and the start is the inflate alone. Not measured, named: the real chaos.pack (not here), the time of the Lua modules' init and of the OTUI windows in the real
+client, the antivirus scan of a 0.9 GB file. What would cut the rest: a pack whose parts inflate independently (a format change: the inflate is the floor now) and showing the window before the
+modules load (engine start order; needs a client build to measure).

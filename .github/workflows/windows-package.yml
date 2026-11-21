@@ -599,6 +599,17 @@ jobs:
           cargo build --locked --release
           test -s target/release/cinders-launcher.exe
 
+      # the launcher is also the setup program the website hands out (Cinders-of-Chaos-Setup.exe, O552), so two facts must
+      # be in the exe before it is packed (O705): its icon (the RT_GROUP_ICON resource, client/tools/check_pe_icon.py; an exe
+      # linked without its .res file shows the generic program icon) and, when the run has an update manifest, that
+      # address (the setup facts of launcher/embedded.json; without them every new player gets "launcher.json is missing")
+      - name: Check the launcher's icon and setup facts (O705)
+        shell: bash
+        run: |
+          args=()
+          if [ -n "$UPDATE_MANIFEST" ]; then args+=(--text "$UPDATE_MANIFEST"); fi
+          python -I chaos/client/tools/check_pe_icon.py chaos/launcher/target/release/cinders-launcher.exe "${args[@]}"
+
       # the exe and DLLs come from built/ (build or cache); init.lua, data, modules, mods and layouts always from game/
       - name: Put the client folder together
         shell: bash
