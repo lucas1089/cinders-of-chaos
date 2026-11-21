@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Ascended Vhoss (O667, pinnacle_config.lua): the hexmaw, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 2100; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2100); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended vhoss"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Vhoss the Hexmaw. Numbers: server/README.md "Pinnacle bosses (O667)". -->
 <monster name="Ascended Vhoss" nameDescription="Ascended Vhoss" race="undead" experience="0" speed="250" manacost="0">
-	<health now="3876000" max="3876000" />
+	<health now="4654000" max="4654000" />
 	<look type="2130" corpse="6068" />
 	<targetchange interval="5000" chance="10" />
 	<flags>

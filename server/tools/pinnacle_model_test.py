@@ -80,7 +80,7 @@ def main():
     boss = cfg['bosses'][0]
     heal = 250
     health, extra = PM.derive_health(boss, bal, heal)
-    d = PM.typical(boss['refLevel'])
+    d = PM.typical(boss['refLevel'], boss)   # O699: the boss file's own resistance
     near(health, bal['seconds']['solo'] * (d * bal['uptime'] - heal), 1e-6, 'solo health')
     solo = PM.kill_seconds(dict(boss, health=health, perExtra=extra), bal, 1, heal)
     near(solo, bal['seconds']['solo'], 1e-6, 'the median class kills it in the planned time')
@@ -230,7 +230,7 @@ def main():
         near(sizes['1']['final'], base['bal']['seconds']['solo'], 5, key + ': alone the factor keeps the plan')
         near(sizes['5']['final'], base['bal']['seconds']['party'], 3, key + ': with five the factor keeps the plan')
         eq(sizes['5']['hpMult'] != sizes['5']['soloMult'], True, key + ': the party factor is its own')
-    near(facs['ascended vhoss']['5']['soloFinal'], 271, 2, 'the solo factor at five would kill the Vhoss in 271 s (the bug)')
+    near(facs['ascended vhoss']['5']['soloFinal'], 275, 2, 'the solo factor at five would kill the Vhoss in 275 s (the bug)')
     # a factor that misses the plan is caught (the solo one handed to a party)
     bad = copy.deepcopy(base)
     for key in bad['factors']:
@@ -254,7 +254,7 @@ def main():
         near(a['median5'], 300, 3, o['boss']['name'] + ': option a keeps the median five at the plan')
         near(b['bots5'], 300, 1, o['boss']['name'] + ': option b brings the bot five to the plan')
         near(c['bots5'], 150, 1, o['boss']['name'] + ': option c brings the bot five to half of it')
-        eq(today['bots5'] < a['bots5'] < c['bots5'] < b['bots5'], True, o['boss']['name'] + ': the options rise in health')
+        eq(abs(today['bots5'] - a['bots5']) < 1e-6 and a['bots5'] < c['bots5'] < b['bots5'], True, o['boss']['name'] + ': option a is the committed state (O699), the others rise in health')
     near(opts[0]['options'][0][1]['bots5'], 77, 1, 'Malgrath today: the measured 79 s x the better factor')
 
     print('pinnacle_model_test: %d checks ok' % CHECKS)

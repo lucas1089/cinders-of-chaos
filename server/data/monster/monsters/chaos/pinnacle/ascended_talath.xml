@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Ascended Talath (O667, pinnacle_config.lua): the frost lord, ascended. A private fight in a runtime-built arena (pinnacle.lua), alone or with a party of up to five, shown at level 2300; opened by a set of four fragments at the Keeper of the Pinnacle. Health is the solo fight of tools/pinnacle_model.py (420 s for the median class at level 2300); the run sets the health of a party and the hits of the damage curve. The telegraphed mechanics are boss_mechanics_config.lua (profile "ascended talath"). It has no loot of its own: the spoils are given by the script. Look and defences are those of Talath. Numbers: server/README.md "Pinnacle bosses (O667)". -->
 <monster name="Ascended Talath" nameDescription="Ascended Talath" race="undead" experience="0" speed="280" manacost="0">
-	<health now="4231000" max="4231000" />
+	<health now="4899000" max="4899000" />
 	<look type="1473" corpse="6068" />
 	<targetchange interval="5000" chance="10" />
 	<flags>

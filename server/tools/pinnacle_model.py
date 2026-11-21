@@ -95,13 +95,19 @@ def xml_hits(text):
 
 
 # ------------------------------------------------------------------------------------------------ length
-def typical(level):
-    """damage a second of the median class on one boss at a level (boss_length_model: armour and resistance of a boss kept)"""
-    return BL.one_target(level)
+def typical(level, boss=None):
+    """damage a second of the median class on one boss at a level (boss_length_model: armour and resistance of a boss kept).
+    O699 (owner 2026-11-21): for a pinnacle boss (`boss` given) the kept share of the elemental half is the boss file's own resistance
+    (real_kept), not the shared BOSS_RES 0.30 of boss_length_model.py (that constant stays for every other boss)"""
+    d = BL.one_target(level)
+    if boss is not None:
+        kept, _ = real_kept(xml_text(boss))
+        d *= kept / BL.kept('boss')
+    return d
 
 
 def derive_health(boss, bal, heal):
-    d = typical(boss['refLevel'])
+    d = typical(boss['refLevel'], boss)
     up = bal['uptime']
     solo = bal['seconds']['solo'] * (d * up - heal)
     party = bal['seconds']['party'] * (bal['players'] * d * up - heal)
@@ -110,7 +116,7 @@ def derive_health(boss, bal, heal):
 
 def kill_seconds(boss, bal, players, heal, dmg_factor=1.0):
     """seconds for `players` of the median class (or `dmg_factor` of it) to kill the committed fight"""
-    d = typical(boss['refLevel']) * dmg_factor
+    d = typical(boss['refLevel'], boss) * dmg_factor
     health = boss['health'] * SU.health(boss['refLevel']) * (1 + boss['perExtra'] * (players - 1))  # x H at the planned level (pinnacle.lua), 1 while off
     return health / (players * d * bal['uptime'] - heal)
 
@@ -327,7 +333,7 @@ def rows():
         m5 = median(boss, text, profile, bal['players'], mult=dmg5)
         press5 = m5['pressure'] * dmg5
         out.append({'boss': boss, 'heal': heal, 'health': health, 'perExtra': extra, 'm1': m1, 'm5': m5, 'press5': press5, 'dmg5': dmg5,
-                    'dps': typical(boss['refLevel']), 'profile': profile, 'text': text})
+                    'dps': typical(boss['refLevel'], boss), 'profile': profile, 'text': text})
     return out
 
 
@@ -546,7 +552,7 @@ def check():
                 if abs(ref.get(key, -1) - val) > 1e-9:
                     errors.append('%s: profile ref %s is %s, the model says %s' % (tag, key, ref.get(key), val))
             with SU.forced(False):  # the ref is the fight's numbers of today (the XML health, the damage of the model), the game adds H and the gain
-                today_dps = typical(b['refLevel'])
+                today_dps = typical(b['refLevel'], b)
             if abs(ref.get('dps', 0) - today_dps) > 0.015 * today_dps:
                 errors.append('%s: profile ref dps %s, derived %d' % (tag, ref.get('dps'), today_dps))
             if abs(ref.get('heal', 0) - r['heal']) > 0.03 * max(1, r['heal']):
@@ -645,7 +651,7 @@ def bot_scale(bal, rows_):
         b = r['boss']
         key = b['name'].lower()
         kept, res = real_kept(r['text'])
-        ratio = kept / BL.kept('boss')
+        ratio = 1.0   # O699: the committed fight already holds the boss file's resistance (typical(level, boss)); option a is the committed state
         row5 = facs[key][str(bal['players'])]
         vid = row5['health'] * row5['soloMult']   # the fight of the video: the party's health x the solo factor (Malgrath: 10,134,615)
         cur = row5['health'] * row5['hpMult']

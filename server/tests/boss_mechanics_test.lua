@@ -1253,7 +1253,7 @@ do
 		local h1 = p.ref.health
 		local solo = G.balance(p, G.refFor(p.ref, 1, h1))
 		for n = 2, 5 do
-			local h = h1 * (1 + 0.664 * (n - 1))
+			local h = h1 * (1 + 0.661 * (n - 1))
 			local ref = G.refFor(p.ref, n, h)
 			local b = G.balance(p, ref)
 			check(math.abs(b.final - b.base) / b.base < 0.005, name .. " x" .. n .. ": the kill time stays with the party's own factor ("
@@ -1268,7 +1268,7 @@ do
 	-- the engine file: attach with a size and a health scale cuts the party's boss by the factor of that size
 	local name = "ascended vhoss"
 	local p = cfg.profiles[name]
-	local scale = 1 + 0.664 * 4
+	local scale = 1 + 0.662 * 4
 	local pb = make({name = "Party Vhoss", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
 	local pm = make({name = "PartyMan", player = true, pos = {x = 200, y = 201, z = 7}, hp = 10000})
 	pb.target = pm.id

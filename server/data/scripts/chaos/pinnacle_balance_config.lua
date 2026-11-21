@@ -12,6 +12,11 @@
 --             seconds to die with no healing, and the pressure (damage against healing).
 --   fragments a whole set is four kinds, three from one content each and the keystone from any: the hours of top content for a set
 --             and, with the unique's roll and its bad-luck count, for a unique.
+-- O699 (owner decision 2026-11-21, option a of O698): the four Ascended bosses' health is up 15-20% (Malgrath x1.186, Vhoss x1.201,
+-- Talath x1.158, Varkhul x1.201). Reason: pinnacle_model.py took the kept share of the elemental half from the shared BOSS_RES 0.30 of
+-- boss_length_model.py, but the four boss files resist 8.3 / 6.7 / 11.7 / 6.7% on the six elements, so the median class deals 15-20%
+-- more than the model planned and the fights were too short. The model now reads each pinnacle boss file's own resistance (real_kept);
+-- the shared BOSS_RES stays for every other boss (a separate decision). 420 s alone and 300 s with five of the median class are kept.
 return {
 	-- O672 (owner 2026-11-19): the player's level cap is 2500, so no boss is shown, planned or opened at a level above it. The first
 	-- version (O667) had 2000 / 2500 / 3000 / 3500 with planned levels 2000-2500; the ladder is now 1900 / 2100 / 2300 / 2500: even steps

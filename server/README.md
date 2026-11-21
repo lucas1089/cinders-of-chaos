@@ -37113,6 +37113,15 @@ fragment chances. `--derive` prints the numbers to commit, `--check` (CI) holds 
 | | c | 25,395,032 | 1.86 | 554 | 150 | 776 |
 
   - **What the options mean.** (a) is the model's own answer once its resistance input is the boss file's: the median player's times stay 300 s / 420 s, the bots still kill in 1.5 minutes (91 s), the damage the bots do is not the model's to answer. (b) makes the measured bot party take 5 minutes and so makes a median party take 17-19 minutes of the 20 minute limit and a median player alone 24-27 minutes (over the limit): it breaks the content for the player the model is built for; it only works with a steeper party curve (`perExtra` about 3.3 instead of 0.664, solo health unchanged), which makes a party of five carry 14 times the solo health. (c) is the middle: the bots 2.5 minutes, the median five 8.5-10 minutes, alone 12-14 minutes (inside the limit; the weakest class alone is 0.75 of the median, 16-18 minutes: near the limit). The option that matters more than the number is what the bots are: two outliers (Deadeye, Elementalist) of five give the party 2.1 x the model; a bot gear that matched the model's median would put them at about 1.1 x, and then (a) is the answer. Tests: `tests/boss_mechanics_test.lua` (refFor, the factor of each Ascended profile at 1-5 players against the plan, the engine file with a size and without), `tests/pinnacle_test.lua` (size and health scale passed), `tools/pinnacle_model_test.py` (factor rows, a missed plan and a factor on the floor are caught, resistance of the boss file, the options).
+- **Option (a) done (O699, owner 2026-11-21).** The four Ascended bosses' health is up 15.8-20.1% and `pinnacle_model.py` reads each boss file's own resistance for the kept share (`typical(level, boss)` through `real_kept`) in its tables and `--check`, for the pinnacle bosses only; `BOSS_RES` of `boss_length_model.py` is unchanged (other bosses: a separate decision). Source of truth: `pinnacle_config.lua` `health` and `perExtra`, the four XML files and `boss_mechanics_config.lua` `ref.health` / `ref.dps`, all held equal by `--check`. `--options` now prints option a as the committed state (x1.00).
+
+| Boss | health solo before | health solo now | x | perExtra | fight health with five (factor applied) | median five | median alone | bot five (run 6 ratio) |
+|---|---|---|---|---|---|---|---|---|
+| Ascended Malgrath | 3,475,000 | 4,121,000 | 1.186 | 0.661 | 11,725,851 | 300 s | 420 s | 77 s |
+| Ascended Vhoss | 3,876,000 | 4,654,000 | 1.201 | 0.662 | 13,060,162 | 300 s | 420 s | 86 s |
+| Ascended Talath | 4,231,000 | 4,899,000 | 1.158 | 0.663 | 14,646,531 | 300 s | 420 s | 80 s |
+| Ascended Varkhul | 4,587,000 | 5,508,000 | 1.201 | 0.663 | 16,408,767 | 300 s | 420 s | 81 s |
+
 - **Art that would help** (none needed, nothing blocks): an item look for each fragment (the four kinds x four bosses are plain storage counters now, shown by name in the Keeper's
   window), a look for the four Ascended bosses apart from the old ones (a recolour of the base bosses' outfits), and a portal or altar sprite for the Keeper's place.
 
