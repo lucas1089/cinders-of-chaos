@@ -437,7 +437,10 @@ local monsters = {}
 local nextMid = 5000
 local function newMonster(name, p)
 	nextMid = nextMid + 1
-	local m = {id = nextMid, name = name, hp = 1000000, maxHp = 1000000, pos = p, events = {}}
+	-- the spawn registers the natural tier roll of monster_tiers.lua (a boss rolls 4-5 modifiers, Regenerating and Vampiric heal it)
+	local m = {id = nextMid, name = name, hp = 1000000, maxHp = 1000000, pos = p,
+		events = {ChaosTierRollMagic = true, ChaosTierRollRare = true, ChaosTierRollLegendary = true, ChaosTierRollBoss = true}}
+	function m:unregisterEvent(e) self.events[e] = nil end
 	function m:getId() return self.id end
 	function m:getName() return self.name end
 	function m:isMonster() return true end
@@ -749,6 +752,9 @@ eq(bossM.name, "Ascended Malgrath", "the type of its name")
 eq(bossM.maxHp, math.floor(pcfg.bosses[1].health * 0.8 + 0), "the health is the fight's x the mechanics factor")
 eq(bossM.hp, bossM.maxHp, "O681: a solo boss starts at its full health")
 ok(bossM.events.ChaosPinnacleDeath, "death event")
+-- O694: the boss climbed from 79% back to 100% in a party run: the natural boss modifiers (Regenerating 1% of the maximum every 2.5 s) healed it
+ok(not (bossM.events.ChaosTierRollBoss or bossM.events.ChaosTierRollMagic or bossM.events.ChaosTierRollRare or bossM.events.ChaosTierRollLegendary),
+	"O694: the pinnacle boss rolls no tier or boss modifiers")
 eq(attached[#attached].opts.solo, true, "the mechanics know it is a solo fight")
 -- its hits x the damage curve
 local hit = registry.ChaosPinnacleHit.onHealthChange

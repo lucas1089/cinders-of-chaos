@@ -144,9 +144,11 @@ local function chebyshev(a, b)
   return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
 end
 
--- what the client sees round the spectator: the distance to the nearest party member and the boss's health percent
+-- what the client sees round the spectator: the distance to the nearest party member and the boss's health percent. O694: the health is
+-- the one of the creature locked on at the first match (L.watchBoss: its id, a line when it leaves the view or another one carries the name)
 local function look(pos)
-  local nearest, bossHp
+  local nearest
+  local seen = {}
   local ok, list = pcall(function() return g_map.getSpectators(pos, false) end)
   if not ok or type(list) ~= 'table' then return nil, nil end
   for _, c in ipairs(list) do
@@ -154,7 +156,8 @@ local function look(pos)
     if okName and name then
       if L.bossMatches(cfg, name) then
         local okHp, hp = pcall(function() return c:getHealthPercent() end)
-        if okHp then bossHp = hp end
+        local okId, id = pcall(function() return c:getId() end)
+        if okHp and okId then seen[#seen + 1] = {id = id, name = name, hp = hp} end
       else
         for _, member in ipairs(cfg.follow) do
           if name:lower() == member:lower() then
@@ -168,6 +171,8 @@ local function look(pos)
       end
     end
   end
+  local bossHp, logs = L.watchBoss(S, seen)
+  for _, line in ipairs(logs) do log(line) end
   return nearest, bossHp
 end
 
