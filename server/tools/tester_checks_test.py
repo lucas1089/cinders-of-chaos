@@ -13973,5 +13973,189 @@ class SpellUpgradesLive8b(unittest.TestCase):
         self.assertEqual(r.status, TX.PASS, r.detail)
 
 
+class SpellUpgradesLive8d(unittest.TestCase):
+    """O686 phase 8d: LEECH and REFLECT live, the share of a signature that lands (signature.use), the helper v44 columns"""
+
+    def test_the_keys_and_the_constants_hold_the_configs(self):
+        for key in ('closed_spell_leech', 'closed_spell_reflect', 'closed_spell_use'):
+            self.assertIn(key, TX.CLOSED_KEYS)
+            self.assertNotIn(key, TX.KEYS)
+            self.assertIn(key, TX.FIGHT_KEYS)
+        root = os.path.join(os.path.dirname(__file__), '..', 'data', 'scripts', 'chaos')
+        awake = open(os.path.join(root, 'spell_awakening_config.lua')).read()
+        self.assertRegex(awake, r'use = %.2f,' % TX.USE_MODEL)
+        csv = open(os.path.join(os.path.dirname(__file__), '..', 'data', 'spells', 'awakened.csv')).read()
+        leech, reflect = set(), set()
+        for m in re.finditer(r'LEECH\.pct=([0-9.]+)', csv):
+            leech.add(float(m.group(1)))
+        for m in re.finditer(r'REFLECT\.radius=(\d+)', csv):
+            reflect.add(int(m.group(1)))
+        self.assertEqual(leech, {TX.LEECH_PCT}, 'every LEECH row heals the share the check reads')
+        self.assertEqual(reflect, {TX.REFLECT_RADIUS})
+        # the row of `spellup sig` (helper v44): the columns the checks read are the helper's
+        helper = open(os.path.join(os.path.dirname(__file__), 'tester_helper.lua')).read()
+        self.assertIn('c.pulses, c.land, c.leechPlan, c.leechAsk, c.leechLand, c.reflPlan, c.reflAsk, c.reflLand, c.reflN, c.dead}', helper)
+        self.assertEqual(TX.SIG_ROW['land'], 15)
+        self.assertEqual(TX.SIG_ROW['dead'], 23)
+        self.assertEqual(len(TX.SIG_ROW), 24)
+
+    def row(self, sid=37, casts=3, own=10000, dmg=1500, ops='echo=3,leech=3', leech=(400, 400, 380), refl=(0, 0, 0, 0), land=1200, dead=0, planned=1900, cap=2500, pvp=0):
+        return [sid, casts, own, planned, cap, dmg, 0, 0, 6, ops, 0, pvp, 0, 1, 0, land, leech[0], leech[1], leech[2], refl[0], refl[1], refl[2], refl[3], dead]
+
+    def test_sig_cols_reads_an_old_row_as_zero(self):
+        c = TX.sig_cols([37, 2, 100, 1, 2, 3, 4, 5, 6, 'echo=1'])
+        self.assertEqual((c['casts'], c['land'], c['reflN'], c['ops']), (2, 0, 0, 'echo=1'))
+
+    def test_sig_pick_kind(self):
+        rows = [[1, 'A', 0, [], 'ECHO+LEECH'], [2, 'B', 1, [], 'REFLECT+SHIELD'], [3, 'C', 0, [], 'PULSE'], [4, 'D', 0, [], 'PULSE+LEECH'], [5, 'E', 1, [], 'REFLECT']]
+        self.assertEqual([p[0] for p in TX.sig_pick_kind(rows, 'LEECH', False)], [1, 4])
+        self.assertEqual([p[0] for p in TX.sig_pick_kind(rows, 'REFLECT', True)], [2, 5])
+        self.assertEqual([p[0] for p in TX.sig_pick_kind(rows, {'PULSE', 'ECHO'}, False, 2, ('d',))], [4, 1])
+        self.assertEqual(TX.sig_pick_kind(rows, 'LEECH', True), [])
+
+    def test_leech_verdict(self):
+        t = lambda row: {'spells': [{'name': 'Headsman\'s Hurl', 'kinds': ['ECHO', 'LEECH'], 'row': row}]}
+        st, text = TX.spell_leech_verdict(t(self.row()))
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('4.00%', text)
+        self.assertEqual(TX.spell_leech_verdict({'spells': []})[0], TX.SKIP)
+        self.assertEqual(TX.spell_leech_verdict(t(self.row(ops='echo=3')))[0], TX.SKIP)   # the leech never ran
+        self.assertEqual(TX.spell_leech_verdict(t([37, 0] + [0] * 22))[0], TX.SKIP)       # not cast
+        st, text = TX.spell_leech_verdict(t(self.row(leech=(400, 900, 380))))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('planned 400 and asked 900', text)
+        st, text = TX.spell_leech_verdict(t(self.row(leech=(900, 900, 800))))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('the row says 4%', text)
+        st, text = TX.spell_leech_verdict(t(self.row(leech=(400, 400, 0))))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('got nothing', text)
+        self.assertEqual(TX.spell_leech_verdict(t(self.row(dmg=4000)))[0], TX.FAIL)       # over the cap
+        self.assertEqual(TX.spell_leech_verdict(t(self.row(pvp=1)))[0], TX.FAIL)          # ran in PvP
+
+    def test_reflect_verdict(self):
+        sp = lambda row, dists=(2, 3, 2): {'party': 2, 'spells': [{'name': 'Salve of Scars', 'kinds': ['REFLECT', 'SHIELD'], 'row': row, 'dists': list(dists)}]}
+        good = self.row(sid=175, casts=3, own=6000, dmg=0, ops='reflect=3,shield=3', leech=(0, 0, 0), refl=(840, 840, 800, 3), planned=840)
+        st, text = TX.spell_reflect_verdict(sp(good))
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('14.0%', text)
+        self.assertEqual(TX.spell_reflect_verdict({'party': 1, 'spells': sp(good)['spells']})[0], TX.SKIP)   # no party
+        self.assertEqual(TX.spell_reflect_verdict({'party': 2, 'spells': []})[0], TX.SKIP)
+        none = self.row(sid=175, casts=3, own=6000, dmg=0, ops='shield=3', leech=(0, 0, 0))
+        st, text = TX.spell_reflect_verdict(sp(none))   # the ally stood near in a party and nothing ran: a failure
+        self.assertEqual(st, TX.FAIL)
+        self.assertEqual(TX.spell_reflect_verdict(sp(none, (9, 9, 9)))[0], TX.SKIP)   # too far: nothing to say
+        over = self.row(sid=175, casts=3, own=6000, dmg=0, ops='reflect=3', leech=(0, 0, 0), refl=(2400, 2400, 2000, 3), planned=2400)
+        self.assertEqual(TX.spell_reflect_verdict(sp(over))[0], TX.FAIL)
+        dry = self.row(sid=175, casts=3, own=6000, dmg=0, ops='reflect=3', leech=(0, 0, 0), refl=(840, 840, 0, 3), planned=840)
+        st, text = TX.spell_reflect_verdict(sp(dry))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('got nothing', text)
+
+    def test_use_verdict(self):
+        rows = [self.row(sid=221, casts=10, own=100000, dmg=14000, ops='leech=10,pulse=10', leech=(400, 400, 380), land=9000, planned=20000, cap=25000, dead=500),
+                self.row(sid=37, casts=5, own=50000, dmg=6000, ops='echo=5', leech=(0, 0, 0), land=3000, planned=7500, cap=12500)]
+        st, text = TX.spell_use_verdict({'seconds': 480, 'spells': [{'name': 'Earthbreaker', 'kinds': ['PULSE']}], 'rows': rows})
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('= 44%', text)   # 12000 landed of the plan 27500
+        self.assertEqual(TX.spell_use_verdict({'seconds': 480, 'rows': []})[0], TX.SKIP)
+        bad = [self.row(sid=221, casts=10, own=100000, dmg=40000, land=9000, planned=20000, cap=25000)]
+        self.assertEqual(TX.spell_use_verdict({'seconds': 480, 'rows': bad})[0], TX.FAIL)
+        dead = [self.row(sid=221, casts=10, own=100000, dmg=10000, land=1000, planned=20000, cap=25000, dead=8000)]
+        self.assertEqual(TX.spell_use_verdict({'seconds': 480, 'rows': dead})[0], TX.FAIL)
+        pvp = [self.row(sid=221, casts=10, own=100000, dmg=10000, land=1000, planned=20000, cap=25000, pvp=2)]
+        self.assertEqual(TX.spell_use_verdict({'seconds': 480, 'rows': pvp})[0], TX.FAIL)
+
+    # ---- the checks on a mocked game
+    def scripted(self, forms, sig_row, party=2, ok_awaken=True):
+        io = FakeIO(answers={'spellup state': {'on': True}})
+        log = []
+
+        async def helper(command, kind, wait=4.0):
+            log.append(command)
+            if command == 'spellup forms':
+                return {'forms': forms}
+            if command == 'spellup sig':
+                return {'sig': [sig_row]}
+            if command.startswith('spellup ally'):
+                return {'ally': 'x', 'moved': True, 'dist': 2, 'sameFloor': True}
+            if command == 'party':
+                return {'size': party}
+            return {'on': True, 'cleared': True}
+
+        async def helper_of(who, command, kind, wait=4.0):
+            log.append('%s:%s' % (who, command))
+            return {'on': True}
+
+        async def request(opname, action, data, expect, timeout):
+            return {'data': {'ok': ok_awaken, 'slot': 1}}
+
+        async def cast(name, words, gap=2.0):
+            log.append('cast ' + words)
+            return True
+
+        async def go_of(other, place):
+            return True
+        io.helper, io.helper_of, io.request, io.cast_words_of, io.go_of = helper, helper_of, request, cast, go_of
+        io.class_spells = lambda: [{'name': 'Headsman\'s Hurl', 'words': 'kah rek sang'}, {'name': 'Salve of Scars', 'words': 'saen tin brak'}, {'name': 'Earthbreaker', 'words': 'kah grund krak'}]
+        io.rotation_names = lambda: ['earthbreaker']
+        io.log = log
+        return io
+
+    def test_the_leech_check_on_a_mock(self):
+        io = self.scripted([[37, 'Headsman\'s Hurl', 0, [], 'ECHO+LEECH']], self.row())
+        r = run(TX.check_closed_spell_leech(io, 'Tester Aaa', 'Warrior', 500))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.log.count('cast kah rek sang'), TX.LEECH_CASTS)
+        self.assertIn('spellup hurt 40', io.log)
+        self.assertEqual(io.log[-1], 'spellup clear')
+        io = self.scripted([[3, 'Spark', 0, [], 'PULSE']], self.row())
+        self.assertEqual(run(TX.check_closed_spell_leech(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP)
+
+    def test_the_reflect_check_on_a_mock(self):
+        row = self.row(sid=175, casts=3, own=6000, dmg=0, ops='reflect=3,shield=3', leech=(0, 0, 0), refl=(840, 840, 800, 3), planned=840)
+        io = self.scripted([[175, 'Salve of Scars', 1, [], 'REFLECT+SHIELD']], row)
+        r = run(TX.check_closed_spell_reflect(io, 'Tester Aaa', 'Warrior', 500))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('form', 'Tester Bbb'), io.partied)
+        self.assertIn(('leave', 'Tester Bbb'), io.partied)
+        self.assertIn('spellup ally Tester Bbb', io.log)
+        self.assertIn('Tester Bbb:spellup hurt 40', io.log)
+        io = self.scripted([[175, 'Salve of Scars', 1, [], 'REFLECT+SHIELD']], row, party=1)
+        self.assertEqual(run(TX.check_closed_spell_reflect(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP)
+        io = self.scripted([[37, 'Headsman\'s Hurl', 0, [], 'ECHO+LEECH']], row)
+        self.assertEqual(run(TX.check_closed_spell_reflect(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP)
+
+    def test_the_use_check_on_a_mock(self):
+        row = self.row(sid=221, casts=10, own=100000, dmg=14000, ops='pulse=10', leech=(0, 0, 0), land=9000, planned=20000, cap=25000)
+        io = self.scripted([[221, 'Earthbreaker', 0, [], 'PULSE+LEECH'], [37, 'Headsman\'s Hurl', 0, [], 'ECHO+LEECH']], row)
+        base = io.helper
+
+        async def helper(command, kind, wait=4.0):
+            if command == 'spellup pack %d' % TX.USE_PACK:
+                io.log.append(command)
+                return {'pack': TX.USE_PACK, 'name': 'Troll', 'hp': 4000}
+            return await base(command, kind, wait)
+        io.helper = helper
+        r = run(TX.check_closed_spell_use(io, 'Tester Aaa', 'Warrior', 500))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.log.count('spellup pack %d' % TX.USE_PACK), 2 * TX.USE_CASTS)   # a fresh pack for each cast of each of the two spells
+        self.assertEqual(io.log.count('cast kah grund krak'), TX.USE_CASTS)
+        self.assertGreaterEqual(io.t, 2 * TX.USE_CASTS * TX.USE_WAIT)
+        self.assertIn('%d pack(s)' % (2 * TX.USE_CASTS), r.detail)
+        # no monster near: no pack, no cast, the verdict says so
+        io = self.scripted([[221, 'Earthbreaker', 0, [], 'PULSE+LEECH']], [])
+        r = run(TX.check_closed_spell_use(io, 'Tester Aaa', 'Warrior', 500))
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('no pack', r.detail)
+        io.up = False
+        self.assertEqual(run(TX.check_closed_spell_use(io, 'Tester Aaa', 'Warrior', 500)).status, TX.SKIP)
+
+    def test_the_helper_parses_the_new_commands(self):
+        helper = open(os.path.join(os.path.dirname(__file__), '..', 'tests', 'tester_helper_test.lua')).read()
+        for text in ('spellup: hurt [PERCENT]', 'spellup: ally NAME', 'spellup: rank SPELL RANK [PERCENT]', 'the helper is version 44 or later'):
+            self.assertIn(text, helper)
+
+
 if __name__ == '__main__':
     unittest.main()

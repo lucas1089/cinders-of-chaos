@@ -37611,3 +37611,20 @@ Verdict rules that changed: the PvP check is a SKIP without an awakened hit on t
 **Still not run live.** LEECH and REFLECT, `signature.use`, the client window, the bot Aab of the Forms check (it never started its casts in three runs: dead or at the temple when the check began).
 
 **Run it again.** As phase 8, then one run of `testers.py run --checks --closed --only closed_spell_pvp --count 2`, `--only closed_spell_formgain --count 1` and `--only closed_spell_seal_pinnacle` with a bot of level 1800 or more (the bots die often at the hunt, a run takes 15 to 30 minutes; the first bot to start has no free partner and skips the PvP check, the second one plays it).
+
+### Phase 8d: LEECH, REFLECT, `signature.use` and the client window (O686)
+
+Same local test server and switch as 8c (installed copy only; the repository stays `enabled = false`), helper v44 (new `spellup rank`, `hurt`, `ally`, `pack`; `sig` rows carry landed damage, the leech and reflect amounts planned / asked / landed, and damage asked of dead targets). No game bug found, server or client.
+
+| Item | Design | Live |
+|---|---|---|
+| LEECH (`closed_spell_leech`, PASS) | heals 4% of the cast's damage, never scaled, signature inside the 25% cap | Warrior level 500: Headsman's Hurl (ECHO + LEECH) 3 casts, leech 4239 of 106018 own damage = 4.00% (planned = asked = landed), signature 12.8% of own; Earthbreaker (PULSE + LEECH) 3058 of 76485 = 4.00%, signature 10.4%. The second Warrior ran none of its casts (SKIP, gear of that bot) |
+| REFLECT (`closed_spell_reflect`, PASS) | its share of the heal to party allies within 4 sqm, inside the cap | two bots in a party at the temple: Minor Mending 13.9% of the heal, Battle Salve 24.9% (the cap bites, scale 0.757), Salve of Scars 12.9%; 100% landed |
+| `signature.use` (`closed_spell_use`, measured) | 20% of the planned signature damage lands on a live target (`spell_awakening_config.lua` `use`) | Warrior: 9 casts of 3 awakened spells at 12 packs of 6 monsters of 25,000 health (`spellup pack`): own damage 22739, planned 2997 (13.2% of it after the cap; 5212 before), asked of a living target 45%, landed 1256 = 42% of the plan, none asked of a dead target. The two other bots cast no awakened spell at a pack (refused casts, SKIP) |
+| Client window on live opcode 168 messages | every field has a value and a pt-BR text | `game_spellranks/spellranks_wire_test.lua` on the messages `closed_spell_wire` captured (`wire_live.lua`), plus every LEECH and REFLECT spell at rank 20: 4422 checks pass under luajit and lua5.3, no pt-BR key missing |
+
+**`signature.use` stays 0.20.** The 42% comes from packs that do not die (25,000 health) standing in the spell's shape: the best case. In a passive hunt 5 casts landed nothing. The landed signature was 5.5% of the cast's own damage in the test pack, at the design's "about +5% of its spell" with use 0.20 and the 25% cap, so the model's +3.0% of a class's damage is not low.
+
+**Not run live.** PvP with a LEECH spell (`closed_spell_pvp` now prefers one; mock test only).
+
+**Run it again.** As phase 8, then `testers.py run --checks --closed --only closed_spell_leech --count 2`, `--only closed_spell_reflect --count 2`, `--only closed_spell_use --count 3`, `--only closed_spell_wire --count 1`.

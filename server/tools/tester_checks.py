@@ -10341,6 +10341,9 @@ async def check_closed_spell_pvp(io, name, cls, level):
         forms = [r for r in await su_forms_rows(io, who) if not r[2]]
         rot = getattr(io, 'rotation_names', lambda: [])() if who is None else []
         pick = next((r for r in forms if str(r[1]).lower() in rot), forms[0] if forms else None)
+        leech = [r for r in forms if 'LEECH' in sig_kinds_of(r[4] if len(r) > 4 else '')]   # phase 8d: a LEECH signature must not heal in PvP either
+        if leech:
+            pick = leech[0]
         awake = []
         if pick is not None:
             await su_cmd(io, who, 'spellup seals 40 36 16')
@@ -10995,11 +10998,23 @@ async def check_closed_spell_wire(io, name, cls, level):
     await su_cmd(io, None, 'spellup seals 40 36 16')
     sid = int(rows[0][0])
     got = await su_awaken(io, None, sid)
+    # phase 8d: the window shows more than one awakened spell: ranks with SP into the rank, a Form that waits for its pick, a heal spell, a Form picked on the wire
+    every = await su_forms_rows(io)
+    others = [r for r in every if int(r[0]) != sid and not r[2]][:2] + [r for r in every if r[2]][:1]
+    for r, (rank, pct) in zip(others, ((14, 40), (5, 60), (12, 10))):
+        await su_cmd(io, None, 'spellup rank %d %d %d' % (int(r[0]), rank, pct))
+    pick_answer = None
+    if others:
+        await io.sleep(SPELLUP_GAP)
+        pick_answer = await su_request(io, None, 'pick', {'spell': int(others[0][0]), 'tier': 1, 'pick': 2}, ('pick',))
+        await io.sleep(SPELLUP_GAP)
     wire = {'state': await su_request(io, None, 'open', {}, ('state',))}   # one `open` answers with state, forms and awakened: the first is the reply, the others are read from the bot
     await io.sleep(0.8)
     last = getattr(io, 'last_message', None)
     wire['forms'] = last('spellRanks', 'forms') if last else None
     wire['awakened'] = last('spellRanks', 'awakened') if last else None
+    wire['awaken'] = got if isinstance(got, dict) else None
+    wire['pick'] = pick_answer if isinstance(pick_answer, dict) else None
     problems = wire_state_problems(wire)
     slots = (wire.get('awakened') or {}).get('slots') if isinstance(wire.get('awakened'), dict) else None
     if isinstance(got, dict) and got.get('ok') and isinstance(slots, list) and sid not in [int(x) for x in slots if x]:
@@ -11017,6 +11032,396 @@ async def check_closed_spell_wire(io, name, cls, level):
     return Result(key, name, cls, PASS, 'state (%d spell row(s)), forms (%d row(s)) and awakened (seals, %d slots, costs, bonus) hold every field the client logic reads; spell %d in its slot' % (
         len((wire['state'] or {}).get('s') or []), len((wire['forms'] or {}).get('f') or []), len(SEAL_COSTS), sid), fb)
 
+
+
+# ---- 7. LEECH, REFLECT and the share of a signature that lands (O686 phase 8d; docs/SPELL_UPGRADES.md 3.3)
+CAST_TRIES, CAST_GAP = 12, 0.5   # su_cast: a refused cast is tried again for CAST_TRIES x CAST_GAP seconds
+LEECH_PCT = 0.04            # awakened.csv: LEECH.pct of every row that has one (the leech heals this share of the cast's own damage)
+LEECH_CASTS, LEECH_WAIT = 3, 5.0   # casts of each spell; seconds the echo (1.5 s) and the pulses of a cast run
+REFLECT_CASTS, REFLECT_WAIT = 3, 2.5
+USE_MODEL = 0.20            # spell_awakening_config.lua signature.use: the share of a signature's output that lands on a live target of a hunt pack
+USE_SPELLS, USE_CASTS, USE_PACK, USE_WAIT = 3, 4, 6, 8.0   # awakened spells, casts of each at a fresh pack, monsters of a pack, seconds the echo and the pulses of a cast run
+SIG_ROW = {'id': 0, 'casts': 1, 'own': 2, 'planned': 3, 'cap': 4, 'dmg': 5, 'heal': 6, 'shield': 7, 'hits': 8, 'ops': 9, 'pvpCasts': 10, 'pvpRuns': 11, 'pvpAmt': 12,
+           'scale': 13, 'pulses': 14, 'land': 15, 'leechPlan': 16, 'leechAsk': 17, 'leechLand': 18, 'reflPlan': 19, 'reflAsk': 20, 'reflLand': 21, 'reflN': 22, 'dead': 23}
+
+
+def sig_cols(row):
+    """a `spellup sig` row of helper v44 as a dict by SIG_ROW (0 for a column an older helper does not send)"""
+    out = {k: (row[i] if len(row) > i else 0) for k, i in SIG_ROW.items() if k != 'ops'}
+    out['ops'] = row[9] if len(row) > 9 else ''
+    return out
+
+
+async def su_cast(io, name, words, tries=CAST_TRIES, gap=CAST_GAP):
+    """the bot says the words of a spell: tried again (every `gap` s, up to `tries` times) while the bot refuses it, because its own rotation or heal rule cast a spell of the same group
+    a moment ago (the group cooldown is the bot's own book-keeping) -> True when said"""
+    for _ in range(tries):
+        if not io.alive():
+            return False
+        if await io.cast_words_of(name, words):
+            return True
+        await io.sleep(gap)
+    return False
+
+
+def spell_leech_verdict(t):
+    """(status, text). t: {'spells': [{'name', 'kinds', 'row': the `spellup sig` row of helper v44}]}. A LEECH signature heals the caster this share of the cast's own damage
+    (awakened.csv LEECH.pct 0.04, never scaled by the cap): the leech ran each cast, the plan equals what was asked of the engine, the asked heal is LEECH_PCT of the damage of
+    the casts (a floor a cast), part of it landed on a wounded caster, the signature's damage stays inside the 25% cap, nothing ran in PvP"""
+    bad, lines, shares, landed = [], [], [], []
+    spells = t.get('spells') or []
+    if not spells:
+        return SKIP, 'no spell with a LEECH signature was cast'
+    ran = 0
+    for s in spells:
+        row = s.get('row') or []
+        if len(row) < len(SIG_ROW) or not int(row[1]):
+            lines.append('%s: not cast' % s['name'])
+            continue
+        c = sig_cols(row)
+        casts, own = int(c['casts']), float(c['own'])
+        _, ops = sig_row_seen(row, s['kinds'])
+        n_leech = ops.get('leech', 0)
+        if not n_leech:
+            lines.append('%s: %d cast(s), the leech did not run (ran %s)' % (s['name'], casts, ','.join('%s=%d' % kv for kv in sorted(ops.items())) or 'nothing'))
+            continue
+        ran += 1
+        ask, plan, land = float(c['leechAsk']), float(c['leechPlan']), float(c['leechLand'])
+        share = ask / own if own > 0 else 0.0
+        sig_dmg = float(c['dmg']) / own if own > 0 else 0.0
+        if abs(ask - plan) > casts:
+            bad.append('%s: the leech planned %d and asked %d of the engine' % (s['name'], plan, ask))
+        if own > 0 and abs(ask - LEECH_PCT * own) > casts + 1:
+            bad.append('%s: the leech asked %d of %d damage in %d cast(s) (%.2f%%), the row says %d%%' % (s['name'], ask, own, casts, share * 100, round(LEECH_PCT * 100)))
+        if own > 0 and sig_dmg > SIG_CAP_SHARE + SIG_CAP_TOL:
+            bad.append('%s: the signature dealt %.1f%% of the cast\'s own damage, the cap is %d%%' % (s['name'], sig_dmg * 100, int(SIG_CAP_SHARE * 100)))
+        if int(c['pvpRuns']):
+            bad.append('%s: the signature ran in PvP' % s['name'])
+        if ask > 0 and land <= 0:
+            bad.append('%s: the leech asked %d of the engine and the caster (hurt before the cast) got nothing' % (s['name'], ask))
+        if land > ask + casts:
+            bad.append('%s: the caster got %d from a leech of %d' % (s['name'], land, ask))
+        shares.append(share)
+        landed.append(land / ask if ask > 0 else 0.0)
+        lines.append('%s %s: %d cast(s), %d leech run(s), own %d, leech planned %d asked %d landed %d (%.2f%% of the damage, %.0f%% landed), signature damage %.1f%%' % (
+            s['name'], '+'.join(s['kinds']), casts, n_leech, own, plan, ask, land, share * 100, landed[-1] * 100, sig_dmg * 100))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines[:3])
+    if not ran:
+        return SKIP, 'the leech did not run in the casts: %s' % '; '.join(lines[:3])
+    return PASS, 'LEECH by the row at %s of the cast\'s damage (mean %.2f%%), landed %.0f%% on a wounded caster, inside the %d%% cap, none in PvP: %s' % (
+        'the planned share' if shares else '?', 100 * sum(shares) / len(shares), 100 * sum(landed) / len(landed), int(SIG_CAP_SHARE * 100), '; '.join(lines[:6]))
+
+
+def spell_reflect_verdict(t):
+    """(status, text). t: {'party': members of the party the helper sees, 'dist': tiles between the two bots, 'spells': [{'name', 'kinds', 'row'}]}. A REFLECT signature heals
+    every party member within radius sqm of the healed one for pct of the heal: a cast with an ally near ran it, the amount asked is the row's share of the heal (a rounding a cast),
+    all inside the 25% cap of the cast's own heal, part landed on the wounded ally, none in PvP"""
+    bad, lines = [], []
+    spells = t.get('spells') or []
+    if not spells:
+        return SKIP, 'no healing spell with a REFLECT signature was cast'
+    if int(t.get('party') or 0) < 2:
+        return SKIP, 'the party of the two bots was not formed (the helper sees %s member(s))' % t.get('party')
+    ran = 0
+    shares, landed = [], []
+    for s in spells:
+        row = s.get('row') or []
+        if len(row) < len(SIG_ROW) or not int(row[1]):
+            lines.append('%s: not cast' % s['name'])
+            continue
+        c = sig_cols(row)
+        casts, own = int(c['casts']), float(c['own'])
+        _, ops = sig_row_seen(row, s['kinds'])
+        n = ops.get('reflect', 0)
+        near = [d for d in (s.get('dists') or []) if d is not None]
+        if not n:
+            lines.append('%s: %d cast(s), the reflect did not run (ran %s), ally distances %s' % (s['name'], casts, ','.join('%s=%d' % kv for kv in sorted(ops.items())) or 'nothing', near))
+            if near and max(near) <= REFLECT_RADIUS and own > 0:
+                bad.append('%s: the ally stood within %d sqm in a party and the reflect did not run' % (s['name'], REFLECT_RADIUS))
+            continue
+        ran += 1
+        ask, plan, land, healed = float(c['reflAsk']), float(c['reflPlan']), float(c['reflLand']), int(c['reflN'])
+        share = ask / own if own > 0 else 0.0
+        if abs(ask - plan) > healed:
+            bad.append('%s: the reflect planned %d and asked %d of the engine' % (s['name'], plan, ask))
+        if own > 0 and share > SIG_CAP_SHARE + SIG_CAP_TOL:
+            bad.append('%s: the reflect asked %.1f%% of the cast\'s own heal, the cap is %d%%' % (s['name'], share * 100, int(SIG_CAP_SHARE * 100)))
+        if int(c['pvpRuns']):
+            bad.append('%s: the signature ran in PvP' % s['name'])
+        if ask > 0 and land <= 0:
+            bad.append('%s: the reflect asked %d for %d ally(ies) and the wounded ally got nothing' % (s['name'], ask, healed))
+        if land > ask + healed:
+            bad.append('%s: the ally got %d from a reflect of %d' % (s['name'], land, ask))
+        shares.append(share)
+        landed.append(land / ask if ask > 0 else 0.0)
+        lines.append('%s %s: %d cast(s), %d reflect run(s) on %d ally heal(s), own heal %d, reflect planned %d asked %d landed %d (%.1f%% of the heal), min scale %s' % (
+            s['name'], '+'.join(s['kinds']), casts, n, healed, own, plan, ask, land, share * 100, c['scale']))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines[:3])
+    if not ran:
+        return SKIP, 'the reflect did not run: %s' % '; '.join(lines[:3])
+    return PASS, 'REFLECT heals the party member beside the healed one, %.1f%% of the cast\'s heal (cap %d%%), landed %.0f%%, none in PvP: %s' % (
+        100 * sum(shares) / len(shares), int(SIG_CAP_SHARE * 100), 100 * sum(landed) / len(landed), '; '.join(lines[:6]))
+
+
+REFLECT_RADIUS = 4      # awakened.csv REFLECT.radius
+
+
+def spell_use_verdict(t):
+    """(status, text). t: {'seconds', 'spells': [{'name', 'kinds'}], 'rows': the `spellup sig` rows of the bot, 'kills': monsters killed}. The share of a signature's output that
+    lands on a live target of a hunt pack (spell_awakening_config.lua signature.use, 0.20 in the value model): over all rows, the damage the signature asked of the engine
+    (of a living target), what the target lost (`land`), against the plan the engine made at the casts (capped). Never a failure of the config: the numbers are told,
+    a failure is a signature past the 25% cap, one that ran in PvP, or damage asked of dead targets in more than half of the asks"""
+    rows = [sig_cols(r) for r in (t.get('rows') or []) if len(r) >= len(SIG_ROW)]
+    cast_rows = [c for c in rows if int(c['casts'])]
+    if not cast_rows:
+        return SKIP, 'no awakened spell was cast at a pack'
+    casts = sum(int(c['casts']) for c in cast_rows)
+    own = sum(float(c['own']) for c in cast_rows)
+    plan = sum(min(float(c['planned']), float(c['cap'])) if float(c['cap']) else float(c['planned']) for c in cast_rows)
+    raw = sum(float(c['planned']) for c in cast_rows)
+    ask = sum(float(c['dmg']) for c in rows)
+    land = sum(float(c['land']) for c in rows)
+    dead = sum(float(c['dead']) for c in rows)
+    bad = []
+    if own > 0 and ask / own > SIG_CAP_SHARE + SIG_CAP_TOL:
+        bad.append('the signatures asked %.1f%% of the casts\' own damage, the cap is %d%%' % (100 * ask / own, int(SIG_CAP_SHARE * 100)))
+    if any(int(c['pvpRuns']) for c in rows):
+        bad.append('a signature ran in PvP')
+    if ask > 0 and dead > 0.5 * ask:
+        bad.append('%.0f%% of the damage asked was for a target already dead' % (100 * dead / ask))
+    use = land / plan if plan > 0 else 0.0
+    reach = ask / plan if plan > 0 else 0.0
+    text = ('%d cast(s) of %d awakened spell(s) at %d pack(s) of %s monster(s) (health %s): own damage %d, the engine planned %d (%.1f%% of it; %d before the cap), asked %d of a living target (%.0f%% of the plan), '
+            'the targets lost %d = %.0f%% of the plan (model use %.0f%%), %d asked of a dead target; %s' % (
+                casts, len(cast_rows), len(t.get('packs') or []), USE_PACK, t.get('hp', '?'), own, plan, 100 * plan / own if own else 0, raw, ask, 100 * reach, land, 100 * use, 100 * USE_MODEL, dead,
+                '; '.join('%s %s' % (s['name'], '+'.join(s['kinds'])) for s in (t.get('spells') or [])[:3])))
+    if bad:
+        return FAIL, '; '.join(bad[:3]) + ' | ' + text
+    return PASS, text
+
+
+def sig_pick_kind(rows, want, heal=None, size=SIG_BATCH, prefer=()):
+    """up to `size` spells of the `spellup forms` rows whose signature has the kind `want` (a string or a set), a heal spell when `heal` is True, an attack spell when False, the
+    spells of `prefer` (names in lower case) first -> [(id, name, heal, kinds)]"""
+    kinds_wanted = {want} if isinstance(want, str) else set(want)
+    out = []
+    for r in rows:
+        kinds = sig_kinds_of(r[4]) if len(r) > 4 else []
+        if not (kinds_wanted & set(kinds)):
+            continue
+        if heal is not None and bool(r[2]) != heal:
+            continue
+        out.append((int(r[0]), str(r[1]), bool(r[2]), kinds))
+    out.sort(key=lambda c: (str(c[1]).lower() not in prefer, c[0]))
+    return out[:size]
+
+
+async def check_closed_spell_leech(io, name, cls, level):
+    """a bot whose book has a spell with a LEECH signature awakens up to three of them and casts each at sturdy Rats while hurt: the leech ran, asked LEECH_PCT of the cast's damage
+    of the engine, landed on the wounded caster, inside the cap of the cast's own damage"""
+    key = 'closed_spell_leech'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup mob (TEST ONLY Rats, the cast target)',
+          'spellup hurt (TEST ONLY: health down so the leech has something to heal)', 'spellup mana (TEST ONLY mana top-up)']
+    rows = await su_forms_rows(io)
+    picks = sig_pick_kind(rows, 'LEECH', False)
+    if not picks:
+        return Result(key, name, cls, SKIP, 'the bot has no attack spell with a LEECH signature in its book')
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    words = su_words(io)
+    pause = getattr(io, 'pause_rotation', None)
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_ALL)
+    live = []
+    for sid, sname, heal, kinds in picks:
+        got = await su_awaken(io, None, sid)
+        if isinstance(got, dict) and got.get('ok'):
+            live.append((sid, sname, heal, kinds))
+    await su_cmd(io, None, 'spellup sig clear')
+    await su_cmd(io, None, 'spellup mob clear')
+    said = []
+    for sid, sname, heal, kinds in live:
+        w = words.get(sname)
+        if not w:
+            said.append('%s: no words' % sname)
+            continue
+        for _ in range(LEECH_CASTS):
+            if not io.alive():
+                break
+            await su_when_ready(io, name, w, 30.0)
+            await su_cmd(io, None, 'spellup mob')
+            await su_cmd(io, None, 'spellup mana')
+            if pause:
+                pause(name, True)
+            try:
+                await su_cmd(io, None, 'spellup hurt 40')
+                said.append('%s: %s' % (sname, 'said' if await su_cast(io, name, w) else 'refused by the bot (cooldown, group or not learned)'))
+            finally:
+                if pause:
+                    pause(name, False)
+            await io.sleep(LEECH_WAIT)
+    sg = await su_cmd(io, None, 'spellup sig')
+    ran = await su_cmd(io, None, 'spellup log')   # the casts the server ran (the cast event), whatever the bot said
+    await su_cmd(io, None, 'spellup mob clear')
+    await su_cmd(io, None, 'spellup clear')
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the bot died or left during the casts', fb)
+    by_sid = {int(r[0]): r for r in (sg or {}).get('sig') or [] if len(r) >= 15}
+    t = {'spells': [{'sid': sid, 'name': sname, 'kinds': kinds, 'row': by_sid.get(sid) or []} for sid, sname, heal, kinds in live]}
+    status, text = spell_leech_verdict(t)
+    if status != PASS:
+        text += ' | casts: %s; the server ran %s; rows of the helper: %s' % ('; '.join(said[:8]) or 'none', (ran or {}).get('casts'), sorted(by_sid))
+    return Result(key, name, cls, status, text, fb)
+
+
+async def check_closed_spell_reflect(io, name, cls, level):
+    """two bots in a party at the temple: the one with a healing spell that has a REFLECT signature awakens it and heals itself beside the other, both hurt: the reflect heals the
+    other, the amount is the row's share of the heal, inside the cap"""
+    key = 'closed_spell_reflect'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    rows = await su_forms_rows(io)
+    picks = sig_pick_kind(rows, 'REFLECT', True)
+    if not picks:
+        return Result(key, name, cls, SKIP, 'the bot has no healing spell with a REFLECT signature in its book')
+    other = await io.partner()
+    if not other:
+        return Result(key, name, cls, SKIP, 'no free bot in game')
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup hurt (TEST ONLY: health down so the heal has something to heal)',
+          'spellup ally (TEST ONLY: the bot stands beside its partner)', 'spellup mana (TEST ONLY mana top-up)']
+    words = su_words(io)
+    pause = getattr(io, 'pause_rotation', None)
+    if not await io.go('town') or not await io.go_of(other, 'town'):
+        return Result(key, name, cls, SKIP, 'the helper did not bring both bots to the temple', fb)
+    await io.sleep(SETTLE)
+    if not await io.party('form', other):
+        return Result(key, name, cls, SKIP, 'the invite could not be sent', fb)
+    await io.sleep(SETTLE)
+    p = await io.helper('party', 'party', ANSWER)
+    size = int((p or {}).get('size') or 0) if isinstance(p, dict) else 0
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_ALL)
+    live = []
+    for sid, sname, heal, kinds in picks:
+        got = await su_awaken(io, None, sid)
+        if isinstance(got, dict) and got.get('ok'):
+            live.append({'sid': sid, 'name': sname, 'kinds': kinds, 'dists': []})
+    await su_cmd(io, None, 'spellup sig clear')
+    said = []
+    for s in live:
+        w = words.get(s['name'])
+        if not w:
+            said.append('%s: no words' % s['name'])
+            continue
+        for _ in range(REFLECT_CASTS):
+            if not io.alive():
+                break
+            await su_when_ready(io, name, w, 30.0)
+            near = await su_cmd(io, None, 'spellup ally %s' % other)
+            s['dists'].append(int(near['dist']) if isinstance(near, dict) and near.get('dist') is not None else None)
+            await su_cmd(io, None, 'spellup mana')
+            if pause:
+                pause(name, True)
+            try:
+                await su_cmd(io, None, 'spellup hurt 40')
+                await su_cmd(io, other, 'spellup hurt 40')
+                said.append('%s: %s' % (s['name'], 'said' if await su_cast(io, name, w) else 'refused by the bot (cooldown, group or not learned)'))
+            finally:
+                if pause:
+                    pause(name, False)
+            await io.sleep(REFLECT_WAIT)
+    sg = await su_cmd(io, None, 'spellup sig')
+    p = await io.helper('party', 'party', ANSWER)
+    size = max(size, int((p or {}).get('size') or 0) if isinstance(p, dict) else 0)
+    await io.party('leave', other)
+    await su_cmd(io, None, 'spellup clear')
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the bot died or left during the casts', fb)
+    by_sid = {int(r[0]): r for r in (sg or {}).get('sig') or [] if len(r) >= 15}
+    for s in live:
+        s['row'] = by_sid.get(s['sid']) or []
+    status, text = spell_reflect_verdict({'party': size, 'spells': live})
+    if status != PASS:
+        text += ' | casts: %s; party %s; rows of the helper: %s' % ('; '.join(said[:8]) or 'none', size, sorted(by_sid))
+    return Result(key, name, cls, status, text, fb)
+
+
+async def check_closed_spell_use(io, name, cls, level):
+    """what share of a signature lands on a pack that dies (`signature.use` of spell_awakening_config.lua, 0.20): the bot awakens up to USE_SPELLS attack spells with a damage
+    signature (the ones of its own rotation first) and casts each USE_CASTS times at a fresh pack of USE_PACK monsters of the hunt it stands at (`spellup pack`: the health the game
+    gives them, they die to the cast and its signature, they do not stand like the Rats); the rows of `spellup sig` tell what the engine planned, asked of a living target and what the
+    targets lost"""
+    key = 'closed_spell_use'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup pack (TEST ONLY: the pack the cast hits)',
+          'spellup mana (TEST ONLY mana top-up)']
+    rows = await su_forms_rows(io)
+    rot = [str(n).lower() for n in (getattr(io, 'rotation_names', lambda: [])() or [])]
+    picks = sig_pick_kind(rows, {'PULSE', 'LINE', 'RINGS', 'ECHO'}, False, USE_SPELLS, rot)
+    if not picks:
+        return Result(key, name, cls, SKIP, 'the bot has no attack spell with a damage signature in its book')
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    words = su_words(io)
+    pause = getattr(io, 'pause_rotation', None)
+    await su_cmd(io, None, 'spellup clear')
+    await su_cmd(io, None, 'spellup seals %d %d %d' % SEAL_ALL)
+    live = []
+    for sid, sname, heal, kinds in picks:
+        got = await su_awaken(io, None, sid)
+        if isinstance(got, dict) and got.get('ok'):
+            live.append({'sid': sid, 'name': sname, 'kinds': kinds})
+    if not live:
+        await su_cmd(io, None, 'spellup clear')
+        return Result(key, name, cls, SKIP, 'no spell could be awakened', fb)
+    await su_cmd(io, None, 'spellup sig clear')
+    await su_cmd(io, None, 'spellup mob clear')
+    packs, said, hp = [], [], None
+    for s in live:
+        w = words.get(s['name'])
+        if not w:
+            said.append('%s: no words' % s['name'])
+            continue
+        for _ in range(USE_CASTS):
+            if not io.alive():
+                break
+            await su_when_ready(io, name, w, 30.0)
+            await su_cmd(io, None, 'spellup mana')
+            if pause:
+                pause(name, True)
+            try:
+                pk = await su_cmd(io, None, 'spellup pack %d' % USE_PACK)
+                if not (isinstance(pk, dict) and pk.get('pack')):
+                    said.append('%s: no pack (%s)' % (s['name'], (pk or {}).get('err') if isinstance(pk, dict) else 'no answer'))
+                    continue
+                hp = pk.get('hp')
+                packs.append(int(pk['pack']))
+                said.append('%s: %s' % (s['name'], 'said' if await su_cast(io, name, w) else 'refused by the bot'))
+                await io.sleep(USE_WAIT)
+            finally:
+                if pause:
+                    pause(name, False)
+            await su_cmd(io, None, 'spellup mob clear')
+    sg = await su_cmd(io, None, 'spellup sig')
+    await su_cmd(io, None, 'spellup mob clear')
+    await su_cmd(io, None, 'spellup clear')
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the bot died or left during the casts', fb)
+    status, text = spell_use_verdict({'seconds': len(packs) * USE_WAIT, 'spells': live, 'rows': (sg or {}).get('sig') or [], 'packs': packs, 'hp': hp})
+    if status != PASS:
+        text += ' | casts: %s' % ('; '.join(said[:8]) or 'none')
+    return Result(key, name, cls, status, text, fb)
 
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
@@ -11049,6 +11454,9 @@ CLOSED_CHECKS = [
     ('closed_spell_seal_pinnacle', check_closed_spell_seal_pinnacle, lambda c: True),   # O686 phase 8b: the Pinnacle Seals at the death of a real pinnacle boss
     ('closed_spell_formgain', check_closed_spell_formgain, lambda c: True),   # O686 phase 8b: the Forms' landed gain against the planner's
     ('closed_spell_wire', check_closed_spell_wire, lambda c: True),   # O686 phase 8b: the opcode 168 messages hold what the client reads
+    ('closed_spell_leech', check_closed_spell_leech, lambda c: True),   # O686 phase 8d: a LEECH signature heals its share of the cast's damage
+    ('closed_spell_reflect', check_closed_spell_reflect, lambda c: True),   # O686 phase 8d: a REFLECT signature heals the party member beside the healed one
+    ('closed_spell_use', check_closed_spell_use, lambda c: True),   # O686 phase 8d: the share of a signature that lands in a real hunt (signature.use)
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -11156,6 +11564,7 @@ FIGHT_KEYS = frozenset([
     'bounty_boss_walk', 'mainquest_walk', 'nemesis_walk', 'pocket_walk', 'wsmap_walk', 'goblin_walk', 'vael_walk', 'boss_copy_walk',
     'kill_task_kills', 'ascension_walk', 'closed_spell_ranks', 'closed_spell_forms', 'closed_spell_combos', 'closed_spell_awaken', 'closed_spell_pvp',
     'closed_spell_dormant', 'closed_spell_signature', 'closed_spell_seals', 'closed_spell_seal_pinnacle', 'closed_spell_formgain', 'closed_spell_wire',
+    'closed_spell_leech', 'closed_spell_reflect', 'closed_spell_use',
 ])
 # the level each content opens at (a floor: the helper's own `minLevel` answers still apply after it). Read from the configs by
 # tester_checks_test.py (`test_level_gates_hold_the_configs`): a number that drifts fails the test, not a live run.

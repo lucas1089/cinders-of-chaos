@@ -2612,7 +2612,7 @@ end
 -- grant of a rank (0-20) or of Seals (0-999 each), the monster health factor H on two fresh copies of a monster nearby (switch off, then on),
 -- and the log of the factors the hooks of ChaosPassiveDealt applied to the bot's hits. Only a tester character gets it (the guard of every command).
 H.COMMANDS.spellup = true
-H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | mob [clear] | mana | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]] | sig [clear] | fstat [clear] | pick SPELL F1 F2 | awk [SPELL] | class VOCATION | source waystone TIER [first] | source rift G [fail] | source pinnacle]"
+H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | mob [clear] | mana | hurt [PERCENT] | ally NAME | pack [N] | clear | rank SPELL RANK [PERCENT] | near SPELL | seals [W [R [P]]] | sig [clear] | fstat [clear] | pick SPELL F1 F2 | awk [SPELL] | class VOCATION | source waystone TIER [first] | source rift G [fail] | source pinnacle]"
 
 function H.parseSpellup(arg)
 	local s = tostring(arg or "")
@@ -2623,6 +2623,24 @@ function H.parseSpellup(arg)
 	word = word and word:lower()
 	if word == "mob" and rest:lower() == "clear" then -- phase 8c: the Rats of the earlier `mob` removed
 		return {what = "mob", clear = true}
+	elseif word == "hurt" then -- phase 8d, TEST ONLY: health to PERCENT (default 50) of the maximum, so a heal or a leech has something to heal
+		local p = rest == "" and 50 or tonumber(rest:match("^(%d+)$"))
+		if not p or p < 1 or p > 99 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "hurt", pct = p}
+	elseif word == "pack" then -- phase 8d, TEST ONLY: N monsters (default 6) of the kind that stands nearest, around the bot, the first one its target
+		local n = rest == "" and 6 or tonumber(rest:match("^(%d+)$"))
+		if not n or n < 1 or n > 12 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "pack", n = n}
+	elseif word == "ally" then -- phase 8d, TEST ONLY: the bot stands beside the named player (the reflect of a heal needs an ally within 4 sqm)
+		local nm = rest:match("^(%a[%w' ]*)$")
+		if not nm then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "ally", name = nm}
 	elseif word == "state" or word == "h" or word == "clear" or word == "forms" or word == "combos" or word == "mob" or word == "mana" then
 		if rest ~= "" then
 			return nil, H.SPELLUP_USAGE
@@ -2636,12 +2654,12 @@ function H.parseSpellup(arg)
 		end
 		return nil, H.SPELLUP_USAGE
 	elseif word == "rank" then
-		local a, b = rest:match("^(%d+)%s+(%d+)$")
-		a, b = tonumber(a), tonumber(b)
-		if not a or not b or a > 499 or b > 20 then
+		local a, b, c = rest:match("^(%d+)%s+(%d+)%s*(%d*)$")
+		a, b, c = tonumber(a), tonumber(b), tonumber(c)
+		if not a or not b or a > 499 or b > 20 or (c and (c > 99 or b >= 20)) then
 			return nil, H.SPELLUP_USAGE
 		end
-		return {what = "rank", spell = a, rank = b}
+		return {what = "rank", spell = a, rank = b, pct = c} -- phase 8d: PERCENT of the way to the next rank (SP into the rank), for the window's bar
 	elseif word == "sig" or word == "fstat" then -- phase 8b: the signature record, the Forms' gain record
 		if rest == "" then
 			return {what = word}

@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 43
+HELPER_VERSION = 44
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -4939,6 +4939,10 @@ end
 -- [fail] | pinnacle` runs the Seal credit of a content (TEST ONLY: the bot as the only player, no map, run or fight played; the pinnacle kill is the real one).
 -- O686 phase 8c (helper v43): `pvp aim` (the foe tester as the target at once), `spellup mana` (mana to the top), `spellup mob clear`, the `casts` the server ran in `log` and
 -- `fstat`, the plan at an uptime of 1 in an `fstat` row, the rows of hits on a player first in `log`.
+-- O686 phase 8d (helper v44): `rank SPELL RANK [PERCENT]` (SP into the rank, for the window's bar), `hurt [PERCENT]` (health down, so a heal or a leech has something to heal),
+-- `ally NAME` (the bot stands beside a player: the reflect of a heal needs an ally within 4 sqm), `pack [N]` (a pack of the nearest kind of monster around the bot, for the share of a
+-- signature that lands); `sig` rows carry the damage that LANDED (the target's health taken), the leech
+-- and the reflect (planned, asked, landed, allies healed).
 T.spellup = T.spellup or {log = {}, wrapped = false}
 local SU = T.spellup
 SU.lastRow, SU.fires = SU.lastRow or {}, SU.fires or {} -- the combo row that just fired, per bot; the fires of a bot {row id, target id, ms}
@@ -4987,7 +4991,7 @@ local function suSigCell(pid, sid)
 	local c = byP[sid]
 	if not c then
 		c = {casts = 0, own = 0, planned = 0, limit = 0, dmg = 0, heal = 0, shield = 0, hits = 0, ops = {}, pvpCasts = 0, pvpRuns = 0, pvpAmt = 0, minScale = 1,
-			pulses = 0}
+			pulses = 0, land = 0, leechPlan = 0, leechAsk = 0, leechLand = 0, reflPlan = 0, reflAsk = 0, reflLand = 0, reflN = 0, dead = 0}
 		byP[sid] = c
 	end
 	return c
@@ -5090,6 +5094,10 @@ local function suWrap2()
 				for _, a in ipairs(out.actions or {}) do
 					if a.op == "pulse" then
 						c.pulses = c.pulses + (a.pulses or 0)
+					elseif a.op == "leech" then
+						c.leechPlan = c.leechPlan + (a.amount or 0)
+					elseif a.op == "reflect" then
+						c.reflPlan = c.reflPlan + (a.amount or 0) * #(a.targets or {})
 					end
 				end
 			end
@@ -5131,7 +5139,13 @@ local function suWrap2()
 					c.pvpRuns = c.pvpRuns + 1
 				end
 			end
-			return origRun(player, spec, a, info, serial, spellId, ...)
+			T.sigOp = a and a.op or nil -- phase 8d: the leech and the reflect heal inside this call (the heals below are told apart by it)
+			local ok, err = pcall(origRun, player, spec, a, info, serial, spellId, ...)
+			T.sigOp = nil
+			if not ok then
+				error(err, 0)
+			end
+			return err
 		end
 	end
 	local ops = FE and FE.ops
@@ -5143,22 +5157,47 @@ local function suWrap2()
 		local od = ops.dealHit
 		ops.dealHit = function(player, target, ctype, amount, ...)
 			local c = cellOf(player)
+			local before
 			if c then
 				local n = math.floor(math.abs(tonumber(amount) or 0))
 				c.dmg, c.hits = c.dmg + n, c.hits + 1
 				if target and target.isPlayer and target:isPlayer() then
 					c.pvpAmt = c.pvpAmt + n
 				end
+				before = target and target.getHealth and target:getHealth() or nil
+				if before and before <= 0 then
+					c.dead = c.dead + n -- asked of a target that was already dead (the hit is not made)
+				end
 			end
-			return od(player, target, ctype, amount, ...)
+			local res = od(player, target, ctype, amount, ...)
+			if c and before and target.getHealth then
+				local okH, after = pcall(target.getHealth, target)
+				if okH and tonumber(after) then
+					c.land = c.land + math.max(0, before - after) -- phase 8d: what the hit took from the target (armour, resistance and overkill are in it)
+				end
+			end
+			return res
 		end
 		local oh = ops.dealHeal
 		ops.dealHeal = function(player, target, amount, ...)
 			local c = cellOf(player)
+			local n = math.floor(math.abs(tonumber(amount) or 0))
+			local before
 			if c then
-				c.heal = c.heal + math.floor(math.abs(tonumber(amount) or 0))
+				c.heal = c.heal + n
+				before = target and target.getHealth and target:getHealth() or nil
 			end
-			return oh(player, target, amount, ...)
+			local res = oh(player, target, amount, ...)
+			if c and before and T.sigOp then
+				local okH, after = pcall(target.getHealth, target)
+				local got = okH and tonumber(after) and math.max(0, after - before) or 0
+				if T.sigOp == "leech" then
+					c.leechAsk, c.leechLand = c.leechAsk + n, c.leechLand + got
+				elseif T.sigOp == "reflect" then
+					c.reflAsk, c.reflLand, c.reflN = c.reflAsk + n, c.reflLand + got, c.reflN + 1
+				end
+			end
+			return res
 		end
 		local os_ = ops.addShield
 		ops.addShield = function(target, amount, secs, ...)
@@ -5466,10 +5505,76 @@ function commands.spellup(player, arg)
 			return
 		end
 		st.sp[w.spell], st.rank[w.spell], st.dirty[w.spell] = P.spForRank(w.rank, m.scale, cfg), w.rank, true
+		if w.pct and w.pct > 0 and w.rank < (cfg.maxRank or 20) then -- phase 8d: part of the way to the next rank (the bar of the window)
+			st.sp[w.spell] = st.sp[w.spell] + (P.spForRank(w.rank + 1, m.scale, cfg) - st.sp[w.spell]) * w.pct / 100
+		end
 		local _, f1, f2, aw = P.unpack(player:getStorageValue(k.rankBase + w.spell))
 		player:setStorageValue(k.rankBase + w.spell, P.pack(w.rank, f1, f2, aw))
 		R.flush(player, st)
 		tell(player, "spellup", {granted = {w.spell, w.rank}, name = m.name})
+	elseif w.what == "hurt" then
+		-- phase 8d, TEST ONLY: health down to PERCENT of the maximum (a heal, a leech or a reflect then has something to heal)
+		local want = math.max(1, math.floor(player:getMaxHealth() * w.pct / 100))
+		local drop = player:getHealth() - want
+		if drop > 0 then
+			player:addHealth("physical", -drop)
+		end
+		tell(player, "spellup", {hurt = player:getHealth(), max = player:getMaxHealth()})
+	elseif w.what == "pack" then
+		-- phase 8d, TEST ONLY: a pack of the kind of monster that stands nearest (a monster of the hunt the bot is at), N of them around the bot with the health the game gives them,
+		-- the first one the bot's target; `mob clear` removes them (the signature of an awakened spell is measured on a pack that dies, not on Rats that never do)
+		local pick
+		for _, c in ipairs(Game.getSpectators(player:getPosition(), false, false, 7, 7, 7, 7) or {}) do
+			if c:isMonster() and not c:getMaster() and c:getName() ~= "Rat" then
+				pick = c
+				break
+			end
+		end
+		local name = pick and pick:getName() or KILL_MONSTER -- none near: the kill check's monster
+		SU.mobs[pid] = SU.mobs[pid] or {}
+		local made, hp = 0, 0
+		for _ = 1, w.n do
+			local spot = freeNear(player:getPosition(), nil, 3) or player:getPosition()
+			local ok, m = pcall(Game.createMonster, name, spot, true, true)
+			if ok and m then
+				made = made + 1
+				SU.mobs[pid][#SU.mobs[pid] + 1] = m:getId()
+				hp = m:getMaxHealth()
+				if made == 1 then
+					player:setTarget(m)
+				end
+			end
+		end
+		-- the pack is of the hunt's level and the bot's gear is what it is: for the 12 s of the cast the bot's health is topped up every 0.2 s (TEST ONLY), so it lives through the pack
+		-- that a real hunter with a heal rule and potions lives through (a death ends the measurement, not the pack)
+		local function keep(left)
+			local p = Player(pid)
+			if not p then
+				return
+			end
+			local miss = p:getMaxHealth() - p:getHealth()
+			if miss > 0 then
+				pcall(Chaos.heal, p, miss)
+			end
+			if left > 1 then
+				addEvent(keep, 200, left - 1)
+			end
+		end
+		keep(60)
+		tell(player, "spellup", {pack = made, name = name, hp = hp})
+	elseif w.what == "ally" then
+		-- phase 8d, TEST ONLY: the bot stands beside the named player (a free tile within 2 sqm)
+		local other = Player(w.name)
+		if not other or other:getId() == pid then
+			tell(player, "spellup", {err = "no such player online"})
+			return
+		end
+		local spot = freeNear(other:getPosition(), nil, 2)
+		if spot then
+			player:teleportTo(spot)
+		end
+		local a, b = player:getPosition(), other:getPosition()
+		tell(player, "spellup", {ally = other:getName(), moved = spot ~= nil, dist = math.max(math.abs(a.x - b.x), math.abs(a.y - b.y)), sameFloor = a.z == b.z})
 	elseif w.what == "mana" then
 		-- phase 8c, TEST ONLY: mana to the top, so a check that casts a big spell four times is not stopped by "not enough mana" (the bot's rotation and its heal spend it
 		-- between the casts, and a cast that the server refuses leaves no trace: the formgain check read 4 casts said and none run)
@@ -5514,7 +5619,8 @@ function commands.spellup(player, arg)
 		tell(player, "spellup", {mob = made, name = name})
 	elseif w.what == "sig" then
 		-- phase 8b: per spell {id, casts, own (the casts' damage), planned, cap, damage the signature dealt, heal, biggest shield, hits, "op=n,..", PvP casts,
-		-- PvP runs, PvP amount, lowest scale, pulses planned}
+		-- PvP runs, PvP amount, lowest scale, pulses planned}; phase 8d, after them: the damage that landed (health taken), the leech planned / asked / landed, the
+		-- reflect planned / asked / landed / allies healed, the damage asked of a target already dead
 		local rows = {}
 		for sid, c in pairs(T.sig[pid] or {}) do
 			local names = {}
@@ -5523,7 +5629,7 @@ function commands.spellup(player, arg)
 			end
 			table.sort(names)
 			rows[#rows + 1] = {sid, c.casts, c.own, c.planned, c.limit, c.dmg, c.heal, c.shield, c.hits, table.concat(names, ","), c.pvpCasts, c.pvpRuns, c.pvpAmt,
-				math.floor(c.minScale * 1000) / 1000, c.pulses}
+				math.floor(c.minScale * 1000) / 1000, c.pulses, c.land, c.leechPlan, c.leechAsk, c.leechLand, c.reflPlan, c.reflAsk, c.reflLand, c.reflN, c.dead}
 		end
 		table.sort(rows, function(a, b) return a[1] < b[1] end)
 		while #rows > 12 do

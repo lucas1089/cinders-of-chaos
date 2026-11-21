@@ -4253,19 +4253,21 @@ do
 	ChaosSpellCombos = {hitFactor = function() return cf end, announce = function() end}
 	local af = 1
 	local awSlots, awCast = {0, 0, 0}, nil
+	local runHook -- phase 8d: what the mocked signature action does inside its call (a leech and a reflect heal)
 	ChaosSpellAwakening = {hitFactor = function() return af end, seals = function(p) return {waystone = 2, rift = 3, pinnacle = 4} end, slots = function() return awSlots end,
 		-- phase 8b: the signature of an awakened spell (the cast event, the actions, the marks and windows the probe counts)
 		isAwakened = function() return true end, windows = {}, marks = {},
 		entry = function(sid) if sid == 201 then return {parts = {{kind = "PULSE"}, {kind = "MARK"}}} end end,
 		onCast = function(p, b, info) if info.pvp then return end ChaosSpellAwakening.run(p, {}, {op = "pulse"}, {}, 1, b.spellId) ChaosSpellForms.ops.dealHit(p, nil, 1, 120) end,
-		run = function() awCast = (awCast or 0) + 1 end}
+		run = function(p, spec, a) awCast = (awCast or 0) + 1 if runHook then runHook(p, a) end end}
 	local spellHits = 0
 	ChaosCombatLog = {spellHook = function() spellHits = spellHits + 1 end}
 	local formOps = {dealHit = function() end, dealHeal = function() end, addShield = function() end}
 	ChaosSpellForms = {picksOf = function() return {{200, 1, 0}} end, active = function() return {{kind = "SPLIT"}} end, ops = formOps}
 	ChaosSpellFormsCore = {hitFactor = function(specs, hit) return 1.1 end, dist = function() return 0 end,
 		planAll = function(specs, cast) return {actions = {{t = "hit", amount = 100, up = 0.5}, {t = "dot", amount = 10, ticks = 3}}} end}
-	ChaosSpellAwakeningCore = {plan = function(spec, cast, cfg) return {planned = 300, limit = 250, scaled = 0.83, actions = {{op = "pulse", pulses = 3}}} end}
+	local planActions = {{op = "pulse", pulses = 3}}
+	ChaosSpellAwakeningCore = {plan = function(spec, cast, cfg) return {planned = 300, limit = 250, scaled = 0.83, actions = planActions} end}
 	local savedPlayer = Player
 	Player = function(id) if id == sup.id then return sup end return savedPlayer(id) end
 	local hf = 1.05
@@ -4410,6 +4412,77 @@ do
 	say2("spellup sig clear #954")
 	say2("spellup sig #955")
 	check(last(sup):find('"sig":[]', 1, true), "spellup sig clear: the record is empty after it")
+
+	-- phase 8d (helper v44): the damage that landed, what was asked of a dead target, the leech and the reflect (planned, asked, landed, allies healed)
+	check(HELPER_VERSION >= 44, "the helper is version 44 or later (O686 phase 8d)")
+	spell = 201
+	planActions = {{op = "leech", amount = 40}, {op = "reflect", amount = 30, targets = {{id = 1}, {id = 2}}}}
+	ChaosSpellAwakeningCore.plan({}, {caster = {id = sup.id}, spellId = 201, pvp = false}, {})
+	local function health(...) -- a target whose health reads the given numbers one after the other (the last one stays)
+		local seq, i = {...}, 0
+		return {getHealth = function() i = i + 1 return seq[math.min(i, #seq)] end, isPlayer = function() return false end}
+	end
+	formOps.dealHit(sup, health(1000, 880), 1, 120) -- 120 asked, 120 taken
+	formOps.dealHit(sup, health(30, 0), 1, 100) -- 100 asked, 30 taken (overkill)
+	formOps.dealHit(sup, health(0, 0), 1, 50) -- 50 asked of a target already dead
+	local heals = {health(500, 540), health(300, 330), health(300, 330)}
+	local hi = 0
+	runHook = function(p, a)
+		for _ = 1, (a.op == "leech" and 1 or 2) do
+			hi = hi + 1
+			formOps.dealHeal(p, heals[hi], a.amount)
+		end
+	end
+	ChaosSpellAwakening.run(sup, {}, {op = "leech", amount = 40}, {}, 1, 201)
+	ChaosSpellAwakening.run(sup, {}, {op = "reflect", amount = 30, targets = {{id = 1}, {id = 2}}}, {}, 1, 201)
+	runHook = nil
+	say2("spellup sig #980")
+	out = last(sup)
+	check(out:find(',150,40,40,40,60,60,60,2,50]', 1, true), "spellup sig: landed 150 of 270 asked, leech planned / asked / landed 40 / 40 / 40, reflect 60 / 60 / 60 on 2 allies, 50 asked of a dead target: " .. out)
+	say2("spellup sig clear #981")
+	planActions = {{op = "pulse", pulses = 3}}
+	-- the new words and their effects
+	local hr = H.parseSpellup("rank 200 12 40")
+	check(hr.pct == 40 and H.parseSpellup("rank 200 12").pct == nil and H.parseSpellup("rank 200 20 5") == nil and H.parseSpellup("rank 200 12 100") == nil,
+		"spellup: rank SPELL RANK [PERCENT] (phase 8d: SP into the rank)")
+	check(H.parseSpellup("hurt").pct == 50 and H.parseSpellup("hurt 30").pct == 30 and H.parseSpellup("hurt 0") == nil and H.parseSpellup("hurt 100") == nil
+		and H.parseSpellup("hurt x") == nil, "spellup: hurt [PERCENT] (1-99, default 50)")
+	check(H.parseSpellup("pack").n == 6 and H.parseSpellup("pack 9").n == 9 and H.parseSpellup("pack 0") == nil and H.parseSpellup("pack 13") == nil and H.parseSpellup("pack x") == nil,
+		"spellup: pack [N] (1-12, default 6)")
+	check(H.parseSpellup("ally Tester Foe").name == "Tester Foe" and H.parseSpellup("ally Aab1").name == "Aab1" and H.parseSpellup("ally") == nil and H.parseSpellup("ally 5") == nil,
+		"spellup: ally NAME")
+	say2("spellup rank 201 12 50 #982")
+	eq(ranked.sp[201], 25, "spellup rank with a percent: halfway to the next rank (24 + (26 - 24) x 0.5)")
+	say2("spellup rank 201 12 #983")
+	eq(ranked.sp[201], 24, "spellup rank without a percent: at the start of the rank")
+	sup.health = 500
+	sup.addHealth = function(self, kind, n) self.health = self.health + n end
+	say2("spellup hurt 40 #984")
+	check(sup.health == 200 and last(sup):find('"hurt":200', 1, true), "spellup hurt: the health goes down to 40% of 500: " .. last(sup))
+	say2("spellup hurt 90 #985")
+	check(sup.health == 200 and last(sup):find('"hurt":200', 1, true), "spellup hurt: a bot already below the percent is left as it is")
+	local ally = creature(268436400, "Tester Aab1", {store = {[ST] = 1}, pos = {x = 120, y = 130, z = 7}})
+	local playerBefore = Player
+	Player = function(id) if id == "Tester Aab1" then return ally end return playerBefore(id) end
+	local tileBefore = Tile
+	Tile = function() return {getGround = function() return true end, hasFlag = function() return false end, getTopCreature = function() return nil end} end
+	say2("spellup ally Tester Aab1 #986")
+	out = last(sup)
+	check(out:find('"ally":"Tester Aab1"', 1, true) and out:find('"moved":true', 1, true) and out:find('"dist":', 1, true) and sup.pos.x >= 118 and sup.pos.x <= 122,
+		"spellup ally: the bot stands within 2 sqm of the player: " .. out)
+	-- phase 8d: a pack of the kind of monster that stands nearest, the first one the target, removed again by `mob clear`
+	local packBefore = #made
+	Game.getSpectators = function() return {sup, mon} end
+	say2("spellup pack 4 #988")
+	out = last(sup)
+	check(out:find('"pack":4', 1, true) and out:find('"name":"Troll"', 1, true) and #made == packBefore + 4 and made[packBefore + 1].name == "Troll", "spellup pack: four of the nearest kind: " .. out)
+	eq(sup.target, made[packBefore + 1], "spellup pack: the first one is the bot's target")
+	Game.getSpectators = function() return {sup} end
+	say2("spellup pack #989")
+	check(last(sup):find('"pack":1', 1, true) == nil and last(sup):find('"pack":', 1, true) and last(sup):find('"name":"Demon"', 1, true), "spellup pack: none near is the kill monster: " .. last(sup))
+	say2("spellup ally Nobody #987")
+	check(last(sup):find("no such player online", 1, true), "spellup ally: no such player is an answer")
+	Tile, Player = tileBefore, playerBefore
 	spell = 200
 	ChaosSpellForms.entry = function(sid)
 		if sid == 200 then return {[1] = {{kind = "ECHO"}, {kind = "BURST"}}, [2] = {{kind = "AREA"}}} end
