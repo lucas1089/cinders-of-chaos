@@ -1010,6 +1010,30 @@ function G.downtime(profile, ref)
 	return share, fixed
 end
 
+-- O698: the reference of a fight of `size` players. A profile's `ref` is worked out for the party it names (`ref.players`, 1 for most);
+-- a fight of another size has more adds and totem health (G.addsHealth / G.addsCount / G.totemHealth read the players), the damage of
+-- that many players and the health the system gives that size. `health` = the boss's maximum health at that size before the factor
+-- (omitted: the ref's). Without a size the ref comes back as it is. Returns a copy
+function G.refFor(ref, size, health)
+	local r = {}
+	for k, v in pairs(ref) do
+		r[k] = v
+	end
+	local base = math.max(1, ref.players or 1)
+	size = size and math.max(1, floor(size)) or base
+	if size ~= base then
+		r.players = size
+		r.dps = ref.dps * size / base
+		if ref.weakDps then
+			r.weakDps = ref.weakDps * size / base
+		end
+	end
+	if health and health > 0 then
+		r.health = health
+	end
+	return r
+end
+
 -- the kill time model of a profile against ref = {health, heal, dps, uptime, players, tier}: base = health / (dps x uptime)
 -- (the old time); with = the time with the mechanics before the health change; hpMult = the boss health factor that
 -- brings `with` back to base (at least minHpMult); final = the time with both

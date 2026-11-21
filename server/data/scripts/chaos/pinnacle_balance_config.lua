@@ -37,6 +37,11 @@ return {
 	marksTaken = 0.35,
 	-- a Hex Effigy (the immobile ward of the adds) and the boss's heal a second: from the XML (healing defense)
 
+	-- O698: the mechanics' health factor (boss_mechanics_core.lua G.balance, for the fight's size) keeps the planned kill time of every size
+	-- inside `tolerance` (the model's own plan is the base of the factor, so the gap is the floor of the factor and the downtime's rounding);
+	-- `partyDiffers`: a party's factor within this of the solo one is only accepted when the solo one still hits the plan
+	factor = {tolerance = 0.01, partyDiffers = 0.002},
+
 	-- tolerance of the committed numbers (health, party curve) against the derivation
 	tolerance = {health = 0.015, perExtra = 0.02},
 
@@ -83,6 +88,22 @@ return {
 		-- with five, the number of classes whose biggest roll is over the plain cap: at least `atLeast` (a cap that touches nobody is no cap) and at most
 		-- `atMost` of the 21 (it is the fight that is hard, not the hit)
 		cuts = {atLeast = 5, atMost = 0.80}
+	},
+
+	-- O698: what the one boss video measured (O689 run 6, the five tester bots of O685 / O693 against the Ascended Malgrath; fight report and
+	-- server console of the run, `damage_final` is the count behind every damage event, O697). tools/pinnacle_model.py --options reads it:
+	-- the kill time of the bots against the median five, per boss, for three health choices. Measured, not modelled: one run, one boss
+	measured = {
+		boss = "ascended malgrath", players = 5, level = 1893,
+		seconds = 79,           -- the boss came, the boss fell (the bar read 100% at 7 s)
+		startHealth = 10134615, -- the boss's maximum at the start (12,704,600 x the solo factor 0.7977, O697)
+		lost = 10139361,        -- the fall of its own health (the ledger)
+		-- damage a second of each bot on the boss over 78 s, every event behind it (damage_final); dots are part of it
+		perBot = {Deadeye = 56968, Elementalist = 33664, Juggernaut = 14656, Samurai = 13596, Illusionist = 10822},
+		-- the same before the events a first hit registers (the damage pool, gems, supports, charms): the early tally
+		early = {Deadeye = 19654, Elementalist = 12152, Juggernaut = 9442, Samurai = 8847, Illusionist = 6410},
+		dots = {Deadeye = 623606, Juggernaut = 345841}, -- total damage of the fight that came as dots
+		botSeconds = 78
 	},
 
 	-- the fragments: what the top content takes (minutes a clear, solo or a party) and the limits of --check. A waystone map of the
