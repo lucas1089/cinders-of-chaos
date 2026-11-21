@@ -157,15 +157,49 @@ local function writeBit(player, spellId, awakened)
 	player:setStorageValue(rcfg.storage.rankBase + spellId, P.pack(rank, f1, f2, awakened))
 end
 
+-- The Spellbook's row of a spell by name ({name, level, needLearn, vocations}), nil when the book is not there (a test, a cold start).
+local bookIndex, bookList
+local function bookEntry(name)
+	local book = rawget(_G, "ChaosSpellbook")
+	local list = book and book.get and book.get()
+	if type(list) ~= "table" then
+		return nil
+	end
+	if bookList ~= list then
+		bookList, bookIndex = list, {}
+		for _, spell in ipairs(list) do
+			if spell.name then
+				bookIndex[spell.name] = spell
+			end
+		end
+	end
+	return bookIndex[name]
+end
+
+-- O686 phase 8 (live pass): the engine lists as learned only the needlearn spells, and every Chaos class spell is needlearn="0" (class_spells.lua:
+-- the vocation and the level decide, nothing is taught), so `hasLearnedSpell` was false for nearly every spell: awaken answered `unknown`, and a login
+-- freed the slot of every awakened spell as dormant. A spell without needlearn is known when the character's class lists it and the level allows it.
 local function knows(player, info)
 	if not info then
 		return false
+	end
+	local entry = bookEntry(info.name)
+	if entry and not entry.needLearn then
+		local Core = rawget(_G, "ChaosClassSpellsCore")
+		if not Core or not Core.lists then
+			pcall(dofile, "data/scripts/chaos/class_spells_core.lua")
+			Core = rawget(_G, "ChaosClassSpellsCore")
+		end
+		local voc = player.getVocation and player:getVocation()
+		return Core and Core.lists and voc ~= nil and Core.lists(entry, voc:getId()) == true
+			and (tonumber(player:getLevel()) or 0) >= (tonumber(entry.level) or 0) or false
 	end
 	if player.hasLearnedSpell then
 		return player:hasLearnedSpell(info.name) == true
 	end
 	return true
 end
+AW.knows = knows -- the live pass helper (tester_helper.lua spellup) asks the same question
 
 -- the answer of an awaken request: {ok, why, spell, slot, name, namePt, cost, need}
 -- a whole number from a request, nil for anything else (a fuzzed or hostile client: inf, nan, a fraction, a string)

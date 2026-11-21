@@ -388,7 +388,9 @@ function M.installCombat()
 			p = {}
 			params[self] = p
 		end
-		p[key] = value
+		if key ~= nil then -- O686 phase 8: a stock monster spell passes a constant this engine lacks (nil): the engine's own call takes it, a table does not
+			p[key] = value
+		end
 		return rawSet(self, key, value)
 	end
 	C.execute = function(self, creature, variant)

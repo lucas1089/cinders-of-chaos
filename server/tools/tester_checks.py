@@ -9656,6 +9656,486 @@ async def check_closed_greater(io, name, cls, level):
     return Result(key, name, cls, status, text)
 
 
+# ------------------------------------------------------------------------------------------------ the spell upgrades, live (O686 phase 8)
+# The live pass of the ranks, Forms, combos and awakening (docs/SPELL_UPGRADES.md, server/README.md "Spell upgrades live pass (O686 phase 8)"):
+# four closed checks that run on a server whose installed spell_ranks_config.lua has `enabled = true`, `track = true` and `testersEarn = true`
+# (the run's own copy: the repository stays off; with the switch off every one of them says SKIP). They talk to the game the way the Spellbook
+# window does (opcode 168: open, pick, awaken) and read the rest through the TEST ONLY helper command `!tester spellup` (helper v40): the rank
+# state of the bot, a rank or Seals granted (counted as fallbacks), the monster health factor H on two fresh copies of a monster, and the log of the
+# factors the hooks of ChaosPassiveDealt applied to the bot's hits (rank, combo, awakening) with the combo rows that fired.
+SPELLUP_HUNT = 600.0      # seconds closed_spell_ranks hunts (the live pass: 10 to 15 minutes; testers.py --spellup-minutes sets it)
+SPELLUP_LOOK = 30.0       # seconds between two looks while the bot hunts
+SPELLUP_GAP = 0.7         # seconds between two pick or awaken requests: the server drops one inside 500 ms of the last (ChaosRateLimit spellforms / spellawaken)
+SPELLUP_CAST_RUN = 120.0  # seconds the forms and awakening checks let the bot fight with the upgrade on
+RANK_PACE_BASIS = 0.16    # SP an hour of on-level hunting the main spell earns at the typical share (spell_upgrade_model.py)
+RANK_PACE_BAND = (0.2, 4.0)   # the main spell's SP an hour of hunting, as a multiple of the basis: outside it is a bug, inside it is reported
+RANK_TOTAL_MAX = 2.1      # all SP of the kills over the kills' value: at most 1, the catch-up doubles a low spell (rank_core catchUp.mult 2)
+H_TOL = 0.003             # the live health factor against Chaos.healthFactor, plus the rounding of the health
+FORM_MIN_PRICE, FORM_PER_LEVEL, FORM_FREE_RANK = 10000, 150, (10, 20)   # spell_ranks_config.lua forms: the price of a paid change, the ranks of Form I and II
+COMBO_BAND = (1.10 - 1e-6, 1.20 + 1e-6)   # spell_combos_config.lua band: every combo is +10% to +20% of the first hit
+COMBO_REPEAT_MS, COMBO_GLOBAL_MS = 6000, 1200   # spell_combos_config.lua limits
+AWAKE_BONUS = 1.10        # spell_awakening_config.lua bonus: +10% on the hit
+AWAKE_MARK_MAX = 1.5      # a spent mark (awakened.csv MARK.pct 0.5) multiplies the hit once more
+SEAL_COSTS = ((40, 36, 16), (70, 60, 28), (100, 90, 40))   # spell_awakening_config.lua slots: Seals of waystone, rift, pinnacle for slot 1, 2, 3
+# the six element reactions and what a bot needs to cast one: (row id, element of the first spell, element of the second)
+COMBO_REACTIONS = (('steam_burst', 'ice', 'fire'), ('thermal_shock', 'fire', 'ice'), ('overload', 'energy', 'fire'),
+                   ('pyre_of_the_dead', 'death', 'fire'), ('mudslide', 'earth', 'ice'), ('consecrated_ash', 'fire', 'holy'))
+# the signature combos (spell_combos_config.lua rows of kind class and heal): (row id, spell ids of the first cast, spell ids of the second); both spells must be at rank 5
+COMBO_CLASS_ROWS = (('pinned_shot', (99, 100), (218, 144, 19)), ('meat_grinder', (2,), (220, 105, 221)), ('anvil_chain', (196,), (84,)),
+                    ('backstab', (240,), (45, 157)), ('rotting_curse', (182,), (183, 113, 185)), ('psychic_shatter', (53,), (228, 43)),
+                    ('echoing_mend', (96,), (97,)))
+COMBO_CLASS_RANK = 5
+
+
+def spellup_on(a):
+    """(ok, why) from a `!tester spellup` answer: the probe is there and the switch is on"""
+    if not isinstance(a, dict):
+        return False, 'no answer to !tester spellup (old helper file)'
+    if a.get('err'):
+        return False, str(a['err'])[:80]
+    if not a.get('on'):
+        return False, 'the spell ranks switch is off on this server (the live pass turns it on in the run\'s copy of spell_ranks_config.lua)'
+    return True, ''
+
+
+def spell_sp_by_id(state):
+    """{spell id: (rank, SP)} from a state answer's `spells` rows [id, rank, SP]"""
+    out = {}
+    for row in (state or {}).get('spells') or []:
+        if isinstance(row, (list, tuple)) and len(row) >= 3:
+            out[int(row[0])] = (int(row[1]), float(row[2]))
+    return out
+
+
+def spell_ranks_verdict(a, b, seconds, health=None, wire=None):
+    """(status, text) of the hunt of closed_spell_ranks. a, b: the state answers before and after `seconds` of hunting; health: the `spellup h` answer;
+    wire: the data of the opcode 168 `state` message after it. The SP the kills gave against the kills' value (the experience gained over the model's
+    experience an hour, ranks config refXpPerHour), the main spell's SP an hour of hunting against RANK_PACE_BASIS, the wire state against the
+    helper's, the live H against Chaos.healthFactor"""
+    ok, why = spellup_on(b)
+    if not ok:
+        return SKIP, why
+    if not isinstance(a, dict) or not a.get('loaded') or not b.get('loaded'):
+        return SKIP, 'the spell ranks of the bot are not loaded'
+    if not b.get('track') or not b.get('earn'):
+        return SKIP, 'the live pass needs track and testersEarn on (a tester earns no SP otherwise)'
+    ref = float(b.get('ref') or 0)
+    d_exp = int(b.get('exp') or 0) - int(a.get('exp') or 0)
+    if ref <= 0 or d_exp <= 0:
+        return SKIP, 'the bot gained no experience in %d s (no kill to rank by)' % seconds
+    hours = d_exp / ref   # hours of on-level hunting the kills are worth
+    before, after = spell_sp_by_id(a), spell_sp_by_id(b)
+    gains = {sid: sp - before.get(sid, (0, 0.0))[1] for sid, (rank, sp) in after.items()}
+    gains = {sid: g for sid, g in gains.items() if g > 1e-9}
+    total = sum(gains.values())
+    problems, notes = [], []
+    if total <= 0:
+        return FAIL, 'no SP in %d s although the bot gained %d experience (%.3f hours of hunting by the model)' % (seconds, d_exp, hours)
+    if total / hours > RANK_TOTAL_MAX:
+        problems.append('the kills gave %.2f SP for %.3f hours of hunting (%.2f a hour, at most %.1f)' % (total, hours, total / hours, RANK_TOTAL_MAX))
+    main_sid = max(gains, key=lambda k: gains[k])
+    main_rate = gains[main_sid] / hours
+    lo, hi = RANK_PACE_BAND
+    if not RANK_PACE_BASIS * lo <= main_rate <= RANK_PACE_BASIS * hi:
+        problems.append('the main spell (%d) earned %.3f SP a hour of hunting, the model basis is %.2f (band %.2f to %.2f)' % (
+            main_sid, main_rate, RANK_PACE_BASIS, RANK_PACE_BASIS * lo, RANK_PACE_BASIS * hi))
+    ups = sorted(sid for sid, (rank, sp) in after.items() if rank > before.get(sid, (0, 0.0))[0])
+    if isinstance(wire, dict):
+        rows = {int(r[0]): int(r[1]) for r in (wire.get('s') or []) if isinstance(r, (list, tuple)) and len(r) >= 2}
+        if wire.get('on') is not True:
+            problems.append('the opcode 168 state says on=%s with the switch on' % wire.get('on'))
+        bad = sorted(sid for sid, (rank, sp) in after.items() if sid in rows and rows[sid] != rank)
+        if bad:
+            problems.append('the state message and the server disagree on the rank of spell(s) %s' % bad[:4])
+        if not rows:
+            problems.append('the state message lists no spell although %d have SP' % len(after))
+    else:
+        notes.append('no state message')
+    if isinstance(health, dict) and not health.get('err'):
+        off, on, hf = health.get('off'), health.get('on'), float(health.get('hf') or 1)
+        if off and on:
+            ratio = on / off
+            if abs(ratio - hf) > H_TOL + 1.0 / off:
+                problems.append('the live monster health factor is %.4f (%s on, %s off), Chaos.healthFactor says %.4f at level %s' % (
+                    ratio, on, off, hf, health.get('level')))
+            else:
+                notes.append('H %.4f live vs %.4f (%s health %s off, %s on)' % (ratio, hf, health.get('name'), off, on))
+    elif isinstance(health, dict):
+        notes.append('H not measured: %s' % str(health.get('err'))[:50])
+    top = ' '.join('%d:%.3f/h' % (sid, gains[sid] / hours) for sid in sorted(gains, key=lambda k: -gains[k])[:4])
+    text = 'SP +%.4f in %d s (%d spells, %.3f a hunting hour of %.3f, main spell %d %.3f a hour vs basis %.2f; by spell %s), %d rank-up(s)%s%s' % (
+        total, seconds, len(gains), total / hours, hours, main_sid, main_rate, RANK_PACE_BASIS, top, len(ups), (' ' + str(ups[:4])) if ups else '',
+        ('; ' + '; '.join(notes)) if notes else '')
+    if problems:
+        return FAIL, '; '.join(problems) + ' | ' + text
+    return PASS, text
+
+
+async def check_closed_spell_ranks(io, name, cls, level):
+    """the bot hunts SPELLUP_HUNT seconds with the spell ranks on: SP and ranks against the model's pace, the opcode 168 state, the monster health factor"""
+    key = 'closed_spell_ranks'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    await io.helper('spellup clear', 'spellup', ANSWER)   # a rank, Seals or an awakening an earlier check granted is not the pace of the kills
+    await io.sleep(SETTLE)
+    a = await io.helper('spellup state', 'spellup', ANSWER) or a
+    spent = 0.0
+    health = None
+    pushed = None   # the spell put just under its next rank by the helper (TEST ONLY), once a kill has paid some SP: the rank-up and its message are seen live
+    while spent < SPELLUP_HUNT and io.alive():
+        await io.sleep(SPELLUP_LOOK)
+        spent += SPELLUP_LOOK
+        if pushed is None:
+            seen = await io.helper('spellup state', 'spellup', ANSWER)
+            rows = [r for r in ((seen or {}).get('spells') or []) if int(r[1]) < 20]   # the spell with the most SP that has a next rank
+            if rows:
+                near = await io.helper('spellup near %d' % int(rows[0][0]), 'spellup', ANSWER)
+                if isinstance(near, dict) and not near.get('err'):
+                    pushed = near.get('near')
+                    a = await io.helper('spellup state', 'spellup', ANSWER) or a   # the SP the kills pay from here, not the push
+                    spent = 0.0   # the hunt measured is the one after the push
+        if health is None or health.get('err') or not health.get('off'):   # until a monster stood near at a look
+            probe = await io.helper('spellup h', 'spellup', ANSWER)
+            if isinstance(probe, dict):
+                health = probe
+    if not io.alive():
+        return Result(key, name, cls, SKIP, 'the bot died or left in the hunt after %d s' % spent)
+    b = await io.helper('spellup state', 'spellup', ANSWER)
+    opened = await io.request('spellRanks', 'open', {}, ('state',), ANSWER)
+    wire = (opened or {}).get('data') if isinstance(opened, dict) else None
+    status, text = spell_ranks_verdict(a, b, int(spent), health, wire)
+    fb = []
+    if pushed:
+        fb.append('spellup near (TEST ONLY: the SP of spell %s put just under its next rank, rank %s)' % (pushed[0], pushed[1]))
+        up = spell_sp_by_id(b).get(int(pushed[0]), (0, 0.0))[0]
+        text += '; push on spell %s from rank %s: %s' % (pushed[0], pushed[1], ('rank %d after the next kills' % up) if up > int(pushed[1]) else 'no rank-up in the rest of the hunt')
+        if status == PASS and up <= int(pushed[1]) and spent >= SPELLUP_LOOK * 2:
+            status, text = FAIL, 'a spell at 0.0005 SP under its next rank gained no rank in %d s of kills | %s' % (int(spent), text)
+    return Result(key, name, cls, status, text, fb)
+
+
+def form_expectations(level, bank_before=None, bank_after=None):
+    """the price of a paid Form change at `level` (spell_ranks_config.lua forms: max(minPrice, perLevel x level))"""
+    return max(FORM_MIN_PRICE, FORM_PER_LEVEL * int(level))
+
+
+def spell_forms_verdict(t):
+    """(status, text) from the trace of closed_spell_forms: {'level', 'spell': [id, name], 'kinds', 'steps': [(label, want, got)], 'bank': [before, after],
+    'log': the `spellup log` row of the spell after the fight, 'picks': the Forms held at the end}. A step is expected to answer
+    {ok, why, price} as `want` says (the keys of want must all equal the answer's)."""
+    steps = t.get('steps') or []
+    if not steps:
+        return SKIP, 'no Form step ran'
+    bad = []
+    for label, want, got in steps:
+        if not isinstance(got, dict):
+            bad.append('%s: no answer' % label)
+            continue
+        miss = ['%s=%s (wanted %s)' % (k, got.get(k), v) for k, v in want.items() if got.get(k) != v]
+        if miss:
+            bad.append('%s: %s' % (label, ', '.join(miss)))
+    bank = t.get('bank') or [None, None]
+    price = form_expectations(t.get('level') or 0)
+    if bank[0] is not None and bank[1] is not None and bank[0] - bank[1] != price:
+        bad.append('the paid change took %s gold from the bank, the price is %s' % (bank[0] - bank[1], price))
+    log = t.get('log') or []
+    hit_note = 'no hit of the spell seen with the Forms on'
+    if len(log) >= 11 and log[8]:
+        hit_note = '%d hit(s) of the spell with the Forms on, mean %d, best %d, rank factor %.3f' % (log[8], log[9] / max(1, log[8]), log[10], log[2])
+    if bad:
+        return FAIL, '; '.join(bad[:4]) + ' | ' + hit_note
+    kinds = '/'.join(str(k) for k in (t.get('kinds') or [])[:4])
+    return PASS, '%s (id %s): %d Form steps answered as the rules say (rank gate, first pick free, window, form1 gate, paid change %d gold, refusals); kinds %s; %s' % (
+        (t.get('spell') or ['?', '?'])[1], (t.get('spell') or ['?'])[0], len(steps), price, kinds, hit_note)
+
+
+async def check_closed_spell_forms(io, name, cls, level):
+    """Forms on a TEST ONLY rank: Form I at rank 10 and II at 20, the first pick free, the free window, a paid change, the refusals, then a fight with them on"""
+    key = 'closed_spell_forms'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grant)', 'gold to N (TEST ONLY bank top-up)']
+    f = await io.helper('spellup forms', 'spellup', ANSWER)
+    rows = [r for r in ((f or {}).get('forms') or []) if isinstance(r, (list, tuple)) and len(r) >= 4 and not r[2]]
+    if not rows:
+        return Result(key, name, cls, SKIP, 'the bot has no learned attack spell with Forms (level %s)' % level)
+    rot = getattr(io, 'rotation_names', lambda: [])()
+    row = next((r for r in rows if str(r[1]).lower() in rot), rows[0])
+    sid, sname, kinds = int(row[0]), str(row[1]), row[3]
+    steps = []
+
+    async def pick(tier, which, sp=sid):
+        await io.sleep(SPELLUP_GAP)
+        reply = await io.request('spellRanks', 'pick', {'spell': sp, 'tier': tier, 'pick': which}, ('pick',), ANSWER)
+        return (reply or {}).get('data') if isinstance(reply, dict) else None
+
+    async def grant(rank):
+        g = await io.helper('spellup rank %d %d' % (sid, rank), 'spellup', ANSWER)
+        return isinstance(g, dict) and not g.get('err')
+
+    await io.helper('spellup clear', 'spellup', ANSWER)
+    if not await grant(5):
+        return Result(key, name, cls, SKIP, 'the rank grant was refused', fb)
+    steps.append(('Form I at rank 5', {'ok': False, 'why': 'rank'}, await pick(1, 1)))
+    await grant(10)
+    steps.append(('first Form I pick', {'ok': True, 'why': 'first', 'price': 0, 'f1': 1}, await pick(1, 1)))
+    steps.append(('Form II at rank 10', {'ok': False, 'why': 'rank'}, await pick(2, 1)))
+    steps.append(('the other Form I inside the free window', {'ok': True, 'why': 'window', 'price': 0, 'f1': 2}, await pick(1, 2)))
+    steps.append(('the same pick again', {'ok': True, 'why': 'same', 'noop': True}, await pick(1, 2)))
+    steps.append(('a pick that does not exist', {'ok': False, 'why': 'spell'}, await pick(1, 3)))
+    steps.append(('a spell with no Forms', {'ok': False, 'why': 'spell'}, await pick(1, 1, 499)))
+    await grant(20)
+    steps.append(('first Form II pick', {'ok': True, 'why': 'first', 'price': 0, 'f2': 1}, await pick(2, 1)))
+    lvl = int(getattr(getattr(io, 'bot', None), 'level', 0) or level)
+    price = form_expectations(lvl)
+    await io.helper('gold to %d' % (price + 20000), 'gold', ANSWER)
+    g0 = await io.helper('gold', 'gold', ANSWER)
+    steps.append(('a paid change of Form I (not the last pick)', {'ok': True, 'why': 'paid', 'price': price, 'f1': 1}, await pick(1, 1)))
+    g1 = await io.helper('gold', 'gold', ANSWER)
+    bank = [(g0 or {}).get('bank'), (g1 or {}).get('bank')]
+    await io.helper('spellup log clear', 'spellup', ANSWER)
+    if await io.go('hunt'):
+        await io.sleep(SPELLUP_CAST_RUN)
+    lg = await io.helper('spellup log', 'spellup', ANSWER)
+    row_log = next((r for r in ((lg or {}).get('log') or []) if r and int(r[0]) == sid), [])
+    picks = ((await io.helper('spellup state', 'spellup', ANSWER)) or {}).get('forms')
+    await io.helper('spellup clear', 'spellup', ANSWER)
+    status, text = spell_forms_verdict({'level': lvl, 'spell': [sid, sname], 'kinds': kinds, 'steps': steps, 'bank': bank, 'log': row_log, 'picks': picks})
+    return Result(key, name, cls, status, text, fb)
+
+
+def spell_combos_verdict(log, fires, tried, state=''):
+    """(status, text) from the `spellup log` rows and fires after the casts of closed_spell_combos. Every proc a factor inside COMBO_BAND, no row twice on
+    one target inside COMBO_REPEAT_MS, no two combos of the bot inside COMBO_GLOBAL_MS; `tried`: the pairs cast [(row id, spell 1, spell 2)]"""
+    procs = sum(int(r[3]) for r in log or [] if len(r) >= 6)
+    bad = []
+    for r in log or []:
+        if len(r) >= 6 and int(r[3]) and not COMBO_BAND[0] <= float(r[5]) <= COMBO_BAND[1]:
+            bad.append('spell %s: a combo factor %.3f (best) outside +10%% to +20%%' % (r[0], float(r[5])))
+        if len(r) >= 6 and int(r[3]) and not COMBO_BAND[0] <= float(r[4]) <= COMBO_BAND[1]:
+            bad.append('spell %s: a combo factor %.3f (mean) outside +10%% to +20%%' % (r[0], float(r[4])))
+    last_by = {}
+    prev = None
+    for f in sorted((x for x in fires or [] if len(x) >= 3), key=lambda x: x[2]):
+        row, tid, ms = f[0], f[1], f[2]
+        if (row, tid) in last_by and ms - last_by[(row, tid)] < COMBO_REPEAT_MS:
+            bad.append('combo %s fired on the same target twice in %d ms (the repeat guard is %d)' % (row, ms - last_by[(row, tid)], COMBO_REPEAT_MS))
+        if prev is not None and ms - prev < COMBO_GLOBAL_MS and ms != prev:
+            bad.append('two combos %d ms apart (the pause is %d)' % (ms - prev, COMBO_GLOBAL_MS))
+        last_by[(row, tid)] = ms
+        prev = ms
+    rows = sorted({str(f[0]) for f in fires or [] if f})
+    if bad:
+        return FAIL, '; '.join(bad[:3])
+    if not tried:
+        return SKIP, 'the bot has no pair of spells for an element reaction (rows tried: none)'
+    if not procs:
+        return SKIP, 'no combo proc in the casts of %d pair(s) %s (a miss, a dead target or a cooldown)%s' % (len(tried), [t[0] for t in tried][:3], state)
+    return PASS, '%d combo proc(s) of rows %s, every factor inside +10%% to +20%%, repeat guard %d ms and pause %d ms held; pairs cast %s' % (
+        procs, rows, COMBO_REPEAT_MS, COMBO_GLOBAL_MS, [t[0] for t in tried][:6])
+
+
+async def check_closed_spell_combos(io, name, cls, level):
+    """the element reactions the bot's spells make: cast the first spell, then the second inside the window, count the procs and their factors; the repeat
+    and the pause are held by the log of the fires"""
+    key = 'closed_spell_combos'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    f = await io.helper('spellup combos', 'spellup', ANSWER)
+    by_el, by_id = {}, {}
+    pause = getattr(io, 'pause_rotation', None)   # the bot's rotation is paused while the check casts a pair
+    for r in (f or {}).get('spells') or []:
+        if isinstance(r, (list, tuple)) and len(r) >= 3:
+            by_id[int(r[0])] = str(r[1])
+            if r[2] and not (len(r) > 3 and r[3]):
+                by_el.setdefault(str(r[2]), []).append((int(r[0]), str(r[1])))
+    if not by_id:
+        return Result(key, name, cls, SKIP, 'no spell with ranks in the bot\'s book')
+    fb = []
+    if not await io.go('hunt'):
+        return Result(key, name, cls, SKIP, not_at_hunt(io))
+    await io.sleep(SETTLE)
+    await io.helper('spellup log clear', 'spellup', ANSWER)
+    words = {str(s.get('name')): s.get('words') for s in (io.class_spells() if hasattr(io, 'class_spells') else [])}
+    tried = []
+    for rid, e1, e2 in COMBO_REACTIONS:
+        if e1 not in by_el or e2 not in by_el or not io.alive():
+            continue
+        s1, s2 = by_el[e1][0], by_el[e2][0]
+        w1, w2 = words.get(s1[1]), words.get(s2[1])
+        if not w1 or not w2:
+            continue
+        for _ in range(2):   # the second round is inside the repeat guard of the first: it must not fire again on the same target
+            await io.helper('spellup mob', 'spellup', ANSWER)   # monsters beside the bot: the cast needs a target (TEST ONLY, counted below)
+            if pause:
+                pause(name, True)
+            try:
+                if not await io.cast_words_of(name, w1):
+                    await io.sleep(2.2)
+                    await io.cast_words_of(name, w1)
+                await io.sleep(2.2)
+                await io.cast_words_of(name, w2)
+                await io.sleep(1.0)
+            finally:
+                if pause:
+                    pause(name, False)
+            await io.sleep(1.5)
+        tried.append((rid, s1[1], s2[1]))
+    async def when_ready(w1, w2, limit=60.0):
+        """wait (at most `limit` s) until both spells of a pair are off cooldown: a signature combo's second spell is often a long cooldown one"""
+        ready_in = getattr(io, 'ready_in', None)
+        waited = 0.0
+        while ready_in and io.alive() and waited < limit and max(ready_in(name, w1) or 0.0, ready_in(name, w2) or 0.0) > 0:
+            await io.sleep(1.0)
+            waited += 1.0
+        return waited
+
+    for rid, firsts, seconds in COMBO_CLASS_ROWS:   # a signature combo of the bot's class: both spells at rank 5 (a TEST ONLY grant), the first, then the second
+        first = next((x for x in firsts if x in by_id), None)
+        second = next((x for x in seconds if x in by_id), None)
+        w1, w2 = words.get(by_id.get(first)), words.get(by_id.get(second))
+        if first is None or second is None or not w1 or not w2 or not io.alive():
+            continue
+        for sid in (first, second):
+            await io.helper('spellup rank %d %d' % (sid, COMBO_CLASS_RANK), 'spellup', ANSWER)
+        fb.append('spellup rank (TEST ONLY: rank %d for %s)' % (COMBO_CLASS_RANK, rid))
+        for _ in range(2):
+            await when_ready(w1, w2)
+            await io.helper('spellup mob', 'spellup', ANSWER)
+            if pause:
+                pause(name, True)   # the rotation would take the attack group between the two casts
+            try:
+                if not await io.cast_words_of(name, w1):
+                    await io.sleep(2.2)
+                    await io.cast_words_of(name, w1)
+                await io.sleep(2.1)
+                await io.cast_words_of(name, w2)
+                await io.sleep(1.0)
+            finally:
+                if pause:
+                    pause(name, False)
+            await io.sleep(1.5)
+        tried.append((rid, by_id[first], by_id[second]))
+    if io.alive():   # then the bot's own rotation fights on: its casts make reactions too (the bot's rotation and the forced casts share the attack group)
+        await io.sleep(SPELLUP_CAST_RUN)
+    lg = await io.helper('spellup log', 'spellup', ANSWER)
+    c = await io.helper('spellup combos', 'spellup', ANSWER) or {}
+    state = ' [combos on %s, ring %s, cast events live %s]' % (c.get('combos'), c.get('ring'), c.get('events'))
+    status, text = spell_combos_verdict((lg or {}).get('log'), (lg or {}).get('fires'), tried, state)
+    if tried:
+        fb.append('spellup mob (TEST ONLY: three sturdy Rats beside the bot, the first its target, for the casts)')
+    return Result(key, name, cls, status, text, fb)
+
+
+def spell_awaken_verdict(t):
+    """(status, text) from the trace of closed_spell_awaken: {'steps': [(label, want, got)], 'log': the log row of the awakened spell, 'seals': [before, after],
+    'cost': the Seals the first slot took}. The refusals (rank, forms, seals, unknown spell, a slot that is taken or not there), the first awakening, the
+    cost of its slot, the +10% on the hit"""
+    steps = t.get('steps') or []
+    if not steps:
+        return SKIP, 'no awakening step ran'
+    bad = []
+    for label, want, got in steps:
+        if not isinstance(got, dict):
+            bad.append('%s: no answer' % label)
+            continue
+        miss = ['%s=%s (wanted %s)' % (k, got.get(k), v) for k, v in want.items() if got.get(k) != v]
+        if miss:
+            bad.append('%s: %s' % (label, ', '.join(miss)))
+    s0, s1 = t.get('seals') or [None, None]
+    if s0 and s1 and [x - y for x, y in zip(s0, s1)] != list(SEAL_COSTS[0]):
+        bad.append('slot 1 took %s Seals, the cost is %s' % ([x - y for x, y in zip(s0, s1)], list(SEAL_COSTS[0])))
+    log = t.get('log') or []
+    note = 'no hit of the awakened spell seen'
+    if len(log) >= 8 and log[6]:
+        mean = float(log[7])
+        low, high = (float(log[11]), float(log[12])) if len(log) >= 13 else (mean, mean)
+        note = '%d awakened hit(s), factor %.3f to %.3f (mean %.3f), %s hit(s) of the spell in all' % (log[6], low, high, mean, log[8] if len(log) > 8 else '?')
+        # the +10% on every hit; a MARK signature spends a mark on the next single target hit once: +50% on that hit (awakened.csv MARK.pct)
+        if abs(low - AWAKE_BONUS) > 0.0011:
+            bad.append('the lowest awakened hit factor is %.3f, the bonus is %.2f' % (low, AWAKE_BONUS))
+        if high > AWAKE_BONUS * AWAKE_MARK_MAX + 0.0011:
+            bad.append('the highest awakened hit factor is %.3f, a bonus and a spent mark make at most %.3f' % (high, AWAKE_BONUS * AWAKE_MARK_MAX))
+    if t.get('dormant') is False:
+        bad.append('a spell the bot no longer knew kept its awakening slot at login')
+    if bad:
+        return FAIL, '; '.join(bad[:4]) + ' | ' + note
+    return PASS, '%s awakened (slot 1 for %s Seals), %d step(s) answered as the rules say; %s' % (t.get('spell') or '?', list(SEAL_COSTS[0]), len(steps), note)
+
+
+async def check_closed_spell_awaken(io, name, cls, level):
+    """awakening on TEST ONLY Seals and a TEST ONLY rank 20 with both Forms: the refusals, one awakening, its slot cost, the +10% on the hits"""
+    key = 'closed_spell_awaken'
+    a = await io.helper('spellup state', 'spellup', ANSWER)
+    ok, why = spellup_on(a)
+    if not ok:
+        return Result(key, name, cls, SKIP, why)
+    fb = ['spellup rank (TEST ONLY rank grant)', 'spellup seals (TEST ONLY Seals)', 'gold to N (TEST ONLY bank top-up)']
+    kept = [x for x in (a.get('slots') or []) if x]   # an awakening a run before left (the check does not clear it): it must have survived this login (dormant sync)
+    f = await io.helper('spellup forms', 'spellup', ANSWER)
+    rows = [r for r in ((f or {}).get('forms') or []) if isinstance(r, (list, tuple)) and len(r) >= 4 and not r[2]]
+    if not rows:
+        return Result(key, name, cls, SKIP, 'the bot has no learned attack spell with Forms (level %s)' % level)
+    rot = getattr(io, 'rotation_names', lambda: [])()
+    row = next((r for r in rows if str(r[1]).lower() in rot), rows[0])
+    sid, sname = int(row[0]), str(row[1])
+    other = next((int(r[0]) for r in rows if int(r[0]) != sid), None)
+    steps = []
+
+    async def awaken(spell, slot=None):
+        data = {'spell': spell}
+        if slot is not None:
+            data['slot'] = slot
+        await io.sleep(SPELLUP_GAP)
+        reply = await io.request('spellRanks', 'awaken', data, ('awaken',), ANSWER)
+        return (reply or {}).get('data') if isinstance(reply, dict) else None
+
+    async def pick(tier, which, spell):
+        await io.sleep(SPELLUP_GAP)
+        reply = await io.request('spellRanks', 'pick', {'spell': spell, 'tier': tier, 'pick': which}, ('pick',), ANSWER)
+        return (reply or {}).get('data') if isinstance(reply, dict) else None
+
+    await io.helper('spellup clear', 'spellup', ANSWER)
+    await io.helper('spellup rank %d 19' % sid, 'spellup', ANSWER)
+    steps.append(('awaken below rank 20', {'ok': False, 'why': 'rank'}, await awaken(sid)))
+    await io.helper('spellup rank %d 20' % sid, 'spellup', ANSWER)
+    steps.append(('awaken with no Forms picked', {'ok': False, 'why': 'forms'}, await awaken(sid)))
+    await pick(1, 1, sid)
+    await pick(2, 1, sid)
+    steps.append(('awaken with no Seals', {'ok': False, 'why': 'seals'}, await awaken(sid)))
+    steps.append(('awaken a spell with no awakening row', {'ok': False, 'why': 'spell'}, await awaken(499)))
+    s0 = (await io.helper('spellup seals 40 36 16', 'spellup', ANSWER) or {}).get('seals')
+    steps.append(('awaken into a slot that does not exist', {'ok': False, 'why': 'slot'}, await awaken(sid, 11)))
+    first = await awaken(sid, 1)
+    steps.append(('the first awakening, slot 1', {'ok': True, 'slot': 1}, first))
+    s1 = ((await io.helper('spellup state', 'spellup', ANSWER)) or {}).get('seals')
+    steps.append(('awaken the same spell again', {'ok': False, 'why': 'already'}, await awaken(sid)))
+    if other is not None:
+        steps.append(('a second spell below rank 20', {'ok': False, 'why': 'rank'}, await awaken(other)))
+        await io.helper('spellup rank %d 20' % other, 'spellup', ANSWER)
+        await pick(1, 1, other)
+        await pick(2, 1, other)
+        steps.append(('a second awakening with the Seals of slot 1 spent: slot 2 asks for more', {'ok': False, 'why': 'seals', 'slot': 2}, await awaken(other)))
+    await io.helper('spellup log clear', 'spellup', ANSWER)
+    if await io.go('hunt'):
+        await io.sleep(SPELLUP_CAST_RUN)
+    lg = await io.helper('spellup log', 'spellup', ANSWER)
+    row_log = next((r for r in ((lg or {}).get('log') or []) if r and int(r[0]) == sid), [])
+    await io.helper('spellup log clear', 'spellup', ANSWER)   # the awakening itself stays: the next login must keep it (the first look of the next run)
+    status, text = spell_awaken_verdict({'steps': steps, 'seals': [s0, s1], 'log': row_log, 'spell': sname})
+    if kept:
+        text += '; at this login the slots %s of an earlier run were kept' % kept
+    return Result(key, name, cls, status, text, fb)
+
+
 # the checks of closed mode, run only with --closed: (key, function, applies to the class)
 CLOSED_CHECKS = [
     ('closed_guards', check_closed_guards, lambda c: True),
@@ -9676,6 +10156,10 @@ CLOSED_CHECKS = [
     ('closed_pvp_fight', check_closed_pvp_fight, lambda c: True),   # O652: two testers fight in the Marches, only testers inside
     ('closed_battleground_match', check_closed_battleground_match, lambda c: True),   # O652: a match of testers only when 10 queue
     ('closed_greater', check_closed_greater, lambda c: True),   # O668: the Greater Rift boards exist and hold no tester bot
+    ('closed_spell_ranks', check_closed_spell_ranks, lambda c: True),   # O686 phase 8: SP and ranks of a hunt against the model's pace, the state message, H live
+    ('closed_spell_forms', check_closed_spell_forms, lambda c: True),   # O686 phase 8: Form picks on a TEST ONLY rank, the price and the free window, a fight with them
+    ('closed_spell_combos', check_closed_spell_combos, lambda c: True),   # O686 phase 8: the element reactions cast, the procs, the band, the repeat guard
+    ('closed_spell_awaken', check_closed_spell_awaken, lambda c: True),   # O686 phase 8: an awakening on TEST ONLY Seals: refusals, slot cost, +10%
     ('closed_raid', check_closed_raid, lambda c: True),   # the longest: last (O588)
 ]
 CLOSED_KEYS = tuple(k for k, _, _ in CLOSED_CHECKS)
@@ -9781,7 +10265,7 @@ FIGHT_KEYS = frozenset([
     'closed_arena_fight', 'closed_pvp_fight', 'closed_battleground_match',
     'rift_walk', 'tower_walk', 'descent_walk', 'trial_walk', 'ascended_walk', 'omen_walk', 'pinnacle_walk', 'bounty_walk', 'bounty_elite_walk',
     'bounty_boss_walk', 'mainquest_walk', 'nemesis_walk', 'pocket_walk', 'wsmap_walk', 'goblin_walk', 'vael_walk', 'boss_copy_walk',
-    'kill_task_kills', 'ascension_walk',
+    'kill_task_kills', 'ascension_walk', 'closed_spell_ranks', 'closed_spell_forms', 'closed_spell_combos', 'closed_spell_awaken',
 ])
 # the level each content opens at (a floor: the helper's own `minLevel` answers still apply after it). Read from the configs by
 # tester_checks_test.py (`test_level_gates_hold_the_configs`): a number that drifts fails the test, not a live run.

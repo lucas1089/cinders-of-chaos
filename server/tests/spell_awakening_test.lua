@@ -1087,6 +1087,38 @@ do
 	eq(AW.slots(p)[1], 0, "the login event frees a dormant slot")
 end
 
+-- ---------------------------------------------------------------- B7b. a spell without needlearn (every class spell of the game)
+-- The live pass (O686 phase 8): the engine never lists such a spell as learned, so `hasLearnedSpell` is false for it; the class and the level decide
+do
+	storage = {}
+	local savedBook = rawget(_G, "ChaosSpellbook")
+	local book = {{name = "Doomtide", level = 200, vocations = {2, 3}}, {name = "Final Verdict", level = 100, vocations = {2}, needLearn = true}}
+	ChaosSpellbook = {get = function() return book end}
+	p.learned = {} -- nothing is "learned" by the engine's list
+	setSpell(206, 20, 1, 1, false)
+	seals(500, 500, 500)
+	eq(AW.awaken(p, 206, 1).ok, true, "a needlearn=0 spell the class lists at this level is known: awakened with nothing in the learned list")
+	eq(AW.sync(p), 0, "and a login does not free its slot as dormant")
+	eq(AW.slots(p)[1], 206, "the slot stays")
+	book[1].vocations = {5}
+	eq(AW.sync(p), 1, "a class change to a class that does not list it: dormant, as the design says")
+	setSpell(206, 20, 1, 1, false)
+	seals(500, 500, 500)
+	eq(AW.awaken(p, 206, 1).why, "unknown", "a spell another class lists is unknown")
+	book[1].vocations, book[1].level = {2}, 2500
+	eq(AW.awaken(p, 206, 1).why, "unknown", "a spell above the level is unknown")
+	book[1].level = 200
+	p.learned = {["Final Verdict"] = true}
+	setSpell(218, 20, 1, 1, false)
+	eq(AW.awaken(p, 218, nil).ok, true, "a needlearn spell still needs the learned list: learned, known")
+	p.learned = {}
+	storage[RC.storage.awakenedSlots] = 0
+	setSpell(218, 20, 1, 1, false)
+	eq(AW.awaken(p, 218, nil).why, "unknown", "a needlearn spell that is not learned is unknown")
+	ChaosSpellbook = savedBook
+	storage = {}
+end
+
 -- ---------------------------------------------------------------- B8. the staff command and the logout
 do
 	storage = {}

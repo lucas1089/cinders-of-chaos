@@ -932,6 +932,24 @@ do
 	calls = {}
 end
 
+-- O686 phase 8 (live pass): Combat:setParameter wrapped by installCombat took a nil key and raised "table index is nil". The stock monster spell
+-- priestess_firering.lua passes COMBAT_PARAM_SHOOT_EFFECT, a constant this engine has no name for, so every server start with the switch on printed a Lua
+-- error and the spell was never registered
+do
+	local saved = {Combat = Combat, installed = FormsLib.combatInstalled}
+	local seen = {}
+	local FakeCombat = {setParameter = function(self, key, value) seen[#seen + 1] = {key, value} end, execute = function() return true end}
+	Combat = FakeCombat
+	FormsLib.combatInstalled = false
+	ok(FormsLib.installCombat(), "installCombat wraps the fake Combat")
+	local c = setmetatable({}, {__index = FakeCombat})
+	local fine, err = pcall(function() Combat.setParameter(c, nil, 5) end)
+	ok(fine, "Combat:setParameter with a nil key (a constant this engine lacks) is no error: " .. tostring(err))
+	eq(#seen, 1, "the call still reaches the engine's own setParameter")
+	Combat = saved.Combat
+	FormsLib.combatInstalled = saved.installed
+end
+
 print(string.format("spell_forms_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

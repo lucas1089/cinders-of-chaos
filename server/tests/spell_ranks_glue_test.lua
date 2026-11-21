@@ -276,6 +276,13 @@ ok(R.players[3].tester, "a tester is marked")
 local mon5 = newMonster(513, 1000, 100)
 R.onDamage(bot, nil, mon5, 1000, 200)
 eq(R.tracked[513], nil, "a tester's damage is not even tracked")
+-- O686 phase 8 (live pass): `testersEarn = true` is the switch of a live run with tester bots; it was dead (onDamage and onHeal dropped
+-- a tester's hit before P.counts could read it), so a bot never earned a point
+cfg.testersEarn = true
+local monT = newMonster(517, 1000, 100)
+R.onDamage(bot, nil, monT, 1000, 200)
+ok(R.tracked[517] ~= nil, "testersEarn: a tester's damage is tracked")
+cfg.testersEarn = false
 -- the level gate
 local low = newPlayer(4, 5, 41)
 login.onLogin(low)

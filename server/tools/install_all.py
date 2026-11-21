@@ -17,7 +17,8 @@ A map master has no use for it (the master holds the old plan: server/README.md 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
                monster/monsters/chaos/**/*.xml, monster/lua/chaos/**/*.lua, spells/chaos/** (the source folder
-               register_spells.py reads) and patchnotes/*.md (+ index.txt). Only new or different files are written;
+               register_spells.py reads), the two run time tables of the spell upgrades spells/forms.csv and
+               spells/awakened.csv (O686 phase 8) and patchnotes/*.md (+ index.txt). Only new or different files are written;
                files in SERVER_DIR/data/scripts/chaos that the repo no longer has are listed, never deleted.
   lib          data/lib/lib.lua loads chaos_unique_items.lua (data/items/README.md, "Install" 1)
   monsternames tools/patch_base_monster_names.py Chaos names of the base monsters (data/monster/base_monster_names.csv,
@@ -580,6 +581,8 @@ COPY = [
     ('monster/monsters/chaos', lambda name: name.endswith('.xml'), True),
     ('monster/lua/chaos', lambda name: name.endswith('.lua'), True),
     ('spells/chaos', None, True),
+    # the two tables the spell upgrades read at run time (chaos_spell_forms.lua, chaos_spell_awakening.lua; O686 phase 8: they were never copied)
+    ('spells', lambda name: name in ('forms.csv', 'awakened.csv'), False),
     ('patchnotes', lambda name: name.endswith('.md') or name == 'index.txt', False),
 ]
 # repo files whose `enabled = ...` line is the owner's switch on the server (chaos-ctl.sh beta-mode, the admin app): a copy

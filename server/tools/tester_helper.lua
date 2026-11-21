@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 39
+HELPER_VERSION = 40
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -4880,6 +4880,351 @@ function commands.gold(player, arg)
 		data.granted, data.refused = give, why
 	end
 	tell(player, "gold", data)
+end
+
+-- O686 phase 8 (the live pass of the spell upgrades, TEST ONLY): `!tester spellup state | log [clear] | h | forms | combos | clear | rank SPELL RANK | seals [W [R [P]]]`.
+-- It reads the rank state of the bot, grants a rank or Seals (the TEST ONLY fallbacks the bot counts), measures the monster health factor H on two
+-- fresh copies of a monster nearby (switch off, then on) and returns the log of the factors the hooks of ChaosPassiveDealt applied to the bot's
+-- hits. The log comes from wrappers of ChaosSpellRanks.hitFactor, ChaosSpellCombos.hitFactor, ChaosSpellAwakening.hitFactor and ChaosCombatLog.spellHook
+-- put on at the first `spellup`; they pass every argument and result through and only count for tester characters.
+T.spellup = T.spellup or {log = {}, wrapped = false}
+local SU = T.spellup
+SU.lastRow, SU.fires = SU.lastRow or {}, SU.fires or {} -- the combo row that just fired, per bot; the fires of a bot {row id, target id, ms}
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+
+local function suCell(pid, sid)
+	local byP = SU.log[pid]
+	if not byP then
+		byP = {}
+		SU.log[pid] = byP
+	end
+	sid = sid or 0
+	local e = byP[sid]
+	if not e then
+		e = {rank = {0, 0}, combo = {0, 0, 0}, awake = {0, 0, 9, 0}, hit = {0, 0, 0}} -- awake: n, sum, lowest, highest factor
+		byP[sid] = e
+	end
+	return e
+end
+
+local function suWrap()
+	if SU.wrapped then
+		return
+	end
+	SU.wrapped = true
+	local R = rawget(_G, "ChaosSpellRanks")
+	if R and R.hitFactor and R.castSpell then
+		local orig = R.hitFactor
+		R.hitFactor = function(attacker, creature, origin, ctype, ...)
+			local f = orig(attacker, creature, origin, ctype, ...)
+			if ctype and ctype ~= COMBAT_NONE and origin == ORIGIN_SPELL and eligible(attacker) then
+				local sid = R.castSpell(attacker)
+				if sid then
+					local c = suCell(attacker:getId(), sid).rank
+					c[1], c[2] = c[1] + 1, c[2] + f
+				end
+			end
+			return f
+		end
+	end
+	local C = rawget(_G, "ChaosSpellCombos")
+	if C and C.announce then
+		local origA = C.announce -- the row that fired is known here, just before the hit factor returns
+		C.announce = function(player, row, ...)
+			if player and row and eligible(player) then
+				SU.lastRow[player:getId()] = row.id
+			end
+			return origA(player, row, ...)
+		end
+	end
+	if C and C.hitFactor and R and R.castSpell then
+		local orig = C.hitFactor
+		C.hitFactor = function(attacker, creature, ...)
+			local f = orig(attacker, creature, ...)
+			if f ~= 1 and eligible(attacker) then
+				local pid = attacker:getId()
+				local c = suCell(pid, R.castSpell(attacker)).combo
+				c[1], c[2], c[3] = c[1] + 1, c[2] + f, math.max(c[3], f)
+				local row = SU.lastRow[pid]
+				SU.lastRow[pid] = nil
+				if row then
+					local list = SU.fires[pid] or {}
+					SU.fires[pid] = list
+					list[#list + 1] = {row, creature and creature.getId and creature:getId() or 0, nowMs()}
+					while #list > 60 do
+						table.remove(list, 1)
+					end
+				end
+			end
+			return f
+		end
+	end
+	local A = rawget(_G, "ChaosSpellAwakening")
+	if A and A.hitFactor and R and R.castSpell then
+		local orig = A.hitFactor
+		A.hitFactor = function(attacker, ...)
+			local f = orig(attacker, ...)
+			if f ~= 1 and eligible(attacker) then
+				local c = suCell(attacker:getId(), R.castSpell(attacker)).awake
+				c[1], c[2], c[3], c[4] = c[1] + 1, c[2] + f, math.min(c[3], f), math.max(c[4], f)
+			end
+			return f
+		end
+	end
+	local CL = rawget(_G, "ChaosCombatLog")
+	if CL and CL.spellHook then
+		local orig = CL.spellHook
+		CL.spellHook = function(owner, summon, creature, amount, spellId, ...)
+			if spellId and eligible(owner) then
+				local c = suCell(owner:getId(), spellId).hit
+				c[1], c[2], c[3] = c[1] + 1, c[2] + (tonumber(amount) or 0), math.max(c[3], tonumber(amount) or 0)
+			end
+			return orig(owner, summon, creature, amount, spellId, ...)
+		end
+	end
+end
+
+-- a spell of the bot's book: the awakening's own question (a spell without needlearn is known by class and level, hasLearnedSpell is false for it)
+local function suKnows(player, m)
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if AW and AW.knows then
+		return AW.knows(player, m)
+	end
+	return player:hasLearnedSpell(m.name) == true
+end
+
+local function suStatus(player)
+	local R, cfg = rawget(_G, "ChaosSpellRanks"), rawget(_G, "ChaosSpellRanksConfig")
+	local st = R and R.players and R.players[player:getId()]
+	local level = player:getLevel()
+	local data = {level = level, on = cfg and cfg.enabled == true, track = cfg and cfg.track == true, earn = cfg and cfg.testersEarn == true,
+		hf = Chaos.healthFactor(level), loaded = st ~= nil, exp = player:getExperience()}
+	local Pc = rawget(_G, "ChaosSpellRanksCore")
+	data.ref = Pc and cfg and Pc.refXp and math.floor(Pc.refXp(level, cfg)) or nil -- the experience an hour the ranks' kill value is measured against
+	local list, total = {}, 0
+	if st then
+		for sid, sp in pairs(st.sp) do
+			if sp > 0 then
+				list[#list + 1] = {sid, st.rank[sid] or 0, math.floor(sp * 10000 + 0.5) / 10000}
+				total = total + sp
+			end
+		end
+		table.sort(list, function(a, b) return a[3] > b[3] end)
+		while #list > 12 do
+			list[#list] = nil
+		end
+	end
+	data.spells, data.sp = list, math.floor(total * 10000 + 0.5) / 10000
+	local FM = rawget(_G, "ChaosSpellForms")
+	if FM and FM.picksOf then
+		data.forms = FM.picksOf(player)
+	end
+	local AW = rawget(_G, "ChaosSpellAwakening")
+	if AW and AW.seals then
+		local sl = AW.seals(player)
+		data.seals, data.slots = {sl.waystone, sl.rift, sl.pinnacle}, AW.slots(player)
+	end
+	data.state = R and R.state and R.state(player).s or nil
+	return data
+end
+
+-- the monster health factor, live: two fresh copies of the nearest monster, the switch off for the first and on for the second
+local function suHealth(player)
+	local cfg, PC = rawget(_G, "ChaosSpellRanksConfig"), rawget(_G, "ChaosPace")
+	if not cfg or not PC or not PC.apply then
+		return {err = "no spell ranks or no pace layer"}
+	end
+	local pos = player:getPosition()
+	local pick
+	for _, c in ipairs(Game.getSpectators(pos, false, false, 7, 7, 7, 7) or {}) do
+		if c:isMonster() and not c:getMaster() then
+			pick = c
+			break
+		end
+	end
+	if not pick then
+		return {err = "no monster within 7 tiles"}
+	end
+	local name, was = pick:getName(), cfg.enabled
+	local made = {}
+	local out = {name = name, pos = posOf(pick:getPosition())}
+	local ok, err = pcall(function()
+		for _, on in ipairs({false, true}) do
+			cfg.enabled = on
+			local m = Game.createMonster(name, pick:getPosition(), true, true)
+			if not m then
+				error("no monster made")
+			end
+			made[#made + 1] = m
+			PC.apply(m, true)
+			local level = PC.levelOf and PC.levelOf(m) or nil
+			out[on and "on" or "off"] = m:getMaxHealth()
+			out.level = out.level or level
+			if on then
+				out.hf = Chaos.healthFactor(out.level)
+			end
+		end
+	end)
+	cfg.enabled = was
+	for _, m in ipairs(made) do
+		m:remove()
+	end
+	if not ok then
+		out.err = tostring(err)
+	end
+	return out
+end
+
+function commands.spellup(player, arg)
+	local w, usage = H.parseSpellup(arg)
+	if not w then
+		tell(player, "spellup", {err = usage})
+		return
+	end
+	suWrap()
+	local R, cfg, P = rawget(_G, "ChaosSpellRanks"), rawget(_G, "ChaosSpellRanksConfig"), rawget(_G, "ChaosSpellRanksCore")
+	if not (R and cfg and P and R.players) then
+		tell(player, "spellup", {err = "no spell ranks"})
+		return
+	end
+	local pid = player:getId()
+	local st = R.players[pid]
+	local k = cfg.storage
+	if w.what == "state" then
+		tell(player, "spellup", H.cutAnswer(suStatus(player)))
+	elseif w.what == "h" then
+		tell(player, "spellup", H.cutAnswer(suHealth(player)))
+	elseif w.what == "combos" then
+		-- the spells of the bot's book: id, name, the element of the hit ("" for none) and 1 for a heal (the element reactions and the class combos of
+		-- spell_combos_config.lua pick their pairs from it)
+		local FM, rows = rawget(_G, "ChaosSpellForms"), {}
+		for sid, m in pairs(R.catalog or {}) do
+			if suKnows(player, m) then
+				local el = not m.heal and FM and FM.element and FM.element(sid) or ""
+				rows[#rows + 1] = {sid, m.name, el, m.heal and 1 or 0}
+			end
+		end
+		table.sort(rows, function(x, y) return x[1] < y[1] end)
+		while #rows > 70 do
+			rows[#rows] = nil
+		end
+		local CB, SE = rawget(_G, "ChaosSpellCombos"), rawget(_G, "ChaosSpellEvents")
+		local cs = CB and CB.states and CB.states[player:getId()]
+		tell(player, "spellup", {spells = rows, combos = CB and CB.on and CB.on() or false, ring = cs and cs.ring and #cs.ring or -1, events = SE and SE.live or false})
+	elseif w.what == "forms" then
+		-- the spells of the bot that have Forms (forms.csv): id, name, heal, and the kind of each of the four picks
+		local FM, rows = rawget(_G, "ChaosSpellForms"), {}
+		for sid, m in pairs(R.catalog or {}) do
+			local entry = FM and FM.entry and FM.entry(sid)
+			if entry and suKnows(player, m) then
+				local kinds = {}
+				for _, tier in ipairs({1, 2}) do
+					for pick = 1, 2 do
+						kinds[#kinds + 1] = entry[tier] and entry[tier][pick] and entry[tier][pick].kind or "?"
+					end
+				end
+				rows[#rows + 1] = {sid, m.name, m.heal and 1 or 0, kinds}
+			end
+		end
+		table.sort(rows, function(a, b) return a[1] < b[1] end)
+		while #rows > 30 do
+			rows[#rows] = nil
+		end
+		tell(player, "spellup", {forms = rows})
+	elseif w.what == "log" then
+		local rows = {}
+		for sid, e in pairs(SU.log[pid] or {}) do
+			rows[#rows + 1] = {sid, e.rank[1], e.rank[1] > 0 and e.rank[2] / e.rank[1] or 0, e.combo[1], e.combo[1] > 0 and e.combo[2] / e.combo[1] or 0,
+				e.combo[3], e.awake[1], e.awake[1] > 0 and e.awake[2] / e.awake[1] or 0, e.hit[1], e.hit[2], e.hit[3],
+				e.awake[1] > 0 and e.awake[3] or 0, e.awake[4]}
+		end
+		table.sort(rows, function(a, b) return a[9] > b[9] end)
+		while #rows > 14 do
+			rows[#rows] = nil
+		end
+		local fires = {}
+		for _, f in ipairs(SU.fires[pid] or {}) do
+			fires[#fires + 1] = f
+		end
+		while #fires > 30 do
+			table.remove(fires, 1)
+		end
+		if w.clear then
+			SU.log[pid], SU.fires[pid] = {}, {}
+		end
+		tell(player, "spellup", {log = rows, fires = fires, cleared = w.clear or nil})
+	elseif w.what == "rank" then
+		local m = R.catalog and R.catalog[w.spell]
+		if not st or not m then
+			tell(player, "spellup", {err = "no such ranked spell or the bot is not loaded"})
+			return
+		end
+		st.sp[w.spell], st.rank[w.spell], st.dirty[w.spell] = P.spForRank(w.rank, m.scale, cfg), w.rank, true
+		local _, f1, f2, aw = P.unpack(player:getStorageValue(k.rankBase + w.spell))
+		player:setStorageValue(k.rankBase + w.spell, P.pack(w.rank, f1, f2, aw))
+		R.flush(player, st)
+		tell(player, "spellup", {granted = {w.spell, w.rank}, name = m.name})
+	elseif w.what == "mob" then
+		-- three Rats beside the bot (a monster of the hunt would kill a bot of its own gear), for the casts of a combo that need a target: the helper's
+		-- own loop aims the bot at them. Made with Game.createMonster and left as they are
+		local name = "Rat"
+		local made = 0
+		for _ = 1, 3 do
+			local ok, m = pcall(Game.createMonster, name, player:getPosition(), true, true)
+			if ok and m then
+				made = made + 1
+				pcall(function() -- they must live through two casts 2 s apart, and the first one is the bot's target (a hook or a trap needs one)
+					m:setMaxHealth(200000)
+					m:setHealth(200000)
+					if made == 1 then
+						player:setTarget(m)
+					end
+				end)
+			end
+		end
+		tell(player, "spellup", {mob = made, name = name})
+	elseif w.what == "near" then
+		-- the SP of the spell just under the cost of its next rank (a rank-up on the next kill that credits it)
+		local m = R.catalog and R.catalog[w.spell]
+		if not st or not m then
+			tell(player, "spellup", {err = "no such ranked spell or the bot is not loaded"})
+			return
+		end
+		local rank, into, nextCost = P.rankOf(st.sp[w.spell] or 0, m.scale, cfg)
+		if nextCost <= 0 then
+			tell(player, "spellup", {err = "the spell is at the top rank"})
+			return
+		end
+		st.sp[w.spell] = (st.sp[w.spell] or 0) + (nextCost - into) - 0.0005
+		st.dirty[w.spell] = true
+		R.flush(player, st)
+		tell(player, "spellup", {near = {w.spell, rank, math.floor(st.sp[w.spell] * 10000 + 0.5) / 10000}, name = m.name})
+	elseif w.what == "seals" then
+		if w.waystone then
+			player:setStorageValue(k.sealWaystone, w.waystone)
+			player:setStorageValue(k.sealRift, w.rift)
+			player:setStorageValue(k.sealPinnacle, w.pinnacle)
+		end
+		tell(player, "spellup", {seals = {player:getStorageValue(k.sealWaystone), player:getStorageValue(k.sealRift), player:getStorageValue(k.sealPinnacle)}})
+	else -- clear: ranks, picks, awakening, Seals back to nothing
+		if st then
+			for sid in pairs(R.catalog or {}) do
+				st.sp[sid], st.rank[sid], st.dirty[sid] = 0, 0, true
+				player:setStorageValue(k.rankBase + sid, 0)
+			end
+			R.flush(player, st)
+		end
+		for _, key in ipairs({k.awakened, k.formChanges, k.lastPickAt, k.lastPickWhat, k.sealWaystone, k.sealRift, k.sealPinnacle}) do
+			player:setStorageValue(key, 0)
+		end
+		for i = 0, 9 do
+			player:setStorageValue(k.awakenedSlots + i, 0)
+		end
+		SU.log[pid], SU.fires[pid] = {}, {}
+		tell(player, "spellup", {cleared = true})
+	end
 end
 
 T.FILE = "data/scripts/zz_tester_helper.lua"

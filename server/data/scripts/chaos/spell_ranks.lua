@@ -287,7 +287,7 @@ end
 -- ---------------------------------------------------------------- damage tracking
 function R.onDamage(owner, summon, creature, amount, spellId)
 	local st = R.players[owner:getId()]
-	if not st or st.tester then
+	if not st or (st.tester and cfg.testersEarn ~= true) then -- O686 phase 8: testersEarn was dead (the live pass with bots)
 		return
 	end
 	local mid = creature:getId()
@@ -316,7 +316,7 @@ end
 
 function R.onHeal(healer, ally, effective, spellId, t)
 	local st = R.players[healer:getId()]
-	if not st or st.tester or not spellId or not R.catalog[spellId] or not R.catalog[spellId].heal then
+	if not st or (st.tester and cfg.testersEarn ~= true) or not spellId or not R.catalog[spellId] or not R.catalog[spellId].heal then
 		return
 	end
 	local pid = healer:getId()

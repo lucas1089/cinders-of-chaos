@@ -14,7 +14,8 @@ return {
 	-- combos; at most one combo a cast (the best row: the highest bonus, then the order of `rows`)
 	limits = {repeatMs = 6000, globalMs = 1200},
 	-- 4.3: the ring of the last casts of a player, and how long a cast waits for its first hit (a cast that misses never fires)
-	ring = {size = 4, expireMs = 1000},
+	-- O686 phase 8 (live pass): 2500, not 1000: a cast-time spell (ChaosCasting, 1 to 2 s on its bar) hits that long after its precast, and its entry must be alive then
+	ring = {size = 4, expireMs = 2500},
 
 	-- the element of a hit with two parts (a weapon line spell: physical and an element): the larger part, but an element other than
 	-- physical wins when it has at least this share of the larger part

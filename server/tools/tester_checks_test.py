@@ -13262,5 +13262,423 @@ class PinnacleMoreGear(unittest.TestCase):
             self.assertRegex(xml, r'name="%s"[^>]*needlearn="1"' % re.escape(n), '%s is taught, so `buffs learn` is the grant' % n)
 
 
+class SpellUpgradesLive(unittest.TestCase):
+    """O686 phase 8: the four closed checks of the live pass of the spell upgrades (ranks, Forms, combos, awakening) on a mocked game, and their verdicts"""
+
+    def state(self, exp=0, sp=None, on=True, level=150, **extra):
+        d = {'on': on, 'track': True, 'earn': True, 'loaded': True, 'level': level, 'exp': exp, 'ref': 39130589, 'hf': 1.02,
+             'spells': sp if sp is not None else []}
+        d.update(extra)
+        return d
+
+    # ---- ranks
+    def test_the_keys(self):
+        for key in ('closed_spell_ranks', 'closed_spell_forms', 'closed_spell_combos', 'closed_spell_awaken'):
+            self.assertIn(key, TX.CLOSED_KEYS)
+            self.assertNotIn(key, TX.KEYS)
+            self.assertIn(key, TX.FIGHT_KEYS, 'a bot that fights geared up first')
+        self.assertEqual(TX.CLOSED_KEYS[-1], 'closed_raid')
+
+    def test_ranks_pass_inside_the_pace(self):
+        a = self.state(exp=1000, sp=[[200, 1, 0.05]])
+        # 600 s at the model's pace: 0.1667 hours of hunting; the main spell earns 0.16 an hour of it = 0.0267 SP, the rest 0.02
+        hours = 0.1667
+        b = self.state(exp=1000 + int(hours * 39130589), sp=[[200, 1, 0.05 + 0.16 * hours], [201, 0, 0.02]])
+        st, text = TX.spell_ranks_verdict(a, b, 600, {'name': 'Troll', 'off': 1000, 'on': 1020, 'hf': 1.02, 'level': 150}, {'on': True, 's': [[200, 1, 0.1, 0.2]]})
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('H 1.0200 live', text)
+
+    def test_ranks_skips(self):
+        a = self.state(exp=1000)
+        self.assertEqual(TX.spell_ranks_verdict(a, self.state(exp=2000, on=False), 60)[0], TX.SKIP)
+        self.assertEqual(TX.spell_ranks_verdict(a, None, 60)[0], TX.SKIP)
+        self.assertEqual(TX.spell_ranks_verdict(a, self.state(exp=1000), 60)[0], TX.SKIP, 'no experience: no kill to rank by')
+        off = self.state(exp=5000)
+        off['earn'] = False
+        self.assertIn('testersEarn', TX.spell_ranks_verdict(a, off, 60)[1])
+
+    def test_ranks_bugs(self):
+        a = self.state(exp=0)
+        hours = 0.1
+        exp = int(hours * 39130589)
+        st, text = TX.spell_ranks_verdict(a, self.state(exp=exp), 600)
+        self.assertEqual(st, TX.FAIL, 'experience and no SP')
+        self.assertIn('no SP', text)
+        slow = self.state(exp=exp, sp=[[200, 0, 0.0005]])
+        self.assertEqual(TX.spell_ranks_verdict(a, slow, 600)[0], TX.FAIL, 'the main spell 30 times under the basis')
+        fast = self.state(exp=exp, sp=[[200, 1, 0.5]])
+        self.assertEqual(TX.spell_ranks_verdict(a, fast, 600)[0], TX.FAIL, 'more SP than the kills are worth')
+        good = self.state(exp=exp, sp=[[200, 1, 0.016]])
+        st, text = TX.spell_ranks_verdict(a, good, 600, None, {'on': True, 's': [[200, 2, 0.1, 0.2]]})
+        self.assertEqual((st, 'disagree' in text), (TX.FAIL, True), 'the wire says another rank')
+        st, text = TX.spell_ranks_verdict(a, good, 600, {'name': 'Troll', 'off': 1000, 'on': 1100, 'hf': 1.02, 'level': 150})
+        self.assertEqual((st, 'health factor' in text), (TX.FAIL, True), 'H live 1.10 against 1.02')
+        st, text = TX.spell_ranks_verdict(a, good, 600, {'err': 'no monster within 7 tiles'})
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('H not measured', text)
+
+    def go_ranks(self, answers, wire):
+        io = FakeIO(answers=answers, replies={('spellRanks', 'open'): {'data': wire}})
+        old = TX.SPELLUP_HUNT
+        TX.SPELLUP_HUNT = 60.0
+        try:
+            return run(TX.check_closed_spell_ranks(io, 'Tester Aaa', 'Mystic', 150)), io
+        finally:
+            TX.SPELLUP_HUNT = old
+
+    def test_ranks_check_hunts_and_reads(self):
+        calls = {'n': 0}
+
+        def look(io):
+            calls['n'] += 1
+            if calls['n'] <= 2:
+                return self.state(exp=0, sp=[])
+            return self.state(exp=int(0.01 * 39130589), sp=[[200, 1, 0.0016]])
+        r, io = self.go_ranks({'spellup state': look, 'spellup h': {'name': 'Troll', 'off': 1000, 'on': 1020, 'hf': 1.02, 'level': 150}},
+                              {'on': True, 's': [[200, 1, 0.0, 0.1]]})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(io.moves[:1], ['hunt'])
+        self.assertTrue(any(x[1] == 'open' for x in io.asked))
+
+    def test_ranks_check_pushes_a_spell_near_its_rank_and_sees_the_rank_up(self):
+        calls = {'n': 0}
+        hours = 0.01
+
+        def look(io):
+            calls['n'] += 1
+            n = calls['n']
+            if n <= 2:
+                return self.state(exp=0, sp=[])                          # the first looks: nothing earned yet
+            if n == 3:
+                return self.state(exp=1000, sp=[[200, 0, 0.01]])         # the look of the first loop: a spell has SP
+            if n == 4:
+                return self.state(exp=1000, sp=[[200, 0, 0.0495]])       # the baseline after the push
+            return self.state(exp=1000 + int(hours * 39130589), sp=[[200, 1, 0.0495 + 0.0016 + 0.0005]])   # the end: the rank came
+
+        answers = {'spellup state': look, 'spellup near 200': {'near': [200, 0, 0.0495]}, 'spellup h': {'err': 'no monster within 7 tiles'}}
+        r, io = self.go_ranks(answers, {'on': True, 's': [[200, 1, 0.0, 0.1]]})
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('rank 1 after the next kills', r.detail)
+        self.assertTrue(any('spellup near' in f for f in r.fallbacks), 'the push is a named fallback')
+
+        calls['n'] = 0
+
+        def stuck(io):
+            calls['n'] += 1
+            n = calls['n']
+            if n <= 2:
+                return self.state(exp=0, sp=[])
+            if n == 3:
+                return self.state(exp=1000, sp=[[200, 0, 0.01]])
+            if n == 4:
+                return self.state(exp=1000, sp=[[200, 0, 0.0495]])
+            return self.state(exp=1000 + int(hours * 39130589), sp=[[200, 0, 0.0495 + 0.0016]])   # the SP rose and the rank did not
+        r, io = self.go_ranks(dict(answers, **{'spellup state': stuck}), {'on': True, 's': [[200, 0, 0.0, 0.1]]})
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('gained no rank', r.detail)
+
+    def test_ranks_check_skips_without_the_switch_or_the_helper(self):
+        r, _ = self.go_ranks({'spellup state': self.state(on=False)}, None)
+        self.assertEqual((r.status, 'switch is off' in r.detail), (TX.SKIP, True))
+        r, _ = self.go_ranks({}, None)
+        self.assertEqual((r.status, 'old helper' in r.detail), (TX.SKIP, True))
+        r, _ = self.go_ranks({'spellup state': {'err': 'no spell ranks'}}, None)
+        self.assertEqual((r.status, r.detail), (TX.SKIP, 'no spell ranks'))
+
+    # ---- Forms
+    def pick_answer(self, ok, why, **kw):
+        d = {'ok': ok, 'why': why}
+        d.update(kw)
+        return d
+
+    def forms_trace(self, **over):
+        t = {'level': 150, 'spell': [200, 'Bolt'], 'kinds': ['ECHO', 'BURST', 'AREA', 'CHAIN'], 'bank': [100000, 77500],
+             'log': [200, 40, 1.18, 0, 0, 0, 0, 0, 55, 22000, 900], 'steps': [
+                 ('Form I at rank 5', {'ok': False, 'why': 'rank'}, self.pick_answer(False, 'rank')),
+                 ('first Form I pick', {'ok': True, 'why': 'first', 'price': 0, 'f1': 1}, self.pick_answer(True, 'first', price=0, f1=1))]}
+        t.update(over)
+        return t
+
+    def test_forms_verdict(self):
+        st, text = TX.spell_forms_verdict(self.forms_trace())
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('55 hit(s)', text)
+        t = self.forms_trace()
+        t['steps'][1] = ('first Form I pick', {'ok': True, 'why': 'first'}, self.pick_answer(True, 'window'))
+        st, text = TX.spell_forms_verdict(t)
+        self.assertEqual((st, 'why=window (wanted first)' in text), (TX.FAIL, True))
+        st, text = TX.spell_forms_verdict(self.forms_trace(bank=[100000, 90000]))
+        self.assertEqual((st, '22500' in text), (TX.FAIL, True), 'the paid change must take max(10000, 150 x level) = 22500 at level 150')
+        self.assertEqual(TX.spell_forms_verdict(self.forms_trace(level=40, bank=[50000, 40000]))[0], TX.PASS, 'the minimum price at a low level')
+        t = self.forms_trace()
+        t['steps'].append(('no answer', {'ok': True}, None))
+        self.assertEqual(TX.spell_forms_verdict(t)[0], TX.FAIL)
+        self.assertEqual(TX.spell_forms_verdict({'steps': []})[0], TX.SKIP)
+        self.assertIn('no hit', TX.spell_forms_verdict(self.forms_trace(log=[]))[1])
+
+    def forms_io(self, rules=None):
+        """a game that answers the picks by the rules of F.decide, for the flow of the check"""
+        io = FakeIO()
+        io.bot = type('B', (), {'level': 150})()
+        st = {'rank': 0, 'f1': 0, 'f2': 0, 'last': None}
+        bank = {'v': 100000}
+        io.state = st
+
+        async def helper(command, kind, wait=4.0):
+            if command == 'spellup state':
+                return self.state(exp=0, forms=[[200, st['f1'], st['f2']]])
+            if command == 'spellup forms':
+                return {'forms': [[200, 'Bolt', 0, ['ECHO', 'BURST', 'AREA', 'CHAIN']], [201, 'Heal', 1, ['A', 'B', 'C', 'D']]]}
+            if command.startswith('spellup rank'):
+                st['rank'] = int(command.split()[3])
+                return {'granted': [200, st['rank']]}
+            if command.startswith('gold to'):
+                return {'bank': bank['v']}
+            if command == 'gold':
+                return {'bank': bank['v']}
+            if command == 'spellup log':
+                return {'log': [[200, 10, 1.18, 0, 0, 0, 0, 0, 12, 1200, 200]]}
+            return {'cleared': True}
+
+        async def request(opname, action, data, expect, timeout):
+            io.asked.append((opname, action, data))
+            if action != 'pick':
+                return None
+            sp, tier, pick = data['spell'], data['tier'], data['pick']
+            if sp != 200 or pick not in (1, 2):
+                return {'data': {'ok': False, 'why': 'spell'}}
+            need = 10 if tier == 1 else 20
+            if st['rank'] < need:
+                return {'data': {'ok': False, 'why': 'rank'}}
+            cur = st['f1'] if tier == 1 else st['f2']
+            if cur == pick:
+                return {'data': {'ok': True, 'why': 'same', 'noop': True, 'price': 0}}
+            if cur == 0:
+                st['f%d' % tier] = pick
+                st['last'] = tier
+                return {'data': {'ok': True, 'why': 'first', 'price': 0, 'f1': st['f1'], 'f2': st['f2']}}
+            if st['last'] == tier:
+                st['f%d' % tier] = pick
+                return {'data': {'ok': True, 'why': 'window', 'price': 0, 'f1': st['f1'], 'f2': st['f2']}}
+            price = max(10000, 150 * 150)
+            bank['v'] -= price
+            st['f%d' % tier] = pick
+            st['last'] = tier
+            return {'data': {'ok': True, 'why': 'paid', 'price': price, 'f1': st['f1'], 'f2': st['f2']}}
+        io.helper, io.request = helper, request
+        return io
+
+    def test_forms_check_flow(self):
+        io = self.forms_io()
+        r = run(TX.check_closed_spell_forms(io, 'Tester Aaa', 'Mystic', 150))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Bolt', r.detail)
+        self.assertTrue(r.fallbacks, 'the rank grant and the gold are named fallbacks')
+        picks = [a[2] for a in io.asked if a[1] == 'pick']
+        self.assertEqual(picks[0], {'spell': 200, 'tier': 1, 'pick': 1})
+        self.assertIn({'spell': 499, 'tier': 1, 'pick': 1}, picks)
+
+    def test_forms_check_skips(self):
+        io = FakeIO(answers={'spellup state': self.state(on=False)})
+        self.assertEqual(run(TX.check_closed_spell_forms(io, 'a', 'Mystic', 150)).status, TX.SKIP)
+        io = FakeIO(answers={'spellup state': self.state(), 'spellup forms': {'forms': []}})
+        r = run(TX.check_closed_spell_forms(io, 'a', 'Mystic', 150))
+        self.assertEqual((r.status, 'no learned attack spell' in r.detail), (TX.SKIP, True))
+
+    # ---- combos
+    def test_combos_verdict(self):
+        log = [[201, 5, 1.0, 3, 1.12, 1.15, 0, 0, 20, 5000, 400]]
+        fires = [['steam_burst', 7, 10000], ['thermal_shock', 7, 11500], ['steam_burst', 7, 17000]]
+        st, text = TX.spell_combos_verdict(log, fires, [('steam_burst', 'a', 'b')])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('3 combo proc', text)
+        st, text = TX.spell_combos_verdict(log, [['steam_burst', 7, 10000], ['steam_burst', 7, 14000]], [('steam_burst', 'a', 'b')])
+        self.assertEqual((st, 'repeat guard' in text), (TX.FAIL, True), 'the same row on the same target 4 s later')
+        st, text = TX.spell_combos_verdict(log, [['steam_burst', 7, 10000], ['overload', 8, 10500]], [('steam_burst', 'a', 'b')])
+        self.assertEqual((st, 'apart' in text), (TX.FAIL, True), 'two combos 500 ms apart')
+        self.assertEqual(TX.spell_combos_verdict(log, [['steam_burst', 7, 10000], ['steam_burst', 8, 14000]], [('steam_burst', 'a', 'b')])[0], TX.PASS,
+                         'the same row on another target is no repeat')
+        st, text = TX.spell_combos_verdict([[201, 5, 1.0, 2, 1.3, 1.4, 0, 0, 1, 1, 1]], [], [('x', 'a', 'b')])
+        self.assertEqual((st, 'outside' in text), (TX.FAIL, True), 'a combo of +40%')
+        self.assertEqual(TX.spell_combos_verdict([], [], [('x', 'a', 'b')])[0], TX.SKIP, 'no proc')
+        self.assertEqual(TX.spell_combos_verdict([], [], [])[0], TX.SKIP, 'no pair')
+
+    def test_combos_check_flow(self):
+        io = FakeIO(answers={
+            'spellup state': self.state(),
+            'spellup combos': {'spells': [[10, 'Frost Bolt', 'ice', 0], [11, 'Fire Bolt', 'fire', 0], [12, 'Spark', 'energy', 0]]},
+            'spellup log clear': {'cleared': True},
+            'spellup log': {'log': [[11, 4, 1.0, 2, 1.1, 1.1, 0, 0, 6, 1000, 300]], 'fires': [['steam_burst', 3, 5000], ['steam_burst', 3, 12000]]}})
+        io.class_spells = lambda: [{'name': 'Frost Bolt', 'words': 'exori frigo'}, {'name': 'Fire Bolt', 'words': 'exori flam'}, {'name': 'Spark', 'words': 'exori vis'}]
+        cast = []
+
+        async def cast_words_of(name, words, gap=2.0):
+            cast.append(words)
+            return True
+        io.cast_words_of = cast_words_of
+        r = run(TX.check_closed_spell_combos(io, 'Tester Aaa', 'Elementalist', 1000))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        # steam burst (ice then fire), thermal shock (fire then ice) and overload (energy then fire) are the pairs this book has, each twice
+        self.assertEqual(cast, ['exori frigo', 'exori flam'] * 2 + ['exori flam', 'exori frigo'] * 2 + ['exori vis', 'exori flam'] * 2)
+
+    def test_combos_check_casts_a_class_combo_at_rank_5(self):
+        io = FakeIO(answers={
+            'spellup state': self.state(),
+            'spellup combos': {'spells': [[2, 'Gorehook', 'physical', 0], [105, "Butcher's Gyre", 'physical', 0], [96, 'Mirror Mend', '', 1]]},
+            'spellup log clear': {'cleared': True},
+            'spellup log': {'log': [[105, 4, 1.18, 2, 1.2, 1.2, 0, 0, 6, 1000, 300]], 'fires': [['meat_grinder', 3, 5000]]}})
+        io.class_spells = lambda: [{'name': 'Gorehook', 'words': 'exori hook'}, {'name': "Butcher's Gyre", 'words': 'exori gyre'}]
+        granted, cast = [], []
+        base = io.helper
+
+        async def helper(command, kind, wait=4.0):
+            if command.startswith('spellup rank'):
+                granted.append(command)
+                return {'granted': True}
+            return await base(command, kind, wait)
+        io.helper = helper
+
+        async def cast_words_of(name, words, gap=2.0):
+            cast.append(words)
+            return True
+        io.cast_words_of = cast_words_of
+        paused = []
+        io.pause_rotation = lambda name, on: paused.append((name, on))
+        r = run(TX.check_closed_spell_combos(io, 'Tester Aaa', 'Warrior', 150))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual(paused, [('Tester Aaa', True), ('Tester Aaa', False)] * 2, 'the rotation is paused for each pair of casts and resumed after it')
+        self.assertIn('meat_grinder', r.detail)
+        self.assertEqual(granted, ['spellup rank 2 5', 'spellup rank 105 5'], 'both spells of the row at rank 5')
+        self.assertEqual(cast, ['exori hook', 'exori gyre'] * 2)
+        self.assertTrue(any('meat_grinder' in f for f in r.fallbacks))
+
+    def test_combos_check_waits_for_both_spells_of_a_class_combo_to_be_ready(self):
+        io = FakeIO(answers={
+            'spellup state': self.state(),
+            'spellup combos': {'spells': [[2, 'Gorehook', 'physical', 0], [105, "Butcher's Gyre", 'physical', 0]]},
+            'spellup log clear': {'cleared': True},
+            'spellup log': {'log': [], 'fires': []}})
+        io.class_spells = lambda: [{'name': 'Gorehook', 'words': 'exori hook'}, {'name': "Butcher's Gyre", 'words': 'exori gyre'}]
+        left = {'exori hook': 3.0, 'exori gyre': 5.0}   # seconds to go; one second of waiting takes one off
+
+        def ready_in(name, words):
+            return left[words]
+        io.ready_in = ready_in
+        slept = []
+        base = io.sleep
+
+        async def sleep(seconds):
+            slept.append(seconds)
+            for k in left:
+                left[k] = max(0.0, left[k] - seconds)
+            await base(seconds)
+        io.sleep = sleep
+        cast = []
+
+        async def cast_words_of(name, words, gap=2.0):
+            cast.append((words, left['exori hook'], left['exori gyre']))
+            return True
+        io.cast_words_of = cast_words_of
+        run(TX.check_closed_spell_combos(io, 'Tester Aaa', 'Warrior', 150))
+        self.assertEqual(slept[0], TX.SETTLE, 'the settle after the walk to the hunt takes 3 s off the 5 s of the slower spell')
+        self.assertEqual(slept[1:3], [1.0, 1.0], 'then one second at a time until the slower spell is ready')
+        self.assertEqual(cast[0], ('exori hook', 0.0, 0.0), 'the first spell goes when both are ready')
+
+    def test_combos_check_skips(self):
+        io = FakeIO(answers={'spellup state': self.state(), 'spellup combos': {'spells': []}})
+        self.assertEqual(run(TX.check_closed_spell_combos(io, 'a', 'Mystic', 150)).status, TX.SKIP)
+        io = FakeIO(answers={'spellup state': self.state(on=False)})
+        self.assertEqual(run(TX.check_closed_spell_combos(io, 'a', 'Mystic', 150)).status, TX.SKIP)
+
+    # ---- awakening
+    def awaken_trace(self, **over):
+        t = {'spell': 'Bolt', 'seals': [[40, 36, 16], [0, 0, 0]], 'log': [200, 30, 1.18, 0, 0, 0, 12, 1.1, 40, 9000, 700, 1.1, 1.1], 'steps': [
+            ('awaken below rank 20', {'ok': False, 'why': 'rank'}, {'ok': False, 'why': 'rank'}),
+            ('the first awakening, slot 1', {'ok': True, 'slot': 1}, {'ok': True, 'slot': 1, 'why': 'ok'})]}
+        t.update(over)
+        return t
+
+    def test_awaken_verdict(self):
+        st, text = TX.spell_awaken_verdict(self.awaken_trace())
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('12 awakened hit', text)
+        st, text = TX.spell_awaken_verdict(self.awaken_trace(seals=[[40, 36, 16], [10, 0, 0]]))
+        self.assertEqual((st, 'Seals' in text), (TX.FAIL, True), 'slot 1 took the wrong Seals')
+        st, text = TX.spell_awaken_verdict(self.awaken_trace(log=[200, 30, 1.18, 0, 0, 0, 12, 1.25, 40, 9000, 700, 1.25, 1.25]))
+        self.assertEqual((st, 'lowest' in text), (TX.FAIL, True), 'every awakened hit is +25%: the bonus is 10%')
+        st, text = TX.spell_awaken_verdict(self.awaken_trace(log=[200, 30, 1.18, 0, 0, 0, 12, 1.24, 40, 9000, 700, 1.10, 1.65]))
+        self.assertEqual(st, TX.PASS, 'a spent mark makes one hit +50% more: 1.10 x 1.5 = 1.65 is the top')
+        st, text = TX.spell_awaken_verdict(self.awaken_trace(log=[200, 30, 1.18, 0, 0, 0, 12, 1.4, 40, 9000, 700, 1.10, 1.9]))
+        self.assertEqual((st, 'highest' in text), (TX.FAIL, True), 'a hit above bonus and mark')
+        t = self.awaken_trace()
+        t['steps'][0] = ('awaken below rank 20', {'ok': False, 'why': 'rank'}, {'ok': True})
+        self.assertEqual(TX.spell_awaken_verdict(t)[0], TX.FAIL)
+        self.assertEqual(TX.spell_awaken_verdict({'steps': []})[0], TX.SKIP)
+        self.assertIn('no hit of the awakened', TX.spell_awaken_verdict(self.awaken_trace(log=[]))[1])
+
+    def test_awaken_check_flow(self):
+        st = {'rank': 0, 'f1': 0, 'f2': 0, 'seals': [0, 0, 0], 'slots': [0, 0, 0], 'rank2': 0}
+        io = FakeIO()
+        costs = ((40, 36, 16), (70, 60, 28), (100, 90, 40))
+
+        async def helper(command, kind, wait=4.0):
+            if command == 'spellup state':
+                return self.state(seals=list(st['seals']), slots=st.pop('shown', None) or list(st['slots']))
+            if command == 'spellup forms':
+                return {'forms': [[200, 'Bolt', 0, ['A', 'B', 'C', 'D']], [201, 'Wave', 0, ['A', 'B', 'C', 'D']]]}
+            if command.startswith('spellup rank'):
+                sid, rank = int(command.split()[2]), int(command.split()[3])
+                st['rank' if sid == 200 else 'rank2'] = rank
+                return {'granted': [sid, rank]}
+            if command.startswith('spellup seals'):
+                st['seals'] = [int(x) for x in command.split()[2:5]]
+                return {'seals': list(st['seals'])}
+            if command == 'spellup log':
+                return {'log': [[200, 30, 1.18, 0, 0, 0, 9, 1.1, 30, 5000, 500]]}
+            return {'cleared': True}
+
+        async def request(opname, action, data, expect, timeout):
+            io.asked.append((opname, action, data))
+            sid = data['spell']
+            if action == 'pick':
+                st.setdefault('picks', set()).add((sid, data['tier']))
+                return {'data': {'ok': True, 'why': 'first'}}
+            if sid not in (200, 201):
+                return {'data': {'ok': False, 'why': 'spell'}}
+            rank = st['rank'] if sid == 200 else st['rank2']
+            if rank < 20:
+                return {'data': {'ok': False, 'why': 'rank'}}
+            if not {(sid, 1), (sid, 2)} <= st.get('picks', set()):
+                return {'data': {'ok': False, 'why': 'forms'}}
+            if sid in st['slots']:
+                return {'data': {'ok': False, 'why': 'already'}}
+            free = st['slots'].index(0) + 1 if 0 in st['slots'] else None
+            slot = data.get('slot') or free
+            if slot != free:
+                return {'data': {'ok': False, 'why': 'slot', 'slot': free}}
+            cost = costs[slot - 1]
+            if any(h < c for h, c in zip(st['seals'], cost)):
+                return {'data': {'ok': False, 'why': 'seals', 'slot': slot}}
+            st['seals'] = [h - c for h, c in zip(st['seals'], cost)]
+            st['slots'][slot - 1] = sid
+            return {'data': {'ok': True, 'slot': slot, 'why': 'ok'}}
+        io.helper, io.request = helper, request
+        st['shown'] = [200, 0, 0]   # the first look at this login: an awakening an earlier run left is there
+        r = run(TX.check_closed_spell_awaken(io, 'Tester Aaa', 'Mystic', 1000))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('slots [200] of an earlier run were kept', r.detail)
+        self.assertTrue(r.fallbacks)
+        awakes = [a[2] for a in io.asked if a[1] == 'awaken']
+        self.assertEqual(awakes[0], {'spell': 200})
+        self.assertIn({'spell': 200, 'slot': 11}, awakes)
+        self.assertIn({'spell': 200, 'slot': 1}, awakes)
+
+    def test_awaken_check_skips(self):
+        io = FakeIO(answers={'spellup state': self.state(on=False)})
+        self.assertEqual(run(TX.check_closed_spell_awaken(io, 'a', 'Mystic', 1000)).status, TX.SKIP)
+        io = FakeIO(answers={'spellup state': self.state(), 'spellup forms': {'forms': []}})
+        self.assertEqual(run(TX.check_closed_spell_awaken(io, 'a', 'Mystic', 1000)).status, TX.SKIP)
+
+
 if __name__ == '__main__':
     unittest.main()

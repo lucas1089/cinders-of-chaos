@@ -427,6 +427,26 @@ k.keep_alive(115.7)
 eq('!tester hunt' in said, True, 'back to the hunt after the rest')
 eq(said.count('!tester town'), 1, 'one flee a minute')
 
+# O686 phase 8: a check that casts a pair of spells itself pauses the rotation: no attack spell while it is paused, the heal and the potion still go
+r4 = T.Results(1)
+pz = T.TesterBot(3, dict(bot), A(), 1, r4, {'rotation': [hit], 'heal': heal})
+pz.conn, pz.cid = C(), 0x10000003
+pz.helper['info'] = {'potions': {'health': 266}}
+said4 = []
+pz.say = lambda text, kind=1: said4.append(text)
+pz.read(b'\x8c' + struct.pack('<I', pz.cid) + b'\x64')  # 100 %
+eq(pz.rotation_paused, False, 'the rotation runs by default')
+pz.rotation_paused = True
+pz.keep_alive(10.0)
+eq(said4, [], 'paused: no attack spell')
+pz.read(b'\x8c' + struct.pack('<I', pz.cid) + b'\x23')  # 35 %
+pz.keep_alive(10.1)
+eq(said4, ['exura x'], 'paused: the heal still goes at 35 %')
+pz.rotation_paused = False
+pz.read(b'\x8c' + struct.pack('<I', pz.cid) + b'\x64')
+pz.keep_alive(10.2)
+eq(said4[-1], 'exori x', 'resumed: the rotation casts again')
+
 # O695: the bot counts what it cast and what the server refused; a boss fight reads the tally through CheckIO.fight_tally
 k.tally.clear()
 k.ready.clear()

@@ -2547,6 +2547,62 @@ function H.parseGold(arg)
 	return {to = math.min(n, H.GOLD_CAP)}
 end
 
+-- ---------------------------------------------------------------- O686 phase 8 `!tester spellup` (TEST ONLY, the live pass of the spell upgrades)
+-- state | log [clear] | h | forms | combos | mob | clear | rank SPELL RANK | seals [W [R [P]]]: the probe of the spell ranks, Forms, combos and awakening of the bot, a TEST ONLY
+-- grant of a rank (0-20) or of Seals (0-999 each), the monster health factor H on two fresh copies of a monster nearby (switch off, then on),
+-- and the log of the factors the hooks of ChaosPassiveDealt applied to the bot's hits. Only a tester character gets it (the guard of every command).
+H.COMMANDS.spellup = true
+H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]]]"
+
+function H.parseSpellup(arg)
+	local s = tostring(arg or "")
+	if s:match("^%s*$") then
+		return {what = "state"}
+	end
+	local word, rest = s:match("^%s*(%a+)%s*(.-)%s*$")
+	word = word and word:lower()
+	if word == "state" or word == "h" or word == "clear" or word == "forms" or word == "combos" or word == "mob" then
+		if rest ~= "" then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = word}
+	elseif word == "log" then
+		if rest == "" then
+			return {what = "log"}
+		elseif rest:lower() == "clear" then
+			return {what = "log", clear = true}
+		end
+		return nil, H.SPELLUP_USAGE
+	elseif word == "rank" then
+		local a, b = rest:match("^(%d+)%s+(%d+)$")
+		a, b = tonumber(a), tonumber(b)
+		if not a or not b or a > 499 or b > 20 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "rank", spell = a, rank = b}
+	elseif word == "near" then
+		local a = rest:match("^(%d+)$")
+		a = tonumber(a)
+		if not a or a > 499 then
+			return nil, H.SPELLUP_USAGE
+		end
+		return {what = "near", spell = a}
+	elseif word == "seals" then
+		local nums = {}
+		for n in rest:gmatch("%S+") do
+			if not n:match("^%d+$") or #nums >= 3 then
+				return nil, H.SPELLUP_USAGE
+			end
+			nums[#nums + 1] = math.min(999, tonumber(n))
+		end
+		if #nums == 0 then
+			return {what = "seals"}
+		end
+		return {what = "seals", waystone = nums[1], rift = nums[2] or nums[1], pinnacle = nums[3] or nums[1]}
+	end
+	return nil, H.SPELLUP_USAGE
+end
+
 -- gold to add to the bank: -> give, reason (reason only when nothing is given for a rule)
 function H.goldPlan(bank, want, given)
 	bank, given = tonumber(bank) or 0, tonumber(given) or 0
