@@ -125,7 +125,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 36
+HELPER_VERSION = 37
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1979,6 +1979,417 @@ function commands.loadout(player, arg)
 	tell(player, "loadout", state)
 end
 
+-- ---------------------------------------------------------------- O693 the rest of the gear, food and the buff (TEST ONLY)
+-- "!tester gear extras [R] | growth | orbs | gems [WORDS;WORDS]", "!tester food", "!tester buffs [state | learn]": what a character of the level wears,
+-- carries and keeps up besides the four pieces of `gear set`. Every step is the game's own function on a piece or a spell, called by the helper (the grant
+-- is the fallback, a counted one on the bot's side); none runs for a character that is not a tester, outside the closed test mode or inside a fight.
+local GEAR_WORN = {
+	{"head", CONST_SLOT_HEAD}, {"armor", CONST_SLOT_ARMOR}, {"legs", CONST_SLOT_LEGS}, {"feet", CONST_SLOT_FEET}, {"weapon", CONST_SLOT_LEFT},
+	{"offhand", CONST_SLOT_RIGHT}, {"amulet", CONST_SLOT_NECKLACE}, {"ring", CONST_SLOT_RING}}
+local EXTRA_SLOTS = {boots = CONST_SLOT_FEET, amulet = CONST_SLOT_NECKLACE, ring = CONST_SLOT_RING, offhand = CONST_SLOT_RIGHT,
+	ranged = CONST_SLOT_LEFT, weapon1h = CONST_SLOT_LEFT}
+local EXTRA_ORDER = {"weapon1h", "ranged", "boots", "amulet", "ring", "offhand"}
+
+local function closedOn()
+	local K = ChaosTestersCore
+	local ok, on = pcall(function() return K and K.closedOn and K.closedOn() end)
+	return ok and on and true or false
+end
+
+-- true when the step may not run (the answer says why): the closed test mode is off, or the tester is inside a pinnacle fight
+local function gearRefused(player, kind, extra)
+	local why
+	if not closedOn() then
+		why = "closed test mode is off"
+	elseif ChaosPinnacle and ChaosPinnacle.isInside and ChaosPinnacle.isInside(player) then
+		why = "not inside a fight"
+	end
+	if why then
+		local out = {err = why}
+		for k, v in pairs(extra or {}) do
+			out[k] = v
+		end
+		tell(player, kind, out)
+		return true
+	end
+	return false
+end
+
+local function twoHandedItem(item)
+	local ok, v = pcall(function() return ItemType(item:getId()):getSlotPosition() end)
+	local bit = SLOTP_TWO_HAND or 2048
+	return ok and math.floor((tonumber(v) or 0) / bit) % 2 == 1
+end
+
+-- one piece of the plan into a slot (the body of the `gear set` loop): the piece at this level and rarity worn already -> "worn"; else a new piece
+-- through ChaosCrafting.createItem, the old one into the backpack (a two-handed weapon also empties the off hand); "ok", or the reason
+local function grantPiece(player, bag, slot, p, rarity, level, emptyOffHand)
+	local ok, why = pcall(function()
+		local old = player:getSlotItem(slot)
+		if old and old:getId() == p.id then
+			local il, rar = 0, rarity
+			pcall(function() il = ChaosCrafting.levelOf(old) or 0 end)
+			pcall(function() rar = ChaosCrafting.rarityOf(old) or rar end)
+			if il >= level and rar == rarity then
+				return "worn" -- the piece of the plan, at this level and rarity, is on already
+			end
+		end
+		local item
+		if ChaosCrafting and ChaosCrafting.createItem then
+			item = ChaosCrafting.createItem(p.id, rarity, level)
+		else
+			item = Game.createItem(p.id, 1)
+		end
+		if not item then
+			return "the piece could not be made"
+		end
+		if emptyOffHand then
+			local off = player:getSlotItem(CONST_SLOT_RIGHT)
+			if off and off:moveTo(bag) == false then
+				item:remove()
+				return "the off hand could not be emptied"
+			end
+		end
+		if old and old:moveTo(bag) == false then
+			item:remove()
+			return "the worn piece could not be put away"
+		end
+		local rv = player:addItemEx(item, false, slot)
+		if rv ~= RETURNVALUE_NOERROR then
+			item:remove()
+			if old and not player:getSlotItem(slot) then
+				local c = old:clone()
+				if player:addItemEx(c, false, slot) == RETURNVALUE_NOERROR then
+					old:remove()
+				else
+					c:remove()
+				end
+			end
+			return "refused (" .. tostring(rv) .. ")"
+		end
+		return "ok"
+	end)
+	return ok and why or tostring(why)
+end
+
+local function refreshMods(player)
+	if ChaosItemMods and ChaosItemMods.refresh then
+		pcall(ChaosItemMods.refresh, player, true)
+	end
+end
+
+-- gear extras [R]: boots, amulet, ring, the off hand (shield, spellbook or quiver), the bow / crossbow / wand / rod of a class that has none in `gear set`
+local function gearExtras(player, want, pieces, className, level)
+	local quivers = ChaosArchery and ChaosArchery.config and ChaosArchery.config.quivers
+	local plan = H.gearExtrasPlan(pieces, className, level, quivers)
+	local base = H.gearPlan(pieces, className, level)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "gear", {err = "no backpack", level = level})
+		return
+	end
+	local rarity = want.rarity or GEAR_RARITY
+	local capWas = player:getCapacity()
+	player:setCapacity(capWas + 10000000)
+	local given, refused, skipped, ids = {}, {}, {}, {}
+	local launcher = plan.ranged and (plan.ranged.kind == "bow" or plan.ranged.kind == "crossbow")
+	for _, name in ipairs(EXTRA_ORDER) do
+		local p = plan[name]
+		local skip
+		if p and name == "weapon1h" then
+			local left = player:getSlotItem(CONST_SLOT_LEFT)
+			if not (left and twoHandedItem(left)) then
+				skip = "the weapon in hand is one-handed"
+			end
+		elseif p and name == "ranged" and base.weapon then
+			skip = "the class has its weapon in gear set"
+		elseif p and name == "offhand" and p.kind ~= "quiver" then
+			local left = player:getSlotItem(CONST_SLOT_LEFT)
+			if left and twoHandedItem(left) then
+				skip = "a two-handed weapon is in hand"
+			end
+		end
+		if p and skip then
+			skipped[#skipped + 1] = {slot = name, why = skip}
+		elseif p then
+			local why = grantPiece(player, bag, EXTRA_SLOTS[name], p, rarity, level, false)
+			if why == "ok" or why == "worn" then
+				given[#given + 1] = name
+				ids[name] = p.id
+			else
+				refused[#refused + 1] = {slot = name, why = tostring(why):sub(1, 60)}
+			end
+		end
+	end
+	player:setCapacity(capWas)
+	refreshMods(player)
+	print(string.format("[tester-helper] gear extras for %s (level %d, %s): %s%s (TEST ONLY)", player:getName(), level, className, table.concat(given, ","),
+		#refused > 0 and (" refused " .. #refused) or ""))
+	tell(player, "gear", {what = "extras", level = level, class = className, given = given, refused = refused, skipped = skipped, ids = ids,
+		launcher = launcher and true or false, rarity = rarity})
+end
+
+-- gear growth: the weapon touch the game gives a weapon on every read and move (ChaosCrafting.upgradeItem -> growWeapon: the attack moves by the growth
+-- of the item type once, the mark "chaos_wgrow" says it did); a worn weapon the helper made was touched by the equip already, this makes sure
+local function gearGrowth(player, level)
+	local C = ChaosCrafting
+	if not (C and C.upgradeItem) then
+		tell(player, "gear", {err = "no crafting system"})
+		return
+	end
+	local rows = {}
+	for _, e in ipairs(GEAR_WORN) do
+		local item = player:getSlotItem(e[2])
+		if item and (e[1] == "weapon" or e[1] == "offhand") then
+			local attack = 0
+			if ITEM_ATTRIBUTE_ATTACK then
+				local okA, a = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_ATTACK) end)
+				attack = okA and tonumber(a) or 0
+			end
+			if attack > 0 then
+				local okT, changed = pcall(C.upgradeItem, item)
+				local mark
+				pcall(function() mark = item:getCustomAttribute(C.GROWN or "chaos_wgrow") end)
+				local after = attack
+				pcall(function() after = item:getAttribute(ITEM_ATTRIBUTE_ATTACK) end)
+				rows[#rows + 1] = {slot = e[1], id = item:getId(), attack = after, touched = okT and changed and true or false, grown = mark ~= nil}
+			end
+		end
+	end
+	refreshMods(player)
+	print(string.format("[tester-helper] gear growth for %s (level %d): %d weapon(s) (TEST ONLY)", player:getName(), level, #rows))
+	tell(player, "gear", {what = "growth", level = level, weapons = rows})
+end
+
+-- gear orbs: the bench results of a geared character, through the orbs' own apply (ChaosCrafting.apply): Whetstones to H.ORB_PLAN.quality, one Orb of
+-- Tempering and the Ember Orbs of H.ORB_PLAN on the worn pieces. A refusal (corrupted, nothing to raise) is counted, not an error.
+local function gearOrbs(player, level)
+	local C = ChaosCrafting
+	if not (C and C.apply and C.orbByKey and C.orbByKey.whetstone and C.orbByKey.tempering and C.orbByKey.ember) then
+		tell(player, "gear", {err = "no crafting orbs"})
+		return
+	end
+	local plan = H.ORB_PLAN
+	local applied = {whetstone = 0, tempering = 0, ember = 0}
+	local refused = {}
+	local pieces = {}
+	for _, e in ipairs(GEAR_WORN) do
+		local item = player:getSlotItem(e[2])
+		if item then
+			local row = {slot = e[1], id = item:getId()}
+			local function use(key)
+				local ok, res = C.apply(key, item)
+				if ok then
+					applied[key] = applied[key] + 1
+				elseif #refused < 6 then
+					refused[#refused + 1] = e[1] .. " " .. key .. ": " .. tostring(res):sub(1, 40)
+				end
+				return ok
+			end
+			local tries = 0
+			while C.qualityOf and (C.qualityOf(item) or 0) < plan.quality and tries < plan.quality + 5 do
+				tries = tries + 1
+				if not use("whetstone") then
+					break
+				end
+			end
+			for _ = 1, plan.tempering do
+				use("tempering")
+			end
+			local embers = plan.ember[e[1]] or 0
+			for _ = 1, embers do
+				use("ember")
+			end
+			row.quality = C.qualityOf and C.qualityOf(item) or nil
+			pieces[#pieces + 1] = row
+		end
+	end
+	refreshMods(player)
+	print(string.format("[tester-helper] gear orbs for %s (level %d): %d whetstones, %d tempering, %d ember (TEST ONLY)", player:getName(), level,
+		applied.whetstone, applied.tempering, applied.ember))
+	tell(player, "gear", {what = "orbs", level = level, applied = applied, pieces = pieces, refused = refused})
+end
+
+-- the attack spells of the class (the named words, else every attack spell its vocation casts at its level), as {element = ...} rows
+local function gemSpells(player, words)
+	local S = ChaosSupports
+	local out = {}
+	if not (S and S.catalog) then
+		return out
+	end
+	local voc, level = player:getVocation():getId(), player:getLevel()
+	local want = {}
+	for _, w in ipairs(words or {}) do
+		want[w] = true
+	end
+	local named = next(want) ~= nil
+	for _, info in pairs(S.catalog()) do
+		if named then
+			if info.words and want[tostring(info.words):lower()] then
+				out[#out + 1] = {element = info.element}
+			end
+		elseif (info.kind == "single" or info.kind == "area") and (tonumber(info.level) or 0) <= level
+			and (info.vocations and (info.vocations[voc] or next(info.vocations) == nil)) then
+			out[#out + 1] = {element = info.element}
+		end
+	end
+	return out
+end
+
+-- gear gems [WORDS;WORDS]: every worn piece gets its sockets (the most the item may have: H's note; the Orb of Sockets costs 25 coins) and the gems of
+-- H.gemPlan at the best tier a drop of the level can be, through the gems' own socket rule (ChaosGems.socket: the gem is a real item, the socket is
+-- filled by the game's function and the description is written again)
+local function gearGems(player, want, level)
+	local G = ChaosGems
+	if not (G and G.socket and G.setCount and G.maxSockets and G.config and G.levelWeights and G.groupOf and G.gemId) then
+		tell(player, "gear", {err = "no gems system"})
+		return
+	end
+	local tier = H.gemTier(G.levelWeights(level))
+	local element = H.gemElement(gemSpells(player, want.words))
+	local capWas = player:getCapacity()
+	player:setCapacity(capWas + 10000000)
+	local pieces, socketed, refused = {}, 0, {}
+	for _, e in ipairs(GEAR_WORN) do
+		local item = player:getSlotItem(e[2])
+		local max = item and G.maxSockets(item) or 0
+		if item and max > 0 then
+			local group = G.groupOf(item)
+			if G.count(item) < max then
+				G.setCount(item, max)
+				pcall(G.writeDescription, item)
+			end
+			local plan = H.gemPlan(G.config.types, group, element, max)
+			local names = {}
+			for i = 1, max do
+				if G.gemAt(item, i) == 0 and plan[i] then
+					local gemId = G.gemId(plan[i], tier)
+					local gem = player:addItem(gemId, 1)
+					local ok, why = false, "no room"
+					if gem then
+						ok, why = G.socket(player, gem, item)
+						if not ok then
+							player:removeItem(gemId, 1)
+						end
+					end
+					if ok then
+						socketed = socketed + 1
+					elseif #refused < 6 then
+						refused[#refused + 1] = e[1] .. ": " .. tostring(why):sub(1, 50)
+					end
+				end
+				local id = G.gemAt(item, i)
+				if id > 0 then
+					names[#names + 1] = G.gemName(id)
+				end
+			end
+			pieces[#pieces + 1] = {slot = e[1], id = item:getId(), group = group, sockets = max, gems = names}
+		end
+	end
+	player:setCapacity(capWas)
+	refreshMods(player)
+	print(string.format("[tester-helper] gear gems for %s (level %d, %s tier %d): %d gems (TEST ONLY)", player:getName(), level, tostring(element), tier, socketed))
+	tell(player, "gear", {what = "gems", level = level, element = element, tier = tier, socketed = socketed, pieces = pieces, refused = refused})
+end
+
+-- the dispatch of the O693 steps of `!tester gear`; true when `want` was one of them
+local function gearMore(player, want, pieces, className, level)
+	if want.what ~= "extras" and want.what ~= "growth" and want.what ~= "orbs" and want.what ~= "gems" then
+		return false
+	end
+	if gearRefused(player, "gear", {level = level, what = want.what}) then
+		return true
+	end
+	local ok, err = pcall(function()
+		if want.what == "extras" then
+			gearExtras(player, want, pieces, className, level)
+		elseif want.what == "growth" then
+			gearGrowth(player, level)
+		elseif want.what == "orbs" then
+			gearOrbs(player, level)
+		else
+			gearGems(player, want, level)
+		end
+	end)
+	if not ok then
+		tell(player, "gear", {err = "gear " .. want.what .. " failed: " .. tostring(err):sub(1, 80), what = want.what})
+	end
+	return true
+end
+
+-- "!tester food": the Everfull Ration of the store (the store's own service puts it in the backpack: ChaosStoreFood.give) and its bites until "You are
+-- full." (ChaosStoreFoodCore.bite: the ration's own rule; player:feed gives the regeneration). The Action of the ration cannot be called from Lua, so the
+-- helper makes the same bites. Ownership, one ration a character, the cap of 1,200 s are the rule's.
+function commands.food(player)
+	if gearRefused(player, "food") then
+		return
+	end
+	local F, K, C = ChaosStoreFood, ChaosStoreFoodCore, ChaosStoreFoodConfig
+	if not (F and K and C and F.installed and F.installed() and F.owned and F.give and player.feed) then
+		tell(player, "food", {err = "no ration system"})
+		return
+	end
+	local gave
+	if not F.owned(player) then
+		local capWas = player:getCapacity()
+		player:setCapacity(capWas + 10000)
+		gave = F.give(player)
+		player:setCapacity(capWas)
+		if not gave then
+			tell(player, "food", {err = "the ration could not be given"})
+			return
+		end
+	end
+	local bites = 0
+	while bites < 30 do
+		local cond = player:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
+		local r = K.bite(C, {ticksMs = cond and cond:getTicks() or 0})
+		if not r.ok then
+			break
+		end
+		player:feed(r.seconds)
+		bites = bites + 1
+	end
+	local cond = player:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT)
+	local seconds = cond and math.floor(cond:getTicks() / 1000) or 0
+	print(string.format("[tester-helper] food for %s: %d bites, %d s of regeneration (TEST ONLY)", player:getName(), bites, seconds))
+	tell(player, "food", {gave = gave, bites = bites, seconds = seconds, item = C.item and C.item.id or nil})
+end
+
+-- "!tester buffs [state | learn]": the level 800 buff of the class's line (quest 2 of the line spell quests: Ironbound Oath, Unblinking Gaze, Veil of
+-- Whispers, Shroud of Knives, Dirge of the Legion, Lotus Stance, Mantle of Dawn; 20 s, a cooldown of 90 s). `learn` teaches the spell (the quest is long
+-- and the bots do not play it: a TEST ONLY grant); the bot casts it by its words before the fight and again when the cooldown is over.
+function commands.buffs(player, arg)
+	local Q = ChaosSpellQuestCore
+	local sub = tostring(arg or ""):lower():match("^%s*(%a*)%s*$")
+	if sub == nil or (sub ~= "" and sub ~= "state" and sub ~= "learn") then
+		tell(player, "buffs", {err = "usage: buffs [state | learn]"})
+		return
+	end
+	if sub == "learn" and gearRefused(player, "buffs") then
+		return
+	end
+	if not (Q and Q.lineOf) then
+		tell(player, "buffs", {err = "no spell quest system"})
+		return
+	end
+	local idx, line = Q.lineOf(player:getVocation():getId())
+	local name = line and line.spells and line.spells[2]
+	if not (idx and name and H.isBuffSpell(name)) then
+		tell(player, "buffs", {err = "no buff spell for the class", code = "noline"})
+		return
+	end
+	local learned = player:hasLearnedSpell(name) and true or false
+	if sub == "learn" then
+		if not learned then
+			player:learnSpell(name)
+			learned = player:hasLearnedSpell(name) and true or false
+			print(string.format("[tester-helper] buffs for %s: learned %s (TEST ONLY)", player:getName(), name))
+		end
+	end
+	tell(player, "buffs", {spell = name, learned = learned, level = player:getLevel(), line = line.key})
+end
+
 function commands.gear(player, arg)
 	local want, usage = H.parseGear(arg)
 	if not want then
@@ -2003,6 +2414,9 @@ function commands.gear(player, arg)
 		tell(player, "gear", H.gearAnswer(plan, gearWorn(player), {err = "not inside a fight", level = level}))
 		return
 	end
+	if gearMore(player, want, pieces, className, level) then
+		return
+	end
 	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
 	if not bag then
 		tell(player, "gear", H.gearAnswer(plan, gearWorn(player), {err = "no backpack", level = level}))
@@ -2015,52 +2429,8 @@ function commands.gear(player, arg)
 		local p = plan[name]
 		local slot = GEAR_SLOTS[name]
 		if p then
-			local ok, why = pcall(function()
-				local old = player:getSlotItem(slot)
-				if old and old:getId() == p.id then
-					local il, rar = 0, want.rarity or GEAR_RARITY
-					pcall(function() il = ChaosCrafting.levelOf(old) or 0 end)
-					pcall(function() rar = ChaosCrafting.rarityOf(old) or rar end)
-					if il >= level and rar == (want.rarity or GEAR_RARITY) then
-						return "worn" -- the piece of the plan, at this level and rarity, is on already
-					end
-				end
-				local item
-				if ChaosCrafting and ChaosCrafting.createItem then
-					item = ChaosCrafting.createItem(p.id, want.rarity or GEAR_RARITY, level)
-				else
-					item = Game.createItem(p.id, 1)
-				end
-				if not item then
-					return "the piece could not be made"
-				end
-				if name == "weapon" and p.fit == "2" then
-					local off = player:getSlotItem(CONST_SLOT_RIGHT)
-					if off and off:moveTo(bag) == false then
-						item:remove()
-						return "the off hand could not be emptied"
-					end
-				end
-				if old and old:moveTo(bag) == false then
-					item:remove()
-					return "the worn piece could not be put away"
-				end
-				local rv = player:addItemEx(item, false, slot)
-				if rv ~= RETURNVALUE_NOERROR then
-					item:remove()
-					if old and not player:getSlotItem(slot) then
-						local c = old:clone()
-						if player:addItemEx(c, false, slot) == RETURNVALUE_NOERROR then
-							old:remove()
-						else
-							c:remove()
-						end
-					end
-					return "refused (" .. tostring(rv) .. ")"
-				end
-				return "ok"
-			end)
-			if ok and (why == "ok" or why == "worn") then
+			local why = grantPiece(player, bag, slot, p, want.rarity or GEAR_RARITY, level, name == "weapon" and p.fit == "2")
+			if why == "ok" or why == "worn" then
 				given[#given + 1] = name
 			else
 				refused[#refused + 1] = {slot = name, why = tostring(why):sub(1, 60)}

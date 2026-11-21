@@ -3523,6 +3523,416 @@ do
 	ChaosPotionsConfig = realPC
 end
 
+-- O693: the rest of the gear (`gear extras | growth | orbs | gems`), `food` and `buffs`: the plans on the real lists of the sets, the gems and the quivers, and
+-- every step on a mocked player (the right slots, ids that exist in the configs, sockets filled, refused outside the closed mode and for a non-tester)
+do
+	check(HELPER_VERSION >= 37, "the helper is version 37 or later (O693: gear extras, growth, orbs, gems, food, buffs)")
+	check(H.COMMANDS.food and H.COMMANDS.buffs and H.parseCommand("food #3") == "food" and H.parseCommand("buffs learn #4") == "buffs", "food and buffs are registered commands")
+	eq(H.parseGear("extras").what, "extras", "gear extras")
+	eq(H.parseGear("extras 10").rarity, 10, "gear extras 10: Divine")
+	eq(H.parseGear("growth").what, "growth", "gear growth")
+	eq(H.parseGear("orbs").what, "orbs", "gear orbs")
+	local gw = H.parseGear("gems")
+	check(gw.what == "gems" and #gw.words == 0, "gear gems: no words, every attack spell of the class")
+	gw = H.parseGear("gems Saen Spek; Reth Vas Spek ;")
+	check(gw.what == "gems" and #gw.words == 2 and gw.words[1] == "saen spek" and gw.words[2] == "reth vas spek", "gear gems: the words, lower case, apart by ;")
+	check(H.parseGear("gems saen;ra1") == nil and H.parseGear("growth 10") == nil and H.parseGear("orbs 3") == nil and H.parseGear("extras 7") == nil
+		and H.parseGear("extras now") == nil, "gear: a number or a word where none belongs is the usage")
+	eq(H.gearWeaponPower({wandMin = 100, wandMax = 200}), 150, "gear power: a wand or rod is the middle of its range")
+	eq(H.gearWeaponPower({attack = 245, hitChance = 98}), 245, "gear power: a bow is its attack")
+
+	-- the plans on the real lists
+	local sets = dofile("data/lib/chaos_gear_sets_items.lua")
+	local pieces = sets.pieces
+	local byId = {}
+	for _, p in ipairs(pieces) do byId[p.id] = p end
+	local quivers = dofile("data/lib/chaos_archery_config.lua").quivers
+	local function checkPlan(plan, cls, level)
+		for slot, p in pairs(plan) do
+			check(p.id and (byId[p.id] ~= nil or p.kind == "quiver"), cls .. " " .. level .. ": " .. slot .. " is a piece of the lists (id " .. tostring(p.id) .. ")")
+			check(p.level <= level, cls .. " " .. level .. ": " .. slot .. " is a piece the character may wear")
+		end
+	end
+	local jug = H.gearExtrasPlan(pieces, "Juggernaut", 1900, quivers)
+	checkPlan(jug, "Juggernaut", 1900)
+	check(jug.boots and jug.boots.kind == "boots" and jug.amulet and jug.amulet.kind == "amulet" and jug.ring and jug.ring.kind == "ring", "extras plan: boots, amulet and ring for every class")
+	check(jug.offhand and jug.offhand.kind == "shield", "extras plan: the Juggernaut's off hand is a shield")
+	check(jug.weapon1h and jug.weapon1h.fit ~= "2" and H.GEAR_WEAPON[jug.weapon1h.kind], "extras plan: and a one-handed weapon next to it")
+	check(jug.ranged == nil, "extras plan: no bow or wand for a Juggernaut")
+	local sam = H.gearExtrasPlan(pieces, "Samurai", 1900, quivers)
+	checkPlan(sam, "Samurai", 1900)
+	check(sam.boots and sam.amulet and sam.ring and sam.offhand == nil and sam.weapon1h == nil, "extras plan: a Samurai has no shield: the jewellery and boots only")
+	local dead = H.gearExtrasPlan(pieces, "Deadeye", 1900, quivers)
+	checkPlan(dead, "Deadeye", 1900)
+	check(dead.ranged and (dead.ranged.kind == "bow" or dead.ranged.kind == "crossbow"), "extras plan: the Deadeye's weapon is a bow or crossbow")
+	check(dead.offhand and dead.offhand.kind == "quiver" and quivers[dead.offhand.id] ~= nil and quivers[dead.offhand.id][1] <= 1900, "extras plan: the Deadeye's off hand is a quiver of the archery config")
+	local top = 0
+	for _, q in pairs(quivers) do if q[1] <= 1900 and q[1] > top then top = q[1] end end
+	eq(dead.offhand.level, top, "extras plan: the quiver of the highest level the character may wear")
+	local ill = H.gearExtrasPlan(pieces, "Illusionist", 1900, quivers)
+	checkPlan(ill, "Illusionist", 1900)
+	check(ill.ranged and ill.ranged.kind == "rod" and ill.offhand and ill.offhand.kind == "spellbook", "extras plan: the Illusionist has a rod and a spellbook")
+	local ele = H.gearExtrasPlan(pieces, "Elementalist", 2500, quivers)
+	checkPlan(ele, "Elementalist", 2500)
+	check(ele.ranged and ele.ranged.kind == "wand" and ele.offhand and ele.offhand.kind == "spellbook" and ele.ranged.level <= 2050, "extras plan: the Elementalist has a wand and a spellbook, none above the top set")
+	check(next(H.gearExtrasPlan(pieces, "Juggernaut", 0, quivers)) == nil and next(H.gearExtrasPlan(nil, "Juggernaut", 1900)) == nil, "extras plan: no piece of the level, no list: no plan")
+
+	-- the gems, on the real config
+	local gcfg = dofile("data/lib/chaos_gems_config.lua")
+	local function effects(group, plan)
+		local out = {}
+		for i, t in ipairs(plan) do out[i] = gcfg.types[t][group].effect end
+		return table.concat(out, ",")
+	end
+	eq(H.gemTier(gcfg.drop.levelWeights[#gcfg.drop.levelWeights][2]), 5, "gem tier: a high level makes Perfect gems")
+	eq(H.gemTier({60, 32, 8, 0, 0}), 3, "gem tier: the last tier with a weight")
+	eq(H.gemTier(nil), 1, "gem tier: no row, tier 1")
+	eq(H.gemElement({{element = "fire"}, {element = "fire"}, {element = "ice"}, {}}), "fire", "gem element: the most common element of the spells")
+	eq(H.gemElement({{element = "ice"}, {element = "fire"}}), "fire", "gem element: a tie goes by the fixed order")
+	eq(H.gemElement({}), nil, "gem element: no spell, none")
+	eq(effects("weapon", H.gemPlan(gcfg.types, "weapon", "fire", 2)), "dmg_fire,dmg_fire", "gem plan: a fire class's weapon takes fire damage gems")
+	eq(effects("weapon", H.gemPlan(gcfg.types, "weapon", "holy", 3)), "dmg_holy,dmg_holy,dmg_holy", "gem plan: a holy class, a two-handed weapon")
+	eq(effects("weapon", H.gemPlan(gcfg.types, "weapon", "death", 2)), "crit,attackspeed", "gem plan: death has no weapon gem: crit, then attack speed")
+	eq(effects("weapon", H.gemPlan(gcfg.types, "weapon", nil, 3)), "crit,attackspeed,attackspeed", "gem plan: no element: crit, then attack speed")
+	eq(effects("armour", H.gemPlan(gcfg.types, "armour", "fire", 3)), "maxhealth,maxhealth,maxhealth", "gem plan: armour takes max health")
+	eq(effects("jewel", H.gemPlan(gcfg.types, "jewel", "death", 1)), "dmg_death", "gem plan: death damage on a jewel")
+	eq(effects("jewel", H.gemPlan(gcfg.types, "jewel", "energy", 1)), "dmg_energy", "gem plan: energy damage on a jewel")
+	eq(effects("jewel", H.gemPlan(gcfg.types, "jewel", "physical", 1)), "dmg_physical", "gem plan: physical damage on a jewel")
+	eq(effects("jewel", H.gemPlan(gcfg.types, "jewel", "fire", 1)), "res_ice", "gem plan: a fire class's jewel takes ice resistance")
+	eq(#H.gemPlan(gcfg.types, "weapon", "fire", 0), 0, "gem plan: no socket, no gem")
+	-- the buff spells are the second spell of each line of the line spell quests
+	local qc = dofile("data/scripts/chaos/spellquest_config.lua")
+	eq(#qc.lines, #H.BUFF_SPELLS, "buff spells: one for each line")
+	for i, line in ipairs(qc.lines) do
+		check(H.isBuffSpell(line.spells[2]), "buff spells: " .. line.key .. " quest 2 is " .. tostring(line.spells[2]))
+	end
+	check(not H.isBuffSpell("Keepfall") and not H.isBuffSpell(nil), "buff spells: a quest 1 or 3 spell is no buff")
+
+	-- the engine side on a mocked player
+	local savedC, savedG, savedSets, savedArch, savedK, savedIT, savedPN = ChaosCrafting, ChaosGems, ChaosGearSets, ChaosArchery, ChaosTestersCore, ItemType, ChaosPinnacle
+	local savedSupports, savedFood, savedFoodCore, savedFoodCfg, savedQ, savedItemMods = ChaosSupports, ChaosStoreFood, ChaosStoreFoodCore, ChaosStoreFoodConfig, ChaosSpellQuestCore, ChaosItemMods
+	local savedSlotp, savedAttr, savedRegen, savedCid, savedRC = SLOTP_TWO_HAND, ITEM_ATTRIBUTE_ATTACK, CONDITION_REGENERATION, CONDITIONID_DEFAULT, RETURNVALUE_NOERROR
+	SLOTP_TWO_HAND, ITEM_ATTRIBUTE_ATTACK, CONDITION_REGENERATION, CONDITIONID_DEFAULT, RETURNVALUE_NOERROR = 2048, 17, 5, 0, 0
+	local twoHand = {}
+	for _, p in ipairs(pieces) do
+		if p.fit == "2" and H.GEAR_WEAPON[p.kind] then twoHand[p.id] = true end
+	end
+	ItemType = function(id)
+		return {getClientId = function() return id + 10000 end, getName = function() return "item " .. id end, isStackable = function() return false end,
+			getSlotPosition = function() return twoHand[id] and 2048 or 0 end}
+	end
+	local MAXSOCK = {helmet = 2, armor = 3, legs = 2, boots = 1, shield = 2, spellbook = 2, quiver = 1, amulet = 1, ring = 1, sword = 2, axe = 2, club = 2,
+		bow = 2, crossbow = 2, wand = 2, rod = 2}
+	local GROUP = {amulet = "jewel", ring = "jewel", sword = "weapon", axe = "weapon", club = "weapon", bow = "weapon", crossbow = "weapon", wand = "weapon", rod = "weapon"}
+	local made, removedGems = {}, 0
+	local function newItem(id)
+		local row = byId[id]
+		local kind = row and row.kind or (quivers[id] and "quiver") or "plain"
+		local it = {id = id, kind = kind, il = 0, rarity = 0, quality = 0, attack = (row and row.stats and row.stats.attack) or 0, marks = {}, gems = {}, sockets = 0,
+			fit = row and row.fit}
+		function it:getId() return self.id end
+		function it:remove() self.gone = true end
+		function it:clone() return newItem(self.id) end
+		function it:moveTo() self.moved = true; if self.owner and self.owner.slots[self.slot] == self then self.owner.slots[self.slot] = nil end return true end
+		function it:getAttribute() return self.attack end
+		function it:getCustomAttribute(k) return self.marks[k] end
+		return it
+	end
+	local touches = 0
+	ChaosCrafting = {GROWN = "chaos_wgrow",
+		levelOf = function(it) return it.il end, rarityOf = function(it) return it.rarity end,
+		createItem = function(id, rarity, level)
+			local it = newItem(id)
+			it.il, it.rarity = level, rarity
+			if MAXSOCK[it.kind] then it.maxSockets = MAXSOCK[it.kind] + ((it.kind == "sword" or it.kind == "axe" or it.kind == "club") and it.fit == "2" and 1 or 0) end
+			it.group = GROUP[it.kind] or "armour"
+			made[#made + 1] = it
+			return it
+		end,
+		upgradeItem = function(it) touches = touches + 1 if it.marks.chaos_wgrow then return false end it.marks.chaos_wgrow = 1 it.attack = it.attack + 5 return true end,
+		qualityOf = function(it) return it.quality end,
+		orbByKey = {whetstone = {}, tempering = {}, ember = {}},
+		apply = function(key, it)
+			if it.corrupted then return false, "corrupted" end
+			if key == "whetstone" then
+				if it.quality >= 30 then return false, "full" end
+				it.quality = it.quality + 1
+			elseif key == "tempering" then it.tempered = (it.tempered or 0) + 1
+			else it.embers = (it.embers or 0) + 1 end
+			return true, {item = it}
+		end}
+	ChaosGearSets = {items = {pieces = pieces}}
+	ChaosArchery = {config = {quivers = quivers}}
+	local G = {config = gcfg}
+	G.levelWeights = function(level)
+		for _, row in ipairs(gcfg.drop.levelWeights) do if level <= row[1] then return row[2] end end
+		return gcfg.drop.levelWeights[#gcfg.drop.levelWeights][2]
+	end
+	G.maxSockets = function(it) return it.maxSockets or 0 end
+	G.groupOf = function(it) return it.group end
+	G.count = function(it) return it.sockets end
+	G.setCount = function(it, n) it.sockets = n return {} end
+	G.gemAt = function(it, i) return it.gems[i] or 0 end
+	G.gemId = function(t, tier) return gcfg.firstId + (t - 1) * 5 + tier - 1 end
+	G.gemName = function(id) return "gem" .. id end
+	G.writeDescription = function() end
+	G.socket = function(_, gem, it)
+		for i = 1, it.sockets do
+			if not it.gems[i] then it.gems[i] = gem.id; gem.gone = true return true, "ok" end
+		end
+		return false, "full"
+	end
+	ChaosGems = G
+	local closed = true
+	ChaosTestersCore = {closedOn = function() return closed end}
+	ChaosPinnacle = nil
+	local refreshed = 0
+	ChaosItemMods = {refresh = function() refreshed = refreshed + 1 end}
+	ChaosSupports = {catalog = function()
+		return {
+			[1] = {words = "exura a", element = "fire", kind = "single", level = 100, vocations = {[8] = true}},
+			[2] = {words = "exura b", element = "fire", kind = "area", level = 200, vocations = {}},
+			[3] = {words = "exura c", element = "ice", kind = "area", level = 300, vocations = {[8] = true}},
+			[4] = {words = "exura d", element = "death", kind = "single", level = 400, vocations = {[2] = true}},
+			[5] = {words = "exura e", element = "ice", kind = "heal", level = 100, vocations = {}},
+			[6] = {words = "exura f", element = "ice", kind = "single", level = 9000, vocations = {}},
+		}
+	end}
+
+	local function slotsOf(p) return p.slots end
+	local gp = creature(268435800, "Tester Jug", {store = {[ST] = 1}})
+	gp.getLevel = function() return 1900 end
+	gp.getVocation = function() return {getId = function() return 8 end, getName = function() return "Juggernaut" end} end
+	gp.cap = 400
+	function gp:getCapacity() return self.cap end
+	function gp:setCapacity(v) self.cap = v end
+	local greatsword
+	for _, p in ipairs(pieces) do
+		if p.fit == "2" and p.kind == "sword" and p.level <= 1900 then greatsword = p.id end
+	end
+	gp.slots = {[CONST_SLOT_BACKPACK] = {isContainer = function() return true end}, [CONST_SLOT_LEFT] = newItem(greatsword)}
+	for slot, it in pairs(gp.slots) do it.owner, it.slot = gp, slot end
+	function gp:addItemEx(it, _, slot)
+		if self.slots[slot] then return 1 end
+		self.slots[slot] = it
+		it.owner, it.slot = self, slot
+		return RETURNVALUE_NOERROR
+	end
+	function gp:addItem(id) return newItem(id) end
+	function gp:removeItem() removedGems = removedGems + 1 end
+	local last = function(p) return p.log.msgs[#p.log.msgs] end
+	local say = function(p, text) talks["!tester"].onSay(p, "!tester", text) end
+	local origP = print
+	print = function() end
+
+	-- refused: the closed mode off, a pinnacle fight, a character that is no tester
+	closed = false
+	for i, word in ipairs({"gear extras", "gear growth", "gear orbs", "gear gems"}) do
+		say(gp, word .. " #" .. (500 + i))
+		check(last(gp):find("closed test mode is off", 1, true) and last(gp):find('"seq":' .. (500 + i), 1, true), word .. ": refused with the closed test mode off")
+	end
+	say(gp, "food #510")
+	check(last(gp):find("closed test mode is off", 1, true), "food: refused with the closed test mode off")
+	say(gp, "buffs learn #511")
+	check(last(gp):find("closed test mode is off", 1, true), "buffs learn: refused with the closed test mode off")
+	eq(#made, 0, "nothing was made while refused")
+	closed = true
+	ChaosPinnacle = {isInside = function() return true end}
+	say(gp, "gear gems #512")
+	check(last(gp):find("not inside a fight", 1, true), "gear gems: never inside a pinnacle fight")
+	ChaosPinnacle = nil
+	local stranger = creature(268435801, "Ana Real")
+	stranger.slots = {}
+	local before = #stranger.log.msgs
+	check(talks["!tester"].onSay(stranger, "!tester", "gear extras #513") == true and #stranger.log.msgs == before and #made == 0, "gear extras: a player is left alone, nothing is made")
+	local fakeT = creature(268435802, "Tester Fak")
+	check(talks["!tester"].onSay(fakeT, "!tester", "gear gems #514") == true and #fakeT.log.msgs == 0, "gear gems: a tester's name without the storage is left alone")
+
+	-- extras: a Juggernaut after `gear set` (a two-handed sword is the plan's weapon): the one-handed weapon, boots, amulet, ring, the shield
+	function gp:getItemCount() return 1 end
+	say(gp, "gear set 10 #519")
+	check(gp.slots[CONST_SLOT_ARMOR] ~= nil and gp.slots[CONST_SLOT_HEAD] ~= nil and gp.slots[CONST_SLOT_LEGS] ~= nil, "gear set first: the armour pieces are worn: " .. last(gp):sub(1, 160))
+	do -- the two-handed sword back in hand, as a character that wore it before the shield
+		local sword = newItem(greatsword)
+		sword.owner, sword.slot, sword.il, sword.rarity = gp, CONST_SLOT_LEFT, 1900, 10
+		gp.slots[CONST_SLOT_LEFT] = sword
+	end
+	say(gp, "gear extras 10 #520")
+	local ans = last(gp)
+	check(ans:find('"what":"extras"', 1, true) and ans:find('"seq":520', 1, true), "gear extras: answers as extras")
+	check(gp.slots[CONST_SLOT_FEET] and byId[gp.slots[CONST_SLOT_FEET].id].kind == "boots", "gear extras: boots are worn")
+	check(gp.slots[CONST_SLOT_NECKLACE] and byId[gp.slots[CONST_SLOT_NECKLACE].id].kind == "amulet", "gear extras: the amulet is worn")
+	check(gp.slots[CONST_SLOT_RING] and byId[gp.slots[CONST_SLOT_RING].id].kind == "ring", "gear extras: the ring is worn")
+	check(gp.slots[CONST_SLOT_RIGHT] and byId[gp.slots[CONST_SLOT_RIGHT].id].kind == "shield", "gear extras: the shield is in the off hand")
+	check(gp.slots[CONST_SLOT_LEFT] and byId[gp.slots[CONST_SLOT_LEFT].id].fit ~= "2", "gear extras: a one-handed weapon replaced the two-handed one")
+	local allOk = #made >= 5
+	for _, it in ipairs(made) do
+		allOk = allOk and it.rarity == 10 and it.il == 1900 and byId[it.id] ~= nil
+	end
+	check(allOk, "gear extras: every piece is a piece of the lists, Divine, item level = the level")
+	check(ans:find('"given":["weapon1h","boots","amulet","ring","offhand"]', 1, true), "gear extras: the answer names the slots in order: " .. ans:sub(1, 300))
+	eq(gp.cap, 400, "gear extras: the capacity is back")
+	check(refreshed >= 1, "gear extras: the item modifiers are refreshed")
+	local nm = #made
+	say(gp, "gear extras 10 #521")
+	eq(#made, nm, "gear extras again: the pieces are worn at the level and rarity, nothing is made")
+	check(last(gp):find('"given":["boots","amulet","ring","offhand"]', 1, true) and last(gp):find("skipped", 1, true), "gear extras again: the rest is worn, the one-handed weapon step is skipped")
+
+	-- an archer: a bow and the quiver; a class with a two-handed weapon in hand keeps no shield
+	local ap = creature(268435803, "Tester Arc", {store = {[ST] = 1}})
+	ap.getLevel = function() return 1900 end
+	ap.getVocation = function() return {getId = function() return 9 end, getName = function() return "Deadeye" end} end
+	ap.cap = 400
+	function ap:getCapacity() return self.cap end
+	function ap:setCapacity(v) self.cap = v end
+	ap.slots = {[CONST_SLOT_BACKPACK] = {isContainer = function() return true end}}
+	for slot, it in pairs(ap.slots) do it.owner, it.slot = ap, slot end
+	ap.addItemEx, ap.addItem, ap.removeItem = gp.addItemEx, gp.addItem, gp.removeItem
+	say(ap, "gear extras 10 #530")
+	check(ap.slots[CONST_SLOT_LEFT] and (byId[ap.slots[CONST_SLOT_LEFT].id].kind == "bow" or byId[ap.slots[CONST_SLOT_LEFT].id].kind == "crossbow"), "gear extras: the Deadeye wears a bow or crossbow")
+	check(ap.slots[CONST_SLOT_RIGHT] and quivers[ap.slots[CONST_SLOT_RIGHT].id] ~= nil, "gear extras: and a quiver of the archery config in the off hand")
+	check(ap.slots[CONST_SLOT_FEET] and ap.slots[CONST_SLOT_NECKLACE] and ap.slots[CONST_SLOT_RING], "gear extras: and boots, amulet, ring")
+	local sp = creature(268435804, "Tester Sam", {store = {[ST] = 1}})
+	sp.getLevel = function() return 1900 end
+	sp.getVocation = function() return {getId = function() return 10 end, getName = function() return "Samurai" end} end
+	sp.cap = 400
+	function sp:getCapacity() return self.cap end
+	function sp:setCapacity(v) self.cap = v end
+	sp.slots = {[CONST_SLOT_BACKPACK] = {isContainer = function() return true end}, [CONST_SLOT_LEFT] = newItem(greatsword)}
+	for slot, it in pairs(sp.slots) do it.owner, it.slot = sp, slot end
+	sp.addItemEx, sp.addItem, sp.removeItem = gp.addItemEx, gp.addItem, gp.removeItem
+	say(sp, "gear extras 10 #531")
+	check(sp.slots[CONST_SLOT_RIGHT] == nil and sp.slots[CONST_SLOT_FEET] and sp.slots[CONST_SLOT_NECKLACE] and sp.slots[CONST_SLOT_RING], "gear extras: a Samurai has jewellery and boots, no off hand")
+
+	-- growth: the touch of the game, once (the mark)
+	say(gp, "gear growth #540")
+	ans = last(gp)
+	check(ans:find('"what":"growth"', 1, true) and ans:find('"grown":true', 1, true) and ans:find('"touched":true', 1, true), "gear growth: the weapon is touched and carries the mark: " .. ans:sub(1, 200))
+	local t1 = touches
+	say(gp, "gear growth #541")
+	check(last(gp):find('"touched":false', 1, true) and last(gp):find('"grown":true', 1, true) and touches > t1, "gear growth again: the mark holds, the attack does not move twice")
+
+	-- orbs: whetstones to the quality of the plan, one tempering, embers on the weapon and the armour
+	for _, e in pairs(gp.slots) do if e.quality then e.quality = 0 end end
+	say(gp, "gear orbs #550")
+	ans = last(gp)
+	local weaponIt, armorIt = gp.slots[CONST_SLOT_LEFT], gp.slots[CONST_SLOT_ARMOR]
+	eq(weaponIt.quality, H.ORB_PLAN.quality, "gear orbs: the weapon is at the quality of the plan")
+	check(gp.slots[CONST_SLOT_FEET].quality == H.ORB_PLAN.quality and gp.slots[CONST_SLOT_RING].quality == H.ORB_PLAN.quality, "gear orbs: so are the boots and the ring")
+	eq(weaponIt.tempered, 1, "gear orbs: one Orb of Tempering")
+	eq(weaponIt.embers, 1, "gear orbs: one Ember Orb on the weapon")
+	check(gp.slots[CONST_SLOT_FEET].embers == nil, "gear orbs: no Ember Orb on the boots")
+	check(ans:find('"what":"orbs"', 1, true) and ans:find('"whetstone":', 1, true), "gear orbs: the answer counts the orbs")
+	local wq = weaponIt.quality
+	say(gp, "gear orbs #551")
+	eq(weaponIt.quality, wq + 0, "gear orbs again: whetstones stop at the quality")
+	weaponIt.quality, weaponIt.corrupted = 0, true
+	say(gp, "gear orbs #552")
+	check(weaponIt.quality == 0 and last(gp):find("corrupted", 1, true), "gear orbs: a corrupted piece is refused by the orbs' own rule and named")
+	weaponIt.corrupted = nil
+	local plain = ChaosCrafting.orbByKey
+	ChaosCrafting.orbByKey = {}
+	say(gp, "gear orbs #553")
+	check(last(gp):find("no crafting orbs", 1, true), "gear orbs: an install without the orbs: the reason")
+	ChaosCrafting.orbByKey = plain
+
+	-- gems: the element of the class's spells (Juggernaut: fire x2, ice x1 -> fire), sockets to the item's most, Perfect gems at level 1900
+	say(gp, "gear gems #560")
+	ans = last(gp)
+	check(ans:find('"what":"gems"', 1, true) and ans:find('"element":"fire"', 1, true) and ans:find('"tier":5', 1, true), "gear gems: fire, tier 5: " .. ans:sub(1, 160))
+	local function gemEffectsOf(it)
+		local out = {}
+		for i = 1, it.sockets do
+			local g = it.gems[i]
+			check(g ~= nil and g >= gcfg.firstId and g <= gcfg.firstId + 34, "gear gems: socket " .. i .. " of " .. it.kind .. " holds a gem id of the config")
+			if g then
+				local n = g - gcfg.firstId
+				out[i] = gcfg.types[math.floor(n / 5) + 1][it.group].effect .. "@" .. (n % 5 + 1)
+			end
+		end
+		return table.concat(out, ",")
+	end
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_LEFT]), "dmg_fire@5,dmg_fire@5", "gear gems: the one-handed weapon has two Perfect fire gems")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_ARMOR]), "maxhealth@5,maxhealth@5,maxhealth@5", "gear gems: the armour has three Perfect health gems")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_FEET]), "maxhealth@5", "gear gems: the boots one")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_RING]), "res_ice@5", "gear gems: the ring has ice resistance")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_RIGHT]), "maxhealth@5,maxhealth@5", "gear gems: the shield has two health gems")
+	local gemsBefore = 0
+	for _, it in pairs(gp.slots) do gemsBefore = gemsBefore + #(it.gems or {}) end
+	say(gp, "gear gems #561")
+	local gemsAfter = 0
+	for _, it in pairs(gp.slots) do gemsAfter = gemsAfter + #(it.gems or {}) end
+	eq(gemsAfter, gemsBefore, "gear gems again: the sockets are full, no gem is added")
+	check(last(gp):find('"socketed":0', 1, true), "gear gems again: nothing socketed")
+	eq(gp.cap, 400, "gear gems: the capacity is back")
+	-- named words decide the element: a death spell and an energy-free list
+	for _, it in pairs(gp.slots) do if it.gems then it.gems, it.sockets = {}, 0 end end
+	say(gp, "gear gems exura d #562")
+	check(last(gp):find('"element":"death"', 1, true), "gear gems with words: the element of the named spell")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_LEFT]), "crit@5,attackspeed@5", "gear gems: a death class's weapon takes crit and attack speed")
+	eq(gemEffectsOf(gp.slots[CONST_SLOT_RING]), "dmg_death@5", "gear gems: and death damage on the ring")
+	-- a gem that cannot be socketed is taken back
+	for _, it in pairs(gp.slots) do if it.gems then it.gems, it.sockets = {}, 0 end end
+	G.socket = function() return false, "refused here" end
+	local rb = removedGems
+	say(gp, "gear gems #563")
+	check(removedGems > rb and last(gp):find('"socketed":0', 1, true) and last(gp):find("refused here", 1, true), "gear gems: a refused gem is taken away again and named")
+	G.socket = nil
+	say(gp, "gear gems #564")
+	check(last(gp):find("no gems system", 1, true), "gear gems: an install without the gems: the reason")
+
+	-- food: the store's ration and its bites
+	local feed = 0
+	local owned = false
+	local function regen() return feed > 0 and {getTicks = function() return feed * 1000 end} or nil end
+	gp.getCondition = function() return regen() end
+	function gp:feed(s) feed = feed + s end
+	dofile("data/scripts/chaos/store_food_core.lua")
+	ChaosStoreFoodConfig = dofile("data/scripts/chaos/store_food_config.lua")
+	ChaosStoreFood = {installed = function() return true end, owned = function() return owned end, give = function() owned = true return "backpack" end}
+	say(gp, "food #570")
+	ans = last(gp)
+	check(ans:find('"gave":"backpack"', 1, true) and ans:find('"bites":1', 1, true) and ans:find('"seconds":720', 1, true), "food: the ration is given and one bite fills it to 720 s: " .. ans)
+	check(ans:find('"item":' .. ChaosStoreFoodConfig.item.id, 1, true), "food: the item is the ration of the store config")
+	say(gp, "food #571")
+	ans = last(gp)
+	check(ans:find('"bites":0', 1, true) and ans:find('"gave"', 1, true) == nil, "food again: one ration a character, full: no bite")
+	ChaosStoreFood.installed = function() return false end
+	say(gp, "food #572")
+	check(last(gp):find("no ration system", 1, true), "food: a server without the ration: the reason")
+
+	-- buffs: the level 800 spell of the class line
+	local learned = false
+	gp.hasLearnedSpell = function() return learned end
+	gp.learnSpell = function(_, name) learned = name end
+	ChaosSpellQuestCore = {lineOf = function(voc) return 1, qc.lines[1] end}
+	say(gp, "buffs #580")
+	ans = last(gp)
+	check(ans:find('"spell":"Ironbound Oath"', 1, true) and ans:find('"learned":false', 1, true), "buffs state: the Warrior line's buff, not learned: " .. ans)
+	say(gp, "buffs learn #581")
+	ans = last(gp)
+	eq(learned, "Ironbound Oath", "buffs learn: the spell is taught by the engine's own call")
+	check(ans:find('"learned":true', 1, true), "buffs learn: the answer says it is learned")
+	learned = true
+	local taught = false
+	gp.learnSpell = function() taught = true end
+	say(gp, "buffs learn #582")
+	check(not taught, "buffs learn again: a spell that is known is not taught again")
+	say(gp, "buffs now #583")
+	check(last(gp):find("usage: buffs", 1, true), "buffs: an unknown word is the usage")
+	ChaosSpellQuestCore = {lineOf = function() return nil end}
+	say(gp, "buffs #584")
+	check(last(gp):find("no buff spell", 1, true), "buffs: a class with no line: the reason")
+	ChaosSpellQuestCore = {lineOf = function() return 1, {key = "x", spells = {"Keepfall", "Keepfall", "Keepfall"}} end}
+	say(gp, "buffs #585")
+	check(last(gp):find("no buff spell", 1, true), "buffs: a second spell that is no buff is refused")
+
+	print = origP
+	ChaosCrafting, ChaosGems, ChaosGearSets, ChaosArchery, ChaosTestersCore, ItemType, ChaosPinnacle = savedC, savedG, savedSets, savedArch, savedK, savedIT, savedPN
+	ChaosSupports, ChaosStoreFood, ChaosStoreFoodCore, ChaosStoreFoodConfig, ChaosSpellQuestCore, ChaosItemMods = savedSupports, savedFood, savedFoodCore, savedFoodCfg, savedQ, savedItemMods
+	SLOTP_TWO_HAND, ITEM_ATTRIBUTE_ATTACK, CONDITION_REGENERATION, CONDITIONID_DEFAULT, RETURNVALUE_NOERROR = savedSlotp, savedAttr, savedRegen, savedCid, savedRC
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

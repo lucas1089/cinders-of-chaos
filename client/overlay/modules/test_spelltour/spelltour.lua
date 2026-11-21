@@ -60,6 +60,14 @@ local function closeWindows()
   end
 end
 
+-- a window that opens later (the patch notes open by themselves some seconds after the login, a daily reward, a level up) would
+-- cover the film too: look again every 2 s until the tour ends
+local function keepClear()
+  if finished then return end
+  closeWindows()
+  scheduleEvent(keepClear, 2000)
+end
+
 function T.finish(state, ok)
   if finished then return end
   finished = true
@@ -108,7 +116,7 @@ local function enter(nextFn)
         log('fail in the game, then out again within 6 s')
         return T.finish('entry failed', false)
       end
-      closeWindows()
+      keepClear()
       local p = me():getPosition()
       log(('entered at %d,%d,%d'):format(p.x, p.y, p.z))
       nextFn()

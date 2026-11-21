@@ -1106,6 +1106,8 @@ function C.applyBaseBonus(item, rarity, level)
 	raise(ITEM_ATTRIBUTE_ATTACK, "getAttack", withQuality)
 	raise(ITEM_ATTRIBUTE_DEFENSE, "getDefense", withQuality)
 	raise(ITEM_ATTRIBUTE_ARMOR, "getArmor", withQuality)
+	-- the attack now holds the type's base: a type that already carries its grown base must not grow again at the first touch
+	C.markGrownIfCurrent(item)
 	-- the attack was written over: a Weapon Damage modifier on the item takes the new attack as its base
 	M.syncWeaponDamage(item, true)
 	-- a bow or crossbow fires with its type's own hit chance (the engine reads no item attribute for it any more:
@@ -1485,6 +1487,26 @@ function C.growWeapon(item)
 	end
 	item:setCustomAttribute(C.GROWN, T.version or 1)
 	return changed
+end
+
+-- mark a fresh weapon as grown when its attack was just written from a type that carries the new base already (C.applyBaseBonus):
+-- without the mark the first touch would add the growth a second time. A type still on its old base (the install not done) is not
+-- marked, so the touch after the install moves it as usual.
+function C.markGrownIfCurrent(item)
+	if not item or not ITEM_ATTRIBUTE_ATTACK then
+		return false
+	end
+	local T = growthTable()
+	local t = T and T.types and T.types[item:getId()]
+	if not t or C.isUnique(item) or custom(item, C.GROWN) ~= nil then
+		return false
+	end
+	local it = itemType(item)
+	if not it or typeNumber(it, "getAttack") ~= t[2] then
+		return false
+	end
+	item:setCustomAttribute(C.GROWN, T.version or 1)
+	return true
 end
 
 -- upgrade the item if it needs it. Returns true when something changed. Never raises: an item that fails stays as it was.

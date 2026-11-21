@@ -57,7 +57,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true, gear = true, loadout = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true, waystone = true, riftrun = true, pet = true, unique = true, fists = true, blades = true, give = true, closed = true, raid = true, dungeon = true, path = true, siege = true, guildboss = true, rift = true, tower = true, descent = true, trial = true, ascended = true, omen = true, bounty = true, mainquest = true, nemesis = true, daily = true, chronicle = true, vael = true, goblin = true, invasion = true, journey = true, pvp = true, boss = true, pocket = true, wsmap = true, ascend = true, gather = true, pinnacle = true, gear = true, loadout = true, food = true, buffs = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -638,20 +638,40 @@ end
 
 -- !tester gear [state | set] (O681): the armour and the weapon of the equipment sets that fit the bot's class and level, as a person who farmed the
 -- level's drops wears them. `state` reads (what is worn, what the plan would put on), `set` is the TEST ONLY grant (a tester only, logged): one
--- Rare piece of item level = the level for the helmet, armour, legs and the weapon slot, worn at once. Boots, jewellery and the bows and wands of
--- the casters and archers stay with the Gambler (the gear-up): the sets list holds none.
+-- Rare piece of item level = the level for the helmet, armour, legs and the weapon slot, worn at once. O693: `extras` does the rest of the sets' list
+-- (boots, amulet, ring, shield / spellbook / quiver, and the bow, crossbow, wand or rod of the archers and casters), `growth` the weapon touch, `orbs` the
+-- bench results, `gems` the sockets and gems; all TEST ONLY like `set` (H.gearExtrasPlan, H.gemPlan, H.ORB_PLAN below).
 function H.parseGear(arg)
-	local usage = "usage: gear [state | set [rarity]]"
-	local what, num = tostring(arg or ""):match("^%s*(%a*)%s*(%d*)%s*$")
+	local usage = "usage: gear [state | set [rarity] | extras [rarity] | growth | orbs | gems [WORDS;WORDS]]"
+	local what, rest = tostring(arg or ""):match("^%s*(%a*)%s*(.-)%s*$")
 	if not what then
 		return nil, usage
 	end
 	what = what == "" and "state" or what:lower()
-	if what ~= "state" and what ~= "set" then
+	if what == "gems" then
+		-- O693: the words of the spells the class plays (the rotation), `;` apart: their element picks the gem
+		local words = {}
+		if rest ~= "" then
+			if #rest > 120 or not rest:match("^[%a; ]+$") then
+				return nil, usage
+			end
+			for w in rest:gmatch("[^;]+") do
+				w = w:match("^%s*(.-)%s*$")
+				if w ~= "" then
+					words[#words + 1] = w:lower()
+				end
+			end
+		end
+		return {what = "gems", words = words}
+	end
+	if what ~= "state" and what ~= "set" and what ~= "extras" and what ~= "growth" and what ~= "orbs" then
 		return nil, usage
 	end
-	local rarity = num ~= "" and tonumber(num) or nil
-	if num ~= "" and what == "state" then
+	if rest ~= "" and not rest:match("^%d+$") then
+		return nil, usage
+	end
+	local rarity = rest ~= "" and tonumber(rest) or nil
+	if rarity and (what == "state" or what == "growth" or what == "orbs") then
 		return nil, usage
 	end
 	-- O685: the stored rarity id of the pieces `set` makes (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; data/lib/chaos_rarity.lua), default 3
@@ -667,10 +687,14 @@ H.GEAR_WEAPON = {sword = true, axe = true, club = true}
 -- the power of a set weapon: attack plus the element damage (spell_scaling_config.lua weaponElement 1, O679), the stats of items.xml
 function H.gearWeaponPower(stats)
 	local power = 0
-	for key, value in pairs(type(stats) == "table" and stats or {}) do
+	stats = type(stats) == "table" and stats or {}
+	for key, value in pairs(stats) do
 		if type(value) == "number" and (key == "attack" or tostring(key):sub(1, 7) == "element") then
 			power = power + value
 		end
+	end
+	if type(stats.wandMin) == "number" and type(stats.wandMax) == "number" then
+		power = power + (stats.wandMin + stats.wandMax) / 2 -- O693: a wand or rod hits for the middle of its range
 	end
 	return power
 end
@@ -719,6 +743,158 @@ function H.gearPlan(pieces, className, level)
 		end
 	end
 	return best
+end
+
+-- ---------------------------------------------------------------- O693 the rest of the gear (TEST ONLY)
+-- `gear extras`: what a character of the level wears besides the four pieces of `gear set`, from the same list of the equipment sets (and the archery
+-- config's quivers). boots / amulet / ring: the piece of the highest armour the class may wear at the level. offhand: a shield or a spellbook (the
+-- classes the sets list one for), else for an archer the quiver of the highest level <= the character's. ranged: the bow, crossbow, wand or rod of the
+-- most power (a class the sets list one for), the weapon of a class whose `gear set` has none. weapon1h: for a class that wears a shield the best
+-- one-handed melee weapon, because a shield does not go with a two-handed one.
+H.GEAR_RANGED = {bow = true, crossbow = true, wand = true, rod = true}
+H.GEAR_OFFHAND = {shield = true, spellbook = true}
+H.GEAR_JEWEL = {boots = true, amulet = true, ring = true}
+
+local function rowBetter(a, b)
+	for i = 1, #a do
+		if a[i] ~= b[i] then
+			return a[i] > b[i]
+		end
+	end
+	return false
+end
+
+local function stat(stats, key)
+	return type(stats) == "table" and tonumber(stats[key]) or 0
+end
+
+-- pieces: the rows of chaos_gear_sets_items.lua; quivers: {[server id] = {level, implicit}} (chaos_archery_config.lua quivers) or nil
+function H.gearExtrasPlan(pieces, className, level, quivers)
+	level = tonumber(level) or 0
+	local best, score = {}, {}
+	local function offer(slot, p, row)
+		if not score[slot] or rowBetter(row, score[slot]) then
+			best[slot], score[slot] = p, row
+		end
+	end
+	for _, p in ipairs(type(pieces) == "table" and pieces or {}) do
+		if type(p) == "table" and tonumber(p.level) and p.level <= level and gearClassOk(p, className) then
+			local id = -(tonumber(p.id) or 0)
+			local kind = p.kind
+			if H.GEAR_JEWEL[kind] then
+				offer(kind, p, {stat(p.stats, "armor"), p.level, id})
+			elseif H.GEAR_OFFHAND[kind] then
+				offer("offhand", p, {stat(p.stats, "defense"), p.level, id})
+			elseif H.GEAR_RANGED[kind] then
+				offer("ranged", p, {H.gearWeaponPower(p.stats), p.level, id})
+			elseif H.GEAR_WEAPON[kind] and p.fit ~= "2" then
+				offer("weapon1h", p, {H.gearWeaponPower(p.stats), p.level, id})
+			end
+		end
+	end
+	if not best.offhand and best.ranged and (best.ranged.kind == "bow" or best.ranged.kind == "crossbow") and type(quivers) == "table" then
+		local top, topLevel
+		for id, q in pairs(quivers) do
+			local lv = type(q) == "table" and tonumber(q[1]) or nil
+			if lv and lv <= level and (not topLevel or lv > topLevel or (lv == topLevel and id < top)) then
+				top, topLevel = id, lv
+			end
+		end
+		if top then
+			best.offhand = {id = top, kind = "quiver", level = topLevel, name = "quiver", fit = ""}
+		end
+	end
+	if not (best.offhand and best.offhand.kind == "shield") then
+		best.weapon1h = nil -- the one-handed weapon is only wanted next to a shield
+	end
+	return best
+end
+
+-- gems. The tier: the best quality a drop of the level can be (chaos_gems_config.lua drop.levelWeights: the last tier with a weight), which every
+-- character above level 300 can also make by combining three into one. The type per socket, by the slot group of the item (chaos_gems.lua groupOf):
+--   weapon  the gem of the class's element where one gives that element's damage on a weapon (fire ruby, ice sapphire, earth emerald, holy diamond);
+--           else the first socket crit (amethyst) and the rest attack speed (topaz): the offensive themes of a weapon
+--   armour  max health (the ruby): the one effect of the armour group every class wants against a boss hit
+--   jewel   the gem of the class's element where it gives that damage on jewellery (death amethyst, energy topaz, physical onyx); else ice resistance
+--           (the sapphire): the Malgrath fights of O685 took 136 of 304 big hits as ice
+H.GEM_ELEMENTS = {"fire", "ice", "earth", "holy", "death", "energy", "physical"}
+H.GEM_JEWEL_RES = "res_ice"
+
+function H.gemTier(weights)
+	local tier = 1
+	for i, w in ipairs(type(weights) == "table" and weights or {}) do
+		if (tonumber(w) or 0) > 0 then
+			tier = i
+		end
+	end
+	return tier
+end
+
+-- the element most of the class's attack spells have: `spells` = {{element = "fire"}, ...} (the rotation, or every attack spell the class casts)
+function H.gemElement(spells)
+	local count = {}
+	for _, s in ipairs(type(spells) == "table" and spells or {}) do
+		local e = type(s) == "table" and s.element
+		if type(e) == "string" then
+			e = e:lower()
+			count[e] = (count[e] or 0) + 1
+		end
+	end
+	local pick, most = nil, 0
+	for _, e in ipairs(H.GEM_ELEMENTS) do
+		if (count[e] or 0) > most then
+			pick, most = e, count[e]
+		end
+	end
+	return pick
+end
+
+local function typeWith(types, group, effect)
+	for i, t in ipairs(type(types) == "table" and types or {}) do
+		local g = t[group]
+		if type(g) == "table" and g.effect == effect then
+			return i
+		end
+	end
+	return nil
+end
+
+-- -> a list of gem type indexes, one per socket (a type index of chaos_gems_config.lua types)
+function H.gemPlan(types, group, element, sockets)
+	local out = {}
+	local pick1, pick2
+	if group == "weapon" then
+		pick1 = element and typeWith(types, "weapon", "dmg_" .. element)
+		if not pick1 then
+			pick1, pick2 = typeWith(types, "weapon", "crit"), typeWith(types, "weapon", "attackspeed")
+		end
+	elseif group == "armour" then
+		pick1 = typeWith(types, "armour", "maxhealth")
+	elseif group == "jewel" then
+		pick1 = element and typeWith(types, "jewel", "dmg_" .. element) or nil
+		pick1 = pick1 or typeWith(types, "jewel", H.GEM_JEWEL_RES)
+	end
+	for i = 1, tonumber(sockets) or 0 do
+		out[i] = (i > 1 and pick2) or pick1
+	end
+	return out
+end
+
+-- the bench results of a geared character (`gear orbs`): not a perfect roll. Whetstones to this quality (the cap of every rarity under Divine; a
+-- Divine piece can go to 30), one Orb of Tempering on every piece (new values inside the tiers), one Ember Orb (one modifier up one tier) on the
+-- weapon and the armour. No Orb of Fate, Void or Ruin: those are gambles, and the piece keeps the modifiers its drop rolled.
+H.ORB_PLAN = {quality = 20, tempering = 1, ember = {weapon = 1, armor = 1}}
+
+-- the level 800 buff spells of the line spell quests (quest 2 of each line, spellquest_config.lua lines; numbers quest_buffs_config.lua)
+H.BUFF_SPELLS = {"Ironbound Oath", "Unblinking Gaze", "Veil of Whispers", "Shroud of Knives", "Dirge of the Legion", "Lotus Stance", "Mantle of Dawn"}
+
+function H.isBuffSpell(name)
+	for _, n in ipairs(H.BUFF_SPELLS) do
+		if n == name then
+			return true
+		end
+	end
+	return false
 end
 
 -- the answer of `gear`: the plan and what is worn, cut down (the worn: {slot name = {id, il}})

@@ -12834,5 +12834,236 @@ class PinnacleComplete(unittest.TestCase):
         self.assertTrue(TX.PINNACLE_HEALERS <= set(TX.RECOMMENDED_BUILDS))
 
 
+class PinnacleMoreGear(unittest.TestCase):
+    """O693: the rest of the gear, the weapon touch, the bench results, the gems, the food and the class buff of the complete pinnacle bots"""
+
+    NAMES = PinnacleParty.NAMES
+    play = PinnacleParty.play
+    PartyIO = PinnacleParty.PartyIO
+    MemberIO = PinnacleParty.MemberIO
+
+    def setUp(self):
+        TX.PINNACLE_COMPLETE[0] = True
+        TX.PINNACLE_BUFFS.clear()
+
+    def tearDown(self):
+        TX.PINNACLE_BUFFS.clear()
+        TX.PINNACLE_COMPLETE[0] = True
+
+    class GearIO(FakeIO):
+        def __init__(self, answers=None, words=None):
+            FakeIO.__init__(self)
+            self.cmds, self.table, self.words = [], dict(answers or {}), words if words is not None else ['exori a', 'exori b', 'exori c']
+
+        def rotation_words(self, n=3):
+            return self.words[:n]
+
+        async def helper(self, command, kind, wait=4.0):
+            self.cmds.append((command, kind))
+            parts = command.split(' ')
+            a = self.table.get(' '.join(parts[:2]) if parts[0] == 'gear' else parts[0])
+            return a(self) if callable(a) else a
+
+    GOOD = {
+        'gear extras': {'given': ['weapon1h', 'boots', 'amulet', 'ring', 'offhand'], 'refused': [], 'skipped': []},
+        'gear growth': {'weapons': [{'slot': 'weapon', 'grown': True, 'touched': True}, {'slot': 'offhand', 'grown': False}]},
+        'gear orbs': {'applied': {'whetstone': 160, 'tempering': 8, 'ember': 2}, 'pieces': [{'slot': 'head', 'quality': 20}, {'slot': 'armor', 'quality': 20}]},
+        'gear gems': {'element': 'fire', 'tier': 5, 'socketed': 11, 'pieces': [{'slot': 'weapon', 'gems': ['a', 'b']}, {'slot': 'armor', 'gems': ['c', 'd', 'e']}], 'refused': []},
+        'buffs': {'spell': 'Ironbound Oath', 'learned': True},
+        'food': {'gave': 'backpack', 'bites': 1, 'seconds': 720},
+    }
+
+    def test_the_gear_steps_are_asked_in_order_and_named_as_grants(self):
+        io = self.GearIO(self.GOOD)
+        fb = []
+        text = run(TX.pinnacle_gear_more(io, 'Tester Aab', 'Juggernaut', fb))
+        self.assertEqual([c[0] for c in io.cmds], ['gear extras 10', 'gear growth', 'gear orbs', 'gear gems exori a;exori b;exori c'],
+                         'extras at the rarity of `gear set 10`, then the weapon touch, the bench, the gems of the rotation\'s element')
+        self.assertTrue(all(c[1] == 'gear' for c in io.cmds))
+        self.assertIn('extras weapon1h,boots,amulet,ring,offhand', text)
+        self.assertIn('growth 1/2 marked', text)
+        self.assertIn('orbs q20 x2 (w160 t8 e2)', text)
+        self.assertIn('gems fire T5 x5 in 2 pieces', text)
+        self.assertEqual(len(fb), 4)
+        for f, what in zip(fb, ('gear extras', 'gear growth', 'gear orbs', 'gear gems')):
+            self.assertTrue(f.startswith(what) and 'TEST ONLY' in f, f)
+        self.assertIn('11 gems of tier 5, element fire', fb[3])
+
+    def test_the_healer_names_no_words_so_the_class_element_comes_from_its_attack_spells(self):
+        io = self.GearIO(self.GOOD)
+        run(TX.pinnacle_gear_more(io, 'Tester Aaa', 'Illusionist', []))
+        self.assertEqual(io.cmds[3][0], 'gear gems', 'its rotation words would be heals: no element in them')
+
+    def test_an_old_helper_or_a_refusal_is_reported_and_nothing_is_named(self):
+        io = self.GearIO({'gear extras': {'err': 'closed test mode is off'}, 'gear orbs': {'err': 'no crafting orbs'}})
+        fb = []
+        text = run(TX.pinnacle_gear_more(io, 'Tester Aab', 'Juggernaut', fb))
+        self.assertIn('extras: closed test mode is off', text)
+        self.assertIn('growth: no answer (old helper file)', text)
+        self.assertIn('orbs: no crafting orbs', text)
+        self.assertIn('gems: no answer (old helper file)', text)
+        self.assertEqual(fb, [], 'nothing was granted: no fallback named')
+
+    def test_refused_pieces_and_gems_are_in_the_text(self):
+        good = dict(self.GOOD)
+        good['gear extras'] = {'given': ['boots'], 'refused': [{'slot': 'ring', 'why': 'refused (3)'}]}
+        good['gear gems'] = {'element': None, 'tier': 5, 'socketed': 0, 'pieces': [], 'refused': ['weapon: full']}
+        text = run(TX.pinnacle_gear_more(self.GearIO(good), 'Tester Aab', 'Juggernaut', []))
+        self.assertIn('extras boots (refused: ring refused (3))', text)
+        self.assertIn('gems no element T5 x0 in 0 pieces (refused: weapon: full)', text)
+
+    def test_the_buff_is_taught_remembered_and_named(self):
+        io = self.GearIO(self.GOOD)
+        fb = []
+        text = run(TX.pinnacle_buff_learn(io, 'Tester Aab', fb))
+        self.assertEqual(text, 'buff Ironbound Oath')
+        self.assertEqual(io.cmds, [('buffs learn', 'buffs')])
+        self.assertEqual(TX.PINNACLE_BUFFS, {'Tester Aab': 'Ironbound Oath'})
+        self.assertTrue(len(fb) == 1 and fb[0].startswith('grant buff spell') and 'TEST ONLY' in fb[0], fb)
+        TX.PINNACLE_BUFFS.clear()
+        for answer, why in ((None, 'no answer (old helper file)'), ({'err': 'no buff spell for the class'}, 'no buff spell for the class'),
+                            ({'spell': 'Lotus Stance', 'learned': False}, 'Lotus Stance not learned')):
+            fb = []
+            text = run(TX.pinnacle_buff_learn(self.GearIO({'buffs': answer}), 'Tester Aab', fb))
+            self.assertEqual(text, 'buff: ' + why)
+            self.assertEqual((TX.PINNACLE_BUFFS, fb), ({}, []))
+
+    def test_the_buff_is_cast_by_the_words_of_its_spell(self):
+        io = PinnacleParty.ShieldIO([{'words': 'kah ti', 'name': 'x'}, {'words': 'vok brak ael ruun', 'name': 'Ironbound Oath', 'needlearn': 1}])
+        self.assertTrue(run(TX.pinnacle_buff(io, 'Ironbound Oath')))
+        self.assertEqual(io.said, ['vok brak ael ruun'], 'a spell a quest teaches is cast once it was taught')
+        self.assertFalse(run(TX.pinnacle_buff(PinnacleParty.ShieldIO([{'words': 'kah ti', 'name': 'x'}]), 'Ironbound Oath')))
+        self.assertFalse(run(TX.pinnacle_buff(FakeIO(), 'Ironbound Oath')), 'an io with no spell list')
+
+    def test_the_fight_casts_the_buff_when_it_opens_and_each_time_the_cooldown_is_over(self):
+        knight = PinnacleParty.ShieldIO([{'words': 'vok brak ael ruun', 'name': 'Ironbound Oath'}])
+        other = PinnacleParty.ShieldIO([{'words': 'vyr oth sag ael', 'name': 'Unblinking Gaze'}])
+        plain = PinnacleParty.ShieldIO([{'words': 'x', 'name': 'x'}])
+        squad = PinnacleParty.squad(PinnacleParty)[:3]
+        squad[0]['io'], squad[1]['io'], squad[2]['io'] = knight, other, plain
+        TX.PINNACLE_BUFFS.update({squad[0]['name']: 'Ironbound Oath', squad[1]['name']: 'Unblinking Gaze'})
+        io = PinnacleParty.FightIO(kill_at=10 ** 6, extra={'sinceBoss': 5}, mode='fight')
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, squad, t, 215.0))
+        self.assertGreaterEqual(len(knight.said), 3, 'at the start and every 90 seconds: %s' % knight.said)
+        self.assertEqual(set(knight.said), {'vok brak ael ruun'})
+        self.assertEqual(set(other.said), {'vyr oth sag ael'})
+        self.assertEqual(plain.said, [], 'a bot with no taught buff casts none')
+        self.assertEqual(t['buffs'], len(knight.said) + len(other.said))
+        self.assertIn('%d class buff cast(s)' % t['buffs'], TX.pinnacle_walk_verdict(dict(t, killed=True, kill_secs=9, size=5, level=1900))[1])
+
+    def test_no_taught_buff_changes_nothing_in_the_fight(self):
+        knight = PinnacleParty.ShieldIO([{'words': 'vok brak ael ruun', 'name': 'Ironbound Oath'}])
+        squad = PinnacleParty.squad(PinnacleParty)[:1]
+        squad[0]['io'] = knight
+        io = PinnacleParty.FightIO(kill_at=3)
+        t = {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+        run(TX.pinnacle_fight(io, squad, t, 215.0))
+        self.assertEqual(knight.said, [])
+        self.assertNotIn('buffs', t)
+
+    def test_the_ration_is_eaten_and_named(self):
+        io = self.GearIO(self.GOOD)
+        fb = []
+        text = run(TX.pinnacle_food(io, {'name': 'Tester Aaa', 'lead': True}, fb))
+        self.assertEqual(text, 'food 720 s')
+        self.assertEqual(io.cmds, [('food', 'food')])
+        self.assertTrue(len(fb) == 1 and fb[0].startswith('food') and 'TEST ONLY' in fb[0], fb)
+        fb = []
+        self.assertEqual(run(TX.pinnacle_food(self.GearIO({'food': {'err': 'no ration system'}}), {'name': 'Tester Aaa', 'lead': True}, fb)), 'food: no ration system')
+        self.assertEqual(run(TX.pinnacle_food(self.GearIO({}), {'name': 'Tester Aaa', 'lead': True}, fb)), 'food: no answer (old helper file)')
+        self.assertEqual(fb, [])
+
+    def test_the_prep_asks_for_the_gear_steps_after_the_set_and_the_buff_last(self):
+        keep = (TX.complete_character, TX.gear_up, TX.pinnacle_gear, TX.pinnacle_loadout)
+        seen = []
+
+        async def complete(io, name, cls, level, fb):
+            return 'Juggernaut', 'trials 3/3'
+
+        async def up(io, name, cls, level, tree=None):
+            return TX.Result('gear_up', name, cls, TX.PASS, 'ok', [])
+
+        async def gear(io, r, fb):
+            seen.append('set')
+            return 'set gear: helmet'
+
+        async def loadout(io, name, cls, fb):
+            return 'cards Earth x5 set'
+        TX.complete_character, TX.gear_up, TX.pinnacle_gear, TX.pinnacle_loadout = complete, up, gear, loadout
+        try:
+            io = self.GearIO(self.GOOD)
+            fb = []
+            text = run(TX.pinnacle_prep(io, 'Tester Aab', 'Warrior', 1900, fb))
+            asked = [c[0] for c in io.cmds]
+            self.assertEqual(asked, ['gear extras 10', 'gear growth', 'gear orbs', 'gear gems exori a;exori b;exori c', 'buffs learn', 'bag'],
+                             'the steps come after the set gear (seen twice: the first and the last), the buff after them, the bag last')
+            self.assertEqual(seen, ['set', 'set'])
+            self.assertIn('extras weapon1h,boots,amulet,ring,offhand', text)
+            self.assertIn('gems fire T5', text)
+            self.assertIn('buff Ironbound Oath', text)
+            self.assertEqual(len(fb), 5, 'extras, growth, orbs, gems, the buff spell: five named grants')
+            self.assertEqual(TX.PINNACLE_BUFFS, {'Tester Aab': 'Ironbound Oath'})
+            del io.cmds[:]
+            TX.PINNACLE_BUFFS.clear()
+            TX.PINNACLE_COMPLETE[0] = False
+            run(TX.pinnacle_prep(io, 'Tester Aab', 'Warrior', 1900, []))
+            self.assertEqual([c[0] for c in io.cmds], ['bag'], 'the O684 bots: none of the O693 steps')
+        finally:
+            TX.complete_character, TX.gear_up, TX.pinnacle_gear, TX.pinnacle_loadout = keep
+            TX.PINNACLE_COMPLETE[0] = True
+
+    def test_the_party_eats_before_the_window_opens(self):
+        keep = (TX.pinnacle_prep, TX.pinnacle_food)
+        order = []
+
+        async def prep(io, name, cls, level, fallbacks):
+            return '%s: prepped' % name[-3:]
+
+        async def food(io, r, fallbacks):
+            order.append(('food', r['name']))
+            return 'food 720 s'
+
+        async def fight(io_, squad, trace, budget):
+            order.append(('fight', [r['name'] for r in squad]))
+            trace.update(boss_seen=True, hp=0, killed=True, kill_secs=287, falls=0, size=len(squad), boss='vhoss')
+        TX.pinnacle_prep, TX.pinnacle_food = prep, food
+        try:
+            r, calls = self.play(self.PartyIO(), fight=fight)
+        finally:
+            TX.pinnacle_prep, TX.pinnacle_food = keep
+            TX.ASC_WANT.clear()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertEqual([o[1] for o in order if o[0] == 'food'], self.NAMES, 'every bot of the party eats once')
+        self.assertEqual(order[-1][0], 'fight', 'and the food comes before the fight')
+        self.assertEqual(calls['open'], [2])
+        self.assertIn('food: Aaa food 720 s', r.detail)
+
+    def test_the_verdict_names_the_food_and_the_buffs(self):
+        t = {'level': 1900, 'came': 'foot', 'steps': 5, 'secs': 400, 'boss_seen': True, 'hp': 0, 'boss': 'malgrath', 'falls': 0, 'size': 5, 'killed': True,
+             'kill_secs': 300, 'buffs': 12, 'food': 'Aaa food 720 s; Aab food 720 s', 'gear': 'aaa: gems fire T5 x11'}
+        st, text = TX.pinnacle_party_verdict(t)
+        self.assertEqual(st, TX.PASS)
+        self.assertIn('12 class buff cast(s)', text)
+        self.assertIn('gems fire T5 x11; food: Aaa food 720 s; Aab food 720 s', text)
+
+    def test_the_numbers_are_the_games(self):
+        base = os.path.join(HERE, '..', 'data', 'scripts', 'chaos')
+        with open(os.path.join(base, 'quest_buffs_config.lua'), encoding='utf-8') as f:
+            src = f.read()
+        self.assertIn('cooldownMs = %d,' % int(TX.PINNACLE_BUFF_EVERY * 1000), src, 'the recast is the buff spells\' cooldown')
+        with open(os.path.join(HERE, 'tester_helper_core.lua'), encoding='utf-8') as f:
+            core = f.read()
+        names = re.search(r'H\.BUFF_SPELLS = \{(.*?)\}', core, re.S).group(1)
+        with open(os.path.join(base, 'spellquest_config.lua'), encoding='utf-8') as f:
+            lines = re.findall(r'spells = \{"[^"]+", "([^"]+)", "[^"]+"\}', f.read())
+        self.assertEqual(re.findall(r'"([^"]+)"', names), lines, 'the helper\'s buff spells are quest 2 of each line, in the lines\' order')
+        with open(os.path.join(HERE, '..', 'data', 'spells', 'chaos', 'spells_chaos.xml'), encoding='utf-8') as f:
+            xml = f.read()
+        for n in lines:
+            self.assertIn('name="%s"' % n, xml, '%s is a spell of the registration' % n)
+            self.assertRegex(xml, r'name="%s"[^>]*needlearn="1"' % re.escape(n), '%s is taught, so `buffs learn` is the grant' % n)
+
+
 if __name__ == '__main__':
     unittest.main()
