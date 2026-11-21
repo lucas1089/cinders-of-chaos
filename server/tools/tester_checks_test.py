@@ -11963,6 +11963,45 @@ class PinnacleFightReport(unittest.TestCase):
         self.assertIn('refused: none', old)
         self.assertIn('looks: none', old)
 
+    def test_the_final_tally_and_the_ledger_line(self):
+        """O697: the bot line carries the tally of the boss's last event beside the first one; the ledger line sets the boss's own fall against both. The O689 party
+        video: the boss lost 10,134,615, the first tally of the five bots 4.25M"""
+        row = {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0,
+               'dealt': {'boss': 1000, 'bossHits': 10, 'other': 0, 'late': 2400, 'lateHits': 10, 'lateSummon': 600, 'lateDot': 100}}
+        line = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 10)
+        self.assertIn('damage_boss=1000 (100 a second over 10 s, 10 hit(s))', line)
+        self.assertIn('damage_final=2400 (240 a second, 10 hit(s); of it summons 600, dots 100)', line)
+        old_helper = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0, 'dealt': {'boss': 1000, 'bossHits': 10, 'other': 0}}, 10)
+        self.assertNotIn('damage_final', old_helper, 'a helper of version 38 has no late tally')
+        rows = [{'dealt': {'boss': 1000, 'late': 2400}}, {'dealt': {'boss': 3000, 'late': 5600}}]
+        trace = {'ledger': {'lost': 10000, 'healed': 50, 'seen': 9000, 'own': 8000, 'none': 700, 'reflect': 100, 'other': 200}}
+        text = TX.pinnacle_ledger_line(trace, rows)
+        self.assertTrue(text.startswith('pinnacle_party boss ledger: lost 10000, first tally 4000 (40%), final tally 8000 (80%), last event saw 9000 (90%; testers 8000, '
+                                        'no attacker 700, the boss itself 100, strangers 200), no event 1000, healed 50'), text)
+        self.assertEqual(TX.pinnacle_ledger_line({}, rows), '', 'no ledger from an old helper: no line')
+        self.assertIn('-', TX.pinnacle_ledger_line({'ledger': {'lost': 0}}, rows).split('first tally')[1], 'no division by zero when nothing was lost')
+        self.assertNotIn('\u2014', text)
+
+    def test_the_fight_writes_the_ledger_line(self):
+        io = self.DealtIO(kill_at=4, mode='fight')
+        io.dealt = {n: {'boss': 1000, 'bossHits': 10, 'other': 0, 'late': 2500, 'lateHits': 10, 'lateSummon': 0, 'lateDot': 0} for n in self.NAMES}
+        io.grow = False
+        state = io.state
+
+        def with_ledger(name):
+            st = state(name)
+            if st.get('inside'):
+                st['ledger'] = {'lost': 60000, 'healed': 0, 'seen': 50000, 'own': 50000, 'none': 0, 'reflect': 0, 'other': 0, 'hits': 5}
+            return st
+        io.state = with_ledger
+        squad, t = self.squad(), self.trace()
+        run(TX.pinnacle_fight(io, squad, t, 1500.0))
+        lines = [x for x in io.notes if x.startswith('pinnacle_party boss ledger')]
+        self.assertEqual(len(lines), 1, io.notes)
+        self.assertIn('lost 60000', lines[0])
+        self.assertIn('final tally 0 (0%)', lines[0], 'the first look is the baseline: nothing dealt in this fight (the helper tally is cumulative)')
+        self.assertIn('no event 10000', lines[0])
+
     def test_the_fight_writes_a_line_for_each_bot_and_the_series(self):
         io = self.DealtIO(kill_at=4, mode='fight')
         io.dealt = {n: {'boss': 1000 * (i + 1), 'bossHits': 10, 'other': 0} for i, n in enumerate(self.NAMES)}
@@ -12045,6 +12084,10 @@ class PinnacleFightReport(unittest.TestCase):
         self.assertIn('damage_boss=900', text)
         self.assertIn('boss series', text)
         self.assertEqual(text.count('damage_boss=900'), 1, 'the bot line is in its section only, not again among the activity lines')
+        ledger = TX.pinnacle_ledger_line({'ledger': {'lost': 5000, 'seen': 4000, 'own': 4000}}, [{'dealt': {'boss': 900, 'late': 3000}}])
+        text = mod.build_report('malgrath', 1900, ['Tester Aaa'], activity + '\n01:29:50 Tester Aaa (L1893 Illusionist) RETRY    ' + ledger, '')
+        self.assertIn('boss ledger: lost 5000', text, 'O697: the ledger line is in the section of the bots')
+        self.assertEqual(text.count('boss ledger: lost 5000'), 1, 'and not again among the activity lines')
 
 
 class PinnacleVideo(unittest.TestCase):

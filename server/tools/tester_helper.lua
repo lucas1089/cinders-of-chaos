@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 38
+HELPER_VERSION = 39
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1762,7 +1762,12 @@ function commands.pinnacle(player, arg)
 		tell(player, "pinnacle", H.pinnacleAnswer(probe, got or {err = why}))
 		return
 	end
-	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = H.dealtRow(T.dealt, player:getId())}))   -- O695: the damage tally of this tester
+	-- O695: the damage tally of this tester. O697: `late*` is the same tally taken at the LAST event of the boss's chain (after every other event), and
+	-- `ledger` the boss's own health fall against what the last event saw (boss wide, the same for every tester of the fight)
+	local row = H.dealtRow(T.dealt, player:getId())
+	local late = H.dealtRow(T.dealtLate, player:getId())
+	row.late, row.lateHits, row.lateSummon, row.lateDot = late.boss, late.bossHits, late.summon, late.dot
+	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = row, ledger = H.ledgerRow(T.bossLedger)}))
 end
 
 -- ---------------------------------------------------------------- O681 the gear of the level
@@ -4414,6 +4419,20 @@ end
 health:type("healthchange")
 health:register()
 
+-- O697: where a hit came from (H.hitKind): the attacker, the master of a summon, whether that is a tester, the origin of a damage over time
+local function hitKindOf(creature, attacker, origin)
+	if not attacker then
+		return H.hitKind(nil)
+	end
+	local p, summon = attacker, false
+	if not p:isPlayer() and p.getMaster and p:getMaster() then
+		p, summon = p:getMaster(), true
+	end
+	local cond = rawget(_G, "ORIGIN_CONDITION")
+	return H.hitKind({attacker = true, self = attacker:getId() == creature:getId(), tester = p:isPlayer() and eligible(p) and true or false, summon = summon,
+		dot = cond ~= nil and origin == cond})
+end
+
 -- on monsters a tester hits: damage dealt by a tester (or its summon)
 local dealt = CreatureEvent("TesterHelperDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
@@ -4428,7 +4447,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 				local PNb = ChaosPinnacle
 				local okB, isBoss = pcall(function() return PNb and PNb.isBoss and PNb.isBoss(creature) end)
 				T.dealt = T.dealt or {}
-				H.dealtAdd(T.dealt, p:getId(), okB and isBoss and true or false, dmg)
+				H.dealtAdd(T.dealt, p:getId(), okB and isBoss and true or false, dmg, hitKindOf(creature, attacker, origin))
 			end
 			local hit = {kind = "dealt", damage = dmg, level = p:getLevel()}
 			local rule = H.hitAnomaly(hit)
@@ -4443,6 +4462,53 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 dealt:type("healthchange")
 dealt:register()
+
+-- O697: the boss's LAST event. The events a hit's first attacker registers on a monster (the passive tree's damage pool, gems, supports, charms, item
+-- powers, the weapon style ...) run in the order they were registered, so TesterHelperDealt, put on the boss when a tester first aims at it, sees a hit
+-- BEFORE them: the party video (O689) counted 4.25M of the 10.13M the boss lost. This event is taken off the boss and put on again at every round of
+-- the loop (carryBoss), which puts it behind them: what it reads is the damage of the chain, from anyone (an attacker that is no tester, no attacker at
+-- all, the boss itself), and the loop reads the boss's health, so a fall that no event saw shows as lost minus seen (H.ledgerNew). TEST ONLY: it
+-- changes no number of the hit.
+local dealtLate = CreatureEvent("TesterHelperDealtLate")
+function dealtLate.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	pcall(function()
+		local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
+		if dmg <= 0 then
+			return
+		end
+		local L = T.bossLedger
+		if not L or L.boss ~= creature:getId() then
+			L = H.ledgerNew(creature:getId())
+			T.bossLedger = L
+		end
+		local kind = hitKindOf(creature, attacker, origin)
+		local landed = H.ledgerHit(L, creature:getHealth(), dmg, kind)
+		if landed > 0 and (kind == "player" or kind == "summon" or kind == "dot") then
+			local p = attacker
+			if not p:isPlayer() then
+				p = p:getMaster()
+			end
+			T.dealtLate = T.dealtLate or {}
+			H.dealtAdd(T.dealtLate, p:getId(), true, landed, kind)
+		end
+	end)
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+dealtLate:type("healthchange")
+dealtLate:register()
+
+-- the boss of a fight carries both damage events, the late one last, and the ledger reads its health (O697)
+local function carryBoss(boss)
+	boss:registerEvent("TesterHelperDealt")
+	pcall(function() boss:unregisterEvent("TesterHelperDealtLate") end)
+	boss:registerEvent("TesterHelperDealtLate")
+	local L = T.bossLedger
+	if not L or L.boss ~= boss:getId() then
+		L = H.ledgerNew(boss:getId())
+		T.bossLedger = L
+	end
+	H.ledgerSample(L, boss:getHealth())
+end
 
 -- on the party kill check's monster: who hit it (TesterKillHits)
 local killHits = CreatureEvent("TesterHelperKillHits")
@@ -4589,7 +4655,7 @@ local function stepBody()
 					if PNa and PNa.bossOf then
 						local okB, boss = pcall(PNa.bossOf, player)
 						if okB and boss then
-							boss:registerEvent("TesterHelperDealt")
+							pcall(carryBoss, boss)
 							local cur = player:getTarget()
 							if (not cur or cur:getId() ~= boss:getId()) and H.withinReach(player:getPosition(), boss:getPosition(), BOSS_AIM) then
 								player:setTarget(boss)
