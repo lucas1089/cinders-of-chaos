@@ -64,6 +64,10 @@ import rotation_sim as R  # noqa: E402
 import weapon_sim as WS  # noqa: E402
 import patch_monster_flat_defence as F  # noqa: E402
 
+# The armour is sized against the class hit of the switch-off numbers (O709): the spell upgrades are paid for by the
+# monster health curve H (spell_upgrade_model.py), not by thinner armour, so this curve never reads the upgrades mode.
+M.SU.set_mode(False)
+
 CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'monster_defence_config.lua')
 DEFENCE = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'defence_config.lua')
 LEVELS = (1, 10, 30, 60, 100, 200, 300, 500, 750, 1000, 1500, 2000, 2500)
