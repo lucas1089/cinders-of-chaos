@@ -2800,8 +2800,9 @@ do
 	end
 	eq(H.parsePvp(nil), "state", "pvp: no word is state")
 	eq(H.parsePvp("PATH"), "path", "pvp: path (any case)")
+	eq(H.parsePvp("aim"), "aim", "pvp: aim (phase 8c: the foe tester as the target at once)")
 	local wp, up = H.parsePvp("hit")
-	check(wp == nil and up == "usage: pvp [state | path]", "pvp: an unknown word is the usage: " .. tostring(up))
+	check(wp == nil and up == "usage: pvp [state | path | aim]", "pvp: an unknown word is the usage: " .. tostring(up))
 	eq(H.parseBoss("spawn"), "spawn", "boss: spawn")
 	check(H.parseBoss("kill") == nil and select(2, H.parseBoss("kill")) == "usage: boss [state | spawn | path | close]", "boss: the usage")
 	-- the aim: only a foe tester, same floor, within range, the nearest, the weakest among equals; a player is never one
@@ -4218,6 +4219,8 @@ do
 	check(H.parseSpellup("sig").what == "sig" and H.parseSpellup("sig clear").clear == true and H.parseSpellup("fstat clear").what == "fstat" and H.parseSpellup("sig x") == nil,
 		"spellup: sig and fstat [clear]")
 	local pk = H.parseSpellup("pick 200 1 2")
+	check(H.parseSpellup("mob clear").what == "mob" and H.parseSpellup("mob clear").clear == true and H.parseSpellup("mob").clear == nil and H.parseSpellup("mob x") == nil, "spellup: mob [clear]")
+	eq(H.parseSpellup("mana").what, "mana", "spellup: mana (phase 8c, TEST ONLY: mana to the top)")
 	check(pk.what == "pick" and pk.spell == 200 and pk.f1 == 1 and pk.f2 == 2 and H.parseSpellup("pick 200 3 0") == nil and H.parseSpellup("pick 200 1") == nil, "spellup: pick SPELL F1 F2")
 	check(H.parseSpellup("awk").what == "awk" and H.parseSpellup("awk 200").spell == 200 and H.parseSpellup("awk 500") == nil, "spellup: awk [SPELL]")
 	check(H.parseSpellup("class Warrior").name == "warrior" and H.parseSpellup("class Iron Sage").name == "iron sage" and H.parseSpellup("class 4").voc == 4
@@ -4324,7 +4327,18 @@ do
 	say2("spellup mob #931")
 	check(last(sup):find('"mob":3', 1, true) and last(sup):find('"name":"Rat"', 1, true) and #made == madeBefore + 3, "spellup mob: three Rats beside the bot, whatever stands near")
 	eq(sup.target, made[madeBefore + 1], "spellup mob: the first Rat is the bot's target")
-	eq(made[madeBefore + 2].hp, 200000, "spellup mob: sturdy enough to live through two casts")
+	eq(made[madeBefore + 2].hp, 5000000, "spellup mob: sturdy enough to live through twenty casts (phase 8c)")
+	-- phase 8c: `mob clear` takes the Rats of the earlier `mob` away and makes none
+	local byId = {}
+	for i = madeBefore + 1, #made do
+		byId[made[i]:getId()] = made[i]
+	end
+	local origCreature = rawget(_G, "Creature")
+	Creature = function(id) return byId[id] end
+	say2("spellup mob clear #9311")
+	Creature = origCreature
+	check(last(sup):find('"cleared":true', 1, true) and made[madeBefore + 1].removed and made[madeBefore + 2].removed and made[madeBefore + 3].removed and #made == madeBefore + 3,
+		"spellup mob clear: the Rats of the last mob are removed, none made")
 	say2("spellup rank 201 12 #905")
 	eq(ranked.rank[201], 12, "spellup rank: the rank is set")
 	eq(ranked.sp[201], 24, "spellup rank: with the SP of that rank")
@@ -4379,7 +4393,7 @@ do
 	ChaosSpellForms.active(sup, 200)
 	ChaosSpellFormsCore.hitFactor({{kind = "TWIN"}}, {id = 1, amount = 500, player = true}) -- a player's hit is not a Form's sample
 	say2("spellup fstat #950")
-	check(last(sup):find('"fstat":[[201,1,1000,1100,80,"SPLIT",0,0]]', 1, true), "spellup fstat: hits, the hits with the Forms' factors, the planned extra (a hit at its uptime, a dot over its ticks): " .. last(sup))
+	check(last(sup):find('"fstat":[[201,1,1000,1100,80,"SPLIT",0,0,130]]', 1, true), "spellup fstat: hits, the hits with the Forms' factors, the planned extra (a hit at its uptime, a dot over its ticks) and at an uptime of 1 (phase 8c): " .. last(sup))
 	say2("spellup fstat clear #951")
 	say2("spellup fstat #952")
 	check(last(sup):find('"fstat":[]', 1, true), "spellup fstat clear: the record is empty after it")

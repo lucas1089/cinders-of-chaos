@@ -37586,3 +37586,28 @@ Test harness faults, not engine bugs: a synthetic Greater Rift run needs `player
 **Console.** Only the stock `luaDoTargetCombat(). Creature not found` of `illusionist_class/bewitched_curse.lua` (a timer after its target died), as in phase 8. No Lua error from the upgrades, no `[tester-anomaly]`.
 
 **Run it again.** As phase 8, then `testers.py run --checks --closed --only closed_spell_pvp,closed_spell_dormant,closed_spell_signature,closed_spell_seals,closed_spell_wire --minutes 40`; `CHAOS_WIRE_DUMP=FILE` saves the opcode 168 messages of the wire check.
+
+### Phase 8c: the three checks 8b could not measure (O686)
+
+Run live on the same local test server (current main installed over it with a SQL dump first, the four lines of the switch in the installed copy only, the repository stays `enabled = false`; the switch, the helper copy and the tester rows are gone again). Bots: two Elementalists at level 500 (the PvP pair, the Forms check) and one at 1900 (the Pinnacle). Helper **v43** (the bots' own tools, TEST ONLY): `pvp aim` (the foe tester becomes the bot's target at once, a monster of the zone or not), `spellup mana` (mana to the top), `spellup mob clear` (the Rats of the earlier `mob` removed; the new ones carry 5,000,000 health, the old 200,000 died in the second variant), the `casts` list of `spellup log` / `fstat` (the casts the server ran, from the cast event of engine patch 0008: the bot only knows it said the words), the plan at an uptime of 1 as the ninth field of an `fstat` row.
+
+| Item | Design | Live |
+|---|---|---|
+| Combos and awakening in PvP (`closed_spell_pvp`, PASS) | the rank at the half (rank 20: 1.090), the awakened hit 1.050, no combo, no signature | two Elementalists in the Marches, every attack spell at rank 20, one spell each awakened: 6 PvP hits logged, rank factor 1.090 on every one, awakened hit 1.050 over 6 hits (best 1.050), 0 combo procs after 3 pairs cast at the foe (Steam Burst, Thermal Shock, Overload; the second spell of Thermal Shock hit the foe), the signature ran 0 times (4 awakened casts in PvP). An earlier run: 3 hits, the same 1.090 and 1.050 |
+| Forms' hit gain (`closed_spell_formgain`, PASS) | `forms.csv` and the planner of `spell_forms_core.lua`, per cast | Glacial Doom at rank 20 against three Rats of 5,000,000 health, 11 to 16 casts a variant, Form-less 21945 and 21809 damage per cast (spread 0%): ECHO plan 1.05, plan at uptime 1 1.07, landed 1.11; GROUND 1.10 / 1.21 / 1.13; ECHO + OVERCHARGE 1.24 / 1.34 / 1.39; ECHO + ASCEND 1.10 / 1.13 / 1.11 |
+| Pinnacle Seals (`closed_spell_seal_pinnacle`, PASS) | 2 Seals for a pinnacle kill | the bot (level 1900) opened a fight through `PN.testerSet` and `PN.enter`, Ascended Malgrath came after the start delay and was killed through its real death event: Seals +0 / +0 / +2 (waystone, rift, pinnacle) |
+
+The Forms land at the plan, per cast: inside the plan and the plan at uptime 1 plus 0.05 in every variant of the last run. The planner discounts each extra by the uptime of its kind (a pack that dies or moves away); the Rats do neither, so a landed gain between the two numbers is the expected one. Two earlier runs with four casts a variant and one Form-less base read 1.13 / 1.27 / 1.63 / 1.17 and 1.13 / 1.16 / 1.49 / 1.16: the gap of the second run was the noise of the damage rolls, which is why the check casts a Form-less variant again at the end (the live gain is read over the mean of the two). The numbers are per cast, not per second: the 0.6 s of cast delay of OVERCHARGE is not in them.
+
+**Why 8b saw nothing, all in the tester tools (no game bug found, so no new server test).**
+1. `spellup log` sorted its rows by the combat log's hit count and cut them at 14: a hit on a player is not credited to the spell (count 0), so the PvP rows (negative spell id) went last and fell off. They come first now and are never cut.
+2. The bots' rotation cast at the monsters of the Marches (the helper aims at a foe tester only when the bot has no target). `pvp aim` and the scripted casts of the check aim at the foe first.
+3. Two level 500 Elementalists kill each other in a few seconds and the zone puts them out: both rotations stay paused until the scripted casts are done (the awakened spell five times a bot, then the combo pairs), and the walk ends when the lead is within reach, not when a foe reads under 100% (61% was a bot's own health).
+4. `closed_spell_formgain` read a cast the server refused for mana as a cast (4 said, 0 run): mana is topped up before each cast and the casts that ran are counted by the server.
+5. The Rats died in the second variant (the later variants hit nothing and read as a lost Form): new Rats for each variant, and a Form-less variant at the end.
+6. The pinnacle check passes through `PN.enter` as 8b's change meant.
+Verdict rules that changed: the PvP check is a SKIP without an awakened hit on the foe and without a combo pair whose second spell hit the foe; the Forms check fails only when a Form lands more than 0.30 under its plan and notes a gain outside the plan to the plan at uptime 1 (0.20).
+
+**Still not run live.** LEECH and REFLECT, `signature.use`, the client window, the bot Aab of the Forms check (it never started its casts in three runs: dead or at the temple when the check began).
+
+**Run it again.** As phase 8, then one run of `testers.py run --checks --closed --only closed_spell_pvp --count 2`, `--only closed_spell_formgain --count 1` and `--only closed_spell_seal_pinnacle` with a bot of level 1800 or more (the bots die often at the hunt, a run takes 15 to 30 minutes; the first bot to start has no free partner and skips the PvP check, the second one plays it).

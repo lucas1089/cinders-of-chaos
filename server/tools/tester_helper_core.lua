@@ -1226,7 +1226,7 @@ end
 --   !tester boss [state | spawn | path | close]   spawn is a copy of a key boss for the bot (TEST ONLY, only while no player is near and no lair is
 --                                    near); state gives its telegraph marks, the safe tile (guide `dodge`), the kills, the boss points, `listed`
 function H.parsePvp(arg)
-	return parseWords(arg, "pvp", {"state", "path"})
+	return parseWords(arg, "pvp", {"state", "path", "aim"})
 end
 
 function H.parseBoss(arg)
@@ -2612,7 +2612,7 @@ end
 -- grant of a rank (0-20) or of Seals (0-999 each), the monster health factor H on two fresh copies of a monster nearby (switch off, then on),
 -- and the log of the factors the hooks of ChaosPassiveDealt applied to the bot's hits. Only a tester character gets it (the guard of every command).
 H.COMMANDS.spellup = true
-H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]] | sig [clear] | fstat [clear] | pick SPELL F1 F2 | awk [SPELL] | class VOCATION | source waystone TIER [first] | source rift G [fail] | source pinnacle]"
+H.SPELLUP_USAGE = "usage: spellup [state | log [clear] | h | forms | combos | mob [clear] | mana | clear | rank SPELL RANK | near SPELL | seals [W [R [P]]] | sig [clear] | fstat [clear] | pick SPELL F1 F2 | awk [SPELL] | class VOCATION | source waystone TIER [first] | source rift G [fail] | source pinnacle]"
 
 function H.parseSpellup(arg)
 	local s = tostring(arg or "")
@@ -2621,7 +2621,9 @@ function H.parseSpellup(arg)
 	end
 	local word, rest = s:match("^%s*(%a+)%s*(.-)%s*$")
 	word = word and word:lower()
-	if word == "state" or word == "h" or word == "clear" or word == "forms" or word == "combos" or word == "mob" then
+	if word == "mob" and rest:lower() == "clear" then -- phase 8c: the Rats of the earlier `mob` removed
+		return {what = "mob", clear = true}
+	elseif word == "state" or word == "h" or word == "clear" or word == "forms" or word == "combos" or word == "mob" or word == "mana" then
 		if rest ~= "" then
 			return nil, H.SPELLUP_USAGE
 		end

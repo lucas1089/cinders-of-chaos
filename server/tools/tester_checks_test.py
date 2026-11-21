@@ -13863,6 +13863,34 @@ class SpellUpgradesLive8b(unittest.TestCase):
         self.assertIn('SPLIT', text)
         self.assertEqual(TX.spell_formgain_verdict([])[0], TX.SKIP)
 
+    def test_formgain_brackets_the_form_less_cast_before_and_after(self):
+        # phase 8c: the Form-less variant is cast again at the end; the live gain is read over the mean of the two (6000 and 8000 per 6 casts: 1000 and 1333, mean 1167)
+        v = [{'label': 'none', 'casts': 6, 'row': [200, 6, 0, 0, 0, 'none', 6, 6000.0]},
+             {'label': 'I-1', 'casts': 6, 'ran': 6, 'row': self.fs(200, 6, 6000, 6000, 2100, 'SPLIT', 9450.0)},   # 1575 per cast over 1167 = 1.35
+             {'label': 'none-2', 'casts': 6, 'ran': 6, 'row': [200, 6, 0, 0, 0, 'none', 6, 8000.0]}]
+        st, text = TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': v}])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('plan 1.35 live 1.35', text)
+        self.assertIn('spread 28%', text)
+        self.assertEqual(len([r for r in TX.form_gain_rows(v) if r[1] == 'none']), 2)
+        # only Form variants and no base: nothing to compare
+        self.assertEqual(TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': [v[1]]}])[0], TX.SKIP)
+
+    def test_formgain_reads_the_gain_against_the_plan_and_the_plan_at_full_uptime(self):
+        # phase 8c: the planner discounts the extras by the uptime of the kind (a pack that dies or moves); the Rats of the check never do, so the gain may land up to the plan at
+        # an uptime of 1; row[8] is what the planner added at an uptime of 1
+        base = {'label': 'none', 'casts': 6, 'ran': 6, 'row': [200, 6, 0, 0, 0, 'none', 6, 6000.0]}
+        row = [200, 6, 6000, 6000, 1000, 'ECHO', 10, 7800.0, 2000]   # plan 7000 / 6000 = 1.17, at uptime 1 8000 / 6000 = 1.33, landed 1300 per cast = 1.30
+        st, text = TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': [base, {'label': 'I-1', 'casts': 6, 'ran': 6, 'row': row}]}])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('plan 1.17 live 1.30', text)
+        self.assertIn('plan at uptime 1: 1.33', text)
+        self.assertNotIn('outside the plan', text)
+        row = [200, 6, 6000, 6000, 1000, 'ECHO', 10, 9600.0, 2000]   # landed 1600 per cast = 1.60, beyond the plan at uptime 1 by more than the tolerance
+        st, text = TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': [base, {'label': 'I-1', 'casts': 6, 'ran': 6, 'row': row}]}])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('outside the plan', text)
+
     # ---- the wire state
     def wire(self, **over):
         w = {'state': {'on': True, 's': [[200, 3, 0.1, 0.4], [201, 20, 0, 0]]}, 'forms': {'f': [[200, 1, 2]]},

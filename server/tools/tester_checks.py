@@ -10185,6 +10185,8 @@ async def check_closed_spell_awaken(io, name, cls, level):
 # awakening after a class change, the nine signature kinds, the Seal sources, the Forms' hit gain, the wire state. Helper v42 (`spellup sig | fstat |
 # pick | awk | class | source`, the PvP cell of the log). Every grant is TEST ONLY and a named fallback of the result.
 SPELLUP_PVP_FIGHT = 150.0   # seconds the two bots fight in the Marches after the combo pairs
+SPELLUP_PVP_MEET = 240.0   # seconds the two bots walk to each other in the Marches before the casts (phase 8c)
+SPELLUP_PVP_CASTS = 5   # casts of its awakened spell a bot aims at the foe in the Marches (phase 8c)
 PVP_ENTER_TRIES, PVP_ENTER_WAIT = 4, 25.0   # tries to enter the Marches, seconds between two (a bot just out of combat is refused)
 PINNACLE_SEAL_WAIT = 240.0   # seconds the Pinnacle Seal check waits for the arena to open and the boss to come
 RANK_POWER_PCT = 0.9        # spell_ranks_config.lua effects.damage.power: percent a rank adds to a damage hit
@@ -10200,8 +10202,8 @@ SIG_BATCH, SIG_BATCHES, SIG_CASTS, SIG_WAIT = 3, 4, 2, 9.0   # spells awakened a
 SEAL_SOURCES = {'waystone': {'minTier': 16, 'perClear': 1, 'firstClear': 1}, 'rift': {'minTier': 16, 'perRun': 1, 'climb': 1}, 'pinnacle': {'perKill': 2}}
 SEAL_ALL = (210, 186, 84)   # the Seals of the three slots together (spell_awakening_config.lua slots)
 FORM_GAIN_TOL, FORM_GAIN_BAD = 0.20, 0.30   # the live gain against the planned one: a note beyond the first, a failure beyond the second
-FORM_CASTS, FORM_SPELLS, FORM_READY = 4, 1, 40.0   # casts of each variant, spells sampled, seconds to wait for a cooldown
-FORM_VARIANTS = (('none', 0, 0), ('I-1', 1, 0), ('I-2', 2, 0), ('I-1+II-1', 1, 1), ('I-1+II-2', 1, 2))   # (label, Form I pick, Form II pick)
+FORM_CASTS, FORM_SPELLS, FORM_READY = 6, 1, 40.0   # casts of each variant, spells sampled, seconds to wait for a cooldown
+FORM_VARIANTS = (('none', 0, 0), ('I-1', 1, 0), ('I-2', 2, 0), ('I-1+II-1', 1, 1), ('I-1+II-2', 1, 2), ('none-2', 0, 0))   # (label, Form I pick, Form II pick); the Form-less variant is cast again at the end
 DORMANT_FAMILY = ('Warrior', 'Juggernaut', 'Berserker', 'Beastmaster')   # a class of these changes to a Mystic, any other to a Warrior
 
 
@@ -10302,11 +10304,18 @@ def spell_pvp_verdict(bots, tried):
         return SKIP, 'no spell hit of a bot on the foe tester was logged'
     if not tried:
         return SKIP, '%d PvP hit(s) logged but no combo pair could be cast at the foe (the bot\'s book has no reaction pair)' % hits
+    if not awake_f:
+        return SKIP, '%d PvP hit(s) logged (rank factor %s) but no awakened spell hit the foe' % (hits, ('%.3f' % (sum(ranked) / len(ranked))) if ranked else 'none')
+    ids = {str(n): int(sid) for sid, n in ((bots[0].get('by_id') or {}) if bots else {}).items()}
+    pvp_ids = {-int(r[0]) for r in (bots[0].get('log') or []) if len(r) >= 13 and int(r[0]) < 0 and int(r[1])} if bots else set()
+    landed = [t for t in tried if ids.get(str(t[2])) in pvp_ids] if ids else list(tried)   # a pair counts when its second spell hit the foe (a PvP row of the log)
+    if ids and not landed:
+        return SKIP, '%d PvP hit(s) logged but the second spell of no combo pair %s hit the foe' % (hits, [t[0] for t in tried][:4])
     casts = sum(int(r[10]) for b in bots for r in (b.get('sig') or []) if len(r) >= 13)
     rank_txt = 'rank factor %.3f' % (sum(ranked) / len(ranked)) if ranked else 'no ranked hit'
-    awake_txt = 'awakened hit %.3f (want %.3f)' % (sum(awake_f) / len(awake_f), AWAKE_PVP) if awake_f else 'no awakened hit on the foe'
-    return PASS, '%d PvP hit(s) of %d bot(s): %s at the half rule, %s, 0 combo procs after %d pair(s) cast at the foe %s, signature never ran (%d awakened cast(s) in PvP)' % (
-        hits, len(bots), rank_txt, awake_txt, len(tried), [t[0] for t in tried][:4], casts)
+    awake_txt = 'awakened hit %.3f over %d hit(s) (want %.3f)' % (sum(awake_f) / len(awake_f), awake_n, AWAKE_PVP)
+    return PASS, '%d PvP hit(s) of %d bot(s): %s at the half rule, %s, 0 combo procs after %d pair(s) cast at the foe (%d landed their second spell on it) %s, signature never ran (%d awakened cast(s) in PvP)' % (
+        hits, len(bots), rank_txt, awake_txt, len(tried), len(landed), [t[0] for t in landed][:4], casts)
 
 
 async def check_closed_spell_pvp(io, name, cls, level):
@@ -10320,7 +10329,7 @@ async def check_closed_spell_pvp(io, name, cls, level):
     other = await io.partner()
     if not other:
         return Result(key, name, cls, SKIP, 'no free bot in game')
-    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)']
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms)', 'spellup seals (TEST ONLY Seals)', 'spellup mana (TEST ONLY mana top-up)', 'pvp aim (the foe as the target)']
     bots, pair_words = [], {}
     for who in (None, other):
         nm = name if who is None else other
@@ -10364,11 +10373,44 @@ async def check_closed_spell_pvp(io, name, cls, level):
             await io.sleep(PVP_ENTER_WAIT)
         else:
             return Result(key, name, cls, SKIP, 'both bots were not inside the Marches after %d tries: %s' % (PVP_ENTER_TRIES, text or 'no text'), fb)
-        await pvp_play(io, squad, 'zone', trace, PVP_BUDGET['zone'], stop=lambda t: t.get('foe_hp') is not None and t['foe_hp'] < 100 and t['fought'] >= 10)
+        # phase 8c: both rotations stay paused from here to the end of the casts (two level 500 bots kill each other in a few seconds with their own spells, and the zone then puts
+        # them out: the casts below must come first and be the only ones). The bots walk until the lead stands within reach of the foe (the guide says fight), not until a foe
+        # reads below 100% (a bot at 61% of its health is not a hurt foe)
         words = su_words(io)
         me = bots[0]
         pause = getattr(io, 'pause_rotation', None)
-        for rid, e1, e2 in COMBO_REACTIONS:   # the lead casts the pairs at the foe: first spell, 2.2 s, the second (the rotation is paused)
+        if pause:
+            pause(name, True)
+            pause(other, True)
+        await pvp_play(io, squad, 'zone', trace, SPELLUP_PVP_MEET, stop=lambda t: t['fought'] >= 3)
+        # the awakened spell of each bot is cast at the foe on purpose: `pvp aim` takes the foe tester as the target (the Marches hold monsters), mana to the top, SPELLUP_PVP_CASTS
+        # casts a bot; the hit on the foe is the awakened +5% on top of the rank at the half, and the signature does not run
+        for r, b in zip(squad, bots):
+            nm, sids = b['name'], [sid for sid in b['awake'] if words.get(str(b['by_id'].get(sid)))]
+            b['aimlog'] = []
+            if not sids or not io.alive():
+                b['aimlog'].append('no words for the awakened spell' if b['awake'] else 'no awakened spell')
+                continue
+            w = words[str(b['by_id'][sids[0]])]
+            for _ in range(SPELLUP_PVP_CASTS):
+                if not io.alive():
+                    break
+                await su_when_ready(io, nm, w, 30.0)
+                await su_cmd(io, b['who'], 'spellup mana')
+                aim = await hcmd(io, r, 'pvp aim', 'pvp')
+                foe = (aim or {}).get('foe') if isinstance(aim, dict) else None
+                note = 'aim %s place %s foe %s' % ((aim or {}).get('aimed') if isinstance(aim, dict) else 'no answer', (aim or {}).get('place') if isinstance(aim, dict) else None,
+                                                    ('%s tiles%s' % (foe.get('dist'), '' if foe.get('seen') else ' unseen')) if isinstance(foe, dict) else 'none')
+                if isinstance(aim, dict) and aim.get('aimed') is False:
+                    b['aimlog'].append(note)
+                    await io.sleep(2.0)
+                    continue
+                cast = await io.cast_words_of(nm, w)
+                if cast:
+                    b['aimed'] = b.get('aimed', 0) + 1
+                b['aimlog'].append('%s, cast %s' % (note, cast))
+                await io.sleep(1.2)
+        for rid, e1, e2 in COMBO_REACTIONS:   # the lead casts the pairs at the foe: first spell, 2.2 s, the second
             if e1 not in me['by_el'] or e2 not in me['by_el'] or not io.alive() or len(tried) >= 3:
                 continue
             s1, s2 = me['by_el'][e1][0], me['by_el'][e2][0]
@@ -10377,17 +10419,17 @@ async def check_closed_spell_pvp(io, name, cls, level):
                 continue
             await su_when_ready(io, name, w1, 30.0)
             await su_when_ready(io, name, w2, 30.0)
-            if pause:
-                pause(name, True)
-            try:
-                if await io.cast_words_of(name, w1):
-                    await io.sleep(2.2)
-                    if await io.cast_words_of(name, w2):
-                        tried.append((rid, s1[1], s2[1]))
-                    await io.sleep(1.0)
-            finally:
-                if pause:
-                    pause(name, False)
+            await su_cmd(io, None, 'spellup mana')
+            await hcmd(io, squad[0], 'pvp aim', 'pvp')   # the foe tester is the target, not a monster of the zone
+            if await io.cast_words_of(name, w1):
+                await io.sleep(2.2)
+                await hcmd(io, squad[0], 'pvp aim', 'pvp')
+                if await io.cast_words_of(name, w2):
+                    tried.append((rid, s1[1], s2[1]))
+                await io.sleep(1.0)
+        if pause:
+            pause(name, False)
+            pause(other, False)
         trace['stuck'] = None
         await pvp_play(io, squad, 'zone', trace, SPELLUP_PVP_FIGHT)
         for b in bots:
@@ -10398,11 +10440,16 @@ async def check_closed_spell_pvp(io, name, cls, level):
         if trace.get('faults'):
             status, text = FAIL, '; '.join(trace['faults'][:3])
         if status == SKIP:
-            text += ' [foe health %s%%, fought %d s of %d, both inside %s; log rows %s]' % (
+            text += ' [foe health %s%%, fought %d s of %d, both inside %s, awakened casts aimed at the foe %s; log rows (spell, hits, rank calls) %s]' % (
                 trace.get('foe_hp'), int(trace.get('fought') or 0), int(trace.get('secs') or 0), trace.get('both'),
-                [[b['name'][-3:], [(r[0], r[8]) for r in (b['log'] or [])[:6]]] for b in bots])
+                ['%d (%s)' % (b.get('aimed', 0), '; '.join(sorted(set(b.get('aimlog') or []))[:3])) for b in bots],
+                [[b['name'][-3:], [(r[0], r[8], r[1]) for r in (b['log'] or [])[:6]]] for b in bots])
         return Result(key, name, cls, status, text, fb)
     finally:
+        pause_end = getattr(io, 'pause_rotation', None)
+        if pause_end:
+            pause_end(name, False)
+            pause_end(other, False)
         await io.go('town')
         await io.go_of(other, 'town')
         io.raid_mode([name, other], False)
@@ -10776,60 +10823,71 @@ async def check_closed_spell_seal_pinnacle(io, name, cls, level):
 def form_gain_rows(variants):
     """[(label, kinds, casts, landed per cast, planned gain, live gain)] from the variants [{'label', 'row': the `spellup fstat` row}]: the planned gain is what the planner
     of the Forms made of the real casts (the hits with the Forms' main factors, plus the extra hits, dots, bursts and grounds at the uptime of the kind) over the hits before
-    the Forms; the live one is the landed damage per cast over the one of the first variant (no Form)"""
-    out, base = [], None
+    the Forms; the live one is the landed damage per cast over the mean of the Form-less variants (phase 8c: one before and one after the Forms, the two bracket the drift of
+    the Rats' places and of the damage rolls; a variant with the kinds 'none' is such a base)"""
+    parsed = []
     for v in variants:
         row = v.get('row') or []
         if len(row) < 8:
             continue
-        done = max(1, int(v.get('casts') or 0))
-        per_cast = float(row[7]) / done
-        if base is None:
-            base = per_cast
-            out.append((v['label'], 'none', done, per_cast, 1.0, 1.0))
+        done = max(1, int(v.get('ran') or v.get('casts') or 0))   # the casts the server ran when the helper counted them, else the ones the bot said
+        parsed.append((v, row, done, float(row[7]) / done))
+    bases = [p[3] for p in parsed if str(p[1][5]) == 'none']
+    base = sum(bases) / len(bases) if bases else 0.0
+    out = []
+    for v, row, done, per_cast in parsed:
+        if str(row[5]) == 'none':
+            out.append((v['label'], 'none', done, per_cast, 1.0, per_cast / base if base > 0 else None, 1.0))
             continue
         orig, adj, extra = float(row[2]), float(row[3]), float(row[4])
         plan = (adj + extra) / orig if orig > 0 else None
-        live = per_cast / base if base > 0 else None
-        out.append((v['label'], str(row[5]), done, per_cast, plan, live))
+        full = (adj + float(row[8])) / orig if orig > 0 and len(row) > 8 else plan   # the plan at an uptime of 1 (the Rats of the check never die or move away)
+        out.append((v['label'], str(row[5]), done, per_cast, plan, per_cast / base if base > 0 else None, full))
     return out
 
 
 def spell_formgain_verdict(samples):
-    """(status, text). samples: [{'spell': name, 'variants': [{'label', 'casts', 'row'}]}] the first variant of a spell is the one with no Form. A variant whose live gain is
-    more than FORM_GAIN_BAD under its planned one lost hits (the Form plans extras that do not land)"""
+    """(status, text). samples: [{'spell': name, 'variants': [{'label', 'casts', 'row'}]}]; a variant with no Form (kinds 'none') is a base, the first and the last of a
+    spell's variants. A variant whose live gain is more than FORM_GAIN_BAD under its planned one lost hits (the Form plans extras that do not land)"""
     bad, notes, lines = [], [], []
     n = 0
     for s in samples:
         rows = form_gain_rows(s.get('variants') or [])
-        if len(rows) < 2:
+        forms = [r for r in rows if r[1] != 'none']
+        bases = [r for r in rows if r[1] == 'none']
+        if not forms or not bases:
             continue
-        for label, kinds, casts, per_cast, plan, live in rows[1:]:
+        base_txt = ' and '.join('%d' % b[3] for b in bases)
+        spread = (max(b[3] for b in bases) - min(b[3] for b in bases)) / (sum(b[3] for b in bases) / len(bases)) if len(bases) > 1 and sum(b[3] for b in bases) > 0 else 0.0
+        for label, kinds, casts, per_cast, plan, live, full in forms:
             if plan is None or live is None:
                 continue
             n += 1
-            lines.append('%s %s [%s]: plan %.2f live %.2f' % (s['spell'], label, kinds, plan, live))
+            lines.append('%s %s [%s]: plan %.2f live %.2f (plan at uptime 1: %.2f; %d cast(s), %d per cast, Form-less %s per cast, spread %d%%)' % (
+                s['spell'], label, kinds, plan, live, full, casts, per_cast, base_txt, int(spread * 100)))
             if live < plan - FORM_GAIN_BAD:
                 bad.append('%s %s [%s]: plan %.2f, landed %.2f of the Form-less cast' % (s['spell'], label, kinds, plan, live))
-            elif abs(live - plan) > FORM_GAIN_TOL:
-                notes.append('%s %s %.2f vs %.2f' % (s['spell'], label, live, plan))
+            elif live < plan - FORM_GAIN_TOL or live > max(plan, full) + FORM_GAIN_TOL:   # the planner discounts for a pack that dies or moves (uptime); the Rats do neither
+                notes.append('%s %s %.2f vs %.2f to %.2f' % (s['spell'], label, live, plan, full))
     if bad:
         return FAIL, '; '.join(bad[:3]) + ' | ' + '; '.join(lines[:4])
     if not n:
-        return SKIP, 'no Form variant was cast with a planned gain'
+        return SKIP, 'no Form variant was cast with a planned gain [%s]' % '; '.join(
+            '%s %s: %s' % (s['spell'], v['label'], 'said %s ran %s (server casts %s) row %s' % (v.get('casts'), v.get('ran'), v.get('all'), v.get('row'))) for s in samples for v in (s.get('variants') or [])[:6])
     return PASS, '%d Form variant(s), the landed gain of the combat log against the planned one: %s%s' % (
-        n, '; '.join(lines[:8]), ('; off by more than %d%% (inside the noise of %d casts): %s' % (int(FORM_GAIN_TOL * 100), FORM_CASTS, ', '.join(notes[:4]))) if notes else '')
+        n, '; '.join(lines[:8]), ('; outside the plan (by more than %d%%, plan to plan at uptime 1): %s' % (int(FORM_GAIN_TOL * 100), ', '.join(notes[:4]))) if notes else '')
 
 
 async def check_closed_spell_formgain(io, name, cls, level):
-    """two attack spells of the bot at rank 20 cast FORM_CASTS times at six sturdy Rats with no Form, each Form I, then Form II on one: the landed damage per cast of the
-    combat log against the gain the Forms' planner made of the real casts"""
+    """one attack spell of the bot at rank 20 cast FORM_CASTS times at three sturdy Rats (5,000,000 health, new ones for each variant) with no Form, each Form I, then Form II
+    on one, and with no Form again: the landed damage per cast of the combat log, over the mean of the two Form-less variants, against the gain the Forms' planner made of the
+    real casts"""
     key = 'closed_spell_formgain'
     a = await io.helper('spellup state', 'spellup', ANSWER)
     ok, why = spellup_on(a)
     if not ok:
         return Result(key, name, cls, SKIP, why)
-    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms written)', 'spellup mob (TEST ONLY Rats, the cast target)']
+    fb = ['spellup rank (TEST ONLY rank grants)', 'spellup pick (TEST ONLY Forms written)', 'spellup mob (TEST ONLY Rats, the cast target)', 'spellup mana (TEST ONLY mana top-up)']
     rows = [r for r in await su_forms_rows(io) if not r[2]]
     if not rows:
         return Result(key, name, cls, SKIP, 'the bot has no attack spell with Forms')
@@ -10843,8 +10901,6 @@ async def check_closed_spell_formgain(io, name, cls, level):
         return Result(key, name, cls, SKIP, not_at_hunt(io))
     pause = getattr(io, 'pause_rotation', None)
     await su_cmd(io, None, 'spellup clear')
-    await su_cmd(io, None, 'spellup mob')
-    await su_cmd(io, None, 'spellup mob')
     samples = []
     for r in rows[:FORM_SPELLS]:
         sid, sname = int(r[0]), str(r[1])
@@ -10855,12 +10911,15 @@ async def check_closed_spell_formgain(io, name, cls, level):
             if not io.alive():
                 break
             await su_cmd(io, None, 'spellup pick %d %d %d' % (sid, f1, f2))
+            await su_cmd(io, None, 'spellup mob clear')   # phase 8c: fresh Rats of 5,000,000 health for every variant (the old ones died in the second variant)
+            await su_cmd(io, None, 'spellup mob')
             await su_cmd(io, None, 'spellup fstat clear')
             done = 0
             for _ in range(FORM_CASTS):
                 if not io.alive():
                     break
                 await su_when_ready(io, name, w)
+                await su_cmd(io, None, 'spellup mana')   # phase 8c: a cast the server refuses for mana leaves no trace (4 casts said, none run)
                 if pause:
                     pause(name, True)
                 try:
@@ -10873,11 +10932,12 @@ async def check_closed_spell_formgain(io, name, cls, level):
             await io.sleep(5.0)   # the dots and the delayed hits of the last cast land
             fs = await su_cmd(io, None, 'spellup fstat')
             lg = await su_cmd(io, None, 'spellup log')
+            ran = sum(int(x[1]) for x in ((fs or {}).get('casts') or []) if int(x[0]) == sid)   # the casts the server ran (the bot only knows it said the words)
             row = next((x for x in (fs or {}).get('fstat') or [] if int(x[0]) == sid), None)
             if row is None:   # no Form acted (the first variant): the landed damage of the combat log is the base
                 hit = next((x for x in (lg or {}).get('log') or [] if int(x[0]) == sid), None)
                 row = [sid, done, 0, 0, 0, 'none', int(hit[8]) if hit else 0, float(hit[9]) if hit else 0.0]
-            variants.append({'label': label, 'casts': done, 'row': row})
+            variants.append({'label': label, 'casts': done, 'ran': ran, 'row': row, 'all': (fs or {}).get('casts')})
         samples.append({'spell': sname, 'variants': variants})
     await su_cmd(io, None, 'spellup clear')
     status, text = spell_formgain_verdict(samples)
