@@ -1705,7 +1705,12 @@ function spawnBoss(run) -- the forward-declared local (reinforce)
 					run.kit = keys
 				end
 				pcall(ChaosBossMech.attach, m, key, {level = healthLevelOf(run), center = run.L.bossSpawn, radius = radius, tier = run.key and run.key.tier or nil,
-					solo = (run.size or 1) == 1, profile = profile})
+					solo = (run.size or 1) == 1, profile = profile,
+					-- O703: an Omen guardian's factor is worked out for the party (R.omenHealthMult); a rift guardian has 1.0 a player: no effect
+					partySize = run.omen and (run.size or 1) or nil,
+					healthCurve = run.omen and function(n)
+						return R.omenHealthMult(C(), n)
+					end or nil})
 			end
 			first = first or m
 			packFx(P(at), "rift_boss_arrives", CONST_ME_MORTAREA)

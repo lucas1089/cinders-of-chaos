@@ -1290,6 +1290,131 @@ do
 	creatures[ob.id] = nil
 end
 
+-- O703: the dungeon bosses, the guild boss and the Omen guardians get the factor of their fight's size (the party health is a curve of the size,
+-- not the monster's health at attach time). Seconds are the model's: G.balance final against the plan, no engine
+do
+	local function dungeonCurve(n) return 1 + 0.6 * (n - 1) end
+	local function omenCurve(n) return 1 + 1.0 * (n - 1) end
+	local gcfg = dofile("data/scripts/chaos/guildboss_config.lua")
+	dofile("data/scripts/chaos/guildboss_core.lua")
+	local GB = ChaosGuildBossCore
+	local function guildCurve(n) return GB.healthMult(gcfg, n) end
+	-- refForCurve: the ref's own party is the unit
+	local r = G.refForCurve({health = 100, dps = 10, uptime = 1, players = 1}, 5, dungeonCurve)
+	check(r.players == 5 and r.dps == 50 and math.abs(r.health - 340) < 1e-9, "O703 refForCurve: five of a solo ref, health x 3.4")
+	local g5 = G.refForCurve({health = 3400, dps = 50, uptime = 1, players = 5}, 5, dungeonCurve)
+	check(math.abs(g5.health - 3400) < 1e-9, "O703 refForCurve: the ref's own party keeps its health")
+	local g1 = G.refForCurve({health = 3400, dps = 50, uptime = 1, players = 5}, 1, dungeonCurve)
+	check(g1.players == 1 and math.abs(g1.health - 1000) < 1e-9 and g1.dps == 10, "O703 refForCurve: a smaller party than the ref's")
+	check(G.refForCurve({health = 100, dps = 10, players = 1}, 5).health == 100, "O703 refForCurve: no curve, the ref's health")
+	local function fightOf(name, opts)
+		local p = cfg.profiles[name]
+		local b = make({name = "O703 " .. name, pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
+		opts.center, opts.radius = {x = 200, y = 200, z = 7}, 8
+		local f = M.attach(b, name, opts)
+		creatures[b.id] = nil
+		return f, p
+	end
+	local function final(p, n, curve)
+		local ref = G.refForCurve(p.ref, n, curve)
+		return G.balance(p, ref)
+	end
+	-- the five generated dungeon bosses: 150 s alone, 102 s with five (the curve 1 + 0.6 (n - 1) plans it), not the 88-95 s of the solo factor
+	for _, name in ipairs({"vault keeper ossrim", "ossivane the gravecage", "forgewarden kharzun", "vaelith the fallen seraph",
+		"azhkarrath the chained wyrm"}) do
+		local f, p = fightOf(name, {partySize = 5, healthCurve = dungeonCurve})
+		local solo = G.balance(p, G.refFor(p.ref))
+		local b5 = final(p, 5, dungeonCurve)
+		check(f and math.abs(f.hpMult - b5.hpMult) < 1e-9, "O703 " .. name .. ": attach uses the factor of five (" .. tostring(f and f.hpMult) .. ")")
+		check(math.abs(b5.final - 102) < 2, "O703 " .. name .. ": five kill it in " .. G.clockText(b5.final) .. ", the curve plans 1:42")
+		check(math.abs(solo.final - 150) < 1.5, "O703 " .. name .. ": alone 2:30")
+		local oldWay = (p.ref.health * dungeonCurve(5)) * solo.hpMult / (5 * p.ref.dps * math.max(0.3, p.ref.uptime - b5.downShare)) + b5.fixed
+		check(oldWay < b5.final - 0.5 or math.abs(f.hpMult - solo.hpMult) < 1e-9, "O703 " .. name .. ": the solo factor had left five faster than the plan (" .. G.clockText(oldWay) .. ")")
+		local s1 = fightOf(name, {partySize = 1, healthCurve = dungeonCurve})
+		check(s1 and math.abs(s1.hpMult - solo.hpMult) < 1e-9, "O703 " .. name .. ": a solo run keeps the solo factor")
+	end
+	-- Gorvath: the ref is the party of five; a group of 1-4 had the factor of five
+	do
+		local name = "gorvath the banner-eater"
+		local p = cfg.profiles[name]
+		for n, want in pairs({[1] = 495, [2] = 495, [5] = 421}) do
+			local f = fightOf(name, {partySize = n, healthCurve = guildCurve})
+			local b = final(p, n, guildCurve)
+			check(f and math.abs(f.hpMult - b.hpMult) < 1e-9, "O703 Gorvath x" .. n .. ": attach uses the factor of its size")
+			check(math.abs(b.final - want) < 2, "O703 Gorvath x" .. n .. ": " .. string.format("%.1f", b.final) .. " s, planned " .. want)
+		end
+		local five = G.balance(p, G.refFor(p.ref)).hpMult
+		local f1 = fightOf(name, {partySize = 1, healthCurve = guildCurve})
+		check(f1 and math.abs(f1.hpMult - five) > 0.05, "O703 Gorvath x1: not the factor of five (" .. string.format("%.4f", five) .. ")")
+		local f5 = fightOf(name, {partySize = 5, healthCurve = guildCurve})
+		check(f5 and math.abs(f5.hpMult - five) < 1e-9, "O703 Gorvath x5: the ref's own party is unchanged")
+		check(final(p, 1, guildCurve).final < gcfg.boss.enrageAt - 60, "O703 Gorvath alone is clear of the " .. gcfg.boss.enrageAt .. " s enrage")
+	end
+	-- the Omen guardians: Sangrith and Thalcyra do not move (the same factor at every size), Morvane's party factor is its own
+	for _, name in ipairs({"sangrith the bloodmoon herald", "thalcyra the stormbound seer"}) do
+		local p = cfg.profiles[name]
+		local solo = G.balance(p, G.refFor(p.ref)).hpMult
+		for n = 1, 5 do
+			local f = fightOf(name, {partySize = n, healthCurve = omenCurve})
+			check(f and math.abs(f.hpMult - solo) < 1e-9, "O703 " .. name .. " x" .. n .. ": the factor does not move")
+		end
+	end
+	do
+		local name = "morvane the hollow crown"
+		local p = cfg.profiles[name]
+		local solo = G.balance(p, G.refFor(p.ref)).hpMult
+		local s1 = fightOf(name, {partySize = 1, healthCurve = omenCurve})
+		check(s1 and math.abs(s1.hpMult - solo) < 1e-9, "O703 Morvane alone: unchanged (the floor of the profile)")
+		local f5 = fightOf(name, {partySize = 5, healthCurve = omenCurve})
+		check(f5 and f5.hpMult > solo + 0.01, "O703 Morvane x5: its party factor " .. string.format("%.4f", f5 and f5.hpMult or 0) .. " is above the floor " .. string.format("%.4f", solo))
+	end
+	-- the call sites hand the mechanics their size and curve (read from the engine files: they need a running engine to run)
+	do
+		local function slurp(path)
+			local fh = assert(io.open(path, "rb"))
+			local s = fh:read("*a")
+			fh:close()
+			return s
+		end
+		local dg, gb, rf = slurp("data/scripts/chaos/dungeons.lua"), slurp("data/scripts/chaos/guildboss.lua"), slurp("data/scripts/chaos/rift.lua")
+		check(dg:find("ChaosBossMech.hint(monster, run.size or 1", 1, true) and dg:find("DIFF.partyHealth(n, cfg.party)", 1, true),
+			"O703 dungeons.lua: the boss is hinted with the run's size and DIFF.partyHealth")
+		check(gb:find("partySize = run.size", 1, true) and gb:find("B.healthMult(cfg, n)", 1, true),
+			"O703 guildboss.lua: attach gets the group's size and B.healthMult")
+		check(rf:find("R.omenHealthMult(C(), n)", 1, true) and rf:find("partySize = run.omen", 1, true),
+			"O703 rift.lua: an Omen guardian's attach gets the size and R.omenHealthMult (and a rift guardian none)")
+	end
+	-- no curve: the profile's own ref as before (the other systems)
+	do
+		local name = "vault keeper ossrim"
+		local f, p = fightOf(name, {})
+		check(f and math.abs(f.hpMult - G.balance(p, G.refFor(p.ref)).hpMult) < 1e-9, "O703: no curve, no change")
+	end
+	-- the auto attach of a first think reads the hint a system left (dungeons.lua scaleMonster): the real engine path
+	do
+		local name = "ossivane the gravecage"
+		local p = cfg.profiles[name]
+		local b = make({name = "Ossivane The Gravecage", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health, monster = true})
+		b.isMonster = function() return true end
+		M.hint(b, 5, dungeonCurve)
+		check(M.hints[b.id] ~= nil, "O703 hint: stored")
+		registered.ChaosBossMechAttach.onThink(b, 0)
+		local f = M.fights[b.id]
+		check(f and math.abs(f.hpMult - final(p, 5, dungeonCurve).hpMult) < 1e-9, "O703 hint: the first think attaches with the run's party (" .. tostring(f and f.hpMult) .. ")")
+		check(M.hints[b.id] == nil, "O703 hint: used once")
+		M.detach(b)
+		creatures[b.id] = nil
+		local c = make({name = "Ossivane The Gravecage", pos = {x = 200, y = 200, z = 7}, hp = p.ref.health})
+		c.isMonster = function() return true end
+		M.hint(c, 5, dungeonCurve)
+		c.name = "Someone Else" -- an id that now belongs to another monster takes no hint
+		registered.ChaosBossMechAttach.onThink(c, 0)
+		check(M.fights[c.id] == nil, "O703 hint: a monster of another name takes none and has no profile")
+		M.hints[c.id] = nil
+		creatures[c.id] = nil
+	end
+end
+
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

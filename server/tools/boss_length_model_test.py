@@ -48,6 +48,36 @@ real = B.committed_mults
 B.committed_mults = lambda: dict(real(), vault=real()['vault'] * 1.1)
 ok(any('vault healthMult' in b for b in B.problems()), 'a healthMult 10% off is reported')
 B.committed_mults = real
+# O703: the mechanics' health factor of the fight's own size (the real core through tools/party_factor_numbers.lua)
+import copy  # noqa: E402
+
+nums = B.party_numbers()
+ok(B.party_problems(nums) == [] and B.callsite_problems() == [], 'the party factor and the call sites hold: %s' % (B.party_problems(nums) + B.callsite_problems())[:3])
+fights = {f['key']: f for f in nums['fights']}
+ok(len(fights) == 9 and [f['kind'] for f in nums['fights']].count('dungeon') == 5, 'five dungeon bosses, Gorvath and three Omen guardians')
+five = [f['rows']['5'] for f in nums['fights'] if f['kind'] == 'dungeon']
+ok(all(abs(r['final'] - 102) < 1.5 for r in five), 'a group of five kills each dungeon boss in 102 s: %s' % [round(r['final'], 1) for r in five])
+ok(all(abs(f['rows']['1']['final'] - 150) < 1.5 for f in nums['fights'] if f['kind'] == 'dungeon'), 'alone 150 s')
+ok(sum(1 for r in five if r['oldFinal'] < r['final'] - 3) == 4, 'the solo factor left 4 of the 5 dungeon bosses 8-14% too fast with five')
+g = fights['gorvath the banner-eater']['rows']
+ok(abs(g['1']['final'] - 495) < 2 and abs(g['5']['final'] - 421) < 2 and g['1']['oldFinal'] > 570, 'Gorvath 495 s alone (was %.0f), 421 s with five' % g['1']['oldFinal'])
+ok(nums['guild']['enrageAt'] - g['1']['final'] >= B.PARTY_ENRAGE_GAP, 'Gorvath alone is clear of the enrage')
+for k in ('sangrith the bloodmoon herald', 'thalcyra the stormbound seer'):
+    ok(all(abs(r['hpMult'] - r['soloMult']) < 1e-9 for r in fights[k]['rows'].values()), '%s does not move' % k)
+m = fights['morvane the hollow crown']['rows']
+ok(abs(m['1']['final'] - m['1']['oldFinal']) < 1e-9 and m['5']['final'] > m['5']['oldFinal'] + 5, 'Morvane: alone as before, five %.0f s (was %.0f)' % (m['5']['final'], m['5']['oldFinal']))
+# the old way (the factor of the profile's own party at every size) is reported: dungeon bosses, Gorvath and Morvane
+old = copy.deepcopy(nums)
+for f in old['fights']:
+    for r in f['rows'].values():
+        r['hpMult'], r['final'] = r['soloMult'], r['oldFinal']
+bad = B.party_problems(old)
+ok(any('vault keeper ossrim' in b for b in bad) and any('Gorvath' in b for b in bad) and any('Morvane' in b for b in bad), 'the solo factor on a party is reported')
+ok(not any('sangrith' in b or 'thalcyra' in b for b in bad), 'and Sangrith and Thalcyra still pass')
+# an Omen guardian that moved is reported
+moved = copy.deepcopy(nums)
+moved['fights'][6]['rows']['5']['hpMult'] += 0.01
+ok(any('must not' in b for b in B.party_problems(moved)), 'a Sangrith that moves is reported')
 if fails:
     print('boss_length_model_test: %d failed' % fails)
     sys.exit(1)

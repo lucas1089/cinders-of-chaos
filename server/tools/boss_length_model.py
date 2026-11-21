@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The boss lengths of the balance round (O475, owner 2026-11-10: "You can do everything"; computed, not measured).
 
-usage: python3 -I server/tools/boss_length_model.py [--derive] [--check] [--upgrades]
+usage: python3 -I server/tools/boss_length_model.py [--derive] [--check] [--party] [--upgrades]
 
 --upgrades (O686 phase 3): the typical damage is the median class's with the spell upgrades (class_dps_model.py), and every committed health
 is multiplied by H of the level it is planned for before it is held to the derivation (the committed numbers are today's: the game
@@ -25,6 +25,13 @@ numbers that give the bosses their planned length again, and --check holds the c
                    the Ascended Omens and the Cinderheart (XML health) and the models that fight them (uber_config.lua and
                    raid_config.lua refDps) and the five raid bosses (XML health) move by the same factor, so their documented times hold
 
+O703 (party health curves, owner 2026-11-21): the mechanics' health factor (boss_mechanics_core.lua G.balance) is worked out for the fight's own
+size and health curve, not the profile's own party (the solo one, or the party of five for Gorvath). --party prints the table (tools/
+party_factor_numbers.lua, the real core), --check holds it: the five generated dungeon bosses keep their plan (150 s alone, about 102 s with
+five) within PARTY_TOL at every size; Gorvath 495 s alone / 421 s with five (guildboss_config.lua targets, clear of the enrage by PARTY_ENRAGE_GAP);
+Sangrith and Thalcyra do not move (the same factor at every size: their party health curve is 1.0 a player); Morvane keeps its solo time (the floor
+of the profile) and its party time keeps the plan's ratio to it; and dungeons.lua, guildboss.lua and rift.lua hand attach the size and the curve.
+
 The typical damage on one target is the median class at the level (class_dps_model.median_dps, 1 target) x the share a boss lets
 through (BOSS_KEPT: the boss armour takes armourTarget.boss percent of the physical half, the resistance BOSS_RES of the elemental
 half); on a pack it is the 5 target median x NORMAL_KEPT (armourTarget.normal, NORMAL_RES). BOSS_RES and NORMAL_RES are assumptions
@@ -33,9 +40,11 @@ half); on a pack it is the 5 target median x NORMAL_KEPT (armourTarget.normal, N
 --derive   print the numbers (the table of D.dps, the five healthMult, the rift model, the Omen factor)
 --check    exit 1 when a committed number is more than 1.5% (the Omen XML 0.5%) off its derivation
 """
+import json
 import math
 import os
 import re
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -242,6 +251,93 @@ def _tol(base, level, targets=1):
     return base + SU.slack(level, targets)
 
 
+# ------------------------------------------------------------------------------------------------ O703: the factor of the fight's own size
+PARTY_TOL = 0.015            # the kill time with the factor against the plain time of the size (the curve's own plan)
+PARTY_ENRAGE_GAP = 60        # seconds the guild boss's solo kill must stay under its enrage
+PARTY_FIVE = {'dungeon': 102.0}   # the dungeon curve 1 + 0.6 (n - 1): a group of five against 150 s alone (150 x 3.4 / 5)
+_party = []
+
+
+def lua_bin():
+    return os.environ.get('LUAJIT', 'luajit')
+
+
+def party_numbers():
+    """tools/party_factor_numbers.lua: G.refForCurve / G.balance of the real core for each fight and size"""
+    if not _party:
+        out = subprocess.run([lua_bin(), os.path.join('tools', 'party_factor_numbers.lua')], cwd=SERVER, check=True, capture_output=True,
+                             text=True).stdout
+        _party.append(json.loads(out))
+    return _party[0]
+
+
+def party_problems(nums=None):
+    nums = nums or party_numbers()
+    bad = []
+    guild = nums['guild']
+    for f in nums['fights']:
+        key, kind, rows = f['key'], f['kind'], f['rows']
+        solo, five = rows['1'], rows['5']
+        if kind != 'guild' and abs(solo['hpMult'] - solo['soloMult']) > 1e-9:
+            bad.append('%s: alone the factor %.4f is not the solo one %.4f' % (key, solo['hpMult'], solo['soloMult']))
+        if kind == 'dungeon':
+            if abs(solo['final'] / BOSS_SECONDS - 1) > PARTY_TOL:
+                bad.append('%s: alone %.0f s, planned %d' % (key, solo['final'], BOSS_SECONDS))
+            if abs(five['final'] / PARTY_FIVE['dungeon'] - 1) > 0.02:
+                bad.append('%s: five kill it in %.0f s, the curve plans %.0f' % (key, five['final'], PARTY_FIVE['dungeon']))
+            for n, r in rows.items():
+                if abs(r['final'] / r['base'] - 1) > PARTY_TOL:
+                    bad.append('%s x%s: %.1f s with the factor, the plain time of the size is %.1f' % (key, n, r['final'], r['base']))
+        elif kind == 'guild':
+            t = guild['targets']
+            for n, want in (('1', t['party1']), ('2', t['party2']), ('5', t['party5']), ('10', t['party10'])):
+                got = rows[n]['final']
+                if abs(got / want - 1) > 0.01:
+                    bad.append('Gorvath x%s: %.0f s with the factor, the plan is %d' % (n, got, want))
+            for n, r in rows.items():
+                if abs(r['final'] / r['base'] - 1) > PARTY_TOL:
+                    bad.append('Gorvath x%s: %.1f s with the factor, the plain time of the size is %.1f' % (n, r['final'], r['base']))
+            if guild['enrageAt'] - solo['final'] < PARTY_ENRAGE_GAP:
+                bad.append('Gorvath alone %.0f s is within %d s of the %d s enrage' % (solo['final'], PARTY_ENRAGE_GAP, guild['enrageAt']))
+        elif key.startswith('morvane'):
+            # the floor of the profile binds (the weakest class's rule): alone it stays, and the party keeps the plan's ratio to it
+            if abs(five['final'] / solo['final'] / (five['base'] / solo['base']) - 1) > PARTY_TOL:
+                bad.append('Morvane: five take %.0f s against %.0f alone, the plain ratio is %.3f (the factor %.4f)' % (
+                    five['final'], solo['final'], five['base'] / solo['base'], five['hpMult']))
+        else:   # Sangrith, Thalcyra: no effect, the same factor at every size
+            for n, r in rows.items():
+                if abs(r['hpMult'] - r['soloMult']) > 1e-9:
+                    bad.append('%s x%s: the factor moved to %.4f from %.4f (it must not)' % (key, n, r['hpMult'], r['soloMult']))
+    return bad
+
+
+def callsite_problems():
+    """the engine files hand attach the size and the curve (they run only inside the engine)"""
+    bad = []
+    want = (('dungeons.lua', ('ChaosBossMech.hint(monster, run.size or 1', 'DIFF.partyHealth(n, cfg.party)')),
+            ('guildboss.lua', ('partySize = run.size', 'B.healthMult(cfg, n)')),
+            ('rift.lua', ('partySize = run.omen', 'R.omenHealthMult(C(), n)')),
+            ('boss_mechanics.lua', ('G.refForCurve(profile.ref, opts.partySize or players, opts.healthCurve)', 'M.hints[id]')))
+    for fname, needles in want:
+        text = read(os.path.join(CHAOS, fname))
+        for n in needles:
+            if n not in text:
+                bad.append("%s does not hand the mechanics the fight's size and health curve (missing: %s)" % (fname, n))
+    return bad
+
+
+def print_party():
+    nums = party_numbers()
+    print('mechanics health factor by size (with = kill time with it, today = with the factor the fights had; seconds of the ref):')
+    for f in nums['fights']:
+        print('  %-32s %s' % (f['key'], f['kind']))
+        for n in sorted(f['rows'], key=int):
+            r = f['rows'][n]
+            print('    x%-2s factor %.4f (was %.4f)  plain %6.1f s  with factor %6.1f s  today %6.1f s' % (
+                n, r['hpMult'], r['soloMult'], r['base'], r['final'], r['oldFinal']))
+    return 0
+
+
 def problems():
     bad = []
     rows = dps_table()
@@ -312,6 +408,8 @@ def problems():
         # a damage number of today's model: held in the run of today only (see D.dps above)
         if not SU.active() and abs(v / (REFDPS_OLD * factor) - 1) > 0.015:
             bad.append('%s refDps is %.0f, the derivation %.0f' % (name, v, REFDPS_OLD * factor))
+    bad.extend(party_problems())
+    bad.extend(callsite_problems())
     return bad
 
 
@@ -321,12 +419,14 @@ def main(argv):
         print(SU.banner())
     if '--derive' in argv:
         return derive()
+    if '--party' in argv:
+        return print_party()
     bad = problems()
     if '--check' in argv:
         for b in bad:
             print('FAIL ' + b)
         if not bad:
-            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, arena bosses %s s, from the typical damage after the round)' % (
+            print('boss length check: ok (dungeon bosses %d s, rift guardian %d s, Omen guardian %d s, arena bosses %s s, from the typical damage after the round; the party factor of each size, O703)' % (
                 BOSS_SECONDS, GUARDIAN_SECONDS, OMEN_SECONDS, '/'.join(str(a[4]) for a in ARENA_BOSSES)))
         return 1 if bad else 0
     return derive()

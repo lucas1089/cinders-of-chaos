@@ -42,6 +42,7 @@ local M = ChaosBossMech
 local G = ChaosBossMechCore
 
 M.fights = M.fights or {} -- boss creature id -> fight
+M.hints = M.hints or {} -- O703: boss creature id -> {name, partySize, healthCurve} for the auto attach of its first think (M.hint)
 M.addOf = M.addOf or {} -- add / totem id -> boss id
 
 local function C()
@@ -121,6 +122,15 @@ local COMBAT = {physical = "COMBAT_PHYSICALDAMAGE", death = "COMBAT_DEATHDAMAGE"
 	fire = "COMBAT_FIREDAMAGE", ice = "COMBAT_ICEDAMAGE", earth = "COMBAT_EARTHDAMAGE", holy = "COMBAT_HOLYDAMAGE"}
 local function combatOf(element)
 	return _G[COMBAT[element or "physical"] or "COMBAT_PHYSICALDAMAGE"] or COMBAT_PHYSICALDAMAGE
+end
+
+-- O703: a system that spawns a boss the auto attach (below) picks up by name tells it the fight's size and the health curve of the party
+-- before the first think (the generated dungeons: dungeons.lua scaleMonster), so the health factor is worked out for the real fight
+function M.hint(monster, partySize, healthCurve)
+	local id = monster and monster:getId() or 0
+	if id ~= 0 and not M.fights[id] then
+		M.hints[id] = {name = monster:getName(), partySize = partySize, healthCurve = healthCurve}
+	end
 end
 
 -- ======================================================================== lookups (also used by uber.lua, guildboss.lua)
@@ -965,7 +975,7 @@ function M.attach(monster, key, opts)
 	M.fights[id] = f
 	players = math.max(1, #fightPlayers(f))
 	f.st = G.newFight(profile, {now = mnow(), difficulty = difficulty, solo = opts.solo or (profile.ref and profile.ref.solo),
-		players = players, size = opts.size, tier = tier})
+		players = players, size = opts.size, tier = tier}) -- size: the boss footprint (profile.size when nil); the party size is opts.partySize (O703)
 	if profile.ownTelegraphs then
 		f.st.p = setmetatable({telegraphs = {}}, {__index = profile})
 	end
@@ -974,9 +984,13 @@ function M.attach(monster, key, opts)
 		-- O698: a system that gives its fight a party's health (opts.healthScale: the factor on the monster's health at this size,
 		-- pinnacle.lua and pocketboss.lua) gets the factor worked out for that size (the adds, the totems and the damage of that
 		-- many players), not the profile's own party (the solo one for most): the solo factor cut a party of five's boss by 20% too much
+		-- O703: a system whose party health is a curve of the size, not the monster's health at this moment (the generated dungeon
+		-- bosses, the guild boss, the Omen guardians), passes opts.partySize and opts.healthCurve(n): the ref's health follows the curve
 		local ref
 		if opts.healthScale then
-			ref = G.refFor(profile.ref, opts.size or players, monster:getMaxHealth() * opts.healthScale)
+			ref = G.refFor(profile.ref, opts.partySize or opts.size or players, monster:getMaxHealth() * opts.healthScale)
+		elseif opts.healthCurve then
+			ref = G.refForCurve(profile.ref, opts.partySize or players, opts.healthCurve)
 		else
 			ref = G.refFor(profile.ref)
 		end
@@ -1099,7 +1113,15 @@ local attachEv = CreatureEvent("ChaosBossMechAttach")
 function attachEv.onThink(creature, interval)
 	creature:unregisterEvent("ChaosBossMechAttach")
 	if creature:isMonster() and creature:getId() ~= 0 and not M.fights[creature:getId()] then
-		M.attach(creature, nil, {center = creature:getPosition()})
+		local opts = {center = creature:getPosition()}
+		-- O703: the size and health curve a system left for this monster (M.hint): the dungeon's party of the run
+		local id = creature:getId()
+		local hint = M.hints[id]
+		M.hints[id] = nil
+		if hint and hint.name == creature:getName() then
+			opts.partySize, opts.healthCurve = hint.partySize, hint.healthCurve
+		end
+		M.attach(creature, nil, opts)
 	end
 	return true
 end

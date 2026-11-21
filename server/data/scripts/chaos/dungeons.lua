@@ -663,6 +663,13 @@ local function scaleMonster(run, monster)
 	local partyHp = DIFF.partyHealth(run.size or 1, cfg.party)
 	if ex.bossHealth and ex.bossName and monster:getName():lower() == ex.bossName:lower() then
 		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.bossHealth)
+		-- O703: the boss mechanics' health factor (its auto attach, first think) is worked out for this run's party and its health curve,
+		-- not the solo fight: a group of five takes the 102 s the curve plans, not 93
+		if ChaosBossMech and ChaosBossMech.hint then
+			ChaosBossMech.hint(monster, run.size or 1, function(n)
+				return DIFF.partyHealth(n, cfg.party)
+			end)
+		end
 	elseif ex.trashHealth then
 		-- a generated dungeon's own trash curve (areagen_config.lua trashHealth: a run of about 10-15 minutes)
 		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.trashHealth)
