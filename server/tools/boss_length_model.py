@@ -35,8 +35,9 @@ O703 (party health curves, owner 2026-11-21): the mechanics' health factor (boss
 size and health curve, not the profile's own party (the solo one, or the party of five for Gorvath). --party prints the table (tools/
 party_factor_numbers.lua, the real core), --check holds it: the five generated dungeon bosses keep their plan (150 s alone, about 102 s with
 five) within PARTY_TOL at every size; Gorvath 495 s alone / 421 s with five (guildboss_config.lua targets, clear of the enrage by PARTY_ENRAGE_GAP);
-Sangrith and Thalcyra do not move (the same factor at every size: their party health curve is 1.0 a player); Morvane keeps its solo time (the floor
-of the profile) and its party time keeps the plan's ratio to it; and dungeons.lua, guildboss.lua and rift.lua hand attach the size and the curve.
+Sangrith and Thalcyra do not move (the same factor at every size: their party health curve is 1.0 a player); Morvane's profile sits on its floor
+(minHpMult 0.60), so its health is raised until the solo kill is the other guardians' (O710: ref health 533,800 and the file 1,198,500, x1.0676,
+313.5 s alone within 1 s, about 268 s with five against 266) and its party time keeps the plan's ratio to it; and dungeons.lua, guildboss.lua and rift.lua hand attach the size and the curve.
 
 The typical damage on one target is the median class at the level (class_dps_model.median_dps, 1 target) x the share a boss lets
 through (BOSS_KEPT: the boss armour takes armourTarget.boss percent of the physical half, the resistance BOSS_RES of the elemental
@@ -409,6 +410,8 @@ def _tol(base, level, targets=1):
 # ------------------------------------------------------------------------------------------------ O703: the factor of the fight's own size
 PARTY_TOL = 0.015            # the kill time with the factor against the plain time of the size (the curve's own plan)
 PARTY_ENRAGE_GAP = 60        # seconds the guild boss's solo kill must stay under its enrage
+MORVANE_SOLO_TOL = 1.0       # seconds: Morvane alone against Sangrith alone (O710)
+MORVANE_FIVE_TOL = 0.02      # Morvane with five against Sangrith with five
 PARTY_FIVE = {'dungeon': 102.0}   # the dungeon curve 1 + 0.6 (n - 1): a group of five against 150 s alone (150 x 3.4 / 5)
 _party = []
 
@@ -455,7 +458,14 @@ def party_problems(nums=None):
             if guild['enrageAt'] - solo['final'] < PARTY_ENRAGE_GAP:
                 bad.append('Gorvath alone %.0f s is within %d s of the %d s enrage' % (solo['final'], PARTY_ENRAGE_GAP, guild['enrageAt']))
         elif key.startswith('morvane'):
-            # the floor of the profile binds (the weakest class's rule): alone it stays, and the party keeps the plan's ratio to it
+            # the floor of the profile binds (the weakest class's rule): O710 raised its health until alone it takes the other Omen guardians'
+            # time, and the party keeps the plan's ratio to it
+            ref_s = [x for x in nums['fights'] if x['key'].startswith('sangrith')][0]['rows']
+            if abs(solo['final'] - ref_s['1']['final']) > MORVANE_SOLO_TOL:
+                bad.append('Morvane alone: %.1f s, Sangrith alone %.1f s (within %.0f s)' % (solo['final'], ref_s['1']['final'], MORVANE_SOLO_TOL))
+            if abs(five['final'] / ref_s['5']['final'] - 1) > MORVANE_FIVE_TOL:
+                bad.append('Morvane with five: %.1f s, Sangrith with five %.1f s (within %.0f%%)' % (
+                    five['final'], ref_s['5']['final'], MORVANE_FIVE_TOL * 100))
             if abs(five['final'] / solo['final'] / (five['base'] / solo['base']) - 1) > PARTY_TOL:
                 bad.append('Morvane: five take %.0f s against %.0f alone, the plain ratio is %.3f (the factor %.4f)' % (
                     five['final'], solo['final'], five['base'] / solo['base'], five['hpMult']))
@@ -530,9 +540,11 @@ def problems():
     health, factor = omen_factor()
     h_omen = _h(1000)
     heal_tol = HEAL_UP_TOL if SU.active() else 0.0
+    morvane = committed_arena('morvane the hollow crown')[0] / float(OMEN_OLD)   # O710: the one guardian on its floor has more health
     for f, v in committed_health(OMENS).items():
-        if abs(v * h_omen / health - 1) > _tol(0.005, 1000) + heal_tol:
-            bad.append('Omen %s health %d x H %.3f, the derivation %.0f' % (f, v, h_omen, health))
+        want_h = health * (morvane if f.startswith('morvane') else 1.0)
+        if abs(v * h_omen / want_h - 1) > _tol(0.005, 1000) + heal_tol:
+            bad.append('Omen %s health %d x H %.3f, the derivation %.0f' % (f, v, h_omen, want_h))
     for f, v in committed_health(ASCENDED).items():
         old = {'ysgrath_the_cinderheart.xml': CINDER_OLD}.get(f, ASCENDED_OLD if f.startswith('ascended_') else None)
         if old and abs(v * h_omen / (old * factor) - 1) > _tol(0.005, 1000) + heal_tol:

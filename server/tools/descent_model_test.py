@@ -11,6 +11,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import spell_upgrade_model as _SU  # noqa: E402
+_SU.set_mode(False)  # O709: the spell upgrades ship on and a model's default is the upgrades mode; this test holds the switch-off numbers (the model's --check runs both modes in CI)
 import descent_model as M
 import class_dps_model as CD
 import survival_model as S

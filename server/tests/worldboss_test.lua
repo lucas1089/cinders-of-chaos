@@ -198,6 +198,10 @@ assert(titleSources.worldboss, "role titles registered with ChaosTitles")
 
 local W = ChaosWorldBoss
 local cfg = Chaos.worldBoss
+-- O709: the repository ships the spell ranks (and H, the monster health factor) on. The fight numbers below are the boss file's (18M), so the
+-- loaded ranks config is switched off for this test; tests/health_factor_test.lua holds H and the adds line below reads it either way
+dofile("data/lib/chaos_spell_ranks.lua")
+ChaosSpellRanksConfig.enabled = false
 local assertEq = function(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
 
 -- ---------------------------------------------------------------- layout and bounds
@@ -521,8 +525,8 @@ hit(a, 4000000); hit(b, 2000000); hit(alt, 1000000)   -- 18M -> 11M (61%): phase
 advance(200)
 local adds = 0; for _ in pairs(W.state.adds) do adds = adds + 1 end
 assertEq(adds, 4, "phase 1 adds")
-assertEq(monsters[next(W.state.adds)].maxhp, 150000, "adds get the configured health")
-assertEq(monsters[next(W.state.adds)].hp, 150000, "adds start at full health")
+assertEq(monsters[next(W.state.adds)].maxhp, Chaos.scaleHealth(150000, cfg.minLevel), "adds get the configured health x H (O709: the ranks are live)")
+assertEq(monsters[next(W.state.adds)].hp, Chaos.scaleHealth(150000, cfg.minLevel), "adds start at full health")
 hc.onHealthChange(boss, a, 500, COMBAT_HEALING, 0, COMBAT_NONE, 0)
 assertEq(W.state.stats[1].damage, 4000000, "healing is not damage")
 hit(cy, 50000) -- Cyra 50k = 0.28% of 18M: eligible

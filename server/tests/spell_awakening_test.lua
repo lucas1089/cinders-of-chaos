@@ -511,7 +511,10 @@ local P = ChaosSpellRanksCore
 local AC = ChaosSpellAwakeningConfig
 ok(registered["ChaosSpellAwakeningLogin"] and registered["ChaosSpellAwakeningLogout"] and registered["ChaosSpellAwakeningKill"], "login, logout and kill events")
 ok(registered["/spellseal"], "the staff command")
-eq(AW.on(), false, "the shipped switch is off")
+eq(RC.enabled, true, "the ranks ship switched on (O709, owner 2026-11-21)")
+eq(AW.on(), true, "so does awakening: the shipped switch is on")
+RC.enabled = false -- the off path below runs with the ranks switched off in the loaded config
+eq(AW.on(), false, "the ranks switch off: awakening is off")
 eq(#AW.table() == 0 and 0 or 1, 1, "the table loaded from data/spells/awakened.csv")
 eq(AW.nameOf(206), "Cataclysm of Cinders", "the awakened name, English")
 eq(AW.nameOf(206, true), "Cataclismo de Cinzas", "the awakened name, pt-BR")

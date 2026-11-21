@@ -28,8 +28,8 @@
 #                   Illusionist, Deadeye, Juggernaut, Elementalist and Samurai of them), the TEST ONLY tester helper is installed and the closed switch
 #                   (data/chaos_testers_closed) is put on. WORK/party.env (mode 600) holds what tools/ci/boss_video.sh needs, the database login of the run
 #                   included. UL_PINNACLE_BOSS malgrath (default) | vhoss | talath | varkhul picks the level (1900 / 2100 / 2300 / 2500)
-#   UL_SPELL_SHOWCASE=1  (--serve-only) the spells video of .github/workflows/spells-video.yml (O692): the spell ranks switch (spell_ranks_config.lua `enabled`) is put
-#                   ON in this run's server copy only (never in the repository), with the monster health factor that comes with it; three staff characters, "Showcase
+#   UL_SPELL_SHOWCASE=1  (--serve-only) the spells video of .github/workflows/spells-video.yml (O692): the spell ranks switch (spell_ranks_config.lua `enabled`) is ON
+#                   in this run's server copy (in the repository too since O709; a copy with false is switched), with the monster health factor that comes with it; three staff characters, "Showcase
 #                   Elementalist", "Showcase Deadeye" and "Showcase Illusionist" (group 6, level 1000, mana and health of a hunter, the Illusionist half hurt so that a heal
 #                   lands), stand in the rat cave and the TEST ONLY pack helper (server/tools/spell_showcase.lua) keeps six monsters round whichever one is online.
 #                   WORK/spell-CLASS.env (mode 600, one per class: CHAOS_LIVE_*, CHAOS_SPELLTOUR_CLASS, CHAOS_CLIENT_KEY) is what tools/ci/spells_video.sh needs
@@ -263,7 +263,8 @@ install_spell_showcase() {
   [ "${UL_SPELL_SHOWCASE:-0}" = 1 ] || return 0
   local cfg="$SERVER/data/scripts/chaos/spell_ranks_config.lua"
   [ -f "$cfg" ] || die "no $cfg (install_all.py did not put the spell ranks there)"
-  grep -q '^	enabled = false,' "$cfg" || die "spell_ranks_config.lua has no top-level 'enabled = false,' line to switch"
+  # O709: the repository's switch is true now, so this only keeps the run right if a copy still has it false
+  grep -q '^	enabled = \(false\|true\),' "$cfg" || die "spell_ranks_config.lua has no top-level 'enabled = ...,' line to switch"
   sed -i '0,/^	enabled = false,/s//	enabled = true,/' "$cfg"
   grep -q '^	enabled = true,' "$cfg" || die "the spell ranks switch is not on"
   if [ ! -f "$REPO/server/tools/spell_showcase.lua" ] || [ ! -f "$REPO/server/tools/spell_showcase_core.lua" ]; then

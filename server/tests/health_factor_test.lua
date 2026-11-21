@@ -1,6 +1,7 @@
 -- Run from the server/ folder: luajit tests/health_factor_test.lua && lua5.3 tests/health_factor_test.lua (CI runs both)
 -- O686 phase 3: the door every monster health goes through (Chaos.healthFactor / Chaos.scaleHealth in chaos_constants.lua, reading
--- data/lib/chaos_spell_ranks.lua and spell_ranks_config.lua `health`): 1 while the ranks are off, the curve when on, never an error,
+-- data/lib/chaos_spell_ranks.lua and spell_ranks_config.lua `health`): 1 while the ranks are off, the curve when on (the repository ships
+-- them on since O709; the off path is run by switching the loaded config off), never an error,
 -- and the planned levels the systems read it at (uber, raid, guild boss, Omen guardian, Greater Rift) are in their configs.
 -- Which files call the door: tools/ci/check_health_paths.py.
 
@@ -25,7 +26,8 @@ end
 ok(type(Chaos.healthFactor) == "function" and type(Chaos.scaleHealth) == "function", "the door exists")
 dofile("data/lib/chaos_spell_ranks.lua")
 local cfg = ChaosSpellRanksConfig
-eq(cfg.enabled, false, "ships switched off")
+eq(cfg.enabled, true, "ships switched on (O709, owner 2026-11-21)")
+cfg.enabled = false -- the next block is the off path of the door
 
 -- ---------------------------------------------------------------- off: nothing moves
 for _, lv in ipairs({1, 99, 100, 500, 1000, 2500, 9999}) do

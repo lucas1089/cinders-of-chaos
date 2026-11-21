@@ -1,6 +1,6 @@
 # Spell upgrades: design, O686 phase 1
 
-Status: design written, owner answered 2026-11-20. Phase 2 (rank core), phase 3 (monster health curve H and the balance models), phase 4 (Forms), phase 5 (client), phase 6 (combos) and phase 7 (awakening) are built and switched off (`enabled = false`). Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3, 4, 6 or 7 moved a number of the first design, the text says so ("Phase 3", "Phase 4", "Phase 6" and "Phase 7" notes).
+Status: LIVE since 2026-11-21 (O709, owner "Ligar agora": `spell_ranks_config.lua` `enabled = true`, `track = true`; ranks, Forms, combos, awakening and the monster health curve H together, existing characters from rank zero). Design written, owner answered 2026-11-20. Phase 2 (rank core), phase 3 (monster health curve H and the balance models), phase 4 (Forms), phase 5 (client), phase 6 (combos), phase 7 (awakening) and phase 8 (the live passes) are built and tested. Every number below is a proposal, computed from the committed models, never measured in game. Where phase 3, 4, 6 or 7 moved a number of the first design, the text says so ("Phase 3", "Phase 4", "Phase 6" and "Phase 7" notes).
 
 Owner 2026-11-20, translated: "upgrade of spells, raise the strength and whatever else of the spells. Think of something cool." Four paths were shown. The owner chose three: Rank by use, now Rank by monster experience, plus Forms; Awakening in the endgame; Combos between spells. Not chosen: tradeable spell tomes. Strength: total spell power gain per character of 50% or more, knowing the endgame must be rebalanced and that a player without upgrades falls far behind.
 
@@ -755,6 +755,8 @@ Working days of one agent session each, with tests and docs. Total about 37 days
 | 8 | Live pass: the tester bots climb ranks, kill times against the models, tune the curve and H, wipe policy, docs. **Ran 2026-11-21** (README "Spell upgrades live pass (O686 phase 8)"): ranks, H, Forms, combos and awakening on a real engine with four bots, five bugs fixed (tables not installed, a nil key, `testersEarn`, `hasLearnedSpell`, the cast event order); the numbers matched the models inside their bands; still open: long hunts to rank 20, kill times with and without awakening, PvP, the wipe policy | 3 |
 
 Phases 2 and 3 ship together, dark. Phase 4 and 5 can overlap. The health factor and the rank gain go live in the same release, never one without the other.
+
+**Released 2026-11-21 (O709).** Owner "Ligar agora": `enabled = true` and `track = true`, nothing was kept dark; the health factor and the rank gain went live in the same release as asked above, every balance model runs in the upgrades mode by default and in the switch-off mode with `--today`. README "Spell upgrades live (O709)"; player note `server/data/patchnotes/2026-11-21.md`.
 
 ## 9. Open questions for the owner
 

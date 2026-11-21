@@ -1249,7 +1249,7 @@ jobs:
         run: |
           python3 -I server/tools/gen_awakened.py --check
           python3 -I server/tools/gen_awakened_test.py
-      - name: Spell upgrades (O686 phase 3), the monster health curve H and the balance models with the upgrades on (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades; spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
+      - name: Spell upgrades (O686 phase 3, live since O709), the monster health curve H and the balance models in both modes (spell_upgrade_model.py --check and its test, the health door check_health_paths.py, every model --check --upgrades (the default while spell_ranks_config.lua enabled is true) and --check --today (the switch-off numbers); spell_upgrade_balance_config.lua, spell_ranks_config.lua health)
         run: |
           python3 -I server/tools/spell_upgrade_model.py --check
           python3 -I server/tools/spell_upgrade_model_test.py
@@ -1273,6 +1273,24 @@ jobs:
           python3 -I server/tools/spell_mastery_model.py --check --upgrades
           python3 -I server/tools/weapon_family_model.py --check --upgrades
           python3 -I server/tools/mainquest_boss_model.py --check --upgrades
+          python3 -I server/tools/class_dps_model.py --check --today
+          python3 -I server/tools/pack_model.py --check --today
+          python3 -I server/tools/boss_model.py --check --today
+          python3 -I server/tools/boss_length_model.py --check --today
+          python3 -I server/tools/tower_model.py --check --today
+          python3 -I server/tools/guardian_model.py --check --today
+          python3 -I server/tools/survival_model.py --check --today
+          python3 -I server/tools/pvp_model.py --check --today
+          python3 -I server/tools/descent_model.py --check --today
+          python3 -I server/tools/waystone_endgame_model.py --check --today
+          python3 -I server/tools/pinnacle_model.py --check --today
+          python3 -I server/tools/greater_rift_model.py --check --today
+          python3 -I server/tools/minion_model.py --check --today
+          python3 -I server/tools/companion_model.py --check --today
+          python3 -I server/tools/card_set_model.py --check --today
+          python3 -I server/tools/spell_mastery_model.py --check --today
+          python3 -I server/tools/weapon_family_model.py --check --today
+          python3 -I server/tools/mainquest_boss_model.py --check --today
           cd server
           luajit tools/rift_layout_model.lua --check --upgrades
           lua5.3 tools/rift_layout_model.lua --check --upgrades
@@ -1280,6 +1298,10 @@ jobs:
           lua5.3 tools/progression_model.lua --check --upgrades
           luajit tools/progression_model.lua --check --no-upgrades
           lua5.3 tools/progression_model.lua --check --no-upgrades
+          luajit tools/rift_layout_model.lua --check --today
+          lua5.3 tools/rift_layout_model.lua --check --today
+          luajit tools/progression_model.lua --check --today
+          lua5.3 tools/progression_model.lua --check --today
       - name: Weapon families keep the class damage, each within 3% on one target, the axe under 5% of a class on 5 targets (weapon_family_model.py --check and its test; weapon_families_config.lua, class_dps_measured.csv; O454)
         run: python3 -I server/tools/weapon_family_model.py --check && python3 -I server/tools/weapon_family_model_test.py
       - name: Waystone endgame, tiers XVI-XXV at level 2500 (the cap, ten steps of difficulty), clear time, survival and experience against the hunt, band bosses, corrupted waystone and the first-clear atlas, computed and not measured (waystone_endgame_model.py --check and its test; waystone_endgame_config.lua, waystone_endgame_balance_config.lua, waystone_tiers_config.lua deep; O666)

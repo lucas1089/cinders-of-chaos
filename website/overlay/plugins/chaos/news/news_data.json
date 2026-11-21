@@ -3,11 +3,39 @@
  "recent_weeks": 8,
  "featured_days": 30,
  "featured_max": 3,
- "latest": "2026-11-20",
+ "latest": "2026-11-21",
  "weeks": [
   {
    "start": "2026-11-16",
    "entries": [
+    {
+     "id": "patch-2026-11-21",
+     "date": "2026-11-21",
+     "kind": "patch",
+     "patch": "2026-11-21",
+     "title": {
+      "en": "Spell upgrades",
+      "pt-BR": "Melhorias de magia"
+     },
+     "text": {
+      "en": "Your spells grow now. Every damage and heal spell has a rank, a choice of Forms and combos with other spells, and in the endgame the best of them awaken. Monsters grow tougher along the game to match.",
+      "pt-BR": "Suas magias crescem agora. Toda magia de dano e de cura tem um rank, uma escolha de Formas e combos com outras magias, e no endgame as melhores despertam. Os monstros ficam mais resistentes ao longo do jogo para acompanhar."
+     },
+     "points": {
+      "en": [
+       "Spell ranks",
+       "Forms",
+       "Combos",
+       "Awakening"
+      ],
+      "pt-BR": [
+       "Ranks de magia",
+       "Formas",
+       "Combos",
+       "Despertar"
+      ]
+     }
+    },
     {
      "id": "melee-weapons",
      "date": "2026-11-20",

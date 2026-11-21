@@ -381,16 +381,18 @@ end
 
 -- ---------------------------------------------------------------- command line
 -- Flags in any position: --no-newcomer, and (O686 phase 3, docs/SPELL_UPGRADES.md 5.3 and 5.6; server/README.md "Monster health curve and the
--- models (O686 phase 3)"):
---   --upgrades     the typical character with the spell ranks on: the monsters have H (spell_ranks_config.lua `health`), the character's damage
---                  has the typical gain G (spell_upgrade_balance_config.lua `typical`, held to the derivation by spell_upgrade_model.py), so a
---                  level takes H / G of the minutes (within 3% of 1: the design's promise) and --check holds the same smoothness limits
+-- models (O686 phase 3)"). O709: the spell upgrades are live (spell_ranks_config.lua `enabled`), so with no flag the model runs in the upgrades mode:
+--   --upgrades     (the default while `enabled` is true) the typical character with the spell ranks on: the monsters have H (spell_ranks_config.lua
+--                  `health`), the character's damage has the typical gain G (spell_upgrade_balance_config.lua `typical`, held to the derivation by
+--                  spell_upgrade_model.py), so a level takes H / G of the minutes (within 3% of 1: the design's promise) and --check holds the same
+--                  smoothness limits
+--   --today        the numbers with the switch off (what the model said before O709): no H, no gain
 --   --no-upgrades  the character with no ranks, no Forms, no combos, no awakening: the monsters have H and the damage has nothing, a level
 --                  takes H x the minutes; prints the hours to reach levels against the typical character (design 5.6), or with --check the
 --                  same limits on that curve (it is slower, so the "minutes a level" ceilings may not hold: the report says which)
 local flags, args = {}, {}
 for _, a in ipairs(arg or {}) do
-	if a == "--no-newcomer" or a == "--upgrades" or a == "--no-upgrades" then
+	if a == "--no-newcomer" or a == "--upgrades" or a == "--no-upgrades" or a == "--today" then
 		flags[a] = true
 	else
 		args[#args + 1] = a
@@ -398,15 +400,19 @@ for _, a in ipairs(arg or {}) do
 end
 local mode = args[1]
 local env = M.load({noNewcomer = flags["--no-newcomer"]})
+local rcfg = dofile("data/scripts/chaos/spell_ranks_config.lua")
+if not flags["--today"] and not flags["--no-upgrades"] and rcfg.enabled then
+	flags["--upgrades"] = true
+end
 if flags["--upgrades"] or flags["--no-upgrades"] then
 	local ranks = dofile("data/scripts/chaos/spell_ranks_core.lua")
-	local rcfg = dofile("data/scripts/chaos/spell_ranks_config.lua")
 	local bal = dofile("data/scripts/chaos/spell_upgrade_balance_config.lua")
 	local function H(L) return ranks.healthFactor(L, rcfg) end
 	local function G(L) return ranks.interp(bal.typical, L, 1) end
 	env.minutesFactor = flags["--no-upgrades"] and H or function(L) return H(L) / G(L) end
-	print(flags["--no-upgrades"] and "spell upgrades: the character with none (the monsters have H, the damage has no gain)"
-		or "spell upgrades: ON for the typical character (the monsters have H, the damage the typical gain)")
+	-- stderr: the tools that read --curve-json and the tables parse stdout (O709: the upgrades mode is the default now)
+	io.stderr:write((flags["--no-upgrades"] and "spell upgrades: the character with none (the monsters have H, the damage has no gain)"
+		or "spell upgrades: ON for the typical character (the monsters have H, the damage the typical gain)") .. "\n")
 end
 local problems, curve = M.problems(env)
 if mode == "--spells" then

@@ -197,10 +197,10 @@ for m in ('rift_layout_model.lua', 'progression_model.lua'):
 check('--no-upgrades' in open(os.path.join(HERE, 'progression_model.lua'), encoding='utf-8').read(), 'progression_model.lua has --no-upgrades')
 
 # ---- a model run in a process of its own, both modes (the caches of the models are per process)
-for flags in ([], ['--upgrades']):
+for flags in (['--today'], [], ['--upgrades']):   # O709: no flag follows the switch, which is on
     r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'boss_model.py'), '--check'] + flags, capture_output=True, text=True, timeout=600)
     check(r.returncode == 0 and 'boss check: ok' in r.stdout, 'boss_model.py --check %s: %s' % (' '.join(flags), (r.stdout + r.stderr)[-300:]))
-    check(('spell upgrades: ON' in r.stdout) == bool(flags), 'the banner follows the flag')
+    check(('spell upgrades: ON' in r.stdout) == (flags != ['--today']), 'the banner follows the flag and the switch')
 
 # ---- the Form band (O686 phase 4, design 2.1)
 band = SU.form_band_config()

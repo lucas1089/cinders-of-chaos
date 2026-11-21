@@ -291,10 +291,11 @@ eq(boss.registered[1], "ChaosBossLairHealth", "and gets the health event")
 local plain = lairBoss("Mercenary", 100)
 spawnCb(plain, nil, true, false)
 eq(#plain.registered, 0, "a hunt monster gets none")
+dofile("data/lib/chaos_spell_ranks.lua")
+ChaosSpellRanksConfig.enabled = false -- the repository ships the ranks on (O709): switch them off for the off path
 creatureEvents.ChaosBossLairHealth.onThink(boss, 1000)
 eq(boss.max, 21000000, "the ranks are off: the health is the file's")
 eq(boss.events.ChaosBossLairHealth, true, "the event is one-shot")
-dofile("data/lib/chaos_spell_ranks.lua")
 ChaosSpellRanksConfig.enabled = true
 local boss2 = lairBoss("Talath", 21000000)
 creatureEvents.ChaosBossLairHealth.onThink(boss2, 1000)
