@@ -101,6 +101,39 @@ function L.new(cfg, now)
           lastState = nil, gotoAt = nil, farAt = nil, idx = 0, fightAt = nil, endAt = nil, endWhy = nil, done = false}
 end
 
+-- The boss's health (O694): read from ONE creature, the one whose id was locked at the first match. A look that took the last creature with
+-- the boss's name in the list could switch between two (an add or a copy with the name in it) and make the numbers of a video untrustworthy.
+-- seen = {{id, name, hp}, ...}: the creatures in view whose name matches. Returns the health percent of the locked creature (nil when it is not
+-- in view) and a list of log lines: the lock, the creature leaving the view and coming back, and each other creature with the boss's name (once).
+function L.watchBoss(S, seen)
+  local logs = {}
+  S.bossOthers = S.bossOthers or {}
+  local mine
+  for _, c in ipairs(seen or {}) do
+    if S.bossId == nil then
+      S.bossId = c.id
+      logs[#logs + 1] = ('boss locked: creature %s "%s" at %s%%'):format(tostring(c.id), tostring(c.name), tostring(c.hp))
+    end
+    if c.id == S.bossId then
+      mine = c
+    elseif not S.bossOthers[c.id] then
+      S.bossOthers[c.id] = true
+      logs[#logs + 1] = ('another creature with the boss name: %s "%s" at %s%% (the health is read from creature %s only)'):format(
+        tostring(c.id), tostring(c.name), tostring(c.hp), tostring(S.bossId))
+    end
+  end
+  if S.bossId ~= nil then
+    if mine == nil and not S.bossOut then
+      S.bossOut = true
+      logs[#logs + 1] = ('boss creature %s left the view'):format(tostring(S.bossId))
+    elseif mine ~= nil and S.bossOut then
+      S.bossOut = false
+      logs[#logs + 1] = ('boss creature %s is in view again at %s%%'):format(tostring(S.bossId), tostring(mine.hp))
+    end
+  end
+  return mine and mine.hp or nil, logs
+end
+
 -- feed every text line of the server in; returns the parsed line (or nil)
 function L.onText(S, text)
   local p = L.parseInstanceLine(text)

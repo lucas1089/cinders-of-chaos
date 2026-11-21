@@ -852,6 +852,12 @@ local function spawnBoss(run)
 	end
 	PN.monsterRun[m:getId()] = run
 	run.bossId = m:getId()
+	-- O694: a tuned fight rolls no boss modifiers. The spawn registered the natural roll (monster_tiers.lua: a boss gets 4-5 of Regenerating,
+	-- Vampiric, Juggernaut, Stoneskin ...) as a first-think event, and the model (pinnacle_model.py, ref.heal) knows none of them: one run healed
+	-- the boss from 79% back to 100% in three minutes. Off here, as in the adds of boss_mechanics.lua spawnNamed and the tower floors
+	for _, ev in ipairs({"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary", "ChaosTierRollBoss"}) do
+		pcall(function() m:unregisterEvent(ev) end)
+	end
 	local hpMult = 1
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot

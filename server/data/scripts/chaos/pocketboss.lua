@@ -945,6 +945,11 @@ local function spawnBoss(run)
 	end
 	PB.monsterRun[m:getId()] = run
 	run.bossId = m:getId()
+	-- O694: no boss modifiers in a tuned fight (monster_tiers.lua rolls 4-5, Regenerating and Vampiric heal the boss, the model knows none;
+	-- the Ascended pinnacle boss climbed from 79% to 100% by them): the natural roll the spawn registered is off, as in pinnacle.lua
+	for _, ev in ipairs({"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary", "ChaosTierRollBoss"}) do
+		pcall(function() m:unregisterEvent(ev) end)
+	end
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
 		pcall(ChaosBossMech.attach, m, nil, {level = level, tiles = run.L.floorList, size = run.size, solo = run.size == 1,

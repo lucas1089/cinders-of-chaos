@@ -399,7 +399,10 @@ local monsters = {}
 local nextMid = 5000
 local function newMonster(name, p)
 	nextMid = nextMid + 1
-	local m = {id = nextMid, name = name, hp = 1000000, maxHp = 1000000, pos = p, events = {}}
+	-- the spawn registers the natural tier roll of monster_tiers.lua (a boss rolls 4-5 modifiers, Regenerating and Vampiric heal it)
+	local m = {id = nextMid, name = name, hp = 1000000, maxHp = 1000000, pos = p,
+		events = {ChaosTierRollMagic = true, ChaosTierRollRare = true, ChaosTierRollLegendary = true, ChaosTierRollBoss = true}}
+	function m:unregisterEvent(e) self.events[e] = nil end
 	function m:getId() return self.id end
 	function m:getName() return self.name end
 	function m:isMonster() return true end
@@ -592,6 +595,8 @@ local bossM = Monster(run.bossId)
 ok(bossM, "the boss appeared")
 eq(bossM.maxHp, math.floor(1000000 * 0.03), "health x the solo curve")
 ok(bossM.events.ChaosPocketBossDeath, "death event")
+ok(not (bossM.events.ChaosTierRollBoss or bossM.events.ChaosTierRollMagic or bossM.events.ChaosTierRollRare or bossM.events.ChaosTierRollLegendary),
+	"O694: a pocket boss rolls no tier or boss modifiers (the model knows no Regenerating or Vampiric)")
 eq(bossM.events.ChaosPocketContestHealth, nil, "a pocket boss never counts as the contested fight")
 eq(PB.lootMultOf(bossM), 0.6, "loot factor of a pocket monster")
 ok(PB.isWorldBoss(bossM), "the pocket world boss drops at the world boss item level")
