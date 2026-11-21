@@ -17817,6 +17817,7 @@ one, and the Demon's own resists are taken off by damage type (physical 25, holy
 - **PvP, closed arena on the same server** (`closed_arena_fight`, two testers at 813, 1v1, the fight played on past the first hurt and secure mode off as the
   client does in the arena; the unmodified check leaves at the first hurt and its bots land only the auto attack: with secure mode on a spell of a player is
   refused with "You may not attack this person"). Elementalist (wand, 18,120 health) as the foe, her own healing on:
+  Owner decision 2026-11-21: no retune; the Inquisitor at 1.31 and the Templar line stay as measured.
 
 | Duel | `weaponElement` | Seconds to kill, first hit to the lethal hit | Damage dealt (spells / melee) | Damage taken |
 |---|---:|---:|---|---:|
