@@ -1911,7 +1911,9 @@ class TesterBot(LT.Bot):
             if data.get('items'):
                 self.kills.append(data)
                 del self.kills[:-5]
-        self.last_ext[(op, msg.get("action"))] = msg.get("data")
+        last = getattr(self, 'last_ext', None)
+        if isinstance(last, dict):   # a bare test double of a bot has no table
+            last[(op, msg.get("action"))] = msg.get("data")
         for w_op, w_actions, fut in list(self.waiters):
             if w_op == op and ('*' in w_actions or msg.get('action') in w_actions) and not fut.done():
                 fut.set_result(msg)
