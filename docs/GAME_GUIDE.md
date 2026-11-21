@@ -461,7 +461,7 @@ Crafting Bench to open its page.
 > (a hunter of the deep hunting grounds)
 
 - **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better rewarded, with a higher
-  item level on its drops. Tiered monsters and bosses roll modifiers: *Blazing, Chilling, Venomous, Shocking, Vampiric,
+  item level on its drops. Tiered monsters roll modifiers (bosses never do): *Blazing, Chilling, Venomous, Shocking, Vampiric,
   Berserker, Brutal, Stoneskin, Reflective, Regenerating, Swift, Explosive* and *Juggernaut*. A tiered monster glows in the
   colour of its strongest modifier, and the monster bar shows its tier and modifiers.
 - **Ember Blessings:** a kill may bless you for one minute: more experience, gold, damage, Chaos loot, rarity find or

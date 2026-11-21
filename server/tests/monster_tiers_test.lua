@@ -440,7 +440,13 @@ setChance(10000, 0, 0)
 local boss = Game.createMonster("Vhalkareth", position(104, 100, 7), true, false)
 think(boss)
 eq(ChaosTierOf(boss), "boss", "boss: boss tier")
-check(state[boss:getId()] and #state[boss:getId()].mods >= 4, "boss: modifiers under its id")
+check(not state[boss:getId()] or #state[boss:getId()].mods == 0, "boss: no modifiers (O696, bossMods off)")
+-- the old switch still works when a config turns it on
+cfg.bossMods = true
+local boss2 = Game.createMonster("Vhalkareth", position(104, 101, 7), true, false)
+think(boss2)
+check(state[boss2:getId()] and #state[boss2:getId()].mods >= 4, "boss: modifiers under its id with bossMods on")
+cfg.bossMods = false
 
 cfg.skip["dragon lord"] = true
 local skipped = Game.createMonster("Dragon Lord", position(105, 100, 7), true, false)
