@@ -215,15 +215,15 @@ eq(epicFork, 32148, "epic fork id")
 eq(S.runeName(epicFork), "Epic Fork Rune", "rune name")
 eq(S.itemName(fork.index, 3, true), "epic fork runes", "items.xml plural")
 eq(S.effectText(epicFork), "The hit forks to 2 more enemies within 3 sqm for 45% of it", "effect text")
-eq(S.effectText(S.runeId(1, 5)), "50% of the spell's damage is added as extra fire damage", "brand text: O471, a Mythic brand counts as Legendary")
-eq(S.effectText(S.runeId(1, 4)), "50% of the spell's damage is added as extra fire damage", "the Legendary brand")
-eq(S.effectText(S.runeId(1, 3)), "40% of the spell's damage is added as extra fire damage", "the Epic brand")
+eq(S.effectText(S.runeId(1, 5)), "20% of the spell's damage is added as extra fire damage", "brand text: O701, a Mythic brand is 20")
+eq(S.effectText(S.runeId(1, 4)), "16% of the spell's damage is added as extra fire damage", "the Legendary brand")
+eq(S.effectText(S.runeId(1, 3)), "13% of the spell's damage is added as extra fire damage", "the Epic brand")
 eq(S.levelsText("quickening"), "Cooldown -6/9/12/15/18%", "levels text")
 eq(S.levelColor(S.runeId(1, 5)), cfg.levelColors[5], "mythic colour")
 ok(S.description(fork.index, 5):find("Fits single target spells%.") ~= nil, "description fits")
 ok(S.description(fork.index, 5):find("combine") == nil, "mythic does not combine")
 ok(S.description(fork.index, 4):find("use the stack, then left%-click the same stack") ~= nil, "the text says how to combine")
-ok(S.description(1, 1):find("^A support rune for a spell socket: 20%% of") ~= nil, "description starts lower case")
+ok(S.description(1, 1):find("^A support rune for a spell socket: 7%% of") ~= nil, "description starts lower case")
 -- every support: values rise, fits are known kinds, sprite exists, a group-mate never fits nothing
 local kinds = {single = true, area = true, heal = true, buff = true}
 for _, t in ipairs(cfg.supports) do
@@ -278,13 +278,20 @@ eq(select(2, S.canSocket(sock(), 1, quick, nil)), S.reasons.noSpell, "no kind")
 -- ---------------------------------------------------------------- O471: the damage runes count at most their level 4 value
 do
 	local ceil = cfg.levelCeiling
-	local want = {emberbrand = 4, rimebrand = 4, dawnbrand = 4, gravebrand = 4, stormbrand = 4, keenedge = 4, echo = 4, hex = 4}
+	local want = {keenedge = 4, echo = 4, hex = 4}
 	for key, lv in pairs(want) do
 		eq(ceil[key], lv, key .. " has a ceiling at level 4")
 	end
 	local n = 0
 	for _ in pairs(ceil) do n = n + 1 end
-	eq(n, 8, "the brands, Keen Edge, Echo and Hex have one, nothing else")
+	eq(n, 3, "Keen Edge, Echo and Hex have one, nothing else (O701: the brands have none)")
+	for _, key in ipairs({"emberbrand", "rimebrand", "dawnbrand", "gravebrand", "stormbrand"}) do
+		local t = S.byKey[key]
+		eq(table.concat(t.values, "/"), "7/10/13/16/20", key .. ": O701 curve, the top is 20")
+		eq(S.values(S.runeId(t.index, 5)), 20, key .. ": a Mythic brand counts 20")
+		eq(ceil[key], nil, key .. ": no ceiling")
+		eq(S.ceilingNote(S.runeId(t.index, 5)), "", key .. ": no Counts-as note")
+	end
 	for key in pairs(want) do
 		local t = S.byKey[key]
 		local mythic, legendary = S.runeId(t.index, 5), S.runeId(t.index, 4)
@@ -302,10 +309,9 @@ do
 		eq(fxm.value, math.min(t.values[4], cfg.caps[key] or 1e9), key .. ": the summed effect counts level 4")
 		eq(fxm.level, 5, key .. ": the effect still reports the rune's level")
 	end
-	eq(S.levelsText("emberbrand"), "20/30/40/50/50% of the spell's damage is added as extra fire damage", "the levels text shows what counts")
+	eq(S.levelsText("emberbrand"), "7/10/13/16/20% of the spell's damage is added as extra fire damage", "the levels text shows what counts")
 	eq(S.levelsText("hex"), "Monsters hit take +3/4/5/6/6% damage from everyone for 4 s (the strongest hex counts)", "hex levels text")
-	eq(S.values(S.runeId(S.byKey.emberbrand.index, 5)), 50, "brand 50, not 60")
-	eq(S.values(S.runeId(S.byKey.echo.index, 5)), 30, "echo 30, not 35")
+		eq(S.values(S.runeId(S.byKey.echo.index, 5)), 30, "echo 30, not 35")
 	eq(S.values(S.runeId(S.byKey.hex.index, 5)), 6, "hex 6, not 8")
 	eq(S.values(S.runeId(S.byKey.keenedge.index, 5)), 6, "keen edge 6, not 8")
 	-- the other supports keep their level 5 values
@@ -327,7 +333,7 @@ end
 
 -- ---------------------------------------------------------------- effects and caps
 local fx = S.effects({ember, quick, 0})
-eq(fx.emberbrand.value, 30, "brand value")
+eq(fx.emberbrand.value, 10, "brand value")
 eq(fx.emberbrand.element, "fire", "brand element")
 eq(fx.quickening.value, 15, "quickening value")
 local capped = S.effects({S.runeId(S.byKey.quickening.index, 5), S.runeId(S.byKey.quickening.index, 5)})
@@ -655,7 +661,7 @@ local me = newCreature({player = true, level = 100, voc = 1, pos = {x = 50, y = 
 registered.ChaosSupportsLogin.onLogin(me)
 ok(me.events.ChaosSupportsHit, "hit event on the player")
 -- socketing
-local brand = S.runeId(S.byKey.emberbrand.index, 3) -- 40%
+local brand = S.runeId(S.byKey.emberbrand.index, 3) -- 13%
 me.items[brand] = 1
 local okS, text = S.socket(me, 201, brand)
 ok(okS, text)
@@ -690,7 +696,7 @@ ok(demon.events and demon.events.ChaosSupportsHit, "event on the target of a pla
 S.random = function(a, b) return b end -- no Keen Edge
 me.storage[cfg.storageContext] = S.ctxEncode(5, 201)
 local a, at, b, bt = hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
-eq(a, 100, "physical part stays whole"); eq(b, 20, "fire part added after the fire resistance"); eq(bt, COMBAT_FIREDAMAGE, "fire")
+eq(a, 100, "physical part stays whole"); eq(b, 6, "fire part added after the fire resistance"); eq(bt, COMBAT_FIREDAMAGE, "fire")
 -- the hit hexed the demon: +6% from anyone (the Mythic hex counts as Legendary) (also without a context)
 me.storage[cfg.storageContext] = nil
 local other = newCreature({player = true, level = 50, pos = {x = 53, y = 50, z = 7}, health = 100})
@@ -706,12 +712,12 @@ eq((hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)), 106, "weapo
 S.random = function(a, b) return a end
 me.storage[cfg.storageContext] = S.ctxEncode(6, 201)
 a, at, b = hit(demon, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
--- hex first (106), brand 40% (42 added, 21 after the fire resistance), then the crit +50% on both parts
-eq(a, 159, "crit on the whole physical part"); eq(b, 31, "crit on the added fire part")
+-- hex first (106), brand 13% (13 added, 6 after the fire resistance), then the crit +50% on both parts
+eq(a, 159, "crit on the whole physical part"); eq(b, 9, "crit on the added fire part")
 me.storage[cfg.storageContext] = nil
 flushEvents()
 
--- brands add up and add, never convert (O277): fire 40% in socket 1, ice 30% in socket 2 (set past the window rule)
+-- brands add up and add, never convert (O277): fire 13% in socket 1, ice 10% in socket 2 (set past the window rule)
 S.setRune(me, 201, 2, S.runeId(S.byKey.rimebrand.index, 2))
 S.refreshActive(me)
 S.random = function(a, b) return b end
@@ -721,11 +727,11 @@ hits = {}
 me.storage[cfg.storageContext] = S.ctxEncode(20, 201)
 a, at, b, bt = hit(plain, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
 eq(a, 100, "two brands: the original hit stays whole"); eq(at, COMBAT_PHYSICALDAMAGE, "still physical")
-eq(b, 40, "the first brand (fire 40%) rides in the same event"); eq(bt, COMBAT_FIREDAMAGE, "fire in the secondary slot")
+eq(b, 13, "the first brand (fire 13%) rides in the same event"); eq(bt, COMBAT_FIREDAMAGE, "fire in the secondary slot")
 me.storage[cfg.storageContext] = nil
 flushEvents()
 eq(#hits, 1, "only the overflow is a separate hit (no extra event for the brand in the slot)")
-eq(hits[1].type, COMBAT_ICEDAMAGE, "the second brand is a hit of ice"); eq(hits[1].amount, -30, "30% of the ORIGINAL hit, not of 140")
+eq(hits[1].type, COMBAT_ICEDAMAGE, "the second brand is a hit of ice"); eq(hits[1].amount, -10, "10% of the ORIGINAL hit, not of 113")
 eq(hits[1].target.id, plain.id, "on the same monster")
 -- one brand alone: one combat event, nothing dealt apart (leech and crit see one hit)
 S.setRune(me, 201, 2, 0)
@@ -735,7 +741,7 @@ registered.targetCombat(me, solo)
 hits = {}
 me.storage[cfg.storageContext] = S.ctxEncode(21, 201)
 a, at, b, bt = hit(solo, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)
-eq(a, 100, "one brand: whole"); eq(b, 40, "one brand: +40 fire")
+eq(a, 100, "one brand: whole"); eq(b, 13, "one brand: +13 fire")
 me.storage[cfg.storageContext] = nil
 flushEvents()
 eq(#hits, 0, "no separate hit, so no second leech or crit roll")
@@ -743,7 +749,7 @@ eq(#hits, 0, "no separate hit, so no second leech or crit roll")
 me.storage[cfg.storageContext] = S.ctxEncode(22, 201)
 local fresh = newCreature({name = "Plain Golem", pos = {x = 58, y = 55, z = 7}, health = 5000})
 a, at, b = hit(fresh, me, 100, COMBAT_FIREDAMAGE, 0, 0, ORIGIN_SPELL)
-eq(a, 140, "a fire spell with a fire brand: 140"); eq(b, 0, "no secondary part")
+eq(a, 113, "a fire spell with a fire brand: 113"); eq(b, 0, "no secondary part")
 -- PvP: a player is not hit harder
 local pvp = newCreature({player = true, level = 100, pos = {x = 57, y = 55, z = 7}, health = 3000})
 a, at, b = hit(pvp, me, 100, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_SPELL)

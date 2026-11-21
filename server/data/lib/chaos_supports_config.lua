@@ -74,19 +74,19 @@ return {
 	-- text = the effect, %1 = value, %2 = value2. icon = client/overlay/data/images/game/supports/<key>.png
 	supports = {
 		{key = "emberbrand", name = "Emberbrand", sprite = 1, weight = 6, fits = {"single", "area"}, group = "brand",
-			element = "fire", values = {20, 30, 40, 50, 60},
+			element = "fire", values = {7, 10, 13, 16, 20},
 			text = "%1%% of the spell's damage is added as extra fire damage"},
 		{key = "rimebrand", name = "Rimebrand", sprite = 2, weight = 6, fits = {"single", "area"}, group = "brand",
-			element = "ice", values = {20, 30, 40, 50, 60},
+			element = "ice", values = {7, 10, 13, 16, 20},
 			text = "%1%% of the spell's damage is added as extra ice damage"},
 		{key = "dawnbrand", name = "Dawnbrand", sprite = 3, weight = 6, fits = {"single", "area"}, group = "brand",
-			element = "holy", values = {20, 30, 40, 50, 60},
+			element = "holy", values = {7, 10, 13, 16, 20},
 			text = "%1%% of the spell's damage is added as extra holy damage"},
 		{key = "gravebrand", name = "Gravebrand", sprite = 4, weight = 6, fits = {"single", "area"}, group = "brand",
-			element = "death", values = {20, 30, 40, 50, 60},
+			element = "death", values = {7, 10, 13, 16, 20},
 			text = "%1%% of the spell's damage is added as extra death damage"},
 		{key = "stormbrand", name = "Stormbrand", sprite = 5, weight = 6, fits = {"single", "area"}, group = "brand",
-			element = "energy", values = {20, 30, 40, 50, 60},
+			element = "energy", values = {7, 10, 13, 16, 20},
 			text = "%1%% of the spell's damage is added as extra energy damage"},
 		{key = "quickening", name = "Quickening", sprite = 6, weight = 10, fits = {"single", "area", "heal", "buff"},
 			values = {6, 9, 12, 15, 18},
@@ -136,12 +136,14 @@ return {
 	},
 
 	-- O471 (2026-11-10): the damage runes count at most this level's value in a hit. A Mythic rune (level 5) stays what it is, shows
-	-- its own level and name, and counts as a Legendary one (level 4): brand 50 (not 60), Echo 30 (35), Hex 6 (8), Keen Edge 6 (8).
+	-- its own level and name, and counts as a Legendary one (level 4): Echo 30 (35), Hex 6 (8), Keen Edge 6 (8).
 	-- The values of level 5 stay in `values` above (the Mythic row of the Codex shows the value that counts). Sunder is no entry
 	-- here: its points count into the penetration total of 20 (ChaosItemMods.penLeft). Owned Mythic runes keep working.
-	levelCeiling = {emberbrand = 4, rimebrand = 4, dawnbrand = 4, gravebrand = 4, stormbrand = 4, keenedge = 4, echo = 4, hex = 4},
+	levelCeiling = {keenedge = 4, echo = 4, hex = 4},
 	ceilingNote = "Counts as Legendary: the damage runes count at most their level 4 value.",
 
+	-- O701 (2026-11-21, owner): the brands are 7 / 10 / 13 / 16 / 20 (was 20 .. 60, counting 50 at Mythic): no ceiling, Mythic counts 20,
+	-- near the 12% of a Perfect gem and the 17.5% of Echo.
 	-- caps on the summed value of one support key on one spell (with option 2, extra sources may add up)
 	caps = {quickening = 30, thrift = 30, keenedge = 13, echo = 40, bloodthirst = 8, siphon = 40, sunder = 25,
 		hex = 10, mercy = 25},
