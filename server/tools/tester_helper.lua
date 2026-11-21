@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 41
+HELPER_VERSION = 42
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1768,6 +1768,7 @@ function commands.pinnacle(player, arg)
 	local late = H.dealtRow(T.dealtLate, player:getId())
 	row.late, row.lateHits, row.lateSummon, row.lateDot = late.boss, late.bossHits, late.summon, late.dot
 	row.lateSrc, row.lateElem = late.src, late.elem -- O700: the final damage by origin and by damage type
+	row.lateSrcN = late.srcN -- O706: the hits of each origin (v42)
 	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = row, ledger = H.ledgerRow(T.bossLedger)}))
 end
 

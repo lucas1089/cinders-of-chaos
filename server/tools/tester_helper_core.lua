@@ -1654,6 +1654,9 @@ function H.dealtAdd(tally, id, isBoss, damage, kind, src, parts)
 		if type(src) == "string" then
 			row.src = row.src or {}
 			row.src[src] = (row.src[src] or 0) + math.floor(damage)
+			-- O706: and how many hits each origin made (the mean hit of an origin = damage / hits: autos against spells, the swing rate)
+			row.srcN = row.srcN or {}
+			row.srcN[src] = (row.srcN[src] or 0) + 1
 		end
 		if type(parts) == "table" then
 			row.elem = row.elem or {}
@@ -1720,7 +1723,7 @@ function H.dealtRow(tally, id)
 		return c
 	end
 	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits, summon = row.summon or 0, dot = row.dot or 0,
-		src = copy(row.src), elem = copy(row.elem)}
+		src = copy(row.src), srcN = copy(row.srcN), elem = copy(row.elem)}
 end
 
 -- O697 (O689 party video: the boss lost 10.13M health in 75 s, the tally of O695 counted 4.25M): where a hit on the boss came from.

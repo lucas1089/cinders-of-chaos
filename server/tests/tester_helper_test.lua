@@ -714,6 +714,11 @@ do
 		"late tally: the damage by origin (spell, dot) and by type (fire, physical)")
 	sr.src.spell = 0
 	eq(H.dealtRow(TesterHelper.dealtLate, tester.id).src.spell, 1000, "late tally: the split of a row is a copy")
+	-- O706: the hits of each origin beside the damage of each (the report prints the mean hit)
+	check(HELPER_VERSION >= 42, "the helper is version 42 or later (O706: the hits by origin)")
+	check(sr.srcN and sr.srcN.spell == 1 and sr.srcN.dot == 1, "late tally: one hit counted for each origin")
+	sr.srcN.spell = 9
+	eq(H.dealtRow(TesterHelper.dealtLate, tester.id).srcN.spell, 1, "late tally: the hit counts of a row are a copy")
 	rawset(_G, "ORIGIN_SPELL", spellWas)
 	-- a hit that does not change the damage
 	local a, b = L.onHealthChange(boss, tester, -10, COMBAT_PHYSICALDAMAGE, 0, 0, 3)

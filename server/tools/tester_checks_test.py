@@ -11978,6 +11978,15 @@ class PinnacleFightReport(unittest.TestCase):
         self.assertIn('final by origin: spell 62%, ranged 25%, dot 4%', split)
         self.assertNotIn('none', split.split('final by origin:')[1].split(';')[0], 'a share under 1% is left out')
         self.assertIn('final by type: holy 75%, fire 20%, physical 5%', split)
+        # O706 (helper v42): the hits of each origin and their mean, so the next run says how many autos a bot made and how big each was
+        self.assertNotIn('final hits by origin', split, 'a helper of version 41 has no hit counts')
+        row['dealt']['lateSrcN'] = {'spell': 3, 'ranged': 2, 'none': 0}
+        counted = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 10)
+        self.assertIn('final hits by origin: spell 3 (mean 500), ranged 2 (mean 300)', counted)
+        self.assertEqual(TX.pinnacle_hits({'ranged': 4958014}, {'ranged': 141}), 'ranged 141 (mean 35,163)')
+        self.assertEqual(TX.pinnacle_hits(None, {'ranged': 1}), '')
+        self.assertEqual(TX.pinnacle_hits({'ranged': 5}, None), '')
+        self.assertEqual(TX.dealt_delta({'lateSrcN': {'ranged': 9}}, {'lateSrcN': {'ranged': 4}}), {'lateSrcN': {'ranged': 5}})
         self.assertEqual(TX.pinnacle_shares(None, 100), '')
         self.assertEqual(TX.pinnacle_shares({'spell': 5}, 0), '')
         # the O700 run broke on int(dict): the tally since the fight opened takes the nested tables apart too

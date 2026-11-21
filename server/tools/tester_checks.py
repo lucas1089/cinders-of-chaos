@@ -5047,6 +5047,19 @@ def pinnacle_shares(table, total):
     return ', '.join('%s %d%%' % (k, round(v * 100.0 / total)) for k, v in rows if v * 100.0 / total >= 1)
 
 
+def pinnacle_hits(damage, counts):
+    """O706: 'ranged 141 (mean 31,200), spell 160 (mean 9,000)' from {origin: final damage} and {origin: hits}, the most hits first; '' when either is missing"""
+    if not isinstance(damage, dict) or not isinstance(counts, dict):
+        return ''
+    rows = sorted(((str(k), int(v)) for k, v in counts.items() if isinstance(v, (int, float)) and v >= 1), key=lambda kv: (-kv[1], kv[0]))
+    out = []
+    for name, n in rows:
+        total = damage.get(name)
+        mean = int(round(float(total) / n)) if isinstance(total, (int, float)) and total > 0 else 0
+        out.append('%s %d (mean %s)' % (name, n, format(mean, ',')))
+    return ', '.join(out)
+
+
 def dealt_delta(now, before):
     """O700 fix: the tally since the fight opened, key by key; a nested table (lateSrc, lateElem of helper v41) is taken apart the same way"""
     out = {}
@@ -5080,6 +5093,10 @@ def pinnacle_bot_line(name, cls, row, boss_secs):
             shares = pinnacle_shares(d.get(key), int(d.get('late') or 0))
             if shares:
                 parts.append('%s: %s' % (label, shares))
+        # O706 (helper v42): the hits of each origin and the mean final hit of it (the swing rate and the size of an auto attack against a spell)
+        hits = pinnacle_hits(d.get('lateSrc'), d.get('lateSrcN'))
+        if hits:
+            parts.append('final hits by origin: %s' % hits)
     parts.append('casts: ' + ', '.join('%d %s' % (int(t.get(k) or 0), label) for k, label in TALLY_SHOW))
     refused = sorted(((k[len('refused:'):], v) for k, v in t.items() if str(k).startswith('refused:') and v), key=lambda kv: (-kv[1], kv[0]))
     parts.append('refused: ' + (', '.join('%s %d' % kv for kv in refused) if refused else 'none'))
