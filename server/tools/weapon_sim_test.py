@@ -87,7 +87,7 @@ for kind, row in power.items():
         got = W.own_dps(kind, lv) * W.interp(W.POWER_LEVELS, row, lv)
         check(got >= min(share, W.own_dps(kind, lv) / ref) * ref * 0.97,
               '%s at level %d: %.0f per second against %.0f%% of %.0f' % (kind, lv, got, share * 100, ref))
-check(W.interp(W.POWER_LEVELS, power['distance'], 2000) > W.interp(W.POWER_LEVELS, power['distance'], 1000) > 1.15,
+check(W.interp(W.POWER_LEVELS, power['distance'], 2000) > W.interp(W.POWER_LEVELS, power['distance'], 1000) > 1.05,
       'the launcher is lifted more and more with the level')
 check(W.interp(W.POWER_LEVELS, power['wand'], 300) > 1.5, 'the wand is lifted')
 check(all(v <= 1.03 for v in power['melee']), 'melee is at or near its share at every level: at most a 3%% lift: %s' % power['melee'])
@@ -153,8 +153,8 @@ with W.before_growth():
 check(before_wand == 118 and after_wand == 285, 'wand mean at 1000: 118 before the growth, 285 after (%s, %s)' % (before_wand, after_wand))
 check(W.G.curve('wand', 1000) == 285 and W.GROWTH['on'], 'the growth is back on after the block')
 check(W.typed_mean_hit('fist', 1000, 140) > before_fist * 2, 'the fist grows with a(level) now')
-check(before_power['wand'][W.POWER_LEVELS.index(1000)] == 2.14 and before_power['distance'][W.POWER_LEVELS.index(1000)] == 1.49,
-      'the power factors before O472 at 1000: wand 2.14, distance 1.49')
+check(before_power['wand'][W.POWER_LEVELS.index(1000)] == 2.14 and before_power['distance'][W.POWER_LEVELS.index(1000)] == 1.0,
+      'the power factors before O472 at 1000: wand 2.14, distance 1.0 (1.49 at the share 0.30, O707 lowered it to 0.20)')
 
 if fails:
     for f in fails:

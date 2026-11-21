@@ -38,7 +38,7 @@ local S = ChaosPvpScale
 local cfg = dofile("data/scripts/chaos/pvp_balance_config.lua")
 
 -- ============================================================================================== the table
-local want = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.95}, {1000, 0.68}, {1500, 0.69}, {2000, 0.65}}
+local want = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.97}, {1000, 0.69}, {1500, 0.71}, {2000, 0.65}}
 ok(#cfg.damageScale == #want, "eight rows")
 for i, row in ipairs(want) do
 	ok(cfg.damageScale[i][1] == row[1] and cfg.damageScale[i][2] == row[2], "row " .. i .. ": " .. row[1] .. " -> " .. row[2])
@@ -51,9 +51,9 @@ near(S.factor(1), 1.24, 1e-12, "below the first row: the first factor")
 near(S.factor(50), 1.24, 1e-12, "level 50")
 near(S.factor(5000), 0.65, 1e-12, "above the last row: the last factor")
 near(S.factor(150), math.exp(0.5 * math.log(1.24) + 0.5 * math.log(1.09)), 1e-12, "between 100 and 200: geometric, halfway")
-near(S.factor(600), math.exp(0.5 * math.log(0.98) + 0.5 * math.log(0.95)), 1e-12, "between 500 and 700")
-near(S.factor(750), math.exp(math.log(0.95) + (math.log(0.68) - math.log(0.95)) * 50 / 300), 1e-12, "between 700 and 1000")
-ok(S.factor(1250) > 0.68 and S.factor(1250) < 0.69, "between 1000 and 1500 (it rises there)")
+near(S.factor(600), math.exp(0.5 * math.log(0.98) + 0.5 * math.log(0.97)), 1e-12, "between 500 and 700")
+near(S.factor(750), math.exp(math.log(0.97) + (math.log(0.69) - math.log(0.97)) * 50 / 300), 1e-12, "between 700 and 1000")
+ok(S.factor(1250) > 0.69 and S.factor(1250) < 0.71, "between 1000 and 1500 (it rises there)")
 ok(S.factor(nil) == 1 and S.factor("x") == 1, "no level: 1")
 ok(S.factor(500, {damageScale = {}}) == 1 and S.factor(500, {}) == 1, "no table: 1")
 for level = 1, 2200 do
@@ -87,7 +87,7 @@ local a500, a1000, victim = player(7, 500), player(8, 1000), player(9, 500)
 ChaosPassiveCache[7], ChaosPassiveCache[8] = {}, {}
 -- player against player: the attacker's level
 ok(run(victim, a500, 1000) == 980, "level 500 attacker: x0.98 (" .. run(victim, a500, 1000) .. ")")
-ok(run(victim, a1000, 1000) == 680, "level 1000 attacker: x0.68")
+ok(run(victim, a1000, 1000) == 690, "level 1000 attacker: x0.69")
 ok(run(victim, player(10, 100), 1000) == 1240, "level 100: x1.24")
 -- the victim's level does not matter
 ok(run(player(11, 2000), a500, 1000) == 980, "the target's level is not read")
@@ -114,7 +114,7 @@ end
 ok(run(a500, a500, 1000) == 1000, "damage to oneself is not scaled")
 -- a summon or companion of a player: the owner's level
 local summon = monster(600, a1000)
-ok(run(victim, summon, 1000) == 680, "a summon of a level 1000 player: x0.68")
+ok(run(victim, summon, 1000) == 690, "a summon of a level 1000 player: x0.69")
 ok(run(mon, summon, 1000) == 1000, "a summon against a monster: not scaled")
 ok(run(a1000, summon, 1000) == 1000, "a summon does not scale a hit on its own owner")
 local pet = monster(601, a500)
@@ -134,7 +134,7 @@ ok(run(mon, a500, 1000) == 1600, "against a monster the pool alone")
 local f = io.open("data/scripts/chaos/pvp_balance_config.lua", "r")
 local text = f:read("*a")
 f:close()
-ok(text:find("damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.95}, {1000, 0.68}, {1500, 0.69}, {2000, 0.65}}", 1, true),
+ok(text:find("damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.97}, {1000, 0.69}, {1500, 0.71}, {2000, 0.65}}", 1, true),
 	"the table sits in pvp_balance_config.lua, one line")
 -- the other PvP rules stay: the battleground level normalisation is a separate step, the arena adds none
 local bg = dofile("data/scripts/chaos/battleground_config.lua")

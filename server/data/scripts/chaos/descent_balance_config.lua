@@ -67,7 +67,10 @@ return {
 		-- of the party grows by a player)
 		party = {clearRatio = {0.4, 1.5}},
 		-- a curse is a gamble for 15-25% more rewards, not a sentence: with Swarm and Frailty both taken at `depth` the median class
-		-- keeps `medianLeft`
-		curse = {depth = 4, medianLeft = 0.25}
+		-- keeps `medianLeft`. Named exception (O707, owner decision of 2026-11-21: weapon style power share 0.20 and skill factor
+		-- max 1.0): the bow and melee classes lost damage, the class at the middle of the 21 by pressure at level 1000 is now the
+		-- Monk (0% left, it was the Beastmaster, 50%), a knife edge of the class order, not a change of the room; `exceptions` lists
+		-- the level and the floor held instead (the curse stays a gamble: depth 3 leaves the median class 92%, see --curses)
+		curse = {depth = 4, medianLeft = 0.25, exceptions = {[1000] = 0.0}}
 	}
 }

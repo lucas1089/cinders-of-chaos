@@ -227,14 +227,14 @@ for _, b in ipairs(cfg.bosses) do
 		local t = K.killTime(cfg, hp, players)
 		check(t > 240 and t < b.enrageAt, string.format("%s at %d: %.0f s, before the enrage (%d)", b.name, players, t, b.enrageAt))
 	end
-	-- the median character (2,600 before the balance round, 5,980 after it: O475, x2.3 with the raid bosses' health): 5 raiders finish
+	-- the median character (2,600 before the balance round, 5,980 after it: O475, 5,840 since O707, x2.3 with the raid bosses' health): 5 raiders finish
 	-- about 20% before the enrage
 	local ref = cfg.model.refDps
-	cfg.model.refDps = 5980
+	cfg.model.refDps = 5840
 	local t5 = K.killTime(cfg, hp, 5)
 	cfg.model.refDps = ref
 	check(t5 * 1.15 <= b.enrageAt and t5 * 1.25 >= b.enrageAt,
-		string.format("%s: 5 at 5,980 take %.0f s, about 20%% before the enrage (%d)", b.name, t5, b.enrageAt))
+		string.format("%s: 5 at 5,840 take %.0f s, about 20%% before the enrage (%d)", b.name, t5, b.enrageAt))
 	check(s and s:find('isboss="1"', 1, true) ~= nil, b.name .. " is a boss")
 end
 local looks = {}
@@ -1052,7 +1052,7 @@ eq(bars(1, "east"), 5, "the room seals")
 for i = 2, 5 do
 	check(K.inRoom(run.L, 1, raiders[i].pos), "R" .. i .. " is drawn in")
 end
-eq(boss.maxhp, 9200000, "five raiders: the XML health")
+eq(boss.maxhp, 8980954, "five raiders: the XML health")
 
 -- the tank swap: four melee hits on the tank with a fresh tank beside the boss
 local tank, off = lead, raiders[2]

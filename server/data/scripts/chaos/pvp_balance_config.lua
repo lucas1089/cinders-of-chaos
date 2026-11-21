@@ -25,7 +25,9 @@ return {
 	-- ratio, so seconds to kill hold what the model had before the round (python3 -I server/tools/pvp_model.py --scale prints it,
 	-- --check holds the table to within 1.5% of it). It is above 1 up to level 300: the pool takes more from the typical
 	-- character there than the weapon growth gives back, and a duel keeps its length.
-	damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.95}, {1000, 0.68}, {1500, 0.69}, {2000, 0.65}},
+	-- O707 (2026-11-21, weapon style power share 0.20 and skill factor max 1.0): the median class damage fell about 2% at 700-1500 (4550 at 700,
+	-- 8689 at 1000, 12481 at 1500), so 700 / 1000 / 1500 are re-fitted to 0.97 / 0.69 / 0.71.
+	damageScale = {{100, 1.24}, {200, 1.09}, {300, 1.06}, {500, 0.98}, {700, 0.97}, {1000, 0.69}, {1500, 0.71}, {2000, 0.65}},
 
 	-- the levels of the table and of the check (class_dps_model.py measures 100, 500 and 1000; survival_model.py has builds for them)
 	levels = {100, 500, 1000},

@@ -9725,9 +9725,9 @@
 								["200", "x1.09"],
 								["300", "x1.06"],
 								["500", "x0.98"],
-								["700", "x0.95"],
-								["1000", "x0.68"],
-								["1500", "x0.69"],
+								["700", "x0.97"],
+								["1000", "x0.69"],
+								["1500", "x0.71"],
 								["2000", "x0.65"]
 							]
 						}
@@ -45261,7 +45261,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,694,286"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -45295,7 +45295,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,694,286"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -45333,7 +45333,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "2,760,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "2,694,286"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{
@@ -46473,7 +46473,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "9,200,000"], ["Experience", "2,500,000"]]
+							"rows": [["Health", "8,980,954"], ["Experience", "2,500,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -46960,7 +46960,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,122,619"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -46994,7 +46994,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "10,120,000"], ["Experience", "2,700,000"]]
+							"rows": [["Health", "9,879,049"], ["Experience", "2,700,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47322,7 +47322,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,122,619"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -47553,7 +47553,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "1,150,000"], ["Experience", "2,000,000"]]
+							"rows": [["Health", "1,122,619"], ["Experience", "2,000,000"]]
 						},
 						{"h": "Where", "p": ["Omen guardian"]},
 						{
@@ -47587,7 +47587,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "11,040,000"], ["Experience", "2,900,000"]]
+							"rows": [["Health", "10,777,144"], ["Experience", "2,900,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47723,7 +47723,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "16,560,000"], ["Experience", "6,000,000"]]
+							"rows": [["Health", "16,165,716"], ["Experience", "6,000,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47777,7 +47777,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "11,500,000"], ["Experience", "3,100,000"]]
+							"rows": [["Health", "11,226,192"], ["Experience", "3,100,000"]]
 						},
 						{"h": "Where", "p": ["Raid boss: The Ashen Sepulchre"]},
 						{
@@ -47799,7 +47799,7 @@
 							"h": "Monster",
 							"cols": ["", ""],
 							"w": [35, 65],
-							"rows": [["Health", "3,795,000"], ["Experience", "15,000,000"]]
+							"rows": [["Health", "3,704,643"], ["Experience", "15,000,000"]]
 						},
 						{"h": "Where", "p": ["Ascended boss"]},
 						{

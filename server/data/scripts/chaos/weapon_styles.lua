@@ -12,7 +12,7 @@
 --     das armas/auto attack escalar com as skills"); the other weapons scale with their skill in the engine already
 --   * the auto attack keeps up with the level and the skill (weapon_power_core.lua, owner 2026-10-23): a launcher and a
 --     wand or rod are lifted to their share of the class's spell rotation at high levels, and a melee or launcher hit
---     also scales with (skill / typical skill) ^ 0.5 on top of the engine's skill term; a spell's weapon strike is not
+--     also scales with (skill / typical skill) ^ 0.5, capped at 1 since O707, on top of the engine's skill term; a spell's weapon strike is not
 --     an auto attack and is left out
 --   * weapon families (O454, weapon_families_core.lua, weapon_families.lua): a sword's hits on one target speed the swing up (tempo),
 --     an axe splits a share of the hit among the monsters next to the target (cleave), a club may daze a monster (impact); the

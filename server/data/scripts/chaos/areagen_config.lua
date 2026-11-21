@@ -611,7 +611,7 @@ return {
 				monsters = {{"Scaleborn", 3}, {"Ice Lich", 3}, {"Spirit of Purity", 2}, {"Twisted Shaper", 2},
 					{"Celestial Wyrm", 2}}},
 			-- 15,000 x (1 + 0.0074 x 1100) x 2.91 = 399k: 2:30 at 2,660 (level 1025)
-			boss = {monster = "Ossivane the Gravecage", name = "Ossivane the Gravecage", level = 1100, healthMult = 5.96,
+			boss = {monster = "Ossivane the Gravecage", name = "Ossivane the Gravecage", level = 1100, healthMult = 5.83,
 				damageMult = 1.4},
 			dungeon = {id = 6, level = 1000, party = 1, time = 900, title = "The Marrow Crypts",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {94, 101, 108, 115, 122, 129},
@@ -632,7 +632,7 @@ return {
 				spawntime = 0, level = {1300, 1350},
 				monsters = {{"Facetis", 3}, {"Thal", 3}, {"Silicron", 2}, {"Winterstride", 2}, {"Gloamfang Ravager", 2}}},
 			-- 15,500 x (1 + 0.0074 x 1400) x 2.88 = 507k: 2:30 at 3,383 (level 1325)
-			boss = {monster = "Forgewarden Kharzun", name = "Forgewarden Kharzun", level = 1400, healthMult = 5.86,
+			boss = {monster = "Forgewarden Kharzun", name = "Forgewarden Kharzun", level = 1400, healthMult = 5.71,
 				damageMult = 1.4},
 			dungeon = {id = 7, level = 1300, party = 1, time = 900, title = "The Iron Crucible",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {55, 61, 66, 72, 77, 83},
@@ -654,7 +654,7 @@ return {
 				monsters = {{"Bloodantler Fiend", 3}, {"Cinderskull Reaver", 3}, {"Rimeshroud Revenant", 2},
 					{"Cinderhorn Juggernaut", 2}, {"Wraithbone Stalker", 2}}},
 			-- 16,000 x (1 + 0.0074 x 1700) x 2.83 = 615k: 2:30 at 4,106 (level 1625)
-			boss = {monster = "Vaelith the Fallen Seraph", name = "Vaelith the Fallen Seraph", level = 1700, healthMult = 5.83,
+			boss = {monster = "Vaelith the Fallen Seraph", name = "Vaelith the Fallen Seraph", level = 1700, healthMult = 5.71,
 				damageMult = 1.4},
 			dungeon = {id = 8, level = 1600, party = 1, time = 900, title = "The Fallen Sanctum",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {46, 51, 56, 61, 66, 71},

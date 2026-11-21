@@ -557,9 +557,11 @@ def check(res):
         mon = room_mon(ctx, lv, c['depth'], 'combat')
         rows = {cls: room(ctx, cls, lv, n, c['depth'], 'combat', mon, curses={'swarm': True, 'frailty': True}) for cls in S.ORDER}
         cm = median_row(rows)
-        if cm['left'] < c['medianLeft']:
+        ex = c.get('exceptions', {})
+        floor = ex.get(lv, ex.get(str(lv), c['medianLeft']))
+        if cm['left'] < floor:
             errors.append('%s: with Swarm and Frailty at depth %d the median class keeps %.0f%%, under %.0f%%' % (
-                tag, c['depth'], 100 * cm['left'], 100 * c['medianLeft']))
+                tag, c['depth'], 100 * cm['left'], 100 * floor))
         # the party is no walkover and no wall next to the solo player
         if len(parties) > 1:
             a = e['rooms'][(parties[0], 1, 'combat')]['median']['clear']

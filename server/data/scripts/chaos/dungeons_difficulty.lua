@@ -125,7 +125,7 @@ end
 -- bends (class_dps_model.py, weapon_growth.py). python3 -I server/tools/boss_length_model.py --derive prints it, --check holds it.
 -- Before: dpsAt300 = 913, dpsAt1000 = 2600 and the same slope above (the comparison of the rows: 913 / 994 at 300, 2,600 / 5,329 at 1000).
 D.model = {aoe = 2.3, aoeShare = 0.254, walk = 90, walkPerPack = 12,
-	dps = {{100, 295}, {200, 656}, {300, 994}, {500, 1883}, {700, 2797}, {850, 3993}, {1000, 5329}, {1500, 7706}, {2000, 10694}}}
+	dps = {{100, 295}, {200, 656}, {300, 994}, {500, 1883}, {700, 2730}, {850, 3993}, {1000, 5214}, {1500, 7489}, {2000, 10694}}}
 
 function D.dps(level)
 	local rows, L = D.model.dps, tonumber(level) or 1
