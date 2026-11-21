@@ -5047,6 +5047,20 @@ def pinnacle_shares(table, total):
     return ', '.join('%s %d%%' % (k, round(v * 100.0 / total)) for k, v in rows if v * 100.0 / total >= 1)
 
 
+def dealt_delta(now, before):
+    """O700 fix: the tally since the fight opened, key by key; a nested table (lateSrc, lateElem of helper v41) is taken apart the same way"""
+    out = {}
+    for k, v in now.items():
+        b = before.get(k) if isinstance(before, dict) else None
+        if isinstance(v, dict):
+            out[k] = dealt_delta(v, b if isinstance(b, dict) else {})
+        elif isinstance(v, (int, float)):
+            out[k] = max(0, int(v) - int(b if isinstance(b, (int, float)) else 0))
+        else:
+            out[k] = v
+    return out
+
+
 def pinnacle_bot_line(name, cls, row, boss_secs):
     """O695: one line of the fight report for one bot: the damage the server counted on the boss (the helper's tally, TEST ONLY), what the bot cast and what the
     server refused, potions, beats given to a heal or with no spell it could pay, the lowest mana, the looks by guide mode and the steps. Plain numbers
@@ -5123,7 +5137,7 @@ async def pinnacle_fight_finish(io, squad, trace):
                 row['tally'] = {}
         if isinstance(row.get('dealt'), dict):
             d0 = row.get('dealt0') or {}
-            row['dealt'] = {k: max(0, int(v or 0) - int(d0.get(k) or 0)) for k, v in row['dealt'].items()}
+            row['dealt'] = dealt_delta(row['dealt'], d0)
         cls = io.class_of(r['name']) if hasattr(io, 'class_of') else ''
         row['cls'] = cls
         video_note(io, pinnacle_bot_line(r['name'], cls, row, secs))

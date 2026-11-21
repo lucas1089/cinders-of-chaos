@@ -11980,6 +11980,10 @@ class PinnacleFightReport(unittest.TestCase):
         self.assertIn('final by type: holy 75%, fire 20%, physical 5%', split)
         self.assertEqual(TX.pinnacle_shares(None, 100), '')
         self.assertEqual(TX.pinnacle_shares({'spell': 5}, 0), '')
+        # the O700 run broke on int(dict): the tally since the fight opened takes the nested tables apart too
+        d = TX.dealt_delta({'late': 900, 'lateSrc': {'spell': 700, 'dot': 200}, 'name': 'x'}, {'late': 100, 'lateSrc': {'spell': 50}})
+        self.assertEqual(d, {'late': 800, 'lateSrc': {'spell': 650, 'dot': 200}, 'name': 'x'})
+        self.assertEqual(TX.dealt_delta({'lateElem': {'holy': 5}}, {'lateElem': 3}), {'lateElem': {'holy': 5}})
         old_helper = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0, 'dealt': {'boss': 1000, 'bossHits': 10, 'other': 0}}, 10)
         self.assertNotIn('damage_final', old_helper, 'a helper of version 38 has no late tally')
         rows = [{'dealt': {'boss': 1000, 'late': 2400}}, {'dealt': {'boss': 3000, 'late': 5600}}]
