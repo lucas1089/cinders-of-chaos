@@ -2,7 +2,9 @@
 """The pinnacle boss model (O667; computed, not measured in game; server/README.md "Pinnacle bosses (O667)").
 O686 phase 3: `--upgrades` puts the spell upgrades on (spell_upgrade_model.py): the four bosses x H at their planned level (pinnacle.lua), the typical damage with the gain: 420 s alone and 300 s with five stay. `--check --upgrades` must pass as `--check` does.
 
-usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check] [--hits] [--nocap] [--upgrades]
+usage: python3 -I server/tools/pinnacle_model.py [--derive] [--check] [--hits] [--nocap] [--factors] [--options] [--upgrades]
+O698: --factors prints the mechanics' health factor per party size (boss_mechanics_core.lua, what pinnacle.lua applies) against the solo one;
+--options prints the bots of the boss video against the model class by class and three health options per boss (the owner picks)
 O690 (owner 2026-11-20): one hit of a pinnacle boss, of its adds or of its marked attacks on a player takes at most pinnacle_config.lua
 `hitCap` (40% of the pool, a marked attack 60%; the rule of the rift guardian's O478 cap, hitcap_core.lua). The model's damage is the sustained
 damage x the retention of the cap, E[min(roll, cap)] / E[roll] per attack of the XML, per class (its pool, armour, absorbs, toughness; rolls
@@ -93,13 +95,19 @@ def xml_hits(text):
 
 
 # ------------------------------------------------------------------------------------------------ length
-def typical(level):
-    """damage a second of the median class on one boss at a level (boss_length_model: armour and resistance of a boss kept)"""
-    return BL.one_target(level)
+def typical(level, boss=None):
+    """damage a second of the median class on one boss at a level (boss_length_model: armour and resistance of a boss kept).
+    O699 (owner 2026-11-21): for a pinnacle boss (`boss` given) the kept share of the elemental half is the boss file's own resistance
+    (real_kept), not the shared BOSS_RES 0.30 of boss_length_model.py (that constant stays for every other boss)"""
+    d = BL.one_target(level)
+    if boss is not None:
+        kept, _ = real_kept(xml_text(boss))
+        d *= kept / BL.kept('boss')
+    return d
 
 
 def derive_health(boss, bal, heal):
-    d = typical(boss['refLevel'])
+    d = typical(boss['refLevel'], boss)
     up = bal['uptime']
     solo = bal['seconds']['solo'] * (d * up - heal)
     party = bal['seconds']['party'] * (bal['players'] * d * up - heal)
@@ -108,7 +116,7 @@ def derive_health(boss, bal, heal):
 
 def kill_seconds(boss, bal, players, heal, dmg_factor=1.0):
     """seconds for `players` of the median class (or `dmg_factor` of it) to kill the committed fight"""
-    d = typical(boss['refLevel']) * dmg_factor
+    d = typical(boss['refLevel'], boss) * dmg_factor
     health = boss['health'] * SU.health(boss['refLevel']) * (1 + boss['perExtra'] * (players - 1))  # x H at the planned level (pinnacle.lua), 1 while off
     return health / (players * d * bal['uptime'] - heal)
 
@@ -325,7 +333,7 @@ def rows():
         m5 = median(boss, text, profile, bal['players'], mult=dmg5)
         press5 = m5['pressure'] * dmg5
         out.append({'boss': boss, 'heal': heal, 'health': health, 'perExtra': extra, 'm1': m1, 'm5': m5, 'press5': press5, 'dmg5': dmg5,
-                    'dps': typical(boss['refLevel']), 'profile': profile, 'text': text})
+                    'dps': typical(boss['refLevel'], boss), 'profile': profile, 'text': text})
     return out
 
 
@@ -450,6 +458,39 @@ def check_cap(n, rs):
     return errors
 
 
+def check_factors(n):
+    """O698: the mechanics' health factor of each boss at each size (boss_mechanics_core.lua G.refFor / G.balance, what pinnacle.lua hands
+    boss_mechanics.lua) keeps the planned kill time of that size (420 s alone, 300 s with five) inside `factor.tolerance`, no factor sits on the
+    floor of the profile (`minHpMult`, a bound that cuts the plan), and the factor of a party is not the solo one (the fight is worked out for its size)"""
+    bal = n['bal']
+    fc = bal['factor']
+    errors = []
+    for boss in n['cfg']['bosses']:
+        key = boss['name'].lower()
+        prof = n['profiles'].get(key, {})
+        rows_ = n['factors'].get(key)
+        if not rows_:
+            errors.append('%s: no factor rows (the profile has no ref)' % boss['name'])
+            continue
+        floor_ = prof.get('minHpMult', 0.6)
+        for size in range(1, bal['players'] + 1):
+            f = rows_[str(size)]
+            if f['hpMult'] <= floor_ + 1e-9 or f['hpMult'] > 1 + 1e-9:
+                errors.append('%s x%d: the health factor %.4f is on the floor %.2f or above 1: the kill time is not kept' % (boss['name'], size, f['hpMult'], floor_))
+            if abs(f['final'] - f['base']) > fc['tolerance'] * f['base']:
+                errors.append('%s x%d: with the factor %.4f the kill time is %.0f s, planned %.0f (%.1f%% off, over %.1f%%)' % (
+                    boss['name'], size, f['hpMult'], f['final'], f['base'], 100 * abs(f['final'] - f['base']) / f['base'], 100 * fc['tolerance']))
+        solo_plan, party_plan = bal['seconds']['solo'], bal['seconds']['party']
+        if abs(rows_['1']['final'] - solo_plan) > fc['tolerance'] * solo_plan:
+            errors.append('%s: alone the median class kills it in %.0f s with the factor, planned %d' % (boss['name'], rows_['1']['final'], solo_plan))
+        top = rows_[str(bal['players'])]
+        if abs(top['final'] - party_plan) > fc['tolerance'] * party_plan:
+            errors.append('%s: five of the median class kill it in %.0f s with the factor, planned %d' % (boss['name'], top['final'], party_plan))
+        if abs(top['hpMult'] - top['soloMult']) < fc['partyDiffers'] and abs(top['soloFinal'] - party_plan) > fc['tolerance'] * party_plan:
+            errors.append('%s: the party factor is the solo one (%.4f) and misses the plan' % (boss['name'], top['soloMult']))
+    return errors
+
+
 def committed_ref(profile):
     r = profile.get('ref') or {}
     return r
@@ -511,7 +552,7 @@ def check():
                 if abs(ref.get(key, -1) - val) > 1e-9:
                     errors.append('%s: profile ref %s is %s, the model says %s' % (tag, key, ref.get(key), val))
             with SU.forced(False):  # the ref is the fight's numbers of today (the XML health, the damage of the model), the game adds H and the gain
-                today_dps = typical(b['refLevel'])
+                today_dps = typical(b['refLevel'], b)
             if abs(ref.get('dps', 0) - today_dps) > 0.015 * today_dps:
                 errors.append('%s: profile ref dps %s, derived %d' % (tag, ref.get('dps'), today_dps))
             if abs(ref.get('heal', 0) - r['heal']) > 0.03 * max(1, r['heal']):
@@ -546,6 +587,7 @@ def check():
             if len(text) > 24:
                 errors.append('%s: the title "%s" is %d characters, 24 at most' % (tag, text, len(text)))
     errors.extend(check_cap(n, rs))
+    errors.extend(check_factors(n))
     first, last = rs[0]['m1']['pressure'], rs[-1]['m1']['pressure']
     if last > first * lim['riseMax']:
         errors.append('the last boss presses %.2f, over %.2f x the first (%.2f)' % (last, lim['riseMax'], first))
@@ -570,6 +612,136 @@ def check():
     print('pinnacle check: %s (%d bosses, a set in %.2f hours of top content, a unique in %.1f)' % (
         'FAIL' if errors else 'ok', len(rs), hours, uh))
     return 1 if errors else 0
+
+
+# ------------------------------------------------------------------------------------------------ O698: the mechanics' factor, the options
+def factor_rows():
+    """{boss key: {size: row}} of boss_mechanics_core.lua G.balance for the fight of each size (tools/pinnacle_numbers.lua, the real core):
+    health, hpMult (what pinnacle.lua applies), base / final seconds, downtime share, fixed seconds, and the solo factor the fights used before O698"""
+    return numbers()['factors']
+
+
+def scaled_rows(wants):
+    """the same rows for a health and a damage scale of the committed fight: wants = [(boss key, health scale, damage scale)] -> {want: {size: row}}"""
+    args = ['%s,%.8f,%.8f' % w for w in wants]
+    out = subprocess.run([lua_bin(), os.path.join('tools', 'pinnacle_numbers.lua')] + args, cwd=SERVER, check=True, capture_output=True,
+                         text=True).stdout
+    got = json.loads(out)['scaled']
+    return {w: got[a] for w, a in zip(wants, args)}
+
+
+def real_kept(text):
+    """boss_length_model.kept('boss') with the boss's own resistances: the elemental half through the mean of the six elements of its XML
+    (fire, energy, earth, ice, holy, death) instead of BOSS_RES; the armour on the physical half as the model has it"""
+    share = float(re.search(r'physicalShare = ([0-9.]+)', BL.read(BL.PVP)).group(1))
+    six = [int(v) for k, v in re.findall(r'<element (\w+)Percent="(-?\d+)"', text) if k != 'physical']
+    res = sum(six) / (100.0 * max(1, len(six)))
+    return BL.kept('boss') + (1 - share) * (BL.BOSS_RES - res), res
+
+
+def bot_scale(bal, rows_):
+    """[(boss key, options)] the three options of health for each boss (the owner picks; nothing is changed by them), numbers from the real core:
+    health scales of the committed fight (a: the median kills it in the planned time with the boss's real resistances, b: the measured bot five
+    kill it in `target` seconds, c: in half of it), the fight's health with the factor, the median five's and the bot five's seconds"""
+    me = bal['measured']
+    plan = float(bal['seconds']['party'])
+    facs = factor_rows()
+    out = []
+    for r in rows_:
+        b = r['boss']
+        key = b['name'].lower()
+        kept, res = real_kept(r['text'])
+        ratio = 1.0   # O699: the committed fight already holds the boss file's resistance (typical(level, boss)); option a is the committed state
+        row5 = facs[key][str(bal['players'])]
+        vid = row5['health'] * row5['soloMult']   # the fight of the video: the party's health x the solo factor (Malgrath: 10,134,615)
+        cur = row5['health'] * row5['hpMult']
+
+        def times(hs, ds):
+            got = scaled_rows([(key, hs, ds)])[(key, hs, ds)]
+            five, solo = got[str(bal['players'])], got['1']
+            fight = five['health'] * five['hpMult']
+            return {'hs': hs, 'ds': ds, 'five_health': fight, 'solo_health': solo['health'] * solo['hpMult'], 'median5': five['final'],
+                    'median1': solo['final'], 'bots5': me['seconds'] * fight / vid, 'hpMult5': five['hpMult']}
+
+        def solve(target):
+            hs = 1.0
+            for _ in range(4):
+                hs *= target / times(hs, 1.0)['bots5']
+            return hs
+        opts = [('today (O698 factor)', times(1.0, 1.0)), ('a: inputs fixed', times(ratio, ratio)),
+                ('b: bots kill in %d s' % plan, times(solve(plan), 1.0)), ('c: bots kill in %d s' % (plan / 2), times(solve(plan / 2), 1.0))]
+        out.append({'boss': b, 'res': res, 'kept': kept, 'ratio': ratio, 'cur': cur, 'vid': vid, 'options': opts})
+    return out
+
+
+def print_factors():
+    n = numbers()
+    bal = n['bal']
+    print('health factor of boss_mechanics_core.lua G.balance per party size (what pinnacle.lua applies, O698), against the solo factor the')
+    print('fights used at every size before it (final = the kill time of the median class with the factor; plan %d s solo, %d s with %d)' % (
+        bal['seconds']['solo'], bal['seconds']['party'], bal['players']))
+    print('| Boss | size | health | factor | solo factor (before) | final s | before s | downtime | fixed s |')
+    print('|---|---|---|---|---|---|---|---|---|')
+    for key, sizes in n['factors'].items():
+        for size in sorted(sizes, key=int):
+            f = sizes[size]
+            print('| %s | %s | %d | %.4f | %.4f | %.0f | %.0f | %.3f | %.1f |' % (key, size, f['health'], f['hpMult'], f['soloMult'], f['final'],
+                                                                              f['soloFinal'], f['share'], f['fixed']))
+
+
+def print_options():
+    n = numbers()
+    bal = n['bal']
+    me = bal['measured']
+    rs = rows()
+    print('measured (O689 run 6): %s, %d bots of level %d, %d s from %d health; bots %.0f a second (sum), the model plans %.0f (%d x %.0f raw)' % (
+        me['boss'], me['players'], me['level'], me['seconds'], me['startHealth'], sum(me['perBot'].values()),
+        bal['players'] * typical(rs[0]['boss']['refLevel']), bal['players'], typical(rs[0]['boss']['refLevel'])))
+    print('| Boss | boss resist (six elements) | kept (BOSS_RES 0.30 / real) | option | health of the fight (five) | median five s | bot five s | median alone s | health x today |')
+    print('|---|---|---|---|---|---|---|---|---|')
+    for o in bot_scale(bal, rs):
+        today = o['options'][0][1]['five_health']
+        for name, t in o['options']:
+            print('| %s | %.1f%% | %.3f / %.3f | %s | %d | %.0f | %.0f | %.0f | %.2f |' % (
+                o['boss']['name'], 100 * o['res'], BL.kept('boss'), o['kept'], name, t['five_health'], t['median5'], t['bots5'], t['median1'],
+                t['five_health'] / today))
+
+
+def class_table():
+    """the bots against the model, per class, at the planned level of the measured boss: the bot's damage a second, the model's raw and kept"""
+    n = numbers()
+    me = n['bal']['measured']
+    rs = rows()
+    r = [x for x in rs if x['boss']['name'].lower() == me['boss']][0]
+    import class_dps_model as CD
+    level = r['boss']['refLevel']
+    kept = BL.kept('boss')
+    real, res = real_kept(r['text'])
+    out = []
+    for cls, got in me['perBot'].items():
+        raw = CD.dps(cls, level)[0]
+        out.append({'cls': cls, 'bot': got, 'early': me['early'][cls], 'raw': raw, 'model': raw * kept, 'real': raw * real,
+                    'dots': me['dots'].get(cls, 0) / float(me['botSeconds'])})
+    return out, kept, real, res
+
+
+def print_classes():
+    n = numbers()
+    me = n['bal']['measured']
+    rows_, kept, real, res = class_table()
+    print('class by class at level %d on one boss (a second): bot = damage_final of the run, model = class_dps_model.dps x BOSS_RES kept %.3f,' % (
+        1900, kept))
+    print('real = the same x the kept %.3f of the boss files (%.1f%% resist on the six elements)' % (real, 100 * res))
+    print('| Class | bot | early tally | model raw | model kept | bot / model | model real resist | bot / real | dots of the bot |')
+    print('|---|---|---|---|---|---|---|---|---|')
+    tb = tm = tr = 0.0
+    for c in rows_:
+        print('| %s | %.0f | %.0f | %.0f | %.0f | %.2f | %.0f | %.2f | %.0f (%.0f%%) |' % (c['cls'], c['bot'], c['early'], c['raw'], c['model'], c['bot'] / c['model'],
+                                                                                    c['real'], c['bot'] / c['real'], c['dots'], 100 * c['dots'] / c['bot']))
+        tb += c['bot']
+        tm += c['model']
+        tr += c['real']
+    print('| sum of the five | %.0f | | | %.0f | %.2f | %.0f | %.2f | |' % (tb, tm, tb / tm, tr, tb / tr))
 
 
 def derive():
@@ -622,6 +794,14 @@ def main(argv):
         return check()
     if '--hits' in argv:
         print_hits(hit_table())
+        return 0
+    if '--factors' in argv:
+        print_factors()
+        return 0
+    if '--options' in argv:
+        print_classes()
+        print()
+        print_options()
         return 0
     if '--derive' in argv:
         derive()

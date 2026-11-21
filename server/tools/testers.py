@@ -1092,9 +1092,29 @@ class CheckIO(KeyIO):
         """O695: True while a cast-time spell of this bot is on the cast bar (a step now would cancel it)"""
         return bool(self.bot.casting(time.monotonic()))
 
+    def rotation_names(self):
+        """O686 phase 8: the lowercase names of the attack spells of the bot's rotation (the spell the Forms and awakening checks pick when it has Forms)"""
+        return [str(s.get('name') or '').lower() for s in (getattr(self.bot, 'rotation', None) or []) if s.get('group') == 'attack']
+
     def rotation_words(self, n=3):
         """O685: the words of the first `n` attack spells of the bot's rotation (the spells a support rune goes into)"""
         return [s['words'] for s in (getattr(self.bot, 'rotation', None) or []) if s.get('group') == 'attack'][:n]
+
+    def pause_rotation(self, name, on):
+        """O686 phase 8: the bot's rotation casts no attack spell while `on` (the heal and the potions go on); a check that casts two spells a second apart needs the
+        attack group for itself"""
+        b = self._bot(name)
+        if b is not None:
+            b.rotation_paused = bool(on)
+
+    def ready_in(self, name, words):
+        """O686 phase 8: seconds until the bot may cast the spell of `words` (its own cooldown or its group's, the bot's own clock); 0 when ready, None when the
+        bot has no such spell"""
+        b, now = self._bot(name), time.monotonic()
+        spell = next((s for s in (getattr(b, 'all_spells', None) or []) if s.get('words') == words and not s.get('needlearn')), None) if b is not None else None
+        if b is None or spell is None:
+            return None
+        return max(0.0, b.ready.get(words, 0) - now, b.ready.get(spell['group'], 0) - now)
 
     async def cast_words_of(self, name, words, gap=2.0):
         """O685: the bot casts the spell of `words` of its own class now when it is ready (a healer's Mirror Mend, Lucid Reverie, Kindled Breath: no
@@ -1614,6 +1634,7 @@ class TesterBot(LT.Bot):
         self.checks_done = False
         self.checks_flushed = False
         self.in_raid = False  # inside the testers' raid (O588): the engine catches a lethal hit there, no flight to the temple
+        self.rotation_paused = False  # O686 phase 8: keep_alive casts no attack spell while a check casts a pair itself (heals and potions go on)
         self.heal_at = (60, 40)  # O681: health percent under which the bot casts its heal spell / drinks a potion (a boss fight sets it higher)
         self.heal_first = 0  # O684: health percent under which the bot casts no attack while its heal spell or its potion is ready (a pinnacle fight: 40)
         self.tally = {}  # O695: what the bot cast and what the server refused, by kind (tally_count); a boss fight reads the difference of two snapshots
@@ -2157,6 +2178,8 @@ class TesterBot(LT.Bot):
             self.flee_check = (now + TC.FLEE_LOOK, self.health)
             self.results.behaviour('flee', 'tried')
             self.results.log(self, 'do', 'flee at %d %% health' % self.health)
+            return
+        if self.rotation_paused:   # O686 phase 8: a check casts the pair of spells itself (the rotation would take the attack group between the two)
             return
         if self.rotation and not TC.hold_attack(self.health, self.heal, healed or (
                 self.heal and self.ready.get('heal', 0) <= now and self.ready.get(self.heal['group'], 0) <= now)) \

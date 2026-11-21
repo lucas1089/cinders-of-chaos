@@ -135,7 +135,7 @@ function M.onCast(player, name, id, group, aggressive)
 end
 
 if ChaosSpellEvents and ChaosSpellEvents.set then
-	ChaosSpellEvents.set("cast", "spellcombos", M.onCast)
+	ChaosSpellEvents.set("precast", "spellcombos", M.onCast) -- O686 phase 8: the engine fires `cast` AFTER the spell ran (patch 0008), so a ring entry made there never met its own hit
 end
 
 -- ---------------------------------------------------------------- the element of a hit

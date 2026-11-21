@@ -243,7 +243,7 @@ local function rune(key, l) return S.runeId(S.byKey[key].index, l) end
 fx = S.spellEffects(withRunes(20, 128, {rune("emberbrand", 1)}), 128, 160)
 ok(fx.emberbrand and not fx.dawnbrand, "a real Emberbrand: the free Dawnbrand does not join it")
 fx = S.spellEffects(withRunes(20, 128, {rune("dawnbrand", 1)}), 128, 160)
-eq(fx.dawnbrand.value, 20, "the real Common Dawnbrand 20%: the choice adds no free brand (it is +3 in the pool)")
+eq(fx.dawnbrand.value, 7, "the real Common Dawnbrand 7%: the choice adds no free brand (it is +3 in the pool)")
 ok(not fx.dawnbrand.free, "the rune")
 fx = S.spellEffects(withRunes(20, 128, {rune("keenedge", 1)}), 128, 160)
 ok(fx.keenedge and not fx.dawnbrand, "another support: only the rune, the choice gives no free brand")

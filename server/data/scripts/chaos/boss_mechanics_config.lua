@@ -597,7 +597,7 @@ return {
 					healthPerExtra = 0.05, text = "%s hangs on two Drowned Anchors! Break them!",
 					doneText = "The anchors break: %s can be hurt again!", tip = "At 50% he takes 70% less until the 2 Drowned Anchors die."}
 			},
-			ref = {health = 3475000, heal = 250, dps = 10027, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 4121000, heal = 250, dps = 11837, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended vhoss"] = {
 			label = "Vhoss", size = 2, element = "death", difficulty = 0.4, every = 9000, fair = {refLevel = 2100},
@@ -618,7 +618,7 @@ return {
 					healthPerExtra = 0.05, text = "Whispering Idols rise: they feed %s's hits!",
 					doneText = "The idols fall silent.", tip = "At 50% each living Whispering Idol makes his hits 12% harder."}
 			},
-			ref = {health = 3876000, heal = 300, dps = 11210, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 4654000, heal = 300, dps = 13389, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended talath"] = {
 			label = "Talath", size = 2, element = "ice", difficulty = 0.4, every = 9000, fair = {refLevel = 2300},
@@ -635,7 +635,7 @@ return {
 					healthPerExtra = 0.05, text = "%s hides behind two Rime Pillars! Break them!",
 					doneText = "The pillars shatter: %s can be hurt again!", tip = "At 55% he takes 70% less until the 2 Rime Pillars die."}
 			},
-			ref = {health = 4231000, heal = 330, dps = 12240, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 4899000, heal = 330, dps = 14110, uptime = 0.85, players = 1, limit = 1200}
 		},
 		["ascended varkhul"] = {
 			label = "Varkhul", size = 2, element = "fire", difficulty = 0.45, every = 9000, fair = {refLevel = 2500},
@@ -651,7 +651,7 @@ return {
 					doneText = "The idols crumble.", tip = "At 50% each living Ash Idol makes his hits 12% harder."}
 			},
 			softEnrage = {at = 600, perMin = 0.08, maxMult = 1.8, text = "%s burns hotter with every minute!"},
-			ref = {health = 4587000, heal = 360, dps = 13271, uptime = 0.85, players = 1, limit = 1200}
+			ref = {health = 5508000, heal = 360, dps = 15851, uptime = 0.85, players = 1, limit = 1200}
 		}
 	}
 }

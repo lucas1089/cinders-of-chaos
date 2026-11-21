@@ -700,6 +700,21 @@ do
 	local row = H.dealtRow(TesterHelper.dealtLate, tester.id)
 	check(row.boss == 3800 and row.bossHits == 3 and row.summon == 2000 and row.dot == 300, "late tally: the tester's hits, its summon's and its dot apart")
 	check(H.dealtRow(TesterHelper.dealtLate, person.id).boss == 0, "late tally: a player that is no tester has no row")
+	-- O700: the final damage by origin and by damage type (the report says where the boss's health went)
+	check(HELPER_VERSION >= 41, "the helper is version 41 or later (O700: the final damage by origin and by type)")
+	TesterHelper.dealtLate = {}
+	local spellWas = rawget(_G, "ORIGIN_SPELL")
+	rawset(_G, "ORIGIN_SPELL", 3)
+	boss.health = 900000
+	L.onHealthChange(boss, tester, -600, COMBAT_FIREDAMAGE, -400, COMBAT_PHYSICALDAMAGE, 3)
+	boss.health = 899000
+	L.onHealthChange(boss, tester, -300, COMBAT_FIREDAMAGE, 0, 0, COND)
+	local sr = H.dealtRow(TesterHelper.dealtLate, tester.id)
+	check(sr.src and sr.src.spell == 1000 and sr.src.dot == 300 and sr.elem and sr.elem.fire == 900 and sr.elem.physical == 400,
+		"late tally: the damage by origin (spell, dot) and by type (fire, physical)")
+	sr.src.spell = 0
+	eq(H.dealtRow(TesterHelper.dealtLate, tester.id).src.spell, 1000, "late tally: the split of a row is a copy")
+	rawset(_G, "ORIGIN_SPELL", spellWas)
 	-- a hit that does not change the damage
 	local a, b = L.onHealthChange(boss, tester, -10, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
 	check(a == -10 and b == COMBAT_PHYSICALDAMAGE, "the late event returns the hit as it came")
@@ -768,6 +783,25 @@ do
 	eq(t[7].boss, 100, "dealtRow: a copy")
 	local z = H.dealtRow(t, 8)
 	check(z.boss == 0 and z.bossHits == 0 and z.other == 0 and z.otherHits == 0, "dealtRow: none dealt is a row of zeros")
+	-- O700: origin and damage type parts
+	local o = {spell = 3, melee = 1, ranged = 2, cond = 7, none = 0}
+	eq(H.originName(3, o), "spell", "originName: a spell")
+	eq(H.originName(1, o), "melee", "originName: a melee auto attack")
+	eq(H.originName(2, o), "ranged", "originName: a ranged auto attack")
+	eq(H.originName(7, o), "dot", "originName: a condition is a dot")
+	eq(H.originName(0, o), "none", "originName: no origin")
+	eq(H.originName(nil, o), "none", "originName: nil is none")
+	eq(H.originName(9, o), "other", "originName: any other value")
+	eq(H.originName(3, nil), "other", "originName: no table, nothing matches")
+	local pp = H.damageParts(-600, 2, -400, 1, {[1] = "physical", [2] = "fire"})
+	check(pp.fire == 600 and pp.physical == 400, "damageParts: both slots by name, positive")
+	check(next(H.damageParts(500, 128, 0, 0, {[1] = "physical"})) == nil, "damageParts: healing and unknown types count nothing")
+	local t2 = {}
+	H.dealtAdd(t2, 9, true, 1000, "player", "spell", {fire = 600, physical = 400})
+	H.dealtAdd(t2, 9, true, 300, "dot", "dot", {fire = 300})
+	H.dealtAdd(t2, 9, false, 50, "player", "spell", {fire = 50})
+	check(t2[9].src.spell == 1000 and t2[9].src.dot == 300 and t2[9].elem.fire == 900 and t2[9].elem.physical == 400, "dealtAdd: origin and type parts of the boss damage")
+	check(t2[9].other == 50 and t2[9].src.spell == 1000, "dealtAdd: a hit on another monster is in neither split")
 	check(H.withinReach({x = 10, y = 10, z = 7}, {x = 17, y = 3, z = 7}, 7) and not H.withinReach({x = 10, y = 10, z = 7}, {x = 18, y = 10, z = 7}, 7)
 		and not H.withinReach({x = 10, y = 10, z = 7}, {x = 10, y = 10, z = 8}, 7) and not H.withinReach(nil, {x = 1, y = 1, z = 7}, 7), "withinReach: a square of the floor")
 end
@@ -4159,6 +4193,141 @@ do
 	ChaosCrafting, ChaosGems, ChaosGearSets, ChaosArchery, ChaosTestersCore, ItemType, ChaosPinnacle = savedC, savedG, savedSets, savedArch, savedK, savedIT, savedPN
 	ChaosSupports, ChaosStoreFood, ChaosStoreFoodCore, ChaosStoreFoodConfig, ChaosSpellQuestCore, ChaosItemMods = savedSupports, savedFood, savedFoodCore, savedFoodCfg, savedQ, savedItemMods
 	SLOTP_TWO_HAND, ITEM_ATTRIBUTE_ATTACK, CONDITION_REGENERATION, CONDITIONID_DEFAULT, RETURNVALUE_NOERROR = savedSlotp, savedAttr, savedRegen, savedCid, savedRC
+end
+
+-- O686 phase 8: `!tester spellup` (TEST ONLY): the reading of the words, the probe, the grants, the log of the hook wrappers, the monster health factor
+do
+	check(HELPER_VERSION >= 40, "the helper is version 40 or later (O686 phase 8: spellup)")
+	eq(H.parseSpellup(nil).what, "state", "spellup: no word is state")
+	eq(H.parseSpellup("LOG clear").clear, true, "spellup: log clear")
+	local r = H.parseSpellup("rank 200 20")
+	check(r.what == "rank" and r.spell == 200 and r.rank == 20, "spellup: rank SPELL RANK")
+	check(H.parseSpellup("rank 200 21") == nil and H.parseSpellup("rank 500 1") == nil and H.parseSpellup("rank 5") == nil, "spellup: a rank above 20 or a spell above 499 is refused")
+	local s1, s3 = H.parseSpellup("seals 7"), H.parseSpellup("seals 1 2 3")
+	check(s1.waystone == 7 and s1.rift == 7 and s1.pinnacle == 7 and s3.waystone == 1 and s3.rift == 2 and s3.pinnacle == 3, "spellup: seals N or W R P")
+	eq(H.parseSpellup("seals 5000").waystone, 999, "spellup: Seals are capped at 999")
+	check(H.parseSpellup("seals 1 2 3 4") == nil and H.parseSpellup("seals x") == nil and H.parseSpellup("burn") == nil and select(2, H.parseSpellup("burn")) == H.SPELLUP_USAGE,
+		"spellup: other words are the usage")
+
+	local saved = {ChaosSpellRanks, ChaosSpellRanksConfig, ChaosSpellRanksCore, ChaosSpellCombos, ChaosSpellAwakening, ChaosCombatLog, ChaosSpellForms, ChaosPace,
+		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators}
+	COMBAT_NONE, ORIGIN_SPELL = 0, 3
+	local cfgS = {enabled = true, track = true, testersEarn = true,
+		storage = {rankBase = 5000, sealWaystone = 6001, sealRift = 6002, sealPinnacle = 6003, awakened = 6004, formChanges = 6005, lastPickAt = 6006,
+			lastPickWhat = 6007, awakenedSlots = 6100}}
+	ChaosSpellRanksConfig = cfgS
+	local spell = 200
+	local sup = creature(268436100, "Tester Sup", {store = {[ST] = 1}})
+	sup.getLevel = function() return 150 end
+	sup.getExperience = function() return 123456 end
+	sup.hasLearnedSpell = function() return true end
+	local ranked = {sp = {[200] = 1.5, [201] = 0}, rank = {[200] = 3}, dirty = {}}
+	local flushed = 0
+	ChaosSpellRanks = {players = {[sup.id] = ranked}, catalog = {[200] = {name = "Bolt", scale = 1}, [201] = {name = "Wave", scale = 1}},
+		castSpell = function() return spell end, hitFactor = function() return 1.09 end, flush = function() flushed = flushed + 1 end,
+		state = function() return {s = {{200, 3, 0.5, 2}}} end}
+	ChaosSpellRanksCore = {refXp = function() return 39130589.5 end, spForRank = function(rank) return rank * 2 end, unpack = function(v) return v > 0 and v or 0, 0, 0, false end,
+		pack = function(rank) return rank end}
+	local cf = 1
+	ChaosSpellCombos = {hitFactor = function() return cf end, announce = function() end}
+	local af = 1
+	ChaosSpellAwakening = {hitFactor = function() return af end, seals = function(p) return {waystone = 2, rift = 3, pinnacle = 4} end, slots = function() return {0, 0, 0} end}
+	local spellHits = 0
+	ChaosCombatLog = {spellHook = function() spellHits = spellHits + 1 end}
+	ChaosSpellForms = {picksOf = function() return {{200, 1, 0}} end}
+	local hf = 1.05
+	Chaos.healthFactor = function() return hf end
+	local made = {}
+	ChaosPace = {levelOf = function() return 300 end, apply = function() return true end}
+	local mon = creature(268436101, "Troll", {player = false, monster = true})
+	Game.getSpectators = function() return {sup, mon} end
+	Game.createMonster = function(name)
+		local m = creature(268436200 + #made, name, {player = false, monster = true, health = 1000})
+		m.removed = false
+		m.maxHealth = cfgS.enabled and 1050 or 1000
+		function m:getMaxHealth() return self.maxHealth end
+		function m:remove() self.removed = true end
+		function m:setMaxHealth(v) self.hp = v end
+		function m:setHealth(v) self.hp = v end
+		made[#made + 1] = m
+		return m
+	end
+	local origP = print
+	print = function() end
+	local function say2(text) talks["!tester"].onSay(sup, "!tester", text) end
+	say2("spellup #901")
+	local out = last(sup)
+	check(out:find('"on":true', 1, true) and out:find('"earn":true', 1, true) and out:find('"hf":1.0500', 1, true) and out:find('"seq":901', 1, true), "spellup state: the switches, H, the number")
+	check(out:find('"sp":1.5000', 1, true) and out:find("[200,3,1.5000]", 1, true), "spellup state: the SP and the rank of the spell")
+	check(out:find('"exp":123456', 1, true) and out:find('"ref":39130589', 1, true), "spellup state: the experience and the model's experience an hour, for the pace")
+	ChaosSpellForms.entry = function(sid)
+		if sid == 200 then return {[1] = {{kind = "ECHO"}, {kind = "BURST"}}, [2] = {{kind = "AREA"}}} end
+	end
+	say2("spellup forms #912")
+	check(last(sup):find('"forms":[[200,"Bolt",0,["ECHO","BURST","AREA","?"]]]', 1, true), "spellup forms: the spells with Forms and the kind of each pick")
+	-- the wrappers count the factors the hooks give a tester's hit, and only a tester's
+	local rf = ChaosSpellRanks.hitFactor
+	eq(rf(sup, mon, ORIGIN_SPELL, 1), 1.09, "the wrapper passes the rank factor through")
+	cf, af = 1.15, 1.1
+	ChaosSpellCombos.announce(sup, {id = "steam_burst"}, nil)
+	ChaosSpellCombos.hitFactor(sup, mon)
+	ChaosSpellAwakening.hitFactor(sup)
+	ChaosCombatLog.spellHook(sup, nil, mon, 400, 200)
+	ChaosCombatLog.spellHook(sup, nil, mon, 600, 200)
+	check(spellHits == 2, "the wrapper of the combat log calls the original")
+	local stranger = creature(268436102, "Ana Three", {player = true})
+	rf(stranger, mon, ORIGIN_SPELL, 1)
+	say2("spellup log #902")
+	out = last(sup)
+	check(out:find('"log":[[200,1,1.0900,1,1.1500,1.1500,1,1.1000,2,1000,600,1.1000,1.1000]]', 1, true), "spellup log: factors, combo and awakening procs, the hits and their total and best")
+	check(out:find('"fires":[["steam_burst",', 1, true) and out:find(',' .. mon.id .. ',', 1, true), "spellup log: the combo row that fired, the target and the time")
+	say2("spellup log clear #903")
+	say2("spellup log #904")
+	check(last(sup):find('"log":[]', 1, true), "spellup log clear: the log is empty after it")
+	-- grants
+	ChaosSpellForms.element = function(sid) return sid == 200 and "fire" or nil end
+	say2("spellup combos #930")
+	check(last(sup):find('"spells":[[200,"Bolt","fire",0],[201,"Wave","",0]]', 1, true), "spellup combos: the spells of the book with the element and the heal flag: " .. last(sup))
+	check(last(sup):find('"combos":false', 1, true) and last(sup):find('"ring":-1', 1, true), "spellup combos: the combos state is told (off and no ring in the mock)")
+	local madeBefore = #made
+	Game.getSpectators = function() return {sup, mon} end
+	say2("spellup mob #931")
+	check(last(sup):find('"mob":3', 1, true) and last(sup):find('"name":"Rat"', 1, true) and #made == madeBefore + 3, "spellup mob: three Rats beside the bot, whatever stands near")
+	eq(sup.target, made[madeBefore + 1], "spellup mob: the first Rat is the bot's target")
+	eq(made[madeBefore + 2].hp, 200000, "spellup mob: sturdy enough to live through two casts")
+	say2("spellup rank 201 12 #905")
+	eq(ranked.rank[201], 12, "spellup rank: the rank is set")
+	eq(ranked.sp[201], 24, "spellup rank: with the SP of that rank")
+	eq(sup.store[5201], 12, "spellup rank: and stored")
+	check(flushed >= 1 and last(sup):find('"name":"Wave"', 1, true), "spellup rank: flushed, named")
+	ChaosSpellRanksCore.rankOf = function(sp, scale) return 2, 0.1, 0.6 end
+	say2("spellup near 200 #920")
+	check(last(sup):find('"near":[200,2,1.9995]', 1, true), "spellup near: the SP is set just under the next rank (cost 0.6, 0.1 in: +0.5 - 0.0005)")
+	eq(ranked.dirty[200], true, "spellup near: the spell is marked for the writer")
+	ChaosSpellRanksCore.rankOf = function() return 20, 0, 0 end
+	say2("spellup near 200 #921")
+	check(last(sup):find("top rank", 1, true), "spellup near: the top rank has no next rank")
+	check(H.parseSpellup("near 200").spell == 200 and H.parseSpellup("near") == nil and H.parseSpellup("near 500") == nil, "spellup: near SPELL")
+	say2("spellup rank 300 5 #906")
+	check(last(sup):find('"err":', 1, true), "spellup rank: a spell with no rank is an error")
+	say2("spellup seals 5 6 7 #907")
+	eq(sup.store[6001] .. sup.store[6002] .. sup.store[6003], "567", "spellup seals: the three counters")
+	-- the health factor: two fresh copies, off then on, removed after
+	local beforeH = #made
+	say2("spellup h #908")
+	out = last(sup)
+	check(out:find('"off":1000', 1, true) and out:find('"on":1050', 1, true) and out:find('"hf":1.0500', 1, true) and out:find('"level":300', 1, true), "spellup h: both copies read")
+	check(#made == beforeH + 2 and made[beforeH + 1].removed and made[beforeH + 2].removed and cfgS.enabled == true, "spellup h: the copies are removed and the switch is back")
+	Game.getSpectators = function() return {sup} end
+	say2("spellup h #909")
+	check(last(sup):find("no monster within 7 tiles", 1, true), "spellup h: no monster near is an answer")
+	say2("spellup clear #910")
+	check(ranked.rank[200] == 0 and ranked.sp[201] == 0 and sup.store[6001] == 0 and sup.store[5200] == 0, "spellup clear: ranks, SP and Seals back to nothing")
+	say2("spellup burn #911")
+	check(last(sup):find("usage: spellup", 1, true), "spellup: an unknown word is the usage")
+	print = origP
+	ChaosSpellRanks, ChaosSpellRanksConfig, ChaosSpellRanksCore, ChaosSpellCombos, ChaosSpellAwakening, ChaosCombatLog, ChaosSpellForms, ChaosPace,
+		COMBAT_NONE, ORIGIN_SPELL, Chaos.healthFactor, Game.createMonster, Game.getSpectators = (table.unpack or unpack)(saved, 1, 13)
 end
 
 print = origPrint

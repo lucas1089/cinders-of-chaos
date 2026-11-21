@@ -102,19 +102,19 @@ return {
 	-- unique's name (data/lib/chaos_unique_items.lua) and its base id; title = the short name of the titles.
 	bosses = {
 		{key = "malgrath", name = "Ascended Malgrath", short = "Malgrath", level = 1900, minLevel = 1800, refLevel = 1900,
-			health = 3475000, perExtra = 0.664, tokens = 8, orbs = {chaos = 24, divine = 12, exalted = 2},
+			health = 4121000, perExtra = 0.661, tokens = 8, orbs = {chaos = 24, divine = 12, exalted = 2},
 			fragments = {"Drowned Crown Shard", "Tidebroken Pearl", "Saltwrit Sigil", "Tidal Keystone"},
 			unique = {name = "Signet of the Drowned Crown", id = 2216}},
 		{key = "vhoss", name = "Ascended Vhoss", short = "Vhoss", level = 2100, minLevel = 2000, refLevel = 2100,
-			health = 3876000, perExtra = 0.666, tokens = 10, orbs = {chaos = 32, divine = 16, exalted = 3},
+			health = 4654000, perExtra = 0.662, tokens = 10, orbs = {chaos = 32, divine = 16, exalted = 3},
 			fragments = {"Hexmaw Fang", "Veiled Hex Scrap", "Whispering Idol Chip", "Hex Keystone"},
 			unique = {name = "Seventh Hex Amulet", id = 2196}},
 		{key = "talath", name = "Ascended Talath", short = "Talath", level = 2300, minLevel = 2200, refLevel = 2300,
-			health = 4231000, perExtra = 0.666, tokens = 12, orbs = {chaos = 40, divine = 20, exalted = 4},
+			health = 4899000, perExtra = 0.663, tokens = 12, orbs = {chaos = 40, divine = 20, exalted = 4},
 			fragments = {"Rime Crown Splinter", "Frozen Oath Shard", "Winterglass Tear", "Rime Keystone"},
 			unique = {name = "Helm of the Unthawed", id = 5461}},
 		{key = "varkhul", name = "Ascended Varkhul", short = "Varkhul", level = 2500, minLevel = 2400, refLevel = 2500,
-			health = 4587000, perExtra = 0.666, tokens = 14, orbs = {chaos = 48, divine = 24, exalted = 5},
+			health = 5508000, perExtra = 0.663, tokens = 14, orbs = {chaos = 48, divine = 24, exalted = 5},
 			fragments = {"Ashen Sovereign Cinder", "Sepulchre Seal", "Embered Oath Sliver", "Ash Keystone"},
 			unique = {name = "Ring of the Last Verdict", id = 7708}}
 	},

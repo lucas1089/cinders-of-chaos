@@ -12,6 +12,11 @@
 --             seconds to die with no healing, and the pressure (damage against healing).
 --   fragments a whole set is four kinds, three from one content each and the keystone from any: the hours of top content for a set
 --             and, with the unique's roll and its bad-luck count, for a unique.
+-- O699 (owner decision 2026-11-21, option a of O698): the four Ascended bosses' health is up 15-20% (Malgrath x1.186, Vhoss x1.201,
+-- Talath x1.158, Varkhul x1.201). Reason: pinnacle_model.py took the kept share of the elemental half from the shared BOSS_RES 0.30 of
+-- boss_length_model.py, but the four boss files resist 8.3 / 6.7 / 11.7 / 6.7% on the six elements, so the median class deals 15-20%
+-- more than the model planned and the fights were too short. The model now reads each pinnacle boss file's own resistance (real_kept);
+-- the shared BOSS_RES stays for every other boss (a separate decision). 420 s alone and 300 s with five of the median class are kept.
 return {
 	-- O672 (owner 2026-11-19): the player's level cap is 2500, so no boss is shown, planned or opened at a level above it. The first
 	-- version (O667) had 2000 / 2500 / 3000 / 3500 with planned levels 2000-2500; the ladder is now 1900 / 2100 / 2300 / 2500: even steps
@@ -36,6 +41,11 @@ return {
 	-- the share of the marked attacks a player still takes after moving (the telegraphs are dodgeable)
 	marksTaken = 0.35,
 	-- a Hex Effigy (the immobile ward of the adds) and the boss's heal a second: from the XML (healing defense)
+
+	-- O698: the mechanics' health factor (boss_mechanics_core.lua G.balance, for the fight's size) keeps the planned kill time of every size
+	-- inside `tolerance` (the model's own plan is the base of the factor, so the gap is the floor of the factor and the downtime's rounding);
+	-- `partyDiffers`: a party's factor within this of the solo one is only accepted when the solo one still hits the plan
+	factor = {tolerance = 0.01, partyDiffers = 0.002},
 
 	-- tolerance of the committed numbers (health, party curve) against the derivation
 	tolerance = {health = 0.015, perExtra = 0.02},
@@ -83,6 +93,22 @@ return {
 		-- with five, the number of classes whose biggest roll is over the plain cap: at least `atLeast` (a cap that touches nobody is no cap) and at most
 		-- `atMost` of the 21 (it is the fight that is hard, not the hit)
 		cuts = {atLeast = 5, atMost = 0.80}
+	},
+
+	-- O698: what the one boss video measured (O689 run 6, the five tester bots of O685 / O693 against the Ascended Malgrath; fight report and
+	-- server console of the run, `damage_final` is the count behind every damage event, O697). tools/pinnacle_model.py --options reads it:
+	-- the kill time of the bots against the median five, per boss, for three health choices. Measured, not modelled: one run, one boss
+	measured = {
+		boss = "ascended malgrath", players = 5, level = 1893,
+		seconds = 79,           -- the boss came, the boss fell (the bar read 100% at 7 s)
+		startHealth = 10134615, -- the boss's maximum at the start (12,704,600 x the solo factor 0.7977, O697)
+		lost = 10139361,        -- the fall of its own health (the ledger)
+		-- damage a second of each bot on the boss over 78 s, every event behind it (damage_final); dots are part of it
+		perBot = {Deadeye = 56968, Elementalist = 33664, Juggernaut = 14656, Samurai = 13596, Illusionist = 10822},
+		-- the same before the events a first hit registers (the damage pool, gems, supports, charms): the early tally
+		early = {Deadeye = 19654, Elementalist = 12152, Juggernaut = 9442, Samurai = 8847, Illusionist = 6410},
+		dots = {Deadeye = 623606, Juggernaut = 345841}, -- total damage of the fight that came as dots
+		botSeconds = 78
 	},
 
 	-- the fragments: what the top content takes (minutes a clear, solo or a party) and the limits of --check. A waystone map of the

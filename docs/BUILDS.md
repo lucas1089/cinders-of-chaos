@@ -636,9 +636,9 @@ a build is.
   Striker, Hundred Fists, the Deadeye's crossbow) keep working: their crit chance sits at 15 to 40 points, under the cap.
   What loses is the stack: a build that used badge and quiver crit to reach 70 points and an amount near 300 now counts 45 and
   150 and loses about 30% of its damage. Chance above 45 and damage above 150 are wasted; put the points elsewhere.
-- **Damage runes.** A Mythic Brand, Echo, Hex or Keen Edge rune counts as a Legendary one (brand 50%, Echo 30%, Hex 6%,
-  Keen Edge 6%). The Mythic rune is still the best to find for the other supports. For these four, a Legendary rune does the
-  same, so do not pay for the upgrade.
+- **Damage runes.** A Mythic Echo, Hex or Keen Edge rune counts as a Legendary one (Echo 30%, Hex 6%, Keen Edge 6%). A Brand has no
+  ceiling: 7 / 10 / 13 / 16 / 20% (O701). The Mythic rune is still the best to find for the other supports. For Echo, Hex and
+  Keen Edge, a Legendary rune does the same, so do not pay for the upgrade.
 - **Penetration.** At most 20 points of physical and 20 of elemental penetration. The Sunder rune adds to the elemental 20
   after the gear: 12 points on the gear leave it 8. A build that stacked three penetration prefixes wastes the third.
 - **Gear.** Items drop at a higher item level late in the game (144 at monster level 2000, was 138) and a bit lower in the

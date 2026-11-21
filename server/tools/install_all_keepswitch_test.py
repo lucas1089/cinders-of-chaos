@@ -32,6 +32,20 @@ newer = repo + '-- a newer comment\n'
 check(I.keep_switch(KEY, newer, on) == newer.replace('\tenabled = false,', '\tenabled = true,', 1),
       'new repo text with the installed switch')
 check(I.keep_switch('scripts/chaos/other.lua', repo, on) == repo, 'other files are copied as they are')
+# O686 phase 8 (live pass): the Forms and the awakening read data/spells/forms.csv and awakened.csv at run time (chaos_spell_forms.lua,
+# chaos_spell_awakening.lua) and the files step never copied them: on a server the tables were empty and no Form or awakening existed
+import tempfile
+with tempfile.TemporaryDirectory() as tmp:
+    data = os.path.join(tmp, 'data')
+    os.makedirs(os.path.join(data, 'spells'))
+    ok, lines, warn = I.step_files(tmp, data, {'dry': False})
+    check(ok, 'the files step runs on an empty data folder')
+    for name in ('forms.csv', 'awakened.csv'):
+        dst = os.path.join(data, 'spells', name)
+        check(os.path.isfile(dst), name + ' is copied to data/spells')
+        check(os.path.isfile(dst) and open(dst, 'rb').read() == open(os.path.join(I.REPO_DATA, 'spells', name), 'rb').read(), name + ' is the repo file')
+    others = sorted(n for n in os.listdir(os.path.join(data, 'spells')) if os.path.isfile(os.path.join(data, 'spells', n)))
+    check(others == ['awakened.csv', 'forms.csv'], 'only the two run time tables are copied from data/spells, not the 30 catalogs of the tools: ' + str(others))
 if failed:
     sys.exit(1)
 print('install_all_keepswitch_test: ok')

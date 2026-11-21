@@ -862,6 +862,7 @@ local function spawnBoss(run)
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
 		local okA, f = pcall(ChaosBossMech.attach, m, nil, {level = run.boss.refLevel or run.boss.level, tiles = run.L.floorList, size = run.size, solo = run.size == 1,
+			healthScale = K.bossHealth(run.boss, run.size) / math.max(1, m:getMaxHealth()), -- O698: the factor is worked out for this fight's size and health
 			players = function()
 				local r = PN.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}

@@ -80,7 +80,7 @@ def main():
     boss = cfg['bosses'][0]
     heal = 250
     health, extra = PM.derive_health(boss, bal, heal)
-    d = PM.typical(boss['refLevel'])
+    d = PM.typical(boss['refLevel'], boss)   # O699: the boss file's own resistance
     near(health, bal['seconds']['solo'] * (d * bal['uptime'] - heal), 1e-6, 'solo health')
     solo = PM.kill_seconds(dict(boss, health=health, perExtra=extra), bal, 1, heal)
     near(solo, bal['seconds']['solo'], 1e-6, 'the median class kills it in the planned time')
@@ -222,6 +222,40 @@ def main():
     # the boss that hits so little the cap would take the pressure under the band is caught by the band (the damage is raised, not the cap)
     code, text = check_out(xml=scaled_xml(0.7))
     eq(code, 1, 'a weaker boss is still caught under the band, with the cap')
+
+    # O698: the mechanics' health factor of each size, from the real core, is held to the plan
+    facs = base['factors']
+    for key, sizes in facs.items():
+        eq(sorted(sizes, key=int), ['1', '2', '3', '4', '5'], key + ': a factor row for every size')
+        near(sizes['1']['final'], base['bal']['seconds']['solo'], 5, key + ': alone the factor keeps the plan')
+        near(sizes['5']['final'], base['bal']['seconds']['party'], 3, key + ': with five the factor keeps the plan')
+        eq(sizes['5']['hpMult'] != sizes['5']['soloMult'], True, key + ': the party factor is its own')
+    near(facs['ascended vhoss']['5']['soloFinal'], 275, 2, 'the solo factor at five would kill the Vhoss in 275 s (the bug)')
+    # a factor that misses the plan is caught (the solo one handed to a party)
+    bad = copy.deepcopy(base)
+    for key in bad['factors']:
+        bad['factors'][key]['5']['final'] = bad['factors'][key]['5']['soloFinal'] * 0.9
+    code, text = check_out(bad)
+    eq(code, 1, 'a factor that misses the planned party time is caught')
+    eq('with the factor' in text, True, 'and named')
+    floor = copy.deepcopy(base)
+    floor['factors']['ascended vhoss']['3']['hpMult'] = 0.6
+    code, text = check_out(floor)
+    eq(code, 1, 'a factor on the floor of the profile is caught')
+    # the real resistance of a boss file against BOSS_RES (the option a of --options)
+    kept, res = PM.real_kept(PM.S.read(PM.xml_path(base['cfg']['bosses'][0])))
+    near(res, 0.0833, 0.001, 'Malgrath resists 8.3% on the six elements (fire -10, energy -15, earth 20, ice 35, holy -20, death 40)')
+    near(kept, 0.7083, 0.001, 'the kept share of the boss files (BOSS_RES 0.30 keeps 0.600)')
+    # the options: the bots kill faster than the median five today, option b brings them to the plan, option a keeps the median at the plan
+    opts = PM.bot_scale(base['bal'], PM.rows())
+    for o in opts:
+        today, a, b, c = [t for _, t in o['options']]
+        near(today['median5'], 300, 3, o['boss']['name'] + ': today the median five kill in 300 s')
+        near(a['median5'], 300, 3, o['boss']['name'] + ': option a keeps the median five at the plan')
+        near(b['bots5'], 300, 1, o['boss']['name'] + ': option b brings the bot five to the plan')
+        near(c['bots5'], 150, 1, o['boss']['name'] + ': option c brings the bot five to half of it')
+        eq(abs(today['bots5'] - a['bots5']) < 1e-6 and a['bots5'] < c['bots5'] < b['bots5'], True, o['boss']['name'] + ': option a is the committed state (O699), the others rise in health')
+    near(opts[0]['options'][0][1]['bots5'], 77, 1, 'Malgrath today: the measured 79 s x the better factor')
 
     print('pinnacle_model_test: %d checks ok' % CHECKS)
     return 0

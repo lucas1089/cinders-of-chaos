@@ -379,9 +379,9 @@ eq((scenario({element = "ice", spell = 1}, {element = "fire", spell = 2}, {first
 	"steam_burst", "the same target: always near")
 eq((scenario({element = "ice", spell = 1}, {element = "fire", spell = 2}, {firstTarget = 50, hitTarget = 51, hitPos = {x = 10, y = 10, z = 8}})),
 	nil, "another floor is never near")
--- the pending combo expires after 1 s without a hit
+-- the pending combo expires after 2.5 s without a hit (1 s in phase 6; O686 phase 8: a cast-time spell hits up to 2 s after its precast)
 eq((scenario({element = "ice", spell = 1}, {element = "fire", spell = 2}, {hitAt = 100000 + 1500 + 1000})), "steam_burst", "a hit 1000 ms after the cast: still counts")
-eq((scenario({element = "ice", spell = 1}, {element = "fire", spell = 2}, {hitAt = 100000 + 1500 + 1001})), nil, "a hit 1001 ms after the cast: the cast missed")
+eq((scenario({element = "ice", spell = 1}, {element = "fire", spell = 2}, {hitAt = 100000 + 1500 + 2501})), nil, "a hit 2501 ms after the cast: the cast missed")
 
 -- only the first hit of a cast asks: an area spell's second target gets nothing
 do
@@ -526,7 +526,7 @@ local function setRank(id, rank)
 	storage[RC.storage.rankBase + id] = P.pack(rank, 0, 0, false)
 end
 local function cast(p, id, aggressive)
-	ChaosSpellEvents.onSpellCast(p, "S" .. id, id, 1, aggressive ~= false, 0, 0)
+	ChaosSpellEvents.onSpellPreCast(p, "S" .. id, id, 1, aggressive ~= false, 0, 0)
 	castSpell = id
 end
 local function hit(p, target, ctype, amount, ctype2, amount2)
@@ -718,6 +718,34 @@ cast(p, 301)
 eq((hit(p, troll, COMBAT_FIREDAMAGE, -1000)), -1000, "the ice cast is older than 4 s: no combo")
 registered["ChaosSpellCombosLogout"].onLogout(p)
 eq(M.states[900], nil, "logout drops the state")
+
+-- O686 phase 8 (the live pass): the engine's order is precast, the spell's hits, then `cast` (engine patch 0008: "after the spell ran"). The ring
+-- entry was made by the `cast` handler, after the hit it was meant for, so no combo ever fired for an instant spell; it is made by `precast` now.
+-- A cast-time spell (ChaosCasting, 1 to 2 s) hits long after its precast: the entry lives ring.expireMs.
+do
+	local E = ChaosSpellEvents
+	local function engineCast(id, ctype, amount, delayMs)
+		E.onSpellPreCast(p, "S" .. id, id, 1, true, 0, 0)
+		castSpell = id
+		if delayMs then
+			tick(delayMs) -- a cast-time spell: the hit comes when the bar is full
+		end
+		local d = hit(p, troll, ctype, amount)
+		E.onSpellCast(p, "S" .. id, id, 1, true, 0, 0)
+		return d
+	end
+	tick(10000)
+	eq((engineCast(300, COMBAT_ICEDAMAGE, -1000)), -1000, "engine order: the first spell is plain")
+	tick(1500)
+	eq((engineCast(301, COMBAT_FIREDAMAGE, -1000)), -1100, "engine order precast, hit, cast: ice then fire gives Steam Burst +10%")
+	eq(#M.states[900].ring, 2, "the `cast` event after the hit made no second entry")
+	-- a cast-time spell: 2 s between its precast and its hit
+	tick(10000)
+	eq((engineCast(300, COMBAT_ICEDAMAGE, -1000, 2000)), -1000, "a 2 s cast-time ice spell is plain")
+	tick(500)
+	eq((engineCast(301, COMBAT_FIREDAMAGE, -1000, 2000)), -1100, "a 2 s cast-time fire spell after it: its hit meets its own entry, Steam Burst")
+	tick(10000)
+end
 
 -- ---------------------------------------------------------------- C. the riders and the masteries (phase 6b), the engine side
 do
