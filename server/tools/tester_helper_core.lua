@@ -1634,7 +1634,7 @@ end
 -- A TEST ONLY tally the party fight's report reads (`!tester pinnacle state` answers `dealt`): the server's own number, after every event that scaled the hit
 -- O697: `kind` (H.hitKind) splits the boss part: `summon` and `dot` hold what a summon of the tester and what a damage over time of its own did
 -- (both are inside `boss` as well); a plain hit of the tester has no part of its own
-function H.dealtAdd(tally, id, isBoss, damage, kind)
+function H.dealtAdd(tally, id, isBoss, damage, kind, src, parts)
 	damage = tonumber(damage) or 0
 	if type(tally) ~= "table" or id == nil or damage ~= damage or damage <= 0 then
 		return false
@@ -1650,11 +1650,57 @@ function H.dealtAdd(tally, id, isBoss, damage, kind)
 		if kind == "summon" or kind == "dot" then
 			row[kind] = row[kind] + math.floor(damage)
 		end
+		-- O700: where the boss damage came from, by the hit's origin (`src`: spell, melee, ranged, dot, none, other) and by damage type (`parts`: {name = damage})
+		if type(src) == "string" then
+			row.src = row.src or {}
+			row.src[src] = (row.src[src] or 0) + math.floor(damage)
+		end
+		if type(parts) == "table" then
+			row.elem = row.elem or {}
+			for name, v in pairs(parts) do
+				if type(name) == "string" and tonumber(v) and v > 0 then
+					row.elem[name] = (row.elem[name] or 0) + math.floor(v)
+				end
+			end
+		end
 	else
 		row.other = row.other + math.floor(damage)
 		row.otherHits = row.otherHits + 1
 	end
 	return true
+end
+
+-- O700: the origin of a hit as a name. c = {spell, melee, ranged, cond, none} the engine's ORIGIN_* values (a missing one never matches)
+function H.originName(origin, c)
+	c = type(c) == "table" and c or {}
+	if origin ~= nil and origin == c.spell then
+		return "spell"
+	elseif origin ~= nil and origin == c.melee then
+		return "melee"
+	elseif origin ~= nil and origin == c.ranged then
+		return "ranged"
+	elseif origin ~= nil and origin == c.cond then
+		return "dot"
+	elseif origin == nil or origin == c.none then
+		return "none"
+	end
+	return "other"
+end
+
+-- O700: the parts of one hit by damage type name: {holy = 120, fire = 40}; names = {[COMBAT_* value] = "holy" ...}; a healing part and an unknown type count nothing
+function H.damageParts(primary, primaryType, secondary, secondaryType, names)
+	local out = {}
+	names = type(names) == "table" and names or {}
+	local function add(v, t)
+		v = tonumber(v) or 0
+		local n = names[t]
+		if n and v == v and v ~= 0 then
+			out[n] = (out[n] or 0) + math.abs(v)
+		end
+	end
+	add(primary, primaryType)
+	add(secondary, secondaryType)
+	return out
 end
 
 -- the row of one tester for the answer (a copy; zeros when nothing was dealt yet, so the report can tell "no damage" from an old helper)
@@ -1663,7 +1709,18 @@ function H.dealtRow(tally, id)
 	if not row then
 		return {boss = 0, bossHits = 0, other = 0, otherHits = 0, summon = 0, dot = 0}
 	end
-	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits, summon = row.summon or 0, dot = row.dot or 0}
+	local function copy(t)
+		if type(t) ~= "table" then
+			return nil
+		end
+		local c = {}
+		for k, v in pairs(t) do
+			c[k] = v
+		end
+		return c
+	end
+	return {boss = row.boss, bossHits = row.bossHits, other = row.other, otherHits = row.otherHits, summon = row.summon or 0, dot = row.dot or 0,
+		src = copy(row.src), elem = copy(row.elem)}
 end
 
 -- O697 (O689 party video: the boss lost 10.13M health in 75 s, the tally of O695 counted 4.25M): where a hit on the boss came from.

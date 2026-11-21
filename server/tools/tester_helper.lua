@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 40
+HELPER_VERSION = 41
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1767,6 +1767,7 @@ function commands.pinnacle(player, arg)
 	local row = H.dealtRow(T.dealt, player:getId())
 	local late = H.dealtRow(T.dealtLate, player:getId())
 	row.late, row.lateHits, row.lateSummon, row.lateDot = late.boss, late.bossHits, late.summon, late.dot
+	row.lateSrc, row.lateElem = late.src, late.elem -- O700: the final damage by origin and by damage type
 	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = row, ledger = H.ledgerRow(T.bossLedger)}))
 end
 
@@ -4489,7 +4490,27 @@ function dealtLate.onHealthChange(creature, attacker, primaryDamage, primaryType
 				p = p:getMaster()
 			end
 			T.dealtLate = T.dealtLate or {}
-			H.dealtAdd(T.dealtLate, p:getId(), true, landed, kind)
+			-- O700: the same hit by origin and by damage type (shares of the final damage: the report says where the boss's health went)
+			local src = H.originName(origin, {spell = rawget(_G, "ORIGIN_SPELL"), melee = rawget(_G, "ORIGIN_MELEE"), ranged = rawget(_G, "ORIGIN_RANGED"),
+				cond = rawget(_G, "ORIGIN_CONDITION"), none = rawget(_G, "ORIGIN_NONE")})
+			local names = {}
+			for _, n in ipairs({"physical", "energy", "earth", "fire", "ice", "holy", "death", "drown"}) do
+				local v = rawget(_G, "COMBAT_" .. n:upper() .. "DAMAGE")
+				if v ~= nil then
+					names[v] = n
+				end
+			end
+			local parts = H.damageParts(primaryDamage, primaryType, secondaryDamage, secondaryType, names)
+			local sum = 0
+			for _, v in pairs(parts) do
+				sum = sum + v
+			end
+			if sum > 0 and landed < sum then -- the hit was cut to the health left: the parts keep their shares of what landed
+				for n, v in pairs(parts) do
+					parts[n] = v * landed / sum
+				end
+			end
+			H.dealtAdd(T.dealtLate, p:getId(), true, landed, kind, src, parts)
 		end
 	end)
 	return primaryDamage, primaryType, secondaryDamage, secondaryType

@@ -5039,6 +5039,14 @@ def fight_row(trace, name):
 TALLY_SHOW = (('cast:attack', 'attack cast'), ('cast:heal', 'heal cast'), ('cast:support', 'support cast'))
 
 
+def pinnacle_shares(table, total):
+    """O700: 'spell 62%, ranged 21%, dot 14%' from {name: damage} against `total` (largest first, shares under 1% left out); '' for no table or no total"""
+    if not isinstance(table, dict) or total <= 0:
+        return ''
+    rows = sorted(((str(k), float(v)) for k, v in table.items() if isinstance(v, (int, float)) and v > 0), key=lambda kv: (-kv[1], kv[0]))
+    return ', '.join('%s %d%%' % (k, round(v * 100.0 / total)) for k, v in rows if v * 100.0 / total >= 1)
+
+
 def pinnacle_bot_line(name, cls, row, boss_secs):
     """O695: one line of the fight report for one bot: the damage the server counted on the boss (the helper's tally, TEST ONLY), what the bot cast and what the
     server refused, potions, beats given to a heal or with no spell it could pay, the lowest mana, the looks by guide mode and the steps. Plain numbers
@@ -5053,6 +5061,11 @@ def pinnacle_bot_line(name, cls, row, boss_secs):
         if 'late' in d:   # O697: the same tally at the boss's last event, after the events that scale a hit (the first reads before them)
             parts.append('damage_final=%d (%d a second, %d hit(s); of it summons %d, dots %d)' % (
                 int(d.get('late') or 0), int(d.get('late') or 0) // secs, int(d.get('lateHits') or 0), int(d.get('lateSummon') or 0), int(d.get('lateDot') or 0)))
+        # O700 (helper v41): where the final damage came from, by the hit's origin and by damage type, as shares of damage_final
+        for key, label in (('lateSrc', 'final by origin'), ('lateElem', 'final by type')):
+            shares = pinnacle_shares(d.get(key), int(d.get('late') or 0))
+            if shares:
+                parts.append('%s: %s' % (label, shares))
     parts.append('casts: ' + ', '.join('%d %s' % (int(t.get(k) or 0), label) for k, label in TALLY_SHOW))
     refused = sorted(((k[len('refused:'):], v) for k, v in t.items() if str(k).startswith('refused:') and v), key=lambda kv: (-kv[1], kv[0]))
     parts.append('refused: ' + (', '.join('%s %d' % kv for kv in refused) if refused else 'none'))

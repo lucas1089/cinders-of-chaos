@@ -700,6 +700,21 @@ do
 	local row = H.dealtRow(TesterHelper.dealtLate, tester.id)
 	check(row.boss == 3800 and row.bossHits == 3 and row.summon == 2000 and row.dot == 300, "late tally: the tester's hits, its summon's and its dot apart")
 	check(H.dealtRow(TesterHelper.dealtLate, person.id).boss == 0, "late tally: a player that is no tester has no row")
+	-- O700: the final damage by origin and by damage type (the report says where the boss's health went)
+	check(HELPER_VERSION >= 41, "the helper is version 41 or later (O700: the final damage by origin and by type)")
+	TesterHelper.dealtLate = {}
+	local spellWas = rawget(_G, "ORIGIN_SPELL")
+	rawset(_G, "ORIGIN_SPELL", 3)
+	boss.health = 900000
+	L.onHealthChange(boss, tester, -600, COMBAT_FIREDAMAGE, -400, COMBAT_PHYSICALDAMAGE, 3)
+	boss.health = 899000
+	L.onHealthChange(boss, tester, -300, COMBAT_FIREDAMAGE, 0, 0, COND)
+	local sr = H.dealtRow(TesterHelper.dealtLate, tester.id)
+	check(sr.src and sr.src.spell == 1000 and sr.src.dot == 300 and sr.elem and sr.elem.fire == 900 and sr.elem.physical == 400,
+		"late tally: the damage by origin (spell, dot) and by type (fire, physical)")
+	sr.src.spell = 0
+	eq(H.dealtRow(TesterHelper.dealtLate, tester.id).src.spell, 1000, "late tally: the split of a row is a copy")
+	rawset(_G, "ORIGIN_SPELL", spellWas)
 	-- a hit that does not change the damage
 	local a, b = L.onHealthChange(boss, tester, -10, COMBAT_PHYSICALDAMAGE, 0, 0, 3)
 	check(a == -10 and b == COMBAT_PHYSICALDAMAGE, "the late event returns the hit as it came")
@@ -768,6 +783,25 @@ do
 	eq(t[7].boss, 100, "dealtRow: a copy")
 	local z = H.dealtRow(t, 8)
 	check(z.boss == 0 and z.bossHits == 0 and z.other == 0 and z.otherHits == 0, "dealtRow: none dealt is a row of zeros")
+	-- O700: origin and damage type parts
+	local o = {spell = 3, melee = 1, ranged = 2, cond = 7, none = 0}
+	eq(H.originName(3, o), "spell", "originName: a spell")
+	eq(H.originName(1, o), "melee", "originName: a melee auto attack")
+	eq(H.originName(2, o), "ranged", "originName: a ranged auto attack")
+	eq(H.originName(7, o), "dot", "originName: a condition is a dot")
+	eq(H.originName(0, o), "none", "originName: no origin")
+	eq(H.originName(nil, o), "none", "originName: nil is none")
+	eq(H.originName(9, o), "other", "originName: any other value")
+	eq(H.originName(3, nil), "other", "originName: no table, nothing matches")
+	local pp = H.damageParts(-600, 2, -400, 1, {[1] = "physical", [2] = "fire"})
+	check(pp.fire == 600 and pp.physical == 400, "damageParts: both slots by name, positive")
+	check(next(H.damageParts(500, 128, 0, 0, {[1] = "physical"})) == nil, "damageParts: healing and unknown types count nothing")
+	local t2 = {}
+	H.dealtAdd(t2, 9, true, 1000, "player", "spell", {fire = 600, physical = 400})
+	H.dealtAdd(t2, 9, true, 300, "dot", "dot", {fire = 300})
+	H.dealtAdd(t2, 9, false, 50, "player", "spell", {fire = 50})
+	check(t2[9].src.spell == 1000 and t2[9].src.dot == 300 and t2[9].elem.fire == 900 and t2[9].elem.physical == 400, "dealtAdd: origin and type parts of the boss damage")
+	check(t2[9].other == 50 and t2[9].src.spell == 1000, "dealtAdd: a hit on another monster is in neither split")
 	check(H.withinReach({x = 10, y = 10, z = 7}, {x = 17, y = 3, z = 7}, 7) and not H.withinReach({x = 10, y = 10, z = 7}, {x = 18, y = 10, z = 7}, 7)
 		and not H.withinReach({x = 10, y = 10, z = 7}, {x = 10, y = 10, z = 8}, 7) and not H.withinReach(nil, {x = 1, y = 1, z = 7}, 7), "withinReach: a square of the floor")
 end

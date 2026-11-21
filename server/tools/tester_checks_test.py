@@ -11971,6 +11971,15 @@ class PinnacleFightReport(unittest.TestCase):
         line = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 10)
         self.assertIn('damage_boss=1000 (100 a second over 10 s, 10 hit(s))', line)
         self.assertIn('damage_final=2400 (240 a second, 10 hit(s); of it summons 600, dots 100)', line)
+        self.assertNotIn('final by origin', line, 'a helper of version 40 has no split')
+        # O700 (helper v41): the final damage by origin and by type, shares of damage_final, largest first, under 1% left out
+        row['dealt'].update({'lateSrc': {'spell': 1500, 'ranged': 600, 'dot': 100, 'none': 4, 'melee': 0}, 'lateElem': {'holy': 1800, 'fire': 480, 'physical': 120}})
+        split = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 10)
+        self.assertIn('final by origin: spell 62%, ranged 25%, dot 4%', split)
+        self.assertNotIn('none', split.split('final by origin:')[1].split(';')[0], 'a share under 1% is left out')
+        self.assertIn('final by type: holy 75%, fire 20%, physical 5%', split)
+        self.assertEqual(TX.pinnacle_shares(None, 100), '')
+        self.assertEqual(TX.pinnacle_shares({'spell': 5}, 0), '')
         old_helper = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0, 'dealt': {'boss': 1000, 'bossHits': 10, 'other': 0}}, 10)
         self.assertNotIn('damage_final', old_helper, 'a helper of version 38 has no late tally')
         rows = [{'dealt': {'boss': 1000, 'late': 2400}}, {'dealt': {'boss': 3000, 'late': 5600}}]
