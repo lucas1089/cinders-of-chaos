@@ -195,7 +195,7 @@ end
 local WP = ChaosWeaponPower
 local function sc(v, f) return math.floor(v * f + 0.5) end
 local pw = WP.hitFactor("melee", 100, 100)
-ok(pw > 1.1 and pw < 1.13, "the power factor of skill 100 at level 100 (" .. pw .. ")")
+ok(pw == 1 and WP.hitFactor("melee", 100, 60) < 1, "the power factor of skill 100 at level 100 stops at 1 (O707, " .. pw .. "), a lower skill cuts")
 
 -- a sword with the best skill: the engine's hit, x the power factor of the skill
 local a = attacker(100, {[SKILL_SWORD] = 100, [SKILL_AXE] = 20, [SKILL_CLUB] = 10})

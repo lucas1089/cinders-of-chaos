@@ -4,7 +4,7 @@
      are written by tools/waystone_endgame_model.py (write-bosses: the median class kills it in 170 s and lives 40 s under its
      hits at the tier's level); the loot of its drop table is in content_rewards.lua (branch band), so this file lists a coin only. -->
 <monster name="Gravewatch Ulrim" nameDescription="Gravewatch Ulrim" race="undead" experience="54000" speed="260" manacost="0">
-	<health now="987000" max="987000" />
+	<health now="959000" max="959000" />
 	<look type="2234" corpse="6068" />
 	<targetchange interval="8000" chance="5" />
 	<flags>

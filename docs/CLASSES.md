@@ -836,7 +836,7 @@ Open for the Necromancer:
   of the Pyre Saint 64 / 650 (legendary), Gravewind Talons 68 / 1400 and Dawnless Gauntlets 70 / 2000 (endgame, rare or better,
   strong monsters), each with Chaos modifiers built in. A plain tier is x1.00 .. x1.12 damage over bare fists (cap 60) at its
   level; the auto attack stays at 53-62% of the Monk's rotation. The fist skill scales the hit like the melee skill does for the
-  other classes (`(skill / typical)^0.5`, 0.7 .. 1.6; 1 at the typical skill). The Monk's attack speed is not changed.
+  other classes (`(skill / typical)^0.5`, 0.7 .. 1.0 since O707, was 1.6; 1 at the typical skill). The Monk's attack speed is not changed.
   Staves are
   ordinary weapons (club skill, the two-handed factor of `weapon_styles.lua`, the attack speed patch 0002).
 - **Chi**: a player storage (shared by the spells' and the scripts' Lua states) with the time of its last change; gone after 12 s untouched.

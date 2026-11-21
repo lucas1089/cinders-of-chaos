@@ -643,7 +643,9 @@ jobs:
           awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
             client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
           patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -o "$d/chaospack_test"
+          # base patch 0206 (O705): the same header read and inflated on two threads; only this file, so it applies on its own
+          patch -p1 --fuzz=0 -d "$d" < client/base-patches/0206-pack-two-threads.patch
+          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -pthread -o "$d/chaospack_test"
           "$d/chaospack_test"
 
       - name: Encrypted update blobs (C++, OpenSSL, PhysFS; header from base patch 0103, same bytes as update_crypt.py)
@@ -1213,7 +1215,7 @@ jobs:
       - name: Infinity Tower floors clear in bounded time, level 800 reaches floor 30-46, class damage from class_dps_model.py, the stale curves held at curveTol (tower_model.py --check and its test; infinitytower_balance_config.lua; O444)
         run: python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py
 
-      - name: Bosses at their planned length for the typical damage after the round (boss_length_model.py --check and its test; dungeons_difficulty.lua, rift_config.lua, the Omen, Ascended, Cinderheart and raid boss health; O475)
+      - name: Bosses at their planned length for the typical damage after the round (boss_length_model.py --check and its test; dungeons_difficulty.lua, rift_config.lua, the Omen, Ascended, Cinderheart and raid boss health; O475; the world pocket bosses 300 s alone, 200 s with five, O704)
         run: python3 -I server/tools/boss_length_model.py --check && python3 -I server/tools/boss_length_model_test.py
 
       - name: Pinnacle bosses (O667) kill in 420 s alone and 300 s with five for the median class, hit within the healing limits, and a set of fragments takes 2.5-7 hours of top content (pinnacle_model.py --check and its test; pinnacle_config.lua, pinnacle_balance_config.lua, the XML of the four bosses, their boss_mechanics_config.lua profiles)
@@ -1353,6 +1355,7 @@ jobs:
           python3 -I client/tools/check_otui_lines.py  # no OTML line at column 0 inside a style (base patch 0145)
           python3 -I client/tools/check_win_macros.py  # no Windows SDK macro names as identifiers in base patch C++ (base patch 0150)
           python3 -I client/tools/check_pe_hardening_test.py  # PE header flags checker of the Windows package (O204)
+          python3 -I client/tools/check_pe_icon_test.py  # the launcher exe carries its icon resource and its setup facts (O705); the test puts the real launcher/assets/app.ico in a synthetic PE
 
       - name: Console lines drawn where their labels are (model of base patch 0110)
         run: python3 -I client/tools/console_glyphs_test.py

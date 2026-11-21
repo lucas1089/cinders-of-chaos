@@ -12,6 +12,17 @@ fn env_path(name: &str) -> Option<PathBuf> {
     std::env::var_os(name).map(PathBuf::from).filter(|p| p.is_dir())
 }
 
+/// A folder as Explorer itself resolves it: `HKCU\...\Explorer\Shell Folders`, value `name` ("Desktop", "Programs"), already
+/// expanded. This is the real place whatever the language of Windows ("Area de Trabalho" in pt-BR) and wherever OneDrive moved
+/// it, which a guess from `USERPROFILE\Desktop` misses (O705: no desktop shortcut on such a PC).
+fn shell_folder(name: &str) -> Option<PathBuf> {
+    let k = RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
+        .ok()?;
+    let v: String = k.get_value(name).ok()?;
+    Some(PathBuf::from(v)).filter(|p| p.is_dir())
+}
+
 impl Shell for Real {
     fn make_shortcut(&self, link: &Path, target: &Path, args: &str, workdir: &Path, icon: &Path) -> Result<(), String> {
         let mut sl = mslnk::ShellLink::new(target).map_err(|e| e.to_string())?;
@@ -24,19 +35,23 @@ impl Shell for Real {
     }
 
     fn desktop_dir(&self) -> Option<PathBuf> {
-        // the user's Desktop; a OneDrive-redirected one is tried first
-        env_path("OneDrive")
-            .map(|p| p.join("Desktop"))
-            .filter(|p| p.is_dir())
-            .or_else(|| {
-                env_path("USERPROFILE")
-                    .map(|p| p.join("Desktop"))
-                    .filter(|p| p.is_dir())
-            })
+        // Explorer's own answer first; then the user's Desktop, a OneDrive-redirected one tried before the plain one
+        shell_folder("Desktop").or_else(|| {
+            env_path("OneDrive")
+                .map(|p| p.join("Desktop"))
+                .filter(|p| p.is_dir())
+                .or_else(|| {
+                    env_path("USERPROFILE")
+                        .map(|p| p.join("Desktop"))
+                        .filter(|p| p.is_dir())
+                })
+        })
     }
 
     fn start_menu_dir(&self) -> Option<PathBuf> {
-        env_path("APPDATA").map(|p| p.join("Microsoft").join("Windows").join("Start Menu").join("Programs"))
+        shell_folder("Programs").or_else(|| {
+            env_path("APPDATA").map(|p| p.join("Microsoft").join("Windows").join("Start Menu").join("Programs"))
+        })
     }
 
     fn pick_folder(&self, start: &Path) -> Option<PathBuf> {

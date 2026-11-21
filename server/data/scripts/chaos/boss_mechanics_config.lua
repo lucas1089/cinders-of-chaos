@@ -30,7 +30,7 @@
 
 local WARD = "Hex Effigy" -- the immobile totem of the raid, reused (its own scripts are the raid's; here it only stands)
 
-return {
+local CFG = {
 	enabled = true,
 	tickMs = 250,
 	opcodeAction = "mech", -- on ChaosOpcodes.monsterbar (125): the cast bar of game_monsterbar
@@ -655,3 +655,75 @@ return {
 		}
 	}
 }
+
+-- ======================================================================== pocket bosses (O704)
+-- The five world bosses are also fought alone or in a party of up to five in a pocket (pocketboss.lua, server/README.md "Pocket bosses",
+-- "Pocket boss profile (O704)"). The profiles above are for the event (10 players, 15-24 M health, 45 minutes); a pocket keeps their
+-- telegraphs, adds, totems and debuffs but is a smaller fight (owner decision 2026-11-21 on O702: a pocket-sized profile, not the raid one):
+-- the median class (class_dps_model.py) at the pocket's level kills it alone in `seconds.solo` and five of them in `seconds.party`,
+-- tools/boss_length_model.py --check (O704) holds every number below to that. A pocket profile is the event profile of the same boss with
+--   key         "pocket " .. the boss's lower case name (pocketboss.lua attaches it by that key; the monster's own name stays the event's)
+--   ref         the pocket fight alone: health = `health`, dps = the median class's `dps`, heal = `heal` (after the scale below), players = 1
+--   adds        the adds' and totems' health x (`health` / the event ref's health): the same share of the fight as in the event;
+--               healthPerExtra / totemPerExtra = the party curve, so they grow with the boss
+--   pocket      {level, xmlHeal, healScale = heal / xmlHeal, perExtra}: what pocketboss.lua hands attach (opts.healScale: the monster file's
+--               own healing defense, which is above the median class's damage at the pocket's level, is scaled to `heal` a second)
+-- health / perExtra here and `health` of pocketboss_config.lua overrides world_1 .. world_5 (fractions of the monster file) are one fact in
+-- two units, held equal by --check.
+local POCKET = {
+	prefix = "pocket ",
+	level = 300, -- Chaos.worldBoss.minLevel: the level the world pocket is tuned for (pocketboss_core.lua K.bossLevel)
+	seconds = {solo = 300, party = 200}, -- the planned fight for the median class, alone and five of them
+	players = 5,
+	uptime = 0.85,
+	dps = 994, -- the median class on one boss at the level (boss_length_model.py one_target(300))
+	healShare = 0.10, -- the boss heals this share of the median class's damage alone (the Omen guardian 0.07, the pinnacle bosses 0.025)
+	heal = 100, -- the heal a second of every pocket boss (dps x healShare)
+	health = 223500, -- seconds.solo x (dps x uptime - heal)
+	perExtra = 0.673, -- (seconds.party x (players x dps x uptime - heal) / health - 1) / (players - 1)
+	bosses = { -- the event profile, the monster file's heal a second (data/monster/monsters/chaos/world_bosses/*.xml healing defense)
+		["kaelgor the infernal warlord"] = {xmlHeal = 1200},
+		["skaldra the rime queen"] = {xmlHeal = 1200},
+		["the rotmother"] = {xmlHeal = 2500},
+		["nyxareth the void archon"] = {xmlHeal = 1250},
+		["vharok the blood colossus"] = {xmlHeal = 3200}
+	}
+}
+CFG.pocket = POCKET
+
+local function copy(v)
+	if type(v) ~= "table" then
+		return v
+	end
+	local out = {}
+	for k, x in pairs(v) do
+		out[k] = copy(x)
+	end
+	return out
+end
+
+local function round(v)
+	return math.floor(v + 0.5)
+end
+
+for key, spec in pairs(POCKET.bosses) do
+	local raid = CFG.profiles[key]
+	local p = copy(raid)
+	local k = POCKET.health / raid.ref.health
+	for _, ph in ipairs(p.adds or {}) do
+		ph.health = round(ph.health * k)
+		ph.healthPerExtra = POCKET.perExtra
+	end
+	for _, m in ipairs(p.timed or {}) do
+		if m.totemHealth then
+			m.totemHealth = round(m.totemHealth * k)
+			m.totemPerExtra = POCKET.perExtra
+		end
+	end
+	p.ref = {health = POCKET.health, heal = POCKET.heal, dps = POCKET.dps, uptime = POCKET.uptime, players = 1, limit = 900}
+	p.pocket = {level = POCKET.level, xmlHeal = spec.xmlHeal, healScale = POCKET.heal / spec.xmlHeal, perExtra = POCKET.perExtra,
+		of = key}
+	CFG.profiles[POCKET.prefix .. key] = p
+end
+
+return CFG

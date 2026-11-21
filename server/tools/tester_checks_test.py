@@ -8782,6 +8782,7 @@ class Pure658(unittest.TestCase):
             'weekly_challenge': first('weekly_challenge_config.lua', r'Hollow Vault \(level (\d+)\)'),
             'ascension_walk': first('chaos_constants.lua', r'ascension = \{\s*minLevel = (\d+)'),
             'pinnacle_walk': first('pinnacle_config.lua', r'key = "malgrath".*?minLevel = (\d+)'),
+            'closed_spell_seal_pinnacle': first('pinnacle_config.lua', r'key = "malgrath".*?minLevel = (\d+)'),
         }
         for key, level in want.items():
             self.assertEqual(TX.LEVEL_GATES[key], level, '%s: the config says level %d' % (key, level))
@@ -11978,8 +11979,21 @@ class PinnacleFightReport(unittest.TestCase):
         self.assertIn('final by origin: spell 62%, ranged 25%, dot 4%', split)
         self.assertNotIn('none', split.split('final by origin:')[1].split(';')[0], 'a share under 1% is left out')
         self.assertIn('final by type: holy 75%, fire 20%, physical 5%', split)
+        # O706 (helper v42): the hits of each origin and their mean, so the next run says how many autos a bot made and how big each was
+        self.assertNotIn('final hits by origin', split, 'a helper of version 41 has no hit counts')
+        row['dealt']['lateSrcN'] = {'spell': 3, 'ranged': 2, 'none': 0}
+        counted = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 10)
+        self.assertIn('final hits by origin: spell 3 (mean 500), ranged 2 (mean 300)', counted)
+        self.assertEqual(TX.pinnacle_hits({'ranged': 4958014}, {'ranged': 141}), 'ranged 141 (mean 35,163)')
+        self.assertEqual(TX.pinnacle_hits(None, {'ranged': 1}), '')
+        self.assertEqual(TX.pinnacle_hits({'ranged': 5}, None), '')
+        self.assertEqual(TX.dealt_delta({'lateSrcN': {'ranged': 9}}, {'lateSrcN': {'ranged': 4}}), {'lateSrcN': {'ranged': 5}})
         self.assertEqual(TX.pinnacle_shares(None, 100), '')
         self.assertEqual(TX.pinnacle_shares({'spell': 5}, 0), '')
+        # the O700 run broke on int(dict): the tally since the fight opened takes the nested tables apart too
+        d = TX.dealt_delta({'late': 900, 'lateSrc': {'spell': 700, 'dot': 200}, 'name': 'x'}, {'late': 100, 'lateSrc': {'spell': 50}})
+        self.assertEqual(d, {'late': 800, 'lateSrc': {'spell': 650, 'dot': 200}, 'name': 'x'})
+        self.assertEqual(TX.dealt_delta({'lateElem': {'holy': 5}}, {'lateElem': 3}), {'lateElem': {'holy': 5}})
         old_helper = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0, 'dealt': {'boss': 1000, 'bossHits': 10, 'other': 0}}, 10)
         self.assertNotIn('damage_final', old_helper, 'a helper of version 38 has no late tally')
         rows = [{'dealt': {'boss': 1000, 'late': 2400}}, {'dealt': {'boss': 3000, 'late': 5600}}]
@@ -13687,6 +13701,248 @@ class SpellUpgradesLive(unittest.TestCase):
         self.assertEqual(run(TX.check_closed_spell_awaken(io, 'a', 'Mystic', 1000)).status, TX.SKIP)
         io = FakeIO(answers={'spellup state': self.state(), 'spellup forms': {'forms': []}})
         self.assertEqual(run(TX.check_closed_spell_awaken(io, 'a', 'Mystic', 1000)).status, TX.SKIP)
+
+
+class SpellUpgradesLive8b(unittest.TestCase):
+    """O686 phase 8b: the checks of what phase 8 left open (PvP, dormant awakening, signature kinds, Seal sources, Forms' gain, the wire state)"""
+
+    PVP_ROW = [-200, 20, 1.09, 0, 0, 0, 0, 0, 20, 4000, 300, 0, 0]   # a PvP row of `spellup log`: the spell id is negative
+
+    def test_the_keys_and_the_constants_hold_the_configs(self):
+        for key in ('closed_spell_pvp', 'closed_spell_dormant', 'closed_spell_signature', 'closed_spell_seals', 'closed_spell_seal_pinnacle',
+                    'closed_spell_formgain', 'closed_spell_wire'):
+            self.assertIn(key, TX.CLOSED_KEYS)
+            self.assertNotIn(key, TX.KEYS)
+            self.assertIn(key, TX.FIGHT_KEYS)
+        root = os.path.join(os.path.dirname(__file__), '..', 'data', 'scripts', 'chaos')
+        ranks = open(os.path.join(root, 'spell_ranks_config.lua')).read()
+        awake = open(os.path.join(root, 'spell_awakening_config.lua')).read()
+        self.assertRegex(ranks, r'pvp = \{rank = %s,' % TX.PVP_RANK_SHARE)
+        self.assertRegex(ranks, r'damage = \{power = %s,' % TX.RANK_POWER_PCT)
+        self.assertRegex(awake, r'bonus = %.2f,' % TX.AWAKE_BONUS_PCT)
+        self.assertRegex(awake, r'capShare = %.2f,' % TX.SIG_CAP_SHARE)
+        self.assertRegex(awake, r'waystone = \{minTier = %d, perClear = %d, firstClear = %d\}' % (
+            TX.SEAL_SOURCES['waystone']['minTier'], TX.SEAL_SOURCES['waystone']['perClear'], TX.SEAL_SOURCES['waystone']['firstClear']))
+        self.assertRegex(awake, r'rift = \{minTier = %d, perRun = %d, climb = %d\}' % (
+            TX.SEAL_SOURCES['rift']['minTier'], TX.SEAL_SOURCES['rift']['perRun'], TX.SEAL_SOURCES['rift']['climb']))
+        self.assertRegex(awake, r'pinnacle = \{perKill = %d\}' % TX.SEAL_SOURCES['pinnacle']['perKill'])
+        self.assertEqual(tuple(sum(c[i] for c in TX.SEAL_COSTS) for i in range(3)), TX.SEAL_ALL)
+        self.assertAlmostEqual(TX.AWAKE_PVP, 1.05)
+        # the kinds and their action names are the planner's
+        core = open(os.path.join(root, 'spell_awakening_core.lua')).read()
+        for kind, op in TX.SIG_OPS.items():
+            self.assertIn('k == "%s"' % kind, core)
+            self.assertIn('op = "%s"' % op, core)
+
+    # ---- PvP
+    def bot(self, log, sig=None, awake=(200,), ranks=None, name='Tester Aaa'):
+        return {'name': name, 'log': log, 'sig': sig or [], 'awake': list(awake), 'ranks': ranks or {200: 20}}
+
+    def test_pvp_passes_at_the_half_rule(self):
+        row = [-200, 20, 1.09, 0, 0, 0, 12, 1.05, 20, 4000, 300, 1.05, 1.05]
+        st, text = TX.spell_pvp_verdict([self.bot([row], [[200, 0, 0, 0, 0, 0, 0, 0, 0, '', 4, 0, 0, 1, 0]])], [('steam_burst', 'a', 'b')])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('rank factor 1.090', text)
+        self.assertIn('awakened hit 1.050', text)
+
+    def test_pvp_fails_on_a_combo_the_full_rank_or_a_signature(self):
+        row = list(self.PVP_ROW)
+        row[3] = 2
+        st, text = TX.spell_pvp_verdict([self.bot([row])], [('x', 'a', 'b')])
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('combo proc', text)
+        row = [-200, 20, 1.18, 0, 0, 0, 0, 0, 20, 4000, 300, 0, 0]   # the whole rank against a player
+        st, text = TX.spell_pvp_verdict([self.bot([row])], [('x', 'a', 'b')])
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('1.180', text)
+        row = [-200, 20, 1.09, 0, 0, 0, 5, 1.10, 20, 4000, 300, 1.10, 1.10]   # the whole +10% against a player
+        st, text = TX.spell_pvp_verdict([self.bot([row])], [('x', 'a', 'b')])
+        self.assertEqual(st, TX.FAIL)
+        sig = [[200, 0, 0, 0, 0, 0, 0, 0, 0, '', 2, 1, 300, 1, 0]]
+        st, text = TX.spell_pvp_verdict([self.bot([self.PVP_ROW], sig)], [('x', 'a', 'b')])
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('signature ran in PvP', text)
+
+    def test_pvp_skips(self):
+        self.assertEqual(TX.spell_pvp_verdict([self.bot([[200, 5, 1.18, 0, 0, 0, 0, 0, 5, 100, 20, 0, 0]])], [('x', 'a', 'b')])[0], TX.SKIP)   # monster rows only
+        self.assertEqual(TX.spell_pvp_verdict([self.bot([self.PVP_ROW])], [])[0], TX.SKIP)
+
+    # ---- dormant
+    def awk(self, sid, rank=20, f1=1, f2=1, bit=1, known=1, name='Spell'):
+        return [sid, name, rank, f1, f2, bit, known, rank]
+
+    def test_dormant_passes(self):
+        t = {'before': [self.awk(200), self.awk(201)], 'after': [self.awk(200, bit=0, known=0), self.awk(201)], 'back': [self.awk(200, bit=0), self.awk(201)],
+             'seals': [[10, 20, 30], [10, 20, 30], [10, 20, 30]], 'slots': [[200, 201], [0, 201]], 'class': ['Mystic', 'Warrior'],
+             'reawaken': {'ok': True, 'slot': 1, 'cost': [40, 36, 16]}, 'cost': (40, 36, 16)}
+        st, text = TX.spell_dormant_verdict(t)
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('1 dormant', text)
+        self.assertIn('1 shared', text)
+        t['reawaken'] = {'ok': True, 'slot': 1, 'cost': {'waystone': 40, 'rift': 36, 'pinnacle': 16}}   # the server sends a table
+        self.assertEqual(TX.spell_dormant_verdict(t)[0], TX.PASS)
+
+    def test_dormant_fails_on_a_slot_kept_a_lost_rank_or_a_refund(self):
+        base = {'before': [self.awk(200)], 'back': [self.awk(200, bit=0)], 'seals': [[1, 1, 1], [1, 1, 1], [1, 1, 1]], 'slots': [[200], [200]], 'class': ['a', 'b']}
+        st, text = TX.spell_dormant_verdict(dict(base, after=[self.awk(200, known=0)]))   # the design: freed at once
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('keeps its awakening slot', text)
+        st, text = TX.spell_dormant_verdict(dict(base, after=[self.awk(200, rank=0, f1=0, f2=0, bit=0, known=0)], slots=[[200], []]))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('lost its rank or Forms', text)
+        st, text = TX.spell_dormant_verdict(dict(base, after=[self.awk(200, bit=0, known=0)], slots=[[200], []], seals=[[1, 1, 1], [41, 37, 17], [1, 1, 1]]))
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('Seals changed', text)
+        st, text = TX.spell_dormant_verdict(dict(base, after=[self.awk(200)], slots=[[200], [200]]))   # everything shared: no dormant case
+        self.assertEqual(st, TX.SKIP)
+
+    # ---- signature
+    def test_sig_pick_covers_the_kinds(self):
+        rows = [[1, 'A', 0, [], 'PULSE'], [2, 'B', 0, [], 'PULSE+MARK'], [3, 'C', 0, [], 'LINE'], [4, 'D', 1, [], 'REFLECT+SHIELD'], [5, 'E', 0, [], '']]
+        picks = TX.sig_pick(rows, set())
+        self.assertEqual([p[0] for p in picks], [2, 4, 3])
+        self.assertEqual([p[0] for p in TX.sig_pick(rows, {'PULSE', 'MARK', 'LINE', 'REFLECT', 'SHIELD'})], [])
+        self.assertEqual(TX.sig_kinds_of('PULSE+MARK+NOPE'), ['PULSE', 'MARK'])
+
+    def sig_row(self, sid=200, casts=2, own=10000, dmg=1500, ops='pulse=2', pvp=(0, 0, 0)):
+        return [sid, casts, own, 2000, 2500, dmg, 0, 0, 6, ops, pvp[0], pvp[1], pvp[2], 1, 6]
+
+    def test_signature_passes_inside_the_cap(self):
+        st, text = TX.spell_signature_verdict({'spells': [{'sid': 200, 'name': 'Doomtide', 'kinds': ['PULSE', 'MARK'], 'row': self.sig_row(ops='pulse=2,mark=2')}]})
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('MARK', text.replace('mark', 'MARK'))
+        self.assertIn('15.0%', text)
+
+    def test_signature_fails_over_the_cap_and_in_pvp(self):
+        st, text = TX.spell_signature_verdict({'spells': [{'sid': 200, 'name': 'Doomtide', 'kinds': ['PULSE'], 'row': self.sig_row(dmg=4000)}]})
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('40.0%', text)
+        st, text = TX.spell_signature_verdict({'spells': [{'sid': 200, 'name': 'Doomtide', 'kinds': ['PULSE'], 'row': self.sig_row(pvp=(1, 1, 50))}]})
+        self.assertEqual(st, TX.FAIL)
+
+    def test_signature_cdcut_and_mark_count_by_their_state(self):
+        row = self.sig_row(dmg=0, ops='')
+        seen, _ = TX.sig_row_seen(row, ['CDCUT', 'MARK'], windows=1, marks=1)
+        self.assertEqual(sorted(seen), ['CDCUT', 'MARK'])
+        self.assertEqual(TX.spell_signature_verdict({'spells': [{'sid': 1, 'name': 'X', 'kinds': ['LINE'], 'row': self.sig_row(dmg=0, ops='')}]})[0], TX.SKIP)
+
+    # ---- Seals
+    def test_seal_expect_follows_the_config(self):
+        self.assertEqual(TX.seal_expect('waystone', 15, {}), (0, 0, 0))
+        self.assertEqual(TX.seal_expect('waystone', 16, {'firstPaid': True}), (2, 0, 0))
+        self.assertEqual(TX.seal_expect('waystone', 16, {'firstPaid': False}), (1, 0, 0))
+        self.assertEqual(TX.seal_expect('rift', 1, {'shown': 16, 'ok': False}), (0, 1, 0))
+        self.assertEqual(TX.seal_expect('rift', 3, {'shown': 18, 'ok': True}), (0, 2, 0))
+        self.assertEqual(TX.seal_expect('rift', 0, {'shown': 15, 'ok': True}), (0, 0, 0))
+        self.assertEqual(TX.seal_expect('pinnacle', 0, {}), (0, 0, 2))
+
+    def test_seals_verdict(self):
+        good = [('w16', 'waystone', 16, {'before': [0, 0, 0], 'after': [2, 0, 0], 'firstPaid': True}), ('r', 'rift', 1, {'before': [2, 0, 0], 'after': [2, 1, 0], 'shown': 16})]
+        self.assertEqual(TX.spell_seals_verdict(good)[0], TX.PASS)
+        bad = [('w16', 'waystone', 16, {'before': [0, 0, 0], 'after': [1, 0, 0], 'firstPaid': True})]
+        st, text = TX.spell_seals_verdict(bad)
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('config says (2, 0, 0)', text)
+        self.assertEqual(TX.spell_seals_verdict([('x', 'waystone', 16, {'err': 'no waystone endgame'})])[0], TX.FAIL)
+        self.assertEqual(TX.spell_seals_verdict([])[0], TX.SKIP)
+
+    # ---- Forms' gain
+    def fs(self, sid, casts, orig, adj, extra, kinds, landed):
+        return [sid, casts, orig, adj, extra, kinds, 10, landed]
+
+    def test_formgain_compares_the_landed_gain_with_the_plan(self):
+        v = [{'label': 'none', 'casts': 6, 'row': [200, 6, 0, 0, 0, 'none', 6, 6000.0]},
+             {'label': 'I-1', 'casts': 6, 'row': self.fs(200, 6, 6000, 6000, 2100, 'SPLIT', 8100.0)},   # plan 1.35, landed 8100 / 6 = 1350 per cast = 1.35
+             {'label': 'I-2', 'casts': 6, 'row': self.fs(200, 6, 6000, 5700, 0, 'PULL', 5600.0)}]
+        st, text = TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': v}])
+        self.assertEqual(st, TX.PASS, text)
+        self.assertIn('plan 1.35 live 1.35', text)
+        v[1] = {'label': 'I-1', 'casts': 6, 'row': self.fs(200, 6, 6000, 6000, 2100, 'SPLIT', 6100.0)}   # the extras never landed
+        st, text = TX.spell_formgain_verdict([{'spell': 'Bolt', 'variants': v}])
+        self.assertEqual(st, TX.FAIL)
+        self.assertIn('SPLIT', text)
+        self.assertEqual(TX.spell_formgain_verdict([])[0], TX.SKIP)
+
+    # ---- the wire state
+    def wire(self, **over):
+        w = {'state': {'on': True, 's': [[200, 3, 0.1, 0.4], [201, 20, 0, 0]]}, 'forms': {'f': [[200, 1, 2]]},
+             'awakened': {'on': True, 'seals': [1, 2, 3], 'slots': [200, 0, 0], 'costs': [list(c) for c in TX.SEAL_COSTS], 'held': 1, 'bonus': 0.1}}
+        w.update(over)
+        return w
+
+    def test_wire_state_fields(self):
+        self.assertEqual(TX.wire_state_problems(self.wire()), [])
+        self.assertTrue(TX.wire_state_problems(self.wire(state={'on': True, 's': [[200, 21, 0, 0]]})))
+        self.assertTrue(TX.wire_state_problems(self.wire(forms={'f': [[200, 3, 0]]})))
+        w = self.wire()
+        w['awakened']['costs'] = [[1, 1, 1]]
+        self.assertTrue(TX.wire_state_problems(w))
+        self.assertTrue(TX.wire_state_problems({}))
+
+    # ---- the checks on a mocked game
+    def test_checks_skip_with_the_switch_off(self):
+        for fn in (TX.check_closed_spell_pvp, TX.check_closed_spell_dormant, TX.check_closed_spell_signature, TX.check_closed_spell_seals,
+                   TX.check_closed_spell_seal_pinnacle, TX.check_closed_spell_formgain, TX.check_closed_spell_wire):
+            io = FakeIO(answers={'spellup state': {'on': False}})
+            self.assertEqual(run(fn(io, 'a', 'Mystic', 1000)).status, TX.SKIP, fn.__name__)
+
+    def test_the_seals_check_reads_every_source(self):
+        io = FakeIO(answers={'spellup state': {'on': True}})
+        seals = [0, 0, 0]
+        firsts = set()
+
+        async def helper(command, kind, wait=4.0):
+            nonlocal seals
+            if command.startswith('spellup source'):
+                w = command.split()
+                before = list(seals)
+                out = {'before': before}
+                if w[2] == 'waystone':
+                    tier = int(w[3])
+                    n = 0
+                    if tier >= 16:
+                        n = 1
+                        if len(w) > 4 and tier not in firsts:
+                            firsts.add(tier)
+                            n, out['firstPaid'] = 2, True
+                    seals = [seals[0] + n, seals[1], seals[2]]
+                else:
+                    g = int(w[3])
+                    out['shown'], out['ok'] = 15 + g, len(w) <= 4
+                    seals = [seals[0], seals[1] + (2 if out['ok'] else 1), seals[2]]
+                out['after'] = list(seals)
+                return out
+            if command == 'spellup state':
+                return {'on': True}
+            return {'cleared': True}
+        io.helper = helper
+        r = run(TX.check_closed_spell_seals(io, 'Tester Aaa', 'Mystic', 1000))
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertTrue(r.fallbacks)
+
+    def test_the_wire_check_saves_what_the_client_reads(self):
+        io = FakeIO(answers={'spellup state': {'on': True}})
+        st = {}
+
+        async def helper(command, kind, wait=4.0):
+            if command == 'spellup forms':
+                return {'forms': [[200, 'Bolt', 0, ['SPLIT', 'CHAIN', 'TWIN', 'CASCADE'], 'PULSE']]}
+            return {'on': True, 'cleared': True, 'seals': [40, 36, 16]}
+
+        async def request(opname, action, data, expect, timeout):
+            if action == 'awaken':
+                st['slot'] = data['spell']
+                return {'data': {'ok': True, 'slot': 1}}
+            if action == 'open':
+                return {'data': {'on': True, 's': [[200, 20, 0, 0]]}}
+            return {'data': {'ok': True}}
+
+        def last_message(opname, action):
+            return {'forms': {'f': [[200, 1, 1]]},
+                    'awakened': {'on': True, 'seals': [0, 0, 0], 'slots': [st.get('slot', 0), 0, 0], 'costs': [list(c) for c in TX.SEAL_COSTS], 'held': 1, 'bonus': 0.1}}.get(action)
+        io.helper, io.request, io.last_message = helper, request, last_message
+        r = run(TX.check_closed_spell_wire(io, 'Tester Aaa', 'Mystic', 1000))
+        self.assertEqual(r.status, TX.PASS, r.detail)
 
 
 if __name__ == '__main__':

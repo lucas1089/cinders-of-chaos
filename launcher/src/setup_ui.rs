@@ -39,7 +39,7 @@ fn small_btn(ui: &egui::Ui, art: &Art, cv: Cv, rect: Rect, label: &str, id: &str
     } else {
         Color32::WHITE
     };
-    theme::nine(p, &art.btn, rect, 12.0, cv.px(0.6), tint);
+    theme::button_plate(p, art, rect, cv.k, tint);
     p.text(
         rect.center(),
         Align2::CENTER_CENTER,
@@ -207,7 +207,7 @@ impl SetupApp {
         if ui.interact(bar, egui::Id::new("drag"), Sense::drag()).drag_started() {
             ctx.send_viewport_cmd(egui::ViewportCommand::StartDrag);
         }
-        p.circle_filled(cv.pt(38.0, 34.0), cv.px(5.0), theme::GOLD);
+        self.art.draw_icon(&p, cv.pt(38.0, 34.0), cv.k);
         p.text(
             cv.pt(56.0, 34.0),
             Align2::LEFT_CENTER,

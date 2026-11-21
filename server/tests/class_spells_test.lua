@@ -130,6 +130,8 @@ eq(learn, 0, "no Chaos spell needs teaching: the vocation and the level decide, 
 local ascension = read("data/scripts/chaos/ascension.lua")
 local after = ascension:match("function C%.afterVocationChange%(player%)(.-)\nend\n")
 assert(after and after:find("ChaosClassSpells.sync(player)", 1, true), "afterVocationChange runs the spell sync")
+-- O686 phase 8b: an awakened spell the new class does not know frees its slot at once (design 1.6), not at the next login
+assert(after:find("ChaosSpellAwakening", 1, true) and after:find("afterClassChange", 1, true), "afterVocationChange frees the slots of dormant awakened spells")
 local shop = read("data/scripts/chaos/shop_services.lua")
 assert(shop:find("ChaosClasses.afterVocationChange(player)", 1, true), "the store's Vocation Change calls afterVocationChange")
 assert(shop:find("Your spellbook now lists the spells of your new class", 1, true), "and tells the player")

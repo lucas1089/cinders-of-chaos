@@ -289,9 +289,10 @@ def rivet(r=2.5, tone=1.0, metal=None):
     return out
 
 
-def gem(r, color, color_l, glow=0.0):
-    """Faceted cabochon gem with a gold bezel; RGBA (2R+1)^2 where R = r + 2."""
-    R = int(math.ceil(r)) + 2
+def gem(r, color, color_l, glow=0.0, px=1.0):
+    """Faceted cabochon gem with a gold bezel; RGBA (2R+1)^2 where R = r + 2.
+    px (O705): pixels per design unit; r is in pixels already, the bezel (the part drawn in design units) scales with it."""
+    R = int(math.ceil(r)) + int(math.ceil(2 * px))
     n = 2 * R + 1
     yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
     d = np.sqrt((xx - R) ** 2 + (yy - R) ** 2)
@@ -301,8 +302,8 @@ def gem(r, color, color_l, glow=0.0):
         out[..., :3] = color_l
         out[..., 3] = g
     # bezel ring
-    ring_h = np.clip(1 - np.abs(d - (r + 0.9)) / 1.4, 0, 1)
-    ring_m = np.clip(r + 2.2 - d, 0, 1)
+    ring_h = np.clip(1 - np.abs(d - (r + 0.9 * px)) / (1.4 * px), 0, 1)
+    ring_m = np.clip(r + 2.2 * px - d, 0, 1)
     bez = shade(ring_h * 1.6, np.ones((n, n, 3), np.float32) * GOLD, amb=0.4, diff=0.9, spec=0.8, shin=10)
     over(out, rgba(bez, ring_m))
     # stone
@@ -384,18 +385,22 @@ def bezier(p0, p1, p2, p3, n=40):
 
 
 def metal_from_mask(m, albedo, height_scale=2.2, blur=0.8, amb=0.38, diff=0.85, spec=0.9, shin=12,
-                    outline=0.9, shadow=0.75, shadow_off=(1, 1)):
-    """Turn a coverage mask into an embossed metal piece with a dark outline and a drop shadow (RGBA)."""
+                    outline=0.9, shadow=0.75, shadow_off=(1, 1), px=1.0):
+    """Turn a coverage mask into an embossed metal piece with a dark outline and a drop shadow (RGBA).
+    px (O705): the mask is drawn px times bigger than the design (the launcher draws its corner at the size it is shown, so
+    nothing is scaled up later): blur, outline, shadow and the height scale follow it; 1.0 is the old output, byte for byte."""
     h, w = m.shape
+    blur, height_scale = blur * px, height_scale * px
+    shadow_off = (int(round(shadow_off[0] * px)), int(round(shadow_off[1] * px)))
     hg = gauss(m, blur) * height_scale
     rgb = shade(hg, albedo, amb=amb, diff=diff, spec=spec, shin=shin, strength=1.4)
     out = np.zeros((h, w, 4), np.float32)
     if shadow:
-        sh = gauss(m, 1.2) * shadow
+        sh = gauss(m, 1.2 * px) * shadow
         sh = np.roll(np.roll(sh, shadow_off[1], 0), shadow_off[0], 1)
         out[..., 3] = sh
     if outline:
-        ol = np.clip(gauss(m, 0.7) * 2.2, 0, 1)
+        ol = np.clip(gauss(m, 0.7 * px) * 2.2, 0, 1)
         over(out, rgba(np.zeros((h, w, 3), np.float32) + IRON_D * 0.4, ol * outline))
     over(out, rgba(rgb, m))
     return out
@@ -558,12 +563,14 @@ def gold_albedo(h, w, seed=7, tone=1.0):
     return np.clip(GOLD[None, None, :] * v[..., None] * 1.05, 0, 1)
 
 
-def ornament_corner(size=44, gem_color=None, gem_light=None, seed=1):
+def ornament_corner(size=44, gem_color=None, gem_light=None, seed=1, px=1.0):
     """Top-left corner ornament: gold bracket with scroll curls, a fleur spike and a set gem.
-    The gem centre sits at (14, 14); mirror it for the other corners."""
+    The gem centre sits at (14, 14); mirror it for the other corners.
+    px (O705): size is in pixels and the design is 44 units wide: px = size / 44 draws the same piece at that many pixels
+    (the launcher shows it at 108 px, not 44 scaled up); 1.0 is the client's piece, unchanged."""
     gem_color = BLOOD if gem_color is None else gem_color
     gem_light = BLOOD_L if gem_light is None else gem_light
-    S = size
+    S = size / px
 
     def draw(d, s):
         # arms along the top and the left edge
@@ -586,10 +593,11 @@ def ornament_corner(size=44, gem_color=None, gem_light=None, seed=1):
         r = 7.2
         d.ellipse([(14 - r) * s, (14 - r) * s, (14 + r) * s, (14 + r) * s], fill=255)
 
-    m = mask_draw(S, S, draw)
-    piece = metal_from_mask(m, gold_albedo(S, S, seed), height_scale=2.6, blur=0.9)
-    g = gem(4.6, gem_color, gem_light)
-    over(piece, g, 14 - g.shape[1] // 2, 14 - g.shape[0] // 2)
+    m = mask_draw(size, size, lambda d, s: draw(d, s * px))
+    piece = metal_from_mask(m, gold_albedo(size, size, seed), height_scale=2.6, blur=0.9, px=px)
+    g = gem(4.6 * px, gem_color, gem_light, px=px)
+    c = int(round(14 * px))
+    over(piece, g, c - g.shape[1] // 2, c - g.shape[0] // 2)
     return piece
 
 
@@ -602,11 +610,12 @@ def mirror(img, fx, fy):
     return np.ascontiguousarray(o)
 
 
-def ornament_crest(w=84, h=30, gem_color=None, gem_light=None, seed=2):
-    """Title crest: a pointed gem in a winged gold setting with scroll ends."""
+def ornament_crest(w=84, h=30, gem_color=None, gem_light=None, seed=2, px=1.0):
+    """Title crest: a pointed gem in a winged gold setting with scroll ends.
+    px (O705): w and h are in pixels, the design is 84 x 30 units (px = w / 84): the launcher shows it at 264 x 94 px."""
     gem_color = BLOOD if gem_color is None else gem_color
     gem_light = BLOOD_L if gem_light is None else gem_light
-    cx, cy = w / 2, h / 2 + 1
+    cx, cy = w / px / 2, h / px / 2 + 1
 
     def draw(d, s):
         # wings: two swept blades
@@ -620,11 +629,11 @@ def ornament_crest(w=84, h=30, gem_color=None, gem_light=None, seed=2):
         # central pointed setting (diamond)
         d.polygon([(cx * s, (cy - 14) * s), ((cx + 10) * s, cy * s), (cx * s, (cy + 14) * s), ((cx - 10) * s, cy * s)], fill=255)
 
-    m = mask_draw(w, h, draw)
-    piece = metal_from_mask(m, gold_albedo(h, w, seed), height_scale=2.6, blur=0.9)
+    m = mask_draw(w, h, lambda d, s: draw(d, s * px))
+    piece = metal_from_mask(m, gold_albedo(h, w, seed), height_scale=2.6, blur=0.9, px=px)
     # dark inlay lines on the wings
-    g = gem(5.2, gem_color, gem_light, glow=0.0)
-    over(piece, g, int(cx) - g.shape[1] // 2, int(cy) - g.shape[0] // 2)
+    g = gem(5.2 * px, gem_color, gem_light, glow=0.0, px=px)
+    over(piece, g, int(cx * px) - g.shape[1] // 2, int(cy * px) - g.shape[0] // 2)
     return piece
 
 
@@ -635,9 +644,10 @@ def edge_maps(H, W):
     return x, y, x, W - 1 - x, y, H - 1 - y   # x, y, dl, dr, dt, db
 
 
-def button_face(W, H, b, state, seed=11, rim=None, face_tint=None, round_corner=True):
+def button_face(W, H, b, state, seed=11, rim=None, face_tint=None, round_corner=True, rim_w=1):
     """Bevelled iron button with a metal rim. Bevel and rim live inside the b px border, the middle is
-    flat (tileable) so the engine can stretch it.  state: normal, hover, pressed, disabled, on."""
+    flat (tileable) so the engine can stretch it.  state: normal, hover, pressed, disabled, on.
+    rim_w (O705): width of the rim in px; the launcher draws the button at the size it is shown (2 px at twice the size)."""
     ch, cw = max(1, H - 2 * b), max(1, W - 2 * b)
     x, y, dl, dr, dt, db = edge_maps(H, W)
     d = np.minimum(np.minimum(dl, dr), np.minimum(dt, db))
@@ -650,16 +660,16 @@ def button_face(W, H, b, state, seed=11, rim=None, face_tint=None, round_corner=
         rim = {'normal': GOLD * 0.85, 'hover': GOLD_L * 1.05, 'pressed': GOLD * 0.6, 'disabled': STEEL * 0.6,
                'on': GOLD_L}[state]
     alb = face.copy()
-    ring = (d >= 1) & (d < 2)
+    ring = (d >= 1) & (d < 1 + rim_w)
     alb[ring] = rim
     # bevel inside the rim: light top/left, dark bottom/right (inverted when pressed)
     up = state != 'pressed'
     k = np.ones((H, W), np.float32)
-    bev = b - 2
+    bev = b - 1 - rim_w
     if bev > 0:
         near = np.argmin(np.stack([dt, dl, db, dr]), 0)
-        zone = (d >= 2) & (d < b)
-        fall = np.clip(1 - (d - 2) / max(bev, 1), 0, 1)
+        zone = (d >= 1 + rim_w) & (d < b)
+        fall = np.clip(1 - (d - 1 - rim_w) / max(bev, 1), 0, 1)
         lit = zone & (near <= 1)
         drk = zone & (near >= 2)
         k = np.where(lit, 1 + (0.5 if up else -0.4) * fall, k)
@@ -667,10 +677,10 @@ def button_face(W, H, b, state, seed=11, rim=None, face_tint=None, round_corner=
     rgb = np.clip(alb * k[..., None], 0, 1)
     if state == 'hover':
         # ember glow creeping in from the rim
-        glow = np.exp(-np.clip(d - 2, 0, None) / 1.6) * (d >= 2)
+        glow = np.exp(-np.clip(d - 1 - rim_w, 0, None) / 1.6) * (d >= 1 + rim_w)
         rgb = np.clip(rgb + glow[..., None] * EMBER[None, None, :] * 0.45, 0, 1)
     # rim highlight on top edge
-    rgb[(d >= 1) & (d < 2) & (dt < 2)] = np.clip(rim * 1.35, 0, 1)
+    rgb[(d >= 1) & (d < 1 + rim_w) & (dt < 1 + rim_w)] = np.clip(rim * 1.35, 0, 1)
     out = rgba(rgb)
     blend_rgb(out, BLACK, (d < 1).astype(np.float32) * 0.92)
     if round_corner:

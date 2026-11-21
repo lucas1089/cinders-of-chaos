@@ -3,7 +3,7 @@
 // fixed cross-language vector, round trips through the streaming decryptStream() (the engine's path, also with a
 // reader that returns odd-sized pieces of a multi-chunk pack), wrong key, tamper, truncation and the inflate length
 // checks. Built standalone in CI (.github/workflows/ci.yml):
-//   g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -o chaospack_test
+//   g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -pthread -o chaospack_test
 // With a pack file as argument it instead times the streamed decrypt + inflate of that file with the development key:
 //   chaospack_test some.pack
 #include <framework/util/chaospack.h>
@@ -218,6 +218,51 @@ int main(int argc, char** argv)
         std::string early = treePack;
         early[chaospack::HEADER_LEN + 100] ^= 0x01;
         check(!decryptVec(key, early, buf) && buf.empty(), "stream: change in the first chunk fails and clears");
+    }
+
+    {
+        // 40 MB, mostly random: ten 4 MB chunks, more than the ring between the reading thread and the inflating one holds
+        // (base patch 0206, O705), so they hand chunks over several times. Round trip, an I/O error in the middle, a
+        // corrupt first chunk while the reader is already a ring ahead, a pack cut short: each must end, not hang.
+        std::mt19937 rng(11);
+        std::string big;
+        const size_t want = 40u * 1024 * 1024 + 777;
+        big.reserve(want);
+        while (big.size() < 3u * 1024 * 1024)
+            big += "modules/game_y/y.otui Label id: cinders ";
+        while (big.size() < want)
+            big.push_back(static_cast<char>(rng() & 0xFF));
+        std::string bigPack;
+        check(chaospack::encrypt(key, big, false, bigPack), "encrypt 40 MB");
+        auto reader = [&](const std::string& pack, size_t failAt, size_t* at) {
+            return [&pack, failAt, at](unsigned char* dst, size_t n) {
+                if (*at + n > pack.size() || *at + n > failAt)
+                    return false;
+                std::memcpy(dst, pack.data() + *at, n);
+                *at += n;
+                return true;
+            };
+        };
+        size_t pos = 0;
+        auto ok = reader(bigPack, bigPack.size(), &pos);
+        check(chaospack::decryptStream(key, bigPack.size(), ok, buf) && buf.size() == big.size() && str(buf) == big,
+              "stream: 40 MB round trip over the ring");
+        pos = 0;
+        auto cut = reader(bigPack, bigPack.size() / 2, &pos); // the disk fails in the middle
+        check(!chaospack::decryptStream(key, bigPack.size(), cut, buf) && buf.empty(), "stream: I/O error in the middle fails and clears");
+        pos = 0;
+        auto noTag = reader(bigPack, bigPack.size() - chaospack::TAG_LEN, &pos); // the tag cannot be read
+        check(!chaospack::decryptStream(key, bigPack.size(), noTag, buf) && buf.empty(), "stream: unreadable tag fails and clears");
+        pos = 0;
+        std::string first = bigPack;
+        first[chaospack::HEADER_LEN + 100] ^= 0x01;
+        auto bad = reader(first, first.size(), &pos);
+        check(!chaospack::decryptStream(key, first.size(), bad, buf) && buf.empty(), "stream: corrupt first chunk of 40 MB fails and clears");
+        pos = 0;
+        std::string last = bigPack;
+        last[last.size() - chaospack::TAG_LEN - 1] ^= 0x01;
+        auto bad2 = reader(last, last.size(), &pos);
+        check(!chaospack::decryptStream(key, last.size(), bad2, buf) && buf.empty(), "stream: corrupt last chunk of 40 MB fails and clears");
     }
 
     // the inflate checks behind an authentic tag

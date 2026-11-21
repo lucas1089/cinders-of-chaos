@@ -1034,6 +1034,24 @@ function G.refFor(ref, size, health)
 	return r
 end
 
+-- O703: the same for a system whose party health is a curve of the party size that is NOT the monster's own health at attach time (the
+-- dungeon bosses: D.partyHealth, the guild boss: B.healthMult, the Omen guardians: R.omenHealthMult). `curve(n)` = the health multiplier
+-- of n players; the ref's health stays in the units of the ref and is moved by the curve from the ref's own party (`ref.players`, 1 for
+-- most, 5 for the guild boss) to `size`: ref.health x curve(size) / curve(ref.players). The solo fight of a ref made for one player is
+-- the ref itself (size 1, curve(1) = 1 in the dungeons and the Omens), so a solo fight does not move
+function G.refForCurve(ref, size, curve)
+	size = size and math.max(1, floor(size)) or math.max(1, ref.players or 1)
+	local mult = 1
+	if type(curve) == "function" then
+		local own = tonumber(curve(math.max(1, ref.players or 1)))
+		local now = tonumber(curve(size))
+		if own and now and own > 0 and now > 0 then
+			mult = now / own
+		end
+	end
+	return G.refFor(ref, size, ref.health * mult)
+end
+
 -- the kill time model of a profile against ref = {health, heal, dps, uptime, players, tier}: base = health / (dps x uptime)
 -- (the old time); with = the time with the mechanics before the health change; hpMult = the boss health factor that
 -- brings `with` back to base (at least minHpMult); final = the time with both

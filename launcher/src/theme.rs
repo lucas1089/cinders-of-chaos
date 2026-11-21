@@ -26,6 +26,8 @@ pub const ERROR: Color32 = Color32::from_rgb(240, 98, 84);
 pub const BLOOD: Color32 = Color32::from_rgb(150, 36, 24);
 
 pub const ICON_SIZE: u32 = 128;
+/// The title bar icon's size in canvas points.
+pub const TITLE_ICON: f32 = 26.0;
 const ICON_RGBA: &[u8] = include_bytes!("../assets/icon.rgba");
 
 pub fn icon() -> egui::IconData {
@@ -90,19 +92,34 @@ fn tex(ctx: &egui::Context, name: &str, bytes: &[u8], opt: TextureOptions) -> Te
     ctx.load_texture(name, ci, opt)
 }
 
+/// The brand icon cut to twice its title bar size with a proper filter (the 128 px window icon shrunk by the graphics card
+/// alone would alias).
+fn title_icon(ctx: &egui::Context) -> TextureHandle {
+    let n = (TITLE_ICON * 2.0) as u32;
+    let big = image::RgbaImage::from_raw(ICON_SIZE, ICON_SIZE, ICON_RGBA.to_vec())
+        .unwrap_or_else(|| image::RgbaImage::new(ICON_SIZE, ICON_SIZE));
+    let small = image::imageops::resize(&big, n, n, image::imageops::FilterType::Lanczos3);
+    let ci = egui::ColorImage::from_rgba_unmultiplied([n as usize, n as usize], small.as_raw());
+    ctx.load_texture("title_icon", ci, TextureOptions::LINEAR)
+}
+
 /// A texture with its pixel size (for nine-slice maths).
 pub struct Tex {
     pub h: TextureHandle,
     pub size: Vec2,
 }
 
+/// A skin picture. The art is drawn at twice the size it is shown at (O705), so it is filtered, not nearest-neighbour: a
+/// 1x screen shrinks it by exactly 2, a 2x screen shows every pixel.
 fn skin(ctx: &egui::Context, name: &str, bytes: &[u8]) -> Tex {
-    let h = tex(ctx, name, bytes, TextureOptions::NEAREST);
+    let h = tex(ctx, name, bytes, TextureOptions::LINEAR);
     let size = h.size_vec2();
     Tex { h, size }
 }
 
 pub struct Art {
+    /// The brand icon for the title bar, cut at 2x the 26 points it is shown at.
+    pub icon: TextureHandle,
     pub hero: TextureHandle,
     pub logo: TextureHandle,
     pub corners: [Tex; 4],
@@ -117,6 +134,7 @@ impl Art {
         let lin = TextureOptions::LINEAR;
         let news = |n: &'static str, b: &[u8]| (n, tex(ctx, &format!("news_{n}"), b, lin));
         Art {
+            icon: title_icon(ctx),
             hero: tex(ctx, "hero", include_bytes!("../assets/hero.jpg"), lin),
             logo: tex(ctx, "logo", include_bytes!("../assets/logo.png"), lin),
             corners: [
@@ -134,6 +152,17 @@ impl Art {
                 news("notice", include_bytes!("../assets/news_notice.jpg")),
             ],
         }
+    }
+
+    /// Draws the brand icon in the title bar, centred on `c` (26 canvas points wide) - the window has no frame of its own, so
+    /// this is the icon the player sees on the window (O705).
+    pub fn draw_icon(&self, p: &Painter, c: Pos2, k: f32) {
+        p.image(
+            self.icon.id(),
+            Rect::from_center_size(c, Vec2::splat(TITLE_ICON * k)),
+            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+            Color32::WHITE,
+        );
     }
 
     pub fn default_news(&self, art: &str) -> &TextureHandle {
@@ -185,7 +214,33 @@ fn quad(mesh: &mut Mesh, rect: Rect, uv: Rect, tint: Color32) {
     mesh.add_rect_with_uv(rect, uv, tint);
 }
 
-/// Nine-slice of a skin sprite: corners of `c` source pixels drawn `scale` times bigger, edges and middle stretched.
+/// The button tile (`assets/skin_btn.png`, drawn by `tools/gen_launcher_art.py` at twice the size it is shown): the corner
+/// is 14 texture pixels, shown 7 points wide, so one texture pixel is half a point (O705).
+pub const BTN_BORDER: f32 = 14.0;
+pub const BTN_SCALE: f32 = 0.5;
+
+/// One axis of a nine-slice: the spans `(dest from, dest to, uv from, uv to)` that fill `d0..d1`. A corner is one span with
+/// its whole uv range; the middle is cut into whole tiles of `tile` points, the last one cropped (never stretched), so the
+/// plate keeps the pixel density it was drawn with at every size. `eps` keeps a bilinear lookup inside the tile.
+pub fn axis_spans(d0: f32, d1: f32, u0: f32, u1: f32, tile: Option<f32>, eps: f32) -> Vec<(f32, f32, f32, f32)> {
+    let Some(tile) = tile.filter(|t| *t > 0.5 && d1 - d0 > 0.0) else {
+        return vec![(d0, d1, u0, u1)];
+    };
+    let (ua, ub) = (u0 + eps, u1 - eps);
+    let mut out = Vec::new();
+    let mut x = d0;
+    while x < d1 - 0.01 {
+        let e = (x + tile).min(d1);
+        let f = (e - x) / tile;
+        out.push((x, e, ua, ua + (ub - ua) * f));
+        x = e;
+    }
+    out
+}
+
+/// Nine-slice of a skin picture: corners of `c` texture pixels drawn `scale` points per pixel, the edges and the middle
+/// tiled at the same density (the picture's edges and middle are made to tile). Nothing is stretched or shrunk by
+/// nearest-neighbour: at `scale` 0.5 and a 2x screen every texture pixel is a screen pixel (O705).
 pub fn nine(p: &Painter, t: &Tex, rect: Rect, c: f32, scale: f32, tint: Color32) {
     let (sw, sh) = (t.size.x, t.size.y);
     let cs = (c * scale).min(rect.width() / 2.0).min(rect.height() / 2.0);
@@ -193,18 +248,30 @@ pub fn nine(p: &Painter, t: &Tex, rect: Rect, c: f32, scale: f32, tint: Color32)
     let ys = [rect.min.y, rect.min.y + cs, rect.max.y - cs, rect.max.y];
     let us = [0.0, c / sw, 1.0 - c / sw, 1.0];
     let vs = [0.0, c / sh, 1.0 - c / sh, 1.0];
+    let (tw, th) = ((sw - 2.0 * c) * scale, (sh - 2.0 * c) * scale);
     let mut m = Mesh::with_texture(t.h.id());
     for j in 0..3 {
+        let rows = axis_spans(ys[j], ys[j + 1], vs[j], vs[j + 1], (j == 1).then_some(th), 0.5 / sh);
         for i in 0..3 {
-            quad(
-                &mut m,
-                Rect::from_min_max(Pos2::new(xs[i], ys[j]), Pos2::new(xs[i + 1], ys[j + 1])),
-                Rect::from_min_max(Pos2::new(us[i], vs[j]), Pos2::new(us[i + 1], vs[j + 1])),
-                tint,
-            );
+            let cols = axis_spans(xs[i], xs[i + 1], us[i], us[i + 1], (i == 1).then_some(tw), 0.5 / sw);
+            for (y0, y1, v0, v1) in &rows {
+                for (x0, x1, u0, u1) in &cols {
+                    quad(
+                        &mut m,
+                        Rect::from_min_max(Pos2::new(*x0, *y0), Pos2::new(*x1, *y1)),
+                        Rect::from_min_max(Pos2::new(*u0, *v0), Pos2::new(*u1, *v1)),
+                        tint,
+                    );
+                }
+            }
         }
     }
     p.add(m);
+}
+
+/// A button plate: the tile of the skin drawn 1:1 with the corner `BTN_BORDER` (7 points). `k` is the canvas scale.
+pub fn button_plate(p: &Painter, art: &Art, rect: Rect, k: f32, tint: Color32) {
+    nine(p, &art.btn, rect, BTN_BORDER, BTN_SCALE * k, tint);
 }
 
 /// A texture drawn to fill `rect`, cropped (not stretched) to the rectangle's shape.
@@ -624,5 +691,40 @@ mod tests {
         assert_eq!(v, 1.0);
         assert!(approach(1.0, 0.0, 0.016, 8.0) < 1.0);
         assert_eq!(approach(0.5, 0.5, 0.016, 8.0), 0.5);
+    }
+
+    #[test]
+    fn a_corner_is_one_span_and_the_middle_is_tiled_not_stretched() {
+        // corner: the whole uv range, once
+        assert_eq!(axis_spans(0.0, 7.0, 0.0, 0.1, None, 0.003), vec![(0.0, 7.0, 0.0, 0.1)]);
+        // middle of 100 points, tile 66: one whole tile and a cropped one, in order, no gap
+        let s = axis_spans(7.0, 107.0, 0.1, 0.9, Some(66.0), 0.0);
+        assert_eq!(s.len(), 2);
+        assert_eq!((s[0].0, s[0].1), (7.0, 73.0));
+        assert_eq!((s[1].0, s[1].1), (73.0, 107.0));
+        // the whole tile spans the whole uv range, the last one only its share: the same density, nothing stretched
+        assert!((s[0].2 - 0.1).abs() < 1e-6 && (s[0].3 - 0.9).abs() < 1e-6);
+        let per_point = (s[0].3 - s[0].2) / (s[0].1 - s[0].0);
+        let last = (s[1].3 - s[1].2) / (s[1].1 - s[1].0);
+        assert!((per_point - last).abs() < 1e-6);
+        // a middle shorter than one tile is one cropped tile; an empty one is nothing to draw
+        assert_eq!(axis_spans(0.0, 10.0, 0.0, 1.0, Some(66.0), 0.0).len(), 1);
+        assert_eq!(
+            axis_spans(5.0, 5.0, 0.0, 1.0, Some(66.0), 0.0),
+            vec![(5.0, 5.0, 0.0, 1.0)]
+        );
+    }
+
+    #[test]
+    fn the_button_tile_is_drawn_twice_the_size_it_is_shown_at() {
+        // assets/skin_btn.png is 160 x 120 with 14 px corners, shown with the corner 7 points wide (O705)
+        let png = include_bytes!("../assets/skin_btn.png");
+        let im = cinders_launcher::images::decode(png).unwrap();
+        assert_eq!((im.w, im.h), (160, 120));
+        assert_eq!(BTN_BORDER * BTN_SCALE, 7.0);
+        let corner = cinders_launcher::images::decode(include_bytes!("../assets/skin_corner_tl.png")).unwrap();
+        assert_eq!((corner.w, corner.h), (108, 108), "shown at 54 points");
+        let crest = cinders_launcher::images::decode(include_bytes!("../assets/skin_crest.png")).unwrap();
+        assert_eq!((crest.w, crest.h), (264, 94), "shown at 132 x 47 points");
     }
 }

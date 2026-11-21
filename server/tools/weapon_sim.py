@@ -339,16 +339,16 @@ POWER_LEVELS = (1, 50, 100, 150, 200, 300, 400, 500, 600, 700, 850, 1000, 1250, 
 # kind -> (share of the reference class's single-target spell rotation the auto attack is lifted to, reference class,
 # attack interval in seconds of the model's weapon). A factor never cuts: under the share it lifts, over it stays 1.
 POWER_KINDS = {
-    'melee': (0.30, 'Warrior', 2.0),
-    'distance': (0.30, 'Ranger', 3.0),
+    'melee': (0.20, 'Warrior', 2.0),
+    'distance': (0.20, 'Ranger', 3.0),
     'wand': (0.15, 'Mystic', 2.0),
-    # the Monk line's fists and fist weapons (monk_combat.lua): 30% of a Monk's own rotation, the attack interval of the
+    # the Monk line's fists and fist weapons (monk_combat.lua): 20% of a Monk's own rotation, the attack interval of the
     # Monk (1.5 s; the Shadowfist 1.3 s and the Iron Sage 1.7 s are left out like every class factor). The model's fist
     # auto attack is 53-62% of the Monk's rotation, so this stays 1 and only the skill factor works (owner 2026-10-23)
-    'fist': (0.30, 'Monk', 1.5),
+    'fist': (0.20, 'Monk', 1.5),
 }
 POWER_MAX = 3.0                                   # no kind is ever lifted more than this
-SKILL_POWER = {'exponent': 0.5, 'min': 0.7, 'max': 1.6}   # (skill / typical skill) ^ exponent, clamped: weapon_power_core.lua
+SKILL_POWER = {'exponent': 0.5, 'min': 0.7, 'max': 1.0}   # (skill / typical skill) ^ exponent, clamped: weapon_power_core.lua
 
 
 def own_dps(kind, level):
@@ -410,7 +410,7 @@ def power_text(factors):
         '-- (monk_combat.lua does the same for a Monk\'s fists and fist weapons)\n'
         '-- (weapon_power_core.lua interpolates between the levels) on top of the engine formula, so the auto attack keeps up\n'
         '-- with the level: each kind is lifted to its share of the single-target spell rotation of its reference class\n'
-        '-- (melee 30%% of a Warrior\'s, distance 30%% of a Ranger\'s, wand 15%% of a Mystic\'s, fist 30%% of a Monk\'s; a factor\n'
+        '-- (melee 20%% of a Warrior\'s, distance 20%% of a Ranger\'s, wand 15%% of a Mystic\'s, fist 20%% of a Monk\'s; a factor\n'
         '-- never cuts, so 1 where the auto attack is above the share already). skill: the hit also scales with (skill / typical skill of the level)\n'
         '-- ^ exponent, clamped to min .. max, on top of the skill term of the engine. Lua 5.1 / LuaJIT and 5.3.\n'
         'return {\n'

@@ -299,6 +299,17 @@ function AW.sync(player)
 	return freed
 end
 
+-- O686 phase 8b: a class change (ascension.lua afterVocationChange: the Oracle, the free switch, the store's Vocation Change) runs the sync a login does, at once
+-- (design 1.6: "an awakened spell that is dormant frees its slot at once"; the live pass saw the slots stay taken until the next login), and the client learns
+-- the slots. Returns the number of slots freed
+function AW.afterClassChange(player)
+	local freed = AW.sync(player) or 0
+	if freed > 0 then
+		try("push", AW.push, player)
+	end
+	return freed
+end
+
 -- ---------------------------------------------------------------- the bonus and the mark (ChaosPassiveDealt)
 -- the factor of one hit of a player: 1 + the bonus when the spell that made it is awakened, and a mark on the target spent by a single target
 -- spell. 1 while off, outside a spell's cast context and for anything but a spell hit

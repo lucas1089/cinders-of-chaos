@@ -155,7 +155,7 @@ for key, row in cfg['exceptions'].items():
 ok(all(t['rows'][c]['sustain'] > 1.0 for t in real.values() for c in P.NAMES),
    'O444 finding: sustain is above 1 for all 63 class rows (delete this when it is not)')
 # O473: the PvP damage scale table (pvp_scale_core.lua applies it; the model only reads and checks its shape)
-ok(cfg['damageScale'] == [(100, 1.24), (200, 1.09), (300, 1.06), (500, 0.98), (700, 0.95), (1000, 0.68), (1500, 0.69), (2000, 0.65)],
+ok(cfg['damageScale'] == [(100, 1.24), (200, 1.09), (300, 1.06), (500, 0.98), (700, 0.97), (1000, 0.69), (1500, 0.71), (2000, 0.65)],
    'O473: the damage scale table is read')
 ok(P.scale_problems(cfg) == [], 'O473: the scale table is well formed')
 ok(P.damage_scale(100, cfg) == 1.24 and abs(P.damage_scale(500, cfg) - 0.98) < 1e-12 and abs(P.damage_scale(5000, cfg) - 0.65) < 1e-12,

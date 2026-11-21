@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 41
+HELPER_VERSION = 42
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -1768,6 +1768,7 @@ function commands.pinnacle(player, arg)
 	local late = H.dealtRow(T.dealtLate, player:getId())
 	row.late, row.lateHits, row.lateSummon, row.lateDot = late.boss, late.bossHits, late.summon, late.dot
 	row.lateSrc, row.lateElem = late.src, late.elem -- O700: the final damage by origin and by damage type
+	row.lateSrcN = late.srcN -- O706: the hits of each origin (v42)
 	tell(player, "pinnacle", H.pinnacleAnswer(probe, {dealt = row, ledger = H.ledgerRow(T.bossLedger)}))
 end
 
@@ -4908,6 +4909,11 @@ end
 -- fresh copies of a monster nearby (switch off, then on) and returns the log of the factors the hooks of ChaosPassiveDealt applied to the bot's
 -- hits. The log comes from wrappers of ChaosSpellRanks.hitFactor, ChaosSpellCombos.hitFactor, ChaosSpellAwakening.hitFactor and ChaosCombatLog.spellHook
 -- put on at the first `spellup`; they pass every argument and result through and only count for tester characters.
+-- O686 phase 8b (helper v42): the same log keeps a hit on another player apart (the spell id negative); `sig [clear]` is the record of the awakened signatures
+-- (per spell: the casts and their own damage, the plan and its cap, what the signature dealt, the actions run, the casts and runs in PvP), `fstat [clear]`
+-- the record of the Forms (the hits before the Forms, with their main factors, what the planner added), `pick SPELL F1 F2` writes the Forms straight into the
+-- spell's state, `awk [SPELL]` reads the awakened slots, `class NAME` changes the vocation on the game's own path, `source waystone TIER [first] | rift G
+-- [fail] | pinnacle` runs the Seal credit of a content (TEST ONLY: the bot as the only player, no map, run or fight played; the pinnacle kill is the real one).
 T.spellup = T.spellup or {log = {}, wrapped = false}
 local SU = T.spellup
 SU.lastRow, SU.fires = SU.lastRow or {}, SU.fires or {} -- the combo row that just fired, per bot; the fires of a bot {row id, target id, ms}
@@ -4915,13 +4921,21 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 
-local function suCell(pid, sid)
+-- phase 8b: a hit on another player (not a heal) is PvP: its numbers go to the cell of the negative spell id, so the log tells the two apart
+local function suPvp(attacker, creature, ctype)
+	return ctype ~= COMBAT_HEALING and creature ~= nil and creature ~= attacker and creature.isPlayer ~= nil and creature:isPlayer() == true
+end
+
+local function suCell(pid, sid, pvp)
 	local byP = SU.log[pid]
 	if not byP then
 		byP = {}
 		SU.log[pid] = byP
 	end
 	sid = sid or 0
+	if pvp then
+		sid = -sid
+	end
 	local e = byP[sid]
 	if not e then
 		e = {rank = {0, 0}, combo = {0, 0, 0}, awake = {0, 0, 9, 0}, hit = {0, 0, 0}} -- awake: n, sum, lowest, highest factor
@@ -4930,11 +4944,212 @@ local function suCell(pid, sid)
 	return e
 end
 
+-- phase 8b: the signature record and the Forms' gain record. Wrappers again, they pass every argument and result through.
+--   sig: per bot and spell id: casts of the awakened spell (and the cast's own damage, the sum of the cast's hits as the Forms' hit buffer holds them),
+--   the plan the real planner made (planned output, the cap), the actions run (by name), the amounts the signature asked of ChaosSpellForms.ops
+--   (dealHit / dealHeal / addShield are the signature's own calls: the Forms use their local ones), and the casts and runs in PvP (must be none);
+--   fstat: per bot and spell id: the casts a Form acted on, the hits before the Forms (sum, and with the Forms' main factors) and what the planner
+--   planned on top of them (hits, dots, bursts and grounds at the enemies near, times the uptime of the kind)
+T.sig, T.fstat = T.sig or {}, T.fstat or {}
+local function suSigCell(pid, sid)
+	local byP = T.sig[pid]
+	if not byP then
+		byP = {}
+		T.sig[pid] = byP
+	end
+	local c = byP[sid]
+	if not c then
+		c = {casts = 0, own = 0, planned = 0, limit = 0, dmg = 0, heal = 0, shield = 0, hits = 0, ops = {}, pvpCasts = 0, pvpRuns = 0, pvpAmt = 0, minScale = 1,
+			pulses = 0}
+		byP[sid] = c
+	end
+	return c
+end
+
+local function suFsCell(pid, sid)
+	local byP = T.fstat[pid]
+	if not byP then
+		byP = {}
+		T.fstat[pid] = byP
+	end
+	local c = byP[sid]
+	if not c then
+		c = {casts = 0, orig = 0, adj = 0, extra = 0, hits = 0, kinds = ""}
+		byP[sid] = c
+	end
+	return c
+end
+
+-- the targets a planned action of a Form reaches: a burst or a ground at the enemies of the cast near its place
+local function suActionTargets(a, cast, FC)
+	if a.t == "burst" or a.t == "ground" then
+		local n = 0
+		for _, f in ipairs(cast.foes or {}) do
+			if a.pos and f.pos and FC.dist and FC.dist(a.pos, f.pos) <= (a.radius or 1) then
+				n = n + 1
+			end
+		end
+		return math.max(1, math.min(n, 12))
+	end
+	return 1
+end
+
+local function suWrap2()
+	local R = rawget(_G, "ChaosSpellRanks")
+	local FE, FC = rawget(_G, "ChaosSpellForms"), rawget(_G, "ChaosSpellFormsCore")
+	local A, AC = rawget(_G, "ChaosSpellAwakening"), rawget(_G, "ChaosSpellAwakeningCore")
+	-- who acts: FE.active(player, spell) runs just before the planner and the hit factor of the same player and spell
+	if FE and FE.active and FC then
+		local origActive = FE.active
+		FE.active = function(player, spellId, ...)
+			T.fsLast = {player and player.getId and player:getId() or 0, spellId, player}
+			return origActive(player, spellId, ...)
+		end
+		if FC.hitFactor then
+			local origHF = FC.hitFactor
+			FC.hitFactor = function(specs, hit, ...)
+				local f = origHF(specs, hit, ...)
+				local who = T.fsLast
+				if who and who[3] and #(specs or {}) > 0 and eligible(who[3]) and not hit.player and hit.amount then
+					local c = suFsCell(who[1], who[2])
+					c.orig, c.adj = c.orig + hit.amount, c.adj + hit.amount * f
+				end
+				return f
+			end
+		end
+		if FC.planAll then
+			local origPlan = FC.planAll
+			FC.planAll = function(specs, cast, ...)
+				local plan = origPlan(specs, cast, ...)
+				local who = T.fsLast
+				if who and who[3] and #(specs or {}) > 0 and eligible(who[3]) and not cast.pvp and not cast.heal then
+					local c = suFsCell(who[1], who[2])
+					c.casts = c.casts + 1
+					local kinds = {}
+					for _, s in ipairs(specs) do
+						kinds[#kinds + 1] = tostring(s.kind or "?")
+					end
+					c.kinds = table.concat(kinds, "+")
+					for _, a in ipairs(plan and plan.actions or {}) do
+						local amt, up = tonumber(a.amount) or 0, tonumber(a.up) or 1
+						local n = suActionTargets(a, cast, FC)
+						if a.t == "hit" then
+							c.extra = c.extra + amt * up
+						elseif a.t == "dot" then
+							c.extra = c.extra + amt * (a.ticks or 1) * up
+						elseif a.t == "burst" then
+							c.extra = c.extra + amt * n * up
+						elseif a.t == "ground" then
+							c.extra = c.extra + amt * n * (a.seconds or 1) * up
+						end
+					end
+				end
+				return plan
+			end
+		end
+	end
+	if AC and AC.plan then
+		local origPlan = AC.plan
+		AC.plan = function(spec, cast, cfg, ...)
+			local out = origPlan(spec, cast, cfg, ...)
+			local pid = cast and cast.caster and cast.caster.id
+			local p = pid and Player(pid)
+			if out and p and cast.spellId and eligible(p) and not cast.pvp then
+				local c = suSigCell(pid, cast.spellId)
+				c.planned, c.limit = c.planned + (out.planned or 0), c.limit + (out.limit or 0)
+				c.minScale = math.min(c.minScale, out.scaled or 1)
+				for _, a in ipairs(out.actions or {}) do
+					if a.op == "pulse" then
+						c.pulses = c.pulses + (a.pulses or 0)
+					end
+				end
+			end
+			return out
+		end
+	end
+	if A and A.onCast then
+		local origCast = A.onCast
+		A.onCast = function(player, b, info, ...)
+			if player and eligible(player) and b and b.spellId and info and A.isAwakened and A.isAwakened(player, b.spellId) then
+				local c = suSigCell(player:getId(), b.spellId)
+				local total = 0
+				for _, h in ipairs(info.hits or {}) do
+					total = total + (tonumber(h.amount) or 0)
+				end
+				if info.pvp then
+					c.pvpCasts = c.pvpCasts + 1
+				else
+					c.casts, c.own = c.casts + 1, c.own + total
+				end
+				T.sigCast = {pid = player:getId(), spell = b.spellId, pvp = info.pvp == true}
+			end
+			local ok, err = pcall(origCast, player, b, info, ...)
+			T.sigCast = nil
+			if not ok then
+				error(err, 0)
+			end
+			return err
+		end
+	end
+	if A and A.run then
+		local origRun = A.run
+		A.run = function(player, spec, a, info, serial, spellId, ...)
+			local cast = T.sigCast
+			if cast and a and cast.pid == (player and player.getId and player:getId()) then
+				local c = suSigCell(cast.pid, cast.spell)
+				c.ops[a.op] = (c.ops[a.op] or 0) + 1
+				if cast.pvp then
+					c.pvpRuns = c.pvpRuns + 1
+				end
+			end
+			return origRun(player, spec, a, info, serial, spellId, ...)
+		end
+	end
+	local ops = FE and FE.ops
+	if ops and R and R.castSpell then
+		local function cellOf(player)
+			local sid = player and player.getId and eligible(player) and R.castSpell(player)
+			return sid and suSigCell(player:getId(), sid) or nil
+		end
+		local od = ops.dealHit
+		ops.dealHit = function(player, target, ctype, amount, ...)
+			local c = cellOf(player)
+			if c then
+				local n = math.floor(math.abs(tonumber(amount) or 0))
+				c.dmg, c.hits = c.dmg + n, c.hits + 1
+				if target and target.isPlayer and target:isPlayer() then
+					c.pvpAmt = c.pvpAmt + n
+				end
+			end
+			return od(player, target, ctype, amount, ...)
+		end
+		local oh = ops.dealHeal
+		ops.dealHeal = function(player, target, amount, ...)
+			local c = cellOf(player)
+			if c then
+				c.heal = c.heal + math.floor(math.abs(tonumber(amount) or 0))
+			end
+			return oh(player, target, amount, ...)
+		end
+		local os_ = ops.addShield
+		ops.addShield = function(target, amount, secs, ...)
+			-- the shield is given to a player the signature names; the owner is the cast's bot (T.sigCast is nil for a later pulse, the shield is instant)
+			local cast = T.sigCast
+			if cast then
+				local c = suSigCell(cast.pid, cast.spell)
+				c.shield = math.max(c.shield, math.floor(tonumber(amount) or 0))
+			end
+			return os_(target, amount, secs, ...)
+		end
+	end
+end
+
 local function suWrap()
 	if SU.wrapped then
 		return
 	end
 	SU.wrapped = true
+	pcall(suWrap2)
 	local R = rawget(_G, "ChaosSpellRanks")
 	if R and R.hitFactor and R.castSpell then
 		local orig = R.hitFactor
@@ -4943,7 +5158,7 @@ local function suWrap()
 			if ctype and ctype ~= COMBAT_NONE and origin == ORIGIN_SPELL and eligible(attacker) then
 				local sid = R.castSpell(attacker)
 				if sid then
-					local c = suCell(attacker:getId(), sid).rank
+					local c = suCell(attacker:getId(), sid, suPvp(attacker, creature, ctype)).rank
 					c[1], c[2] = c[1] + 1, c[2] + f
 				end
 			end
@@ -4962,11 +5177,11 @@ local function suWrap()
 	end
 	if C and C.hitFactor and R and R.castSpell then
 		local orig = C.hitFactor
-		C.hitFactor = function(attacker, creature, ...)
-			local f = orig(attacker, creature, ...)
+		C.hitFactor = function(attacker, creature, origin, primaryType, ...)
+			local f = orig(attacker, creature, origin, primaryType, ...)
 			if f ~= 1 and eligible(attacker) then
 				local pid = attacker:getId()
-				local c = suCell(pid, R.castSpell(attacker)).combo
+				local c = suCell(pid, R.castSpell(attacker), suPvp(attacker, creature, primaryType)).combo
 				c[1], c[2], c[3] = c[1] + 1, c[2] + f, math.max(c[3], f)
 				local row = SU.lastRow[pid]
 				SU.lastRow[pid] = nil
@@ -4985,10 +5200,10 @@ local function suWrap()
 	local A = rawget(_G, "ChaosSpellAwakening")
 	if A and A.hitFactor and R and R.castSpell then
 		local orig = A.hitFactor
-		A.hitFactor = function(attacker, ...)
-			local f = orig(attacker, ...)
+		A.hitFactor = function(attacker, creature, origin, primaryType, ...)
+			local f = orig(attacker, creature, origin, primaryType, ...)
 			if f ~= 1 and eligible(attacker) then
-				local c = suCell(attacker:getId(), R.castSpell(attacker)).awake
+				local c = suCell(attacker:getId(), R.castSpell(attacker), suPvp(attacker, creature, primaryType)).awake
 				c[1], c[2], c[3], c[4] = c[1] + 1, c[2] + f, math.min(c[3], f), math.max(c[4], f)
 			end
 			return f
@@ -4999,7 +5214,7 @@ local function suWrap()
 		local orig = CL.spellHook
 		CL.spellHook = function(owner, summon, creature, amount, spellId, ...)
 			if spellId and eligible(owner) then
-				local c = suCell(owner:getId(), spellId).hit
+				local c = suCell(owner:getId(), spellId, suPvp(owner, creature)).hit
 				c[1], c[2], c[3] = c[1] + 1, c[2] + (tonumber(amount) or 0), math.max(c[3], tonumber(amount) or 0)
 			end
 			return orig(owner, summon, creature, amount, spellId, ...)
@@ -5146,11 +5361,21 @@ function commands.spellup(player, arg)
 						kinds[#kinds + 1] = entry[tier] and entry[tier][pick] and entry[tier][pick].kind or "?"
 					end
 				end
-				rows[#rows + 1] = {sid, m.name, m.heal and 1 or 0, kinds}
+				local row = {sid, m.name, m.heal and 1 or 0, kinds}
+				local AWE = rawget(_G, "ChaosSpellAwakening")
+				local spec = AWE and AWE.entry and AWE.entry(sid)
+				if spec and spec.parts then -- phase 8b: the kinds of the awakened signature of the spell, "PULSE+MARK"
+					local names = {}
+					for _, part in ipairs(spec.parts) do
+						names[#names + 1] = part.kind
+					end
+					row[5] = table.concat(names, "+")
+				end
+				rows[#rows + 1] = row
 			end
 		end
 		table.sort(rows, function(a, b) return a[1] < b[1] end)
-		while #rows > 30 do
+		while #rows > 40 do
 			rows[#rows] = nil
 		end
 		tell(player, "spellup", {forms = rows})
@@ -5206,6 +5431,207 @@ function commands.spellup(player, arg)
 			end
 		end
 		tell(player, "spellup", {mob = made, name = name})
+	elseif w.what == "sig" then
+		-- phase 8b: per spell {id, casts, own (the casts' damage), planned, cap, damage the signature dealt, heal, biggest shield, hits, "op=n,..", PvP casts,
+		-- PvP runs, PvP amount, lowest scale, pulses planned}
+		local rows = {}
+		for sid, c in pairs(T.sig[pid] or {}) do
+			local names = {}
+			for k, v in pairs(c.ops) do
+				names[#names + 1] = k .. "=" .. v
+			end
+			table.sort(names)
+			rows[#rows + 1] = {sid, c.casts, c.own, c.planned, c.limit, c.dmg, c.heal, c.shield, c.hits, table.concat(names, ","), c.pvpCasts, c.pvpRuns, c.pvpAmt,
+				math.floor(c.minScale * 1000) / 1000, c.pulses}
+		end
+		table.sort(rows, function(a, b) return a[1] < b[1] end)
+		while #rows > 12 do
+			rows[#rows] = nil
+		end
+		local AW = rawget(_G, "ChaosSpellAwakening")
+		local wins, marks = 0, 0
+		if AW then
+			wins = #(AW.windows and AW.windows[pid] or {})
+			for _, m in pairs(AW.marks or {}) do
+				if m.owner == pid then
+					marks = marks + 1
+				end
+			end
+		end
+		if w.clear then
+			T.sig[pid] = {}
+		end
+		tell(player, "spellup", {sig = rows, windows = wins, marks = marks, cleared = w.clear or nil})
+	elseif w.what == "fstat" then
+		-- per spell a Form acted on: {id, casts, hits before the Forms, the same with the Forms' main factors, what the planner added, kinds, hits landed
+		-- (the combat log), the damage they landed}
+		local rows = {}
+		for sid, c in pairs(T.fstat[pid] or {}) do
+			local hit = (SU.log[pid] and SU.log[pid][sid] and SU.log[pid][sid].hit) or {0, 0, 0}
+			rows[#rows + 1] = {sid, c.casts, math.floor(c.orig), math.floor(c.adj), math.floor(c.extra), c.kinds, hit[1], hit[2]}
+		end
+		table.sort(rows, function(a, b) return a[1] < b[1] end)
+		while #rows > 10 do
+			rows[#rows] = nil
+		end
+		if w.clear then
+			T.fstat[pid] = {}
+			if SU.log[pid] then
+				SU.log[pid] = {}
+			end
+		end
+		tell(player, "spellup", {fstat = rows, cleared = w.clear or nil})
+	elseif w.what == "pick" then
+		-- TEST ONLY: the Forms written into the spell's packed state (no price, no window); the rank stays as it is
+		local m = R.catalog and R.catalog[w.spell]
+		if not st or not m then
+			tell(player, "spellup", {err = "no such ranked spell or the bot is not loaded"})
+			return
+		end
+		local rank, _, _, aw = P.unpack(player:getStorageValue(k.rankBase + w.spell))
+		player:setStorageValue(k.rankBase + w.spell, P.pack(rank, w.f1, w.f2, aw))
+		tell(player, "spellup", {picked = {w.spell, rank, w.f1, w.f2}, name = m.name})
+	elseif w.what == "awk" then
+		-- the awakened slots (or one spell): id, name, rank, Form I, Form II, awakened bit, known by class (the awakening's own question), rank in the
+		-- ranks table of the server
+		local AW = rawget(_G, "ChaosSpellAwakening")
+		local list = {}
+		if w.spell then
+			list[1] = w.spell
+		elseif AW and AW.slots then
+			for _, id in ipairs(AW.slots(player)) do
+				if id > 0 then
+					list[#list + 1] = id
+				end
+			end
+		end
+		local rows = {}
+		for _, sid in ipairs(list) do
+			local m = R.catalog and R.catalog[sid]
+			local rank, f1, f2, aw = P.unpack(player:getStorageValue(k.rankBase + sid))
+			rows[#rows + 1] = {sid, m and m.name or "?", rank, f1, f2, aw and 1 or 0, (m and suKnows(player, m)) and 1 or 0, st and st.rank[sid] or -1}
+		end
+		local seals = AW and AW.seals and AW.seals(player) or {}
+		local voc = player.getVocation and player:getVocation()
+		tell(player, "spellup", {awk = rows, slots = AW and AW.slots and AW.slots(player) or {}, seals = {seals.waystone, seals.rift, seals.pinnacle},
+			voc = voc and voc:getId() or 0, vocName = voc and voc.getName and voc:getName() or "?"})
+	elseif w.what == "class" then
+		-- TEST ONLY: the vocation changed on the game's own path (what the Oracle and the store call)
+		local voc, C = w.voc and Vocation(w.voc) or nil, rawget(_G, "ChaosClasses")
+		if w.name then
+			for id = 1, 60 do
+				local v = Vocation(id)
+				if v and tostring(v:getName()):lower() == w.name then
+					voc = v
+					break
+				end
+			end
+		end
+		if not voc or not C or not C.applyVocation then
+			tell(player, "spellup", {err = "no such vocation or no class system"})
+			return
+		end
+		local before = player:getVocation():getId()
+		local ok, err = pcall(C.applyVocation, player, voc)
+		print(string.format("[tester-helper] class change %d -> %d of %s (TEST ONLY, spellup class)", before, voc:getId(), player:getName()))
+		tell(player, "spellup", {class = {before, player:getVocation():getId()}, ok = ok, err = (not ok) and tostring(err):sub(1, 90) or nil, name = voc:getName()})
+	elseif w.what == "source" then
+		-- TEST ONLY: the Seal credit of a content, run by the content's own credit function with the bot as its only player (the map, the run or
+		-- the fight themselves are not played): waystone = ChaosWaystoneEndgame.creditFirstClear / creditSeals of a map boss's death, rift = RF.greaterSettle
+		-- of a Greater Rift run, pinnacle = the kill of the bot's own pinnacle boss (the arena the bot stands in, the real death event)
+		local AW = rawget(_G, "ChaosSpellAwakening")
+		if not (AW and AW.seals) then
+			tell(player, "spellup", {err = "no awakening"})
+			return
+		end
+		local function triple()
+			local s = AW.seals(player)
+			return {s.waystone, s.rift, s.pinnacle}
+		end
+		local before, out = triple(), {source = w.kind}
+		if w.kind == "waystone" then
+			local E, WA = rawget(_G, "ChaosWaystoneEndgame"), rawget(_G, "ChaosWaystoneAtlas")
+			if not (E and E.creditFirstClear and E.creditSeals and WA and WA.playersInMap) then
+				tell(player, "spellup", {err = "no waystone endgame"})
+				return
+			end
+			local fake, orig = 99999, WA.playersInMap
+			WA.playersInMap = function(map)
+				if map == fake then
+					return {player}
+				end
+				return orig(map)
+			end
+			local ok, err = pcall(function()
+				local firsts
+				if w.first then
+					local _, f = E.creditFirstClear(fake, w.tier)
+					firsts = f
+					out.firstPaid = f and f[pid] == true
+				end
+				out.credited = E.creditSeals(fake, w.tier, firsts)
+			end)
+			WA.playersInMap = orig
+			if not ok then
+				out.err = tostring(err):sub(1, 90)
+			end
+			out.tier = w.tier
+		elseif w.kind == "rift" then
+			local RF, cfg, RC = rawget(_G, "ChaosRift"), rawget(_G, "ChaosRiftConfig"), rawget(_G, "ChaosRiftCore")
+			if not (RF and RF.greaterSettle and cfg and RC and RC.greaterKey) then
+				tell(player, "spellup", {err = "no greater rift"})
+				return
+			end
+			local run = {settled = false, greater = w.g, key = RC.greaterKey(cfg, w.g, math.random, false), players = {[pid] = {id = pid, guid = player:getGuid(), name = player:getName()}}, startTime = os.time() - 900,
+				limit = 1200, finishers = {}, size = 1, openerGuid = -1}
+			local ok, res = pcall(RF.greaterSettle, run, not w.fail)
+			out.shown = RC.shownTier(cfg, run.key)
+			out.ok = not w.fail
+			if not ok then
+				out.err = tostring(res):sub(1, 90)
+			end
+		else
+			local PN = rawget(_G, "ChaosPinnacle")
+			local boss = PN and PN.bossOf and PN.bossOf(player)
+			if not boss and PN and PN.enter and PN.testerSet and not (PN.isInside and PN.isInside(player)) then
+				-- not inside yet: a whole set (TEST ONLY, the highest boss the level opens) and the Keeper's own Open call; the boss comes a few seconds later
+				local key, why = PN.testerSet(player)
+				if not key then
+					tell(player, "spellup", {err = tostring(why or "no set"):sub(1, 90)})
+					return
+				end
+				local okE, whyE = PN.enter(player, key)
+				out.entered, out.key, out.waiting = okE == true, key, okE == true
+				if not okE then
+					out.err = tostring(whyE or "refused"):sub(1, 90)
+				end
+				out.before, out.after = before, triple()
+				tell(player, "spellup", out)
+				return
+			end
+			if not boss then
+				if PN and PN.isInside and PN.isInside(player) then
+					out.waiting = true -- inside the arena, the boss has not come yet
+					out.before, out.after = before, triple()
+					tell(player, "spellup", out)
+					return
+				end
+				tell(player, "spellup", {err = "not inside a pinnacle fight with a boss"})
+				return
+			end
+			local hp = boss:getHealth()
+			pcall(boss.setHealth, boss, math.min(hp, 100))
+			local ok, err = pcall(doTargetCombatHealth, player:getId(), boss, COMBAT_PHYSICALDAMAGE, -5000, -5000, CONST_ME_NONE)
+			out.boss = boss:getName()
+			out.hit = ok
+			if not ok then
+				out.err = tostring(err):sub(1, 90)
+			end
+			out.pending = true -- the death event runs success() in an addEvent: the Seals arrive a moment later; the check reads them again
+		end
+		out.before, out.after = before, triple()
+		print(string.format("[tester-helper] seal source %s for %s (TEST ONLY)", w.kind, player:getName()))
+		tell(player, "spellup", out)
 	elseif w.what == "near" then
 		-- the SP of the spell just under the cost of its next rank (a rank-up on the next kill that credits it)
 		local m = R.catalog and R.catalog[w.spell]
@@ -5243,7 +5669,7 @@ function commands.spellup(player, arg)
 		for i = 0, 9 do
 			player:setStorageValue(k.awakenedSlots + i, 0)
 		end
-		SU.log[pid], SU.fires[pid] = {}, {}
+		SU.log[pid], SU.fires[pid], T.sig[pid], T.fstat[pid] = {}, {}, {}, {}
 		tell(player, "spellup", {cleared = true})
 	end
 end

@@ -13,6 +13,8 @@ return {
 	-- dps x (1 - auto share) x 2 s) from class_dps_model.py.
 	-- O475 (2026-11-10): regenerated for the damage of the balance round (class_dps_model.py after O472 to O474: median hit 7169 -> 9993
 	-- at 1000, 576 -> 464 at 100, 3645 -> 3658 at 500; the pool takes back what the weapon growth gives at low levels).
+	-- O707 (2026-11-21): regenerated for the lower median (weapon style power share 0.20, skill factor max 1.0): 750 5971 -> 5928,
+	-- 1500 14449 -> 14353, 2000 20053 -> 20497, 2500 24884 -> 25436.
 	hitCurve = {
 		{level = 1, hit = 4},
 		{level = 10, hit = 41},
@@ -22,11 +24,11 @@ return {
 		{level = 200, hit = 1138},
 		{level = 300, hit = 1816},
 		{level = 500, hit = 3658},
-		{level = 750, hit = 5971},
+		{level = 750, hit = 5928},
 		{level = 1000, hit = 9993},
-		{level = 1500, hit = 14449},
-		{level = 2000, hit = 20053},
-		{level = 2500, hit = 24884}
+		{level = 1500, hit = 14353},
+		{level = 2000, hit = 20497},
+		{level = 2500, hit = 25436}
 	},
 
 	-- The median WEAPON hit by monster level (O501): the size of the hit that armour is measured against for a melee or ranged

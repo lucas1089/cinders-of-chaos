@@ -2983,12 +2983,14 @@ with the level.
 
 Other classes at the same levels (unchanged): the two-handed Berserker 44-46% of its rotation (3 s swing); Thief
 line 54-58% (1.6 s swing), Templar line about 50%, Monk line 58%. The factor never cuts, so below its share a kind is lifted and above
-it stays as it is. Target used: **30%** of the reference class's single-target rotation for the weapon classes (25-35%), **15%**
+it stays as it is. Target used: **30%** (20% since O707) of the reference class's single-target rotation for the weapon classes (25-35%), **15%**
 for a caster's wand (the measured tables above had the wand at 13-23% of a caster's total). The Deadeye (rotation 2168 at level
 1000) ends at 21% and the Beastmaster (663; his companions are not in the model) at 69% with the Ranger's factor (54% before; 79% against 49% at
 level 2000): a known side effect of one factor per weapon kind, to watch in game.
 
-**The skill.** `(skill / typical skill of the level) ^ 0.5`, clamped 0.7 .. 1.6, on top of the engine's linear term (melee and
+**O707 (2026-11-21, owner decision on O706, options A and B together; the tables of this section are the numbers of 2026-10-23).** The share of the weapon kinds is **20%** (was 30%: `POWER_KINDS` in `weapon_sim.py`; the Ranger's factor 1.63 -> 1.09 at 1000, 1.98 -> 1.32 at 2000, 1.00 up to 700; melee and fist were at 1.00 already and stay; the wand's 15% is unchanged) and the skill factor is clamped **0.7 .. 1.0** (was 0.7 .. 1.6): above the typical skill the engine's linear term is the whole gain (+10 skill at level 1000 is +5.6%), below it the factor still cuts. The numbers of the skill table below are the 2026-10-23 ones, with the old cap.
+
+**The skill (2026-10-23, cap changed by O707).** `(skill / typical skill of the level) ^ 0.5`, clamped 0.7 .. 1.6, on top of the engine's linear term (melee and
 launchers; a wand keeps the magic level factor). Effect at level 1000 (typical skill 140, melee, mean hit before: 477):
 
 | Skill | Engine alone | With the skill factor |

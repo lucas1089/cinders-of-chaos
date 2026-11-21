@@ -1,0 +1,267 @@
+# Chaos: the client pack is read and inflated on two threads (O705; client/BASE.md "0206"; src/framework/util/chaospack.h of 0102,
+# header only, no other file; after 0001-0205). Owner 2026-11-21: after Play the game takes about 10 s to open. The start reads
+# chaos.pack (about 0.9 GB: Tibia.dat / Tibia.spr shards, modules, data), GCM-decrypts it and inflates it into one buffer before
+# any window exists, and 0102 did the three steps one chunk after the other: read + decrypt + inflate. Now one thread reads and
+# decrypts a chunk ahead (a ring of four 4 MB chunks), the calling thread inflates: the start takes the longer of the two, not
+# their sum. Measured (client/tools/chaospack_test.cpp builds it; a 200 MB sprite-like ZIP, 58 MB pack, one core each): with a
+# disk of 120 MB/s 1.32 s -> 0.70 s, of 400 MB/s 0.88 s -> 0.74 s, from memory 0.72 s -> 0.75 s (nothing to overlap). Nothing else
+# changes: same format, same checks (the tag, the exact end of the zlib stream, the exact length, `out` wiped on any failure),
+# same signature; a pack of one chunk and a system that cannot make a thread run the old order on the calling thread. `read` is
+# called from the second thread only (after the header), always in order. The test adds a 40 MB pack (ten chunks, more than the
+# ring), an I/O error in the middle, an unreadable tag and a corrupt first / last chunk, and runs clean under ThreadSanitizer and
+# AddressSanitizer. The build links pthread (the engine already does).
+--- a/src/framework/util/chaospack.h
++++ b/src/framework/util/chaospack.h
+@@ -23,10 +23,13 @@
+ 
+ #include <algorithm>
+ #include <climits>
++#include <condition_variable>
+ #include <cstdint>
+ #include <cstring>
+ #include <limits>
++#include <mutex>
+ #include <string>
++#include <thread>
+ #include <vector>
+ 
+ #include <openssl/evp.h>
+@@ -191,11 +194,19 @@
+ //
+ // One output buffer of the header's plaintext length (the ZIP) is allocated up front; the file is read in 4 MB
+ // chunks, each chunk is GCM-decrypted in place and fed straight to inflate, which writes into that buffer. Peak memory
+-// is the ZIP size + one 4 MB chunk + the inflate window: no ciphertext copy, no second plaintext copy.
++// is the ZIP size + a ring of four 4 MB chunks + the inflate window: no ciphertext copy, no second plaintext copy.
++//
++// Two threads (base patch 0206, O705): the calling thread inflates, a second one reads the file and GCM-decrypts, a chunk
++// ahead of it (a ring of SLOTS chunks). The work of the two is about equal on a warm disk and the read is far longer on a
++// cold one, so the start takes the longer of the two instead of their sum. `read` is called from the second thread only
++// (after the header, which the calling thread reads), always in order. When the thread cannot be made the same steps run
++// one after the other on the calling thread.
+ //
+ // inflate runs on bytes the tag has not authenticated yet (zlib is hardened for any input; the output buffer is fixed
+ // so it cannot overrun). Only when the whole body is read, the tag verifies, inflate ended exactly at the end of the
+ // body and produced exactly the declared length is `out` kept. On any failure `out` is wiped and emptied.
++constexpr size_t SLOTS = 4; // chunks of READ_CHUNK between the reading thread and the inflating one
++
+ template <typename Read>
+ inline bool decryptStream(const std::string& clientKey, uint64_t fileSize, Read&& read, std::vector<uint8_t>& out)
+ {
+@@ -204,7 +215,7 @@
+     z_stream zs;
+     std::memset(&zs, 0, sizeof(zs));
+     bool zInit = false;
+-    std::vector<uint8_t> chunk;
++    std::vector<std::vector<uint8_t>> slots;
+     out.clear();
+     try {
+         do {
+@@ -240,28 +251,46 @@
+             zInit = true;
+ 
+             out.resize(static_cast<size_t>(plainLen));
+-            chunk.resize(static_cast<size_t>(std::min<uint64_t>(READ_CHUNK, bodyLen)));
+-            unsigned char spare = 0; // next_out must not be null even when there is no room left
+-            uint64_t produced = 0;
++            const size_t chunkSize = static_cast<size_t>(std::min<uint64_t>(READ_CHUNK, bodyLen));
++            const size_t nSlots = bodyLen > chunkSize ? SLOTS : 1;
++            slots.resize(nSlots);
++            for (auto& s : slots)
++                s.resize(chunkSize);
++            std::vector<size_t> slotLen(nSlots, 0);
++
++            // ---- the reading side: file bytes, then GCM, one chunk at a time; finally the tag
+             uint64_t left = bodyLen;
+-            bool ended = false;
+-            bool bad = false;
+-            while (left > 0 && !bad) {
+-                const size_t n = static_cast<size_t>(std::min<uint64_t>(chunk.size(), left));
++            auto readChunk = [&](size_t slot) -> bool {
++                const size_t n = static_cast<size_t>(std::min<uint64_t>(chunkSize, left));
+                 int outLen = 0;
+-                if (!read(chunk.data(), n) ||
+-                    EVP_DecryptUpdate(ctx, chunk.data(), &outLen, chunk.data(), static_cast<int>(n)) != 1 ||
+-                    outLen != static_cast<int>(n)) {
+-                    bad = true;
+-                    break;
+-                }
++                if (!read(slots[slot].data(), n) ||
++                    EVP_DecryptUpdate(ctx, slots[slot].data(), &outLen, slots[slot].data(), static_cast<int>(n)) != 1 ||
++                    outLen != static_cast<int>(n))
++                    return false;
+                 left -= n;
+-                if (ended) { // bytes after the end of the zlib stream
+-                    bad = true;
+-                    break;
+-                }
+-                zs.next_in = chunk.data();
+-                zs.avail_in = static_cast<uInt>(n);
++                slotLen[slot] = n;
++                return true;
++            };
++            auto checkTag = [&]() -> bool {
++                unsigned char tag[TAG_LEN];
++                if (!read(tag, TAG_LEN))
++                    return false;
++                if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, static_cast<int>(TAG_LEN), tag) != 1)
++                    return false;
++                unsigned char dummy[16];
++                int finalLen = 0;
++                return EVP_DecryptFinal_ex(ctx, dummy, &finalLen) == 1; // authentication
++            };
++
++            // ---- the inflating side: one chunk into the output buffer
++            unsigned char spare = 0; // next_out must not be null even when there is no room left
++            uint64_t produced = 0;
++            bool ended = false;
++            auto inflateChunk = [&](size_t slot) -> bool {
++                if (ended) // bytes after the end of the zlib stream
++                    return false;
++                zs.next_in = slots[slot].data();
++                zs.avail_in = static_cast<uInt>(slotLen[slot]);
+                 while (zs.avail_in > 0) {
+                     const uint64_t room = plainLen - produced;
+                     const uInt avail = static_cast<uInt>(std::min<uint64_t>(room, UINT_MAX));
+@@ -272,26 +301,118 @@
+                     if (r == Z_STREAM_END) {
+                         ended = true;
+                         if (zs.avail_in > 0)
+-                            bad = true; // trailing bytes inside this chunk
++                            return false; // trailing bytes inside this chunk
+                         break;
+                     }
+-                    if (r != Z_OK) { // corrupt stream, or more output than the header declared (Z_BUF_ERROR)
+-                        bad = true;
++                    if (r != Z_OK) // corrupt stream, or more output than the header declared (Z_BUF_ERROR)
++                        return false;
++                }
++                return true;
++            };
++
++            bool good = true;
++            std::mutex mu;
++            std::condition_variable cv;
++            size_t filled = 0;    // chunks the reading side has put in the ring (guarded by mu)
++            size_t drained = 0;   // chunks the inflating side is done with (guarded by mu)
++            bool readerDone = false;
++            bool readerOk = false;
++            bool stop = false;    // the inflating side failed: the reading side leaves
++            auto reader = [&]() {
++                bool rok = true;
++                size_t i = 0;
++                while (left > 0) {
++                    {
++                        std::unique_lock<std::mutex> lk(mu);
++                        cv.wait(lk, [&] { return stop || filled - drained < nSlots; });
++                        if (stop) {
++                            rok = false;
++                            break;
++                        }
++                    }
++                    if (!readChunk(i % nSlots)) {
++                        rok = false;
+                         break;
+                     }
++                    ++i;
++                    {
++                        std::lock_guard<std::mutex> lk(mu);
++                        ++filled;
++                    }
++                    cv.notify_all();
+                 }
+-            }
+-            if (bad || !ended || produced != plainLen)
+-                break;
++                if (rok)
++                    rok = checkTag();
++                {
++                    std::lock_guard<std::mutex> lk(mu);
++                    readerDone = true;
++                    readerOk = rok;
++                }
++                cv.notify_all();
++            };
+ 
+-            unsigned char tag[TAG_LEN];
+-            if (!read(tag, TAG_LEN))
+-                break;
+-            if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, static_cast<int>(TAG_LEN), tag) != 1)
+-                break;
+-            unsigned char dummy[16];
+-            int finalLen = 0;
+-            if (EVP_DecryptFinal_ex(ctx, dummy, &finalLen) != 1) // authentication failed
++            std::thread th;
++            bool threaded = nSlots > 1;
++            if (threaded) {
++                try {
++                    th = std::thread(reader);
++                } catch (...) {
++                    threaded = false; // no thread: the same steps one after the other
++                }
++            }
++            // whatever happens below, the reading thread is told to leave and is joined before its locals go
++            struct Joiner {
++                std::thread& t;
++                std::mutex& m;
++                std::condition_variable& c;
++                bool& flag;
++                ~Joiner()
++                {
++                    if (!t.joinable())
++                        return;
++                    {
++                        std::lock_guard<std::mutex> lk(m);
++                        flag = true;
++                    }
++                    c.notify_all();
++                    t.join();
++                }
++            } joiner{th, mu, cv, stop};
++            if (threaded) {
++                size_t i = 0;
++                for (;;) {
++                    {
++                        std::unique_lock<std::mutex> lk(mu);
++                        cv.wait(lk, [&] { return filled > drained || readerDone; });
++                        if (filled == drained) // the reading side is done and everything was inflated
++                            break;
++                    }
++                    if (!inflateChunk(i % nSlots)) {
++                        good = false;
++                        break;
++                    }
++                    ++i;
++                    {
++                        std::lock_guard<std::mutex> lk(mu);
++                        ++drained;
++                    }
++                    cv.notify_all();
++                }
++                if (!good) {
++                    {
++                        std::lock_guard<std::mutex> lk(mu);
++                        stop = true;
++                    }
++                    cv.notify_all();
++                }
++                th.join();
++                good = good && readerOk;
++            } else {
++                while (left > 0 && good)
++                    good = readChunk(0) && inflateChunk(0);
++                good = good && checkTag();
++            }
++            if (!good || !ended || produced != plainLen)
+                 break;
+             ok = true;
+         } while (false);
+@@ -302,7 +423,8 @@
+         inflateEnd(&zs);
+     if (ctx)
+         EVP_CIPHER_CTX_free(ctx);
+-    std::fill(chunk.begin(), chunk.end(), 0);
++    for (auto& s : slots)
++        std::fill(s.begin(), s.end(), 0);
+     if (!ok) {
+         std::fill(out.begin(), out.end(), 0);
+         out.clear();

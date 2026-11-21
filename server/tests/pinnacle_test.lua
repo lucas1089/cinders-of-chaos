@@ -757,7 +757,8 @@ ok(not (bossM.events.ChaosTierRollBoss or bossM.events.ChaosTierRollMagic or bos
 	"O694: the pinnacle boss rolls no tier or boss modifiers")
 eq(attached[#attached].opts.solo, true, "the mechanics know it is a solo fight")
 -- O698: the factor is worked out for the fight's size: the mechanics are told the health of this size over the monster's own
-eq(attached[#attached].opts.size, 1, "O698: the mechanics are told the size of the fight")
+eq(attached[#attached].opts.partySize, 1, "O698: the mechanics are told the size of the fight")
+eq(attached[#attached].opts.size, nil, "O703: the party size is not the boss footprint (the shapes keep the profile size)")
 ok(attached[#attached].opts.healthScale > 0, "O698: the mechanics are told the health scale of the fight")
 -- its hits x the damage curve
 local hit = registry.ChaosPinnacleHit.onHealthChange
@@ -851,7 +852,8 @@ bossM = Monster(run.bossId)
 eq(bossM.maxHp, math.floor(K.bossHealth(pcfg.bosses[2], 3) * 0.8), "health for three x the mechanics factor")
 eq(bossM.hp, bossM.maxHp, "O681: the party's boss starts at its full health (the engine's addHealth takes a damage type: the one-argument call healed nothing and the boss stood at the solo value)")
 eq(attached[#attached].opts.solo, false, "the mechanics know it is a party fight")
-eq(attached[#attached].opts.size, 3, "O698: the mechanics are told the party size")
+eq(attached[#attached].opts.partySize, 3, "O698: the mechanics are told the party size")
+eq(attached[#attached].opts.size, nil, "O703: a party of three does not grow the telegraphs")
 ok(attached[#attached].opts.healthScale > 1, "O698: a party's boss is told its party health (" .. tostring(attached[#attached].opts.healthScale) .. ")")
 local hit2 = hit(b2, bossM, -1000, 1, 0, 1, 0)
 eq(hit2, math.floor(-1000 * K.scale(pcfg.damage, 3)), "the damage curve for three")

@@ -1249,7 +1249,12 @@ local function spawnBoss(run)
 	-- the phases; their hits go through shareHit (the lethal-hit catch)
 	if ChaosBossMech and ChaosBossMech.attach then
 		local rid, slot = run.id, run.slot
+		-- O703: the health factor is worked out for this group's size and the boss's health curve (the profile's ref is the party of
+		-- five: a group of 1-4 got the factor of five), so Gorvath takes 495 s alone, 421 with five
 		pcall(ChaosBossMech.attach, m, def.boss, {level = cfg.model.refLevel, tiles = run.L.floorList,
+			partySize = run.size, healthCurve = function(n)
+				return B.healthMult(cfg, n)
+			end,
 			players = function()
 				local r = GB.runs[slot]
 				return (r and r.id == rid) and arenaPlayers(r) or {}

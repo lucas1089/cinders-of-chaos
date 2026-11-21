@@ -43,11 +43,79 @@ real_arena = B.ARENA_BOSSES
 B.ARENA_BOSSES = (('malgrath_the_drowned_crown.xml', 'malgrath, the drowned crown', 800, 5, 400, 0.85, 400),)
 ok(any('arena boss malgrath_the_drowned_crown.xml health' in b for b in B.problems()), 'a boss at 400 s instead of 360 is reported')
 B.ARENA_BOSSES = real_arena
+# the pocket bosses (O704): 300 s alone and 200 s for five of the median class at level 300, the boss heals a tenth of its damage, adds and totems at
+# the pocket's size, the world curve of the files in pocketboss_config.lua, and the kill time of every size from the real core
+ok(B.POCKET_SECONDS == (300, 200) and B.POCKET_PLAYERS == 5 and B.POCKET_HEAL_SHARE == 0.10, 'the pocket plan: 300 s alone, 200 s for five, heal 10%')
+pn = B.pocket_numbers()
+ok(pn['worldLevel'] == 300 and len(pn['bosses']) == 5 and pn['limit'] == 900, 'five world pocket bosses at level 300, limit 900 s')
+solo, extra = B.pocket_plan(300, 100)
+ok(abs(solo - 300 * (B.one_target(300) * 0.85 - 100)) < 1e-6 and 223000 < solo < 224200 and abs(extra - 0.673) < 0.002, 'the pocket health 223,5xx and the curve 0.673 (%.0f %.4f)' % (solo, extra))
+ok(B.pocket_problems() == [], 'the committed pocket numbers are the plan: %s' % B.pocket_problems()[:3])
+for pb in pn['bosses']:
+    ok(pb['xmlHeal'] > B.one_target(300), '%s: the monster file heals %.0f a second, above the median class (%.0f): the reason for the scale' % (pb['name'], pb['xmlHeal'], B.one_target(300)))
+    ok(pb['before']['1']['seconds'] is None and pb['after']['1']['seconds'] is not None, '%s: alone it could not be killed before (the heal), 300 s after' % pb['name'])
+    ok(abs(pb['after']['1']['seconds'] / 300 - 1) < 0.03 and abs(pb['after']['5']['seconds'] / 200 - 1) < 0.03, '%s: %.0f s alone, %.0f s with five' % (pb['name'], pb['after']['1']['seconds'], pb['after']['5']['seconds']))
+    ok(pb['before']['5']['seconds'] > 540, '%s: five took %.0f s before, over 60%% of the 900 s limit' % (pb['name'], pb['before']['5']['seconds']))
+import copy  # noqa: E402
+real_pocket = list(B._pocket)
+
+
+def mutated(fn):
+    d = copy.deepcopy(real_pocket[0])
+    fn(d)
+    B._pocket[:] = [d]
+    out = B.pocket_problems()
+    B._pocket[:] = real_pocket
+    return out
+
+
+ok(any('pocket health alone' in x for x in mutated(lambda d: d['pocket'].update(health=d['pocket']['health'] * 1.1))), 'a pocket health 10% off is reported')
+ok(any('pocket health for five' in x for x in mutated(lambda d: d['pocket'].update(perExtra=0.4))), 'a party curve of 0.4 is reported')
+ok(any('heals' in x for x in mutated(lambda d: d['bosses'][3]['profile']['pocket'].update(healScale=1.0))), 'a boss that keeps the file heal (Nyxareth, 1,250 a second) is reported')
+ok(any('health curve' in x for x in mutated(lambda d: d['bosses'][0].update(settings=d['bosses'][0]['defaults']))), 'the world curve of 3% on a boss file is reported')
+ok(any('the median class kills it' in x for x in mutated(lambda d: d['bosses'][1]['after']['1'].update(seconds=420))), 'a kill time of 420 s against 300 is reported')
+ok(any('the median class kills it' in x for x in mutated(lambda d: d['bosses'][1]['after']['5'].update(seconds=300))), 'a party of five at 300 s against 200 is reported')
+ok(any('floor' in x for x in mutated(lambda d: d['bosses'][2]['after']['3'].update(hpMult=0.6))), 'a factor on the floor is reported')
+ok(any('weakest class' in x for x in mutated(lambda d: d['bosses'][0]['weak'].update({'1': 600}))), 'a weakest class over the limit is reported')
+ok(any('adds' in x for x in mutated(lambda d: d['bosses'][0]['profile']['adds'][0].update(health=400000))), 'adds of the event\'s size in a pocket are reported')
+ok(any('totem' in x for x in mutated(lambda d: [m.update(totemHealth=120000) for m in d['bosses'][3]['profile']['timed'] if 'totemHealth' in m])), 'a totem of the event\'s size is reported')
+ok(any('no pocket profile' in x for x in mutated(lambda d: d['bosses'][4].update(profile=None))), 'a world boss with no pocket profile is reported')
+ok(any('level' in x for x in mutated(lambda d: d.update(worldLevel=500))), 'a pocket level that is not the world pocket\'s is reported')
 # a number off by more than the tolerance is found
 real = B.committed_mults
 B.committed_mults = lambda: dict(real(), vault=real()['vault'] * 1.1)
 ok(any('vault healthMult' in b for b in B.problems()), 'a healthMult 10% off is reported')
 B.committed_mults = real
+# O703: the mechanics' health factor of the fight's own size (the real core through tools/party_factor_numbers.lua)
+import copy  # noqa: E402
+
+nums = B.party_numbers()
+ok(B.party_problems(nums) == [] and B.callsite_problems() == [], 'the party factor and the call sites hold: %s' % (B.party_problems(nums) + B.callsite_problems())[:3])
+fights = {f['key']: f for f in nums['fights']}
+ok(len(fights) == 9 and [f['kind'] for f in nums['fights']].count('dungeon') == 5, 'five dungeon bosses, Gorvath and three Omen guardians')
+five = [f['rows']['5'] for f in nums['fights'] if f['kind'] == 'dungeon']
+ok(all(abs(r['final'] - 102) < 1.5 for r in five), 'a group of five kills each dungeon boss in 102 s: %s' % [round(r['final'], 1) for r in five])
+ok(all(abs(f['rows']['1']['final'] - 150) < 1.5 for f in nums['fights'] if f['kind'] == 'dungeon'), 'alone 150 s')
+ok(sum(1 for r in five if r['oldFinal'] < r['final'] - 3) == 4, 'the solo factor left 4 of the 5 dungeon bosses 8-14% too fast with five')
+g = fights['gorvath the banner-eater']['rows']
+ok(abs(g['1']['final'] - 495) < 2 and abs(g['5']['final'] - 421) < 2 and g['1']['oldFinal'] > 570, 'Gorvath 495 s alone (was %.0f), 421 s with five' % g['1']['oldFinal'])
+ok(nums['guild']['enrageAt'] - g['1']['final'] >= B.PARTY_ENRAGE_GAP, 'Gorvath alone is clear of the enrage')
+for k in ('sangrith the bloodmoon herald', 'thalcyra the stormbound seer'):
+    ok(all(abs(r['hpMult'] - r['soloMult']) < 1e-9 for r in fights[k]['rows'].values()), '%s does not move' % k)
+m = fights['morvane the hollow crown']['rows']
+ok(abs(m['1']['final'] - m['1']['oldFinal']) < 1e-9 and m['5']['final'] > m['5']['oldFinal'] + 5, 'Morvane: alone as before, five %.0f s (was %.0f)' % (m['5']['final'], m['5']['oldFinal']))
+# the old way (the factor of the profile's own party at every size) is reported: dungeon bosses, Gorvath and Morvane
+old = copy.deepcopy(nums)
+for f in old['fights']:
+    for r in f['rows'].values():
+        r['hpMult'], r['final'] = r['soloMult'], r['oldFinal']
+bad = B.party_problems(old)
+ok(any('vault keeper ossrim' in b for b in bad) and any('Gorvath' in b for b in bad) and any('Morvane' in b for b in bad), 'the solo factor on a party is reported')
+ok(not any('sangrith' in b or 'thalcyra' in b for b in bad), 'and Sangrith and Thalcyra still pass')
+# an Omen guardian that moved is reported
+moved = copy.deepcopy(nums)
+moved['fights'][6]['rows']['5']['hpMult'] += 0.01
+ok(any('must not' in b for b in B.party_problems(moved)), 'a Sangrith that moves is reported')
 if fails:
     print('boss_length_model_test: %d failed' % fails)
     sys.exit(1)

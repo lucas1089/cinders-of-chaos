@@ -771,6 +771,12 @@ class KeyIO:
         while time.monotonic() < end and self.alive():
             await asyncio.sleep(min(0.5, max(0.0, end - time.monotonic())))
 
+    def last_message(self, opname, action):
+        """O686 phase 8b: the data of the newest message `action` of the window `opname` the bot received (None when none came): a request that sends several
+        messages returns the first one, the others are read here"""
+        op = self.bot.args.ops.get(opname)
+        return getattr(self.bot, 'last_ext', {}).get((op, action)) if op is not None else None
+
     async def request(self, opname, action, data, expect, timeout):
         bot = self.bot
         op = bot.args.ops.get(opname)
@@ -1622,6 +1628,7 @@ class TesterBot(LT.Bot):
         self.bag_at = -999.0  # when the bag was last looked at
         self.bag_report = {}  # the newest `!tester bag` answer
         self.waiters = []  # (opcode, {actions}, future): requests of the keystone scenario waiting for their answer
+        self.last_ext = {}  # O686 phase 8b: (opcode, action) -> the data of the newest extended message of that kind (a check reads the messages a request sent after the first)
         self.modals = []   # O655: the modal windows the server opened (parse_modal), the newest last
         self.recent_n = 0
         self.recent = []   # O655: the last server text lines (a check reads what a cast or a word was answered with)
@@ -1904,6 +1911,9 @@ class TesterBot(LT.Bot):
             if data.get('items'):
                 self.kills.append(data)
                 del self.kills[:-5]
+        last = getattr(self, 'last_ext', None)
+        if isinstance(last, dict):   # a bare test double of a bot has no table
+            last[(op, msg.get("action"))] = msg.get("data")
         for w_op, w_actions, fut in list(self.waiters):
             if w_op == op and ('*' in w_actions or msg.get('action') in w_actions) and not fut.done():
                 fut.set_result(msg)

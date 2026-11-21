@@ -4,14 +4,14 @@
 -- (monk_combat.lua does the same for a Monk's fists and fist weapons)
 -- (weapon_power_core.lua interpolates between the levels) on top of the engine formula, so the auto attack keeps up
 -- with the level: each kind is lifted to its share of the single-target spell rotation of its reference class
--- (melee 30% of a Warrior's, distance 30% of a Ranger's, wand 15% of a Mystic's, fist 30% of a Monk's; a factor
+-- (melee 20% of a Warrior's, distance 20% of a Ranger's, wand 15% of a Mystic's, fist 20% of a Monk's; a factor
 -- never cuts, so 1 where the auto attack is above the share already). skill: the hit also scales with (skill / typical skill of the level)
 -- ^ exponent, clamped to min .. max, on top of the skill term of the engine. Lua 5.1 / LuaJIT and 5.3.
 return {
 	levels = {1, 50, 100, 150, 200, 300, 400, 500, 600, 700, 850, 1000, 1250, 1500, 2000},
 	melee = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	distance = {1, 1, 1, 1, 1, 1.08, 1.17, 1.27, 1.36, 1.43, 1.53, 1.63, 1.8, 1.95, 1.98},
+	distance = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.02, 1.09, 1.2, 1.3, 1.32},
 	wand = {1, 1, 1.71, 1.74, 1.74, 1.75, 1.76, 1.83, 1.88, 1.91, 1.93, 1.95, 2, 2.05, 2.12},
 	fist = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	skill = {exponent = 0.5, min = 0.7, max = 1.6}
+	skill = {exponent = 0.5, min = 0.7, max = 1}
 }
