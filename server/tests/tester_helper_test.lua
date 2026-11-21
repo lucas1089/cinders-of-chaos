@@ -583,6 +583,74 @@ do
 	byId[add.id] = nil
 end
 
+-- O695: inside a pinnacle fight the loop aims the tester at the boss of its fight before the nearest monster, when it is in reach; the boss carries the
+-- damage event; the damage tally counts the hits on the boss apart from the others
+do
+	check(HELPER_VERSION >= 38, "the helper is version 38 or later (O695: boss aim, damage tally)")
+	local boss = creature(1073742500, "Ascended Malgrath", {player = false, monster = true, pos = {x = 105, y = 100, z = 7}, health = 900000})
+	local farBoss = creature(1073742501, "Far Boss", {player = false, monster = true, pos = {x = 140, y = 100, z = 7}, health = 900000})
+	local realPN = ChaosPinnacle
+	local which = boss
+	ChaosPinnacle = {bossOf = function() return which end, isBoss = function(c) return c == boss end}
+	tester.target = wolf
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, boss, "boss aim: the tester hits the boss of its fight, not the nearest monster it had")
+	local carried = 0
+	for _, e in ipairs(boss.log.events) do
+		if e == "TesterHelperDealt" then carried = carried + 1 end
+	end
+	check(carried >= 1, "boss aim: the boss carries the damage event")
+	local n0 = #tester.log.targets
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(#tester.log.targets, n0, "boss aim: the target is set once, not every beat")
+	which = farBoss
+	tester.target = wolf
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, wolf, "boss aim: a boss out of reach is not aimed at (the nearest monster stays)")
+	ChaosPinnacle = {bossOf = function() error("a probe that breaks") end}
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, wolf, "boss aim: a probe that breaks does not stop the loop")
+	ChaosPinnacle = {bossOf = function() return boss end, isBoss = function(c) return c == boss end,
+		priorityTarget = function() return wolf end}
+	tester.target = boss
+	for _ = 1, 8 do
+		lastStep().fn()
+	end
+	eq(tester.target, wolf, "boss aim: an add that shields the boss still comes first")
+	-- the tally
+	TesterHelper.dealt = nil
+	events.TesterHelperDealt.onHealthChange(boss, tester, -1000, COMBAT_PHYSICALDAMAGE, -500, COMBAT_PHYSICALDAMAGE, 0)
+	events.TesterHelperDealt.onHealthChange(wolf, tester, -200, COMBAT_PHYSICALDAMAGE, 0, 0, 0)
+	events.TesterHelperDealt.onHealthChange(boss, tester, 5000, COMBAT_HEALING, 0, 0, 0)
+	local row = H.dealtRow(TesterHelper.dealt, tester.id)
+	check(row and row.boss == 1500 and row.bossHits == 1 and row.other == 200 and row.otherHits == 1, "damage tally: the boss and the others apart, healing not counted")
+	TesterHelper.dealt = nil
+	ChaosPinnacle = realPN
+	byId[boss.id], byId[farBoss.id] = nil, nil
+end
+do
+	local t = {}
+	check(H.dealtAdd(t, 7, true, 100.9) and t[7].boss == 100 and t[7].bossHits == 1, "dealtAdd: a hit on the boss")
+	check(not H.dealtAdd(t, 7, true, 0) and not H.dealtAdd(t, 7, true, -5) and not H.dealtAdd(t, nil, true, 5) and not H.dealtAdd(nil, 7, true, 5), "dealtAdd: nothing for no damage, no id, no table")
+	H.dealtAdd(t, 7, false, 40)
+	local r = H.dealtRow(t, 7)
+	check(r.boss == 100 and r.other == 40 and r.otherHits == 1, "dealtRow: the row of one tester")
+	r.boss = 0
+	eq(t[7].boss, 100, "dealtRow: a copy")
+	local z = H.dealtRow(t, 8)
+	check(z.boss == 0 and z.bossHits == 0 and z.other == 0 and z.otherHits == 0, "dealtRow: none dealt is a row of zeros")
+	check(H.withinReach({x = 10, y = 10, z = 7}, {x = 17, y = 3, z = 7}, 7) and not H.withinReach({x = 10, y = 10, z = 7}, {x = 18, y = 10, z = 7}, 7)
+		and not H.withinReach({x = 10, y = 10, z = 7}, {x = 10, y = 10, z = 8}, 7) and not H.withinReach(nil, {x = 1, y = 1, z = 7}, 7), "withinReach: a square of the floor")
+end
+
 -- once a minute the console gets the count of testers in game
 before = #printed
 for _ = 1, 120 do
@@ -2283,6 +2351,10 @@ do
 	end}
 	talks["!tester"].onSay(t9, "!tester", "pinnacle #170")
 	check(last(t9):find('"inside":null', 1, true) == nil and last(t9):find('"pz":true', 1, true) and last(t9):find('"seq":170', 1, true), "pinnacle state: outside")
+	events.TesterHelperDealt.onHealthChange(wolf, t9, -700, COMBAT_PHYSICALDAMAGE, 0, 0, 0)   -- O695: the answer carries the tester's damage tally
+	talks["!tester"].onSay(t9, "!tester", "pinnacle #174")
+	check(last(t9):find('"dealt":{', 1, true) and last(t9):find('"other":700', 1, true) and last(t9):find('"seq":174', 1, true), "pinnacle state: the damage tally of the tester")
+	TesterHelper.dealt = nil
 	talks["!tester"].onSay(t9, "!tester", "pinnacle set #171")
 	check(setFor == 1 and last(t9):find('"given":true', 1, true) and last(t9):find('"kind":"vhoss"', 1, true) and last(t9):find('"ready":true', 1, true), "pinnacle set: given, then ready")
 	talks["!tester"].onSay(t9, "!tester", "pinnacle set nonsense #172")
@@ -3511,6 +3583,32 @@ do
 	talks["!tester"].onSay(gp, "!tester", "gear set #304")
 	eq(gp.slots[CONST_SLOT_LEFT].id, 9, "gear set: a two-handed weapon replaces the hand")
 	check(gp.slots[CONST_SLOT_RIGHT] == nil, "gear set: the off hand is emptied for a two-handed weapon")
+	-- O695: the best piece of a slot is an item the server does not have: the next best is worn, in order, and a slot with none is refused with the id
+	local rk = H.gearRanked(pieces, "Warrior", 2100)
+	check(#rk.helmet == 3 and rk.helmet[1].id == 3 and rk.helmet[2].id == 2 and rk.helmet[3].id == 1, "gear ranked: the helmets of the class, best first (the cowl is not a Warrior's)")
+	check(rk.weapon[1].id == H.gearPlan(pieces, "Warrior", 2100).weapon.id and rk.boots == nil, "gear ranked: the first is the plan's piece, the sets' boots are no slot")
+	check(next(H.gearRanked(nil, "Warrior", 2100)) == nil, "gear ranked: no list, nothing")
+	local createOk = ChaosCrafting.createItem
+	local gone = {[3] = true}
+	ChaosCrafting.createItem = function(id, rarity, level) if gone[id] then return nil end return createOk(id, rarity, level) end
+	gp.slots[CONST_SLOT_HEAD] = item(1, 1000)
+	gp.slots[CONST_SLOT_HEAD].owner, gp.slots[CONST_SLOT_HEAD].slot = gp, CONST_SLOT_HEAD
+	lines = {}
+	local printWas = print
+	print = function(...) lines[#lines + 1] = table.concat({...}, " ") end
+	talks["!tester"].onSay(gp, "!tester", "gear set #307")
+	print = printWas
+	eq(gp.slots[CONST_SLOT_HEAD].id, 2, "gear set: the best helmet is unknown to the server, the next best is worn")
+	check(last(gp):find('"given":["helmet"', 1, true) and last(gp):find('"refused":[]', 1, true), "gear set: the slot is given, nothing refused")
+	local worn2 = false
+	for _, l in ipairs(lines) do if l:find("helmet worn after 2 tries", 1, true) then worn2 = true end end
+	check(worn2, "gear set: a console line names the second try")
+	gone[2], gone[1] = true, true
+	gp.slots[CONST_SLOT_HEAD] = item(9, 0)
+	gp.slots[CONST_SLOT_HEAD].owner, gp.slots[CONST_SLOT_HEAD].slot = gp, CONST_SLOT_HEAD
+	talks["!tester"].onSay(gp, "!tester", "gear set #308")
+	check(last(gp):find('"slot":"helmet"', 1, true) and last(gp):find("item 3 unknown) +2 more", 1, true), "gear set: no helmet can be made: refused, with the id of the best piece and the others tried")
+	ChaosCrafting.createItem = createOk
 	local realPN2 = ChaosPinnacle
 	ChaosPinnacle = {isInside = function() return true end}
 	talks["!tester"].onSay(gp, "!tester", "gear set #305")

@@ -5022,6 +5022,79 @@ def healer_step(pos, boss, patient, near=PINNACLE_HEAL_NEAR, reach=PINNACLE_HEAL
     return None, False
 
 
+def bot_casting(r):
+    """O695: True while the bot of `r` has a cast-time spell on its cast bar (its io says so; an io that cannot say: False)"""
+    f = getattr(r.get('io'), 'casting', None)
+    try:
+        return bool(f()) if callable(f) else False
+    except Exception:   # noqa: BLE001 - a fake io or a bot that left: nothing is held back
+        return False
+
+
+def fight_row(trace, name):
+    """O695: the per bot row of a fight trace: looks by guide mode, dodge / walk / role steps, the last damage tally the helper answered"""
+    return trace.setdefault('bots', {}).setdefault(name, {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0})
+
+
+TALLY_SHOW = (('cast:attack', 'attack cast'), ('cast:heal', 'heal cast'), ('cast:support', 'support cast'))
+
+
+def pinnacle_bot_line(name, cls, row, boss_secs):
+    """O695: one line of the fight report for one bot: the damage the server counted on the boss (the helper's tally, TEST ONLY), what the bot cast and what the
+    server refused, potions, beats given to a heal or with no spell it could pay, the lowest mana, the looks by guide mode and the steps. Plain numbers
+    ('damage_boss=...'), the report reads the line back"""
+    d = row.get('dealt') if isinstance(row.get('dealt'), dict) else {}
+    t = row.get('tally') if isinstance(row.get('tally'), dict) else {}
+    boss = int(d.get('boss') or 0)
+    secs = max(1, int(boss_secs or 0))
+    parts = ['damage_boss=%d (%d a second over %d s, %d hit(s))' % (boss, boss // secs, secs, int(d.get('bossHits') or 0)) if d else 'damage_boss=unknown (no tally from the helper)']
+    if d:
+        parts.append('damage_other=%d' % int(d.get('other') or 0))
+    parts.append('casts: ' + ', '.join('%d %s' % (int(t.get(k) or 0), label) for k, label in TALLY_SHOW))
+    refused = sorted(((k[len('refused:'):], v) for k, v in t.items() if str(k).startswith('refused:') and v), key=lambda kv: (-kv[1], kv[0]))
+    parts.append('refused: ' + (', '.join('%s %d' % kv for kv in refused) if refused else 'none'))
+    parts.append('potions: health %d, mana %d' % (int(t.get('potion:health') or 0), int(t.get('potion:mana') or 0)))
+    parts.append('beats: held for a heal %d, no spell to pay %d' % (int(t.get('beat:held') or 0), int(t.get('beat:no_spell') or 0)))
+    if t.get('mana_low') is not None:
+        parts.append('mana low %d%%' % int(t['mana_low']))
+    modes = row.get('modes') or {}
+    parts.append('looks: ' + (', '.join('%s %d' % kv for kv in sorted(modes.items(), key=lambda kv: (-kv[1], str(kv[0])))) or 'none'))
+    parts.append('steps: dodge %d, walk %d, role %d' % (row.get('dodge', 0), row.get('walk', 0), row.get('role', 0)))
+    return 'pinnacle_party bot %s (%s): %s' % (str(name)[-3:], cls or '?', '; '.join(parts))
+
+
+def pinnacle_series_line(trace):
+    """O695: the boss health series of the fight (seconds in the fight: percent, health) for the report, '' without one; the net damage per 15 s window follows
+    from it (it is the damage minus what the boss heals)"""
+    series = trace.get('series') or []
+    if not series:
+        return ''
+    return 'pinnacle_party boss series (seconds: percent / health): ' + ', '.join(
+        '%d: %s%%%s' % (s, p, ' / %d' % h if isinstance(h, int) else '') for s, p, h in series[:40])
+
+
+async def pinnacle_fight_finish(io, squad, trace):
+    """O695: after the fight: each bot's tally (reset at the start), its row, one report line each (the activity log, kind RETRY) and the boss series line"""
+    secs = trace.get('since') if isinstance(trace.get('since'), int) else int(trace.get('secs') or 0)
+    for r in squad:
+        row = fight_row(trace, r['name'])
+        f = getattr(r.get('io'), 'fight_tally', None)
+        if callable(f):
+            try:
+                row['tally'] = f()
+            except Exception:   # noqa: BLE001 - a bot that left the game has no tally
+                row['tally'] = {}
+        if isinstance(row.get('dealt'), dict):
+            d0 = row.get('dealt0') or {}
+            row['dealt'] = {k: max(0, int(v or 0) - int(d0.get(k) or 0)) for k, v in row['dealt'].items()}
+        cls = io.class_of(r['name']) if hasattr(io, 'class_of') else ''
+        row['cls'] = cls
+        video_note(io, pinnacle_bot_line(r['name'], cls, row, secs))
+    line = pinnacle_series_line(trace)
+    if line:
+        video_note(io, line)
+
+
 async def pinnacle_roles(io, squad, inside, trace, elapsed=0.0):
     """O684: what the roles of a party add to the fight, once per look: the healer (the Mystic) walks to the lowest member under PINNACLE_ALLY_HEAL_AT and
     casts its heal there, else keeps PINNACLE_HEALER_KEEPS tiles from the boss; melee bots next to another bot spread to a tile of their own. Never while a
@@ -5051,13 +5124,14 @@ async def pinnacle_roles(io, squad, inside, trace, elapsed=0.0):
                         trace['ally_heals'] = trace.get('ally_heals', 0) + 1
             elif cast and patient is not None and hasattr(io, 'heal_spell_of') and await io.heal_spell_of(n):
                 trace['ally_heals'] = trace.get('ally_heals', 0) + 1
-            if step and not pending and mode in ('fight', 'walk', 'wait', 'hold', None) and elapsed - r.get('healer_at', -99.0) >= PINNACLE_ROLE_EVERY:
+            if step and not pending and mode in ('fight', 'walk', 'wait', 'hold', None) and elapsed - r.get('healer_at', -99.0) >= PINNACLE_ROLE_EVERY \
+                    and not bot_casting(r):   # O695: a person does not step off his own cast-time spell (the step cancels it, the cast is lost)
                 r['healer_at'] = elapsed
                 moves[n] = (r, step)
                 trace['healer_steps'] = trace.get('healer_steps', 0) + 1
         elif classes.get(n) in PINNACLE_MELEE and mode == 'fight' and not pending:
             mates = set(pos[m] for m in names if m != n and pos.get(m) is not None)
-            step = spread_step(pos[n], mates, boss, crowd=2) if elapsed - r.get('spread_at', -99.0) >= PINNACLE_SPREAD_EVERY else None
+            step = spread_step(pos[n], mates, boss, crowd=2) if elapsed - r.get('spread_at', -99.0) >= PINNACLE_SPREAD_EVERY and not bot_casting(r) else None
             if step:
                 r['spread_at'] = elapsed
                 moves[n] = (r, step)
@@ -5224,6 +5298,11 @@ async def pinnacle_fight(io, squad, trace, budget):
     fight itself is each bot's own (its rotation, its heals). Ends when the boss falls, a fault, every bot is out, or the budget"""
     elapsed, misses, fight_since, mark = 0.0, 0, None, None
     was_in, shielded, buffed = {}, -PINNACLE_SHIELD_EVERY, -PINNACLE_BUFF_EVERY
+    for r in squad:   # O695: the casts and refusals of each bot are counted from here
+        fight_row(trace, r['name'])
+        f = getattr(r.get('io'), 'fight_tally', None)
+        if callable(f):
+            f(reset=True)
     while io.alive() and elapsed < budget:
         if elapsed - buffed >= PINNACLE_BUFF_EVERY and PINNACLE_BUFFS:   # O693: the class buff when the fight opens (the boss comes after startDelay) and each time its cooldown is over
             buffed = elapsed
@@ -5252,6 +5331,14 @@ async def pinnacle_fight(io, squad, trace, budget):
             continue
         misses = 0
         inside = {n: s for n, s in good.items() if s.get('inside')}
+        for n, s in inside.items():   # O695: what each bot was told to do this look (guide mode), and the damage the helper counted for it so far
+            row = fight_row(trace, n)
+            mode = str((s.get('guide') or {}).get('mode') or 'none')
+            row['modes'][mode] = row['modes'].get(mode, 0) + 1
+            if isinstance(s.get('dealt'), dict):
+                if 'dealt0' not in row:
+                    row['dealt0'] = dict(s['dealt'])   # the tally of an earlier fight of this bot is taken off at the end
+                row['dealt'] = s['dealt']
         for n, s in good.items():
             if was_in.get(n) and not s.get('inside') and n not in [o[0] for o in trace.setdefault('out', [])]:
                 trace['out'].append((n, int(elapsed)))   # the lethal hit was caught: the bot is out, healed, a fall
@@ -5291,6 +5378,8 @@ async def pinnacle_fight(io, squad, trace, budget):
                 dodge[r['name']] = dodge_route(s, gr['goal'], BOSS_DODGE_STEPS)   # O684: the way the server planned for this bot
         if dodge:
             trace['dodged'] = trace.get('dodged', 0) + len(dodge)
+            for n_, plan_ in dodge.items():
+                fight_row(trace, n_)['dodge'] += len(plan_ or [])   # O695
             for i in range(BOSS_DODGE_STEPS):
                 moved = False
                 for r in squad:
@@ -5308,6 +5397,8 @@ async def pinnacle_fight(io, squad, trace, budget):
             trace['secs'] = int(elapsed)
             continue
         roled = await pinnacle_roles(io, squad, inside, trace, elapsed)   # O684: the healer's walk and cast, the melee bots' own tiles
+        for n_ in roled:
+            fight_row(trace, n_)['role'] += 1   # O695
         walkers = []
         for r in squad:
             s = inside.get(r['name'])
@@ -5326,6 +5417,8 @@ async def pinnacle_fight(io, squad, trace, budget):
         if trace.get('stuck'):
             break
         sent = {r['name']: r['plan'] for r, s, gr in walkers}
+        for n_, plan_ in sent.items():
+            fight_row(trace, n_)['walk'] += len(plan_ or [])   # O695
         for i in range(PINNACLE_STEPS):
             moved = False
             for r in squad:
@@ -5342,6 +5435,7 @@ async def pinnacle_fight(io, squad, trace, budget):
         elapsed += PINNACLE_LOOK
         trace['secs'] = int(elapsed)
     trace['secs'] = int(elapsed)
+    await pinnacle_fight_finish(io, squad, trace)   # O695
 
 
 async def check_pinnacle_party(io, name, cls, level):

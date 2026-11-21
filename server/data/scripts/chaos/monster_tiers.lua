@@ -64,7 +64,7 @@ local cfg = {
 	minMaxHealth = 50,
 	skip = {}, -- lowercase monster names that never get a tier or an ambush
 	bosses = {}, -- lowercase names treated as boss even without the isboss flag
-	bossMods = true, -- bosses get modifiers (and their shader)
+	bossMods = false, -- O696: bosses roll no modifiers (owner 2026-11-21: "chefes não tem modificadores"); every boss fight is tuned by its model
 	modCount = {magic = {1, 2}, rare = {2, 3}, legendary = {3, 4}, boss = {4, 5}},
 	-- modifiers that never come together: two sources of healing made a monster that could not be brought below 90% (beta
 	-- report 2026-10-20: Vampiric + Juggernaut + Regenerating)

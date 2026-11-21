@@ -11893,6 +11893,160 @@ class PinnacleParty(unittest.TestCase):
         self.assertIn('party = {max = %d,' % TX.PINNACLE_PARTY, src, 'the arena takes as many as the check forms')
 
 
+class PinnacleFightReport(unittest.TestCase):
+    """O695: the per bot lines of the party fight's report (damage the server counted, casts, refusals, looks by mode, steps), the damage baseline, the report
+    section of the video, and no step off a cast-time spell"""
+
+    NAMES = PinnacleParty.NAMES
+
+    class BotIO:
+        """the io of one bot as the fight reads it: its tally and whether it is casting"""
+
+        def __init__(self, tally, casting=False):
+            self.tally, self.cast, self.resets = tally, casting, 0
+
+        def fight_tally(self, reset=False):
+            if reset:
+                self.resets += 1
+            return dict(self.tally)
+
+        def casting(self):
+            return self.cast
+
+    class DealtIO(PinnacleParty.FightIO):
+        def __init__(self, **kw):
+            PinnacleParty.FightIO.__init__(self, **kw)
+            self.notes, self.dealt, self.grow = [], {}, True
+
+        def note(self, text):
+            self.notes.append(text)
+
+        def class_of(self, name):
+            return PinnacleParty.CLASSES.get(name, '')
+
+        def state(self, name):
+            st = PinnacleParty.FightIO.state(self, name)
+            if name in self.dealt and st.get('inside'):
+                st['dealt'] = {k: v * (self.looks if self.grow else 1) for k, v in self.dealt[name].items()}   # the tally grows a look
+            return st
+
+    def squad(self, casting=False):
+        out = []
+        for i, n in enumerate(self.NAMES):
+            tally = {'cast:attack': 100 + i, 'cast:heal': 3, 'refused:exhausted': 7 + i, 'refused:no mana': 40 if i == 1 else 0, 'potion:mana': 9, 'beat:held': 2,
+                     'beat:no_spell': 11, 'mana_low': 4}
+            out.append({'name': n, 'lead': i == 0, 'walker': TX.RaidWalker(), 'inside': True, 'io': self.BotIO(tally, casting)})
+        return out
+
+    def trace(self):
+        return {'faults': [], 'steps': 0, 'fought': 0.0, 'stuck': None, 'died': False, 'secs': 0, 'boss_seen': False, 'hp': None}
+
+    def test_one_line_a_bot(self):
+        row = {'modes': {'fight': 80, 'walk': 5, 'dodge': 12}, 'dodge': 30, 'walk': 9, 'role': 2, 'dealt': {'boss': 1200000, 'bossHits': 300, 'other': 5000},
+               'tally': {'cast:attack': 310, 'cast:heal': 4, 'refused:exhausted': 12, 'refused:no mana': 40, 'refused:zero': 0, 'potion:health': 2, 'potion:mana': 8,
+                         'beat:held': 5, 'beat:no_spell': 30, 'mana_low': 3}}
+        line = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', row, 300)
+        self.assertTrue(line.startswith('pinnacle_party bot Aab (Deadeye): '))
+        self.assertIn('damage_boss=1200000 (4000 a second over 300 s, 300 hit(s))', line)
+        self.assertIn('damage_other=5000', line)
+        self.assertIn('310 attack cast, 4 heal cast, 0 support cast', line)
+        self.assertIn('refused: no mana 40, exhausted 12', line)
+        self.assertNotIn('zero', line, 'a refusal kind counted zero times is not listed')
+        self.assertIn('potions: health 2, mana 8', line)
+        self.assertIn('held for a heal 5, no spell to pay 30', line)
+        self.assertIn('mana low 3%', line)
+        self.assertIn('looks: fight 80, dodge 12, walk 5', line)
+        self.assertIn('steps: dodge 30, walk 9, role 2', line)
+        self.assertNotIn('\u2014', line)
+        old = TX.pinnacle_bot_line('Tester Aac', 'Samurai', {'modes': {}, 'dodge': 0, 'walk': 0, 'role': 0}, 0)
+        self.assertIn('damage_boss=unknown (no tally from the helper)', old)
+        self.assertIn('refused: none', old)
+        self.assertIn('looks: none', old)
+
+    def test_the_fight_writes_a_line_for_each_bot_and_the_series(self):
+        io = self.DealtIO(kill_at=4, mode='fight')
+        io.dealt = {n: {'boss': 1000 * (i + 1), 'bossHits': 10, 'other': 0} for i, n in enumerate(self.NAMES)}
+        squad, t = self.squad(), self.trace()
+        run(TX.pinnacle_fight(io, squad, t, 1500.0))
+        bots = [x for x in io.notes if x.startswith('pinnacle_party bot ')]
+        self.assertEqual(len(bots), 5)
+        self.assertIn('bot Aab (Ranger)', bots[1])
+        self.assertIn('damage_boss=6000 (', bots[1], 'the helper tally of that bot: 2000 a look, four looks, the first one is the baseline')
+        self.assertIn('looks: fight 4', bots[0], 'four looks with the guide on fight before the boss fell')
+        self.assertIn('refused: exhausted 7', bots[0])
+        self.assertIn('refused: no mana 40, exhausted 8', bots[1])
+        self.assertTrue(any(x.startswith('pinnacle_party boss series') for x in io.notes))
+        self.assertEqual([x['io'].resets for x in squad], [1] * 5, 'each tally starts at the fight, once')
+
+    def test_the_damage_of_an_earlier_fight_is_taken_off(self):
+        io = self.DealtIO(kill_at=3, mode='fight')
+        io.grow = False
+        io.dealt = {n: {'boss': 5000, 'bossHits': 5, 'other': 100} for n in self.NAMES}
+        squad, t = self.squad(), self.trace()
+        run(TX.pinnacle_fight(io, squad, t, 1500.0))
+        self.assertEqual(t['bots']['Tester Aaa']['dealt']['boss'], 0, 'the first look is the baseline: nothing dealt in this fight')
+        self.assertIn('damage_boss=0 (0 a second', [x for x in io.notes if x.startswith('pinnacle_party bot ')][0])
+
+    def test_dodges_walks_and_roles_are_counted_a_bot(self):
+        io = self.DealtIO(kill_at=2, mode='dodge')
+        t = self.trace()
+        run(TX.pinnacle_fight(io, self.squad(), t, 1500.0))
+        self.assertEqual({n: r['dodge'] for n, r in t['bots'].items()}, {n: 3 for n in self.NAMES}, 'three dodge steps for each bot')
+        io2 = self.DealtIO(kill_at=3, mode='walk')
+        t2 = self.trace()
+        run(TX.pinnacle_fight(io2, self.squad(), t2, 1500.0))
+        self.assertTrue(all(r['walk'] > 0 and r['modes'].get('walk') for r in t2['bots'].values()))
+
+    def test_an_old_helper_has_no_damage_but_the_casts_are_there(self):
+        io = self.DealtIO(kill_at=2, mode='fight')
+        squad, t = self.squad(), self.trace()
+        run(TX.pinnacle_fight(io, squad, t, 1500.0))
+        line = [x for x in io.notes if x.startswith('pinnacle_party bot ')][0]
+        self.assertIn('damage_boss=unknown', line)
+        self.assertIn('100 attack cast', line)
+
+    def test_no_step_off_a_cast_time_spell(self):
+        self.assertFalse(TX.bot_casting({'io': None}))
+        self.assertFalse(TX.bot_casting({}))
+        self.assertTrue(TX.bot_casting({'io': self.BotIO({}, True)}))
+        self.assertFalse(TX.bot_casting({'io': self.BotIO({}, False)}))
+
+        class Broken:
+            def casting(self):
+                raise RuntimeError('left the game')
+        self.assertFalse(TX.bot_casting({'io': Broken()}))
+        # a melee bot among three crowds a tile: its spread step waits while it casts, and goes when it does not
+        for casting, moved in ((True, 0), (False, 1)):
+            io = PinnacleParty.FightIO()
+            squad = [{'name': n, 'lead': False, 'walker': TX.RaidWalker(), 'inside': True, 'io': self.BotIO({}, casting)} for n in self.NAMES[:3]]
+            spots = [(10, 10), (11, 10), (10, 11)]
+            inside = {n: {'pos': {'x': x, 'y': y, 'z': 7}, 'guide': {'mode': 'fight'}, 'run': {'bossPos': {'x': 13, 'y': 10, 'z': 7}}}
+                      for n, (x, y) in zip(self.NAMES[:3], spots)}
+            io.class_of = lambda name: 'Samurai'
+            io.health_of = lambda name: 100
+            got = run(TX.pinnacle_roles(io, squad, inside, {'steps': 0}, 100.0))
+            self.assertEqual(len(got) > 0, bool(moved), 'casting=%s: %s' % (casting, got))
+
+    def test_the_report_has_a_section_per_bot(self):
+        import importlib.util
+        import os
+        here = os.path.dirname(os.path.abspath(__file__))
+        spec = importlib.util.spec_from_file_location('boss_video_report', os.path.join(here, '..', '..', 'tools', 'ci', 'boss_video_report.py'))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        bot = TX.pinnacle_bot_line('Tester Aab', 'Deadeye', {'modes': {'fight': 3}, 'dodge': 0, 'walk': 0, 'role': 0, 'dealt': {'boss': 900, 'bossHits': 3, 'other': 0}}, 30)
+        series = 'pinnacle_party boss series (seconds: percent / health): 15: 99% / 12000000'
+        activity = '\n'.join([
+            '01:15:17 Tester Aaa (L1893 Illusionist) RETRY    ' + bot,
+            '01:15:17 Tester Aaa (L1893 Illusionist) RETRY    ' + series,
+            '01:29:51 Tester Aaa (L1893 Illusionist) CHECK    PASS pinnacle_party: malgrath hurt to 90% in 761 s, not down (1 fall(s), level 1893)'])
+        text = mod.build_report('malgrath', 1900, ['Tester Aaa'], activity, '')
+        self.assertIn('what each bot did in the fight', text)
+        self.assertIn('damage_boss=900', text)
+        self.assertIn('boss series', text)
+        self.assertEqual(text.count('damage_boss=900'), 1, 'the bot line is in its section only, not again among the activity lines')
+
+
 class PinnacleVideo(unittest.TestCase):
     """O689, the second video run: the gather tried again, members waited for, no hunt, the prep that survives a death, the check of the audit unchanged"""
 

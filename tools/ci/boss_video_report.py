@@ -73,6 +73,26 @@ def fight_lines(activity):
     return out
 
 
+BOT_PREFIX = 'pinnacle_party bot '
+SERIES_PREFIX = 'pinnacle_party boss series'
+
+
+def bot_lines(lines):
+    """(bots, series) of the activity lines of the fight (O695): the per bot lines of tester_checks.pinnacle_bot_line (damage the server counted, casts, refusals,
+    looks, steps) and the boss health series line, the text after the log's `HH:MM:SS Tester Xxx (L.. Class) RETRY` prefix"""
+    bots, series = [], ''
+    for line in lines:
+        m = re.match(r'^\d\d:\d\d:\d\d .*? \(L\d+ [^)]*\) RETRY\s+(.*)$', line)
+        if not m:
+            continue
+        text = m.group(1)
+        if text.startswith(BOT_PREFIX):
+            bots.append(text[len(BOT_PREFIX):])
+        elif text.startswith(SERIES_PREFIX):
+            series = text
+    return bots, series
+
+
 def verdict_of(lines):
     """the facts of the pinnacle_party verdict among `lines`: {'result': 'killed' | 'not killed' | 'unknown', 'seconds', 'boss_left', 'falls', 'out': [(name, s)], 'status', 'text'}.
     The texts are tester_checks.pinnacle_walk_verdict and pinnacle_party_verdict"""
@@ -208,7 +228,13 @@ def build_report(boss, level, party, activity, client_log, seconds=None, secrets
         out.append('recorded: %s s' % seconds)
     d = death_facts(lines)
     deaths = [l for l in lines if ' DEATH ' in l]
-    key_lines = [l for l in lines if ' DEATH ' not in l]
+    bots, series = bot_lines(lines)
+    key_lines = [l for l in lines if ' DEATH ' not in l and (BOT_PREFIX not in l and SERIES_PREFIX not in l)]
+    if bots or series:
+        out += ['', 'what each bot did in the fight (damage_boss is the server\'s own count of what landed on the boss, TEST ONLY):']
+        out += ['  ' + b for b in bots]
+        if series:
+            out += ['  ' + series[len('pinnacle_party '):]]
     out += [''] + death_text(d)
     out += ['', 'lines of the testers\' activity log (checks, bugs, retries):']
     out += ['  ' + l for l in key_lines[:MAX_LINES]] or ['  none']

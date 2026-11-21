@@ -339,7 +339,10 @@ function M.applySet(attacker, creature, pd, pt, sd, st)
 	if effect and dealt > 0 then
 		local kind = K.setBonus(effect).kind
 		if kind ~= "damage" then
-			later(setEffects, attacker:getId(), creature:getId(), effect, dealt, attacker, creature)
+			-- O695: the engine refuses userdata in addEvent (16 "Arguments #7 and #8 are unsafe" in a boss video: no set effect
+			-- ever ran); the objects go along only in tests, where `later` calls at once
+			local direct = type(addEvent) ~= "function"
+			later(setEffects, attacker:getId(), creature:getId(), effect, dealt, direct and attacker or nil, direct and creature or nil)
 		end
 	end
 	return pd, pt, sd, st
