@@ -593,13 +593,14 @@ def form_table(rows=None):
 
 # ---- the progression curve ---------------------------------------------------------------------------------------------------
 def minutes_per_level():
-    """{level: minutes a level} of progression_model.lua --curve-json (luajit, else lua5.3), levels 1 to 2250"""
+    """{level: minutes a level} of progression_model.lua --today --curve-json (luajit, else lua5.3), levels 1 to 2250: the curve with no H and no gain
+    (the model derives H and the gain from it; O709: the default of progression_model.lua is the upgrades mode now)"""
     if 'minutes' not in _CACHE:
         import json
         last = None
         for exe in ('luajit', 'lua5.3'):
             try:
-                r = subprocess.run([exe, PROGRESSION, '--curve-json', '2250'], cwd=SERVER, capture_output=True, text=True, timeout=300)
+                r = subprocess.run([exe, PROGRESSION, '--today', '--curve-json', '2250'], cwd=SERVER, capture_output=True, text=True, timeout=300)
             except FileNotFoundError:
                 continue
             if r.returncode == 0:

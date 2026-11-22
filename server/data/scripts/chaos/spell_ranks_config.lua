@@ -3,12 +3,12 @@
 -- Design: docs/SPELL_UPGRADES.md (sections 1, 5.2, 5.3, 7); logic: spell_ranks_core.lua; engine: spell_ranks.lua;
 -- server/README.md "Spell ranks (O686 phase 2)". Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 return {
-	-- The switch. false: the rank state is tracked and stored, the opcode answers, but no rank changes a hit, a cooldown, a
-	-- mana cost or a monster's health. It turns true with phase 3 (the monster health curve and the models), never alone:
-	-- the health factor and the rank gain go live in the same release.
-	enabled = false,
+	-- The switch. true (owner 2026-11-21, O709): ranks, Forms, combos, awakening and the monster health curve H are live
+	-- together. false: the rank state is tracked and stored, the opcode answers, but no rank changes a hit, a cooldown, a
+	-- mana cost or a monster's health. Never turn it on or off alone: the health factor and the rank gain move in the same release.
+	enabled = true,
 	-- SP are earned and stored whether or not `enabled` is true (a dark release lets the ranks accrue, nothing is felt). false: no SP at all.
-	track = false,
+	track = true,
 
 	-- player storage block 7107000 - 7108099 (README "Storage keys"); the keys of the design, section 7.1
 	storage = {

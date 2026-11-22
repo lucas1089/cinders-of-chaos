@@ -21,7 +21,7 @@ local P = dofile("data/scripts/chaos/spell_ranks_core.lua")
 local cfg = dofile("data/scripts/chaos/spell_ranks_config.lua")
 
 -- ---------------------------------------------------------------- the switch and the shipped numbers
-eq(cfg.enabled, false, "ships switched off")
+eq(cfg.enabled, true, "ships switched on (O709, owner 2026-11-21)")
 eq(cfg.opcode, 168, "opcode 168")
 eq(cfg.maxRank, 20, "rank 20")
 eq(cfg.pvp.rank, 0.5, "PvP half (owner 2026-11-20)")
@@ -295,7 +295,7 @@ do
 	end
 end
 
--- ---------------------------------------------------------------- the read API of the lib (off by default)
+-- ---------------------------------------------------------------- the read API of the lib (on in the repository since O709)
 do
 	ChaosSpellRanksCore, ChaosSpellRanksConfig = P, cfg
 	ORIGIN_SPELL, COMBAT_HEALING, COMBAT_NONE = 3, 9, 0
@@ -310,6 +310,10 @@ do
 		return pl
 	end
 	local pl = mkPlayer()
+	-- O709 (owner 2026-11-21): the repository ships the upgrades on; the off path below switches the loaded config off
+	eq(cfg.enabled, true, "ships switched on")
+	eq(cfg.track, true, "ships tracking SP")
+	cfg.enabled = false
 	eq(R.rankOf(pl, 40), 20, "the rank is read from the packed storage")
 	eq(R.rankOf(pl, 41), 0, "a spell with no storage: rank 0")
 	eq(R.rankOf(pl, 9999), 0, "an id outside the block: rank 0")
@@ -324,6 +328,22 @@ do
 	near(R.factor(pl, 40, false, false), 1.18, 1e-9, "on: rank 20 is +18%")
 	near(R.factor(pl, 40, false, true), 1.09, 1e-9, "on: PvP half")
 	eq(R.factor(pl, 41, false, false), 1, "on: rank 0 is x1")
+	-- O709: a new character, or one that never earned a point, has no storage at all: rank 0 everywhere, nothing changes, no error
+	do
+		local fresh = {}
+		function fresh:getId() return 2 end
+		function fresh:isPlayer() return true end
+		function fresh:getStorageValue(k) return -1 end
+		for _, sid in ipairs({0, 1, 40, 200, 499, 500, -1}) do
+			eq(R.rankOf(fresh, sid), 0, "a character with no storage: rank 0 of spell " .. sid)
+			eq(R.factor(fresh, sid, false, false), 1, "a character with no storage: factor 1 of spell " .. sid)
+			eq(R.manaFor(fresh, sid, 100), 100, "a character with no storage: mana unchanged " .. sid)
+			eq(R.cooldownFor(fresh, sid, 8000), 8000, "a character with no storage: cooldown unchanged " .. sid)
+		end
+		ChaosSupportsSpell = {cast = function() return 2, 40 end}
+		eq(R.hitFactor(fresh, {}, ORIGIN_SPELL, 5), 1, "a character with no storage: a spell hit is x1")
+		ChaosSupportsSpell = {cast = function() return 1, 40 end}
+	end
 	near(R.hitFactor(pl, {}, ORIGIN_SPELL, 5), 1.18, 1e-9, "on: a spell hit in a cast")
 	eq(R.hitFactor(pl, {}, 1, 5), 1, "on: a weapon hit is x1")
 	eq(R.hitFactor(pl, {}, ORIGIN_SPELL, 0), 1, "on: no combat type is x1")

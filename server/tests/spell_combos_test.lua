@@ -542,8 +542,9 @@ local troll = newMonster(501)
 p.target = troll
 RC.track = false
 
--- switched off (the shipped state): a fire spell after an ice spell is plain
-eq(RC.enabled, false, "the shipped switch is off")
+-- switched off (the shipped state until O709; the loaded config is switched off here): a fire spell after an ice spell is plain
+eq(RC.enabled, true, "the ranks ship switched on (O709, owner 2026-11-21)")
+RC.enabled = false
 cast(p, 300)
 eq(M.states[900], nil, "switch off: no ring is kept")
 eq((hit(p, troll, COMBAT_ICEDAMAGE, -1000)), -1000, "switch off: an ice hit is plain")

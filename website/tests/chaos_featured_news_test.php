@@ -195,7 +195,8 @@ check(strpos(render('home', 'en', '2026-12-25'), 'id="novidade"') === false, 'a 
 $on = render('home', 'en', $T, array('spell_upgrades' => true));
 check(strpos($on, 'Spell ranks: your spells grow') !== false && strpos($on, 'Spell combos: ice then fire, and more') !== false && strpos($on, 'Spell ranks: your spells grow') < strpos($on, 'Spell combos: ice then fire, and more') && strpos($on, 'Spell combos: ice then fire, and more') < strpos($on, 'Loot bursts out of every kill'), 'the flag on: the spell entries lead the banner');
 check(strpos($on, 'Four Ascended pinnacle bosses') === false && substr_count($on, 'chaos-novelty__card') === 3, 'still three cards');
-check(strpos($on, 'Spells now have ranks') !== false, 'and the news block of the front page lists the entry');
+// O709: the patch note of 2026-11-21 (Spell upgrades) is the newest entry and takes a place of the three the block lists
+check(strpos($on, 'Spells now have ranks') !== false || strpos($on, 'Spell upgrades') !== false, 'and the news block of the front page lists the entry (or the patch note that announces the system)');
 
 $news = render('news', 'en', $T);
 check(strpos($news, 'chaos-newsitem--new') !== false && substr_count($news, 'chaos-newbadge') === 4 && strpos($news, 'Spells now have ranks') === false, 'the news page: the badge on the four fresh featured entries, the gated ones left out');

@@ -121,7 +121,31 @@ dofile("data/scripts/chaos/spell_ranks.lua")
 local R = ChaosSpellRanks
 local P = ChaosSpellRanksCore
 local cfg = ChaosSpellRanksConfig
-cfg.track = true   -- the shipped config tracks nothing (owner: characters start from zero when the system goes live); the glue cases turn it on
+-- O709 (owner 2026-11-21): the repository ships the upgrades on and tracking SP; every character starts from rank zero
+eq(cfg.enabled, true, "ships switched on")
+eq(cfg.track, true, "ships tracking SP")
+do
+	-- a character with no storage at all logs in on the shipped (on) config: rank 0 everywhere, the version written, no error line
+	local printed = {}
+	local realPrint = print
+	print = function(...) printed[#printed + 1] = table.concat({...}, " ") end
+	local fresh = newPlayer(990, 150, 9901)
+	registered.events.ChaosSpellRanksLogin.onLogin(fresh)
+	local state = ChaosSpellRanks.state(fresh)
+	print = realPrint
+	for _, line in ipairs(printed) do
+		ok(not line:find("login:", 1, true), "a new character logs in without an error: " .. line)
+	end
+	ok(ChaosSpellRanks.players[990] ~= nil, "a new character: the state exists")
+	for _, rank in pairs(ChaosSpellRanks.players[990].rank) do
+		eq(rank, 0, "a new character: rank 0")
+	end
+	eq(state.on, true, "a new character: the state says on")
+	eq(#state.s, 0, "a new character: no spell has a point")
+	eq(fresh:getStorageValue(cfg.storage.version), cfg.version, "a new character: the version is written")
+	ChaosSpellRanks.players[990] = nil
+end
+cfg.enabled = false -- the cases below are the off path and their own switch on; they start from off
 
 eq(#registered.callbacks, 1, "one experience callback")
 eq(registered.callbacks[1].index, -9, "at index -9: after the pace curve (-10), before every bonus")

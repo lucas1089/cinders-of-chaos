@@ -1052,7 +1052,7 @@ eq(bars(1, "east"), 5, "the room seals")
 for i = 2, 5 do
 	check(K.inRoom(run.L, 1, raiders[i].pos), "R" .. i .. " is drawn in")
 end
-eq(boss.maxhp, 8980954, "five raiders: the XML health")
+eq(boss.maxhp, math.floor(8980954 * Chaos.healthFactor(1000)), "five raiders: the XML health x H at the raid level 1000 (O709: the ranks are live)")
 
 -- the tank swap: four melee hits on the tank with a fresh tank beside the boss
 local tank, off = lead, raiders[2]

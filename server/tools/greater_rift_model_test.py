@@ -7,6 +7,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import spell_upgrade_model as _SU  # noqa: E402
+_SU.set_mode(False)  # O709: the spell upgrades ship on and a model's default is the upgrades mode; this test holds the switch-off numbers (the model's --check runs both modes in CI)
 import greater_rift_model as M
 
 fails = 0

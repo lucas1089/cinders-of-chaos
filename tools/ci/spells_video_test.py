@@ -120,10 +120,11 @@ class Static(unittest.TestCase):
         xml = read('server', 'data', 'XML', 'chaos_vocations.xml')
         for name, vid in (('Elementalist', 5), ('Deadeye', 7), ('Illusionist', 10)):
             self.assertRegex(xml, r'<vocation id="%d" clientid="\d+" name="%s"' % (vid, name))
-        # the ranks switch of the repository stays off
+        # the ranks switch of the repository is on since O709; the install step accepts a copy with either value
         cfg = read('server', 'data', 'scripts', 'chaos', 'spell_ranks_config.lua')
-        self.assertRegex(cfg, r'(?m)^\tenabled = false,')
+        self.assertRegex(cfg, r'(?m)^\tenabled = true,')
         self.assertIn('^\tenabled = false,', inst)
+        self.assertIn('enabled = \\(false\\|true\\),', inst)
 
     def test_classes_of_the_module_match(self):
         logic = read('client', 'overlay', 'modules', 'test_spelltour', 'spelltourlogic.lua')

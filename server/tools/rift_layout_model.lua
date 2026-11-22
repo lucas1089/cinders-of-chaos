@@ -121,16 +121,18 @@ end
 
 local cfg = dofile("data/scripts/chaos/rift_config.lua")
 local ag = dofile("data/scripts/chaos/areagen_config.lua")
--- O686 phase 3: `--upgrades` (any position). A layout is walkable tiles against the monsters planned on them (R.density: counts from the
+-- O686 phase 3: `--upgrades` (any position; the default while spell_ranks_config.lua `enabled` is true, O709; `--today` switches it off, nothing moves). A layout is walkable tiles against the monsters planned on them (R.density: counts from the
 -- budget model of rift_config.lua, which the spell ranks do not touch) and walking seconds (speed, not damage): the ranks change a rift
 -- monster's health (x H, rift.lua healthLevelOf) and the players' damage, never the count or the map. So the mode prints the same table and
 -- --check holds the same limits; it is here so every balance model answers the flag, and the line below says why nothing moves
 local mode = arg and arg[1]
-local upgrades = false
+local upgrades = dofile("data/scripts/chaos/spell_ranks_config.lua").enabled and true or false
 for _, a in ipairs(arg or {}) do
 	if a == "--upgrades" then
 		upgrades = true
-	elseif mode == "--upgrades" then
+	elseif a == "--today" then
+		upgrades = false
+	elseif mode == "--upgrades" or mode == "--today" then
 		mode = a
 	end
 end

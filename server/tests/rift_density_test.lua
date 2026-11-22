@@ -234,7 +234,7 @@ do
 			if not m.tier and not checked then
 				checked = true
 				local ratio = run.healthRatio[m.name:lower()]
-				eq(m.max, math.floor(run.density.packHealth * ratio * run.fx.health), "a normal monster has the budget health x its kind")
+				eq(m.max, Chaos.scaleHealth(math.floor(run.density.packHealth * ratio * run.fx.health), R.tierInfo(cfg, run.key.tier).minLevel), "a normal monster has the budget health x its kind x H (O709: the ranks are live)")
 			end
 		end
 	end
@@ -346,7 +346,7 @@ do
 	ok(run.bossAt > run.density.live, "more kills than the live cap before the guardian")
 	local bossId = next(run.bossIds)
 	local g = monsters[bossId]
-	eq(g.max, math.floor(R.guardianBase(cfg, 8) * R.guardianHealthMult(cfg, run.fx, 1)), "the guardian's budget health")
+	eq(g.max, Chaos.scaleHealth(math.floor(R.guardianBase(cfg, 8) * R.guardianHealthMult(cfg, run.fx, 1)), R.tierInfo(cfg, run.key.tier).minLevel), "the guardian's budget health x H")
 	local q2 = #run.queue
 	run.alive = 0
 	RF._reinforce(run)

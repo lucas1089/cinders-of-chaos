@@ -181,7 +181,10 @@ local CFG = {
 					text = "%s sings the Dirge! Destroy the Hollow Totem!",
 					tip = "A Hollow Totem rises while he sings: kill it (about 8 s alone) before the cast ends."}
 			},
-			ref = {health = 500000, heal = 355, dps = 2600, uptime = 0.75, players = 1, limit = 720, solo = true, weakDps = 1950}
+			-- O710: health 533,800 = 500,000 x 1.0676, and the monster file 1,198,500 = 1,122,619 x 1.0676. The floor of this profile (minHpMult
+			-- 0.60, the weakest class's rule) binds, so the factor stays 0.60 and the solo kill was 293.6 s against the 313.5 s of the other Omen
+			-- guardians (boss_length_model.py --party). The factor does not depend on the health, so the boss gets the health the plan needs
+			ref = {health = 533800, heal = 355, dps = 2600, uptime = 0.75, players = 1, limit = 720, solo = true, weakDps = 1950}
 		},
 		["thalcyra the stormbound seer"] = {
 			label = "Thalcyra", size = 4, element = "energy", difficulty = 0.25, every = 9000,
