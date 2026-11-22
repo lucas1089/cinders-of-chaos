@@ -84,6 +84,9 @@ P37END = '\t<!-- end of the Chaos pair 37 outfits -->\n'
 FUN72 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_fun_costumes.lua')
 F72BEGIN = '\t<!-- Chaos pair 72 outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 F72END = '\t<!-- end of the Chaos pair 72 outfits -->\n'
+# the six code-drawn wings of client pair 78 (data/lib/chaos_drawn_wings_ids.lua M.wings, generated from drawn_wings/new_looks.csv, O581 phase 2); their
+# wings.xml lines join the Chaos wings block only while config.lua chaosClientPair is 78 or more (client_pair.py PAIR_DRAWN_WINGS)
+DRAWN78 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_drawn_wings_ids.lua')
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
@@ -201,6 +204,21 @@ def fun72_outfits(data, path=None):
         return []
     return [(int(m), int(f), n) for n, m, f in re.findall(
         r'\{key = "\w+", name = "([^"]+)", male = (\d+), female = (\d+)', open(path, encoding='utf-8').read())]
+
+
+def drawn78_wings(data, path=None):
+    """[(wings.xml id, look, name)] of chaos_drawn_wings_ids.lua M.wings; [] (and a WARNING line) while config.lua chaosClientPair is below 78"""
+    path = path or DRAWN78
+    if not os.path.isfile(path):
+        return []
+    sys.path.insert(0, HERE)
+    import client_pair
+    ok, msg = client_pair.allows(data, client_pair.PAIR_DRAWN_WINGS, 'wings.xml (the six drawn wings)')
+    print(msg)
+    if not ok:
+        return []
+    return [(int(i), int(lk), n) for i, lk, n in re.findall(
+        r'\{key = "wings_\w+", id = (\d+), look = (\d+), name = "([^"]+)"', open(path, encoding='utf-8').read())]
 
 
 def install_block(path, begin, end, close, lines, taken_re, dry, label):
@@ -475,6 +493,7 @@ def main(argv):
     if new != text and not dry:
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
     code = install_mounts(args[0], dry)
+    ex['wings'] = ex['wings'] + drawn78_wings(args[0])
     code = install_wings(args[0], dry, ex) or code
     ex['shader'] = ex['shader'] + cosmetic_shaders() + seasonpass_shaders()
     return install_shaders(args[0], dry, ex) or code

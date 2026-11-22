@@ -62,7 +62,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
   orbs         tools/install_orbs.py             crafting orbs v2 items, orb renames in the base files (README "Crafting orbs v2")
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
-  outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
+  outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md); the six drawn
+               wings of pair 78 in wings.xml only from chaosClientPair 78 (README "Drawn wings (O581 phase 2)")
   auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
                client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects"; the pair 33 head
                accessories and capes and, in outfits, the pair 33 wings only while ChaosPack33.PAIR33 is on; README

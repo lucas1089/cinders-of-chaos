@@ -42,6 +42,10 @@ with this kit. Their commands, handed over from here:
   score DAT SPR [OUT.tsv]      likeness of every row to the old art: shape, colour, layout, motion, 0 is the same
   apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
   live DAT SPR                 a built pair holds them
+  new-table [--check]          the six wings of this file as wings looks 3555-3560 of pair 78 (O581 phase 2): drawn_wings/new_looks.csv, .sums,
+                               wing_anchors.lua and the server's ids file (gen_drawn_wings_new.py)
+  build-new DAT SPR OUT_DIR    pair 77 (and no other) -> pair 78: the six looks appended, nothing else changes
+  live-new DAT SPR             a built pair 78 holds them
   --src DIR                    with sheets, compare, fit, score, apply, live: ten rows come from the painted sheets of
                                DIR (O594, gen_pixellab_wings.py, drawn_wings/pixellab_rows.csv); without it every row
                                is drawn by code. CHAOS_WINGS_SRC names the folder for the test
@@ -928,6 +932,10 @@ def preview(out_dir, dat=None, spr=None, look=2050, loops=6):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
+    if argv and argv[0] in ('new-table', 'build-new', 'live-new'):
+        sys.path.insert(0, HERE)
+        import gen_drawn_wings_new as new        # the six looks of O581 phase 2 (pair 78)
+        return new.main(argv)
     if argv and argv[0] in ('table', 'sheets', 'compare', 'fit', 'apply', 'live', 'measure', 'score'):
         sys.path.insert(0, HERE)
         import gen_drawn_wings_families as fam        # the 121 looks of the pair (O583)

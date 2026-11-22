@@ -6831,7 +6831,7 @@ Owner 2026-11-14: a place where looted cards go by themselves, filtered and seen
 
 
 ## Code-drawn wings (O581, `tools/sprites/gen_drawn_wings.py`; owner 2026-11-16)
-Prototype. Six back cosmetics drawn by code, no art file read. Not in a pair, no look ids, not seen in a client. Waits for the owner's pick, then pair 73.
+Prototype. Six back cosmetics drawn by code, no art file read. Not seen in a client. Phase 2 (owner 2026-11-22: all six) gives them look ids and a pair 78: next section, "Code-drawn wings as cosmetics (O581 phase 2)".
 - **Designs**: `ember_pinions` (feathered wings, charcoal to ember tips, a flap, sparks rise), `ossuary_wings` (bone arm, four curled ribs, a slow flap, pale motes sink),
   `void_orbit` (five dark violet orbs on a tilted ellipse, a faint dotted trail), `bladefan` (seven steel blades behind the back, the fan opens and closes, a red gem hub),
   `rimeshard` (five ice shards a side, they pulse, a glint walks over them), `grave_lanterns` (three skulls with a green flame, they orbit and bob).
@@ -6847,6 +6847,25 @@ Prototype. Six back cosmetics drawn by code, no art file read. Not in a pair, no
   The engine drew one wings layer (behind or in front by direction). Decided in O583: base patch 0203 draws the front part after the body, 0204 places the wings (next section).
 - **Preview**: `gen_drawn_wings.py preview OUT_DIR --dat Tibia.dat --spr Tibia.spr` writes one MP4 per design at 4x, `all_designs.mp4`, `scale_1x.png`. Class look 2050, tinted. No pair: a drawn silhouette. Never committed.
 - **Test**: `gen_drawn_wings_test.py`: the loop closes, no frame equals the next, binary alpha plus the glow level, outline on every open edge, same bytes twice, sizes, four directions differ.
+
+## Code-drawn wings as cosmetics (O581 phase 2, `tools/sprites/gen_drawn_wings_new.py`, `drawn_wings/new_looks.csv`; owner 2026-11-22: "Todas as 6")
+The six wings of O581 become wings players can get, in a new pair 78 (= pair 77 plus these six looks). **Status: tool, table, tests and the server side are in code. Pair 78 is not built. The build and the windows-assets push wait for the owner's approval. `PAIR_ASSETS` stays 77.**
+- **Table** `drawn_wings/new_looks.csv`: `key`, `name`, `theme`, `element`, `wings` (wings.xml id), `look` (client look id).
+  | key | name | theme | element | wings id | look |
+  |---|---|---|---|---|---|
+  | `ember_pinions` | Ember Pinions | ember | fire | 122 | 3555 |
+  | `ossuary_wings` | Ossuary Wings | bone | dark | 123 | 3556 |
+  | `void_orbit` | Void Orbit | void | dark | 124 | 3557 |
+  | `bladefan` | Bladefan | steel | neutral | 125 | 3558 |
+  | `rimeshard` | Rimeshard | frost | water | 126 | 3559 |
+  | `grave_lanterns` | Grave Lanterns | grave | earth | 127 | 3560 |
+  Looks follow the last outfit of pair 77 (3554, the last PixelLab monster; pairs 75 to 77 added effects and missiles only). No old id is touched. `new_looks.sums` holds one sha256 a look over its 128 pictures (the digest of `designs.sums`).
+- **Commands** (`gen_drawn_wings.py` hands them over): `new-table [--check]` (the table rules, `new_looks.sums`, `wing_anchors.lua`, the server's `data/lib/chaos_drawn_wings_ids.lua`), `build-new DAT SPR OUT_DIR`, `live-new DAT SPR`.
+- **Build** (`build-new`): takes pair 77 and no other (dat md5 `80cdf40aa03fc6097752f2d0822ffae7`, 3,554 outfits; another md5 or a pair that has the looks already is refused, nothing written). Appends six outfits, the same shape as the O583 wings: 3 x 3 tiles, one layer, 4 directions, 2 y patterns (0 the whole wing, 1 the part in front of the body, base patch 0203), 16 phases of 83 ms, group type 0, one z pattern, flag `animateAlways` only (no displacement). Sprites are appended only. Every old outfit, item, effect and missile stays byte for byte. It runs through `gen_wst_outfits.build`: verified before the rename, then the append-only guard of `check_pair.py`.
+- **Anchors**: the six looks join the 121 of `designs.csv` in `client_chaos_wingfit/wing_anchors.lua` (generated). The one anchor (-16, 0) and the torso rule of base patch 0204 are the same. A client on pair 77 or older lists looks it does not have: harmless, the engine keeps a table row per look id. `anchor_fixtures.txt` does not change (it holds the torso rule, not the looks). `wing_centres.lua` and its dat md5 are **not** touched: they change only when pair 78 goes to windows-assets, from the built pair (`gen_wing_centres.py`, `--check` in the live-pair job).
+- **Server**: `data/lib/chaos_drawn_wings.lua` sells the six at 300 coins each (placeholder, docs/PRICES.md) at the end of Cosmetics > Wings and `install_outfits.py` writes their wings.xml lines, both only from config.lua `chaosClientPair` 78. The client shows the names the server sends (no client locale rows). server/README.md "Drawn wings (O581 phase 2)".
+- **Pair 78 build** (not run; needs the real pair 77 and the owner's approval): `python3 -I client/tools/sprites/gen_drawn_wings.py build-new P77/Tibia.dat P77/Tibia.spr OUT78` then `python3 -I client/tools/sprites/gen_drawn_wings.py live-new OUT78/Tibia.dat OUT78/Tibia.spr` (and `live` of the 121 old wings still passes). After it: the dat md5 and `PAIR_ASSETS` 78 in `server/tools/client_pair.py` and the tables that hold the dat md5 (`wing_centres.lua`, `foot_marks.lua`, `outfit_anchors.lua`, `head_centres.lua`, `info_lifts.lua` from the built pair), `tools/ci/check_content.py` `PAIR_NAME` / `PAIR_OUTFITS` (3560), the windows-assets push, then `chaosClientPair` 78.
+- **Test**: `gen_drawn_wings_new_test.py` (table rules and faults, the files are current, the pictures, `build-new` and `live-new` on a synthetic pair: six outfits appended, the O583 shape, old outfits byte for byte, another pair and a second run refused, the same bytes twice), `wingfit_core_test.lua` (127 anchors), server `tests/drawn_wings_test.lua`, `install_outfits_test.py`.
 
 ## Outfits centred on the tile (O585, `tools/sprites/gen_outfit_centre.py`, `pair_fixes/outfit_centre.csv`; owner 2026-11-16)
 Owner (translated): "Put all the outfits centred on the same place too; today some are centred up and to the left, others down and to the right." **Status: tool, table and previews. No pair built for the game. Waits for the owner, then pair 73.**

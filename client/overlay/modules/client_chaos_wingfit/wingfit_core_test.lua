@@ -128,7 +128,7 @@ ok(xs[math.floor(#xs / 2)] <= 0 and ys[math.floor(#ys / 2)] < 0, 'the median cla
 -- code-drawn wings (O583): the anchors file and its hand-over
 dofile(dir .. 'wing_anchors.lua')
 local A = ChaosWingAnchors
-ok(type(A) == 'table' and #A.wings == 121 and A.anchor[1] == -16 and A.anchor[2] == 0, 'the anchors file: 121 wings, one anchor')
+ok(type(A) == 'table' and #A.wings == 127 and A.anchor[1] == -16 and A.anchor[2] == 0, 'the anchors file: 121 old wings and the 6 of O581 phase 2, one anchor')
 local seenW, lastW, sortedW = {}, 0, true
 for _, id in ipairs(A.wings) do
   if seenW[id] or id <= lastW then sortedW = false end
@@ -137,7 +137,7 @@ end
 ok(sortedW, 'the wings ids are sorted and unique')
 local gotW, gotB = {}, {}
 local nw, nr = C.applyAnchors(A, function(l, x, y) gotW[#gotW + 1] = { l, x, y } end, function(l, d, x, y) gotB[#gotB + 1] = { l, d, x, y } end)
-ok(nw == 121 and #gotW == 121 and nr == #A.bodies and #gotB == nr, 'applyAnchors counts ' .. nw .. ' ' .. nr)
+ok(nw == 127 and #gotW == 127 and nr == #A.bodies and #gotB == nr, 'applyAnchors counts ' .. nw .. ' ' .. nr)
 ok(gotW[1][1] == A.wings[1] and gotW[1][2] == -16 and gotW[1][3] == 0, 'applyAnchors hands the anchor')
 ok(C.applyAnchors(nil, error, error) == 0 and C.applyAnchors({ wings = { 5 } }, error, error) == 0, 'no table, no anchor: nothing')
 local junkA = { anchor = { -16.7, 0 }, wings = { 9, 'x', 0, 2.5, 4 }, bodies = { { 7, 2, -30, -4 }, { 7, 4, 0, 0 }, { 7, 1 }, 'x' } }
