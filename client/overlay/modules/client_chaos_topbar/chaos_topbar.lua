@@ -835,6 +835,26 @@ end
 
 local keepStockGone       -- set below with the stock top strip code
 
+-- true when a visible window drawn after the bar overlaps it (the Passive Tree fills the game root panel): the bar is not
+-- raised over it. An engine error reads as false, so the bar is raised as before.
+local function windowAboveBar(p)
+  local ok, covered = pcall(function()
+    local above, seen = {}, false
+    for _, c in ipairs(p:getChildren()) do
+      if c == menuBar then
+        seen = true
+      elseif seen then
+        local r = c:getRect()
+        above[#above + 1] = { visible = c:isVisible(), window = c:getClassName() == 'UIWindow',
+                              x = r.x, y = r.y, width = r.width, height = r.height }
+      end
+    end
+    local b = menuBar:getRect()
+    return ChaosTopBarLogic.coveredByWindow({ x = b.x, y = b.y, width = b.width, height = b.height }, above)
+  end)
+  return ok and covered == true
+end
+
 function ChaosTopBar.refresh()
   if not isAlive(menuBar) then return end
   if keepStockGone then keepStockGone() end
@@ -879,7 +899,7 @@ function ChaosTopBar.refresh()
   if not menuBar:isVisible() then menuBar:setVisible(true) end
   local p = menuBar:getParent()
   local top = p and p.getLastChild and p:getLastChild() == menuBar
-  if moved or not top then menuBar:raise() end
+  if moved or (not top and not windowAboveBar(p)) then menuBar:raise() end
 end
 
 -- one refresh for a burst of requests (every module that adds an entry at load asks for one)

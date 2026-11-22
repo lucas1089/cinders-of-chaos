@@ -6798,6 +6798,24 @@ online and offline: no anchors means centred below the bar, anchored means never
 the oversized window, the HUD and the phone. `layout_test.lua` has the saved-position cases.
 Not run in a real client.
 
+### Bar under a full window (2026-11-22, `client_chaos_topbar`)
+
+Owner (pt-BR): "top menu as vezes aparece em cima da passive tree". **Cause.** The bar and the Passive Tree are siblings on the game
+root panel. The tree fills the panel and raises itself on show, then asks the server for its points; `sendPoints` calls
+`ChaosTopBar.refresh`, and a refresh raised the bar above every sibling that was drawn later, so the bar covered the tree's top
+row (Paragon, Build Code, Auto Build, Stats) whenever the answer came after the show (always, by a round trip; hidden when the
+bar had been refreshed again before). **Fix.** `refresh` raises the bar only when no visible `UIWindow` drawn after it overlaps
+its rect (`ChaosTopBarLogic.coveredByWindow`, `windowAboveBar` in `chaos_topbar.lua`); it is raised again by the next refresh
+once that window is closed. Any full or tall window gets the same rule. Tests: `topbarlogic_test.lua` (the rule),
+`chaos_topbar_test.lua` (a tree window above the bar stays above through a refresh, a panel does not hold the bar down).
+
+### Store card count (2026-11-22, `game_shop`, server `shop.lua`)
+
+Owner (pt-BR): "itens na store aparecem com x100". **Cause.** The card's "xN" line read `count`, which the server fills with how
+many the picture is drawn with: a service such as World Experience / Loot / Training is drawn as a pile of 100 coins
+(`ChaosShopCore.iconCount`), so it read as 100 items. **Fix.** The server sends `amount` (the items the buyer gets) only on offers
+of kind item; `ShopView.subLine` writes xN from `amount` alone. Tests: `shopview_test.lua`, `server/tests/shop_test.lua`.
+
 ### Close X (O572)
 
 Owner 2026-11-14: "coloque um X pra fechar a janela da forge". The skin had no close X widget: windows close by a Close or

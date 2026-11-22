@@ -9,13 +9,16 @@
 local cfg = dofile("data/scripts/chaos/seasonpass_config.lua")
 local pass = cfg.passes[cfg.storeSeason] or {packs = {}}
 local offers = {}
+-- the picture of a pass: the premium scroll of Premium Time (owner 2026-11-22: the supreme health potion "has nothing to do
+-- with the item"); drawn once, not as a pile
+local PASS_ICON = 16101
 if pass.premium then
-	offers[#offers + 1] = {kind = "unlock", unlock = pass.premium.unlock, icon = pass.premium.icon or 26031,
+	offers[#offers + 1] = {kind = "unlock", unlock = pass.premium.unlock, icon = pass.premium.icon or PASS_ICON, iconCount = 1,
 		cost = pass.premium.price, name = "Premium " .. pass.name, description = pass.premium.description,
 		noSale = true, gift = false}
 end
 for _, p in ipairs(pass.packs or {}) do
-	offers[#offers + 1] = {kind = "unlock", unlock = p.unlock, look = p.look, icon = 26031, cost = p.price,
+	offers[#offers + 1] = {kind = "unlock", unlock = p.unlock, look = p.look, icon = PASS_ICON, iconCount = 1, cost = p.price,
 		name = p.name, description = p.description, noSale = true, gift = false}
 end
-return {name = "Season Pass", icon = {item = pass.premium and pass.premium.icon or 26031}, offers = offers}
+return {name = "Season Pass", icon = {item = pass.premium and pass.premium.icon or PASS_ICON, count = 1}, offers = offers}

@@ -67,6 +67,15 @@ function Widget:getLastChild() return self.kids[#self.kids] end
 function Widget:getPosition() return { x = 0, y = 0 } end
 function Widget:getHeight() return self.h end
 function Widget:containsPoint() return true end
+function Widget:getChildren() return self.kids end
+function Widget:getRect() return self.rect or { x = 0, y = 0, width = 0, height = 0 } end
+function Widget:getClassName() return self.class or 'UIWidget' end
+function Widget:raise()
+  local p = self.parent
+  if not p then return end
+  for i, k in ipairs(p.kids) do if k == self then table.remove(p.kids, i) break end end
+  p.kids[#p.kids + 1] = self
+end
 
 local settings, logged, events = {}, {}, {}
 local gameRoot = new('root')
@@ -126,6 +135,24 @@ eq(stock.visible, false, 'a refresh hides it again'); eq(stock.h, 0, 'and sizes 
 stock.h = 22; stock.visible = false -- grown while hidden
 ChaosTopBar.refresh()
 eq(stock.h, 0, 'a refresh takes the height away again')
+
+-- owner 2026-11-22: the bar is never raised over a window that overlaps it (the Passive Tree fills the game root panel and
+-- asks for a refresh when its points arrive, after it raised itself)
+bar.rect = { x = 400, y = 2, width = 300, height = 42 }
+local tree = new('TreeWindow', gameRoot)
+tree.class, tree.rect = 'UIWindow', { x = 0, y = 0, width = 1280, height = 720 }
+eq(gameRoot.kids[#gameRoot.kids], tree, 'the tree window opened above the bar')
+ChaosTopBar.refresh()
+eq(gameRoot.kids[#gameRoot.kids], tree, 'a refresh leaves the bar below the open tree')
+tree.visible = false
+ChaosTopBar.refresh()
+eq(gameRoot.kids[#gameRoot.kids], bar, 'the tree closed: the next refresh raises the bar again')
+local hud = new('Panel', gameRoot)
+hud.rect = { x = 0, y = 0, width = 1280, height = 720 }
+ChaosTopBar.refresh()
+eq(gameRoot.kids[#gameRoot.kids], bar, 'a panel above (not a window) does not hold the bar down')
+hud:destroy()
+tree:destroy()
 
 -- the login screen in the hub look: the System hub only (Join Discord, Exit, Options... whatever the offline entries give)
 eq(ChaosTopBar.getStyle(), 'hubs', 'the default look is the hubs')

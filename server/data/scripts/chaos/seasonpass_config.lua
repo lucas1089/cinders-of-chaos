@@ -166,7 +166,7 @@ return {
 		[1] = {
 			name = "Ashen Pass",
 			-- price: decided 2026-10-14 (owner delegated; docs/PRICES.md): 600, 320 of it back on the track
-			premium = {price = 600, unlock = "seasonPassPremium", icon = 26031,
+			premium = {price = 600, unlock = "seasonPassPremium", icon = 16101,
 				description = "Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."},
 			-- tier = {free reward, premium reward}. The free track (gold and potions) is earned by play; the premium track
 			-- is cosmetics and Chaos Coins back only (validated: seasonpass_core.lua P.PREMIUM_KINDS): no gold, no potions,

@@ -46,7 +46,7 @@ local pathEndsAt = nil -- the weekly rotation's end while its category is shown 
 
 local CARD_W, CARD_H, CARD_GAP = 168, 68, 6
 local LOOK_HEIGHT = 190 -- the look preview's room in the details pane (offers that have a look)
-local CHIP_W, CHIP_H, CHIP_GAP, CHIP_CHARS = 108, 22, 3, 19
+local CHIP_W, CHIP_H, CHIP_GAP, CHIP_CHARS, CHIP_ROWS, CHIP_PAD = 108, 18, 2, 19, 2, 12
 local NAME_CHARS = 34 -- two lines of a card's name
 local ONE_LINE_CHARS = 16 -- what fits on one line of it
 
@@ -261,7 +261,7 @@ end
 -- the widgets of the window that the code reaches by id (a nested widget is no field of the window)
 local IDS = { 'infoPanel', 'points', 'buy', 'searchText', 'rail', 'detailPanel', 'lookPreview', 'dTitle', 'dTags', 'dCoin',
   'dPrice', 'dOld', 'dDesc', 'dNote', 'tryButton', 'giftButton', 'buyButton', 'mainPanel', 'adPanel', 'ad', 'pathLabel',
-  'pathCount', 'chips', 'offers', 'offersScrollBar', 'home', 'homeScrollBar', 'emptyLabel', 'pageControls', 'pageLabel',
+  'pathCount', 'chips', 'chipsScrollBar', 'offers', 'offersScrollBar', 'home', 'homeScrollBar', 'emptyLabel', 'pageControls', 'pageLabel',
   'prevPage', 'nextPage' }
 
 function createShop()
@@ -713,9 +713,11 @@ function renderChips()
 end
 
 function setChipsHeight(count)
-  local width = ui.chips:getWidth()
+  local width = ui.chips:getWidth() - CHIP_PAD
   local cols = width > 0 and ShopView.columns(width, CHIP_W, CHIP_GAP) or 5
-  ui.chips:setHeight(ShopView.gridHeight(count, cols, CHIP_H, CHIP_GAP))
+  local area = ShopView.chipsArea(count, cols, CHIP_H, CHIP_GAP, CHIP_ROWS)
+  ui.chips:setHeight(area.height)
+  if ui.chipsScrollBar then ui.chipsScrollBar:setVisible(area.overflow) end
 end
 
 -- for other modules: open the store at a category (by its name, as the server sends it)
@@ -1117,6 +1119,25 @@ end
 
 -- the details of a card: its look in the preview column (look offers), the name, tags, price, text, the note (owned,
 -- coins short) and the Buy / Gift / Try on buttons; nothing picked: a hint. `keepTry` leaves the Try on countdown alone.
+-- the note sits on the top-most button shown and the text takes the room above it (ShopView.detailLayout)
+local function layoutDetailText(plan, noteText)
+  local L = ShopView.detailLayout(plan, noteText)
+  local note = ui.dNote
+  if not note then return end
+  pcall(function()
+    note:breakAnchors()
+    note:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    note:addAnchor(AnchorRight, 'parent', AnchorRight)
+    if L.anchor == 'parent' then
+      note:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+    else
+      note:addAnchor(AnchorBottom, L.anchor, AnchorTop)
+    end
+    note:setMarginBottom(L.noteMargin)
+    note:setHeight(L.noteHeight)
+  end)
+end
+
 function showDetails(card, keepTry)
   if not ui.dTitle then return end
   if not card or not stillAlive(card) then
@@ -1133,6 +1154,7 @@ function showDetails(card, keepTry)
     ui.buyButton:setVisible(false)
     ui.giftButton:setVisible(false)
     ui.tryButton:setVisible(false)
+    layoutDetailText(nil, '')
     return
   end
   local data = card.offerData
@@ -1186,6 +1208,7 @@ function showDetails(card, keepTry)
     if not keepTry then ui.tryButton:setText(tr('TRY ON')) end
     ui.tryButton.onClick = function() tryOffer(card) end
   end
+  layoutDetailText(plan, ui.dNote:getText())
 end
 
 -- the countdown on the button while a try runs
