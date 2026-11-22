@@ -1,4 +1,5 @@
 id,name,element
+3,CONST_ME_POFF,any
 18,CONST_ME_MORTAREA,death
 372,fire_nova,fire
 379,frost_burst,ice

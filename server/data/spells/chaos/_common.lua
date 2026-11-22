@@ -968,11 +968,23 @@ function ChaosSpell.slow(target, ticks, percent)
 	end
 end
 
+-- O711: the hit effect a script hands to the combat call (a raw send of the engine) is the awakened kit effect while an awakened cast runs:
+-- sent once a cast on the anchor tile, the combat's own effect is none then. Returns `effect` unchanged below client pair 76, for a cast that
+-- is not awakened, and when there is no effect.
+function ChaosSpell.awakenedHit(pos, effect)
+	local AL = rawget(_G, "ChaosAwakenedLook")
+	if AL and AL.vfx and pos and effect and effect ~= 0 and effect ~= CONST_ME_NONE and AL.vfx(pos) then
+		return CONST_ME_NONE
+	end
+	return effect
+end
+
 function ChaosSpell.damageTarget(caster, target, ctype, min, max, effect)
 	if not ChaosSpell.canAttack(caster, target) then
 		return false
 	end
-	return doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), ChaosSpell.plainHit(target:getPosition(), effect))
+	local fx = ChaosSpell.plainHit(target:getPosition(), effect)
+	return doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), ChaosSpell.awakenedHit(target:getPosition(), fx))
 end
 
 function ChaosSpell.healTarget(caster, target, min, max, effect)

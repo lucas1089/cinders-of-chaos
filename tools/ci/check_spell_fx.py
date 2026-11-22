@@ -21,8 +21,8 @@ in the signature too). A row of spell_fx_allow.csv that the spell has is accepte
 O711: the awakened casts are run again at client pair 76 (the probe's 8th argument; data/lib/chaos_awakened_look.lua), once with the picks that
 keep the element and once with the Forms that convert it. The kit effects of data/lib/chaos_awakened_fx_ids.lua (ids 5354..5393, tagged `af_*`) go
 through the same element rule, and every kit effect a cast sends is the kit of the element the cast shows (a conversion's, else the spell's own),
-once a cast. A spell that sends effects below pair 76 must send a kit effect at it, unless it is a named row of NOKIT_ALLOWED (a cast the mock
-does not run: cast-time spells, corpses; the list may only shrink).
+once a cast. A spell that sends effects below pair 76 must send a kit effect at it, unless it is a named row of NOKIT_ALLOWED (empty now; the list may only shrink).
+The 8 spells of RICH_PROBE (cast-time, corpse, minion, free tile) run with the rich mock of the probe at pair 76.
 
 What a spell sends is measured, not read from names: tools/ci/spell_fx_probe.lua runs the real script of every chaos
 spell against a recording mock of the engine, once per vocation of the spell, with the real libraries (so the swap
@@ -210,26 +210,28 @@ def parse_probe(lines):
     return ids
 
 
-def run_probe(root, spell, voc, dx, state=0, weakest='', pair=0):
+def run_probe(root, spell, voc, dx, state=0, weakest='', pair=0, rich=False):
     cmd = ['lua5.3', PROBE, str(VOC[voc]), str(spell['id']), spell['script'], '300', str(dx)]
     if state:
         cmd += [str(state), weakest]
-        if pair:
+        if pair or rich:
             cmd += [str(pair)]
+        if rich:
+            cmd += ['rich']
     p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=60)
     return p.stdout.strip().split('\n') if p.stdout.strip() else []
 
 
-def probe_spell(root, spell, state=0, weakest='', pair=0):
+def probe_spell(root, spell, state=0, weakest='', pair=0, rich=False):
     """effect ids over every vocation of the spell (the class swaps differ by vocation); a target out of reach is
     tried again close. state / weakest: the Form of the cast; pair: the client pair of the run (spell_fx_probe.lua)"""
     ids = set()
     for voc in spell['vocs']:
         if voc not in VOC:
             continue
-        lines = run_probe(root, spell, voc, 5, state, weakest, pair)
+        lines = run_probe(root, spell, voc, 5, state, weakest, pair, rich)
         if any(l.startswith('CANCEL') for l in lines):
-            more = run_probe(root, spell, voc, 1, state, weakest, pair)
+            more = run_probe(root, spell, voc, 1, state, weakest, pair, rich)
             if len(parse_probe(more)) > len(parse_probe(lines)):
                 lines = more
         ids.update(parse_probe(lines))
@@ -290,7 +292,7 @@ def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case):
                 state, weak, want = got
                 jobs.append((s, state, weak, want))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2], pair), jobs))
+            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2], pair, pair >= KIT_PAIR and j[0]['name'] in RICH_PROBE), jobs))
         return {j[0]['id']: (j[2], j[3], r) for j, r in zip(jobs, results)}
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -298,21 +300,15 @@ def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case):
 
 KIT_IDS = os.path.join(ROOT, 'server/data/lib/chaos_awakened_fx_ids.lua')
 KIT_PAIR = 76
-# awakened spells whose cast sends effects below pair 76 but no kit effect at pair 76, each with its reason (the list may only shrink).
-# What the probe sees of these is the cast's first effect and the Forms' and the signature's own: the area / hit of the cast is not run
-# by the mock (a cast-time spell fires after its timer, ChaosCasting; a corpse, a state) or is sent by a script's own raw call
-# (ChaosSpell.damageTarget with an effect, a Necromancer helper). Their casts take the kit in the game when they go through Vfx,
-# ChaosSpell.fx, Combat or doAreaCombat (data/lib/chaos_awakened_look.lua); tests/awakened_look_test.lua holds those paths.
-NOKIT_ALLOWED = {
-    'Glacial Doom': 'cast-time spell: the area fires after its timer, not run by the mock',
-    'Doomtide': 'cast-time spell: the area fires after its timer, not run by the mock',
-    'Primordial Squall': 'cast-time spell: the area fires after its timer, not run by the mock',
-    'Colossus Fall': 'cast-time spell: the area fires after its timer, not run by the mock',
-    'Corpse Explosion': 'needs a corpse: nothing is cast in the mock',
-    'Bone Offering': 'needs a corpse or a minion: nothing is cast in the mock',
-    'Hail of Dawn': 'the hit effect is an argument of ChaosSpell.damageTarget, a raw send of the script',
-    'Umbral Stride': 'needs a free tile behind the target: the mock cancels the cast',
-}
+# awakened spells whose cast sends effects below pair 76 but no kit effect at pair 76, each with its reason (the list may only shrink; empty since
+# the rich mock below runs the 8 casts that the plain mock could not).
+# the awakened casts that need more than the plain mock to run (O711): the awakened run of these gets the rich mock of spell_fx_probe.lua
+# (a clock past the cast time for the cast-time spells, a corpse on every tile, a skeleton of the caster, ground on every tile, the hit
+# effect of doTargetCombat recorded), in the runs at pair 76 only: there the look holds back the effects of the cast's own timers and rings, so
+# what is left is the kit and what escaped it. Other spells and every plain, Form and pair 0 run keep the plain mock.
+RICH_PROBE = {'Glacial Doom', 'Doomtide', 'Primordial Squall', 'Colossus Fall', 'Corpse Explosion', 'Bone Offering', 'Hail of Dawn',
+              'Umbral Stride'}
+NOKIT_ALLOWED = {}
 
 
 def load_kit(path=KIT_IDS):

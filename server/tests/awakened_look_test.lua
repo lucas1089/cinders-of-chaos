@@ -413,6 +413,34 @@ do
 	castSpell = nil
 end
 
+-- the hit effect a script hands to the combat call (ChaosSpell.damageTarget -> ChaosSpell.awakenedHit, cut out of _common.lua): the kit, once
+do
+	local f = assert(io.open("data/spells/chaos/_common.lua", "r"))
+	local text = f:read("*a")
+	f:close()
+	local a, b = text:find("function ChaosSpell%.awakenedHit%(pos, effect%).-\nend\n")
+	ok(a ~= nil, "ChaosSpell.awakenedHit is in _common.lua")
+	ok(text:find("ChaosSpell.awakenedHit(target:getPosition(), fx)", 1, true) ~= nil, "damageTarget asks awakenedHit")
+	local env = {ChaosSpell = {}, ChaosAwakenedLook = L, CONST_ME_NONE = 0, rawget = rawget}
+	env._G = env
+	local chunk = (loadstring or load)(text:sub(a, b), "awakenedhit", "t", env)
+	if not chunk then chunk = (loadstring or load)(text:sub(a, b)); if setfenv then setfenv(chunk, env) end end
+	chunk()
+	local hit = env.ChaosSpell.awakenedHit
+	local pos = Position(105, 100, 7)
+	take()
+	castSpell, serial = SPELL, serial + 1
+	eq(hit(pos, 7), 0, "an awakened cast: the raw hit effect is dropped")
+	eq(select(2, take():gsub("ME", "")), 1, "and the kit is sent once")
+	eq(hit(pos, 7), 0, "the same cast again: dropped")
+	eq(select(2, take():gsub("ME", "")), 0, "nothing more is sent")
+	eq(hit(pos, nil), nil, "no effect stays none")
+	eq(hit(pos, 0), 0, "none stays none")
+	castSpell = nil
+	eq(hit(pos, 7), 7, "a cast that is not awakened keeps its hit effect")
+	eq(take(), "", "and sends nothing")
+end
+
 -- ---------------------------------------------------------------- 4. PvP is no gate, the lib asks no PvP rule
 do
 	local f = assert(io.open("data/lib/chaos_awakened_look.lua", "r"))
