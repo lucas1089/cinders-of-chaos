@@ -451,6 +451,8 @@ The effect pipeline of the repo: own art, drawn by code, like `gen_lightning_fx.
 - the server gate is `chaosClientPair >= N` for the pair that adds them. Until then an awakened spell plays the normal effects with the new name
 - `check_spell_fx.py` probes the awakened version of each spell
 
+**Status (O711, 2026-11-22): prototype.** `gen_awakened_fx.py` draws the 40 effects and 8 projectiles (eighth element: arcane) with `check`, `sheets`, `preview`, table and sums, no `build`, no ids file, no gate. It waits for the owner to judge the look; the rest of the list above follows after approval.
+
 ## 4. Combos
 
 ### 4.1 The rule
