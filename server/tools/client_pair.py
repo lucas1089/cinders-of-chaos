@@ -62,14 +62,14 @@ PAIR_AWAKENFX = 76  # the awakened spell look kit (O711, gen_awakened_fx.py): 40
 
 PAIR_AWAKENFX_HEADINGS = 77   # the awakened kit's line and wave heading north, south and west (O711 follow-up, gen_awakened_fx.py): 48 effects
                     # 5394-5441 appended after the kit; data/lib/chaos_awakened_fx.lua answers a heading only from this pair, below it a line or
-                    # wave that does not face east keeps the single (awakened_look_config.lua eastOnly). Code done; PAIR_ASSETS stays 76 until
-                    # the owner pushes pair 77 to windows-assets.
+                    # wave that does not face east keeps the single (awakened_look_config.lua eastOnly). On windows-assets since 2026-11-22 (PAIR_ASSETS 77);
+                    # the client sees it once chaosClientPair is 77.
 
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 76
-PAIR_ASSETS_DAT_MD5 = '2ff019d10b257fca75ffe7d04e5e1b02'
+PAIR_ASSETS = 77
+PAIR_ASSETS_DAT_MD5 = '80cdf40aa03fc6097752f2d0822ffae7'
 
 
 def parse(text):
