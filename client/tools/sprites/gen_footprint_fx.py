@@ -523,8 +523,8 @@ def live(dat_path, spr_path):
     rows = read_spec()
     sums = read_sums()
     errs = []
-    if len(dat.effects) != FIRST + len(rows) - 1:
-        errs.append('the pair has %d effects, %d expected' % (len(dat.effects), FIRST + len(rows) - 1))
+    if len(dat.effects) < FIRST + len(rows) - 1:     # a later pair appends after 5353 (pair 76, O711)
+        errs.append('the pair has %d effects, at least %d expected' % (len(dat.effects), FIRST + len(rows) - 1))
     for r in rows if not errs else []:
         t = dat.effects[int(r['id']) - 1]
         if (t.w, t.h, t.phases) != (int(r['w']), int(r['h']), int(r['phases'])):

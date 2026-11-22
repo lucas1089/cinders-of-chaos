@@ -224,6 +224,9 @@ check(C.allows(os.path.join(server('chaosClientPair = 74\n'), 'data'), C.PAIR_PI
 # the effect footprints (O649) need pair 75, on windows-assets since 2026-11-18
 check(C.PAIR_FOOTFX == 75 and C.PAIR_ASSETS >= C.PAIR_FOOTFX, 'the effect footprints need pair 75, which windows-assets carries (O649)')
 
+# the awakened look kit (O711) needs pair 76: its lib reads the same number
+check(C.PAIR_AWAKENFX == 76 and 'C.PAIR = %d' % C.PAIR_AWAKENFX in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_awakened_fx.lua')).read(), 'the awakened look kit needs pair 76 (O711)')
+
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
 check(C.PAIR_DECOR == 74 and C.PAIR_MALGRATH == 74, 'the decor flames (O623) and Malgrath (O637) need pair 74')

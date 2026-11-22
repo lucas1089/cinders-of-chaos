@@ -36854,6 +36854,15 @@ round swaps them for looks the pair already has: no new picture, no new outfit. 
   Revenant, Rimecairn and Scaleborn, the Pyre pair, Thornveil Wraith and Elite Spider) now have two looks of two arts. The sizes: the old figures were
   3x3 to 5x5, 18 of the 21 new looks are 2x2 or 1x1; only three world bosses keep a big look. Skaldra the Rime Queen keeps 1534 (owner, 2026-11-17).
 
+## Awakened spell looks (O711; `data/lib/chaos_awakened_fx.lua`, `data/lib/chaos_awakened_fx_ids.lua`, client pair 76)
+
+The kit of docs/SPELL_UPGRADES.md 3.4, drawn by code: `client/tools/sprites/gen_awakened_fx.py`, client/MANIFEST.md. Looks only. A lookup, wired into no spell yet.
+
+- **Gate.** `chaosClientPair` of `config.lua` is 76 or more, read once at load (`ChaosAwakenedFx.on`). Below 76 `effect` and `missile` answer nil and the caller keeps today's effects.
+- **Ids.** 40 effects at 5354..5393 in table order (element order fire ice energy earth death holy physical arcane, shape order single circle around line wave), tagged with their element in `data/spells/spell_fx_elements.csv` (`af_*` rows). 8 missiles at 43, 47, 52, 147, 148, 149, 150, 151 in the same element order: a missile id is one byte, so they fill blank or unsent ids in place. Generated: `gen_awakened_fx.py ids`, held by `check`.
+- **API.** `ChaosAwakenedFx.effect(element, shape)` returns `{id, dx, dy, ms}`, `missile(element)` returns `{id, dx, dy}`. The admin app has nothing to do here: the owner raises the record with "Par do cliente" when pair 76 ships (README "Client pair guard").
+- **Test.** `tests/awakened_fx_test.lua`: gate off below 76, every element and shape mapped in order, missile ids unique and below 254, tags match.
+
 ## Bolt from the sky (O614; `data/lib/chaos_lightning_fx.lua`, `data/lib/chaos_lightning_fx_ids.lua`, client pair 73)
 
 Owner 2026-11-17: "For the lightning falling from the sky, make the tool to draw the lightning."

@@ -57,6 +57,9 @@ PAIR_PIXELLAB = 74  # the 24 PixelLab monsters 3531-3554 (O640, gen_pixellab_mon
 PAIR_FOOTFX = 75    # the 20 footprint effects 5334-5353 (O649, gen_footprint_fx.py): the effect footprint cosmetics (cosmetics_config.lua `pair = 75`,
                     # data/lib/chaos_footprint_fx_ids.lua `on`) are offered only from this pair. pair 75 is on windows-assets since 2026-11-18 (O649)
 
+PAIR_AWAKENFX = 76  # the awakened spell look kit (O711, gen_awakened_fx.py): 40 effects 5354-5393 and 8 projectiles (blank ids 43 47 52, donor ids
+                    # 147-151 rebuilt); data/lib/chaos_awakened_fx.lua answers only from this pair, a lookup no spell asks yet. Built, not on windows-assets yet
+
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
