@@ -8,7 +8,7 @@
  ],
  "counts": {
   "closed": 15,
-  "opcode": 74,
+  "opcode": 75,
   "out": 24,
   "passive": 115,
   "place": 15,
@@ -10525,6 +10525,27 @@
     "mentor"
    ]
   },
+  "monsterInspect": {
+   "actions": [
+    "inspect"
+   ],
+   "client": [
+    "game_monsterinspect"
+   ],
+   "dataKeys": [
+    "cid"
+   ],
+   "files": [
+    "monster_inspect.lua"
+   ],
+   "opcode": 166,
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
+   "systems": [
+    "monster_inspect"
+   ]
+  },
   "monsterbar": {
    "actions": [
     "query"
@@ -13067,6 +13088,17 @@
    "kind": "opcode",
    "opcodes": [
     "monsterbar"
+   ],
+   "talkactions": []
+  },
+  "monster_inspect": {
+   "files": [
+    "chaos_constants.lua",
+    "monster_inspect.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "monsterInspect"
    ],
    "talkactions": []
   },
