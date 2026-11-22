@@ -7,7 +7,9 @@ set(VCPKG_CMAKE_SYSTEM_NAME Android)
 set(VCPKG_CMAKE_SYSTEM_VERSION 26)
 set(VCPKG_MAKE_BUILD_TRIPLET "--host=aarch64-linux-android")
 # the NDK toolchain falls back to armeabi-v7a without it (luajit then assembles arm64 code for armv7)
-set(VCPKG_CMAKE_CONFIGURE_OPTIONS -DANDROID_ABI=arm64-v8a)
+# CMAKE_POLICY_VERSION_MINIMUM: the runner's CMake 4 refuses ports that ask for a CMake below 3.5 (libogg 1.3.5,
+# android-client run 2026-11-22: "Compatibility with CMake < 3.5 has been removed")
+set(VCPKG_CMAKE_CONFIGURE_OPTIONS -DANDROID_ABI=arm64-v8a -DCMAKE_POLICY_VERSION_MINIMUM=3.5)
 set(VCPKG_BUILD_TYPE release)
 # position independent code: every static library ends up in one shared library
 set(VCPKG_C_FLAGS "-fPIC")
