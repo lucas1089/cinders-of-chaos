@@ -726,6 +726,7 @@ collision check") and be added here.
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
 | 165 | `statusVfx` | `status_vfx.lua` (the scan and the wish), `data/lib/chaos_status_vfx.lua` (the rules) | `game_statusfx` | client -> server `hello {on}`, server -> client `cfg {on, e, ms}`, `s {l}` only to a client that asked (O597, README "Status layer (O597)") |
+| 166 | `monsterInspect` | `monster_inspect.lua` | `game_monsterinspect` | client -> server `inspect {cid}`, server -> client `result {...}` (through `Chaos.sendChunked`), `denied {code}` (O721, README "Inspect Monster (O721)") |
 | 168 | `spellRanks` | `spell_ranks.lua`, `spell_forms.lua`, `spell_combos.lua` | `game_spellranks` | client -> server `open`, `pick {spell, tier, pick}`, server -> client `state {on, v, s}`, `forms {v, f}`, `pick {ok, why, price, ...}`, `rank {s}` (a rank-up), `combo {id, n, x, y, z}` (O686 phases 2, 4, 5 and 6, README "Spell ranks (O686 phase 2)", "Spell Forms (O686 phase 4)", "Spell combos (O686 phase 6)") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
@@ -17109,6 +17110,78 @@ under it); Social > Inspect Player and a typed name; the privacy checkbox switch
 request refused with the name in the text and no stale data in the window. Not tested in game: a hidden staff member, a player
 out of range (unit tests), a character with a guild (the guild line is the stock `getGuild`), rift / trial records of a
 character that has them (the fields were 0).
+
+## Inspect Monster (O721: `monster_inspect.lua`, `monster_inspect_core.lua`, `monster_inspect_config.lua`, client `game_monsterinspect`)
+
+Owner 2026-11-22 (pt-BR): "quando a gente dá um control+right click, faça uma opção pra inspecionar o monstro, mostrando todas as
+informações dele. ou shift+left click" and "o shift click já abre a janela direto". The right-click menu of a monster has a new
+entry **Inspect** (pt-BR "Inspecionar") next to Look, and **Shift + left click** on a monster opens the window at once. Look
+(the menu entry and Shift + right click) stays, on items, players and monsters. Ctrl + right click shows the same menu.
+Extended opcode `ChaosOpcodes.monsterInspect` = **166** (the next number after 165 that nothing uses: not in the reference
+server, not a base client `ExtendedIds`, no `ChaosOpcodes` value, no client module; `tests/monster_inspect_test.lua` checks all
+four). Files: `monster_inspect_core.lua` (pure: who may ask, the budget, the monster file reader, every row), `monster_inspect_config.lua`
+(numbers, element words, one sentence per modifier), `monster_inspect.lua` (the engine reads and the handler); test
+`server/tests/monster_inspect_test.lua` (mocked engine, both interpreters).
+
+**Protocol (JSON `{action, data}`, answers through `Chaos.sendChunked`; the biggest window stays under one 8000 byte packet).**
+
+| direction | action | data |
+|---|---|---|
+| client -> server | `inspect` | `{cid}` the creature id of the monster clicked |
+| server -> client | `result` | `{cid, name, level, tier, flags = [{key, name?}], outfit, health = {cur, max, pct, hidden?}, family = {cat, race, diff}, mods = [{key, name, text}], exp = {base, tier?, rate?, total, bonus?, rank?}, resist = {elements = [{name, pct}], immune, conditions}, armour = {armor, defense, class, spell, weapon}, attacks = [{name, kind, element, chance, interval, min, max, range}], abilities = [{kind, name, ...}], speed = {base, now}, loot = {total, bands, rows, locked, tierText}, uniques = [{name, cid, boss, set}], areas = [{text, count}], bestiary = {kills, stage, th, next}}` |
+| server -> client | `denied` | `{code}` `notfound` (not a monster, a hunt teleport room display monster, no such creature), `range`, `rate`, `bad` |
+
+**Rules.** Only a monster the player can see: the same floor, within 10 tiles (`rangeX` / `rangeY`) and in view
+(`Player:canSeeCreature`); a player, an NPC and the display monsters of the hunt teleport room answer like a creature that is not
+there. Request budget per player: one request per 600 ms, a bucket of 8, one more every 2 s (`cooldownMs`, `bucketSize`,
+`bucketPerSecond`; the bucket is dropped at logout). The client never guesses: every number and word of the window is in the
+result; a text is an English key the client translates (the server sends no sentence).
+
+**What the window shows (everything the player may know of a live monster).**
+
+- Header: outfit, name, level (the nameplate level: `getDisplayLevel`, else `ChaosMonsterLevels.estimate`), flags (the tier label
+  Magic / Rare / Legendary, **Elite** when `ChaosMonsterDefence.classOf` is `elite`, **Boss**, Rift guardian / Omen guardian, Summon),
+  health bar with current / maximum / percent (a monster with hidden health shows the percent only; the numbers are in the
+  viewer's display scale, `ChaosDisplayScale.forPlayer`).
+- Overview: family (the Bestiary category), type (race), the Bestiary difficulty, speed (base and now).
+- Experience: one kill = base x the rank factor of its tier (`ChaosTiers[tier].xp`) x the viewer's experience stage
+  (`Game.getExperienceStage`), then the viewer's Bestiary entry bonus (completed entry) and rank bonus as rows. Before party
+  sharing, stamina and boosts.
+- Modifiers (affixes): the name and one sentence each (`monster_inspect_config.lua` `modifiers`, held to the list of
+  `ChaosMods` by the test).
+- Resistances: every element the monster takes more or less of after the O462 defence layer
+  (`ChaosMonsterDefence.effectiveResist`: file value, elite bonus, resist modifier, cap), the immunities
+  (`MonsterType:combatImmunities`) and the conditions it cannot suffer (`conditionImmunities`).
+- Defence: the flat armour and defence of the monster file, the armour class (normal / elite / boss) and the share of a typical
+  hit of its level the O462 armour layer removes, for a spell hit and for a weapon hit (`ChaosMonsterDefenceCore.armourReduction`,
+  `weaponShare` with the class cap).
+- Attacks: read from the monster file (`data/monster/<file>.xml` through `monsters.xml`, 64 KB at most, parsed by
+  `M.parseXml`, cached): melee (the engine's maximum from skill and attack), bolts and spells with their element (words of the
+  name, `attackElements`), range, chance, interval, and the damage range x the tier's damage factor x the display scale. A
+  monster defined in Lua has no file: the engine's `MonsterType:getAttackList()` answers (melee or spell, damage range).
+  The engine gives no spell name or element there. Cut at 12 rows.
+- Abilities: defence spells (heals, haste, invisibility, outfit change), summons (names, the most it holds), and the flags worth
+  knowing (runs at a health percent, pushes items / creatures, hides its health). Cut at 10.
+- Loot: the count of items in the loot table by rarity band (Common 10% and over, Uncommon 1%, Rare 0.1%, Very rare below), the
+  line of what its tier adds to the corpse, and the rows (name, chance, most per drop) by the **Bestiary stage of the viewer for this
+  monster** (below).
+- Unique items and set pieces that name this monster (`ChaosLoot.uniqueList` entries with the monster in `monsters`; a set piece is
+  marked). Leveling uniques with no monster list (the O342 window) are not listed: they drop from any monster of their level
+  window.
+- Where it lives: the Bestiary places (nearest town and floor, spawn count, 3 at most).
+- Your Bestiary progress: stage, kills, kills for the next stage.
+
+**What follows the Bestiary.** Everything above is open from the first look. The Bestiary sells the loot and the places as
+progress, so they keep its stages (`monster_inspect_config.lua` `reveal`, the same numbers as `bestiary_config.lua`): stage 2
+(Studied) shows the 4 rarest loot rows and the places, stage 3 (Mastered) the whole table (30 rows) and the uniques; below that
+the window says which stage opens it. A monster with no Bestiary entry (summons, scenery) has no family, no places and no loot
+rows, only the band counts. To open everything, set `reveal` to 0.
+
+**Not done / assumed.** No spell names for Lua-defined monsters (engine limit). The `MonsterType` methods `getElementList`,
+`combatImmunities`, `conditionImmunities`, `getLoot`, `getAttackList`, `armor`, `defense`, `isHealthHidden` and `isBoss` are read
+through `pcall`: one that is missing leaves its rows out. The damage range of a file attack is the file's, scaled by the tier's
+damage factor; the monster level damage bonus (`monster_damage.lua`), pack factors and modifiers that change hits are not in it.
+Not run on a server or in a client: the unit tests only.
 
 ## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
 

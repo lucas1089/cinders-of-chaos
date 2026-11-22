@@ -1,0 +1,174 @@
+// Inspect Monster window (game_monsterinspect). Styles from client_chaos_theme (styles.otui).
+
+// a row of the list: the name left, the value right (a verticalBox places it and gives it the full width)
+MonsterInspectRow < UIWidget
+  height: 16
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #f6cf72
+    text-align: right
+    phantom: true
+
+// a heading of the list: gold text over a thin rule
+MonsterInspectSection < UIWidget
+  height: 22
+  margin-top: 6
+  phantom: true
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    height: 14
+    phantom: true
+
+  ChaosSeparator
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+// a sentence under a row (what a modifier does, why a part is locked): wraps and grows
+MonsterInspectNote < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-left: 8
+  phantom: true
+
+MonsterInspectHeadLine < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: false
+  height: 16
+  phantom: true
+
+ChaosMainWindow
+  id: monsterInspectWindow
+  size: 480 520
+  !text: tr('Inspect Monster')
+  @onEscape: modules.game_monsterinspect.hide()
+
+  ChaosCloseX
+    @onClick: modules.game_monsterinspect.hide()
+
+  ChaosPanelHighlight
+    id: headPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 92
+    padding: 10
+
+    UICreature
+      id: creature
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 64 64
+      phantom: true
+
+    ChaosTitle
+      id: monsterName
+      anchors.top: parent.top
+      anchors.left: creature.right
+      anchors.right: parent.right
+      margin-left: 12
+      text-align: left
+      text-auto-resize: false
+      height: 20
+
+    MonsterInspectHeadLine
+      id: levelLine
+      anchors.top: monsterName.bottom
+      anchors.left: monsterName.left
+      anchors.right: parent.right
+      margin-top: 2
+
+    MonsterInspectHeadLine
+      id: flagsLine
+      anchors.top: levelLine.bottom
+      anchors.left: monsterName.left
+      anchors.right: parent.right
+      margin-top: 2
+      color: #e8903a
+
+    ChaosHealthBar
+      id: healthBar
+      anchors.bottom: parent.bottom
+      anchors.left: creature.right
+      anchors.right: parent.right
+      margin-left: 12
+      height: 16
+
+  ChaosPanelDark
+    id: listPanel
+    anchors.top: headPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 6
+    padding: 10
+
+    UIScrollArea
+      id: list
+      anchors.fill: parent
+      margin-right: 14
+      layout:
+        type: verticalBox
+        spacing: 1
+      vertical-scrollbar: scroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: scroll
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      step: 24
+      pixels-scroll: true
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.bottom: closeButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 4
+    height: 16
+    text-align: left
+
+  ChaosButton
+    id: refreshButton
+    anchors.bottom: parent.bottom
+    anchors.right: closeButton.left
+    margin-right: 6
+    width: 110
+    !text: tr('Refresh')
+    !tooltip: tr('Ask the server again for this monster.')
+    @onClick: modules.game_monsterinspect.refresh()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_monsterinspect.hide()

@@ -7,5 +7,6 @@
 164 | effect owner marks (O567): the Options > Effects opacity of my effects is a main client option (base patch 0202); the Unity client never sends the hello, so the server sends it nothing
 173 | not ported yet: Deck of Cards window (O570, client game_carddeck). Unity work is paused by the owner (2026-11); port it with the other card screens when Unity resumes. The old card border handler (172) is dead code: nothing sends 172 any more
 147 | not ported yet: Unity is paused (O433), so the trainer DPS panel of the main client (O573, game_trainerdps) has no Unity window; the server sends only to a client that asked (`watch`), so Unity players get nothing
+166 | not ported yet: Inspect Monster window (O721, client game_monsterinspect). Unity work is paused by the owner (2026-11); the server answers only a client that sent `inspect {cid}`, which the Unity client never does, so Unity players get nothing
 165 | status layer (O597, client game_statusfx): the effects are in the sprite pair of the main client (pair 73); the Unity client never sends the hello, so the server sends it nothing
 168 | spell ranks and Forms (O686 phases 2, 4, 5; main client module game_spellranks in the Spellbook): the Unity client never sends open or pick, so the server sends it nothing; Unity work is paused by the owner (2026-11)
