@@ -272,10 +272,11 @@ function H.fit(text, maxW, measure)
   return cut
 end
 
--- the bar, left to right: the hubs (all but the right one), a divider and the pinned cards, a divider and the right hub
--- (System). A divider is drawn only when something comes before it. Items: { kind = 'hub', hub = hub } | { kind = 'divider' }
--- | { kind = 'pin', card = card }.
-function H.barItems(model, pinCards)
+-- the bar, left to right: the hubs (all but the right one), a divider and the pinned cards, a divider and the tools (O718:
+-- Favourites and Search, `tools` = a list of ids), a divider and the right hub (System). A divider is drawn only when
+-- something comes before it. Items: { kind = 'hub', hub = hub } | { kind = 'divider' } | { kind = 'pin', card = card }
+-- | { kind = 'tool', id = id }.
+function H.barItems(model, pinCards, tools)
   local items, rightHub = {}, nil
   for _, hub in ipairs(model.hubs) do
     if hub.id == H.RIGHT_HUB then rightHub = hub else items[#items + 1] = { kind = 'hub', hub = hub } end
@@ -283,6 +284,10 @@ function H.barItems(model, pinCards)
   if #pinCards > 0 then
     if #items > 0 then items[#items + 1] = { kind = 'divider' } end
     for _, card in ipairs(pinCards) do items[#items + 1] = { kind = 'pin', card = card } end
+  end
+  if tools and #tools > 0 then
+    if #items > 0 then items[#items + 1] = { kind = 'divider' } end
+    for _, id in ipairs(tools) do items[#items + 1] = { kind = 'tool', id = id } end
   end
   if rightHub then
     if #items > 0 then items[#items + 1] = { kind = 'divider' } end

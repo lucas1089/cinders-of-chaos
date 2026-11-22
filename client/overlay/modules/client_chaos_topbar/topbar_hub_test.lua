@@ -97,7 +97,8 @@ g_app = { isMobile = function() return false end }
 g_game = { isOnline = function() return false end, getCharacterName = function() return 'Ash' end }
 g_settings = { getString = function(k) return settings[k] or '' end, set = function(k, v) settings[k] = v end }
 g_logger = { warning = function(m) logged[#logged + 1] = m end }
-g_keyboard = { isShiftPressed = function() return false end }
+local bound = {}
+g_keyboard = { isShiftPressed = function() return false end, bindKeyDown = function(k, fn, w) bound[#bound + 1] = { key = k, fn = fn, widget = w } end, unbindKeyDown = function(k, fn) for i, b in ipairs(bound) do if b.fn == fn then table.remove(bound, i) break end end end }
 local events = {}
 function scheduleEvent(fn, ms) events[#events + 1] = fn return #events end
 function removeEvent() end
@@ -109,6 +110,8 @@ MouseLeftButton, MouseRightButton = 1, 2
 dofile(here .. 'topbar_tree.lua')
 dofile(here .. 'topbar_cards.lua')
 dofile(here .. 'topbar_glyph_index.lua')
+dofile(here .. 'topbar_keywords.lua')
+dofile(here .. 'topbarfindlogic.lua')
 dofile(here .. 'topbarhublogic.lua')
 dofile(here .. 'topbarunlockslogic.lua')
 dofile(here .. 'topbar_hub.lua')
@@ -144,10 +147,10 @@ Hub.testPanel = panel
 
 -- ---------------------------------------------------------------- the bar
 local width = Hub.layoutBar(panel)
-eq(width, 16 + 5 * 32 + 2 * 5 + 6 * 4, 'width: Hero, Hunt, Trade, a divider, the Store pin, a divider and System (32 px badges)')
+eq(width, 16 + 7 * 32 + 3 * 5 + 9 * 4, 'width: Hero, Hunt, Trade, a divider, the Store pin, a divider, Favourites, Search, a divider and System (32 px badges)')
 local ids = {}
 for _, k in ipairs(panel.kids) do ids[#ids + 1] = k.id or k.style end
-eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,ChaosHubDivider,chaosPin_1,ChaosHubDivider,chaosHub_system', 'System at the right end, the Store as its own button (a default pin, on no tab)')
+eq(table.concat(ids, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,ChaosHubDivider,chaosPin_1,ChaosHubDivider,chaosTool_favs,chaosTool_search,ChaosHubDivider,chaosHub_system', 'System at the right end, the Store as its own button (a default pin, on no tab), Favourites and Search before System')
 eq(panel.kids[2].byId.glyph.width, 32, 'the bar glyph is as big as its 32 px cell')
 eq(panel.kids[2].byId.glyph.clip ~= nil, true, 'a badge glyph got its atlas cell')
 eq(panel.kids[2].tooltip, 'Hunt', 'tooltip is the hub name')
@@ -217,10 +220,10 @@ local rel0 = relayouts
 eq(click(inv, MouseRightButton), true, 'the right click is taken')
 eq(settings['chaosHubPins'], 'v1:Store|Inventory', 'the pin is saved after the default Store pin')
 eq(relayouts > rel0, true, 'the host measured the bar again (a bar kept at its old width squeezes the new badge)')
-eq(lastWidth, 16 + 6 * 32 + 2 * 5 + 7 * 4, 'the bar is wide enough for both pins and their dividers')
+eq(lastWidth, 16 + 8 * 32 + 3 * 5 + 10 * 4, 'the bar is wide enough for both pins and their dividers')
 local order = {}
 for _, k in ipairs(panel.kids) do order[#order + 1] = k.id or 'div' end
-eq(table.concat(order, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,div,chaosPin_1,chaosPin_2,div,chaosHub_system', 'the pins sit between the hubs and System')
+eq(table.concat(order, ','), 'chaosHub_hero,chaosHub_hunt,chaosHub_trade,div,chaosPin_1,chaosPin_2,div,chaosTool_favs,chaosTool_search,div,chaosHub_system', 'the pins sit between the hubs and System')
 eq(win.byId.hint.text, 'Pinned to the bar.', 'the hint says so')
 local inv2
 for _, c in ipairs(win.byId.cards.kids) do if c.byId.name.text == 'Inventory' then inv2 = c end end
@@ -288,6 +291,112 @@ local texts = {}
 for _, c in ipairs(win.byId.cards.kids) do texts[#texts + 1] = c.byId.name.text end
 eq(texts[#texts] == 'Auto Loot' or #texts >= 1, true, 'the open tab follows the model')
 Hub.close()
+
+-- ---------------------------------------------------------------- favourites (O718)
+settings['chaosHubFavs'] = nil
+Hub.terminate(); Hub.init(host); panel = new('panel'); Hub.testPanel = panel; Hub.layoutBar(panel)
+local function openWin()
+  for _, c in ipairs(created) do if c.style == 'ChaosHubWindow' and not c.destroyed then win = c end end
+  return win
+end
+local function cardNamed(w, name)
+  for _, c in ipairs(w.byId.cards.kids) do if c.byId.name and c.byId.name.text == name then return c end end
+end
+local function starClick(card) return card.byId.favStar.onMouseRelease(card.byId.favStar, { x = 1, y = 1 }, MouseLeftButton) end
+eq(panel.kids[7].id, 'chaosTool_favs', 'the Favourites badge sits on the bar'); eq(panel.kids[7].tooltip, 'Favourites', 'with its tooltip')
+eq(panel.kids[7].byId.glyph.clip ~= nil, true, 'and a glyph')
+-- an empty Favourites says how to fill it
+eq(Hub.toggleTool('favs'), true, 'open the Favourites'); openWin()
+eq(win.text, 'Favourites', 'the title'); eq(#win.byId.tabs.kids, 0, 'no tabs while empty'); eq(#win.byId.cards.kids, 1, 'one line of text')
+eq(win.byId.cards.kids[1].text, 'No favourites yet. Click the star on a card to add it here.', 'the empty text')
+eq(panel.kids[7].on, true, 'the badge is on while it is open')
+Hub.toggleTool('favs'); eq(win.visible, false, 'the badge closes it')
+settings['chaosHubTab_hunt'] = nil
+-- a star on a card of a hub
+Hub.toggle('hunt'); openWin()
+local fcard = cardNamed(win, 'Battle List')
+eq(fcard.byId.favStar.clip ~= nil, true, 'the card has its star picture'); eq(fcard.byId.favStar.tooltip, 'Add to favourites', 'an outline star offers to add')
+eq(starClick(fcard), true, 'the click on the star is taken')
+eq(settings['chaosHubFavs'], 'v1:Battle List', 'the favourite is saved'); eq(win.byId.hint.text, 'Added to favourites.', 'the hint says so')
+fcard = cardNamed(win, 'Battle List'); eq(fcard.byId.favStar.tooltip, 'Remove from favourites', 'the card follows: the star is filled now')
+eq(win.visible, true, 'the star does not open the card'); eq(#ran, 1, 'nothing ran')
+starClick(cardNamed(win, 'Helper'))
+eq(settings['chaosHubFavs'], 'v1:Battle List|Helper', 'a second favourite')
+Hub.close()
+-- the Favourites window lists them, a click opens one as its card does
+Hub.toggleTool('favs'); openWin()
+eq(#win.byId.tabs.kids, 1, 'one page'); eq(win.byId.tabs.kids[1].text, 'Favourites', 'its tab')
+local names = {}
+for _, c in ipairs(win.byId.cards.kids) do names[#names + 1] = c.byId.name.text end
+eq(table.concat(names, ','), 'Battle List,Helper', 'both, in the order of the tree')
+click(cardNamed(win, 'Helper'), MouseLeftButton)
+eq(ran[#ran], 'Helper', 'the favourite ran as its card does'); eq(win.visible, false, 'and the window closed')
+-- removing the last ones brings the empty text back; the favourites survive a reload
+Hub.terminate(); Hub.init(host); panel = new('panel'); Hub.testPanel = panel; Hub.layoutBar(panel)
+Hub.toggleTool('favs'); openWin()
+eq(#win.byId.cards.kids, 2, 'saved favourites are back after a reload')
+starClick(cardNamed(win, 'Battle List')); starClick(cardNamed(win, 'Helper'))
+eq(settings['chaosHubFavs'], 'v1:', 'both removed'); eq(#win.byId.cards.kids, 1, 'the empty text again')
+-- the list is full at MAX_FAVS
+local fulls = {}
+for i = 1, ChaosTopBarFindLogic.MAX_FAVS do fulls[i] = 'X' .. i end
+settings['chaosHubFavs'] = ChaosTopBarFindLogic.serializeFavs(fulls)
+Hub.terminate(); Hub.init(host); panel = new('panel'); Hub.testPanel = panel; Hub.layoutBar(panel)
+Hub.toggle('hunt'); openWin()
+starClick(cardNamed(win, 'Battle List'))
+eq(win.byId.hint.text, 'Favourites are full. Remove one first.', 'a full list says why'); eq(settings['chaosHubFavs'], ChaosTopBarFindLogic.serializeFavs(fulls), 'and keeps the list')
+settings['chaosHubFavs'] = nil
+Hub.close()
+
+-- ---------------------------------------------------------------- search (O718)
+Hub.terminate(); Hub.init(host); panel = new('panel'); Hub.testPanel = panel; Hub.layoutBar(panel)
+eq(panel.kids[8].id, 'chaosTool_search', 'the Search badge'); eq(panel.kids[8].tooltip, 'Search windows and functions  (Ctrl+K)', 'its tooltip names the hotkey')
+eq(#bound >= 1 and bound[#bound].key, 'Ctrl+K', 'Ctrl+K is bound')
+local searchWin
+local function openSearchWin()
+  for _, c in ipairs(created) do if c.style == 'ChaosHubSearchWindow' and not c.destroyed then searchWin = c end end
+  return searchWin
+end
+eq(bound[#bound].fn(), true, 'the hotkey is taken'); openSearchWin()
+eq(searchWin ~= nil and searchWin.visible, true, 'the hotkey opens the search window'); eq(panel.kids[8].on, true, 'its badge is on')
+eq(searchWin.byId.hint.text, 'Type a name, a word or a hotkey. Enter opens the first result.', 'the hint before typing'); eq(#searchWin.byId.results.kids, 0, 'no results yet')
+local q = searchWin.byId.query
+q.onTextChange(q, 'tracker')
+local rnames = {}
+for _, c in ipairs(searchWin.byId.results.kids) do rnames[#rnames + 1] = c.byId.name.text end
+eq(rnames[1], 'Hunt Tracker', 'the best match first (all hubs and tabs are searched)')
+eq(searchWin.byId.hint.text, 'Enter opens the first result.', 'the hint names Enter')
+eq(searchWin.byId.results.kids[1].byId.favStar.clip ~= nil, true, 'a result shows its star')
+q.onTextChange(q, 'zzzz')
+eq(#searchWin.byId.results.kids, 0, 'no match, no cards'); eq(searchWin.byId.hint.text, 'Nothing found. Try another word.', 'the hint says so')
+q.onTextChange(q, 'market')
+eq(searchWin.byId.results.kids[1].byId.name.text, 'Market', 'a card of another hub')
+-- Enter opens the first result, closing the search
+local enter
+for _, b in ipairs(bound) do if b.key == 'Enter' and b.widget == q then enter = b.fn end end
+eq(enter ~= nil, true, 'Enter is bound to the field'); eq(enter(), true, 'and taken')
+eq(ran[#ran], 'Market', 'the first result ran as its card does'); eq(searchWin.visible, false, 'the search closed')
+-- a click on a result, a star in the results, a locked result
+Hub.toggleTool('search'); q = searchWin.byId.query
+q.onTextChange(q, 'passive')
+local pr = searchWin.byId.results.kids[1]
+eq(pr.byId.name.text, 'Passive Tree', 'a locked card is found'); eq(pr.byId.lockText.visible, true, 'and shows its lock line')
+click(pr, MouseLeftButton)
+eq(lockedSeen[#lockedSeen], 'Passive Tree', 'a click on a locked result says when it opens'); eq(searchWin.visible, true, 'the search stays open')
+starClick(pr)
+eq(settings['chaosHubFavs'], 'v1:Passive Tree', 'the star in the results saves a favourite'); eq(searchWin.byId.hint.text ~= nil, true, 'the results redrawn')
+eq(searchWin.byId.results.kids[1].byId.favStar.tooltip, 'Remove from favourites', 'the result shows the filled star')
+-- Favourites replaces the search window, Escape closes
+Hub.toggleTool('favs'); openWin()
+eq(searchWin.visible, false, 'opening the Favourites hides the search'); eq(win.visible, true, 'and shows its window')
+Hub.toggleTool('search')
+eq(win.visible, false, 'opening the search hides the Favourites window'); eq(searchWin.visible, true, 'and shows the search')
+searchWin.onEscape(); eq(searchWin.visible, false, 'Escape closes the search'); eq(panel.kids[8].on, false, 'the badge is off again')
+settings['chaosHubFavs'] = nil
+-- terminate lets go of the key
+local keys = #bound
+Hub.terminate()
+eq(#bound < keys, true, 'the hotkey is unbound on terminate')
 
 -- an error in the hub code reaches host.failed and does not escape
 local bad = { items = function() error('boom') end, parent = host.parent, admin = host.admin, failed = function(e) failed[#failed + 1] = e end }

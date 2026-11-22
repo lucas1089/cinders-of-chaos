@@ -158,7 +158,7 @@ eq(H.fit('Map Overlay Settings', 100, m8), 'Map Overla..', 'cut with dots')
 eq(H.fit('Ab', 1, m8), 'A', 'nothing fits: one letter')
 eq(m8(H.fit('Points of interest and party marks', 118, m8)) <= 118, true, 'cut width within the limit')
 local bm = { hubs = { { id = 'hero' }, { id = 'hunt' }, { id = 'system' } } }
-local function kinds(items) local o = {} for _, it in ipairs(items) do o[#o + 1] = it.kind == 'hub' and it.hub.id or (it.kind == 'pin' and ('pin:' .. it.card.text) or '|') end return table.concat(o, ',') end
+local function kinds(items) local o = {} for _, it in ipairs(items) do o[#o + 1] = it.kind == 'hub' and it.hub.id or (it.kind == 'pin' and ('pin:' .. it.card.text) or (it.kind == 'tool' and ('tool:' .. it.id) or '|')) end return table.concat(o, ',') end
 eq(kinds(H.barItems(bm, {})), 'hero,hunt,|,system', 'System alone at the right end, behind a divider')
 eq(kinds(H.barItems(bm, { { text = 'Bank' } })), 'hero,hunt,|,pin:Bank,|,system', 'pins between the hubs and System')
 eq(kinds(H.barItems({ hubs = { { id = 'system' } } }, {})), 'system', 'the login screen: System only, no divider')
@@ -167,6 +167,11 @@ eq(H.barWidth(H.barItems({ hubs = { { id = 'system' } } }, {}), 32), 16 + 32, 'w
 eq(H.barWidth({}, 32), 16, 'empty bar')
 local full = { hubs = { { id = 'hero' }, { id = 'hunt' }, { id = 'adventure' }, { id = 'trade' }, { id = 'social' }, { id = 'system' } } }
 eq(H.barWidth(H.barItems(full, { {}, {}, {} }), 32) <= 420, true, 'six hubs and three pins stay in 420 px')
+eq(kinds(H.barItems(bm, {}, { 'favs', 'search' })), 'hero,hunt,|,tool:favs,tool:search,|,system', 'the tools sit before System (O718)')
+eq(kinds(H.barItems(bm, { { text = 'Bank' } }, { 'favs' })), 'hero,hunt,|,pin:Bank,|,tool:favs,|,system', 'pins, then the tools')
+eq(kinds(H.barItems({ hubs = { { id = 'system' } } }, {}, { 'search' })), 'tool:search,|,system', 'the login screen: the tools and System')
+eq(kinds(H.barItems(bm, {}, {})), 'hero,hunt,|,system', 'no tools: as before')
+eq(H.barWidth(H.barItems(full, { {}, {}, {} }, { 'favs', 'search' }), 32) <= 460, true, 'six hubs, three pins and two tools stay in 460 px')
 local pm = H.build(T, C, { item('Passive Tree', { category = 'character', points = 3 }), item('Skills', { category = 'character', points = 0 }) }, {})
 eq(H.findCard(pm, 'Passive Tree').points, 3, 'a card takes the points its module counts'); eq(H.findCard(pm, 'Skills').points, nil, 'zero points: no badge')
 local pt = H.build(T, C, { item('Passive Tree', { category = 'character', points = '!' }) }, {})

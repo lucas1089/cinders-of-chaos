@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos menu at the top of the game map (six hub badges that open a window with tabs and cards, or the text menu with category drop-downs; hotkeys, systems shown as the character unlocks them; replaces the side button icons)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ topbarlogic, topbarhublogic, topbar_tree, topbar_cards, topbar_glyph_index, topbar_hub, topbarunlockslogic, topbar_unlocks, chaos_topbar ]
+  scripts: [ topbarlogic, topbarhublogic, topbarfindlogic, topbar_tree, topbar_cards, topbar_keywords, topbar_glyph_index, topbar_hub, topbarunlockslogic, topbar_unlocks, chaos_topbar ]
   dependencies:
     - client_chaos_theme
     - game_interface

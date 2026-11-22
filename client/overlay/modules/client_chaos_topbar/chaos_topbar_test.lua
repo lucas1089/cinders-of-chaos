@@ -112,7 +112,7 @@ AnchorTop, AnchorLeft, AnchorRight, AnchorVerticalCenter, AnchorHorizontalCenter
 MouseLeftButton, MouseRightButton = 1, 2
 local function runEvents() local e = events events = {} for _, fn in ipairs(e) do fn() end end
 
-for _, file in ipairs({ 'topbarlogic', 'topbarhublogic', 'topbar_tree', 'topbar_cards', 'topbar_glyph_index', 'topbar_hub',
+for _, file in ipairs({ 'topbarlogic', 'topbarhublogic', 'topbarfindlogic', 'topbar_tree', 'topbar_cards', 'topbar_keywords', 'topbar_glyph_index', 'topbar_hub',
                         'topbarunlockslogic', 'chaos_topbar' }) do
   dofile(here .. file .. '.lua')
 end
@@ -157,7 +157,7 @@ tree:destroy()
 -- the login screen in the hub look: the System hub only (Join Discord, Exit, Options... whatever the offline entries give)
 eq(ChaosTopBar.getStyle(), 'hubs', 'the default look is the hubs')
 eq(badgeIds(), 'chaosHub_system', 'the login screen shows the System hub only')
-eq(bar.h, 42, 'the hub bar is 42 high'); eq(panel.marginTop, 5, 'badge margins')
+eq(bar.h, 48, 'the hub bar is 48 high: a 32 px badge inside the 8 px frame border (O718)'); eq(panel.marginTop, 8, 'badge margins'); eq(panel.marginBottom, 8, 'as wide as the border')
 local hubWidth = bar.width
 eq(hubWidth, ChaosTopBarHubLogic.barWidth({ { kind = 'hub' } }, 32), 'the bar is as wide as its badge')
 for _, k in ipairs(panel.kids) do if k.style == 'ChaosMenuButton' then eq(k.visible, false, 'the category buttons are hidden in the hub look') end end

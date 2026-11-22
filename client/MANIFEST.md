@@ -6719,6 +6719,18 @@ text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com
   0 high, and every `ChaosTopBar.refresh` does it again when the base shows or grows it (both looks; `terminate` gives it back;
   `chaos_topbar_test.lua`). The text menu keeps its own bar.
 
+**Bar frame, Search and Favourites (O718):** the hub bar is 48 high (phone 60) with 8 px margins, so the 32 px (phone 44) badges sit
+inside the 8 px border of `skin/menubar` and the frame shows on all sides (it was 42 with 5 px margins: the badges covered it); the
+hub and search windows open at `margin-top` 54 (phone 66). Two tool badges sit before System (`H.barItems(model, pins, tools)`, not
+on the login screen): Favourites (`starsolid` glyph) and Search (`magnifier`, hotkey Ctrl+K, bound by `topbar_hub.lua`). Search
+(`ChaosHubSearchWindow`, a `ChaosTextEdit` and the cards that match, drawn by the card code so a result has its star, pin and lock line):
+`topbarfindlogic.lua` folds case and accents, every word must be found in the English or pt-BR name, the line, the hub and tab names,
+the hotkey or the words of `topbar_keywords.lua` (one line per card; its test fails when a card has none), best 8 first, Enter opens the
+first. Favourites: a star on every card (`favStar`, filled gold when set), saved per character in `g_settings`
+`chaosHubFavs_<character>` as `v1:A|B` (at most 24); the Favourites window is a virtual hub (`F.favHub`: pages of 8 cards in tree order,
+a favourite whose window is gone is skipped, not deleted), empty text "No favourites yet..."; the tree rules (6 hubs, at most 6 cards a tab)
+do not apply to it. New glyphs `starsolid`, `starline` (56 cells, the atlases keep their size). Tests `topbarfindlogic_test.lua`,
+`topbar_hub_test.lua`. Not seen in a client.
 
 ## Customise Character fixes (O562, owner 2026-11-14)
 - **Capes from the back.** The pair 33 capes are auras (client looks 2569-2657, auras.xml 125-213; `LookPreviewCore.CAPE_FIRST / CAPE_LAST`, `isCape`;

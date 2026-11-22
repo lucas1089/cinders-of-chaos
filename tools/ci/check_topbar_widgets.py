@@ -23,7 +23,7 @@ THEME = os.path.join(ROOT, 'client', 'overlay', 'modules', 'client_chaos_theme',
 LUA_FILES = ('topbar_hub.lua',)
 OTUI_FILES = ('topbar_hub.otui', 'topbar.otui')
 STOCK = {'UIWidget', 'UIButton', 'UILabel', 'UIWindow'}
-MOBILE_STYLES = ('ChaosHubWindow', 'ChaosHubCard', 'ChaosHubBadge')
+MOBILE_STYLES = ('ChaosHubWindow', 'ChaosHubSearchWindow', 'ChaosHubCard', 'ChaosHubBadge')
 
 
 def read(path):

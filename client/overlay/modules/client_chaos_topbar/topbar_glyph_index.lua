@@ -15,7 +15,7 @@ ChaosTopBarGlyphs = {
     shirt = { 0, 160 }, sliders = { 32, 160 }, split = { 64, 160 }, stall = { 96, 160 },
     star = { 128, 160 }, stopwatch = { 160, 160 }, swirl = { 192, 160 }, swords = { 224, 160 },
     terminal = { 0, 192 }, tome = { 32, 192 }, tower = { 64, 192 }, tree = { 96, 192 },
-    trio = { 128, 192 }, trophy = { 160, 192 },
+    trio = { 128, 192 }, trophy = { 160, 192 }, starsolid = { 192, 192 }, starline = { 224, 192 },
   } },
   card = { file = 'images/glyphs_card', cell = 40, glyph = 34, slots = {
     anvil = { 0, 0 }, bars = { 40, 0 }, bolt = { 80, 0 }, book = { 120, 0 },
@@ -31,7 +31,7 @@ ChaosTopBarGlyphs = {
     shirt = { 0, 200 }, sliders = { 40, 200 }, split = { 80, 200 }, stall = { 120, 200 },
     star = { 160, 200 }, stopwatch = { 200, 200 }, swirl = { 240, 200 }, swords = { 280, 200 },
     terminal = { 0, 240 }, tome = { 40, 240 }, tower = { 80, 240 }, tree = { 120, 240 },
-    trio = { 160, 240 }, trophy = { 200, 240 },
+    trio = { 160, 240 }, trophy = { 200, 240 }, starsolid = { 240, 240 }, starline = { 280, 240 },
   } },
   mark = { file = 'images/glyphs_mark', cell = 20, glyph = 14, slots = {
     anvil = { 0, 0 }, bars = { 20, 0 }, bolt = { 40, 0 }, book = { 60, 0 },
@@ -47,7 +47,7 @@ ChaosTopBarGlyphs = {
     shirt = { 0, 100 }, sliders = { 20, 100 }, split = { 40, 100 }, stall = { 60, 100 },
     star = { 80, 100 }, stopwatch = { 100, 100 }, swirl = { 120, 100 }, swords = { 140, 100 },
     terminal = { 0, 120 }, tome = { 20, 120 }, tower = { 40, 120 }, tree = { 60, 120 },
-    trio = { 80, 120 }, trophy = { 100, 120 },
+    trio = { 80, 120 }, trophy = { 100, 120 }, starsolid = { 120, 120 }, starline = { 140, 120 },
   } },
 }
 return ChaosTopBarGlyphs

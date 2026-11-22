@@ -811,7 +811,8 @@ local shown = {}              -- category id -> {visible, color} as last set on 
 local shownWidth, shownParent
 local refreshQueued
 
--- the bar's metrics for a look: the hub bar is 42 high (32 px badges; phone 56, 44 px badges), the text bar 36 (phone 52)
+-- the bar's metrics for a look: the hub bar is 48 high (32 px badges inside the 8 px frame border, so the border shows all
+-- round; phone 60, 44 px badges; O718: it was 42 and the badges covered the border), the text bar 36 (phone 52)
 local function setBarStyle(style)
   if barStyle == style then return end
   barStyle = style
@@ -819,9 +820,9 @@ local function setBarStyle(style)
   local phone = isPhone()
   if style == 'hubs' then
     for _, button in pairs(categoryButtons) do button:setVisible(false) end
-    menuBar:setHeight(phone and 56 or 42)
-    buttonsPanel:setMarginTop(phone and 6 or 5)
-    buttonsPanel:setMarginBottom(phone and 6 or 5)
+    menuBar:setHeight(phone and 60 or 48)
+    buttonsPanel:setMarginTop(8)
+    buttonsPanel:setMarginBottom(8)
   else
     if ChaosTopBarHub then
       pcall(ChaosTopBarHub.close)
