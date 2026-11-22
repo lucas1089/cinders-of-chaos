@@ -182,13 +182,13 @@ local function renderItem()
   end
   local parts = { p.rarityText, p.rarityColor }
   if p.level then
-    parts[#parts + 1] = ' · ' .. tr('Item level') .. ' '
+    parts[#parts + 1] = ' - ' .. tr('Item level') .. ' '
     parts[#parts + 1] = C.dim
     parts[#parts + 1] = tostring(p.level)
     parts[#parts + 1] = C.text
   end
   if p.quality then
-    parts[#parts + 1] = ' · ' .. tr('Quality') .. ' '
+    parts[#parts + 1] = ' - ' .. tr('Quality') .. ' '
     parts[#parts + 1] = C.dim
     parts[#parts + 1] = string.format('%d%%', p.quality.q)
     parts[#parts + 1] = C.good
@@ -449,7 +449,7 @@ local function renderWhat(actions)
     w('cmpLeft'):setText(cmp.left.text)
     w('cmpLeft'):setColor(C.dim)
     w('cmpArrow'):setVisible(true)
-    w('cmpArrow'):setText('»')
+    w('cmpArrow'):setText('>')
     w('cmpRight'):setVisible(true)
     w('cmpRight'):setText(cmp.right.text)
     w('cmpRight'):setColor(cmp.right.color or C.text)
@@ -475,7 +475,7 @@ local function renderBar()
   local mark, label = w('resultMark'), w('resultLabel')
   if lines.result.text ~= '' then
     mark:setVisible(lines.result.mark == 'ok')
-    label:setText((lines.result.mark == 'fail' and '× ' or '') .. lines.result.text)
+    label:setText((lines.result.mark == 'fail' and 'x ' or '') .. lines.result.text)
     label:setColor(lines.result.mark == 'fail' and C.blood or C.good)
     setTip(label, lines.result.text)
   else
@@ -655,6 +655,19 @@ function F.forge()
   else
     go()
   end
+end
+
+-- the item menu's Forge entry (O719): the window opens, then the item goes on the bench. The server answers a state at
+-- most every 150 ms, so the select waits a little behind the open. req = {pos, clientId} (lockmenu.lua forgeRequest)
+F.OPEN_SELECT_DELAY = 300
+function F.openWith(req)
+  if not fw or type(req) ~= 'table' then return end
+  F.switchTo()
+  local function put()
+    lastResult = nil
+    send('select', { pos = req.pos, clientId = req.clientId })
+  end
+  if scheduleEvent then scheduleEvent(put, F.OPEN_SELECT_DELAY) else put() end
 end
 
 -- the Forge button of the classic window (shown for Salvage)

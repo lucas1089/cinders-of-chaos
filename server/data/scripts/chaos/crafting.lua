@@ -186,6 +186,25 @@ end
 -- never changes once ("info": the orbs with their texts, the reason texts) when it opens, and every state carries only
 -- counts, reason codes and the item. sendState also trims the lists until the JSON fits (STATE_LIMIT).
 local STATE_LIMIT = 7600
+-- what the player carries of an orb: the engine count plus the Orbs Pouch that lies in the purse (pouches.lua, O719)
+local function carried(player, id)
+	local PO = ChaosPouches
+	if PO and PO.countOrbs then
+		local ok, n = pcall(PO.countOrbs, player, id)
+		if ok and tonumber(n) then
+			return n
+		end
+	end
+	return player:getItemCount(id)
+end
+local function spendCarried(player, id, n)
+	local PO = ChaosPouches
+	if PO and PO.removeOrbs then
+		return PO.removeOrbs(player, id, n)
+	end
+	return player:removeItem(id, n)
+end
+
 -- how many of an orb the stash holds for the bench (0 when the stash cannot be used here: stash.lua S.plainCount)
 local function stashCount(player, orb)
 	local S = ChaosStash
@@ -211,7 +230,7 @@ local function orbCounts(player)
 		held = ok and type(res) == "table" and res or {}
 	end
 	for _, orb in ipairs(cfg.orbs) do
-		bag[orb.key] = player:getItemCount(orb.id)
+		bag[orb.key] = carried(player, orb.id)
 		stash[orb.key] = tonumber(held[orb.id]) or 0
 		out[orb.key] = bag[orb.key] + stash[orb.key]
 	end
@@ -365,7 +384,7 @@ local function craft(player, orbKey, item, orbItem, opts)
 	end
 	-- the orb: the one used (use-with), else one of the backpack, else one of the stash (O481; the backpack first)
 	local fromStash = false
-	if not orbItem and player:getItemCount(orb.id) < 1 then
+	if not orbItem and carried(player, orb.id) < 1 then
 		if stashCount(player, orb) < 1 then
 			return false, string.format("You have no %s.", orb.name)
 		end
@@ -414,7 +433,7 @@ local function craft(player, orbKey, item, orbItem, opts)
 			if orbItem then
 				orbItem:remove(1)
 			else
-				player:removeItem(orb.id, 1)
+				spendCarried(player, orb.id, 1)
 			end
 		end
 	end
@@ -555,7 +574,7 @@ local function explain(player, data)
 	local e = C.explain(orbKey, item, modKey)
 	local reason = e.reason
 	local orb = C.orbByKey[orbKey]
-	local bag = orb and player:getItemCount(orb.id) or 0
+	local bag = orb and carried(player, orb.id) or 0
 	local stash = orb and stashCount(player, orb) or 0
 	Chaos.send(player, OPCODE, "explain", {orb = orbKey, mod = modKey, sig = C.signature(item), ok = e.ok, kind = e.kind,
 		tag = e.tag, reason = reason, reasonText = reason and Chaos.tx(player, C.reasons[reason] or reason) or nil,

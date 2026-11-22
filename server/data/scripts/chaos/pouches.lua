@@ -279,6 +279,76 @@ function PO.carried(player)
 	return found
 end
 
+-- The Orbs Pouch in the purse (O719, owner 2026-11-22: the forge showed 0 for orbs that lay in the orb bag). A pouch the store
+-- just delivered lies in the purse (the engine's store inbox), outside inventory slots 1-10, so player:getItemCount and
+-- player:removeItem never walk it (only the Rune Bag has the engine patch 0092). These helpers add the stacks that lie
+-- DIRECTLY in an Orbs Pouch that lies directly in the purse and the character owns. A pouch in the backpack or in a bag of it
+-- is walked by the engine already and is not visited here: no double count. Count and removal read the same list.
+local function purseOrbStacks(player, itemId)
+	local out = {}
+	local purse = purseOf(player)
+	local k = cfg().kinds.orbs
+	if not (purse and k) then
+		return out
+	end
+	local guid = player:getGuid()
+	local ok, items = pcall(function() return purse:getItems() end)
+	for _, pouch in ipairs(ok and items or {}) do
+		local okI, id = pcall(function() return pouch:getId() end)
+		if okI and id == k.id and PO.ownerOf(pouch) == guid then
+			local okC, inner = pcall(function() return pouch:getItems() end)
+			for _, stack in ipairs(okC and inner or {}) do
+				if stack:getId() == itemId then
+					out[#out + 1] = stack
+				end
+			end
+		end
+	end
+	return out
+end
+
+-- how many of itemId lie in the Orbs Pouch of the purse (the part the engine count misses)
+function PO.purseOrbCount(player, itemId)
+	local n = 0
+	for _, stack in ipairs(purseOrbStacks(player, itemId)) do
+		n = n + (tonumber(stack:getCount()) or 1)
+	end
+	return n
+end
+
+-- what the character can spend of itemId: the engine count (inventory, bags, the pouch in them) plus the purse pouch
+function PO.countOrbs(player, itemId)
+	return player:getItemCount(itemId) + PO.purseOrbCount(player, itemId)
+end
+
+-- take n of itemId: the engine's walk first (as before), the rest from the purse pouch. false and nothing taken when the
+-- total is short.
+function PO.removeOrbs(player, itemId, n)
+	n = tonumber(n) or 0
+	if n < 1 then
+		return true
+	end
+	local have = player:getItemCount(itemId)
+	local fromEngine = math.min(have, n)
+	local rest = n - fromEngine
+	if rest > PO.purseOrbCount(player, itemId) then
+		return false
+	end
+	if fromEngine > 0 and not player:removeItem(itemId, fromEngine) then
+		return false
+	end
+	for _, stack in ipairs(purseOrbStacks(player, itemId)) do
+		if rest < 1 then
+			break
+		end
+		local c = tonumber(stack:getCount()) or 1
+		local take = math.min(c, rest)
+		stack:remove(take)
+		rest = rest - take
+	end
+	return true
+end
+
 -- every place a character keeps things: inventory, the purse (store inbox), inbox, the depot chest of every town
 local function storageRoots(player)
 	local roots = inventoryRoots(player)

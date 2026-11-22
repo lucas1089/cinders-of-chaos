@@ -436,6 +436,30 @@ apply("ember", "rarity_swordSkill")
 eq(last("result").ok, false, "refused again") eq(player:getItemCount(EMBER), 1, "the bag keeps its orb too")
 setBag(EMBER, 0)
 
+-- O719: the orbs lie only in the Orbs Pouch of the purse (the engine count is 0): the row counts them, a craft spends them
+do
+	local purseOrbs = 3
+	ChaosPouches = {
+		countOrbs = function(p, id) return p:getItemCount(id) + (id == EMBER and purseOrbs or 0) end,
+		removeOrbs = function(p, id, n)
+			if id ~= EMBER or p:getItemCount(id) > 0 or purseOrbs < n then return p:removeItem(id, n) end
+			purseOrbs = purseOrbs - n
+			return true
+		end
+	}
+	setBag(EMBER, 0)
+	world.stash[EMBER] = 0
+	gear = rareItem(2400, 4, {rarity_swordSkill = 1, rarity_physicalAbsorb = 2})
+	req("open", {forge = true})
+	local st2 = last("state")
+	eq(st2.counts.ember, 3, "the purse pouch orbs are in the count") eq(st2.bag.ember, 3, "and in the bag part")
+	apply("ember", "rarity_swordSkill")
+	local r2 = last("result")
+	eq(r2.ok, true, "a craft from the purse pouch") eq(r2.from, "bag", "paid from the bag side")
+	eq(purseOrbs, 2, "one orb left the pouch") eq(last("state").counts.ember, 2, "counts follow")
+	ChaosPouches = nil
+end
+
 -- the stash row vanished between the answer and the apply
 local free2 = rareItem(2400, 4, {rarity_swordSkill = 1, rarity_physicalAbsorb = 2})
 gear = free2

@@ -108,7 +108,10 @@ local function detach(it)
 	end
 	it.parent = nil
 end
-function Item:remove() detach(self); self.removed = true; return true end
+function Item:remove(n)
+	if n and self.stack and n < self.count then self.count = self.count - n return true end
+	detach(self); self.removed = true; return true
+end
 local function holder(c)
 	while c and not c.isPlayerMock do c = c.parent end
 	return c
@@ -1206,6 +1209,61 @@ do
 	ok(cfg.kinds.runes.description:find("purse or the backpack"), "the item description names the purse")
 	-- cleanup: the next tests run on the old engine again
 	Game.setRuneBagContainer = nil ChaosCombine = nil PO.runeBagOk = false
+end
+
+-- ------------------------------------------------------------------ orbs in the Orbs Pouch of the purse (O719)
+do
+	local ORB = 32000
+	local op = newPlayer(80)
+	-- the engine's count walks slots 1-10 and their bags (the mock: the backpack's loose items and its pouches)
+	local function engineCount(p, id)
+		local n = 0
+		local function walkc(c) for _, x in ipairs(c.items) do if x.id == id then n = n + x.count end walkc(x) end end
+		for _, root in pairs(p.slots) do walkc({items = {root}}) end
+		return n
+	end
+	function op:getItemCount(id) return engineCount(self, id) end
+	function op:removeItem(id, n)
+		local rest = n
+		local function walkc(c)
+			for _, x in ipairs(c:getItems()) do
+				if rest > 0 and x.id == id then local t = math.min(rest, x.count) x:remove(t) rest = rest - t end
+				walkc(x)
+			end
+		end
+		for _, root in pairs(self.slots) do walkc({getItems = function() return {root} end}) end
+		return rest == 0
+	end
+	local function stack(parent, id, count) local s = item(id, {count = count}) s.stack = true s.parent = parent parent.items[#parent.items + 1] = s return s end
+	local pouch = item(cfg.kinds.orbs.id, {custom = {chaos_pouch = "orbs", chaos_pouch_owner = 80}})
+	pouch.parent = op.purse op.purse.items[1] = pouch
+	stack(pouch, ORB, 7)
+	stack(pouch, ORB + 1, 2)
+	eq(op:getItemCount(ORB), 0, "the engine does not see the pouch in the purse")
+	eq(PO.countOrbs(op, ORB), 7, "countOrbs sees the orbs in the purse pouch")
+	eq(PO.countOrbs(op, ORB + 1), 2, "and the other orb")
+	-- the pouch is another character's: not counted
+	pouch.custom.chaos_pouch_owner = 81
+	eq(PO.countOrbs(op, ORB), 0, "a pouch of another owner adds nothing")
+	pouch.custom.chaos_pouch_owner = 80
+	-- loose orbs in the backpack plus the pouch: both, once each
+	local bp = item(1988) bp.parent = op bp.cap = 20 op.slots[CONST_SLOT_BACKPACK] = bp
+	stack(bp, ORB, 3)
+	eq(PO.countOrbs(op, ORB), 10, "backpack 3 plus purse pouch 7")
+	-- a spend of 5: the backpack's 3 first, then 2 of the pouch
+	ok(PO.removeOrbs(op, ORB, 5), "removeOrbs 5")
+	eq(PO.countOrbs(op, ORB), 5, "5 left") eq(op:getItemCount(ORB), 0, "the backpack is empty") eq(PO.purseOrbCount(op, ORB), 5, "the pouch keeps 5")
+	-- too many: nothing taken
+	ok(not PO.removeOrbs(op, ORB, 6), "removeOrbs 6 refused") eq(PO.countOrbs(op, ORB), 5, "nothing taken on a refusal")
+	ok(PO.removeOrbs(op, ORB, 5), "removeOrbs the rest") eq(PO.countOrbs(op, ORB), 0, "none left")
+	-- the same pouch in the backpack: the engine counts it, the purse part is not added again
+	local inbp = item(cfg.kinds.orbs.id, {custom = {chaos_pouch = "orbs", chaos_pouch_owner = 80}})
+	inbp.parent = bp bp.items[#bp.items + 1] = inbp
+	stack(inbp, ORB, 4)
+	eq(PO.countOrbs(op, ORB), 4, "a pouch in the backpack is counted once")
+	-- no purse: the engine count only
+	op.noPurse = true
+	eq(PO.countOrbs(op, ORB), 4, "no purse: no error")
 end
 
 -- the store while a pouch is owed

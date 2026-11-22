@@ -14529,6 +14529,19 @@ base script and NPC: after this change the late boss materials above are all use
 price of the item price table: the classic creature products (vendor loot by design) and the energy creature parts
 26158-26179 and the scarab ocarina 27432, which no base NPC buys (the Loot Buyer pays the table's price).
 
+### Orbs in the Orbs Pouch of the purse (O719)
+
+Owner 2026-11-22 (pt-BR): the forge showed 0 for every orb while they lay in the orb bag. Cause: a pouch the store delivers lies
+in the purse (the store inbox), outside inventory slots 1-10, and `player:getItemCount` / `removeItem` never walk it (only the
+Rune Bag has the engine patch 0092). A pouch in the backpack, or in a bag of it, was always counted.
+- `ChaosPouches.purseOrbCount`, `countOrbs`, `removeOrbs` (`pouches.lua`): the stacks that lie directly in an Orbs Pouch that lies
+  directly in the purse and that the character owns are added to the engine count. A pouch inside the backpack is not visited
+  there: no double count. A spend takes the engine's orbs first (as before), then the pouch; short total: nothing is taken.
+- `crafting.lua` (`carried`, `spendCarried`) uses them for the orb counts of the state (backpack part of the forge row), the bench
+  explain cost, the check before a craft and the spend. Stash counts are unchanged. Salvage and the atlas keep the engine count.
+- Tests: `tests/pouches_test.lua` (count, spend, other owner, backpack pouch once, no purse), `tests/forge_test.lua` (row count and
+  a craft from the purse pouch).
+
 ## Crafting bonus (`tools/patch_base_crafting_bonus.py`, `chaos/craft_bonus*.lua`, `tests/craft_bonus_test.lua`, `tests/base_crafting_bonus_test.lua`)
 
 **The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
