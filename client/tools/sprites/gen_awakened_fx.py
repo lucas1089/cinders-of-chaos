@@ -17,7 +17,7 @@ STATUS (O711, the owner approved the import): the kit is built into pair 76. The
 pair 75 (the footprints, O649) as 5354..5393. A missile id is ONE BYTE on the wire (254 is the weapon-type constant) and pair 75
 holds 253 missiles, so the 8 missiles cannot be appended: they fill 3 blank stock ids (43, 47, 52) and rebuild 5 donor ids that
 no script sends (147-151, pair 51) in place, as 3 x 3 direction patterns of 1 x 1 tiles made here from the east strip.
-Server: data/lib/chaos_awakened_fx.lua (gate chaosClientPair >= 76), a lookup only: no spell cast sends these yet.
+Server: data/lib/chaos_awakened_fx.lua (gate chaosClientPair >= 76), the awakened casts send these through data/lib/chaos_awakened_look.lua (O711).
 The `slot` column of the table is the position inside the kit (effects 1..40, projectiles 1..8); the client id comes from it
 (FIRST, MISSILE_IDS).
 

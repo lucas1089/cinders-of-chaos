@@ -1,6 +1,6 @@
 -- chaos_awakened_fx.lua: the awakened spell look kit (O711, client pair 76; our own art, client/tools/sprites/gen_awakened_fx.py,
--- docs/SPELL_UPGRADES.md 3.4). A LOOKUP ONLY: no spell cast asks it yet, so an awakened spell keeps today's effects until the
--- pair is live and the senders are wired (a later step).
+-- docs/SPELL_UPGRADES.md 3.4). A LOOKUP ONLY: the data and the gate. Which kit an awakened cast sends, and where, is
+-- data/lib/chaos_awakened_look.lua with the rules of data/scripts/chaos/awakened_look_config.lua.
 --
 -- Gate: config.lua `chaosClientPair` (README "Client pair guard") is 76 or more, read from the file at load (C.on). A client
 -- on an older pair has no effect 5354+ and its missiles 43, 47, 52, 147-151 are blank or other art, so below 76 every answer is

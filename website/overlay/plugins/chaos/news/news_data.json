@@ -3,11 +3,35 @@
  "recent_weeks": 8,
  "featured_days": 30,
  "featured_max": 3,
- "latest": "2026-11-21",
+ "latest": "2026-11-22",
  "weeks": [
   {
    "start": "2026-11-16",
    "entries": [
+    {
+     "id": "patch-2026-11-22",
+     "date": "2026-11-22",
+     "kind": "patch",
+     "patch": "2026-11-22",
+     "title": {
+      "en": "Awakened spell looks",
+      "pt-BR": "Visual das magias despertas"
+     },
+     "text": {
+      "en": "Awakened spells have their own look now. With the new game client, an awakened spell plays a new effect of its element when you cast it, with a sigil ring that turns while it plays, and its projectile is new too.",
+      "pt-BR": "As magias despertas têm um visual próprio agora. Com o novo cliente do jogo, uma magia desperta toca um efeito novo do seu elemento ao ser lançada, com um anel de sigilo que gira enquanto toca, e o projétil dela também é novo."
+     },
+     "points": {
+      "en": [
+       "A look for every awakened spell",
+       "Needs the new client"
+      ],
+      "pt-BR": [
+       "Um visual para cada magia desperta",
+       "Precisa do cliente novo"
+      ]
+     }
+    },
     {
      "id": "patch-2026-11-21",
      "date": "2026-11-21",

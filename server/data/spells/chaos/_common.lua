@@ -162,6 +162,13 @@ end
 if ChaosSpellForms and ChaosSpellForms.installCombat then
 	pcall(ChaosSpellForms.installCombat)
 end
+-- The awakened spell look (data/lib/chaos_awakened_look.lua, O711, client pair 76): an awakened cast sends the kit effect and projectile
+if not ChaosAwakenedLook then
+	pcall(dofile, 'data/lib/chaos_awakened_look.lua')
+end
+if ChaosAwakenedLook and ChaosAwakenedLook.installLegacy then
+	pcall(ChaosAwakenedLook.installLegacy)
+end
 -- The spell VFX pack (data/lib/chaos_spell_vfx.lua, O596 and O600, client pair 73): a spell's own pack effect or projectile for a
 -- name, asked before the effects pass; nil below pair 73, so a pair 72 client keeps today's effects
 if not ChaosSpellVfx then
@@ -304,6 +311,11 @@ local function wrapFx()
 	if FxMissile and FxMissile ~= ChaosSpellSkinFxMissile then
 		local raw = FxMissile
 		ChaosSpellSkinFxMissile = function(name, fallback)
+			local AL = rawget(_G, "ChaosAwakenedLook") -- O711: the awakened cast's projectile (nil below client pair 76)
+			local kit = AL and AL.missileId and AL.missileId()
+			if kit then
+				return kit
+			end
 			local alt = skinned("missile", name)
 			if alt and ChaosFxMissile and ChaosFxMissile[alt] then
 				return raw(alt, fallback)
@@ -317,6 +329,10 @@ wrapFx()
 -- <<< Cosmetics
 
 function ChaosSpell.fx(pos, name, fallback)
+	local AL = rawget(_G, "ChaosAwakenedLook") -- O711: the awakened cast's kit effect, once (nil below client pair 76)
+	if AL and AL.vfx and pos and AL.vfx(pos) then
+		return
+	end
 	local skin = skinned("fx", name)
 	local p27, p27first = nil, false
 	if not skin then

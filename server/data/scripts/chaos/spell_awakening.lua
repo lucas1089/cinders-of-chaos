@@ -458,7 +458,7 @@ function AW.run(player, spec, a, info, serial, spellId)
 		return
 	end
 	local pid = player:getId()
-	local el = spec.element or info.element or "physical"
+	local el = info.element or spec.element or "physical" -- O711: info.element is the Form's new element when the spell converts, else the spell's own
 	local ctype = info.ctype or (rawget(_G, "COMBAT_PHYSICALDAMAGE"))
 	if a.op == "pulse" then
 		if a.pos and ringStart(pid) then

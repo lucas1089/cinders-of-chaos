@@ -2,13 +2,15 @@
 -- mock of the engine and prints every effect it sends, with the real libraries of server/data/lib and
 -- server/data/scripts/chaos (the swap layers: skins, the effects pass, pair 29, 36, class, pair 27).
 -- usage (cwd = a folder with data/lib, data/scripts/chaos and data/spells/scripts/chaos linked in):
---   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST]
+--   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST] [PAIR]
 -- FORM_STATE (O686 phase 4): the packed state of the spell (rank + 32 x Form I pick + 128 x Form II pick, data/lib/chaos_spell_ranks.lua) stored
 -- for the caster with the spell ranks switched on, so the cast runs with the Form of the pick: an element conversion swaps the effect
 -- names (data/lib/chaos_spell_forms.lua) and the Form's own effects are sent after the cast (fxProbe). WEAKEST: the element the
 -- target resists least, for ASCEND:weakest. The state is a spell's own, the caster holds no other.
 -- O686 phase 7: a state of 512 or more is an awakened spell (rank 20, both Forms, bit 9): the signature effects of
 -- data/spells/awakened.csv are sent after the Forms' (ChaosSpellAwakening.fxProbe).
+-- O711: PAIR is the client pair the run pretends to have (config.lua chaosClientPair, default none): at 76 or more an awakened cast sends the
+-- awakened look kit (data/lib/chaos_awakened_look.lua), so its effects are the kit ids 5354..5393 and its projectile 43 47 52 147..151.
 -- Output lines (tab separated):  ME id tx ty (abs pos minus target pos) cx cy (minus caster pos) delay via
 --                                ANI id from_dx to_dx ...
 --                                COMBAT effect distance cells w h
@@ -17,6 +19,7 @@
 local vocId, spellId, script = tonumber(arg[1]), tonumber(arg[2]), arg[3]
 local level = tonumber(arg[4]) or 300
 local formState, weakestEl = tonumber(arg[6]), arg[7]
+local probePair = tonumber(arg[8])
 local STORE = {}
 local out = {}
 local pname = {}
@@ -244,6 +247,8 @@ function Game.getWorldTime() return 0 end
 -- the cast context of data/spells/chaos/_supports.lua (not loaded: it wraps the engine's script loading)
 ChaosSupportsSpell = {wrapped = 0, cast = function() return 1, spellId end, rawAddEvent = addEvent}
 -- the real constants file (Chaos.classes, storages, opcodes); a permissive stand-in when it does not load
+-- O711: Chaos.send (a message to the client, which some casts of a spell with ranks make) encodes with the engine's json: a stub, nothing is sent
+json = json or {encode = function() return "{}" end, decode = function() return {} end}
 local okc, errc = pcall(dofile, "data/scripts/chaos/chaos_constants.lua")
 if not okc or type(rawget(_G, "Chaos")) ~= "table" then
 	rec("NOTE", "chaos_constants did not load: " .. tostring(errc):sub(1, 120))
@@ -265,6 +270,14 @@ if formState and formState > 0 then
 		if okf and ChaosSpellForms and weakestEl and weakestEl ~= "" then
 			ChaosSpellForms.resistOf = function() return function(el) return el == weakestEl and 0 or 50 end end
 		end
+	end
+end
+
+-- the client pair of the run: the kit gate (data/lib/chaos_awakened_fx.lua reads config.lua, which the probe folder does not have)
+if probePair then
+	local okk = pcall(dofile, "data/lib/chaos_awakened_fx.lua")
+	if okk and rawget(_G, "ChaosAwakenedFx") then
+		ChaosAwakenedFx.on = probePair >= ChaosAwakenedFx.PAIR
 	end
 end
 

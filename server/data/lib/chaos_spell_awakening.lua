@@ -112,7 +112,13 @@ function M.fxProbe(player, spellId, pos)
 	if not e or not F or not F.sendFx then
 		return
 	end
-	local el = e.element or "physical"
+	-- the element the cast shows: a Form's conversion (SHIFT / ASCEND) first, as the Forms' own effects and the engine file do (O711)
+	local conv
+	if F.conversion and F.active then
+		local okc, c = pcall(function() return F.conversion(F.active(player, spellId), F.resistOf and F.resistOf(player) or nil) end)
+		conv = okc and c or nil
+	end
+	local el = conv or e.element or "physical"
 	local roles = {}
 	for _, p in ipairs(e.parts) do
 		if p.kind == "PULSE" then

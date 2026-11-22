@@ -15,9 +15,14 @@ the spell's own element, as before. What a Form may send beyond that is a row of
 
 O686 phase 7: the awakened version of every probed spell is run too (rank 20, both Forms picked, bit 9 of the packed state, the picks that do not
 convert the element when the spell has such picks): the cast, the Forms' effects and the signature effects of server/data/spells/awakened.csv
-(data/lib/chaos_spell_awakening.lua fxProbe) send effects of the element the cast shows, as for a Form. Until the kit art of the awakened looks
-(design 3.4) an awakened spell plays the normal effects of its element, so there is nothing to allow: a row of spell_fx_allow.csv that the spell has
-is accepted, as it is for a Form that does not convert.
+(data/lib/chaos_spell_awakening.lua fxProbe) send effects of the element the cast shows, as for a Form (a Form that converts: the new element,
+in the signature too). A row of spell_fx_allow.csv that the spell has is accepted, as it is for a Form that does not convert.
+
+O711: the awakened casts are run again at client pair 76 (the probe's 8th argument; data/lib/chaos_awakened_look.lua), once with the picks that
+keep the element and once with the Forms that convert it. The kit effects of data/lib/chaos_awakened_fx_ids.lua (ids 5354..5393, tagged `af_*`) go
+through the same element rule, and every kit effect a cast sends is the kit of the element the cast shows (a conversion's, else the spell's own),
+once a cast. A spell that sends effects below pair 76 must send a kit effect at it, unless it is a named row of NOKIT_ALLOWED (a cast the mock
+does not run: cast-time spells, corpses; the list may only shrink).
 
 What a spell sends is measured, not read from names: tools/ci/spell_fx_probe.lua runs the real script of every chaos
 spell against a recording mock of the engine, once per vocation of the spell, with the real libraries (so the swap
@@ -205,24 +210,26 @@ def parse_probe(lines):
     return ids
 
 
-def run_probe(root, spell, voc, dx, state=0, weakest=''):
+def run_probe(root, spell, voc, dx, state=0, weakest='', pair=0):
     cmd = ['lua5.3', PROBE, str(VOC[voc]), str(spell['id']), spell['script'], '300', str(dx)]
     if state:
         cmd += [str(state), weakest]
+        if pair:
+            cmd += [str(pair)]
     p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=60)
     return p.stdout.strip().split('\n') if p.stdout.strip() else []
 
 
-def probe_spell(root, spell, state=0, weakest=''):
+def probe_spell(root, spell, state=0, weakest='', pair=0):
     """effect ids over every vocation of the spell (the class swaps differ by vocation); a target out of reach is
-    tried again close. state / weakest: the Form of the cast (spell_fx_probe.lua)"""
+    tried again close. state / weakest: the Form of the cast; pair: the client pair of the run (spell_fx_probe.lua)"""
     ids = set()
     for voc in spell['vocs']:
         if voc not in VOC:
             continue
-        lines = run_probe(root, spell, voc, 5, state, weakest)
+        lines = run_probe(root, spell, voc, 5, state, weakest, pair)
         if any(l.startswith('CANCEL') for l in lines):
-            more = run_probe(root, spell, voc, 1, state, weakest)
+            more = run_probe(root, spell, voc, 1, state, weakest, pair)
             if len(parse_probe(more)) > len(parse_probe(lines)):
                 lines = more
         ids.update(parse_probe(lines))
@@ -251,20 +258,91 @@ def load_awakened(path=AWAKENED):
     return {int(r['id']): r['kind'] for r in read_csv(path)}
 
 
-def probe_awakened(spells, wanted, forms, awakened):
-    """{spell id: (weakest element, expected element, effect ids)} of the awakened version of the wanted spells"""
+def awaken_conv_case(kinds):
+    """like awaken_case, but the picks that convert the element (SHIFT / ASCEND, the last one acts): None when the spell has no such Form.
+    The awakened cast must show the kit of the NEW element (O711)"""
+    def conv(k):
+        return k.split(':')[1] if k.startswith(('SHIFT:', 'ASCEND:')) else None
+    f1s = [p for p in (1, 2) if conv(kinds[(1, p)])]
+    f2s = [p for p in (1, 2) if conv(kinds[(2, p)])]
+    if not f1s and not f2s:
+        return None
+    f1 = f1s[0] if f1s else 1
+    f2 = f2s[0] if f2s else 1
+    c = conv(kinds[(2, f2)]) if f2s else conv(kinds[(1, f1)])
+    weak = ''
+    if c == 'weakest':
+        weak, c = 'fire', 'fire'
+    return 20 + 32 * f1 + 128 * f2 + 512, weak, c
+
+
+def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case):
+    """{spell id: (weakest element, expected element, effect ids)} of the awakened version of the wanted spells; pair 76: the run has
+    the awakened look kit (O711); case: awaken_case (picks that keep the element) or awaken_conv_case (picks that convert it)"""
     root = make_root()
     try:
         jobs = []
         for s in spells:
             if s['id'] in wanted and s['id'] in forms and s['id'] in awakened:
-                state, weak, want = awaken_case(forms[s['id']])
+                got = case(forms[s['id']])
+                if got is None:
+                    continue
+                state, weak, want = got
                 jobs.append((s, state, weak, want))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2]), jobs))
+            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2], pair), jobs))
         return {j[0]['id']: (j[2], j[3], r) for j, r in zip(jobs, results)}
     finally:
         shutil.rmtree(root, ignore_errors=True)
+
+
+KIT_IDS = os.path.join(ROOT, 'server/data/lib/chaos_awakened_fx_ids.lua')
+KIT_PAIR = 76
+# awakened spells whose cast sends effects below pair 76 but no kit effect at pair 76, each with its reason (the list may only shrink).
+# What the probe sees of these is the cast's first effect and the Forms' and the signature's own: the area / hit of the cast is not run
+# by the mock (a cast-time spell fires after its timer, ChaosCasting; a corpse, a state) or is sent by a script's own raw call
+# (ChaosSpell.damageTarget with an effect, a Necromancer helper). Their casts take the kit in the game when they go through Vfx,
+# ChaosSpell.fx, Combat or doAreaCombat (data/lib/chaos_awakened_look.lua); tests/awakened_look_test.lua holds those paths.
+NOKIT_ALLOWED = {
+    'Glacial Doom': 'cast-time spell: the area fires after its timer, not run by the mock',
+    'Doomtide': 'cast-time spell: the area fires after its timer, not run by the mock',
+    'Primordial Squall': 'cast-time spell: the area fires after its timer, not run by the mock',
+    'Colossus Fall': 'cast-time spell: the area fires after its timer, not run by the mock',
+    'Corpse Explosion': 'needs a corpse: nothing is cast in the mock',
+    'Bone Offering': 'needs a corpse or a minion: nothing is cast in the mock',
+    'Hail of Dawn': 'the hit effect is an argument of ChaosSpell.damageTarget, a raw send of the script',
+    'Umbral Stride': 'needs a free tile behind the target: the mock cancels the cast',
+}
+
+
+def load_kit(path=KIT_IDS):
+    """{effect id: (element, shape)} of the 40 kit effects of data/lib/chaos_awakened_fx_ids.lua"""
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    return {int(m.group(1)): (m.group(2), m.group(3)) for m in re.finditer(
+        r'af_\w+ = \{id = (\d+), dx = -?\d+, dy = -?\d+, ms = \d+, element = "(\w+)", shape = "(\w+)"\}', text)}
+
+
+def kit_violations(plain, kit_run, spells, awakened, kit):
+    """plain: the awakened runs below pair 76, kit_run: the same at pair 76 ({spell id: (weakest, expected element, effect ids)}). At pair 76
+    every kit effect an awakened cast sends is the kit of the element it shows (a Form's conversion, else its own, `arcane` when the kit has
+    none), the kit is sent once a cast, and a spell that sent effects below pair 76 sends a kit effect now.
+    Returns (errors, names of the spells with no kit effect)"""
+    errors, nokit = [], []
+    for sid in sorted(kit_run):
+        weak, want, ids = kit_run[sid]
+        name, element = spells[sid]
+        shown = want or element
+        where = 'awakened %s (%d) %s at pair %d' % (name, sid, awakened[sid], KIT_PAIR)
+        sent = sorted(i for i in ids if i in kit)
+        for eid in sent:
+            if kit[eid][0] != shown:
+                errors.append('%s sends the kit %s %s (%d) but shows %s' % (where, kit[eid][0], kit[eid][1], eid, shown))
+        if len(sent) > 1:
+            errors.append('%s sends %d kit effects, a cast sends the kit once' % (where, len(sent)))
+        if plain.get(sid) and plain[sid][2] and not sent:
+            nokit.append(name)
+    return errors, nokit
 
 
 def awakened_violations(sent, spells, tags, awakened, base_allow=None):
@@ -369,6 +447,21 @@ def main(argv):
     awakened = load_awakened()
     awake_sent = probe_awakened(spells, set(elements), forms, awakened)
     problems.extend(awakened_violations(awake_sent, elements, tags, awakened, allow))
+    # O711: the same awakened casts at client pair 76: the kit effects of the element the cast shows, the element rule for the rest
+    kit_sent = probe_awakened(spells, set(elements), forms, awakened, KIT_PAIR)
+    problems.extend(awakened_violations(kit_sent, elements, tags, awakened, allow))
+    kit_errors, nokit = kit_violations(awake_sent, kit_sent, elements, awakened, load_kit())
+    problems.extend(kit_errors)
+    # a Form that converts the element: the awakened cast shows the kit of the new element, and nothing of the old one
+    conv_sent = probe_awakened(spells, set(elements), forms, awakened, KIT_PAIR, awaken_conv_case)
+    problems.extend(awakened_violations(conv_sent, elements, tags, awakened, allow))
+    conv_errors, _ = kit_violations({}, conv_sent, elements, awakened, load_kit())
+    problems.extend(conv_errors)
+    for name in sorted(set(nokit) - set(NOKIT_ALLOWED)):
+        problems.append('awakened %s sends effects below pair %d but no kit effect at it: route its effects through Vfx / ChaosSpell.fx / '
+                        'Combat or add a reason to NOKIT_ALLOWED' % (name, KIT_PAIR))
+    for name in sorted(set(NOKIT_ALLOWED) - set(nokit)):
+        problems.append('NOKIT_ALLOWED row %s is not needed any more: remove it' % name)
     for sid in sorted(set(forms) - set(awakened)):
         problems.append('spell %d has Forms but no row in awakened.csv' % sid)
     for key in sorted(set(form_allow) - form_used):
@@ -386,8 +479,9 @@ def main(argv):
             print('  ' + p)
         return 1
     print('check_spell_fx: ok (%d spells with an element, %d probed, %d not probed, %d effect ids tagged, %d reasons; %d Form runs, '
-          '%d Form reasons; %d awakened runs)' % (len(elements), len(elements) - len(unprobed), len(unprobed), len(tags), len(allow),
-                                                   len(form_sent), len(form_allow), len(awake_sent)))
+          '%d Form reasons; %d awakened runs, %d at pair %d)' % (len(elements), len(elements) - len(unprobed), len(unprobed), len(tags),
+                                                                     len(allow), len(form_sent), len(form_allow), len(awake_sent), len(kit_sent),
+                                                                     KIT_PAIR))
     return 0
 
 
