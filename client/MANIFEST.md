@@ -7866,7 +7866,7 @@ Owner task 2026-11-18 ("pode importar todos assim mesmo": all 20 footprints chos
   4. Only then: admin app Comandos > "Par do cliente" > Gravar 75 (`chaos-ctl.sh client-pair set 75`, not while an update runs), then Painel > Atualizar servidor (`update-apply`). Pair 75 opens the twenty effect footprints in the store (all gated `chaosClientPair >= 75`).
 - **Not done.** Not pushed, not seen in a client (the effects were never viewed: art rule of the footprint source). The fade ramp and the report's score are not reproduced exactly (see Treatments). Cosmetic names and descriptions are English only, as the other cosmetics.
 
-## Awakened spell looks (O711, pair 76: built, not published)
+## Awakened spell looks (O711, pair 76: on windows-assets)
 
 `tools/sprites/gen_awakened_fx.py`, `art_import/awakened_fx.csv` and `.sums`, test `gen_awakened_fx_test.py`. Owner 2026-11-22 ("Arte do despertar"; approved, "fix and import"). Own art, drawn by code like `gen_lightning_fx.py` (O614): no art file is read or committed.
 
@@ -7879,10 +7879,11 @@ Owner task 2026-11-18 ("pode importar todos assim mesmo": all 20 footprints chos
 - **Build run.** `gen_awakened_fx.py build P75/Tibia.dat P75/Tibia.spr OUT` on the real pair 75 (dat md5 528b2eeefe1b89dc9d3d20b1cd38a635): 5,393 effects, 253 missiles, 3,875 sprites appended (1,071,018 to 1,074,893), `live` OK. Result dat **2ff019d10b257fca75ffe7d04e5e1b02** (9,624,730 bytes), spr **850075c0fa50906d60c6854e3727ad7e**.
 - **Not done, on purpose.** Not pushed to windows-assets, not seen in a client (no picture of the pair was viewed). `PAIR_ASSETS` stays 75 and the knock-on tables keyed on the pair md5 (`outfit_anchors.lua` and the others of pair 75) are not changed until the owner publishes pair 76. The `live` step in the job "Live sprite pair" of `ci.yml` waits for that push. No spell sends the kit yet (the wiring of the awakened spells is a later step, docs/SPELL_UPGRADES.md 3.4).
 
-### Pair 76 build (O711, 2026-11-22): built, not pushed
+### Pair 76 build (O711, 2026-11-22): on windows-assets
 Owner 2026-11-22 ("Pode fazer o par"). `gen_awakened_fx.py build P75/Tibia.dat P75/Tibia.spr OUT` on a RAM disk (`/dev/shm/p76`).
 - **Result.** 5,393 effects, 253 missiles, 1,074,893 sprites (3,875 appended). Dat **2ff019d10b257fca75ffe7d04e5e1b02** (9,624,730 bytes), spr **850075c0fa50906d60c6854e3727ad7e** (1,251,680,580 bytes).
 - **Checks.** `check_pair.py --old` P75 with `--allow-changed 'missile:43,47,52,147-151'`: 0 errors, 5,189 warnings. Every step of the CI job "Live sprite pair" passes. `gen_footprint_fx.py live` now takes a pair with more effects than 5353. Four tables fail until regenerated, then pass: `gen_outfit_anchors.py`, `gen_info_lift.py`, `gen_wing_centres.py`, `gen_foot_marks.py`, plus unity `InfoLiftData.cs`. Only their md5 line changes. They are committed with the push, not before.
 - **Archive.** `--mtime='2026-11-22 00:00:00'`, same tar / xz / split as pair 75. Read back to the two md5s.
   part00 99,614,720 bytes sha256 856040fb1dba3fcb18cb6d523e6e1529abbfb8fdcca9be321c85f4f01287b76b; part01 45,386,240 bytes sha256 ba5c8bdf9e5b4cd9f90ab9e4a410a11c058b19f0941a77e8ffe7565ec45fa3c1.
-- **Push steps** (as pair 75): replace the two parts on `windows-assets` and their lines in `SHA256SUMS.parts`. Then on `main`: `PAIR_ASSETS = 76` with its dat md5, the five md5 tables, and the `gen_awakened_fx.py live` step in ci.yml. Then admin app Comandos > "Par do cliente" > Gravar 76.
+- **Pushed** to windows-assets on 2026-11-22 as 59cff3c (parent 12e1bfe, owner approved: "Pode fazer o envio"). Rebuilt after a container restart: same md5s and part sha256s. On `main`: `PAIR_ASSETS = 76` with its dat md5, the five md5 tables, and the `gen_awakened_fx.py live` step in the CI job "Live sprite pair".
+- **Owner step.** Ship a client package with pair 76. Then admin app Comandos > "Par do cliente" > Gravar 76 (`chaos-ctl.sh client-pair set 76`). Below 76 the gate answers nil.
