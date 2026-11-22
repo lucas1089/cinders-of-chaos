@@ -407,6 +407,10 @@ def main():
               'the snapshot and the pair: %r' % args)
         check(spool() == before + "spectate Sir O'Neil\n", 'spectate queues its line')
         check(oct(os.stat(spstate).st_mode & 0o777) == oct(0o700), 'the state folder is private')
+        # the first view may have waited longer than 0.8 s for the engine's answer: stamp a view of right now, so the
+        # second one must wait (the limiter reads the stamp, not how long the first view took)
+        with open(os.path.join(spstate, 'last'), 'w') as f:
+            f.write(str(int(time.time() * 1000)))
         t0 = time.time()
         r = run('spectate', "Sir O'Neil", extra=spe)
         check(r.returncode == 0, 'a second view at once: ' + r.stderr)
