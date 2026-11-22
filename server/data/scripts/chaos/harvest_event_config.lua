@@ -63,8 +63,8 @@ C.boss = {name = "Malvorn the Hollow King", phases = {75, 50, 25}, wardSeconds =
 -- HOOK for the pair 33 cosmetics (wings, head pieces, capes): add their keys here, e.g. {kind = "exclusive",
 -- key = "wings_<name>"}, once they exist; nothing else changes. Owned all: the charm gives fallbackCandy instead.
 C.charmPool = {
-	{kind = "cosmetic", key = "kill_soulspark"},
-	{kind = "cosmetic", key = "kill_bloodbloom"},
+	{kind = "cosmetic", key = "kill_ashfall"},
+	{kind = "cosmetic", key = "kill_unravel"},
 	{kind = "cosmetic", key = "chat_amethyst"},
 	{kind = "cosmetic", key = "foot_blood"},
 	{kind = "cosmetic", key = "loot_royal"}

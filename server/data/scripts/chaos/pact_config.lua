@@ -93,7 +93,7 @@ return {
 	marks = {
 		shelf = {
 			{key = "loot_ember", marks = 150}, {key = "loot_verdant", marks = 150}, {key = "loot_azure", marks = 150},
-			{key = "chat_cinder", marks = 200}, {key = "chat_frost", marks = 200}, {key = "kill_soulspark", marks = 200}
+			{key = "chat_cinder", marks = 200}, {key = "chat_frost", marks = 200}, {key = "kill_windswept", marks = 200}
 		},
 		-- One more slot on the shelf, chosen by the server month from this list (pact_core.lua monthlyItem): the entry at
 		-- ((year * 12 + month - 1) mod #list) + 1, so with 12 entries it is the month number and every month of the year has its
@@ -105,14 +105,14 @@ return {
 			{key = "lvl_frost", marks = 200},     -- February
 			{key = "lvl_grove", marks = 150},     -- March
 			{key = "rare_seal", marks = 150},     -- April
-			{key = "kill_shatter", marks = 200},  -- May
+			{key = "kill_frostmelt", marks = 200},  -- May
 			{key = "chat_verdant", marks = 200},  -- June
 			{key = "loot_royal", marks = 150},    -- July
 			{key = "foot_shadow", marks = 200},   -- August
 			{key = "lvl_dawn", marks = 200},      -- September
 			{key = "rare_crimson", marks = 200},  -- October
 			{key = "lvl_ember", marks = 200},     -- November
-			{key = "kill_bloodbloom", marks = 200} -- December
+			{key = "kill_unravel", marks = 200} -- December
 		},
 		maxBalance = 100000 -- a sanity cap for the column, far above what a Pact earns in years
 	},

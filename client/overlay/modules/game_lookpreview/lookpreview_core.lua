@@ -938,6 +938,21 @@ function P.fxExtent(play, sizeOf, scene, boxes)
   return x0, y0, x1, y1
 end
 
+-- A kill scene (O715, owner 2026-11-22: "o monstro nao esta centralizado"): the stage centred the extent of the troll AND its
+-- effect, and an effect is rarely round (a ring that rises, a pool, a 3 x 5 pillar, its displacement), so the monster stood off
+-- the middle of the box. Now the extent is made symmetric about the monster's own centre (the middle of its box, as the outfit
+-- previews centre their figure: P.centreBox), so the troll stands on the stage's middle at the scale where the whole effect
+-- still fits. x0, y0, x1, y1: the extent in tiles (P.fxExtent); scene.target: the troll's tile; box: P.lookBox of the troll.
+-- Returns the extent, symmetric about the troll's centre.
+function P.killExtent(x0, y0, x1, y1, scene, box)
+  if type(scene) ~= 'table' or not scene.kill or not x0 then return x0, y0, x1, y1 end
+  local b = centreBox(type(box) == 'table' and box or P.FALLBACK_BOX)
+  local t = scene.target or { x = 0, y = 0 }
+  local cx, cy = t.x + (b.left + b.right) / 64, t.y + (b.top + b.bottom) / 64
+  local rx, ry = math.max(cx - x0, x1 - cx), math.max(cy - y0, y1 - cy)
+  return cx - rx, cy - ry, cx + rx, cy + ry
+end
+
 -- the stage layout with effects: the largest of P.FX_SCALES at which the scene's extent fits the stage, the extent
 -- centred. Returns scale, T, tileX, tileY (the stage tile's top-left px) and the UICreature rect of a creature on
 -- that tile (x, y, size: its own tile is the lower right quarter of a 2T square; P.creatureRect for another tile).

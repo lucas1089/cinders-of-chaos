@@ -25,6 +25,9 @@ GL.LOOT_BAG_LOOK = 19202
 GL.RARE = 3 -- "Magic+" = rarity 3 (Magic) or better, uniques, orbs and legendary powers (the setting key stays rarePlus)
 GL.TEXT_COLOR = '#d8cfbf' -- items without a rarity colour
 GL.DIM_COLOR = '#8c8478'
+-- the name of a set piece (row.st) is drawn in the set green of the item tooltip's "Set: ..." line (game_itemtooltip tooltiplogic.lua
+-- COLORS.set), whatever its rarity (O715)
+GL.SET_COLOR = '#58c878'
 GL.HIGHLIGHT_BACKGROUND = '#100c0ef0'
 GL.PLAIN_BACKGROUND = '#0c0a0cd8'
 -- the loot label accent cosmetic (game_cosmetics, server cosmetics.lua): the background of the labels the loot filter
@@ -143,7 +146,7 @@ end
 
 -- ---------------------------------------------------------------- what gets a label
 local function isRarePlus(info)
-  return flag(info.u) or flag(info.o) or flag(info.pw) or (tonumber(info.r) or 0) >= GL.RARE
+  return flag(info.st) or flag(info.u) or flag(info.o) or flag(info.pw) or (tonumber(info.r) or 0) >= GL.RARE
 end
 GL.isRarePlus = isRarePlus
 
@@ -152,14 +155,15 @@ local function filterState(info, filter)
   return LF.classify(info, filter)
 end
 
--- items of a corpse the label counts: the ones the filter makes glow, and Rare+ ones the filter does not hide
+-- items of a corpse the label counts: the ones the filter makes glow, set pieces (they always beam, O715), and Rare+ ones the filter
+-- does not hide
 local function corpseMatches(row, s, filter)
   local n, best, bestRank = 0, nil, -1
   for _, info in ipairs(type(row.i) == 'table' and row.i or {}) do
     local st = filterState(info, filter)
-    if st == 'highlight' or (s.rarePlus and st ~= 'dim' and isRarePlus(info)) then
+    if st == 'highlight' or flag(info.st) or (s.rarePlus and st ~= 'dim' and isRarePlus(info)) then
       n = n + 1 -- a stack counts once
-      local rank = flag(info.u) and 100 or (tonumber(info.r) or 0)
+      local rank = flag(info.u) and 100 or (flag(info.st) and 50 or (tonumber(info.r) or 0))
       if rank > bestRank then best, bestRank = info, rank end
     end
   end
@@ -181,7 +185,8 @@ function GL.decide(row, s, filter, alt)
     return nil
   end
   local st = filterState(row, filter)
-  if st == 'highlight' then return { kind = 'item', highlight = true, dim = false } end
+  -- a set piece always beams (game_lootbeams), so its name always shows with the beam, glowing, whatever the filter says (O715)
+  if flag(row.st) or st == 'highlight' then return { kind = 'item', highlight = true, dim = false } end
   if st ~= 'dim' and s.rarePlus and isRarePlus(row) then return { kind = 'item', highlight = false, dim = false } end
   if showAll then return { kind = 'item', highlight = false, dim = st == 'dim' } end
   return nil
@@ -258,6 +263,7 @@ end
 function GL.color(row, d)
   if d.dim then return GL.DIM_COLOR end
   local info = d.kind == 'corpse' and d.best or row
+  if info and flag(info.st) then return GL.SET_COLOR end
   return (info and LF.color(info)) or GL.TEXT_COLOR
 end
 
@@ -281,7 +287,7 @@ function GL.priority(row, d)
   if d.kind == 'corpse' then
     p = 300 + (d.best and (flag(d.best.u) and 100 or (tonumber(d.best.r) or 0) * 5) or 0)
   else
-    p = (flag(row.u) and 600 or 0) + (tonumber(row.r) or 0) * 20 + (flag(row.o) and 40 or 0)
+    p = (flag(row.u) and 600 or 0) + (flag(row.st) and 500 or 0) + (tonumber(row.r) or 0) * 20 + (flag(row.o) and 40 or 0)
     if d.highlight then p = p + 200 end
   end
   if d.dim then p = p - 1000 end

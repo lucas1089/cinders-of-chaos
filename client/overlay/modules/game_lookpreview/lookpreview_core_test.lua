@@ -750,4 +750,37 @@ eq(P.dissolveOf(nil), nil, 'no row')
 local sd = P.fromStoreLook({ kind = 'effects', killfx = true, play = { { b = { id = 468 } } }, dissolve = 'burn', tint = 2 })
 eq(sd.dissolve.m, 'burn', 'a store offer carries the dissolve') eq(sd.dissolve.t, 2, 'store tint')
 
+-- a kill scene centres the monster, not the monster plus its effect (O715, owner 2026-11-22: "o monstro nao esta centralizado")
+do
+  local scene = P.sceneOf({ killfx = true })
+  local troll = { left = 4, top = 2, right = 28, bottom = 32 } -- a stock look's box in sprite px from its tile's top left
+  local boxes = { target = troll }
+  local bigSizes = { [468] = { 3, 3, 16, 16 }, [469] = { 1, 5, 0, 0 } }
+  local function bigOf(sp) local z = bigSizes[sp.id] return z[1], z[2], z[3], z[4] end
+  for _, play in ipairs({ { { b = { id = 468 } } }, { { b = { id = 469 } } }, {} }) do
+    for _, dim in ipairs({ { 188, 240 }, { 318, 130 }, { 240, 240 } }) do
+      local W, H = dim[1], dim[2]
+      local ox0, oy0, ox1, oy1 = P.fxExtent(play, bigOf, scene, boxes)
+      local old = P.fxLayout(W, H, ox0, oy0, ox1, oy1)
+      local x0, y0, x1, y1 = P.killExtent(ox0, oy0, ox1, oy1, scene, troll)
+      local L = P.fxLayout(W, H, x0, y0, x1, y1)
+      local cx = L.tileX + (troll.left + troll.right) / 2 * L.T / 32 -- the monster's middle on the stage
+      local cy = L.tileY + (troll.top + troll.bottom) / 2 * L.T / 32
+      eq(math.abs(cx - W / 2) <= 1.5, true, 'the monster is centred across a ' .. W .. ' x ' .. H .. ' stage (' .. cx .. ')')
+      eq(math.abs(cy - H / 2) <= 1.5, true, 'and up and down (' .. cy .. ')')
+      -- the whole effect still fits the stage
+      local smallest = L.scale == P.FX_SCALES[#P.FX_SCALES] -- a stage too small even for the smallest scale clips, as before
+      eq(smallest or (L.tileX + x0 * L.T >= -1 and L.tileX + x1 * L.T <= W + 1), true, 'the effect fits across')
+      eq(smallest or (L.tileY + y0 * L.T >= -1 and L.tileY + y1 * L.T <= H + 1), true, 'and up and down')
+      if #play > 0 then
+        local ocx = old.tileX + (troll.left + troll.right) / 2 * old.T / 32
+        local ocy = old.tileY + (troll.top + troll.bottom) / 2 * old.T / 32
+        eq(math.abs(ocx - W / 2) > 1.5 or math.abs(ocy - H / 2) > 1.5, true, 'before the fix the monster stood off the middle (' .. W .. ' x ' .. H .. ')')
+      end
+    end
+  end
+  eq(select(1, P.killExtent(-1, -1, 1, 1, { kill = false }, troll)), -1, 'a spell scene keeps its extent')
+  eq(select(1, P.killExtent(nil, nil, nil, nil, scene, troll)), nil, 'no extent, none made')
+end
+
 print('lookpreview_core_test: ' .. n .. ' checks OK')

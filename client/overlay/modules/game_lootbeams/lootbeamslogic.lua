@@ -116,10 +116,14 @@ function LB.frame(age, rich)
   return a.burst + math.floor((age - LB.ART_MS) / a.loopMs) % a.loop
 end
 
--- size and margins of the widget of a beam over a tile of tw x th px on the screen. The engine centres a tile widget on its tile's
--- top left + 32 px (so the margins that centre it are tw / 2 - 32), and the picture's foot must sit footDrop px (of a 32 px tile)
--- below the tile's centre: the widget's centre is higher than that by footY - h / 2 - footDrop (frame px, scaled). Returns
--- width, height, marginLeft, marginTop (integers).
+-- size and margins of the widget of a beam over a tile of tw x th px on the screen. The engine puts the widget's centre at
+-- `dest` + 32 px (base patch 0041, drawWidgetOverTile) + its margins, and `dest` is the CENTRE of the tile, not its top left
+-- (O715: the margins tw / 2 - 32 of O569 assumed the corner and put the ring and the column half a tile right and down of the
+-- item in a live client, owner screenshot 2026-11-22), so the margins that centre it are -32 at every zoom. The picture's foot
+-- must sit footDrop px (of a 32 px tile) below the tile's centre: the widget's centre is higher than that by
+-- footY - h / 2 - footDrop (frame px, scaled). LB.DEST = 'corner' brings the O569 rule back. Returns width, height,
+-- marginLeft, marginTop (integers).
+LB.DEST = 'centre'
 function LB.box(tw, th, heightKey)
   local a = LB.ART
   tw, th = tonumber(tw) or 64, tonumber(th) or 64
@@ -129,7 +133,9 @@ function LB.box(tw, th, heightKey)
   local sx, sy = tw / a.tile * f, th / a.tile * f
   local lift = (a.footY - a.h / 2 - a.footDrop) * sy
   local function rnd(v) return math.floor(v + 0.5) end
-  return rnd(a.w * sx), rnd(a.h * sy), rnd(tw / 2 - 32), rnd(th / 2 - 32 - lift)
+  local cx, cy = 0, 0 -- where `dest` is, from the tile's centre
+  if LB.DEST == 'corner' then cx, cy = tw / 2, th / 2 end
+  return rnd(a.w * sx), rnd(a.h * sy), rnd(cx - 32), rnd(cy - 32 - lift)
 end
 
 -- the keys of the `cap` beams that animate: the same order as the choice of the beams on screen (best group first, then the

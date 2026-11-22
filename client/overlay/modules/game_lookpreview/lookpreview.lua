@@ -472,9 +472,12 @@ end
 -- the scene's extent (in tiles) with the boxes of its creatures
 function Preview:fxExtent()
   local fx = self.fx
-  local boxes = { target = fx.scene.loot and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
+  local trollBox = boxOf({ type = P.TROLL })
+  local boxes = { target = (fx.scene.loot or fx.scene.foot) and P.LOOT_BOX or trollBox }
   if fx.scene.caster then boxes.caster = self.box end
-  return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
+  -- a dissolve plays no effect on the stage, only the troll coming apart: its plain effect is not part of the scene
+  local x0, y0, x1, y1 = P.fxExtent(fx.dissolve and {} or fx.play, fx.sizeOf, fx.scene, boxes)
+  return P.killExtent(x0, y0, x1, y1, fx.scene, trollBox)
 end
 
 -- The footprint walk (O712, footwalk.lua): the figure walks east in place and the floor runs by under it. The marks (a

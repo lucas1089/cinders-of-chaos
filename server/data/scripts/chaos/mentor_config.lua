@@ -123,7 +123,7 @@ return {
 			desc = "Loot label accent (account-wide), the same as the store's."},
 		{key = "cos_chat_cinder", kind = "cosmetic", cost = 140, cosmetic = "chat_cinder", name = "Cinder Name",
 			desc = "Chat name colour (account-wide), the same as the store's."},
-		{key = "cos_kill_soulspark", kind = "cosmetic", cost = 140, cosmetic = "kill_soulspark", name = "Soul Spark",
+		{key = "cos_kill_windswept", kind = "cosmetic", cost = 140, cosmetic = "kill_windswept", name = "Windswept",
 			desc = "Kill effect (account-wide), the same as the store's."},
 		{key = "sup_health", kind = "item", cost = 6, item = 7618, count = 50, weekly = 3, name = "50 Health Potions",
 			desc = "Supplies for a hunt with your apprentice."},
