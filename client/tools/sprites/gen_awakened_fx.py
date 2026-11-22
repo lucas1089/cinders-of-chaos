@@ -3,16 +3,23 @@
 none is committed except the table and the sums.
 
     python3 -I gen_awakened_fx.py table                 # writes art_import/awakened_fx.csv and .sums
-    python3 -I gen_awakened_fx.py check                 # CI, no pair: the code redraws the committed table and sums
+    python3 -I gen_awakened_fx.py check                 # CI, no pair: the code redraws the committed table and sums, the ids
+                                                        # file and the tags are current
     python3 -I gen_awakened_fx.py sheets OUT_DIR        # sheet.png (contact sheet), one PNG per kit and the strips (never committed)
     python3 -I gen_awakened_fx.py preview OUT_DIR       # awakened_kits.mp4 (game scale) and awakened_kits_3x.mp4, ffmpeg,
                                                         # on a plain dark ground (never committed)
+    python3 -I gen_awakened_fx.py build DAT SPR OUT_DIR # pair 75 -> pair 76: OUT_DIR gets Tibia.dat, Tibia.spr and strips/
+    python3 -I gen_awakened_fx.py live DAT SPR          # the pair holds every effect and missile at its id, pixel for pixel
+    python3 -I gen_awakened_fx.py ids [--check]         # server/data/lib/chaos_awakened_fx_ids.lua, the tags of
+                                                        # spell_fx_elements.csv
 
-STATUS: prototype for the owner to judge the look (owner 2026-11-22, "Arte do despertar"). There is NO `build` into a pair, NO
-`live`, NO ids file (data/lib/chaos_awakened_fx_ids.lua), NO tags in spell_fx_elements.csv and NO server gate
-(chaosClientPair >= N) yet. They come after the owner approves the look, as 3.4 of docs/SPELL_UPGRADES.md describes: the new
-effect ids are appended after the newest effect of the pair that is current then. The `slot` column of the table is the
-position inside the kit (effects 1..40, projectiles 1..8), not a client id.
+STATUS (O711, the owner approved the import): the kit is built into pair 76. The effects are appended after effect 5353 of
+pair 75 (the footprints, O649) as 5354..5393. A missile id is ONE BYTE on the wire (254 is the weapon-type constant) and pair 75
+holds 253 missiles, so the 8 missiles cannot be appended: they fill 3 blank stock ids (43, 47, 52) and rebuild 5 donor ids that
+no script sends (147-151, pair 51) in place, as 3 x 3 direction patterns of 1 x 1 tiles made here from the east strip.
+Server: data/lib/chaos_awakened_fx.lua (gate chaosClientPair >= 76), a lookup only: no spell cast sends these yet.
+The `slot` column of the table is the position inside the kit (effects 1..40, projectiles 1..8); the client id comes from it
+(FIRST, MISSILE_IDS).
 
 The kit (3.4): 8 elements x 5 shapes = 40 effects of 10 to 12 frames, plus 8 projectile strips.
   elements  fire, ice, energy, earth, death, holy, physical (the seven of spelldata.lua) and arcane (the eighth: the tag
@@ -85,6 +92,20 @@ SHAPE = {
     'wave': dict(w=5, h=4, dx=4, dy=1, n=11),
 }
 MISSILE_FRAMES = 4
+ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
+LUA = os.path.join(ROOT, 'server', 'data', 'lib', 'chaos_awakened_fx_ids.lua')
+TAGS = os.path.join(ROOT, 'server', 'data', 'spells', 'spell_fx_elements.csv')
+PAIR = 76
+FIRST = 5354                                # pair 75 ends at effect 5353 (footprints, O649)
+NEED_EFFECTS, NEED_MISSILES = 5353, 253     # the input pair, exactly
+MISSILE_IDS = [43, 47, 52, 147, 148, 149, 150, 151]   # element order: 3 blank stock ids, then 5 unsent donor ids rebuilt in place
+BLANK_IDS = (43, 47, 52)
+# the client's 3 x 3 missile patterns (x west / centre / east, y north / centre / south) and the heading of each (screen y down)
+DIRS = {'east': (1, 0), 'west': (-1, 0), 'north': (0, -1), 'south': (0, 1),
+        'northeast': (1, -1), 'southeast': (1, 1), 'southwest': (-1, 1), 'northwest': (-1, -1)}
+PATTERN = {'east': (2, 1), 'west': (0, 1), 'north': (1, 0), 'south': (1, 2),
+           'northeast': (2, 0), 'southeast': (2, 2), 'southwest': (0, 2), 'northwest': (0, 0)}
+STEPS = {(1, 0): 0, (1, 1): 1, (0, 1): 2, (-1, 1): 3, (-1, 0): 4, (-1, -1): 5, (0, -1): 6, (1, -1): 7}
 FIELDS = ['kind', 'slot', 'name', 'element', 'shape', 'frames', 'w', 'h', 'dx', 'dy', 'ms', 'seed', 'note']
 
 
@@ -1142,12 +1163,211 @@ def check(quiet=False):
             errs += art_errors(s, r)
         if not os.path.exists(SUMS) or open(SUMS).read() != sums_text(pairs):
             errs.append('awakened_fx.sums is not what the script draws (run gen_awakened_fx.py table after a wanted change)')
+    bad = ids(True, quiet) if rows else 1
     if not quiet:
         for e in errs:
             print(e)
-        print('awakened fx: %d effects, %d missiles, %s' % (len(ELEMENTS) * len(SHAPES), len(ELEMENTS),
-                                                           'OK' if not errs else 'PROBLEMS'))
+        print('awakened fx: %d effects %d..%d, %d missiles, %s' % (len(ELEMENTS) * len(SHAPES), FIRST,
+                                                                  FIRST + len(ELEMENTS) * len(SHAPES) - 1, len(ELEMENTS),
+                                                                  'OK' if not errs and not bad else 'PROBLEMS'))
+    return 1 if errs or bad else 0
+
+
+# ------------------------------------------------------------------------------------------------- the pair
+def effect_id(r):
+    return FIRST + int(r['slot']) - 1
+
+
+def missile_id(r):
+    return MISSILE_IDS[int(r['slot']) - 1]
+
+
+def pair_ok(effects, missiles):
+    return effects == NEED_EFFECTS and missiles == NEED_MISSILES
+
+
+def missile_strip(east):
+    """the east strip (32 x 32 * n, heading east) -> the 3 x 3 direction patterns of the client, each n frames left to right:
+    (3 * 32, 3 * 32 * n, 4). Nearest-pixel turns about the middle of the tile, so no colour or alpha level is made; the middle
+    cell repeats the south one (every pack missile does)."""
+    import numpy as np
+    n = east.shape[1] // 32
+    out = np.zeros((96, 96 * n, 4), np.uint8)
+    cells = {}
+    for d, hd in DIRS.items():
+        k = STEPS[hd]
+        c, s = math.cos(k * math.pi / 4), math.sin(k * math.pi / 4)
+        frames = []
+        for f in range(n):
+            a = east[:, f * 32:(f + 1) * 32]
+            b = np.zeros((32, 32, 4), np.uint8)
+            for y in range(32):
+                for x in range(32):
+                    rx, ry = x - 15.5, y - 15.5
+                    sx = int(math.floor(rx * c + ry * s + 15.5 + 0.5))      # the inverse turn
+                    sy = int(math.floor(-rx * s + ry * c + 15.5 + 0.5))
+                    if 0 <= sx < 32 and 0 <= sy < 32:
+                        b[y, x] = a[sy, sx]
+            frames.append(b)
+        cells[PATTERN[d]] = frames
+    cells[(1, 1)] = cells[PATTERN['south']]
+    for (px, py), fr in cells.items():
+        for f, im in enumerate(fr):
+            x0 = (px * n + f) * 32
+            out[py * 32:(py + 1) * 32, x0:x0 + 32] = im
+    out[out[..., 3] == 0] = 0
+    return out
+
+
+def import_spec(path, strips, pairs):
+    """the spec import_fx_art.py reads: the 40 effects appended, then the 8 missiles at their ids (`replace`, `lua` names)"""
+    import numpy as np
+    from PIL import Image
+    with open(path, 'w', newline='') as fh:
+        w = csv.writer(fh, lineterminator='\n')
+        w.writerow(['replace', 'kind', 'name', 'file', 'w', 'h', 'phases', 'ms', 'dx', 'dy', 'note', 'alpha', 'durs', 'lua'])
+        for r, s in pairs:
+            f = os.path.join(strips, r['name'] + '.png')
+            if r['kind'] == 'missile':
+                s = missile_strip(s)
+            Image.fromarray(np.ascontiguousarray(s)).save(f, optimize=False)
+            if r['kind'] == 'effect':
+                w.writerow(['', 'effect', r['name'], f, r['w'], r['h'], r['frames'], r['ms'], r['dx'], r['dy'], r['note'], 'soft',
+                            '', ''])
+            else:
+                w.writerow([missile_id(r), 'missile', r['name'], f, 1, 1, r['frames'], 50, 0, 0, r['note'], 'soft', '', r['name']])
+
+
+def build(dat, spr, out):
+    sys.path.insert(0, HERE)
+    from datspr import Dat
+    d = Dat(dat)
+    if not pair_ok(len(d.effects), len(d.missiles)):
+        sys.exit('refused: the input pair has %d effects and %d missiles, this step needs exactly %d and %d (pair 75: the '
+                 'footprints of O649 end at effect %d)' % (len(d.effects), len(d.missiles), NEED_EFFECTS, NEED_MISSILES,
+                                                           NEED_EFFECTS))
+    for mid in BLANK_IDS:
+        if any(d.missiles[mid - 1].sprites):
+            sys.exit('refused: missile %d is not blank in the input pair' % mid)
+    if check(quiet=True):
+        sys.exit('refused: `check` fails (the table, the sums or the ids file are not current)')
+    pairs = build_rows()
+    strips = os.path.join(os.path.abspath(out), 'strips')
+    os.makedirs(strips, exist_ok=True)
+    spec = os.path.join(strips, 'import.csv')
+    import_spec(spec, strips, pairs)
+    cmd = [sys.executable, '-I', os.path.join(HERE, 'import_fx_art.py'), '--ours-dat', dat, '--ours-spr', spr, '--out-dir', out,
+           '--spec', spec, '--expect-first-effect', str(FIRST), '--keep-donor-names']
+    if subprocess.run(cmd).returncode:
+        sys.exit('import_fx_art.py failed')
+    for f in ('chaos_vfx_art.lua', 'vfx_art_catalog.csv'):                # this step's ids come from the table
+        p = os.path.join(out, f)
+        if os.path.exists(p):
+            os.remove(p)
+    print('awakened fx: 40 effects %d..%d, 8 missiles at %s' % (FIRST, FIRST + 39, ' '.join(map(str, MISSILE_IDS))))
+    return live(os.path.join(out, 'Tibia.dat'), os.path.join(out, 'Tibia.spr'))
+
+
+def live(dat_path, spr_path):
+    """the pair holds every effect and missile at its id: size, phases and the pixels of the sums (a missile: the east cell
+    is the sum, all nine cells are the turned strip)"""
+    import numpy as np
+    sys.path.insert(0, HERE)
+    from datspr import Dat, Spr
+    from import_vfx import render_back
+    from fxlib import render_frame
+    dat, spr = Dat(dat_path), Spr(spr_path)
+    rows = read_spec()
+    sums = read_sums()
+    errs = []
+    ne = sum(1 for r in rows if r['kind'] == 'effect')
+    if len(dat.effects) != FIRST + ne - 1 or len(dat.missiles) != NEED_MISSILES:
+        errs.append('the pair has %d effects and %d missiles' % (len(dat.effects), len(dat.missiles)))
+    for r in rows if not errs else []:
+        ph, w, h = int(r['frames']), int(r['w']), int(r['h'])
+        if r['kind'] == 'effect':
+            t = dat.effects[effect_id(r) - 1]
+            if (t.w, t.h, t.phases) != (w, h, ph):
+                errs.append('%s: size or phases differ at %d' % (r['name'], effect_id(r)))
+                continue
+            back = render_back(t, spr, 1)
+            strip = np.concatenate([back[(f, 0, 0, 0)] for f in range(ph)], axis=1).copy()
+            strip[strip[..., 3] == 0] = 0
+            if digest(strip) != sums.get(r['name']):
+                errs.append('%s: pixels differ from the sum' % r['name'])
+        else:
+            t = dat.missiles[missile_id(r) - 1]
+            if (t.w, t.h, t.phases) != (1, 1, ph):
+                errs.append('%s: size or phases differ at missile %d' % (r['name'], missile_id(r)))
+                continue
+            got = np.zeros((96, 96 * ph, 4), np.uint8)
+            for py in range(3):
+                for px in range(3):
+                    for f in range(ph):
+                        a = np.array(render_frame(t, spr, f, px, py))
+                        a[a[..., 3] == 0] = 0
+                        got[py * 32:(py + 1) * 32, (px * ph + f) * 32:(px * ph + f + 1) * 32] = a
+            east = np.ascontiguousarray(got[32:64, 2 * ph * 32:3 * ph * 32])
+            if digest(east) != sums.get(r['name']):
+                errs.append('%s: the east pattern differs from the sum' % r['name'])
+            elif not (got == missile_strip(east)).all():
+                errs.append('%s: the nine patterns are not the turned east strip' % r['name'])
+    for e in errs:
+        print(e)
+    print('awakened fx live: %d effects at %d..%d, %d missiles, %s' % (ne, FIRST, FIRST + ne - 1, len(rows) - ne,
+                                                                      'OK' if not errs else '%d problem(s)' % len(errs)))
     return 1 if errs else 0
+
+
+# ------------------------------------------------------------------------------------------------- server files
+def lua_text(rows):
+    L = ['-- GENERATED by client/tools/sprites/gen_awakened_fx.py from art_import/awakened_fx.csv (O711). Do not edit by hand.',
+         '-- The awakened spell look kit, drawn by code (our own art), in client pair %d: 40 effects at the ids %d..%d, after the' % (
+             PAIR, FIRST, FIRST + 39),
+         '-- footprints of pair 75 (%d), and 8 projectiles. A projectile id is one byte on the wire (254 is the weapon-type' % (
+             FIRST - 1),
+         '-- constant, pair 75 holds 253), so none is appended: ids 43, 47, 52 were blank stock ids, 147-151 are donor ids no script',
+         '-- sends, rebuilt in place (1 x 1 tiles, 4 phases, 3 x 3 direction patterns). dx, dy: the send offset; ms: the whole play.',
+         '-- A plain table: data/lib/chaos_awakened_fx.lua answers only when config.lua chaosClientPair is %d or more.' % PAIR,
+         'ChaosAwakenedFxIds = {',
+         '\tpair = %d, first = %d, count = 40,' % (PAIR, FIRST),
+         '\teffects = {']
+    for r in rows:
+        if r['kind'] == 'effect':
+            L.append('\t\t%s = {id = %d, dx = %s, dy = %s, ms = %d, element = "%s", shape = "%s"},' % (
+                r['name'], effect_id(r), r['dx'], r['dy'], int(r['ms']) * int(r['frames']), r['element'], r['shape']))
+    L += ['\t},', '\tmissiles = {']
+    for r in rows:
+        if r['kind'] == 'missile':
+            L.append('\t\t%s = {id = %d, dx = 0, dy = 0, element = "%s"},' % (r['name'], missile_id(r), r['element']))
+    L += ['\t},', '}']
+    return '\n'.join(L) + '\n'
+
+
+def tags_text(rows):
+    """spell_fx_elements.csv with this step's 40 effect rows (id, name, element) in id order, the other rows as they are
+    (a missile id is no effect id, so the 8 projectiles carry no tag)"""
+    with open(TAGS, encoding='utf-8', newline='') as fh:
+        keep = [l for l in fh.read().splitlines() if not l.split(',')[1:2] or not l.split(',')[1].startswith('af_')]
+    mine = ['%d,%s,%s' % (effect_id(r), r['name'], r['element']) for r in rows if r['kind'] == 'effect']
+    return '\n'.join(keep[:1] + sorted(keep[1:] + mine, key=lambda l: int(l.split(',')[0]))) + '\n'
+
+
+def ids(check_only, quiet=False):
+    rows = read_spec()
+    want = {LUA: lua_text(rows), TAGS: tags_text(rows)}
+    if check_only:
+        bad = 0
+        for p, text in want.items():
+            have = open(p, encoding='utf-8', newline='').read() if os.path.exists(p) else None
+            if not quiet:
+                print(os.path.relpath(p, ROOT) + (': up to date' if have == text else ': OUT OF DATE (run gen_awakened_fx.py ids)'))
+            bad += have != text
+        return 1 if bad else 0
+    for p, text in want.items():
+        open(p, 'w', encoding='utf-8', newline='\n').write(text)
+        print('wrote', os.path.relpath(p, ROOT))
+    return 0
 
 
 # ------------------------------------------------------------------------------------------------- sheets and previews
@@ -1317,8 +1537,9 @@ def preview(out_dir):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('cmd', choices=['sheets', 'preview', 'table', 'check'])
+    ap.add_argument('cmd', choices=['sheets', 'preview', 'build', 'table', 'ids', 'check', 'live'])
     ap.add_argument('rest', nargs='*')
+    ap.add_argument('--check', action='store_true')
     a = ap.parse_args()
     if a.cmd == 'sheets':
         if len(a.rest) != 1:
@@ -1328,6 +1549,16 @@ def main():
         if len(a.rest) != 1:
             sys.exit('preview OUT_DIR')
         return preview(a.rest[0])
+    if a.cmd == 'build':
+        if len(a.rest) != 3:
+            sys.exit('build DAT SPR OUT_DIR')
+        return build(*a.rest)
+    if a.cmd == 'live':
+        if len(a.rest) != 2:
+            sys.exit('live DAT SPR')
+        return live(*a.rest)
+    if a.cmd == 'ids':
+        return ids(a.check)
     if a.cmd == 'table':
         return table()
     return check()
