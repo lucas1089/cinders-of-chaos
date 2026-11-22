@@ -333,6 +333,23 @@ if __name__ == '__main__':
     got = fm.pair_patterns(xd, xs, 3)
     check(not isinstance(got, str) and all(np.array_equal(new_pats[key], got[key]) for key in new_pats), 'an extra look reads back its pictures')
     check([r[2] for r in fm.new_rows()] == list(gd.KEYS), 'new_rows names the six designs in order')
+    # O714b: `--keep-painted`: a row of pixellab_rows.csv keeps its look as the input pair has it, the others are redrawn
+    painted = copy.copy(rows[1])
+    painted.wings = sorted(fm.sheet_rows())[0]
+    out_k = os.path.join(case.dir, 'outk')
+    done = fm.apply(dat_p, spr_p, out_k, [rows[0], painted], log=quiet, keep=set(fm.sheet_rows()))
+    check(done == [2], 'apply keep redraws the unpainted look only: %s' % done)
+    kd, ks = Dat(os.path.join(out_k, 'Tibia.dat')), Spr(os.path.join(out_k, 'Tibia.spr'))
+    ta, tb = od.outfit(3), kd.outfit(3)
+    check(od.data[ta.raw[0]:ta.raw[1]] == kd.data[tb.raw[0]:tb.raw[1]], 'a kept look is byte for byte the input look')
+    kdat, kspr = os.path.join(out_k, 'Tibia.dat'), os.path.join(out_k, 'Tibia.spr')
+    ksums = {rows[0].wings: row_sums[rows[0].wings]}
+    keep_ids = set(fm.sheet_rows())
+    check(fm.check_pair(kdat, kspr, [rows[0], painted], ksums, log=quiet, keep=keep_ids, base=(dat_p, spr_p)) == [],
+          'live keep: kept row equal to the base pair, the other held to the sums')
+    check(fm.check_pair(kdat, kspr, [rows[0], painted], ksums, log=quiet, keep=keep_ids) == [], 'live keep without a base skips the kept row')
+    check(len(fm.check_pair(ndat_p, nspr_p, [rows[0], painted], ksums, log=quiet, keep=keep_ids, base=(dat_p, spr_p))) == 1,
+          'live keep names a painted row that was redrawn instead of kept')
     for bad_call, what in ((lambda: fm.apply(dat_p, spr_p, out_dir, rows, log=quiet), 'an existing folder'),
                            (lambda: fm.apply(dat_p, spr_p, out_dir + '2', [rows[0], copy.copy(specs[1])], log=quiet), 'a missing look')):
         try:

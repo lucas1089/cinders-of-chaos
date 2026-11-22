@@ -1803,12 +1803,14 @@ def new_rows():
     return [(int(r['look']), int(r['wings']), r['key'], new.patterns(r['key'])) for r in new.load()]
 
 
-def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=()):
+def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=()):
     """pair in -> pair out in OUT_DIR (not there yet): every row's wings look keeps its id, its flags without the
     displacement, its frame groups and z patterns, and gets the drawn pictures. Outfits, items, effects and missiles
     that are not wings stay byte for byte, sprites are only appended. Verified before the rename. `extra`: more wings
     looks of the same shape as (look, wings id, key, pictures), for the six of O581 phase 2 that pair 78 already holds
-    (`apply --new`, O714: they are drawn again in place, pair 77 -> 78 is gen_drawn_wings_new.py build-new)."""
+    (`apply --new`, O714: they are drawn again in place, pair 77 -> 78 is gen_drawn_wings_new.py build-new).
+    `keep`: wings ids whose looks stay exactly as the input pair has them, frame groups and sprite ids (`--keep-painted`,
+    O714b: the ten painted rows when the sheets are not at hand)."""
     import hashlib
     import shutil
     import struct
@@ -1835,7 +1837,8 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=()):
         return recs[rec]
 
     entries, expect = {}, {}
-    jobs = [(sp.look, sp.wings, sp.key, None, sp) for sp in specs] + [(look, wings, key, pats, None) for look, wings, key, pats in extra]
+    keep = set(keep)
+    jobs = [(sp.look, sp.wings, sp.key, None, sp) for sp in specs if sp.wings not in keep] + [(look, wings, key, pats, None) for look, wings, key, pats in extra]
     for look, wings, key, pats, sp in jobs:
         t = od.outfit(look)
         if t is None:
@@ -1885,7 +1888,7 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=()):
     md, ms = Dat(os.path.join(tmp, 'Tibia.dat')), Spr(os.path.join(tmp, 'Tibia.spr'))
     assert md.variant == od.variant and md.counts == od.counts and ms.count == cnt + nn and md.max_sprite <= ms.count
     looks = set(entries)
-    for i, (a, b) in enumerate(zip(od.outfits, md.outfits)):
+    for i, (a, b) in enumerate(zip(od.outfits, md.outfits)):   # a kept look is not in entries: its bytes are checked here too
         if i + 1 not in looks:
             assert d[a.raw[0]:a.raw[1]] == md.data[b.raw[0]:b.raw[1]], 'outfit %d changed' % (i + 1)
     assert d[:od.outfits[0].raw[0]] == md.data[:md.outfits[0].raw[0]], 'items changed'
@@ -1907,8 +1910,10 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=()):
     return sorted(entries)
 
 
-def check_pair(dat_path, spr_path, specs=None, sums=None, log=print):
-    """a built pair holds the drawn wings: every row's look has the shape and the pictures of designs.sums"""
+def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), base=None):
+    """a built pair holds the drawn wings: every row's look has the shape and the pictures of designs.sums.
+    `keep`: wings ids of the rows kept as they were (`--keep-painted`): not held to designs.sums; with `base` = (dat, spr)
+    of the input pair their entry bytes and sprites must equal the base's, else they are only named as skipped."""
     from datspr import Dat, Spr
     specs = load() if specs is None else specs
     if sums is None:
@@ -1917,7 +1922,23 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print):
             sums.update(read_sums(SHEET_SUMS))
     dat, spr = Dat(dat_path), Spr(spr_path)
     bad = []
+    keep = set(keep)
+    bdat, bspr = (Dat(base[0]), Spr(base[1])) if base and keep else (None, None)
     for sp in specs:
+        if sp.wings in keep:
+            if bdat is None:
+                log('look %d (%s): kept painted row, skipped (no --base)' % (sp.look, sp.key))
+                continue
+            a, b = bdat.outfit(sp.look), dat.outfit(sp.look)
+            if a is None or b is None or bdat.data[a.raw[0]:a.raw[1]] != dat.data[b.raw[0]:b.raw[1]]:   # same flags, groups, sprite ids
+                bad.append('look %d (%s): kept painted row differs from the base pair' % (sp.look, sp.key))
+            else:
+                for sid in {s for g in __import__('import_outfits').parse_body(dat, b) for s in g.sprites if s}:
+                    x, y = bspr.sprite(sid), spr.sprite(sid)
+                    if (x is None) != (y is None) or (x is not None and not np.array_equal(x, y)):
+                        bad.append('look %d (%s): kept sprite %d differs' % (sp.look, sp.key, sid))
+                        break
+            continue
         got = pair_patterns(dat, spr, sp.look)
         if isinstance(got, str):
             bad.append(got)
@@ -1925,7 +1946,9 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print):
             bad.append('look %d (%s): pictures are not those of designs.sums' % (sp.look, sp.key))
     for line in bad:
         log(line)
-    log('%d of %d wings looks hold the drawn pictures' % (len(specs) - len(bad), len(specs)))
+    n = len(specs) - len(keep & {sp.wings for sp in specs})
+    log('%d of %d wings looks hold the drawn pictures%s' % (n - len([b for b in bad if 'kept' not in b]), n,
+        '' if not keep else '; %d kept painted rows %s' % (len(keep), 'equal to the base pair' if bdat else 'skipped')))
     return bad
 
 
@@ -2431,7 +2454,20 @@ def main(argv):
     with_new = '--new' in args                            # apply and live also take the six wings looks of O581 phase 2
     if with_new and cmd not in ('apply', 'live'):
         raise SystemExit('--new goes with apply and live')
-    args = [a for a in args if a not in ('--check', '--new')]
+    keep_painted = '--keep-painted' in args               # apply and live: the ten painted rows stay as the input pair has them (O714b)
+    if keep_painted and cmd not in ('apply', 'live'):
+        raise SystemExit('--keep-painted goes with apply and live')
+    base = None
+    if '--base' in args:                                  # live --keep-painted: the input pair, the kept rows are held equal to it
+        i = args.index('--base')
+        if cmd != 'live' or i + 2 >= len(args):
+            raise SystemExit('--base DAT SPR goes with live --keep-painted')
+        base = (args[i + 1], args[i + 2])
+        del args[i:i + 3]
+    args = [a for a in args if a not in ('--check', '--new', '--keep-painted')]
+    if keep_painted and '--src' in args:
+        raise SystemExit('--keep-painted and --src exclude each other')
+    keep = set(sheet_rows()) if keep_painted else set()
     if '--src' in args:                                   # the folder of the painted sheets (O594)
         i = args.index('--src')
         if cmd == 'table' or i + 1 >= len(args):
@@ -2477,10 +2513,10 @@ def main(argv):
         print(text, end='')
         return 0
     if cmd == 'apply':
-        apply(args[0], args[1], args[2], extra=new_rows() if with_new else ())
+        apply(args[0], args[1], args[2], extra=new_rows() if with_new else (), keep=keep)
         return 0
     if cmd == 'live':
-        bad = check_pair(args[0], args[1])
+        bad = check_pair(args[0], args[1], keep=keep, base=base)
         if with_new:
             import gen_drawn_wings_new as new
             bad += new.live(args[0], args[1])
