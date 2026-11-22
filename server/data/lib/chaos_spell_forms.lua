@@ -395,7 +395,10 @@ function M.installCombat()
 	end
 	C.execute = function(self, creature, variant)
 		local el = M.castConversion(creature)
-		if not el then
+		-- O711: an awakened cast (client pair 76) sends the kit effect and projectile (data/lib/chaos_awakened_look.lua), nil otherwise
+		local AL = rawget(_G, "ChaosAwakenedLook")
+		local look = AL and AL.forCast and AL.forCast()
+		if not el and not look then
 			return rawExec(self, creature, variant)
 		end
 		local p = params[self] or {}
@@ -403,7 +406,7 @@ function M.installCombat()
 		if effectKey then
 			rawSet(self, effectKey, rawget(_G, "CONST_ME_NONE") or 0)
 		end
-		local ani = rawget(_G, M.missiles[el] or "")
+		local ani = look and look.missile or rawget(_G, el and M.missiles[el] or "")
 		if aniKey and p[aniKey] and ani then
 			rawSet(self, aniKey, ani)
 		end
@@ -427,7 +430,9 @@ function M.installCombat()
 				end
 			end
 			pos = pos or (creature and creature:getPosition())
-			if pos then
+			if pos and look then
+				look.send(pos)
+			elseif pos then
 				M.sendFx(pos, el, "hit")
 			end
 		end

@@ -205,6 +205,11 @@ end
 
 function Vfx(pos, name, raw)
 	if not raw then
+		-- O711: an awakened cast sends the awakened look kit once (data/lib/chaos_awakened_look.lua; nil below client pair 76)
+		local AL = rawget(_G, "ChaosAwakenedLook")
+		if AL and AL.vfx and pos and AL.vfx(pos) then
+			return true
+		end
 		name = skySwap(name)
 		name = formSwap(name)
 	end
@@ -223,6 +228,13 @@ function VfxDir(pos, base, direction)
 end
 
 function VfxShoot(fromPos, toPos, name)
+	-- O711: every projectile of an awakened cast is the kit projectile of its element (data/lib/chaos_awakened_look.lua)
+	local AL = rawget(_G, "ChaosAwakenedLook")
+	local kitMissile = AL and AL.missileId and fromPos and toPos and AL.missileId()
+	if kitMissile then
+		Position(fromPos.x, fromPos.y, fromPos.z):sendDistanceEffect(Position(toPos.x, toPos.y, toPos.z), kitMissile)
+		return true
+	end
 	local m = ChaosVfxMissile[name]
 	if not m or not fromPos or not toPos then
 		return false

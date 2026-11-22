@@ -2,13 +2,15 @@
 -- mock of the engine and prints every effect it sends, with the real libraries of server/data/lib and
 -- server/data/scripts/chaos (the swap layers: skins, the effects pass, pair 29, 36, class, pair 27).
 -- usage (cwd = a folder with data/lib, data/scripts/chaos and data/spells/scripts/chaos linked in):
---   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST]
+--   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST] [PAIR] [rich]
 -- FORM_STATE (O686 phase 4): the packed state of the spell (rank + 32 x Form I pick + 128 x Form II pick, data/lib/chaos_spell_ranks.lua) stored
 -- for the caster with the spell ranks switched on, so the cast runs with the Form of the pick: an element conversion swaps the effect
 -- names (data/lib/chaos_spell_forms.lua) and the Form's own effects are sent after the cast (fxProbe). WEAKEST: the element the
 -- target resists least, for ASCEND:weakest. The state is a spell's own, the caster holds no other.
 -- O686 phase 7: a state of 512 or more is an awakened spell (rank 20, both Forms, bit 9): the signature effects of
 -- data/spells/awakened.csv are sent after the Forms' (ChaosSpellAwakening.fxProbe).
+-- O711: PAIR is the client pair the run pretends to have (config.lua chaosClientPair, default none): at 76 or more an awakened cast sends the
+-- awakened look kit (data/lib/chaos_awakened_look.lua), so its effects are the kit ids 5354..5393 and its projectile 43 47 52 147..151.
 -- Output lines (tab separated):  ME id tx ty (abs pos minus target pos) cx cy (minus caster pos) delay via
 --                                ANI id from_dx to_dx ...
 --                                COMBAT effect distance cells w h
@@ -17,6 +19,11 @@
 local vocId, spellId, script = tonumber(arg[1]), tonumber(arg[2]), arg[3]
 local level = tonumber(arg[4]) or 300
 local formState, weakestEl = tonumber(arg[6]), arg[7]
+local probePair = tonumber(arg[8])
+-- O711: an awakened run asked for with RICH (9th argument, the spells of RICH_PROBE in check_spell_fx.py) gets a richer mock, so the casts that need a timer, a corpse, a minion or a free tile run: a clock
+-- that has passed the cast time (ChaosCasting polls os.mtime), a corpse on every tile, a skeleton of the caster, ground on every tile and the
+-- effect of a doTargetCombat hit recorded. A plain or Form run is mocked as before.
+local awake = formState ~= nil and formState >= 512 and arg[9] == "rich"
 local STORE = {}
 local out = {}
 local pname = {}
@@ -109,6 +116,7 @@ Pmt.__tostring = function(self) return self.x .. "," .. self.y end
 _G.Position = Position
 
 ------------------------------------------------------------------ creatures
+local SKELETON
 local function makeCreature(id, pos, isPlayer)
 	local c = {_id = id, _pos = pos}
 	local voc = setmetatable({getId = function() return vocId end, getBase = function() return Any end, getName = function() return "voc" end}, {__index = function() return function() return Any end end})
@@ -127,7 +135,7 @@ local function makeCreature(id, pos, isPlayer)
 		getSpeed = function() return 200 end, getBaseSpeed = function() return 200 end,
 		getSex = function() return 1 end,
 		getParty = function() return nil end, getGuild = function() return nil end,
-		getMaster = function() return nil end, getSummons = function() return {} end,
+		getMaster = function() return nil end, getSummons = function() return (isPlayer and awake and SKELETON) and {SKELETON} or {} end,
 		getOutfit = function() return {lookType = 128} end,
 		getSpectators = function() return {} end,
 		getCondition = function() return nil end, hasCondition = function() return false end,
@@ -160,14 +168,20 @@ local function makeCreature(id, pos, isPlayer)
 	return setmetatable(c, {__index = function(t, k) if methods[k] then return methods[k] end return function() return Any end end,
 		__eq = function(a, b) return rawequal(a, b) or (type(a) == "table" and type(b) == "table" and rawget(a, "_id") == rawget(b, "_id")) end})
 end
+if awake then
+	SKELETON = makeCreature(3, {x = TARGET_POS.x - 1, y = TARGET_POS.y, z = 7}, false)
+	rawset(SKELETON, "getName", function() return "Risen Skeleton" end)
+	rawset(SKELETON, "remove", function() end)
+end
 local caster = makeCreature(1, CASTER_POS, true)
 local target = makeCreature(2, TARGET_POS, false)
 function Player(id) if id == 1 or id == caster or (type(id) == "table" and id._id == 1) then return caster end return nil end
 function Creature(id) if id == 2 or id == target then return target end if id == 1 or id == caster then return caster end if type(id) == "table" then return id end return nil end
 function Monster(id) if id == 2 or id == target then return target end return nil end
 function Npc() return nil end
+local CORPSE = {getId = function() return 3059 end, isContainer = function() return false end, remove = function() end, isItem = function() return true end}
 tileObj = setmetatable({hasFlag = function() return false end, getTopCreature = function() return nil end, getCreatures = function() return {} end,
-	getItems = function() return {} end, getGround = function() return nil end, isWalkable = function() return true end, getItemCount = function() return 0 end,
+	getItems = function() return awake and {CORPSE} or {} end, getGround = function() return awake and CORPSE or nil end, isWalkable = function() return true end, getItemCount = function() return 0 end,
 	getTopVisibleCreature = function() return nil end, getThingCount = function() return 0 end, getItemById = function() return nil end, queryAdd = function() return 0 end},
 	{__index = function() return function() return nil end end})
 function Tile() return tileObj end
@@ -211,7 +225,14 @@ end
 function doSendMagicEffect(pos, id) Position(pos):sendMagicEffect(id) end
 function doSendDistanceShoot(from, to, id) Position(from):sendDistanceEffect(Position(to), id) end
 function doAreaCombat() return true end
-function doTargetCombat() return true end
+function doTargetCombat(cid, tgt, ctype, mn, mx, effect)
+	-- an awakened run records the hit effect the engine would send on the target (a raw send of the script, or what the look left of it)
+	if awake and type(effect) == "number" and effect ~= 0 and effect ~= CONST_ME_NONE then
+		local at = type(tgt) == "table" and tgt._pos or TARGET_POS
+		Position(at):sendMagicEffect(effect)
+	end
+	return true
+end
 function doAreaCombatHealth(cid, ct, pos, area, mn, mx, e)
 	local c = (type(area) == "table" and area.cells) or 1
 	rec("COMBAT", e or 0, 0, c, area and area.w or 1, area and area.h or 1, area and area.name or "single", delay, "doAreaCombatHealth")
@@ -233,6 +254,11 @@ function addEvent(fn, ms, ...)
 	return 1
 end
 function stopEvent() end
+-- an awakened run: the clock of ChaosCasting runs a hundredfold with the scheduled delay, so a cast-time spell is done at its first poll
+if awake then
+	local t0 = 1700000000000
+	os.mtime = function() return t0 + delay * 100 end
+end
 os.time = os.time
 Game = setmetatable({}, {__index = function(t, k)
 	return function() return nil end
@@ -244,6 +270,8 @@ function Game.getWorldTime() return 0 end
 -- the cast context of data/spells/chaos/_supports.lua (not loaded: it wraps the engine's script loading)
 ChaosSupportsSpell = {wrapped = 0, cast = function() return 1, spellId end, rawAddEvent = addEvent}
 -- the real constants file (Chaos.classes, storages, opcodes); a permissive stand-in when it does not load
+-- O711: Chaos.send (a message to the client, which some casts of a spell with ranks make) encodes with the engine's json: a stub, nothing is sent
+json = json or {encode = function() return "{}" end, decode = function() return {} end}
 local okc, errc = pcall(dofile, "data/scripts/chaos/chaos_constants.lua")
 if not okc or type(rawget(_G, "Chaos")) ~= "table" then
 	rec("NOTE", "chaos_constants did not load: " .. tostring(errc):sub(1, 120))
@@ -265,6 +293,14 @@ if formState and formState > 0 then
 		if okf and ChaosSpellForms and weakestEl and weakestEl ~= "" then
 			ChaosSpellForms.resistOf = function() return function(el) return el == weakestEl and 0 or 50 end end
 		end
+	end
+end
+
+-- the client pair of the run: the kit gate (data/lib/chaos_awakened_fx.lua reads config.lua, which the probe folder does not have)
+if probePair then
+	local okk = pcall(dofile, "data/lib/chaos_awakened_fx.lua")
+	if okk and rawget(_G, "ChaosAwakenedFx") then
+		ChaosAwakenedFx.on = probePair >= ChaosAwakenedFx.PAIR
 	end
 end
 

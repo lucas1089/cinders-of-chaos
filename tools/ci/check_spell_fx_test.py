@@ -213,6 +213,87 @@ class AwakenedProbe(unittest.TestCase):
             self.assertTrue(c.element_ok(want or 'holy', tags[eid][1]), 'effect %d is %s' % (eid, tags[eid]))
 
 
+class AwakenedKit(unittest.TestCase):
+    """O711: the awakened cast at client pair 76 sends the kit of the element it shows (data/lib/chaos_awakened_look.lua)"""
+    KIT = {5354: ('fire', 'single'), 5359: ('ice', 'single'), 5360: ('ice', 'circle')}
+    SPELLS = {10: ('Test Fire', 'fire')}
+    AW = {10: 'PULSE'}
+
+    def test_the_kit_file_is_read(self):
+        kit = c.load_kit()
+        self.assertEqual(len(kit), 40)
+        self.assertEqual(kit[5354], ('fire', 'single'))
+        self.assertEqual(kit[5393], ('arcane', 'wave'))
+
+    def test_the_kit_of_the_shown_element_passes(self):
+        errors, nokit = c.kit_violations({10: ('', None, {1})}, {10: ('', None, {5354, 3})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual((errors, nokit), ([], []))
+
+    def test_the_kit_of_another_element_fails(self):
+        errors, _ = c.kit_violations({}, {10: ('', None, {5359})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('shows fire', errors[0])
+
+    def test_a_conversion_shows_the_kit_of_the_new_element(self):
+        errors, _ = c.kit_violations({}, {10: ('', 'ice', {5359})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(errors, [])
+        errors, _ = c.kit_violations({}, {10: ('', 'ice', {5354})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(len(errors), 1)
+
+    def test_the_kit_is_sent_once_a_cast(self):
+        errors, _ = c.kit_violations({}, {10: ('', 'ice', {5359, 5360})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('once', errors[0])
+
+    def test_a_spell_with_effects_and_no_kit_is_listed(self):
+        _, nokit = c.kit_violations({10: ('', None, {1})}, {10: ('', None, {1})}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(nokit, ['Test Fire'])
+        _, nokit = c.kit_violations({10: ('', None, set())}, {10: ('', None, set())}, self.SPELLS, self.AW, self.KIT)
+        self.assertEqual(nokit, [])
+
+    def test_awaken_conv_case_picks_the_converting_forms(self):
+        kinds = {(1, 1): 'SPLIT', (1, 2): 'SHIFT:ice', (2, 1): 'TWIN', (2, 2): 'SEEK'}
+        state, weak, want = c.awaken_conv_case(kinds)
+        self.assertEqual((state, weak, want), (20 + 32 * 2 + 128 * 1 + 512, '', 'ice'))
+        self.assertIsNone(c.awaken_conv_case({(1, 1): 'SPLIT', (1, 2): 'CHAIN', (2, 1): 'TWIN', (2, 2): 'SEEK'}))
+        state, weak, want = c.awaken_conv_case({(1, 1): 'SPLIT', (1, 2): 'SHIFT:ice', (2, 1): 'TWIN', (2, 2): 'ASCEND:weakest'})
+        self.assertEqual((weak, want), ('fire', 'fire'))
+
+    def test_allow_rows_name_awakened_spells(self):
+        names = {s['name'] for s in c.chaos_spells()}
+        for name, reason in c.NOKIT_ALLOWED.items():
+            self.assertIn(name, names)
+            self.assertTrue(reason.strip())
+
+
+class AwakenedKitProbe(unittest.TestCase):
+    """the real probe at pair 76 (tools/ci/spell_fx_probe.lua, 8th argument): below it the cast is as before"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.root = c.make_root()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.root, ignore_errors=True)
+
+    def test_witchfire_converted_to_ice_sends_the_ice_kit_at_pair_76_only(self):
+        # Witchfire Bolt (fire) with a Form that shifts it to ice: the kit of ice, once; below pair 76 no kit effect
+        forms = c.load_forms()
+        sid = next(s['id'] for s in c.chaos_spells() if s['name'] == 'Witchfire Bolt')
+        case = c.awaken_conv_case(forms[sid])
+        self.assertIsNotNone(case)
+        state, weak, want = case
+        spell = next(s for s in c.chaos_spells() if s['id'] == sid)
+        kit = c.load_kit()
+        low = c.probe_spell(self.root, spell, state, weak, 75)
+        high = c.probe_spell(self.root, spell, state, weak, c.KIT_PAIR)
+        self.assertFalse([i for i in low if i in kit], 'pair 75: no kit effect')
+        sent = [i for i in high if i in kit]
+        self.assertEqual(len(sent), 1, 'pair 76: the kit once')
+        self.assertEqual(kit[sent[0]][0], want)
+
+
 class Tables(unittest.TestCase):
     def test_tags(self):
         tags = c.load_tags()

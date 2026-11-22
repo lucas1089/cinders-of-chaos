@@ -2,7 +2,7 @@
 -- The awakened spell look kit (O711, client pair 76, data/lib/chaos_awakened_fx.lua and the generated
 -- chaos_awakened_fx_ids.lua): the gate is config.lua chaosClientPair >= 76; below it every answer is nil (the caller keeps
 -- today's effects); with it every element and shape maps to its effect id 5354.. in table order and every element to its
--- projectile; every effect is tagged with its element; the lookup is not wired into any spell yet.
+-- projectile; every effect is tagged with its element. The wiring into the awakened casts: tests/awakened_look_test.lua.
 local n = 0
 local function eq(a, b, m)
 	n = n + 1
