@@ -2224,6 +2224,11 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_footprint_fx.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
+      - name: Awakened spell looks sit at their ids (gen_awakened_fx.py live, pair 76, O711)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_awakened_fx.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
       - name: Wing shadows stay cleaned (clean_wing_shadows.py check-clean, pair 64; Shadow Smoke 2457 untouched)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/clean_wing_shadows.py check-clean \

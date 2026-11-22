@@ -451,7 +451,7 @@ The effect pipeline of the repo: own art, drawn by code, like `gen_lightning_fx.
 - the server gate is `chaosClientPair >= N` for the pair that adds them. Until then an awakened spell plays the normal effects with the new name
 - `check_spell_fx.py` probes the awakened version of each spell
 
-**Status (O711, 2026-11-22): built into pair 76, not published.** `gen_awakened_fx.py` draws the 40 effects and 8 projectiles (eighth element: arcane); the owner approved the look. `build` makes pair 76 from pair 75 (effects 5354-5393; the missiles fill blank ids 43 47 52 and unsent donor ids 147-151, a missile id being one byte), `live` holds it, `ids` writes `data/lib/chaos_awakened_fx_ids.lua` and the tags, and `data/lib/chaos_awakened_fx.lua` is the gate (`chaosClientPair >= 76`, a lookup). No spell cast sends the kit yet: the wiring and the `check_spell_fx.py` probe of the awakened kit follow when the pair is live.
+**Status (O711, 2026-11-22): pair 76 on windows-assets (59cff3c), PAIR_ASSETS 76.** `gen_awakened_fx.py` draws the 40 effects and 8 projectiles (eighth element: arcane); the owner approved the look. `build` makes pair 76 from pair 75 (effects 5354-5393; the missiles fill blank ids 43 47 52 and unsent donor ids 147-151, a missile id being one byte), `live` holds it, `ids` writes `data/lib/chaos_awakened_fx_ids.lua` and the tags, and `data/lib/chaos_awakened_fx.lua` is the gate (`chaosClientPair >= 76`, a lookup). No spell cast sends the kit yet: the wiring and the `check_spell_fx.py` probe of the awakened kit follow when the pair is live.
 
 ## 4. Combos
 
