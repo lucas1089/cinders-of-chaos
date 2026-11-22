@@ -17,7 +17,8 @@ local NODE = 'chaosTrainerDps'
 local panel
 local settings = TrainerDpsLogic.sanitize(nil)
 local state
-local ctx = { visible = false, closeAt = nil, sid = nil }
+local ctx = { visible = false, closeAt = nil, sid = nil, recvAt = nil }
+local moveAttached = false
 local watching = false
 local tabButtons, rowPool = {}, {}
 local pollEvent
@@ -34,6 +35,22 @@ local function nowMs() return g_clock.millis() end
 local function dm()
   if DpsMath then return DpsMath end
   return modules.game_dpsmeter and modules.game_dpsmeter.DpsMath
+end
+
+-- the movable-HUD service (game_hudmove, a dependency of this module; a global of the module that loaded before)
+local function hudMove()
+  return rawget(_G, 'ChaosHudMove') or ChaosHudMove
+end
+
+-- movable (O720): the panel drags by its title bar and by its background, the spot is saved per character, a double-click
+-- puts it back. Tried again each time the panel is shown, so a late game_hudmove still gets it.
+function attachMove()
+  if moveAttached or not alive(panel) then return end
+  local hm = hudMove()
+  if not hm then return end
+  local st = hm.attach(panel, 'trainerDps', { handles = { panel.header },
+    otui = '/modules/game_trainerdps/trainerdps', style = 'TrainerDpsPanel' })
+  moveAttached = st ~= nil
 end
 
 -- ---------------------------------------------------------------- settings, server
@@ -129,31 +146,32 @@ function refreshPanel()
   if not alive(panel) or not panel:isVisible() then return end
   local L = TrainerDpsLogic
   local d = dm()
-  local st = L.stats(state)
-  local hasParty = L.hasParty(state)
+  local view = L.live(state, ctx.recvAt, nowMs()) -- the clock moves between two summaries
+  local st = L.stats(view)
+  local hasParty = L.hasParty(view)
   if settings.tab == 'party' and not hasParty then settings.tab = 'src' end
   for key, b in pairs(tabButtons) do
     b:setOn(key == settings.tab)
     if key == 'party' then b:setVisible(hasParty) end
   end
-  panel.header.liveDot:setVisible(state ~= nil and state.act == 1)
-  panel.trainerName:setText(state and state.tn or '')
+  panel.header.liveDot:setVisible(view ~= nil and view.act == 1)
+  panel.trainerName:setText(view and view.tn or '')
   setStat(panel.statCur, tr('DPS now'), st.cur, tr('%s damage per second over the last %d seconds', st.exactCur,
-    math.floor(tonumber(state and state.w) or 5)))
+    math.floor(tonumber(view and view.w) or 5)))
   setStat(panel.statAvg, tr('Average'), st.avg, tr('%s damage per second since the first hit', st.exactAvg))
   setStat(panel.statTotal, tr('Total'), st.total, tr('%s damage in all', st.exactTotal))
   setStat(panel.statTime, tr('Time'), st.time, tr('From the first hit to the last one'))
   panel.bigLine:setText(tr('Biggest hit: %s', st.biggest))
   panel.bigLine:setTooltip(tr('%s damage', st.exactMax))
   panel.hitsLine:setText(st.hits)
-  panel.profileLine:setText(L.profileText(state))
+  panel.profileLine:setText(L.profileText(view))
   panel.profileLine:setTooltip(tr('The trainer defends like a monster of this kind, so a number here means what it would against one'))
-  panel.status:setText(L.status(state, L.secondsLeft(ctx.closeAt, nowMs())))
+  panel.status:setText(L.status(view, L.secondsLeft(ctx.closeAt, nowMs())))
   panel.keepRow.keepBox:setChecked(settings.keep)
   panel.keepRow.autoBox:setChecked(settings.auto)
   local n = 0
   if settings.tab == 'el' then
-    for i, r in ipairs(L.elementRows(state)) do
+    for i, r in ipairs(L.elementRows(view)) do
       local row = rowAt(i)
       row.item:setVisible(false)
       row.icon:setVisible(false)
@@ -165,7 +183,7 @@ function refreshPanel()
       n = i
     end
   elseif settings.tab == 'party' then
-    for i, r in ipairs(L.partyRows(state)) do
+    for i, r in ipairs(L.partyRows(view)) do
       local row = rowAt(i)
       setIcon(row, 'u', 'player')
       row.name:setText(r.name)
@@ -177,7 +195,7 @@ function refreshPanel()
       n = i
     end
   else
-    for i, r in ipairs(L.skillRows(state)) do
+    for i, r in ipairs(L.skillRows(view)) do
       local row = rowAt(i)
       setIcon(row, r.kind, r.icon)
       row.name:setText(r.name)
@@ -192,7 +210,7 @@ function refreshPanel()
     end
   end
   hideRowsFrom(n + 1)
-  panel.emptyText:setText(state and not state.none and tr('Nothing counted yet.') or tr('No trainer hit yet.'))
+  panel.emptyText:setText(view and not view.none and tr('Nothing counted yet.') or tr('No trainer hit yet.'))
   panel.emptyText:setVisible(n == 0)
 end
 
@@ -212,7 +230,7 @@ local function poll()
     hide()
     return
   end
-  if ctx.closeAt then refreshPanel() end -- the seconds left
+  if ctx.closeAt or (state and state.act == 1) then refreshPanel() end -- the seconds left, the clock of a running session
 end
 
 local function startPoll()
@@ -226,12 +244,12 @@ local function onMessage(protocol, opcode, msg)
   ctx.visible = panel:isVisible()
   local r = TrainerDpsLogic.onState(ctx, data, settings, nowMs())
   state = (not data.none) and data or nil
-  ctx.closeAt, ctx.sid = r.closeAt, r.sid
+  ctx.closeAt, ctx.sid, ctx.recvAt = r.closeAt, r.sid, nowMs()
   if r.open and not ctx.visible then
     show()
     return
   end
-  if r.closeAt then startPoll() end
+  if r.closeAt or (state and state.act == 1) then startPoll() end
   refreshPanel()
 end
 
@@ -241,7 +259,8 @@ function show()
   panel:show()
   panel:raise()
   ctx.visible = true
-  if ctx.closeAt then startPoll() end
+  attachMove() -- a module that could not attach at init tries again
+  if ctx.closeAt or (state and state.act == 1) then startPoll() end
   refreshPanel()
   updateWatching()
 end
@@ -326,7 +345,8 @@ function showMenu()
   end
   menu:addSeparator()
   menu:addOption(tr('Reset position'), function()
-    if ChaosHudMove and ChaosHudMove.reset then ChaosHudMove.reset(panel) end
+    local hm = hudMove()
+    if hm and hm.reset then hm.reset(panel) end
   end)
   menu:display(g_window.getMousePosition())
 end
@@ -374,10 +394,7 @@ function init()
   loadSettings()
   panel = g_ui.createWidget('TrainerDpsPanel', modules.game_interface.getRootPanel())
   panel:hide()
-  -- movable, spot saved per character, double-click back (game_hudmove)
-  if ChaosHudMove then
-    ChaosHudMove.attach(panel, 'trainerDps', { otui = '/modules/game_trainerdps/trainerdps', style = 'TrainerDpsPanel' })
-  end
+  attachMove()
   buildTabs()
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, onMessage)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
@@ -391,8 +408,9 @@ function terminate()
   if watching then send('watch', { on = false }) end
   rowPool = {}
   if alive(panel) then
-    if ChaosHudMove then ChaosHudMove.detach(panel) end
+    local hm = hudMove()
+    if hm then hm.detach(panel) end
     panel:destroy()
   end
-  panel, state = nil, nil
+  panel, state, moveAttached = nil, nil, false
 end

@@ -8,6 +8,7 @@ Module
     - client_chaos_theme
     - game_interface
     - game_dpsmeter
+    - game_hudmove
   autoload: true
   autoload-priority: 1000
   @onLoad: init()

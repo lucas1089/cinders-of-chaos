@@ -139,7 +139,49 @@ function L.status(state, secondsLeft)
   return tr('Finished. This is the last result.')
 end
 
+-- ---------------------------------------------------------------- the clock between two states
+-- The server sends a summary once a second while a session runs. Between two of them the panel keeps the clock moving:
+-- the state as it would read `now` ms (the ms clock of the client) when it arrived at `recvAt`. Time and Average follow the
+-- clock (the average is the total over the time since the first hit, never over less than 1 s); DPS now, total and rows are
+-- the server's (a hit only changes them when the next summary arrives). A state that is not running is returned as it is.
+function L.live(state, recvAt, now)
+  if type(state) ~= 'table' or state.none or state.act ~= 1 or not recvAt or not now then return state end
+  local extra = math.max(0, now - recvAt)
+  if extra == 0 then return state end
+  local out = {}
+  for k, v in pairs(state) do out[k] = v end
+  out.dur = (tonumber(state.dur) or 0) + extra
+  local tot = tonumber(state.tot) or 0
+  out.avg = tot > 0 and math.floor(tot * 1000 / math.max(1000, out.dur) + 0.5) or 0
+  return out
+end
+
 -- ---------------------------------------------------------------- the rows
+-- whole percents of a list of amounts that add up to exactly 100 (the largest remainder takes the leftover points); all 0
+-- when there is nothing
+function L.shares(values)
+  local sum = 0
+  for _, v in ipairs(values) do sum = sum + math.max(0, tonumber(v) or 0) end
+  local out, order, used = {}, {}, 0
+  for i, v in ipairs(values) do
+    local share = sum > 0 and 100 * math.max(0, tonumber(v) or 0) / sum or 0
+    out[i] = math.floor(share)
+    used = used + out[i]
+    order[#order + 1] = { i = i, rem = share - out[i] }
+  end
+  table.sort(order, function(a, b)
+    if a.rem ~= b.rem then return a.rem > b.rem end
+    return a.i < b.i
+  end)
+  local left = sum > 0 and (100 - used) or 0
+  for k = 1, left do
+    local o = order[k]
+    if not o then break end
+    out[o.i] = out[o.i] + 1
+  end
+  return out
+end
+
 local function pct(part, total)
   if not total or total <= 0 then return 0 end
   return math.floor(100 * part / total + 0.5)
@@ -149,21 +191,24 @@ end
 function L.skillRows(state)
   local out = {}
   if type(state) ~= 'table' then return out end
-  local total = tonumber(state.tot) or 0
   local dur = tonumber(state.dur) or 0
-  local top = 0
-  for _, r in ipairs(state.rows or {}) do top = math.max(top, tonumber(r.v) or 0) end
+  local values, total = {}, 0
+  for i, r in ipairs(state.rows or {}) do
+    values[i] = tonumber(r.v) or 0
+    total = total + values[i]
+  end
+  local shares = L.shares(values)
   local d = dm()
-  for _, r in ipairs(state.rows or {}) do
+  for i, r in ipairs(state.rows or {}) do
     local v, h = tonumber(r.v) or 0, tonumber(r.h) or 0
     local name = tostring(r.n or '')
     if name == 'Others' or name == 'Other' then name = tr(name) end
     out[#out + 1] = {
-      name = name, kind = r.t, icon = r.i, total = v, pct = pct(v, total), hits = h,
+      name = name, kind = r.t, icon = r.i, total = v, pct = shares[i], hits = h,
       critPct = h > 0 and math.floor(100 * (tonumber(r.c) or 0) / h + 0.5) or 0,
       avg = h > 0 and math.floor(v / h) or 0, max = tonumber(r.m) or 0,
       rate = dur > 0 and math.floor(v * 1000 / math.max(1000, dur)) or 0,
-      frac = top > 0 and v / top or 0, color = d and d.barColor(r.t, 1) or '#6b6258',
+      frac = total > 0 and v / total or 0, color = d and d.barColor(r.t, 1) or '#6b6258',
     }
   end
   return out
@@ -173,16 +218,19 @@ end
 function L.elementRows(state)
   local out = {}
   if type(state) ~= 'table' then return out end
-  local total = tonumber(state.tot) or 0
-  local top = 0
-  for _, e in ipairs(state.el or {}) do top = math.max(top, tonumber(e[2]) or 0) end
+  local values, total = {}, 0
+  for i, e in ipairs(state.el or {}) do
+    values[i] = tonumber(e[2]) or 0
+    total = total + values[i]
+  end
+  local shares = L.shares(values)
   local d = dm()
   local names = d and d.ELEMENT_NAMES or {}
-  for _, e in ipairs(state.el or {}) do
-    local v = tonumber(e[2]) or 0
+  for i, e in ipairs(state.el or {}) do
+    local v = values[i]
     out[#out + 1] = {
-      name = tr(names[e[1]] or tostring(e[1])), element = e[1], total = v, pct = pct(v, total),
-      frac = top > 0 and v / top or 0, color = L.ELEMENT_COLORS[e[1]] or '#6b6258',
+      name = tr(names[e[1]] or tostring(e[1])), element = e[1], total = v, pct = shares[i],
+      frac = total > 0 and v / total or 0, color = L.ELEMENT_COLORS[e[1]] or '#6b6258',
     }
   end
   return out

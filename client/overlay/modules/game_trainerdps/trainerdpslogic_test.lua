@@ -141,11 +141,11 @@ do
   eq(rows[1].critPct, 0, 'no crits')
   eq(rows[1].avg, 3750, 'average hit')
   eq(rows[1].max, 4500, 'biggest hit')
-  eq(rows[1].frac, 1, 'the longest bar')
+  eq(rows[1].frac, 0.75, 'the bar is the share of the total damage')
   eq(rows[1].rate, math.floor(7500 * 1000 / 4000), 'per second over the session')
   eq(rows[2].name, 'Sword attacks', 'second')
   eq(rows[2].critPct, 100, 'a crit share')
-  eq(rows[2].frac, 0.2, 'bar length against the first')
+  eq(rows[2].frac, 0.15, 'second bar: its share of the total')
   eq(rows[1].color, DpsMath.barColor('s', 1), 'colour by kind')
   local sum = 0
   for _, r in ipairs(rows) do sum = sum + r.total end
@@ -166,7 +166,7 @@ do
   eq(els[1].total, 8500, 'fire total')
   eq(els[1].pct, 85, 'fire share')
   eq(els[1].name, 'Fire', 'element name')
-  eq(els[1].frac, 1, 'longest bar')
+  eq(els[1].frac, 0.85, 'element bar: its share')
   eq(els[1].color, L.ELEMENT_COLORS.fire, 'element colour')
   eq(els[2].name, 'Physical', 'second element')
   eq(#L.elementRows(nil), 0, 'no state: no elements')
@@ -205,6 +205,120 @@ do
   ok(#line <= 240, 'chat line within its limit')
   ok(#L.chatLine(state, 70) <= 70 + 0, 'a short limit is kept: ' .. #L.chatLine(state, 70))
   eq(L.chatLine(nil, 240), '', 'no state: no line')
+end
+
+-- the stats over time: a hit sequence through the real server core, read the way the panel reads it (a summary a second,
+-- the clock between two of them by L.live)
+do
+  local function near(a, b, what) ok(math.abs(a - b) < 1e-6, what .. ': ' .. tostring(a) .. ' ~ ' .. tostring(b)) end
+  -- one hit, then silence: the numbers fall with the clock, they do not stay at the size of the hit
+  local one = M.newSession(7, 1, 'Training Dummy')
+  M.record(cfg, one, T0, 178, sword, 'physical', false)
+  local v0 = M.view(cfg, one, T0)
+  eq(v0.tot, 178, 'one hit: total')
+  eq(v0.dur, 0, 'one hit: time 0 at the hit')
+  local v2 = M.view(cfg, one, T0 + 2000)
+  eq(v2.tot, 178, 'one hit, 2 s later: total stays')
+  eq(v2.dur, 2000, 'one hit, 2 s later: time ticks')
+  eq(v2.cur, 89, 'one hit, 2 s later: DPS now is over the 2 s')
+  eq(v2.avg, 89, 'one hit, 2 s later: average is over the 2 s')
+  local v4 = M.view(cfg, one, T0 + 4000)
+  eq(v4.cur, 45, 'one hit, 4 s later: DPS now keeps falling (44.5)')
+  -- the panel's clock between two summaries
+  local live = L.live(v0, 5000, 8000)
+  eq(live.dur, 3000, 'live: the time ticks 3 s after the summary')
+  eq(live.avg, 59, 'live: average is the total over the clock (178 / 3 s)')
+  eq(live.tot, 178, 'live: total is the server\'s')
+  eq(live.cur, v0.cur, 'live: DPS now is the server\'s')
+  eq(v0.dur, 0, 'live: the state it was given is not changed')
+  eq(L.live(v0, 5000, 5000), v0, 'live: no time passed, the same state')
+  eq(L.live(v0, 5000, 4000), v0, 'live: a clock that went back changes nothing')
+  eq(L.live(nil, 1, 2), nil, 'live: no state')
+  eq(L.live({ none = 1 }, 1, 2).none, 1, 'live: none stays none')
+  local ended = M.view(cfg, one, T0 + 20000)
+  ok(M.tick(cfg, one, T0 + 20000), 'the session ends')
+  ended = M.view(cfg, one, T0 + 20000)
+  eq(L.live(ended, 1000, 9000), ended, 'live: a finished session does not tick')
+  eq(ended.dur, 0, 'the finished time is first hit to last hit (one hit: 0)')
+  eq(L.live(v0, 5000, 5500).avg, 178, 'live: under 1 s the average is over 1 s')
+
+  -- steady hits: 100 damage every second for 8 s
+  local st2 = M.newSession(8, 1, 'Training Dummy')
+  for i = 0, 7 do M.record(cfg, st2, T0 + i * 1000, 100, bolt, 'fire', false) end
+  local a = M.view(cfg, st2, T0 + 7000)
+  eq(a.tot, 800, 'steady: total')
+  eq(a.dur, 7000, 'steady: time')
+  near(a.avg, math.floor(800 * 1000 / 7000 + 0.5), 'steady: average over the 7 s')
+  -- the window holds 5 s: the hits of +3 .. +7 s (the hit of +2 s left at +7 s)
+  eq(a.cur, 100, 'steady: DPS now is 100 a second, not the size of a hit')
+  -- a pause: no hit for 4 s
+  local b = M.view(cfg, st2, T0 + 11000)
+  eq(b.tot, 800, 'pause: total unchanged')
+  eq(b.dur, 11000, 'pause: the time keeps counting')
+  eq(b.avg, math.floor(800 * 1000 / 11000 + 0.5), 'pause: the average falls')
+  eq(b.cur, 20, 'pause: DPS now only holds the hit of +7 s (100 over 5 s)')
+  local c = M.view(cfg, st2, T0 + 13000)
+  eq(c.cur, 0, 'pause: nothing in the window, DPS now 0')
+  -- hits again after the pause: DPS now rises by the window, it does not jump to the last hit
+  M.record(cfg, st2, T0 + 14000, 100, bolt, 'fire', false)
+  local d = M.view(cfg, st2, T0 + 14000)
+  eq(d.cur, 20, 'after the pause: one hit in the window is 100 / 5 s')
+  eq(d.tot, 900, 'after the pause: total')
+end
+
+-- every source its own row; the shares add up to 100
+do
+  local function fresh() return M.newSession(9, 1, 'Training Dummy') end
+  local c = M.configure({})
+  local s9 = fresh()
+  local srcs = {
+    { k = 's:Witchfire Bolt', t = 's', n = 'Witchfire Bolt', i = 'exori flam' },
+    { k = 's:Witchfire Bolt (over time)', t = 's', n = 'Witchfire Bolt (over time)', i = 'exori flam' },
+    { k = 'd:Burning', t = 'd', n = 'Burning', i = 'burning' },
+    { k = 'p:Pyre Oath', t = 'p', n = 'Pyre Oath', i = 'proc' },
+    { k = 'm:Skeleton Minion', t = 'm', n = 'Skeleton Minion', i = 'summon' },
+    { k = 'r:Sudden Death Rune', t = 'r', n = 'Sudden Death Rune', i = 'sd' },
+    { k = 'w:Sword attacks', t = 'w', n = 'Sword attacks', i = 'sword' },
+  }
+  local amounts = { 3333, 1111, 777, 333, 222, 111, 55 }
+  local elements = { 'fire', 'fire', 'fire', 'energy', 'death', 'holy', 'physical' }
+  for i, src in ipairs(srcs) do M.record(c, s9, T0 + i, amounts[i], src, elements[i], false) end
+  local view = M.view(c, s9, T0 + 3000)
+  local rows = L.skillRows(view)
+  eq(#rows, #srcs, 'a spell, its ticks, a dot, a proc, a minion, a rune and a weapon each get a row')
+  local names = {}
+  for _, r in ipairs(rows) do names[r.name] = true end
+  for _, src in ipairs(srcs) do ok(names[src.n], 'a row for ' .. src.n) end
+  local pctSum, fracSum, totalSum = 0, 0, 0
+  for i, r in ipairs(rows) do
+    pctSum = pctSum + r.pct
+    fracSum = fracSum + r.frac
+    totalSum = totalSum + r.total
+    if i > 1 then ok(rows[i - 1].total >= r.total, 'sorted by damage at ' .. r.name) end
+  end
+  eq(pctSum, 100, 'the shares add up to 100')
+  ok(math.abs(fracSum - 1) < 1e-9, 'the bars are shares of the total: they add up to the whole')
+  eq(totalSum, view.tot, 'the rows add up to the total damage')
+  eq(rows[1].frac, 3333 / view.tot, 'the first bar is its share of the total, not of the top row')
+  local els = L.elementRows(view)
+  eq(#els, 5, 'an element each: fire, energy, death, holy, physical')
+  local es = 0
+  for _, e in ipairs(els) do es = es + e.pct end
+  eq(es, 100, 'the element shares add up to 100')
+  -- more rows than the server sends: the rest is one Others row and the shares still add up
+  local c2 = M.configure({ maxRowsSent = 3 })
+  local many = L.skillRows(M.view(c2, s9, T0 + 3000))
+  eq(#many, 4, 'three rows and Others')
+  local ps = 0
+  for _, r in ipairs(many) do ps = ps + r.pct end
+  eq(ps, 100, 'with Others the shares add up to 100')
+  -- the share rounding: thirds
+  local sh = L.shares({ 1, 1, 1 })
+  eq(sh[1] + sh[2] + sh[3], 100, 'thirds add up to 100')
+  eq(table.concat(L.shares({ 0, 0 }), ','), '0,0', 'nothing: no share')
+  eq(table.concat(L.shares({}), ','), '', 'no values')
+  eq(L.shares({ 5 })[1], 100, 'one source is 100%')
+  eq(table.concat(L.shares({ 50, 50 }), ','), '50,50', 'halves')
 end
 
 if fails > 0 then

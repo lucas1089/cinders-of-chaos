@@ -52,6 +52,7 @@ eq(DpsMath.duration(3725000), '1:02:05', 'hours')
 eq(DpsMath.duration(-1), '0:00', 'negative')
 eq(DpsMath.perSecond(6000, 1500), 4000, 'per second')
 eq(DpsMath.perSecond(6000, 0), 0, 'no time')
+eq(DpsMath.perSecond(500, 100), 500, 'over less than 1 s: counted over 1 s')
 eq(DpsMath.percent(1, 3), 33.3, 'percent')
 eq(DpsMath.percent(5, 0), 0, 'percent of nothing')
 

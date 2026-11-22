@@ -2,7 +2,9 @@
 """Client module sanity: every module folder has one .otmod, its `name:` matches the folder, and every
 entry of `scripts: [...]` exists as a .lua file in the folder.
 A module script may not read `window.<id>` when <id> sits deeper than a direct child in every .otui of the module:
-the engine sets only direct children as fields, so the lookup gives nil (the Candlemarks list once stayed empty)."""
+the engine sets only direct children as fields, so the lookup gives nil (the Candlemarks list once stayed empty).
+A module script that calls ChaosHudMove.attach must list game_hudmove in its dependencies, so the service is loaded before
+the module's init, whatever the autoload priorities say (O720)."""
 import os, re, sys
 
 bad = 0
@@ -24,6 +26,13 @@ for base in ('client/overlay/modules', 'client/alternates'):
         for s in (x.strip() for x in (m.group(1).split(',') if m else [])):
             if s and not os.path.exists(os.path.join(d, s + '.lua')) and not os.path.exists(os.path.join(d, s)):
                 print(f'{d}: script {s!r} not found'); bad += 1
+        deps = re.search(r'dependencies:\s*(\[[^\]]*\]|(?:\n\s+- .*)+)', t)
+        has_hudmove = bool(deps and 'game_hudmove' in deps.group(1))
+        for f in sorted(os.listdir(d)):
+            if f.endswith('.lua') and not f.endswith('_test.lua') and mod != 'game_hudmove':
+                if re.search(r'ChaosHudMove\.attach\(', open(os.path.join(d, f), encoding='utf-8', errors='ignore').read()) \
+                        and not has_hudmove:
+                    print(f'{d}/{f}: calls ChaosHudMove.attach but {mod} does not list game_hudmove in dependencies'); bad += 1
         direct, nested = set(), set()
         for f in os.listdir(d):
             if not f.endswith('.otui'):

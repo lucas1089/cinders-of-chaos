@@ -20120,6 +20120,8 @@ settings `trainer_meter_config.lua` (`Chaos.trainerMeterConfig`), pure logic `tr
 hook on the combat log), `tests/monster_defence_test.lua` (the target profile), `tests/display_scale_test.lua`. No DB
 table, no storage, no engine patch, no change to the training.
 
+O720 (owner 2026-11-22): the window of DPS now drops a bucket that begins at or before its start (a hit exactly `windowMs` old is out, so a steady 100 a second reads 100, not 120); `maxRowsSent` 25 (was 10, every source its own row, the rest one Others row). The client counts Time and Average on its own clock between two summaries and draws each bar as its share of the total (client/MANIFEST.md game_trainerdps).
+
 **Which monsters are trainers.** A monster whose name (lower case) contains `train` or `dummy` (the rule of
 `monster_tiers.lua`, which gives such a monster no tier), or is listed in `names`, unless it is in `exclude`. The training
 monsters of the temples and towns, the Idle Hall's and the guild hall's "Chaos Dummy" / "Training Dummy" all match. The
