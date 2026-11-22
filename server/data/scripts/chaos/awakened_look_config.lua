@@ -18,8 +18,9 @@ return {
 	-- `target` is the tile of the cast's first send (the target, or the tile an area cast is aimed at), `caster` the caster's own tile.
 	anchor = {single = "target", circle = "target", around = "caster", line = "caster", wave = "caster"},
 
-	-- HEADING. A line or a wave of the kit is drawn running EAST (client/tools/sprites/gen_awakened_fx.py: the other headings come with
-	-- a later build step). A cast of a line or wave spell that does not face east sends the kit shape named here, on the target.
-	-- Empty a row once the pair draws every heading.
+	-- HEADING. A line or a wave of the kit is drawn running EAST at pair 76; pair 77 (client/tools/sprites/gen_awakened_fx.py) draws it
+	-- heading north, south and west too, and the cast takes the heading of the caster's direction (data/lib/chaos_awakened_look.lua).
+	-- Without a heading effect for the cast (chaosClientPair below 77 and not facing east, or a diagonal direction at any pair) a line or
+	-- wave spell sends the kit shape named here, on the target. The rows stay: they are the fallback, not an east rule.
 	eastOnly = {line = "single", wave = "single"},
 }

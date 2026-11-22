@@ -5,7 +5,11 @@
 -- Gate: config.lua `chaosClientPair` (README "Client pair guard") is 76 or more, read from the file at load (C.on). A client
 -- on an older pair has no effect 5354+ and its missiles 43, 47, 52, 147-151 are blank or other art, so below 76 every answer is
 -- nil and the caller draws what it draws today.
---   C.effect(element, shape)  -> {id, dx, dy, ms} of the effect, or nil (gate off, unknown element or shape)
+-- Headings (O711 follow-up): the line and the wave of the kit run east; pair 77 adds them heading north, south and west (effects
+-- 5394-5441, af_ELEMENT_SHAPE_HEADING). They answer only at chaosClientPair >= 77 (C.headings); below it a heading other than east
+-- is nil and the caller takes its eastOnly fallback (awakened_look_config.lua).
+--   C.effect(element, shape, heading) -> {id, dx, dy, ms} of the effect, or nil (gate off, unknown element or shape; heading
+--                                        east, nil or "" is the kit effect, north / south / west the heading effect of a line or wave)
 --   C.missile(element)        -> {id, dx, dy} of the projectile (1 x 1, 3 x 3 direction patterns), or nil
 -- Elements: fire ice energy earth death holy physical arcane. Shapes: single circle around line wave.
 -- The ids and send offsets are the generated data/lib/chaos_awakened_fx_ids.lua. Plain Lua, no engine call at load
@@ -14,6 +18,8 @@
 local C = {}
 
 C.PAIR = 76
+C.PAIR_HEADINGS = 77
+C.HEADINGS = {"east", "north", "south", "west"}
 C.ELEMENTS = {"fire", "ice", "energy", "earth", "death", "holy", "physical", "arcane"}
 C.SHAPES = {"single", "circle", "around", "line", "wave"}
 
@@ -36,7 +42,9 @@ function C.recordedPair(path)
 end
 
 -- the gate, read once at load; tests set it by hand
-C.on = (C.recordedPair() or 0) >= C.PAIR
+local recorded = C.recordedPair() or 0
+C.on = recorded >= C.PAIR
+C.headings = recorded >= C.PAIR_HEADINGS
 
 local function ids()
 	if not ChaosAwakenedFxIds and dofile then
@@ -45,12 +53,19 @@ local function ids()
 	return ChaosAwakenedFxIds
 end
 
-function C.effect(element, shape)
+function C.effect(element, shape, heading)
 	if not C.on then
 		return nil
 	end
+	local key = "af_" .. tostring(element) .. "_" .. tostring(shape)
+	if heading and heading ~= "" and heading ~= "east" then
+		if not C.headings then
+			return nil
+		end
+		key = key .. "_" .. tostring(heading)
+	end
 	local I = ids()
-	local e = I and I.effects and I.effects["af_" .. tostring(element) .. "_" .. tostring(shape)]
+	local e = I and I.effects and I.effects[key]
 	if not e then
 		return nil
 	end

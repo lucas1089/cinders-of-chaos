@@ -23,6 +23,9 @@ keep the element and once with the Forms that convert it. The kit effects of dat
 through the same element rule, and every kit effect a cast sends is the kit of the element the cast shows (a conversion's, else the spell's own),
 once a cast. A spell that sends effects below pair 76 must send a kit effect at it, unless it is a named row of NOKIT_ALLOWED (empty now; the list may only shrink).
 The 8 spells of RICH_PROBE (cast-time, corpse, minion, free tile) run with the rich mock of the probe at pair 76.
+O711 headings (client pair 77, effects 5394..5441): the awakened casts run at pair 77 facing east (the kit as at pair 76) and facing north, south
+and west (the probe's 10th argument is the caster's direction). The element rule holds for the heading effects too, and a cast whose kit effect is a
+line or a wave sends the same element and shape drawn in the heading it faces; every other kit effect is the east run's, unchanged.
 
 What a spell sends is measured, not read from names: tools/ci/spell_fx_probe.lua runs the real script of every chaos
 spell against a recording mock of the engine, once per vocation of the spell, with the real libraries (so the swap
@@ -210,28 +213,30 @@ def parse_probe(lines):
     return ids
 
 
-def run_probe(root, spell, voc, dx, state=0, weakest='', pair=0, rich=False):
+def run_probe(root, spell, voc, dx, state=0, weakest='', pair=0, rich=False, direction=None):
     cmd = ['lua5.3', PROBE, str(VOC[voc]), str(spell['id']), spell['script'], '300', str(dx)]
     if state:
         cmd += [str(state), weakest]
         if pair or rich:
             cmd += [str(pair)]
-        if rich:
-            cmd += ['rich']
+        if rich or direction is not None:
+            cmd += ['rich' if rich else 'plain']
+        if direction is not None:
+            cmd += [str(direction)]
     p = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=60)
     return p.stdout.strip().split('\n') if p.stdout.strip() else []
 
 
-def probe_spell(root, spell, state=0, weakest='', pair=0, rich=False):
+def probe_spell(root, spell, state=0, weakest='', pair=0, rich=False, direction=None):
     """effect ids over every vocation of the spell (the class swaps differ by vocation); a target out of reach is
     tried again close. state / weakest: the Form of the cast; pair: the client pair of the run (spell_fx_probe.lua)"""
     ids = set()
     for voc in spell['vocs']:
         if voc not in VOC:
             continue
-        lines = run_probe(root, spell, voc, 5, state, weakest, pair, rich)
+        lines = run_probe(root, spell, voc, 5, state, weakest, pair, rich, direction)
         if any(l.startswith('CANCEL') for l in lines):
-            more = run_probe(root, spell, voc, 1, state, weakest, pair, rich)
+            more = run_probe(root, spell, voc, 1, state, weakest, pair, rich, direction)
             if len(parse_probe(more)) > len(parse_probe(lines)):
                 lines = more
         ids.update(parse_probe(lines))
@@ -278,7 +283,7 @@ def awaken_conv_case(kinds):
     return 20 + 32 * f1 + 128 * f2 + 512, weak, c
 
 
-def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case):
+def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case, direction=None):
     """{spell id: (weakest element, expected element, effect ids)} of the awakened version of the wanted spells; pair 76: the run has
     the awakened look kit (O711); case: awaken_case (picks that keep the element) or awaken_conv_case (picks that convert it)"""
     root = make_root()
@@ -292,7 +297,7 @@ def probe_awakened(spells, wanted, forms, awakened, pair=0, case=awaken_case):
                 state, weak, want = got
                 jobs.append((s, state, weak, want))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2], pair, pair >= KIT_PAIR and j[0]['name'] in RICH_PROBE), jobs))
+            results = list(ex.map(lambda j: probe_spell(root, j[0], j[1], j[2], pair, pair >= KIT_PAIR and j[0]['name'] in RICH_PROBE, direction), jobs))
         return {j[0]['id']: (j[2], j[3], r) for j, r in zip(jobs, results)}
     finally:
         shutil.rmtree(root, ignore_errors=True)
@@ -308,15 +313,49 @@ KIT_PAIR = 76
 # what is left is the kit and what escaped it. Other spells and every plain, Form and pair 0 run keep the plain mock.
 RICH_PROBE = {'Glacial Doom', 'Doomtide', 'Primordial Squall', 'Colossus Fall', 'Corpse Explosion', 'Bone Offering', 'Hail of Dawn',
               'Umbral Stride'}
+HEADING_PAIR = 77                 # O711 follow-up: a line and a wave heading north, south and west (effects 5394..5441)
+HEADING_DIRS = {'north': 0, 'south': 2, 'west': 3}    # the direction constants of the engine
 NOKIT_ALLOWED = {}
 
 
+KIT_ROW = re.compile(r'af_\w+ = \{id = (\d+), dx = -?\d+, dy = -?\d+, ms = \d+, element = "(\w+)", shape = "(\w+)", heading = "(\w+)"\}')
+
+
 def load_kit(path=KIT_IDS):
-    """{effect id: (element, shape)} of the 40 kit effects of data/lib/chaos_awakened_fx_ids.lua"""
+    """{effect id: (element, shape)} of the 88 kit effects of data/lib/chaos_awakened_fx_ids.lua (the 40 of pair 76 and the 48 headings of pair 77)"""
     with open(path, encoding='utf-8') as f:
         text = f.read()
-    return {int(m.group(1)): (m.group(2), m.group(3)) for m in re.finditer(
-        r'af_\w+ = \{id = (\d+), dx = -?\d+, dy = -?\d+, ms = \d+, element = "(\w+)", shape = "(\w+)"\}', text)}
+    return {int(m.group(1)): (m.group(2), m.group(3)) for m in KIT_ROW.finditer(text)}
+
+
+def load_kit_headings(path=KIT_IDS):
+    """{effect id: heading} of the same rows: east for the 40 of pair 76, north / south / west for the 48 of pair 77"""
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    return {int(m.group(1)): m.group(4) for m in KIT_ROW.finditer(text)}
+
+
+def heading_violations(east_run, head_run, heading, kit, heads):
+    """east_run / head_run: the awakened runs at pair 77 facing east / facing `heading` ({spell id: (weakest, expected element, effect ids)}).
+    A cast whose kit effect is a line or a wave sends, facing `heading`, the same element and shape drawn in that heading; any other kit
+    effect, and a cast with none, is the east run's, unchanged. Returns the errors"""
+    errors = []
+    for sid in sorted(east_run):
+        sent_e = sorted(i for i in east_run[sid][2] if i in kit)
+        sent_h = sorted(i for i in head_run.get(sid, (None, None, set()))[2] if i in kit)
+        where = 'awakened spell %d facing %s at pair %d' % (sid, heading, HEADING_PAIR)
+        if len(sent_e) != 1:
+            if sent_h != sent_e:
+                errors.append('%s: the kit effects %s differ from the east run %s' % (where, sent_h, sent_e))
+            continue
+        el, shape = kit[sent_e[0]]
+        if shape not in ('line', 'wave'):
+            if sent_h != sent_e:
+                errors.append('%s: a %s has no heading, it sends %s, not %s' % (where, shape, sent_h, sent_e))
+            continue
+        if len(sent_h) != 1 or kit[sent_h[0]] != (el, shape) or heads.get(sent_h[0]) != heading:
+            errors.append('%s: the %s %s should be drawn heading %s, it sends %s' % (where, el, shape, heading, sent_h))
+    return errors
 
 
 def kit_violations(plain, kit_run, spells, awakened, kit):
@@ -453,6 +492,16 @@ def main(argv):
     problems.extend(awakened_violations(conv_sent, elements, tags, awakened, allow))
     conv_errors, _ = kit_violations({}, conv_sent, elements, awakened, load_kit())
     problems.extend(conv_errors)
+    # O711 headings, pair 77: the same casts facing east (the kit as at pair 76) and facing north, south and west
+    east77 = probe_awakened(spells, set(elements), forms, awakened, HEADING_PAIR)
+    problems.extend(awakened_violations(east77, elements, tags, awakened, allow))
+    problems.extend(heading_violations(kit_sent, east77, 'east', load_kit(), load_kit_headings()))
+    for hname, hdir in sorted(HEADING_DIRS.items()):
+        head_sent = probe_awakened(spells, set(elements), forms, awakened, HEADING_PAIR, awaken_case, hdir)
+        problems.extend(awakened_violations(head_sent, elements, tags, awakened, allow))
+        k_errors, _ = kit_violations({}, head_sent, elements, awakened, load_kit())
+        problems.extend(k_errors)
+        problems.extend(heading_violations(east77, head_sent, hname, load_kit(), load_kit_headings()))
     for name in sorted(set(nokit) - set(NOKIT_ALLOWED)):
         problems.append('awakened %s sends effects below pair %d but no kit effect at it: route its effects through Vfx / ChaosSpell.fx / '
                         'Combat or add a reason to NOKIT_ALLOWED' % (name, KIT_PAIR))

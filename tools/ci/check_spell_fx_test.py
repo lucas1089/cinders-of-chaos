@@ -221,9 +221,26 @@ class AwakenedKit(unittest.TestCase):
 
     def test_the_kit_file_is_read(self):
         kit = c.load_kit()
-        self.assertEqual(len(kit), 40)
+        self.assertEqual(len(kit), 88)
         self.assertEqual(kit[5354], ('fire', 'single'))
         self.assertEqual(kit[5393], ('arcane', 'wave'))
+        self.assertEqual(kit[5394], ('fire', 'line'))
+        self.assertEqual(kit[5441], ('arcane', 'wave'))
+        heads = c.load_kit_headings()
+        self.assertEqual(heads[5393], 'east')
+        self.assertEqual([heads[i] for i in (5394, 5395, 5396)], ['north', 'south', 'west'])
+
+    def test_heading_violations(self):
+        kit = {5357: ('fire', 'line'), 5354: ('fire', 'single'), 5394: ('fire', 'line'), 5395: ('fire', 'line'), 5359: ('ice', 'line')}
+        heads = {5357: 'east', 5354: 'east', 5394: 'north', 5395: 'south', 5359: 'east'}
+        east = {1: ('', None, {5357}), 2: ('', None, {5354}), 3: ('', None, {7})}
+        good = {1: ('', None, {5394}), 2: ('', None, {5354}), 3: ('', None, {7})}
+        self.assertEqual(c.heading_violations(east, good, 'north', kit, heads), [])
+        self.assertEqual(len(c.heading_violations(east, {**good, 1: ('', None, {5357})}, 'north', kit, heads)), 1)   # still east
+        self.assertEqual(len(c.heading_violations(east, {**good, 1: ('', None, {5395})}, 'north', kit, heads)), 1)   # the wrong heading
+        self.assertEqual(len(c.heading_violations(east, {**good, 1: ('', None, {5359})}, 'north', kit, heads)), 1)   # another element
+        self.assertEqual(len(c.heading_violations(east, {**good, 2: ('', None, {5394})}, 'north', kit, heads)), 1)   # a single has no heading
+        self.assertEqual(len(c.heading_violations(east, {**good, 3: ('', None, {5354})}, 'north', kit, heads)), 1)   # a kit where none was
 
     def test_the_kit_of_the_shown_element_passes(self):
         errors, nokit = c.kit_violations({10: ('', None, {1})}, {10: ('', None, {5354, 3})}, self.SPELLS, self.AW, self.KIT)

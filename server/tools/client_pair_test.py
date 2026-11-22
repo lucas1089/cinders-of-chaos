@@ -226,6 +226,7 @@ check(C.PAIR_FOOTFX == 75 and C.PAIR_ASSETS >= C.PAIR_FOOTFX, 'the effect footpr
 
 # the awakened look kit (O711) needs pair 76: its lib reads the same number
 check(C.PAIR_AWAKENFX == 76 and 'C.PAIR = %d' % C.PAIR_AWAKENFX in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_awakened_fx.lua')).read(), 'the awakened look kit needs pair 76 (O711)')
+check(C.PAIR_AWAKENFX_HEADINGS == 77 and 'C.PAIR_HEADINGS = %d' % C.PAIR_AWAKENFX_HEADINGS in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_awakened_fx.lua')).read(), 'the awakened headings need pair 77, code done, PAIR_ASSETS stays 76 until the owner pushes it (O711)')
 
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)

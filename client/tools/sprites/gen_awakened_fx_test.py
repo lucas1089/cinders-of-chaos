@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Tests of gen_awakened_fx.py (O711, prototype): the table rules, the drawing held to its bar (the same bytes twice, frame
 counts, alpha 0 / one glow level / 255, canvas bounds, the start and the fade close, no equal neighbour frames), distinct
-pictures per element and per shape, the committed sums; the pair step on a synthetic pair of 5,353 effects and 253 missiles
-(build, live, a changed pixel, refusals), the turned missile patterns, the ids file and the tags (stale cases). No real pair:
+pictures per element and per shape, the committed sums; the 48 heading effects (a line and a wave north, south and west: tall or
+wide as the heading says, the mass on the side of the heading, every heading its own picture); the pair steps on a synthetic pair
+of 5,353 effects and 253 missiles (build to pair 76, then to pair 77, live on both, a changed pixel, refusals of every other
+pair), the turned missile patterns, the ids file and the tags (stale cases). No real pair:
 python3 -I client/tools/sprites/gen_awakened_fx_test.py (numpy, Pillow)."""
 import io
 import os
@@ -32,9 +34,21 @@ def test_table():
     eff = [r for r in rows if r['kind'] == 'effect']
     mis = [r for r in rows if r['kind'] == 'missile']
     ok(len(G.ELEMENTS) == 8 and len(G.SHAPES) == 5, '8 elements and 5 shapes')
-    ok(len(eff) == 40 and len(mis) == 8, '40 effects and 8 missiles')
+    ok(len(eff) == 88 and len(mis) == 8, '88 effects (40 + 48 headings) and 8 missiles')
+    head = [r for r in eff if r['heading'] != 'east']
+    ok(len(head) == 48 and {r['heading'] for r in head} == {'north', 'south', 'west'}, '48 heading effects')
+    ok({r['shape'] for r in head} == {'line', 'wave'}, 'the headings are for the line and the wave')
+    ok([int(r['slot']) for r in head] == list(range(41, 89)), 'heading slots 41..88')
+    ok(G.effect_id(head[0]) == 5394 and G.effect_id(head[-1]) == 5441, 'heading ids 5394..5441')
+    ok(G.effect_id(eff[39]) == 5393, 'the kit keeps 5354..5393')
     ok(all(10 <= int(r['frames']) <= 12 for r in eff), 'effects of 10 to 12 frames')
     ok({r['element'] for r in eff} == set(G.ELEMENTS) and {r['shape'] for r in eff} == set(G.SHAPES), 'every element and shape')
+    bad = [dict(r) for r in rows]
+    bad[45]['heading'] = 'east'
+    ok(G.table_errors(bad), 'a heading effect that says east is found')
+    bad = [dict(r) for r in rows]
+    bad[41]['w'], bad[41]['h'] = bad[41]['h'], bad[41]['w']
+    ok(G.table_errors(bad), 'a wide strip heading north is found')
     bad = [dict(r) for r in rows]
     bad[1]['slot'] = 9
     ok(G.table_errors(bad), 'a hole in the slots is found')
@@ -96,7 +110,7 @@ def test_drawing():
         for b in G.ELEMENTS[i + 1:]:
             ok(float(np.abs(em[a] - em[b]).sum()) > 30, '%s and %s are different in colour' % (a, b))
     canv = {(int(r['w']), int(r['h'])) for r, _ in pairs if r['kind'] == 'effect'}
-    ok(len(canv) == 4, 'the shapes have four different canvases (single and around share one)')
+    ok(len(canv) == 5, 'five canvases: single and around share one, the line north and south is the new one (%s)' % sorted(canv))
     by = {r['name']: (r, s) for r, s in pairs}
     for el in G.ELEMENTS:
         cs = []
@@ -107,6 +121,61 @@ def test_drawing():
             f = s[:, k * W:(k + 1) * W, 3] > 0
             cs.append(int(f[36:60, 40:56].sum()))
         ok(cs[0] > 0 and cs[0] != cs[1], '%s: around is not single (%s)' % (el, cs))
+
+
+def centroid(strip, r):
+    """the weight of the opaque pixels of every frame relative to the caster's point, in px (x right, y down)"""
+    import numpy as np
+    n = int(r['frames'])
+    W = int(r['w']) * 32
+    al = np.max([strip[:, f * W:(f + 1) * W, 3] for f in range(n)], axis=0) > 0
+    ys, xs = np.where(al)
+    gx, gy = G.anchor_of(r['shape'], r['heading'])
+    return float(xs.mean() - gx), float(ys.mean() - gy)
+
+
+def test_headings():
+    pairs = G.build_rows()
+    by = {r['name']: (r, s) for r, s in pairs}
+    for el in G.ELEMENTS:
+        for sh in G.HSHAPES:
+            seen = {}
+            for hd in G.HEADINGS:
+                name = 'af_%s_%s' % (el, sh) + ('' if hd == 'east' else '_' + hd)
+                r, s = by[name]
+                n = int(r['frames'])
+                ok(n == 11 and s.shape[1] == int(r['w']) * 32 * n, '%s: 11 frames of its canvas' % name)
+                ok(G.art_errors(s, r) == [], '%s holds the bar' % name)
+                ok(0 <= int(r['dx']) < int(r['w']) and 0 <= int(r['dy']) < int(r['h']), '%s: the send offset is on the canvas' % name)
+                seen[hd] = G.digest(s)
+                cx, cy = centroid(s, r)
+                ok({'east': cx > 40, 'west': cx < -40, 'north': cy < -40, 'south': cy > 40}[hd],
+                   '%s: the mass lies on the side of the heading (%.0f, %.0f)' % (name, cx, cy))
+                ok(abs({'east': cy, 'west': cy, 'north': cx, 'south': cx}[hd]) < 24,
+                   '%s: the mass lies on the line of the caster, not beside it (%.0f, %.0f)' % (name, cx, cy))
+                if hd in ('north', 'south'):
+                    ok(int(r['h']) > int(r['w']) if sh == 'line' else int(r['h']) >= int(r['w']), '%s: tall, not wide' % name)
+                    if sh == 'line':
+                        ok(int(r['h']) >= 8 and int(r['w']) <= 3, '%s: a tall strip of 7 tiles and head room' % name)
+                else:
+                    ok(int(r['w']) > int(r['h']), '%s: wide, not tall' % name)
+                col, row = int(r['w']) - 1 - int(r['dx']), int(r['h']) - 1 - int(r['dy'])      # the caster's tile
+                if hd == 'north':
+                    ok(row == int(r['h']) - 1, '%s: the caster on the bottom row' % name)
+                if hd == 'south':
+                    ok(row <= 1, '%s: the caster on the top rows' % name)
+                if hd == 'west':
+                    ok(col == int(r['w']) - 1, '%s: the caster on the right column' % name)
+                if hd == 'east':
+                    ok(col == 0, '%s: the caster on the left column' % name)
+            ok(len(set(seen.values())) == 4, '%s %s: the four headings are four pictures' % (el, sh))
+    for el in ('fire', 'ice'):                                              # west keeps the weight of east
+        for sh in G.HSHAPES:
+            e = by['af_%s_%s' % (el, sh)]
+            w = by['af_%s_%s_west' % (el, sh)]
+            ae = int((e[1][..., 3] > 0).sum())
+            aw = int((w[1][..., 3] > 0).sum())
+            ok(abs(ae - aw) * 10 < ae, '%s %s: west keeps the weight of east (%d, %d)' % (el, sh, ae, aw))
 
 
 def test_missiles():
@@ -176,6 +245,7 @@ def test_pair_step():
         o1 = os.path.join(tmp, 'o1')
         rc, out = quiet(G.build, dat, spr, o1)
         ok(rc == 0 and 'live: 40 effects at 5354..5393, 8 missiles, OK' in out, 'build and live: ' + out[-300:])
+        ok('live: 40 effects' in quiet(G.live, os.path.join(o1, 'Tibia.dat'), os.path.join(o1, 'Tibia.spr'))[1], 'live on pair 76')
         od, nd = Dat(dat), Dat(os.path.join(o1, 'Tibia.dat'))
         ok(len(nd.effects) == 5393 and len(nd.missiles) == 253, '40 effects appended, no missile appended')
         ok(all(nd.data[a.raw[0]:a.raw[1]] == od.data[b.raw[0]:b.raw[1]] for a, b in zip(nd.effects[:5353], od.effects)),
@@ -192,6 +262,30 @@ def test_pair_step():
         ok(open(os.path.join(o1, 'Tibia.dat'), 'rb').read() == open(os.path.join(o2, 'Tibia.dat'), 'rb').read()
            and open(os.path.join(o1, 'Tibia.spr'), 'rb').read() == open(os.path.join(o2, 'Tibia.spr'), 'rb').read(),
            'the same bytes twice')
+        # pair 76 -> pair 77: the 48 heading effects
+        d76, s76 = os.path.join(o1, 'Tibia.dat'), os.path.join(o1, 'Tibia.spr')
+        o3 = os.path.join(tmp, 'o3')
+        rc, out = quiet(G.build, d76, s76, o3)
+        ok(rc == 0 and 'live: 88 effects at 5354..5441, 8 missiles, OK' in out, 'build 77 and live: ' + out[-300:])
+        d77 = Dat(os.path.join(o3, 'Tibia.dat'))
+        ok(len(d77.effects) == 5441 and len(d77.missiles) == 253, '48 effects appended after 5393, no missile')
+        ok(all(d77.data[a.raw[0]:a.raw[1]] == nd.data[b.raw[0]:b.raw[1]] for a, b in zip(d77.effects[:5393], nd.effects)),
+           'pair 76 effects are byte-identical in pair 77')
+        ok(all(d77.data[a.raw[0]:a.raw[1]] == nd.data[b.raw[0]:b.raw[1]] for a, b in zip(d77.missiles, nd.missiles)),
+           'the missiles are byte-identical in pair 77')
+        for r in [r for r in G.read_spec() if r['heading'] not in ('east', '')]:
+            t = d77.effects[G.effect_id(r) - 1]
+            ok((t.w, t.h, t.phases) == (int(r['w']), int(r['h']), int(r['frames'])),
+               '%s: its size and phases at %d' % (r['name'], G.effect_id(r)))
+        o4 = os.path.join(tmp, 'o4')
+        quiet(G.build, d76, s76, o4)
+        ok(open(os.path.join(o3, 'Tibia.dat'), 'rb').read() == open(os.path.join(o4, 'Tibia.dat'), 'rb').read()
+           and open(os.path.join(o3, 'Tibia.spr'), 'rb').read() == open(os.path.join(o4, 'Tibia.spr'), 'rb').read(),
+           'pair 77: the same bytes twice')
+        rc, out = quiet(G.live, os.path.join(o3, 'Tibia.dat'), os.path.join(o3, 'Tibia.spr'))
+        ok(rc == 0 and 'live: 88 effects' in out, 'live on pair 77')
+        rc, out = quiet(G.build, os.path.join(o3, 'Tibia.dat'), os.path.join(o3, 'Tibia.spr'), os.path.join(tmp, 'o5'))
+        ok(rc == 1 and 'refused' in out and not os.path.exists(os.path.join(tmp, 'o5')), 'pair 77 is not an input')
         rc, out = quiet(G.live, dat, spr)
         ok(rc == 1 and 'the pair has 5353 effects' in out, 'live: the input pair fails')
         lines = open(sums).read().splitlines()
@@ -201,13 +295,16 @@ def test_pair_step():
         rc, out = quiet(G.live, os.path.join(o1, 'Tibia.dat'), os.path.join(o1, 'Tibia.spr'))
         ok(rc == 1 and 'pixels differ from the sum' in out, 'live: a changed pixel is found')
         G.SUMS = sums
-        cases = [(5352, 253, G.BLANK_IDS), (5354, 253, G.BLANK_IDS), (5353, 252, G.BLANK_IDS), (5353, 253, (47, 52))]
+        cases = [(5352, 253, G.BLANK_IDS), (5354, 253, G.BLANK_IDS), (5353, 252, G.BLANK_IDS), (5353, 253, (47, 52)),
+                 (5392, 253, G.BLANK_IDS), (5394, 253, G.BLANK_IDS), (5393, 252, G.BLANK_IDS), (5441, 253, G.BLANK_IDS)]
         for k, (e, m, blank) in enumerate(cases):
             d2, s2 = synthetic_pair(e, m, blank)
             o = os.path.join(tmp, 'r%d' % k)
             rc, out = quiet(G.build, d2, s2, o)
             ok(rc == 1 and 'refused' in out and not os.path.exists(o), 'refused: %d effects, %d missiles, blank %s' % (e, m, blank))
-        ok(not G.pair_ok(5393, 253) and G.pair_ok(5353, 253), 'only pair 75 is the input')
+        ok(G.pair_ok(5353, 253) and G.pair_ok(5393, 253), 'pair 75 and pair 76 are the inputs')
+        ok(not (G.pair_ok(5441, 253) or G.pair_ok(5353, 252) or G.pair_ok(5394, 253) or G.pair_ok(5392, 253)), 'no other pair is')
+        ok(G.stage_of(5353, 253) == 76 and G.stage_of(5393, 253) == 77, 'pair 75 builds 76, pair 76 builds 77')
     finally:
         G.SUMS = sums
         shutil.rmtree(tmp, ignore_errors=True)
@@ -218,13 +315,19 @@ def test_ids_and_tags():
     ok(G.ids(True, quiet=True) == 0, 'the ids file and the tags are current')
     lua = G.lua_text(rows)
     ok(lua == open(G.LUA, encoding='utf-8', newline='').read(), 'the ids file is the text of the script')
-    ok(lua.count('af_') == 48 and 'id = 5354,' in lua and 'id = 5393,' in lua, '40 effects and 8 missiles in the ids file')
+    ok(lua.count(' = {id = ') == 96 and 'id = 5354,' in lua and 'id = 5393,' in lua, '88 effects and 8 missiles in the ids file')
+    ok('id = 5394,' in lua and 'id = 5441,' in lua and 'id = 5442,' not in lua, 'the headings at 5394..5441')
+    ok('headingPair = 77, headingFirst = 5394, headingCount = 48' in lua and 'pair = 76, first = 5354, count = 40' in lua,
+       'the ids file says what each pair holds')
+    ok('af_fire_line = {id = 5357, dx = 7, dy = 0, ms = 880, element = "fire", shape = "line", heading = "east"}' in lua,
+       'the old ids are kept, with heading east')
+    ok('af_fire_line_north = {id = 5394, dx = 1, dy = 0,' in lua and 'heading = "north"' in lua, 'the north heading entry')
     for r in rows:
         if r['kind'] == 'missile':
             ok('%s = {id = %d,' % (r['name'], G.MISSILE_IDS[int(r['slot']) - 1]) in lua, '%s at its id' % r['name'])
     ok(len(set(G.MISSILE_IDS)) == 8 and all(1 <= i <= 253 for i in G.MISSILE_IDS), 'eight different missile ids inside the pair')
     tags = G.tags_text(rows)
-    ok(tags.count(',af_') == 40, 'one tag per effect')
+    ok(tags.count(',af_') == 88, 'one tag per effect, headings included')
     for r in rows:
         if r['kind'] == 'effect':
             ok('\n%d,%s,%s\n' % (G.FIRST + int(r['slot']) - 1, r['name'], r['element']) in tags,
@@ -262,6 +365,7 @@ if __name__ == '__main__':
     test_table()
     test_ramps()
     test_drawing()
+    test_headings()
     test_missiles()
     test_missile_strip()
     test_pair_step()

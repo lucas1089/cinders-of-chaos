@@ -2,6 +2,8 @@
 -- O711: an awakened spell sends the awakened look kit when chaosClientPair >= 76 (data/lib/chaos_awakened_look.lua, the rules in
 -- data/scripts/chaos/awakened_look_config.lua, the kit data/lib/chaos_awakened_fx.lua). On a mocked engine with the real Vfx / VfxShoot of
 -- chaos_vfx.lua, the real Combat wrapper of chaos_spell_forms.lua and the real awakening state (bit 9 of the packed state):
+--   * O711 headings, client pair 77 (chaosClientPair >= 77, FX.headings): a line or a wave cast facing north / south / west / east sends the
+--     heading effect of the kit on the caster's tile at its send offset; a diagonal direction and every cast at pair 76 keep the eastOnly single;
 --   * the element rule and the shape rule (one place each), every shape of awakened.csv mapped, a Form's conversion takes the new element;
 --   * at pair 76 every send of an awakened cast is the kit: the effect ONCE a cast on the anchor tile, every projectile the kit projectile,
 --     the combat's own area effect off, the doAreaCombat tile effect off, a line / wave that does not face east a single on the target;
@@ -43,7 +45,7 @@ local function take()
 	return out
 end
 
-EAST, SOUTH = 1, 2
+NORTH, EAST, SOUTH, WEST = 0, 1, 2, 3
 COMBAT_PARAM_EFFECT, COMBAT_PARAM_DISTANCEEFFECT, CONST_ME_NONE = 1, 2, 0
 
 local storage = {}
@@ -150,6 +152,31 @@ eq(look.shape("line", true), "line", "a line facing east")
 eq(look.shape("wave", true), "wave", "a wave facing east")
 eq(look.shape("line", false), "single", "a line not facing east: a single on the target")
 eq(look.shape("wave", false), "single", "a wave not facing east: a single on the target")
+eq(select(2, look.shape("line", true)), "east", "a line facing east: the heading east")
+eq(select(2, look.shape("line", false)), "east", "a fallback single is drawn in the east kit")
+-- below pair 77 a heading name changes nothing: the eastOnly rule of pair 76
+eq(FX.headings, false, "the checked in pair is below 77")
+for _, hd in ipairs({"north", "south", "west", nil}) do
+	eq(look.shape("line", hd), "single", "pair 76, a line heading " .. tostring(hd) .. ": a single on the target")
+	eq(look.shape("wave", hd), "single", "pair 76, a wave heading " .. tostring(hd) .. ": a single on the target")
+end
+eq(look.shape("line", "east"), "line", "pair 76, a line heading east")
+-- at pair 77 the headings are the line and the wave
+FX.headings = true
+for _, hd in ipairs({"north", "south", "west", "east"}) do
+	local a, b = look.shape("line", hd)
+	eq(a, "line", "pair 77, a line heading " .. hd)
+	eq(b, hd, "pair 77, the heading of a line heading " .. hd)
+	a, b = look.shape("wave", hd)
+	eq(a, "wave", "pair 77, a wave heading " .. hd)
+	eq(b, hd, "pair 77, the heading of a wave heading " .. hd)
+end
+eq(look.shape("line", nil), "single", "pair 77, a diagonal direction: the single on the target")
+eq(look.shape("wave", false), "single", "pair 77, a wave with no heading: the single on the target")
+eq(look.shape("circle", "north"), "circle", "pair 77: a circle has no heading")
+eq(select(2, look.shape("circle", "north")), "east", "pair 77: a circle is the kit effect")
+eq(look.shape("single", "west"), "single", "pair 77: a single has no heading")
+FX.headings = false
 eq(look.shape("zigzag", true), "single", "an unknown shape")
 -- every shape of awakened.csv has a kit shape the kit really has
 local shapes = {}
@@ -247,8 +274,8 @@ local function kitOf(spellId, facing)
 	local conv = FM.castConversion(player)
 	castSpell = nil
 	local el = look.element(r.element, conv)
-	local sh = look.shape(r.shape, direction == EAST)
-	return FX.effect(el, sh), FX.missile(el), el, sh
+	local sh, hd = look.shape(r.shape, look.heading(player))
+	return FX.effect(el, sh, hd), FX.missile(el), el, sh, hd
 end
 local function anchor(shape, e)
 	if cfg.anchor[shape] == "caster" then
@@ -363,6 +390,67 @@ do
 	Vfx(Position(105, 100, 7), "ember_crown")
 	castSpell = nil
 	eq(take(), "ME " .. e.id .. " " .. (105 + e.dx) .. "," .. (100 + e.dy) .. ",7", "the single on the target tile")
+	direction = EAST
+end
+
+-- O711 headings: the line and the wave of the kit in the heading of the caster (pair 77), the single at pair 76
+do
+	local DIAG = 7
+	local want = {[NORTH] = "north", [EAST] = "east", [SOUTH] = "south", [WEST] = "west"}
+	for _, shape in ipairs({"line", "wave"}) do
+		local id = pick(shape, true)
+		awaken(id)
+		for dir, name in pairs(want) do
+			direction = dir
+			FX.headings = true
+			eq(look.heading(player), name, "the direction " .. dir .. " is the heading " .. name)
+			local e, _, el, sh, hd = kitOf(id, dir)
+			eq(sh, shape, shape .. " heading " .. name .. ": the kit shape")
+			eq(hd, name, shape .. ": the heading of the cast")
+			ok(e ~= nil, shape .. " heading " .. name .. ": the kit has the effect")
+			eq(e.id, FX.effect(el, shape, name ~= "east" and name or nil).id, "the effect of the heading")
+			castSpell, serial = id, serial + 1
+			Vfx(Position(105, 100, 7), "ember_crown")
+			Vfx(Position(106, 101, 7), "ember_crown")
+			castSpell = nil
+			eq(take(), "ME " .. e.id .. " " .. (100 + e.dx) .. "," .. (100 + e.dy) .. ",7",
+				shape .. " heading " .. name .. ": the effect once, on the caster's tile at its send offset")
+			-- pair 76: the same cast is the eastOnly rule of before the headings
+			FX.headings = false
+			local e76, _, _, sh76 = kitOf(id, dir)
+			eq(sh76, name == "east" and shape or "single", shape .. " heading " .. name .. " at pair 76")
+			castSpell, serial = id, serial + 1
+			Vfx(Position(105, 100, 7), "ember_crown")
+			castSpell = nil
+			local expect = name == "east" and ("ME " .. e76.id .. " " .. (100 + e76.dx) .. "," .. (100 + e76.dy) .. ",7")
+				or ("ME " .. e76.id .. " " .. (105 + e76.dx) .. "," .. (100 + e76.dy) .. ",7")
+			eq(take(), expect, shape .. " heading " .. name .. " at pair 76: east is the line, the rest a single on the target")
+		end
+		-- a diagonal direction at pair 77: the single on the target
+		FX.headings = true
+		direction = DIAG
+		eq(look.heading(player), nil, "a diagonal direction is no heading")
+		local e, _, _, sh = kitOf(id, DIAG)
+		eq(sh, "single", shape .. " diagonal: the single")
+		castSpell, serial = id, serial + 1
+		Vfx(Position(105, 100, 7), "ember_crown")
+		castSpell = nil
+		eq(take(), "ME " .. e.id .. " " .. (105 + e.dx) .. "," .. (100 + e.dy) .. ",7", shape .. " diagonal: the single on the target tile")
+		-- a spell that is not awakened is untouched at pair 77
+		awaken(id, false)
+		direction = SOUTH
+		castSpell, serial = id, serial + 1
+		Vfx(Position(105, 100, 7), "ember_crown")
+		castSpell = nil
+		local plain = take()
+		FX.headings = false
+		castSpell, serial = id, serial + 1
+		Vfx(Position(105, 100, 7), "ember_crown")
+		castSpell = nil
+		eq(take(), plain, shape .. ": not awakened, the headings change nothing")
+		awaken(id)
+	end
+	FX.headings = false
 	direction = EAST
 end
 

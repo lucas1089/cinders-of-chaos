@@ -60,6 +60,11 @@ PAIR_FOOTFX = 75    # the 20 footprint effects 5334-5353 (O649, gen_footprint_fx
 PAIR_AWAKENFX = 76  # the awakened spell look kit (O711, gen_awakened_fx.py): 40 effects 5354-5393 and 8 projectiles (blank ids 43 47 52, donor ids
                     # 147-151 rebuilt); data/lib/chaos_awakened_fx.lua answers only from this pair, an awakened cast asks it through data/lib/chaos_awakened_look.lua (O711). On windows-assets
 
+PAIR_AWAKENFX_HEADINGS = 77   # the awakened kit's line and wave heading north, south and west (O711 follow-up, gen_awakened_fx.py): 48 effects
+                    # 5394-5441 appended after the kit; data/lib/chaos_awakened_fx.lua answers a heading only from this pair, below it a line or
+                    # wave that does not face east keeps the single (awakened_look_config.lua eastOnly). Code done; PAIR_ASSETS stays 76 until
+                    # the owner pushes pair 77 to windows-assets.
+
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
