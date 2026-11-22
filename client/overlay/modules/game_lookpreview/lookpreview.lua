@@ -8,7 +8,7 @@
 --   pv:destroy()
 -- Effects (option {kind = 'effects', play} of LookPreviewCore.fromPlayRow: spell skins, kill effects) play in a loop
 -- on the stage around the creature, from the client's own sprites (see "the effect stage" below); a footprint option
--- with its art draws a few prints behind the walking creature, which stays where the look alone puts it (O496). A loot
+-- with its art, or an effect footprint, walks the creature in place and lays the marks / plays the effect behind it (footwalk.lua, O712). A loot
 -- label, a chat colour and a name plate frame option draw a sample of it on the stage (O497, "samples" below).
 --   modules.game_lookpreview.effectIcon(widget, spec, size)   a list icon: the effect's best frame, cropped and fitted
 --   modules.game_lookpreview.fitCard(creatureWidget, outfit, w, h)   a list card's look facing south, filling the card
@@ -23,6 +23,7 @@
 -- The base Outfit window gets a panel too: see "the Outfit window" at the end.
 
 local P = LookPreviewCore
+local FW = FootWalk
 local SETTINGS_NODE = 'chaosLookPreview'
 local settings = { auto = false, walk = false, simple = false, compare = false }
 local live = {}            -- open panels: handle -> true
@@ -429,10 +430,9 @@ function Preview:startFx(opt)
   local scene = P.sceneOf(opt)
   self.fx = { timeline = P.timeline(play, side, phasesOf, scene), holders = {}, started = g_clock.millis(),
     hasStock = hasStock, scene = scene, play = play, sizeOf = sizeOf }
-  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead) or an
-  -- effect footprint's
+  -- the troll: alone in a kill scene, facing the player in a spell scene; none in a rare-loot scene (a loot bag instead)
   local tw = targetWidget(self)
-  if tw and (scene.loot or scene.foot) then
+  if tw and scene.loot then
     tw:setVisible(false)
   elseif tw then
     pcall(tw.setOutfit, tw, { type = P.TROLL })
@@ -472,37 +472,134 @@ end
 -- the scene's extent (in tiles) with the boxes of its creatures
 function Preview:fxExtent()
   local fx = self.fx
-  local boxes = { target = (fx.scene.loot or fx.scene.foot) and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
+  local boxes = { target = fx.scene.loot and P.LOOT_BOX or boxOf({ type = P.TROLL }) }
   if fx.scene.caster then boxes.caster = self.box end
   return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
 
--- the prints of a footprint option, under the creature (game_cosmeticfx's own pictures). `prints` are the stage places
--- of LookPreviewCore.stepPrints; the widgets are tagged so a ground effect in the same layer is left alone
-local STEP_ID = 'footstep'
-local function clearSteps(st)
-  for _, c in ipairs(st.fxUnder:getChildren()) do
-    if c:getId() == STEP_ID then c:destroy() end
+-- The footprint walk (O712, footwalk.lua): the figure walks east in place and the floor runs by under it. The marks (a
+-- pool of the walker's mode.maxPer widgets) and the effects of an effect footprint (a pool of CF.FX_MAX_PER_CREATURE
+-- holders) lie in the fxUnder layer, tagged so a ground effect in the same layer is left alone. game_cosmeticfx
+-- supplies the rules (CosmeticFxLogic) and the feet of the looks (CosmeticFootMarks); without that module there is no walk.
+local STEP_ID, FOOTFX_ID = 'footstep', 'footfx'
+
+local function footRules()
+  local m = modules.game_cosmeticfx
+  local CF = m and m.CosmeticFxLogic
+  if type(CF) ~= 'table' or type(CF.stepMarks) ~= 'function' then return nil end
+  return CF, m.CosmeticFootMarks
+end
+
+local function clearWalk(self)
+  self.walkW = nil
+  if not alive(self.widget) then return end
+  for _, c in ipairs(self.widget.stage.fxUnder:getChildren()) do
+    local id = c:getId()
+    if id == STEP_ID or id == FOOTFX_ID then c:destroy() end
   end
 end
 
-function Preview:drawSteps(art, prints)
-  local st = self.widget.stage
-  clearSteps(st)
-  if not prints then return end
-  for _, f in ipairs(prints) do
-    local w = g_ui.createWidget('UIWidget', st.fxUnder)
-    w:setId(STEP_ID)
-    w:setPhantom(true)
-    w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-    w:addAnchor(AnchorTop, 'parent', AnchorTop)
-    w:setImageSource('/modules/game_cosmeticfx/images/prints/' .. art)
-    w:setSize({ width = f.size, height = f.size })
-    w:setMarginLeft(f.x)
-    w:setMarginTop(f.y)
-    w:setRotation(f.rotation)
-    w:setOpacity(f.opacity)
+local function markWidget(self, i, mode)
+  local pool = self.walkW.marks
+  local w = pool[i]
+  if w and alive(w) then return w end
+  w = g_ui.createWidget('UIWidget', self.widget.stage.fxUnder)
+  w:setId(STEP_ID)
+  w:setPhantom(true)
+  w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  w:addAnchor(AnchorTop, 'parent', AnchorTop)
+  w:setImageSmooth(true)
+  if mode.tint then w:setImageColor(mode.tint) end
+  w:setRotation(FW.rotation(self.walkW.CF))
+  pool[i] = w
+  return w
+end
+
+local function walkSame(a, b) return P.sameWalk(a, b) end
+
+local function walkMarks(self, frame)
+  local mode, art = frame.mode, self.walk.art
+  local shown = 0
+  for i, m in ipairs(frame.marks) do
+    local w = markWidget(self, i, mode)
+    shown = i
+    local src = FW.picture(self.walkW.CF, mode, art, m.side)
+    if w.walkSrc ~= src then
+      w:setImageSource(src)
+      w.walkSrc = src
+    end
+    w:setSize({ width = m.size, height = m.size })
+    w:setMarginLeft(m.x)
+    w:setMarginTop(m.y)
+    w:setOpacity(m.opacity)
+    w:setVisible(true)
   end
+  for i = shown + 1, #self.walkW.marks do
+    local w = self.walkW.marks[i]
+    if alive(w) then w:setVisible(false) end
+  end
+end
+
+local function walkFxHolder(self, slot, spec)
+  local h = self.walkW.fx[slot]
+  if h and alive(h.widget) then return h end
+  local info = specInfo(spec)
+  if not info then return nil end
+  local holder = g_ui.createWidget('UIWidget', self.widget.stage.fxUnder)
+  holder:setId(FOOTFX_ID)
+  holder:setPhantom(true)
+  holder:fill('parent')
+  h = { widget = holder, info = info, tiles = {} }
+  for hh = 0, math.max(1, num(info.h)) - 1 do
+    for ww = 0, math.max(1, num(info.w)) - 1 do
+      local sw = spriteWidget(holder)
+      if sw then h.tiles[#h.tiles + 1] = { w = ww, h = hh, widget = sw, sprite = -1 } end
+    end
+  end
+  self.walkW.fx[slot] = h
+  return h
+end
+
+local function walkEffects(self, frame, L)
+  local e = self.walk.fx
+  local live = {}
+  for _, a in ipairs(frame.effects) do
+    local slot = a.k % self.walkW.CF.FX_MAX_PER_CREATURE + 1
+    local h = walkFxHolder(self, slot, e)
+    if h then
+      live[slot] = true
+      local info = h.info
+      local phase = P.phaseAt(a.ms, a.dur, info.phases)
+      -- an effect's pattern follows its tile (Effect::draw: position % patterns); the walk's tile is the step's
+      local pxp = (a.k + e.dx) % math.max(1, num(info.px))
+      for _, t in ipairs(h.tiles) do
+        local id = P.spriteAt(info, t.w, t.h, 0, pxp, 0, 0, phase)
+        if id ~= t.sprite then
+          t.sprite = id
+          if id > 0 then t.widget:setSpriteId(id) end
+        end
+        t.widget:setVisible(id > 0)
+        local x, y = P.tilePixel(L, a.ox, a.oy, t.w, t.h, info.dispX, info.dispY)
+        t.widget:setMarginLeft(x)
+        t.widget:setMarginTop(y)
+        t.widget:setSize({ width = L.T, height = L.T })
+      end
+      h.widget:setVisible(true)
+    end
+  end
+  for slot, h in pairs(self.walkW.fx) do
+    if not live[slot] and alive(h.widget) then h.widget:setVisible(false) end
+  end
+end
+
+function Preview:walkTick()
+  if not self.walk or not alive(self.widget) or not self.layout or not self.layout.tileX then return end
+  local CF, footMarks = footRules()
+  if not CF then return end
+  if not self.walkW then self.walkW = { marks = {}, fx = {}, CF = CF } end
+  local L = self.layout
+  local frame = FW.frame(CF, self.walk, L, { FW.feet(CF, footMarks, self.outfit) }, g_clock.millis() - (self.walkStart or 0))
+  if self.walk.fx then walkEffects(self, frame, L) else walkMarks(self, frame) end
 end
 
 -- a rare-loot effect's scene (O564): the loot bag on its tile, under the effect (the fxUnder layer), tagged so a ground
@@ -573,8 +670,7 @@ local function holderFor(self, idx, item)
   local info = specInfo(spec)
   if not info then return nil end
   local st = self.widget.stage
-  -- an effect footprint's effect lies under the figure whatever the ground list says (it is a mark on the floor)
-  local under = self.fx.scene.foot == true or isGround(num(spec.id))
+  local under = isGround(num(spec.id))
   local layer = (not spec.m and under) and st.fxUnder or st.fxOver
   local holder = g_ui.createWidget('UIWidget', layer)
   holder:setPhantom(true)
@@ -652,6 +748,14 @@ local function fxTickAll()
           h:stopFx()
         end
       end
+      if h.walk and h.widget:isVisible() then
+        local ok, err = pcall(h.walkTick, h)
+        if not ok then
+          g_logger.warning('[lookpreview] footprint walk: ' .. tostring(err))
+          h.walk = nil
+          clearWalk(h)
+        end
+      end
     else
       live[h] = nil
     end
@@ -677,8 +781,8 @@ end
 function Preview:animate()
   local cw = self.widget.stage.creature
   -- walking in place as the Outfit window's Movement box does it (setStaticWalking), else the idle animation; a
-  -- footprint always walks (its prints are behind it)
-  local walk = settings.walk or self.steps ~= nil
+  -- footprint always walks (its marks are behind it)
+  local walk = settings.walk or self.walk ~= nil
   cw:setAnimate(walk)
   pcall(cw.setIdleAnimate, cw, not walk)
   pcall(cw.setStaticWalking, cw, walk)
@@ -698,12 +802,10 @@ function Preview:relayout()
   local L
   local cw = stage.creature
   local floor = stage.floor
-  local prints
   if self.fx then
     -- effects: every creature on its tile, at the scale where the scene fits (as the map draws them), the scene
-    -- centred in the stage. A bundle that also has prints keeps room for them on the left
+    -- centred in the stage
     local x0, y0, x1, y1 = self:fxExtent()
-    if self.steps then x0 = math.min(x0, -3) end
     L = P.fxLayout(W, H, x0, y0, x1, y1)
     local scene = self.fx.scene
     if scene.kill then
@@ -711,16 +813,14 @@ function Preview:relayout()
     else
       cw:setVisible(true)
       place(cw, P.creatureRect(L, scene.caster))
-      if self.steps then prints = P.stepPrints(L, self.box, W, H) end
     end
     local tw = targetWidget(self)
     if tw then place(tw, P.creatureRect(L, scene.target)) end
     floor:setVisible(false)
   else
-    -- the look alone, and a footprint too (O496: the prints go behind the character, it does not move): always 2x,
-    -- the box of everything drawn centred in the stage
-    L = self.steps and P.stepsLayout(self.box, W, H) or P.layout(self.box, W, H)
-    prints = L.prints
+    -- the look alone, and a footprint too (O712: the figure walks in place, the floor runs by): always 2x, the box of
+    -- everything drawn centred in the stage
+    L = P.walkLayout(self.box, W, H)
     cw:setVisible(true)
     place(cw, L.x, L.y, L.size)
     -- a soft shadow on the ground under the feet (the character select's art, drawn at the same scale)
@@ -735,7 +835,7 @@ function Preview:relayout()
   end
   self.layout = L
   self.widget.controls.zoomLabel:setText(L.scale .. 'x')
-  if self.steps then self:drawSteps(self.steps, prints) end
+  self:walkTick()
   self:drawLootBag(L)
   self:drawSample(L, W, H)
 end
@@ -773,7 +873,7 @@ function Preview:refresh()
       self:startFx(fxOpt)
       self.fx.compare = settings.compare
       -- a spell scene: the player faces the troll (a kill and a rare-loot scene: south)
-      if not self.fx.scene.kill and not self.fx.scene.loot and not self.fx.scene.foot then self.dir = P.EAST end
+      if not self.fx.scene.kill and not self.fx.scene.loot then self.dir = P.EAST end
     else
       if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell or rare-loot scene
       self:stopFx()
@@ -781,13 +881,28 @@ function Preview:refresh()
     cw:setDirection(self:face(outfit))
   end
   self.sample = P.sampleOf(opt)
-  local steps = P.footprintArt(opt)
-  if steps ~= self.steps then
-    self.steps = steps
-    if not steps then self.widget.stage.fxUnder:destroyChildren() end
-    self.dir = steps and 1 or P.SOUTH -- walking east, the prints behind
-    cw:setDirection(self:face(outfit))
-    self:animate()
+  local walk = P.walkOf(opt, function(spec)
+    local info = specInfo(spec)
+    return info and info.phases or 1
+  end)
+  if not walkSame(walk, self.walk) then
+    local had = self.walk ~= nil
+    self.walk = walk
+    self.walkStart = g_clock.millis()
+    clearWalk(self)
+    if walk and not footRules() then
+      -- no game_cosmeticfx (its rules and feet): the figure stands, the note says what a footprint is
+      self.walk = nil
+      note = P.UNSHOWN.footprint
+      label:setVisible(true)
+      label:setText(tr(note))
+      walk = nil
+    end
+    if walk or had then
+      self.dir = walk and P.EAST or P.SOUTH -- walking east, the marks behind
+      cw:setDirection(self:face(outfit))
+      self:animate()
+    end
   end
   self.outfit = outfit
   self.box = boxOf(outfit)
@@ -842,9 +957,9 @@ function Preview:setOwnOutfit(o)
 end
 
 -- the direction to draw `outfit` facing: a cape is shown from the back (O562, LookPreviewCore.face), but a spell scene
--- or footprints keep the direction they set
+-- or footprints (the walk) keep the direction they set
 function Preview:face(outfit)
-  if self.fxPlay or self.steps then return self.dir end
+  if self.fxPlay or self.walk then return self.dir end
   return P.face(self, outfit)
 end
 

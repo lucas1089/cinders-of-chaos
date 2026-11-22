@@ -50,8 +50,8 @@ end
 --                                                    mount, wings, aura, shader, an outline, an effect)
 --   { kind = 'effects', play, killfx, lootfx, footfx } a spell skin / kill effect / rare-loot effect, played on the stage (fromPlayRow):
 --                                                    killfx on a troll that dies, lootfx over a loot bag beside the figure (O564),
---                                                    footfx (an effect footprint, O649) on the figure's own tile, under it
---   { kind = 'footprint', art }                      prints behind the walking figure
+--                                                    footfx (an effect footprint, O649): not a scene, the figure walks (P.walkOf)
+--   { kind = 'footprint', art }                      marks behind the figure walking in place (P.walkOf, footwalk.lua)
 --   { kind = 'lootlabel', accent }                   a loot label sample on the stage (accent: its background colour, nil = stock)
 --   { kind = 'chatcolor', color }                    a chat line sample on the stage (color: the name's colour, nil = stock)
 --   { kind = 'nameplate', frame }                    a name plate sample on the stage (the 9-slice frame art of game_nameplate)
@@ -145,7 +145,7 @@ function P.composeRaw(mode, own, opt)
   elseif kind == 'outline' and type(opt.art) == 'string' and opt.art ~= '' then
     outline = { art = opt.art, pulse = opt.pulse == true }
   elseif kind == 'footprint' and type(opt.art) == 'string' and opt.art ~= '' then
-    return o, nil, nil -- the stage draws the prints (P.footsteps)
+    return o, nil, nil -- the stage draws the walk (footwalk.lua)
   end
   return o, outline, P.note(opt)
 end
@@ -196,10 +196,11 @@ function P.dissolveOf(r)
   return { m = r.dissolve, t = math.max(0, math.min(7, math.floor(tonumber(r.tint) or 0))) }
 end
 
--- the effects option inside an option (a spell skin itself, or a bundle's part), for the stage; nil when none
+-- the effects option inside an option (a spell skin itself, or a bundle's part), for the stage; nil when none. An effect
+-- footprint (footfx) is no scene: the figure walks and the effect plays behind it (P.walkOf)
 function P.effectsOf(opt)
   if type(opt) ~= 'table' then return nil end
-  if opt.kind == 'effects' and type(opt.play) == 'table' then return opt end
+  if opt.kind == 'effects' and type(opt.play) == 'table' then return opt.footfx ~= true and opt or nil end
   if opt.kind == 'bundle' then
     for _, p in ipairs(opt.parts or {}) do
       local e = P.effectsOf(p)
@@ -220,6 +221,36 @@ function P.footprintArt(opt)
     end
   end
   return nil
+end
+
+-- The walk of an option (a footprint itself or a bundle's part), for the stage: {art = 'ash'} a drawn footprint, or
+-- {fx = {id, dx, dy, ms, dur}} an effect footprint (O649: its effect, the main one of its play; dur = ms of one play, the
+-- frames of the thing when the server sent none: phasesOf(spec) -> frames, optional); nil when the option is no footprint
+function P.walkOf(opt, phasesOf)
+  if type(opt) ~= 'table' then return nil end
+  if opt.kind == 'effects' and opt.footfx == true then
+    local spec = P.mainEffect(opt.play)
+    if type(spec) ~= 'table' or num(spec.id) <= 0 then return nil end
+    return { fx = { id = num(spec.id), dx = num(spec.dx), dy = num(spec.dy), ms = num(spec.ms),
+      dur = P.fxDuration(spec, phasesOf and phasesOf(spec) or 1) } }
+  end
+  local art = P.footprintArt(opt)
+  if art then return { art = art } end
+  if opt.kind == 'bundle' then
+    for _, p in ipairs(opt.parts or {}) do
+      local w = P.walkOf(p, phasesOf)
+      if w then return w end
+    end
+  end
+  return nil
+end
+
+-- the same walk twice? (the panel redraws on every hover and keeps its marks and its clock when nothing changed)
+function P.sameWalk(a, b)
+  if a == nil or b == nil then return a == b end
+  if a.art ~= nil or b.art ~= nil then return a.art == b.art end
+  local x, y = a.fx, b.fx
+  return x ~= nil and y ~= nil and x.id == y.id and x.dx == y.dx and x.dy == y.dy and x.ms == y.ms and x.dur == y.dur
 end
 
 -- a store offer (server shop.lua clientOffer: look; older servers: kind, outfit). Without a kind: wings / aura / shader by their field, a
@@ -647,15 +678,10 @@ P.EAST, P.WEST = 1, 3
 P.LOOT_AT = 1
 P.LOOT_BOX = { left = 0, top = 0, right = 32, bottom = 32 } -- the bag: one tile, in sprite px from its tile's top left
 
--- the scene of an effects option: {kill, loot, foot, caster = {x, y} or nil, target = {x, y}}
--- Effect footprints (O649): the figure stands on (0, 0) facing south and the effect plays on its own tile, under it, as the
--- map plays it on the tile a walker leaves; no troll, no bag.
+-- the scene of an effects option: {kill, loot, caster = {x, y} or nil, target = {x, y}}
 function P.sceneOf(opt)
   if type(opt) == 'table' and opt.killfx == true then
     return { kill = true, target = { x = 0, y = 0 } }
-  end
-  if type(opt) == 'table' and opt.footfx == true then
-    return { kill = false, foot = true, caster = { x = 0, y = 0 }, target = { x = 0, y = 0 } }
   end
   if type(opt) == 'table' and opt.lootfx == true then
     return { kill = false, loot = true, caster = { x = 0, y = 0 }, target = { x = P.LOOT_AT, y = 0 } }
@@ -672,7 +698,6 @@ P.TARGET_WORDS = { 'explosion', 'lightning', 'strike', 'impact', 'hit', 'punch',
 function P.landsOn(spec, hasMissile, scene)
   if type(spec) ~= 'table' then return 'target' end
   if spec.m then return 'missile' end
-  if type(scene) == 'table' and scene.foot then return 'caster' end
   if type(scene) == 'table' and (scene.kill or scene.loot or not scene.caster) then return 'target' end
   if hasMissile then return 'target' end
   local n = type(spec.n) == 'string' and spec.n:lower() or ''
@@ -943,71 +968,14 @@ function P.tilePixel(L, ox, oy, w, h, dispX, dispY)
 end
 
 -- ---------------------------------------------------------------- footprints on the stage
--- a few prints behind a character walking east: {x, y (tile fractions from the creature tile), rotation, opacity},
--- the newest first, alternating feet
-P.STEPS = 4
-function P.footsteps(n)
-  local out = {}
-  for i = 1, n or P.STEPS do
-    out[#out + 1] = { x = -0.5 * i, y = (i % 2 == 0) and 0.1 or -0.1, rotation = 90, opacity = math.max(0.15, 1 - 0.22 * (i - 1)) }
-  end
-  return out
-end
-
--- Where the prints go on the stage (O496). The character never moves for a footprint: the creature stays where the look
--- alone puts it (P.layout, same scale, same place, the floor shadow stays) and the prints go behind it, to its left, on
--- the floor line under its feet: print i is i steps left of the feet. A print is P.PRINT_SIZE of a tile wide; a step is
--- P.PRINT_STEP of a tile. When the prints would leave the stage at the left they are brought closer (down to
--- P.PRINT_MIN_STEP of a tile), then dropped, last first: the character is never moved or cut for them. A print that
--- would leave the stage at the bottom (a mount's feet sit low in a short stage) is lifted until it fits, a stage too
--- small for any print gets none. L = a layout with tileX, tileY (the creature tile's top left), scale and T: P.stepsLayout,
--- or P.fxLayout (a bundle that also has effects). box = P.lookBox of the figure. Returns {{x, y, size, cx, cy, rotation,
--- opacity}} (x, y: the top left, cx, cy: the centre, in stage px), the newest first.
-P.PRINT_SIZE = 0.6
-P.PRINT_STEP = 0.5
-P.PRINT_MIN_STEP = 0.3
-P.PRINT_MARGIN = 2
-
-function P.stepPrints(L, box, w, h, n)
-  box = box or P.FALLBACK_BOX
-  local s, T = L.scale, L.T
-  local cx0, cy0 = (box.left + box.right) / 2, box.bottom
-  local feetX = L.tileX + num(box.fx or cx0) * s
-  local feetY = L.tileY + num(box.fy or cy0) * s
-  local m = P.PRINT_MARGIN
-  local size = math.min(math.floor(T * P.PRINT_SIZE + 0.5), math.floor(h - 2 * m), math.floor(w - 2 * m))
-  if size < 6 then return {} end
-  local half = size / 2
-  local want = n or P.STEPS
-  local reach = feetX - half - m -- from the feet to the left-most centre the stage allows
-  local step, count = T * P.PRINT_STEP, want
-  if reach < want * step then
-    local closer = reach / want
-    if closer >= T * P.PRINT_MIN_STEP then
-      step = closer
-    else
-      count = math.max(0, math.floor(reach / (T * P.PRINT_MIN_STEP)))
-      step = count > 0 and math.min(step, reach / count) or 0
-    end
-  end
-  local out = {}
-  local feet = P.footsteps(count)
-  for i = 1, count do
-    local f = feet[i]
-    local cx = feetX - i * step
-    local cy = math.max(half + m, math.min(feetY + f.y * T, h - half - m))
-    out[i] = { x = math.floor(cx - half + 0.5), y = math.floor(cy - half + 0.5), size = size, cx = cx, cy = cy,
-      rotation = f.rotation, opacity = f.opacity }
-  end
-  return out
-end
-
--- the stage layout of a footprint option: exactly P.layout (the look alone: 2x, the box centred, the floor shadow), plus
--- the creature tile (tileX, tileY, as P.fxLayout names them) and the prints behind the feet
-function P.stepsLayout(box, w, h, n)
+-- A footprint option (O712, owner 2026-11-22: the previews of the footprints were bad: four still prints of the pair
+-- picture, the wrong one, behind a figure that stood still) shows the figure walking east in place at the look alone's place
+-- and size (P.layout: 2x, the box centred, the floor shadow stays) with the floor running by under it: footwalk.lua lays
+-- the marks and plays the effects by the in-game rules. This is the layout it draws on: exactly P.layout plus the
+-- creature tile (tileX, tileY, as P.fxLayout names them).
+function P.walkLayout(box, w, h)
   local L = P.layout(box, w, h)
   L.tileX, L.tileY = L.x + L.T, L.y + L.T
-  L.prints = P.stepPrints(L, box, w, h, n)
   return L
 end
 
@@ -1034,6 +1002,7 @@ P.PLATE_PATH = '/modules/game_nameplate/images/plate_'
 P.COMPACT_TEXT = 'Aa'
 P.NAME_MAX = { stage = 16, card = 10 }
 P.SAMPLE_GAP = 4
+P.PRINT_MARGIN = 2 -- the gap the samples keep to the stage's edge
 P.BAG_SIZES = { 1, 0.75, 0.5 } -- of a tile, the largest that fits beside the figure
 
 function P.validColor(s)
