@@ -1,10 +1,10 @@
--- chaos_awakened_look.lua: an awakened spell sends the awakened look kit (O711, client pair 76; docs/SPELL_UPGRADES.md 3.4,
+-- chaos_awakened_look.lua: an awakened spell sends the awakened look kit (O711, client pair 76, headings of a line and a wave: pair 77; docs/SPELL_UPGRADES.md 3.4,
 -- server/README.md "Awakened spell looks (O711)"). The kit and the gate are data/lib/chaos_awakened_fx.lua (chaosClientPair >= 76);
 -- every rule of which effect is data/scripts/chaos/awakened_look_config.lua. This file only asks and sends.
 --
 -- A cast is awakened when the spell of the cast running now (ChaosSupportsSpell.cast()) is awakened for the caster
 -- (ChaosSpellAwakening.isAwakened). Then, for that cast:
---   * the area / target effect is the kit effect ChaosAwakenedFx.effect(element, shape), sent ONCE a cast on the anchor tile
+--   * the area / target effect is the kit effect ChaosAwakenedFx.effect(element, shape, heading), sent ONCE a cast on the anchor tile
 --     (the picture is itself the area: later sends of the same cast, by Vfx, ChaosSpell.fx and the combat's own effect, send nothing);
 --   * every projectile is ChaosAwakenedFx.missile(element) (the Combat distance effect, FxMissile, VfxShoot).
 -- Not changed: the effects the Forms and the signature send themselves (ChaosSpellForms.sendFx, Vfx(pos, name, true)), raw
@@ -54,19 +54,46 @@ function L.element(spellElement, conversion)
 	return c.fallbackElement
 end
 
--- THE shape rule: the kit shape of the spell's area shape; a line or a wave that does not face east takes its eastOnly shape
-function L.shape(areaShape, facingEast)
+-- THE shape rule: the kit shape of the spell's area shape, and the heading it is drawn in. `heading` is the caster's heading name
+-- ("east" "north" "south" "west", nil for a diagonal or unknown direction) or, for the callers of before the headings, a boolean
+-- (true = east). A line or a wave heading east is the kit shape; heading north, south or west it is the heading effect when the pair has
+-- it (ChaosAwakenedFx.headings, chaosClientPair >= 77); otherwise it takes its eastOnly shape (a single on the target).
+function L.shape(areaShape, heading)
 	local c = cfg()
 	local s = c.shape[areaShape] or c.fallbackShape
-	if not facingEast and c.eastOnly[s] then
-		s = c.eastOnly[s]
+	if heading == true then
+		heading = "east"
 	end
-	return s
+	if not c.eastOnly[s] then
+		return s, "east"
+	end
+	if heading == "east" then
+		return s, "east"
+	end
+	local FX = rawget(_G, "ChaosAwakenedFx")
+	if (heading == "north" or heading == "south" or heading == "west") and FX and FX.headings then
+		return s, heading
+	end
+	return c.eastOnly[s], "east"
 end
 
-local function facesEast(player)
+-- the heading name of the caster's direction, nil for a diagonal (the area of a diagonal cast is not a heading of the kit)
+function L.heading(player)
 	local ok, d = pcall(function() return player:getDirection() end)
-	return ok and d == (rawget(_G, "EAST") or 1)
+	if not ok then
+		return nil
+	end
+	local g = rawget(_G, "DIRECTION_NORTH") or rawget(_G, "NORTH") or 0
+	if d == g then
+		return "north"
+	elseif d == (rawget(_G, "DIRECTION_EAST") or rawget(_G, "EAST") or 1) then
+		return "east"
+	elseif d == (rawget(_G, "DIRECTION_SOUTH") or rawget(_G, "SOUTH") or 2) then
+		return "south"
+	elseif d == (rawget(_G, "DIRECTION_WEST") or rawget(_G, "WEST") or 3) then
+		return "west"
+	end
+	return nil
 end
 
 local function build(pid, spellId)
@@ -90,15 +117,15 @@ local function build(pid, spellId)
 		conv = ok and el or nil
 	end
 	local element = L.element(entry.element, conv)
-	local shape = L.shape(entry.shape, facesEast(player))
-	local effect = FX.effect(element, shape)
+	local shape, heading = L.shape(entry.shape, L.heading(player))
+	local effect = FX.effect(element, shape, heading)
 	if not effect then
 		return false
 	end
-	return {element = element, shape = shape, effect = effect, missile = FX.missile(element), sent = false, caster = player:getPosition()}
+	return {element = element, shape = shape, heading = heading, effect = effect, missile = FX.missile(element), sent = false, caster = player:getPosition()}
 end
 
--- the awakened look of the cast running now: {element, shape, effect, missile, sent, caster} or nil
+-- the awakened look of the cast running now: {element, shape, heading, effect, missile, sent, caster} or nil
 function L.cast()
 	if not L.loaded then
 		L.loaded = true

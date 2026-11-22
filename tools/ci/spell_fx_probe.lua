@@ -2,7 +2,7 @@
 -- mock of the engine and prints every effect it sends, with the real libraries of server/data/lib and
 -- server/data/scripts/chaos (the swap layers: skins, the effects pass, pair 29, 36, class, pair 27).
 -- usage (cwd = a folder with data/lib, data/scripts/chaos and data/spells/scripts/chaos linked in):
---   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST] [PAIR] [rich]
+--   lua5.3 spell_fx_probe.lua VOCID SPELLID SCRIPT_REL_TO_SPELLS_SCRIPTS [CASTER_LEVEL] [TARGET_DX] [FORM_STATE] [WEAKEST] [PAIR] [rich|plain] [DIRECTION]
 -- FORM_STATE (O686 phase 4): the packed state of the spell (rank + 32 x Form I pick + 128 x Form II pick, data/lib/chaos_spell_ranks.lua) stored
 -- for the caster with the spell ranks switched on, so the cast runs with the Form of the pick: an element conversion swaps the effect
 -- names (data/lib/chaos_spell_forms.lua) and the Form's own effects are sent after the cast (fxProbe). WEAKEST: the element the
@@ -11,6 +11,8 @@
 -- data/spells/awakened.csv are sent after the Forms' (ChaosSpellAwakening.fxProbe).
 -- O711: PAIR is the client pair the run pretends to have (config.lua chaosClientPair, default none): at 76 or more an awakened cast sends the
 -- awakened look kit (data/lib/chaos_awakened_look.lua), so its effects are the kit ids 5354..5393 and its projectile 43 47 52 147..151.
+-- At 77 or more a line or a wave also has its heading effects 5394..5441; the 10th argument is the direction the caster faces (0 north,
+-- 1 east, 2 south, 3 west; default east), which picks the heading.
 -- Output lines (tab separated):  ME id tx ty (abs pos minus target pos) cx cy (minus caster pos) delay via
 --                                ANI id from_dx to_dx ...
 --                                COMBAT effect distance cells w h
@@ -24,6 +26,7 @@ local probePair = tonumber(arg[8])
 -- that has passed the cast time (ChaosCasting polls os.mtime), a corpse on every tile, a skeleton of the caster, ground on every tile and the
 -- effect of a doTargetCombat hit recorded. A plain or Form run is mocked as before.
 local awake = formState ~= nil and formState >= 512 and arg[9] == "rich"
+local probeDir = tonumber(arg[10]) -- the direction the caster faces (0 north 1 east 2 south 3 west), default east: the headings of the kit (O711, pair 77)
 local STORE = {}
 local out = {}
 local pname = {}
@@ -127,7 +130,7 @@ local function makeCreature(id, pos, isPlayer)
 		isNpc = function() return false end, isItem = function() return false end, isTile = function() return false end,
 		getLevel = function() return level end, getMagicLevel = function() return level end, getSkillLevel = function() return level end,
 		getVocation = function() return voc end,
-		getDirection = function() return EAST end,
+		getDirection = function() return probeDir or EAST end,
 		getHealth = function() return 5000 end, getMaxHealth = function() return 10000 end,
 		getMana = function() return 5000 end, getMaxMana = function() return 10000 end,
 		getTarget = function() return not isPlayer and nil or nil end,
@@ -301,6 +304,7 @@ if probePair then
 	local okk = pcall(dofile, "data/lib/chaos_awakened_fx.lua")
 	if okk and rawget(_G, "ChaosAwakenedFx") then
 		ChaosAwakenedFx.on = probePair >= ChaosAwakenedFx.PAIR
+		ChaosAwakenedFx.headings = probePair >= (ChaosAwakenedFx.PAIR_HEADINGS or 77)
 	end
 end
 
