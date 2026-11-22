@@ -11,8 +11,9 @@ rows north, east, south, west. Motion comes from periodic curves of the frame ph
 The canvas and the body. The engine puts the bottom right tile of a 3 x 3 look on the creature's tile, draws the wings
 at the creature's place and the body 6 px up and left of it (client/MANIFEST.md "Wings centred on the body"). With
 displacement 0 for the wings the torso of a class look lies at canvas y 63.5 (median of the class looks, measured on
-pair 71; the stock look 128: 66). ANCHOR is that point, x in the middle of the canvas. Bodies lean up and left
-(LEAN, measured), so a piece worn at height `pivot` sits left of the anchor; the art itself leans less (LEAN_ART).
+pair 71; the stock look 128: 66). ANCHOR is that point, x in the middle of the canvas. Since O714 the art does not lean (LEAN, LEAN_ART are 0): a pair
+is the same on both sides of the anchor column (the left half drawn and its mirror picture, Canvas.pair) and west is the
+east frame mirrored, so the engine's anchor on the torso (base patch 0204) puts the pair on the body, not beside it.
 The x needs a row in wing_centres.lua that says ANCHOR's x (base patch 0193 then puts it on any body's torso);
 gen_wing_centres.py would measure the art's mass instead, so pair 73 must write the row from `anchor_row()` here.
 Until a pair has these looks nothing reads this.
@@ -40,8 +41,9 @@ with this kit. Their commands, handed over from here:
                                player_looks.csv only, O587): engine anchor left, old table right
   measure DAT SPR [--write]    read the strips, zone colours and beat of the old wings into designs.csv (O587, O590)
   score DAT SPR [OUT.tsv]      likeness of every row to the old art: shape, colour, layout, motion, 0 is the same
-  apply DAT SPR OUT_DIR        the pair with the drawn wings in the same ids (pair 73 step)
-  live DAT SPR                 a built pair holds them
+  apply DAT SPR OUT_DIR [--new]   the pair with the drawn wings in the same ids (pair 73 step); --new also redraws the six
+                               looks 3555-3560 in place (a pair that holds them already: pair 78, O714)
+  live DAT SPR [--new]         a built pair holds them
   new-table [--check]          the six wings of this file as wings looks 3555-3560 of pair 78 (O581 phase 2): drawn_wings/new_looks.csv, .sums,
                                wing_anchors.lua and the server's ids file (gen_drawn_wings_new.py)
   build-new DAT SPR OUT_DIR    pair 77 (and no other) -> pair 78: the six looks appended, nothing else changes
@@ -68,9 +70,14 @@ ANCHOR = (48, 64)            # canvas px of the body's torso centre (see the doc
 GLOW_ALPHA = 144             # the one partial alpha: spark arms, trail ends
 TAU = 2 * math.pi
 DIR_ANGLE = {'south': 0.0, 'east': 90.0, 'north': 180.0, 'west': 270.0}
-VIEW_YAW = {'south': -14.0, 'north': -14.0, 'east': -14.0, 'west': 14.0}   # seen a little from the side
-LEAN = -0.55                 # px left per px of height: bodies of this client lean up and left (measured, class looks)
-LEAN_ART = -0.2              # the lean of the art itself above and below its pivot height (a full lean flattens a wing)
+# O714: a pair is as wide left as right about the anchor column in the south and north views (no yaw there) and the
+# west view is the east view mirrored (yaw -14 and +14 about the side). The owner saw a wing mirrored or on the wrong
+# side in nearly every wing of the store preview (client/MANIFEST.md "Wings that stand the same on both sides (O714)"):
+# a lean to the left and a yaw of -14 face on put the mass of a pair 10 px left of the anchor from behind, and the east
+# view twice as far left as the west view was right.
+VIEW_YAW = {'south': 0.0, 'north': 0.0, 'east': -14.0, 'west': 14.0}
+LEAN = 0.0                   # px left per px of height: none, the pair stands on the torso column (-0.55 before O714)
+LEAN_ART = 0.0               # the lean of the art itself above and below its pivot height (-0.2 before O714)
 DEPTH = 0.42                 # px down per px towards the viewer
 LIGHT2 = (-0.6, -0.8)        # screen light direction (from the top left)
 LIGHT3 = (-0.52, -0.62, 0.59)
@@ -130,6 +137,14 @@ def nb(mask, dx, dy):
     xs0, xs1 = max(0, -dx), min(w, w - dx)
     ys0, ys1 = max(0, -dy), min(h, h - dy)
     out[ys0:ys1, xs0:xs1] = mask[ys0 + dy:ys1 + dy, xs0 + dx:xs1 + dx]
+    return out
+
+
+def mirrored(a):
+    """the picture mirrored about the anchor column (column c goes to 96 - c; column 0 has no partner and stays empty).
+    Wings are drawn about this column, the engine puts it on the body's torso (base patch 0204)"""
+    out = np.zeros_like(a)
+    out[:, 1:] = a[:, 1:][:, ::-1]
     return out
 
 
@@ -260,6 +275,34 @@ class Canvas:
         """a soft field at the glow level (smoke, mist, light): only where the layer is clear"""
         self.hazes.append((mask, colour))
 
+    def mirror_in(self):
+        """add the mirror picture of everything drawn so far, about the anchor column: opaque pixels, sparks and
+        hazes. The first drawing keeps a pixel both own (O714: a pair is one wing and its mirror picture)"""
+        rgb, op = mirrored(self.rgb), mirrored(self.op)
+        new = op & ~self.op
+        self.rgb[new] = rgb[new]
+        self.op |= op
+        # the outline ring of a piece may reach column 1 (a piece stays inside columns 2..93): its partner would be on
+        # the cell border, so the two columns go together and finish() draws the edge in the outline colour
+        self.op[:, :2] = False
+        self.op[:, SIZE - 1:] = False
+        self.rgb[~self.op] = 0
+        self.sparks = self.sparks + [(2 * (SIZE // 2) - x, y, c, s) for x, y, c, s in self.sparks]
+        self.hazes = self.hazes + [(mirrored(m), c) for m, c in self.hazes]
+
+    def keep_left(self):
+        """drop what lies right of the anchor column"""
+        half = SIZE // 2
+        self.op[:, half + 1:] = False
+        self.rgb[:, half + 1:] = 0
+        self.sparks = [s for s in self.sparks if s[0] <= half]
+        self.hazes = [(m & (XX <= half), c) for m, c in self.hazes]
+
+    def pair(self):
+        """what the left half drew and its mirror picture: a pair that is the same on both sides"""
+        self.keep_left()
+        self.mirror_in()
+
     def finish(self):
         op = self.op
         edge = op & ~(nb(op, 1, 0) & nb(op, -1, 0) & nb(op, 0, 1) & nb(op, 0, -1))
@@ -328,7 +371,11 @@ class Scene:
         canvas.piece(mask, idx.astype(np.int8), ramp, line=line)
         return b, t
 
-    def result(self):
+    def result(self, pair=False):
+        """the two finished layers; pair: first make each the left half and its mirror picture (O714)"""
+        if pair:
+            self.back.pair()
+            self.front.pair()
         return self.back.finish(), self.front.finish()
 
 
@@ -770,11 +817,15 @@ def design(key):
 
 
 def render_frame(key, d, f):
-    """(back, front) RGBA arrays of one frame"""
+    """(back, front) RGBA arrays of one frame. O714: south and north are a left half and its mirror picture, west is
+    the east frame mirrored about the anchor column"""
+    if d == 'west':
+        back, front = render_frame(key, 'east', f)
+        return mirrored(back), mirrored(front)
     _, _, outline, fn, pivot = design(key)
     sc = Scene(outline, d, f, pivot)
     fn(sc)
-    return sc.result()
+    return sc.result(pair=d in ('south', 'north'))
 
 
 def render(key):

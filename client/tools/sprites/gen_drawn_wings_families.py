@@ -139,7 +139,6 @@ PIVOT = 9.0
 # and the north view, the left and the right wing. A style fills the strip with the material of its family: it puts
 # pieces at strip places (s along, t across), so the same style draws a long flat wing and a short upright one.
 # The colours of a wing come from six measured zones (three along, two across): `zones` of the table.
-ROOT = (0.0, 9.0, -3.5)      # the model point where the wings meet (the side views turn about its picture)
 INNER = np.zeros((S, S), bool)
 INNER[2:S - 2, 2:S - 2] = True
 
@@ -169,10 +168,12 @@ _PLACED = {}
 
 
 def placed(sp, d):
-    """(origin, scale) of a row's pair in one face-on view"""
+    """(origin, scale) of a row's pair in one face-on view: the model wing and its mirror picture, so the box of the
+    pair is centred on the anchor column and so is the meeting point (O714)"""
     key = (sp.key, d)
     if key not in _PLACED:
-        _PLACED[key] = st.place(sp.strips[d], amp=sp.amp)
+        v = model_strip(sp, d)
+        _PLACED[key] = st.place((v, mirror_strip(v)), amp=sp.amp, tries=40)
     return _PLACED[key]
 
 
@@ -1241,32 +1242,155 @@ STYLES = {'feather': st_feather, 'bat': st_bat, 'insect': st_insect, 'crystal': 
           'fan': st_fan, 'energy': st_energy, 'orbit': st_orbit}
 
 
+# O714. The layout of a pair, the same for every row (the layout of the painted rows, O620, for the code rows):
+#   south, north   ONE wing is drawn, the left one, with its root on the anchor column; the right wing is its mirror
+#                  picture about that column (Canvas.mirror_in). The wing is the longer of the two measured wings of
+#                  the view (a right wing is mirrored first). Before O714 each of the two measured wings was drawn
+#                  as measured, so a pair had a long wing and a short one and its box, not its meeting point, stood on
+#                  the anchor column: mirror partner share 0.56 (median), mass 2.5 px right of the column facing south.
+#   east, west     the same wing seen from the side: near (SIDE_NEAR of its size) and far (SIDE_FAR, a step darker,
+#                  SIDE_FAR_AT away), both turned to rise at SIDE_RISE degrees from the join and trail left; west is
+#                  the east frame mirrored about the anchor column, so it trails right. Before O714 east was the
+#                  south picture and west the north picture with x and y changed over: a transposed picture trails
+#                  left in both, and the second wing hung under the body (46% of the pixels under the torso row).
+JOIN = (k.ANCHOR[0], st.MEET[1])        # the point where the wings meet, over the anchor
+SIDE_NEAR, SIDE_FAR = 0.7, 0.55
+SIDE_RISES = (58, 50, 42, 34, 26, 18)   # degrees over the horizontal of the line from the root to the tip of the near side wing: the steepest that trails
+SIDE_FAR_EXTRA = 14                     # the far wing stands this much steeper
+SIDE_TRAIL = 3                          # px the side wings reach behind the join more than in front of it, in every frame, at least
+SIDE_FAR_AT = (2, -3)
+SIDE_FAR_SHADE = 0.74
+SIDE_LAG = 0.5                          # the far wing follows the near one (radians of the beat)
+X_INDEX = tuple([0] + [2 + 4 * i for i in range(st.STATIONS)] + [4 * st.STATIONS + 2])      # the x of root, stations, tip
+
+
+def mirror_strip(v):
+    """the strip of the mirror picture: x changes sign"""
+    out = list(v)
+    for i in X_INDEX:
+        out[i] = -out[i]
+    return out
+
+
+def model_strip(sp, d):
+    """the one wing of a face-on view as a left wing with its root on the column x = 0: the longer of the measured
+    left wing and the measured right wing mirrored (the left one when they are as long)"""
+    l, r = sp.strips[d]
+    cands = []
+    if l is not None:
+        cands.append((st.Strip(l, -1, (0.0, 0.0)).length, 1, list(l)))
+    if r is not None:
+        cands.append((st.Strip(r, 1, (0.0, 0.0)).length, 0, mirror_strip(r)))
+    v = max(cands, key=lambda c: (round(c[0], 1), c[1]))[2]
+    root = v[0]
+    for i in X_INDEX:
+        v[i] -= root
+    return v
+
+
+def side_strip(v, rise):
+    """a left wing turned about its root so that the line to its tip rises `rise` degrees over the horizontal
+    (the numbers become floats; the widths do not turn)"""
+    out = [float(x) for x in v]
+    rx, ry = out[0], out[1]
+    cx, cy = out[-2] - rx, out[-1] - ry
+    if math.hypot(cx, cy) >= 4.0:
+        turn = math.atan2(-math.sin(math.radians(rise)), -math.cos(math.radians(rise))) - math.atan2(cy, cx)
+        c, s = math.cos(turn), math.sin(turn)
+        pts = [(0, 1)] + [(2 + 4 * i, 3 + 4 * i) for i in range(st.STATIONS)] + [(len(v) - 2, len(v) - 1)]
+        for xi, yi in pts:
+            x, y = out[xi] - rx, out[yi] - ry
+            out[xi], out[yi] = rx + x * c - y * s, ry + x * s + y * c
+    return out
+
+
+def _draw_wing(sc, canvas, sp, v, origin, scale, lag=0.0):
+    """one left wing (strip numbers v, root at `origin` plus the root's own numbers) into a canvas with its style"""
+    sgn = -1
+
+    def bend(u):
+        return -sgn * sp.amp * (0.25 + 0.75 * u) * sin(sc.ph - 1.0 * u - lag)
+    w = st.Strip(v, sgn, origin, scale, bend, 1.0 + 0.015 * sin(sc.ph + 1.0))
+    rest = st.Strip(v, sgn, origin, scale)
+    mould = MOULD_ENV or sp.mould
+    layer = Clip(sp.outline) if mould != 'free' else canvas
+    g = G(layer, w, rest, sp, sc, sgn)
+    STYLES[sp.family](g)
+    g.glint()
+    if layer is not canvas:
+        _mould(layer, canvas, w, sp, mould == 'fill')
+
+
 def fam_strip(sc, sp):
-    """one face-on frame of a row: the far (smaller) wing first; south behind the body, north in front of it"""
+    """one face-on frame of a row: the left wing and its mirror picture; south behind the body, north in front of it"""
     d = sc.d
     sc.back, sc.front = Clip(sp.outline), Clip(sp.outline)
     canvas = sc.front if d == 'north' else sc.back
     origin, scale = placed(sp, d)
-    wings = [(v, sgn) for v, sgn in zip(sp.strips[d], (-1, 1)) if v is not None]
-    wings.sort(key=lambda it: st.Strip(it[0], it[1], origin, scale).length)
-    for v, sgn in wings:
-        lagp = 0.35 if sgn > 0 else 0.0
-
-        def bend(u, sgn=sgn, lagp=lagp):
-            return -sgn * sp.amp * (0.25 + 0.75 * u) * sin(sc.ph - 1.0 * u - lagp)
-        w = st.Strip(v, sgn, origin, scale, bend, 1.0 + 0.015 * sin(sc.ph + 1.0))
-        rest = st.Strip(v, sgn, origin, scale)
-        mould = MOULD_ENV or sp.mould
-        layer = Clip(sp.outline) if mould != 'free' else canvas
-        g = G(layer, w, rest, sp, sc, sgn)
-        STYLES[sp.family](g)
-        g.glint()
-        if layer is not canvas:
-            _mould(layer, canvas, w, sp, mould == 'fill')
+    _draw_wing(sc, canvas, sp, model_strip(sp, d), (origin[0] + 0.5, origin[1]), scale)
+    canvas.mirror_in()
     if d == 'north':                                      # from behind, the knot that ties the pair is in sight
         x, y = origin
         m = k.disc_mask(x + 0.5, y + 0.5, 1.9) & INNER
         canvas.piece(m, k.sphere_shade(x + 0.5, y + 0.5, 2.4).astype(np.int8), sp.A)
+
+
+def _side_fit(v, at, scale, amp):
+    """(origin, scale) that puts the root of the side wing v on `at`, shrunk until the wing stays inside ROOM through the beat"""
+    room = st.ROOM
+    for _ in range(12):
+        origin = (at[0] - v[0] * scale, at[1] - v[1] * scale)
+        boxes = [st.Strip(v, -1, origin, scale, (lambda u, a=a: a * (0.25 + 0.75 * u)) if a else None).box()
+                 for a in ((-amp, 0.0, amp) if amp else (0.0,))]
+        if (min(b[0] for b in boxes) >= room[0] + 2 and min(b[1] for b in boxes) >= room[1] + 2
+                and max(b[2] for b in boxes) <= room[2] - 2 and max(b[3] for b in boxes) <= room[3] - 2):
+            break
+        scale *= 0.96
+    return origin, scale
+
+
+_RISE = {}
+
+
+def side_rise(sp):
+    """the steepest of SIDE_RISES at which the side wings of the row, in all 16 frames of their beat, reach SIDE_TRAIL px more
+    behind the join than in front of it: a broad wing (a butterfly, a bat) stands on both sides of the line to its tip,
+    so it needs a flatter turn to trail"""
+    if sp.key not in _RISE:
+        pick = SIDE_RISES[-1]
+        for rise in SIDE_RISES:
+            ok = True
+            for f in range(k.FRAMES):
+                sc = k.Scene(sp.outline, 'east', f, PIVOT)
+                fam_side(sc, sp, rise)
+                ys, xs = np.nonzero(sc.back.op)
+                if len(xs) and (JOIN[0] - int(xs.min())) - (int(xs.max()) - JOIN[0]) < SIDE_TRAIL:
+                    ok = False
+                    break
+            if ok:
+                pick = rise
+                break
+        _RISE[sp.key] = pick
+    return _RISE[sp.key]
+
+
+def fam_side(sc, sp, rise=None):
+    """one east frame of a row (west is it mirrored): the far wing, a step darker, then the near wing, both rising from the
+    join and trailing left, behind the body"""
+    sc.back, sc.front = Clip(sp.outline), Clip(sp.outline)
+    canvas = sc.back
+    v = model_strip(sp, 'south')
+    scale = placed(sp, 'south')[1]
+    rise = side_rise(sp) if rise is None else rise
+    far = side_strip(v, rise + SIDE_FAR_EXTRA)
+    far_at = (JOIN[0] + SIDE_FAR_AT[0] + 0.5, JOIN[1] + SIDE_FAR_AT[1])
+    origin, s = _side_fit(far, far_at, scale * SIDE_FAR, sp.amp)
+    _draw_wing(sc, canvas, sp, far, origin, s, SIDE_LAG)
+    dark = canvas.op
+    canvas.rgb[dark] = (canvas.rgb[dark].astype(np.float64) * SIDE_FAR_SHADE).astype(np.uint8)
+    near = side_strip(v, rise)
+    origin, s = _side_fit(near, (JOIN[0] + 0.5, JOIN[1]), scale * SIDE_NEAR, sp.amp)
+    _draw_wing(sc, canvas, sp, near, origin, s)
 
 
 def _grow(mask, n):
@@ -1362,86 +1486,34 @@ def sheet_faces(sp):
     return _SHEETS[sp.wings]
 
 
-VIEW_SRC = {'north': 'north', 'south': 'south', 'east': 'south', 'west': 'north'}
-SIDE_ROOT = {'east': 2, 'west': 9}      # px right of the torso where the wings meet in a side view (measured, O590)
-SIDE_MID = -5                           # px under the torso line where the middle of the pair lies in a side view
 _FACE = {}
 
 
-def _face(sp, d, f):
-    """a face-on frame (north or south) as the family draws it; one row is kept, so a side view costs nothing more"""
+def _view(sp, d, f):
+    """(back, front) of a frame the family draws itself, north, south or east; one row is kept, so west (east mirrored)
+    costs nothing more"""
     if _FACE.get('key') != sp.key:
         _FACE.clear()
         _FACE['key'] = sp.key
     if (d, f) not in _FACE:
         fn, pivot = FAMILIES[sp.family]
         sc = k.Scene(sp.outline, d, f, pivot)
-        fn(sc, sp)
+        (fam_side if d == 'east' else fn)(sc, sp)
         _FACE[(d, f)] = sc.result()
     return _FACE[(d, f)]
 
 
-def _side_shift(sp, d):
-    """where a side view puts the turned face-on picture: (dx, dy) of the transposed canvas. The point where the
-    wings meet goes SIDE_ROOT right of the torso, the middle of the pair SIDE_MID under it; then the whole loop is
-    pushed back inside the cell"""
-    if ('shift', d) in _FACE and _FACE.get('key') == sp.key:
-        return _FACE[('shift', d)]
-    src = VIEW_SRC[d]
-    any_ = np.zeros((S, S), bool)
-    for f in range(k.FRAMES):
-        b, fr = _face(sp, src, f)
-        any_ |= (b[..., 3] > 0) | (fr[..., 3] > 0)
-    _FACE[('shift', d)] = side_shift_of(any_, d, FAMILIES[sp.family][1])
-    return _FACE[('shift', d)]
-
-
-def side_shift_of(any_, d, pivot=PIVOT):
-    """the (dx, dy) of _side_shift for a face-on loop that covers the mask any_"""
-    rx, ry, _ = k.project((0.0, ROOT[1], ROOT[2]), VIEW_SRC[d], pivot)
-    dx = int(round(k.ANCHOR[0] + SIDE_ROOT[d] - ry))      # a face-on y becomes x
-    dy = int(round(k.ANCHOR[1] + SIDE_MID - rx))          # a face-on x becomes y
-    ys, xs = np.nonzero(any_.T)
-    if len(xs):
-        lo, hi = 2, S - 3
-        for _ in range(2):
-            if xs.max() + dx > hi:
-                dx = hi - int(xs.max())
-            if xs.min() + dx < lo:
-                dx = lo - int(xs.min())
-            if ys.max() + dy > hi:
-                dy = hi - int(ys.max())
-            if ys.min() + dy < lo:
-                dy = lo - int(ys.min())
-    return dx, dy
-
-
-def _turned(img, dx, dy):
-    """the picture transposed (the light from the top left stays where it is) and moved by (dx, dy)"""
-    t = np.ascontiguousarray(img.transpose(1, 0, 2))
-    out = np.zeros_like(t)
-    x0, x1 = max(0, dx), min(S, S + dx)
-    y0, y1 = max(0, dy), min(S, S + dy)
-    if x1 > x0 and y1 > y0:
-        out[y0:y1, x0:x1] = t[y0 - dy:y1 - dy, x0 - dx:x1 - dx]
-    return out
-
-
 def render_frame(sp, d, f):
-    """(back, front) of one frame. North and south are drawn face on. East and west are the old art's side views
-    (O590): the south picture (east) or the north picture (west) with x and y changed over, the wings one over the
-    other behind the body. Measured on the old pair: 113 of 121 east views are the south view turned that way."""
+    """(back, front) of one frame. North and south are drawn face on, the left wing and its mirror picture; east is the
+    side view, west is east mirrored about the anchor column (O714, the layout above `JOIN`)."""
     faces = sheet_faces(sp)
     if faces is not None:                                 # a painted row (O594, own side views O620): north in front of the body, the rest behind
         img, none = faces[d][f], np.zeros((S, S, 4), np.uint8)
         return (none, img) if d == 'north' else (img, none)
-    src = VIEW_SRC[d]
-    back, front = _face(sp, src, f)
-    if src == d:
-        return back, front
-    dx, dy = _side_shift(sp, d)
-    # from the side the pair lies behind the body, so it never hides the character
-    return _turned(k.merge(back, front), dx, dy), np.zeros_like(front)
+    if d == 'west':
+        back, front = _view(sp, 'east', f)
+        return k.mirrored(back), k.mirrored(front)
+    return _view(sp, d, f)
 
 
 def render(sp, dirs=k.DIRS, frames=None):
@@ -1725,10 +1797,18 @@ def pair_patterns(dat, spr, look):
     return out
 
 
-def apply(dat_path, spr_path, out_dir, specs=None, log=print):
+def new_rows():
+    """the six wings of O581 phase 2 (gen_drawn_wings_new.py) as (look, wings id, key, pictures) for `apply` and `check_pair`"""
+    import gen_drawn_wings_new as new
+    return [(int(r['look']), int(r['wings']), r['key'], new.patterns(r['key'])) for r in new.load()]
+
+
+def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=()):
     """pair in -> pair out in OUT_DIR (not there yet): every row's wings look keeps its id, its flags without the
     displacement, its frame groups and z patterns, and gets the drawn pictures. Outfits, items, effects and missiles
-    that are not wings stay byte for byte, sprites are only appended. Verified before the rename."""
+    that are not wings stay byte for byte, sprites are only appended. Verified before the rename. `extra`: more wings
+    looks of the same shape as (look, wings id, key, pictures), for the six of O581 phase 2 that pair 78 already holds
+    (`apply --new`, O714: they are drawn again in place, pair 77 -> 78 is gen_drawn_wings_new.py build-new)."""
     import hashlib
     import shutil
     import struct
@@ -1755,22 +1835,23 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print):
         return recs[rec]
 
     entries, expect = {}, {}
-    for sp in specs:
-        t = od.outfit(sp.look)
+    jobs = [(sp.look, sp.wings, sp.key, None, sp) for sp in specs] + [(look, wings, key, pats, None) for look, wings, key, pats in extra]
+    for look, wings, key, pats, sp in jobs:
+        t = od.outfit(look)
         if t is None:
-            raise SystemExit('the pair has no outfit %d (%s)' % (sp.look, sp.key))
+            raise SystemExit('the pair has no outfit %d (%s)' % (look, key))
         if 'animateAlways' not in t.flags:
-            raise SystemExit('outfit %d (%s) is not a wings look of the pair: no animateAlways' % (sp.look, sp.key))
+            raise SystemExit('outfit %d (%s) is not a wings look of the pair: no animateAlways' % (look, key))
         keep = _G()
         keep.flags = {name: v for name, v in t.flags.items() if name != 'displacement'}
         flags, stripped = encode_flags(keep, od.extra)
         if stripped:
-            raise SystemExit('outfit %d: flags %s cannot be kept' % (sp.look, stripped))
-        pats = patterns(sp)
-        expect[sp.look] = pats
+            raise SystemExit('outfit %d: flags %s cannot be kept' % (look, stripped))
+        pats = patterns(sp) if pats is None else pats
+        expect[look] = pats
         groups = [new_group(g, pats, index) for g in parse_body(od, t)]
-        entries[sp.look] = build_entry(flags, groups, {s: s for g in groups for s in g.sprites})
-        log('%3d %-22s look %d drawn' % (sp.wings, sp.key, sp.look))
+        entries[look] = build_entry(flags, groups, {s: s for g in groups for s in g.sprites})
+        log('%3d %-22s look %d drawn' % (wings, key, look))
     d = od.data
     parts = [bytes(d[:od.outfits[0].raw[0]])]
     for i, t in enumerate(od.outfits):
@@ -2347,7 +2428,10 @@ def main(argv):
         sys.path.insert(0, HERE)
     cmd, args = argv[0], argv[1:]
     check = '--check' in args
-    args = [a for a in args if a != '--check']
+    with_new = '--new' in args                            # apply and live also take the six wings looks of O581 phase 2
+    if with_new and cmd not in ('apply', 'live'):
+        raise SystemExit('--new goes with apply and live')
+    args = [a for a in args if a not in ('--check', '--new')]
     if '--src' in args:                                   # the folder of the painted sheets (O594)
         i = args.index('--src')
         if cmd == 'table' or i + 1 >= len(args):
@@ -2393,10 +2477,14 @@ def main(argv):
         print(text, end='')
         return 0
     if cmd == 'apply':
-        apply(args[0], args[1], args[2])
+        apply(args[0], args[1], args[2], extra=new_rows() if with_new else ())
         return 0
     if cmd == 'live':
-        return 1 if check_pair(args[0], args[1]) else 0
+        bad = check_pair(args[0], args[1])
+        if with_new:
+            import gen_drawn_wings_new as new
+            bad += new.live(args[0], args[1])
+        return 1 if bad else 0
     raise SystemExit('unknown command %s' % cmd)
 
 
@@ -2549,8 +2637,48 @@ def bar_problems(sp, frames=None):
             if np.array_equal(merged[a][0], merged[b][0]):
                 bad.add('%s and %s look the same' % (a, b))
     ys, xs = np.nonzero(np.max([m[..., 3] for d in k.DIRS for m in merged[d]], axis=0))
-    if abs(xs.mean() - k.ANCHOR[0]) >= 16 or abs(ys.mean() - k.ANCHOR[1]) >= 24:
+    if abs(xs.mean() - k.ANCHOR[0]) >= 16 or abs(ys.mean() - k.ANCHOR[1]) >= 32:      # y: a tile (24 before O714, when the side wings hung)
         bad.add('the art is far from the anchor (%.1f, %.1f)' % (xs.mean(), ys.mean()))
+    bad.update(layout_problems(sp, frames, merged))
+    return sorted(bad)
+
+
+LOPSIDED = 0.02             # the share of a face-on pair without a mirror partner
+SIDE_RISE_MIN = 8           # px a side wing rises over the join at least
+SIDE_HANG_MAX = 0.25        # the most of a side wing that may lie under the anchor row (a tail or a stalk of a few
+                            # designs does: kite, maple leaf, torn bat; the painted rows hold 0.12, gen_pixellab_wings.py)
+
+
+def layout_problems(sp, frames, merged=None):
+    """the layout of O714 on one row: a face-on pair is the same left and right about the anchor column, west is east
+    mirrored (exactly, for a row drawn by code), a side wing rises from the join and trails behind the body (east to the
+    left, west to the right) and does not hang under the anchor row. The painted rows (O620) hold their own checks
+    of the same facts (gen_pixellab_wings.py)."""
+    merged = merged or {d: [k.merge(b, f) for b, f in frames[d]] for d in k.DIRS}
+    bad = set()
+    if sheet_faces(sp) is None:                           # a painted row holds its own (O620, gen_pixellab_wings.py)
+        for d in ('south', 'north'):
+            for img in merged[d]:
+                m = img[..., 3] > 0
+                if (m ^ k.mirrored(m))[:, 1:].sum() > LOPSIDED * max(1, int(m.sum())):
+                    bad.add('%s: the pair is not the same left and right' % d)
+                    break
+        for (be, fe), (bw, fw) in zip(frames['east'], frames['west']):
+            if not (np.array_equal(k.mirrored(be), bw) and np.array_equal(k.mirrored(fe), fw)):
+                bad.add('west is not east mirrored')
+                break
+    for d, sign in (('east', -1), ('west', 1)):
+        for img in merged[d]:
+            ys, xs = np.nonzero(img[..., 3] == 255)
+            if not len(ys):
+                continue
+            if JOIN[1] - int(ys.min()) < SIDE_RISE_MIN:
+                bad.add('%s: the side wing does not rise over the join' % d)
+            if float((ys >= k.ANCHOR[1]).mean()) > SIDE_HANG_MAX:
+                bad.add('%s: the side wing hangs under the anchor row' % d)
+            reach = ((JOIN[0] - int(xs.min())) - (int(xs.max()) - JOIN[0])) * -sign     # the reach behind the join minus the reach in front
+            if reach <= 0:
+                bad.add('%s: the side wing trails the wrong way' % d)
     return sorted(bad)
 
 

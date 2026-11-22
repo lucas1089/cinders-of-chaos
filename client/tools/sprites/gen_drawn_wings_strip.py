@@ -395,12 +395,13 @@ class Strip(Places):
         return j / float(self.m - 1) if j > SUB else 0.0
 
 
-def place(strips, room=ROOM, amp=0.0):
+def place(strips, room=ROOM, amp=0.0, tries=8):
     """(origin, scale) that puts a pair of strips (table numbers, either may be None) round the anchor: the box of
     the pair centred on the anchor's column, the meeting point on MEET's row, moved and at last scaled down so that
-    it stays inside `room` through the whole beat (`amp`, radians)"""
+    it stays inside `room` through the whole beat (`amp`, radians). `tries` steps of 4% at most (O714: a pair that is
+    one wing and its mirror picture must never be pushed off the column, so its caller gives 40)"""
     scale = 1.0
-    for _ in range(8):
+    for _ in range(tries):
         boxes = [Strip(v, sgn, (0.0, 0.0), scale, (lambda u, a=a: a * (0.25 + 0.75 * u)) if a else None).box()
                  for v, sgn in zip(strips, (-1, 1)) if v is not None for a in ((-amp, 0.0, amp) if amp else (0.0,))]
         x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)

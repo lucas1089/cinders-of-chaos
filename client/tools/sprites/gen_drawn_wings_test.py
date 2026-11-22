@@ -123,7 +123,15 @@ for key, title, outline, fn, pivot in gd.DESIGNS:
     for i, a in enumerate(gd.DIRS):
         for b in gd.DIRS[i + 1:]:
             check(not np.array_equal(merged[a][0], merged[b][0]), '%s: %s and %s look the same' % (key, a, b))
-    check(not np.array_equal(merged['east'][0], merged['west'][0][:, ::-1]), '%s: west is not east mirrored' % key)
+    # O714: a pair is the same on both sides, west is the east frame mirrored about the anchor column
+    for d in ('south', 'north'):
+        for f in range(F):
+            a = merged[d][f][..., 3] > 0
+            check(int((a ^ gd.mirrored(a))[:, 1:].sum()) <= 0.02 * int(a.sum()), '%s %s %d: the pair is not the same left and right' % (key, d, f))
+    for f in range(F):
+        check(np.array_equal(gd.mirrored(merged['east'][f]), merged['west'][f]), '%s %d: west is east mirrored' % (key, f))
+        ex = np.nonzero(merged['east'][f][..., 3] == 255)[1]
+        check(ex.mean() < gd.ANCHOR[0], '%s %d: east is on the left of the anchor column' % (key, f))
     # the art stands round the anchor: its mass is within a tile of it
     ys, xs = np.nonzero(np.max([m[..., 3] for d in gd.DIRS for m in merged[d]], axis=0))
     check(abs(xs.mean() - gd.ANCHOR[0]) < 16 and abs(ys.mean() - gd.ANCHOR[1]) < 24,
@@ -315,6 +323,16 @@ if __name__ == '__main__':
     got = fm.pair_patterns(nd, nspr, 2)
     want = fm.patterns(rows[0])
     check(not isinstance(got, str) and all(np.array_equal(want[key], got[key]) for key in want), 'the pictures read back')
+    # O714: `apply --new` redraws the six looks of O581 phase 2 in place on a pair that holds them (look 3 stands for one here)
+    import gen_drawn_wings_new as new_wings
+    new_pats = new_wings.patterns('void_orbit')
+    out_x = os.path.join(case.dir, 'outx')
+    done = fm.apply(dat_p, spr_p, out_x, [rows[0]], log=quiet, extra=[(3, 127, 'void_orbit', new_pats)])
+    check(done == [2, 3], 'apply with extra looks redraws them too: %s' % done)
+    xd, xs = Dat(os.path.join(out_x, 'Tibia.dat')), Spr(os.path.join(out_x, 'Tibia.spr'))
+    got = fm.pair_patterns(xd, xs, 3)
+    check(not isinstance(got, str) and all(np.array_equal(new_pats[key], got[key]) for key in new_pats), 'an extra look reads back its pictures')
+    check([r[2] for r in fm.new_rows()] == list(gd.KEYS), 'new_rows names the six designs in order')
     for bad_call, what in ((lambda: fm.apply(dat_p, spr_p, out_dir, rows, log=quiet), 'an existing folder'),
                            (lambda: fm.apply(dat_p, spr_p, out_dir + '2', [rows[0], copy.copy(specs[1])], log=quiet), 'a missing look')):
         try:
@@ -393,15 +411,91 @@ _ss, _tt = _sl.field()
 check(_ss.shape == (gd.SIZE, gd.SIZE) and 0.0 <= float(_ss[_sl.body()].min()) and float(_ss[_sl.body()].max()) <= 1.0,
       'O590: the field of a strip runs from root to tip')
 
-# east and west are the face-on pictures with x and y changed over (the old art's side views)
+# ---- O714: a pair is one wing and its mirror picture, west is east mirrored, a side wing rises and trails behind the body.
+# The owner saw a wing mirrored or on the wrong side in nearly every wing of the store preview. The cause, held here by numbers:
+# (1) the table measured the left and the right wing of the old art apart and the strip engine drew each as measured
+_lopsided = sum(1 for _s in _specs for _v in ('south', 'north')
+                if min(_st.Strip(_s.strips[_v][0], -1, (0, 0)).length, _st.Strip(_s.strips[_v][1], 1, (0, 0)).length)
+                < 0.8 * max(_st.Strip(_s.strips[_v][0], -1, (0, 0)).length, _st.Strip(_s.strips[_v][1], 1, (0, 0)).length))
+check(_lopsided >= 60, 'O714: the measured pair is lopsided in many views (%d of 242)' % _lopsided)
+# (2) and the side views were the face-on pictures with x and y changed over: east and west alike, so west trailed left too
 _sp = [sp for sp in _specs if sp.key == 'fiery'][0]
+_old_side = {}
 for _d, _src in (('east', 'south'), ('west', 'north')):
     _fb, _ff = fm587.render_frame(_sp, _src, 3)
-    _eb, _ef = fm587.render_frame(_sp, _d, 3)
-    _dx, _dy = fm587._side_shift(_sp, _d)
-    check(np.array_equal(_eb, fm587._turned(gd.merge(_fb, _ff), _dx, _dy)), 'O590: %s is the %s view turned' % (_d, _src))
-    check(not _ef[..., 3].any(), 'O590: from the side the pair lies behind the body (%s)' % _d)
-    check((gd.merge(_eb, _ef)[..., 3] > 0).sum() == (gd.merge(_fb, _ff)[..., 3] > 0).sum(), 'O590: %s loses no pixel' % _d)
+    _old_side[_d] = np.ascontiguousarray(gd.merge(_fb, _ff).transpose(1, 0, 2))
+_mx = lambda im: np.nonzero(im[..., 3] > 0)[1].mean()
+check(_mx(_old_side['east']) - _mx(_old_side['west']) < 8 and (_old_side['east'][..., 3] > 0).sum() > 0,
+      'O714: a transposed picture has the same x for east and west (it cannot trail both ways)')
+
+# the layout
+check(gd.mirrored(np.arange(96)[None, :, None] * np.ones((2, 1, 1), np.int32))[0, 5, 0] == 91 and gd.mirrored(np.ones((2, 96)))[0, 0] == 0,
+      'O714: mirrored() sends column c to 96 - c and leaves column 0 empty')
+for _sp in _specs:
+    _bad = []
+    for _v in ('south', 'north'):
+        _m = fm587.model_strip(_sp, _v)
+        _n = fm587.mirror_strip(_m)
+        _bad += [] if (_m[0] == 0 and _n[0] == 0 and fm587.mirror_strip(_n) == _m) else ['root or mirror']
+        _a = _st.Strip(_m, -1, (48.0, 58.0))
+        _b = _st.Strip(_n, 1, (48.0, 58.0))
+        _lens = [_st.Strip(v, sg, (0, 0)).length for v, sg in zip(_sp.strips[_v], (-1, 1)) if v is not None]
+        _bad += [] if abs(_a.length - max(_lens)) < 1.0 else ['not the longer wing']
+        _pa, _pb = np.array([_a.pt(s_, 0.0) for s_ in (0.2, 0.5, 1.0)]), np.array([_b.pt(s_, 0.0) for s_ in (0.2, 0.5, 1.0)])
+        _bad += [] if np.allclose(_pa[:, 0] - 48.0, -(_pb[:, 0] - 48.0), atol=1e-6) and np.allclose(_pa[:, 1], _pb[:, 1], atol=1e-6) else ['strip and mirror']
+        _o, _sc = fm587.placed(_sp, _v)
+        _bad += [] if _o[0] == 48 else ['origin x %s' % (_o,)]
+    check(not _bad, 'O714: %s: model strip %s' % (_sp.key, _bad))
+_sp = [sp for sp in _specs if sp.key == 'fiery'][0]
+_fr = fm587.render(_sp)
+check(fm587.layout_problems(_sp, _fr) == [], 'O714: fiery holds the layout: %s' % fm587.layout_problems(_sp, _fr))
+for _d in ('south', 'north'):
+    for _f in (0, 7, 15):
+        _mg = gd.merge(*_fr[_d][_f])[..., 3] > 0
+        check(int((_mg ^ gd.mirrored(_mg))[:, 1:].sum()) <= 0.02 * int(_mg.sum()), 'O714: fiery %s %d is its own mirror picture' % (_d, _f))
+check(all(np.array_equal(gd.mirrored(_fr['east'][_f][_i]), _fr['west'][_f][_i]) for _f in range(F) for _i in (0, 1)), 'O714: west is east mirrored, both layers')
+check(all(not _fr[_d][_f][1][..., 3].any() for _d in ('east', 'west') for _f in range(F)), 'O590: from the side the pair lies behind the body')
+check(any(_fr['north'][_f][1][..., 3].any() for _f in range(F)) and not any(_fr['south'][_f][1][..., 3].any() for _f in range(F)),
+      'O583: south behind the body, north in front of it')
+_ys, _xs = np.nonzero(gd.merge(*_fr['east'][3])[..., 3] == 255)
+check(fm587.JOIN[1] - _ys.min() >= fm587.SIDE_RISE_MIN and (_ys >= gd.ANCHOR[1]).mean() <= 0.12, 'O714: the east wing rises over the join and does not hang')
+check(_xs.min() < fm587.JOIN[0] - 8, 'O714: the east wing trails behind the join')
+check(fm587.side_rise(_sp) in fm587.SIDE_RISES, 'O714: the rise of a side wing is one of the steps')
+# the strip turned to rise: the line to the tip is at the angle asked, the widths do not change
+_v = fm587.model_strip(_sp, 'south')
+for _rise in (58, 30):
+    _t = fm587.side_strip(_v, _rise)
+    _ang = math.degrees(math.atan2(-(_t[-1] - _t[1]), -(_t[-2] - _t[0])))
+    check(abs(_ang - _rise) < 0.5 and [_t[4 + 4 * _i] for _i in range(5)] == [float(_v[4 + 4 * _i]) for _i in range(5)],
+          'O714: a side wing is turned to rise %d degrees (got %.1f)' % (_rise, _ang))
+# a pair is mirrored in place by the canvas: the first drawing keeps a pixel both own, sparks and hazes follow
+_c = gd.Canvas((20, 20, 30))
+_pc = np.zeros((gd.SIZE, gd.SIZE), bool)
+_pc[30:40, 20:44] = True
+_c.piece(_pc, np.full((gd.SIZE, gd.SIZE), 2, np.int8), fm587.ramp5((200, 60, 60)))
+_c.spark(30.4, 20.2, (255, 255, 200), 1)
+_c.mirror_in()
+_ci = _c.finish()
+check(((_ci[..., 3] > 0) == gd.mirrored(_ci[..., 3] > 0)).all(), 'O714: Canvas.mirror_in gives a picture that is its own mirror picture')
+check(_ci[20, 30, 3] == 255 and _ci[20, 66, 3] == 255, 'O714: a spark comes with its mirror partner (column 30 and 66)')
+_c = gd.Canvas((20, 20, 30))
+_pc[:] = False
+_pc[30:40, 0:6] = True
+_c.piece(_pc, np.full((gd.SIZE, gd.SIZE), 2, np.int8), fm587.ramp5((200, 60, 60)))
+_c.mirror_in()
+check(not (_c.op[:, :2].any() or _c.op[:, -1:].any()), 'O714: a ring on column 1 and its partner on column 95 are dropped together: nothing on the cell border')
+# refused: the layout of before O714
+_old = {d: list(_fr[d]) for d in gd.DIRS}
+_old['west'] = [(_t, np.zeros_like(_t)) for _t in (np.roll(_old_side['west'], 0, axis=1),) for _f in range(F)]
+check(any('west is not east mirrored' in p for p in fm587.layout_problems(_sp, _old)), 'O714: a west view that is not east mirrored is refused')
+_old = {d: list(_fr[d]) for d in gd.DIRS}
+_old['south'] = [(np.roll(_b, 3, axis=1), np.roll(_f2, 3, axis=1)) for _b, _f2 in _fr['south']]
+check(any('not the same left and right' in p for p in fm587.layout_problems(_sp, _old)), 'O714: a pair 3 px off the anchor column is refused')
+_old = {d: list(_fr[d]) for d in gd.DIRS}
+_old['east'] = [(np.roll(np.ascontiguousarray(gd.merge(*_fr['south'][_f]).transpose(1, 0, 2)), 6, axis=0), np.zeros((gd.SIZE, gd.SIZE, 4), np.uint8)) for _f in range(F)]
+_old['west'] = [(gd.mirrored(_b), gd.mirrored(_f2)) for _b, _f2 in _old['east']]
+check(any('hangs' in p or 'does not rise' in p or 'trails the wrong way' in p for p in fm587.layout_problems(_sp, _old)),
+      'O714: the south picture turned on its side (the side view of before) is refused')
 
 # a mould holds a wing to its strip: nothing further than a pixel outside, `fill` leaves no hole
 for _mould in ('clip', 'fill'):
