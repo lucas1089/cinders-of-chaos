@@ -739,6 +739,32 @@ local spawned = mon({x = 31648, y = cellN, z = 6})
 function spawned:registerEvent(n) regs[#regs + 1] = n end
 eq(registered.onSpawn(spawned, {x = 31648, y = cellN, z = 6}, true, false), true, "onSpawn lets it spawn")
 eq(regs[1], "ChaosHallDisplayGuard", "a display monster gets the guard at its spawn")
+-- O713: display monsters face their teleport (the spawn direction defaults to north: a north cell showed its back)
+eq(H.displayFacing(cfg, {x = 31648, y = cellN, z = 6}), 2, "a north cell looks south, toward its teleport")
+eq(H.displayFacing(cfg, {x = 31648, y = cellS, z = 6}), 0, "a south cell looks north")
+eq(H.displayFacing(cfg, {x = 31648, y = 32256, z = 6}), nil, "no display spot: no facing")
+do
+	local turned = {}
+	local m = mon({x = 31648, y = cellN, z = 6})
+	m.dir = 0
+	function m:registerEvent() end
+	function m:getDirection() return self.dir end
+	function m:setDirection(d) self.dir = d; turned[#turned + 1] = d end
+	registered.onSpawn(m, m.pos, true, false)
+	eq(m.dir, 2, "onSpawn turns a north cell's monster south")
+	m.dir = 0 -- the engine turned it to a player
+	guard.onThink(m, 1000)
+	eq(m.dir, 2, "onThink turns it back")
+	local c = #turned
+	guard.onThink(m, 1000)
+	eq(#turned, c, "no turn when it already faces its teleport")
+	local south = mon({x = 31648, y = cellS, z = 6})
+	south.dir = 2
+	function south:getDirection() return self.dir end
+	function south:setDirection(d) self.dir = d end
+	guard.onThink(south, 1000)
+	eq(south.dir, 0, "a south cell's monster looks north")
+end
 regs = {}
 eq(registered.onSpawn(spawned, {x = 31648, y = 32256, z = 6}, true, false), true, "onSpawn elsewhere")
 eq(#regs, 0, "a monster elsewhere gets no guard")

@@ -127,12 +127,25 @@ function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
+-- a display monster keeps facing its teleport (O713): the engine turns an idle monster to a player near it, and
+-- an unset spawn direction is north; turn it back at every think
+function guard.onThink(creature, interval)
+	local d = creature and H.displayFacing(cfg, creature:getPosition())
+	if d and creature:getDirection() ~= d then
+		pcall(function() creature:setDirection(d) end)
+	end
+	return true
+end
 guard:register()
 
 local displaySpawn = EventCallback
 displaySpawn.onSpawn = function(self, position, startup, artificial)
 	if not self:getMaster() and HT.isDisplaySpot(position) then
 		self:registerEvent("ChaosHallDisplayGuard")
+		local d = H.displayFacing(cfg, position)
+		if d then
+			pcall(function() self:setDirection(d) end)
+		end
 		-- the level of its hunt, not its own (monster_levels.lua reads Chaos.spawnLevel after this, index 50)
 		local lv = cfg.enabled and H.displayLevel(H.entryForDisplay(cfg, HT.idx, position))
 		if lv and Chaos then

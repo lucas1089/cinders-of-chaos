@@ -25395,6 +25395,13 @@ floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and la
 languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
 places file's `front` or computed for both rows and the end row).
 
+### Display monsters face their teleport (O713)
+
+- The spawn block of a display monster had no `direction`, so the engine put it facing north. A monster in a north cell showed its back to the teleport and the player.
+- `install_content_areas.py` now writes `direction` on every display block: 2 (south) for a cell north of the corridor's middle row, 0 (north) for a cell south of it (`display_facing`). An old block without it is written again; a second run changes nothing.
+- `hunt_teleports.lua` turns a display monster to the same direction at its spawn and at every think (`ChaosHallDisplayGuard.onThink`, rule `ChaosHuntTeleportsCore.displayFacing`). This also holds the base server's own display blocks and a turn toward a player standing near.
+- Run the install step `contentareas` again on the VPS to write the attribute; the Lua part works at once.
+
 ## Quest hall showcase (O361) (`tools/patch_quest_showcase.py`, `tools/quest_showcase.json`, install step `questshowcase`)
 Owner 2026-11-02: "check that the quests give the same rewards as the showcases of the teleports"; "yes to all".
 An audit of the 16 quest alcoves on an installed server compared what each alcove shows with what its quest gives.
