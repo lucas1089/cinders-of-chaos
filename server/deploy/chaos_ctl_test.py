@@ -999,6 +999,14 @@ def test_admin_commands():
             f.write('private-repo: GitHub says 404 and no GitHub token is saved\n')
         r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
         check(r.returncode == 0 and 'hint:' not in r.stdout, 'update-log with a reason word adds no hint: ' + r.stdout)
+        with open(ulog, 'w') as f:
+            f.write('downloaded 340404123 bytes\nsha256 4041a2 ok\nRESULT ok\n')
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'hint:' not in r.stdout, 'update-log: a number that holds 404 adds no hint: ' + r.stdout)
+        with open(ulog, 'w') as f:
+            f.write('< HTTP/2 404\n')
+        r = run('update-log', extra={'CHAOS_UPDATE_LOG': ulog})
+        check(r.returncode == 0 and 'github-token-set' in r.stdout, 'update-log: HTTP/2 404 adds the hint: ' + r.stdout)
         check(run('update-log', 'x', extra={'CHAOS_UPDATE_LOG': ulog}).returncode != 0, 'update-log refuses a bad N')
 
         # areas-publish: the map inbox into CHAOS_DL_DIR/areas-TOKEN (a stub area_inbox.py), a token kept in a 600 file

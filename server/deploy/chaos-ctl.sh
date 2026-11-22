@@ -813,12 +813,13 @@ show_log() {
   text=$(tail -n "$n" "$file" 2>&1) || { printf '%s\n' "$text"; return 1; }
   printf '%s\n' "$text"
   case $text in
-    *private-repo:*|*token-refused:*|*no-access:*|*no-release:*) ;;
-    *404*|*"exit code: 22"*|*"curl: (22)"*)
-      echo "--"
-      echo "hint: GitHub answered 404. The repository is private: save the token with chaos-ctl.sh github-token-set (admin app: Definir token do GitHub), check it with github-token-status, then run the update again."
-      ;;
+    *private-repo:*|*token-refused:*|*no-access:*|*no-release:*) return 0 ;;
   esac
+  # a 404 only as an HTTP answer (curl 22, "error: 404", "HTTP/2 404", "404 Not Found"), never a number that holds 404
+  if printf '%s\n' "$text" | grep -qE 'exit code: 22|curl: \(22\)|error: 404([^0-9]|$)|HTTP/[0-9.]+ 404([^0-9]|$)|(^|[^0-9])404 Not Found'; then
+    echo "--"
+    echo "hint: GitHub answered 404. If the repository is private, save the token with chaos-ctl.sh github-token-set (admin app: Definir token do GitHub), check it with github-token-status, then run the update again. If it is public, the release or file named above is missing."
+  fi
 }
 
 # one remote.cmd line; the text is one line of printable characters (the engine checks it again)
