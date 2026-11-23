@@ -20,15 +20,17 @@ sys.path.insert(0, HERE)
 import numpy as np  # noqa: E402
 from PIL import Image  # noqa: E402
 import gen_pixellab_monsters as P  # noqa: E402
+import oblique_lean as L  # noqa: E402
 import gen_wst_outfits as W  # noqa: E402
 import gen_wst_outfits_test as WT  # noqa: E402
 from datspr import Dat, Spr  # noqa: E402
 from import_outfits import parse_body  # noqa: E402
 
 
-def figure(root, key, cell, box, idle=4, walk=8, bob=1, seed=1, soft=False, tag='aa'):
+def figure(root, key, cell, box, idle=4, walk=8, bob=1, seed=1, soft=False, tag='aa', lean=0.0):
     """root/key/{idle,walk}/{south,east,north,west}/NN.png: cell x cell pictures, a block of random colour in `box` (x, y, w, h) that moves
-    a little from picture to picture and differs from direction to direction; ids.json names a character id"""
+    a little from picture to picture and differs from direction to direction, leaning `lean` px a row (the game's angle, O728); ids.json
+    names a character id"""
     rng = np.random.default_rng(seed + sum(map(ord, key)))
     x, y, w, h = box
     for kind, n in (('idle', idle), ('walk', walk)):
@@ -49,6 +51,8 @@ def figure(root, key, cell, box, idle=4, walk=8, bob=1, seed=1, soft=False, tag=
                 a[top + h:top + h + 4, x + k + w - 5:x + k + w - 2, 3] = 255
                 if soft:
                     a[top, x + k:x + k + w, 3] = 100        # a soft top row: cut away
+                if lean:
+                    a = L.shear(a, lean, y + h + 4 + bob + 1)
                 Image.fromarray(a, 'RGBA').save(os.path.join(p, '%02d.png' % i))
     open(os.path.join(root, key, 'ids.json'), 'w').write('{"id": "%s000000-0000-4000-8000-000000000000"}' % tag)
     return os.path.join(root, key)
@@ -59,7 +63,8 @@ def spec(key, name, tier=1, role='roamer', fl=0):
 
 
 def row(key='a', new=3, **kw):
-    r = {'key': key, 'name': 'A', 'tier': '1', 'role': 'roamer', 'float': '0', 'new': str(new), 'tiles': '2x2', 'disp': '-16:0', 'idle': '4',
+    r = {'key': key, 'name': 'A', 'tier': '1', 'role': 'roamer', 'float': '0', 'new': str(new), 'tiles': '2x2', 'lean': '0.00', 'disp': '-16:0',
+         'idle': '4',
          'idle_ms': '300', 'walk': '8', 'walk_ms': '100', 'pixels': '1000', 'src': 'a' * 12, 'pl': 'b' * 8}
     r.update({k: str(v) for k, v in kw.items()})
     return r
@@ -75,7 +80,11 @@ def main():
     assert [int(r['tier']) for r in t].count(3) == 6 and [int(r['tier']) for r in t].count(4) == 5
     assert [r['key'] for r in t if r['float'] == '1'] == ['wisp', 'maw', 'bat', 'broodsac', 'veilwitch']
     assert {r['tiles'] for r in t} == {'2x2', '3x3'}, 'nothing is sampled down: a figure over 64 px is a 3x3 outfit'
-    assert [r['key'] for r in t if r['tiles'] == '2x2'] == ['imp', 'acolyte', 'arbalist', 'hound', 'wisp', 'crawler', 'penitent', 'maw', 'bat', 'broodsac']
+    # the built size: the hound and the bat grow to 3x3 for their shear (O728); the sheets stay as drawn; every redraw is 3x3
+    assert [r['key'] for r in t if r['tiles'] == '2x2'] == ['wisp', 'crawler', 'maw', 'broodsac']
+    assert P.REDRAW_PENDING == () and all(r['tiles'] == '3x3' for r in t if r['key'] not in P.SHEAR), 'every oblique redraw is in (O728)'
+    assert {r['key'] for r in t if r['lean'] != '0.00'} == set(P.SHEAR), 'every key of SHEAR is sheared (none leaned already)'
+    assert all(P.read_sheet(r)[1][('idle', 0)][0].shape[0] == 64 for r in t if r['key'] in ('hound', 'bat'))
     assert all(r['walk'] == '8' and r['walk_ms'] == '100' for r in t) and [r['idle'] for r in t].count('15') == 1
     assert all(int(r['idle_ms']) == P.idle_ms_for(int(r['idle'])) for r in t) and P.idle_ms_for(4) == 300 and P.idle_ms_for(8) == 200 and P.idle_ms_for(15) == 100
     assert set(P.read_sums()) == {r['new'] for r in t} and all(len(v) == 64 for v in P.read_sums().values())
@@ -93,6 +102,7 @@ def main():
     # the standing point: the O585 point on every sheet, as the numbers of the notes say
     for r in t:
         _a, cells = P.read_sheet(r)
+        r, cells, _p = P.built(r, cells)
         m = P.measure_cells(r, cells)
         assert abs(m['stand'][0] - P.TX) <= 1 and abs(m['stand'][1] - m['want_y']) <= 1, (r['key'], m)
         assert m['dirs'] == 4 and m['idle_distinct'] >= 2 and m['walk_distinct'] >= 4
@@ -121,7 +131,10 @@ def main():
             ([row('a', 3, tier=5), row('b', 4)], 'tier 5'),
             ([row('a', 3, role='boss'), row('b', 4)], 'role boss'),
             ([row('a', 3, float=2), row('b', 4)], 'float 2'),
-            ([row('a', 3, name=' '), row('b', 4)], 'no name')):
+            ([row('a', 3, name=' '), row('b', 4)], 'no name'),
+            ([row('a', 3, lean='0.25'), row('b', 4)], 'lean 0.25'),
+            ([row('hound', 3, lean='0.10'), row('b', 4)], 'lean 0.10'),
+            ([row('a', 3, lean=''), row('b', 4)], 'lean ')):
         p = P.problems(bad, sums, first=3, spec=None)
         assert any(text in x for x in p), (text, p)
     assert any('name other outfits' in x for x in P.problems(good, {'3': 'x'}, first=3, spec=None))
@@ -239,6 +252,8 @@ def main():
                                                 spec('tall', 'Tall One', 4, 'hunter'), spec('floaty', 'Floaty One', 2, 'sniper', 1)),
                                                os.path.join(tmp, 'sheets'), os.path.join(tmp, 'm.csv'), os.path.join(tmp, 'm.sums'))
         P.KEYS = tuple(s[0] for s in P.SPEC)
+        # the synthetic blocks stand straight: the lean rule is tested on its own below (LOW_BODY with no floor lets them through)
+        P.SHEAR, P.REDRAW_PENDING, P.LOW_BODY = (), (), {k: -99.0 for k in P.KEYS}
         assert P.art([src], True) == []
         t2 = P.rows()
         assert [r['key'] for r in t2] == list(P.KEYS) and [r['new'] for r in t2] == ['3531', '3532', '3533', '3534', '3535']
@@ -337,6 +352,83 @@ def main():
         P.build(odat, ospr, out2, table=t3, first=3, log=lambda *_: None)
         assert open(paths[0], 'rb').read() == open(os.path.join(out2, 'Tibia.dat'), 'rb').read()
         assert open(paths[1], 'rb').read() == open(os.path.join(out2, 'Tibia.spr'), 'rb').read()
+
+        # ---- O728: the shear of a SHEAR key when built, the lean rule, the guard, the in-place rewrite of a pair, the old form in live
+        P.LOW_BODY = {k: -99.0 for k in P.KEYS if k != 'tall'}
+        rt = t3[3]                                          # the tall one: 24 x 88 px, upright
+        _a, cells = P.read_sheet(rt)
+        assert any('the game\'s angle' in x for x in P.lean_rule(rt, cells)), 'an upright look fails the lean rule'
+        P.REDRAW_PENDING = ('tall',)
+        assert P.lean_rule(rt, cells) == [], 'a pending key waits'
+        P.REDRAW_PENDING, P.SHEAR = (), ('tall',)
+        r2, c2, p = P.built(rt, cells)
+        ln = L.leans(c2)
+        assert p == [] and r2['lean'] == '0.25' and L.LEAN[0] <= ln[2] <= L.LEAN[1], (p, r2['lean'], ln)
+        assert sum(P.opaque(a) for v in c2.values() for a in v) == int(rt['pixels']), 'the shear keeps every pixel'
+        assert P.problems([dict(r2, new='3')], {'3': 'x'}, first=3, spec=None) == []
+        lean_cells = {k: [L.shear(a, 0.3) for a in v] for k, v in cells.items()}
+        assert P.leaned(rt, lean_cells)[0]['lean'] == '0.00', 'the guard: a sheet that leans already is left as drawn'
+        P.REDRAW_PENDING = ('tall',)
+        assert any('REDRAW_PENDING' in x for x in P.lean_rule(r2, c2)), 'a pending key that leans now is named'
+        P.REDRAW_PENDING = ()
+        # the pair built before (upright) is the old form; the table now builds the tall one sheared
+        old_csv, old_sums = os.path.join(tmp, 'old.csv'), os.path.join(tmp, 'old.sums')
+        open(old_csv, 'w', encoding='utf-8', newline='').write(P.table_text([dict(r, lean='0.00') for r in t3]))
+        open(old_sums, 'w', encoding='utf-8').write(P.sums_text(sums))
+        P.OLD_TABLE, P.OLD_SUMS = old_csv, old_sums
+        t4 = [P.built(r, P.read_sheet(r)[1])[0] for r in t3]
+        sums4 = {r['new']: P.digest_of(r, P.built(r, P.read_sheet(r)[1])[1]) for r in t3}
+        assert sums4['6'] != sums['6'] and all(sums4[k] == sums[k] for k in sums if k != '6')
+        assert P.live(*paths, table=t4, sums=sums4, first=3, accept_old=True, **quiet) == [], 'the old form is let through'
+        assert P.live(*paths, table=t4, sums=sums4, first=3, accept_old=False, **quiet), 'and held once the pair is meant to carry the lean'
+        rel = os.path.join(tmp, 'relook')
+        assert P.relook(*paths, rel, table=t4, sums=sums4, **quiet) == [6]
+        rpaths = (os.path.join(rel, 'Tibia.dat'), os.path.join(rel, 'Tibia.spr'))
+        assert P.live(*rpaths, table=t4, sums=sums4, first=3, accept_old=False, **quiet) == []
+        rd, od = Dat(rpaths[0]), Dat(paths[0])
+        assert all(rd.data[od.outfits[i].raw[0]:od.outfits[i].raw[1]] == od.data[od.outfits[i].raw[0]:od.outfits[i].raw[1]]
+                   for i in range(5)), 'only outfit 6 changed'
+        assert P.relook(*rpaths, os.path.join(tmp, 'relook2'), table=t4, sums=sums4, **quiet) == [] and \
+            not os.path.exists(os.path.join(tmp, 'relook2')), 'a second run writes nothing'
+        open(old_sums, 'w', encoding='utf-8').write(P.sums_text({**sums, '4': '0' * 64}))
+        try:
+            P.relook(*paths, os.path.join(tmp, 'relook3'), table=t4, sums={**sums4, '4': '0' * 64}, **quiet)
+        except SystemExit as e:
+            assert 'neither' in str(e), e
+        else:
+            raise AssertionError('relook took an outfit of another pair')
+
+        # ---- O728: an oblique PixelLab download (rotations, a v3 walk of 9 frames with the standing frame_000, metadata.json)
+        drop = os.path.join(tmp, 'drop', 'tall', 'Idle')
+        rng = np.random.default_rng(7)
+        for k, d in enumerate(('south', 'east', 'north', 'west')):
+            os.makedirs(os.path.join(drop, 'rotations'), exist_ok=True)
+            os.makedirs(os.path.join(drop, 'animations', 'walkv3-%d' % k, d))
+            for i in range(-1, 9):
+                a = np.zeros((80, 80, 4), np.uint8)
+                a[20:60, 30 + k:44 + k, :3] = rng.integers(40, 250, (40, 14, 3)) if i < 0 else 100 + 10 * k
+                a[20:60, 30 + k:44 + k, 3] = 255
+                a[60:66, 32 + k + (i % 4):35 + k + (i % 4), :3] = 70
+                a[60:66, 32 + k + (i % 4):35 + k + (i % 4), 3] = 255
+                a[60:66, 40 + k - (i % 4):43 + k - (i % 4), :3] = 70
+                a[60:66, 40 + k - (i % 4):43 + k - (i % 4), 3] = 255
+                a = L.shear(a, 0.45, 65)
+                if i < 0:
+                    Image.fromarray(a, 'RGBA').save(os.path.join(drop, 'rotations', d + '.png'))
+                else:
+                    a = np.roll(a, 2, axis=1)                   # drawn 2 px off: the import puts it back on the feet
+                    Image.fromarray(a, 'RGBA').save(os.path.join(drop, 'animations', 'walkv3-%d' % k, d, 'frame_%03d.png' % i))
+        open(os.path.join(tmp, 'drop', 'tall', 'metadata.json'), 'w').write(
+            '{"states": [{"character": {"id": "abcdef12-0000-4000-8000-000000000000"}}]}')
+        dr = L.read_drop(os.path.join(tmp, 'drop', 'tall'))
+        assert [len(dr['walk'][d]) for d in L.DROP_DIRS] == [8] * 4 and [len(dr['idle'][d]) for d in L.DROP_DIRS] == [4] * 4
+        assert len({a.tobytes() for a in dr['idle']['south']}) >= 2, 'the breath moves'
+        assert all(abs(L.feet_point(a)[0] - L.feet_point(dr['stand'][d])[0]) <= 1.5 for d in L.DROP_DIRS for a in dr['walk'][d]), \
+            'the walk is back on the standing feet'
+        r5, pl5, _f = P.make_drop(P.SPEC[3], 3534, os.path.join(tmp, 'drop', 'tall'))
+        assert (r5['tiles'], r5['idle'], r5['idle_ms'], r5['walk'], r5['lean'], r5['pl']) == ('3x3', '4', '300', '8', '0.00', 'abcdef12'), r5
+        P.SHEAR = ()
+        assert P.sheet_problems(r5, pl5) == [] and P.lean_rule(r5, pl5) == [], (P.sheet_problems(r5, pl5), L.lean_text(pl5))
     assert P.main(['build', 'a', 'b']) == 2 and P.main(['art']) == 2 and P.main(['nothing']) == 2
     print('gen_pixellab_monsters_test: ok')
 

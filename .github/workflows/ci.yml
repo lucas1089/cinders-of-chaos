@@ -157,6 +157,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_malgrath_boss.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_malgrath_boss_test.py
           # the 24 PixelLab monsters 3531-3554 (O640, joins pair 74): our own PixelLab art, committed as placed sheets (art_import/pixellab_monsters); table, sums, sheets (hard alpha, four directions, idle and walk that move, the O585 standing point), the monster map against the pool; the test places synthetic downloads and builds / checks a synthetic pair
+          # the game's angle for generated monster art (O728): the shear, the guard, the lean rule, the drop reader
+          /tmp/fxenv/bin/python -I client/tools/sprites/oblique_lean_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pixellab_monsters_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pixellab_monsters.py check
           # eleven hunt monster outfits 3561-3571 (O726, joins pair 81): nine from our PixelLab redraws (art_import/drive_redraw), two from character packs (table and sums only, the pack art is never in git), the monster map; the test scales synthetic packs, imports a synthetic redraw drop and builds / checks a synthetic pair

@@ -74,7 +74,7 @@ def figure(seed, di, i, soft=False):
         a[70:92, lx:lx + 6, 3] = 255
     if soft:
         a[10, x, 3] = 128
-    return a
+    return D.L.shear(a, 0.3, 91)        # drawn at the game's angle (O728)
 
 
 def stand(folder, soft=False):
@@ -239,6 +239,44 @@ def main():
             check(all(set(np.unique(a[..., 3]).tolist()) <= {0, 255} for lst in placed.values() for a in lst), 'hard alpha placed')
         sums = D.pack_sums(ms)
         check(D.pack_sums(D.measured([src], want, first=3, redraw=rroot)) == sums, 'the same packs give the same sums')
+        # O728: the packs (upright blocks) are sheared, the redraw (drawn leaning) is not; every look leans in the band
+        check(all(D.L.K_MIN <= float(r['lean']) <= D.L.K for r in (r0, r1, r2)) and r3['lean'] == '0.00',
+              'lean column %s' % [r['lean'] for r, _p in ms])
+        for r, placed in ms:
+            check(D.L.lean_ok(placed), '%s leans %s' % (r['key'], D.L.lean_text(placed)))
+        sh_pixels = {r['key']: int(r['pixels']) for r, _p in ms}
+        check(all(v > 0 for v in sh_pixels.values()), 'pixels counted')
+        r_up, p_up = ms[3]
+        flat = {k: [np.ascontiguousarray(D.L.shear(a, -0.3)) for a in v] for k, v in p_up.items()}
+        check(any('game\'s angle' in x for x in D.frame_problems(dict(r_up, key='ghost'), flat)), 'an upright redraw fails the lean rule')
+        keep = D.UPRIGHT_PENDING
+        D.UPRIGHT_PENDING = ('seraph',)
+        check(not any('game\'s angle' in x for x in D.frame_problems(dict(r_up, key='seraph'), flat)), 'a pending key waits')
+        check(any('UPRIGHT_PENDING' in x for x in D.frame_problems(dict(r_up, key='seraph'), p_up)), 'a pending key that leans is named')
+        D.UPRIGHT_PENDING = keep
+        check(D.UPRIGHT_PENDING == (), 'every oblique redraw is in (O728)')
+        for bad, text in ((dict(r3, lean='0.25'), 'never sheared'), (dict(r0, lean='0.30'), 'lean 0.30'), (dict(r0, lean='x'), 'lean x')):
+            p = D.problems([dict(bad, new='3561')], {'3561': 'x'}, want=None)
+            check(any(text in x for x in p), 'lean rule %s: %s' % (text, p))
+        # O728: an oblique PixelLab download imported as a redraw (rotations, a v3 walk of 9 with the standing frame_000)
+        pl_drop = os.path.join(tmp, 'pldrop', 'plague', 'Idle')
+        for di, d in enumerate(D.DIRS):
+            os.makedirs(os.path.join(pl_drop, 'rotations'), exist_ok=True)
+            os.makedirs(os.path.join(pl_drop, 'animations', 'walkv3-%d' % di, d))
+            Image.fromarray(figure(4, di, 0)[8:88, 8:88], 'RGBA').save(os.path.join(pl_drop, 'rotations', d + '.png'))
+            for i in range(9):
+                Image.fromarray(figure(5, di, i)[8:88, 8:88], 'RGBA').save(
+                    os.path.join(pl_drop, 'animations', 'walkv3-%d' % di, d, 'frame_%03d.png' % i))
+        droot = os.path.join(tmp, 'droproot')
+        check(D.drop_import(os.path.join(tmp, 'pldrop'), root=droot, log=lambda *_: None) == ['plaguemedic'], 'the drop name maps to its key')
+        got = sorted(os.listdir(os.path.join(droot, 'plaguemedic')))
+        check(got == sorted(D.STANDING + ('idle', 'walk')), 'standing pictures, idle and walk written: %s' % got)
+        check([len(os.listdir(os.path.join(droot, 'plaguemedic', g, 'south'))) for g in ('idle', 'walk')] == [4, 8],
+              'a breath of 4, a walk of 8 (frame_000 is the standing reference)')
+        rp, pp = D.measure(D.redraw_character(os.path.join(droot, 'plaguemedic')), 'plaguemedic', 9, 'redraw')
+        check((rp['idle'], rp['idle_ms'], rp['walk'], rp['lean'], rp['tiles']) == ('4', '300', '8', '0.00', '3x3'), 'the drop row: %s' % rp)
+        check(D.frame_problems(rp, pp) == [], 'the drop passes every rule: %s' % D.frame_problems(rp, pp))
+        check(D.redraw_built_problems() == [], 'the committed redraws build as the table: %s' % D.redraw_built_problems())
 
         # ---- the pair
         odat, ospr = WT.input_pair(tmp)

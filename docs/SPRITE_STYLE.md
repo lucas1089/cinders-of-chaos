@@ -206,6 +206,24 @@ The layout `import_art_things.py` reads (its docstring is the reference; `compos
 - The 64 px owner monsters use 16 to 37 colours a frame and a dark rim (84-98% under luma 24) like the items; the
   two ice looks have a dark blue rim instead. The 4 x 4 lions are painted with thousands of colours; do not copy that for new pixel art.
 
+### Lean of generated art (O728)
+
+The game draws a creature leaning: its feet sit right of its head (the view above). Generated monster art must hold it.
+
+- **Measure**: `oblique_lean.lean`, the centre of the bottom quarter of the figure's box minus the centre of its top
+  quarter, in px (gen_class_redraw.lean). Positive is the game's way.
+- **Rule**: south or east of the standing picture leans **9 to 26 px**. The O618 class looks read 9 to 22. The
+  oblique PixelLab drops read 15 to 24 (west of the plague medic 23.6), so the top is 26.
+- **How**: draw man-shaped figures at the angle (PixelLab view `oblique`, the O618 recipe), never shear them.
+  Beasts and things keep their art and are sheared by `oblique_lean.py`: each row moves left by
+  floor(k (feet - y) + 0.5) px, k 0.25, lowered a hundredth while a pixel would leave the canvas, never under 0.15.
+  The feet line is the lowest row of the standing picture of each direction. Art that leans 9 px or more already
+  is left as drawn.
+- **Low bodies**: a crab, a bat or a wisp is short, so the same k leans it less. They keep a floor (`LOW_BODY`, 5 to
+  8.5 px). Stock crabs, spiders and wolves read 0 to 7 px.
+- `gen_pixellab_monsters.py check` and `gen_drive_monsters.py check` hold the rule. A key whose oblique drop is not in yet
+  may wait, named TEMPORARY in `REDRAW_PENDING` / `UPRIGHT_PENDING` (both empty since 2026-11-23).
+
 ### Palette pass on donor creatures (pair 40)
 
 The donor creature looks and the looks made from them (rift rank variants, theme recolours) were painted with
