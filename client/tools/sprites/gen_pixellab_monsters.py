@@ -9,6 +9,9 @@
     python3 -I gen_pixellab_monsters.py build DAT SPR OUT_DIR         # a pair with 3,530 outfits in, 24 more out (OUT_DIR must not exist)
     python3 -I gen_pixellab_monsters.py live DAT SPR                  # the pair holds every outfit at its id, as the sheets and sums say
     python3 -I gen_pixellab_monsters.py preview OUT_DIR --dat D --spr S   # monsters_ingame.mp4 drawn from the pair (never committed; ffmpeg)
+    python3 -I gen_pixellab_monsters.py table [--write]               # O728: the table from the committed sheets (shear, lean, disp, tiles)
+    python3 -I gen_pixellab_monsters.py drop-import DIR [KEY...]      # O728: oblique PixelLab drops DIR/<key>/Idle/... -> a 3x3 sheet
+    python3 -I gen_pixellab_monsters.py relook DAT SPR OUT_DIR        # O728: rewrite outfits 3531-3554 in place in a built pair (74 form -> now)
 
 Owner 2026-11-18 (translated): the 24 original monsters of O629 and O630 are approved ("Aprovados"). They are built into pair 74 and
 given to hunt monsters (server/README.md "PixelLab monsters (O640)"). The art is ours: PixelLab characters and objects (docs/CREDITS.md,
@@ -37,6 +40,13 @@ Sheet. N x N tile cells (32 N px), columns north, east, south, west (engine orde
 Table art_import/pixellab_monsters.csv (one row per outfit, from 3531 in the order of KEYS), art_import/pixellab_monsters.sums (the
 digest of every outfit: shapes, animator, every sprite slot). The outfits go after the 3,530 outfits of pair 74's Malgrath (O637,
 gen_malgrath_boss.py): this step needs exactly those in its input and refuses a pair that ends at 3529.
+Angle (O728, owner 2026-11-23 "Refaça todos"). The O640 sheets were drawn upright; the game draws a creature leaning (its feet right
+of its head). SHEAR keys (beasts and things) are sheared at build by oblique_lean.py (k 0.25, lower while a pixel would leave the
+canvas; a canvas that cannot hold it grows a tile up and left), column `lean`; a sheet that leans 9 px or more already is left as drawn.
+The man-shaped keys are drawn again at the angle (`drop-import`, lean 0.00); REDRAW_PENDING names those whose drop is not in yet
+(TEMPORARY; empty since 2026-11-23). The rule: 9-26 px in south or east, LOW_BODY keeps a floor. The pair 74 form of every outfit (pixellab_monsters.pair74.csv
+and .sums) is still taken by `live` while client_pair.PAIR_ASSETS is under PAIR_LEAN; `relook` turns a built pair into the new form
+in place (new sprite records appended, every other byte kept).
 Needs numpy and Pillow (the fx venv of CI); `check` also needs them (it reads the sheets). `preview` needs ffmpeg.
 """
 import csv
@@ -53,16 +63,23 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import gen_wst_outfits as W  # noqa: E402
 import gen_creature_outfits as G  # noqa: E402
+import oblique_lean as L  # noqa: E402
 
 ART = os.path.join(HERE, 'art_import')
 SHEETS = os.path.join(ART, 'pixellab_monsters')
 TABLE = os.path.join(ART, 'pixellab_monsters.csv')
 SUMS = os.path.join(ART, 'pixellab_monsters.sums')
+# O728: the table and the sums as pair 74 built the outfits (upright), the form `relook` rewrites in a pair and `live` accepts while
+# client_pair.PAIR_ASSETS is under PAIR_LEAN
+OLD_TABLE = os.path.join(ART, 'pixellab_monsters.pair74.csv')
+OLD_SUMS = os.path.join(ART, 'pixellab_monsters.pair74.sums')
+PAIR_LEAN = 81
 REPO = W.REPO
 PICKS = W.PICKS
 MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_pixellab_looks.csv')
 MAP_HEADER = ['monster', 'look', 'new_look']
-HEADER = ['key', 'name', 'tier', 'role', 'float', 'new', 'tiles', 'disp', 'idle', 'idle_ms', 'walk', 'walk_ms', 'pixels', 'src', 'pl']
+HEADER = ['key', 'name', 'tier', 'role', 'float', 'new', 'tiles', 'lean', 'disp', 'idle', 'idle_ms', 'walk', 'walk_ms', 'pixels', 'src',
+          'pl']
 FAMILY = 'pixellab'
 PAIR = 74
 OUTFITS_BEFORE = 3530               # pair 73's 3,529 and Malgrath (O637)
@@ -97,6 +114,17 @@ SPEC = (
     ('broodqueen', 'Ashen Brood Queen', 4, 'hunter', 0), ('veilwitch', 'Veil Witch', 4, 'sniper', 1),
 )
 KEYS = tuple(s[0] for s in SPEC)
+# O728, the game's angle (owner 2026-11-23: "Refaça todos"). SHEAR: things that are not man-shaped keep their art and are sheared by
+# oblique_lean when the outfit is built from the sheet (the sheet stays as drawn; column `lean` holds the k, `disp` the displacement of
+# the built outfit); a sheet that leans already is left as drawn. The others are drawn again in PixelLab's oblique view (the O618
+# recipe) and come in by `drop-import`. REDRAW_PENDING (TEMPORARY): the keys whose oblique drawing is not in yet; the lean rule waits
+# for them, and a key here that leans already is named.
+SHEAR = ('hound', 'wisp', 'crawler', 'maw', 'bat', 'bloat', 'broodsac', 'broodqueen', 'ravager')
+REDRAW_PENDING = ()                 # all 15 oblique drawings are in (2026-11-23)
+# small floating things the band does not fit (the lean measure of a short round body: 3/4 of its height times k is under 9 px): the
+# shear is applied all the same, the band is not asked; key -> the least lean in south or east it must keep (measured 2026-11-23)
+LOW_BODY = {'wisp': 5.0, 'bat': 7.0, 'broodsac': 8.5}
+DROP_TILES = 3                      # an oblique drawing is placed on a 3x3 outfit (coordinator 2026-11-23), more only when it needs it
 
 
 def rows(path=None):
@@ -172,6 +200,9 @@ def problems(table=None, sums=None, first=FIRST_NEW, spec=SPEC):
             out.append('%s: pl %s is not 8 hex digits' % (k, r['pl']))
         if not (r['pixels'] or '').isdigit() or int(r['pixels']) < 1:
             out.append('%s: pixels %s is not the count of opaque pixels of the outfit' % (k, r['pixels']))
+        ln = r.get('lean') or ''
+        if not re.fullmatch(r'0\.\d\d', ln) or (ln != '0.00' and (k not in SHEAR or not L.K_MIN <= float(ln) <= L.K)):
+            out.append('%s: lean %s, 0.00 (as drawn) or, for a key of SHEAR, a shear k of %.2f to %.2f (O728)' % (k, ln, L.K_MIN, L.K))
     if set(s) != {r['new'] for r in t}:
         out.append('pixellab_monsters.sums and the table name other outfits (%s)' % ', '.join(sorted(set(s) ^ {r['new'] for r in t})))
     return out
@@ -220,27 +251,66 @@ def near(centre):
 def fit(frames, floating):
     """(tiles, (dx, dy), (shift x, shift y)) of a figure: the smallest canvas of whole tiles that holds its box, the displacement nearest
     (-(16 N - 16), 0) that lets the standing point land on the tile's (TX, ty) after one whole pixel shift of every picture"""
+    for n in range(MIN_TILES, MAX_TILES + 1):
+        try:
+            return fit_at(frames, floating, n)
+        except ValueError:
+            continue
+    x0, y0, x1, y1 = union_box(frames)
+    raise ValueError('a figure of %dx%d px does not fit a canvas of %d tiles' % (x1 - x0 + 1, y1 - y0 + 1, MAX_TILES))
+
+
+def fit_at(frames, floating, n):
+    """fit() on a canvas of exactly n tiles: (n, (dx, dy), (shift x, shift y)); ValueError when the figure does not fit it"""
     x0, y0, x1, y1 = union_box(frames)
     sx, sy = stand_of(frames, floating)
-    for n in range(MIN_TILES, MAX_TILES + 1):
-        c = 32 * n
-        if x1 - x0 + 1 > c or y1 - y0 + 1 > c:
+    c = 32 * n
+    if x1 - x0 + 1 > c or y1 - y0 + 1 > c:
+        raise ValueError('a figure of %dx%d px is over %d px' % (x1 - x0 + 1, y1 - y0 + 1, c))
+    ty = FLOAT_LOW if floating else min(TY[n], 31 + HANG - (y1 - sy))
+    for dx in near(-(16 * n - 16)):
+        shx = int(math.floor(c - 32 + dx + TX - sx + 0.5))
+        if x0 + shx >= 0 and x1 + shx <= c - 1:
+            break
+    else:
+        raise ValueError('no displacement x holds the figure')
+    for dy in near(0):
+        shy = int(math.floor(c - 32 + dy + ty - sy + 0.5))
+        if y0 + shy >= 0 and y1 + shy <= c - 1:
+            break
+    else:
+        raise ValueError('no displacement y holds the figure')
+    return n, (dx, dy), (shx, shy)
+
+
+def leaned(r, cells):
+    """(row, cells) of the outfit as built from a sheet's cells (O728): a key of SHEAR is sheared by oblique_lean on its canvas (k from
+    L.K down while a pixel would leave it or the standing point cannot land on the tile of the same size) and placed again on the O585
+    point; `lean` and `disp` of the row are the built outfit's. Any other key, or a sheet that leans already, is built as drawn
+    (lean 0.00). When no k from L.K to L.K_MIN holds the figure on its canvas, the canvas grows by a tile (`tiles` of the row is the
+    built outfit's then) and k starts again from L.K. ValueError when no canvas up to MAX_TILES holds it."""
+    import numpy as np
+    n0, fl = cells[('idle', 0)][0].shape[0] // 32, r['float'] == '1'
+    if r['key'] not in SHEAR or L.leaning(cells):
+        return dict(r, lean='0.00', tiles='%dx%d' % (n0, n0)), cells
+    for n in range(n0, MAX_TILES + 1):
+        got = []
+
+        def fits(fr):
+            try:
+                got[:] = [fit_at(fr, fl, n)]
+                return True
+            except ValueError:
+                return False
+        grow = 32 * (n - n0)            # a larger canvas grows up and left: the creature's tile stays the last one
+        src = {kk: [L.pad(np.pad(a, ((grow, 0), (0, 0), (0, 0))), grow) for a in lst] for kk, lst in cells.items()}
+        try:
+            sh, k = L.lean_frames(src, fits=fits)
+        except L.LostPixel:
             continue
-        ty = FLOAT_LOW if floating else min(TY[n], 31 + HANG - (y1 - sy))
-        for dx in near(-(16 * n - 16)):
-            shx = int(math.floor(c - 32 + dx + TX - sx + 0.5))
-            if x0 + shx >= 0 and x1 + shx <= c - 1:
-                break
-        else:
-            continue
-        for dy in near(0):
-            shy = int(math.floor(c - 32 + dy + ty - sy + 0.5))
-            if y0 + shy >= 0 and y1 + shy <= c - 1:
-                break
-        else:
-            continue
-        return n, (dx, dy), (shx, shy)
-    raise ValueError('a figure of %dx%d px does not fit a canvas of %d tiles' % (x1 - x0 + 1, y1 - y0 + 1, MAX_TILES))
+        _n, disp, shift = got[0]
+        return dict(r, lean='%.2f' % k, disp='%d:%d' % disp, tiles='%dx%d' % (n, n)), place_checked(sh, n, shift)
+    raise ValueError('no k from %.2f down to %.2f holds the sheared figure on a canvas of %d to %d tiles' % (L.K, L.K_MIN, n0, MAX_TILES))
 
 
 def place_checked(frames, n, shift):
@@ -321,10 +391,10 @@ def read_sheet(r, root=None):
     import numpy as np
     from PIL import Image
     a = np.array(Image.open(sheet_path(r['key'], root)).convert('RGBA'))
-    n, ni, nw = tiles_of_text(r['tiles']), int(r['idle']), int(r['walk'])
-    if a.shape != ((ni + nw) * 32 * n, 4 * 32 * n, 4):
-        raise SystemExit('%s: sheet is %s, %d x %d tiles of %d + %d pictures are %s' % (
-            r['key'], a.shape, n, n, ni, nw, ((ni + nw) * 32 * n, 4 * 32 * n, 4)))
+    # the sheet's own size (the built outfit of a sheared key may be a tile larger: leaned(), the table's `tiles`)
+    n, ni, nw = a.shape[1] // 128, int(r['idle']), int(r['walk'])
+    if n < MIN_TILES or a.shape != ((ni + nw) * 32 * n, 4 * 32 * n, 4):
+        raise SystemExit('%s: sheet is %s, not N x N tiles of %d + %d pictures (%d px a cell)' % (r['key'], a.shape, ni, nw, 32 * n))
     return a, cells_of(a, n, ni, nw)
 
 
@@ -546,34 +616,69 @@ def make(spec, first_row, srcs):
     placed = place_checked(frames, n, shift)
     ni, nw = len(frames[('idle', 0)]), len(frames[('walk', 0)])
     r = {'key': key, 'name': name, 'tier': str(tier), 'role': role, 'float': str(fl), 'new': str(first_row), 'tiles': '%dx%d' % (n, n),
-         'disp': '%d:%d' % disp, 'idle': str(ni), 'idle_ms': str(idle_ms_for(ni)), 'walk': str(nw), 'walk_ms': str(WALK_MS),
-         'pixels': str(sum(opaque(a) for lst in placed.values() for a in lst)), 'src': '0' * 12, 'pl': pl_id(path)}
+         'lean': '0.00', 'disp': '%d:%d' % disp, 'idle': str(ni), 'idle_ms': str(idle_ms_for(ni)), 'walk': str(nw),
+         'walk_ms': str(WALK_MS), 'pixels': str(sum(opaque(a) for lst in placed.values() for a in lst)), 'src': '0' * 12, 'pl': pl_id(path)}
     if int(r['pixels']) != src_px:
         raise SystemExit('%s: %s opaque pixels placed, %d in the download: a pixel was lost' % (key, r['pixels'], src_px))
     return r, placed, frames
 
 
-def art(srcs, write, only=()):
+def make_drop(spec, first_row, path):
+    """(table row, cells, frames) of a SPEC entry from a PixelLab oblique download (oblique_lean.read_drop: rotations, the v3 walk of 8,
+    a breath of 4 made here), placed on a DROP_TILES outfit (a larger one only when it does not fit)"""
+    key, name, tier, role, fl = spec
+    try:
+        d = L.read_drop(path)
+    except ValueError as e:
+        raise SystemExit('%s: %s' % (key, e))
+    frames = L.drop_frames(d)
+    src_px = sum(opaque(a) for lst in frames.values() for a in lst)
+    try:
+        n, disp, shift = fit_at(frames, bool(fl), DROP_TILES)
+    except ValueError:
+        n, disp, shift = fit(frames, bool(fl))
+    placed = place_checked(frames, n, shift)
+    ni, nw = len(frames[('idle', 0)]), len(frames[('walk', 0)])
+    pl = (d['id'] or '').replace('-', '')[:8]
+    if not re.fullmatch(r'[0-9a-f]{8}', pl):
+        raise SystemExit('%s: the download names no PixelLab character id (metadata.json)' % key)
+    r = {'key': key, 'name': name, 'tier': str(tier), 'role': role, 'float': str(fl), 'new': str(first_row), 'tiles': '%dx%d' % (n, n),
+         'lean': '0.00', 'disp': '%d:%d' % disp, 'idle': str(ni), 'idle_ms': str(idle_ms_for(ni)), 'walk': str(nw), 'walk_ms': str(WALK_MS),
+         'pixels': str(sum(opaque(a) for lst in placed.values() for a in lst)), 'src': '0' * 12, 'pl': pl}
+    if int(r['pixels']) != src_px:
+        raise SystemExit('%s: %s opaque pixels placed, %d in the download: a pixel was lost' % (key, r['pixels'], src_px))
+    return r, placed, frames
+
+
+def art(srcs, write, only=(), drop=None):
+    """the sheets, table and sums from the PixelLab downloads under `srcs` (the O640 layout) or, with `drop`, from the oblique
+    downloads DROP/KEY (O728, make_drop); `only`: these keys, the other rows kept"""
     from PIL import Image
     table, sums, bad = [], {}, []
     old = {r['key']: r for r in rows()} if os.path.exists(TABLE) else {}
+    old_sums = read_sums() if os.path.exists(SUMS) else {}
     for i, spec in enumerate(SPEC):
         if only and spec[0] not in only:
             if spec[0] in old:
                 table.append(old[spec[0]])
+                if old[spec[0]]['new'] in old_sums:
+                    sums[old[spec[0]]['new']] = old_sums[old[spec[0]]['new']]
             continue
-        r, placed, frames = make(spec, FIRST_NEW + i, srcs)
+        if drop:
+            r, placed, frames = make_drop(spec, FIRST_NEW + i, os.path.join(drop, spec[0]))
+        else:
+            r, placed, frames = make(spec, FIRST_NEW + i, srcs)
         sheet = sheet_of(placed, tiles_of_text(r['tiles']), int(r['idle']), int(r['walk']))
         os.makedirs(SHEETS, exist_ok=True)
         tmp = os.path.join(SHEETS, '.tmp.png')
         Image.fromarray(sheet).save(tmp, optimize=True)
         r['src'] = hashlib.sha256(open(tmp, 'rb').read()).hexdigest()[:12]
         cells = cells_of(sheet, tiles_of_text(r['tiles']), int(r['idle']), int(r['walk']))
-        p = sheet_problems(r, cells)
+        r, cells, p = built(r, cells)
         m = measure_cells(r, cells)
-        print('%-11s %s outfit %s  idle %2s x %3s ms  walk %s  pixels %7s  stand (%.1f, %.1f) want y %.1f hang %d  %s' % (
+        print('%-11s %s outfit %s  idle %2s x %3s ms  walk %s  pixels %7s  stand (%.1f, %.1f) want y %.1f hang %d  lean k %s %s px  %s' % (
             r['key'], r['tiles'], r['new'], r['idle'], r['idle_ms'], r['walk'], r['pixels'], m['stand'][0], m['stand'][1], m['want_y'],
-            m['hang'], 'ok' if not p else p))
+            m['hang'], r['lean'], L.lean_text(cells), 'ok' if not p else p))
         bad += p
         if write:
             os.replace(tmp, sheet_path(r['key']))
@@ -584,10 +689,55 @@ def art(srcs, write, only=()):
     if write and not bad:
         with open(TABLE, 'w', encoding='utf-8', newline='') as f:
             f.write(table_text(table))
-        if not only:
-            with open(SUMS, 'w', encoding='utf-8', newline='') as f:
-                f.write(sums_text(sums))
+        with open(SUMS, 'w', encoding='utf-8', newline='') as f:
+            f.write(sums_text(sums))
     return bad
+
+
+def table_from_sheets(write):
+    """the table's `lean`, `disp`, `tiles` and the sums from the committed sheets as built (leaned()); the other columns kept.
+    Returns the problem lines (nothing is written when there is one)."""
+    t, sums, bad = [], {}, []
+    for r in rows():
+        r = dict(r, lean=r.get('lean') or '0.00')
+        _a, cells = read_sheet(r)
+        r2, c2, p = built(r, cells)
+        bad += p
+        t.append(r2)
+        sums[r2['new']] = digest_of(r2, c2)
+        print('%-11s %s lean k %s disp %-7s lean %s px%s' % (r2['key'], r2['tiles'], r2['lean'], r2['disp'], L.lean_text(c2),
+                                                            ('  ' + '; '.join(p)) if p else ''))
+    if write and not bad:
+        with open(TABLE, 'w', encoding='utf-8', newline='') as f:
+            f.write(table_text(t))
+        with open(SUMS, 'w', encoding='utf-8', newline='') as f:
+            f.write(sums_text(sums))
+    return bad
+
+
+def lean_rule(r, cells, stale=True):
+    """the O728 lean rule of a built outfit: south or east in oblique_lean.LEAN; a key of REDRAW_PENDING waits (and, with stale, is
+    named once it leans)"""
+    if r['key'] in REDRAW_PENDING:
+        if stale and L.lean_ok(cells):
+            return ['%s: leans %s px now: remove it from REDRAW_PENDING (O728)' % (r['key'], L.lean_text(cells))]
+        return []
+    low = LOW_BODY.get(r['key'])
+    if low is not None:
+        ln = L.leans(cells)
+        best = max(v or 0 for v in (ln[L.SOUTH], ln[L.EAST]))
+        return [] if best >= low else ['%s: lean %s px, a low body keeps %g px (O728)' % (r['key'], L.lean_text(cells), low)]
+    bad = L.lean_problem(r['key'], cells)
+    return [bad] if bad else []
+
+
+def built(r, cells):
+    """(row, cells, problems) of the outfit built from a sheet's cells: leaned(), then the sheet rules and the lean rule"""
+    try:
+        r2, c2 = leaned(r, cells)
+    except ValueError as e:
+        return r, cells, ['%s: %s' % (r['key'], e)]
+    return r2, c2, sheet_problems(r2, c2) + lean_rule(r2, c2, stale=False)
 
 
 # ---------------------------------------------------------------- check
@@ -602,10 +752,14 @@ def check_sheets(table=None, sums=None, root=None):
             out.append('%s: no sheet art_import/pixellab_monsters/%s.png' % (r['key'], r['key']))
             continue
         _a, cells = read_sheet(r, root)
-        out += sheet_problems(r, cells)
+        r2, cells2, p = built(r, cells)
+        out += p + [x for x in lean_rule(r2, cells2) if 'REDRAW_PENDING' in x]
+        if (r2['lean'], r2['disp']) != (r.get('lean'), r['disp']):
+            out.append('%s: the built outfit has lean %s and displacement %s, the table %s and %s (run art --write)' % (
+                r['key'], r2['lean'], r2['disp'], r.get('lean'), r['disp']))
         if digest12(r['key'], root) != r['src']:
             out.append('%s: the sheet file is not the one of the table (src %s)' % (r['key'], r['src']))
-        if s.get(r['new']) and digest_of(r, cells) != s[r['new']]:
+        if s.get(r['new']) and digest_of(r2, cells2) != s[r['new']]:
             out.append('%s: the outfit made from the sheet is not the one of pixellab_monsters.sums' % r['key'])
     if root is None and os.path.isdir(SHEETS):
         extra = sorted(set(f[:-4] for f in os.listdir(SHEETS) if f.endswith('.png')) - {r['key'] for r in t})
@@ -647,7 +801,7 @@ def build(dat, spr, out_dir, table=None, first=FIRST_NEW, root=None, log=print):
     by = {}
     for r in t:
         _a, cells = read_sheet(r, root)
-        by[r['new']] = (r, cells)
+        by[r['new']] = built(r, cells)[:2]
     return W.build(dat, spr, out_dir, None, table=t, first=first, log=log, specs_of=lambda r: groups_of(*by[r['new']]), flags_of=flags_of)
 
 
@@ -674,10 +828,26 @@ def outfit_frames(dat, spr, nid, n, gs=None):
     return out, gs
 
 
-def live(dat_path, spr_path, table=None, sums=None, first=FIRST_NEW, root=None, log=print):
-    """The pair holds every outfit at its id: its digest the one of the sums, the sheet's pictures in every cell, its size, one layer, an idle
-    and a walk group, the displacement as its only flag, every phase its duration, the standing point of the rule on the tile. Returns the
-    problem lines."""
+def pair_assets():
+    """PAIR_ASSETS of server/tools/client_pair.py, 0 when it cannot be read"""
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'server', 'tools'))
+        import client_pair
+        return int(client_pair.PAIR_ASSETS)
+    except (ImportError, AttributeError, ValueError):
+        return 0
+
+
+def old_form():
+    """({key: row}, {id: digest}) of the outfits as pair 74 built them (O640, before O728)"""
+    return {r['key']: r for r in rows(OLD_TABLE)}, read_sums(OLD_SUMS)
+
+
+def live(dat_path, spr_path, table=None, sums=None, first=FIRST_NEW, root=None, log=print, accept_old=None, lean_check=None):
+    """The pair holds every outfit at its id: its digest the one of the sums, the sheet's pictures (as built: leaned()) in every cell, its
+    size, one layer, an idle and a walk group, the displacement as its only flag, every phase its duration, the standing point of the rule
+    on the tile, the O728 lean. While client_pair.PAIR_ASSETS is under PAIR_LEAN (accept_old None) an outfit may also be the one pair 74
+    built (pixellab_monsters.pair74.*): then it is held to that row and digest. Returns the problem lines."""
     sys.path.insert(0, HERE)
     from datspr import Dat, Spr
     from import_outfits import parse_body
@@ -688,9 +858,16 @@ def live(dat_path, spr_path, table=None, sums=None, first=FIRST_NEW, root=None, 
     last = int(t[-1]['new'])
     if len(d.outfits) < last:
         return ['the pair has %d outfits, the PixelLab monsters end at %d' % (len(d.outfits), last)]
-    out = []
+    if accept_old is None:
+        accept_old = pair_assets() < PAIR_LEAN and os.path.exists(OLD_TABLE)
+    old_rows, old_sums = old_form() if accept_old else ({}, {})
+    out, n_old = [], 0
     for r in t:
         nid, k = int(r['new']), r['key']
+        dg = W.digest(d, sp, nid)
+        is_old = accept_old and k in old_rows and dg != s.get(r['new']) and dg == old_sums.get(r['new'])
+        if is_old:
+            r, s, n_old = old_rows[k], dict(s, **{r['new']: old_sums[r['new']]}), n_old + 1
         n = tiles_of_text(r['tiles'])
         th = d.outfit(nid)
         if dict(th.flags) != flags_of(r)[1]:
@@ -713,17 +890,158 @@ def live(dat_path, spr_path, table=None, sums=None, first=FIRST_NEW, root=None, 
         total = sum(opaque(a) for lst in frames.values() for a in lst)
         if total != int(r['pixels']):
             out.append('outfit %d (%s): %d opaque pixels in its sprites, the table counts %s' % (nid, k, total, r['pixels']))
-        if os.path.exists(sheet_path(k, root)):
+        if not is_old and os.path.exists(sheet_path(k, root)):
             _a, cells = read_sheet(r, root)
+            cells = built(r, cells)[1]
             if any(not np.array_equal(a, b) for key2 in cells for a, b in zip(cells[key2], frames[key2])):
                 out.append('outfit %d (%s): a picture is not the one of the sheet' % (nid, k))
+        if not is_old:
+            out += ['outfit %d (%s): %s' % (nid, k, x) for x in (lean_check or lean_rule)(r, frames)]
         m = measure_cells(r, frames)
         if abs(m['stand'][0] - TX) > STAND_TOL or abs(m['stand'][1] - m['want_y']) > STAND_TOL:
             out.append('outfit %d (%s): stands on tile point (%.1f, %.1f), the rule is (%.1f, %.1f)' % (nid, k, m['stand'][0], m['stand'][1], TX, m['want_y']))
         if r['float'] == '0' and m['hang'] > HANG:
             out.append('outfit %d (%s): the lowest pixel hangs %d rows under the tile' % (nid, k, m['hang']))
-    log('live: %d outfits %d to %d checked, %d problems' % (len(t), int(t[0]['new']), last, len(out)))
+    log('live: %d outfits %d to %d checked, %d problems%s' % (len(t), int(t[0]['new']), last, len(out),
+                                                              ', %d in the pair 74 form (before O728)' % n_old if n_old else ''))
     return out
+
+
+# ---------------------------------------------------------------- the pair 74 outfits rewritten in place (O728)
+
+def rewrite_outfits(dat, spr, out_dir, changes, log=print):
+    """pair in -> pair out in OUT_DIR (must not exist): every outfit of `changes` {id: (flag bytes, flags as read, [(Group, tiles)])}
+    gets a new entry (its pictures as new sprite records after the pair's last, a record the pair has already reused); every other
+    thing byte for byte, every old record kept. Verified before the rename."""
+    import random
+    import struct
+    import numpy as np
+    from datspr import Dat, Spr
+    from import_outfits import build_entry, parse_body
+    from gen_effects import encode_sprite
+    if os.path.exists(out_dir):
+        raise SystemExit('%s exists: remove it or name another folder' % out_dir)
+    od, ospr = Dat(dat), Spr(spr)
+    assert ospr.u32count and ospr.alpha, 'expected an alpha spr with u32 count'
+    cnt = ospr.count
+    index = W.record_index(ospr)
+    newrecs, recs, reused = [], {}, 0
+    entries = {}
+    for nid, (fb, _fl, specs) in sorted(changes.items()):
+        sid_map = {0: 0}
+        for g, tiles in specs:
+            for slot, a in enumerate(tiles):
+                rec = encode_sprite(a)
+                if rec is None:
+                    sid_map[(id(g), slot)] = 0
+                    continue
+                key = hashlib.md5(rec).digest()
+                if key in index:
+                    sid_map[(id(g), slot)] = index[key]
+                    reused += 1
+                else:
+                    if rec not in recs:
+                        newrecs.append(rec)
+                        recs[rec] = cnt + len(newrecs)
+                    sid_map[(id(g), slot)] = recs[rec]
+        gs = []
+        for g, tiles in specs:
+            g2 = type(g)()
+            for k in g.__slots__:
+                setattr(g2, k, getattr(g, k))
+            g2.sprites = tuple((id(g), x) for x in range(len(tiles)))
+            gs.append(g2)
+        entries[nid] = build_entry(fb, gs, sid_map)
+    data = od.data
+    out = bytearray()
+    pos = 0
+    spans = []
+    for nid in sorted(entries):
+        a, b = od.outfits[nid - 1].raw
+        assert od.outfits[nid - 1].id == nid
+        out += data[pos:a]
+        spans.append((len(out), len(entries[nid]), a, b))
+        out += entries[nid]
+        pos = b
+    out += data[pos:]
+    tmp = out_dir.rstrip('/') + '.tmp'
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.makedirs(tmp)
+    with open(os.path.join(tmp, 'Tibia.dat'), 'wb') as f:
+        f.write(out)
+    m_, nn = ospr.m, len(newrecs)
+    toffs = ospr.offs.astype('<u8').copy()
+    toffs[toffs > 0] += 4 * nn
+    cur = len(m_) + 4 * nn
+    new_offs = []
+    for rec in newrecs:
+        new_offs.append(cur)
+        cur += len(rec)
+    assert cur < 1 << 32, 'spr would exceed 4 GB'
+    table_b = np.concatenate([toffs, np.array(new_offs, dtype='<u8')]).astype('<u4')
+    with open(os.path.join(tmp, 'Tibia.spr'), 'wb') as f:
+        f.write(struct.pack('<II', ospr.signature, cnt + nn))
+        f.write(table_b.tobytes())
+        p = 8 + 4 * cnt
+        while p < len(m_):
+            f.write(m_[p:p + (1 << 24)])
+            p += 1 << 24
+        for rec in newrecs:
+            f.write(rec)
+    md, ms = Dat(os.path.join(tmp, 'Tibia.dat')), Spr(os.path.join(tmp, 'Tibia.spr'))
+    assert md.counts == od.counts and ms.count == cnt + nn and md.max_sprite <= ms.count
+    # every byte outside the rewritten entries is the old one
+    q = 0
+    prev = 0
+    for start, ln, a, b in spans:
+        assert bytes(md.data[q:start]) == bytes(data[prev:a]), 'a byte outside the rewritten outfits changed'
+        q, prev = start + ln, b
+    assert bytes(md.data[q:]) == bytes(data[prev:]), 'a byte after the rewritten outfits changed'
+    for nid, (_fb, fl, specs) in changes.items():
+        assert dict(md.outfit(nid).flags) == fl, (nid, 'flags')
+        assert W.digest(md, ms, nid) == W.spec_digest(specs), (nid, 'digest')
+    random.seed(1)
+    for sid in random.sample(range(1, cnt + 1), min(3000, cnt)) + [1, cnt]:
+        x, y = ospr.sprite(sid), ms.sprite(sid)
+        assert (x is None) == (y is None) and (x is None or (x == y).all()), sid
+    os.rename(tmp, out_dir)
+    log('rewrote %d outfits in place, %d records appended (%d -> %d), %d slots reuse a record; every other thing byte for byte, '
+        '3000 sampled old records unchanged' % (len(changes), nn, cnt, cnt + nn, reused))
+    return sorted(changes)
+
+
+def relook(dat, spr, out_dir, table=None, sums=None, root=None, log=print):
+    """pair in (the PixelLab monsters as pair 74 built them, or some already as now) -> pair out: every outfit whose digest is the pair
+    74 one (pixellab_monsters.pair74.sums) gets its entry as the table and the sheets build it now (leaned, or a new drawing); one that
+    is already the one of pixellab_monsters.sums is left; any other refuses the run. Returns the ids rewritten (none: nothing written)."""
+    from datspr import Dat, Spr
+    t = rows() if table is None else table
+    s = read_sums() if sums is None else sums
+    _old_rows, old_sums = old_form()
+    d, sp = Dat(dat), Spr(spr)
+    if len(d.outfits) < int(t[-1]['new']):
+        raise SystemExit('refused: the pair has %d outfits, the PixelLab monsters end at %s' % (len(d.outfits), t[-1]['new']))
+    changes = {}
+    for r in t:
+        dg = W.digest(d, sp, int(r['new']))
+        if dg == s.get(r['new']):
+            log('%s (%s): as the table builds it already' % (r['new'], r['key']))
+            continue
+        if dg != old_sums.get(r['new']):
+            raise SystemExit('refused: outfit %s (%s) is neither the pair 74 form nor the one of pixellab_monsters.sums: another pair'
+                             % (r['new'], r['key']))
+        _a, cells = read_sheet(r, root)
+        r2, c2, p = built(r, cells)
+        if p or digest_of(r2, c2) != s.get(r['new']):
+            raise SystemExit('refused: %s does not build as the table says: %s' % (r['key'], '; '.join(p) or 'another digest'))
+        fb, fl = flags_of(r2)
+        changes[int(r['new'])] = (fb, fl, groups_of(r2, c2))
+        log('%s (%s): rewritten, lean k %s, displacement %s, %s' % (r['new'], r['key'], r2['lean'], r2['disp'], r2['tiles']))
+    if not changes:
+        log('nothing to do: every outfit is as the table builds it, nothing written')
+        return []
+    return rewrite_outfits(dat, spr, out_dir, changes, log=log)
 
 
 # ---------------------------------------------------------------- the preview (never committed)
@@ -834,7 +1152,8 @@ def main(argv):
         p = check()
         for line in p:
             print('PROBLEM', line)
-        print('pixellab_monsters: %d rows, %d problems' % (len(rows()), len(p)))
+        print('pixellab_monsters: %d rows, %d problems%s' % (len(rows()), len(p), '; TEMPORARY upright until redrawn (O728): '
+                                                               + ', '.join(REDRAW_PENDING) if REDRAW_PENDING else ''))
         return 1 if p else 0
     if cmd == 'looks':
         p = map_problems() + write_map(check='--check' in a)
@@ -868,6 +1187,30 @@ def main(argv):
             print('PROBLEM', line)
         print('built %d outfits %d to %d' % (len(ids), ids[0], ids[-1]))
         return 1 if p else 0
+    if cmd == 'table':
+        bad = table_from_sheets('--write' in a)
+        for line in bad:
+            print('PROBLEM', line)
+        return 1 if bad else 0
+    if cmd == 'relook' and len(a) == 3:
+        p = problems()
+        if p:
+            print('\n'.join(p))
+            return 1
+        ids = relook(a[0], a[1], a[2])
+        if not ids:
+            return 0
+        p = live(os.path.join(a[2], 'Tibia.dat'), os.path.join(a[2], 'Tibia.spr'), accept_old=False)
+        for line in p:
+            print('PROBLEM', line)
+        return 1 if p else 0
+    if cmd == 'drop-import' and len(a) >= 1:
+        keys = [x for x in a[1:] if x in KEYS] or [k for k in KEYS if k not in SHEAR and os.path.isdir(os.path.join(a[0], k))]
+        bad = art([], True, keys, drop=a[0])
+        for line in bad:
+            print('PROBLEM', line)
+        print('drop-import: %s; remove them from REDRAW_PENDING, then `relook` a pair' % ', '.join(keys))
+        return 1 if bad else 0
     if cmd == 'live' and len(a) == 2:
         p = live(*a)
         for line in p:

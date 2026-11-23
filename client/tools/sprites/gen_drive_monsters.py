@@ -5,6 +5,7 @@ own PixelLab redraws, two from purchased 8-direction character packs.
     python3 -I gen_drive_monsters.py check                       # the table, the sums keys, the redraw pictures and the monster map (no pair)
     python3 -I gen_drive_monsters.py looks [--check]             # server/data/monster/monster_drive_looks.csv from PICKS
     python3 -I gen_drive_monsters.py redraw-import DIR           # copy the redraw pictures of DIR/<any name>/ into art_import/drive_redraw/<key>/
+    python3 -I gen_drive_monsters.py drop-import DIR [NAME=KEY...]  # O728: oblique PixelLab drops DIR/<name>/Idle/... -> drive_redraw/<key>/
     python3 -I gen_drive_monsters.py ids --src DIR [--src DIR]   # src id and measures of every pack character under the folders (author's aid)
     python3 -I gen_drive_monsters.py table --src DIR... [--write]  # measure the rows of ROWS, print (or write) the table and the sums
     python3 -I gen_drive_monsters.py sums --src DIR... --check   # the pictures give the committed sums
@@ -43,7 +44,13 @@ Size. Every outfit is 3x3 (TILES). Scale s in hundredths, the largest of at most
 a 3x3 outfit at the standing point (fit3, gen_pixellab_monsters.fit on 3 tiles), tried down from 96 px over the longer side of the box of
 every frame. The filter keeps the hard alpha and the palette: an output pixel covers a block of source pixels (1 or more a side, counted
 from the bottom row); it is opaque when at least half of them are, and takes the colour most of its opaque pixels have (the first such in
-the block on a tie). No colour is made that is not in the source. Nothing is sheared or leaned.
+the block on a tie). No colour is made that is not in the source.
+
+Angle (O728, owner 2026-11-23 "Refaça todos"). A pack row is sheared to the game's angle before the fit (oblique_lean.py: each row moves
+left by k px a row above the feet, k from 0.25 down to 0.15 while a pixel would leave the widened canvas or the figure does not fit 3x3;
+column `lean` holds k). A redraw is drawn at the angle (PixelLab view oblique, `drop-import`) and never sheared (lean 0.00). Every look
+leans 9-26 px in south or east (the centre of its bottom quarter right of the centre of its top quarter), except LOW_BODY (a floor) and
+the UPRIGHT_PENDING keys (TEMPORARY, a redraw whose oblique drop is not in yet; empty since 2026-11-23).
 
 Frames. Idle: as many phases as the longest idle direction has frames, at most 8, at least 4 (1 for a redraw with none); walk: 8 phases
 (1 for a redraw with none). A direction with n frames shows frame floor(i * n / P) at phase i (gen_creature_outfits.pick). Durations like
@@ -70,6 +77,7 @@ sys.path.insert(0, HERE)
 import gen_wst_outfits as W  # noqa: E402
 import gen_creature_outfits as G  # noqa: E402
 import gen_pixellab_monsters as P  # noqa: E402
+import oblique_lean as L  # noqa: E402
 
 ART = os.path.join(HERE, 'art_import')
 TABLE = os.path.join(ART, 'drive_monsters.csv')
@@ -78,7 +86,7 @@ REPO = W.REPO
 MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_drive_looks.csv')
 MAP_HEADER = ['monster', 'look', 'new_look']
 REDRAW = os.path.join(ART, 'drive_redraw')
-HEADER = ['key', 'src', 'art', 'new', 'tiles', 'scale', 'disp', 'float', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'west', 'east',
+HEADER = ['key', 'src', 'art', 'new', 'tiles', 'scale', 'lean', 'disp', 'float', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'west', 'east',
           'idle_frames', 'walk_frames', 'colours', 'pixels']
 PAIR = 81
 OUTFITS_BEFORE = 3560               # pair 80: pair 79's 3,560 (the six drawn wings 3555-3560 of pair 78), changed in place by O724 / O725b
@@ -92,22 +100,31 @@ WALK_MS = 100
 MAX_ON_LOOK = 1                     # one hunt monster on each new look (O529)
 WALK_NAMES = ('walk', 'running', 'run', 'move')
 
-# (src, key, art) in outfit order; key is our own word for the figure, never a pack name; art `redraw` (art_import/drive_redraw/<key>,
-# src of its south.png) or `pack` (src of its first south idle frame). FLOAT: keys of things with no feet.
+# (src, key, art) in outfit order; key is our own word for the figure, never a pack name; art `redraw` (art_import/drive_redraw/<key>;
+# src None: the table's src is the one of its south.png, held by redraw_problems, so a new drop needs no change here) or `pack` (src of
+# its first south idle frame). FLOAT: keys of things with no feet.
 ROWS = (
-    ('e86cc8933b0f', 'seraph', 'redraw'),
-    ('f838b8411d2d', 'relicbearer', 'redraw'),
-    ('19e703a3576d', 'aberration', 'redraw'),
+    (None, 'seraph', 'redraw'),
+    (None, 'relicbearer', 'redraw'),
+    (None, 'aberration', 'redraw'),
     ('a131cf8f2824', 'wolf', 'pack'),
-    ('162d4e858320', 'voidmage', 'redraw'),
-    ('435a175bc234', 'plaguemedic', 'redraw'),
-    ('83e9ddc20794', 'seacaptain', 'redraw'),
-    ('35ecd304f399', 'templar', 'redraw'),
-    ('3973b8038abc', 'stormmage', 'redraw'),
-    ('8e37a4728f97', 'voidpriest', 'redraw'),
+    (None, 'voidmage', 'redraw'),
+    (None, 'plaguemedic', 'redraw'),
+    (None, 'seacaptain', 'redraw'),
+    (None, 'templar', 'redraw'),
+    (None, 'stormmage', 'redraw'),
+    (None, 'voidpriest', 'redraw'),
     ('f49d946fb82c', 'crab', 'pack'),
 )
 FLOAT = ('aberration',)
+# O728: the game's angle. A pack row is sheared by oblique_lean (k from L.K down to L.K_MIN, column `lean`) unless it leans already;
+# a redraw is drawn at the angle (PixelLab view "oblique") and never sheared. Every look must lean L.LEAN px in south or east, except
+# the keys below. UPRIGHT_PENDING (TEMPORARY when used): a redraw whose oblique pictures are not in yet; frame_problems names a key
+# here that leans already. All nine oblique redraws came in on 2026-11-23, so it is empty.
+UPRIGHT_PENDING = ()                # all nine oblique drawings are in (2026-11-23)
+# low bodies the band does not fit (the lean measure of a wide flat body: stock crabs, spiders and wolves read 0 to 7 px): the shear
+# is applied all the same, the band is not asked. key -> the least lean in south or east it must keep.
+LOW_BODY = {'crab': 7.0}         # 42 px tall at k 0.25: 8.7 px east (3/4 of its height times k is 7.9); the stock crabs read 1 to 2
 # keys whose walk east is their walk west mirrored (column east `mirror`): a frame of the drawn walk east is nearer the south or north
 # standing picture than the east one (the colour distance of `facing`), the mirrored west walk is not
 EAST_FROM_WEST = ('seacaptain',)
@@ -147,7 +164,8 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
     t = rows() if table is None else table
     s = read_sums() if sums is None else sums
     out = []
-    if want is not None and [(r['src'], r['key'], r['art']) for r in t] != [tuple(x) for x in want]:
+    if want is not None and (len(t) != len(want) or any((r['src'], r['key'], r['art']) != (r['src'] if c is None else c, kk, a)
+                                                         for r, (c, kk, a) in zip(t, want))):
         out.append('the rows are not ROWS of gen_drive_monsters.py, in its order')
     seen = set()
     for i, r in enumerate(t):
@@ -172,6 +190,10 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
             out.append('%s: art %s, redraw or pack' % (k, r['art']))
         if red and r['scale'] != '1.00':
             out.append('%s: scale %s, a redraw is drawn at game size (1.00)' % (k, r['scale']))
+        ln = r.get('lean', '')
+        if not re.fullmatch(r'0\.\d\d', ln or '') or (ln != '0.00' and not L.K_MIN <= float(ln) <= L.K) or (red and ln != '0.00'):
+            out.append('%s: lean %s, 0.00 (drawn at the angle) or a shear k of %.2f to %.2f; a redraw is never sheared (O728)'
+                       % (k, ln, L.K_MIN, L.K))
         if r['float'] != ('1' if k in FLOAT else '0'):
             out.append('%s: float %s, FLOAT says %s' % (k, r['float'], k in FLOAT))
         still_idle = red and (r['idle'], r['idle_ms']) == ('1', '0')
@@ -361,13 +383,20 @@ def redraw_import(drop, root=None, want=ROWS, log=print):
     def px(path):
         return np.array(Image.open(path).convert('RGBA'))
     root = REDRAW if root is None else root
-    by = {cid: key for cid, key, art in want if art == 'redraw'}
+    by = {}
+    for cid, key, art in want:
+        if art == 'redraw':
+            c = os.path.join(root, key, 'south.png')
+            by[cid if cid is not None else (W._sha12(c) if os.path.isfile(c) else '-' + key)] = key
     done = []
     for name in sorted(os.listdir(drop)):
         src = os.path.join(drop, name)
         if not os.path.isfile(os.path.join(src, 'south.png')):
             continue
         key = by.get(W._sha12(os.path.join(src, 'south.png')))
+        new_art = key is None and name in [k for _c, k, a in want if a == 'redraw']
+        if new_art:
+            key = name          # O728: a new drawing of the row named by the folder (its standing pictures replace the old ones)
         if key is None:
             south = px(os.path.join(src, 'south.png'))
             for k in by.values():
@@ -379,23 +408,88 @@ def redraw_import(drop, root=None, want=ROWS, log=print):
             log('skipped %s: its south.png is no redraw row of ROWS' % name)
             continue
         dst0 = os.path.join(root, key)
-        files = [f for f in STANDING if not (os.path.isfile(os.path.join(dst0, f))
+        files = list(STANDING) if new_art else [f for f in STANDING if not (os.path.isfile(os.path.join(dst0, f))
                                              and np.array_equal(px(os.path.join(dst0, f)), px(os.path.join(src, f))))]
         for anim in ('idle', 'walk'):
             for d in DIRS:
                 files += [os.path.relpath(f, src) for f in _pngs(os.path.join(src, anim, d))]
+        side = px(os.path.join(src, 'south.png')).shape[:2]
         for f in files:
             a = np.array(Image.open(os.path.join(src, f)).convert('RGBA'))
             al = a[..., 3]
-            if a.shape != (96, 96, 4) or al[(al != 0) & (al != 255)].size:
-                raise SystemExit('refused %s/%s: a redraw picture is 96 x 96 with hard alpha' % (name, f))
+            if a.shape[:2] != side or side[0] != side[1] or not 32 <= side[0] <= 256 or al[(al != 0) & (al != 255)].size:
+                raise SystemExit('refused %s/%s: a redraw picture is square (32 to 256 px), the size of south.png, with hard alpha'
+                                 % (name, f))
         dst = os.path.join(root, key)
+        if new_art:
+            shutil.rmtree(dst, ignore_errors=True)
         for anim in ('idle', 'walk'):
             shutil.rmtree(os.path.join(dst, anim), ignore_errors=True)
+        moves = []
         for f in files:
             os.makedirs(os.path.dirname(os.path.join(dst, f)), exist_ok=True)
             shutil.copyfile(os.path.join(src, f), os.path.join(dst, f))
-        log('%s: %d pictures into art_import/drive_redraw/%s' % (name, len(files), key))
+        for anim in ('idle', 'walk'):           # O728: each group and direction onto its standing picture by the feet (one shift)
+            for d, st in zip(DIRS, STANDING):
+                fs = _pngs(os.path.join(dst, anim, d))
+                if not fs:
+                    continue
+                try:
+                    lst, mv = L.align_to_standing(px(os.path.join(dst, st)), [px(f) for f in fs])
+                except L.LostPixel as e:
+                    raise SystemExit('refused %s %s %s: %s' % (name, anim, d, e))
+                if mv != (0, 0):
+                    moves.append('%s %s %+d,%+d' % (anim, d, mv[0], mv[1]))
+                    for f, a in zip(fs, lst):
+                        Image.fromarray(a, 'RGBA').save(f)
+        stand_ = {('idle', i): [px(os.path.join(dst, st))] for i, st in enumerate(STANDING)}
+        log('%s: %d pictures into art_import/drive_redraw/%s%s; lean %s px%s' % (
+            name, len(files), key, ' (new drawing)' if new_art else '', L.lean_text(stand_),
+            '' if L.lean_ok(stand_) else ' (OUTSIDE %g to %g in south and east)' % L.LEAN))
+        if moves:
+            log('  frames aligned to the standing pictures by the feet: ' + ', '.join(moves))
+        done.append(key)
+    return done
+
+
+# O728: the drop folder names of the oblique redraws (the coordinator's words) -> the row key. The O726 inquisitor (key templar) is the folder `drive_inquisitor`:
+# the name `inquisitor` belongs to the O640 Brand Inquisitor (gen_pixellab_monsters.py drop-import reads it).
+DROP_NAMES = {'plague': 'plaguemedic', 'archangel': 'seraph', 'reliquary': 'relicbearer', 'eldritch': 'aberration',
+              'voidcaller': 'voidmage', 'admiral': 'seacaptain', 'drive_inquisitor': 'templar', 'magister': 'stormmage', 'hierophant': 'voidpriest'}
+
+
+def drop_import(drop, names=None, root=None, log=print):
+    """the PixelLab oblique downloads DROP/<name>/ (oblique_lean.read_drop: rotations, the v3 walk of 8, a breath of 4 made here) of
+    the names of DROP_NAMES (or `names`: {folder: key}) -> art_import/drive_redraw/<key>/: the four standing pictures, idle/<dir>/
+    frame_000..003.png, walk/<dir>/frame_000..007.png (the old pictures of the key go). Returns the keys written."""
+    from PIL import Image
+    root = REDRAW if root is None else root
+    names = DROP_NAMES if names is None else names
+    keys = {k for _c, k, a in ROWS if a == 'redraw'}
+    done = []
+    for name, key in sorted(names.items()):
+        src = os.path.join(drop, name)
+        if not os.path.isdir(src):
+            continue
+        if key not in keys and names is DROP_NAMES:
+            raise SystemExit('%s: %s is no redraw row' % (name, key))
+        try:
+            d = L.read_drop(src)
+        except ValueError as e:
+            raise SystemExit('refused %s: %s' % (name, e))
+        dst = os.path.join(root, key)
+        shutil.rmtree(dst, ignore_errors=True)
+        os.makedirs(dst)
+        for dn, f in zip(DIRS, STANDING):
+            Image.fromarray(d['stand'][dn], 'RGBA').save(os.path.join(dst, f))
+            for g in ('idle', 'walk'):
+                os.makedirs(os.path.join(dst, g, dn))
+                for i, a in enumerate(d[g][dn]):
+                    Image.fromarray(a, 'RGBA').save(os.path.join(dst, g, dn, 'frame_%03d.png' % i))
+        fr = L.drop_frames(d)
+        log('%s -> art_import/drive_redraw/%s: %d px canvas, lean %s px%s' % (
+            name, key, d['stand']['south'].shape[0], L.lean_text(fr),
+            '' if L.lean_ok(fr) else ' (OUTSIDE %g to %g in south and east)' % L.LEAN))
         done.append(key)
     return done
 
@@ -572,12 +666,36 @@ def measure(ch, key, new, art='pack'):
     sel = resample(full, idle_p, walk_p)
     fl = key in FLOAT
     hund = int(round(scale_start(sel) * 100))
+    shear = art == 'pack'
     while True:
         if hund < 20:
             raise ValueError('no scale of 0.20 or more fits a 3x3 outfit')
         frames = {kk: [resize(a, hund / 100.0) for a in lst] for kk, lst in sel.items()}
         if any(not a[..., 3].any() for lst in frames.values() for a in lst):
             raise ValueError('an empty frame after the scale')
+        if shear and L.leaning(frames):
+            shear = False       # the guard: art at the angle is left as drawn
+        got = []
+        if shear:
+            # O728: the shear before the fit, on a canvas widened for it; k from L.K down to L.K_MIN while the figure does not fit 3x3
+            side = max(a.shape[0] for lst in frames.values() for a in lst)
+            room = int(L.K * side) + 2
+            wide = {kk: [L.pad(a, room, room) for a in lst] for kk, lst in frames.items()}
+
+            def fits(fr):
+                try:
+                    got[:] = [fit3(fr, fl)]
+                    return True
+                except ValueError:
+                    return False
+            try:
+                frames, k = L.lean_frames(wide, fits=fits)
+            except L.LostPixel:
+                hund -= 1
+                continue
+            n, disp, shift = got[0]
+            break
+        k = 0.0
         try:
             n, disp, shift = fit3(frames, fl)
             break
@@ -585,6 +703,7 @@ def measure(ch, key, new, art='pack'):
             hund -= 1
     placed = P.place_checked(frames, n, shift)
     r = {'key': key, 'src': ch.id, 'art': art, 'new': str(new), 'tiles': '%dx%d' % (n, n), 'scale': '%.2f' % (hund / 100.0),
+         'lean': '%.2f' % k,
          'disp': '%d:%d' % disp, 'float': '1' if fl else '0', 'idle': str(idle_p), 'idle_ms': str(idle_ms_for(idle_p) if idle_p > 1 else 0),
          'walk': str(walk_p), 'walk_ms': str(WALK_MS if walk_p > 1 else 0),
          'walk_src': ch.walk_src, 'west': ch.west, 'east': 'mirror' if key in EAST_FROM_WEST else 'own',
@@ -597,11 +716,25 @@ def measure(ch, key, new, art='pack'):
 STILL_RULES = ('an idle direction shows one picture', 'a walk direction shows')
 
 
+def lean_problems(r, placed):
+    """the O728 lean rule of one look (a pending redraw waits and is named once it leans, LOW_BODY keeps its floor)"""
+    if r.get('art') == 'redraw' and r['key'] in UPRIGHT_PENDING:
+        return ['%s: leans %s px now: remove it from UPRIGHT_PENDING (O728)' % (r['key'], L.lean_text(placed))] if L.lean_ok(placed) else []
+    low = LOW_BODY.get(r['key'])
+    if low is None:
+        bad = L.lean_problem(r['key'], placed)
+    else:
+        ln = L.leans(placed)
+        bad = None if max(v or 0 for v in (ln[L.SOUTH], ln[L.EAST])) >= low else '%s: lean %s px, a low body keeps %g px (O728)' % (
+            r['key'], L.lean_text(placed), low)
+    return [bad] if bad else []
+
+
 def frame_problems(r, placed):
     """the rules of the built frames (gen_pixellab_monsters.sheet_problems: hard alpha, four directions of their own, an idle that moves,
     a walk of 4 or more pictures, the standing point); a 1-phase idle or walk of a redraw is let through those two motion rules only
     (the idle gap is a TEMPORARY row of no_idle_allow.csv, held by check_content.py)"""
-    out = P.sheet_problems(r, placed)
+    out = P.sheet_problems(r, placed) + lean_problems(r, placed)
     if r.get('art') == 'redraw':
         skip = [STILL_RULES[0]] * (r['idle'] == '1') + [STILL_RULES[1]] * (r['walk'] == '1')
         out = [x for x in out if not any(s in x for s in skip)]
@@ -620,21 +753,52 @@ def groups_of(r, placed):
 def measured(srcs, want=ROWS, first=FIRST_NEW, redraw=None):
     """[(row, placed)] of the rows of `want` (src, key, art) from the pack files under `srcs` and the redraw folders, ids from `first`"""
     packs = {c.id: c for c in discover(srcs)} if any(a == 'pack' for _c, _k, a in want) else {}
-    reds = {c.id: c for c in discover_redraws(redraw)}
+    root = REDRAW if redraw is None else redraw
     out = []
     for i, (cid, key, art) in enumerate(want):
-        by = reds if art == 'redraw' else packs
-        if cid not in by:
-            raise SystemExit('no %s character %s (%s) under %s' % (art, cid, key, 'art_import/drive_redraw' if art == 'redraw'
-                                                                   else ', '.join(srcs) or 'no --src'))
+        if art == 'redraw':
+            ch = redraw_character(os.path.join(root, key))
+            if ch is None or (cid is not None and ch.id != cid):
+                raise SystemExit('no redraw character %s (%s) under art_import/drive_redraw' % (cid, key))
+        else:
+            ch = packs.get(cid)
+            if ch is None:
+                raise SystemExit('no pack character %s (%s) under %s' % (cid, key, ', '.join(srcs) or 'no --src'))
         try:
-            r, placed = measure(by[cid], key, first + i, art)
+            r, placed = measure(ch, key, first + i, art)
         except ValueError as e:
             raise SystemExit('character %s (%s): %s' % (cid, key, e))
         bad = frame_problems(r, placed)
         if bad:
             raise SystemExit('character %s (%s): %s' % (cid, key, '; '.join(bad[:5])))
         out.append((r, placed))
+    return out
+
+
+def redraw_built_problems(table=None, sums=None, root=None):
+    """the redraw rows built from the committed pictures (no pack needed, CI): every frame rule (the lean of O728 among them), the
+    row as the table has it, the outfit as drive_monsters.sums has it"""
+    t = rows() if table is None else table
+    s = read_sums() if sums is None else sums
+    root = REDRAW if root is None else root
+    out = []
+    for r in t:
+        if r['art'] != 'redraw':
+            continue
+        ch = redraw_character(os.path.join(root, r['key']))
+        if ch is None:
+            continue        # redraw_problems names it
+        try:
+            got, placed = measure(ch, r['key'], int(r['new']), 'redraw')
+        except ValueError as e:
+            out.append('%s: %s' % (r['key'], e))
+            continue
+        out += frame_problems(got, placed)
+        diff = [k for k in HEADER if got[k] != r.get(k)]
+        if diff:
+            out.append('%s: the pictures give other %s than the table (run table --write)' % (r['key'], ', '.join(diff)))
+        elif W.spec_digest(groups_of(got, placed)) != s.get(r['new']):
+            out.append('%s: the pictures give another outfit than drive_monsters.sums' % r['key'])
     return out
 
 
@@ -688,7 +852,7 @@ def live(dat, spr, table=None, sums=None, first=FIRST_NEW, log=print):
     out = []
     if moving:
         out += P.live(dat, spr, table=moving, sums=s, first=first, root=os.path.join(tempfile.gettempdir(), 'no-sheets-o726'),
-                      log=lambda *_: None)
+                      log=lambda *_: None, lean_check=lean_problems)
     if still:
         d, sp = Dat(dat), Spr(spr)
         if len(d.outfits) < max(int(r['new']) for r in still):
@@ -810,9 +974,13 @@ def main(argv):
     cmd = a.pop(0) if a else ''
     if cmd == 'check':
         p = problems() + map_problems() + write_map(check=True)
+        if not p:
+            p += redraw_built_problems()
         for line in p:
             print('PROBLEM', line)
-        print('drive_monsters: %d rows, %d problems' % (len(rows()), len(p)))
+        pend = [k for k in UPRIGHT_PENDING]
+        print('drive_monsters: %d rows, %d problems%s' % (len(rows()), len(p), '; TEMPORARY upright until redrawn (O728): ' + ', '.join(pend)
+                                                         if pend else ''))
         return 1 if p else 0
     if cmd == 'looks':
         p = map_problems() + write_map(check='--check' in a)
@@ -820,6 +988,12 @@ def main(argv):
             print('PROBLEM', line)
         print('monster_drive_looks: %d rows, %d problems' % (len(PICKS), len(p)))
         return 1 if p else 0
+    if cmd == 'drop-import' and len(a) >= 1:
+        names = dict(x.split('=', 1) for x in a[1:]) or None
+        keys = drop_import(a[0], names)
+        print('drop-import: %d characters (%s); now `table --src PACKS --write`, then remove them from UPRIGHT_PENDING' % (
+            len(keys), ', '.join(keys)))
+        return 0
     if cmd == 'redraw-import' and len(a) == 1:
         keys = redraw_import(a[0])
         print('redraw-import: %d characters' % len(keys))
