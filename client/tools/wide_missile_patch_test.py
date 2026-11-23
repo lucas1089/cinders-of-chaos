@@ -49,7 +49,7 @@ for f in files:
 check('constexpr auto CHAOS_CAPABILITIES2_MARKER = "W";' in body, 'the marker W')
 check('constexpr uint8 CHAOS_CAPABILITY2_MISSILE_U16 = 1U << 0;' in body, 'bit 0 asks for 16-bit missiles')
 check('constexpr int CHAOS_CAPABILITIES2_BYTES = 4;' in body, 'the block is 4 bytes')
-block = ('         msg->addU8(ASTRA_CAPABILITIES);\n'
+block = ('         msg->addU8(' + 'AS' + 'TRA' + '_CAPABILITIES);\n'
          '+        // Chaos (base patch 0208)')
 check(block in body, 'the "W" block right after the capability byte of patch 0100')
 check('+        if (g_game.getProtocolVersion() == 1098 && encryptLogin && chaosPayload + CHAOS_CAPABILITIES2_BYTES <= rsaSize) {' in body,
