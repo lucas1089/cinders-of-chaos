@@ -19,6 +19,13 @@
                "source": "stock locker 1732-1735 (items.xml: locker, a rotatable container; NOT the depot locker 2589-2592, which needs a depot id)"},
     "table": {"block": true, "ids": [1615], "source": "stock square table 1615"},
     "chair": {"block": true, "dirs": {"s": 1650, "w": 1651, "n": 1652, "e": 1653},
-              "source": "stock wooden chair 1650-1653"}
+              "source": "stock wooden chair 1650-1653"},
+    "campfire": {"block": false, "ids": [48561],
+                 "source": "O740: the flame campfire of data/items/decor_flames.csv (O623, install step decorflames, client pair 74); walkable, light 7"},
+    "bedroll": {"group": "dry_grass",
+                "source": "O740: no bedroll or sleeping mat art exists; the dry grass of the decor kits (walkable) stands in as a straw bed"},
+    "barrels": {"group": "barrels"},
+    "debris": {"group": "debris_grey",
+               "source": "O740: loose debris of a ruin (walkable); no broken wall piece exists in our art, so a ruin opens gaps in the wall"}
   }
 }

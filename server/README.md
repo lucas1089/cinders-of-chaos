@@ -25021,7 +25021,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   walls, light props, corner pieces, wall props, clusters of 2-5, path edging, floor detail denser near walls. Never on
   a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
   that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
-- **Buildings (O515):** a plan may list `buildings` (temple, depot, shop, house) with the door on a chosen side: see "Buildings in the planner (O515)" below.
+- **Buildings (O515, O740):** a plan may list `buildings` (temple, depot, shop, house, camp) with the door on a chosen side, floors above, a cellar and a ruin share: see "Buildings in the planner (O515)" and "Buildings phase 2 (O740)" below.
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
@@ -25141,7 +25141,7 @@ the repo were compared before and after by hand.
   The compiler writes no houses today, so `house` is a building shape only. Beds (a bed is two linked items with a bed
   type). Depot lockers: the base depot locker 2589-2592 needs a depot id attribute, which the OTBM writer does not
   know, so the depot uses the stock locker 1732-1735 as a stand-in. Towns and the temple position in the OTBM (the writer
-  writes an empty towns node). Shop offers (the NPC stub says words only). Windows. Second floors and stairs in a building. Door
+  writes an empty towns node). Shop offers (the NPC stub says words only). Windows. (Second floors, stairs, ruins, camps and cellars: "Buildings phase 2 (O740)".) Door
   action ids and keys. **Not verified:** which of the two stock door pairs is drawn across a wall and which along it (the
   table says `v` = 1210 / 1211 for a wall that runs north-south), and the facing order of the stock bench, bookcase, locker
   and chair ids (`building_families.json`). Both wait for `check-kits` and a look on the pair. Hung pieces on south and east walls
@@ -25152,6 +25152,64 @@ the repo were compared before and after by hand.
   side, the village example, the QA cases (a pillar inside the door, a crate in front of the altar, a piece hung on the
   door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
   the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
+
+## Buildings phase 2 (O740) (`tools/area_plan_buildings.py`, `tools/areaplan/prefabs/camp.json`)
+
+Four additions to "Buildings in the planner (O515)". All are off by default: a plan without them compiles to the same
+bytes. All 86 plans, examples and inbox entries that compiled before gave the same OTBM, frame, spawn file and manifest
+after (compared with the tools of the commit before). `area_plan_buildings2_test.py` holds village_square, river_hunt
+and crypt_boss by checksum.
+
+- **Floors above.** Building field `floors_above` (0-2) on a walled kind. Each floor is the footprint again at z - 1 and
+  z - 2: the full wall ring of the same brush (the door tile is wall there), the floor family, the pieces of the
+  prefab's `upper` (house: shelf, table, crates; shop: crates, barrels, shelf), one per free interior corner. The floors
+  are joined by our stair brush, the rule of a plan's `stairs` connection: the stone stairs 3687 on the floor below
+  lead up to the tile north of the stairs ground 411 above; stepping on 411 goes down south of the stone stairs.
+  `plan_levels` picks the stairs tile farthest from the door with a free landing on both floors. A stair tile changes
+  the floor, so every free tile of every floor stays joined to the way in without it. The roof moves to the top
+  floor (z - 1 - n). A house on 3 floors gets a validator WARN: the house audit (O513) wants at most 2. The floors above
+  get no view frame: they look down on the floor below, as a roof does.
+- **Ruin share.** Plan field `ruin` (0-100, default 0) and building field `ruin` (overrides it). The share of the wall
+  tiles breaks into gaps; half the share of the free floor takes back the ground that lay there before. Our art has no
+  broken wall piece, so a ruin opens gaps and lays loose debris (`debris_grey`, walkable) on half of the gaps and patches.
+  The walls left get the piece their new neighbours want. Kept: the door, the two wall tiles on each side of it (so
+  the map tile audit, which does not count a door as wall, gives the same piece) and a hung piece with its neighbours.
+  Nothing blocks, so the door path stays as it was. A ruin has no roof. A building with floors above stays whole.
+- **Camp.** Kind `camp`, an open prefab (`"open": true`): 5-7 tiles a side, no wall, no door, no roof, no NPC. It takes
+  the walkable tiles of its patch and keeps their ground and border pieces; a tree or a stone in it stays (cutting it
+  would square off the edge of the floor, the outline rule of "Asymmetric areas"). At least 75 % of the patch walkable,
+  every piece on a walkable tile the entry reaches. Pieces: the flame campfire 48561 (`data/items/decor_flames.csv`,
+  O623, install step decorflames, pair 74), crates, barrels. No bedroll or sleeping mat art exists: the walkable dry
+  grass of the decor kits stands in as straw beds.
+- **Cellar.** Building field `cellar`: `true` or `{biome, size}` (crypt, vault, catacomb, catacomb_earth, hall or cave;
+  default crypt 10 x 8). The area generator builds a small dungeon of one zone one floor down (`cellar_area` in
+  `area_plan_compile.py`: a plan of 24 x 24 or more, its own seed), its arrival under the building's hole. The large
+  hole 8972 lies on a free interior tile, the ladder 1386 on the arrival below climbs to the tile south of the hole
+  (the generator's own link rule). The cellar gets the view frame of its own biome (earth 101). It is an ERROR when the
+  cellar overlaps a floor of the plan; the validator refuses a cellar over a deeper floor of the plan.
+- **QA.** Every floor above: the stairs reach it, every free tile in reach, every wall piece right. The cellar: the
+  hole, the tile south of it, the ladder and every cellar tile in reach. A ruin gap is walkable. A camp tile out of
+  reach is an ERROR. The floors above and the cellars are added to the reach with their floor changes
+  (`bres['edges']`), are protected from the dressing pass and are exempt from the border rule. A floor or roof above z 0 is
+  an ERROR.
+- **Example.** `tools/areaplan/examples/ruined_hamlet.json` (Thornwick Ruins, forest, 104 x 84, levels 20-70, seed
+  74011, ruin 40). The old inn (shop 9 x 8): two floors above (42 tiles each) and a crypt cellar (97 walkable tiles,
+  22 steps from the entry). The watch house: one floor above (25 tiles). The burnt house: a vault cellar (81 tiles) and
+  ruin 40 (9 gaps). The fallen shop: ruin 60 (15 gaps). The empty house: ruin 40 (8 gaps). A hunters' camp of 6 x 5 in
+  the clearing. Measured: 1694 walkable tiles, no QA error or warning, nothing out of reach, map tile audit clean.
+  The look audit lists HANGING_CUT 3: the tapestry of the O515 house prefab, also in village_square (5). 10 of 12 seeds
+  are clean; the other 2 break the outline rule with no building at all.
+- **House audit rules** (`audit_houses.py`, O513) on its whole houses: at most 2 floors, a door with a walkable tile
+  outside, 13-180 tiles, the whole roof. A ruin is no house anyone owns: the roof rule does not apply to it. The
+  compiler still writes no houses.xml.
+- **Not done.** Hung pieces and NPCs on the floors above. A broken wall piece (no art). Stairs that turn with the
+  building (the stair brush runs north-south only). A room plan for the floors above.
+- **Tests.** `tools/area_plan_buildings2_test.py` (CI step "Area planner"): the camp prefab and families, `plan_levels` on
+  all 184 layouts of the four walled kinds with 1 or 2 floors above and a cellar (736 cases; only the 7-deep shop with
+  the door south has no room for stairs and hole together: the planner turns its door), `ruin_plan`, `open_layout`, the
+  example (stairs and ids, roofs, cellars, ruins, camp, every tile reached over its floor changes,
+  house audit rules, the map tile audit), the QA (a stair taken away, a cellar with no hole, a roof off the map), the
+  validator, and the three checksums. `area_planner_test.py` compiles the example with the others.
 
 ## Area planner candidates and reach repair (O738) (`tools/area_plan_rank.py`, `areagen_core.lua` `A.linkPath`)
 

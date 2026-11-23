@@ -29,10 +29,10 @@ def ok(cond, what):
 
 EX = os.path.join(HERE, 'areaplan', 'examples')
 examples = {f[:-5]: json.load(open(os.path.join(EX, f))) for f in sorted(os.listdir(EX)) if f.endswith('.json')}
-ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'river_hunt', 'swamp_hunt', 'temple_throne', 'village_square'],
-   'six example plans: %s' % sorted(examples))
+ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'river_hunt', 'ruined_hamlet', 'swamp_hunt', 'temple_throne', 'village_square'],
+   'seven example plans: %s' % sorted(examples))
 NUMERIC = {'size', 'floors', 'level', 'seed', 'count', 'respawn', 'pack', 'width', 'at', 'x', 'y', 'z', 'gold',
-           'experience', 'chest_action', 'floor', 'dx', 'dy', 'radius', 'fords'}
+           'experience', 'chest_action', 'floor', 'dx', 'dy', 'radius', 'fords', 'ruin', 'floors_above'}
 
 
 def numbers_outside(v, key=None):
@@ -214,14 +214,15 @@ def frame_ok(name, res):
     """the frame fills the whole view of every walkable tile, never on a tile of the area, unwalkable, one ground"""
     fr, man = res['frame'], res['manifest']['frame']
     allt = set(res['tiles']) | set(fr)
-    ok(not C.view_frame(res['walk'], allt), name + ': no void in view of a walkable tile')
+    # a building's floors above ground (O740) look down on the floor below, as a roof does: no frame round them
+    ok(not C.view_frame({t for t in res['walk'] if t[2] >= res['origin'][2]}, allt), name + ': no void in view of a walkable tile')
     ok(not set(fr) & set(res['tiles']) and not set(fr) & res['walk'], name + ': the frame is off the area and its floor')
     if man.get('thicket'):
         # a thicket biome: the whole plan rectangle, one blocking tree or bush on every tile
         ok(man['tiles'] == len(fr) and all(len(t['items']) == 1 and not t['flags'] for t in fr.values()),
            name + ': the frame is a thicket')
     else:
-        ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
+        ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']} | set(man.get('cellars', []))
            and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
     _h, back, problems = PC.read_otbm_full(res['frame_otbm'])
     ok(not problems and set(back) == set(fr), name + ': the frame OTBM reads back')

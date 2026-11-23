@@ -458,8 +458,11 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if plan.get('buildings'):
         mats = C.materials(pair24, dark)
         link_edges = [e for l in link_out for e in l['edges']]
+        border_ids = {i for s_ in (meta['sets'].values() if isinstance(meta['sets'], dict) else []) for i in s_}
         bres = BLD.place_all(plan, zrect, walk, tiles, special, corridor_cells(), arrival, (ox, oy, oz), mats, kit,
-                             BLD.families(), seed, E, Wn, lambda w_: C.tile_reach(w_, arrival, (), link_edges))
+                             BLD.families(), seed, E, Wn, lambda w_: C.tile_reach(w_, arrival, (), link_edges),
+                             cellar_fn=lambda b_, spec_, at_: cellar_area(plan, cat, b_, spec_, at_, seed, pair24, dark),
+                             border_ids=border_ids)
         bprot |= bres['prot'] | bres['special']
         special.update(bres['special'])
         for rec in bres['records']:
@@ -609,6 +612,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
               % (i, s['count'], name, zid, npts - (left + pack - 1) // pack, npts))
     # ---------------------------------------------------------------------------------------- decoration
     edges = [e for l in link_out for e in l['edges']] + list(teleports)
+    if bres and bres['edges']:
+        edges += bres['edges']      # O740: the stairs of the floors above and the cellars' holes and ladders
     sets = meta['sets'] if isinstance(meta['sets'], dict) else {}
     meta['sets'] = sets
     plain = set(meta['allowed']) & set(i for s_ in sets.values() for i in s_)
@@ -683,12 +688,17 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     # or room goes
     fr = meta.get('frame')
     frame = {}
+    extra = bres['extra'] if bres else set()     # O740: floors above (open to the floor below) and cellars (framed on their own)
     if not fr:
         E('the generator names no ground for the view frame')
     else:
         if fr['walk']:
             E('the view frame family %s is walkable; it needs a blocking ground' % fr['family'])
-        frame = {p: dict(ground=fr['ground'], items=[], flags=0) for p in C.view_frame(walk, tiles)}
+        frame = {p: dict(ground=fr['ground'], items=[], flags=0) for p in C.view_frame(walk - extra, tiles)}
+        for cel in (bres['cellars'] if bres else ()):      # O740: a cellar gets the frame of its own biome
+            for p in sorted(C.view_frame(cel['walk'], tiles)):
+                if p not in frame:
+                    frame[p] = dict(ground=cel['frame']['ground'], items=[], flags=0)
     # a thicket biome (meta['thicket']): the rock around the floor and its edge pieces become grass under a tree or a
     # bush on every tile, and the frame grows to the whole rectangle of the plan on each floor, all of it thicket
     th = meta.get('thicket')
@@ -744,6 +754,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         allowed.add(fr['ground'])
     if bres:
         allowed |= bres['wall_ids'] | bres['floor_ids'] | bres['door_ids'] | bres['item_ids'] | bres['roof_ids']
+        allowed |= bres['extra_allowed'] | bres['extra_ground'] | {c_['frame']['ground'] for c_ in bres['cellars']}
     unknown = {}
     for k, t in back.items():
         if t['ground'] is None and not t['items']:
@@ -772,8 +783,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         ground_ids.add(fr['ground'])
     block_ids = {i for g_ in kit['groups'].values() if g_.get('block') for i in g_['ids']} | wall_ids | {meta['chest']}
     if bres:
-        ground_ids |= bres['floor_ids']
-        block_ids |= bres['block_ids']
+        ground_ids |= bres['floor_ids'] | bres['extra_ground'] | {c_['frame']['ground'] for c_ in bres['cellars']}
+        block_ids |= bres['block_ids'] | bres['extra_block']
     for msg in tile_rule_errors(back, walk, ground_ids, block_ids, meta['portal']):
         E(msg)
     # borders closed: every transition to a higher family with a border set carries one of its pieces; every
@@ -801,7 +812,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 if k in walk:
                     open_edges += 1
                 continue
-            if bres and (k in bres['foot'] or nk in bres['foot']):
+            if bres and (k in bres['skip_border'] or nk in bres['skip_border']):
                 continue    # a building's wall closes the edge (its floor and walls stand on grounds of their own)
             if nk in frame_back and ids & wall_ids:
                 continue    # a dungeon wall closes the edge to the frame behind it
@@ -816,7 +827,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 unbordered += 1
     if open_edges:
         E('%d walkable tile edge(s) open into unbuilt tiles' % open_edges)
-    void = C.view_frame(walk, back)
+    void = C.view_frame(walk - {t for t in extra if t[2] < oz}, back)
     if void:
         E('%d tile(s) in view of a walkable tile have no ground (first %s): the client shows black void there'
           % (len(void), sorted(void)[0]))
@@ -914,12 +925,51 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             stubs.update(npc_stub(n))
     if bres:
         manifest['buildings'] = [BLD.manifest_of(r_, dist) for r_ in bres['records']]
+    if bres and bres['cellars']:     # O740: the frame grounds of the cellars, beside the area's own
+        manifest['frame']['cellars'] = sorted({c_['frame']['ground'] for c_ in bres['cellars']})
     manifest['stubs'] = sorted(stubs)
     return dict(otbm=data, frame_otbm=frame_data, frame=frame, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
                 stubs=stubs, dresser=dresser, buildings=(bres['records'] if bres else []),
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues, reach=reach)
+
+
+def cellar_area(plan, cat, b, spec, at, seed, pair24, dark):
+    """the cellar of a building (O740): the area generator builds a small dungeon (one zone, `size`, `biome`, default
+    crypt 10 x 8) whose arrival lies at `at`, the tile under the building's hole. -> dict(tiles, walk, hole, ladder,
+    frame, allowed, grounds, block, biome, problems)"""
+    spec = spec if isinstance(spec, dict) else {}
+    biome = spec.get('biome', 'crypt')
+    zw, zh = spec.get('size', [10, 8])
+    k = sum(ord(ch) for ch in b['id'])
+    mini = dict(schema=plan.get('schema', 'chaos-area-plan/1'), id=('cellar_' + b['id'])[:40], name='%s cellar' % b['id'],
+                biome=biome, size=[max(24, zw + 14), max(24, zh + 14)], floors=1, level=list(plan['level']),
+                seed=(seed * 31 + k) % 2000000000 or 1, zones=[dict(id='cellar', floor=1, size=[zw, zh], place='center')],
+                entry=dict(zone='cellar'))
+    problems = ['the cellar plan: %s' % i for i in C.errors(C.validate(mini, cat))]
+    if problems:
+        return dict(tiles={}, walk=set(), hole=0, ladder=0, frame=dict(ground=0), allowed=set(), grounds=set(),
+                    block=set(), biome=biome, problems=problems)
+    lay = C.layout(mini, cat)
+    ax, ay = lay['arrival']
+    mini['origin'] = dict(x=at[0] - ax + 1, y=at[1] - ay + 1, z=at[2])
+    area, meta = run_build(mini, cat, lay, pair24, dark)
+    tiles, walk = {}, set()
+    for t in area['tiles']:
+        p = (t['x'], t['y'], t['z'])
+        tiles[p] = dict(ground=t['ground'], items=[(i, {}) for i in t['items']], flags=0)
+        if t['walk']:
+            walk.add(p)
+    problems = [p for p in area['problems'] if 'cannot be reached' not in p and 'links,' not in p]
+    if tuple(area['arrival']) != tuple(at):
+        problems.append('the generator put the arrival at %s, not under the hole %s' % (tuple(area['arrival']), tuple(at)))
+    kit = D.kits()
+    wall_ids = {i for ids in (meta.get('walls') or {}).values() for i in ids}
+    return dict(tiles=tiles, walk=walk, hole=meta['hole'], ladder=meta['ladder'], frame=meta['frame'],
+                allowed=set(meta['allowed']) | D.all_ids(), biome=biome, problems=problems,
+                grounds={g for d in meta['families'].values() for g in d['grounds'] if g is not None},
+                block={i for g_ in kit['groups'].values() if g_.get('block') for i in g_['ids']} | wall_ids)
 
 
 def tile_rule_errors(back, walk, ground_ids, block_ids, portal):

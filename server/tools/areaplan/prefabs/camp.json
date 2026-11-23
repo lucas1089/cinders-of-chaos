@@ -1,0 +1,17 @@
+{
+  "kind": "camp",
+  "open": true,
+  "note": "O740: a small open camp, no walls, no door, no roof. The patch keeps its ground and border pieces; its pieces stand on floor slots (dx, dy over the whole patch, \"c\" the middle). The campfire is the flame campfire of the decor flames (pair 74). No bedroll art exists: the dry grass stands in as straw beds round the fire.",
+  "width": [5, 7],
+  "height": [5, 7],
+  "stats": "no statistic in docs/MAP_GUIDE.md; 5-7 tiles a side keeps a fire, three beds and a crate pile in reach of every tile",
+  "pz": false,
+  "slots": [
+    {"dx": "c", "dy": "c", "family": "campfire", "role": "floor"},
+    {"dx": 1, "dy": 1, "family": "bedroll", "role": "floor"},
+    {"dx": -2, "dy": 1, "family": "bedroll", "role": "floor"},
+    {"dx": 1, "dy": -2, "family": "bedroll", "role": "floor"},
+    {"dx": -1, "dy": -1, "family": "crates", "role": "floor"},
+    {"dx": 0, "dy": -1, "family": "barrels", "role": "floor"}
+  ]
+}

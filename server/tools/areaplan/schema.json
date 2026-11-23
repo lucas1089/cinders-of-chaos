@@ -169,6 +169,12 @@
         }
       }
     },
+    "ruin": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "O740: the share (percent) of a walled building's wall tiles that break into gaps and of half its free floor that loses the floor (server/README.md \"Buildings phase 2 (O740)\"); default 0; a building with floors above stays whole; nothing it does blocks a way"
+    },
     "origin": {
       "type": "object",
       "additionalProperties": false,
@@ -586,9 +592,10 @@
               "temple",
               "depot",
               "shop",
-              "house"
+              "house",
+              "camp"
             ],
-            "description": "the prefab: areaplan/prefabs/<kind>.json"
+            "description": "the prefab: areaplan/prefabs/<kind>.json; camp is an open kind (O740): no walls, no door, no roof"
           },
           "zone": {
             "type": "string",
@@ -716,6 +723,54 @@
                 }
               }
             }
+          },
+          "floors_above": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "O740: floors above the building at z - 1 and z - 2, joined by stairs, the roof on the top one (default 0); a walled kind on floor 1 only"
+          },
+          "cellar": {
+            "description": "O740: a small dungeon one floor down, built by the area generator, reached by a large hole inside and a ladder back up (true, or {biome, size}); the floor under the building must be free",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "biome": {
+                    "enum": [
+                      "crypt",
+                      "vault",
+                      "catacomb",
+                      "catacomb_earth",
+                      "hall",
+                      "cave"
+                    ],
+                    "description": "default crypt"
+                  },
+                  "size": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 6,
+                      "maximum": 16
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "the cellar zone, default [10, 8]"
+                  }
+                }
+              }
+            ]
+          },
+          "ruin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "O740: this building's ruin share (default the plan's `ruin`)"
           }
         }
       }
