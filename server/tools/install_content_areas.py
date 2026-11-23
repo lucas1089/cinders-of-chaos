@@ -896,7 +896,17 @@ def spawned_tiles(text):
     return {c for b in SPAWN_RE.findall(text) for c in spawn_cells(b)}
 
 
-def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
+def display_facing(cell, mid):
+    """the spawn direction of a display cell (O713): toward its teleport and the corridor, south (2) for a cell
+    north of the corridor's middle row `mid` (twice the row), else north (0); south when `mid` is unknown. The same
+    rule as hunt_teleports_core.lua H.displayFacing: the spawn file's default is north, which turned every north
+    cell's monster away from the player."""
+    if mid is None:
+        return 2
+    return 2 if cell[1] * 2 < mid else 0
+
+
+def update_spawns(text, plan_blocks, displays, spawntime, takeover=(), mid=None):
     """the spawn file with the plans' blocks (once each) and exactly the wanted display blocks; returns (text, notes).
     displays: {id: (monster, cells[, spawntime])}; takeover: display cells of the hall order whose unmarked blocks (the
     base server's own display monsters) are replaced too"""
@@ -935,15 +945,16 @@ def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
         pid, monster = want[c]
         have = [b for b in centers.get(c, []) if 'chaoshunt="%s"' % pid in b]
         if have:
-            if 'name="%s"' % monster in have[0] and 'spawntime="%d"' % times[c] in have[0]:
+            if ('name="%s"' % monster in have[0] and 'spawntime="%d"' % times[c] in have[0]
+                    and 'direction="%d"' % display_facing(c, mid) in have[0]):
                 continue
             text = text.replace(have[0], '', 1)
         elif centers.get(c):
             notes.append('display cell %s already has a spawn (not ours); skipped' % (c,))
             continue
         add.append('\t<spawn centerx="%d" centery="%d" centerz="%d" radius="1" chaoshunt="%s">\n'
-                   '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" />\n\t</spawn>\n'
-                   % (c[0], c[1], c[2], pid, monster, c[2], times[c]))
+                   '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" direction="%d" />\n\t</spawn>\n'
+                   % (c[0], c[1], c[2], pid, monster, c[2], times[c], display_facing(c, mid)))
     if add:
         notes.append('%d display spawn(s) added' % len(add))
     for pid, xml in plan_blocks:
@@ -1641,7 +1652,9 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             else:
                 mons = {p['id']: p['monster'] for p in order if p.get('display', True)}
                 displays, takeover = {pid: (mons[pid], s['cells']) for pid, s in slots.items() if mons.get(pid)}, ()
-            new, notes = update_spawns(text, plan_blocks, displays, cfg.get('displaySpawntime', 120), takeover)
+            tr = (cfg.get('room') or {}).get('teleportRows')
+            spawn_mid = sum(tr) if tr else None
+            new, notes = update_spawns(text, plan_blocks, displays, cfg.get('displaySpawntime', 120), takeover, mid=spawn_mid)
             for n in notes:
                 log('spawns: ' + n)
             if new != text:

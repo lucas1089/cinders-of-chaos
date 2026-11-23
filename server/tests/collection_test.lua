@@ -122,7 +122,7 @@ end
 eq(broken(function(l) l[2].points = 20 end):find("used twice", 1, true) ~= nil, true, "two milestones at one score")
 eq(broken(function(l) l[1].rewards[1].text = ("x"):rep(30) end):find("characters", 1, true) ~= nil, true, "a long title")
 eq(broken(function(l) l[5].rewards[1].frame = "nope" end):find("no picture", 1, true) ~= nil, true, "an unknown plate frame")
-eq(broken(function(l) l[2].rewards[1].key = "kill_soulspark" end):find("source collection", 1, true) ~= nil, true, "a sold cosmetic is no reward")
+eq(broken(function(l) l[2].rewards[1].key = "kill_windswept" end):find("source collection", 1, true) ~= nil, true, "a sold cosmetic is no reward")
 eq(broken(function(l) l[2].points = 61 end):find("granted at", 1, true) ~= nil, true, "the cosmetic and the milestone must agree")
 eq(broken(function(l) l[1].rewards = {} end):find("at least one reward", 1, true) ~= nil, true, "a milestone without a reward")
 eq(broken(function(l) l[4].rewards = {{kind = "title", text = "Gold"}} end):find("no milestone grants it", 1, true) ~= nil, true,
@@ -219,7 +219,7 @@ eq(M.refresh(ann).score, 0, "an empty account has 0 points")
 eq(titleSources.collection(ann), nil, "no titles yet")
 -- Ann owns a 450-coin mount (9), an outfit (150 coins, 3) and two 200-coin cosmetics (8): 20 points = Collector
 wardrobeOwned.Ann = {mount = {{l = 368, o = 1}}, outfit = {{l = 128, o = 1}}}
-cosOwned[10] = {lvl_dawn = true, kill_soulspark = true}
+cosOwned[10] = {lvl_dawn = true, kill_windswept = true}
 local v = M.refresh(ann)
 eq(v.score, 20, "20 points") eq(v.milestones[1].done, true, "the first milestone is reached")
 eq(#ann.msgs, 1, "told once") eq(ann.msgs[1]:find("Collector", 1, true) ~= nil, true, "the reward is named")
@@ -235,8 +235,8 @@ cosOwned[10].rare_gilded = true
 cosOwned[10].lvl_ember = true
 cosOwned[10].lvl_frost = true
 cosOwned[10].rare_crimson = true
-for _, key in ipairs({"skin_warrior_void", "skin_warrior_storm", "skin_ranger_sunfire", "skin_mystic_voidfire", "kill_shatter",
-	"kill_bloodbloom", "chat_cinder", "chat_frost", "foot_ember", "foot_frost", "glow_gold"}) do
+for _, key in ipairs({"skin_warrior_void", "skin_warrior_storm", "skin_ranger_sunfire", "skin_mystic_voidfire", "kill_frostmelt",
+	"kill_unravel", "chat_cinder", "chat_frost", "foot_ember", "foot_frost", "glow_gold"}) do
 	cosOwned[10][key] = true
 end
 v = M.refresh(ann)
@@ -285,8 +285,8 @@ registered.ChaosCollectionLogin.onLogin(c1) eq(#timers, 1, "login schedules a sw
 timers = {}
 eq(ChaosShop.deliver(c1, "ok"), true, "delivery passes through") eq(#timers, 1, "a delivery schedules a sweep") runTimers()
 eq(ChaosShop.deliver(c1, "fail"), false, "a failed delivery") eq(#timers, 0, "does not")
-eq(ChaosCosmetics.grant(50, "kill_shatter", "store"), true, "grant passes through") eq(#timers, 1, "a store grant schedules a sweep") runTimers()
-eq(ChaosCosmetics.grant(50, "kill_shatter", "store"), false, "an owned one is refused") eq(#timers, 0, "no sweep")
+eq(ChaosCosmetics.grant(50, "kill_frostmelt", "store"), true, "grant passes through") eq(#timers, 1, "a store grant schedules a sweep") runTimers()
+eq(ChaosCosmetics.grant(50, "kill_frostmelt", "store"), false, "an owned one is refused") eq(#timers, 0, "no sweep")
 eq(ChaosCosmetics.grant(50, "chat_collector", "collection"), true, "a collection grant") eq(#timers, 0, "does not loop")
 -- the last character of an account logging out drops the cached state
 registered.ChaosCollectionLogout.onLogout(c1)

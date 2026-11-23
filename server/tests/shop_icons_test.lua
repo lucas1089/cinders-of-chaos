@@ -93,6 +93,21 @@ for _, cat in ipairs(cfg.categories) do
 		end
 	end
 end
+-- owner 2026-11-22: "Premium Ashen Pass" showed a supreme health potion (and a pile of 100). A pass offer is not a potion
+do
+	local seen = 0
+	for _, cat in ipairs(cfg.categories) do
+		if cat.name == "Season Pass" then
+			check(cat.icon and cat.icon.item ~= 26031 and cat.icon.count == 1, "the Season Pass category icon is not a potion pile")
+			for _, o in ipairs(cat.offers or {}) do
+				seen = seen + 1
+				check(o.icon ~= 26031, (o.name or "?") .. ": not the supreme health potion")
+				check(o.iconCount == 1, (o.name or "?") .. ": drawn once, not as a pile")
+			end
+		end
+	end
+	check(seen >= 2, "season pass offers found (" .. seen .. ")")
+end
 check(K.iconCount({iconCount = 3}, true) == 3, "an own iconCount wins")
 check(K.iconCount({count = 7}, true) == 7, "a category's own count wins")
 check(K.iconCount({}, false) == 1, "a non-stackable item is drawn once")

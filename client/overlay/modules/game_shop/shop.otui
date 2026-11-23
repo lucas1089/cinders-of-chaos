@@ -108,7 +108,7 @@ ShopRailImage < ShopRail
 // ---------------------------------------------------------------- chips (the subcategories of a group, the filter of
 // the search results)
 ShopChip < UIButton
-  size: 108 22
+  size: 108 18
   font: Verdana-9px-antialiased
   color: #d6c9ae
   text-offset: 0 1
@@ -620,18 +620,33 @@ MainWindow
       color: #8c8070
       font: Verdana-9px-antialiased
 
-    Panel
+    // compact (owner 2026-11-22: 22 subcategories in six rows took most of the page): rows of 18 px, at most two rows high,
+    // a scroll bar beside them when there are more (shop.lua setChipsHeight)
+    ScrollablePanel
       id: chips
       anchors.top: pathLabel.bottom
       anchors.left: parent.left
       anchors.right: parent.right
-      margin-top: 6
+      margin-top: 4
       height: 0
+      padding-right: 12
+      vertical-scrollbar: chipsScrollBar
+      focusable: false
       layout:
         type: grid
         flow: true
-        cell-size: 108 22
-        cell-spacing: 3
+        cell-size: 108 18
+        cell-spacing: 2
+
+    VerticalScrollBar
+      id: chipsScrollBar
+      anchors.top: chips.top
+      anchors.bottom: chips.bottom
+      anchors.right: chips.right
+      width: 10
+      step: 20
+      pixels-scroll: true
+      visible: false
 
     // the offer cards of a category, the search or the history
     ScrollablePanel

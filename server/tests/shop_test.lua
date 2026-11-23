@@ -573,6 +573,21 @@ do
 	ok(bv.outfit.mount, "the mount is on the bundle icon (wings and auras need the XML files, absent in this test)")
 	local iv = viewOf("item:2304x100")
 	eq(iv.look, nil, "an item has no look"); eq(iv.type, "item", "an item keeps its picture")
+	eq(iv.amount, 100, "an item pack says how many items the buyer gets (the card's xN)")
+	-- the world boosts are one purchase each: drawn as a pile, but no amount (owner 2026-11-22: "x100" under World Experience)
+	local seenBuff = 0
+	for _, cat in ipairs(Shop.view(A)) do
+		for _, e in ipairs(cat.offers or {}) do
+			if e.offer.service == "worldBuff" then
+				local c, page, o = find(A, e.offer.key)
+				request(A, "get_page", {category = c, page = page})
+				local wv = last("category_page").data.offers[o]
+				seenBuff = seenBuff + 1
+				eq(wv.amount, nil, e.offer.name .. " has no item amount")
+			end
+		end
+	end
+	ok(seenBuff >= 4, "the world boost offers were checked (" .. seenBuff .. ")")
 end
 eq(buy(A, "frame:frost"), "Purchase complete", "frame")
 eq(Shop.frameOf(A), "frost", "frame shown")

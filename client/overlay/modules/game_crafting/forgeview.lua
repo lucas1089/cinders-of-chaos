@@ -330,7 +330,7 @@ function V.header(item)
   if num(sk.max) > 0 then parts[#parts + 1] = tr('sockets %d/%d', num(sk.count), num(sk.max)) end
   if item.ruined then parts[#parts + 1] = tr('RUINED') end
   if item.corrupted then parts[#parts + 1] = tr('CORRUPTED') end
-  h.line = table.concat(parts, ' · ')
+  h.line = table.concat(parts, ' - ')
   return h
 end
 
@@ -597,10 +597,10 @@ function V.compare(ex)
   return nil
 end
 
--- the cost row of the what-happens box: {name = "Cost: 1 Ember Orb", have = "you have 7 · 3 backpack · 4 stash"}
+-- the cost row of the what-happens box: {name = "Cost: 1 Ember Orb", have = "you have 7: 3 backpack, 4 stash"}
 function V.costRow(a)
   if not a then return { name = '', have = '' } end
-  return { name = tr('Cost: 1 %s', a.name), have = tr('you have %d · %d backpack · %d stash', a.total, a.bag, a.stash) }
+  return { name = tr('Cost: 1 %s', a.name), have = tr('you have %d: %d backpack, %d stash', a.total, a.bag, a.stash) }
 end
 
 -- the FORGE button: {title, sub, risky, enabled}

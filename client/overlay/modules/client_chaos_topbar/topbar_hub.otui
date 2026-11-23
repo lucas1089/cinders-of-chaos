@@ -144,7 +144,7 @@ ChaosHubCard < UIWidget
     anchors.left: parent.left
     margin-top: 9
     margin-left: 60
-    width: 114
+    width: 98
 
     $mobile:
       font: chaos-heading-14px
@@ -234,18 +234,30 @@ ChaosHubCard < UIWidget
     margin-left: 40
     visible: false
 
-  // the pin mark, top right: the card is pinned to the bar (drawn from the saved pins); the picture is the pin glyph of
-  // the mark atlas, tinted by topbar_hub.lua
+  // the pin mark, on the lower corner of the glyph badge: the card is pinned to the bar (drawn from the saved pins); the
+  // picture is the pin glyph of the mark atlas, tinted by topbar_hub.lua
   UIWidget
     id: pinMark
     size: 20 20
     image-source: images/glyphs_mark
-    anchors.top: parent.top
-    anchors.right: parent.right
-    margin-top: 3
-    margin-right: 4
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 3
+    margin-left: 36
     visible: false
     phantom: true
+
+  // the favourite star, top right (O718): a click toggles it, topbar_hub.lua draws the filled star (a favourite) or the outline
+  UIWidget
+    id: favStar
+    size: 20 20
+    image-source: images/glyphs_mark
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 2
+    change-cursor-image: true
+    cursor: pointer
 
 // the hub window: fixed 780 x 262 under the bar (phone: 780 x 290). A ChaosWindow, not a main window: it sits under the bar
 // and not in the middle of the screen. topbar_hub.lua sets its title and escape key.
@@ -254,17 +266,79 @@ ChaosHubWindow < ChaosWindow
   size: 780 262
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  margin-top: 48
+  margin-top: 54
   draggable: false
   focusable: true
 
   $mobile:
     size: 780 290
-    margin-top: 62
+    margin-top: 66
 
   ChaosHubTabs
 
   ChaosHubCards
+
+  UIWidget
+    id: footer
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    focusable: false
+
+    $mobile:
+      height: 20
+
+    UILabel
+      id: hint
+      font: Verdana-9px-antialiased
+      color: #8c8070
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      text-auto-resize: true
+      phantom: true
+
+      $mobile:
+        font: verdana-11px-antialised
+
+// the search box (O718): a text field and the cards that match, in a window the size of the hub window
+ChaosHubSearchBox < ChaosTextEdit
+  id: query
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 24
+
+  $mobile:
+    height: 32
+
+ChaosHubResults < UIWidget
+  id: results
+  anchors.top: query.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  anchors.bottom: footer.top
+  margin-top: 8
+  focusable: false
+
+// the search window: fixed 780 x 262 under the bar (phone: 780 x 290), like the hub window. topbar_hub.lua sets its title,
+// the placeholder and the hint.
+ChaosHubSearchWindow < ChaosWindow
+  id: chaosHubSearch
+  size: 780 262
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 54
+  draggable: false
+  focusable: true
+
+  $mobile:
+    size: 780 290
+    margin-top: 66
+
+  ChaosHubSearchBox
+
+  ChaosHubResults
 
   UIWidget
     id: footer

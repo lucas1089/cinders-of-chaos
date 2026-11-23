@@ -65,11 +65,15 @@ PAIR_AWAKENFX_HEADINGS = 77   # the awakened kit's line and wave heading north, 
                     # wave that does not face east keeps the single (awakened_look_config.lua eastOnly). On windows-assets since 2026-11-22 (PAIR_ASSETS 77);
                     # the client sees it once chaosClientPair is 77.
 
+PAIR_DRAWN_WINGS = 78   # the six code-drawn wings of O581 phase 2 (gen_drawn_wings_new.py build-new): outfits 3555-3560 appended to pair 77, wings.xml ids
+                    # 122-127. data/lib/chaos_drawn_wings.lua (the store offers) and install_outfits.py (the wings.xml lines) act only from this pair.
+                    # On windows-assets (8433cf2, 2026-11-22, owner approved): PAIR_ASSETS 78
+
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 77
-PAIR_ASSETS_DAT_MD5 = '80cdf40aa03fc6097752f2d0822ffae7'
+PAIR_ASSETS = 78
+PAIR_ASSETS_DAT_MD5 = 'c2bcc0e562485be8470c41fd9db964c5'
 
 
 def parse(text):

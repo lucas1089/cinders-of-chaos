@@ -41,4 +41,24 @@ function L.request(info, clientId, on)
   return { pos = pos, cid = tonumber(clientId), on = on and true or false }
 end
 
+-- Forge entry (O719): "Forge" in the same menu opens the forge window with the item placed. Only an item that lies in an open
+-- container (the bench works on the backpack; the server refuses equipped items and the ground) and that can be a craftable
+-- piece: not stackable, not a container, and rolled gear (rarity), a unique, equipment (info.equip: it has a cloth slot or is
+-- a weapon), a Rift Key or a waystone by name. The server checks again (crafting.lua craftable) and answers with a text.
+function L.forgeShow(info)
+  if type(info) ~= 'table' or info.stackable or info.container then return false end
+  local pos = L.ownPosition(info.pos)
+  if not pos or pos.y < 0x40 then return false end
+  if (tonumber(info.rarity) or 0) > 0 or info.unique or info.equip then return true end
+  local name = type(info.name) == 'string' and info.name:lower() or ''
+  return name:find('rift key', 1, true) ~= nil or name:find('waystone', 1, true) ~= nil
+end
+
+-- the extended-opcode data of crafting.lua selectItem
+function L.forgeRequest(info, clientId)
+  local pos = L.ownPosition(info and info.pos)
+  if not pos or pos.y < 0x40 or not tonumber(clientId) then return nil end
+  return { pos = pos, clientId = tonumber(clientId) }
+end
+
 return L

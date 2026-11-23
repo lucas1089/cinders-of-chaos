@@ -99,7 +99,13 @@ local config = {
 		{id = 802, key = "emote_salute", kind = "emote", price = 200},
 		{id = 803, key = "emote_flourish", kind = "emote", price = 250},
 		{id = 804, key = "emote_halo", kind = "emote", price = 250},
-		{id = 805, key = "emote_shadow", kind = "emote", price = 200}
+		{id = 805, key = "emote_shadow", kind = "emote", price = 200},
+		-- O715: the first generation of store kill effects (refund: server/sql/chaos_zz_killfx_removal.sql)
+		{id = 101, key = "kill_soulspark", kind = "killfx", price = 200},
+		{id = 102, key = "kill_sunring", kind = "killfx", price = 200},
+		{id = 103, key = "kill_shatter", kind = "killfx", price = 200},
+		{id = 104, key = "kill_bloodbloom", kind = "killfx", price = 200},
+		{id = 105, key = "kill_radiant", kind = "killfx", price = 200}
 	},
 
 	-- Combat cosmetics others see (O318, cosmetics.lua). Visual only: an effect on a tile, sent to everyone who stands
@@ -248,16 +254,9 @@ local config = {
 			spells = {250, 199}, vfx = {aura_burst_gold = "aura_burst_red", dome_blast_holy = "dome_blast_fire"}},
 
 		-- ------------------------------------------------------------------ kill effects (store 200, two from achievements; one more at the end)
-		{id = 101, key = "kill_soulspark", kind = "killfx", icon = 5944, source = "store", price = 200, vfx = "px633_indigo",
-			name = "Soul Spark", desc = "A violet skull rises from the monster you finish."},
-		{id = 102, key = "kill_sunring", kind = "killfx", icon = 2304, source = "store", price = 200, vfx = "px586_fire",
-			name = "Sun Ring", desc = "A ring of fire flares where your killing blow lands."},
-		{id = 103, key = "kill_shatter", kind = "killfx", icon = 2274, source = "store", price = 200, vfx = "ice_shatter",
-			name = "Frost Shatter", desc = "Your kills shatter into shards of ice."},
-		{id = 104, key = "kill_bloodbloom", kind = "killfx", icon = 9020, source = "store", price = 200, vfx = "px197_crimson",
-			name = "Blood Bloom", desc = "A spiky burst of blood marks every kill."},
-		{id = 105, key = "kill_radiant", kind = "killfx", icon = 10305, source = "store", price = 200, vfx = "px586_white",
-			name = "Radiant Ring", desc = "A white sun ring shines over your kills."},
+		-- O715: the five oldest store kill effects (ids 101-105: Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, plain
+		-- effects of the server, a skull and rings) are gone (owner 2026-11-22: "os mais antigos estao ruins, podem ser deletados"); a
+		-- character that owned one finds it in no list and its chosen kill effect reads as none (cosmetics.lua `retired`).
 		{id = 106, key = "kill_voidring", kind = "killfx", icon = 6500, source = "achievement", achievement = "legendary_250",
 			vfx = "px396_indigo", name = "Void Ring", desc = "A dark ring closes over your kills. Achievement: Legend's Bane."},
 		{id = 107, key = "kill_harbinger", kind = "killfx", icon = 2229, source = "achievement", achievement = "tiered_1000",

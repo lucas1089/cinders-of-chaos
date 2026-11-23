@@ -118,6 +118,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/gen_cosmeticfx_art_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/clean_wing_shadows_test.py  # the baked ground shadow of the wings (O508, pair 64)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_drawn_wings_test.py  # code-drawn wings (O581, O583): the drawing rules, the 121 designs, the pair step on a synthetic pair, the torso rule
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_drawn_wings_new_test.py  # the six code-drawn wings as new wings looks 3555-3560 of pair 78 (O581 phase 2): table rules, sums, anchors, the server ids file, build-new / live-new on a synthetic pair, a pair that is not pair 77 refused
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_drawn_wings.py new-table --check  # new_looks.csv, .sums, wing_anchors.lua and server data/lib/chaos_drawn_wings_ids.lua are current
           /tmp/fxenv/bin/python -I client/tools/sprites/clean_pack_dither_test.py  # the Bayer mesh of the pack effects, the hard cut of the import, the blue nova (O523, pair 66)
           /tmp/fxenv/bin/python -I client/tools/gen_tooltip_art.py --check  # ring, glow and diamond of the card item tooltip (O422)
           /tmp/fxenv/bin/python -I client/tools/gen_hotbar_art.py --check  # nine-slice frames, slots, caps and chat skin of game_hotbar / game_floatchat (O414)

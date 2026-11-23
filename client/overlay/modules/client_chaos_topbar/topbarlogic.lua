@@ -85,4 +85,21 @@ function T.sortList(list, textOf)
   return out
 end
 
+-- Owner 2026-11-22 ("top menu as vezes aparece em cima da passive tree"): the bar raised itself above every sibling on
+-- each refresh, and the Passive Tree (a window that fills the game root panel) asks for a refresh when its points arrive,
+-- a moment after it raised itself, so the bar then covered the tree's top row of buttons. `above` lists the siblings drawn
+-- after the bar ({visible, window, x, y, width, height}); true when a visible window of them overlaps the bar, which then
+-- stays where it is, below that window.
+function T.coveredByWindow(bar, above)
+  if not bar or (bar.width or 0) <= 0 or (bar.height or 0) <= 0 then return false end
+  for _, w in ipairs(above or {}) do
+    if w.visible and w.window and (w.width or 0) > 0 and (w.height or 0) > 0
+       and w.x < bar.x + bar.width and bar.x < w.x + w.width
+       and w.y < bar.y + bar.height and bar.y < w.y + w.height then
+      return true
+    end
+  end
+  return false
+end
+
 return T

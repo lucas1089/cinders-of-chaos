@@ -754,4 +754,11 @@ if okFun and type(FUN) == "table" and FUN.addStore then
 	FUN.addStore(cfg)
 end
 
+-- the six code-drawn wings of client pair 78 (data/lib/chaos_drawn_wings.lua; nothing while config.lua chaosClientPair is below 78): at the
+-- end of the Wings category (O581 phase 2)
+local okDrawn, DRAWN = pcall(dofile, "data/lib/chaos_drawn_wings.lua")
+if okDrawn and type(DRAWN) == "table" and DRAWN.addStore then
+	DRAWN.addStore(cfg)
+end
+
 return cfg

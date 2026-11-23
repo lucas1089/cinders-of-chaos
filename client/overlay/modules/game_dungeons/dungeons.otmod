@@ -5,6 +5,7 @@ Module
   website: None
   sandboxed: true
   autoload: true
+  dependencies: [ game_hudmove ]
   scripts: [ dungeonsview, dungeons ]
   @onLoad: init()
   @onUnload: terminate()

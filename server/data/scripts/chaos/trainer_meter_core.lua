@@ -14,7 +14,7 @@ local floor, max, min = math.floor, math.max, math.min
 
 M.CLASSES = {normal = true, elite = true, boss = true}
 
-local DEFAULTS = {windowMs = 5000, bucketMs = 250, minSpanMs = 1000, endAfterMs = 10000, maxRows = 40, maxRowsSent = 10,
+local DEFAULTS = {windowMs = 5000, bucketMs = 250, minSpanMs = 1000, endAfterMs = 10000, maxRows = 40, maxRowsSent = 25,
 	maxElementsSent = 10, maxPartySent = 8, minLevel = 1, maxLevel = 2500}
 
 -- the config with the defaults under it (a table used for every call, built once by the caller: M.configure(cfg))
@@ -103,11 +103,12 @@ function M.active(s)
 	return s ~= nil and s.start ~= nil and not s.ended
 end
 
--- buckets older than the window leave it
+-- buckets that begin at or before the window's start leave it, so a steady 100 a second reads 100 over a 5 s window (a hit
+-- exactly windowMs old is out; the edge is blurred by one bucket, bucketMs)
 local function prune(cfg, s, now)
 	local limit = now - cfg.windowMs
 	local bms = cfg.bucketMs
-	while s.bh <= s.bn and (s.bt[s.bh] + 1) * bms <= limit do
+	while s.bh <= s.bn and s.bt[s.bh] * bms <= limit do
 		s.wsum = s.wsum - s.bv[s.bh]
 		s.bt[s.bh], s.bv[s.bh] = nil, nil
 		s.bh = s.bh + 1

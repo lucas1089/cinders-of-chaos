@@ -352,21 +352,33 @@ for age = 0, 20000, 37 do
 end
 eq(A.simple >= 0 and A.simple < A.loop, true, 'the still frame is a loop frame')
 
--- size and margins: the foot of the picture lies on the item's tile, whatever the zoom
+-- size and margins: the foot of the picture lies on the item's tile, whatever the zoom. The engine model is the one of the live
+-- client (O715, owner screenshot 2026-11-22: the O569 margins put the ring and the column half a tile right and down of the item):
+-- a tile widget's centre is drawn at dest + 32 + margin with dest the tile's CENTRE.
+local function engineCentre(tile, ml, mt) return tile / 2 + 32 + ml, tile / 2 + 32 + mt end
 local w64, h64, ml64, mt64 = LB.box(64, 64, 'normal')
 eq(w64, 128, 'a 64 px tile: the picture is twice as wide')
 eq(h64, 256, 'a 64 px tile: and twice as high')
-eq(ml64, 0, 'a 64 px tile is centred by a zero margin')
-for _, tile in ipairs({ 24, 32, 48, 64, 96 }) do
+eq(ml64, -32, 'a 64 px tile: the margin cancels the 32 px the engine adds to the tile centre')
+for _, tile in ipairs({ 24, 32, 48, 64, 96, 128 }) do
   local w, h, ml, mt = LB.box(tile, tile, 'normal')
-  local centreX = 32 + ml -- the engine puts the widget centre at tile corner + 32 + margin
-  local centreY = 32 + mt                 -- the widget's centre, from the tile's corner
+  local centreX, centreY = engineCentre(tile, ml, mt) -- the widget's centre from the tile's corner
   local footY = centreY - h / 2 + A.footY * (h / A.h) -- the picture's foot row on the screen
   local wantY = tile / 2 + A.footDrop * tile / A.tile -- the tile's centre plus the drop
   eq(math.abs(footY - wantY) <= 1.5, true, 'the foot of the beam is on the tile at ' .. tile .. ' px (' .. footY .. ' vs ' .. wantY .. ')')
   eq(math.abs(centreX - (tile / 2)) <= 1.5, true, 'the beam is centred on the tile at ' .. tile .. ' px')
   eq(math.abs(w / h - A.w / A.h) < 0.02, true, 'the picture keeps its shape at ' .. tile .. ' px')
 end
+-- the rule of O569 (dest = the tile's corner) puts the beam half a tile right and down in that engine: the report
+LB.DEST = 'corner'
+do
+  local _, h, ml, mt = LB.box(64, 64, 'normal')
+  local cx, cy = engineCentre(64, ml, mt)
+  eq(cx - 32, 32, 'the corner rule: the beam centre is 32 px (half a tile) right of the item centre')
+  local footY = cy - h / 2 + A.footY * (h / A.h)
+  eq(math.abs(footY - (32 + A.footDrop * 2) - 32) <= 1.5, true, 'the corner rule: and its ring half a tile below the item')
+end
+LB.DEST = 'centre'
 local ws, hs = LB.box(64, 64, 'short')
 local wt, ht = LB.box(64, 64, 'tall')
 eq(hs < h64 and h64 < ht, true, 'the height setting scales the picture')

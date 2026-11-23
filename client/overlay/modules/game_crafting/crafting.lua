@@ -875,6 +875,14 @@ local function itemFlag(thing, key)
   return ok and (tonumber(v) or 0) or 0
 end
 
+-- a piece of equipment: it has a cloth slot (armour, jewellery, shields) or is a weapon; false when the client cannot say
+local function itemEquip(thing)
+  local ok, slot = pcall(function() return thing:getClothSlot() end)
+  if ok and (tonumber(slot) or 0) > 0 then return true end
+  local okW, weapon = pcall(function() return thing:getType():isWeapon() end)
+  return okW and weapon == true
+end
+
 local function menuInfo(lookThing, useThing)
   local thing = useThing or lookThing
   if not thing or not thing.isItem or not thing:isItem() then return nil end
@@ -885,7 +893,7 @@ local function menuInfo(lookThing, useThing)
     stackable = thing.isStackable and thing:isStackable() or false,
     container = thing.isContainer and thing:isContainer() or false,
     rarity = itemFlag(thing, A.RARITY), unique = itemFlag(thing, A.UNIQUE) > 0,
-    locked = itemFlag(thing, A.LOCKED) > 0, name = okName and name or nil }
+    locked = itemFlag(thing, A.LOCKED) > 0, name = okName and name or nil, equip = itemEquip(thing) }
 end
 
 local function hookMenu()
@@ -907,6 +915,20 @@ local function hookMenu()
         return ok and res or false
       end)
   end
+  -- Forge (O719): the forge window opens with this item on the bench (forge.lua F.openWith)
+  gi.addMenuHook('chaosItemForge', tr('Forge item'),
+    function(_, lookThing, useThing)
+      local ok, err = pcall(function()
+        local i = menuInfo(lookThing, useThing)
+        local req = i and K.forgeRequest(i, i.thing:getId())
+        if req and CraftingForge and CraftingForge.openWith then CraftingForge.openWith(req) end
+      end)
+      if not ok then g_logger.warning('[crafting] forge menu: ' .. tostring(err)) end
+    end,
+    function(_, lookThing, useThing)
+      local ok, res = pcall(function() return K.forgeShow(menuInfo(lookThing, useThing)) end)
+      return ok and res or false
+    end)
   entry('chaosItemLock', tr('Lock item'), false)
   entry('chaosItemUnlock', tr('Unlock item'), true)
 end

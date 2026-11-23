@@ -659,6 +659,8 @@ local function clientOffer(e, player)
 	if offer.kind == "item" then
 		local it = ItemType(offer.id)
 		view.type, view.item, view.count = "item", it:getClientId(), offer.count or 1
+		-- the items the buyer gets: the only count the card writes as "xN" (view.count is how the picture is drawn)
+		view.amount = offer.count or 1
 		view.title = view.title or it:getName()
 	elseif offer.kind == "wings" then
 		local w = WINGS[offer.id] or {}

@@ -272,7 +272,12 @@ layout = function()
     drawn[b.key] = true
     local box = GL.widgetBox(boxes[b.key])
     local sig = {}
-    for _, e in ipairs(b.rows) do sig[#sig + 1] = e.text .. '|' .. tostring(e.d.dim) .. tostring(e.d.highlight) end
+    -- the timer digits are not part of the signature (O716): they change every second and a layout that rebuilt the labels for
+    -- that threw away the widget under the pointer, so a click that began on it was lost; tickTimers rewrites the text
+    for _, e in ipairs(b.rows) do
+      local text = GL.showTimer(e.row, e.d, settings) and (e.text:gsub('%d', '0')) or e.text
+      sig[#sig + 1] = text .. '|' .. tostring(e.d.dim) .. tostring(e.d.highlight)
+    end
     local render = table.concat(sig, '\n') .. '@' .. box.w .. 'x' .. box.h .. '+' .. box.cx .. ',' .. box.cy .. settings.size .. (GL.accent or '')
     if t.render ~= render or not t.widget or t.widget:isDestroyed() then
       destroyWidget(t)
@@ -624,7 +629,7 @@ local function onMousePress(widget, mousePos, button)
     pressed = nil
     return false
   end
-  pressed = { l = l, button = button, pos = { x = mousePos.x, y = mousePos.y } }
+  pressed = { l = l, key = tipKey(l), button = button, pos = { x = mousePos.x, y = mousePos.y } }
   -- A left press goes on to the map: UIGameMap:onMousePress remembers the tile there, and without it onDragEnter
   -- refuses, so an item under a label could not be dragged (owner 2026-10-17). The click is told apart from a drag on
   -- release (GL.isDrag). The right button has no drag; its press stays ours.
@@ -638,7 +643,8 @@ local function onMouseRelease(widget, mousePos, button)
   if button ~= p.button then return false end
   if GL.isDrag(p.pos, mousePos) then return false end -- a drag the engine did not take: the map decides
   local l = labelAt(mousePos)
-  if l and l.label == p.l.label then
+  -- the same item, not the same widget: the labels may have been built again between the press and the release (O716)
+  if l and (l.label == p.l.label or tipKey(l) == p.key) then
     activate(l, mousePos, button)
   end
   return true

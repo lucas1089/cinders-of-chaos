@@ -726,6 +726,7 @@ collision check") and be added here.
 | 163 | `nemesis` | `nemesis.lua` | `game_nemesis` | client -> server `get`, server -> client `state` (see "Nemesis") |
 | 164 | `fxOwner` | `fxowner.lua` (the client's wish), `data/lib/chaos_fx_owner.lua` (the marks; wrappers installed by `data/spells/chaos/_supports.lua`) | `game_effectopacity` | client -> server `hello {need}`, server -> client `marks {b, m}` only to a client that asked (O567, README "Effect owner marks") |
 | 165 | `statusVfx` | `status_vfx.lua` (the scan and the wish), `data/lib/chaos_status_vfx.lua` (the rules) | `game_statusfx` | client -> server `hello {on}`, server -> client `cfg {on, e, ms}`, `s {l}` only to a client that asked (O597, README "Status layer (O597)") |
+| 166 | `monsterInspect` | `monster_inspect.lua` | `game_monsterinspect` | client -> server `inspect {cid}`, server -> client `result {...}` (through `Chaos.sendChunked`), `denied {code}` (O721, README "Inspect Monster (O721)") |
 | 168 | `spellRanks` | `spell_ranks.lua`, `spell_forms.lua`, `spell_combos.lua` | `game_spellranks` | client -> server `open`, `pick {spell, tier, pick}`, server -> client `state {on, v, s}`, `forms {v, f}`, `pick {ok, why, price, ...}`, `rank {s}` (a rank-up), `combo {id, n, x, y, z}` (O686 phases 2, 4, 5 and 6, README "Spell ranks (O686 phase 2)", "Spell Forms (O686 phase 4)", "Spell combos (O686 phase 6)") |
 | 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
@@ -6324,6 +6325,15 @@ the store (`cosmetics_store.lua` / `shop_config.lua`), `cosmetics_config.lua` (`
   The collection score of an account that owned one drops by its points (the cosmetics are read live); milestones already claimed stay.
 - A rare-loot effect no longer shows the kill animation in the preview (the offer's look carries `lootfx`, not `killfx`; client
   `game_lookpreview` plays it over a loot bag beside the figure, client/MANIFEST.md "Store cosmetics fixes (O564)").
+
+### Old kill effects removed (O715)
+Owner, 2026-11-22 (pt-BR, translated): "the on-death effects: the latest shown are good, the oldest ones, where the skull appears for example, are bad ... they can be deleted". The store sold 14 kill effects: five of the first generation (plain server effects: a skull, rings, a shatter, a blood burst) and nine dissolves (O563, O597), where the monster's own sprite comes apart.
+- **Removed (5, store, 200 coins each):** Soul Spark (101, the skull), Sun Ring (102), Frost Shatter (103), Blood Bloom (104), Radiant Ring (105). They are in `cosmetics_config.lua` `retired` (ids and keys never reused) and in no list, store or Pact shelf.
+- **Kept (the 9 dissolves of the store):** Windswept, Unravelling, Ashfall, Frostmelt, Meltdown, Swallowed, Bare Bones, Boil Off, Stonebreak; and every kill effect earned elsewhere (achievements, PvP vendors, Pact months, Candlemarks, raid and Cinderheart drops: 23, among them the dissolves Emberfade, Void Collapse, Gilded Dust, Honor Brand, Verdigris Splash, Pact Ember). 17 of those 23 are still plain server effects of the old generation (Void Ring, Harbinger's Toll, Cinderheart Crown, Sovereign's Pyre, Cinder Throne, Candle Seal, Marchfire, Arcane Vortex, Gilded Ascent, War Surge, Thornbloom, Titan's Pyre, Rift Sigil, Falling Stars, Summit Seal, Pact Venom, Pact Frost): they are rewards that pact, PvP, Candlemarks and achievement configs and tests name, so they stay until the owner says to retire them too (the same method: `retired` rows and one more refund file).
+- **Players who owned one:** `server/sql/chaos_zz_killfx_removal.sql` (run by the install step `sql`, one transaction, a second run pays nothing): `store` rows get the coins back (last purchase price, else 200) with a refund row in the purchase log; `marks` rows (the Pact shelf sold Soul Spark, Frost Shatter and Blood Bloom for 200 Marks) get the Marks back; `mentor` rows (Soul Spark for 140 Mentor Marks) get Windswept instead; staff grants get nothing. Then the rows leave `chaos_cosmetics` and a chosen id 101-105 leaves storage 7100940 (the choice reads as none).
+- **Stand-ins in other configs:** the Pact shelf sells Windswept instead of Soul Spark, May Frostmelt instead of Frost Shatter, December Unravelling instead of Blood Bloom (200 Marks, as before); the mentor shop sells Windswept (140); the Harvest hollow charm pool has Ashfall and Unravelling.
+- **The preview** (client `game_lookpreview`): the dying monster is centred in the box. The stage centred the monster and its effect together, so an asymmetric effect pushed the monster off the middle; a kill scene now makes the extent symmetric about the monster's own centre (`P.killExtent`) and a dissolve ignores the plain effect it does not play.
+- Tests: `tests/cosmetics_removal_test.lua` (retired list against the SQL, nothing live), `cosmetics_test.lua`, `collection_test.lua`, `shop_looks_test.lua` (fixtures moved to kept effects; list positions after id 105 moved up by 5), client `lookpreview_core_test.lua`; `store_model.lua --check` passes (805 offers).
 
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
@@ -14520,6 +14530,19 @@ base script and NPC: after this change the late boss materials above are all use
 price of the item price table: the classic creature products (vendor loot by design) and the energy creature parts
 26158-26179 and the scarab ocarina 27432, which no base NPC buys (the Loot Buyer pays the table's price).
 
+### Orbs in the Orbs Pouch of the purse (O719)
+
+Owner 2026-11-22 (pt-BR): the forge showed 0 for every orb while they lay in the orb bag. Cause: a pouch the store delivers lies
+in the purse (the store inbox), outside inventory slots 1-10, and `player:getItemCount` / `removeItem` never walk it (only the
+Rune Bag has the engine patch 0092). A pouch in the backpack, or in a bag of it, was always counted.
+- `ChaosPouches.purseOrbCount`, `countOrbs`, `removeOrbs` (`pouches.lua`): the stacks that lie directly in an Orbs Pouch that lies
+  directly in the purse and that the character owns are added to the engine count. A pouch inside the backpack is not visited
+  there: no double count. A spend takes the engine's orbs first (as before), then the pouch; short total: nothing is taken.
+- `crafting.lua` (`carried`, `spendCarried`) uses them for the orb counts of the state (backpack part of the forge row), the bench
+  explain cost, the check before a craft and the spend. Stash counts are unchanged. Salvage and the atlas keep the engine count.
+- Tests: `tests/pouches_test.lua` (count, spend, other owner, backpack pouch once, no purse), `tests/forge_test.lua` (row count and
+  a craft from the purse pouch).
+
 ## Crafting bonus (`tools/patch_base_crafting_bonus.py`, `chaos/craft_bonus*.lua`, `tests/craft_bonus_test.lua`, `tests/base_crafting_bonus_test.lua`)
 
 **The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
@@ -17087,6 +17110,78 @@ under it); Social > Inspect Player and a typed name; the privacy checkbox switch
 request refused with the name in the text and no stale data in the window. Not tested in game: a hidden staff member, a player
 out of range (unit tests), a character with a guild (the guild line is the stock `getGuild`), rift / trial records of a
 character that has them (the fields were 0).
+
+## Inspect Monster (O721: `monster_inspect.lua`, `monster_inspect_core.lua`, `monster_inspect_config.lua`, client `game_monsterinspect`)
+
+Owner 2026-11-22 (pt-BR): "quando a gente dá um control+right click, faça uma opção pra inspecionar o monstro, mostrando todas as
+informações dele. ou shift+left click" and "o shift click já abre a janela direto". The right-click menu of a monster has a new
+entry **Inspect** (pt-BR "Inspecionar") next to Look, and **Shift + left click** on a monster opens the window at once. Look
+(the menu entry and Shift + right click) stays, on items, players and monsters. Ctrl + right click shows the same menu.
+Extended opcode `ChaosOpcodes.monsterInspect` = **166** (the next number after 165 that nothing uses: not in the reference
+server, not a base client `ExtendedIds`, no `ChaosOpcodes` value, no client module; `tests/monster_inspect_test.lua` checks all
+four). Files: `monster_inspect_core.lua` (pure: who may ask, the budget, the monster file reader, every row), `monster_inspect_config.lua`
+(numbers, element words, one sentence per modifier), `monster_inspect.lua` (the engine reads and the handler); test
+`server/tests/monster_inspect_test.lua` (mocked engine, both interpreters).
+
+**Protocol (JSON `{action, data}`, answers through `Chaos.sendChunked`; the biggest window stays under one 8000 byte packet).**
+
+| direction | action | data |
+|---|---|---|
+| client -> server | `inspect` | `{cid}` the creature id of the monster clicked |
+| server -> client | `result` | `{cid, name, level, tier, flags = [{key, name?}], outfit, health = {cur, max, pct, hidden?}, family = {cat, race, diff}, mods = [{key, name, text}], exp = {base, tier?, rate?, total, bonus?, rank?}, resist = {elements = [{name, pct}], immune, conditions}, armour = {armor, defense, class, spell, weapon}, attacks = [{name, kind, element, chance, interval, min, max, range}], abilities = [{kind, name, ...}], speed = {base, now}, loot = {total, bands, rows, locked, tierText}, uniques = [{name, cid, boss, set}], areas = [{text, count}], bestiary = {kills, stage, th, next}}` |
+| server -> client | `denied` | `{code}` `notfound` (not a monster, a hunt teleport room display monster, no such creature), `range`, `rate`, `bad` |
+
+**Rules.** Only a monster the player can see: the same floor, within 10 tiles (`rangeX` / `rangeY`) and in view
+(`Player:canSeeCreature`); a player, an NPC and the display monsters of the hunt teleport room answer like a creature that is not
+there. Request budget per player: one request per 600 ms, a bucket of 8, one more every 2 s (`cooldownMs`, `bucketSize`,
+`bucketPerSecond`; the bucket is dropped at logout). The client never guesses: every number and word of the window is in the
+result; a text is an English key the client translates (the server sends no sentence).
+
+**What the window shows (everything the player may know of a live monster).**
+
+- Header: outfit, name, level (the nameplate level: `getDisplayLevel`, else `ChaosMonsterLevels.estimate`), flags (the tier label
+  Magic / Rare / Legendary, **Elite** when `ChaosMonsterDefence.classOf` is `elite`, **Boss**, Rift guardian / Omen guardian, Summon),
+  health bar with current / maximum / percent (a monster with hidden health shows the percent only; the numbers are in the
+  viewer's display scale, `ChaosDisplayScale.forPlayer`).
+- Overview: family (the Bestiary category), type (race), the Bestiary difficulty, speed (base and now).
+- Experience: one kill = base x the rank factor of its tier (`ChaosTiers[tier].xp`) x the viewer's experience stage
+  (`Game.getExperienceStage`), then the viewer's Bestiary entry bonus (completed entry) and rank bonus as rows. Before party
+  sharing, stamina and boosts.
+- Modifiers (affixes): the name and one sentence each (`monster_inspect_config.lua` `modifiers`, held to the list of
+  `ChaosMods` by the test).
+- Resistances: every element the monster takes more or less of after the O462 defence layer
+  (`ChaosMonsterDefence.effectiveResist`: file value, elite bonus, resist modifier, cap), the immunities
+  (`MonsterType:combatImmunities`) and the conditions it cannot suffer (`conditionImmunities`).
+- Defence: the flat armour and defence of the monster file, the armour class (normal / elite / boss) and the share of a typical
+  hit of its level the O462 armour layer removes, for a spell hit and for a weapon hit (`ChaosMonsterDefenceCore.armourReduction`,
+  `weaponShare` with the class cap).
+- Attacks: read from the monster file (`data/monster/<file>.xml` through `monsters.xml`, 64 KB at most, parsed by
+  `M.parseXml`, cached): melee (the engine's maximum from skill and attack), bolts and spells with their element (words of the
+  name, `attackElements`), range, chance, interval, and the damage range x the tier's damage factor x the display scale. A
+  monster defined in Lua has no file: the engine's `MonsterType:getAttackList()` answers (melee or spell, damage range).
+  The engine gives no spell name or element there. Cut at 12 rows.
+- Abilities: defence spells (heals, haste, invisibility, outfit change), summons (names, the most it holds), and the flags worth
+  knowing (runs at a health percent, pushes items / creatures, hides its health). Cut at 10.
+- Loot: the count of items in the loot table by rarity band (Common 10% and over, Uncommon 1%, Rare 0.1%, Very rare below), the
+  line of what its tier adds to the corpse, and the rows (name, chance, most per drop) by the **Bestiary stage of the viewer for this
+  monster** (below).
+- Unique items and set pieces that name this monster (`ChaosLoot.uniqueList` entries with the monster in `monsters`; a set piece is
+  marked). Leveling uniques with no monster list (the O342 window) are not listed: they drop from any monster of their level
+  window.
+- Where it lives: the Bestiary places (nearest town and floor, spawn count, 3 at most).
+- Your Bestiary progress: stage, kills, kills for the next stage.
+
+**What follows the Bestiary.** Everything above is open from the first look. The Bestiary sells the loot and the places as
+progress, so they keep its stages (`monster_inspect_config.lua` `reveal`, the same numbers as `bestiary_config.lua`): stage 2
+(Studied) shows the 4 rarest loot rows and the places, stage 3 (Mastered) the whole table (30 rows) and the uniques; below that
+the window says which stage opens it. A monster with no Bestiary entry (summons, scenery) has no family, no places and no loot
+rows, only the band counts. To open everything, set `reveal` to 0.
+
+**Not done / assumed.** No spell names for Lua-defined monsters (engine limit). The `MonsterType` methods `getElementList`,
+`combatImmunities`, `conditionImmunities`, `getLoot`, `getAttackList`, `armor`, `defense`, `isHealthHidden` and `isBoss` are read
+through `pcall`: one that is missing leaves its rows out. The damage range of a file attack is the file's, scaled by the tier's
+damage factor; the monster level damage bonus (`monster_damage.lua`), pack factors and modifiers that change hits are not in it.
+Not run on a server or in a client: the unit tests only.
 
 ## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
 
@@ -20097,6 +20192,8 @@ settings `trainer_meter_config.lua` (`Chaos.trainerMeterConfig`), pure logic `tr
 `tests/trainer_meter_test.lua` (core, the engine file on a mocked engine, the opcode), `tests/combatlog_test.lua` (the
 hook on the combat log), `tests/monster_defence_test.lua` (the target profile), `tests/display_scale_test.lua`. No DB
 table, no storage, no engine patch, no change to the training.
+
+O720 (owner 2026-11-22): the window of DPS now drops a bucket that begins at or before its start (a hit exactly `windowMs` old is out, so a steady 100 a second reads 100, not 120); `maxRowsSent` 25 (was 10, every source its own row, the rest one Others row). The client counts Time and Average on its own clock between two summaries and draws each bar as its share of the total (client/MANIFEST.md game_trainerdps).
 
 **Which monsters are trainers.** A monster whose name (lower case) contains `train` or `dummy` (the rule of
 `monster_tiers.lua`, which gives such a monster no tier), or is listed in `names`, unless it is in `exclude`. The training
@@ -25394,6 +25491,13 @@ ground and an old end tile without a copy: ground everywhere, the teleport after
 floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and labels, the floor labels in both
 languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
 places file's `front` or computed for both rows and the end row).
+
+### Display monsters face their teleport (O713)
+
+- The spawn block of a display monster had no `direction`, so the engine put it facing north. A monster in a north cell showed its back to the teleport and the player.
+- `install_content_areas.py` now writes `direction` on every display block: 2 (south) for a cell north of the corridor's middle row, 0 (north) for a cell south of it (`display_facing`). An old block without it is written again; a second run changes nothing.
+- `hunt_teleports.lua` turns a display monster to the same direction at its spawn and at every think (`ChaosHallDisplayGuard.onThink`, rule `ChaosHuntTeleportsCore.displayFacing`). This also holds the base server's own display blocks and a turn toward a player standing near.
+- Run the install step `contentareas` again on the VPS to write the attribute; the Lua part works at once.
 
 ## Quest hall showcase (O361) (`tools/patch_quest_showcase.py`, `tools/quest_showcase.json`, install step `questshowcase`)
 Owner 2026-11-02: "check that the quests give the same rewards as the showcases of the teleports"; "yes to all".
@@ -37667,3 +37771,11 @@ Owner 2026-11-21 (pt-BR "Ligar agora"): the spell upgrades of O686 are on. Ranks
 **What a player feels.** Everyone is at rank 0 with a spell factor of 1 until the first Spell Points arrive (about 0.3 to 0.7 hunting hours for the first rank of the main spell, "Spell upgrades live pass (O686 phase 8)"). Monsters have H from level 100 at once (about x1.02 at 100, x1.22 at 1000, x1.39 at 2500), so a character with no upgrades is slower and earns less experience an hour than before (17% less at level 1000, 28% at the cap, design 5.6): that is the owner's choice. PvP counts rank and Form numbers at half and has no combos and no awakening signature.
 
 **Rollback.** `enabled = false` in `spell_ranks_config.lua` and a restart: the state stays in storage and the table, nothing is felt, the opcode answers `on = false` and the client hides the tab. Do not turn `track` off alone while `enabled` is true.
+
+## Drawn wings (O581 phase 2; `data/lib/chaos_drawn_wings.lua`, `data/lib/chaos_drawn_wings_ids.lua`, install step `outfits`, gate `chaosClientPair` 78)
+Owner 2026-11-22 ("Todas as 6"): the six code-drawn wings of O581 are wings players can buy. Art: `client/tools/sprites/gen_drawn_wings.py` (ours, no art file); the pair: client/MANIFEST.md "Code-drawn wings as cosmetics (O581 phase 2)".
+- **What.** Ember Pinions, Ossuary Wings, Void Orbit, Bladefan, Rimeshard, Grave Lanterns: wings.xml ids 122 to 127 on client looks 3555 to 3560 (the looks follow the last outfit of pair 77, 3554). The 121 old wings keep ids 1 to 121. `chaos_drawn_wings_ids.lua` is generated from `client/tools/sprites/drawn_wings/new_looks.csv` (`gen_drawn_wings.py new-table`, CI `--check`; `tests/drawn_wings_test.lua` reads the csv too).
+- **Gate.** Config.lua `chaosClientPair` 78 or more, read at load (`M.PAIR78`, the same reading as the fun costumes). A client on pair 77 or older has no outfits 3555 to 3560 and would draw nothing, so below 78 nothing changes: no store offers, no wings.xml lines. `install_outfits.py` (step `outfits`) writes the six `<wing>` lines into the Chaos wings block only from 78 (`client_pair.py` `PAIR_DRAWN_WINGS`; below it a WARNING line, and the lines go again when the record is lowered). `PAIR_ASSETS` stays 77 until pair 78 is built and pushed to windows-assets (owner approval); then, once the client update is published, set the record: admin app, tab Comandos > card Par do cliente > field 78 > button Gravar (fallback: `chaos-ctl.sh client-pair set 78`).
+- **Store.** `ChaosDrawnWings.addStore` (called by `shop_config.lua`) appends six offers to the end of Cosmetics > Wings: kind `wings`, 300 coins each, the sentences of the pair 33 wings ("Fire wings, animated. Wear them with any aura, head accessory or cape.", so pt-BR texts exist). The price is a placeholder for the owner to confirm: the pair 33 wings cost 250 at 3 x 3 and 300 above it, these are 3 x 3 but drawn in two layers round the body, so they take the upper price (docs/PRICES.md; `tools/store_model.lua --check` passes with the gate on, 853 offers). None is a boss drop, a reward or a Founder piece.
+- **Not built yet.** Pair 78 is not built here (`gen_drawn_wings.py build-new` on the real pair 77). The tables that hold the dat md5 and `check_content.py` `PAIR_OUTFITS` change at the pair 78 push, not before.
+- **Tests.** `tests/drawn_wings_test.lua` (ids and looks in order, the csv rows, no clash with the old wings, gate off changes nothing, gate on: six offers at the end of Wings, the store validates, pt-BR for every sentence), `tools/install_outfits_test.py` `test_pair78`, `tests/shop_tree_test.lua` (the six are known wings when on).

@@ -372,6 +372,17 @@ def star(g):
     g.star(4, 4.4, 2.2, 0.7, n=4)
 
 
+def starsolid(g):
+    # the favourite star, filled (O718): one plain five point star, a little bigger than the card star
+    g.star(12, 13, 11.2, 4.7)
+
+
+def starline(g):
+    # the favourite star, outline (O718): the same star with its middle cut out
+    g.star(12, 13, 11.2, 4.7)
+    g.star(12, 13.4, 6.4, 2.7, cut=True)
+
+
 def cards(g):
     back = [(3, 6), (13, 3.2), (16.4, 16.6), (6.4, 19.4)]
     g.poly(back)
@@ -512,6 +523,7 @@ NAMES = (
     'funnel', 'gear', 'gem', 'hammer', 'heads', 'helm', 'horns', 'house', 'info', 'laurel', 'list', 'lootarrow', 'magnifier', 'map',
     'note', 'orbs', 'pack', 'peaks', 'pick', 'pin', 'pouch', 'power', 'rift', 'salvage', 'scales', 'scroll', 'sellcoin', 'shirt', 'sliders',
     'split', 'stall', 'star', 'stopwatch', 'swirl', 'swords', 'terminal', 'tome', 'tower', 'tree', 'trio', 'trophy',
+    'starsolid', 'starline',
 )
 
 _SHAPES = {
@@ -522,7 +534,7 @@ _SHAPES = {
     'pack': pack, 'peaks': peaks, 'pick': pick, 'pin': pin, 'pouch': pouch, 'power': power, 'rift': rift, 'salvage': salvage, 'scales': scales,
     'scroll': scroll, 'sellcoin': sellcoin, 'shirt': shirt, 'sliders': sliders, 'split': split, 'stall': stall, 'star': star,
     'stopwatch': stopwatch, 'swirl': swirl, 'swords': swords, 'terminal': terminal, 'tome': tome, 'tower': tower, 'tree': tree,
-    'trio': trio, 'trophy': trophy,
+    'trio': trio, 'trophy': trophy, 'starsolid': starsolid, 'starline': starline,
 }
 
 

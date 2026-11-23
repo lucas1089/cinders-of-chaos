@@ -25,7 +25,7 @@ local sql = read("sql/chaos_zz_emote_removal.sql")
 eq(sql ~= nil, true, "the refund file exists")
 
 -- the retired list: five emotes, ids 801-805, never reused, list prices 150-250
-eq(#cfg.retired, 5, "five retired emotes")
+eq(#cfg.retired, 10, "five retired emotes (O564) and five retired kill effects (O715)")
 local live = {}
 for _, c in ipairs(cfg.cosmetics) do
 	live[c.key], live["id" .. c.id] = true, true
@@ -35,7 +35,16 @@ for _, k in ipairs(cfg.kinds) do
 	eq(k.key ~= "emote", true, "no emote kind")
 end
 eq(cfg.storage.emote, nil, "the emote storage is not read any more (7102004 stays reserved)")
+local emotes, kills = {}, {}
 for _, r in ipairs(cfg.retired) do
+	if r.kind == "killfx" then
+		kills[#kills + 1] = r
+	else
+		emotes[#emotes + 1] = r
+	end
+end
+eq(#emotes, 5, "five emotes") eq(#kills, 5, "five kill effects")
+for _, r in ipairs(emotes) do
 	eq(r.kind, "emote", r.key .. " kind")
 	eq(live[r.key], nil, r.key .. " key not live") eq(live["id" .. r.id], nil, r.key .. " id not live")
 	eq(r.price >= 150 and r.price <= 250, true, r.key .. " list price")
@@ -48,6 +57,36 @@ eq(select(2, sql:gsub("''emote_[a-z]+''", "")), 10, "the SQL names no other emot
 eq(sql:find("7102004", 1, true) ~= nil, true, "the chosen emote storage is cleared")
 eq(sql:find("100000", 1, true) ~= nil and pact.marks.maxBalance, 100000, "the Marks cap of the Pact")
 eq(sql:find("START TRANSACTION", 1, true) ~= nil and sql:find("COMMIT;", 1, true) ~= nil, true, "one transaction")
+
+-- the kill effects of the first generation (O715): the retired list against the refund file, nothing of them live
+local ksql = read("sql/chaos_zz_killfx_removal.sql")
+eq(ksql ~= nil, true, "the kill effect refund file exists")
+for _, r in ipairs(kills) do
+	eq(live[r.key], nil, r.key .. " key not live") eq(live["id" .. r.id], nil, r.key .. " id not live")
+	eq(r.price, 200, r.key .. " list price")
+	eq(tonumber(ksql:match("SELECT ''" .. r.key .. "'' AS `k`, (%d+) AS `price`") or ksql:match("UNION ALL SELECT ''" .. r.key .. "'', (%d+),")), r.price,
+		r.key .. " price in the SQL")
+	eq(select(2, ksql:gsub("''" .. r.key .. "''", "")) >= 2, true, r.key .. " is refunded and deleted")
+	eq(ksql:find("AND `value` IN (101, 102, 103, 104, 105)", 1, true) ~= nil and ksql:find(r.id .. ",", 1, true) ~= nil or r.id == 105, true, r.key .. " chosen id cleared")
+end
+eq(select(2, ksql:gsub("''kill_[a-z]+''", "")), 11, "the SQL names no other kill effect (5 + 5 + the Windswept stand-in)")
+eq(ksql:find("7100940", 1, true) ~= nil and cfg.storage.killfx, 7100940, "the chosen kill effect storage is cleared")
+eq(ksql:find("START TRANSACTION", 1, true) ~= nil and ksql:find("COMMIT;", 1, true) ~= nil, true, "one transaction")
+eq(live.kill_windswept, true, "the stand-in for Mentor Marks buyers is a live kill effect")
+local mentor = read("data/scripts/chaos/mentor_config.lua")
+eq(mentor:find("kill_soulspark", 1, true), nil, "the mentor shop sells no retired kill effect")
+for _, it in ipairs(pact.marks.monthly) do
+	eq(it.key:find("^kill_") == nil or live[it.key] == true, true, "monthly " .. it.key .. " is live")
+end
+for _, it in ipairs(pact.marks.shelf) do
+	eq(live[it.key] == true, true, "shelf " .. it.key .. " is live")
+end
+local harvest = dofile("data/scripts/chaos/harvest_event_config.lua")
+for _, e in ipairs(harvest.charmPool) do
+	if e.kind == "cosmetic" then
+		eq(live[e.key] == true, true, "charm pool " .. e.key .. " is live")
+	end
+end
 
 -- the Pact shelf and its monthly slot name no emote
 for _, it in ipairs(pact.marks.monthly) do

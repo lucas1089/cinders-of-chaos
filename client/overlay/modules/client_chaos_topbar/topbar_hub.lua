@@ -14,6 +14,7 @@
 ChaosTopBarHub = {}
 local Hub = ChaosTopBarHub
 local H = ChaosTopBarHubLogic
+local F = ChaosTopBarFindLogic
 
 local host
 local model
@@ -26,6 +27,12 @@ local barSig, winSig
 local hintEvent
 local pins = {}
 local pinsFor
+local favs = {}               -- the favourite card texts of this character (O718)
+local favsFor
+local searchWin               -- the search window (O718)
+local searchQuery = ''
+local searchFirst             -- the card Enter opens
+local keyHandler
 
 -- ---------------------------------------------------------------- helpers
 local function alive(w)
@@ -112,6 +119,14 @@ local function savePins()
   setSetting(H.pinsSettingKey(charName()), H.serializePins(pins))
 end
 
+local function loadFavs()
+  favs = F.parseFavs(getSetting(F.favsSettingKey(charName())))
+end
+
+local function saveFavs()
+  setSetting(F.favsSettingKey(charName()), F.serializeFavs(favs))
+end
+
 -- ---------------------------------------------------------------- the model
 local function rebuildModel()
   model = H.build(ChaosTopBarTree, ChaosTopBarCards, host.items(), { admin = host.admin and host.admin() })
@@ -137,6 +152,17 @@ local function windowAlive()
   return alive(win)
 end
 
+local function searchAlive()
+  return alive(searchWin)
+end
+
+-- the window a hint is written to: the search window while it is open, else the hub window
+local function hintWindow()
+  if openHubId == F.SEARCH_HUB and searchAlive() then return searchWin end
+  if windowAlive() then return win end
+  return nil
+end
+
 local function hideHint()
   if hintEvent then removeEvent(hintEvent) hintEvent = nil end
 end
@@ -146,16 +172,20 @@ local function defaultHint()
     or tx('Click a card to open it. Right-click to pin it to the bar.')
 end
 
+local searchHint
+
 local function setHint(text, seconds)
-  if not windowAlive() then return end
-  local hint = get(win, 'hint')
+  local w = hintWindow()
+  if not w then return end
+  local hint = get(w, 'hint')
   if not hint then return end
   hideHint()
   hint:setText(text)
   if seconds then
     hintEvent = scheduleEvent(function()
       hintEvent = nil
-      if windowAlive() then get(win, 'hint'):setText(defaultHint()) end
+      local again = hintWindow()
+      if again then get(again, 'hint'):setText(openHubId == F.SEARCH_HUB and searchHint() or defaultHint()) end
     end, seconds * 1000)
   end
 end
@@ -177,6 +207,31 @@ local function pinCard(card)
   if host.relayout then host.relayout() end
   Hub.refresh()
   setHint(added and tx('Pinned to the bar.') or tx('Removed from the bar.'), 3)
+end
+
+local fillSearch
+
+-- redraws what is open after a favourite changed
+local function redrawOpen()
+  winSig = nil
+  if openHubId == F.SEARCH_HUB then
+    if fillSearch then fillSearch() end
+  elseif openHubId then
+    Hub.refresh()
+  end
+end
+
+local function toggleFav(card)
+  local list, changed = F.toggleFav(favs, card.text)
+  if not changed then
+    setHint(tx('Favourites are full. Remove one first.'), 4)
+    return
+  end
+  local added = #list > #favs
+  favs = list
+  saveFavs()
+  redrawOpen()
+  setHint(added and tx('Added to favourites.') or tx('Removed from favourites.'), 3)
 end
 
 local function clickCard(card, keepOpen)
@@ -251,6 +306,17 @@ local function buildCard(parent, card, index, cardH)
     mark:setVisible(true)
   end
 
+  -- the favourite star: filled and gold when it is one, an outline when not; a click toggles it
+  local star = get(w, 'favStar')
+  local isFav = F.isFav(favs, card.text)
+  setGlyph(star, 'mark', isFav and 'starsolid' or 'starline', isFav and color('menuNew', '#ffd24a') or color('textDisabled', '#6b6258'))
+  star:setTooltip(isFav and tx('Remove from favourites') or tx('Add to favourites'))
+  star.onMouseRelease = function(self, pos, button)
+    if button ~= MouseLeftButton or not self:containsPoint(pos) then return false end
+    guard('favourite', toggleFav)(card)
+    return true
+  end
+
   local function hoverBadge(hovered)
     if alive(badge) then badge:setImageClip(hovered and '0 24 64 24' or '0 0 64 24') end
   end
@@ -271,6 +337,19 @@ local function buildCard(parent, card, index, cardH)
   return w
 end
 
+-- the text of page p of the Favourites tabs: its own name when one page is enough
+local function pageName(p, pages)
+  if pages <= 1 then return tx('Favourites') end
+  local ok, v = pcall(tr, 'Page %d / %d', p, pages)
+  return ok and type(v) == 'string' and v or tostring(p)
+end
+
+-- the hub the window shows: a hub of the model, or the Favourites as a virtual hub (its tabs are pages of 8 cards)
+local function currentHub()
+  if openHubId == F.FAV_HUB then return F.favHub(model, favs, tx('Favourites'), pageName) end
+  return H.findHub(model, openHubId)
+end
+
 local function selectTab(hub, tabIndex)
   openTab = tabIndex
   setSetting(H.tabSettingKey(hub.id, charName()), hub.tabs[tabIndex].id)
@@ -280,21 +359,22 @@ end
 
 local function fillWindow()
   if not windowAlive() then return end
-  local hub = H.findHub(model, openHubId)
+  local hub = currentHub()
   if not hub then closeHub() return end
   if not openTab or not hub.tabs[openTab] then
     openTab = H.pickTab(hub, getSetting(H.tabSettingKey(hub.id, charName())))
   end
-  local sigParts = { hub.id, tostring(openTab), isPhone() and 'p' or 'd', table.concat(pins, '+') }
+  local shownTab = hub.tabs[openTab]       -- nil for an empty Favourites
+  local sigParts = { hub.id, tostring(openTab), isPhone() and 'p' or 'd', table.concat(pins, '+'), '|' .. table.concat(favs, '+') }
   for _, tab in ipairs(hub.tabs) do
     sigParts[#sigParts + 1] = tab.id .. ':' .. tostring(tab.new) .. ':' .. tab.count
   end
-  for _, c in ipairs(hub.tabs[openTab].cards) do sigParts[#sigParts + 1] = cardSig(c) end
+  for _, c in ipairs(shownTab and shownTab.cards or {}) do sigParts[#sigParts + 1] = cardSig(c) end
   local sig = table.concat(sigParts, ';')
   if sig == winSig then return end
   winSig = sig
 
-  win:setText(hubName(hub))
+  win:setText(openHubId == F.FAV_HUB and hub.name or hubName(hub))
   local tabsPanel = get(win, 'tabs')
   tabsPanel:destroyChildren()
   local x = 0
@@ -314,8 +394,20 @@ local function fillWindow()
   local cardsPanel = get(win, 'cards')
   cardsPanel:destroyChildren()
   local cardH = isPhone() and 76 or H.CARD_H
-  for i, card in ipairs(hub.tabs[openTab].cards) do
+  for i, card in ipairs(shownTab and shownTab.cards or {}) do
     buildCard(cardsPanel, card, i, cardH)
+  end
+  if not shownTab then
+    -- an empty Favourites: one line saying how to fill it
+    local empty = g_ui.createWidget('ChaosHubCardText', cardsPanel)
+    empty:addAnchor(AnchorTop, 'parent', AnchorTop)
+    empty:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    empty:addAnchor(AnchorRight, 'parent', AnchorRight)
+    empty:setMarginTop(24)
+    empty:setTextAlign(AlignCenter)
+    empty:setTextWrap(true)
+    empty:setHeight(40)
+    empty:setText(tx('No favourites yet. Click the star on a card to add it here.'))
   end
   setHint(defaultHint())
 end
@@ -331,6 +423,8 @@ closeHub = function()
   if alive(shade) then shade:destroy() end
   shade = nil
   if windowAlive() then win:hide() end
+  if searchAlive() then searchWin:hide() end
+  searchQuery, searchFirst = '', nil
   openHubId, openTab, winSig = nil, nil, nil
   markOpen()
 end
@@ -353,10 +447,10 @@ end
 local function openHub(hubId)
   if host.opened then pcall(host.opened) end   -- the host may ask a module for a fresh count (answered later)
   rebuildModel()
-  local hub = H.findHub(model, hubId)
-  if not hub then return false end
+  if hubId ~= F.FAV_HUB and not H.findHub(model, hubId) then return false end
   if alive(shade) then shade:destroy() end
   shade = nil
+  if searchAlive() then searchWin:hide() end
   ensureWindow()
   if isPhone() then
     shade = g_ui.createWidget('ChaosHubShade', host.parent())
@@ -368,6 +462,98 @@ local function openHub(hubId)
   win:show()
   win:raise()
   win:focus()
+  markOpen()
+  return true
+end
+
+-- ---------------------------------------------------------------- the search window (O718)
+searchHint = function()
+  return tx('Enter opens the first result.')
+end
+
+local function searchContext()
+  return { tr = tr, keywords = ChaosTopBarKeywords and ChaosTopBarKeywords.WORDS or {}, cards = ChaosTopBarCards }
+end
+
+-- draws the cards that match the query (all hubs and tabs of the model), the first one marked as the one Enter opens
+fillSearch = function()
+  if not searchAlive() or not model then return end
+  local results = get(searchWin, 'results')
+  results:destroyChildren()
+  searchFirst = nil
+  local list, total = F.search(model, searchQuery, searchContext(), F.MAX_RESULTS)
+  local cardH = isPhone() and 76 or H.CARD_H
+  for i, r in ipairs(list) do
+    local w = buildCard(results, r.card, i, cardH)
+    if i == 1 then
+      searchFirst = r.card
+      local badge = get(w, 'badge')
+      if alive(badge) then badge:setImageClip('0 24 64 24') end
+    end
+  end
+  local hint = get(searchWin, 'hint')
+  hideHint()
+  if #F.words(searchQuery) == 0 then
+    hint:setText(tx('Type a name, a word or a hotkey. Enter opens the first result.'))
+  elseif #list == 0 then
+    hint:setText(tx('Nothing found. Try another word.'))
+  elseif total > #list then
+    hint:setText(tx('These are the best results. Type more to narrow it.'))
+  else
+    hint:setText(searchHint())
+  end
+end
+
+local function openFirstResult()
+  local card = searchFirst
+  if card then clickCard(card, false) end
+end
+
+local function ensureSearchWindow()
+  local parent = host.parent()
+  if searchAlive() and searchWin:getParent() ~= parent then
+    searchWin:destroy()
+    searchWin = nil
+  end
+  if not searchAlive() then
+    searchWin = g_ui.createWidget('ChaosHubSearchWindow', parent)
+    searchWin.chaosNoMirror = true   -- the cards are made in Lua: the RmlUi window mirror leaves it in OTUI
+    searchWin:hide()
+    searchWin:setText(tx('Search'))
+    searchWin.onEscape = function() closeHub() return true end
+    local query = get(searchWin, 'query')
+    query.onTextChange = function(_, text)
+      searchQuery = type(text) == 'string' and text or ''
+      guard('search', fillSearch)()
+    end
+    if g_keyboard and g_keyboard.bindKeyDown then
+      pcall(g_keyboard.bindKeyDown, 'Enter', function() guard('enter', openFirstResult)() return true end, query)
+    end
+  end
+  return searchWin
+end
+
+local function openSearch()
+  if host.opened then pcall(host.opened) end
+  rebuildModel()
+  if alive(shade) then shade:destroy() end
+  shade = nil
+  if windowAlive() then win:hide() end
+  ensureSearchWindow()
+  if isPhone() then
+    shade = g_ui.createWidget('ChaosHubShade', host.parent())
+    shade.onMousePress = function() closeHub() return true end
+  end
+  openHubId, openTab, winSig = F.SEARCH_HUB, nil, nil
+  searchQuery = ''
+  local query = get(searchWin, 'query')
+  query:setText('')
+  fillSearch()
+  if shade then shade:raise() end
+  searchWin:show()
+  searchWin:raise()
+  searchWin:focus()
+  query:focus()
   markOpen()
   return true
 end
@@ -389,13 +575,20 @@ local function addDot(badge, count)
   d:setText(tostring(math.min(count, 99)))
 end
 
+local TOOL_IDS = { F.FAV_HUB, F.SEARCH_HUB }   -- the badges after the pins: Favourites, Search
+
+-- the tools show once there is more than the System hub to look through (not on the login screen)
+local function barTools()
+  return #model.hubs > 1 and TOOL_IDS or {}
+end
+
 local function buildBar()
   for _, w in pairs(barBadges) do if alive(w) then w:destroy() end end
   for _, w in ipairs(pinBadges) do if alive(w) then w:destroy() end end
   barBadges, pinBadges = {}, {}
   local pinCards = H.pinnedCards(model, pins)
   local pinNo = 0
-  for _, it in ipairs(H.barItems(model, pinCards)) do
+  for _, it in ipairs(H.barItems(model, pinCards, barTools())) do
     if it.kind == 'hub' then
       local hub = it.hub
       local tint = hub.new and color('menuNew', '#ffd24a') or nil
@@ -406,6 +599,14 @@ local function buildBar()
       barBadges[hub.id] = b
     elseif it.kind == 'divider' then
       pinBadges[#pinBadges + 1] = g_ui.createWidget('ChaosHubDivider', barPanel)
+    elseif it.kind == 'tool' then
+      local isSearch = it.id == F.SEARCH_HUB
+      local tip = isSearch and (tx('Search windows and functions') .. '  (' .. F.HOTKEY .. ')') or tx('Favourites')
+      local toolId = it.id
+      local b = addBadge(barPanel, 'chaosTool_' .. toolId, isSearch and 'magnifier' or 'starsolid', tip, nil, function()
+        guard('tool', Hub.toggleTool)(toolId)
+      end)
+      barBadges[toolId] = b
     else
       local card = it.card
       pinNo = pinNo + 1
@@ -425,10 +626,27 @@ local function buildBar()
   markOpen()
 end
 
+-- the hotkey (F.HOTKEY): only while the hub bar is on screen
+local function bindKey()
+  if keyHandler or not (g_keyboard and g_keyboard.bindKeyDown) then return end
+  keyHandler = function()
+    if not host or not barPanel or next(barBadges) == nil then return false end
+    guard('hotkey', Hub.toggleTool)(F.SEARCH_HUB)
+    return true
+  end
+  pcall(g_keyboard.bindKeyDown, F.HOTKEY, keyHandler)
+end
+
+local function unbindKey()
+  if keyHandler and g_keyboard and g_keyboard.unbindKeyDown then pcall(g_keyboard.unbindKeyDown, F.HOTKEY, keyHandler) end
+  keyHandler = nil
+end
+
 -- ---------------------------------------------------------------- the calls chaos_topbar.lua makes
 function Hub.init(h)
   host = h
-  openHubId, openTab, barSig, winSig, pinsFor = nil, nil, nil, nil, nil
+  openHubId, openTab, barSig, winSig, pinsFor, favsFor = nil, nil, nil, nil, nil, nil
+  bindKey()
 end
 
 -- puts the badges into the bar's panel; returns the bar width the badges need (nil when nothing is to show)
@@ -441,14 +659,23 @@ function Hub.layoutBar(panel)
       loadPins()
       barSig = nil
     end
+    if who ~= favsFor then
+      favsFor = who
+      loadFavs()
+      winSig = nil
+    end
     rebuildModel()
     local sig = modelSig()
     if sig ~= barSig or (next(barBadges) == nil and #model.hubs > 0) then
       buildBar()
       barSig = sig
     end
-    if openHubId then fillWindow() end    -- a count changed (unspent points, applications): the open hub follows
-    return H.barWidth(H.barItems(model, H.pinnedCards(model, pins)), isPhone() and 44 or 32)
+    if openHubId == F.SEARCH_HUB then
+      fillSearch()                        -- a count or an unlock changed: the results follow
+    elseif openHubId then
+      fillWindow()                        -- a count changed (unspent points, applications): the open hub follows
+    end
+    return H.barWidth(H.barItems(model, H.pinnedCards(model, pins), barTools()), isPhone() and 44 or 32)
   end)(panel)
 end
 
@@ -462,8 +689,10 @@ function Hub.refresh()
       buildBar()
       barSig = sig
     end
-    if openHubId then
-      if H.findHub(model, openHubId) then fillWindow() else closeHub() end
+    if openHubId == F.SEARCH_HUB then
+      fillSearch()
+    elseif openHubId then
+      if openHubId == F.FAV_HUB or H.findHub(model, openHubId) then fillWindow() else closeHub() end
     end
   end)()
 end
@@ -482,6 +711,24 @@ function Hub.toggle(hubId)
     return false
   end
   return openHub(hubId)
+end
+
+-- Favourites and Search are toggled like a hub (the same badge turns on while one is open)
+function Hub.toggleTool(id)
+  if openHubId == id and (windowAlive() and win:isVisible() or searchAlive() and searchWin:isVisible()) then
+    closeHub()
+    return false
+  end
+  if id == F.SEARCH_HUB then return openSearch() end
+  return openHub(id)
+end
+
+function Hub.openSearch()
+  return guard('openSearch', openSearch)() == true
+end
+
+function Hub.openFavourites()
+  return guard('openFavourites', openHub)(F.FAV_HUB) == true
 end
 
 -- takes the badges off the bar (the text menu is on, or the hubs failed)
@@ -510,8 +757,11 @@ function Hub.terminate()
   hideHint()
   if alive(shade) then shade:destroy() end
   if windowAlive() then win:destroy() end
+  if searchAlive() then searchWin:destroy() end
+  unbindKey()
   for _, w in pairs(barBadges) do if alive(w) then w:destroy() end end
   for _, w in ipairs(pinBadges) do if alive(w) then w:destroy() end end
-  win, shade, barBadges, pinBadges, barPanel, model, host = nil, nil, {}, {}, nil, nil, nil
-  openHubId, openTab, barSig, winSig, pinsFor = nil, nil, nil, nil, nil
+  win, shade, searchWin, barBadges, pinBadges, barPanel, model, host = nil, nil, nil, {}, {}, nil, nil, nil
+  searchQuery, searchFirst = '', nil
+  openHubId, openTab, barSig, winSig, pinsFor, favsFor = nil, nil, nil, nil, nil, nil
 end

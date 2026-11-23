@@ -77,6 +77,7 @@ return {
 		-- chance (percent) for a bonus after the floor, then +1..+3 steps with the weights below
 		bonusChance = {normal = 0, magic = 10, rare = 20, legendary = 35, boss = 50},
 		bonusSteps = {{1, 60}, {2, 30}, {3, 10}}, -- {steps, weight}: places up the order Common, Uncommon, Magic, Rare, Legendary
+		setMinRarity = 4, -- O717: a piece of an equipment set (a plain item of chaos_item_sets.lua, no unique) never drops below this stored id (4 Rare); a higher roll stays
 		maxRarity = 5, -- the bonus steps stop at Legendary; Divine only comes from divineChance (and the stock roll)
 		-- percent per gear drop of a Divine item, on top of the steps (x item find; the stock roll gives 0.38% more)
 		divineChance = {normal = 0, magic = 0, rare = 0.05, legendary = 0.3, boss = 1.5},

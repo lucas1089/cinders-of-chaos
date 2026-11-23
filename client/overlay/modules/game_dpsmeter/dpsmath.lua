@@ -130,7 +130,7 @@ end
 function DpsMath.perSecond(value, ms)
   ms = tonumber(ms) or 0
   if ms <= 0 then return 0 end
-  return math.floor((tonumber(value) or 0) * 1000 / ms)
+  return math.floor((tonumber(value) or 0) * 1000 / math.max(1000, ms)) -- never over less than 1 s: one hit is not a rate
 end
 
 function DpsMath.percent(part, total)

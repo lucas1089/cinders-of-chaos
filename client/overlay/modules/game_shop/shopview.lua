@@ -154,6 +154,15 @@ function V.columns(width, cell, gap)
   return math.max(1, math.floor((width + gap) / (cell + gap)))
 end
 
+-- the chip area: the height of the rows (at most maxRows) and whether more rows wait behind a scroll bar
+function V.chipsArea(count, columns, cellH, gap, maxRows)
+  if count <= 0 then return { height = 0, overflow = false } end
+  columns = math.max(1, tonumber(columns) or 1)
+  local rows = math.ceil(count / columns)
+  local shown = math.min(rows, math.max(1, tonumber(maxRows) or rows))
+  return { height = shown * cellH + (shown - 1) * gap, overflow = rows > shown }
+end
+
 -- the height of a grid of `count` cards in `columns` columns
 function V.gridHeight(count, columns, cellH, gap)
   if count <= 0 then return 0 end
@@ -239,9 +248,11 @@ function V.cardState(data, points)
     priceKind = priceKind, onSale = onSale }
 end
 
--- the sub line of a card: "x100" for a pack of items, else nothing
+-- the sub line of a card: "x100" for a pack of items, else nothing. Only `amount` counts, the items the buyer gets (server
+-- shop.lua, offers of kind item); `count` is how many the picture is drawn with: a service or unlock such as World
+-- Experience is drawn as a pile of 100 and is one purchase (owner 2026-11-22: "itens na store aparecem com x100")
 function V.subLine(data)
-  local n = tonumber(type(data) == 'table' and data.count)
+  local n = tonumber(type(data) == 'table' and data.amount)
   if n and n > 1 and data.type == 'item' then return 'x' .. math.floor(n) end
   return ''
 end
@@ -273,6 +284,20 @@ function V.detailPlan(data, points, sel, hasLook, tryPlan)
   if st.owned then plan.note = 'owned'
   elseif not st.affordable then plan.note = 'poor' end
   return plan
+end
+
+-- Where the note line and the text of the details pane end (owner 2026-11-22: "texto nao aparece por completo": the text was
+-- clipped after two and a half lines with empty space above BUY). The note sat on the Try on row and kept its 28 px even
+-- with no text, and the row kept its place with no button on it, so the text label stopped well above BUY. Now the note
+-- (28 px, none when empty) sits on the top-most button shown, and the text label takes everything above it.
+-- -> {anchor = 'tryButton' | 'giftButton' | 'buyButton' | 'parent', noteHeight, noteMargin}
+function V.detailLayout(plan, noteText)
+  local anchor = 'parent'
+  if plan and plan.try then anchor = 'tryButton'
+  elseif plan and plan.gift then anchor = 'giftButton'
+  elseif plan and plan.showBuy then anchor = 'buyButton' end
+  local has = noteText ~= nil and noteText ~= ''
+  return { anchor = anchor, noteHeight = has and 28 or 0, noteMargin = (has or anchor == 'parent') and 4 or 0 }
 end
 
 -- ---------------------------------------------------------------- the search results

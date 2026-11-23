@@ -440,6 +440,29 @@ function L.upgradeRarity(tier, current, itemFind, huntLevel)
 	return R.idOfRank(target)
 end
 
+-- O717: a piece of an equipment set (ChaosItemSets.pieceOf, not a unique: a unique carries no rarity) never rolls below
+-- gear.setMinRarity (Rare). Returns the target raised to that floor as a stored id; a higher target is returned as it is.
+function L.setPieceTarget(item, target)
+	local floor = tonumber(cfg().gear.setMinRarity) or 0
+	local R = ChaosRarity
+	if floor <= 0 or not item or R.rank(target) >= R.rank(floor) then
+		return target
+	end
+	local S = ChaosItemSets
+	if type(S) ~= "table" or not S.pieceOf then
+		return target
+	end
+	local okP, set = pcall(S.pieceOf, item)
+	if not okP or not set then
+		return target
+	end
+	local okU, uniq = pcall(function() return item:getCustomAttribute("chaos_unique") end)
+	if okU and uniq ~= nil then
+		return target
+	end
+	return R.idOfRank(R.rank(floor))
+end
+
 -- ---------------------------------------------------------------------------
 -- 1. extra loot rolls. lootTable = MonsterType:getLoot() style list.
 -- returns list of {itemId=, count=}
@@ -1582,6 +1605,7 @@ local function processKill(monster, corpse)
 					target = t
 				end
 			end
+			target = L.setPieceTarget(item, target)
 			markUpgrade(item, id, current, target)
 		end
 	end

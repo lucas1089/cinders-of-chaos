@@ -1359,6 +1359,20 @@ def main():
         new, notes = T.update_spawns(off, [], {'h': ('Hydra', [(11, 10, 6)])}, 120, takeover=())
         check('Warlock' in new and 'chaoshunt' not in new and any('already has a spawn' in n for n in notes),
               'an off-centre monster on a display cell is seen (no second monster on it): %s' % notes)
+        # O713: a display block carries the direction toward its teleport: a north cell looks south (2), a south cell
+        # north (0); the spawn file's default is north, so a block without it showed its back (and an old block without
+        # the attribute is written again)
+        two = '<?xml version="1.0"?>\n<spawns>\n</spawns>\n'
+        dsp = {'n': ('Hydra', [(11, 32253, 6)]), 's': ('Hydra', [(11, 32259, 6)])}
+        new, _ = T.update_spawns(two, [], dsp, 120, mid=32254 + 32258)
+        n_blk = [b for b in T.SPAWN_RE.findall(new) if 'chaoshunt="n"' in b][0]
+        s_blk = [b for b in T.SPAWN_RE.findall(new) if 'chaoshunt="s"' in b][0]
+        check('direction="2"' in n_blk and 'direction="0"' in s_blk, 'display facing: north cell south, south cell north')
+        old = new.replace(' direction="2"', '').replace(' direction="0"', '')
+        fixed, notes = T.update_spawns(old, [], dsp, 120, mid=32254 + 32258)
+        check(fixed.count('direction=') == 2 and 'direction="2"' in fixed, 'an old display block without direction is rewritten: %s' % notes)
+        again, notes = T.update_spawns(fixed, [], dsp, 120, mid=32254 + 32258)
+        check(again == fixed and not notes, 'display facing is idempotent')
         display_cell_checks()
         frame_checks(root)
     finally:

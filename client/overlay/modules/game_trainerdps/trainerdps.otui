@@ -57,7 +57,6 @@ TrainerDpsPanel < UIWidget
     anchors.right: parent.right
     margin: 3 3 0 3
     background-color: #1a1418cc
-    cursor: pointer
 
     UILabel
       id: title
@@ -206,7 +205,7 @@ TrainerDpsPanel < UIWidget
     anchors.right: parent.right
     anchors.bottom: buttonRow.top
     margin: 0 8 3 8
-    phantom: false
+    phantom: true
 
     ChaosCheckBox
       id: keepBox
@@ -234,7 +233,7 @@ TrainerDpsPanel < UIWidget
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     margin: 0 8 6 8
-    phantom: false
+    phantom: true
 
     DpsMiniButton
       id: resetButton

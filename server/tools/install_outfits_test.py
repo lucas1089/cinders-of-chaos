@@ -138,6 +138,44 @@ def test_pair72(tmp):
     expect(IO.main([data]) == 1, 'a clashing look type stops the step')
 
 
+def test_pair78(tmp):
+    """the six code-drawn wings (chaos_drawn_wings_ids.lua): their wings.xml lines come only while config.lua chaosClientPair is 78 or more (O581 phase 2)"""
+    srv = os.path.join(tmp, 'srv78')
+    data = os.path.join(srv, 'data')
+    os.makedirs(os.path.join(data, 'XML'))
+    for name, text in BASE.items():
+        open(os.path.join(data, 'XML', name), 'w').write(text)
+    cfg = os.path.join(srv, 'config.lua')
+    wings = os.path.join(data, 'XML', 'wings.xml')
+
+    def run(pair):
+        if pair is None:
+            if os.path.exists(cfg):
+                os.remove(cfg)
+        else:
+            open(cfg, 'w').write('chaosClientPair = %d\n' % pair)
+        IO.main([data])
+        return open(wings).read()
+    six = [(122, 3555, 'Ember Pinions'), (123, 3556, 'Ossuary Wings'), (124, 3557, 'Void Orbit'), (125, 3558, 'Bladefan'),
+           (126, 3559, 'Rimeshard'), (127, 3560, 'Grave Lanterns')]
+    for pair in (None, 72, 77):
+        xml = run(pair)
+        expect('clientid="3555"' not in xml and 'id="122"' not in xml, 'pair %s: no drawn wings line' % pair)
+    xml = run(78)
+    expect(IO.drawn78_wings(data) == six, 'pair 78: the six wings read: %r' % (IO.drawn78_wings(data),))
+    for i, lk, n in six:
+        expect('<wing id="%d" clientid="%d" name="%s" speed="20" />' % (i, lk, n) in xml, 'pair 78: wings.xml line of %s' % n)
+    expect(run(78) == xml, 'pair 78: a second run changes nothing')
+    expect(run(80) == xml, 'pair 80: the same lines')
+    xml = run(77)
+    expect('clientid="3555"' not in xml, 'back to pair 77: no drawn wings line')
+    # an id that wings.xml already has outside the block stops the step
+    open(wings, 'w').write(BASE['wings.xml'].replace('</wings>', '\t<wing id="122" clientid="9999" name="X" speed="20" />\n</wings>\n'))
+    open(cfg, 'w').write('chaosClientPair = 78\n')
+    IO.main([data])
+    expect('clientid="3555"' not in open(wings).read(), 'a clashing wings id writes nothing')
+
+
 def main():
     test_shipped()
     tmp = tempfile.mkdtemp()
@@ -145,6 +183,7 @@ def main():
         test_switch_on(tmp)
         test_install(tmp)
         test_pair72(tmp)
+        test_pair78(tmp)
     finally:
         shutil.rmtree(tmp)
     if FAILS:

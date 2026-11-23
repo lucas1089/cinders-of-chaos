@@ -20,7 +20,7 @@ return {
 
 	-- bounded tables: sources kept per session (a source beyond this counts under "Other"), rows and elements sent
 	maxRows = 40,
-	maxRowsSent = 10,
+	maxRowsSent = 25,
 	maxElementsSent = 10,
 	-- members of the viewer's party that hit the same trainer, shown next to the own numbers
 	party = true,

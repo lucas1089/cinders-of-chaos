@@ -288,5 +288,47 @@ do
   eq(GL.secondsLeft(row, 40), 120, 'the timer counts down from what the server said')
 end
 
+-- ---------------------------------------------------------------- set pieces and beams (O715)
+-- a dropped Common set shield (Mirrored Cinderwrought Aegis, owner report 2026-11-22): the beam showed, the name did not
+local setShield = { id = 7, nm = 'mirrored cinderwrought aegis', r = 1, st = 1, g = 'equipment', c = 1 }
+local dsh = decide(setShield)
+eq(dsh ~= nil and dsh.kind == 'item', true, 'a Common set piece has a name label')
+eq(dsh and dsh.highlight, true, 'and it glows')
+eq(GL.color(setShield, dsh), GL.SET_COLOR, 'its name is the set green')
+eq(GL.color(setShield, dsh), '#58c878', 'the green of the tooltip Set line')
+do
+  local f = io.open(dir .. '../game_itemtooltip/tooltiplogic.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find("set = '" .. GL.SET_COLOR .. "'", 1, true) ~= nil, true, 'the set green is the one of game_itemtooltip COLORS.set')
+end
+eq(GL.itemText(setShield), 'Common Mirrored Cinderwrought Aegis', 'the text names the item')
+eq(decide(setShield, false, GL.normalize({ rarePlus = false })) ~= nil, true, 'also with the Rare+ setting off')
+eq(GL.decide(setShield, GL.normalize({ enabled = false }), filter, true), nil, 'labels off stay off')
+eq(GL.color(common, decide(common, true)), GL.DIM_COLOR, 'a plain Common item is still dimmed')
+eq(GL.color(epic, decide(epic)), L.RARITY[4].color, 'a Rare non-set item keeps its rarity colour')
+eq(GL.priority(setShield, dsh) > GL.priority(epic, decide(epic)), true, 'a set piece wins a crowded screen over a Rare')
+local setCorpse = { id = 6068, k = 1, n = 2, i = { common, setShield } }
+local cds = decide(setCorpse)
+eq(cds ~= nil and cds.matches, 1, 'a corpse holding a set piece counts it')
+eq(GL.color(setCorpse, cds), GL.SET_COLOR, 'and takes its green')
+-- every item that gets a beam has a name label with it, whatever the filter and the settings
+dofile(dir .. '../game_lootbeams/lootbeamslogic.lua')
+local LB = LootBeamsLogic
+LB.setFilterLogic(L)
+local rows = { setShield, epic, rare, unc, common, unique, orb, junk,
+  { id = 9, nm = 'divine blade', r = 10, g = 'equipment', c = 1 }, { id = 9, nm = 'legendary blade', r = 5, g = 'equipment', c = 1 },
+  { id = 9, nm = 'power blade', r = 0, pw = 1, g = 'equipment', c = 1 }, { id = 9, nm = 'set unique', u = 1, st = 1, g = 'equipment', c = 1 } }
+local filters = { filter, L.normalize({ highlight = 5, dim = 4 }), L.normalize({ highlight = 10, dim = 6 }) }
+for fi, fl in ipairs(filters) do
+  for _, st in ipairs({ on, GL.normalize({ rarePlus = false }), GL.normalize({ altAll = false, rarePlus = false }) }) do
+    for ri, row in ipairs(rows) do
+      if LB.wants(row, fl, {}) then
+        eq(GL.decide(row, st, fl, false) ~= nil, true, 'the beam of row ' .. ri .. ' has its name (filter ' .. fi .. ')')
+      end
+    end
+  end
+end
+
 print(string.format('groundlabels_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

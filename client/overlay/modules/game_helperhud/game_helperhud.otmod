@@ -5,7 +5,7 @@ Module
   sandboxed: false
   autoload: true
   autoload-priority: 950
-  dependencies: [ game_interface ]
+  dependencies: [ game_interface, game_hudmove ]
   scripts: [ helperhud_logic, helperhud ]
   @onLoad: ChaosBotHud.init()
   @onUnload: ChaosBotHud.terminate()

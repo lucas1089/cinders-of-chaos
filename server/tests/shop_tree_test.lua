@@ -180,6 +180,11 @@ if pack33.PAIR33 then
 		if id then AURAS[id] = true end
 	end
 end
+-- the six code-drawn wings of pair 78 (chaos_drawn_wings.lua, while config.lua chaosClientPair is 78 or more; install_outfits.py writes their lines)
+local drawn78 = dofile("data/lib/chaos_drawn_wings.lua")
+if drawn78.PAIR78 then
+	for _, w in ipairs(drawn78.wings) do WINGS[w.id] = true end
+end
 local COS = dofile("data/scripts/chaos/shop_cosmetics.lua")
 local LOOKS, MOUNTS = {}, {}
 for _, e in ipairs(COS.outfits) do LOOKS[e.looktype] = true end

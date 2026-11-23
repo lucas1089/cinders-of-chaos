@@ -44,4 +44,17 @@ local system = { item('Options'), item('Credits'), item('Hotkeys'), SEP, sub('De
   SEP, item('Logout'), item('Exit') }
 eq(texts(T.sortList(system, en), en), 'Credits|Hotkeys|Options|-|Developer|-|Exit|Logout', 'groups sorted each on their own')
 
+-- the bar stays below a visible window that overlaps it (the Passive Tree fills the game root panel)
+local barRect = { x = 400, y = 2, width = 300, height = 42 }
+local function win(o) local w = { visible = true, window = true, x = 0, y = 0, width = 1280, height = 720 } for k, v in pairs(o or {}) do w[k] = v end return w end
+eq(T.coveredByWindow(barRect, { win() }), true, 'a full window above covers the bar')
+eq(T.coveredByWindow(barRect, { win({ visible = false }) }), false, 'a hidden one does not')
+eq(T.coveredByWindow(barRect, { win({ window = false }) }), false, 'a panel or HUD is not a window')
+eq(T.coveredByWindow(barRect, { win({ y = 100, height = 300 }) }), false, 'a window below the bar does not overlap')
+eq(T.coveredByWindow(barRect, { win({ x = 800, width = 200 }) }), false, 'a window beside the bar does not overlap')
+eq(T.coveredByWindow(barRect, { win({ y = 30, height = 300 }) }), true, 'a window over the bar bottom edge covers it')
+eq(T.coveredByWindow(barRect, {}), false, 'nothing above')
+eq(T.coveredByWindow(nil, { win() }), false, 'no bar rect: raise as before')
+eq(T.coveredByWindow({ x = 0, y = 0, width = 0, height = 0 }, { win() }), false, 'an empty bar rect: raise as before')
+
 print('topbarlogic_test: ' .. n .. ' checks ok')

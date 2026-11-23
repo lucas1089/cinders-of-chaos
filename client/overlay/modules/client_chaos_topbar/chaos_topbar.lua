@@ -811,7 +811,8 @@ local shown = {}              -- category id -> {visible, color} as last set on 
 local shownWidth, shownParent
 local refreshQueued
 
--- the bar's metrics for a look: the hub bar is 42 high (32 px badges; phone 56, 44 px badges), the text bar 36 (phone 52)
+-- the bar's metrics for a look: the hub bar is 48 high (32 px badges inside the 8 px frame border, so the border shows all
+-- round; phone 60, 44 px badges; O718: it was 42 and the badges covered the border), the text bar 36 (phone 52)
 local function setBarStyle(style)
   if barStyle == style then return end
   barStyle = style
@@ -819,9 +820,9 @@ local function setBarStyle(style)
   local phone = isPhone()
   if style == 'hubs' then
     for _, button in pairs(categoryButtons) do button:setVisible(false) end
-    menuBar:setHeight(phone and 56 or 42)
-    buttonsPanel:setMarginTop(phone and 6 or 5)
-    buttonsPanel:setMarginBottom(phone and 6 or 5)
+    menuBar:setHeight(phone and 60 or 48)
+    buttonsPanel:setMarginTop(8)
+    buttonsPanel:setMarginBottom(8)
   else
     if ChaosTopBarHub then
       pcall(ChaosTopBarHub.close)
@@ -834,6 +835,26 @@ local function setBarStyle(style)
 end
 
 local keepStockGone       -- set below with the stock top strip code
+
+-- true when a visible window drawn after the bar overlaps it (the Passive Tree fills the game root panel): the bar is not
+-- raised over it. An engine error reads as false, so the bar is raised as before.
+local function windowAboveBar(p)
+  local ok, covered = pcall(function()
+    local above, seen = {}, false
+    for _, c in ipairs(p:getChildren()) do
+      if c == menuBar then
+        seen = true
+      elseif seen then
+        local r = c:getRect()
+        above[#above + 1] = { visible = c:isVisible(), window = c:getClassName() == 'UIWindow',
+                              x = r.x, y = r.y, width = r.width, height = r.height }
+      end
+    end
+    local b = menuBar:getRect()
+    return ChaosTopBarLogic.coveredByWindow({ x = b.x, y = b.y, width = b.width, height = b.height }, above)
+  end)
+  return ok and covered == true
+end
 
 function ChaosTopBar.refresh()
   if not isAlive(menuBar) then return end
@@ -879,7 +900,7 @@ function ChaosTopBar.refresh()
   if not menuBar:isVisible() then menuBar:setVisible(true) end
   local p = menuBar:getParent()
   local top = p and p.getLastChild and p:getLastChild() == menuBar
-  if moved or not top then menuBar:raise() end
+  if moved or (not top and not windowAboveBar(p)) then menuBar:raise() end
 end
 
 -- one refresh for a burst of requests (every module that adds an entry at load asks for one)

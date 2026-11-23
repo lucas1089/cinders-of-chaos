@@ -71,7 +71,7 @@ end
 -- the window: every id of shop.otui the code reaches
 local WINDOW_IDS = { 'infoPanel', 'points', 'buy', 'searchText', 'rail', 'detailPanel', 'lookPreview', 'dTitle', 'dTags',
   'dCoin', 'dPrice', 'dOld', 'dDesc', 'dNote', 'tryButton', 'giftButton', 'buyButton', 'mainPanel', 'adPanel', 'ad',
-  'pathLabel', 'pathCount', 'chips', 'offers', 'offersScrollBar', 'home', 'homeScrollBar', 'emptyLabel',
+  'pathLabel', 'pathCount', 'chips', 'chipsScrollBar', 'offers', 'offersScrollBar', 'home', 'homeScrollBar', 'emptyLabel',
   'pageControls', 'pageLabel', 'prevPage', 'nextPage' }
 for _, id in ipairs(WINDOW_IDS) do eq(hasId(id), true, 'shop.otui defines id ' .. id) end
 for _, st in ipairs({ 'ShopRail', 'ShopRailItem', 'ShopRailCreature', 'ShopRailImage', 'ShopChip', 'ShopCard', 'ShopCardItem',
@@ -280,7 +280,7 @@ eq(id('rail'):getChildren()[1]:isChecked(), false, 'Home is not')
 eq(#id('chips'):getChildren(), 2, 'two chips')
 eq(id('chips'):getChildren()[1].props.text, 'Outfits (25)', 'name and count')
 eq(id('chips'):getChildren()[1]:isChecked(), true, 'the open subcategory is checked')
-eq(id('chips'):getHeight(), 22, 'one chip row')
+eq(id('chips'):getHeight(), 18, 'one chip row')
 eq(id('pathLabel'):getText(), 'Cosmetics > Outfits', 'the path')
 eq(id('pathCount'):getText(), '25 offers', 'the subtle count')
 eq(id('pageControls'):isVisible(), true, 'three pages: the pager')

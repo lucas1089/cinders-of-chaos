@@ -133,6 +133,10 @@ ChaosOpcodes.chronicle = 171
 -- Candlemarks: the currency for time online, its counter and shop window (client game_candlemarks; candlemarks.lua,
 -- candlemarks_core.lua, candlemarks_config.lua; server/README.md "Candlemarks"). Storages 7102460 - 7102469.
 ChaosOpcodes.candlemarks = 176
+-- Inspect Monster window (O721; client game_monsterinspect; monster_inspect.lua, monster_inspect_core.lua, monster_inspect_config.lua).
+-- 166: free in the reference server, the base client ExtendedIds, every Chaos script and every client module
+-- (tests/monster_inspect_test.lua checks it).
+ChaosOpcodes.monsterInspect = 166
 -- NPCs that trade for something other than gold: the currency's name, icon and the player's balance in the NPC trade
 -- window (client game_npctradewindow; data/lib/chaos_npc_currency.lua, tools/patch_npc_currency.py; README "NPC currencies")
 ChaosOpcodes.npcCurrency = 113

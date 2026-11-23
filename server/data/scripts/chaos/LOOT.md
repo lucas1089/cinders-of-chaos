@@ -50,6 +50,7 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
    downgrades. If the target is higher, `Game.createItemWithRarity(id, 1, target)` (target a stored id) is made, checked
    (`getCustomAttribute("rarity") == target`), added with `corpse:addItemEx`, and only then the old item is removed. On any
    failure the original stays.
+   2-set. **Set pieces** (O717): a piece of an equipment set (`ChaosItemSets.pieceOf`, not a unique) never ends below `gear.setMinRarity` (4, Rare): `L.setPieceTarget`, applied after the roll and the pity step; a higher roll stays.
    2a. **Guaranteed gear** (O575, `gear.guarantee`): a Legendary monster's corpse always holds at least 1 gear piece of Rare or
    better: a corpse without gear gets one of the monster's own loot table (else a base of the killer's class near its level)
    before this step, and after it `L.guaranteeRaise` lifts the best lower piece to the floor. server/README.md "Legendary

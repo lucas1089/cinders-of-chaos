@@ -321,7 +321,7 @@ eq(V.compare({ ok = true, text = 'x' }), nil, 'no change table: no compare row (
 eq(V.compare({ ok = false, change = { kind = 'bind' } }), nil, 'a refusal: no compare row')
 eq(V.compare({ ok = true, change = { kind = 'mystery' } }), nil, 'an unknown change: none')
 local cr = V.costRow(V.find(V.actions(ctx({ mod = 'a2' })), 'ember'))
-eq(cr.name, 'Cost: 1 Ember Orb', 'cost name') eq(cr.have, 'you have 7 · 3 backpack · 4 stash', 'cost have')
+eq(cr.name, 'Cost: 1 Ember Orb', 'cost name') eq(cr.have, 'you have 7: 3 backpack, 4 stash', 'cost have')
 -- the FORGE button and the bottom lines
 local go = V.go(ctx({ orb = 'ember', mod = 'a2' }, ex))
 eq(go.enabled, true, 'enabled') eq(go.risky, false, 'safe') eq(go.sub, 'spends 1 Ember Orb', 'sub line')

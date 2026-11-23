@@ -239,6 +239,21 @@ function H.isDisplaySpot(cfg, pos)
 	return false
 end
 
+-- the way a display monster faces: toward its teleport and the corridor (O713). The north cell row (above its
+-- teleport) looks south (2), the south cell row north (0). The spawn file's direction defaults to north, so every
+-- north cell showed its back to the player. nil when `pos` is no display spot. install_content_areas.py
+-- display_facing writes the same rule into the spawn blocks.
+function H.displayFacing(cfg, pos)
+	if not H.isDisplaySpot(cfg, pos) then
+		return nil
+	end
+	local rows = cfg.room.teleportRows
+	if type(rows) ~= "table" or type(rows[1]) ~= "number" or type(rows[2]) ~= "number" then
+		return 2
+	end
+	return (pos.y * 2 < rows[1] + rows[2]) and 2 or 0
+end
+
 -- the hunt a display monster at `pos` stands for (beta 2026-10-22: the showcase showed the monster's own level, a
 -- Dragon [42] beside a hunt of levels 665+): the teleport of its alcove, a placed plan's (idx.byTeleport) or a base
 -- hunt's (idx.base). A cell row's cell belongs to the teleport right in front of it, else to the one beside that (the

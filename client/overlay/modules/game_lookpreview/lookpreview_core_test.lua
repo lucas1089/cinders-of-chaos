@@ -428,10 +428,6 @@ eq(#P.activeAt(ktl, 10), 0, 'nothing plays during the lead')
 mx, my = P.itemPlace({ item = ktl.items[1], frac = 0 }, ks)
 eq(mx .. ',' .. my, '0,0', 'the kill effect on the troll\'s tile')
 -- footprints and rows
-local steps = P.footsteps(4)
-eq(#steps, 4, 'four prints')
-eq(steps[1].opacity > steps[4].opacity, true, 'older prints fade')
-eq(steps[2].x < steps[1].x, true, 'behind the walker')
 eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } } }).killfx, true, 'kill effect row')
 eq(P.fromPlayRow({ kind = 'spellskin', play = {} }), nil, 'nothing to play')
 eq(P.fromPlayRow({ kind = 'rarefx', play = { { b = { id = 468 } } } }).killfx, nil, 'rare-loot effect row: not the kill animation (O564)')
@@ -459,15 +455,26 @@ eq(fo.kind, 'effects', 'an effect footprint row plays its effect') eq(fo.footfx,
 eq(P.fromPlayRow({ kind = 'footprint', play = {} }), nil, 'a picture footprint row has no play: the prints stay')
 eq(P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } }, footfx = true }).footfx, true, 'a store offer carries footfx')
 eq(P.fromStoreLook({ kind = 'effects', play = { { b = { id = 5 } } } }).footfx, nil, 'and others do not')
-local fs = P.sceneOf(fo)
-eq(fs.foot, true, 'a foot scene') eq(fs.kill, false, 'no dying troll') eq(fs.loot, nil, 'no loot bag')
-eq(fs.caster.x, 0, 'the figure on (0, 0)') eq(fs.target.x, 0, 'the effect on the same tile') eq(fs.target.y, 0, 'row')
-eq(P.landsOn({ id = 5334, n = 'vfx_fp_heart' }, false, fs), 'caster', 'around the figure')
-eq(P.landsOn({ id = 5334, n = 'vfx_fp_lightning_hit' }, false, fs), 'caster', 'whatever its name says')
-local ftl = P.timeline({ { b = { id = 5334, ms = 800 } } }, 'b', nil, fs)
-eq(ftl.lead, 0, 'it plays at once') eq(ftl.items[1].at, 'caster', 'on the figure') eq(ftl.total > 800, true, 'it loops after a pause')
-local ffx, ffy = P.itemPlace({ item = ftl.items[1], frac = 0 }, fs)
-eq(ffx .. ',' .. ffy, '0,0', 'on the figure tile')
+-- O712: an effect footprint is no scene (the figure walks, footwalk.lua plays the effect behind it): not an effects option
+-- for the stage, a walk with its effect, one play long
+eq(P.effectsOf(fo), nil, 'an effect footprint is no effects scene')
+eq(P.effectsOf({ kind = 'bundle', parts = { { kind = 'mount', look = 5 }, fo } }), nil, 'nor inside a bundle')
+eq(P.effectsOf({ kind = 'effects', play = { { b = { id = 5 } } } }).kind, 'effects', 'a spell skin still is')
+local fw = P.walkOf(fo)
+eq(fw.fx.id, 5334, 'the walk plays the footprint effect') eq(fw.fx.ms, 800, 'its length') eq(fw.fx.dur, 800, 'the play lasts that long') eq(fw.art, nil, 'no picture')
+eq(P.walkOf(P.fromPlayRow({ kind = 'footprint', play = { { b = { id = 5345, dx = 1, dy = 0 } } } }), function() return 9 end).fx.dur, 900, 'no length sent: the frames of the thing (100 ms each)')
+eq(P.walkOf(P.fromPlayRow({ kind = 'footprint', play = { { b = { id = 5345, dx = 1, dy = 0 } } } })).fx.dx, 1, 'the effect own offset')
+eq(P.walkOf({ kind = 'footprint', art = 'ash' }).art, 'ash', 'a drawn footprint walks with its art')
+eq(P.walkOf({ kind = 'bundle', parts = { { kind = 'mount', look = 5 }, { kind = 'footprint', art = 'rime' } } }).art, 'rime', 'a bundle footprint')
+eq(P.walkOf({ kind = 'bundle', parts = { { kind = 'mount', look = 5 }, fo } }).fx.id, 5334, 'a bundle effect footprint')
+eq(P.walkOf({ kind = 'outfit', look = 128 }), nil, 'an outfit does not walk') eq(P.walkOf(nil), nil, 'nothing does not')
+eq(P.walkOf({ kind = 'effects', footfx = true, play = { { b = { id = 0 } } } }), nil, 'an effect footprint without an effect')
+eq(P.sameWalk(P.walkOf(fo), P.walkOf(fo)), true, 'the same effect footprint is the same walk')
+eq(P.sameWalk({ art = 'ash' }, { art = 'ash' }), true, 'the same art') eq(P.sameWalk({ art = 'ash' }, { art = 'rime' }), false, 'another art')
+eq(P.sameWalk({ art = 'ash' }, P.walkOf(fo)), false, 'art against an effect') eq(P.sameWalk(nil, nil), true, 'no walk twice')
+eq(P.sameWalk(nil, { art = 'ash' }), false, 'a walk against none')
+local fo2 = P.walkOf(P.fromPlayRow({ kind = 'footprint', play = { { b = { id = 5335, ms = 1100 } } } }))
+eq(P.sameWalk(P.walkOf(fo), fo2), false, 'another effect')
 eq(P.hasWearer(fo), true, 'the figure is worn')
 
 -- store offers carry their own look (server shop_core.lua K.lookOf): every kind becomes an option
@@ -526,68 +533,28 @@ eq(L({ kind = 'bundle', parts = { { kind = 'swatch' } } }), nil, 'a bundle with 
 eq(L({ kind = 'bundle', parts = { { kind = 'bundle', parts = { { kind = 'mount', look = 5 } } } } }), nil, 'nested bundles are not followed')
 eq(P.showable({ kind = 'bundle' }), true, 'bundles are shown')
 
--- ---------------------------------------------------------------- footprints (O496)
--- The character stays exactly where the look alone puts it; the prints are behind it, on the floor line, inside the stage.
--- Before: with prints the stage used P.fxLayout over the extent min(box.left / 32, -3) .. box.right / 32, which centres the
--- EXTENT: the creature tile landed right of the centre (a plain look 231 px of 318, art 205..279 against a stage centre of 159).
+-- ---------------------------------------------------------------- footprints (O496, O712)
+-- The character stays exactly where the look alone puts it (2x, centred, the floor shadow); it walks in place (footwalk.lua)
+-- and the walk layout adds only the creature tile the marks and effects are placed from.
 local function datInfo(id) return DAT[id] end
 local winged = P.lookBox({ type = 128, wings = 937, addons = 3 }, anchors, datInfo, 6)
 local mounted = P.lookBox({ type = 128, mount = 1338, addons = 3 }, anchors, datInfo, 6)
 local plain = P.lookBox({ type = 128, addons = 3 }, anchors, datInfo, 6)
 local wmount = P.lookBox({ type = 128, mount = 1338, wings = 937, addons = 3 }, anchors, datInfo, 6)
-local oldx0 = math.min(plain.left / 32, -3)
-local OLD = P.fxLayout(318, 130, oldx0, plain.top / 32, plain.right / 32, plain.bottom / 32)
-eq(OLD.tileX + (plain.left + plain.right) / 2 * OLD.scale > 318 / 2 + 60, true, 'the old layout put the figure 60+ px right of the centre')
 for _, st in ipairs({ { 318, 130 }, { 318, 211 }, { 204, 150 }, { 188, 130 }, { 400, 300 }, { 150, 130 }, { 110, 130 } }) do
   for name, box in pairs({ plain = plain, winged = winged, mounted = mounted, wmount = wmount }) do
     local W, H = st[1], st[2]
     local tag = name .. ' ' .. W .. 'x' .. H
-    local SL, LL = P.stepsLayout(box, W, H), P.layout(box, W, H)
+    local SL, LL = P.walkLayout(box, W, H), P.layout(box, W, H)
     for _, k in ipairs({ 'scale', 'T', 'x', 'y', 'size', 'feetX', 'feetY' }) do eq(SL[k], LL[k], 'same ' .. k .. ' as the look alone: ' .. tag) end
     local rx, ry, rs = P.creatureRect(SL, { x = 0, y = 0 })
-    eq(rx .. ',' .. ry .. ',' .. rs, LL.x .. ',' .. LL.y .. ',' .. LL.size, 'the creature rect is the look alone\'s: ' .. tag)
+    eq(rx .. ',' .. ry .. ',' .. rs, LL.x .. ',' .. LL.y .. ',' .. LL.size, 'the creature rect is the look alone: ' .. tag)
     eq(SL.scale, P.SCALE, 'always 2x: ' .. tag)
-    eq(#SL.prints <= P.STEPS, true, 'at most four prints: ' .. tag)
-    local lastCx = SL.feetX + 1
-    for i, pr in ipairs(SL.prints) do
-      eq(pr.x >= 0 and pr.y >= 0 and pr.x + pr.size <= W and pr.y + pr.size <= H, true, 'print ' .. i .. ' inside the stage: ' .. tag)
-      eq(pr.cx < SL.feetX, true, 'print ' .. i .. ' left of the feet: ' .. tag)
-      eq(pr.cx < lastCx, true, 'prints go further left: ' .. tag) lastCx = pr.cx
-      eq(math.abs(pr.cy - SL.feetY) <= 0.3 * SL.T, true, 'print ' .. i .. ' on the feet line: ' .. tag .. ' ' .. pr.cy .. ' ' .. SL.feetY)
-      if H >= 160 then eq(math.abs(pr.cy - SL.feetY) <= 0.1 * SL.T + 1, true, 'a tall stage: right on the line: ' .. tag) end
-    end
-    if W >= 188 then eq(#SL.prints, 4, 'room for all four prints: ' .. tag) end
-    -- the figure's own centre is the stage's centre (the old layout was 70 px off)
+    eq(SL.tileX, LL.x + LL.T, 'the creature tile: ' .. tag) eq(SL.tileY, LL.y + LL.T, 'the creature tile row: ' .. tag)
+    -- the figure's own centre is the stage's centre
     local fb = box.core or box -- the figure's own box (wings are not part of it)
     eq(math.abs(SL.x + ((fb.left + fb.right) / 2 + 32) * SL.scale - W / 2) <= 1, true, 'the figure stays centred: ' .. tag)
   end
-end
--- a stage the prints cannot all fit: closer first, then fewer; never a print outside, the creature rect the same
-local narrow = P.stepsLayout(plain, 110, 130)
-eq(#narrow.prints > 0 and #narrow.prints < 4, true, 'a narrow stage: fewer prints')
-local tight = P.stepsLayout(plain, 150, 130)
-eq(#tight.prints, 4, 'a bit narrower: the same four, closer')
-eq(tight.feetX - tight.prints[4].cx < 4 * 0.5 * tight.T, true, 'closer than a half tile apart')
-eq(tight.prints[2].cx - tight.prints[3].cx >= 0.3 * tight.T - 0.001, true, 'never closer than 0.3 tiles')
-eq(#P.stepsLayout(plain, 60, 130).prints <= 1, true, 'a very narrow stage: one print at most')
-for _, pr in ipairs(P.stepsLayout(plain, 24, 130).prints) do
-  eq(pr.x >= 0 and pr.x + pr.size <= 24, true, 'a 24 px stage: the print is inside, shrunk')
-end
-eq(#P.stepsLayout(plain, 8, 130).prints, 0, 'no room for a print: none')
-eq(#P.stepsLayout(plain, 318, 8).prints, 0, 'a stage no taller than a print: none')
-eq(#P.stepsLayout(plain, 318, 130, 2).prints, 2, 'n sets the count')
--- a short stage: a mount\'s feet are low, the print is lifted inside (never cut at the bottom)
-local ms = P.stepsLayout(mounted, 318, 130)
-eq(ms.prints[1].y + ms.prints[1].size <= 130 - P.PRINT_MARGIN, true, 'lifted to fit at the bottom')
--- opacity and turning as footsteps() gives them
-local sp = P.stepsLayout(plain, 318, 211)
-eq(sp.prints[1].opacity > sp.prints[4].opacity, true, 'older prints fade') eq(sp.prints[1].rotation, 90, 'walking east')
-eq(sp.prints[1].cy ~= sp.prints[2].cy, true, 'alternating feet')
--- a bundle with effects: prints on the effects layout, inside the stage too
-local FX = P.fxLayout(318, 130, -3, -0.5, 1.5, 1)
-for _, pr in ipairs(P.stepPrints(FX, plain, 318, 130)) do
-  eq(pr.x >= 0 and pr.y >= 0 and pr.x + pr.size <= 318 and pr.y + pr.size <= 130, true, 'effects layout: print inside')
-  eq(pr.cx < FX.tileX + plain.fx * FX.scale, true, 'effects layout: left of the feet')
 end
 
 -- ---------------------------------------------------------------- samples (O497)
@@ -782,5 +749,38 @@ eq(P.fromPlayRow({ kind = 'killfx', play = { { b = { id = 468 } } }, dissolve = 
 eq(P.dissolveOf(nil), nil, 'no row')
 local sd = P.fromStoreLook({ kind = 'effects', killfx = true, play = { { b = { id = 468 } } }, dissolve = 'burn', tint = 2 })
 eq(sd.dissolve.m, 'burn', 'a store offer carries the dissolve') eq(sd.dissolve.t, 2, 'store tint')
+
+-- a kill scene centres the monster, not the monster plus its effect (O715, owner 2026-11-22: "o monstro nao esta centralizado")
+do
+  local scene = P.sceneOf({ killfx = true })
+  local troll = { left = 4, top = 2, right = 28, bottom = 32 } -- a stock look's box in sprite px from its tile's top left
+  local boxes = { target = troll }
+  local bigSizes = { [468] = { 3, 3, 16, 16 }, [469] = { 1, 5, 0, 0 } }
+  local function bigOf(sp) local z = bigSizes[sp.id] return z[1], z[2], z[3], z[4] end
+  for _, play in ipairs({ { { b = { id = 468 } } }, { { b = { id = 469 } } }, {} }) do
+    for _, dim in ipairs({ { 188, 240 }, { 318, 130 }, { 240, 240 } }) do
+      local W, H = dim[1], dim[2]
+      local ox0, oy0, ox1, oy1 = P.fxExtent(play, bigOf, scene, boxes)
+      local old = P.fxLayout(W, H, ox0, oy0, ox1, oy1)
+      local x0, y0, x1, y1 = P.killExtent(ox0, oy0, ox1, oy1, scene, troll)
+      local L = P.fxLayout(W, H, x0, y0, x1, y1)
+      local cx = L.tileX + (troll.left + troll.right) / 2 * L.T / 32 -- the monster's middle on the stage
+      local cy = L.tileY + (troll.top + troll.bottom) / 2 * L.T / 32
+      eq(math.abs(cx - W / 2) <= 1.5, true, 'the monster is centred across a ' .. W .. ' x ' .. H .. ' stage (' .. cx .. ')')
+      eq(math.abs(cy - H / 2) <= 1.5, true, 'and up and down (' .. cy .. ')')
+      -- the whole effect still fits the stage
+      local smallest = L.scale == P.FX_SCALES[#P.FX_SCALES] -- a stage too small even for the smallest scale clips, as before
+      eq(smallest or (L.tileX + x0 * L.T >= -1 and L.tileX + x1 * L.T <= W + 1), true, 'the effect fits across')
+      eq(smallest or (L.tileY + y0 * L.T >= -1 and L.tileY + y1 * L.T <= H + 1), true, 'and up and down')
+      if #play > 0 then
+        local ocx = old.tileX + (troll.left + troll.right) / 2 * old.T / 32
+        local ocy = old.tileY + (troll.top + troll.bottom) / 2 * old.T / 32
+        eq(math.abs(ocx - W / 2) > 1.5 or math.abs(ocy - H / 2) > 1.5, true, 'before the fix the monster stood off the middle (' .. W .. ' x ' .. H .. ')')
+      end
+    end
+  end
+  eq(select(1, P.killExtent(-1, -1, 1, 1, { kill = false }, troll)), -1, 'a spell scene keeps its extent')
+  eq(select(1, P.killExtent(nil, nil, nil, nil, scene, troll)), nil, 'no extent, none made')
+end
 
 print('lookpreview_core_test: ' .. n .. ' checks OK')

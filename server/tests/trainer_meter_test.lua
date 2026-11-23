@@ -36,7 +36,7 @@ local cfg = M.configure(cfgFile)
 -- the config
 eq(cfg.windowMs, 5000, "window 5 s")
 eq(cfg.endAfterMs, 10000, "session ends after 10 s")
-eq(cfg.maxRowsSent, 10, "top 10")
+eq(cfg.maxRowsSent, 25, "top 25 rows")
 eq(cfg.profile.class, "normal", "default profile: normal")
 eq(cfg.profile.level, "player", "default profile: the player's level")
 ok(cfg.sendMs == 1000, "a summary every second")
@@ -106,8 +106,10 @@ do
 	near(M.currentDps(cfg, s, T0 + 2000), 500, 1e-9, "DPS now: all inside the window, over the 2 s so far")
 	near(M.averageDps(cfg, s, T0 + 2000), 500, 1e-9, "average since the start")
 	eq(M.duration(cfg, s, T0 + 2000), 2000, "time")
-	-- the window slides: at +7 s only the hit of +2 s is inside the last 5 s (the older buckets left)
-	near(M.currentDps(cfg, s, T0 + 7000), 300 * 1000 / 5000, 1e-9, "DPS now slides")
+	-- the window slides: at +6.9 s only the hit of +2 s is inside the last 5 s (the older buckets left), at +7 s it is
+	-- exactly 5 s old and out
+	near(M.currentDps(cfg, s, T0 + 6900), 300 * 1000 / 5000, 1e-9, "DPS now slides")
+	eq(M.currentDps(cfg, s, T0 + 7000), 0, "a hit exactly 5 s old is out of the window")
 	near(M.averageDps(cfg, s, T0 + 7000), 1000 * 1000 / 7000, 1e-9, "the average keeps counting the time")
 	-- past the window: nothing in it
 	eq(M.currentDps(cfg, s, T0 + 9000), 0, "DPS now: nothing inside the window")
@@ -119,6 +121,27 @@ do
 	eq(M.duration(cfg, s, T0 + 30000), 2000, "the time stops at the last hit")
 	near(M.averageDps(cfg, s, T0 + 30000), 500, 1e-9, "the final average")
 	eq(M.currentDps(cfg, s, T0 + 12000), 0, "no DPS now once ended")
+end
+
+-- hit sequences over time (O720): a lone hit falls with the clock, steady hits read their own rate, a pause drains the window
+do
+	local s = M.newSession(1, 7, "x")
+	M.record(cfg, s, T0, 178, A, "fire")
+	near(M.currentDps(cfg, s, T0), 178, 1e-9, "one hit at once: over the 1 s minimum")
+	near(M.currentDps(cfg, s, T0 + 2000), 89, 1e-9, "one hit, 2 s on: over the 2 s")
+	near(M.averageDps(cfg, s, T0 + 2000), 89, 1e-9, "one hit, 2 s on: the average over the 2 s")
+	eq(M.duration(cfg, s, T0 + 2000), 2000, "one hit, 2 s on: the time ticks without a hit")
+	near(M.currentDps(cfg, s, T0 + 5000), 0, 1e-9, "one hit, 5 s on: out of the window")
+	local t = M.newSession(2, 7, "x")
+	for i = 0, 9 do
+		M.record(cfg, t, T0 + i * 1000, 100, A, "fire")
+	end
+	near(M.currentDps(cfg, t, T0 + 9000), 100, 1e-9, "steady 100 a second reads 100, not the size of a hit")
+	near(M.averageDps(cfg, t, T0 + 9000), 1000 * 1000 / 9000, 1e-9, "steady: the average over the time since the first hit")
+	near(M.currentDps(cfg, t, T0 + 12000), 200 * 1000 / 5000, 1e-9, "a pause of 3 s: two hits left in the window")
+	near(M.averageDps(cfg, t, T0 + 12000), 1000 * 1000 / 12000, 1e-9, "a pause: the average keeps falling")
+	eq(M.duration(cfg, t, T0 + 12000), 12000, "a pause: the time keeps counting")
+	eq(t.total, 1000, "a pause: the total stays")
 end
 
 -- the average is never over less than the minimum span
