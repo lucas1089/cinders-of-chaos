@@ -44,7 +44,10 @@ with this kit. Their commands, handed over from here:
   apply DAT SPR OUT_DIR [--new] [--keep-painted]   the pair with the drawn wings in the same ids (pair 73 step); --new also redraws the six
                                looks 3555-3560 in place (a pair that holds them already: pair 78, O714)
                                --keep-painted: the ten painted rows stay as the input pair has them (no --src needed, O714b)
-  live DAT SPR [--new] [--keep-painted [--base DAT SPR]]   a built pair holds them (kept rows: equal to --base, else skipped)
+                               --keep-painted --painted-sides: and their east / west become the PixelLab side strips of
+                               gen_painted_sides.py (drawn_wings/painted_sides, O724); north / south stay as the pair has them;
+                               --sides-only: only those ten looks change, every other look byte for byte (pair 79 -> 80)
+  live DAT SPR [--new] [--keep-painted [--painted-sides] [--base DAT SPR]]   a built pair holds them (kept rows: equal to --base, else skipped)
   new-table [--check]          the six wings of this file as wings looks 3555-3560 of pair 78 (O581 phase 2): drawn_wings/new_looks.csv, .sums,
                                wing_anchors.lua and the server's ids file (gen_drawn_wings_new.py)
   build-new DAT SPR OUT_DIR    pair 77 (and no other) -> pair 78: the six looks appended, nothing else changes

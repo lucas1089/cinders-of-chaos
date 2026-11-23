@@ -354,6 +354,33 @@ if __name__ == '__main__':
     check(fm.check_pair(kdat, kspr, [rows[0], painted], ksums, log=quiet, keep=keep_ids) == [], 'live keep without a base skips the kept row')
     check(len(fm.check_pair(ndat_p, nspr_p, [rows[0], painted], ksums, log=quiet, keep=keep_ids, base=(dat_p, spr_p))) == 1,
           'live keep names a painted row that was redrawn instead of kept')
+    # O724: `--keep-painted --painted-sides`: a painted look keeps its north and south as the input pair has them and
+    # takes the PixelLab side strips in east and west (west the strip mirrored); every other look stays as it was
+    import gen_painted_sides as gps
+    out_s = os.path.join(case.dir, 'outs')
+    done = fm.apply(ndat_p, nspr_p, out_s, [painted], log=quiet, keep=keep_ids, sides=keep_ids)
+    check(done == [3], 'apply painted sides rewrites the painted look only: %s' % done)
+    sdat, sspr = os.path.join(out_s, 'Tibia.dat'), os.path.join(out_s, 'Tibia.spr')
+    sd, ss = Dat(sdat), Spr(sspr)
+    base3, got3 = fm.pair_patterns(nd, nspr, 3), fm.pair_patterns(sd, ss, 3)
+    east = gps.read_strip(painted.wings)
+    check(not isinstance(got3, str) and all(np.array_equal(base3[(y, x, f)], got3[(y, x, f)])
+                                             for y in range(2) for x in (0, 2) for f in range(gd.FRAMES)),
+          'painted sides keep north and south of the input pair')
+    check(all(np.array_equal(got3[(0, 1, f)], east[f]) and np.array_equal(got3[(0, 3, f)], gd.mirrored(east[f]))
+              and not got3[(1, 1, f)].any() and not got3[(1, 3, f)].any() for f in range(gd.FRAMES)),
+          'painted sides put the strip in east and its mirror in west, behind the body')
+    ta, tb = nd.outfit(2), sd.outfit(2)
+    check(nd.data[ta.raw[0]:ta.raw[1]] == sd.data[tb.raw[0]:tb.raw[1]], 'painted sides leave the other looks byte for byte')
+    check(fm.check_pair(sdat, sspr, [painted], {}, log=quiet, keep=keep_ids, base=(ndat_p, nspr_p), sides=keep_ids) == [],
+          'live painted sides: north / south equal the base, east / west the strips')
+    check(len(fm.check_pair(ndat_p, nspr_p, [painted], {}, log=quiet, keep=keep_ids, base=(ndat_p, nspr_p), sides=keep_ids)) == 1,
+          'live painted sides names a look without the side strips')
+    try:
+        fm.apply(ndat_p, nspr_p, out_s + '2', [painted], log=quiet, keep=set(), sides=keep_ids)
+        check(False, 'painted sides refuse a row that is not kept')
+    except SystemExit:
+        pass
     for bad_call, what in ((lambda: fm.apply(dat_p, spr_p, out_dir, rows, log=quiet), 'an existing folder'),
                            (lambda: fm.apply(dat_p, spr_p, out_dir + '2', [rows[0], copy.copy(specs[1])], log=quiet), 'a missing look')):
         try:
@@ -791,6 +818,26 @@ if SHEETS:
     print('O594, O620: the ten sheets of %s hold the table, the bar, the layout and the sums' % SHEETS)
 else:
     print('O594: no sheets folder named (CHAOS_WINGS_SRC), the ten painted sheets are not checked')
+
+# ---- O724: the side views of the ten painted rows, from PixelLab, held to the O714c side rules
+import gen_painted_sides as _gps  # noqa: E402
+check(set(_gps.rows()) == set(fm.sheet_rows()), 'O724: a side strip for every painted row of pixellab_rows.csv')
+check(all(_gps.rows()[_w]['key'] == fm.sheet_rows()[_w]['key'] for _w in _gps.rows()), 'O724: side rows name the keys of the table')
+_gbad = _gps.build(check=True, log=lambda *_a: None)
+check(not _gbad, 'O724: the strips are what build draws, sides.sums is current, every frame holds the side rules: %s' % _gbad[:4])
+_gs = _gps.read_strip(58)
+_gw = [_f.copy() for _f in _gs]
+_gw[3][40, 47:60] = 255                                  # art over the chest
+check(_gps.problems(58, _gw), 'O724: the side rules refuse art in front of the back line')
+_gw = [_f.copy() for _f in _gs]
+_gw[0][_gw[0][..., 3] == 255] = (255, 0, 0, 255)          # no outline
+check(_gps.problems(58, _gw), 'O724: the side rules refuse an open edge that is not the outline colour')
+check(_gps.problems(58, [_gs[0]] * gd.FRAMES), 'O724: the side rules refuse a strip that does not flap')
+_gr = dict(_gps.rows()[58])
+_gr['aim'] = '60'
+_gi, _gm = _gps.frames(58, _gr)
+check(_gps.problems(58, _gi, _gm, _gr), 'O724: the side rules refuse a near wing that stands too steep')
+print('O724: the ten painted side strips hold the side rules and the sums')
 
 if fails:
     print('%d FAILED' % fails)
