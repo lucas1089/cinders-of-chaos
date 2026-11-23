@@ -19,6 +19,9 @@
 #                               the log is deleted; logs and the update log still show everything)
 #   players                     online characters: name, level, class name (tab separated)
 #   vocations                   id=class name, one per line
+#   botcheck-top [N]            bot detection (O722, server/README.md "Bot detection events and scores (O722)"), read-only: the N (20,
+#                               1 to 100) highest scores of the last 24 hours, one line per character with the six heuristic
+#                               numbers; the table chaos_botdet_scores that botdet.lua fills every hour. Never bans or kicks
 #   metrics [--json]            anonymous progress counters (server/README.md "Progress metrics (O253)"), read-only: churn by level
 #                               band, the 10 areas and monsters with the most deaths, first session length, median time to
 #                               level 10 / 25 / 50 / 100 / 200, and (O437) the return rates per creation day: back on day 1,
@@ -1370,6 +1373,34 @@ case $cmd in
       exit 1
     fi
     printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
+    ;;
+  botcheck-top)
+    # read-only (O722): the highest bot detection score of each character in the last 24 hours (the table the game server
+    # writes every hour, server/README.md "Bot detection events and scores (O722)"). A fixed query; the one argument is a
+    # number checked here. Nothing here bans or kicks: the list is for staff to read, with /botcheck NAME in the game for the numbers.
+    bn=20
+    if [ $# -gt 0 ]; then
+      { num "$1" && [ "${#1}" -le 3 ] && [ "$((10#$1))" -ge 1 ] && [ "$((10#$1))" -le 100 ]; } || die "botcheck-top [N] (1 to 100)"
+      bn=$((10#$1))
+      shift
+    fi
+    [ $# -eq 0 ] || die "botcheck-top [N] (1 to 100)"
+    brc=0
+    # ties and the several hours of one character are cut below, so the query asks for more rows than N
+    brows=$(mysql_q "SELECT player_name, total, flagged, route, regularity, reaction, heal, session, bonus, FROM_UNIXTIME(hour_ts) FROM chaos_botdet_scores WHERE hour_ts >= UNIX_TIMESTAMP() - 86400 ORDER BY total DESC, hour_ts DESC LIMIT $((bn * 12))" 2>&1) || brc=$?
+    if [ "$brc" -ne 0 ]; then
+      case $brows in
+        *"doesn't exist"*) die "no-table: chaos_botdet_scores does not exist yet (the game server creates it when it starts with the bot detection)" ;;
+        *) die "database: $brows" ;;
+      esac
+    fi
+    echo "botcheck-top: the highest hour of each character in the last 24 hours (flag above 70; staff decide, nothing is done automatically)"
+    if [ -z "$brows" ]; then
+      echo "no scores in the last 24 hours"
+    else
+      printf '%s\n' "$brows" | awk -F '\t' -v n="$bn" '!($1 in seen) && c < n { seen[$1] = 1; c++
+        printf "%2d. %-20s total %3d%s  route %d rhythm %d reaction %d heal %d session %d bonus %d  at %s\n", c, $1, $2, ($3 == 1 ? " FLAG" : "     "), $4, $5, $6, $7, $8, $9, $10 }'
+    fi
     ;;
   newplayer-funnel|survey)
     # read-only: the SELECT comes from newplayer_report.py, built from fixed numbers and a checked day count; no argument

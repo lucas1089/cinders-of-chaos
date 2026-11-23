@@ -41,6 +41,7 @@ access flag (gamemaster or higher).
 |---|---|---|
 | `/reports`, `/reports list closed\|all\|bugs`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
 | `/botreview`, `/botreview <name>`, `/botreview mark <name>, reviewed\|false_positive\|escalate\|note[, note]` | 4+ (changing an escalated day: **5+**) | the bot review list, one character's score and signals, a mark (section 3a) |
+| `/botcheck <name>`, `/botcheck top [N]`, `/botcheck ask <name>` | 4+ | bot detection (O722): the numbers of the six heuristics of one character (live if online, the highest hour of the last 24 otherwise) and the client's signals; the 20 highest scores of the day; the presence check sent now. Reports only: it never bans or kicks, the decision is yours. `chaos-ctl.sh botcheck-top` and the admin apps list the day's top; docs/BOT_DETECTION.md (pt-BR) |
 | `/gmnotify <message>` | 4+ | a toast to every online player |
 | `/patchnotes reload\|unseen` | 4+ | read the notes folder now; forget your account's last seen week |
 | `/rift status`, `/rift fail` | 4+ | the runs and slots, fail your run |

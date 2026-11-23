@@ -131,6 +131,14 @@
    "action": "wipe",
    "reason": "bot review rows of beta characters"
   },
+  "chaos_botdet_events": {
+   "action": "wipe",
+   "reason": "bot detection events of beta characters"
+  },
+  "chaos_botdet_scores": {
+   "action": "wipe",
+   "reason": "bot detection scores of beta characters"
+  },
   "chaos_bounty": {
    "action": "wipe",
    "reason": "bounty contracts of beta characters"

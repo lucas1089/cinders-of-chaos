@@ -1,0 +1,287 @@
+# Bot signals for the bot detection (O722; server/README.md "Bot detection events and scores (O722)", docs/BOT_DETECTION.md): what the
+# engine sees of a player's walking and targeting that Lua cannot, as counts and a few times a script polls. Detection and reports only:
+# nothing here changes how a player walks, attacks or is treated, and nothing is saved.
+#   * Player::getChaosBotSignals() holds a ChaosBotSignals::Signals (src/chaosbotsignals.h, pure, tested by server/tools/chaosbotsignals_test.cpp):
+#     key steps, path commands (a click on the map or the minimap: one command of N steps) and the time from a monster coming into the player's
+#     view to the player's FIRST attack on it (a reaction time, at most 30 s, a ring of 64 waiting creatures and 32 reaction times).
+#   * Hooks, one line each: Game::playerMove (a key step), Game::playerAutoWalk (a path command, listDir.size() steps),
+#     Player::onCreatureMove (a monster that was out of the player's view and is in it now), Game::playerSetAttackedCreature (a new target
+#     that is a monster).
+#   * Lua player:getBotSignals(): {keys, paths, pathSteps, reactions = {{creature id, ms}, ...}} since the last call and resets, nil when there
+#     is nothing. The capability scripts detect: type(Player.getBotSignals) == "function". Without the patch botdet.lua has no reaction or
+#     path data and the other four heuristics carry the total.
+# Applies after 0001-0092 (0028 kite walk, 0066 attack at once, 0091 and 0092 give the context lines). The context of the two hunks of
+# player.cpp and game.cpp that 0028 / 0066 do not show (Creature::onCreatureMove's call line, the blank lines) is the stock TFS 1.4.2 text; the
+# base source tree is not in the repository, so the patch was written from those patches and from the stock text and NOT applied to a tree:
+# run patch -p1 --fuzz=0 --dry-run first (server/tools/botsignals_patch_test.py does it with SRC_TREE=<tree with 0001-0092>), then rebuild.
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -2184,6 +2184,7 @@
+ 	player->setNextWalkActionTask(nullptr);
+ 
+ 	player->setKiteWalk(chaosKiteWalkOn(player));
++	player->getChaosBotSignals().keyStep(); // Chaos (src-patch 0093)
+ 	player->startAutoWalk(direction);
+ }
+ 
+@@ -2383,6 +2384,7 @@ void Game::playerAutoWalk(uint32_t playerId, const std::vector<Direction>& listD
+ 	player->resetIdleTime();
+ 	player->setNextWalkTask(nullptr);
+ 	player->setKiteWalk(!listDir.empty() && !player->isMovementBlocked() && chaosKiteWalkOn(player));
++	player->getChaosBotSignals().pathCommand(listDir.size()); // Chaos (src-patch 0093)
+ 	player->startAutoWalk(listDir);
+ }
+ 
+@@ -3668,6 +3670,10 @@ void Game::playerSetAttackedCreature(uint32_t playerId, uint32_t creatureId)
+ 
+ 	const bool newTarget = player->getAttackedCreature() != attackCreature;
+ 	player->setAttackedCreature(attackCreature);
++	if (newTarget && attackCreature && attackCreature->getMonster()) {
++		// Chaos (src-patch 0093): the first attack on a monster that came into view is a reaction time (chaosbotsignals.h)
++		player->getChaosBotSignals().attacked(attackCreature->getID(), OTSYS_TIME());
++	}
+ 	g_dispatcher.addTask(createTask(std::bind(&Game::updateCreatureWalk, this, player->getID())));
+ 
+ 	// Chaos (src-patch 0066): the first swing at a new target (a pull, a switch, the target picked again after a stair)
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2718,6 +2718,7 @@
+ 	registerMethod("Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
+ 	registerMethod("Player", "setFistAttack", LuaScriptInterface::luaPlayerSetFistAttack); // Chaos (src-patch 0091)
+ 	registerMethod("Player", "getFistAttack", LuaScriptInterface::luaPlayerGetFistAttack); // Chaos (src-patch 0091)
++	registerMethod("Player", "getBotSignals", LuaScriptInterface::luaPlayerGetBotSignals); // Chaos (src-patch 0093)
+ 
+ 	registerMethod("Player", "getStoreInbox", LuaScriptInterface::luaPlayerGetStoreInbox);
+ 
+@@ -11430,6 +11431,41 @@
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaPlayerGetBotSignals(lua_State* L)
++{
++	// player:getBotSignals() (Chaos, src-patch 0093): what the engine counted of this player's walking and targeting since the last call
++	// (chaosbotsignals.h), as {keys, paths, pathSteps, reactions = {{creature id, ms}, ...}}, and back to zero. nil when there is nothing
++	// (or the player is gone). Read only: nothing here changes the player.
++	Player* player = getUserdata<Player>(L, 1);
++	if (!player) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	ChaosBotSignals::Drained drained = player->getChaosBotSignals().drain();
++	if (drained.empty()) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	lua_createtable(L, 0, 4);
++	setField(L, "keys", drained.keySteps);
++	setField(L, "paths", drained.pathCommands);
++	setField(L, "pathSteps", drained.pathSteps);
++	lua_createtable(L, static_cast<int>(drained.reactions.size()), 0);
++	int index = 0;
++	for (const auto& reaction : drained.reactions) {
++		lua_createtable(L, 2, 0);
++		lua_pushnumber(L, reaction.first);
++		lua_rawseti(L, -2, 1);
++		lua_pushnumber(L, reaction.second);
++		lua_rawseti(L, -2, 2);
++		lua_rawseti(L, -2, ++index);
++	}
++	lua_setfield(L, -2, "reactions");
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerSetFistAttack(lua_State* L)
+ {
+ 	// player:setFistAttack(attack, multiplier) (Chaos, src-patch 0091): the bare-fist hit of this player is rolled with this attack value
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1082,6 +1082,7 @@
+ 		static int luaPlayerGetFightMode(lua_State* L);
+ 		static int luaPlayerSetFistAttack(lua_State* L); // Chaos (src-patch 0091)
+ 		static int luaPlayerGetFistAttack(lua_State* L); // Chaos (src-patch 0091)
++		static int luaPlayerGetBotSignals(lua_State* L); // Chaos (src-patch 0093)
+ 
+ 		static int luaPlayerGetStoreInbox(lua_State* L);
+ 		static int luaPlayerSetCharacterStat(lua_State* L);
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -10,6 +10,7 @@
+ #include "enums.h"
+ #include "chaostesters.h"
+ #include "chaosfist.h"
++#include "chaosbotsignals.h"
+ #include "vocation.h"
+ #include "protocolgame.h"
+ #include "party.h"
+@@ -735,6 +736,12 @@
+ 			return chaosFistMultiplier;
+ 		}
+ 
++		// Chaos (src-patch 0093): the counts and times of this player's walking and targeting that the bot detection reads (a script polls
++		// them with player:getBotSignals(); nothing here acts on the player and nothing is saved)
++		ChaosBotSignals::Signals& getChaosBotSignals() {
++			return chaosBotSignals;
++		}
++
+ 		void addInFightTicks(bool pzlock = false);
+ 
+ 		uint64_t getGainedExperience(Creature* attacker) const override;
+@@ -1392,6 +1399,7 @@
+ 		int64_t lastFailedFollow = 0;
+ 		float chaosFistAttack = 0.0f; // Chaos (src-patch 0091)
+ 		float chaosFistMultiplier = 1.0f; // Chaos (src-patch 0091)
++		ChaosBotSignals::Signals chaosBotSignals; // Chaos (src-patch 0093)
+ 		int64_t kiteChaseResumeTime = 0; // Chaos (kite walk): chase pathing waits until then after a kite walk
+ 		int64_t skullTicks = 0;
+ 		int64_t lastWalkthroughAttempt = 0;
+diff --git a/src/player.cpp b/src/player.cpp
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -3475,4 +3475,9 @@ void Player::onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
+                             const Tile* oldTile, const Position& oldPos, bool teleport)
+ {
++	// Chaos (src-patch 0093): a monster that was out of this player's view and is in it now (a reaction time starts, chaosbotsignals.h)
++	if (creature != this && creature->getMonster() && !canSee(oldPos) && canSee(newPos)) {
++		chaosBotSignals.seen(creature->getID(), OTSYS_TIME());
++	}
++
+ 	Creature::onCreatureMove(creature, newTile, newPos, oldTile, oldPos, teleport);
+ 
+diff --git a/src/chaosbotsignals.h b/src/chaosbotsignals.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaosbotsignals.h
+@@ -0,0 +1,127 @@
++// Chaos (src-patch 0093): what the engine sees of a player's walking and targeting that Lua cannot see, for the bot detection
++// (data/scripts/chaos/botdet.lua). Pure parts, tested by server/tools/chaosbotsignals_test.cpp. Counts and a few times only:
++// nothing here acts on the player and nothing is saved.
++#ifndef FS_CHAOSBOTSIGNALS_H
++#define FS_CHAOSBOTSIGNALS_H
++
++#include <cstddef>
++#include <cstdint>
++#include <utility>
++#include <vector>
++
++namespace ChaosBotSignals {
++
++// creatures that came into view and have not been attacked yet: a ring, a new one pushes the oldest out
++constexpr size_t SEEN_CAP = 64;
++// reaction times waiting for the next poll of the script (a script polls every few seconds): the oldest are dropped
++constexpr size_t REACTION_CAP = 32;
++// a creature seen longer ago than this is not a reaction when it is attacked (the player had it in view for a while)
++constexpr int64_t SEEN_MAX_AGE_MS = 30000;
++// the largest step count one path command adds (a client walks at most a screen and a half; a bigger number is a bad packet)
++constexpr uint32_t MAX_PATH_STEPS = 4096;
++
++struct Drained {
++	uint32_t keySteps = 0;
++	uint32_t pathCommands = 0;
++	uint32_t pathSteps = 0;
++	std::vector<std::pair<uint32_t, int32_t>> reactions; // (creature id, milliseconds from coming into view to the first attack)
++
++	bool empty() const {
++		return keySteps == 0 && pathCommands == 0 && pathSteps == 0 && reactions.empty();
++	}
++};
++
++class Signals
++{
++	public:
++		// a step asked for with a key (Game::playerMove)
++		void keyStep() {
++			if (keySteps != UINT32_MAX) {
++				++keySteps;
++			}
++		}
++
++		// a walk asked for with a click on the map or the minimap (Game::playerAutoWalk): one command of `steps` steps
++		void pathCommand(size_t steps) {
++			if (steps == 0) {
++				return;
++			}
++			if (pathCommands != UINT32_MAX) {
++				++pathCommands;
++			}
++			const uint32_t add = steps > MAX_PATH_STEPS ? MAX_PATH_STEPS : static_cast<uint32_t>(steps);
++			pathSteps = (UINT32_MAX - pathSteps < add) ? UINT32_MAX : pathSteps + add;
++		}
++
++		// a monster moved into the player's view (a creature already in the list keeps being listed, with the new time)
++		void seen(uint32_t id, int64_t nowMs) {
++			for (size_t i = 0; i < seenCount; ++i) {
++				if (seenList[i].id == id) {
++					seenList[i].at = nowMs;
++					return;
++				}
++			}
++			if (seenCount < SEEN_CAP) {
++				seenList[seenCount++] = {id, nowMs};
++			} else {
++				seenList[seenNext] = {id, nowMs};
++				seenNext = (seenNext + 1) % SEEN_CAP;
++			}
++		}
++
++		// the player attacked a creature: when it is one that came into view and is waiting, its first attack is a reaction time
++		// (and it is not waiting any more, so a second attack on it, a retarget, counts for nothing)
++		void attacked(uint32_t id, int64_t nowMs) {
++			for (size_t i = 0; i < seenCount; ++i) {
++				if (seenList[i].id != id) {
++					continue;
++				}
++				const int64_t ms = nowMs - seenList[i].at;
++				seenList[i] = seenList[seenCount - 1];
++				--seenCount;
++				if (seenNext >= seenCount) {
++					seenNext = 0;
++				}
++				if (ms >= 0 && ms <= SEEN_MAX_AGE_MS) {
++					if (reactions.size() >= REACTION_CAP) {
++						reactions.erase(reactions.begin());
++					}
++					reactions.emplace_back(id, static_cast<int32_t>(ms));
++				}
++				return;
++			}
++		}
++
++		// everything since the last call, and back to zero
++		Drained drain() {
++			Drained d;
++			d.keySteps = keySteps;
++			d.pathCommands = pathCommands;
++			d.pathSteps = pathSteps;
++			d.reactions.swap(reactions);
++			keySteps = pathCommands = pathSteps = 0;
++			return d;
++		}
++
++		size_t waiting() const {
++			return seenCount;
++		}
++
++	private:
++		struct Entry {
++			uint32_t id = 0;
++			int64_t at = 0;
++		};
++
++		Entry seenList[SEEN_CAP];
++		size_t seenCount = 0;
++		size_t seenNext = 0;
++		uint32_t keySteps = 0;
++		uint32_t pathCommands = 0;
++		uint32_t pathSteps = 0;
++		std::vector<std::pair<uint32_t, int32_t>> reactions;
++};
++
++} // namespace ChaosBotSignals
++
++#endif

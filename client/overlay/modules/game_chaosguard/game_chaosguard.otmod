@@ -1,9 +1,9 @@
 Module
   name: game_chaosguard
-  description: Client guard hello (extended opcode 190 after the login; server clientguard.lua, base patch 0035)
+  description: Client guard hello (extended opcode 190 after the login; server clientguard.lua, base patch 0035) and the bot detection signals (opcode 169; server botdet.lua, base patch 0207)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ guardhello, chaosguard ]
+  scripts: [ guardhello, integrity, chaosguard ]
   autoload: true
   autoload-priority: 1000
   @onLoad: init()

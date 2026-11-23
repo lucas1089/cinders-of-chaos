@@ -1,0 +1,282 @@
+# Chaos (0207, O722; client/BASE.md "0207", server/README.md "Bot detection events and scores (O722)", docs/BOT_DETECTION.md part 4): the
+# known-tool scan of the bot detection, Windows only. New pure header src/client/chaostoolscan.h (tested on every platform by
+# client/tools/chaostoolscan_test.cpp, CI cuts the header out of this patch) and one Lua function in luafunctions_client.cpp:
+#   g_game.chaosScanTools(spec) -> "code,code" or ""
+# spec is the list the server sends ("code:hash,code:hash", data/scripts/chaos/botdet_config.lua `tools`, kept by staff): a short code
+# of 3 to 16 letters or digits and the 16 hex digits of the FNV-1a 64 hash of a lower-case name. On Windows the scan reads the names of
+# the running processes (no paths, no ids) and the titles of the visible windows, hashes the whole text, the name without its extension and
+# each word, and answers with the codes whose hash it found. It never returns, stores, logs or sends a process name, a window title or a
+# list of either: only the codes, which the Lua module game_chaosguard sends to the server on extended opcode 169 as one `tool` event. On
+# every other platform (Linux, Android) it answers "". Detection and reports only: nothing is closed, stopped or blocked.
+# Not done on purpose: the check for other processes holding memory handles on the client (docs/BOT_DETECTION.md part 4, point 3: it
+# gives false positives for antivirus, screen recorders and overlays, and the plan said to skip it).
+# The Windows branch of the header (the process snapshot, the window enumeration) was never built or run: the base client tree is not in the
+# repository. The hunks use the context of 0035 (the include of chaosguard.h and the two g_game functions it binds); not applied to a tree.
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -23,6 +23,7 @@
+ #include "luavaluecasts_client.h"
+ #include "game.h"
+ #include "chaosguard.h"
++#include "chaostoolscan.h"
+ #include "gameconfig.h"
+ #include "tile.h"
+ #include "houses.h"
+@@ -252,6 +253,8 @@ void Client::registerLuaFunctions()
+         msg->addU32(chaosguard::clientId()); // Chaos (base patch 0035): the client guard's identifier, not the version
+     g_lua.bindClassStaticFunction("g_game", "getChaosClientId", std::function<uint32()>([]() { return chaosguard::clientId(); }));
+     g_lua.bindClassStaticFunction("g_game", "getChaosClientBuild", std::function<int()>([]() { return static_cast<int>(chaosguard::build()); }));
++    // Chaos (base patch 0207): the known-tool scan of the bot detection (Windows only; codes only, never a name or a title)
++    g_lua.bindClassStaticFunction("g_game", "chaosScanTools", std::function<std::string(const std::string&)>([](const std::string& spec) { return chaos::toolscan::scan(spec); }));
+     g_lua.bindSingletonFunction("g_game", "loginWorld", &Game::loginWorld, &g_game);
+     g_lua.bindSingletonFunction("g_game", "playRecord", &Game::playRecord, &g_game);
+     g_lua.bindSingletonFunction("g_game", "cancelLogin", &Game::cancelLogin, &g_game);
+diff -ruN a/src/client/chaostoolscan.h b/src/client/chaostoolscan.h
+--- /dev/null
++++ b/src/client/chaostoolscan.h
+@@ -0,0 +1,244 @@
++// Chaos (client base patch 0207): the known-tool scan of the bot detection (O722; client/BASE.md "0207", server/README.md "Bot detection
++// events and scores (O722)", docs/BOT_DETECTION.md part 4). The server sends a list of short codes with the hash of a name each
++// (data/scripts/chaos/botdet_config.lua `tools`, kept by staff); this scan, on Windows only, looks at the names of the running processes and
++// the titles of the visible windows, compares the hashes of their words with the list and answers with the CODES that matched. It never
++// returns, stores, logs or sends a process name, a window title or the list of either: the answer is "code,code" or an empty string.
++// Detection and reports only: nothing is closed, stopped or blocked. Pure parts (the hash, the list, the matching) are tested by
++// client/tools/chaostoolscan_test.cpp on every platform; the Windows part (the process snapshot, the window enumeration) was not built or
++// run here. On every other platform scan() returns "".
++#ifndef CHAOS_TOOLSCAN_H
++#define CHAOS_TOOLSCAN_H
++
++#include <algorithm>
++#include <cstddef>
++#include <cstdint>
++#include <string>
++#include <unordered_set>
++#include <vector>
++
++#ifdef _WIN32
++#ifndef WIN32_LEAN_AND_MEAN
++#define WIN32_LEAN_AND_MEAN
++#endif
++#include <windows.h>
++#include <tlhelp32.h>
++#endif
++
++namespace chaos {
++namespace toolscan {
++
++constexpr size_t MAX_ENTRIES = 200; // entries of the list the server sends
++constexpr size_t MAX_CODES = 8; // codes in the answer
++constexpr size_t MAX_NAMES = 8192; // process names and window titles read in one scan
++constexpr size_t MAX_WORDS = 24; // words looked at in one title
++constexpr size_t MAX_TEXT = 512; // bytes looked at in one name or title
++
++inline char fold(char c)
++{
++	return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + 32) : c;
++}
++
++// FNV-1a 64 over the lower-cased (ASCII) bytes: "foobar" is 0x85944171f73967e8 (the vector in the test)
++inline uint64_t fnv1a64(const std::string& s)
++{
++	uint64_t h = 0xcbf29ce484222325ULL;
++	for (unsigned char c : s) {
++		h ^= static_cast<unsigned char>(fold(static_cast<char>(c)));
++		h *= 0x100000001b3ULL;
++	}
++	return h;
++}
++
++inline std::string hex16(uint64_t v)
++{
++	static const char digits[] = "0123456789abcdef";
++	std::string out(16, '0');
++	for (int i = 15; i >= 0; --i) {
++		out[static_cast<size_t>(i)] = digits[v & 0xF];
++		v >>= 4;
++	}
++	return out;
++}
++
++struct Entry {
++	std::string code;
++	uint64_t hash = 0;
++};
++
++inline bool isAlnum(char c)
++{
++	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
++}
++
++// "code:hash,code:hash": code 3 to 16 letters or digits, hash 16 hex digits; a bad entry is skipped, at most MAX_ENTRIES are read
++inline std::vector<Entry> parseSpec(const std::string& spec)
++{
++	std::vector<Entry> out;
++	size_t pos = 0;
++	while (pos <= spec.size() && out.size() < MAX_ENTRIES) {
++		size_t end = spec.find(',', pos);
++		if (end == std::string::npos) {
++			end = spec.size();
++		}
++		const std::string item = spec.substr(pos, end - pos);
++		pos = end + 1;
++		const size_t colon = item.find(':');
++		if (colon == std::string::npos) {
++			continue;
++		}
++		const std::string code = item.substr(0, colon);
++		const std::string hex = item.substr(colon + 1);
++		if (code.size() < 3 || code.size() > 16 || hex.size() != 16) {
++			continue;
++		}
++		bool ok = std::all_of(code.begin(), code.end(), isAlnum);
++		uint64_t value = 0;
++		for (char c : hex) {
++			int d = (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : (c >= 'A' && c <= 'F') ? c - 'A' + 10 : -1;
++			if (d < 0) {
++				ok = false;
++				break;
++			}
++			value = (value << 4) | static_cast<uint64_t>(d);
++		}
++		if (ok) {
++			out.push_back({code, value});
++		}
++	}
++	return out;
++}
++
++// the hashes a name or a title is looked up by: the whole text, for a process name also without its extension, and each word of letters
++// and digits (a title "Name v1.2 - cave" gives the whole title and name, v1, 2, cave)
++inline void addHashes(const std::string& text, bool processName, std::unordered_set<uint64_t>& out)
++{
++	const std::string t = text.size() > MAX_TEXT ? text.substr(0, MAX_TEXT) : text;
++	if (t.empty()) {
++		return;
++	}
++	out.insert(fnv1a64(t));
++	if (processName) {
++		const size_t dot = t.rfind('.');
++		if (dot != std::string::npos && dot > 0) {
++			out.insert(fnv1a64(t.substr(0, dot)));
++		}
++	}
++	size_t words = 0;
++	size_t i = 0;
++	while (i < t.size() && words < MAX_WORDS) {
++		while (i < t.size() && !isAlnum(t[i])) {
++			++i;
++		}
++		const size_t start = i;
++		while (i < t.size() && isAlnum(t[i])) {
++			++i;
++		}
++		if (i > start) {
++			out.insert(fnv1a64(t.substr(start, i - start)));
++			++words;
++		}
++	}
++}
++
++// the answer for the names and titles the platform part collected: the codes whose hash is among theirs, sorted, once each, at most
++// MAX_CODES, joined with commas; "" when nothing matches or the list is empty
++inline std::string answerFor(const std::string& spec, const std::vector<std::string>& processNames, const std::vector<std::string>& windowTitles)
++{
++	const std::vector<Entry> entries = parseSpec(spec);
++	if (entries.empty()) {
++		return std::string();
++	}
++	std::unordered_set<uint64_t> seen;
++	size_t n = 0;
++	for (const std::string& name : processNames) {
++		if (n++ >= MAX_NAMES) {
++			break;
++		}
++		addHashes(name, true, seen);
++	}
++	n = 0;
++	for (const std::string& title : windowTitles) {
++		if (n++ >= MAX_NAMES) {
++			break;
++		}
++		addHashes(title, false, seen);
++	}
++	std::vector<std::string> codes;
++	for (const Entry& e : entries) {
++		if (seen.count(e.hash) != 0 && std::find(codes.begin(), codes.end(), e.code) == codes.end()) {
++			codes.push_back(e.code);
++		}
++	}
++	std::sort(codes.begin(), codes.end());
++	if (codes.size() > MAX_CODES) {
++		codes.resize(MAX_CODES);
++	}
++	std::string out;
++	for (const std::string& c : codes) {
++		if (!out.empty()) {
++			out += ',';
++		}
++		out += c;
++	}
++	return out;
++}
++
++#ifdef _WIN32
++inline std::string narrow(const wchar_t* w)
++{
++	if (!w || !*w) {
++		return std::string();
++	}
++	const int len = WideCharToMultiByte(CP_UTF8, 0, w, -1, nullptr, 0, nullptr, nullptr);
++	if (len <= 1) {
++		return std::string();
++	}
++	std::string out(static_cast<size_t>(len - 1), '\0');
++	WideCharToMultiByte(CP_UTF8, 0, w, -1, &out[0], len, nullptr, nullptr);
++	return out;
++}
++
++inline BOOL CALLBACK collectTitle(HWND hwnd, LPARAM param)
++{
++	auto* titles = reinterpret_cast<std::vector<std::string>*>(param);
++	if (titles->size() < MAX_NAMES && IsWindowVisible(hwnd)) {
++		wchar_t buffer[256];
++		const int got = GetWindowTextW(hwnd, buffer, 256);
++		if (got > 0) {
++			titles->push_back(narrow(buffer));
++		}
++	}
++	return TRUE;
++}
++
++// the platform part: process image names (no paths, no ids) and visible window titles, held only for the comparison
++inline std::string scan(const std::string& spec)
++{
++	if (parseSpec(spec).empty()) {
++		return std::string();
++	}
++	std::vector<std::string> names;
++	std::vector<std::string> titles;
++	HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
++	if (snap != INVALID_HANDLE_VALUE) {
++		PROCESSENTRY32W entry;
++		entry.dwSize = sizeof(entry);
++		for (BOOL ok = Process32FirstW(snap, &entry); ok && names.size() < MAX_NAMES; ok = Process32NextW(snap, &entry)) {
++			names.push_back(narrow(entry.szExeFile));
++		}
++		CloseHandle(snap);
++	}
++	EnumWindows(collectTitle, reinterpret_cast<LPARAM>(&titles));
++	return answerFor(spec, names, titles);
++}
++#else
++inline std::string scan(const std::string&)
++{
++	return std::string();
++}
++#endif
++
++} // namespace toolscan
++} // namespace chaos
++
++#endif

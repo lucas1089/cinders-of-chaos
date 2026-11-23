@@ -677,6 +677,7 @@ def main():
     test_testers()
     test_journey()
     test_metrics()
+    test_botcheck_top()
     test_newplayer()
     test_health_balance()
     test_feedback()
@@ -1978,6 +1979,78 @@ def test_metrics():
         os.unlink(os.path.join(repo, 'server', 'tools', 'progress_metrics.py'))
         r = run('metrics', '--json')
         check(r.returncode != 0 and 'progress_metrics.py' in r.stderr, 'metrics: a missing tool is named: ' + r.stderr)
+
+
+BOTDET_MYSQL = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case "$*" in
+  *chaos_botdet_scores*)
+    case "${STUB_BOTDET_FAIL:-}" in
+      table) echo "ERROR 1146 (42S02) at line 1: Table 'chaos.chaos_botdet_scores' doesn't exist" >&2; exit 1 ;;
+      db) echo "ERROR 2002 (HY000): Can't connect to local MySQL server" >&2; exit 1 ;;
+    esac
+    cat "$STUB/botdet.tsv" ;;
+esac
+'''
+
+
+def test_botcheck_top():
+    """chaos-ctl.sh botcheck-top [N] (O722)"""
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        os.makedirs(stub)
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', BOTDET_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        rows = [('Bota', 91, 1, 100, 95, 80, 90, 60, 5, '2026-11-22 03:00:00'), ('Bota', 88, 1, 100, 90, 80, 90, 60, 4, '2026-11-22 02:00:00'),
+                ('Mira', 45, 0, 10, 60, 0, 30, 0, 0, '2026-11-22 01:00:00'), ('Tol', 12, 0, 0, 20, 0, 0, 0, 0, '2026-11-22 00:00:00')]
+        with open(os.path.join(stub, 'botdet.tsv'), 'w') as f:
+            f.write(''.join('\t'.join(str(c) for c in row) + '\n' for row in rows))
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=os.path.join(tmp, 'repo'),
+                   CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_BOTDET_FAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        r = run('botcheck-top')
+        lines = r.stdout.splitlines()
+        check(r.returncode == 0 and lines[0].startswith('botcheck-top: the highest hour of each character'), 'botcheck-top: header: ' + r.stdout + r.stderr)
+        check(len(lines) == 4 and ' 1. Bota' in lines[1] and 'total  91 FLAG' in lines[1] and 'route 100 rhythm 95' in lines[1],
+              'botcheck-top: the highest hour first, flagged: ' + r.stdout)
+        check(' 2. Mira' in lines[2] and 'FLAG' not in lines[2] and ' 3. Tol' in lines[3], 'botcheck-top: one line per character: ' + r.stdout)
+        check('FROM chaos_botdet_scores WHERE hour_ts >= UNIX_TIMESTAMP() - 86400 ORDER BY total DESC, hour_ts DESC LIMIT 240' in calls(),
+              'botcheck-top: the fixed query for 20: ' + calls())
+        r = run('botcheck-top', '2')
+        check(r.returncode == 0 and len(r.stdout.splitlines()) == 3 and 'Tol' not in r.stdout, 'botcheck-top 2 cuts the list: ' + r.stdout)
+        check('LIMIT 24' in calls(), 'botcheck-top 2: the limit follows N')
+        r = run('botcheck-top', extra={'STUB_BOTDET_FAIL': 'table'})
+        check(r.returncode == 1 and 'no-table' in r.stderr, 'botcheck-top: no table is named: ' + r.stderr)
+        r = run('botcheck-top', extra={'STUB_BOTDET_FAIL': 'db'})
+        check(r.returncode == 1 and 'database' in r.stderr, 'botcheck-top: no database: ' + r.stderr)
+        with open(os.path.join(stub, 'botdet.tsv'), 'w') as f:
+            f.write('')
+        r = run('botcheck-top')
+        check(r.returncode == 0 and 'no scores in the last 24 hours' in r.stdout, 'botcheck-top: an empty table: ' + r.stdout)
+        before = calls()
+        for bad in (('botcheck-top', 'x'), ('botcheck-top', '0'), ('botcheck-top', '101'), ('botcheck-top', '1', '2'), ('botcheck-top', '1;id'),
+                    ('botcheck-top', '$(id)'), ('botcheck-top', "' OR 1=1 --"), ('botcheck-top', '-5')):
+            r = run(*bad)
+            check(r.returncode != 0, 'botcheck-top refuses %r' % (bad,))
+        check(calls() == before, 'botcheck-top: a refused call never reaches the database')
 
 
 def test_discord():
