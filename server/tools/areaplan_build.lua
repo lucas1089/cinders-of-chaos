@@ -775,6 +775,7 @@ local frameFam = def.kind == "dungeon" and "earth" or theme.rock
 local frameDef = frameFam and cfg.families[frameFam]
 local frame = frameDef and {family = frameFam, ground = idOf(frameDef.grounds[1][1]), walk = frameDef.walk ~= false} or nil
 put("J " .. json({allowed = allowed, families = fams, borders = borders, sets = sets, chest = riftCfg.chest.itemId,
+	reach = m.reach,
 	portal = cfg.items.portal, hole = cfg.items.hole, ladder = cfg.items.ladder, exitAction = cfg.aid.exit,
 	kind = def.kind, theme = b.theme, frame = frame, thicket = thicket, walls = theme.wall and cfg.walls[theme.wall] and (function()
 		local w = {}

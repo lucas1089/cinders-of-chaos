@@ -67,6 +67,10 @@
       "maximum": 2000000000,
       "description": "the same seed gives the same tiles (default: from the id)"
     },
+    "repair_reach": {
+      "type": "boolean",
+      "description": "join walkable pockets cut off from the main region to it by the shortest carved link instead of closing them with rock (O738, server/README.md \"Area planner candidates and reach repair (O738)\"); default false, so a held plan keeps its tiles"
+    },
     "origin": {
       "type": "object",
       "additionalProperties": false,

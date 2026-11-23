@@ -25143,6 +25143,44 @@ the repo were compared before and after by hand.
   door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
   the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
 
+## Area planner candidates and reach repair (O738) (`tools/area_plan_rank.py`, `areagen_core.lua` `A.linkPath`)
+
+Two planner options. Both are off by default: every held plan compiles to the same bytes.
+
+**Candidates.** `area_planner.py compile|stats|render|approve PLAN --candidates N` compiles N seeds of one plan.
+Candidate 1 is the plan's own seed. Candidate k takes `seed + (k - 1) x 104729`.
+Each compile is scored with the scorers we have, as penalty points off 100:
+
+| part | points |
+|---|---|
+| qa | 30 per QA error, 3 per QA warning (outline lines left out) |
+| shape | `area_plan_shape.py` per floor: 10 per limit broken, 20 x the larger mirror overlap |
+| reach | 100 x (share cut off and closed with rock + share the entry cannot reach) |
+| deco | 100 x the share of tiles with 3+ decoration items; 5 when monsters per 100 tiles lie outside 1.5-5 |
+| look | 5 per `audit_plan_look.py` finding |
+
+The best score is kept; a tie goes to the lower candidate, so the plan's own seed wins a tie.
+A seed whose compile fails ranks last. The table of all candidates is printed.
+`compile` also writes `OUT_DIR/<id>-candidates.txt`. The plan file is not changed: copy the kept seed into `seed`.
+Measured: swamp_hunt 8 seeds 79.80-83.54 (own seed 80.90, sixth), crypt_boss 57.07-58.43 (own seed best),
+hollow_crypt 77.74-78.64 (own seed last). The outline part decides; no example had a QA error, a pocket or spam.
+
+**Reach repair.** Plan field `repair_reach` (boolean, default false; on in `examples/village_square.json`).
+The generator keeps the walkable region of the entry and every region holding a zone or a required point.
+Any other walkable pocket was closed with rock. With the field on, each pocket of 4+ tiles first gets the shortest
+link to the main region (`A.linkPath`: 4 neighbours, 3 cells from the grid border, never through a boss room or the
+cell around it). The design is classified again, so grounds, borders and rims follow the link.
+Pockets under 4 tiles, or with no link, are still closed. Config: `areagen_config.lua` `reachRepair` (minPocket,
+margin), absent means 4 and 3.
+`model.reach` (and `J` of `areaplan_build.lua`) counts per floor: walk, cut, pockets, repaired, carved, left.
+The compile turns it into `reach` (always in the result, in `manifest.stats.reach` only with the field on):
+pockets, repaired, carved, cut_share, left_share, and `share`: walkable tiles the entry cannot reach after
+decoration, teleports and links.
+Measured: no held plan and no example has a pocket at its seed, nor at 14 other seeds of 17 plans. The repair is a
+net. Tests add a cut-off path piece: Lua 34 of 536 tiles in 1 pocket, joined by 12 carved cells; swamp_hunt 3.8 %
+cut off, joined by 7 cells, then 0 out of reach.
+Tests: `tools/area_plan_rank_test.py`, `tests/areagen_reach_test.lua` (server loop).
+
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
 Areas the owner asks for in chat wait here as plans until they are approved (docs/MAP_GUIDE.md "Map inbox").

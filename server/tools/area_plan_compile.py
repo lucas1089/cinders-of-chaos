@@ -78,11 +78,14 @@ def job_def(plan, cat, lay):
         per_floor[f] = dict(zones=zones, paths=paths, meander=not SH.is_legacy(plan['id']), spots=[list(s) for s in lay['spots'][f]],
                             anchor=list(lay['anchors'][f]))
     ax, ay = lay['arrival']
-    return dict(id=plan['id'], name=plan['name'], origin=dict(x=ox, y=oy, z=oz), size=[W, H], floors=plan['floors'],
+    out = dict(id=plan['id'], name=plan['name'], origin=dict(x=ox, y=oy, z=oz), size=[W, H], floors=plan['floors'],
                 seed=lay['seed'], arrival=[ax, ay], noExit=True,
                 links=[dict(floor=l['floor'], x=l['x'], y=l['y']) for l in lay['links']],
                 layout=dict(plan=per_floor),
                 spawns=dict(density=0, minDistance=4, safeRadius=4, level=[1, 1], monsters=[]))
+    if plan.get('repair_reach'):
+        out['repairReach'] = True      # O738: pockets joined by a carved link (absent when off: the job text stays the same)
+    return out
 
 
 def run_build(plan, cat, lay, pair24, dark):
@@ -846,6 +849,9 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                  transitions=transitions, unbordered=unbordered, unknown_ids=len(unknown),
                  decoration=deco_stats(tiles, walk, plain, dresser, oz, plan['floors']), roof_tiles=roofs,
                  checksum=area.get('checksum'), frame_tiles=len(frame))
+    reach = reach_stats(meta.get('reach'), len(unreached), len(walk))
+    if plan.get('repair_reach'):
+        stats['reach'] = reach      # in the manifest only when asked: a held plan keeps its bytes
     if stats['decoration']['spam_share'] > 0.01:
         Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
            % (100 * stats['decoration']['spam_share']))
@@ -873,7 +879,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 stubs=stubs, dresser=dresser, buildings=(bres['records'] if bres else []),
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
-                stats=stats, plan_issues=issues)
+                stats=stats, plan_issues=issues, reach=reach)
 
 
 def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
@@ -894,6 +900,17 @@ def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
         out.append('the teleport at %s %s' % (k, ('has the blocking item %d on its tile' % blocker) if blocker
                                               else 'is on a tile nobody can walk on'))
     return out
+
+
+def reach_stats(gen, unreached, walkable):
+    """the reach numbers of a compile (O738): the generator's pockets (walkable design tiles cut off from the main
+    region; cut = before the repair, left = still cut off and closed with rock), the pockets joined by a carved link
+    and the carved cells, and `share` = walkable tiles the entry cannot reach after decoration, teleports and links"""
+    g = gen or {}
+    w = max(1, g.get('walk', 0))
+    return dict(pockets=g.get('pockets', 0), repaired=g.get('repaired', 0), carved=g.get('carved', 0),
+                cut_share=round(g.get('cut', 0) / float(w), 4), left_share=round(g.get('left', 0) / float(w), 4),
+                share=round(unreached / float(max(1, walkable)), 4))
 
 
 def qa_errors(result):

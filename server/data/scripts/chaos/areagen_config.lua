@@ -22,6 +22,10 @@ return {
 	-- dynamic respawn's percent (respawn_core.lua, respawn_config.lua) applies to the hunters near the point
 	viewRange = {x = 9, y = 7},
 
+	-- reach repair (O738, a def with repairReach): a walkable pocket of minPocket+ tiles cut off from the main region
+	-- gets the shortest carved link (cells at least margin from the grid border) instead of rock
+	reachRepair = {minPocket = 4, margin = 3},
+
 	items = {
 		hole = 8972, -- large hole (floor change down, an item over the ground)
 		ladder = 1386, -- ladder (stock "other/teleport.lua" action: up to the tile south of the hole)

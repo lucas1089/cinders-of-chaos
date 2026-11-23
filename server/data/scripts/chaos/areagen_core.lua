@@ -236,6 +236,57 @@ local function pathBetween(F, from, to, pass)
 	return out
 end
 
+-- the shortest link (4 neighbours, so the carved way reads as a passage) from a cell of `from` to a cell of `to`
+-- (sets {i = true}) over the cells at least `margin` from the grid border and outside every boss room of `rooms`
+-- (one cell around it too: a link never makes a second way into the boss room); the cells of the link, the `from`
+-- cell first and the `to` cell last, or nil. Deterministic: sources in index order, neighbours in D4 order (O738).
+function A.linkPath(F, from, to, margin, rooms)
+	margin = margin or 3
+	local function boss(x, y)
+		for _, q in ipairs(rooms or {}) do
+			if q.kind == "boss" and x >= q.x1 - 1 and x <= q.x2 + 1 and y >= q.y1 - 1 and y <= q.y2 + 1 then
+				return true
+			end
+		end
+		return false
+	end
+	local srcs = {}
+	for i in pairs(from) do
+		srcs[#srcs + 1] = i
+	end
+	table.sort(srcs)
+	local prev, queue, head = {}, {}, 1
+	for _, i in ipairs(srcs) do
+		prev[i] = false
+		queue[#queue + 1] = i
+	end
+	while head <= #queue do
+		T2048()
+		local i = queue[head]
+		head = head + 1
+		if to[i] then
+			local out = {}
+			while i do
+				table.insert(out, 1, i)
+				i = prev[i]
+			end
+			return out
+		end
+		local x, y = xy(F, i)
+		for _, d in ipairs(D4) do
+			local nx, ny = x + d[1], y + d[2]
+			if nx > margin and ny > margin and nx <= F.w - margin and ny <= F.h - margin then
+				local j = idx(F, nx, ny)
+				if prev[j] == nil and (to[j] or not boss(nx, ny)) then
+					prev[j] = i
+					queue[#queue + 1] = j
+				end
+			end
+		end
+	end
+	return nil
+end
+
 -- carve a disc of radius r (open cells), kept inside the margin
 local function carveDisc(F, cx, cy, r, margin)
 	margin = margin or 2
@@ -1390,125 +1441,174 @@ local function buildFloor(cfg, def, theme, opts, r, F, required, bossWanted)
 	else
 		caveLayout(F, r, lay, required)
 	end
-	-- cells: OPEN = the 8-neighbourhood of the design; rock (or walls in a dungeon) around it
-	F.cell = newGrid(F.w, F.h, VOID)
-	for i = 1, F.w * F.h do
-		T2048()
-		if F.open[i] then
-			F.cell[i] = OPEN
+	-- classify() turns the design (F.open) into cells and walkable tiles; run again after a reachability repair
+	local function classify()
+		-- cells: OPEN = the 8-neighbourhood of the design; rock (or walls in a dungeon) around it
+		F.cell = newGrid(F.w, F.h, VOID)
+		for i = 1, F.w * F.h do
+			T2048()
+			if F.open[i] then
+				F.cell[i] = OPEN
+			end
 		end
-	end
-	local function nearOpen(x, y, rad)
-		for dy = -rad, rad do
-			for dx = -rad, rad do
-				local nx, ny = x + dx, y + dy
-				if inside(F, nx, ny) and F.open[idx(F, nx, ny)] then
-					return true
+		local function nearOpen(x, y, rad)
+			for dy = -rad, rad do
+				for dx = -rad, rad do
+					local nx, ny = x + dx, y + dy
+					if inside(F, nx, ny) and F.open[idx(F, nx, ny)] then
+						return true
+					end
+				end
+			end
+			return false
+		end
+		if def.kind == "dungeon" then
+			for y = 1, F.h do
+				T()
+				for x = 1, F.w do
+					local i = idx(F, x, y)
+					if F.cell[i] == VOID and nearOpen(x, y, 1) then
+						F.cell[i] = WALL
+					end
+				end
+			end
+		else
+			-- the floor reaches one cell past the design (those cells carry the rock edge pieces); rock rim behind it
+			local grow = {}
+			for y = 1, F.h do
+				T()
+				for x = 1, F.w do
+					local i = idx(F, x, y)
+					if F.cell[i] == VOID and nearOpen(x, y, 1) then
+						grow[#grow + 1] = i
+					end
+				end
+			end
+			for _, i in ipairs(grow) do
+				F.cell[i] = OPEN
+			end
+			-- rock within rimWidth of the floor, and every enclosed rock island whole (no holes of void inside the area);
+			-- deep rock that reaches the grid border stays void (nothing is built there)
+			local rim = theme.rimWidth or 2
+			local deep = {}
+			for y = 1, F.h do
+				T()
+				for x = 1, F.w do
+					local i = idx(F, x, y)
+					if F.cell[i] == VOID then
+						if nearOpen(x, y, 1 + rim) then
+							F.cell[i] = ROCK
+						else
+							deep[i] = true
+						end
+					end
+				end
+			end
+			local outside = {}
+			for y = 1, F.h do
+				T()
+				for x = 1, F.w do
+					local i = idx(F, x, y)
+					if deep[i] and not outside[i] and (x == 1 or y == 1 or x == F.w or y == F.h) then
+						for j in pairs(flood(F, i, function(k) return deep[k] end)) do
+							outside[j] = true
+						end
+					end
+				end
+			end
+			for i in pairs(deep) do
+				if not outside[i] then
+					F.cell[i] = ROCK
 				end
 			end
 		end
-		return false
-	end
-	if def.kind == "dungeon" then
+		-- walkable: open cells with no rock or wall around them (the edge cells carry blocking pieces)
+		F.walk, F.blocked = {}, {}
 		for y = 1, F.h do
 			T()
 			for x = 1, F.w do
 				local i = idx(F, x, y)
-				if F.cell[i] == VOID and nearOpen(x, y, 1) then
-					F.cell[i] = WALL
-				end
-			end
-		end
-	else
-		-- the floor reaches one cell past the design (those cells carry the rock edge pieces); rock rim behind it
-		local grow = {}
-		for y = 1, F.h do
-			T()
-			for x = 1, F.w do
-				local i = idx(F, x, y)
-				if F.cell[i] == VOID and nearOpen(x, y, 1) then
-					grow[#grow + 1] = i
-				end
-			end
-		end
-		for _, i in ipairs(grow) do
-			F.cell[i] = OPEN
-		end
-		-- rock within rimWidth of the floor, and every enclosed rock island whole (no holes of void inside the area);
-		-- deep rock that reaches the grid border stays void (nothing is built there)
-		local rim = theme.rimWidth or 2
-		local deep = {}
-		for y = 1, F.h do
-			T()
-			for x = 1, F.w do
-				local i = idx(F, x, y)
-				if F.cell[i] == VOID then
-					if nearOpen(x, y, 1 + rim) then
-						F.cell[i] = ROCK
-					else
-						deep[i] = true
+				if F.cell[i] == OPEN then
+					local ok = true
+					for _, d in ipairs(D8) do
+						local nx, ny = x + d[1], y + d[2]
+						local c = inside(F, nx, ny) and F.cell[idx(F, nx, ny)] or VOID
+						if c ~= OPEN and def.kind ~= "dungeon" then
+							ok = false
+						end
+					end
+					if ok then
+						F.walk[i] = true
 					end
 				end
 			end
 		end
-		local outside = {}
-		for y = 1, F.h do
-			T()
-			for x = 1, F.w do
-				local i = idx(F, x, y)
-				if deep[i] and not outside[i] and (x == 1 or y == 1 or x == F.w or y == F.h) then
-					for j in pairs(flood(F, i, function(k) return deep[k] end)) do
-						outside[j] = true
+	end
+	local function mainRegion()
+		-- keep the region of the first required point; anything walkable elsewhere is closed with rock (a planned layout
+		-- keeps every region that holds a zone or a required point: zones may be joined by a teleport only)
+		local main = flood(F, idx(F, required[1].x, required[1].y), function(i) return F.walk[i] end)
+		if lay.plan then
+			local anchors = {}
+			for _, q in ipairs(F.rooms or {}) do
+				anchors[#anchors + 1] = idx(F, q.cx, q.cy)
+			end
+			for _, q in ipairs(required) do
+				anchors[#anchors + 1] = idx(F, q.x, q.y)
+			end
+			for _, a in ipairs(anchors) do
+				if F.walk[a] and not main[a] then
+					for i in pairs(flood(F, a, function(j) return F.walk[j] end)) do
+						main[i] = true
 					end
 				end
 			end
 		end
-		for i in pairs(deep) do
-			if not outside[i] then
-				F.cell[i] = ROCK
-			end
-		end
+		return main
 	end
-	-- walkable: open cells with no rock or wall around them (the edge cells carry blocking pieces)
-	F.walk, F.blocked = {}, {}
-	for y = 1, F.h do
-		T()
-		for x = 1, F.w do
-			local i = idx(F, x, y)
-			if F.cell[i] == OPEN then
-				local ok = true
-				for _, d in ipairs(D8) do
-					local nx, ny = x + d[1], y + d[2]
-					local c = inside(F, nx, ny) and F.cell[idx(F, nx, ny)] or VOID
-					if c ~= OPEN and def.kind ~= "dungeon" then
-						ok = false
+	classify()
+	local main = mainRegion()
+	-- pockets: walkable regions cut off from the main region (O738); closed with rock below, or joined to the main
+	-- region by the shortest carved link first when the plan asks for it (def.repairReach)
+	local pockets = regions(F, function(i) return F.walk[i] and not main[i] end)
+	local rs = {walk = 0, cut = 0, pockets = #pockets, repaired = 0, carved = 0, left = 0}
+	for _ in pairs(F.walk) do
+		rs.walk = rs.walk + 1
+	end
+	for _, q in ipairs(pockets) do
+		rs.cut = rs.cut + q.n
+	end
+	rs.left = rs.cut
+	if def.repairReach and #pockets > 0 then
+		local rc = cfg.reachRepair or {}
+		local carved = 0
+		for _, q in ipairs(pockets) do
+			if q.n >= (rc.minPocket or 4) then
+				local path = A.linkPath(F, q.set, main, rc.margin or 3, F.rooms)
+				if path then
+					for _, i in ipairs(path) do
+						if not F.open[i] then
+							F.open[i] = true
+							carved = carved + 1
+						end
 					end
 				end
-				if ok then
-					F.walk[i] = true
+			end
+		end
+		if carved > 0 then
+			classify()
+			main = mainRegion()
+			rs.carved, rs.left = carved, 0
+			for _, q in ipairs(pockets) do
+				if main[q.first] then
+					rs.repaired = rs.repaired + 1
+				else
+					rs.left = rs.left + q.n
 				end
 			end
 		end
 	end
-	-- keep the region of the first required point; anything walkable elsewhere is closed with rock (a planned layout
-	-- keeps every region that holds a zone or a required point: zones may be joined by a teleport only)
-	local main = flood(F, idx(F, required[1].x, required[1].y), function(i) return F.walk[i] end)
-	if lay.plan then
-		local anchors = {}
-		for _, q in ipairs(F.rooms or {}) do
-			anchors[#anchors + 1] = idx(F, q.cx, q.cy)
-		end
-		for _, q in ipairs(required) do
-			anchors[#anchors + 1] = idx(F, q.x, q.y)
-		end
-		for _, a in ipairs(anchors) do
-			if F.walk[a] and not main[a] then
-				for i in pairs(flood(F, a, function(j) return F.walk[j] end)) do
-					main[i] = true
-				end
-			end
-		end
-	end
+	F.reach = rs
 	for i in pairs(F.walk) do
 		if not main[i] then
 			F.walk[i] = nil
@@ -2447,6 +2547,16 @@ generate = function(cfg, def, opts)
 		F.walkSet = F.walk
 	end
 	model.stats.density = model.stats.hunt > 0 and model.stats.monsters * 100 / model.stats.hunt or 0
+	-- reachability per floor (O738): walkable design tiles, the ones cut off in pockets, pockets joined by a carved
+	-- link (def.repairReach), carved cells, tiles still cut off (closed with rock)
+	model.reach = {walk = 0, cut = 0, pockets = 0, repaired = 0, carved = 0, left = 0, floors = {}}
+	for k, F in ipairs(Fs) do
+		local rs = F.reach or {walk = 0, cut = 0, pockets = 0, repaired = 0, carved = 0, left = 0}
+		model.reach.floors[k] = rs
+		for _, f in ipairs({"walk", "cut", "pockets", "repaired", "carved", "left"}) do
+			model.reach[f] = model.reach[f] + rs[f]
+		end
+	end
 	-- the walkable cells per floor (absolute keys) for the validator and the tests
 	model.walk = {}
 	for k, F in ipairs(Fs) do

@@ -7,9 +7,9 @@ holds an item id: every id comes from our own tables (areagen_config.lua and the
 tools/areaplan_build.lua).
 
     python3 -I server/tools/area_planner.py validate PLAN.json [--json]
-    python3 -I server/tools/area_planner.py compile PLAN.json OUT_DIR [--pair24 on|off] [--dark]
+    python3 -I server/tools/area_planner.py compile PLAN.json OUT_DIR [--pair24 on|off] [--dark] [--candidates N]
     python3 -I server/tools/area_planner.py render PLAN.json OUT_DIR ITEMS.otb ITEMS.xml Tibia.dat Tibia.spr [--scale 0.5]
-    python3 -I server/tools/area_planner.py stats PLAN.json [--json]
+    python3 -I server/tools/area_planner.py stats PLAN.json [--json] [--candidates N]
     python3 -I server/tools/area_planner.py approve PLAN.json [--note TEXT]         (adds it to the knowledge base)
     python3 -I server/tools/area_planner.py suggest BIOME LEVEL_LO LEVEL_HI [--json]
     python3 -I server/tools/area_planner.py similar PLAN.json [-n 5]
@@ -24,6 +24,9 @@ validate  the schema and the game rules (reachability, monsters and level tiers,
 compile   OUT_DIR/<id>.otbm (OTBM 2, items 3.57, for the map editor), <id>-frame.otbm (the view frame: bare rock on every
           spot within 9 x 7 of a walkable tile that has no tile), <id>-spawn.xml (monsters, boss, NPCs) and <id>.json
           (zones, chests with their quest keys, portals, links, stats, QA); exit 1 on a QA error.
+          --candidates N (O738, also for stats, render and approve): compile N seeds (the plan's own first), score
+          each (QA, outline, reach, decoration, look; area_plan_rank.py), keep the best, print the table of all and
+          write OUT_DIR/<id>-candidates.txt. Default 1: the plain compile.
 render    compile, then OUT_DIR/<id>_z<z>.png per floor (the area with its view frame) with the client sprites and <id>_map.png (minimap colours and
           marks). Review only: the pair stays out of git and the pictures are not published.
 stats     walkable tiles, monsters, density per 100 tiles and per screen, steps from the entry to the boss and zones.
@@ -100,18 +103,36 @@ def main(argv):
         import area_plan_compile as PC
         note = _opt(args, '--note', '')
         scale = float(_opt(args, '--scale', '0.5'))
+        ncand = int(_opt(args, '--candidates', '1'))
         plan = load_plan(args[0])
-        try:
-            res = PC.compile_plan(plan, pair24=pair24, dark=dark, dress=dress)
-        except PC.CompileError as e:
-            print(e)
-            return 1
+        ranking = None
+        if ncand > 1:
+            import area_plan_rank as R
+            rows, res = R.rank(plan, ncand, pair24=pair24, dark=dark, dress=dress)
+            ranking = R.table(plan['id'], rows)
+            print(ranking, end='')
+            if res is None:
+                print('every candidate failed')
+                return 1
+            plan = dict(plan, seed=res['manifest']['seed'])
+            print('kept seed %d' % plan['seed'])
+        else:
+            try:
+                res = PC.compile_plan(plan, pair24=pair24, dark=dark, dress=dress)
+            except PC.CompileError as e:
+                print(e)
+                return 1
         for lvl, m in res['qa']:
             print('%s %s' % (lvl, m))
         errs = PC.qa_errors(res)
         if cmd == 'compile':
             for p in PC.write_outputs(res, args[1]):
                 print(p)
+            if ranking:
+                path = os.path.join(args[1], plan['id'] + '-candidates.txt')
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(ranking)
+                print(path)
         elif cmd == 'render':
             PC.write_outputs(res, args[1])
             for p, miss in PC.render_floors(res, args[1], args[2], args[3], args[4], args[5], scale):
