@@ -17,7 +17,7 @@ namespace Chaos.Core.LiveCheck
         {
             if (why != null) Console.Error.WriteLine(why);
             Console.Error.WriteLine("usage: Core.LiveCheck HOST LOGIN_PORT ACCOUNT [CHARACTER|-] [--seconds N] [--report FILE] [--identity extended|chaos]");
-            Console.Error.WriteLine("                      journey bot (O542): --journey --otb items.otb [--poi data/chaos_poi.lua] [--journey-minutes N] [--journey-level N] [--journey-out FILE] [--seed N] [--class NAME]");
+            Console.Error.WriteLine("                      journey bot (O542): --journey --otb items.otb [--poi data/chaos_poi.lua] [--journey-minutes N] [--journey-level N] [--journey-out FILE] [--live-dir DIR] [--seed N] [--class NAME]");
             Console.Error.WriteLine("                      [--otb items.otb | --pair DIR] [--no-ext]   (password: environment variable CHAOS_LIVE_PASSWORD)");
             Console.Error.WriteLine("                      [--scenario newplayer,questlog,firstunlock,firstkill,firstquest,tooltip,stairs,floorchange,npc,sell,market,modal,moremodals,party,sharedkill,rift,riftboss,partyrift,rifttier,riftfail,omen,coffer,guardians,partnerdeath,lastlife,party3,trialwindows,riftsolodeath,riftkilled,omenparty,wrathnova,death,pvpdeath|all] [--items-xml FILE] [--npc NAME] [--npc-at X,Y,Z] [--stairs-at X,Y,Z]");
             Console.Error.WriteLine("                      [--rift-tier N] [--rift-mods name:value,...] [--keeper-at X,Y,Z]");
@@ -58,6 +58,7 @@ namespace Chaos.Core.LiveCheck
                         case "--journey-minutes": jo.Minutes = Math.Max(1, int.Parse(Next())); break;
                         case "--journey-level": jo.TargetLevel = Math.Max(2, int.Parse(Next())); break;
                         case "--journey-out": jo.OutFile = Next(); break;
+                        case "--live-dir": jo.LiveDir = Next(); break;
                         case "--poi": jo.PoiFile = Next(); break;
                         case "--seed": jo.Seed = ulong.Parse(Next()); break;
                         case "--class": jo.ClassName = Next(); break;

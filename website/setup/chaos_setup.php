@@ -306,6 +306,9 @@ $out .= "menu: Player Reports (staff only)\n";
 // balance telemetry for the staff (plugins/chaos/pages/telemetry.php): admin accounts with a group 5+ character only
 $menu('Balance Telemetry', 'page?plugin=chaos&p=telemetry', 'fa-line-chart', 18, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
 $out .= "menu: Balance Telemetry (staff only)\n";
+// the staff's live map of our tester bots (plugins/chaos/pages/botmap.php): admin accounts with a group 4+ character only
+$menu('Bot Map', 'page?plugin=chaos&p=botmap', 'fa-map', 19, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
+$out .= "menu: Bot Map (staff only)\n";
 
 // ZnoteX's own entries that lead to pages this server does not use (README "Not used on this server"): the shop and
 // its points, the creature and spell lists (both in the client) and the forum. Switched off once per install, on a

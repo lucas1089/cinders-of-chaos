@@ -408,6 +408,9 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
+      - name: 'Bot live map tiles (O727): gen_bot_map_tiles.py on a synthetic world map, items folder and swatch atlas (the pyramid, the swatch order, big swatches across a tile edge, the zoom levels, the pointer)'
+        run: python3 -I server/tools/gen_bot_map_tiles_test.py
+
       - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
         # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
         run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
@@ -1705,6 +1708,14 @@ jobs:
       - name: Tester bots levelling journey on foot (mocked world, temple teleport, hall stairs, hunts, town portal, trips, deaths; O654)
         run: python3 -I server/tools/tester_journey_test.py
 
+      - name: 'Bot live map, the bots'' side (O727): the state file of every bot (one JSON line, atomic, rate, heartbeat, 50 log lines, staleness), the views a journey, a behaviour and a check give, the hooks in testers.py'
+        run: python3 -I server/tools/bot_live_test.py
+
+      - name: 'Bot live map, the page script (O727): the tile maths and the lists (node), the whole script on a fake DOM, a fake Leaflet and a fake fetch'
+        run: |
+          node website/tests/chaos_botmap_core_test.js
+          node website/tests/chaos_botmap_ui_test.js
+
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 
@@ -1938,6 +1949,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.TimezoneInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/LaunchCheckInfo.java android/app/src/test/java/com/cindersofchaos/admin/LaunchCheckInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.LaunchCheckInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/BotMapInfo.java android/app/src/test/java/com/cindersofchaos/admin/BotMapInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.BotMapInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

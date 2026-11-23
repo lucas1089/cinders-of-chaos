@@ -58,7 +58,7 @@ function chaos_seo_private_pages(): array {
 		'twofa', 'accountsettings', 'paymentlog', 'changename', 'changesex', 'protected', 'failed', 'success', 'payment',
 		'buypoints', 'shop', 'ipn', 'paygol_ipn', 'pagseguro_ipn', 'pagseguro_retorno', 'payment_webhook', 'twtrNews',
 		'sub', 'blank', 'mailtest', 'auctionChar', 'market', 'voting', 'page_not_found', 'page_chaos_accept',
-		'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_telemetry', 'page_chaos_notused', 'page_chaos_deletecharacter');
+		'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_botmap', 'page_chaos_telemetry', 'page_chaos_notused', 'page_chaos_deletecharacter');
 }
 
 /** The plugin pages whose body follows the visitor's language (the <html lang> is set for these). */
@@ -412,7 +412,7 @@ function chaos_seo_context(): array {
 /** True for a request whose output may be an HTML page (the machine endpoints never are). */
 function chaos_seo_wanted(array $server): bool {
 	$script = strtolower(basename((string)($server['SCRIPT_FILENAME'] ?? '')));
-	return !in_array($script, array('chaos_client_api.php', 'chaos_pay_webhook.php', 'chaos_outfit.php', 'chaos_launcher_feed.php'), true);
+	return !in_array($script, array('chaos_client_api.php', 'chaos_pay_webhook.php', 'chaos_outfit.php', 'chaos_launcher_feed.php', 'chaos_botmap.php'), true);
 }
 
 /** The output buffer callback (plugin.php): the page with its head rewritten, or the output as it was. */

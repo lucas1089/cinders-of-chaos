@@ -163,6 +163,7 @@ class Journey:
         self.deaths = 0
         self.top = level            # the highest level seen: a level lost by a death and won again is not a level completed twice
         self.floor = None
+        self.pos = None             # O727: (x, y, z) of the last look, for the staff's live map
         self.trips = 0
         self.last_trip = None
         self.sell_due = False
@@ -301,6 +302,7 @@ class Journey:
             return None
         self.misses = 0
         now = io.now()
+        self.pos = list(pos_of(s.get('pos')))
         self.seen(now)
         self.level_seen(s.get('level'), now)
         self.arrive(s, now)

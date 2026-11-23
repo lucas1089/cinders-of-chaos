@@ -676,6 +676,7 @@ def main():
     test_admin_commands()
     test_testers()
     test_journey()
+    test_botmap()
     test_metrics()
     test_botcheck_top()
     test_newplayer()
@@ -1167,6 +1168,7 @@ def test_journey():
         check('setup --count 2 --server-dir ' + server + ' --state ' + jstate in calls and 'env --state ' + jstate + ' --index 0' in calls and '--index 1' in calls, 'journey: setup and one env call per bot: ' + calls)
         dn = read('dotnet_calls')
         check(dn.count('--journey-minutes 7') == 2 and '--journey' in dn and '--journey-minutes 7' in dn and '--journey-level 12' in dn and 'chaos_poi.lua' in dn and 'items.otb' in dn and '--class Warrior' in dn, 'journey: the bot programs got their arguments: ' + dn)
+        check('--live-dir ' + os.path.join(server, 'data', 'chaos_botlive') in dn and dn.count('--live-dir') == 2, 'journey: the bots publish their state in the live folder (O727): ' + dn)
         check('pw_secret_123' not in dn and ('ab' * 32) not in dn and dn.count('pw_in_env=yes key_in_env=yes') == 2 and dn.count('--identity chaos --journey') == 2, 'journey: the password and the guard key reach the bots by the environment only: ' + dn)
         r = run('journey', 'start')
         check(r.returncode != 0 and 'already running' in r.stderr, 'journey: a second start while the bots run is refused: ' + r.stderr)
@@ -1178,8 +1180,14 @@ def test_journey():
         check('bot=Tester Aaa;Warrior;level=14;minutes=3.5;kills=40;deaths=1;stuck=0' in r.stdout, 'journey status: a bot line from its numbers: ' + r.stdout)
         r = run('journey', 'report')
         check(r.returncode == 0 and 'report of ' in r.stdout and 'bot-0.json' in r.stdout and '--model-dir' in r.stdout, 'journey report: ' + r.stdout + r.stderr)
+        live = os.path.join(server, 'data', 'chaos_botlive')
+        for name, src in (('tester-ccc.json', 'cs'), ('tester-ddd.json', 'py')):
+            with open(os.path.join(live, name), 'w') as f:
+                f.write('{"name":"x","src":"%s"}\n' % src)
         r = run('journey', 'stop')
         check(r.returncode == 0 and 'stopped' in r.stdout, 'journey stop: ' + r.stdout + r.stderr)
+        check(not os.path.exists(os.path.join(live, 'tester-ccc.json')) and os.path.exists(os.path.join(live, 'tester-ddd.json')),
+              'journey stop removes the files of the journey bots (src cs) and leaves the tester bots\'')
         r = run('journey', 'status')
         check('running=no' in r.stdout, 'journey status after stop: ' + r.stdout)
         r = run('journey', 'cleanup')
@@ -1187,6 +1195,151 @@ def test_journey():
         r = run('journey', 'cleanup', '--yes')
         check(r.returncode == 0 and 'cleanup --state ' + jstate + ' --server-dir ' + server in read('testers_calls'), 'journey cleanup --yes deletes through testers.py cleanup: ' + r.stdout + r.stderr)
         check(run('journey', 'cleanup', '--now').returncode != 0, 'journey cleanup: an unknown flag is refused')
+
+
+BOTMAP_TOOL_STUB = """import json, os, sys, time
+with open(os.path.join(os.environ['STUB'], 'botmap_calls'), 'a') as f:
+    f.write(' '.join(sys.argv[1:]) + '\\n')
+if os.environ.get('STUB_BMFAIL'):
+    print('boom')
+    sys.exit(1)
+a = sys.argv[1:]
+if '--dry-run' in a:
+    print('dry run: 2 floors, about 3 MB')
+    sys.exit(0)
+out = a[a.index('--out') + 1]
+os.makedirs(out + '/7/0/0', exist_ok=True)
+open(out + '/7/0/0/0.png', 'w').write('x')
+open(out + '/meta.json', 'w').write('{}')
+ptr = a[a.index('--pointer') + 1]
+url = a[a.index('--url') + 1]
+json.dump({'v': 1, 'url': url, 'built': int(time.time()), 'floors': [{'z': 7, 'tiles': 1}, {'z': 8, 'tiles': 1}]}, open(ptr, 'w'))
+print('tiles written: 2 floors, about 3 MB')
+"""
+
+
+def test_botmap():
+    """chaos-ctl.sh botmap-build / botmap-status (O727): the tile folder named with a secret token under the site, the pointer in the server's data
+    folder, a failed build leaving the map in use alone, --rotate, the refusals, the status lines and the page address"""
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        server = os.path.join(tmp, 'server')
+        repo = os.path.join(tmp, 'repo')
+        site = os.path.join(tmp, 'site')
+        bstate = os.path.join(tmp, 'bstate')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(server, 'data'))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        os.makedirs(site)
+        with open(os.path.join(repo, 'server', 'tools', 'gen_bot_map_tiles.py'), 'w') as f:
+            f.write(BOTMAP_TOOL_STUB)
+        shutil.copy(os.path.join(HERE, '..', 'tools', 'bot_live.py'), os.path.join(repo, 'server', 'tools', 'bot_live.py'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL)):
+            pth = os.path.join(stub, name)
+            with open(pth, 'w') as f:
+                f.write(body)
+            os.chmod(pth, 0o755)
+        senv = os.path.join(tmp, 'site.env')
+        with open(senv, 'w') as f:
+            f.write('CHAOS_SITE_URL=https://www.example.org/   # the site\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1', CHAOS_SERVER_DIR=server,
+                   CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'server.log'), CHAOS_SITE_DIR=site,
+                   CHAOS_SITE_ENV=senv, CHAOS_BOTMAP_STATE=bstate)
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BOTLIVE_DIR'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True, text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'botmap_calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def status(r):
+            return dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
+
+        # status before anything: no bots, no map, the page address from the site settings
+        r = run('botmap-status')
+        st = status(r)
+        check(r.returncode == 0 and st.get('bots') == '0' and st.get('stale') == '0' and st.get('map') == 'no' and st.get('floors') == '0',
+              'botmap-status: nothing yet: ' + r.stdout + r.stderr)
+        check(st.get('page') == 'https://www.example.org/page?plugin=chaos&p=botmap', 'botmap-status: the staff page address: ' + r.stdout)
+        # bots in the live folder: live and stale ones are counted
+        live = os.path.join(server, 'data', 'chaos_botlive')
+        os.makedirs(live)
+        now = int(time.time())
+        for name, age in (('Tester Abc', 5), ('Tester Bcd', 300), ('Tester Cde', 4000)):
+            with open(os.path.join(live, 'tester-%s.json' % name[-3:].lower()), 'w') as f:
+                f.write(json.dumps({'v': 1, 'name': name, 'class': 'Ranger', 'level': 5, 'pos': [1, 2, 7], 'goal': 'Hunt', 't': now - age, 'src': 'py'}) + '\n')
+        r = run('botmap-status')
+        check(status(r).get('bots') == '2' and status(r).get('stale') == '1', 'botmap-status: two bots, one stale, the old one dropped: ' + r.stdout)
+
+        # refusals
+        for bad in (('--levels',), ('--levels', '0'), ('--levels', '9'), ('--levels', 'x'), ('--floors', '7;id'), ('--floors', '1,2,'), ('--floors', '100'),
+                    ('--yes',), ('../x',), ('--rotate', 'now')):
+            check(run('botmap-build', *bad).returncode != 0, 'botmap-build refuses %r' % (bad,))
+        check(run('botmap-status', 'x').returncode != 0, 'botmap-status takes no argument')
+        check(calls() == '', 'a refused build ran nothing')
+        r = run('botmap-build', extra={'CHAOS_REPO': os.path.join(tmp, 'norepo')})
+        check(r.returncode != 0 and 'gen_bot_map_tiles.py' in r.stderr, 'no tool: named in the refusal: ' + r.stderr)
+
+        # a dry run writes nothing
+        r = run('botmap-build', '--dry-run', '--levels', '4', '--floors', '7,8')
+        check(r.returncode == 0 and 'dry run: 2 floors' in r.stdout and '--dry-run' in calls() and '--floors 7,8' in calls() and '--levels 4' in calls(),
+              'a dry run passes its options: ' + r.stdout + r.stderr + calls())
+        check(os.listdir(site) == [] and not os.path.exists(bstate + '/token'), 'a dry run writes no folder and no token')
+
+        # a build
+        r = run('botmap-build')
+        check(r.returncode == 0 and 'botmap-built:' in r.stdout, 'botmap-build: ' + r.stdout + r.stderr)
+        tok = open(os.path.join(bstate, 'token')).read().strip()
+        check(re.fullmatch(r'[0-9a-f]{32}', tok) is not None and stat.S_IMODE(os.stat(os.path.join(bstate, 'token')).st_mode) == 0o600,
+              'the token: 32 hex digits, mode 600')
+        dest = os.path.join(site, 'botmap-' + tok)
+        check(os.path.isfile(os.path.join(dest, '7', '0', '0', '0.png')) and os.path.isfile(os.path.join(dest, 'meta.json')),
+              'the tiles are in botmap-TOKEN under the site')
+        check(stat.S_IMODE(os.stat(dest).st_mode) == 0o755 and stat.S_IMODE(os.stat(os.path.join(dest, 'meta.json')).st_mode) == 0o644,
+              'readable by the web server')
+        check([n for n in os.listdir(site) if n.startswith('.botmap')] == [], 'no temporary folder is left')
+        c = calls()
+        check('--url botmap-' + tok in c and '--out ' in c and '--pointer ' + os.path.join(bstate, 'pointer.new') in c and server in c,
+              'the tool got the server, the url and the pointer: ' + c)
+        ptr = os.path.join(server, 'data', 'chaos_botmap.json')
+        check(os.path.isfile(ptr) and json.load(open(ptr))['url'] == 'botmap-' + tok and stat.S_IMODE(os.stat(ptr).st_mode) == 0o644,
+              'the pointer is in the server data folder')
+        check('page=https://www.example.org/page?plugin=chaos&p=botmap' in r.stdout, 'the build prints the staff page address: ' + r.stdout)
+        r = run('botmap-status')
+        st = status(r)
+        check(st.get('map') == 'yes' and st.get('floors') == '2' and st.get('folder') == 'botmap-' + tok and st.get('built', '') != ''
+              and st.get('size_mb', '') != '', 'status after a build: ' + r.stdout)
+        check(tok not in r.stdout.replace('botmap-' + tok, ''), 'the token appears only inside the folder name')
+
+        # a second build keeps the token; a failed one leaves the map in use alone
+        r = run('botmap-build')
+        check(r.returncode == 0 and open(os.path.join(bstate, 'token')).read().strip() == tok, 'a second build keeps the token')
+        r = run('botmap-build', extra={'STUB_BMFAIL': '1'})
+        check(r.returncode != 0 and 'unchanged' in r.stderr and os.path.isfile(os.path.join(dest, 'meta.json'))
+              and [n for n in os.listdir(site) if n.startswith('.botmap')] == [] and json.load(open(ptr))['url'] == 'botmap-' + tok,
+              'a failed build leaves the folder and the pointer as they were: ' + r.stdout + r.stderr)
+        # --rotate
+        r = run('botmap-build', '--rotate')
+        tok2 = open(os.path.join(bstate, 'token')).read().strip()
+        check(r.returncode == 0 and tok2 != tok and os.path.isdir(os.path.join(site, 'botmap-' + tok2)) and not os.path.exists(dest)
+              and json.load(open(ptr))['url'] == 'botmap-' + tok2, '--rotate: a new token, the old folder is gone, the pointer follows')
+        # no imaging libraries: a named refusal before anything is made
+        broken = os.path.join(tmp, 'broken')
+        os.makedirs(broken)
+        with open(os.path.join(broken, 'python3'), 'w') as f:
+            f.write('#!/bin/bash\nfor a in "$@"; do [ "$a" = "import numpy, PIL" ] && exit 1; done\nexec ' + shutil.which('python3') + ' "$@"\n')
+        os.chmod(os.path.join(broken, 'python3'), 0o755)
+        n0 = len(calls())
+        r = run('botmap-build', extra={'PATH': broken + ':' + env['PATH']})
+        check(r.returncode != 0 and 'botmap-needs-pillow' in r.stderr and len(calls()) == n0,
+              'no numpy / Pillow: a named refusal, the tool did not run: ' + r.stderr)
 
 
 def test_testers():
@@ -1287,6 +1440,12 @@ def test_testers():
             check('--scenarios ' in calls and 'server/tools/tester_scenarios.json' in calls,
                   'the run gets the coverage table: ' + calls)
             check('--keystones' not in calls, 'a plain start has no --keystones: ' + calls)
+            live = os.path.join(server, 'data', 'chaos_botlive')
+            check('--live-dir ' + live in calls, 'the run gets the folder of the bots\' live state (O727): ' + calls)
+            check(os.path.isdir(live) and oct(os.stat(live).st_mode & 0o777) == '0o755', 'the live folder exists, readable by the web server')
+            for name, src in (('tester-aaa.json', 'py'), ('tester-bbb.json', 'cs')):
+                with open(os.path.join(live, name), 'w') as f:
+                    f.write('{"name":"x","src":"%s"}\n' % src)
             check('--journey' not in calls, 'a plain start has no --journey: ' + calls)
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
@@ -1321,6 +1480,9 @@ def test_testers():
                 pass
         r = run('testers', 'stop')
         check(r.returncode == 0 and not os.path.exists(helper), 'stop when nothing runs is fine')
+        live = os.path.join(server, 'data', 'chaos_botlive')
+        check(not os.path.exists(os.path.join(live, 'tester-aaa.json')) and os.path.exists(os.path.join(live, 'tester-bbb.json')),
+              'testers stop removes the files of the tester bots (src py) and leaves the journey bots\'')
         with open(os.path.join(state, 'stopped'), 'w') as f:
             f.write('%d\n' % (time.time() - 600))
         before = tcalls()

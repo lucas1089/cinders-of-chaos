@@ -139,7 +139,10 @@ $captcha = $captchaSite !== '' && $captchaSecret !== '';
 // ZnoteX's pages and admin panel carry inline scripts and onclick handlers we do not own. Everything else is 'self'
 // (plus Google's reCAPTCHA hosts when it is on, and YouTube frames for the news [youtube] BBCode).
 $google = $captcha ? ' https://www.google.com https://www.gstatic.com' : '';
-$csp = "default-src 'self'; script-src 'self' 'unsafe-inline'" . $google . "; style-src 'self' 'unsafe-inline'; "
+// cdnjs only for the staff's bot map (Leaflet 1.9.4, pinned by its integrity hash in pages/botmap.php; script-src already allows inline script, so
+// this adds no new way in)
+$cdn = ' https://cdnjs.cloudflare.com';
+$csp = "default-src 'self'; script-src 'self' 'unsafe-inline'" . $google . $cdn . "; style-src 'self' 'unsafe-inline'" . $cdn . "; "
 	. "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; "
 	. "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com" . $google . "; "
 	. "form-action 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'";

@@ -180,6 +180,13 @@ final class Friendly {
             return "Áreas publicadas. Endereço para o fetch-areas.bat: " + (u.find() ? u.group(1) : "veja os detalhes")
                     + "  (copie pelo botão de copiar do resultado)";
         }
+        if (t.contains("botmap-needs-pillow")) {
+            return "A VPS precisa de python3 com numpy e Pillow para desenhar o mapa: apt install python3-numpy python3-pil, e toque em Montar o mapa de novo.";
+        }
+        if (t.startsWith("botmap-built") || t.contains("\nbotmap-built")) {
+            Matcher u = Pattern.compile("(?m)^page=(\\S+)").matcher(t);
+            return "Mapa dos bots montado. " + (u.find() ? "Endereço: " + u.group(1) : "Toque em Abrir o mapa.");
+        }
         if (t.startsWith("kit-not-found")) {
             return "Essa função é do kit Linux (/opt/chaos-trial). Escreva CHAOS_KIT_DIR=/opt/chaos-trial em "
                     + "/etc/chaos/ctl.conf.";
