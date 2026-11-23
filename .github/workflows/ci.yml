@@ -152,6 +152,9 @@ jobs:
           # the bolt from the sky, drawn by code (O614, joins pair 73): the script draws the committed table and sums, ids file, tags; the test holds the drawing to its bar (same bytes twice, alpha, palette, the strike reaches the target tile)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx_test.py
+          # the effects of the purchased 32 px sets no pair held yet (O735, pair 82 at 5442..): table, sums, ids file, tags, catalog (the art is never in git); the test cuts synthetic sheets and builds a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_more_fx.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_wst_more_fx_test.py
           # awakened spell look kit, prototype (O711): the script draws the committed table and sums; the test holds the drawing to its bar (no build, no pair)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_awakened_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_awakened_fx_test.py
@@ -2279,6 +2282,11 @@ jobs:
       - name: Pack effect fixes in their fixed form (fix_pack_fx.py check, pair 82, O734; pending before)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fix_pack_fx.py check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: More purchased effects sit at their ids (gen_wst_more_fx.py live, pair 82, O735)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wst_more_fx.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Decor flames sit at their ids (gen_decor_flames.py live, pair 74, O623)

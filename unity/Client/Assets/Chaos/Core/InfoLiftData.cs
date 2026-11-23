@@ -4,7 +4,7 @@ namespace Chaos.Core
 {
     public static partial class InfoLiftData
     {
-        public const string Dat = "d5212cccfe422a2f2534a7eed447c7df";
+        public const string Dat = "ee8c32fc87be4372f4668b635148b9bf";
         public static readonly int[] Table =
         {
             3, 22, 4, 21, 11, 8, 12, 26, 16, 14, 17, 13, 20, 13, 22, 24,

@@ -26,7 +26,7 @@ L.DEFAULT = 100
 L.OPCODE = 164                                  -- ChaosOpcodes.fxOwner (server chaos_constants.lua)
 -- effect ids of boss warnings (the ChaosVfx names with telegraph / warning / danger; server tests/fx_owner_test.lua keeps the list
 -- whole): they ignore both sliders
-L.WARNING_IDS = { 450, 451, 635, 636, 637, 745, 3905, 3906, 4072 }
+L.WARNING_IDS = { 450, 451, 635, 636, 637, 745, 3905, 3906, 4072, 7687, 7720 }
 L.MAX_MARKS = 400                               -- groups of one message (chaosfxowner.h kMaxMarks)
 L.MAX_OFFSET = 127
 

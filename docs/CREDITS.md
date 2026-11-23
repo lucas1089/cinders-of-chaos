@@ -100,15 +100,15 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Magic VFX Spells & Impacts**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them
+  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them; since pair 82 (O735, not built yet) the other colours: 172 impacts and 17 circles
 - **Auras & Buffs**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: auras and buff effects; since pair 36 all 84 auras and states
+  - Used for: auras and buff effects; since pair 36 all 84 auras and states; since pair 82 (O735, not built yet) the other colours: 91 auras and 37 states
 - **UI Game Feel**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set; since pair 73 two markers put back (quest marker, skull)
+  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set; since pair 73 two markers put back (quest marker, skull); since pair 82 (O735, not built yet) the other colours of 39 game feel effects and 14 markers (no text pictures)
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
@@ -116,11 +116,11 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Fields & Traps**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: field and trap effects (all 31 since pair 36)
+  - Used for: field and trap effects (all 31 since pair 36); since pair 82 (O735, not built yet) the other colours: 38 fields and traps
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 47 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair; since pair 73 three beams, three markers and the gravity press of a slowed creature put back, and one area burst (a clock face of runes) of Mega VFX 500 Vol. 3 (same author and licence terms as Grid Magic 500)
+  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit; Vol. 4 of the set (O606, pair 73): 47 effects for events that had no effect of their own (progress, rewards, boss marks, portals, snares, professions) and the boss warning pulse, at the set's own 32 px size (client/tools/sprites/gen_gap_fx.py); the Vol. 4 art is not in the repository, only in the sprite pair; since pair 73 three beams, three markers and the gravity press of a slowed creature put back, and one area burst (a clock face of runes) of Mega VFX 500 Vol. 3 (same author and licence terms as Grid Magic 500); since pair 82 (O735, not built yet, client/tools/sprites/gen_wst_more_fx.py) the rest of Vol. 3 and Vol. 4 at their own 32 px size: 2,058 Vol. 3 effects (134 cones and 100 waves in eight headings, 137 area and 49 tile spells) and 409 Vol. 4 effects (blasts, sigils, feedback, rewards, portals, pings, status, emotes and the rest); the art is not in the repository, only in the sprite pair
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required
