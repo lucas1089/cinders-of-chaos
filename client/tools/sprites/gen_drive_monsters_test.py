@@ -10,6 +10,7 @@ and a small synthetic input pair: the hard alpha and the palette of the block fi
 frame counts, the still redraw (1 phase, no animator, let through the motion rules only), the mirrored west walk, the canvas, the outfit
 shape, wrong pictures, input pairs and an existing output folder refused, `live` holding the pair to the sums. No pack file and no real
 pair needed. Needs numpy and Pillow (the fx venv of CI). Nothing drawn here is art of anyone."""
+import csv
 import os
 import shutil
 import sys
@@ -99,7 +100,23 @@ def main():
     check(D.map_problems() == [], 'committed map: %s' % D.map_problems())
     check(D.write_map(check=True) == [], 'monster_drive_looks.csv is current')
     t = D.rows()
-    check([int(r['new']) for r in t] == list(range(3561, 3572)), 'outfits 3561..3571')
+    check([int(r['new']) for r in t] == list(range(3561, 3589)), 'outfits 3561..3588 (O726 3561..3571, O729 3572..3588)')
+    # O729: the words of the redraws of the upright third-party looks
+    check(D.words_problems() == [], 'drive_redraw_words.csv: %s' % D.words_problems())
+    check(len(D.O729_KEYS) == 17 and all(D.DROP_NAMES[k] == k for k in D.O729_KEYS), 'O729: 17 keys, the drop folder is the key')
+    tmpw = tempfile.mkdtemp(prefix='o729words')
+    rows_w = list(csv.DictReader(open(D.WORDS, newline='', encoding='utf-8')))
+    for bad_w, text in ((dict(rows_w[0], monster='Nobody'), 'PICKS gives'), (dict(rows_w[0], pixellab_id='x'), 'pixellab_id'),
+                        (dict(rows_w[0], description='a knight'), 'dark fantasy')):
+        pw = os.path.join(tmpw, 'w.csv')
+        with open(pw, 'w', newline='', encoding='utf-8') as f:
+            w = csv.DictWriter(f, list(rows_w[0]))
+            w.writeheader()
+            w.writerows([bad_w] + rows_w[1:])
+        check(any(text in x for x in D.words_problems(pw)), 'words rule %s' % text)
+    check(any('O729_KEYS' in x for x in D.words_problems(D.WORDS, keys=D.O729_KEYS[::-1])), 'words out of order')
+    check(D.words_problems(os.path.join(tmpw, 'none.csv')) == ['art_import/drive_redraw_words.csv is missing'], 'words missing')
+    shutil.rmtree(tmpw, ignore_errors=True)
     check(D.FIRST_NEW == 3561 and D.PAIR == 81, 'after the 3,560 outfits of pair 80, pair 81')
     check(len({m for _k, m in D.PICKS}) == len(t), 'one monster a look')
     for r in t:

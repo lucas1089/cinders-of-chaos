@@ -954,9 +954,10 @@ for _nl, _ns in sorted(_xcount.items()):
         fail(f'server/data/monster/monster_pixellab_looks.csv: look {_nl} is on {len(_ns)} monsters ({", ".join(_ns)}): one hunt monster each (O529)')
 for msg in pixellab.map_problems() + pixellab.write_map(check=True):
     fail(f'server/data/monster/monster_pixellab_looks.csv: {msg}')
-# the Drive map (O726, server/data/monster/monster_drive_looks.csv, client pair 81, built in /dev/shm only): 11 hunt monsters, one on each of
-# the outfits 3561..3571 (client/tools/sprites/gen_drive_monsters.py PICKS). Each wears the old look in its file when it is ours and in the committed
-# pool, is in no map of an earlier pair, no new look is a player look or worn by a monster outside the map (checked above at pair 81: no shared look,
+# the Drive map (O726, server/data/monster/monster_drive_looks.csv, client pair 81, built in /dev/shm only): 28 hunt monsters, one on each of
+# the outfits 3561..3588 (client/tools/sprites/gen_drive_monsters.py PICKS; O729 added 3572..3588). Each wears the old look in its file when it is
+# ours and in the committed pool; a monster of an earlier pair's map (O729: Deepforge Fiend, Rootbound Pilgrim, Thornveil Wraith, Infernal Phantom)
+# has the same committed look there, its earlier new look is replaced at pair 81; no new look is a player look or worn by a monster outside the map (checked above at pair 81: no shared look,
 # moves while it stands, not crowded)
 import gen_drive_monsters as drive
 _vmap = audit_shared_looks.load_drive()
@@ -967,14 +968,15 @@ for _n, (_o, _nl) in sorted(_vmap.items()):
         fail(f'server/data/monster/monster_drive_looks.csv: {_n}: the map says look {_o}, the monster file says {_own[_n]}')
     if _prow.get(_n) != _o:
         fail(f'server/data/monster/monster_drive_looks.csv: {_n}: the map says look {_o}, the committed bounty pool says {_prow.get(_n)}')
-    if any(_n in _m for _m in _earlier_maps + (_xmap,)):
-        fail(f'server/data/monster/monster_drive_looks.csv: {_n} is in the map of an earlier pair as well')
+    if any(_n in _m and _m[_n][0] != _o for _m in _earlier_maps + (_xmap,)):
+        fail(f'server/data/monster/monster_drive_looks.csv: {_n} is in the map of an earlier pair with another committed look')
     if _nl in _splayer:
         fail(f'server/data/monster/monster_drive_looks.csv: {_n}: look {_nl} is a look a player can wear (player_looks.csv)')
     if _sworn.get(_nl, set()):
         fail(f'server/data/monster/monster_drive_looks.csv: {_n}: look {_nl} is worn by {sorted(_sworn[_nl])} already')
-if sorted(_vcount) != list(range(3561, 3572)):
-    fail('server/data/monster/monster_drive_looks.csv: the new looks must be the 11 outfits 3561..3571, every one worn')
+if sorted(_vcount) != list(range(3561, 3561 + len(drive.ROWS))):
+    fail('server/data/monster/monster_drive_looks.csv: the new looks must be the %d outfits 3561..%d, every one worn'
+         % (len(drive.ROWS), 3560 + len(drive.ROWS)))
 # a TEMPORARY row of no_idle_allow.csv (O726): the new look of a monster of this map whose redraw stands still for now (idle 1 phase in
 # client/tools/sprites/art_import/drive_monsters.csv); it goes when the frames are in
 import audit_idle_looks as _ail

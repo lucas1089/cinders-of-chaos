@@ -304,8 +304,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Crone) wear the original monsters made with PixelLab (O640; client pair 74, outfits 3531-3554, data/monster/
                monster_pixellab_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
                chaosClientPair >= 74, README "Client pair guard" and "PixelLab monsters (O640)"; after monstermalgrathlook
-  monsterdrivelooks tools/install_monster_drive_looks.py  11 hunt monsters (Paladin's Apparition, Guardian of Tales, ... Saltkin Pincher)
-               wear the outfits of our PixelLab redraws and two character packs (O726; client pair 81, outfits 3561-3571, data/monster/
+  monsterdrivelooks tools/install_monster_drive_looks.py  28 hunt monsters (Paladin's Apparition, ... Saltkin Pincher, Dawn Strayer, ...
+               Infernal Phantom) wear the outfits of our PixelLab redraws and two character packs (O726, O729; client pair 81, outfits
+               3561-3588, data/monster/
                monster_drive_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
                chaosClientPair >= 81, README "Client pair guard" and "Drive characters as hunt monsters (O726)"; after monsterpixellablooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character

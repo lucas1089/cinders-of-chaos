@@ -321,7 +321,7 @@ def load_pixellab(path=None):
 
 
 def load_drive(path=None):
-    """{monster name: (look, new_look)} of monster_drive_looks.csv (O726: 11 hunt monsters on outfits 3561-3571, PixelLab
+    """{monster name: (look, new_look)} of monster_drive_looks.csv (O726, O729: 28 hunt monsters on outfits 3561-3588, PixelLab
     redraws and two character packs): the same shape, from pair 81 on; `look` is the committed look"""
     out = {}
     path = DRIVE if path is None else path
