@@ -25022,6 +25022,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   a spawn, teleport, link, chest, NPC or boss tile; nothing blocking on the routes or the planned paths; the QA checks
   that no walkable tile is cut off. `decoration` sparse/normal/dense = x0.55/x1/x1.5, `light` scales the lights.
 - **Buildings (O515, O740):** a plan may list `buildings` (temple, depot, shop, house, camp) with the door on a chosen side, floors above, a cellar and a ruin share: see "Buildings in the planner (O515)" and "Buildings phase 2 (O740)" below.
+- **Style (O743):** plan field `style` names a profile learned from a painted area: see "Style profile (O743)" below.
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
@@ -25300,6 +25301,62 @@ Tests: `tools/area_plan_water_test.py`, `tests/areagen_water_test.lua` (server l
 leaves cfg and the model alone, a planned river cuts two zones apart and a bridge joins them, every walkable tile
 reached, shores only on water next to land, no spawn on water or a crossing, determinism, 12 cave runs with a river
 and a lake).
+
+## Style profile (O743) (`tools/area_style_learn.py`, `tools/area_plan_style.py`, `tools/areaplan/styles/`)
+
+A plan can look like an area we already painted. The learner reads that area and writes its statistics. The compiler
+then draws from them. Off by default: a plan without `style` compiles to the same bytes.
+
+**Learn.** `python3 -I tools/area_style_learn.py REF.otbm --box X1,Y1,X2,Y2,Z [--name KEY] [--json OUT] [--write]`.
+The map is only read (`tools/map/otbm.py`). Per tile class it counts item shares:
+- grounds: walkable ground families and ids; families nobody walks on (`unwalked`);
+- walls: pieces by brush and kind;
+- decoration: by kit group and id, with the blocking, light, vegetation and debris subsets (kit flags, name words).
+
+Statistics: decoration items per 100 walkable tiles (and per subset), decorated share, sizes of the 8-neighbour groups
+of decorated tiles, groups of 3+ per 100, wall run lengths, open share (all 8 neighbours walkable), corridor width
+(per walkable tile the shorter of its two walkable runs).
+Walkable: a ground of a walkable family, no wall piece, no blocking kit piece, no edge piece of a rock family.
+Known ids only (`area_plan_style.catalogue`): our families and walls, the kits, the generator's own ids by role
+(`areaplan_build.lua styleids`), the links and the chest, `art_items.csv`. Any other id is reported and dropped.
+`--write` writes `tools/areaplan/styles/<KEY>.json` (schema `chaos-area-style/1`).
+
+**Copy guard.** A profile holds shares and statistics only, never a position or a tile layout.
+`area_plan_style.problems` refuses a profile with a tile, layout or position field or a nested list.
+The learner refuses a box under 200 walkable tiles: too few to be statistics.
+The test compiles a plan with a style learned from a synthetic reference. No 8 x 8 window of the output may equal a
+window of the reference (items by tile, windows with 4+ items above the ground: an empty window carries no layout).
+Learn only from our own maps, never from an imported or third-party map.
+
+**Compile.** Plan field `style` (schema: a key). The validator gives an ERROR for a missing or broken profile.
+- Generator (`job.style`, `areaplan_build.lua`): floor = the most used walkable family. A dungeon also gets room
+  floors (families of 8 %+, repeated by share) and the most used wall brush. A cave or waste gets up to 4 patches
+  (families of 2 %+, share capped at 0.25, radius 2-4; no indoor family). The build leaves out a family or brush our
+  tables lack and a patch with no border rule against the floor. Pools and the rock stay the biome's.
+- Decoration (`area_plan_decor.Dresser(style=...)`): in every list category of the biome's kit, the profile's groups
+  that some kit uses in that category, weight 1000 x share. A category with none keeps the biome's rows. Hall pieces
+  and kit rates stay.
+- Density: x (profile items per 100 / `REF_PER100` 38.2), clamped 0.4-2.5, times `decoration`. `REF_PER100` is the
+  mean of the six "normal" examples measured the same way (33.5-46.8).
+- Clusters: groups of 3+ per 100 tiles from the profile; pieces round an anchor drawn from its group sizes (size - 1,
+  1-8) with the compile's seeded rng (the biome default is 2-5).
+- Recorded, not applied yet: wall runs, open share, corridor widths, light and debris densities.
+- `manifest.stats.style` (only with the field): key, source file, the generator part, density factor, kit groups.
+
+**Shipped.** `styles/gravewatch_crypt.json`, learned from the compiled crypt example, floor 1:
+`area_planner.py compile examples/crypt_boss.json OUT`, then
+`area_style_learn.py OUT/gravewatch_crypt.otbm --box 14800,14800,14875,14861,9 --name gravewatch_crypt --write`.
+748 walkable tiles: slate 0.55, marble 0.24, flagstone 0.21, ruin walls, 46.7 decoration items per 100.
+Example `examples/hollowgate_vault.json` (Hollowgate Vault): the crypt plan as a vault, seed 31002, with that style.
+Measured (floor 1): slate 0.78, flagstone 0.15, marble 0.08, ruin walls, 43.5 items per 100, small bones first.
+The same plan without the style: flagstone 0.64, slate 0.23, tiles 0.14, dark stone walls, 36.3 per 100, and one
+outline ERROR at this seed. 2109 walkable tiles, 33 monsters (1.63 per 100), no QA error or warning, no 8 x 8 window
+shared with the crypt floor. All 97 compiled plans, examples, inbox entries and rooms gave the same bytes as before.
+
+Tests: `tools/area_style_learn_test.py` (CI step "Area planner"; 44 checks): the learner on a synthetic glade
+(`map_guard_testkit.build`), the compile with its style, density up and down, unknown family and patch dropped, the
+copy guard, the shipped profile rebuilt from the crypt example, the example, the validator, `styleids` equal under
+luajit and lua5.3.
 
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 

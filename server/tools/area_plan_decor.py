@@ -114,7 +114,7 @@ def all_ids():
 
 class Dresser:
     def __init__(self, tiles, walk, zones, kind, biome, protected, keep_clear, corridor, plain_ids, wall_kind, rng,
-                 decoration='normal', light='normal', boss=None):
+                 decoration='normal', light='normal', boss=None, style=None):
         self.tiles, self.walk, self.zones, self.kind = tiles, walk, zones, kind
         self.protected, self.keep_clear, self.corridor = protected, keep_clear, corridor
         self.plain_ids, self.wall_kind, self.rng, self.boss = plain_ids, wall_kind, rng, boss
@@ -137,6 +137,11 @@ class Dresser:
                 for x in range(x1, x2 + 1):
                     self.zone_of.setdefault((x, y, zz), z)
         self.dist = self._wall_distance()
+        self.style, self.style_rates, self.style_sizes = None, {}, None
+        if style and self.kit:
+            # a style profile (O743, area_plan_style.py): its kit groups, density and clusters
+            import area_plan_style as ST
+            ST.apply_dresser(self, style)
 
     # ------------------------------------------------------------------------------------------------ helpers
     def _wall_distance(self, cap=6):
@@ -296,6 +301,8 @@ class Dresser:
 
     def rate(self, key):
         """RATE[key] times the kit's own factor for it (kit "rates")"""
+        if key in self.style_rates:
+            return self.style_rates[key]
         return RATE[key] * (self.kit.get('rates') or {}).get(key, 1.0)
 
     # ------------------------------------------------------------------------------------------------ passes
@@ -474,7 +481,11 @@ class Dresser:
                     continue
                 if not self.try_block(t, anchors, 'clusters', 1):
                     continue
-                k = self.rng.randint(2, 5)
+                if self.style_sizes:
+                    import area_plan_style as ST
+                    k = ST.pick_weighted(self.rng, self.style_sizes)
+                else:
+                    k = self.rng.randint(2, 5)
                 ring = [(t[0] + dx, t[1] + dy, t[2]) for dx in range(-2, 3) for dy in range(-2, 3) if dx or dy]
                 self.rng.shuffle(ring)
                 got = 0

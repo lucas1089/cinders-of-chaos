@@ -707,13 +707,145 @@ if mode == "materials" then
 	return
 end
 
+-- ------------------------------------------------------------------ styleids
+-- the ids the generator itself lays, by role, over every biome (JSON; the style profiles, area_plan_style.py, O743):
+-- border pieces, flat scatter, blocking obstacles and props, lights, the thickets' trees and bushes
+if mode == "styleids" then
+	local out = {pieces = {}, rim = {}, flat = {}, block = {}, light = {}, water = {}}
+	for name, d in pairs(cfg.water and cfg.water.families or {}) do
+		local ids = {}
+		for _, row in ipairs(d.grounds) do
+			ids[#ids + 1] = idOf(row[1])
+		end
+		out.water[name] = {walk = d.walk ~= false, grounds = ids}
+	end
+	local seen = {pieces = {}, rim = {}, flat = {}, block = {}, light = {}}
+	local function add(key, id)
+		id = idOf(id)
+		if id and not seen[key][id] then
+			seen[key][id] = true
+			out[key][#out[key] + 1] = id
+		end
+	end
+	local function addRows(key, rws)
+		for _, row in ipairs(rws or {}) do
+			add(key, row[1])
+		end
+	end
+	for _, set in pairs(cfg.pieces) do
+		for _, v in pairs(set) do
+			add("pieces", v)
+		end
+	end
+	-- the edge pieces of a family nobody walks on (cliffs, rock rims) block the tile they lie on
+	for over, unders in pairs(cfg.borders) do
+		local d = cfg.families[over]
+		if d and d.walk == false then
+			for _, set in pairs(unders) do
+				for _, v in pairs(cfg.pieces[set] or {}) do
+					add("rim", v)
+				end
+			end
+		end
+	end
+	for _, id in pairs(cfg.water and cfg.water.shore or {}) do
+		add("pieces", id)
+	end
+	local names = {}
+	for name in pairs(BIOMES) do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local t = planTheme(name, 1, 1)
+		local parts = {t}
+		if t.dark then
+			parts[#parts + 1] = t.dark
+		end
+		for _, part in pairs(t.byKind or {}) do
+			parts[#parts + 1] = part
+		end
+		for _, part in ipairs(parts) do
+			if part.decor then
+				addRows("flat", part.decor.scatter)
+				for _, cl in ipairs(part.decor.clusters or {}) do
+					addRows("flat", cl.items)
+				end
+			end
+			addRows("block", part.obstacles and part.obstacles.items)
+			addRows("block", part.props and part.props.items)
+			addRows("light", part.lights and part.lights.items)
+		end
+		for _, spec in ipairs(BIOMES[name].thicket and BIOMES[name].thicket.items or {}) do
+			addRows("block", rows(spec))
+		end
+	end
+	for _, key in ipairs({"pieces", "rim", "flat", "block", "light"}) do
+		table.sort(out[key])
+	end
+	print(json(out))
+	return
+end
+
 -- ------------------------------------------------------------------ build
-assert(mode == "build" and flags, "usage: areaplan_build.lua catalogue|materials|build JOB.lua [pair24] [dark]")
+assert(mode == "build" and flags, "usage: areaplan_build.lua catalogue|materials|styleids|build JOB.lua [pair24] [dark]")
 local job = dofile(arg[2])
 local def = job.def
 local biomeDef = BIOMES[job.biome]
 assert(biomeDef, "unknown biome " .. tostring(job.biome))
 local theme, b = planTheme(job.biome, DECOR[job.decoration or "normal"] or 1, LIGHT[job.light or biomeDef.light] or 1)
+if job.style then
+	-- a style profile (O743, area_plan_style.py): its floor, room floors, ground patches and wall brush replace the
+	-- biome's. A family or brush our tables lack is left out, and so is a patch with no border rule against the floor.
+	local st = job.style
+	local function has(f)
+		return f and cfg.families[f] ~= nil
+	end
+	local function borderOk(a, c)
+		local ra, rc = cfg.borders[a] or {}, cfg.borders[c] or {}
+		return ra[c] or ra["*"] or rc[a] or rc["*"]
+	end
+	local over = {}
+	if has(st.floor) then
+		over.floor = st.floor
+	end
+	local floorFam = over.floor or theme.floor
+	if st.roomFloors then
+		local list = {}
+		for _, f in ipairs(st.roomFloors) do
+			if has(f) then
+				list[#list + 1] = f
+			end
+		end
+		if #list > 0 then
+			over.roomFloors = list
+		end
+	end
+	if st.patches then
+		local list = {}
+		for _, p in ipairs(st.patches) do
+			if has(p.family) and p.family ~= floorFam and borderOk(p.family, floorFam) then
+				list[#list + 1] = {family = p.family, share = p.share, radius = {p.radius[1], p.radius[2]}}
+			end
+		end
+		over.patches = list
+	end
+	if st.wall and cfg.walls[st.wall] and b.kind == "dungeon" then
+		over.wall = st.wall
+	end
+	for k, v in pairs(over) do
+		theme[k] = v
+		if theme.dark then
+			theme.dark[k] = nil
+		end
+		for _, part in pairs(theme.byKind or {}) do
+			part[k] = nil
+		end
+		for _, part in pairs(theme.dark and theme.dark.byKind or {}) do
+			part[k] = nil
+		end
+	end
+end
 def.kind = b.kind
 def.theme = "plan_" .. def.id
 cfg.themes[def.theme] = theme

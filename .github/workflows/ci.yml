@@ -1518,6 +1518,7 @@ jobs:
           python3 -I server/tools/area_plan_water_test.py   # rivers, lakes, bridges and fords (O739): plan rules, the river example, chokepoints
           python3 -I server/tools/area_plan_buildings2_test.py   # buildings phase 2 (O740): floors above, ruins, camps, cellars, the ruined hamlet example
           python3 -I server/tools/area_plan_rank_test.py   # candidate ranking and reach numbers (O738)
+          python3 -I server/tools/area_style_learn_test.py   # style profiles (O743): the learner on a synthetic map, the copy guard, the shipped profile, the hollowgate vault example
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
           python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles

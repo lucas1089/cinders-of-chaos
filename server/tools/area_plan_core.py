@@ -588,6 +588,15 @@ def validate(plan, cat=None, pair24=None):
             W(p + '.zone', 'NPC %s stands outside a protection zone' % n['name'], 'set "pz": true on %s' % z['id'])
     if plan.get('buildings'):
         issues.extend(validate_buildings(plan, zid, biome, nlist, ref, pair24))
+    if plan.get('style'):
+        import area_plan_style as ST      # O743: the profile must load and name a walkable family our tables know
+        try:
+            prof = ST.load(plan['style'])
+        except ValueError as e:
+            prof = None
+            E('plan.style', str(e), 'learn one with area_style_learn.py REF.otbm --box ... --name KEY --write')
+        if prof and ST.job_style(prof, biome['kind'], materials(pair24)) is None:
+            W('plan.style', 'style %s names no walkable ground family of our tables: the biome keeps its grounds' % plan['style'])
     wtr = plan.get('water') or {}
     for i, q in enumerate(wtr.get('rivers', [])):
         if q.get('floor', 1) > floors:

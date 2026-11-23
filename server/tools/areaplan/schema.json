@@ -169,6 +169,11 @@
         }
       }
     },
+    "style": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,39}$",
+      "description": "O743: the key of a style profile in tools/areaplan/styles/ (area_style_learn.py): ground, wall and decoration choices, decoration density and clusters come from it instead of the biome defaults (server/README.md \"Style profile (O743)\"); default none"
+    },
     "ruin": {
       "type": "integer",
       "minimum": 0,

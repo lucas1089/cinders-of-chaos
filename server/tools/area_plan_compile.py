@@ -120,10 +120,24 @@ def water_def(plan, lay):
     return dict(rivers=rivers, lakes=lakes, fords=w.get('fords', 0))
 
 
-def run_build(plan, cat, lay, pair24, dark):
+def style_of(plan, cat, pair24, dark):
+    """(profile, job.style) of a plan's `style` (O743, area_plan_style.py); (None, None) without one"""
+    if not plan.get('style'):
+        return None, None
+    import area_plan_style as ST
+    try:
+        prof = ST.load(plan['style'])
+    except ValueError as e:
+        raise CompileError(str(e))
+    return prof, ST.job_style(prof, C.biome_of(plan, cat)['kind'], C.materials(pair24, dark))
+
+
+def run_build(plan, cat, lay, pair24, dark, style=None):
     job = dict(def_=job_def(plan, cat, lay), biome=plan['biome'], decoration=plan.get('decoration', 'normal'))
     if plan.get('light'):
         job['light'] = plan['light']
+    if style:
+        job['style'] = style     # O743: the profile's floor, room floors, patches and wall (absent when off)
     text = 'return ' + lua_value(job).replace('def_ =', '["def"] =') + '\n'
     fd, path = tempfile.mkstemp(prefix='areaplan_', suffix='.lua')
     try:
@@ -321,7 +335,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         lay = C.layout(plan, cat)
     except C.LayoutError as e:
         raise CompileError(str(e))
-    area, meta = run_build(plan, cat, lay, pair24, dark)
+    style_prof, style_job = style_of(plan, cat, pair24, dark)
+    area, meta = run_build(plan, cat, lay, pair24, dark, style_job)
     biome = C.biome_of(plan, cat)
     ox, oy, oz = origin_of(plan, biome)
     seed = lay['seed']
@@ -651,7 +666,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     dresser = D.Dresser(tiles, walk, zone_list, meta['kind'], plan['biome'], protected, keep, corridor, plain, wall_kind,
                         random.Random(seed * 977 + 5), plan.get('decoration', 'normal'),
                         plan.get('light') or biome.get('light', 'normal'),
-                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None)
+                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None, style=style_prof)
     if dress:
         dresser.run(wall_ids)
         if chest_out:   # nothing else next to a quest chest (owner request 2026-10-27; area_plan_decor.Dresser.clear_around)
@@ -903,6 +918,9 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         stats['water'] = water_qa(meta.get('water'), tiles, spawn_out, boss_out, npc_out, chest_out, water_g, E, qa)
     if plan.get('repair_reach'):
         stats['reach'] = reach      # in the manifest only when asked: a held plan keeps its bytes
+    if style_prof:
+        import area_plan_style as ST
+        stats['style'] = ST.manifest_entry(plan['style'], style_prof, style_job, dresser)    # O743: only with `style`
     if stats['decoration']['spam_share'] > 0.01:
         Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
            % (100 * stats['decoration']['spam_share']))
