@@ -1234,7 +1234,11 @@ def test_botmap():
         with open(os.path.join(repo, 'server', 'tools', 'gen_bot_map_tiles.py'), 'w') as f:
             f.write(BOTMAP_TOOL_STUB)
         shutil.copy(os.path.join(HERE, '..', 'tools', 'bot_live.py'), os.path.join(repo, 'server', 'tools', 'bot_live.py'))
-        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL)):
+        # python3 wrapper: the CI runner of this test has no numpy / Pillow, the tool is a stub, so the dependency check of
+        # botmap-build is answered yes and every other call goes to the real python3
+        py3 = shutil.which('python3')
+        pywrap = '#!/bin/bash\nif [ "$1" = -I ] && [ "$2" = -c ] && [ "$3" = "import numpy, PIL" ]; then exit 0; fi\nexec %s "$@"\n' % py3
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL), ('python3', pywrap)):
             pth = os.path.join(stub, name)
             with open(pth, 'w') as f:
                 f.write(body)
