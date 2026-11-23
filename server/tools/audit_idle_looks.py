@@ -25,6 +25,8 @@ CI (tools/ci/check_content.py) has no dat and no map: it reads the bounty pool (
 look_idle.csv, one row per pool look written by --write-idle from the live dat. A pool monster whose look has no idle animation
 must be a row of no_idle_allow.csv (name, look, reason), the row must name the look the monster wears, and a row of a monster that
 has an idle look now is stale. The list may only shrink: a new hunt monster gets a look with an idle animation or a reason.
+A row whose reason starts with TEMPORARY names the new look of a monster of a later pair's map (load_temporary): that look may stand
+still at its pair until its frames are drawn (O726 redraws), and the row is stale as soon as the look moves.
 """
 import csv
 import os
@@ -153,6 +155,7 @@ def write_idle(dat, pool=POOL, path=IDLE, allow_path=ALLOW):
     looks |= {new for _old, new in S.load_creature().values()}      # and the creature pack looks of pair 73 (O605)
     looks |= {new for _old, new in S.load_swap().values()}          # and the swapped looks of pair 73 (O619)
     looks |= {new for _old, new in S.load_pixellab().values()}      # and the PixelLab looks of pair 74 (O640)
+    looks |= {new for _old, new in S.load_drive().values()}         # and the Drive pack looks of pair 81 (O726)
     walk = {}
     facts = dat_facts(dat, looks, walk)
     with open(path, 'w', newline='', encoding='utf-8') as f:
@@ -256,12 +259,27 @@ def check_walk(path=WALKLIST):
                                     % os.path.relpath(path, REPO)]
 
 
+TEMPORARY = 'TEMPORARY'
+
+
 def load_allow(path=ALLOW):
-    """{monster name: (look, reason)} of no_idle_allow.csv."""
+    """{monster name: (look, reason)} of no_idle_allow.csv, the TEMPORARY rows left out (load_temporary)."""
     out = {}
     if os.path.exists(path):
         for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
-            out[r['name']] = (int(r['look']), r['reason'])
+            if not r['reason'].startswith(TEMPORARY):
+                out[r['name']] = (int(r['look']), r['reason'])
+    return out
+
+
+def load_temporary(path=ALLOW):
+    """{(monster name, look): reason} of the TEMPORARY rows of no_idle_allow.csv: the new look of a moved monster that stands still for
+    now (its frames are not drawn yet)."""
+    out = {}
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            if r['reason'].startswith(TEMPORARY):
+                out[(r['name'], int(r['look']))] = r['reason']
     return out
 
 
@@ -270,7 +288,8 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     monster_donor_looks.csv) wears its new look, from pair 71 a monster of the purchased map (O540, monster_wst_looks.csv) its new look
     (over its donor look: Bonepicker, Wan Sentry), from pair 73 a monster of the creature pack map (O605, monster_creature_looks.csv)
     its new look, from pair 73 a monster of the swap map (O619, monster_o619_looks.csv) its new look, from pair 74 a monster of the PixelLab
-    map (O640, monster_pixellab_looks.csv) its new look; names is the set of those monsters
+    map (O640, monster_pixellab_looks.csv) its new look, from pair 81 a monster of the Drive pack map (O726, monster_drive_looks.csv)
+    its new look; names is the set of those monsters
     (their rows of the allow lists are for the old look)."""
     import client_pair
     donor = S.load_donor() if donor is None else donor
@@ -282,10 +301,11 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     creature = S.load_creature()
     swap = S.load_swap()
     pixellab = S.load_pixellab()
+    drive = S.load_drive()
     for r in rows:
         chain = [m[r['name']] for m, need in ((donor, client_pair.PAIR_DONOR), (purchased, client_pair.PAIR_PURCHASED),
                                               (creature, client_pair.PAIR_CREATURE), (swap, client_pair.PAIR_SWAP),
-                                              (pixellab, client_pair.PAIR_PIXELLAB))
+                                              (pixellab, client_pair.PAIR_PIXELLAB), (drive, client_pair.PAIR_DRIVE_MONSTERS))
                  if r['name'] in m and pair >= need]
         if chain and r['look'] in {x for d in chain for x in d} | {d[0] for d in chain}:
             r = dict(r, look=chain[-1][1])
@@ -304,6 +324,7 @@ def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None, pair=None, don
     idle = load_idle() if idle is None else idle
     walk = load_walklist() if walk is None else walk
     allow = load_allow(allow_path)
+    temp = load_temporary(allow_path)
     out, seen = [], set()
     prow, moved = donor_rows(S.pool_rows(pool), pair, donor, purchased)
     for r in prow:
@@ -315,7 +336,11 @@ def check_pool(pool=POOL, allow_path=ALLOW, idle=None, walk=None, pair=None, don
             if look not in idle:
                 out.append('look %d of %s is not in server/data/monster/look_idle.csv (run tools/audit_idle_looks.py --write-idle Tibia.dat)'
                            % (look, name))
-            elif not (idle[look][0] or look in walk):
+            elif idle[look][0] or look in walk:
+                if (name, look) in temp:
+                    out.append('%s wears the new look %d at pair %d, which moves while it stands now: remove its TEMPORARY row of '
+                               'server/data/monster/no_idle_allow.csv' % (name, look, pair))
+            elif (name, look) not in temp:
                 out.append('%s wears the new look %d at pair %d, which has no idle animation (%s): it must move while it stands'
                            % (name, look, pair, idle[look][3]))
             continue
