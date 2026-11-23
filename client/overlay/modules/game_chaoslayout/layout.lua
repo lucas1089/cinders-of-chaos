@@ -68,18 +68,41 @@ local function containersNow()
   return ok and list or nil
 end
 
+-- O732: the miniwindows the side dock (game_chaosdock) holds now: { widget, home, index, visible } each. They are saved in
+-- the side panel they came from, open or closed as they were there (the dock gives them back to it).
+local function heldByDock()
+  local m = modules.game_chaosdock
+  local dock = type(m) == 'table' and rawget(m, 'ChaosDock') or nil
+  if type(dock) ~= 'table' or type(dock.held) ~= 'function' then return {} end
+  local ok, list = pcall(dock.held)
+  return ok and type(list) == 'table' and list or {}
+end
+
 local function snapshotNow()
   local containers = {}
+  local docked = heldByDock()
   for _, p in ipairs(sidePanels()) do
     local windows = {}
+    local entries = {}
     for _, w in ipairs(p.widget:getChildren()) do
-      if isMini(w) then
-        local minimized = w:isOn()
-        local old = saved and saved.mini and saved.mini[w:getId()]
-        windows[#windows + 1] = { id = w:getId(), visible = w:isExplicitlyVisible(), minimized = minimized,
-          locked = w.isLocked and w:isLocked() or false,
-          height = minimized and (old and old.height or nil) or w:getHeight() }
+      if isMini(w) then entries[#entries + 1] = { w = w } end
+    end
+    for _, h in ipairs(docked) do
+      local ok, homeId = pcall(function() return h.home:getId() end)
+      if isMini(h.widget) and ok and homeId == p.id then
+        table.insert(entries, math.min(math.max(1, h.index or 1), #entries + 1),
+          { w = h.widget, visible = h.visible == true, height = h.height })
       end
+    end
+    for _, e in ipairs(entries) do
+      local w = e.w
+      local minimized = w:isOn()
+      local old = saved and saved.mini and saved.mini[w:getId()]
+      local visible = e.visible
+      if visible == nil then visible = w:isExplicitlyVisible() end
+      windows[#windows + 1] = { id = w:getId(), visible = visible, minimized = minimized,
+        locked = w.isLocked and w:isLocked() or false,
+        height = minimized and (old and old.height or nil) or e.height or w:getHeight() }
     end
     containers[#containers + 1] = { id = p.id, side = p.side, persistent = p.persistent, windows = windows }
   end

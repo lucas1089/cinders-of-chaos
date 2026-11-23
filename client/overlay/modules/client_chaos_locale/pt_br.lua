@@ -7657,5 +7657,15 @@ ChaosLocaleStrings['pt-BR'] = {
   ["range %d"] = "alcance %d",
   ["set piece"] = "peça de conjunto",
   ["%s (max %d)"] = "%s (máx. %d)",
+  -- game_chaosdock (O732: the side dock). Run-time keys: the tab names and the window names of chaosdocklogic.lua L.TABS
+  ["Equip."] = "Equip.",
+  ["Attributes"] = "Atributos",
+  ["Quest Log"] = "Quest Log",
+  ["Quest Tracker"] = "Quest Tracker",
+  ["This window is too wide for the panel on this screen: it opened beside it."] = "Esta janela é larga demais para o painel nesta tela: ela abriu ao lado dele.",
+  ["This window is not available now."] = "Esta janela não está disponível agora.",
+  -- game_hotbar/hotbar.otui (O732: the side dock in Layout options)
+  ["Side panel"] = "Painel lateral",
+  ["Windows in a side panel with tabs"] = "Janelas num painel lateral com abas",
 }
 return ChaosLocaleStrings['pt-BR']

@@ -1,0 +1,135 @@
+// game_chaosdock (O732): the side dock. The client_chaos_theme skin only: the window frame, the tab buttons, the close X,
+// the separator; the tab glyphs are the hub menu's (client_chaos_topbar/images/glyphs_bar, tinted in chaosdock.lua).
+
+// an icon tab: the glyph above its name (58 x 46; phone 54 high)
+ChaosDockTab < ChaosTabButton
+  size: 58 46
+  padding: 0
+  text: ''
+
+  $mobile:
+    height: 54
+
+  UIWidget
+    id: glyph
+    size: 32 32
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 1
+    phantom: true
+
+  UILabel
+    id: label
+    font: Verdana-9px-antialiased
+    color: #d6c9ae
+    text-align: center
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 3
+    height: 11
+    phantom: true
+
+    $mobile:
+      font: verdana-11px-antialised
+      height: 14
+
+// one window of a tab that holds two or more
+ChaosDockSub < ChaosTabButton
+  height: 22
+  padding: 2 6 2 6
+  text-auto-resize: true
+
+// the dock: right edge of the game screen, full height (it stops above the hotbar when the two would meet)
+ChaosDockPanel < UIWidget
+  id: chaosDock
+  width: 330
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+  anchors.right: parent.right
+  image-source: /images/chaos/window
+  image-border: 18
+  image-border-top: 34
+  padding: 8 10 10 10
+  focusable: false
+  phantom: false
+  @onEscape: modules.game_chaosdock.closeDock()
+
+  $mobile:
+    padding: 8 8 8 8
+
+  ChaosTitle
+    id: title
+    font: verdana-11px-rounded
+    text-align: left
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: closeX.left
+    margin-top: 1
+    margin-left: 4
+    margin-right: 6
+    height: 20
+
+  ChaosCloseX
+    id: closeX
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 0
+    margin-right: 0
+    !tooltip: tr('Close')
+
+  UIWidget
+    id: tabs
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    height: 46
+    focusable: false
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+    $mobile:
+      height: 54
+
+  UIWidget
+    id: subs
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    focusable: false
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  ChaosSeparator
+    id: rule
+    anchors.top: subs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  // the hosted window fills this area
+  UIWidget
+    id: content
+    anchors.top: rule.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-top: 4
+    clipping: true
+    focusable: false
+
+  ChaosLabelDim
+    id: note
+    anchors.top: content.top
+    anchors.left: content.left
+    anchors.right: content.right
+    margin-top: 16
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+    visible: false
