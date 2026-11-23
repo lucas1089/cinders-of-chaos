@@ -41,6 +41,19 @@ kit = D.kits()
 fams = B.families()
 blocks = lambda f: B.family_blocks(f, fams, kit)
 STAIRS_UP, STAIRS_GROUND = kit['brushes']['stairs_up'], kit['brushes']['stairs_down_ground']
+STAIRS_ID = {h: kit['brushes'][key] for h, (key, _s) in C.STAIR_HEADINGS.items()}
+STEP = {h: s_ for h, (_k, s_) in C.STAIR_HEADINGS.items()}
+
+
+def plus(t, h, n=1):
+    return (t[0] + n * STEP[h][0], t[1] + n * STEP[h][1]) + tuple(t[2:])
+
+
+# ------------------------------------------------------------------------------------------------ the stair headings
+# O745: the base items hold stone stairs with floorchange north (3687) and west (3688) only; no stone stairs go east or
+# south (those headings are ramps of other art: not used)
+ok(STAIRS_ID == {'n': 3687, 'w': 3688} and C.STAIR_ORDER == ('n', 'w'), 'stair headings: north 3687, then west 3688')
+ok(STEP == {'n': (0, -1), 'w': (-1, 0)}, 'stair headings: up north, up west')
 
 # ------------------------------------------------------------------------------------------------ the tables
 ok(B.KINDS == ('temple', 'depot', 'shop', 'house') and B.ALL_KINDS == B.KINDS + ('camp',), 'four walled kinds and the camp')
@@ -67,7 +80,7 @@ def reached(free, start):
     return B._all_reached(set(free), start)
 
 
-n_lv, no_room = 0, []
+n_lv, no_room, west = 0, [], []
 for kind in B.KINDS:
     pf = B.prefab(kind)
     (wlo, whi), (hlo, hhi) = B.size_range(pf)
@@ -84,6 +97,9 @@ for kind in B.KINDS:
                         continue
                     L = lv['levels']
                     good = len(L) == n_up + 1
+                    good &= all((x['heading'] in STEP) == bool(x['stairs']) for x in L)
+                    if any(x['heading'] == 'w' for x in L):
+                        west.append((kind, w, h, side, n_up, cel))
                     inter = set(lay['floor'])
                     claimed = {it['tile'] for it in lay['items'] if it['role'] == 'floor'}
                     blocked0 = {it['tile'] for it in lay['items'] if it['role'] == 'floor' and blocks(it['family'])}
@@ -91,29 +107,39 @@ for kind in B.KINDS:
                     good &= not bars0 & (claimed | set(lay['reach']) | set(lay['inside']))
                     good &= reached(inter - blocked0 - bars0, lay['inside'][0])
                     for k in range(1, n_up + 1):
-                        d = L[k]['down']
-                        good &= d == L[k - 1]['stairs'] and (d[0], d[1] + 1) in inter and (d[0], d[1] - 1) in inter
-                        good &= (d[0], d[1] + 1) not in claimed | bars0 if k == 1 else (d[0], d[1] + 1) != L[k - 1]['down']
+                        d, dh = L[k]['down'], L[k - 1]['heading']
+                        land = plus(d, dh, -1)
+                        good &= d == L[k - 1]['stairs'] and land in inter and plus(d, dh) in inter
+                        good &= land not in claimed | bars0 if k == 1 else land != L[k - 1]['down']
                         bars = {d} | ({L[k]['stairs']} if L[k]['stairs'] else set())
                         blk = {i['tile'] for i in L[k]['items'] if blocks(i['family'])}
-                        good &= L[k]['start'] == (d[0], d[1] - 1) and reached(inter - bars - blk, L[k]['start'])
+                        good &= L[k]['start'] == plus(d, dh) and reached(inter - bars - blk, L[k]['start'])
                     if cel:
                         hz, up = lv['hole'], lv['hole_up']
                         good &= up == (hz[0], hz[1] + 1) and up in inter and up not in claimed | bars0
                     ok(good, '%s %dx%d door %s: %d floor(s) above, cellar %s: stairs and hole on free tiles, every tile reached'
                        % (kind, w, h, side, n_up, cel))
 ok(n_lv == 4 * 184, 'plan_levels on every layout of the four kinds (%d)' % n_lv)
-# a shop 7 deep with the door south: shelves, counter and the tiles in front of it leave no room for the stairs and the
-# hole together; the planner then turns the door to another side (or names the building in an error)
-ok(sorted(no_room) == [('shop', w, 7, 's', 2, True) for w in (8, 9, 10)], 'no room only in the 7-deep shop with stairs and a hole: %s' % no_room)
+# O745: the 7-deep shop with the door south had no room for the north stairs and the hole together (O740); the west
+# stairs fit there now, and only where no north stairs fit (the held layouts keep theirs)
+ok(not no_room, 'every layout takes its stairs and hole: %s' % no_room)
+ok(sorted(set(west)) == [('shop', w, 7, 's', 2, True) for w in (8, 9, 10)],
+   'the west stairs only in the 7-deep shop with the door south, two floors above and a cellar: %s' % sorted(set(west)))
 # a 6 x 5 building has a 4 x 3 interior: the stairs fit; a table across the middle of a 4 x 2 interior blocks them
 tiny = dict(B.prefab('house'), features=[], slots=[])
 lay = B.layout(tiny, 6, 4, 's')
+C.STAIR_ORDER = ('n',)
 try:
     B.plan_levels(lay, 1, False, blocks)
-    ok(False, 'a 4 x 2 interior has no room for stairs with a landing on both floors')
+    ok(False, 'a 4 x 2 interior has no room for north stairs with a landing on both floors')
 except B.BuildingError as e:
-    ok('stairs' in str(e), 'a 4 x 2 interior: no room for the stairs (%s)' % e)
+    ok('stairs' in str(e), 'a 4 x 2 interior: no room for the north stairs (%s)' % e)
+finally:
+    C.STAIR_ORDER = ('n', 'w')
+lv = B.plan_levels(lay, 1, False, blocks)
+st = lv['levels'][0]['stairs']
+ok(lv['levels'][0]['heading'] == 'w' and plus(st, 'w') in lay['floor'] and plus(st, 'w', -1) in lay['floor']
+   and lv['levels'][1]['start'] == plus(st, 'w'), 'a 4 x 2 interior: the west stairs fit across it (%s)' % (st,))
 
 # ------------------------------------------------------------------------------------------------ ruin_plan, open_layout
 lay = B.layout(B.prefab('house'), 9, 9, 's')
@@ -159,7 +185,7 @@ bedges = []
 for r in recs.values():
     for lv in r.get('levels', ()):
         below = (lv['down'][0], lv['down'][1], lv['z'] + 1)
-        bedges += [(below, (lv['down'][0], lv['down'][1] - 1, lv['z'])), (lv['down'], (below[0], below[1] + 1, below[2]))]
+        bedges += [(below, plus(lv['down'], lv['heading'])), (lv['down'], plus(below, lv['heading'], -1))]
     if r.get('cellar'):
         c = r['cellar']
         bedges += [(c['hole'], c['ladder']), (c['ladder'], c['up'])]
@@ -176,7 +202,7 @@ for r, n in ((inn, 2), (watch, 1)):
     ok(len(r['levels']) == n and [lv['z'] for lv in r['levels']] == [oz - k for k in range(1, n + 1)], '%s: %d floor(s) above' % (r['id'], n))
     for lv in r['levels']:
         below = (lv['down'][0], lv['down'][1], lv['z'] + 1)
-        ok(STAIRS_UP in [i for i, _a in tiles[below]['items']] and tiles[lv['down']]['ground'] == STAIRS_GROUND,
+        ok(STAIRS_ID[lv['heading']] in [i for i, _a in tiles[below]['items']] and tiles[lv['down']]['ground'] == STAIRS_GROUND,
            '%s floor z %d: stone stairs below, the stairs ground above' % (r['id'], lv['z']))
         lw = set(lv['walls'])
         ok(len(lw) == len(r['walls']) + len(r['door']), '%s floor z %d: the full wall ring, the door is wall there' % (r['id'], lv['z']))
@@ -246,6 +272,38 @@ import audit_map_tiles as AMT
 got = AMP.audit_plan(os.path.join(EX, 'ruined_hamlet.json'), log=lambda *_a: None)
 found = {c: got[1].count(c) for c in AMT.CODES if got[1].count(c)} if got else None
 ok(found == {}, 'the map tile audit (ground, borders, wall pieces, doors, floor changes, roofs) finds nothing: %s' % found)
+
+# O745: the old inn as a 9 x 7 shop with the door south (the shape that took no north stairs beside its hole): the
+# west stairs 3688 lead up, every floor and the cellar reached, QA and the map tile audit clean
+p = copy.deepcopy(HAMLET)
+p['buildings'][0].update(size=[9, 7], door='s')
+rw = PC.compile_plan(p, pair24=False, cat=cat)
+ok(not [q for q in rw['qa'] if q[0] != 'INFO'], 'west stairs: no QA error or warning: %s' % [q for q in rw['qa'] if q[0] != 'INFO'][:3])
+inn_w = {r_['id']: r_ for r_ in rw['buildings']}['old_inn']
+ok(inn_w['side'] == 's' and [lv['heading'] for lv in inn_w['levels']][:1] == ['w'],
+   'west stairs: the 9 x 7 inn keeps its door south and climbs west: %s' % [lv['heading'] for lv in inn_w['levels']])
+lv0 = inn_w['levels'][0]
+below0 = (lv0['down'][0], lv0['down'][1], oz)
+ok([i for i, _a in rw['tiles'][below0]['items']].count(3688) == 1 and rw['tiles'][lv0['down']]['ground'] == STAIRS_GROUND
+   and lv0['start'] == plus(lv0['down'], 'w'), 'west stairs: stone stairs 3688 below, the stairs ground above, up to the tile west of it')
+bw = []
+for r_ in rw['buildings']:
+    for lv in r_.get('levels', ()):
+        bl = (lv['down'][0], lv['down'][1], lv['z'] + 1)
+        bw += [(bl, plus(lv['down'], lv['heading'])), (lv['down'], plus(bl, lv['heading'], -1))]
+    if r_.get('cellar'):
+        bw += [(r_['cellar']['hole'], r_['cellar']['ladder']), (r_['cellar']['ladder'], r_['cellar']['up'])]
+ew = [e for l in rw['links'] for e in l['edges']] + [(t['at'], t['to']) for t in rw['teleports']]
+dw = C.tile_reach(rw['walk'], rw['arrival'], (), ew + bw)
+ok(not [t for t in rw['walk'] if t not in dw], 'west stairs: every walkable tile of every floor is reached')
+ok({m_['id']: m_ for m_ in rw['manifest']['buildings']}['old_inn']['floors_above'][0]['climb'] == 'west', 'west stairs: the manifest says west')
+import tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as td:
+    pw = os.path.join(td, 'west_inn.json')
+    json.dump(p, open(pw, 'w'))
+    got = AMP.audit_plan(pw, log=lambda *_a: None)
+    found = {c_: got[1].count(c_) for c_ in AMT.CODES if got[1].count(c_)} if got else None
+ok(found == {}, 'west stairs: the map tile audit finds nothing: %s' % found)
 
 # ------------------------------------------------------------------------------------------------ the QA
 # a stair taken away: the floor above is out of reach

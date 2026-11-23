@@ -22,7 +22,8 @@
  },
  "brushes": {
   "stairs_down_ground": 411,
-  "stairs_up": 3687
+  "stairs_up": 3687,
+  "stairs_up_west": 3688
  },
  "coins": {
   "crystal": 2160,

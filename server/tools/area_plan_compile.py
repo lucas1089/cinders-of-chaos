@@ -12,7 +12,7 @@ compile_plan(plan) runs:
 The result holds the OTBM bytes, the spawn file, a manifest (zones, chests with their quest keys, portals, stats, QA)
 and the tile model for render_floors(). The same plan and seed give the same bytes.
 """
-import json, os, random, struct, subprocess, sys, tempfile
+import copy, json, os, random, struct, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -332,11 +332,18 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     issues = C.validate(plan, cat)
     if C.errors(issues):
         raise CompileError('the plan has errors:\n' + '\n'.join(str(i) for i in C.errors(issues)))
+    style_prof, style_job = style_of(plan, cat, pair24, dark)
+    if style_prof and any('width' not in q for q in plan.get('paths', [])):
+        import area_plan_style as ST
+        wd = ST.path_width(style_prof)
+        if wd != 3:     # O745: a path that names no width takes the profile's corridor width (3 is the default)
+            plan = copy.deepcopy(plan)
+            for q in plan['paths']:
+                q.setdefault('width', wd)
     try:
         lay = C.layout(plan, cat)
     except C.LayoutError as e:
         raise CompileError(str(e))
-    style_prof, style_job = style_of(plan, cat, pair24, dark)
     area, meta = run_build(plan, cat, lay, pair24, dark, style_job)
     biome = C.biome_of(plan, cat)
     ox, oy, oz = origin_of(plan, biome)
@@ -655,7 +662,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             for kind_, ids_ in (meta.get('walls') or {}).items():
                 if i in ids_:
                     wall_kind[k] = kind_
-    plain |= wall_ids | {meta['hole'], meta['ladder'], meta['portal'], meta['chest'], brush['stairs_up']}
+    plain |= wall_ids | {meta['hole'], meta['ladder'], meta['portal'], meta['chest'], brush['stairs_up'], brush['stairs_up_west']}
     if bres:
         plain |= bres['wall_ids'] | bres['door_ids']
     protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out} | bprot | crossing
@@ -681,7 +688,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     dresser = D.Dresser(tiles, walk, zone_list, meta['kind'], plan['biome'], protected, keep, corridor, plain, wall_kind,
                         random.Random(seed * 977 + 5), plan.get('decoration', 'normal'),
                         plan.get('light') or biome.get('light', 'normal'),
-                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None, style=style_prof)
+                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None, style=style_prof,
+                        tops=pres['top'] if pres else None)     # O745: the plateau tops dress with their zone
     if dress:
         dresser.run(wall_ids)
         if chest_out:   # nothing else next to a quest chest (owner request 2026-10-27; area_plan_decor.Dresser.clear_around)
@@ -890,7 +898,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if pres:
         wet = {k for k, t in tiles.items() if (fam_of.get(t['ground']) or '').startswith('water')}
         PL.qa(pres['records'], tiles, walk, dist, {'water': wet, 'a crossing': crossing, 'a building': bres['foot'] if bres else set()},
-              E, Wn, lambda m: qa.append(('INFO', m)), brush['stairs_up'], brush['stairs_down_ground'], pres['cliff']['ground'])
+              E, Wn, lambda m: qa.append(('INFO', m)), {h_: brush[k_] for h_, (k_, _s) in C.STAIR_HEADINGS.items()},
+              brush['stairs_down_ground'], pres['cliff']['ground'])
     for zid, z in zones.items():
         if z.get('role') == 'boss':
             x1, y1, x2, y2, zz = zrect[zid]

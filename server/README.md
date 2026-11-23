@@ -25166,7 +25166,12 @@ and crypt_boss by checksum.
   prefab's `upper` (house: shelf, table, crates; shop: crates, barrels, shelf), one per free interior corner. The floors
   are joined by our stair brush, the rule of a plan's `stairs` connection: the stone stairs 3687 on the floor below
   lead up to the tile north of the stairs ground 411 above; stepping on 411 goes down south of the stone stairs.
-  `plan_levels` picks the stairs tile farthest from the door with a free landing on both floors. A stair tile changes
+  O745: a second heading, the stone stairs 3688 (floorchange west in the base items): up to the tile west of 411,
+  down to the tile east of the stairs (`area_plan_core.STAIR_HEADINGS`, kit brush `stairs_up_west`). The base items hold
+  no stone stairs up east or south; those floor changes are ramps of other art, so those headings stay off.
+  `plan_levels` picks the stairs tile farthest from the door with a free landing on both floors, north stairs first;
+  the west stairs only where no north stairs fit (so every building that had stairs keeps them). The manifest's
+  `floors_above` names the way up (`climb` north or west). A stair tile changes
   the floor, so every free tile of every floor stays joined to the way in without it. The roof moves to the top
   floor (z - 1 - n). A house on 3 floors gets a validator WARN: the house audit (O513) wants at most 2. The floors above
   get no view frame: they look down on the floor below, as a roof does.
@@ -25203,11 +25208,15 @@ and crypt_boss by checksum.
 - **House audit rules** (`audit_houses.py`, O513) on its whole houses: at most 2 floors, a door with a walkable tile
   outside, 13-180 tiles, the whole roof. A ruin is no house anyone owns: the roof rule does not apply to it. The
   compiler still writes no houses.xml.
-- **Not done.** Hung pieces and NPCs on the floors above. A broken wall piece (no art). Stairs that turn with the
-  building (the stair brush runs north-south only). A room plan for the floors above.
-- **Tests.** `tools/area_plan_buildings2_test.py` (CI step "Area planner"): the camp prefab and families, `plan_levels` on
-  all 184 layouts of the four walled kinds with 1 or 2 floors above and a cellar (736 cases; only the 7-deep shop with
-  the door south has no room for stairs and hole together: the planner turns its door), `ruin_plan`, `open_layout`, the
+- **Not done.** Hung pieces and NPCs on the floors above. A broken wall piece (no art). Stairs up east or south (no
+  stone stairs of those headings in the base items; the ramps that have them are other art). A room plan for the
+  floors above. The west stairs not checked on a render (no client pair here).
+- **Tests.** `tools/area_plan_buildings2_test.py` (CI step "Area planner"): the camp prefab and families, the stair
+  headings (north 3687, west 3688), `plan_levels` on all 184 layouts of the four walled kinds with 1 or 2 floors above
+  and a cellar (736 cases, all fit since O745; the west stairs only in the 7-deep shop with the door south, two floors
+  above and a cellar, which had no room for north stairs and hole together and kept its door south; a 4 x 2 interior
+  takes west stairs only), the old inn as that 9 x 7 shop compiled (3688 below, every floor reached, QA and map tile
+  audit clean), `ruin_plan`, `open_layout`, the
   example (stairs and ids, roofs, cellars, ruins, camp, every tile reached over its floor changes,
   house audit rules, the map tile audit), the QA (a stair taken away, a cellar with no hole, a roof off the map), the
   validator, and the three checksums. `area_planner_test.py` compiles the example with the others.
@@ -25340,8 +25349,21 @@ Learn only from our own maps, never from an imported or third-party map.
   mean of the six "normal" examples measured the same way (33.5-46.8).
 - Clusters: groups of 3+ per 100 tiles from the profile; pieces round an anchor drawn from its group sizes (size - 1,
   1-8) with the compile's seeded rng (the biome default is 2-5).
-- Recorded, not applied yet: wall runs, open share, corridor widths, light and debris densities.
-- `manifest.stats.style` (only with the field): key, source file, the generator part, density factor, kit groups.
+- O745, lights: the Dresser's light multiplier x (profile light items per 100 / `REF_LIGHT_PER100` of the plan's
+  layout kind), clamped 0.4-2.5. References, the same six examples by kind: dungeon 6.723 (crypt_boss), cave 3.547
+  (lava_cave, swamp_hunt), waste 0.413 (river_hunt, ruined_hamlet, village_square). Lights differ by kind far more
+  than by plan, so one mean would light every open area like a crypt.
+- O745, debris: the profile's debris share of the decoration against the kind's (`REF_DEBRIS_PER100` /
+  `REF_DECOR_PER100`: dungeon 0.454, cave 0.359, waste 0.132), clamped 0.5-2.0, multiplies the weight of the debris
+  groups (`DEBRIS_WORDS`) in the kit categories that kept the biome's rows. A category drawn from the profile carries
+  its debris share already.
+- O745, corridor width: a plan path that names no `width` takes the most common corridor width of 2-6 tiles in the
+  profile (a tie: the width nearest 3, then the narrower; none: 3). Width 1 is a seam, 7+ a room. A path with a width
+  keeps it.
+- Recorded, not applied: wall runs and open share. The generator has no knob for either: walls follow the zone
+  shapes and the carving, the open share comes out of the zone shapes and path widths.
+- `manifest.stats.style` (only with the field): key, source file, the generator part, density factor, kit groups,
+  light factor, debris factor, the categories the debris factor touched, path width.
 
 **Shipped.** `styles/gravewatch_crypt.json`, learned from the compiled crypt example, floor 1:
 `area_planner.py compile examples/crypt_boss.json OUT`, then
@@ -25352,18 +25374,25 @@ Measured (floor 1): slate 0.78, flagstone 0.15, marble 0.08, ruin walls, 43.5 it
 The same plan without the style: flagstone 0.64, slate 0.23, tiles 0.14, dark stone walls, 36.3 per 100, and one
 outline ERROR at this seed. 2109 walkable tiles, 33 monsters (1.63 per 100), no QA error or warning, no 8 x 8 window
 shared with the crypt floor. All 97 compiled plans, examples, inbox entries and rooms gave the same bytes as before.
+O745 on the example: light factor 0.915 (6.15 per 100 against the dungeon's 6.723), debris factor 1.015, no category
+kept the vault's rows (so the debris factor touched none), paths of 3. Lights 4.58 per 100 (were 4.67), decoration
+43.5 per 100 and the grounds as before, 33 monsters, no QA error or warning.
 
-Tests: `tools/area_style_learn_test.py` (CI step "Area planner"; 44 checks): the learner on a synthetic glade
-(`map_guard_testkit.build`), the compile with its style, density up and down, unknown family and patch dropped, the
-copy guard, the shipped profile rebuilt from the crypt example, the example, the validator, `styleids` equal under
-luajit and lua5.3.
+Tests: `tools/area_style_learn_test.py` (CI step "Area planner"; 51 checks): the learner on a synthetic glade
+(`map_guard_testkit.build`), the compile with its style, density up and down, lights up and down on the crypt plan,
+the debris weight doubled where the biome's rows stay, paths with no width at the profile's corridor width, the path
+width rule, unknown family and patch dropped, the copy guard, the shipped profile rebuilt from the crypt example, the
+example and its factors, the validator, `styleids` equal under luajit and lua5.3.
 
 ## Plateaus and cliffs (O744) (`tools/area_plan_plateau.py`, plan field `plateaus`)
 
 Raised walkable ground over several floors, with ramps. Off by default: a plan without `plateaus` (or with count 0)
 compiles to the same bytes. All 86 plans, examples, rooms and inbox entries gave the same OTBM, frame, spawn file and
 manifest as the commit before (compared with the tools of that commit). `area_plan_plateau_test.py` holds river_hunt,
-village_square and swamp_hunt by checksum. Plan field (schema `plateaus`):
+village_square and swamp_hunt by checksum. O745 (west stairs, decorated tops, style lights, debris and path widths):
+the 99 compiled plans, examples, rooms, annexes and inbox entries kept their bytes against the tools of the commit
+before, except the three examples with the opt-in fields: highland_hunt, hollowgate_vault (lights) and ruined_hamlet
+(the manifest's `climb` only). Plan field (schema `plateaus`):
 
 ```json
 "plateaus": {"count": 3, "size": [17, 21], "height": [1, 2], "ramps": [1, 2], "zones": ["ridge", "crags", "tor"]}
@@ -25383,10 +25412,13 @@ village_square and swamp_hunt by checksum. Plan field (schema `plateaus`):
   lip one floor further up. Every border piece round a changed tile is laid again by our rule (`map_tile_rules.border_pieces`,
   every higher family, lower ones first), so a grass edge next to the cliff stays right.
 - **Ramps.** Our stair brush of O740: the stone stairs 3687 on the floor below lead up to the tile north of the stairs
-  ground 411 above; stepping on 411 goes down south of the stone stairs. The brush runs north-south only, so a ramp
-  is cut into a south facing edge that is flat over 5 columns: a notch 3 tiles wide in the cliff and in the lip, the
-  stairs in its middle (no edge piece on the stairs tile), the tile south of it and the tile north of the stairs ground
-  clear. 1-2 ramps per tier, 6 columns apart, the ones nearest the arrival first.
+  ground 411 above; stepping on 411 goes down south of the stone stairs. Such a ramp is cut into a south facing edge
+  that is flat over 5 columns: a notch 3 tiles wide in the cliff and in the lip, the stairs in its middle (no edge
+  piece on the stairs tile), the tile south of it and the tile north of the stairs ground clear. O745: the stone stairs
+  3688 (up west) cut the same notch into an east facing edge flat over 5 rows. No stone stairs go up east or south, so
+  west and north facing edges take no ramp. 1-2 ramps per tier, the ones nearest the arrival first, of either heading;
+  two of one heading 6 tiles apart along their edge (or 3 across it), two of different headings 6 apart. The
+  manifest's ramps name the way up (`climb`).
 - **Placing** (after the buildings, before teleports, spawns, chests and decoration). A seeded shape: rows whose west
   and east edges wander by a tile (a median pass and a pass against one row bumps: no one tile spike), corners cut by
   1-2 tiles, the last rows narrowing to the south edge. Positions round the zone centre are tried; a place is kept when
@@ -25396,8 +25428,11 @@ village_square and swamp_hunt by checksum. Plan field (schema `plateaus`):
   and the reach of the entry loses no tile it had. Else a smaller size, 4 shapes per size; then an ERROR that names the
   plateau, the sizes tried and the reasons the places were refused.
 - **On top.** Spawns and chests may stand on a plateau of their zone (the compile's zone cells add the top tiles for
-  them). Teleports, the exit, NPCs and the boss stay on the floor. The decoration pass does not dress the tops. The
-  ramps, their landings and the tile north of each stairs ground are special: no spawn, chest or decoration there.
+  them). Teleports, the exit, NPCs and the boss stay on the floor. O745: the tops dress with their zone. The Dresser
+  counts the walkable top tiles as cells of the zone (`Dresser(tops=...)`), so the zone's kit lands there at the zone's
+  density: light props, corners, wall props, clusters, floor detail. The lip and the gravel inside it are not
+  walkable, so nothing stands there. The ramps, their landings and the tile beyond each stairs ground are special: no
+  spawn, chest or decoration there, and no blocking piece next to them.
   The tops get no view frame (they look down on the floor below, as the floors above of O740 do).
 - **QA** (`PL.qa`, on the final tiles). The cliff face is the cliff ground and not walkable. Every built tile of an
   upper floor with an open side is not walkable or is a stairs ground (the ring is closed except at the ramps). Every
@@ -25410,21 +25445,26 @@ village_square and swamp_hunt by checksum. Plan field (schema `plateaus`):
   (walls and roofs, not cliffs); a plateau over z 8 or deeper stays at z 8 or deeper (a cave never rises into the
   ground floor), one at the surface stays at z 0 or deeper; zones of floor 1 only, never the boss room.
 - **Example.** `tools/areaplan/examples/highland_hunt.json` (Greyspur Heights, forest, 124 x 96, levels 80-180, seed
-  74411). Three ragged room zones of 34 x 28, 36 x 30 and 34 x 28. Measured: the ridge plateau (height 1, footprint 248,
-  134 walkable on top, 2 ramps, 60 steps from the entry), the crags plateau (height 2, footprint 326, 59 and 31
-  walkable, 3 ramps, 108 steps), the tor plateau (height 2, footprint 297, 57 and 24 walkable, 3 ramps, 72 steps). 3084
-  walkable tiles on 3 floors, 50 monsters (7 spawn points on top), nothing out of reach, no QA error or warning, map
-  tile audit and look audit clean. 14 seeds of the plan placed all three plateaus; 4 of them break the outline rule,
-  with or without the plateaus.
-- **Not done.** Ramps on the other three sides (the stair brush runs north-south only; no stock ramp of another
-  heading was checked on a render). A cliff face piece of our own (no art; the mountain ground and its gravel edge stand
-  in). Decoration on the tops. A plateau over floor 2 or deeper of a plan. Plateaus that touch the zone's own rock (a
-  plateau keeps off rock, so it never grows out of the area's edge). Not checked on a render (no client pair here).
+  74411). Three ragged room zones of 34 x 28, 36 x 30 and 34 x 28. Measured (O745): the ridge plateau (height 1,
+  footprint 248, 134 walkable on top, 2 ramps north, 60 steps from the entry), the crags plateau (height 2, footprint
+  326, 61 and 33 walkable, 4 ramps: 3 north and a west one to its upper tier, 108 steps), the tor plateau (height 2,
+  footprint 297, 57 and 24 walkable, 3 ramps north, 72 steps). Decoration on the tops: 22 pieces on the ridge (134
+  tiles), 10 on the crags (94), 10 on the tor (81), 5 of them blocking; before O745 only the floor detail pass reached
+  them (23 pieces). 3085 walkable tiles on 3 floors, 50 monsters (7 spawn points on top), nothing out of reach, no QA
+  error or warning, map tile audit and look audit clean. Seeds 74401-74420 all placed the three plateaus; 2 of them
+  (74408, 74417) break the outline rule, with the tools before O745 too.
+- **Not done.** Ramps on west and north facing edges (no stone stairs up east or south in the base items; the stock
+  ramps of those headings are other art, not checked on a render). A cliff face piece of our own (no art; the mountain
+  ground and its gravel edge stand in). A plateau over floor 2 or deeper of a plan. Plateaus that touch the zone's own
+  rock (a plateau keeps off rock, so it never grows out of the area's edge). Not checked on a render (no client pair
+  here).
 - **Tests.** `tools/area_plan_plateau_test.py` (CI step "Area planner"): the materials (stair brush, the gravel set by
-  name), 40 shapes (one run a row, no spike, deterministic), rim, erode, ring, ramp spots, the cliff and lip sets with
-  the notches, the border pieces, the validator, the three held checksums and count 0, the example (cliff face, cliff
-  foot, ring closed, every tile on every floor reached, ramps and their floor changes, no spawn on a ramp, spawns on
-  top, the manifest, the same bytes twice, the map tile audit, the look audit), a lake and a house beside the plateaus,
+  name), 40 shapes (one run a row, no spike, deterministic), rim, erode, ring, ramp spots of both headings, notches,
+  spacing, the cliff and lip sets with the notches, the border pieces, the validator, the three held checksums and
+  count 0, the example (cliff face, cliff foot, ring closed, every tile on every floor reached, each tier entered over
+  its ramps, ramps and their floor changes by heading, no spawn on a ramp, spawns on top, the tops dressed at 0.3-2.5 x
+  their zone floor's density with the zone kit, nothing on a ramp, landing or lip, no blocking piece beside a ramp,
+  the manifest, the same bytes twice, the map tile audit, the look audit), a lake and a house beside the plateaus,
   the QA (stairs taken away, a ramp into a wall, a lip opened, a top tile cut off, a cliff face of the wrong ground).
   `area_planner_test.py` compiles the example with the others. `areaplan_build.lua materials` now also prints the
   border piece sets by name (`pieces`) and the rule of each family over any ground (`over_any`).

@@ -114,7 +114,7 @@ def all_ids():
 
 class Dresser:
     def __init__(self, tiles, walk, zones, kind, biome, protected, keep_clear, corridor, plain_ids, wall_kind, rng,
-                 decoration='normal', light='normal', boss=None, style=None):
+                 decoration='normal', light='normal', boss=None, style=None, tops=None):
         self.tiles, self.walk, self.zones, self.kind = tiles, walk, zones, kind
         self.protected, self.keep_clear, self.corridor = protected, keep_clear, corridor
         self.plain_ids, self.wall_kind, self.rng, self.boss = plain_ids, wall_kind, rng, boss
@@ -136,6 +136,16 @@ class Dresser:
             for y in range(y1, y2 + 1):
                 for x in range(x1, x2 + 1):
                     self.zone_of.setdefault((x, y, zz), z)
+        # O745: the walkable tops of a zone's plateaus (O744) dress with the zone: its kit at its density. The ramps,
+        # their landings and the tile beyond each stairs ground are protected tiles; the lip and the gravel inside it
+        # are not walkable, so nothing stands there
+        self.tops = {}
+        for z in zones:
+            cells = sorted(t for t in (tops or {}).get(z['id'], ()) if t not in self.zone_of)
+            if cells:
+                self.tops[z['id']] = cells
+                for t in cells:
+                    self.zone_of[t] = z
         self.dist = self._wall_distance()
         self.style, self.style_rates, self.style_sizes = None, {}, None
         if style and self.kit:
@@ -428,7 +438,8 @@ class Dresser:
 
     def zone_cells(self, z):
         x1, y1, x2, y2, zz = z['rect']
-        return [(x, y, zz) for y in range(y1, y2 + 1) for x in range(x1, x2 + 1) if (x, y, zz) in self.walk]
+        return [(x, y, zz) for y in range(y1, y2 + 1) for x in range(x1, x2 + 1) if (x, y, zz) in self.walk] + \
+            [t for t in self.tops.get(z['id'], ()) if t in self.walk]
 
     def corners(self):
         rows = self.kit.get('corner') or []
@@ -633,10 +644,11 @@ def check_kits(items_otb, items_xml, dat, log=print):
     if not fc or fc.group(1) != 'down':
         bad += 1
         log('%6d stairs ground BAD: no floorchange down' % b['stairs_down_ground'])
-    fc = floorchange(b['stairs_up'])
-    if not fc or fc.group(1) != 'north':
-        bad += 1
-        log('%6d stone stairs BAD: no floorchange north' % b['stairs_up'])
+    for h, (key, _step) in sorted(C.STAIR_HEADINGS.items()):    # O745: one stone stairs per heading of the brush
+        fc = floorchange(b[key])
+        if not fc or fc.group(1) != C.CLIMB[h]:
+            bad += 1
+            log('%6d stone stairs BAD: no floorchange %s' % (b[key], C.CLIMB[h]))
     for i in k['roof']['ground']:
         if not (db.group[i] == 1 or 'ground' in things[int(db.cid[i]) - 100].flags):
             bad += 1

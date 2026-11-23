@@ -86,7 +86,7 @@ class TableDB:
             if i not in grounds:
                 self.flags[i] |= 1
         self.group[portal_id] = 7
-        for i in (cfg['items']['hole'], cfg['items']['ladder'], kits['brushes']['stairs_up']):
+        for i in (cfg['items']['hole'], cfg['items']['ladder'], kits['brushes']['stairs_up'], kits['brushes']['stairs_up_west']):
             self.cls[i] = C['floorchg']
         for i in kits['roof']['ground']:
             self.name[i] = 'flat roof'

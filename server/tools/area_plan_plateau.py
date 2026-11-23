@@ -13,16 +13,19 @@ tier on top of it (z - 2). Pieces, all from our tables (no new id):
     pieces lie on the tiles round it (the cliff foot, blocking as the generator's rock edges are).
   * the top: the footprint again one floor up with the ground that lay under it; its outer ring is mountain again (the
     lip, closed except at the ramps) and the gravel pieces on the tiles inside the lip; the rest is walkable.
-  * the ramps: our stair brush (O740, the rule of a plan's `stairs` connection): the stone stairs 3687 on the floor
-    below lead up to the tile north of the stairs ground 411 above; stepping on 411 goes down south of the stone
-    stairs. The brush runs north-south only, so a ramp is cut into a south facing edge: a notch three tiles wide in the
-    cliff and in the lip, the stairs in its middle, the tile south of it and the tile north of the stairs ground clear.
+  * the ramps: our stair brush (O740, the rule of a plan's `stairs` connection): the stone stairs on the floor below
+    lead up to the tile one step their way of the stairs ground 411 above; stepping on 411 goes down one step the
+    other way of the stone stairs. Two headings (area_plan_core.STAIR_HEADINGS, O745): 3687 up north, cut into a south
+    facing edge, and 3688 up west, cut into an east facing edge (the base items hold no stone stairs up east or south).
+    A ramp is a notch three tiles wide in the cliff and in the lip, the stairs in its middle, the landing below it and
+    the tile beyond the stairs ground clear.
 
 Pure Python on the compiled tiles; area_plan_compile.py calls place_all after the buildings and before the teleports,
 spawns and decoration, then qa on the final tiles.
 """
 import random
 
+import area_plan_core as C
 import map_tile_rules as MR
 
 D8 = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
@@ -113,21 +116,36 @@ def erode(cells, k):
             if all((x + dx, y + dy) in cells for dx in range(-k, k + 1) for dy in range(-k, k + 1))}
 
 
-def ramp_spots(cells):
-    """(x, y) of the cells where a ramp fits: a south facing edge flat over five columns, two rows deep over the
-    three middle ones and the lip behind it whole"""
+def _axes(h):
+    """(step up, step along the edge) of a ramp heading"""
+    f = C.STAIR_HEADINGS[h][1]
+    return f, (-f[1], f[0])
+
+
+def ramp_spots(cells, h='n'):
+    """(x, y) of the cells where a ramp of heading h fits: an edge facing away from the way up (south for 'n', east
+    for 'w') flat over five tiles, two rows deep over the three middle ones and the lip behind it whole"""
     cells = set(cells)
+    (fx, fy), (lx, ly) = _axes(h)
     out = []
     for x, y in sorted(cells, key=lambda t: (t[1], t[0])):
-        if all((c, y) in cells and (c, y + 1) not in cells and (c, y - 1) in cells for c in range(x - 2, x + 3)) \
-                and all((c, y - 2) in cells for c in range(x - 2, x + 3)) \
-                and all((c, y - 3) in cells for c in range(x - 1, x + 2)):
+        along = [(x + i * lx, y + i * ly) for i in range(-2, 3)]
+        if all(c in cells and (c[0] - fx, c[1] - fy) not in cells and (c[0] + fx, c[1] + fy) in cells for c in along) \
+                and all((c[0] + 2 * fx, c[1] + 2 * fy) in cells for c in along) \
+                and all((c[0] + 3 * fx, c[1] + 3 * fy) in cells for c in along[1:4]):
             out.append((x, y))
     return out
 
 
+def _rh(r):
+    """((x, y), heading) of a ramp given as (x, y) (up north) or (x, y, heading)"""
+    return (r[0], r[1]), (r[2] if len(r) > 2 else 'n')
+
+
 def notch(r):
-    return {(r[0] - 1, r[1]), r, (r[0] + 1, r[1])}
+    (x, y), h = _rh(r)
+    _f, (lx, ly) = _axes(h)
+    return {(x - lx, y - ly), (x, y), (x + lx, y + ly)}
 
 
 def levels_of(G, ramps1, G2=None, ramps2=()):
@@ -135,11 +153,14 @@ def levels_of(G, ramps1, G2=None, ramps2=()):
     -> {level: dict(solid, built, stairs_low, stairs_top)}; built None on level 0 (the base floor's own tiles)"""
     N1 = set().union(*[notch(r) for r in ramps1]) if ramps1 else set()
     N2 = set().union(*[notch(r) for r in ramps2]) if ramps2 else set()
-    lv = {0: dict(solid=set(G) - N1, built=None, stairs_low=set(ramps1), stairs_top=set()),
+    c1 = {_rh(r)[0] for r in ramps1}
+    c2 = {_rh(r)[0] for r in ramps2}
+    heads = dict(_rh(r) for r in list(ramps1) + list(ramps2))
+    lv = {0: dict(solid=set(G) - N1, built=None, stairs_low=c1, stairs_top=set(), heads=heads),
           1: dict(solid=(rim(G) - N1) | ((set(G2) - N2) if G2 else set()), built=set(G),
-                  stairs_low=set(ramps2), stairs_top=set(ramps1))}
+                  stairs_low=c2, stairs_top=c1, heads=heads)}
     if G2:
-        lv[2] = dict(solid=rim(G2) - N2, built=set(G2), stairs_low=set(), stairs_top=set(ramps2))
+        lv[2] = dict(solid=rim(G2) - N2, built=set(G2), stairs_low=set(), stairs_top=c2, heads=heads)
     return lv
 
 
@@ -197,7 +218,7 @@ def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit
                top={}, ids=set(), grounds=set(), cliff=dict(family=None, ground=None))
     if not sp:
         return res
-    stairs_up = kit['brushes']['stairs_up']
+    stairs_up = {h: kit['brushes'][key] for h, (key, _s) in C.STAIR_HEADINGS.items()}
     stairs_ground = kit['brushes']['stairs_down_ground']
     try:
         cfam, cground, names = cliff_of(meta, mats)
@@ -273,7 +294,8 @@ def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit
         res['records'].append(rec)
         for c in rec['clear']:
             bad.setdefault(c, 'plateau %s' % rec['id'])
-    res['ids'] |= {cground, stairs_up, stairs_ground} | set(names.values()) | bd['used']
+    used = {stairs_up[r_['heading']] for rec_ in res['records'] for r_ in rec_['ramps']}
+    res['ids'] |= {cground, stairs_ground} | set(names.values()) | bd['used'] | (used or {stairs_up['n']})
     res['grounds'] |= {cground, stairs_ground}
     res['cliff'] = dict(family=cfam, ground=cground)
     return res
@@ -296,17 +318,30 @@ def _groups(cells):
     return out
 
 
+def _spaced(s, o):
+    """two ramps (x, y, heading) far enough apart: SPACING tiles along one edge or 3 across it; two headings SPACING"""
+    if s[2] != o[2]:
+        return max(abs(s[0] - o[0]), abs(s[1] - o[1])) >= SPACING
+    a, b = (0, 1) if s[2] == 'n' else (1, 0)
+    return abs(s[a] - o[a]) >= SPACING or abs(s[b] - o[b]) >= 3
+
+
 def _choose_ramps(spots, want, landing_ok, arrival):
-    """greedy: the spots nearest the arrival first, SPACING columns apart"""
+    """greedy: the spots (x, y, heading) nearest the arrival first, spaced (_spaced)"""
     spots = [s for s in spots if landing_ok(s)]
-    spots.sort(key=lambda s: ((s[0] - arrival[0]) ** 2 + (s[1] - arrival[1]) ** 2, s[1], s[0]))
+    spots.sort(key=lambda s: ((s[0] - arrival[0]) ** 2 + (s[1] - arrival[1]) ** 2, s[1], s[0], C.STAIR_ORDER.index(s[2])))
     out = []
     for s in spots:
-        if all(abs(s[0] - o[0]) >= SPACING or abs(s[1] - o[1]) >= 3 for o in out):
+        if all(_spaced(s, o) for o in out):
             out.append(s)
         if len(out) >= want:
             break
     return out
+
+
+def all_spots(cells):
+    """ramp_spots of every heading as (x, y, heading)"""
+    return [(x, y, h) for h in C.STAIR_ORDER for x, y in ramp_spots(cells, h)]
 
 
 def _site(k, zid, height, Gl, G2l, zr, walk, tiles, bad, arrival, bd, sp, rng, res, reach_fn, link_edges,
@@ -345,17 +380,18 @@ def _site(k, zid, height, Gl, G2l, zr, walk, tiles, bad, arrival, bd, sp, rng, r
         if G2 is not None and any((x, y, z - 2) in tiles for x, y in G2):
             why['no room for the upper tier'] = why.get('no room for the upper tier', 0) + 1
             continue
-        # ramps of the lower tier: their landing (two tiles south) walkable on the base floor and off the bad tiles
-        ok1 = lambda s: all((s[0], s[1] + d, z) in walk and (s[0], s[1] + d, z) not in bad for d in (1, 2, 3))
-        r1 = _choose_ramps(ramp_spots(G), want, ok1, arrival)
+        # ramps of the lower tier: the three tiles beyond the stairs on the base floor walkable and off the bad tiles
+        back = lambda s, d: (s[0] - d * C.STAIR_HEADINGS[s[2]][1][0], s[1] - d * C.STAIR_HEADINGS[s[2]][1][1])
+        ok1 = lambda s: all(back(s, d) + (z,) in walk and back(s, d) + (z,) not in bad for d in (1, 2, 3))
+        r1 = _choose_ramps(all_spots(G), want, ok1, arrival)
         if len(r1) < sp['ramps'][0]:
-            why['no clear south edge for a ramp'] = why.get('no clear south edge for a ramp', 0) + 1
+            why['no clear edge for a ramp'] = why.get('no clear edge for a ramp', 0) + 1
             continue
         r2 = ()
         if G2 is not None:
             band = (G - rim(G)) - set(G2)
-            ok2 = lambda s: all((s[0], s[1] + d) in band for d in (1, 2))
-            r2 = _choose_ramps(ramp_spots(G2), want, ok2, arrival)
+            ok2 = lambda s: all(back(s, d) in band for d in (1, 2))
+            r2 = _choose_ramps(all_spots(G2), want, ok2, arrival)
             if len(r2) < sp['ramps'][0]:
                 why['no ramp to the upper tier'] = why.get('no ramp to the upper tier', 0) + 1
                 continue
@@ -429,9 +465,10 @@ def _stamp_sets(lv, G, z, walk, tiles, bd):
     for L, d in lv.items():
         zz = z - L
         for x, y in d['stairs_top']:
+            fx, fy = C.STAIR_HEADINGS[d['heads'][(x, y)]][1]
             low, top = (x, y, zz + 1), (x, y, zz)
-            up, down = (x, y - 1, zz), (x, y + 1, zz + 1)
-            for need in (low, top, up, down, (x, y + 2, zz + 1)):
+            up, down = (x + fx, y + fy, zz), (x - fx, y - fy, zz + 1)
+            for need in (low, top, up, down, (x - 2 * fx, y - 2 * fy, zz + 1)):
                 if need not in new_walk:
                     return None
             edges += [(low, up), (top, down)]
@@ -449,7 +486,7 @@ def _commit(k, zid, height, lv, G, G2, r1, r2, z, st, walk, tiles, bd, stairs_up
         if p.get('stairs') == 'top':
             tiles[t] = dict(ground=stairs_ground, items=[], flags=0)
         elif p.get('stairs') == 'low':
-            tiles[t] = dict(ground=p['ground'], items=[(stairs_up, {})], flags=0)
+            tiles[t] = dict(ground=p['ground'], items=[(stairs_up[lv[0]['heads'][t[:2]]], {})], flags=0)
         elif t[2] == z:     # the border pieces again; a tile that stays walkable keeps its own decoration
             keep = [it for it in tiles[t]['items'] if it[0] not in bd['border_ids']] if p['walk'] else []
             tiles[t] = dict(ground=p['ground'], items=[(i, {}) for i in p['items']] + keep, flags=tiles[t]['flags'])
@@ -465,8 +502,10 @@ def _commit(k, zid, height, lv, G, G2, r1, r2, z, st, walk, tiles, bd, stairs_up
     for L, d in sorted(lv.items()):
         zz = z - L
         for x, y in sorted(d['stairs_top']):
-            r = dict(level=L, low=(x, y, zz + 1), top=(x, y, zz), up=(x, y - 1, zz), down=(x, y + 1, zz + 1),
-                     landing=(x, y + 2, zz + 1))
+            h = d['heads'][(x, y)]
+            fx, fy = C.STAIR_HEADINGS[h][1]
+            r = dict(level=L, low=(x, y, zz + 1), top=(x, y, zz), up=(x + fx, y + fy, zz), down=(x - fx, y - fy, zz + 1),
+                     landing=(x - 2 * fx, y - 2 * fy, zz + 1), heading=h)
             ramps.append(r)
             res['special'].update((r['low'], r['top'], r['up'], r['down'], r['landing']))
             res['skip_border'].add(r['low'])
@@ -496,7 +535,10 @@ def _commit(k, zid, height, lv, G, G2, r1, r2, z, st, walk, tiles, bd, stairs_up
 # ------------------------------------------------------------------------------------------------ QA
 def qa(records, tiles, walk, dist, avoid_sets, E, Wn, info, stairs_up, stairs_ground, cliff_ground):
     """QA of the plateaus on the final tiles. avoid_sets: {what: tiles} a plateau and its cliff foot keep off (water,
-    crossings, buildings). info(text) adds an INFO line"""
+    crossings, buildings). stairs_up: {heading: stone stairs id} (an int: the north stairs). info(text) adds an INFO
+    line"""
+    if not isinstance(stairs_up, dict):
+        stairs_up = {'n': stairs_up}
     owner = {}
     for rec in records:
         label = 'plateau %s (zone %s, height %d)' % (rec['id'], rec['zone'], rec['height'])
@@ -532,11 +574,12 @@ def qa(records, tiles, walk, dist, avoid_sets, E, Wn, info, stairs_up, stairs_gr
                 E('%s: only %d walkable tile(s) on top at z %d' % (label, len(lv['walk']), z))
         for r in rec['ramps']:
             low, top = tiles.get(r['low']), tiles.get(r['top'])
-            if not low or [i for i, _a in low['items']] != [stairs_up]:
+            if not low or [i for i, _a in low['items']] != [stairs_up.get(r.get('heading', 'n'))]:
                 E('%s: the ramp at %s holds %s, not the stone stairs alone' % (label, r['low'], low and [i for i, _a in low['items']]))
             if not top or top['ground'] != stairs_ground or top['items']:
                 E('%s: the ramp top at %s is not the bare stairs ground' % (label, r['top']))
-            for what, t in (('the tile north of the ramp top', r['up']), ('the tile south of the ramp', r['down']),
+            beyond, below = ('north', 'south') if r.get('heading', 'n') == 'n' else ('west', 'east')
+            for what, t in (('the tile %s of the ramp top' % beyond, r['up']), ('the tile %s of the ramp' % below, r['down']),
                             ('the ramp\'s landing', r['landing'])):
                 if t not in walk:
                     E('%s: the ramp at %s runs into a wall: %s %s is not walkable' % (label, r['low'], what, t))
@@ -552,5 +595,5 @@ def manifest_of(rec, dist):
     return dict(id=rec['id'], zone=rec['zone'], height=rec['height'], z=rec['z'], rect=list(rec['rect']),
                 footprint=len(rec['foot']), top=[dict(z=lv['z'], tiles=len(lv['built']), walkable=len(lv['walk']))
                                                  for lv in rec['levels']],
-                ramps=[dict(low=list(r['low']), top=list(r['top'])) for r in rec['ramps']],
+                ramps=[dict(low=list(r['low']), top=list(r['top']), climb=C.CLIMB[r.get('heading', 'n')]) for r in rec['ramps']],
                 entry_to_top=min(steps) if steps else None)
