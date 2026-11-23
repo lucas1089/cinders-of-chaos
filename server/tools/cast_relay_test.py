@@ -353,6 +353,16 @@ def test_events(items, dims):
     expect(w.fx == [[PX, PY, 1]], 'only the camera floor')
     expect(w.frame(u8(0x85) + pos(PX, PY, PZ) + pos(PX + 3, PY - 3, PZ) + u8(1)), 'a missile')
     expect(w.mi == [[PX, PY, PX + 3, PY - 3, 1]], 'kept')
+    # src-patch 0094 (O737): a player told 16-bit missiles; the hello flag 4 makes the relay read the id as u16
+    w.wide_missiles = True
+    expect(w.frame(u8(0x85) + pos(PX, PY, PZ) + pos(PX + 2, PY, PZ) + u16(300)), 'a 16-bit missile')
+    expect(w.mi[-1] == [PX, PY, PX + 2, PY, 300], 'missile 300 kept')
+    w.wide_missiles = False
+    w4 = cr.World(items, dims)
+    w4.hello(hello(flags=4))
+    expect(w4.wide_missiles and not w4.impact and not w4.attrs, 'hello flag 4: 16-bit missiles')
+    w4.hello(hello(flags=3))
+    expect(not w4.wide_missiles, 'flags 1 and 2 leave missiles one byte')
     expect(w.frame(u8(0x84) + pos(PX, PY, PZ) + u8(180) + text('+12')), 'animated text')
     expect(w.frame(u8(0xB4) + u8(23) + pos(PX, PY, PZ) + u32(50) + u8(180) + u32(7) + u8(35) + u16(100) + u8(1) +
                    u32(PID) + text('You deal 57 damage.')), 'damage numbers with the typed fields')

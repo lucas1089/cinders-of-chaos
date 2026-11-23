@@ -54,10 +54,13 @@ namespace Chaos.Core.Tests
 
         // ------------------------------------------------------------------------------------------------ login markers (0003, 0051, 0079)
         /// <summary>What ProtocolGame::onRecvFirstMessage reads after the random byte, written out as the patches have it.</summary>
-        static bool ServerReadsMarkers(byte[] b, out ushort v8, out bool chaosClient, out byte caps)
+        static bool ServerReadsMarkers(byte[] b, out ushort v8, out bool chaosClient, out byte caps) =>
+            ServerReadsMarkers(b, out v8, out chaosClient, out caps, out _);
+
+        static bool ServerReadsMarkers(byte[] b, out ushort v8, out bool chaosClient, out byte caps, out bool wideMissiles)
         {
             var r = new ByteReader(b);
-            v8 = 0; chaosClient = false; caps = 0;
+            v8 = 0; chaosClient = false; caps = 0; wideMissiles = false;
             int len = r.U16();
             if (len != 5 || Encoding.ASCII.GetString(r.Bytes(5)) != "OTCv8") return len == 0 && r.AtEnd;
             v8 = r.U16();
@@ -66,7 +69,16 @@ namespace Chaos.Core.Tests
             if (chaosClient)
             {
                 r.U32();
-                if (r.Str() == "C") caps = r.U8();
+                if (r.Str() == "C")
+                {
+                    caps = r.U8();
+                    // src-patch 0094: the "W" block when 4 bytes are left (here: the bytes written; on the server: the RSA block)
+                    if (r.Remaining >= 4 && r.U16() == 1)
+                    {
+                        byte letter = r.U8();
+                        wideMissiles = letter == (byte)'W' && (r.U8() & 1) != 0;
+                    }
+                }
             }
             return r.AtEnd;
         }
@@ -75,16 +87,31 @@ namespace Chaos.Core.Tests
         {
             var w = new ByteWriter();
             ClientIdentity.Chaos(30).WriteMarkers(w);
-            string expect = "0500" + "4f544376" + "38" + "0501" + "0d00" + "4f54437638546965724279746" + "5" + "0100" + "41" + "1e000000" + "0100" + "43" + "c0";
-            check(Hex(w.ToArray()) == expect, "markers: u16 5 OTCv8, u16 261, OTCv8TierByte, A, u32 build, C, capability byte 0xC0: " + Hex(w.ToArray()));
-            check(ServerReadsMarkers(w.ToArray(), out ushort v8, out bool chaos, out byte caps) && v8 == 261 && chaos && (caps & 0x80) != 0 && (caps & 0x40) != 0,
-                  "markers: the server's reads of 0003, 0051 and 0079 take them: version, chaosClient, bits 7 and 6");
+            string expect = "0500" + "4f544376" + "38" + "0501" + "0d00" + "4f54437638546965724279746" + "5" + "0100" + "41" + "1e000000" + "0100" + "43" + "c0" + "0100" + "57" + "01";
+            check(Hex(w.ToArray()) == expect, "markers: u16 5 OTCv8, u16 261, OTCv8TierByte, A, u32 build, C, capability byte 0xC0, W, second byte 1: " + Hex(w.ToArray()));
+            check(ServerReadsMarkers(w.ToArray(), out ushort v8, out bool chaos, out byte caps, out bool wide) && v8 == 261 && chaos && (caps & 0x80) != 0 && (caps & 0x40) != 0 && wide,
+                  "markers: the server's reads of 0003, 0051, 0079 and 0094 take them: version, chaosClient, bits 7 and 6, 16-bit missiles");
+            // no room left in the RSA block: the "W" block is left out and the server reads the old layout
+            var full = new ByteWriter();
+            for (int i = 0; i < 90; i++) full.U8(0);
+            ClientIdentity.Chaos(30).WriteMarkers(full);
+            check(full.Length == 90 + 35, "markers: with 90 bytes before them there is no room for the W block (125 + 4 > 128)");
+            var room = new ByteWriter();
+            for (int i = 0; i < 89; i++) room.U8(0);
+            ClientIdentity.Chaos(30).WriteMarkers(room);
+            check(room.Length == 128, "markers: with 89 bytes before them the W block ends the block exactly");
+            var noMissiles = new ClientIdentity { Markers = true, Signature = 30, Capabilities2 = 0 };
+            var nm = new ByteWriter();
+            noMissiles.WriteMarkers(nm);
+            check(ServerReadsMarkers(nm.ToArray(), out _, out _, out _, out bool w2) && !w2 && nm.Length == 35, "markers: Capabilities2 0 leaves the W block out");
             var plain = new ByteWriter();
             ClientIdentity.Extended.WriteMarkers(plain);
             check(Hex(plain.ToArray()) == "0000" && ServerReadsMarkers(plain.ToArray(), out _, out bool c2, out _) && !c2, "markers: Identity.Extended is u16 0, no chaosClient");
             // bit 6 asks for 16-bit spell ids, bit 7 for typed impact numbers; the other bits of the main client (store, marks) are not claimed
             check(ClientIdentity.CapWideSpellIds == 0x40 && ClientIdentity.CapImpactText == 0x80 && ClientIdentity.Chaos(1).Capabilities == 0xC0,
                   "markers: capabilities are bits 6 and 7 only (0079, 0051)");
+            check(ClientIdentity.CapMissileU16 == 1 && ClientIdentity.Chaos(1).Capabilities2 == 1 && ClientIdentity.Capabilities2Bytes == 4 && ClientFeatures.DistanceEffectU16 == 77,
+                  "markers: the second byte asks for 16-bit missiles only (0094), the answer is feature 77");
         }
 
         // ------------------------------------------------------------------------------------------------ 0x43 feature list

@@ -86,6 +86,11 @@ PAIR_WST_MORE = 82   # pair 81 (or the O734 fixes on it, same counts) plus the e
                     # Pair 82 = pair 81 + the O734 fixes (fix_pack_fx.py) + this step. Built 2026-11-23, owner approved "pode publicar":
                     # PAIR_ASSETS 82
 
+PAIR_MISSILE_U16 = 83   # the first pair that may carry missile ids above 255 (O737, owner 2026-11-23 "Pode fazer o patch do motor"): pair 81 uses
+                    # all 253 one-byte missiles and pair 82 keeps 253. Engine src-patch 0094 and client base patch 0208 send a u16 id to a
+                    # client that asked; data/lib/chaos_wide_missiles.lua hands a script an id above 255 only from this pair (C.PAIR), and the
+                    # import tool that appends a missile must start at 256 (254 stays CONST_ANI_WEAPONTYPE). No such missile yet.
+
 PAIR_ASSETS = 82
 PAIR_ASSETS_DAT_MD5 = 'ee8c32fc87be4372f4668b635148b9bf'
 

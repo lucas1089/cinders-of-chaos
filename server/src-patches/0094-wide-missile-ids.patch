@@ -1,0 +1,505 @@
+# Missile ids above 255 (O737; server/README.md "Missile ids above 255 (O737)"). A distance effect (missile, 0x85) was one byte all the way:
+# ShootType_t, CombatParams::distanceEffect, Game::addDistanceEffect, Player / ProtocolGame::sendDistanceShoot, the overrides of 0045. Pair 81
+# uses all 253 missiles, so no new projectile could be imported. Now the id is 16 bits in the engine, and the wire follows the client:
+#   * Login: after the capability byte of 0051 ("C" + u8) our client adds, inside the same RSA block and only when it fits, the string "W"
+#     and a second capability byte; bit 0 asks for 16-bit missile ids (client base patch 0208). The server reads those 4 bytes only inside
+#     the block, and only u16 length 1 + 'W' + bit 0 counts as asking, so zero or random padding never asks (src/chaoswidemissile.h,
+#     tested by server/tools/chaoswidemissile_test.cpp).
+#   * sendFeatures: a client that asked gets the engine's own feature 77 (GameDistanceEffectU16) in the 0x43 list; the client engine
+#     already reads a u16 missile under it. Every 0x85 to that client after the list carries a u16 id.
+#   * Any other client (an older build of ours, another client, the Unity client without the flag) gets one byte: an id up to 255 as it
+#     is, an id above 255 as its fallback set from Lua (Game.setMissileFallback(id, fallback), data/lib/chaos_wide_missiles.lua) or
+#     nothing at all. Never a broken packet.
+#   * The live cast hello frame (0064) gets flag 4 (HELLO_WIDE_MISSILES) so cast_relay.py reads the spectator's 0x85 right.
+#   * Lua: position:sendDistanceEffect, combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT), MonsterSpell shoot effect and weapon:shootType
+#     take 16-bit ids (ShootType_t is uint16_t); Game.setMissileEffect (0045) takes 16-bit ids on both sides; monsters.xml shootEffect
+#     and items.xml shootType also take a number (a missile with no name).
+#   * Missile 254 stays CONST_ANI_WEAPONTYPE (resolved before anything is sent): new missiles start at 256.
+# Nothing here sends an id above 255 by itself: data only does from client pair 83 (server/tools/client_pair.py PAIR_MISSILE_U16).
+# Guard: server/tools/wide_missile_patch_test.py. Applies after 0001-0093 (0045, 0051, 0060, 0064, 0079 give the context lines). Written on a
+# source tree rebuilt from the base with 0001-0093 and checked there with patch --fuzz=0 and g++ -fsyntax-only on every source file; not
+# built and run on a live server yet (README).
+diff --git a/src/const.h b/src/const.h
+--- a/src/const.h
++++ b/src/const.h
+@@ -100,7 +100,8 @@
+ 	CONST_ME_BEWITCHED = 187,
+ };
+ 
+-enum ShootType_t : uint8_t {
++// Chaos (src-patch 0094, O737): 16 bits, a missile id may be above 255 (chaoswidemissile.h)
++enum ShootType_t : uint16_t {
+ 	CONST_ANI_NONE,
+ 
+ 	CONST_ANI_SPEAR = 1,
+diff --git a/src/combat.h b/src/combat.h
+--- a/src/combat.h
++++ b/src/combat.h
+@@ -55,7 +55,7 @@
+ 	CombatOrigin origin = ORIGIN_SPELL;
+ 
+ 	uint16_t impactEffect = CONST_ME_NONE;
+-	uint8_t distanceEffect = CONST_ANI_NONE;
++	uint16_t distanceEffect = CONST_ANI_NONE; // Chaos (src-patch 0094): 16 bits
+ 
+ 	bool blockedByArmor = false;
+ 	bool blockedByShield = false;
+@@ -134,7 +134,7 @@
+ 		static ReturnValue canDoCombat(Creature* attacker, Creature* target);
+ 		static void postCombatEffects(Creature* caster, const Position& pos, const CombatParams& params);
+ 
+-		static void addDistanceEffect(Creature* caster, const Position& fromPos, const Position& toPos, uint8_t effect);
++		static void addDistanceEffect(Creature* caster, const Position& fromPos, const Position& toPos, uint16_t effect);
+ 
+ 		void doCombat(Creature* caster, Creature* target) const;
+ 		void doCombat(Creature* caster, const Position& position) const;
+diff --git a/src/combat.cpp b/src/combat.cpp
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -441,7 +441,7 @@
+ 		}
+ 
+ 		case COMBAT_PARAM_DISTANCEEFFECT: {
+-			params.distanceEffect = static_cast<uint8_t>(value);
++			params.distanceEffect = static_cast<uint16_t>(value); // Chaos (src-patch 0094): 16 bits
+ 			return true;
+ 		}
+ 
+@@ -659,7 +659,7 @@
+ 	}
+ }
+ 
+-void Combat::addDistanceEffect(Creature* caster, const Position& fromPos, const Position& toPos, uint8_t effect)
++void Combat::addDistanceEffect(Creature* caster, const Position& fromPos, const Position& toPos, uint16_t effect)
+ {
+ 	if (effect == CONST_ANI_WEAPONTYPE) {
+ 		if (!caster) {
+diff --git a/src/game.h b/src/game.h
+--- a/src/game.h
++++ b/src/game.h
+@@ -455,12 +455,16 @@
+ 		static void addCreatureHealth(const SpectatorVec& spectators, const Creature* target);
+ 		void addMagicEffect(const Position& pos, uint16_t effect);
+ 		static void addMagicEffect(const SpectatorVec& spectators, const Position& pos, uint16_t effect);
+-		void addDistanceEffect(const Position& fromPos, const Position& toPos, uint8_t effect);
+-		static void addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint8_t effect);
++		void addDistanceEffect(const Position& fromPos, const Position& toPos, uint16_t effect);
++		static void addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint16_t effect);
+ 
+ 		// Chaos (src-patch 0045): hit effects and missiles swapped from Lua (Game.setHitEffect / Game.setMissileEffect)
+ 		static void setHitEffectOverride(uint8_t kind, uint16_t key, int32_t effect, int8_t dx, int8_t dy);
+-		static void setMissileOverride(uint8_t stock, uint8_t missile, int8_t dx, int8_t dy);
++		static void setMissileOverride(uint16_t stock, uint16_t missile, int8_t dx, int8_t dy); // 16 bits: src-patch 0094
++		// Chaos (src-patch 0094, O737): the one-byte missile an id above 255 is sent as to a client without 16-bit missiles
++		static bool setMissileFallback(int64_t id, int64_t fallback);
++		static uint16_t getMissileFallback(uint16_t id);
++		static void clearMissileFallbacks();
+ 		static void clearEffectOverrides();
+ 		static void addHitEffect(const SpectatorVec& spectators, const Creature* target, const Position& pos,
+ 		                         CombatType_t combatType, CombatOrigin origin, uint8_t stock);
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -5,6 +5,7 @@
+ 
+ #include "chaoscastserver.h"
+ #include "chaosrunebag.h"
++#include "chaoswidemissile.h"
+ 
+ #include "pugicast.h"
+ 
+@@ -56,7 +57,8 @@
+ };
+ // key: kind << 16 | key; kind 0 = a physical hit on a race, 1 = a direct hit of a combat type, 2 = a condition tick
+ std::map<uint32_t, ChaosFxOverride> chaosHitOverrides;
+-std::map<uint8_t, ChaosFxOverride> chaosMissileOverrides;
++std::map<uint16_t, ChaosFxOverride> chaosMissileOverrides; // Chaos (src-patch 0094): keyed by the 16-bit id
++ChaosWideMissile::Fallbacks chaosMissileFallbacks; // Chaos (src-patch 0094): ids above 255 for a one-byte client
+ 
+ const ChaosFxOverride* chaosHitOverride(uint8_t kind, uint16_t key)
+ {
+@@ -80,7 +82,7 @@
+ 	}
+ }
+ 
+-void Game::setMissileOverride(uint8_t stock, uint8_t missile, int8_t dx, int8_t dy)
++void Game::setMissileOverride(uint16_t stock, uint16_t missile, int8_t dx, int8_t dy)
+ {
+ 	if (missile == 0) {
+ 		chaosMissileOverrides.erase(stock);
+@@ -89,6 +91,21 @@
+ 	}
+ }
+ 
++bool Game::setMissileFallback(int64_t id, int64_t fallback)
++{
++	return chaosMissileFallbacks.set(id, fallback);
++}
++
++uint16_t Game::getMissileFallback(uint16_t id)
++{
++	return chaosMissileFallbacks.get(id);
++}
++
++void Game::clearMissileFallbacks()
++{
++	chaosMissileFallbacks.clear();
++}
++
+ void Game::clearEffectOverrides()
+ {
+ 	chaosHitOverrides.clear();
+@@ -5083,7 +5100,7 @@
+ 	}
+ }
+ 
+-void Game::addDistanceEffect(const Position& fromPos, const Position& toPos, uint8_t effect)
++void Game::addDistanceEffect(const Position& fromPos, const Position& toPos, uint16_t effect)
+ {
+ 	SpectatorVec spectators, toPosSpectators;
+ 	map.getSpectators(spectators, fromPos, true, true);
+@@ -5093,12 +5110,12 @@
+ 	addDistanceEffect(spectators, fromPos, toPos, effect);
+ }
+ 
+-void Game::addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint8_t effect)
++void Game::addDistanceEffect(const SpectatorVec& spectators, const Position& fromPos, const Position& toPos, uint16_t effect)
+ {
+ 	Position from = fromPos, to = toPos;
+ 	auto it = chaosMissileOverrides.find(effect); // Chaos (src-patch 0045): a stock missile swapped from Lua
+ 	if (it != chaosMissileOverrides.end()) {
+-		effect = static_cast<uint8_t>(it->second.effect);
++		effect = it->second.effect; // Chaos (src-patch 0094): 16 bits
+ 		from = chaosShifted(fromPos, it->second.dx, it->second.dy);
+ 		to = chaosShifted(toPos, it->second.dx, it->second.dy);
+ 	}
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -1041,7 +1041,7 @@
+ 				client->sendCreatureHealth(creature);
+ 			}
+ 		}
+-		void sendDistanceShoot(const Position& from, const Position& to, unsigned char type) const {
++		void sendDistanceShoot(const Position& from, const Position& to, uint16_t type) const { // Chaos (src-patch 0094): 16 bits
+ 			if (client) {
+ 				client->sendDistanceShoot(from, to, type);
+ 			}
+diff --git a/src/protocolgame.h b/src/protocolgame.h
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -192,7 +192,7 @@
+ 		void sendIcons(uint16_t icons);
+ 		void sendFYIBox(const std::string& message);
+ 
+-		void sendDistanceShoot(const Position& from, const Position& to, uint8_t type);
++		void sendDistanceShoot(const Position& from, const Position& to, uint16_t type);
+ 		void sendMagicEffect(const Position& pos, uint16_t type);
+ 		void sendCreatureHealth(const Creature* creature);
+ 		void sendSkills();
+@@ -369,6 +369,8 @@
+ 		bool chaosWideSpellIds = false; // patch 0079: GameChaosExtendedSpellIds announced: the 0xA4 packet carries a u16 id
+ 		bool chaosImpactTextAsked = false; // patch 0051: the login capability byte of our client asked for typed numbers
+ 		bool chaosImpactText = false; // patch 0051: GameChaosImpactText announced: text messages carry the new fields
++		bool chaosWideMissilesAsked = false; // patch 0094: the "W" block of our client's login asked for 16-bit missile ids
++		bool chaosWideMissiles = false; // patch 0094: feature 77 (GameDistanceEffectU16) announced: 0x85 carries a u16 id
+ 		std::vector<std::string>* castCapture = nullptr; // Chaos (patch 0064): writeCastView collects here
+ 
+ 		// Chaos (patch 0021): the client guard: client version field, names as the client sent them, the nonce, the
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -27,6 +27,7 @@
+ #include "chaosmapdesc.h"
+ #include "chaoscastserver.h"
+ #include "chaosfacing.h"
++#include "chaoswidemissile.h"
+ #include <fmt/format.h>
+ 
+ extern ConfigManager g_config;
+@@ -541,6 +542,8 @@
+ 	guardClientId = msg.get<uint32_t>(); // U32 client version (Chaos patch 0021: the client guard's identifier)
+ 	msg.skipBytes(3); // U8 client type, U16 dat revision
+ 
++	// Chaos (src-patch 0094): the end of the RSA block; the "W" block of the login is read only inside it
++	const size_t chaosRsaEnd = static_cast<size_t>(msg.getBufferPosition()) + 128;
+ 	if (!Protocol::RSA_decrypt(msg)) {
+ 		disconnect();
+ 		return;
+@@ -612,6 +615,15 @@
+ 				chaosImpactTextAsked = (capabilities & CHAOS_CAPABILITY_IMPACT_TEXT) != 0;
+ 				// Chaos (patch 0079): bit 6 asks for 16-bit spell ids; honoured only with chaosWideSpellIds = true
+ 				chaosWideSpellIdsAsked = (capabilities & CHAOS_CAPABILITY_WIDE_SPELL_IDS) != 0;
++				// Chaos (patch 0094): then, when it fits the RSA block, the string "W" and a second capability byte; bit 0
++				// asks for 16-bit missile ids. Zero or random padding is not the marker (chaoswidemissile.h markerAsks)
++				if (ChaosWideMissile::markerFits(msg.getBufferPosition(), chaosRsaEnd)) {
++					const uint16_t length = msg.get<uint16_t>();
++					if (length == 1) {
++						const uint8_t letter = msg.getByte();
++						chaosWideMissilesAsked = ChaosWideMissile::markerAsks(length, letter, msg.getByte());
++					}
++				}
+ 			}
+ 		}
+ 	}
+@@ -759,6 +771,9 @@
+ 	if (chaosImpactText) {
+ 		flags |= ChaosCast::HELLO_IMPACT_TEXT;
+ 	}
++	if (chaosWideMissiles) {
++		flags |= ChaosCast::HELLO_WIDE_MISSILES; // Chaos (patch 0094): 0x85 carries a u16 id
++	}
+ 	frames.push_back(ChaosCast::helloFrame(player->getID(), otclientV8, flags, static_cast<uint8_t>(awareRange.width),
+ 	                                       static_cast<uint8_t>(awareRange.height), player->getName()));
+ 	// the spectator knows no creature yet; the player's client gets the ones it already knows in full again, which
+@@ -2707,13 +2722,24 @@
+ 	writeToOutputBuffer(msg);
+ }
+ 
+-void ProtocolGame::sendDistanceShoot(const Position& from, const Position& to, uint8_t type)
++void ProtocolGame::sendDistanceShoot(const Position& from, const Position& to, uint16_t type)
+ {
++	// Chaos (src-patch 0094, O737): u16 to a client told feature 77; any other client gets one byte: an id above 255 as
++	// its fallback (Game.setMissileFallback) or nothing at all, never a broken packet (chaoswidemissile.h decide)
++	const uint16_t fallback = (type > 0xFF && !chaosWideMissiles) ? Game::getMissileFallback(type) : 0;
++	const ChaosWideMissile::Send send = ChaosWideMissile::decide(type, chaosWideMissiles, fallback);
++	if (send.wire == ChaosWideMissile::Wire::DROP) {
++		return;
++	}
+ 	NetworkMessage msg;
+ 	msg.addByte(0x85);
+ 	msg.addPosition(from);
+ 	msg.addPosition(to);
+-	msg.addByte(type);
++	if (send.wire == ChaosWideMissile::Wire::WORD) {
++		msg.add<uint16_t>(send.id);
++	} else {
++		msg.addByte(static_cast<uint8_t>(send.id));
++	}
+ 	writeToOutputBuffer(msg);
+ }
+ 
+@@ -3796,6 +3822,12 @@
+ 			features[GameChaosImpactText] = true;
+ 			chaosImpactText = true;
+ 		}
++		// Chaos (patch 0094): 16-bit missile ids, only to a client that asked (the "W" block of its login): the engine's
++		// own feature 77, which the client reads in 0x85 already; every 0x85 after this list carries a u16 id
++		if (chaosWideMissilesAsked) {
++			features[GameDistanceEffectU16] = true;
++			chaosWideMissiles = true;
++		}
+ 	}
+ 	if(features.empty())
+ 		return;
+diff --git a/src/chaoscast.h b/src/chaoscast.h
+--- a/src/chaoscast.h
++++ b/src/chaoscast.h
+@@ -28,6 +28,7 @@
+ // flags of the hello frame: how this player's client reads items and text messages
+ static constexpr uint8_t HELLO_ITEM_ATTRIBUTES = 1; // u16 count + (u16 key, u64 value) after every item
+ static constexpr uint8_t HELLO_IMPACT_TEXT = 2;     // u16 percent, u8 type, u32 creature id in damage text messages
++static constexpr uint8_t HELLO_WIDE_MISSILES = 4;   // Chaos (patch 0094): the missile id of 0x85 is u16
+ 
+ // speech kept: what everyone near the player sees over the speaker's head
+ inline bool publicTalkType(uint8_t type)
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -554,6 +554,7 @@
+ 		static int luaGameSetHitEffect(lua_State* L); // Chaos (src-patch 0045)
+ 		static int luaGameSetMissileEffect(lua_State* L);
+ 		static int luaGameClearEffectOverrides(lua_State* L);
++		static int luaGameSetMissileFallback(lua_State* L); // Chaos (src-patch 0094)
+ 		static int luaGameSetFxSendOffsets(lua_State* L); // Chaos (src-patch 0060)
+ 		static int luaGameGetFxSendOffset(lua_State* L);
+ 		static int luaGameSetCastTarget(lua_State* L); // Chaos (src-patch 0064)
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2181,6 +2181,7 @@
+ 	registerMethod("Game", "setHitEffect", LuaScriptInterface::luaGameSetHitEffect); // Chaos (src-patch 0045)
+ 	registerMethod("Game", "setMissileEffect", LuaScriptInterface::luaGameSetMissileEffect);
+ 	registerMethod("Game", "clearEffectOverrides", LuaScriptInterface::luaGameClearEffectOverrides);
++	registerMethod("Game", "setMissileFallback", LuaScriptInterface::luaGameSetMissileFallback); // Chaos (src-patch 0094)
+ 	registerMethod("Game", "setFxSendOffsets", LuaScriptInterface::luaGameSetFxSendOffsets); // Chaos (src-patch 0060)
+ 	registerMethod("Game", "getFxSendOffset", LuaScriptInterface::luaGameGetFxSendOffset);
+ 	registerMethod("Game", "setCastTarget", LuaScriptInterface::luaGameSetCastTarget); // Chaos (src-patch 0064)
+@@ -4527,13 +4528,24 @@
+ {
+ 	// Game.setMissileEffect(stock, missile[, dx = 0[, dy = 0]])  Chaos (src-patch 0045)
+ 	// every distance effect `stock` is sent as `missile` (from and to shifted by dx, dy); missile 0 or nil: stock
+-	uint8_t stock = getNumber<uint8_t>(L, 1);
+-	uint8_t missile = isNumber(L, 2) ? getNumber<uint8_t>(L, 2) : 0;
++	uint16_t stock = getNumber<uint16_t>(L, 1); // Chaos (src-patch 0094): both ids 16 bits
++	uint16_t missile = isNumber(L, 2) ? getNumber<uint16_t>(L, 2) : 0;
+ 	Game::setMissileOverride(stock, missile, getNumber<int8_t>(L, 3, 0), getNumber<int8_t>(L, 4, 0));
+ 	pushBoolean(L, true);
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetMissileFallback(lua_State* L)
++{
++	// Game.setMissileFallback(id[, fallback])  Chaos (src-patch 0094, O737)
++	// a client without 16-bit missiles gets missile `id` (256..65535) as `fallback` (1..255); fallback 0 or nil: the
++	// row goes and such a client gets nothing for that id. false for an id or fallback out of range.
++	const int64_t id = getNumber<int64_t>(L, 1);
++	const int64_t fallback = isNumber(L, 2) ? getNumber<int64_t>(L, 2) : 0;
++	pushBoolean(L, Game::setMissileFallback(id, fallback));
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameClearEffectOverrides(lua_State* L)
+ {
+ 	// Game.clearEffectOverrides()  Chaos (src-patch 0045): back to the stock hit effects and missiles
+diff --git a/src/tools.cpp b/src/tools.cpp
+--- a/src/tools.cpp
++++ b/src/tools.cpp
+@@ -4,6 +4,7 @@
+ #include "otpch.h"
+ 
+ #include "tools.h"
++#include "chaoswidemissile.h"
+ #include "configmanager.h"
+ 
+ extern ConfigManager g_config;
+@@ -714,7 +715,8 @@
+ 	if (shootType != shootTypeNames.end()) {
+ 		return shootType->second;
+ 	}
+-	return CONST_ANI_NONE;
++	// Chaos (src-patch 0094, O737): a missile with no name, as its number (1..65535; 0 or other text: none)
++	return static_cast<ShootType_t>(ChaosWideMissile::parseId(strValue.c_str()));
+ }
+ 
+ std::string getCombatName(CombatType_t combatType)
+diff --git a/src/chaoswidemissile.h b/src/chaoswidemissile.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaoswidemissile.h
+@@ -0,0 +1,125 @@
++// Chaos (src-patch 0094, O737): missile (distance effect) ids above 255. Pure: no engine header, so
++// server/tools/chaoswidemissile_test.cpp tests it alone (ci.yml cuts it out of the patch).
++//   * Login: after the capability byte of patch 0051 ("C" + u8) our client adds, inside the same RSA block, the string "W"
++//     and a second capability byte; bit 0 asks for 16-bit missile ids. The client adds the 4 bytes only when they fit the
++//     block. An older client pads the block with zeros, another client may pad with random bytes: only u16 length 1, the
++//     letter W and bit 0 together count as asking (markerAsks), and nothing is read past the block (markerFits).
++//   * Features: a client that asked gets feature 77 (the engine's GameDistanceEffectU16) in the 0x43 list, and from then on
++//     every 0x85 to it carries the id as u16 (decide: WORD).
++//   * Any other client gets the byte: an id up to 255 as it is, an id above 255 as its fallback (Game.setMissileFallback,
++//     set from Lua: data/lib/chaos_wide_missiles.lua) or not at all (DROP). Never a broken packet.
++//   * Missile 254 stays the engine's "weapon type" (CONST_ANI_WEAPONTYPE, resolved before anything is sent): the first id a
++//     new missile may take above the one-byte range is 256 (FIRST_WIDE).
++
++#ifndef FS_CHAOSWIDEMISSILE_H
++#define FS_CHAOSWIDEMISSILE_H
++
++#include <cstddef>
++#include <cstdint>
++#include <map>
++
++namespace ChaosWideMissile {
++
++static constexpr char MARKER = 'W';
++static constexpr uint8_t CAPABILITY_MISSILE_U16 = 1 << 0;
++static constexpr size_t MARKER_BYTES = 4; // u16 string length 1, 'W', u8 second capability byte
++static constexpr uint8_t FEATURE_DISTANCE_EFFECT_U16 = 77; // GameDistanceEffectU16 of the server's and the client's const.h
++static constexpr uint16_t WEAPON_TYPE = 254; // CONST_ANI_WEAPONTYPE
++static constexpr uint16_t FIRST_WIDE = 256;
++
++// the 4 bytes of the "W" block can be read: they lie inside the RSA block (position and its end are offsets of the message)
++inline bool markerFits(size_t position, size_t blockEnd)
++{
++	return position <= blockEnd && blockEnd - position >= MARKER_BYTES;
++}
++
++// the client may add the "W" block: the RSA payload (payload bytes so far) has room for it
++inline bool clientFits(int payloadSize, int rsaSize)
++{
++	return payloadSize >= 0 && rsaSize > 0 && payloadSize + static_cast<int>(MARKER_BYTES) <= rsaSize;
++}
++
++// what the 4 bytes say: only the exact marker with bit 0 asks (zero padding and random padding do not)
++inline bool markerAsks(uint16_t length, uint8_t letter, uint8_t capabilities)
++{
++	return length == 1 && letter == static_cast<uint8_t>(MARKER) && (capabilities & CAPABILITY_MISSILE_U16) != 0;
++}
++
++enum class Wire : uint8_t { DROP, BYTE, WORD };
++
++struct Send {
++	Wire wire;
++	uint16_t id;
++};
++
++// how one missile goes to one client. wide: the client was told feature 77. fallback: the one-byte missile that stands in
++// for an id above 255 (0 = none)
++inline Send decide(uint16_t id, bool wide, uint16_t fallback)
++{
++	if (wide) {
++		return {Wire::WORD, id};
++	}
++	if (id <= 0xFF) {
++		return {Wire::BYTE, id};
++	}
++	if (fallback != 0 && fallback <= 0xFF) {
++		return {Wire::BYTE, fallback};
++	}
++	return {Wire::DROP, 0};
++}
++
++// the fallbacks of the ids above 255, set from Lua. A row needs an id 256..65535 and a fallback 1..255 (0 removes the row)
++class Fallbacks
++{
++	public:
++		bool set(int64_t id, int64_t fallback)
++		{
++			if (id < FIRST_WIDE || id > 0xFFFF || fallback < 0 || fallback > 0xFF) {
++				return false;
++			}
++			if (fallback == 0) {
++				rows.erase(static_cast<uint16_t>(id));
++			} else {
++				rows[static_cast<uint16_t>(id)] = static_cast<uint8_t>(fallback);
++			}
++			return true;
++		}
++
++		uint16_t get(uint16_t id) const
++		{
++			if (id < FIRST_WIDE) {
++				return 0;
++			}
++			auto it = rows.find(id);
++			return it != rows.end() ? it->second : 0;
++		}
++
++		void clear() { rows.clear(); }
++		size_t size() const { return rows.size(); }
++
++	private:
++		std::map<uint16_t, uint8_t> rows;
++};
++
++// a missile id written as text (monsters.xml shootEffect, items.xml shootType): a whole number 1..65535, else 0
++inline uint16_t parseId(const char* text)
++{
++	if (!text || !*text) {
++		return 0;
++	}
++	uint32_t v = 0;
++	for (const char* p = text; *p; ++p) {
++		if (*p < '0' || *p > '9') {
++			return 0;
++		}
++		v = v * 10 + static_cast<uint32_t>(*p - '0');
++		if (v > 0xFFFF) {
++			return 0;
++		}
++	}
++	return static_cast<uint16_t>(v);
++}
++
++} // namespace ChaosWideMissile
++
++#endif

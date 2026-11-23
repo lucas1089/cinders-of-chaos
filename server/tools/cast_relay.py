@@ -282,6 +282,7 @@ class World:
         self.marker = 0
         self.attrs = False
         self.impact = False
+        self.wide_missiles = False
         self.aware = (17, 13)
         self.central = None
         self.tiles = {}
@@ -655,6 +656,7 @@ class World:
         flags = m.u8()
         self.attrs = bool(flags & 1)
         self.impact = bool(flags & 2)
+        self.wide_missiles = bool(flags & 4)  # src-patch 0094 (O737): the missile id of 0x85 is u16
         w, h = m.u8(), m.u8()
         if w < 1 or h < 1:
             raise ParseError('bad aware range')
@@ -798,7 +800,7 @@ class World:
     def op_missile(self, m, _now):
         a = m.pos()
         b = m.pos()
-        kind = m.u8()
+        kind = m.u16() if self.wide_missiles else m.u8()
         if not self.central:
             return
         if a[2] == self.central[2]:

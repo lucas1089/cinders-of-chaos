@@ -126,6 +126,20 @@ namespace Chaos.Core.Tests
             check(e.Kind == FxKind.Square && e.Creature == 0x40000007 && e.Color == 215, "fx: 0x86 reads the creature and its square colour");
             check(!w.Fx.TryDequeue(out e), "fx: the queue is empty after the four");
 
+            // src-patch 0094 (O737): once the 0x43 list turned feature 77 on, the missile id of 0x85 is u16; off again, one byte
+            parser.Parse(new ByteWriter().U8(0x43).U16(1).U8(ClientFeatures.DistanceEffectU16).U8(1).ToArray());
+            b = Pos3(Pos3(new ByteWriter().U8(0x85), P0), P0.Offset(3, 0)).U16(300);
+            b.U8(0x1D);
+            pinged = false;
+            parser.Parse(b.ToArray());
+            check(pinged && w.Fx.TryDequeue(out e) && e.Kind == FxKind.Missile && e.Id == 300, "fx: 0x85 reads a 16 bit missile id under feature 77");
+            parser.Parse(new ByteWriter().U8(0x43).U16(1).U8(ClientFeatures.DistanceEffectU16).U8(0).ToArray());
+            b = Pos3(Pos3(new ByteWriter().U8(0x85), P0), P0.Offset(3, 0)).U8(44);
+            b.U8(0x1D);
+            pinged = false;
+            parser.Parse(b.ToArray());
+            check(pinged && w.Fx.TryDequeue(out e) && e.Id == 44 && !w.Fx.TryDequeue(out e), "fx: without feature 77 the missile id is one byte again");
+
             // damage dealt (two pairs), damage received, heal (one pair), experience, damage of others, then an ordinary server line
             b = Pos3(new ByteWriter().U8(0xB4).U8(23), P0.Offset(1, 0)).U32(50).U8(180).U32(7).U8(198).Str("A rat loses 57 hitpoints due to your attack.");
             Pos3(b.U8(0xB4).U8(24), P0).U32(12).U8(180).U32(0).U8(0).Str("You lose 12 hitpoints due to an attack by a rat.");

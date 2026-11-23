@@ -228,6 +228,9 @@ check(C.PAIR_FOOTFX == 75 and C.PAIR_ASSETS >= C.PAIR_FOOTFX, 'the effect footpr
 check(C.PAIR_AWAKENFX == 76 and 'C.PAIR = %d' % C.PAIR_AWAKENFX in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_awakened_fx.lua')).read(), 'the awakened look kit needs pair 76 (O711)')
 check(C.PAIR_AWAKENFX_HEADINGS == 77 and 'C.PAIR_HEADINGS = %d' % C.PAIR_AWAKENFX_HEADINGS in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_awakened_fx.lua')).read(), 'the awakened headings need pair 77, code done, PAIR_ASSETS stays 76 until the owner pushes it (O711)')
 
+# missile ids above 255 (O737) start at pair 83: pair 82 is being built with 253 missiles; the lib reads the same number
+check(C.PAIR_MISSILE_U16 == 83 and C.PAIR_MISSILE_U16 > 82 and 'C.PAIR = %d' % C.PAIR_MISSILE_U16 in open(os.path.join(HERE, '..', 'data', 'lib', 'chaos_wide_missiles.lua')).read(), 'missile ids above 255 need pair 83 (O737)')
+
 # the windows-assets pair (prepare_server.sh records it; windows-package.yml checks the dat md5): at least every guarded
 # pair, and its md5 is the one the generated client files were made from (gen_outfit_anchors.py, gen_info_lift.py)
 check(C.PAIR_DECOR == 74 and C.PAIR_MALGRATH == 74, 'the decor flames (O623) and Malgrath (O637) need pair 74')

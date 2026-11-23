@@ -1,0 +1,51 @@
+# Missile ids above 255, the client side (O737; client/BASE.md "Missile ids above 255 (O737)", server src-patch 0094). The engine already
+# reads a u16 missile id in 0x85 under its own feature GameDistanceEffectU16 (77): parseDistanceMissile, Missile::m_id is uint16, the dat
+# missile count is read as u16 like every other category. What was missing is the asking and the switch:
+#   * the login asks: after the capability byte "C" + u8 the client adds the string "W" and a second capability byte, bit 0 = 16-bit
+#     missile ids, inside the RSA block and only when the 4 bytes fit (a long session key leaves them out: one-byte missiles, as before).
+#     Protocol 1098 only. A server without src-patch 0094 never reads past the first capability byte.
+#   * feature 77 is cleared before every 1098 login, like the other negotiated features, so it is on only while the server that announced
+#     it in its 0x43 list is the one connected.
+# No other change: the 0x43 handler already turns any announced feature on. The decision logic and its test are the server's
+# src/chaoswidemissile.h (server/tools/chaoswidemissile_test.cpp); this patch is held by client/tools/wide_missile_patch_test.py.
+# Applies after 0001-0207 (0100 gives the context lines). Not built on a real client yet (BASE.md).
+diff --git a/src/client/protocolgamesend.cpp b/src/client/protocolgamesend.cpp
+--- a/src/client/protocolgamesend.cpp
++++ b/src/client/protocolgamesend.cpp
+@@ -53,6 +53,11 @@
+                                      ASTRA_CAPABILITY_STORE_CATALOG_CHUNKS |
+                                      ASTRA_CAPABILITY_BESTIARY_BANNER_CREATURE_DATA |
+                                      ASTRA_CAPABILITY_EXTENDED_SPELL_IDS;
++// Chaos (base patch 0208, O737): after the capability byte, the string "W" and a second capability byte (server src-patch
++// 0094, chaoswidemissile.h); bit 0 asks for 16-bit missile ids, which the server answers with feature GameDistanceEffectU16
++constexpr auto CHAOS_CAPABILITIES2_MARKER = "W";
++constexpr uint8 CHAOS_CAPABILITY2_MISSILE_U16 = 1U << 0;
++constexpr int CHAOS_CAPABILITIES2_BYTES = 4; // u16 length 1, "W", u8
+ constexpr uint32 ASTRA_CLIENT_SIGNATURE_SEED = 0xA57AC11E;
+ constexpr uint32 ASTRA_CLIENT_SIGNATURE_FINAL = 0x4D415354;
+ 
+@@ -233,6 +238,10 @@
+     g_game.disableFeature(Otc::GameAstraBestiaryBannerCreatureData);
+     g_game.disableFeature(Otc::GameAstraExtendedSpellIds);
+     g_game.disableFeature(Otc::GameChaosImpactText); // Chaos (base patch 0100): only when this server announces it
++    // Chaos (base patch 0208): 16-bit missile ids only when this server announces them (feature 77 in its 0x43 list); the
++    // other protocols keep what game_features gives them
++    if (g_game.getProtocolVersion() == 1098)
++        g_game.disableFeature(Otc::GameDistanceEffectU16);
+ 
+     std::string extended = callLuaField<std::string>("getLoginExtendedData");
+     if (!extended.empty()) {
+@@ -264,6 +273,13 @@
+         // payload in a fixed 128-byte RSA block.
+         msg->addString(std::string(ASTRA_CAPABILITIES_MARKER));
+         msg->addU8(ASTRA_CAPABILITIES);
++        // Chaos (base patch 0208): the "W" block, only when it fits the RSA block; with a long session key it is left out
++        // and the server sends one-byte missiles, as before
++        const int chaosPayload = static_cast<int>(msg->getMessageSize()) - offset;
++        if (g_game.getProtocolVersion() == 1098 && encryptLogin && chaosPayload + CHAOS_CAPABILITIES2_BYTES <= rsaSize) {
++            msg->addString(std::string(CHAOS_CAPABILITIES2_MARKER));
++            msg->addU8(CHAOS_CAPABILITY2_MISSILE_U16);
++        }
+     }
+ 
+     // encrypt with RSA

@@ -12,7 +12,8 @@
 //      shader, floors as 0x4B messages. "OTCv8TierByte" + "A" make `chaosClient`: item custom attributes (feature
 //      126), packet compression when config.lua packetCompression is on, and the capabilities byte is read: bit 7
 //      typed impact numbers (0051, feature 155), bit 6 16-bit spell ids (0079, feature 152, only when the server has
-//      chaosWideSpellIds = true).
+//      chaosWideSpellIds = true). Then, inside the RSA block and only when the 4 bytes fit, "W" and a second capability byte
+//      (src-patch 0094, O737): bit 0 asks for 16-bit missile ids, which the server answers with feature 77 (GameDistanceEffectU16).
 //   3. The u32 client version of both login packets: 0x4343 << 16 | build (ClientGuard.Identifier).
 // Identity.Extended keeps the plain 10.98 wire (markers u16 0). Identity.Chaos sends all the markers; the parser
 // (GameParser, GameSession) reads what that turns on.
@@ -36,6 +37,15 @@ namespace Chaos.Core
         public const byte CapWideSpellIds = 1 << 6;
         public const byte CapImpactText = 1 << 7;
 
+        /// <summary>The second capability byte after "W" (src-patch 0094): bit 0 16-bit missile ids (GameParser reads 0x85 as u16 under
+        /// feature 77). 0 leaves the "W" block out.</summary>
+        public byte Capabilities2 = CapMissileU16;
+        public const byte CapMissileU16 = 1 << 0;
+        /// <summary>u16 length 1, "W", u8: the bytes the second capability block takes in the RSA block.</summary>
+        public const int Capabilities2Bytes = 4;
+        /// <summary>The RSA block the markers sit in (the server reads the "W" block only inside it).</summary>
+        public const int RsaBlockBytes = 128;
+
         /// <summary>Markers u16 0: the plain 10.98 wire, extended opcodes only. What the prototype always did.</summary>
         public static ClientIdentity Extended => new ClientIdentity();
 
@@ -47,6 +57,9 @@ namespace Chaos.Core
         {
             if (!Markers) { w.U16(0); return; }
             w.Str("OTCv8").U16(V8Version).Str("OTCv8TierByte").Str("A").U32(Signature).Str("C").U8(Capabilities);
+            // src-patch 0094 (O737): the "W" block only when it fits the RSA block (w holds the block from its first byte; a long
+            // session key leaves it out and the server sends one-byte missiles)
+            if (Capabilities2 != 0 && w.Length + Capabilities2Bytes <= RsaBlockBytes) w.Str("W").U8(Capabilities2);
         }
 
         /// <summary>The identity named by a text ("extended" or "chaos"), for a setting or an environment variable.</summary>
@@ -65,6 +78,8 @@ namespace Chaos.Core
         public const int ItemCustomAttributes = 126;
         public const int ExtendedSpellIds = 152;
         public const int ImpactText = 155;
+        /// <summary>The engine's GameDistanceEffectU16: the missile id of 0x85 is u16 (src-patch 0094, announced to a client that asked).</summary>
+        public const int DistanceEffectU16 = 77;
 
         readonly HashSet<int> on = new HashSet<int>();
         /// <summary>True once a 0x43 packet arrived (the server knows us as an OTCv8 client).</summary>

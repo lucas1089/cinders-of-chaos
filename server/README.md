@@ -280,6 +280,10 @@ server/
   src-patches/0092-rune-bag-in-purse.patch   engine: a player's search, count and removal by item type also look into the Rune Bag that lies in the
                                       purse (after slots 1-10); Game.setRuneBagContainer(itemId) from pouches.lua (see "Using a rune from the
                                       bag", O509; header src/chaosrunebag.h, tools/chaosrunebag_test.cpp, tools/rune_bag_purse_patch_test.py)
+  src-patches/0094-wide-missile-ids.patch   engine: missile ids are 16 bits; u16 in 0x85 to a client that asked at login (feature 77), one
+                                      byte to any other (an id above 255 as its Lua fallback or not at all); Game.setMissileFallback (see
+                                      "Missile ids above 255 (O737)"; header src/chaoswidemissile.h, tools/chaoswidemissile_test.cpp,
+                                      tools/wide_missile_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -298,6 +302,7 @@ server/
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
     clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     botdet.lua  botdet_core.lua  botdet_config.lua (bot detection events and hourly scores, /botcheck, opcode 169, O722; src-patch 0093)
+    wide_missiles.lua (startup: the missile fallbacks of data/lib/chaos_wide_missiles.lua to the engine, O737; src-patch 0094)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -37934,3 +37939,19 @@ The art is in the sprite pair only: client/MANIFEST.md "More purchased effects (
 - **Data.** `chaos_wst_more_fx_ids.lua`: id, dx, dy (send offset), ms, el (element tag). The tags are in `data/spells/spell_fx_elements.csv`.
   `data/spells/more_pack_fx_catalog.csv` lists id, family, element, shape, size, frames, loop or once. All three are generated (`gen_wst_more_fx.py ids`).
 - **Test.** `tests/more_pack_fx_test.lua`: gate, send offset, dense ids, 8 headings a set.
+
+## Missile ids above 255 (O737) (`src-patches/0094-wide-missile-ids.patch`, `data/lib/chaos_wide_missiles.lua`, `data/scripts/chaos/wide_missiles.lua`, client base patch 0208, gate `chaosClientPair` 83)
+
+Owner 2026-11-23 (pt-BR): "Pode fazer o patch do motor". A missile (distance effect, packet 0x85) id was one byte in the engine and on the wire, and pair 81 uses all 253 missiles, so no new projectile could be imported. Magic effects went past 255 long ago: the base server writes them as u16 and our client enables `GameMagicEffectU16` for 10.98 always. Missiles follow the newer negotiated design of patches 0051 and 0079 instead, because other clients (an older build of ours, the load test, foreign clients) must keep working.
+
+**Capability.** The capability byte after "C" (0051) is full: our client sets bits 0-5 for its own base and 6, 7 for 0079 and 0051. So the client adds, inside the same 128-byte RSA block and only when the 4 bytes fit, the string "W" and a second capability byte; bit 0 asks for 16-bit missile ids (client base patch 0208; the Unity client `ClientIdentity.Capabilities2`). The server takes the end of the RSA block before `RSA_decrypt` and reads those bytes only inside it; only u16 length 1, the letter W and bit 0 together count as asking (`src/chaoswidemissile.h` `markerFits`, `markerAsks`). Our client pads the block with zeros and the Unity client with random bytes: neither asks by accident (100,000 random blocks in the C++ test). A long session key leaves no room: no ask, one-byte missiles as before.
+
+**Answer.** `sendFeatures` gives a client that asked the engine's own feature 77 (`GameDistanceEffectU16`); the client engine has read a u16 missile under it all along (`parseDistanceMissile`, `Missile::m_id` is uint16, the dat missile count is u16). Every 0x85 after the 0x43 list carries a u16 id. No config key. The client clears feature 77 before each 1098 login. The live cast hello frame gets flag 4 (`HELLO_WIDE_MISSILES`) and `tools/cast_relay.py` reads the spectator's 0x85 by it.
+
+**Old clients.** Any client without the feature gets one byte: an id up to 255 as it is; an id above 255 as its fallback from `Game.setMissileFallback(id, fallback)` (id 256-65535, fallback 1-255, 0 or nil removes, false out of range), or nothing at all. Never a broken packet (`decide`: WORD, BYTE or DROP).
+
+**Engine.** `ShootType_t` is uint16_t, so `CombatParams::distanceEffect`, `Game::addDistanceEffect`, `Combat::addDistanceEffect`, `Player` / `ProtocolGame::sendDistanceShoot`, `position:sendDistanceEffect`, `combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, id)`, the MonsterSpell shoot effect and `weapon:shootType` carry 16 bits. The overrides of 0045 (`Game.setMissileEffect`) are keyed by the 16-bit id on both sides (a one-byte key would have caught id 300 as 44). `getShootType` also takes a number, so `monsters.xml` `shootEffect` and `items.xml` `shootType` can name a missile with no name. Missile 254 stays `CONST_ANI_WEAPONTYPE` (resolved before anything is sent): new missiles start at 256.
+
+**Lua.** `data/lib/chaos_wide_missiles.lua`: `C.PAIR` 83 (`server/tools/client_pair.py` `PAIR_MISSILE_U16`; pair 82 keeps 253 missiles), `C.on()` (that pair recorded in config.lua and the engine method present), `C.id(id[, fallback])` (the missile a script sends: an id above 255 only while on, else the fallback or nil), `C.FALLBACK` (empty: no missile above 255 exists yet; the import tool that appends one adds its row), `C.check`, `C.apply` (run at startup by `data/scripts/chaos/wide_missiles.lua`). No new missile in this item.
+
+**Tests.** `tools/chaoswidemissile_test.cpp` (header cut out of the patch in CI, also under sanitizers), `tools/wide_missile_patch_test.py` (files, no one-byte type left in the written signatures, read order, feature only when asked, drop before write, symmetric hunks, applied to a tree rebuilt from its own context; `SRC_TREE=DIR` dry-runs a real tree), `tests/wide_missiles_test.lua` (server loop), `tools/cast_relay_test.py`, client `client/tools/wide_missile_patch_test.py`, Unity `Core.Tests` (markers, 0x85 under feature 77). Written on a source tree rebuilt from the base with 0001-0093: `patch -p1 --fuzz=0` applies 0094 there and every `src/*.cpp` passes `g++ -std=c++17 -fsyntax-only`; the client patch applies to the base client after 0001-0207 and `protocolgamesend.cpp` passes `-fsyntax-only`. **Not done yet:** a full build and link of either engine, and a login on a live server: check that our new client gets feature 77 (log of features in the Unity live check, or a missile on screen), that an older client still sees one-byte missiles, and that a session key near the block limit still logs in.
