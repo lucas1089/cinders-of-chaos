@@ -145,6 +145,48 @@ def main():
     ch3, st3, left3 = cd.plan(Dat(dat2), Spr(spr2))
     check(('effect', 1) in left3 and not ch3, 'a sprite shared with an item leaves the effect whole: %s' % left3)
 
+    # ---- --only (O733): only the effects of the table
+    frames_b = [np.roll(f, 3, axis=1) for f in frames]    # a second effect with its own sprites
+    dat3, spr3 = synthetic_pair_many(case, [frames, frames_b])
+    d3, s3 = Dat(dat3), Spr(spr3)
+    want = cd.thing_masks(d3.effects[1], s3)[2]
+    tab = os.path.join(case.dir, 'only.csv')
+    with open(tab, 'w') as f:
+        f.write('kind,id,mesh,reason\neffect,2,%d,test\n' % want)
+    only = cd.read_only(tab)
+    check(only == {('e', 2): want}, 'read_only: %s' % only)
+    ch4, st4, left4 = cd.plan(d3, s3, only)
+    check(set(st4) == {('effect', 2)} and not left4, '--only cleans the listed effect alone: %s' % st4)
+    check(cd.check_clean(d3, s3, only) != [] and len(cd.check_clean(d3, s3)) == 2, 'check-clean --only sees the listed one')
+    b = A()
+    b.dat, b.spr, b.out_dir, b.dry_run, b.stats_out, b.only = dat3, spr3, os.path.join(case.dir, 'out3'), False, None, tab
+    cd.build(b, log=lambda s: None)
+    nd3, ns3 = Dat(os.path.join(b.out_dir, 'Tibia.dat')), Spr(os.path.join(b.out_dir, 'Tibia.spr'))
+    e1_old = [f for _k, f, _tl in cd.canvases(d3.effects[0], s3)]
+    e1_new = [f for _k, f, _tl in cd.canvases(nd3.effects[0], ns3)]
+    check(all(np.array_equal(x, y) for x, y in zip(e1_old, e1_new)), 'an effect outside the table keeps every pixel')
+    check(cd.check_clean(nd3, ns3, only) == [], 'check-clean --only passes on the output')
+    check(len(cd.check_clean(nd3, ns3)) == 1, 'the effect outside the table keeps its mesh')
+    ch5, st5, _l5 = cd.plan(nd3, ns3, only)
+    check(not ch5 and not st5, '--only is idempotent: a row under MIN_REMOVED counts as done')
+    with open(tab, 'w') as f:
+        f.write('kind,id,mesh,reason\neffect,2,%d,test\n' % (want + 5))
+    try:
+        cd.plan(d3, s3, cd.read_only(tab))
+        check(False, 'a wrong mesh count stops the run')
+    except SystemExit as e:
+        check('not this pair' in str(e), 'the premise message: %s' % e)
+    with open(tab, 'w') as f:
+        f.write('kind,id,mesh,reason\neffect,4090,10,test\n')
+    try:
+        cd.read_only(tab)
+        check(False, 'a loot beam row is refused')
+    except SystemExit:
+        pass
+    real = cd.read_only()
+    check(len(real) == 47 and all(k[0] == 'e' and v >= cd.MIN_REMOVED for k, v in real.items()), 'the committed table: 47 effects')
+    check(('e', 3036) in real and not any(4090 <= k[1] <= 4101 for k in real), 'the committed table: 3036 in, no loot beam')
+
     # ---- the hard cut of the import
     fr = np.zeros((8, 8, 4), np.uint8)
     fr[0, 0] = (10, 20, 30, 255)
@@ -195,6 +237,30 @@ def synthetic_pair_shared(case, frames, sid):
     eff = t.entry(b'', [t.group(sprites, w=2, h=2, phases=n, anim=(0, 0, 0, [60] * (2 * n)))])
     items = [t.entry(bytes([17]), [t.group([sid])])]
     return case.pair(recs, items, [], [eff], [])
+
+
+def synthetic_pair_many(case, effects):
+    """one 2x2 effect per list of frames in `effects` (ids 1, 2, ...), plus an item that shares nothing"""
+    recs, ids, ents = [], {}, []
+    for frames in effects:
+        sprites = []
+        for img in frames:
+            for hh in range(2):
+                for ww in range(2):
+                    tile = np.ascontiguousarray(img[(1 - hh) * 32:(2 - hh) * 32, (1 - ww) * 32:(2 - ww) * 32])
+                    rec = iat.encode_sprite(tile)
+                    if rec is None:
+                        sprites.append(0)
+                        continue
+                    if rec not in ids:
+                        recs.append(rec)
+                        ids[rec] = len(recs)
+                    sprites.append(ids[rec])
+        n = len(frames)
+        ents.append(t.entry(b'', [t.group(sprites, w=2, h=2, phases=n, anim=(0, 0, 0, [60] * (2 * n)))]))
+    recs.append(iat.encode_sprite(np.full((32, 32, 4), 200, np.uint8)))
+    items = [t.entry(bytes([17]), [t.group([len(recs)])])]
+    return case.pair(recs, items, [], ents, [])
 
 
 if __name__ == '__main__':

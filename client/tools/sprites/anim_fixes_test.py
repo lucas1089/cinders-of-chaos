@@ -142,6 +142,84 @@ def test_floor_and_rule(c):
     t.expect(AF.trim_range([5, 5, 5, 5], 0.5, 4) == (0, 4), 'trim rule: never below the floor')
 
 
+def o734_parts():
+    """effects: 1 four phases A A B A (100, 50, 80, 30 ms), 2 one tile with a solid block, 3 dim isolated dots and one bright
+    isolated dot (two phases), 3 one tile with 10 pixels at alpha 20 and 20 at alpha 255 (two phases)"""
+    solid = {y * 32 + x: BRIGHT for y in range(10, 20) for x in range(10, 20)}
+    dots = {2 * 32 + 2: (40, 40, 40, 255), 2 * 32 + 6: (30, 30, 30, 255), 28 * 32 + 28: (50, 50, 50, 255),
+            28 * 32 + 2: (250, 250, 250, 255)}
+    faint = {**{i: (200, 100, 50, 20) for i in range(300, 310)}, **{i: (200, 100, 50, 255) for i in range(400, 420)}}
+    mesh = {**solid, **{y * 32 + x: (90, 160, 230, 255) for y in range(22, 32) for x in range(0, 16) if (x + y) % 2 == 0}}
+    recs = [t.record(solid), t.record({**solid, 0: BRIGHT}), t.record({**solid, **dots}), t.record(faint), t.record(px_block()),
+            t.record(mesh)]
+    e1 = t.entry(b'', [t.group([1, 1, 2, 1], phases=4, anim=(0, 0, 0, [100, 100, 50, 50, 80, 80, 30, 30]))])
+    e2 = t.entry(b'', [t.group([3, 3], phases=2, anim=(0, 0, 0, [100] * 4))])
+    e3 = t.entry(b'', [t.group([4, 4], phases=2, anim=(0, 0, 0, [100] * 4))])
+    e4 = t.entry(b'', [t.group([6])])
+    return recs, [t.entry(bytes([17]), [t.group([5])])], [], [e1, e2, e3, e4], []
+
+
+def px_block():
+    return {i: DARK for i in range(10)}
+
+
+O734_ROWS = [
+    ['effect', '1', 'merge', 'of=4;keep=0,2,3', 'test', 'n/a'],
+    ['effect', '2', 'clear_strays', 'luma_max=100;expect=6', 'test', 'n/a'],
+    ['effect', '3', 'drop_faint', 'below=40;expect=20', 'test', 'n/a'],
+    ['effect', '4', 'demesh', 'expect=%d', 'test', 'n/a'],
+]
+
+
+def test_o734_ops(c):
+    dat, spr = c.pair(*o734_parts())
+    import clean_pack_dither as cpd
+    mesh = int(cpd.mesh_mask(Spr(spr).sprite(6)).sum())
+    t.expect(mesh >= 40, 'the synthetic checker is a mesh (%d pixels)' % mesh)
+    rows = [r[:3] + [r[3] % mesh if '%d' in r[3] else r[3]] + r[4:] for r in O734_ROWS]
+    out, text = run(c, rows, dat, spr, 'o734')
+    od, os_ = os.path.join(out, 'Tibia.dat'), os.path.join(out, 'Tibia.spr')
+    old = idt.parse_dat(open(dat, 'rb').read(), idt.OUR_KINDS)
+    new = idt.parse_dat(open(od, 'rb').read(), idt.OUR_KINDS)
+    g = new['effect'][0].groups[0]
+    t.expect(g['phases'] == 3 and list(g['sprites']) == [1, 2, 1], 'merge: A A B A -> A B A, the same sprite ids')
+    t.expect(g['anim'][1] == (150, 150, 80, 80, 30, 30), 'merge: the run lasts its total time (150 ms)')
+    t.expect(sum(d[1] for d in AF.durations(g)) == sum(d[1] for d in AF.durations(old['effect'][0].groups[0])), 'merge keeps the total time')
+    sp = Spr(os_)
+    e2 = new['effect'][1].groups[0]
+    a = sp.sprite(e2['sprites'][0])
+    t.expect(int((a[..., 3] > 0).sum()) == 101 and a[28, 2, 3] > 0 and a[2, 2, 3] == 0, 'clear_strays: dim dots go, the bright one stays')
+    t.expect(e2['sprites'][0] == e2['sprites'][1], 'clear_strays: both phases share the cleaned picture')
+    b = sp.sprite(new['effect'][2].groups[0]['sprites'][0])
+    t.expect(int((b[..., 3] > 0).sum()) == 20 and int(b[..., 3].min()) == 0 and int(b[b[..., 3] > 0][:, 3].min()) == 255,
+             'drop_faint: the 10 pixels at alpha 20 go, alpha 255 stays')
+    t.expect(new['effect'][2].groups[0]['phases'] == 2 and new['effect'][1].groups[0]['anim'] == old['effect'][1].groups[0]['anim'],
+             'clear_strays and drop_faint keep phases and durations')
+    m = sp.sprite(new['effect'][3].groups[0]['sprites'][0])
+    t.expect(int((m[..., 3] > 0).sum()) == 100 + 80 - mesh and m[15, 15, 3] > 0, 'demesh: the checker goes, the solid block stays')
+    r = cp.check(od, os_, auras=set(), old=(dat, spr), allow_changed=cp.parse_allow('effect:1,2,3,4'))
+    t.expect(r.ok, 'check_pair append-only passes: ' + r.text())
+    bad = {
+        'demesh count': [['effect', '4', 'demesh', 'expect=%d' % (mesh + 1), 'x', 'x']],
+        'merge keep': [['effect', '1', 'merge', 'of=4;keep=0,1,2,3', 'x', 'x']],
+        'merge of': [['effect', '1', 'merge', 'of=5;keep=0,2,3', 'x', 'x']],
+        'strays count': [['effect', '2', 'clear_strays', 'luma_max=100;expect=5', 'x', 'x']],
+        'faint count': [['effect', '3', 'drop_faint', 'below=40;expect=21', 'x', 'x']],
+        'faint bound': [['effect', '3', 'drop_faint', 'below=200;expect=20', 'x', 'x']],
+    }
+    for name, rows in bad.items():
+        try:
+            run(c, rows, dat, spr, 'refuse734')
+            t.expect(False, 'refused: ' + name)
+        except SystemExit:
+            pass
+    try:
+        run(c, rows[:1], od, os_, 'again734')
+        t.expect(False, 'refused: a merge row cannot apply twice')
+    except SystemExit:
+        pass
+
+
 def main():
     c = t.Case()
     for name, fn in sorted(globals().items()):

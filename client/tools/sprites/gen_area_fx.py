@@ -83,6 +83,9 @@ CENTRE_OFF = {}
 # form, the pack's (the sums) or moved back by the table's shift, and only the moved one once client_pair.PAIR_ASSETS reaches it;
 # while the pair on windows-assets is older, a pack form row is "pair fix pending" (printed) and its centre is not held.
 PAIR_RECENTRED = 80
+# O734: fix_pack_fx.py (pair 82) changes rows of this table after the import (the dissolve of the pair 73 rows, recentring,
+# merged identical phases): `live` takes a row in fix_pack_fx.py's fixed form (its digest in pair_fixes/pack_fx_fixed.sums) as
+# done, and fix_pack_fx.py check holds that form; a row of effect_centre.csv is due from the pair of its row.
 BLANK = bytes([0xFF, 1, 1, 1, 1, 1, 1, 1]) + struct.pack('<I', 0)     # a blank effect, as pair 51 writes one
 DIRS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
 STEP = {'n': (0, -1), 'ne': (1, -1), 'e': (1, 0), 'se': (1, 1), 's': (0, 1), 'sw': (-1, 1), 'w': (-1, 0), 'nw': (-1, -1)}
@@ -777,10 +780,27 @@ def centre_errors(rows, frames_of, disp_of=lambda r: (0, 0)):
 
 
 def recentre_table():
-    """{effect id: (dx, dy)} of pair_fixes/effect_centre.csv, the art moved inside its canvas (O725b)"""
+    """{effect id: (dx, dy, pair)} of pair_fixes/effect_centre.csv, the art moved inside its canvas (O725b, O734)"""
     sys.path.insert(0, HERE)
     import recentre_effects
-    return {r['id']: (r['dx'], r['dy']) for r in recentre_effects.read_spec(recentre_effects.SPEC)}
+    return {r['id']: (r['dx'], r['dy'], r['pair']) for r in recentre_effects.read_spec(recentre_effects.SPEC)}
+
+
+FIXED_PAIR = 82
+
+
+def fixed_listed(eid):
+    """the effect is a thing of fix_pack_fx.py's sums (O734)"""
+    sys.path.insert(0, HERE)
+    import fix_pack_fx
+    return ('effect', eid) in fix_pack_fx.read_sums()
+
+
+def fixed_ids(dat_path, spr_path):
+    """{(kind, id)} in the fixed form of fix_pack_fx.py (O734)"""
+    sys.path.insert(0, HERE)
+    import fix_pack_fx
+    return fix_pack_fx.fixed_ids(dat_path, spr_path)
 
 
 def pair_assets():
@@ -829,12 +849,17 @@ def live(dat_path, spr_path, only_long=False):
     fixes = recentre_table()
     pending = set()                  # rows still in the pack form while the pair on windows-assets is older than PAIR_RECENTRED
     assets = pair_assets()
+    fixed = fixed_ids(dat_path, spr_path)
+    nfixed = 0
     last = max(int(r['id']) for r in rows)
     if len(dat.effects) < last or len(dat.missiles) != NEED_MISSILES:
         errs.append('the pair has %d effects and %d missiles' % (len(dat.effects), len(dat.missiles)))
     for r in rows if not errs else []:
         t = dat.effects[int(r['id']) - 1]
         ph, w, h = int(r['phases']), int(r['w']), int(r['h'])
+        if ('effect', int(r['id'])) in fixed:
+            nfixed += 1              # O734: fix_pack_fx.py check holds this form
+            continue
         if (t.w, t.h, t.phases) != (w, h, ph):
             errs.append('%s: size or phases differ at %s' % (r['name'], r['id']))
             continue
@@ -847,15 +872,20 @@ def live(dat_path, spr_path, only_long=False):
         if form is None:
             errs.append('%s: pixels differ from the sum' % r['name'])
         elif form == 'pack' and int(r['id']) in fixes:
-            if assets >= PAIR_RECENTRED:
-                errs.append('%s: the pack form of the art: the pair fix of recentre_effects.py is due since pair %d' % (r['name'], PAIR_RECENTRED))
+            due = fixes[int(r['id'])][2]
+            if assets >= due:
+                errs.append('%s: the pack form of the art: the pair fix of recentre_effects.py is due since pair %d' % (r['name'], due))
             else:
                 pending.add(r['name'])
+        elif form == 'pack' and assets >= FIXED_PAIR and fixed_listed(int(r['id'])):
+            errs.append('%s: the pack form of the art: the fix of fix_pack_fx.py is due since pair %d' % (r['name'], FIXED_PAIR))
+        elif form == 'pack' and fixed_listed(int(r['id'])):
+            pending.add(r['name'])
     if not errs and not only_long:
         def frames_of(r):
             t = dat.effects[int(r['id']) - 1]
             back = render_back(t, spr, 1)
-            return [back[(f, 0, 0, 0)] for f in range(int(r['phases']))]
+            return [back[(f, 0, 0, 0)] for f in range(t.phases)]
 
         def disp_of(r):
             return tuple(dat.effects[int(r['id']) - 1].flags.get('displacement', (0, 0)))
@@ -865,7 +895,9 @@ def live(dat_path, spr_path, only_long=False):
         for name, c in sorted(centres.items()):
             print('area fx centre: %s %.1f, %.1f px from its tile%s' % (name, c[0], c[1], ' (known: %s)' % CENTRE_OFF[name] if name in CENTRE_OFF else ''))
         for name in sorted(pending):
-            print('area fx centre: %s pair fix pending (pack form; recentre_effects.py makes pair %d, windows-assets has pair %d)' % (name, PAIR_RECENTRED, assets))
+            print('area fx centre: %s pair fix pending (pack form; recentre_effects.py / fix_pack_fx.py make the pair, windows-assets has pair %d)' % (name, assets))
+        if nfixed:
+            print('area fx: %d rows in the fixed form of fix_pack_fx.py (O734; its check holds them)' % nfixed)
     for e in errs:
         print(e)
     print('area fx live: %d effects (%d refilled in place, %d new at %d.., %d long beams up to %d), %s' % (

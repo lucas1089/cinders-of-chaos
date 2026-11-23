@@ -432,7 +432,9 @@ def test_recentred_strip():
     edit = moved.copy()
     edit[10, 10] = (1, 2, 3, 255)
     ok(G.strip_form(edit, row, sums, fixes, ph, w, h) is None, 'a changed pixel is neither form')
-    ok(set(G.recentre_table()) == {3036} and G.recentre_table()[3036] == (-6, -6), 'the table of the pair fix is read: 3036 by -6, -6')
+    ok(G.recentre_table()[3036] == (-6, -6, 80), 'the table of the pair fix is read: 3036 by -6, -6 from pair 80')
+    ok(G.recentre_table()[4051][2] == 82 and G.fixed_listed(4051) and G.fixed_listed(3036) and not G.fixed_listed(5300),
+       'O734: rows of pair 82 and the things of fix_pack_fx.py are read')
     ok(G.PAIR_RECENTRED == 80, 'the pair fix is due at pair 80')
     ok(G.pair_assets() >= 79, 'PAIR_ASSETS is read from client_pair.py')
 

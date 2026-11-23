@@ -19,6 +19,11 @@ the first frame group is composed into one canvas of w*32 x h*32, moved by the s
 Verification (always): the dat of every thing outside the table is byte-identical, the new entries parse with the table's ids, the
 spr keeps every old record byte for byte and every new sprite decodes to the pixels asked for, the new centre is `to`.
 Deterministic: the same pair and table give the same bytes.
+
+O734: column `pair`, the pair a row is due in (80 for O725b; 82 for the rows of O734). Rows of a pair after PAIR_STANDALONE are
+applied by fix_pack_fx.py, after its dissolve step, so their `of` is the centre there; `build` here skips them. `check` holds
+a row from its pair on: before (client_pair.PAIR_ASSETS older) it is "pending" and its centre is not held; a thing that
+fix_pack_fx.py lists and that stands in its fixed form passes (a later step of that tool may move its centre a little).
 """
 import argparse
 import csv
@@ -34,6 +39,7 @@ from datspr import Spr  # noqa: E402
 
 SPEC = os.path.join(HERE, 'pair_fixes', 'effect_centre.csv')
 TOL = 0.05
+PAIR_STANDALONE = 80     # rows of this pair or older are built here; later ones by fix_pack_fx.py (O734)
 
 
 def pair_of(text):
@@ -51,6 +57,7 @@ def read_spec(path):
             dx, dy = (int(v) for v in r['shift'].split(','))
             r['dx'], r['dy'] = dx, dy
             r['of'], r['to'] = pair_of(r['of']), pair_of(r['to'])
+            r['pair'] = int(r.get('pair') or PAIR_STANDALONE)
             if max(abs(r['of'][0] + dx - r['to'][0]), abs(r['of'][1] + dy - r['to'][1])) > TOL * 2:
                 raise SystemExit('effect %d: of + shift is not to' % r['id'])
             rows.append(r)
@@ -94,15 +101,16 @@ def near(a, b):
     return a is not None and max(abs(a[0] - b[0]), abs(a[1] - b[1])) <= TOL
 
 
-def plan(things, store, rows):
-    """-> ({id: TS} of the effects to change, [log lines]); stops on a premise that fails"""
-    edited, log = {}, []
+def plan(things, store, rows, edited=None):
+    """-> ({id: TS} of the effects to change, [log lines]); stops on a premise that fails. `edited`: {id: TS} of effects an
+    earlier step already changed (fix_pack_fx.py), continued and returned with the others"""
+    edited, log = ({} if edited is None else edited), []
     for r in rows:
         lst = things['effect']
         i = r['id'] - 1
         if not 0 <= i < len(lst) or lst[i].id != r['id']:
             raise SystemExit('effect %d is not in the pair' % r['id'])
-        ts = AF.TS(lst[i])
+        ts = edited.get(r['id']) or AF.TS(lst[i])
         g = ts.groups[0]
         cur = centre(canvases(store, g), g['w'], g['h'])
         if near(cur, r['to']):
@@ -139,6 +147,10 @@ def build(dat_path, spr_path, out_dir, spec=SPEC, log=print):
     d, spr, things = load(dat_path, spr_path)
     store = AF.Store(spr)
     rows = read_spec(spec)
+    later = [r for r in rows if r['pair'] > PAIR_STANDALONE]
+    rows = [r for r in rows if r['pair'] <= PAIR_STANDALONE]
+    for r in later:
+        log('effect %d: a row of pair %d, built by fix_pack_fx.py: skipped here' % (r['id'], r['pair']))
     edited, lines = plan(things, store, rows)
     for ln in lines:
         log(ln)
@@ -196,7 +208,7 @@ def verify(d, out, things, edited, store, spr, spr_path, rows, log):
             assert spr.m[x:x + n] == ms.m[y:y + n], ('old record changed', sid)
     nstore = AF.Store(ms)
     for r in rows:
-        if r['id'] not in edited:
+        if r['id'] not in edited or r['pair'] > PAIR_STANDALONE:
             continue
         g = nt['effect'][r['id'] - 1].groups[0]
         c = centre(canvases(nstore, g), g['w'], g['h'])
@@ -205,18 +217,39 @@ def verify(d, out, things, edited, store, spr, spr_path, rows, log):
         'centres at the table\'s `to`' % (same, len(edited), len(store.pix), spr.count))
 
 
-def check(dat_path, spr_path, spec=SPEC, log=print):
-    """0 when every row of the table stands at its `to`"""
+def pair_assets():
+    """client_pair.PAIR_ASSETS (server/tools/client_pair.py), 0 when it cannot be read"""
+    sys.path.insert(0, os.path.join(HERE, '..', '..', '..', 'server', 'tools'))
+    try:
+        import client_pair
+        return int(client_pair.PAIR_ASSETS)
+    except (ImportError, AttributeError, ValueError):
+        return 0
+
+
+def check(dat_path, spr_path, spec=SPEC, log=print, assets=None, fixed=None):
+    """0 when every row due by client_pair.PAIR_ASSETS stands at its `to` (or in fix_pack_fx.py's fixed form)"""
     d, spr, things = load(dat_path, spr_path)
     store = AF.Store(spr)
+    assets = pair_assets() if assets is None else assets
+    if fixed is None:
+        import fix_pack_fx
+        fixed = fix_pack_fx.fixed_ids(dat_path, spr_path)
     bad = 0
     for r in read_spec(spec):
         g = AF.TS(things['effect'][r['id'] - 1]).groups[0]
         c = centre(canvases(store, g), g['w'], g['h'])
-        ok = near(c, r['to'])
-        bad += not ok
+        if near(c, r['to']):
+            state = 'OK'
+        elif ('effect', r['id']) in fixed:
+            state = 'OK (fixed form of fix_pack_fx.py)'
+        elif r['pair'] > assets:
+            state = 'pending (a row of pair %d, windows-assets has pair %d)' % (r['pair'], assets)
+        else:
+            state = 'NOT DONE'
+            bad += 1
         log('effect %d: centre %s from the canvas middle, table says %.1f, %.1f: %s' % (
-            r['id'], 'blank' if c is None else '%.1f, %.1f' % c, r['to'][0], r['to'][1], 'OK' if ok else 'NOT DONE'))
+            r['id'], 'blank' if c is None else '%.1f, %.1f' % c, r['to'][0], r['to'][1], state))
     return 1 if bad else 0
 
 
