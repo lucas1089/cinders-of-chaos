@@ -416,7 +416,21 @@ local function setOptionIcon(option, icon)
   end
 end
 
+-- O732: an entry that has a tab in the side dock (game_chaosdock) opens the dock on that tab instead of its window; the
+-- dock itself opens the window through ChaosTopBar.runRaw. True when the dock took the entry.
+local function dockRoute(text)
+  local m = modules and modules.game_chaosdock
+  local dock = type(m) == 'table' and rawget(m, 'ChaosDock') or nil
+  if type(dock) ~= 'table' or type(dock.route) ~= 'function' then return false end
+  local ok, taken = pcall(dock.route, text)
+  return ok and taken == true
+end
+
 local function runItem(item)
+  if dockRoute(item.entry.text) then
+    unlockOpened(item.entry.text)
+    return
+  end
   local ok, err = pcall(item.action)
   if not ok then g_logger.error('[chaos_menu] ' .. item.entry.text .. ': ' .. tostring(err)) end
   unlockOpened(item.entry.text)
@@ -996,12 +1010,13 @@ function ChaosTopBar.available()
   return out
 end
 
--- runs the entry with this text, as a click on it would; returns false when it is not available
-function ChaosTopBar.run(text)
+-- runs the entry with this text, as a click on it would; returns false when it is not available. raw: the window itself,
+-- never the side dock (O732: the dock opens the windows of its tabs this way)
+local function runEntry(text, raw)
   for _, category in ipairs(CATEGORIES) do
     for _, item in ipairs(flatEntries(category.entries)) do
       if item.entry.text == text then
-        item.action()
+        if raw or not dockRoute(text) then item.action() end
         unlockOpened(text)
         return true
       end
@@ -1009,6 +1024,9 @@ function ChaosTopBar.run(text)
   end
   return false
 end
+
+function ChaosTopBar.run(text) return runEntry(text, false) end
+function ChaosTopBar.runRaw(text) return runEntry(text, true) end
 
 -- opens a category's drop-down as a click on its button would (for checks and screenshots)
 function ChaosTopBar.open(categoryId)

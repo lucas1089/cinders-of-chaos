@@ -1181,3 +1181,5 @@ function selectPage(key) M.selectPage(key) end
 function toggleLoot() M.toggleLoot() end
 function togglePin() M.togglePin() end
 function lootArrow(delta) M.lootArrow(delta) end
+-- the panel window, for the side dock (game_chaosdock, O732: its Equip. tab hosts it)
+function getWindow() return alive(window) and window or nil end

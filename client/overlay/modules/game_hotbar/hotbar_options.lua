@@ -1,7 +1,8 @@
 -- The layout options window (client/MANIFEST.md "Floating chat and central hotbar (O414)"): the layout mode (Classic or
 -- Action bar, applied at the next login), the hotbar (globes, slots, scale) and the floating chat (show while typing,
--- opacity, fade). Opened from the hotbar's right-click menu and gear button, the chat's gear, and a button added to
--- Options > Interface when the Options window has one (best effort; the other entries always work).
+-- opacity, fade) and the side dock (O732, game_chaosdock: on or off). Opened from the hotbar's right-click menu and gear
+-- button, the chat's gear, and a button added to Options > Interface when the Options window has one (best effort; the
+-- other entries always work).
 -- Global ChaosLayoutOptions.open() / close(). Values go to ChaosHotbar and ChaosFloatChat, which keep them per character.
 ChaosLayoutOptions = ChaosLayoutOptions or {}
 local M = ChaosLayoutOptions
@@ -35,6 +36,9 @@ local function refresh()
   window.hideOnSend:setChecked(chat.hideOnSend ~= false)
   window.opacity:setValue(chat.opacity)
   window.opacityLabel:setText(tr('Chat opacity: %d%%', chat.opacity))
+  local dock = modules.game_chaosdock and rawget(modules.game_chaosdock, 'ChaosDock')
+  window.dock:setChecked(not dock or not dock.isEnabled or dock.isEnabled())
+  window.dock:setEnabled(dock ~= nil)
   window.fade:setChecked(chat.fade == true)
   window.fadeSeconds:setValue(chat.fadeSeconds)
   window.fadeLabel:setText(tr('Fade after %d seconds', chat.fadeSeconds))
@@ -104,6 +108,11 @@ local function build()
     local fc = rawget(_G, 'ChaosFloatChat')
     window.fadeLabel:setText(tr('Fade after %d seconds', value))
     if fc then fc.setOption('fadeSeconds', value) end
+  end
+  window.dock.onCheckChange = function(_, checked)
+    if updating then return end
+    local dock = modules.game_chaosdock and rawget(modules.game_chaosdock, 'ChaosDock')
+    if dock and dock.setEnabled then dock.setEnabled(checked) end
   end
   window.resetPlace.onClick = function()
     local hb, fc = rawget(_G, 'ChaosHotbar'), rawget(_G, 'ChaosFloatChat')

@@ -121,7 +121,7 @@ ChaosHotbar < UIWidget
 ChaosLayoutOptionsWindow < ChaosMainWindow
   id: chaosLayoutOptions
   !text: tr('Layout options')
-  size: 400 470
+  size: 400 522
   @onEscape: modules.game_hotbar.closeOptions()
 
   ChaosLabel
@@ -248,6 +248,23 @@ ChaosLayoutOptionsWindow < ChaosMainWindow
     anchors.left: parent.left
     margin-top: 14
     width: 270
+
+  // O732: the side dock (game_chaosdock); off gives the floating windows back
+  ChaosLabel
+    id: dockLabel
+    !text: tr('Side panel')
+    anchors.top: resetPlace.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    color: #e8c89a
+
+  ChaosCheckBox
+    id: dock
+    !text: tr('Windows in a side panel with tabs')
+    anchors.top: dockLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
 
   ChaosButton
     id: close
