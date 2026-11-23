@@ -12,7 +12,10 @@ A plan names one with the field `style`. The compiler then takes from it:
   * the decoration kit: in every category of the biome's kit, the profile's groups that some kit uses in that
     category, weighted by their share (a category with none keeps the biome's rows);
   * the decoration density (the profile's items per 100 walkable tiles against REF_PER100, times `decoration`) and
-    the clusters (how many per 100 tiles, how many pieces round an anchor), drawn with the compile's seeded rng.
+    the clusters (how many per 100 tiles, how many pieces round an anchor), drawn with the compile's seeded rng;
+  * O745: the lights (light items per 100 walkable tiles against REF_LIGHT_PER100 of the layout kind), the debris
+    share of the decoration in the kit categories that kept the biome's rows (against REF_DEBRIS_SHARE of the kind)
+    and the width of a plan path that names none (the most common corridor width of 2-6 tiles, `path_width`).
 Without `style` nothing here runs: every held plan compiles to the same bytes.
 
 This module also holds the item catalogue the learner classifies with and the copy guard (`window_matches`).
@@ -35,6 +38,16 @@ ART_CSV = os.path.join(C.SERVER, 'data', 'items', 'art_items.csv')
 # "dense" and left out): the density a profile is measured against. They gave 33.5-46.8, mean 38.2.
 REF_PER100 = 38.2
 DENSITY_RANGE = (0.4, 2.5)
+# O745: light and debris items per 100 walkable tiles of the same six examples by layout kind (area_style_learn.learn on
+# each whole compiled area, 2026-11-23): dungeon crypt_boss; cave lava_cave and swamp_hunt; waste river_hunt,
+# ruined_hamlet and village_square. Lights differ by kind far more than by plan (6.7 in the crypt, 0.3-0.6 in the
+# open biomes), so a profile is measured against its own kind. Debris counts as a share of the decoration.
+REF_LIGHT_PER100 = {'dungeon': 6.723, 'cave': 3.547, 'waste': 0.413}
+REF_DECOR_PER100 = {'dungeon': 46.849, 'cave': 39.873, 'waste': 34.129}
+REF_DEBRIS_PER100 = {'dungeon': 21.289, 'cave': 14.327, 'waste': 4.520}
+LIGHT_RANGE = (0.4, 2.5)
+DEBRIS_RANGE = (0.5, 2.0)
+PATH_WIDTHS = (2, 3, 4, 5, 6)       # corridor widths a plan path takes (1: a seam, 7+: a room)
 CLUSTER_PIECES = (1, 8)      # details round a cluster anchor drawn from the profile (the biome default is 2-5)
 VEG_WORDS = ('tree', 'bush', 'grass', 'fern', 'plant', 'flower', 'reed', 'mushroom', 'moss', 'lichen', 'gnarl',
              'claw', 'thorn', 'corn', 'pumpkin', 'vine', 'leaf', 'leaves', 'shrub', 'cap')
@@ -275,20 +288,69 @@ def pick_weighted(rng, rows):
     return rows[-1][0]
 
 
+def light_factor(prof, kind):
+    """O745: the profile's light items per 100 walkable tiles against REF_LIGHT_PER100 of the layout kind, clamped"""
+    lo, hi = LIGHT_RANGE
+    ref = REF_LIGHT_PER100.get(kind, REF_LIGHT_PER100['waste'])
+    return max(lo, min(hi, float(prof['density'].get('light_per100', ref)) / ref))
+
+
+def debris_factor(prof, kind):
+    """O745: the profile's debris share of the decoration against REF_DEBRIS_SHARE of the layout kind, clamped"""
+    lo, hi = DEBRIS_RANGE
+    k = kind if kind in REF_DEBRIS_PER100 else 'waste'
+    ref = REF_DEBRIS_PER100[k] / REF_DECOR_PER100[k]
+    d = prof['density']
+    if not d.get('decor_per100'):
+        return 1.0
+    return max(lo, min(hi, float(d.get('debris_per100', 0.0)) / float(d['decor_per100']) / ref))
+
+
+def debris_groups(groups):
+    """the kit groups whose name says debris (DEBRIS_WORDS, the learner's debris subset)"""
+    return {g for g, gd in groups.items() if _words(g + ' ' + gd.get('name', ''), DEBRIS_WORDS)}
+
+
+def path_width(prof):
+    """O745: the width of a plan path that names none: the most common corridor width of 2-6 tiles in the profile
+    (a tie goes to the width nearest 3); 3 (the planner's default) when it has none"""
+    h = prof.get('corridor_width') or {}
+    best = max((float(h.get(str(w), 0.0)), -abs(w - 3), -w, w) for w in PATH_WIDTHS)
+    return best[3] if best[0] > 0 else 3
+
+
 def apply_dresser(dresser, prof):
-    """switch a Dresser to the profile: kit, density, clusters (area_plan_decor.Dresser(style=...))"""
+    """switch a Dresser to the profile: kit, density, clusters, lights and debris (area_plan_decor.Dresser(style=...))"""
     dresser.style = prof
+    base = dresser.kit
     dresser.kit = styled_kit(prof, dresser.kit)
     dresser.dm = dresser.dm * density_factor(prof)
     per100 = float(prof['clusters'].get('per100_3plus', 0.0))
     dresser.style_rates = {'clusters_per100': per100 / max(0.4, dresser.dm)}
     dresser.style_sizes = cluster_sizes(prof)
+    # O745: lights by the profile's light density; debris weight in the categories that kept the biome's rows (the
+    # categories drawn from the profile carry its debris share already)
+    dresser.style_light = light_factor(prof, dresser.kind)
+    dresser.lm = dresser.lm * dresser.style_light
+    dresser.style_debris = debris_factor(prof, dresser.kind)
+    deb = debris_groups(dresser.groups)
+    kept = sorted(c for c, rows in base.items() if isinstance(rows, list) and dresser.kit.get(c) == rows)
+    dresser.style_debris_cats = []
+    for c in kept:
+        rows = dresser.kit[c]
+        if any(isinstance(r, list) and r and r[0] in deb for r in rows):
+            dresser.kit[c] = [[r[0], max(1, int(round(r[1] * dresser.style_debris)))] if isinstance(r, list) and r and r[0] in deb
+                              else r for r in rows]
+            dresser.style_debris_cats.append(c)
 
 
 def manifest_entry(key, prof, job, dresser):
     return dict(key=key, source=prof.get('source', {}).get('name'), generator=job or {},
                 density_factor=round(density_factor(prof), 4), kit_groups=sorted({g for c, rows in (dresser.kit or {}).items()
-                                                                                  if isinstance(rows, list) for g, _w in rows}))
+                                                                                  if isinstance(rows, list) for g, _w in rows}),
+                light_factor=round(getattr(dresser, 'style_light', 1.0), 4),
+                debris_factor=round(getattr(dresser, 'style_debris', 1.0), 4),
+                debris_categories=list(getattr(dresser, 'style_debris_cats', [])), path_width=path_width(prof))
 
 
 # ================================================================================================= copy guard

@@ -32,6 +32,13 @@ DEFAULT_ORIGIN = (14800, 14800)
 SCREEN = (15, 11)            # the tiles a 10.98 client shows
 VIEW = (9, 7)                # tiles a player sees on each side (the screen's 7 and 5, plus big sprites); never void
 D8 = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
+# the headings of our stair brush (O745, server/README.md "Buildings phase 2 (O740)"), by the way up: the decor_kits.json
+# brush of the stone stairs on the floor below and the step from them to the tile they lead up to (the stairs ground
+# lies right over the stairs; stepping on it goes down to the tile one step the other way). The base items hold stone
+# stairs with floorchange north (3687) and west (3688) only; east and south are ramps of other art, not used.
+STAIR_HEADINGS = {'n': ('stairs_up', (0, -1)), 'w': ('stairs_up_west', (-1, 0))}
+STAIR_ORDER = ('n', 'w')        # tried in this order: a place the north stairs fit keeps them (held bytes)
+CLIMB = {'n': 'north', 'w': 'west'}
 
 
 # ================================================================================================= catalogues

@@ -60,6 +60,8 @@ kit = D.kits()
 STAIRS_UP, STAIRS_GROUND = kit['brushes']['stairs_up'], kit['brushes']['stairs_down_ground']
 mats = C.materials(False)
 ok(STAIRS_UP == 3687 and STAIRS_GROUND == 411, 'the stair brush of O740: stone stairs 3687, stairs ground 411')
+STAIRS_ID = {h: kit['brushes'][key] for h, (key, _s) in C.STAIR_HEADINGS.items()}
+ok(STAIRS_ID == {'n': 3687, 'w': 3688}, 'O745: the stone stairs up north 3687 and up west 3688 (no stone stairs up east or south)')
 ok(mats['over_any'].get('mountain') == 'gravel' and set(mats['pieces']['gravel']) == {
     'n', 'e', 's', 'w', 'cnw', 'cne', 'csw', 'cse', 'dnw', 'dne', 'dsw', 'dse'}, 'materials: the mountain edge set by name')
 ok(mats['families']['mountain']['grounds'] == [919] and not mats['families']['mountain']['walk'], 'materials: the mountain 919')
@@ -86,6 +88,17 @@ ok(PL.erode(box, 2) == {(x, y) for x in range(2, 8) for y in range(2, 6)}, 'erod
 ok(len(PL.ring({(0, 0)}, 1)) == 8 and len(PL.ring({(0, 0)}, 2)) == 24, 'ring of a tile')
 spots = PL.ramp_spots(box)
 ok(spots and all(y == 7 for _x, y in spots) and {x for x, _y in spots} == set(range(2, 8)), 'ramp spots on the south edge %s' % spots)
+ws = PL.ramp_spots(box, 'w')
+ok(ws and all(x == 9 for x, _y in ws) and {y for _x, y in ws} == set(range(2, 6)), 'O745: west ramp spots on the east edge %s' % ws)
+ok(PL.all_spots(box) == [(x, y, 'n') for x, y in spots] + [(x, y, 'w') for x, y in ws], 'O745: all_spots lists north, then west')
+ok(PL.notch((9, 4, 'w')) == {(9, 3), (9, 4), (9, 5)} and PL.notch((4, 7)) == {(3, 7), (4, 7), (5, 7)},
+   'O745: a west notch runs along the east edge, a north one along the south edge')
+ok(PL._spaced((4, 7, 'n'), (10, 7, 'n')) and not PL._spaced((4, 7, 'n'), (8, 7, 'n')) and PL._spaced((9, 2, 'w'), (9, 8, 'w'))
+   and not PL._spaced((9, 2, 'w'), (9, 6, 'w')) and not PL._spaced((7, 7, 'n'), (9, 4, 'w')),
+   'O745: ramps of one heading 6 apart along their edge, of two headings 6 apart')
+lvw = PL.levels_of(box, [(4, 7), (9, 3, 'w')])
+ok(lvw[1]['stairs_top'] == {(4, 7), (9, 3)} and lvw[0]['heads'] == {(4, 7): 'n', (9, 3): 'w'}
+   and not {(9, 2), (9, 3), (9, 4)} & lvw[0]['solid'] and (9, 5) in lvw[0]['solid'], 'O745: levels with a west ramp: its notch and heading')
 lv = PL.levels_of(box, [(4, 7)])
 ok((3, 7) not in lv[0]['solid'] and (4, 7) not in lv[0]['solid'] and (5, 7) not in lv[0]['solid'] and (2, 7) in lv[0]['solid'],
    'levels: the notch of a ramp is cut out of the cliff')
@@ -199,22 +212,48 @@ for rec in recs:
         open_ = [t for t in built if t in walk and tiles[t]['ground'] != STAIRS_GROUND
                  and any((t[0] + dx, t[1] + dy, t[2]) not in tiles for dx, dy in PL.D8)]
         ok(not open_, '%s z %d: the cliff ring is closed except at the ramps %s' % (lab, lv['z'], open_[:1]))
-        ok(len(lv['walk']) >= PL.MIN_TOP, '%s z %d: %d walkable tiles on top' % (lab, lv['z'], len(lv['walk'])))
-        ok(all(t in dist for t in lv['walk']), '%s z %d: every top tile reached' % (lab, lv['z']))
+        lw = [t for t in lv['walk'] if t in walk]     # a blocking piece of the zone kit may stand on top (O745)
+        ok(len(lw) >= PL.MIN_TOP, '%s z %d: %d walkable tiles on top' % (lab, lv['z'], len(lw)))
+        ok(all(t in dist for t in lw), '%s z %d: every top tile reached' % (lab, lv['z']))
         ok(all((t[0], t[1], z) in tiles for t in built), '%s z %d: built over the floor below' % (lab, lv['z']))
+    for L_ in sorted({rp['level'] for rp in rec['ramps']}):     # a tier is entered over one of its ramps
+        lw = [t for t in next(lv['walk'] for lv in rec['levels'] if lv['level'] == L_) if t in walk]
+        ok(min(dist[t] for t in lw) > min(dist[rp['low']] for rp in rec['ramps'] if rp['level'] == L_),
+           '%s: tier %d is entered over its ramps' % (lab, L_))
     for rp in rec['ramps']:
-        ok([i for i, _a in tiles[rp['low']]['items']] == [STAIRS_UP], '%s: stone stairs alone at %s' % (lab, rp['low']))
+        f = C.STAIR_HEADINGS[rp['heading']][1]
+        ok(rp['up'] == (rp['top'][0] + f[0], rp['top'][1] + f[1], rp['top'][2]) and
+           rp['landing'] == (rp['low'][0] - 2 * f[0], rp['low'][1] - 2 * f[1], rp['low'][2]),
+           '%s: the ramp at %s leads %s' % (lab, rp['low'], C.CLIMB[rp['heading']]))
+        ok([i for i, _a in tiles[rp['low']]['items']] == [STAIRS_ID[rp['heading']]], '%s: stone stairs alone at %s' % (lab, rp['low']))
         ok(tiles[rp['top']]['ground'] == STAIRS_GROUND and not tiles[rp['top']]['items'], '%s: bare stairs ground at %s' % (lab, rp['top']))
         ok(rp['top'][:2] == rp['low'][:2] and rp['top'][2] == rp['low'][2] - 1, '%s: the stairs ground over the stairs' % lab)
         ok(rp['up'] in walk and rp['down'] in walk and rp['landing'] in walk, '%s: the ramp at %s leads walkable tiles' % (lab, rp['low']))
         ok((rp['low'], rp['up']) in r['plateau_edges'] and (rp['top'], rp['down']) in r['plateau_edges'],
            '%s: both floor changes of the ramp' % lab)
-        ok(dist.get(rp['up'], 10 ** 6) > dist.get(rp['low'], -1), '%s: the top is reached over the ramp' % lab)
 taken = {(s['x'], s['y'], s['z']) for s in r['spawns']}
 ramp_tiles = {rp[k] for rec in recs for rp in rec['ramps'] for k in ('low', 'top', 'up', 'down', 'landing')}
 ok(not taken & ramp_tiles and not {c['at'] for c in r['chests']} & ramp_tiles, 'highland_hunt: no spawn or chest on a ramp')
 ok(sum(1 for s in r['spawns'] if s['z'] < oz) >= 1, 'highland_hunt: spawns stand on top of a plateau')
 ok(all(rp['landing'] not in r['dresser'].blocked for rec in recs for rp in rec['ramps']), 'highland_hunt: no decoration on a landing')
+# O745: the tops dress with their zone (its kit, its density); nothing on a ramp, its landing or the lip
+placed = r['dresser'].placed
+near_ramp = {(t[0] + dx, t[1] + dy, t[2]) for t in ramp_tiles for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
+lip = {t for rec in recs for lv in rec['levels'] for t in lv['solid']} | {t for rec in recs for t in rec['base']['solid']}
+ok(not [p for p in placed if p[0] in ramp_tiles] and not [p for p in placed if p[0] in lip],
+   'highland_hunt: no decoration on a ramp tile, a landing or the lip')
+ok(not [p for p in placed if p[0] in near_ramp and r['dresser'].groups[p[2]]['block']], 'highland_hunt: no blocking piece beside a ramp')
+for rec in recs:
+    top = {t for lv in rec['levels'] for t in lv['walk']}
+    on = [p for p in placed if p[0] in top]
+    x1, y1, x2, y2, zz = next(z['rect'] for z in r['dresser'].zones if z['id'] == rec['zone'])
+    floor = [t for t in walk | r['dresser'].blocked if t[2] == zz and x1 <= t[0] <= x2 and y1 <= t[1] <= y2]
+    on_floor = [p for p in placed if p[0][2] == zz and x1 <= p[0][0] <= x2 and y1 <= p[0][1] <= y2]
+    d_top, d_floor = 100.0 * len(on) / len(top), 100.0 * len(on_floor) / max(1, len(floor))
+    ok(on and 0.3 * d_floor <= d_top <= 2.5 * d_floor,
+       'plateau %s: %d pieces on its %d top tiles (%.1f per 100; the zone floor %.1f)' % (rec['id'], len(on), len(top), d_top, d_floor))
+    kit_groups = {g for c, rows in r['dresser'].kit.items() if isinstance(rows, list) for g, _w in rows}
+    ok(all(p[2] in kit_groups for p in on), 'plateau %s: only the zone kit on top' % rec['id'])
 man = r['manifest']['stats']['plateaus']
 ok(len(man) == 3 and all(m['entry_to_top'] for m in man), 'highland_hunt: the manifest lists the plateaus %s' %
    [(m['id'], m['height'], m['entry_to_top']) for m in man])
@@ -259,7 +298,7 @@ ok(rb['buildings'] and rb['plateaus'] and not foot & {t for rec in rb['plateaus'
 def qa_of(tiles_, walk_, dist_=None):
     got = []
     PL.qa(recs, tiles_, walk_, dist_ if dist_ is not None else C.tile_reach(walk_, r['arrival'], (), edges), {},
-          lambda m: got.append(m), lambda m: got.append('WARN ' + m), lambda m: None, STAIRS_UP, STAIRS_GROUND, 919)
+          lambda m: got.append(m), lambda m: got.append('WARN ' + m), lambda m: None, STAIRS_ID, STAIRS_GROUND, 919)
     return got
 
 
@@ -273,7 +312,7 @@ ok(any('runs into a wall' in m for m in qa_of(tiles, w2)), 'QA: a ramp into a wa
 lip = next(t for t in recs[0]['levels'][0]['solid'] if (t[0], t[1] - 1, t[2]) in tiles and t[1] > recs[0]['rect'][1])
 w3 = set(walk) | {lip}
 ok(any('cliff ring of z' in m for m in qa_of(tiles, w3)), 'QA: a lip tile opened %s' % (lip,))
-far = max(recs[0]['levels'][0]['walk'], key=lambda t: dist[t])
+far = max((t for t in recs[0]['levels'][0]['walk'] if t in dist), key=lambda t: dist[t])
 d4 = dict(dist)
 d4.pop(far)
 ok(any('cannot be reached' in m for m in qa_of(tiles, walk, d4)), 'QA: a top tile cut off')

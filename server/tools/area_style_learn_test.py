@@ -25,6 +25,7 @@ sys.path.insert(0, HERE)
 
 import area_plan_compile as PC  # noqa: E402
 import area_plan_core as C  # noqa: E402
+import area_plan_decor as D  # noqa: E402
 import area_plan_style as ST  # noqa: E402
 import area_style_learn as L  # noqa: E402
 import map_guard_testkit as K  # noqa: E402
@@ -171,6 +172,59 @@ try:
         pl['style'] = k
         n[k] = len(PC.compile_plan(pl, pair24=False, cat=cat)['dresser'].placed)
     ok(n['test_dense'] > n['test_sparse'], 'compile: a denser profile places more (%d against %d)' % (n['test_dense'], n['test_sparse']))
+    # O745: lights follow the profile's light density against the kind's reference
+    crypt_plan = json.load(open(os.path.join(EX, 'crypt_boss.json')))
+    lit = json.load(open(os.path.join(C.PLANDIR, 'styles', 'gravewatch_crypt.json')))
+    dim = copy.deepcopy(lit)
+    lit['density']['light_per100'] = ST.REF_LIGHT_PER100['dungeon'] * 3
+    dim['density']['light_per100'] = ST.REF_LIGHT_PER100['dungeon'] / 3
+    nl, lf = {}, {}
+    for k, p in (('test_lit', lit), ('test_dim', dim)):
+        p['key'] = k
+        json.dump(p, open(os.path.join(sdir, k + '.json'), 'w'))
+        pl = copy.deepcopy(crypt_plan)
+        pl['style'] = k
+        rr = PC.compile_plan(pl, pair24=False, cat=cat)
+        nl[k] = sum(1 for _t, _i, g, _c in rr['dresser'].placed if rr['dresser'].groups[g]['light'])
+        lf[k] = rr['stats']['style']['light_factor']
+    ok(lf == {'test_lit': ST.LIGHT_RANGE[1], 'test_dim': ST.LIGHT_RANGE[0]}
+       and nl['test_lit'] > nl['test_dim'], 'O745 compile: a brighter profile lights more (%s, factors %s)' % (nl, lf))
+    # O745: the debris share in the categories that keep the biome's rows
+    deb = copy.deepcopy(prof)
+    deb['key'] = 'test_debris'
+    deb['decor']['groups'] = {}
+    deb['density']['debris_per100'] = deb['density']['decor_per100'] * 0.4
+    json.dump(deb, open(os.path.join(sdir, 'test_debris.json'), 'w'))
+    pl = copy.deepcopy(river)
+    pl['style'] = 'test_debris'
+    rd = PC.compile_plan(pl, pair24=False, cat=cat)
+    sd = rd['stats']['style']
+    base_kit = D.kit_for(river['biome'])[1]
+    dgs = ST.debris_groups(D.kits()['groups'])
+    doubled = all(w == max(1, int(round(bw * 2.0))) for c in sd['debris_categories']
+                  for (g, w), (_g, bw) in zip(rd['dresser'].kit[c], base_kit[c]) if g in dgs)
+    ok(sd['debris_factor'] == ST.DEBRIS_RANGE[1] and sd['debris_categories'] and doubled,
+       'O745 compile: a debris share of 0.4 (the waste kind holds %.2f) doubles the debris weight in %s'
+       % (ST.REF_DEBRIS_PER100['waste'] / ST.REF_DECOR_PER100['waste'], sd['debris_categories']))
+    # O745: a path with no width takes the profile's most common corridor width
+    wide = copy.deepcopy(prof)
+    wide['key'] = 'test_wide'
+    wide['corridor_width'] = {'1': 0.1, '3': 0.2, '5': 0.3, '7+': 0.4}
+    json.dump(wide, open(os.path.join(sdir, 'test_wide.json'), 'w'))
+    seen = []
+    real_layout = C.layout
+    C.layout = lambda pl_, cat_: (seen.append([q.get('width') for q in pl_.get('paths', [])]), real_layout(pl_, cat_))[1]
+    try:
+        pl = copy.deepcopy(river)
+        pl['style'] = 'test_wide'
+        pl['paths'][0]['width'] = 2
+        for q in pl['paths'][1:]:
+            q.pop('width', None)
+        rw = PC.compile_plan(pl, pair24=False, cat=cat)
+    finally:
+        C.layout = real_layout
+    ok(seen and seen[-1] == [2] + [5] * (len(pl['paths']) - 1) and rw['stats']['style']['path_width'] == 5
+       and 'width' not in pl['paths'][1], 'O745 compile: paths with no width take 5 tiles, a named width stays: %s' % seen[-1:])
     # the generator drops what it cannot use
     lay = C.layout(river, cat)
     _a, meta = PC.run_build(river, cat, lay, False, False, dict(floor='no_such_family', patches=[
@@ -207,6 +261,9 @@ ok(vault.get('style') == 'gravewatch_crypt' and vault['biome'] == 'vault', 'exam
 rv = PC.compile_plan(vault, pair24=False, cat=cat)
 ok(not [q for q in rv['qa'] if q[0] in ('ERROR', 'WARN')], 'example: no QA error or warning: %s' % [q for q in rv['qa'] if q[0] != 'INFO'][:3])
 sv = rv['stats']['style']
+ok(abs(sv['light_factor'] - 6.15 / ST.REF_LIGHT_PER100['dungeon']) < 0.001 and sv['path_width'] == 3 and sv['debris_categories'] == []
+   and abs(sv['debris_factor'] - (21.524 / 46.658) / (ST.REF_DEBRIS_PER100['dungeon'] / ST.REF_DECOR_PER100['dungeon'])) < 0.001,
+   'O745 example: light factor %.3f, debris factor %.3f (every category from the profile), paths of 3' % (sv['light_factor'], sv['debris_factor']))
 ok(sv['generator'].get('wall') == 'ruin' and sv['generator'].get('floor') == 'slate', 'example: ruin walls and slate floors from the profile: %s' % sv['generator'])
 vstacks = {k: [t['ground']] + [i for i, _a in t['items']] for k, t in rv['tiles'].items()}
 ok(ST.window_matches(cstacks, vstacks) == [], 'example: copy guard against the reference floor')
@@ -216,6 +273,12 @@ pv = PC.compile_plan(plain_v, pair24=False, cat=cat)
 fams_v = {f for t in rv['tiles'].values() for f in [SC['ground'].get(t['ground'])] if f}
 fams_p = {f for t in pv['tiles'].values() for f in [SC['ground'].get(t['ground'])] if f}
 ok(fams_v != fams_p, 'example: the style changes the grounds (%s against the vault default %s)' % (sorted(fams_v), sorted(fams_p)))
+
+# O745: the path width rule
+ok(ST.path_width({'corridor_width': {'2': 0.3, '4': 0.3}}) == 2 and ST.path_width({'corridor_width': {'5': 0.3, '3': 0.3}}) == 3,
+   'path width: a tie goes to the width nearest 3, then the narrower')
+ok(ST.path_width({'corridor_width': {'1': 0.5, '7+': 0.5}}) == 3 and ST.path_width({}) == 3, 'path width: 3 with no corridor of 2-6')
+ok(ST.path_width({'corridor_width': {'3': 0.2, '6': 0.25}}) == 6, 'path width: the most common of 2-6')
 
 # ------------------------------------------------------------------------------------------------ Lua: both interpreters
 outs = []

@@ -336,12 +336,15 @@ def _all_reached(free, start):
 
 def plan_levels(lay, n_up, cellar, blocks, upper_pieces=()):
     """the floors above a walled building and the way down to its cellar (O740), in the layout's relative tiles. Pure.
-    The stairs are our stair brush: the stone stairs on the floor below lead up to the tile north of the stairs ground
-    on the floor above; stepping on the stairs ground goes down to the tile south of the stone stairs (the rule of the
-    plan's `stairs` connections). The cellar is reached by the large hole (down onto the ladder) and the ladder (up to
-    the tile south of the hole). A stair or hole tile changes the floor, so it counts as no way through: every free
-    interior tile of every floor stays joined to the way in without it. blocks(family) -> the piece blocks.
-    -> dict(levels=[{k, stairs, down, start, items}], hole, hole_up, dropped); raises BuildingError when no place fits"""
+    The stairs are our stair brush: the stone stairs on the floor below lead up to the tile one step their way
+    (C.STAIR_HEADINGS: north, or west since O745) of the stairs ground on the floor above; stepping on the stairs
+    ground goes down to the tile one step the other way of the stone stairs (the rule of the plan's `stairs`
+    connections). A heading is tried only when the north stairs fit nowhere (C.STAIR_ORDER). The cellar is reached by
+    the large hole (down onto the ladder) and the ladder (up to the tile south of the hole). A stair or hole tile
+    changes the floor, so it counts as no way through: every free interior tile of every floor stays joined to the way
+    in without it. blocks(family) -> the piece blocks.
+    -> dict(levels=[{k, stairs, heading, down, start, items}], hole, hole_up, dropped); raises BuildingError when no
+    place fits"""
     interior = set(lay['floor'])
     claimed0 = {it['tile'] for it in lay['items'] if it['role'] == 'floor'}
     blocked0 = {it['tile'] for it in lay['items'] if it['role'] == 'floor' and blocks(it['family'])}
@@ -349,70 +352,79 @@ def plan_levels(lay, n_up, cellar, blocks, upper_pieces=()):
     start0 = lay['inside'][0]
     s0 = lay['inside'][0]
 
+    def step(h):
+        return C.STAIR_HEADINGS[h][1]
+
+    def landing(t, h):
+        return (t[0] - step(h)[0], t[1] - step(h)[1])
+
     def order(start):
         return sorted(interior, key=lambda t: (-(abs(t[0] - start[0]) + abs(t[1] - start[1])), t[1], t[0]))
 
     def stairs_all(level_claimed, level_blocked, level_keep, barriers, start):
-        for t in order(start):
-            south, north = (t[0], t[1] + 1), (t[0], t[1] - 1)
-            if t in level_claimed or t in level_keep or t in barriers or t == start:
-                continue
-            if south not in interior or south in level_claimed or south in barriers or north not in interior:
-                continue
-            if _all_reached(interior - level_blocked - barriers - {t}, start):
-                yield t
+        for h in C.STAIR_ORDER:
+            fx, fy = step(h)
+            for t in order(start):
+                land, arr = (t[0] - fx, t[1] - fy), (t[0] + fx, t[1] + fy)
+                if t in level_claimed or t in level_keep or t in barriers or t == start:
+                    continue
+                if land not in interior or land in level_claimed or land in barriers or arr not in interior:
+                    continue
+                if _all_reached(interior - level_blocked - barriers - {t}, start):
+                    yield t, h
 
     def stairs_on(*a):
-        return next(stairs_all(*a), None)
+        return next(stairs_all(*a), (None, None))
 
-    def hole_for(st):
-        """(hole, up) on the ground floor beside the stairs `st` (or None), or None"""
+    def hole_for(st, sh):
+        """(hole, up) on the ground floor beside the stairs `st` of heading `sh` (or None), or None"""
         bars = {st} if st else set()
+        land = landing(st, sh) if st else None
         for t in order(s0):
             up = (t[0], t[1] + 1)
             if t in claimed0 or t in keep0 or t in bars or t == start0 or up not in interior or up in claimed0 or up in bars:
                 continue
-            if st and (up == (st[0], st[1] + 1) or t == (st[0], st[1] + 1)):
+            if st and (up == land or t == land):
                 continue
             if _all_reached(interior - blocked0 - bars - {t}, start0):
                 return t, up
         return None
-    levels = [dict(k=0, stairs=None, down=None, start=start0, items=[])]
+    levels = [dict(k=0, stairs=None, heading=None, down=None, start=start0, items=[])]
     dropped = []
     hole = hole_up = None
     if n_up:
         found = None
-        for t in stairs_all(claimed0, blocked0, keep0, set(), start0):     # the first stairs tile that leaves room for the hole
+        for t, h in stairs_all(claimed0, blocked0, keep0, set(), start0):  # the first stairs tile that leaves room for the hole
             if not cellar:
-                found = (t, None)
+                found = (t, h, None)
                 break
-            hz = hole_for(t)
+            hz = hole_for(t, h)
             if hz:
-                found = (t, hz)
+                found = (t, h, hz)
                 break
         if found is None:
-            raise BuildingError('no tile inside takes the stairs up (a free tile with a free one south of it)'
-                                + (' beside the hole to the cellar' if cellar else ''))
-        levels[0]['stairs'] = found[0]
-        if found[1]:
-            hole, hole_up = found[1]
+            raise BuildingError('no tile inside takes the stairs up (a free tile with a free one on each side of it '
+                                'along the stairs)' + (' beside the hole to the cellar' if cellar else ''))
+        levels[0]['stairs'], levels[0]['heading'] = found[0], found[1]
+        if found[2]:
+            hole, hole_up = found[2]
     elif cellar:
-        hz = hole_for(None)
+        hz = hole_for(None, None)
         if hz is None:
             raise BuildingError('no tile inside takes the hole to the cellar (a free tile with a free one south of it)')
         hole, hole_up = hz
     for k in range(1, n_up + 1):
-        down = levels[k - 1]['stairs']
-        start = (down[0], down[1] - 1)
-        lv = dict(k=k, stairs=None, down=down, start=start, items=[])
+        down, dh = levels[k - 1]['stairs'], levels[k - 1]['heading']
+        start = (down[0] + step(dh)[0], down[1] + step(dh)[1])
+        lv = dict(k=k, stairs=None, heading=None, down=down, start=start, items=[])
         bars = {down}
         if k < n_up:
-            t = stairs_on(set(), set(), {start}, bars, start)
+            t, h = stairs_on(set(), set(), {start}, bars, start)
             if t is None:
                 raise BuildingError('no tile of floor %d takes the stairs up' % k)
-            lv['stairs'] = t
+            lv['stairs'], lv['heading'] = t, h
             bars.add(t)
-        busy = bars | {start} | ({(lv['stairs'][0], lv['stairs'][1] + 1)} if lv['stairs'] else set())
+        busy = bars | {start} | ({landing(lv['stairs'], lv['heading'])} if lv['stairs'] else set())
         xs, ys = [t[0] for t in interior], [t[1] for t in interior]
         corners = [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]
         blk = set()
@@ -825,10 +837,14 @@ def _ruin(rec, lay, A, tiles, walk, under, floors, brush, kit, fams, share, wher
 
 def _levels(rec, lay, levels, A, z, tiles, walk, floors, brush, kit, fams, rng, look, res, E):
     """the floors above (O740): the same footprint at z - k with the full wall ring (the door becomes wall), the floor
-    family, the stairs (stone stairs below, the stairs ground above) and the pieces of the prefab's `upper`"""
-    stairs_up, stairs_ground = kit['brushes']['stairs_up'], kit['brushes']['stairs_down_ground']
+    family, the stairs (stone stairs below, the stairs ground above; their heading from plan_levels, O745) and the
+    pieces of the prefab's `upper`"""
+    stairs_ground = kit['brushes']['stairs_down_ground']
     rec['levels'] = []
     for lv in levels['levels'][1:]:
+        heading = levels['levels'][lv['k'] - 1]['heading']
+        key, (fx, fy) = C.STAIR_HEADINGS[heading]
+        stairs_up = kit['brushes'][key]
         zk = z - lv['k']
         Ak = lambda t, zk=zk: (A(t)[0], A(t)[1], zk)
         if zk < 0:
@@ -839,7 +855,8 @@ def _levels(rec, lay, levels, A, z, tiles, walk, floors, brush, kit, fams, rng, 
             E('building %s: floor %d at %s is taken by another floor of the area' % (rec['id'], lv['k'], taken[0]))
             break
         info = dict(k=lv['k'], z=zk, walls={}, interior=sorted(Ak(t) for t in lay['floor']), items=[],
-                    start=Ak(lv['start']), down=Ak(lv['down']), stairs=Ak(lv['stairs']) if lv['stairs'] else None)
+                    start=Ak(lv['start']), down=Ak(lv['down']), stairs=Ak(lv['stairs']) if lv['stairs'] else None,
+                    heading=heading, stairs_id=stairs_up)
         for t in list(lay['walls']) + list(lay['floor']):
             tiles[Ak(t)] = dict(ground=rng.choice(floors), items=[], flags=0)
         for t, kind in sorted(lay['walls'].items()):
@@ -859,13 +876,13 @@ def _levels(rec, lay, levels, A, z, tiles, walk, floors, brush, kit, fams, rng, 
                 walk.discard(a)
                 rec['block_ids'].add(iid)
             info['items'].append(dict(family=it['family'], at=a, id=iid, block=blk))
-        # the stairs from the floor below: stone stairs there lead up north of the stairs ground here
+        # the stairs from the floor below: stone stairs there lead up one step their way of the stairs ground here
         below = (info['down'][0], info['down'][1], zk + 1)
         tiles[below]['items'].append((stairs_up, {}))
         tiles[info['down']]['ground'] = stairs_ground
-        res['edges'] += [(below, (info['down'][0], info['down'][1] - 1, zk)),
-                         (info['down'], (below[0], below[1] + 1, zk + 1))]
-        res['special'].update((below, info['down'], (below[0], below[1] + 1, zk + 1), (info['down'][0], info['down'][1] - 1, zk)))
+        arrive, land = (info['down'][0] + fx, info['down'][1] + fy, zk), (below[0] - fx, below[1] - fy, zk + 1)
+        res['edges'] += [(below, arrive), (info['down'], land)]
+        res['special'].update((below, info['down'], land, arrive))
         res['extra_ground'].add(stairs_ground)
         res['foot'].update(Ak(t) for t in list(lay['walls']) + list(lay['floor']))
         res['prot'].update(Ak(t) for t in list(lay['walls']) + list(lay['floor']))
@@ -1011,7 +1028,8 @@ def _manifest_o740(rec, dist):
     if rec.get('open'):
         out['open'] = True
     if rec.get('levels'):
-        out['floors_above'] = [dict(z=lv['z'], stairs_from=list(lv['down']), walkable=len(lv['interior']),
+        out['floors_above'] = [dict(z=lv['z'], stairs_from=list(lv['down']), climb=C.CLIMB[lv['heading']],
+                                    walkable=len(lv['interior']),
                                     pieces=[i['family'] for i in lv['items']]) for lv in rec['levels']]
     if rec.get('cellar'):
         c = rec['cellar']
