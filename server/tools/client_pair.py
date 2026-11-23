@@ -72,8 +72,12 @@ PAIR_DRAWN_WINGS = 78   # the six code-drawn wings of O581 phase 2 (gen_drawn_wi
 # the pair on windows-assets (things/things-1098.tar.xz.partNN) and the md5 of its Tibia.dat. The Windows package ships
 # this pair in its own client, so its server records it (prepare_server.sh) and the guarded steps install; the package
 # job stops when the archive's dat has another md5. Raise both with every windows-assets pair push (client/MANIFEST.md).
-PAIR_ASSETS = 78
-PAIR_ASSETS_DAT_MD5 = 'c2bcc0e562485be8470c41fd9db964c5'
+PAIR_WINGS_REDRAWN = 79   # pair 78 with the 117 code-drawn wings looks redrawn (O714 mirrored face-on pair, O714c side views in profile;
+                    # gen_drawn_wings.py apply --new --keep-painted). No new ids: no server gate. On windows-assets (c01d1eb, 2026-11-23,
+                    # owner approved): PAIR_ASSETS 79
+
+PAIR_ASSETS = 79
+PAIR_ASSETS_DAT_MD5 = 'abd11a96a31a55cb1dceabe9989e792f'
 
 
 def parse(text):
