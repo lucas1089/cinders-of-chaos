@@ -7307,6 +7307,7 @@ Owner (pt-BR): keep the purchased effects, adapted to our quality; "reveja se to
   - flat_palette, abrupt_end: need a new import.
   - off_centre past what the canvas allows: needs a send offset per call (ids 3, 11, 19, 20, 22-25, 32, 33, 374, 405, 416, 481, 537-540, 700, 778, 3965).
 - **Not done**: no pair 82 built for publication. The next pair runs this step after the pair 81 steps.
+- **Send offsets (O736)**: the off centre ids past the canvas, measured on pair 81 and the O734 form (numbers only). Three get a whole-tile send offset in `pair_fixes/fx_send_offsets_extra.csv`, merged by `gen_fx_send_offsets.py` into `server/data/lib/chaos_fx_send_offsets.lua`: 700 and 3965 (+1,+1, 39.6 -> 7.5 and 37.9 -> 8.9 px), 778 (+1,+1 from client pair 82: 32.6 -> 13.8 px; on pair 81 it would end 16.4 px off). The other 20 stay at their tile: no whole tile gets them under 16 px, or it moves the pack36 pivot off its tile, or a pillar's foot a tile down (537-540). `gen_fx_send_offsets.py --pair DAT SPR` prints each extra row before / after. server/README.md "Extra send offsets (O736)".
 
 ## Creature packs as boss outfits (O608, after O605; `tools/sprites/gen_creature_outfits.py`, `art_import/creature_outfits.csv`; joins pair 73; owner 2026-11-17)
 O605 made nine 2x2 outfits for 11 monsters. The owner saw the preview and changed it (translated): "Put the creatures back the way they were.

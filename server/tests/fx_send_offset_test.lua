@@ -57,9 +57,46 @@ for _, f in ipairs({"chaos_vfx", "chaos_vfx_art", "chaos_pack_fx_ids", "chaos_pa
   local ok, err = pcall(dofile, "data/lib/" .. f .. ".lua")
   check(ok, f .. " loads: " .. tostring(err))
 end
+-- (an O736 row names a ChaosVfx entry that sends at its own tile, dx = dy = 0: shifted once, by the table)
+local gatedAll = {}
+for id in pairs(ChaosFxSendOffsetFrom or {}) do gatedAll[id] = true end
+M.pair = 999
+local Tall = M.load(true)
 for name, e in pairs(ChaosVfx or {}) do
-  check(T[e.id] == nil, "ChaosVfx." .. name .. " (" .. e.id .. ") not shifted twice")
+  check(Tall[e.id] == nil or (e.dx == 0 and e.dy == 0), "ChaosVfx." .. name .. " (" .. e.id .. ") not shifted twice")
 end
+
+-- O736 (pair_fixes/fx_send_offsets_extra.csv): pack effects whose art stands a tile up and left in a canvas too tight
+-- to move it are sent one tile right and down; 778 only from client pair 82 (its O734 form)
+for _, id in ipairs({700, 3965}) do
+  x, y = M.shift(100, 200, id, Tall)
+  eq(x * 1000 + y, 101 * 1000 + 201, "O736 effect " .. id .. " one tile right and down")
+end
+check(gatedAll[778] == true and ChaosFxSendOffsetFrom[778] == 82, "778 waits for pair 82")
+x, y = M.shift(100, 200, 778, Tall)
+eq(x * 1000 + y, 101 * 1000 + 201, "778 at pair 82 or newer: one tile right and down")
+M.pair = 81
+local T81 = M.load(true)
+x, y = M.shift(100, 200, 778, T81)
+eq(x * 1000 + y, 100 * 1000 + 200, "778 below pair 82: its own tile")
+x, y = M.shift(100, 200, 700, T81)
+eq(x * 1000 + y, 101 * 1000 + 201, "700 has no gate")
+M.pair = nil
+local Tnone = M.load(true)
+check(Tnone[778] == nil and Tnone[405] ~= nil, "no pair recorded: the gated rows wait, the others stay")
+-- the ids O736 measured and left: no whole tile brings them under 16 px (or it would move the pivot of an in-place
+-- effect off its tile, or the foot of a pillar off its tile)
+for _, id in ipairs({3, 11, 19, 20, 22, 23, 24, 25, 32, 33, 374, 416, 481, 537, 538, 539, 540}) do
+  check(Tall[id] == nil, "O736: effect " .. id .. " is sent at its own tile")
+end
+eq(Tall[405][1] * 10 + Tall[405][2], 11, "405 keeps one tile (two would put its pivot 17 px past)")
+-- the gate, pure
+eq(M.parsePair("x = 1\nchaosClientPair = 82 -- shipped\ny = 2\n"), 82, "the pair of a config text")
+eq(M.parsePair("-- chaosClientPair = 82\n"), nil, "a commented line is no pair")
+local g = M.gate({[1] = {1, 1}, [2] = {0, 1}}, {[1] = 82}, 81)
+check(g[1] == nil and g[2] ~= nil, "gate below the pair")
+g = M.gate({[1] = {1, 1}}, {[1] = 82}, 82)
+check(g[1] ~= nil, "gate at the pair")
 
 if fails > 0 then
   print(fails .. " of " .. count .. " checks failed")

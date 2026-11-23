@@ -81,7 +81,46 @@ table = {i: (dx, dy) for i, dx, dy, _ in G.offsets()}
 # the engine's own table (server/data/lib/chaos_fx_send_offsets.lua) is this one
 lua = open(G.OUT, encoding='utf-8').read()
 lua_rows = {int(a): (int(b), int(c)) for a, b, c in re.findall(r'^\t\[(\d+)\] = \{(-?\d+), (-?\d+)\}', lua, re.M)}
-ok(lua_rows == table, 'the committed Lua table is the generated one')
+extra_rows = G.extra()
+ok(lua_rows == {**table, **{i: (dx, dy) for i, dx, dy, _pf, _w in extra_rows}},
+   'the committed Lua table is the generated one (pack36 in place and the O736 rows)')
+ok(len(table) == 15, f'the 15 in-place rows stay: {len(table)}')
+ok(lua == G.render(G.offsets(), extra_rows), 'the committed Lua file is rendered from both tables')
+
+# O736: the extra rows (pair_fixes/fx_send_offsets_extra.csv)
+ok(G.check_extra() == [], f'committed extra rows: {G.check_extra()}')
+got = {i: (dx, dy, pf) for i, dx, dy, pf, _w in extra_rows}
+ok(got == {700: (1, 1, None), 778: (1, 1, 82), 3965: (1, 1, None)}, f'O736 rows {got}')
+ok(not set(got) & set(table), 'no O736 row names an in-place effect')
+ok(re.search(r'^ChaosFxSendOffsetFrom = \{\n\t\[778\] = 82,\n\}$', lua, re.M) is not None, 'the pair gate of 778')
+for i in (3, 11, 19, 20, 22, 23, 24, 25, 32, 33, 374, 416, 481, 537, 538, 539, 540):
+    ok(i not in got and i not in table, f'O736 leaves effect {i} at its own tile')
+
+
+def extra_file(rows):
+    d = tempfile.mkdtemp(prefix='fxoff_extra_')
+    p = os.path.join(d, 'extra.csv')
+    with open(p, 'w', newline='') as f:
+        w = csv.writer(f, lineterminator='\n')
+        w.writerow(['id', 'dx', 'dy', 'pair_from', 'reason'])
+        for r in rows:
+            w.writerow(r)
+    return p
+
+
+why = 'centre -30,-24 px -> 2,8 px with one tile'
+ok(G.check_extra(path=extra_file([[900, 1, 1, '', why], [901, 0, 1, 82, why]])) == [], 'synthetic extra rows are fine')
+ok(G.extra(extra_file([[901, 0, 1, 82, why]])) == [(901, 0, 1, 82, why)], 'pair_from is read')
+ok(any('in-place' in e for e in G.check_extra(path=extra_file([[405, 1, 1, '', why]]))), 'an in-place id is refused')
+ok(any('listed twice' in e for e in G.check_extra(path=extra_file([[900, 1, 1, '', why], [900, 0, 1, '', why]]))),
+   'an id twice is refused')
+ok(any('0..3 tiles' in e for e in G.check_extra(path=extra_file([[900, 0, 0, '', why]]))), 'no move is refused')
+ok(any('0..3 tiles' in e for e in G.check_extra(path=extra_file([[900, -1, 0, '', why]]))), 'a negative offset is refused')
+ok(any('not a pair' in e for e in G.check_extra(path=extra_file([[900, 1, 1, 5, why]]))), 'a pair gate of no pair')
+ok(any('numbers' in e for e in G.check_extra(path=extra_file([[900, 1, 1, '', 'off']]))), 'a reason without numbers')
+txt = G.render([(4, 0, 1, 'a')], [(900, 1, 1, None, 'b'), (901, 0, 1, 82, 'c')])
+ok('\t[4] = {0, 1},  -- a\n\t[900] = {1, 1},  -- b\n\t[901] = {0, 1},  -- c\n}' in txt, 'rows merged in id order')
+ok(txt.endswith('ChaosFxSendOffsetFrom = {\n\t[901] = 82,\n}\n'), 'only gated rows in the gate table')
 ok(all(dx >= 0 and dy >= 0 and dx <= 3 and dy <= 3 for dx, dy in table.values()), 'offsets are 0..3 tiles')
 # the owner's reports: the blue teleport 11 and the yellow holy 201 / 262 are sent at their own tile
 for i in (3, 7, 11, 167, 201, 226, 262, 309, 416):

@@ -15,11 +15,47 @@ function M.shift(x, y, effect, tbl)
 	return x + o[1], y + o[2]
 end
 
+-- O736: the pair gate of a row. ChaosFxSendOffsetFrom (same file) names ids whose offset fits the art of a later pair;
+-- below that pair (config.lua `chaosClientPair`, README "Client pair guard") the id is sent at its target tile.
+function M.parsePair(text)
+	if type(text) ~= "string" then
+		return nil
+	end
+	local v = text:match("^%s*chaosClientPair%s*=%s*(%d+)%s*%-?%-?[^\n]*$") or text:match("\n%s*chaosClientPair%s*=%s*(%d+)%s*%-?%-?[^\n]*")
+	return v and tonumber(v) or nil
+end
+
+function M.recordedPair(path)
+	local f = io.open(path or "config.lua", "r")
+	if not f then
+		return nil
+	end
+	local text = f:read("*a")
+	f:close()
+	return M.parsePair(text)
+end
+
+-- drop from `tbl` the ids of `from` whose pair is above `pair` (nil: no pair recorded, every gated id dropped) -> tbl
+function M.gate(tbl, from, pair)
+	if type(tbl) ~= "table" or type(from) ~= "table" then
+		return tbl
+	end
+	for id, need in pairs(from) do
+		if (tonumber(pair) or 0) < (tonumber(need) or math.huge) then
+			tbl[id] = nil
+		end
+	end
+	return tbl
+end
+
+-- M.pair: tests set the client pair by hand; nil reads config.lua
 -- the table, loaded once from data/lib (nil when the file is missing: nothing is shifted); `reread` loads the file
 -- again (a scripts reload picks up a new table)
 function M.load(reread)
 	if ChaosFxSendOffset == nil or reread then
+		ChaosFxSendOffsetFrom = nil
 		pcall(dofile, "data/lib/chaos_fx_send_offsets.lua")
+		M.gate(ChaosFxSendOffset, ChaosFxSendOffsetFrom, M.pair or M.recordedPair())
 	end
 	return ChaosFxSendOffset
 end
