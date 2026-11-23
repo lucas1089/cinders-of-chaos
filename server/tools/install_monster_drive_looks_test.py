@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_monster_drive_looks_test.py : install_monster_drive_looks.py (O726; install step `monsterdrivelooks`)
-on the shipped map and on a synthetic server folder: the map (11 rows, ids 3561-3571, one hunt monster on each look, every one a hunt
-monster of the committed pool (no boss) that today shares or crowds its look, the old looks are the files' or the committed pool's, none of
-them in the map of an earlier pair), the client pair guard end to end (pair 80 or missing: nothing written and a WARNING line; pair 81: our
+on the shipped map and on a synthetic server folder: the map (28 rows, ids 3561-3588, one hunt monster on each look, every one a hunt
+monster of the committed pool (no boss); O726's today share or crowd their look and are in no earlier map, O729's (the redraws of the upright
+third-party looks) may be in one with the same committed look), the client pair guard end to end (pair 80 or missing: nothing written and a WARNING line; pair 81: our
 XML, a base XML, a base Lua monster and the pool rows move, colours stay), a monster that wears the PixelLab look of pair 74 moves on from
-it, idempotent, a file with another look stops the step, a missing file stops it, --dry-run writes nothing, gen_bounty_pool.py turns a new
+it, an O729 monster on its recolour or donor look moves on, idempotent, a file with another look stops the step, a missing file stops it, --dry-run writes nothing, gen_bounty_pool.py turns a new
 look back to the old one, the audits read the map at pair 81 (no shared look, every look moves while it stands or is a still redraw with a TEMPORARY row of
 no_idle_allow.csv, none crowded).
 No base server needed."""
@@ -95,10 +95,12 @@ def looks(mon):
     return out
 
 
-# ---- the shipped map: 11 hunt monsters, one on each outfit 3561-3571
+# ---- the shipped map: 28 hunt monsters, one on each outfit 3561-3588 (O726: 3561-3571, O729: 3572-3588)
 rows = M.read_map()
-check(len(rows) == 11 and [r[2] for r in rows] == list(range(3561, 3572)), 'the map has 11 rows, the new looks are the outfits 3561-3571 in order')
-check(len({r[0] for r in rows}) == 11 and len({r[2] for r in rows}) == 11, 'each monster once, each look once: no two hunt monsters share a look')
+check(len(rows) == 28 and [r[2] for r in rows] == list(range(3561, 3589)), 'the map has 28 rows, the new looks are the outfits 3561-3588 in order')
+check(len({r[0] for r in rows}) == 28 and len({r[2] for r in rows}) == 28, 'each monster once, each look once: no two hunt monsters share a look')
+O729 = {m for k, m in P.PICKS if k in P.O729_KEYS}
+check(len(O729) == 17 and {r[0] for r in rows[11:]} == O729, 'O729: the last 17 rows are the redraws of the upright third-party looks')
 check(C.PAIR_DRIVE_MONSTERS == 81 and C.PAIR_ASSETS < C.PAIR_DRIVE_MONSTERS, 'the step needs pair 81, which windows-assets does not carry yet')
 check(P.FIRST_NEW == 3561 and [int(r['new']) for r in P.rows()] == [r[2] for r in rows], 'monster i wears outfit 3561 + i, the table row i')
 check([m for _k, m in P.PICKS] == [r[0] for r in rows], 'the map is PICKS of gen_drive_monsters.py, in order')
@@ -113,21 +115,29 @@ for f in ('crowded_looks_allow.csv', 'shared_looks_allow.csv'):
 for name, old, new in rows:
     check(name in pool_rows and pool_rows[name]['look'] == old, '%s: a hunt monster of the pool on look %d' % (name, old))
     check(name in lv, '%s: on the hunt list of the pool (no boss)' % name)
-    check(name in crowd.get(old, set()), '%s: its look %d is crowded or shared today' % (name, old))
+    if name not in O729:    # O726 took looks that are crowded or shared; O729 takes upright third-party looks (any)
+        check(name in crowd.get(old, set()), '%s: its look %d is crowded or shared today' % (name, old))
     if name in files:
         check(R.LOOK_TAG.search(open(files[name], encoding='utf-8').read()).group(2) == str(old), '%s: the repository file keeps look %d' % (name, old))
-earlier = set()
+earlier = {}
 for f in ('monster_recolour_looks.csv', 'monster_donor_looks.csv', 'monster_wst_looks.csv', 'monster_creature_looks.csv', 'monster_o619_looks.csv',
           'monster_pixellab_looks.csv'):
-    earlier |= {r['monster'] for r in csv.DictReader(open(os.path.join(os.path.dirname(R.MAP), f), newline='', encoding='utf-8'))}
-check(not {r[0] for r in rows} & earlier, 'no monster of an earlier map')
+    for r in csv.DictReader(open(os.path.join(os.path.dirname(R.MAP), f), newline='', encoding='utf-8')):
+        earlier.setdefault(r['monster'], set()).add(int(r['look']))
+check(not {r[0] for r in rows[:11]} & set(earlier), 'O726: no monster of an earlier map')
+check({r[0] for r in rows if r[0] in earlier} == {'Deepforge Fiend', 'Rootbound Pilgrim', 'Thornveil Wraith', 'Infernal Phantom'},
+      'O729: four monsters of earlier maps, whose earlier look the new one replaces')
+for name, old, new in rows:
+    if name in earlier:
+        check(earlier[name] == {old}, '%s: the earlier maps name the same committed look %d' % (name, old))
 
 # ---- the audits read the map: the old look below pair 81, the new one from it
 rc_ = S.load_recolour()
 for name, old, new in rows:
-    check(S.look_at_pair(name, old, 80, rc_) == old and S.look_at_pair(name, old, 81, rc_) == new,
-          'audit_shared_looks: %s wears %d at pair 80 and %d at pair 81' % (name, old, new))
-    check(S.look_at_pair(name, new, 74, rc_) == old, 'a file written for pair 81 reads as the old look for pair 74 (%s)' % name)
+    at = S.look_at_pair(name, old, 80, rc_)
+    check((at == old or name in earlier) and at != new and S.look_at_pair(name, old, 81, rc_) == new,
+          'audit_shared_looks: %s wears %d at pair 80 and %d at pair 81' % (name, at, new))
+    check(S.look_at_pair(name, new, 74, rc_) == S.look_at_pair(name, old, 74, rc_), 'a file written for pair 81 reads as the pair 74 look for pair 74 (%s)' % name)
 for pair in (80, C.PAIR_DRIVE_MONSTERS):
     check(S.check_pool(pair=pair) == [], 'no shared look at pair %d: %s' % (pair, S.check_pool(pair=pair)))
     check(I.check_pool(pair=pair) == [], 'every hunt monster moves while it stands at pair %d: %s' % (pair, I.check_pool(pair=pair)))
@@ -161,7 +171,7 @@ shutil.rmtree(tmpd, ignore_errors=True)
 at81 = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), C.PAIR_DRIVE_MONSTERS)[0]}
 at80 = {r['name']: r['look'] for r in I.donor_rows(S.pool_rows(), 80)[0]}
 check({n for n in at81 if at81[n] != at80[n]} == {r[0] for r in rows} and all(at81[n] == new for n, _o, new in rows),
-      'the pool reads the same at pair 80 and 81 but for the 11 monsters')
+      'the pool reads the same at pair 80 and 81 but for the 28 monsters')
 worn = {}
 for n, lk in at81.items():
     worn.setdefault(lk, []).append(n)
@@ -206,6 +216,16 @@ rc, out = run(os.path.join(dn, 'data'), '--map', one)
 check(rc == 0 and '1 moved to their new look' in out and looks(os.path.join(dn, 'data', 'monster')) == {name: 3565},
       '%s: the PixelLab look moves on to 3565 (%s)' % (name, out.strip()))
 check(M.earlier_looks().get(name) and new in M.earlier_looks()[name], 'earlier_looks reads the PixelLab map too')
+# O729: a monster of the shipped map that wears its recolour copy (pair 69) or its donor look (pair 70) moves on to its O729 look
+for name in ('Deepforge Fiend', 'Infernal Phantom'):
+    old, new = [(o, n) for m, o, n in rows if m == name][0]
+    was = [n for m_, (o, n) in list(S.load_recolour().items()) + list(S.load_donor().items()) if m_ == name][0]
+    dn = server(81, [(name, was)], [], [], pool_text([(name, was, '')]))
+    mp1 = os.path.join(TMP, 'o729.csv')
+    open(mp1, 'w').write('monster,look,new_look\n%s,%d,%d\n' % (name, old, new))
+    rc, out = run(os.path.join(dn, 'data'), '--map', mp1)
+    check(rc == 0 and '1 moved to their new look' in out and looks(os.path.join(dn, 'data', 'monster')) == {name: new},
+          '%s: look %d of an earlier pair moves on to %d (%s)' % (name, was, new, out.strip()))
 
 # the shipped map on a folder without the monsters stops; a file with another look, and a missing file, stop the step before anything is written
 rc, out = run(os.path.join(server(81, [], [], [], None), 'data'))

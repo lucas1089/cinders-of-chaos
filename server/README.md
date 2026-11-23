@@ -37146,7 +37146,7 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
 
 
-## Drive characters as hunt monsters (O726; `data/monster/monster_drive_looks.csv`, install step `monsterdrivelooks`, client pair 81)
+## Drive characters as hunt monsters (O726, O729; `data/monster/monster_drive_looks.csv`, install step `monsterdrivelooks`, client pair 81)
 
 Owner 2026-11-23 (pt-BR): the new 8-direction characters of the Drive become hunt monsters; the nine man-shaped ones are drawn again by us in
 PixelLab, the wolf and the crab keep the pack art. The outfits 3561 to 3571 are made by `client/tools/sprites/gen_drive_monsters.py`
@@ -37169,6 +37169,30 @@ stays 79.
   | 3569 | lightning scholar | redraw | Dark Apprentice | 16 | 133 | an academy apprentice; look 133 keeps the Novice of the Cult alone |
   | 3570 | robed void priest | redraw | Death Priest | 44 | 99 | a priest; 99 was shared with the Lich |
   | 3571 | red crab | pack | Saltkin Pincher | 55 | 77 | a shore crab; 77 was shared with the Saltkin Pincher Scout |
+
+- **O729** (owner 2026-11-23, "Pode redesenhar"): 17 more hunt monsters, the ones that wore an upright third-party humanoid look, each on its own
+  redraw of ours drawn from words (client/MANIFEST.md "Upright third-party humanoid looks redrawn (O729)"). Four of them are in the map of an
+  earlier pair with the same committed look: the step moves them on from that pair's look, `check_content.py` allows it.
+
+  | outfit | figure | monster | level | old look |
+  |---|---|---|---|---|
+  | 3572 | beast-man with a burning mane | Dawn Strayer | 980 | 2122 |
+  | 3573 | horned forge demon | Deepforge Fiend | 980 | 2122 (3398 from pair 69) |
+  | 3574 | root-grown hooded pilgrim | Rootbound Pilgrim | 830 | 1541 (3040 from pair 73) |
+  | 3575 | blindfolded apparition of eyes | Sight of Surrender | 313 | 3076 |
+  | 3576 | gravekeeper ghoul with a lantern | Grave Lantern | 1180 | 3103 |
+  | 3577 | spectre with an eye for a head | Gazer Spectre | 104 | 3153 |
+  | 3578 | hunched flesh sculptor | Twisted Shaper | 1060 | 3172 |
+  | 3579 | masked phantom of purple flame | Capricious Phantom | 415 | 3184 |
+  | 3580 | thorn-veiled reaper wraith | Thornveil Wraith | 730 | 1548 (3193 from pair 73) |
+  | 3581 | rust-eaten armoured sentinel | Rustguard | 1060 | 3215 |
+  | 3582 | frost-bitten cave delver | Pit Delver | 1240 | 3217 |
+  | 3583 | iron and stone war construct | War Golem | 84 | 3277 |
+  | 3584 | crowned usurper knight | Usurper Knight | 137 | 3303 |
+  | 3585 | wild man with lightning hair | Shock Head | 77 | 3304 |
+  | 3586 | undead prospector | Cursed Prospector | 116 | 3316 |
+  | 3587 | chained ash-skinned thrall | Ashbound Thrall | 610 | 3362 |
+  | 3588 | phantom with a burning skull | Infernal Phantom | 363 | 3359 (3418 from pair 70) |
 
 - **The step** (`tools/install_monster_drive_looks.py`, after `monsterpixellablooks`): at config.lua chaosClientPair >= 81 the monster files under
   data/monster (our XML, a base XML or Lua) and the installed bounty pool get the new look; below it a WARNING line and nothing else. A monster on the

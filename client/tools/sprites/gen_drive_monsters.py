@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Eleven hunt monster outfits 3561-3571 of pair 81 (O726; client/MANIFEST.md "Drive characters as hunt monsters (O726)"): nine from our
-own PixelLab redraws, two from purchased 8-direction character packs.
+"""28 hunt monster outfits 3561-3588 of pair 81 (O726; client/MANIFEST.md "Drive characters as hunt monsters (O726)"): nine from our
+own PixelLab redraws, two from purchased 8-direction character packs; O729 (3572-3588, MANIFEST "Upright third-party humanoid looks
+redrawn (O729)"): 17 more redraws of ours, drawn from words for the monsters that wore an upright third-party humanoid look; the words
+are in art_import/drive_redraw_words.csv (`words_problems`).
 
     python3 -I gen_drive_monsters.py check                       # the table, the sums keys, the redraw pictures and the monster map (no pair)
     python3 -I gen_drive_monsters.py looks [--check]             # server/data/monster/monster_drive_looks.csv from PICKS
@@ -10,7 +12,7 @@ own PixelLab redraws, two from purchased 8-direction character packs.
     python3 -I gen_drive_monsters.py table --src DIR... [--write]  # measure the rows of ROWS, print (or write) the table and the sums
     python3 -I gen_drive_monsters.py sums --src DIR... --check   # the pictures give the committed sums
     python3 -I gen_drive_monsters.py build DAT SPR OUT_DIR --src DIR...
-                                                                 # a pair with 3,560 outfits in (pair 80), 11 more out (OUT_DIR must not exist)
+                                                                 # a pair with 3,560 outfits in (pair 80), 28 more out (OUT_DIR must not exist)
     python3 -I gen_drive_monsters.py live DAT SPR                # the pair holds every outfit at its id, as the sums say
     python3 -I gen_drive_monsters.py quality DAT SPR             # sprite_quality.py check --kind creature of every outfit (numbers, a report)
     python3 -I gen_drive_monsters.py preview OUT.mp4 --dat D --spr S   # the looks in game at true size on grass, a PixelLab look beside (never committed)
@@ -86,6 +88,7 @@ REPO = W.REPO
 MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_drive_looks.csv')
 MAP_HEADER = ['monster', 'look', 'new_look']
 REDRAW = os.path.join(ART, 'drive_redraw')
+WORDS = os.path.join(ART, 'drive_redraw_words.csv')   # O729: the words of the redraws of the upright third-party looks
 HEADER = ['key', 'src', 'art', 'new', 'tiles', 'scale', 'lean', 'disp', 'float', 'idle', 'idle_ms', 'walk', 'walk_ms', 'walk_src', 'west', 'east',
           'idle_frames', 'walk_frames', 'colours', 'pixels']
 PAIR = 81
@@ -115,6 +118,24 @@ ROWS = (
     (None, 'stormmage', 'redraw'),
     (None, 'voidpriest', 'redraw'),
     ('f49d946fb82c', 'crab', 'pack'),
+    # O729: the upright third-party humanoid looks, redrawn by us from words at the game's angle (art_import/drive_redraw_words.csv)
+    (None, 'dawnstrayer', 'redraw'),
+    (None, 'forgefiend', 'redraw'),
+    (None, 'pilgrim', 'redraw'),
+    (None, 'surrender', 'redraw'),
+    (None, 'lantern', 'redraw'),
+    (None, 'gazer', 'redraw'),
+    (None, 'shaper', 'redraw'),
+    (None, 'phantom', 'redraw'),
+    (None, 'thornwraith', 'redraw'),
+    (None, 'rustguard', 'redraw'),
+    (None, 'delver', 'redraw'),
+    (None, 'golem', 'redraw'),
+    (None, 'usurper', 'redraw'),
+    (None, 'shockhead', 'redraw'),
+    (None, 'prospector', 'redraw'),
+    (None, 'thrall', 'redraw'),
+    (None, 'infernal', 'redraw'),
 )
 FLOAT = ('aberration',)
 # O728: the game's angle. A pack row is sheared by oblique_lean (k from L.K down to L.K_MIN, column `lean`) unless it leans already;
@@ -142,6 +163,24 @@ PICKS = (
     ('stormmage', 'Dark Apprentice'),
     ('voidpriest', 'Death Priest'),
     ('crab', 'Saltkin Pincher'),
+    # O729 (owner 2026-11-23 "Pode redesenhar"): each monster that wore an upright third-party humanoid look gets its own redraw
+    ('dawnstrayer', 'Dawn Strayer'),
+    ('forgefiend', 'Deepforge Fiend'),
+    ('pilgrim', 'Rootbound Pilgrim'),
+    ('surrender', 'Sight of Surrender'),
+    ('lantern', 'Grave Lantern'),
+    ('gazer', 'Gazer Spectre'),
+    ('shaper', 'Twisted Shaper'),
+    ('phantom', 'Capricious Phantom'),
+    ('thornwraith', 'Thornveil Wraith'),
+    ('rustguard', 'Rustguard'),
+    ('delver', 'Pit Delver'),
+    ('golem', 'War Golem'),
+    ('usurper', 'Usurper Knight'),
+    ('shockhead', 'Shock Head'),
+    ('prospector', 'Cursed Prospector'),
+    ('thrall', 'Ashbound Thrall'),
+    ('infernal', 'Infernal Phantom'),
 )
 
 
@@ -210,9 +249,33 @@ def problems(table=None, sums=None, first=FIRST_NEW, want=ROWS):
         if not (r['pixels'] or '').isdigit() or int(r['pixels']) < 1:
             out.append('%s: pixels %s' % (k, r['pixels']))
     if want is ROWS:
-        out += redraw_problems(t)
+        out += redraw_problems(t) + words_problems()
     if set(s) != {r['new'] for r in t}:
         out.append('drive_monsters.sums and the table name other outfits (%s)' % ', '.join(sorted(set(s) ^ {r['new'] for r in t})))
+    return out
+
+
+def words_problems(path=None, keys=None, picks=PICKS):
+    """O729: art_import/drive_redraw_words.csv (key, monster, pixellab_id, description) holds the words each O729 redraw was drawn from,
+    so it can be drawn again: one row per key of O729_KEYS in order, the monster of PICKS, a PixelLab id, a description that ends with
+    "dark fantasy" and names no other game (check_names.py)"""
+    path = WORDS if path is None else path
+    keys = O729_KEYS if keys is None else keys
+    if not os.path.exists(path):
+        return ['art_import/drive_redraw_words.csv is missing']
+    with open(path, newline='', encoding='utf-8') as f:
+        ws = list(csv.DictReader(f))
+    out = []
+    if [w['key'] for w in ws] != list(keys):
+        out.append('art_import/drive_redraw_words.csv: the keys are not O729_KEYS, in their order')
+    pk = dict(picks)
+    for w in ws:
+        if pk.get(w['key']) != w['monster']:
+            out.append('%s: words for %s, PICKS gives %s' % (w['key'], w['monster'], pk.get(w['key'])))
+        if not re.fullmatch(r'[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}', w['pixellab_id'] or ''):
+            out.append('%s: pixellab_id %s is not a PixelLab character id' % (w['key'], w['pixellab_id']))
+        if not (w['description'] or '').endswith('dark fantasy'):
+            out.append('%s: the description ends with "dark fantasy" (the O618 recipe)' % w['key'])
     return out
 
 
@@ -456,6 +519,8 @@ def redraw_import(drop, root=None, want=ROWS, log=print):
 # the name `inquisitor` belongs to the O640 Brand Inquisitor (gen_pixellab_monsters.py drop-import reads it).
 DROP_NAMES = {'plague': 'plaguemedic', 'archangel': 'seraph', 'reliquary': 'relicbearer', 'eldritch': 'aberration',
               'voidcaller': 'voidmage', 'admiral': 'seacaptain', 'drive_inquisitor': 'templar', 'magister': 'stormmage', 'hierophant': 'voidpriest'}
+O729_KEYS = tuple(k for _c, k, _a in ROWS[11:])     # O729: the 17 redraws of the upright third-party humanoid looks
+DROP_NAMES.update({k: k for k in O729_KEYS})       # O729: the drop folder is the key
 
 
 def drop_import(drop, names=None, root=None, log=print):

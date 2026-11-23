@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""New looks for 11 hunt monsters (O726): the monsters move to them once the client has pair 81.
+"""New looks for 28 hunt monsters (O726, O729): the monsters move to them once the client has pair 81.
 install_all.py step `monsterdrivelooks`.
 
 usage: python3 -I install_monster_drive_looks.py DATA_DIR [--dry-run] [--map CSV]
 
-Client pair 81 holds eleven hunt monster outfits, nine from our own PixelLab redraws and two from purchased character packs
-(client/tools/sprites/gen_drive_monsters.py, outfits 3561 to 3571, README "Drive characters as hunt monsters (O726)"). server/data/monster/
+Client pair 81 holds 28 hunt monster outfits: eleven of O726 (nine from our own PixelLab redraws, two from purchased character packs,
+outfits 3561 to 3571) and seventeen of O729 (our own PixelLab redraws from words of the monsters that wore an upright third-party humanoid
+look, outfits 3572 to 3588); client/tools/sprites/gen_drive_monsters.py, README "Drive characters as hunt monsters (O726)". server/data/monster/
 monster_drive_looks.csv names, for each hunt monster that wears one, its old look (the one its file in the repository has, or for a base
 server monster the one the committed bounty pool gives it) and its new look. The rows are PICKS of gen_drive_monsters.py: one hunt monster
-for each look, taken from looks that two or more hunt monsters wear today (crowded_looks_allow.csv, shared_looks_allow.csv), no boss.
+for each look, no boss; O726 took looks that two or more hunt monsters wear today (crowded_looks_allow.csv, shared_looks_allow.csv).
 The step still knows a monster that wears the look an earlier pair's step gave it (a row of monster_recolour_looks.csv,
 monster_donor_looks.csv, monster_wst_looks.csv, monster_creature_looks.csv, monster_o619_looks.csv or monster_pixellab_looks.csv): the
-new look replaces it. No row is one today.
+new look replaces it. Four rows of O729 are: Deepforge Fiend (recolour), Rootbound Pilgrim and Thornveil Wraith (recolour, swap), Infernal
+Phantom (donor).
 
 The repository files keep the old look, so a server whose client is on an older pair draws what it always did. This step runs after
 `monsterpixellablooks` and does, only when config.lua chaosClientPair is 81 or more (client_pair.py, README "Client pair guard"):
