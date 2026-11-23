@@ -101,7 +101,7 @@ check(len(rows) == 28 and [r[2] for r in rows] == list(range(3561, 3589)), 'the 
 check(len({r[0] for r in rows}) == 28 and len({r[2] for r in rows}) == 28, 'each monster once, each look once: no two hunt monsters share a look')
 O729 = {m for k, m in P.PICKS if k in P.O729_KEYS}
 check(len(O729) == 17 and {r[0] for r in rows[11:]} == O729, 'O729: the last 17 rows are the redraws of the upright third-party looks')
-check(C.PAIR_DRIVE_MONSTERS == 81 and C.PAIR_ASSETS < C.PAIR_DRIVE_MONSTERS, 'the step needs pair 81, which windows-assets does not carry yet')
+check(C.PAIR_DRIVE_MONSTERS == 81 and C.PAIR_ASSETS >= C.PAIR_DRIVE_MONSTERS, 'the step needs pair 81, which windows-assets carries (2026-11-23)')
 check(P.FIRST_NEW == 3561 and [int(r['new']) for r in P.rows()] == [r[2] for r in rows], 'monster i wears outfit 3561 + i, the table row i')
 check([m for _k, m in P.PICKS] == [r[0] for r in rows], 'the map is PICKS of gen_drive_monsters.py, in order')
 pool_rows = {r['name']: r for r in S.pool_rows()}

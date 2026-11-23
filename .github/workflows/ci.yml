@@ -2264,6 +2264,16 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_pixellab_monsters.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
+      - name: Hunt monster outfits 3561-3588 sit at their ids (gen_drive_monsters.py live, pair 81, O726 / O728 / O729)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_drive_monsters.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Effect 3036 sits centred (recentre_effects.py check, pair 80, O725b)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/recentre_effects.py check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
       - name: Decor flames sit at their ids (gen_decor_flames.py live, pair 74, O623)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_decor_flames.py live \
