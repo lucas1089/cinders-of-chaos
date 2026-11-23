@@ -482,6 +482,16 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosrunebag_test.cpp -o "$d/chaosrunebag_test"
           "$d/chaosrunebag_test"
 
+      - name: "Bot signals, pure parts (C++; header from server src-patch 0093, O722)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosbotsignals\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0093-bot-signals.patch > "$d/chaosbotsignals.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosbotsignals_test.cpp -o "$d/chaosbotsignals_test"
+          "$d/chaosbotsignals_test"
+          g++ -std=c++17 -fsanitize=address,undefined -I "$d" server/tools/chaosbotsignals_test.cpp -o "$d/chaosbotsignals_asan"
+          "$d/chaosbotsignals_asan"
+
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
           d=$(mktemp -d)
@@ -818,6 +828,18 @@ jobs:
           "$d/chaosfxowner_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosfxowner_test.cpp -o "$d/chaosfxowner_asan"
           "$d/chaosfxowner_asan"
+
+      - name: Known-tool scan, pure parts (C++; header from base patch 0207, O722)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaostoolscan\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0207-known-tool-scan.patch > "$d/chaostoolscan.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaostoolscan_test.cpp -o "$d/chaostoolscan_test"
+          "$d/chaostoolscan_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaostoolscan_test.cpp -o "$d/chaostoolscan_asan"
+          "$d/chaostoolscan_asan"
+          python3 -I client/tools/toolscan_patch_test.py
+          python3 -I client/tools/gen_module_hashes_test.py
 
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
@@ -1568,6 +1590,9 @@ jobs:
 
       - name: Rune Bag in the purse (src-patch 0092, O509)
         run: python3 -I server/tools/rune_bag_purse_patch_test.py
+
+      - name: Bot signals for the bot detection (src-patch 0093, O722)
+        run: python3 -I server/tools/botsignals_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py

@@ -233,6 +233,7 @@ final class CommandsTab {
         buildServices();
         buildTesters();
         buildJourney();
+        buildBotCheck();
         buildSiteClient();
         buildMapInbox();
     }
@@ -1073,6 +1074,21 @@ final class CommandsTab {
                 + "deles. Se estão rodando, para agora e espera 2 minutos antes de apagar.", "Apagar", true,
                 () -> ctl("Apagar bots de jornada", "journey cleanup --yes", 300, null)));
         b.addView(clean, ui.gap(8));
+        quick.addView(c, ui.gap(12));
+    }
+
+    // bot detection: the highest scores of the last 24 hours (chaos-ctl.sh botcheck-top, O722; read only, never bans or kicks)
+    private void buildBotCheck() {
+        MaterialCardView c = ui.titledCard("Detecção de bots");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("As maiores notas das últimas 24 horas, uma linha por personagem, com os seis números da análise "
+                + "(rota, regularidade, reação, cura, sessão e bônus de caminho). Nota acima de 70 vem marcada. Só leitura: "
+                + "nada é banido nem desconectado, a decisão é da staff. No jogo, /botcheck Nome mostra os números de um personagem."));
+        MaterialButton top20 = ui.secondary("Top 20", R.drawable.ic_search);
+        top20.setOnClickListener(v -> ctl("Detecção de bots: top 20", "botcheck-top 20", 60, null));
+        MaterialButton top50 = ui.secondary("Top 50", R.drawable.ic_search);
+        top50.setOnClickListener(v -> ctl("Detecção de bots: top 50", "botcheck-top 50", 60, null));
+        b.addView(ui.evenRow(top20, top50), ui.gap(8));
         quick.addView(c, ui.gap(12));
     }
 

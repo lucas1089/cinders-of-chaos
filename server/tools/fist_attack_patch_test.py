@@ -59,7 +59,9 @@ for f in later:
           'no later patch removes what 0091 adds: ' + f)
 for f in files:
     if f != NAME and f.startswith('00'):
-        other = open(os.path.join(PATCHES, f), encoding='utf-8').read()
+        # only the lines a later patch adds or removes count: its context may quote this patch's lines
+        other = '\n'.join(l for l in open(os.path.join(PATCHES, f), encoding='utf-8').read().splitlines()
+                          if l[:1] in '+-' and not l.startswith(('+++', '---')))
         check('chaosFistAttack' not in other and 'ChaosFist' not in other, f + ' does not touch the fist attack')
 
 added = [l[1:] for l in body.splitlines() if l.startswith('+') and not l.startswith('+++')]

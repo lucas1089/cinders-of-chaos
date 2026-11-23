@@ -8,7 +8,7 @@
  ],
  "counts": {
   "closed": 15,
-  "opcode": 75,
+  "opcode": 76,
   "out": 24,
   "passive": 115,
   "place": 15,
@@ -9127,6 +9127,24 @@
     "bossspawns"
    ]
   },
+  "botdet": {
+   "actions": [
+    "integrity",
+    "tools"
+   ],
+   "client": [],
+   "dataKeys": [],
+   "files": [
+    "botdet.lua"
+   ],
+   "opcode": 169,
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
+   "systems": [
+    "botdet"
+   ]
+  },
   "bounty": {
    "actions": [
     "accept",
@@ -11908,6 +11926,19 @@
    ],
    "place": "boss",
    "talkactions": []
+  },
+  "botdet": {
+   "files": [
+    "botdet.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "botdet"
+   ],
+   "talkactions": [
+    "/botcheck"
+   ]
   },
   "botreview": {
    "files": [

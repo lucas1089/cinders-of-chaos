@@ -259,6 +259,14 @@ Chaos.storage.antibot = 7100890
 Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
 Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions"} -- botreview.lua, sql/chaos_bot.sql
 
+-- Bot detection events and scores (O722; botdet.lua, botdet_core.lua, botdet_config.lua, sql/chaos_botdet.sql, client module
+-- game_chaosguard): the client's module hashes and known-tool code on one opcode (client -> server; the server answers with
+-- the tool list). 169 is free in the reference server's list, the base client's ExtendedIds, every other ChaosOpcodes
+-- value and every client module (tests/botdet_test.lua checks all four). No player storage: the state is in memory and in
+-- the two tables.
+ChaosOpcodes.botdet = 169
+Chaos.botdetTables = {events = "chaos_botdet_events", scores = "chaos_botdet_scores"}
+
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
 -- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen

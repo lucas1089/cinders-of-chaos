@@ -366,6 +366,8 @@ pub static ACTIONS: &[Action] = &[
     act(Players, "Novos jogadores", "Funil", "newplayer-funnel --pt --days {days}").p(NP_DAYS_P).t(90).h("Níveis 10 a 100, horas jogadas e onde pararam os que sumiram há 7+ dias."),
     act(Players, "Novos jogadores", "Pesquisa", "survey --pt --texts 100 --days {days}").p(NP_DAYS_P).t(90).h("Respostas da pesquisa dos níveis 20 e 50."),
     act(Players, "Métricas dos jogadores", "Ver métricas", "metrics").t(90),
+    act(Players, "Detecção de bots", "Maiores notas (top 20)", "botcheck-top 20").t(60).h("As maiores notas das últimas 24 horas, uma linha por personagem, com rota, regularidade, reação, cura, sessão e bônus de caminho. Acima de 70 vem marcada. Só leitura: nada é banido nem desconectado. No jogo, /botcheck Nome mostra os números de um personagem."),
+    act(Players, "Detecção de bots", "Maiores notas (top 50)", "botcheck-top 50").t(60),
     act(Players, "Saúde do jogo", "Ver como texto", "game-health --pt --days {days}").p(GH_DAYS_P).t(120).h("Online por hora, mortes, hunts mais e menos usadas, ouro e novos jogadores. O gráfico fica no card abaixo."),
     act(Players, "Relatório de equilíbrio", "Últimos dias", "balance-report --pt --days {days}").p(BAL_DAYS_P).t(180).h("Classes por faixa de nível: minutos por nível, mortes e dano por hora, feitiços mais usados e sugestões."),
     act(Players, "Relatório de equilíbrio", "Season atual", "balance-report --pt --season current").t(180),

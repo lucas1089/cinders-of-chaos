@@ -149,6 +149,169 @@ def mirrored(a):
     return out
 
 
+# ------------------------------------------------------------------------------------------------ the side view (O714c)
+# The owner, after the pair 79 preview: "most of the wings look bad from the side". The side view was a narrow clump of
+# both wings piled over the shoulder (70% and 55% of the face-on size, rising at up to 58 degrees, the root on the torso
+# column). Now a side view is the face-on wing seen in profile: the near wing at SIDE_NEAR of its size, its root on the
+# shoulder blade (SIDE_ROOT, on the back line), swept back at one of SIDE_AIMS degrees over the horizontal; the far wing a
+# step darker, smaller, up and back and steeper (SIDE_FARS) until SIDE_FAR_FREE of it shows. Nothing reaches more
+# than SIDE_FRONT px in front of the back line (the face, the chest). East trails left; west is east mirrored.
+SIDE_BACK = 4                # px the back of a slim body seen from the side lies behind the torso column (the class
+                             # looks of pair 78 facing east: 3.5 px at the 10th percentile of the torso row)
+SIDE_ROOT = (ANCHOR[0] - SIDE_BACK, 58)    # the shoulder blade: the back line, the row where the wings meet face on
+SIDE_FRONT = 2               # px the art may reach in front of the back line
+SIDE_AIMS = (30.0, 34.0, 37.0, 40.0)   # degrees over the horizontal the near wing is turned to (the middle of its
+                             # pixels from the root): the flattest at which it keeps its length and does not hang
+SIDE_ANGLE = (20.0, 45.0)    # the band every frame keeps
+SIDE_LEN = 0.8               # the near wing reaches at least this share of the face-on wing
+SIDE_FAR_FREE = 0.25         # the share of the far wing the near one leaves in sight, at least
+SIDE_FAR_SHADE = 0.74
+SIDE_NEAR, SIDE_FAR = 0.92, 0.8
+SIDE_FARS = tuple((turn, at) for at in ((-3, -4), (-6, -6), (-9, -9), (-12, -10)) for turn in (8, 14, 20, 26))
+                             # the far wing: degrees it stands steeper and its root from the near one's (up and back);
+                             # the first that leaves it in sight and over the near wing wins (a fit names it by place)
+SIDE_BACKS = (0, 2, 4, 6)    # px both wings may sit further back than the shoulder blade: a broad wing whose upper edge
+                             # would reach the back line over the head (side_cut)
+SIDE_HANG = 0.25             # the most of the side wings that may lie under the anchor row
+SIDE_HEAD = SIDE_ROOT[1] - 12   # the top of the head of a slim body: over it the wings stay behind the back line, so a
+                                # wing cut at the line (side_clip) never shows a straight edge in the open
+
+
+SIDE_CUT_MAX = 3             # solid px over the head at the back line a frame may have (a tip that brushes it in the beat)
+
+
+def side_cut(mask):
+    """pixels over the head that reach the back line"""
+    return int(mask[:SIDE_HEAD, SIDE_ROOT[0] + 1:].sum())
+
+
+def side_clip(canvas):
+    """drop what lies more than SIDE_FRONT px in front of the back line (east): the body hides the root, and nothing
+    may stand in front of the chest or the face"""
+    lim = SIDE_ROOT[0] + SIDE_FRONT
+    canvas.op &= (XX <= lim) & (XX >= 2)               # column 1 would be the cell border of the west frame
+    canvas.rgb[~canvas.op] = 0
+    canvas.sparks = [s for s in canvas.sparks if s[0] + max(1, s[3]) <= lim and s[0] - s[3] >= 2]
+    canvas.hazes = [(m & (XX <= lim), c) for m, c in canvas.hazes]
+
+
+def side_far_shade(canvas):
+    canvas.rgb[canvas.op] = (canvas.rgb[canvas.op].astype(np.float64) * SIDE_FAR_SHADE).astype(np.uint8)
+
+
+def side_put(dst, src):
+    """the near wing over the far one, on one layer"""
+    dst.rgb[src.op] = src.rgb[src.op]
+    dst.op |= src.op
+    dst.sparks.extend(src.sparks)
+    dst.hazes.extend(src.hazes)
+
+
+def side_tip(near, root=SIDE_ROOT):
+    """(reach, degrees, behind) of the near wing (east): the reach of its farthest pixel from the root, and the
+    sweep: the angle over the horizontal and the px behind the root of the middle of its pixels (a tail, a stalk or a
+    feather tip that hangs does not turn the middle much)"""
+    ys, xs = np.nonzero(near)
+    if not len(xs):
+        return 0.0, 0.0, 0.0
+    dx, dy = xs + 0.5 - root[0], ys + 0.5 - root[1]
+    mx, my = float(dx.mean()), float(dy.mean())
+    return float(np.hypot(dx, dy).max()), math.degrees(math.atan2(-my, -mx)), -mx
+
+
+def face_reach(face, join):
+    """the reach of the left wing of a face-on picture (a mask of its solid pixels) from the point where the wings
+    meet; a pixel with under two solid 4-neighbours (a spark that rose off the wing) does not count"""
+    m = face & ((nb(face, 1, 0).astype(np.int8) + nb(face, -1, 0) + nb(face, 0, 1) + nb(face, 0, -1)) >= 2)
+    ys, xs = np.nonzero(m[:, :ANCHOR[0]])
+    if not len(xs):
+        return 0.0
+    return float(np.hypot(xs + 0.5 - join[0], ys + 0.5 - join[1]).max())
+
+
+SIDE_PROBE = (0, 4, 8, 12)   # the frames a side view is fitted on (the bar checks all 16)
+
+
+def side_fit(draw, reach):
+    """(turn, spread, back) of a side view. draw(f, turn, spread, parts, back) -> {part: Canvas}; reach: {probe frame:
+    the reach of the face-on wing}. For each step back of SIDE_BACKS and each aim of SIDE_AIMS the turn that puts the
+    sweep of the near wing on the aim (mean of the probe frames); the first at which the near wing keeps its length, does
+    not hang and stays off the back line over the head wins. Then the first place of SIDE_FARS at which the far wing
+    shows and stays off the line too. The margins keep the 12 frames between the probes inside the rules."""
+    best = None
+    for back in SIDE_BACKS:
+        for aim in SIDE_AIMS:
+            turn = aim
+            for _ in range(5):
+                nears = {f: draw(f, turn, 0, ('near',), back)['near'].op for f in SIDE_PROBE}
+                err = aim - float(np.mean([side_tip(n)[1] for n in nears.values()]))
+                if abs(err) < 0.7:
+                    break
+                turn += err
+            short = sum(max(0.0, (SIDE_LEN + 0.03) * reach[f] - side_tip(n)[0]) for f, n in nears.items())
+            hang = sum(max(0.0, float((np.nonzero(n)[0] >= ANCHOR[1]).mean()) - (SIDE_HANG - 0.05)) for n in nears.values())
+            cut = sum(side_cut(n) for n in nears.values())
+            cost = short + 100.0 * hang + 0.5 * cut + 0.01 * back
+            if best is None or cost < best[0] - 1e-9:
+                best = (cost, turn, back)
+            if cost - 0.01 * back == 0:
+                break
+        if best[0] - 0.01 * best[2] == 0:
+            break
+    _, turn, back = best
+    pick = len(SIDE_FARS) - 1
+    for spread in range(len(SIDE_FARS)):
+        ok = True
+        for f in SIDE_PROBE:
+            got = draw(f, turn, spread, ('far', 'near'), back)
+            far, near = got['far'].op, got['near'].op
+            fy, ny = np.nonzero(far)[0], np.nonzero(near)[0]
+            if ((far & ~near).sum() < (SIDE_FAR_FREE + 0.08) * max(1, int(far.sum())) or side_cut(far)
+                    or not len(fy) or fy.mean() >= ny.mean() - 1 or fy.min() > ny.min()):
+                ok = False
+                break
+        if ok:
+            pick = spread
+            break
+    return turn, pick, back
+
+
+def side_problems(near, far, img, face, join, outline):
+    """the side view rules of O714c on one east frame: near and far masks of the two wings, the frame (RGBA), the
+    face-on frame of the same phase (RGBA) and its meeting point, the outline colour. West is east mirrored, so east
+    holds both."""
+    bad = []
+    fill = (img[..., 3] == 255) & ~(img[..., :3] == np.asarray(outline, np.uint8)).all(axis=2)
+    a = img[..., 3] > 0
+    if a.any() and int(np.nonzero(a.any(axis=0))[0].max()) > SIDE_ROOT[0] + SIDE_FRONT:
+        bad.append('side: art in front of the back line (over the chest or the face)')
+    if side_cut(img[..., 3] == 255) > SIDE_CUT_MAX:
+        bad.append('side: over the head the wing reaches the back line (a cut edge in the open)')
+    reach, ang, behind = side_tip(near)
+    full = face_reach(face[..., 3] == 255, join)
+    if reach < SIDE_LEN * full:
+        bad.append('side: the near wing is short (%.0f of %.0f px face on)' % (reach, full))
+    if behind <= 0 or not SIDE_ANGLE[0] <= ang <= SIDE_ANGLE[1]:
+        bad.append('side: the near wing is not swept back at %d-%d degrees (%.0f)' % (SIDE_ANGLE + (ang,)))
+    ys, xs = np.nonzero(near)
+    if not len(xs) or float(np.hypot(xs + 0.5 - SIDE_ROOT[0], ys + 0.5 - SIDE_ROOT[1]).min()) > 4.0 + SIDE_BACKS[-1]:
+        bad.append('side: the near wing has no root on the shoulder blade')
+    nf = int(far.sum())
+    if nf == 0 or (far & ~near).sum() < SIDE_FAR_FREE * nf:
+        bad.append('side: the far wing is hidden under the near one')
+    elif len(xs):
+        fy, fx = np.nonzero(far)
+        if fy.mean() >= ys.mean() or fy.min() > ys.min():
+            bad.append('side: the far wing does not stand over the near one')
+        ffill = (face[..., 3] == 255) & ~(face[..., :3] == np.asarray(outline, np.uint8)).all(axis=2)
+        own = far & ~near & fill
+        cols = set(map(tuple, face[ffill][:, :3].tolist()))
+        same = sum(1 for c in img[own][:, :3].tolist() if tuple(c) in cols)
+        if same >= 0.5 * max(1, int(own.sum())):
+            bad.append('side: the far wing is not a step darker (half its pixels carry colours of the wing face on)')
+    return bad
+
+
 def dilate4(mask):
     return mask | nb(mask, 1, 0) | nb(mask, -1, 0) | nb(mask, 0, 1) | nb(mask, 0, -1)
 
@@ -347,13 +510,20 @@ class Scene:
         self.back = Canvas(outline)
         self.front = Canvas(outline)
         self.d = d
+        self.xf = None          # the side view of O714c: a screen turn after the face-on projection (side_scene)
         self.f = f
         self.ph = TAU * f / FRAMES
 
     def layer(self, depth):
+        if self.xf is not None:
+            return self.back
         return self.front if depth >= 0 else self.back
 
     def P(self, p):
+        if self.xf is not None:                 # the face-on wing folded onto the left, then turned into the side view
+            x, y, _ = project(p, 'south', self.pivot, self.depth)
+            x, y = self.xf(min(x, 2 * ANCHOR[0] - x), y)
+            return (x, y, -1.0)
         return project(p, self.d, self.pivot, self.depth)
 
     def leaf3(self, canvas, base, tip, wdir, hw, knots, shader, ramp, bend=0.0, minw=1.2, dim=0, line=None):
@@ -817,12 +987,97 @@ def design(key):
     raise KeyError(key)
 
 
+# O714c: the four wings of the six get the side view of the families: the face-on left wing (the model seen from the
+# south, folded onto the left) turned about the point where the wings meet, rooted on the shoulder blade. Void Orbit
+# and Grave Lanterns are no wings (orbs round the body, lanterns on chains): their side view stays the model's.
+SIDE_WINGS = ('ember_pinions', 'ossuary_wings', 'bladefan', 'rimeshard')
+SIDE_MEET = (ANCHOR[0], ANCHOR[1] - 9.0 - DEPTH * 3.5)       # the meeting point of the six face on: model (0, 9, -3.5)
+
+
+def side_xf(turn, scale, root):
+    c, s = math.cos(rad(turn)), math.sin(rad(turn))
+
+    def xf(x, y):
+        dx, dy = (x - SIDE_MEET[0]) * scale, (y - SIDE_MEET[1]) * scale
+        return root[0] + dx * c - dy * s, root[1] + dx * s + dy * c
+    return xf
+
+
+def side_scene(key, f, turn, spread, parts=('far', 'near'), back=0):
+    """(Scene, {part: Canvas}) of the side view of a wing of the six at a turn"""
+    _, _, outline, fn, pivot = design(key)
+    got = {}
+    sc = None
+    for part in parts:
+        sc = Scene(outline, 'south', f, pivot)
+        turn_f = turn - _SIDE_CORR.get(key, {}).get(f, 0.0)
+        if part == 'far':
+            more, at = SIDE_FARS[spread]
+            sc.xf = side_xf(turn_f + more, SIDE_FAR, (SIDE_ROOT[0] - back + at[0] + 0.5, SIDE_ROOT[1] + at[1]))
+            sc.ph -= 0.5                        # the far wing follows the near one
+        else:
+            sc.xf = side_xf(turn_f, SIDE_NEAR, (SIDE_ROOT[0] - back + 0.5, SIDE_ROOT[1]))
+        fn(sc)
+        side_clip(sc.back)
+        if part == 'far':
+            side_far_shade(sc.back)
+        got[part] = sc.back
+    return sc, got
+
+
+_SIDE_GEO = {}
+_SIDE_CORR = {}
+SIDE_DAMP = 0.6              # share of a model's beat the side view turns back, frame by frame (its flap is wide:
+                             # Ember Pinions swings 35 degrees), so every frame keeps the band of SIDE_ANGLE
+
+
+def side_geo(key):
+    """(turn, spread, back) of a wing of the six, fitted as the families' rows are (side_fit)"""
+    if key not in _SIDE_GEO:
+        def draw(f, turn, spread, parts, back):
+            return side_scene(key, f, turn, spread, parts, back)[1]
+        _SIDE_CORR[key] = {f: 0.0 for f in range(FRAMES)}
+        angs = [side_tip(side_scene(key, f, SIDE_AIMS[0], 0, ('near',))[1]['near'].op)[1] for f in range(FRAMES)]
+        _SIDE_CORR[key] = {f: SIDE_DAMP * (a - float(np.mean(angs))) for f, a in enumerate(angs)}
+        reach = {f: face_reach(merge(*render_frame(key, 'south', f))[..., 3] == 255, SIDE_MEET) for f in SIDE_PROBE}
+        _SIDE_GEO[key] = side_fit(draw, reach)
+    return _SIDE_GEO[key]
+
+
+def side_frame(key, f):
+    """((back, front), (near, far)) of the east frame of a wing of the six"""
+    turn, spread, back = side_geo(key)
+    sc, got = side_scene(key, f, turn, spread, back=back)
+    masks = (got['near'].op.copy(), got['far'].op.copy())
+    back = got['far']
+    side_put(back, got['near'])
+    front = Canvas(back.outline)
+    return (back.finish(), front.finish()), masks
+
+
+def side_problems_of(key, frames=None, sides=None):
+    """the side view rules of O714c on every east frame of a wing of the six (sides: {frame: (near, far)})"""
+    _, _, outline, _, _ = design(key)
+    bad = set()
+    for f in range(FRAMES):
+        if frames is None:
+            img, masks = side_frame(key, f)
+            img = merge(*img)
+        else:
+            img, masks = merge(*frames['east'][f]), sides[f]
+        face = merge(*(render_frame(key, 'south', f) if frames is None else frames['south'][f]))
+        bad.update(side_problems(masks[0], masks[1], img, face, SIDE_MEET, outline))
+    return sorted(bad)
+
+
 def render_frame(key, d, f):
     """(back, front) RGBA arrays of one frame. O714: south and north are a left half and its mirror picture, west is
     the east frame mirrored about the anchor column"""
     if d == 'west':
         back, front = render_frame(key, 'east', f)
         return mirrored(back), mirrored(front)
+    if d == 'east' and key in SIDE_WINGS:
+        return side_frame(key, f)[0]
     _, _, outline, fn, pivot = design(key)
     sc = Scene(outline, d, f, pivot)
     fn(sc)
@@ -867,23 +1122,37 @@ TINT = {(255, 255, 0): (150, 110, 80), (255, 0, 0): (120, 50, 54), (0, 255, 0): 
 
 
 def silhouette(d):
-    """a plain leaning figure when there is no pair: (RGBA 96 x 96, already at the anchor)"""
+    """a plain figure when there is no pair: (RGBA 96 x 96, already at the anchor). Face on it stands on the anchor
+    column; from the side (O714c) its back is the side view's back line (SIDE_BACK), the head and the eye look the
+    way it faces: east to the right, west to the left (before O714c the side views looked the same way)"""
     c = Canvas((30, 30, 36))
     grey = ((70, 72, 80), (104, 106, 116), (140, 142, 152), (176, 178, 186), (210, 212, 218))
     ax, ay = ANCHOR
-    for (x0, y0), (x1, y1), w in (((ax + 3, ay + 13), (ax + 1, ay + 5), 2.4), ((ax - 2, ay + 14), (ax - 2, ay + 5), 2.4)):
-        m = capsule_mask((x0, y0), (x1, y1), w)
+    side = d in ('east', 'west')
+    if side:
+        legs = (((ax + 2, ay + 14), (ax + 1, ay + 5), 2.2), ((ax - 1, ay + 14), (ax - 1, ay + 5), 2.2))
+        torso = ((ax, ay + 4), (ax, ay - 5), SIDE_BACK + 0.2, SIDE_BACK + 0.6)
+        hx, hy = ax + 1.5, ay - 12
+    else:
+        legs = (((ax + 3, ay + 13), (ax + 2, ay + 5), 2.4), ((ax - 3, ay + 13), (ax - 2, ay + 5), 2.4))
+        torso = ((ax, ay + 4), (ax, ay - 5), 5.2, 5.8)
+        hx, hy = ax, ay - 12
+    for p0, p1, w in legs:
+        m = capsule_mask(p0, p1, w)
         c.piece(m, edge_shade(m), grey)
-    m = capsule_mask((ax, ay + 4), (ax - 2, ay - 5), 5.2, 5.8)
+    m = capsule_mask(torso[0], torso[1], torso[2], torso[3])
     c.piece(m, edge_shade(m), grey)
-    hx, hy = ax - 5, ay - 12
     m = disc_mask(hx, hy, 4.6)
     c.piece(m, sphere_shade(hx, hy, 5.2), grey)
-    if d != 'north':
-        ex = {'south': 0, 'east': 2, 'west': -2}[d]
-        c.rgb[int(hy), int(hx + ex) - 1] = c.outline
-        c.rgb[int(hy), int(hx + ex) + 1] = c.outline
-    return c.finish()
+    if side:
+        c.rgb[int(hy), int(hx) + 3] = c.outline           # the eye, at the front of the head
+        m = disc_mask(hx + 4.6, hy + 1.5, 1.2)           # the nose
+        c.piece(m, edge_shade(m), grey)
+    elif d == 'south':
+        c.rgb[int(hy), int(hx) - 2] = c.outline
+        c.rgb[int(hy), int(hx) + 2] = c.outline
+    img = c.finish()
+    return mirrored(img) if d == 'west' else img
 
 
 def pair_body(dat_path, spr_path, look):

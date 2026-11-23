@@ -132,6 +132,10 @@ for key, title, outline, fn, pivot in gd.DESIGNS:
         check(np.array_equal(gd.mirrored(merged['east'][f]), merged['west'][f]), '%s %d: west is east mirrored' % (key, f))
         ex = np.nonzero(merged['east'][f][..., 3] == 255)[1]
         check(ex.mean() < gd.ANCHOR[0], '%s %d: east is on the left of the anchor column' % (key, f))
+    # O714c: a wing of the six seen from the side is a pair of wings in profile (the orbit and the lanterns are no wings)
+    if key in gd.SIDE_WINGS:
+        _sb = gd.side_problems_of(key)
+        check(not _sb, '%s: the side view (O714c): %s' % (key, _sb[:3]))
     # the art stands round the anchor: its mass is within a tile of it
     ys, xs = np.nonzero(np.max([m[..., 3] for d in gd.DIRS for m in merged[d]], axis=0))
     check(abs(xs.mean() - gd.ANCHOR[0]) < 16 and abs(ys.mean() - gd.ANCHOR[1]) < 24,
@@ -475,9 +479,8 @@ check(all(not _fr[_d][_f][1][..., 3].any() for _d in ('east', 'west') for _f in 
 check(any(_fr['north'][_f][1][..., 3].any() for _f in range(F)) and not any(_fr['south'][_f][1][..., 3].any() for _f in range(F)),
       'O583: south behind the body, north in front of it')
 _ys, _xs = np.nonzero(gd.merge(*_fr['east'][3])[..., 3] == 255)
-check(fm587.JOIN[1] - _ys.min() >= fm587.SIDE_RISE_MIN and (_ys >= gd.ANCHOR[1]).mean() <= 0.12, 'O714: the east wing rises over the join and does not hang')
+check(fm587.JOIN[1] - _ys.min() >= fm587.SIDE_RISE_MIN and (_ys >= gd.ANCHOR[1]).mean() <= 0.25, 'O714: the east wing rises over the join and does not hang')
 check(_xs.min() < fm587.JOIN[0] - 8, 'O714: the east wing trails behind the join')
-check(fm587.side_rise(_sp) in fm587.SIDE_RISES, 'O714: the rise of a side wing is one of the steps')
 # the strip turned to rise: the line to the tip is at the angle asked, the widths do not change
 _v = fm587.model_strip(_sp, 'south')
 for _rise in (58, 30):
@@ -485,6 +488,51 @@ for _rise in (58, 30):
     _ang = math.degrees(math.atan2(-(_t[-1] - _t[1]), -(_t[-2] - _t[0])))
     check(abs(_ang - _rise) < 0.5 and [_t[4 + 4 * _i] for _i in range(5)] == [float(_v[4 + 4 * _i]) for _i in range(5)],
           'O714: a side wing is turned to rise %d degrees (got %.1f)' % (_rise, _ang))
+
+# ---- O714c: from the side a wing is a pair of wings in profile. The owner, on the pair 79 preview: most wings look bad
+# from the side. Before: both wings on the torso column at 70% and 55% of the size, as steep as 58 degrees, a clump.
+_rise, _far, _back = fm587.side_geo(_sp)
+check(0 <= _far < len(gd.SIDE_FARS) and _back in gd.SIDE_BACKS, 'O714c: the far wing takes one of the places of SIDE_FARS')
+_near, _farm = fm587.side_masks(_sp, 0)
+_e0 = gd.merge(*_fr['east'][0])
+_reach, _sweep, _behind = gd.side_tip(_near)
+check(_behind > 0 and gd.SIDE_ANGLE[0] <= _sweep <= gd.SIDE_ANGLE[1], 'O714c: fiery is swept back at %.0f degrees' % _sweep)
+check(_reach >= gd.SIDE_LEN * gd.face_reach(gd.merge(*_fr['south'][0])[..., 3] == 255, fm587.JOIN), 'O714c: the near wing keeps its length')
+check(int(np.nonzero(_e0[..., 3].any(axis=0))[0].max()) <= gd.SIDE_ROOT[0] + gd.SIDE_FRONT, 'O714c: nothing in front of the back line')
+check((_farm & ~_near).sum() >= gd.SIDE_FAR_FREE * _farm.sum(), 'O714c: the far wing shows beside the near one')
+check(not gd.side_problems(_near, _farm, _e0, gd.merge(*_fr['south'][0]), fm587.JOIN, _sp.outline), 'O714c: fiery holds the side rules')
+# the dummy of the sheets: east looks right, west left, and the side wing lies behind its back
+_be, _bw = gd.silhouette('east'), gd.silhouette('west')
+check(np.array_equal(gd.mirrored(_be), _bw), 'O714c: the west dummy is the east one mirrored')
+_hx = np.nonzero(_be[: gd.ANCHOR[1] - 8, :, 3].any(axis=0))[0]
+check(_hx.mean() > gd.ANCHOR[0], 'O714c: the east dummy faces right (its head is ahead of the torso column)')
+# refused: the side view of O714, the clump, and faults one at a time
+_o714 = {d: list(_fr[d]) for d in gd.DIRS}
+_o714s = {}
+for _f in range(F):
+    _sc = gd.Scene(_sp.outline, 'east', _f, fm587.PIVOT)
+    fm587.fam_side_o714(_sc, _sp)
+    _o714['east'][_f] = _sc.result()
+    _o714['west'][_f] = tuple(gd.mirrored(_x) for _x in _o714['east'][_f])
+    _o714s[_f] = _sc.side
+_p = fm587.layout_problems(_sp, _o714, sides=_o714s)
+check(any('front of the back line' in p for p in _p) and any('is short' in p for p in _p),
+      'O714c: the side view of O714 (on the torso column, 70%%) is refused: %s' % _p[:3])
+_p = gd.side_problems(_near, _near.copy(), _e0, gd.merge(*_fr['south'][0]), fm587.JOIN, _sp.outline)
+check(any('hidden' in p for p in _p), 'O714c: a far wing under the near one is refused')
+_up = np.zeros_like(_near)
+_up[10:40, 30:32] = True
+_p = gd.side_problems(_up, _farm, _e0, gd.merge(*_fr['south'][0]), fm587.JOIN, _sp.outline)
+check(any('swept back' in p for p in _p) and any('no root' in p for p in _p), 'O714c: a wing that stands straight up off the shoulder is refused')
+_p = gd.side_problems(_near, _farm, np.roll(_e0, 6, axis=1), gd.merge(*_fr['south'][0]), fm587.JOIN, _sp.outline)
+check(any('front of the back line' in p for p in _p), 'O714c: art over the chest is refused')
+_lit = _e0.copy()
+_fc = gd.merge(*_fr['south'][0])
+_fc = _fc[(_fc[..., 3] == 255) & ~(_fc[..., :3] == np.asarray(_sp.outline, np.uint8)).all(axis=2)][0]
+_lit[_farm & ~_near] = _fc
+_p = gd.side_problems(_near, _farm, _lit, gd.merge(*_fr['south'][0]), fm587.JOIN, _sp.outline)
+check(any('darker' in p for p in _p), 'O714c: a far wing in the colours of the wing face on is refused')
+
 # a pair is mirrored in place by the canvas: the first drawing keeps a pixel both own, sparks and hazes follow
 _c = gd.Canvas((20, 20, 30))
 _pc = np.zeros((gd.SIZE, gd.SIZE), bool)
