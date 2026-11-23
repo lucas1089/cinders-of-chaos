@@ -37919,3 +37919,18 @@ A live map of our own test bots, for the staff only (owner 2026-11-23: on the we
 - **The page.** `page?plugin=chaos&p=botmap` (website/README.md "Bot live map (O727)"): Leaflet 1.9.4 from cdnjs with its integrity hash (docs/CREDITS.md), simple CRS, floor buttons with the bots on each, markers polled every 3 s from `/chaos_botmap.php`, a roster, the panel, town labels. Anyone but staff gets "not found" on the page and 404 on the endpoint.
 - **Security.** The endpoint reads the bot files and the pointer only: no database table of players, no account, no IP. A name that is not `Tester Xxx`, a link, a file over 64 KB, a bad position and every key the page does not know are dropped; the page puts server text on the screen with `textContent`. The files are written by root processes; no player can write there.
 - **Tests.** `tools/bot_live_test.py` (the writer: one line, atomic, rate and heartbeat, 50 lines, no secret, clear folder; staleness; the views of a journey, a behaviour and a check; the hooks in `testers.py`), `tools/gen_bot_map_tiles_test.py` (a synthetic OTBM, items folder and swatch atlas: files and geometry, swatch order, border blend, big swatch across a tile edge, zoom averaging, the pointer, the command line), `website/tests/chaos_botmap_page_test.php`, `chaos_botmap_core_test.js`, `chaos_botmap_ui_test.js`, `unity/Core.Tests/BotLiveTests.cs`, `android/.../BotMapInfoTest.java`, `server/deploy/chaos_ctl_test.py` `test_botmap` (and the live folder in `test_testers` / `test_journey`). Not run: against a real world map or a live server.
+
+## More purchased effects (O735; `data/lib/chaos_wst_more_fx.lua`, `data/lib/chaos_wst_more_fx_ids.lua`, client pair 82)
+
+Owner 2026-11-23: import every purchased effect set not yet in a pair. 2,875 effects at the ids 5442..8316.
+The art is in the sprite pair only: client/MANIFEST.md "More purchased effects (O735)", docs/CREDITS.md.
+
+- **Gate.** config.lua `chaosClientPair` is 82 or more (client_pair.py `PAIR_WST_MORE`), read once at load. Below 82 nothing goes out.
+- **Pair.** Pair 82 built 2026-11-23 (owner: "pode publicar"), `PAIR_ASSETS` 82 (client/MANIFEST.md "Pair 82 on windows-assets"). Owner step after a client package with it: admin app Comandos > "Par do cliente" > Gravar 82 (fallback `chaos-ctl.sh client-pair set 82`).
+- **No sender yet.** No spell or system sends them. A sender asks `ChaosWstMoreFx.at(pos, name)` or `.to(who, pos, name)`.
+  Both answer true when the effect went out. Keep the old line in the branch the gate does not take.
+- **Names.** `m3_*` third volume, `m4_*` fourth volume, `mv_*` a colour of a 64 px catalog effect.
+  A cone or a wave is 8 names, `<base>_n` .. `<base>_nw`. `ChaosWstMoreFx.heading(base, dir)` picks one by 0..7.
+- **Data.** `chaos_wst_more_fx_ids.lua`: id, dx, dy (send offset), ms, el (element tag). The tags are in `data/spells/spell_fx_elements.csv`.
+  `data/spells/more_pack_fx_catalog.csv` lists id, family, element, shape, size, frames, loop or once. All three are generated (`gen_wst_more_fx.py ids`).
+- **Test.** `tests/more_pack_fx_test.lua`: gate, send offset, dense ids, 8 headings a set.

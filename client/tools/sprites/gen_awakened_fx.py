@@ -11,7 +11,7 @@ none is committed except the table and the sums.
     python3 -I gen_awakened_fx.py build DAT SPR OUT_DIR # pair 75 -> pair 76 (the kit and the missiles) or pair 76 -> pair 77 (the
                                                         # 48 heading effects 5394..5441); any other pair is refused; OUT_DIR gets
                                                         # Tibia.dat, Tibia.spr and strips/
-    python3 -I gen_awakened_fx.py live DAT SPR          # pair 76 or 77 holds every effect and missile at its id, pixel for pixel
+    python3 -I gen_awakened_fx.py live DAT SPR          # pair 76, 77 or a later pair (82: O735 appends) holds every effect and missile at its id, pixel for pixel
     python3 -I gen_awakened_fx.py ids [--check]         # server/data/lib/chaos_awakened_fx_ids.lua, the tags of
                                                         # spell_fx_elements.csv
 
@@ -1384,9 +1384,10 @@ def live(dat_path, spr_path):
     rows = read_spec()
     sums = read_sums()
     errs = []
-    if len(dat.effects) not in (NEED_EFFECTS + KIT_EFFECTS, NEED_EFFECTS + KIT_EFFECTS + HEAD_EFFECTS) or len(dat.missiles) != NEED_MISSILES:
+    full = NEED_EFFECTS + KIT_EFFECTS + HEAD_EFFECTS          # a later pair appends after 5441 (pair 82, O735)
+    if not (len(dat.effects) == NEED_EFFECTS + KIT_EFFECTS or len(dat.effects) >= full) or len(dat.missiles) != NEED_MISSILES:
         errs.append('the pair has %d effects and %d missiles' % (len(dat.effects), len(dat.missiles)))
-    else:                                                    # pair 76 holds the kit, pair 77 the kit and the headings
+    else:                                                    # pair 76 holds the kit, pair 77 on the kit and the headings
         rows = [r for r in rows if r['kind'] != 'effect' or effect_id(r) <= len(dat.effects)]
     ne = sum(1 for r in rows if r['kind'] == 'effect')
     for r in rows if not errs else []:
