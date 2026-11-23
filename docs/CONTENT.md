@@ -204,7 +204,7 @@ a step. Each one gives:
 - a Milestone Cache of orbs, once per character: 5 Upheaval and 2 Fate at 800, up to 12 / 5 / 2 Grafting at 2200;
 - a LEVEL MILESTONE toast and one short server line;
 - a challenge in Next Goals: an Infinity Tower floor (30 at 800, 100 at 2200) or pocket boss kills at 1000 / 1500 / 2000;
-- a level-up effect at 1000, 1500 and 2000; all 15 give the title Hundredfold and the Summit Seal kill effect.
+- a level-up effect at 1000, 1500 and 2000; all 15 give the title Hundredfold.
 
 Next Goals shows the next milestone, its title and its cache. Characters already past a milestone get the titles at
 login, not the caches. Full table: server/README.md "Level milestones (O378)".

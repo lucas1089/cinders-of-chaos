@@ -157,7 +157,7 @@ return {
 			{key = "infernal", name = "Infernal", min = 2000, color = "#ff4a3a", honor = 1500, title = "Infernal",
 				frame = "gold", cosmetics = {"loot_blazing", "chat_infernal"}},
 			{key = "sovereign", name = "Cinder Sovereign", min = 2200, color = "#ffd36a", honor = 2500,
-				title = "Cinder Sovereign", frame = "violet", cosmetics = {"loot_blazing", "chat_infernal", "kill_cinderthrone"}}
+				title = "Cinder Sovereign", frame = "violet", cosmetics = {"loot_blazing", "chat_infernal"}}
 		},
 		checkSeconds = 60, -- how often the season roll is checked
 		configKey = "chaos_pvp_season_done" -- server_config: the last season whose rewards were handed out

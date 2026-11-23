@@ -108,7 +108,7 @@ end
 eq(P.shelfCheck(cfg, 150, {}, "loot_ember"), nil, "150 Marks buy an Ember Label")
 check(P.shelfCheck(cfg, 149, {}, "loot_ember") ~= nil, "149 are not enough")
 check(P.shelfCheck(cfg, 9999, {loot_ember = true}, "loot_ember") ~= nil, "owned: not twice")
-for _, key in ipairs({"coins", "premium", "stamina", "service:blessings", "item:28095x1", "kill_voidring", "skin_warrior_void", "bogus", ""}) do
+for _, key in ipairs({"coins", "premium", "stamina", "service:blessings", "item:28095x1", "kill_emberfade", "skin_warrior_void", "bogus", ""}) do
 	check(P.shelfCheck(cfg, 99999, {}, key) == cfg.messages.marksNoItem, "Marks buy nothing off the shelf: " .. key)
 end
 -- the month's slot (follow-up 2026-10-29): 6 fixed cosmetics plus one chosen by the server month from cfg.marks.monthly

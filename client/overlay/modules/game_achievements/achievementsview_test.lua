@@ -40,8 +40,8 @@ local track = { ap = 640, steps = {
   { p = 250, n = 'Chronicle Labels', k = 'lootbeam', d = 'Deep teal.', a = '#0b2626f0', o = 1 },
   { p = 500, n = 'Verdigris Splash', k = 'killfx', d = 'A green splash.' },
   { p = 1000, n = "Chronicler's Teal", k = 'chatcolor', d = 'Teal.', c = '#5cc8c0' } },
-  cats = { { key = 'rifts', cn = 'Rifts', dn = 3, t = 27, ti = 'Riftwarden', n = 'Rift Sigil', k = 'killfx', d = 'A sigil.' },
-    { key = 'secrets', cn = 'Secrets', dn = 4, t = 4, ti = 'Keeper of Secrets', n = 'Falling Stars', k = 'killfx', x = 1, o = 1 } } }
+  cats = { { key = 'rifts', cn = 'Rifts', dn = 3, t = 27, ti = 'Riftwarden', n = 'Sample Burst', k = 'killfx', d = 'A sigil.' },
+    { key = 'secrets', cn = 'Secrets', dn = 4, t = 4, ti = 'Keeper of Secrets', n = 'Sample Dust', k = 'killfx', x = 1, o = 1 } } }
 local nxt, prev = V.trackNext(track)
 eq(nxt.p, 1000, 'next milestone'); eq(prev, 500, 'previous milestone')
 eq(V.trackReached(track), 3, 'three reached')
@@ -59,7 +59,7 @@ eq(tip:find('Unlocks at 1,000 account points (360 to go).', 1, true) ~= nil, tru
 eq(tip:find('never sold', 1, true) ~= nil, true, 'not for sale')
 eq(V.rewardTooltip(track.steps[2], 640):find('Label background: #0b2626', 1, true) ~= nil, true, 'accent preview')
 eq(V.rewardTooltip(track.steps[1], 640):find('Owned', 1, true) ~= nil, true, 'owned')
-eq(V.categoryReward(track, 'rifts'), 'Complete all 27: title Riftwarden + Rift Sigil (Kill effect)', 'category reward')
+eq(V.categoryReward(track, 'rifts'), 'Complete all 27: title Riftwarden + Sample Burst (Kill effect)', 'category reward')
 eq(V.categoryReward(track, 'secrets'):find('done', 1, true) ~= nil, true, 'complete category')
 eq(V.categoryReward(track, 'combat'), nil, 'no reward listed'); eq(V.categoryReward(nil, 'rifts'), nil, 'no track')
 local tr = V.trackRows(track)
@@ -68,7 +68,7 @@ eq(tr[1].done, true); eq(tr[1].progress, 'Unlocked'); eq(tr[1].color, '#cfc4b4',
 eq(tr[3].done, true, '500 reached'); eq(tr[2].accent, '#0b2626f0', 'the accent previews itself')
 eq(tr[4].done, false); eq(tr[4].percent, 64); eq(tr[4].progress, '640 / 1,000 account points')
 eq(tr[4].right, '1,000 pts')
-eq(tr[5].name, 'Rifts: Rift Sigil'); eq(tr[5].percent, 11); eq(tr[5].progress, '3 / 27 achievements')
+eq(tr[5].name, 'Rifts: Sample Burst'); eq(tr[5].percent, 11); eq(tr[5].progress, '3 / 27 achievements')
 eq(tr[5].extra, 'Title: Riftwarden   -   Kill effect')
 eq(tr[6].done, true); eq(tr[6].progress, 'Complete'); eq(tr[6].extra:find('owned', 1, true) ~= nil, true)
 eq(#V.trackRows(nil), 0, 'no track: no rows')

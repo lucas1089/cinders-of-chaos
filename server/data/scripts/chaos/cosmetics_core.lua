@@ -800,7 +800,7 @@ function C.validate(cfg, opts)
 	-- retired cosmetics (O564): their ids and keys stay reserved, a new cosmetic never takes one
 	local retiredIds, retiredKeys = {}, {}
 	for _, r in ipairs(cfg.retired or {}) do
-		if type(r.id) ~= "number" or type(r.key) ~= "string" or type(r.price) ~= "number" or r.price <= 0 then
+		if type(r.id) ~= "number" or type(r.key) ~= "string" or type(r.price) ~= "number" or (r.price <= 0 and not r.earned) then
 			bad("retired %s: id, key and the list price are needed", tostring(r.key))
 		end
 		retiredIds[r.id or -1], retiredKeys[r.key or "?"] = true, true

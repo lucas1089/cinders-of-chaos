@@ -82,7 +82,7 @@ do
 		local c = byAch["level_" .. l]
 		check(c and c.kind == "levelfx" and c.price == nil, "level " .. l .. ": a level-up effect, not sold")
 	end
-	check(cat and cat.price == nil, "the category gives a cosmetic")
+	check(cat == nil, "the category gives no cosmetic (Summit Seal removed, O723)")
 end
 
 -- storage block and the README

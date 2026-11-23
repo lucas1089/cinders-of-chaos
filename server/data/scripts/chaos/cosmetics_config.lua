@@ -105,7 +105,27 @@ local config = {
 		{id = 102, key = "kill_sunring", kind = "killfx", price = 200},
 		{id = 103, key = "kill_shatter", kind = "killfx", price = 200},
 		{id = 104, key = "kill_bloodbloom", kind = "killfx", price = 200},
-		{id = 105, key = "kill_radiant", kind = "killfx", price = 200}
+		{id = 105, key = "kill_radiant", kind = "killfx", price = 200},
+		-- O723: the 17 earned plain kill effects of the old generation (owner 2026-11-23: "pode remover completamente, ninguem
+		-- comprou isso ainda"); never sold, so price 0 and `earned = true` (no refund, server/sql/chaos_zz_killfx_removal.sql
+		-- only takes the rows and the chosen id away)
+		{id = 106, key = "kill_voidring", kind = "killfx", price = 0, earned = true},
+		{id = 107, key = "kill_harbinger", kind = "killfx", price = 0, earned = true},
+		{id = 108, key = "kill_cinderheart", kind = "killfx", price = 0, earned = true},
+		{id = 109, key = "kill_sovereign", kind = "killfx", price = 0, earned = true},
+		{id = 111, key = "kill_cinderthrone", kind = "killfx", price = 0, earned = true},
+		{id = 140, key = "kill_candleseal", kind = "killfx", price = 0, earned = true},
+		{id = 120, key = "kill_marchfire", kind = "killfx", price = 0, earned = true},
+		{id = 113, key = "kill_vortex", kind = "killfx", price = 0, earned = true},
+		{id = 114, key = "kill_ascent", kind = "killfx", price = 0, earned = true},
+		{id = 115, key = "kill_warsurge", kind = "killfx", price = 0, earned = true},
+		{id = 116, key = "kill_thornbloom", kind = "killfx", price = 0, earned = true},
+		{id = 117, key = "kill_titanpyre", kind = "killfx", price = 0, earned = true},
+		{id = 118, key = "kill_riftsigil", kind = "killfx", price = 0, earned = true},
+		{id = 119, key = "kill_starfall", kind = "killfx", price = 0, earned = true},
+		{id = 121, key = "kill_summit", kind = "killfx", price = 0, earned = true},
+		{id = 131, key = "kill_pact_venom", kind = "killfx", price = 0, earned = true},
+		{id = 132, key = "kill_pact_frost", kind = "killfx", price = 0, earned = true}
 	},
 
 	-- Combat cosmetics others see (O318, cosmetics.lua). Visual only: an effect on a tile, sent to everyone who stands
@@ -257,10 +277,7 @@ local config = {
 		-- O715: the five oldest store kill effects (ids 101-105: Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, plain
 		-- effects of the server, a skull and rings) are gone (owner 2026-11-22: "os mais antigos estao ruins, podem ser deletados"); a
 		-- character that owned one finds it in no list and its chosen kill effect reads as none (cosmetics.lua `retired`).
-		{id = 106, key = "kill_voidring", kind = "killfx", icon = 6500, source = "achievement", achievement = "legendary_250",
-			vfx = "px396_indigo", name = "Void Ring", desc = "A dark ring closes over your kills. Achievement: Legend's Bane."},
-		{id = 107, key = "kill_harbinger", kind = "killfx", icon = 2229, source = "achievement", achievement = "tiered_1000",
-			vfx = "px633_green", name = "Harbinger's Toll", desc = "A green skull tolls for your kills. Achievement: Chaos Culler."},
+		-- O723: so are the 17 earned plain ones (Void Ring, Cinder Throne, Pact Venom ...; see `retired`).
 
 		-- ------------------------------------------------------------------ loot label accents (store 150, one achievement)
 		{id = 201, key = "loot_ember", kind = "lootbeam", icon = 18420, source = "store", price = 150, accent = "#461809f0",
@@ -290,19 +307,12 @@ local config = {
 			color = "#f0cf6a", name = "Veteran's Gold",
 			desc = "Your name in chat shows old gold for everyone. Achievement: Veteran of the Wastes."},
 
-		-- ------------------------------------------------------------------ the Cinderheart (uber.lua; last, so the list
-		-- positions the tests use stay)
-		{id = 108, key = "kill_cinderheart", kind = "killfx", icon = 2353, source = "achievement", achievement = "cinder_1",
-			vfx = "ember_crown", name = "Cinderheart Crown", desc = "A crown of embers burns over your kills. Achievement: Cinderbreaker."},
-		-- the Ashen Sepulchre's final boss (raid.lua; the achievement raid_sovereign)
-		{id = 109, key = "kill_sovereign", kind = "killfx", icon = 2498, source = "achievement", achievement = "raid_sovereign",
-			vfx = "dome_blast_violet", name = "Sovereign's Pyre", desc = "A pyre of violet ash rises from your kills. Achievement: The Last Door."},
+		-- ------------------------------------------------------------------ PvP, Candlemarks, Marches (the list
+		-- positions the tests use stay; the Cinderheart and Sovereign kill effects are gone, O723)
 		-- PvP (battleground.lua, arena_season.lua; source "pvp", pvp = how): the honor vendor and the season rewards
 		{id = 110, key = "kill_honorbrand", kind = "killfx", icon = 2400, source = "pvp", pvp = "Battleground vendor (honor)",
 			vfx = "px448_crimson", dissolve = "ash", tint = 2, name = "Honor Brand",
 			desc = "The monster you finish crumbles to crimson ash and falls away."},
-		{id = 111, key = "kill_cinderthrone", kind = "killfx", icon = 2343, source = "pvp", pvp = "PvP season reward: Cinder Sovereign",
-			vfx = "aura_burst_god", name = "Cinder Throne", desc = "A storm of light crowns your kills. PvP season: Cinder Sovereign."},
 		{id = 206, key = "loot_warbanner", kind = "lootbeam", icon = 1436, source = "pvp", pvp = "Battleground vendor (honor)",
 			accent = "#2c1010f0", name = "Warbanner Labels", desc = "Your highlighted loot labels sit on war-torn crimson. Rarity colours stay."},
 		{id = 207, key = "loot_blazing", kind = "lootbeam", icon = 1481, source = "pvp", pvp = "PvP season reward: Blazing or better",
@@ -312,15 +322,11 @@ local config = {
 		{id = 308, key = "chat_infernal", kind = "chatcolor", icon = 2343, source = "pvp", pvp = "PvP season reward: Infernal or better",
 			color = "#ff6a4a", name = "Infernal Name", desc = "Your name in chat burns infernal red for everyone. PvP season: Infernal."},
 		-- Candlemarks (candlemarks_config.lua; source "candlemarks"): bought at Osric the Chandler, never for coins
-		{id = 140, key = "kill_candleseal", kind = "killfx", icon = 2050, source = "candlemarks", vfx = "holy_seal",
-			name = "Candle Seal", desc = "A seal of candlelight glows where your killing blow lands."},
 		{id = 230, key = "loot_tallow", kind = "lootbeam", icon = 2048, source = "candlemarks", accent = "#2e2412f0",
 			name = "Tallow Labels", desc = "Your highlighted loot labels sit on warm tallow. Rarity colours stay."},
 		{id = 330, key = "chat_candlelight", kind = "chatcolor", icon = 2047, source = "candlemarks", color = "#ffd98a",
 			name = "Candlelight Name", desc = "Your name in chat glows soft candlelight for everyone."},
 		-- the Scorched Marches vendor (pvpzone.lua; banked embers)
-		{id = 120, key = "kill_marchfire", kind = "killfx", icon = 2353, source = "pvp", pvp = "Scorched Marches vendor (embers)",
-			vfx = "meteor_strike", name = "Marchfire", desc = "A burning star falls where your killing blow lands."},
 		{id = 212, key = "loot_scorched", kind = "lootbeam", icon = 2249, source = "pvp", pvp = "Scorched Marches vendor (embers)",
 			accent = "#2a1608f0", name = "Scorched Earth Labels", desc = "Your highlighted loot labels sit on scorched earth. Rarity colours stay."},
 		{id = 314, key = "chat_marchember", kind = "chatcolor", icon = 1481, source = "pvp", pvp = "Scorched Marches vendor (embers)",
@@ -339,20 +345,8 @@ local config = {
 			desc = "The monster you finish comes apart into green pixels that drift and fade. Reward track: 500 points."},
 		{id = 310, key = "chat_chronicler", kind = "chatcolor", icon = 13531, source = "achievement", points = 1000,
 			color = "#5cc8c0", name = "Chronicler's Teal", desc = "Your name in chat shows chronicle teal for everyone. Reward track: 1000 points."},
-		{id = 113, key = "kill_vortex", kind = "killfx", icon = 2153, source = "achievement", points = 1750,
-			vfx = "px03_arcane", name = "Arcane Vortex", desc = "An arcane vortex swallows your kills. Reward track: 1750 points."},
 		{id = 209, key = "loot_obsidian", kind = "lootbeam", icon = 18414, source = "achievement", points = 2500,
 			accent = "#140f1af0", name = "Obsidian Labels", desc = "Your highlighted loot labels sit on obsidian. Reward track: 2500 points."},
-		{id = 114, key = "kill_ascent", kind = "killfx", icon = 2343, source = "achievement", points = 3500,
-			vfx = "aura_burst_gold", name = "Gilded Ascent", desc = "A golden burst crowns your kills. Reward track: 3500 points."},
-		{id = 115, key = "kill_warsurge", kind = "killfx", icon = 2400, source = "achievement", category = "combat",
-			vfx = "aura_burst_red", name = "War Surge", desc = "A red surge rises from your kills. Complete Combat & Leveling."},
-		{id = 116, key = "kill_thornbloom", kind = "killfx", icon = 18415, source = "achievement", category = "monsters",
-			vfx = "px286_green", name = "Thornbloom", desc = "Petals burst over your kills. Complete Monsters."},
-		{id = 117, key = "kill_titanpyre", kind = "killfx", icon = 2498, source = "achievement", category = "bosses",
-			vfx = "dome_blast_holy", name = "Titan's Pyre", desc = "A dome of holy fire rises from your kills. Complete World Bosses."},
-		{id = 118, key = "kill_riftsigil", kind = "killfx", icon = 6500, source = "achievement", category = "rifts",
-			vfx = "px674_arcane", name = "Rift Sigil", desc = "An arcane sigil seals your kills. Complete Rifts."},
 		{id = 210, key = "loot_sepulchre", kind = "lootbeam", icon = 2498, source = "achievement", category = "raids",
 			accent = "#1d1712f0", name = "Sepulchre Labels", desc = "Your highlighted loot labels sit on grave ash. Complete Raids."},
 		{id = 311, key = "chat_huntsman", kind = "chatcolor", icon = 2392, source = "achievement", category = "bounties",
@@ -363,11 +357,6 @@ local config = {
 			color = "#e8848c", name = "Bloodsteel Name", desc = "Your name in chat shows bloodsteel for everyone. Complete PvP."},
 		{id = 313, key = "chat_lantern", kind = "chatcolor", icon = 2145, source = "achievement", category = "explore",
 			color = "#e8d890", name = "Lantern Name", desc = "Your name in chat shows lantern light for everyone. Complete Exploration & Social."},
-		{id = 119, key = "kill_starfall", kind = "killfx", icon = 2150, source = "achievement", category = "secrets",
-			vfx = "starfall_crown", name = "Falling Stars", desc = "Stars fall over your kills. Complete Secrets."},
-		{id = 121, key = "kill_summit", kind = "killfx", icon = 2353, source = "achievement", category = "milestones",
-			vfx = "infernal_seal", name = "Summit Seal",
-			desc = "A seal of hellfire burns where your killing blow lands. Complete Level Milestones."},
 
 		-- ------------------------------------------------------------------ footprints (store 200)
 		-- every viewer's client draws them (game_cosmeticfx), behind the walking character, fading in about 2.5 s
@@ -531,12 +520,8 @@ local config = {
 			desc = "The monster you finish burns from its edges inward in crimson embers."},
 		{id = 220, key = "loot_pact_frost", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, December 2026",
 			accent = "#0a2028f0", name = "Pact Frost Labels", desc = "Your highlighted loot labels sit on frozen teal. Rarity colours stay."},
-		{id = 131, key = "kill_pact_venom", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, January 2027",
-			vfx = "px633_green", name = "Pact Venom", desc = "A green skull rises from the monster you finish."},
 		{id = 221, key = "loot_pact_rose", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, February 2027",
 			accent = "#4a1230f0", name = "Pact Rose Labels", desc = "Your highlighted loot labels sit on deep rose. Rarity colours stay."},
-		{id = 132, key = "kill_pact_frost", kind = "killfx", icon = 16101, source = "pact", pact = "Chaos Pact, March 2027",
-			vfx = "px195_ice", name = "Pact Frost", desc = "An icy rune bursts where your killing blow lands."},
 		{id = 222, key = "loot_pact_gold", kind = "lootbeam", icon = 16101, source = "pact", pact = "Chaos Pact, April 2027",
 			accent = "#2a2006f0", name = "Pact Gold Labels", desc = "Your highlighted loot labels sit on old gold. Rarity colours stay."},
 

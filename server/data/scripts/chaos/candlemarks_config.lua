@@ -128,8 +128,6 @@ C.offers = {
 		icon = 1950, name = "Kill Task Reroll", desc = "Draw one kill task again."},
 	-- cosmetics (owner 2026-10-15): our own, never sold for Chaos Coins (cosmetics_config.lua source "candlemarks"),
 	-- once per account (the weekly limit of 1 never matters: owned is owned)
-	{key = "cos_candleseal", kind = "cosmetic", cosmetic = "kill_candleseal", price = 150, weekly = 1, minLevel = 1,
-		icon = 2050, name = "Candle Seal", desc = "A kill effect: a seal of candlelight. For the account."},
 	{key = "cos_candlelight", kind = "cosmetic", cosmetic = "chat_candlelight", price = 120, weekly = 1, minLevel = 1,
 		icon = 2047, name = "Candlelight Name", desc = "Your name in chat in candlelight. For the account."},
 	{key = "cos_tallow", kind = "cosmetic", cosmetic = "loot_tallow", price = 100, weekly = 1, minLevel = 1,
