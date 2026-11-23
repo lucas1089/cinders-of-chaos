@@ -25358,6 +25358,77 @@ Tests: `tools/area_style_learn_test.py` (CI step "Area planner"; 44 checks): the
 copy guard, the shipped profile rebuilt from the crypt example, the example, the validator, `styleids` equal under
 luajit and lua5.3.
 
+## Plateaus and cliffs (O744) (`tools/area_plan_plateau.py`, plan field `plateaus`)
+
+Raised walkable ground over several floors, with ramps. Off by default: a plan without `plateaus` (or with count 0)
+compiles to the same bytes. All 86 plans, examples, rooms and inbox entries gave the same OTBM, frame, spawn file and
+manifest as the commit before (compared with the tools of that commit). `area_plan_plateau_test.py` holds river_hunt,
+village_square and swamp_hunt by checksum. Plan field (schema `plateaus`):
+
+```json
+"plateaus": {"count": 3, "size": [17, 21], "height": [1, 2], "ramps": [1, 2], "zones": ["ridge", "crags", "tor"]}
+```
+
+- **What it is.** A plateau rises one floor (z - 1) over a zone of floor 1; height 2 adds a smaller tier at z - 2 on
+  top of it. Count 0-4. Size: tiles a side of the lower footprint (8-30, default 12-16; height 2 needs 17 or more).
+  Height and ramps take a number or a [low, high] range the seed picks from. Zones: in turn; default every hunt zone of
+  floor 1 that is no boss room, camp or protection zone, the largest first.
+- **Pieces, no new id.** Our art has no cliff or ledge piece (art_items.csv holds none). The cliff is the generator's
+  own mountain edge: the biome's view frame family when its border set runs over any ground (`mountain` 919 with the
+  `gravel` set 4468-4479 in the open biomes; `earth` 101 with `dirt_wall` in a cave), else the mountain. On the floor
+  below, the footprint is mountain ground (the cliff face, not walkable) and the gravel pieces lie on the ring round it
+  (the cliff foot, blocking, as the generator's rock edges are). One floor up, the footprint again with the ground that
+  lay under it; its outer ring is mountain (the lip) and the gravel pieces lie inside the lip. The rest of the top is
+  walkable. A height 2 tier stands 5 tiles inside the lower footprint (`LEDGE` 4): mountain on the lower top, its own
+  lip one floor further up. Every border piece round a changed tile is laid again by our rule (`map_tile_rules.border_pieces`,
+  every higher family, lower ones first), so a grass edge next to the cliff stays right.
+- **Ramps.** Our stair brush of O740: the stone stairs 3687 on the floor below lead up to the tile north of the stairs
+  ground 411 above; stepping on 411 goes down south of the stone stairs. The brush runs north-south only, so a ramp
+  is cut into a south facing edge that is flat over 5 columns: a notch 3 tiles wide in the cliff and in the lip, the
+  stairs in its middle (no edge piece on the stairs tile), the tile south of it and the tile north of the stairs ground
+  clear. 1-2 ramps per tier, 6 columns apart, the ones nearest the arrival first.
+- **Placing** (after the buildings, before teleports, spawns, chests and decoration). A seeded shape: rows whose west
+  and east edges wander by a tile (a median pass and a pass against one row bumps: no one tile spike), corners cut by
+  1-2 tiles, the last rows narrowing to the south edge. Positions round the zone centre are tried; a place is kept when
+  the footprint and its cliff foot lie on built tiles of walkable families (no rock, no water), CLEAR (2) tiles off the
+  plan's paths, buildings and crossings, 3 off water, 4 off the arrival, 2 off every special tile and other plateau, the
+  floors above are free, the ramps fit, every ramp tile comes out walkable, each tier keeps 12+ walkable tiles on top,
+  and the reach of the entry loses no tile it had. Else a smaller size, 4 shapes per size; then an ERROR that names the
+  plateau, the sizes tried and the reasons the places were refused.
+- **On top.** Spawns and chests may stand on a plateau of their zone (the compile's zone cells add the top tiles for
+  them). Teleports, the exit, NPCs and the boss stay on the floor. The decoration pass does not dress the tops. The
+  ramps, their landings and the tile north of each stairs ground are special: no spawn, chest or decoration there.
+  The tops get no view frame (they look down on the floor below, as the floors above of O740 do).
+- **QA** (`PL.qa`, on the final tiles). The cliff face is the cliff ground and not walkable. Every built tile of an
+  upper floor with an open side is not walkable or is a stairs ground (the ring is closed except at the ramps). Every
+  top tile is reached from the entry over the ramps; 12+ per tier. Each ramp: the stone stairs alone on its tile, the
+  bare stairs ground above, the tile north of it, the tile south of the stairs and the landing walkable and reached
+  (else "runs into a wall"). The cliff and its foot off water, crossings and buildings. One INFO line per ramp. The
+  compile's open edge rule lets the stairs ground open to the south; its border rule skips the stairs tile.
+  `manifest.stats.plateaus`: id, zone, height, rect, footprint, walkable tiles per top, ramps, steps from the entry.
+- **Validator.** At most 4; lowest first; height 2 with a size under 17 is an ERROR; no plateau in a dungeon biome
+  (walls and roofs, not cliffs); a plateau over z 8 or deeper stays at z 8 or deeper (a cave never rises into the
+  ground floor), one at the surface stays at z 0 or deeper; zones of floor 1 only, never the boss room.
+- **Example.** `tools/areaplan/examples/highland_hunt.json` (Greyspur Heights, forest, 124 x 96, levels 80-180, seed
+  74411). Three ragged room zones of 34 x 28, 36 x 30 and 34 x 28. Measured: the ridge plateau (height 1, footprint 248,
+  134 walkable on top, 2 ramps, 60 steps from the entry), the crags plateau (height 2, footprint 326, 59 and 31
+  walkable, 3 ramps, 108 steps), the tor plateau (height 2, footprint 297, 57 and 24 walkable, 3 ramps, 72 steps). 3084
+  walkable tiles on 3 floors, 50 monsters (7 spawn points on top), nothing out of reach, no QA error or warning, map
+  tile audit and look audit clean. 14 seeds of the plan placed all three plateaus; 4 of them break the outline rule,
+  with or without the plateaus.
+- **Not done.** Ramps on the other three sides (the stair brush runs north-south only; no stock ramp of another
+  heading was checked on a render). A cliff face piece of our own (no art; the mountain ground and its gravel edge stand
+  in). Decoration on the tops. A plateau over floor 2 or deeper of a plan. Plateaus that touch the zone's own rock (a
+  plateau keeps off rock, so it never grows out of the area's edge). Not checked on a render (no client pair here).
+- **Tests.** `tools/area_plan_plateau_test.py` (CI step "Area planner"): the materials (stair brush, the gravel set by
+  name), 40 shapes (one run a row, no spike, deterministic), rim, erode, ring, ramp spots, the cliff and lip sets with
+  the notches, the border pieces, the validator, the three held checksums and count 0, the example (cliff face, cliff
+  foot, ring closed, every tile on every floor reached, ramps and their floor changes, no spawn on a ramp, spawns on
+  top, the manifest, the same bytes twice, the map tile audit, the look audit), a lake and a house beside the plateaus,
+  the QA (stairs taken away, a ramp into a wall, a lip opened, a top tile cut off, a cliff face of the wrong ground).
+  `area_planner_test.py` compiles the example with the others. `areaplan_build.lua materials` now also prints the
+  border piece sets by name (`pieces`) and the rule of each family over any ground (`over_any`).
+
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
 Areas the owner asks for in chat wait here as plans until they are approved (docs/MAP_GUIDE.md "Map inbox").

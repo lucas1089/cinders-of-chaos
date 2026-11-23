@@ -609,6 +609,7 @@ def validate(plan, cat=None, pair24=None):
             E('plan.water.lakes[%d].radius' % i, 'the lowest radius comes first')
     if wtr and biome['kind'] == 'dungeon':
         W('plan.water', 'water in a dungeon biome: the shores meet the walls; an open biome (waste, cave) reads better')
+    issues.extend(validate_plateaus(plan, zid, biome, ref))
     rewards = reward_items()
     slots = {}
     for i, c in enumerate(plan.get('chests', [])):
@@ -633,6 +634,40 @@ def validate(plan, cat=None, pair24=None):
     for k in set(keys):
         if keys.count(k) > 1:
             W('plan.chests', 'quest key %s is used by %d chests' % (k, keys.count(k)))
+    return issues
+
+
+def validate_plateaus(plan, zid, biome, ref):
+    """[Issue] for the plan's `plateaus` (O744, area_plan_plateau.py): sizes, heights, zones, the floors above"""
+    issues = []
+    p = plan.get('plateaus')
+    if not p or not p.get('count'):
+        return issues
+    E = lambda q, m, h=None: issues.append(Issue('ERROR', q, m, h))
+    span = lambda v, d: (v, v) if isinstance(v, int) else tuple(v or d)
+    size, height, ramps = span(p.get('size'), (12, 16)), span(p.get('height'), (1, 1)), span(p.get('ramps'), (1, 2))
+    for k, v in (('size', size), ('height', height), ('ramps', ramps)):
+        if v[0] > v[1]:
+            E('plan.plateaus.' + k, 'the lowest %s comes first' % k)
+    if height[1] == 2 and size[0] < 17:
+        E('plan.plateaus.size', 'a plateau of height 2 needs a footprint of 17 tiles a side or more (the tier on top lies 5 '
+          'tiles in)', 'raise the lowest size to 17 or use height 1')
+    if biome['kind'] == 'dungeon':
+        E('plan.plateaus', 'plateaus need an open biome (waste or cave): a dungeon has walls and roofs, not cliffs')
+    oz = (plan.get('origin') or {}).get('z', biome['z'])
+    if oz - height[1] < (8 if oz >= 8 else 0):
+        E('plan.plateaus.height', 'a plateau of height %d over z %d would rise %s' % (
+            height[1], oz, 'above the ground floor' if oz >= 8 else 'past the top floor'), 'lower the height')
+    for i, zname in enumerate(p.get('zones', [])):
+        z = ref('plan.plateaus.zones[%d]' % i, zname)
+        if z and z['floor'] != 1:
+            E('plan.plateaus.zones[%d]' % i, 'zone %s is on floor %d; plateaus rise over floor 1 only (the floor above is '
+              'free there)' % (zname, z['floor']))
+        if z and z.get('role') == 'boss':
+            E('plan.plateaus.zones[%d]' % i, 'no plateau in the boss room %s' % zname)
+    if not p.get('zones') and not [z for z in plan['zones'] if z['floor'] == 1 and z.get('role', 'hunt') not in ('boss', 'camp')
+                                   and not z.get('pz')]:
+        E('plan.plateaus', 'no hunt zone on floor 1 to put a plateau in', 'name the zones in "zones"')
     return issues
 
 

@@ -180,6 +180,81 @@
       "maximum": 100,
       "description": "O740: the share (percent) of a walled building's wall tiles that break into gaps and of half its free floor that loses the floor (server/README.md \"Buildings phase 2 (O740)\"); default 0; a building with floors above stays whole; nothing it does blocks a way"
     },
+    "plateaus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count"
+      ],
+      "description": "raised walkable regions one floor up over a zone of floor 1, a second tier for height 2, edged by the biome's cliff (mountain ground and its gravel edge pieces), each with 1-2 ramps of our stair brush cut into a south facing edge (O744, server/README.md \"Plateaus and cliffs (O744)\"); absent or count 0: none, a held plan keeps its tiles. A plateau keeps off routes, buildings, crossings and water; spawns and chests may stand on top",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "how many plateaus"
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 30
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "tiles a side of the lower footprint, lowest and highest (default 12, 16); height 2 needs 17 or more"
+        },
+        "height": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ],
+          "description": "floors up: 1 (z - 1) or 2 (a second tier at z - 2), or [lowest, highest] picked by the seed (default 1)"
+        },
+        "ramps": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ],
+          "description": "ways up per tier, or [fewest, most] (default [1, 2]); the fewest must fit"
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "description": "the zones they go in, in turn (default every hunt zone of floor 1 that is no boss room, camp or protection zone, the largest first)"
+        }
+      }
+    },
     "origin": {
       "type": "object",
       "additionalProperties": false,

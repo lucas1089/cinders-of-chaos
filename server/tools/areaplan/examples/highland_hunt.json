@@ -1,0 +1,145 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "greyspur_heights",
+  "name": "Greyspur Heights",
+  "biome": "forest",
+  "size": [
+    124,
+    96
+  ],
+  "floors": 1,
+  "level": [
+    80,
+    180
+  ],
+  "seed": 74411,
+  "repair_reach": true,
+  "plateaus": {
+    "count": 3,
+    "size": [
+      17,
+      21
+    ],
+    "height": [
+      1,
+      2
+    ],
+    "ramps": [
+      1,
+      2
+    ],
+    "zones": [
+      "ridge",
+      "crags",
+      "tor"
+    ]
+  },
+  "decoration": "normal",
+  "light": "bright",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "shape": "room",
+      "size": "small",
+      "place": "southwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "ridge",
+      "floor": 1,
+      "size": [
+        34,
+        28
+      ],
+      "place": "northwest",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "crags",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "northeast",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "tor",
+      "floor": 1,
+      "size": [
+        34,
+        28
+      ],
+      "place": "southeast",
+      "role": "treasure",
+      "shape": "room",
+      "ragged": true
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "ridge",
+      "width": 3
+    },
+    {
+      "from": "ridge",
+      "to": "crags",
+      "width": 3
+    },
+    {
+      "from": "crags",
+      "to": "tor",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "tor",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "ridge",
+      "monster": "Werecrocodile",
+      "count": 18,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "crags",
+      "monster": "Hydra",
+      "count": 18,
+      "pack": 2,
+      "respawn": 120
+    },
+    {
+      "zone": "tor",
+      "monster": "Feral Werecrocodile",
+      "count": 14,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "tor",
+      "quest": "greyspur_cache",
+      "reward": {
+        "gold": 20000,
+        "message": "A climber's pack, left on the high ground."
+      }
+    }
+  ],
+  "notes": "Example plan (O744): a one-floor forest hunt for levels 80-180 with three plateaus, one of them two floors high. Each plateau is mountain ground with its gravel edge on the floor below and a walkable top one floor up, closed by a lip except at its ramps (our stone stairs and stairs ground)."
+}

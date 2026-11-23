@@ -703,7 +703,24 @@ if mode == "materials" then
 	for name, d in pairs(cfg.doors or {}) do
 		doors[name] = d
 	end
-	print(json({walls = walls, families = fams, doors = doors, pair24 = pair24, dark = dark}))
+	-- the border piece sets by piece name (O744: the plateaus' cliff edges) and the rule of each family over any lower one
+	local pieces, over = {}, {}
+	for name, set in pairs(cfg.pieces) do
+		local p, whole = {}, true
+		for k, v in pairs(set) do
+			p[k] = idOf(v)
+			whole = whole and p[k] ~= nil
+		end
+		if whole then
+			pieces[name] = p
+		end
+	end
+	for f, rule in pairs(cfg.borders) do
+		if rule["*"] then
+			over[f] = rule["*"]
+		end
+	end
+	print(json({walls = walls, families = fams, doors = doors, pieces = pieces, over_any = over, pair24 = pair24, dark = dark}))
 	return
 end
 
