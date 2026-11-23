@@ -107,6 +107,28 @@ check(substr_count($rotate, 'rotate 14') === 2 && strpos($rotate, 'clientguard.l
 $backup = (string)file_get_contents($repo . '/server/tools/backup.sh');
 check(strpos($backup, 'CHAOS_BACKUP_KEEP_DAYS:-14') !== false || strpos($backup, 'KEEP_DAYS:=14') !== false || preg_match('/KEEP_DAYS[^\n]*14/', $backup) === 1, 'backups: 14 days on the server');
 
+// the bot monitoring notice (O730): the retention numbers are the code's numbers, the notice is in both languages, the
+// Terms and the Rules page say the rule and that no ban is automatic
+$botCfg = (string)file_get_contents($repo . '/server/data/scripts/chaos/botdet_config.lua');
+check((bool)preg_match('/retention\s*=\s*\{eventDays\s*=\s*7,\s*scoreDays\s*=\s*90\}/', $botCfg), 'botdet_config.lua retention: events 7 days, scores 90 days');
+$privEn = (string)chaos_legal_text('privacy', 'en');
+$termsEn = (string)chaos_legal_text('terms', 'en');
+check(strpos($priv, 'Monitoramento contra bots e macros') !== false && strpos($priv, '| Monitoramento contra bots: registros de comportamento') !== false && strpos($priv, '| 7 dias |') !== false
+	&& strpos($priv, '| Monitoramento contra bots: notas por hora | 90 dias |') !== false && strpos($priv, 'Só a equipe os vê') !== false
+	&& strpos($priv, 'Nada disso pune sozinho') !== false && strpos($priv, 'seção 8') !== false, 'Privacy Policy (PT): bot monitoring, 7 and 90 days, staff only, no automatic punishment');
+check(strpos($privEn, 'Bot and macro monitoring') !== false && strpos($privEn, '| Bot monitoring: behaviour records') !== false && strpos($privEn, '| 7 days |') !== false
+	&& strpos($privEn, '| Bot monitoring: hourly scores | 90 days |') !== false && strpos($privEn, 'Only the staff see it') !== false
+	&& strpos($privEn, 'None of this punishes on its own') !== false, 'Privacy Policy (EN): the same');
+foreach (array('posições', 'passos', 'magias', 'curas', 'pausas de 5 minutos', 'resumo dos arquivos dos módulos', 'nunca os arquivos', 'código curto', 'títulos das janelas') as $w) {
+	check(strpos($priv, $w) !== false, "Privacy Policy (PT) bot monitoring says: $w");
+}
+check(strpos($priv, 'Cavebots') === false && strpos($terms, 'Cavebots e') !== false && strpos($terms, 'nenhuma punição é automática') !== false
+	&& strpos($termsEn, 'Cavebots and any external') !== false && strpos($termsEn, 'no penalty is automatic') !== false, 'Terms (PT and EN): cavebots and external tools forbidden, no automatic penalty');
+$rulesBb = (string)file_get_contents(__DIR__ . '/../setup/rules.bbcode');
+check(strpos($rulesBb, '2.2.1 Bots, cavebots, macros') !== false && strpos($rulesBb, 'kept 7 days, hourly scores 90 days') !== false && strpos($rulesBb, 'no ban is automatic') !== false
+	&& strpos($rulesBb, '[url=/page?plugin=chaos&p=legal&doc=privacy]Privacy Policy[/url], section 2') !== false, 'Rules page: the rule 2.2.1 with the numbers and the link');
+check(count(array_filter(explode("\n", $priv), static function (string $l): bool { return strpos($l, 'Monitoramento contra bots') !== false; })) === 3, 'Privacy Policy (PT): the notice and its two table rows');
+
 // the coin numbers of the Donation Terms are the server's packs
 foreach (chaos_coin_packs() as $p) {
 	check((bool)preg_match('/^\| ' . preg_quote($p['name'], '/') . '[^|]*\| ' . $p['total'] . ' \|/m', $donPt), 'Donation Terms (PT): ' . $p['name'] . ' = ' . $p['total']);

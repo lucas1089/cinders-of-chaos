@@ -42,6 +42,25 @@ como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados
   para a equipe. **Nada disso pune sozinho:** uma pessoa da equipe sempre analisa antes de decidir.
   Uma pontuação diária de suspeita por personagem, com os sinais que a explicam, fica guardada 30 dias (90 dias quando
   a equipe escalou o caso); só dias com pontuação relevante são guardados.
+- **Monitoramento contra bots e macros.** Bots, cavebots e macros que jogam por você são proibidos (Termos, seção 6).
+  Para encontrá-los, o servidor registra o comportamento do seu personagem enquanto você joga: as posições (cada mudança
+  de quadrado), os passos dados com as teclas e os trajetos pedidos com um clique no mapa, o tempo entre uma criatura
+  aparecer na tela e o primeiro ataque a ela (o alvo), o uso de magias (qual, e a vida e a mana em % no momento),
+  as curas, incluindo poções (a vida em % antes da cura), e o início, o fim e as pausas de 5 minutos ou mais de cada
+  sessão. Isso não inclui mensagens do chat, o conteúdo da sua tela, nem nada que esteja fora do jogo. A cada hora o
+  servidor calcula notas de 0 a 100 sobre rotas repetidas, ritmo, tempo de reação, cura e horas seguidas de jogo.
+  O cliente oficial também envia, ao entrar no jogo, um resumo dos arquivos dos módulos e dos mods do jogo (o nome de
+  cada módulo e um código calculado dos seus arquivos, nunca os arquivos), para o servidor ver se foram alterados.
+  No Windows, o cliente pode ainda procurar no seu computador programas de uma lista de ferramentas proibidas que a
+  equipe mantém (hoje a lista está vazia). Se a equipe cadastrar uma ferramenta, o cliente compara os nomes dos
+  processos em execução e os títulos das janelas visíveis com a lista, só no seu computador, e responde ao servidor
+  apenas um código curto da ferramenta encontrada. Ele não envia, guarda nem registra nomes de programas, títulos de
+  janelas, listas, caminhos ou arquivos seus, e não fecha nem bloqueia nada. Esses dados ficam guardados de forma
+  ligada ao personagem (e, portanto, à conta). Só a equipe os vê. **Nada disso pune sozinho:** nenhuma nota, marca ou
+  código bane, expulsa, silencia ou muda nada em ninguém; a equipe analisa cada caso antes de decidir. Os registros
+  de comportamento são apagados depois de 7 dias e as notas por hora, depois de 90 dias (seção 4). A base legal é o
+  legítimo interesse de manter o jogo justo (seção 3). Você pode pedir informações ou a eliminação desses dados pelo
+  contato da seção 8. Personagens da equipe não são monitorados.
 - Denúncias de jogadores: quem denunciou, quem foi denunciado, motivo, observação, posição, data e as últimas 10 linhas
   do denunciado nos canais públicos do jogo. **Mensagens privadas nunca são guardadas nem lidas.**
 - Relatos de bugs: o texto que você escreve, a posição, o nível e a classe do personagem.
@@ -91,6 +110,8 @@ duas coisas quando quiser, para todas as temporadas de uma vez. As listas de con
 | Link de recuperação de senha | 30 minutos ou até ser usado |
 | Dispositivo lembrado na verificação em duas etapas | 30 dias |
 | Registros técnicos: console do servidor, verificações do cliente, servidores de entrada | 14 dias |
+| Monitoramento contra bots: registros de comportamento (posições, passos, magias, curas, sessões, resumo dos módulos, código de ferramenta) | 7 dias |
+| Monitoramento contra bots: notas por hora | 90 dias |
 | Resumo de morte | as últimas 5 mortes de cada personagem |
 | Estatísticas de balanceamento (totais, sem identificação) | 90 dias por hora, depois 2 anos por dia |
 | Denúncias, relatos de bugs, registros do antitrapaça e da equipe | até [PRAZO DOS REGISTROS DE MODERAÇÃO], apagados automaticamente todo dia; mais tempo só enquanto uma denúncia estiver aberta ou um banimento ou recurso precisar deles |
@@ -148,7 +169,7 @@ Pela LGPD, você pode pedir:
 - portabilidade dos dados;
 - eliminação dos dados tratados com o seu consentimento, e a retirada desse consentimento;
 - informação sobre com quem compartilhamos os dados;
-- revisão de decisões tomadas só de forma automática. No nosso caso, nenhuma punição é decidida só pela máquina;
+- revisão de decisões tomadas só de forma automática. No nosso caso, nenhuma punição é decidida só pela máquina, e isso vale também para o monitoramento contra bots (seção 2);
 - oposição a um tratamento feito com base em legítimo interesse.
 
 **Como pedir:** envie um e-mail para [E-MAIL DO ENCARREGADO] a partir do e-mail cadastrado na conta, com o nome da conta.

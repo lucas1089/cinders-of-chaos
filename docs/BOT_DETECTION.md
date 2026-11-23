@@ -117,13 +117,13 @@ O Rumo é visto pelo módulo `game_rumolink` na lista de módulos (`rumo.moduleN
 5. Quanto tempo guardar? Padrão do plano: eventos 7 dias, notas 90 dias (já assim).
 6. O que a staff faz com uma marca? O GM Handbook (seção 3a) trata a revisão do `botreview`; falta dizer se `/botcheck` entra no mesmo fluxo e quem pode escalar.
 7. O memorial e rankings seguram contas marcadas (`chaos_antibot_holds`); as notas do O722 **não** seguram nada. Quer ligar?
-8. A varredura de ferramentas lê nomes de processos e títulos de janelas do jogador, só no Windows e só para comparar hashes. Isto é dado pessoal sensível para algumas leis: precisa estar nas regras e na política de privacidade antes de ligar uma lista (rascunho abaixo).
+8. A varredura de ferramentas lê nomes de processos e títulos de janelas do jogador, só no Windows e só para comparar hashes. Isto é dado pessoal sensível para algumas leis: precisa estar nas regras e na política de privacidade antes de ligar uma lista. **Respondida (O730, 2026-11-23):** o aviso está no site, nos Termos de Uso (seção 6), na Política de Privacidade (seção 2, monitoramento contra bots e macros, e duas linhas da tabela da seção 4: 7 dias e 90 dias) e na regra 2.2.1 da página Rules (`website/setup/rules.bbcode`). Como o texto dos Termos e da Política mudou, a versão aceita (`chaos_legal_version`, SHA-256 dos três textos em pt-BR) muda sozinha e toda conta aceita de novo no próximo login do site; o servidor mostra o aviso com o link. A página Rules do site é editável no painel e só é criada uma vez: num site que já existe, a regra 2.2.1 tem de ser colada à mão (Admin Panel > Pages > rules). Os textos legais ainda têm marcadores a preencher pelo dono ([DATA DE VIGÊNCIA] e outros).
 
-### Rascunho do aviso para as regras do site (monitoramento)
+### Rascunho do aviso para as regras do site (monitoramento; o texto publicado está em `docs/legal/privacy.pt-BR.md` seção 2, e este rascunho fica só como origem)
 
 > **Monitoramento contra bots.** Para manter o jogo justo, o servidor registra o comportamento do seu personagem (posições, passos, uso de magias e poções, alvos e pausas) por até 7 dias e calcula notas por hora, guardadas por até 90 dias. O client envia um resumo dos arquivos dos módulos do jogo e, no Windows, pode dizer ao servidor um código curto quando encontra no seu computador um programa de uma lista de ferramentas proibidas; ele não envia a lista de programas, nomes de janelas nem nenhum arquivo seu. Essas informações só são vistas pela equipe, nunca banem ninguém sozinhas e servem para a equipe revisar casos. Quem usar programas que automatizam o jogo fora das regras pode ter o personagem avaliado, advertido ou banido por decisão da equipe. Para saber mais ou pedir a remoção dos seus dados, fale com a equipe.
 
-(É só um rascunho para o dono revisar com a política de privacidade; não foi publicado no site.)
+(O texto do site é o de `docs/legal/`, mais completo e conferido com o código; o teste `website/tests/chaos_legal_pages_test.php` mantém os prazos de 7 e 90 dias iguais ao `botdet_config.lua`.)
 
 ## Plano de teste (a fazer com o servidor de verdade)
 
@@ -139,6 +139,6 @@ O Rumo é visto pelo módulo `game_rumolink` na lista de módulos (`rumo.moduleN
 - [x] `/botcheck <nome>` para GMs.
 - [x] Lista diária das 20 maiores notas (arquivo de log) e `chaos-ctl.sh botcheck-top`, com botões nos apps de admin.
 - [ ] Teste com jogadores reais e com uma conta de bot, limites ajustados (precisa do servidor com jogadores).
-- [ ] Política sobre bots (incluindo o Rumo) definida pelo dono e publicada nas regras.
+- [x] Política sobre bots (incluindo o Rumo) definida pelo dono (proibido, 2026-11-22) e publicada nas regras, nos Termos e na Política de Privacidade (O730).
 - [ ] Servidor reconstruído com o src-patch 0093 e client reconstruído com o base patch 0207 (nenhum dos dois foi aplicado a uma árvore real; ver as notas dos patches).
 - [ ] Lista oficial de módulos gerada na release (`gen_module_hashes.py`) e lista de ferramentas escolhida pela staff.

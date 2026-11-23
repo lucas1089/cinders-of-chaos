@@ -42,6 +42,25 @@ you use your rights. It follows the Brazilian General Data Protection Law (LGPD,
   staff. **None of this punishes on its own:** a staff member always reviews before deciding.
   A daily suspicion score per character, with the signals behind it, is kept 30 days (90 days when a staff member
   escalated the case); only days with a noticeable score are stored.
+- **Bot and macro monitoring.** Bots, cavebots and macros that play for you are forbidden (Terms, section 6). To find
+  them, the server records how your character behaves while you play: positions (every change of tile), steps taken
+  with the keys and routes ordered by a click on the map, the time between a creature coming into view and the first
+  attack on it (the target), spell use (which one, and your hit points and mana in % at that moment), heals,
+  including potions (hit points in % before the heal), and the start, end and pauses of 5 minutes or more of each
+  session. It does not include chat messages, the contents of your screen or anything outside the game. Every hour the
+  server computes scores from 0 to 100 for repeated routes, rhythm, reaction time, healing and hours played in a row.
+  The official client also sends, when you enter the game, a summary of the files of the game's modules and mods (the
+  name of each module and a code computed from its files, never the files), so the server can see whether they were
+  changed. On Windows the client can also look on your computer for programs from a list of forbidden tools that the
+  staff keep (today the list is empty). If the staff add a tool, the client compares the names of the running
+  processes and the titles of the visible windows with the list, only on your computer, and answers the server with a
+  short code of the tool it found. It does not send, store or log program names, window titles, lists, paths or your
+  files, and it does not close or block anything. This data is stored linked to the character (and so to the
+  account). Only the staff see it. **None of this punishes on its own:** no score, flag or code bans, kicks, mutes or
+  changes anything for anyone; a staff member reviews each case before deciding. The behaviour records are deleted
+  after 7 days and the hourly scores after 90 days (section 4). The legal basis is the legitimate interest in keeping
+  the game fair (section 3). You can ask for information or for the deletion of this data through the contact in
+  section 8. Staff characters are not monitored.
 - Player reports: who reported, who was reported, the reason, the note, the position, the time and the reported
   character's last 10 lines in the game's public channels. **Private messages are never stored or read.**
 - Bug reports: the text you write, the position, and the character's level and class.
@@ -92,6 +111,8 @@ season at once. The Chronicle's contributor lists follow the same choice.
 | Password recovery link | 30 minutes or until used |
 | Remembered device in two-step verification | 30 days |
 | Technical logs: server console, client checks, gateway servers | 14 days |
+| Bot monitoring: behaviour records (positions, steps, spells, heals, sessions, module summary, tool code) | 7 days |
+| Bot monitoring: hourly scores | 90 days |
 | Death recap | the last 5 deaths of each character |
 | Balance statistics (totals, no identifier) | 90 days per hour, then 2 years per day |
 | Player reports, bug reports, anti-cheat and staff logs | up to [PRAZO DOS REGISTROS DE MODERAÇÃO], deleted automatically every day; longer only while a report is still open or a ban or an appeal needs them |
@@ -148,7 +169,7 @@ Under the LGPD, you may ask for:
 - portability of your data;
 - deletion of data processed with your consent, and withdrawal of that consent;
 - information on who we share data with;
-- review of decisions made only by automated means. In our case, no penalty is decided by a machine alone;
+- review of decisions made only by automated means. In our case, no penalty is decided by a machine alone, and this holds for the bot monitoring too (section 2);
 - objection to processing based on legitimate interest.
 
 **How to ask:** send an e-mail to [E-MAIL DO ENCARREGADO] from the e-mail address of the account, with the account name.
