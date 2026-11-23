@@ -19,6 +19,8 @@ namespace Chaos.Core.LiveCheck
         /// <summary>Wall minutes the bot may play, the level it stops at, the file of the metrics JSON, data/chaos_poi.lua of the installed server, the random seed.</summary>
         public int Minutes = 180, TargetLevel = 25;
         public string OutFile, PoiFile;
+        /// <summary>The folder of the bots' live state files (data/chaos_botlive, O727): the bot writes its position, goal, reasons, plan and log there for the staff's map. Null: none.</summary>
+        public string LiveDir;
         public ulong Seed = 1;
         /// <summary>The class name for the report (the character's class), free text.</summary>
         public string ClassName = "";
@@ -56,6 +58,9 @@ namespace Chaos.Core.LiveCheck
         readonly List<OpPlan> opPlan = LiveOps.Plan();
         readonly StuckWatch watch = new StuckWatch();
         readonly StringBuilder log = new StringBuilder();
+        BotLiveState live;       // O727: what the staff's map shows of this bot
+        BotLiveWriter liveW;
+        static long NowSec() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         LiveClient c;
         GameSession s;
@@ -94,6 +99,45 @@ namespace Chaos.Core.LiveCheck
             log.AppendLine(line);
             Console.WriteLine(line);
             if (M.Notes.Count < 400) M.Notes.Add(line);
+            live?.Log(m, NowSec());
+        }
+
+        /// <summary>The staff map: level, position, then the file when it is due (every 3 s when something changed, every 15 s anyway).</summary>
+        void LiveTick(Pos pos)
+        {
+            if (live == null) return;
+            live.SetLevel(p.Level);
+            if (pos.X > 0) live.SetPos(pos.X, pos.Y, pos.Z);
+            liveW.Flush(live);
+        }
+
+        /// <summary>The goal of the activity just chosen and the facts behind it; a hunt shows the hunt it has picked.</summary>
+        void LiveGoal(JourneyActivity act, string reason)
+        {
+            if (live == null) return;
+            long now = NowSec();
+            switch (act)
+            {
+                case JourneyActivity.Hunt: LiveHunt(); break;
+                case JourneyActivity.Town:
+                    live.SetGoal("Town trip", BotLiveText.WhyTrip(reason), "", new[] { "Walk to the nearest shop mark", "Sell the loot", "Buy potions", "Keep the gold (a bank deposit when it is a lot)", "Back to the hunt" }, now); break;
+                case JourneyActivity.Explore:
+                    live.SetGoal("Explore", "between hunts a player looks around: it walks to a town it has not seen yet", "", new[] { "Walk to the town", "Look around a moment", "Back to hunting" }, now); break;
+                case JourneyActivity.Talk:
+                    live.SetGoal("Talk to an NPC", "between hunts a player talks to the people of the town", "", new[] { "Walk to an NPC it has not talked to", "Say hi and read the answer" }, now); break;
+                case JourneyActivity.System:
+                    live.SetGoal("Open a game system", "between hunts a player opens the windows of the game (opcodes of the extended protocol)", "", new[] { "Send the open request of a system it has not touched" }, now); break;
+                default:
+                    live.SetGoal("Idle", "a short pause, as a player has", "", new string[0], now); break;
+            }
+            liveW.Flush(live);
+        }
+
+        void LiveHunt()
+        {
+            if (live == null) return;
+            live.SetGoal("Hunt", hunt == null ? "looking for the hunt of its level" : BotLiveText.WhyHunt(hunt, p.Level, lastGoodPos, M.XpPerHour),
+                hunt == null ? "" : hunt.Name + " (levels " + hunt.Lo + "-" + hunt.Hi + ") at " + hunt.At, BotLiveText.HuntPlan(hunt), NowSec());
         }
 
         // ------------------------------------------------------------------------------------ connect
@@ -177,6 +221,7 @@ namespace Chaos.Core.LiveCheck
                 if (h < lastHealth) lastThreat = NearestMonsterName(pos, 4) ?? lastThreat;
                 lastHealth = h;
                 M.Observe(now - bootMs, p.Level, (long)p.Experience, Gold());
+                LiveTick(pos);
                 if (p.ExpGainTexts > expTexts0) { for (int i = expTexts0; i < p.ExpGainTexts; i++) M.Kill(lastTargetName); expTexts0 = p.ExpGainTexts; }
                 BackUp();
                 if (p.Containers.Count == 0 && now - bagTryAt > 4000 && p.Inventory.Length > 3 && p.Inventory[3] != null) { bagTryAt = now; s.UseItem(GameSession.InventoryPos(3), (ushort)p.Inventory[3].Id, 0); }
@@ -694,6 +739,7 @@ namespace Chaos.Core.LiveCheck
                 if (hunt == null) { Say("no hunt for level " + p.Level + ": exploring instead"); DoExplore(); Pump(3000); return; }
                 M.Hunts.Add(hunt.Name + " (" + hunt.Lo + "-" + hunt.Hi + ") at " + hunt.At + " from minute " + Min.ToString("0.0", CultureInfo.InvariantCulture));
                 Say("hunt: " + hunt.Name + " (level " + hunt.Lo + "-" + hunt.Hi + ") at " + hunt.At);
+                LiveHunt();
             }
             if (PathFinder.Cheb(c.Pos, hunt.At) > 24 || c.Pos.Z != hunt.At.Z)
             {
@@ -1008,6 +1054,12 @@ namespace Chaos.Core.LiveCheck
             if (!Connect(out string err)) { Console.Error.WriteLine("journey: " + err); return 1; }
             bootMs = Tick; runStart = Tick;
             M.Name = c.Character; M.Class = jo.ClassName; M.Vocation = world.PlayerVocation;
+            if (!string.IsNullOrEmpty(jo.LiveDir) && BotLiveState.IsTester(M.Name))
+            {
+                live = new BotLiveState(M.Name, NowSec());
+                live.SetClass(jo.ClassName);
+                liveW = new BotLiveWriter(jo.LiveDir, NowSec);
+            }
             Warm();
             M.Observe(0, p.Level, (long)p.Experience, Gold());
             M.Begin(0, p.Level, (long)p.Experience, Gold());
@@ -1034,6 +1086,7 @@ namespace Chaos.Core.LiveCheck
                     };
                     var act = firstHunts-- > 0 && reason.Length == 0 ? JourneyActivity.Hunt : JourneyActivities.Choose(ctx, rng);
                     activity = act.ToString();
+                    LiveGoal(act, reason);
                     switch (act)
                     {
                         case JourneyActivity.Hunt: DoHunt(JourneyActivities.HuntSliceMs(rng)); break;
@@ -1059,6 +1112,7 @@ namespace Chaos.Core.LiveCheck
             if (M.Stop.Length == 0) M.Stop = p.Level >= jo.TargetLevel ? "level " + p.Level : "stopped";
             Say("journey ends: level " + p.Level + " after " + M.Minutes.ToString("0.0", CultureInfo.InvariantCulture) + " min, " + M.Kills + " kills, " + M.Deaths.Count + " deaths, " + M.Stuck.Count + " stuck events, stop: " + M.Stop);
             try { c.Close(); } catch (Exception) { }
+            if (liveW != null) liveW.Remove(live);   // the bot is gone: its file goes (O727)
             WriteOut(true);
         }
 

@@ -36,6 +36,9 @@ foreach (array("default-src 'self'", "script-src 'self' 'unsafe-inline'", "objec
 	check(strpos($csp, $part) !== false, "CSP has $part");
 }
 check(strpos($csp, 'unsafe-eval') === false && strpos($csp, 'google') === false, 'CSP: no eval, no Google without reCAPTCHA');
+// O727: Leaflet of the staff's bot map comes from cdnjs: allowed for scripts and styles only, no other host, not as a default
+check(preg_match("/script-src [^;]*https:\/\/cdnjs\.cloudflare\.com/", $csp) === 1 && preg_match("/style-src [^;]*https:\/\/cdnjs\.cloudflare\.com/", $csp) === 1, 'CSP: cdnjs in script-src and style-src');
+check(preg_match("/default-src [^;]*cdnjs/", $csp) !== 1 && preg_match("/(img|connect|frame)-src [^;]*cdnjs/", $csp) !== 1 && substr_count($csp, 'cdnjs.cloudflare.com') === 2, 'CSP: cdnjs nowhere else');
 check(($c['security']['content_type_options'] ?? false) === true && ($c['security']['referrer_policy'] ?? '') === 'strict-origin-when-cross-origin', 'nosniff and Referrer-Policy');
 // the stock payment callbacks: off, and a random PayGol secret every run
 check(preg_match('/^[0-9a-f]{64}$/', (string)$c['paygol']['secretKey']) === 1, 'PayGol secret is 64 random hex digits');

@@ -1,0 +1,104 @@
+/*
+ * The staff's bot map (pages/botmap.php, O727). Only the map and its panel: the page frame, tabs, headings and colours are the layout's (layouts/chaos).
+ * Iron surfaces, gold for the one thing picked, ember red for a hunt, steel for checks; stale bots go grey. No glow, no motion.
+ */
+#chaos-botmap .chaos-bm__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 8px 0 12px; }
+#chaos-botmap .chaos-bm__status { margin: 0; color: var(--c-text2); font-size: 14px; flex: 1 1 240px; }
+#chaos-botmap .chaos-bm__follow { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--c-text2); cursor: pointer; }
+#chaos-botmap .chaos-bm__follow input { accent-color: var(--c-gold2); }
+#chaos-botmap .chaos-bm__floors { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+#chaos-botmap .chaos-bm__floors .chaos-tab { cursor: pointer; border: 0; background: var(--c-iron1); }
+#chaos-botmap .chaos-bm__error { margin: 0 0 12px; padding: 8px 12px; color: var(--c-error); background: var(--c-iron1); box-shadow: inset 0 0 0 1px var(--c-blood2); }
+
+#chaos-botmap .chaos-bm__layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+#chaos-botmap .chaos-bm__map, #chaos-botmap .chaos-bm__nomap {
+	height: min(72vh, 760px); min-height: 360px; background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron3); position: relative;
+}
+#chaos-botmap .chaos-bm__nomap { display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--c-text2); }
+#chaos-botmap .chaos-bm__nomap[hidden], #chaos-botmap .chaos-bm__map[hidden] { display: none; }
+
+/* Leaflet, re-coloured: the parent sheet gives it a light grey ground and white controls */
+#chaos-botmap .leaflet-container { background: var(--c-black); font-family: var(--c-body); font-size: 14px; color: var(--c-text); outline: 0; }
+#chaos-botmap .leaflet-container:focus-visible { box-shadow: inset 0 0 0 2px var(--c-gold2); }
+#chaos-botmap .chaos-bm__tile { image-rendering: pixelated; image-rendering: crisp-edges; }
+#chaos-botmap .leaflet-bar { border: 0; box-shadow: 0 0 0 1px var(--c-iron4); }
+#chaos-botmap .leaflet-bar a, #chaos-botmap .leaflet-bar a:hover {
+	background-color: var(--c-iron1); color: var(--c-gold3) !important; border-bottom: 1px solid var(--c-iron3); width: 32px; height: 32px; line-height: 32px;
+}
+#chaos-botmap .leaflet-bar a:hover { background-color: var(--c-iron2); color: var(--c-gold4) !important; }
+#chaos-botmap .leaflet-bar a.leaflet-disabled { background-color: var(--c-iron0); color: var(--c-iron4) !important; }
+#chaos-botmap .leaflet-bar a:last-child { border-bottom: 0; }
+
+/* a bot: a diamond sigil with its name under it; the colour is the kind of goal */
+#chaos-botmap .chaos-bm-mk-icon, #chaos-botmap .chaos-bm-town-icon { background: none; border: 0; overflow: visible; }
+.chaos-bm-mk { position: relative; width: 0; height: 0; --bm-c: var(--c-text2); }
+.chaos-bm-mk__sig {
+	position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; transform: rotate(45deg);
+	background: var(--bm-c); border: 2px solid var(--c-black); box-shadow: 0 0 0 1px var(--bm-c);
+}
+.chaos-bm-mk__lbl {
+	position: absolute; left: 12px; top: -10px; white-space: nowrap; padding: 1px 6px; font-size: 12px; line-height: 18px; color: var(--c-text);
+	background: rgba(13,11,14,.88); box-shadow: inset 0 0 0 1px var(--c-iron3); pointer-events: none;
+}
+.chaos-bm-mk--hunt { --bm-c: var(--c-blood4); }
+.chaos-bm-mk--town { --bm-c: var(--c-gold2); }
+.chaos-bm-mk--check { --bm-c: #8aa0c8; }
+.chaos-bm-mk--walk { --bm-c: var(--c-text); }
+.chaos-bm-mk--other { --bm-c: var(--c-text2); }
+.chaos-bm-mk.is-stale { --bm-c: var(--c-iron4); opacity: .65; }
+.chaos-bm-mk.is-stale .chaos-bm-mk__lbl { color: var(--c-muted); }
+.chaos-bm-mk.is-selected .chaos-bm-mk__sig { box-shadow: 0 0 0 1px var(--bm-c), 0 0 0 4px var(--c-gold3); }
+.chaos-bm-mk.is-selected .chaos-bm-mk__lbl { color: var(--c-gold4); box-shadow: inset 0 0 0 1px var(--c-gold2); }
+.leaflet-marker-icon:focus-visible .chaos-bm-mk__sig { box-shadow: 0 0 0 1px var(--bm-c), 0 0 0 4px var(--c-gold2); }
+
+/* a town (its temple): a small gold rune and the name in the display face */
+.chaos-bm-town { position: relative; width: 0; height: 0; }
+.chaos-bm-town__rune { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; box-sizing: border-box; transform: rotate(45deg); border: 2px solid var(--c-gold2); background: var(--c-black); }
+.chaos-bm-town__name {
+	position: absolute; left: 12px; top: -10px; white-space: nowrap; font-family: var(--c-display); font-size: 14px; letter-spacing: .04em; line-height: 20px;
+	color: var(--c-gold3); text-shadow: 0 1px 2px #000, 0 0 3px #000, 0 0 3px #000;
+}
+
+/* the roster and the panel */
+#chaos-botmap .chaos-bm__side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+#chaos-botmap .chaos-bm__roster { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; background: var(--c-iron0); box-shadow: inset 0 0 0 1px var(--c-iron3); }
+#chaos-botmap .chaos-bm-row {
+	display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; grid-template-areas: 'dot name meta' 'dot goal goal'; gap: 0 8px; align-items: baseline;
+	text-align: left; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--c-line); background: none; color: var(--c-text); cursor: pointer; font: inherit;
+}
+#chaos-botmap .chaos-bm-row:hover { background: var(--c-iron1); }
+#chaos-botmap .chaos-bm-row.is-selected { background: var(--c-raised); box-shadow: inset 2px 0 0 var(--c-gold2); }
+#chaos-botmap .chaos-bm-row.is-stale { color: var(--c-muted); }
+#chaos-botmap .chaos-bm-row:focus-visible { outline: 2px solid var(--c-gold2); outline-offset: -2px; }
+#chaos-botmap .chaos-bm-row__dot { grid-area: dot; width: 9px; height: 9px; transform: rotate(45deg); background: var(--bm-c, var(--c-text2)); align-self: center; }
+#chaos-botmap .chaos-bm-row.is-stale .chaos-bm-row__dot { background: var(--c-iron4); }
+#chaos-botmap .chaos-bm-row__name { grid-area: name; font-weight: 600; }
+#chaos-botmap .chaos-bm-row__meta { grid-area: meta; font-size: 13px; color: var(--c-text2); }
+#chaos-botmap .chaos-bm-row__goal { grid-area: goal; font-size: 13px; color: var(--c-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#chaos-botmap .chaos-bm__empty { margin: 0; padding: 12px; color: var(--c-muted); background: var(--c-iron0); box-shadow: inset 0 0 0 1px var(--c-iron3); font-size: 14px; }
+
+#chaos-botmap .chaos-bm__panel { background: var(--c-iron0); box-shadow: inset 0 0 0 1px var(--c-iron3); padding: 12px 14px; min-width: 0; }
+#chaos-botmap .chaos-bm__panel[hidden], #chaos-botmap .chaos-bm__empty[hidden], #chaos-botmap .chaos-bm__error[hidden] { display: none; }
+#chaos-botmap .chaos-bm__panel h2 { margin: 0; font-size: 20px; }
+#chaos-botmap .chaos-bm__sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 8px; color: var(--c-text2); font-size: 14px; }
+.chaos-bm-tag { padding: 0 8px; font-size: 12px; line-height: 20px; color: var(--c-gold3); background: var(--c-iron1); box-shadow: inset 0 0 0 1px var(--c-gold0); }
+.chaos-bm-tag.is-stale { color: var(--c-muted); box-shadow: inset 0 0 0 1px var(--c-iron4); }
+#chaos-botmap .chaos-bm__fields { margin: 0; }
+#chaos-botmap .chaos-bm-f { margin: 0 0 8px; }
+#chaos-botmap .chaos-bm-f dt { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--c-muted); }
+#chaos-botmap .chaos-bm-f dd { margin: 0; overflow-wrap: anywhere; }
+#chaos-botmap .chaos-bm__panel h3 { margin: 12px 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--c-gold2); }
+#chaos-botmap .chaos-bm__plan { margin: 0; padding-left: 22px; color: var(--c-text2); }
+#chaos-botmap .chaos-bm__plan li { margin: 0 0 2px; overflow-wrap: anywhere; }
+#chaos-botmap .chaos-bm__note { margin: 0; font-size: 14px; color: var(--c-muted); }
+#chaos-botmap .chaos-bm__note[hidden] { display: none; }
+#chaos-botmap .chaos-bm__log { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; background: var(--c-black); box-shadow: inset 0 0 0 1px var(--c-iron2); font-size: 13px; }
+#chaos-botmap .chaos-bm__log li { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; padding: 2px 8px; border-bottom: 1px solid var(--c-line); }
+#chaos-botmap .chaos-bm__log time { color: var(--c-muted); white-space: nowrap; }
+#chaos-botmap .chaos-bm__log span { overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+	#chaos-botmap .chaos-bm__layout { grid-template-columns: minmax(0, 1fr); }
+	#chaos-botmap .chaos-bm__map, #chaos-botmap .chaos-bm__nomap { height: 58vh; min-height: 300px; }
+	#chaos-botmap .chaos-bm__roster { max-height: 180px; }
+}

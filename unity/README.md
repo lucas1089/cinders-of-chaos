@@ -1908,6 +1908,8 @@ Phase 10, track F. Almost every window of phases 1-9 only compiled until now. `C
 ## Journey bots (O542)
 
 A journey bot is a player brain on the Core, run headless by `unity/Core.LiveCheck --journey`. It logs in a fresh character and plays for minutes or hours with no teleport, no staff command and no tester helper file. The full description, the numbers it writes, the report, the CI workflow and the VPS command: server/README.md "Journey bots (O542)".
+
+O727: the bot also publishes its state for the staff's live map: with `--live-dir DIR` it writes one JSON line (position, goal, why, spot, now, plan, the last 50 log lines) to `DIR/tester-xxx.json` every few seconds and removes it when it stops (`Core/BotLive.cs`, the same format as `server/tools/bot_live.py`; the reasons are the facts of `JourneyHunts.Pick` and `JourneyRules.TownTrip`; `Core.Tests/BotLiveTests.cs`). server/README.md "Bot live map (O727)".
 - `Core/Journey.cs`: the decisions as pure C# (hunt pick by level from the map marks, heal / potion / town trip thresholds, the progress watchdog, the activity chooser with uneven timing, the memory of seen tiles with its path finder and explorer, metrics, the coverage table). `Core.Tests/JourneyTests.cs` proves them without a server.
 - `Core.LiveCheck/LiveJourney.cs`: the play on a `GameSession` (walk, fight, loot, town, explore, talk, systems, death and login again). `Program.cs` options: `--journey`, `--journey-minutes N`, `--journey-level N`, `--journey-out FILE`, `--poi data/chaos_poi.lua`, `--seed N`, `--class NAME`, with `--otb` (and `items.xml` beside it: floor changes, doors, ladders).
 - Run on a server that `tools/ci/unity_live_check.sh --serve-only` brought up: `tools/ci/journey_bots.sh` (workflow `journey-bots.yml`, manual).

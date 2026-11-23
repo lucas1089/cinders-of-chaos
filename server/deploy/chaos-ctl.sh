@@ -280,6 +280,17 @@
 #   journey report              the report: minutes per level against server/tools/progression_model.lua, deaths, stuck
 #                               positions, kills / xp / gold per hour, the coverage table of systems, opcodes, towns, areas
 #   journey cleanup [--yes]     lists (or with --yes deletes) the journey accounts, characters and every row of them
+#   botmap-build [--levels N] [--floors A,B] [--rotate] [--dry-run]
+#                               the staff's live bot map (O727, server/README.md "Bot live map (O727)"): draws the installed world
+#                               map, floor by floor, from the HD minimap swatches into a tile pyramid under the site, in a folder
+#                               named botmap-TOKEN (32 random hex digits kept in CHAOS_BOTMAP_STATE/token, mode 600; the world map
+#                               is not a public file), and writes the pointer data/chaos_botmap.json the staff page reads (the
+#                               folder, the geometry, the towns). A map change needs a new build; the tiles stay until then. Needs
+#                               python3 with numpy and Pillow (areas-publish --pictures has the same need). --rotate makes a new
+#                               token and deletes the old folder. --dry-run counts the tiles and the megabytes, writes nothing
+#   botmap-status               key=value lines: bots (entries in data/chaos_botlive, live and stale), stale, map (yes|no), built,
+#                               floors, size_mb, folder, page (the staff page's address from CHAOS_SITE_URL; the admin app opens it).
+#                               Read only
 #   discord-set CHANNEL         a Discord webhook URL of CHANNEL (records, bosses, players, announce, status, bazaar, drops,
 #                               default) into /etc/chaos/discord.env (CHAOS_DISCORD_ENV; mode 600, owner www-data). The URL
 #                               is read from stdin (one line), never from the command line, checked against
@@ -402,6 +413,8 @@
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
 # windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log. For cast: CHAOS_CAST_PORT (else castPort of
 # the server's config.lua). For clientservices-impl: CHAOS_SYSTEMD_DIR /etc/systemd/system.
+# For the bot map (O727): CHAOS_BOTLIVE_DIR $CHAOS_SERVER_DIR/data/chaos_botlive (the bots' state files the site reads),
+# CHAOS_BOTMAP_STATE /var/lib/chaos/botmap (the token of the tile folder), CHAOS_SITE_DIR, CHAOS_SITE_ENV.
 # For pay-*: CHAOS_PAY_ENV /etc/chaos/payments.env, CHAOS_PAY_USER root, CHAOS_PAY_GROUP www-data (the file's owner and
 # group), CHAOS_PAYWORKER_LOG /var/log/chaos/payworker.log, CHAOS_SITE_DIR /var/www/chaos, CHAOS_SITE_ENV.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
@@ -431,7 +444,7 @@ CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STA
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
 CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG \
-CHAOS_ENGINE_TOKEN_FILE CHAOS_GITHUB_TOKEN_FILE "
+CHAOS_ENGINE_TOKEN_FILE CHAOS_GITHUB_TOKEN_FILE CHAOS_BOTLIVE_DIR CHAOS_BOTMAP_STATE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -510,6 +523,8 @@ TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
 TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
 TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
 JSTATE=$(setting CHAOS_JOURNEY_STATE /var/lib/chaos/journey)
+BLIVE=$(setting CHAOS_BOTLIVE_DIR "$SERVER/data/chaos_botlive")
+BMSTATE=$(setting CHAOS_BOTMAP_STATE /var/lib/chaos/botmap)
 JDLL=$(setting CHAOS_JOURNEY_DLL /var/lib/chaos/journey-bin/Core.LiveCheck.dll)
 VLOG=$(setting CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log)
 SPPAIR=$(setting CHAOS_SPECTATE_PAIR "$ROOT/pair")
@@ -1192,6 +1207,23 @@ testers_py() {
     [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK
     CHAOS_MYSQL=$MYSQL
     set +a; exec python3 -I "$py" "$@" )
+}
+
+# ---- the live state of the bots, for the staff's bot map (server/README.md "Bot live map (O727)")
+# the folder of the bots' state files (data/chaos_botlive): made readable for the web server
+live_dir_ready() {
+  mkdir -p "$BLIVE" && chmod 0755 "$BLIVE"
+}
+# the files of one kind of bot (src py: tester bots, src cs: journey bots) leave with the bots; a file the bots could not remove goes stale
+# on the page by itself (2 minutes grey, 10 minutes dropped)
+live_dir_clear() {
+  local f
+  [ -d "$BLIVE" ] || return 0
+  for f in "$BLIVE"/tester-*.json; do
+    if [ ! -f "$f" ] || [ -L "$f" ]; then continue; fi
+    grep -q "\"src\":\"$1\"" "$f" 2>/dev/null && rm -f "$f"
+  done
+  return 0
 }
 
 # ---- journey bots (server/README.md "Journey bots (O542)")
@@ -3872,6 +3904,8 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           testers_py setup --count "$n" --server-dir "$SERVER" --state "$TSTATE" ${journeyarg:+--journey --levels "$jlevel"} || { remove_helper; die "setup failed"; }
         fi
         mkdir -p "$(dirname "$TLOG")"
+        # the bots publish their state here for the staff's live map (O727): one JSON file a bot, readable by the web server
+        live_dir_ready || die "cannot create $BLIVE"
         echo "== $(date '+%F %T') testers start $n $minutes" >> "$TLOG"
         # detached, in its own process group (stop ends the whole group); when the run is over by itself the helper
         # goes too (testers stop --finished)
@@ -3879,9 +3913,9 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
           # shellcheck disable=SC2016
           exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
-            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"} ${12:+"${12}"} ${13:+"${13}"} ${14:+"${14}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"} ${12:+"${12}"} ${13:+"${13}"} ${14:+"${14}"} --live-dir "${15}"; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
             "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
-            "$REPO/server/tools/tester_scenarios.json" "$keyarg" "$checkarg" "$closedarg" "$journeyarg" \
+            "$REPO/server/tools/tester_scenarios.json" "$keyarg" "$checkarg" "$closedarg" "$journeyarg" "$BLIVE" \
             >> "$TLOG" 2>&1 < /dev/null ) &
         echo $! > "$TSTATE/run.pid"
         date +%s > "$TSTATE/started"
@@ -3902,6 +3936,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         fi
         rm -f "$TSTATE/run.pid"
         remove_helper
+        live_dir_clear py
         date +%s > "$TSTATE/stopped" 2>/dev/null || true
         [ "${1:-}" = --finished ] && echo "== $(date '+%F %T') run over" >> "$TLOG"
         echo "tester bots stopped; helper removed from data/scripts (its loop ends within seconds, the rest at the next restart)"
@@ -3962,6 +3997,118 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] [--closed] [--journey [--level L]] | closed on|off|status | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
+  botmap-build)
+    bmlevels=5 bmfloors="" bmrot=0 bmdry=0
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --levels)
+          bmlevels=${2:-}
+          if ! num "$bmlevels" || [ "$bmlevels" -lt 1 ] || [ "$bmlevels" -gt 8 ]; then die "--levels N (1 to 8)"; fi
+          shift 2 ;;
+        --floors)
+          bmfloors=${2:-}
+          [[ $bmfloors =~ ^[0-9]{1,2}(,[0-9]{1,2}){0,15}$ ]] || die "--floors A,B (floor numbers, 0 to 15)"
+          shift 2 ;;
+        --rotate) bmrot=1; shift ;;
+        --dry-run) bmdry=1; shift ;;
+        *) die "botmap-build [--levels N] [--floors A,B] [--rotate] [--dry-run]" ;;
+      esac
+    done
+    bmtool="$REPO/server/tools/gen_bot_map_tiles.py"
+    [ -f "$bmtool" ] || die "no $bmtool (CHAOS_REPO): update the server's repo first (update-apply)"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    python3 -I -c 'import numpy, PIL' 2>/dev/null || die "botmap-needs-pillow: the map tiles need python3 with numpy and Pillow (apt install python3-numpy python3-pil)"
+    bmargs=(--levels "$bmlevels")
+    [ -z "$bmfloors" ] || bmargs+=(--floors "$bmfloors")
+    if [ "$bmdry" -eq 1 ]; then
+      python3 -I "$bmtool" "$SERVER" --out "$BMSTATE/dry-run-unused" "${bmargs[@]}" --dry-run || die "botmap-build: the dry run failed"
+      exit 0
+    fi
+    bmsite=$(setting CHAOS_SITE_DIR /var/www/chaos)
+    [ -d "$bmsite" ] || die "no site folder $bmsite (CHAOS_SITE_DIR)"
+    mkdir -p "$BMSTATE" || die "cannot create $BMSTATE"
+    chmod 0700 "$BMSTATE" || die "cannot protect $BMSTATE"
+    bmtok=""
+    [ -r "$BMSTATE/token" ] && bmtok=$(tr -dc 'a-f0-9' < "$BMSTATE/token" | head -c 32)
+    bmold=$bmtok
+    if [ "${#bmtok}" -ne 32 ] || [ "$bmrot" -eq 1 ]; then
+      bmtok=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+      [ "${#bmtok}" -eq 32 ] || die "no random bytes for the token"
+      ( umask 077; printf '%s\n' "$bmtok" > "$BMSTATE/token" ) || die "cannot write $BMSTATE/token"
+    fi
+    bmtmp=$(mktemp -d "$bmsite/.botmap-new.XXXXXX") || die "cannot write in $bmsite"
+    rm -f "$BMSTATE/pointer.new"
+    bmout=$(python3 -I "$bmtool" "$SERVER" --out "$bmtmp" "${bmargs[@]}" --pointer "$BMSTATE/pointer.new" --url "botmap-$bmtok" 2>&1); bmrc=$?
+    printf '%s\n' "$bmout"
+    if [ "$bmrc" -ne 0 ] || [ ! -s "$BMSTATE/pointer.new" ]; then
+      rm -rf "$bmtmp"
+      die "botmap-build: gen_bot_map_tiles.py failed (exit $bmrc); the map in use is unchanged"
+    fi
+    chmod 0755 "$bmtmp"
+    find "$bmtmp" -type d -exec chmod 0755 {} + 2>/dev/null
+    find "$bmtmp" -type f -exec chmod 0644 {} + 2>/dev/null
+    bmdest="$bmsite/botmap-$bmtok"
+    if [ -d "$bmdest" ]; then mv "$bmdest" "$bmtmp.old" && rm -rf "$bmtmp.old"; fi
+    mv "$bmtmp" "$bmdest" || die "cannot move the tiles into place"
+    if [ "$bmrot" -eq 1 ] && [ "${#bmold}" -eq 32 ] && [ "$bmold" != "$bmtok" ]; then rm -rf "$bmsite/botmap-$bmold"; fi
+    # the pointer the staff page reads (the game server's data folder, not a public file): the new folder is in place first
+    bmptr="$SERVER/data/chaos_botmap.json"
+    cp "$BMSTATE/pointer.new" "$bmptr.tmp" || die "cannot write $bmptr"
+    chmod 0644 "$bmptr.tmp"
+    mv "$bmptr.tmp" "$bmptr" || die "cannot write $bmptr"
+    chown "$(stat -c %U "$SERVER" 2>/dev/null || echo root)" "$bmptr" 2>/dev/null || true
+    rm -f "$BMSTATE/pointer.new"
+    echo "botmap-built: $bmdest"
+    CHAOS_CTL_NO_SUDO=1 "$SELF" botmap-status | grep -E '^page=' || true
+    ;;
+  botmap-status)
+    [ $# -eq 0 ] || die "botmap-status takes no arguments"
+    bmbots=0 bmstale=0
+    if [ -d "$BLIVE" ] && [ -f "$REPO/server/tools/bot_live.py" ] && command -v python3 >/dev/null 2>&1; then
+      bmshow=$(python3 -I "$REPO/server/tools/bot_live.py" show "$BLIVE" 2>/dev/null)
+      bmbots=$(printf '%s\n' "$bmshow" | sed -n 's/^bots=//p' | head -n 1)
+      bmstale=$(printf '%s\n' "$bmshow" | sed -n 's/^stale=//p' | head -n 1)
+    fi
+    echo "bots=${bmbots:-0}"
+    echo "stale=${bmstale:-0}"
+    bmptr="$SERVER/data/chaos_botmap.json"
+    bmmap=no bmbuilt="" bmfloors=0 bmurl="" bmsize=""
+    if [ -r "$bmptr" ] && command -v python3 >/dev/null 2>&1; then
+      bmj=$(python3 -I - "$bmptr" <<'PY'
+import json, sys, time
+try:
+    d = json.load(open(sys.argv[1]))
+    print('%s;%d;%s' % (time.strftime('%F %T', time.localtime(int(d.get('built', 0)))), len(d.get('floors', [])), d.get('url', '')))
+except (OSError, ValueError, TypeError):
+    pass
+PY
+)
+      if [ -n "$bmj" ]; then
+        IFS=';' read -r bmbuilt bmfloors bmurl <<< "$bmj"
+        [[ $bmurl =~ ^[A-Za-z0-9._-]{1,100}$ ]] || bmurl=""
+        bmsite=$(setting CHAOS_SITE_DIR /var/www/chaos)
+        if [ -n "$bmurl" ] && [ -d "$bmsite/$bmurl" ]; then
+          bmmap=yes
+          bmsize=$(du -sm "$bmsite/$bmurl" 2>/dev/null | cut -f1)
+        fi
+      fi
+    fi
+    echo "map=$bmmap"
+    echo "built=$bmbuilt"
+    echo "floors=$bmfloors"
+    echo "size_mb=$bmsize"
+    echo "folder=$bmurl"
+    bmenv=$(setting CHAOS_SITE_ENV /etc/chaos/site.env)
+    bmsurl=""
+    [ -r "$bmenv" ] && bmsurl=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$bmenv" | head -n 1)
+    bmsurl=${bmsurl%$'\r'}
+    bmsurl=${bmsurl%/}
+    if [[ $bmsurl =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$ ]]; then
+      echo "page=$bmsurl/page?plugin=chaos&p=botmap"
+    else
+      echo "page="
+    fi
+    ;;
   journey)
     sub=${1:-status}
     [ $# -gt 0 ] && shift
@@ -3989,6 +4136,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         key_file_ok
         [ -r "$SERVER/data/chaos_poi.lua" ] || die "no $SERVER/data/chaos_poi.lua (install step poi)"
         journey_dll
+        live_dir_ready || die "cannot create $BLIVE"
         have=$( (journey_py list --state "$JSTATE") 2>/dev/null | sed -n 's/^bots=//p')
         if [ -n "$have" ] && [ "$have" -ne 0 ]; then die "the last setup left $have journey characters: chaos-ctl.sh journey cleanup --yes first"; fi
         mkdir -p "$JSTATE" && chmod 700 "$JSTATE"
@@ -4006,7 +4154,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
             export CHAOS_LIVE_BIND="127.1.0.$((i + 1))"
             exec setsid nohup dotnet "$JDLL" 127.0.0.1 7171 "$CHAOS_LIVE_ACCOUNT" "$JOURNEY_CHARACTER" --identity chaos --journey \
               --otb "$SERVER/data/items/items.otb" --poi "$SERVER/data/chaos_poi.lua" --journey-minutes "$minutes" --journey-level "$level" \
-              --journey-out "$JSTATE/bot-$i.json" --seed "$((i + 1))" --class "$JOURNEY_CLASS" > "$JSTATE/bot-$i.log" 2>&1 &
+              --journey-out "$JSTATE/bot-$i.json" --live-dir "$BLIVE" --seed "$((i + 1))" --class "$JOURNEY_CLASS" > "$JSTATE/bot-$i.log" 2>&1 &
             echo $! > "$JSTATE/bot-$i.pid"
           )
           i=$((i + 1))
@@ -4019,6 +4167,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         for p in $pids; do kill -TERM "$p" 2>/dev/null; done
         for _ in $(seq 1 20); do journey_pids >/dev/null || break; sleep 1; done
         for p in $(journey_pids); do kill -KILL "$p" 2>/dev/null; done
+        live_dir_clear cs
         echo "journey bots stopped"
         ;;
       status)

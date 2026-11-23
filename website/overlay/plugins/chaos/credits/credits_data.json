@@ -620,6 +620,13 @@
      "use": "the website layout, re-coloured for Cinders of Chaos"
     },
     {
+     "name": "Leaflet",
+     "author": "Volodymyr Agafonkin and the Leaflet contributors",
+     "licence": "BSD-2-Clause",
+     "use": "the staff's live map of our test bots on the website (version 1.9.4 from cdnjs, pinned with its integrity hash; players never see it, O727)",
+     "source": "https://leafletjs.com and https://github.com/Leaflet/Leaflet"
+    },
+    {
      "name": "PHPMailer",
      "author": "the PHPMailer contributors",
      "licence": "LGPL-2.1",

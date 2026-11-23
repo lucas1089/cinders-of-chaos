@@ -11933,6 +11933,7 @@ class CheckRun:
         self.done = set()
         self.results = []
         self.resets = []
+        self.live = None       # O727: a function (key, keys still to run) the TesterBot sets: the staff's live map shows the check under way
 
     def todo(self):
         return [k for k, _, ok in self.table if ok(self.cls) and k not in self.done and (not self.only or k in self.only)]
@@ -11954,6 +11955,8 @@ class CheckRun:
                 await self.gear_once(io, lvl)
                 if not io.alive():
                     return False
+            if self.live is not None:
+                self.live(key, self.todo())
             await settle_in_town(io, key)   # O660: the bot waits in the temple between the checks
             if key in ROOM_KEYS:   # O660: room in the backpack before the helper hands items out
                 await make_room(io, key)

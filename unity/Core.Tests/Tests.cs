@@ -102,6 +102,7 @@ namespace Chaos.Core.Tests
             Phase29Tests.Run,
             Phase30Tests.Run,
             JourneyTests.Run,
+            BotLiveTests.Run,
         };
 
         static void CryptoChecks()

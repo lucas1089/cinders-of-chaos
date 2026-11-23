@@ -139,7 +139,7 @@ $s = seo(array('page' => 'page_chaos_memorial', 'page_title' => 'The Memorial', 
 check($s['canonical'] === 'https://www.example.org/page?plugin=chaos&p=memorial&s=season-2', 'memorial archive: the season kept');
 
 // ---------------------------------------------------------------- private pages: noindex
-foreach (array('login', 'register', 'myaccount', 'createcharacter', 'changepassword', 'settings', 'twofa', 'recovery', 'page_chaos_accept', 'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_telemetry', 'page_not_found') as $p) {
+foreach (array('login', 'register', 'myaccount', 'createcharacter', 'changepassword', 'settings', 'twofa', 'recovery', 'page_chaos_accept', 'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_botmap', 'page_chaos_telemetry', 'page_not_found') as $p) {
 	$s = seo(array('page' => $p));
 	check($s['robots'] === 'noindex, nofollow' && $s['canonical'] === '', "$p: noindex, no canonical");
 	check(!has(chaos_seo_head($s, $site), 'rel="canonical"') && !has(chaos_seo_head($s, $site), 'og:url'), "$p: no canonical or og:url tag");

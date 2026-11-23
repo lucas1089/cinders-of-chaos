@@ -454,6 +454,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 - **Void layout**
   - Author: Alex (opengamescommunity.com)
   - Used for: the website layout, re-coloured for Cinders of Chaos
+- **Leaflet**
+  - Author: Volodymyr Agafonkin and the Leaflet contributors
+  - Licence: BSD-2-Clause
+  - Used for: the staff's live map of our test bots on the website (version 1.9.4 from cdnjs, pinned with its integrity hash; players never see it, O727)
+  - Source: https://leafletjs.com and https://github.com/Leaflet/Leaflet
 - **PHPMailer**
   - Author: the PHPMailer contributors
   - Licence: LGPL-2.1

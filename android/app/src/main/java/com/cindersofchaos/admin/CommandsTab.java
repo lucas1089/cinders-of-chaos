@@ -1,5 +1,8 @@
 package com.cindersofchaos.admin;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -233,6 +236,7 @@ final class CommandsTab {
         buildServices();
         buildTesters();
         buildJourney();
+        buildBotMap();
         buildBotCheck();
         buildSiteClient();
         buildMapInbox();
@@ -1074,6 +1078,51 @@ final class CommandsTab {
                 + "deles. Se estão rodando, para agora e espera 2 minutos antes de apagar.", "Apagar", true,
                 () -> ctl("Apagar bots de jornada", "journey cleanup --yes", 300, null)));
         b.addView(clean, ui.gap(8));
+        quick.addView(c, ui.gap(12));
+    }
+
+    // the staff's live map of our test bots (chaos-ctl.sh botmap-build / botmap-status, O727, server/README.md "Bot live map (O727)"): the page is on the site
+    // behind the staff login, the card builds its tiles and opens it in the browser. Our own bots only, never a player.
+    private void buildBotMap() {
+        MaterialCardView c = ui.titledCard("Mapa dos bots");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Um mapa do mundo, com zoom, onde cada bot de teste (Testers e bots de jornada) aparece com nome, nível e o que está fazendo. "
+                + "Tocando num bot: objetivo, o motivo, o lugar, a ação de agora, o plano e as últimas linhas do log. Só para a equipe: o mapa abre no site, "
+                + "com o login de staff do site. Nunca mostra jogadores."));
+        MaterialButton openMap = ui.primary("Abrir o mapa", R.drawable.ic_search);
+        openMap.setOnClickListener(v -> a.ctlAction("botmap-status", 30, f -> {
+            BotMapInfo info = f.ok ? BotMapInfo.parse(f.raw) : null;
+            if (info == null) {
+                result.show("Mapa dos bots", f);
+                return;
+            }
+            if (info.page.isEmpty()) {
+                result.show("Mapa dos bots", Friendly.ok("Sem endereço", info.summary(), f.raw));
+                return;
+            }
+            try {
+                a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(info.page)));
+            } catch (ActivityNotFoundException e) {
+                result.show("Mapa dos bots", Friendly.ok("Sem navegador", "Abra este endereço no navegador: " + info.page, f.raw));
+            }
+        }));
+        MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> a.ctlAction("botmap-status", 30, f -> {
+            BotMapInfo info = f.ok ? BotMapInfo.parse(f.raw) : null;
+            result.show("Mapa dos bots", info == null ? f : Friendly.ok("Feito", info.summary(), f.raw));
+        }));
+        b.addView(ui.evenRow(openMap, status), ui.gap(8));
+        MaterialButton build = ui.secondary("Montar o mapa", R.drawable.ic_play);
+        build.setOnClickListener(v -> a.confirm("Montar o mapa dos bots?", "Desenha o mapa do mundo instalado, andar por andar, no site (alguns minutos; não "
+                + "reinicia o servidor nem derruba ninguém). Refaça depois de mudar o mapa do jogo. Precisa de python3 com numpy e Pillow na VPS.",
+                "Montar", false, () -> ctl("Montar o mapa dos bots", "botmap-build", 900, null)));
+        MaterialButton rotate = ui.flat("Novo endereço do mapa", 0);
+        rotate.setOnClickListener(v -> a.confirm("Montar de novo com um endereço novo?", "As imagens do mundo ficam numa pasta com um código secreto. "
+                + "Isto monta o mapa de novo com outro código e apaga a pasta antiga.", "Montar", false,
+                () -> ctl("Novo endereço do mapa", "botmap-build --rotate", 900, null)));
+        b.addView(ui.evenRow(build, rotate), ui.gap(8));
+        b.addView(ui.hint("Os bots aparecem no mapa assim que entram (iniciar Testers ou Bots de jornada acima). Um bot sem notícia há 2 minutos fica cinza e "
+                + "some depois de 10."), ui.gap(4));
         quick.addView(c, ui.gap(12));
     }
 

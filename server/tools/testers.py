@@ -50,6 +50,8 @@ before the bots log in; the bots then run the closed checks (arena, battleground
 lock, the guards the server runs) among themselves, never with a player, and play the raid like a party of people (walk, fight, loot,
 leave: closed_raid, O588). The guilds, wars, tester market book, arena records and raid rows
 of the run are removed when it ends, and by cleanup.
+--live-dir DIR / --no-live (O727, bot_live.py): every bot publishes its state (position, goal, why, spot, now, plan, last 50 log lines) as one JSON line in its own file of DIR (default
+SERVER/data/chaos_botlive), for the staff's live map (website page botmap, admin app); the files go when the run ends and are cleared at its start; --no-live switches it off.
 --no-gear (O658): the checks run without the gear-up (tester_checks.py gear_up: before the hard checks a bot wears its best pieces, buys potions
 and basic pieces at the shops on foot, a TEST ONLY gold grant as the named fallback); the gearless run of before, for a comparison.
 --video [--prep-minutes N] (O689, tools/ci/boss_video.sh; with --checks --closed --only pinnacle_party): the run of the boss fight video. The bots never hunt and never run
@@ -85,6 +87,7 @@ import tester_checks as TX  # noqa: E402  (the system checks, O110)
 import tester_closed as TCL  # noqa: E402  (closed test mode, O582)
 import tester_journey as TJ  # noqa: E402  (the levelling journey on foot, O654)
 import tester_weapons as TW  # noqa: E402  (what a weapon is worth to a class's spells, O665)
+import bot_live as BL  # noqa: E402  (the live state of the bots for the staff map, O727)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -660,6 +663,8 @@ MODAL_IDS = (7101, 7102) + tuple(range(7111, 7150)) + (7170, 7171)   # O655: the
 MODAL_IDS = MODAL_IDS + (5000,)   # O662: the waypoint window of the base script (customs/waypoints/waypoint.lua: choices by town, button 110 Select)
 MODAL_IDS = MODAL_IDS + (7490,)   # O667: the Keeper of the Pinnacle's window of the four bosses (pinnacle_config.lua modal.list)
 
+LIVE_POLL = 20.0   # seconds without a position before a bot asks the helper `info` for the live map (O727)
+LIVE_EVERY = 1.0   # seconds between two looks of the live writer at the files that are due (O727)
 ACTIVITY_MAX = 300000  # lines of one run's activity log (100 testers, 60 minutes: about 40,000)
 
 
@@ -671,6 +676,7 @@ class Results:
     def __init__(self, n, activity=None):
         self.lines = 0
         self.activity = None
+        self.live = None   # O727: a bot_live.BotBoard while the run publishes its bots (every log line is also the bot's live log)
         if activity:
             os.makedirs(os.path.dirname(activity), mode=0o700, exist_ok=True)
             fd = os.open(activity, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
@@ -681,6 +687,8 @@ class Results:
 
     def log(self, bot, kind, text):
         """one line of the activity log: time, tester (level, class), what, outcome or error"""
+        if self.live is not None and bot is not None:
+            self.live.log(bot.name, text, kind)
         if not self.activity or self.lines >= ACTIVITY_MAX:
             return
         self.lines += 1
@@ -1646,6 +1654,8 @@ class TesterBot(LT.Bot):
         self.heal_first = 0  # O684: health percent under which the bot casts no attack while its heal spell or its potion is ready (a pinnacle fight: 40)
         self.tally = {}  # O695: what the bot cast and what the server refused, by kind (tally_count); a boss fight reads the difference of two snapshots
         self.mana_low = None  # O695: the lowest mana percent seen since the last tally reset
+        self.live_pos_at = 0.0  # O727: monotonic time of the last position the live map got (a helper answer that carries `pos`)
+        self.live_poll_at = 0.0
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -1674,6 +1684,7 @@ class TesterBot(LT.Bot):
                 self.results.count('kicks', 'login: ' + reason, self)
             return False
         self.results.d['logins'] += 1
+        self.live_set(cls=self.cls, level=self.level)
         self.results.log(self, 'login', 'in game')
         self.alive, self.died, self.health, self.health_at = True, False, 100, None
         self.mana, self.mana_max = None, None
@@ -1712,6 +1723,45 @@ class TesterBot(LT.Bot):
 
     def say(self, text, kind=1):
         self.conn.send(b'\x96' + bytes([kind]) + LT.string(text))
+
+    # ---------------------------------------------------------------- the live map (O727)
+    def live_set(self, **fields):
+        live = self.results.live
+        if live is not None:
+            live.set(self.name, **fields)
+
+    def live_seen(self, data):
+        """a helper answer: its `pos` and `level` are where the bot is now (the staff map's marker)"""
+        live = self.results.live
+        if live is None or not isinstance(data, dict):
+            return
+        pos = BL.pos_list(data.get('pos'))
+        if pos:
+            self.live_pos_at = time.monotonic()
+            live.set(self.name, pos=pos)
+        if isinstance(data.get('level'), int):
+            live.set(self.name, level=data['level'])
+
+    def live_poll(self, now):
+        """a bot whose position the live map has not had for LIVE_POLL seconds asks the helper `info` (the journey bots get it from every look)"""
+        if self.results.live is None or not self.cid or now - max(self.live_pos_at, self.live_poll_at) < LIVE_POLL:
+            return
+        self.live_poll_at = now
+        self.say('!tester info')
+
+    def live_check(self, key, todo):
+        """the check about to run (tester_checks.CheckRun.live): the goal is the check, the plan the checks after it"""
+        rest = [k for k in todo if k != key]
+        self.live_set(goal='Check: %s' % key, why='system checks of the class %s: %d still to run, this one first' % (self.cls, len(todo)),
+                      spot='', plan=['Check: %s' % k for k in rest])
+
+    def live_goal(self, name):
+        """the behaviour the scheduler picked is the bot's goal, with the reason the scheduler gives (a weighted pick)"""
+        if self.results.live is None:
+            return
+        todo = self.checks.todo() if name == 'checks' and self.checks is not None else None
+        v = BL.behaviour_view(name, todo)
+        self.live_set(cls=self.cls, level=self.level, goal=v['goal'], why=v['why'], spot='', plan=v['plan'])
 
     # ---------------------------------------------------------------- what the server sends
     async def drain(self):
@@ -1825,6 +1875,7 @@ class TesterBot(LT.Bot):
                 self.results.helper_answer('late')
                 return
             self.helper[hk] = data
+            self.live_seen(data)
             if hk in ('hunt', 'town') and not data.get('err'):
                 self.last_move = (hk, time.monotonic())   # O689: for the death line
             if hk == 'hunt' and not data.get('err'):
@@ -2085,6 +2136,7 @@ class TesterBot(LT.Bot):
                     name = 'hold'  # O689: the checks are done (a verdict or a member's wait is over): the bot waits in the temple, no hunt, no errand that ends at a hunt
                 self.last = name
                 self.results.behaviour(name, 'tried')
+                self.live_goal(name)
                 try:
                     ok = await getattr(self, 'do_' + name)(clock)
                 except (ConnectionError, OSError, asyncio.IncompleteReadError):
@@ -2121,6 +2173,7 @@ class TesterBot(LT.Bot):
                     self.conn.send(b'\x1E')
                     next_ping = now + PING_EVERY
                 self.keep_alive(now)
+                self.live_poll(now)   # O727: the position for the staff's map, also while a long behaviour or a check runs
             except (ConnectionError, OSError):
                 return
             await asyncio.sleep(TC.beat_delay(time.monotonic(), self.ready))   # O665: awake when the attack group is ready, not on a 0.25 s grid
@@ -2525,6 +2578,7 @@ class TesterBot(LT.Bot):
                                       only=(([k for k in str(getattr(self.args, 'only', '') or '').split(',') if k] or None)   # O656: --only a,b runs just those checks
                                             if getattr(self.args, 'checks', False) else TX.CLOSED_KEYS))
         run = self.checks
+        run.live = self.live_check   # O727
         io = CheckIO(self, clock)
         await asyncio.sleep(10 if first else 3)
         await self.check_rest()   # O660: after a death the bot rests in the temple as long as the death rule says
@@ -2577,6 +2631,7 @@ class TesterBot(LT.Bot):
         if first:
             self.journey = TJ.Journey(self.name, self.cls, self.level, seed=self.index)
             self.journey.sink = lambda text: self.results.log(self, 'JOURNEY', text)
+            self.live_set(goal='Journey')
             await asyncio.sleep(10)  # the helper's supplies, once
         else:
             await asyncio.sleep(3)
@@ -2590,6 +2645,9 @@ class TesterBot(LT.Bot):
 
         def emit(jj):
             journeys[self.name] = jj.as_dict(io.now())
+            if self.results.live is not None:   # O727: what the journey knows, for the staff map
+                v = BL.journey_view(jj, self.level, getattr(self.args, 'live_curve', None))
+                self.results.live.set(self.name, cls=self.cls, level=jj.level, pos=jj.pos, goal=v['goal'], why=v['why'], spot=v['spot'], plan=v['plan'])
         try:
             why = await j.play(io, emit=emit)
         finally:
@@ -2660,6 +2718,8 @@ async def run_bots(a, entries):
     model_path = os.path.join(HERE, '..', 'data', 'spells', 'rotation_model.csv')
     model = LT.parse_rotation_model(LT.read_text(model_path)) if os.path.exists(model_path) else {}
     results = Results(len(entries), a.activity)
+    board = open_board(a)
+    results.live = board
     clock = {'until': time.monotonic() + a.minutes * 60, 'stop': False}
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -2677,6 +2737,7 @@ async def run_bots(a, entries):
         bots[-1].class_index = seen_class.get(e.get('class'), 0)
         seen_class[e.get('class')] = bots[-1].class_index + 1
     saver = asyncio.ensure_future(save_results_loop(a, results))
+    liver = asyncio.ensure_future(live_loop(board)) if board is not None else None
     tasks = []
     for bot in bots:
         if clock['stop']:
@@ -2690,6 +2751,9 @@ async def run_bots(a, entries):
             bot.checks_flushed = True   # what it got through is kept; the rest was not run
             results.d.setdefault('checks', []).extend(r.as_dict() for r in bot.checks.results)
     saver.cancel()
+    if liver is not None:
+        liver.cancel()
+        board.close()
     results.d['ended'] = time.strftime('%Y-%m-%d %H:%M:%S')
     save_results(a, results)
     results.close()
@@ -2711,6 +2775,34 @@ def save_results(a, results):
     results.d['online_at'] = int(time.time())
     results.d['online_peak'] = max(n, results.d.get('online_peak', 0))
     write_private(os.path.join(a.state, 'run.json'), json.dumps(results.d, indent=1, sort_keys=True))
+
+
+def open_board(a):
+    """O727: the live board of the run (the staff map, server/README.md "Bot live map (O727)"), None with --no-live or when the folder cannot be made.
+    The files of an earlier run are removed first; a journey run also loads the model's minutes per level, for the exp an hour of its hunts"""
+    folder = getattr(a, 'live_dir', '') or ''
+    if getattr(a, 'no_live', False) or not folder:
+        return None
+    try:
+        board = BL.BotBoard(folder)
+        board.clear_folder()
+    except OSError as e:
+        print('live map off: cannot use %s (%s)' % (folder, e), flush=True)
+        return None
+    a.live_curve = None
+    if getattr(a, 'journey', False):
+        try:
+            a.live_curve = TJ.curve_for(2200)
+        except Exception:  # noqa: BLE001 - no Lua installed: the hunts' why has no exp an hour
+            a.live_curve = None
+    print('live map: the bots publish their state in %s' % folder, flush=True)
+    return board
+
+
+async def live_loop(board):
+    while True:
+        await asyncio.sleep(LIVE_EVERY)
+        board.flush()
 
 
 async def save_results_loop(a, results):
@@ -2928,10 +3020,10 @@ def parse(argv):
     defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
                 '--levels': ','.join(str(v) for v in LEVELS), '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
                 '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
-                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': '', '--retreat-at': 0, '--prep-minutes': 0}
+                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0, '--kick-wait': KICK_WAIT, '--only': '', '--retreat-at': 0, '--prep-minutes': 0, '--live-dir': ''}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float, '--kick-wait': int, '--retreat-at': int, '--prep-minutes': int}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False, '--no-gear': False, '--video': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False, '--closed': False, '--journey': False, '--no-gear': False, '--video': False, '--no-live': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -2954,6 +3046,9 @@ def parse(argv):
     a.closed = flags['--closed']
     a.journey = flags['--journey']
     a.video = flags['--video']
+    a.no_live = flags['--no-live']
+    if a.cmd == 'run' and not a.live_dir and a.server_dir:
+        a.live_dir = os.path.join(a.server_dir, 'data', 'chaos_botlive')   # O727: where the staff page reads (website botmap_lib.php)
     if a.video and not (a.checks and a.closed and a.only == 'pinnacle_party'):
         sys.exit('--video is the run of the boss video: with --checks --closed --only pinnacle_party (server/README.md "Malgrath fight video (O689)")')
     if not 0 <= a.prep_minutes <= 1440:

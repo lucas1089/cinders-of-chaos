@@ -452,6 +452,9 @@ pub static ACTIONS: &[Action] = &[
     act(Testers, "Bots de jornada", "Estado", "journey status").t(60),
     act(Testers, "Bots de jornada", "Relatório", "journey report").t(120),
     act(Testers, "Bots de jornada", "Apagar os bots", "journey cleanup --yes").ask().t(300),
+    act(Testers, "Mapa dos bots", "Estado", "botmap-status").t(30).h("O endereço da página (login de staff do site) vem na linha page=."),
+    act(Testers, "Mapa dos bots", "Montar o mapa", "botmap-build").ask().t(900).h("Desenha o mundo instalado, andar por andar, no site; precisa de python3 com numpy e Pillow na VPS."),
+    act(Testers, "Mapa dos bots", "Novo endereço do mapa", "botmap-build --rotate").ask().t(900).h("Monta de novo com outro código secreto e apaga a pasta antiga."),
     // ---- VPS e manutenção
     act(Machine, "Saúde e espaço", "Ver sobras a limpar", "cleanup").t(120),
     act(Machine, "Saúde e espaço", "Limpar sobras", "cleanup --yes").ask().t(120),
