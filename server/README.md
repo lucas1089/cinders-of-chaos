@@ -25181,6 +25181,58 @@ net. Tests add a cut-off path piece: Lua 34 of 536 tiles in 1 pocket, joined by 
 cut off, joined by 7 cells, then 0 out of reach.
 Tests: `tools/area_plan_rank_test.py`, `tests/areagen_reach_test.lua` (server loop).
 
+## Rivers, lakes, bridges and fords (O739) (`areagen_core.lua` "water (O739)", plan field `water`)
+
+An optional water pass of the area generator. Off by default: a plan or def without `water` compiles to the same
+bytes (no draw, no change to `cfg`). Plan field (schema `water`):
+
+```json
+"water": {"rivers": [{"course": "north-south", "width": [3, 5], "at": 50}],
+          "lakes": [{"zone": "mere", "radius": [3, 4]}], "fords": 1}
+```
+
+- **River.** A band of deep water from one edge of the floor to the other (`course` west-east or north-south, `floor`
+  default 1). Its line sits at `at` percent across (default a seeded 35-65). It wanders by a smoothed random walk:
+  the drift turns, is pulled back within `amplitude` of the line and steps at least every `straight` tiles, so no
+  bank runs straight past the outline rule. Width from the plan or `water.river.width`.
+- **Lake.** An irregular blob (the generator's `blob`: a disc and 1-3 lobes, rough rim) in a zone, a quarter of the
+  zone off its centre (`place`, default a seeded diagonal).
+- Water lies only on walkable floor, never within `dry` (2) of a zone centre, a required point's ring or a reserved
+  cell. A water cell with fewer than two water sides turns back to floor (no slivers).
+- **Crossings.** The water cuts the floor. Every cut-off land piece of `minLand` (12) tiles or more, or holding a zone
+  centre or required point, gets a crossing over the shortest straight water run (at most `maxRun` 12), a run with an
+  end on a plan path first, a tie by the seed. Only pieces of one region of before are joined, so zones a teleport
+  joins stay apart. A river's first crossing is a bridge (2 wide), then fords (3 wide) up to `fords`, then bridges.
+  Smaller pieces drown. A river nobody had to cross still gets a bridge. Fords are added up to `fords`, `spacing` (10)
+  from the others.
+- **Looks.** No new id. Deep water: the pack's deep lake water 36456 (blocking). Ford: the pack's shallow water over
+  sand 36457 (walkable, speed 250). Bridge: the stock wooden floor 405 (the tutorial island's dock). Shores: the pack's
+  sand beach set 36483-36501 (19 pieces), laid on the water tile, named after the land sides, `in_` pieces for two or
+  more sides, a corner piece for land on a diagonal whose sides are water (`A.shorePieces`). The pack has grass, sand,
+  rock, snow, stone rim and mud shore sets; the sand beach is the one used. The piece names are read from
+  `art_items.csv` and docs/MAP_GUIDE.md, not checked on a render (no client pair here). No plank or bridge piece exists
+  in the pack, so the planks are the stock wooden floor with no edge pieces.
+- z: water 9000, ford 8990, bridge 9010. Over every walkable floor, so no floor border draws on water; under the rock
+  families, whose edge pieces do. The families (`water.families`) join `cfg.families` only when a def uses water.
+- Crossing cells and the tiles around both ends are reserved and safe: no generator decoration, no spawn. The compile
+  adds every bridge or ford tile and its 8 neighbours to the tiles no spawn, chest or NPC takes, and the crossing
+  tiles to the decoration's protected set.
+- QA: one `INFO` line per crossing, `chokepoint: bridge at X,Y,Z, N tile(s) over the water, W wide (direction)`.
+  The rank (O738) counts INFO as 0. An ERROR when a spawn, chest, NPC or the boss stands on water or a crossing.
+  `manifest.stats.water`: rivers, lakes, deep, ford, bridge tiles, bridges, fords, drowned, crossings.
+  `model.water` (and `J` of `areaplan_build.lua`) carries the crossings with their positions.
+- A dungeon biome with water gets a WARN (the shores meet the walls).
+
+Example: `tools/areaplan/examples/river_hunt.json` (Reedwater Crossing, forest, 84 x 60, levels 50-140, seed 73939,
+`repair_reach` on). A north-south river at 50 % and a lake in the treasure zone. Measured: 158 deep water tiles, a
+bridge of 6 tiles (3 over the water) on the glade-thicket path, a ford of 13 tiles (5 over the water) on the
+hollow-mere path, 8 tiles of land drowned, 1080 walkable tiles, 20 monsters, nothing out of reach, no QA error or
+warning, look audit and map tile audit clean. Six other seeds of the plan were clean too.
+Tests: `tools/area_plan_water_test.py`, `tests/areagen_water_test.lua` (server loop: shore pieces by pattern, off
+leaves cfg and the model alone, a planned river cuts two zones apart and a bridge joins them, every walkable tile
+reached, shores only on water next to land, no spawn on water or a crossing, determinism, 12 cave runs with a river
+and a lake).
+
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
 Areas the owner asks for in chat wait here as plans until they are approved (docs/MAP_GUIDE.md "Map inbox").

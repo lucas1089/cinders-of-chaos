@@ -71,6 +71,104 @@
       "type": "boolean",
       "description": "join walkable pockets cut off from the main region to it by the shortest carved link instead of closing them with rock (O738, server/README.md \"Area planner candidates and reach repair (O738)\"); default false, so a held plan keeps its tiles"
     },
+    "water": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "rivers, lakes, sand beach shores, bridges and fords (O739, server/README.md \"Rivers, lakes, bridges and fords (O739)\"); absent: no water, a held plan keeps its tiles. Every land piece the water cuts off gets a crossing (a river's first one a bridge), so the area stays reachable; no spawn, chest, NPC or decoration on a crossing or next to it",
+      "properties": {
+        "rivers": {
+          "type": "array",
+          "maxItems": 3,
+          "description": "bands of deep water that wander from one edge of the floor to the other",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "course"
+            ],
+            "properties": {
+              "course": {
+                "enum": [
+                  "west-east",
+                  "north-south"
+                ],
+                "description": "the edges it runs between"
+              },
+              "floor": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6,
+                "description": "default 1"
+              },
+              "width": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 8
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "tiles across, lowest and highest (default areagen_config.lua water.river.width)"
+              },
+              "at": {
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 90,
+                "description": "its line, in percent across the floor (default a seeded 35-65)"
+              }
+            }
+          }
+        },
+        "lakes": {
+          "type": "array",
+          "maxItems": 6,
+          "description": "irregular blobs of deep water in a zone",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "zone"
+            ],
+            "properties": {
+              "zone": {
+                "type": "string"
+              },
+              "place": {
+                "enum": [
+                  "north",
+                  "south",
+                  "east",
+                  "west",
+                  "northeast",
+                  "northwest",
+                  "southeast",
+                  "southwest",
+                  "center"
+                ],
+                "description": "a quarter of the zone off its centre (default a seeded diagonal; the centre itself stays dry)"
+              },
+              "radius": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 9
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        "fords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6,
+          "description": "shallow walkable crossings wanted besides the bridges (default 0)"
+        }
+      }
+    },
     "origin": {
       "type": "object",
       "additionalProperties": false,

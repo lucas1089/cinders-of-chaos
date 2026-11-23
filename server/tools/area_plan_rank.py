@@ -35,7 +35,7 @@ def seed_of(base, k):
 
 def score_parts(plan, res, look=True):
     """{part: penalty points} of one compile result"""
-    qa = sum(30 if lvl == 'ERROR' else 3 for lvl, m in res['qa'] if 'outline of floor' not in m)
+    qa = sum(30 if lvl == 'ERROR' else 3 if lvl == 'WARN' else 0 for lvl, m in res['qa'] if 'outline of floor' not in m)
     oz = res['origin'][2]
     breaks, syms = 0, []
     cfg = SH.rules()

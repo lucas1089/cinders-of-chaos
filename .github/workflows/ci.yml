@@ -1512,6 +1512,8 @@ jobs:
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
           python3 -I server/tools/area_plan_buildings_test.py   # parametric buildings (O515): prefabs, layouts, door sides, the village example, QA
+          python3 -I server/tools/area_plan_water_test.py   # rivers, lakes, bridges and fords (O739): plan rules, the river example, chokepoints
+          python3 -I server/tools/area_plan_rank_test.py   # candidate ranking and reach numbers (O738)
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
           python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles

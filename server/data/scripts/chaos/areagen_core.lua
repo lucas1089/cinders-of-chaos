@@ -10,6 +10,7 @@
 --   ChaosAreaGenCore.generate(cfg, def, opts)         the tile model of one area (opts.dark: use the dark tile set)
 --   ChaosAreaGenCore.borderPieces(n, e, s, w, ne, nw, se, sw)   border piece names for one tile (see below)
 --   ChaosAreaGenCore.wallPiece(n, e, s, w)            wall piece type for one wall tile
+--   ChaosAreaGenCore.shorePieces(n, e, s, w, ne, nw, se, sw)    shore piece names for one water tile (O739, def.water)
 --   ChaosAreaGenCore.levelScale(native, target)       health / damage / experience multipliers for a target level
 --   ChaosAreaGenCore.validate(cfg, model)             problems of a model (connectivity, items, spawns, links)
 --   ChaosAreaGenCore.allowedIds(cfg, def, opts)       every item id the area may use
@@ -1668,6 +1669,15 @@ local function paintGrounds(cfg, def, theme, opts, r, F, reserved)
 			F.fam[i] = theme.rock
 		end
 	end
+	if F.water then
+		local W = cfg.water
+		for i = 1, F.w * F.h do
+			local kind = F.water[i]
+			if kind then
+				F.fam[i] = W.fams[kind]
+			end
+		end
+	end
 	-- patches of a second walkable ground (blobs on walkable cells, never next to another patch family)
 	local function otherNear(i, fam)
 		local x, y = xy(F, i)
@@ -2321,6 +2331,436 @@ local function spawns(cfg, def, r, F, safe, model, floorNo)
 	return out, monsters, hunt
 end
 
+-- ====================================================================== water (O739)
+-- Rivers, lakes, shores, bridges and fords, only for a def with `water` (off when absent: no draw, no change):
+--   def.water = {rivers = {{course = "west-east" | "north-south", floor = k, width = {a, b}, at = pct}},
+--                lakes = {{floor = k, x = cx, y = cy, radius = {a, b}}}, fords = n}
+-- A river is a band of deep water that wanders from one edge of the grid to the other; a lake an irregular blob (a
+-- disc and 1-3 lobes, rough rim). Water lies on walkable floor only, never within cfg.water.dry of a required point,
+-- a zone centre or a reserved cell. Every land pocket the water cuts off (cfg.water.minLand+ tiles, or holding a
+-- required point or a zone centre) gets a straight crossing over the shortest water run, a corridor end first: the
+-- first crossing of a river a bridge (wooden planks), then fords (shallow walkable water) up to def.water.fords, then
+-- bridges; smaller pockets drown. A river nobody had to cross still gets one bridge, and fords are added up to
+-- def.water.fords (cfg.water.spacing apart). Crossing cells and the land around both ends are reserved (no
+-- decoration) and safe (no spawn). Shore pieces (A.shorePieces) go on every water tile next to land.
+-- F.water[i] = "deep" | "ford" | "bridge"; F.waterStats the numbers (model.water).
+
+-- The shore pieces of one water tile from which of its 8 neighbours are land (the pack shores: pieces named after
+-- the land sides, `in_` pieces for two or more sides, a corner piece for land on a diagonal whose sides are water)
+function A.shorePieces(n, e, s, w, ne, nw, se, sw)
+	local name
+	local k = (n and 1 or 0) + (e and 1 or 0) + (s and 1 or 0) + (w and 1 or 0)
+	if k == 4 then
+		name = "in_nsew"
+	elseif k == 3 then
+		name = not w and "in_nse" or not s and "in_new" or not e and "in_nsw" or "in_sew"
+	elseif k == 2 then
+		name = (n and s) and "in_ns" or (e and w) and "in_ew" or ("in_" .. (n and "n" or "s") .. (e and "e" or "w"))
+	elseif k == 1 then
+		name = n and "n" or e and "e" or s and "s" or "w"
+	end
+	local out = {}
+	if name then
+		out[1] = name
+	end
+	if ne and not n and not e then
+		out[#out + 1] = "ne"
+	end
+	if nw and not n and not w then
+		out[#out + 1] = "nw"
+	end
+	if se and not s and not e then
+		out[#out + 1] = "se"
+	end
+	if sw and not s and not w then
+		out[#out + 1] = "sw"
+	end
+	return out
+end
+
+-- the water families of cfg.water, added to cfg.families on first use (a def without water never touches cfg)
+local function waterFamilies(cfg)
+	local W = cfg.water
+	for name, d in pairs(W.families) do
+		if not cfg.families[name] then
+			cfg.families[name] = d
+		end
+	end
+	return W
+end
+
+-- the cells of one river band, edge to edge
+local function riverCells(F, r, q, W)
+	local cells = {}
+	local we = q.course ~= "north-south"
+	local len, across = we and F.w or F.h, we and F.h or F.w
+	local wr = q.width or W.river.width
+	local lo, hi = wr[1], max(wr[1], wr[2])
+	local at = q.at and floor(across * q.at / 100) or r:int(floor(across * 35 / 100), floor(across * 65 / 100) + 1)
+	local amp = W.river.amplitude
+	local c, v, wd, still = at, 0, r:int(lo, hi), 0
+	for t = 1, len do
+		T()
+		if t > 1 then
+			-- a smoothed random walk: the drift turns now and then and is pulled back inside the band around `at`;
+			-- never more than W.river.straight tiles without a step (a long straight bank reads built, not grown)
+			if r:chance(W.river.turn) then
+				v = r:int(-1, 1)
+			end
+			still = still + 1
+			if v == 0 and still >= W.river.straight then
+				v = r:chance(50) and 1 or -1
+			end
+			if c - at >= amp then
+				v = -1
+			elseif at - c >= amp then
+				v = 1
+			end
+			if v ~= 0 and (still >= W.river.straight or r:chance(W.river.step)) then
+				c = c + v
+				still = 0
+			end
+			if r:chance(W.river.widthChange) then
+				wd = min(hi, max(lo, wd + r:int(-1, 1)))
+			end
+		end
+		local a = c - floor((wd - 1) / 2)
+		for s = a, a + wd - 1 do
+			local x, y = t, s
+			if not we then
+				x, y = s, t
+			end
+			if inside(F, x, y) then
+				cells[#cells + 1] = idx(F, x, y)
+			end
+		end
+	end
+	return cells
+end
+
+local function waterPass(cfg, def, F, r, reserved, safe)
+	local W = waterFamilies(cfg)
+	local wd = def.water
+	local dry = {}
+	for i in pairs(reserved) do
+		dry[i] = true
+	end
+	local anchors = {}
+	for _, q in ipairs(F.req or {}) do
+		ring(F, q.x, q.y, (q.r or 1) + W.dry, dry)
+		anchors[idx(F, q.x, q.y)] = true
+	end
+	for _, q in ipairs(F.rooms or {}) do
+		ring(F, q.cx, q.cy, W.dry, dry)
+		anchors[idx(F, q.cx, q.cy)] = true
+	end
+	-- the land regions before the water: only pieces of one region are joined again (a teleport joins the others)
+	local pre = {}
+	for k, g in ipairs(regions(F, function(i) return F.walk[i] end)) do
+		for i in pairs(g.set) do
+			pre[i] = k
+		end
+	end
+	F.water, F.waterBody = {}, {}
+	local st = {rivers = 0, lakes = 0, water = 0, bridges = 0, fords = 0, drowned = 0, crossings = {}}
+	local bodies = {}
+	local function wet(i, b)
+		if F.walk[i] and not dry[i] and not F.water[i] then
+			F.water[i] = "deep"
+			F.waterBody[i] = b
+			blockCell(F, i)
+		end
+	end
+	for _, q in ipairs(wd.rivers or {}) do
+		if (q.floor or 1) == F.k then
+			bodies[#bodies + 1] = {kind = "river", bridges = 0}
+			st.rivers = st.rivers + 1
+			for _, i in ipairs(riverCells(F, r, q, W)) do
+				wet(i, #bodies)
+			end
+		end
+	end
+	for _, q in ipairs(wd.lakes or {}) do
+		if (q.floor or 1) == F.k then
+			bodies[#bodies + 1] = {kind = "lake", bridges = 0}
+			st.lakes = st.lakes + 1
+			local rr = q.radius or W.lake.radius
+			blob(F, r, q.x, q.y, r:int(rr[1], max(rr[1], rr[2])), function(i)
+				wet(i, #bodies)
+			end)
+		end
+	end
+	if #bodies == 0 then
+		F.water, F.waterBody = nil, nil
+		return st
+	end
+	-- no slivers: a water cell keeps two water sides (4 neighbours), else the floor comes back
+	local changed = true
+	while changed do
+		changed = false
+		for i = 1, F.w * F.h do
+			T2048()
+			if F.water[i] then
+				local x, y = xy(F, i)
+				local n = 0
+				for _, d in ipairs(D4) do
+					local nx, ny = x + d[1], y + d[2]
+					if inside(F, nx, ny) and F.water[idx(F, nx, ny)] then
+						n = n + 1
+					end
+				end
+				if n < 2 then
+					F.water[i], F.waterBody[i] = nil, nil
+					F.walk[i], F.blocked[i] = true, nil
+					changed = true
+				end
+			end
+		end
+	end
+	local function isLand(i)
+		return F.walk[i] and true or false
+	end
+	local function protect(i)
+		local x, y = xy(F, i)
+		ring(F, x, y, 1, reserved)
+		ring(F, x, y, 1, safe)
+	end
+	-- straight runs of deep water with walkable land at both ends: {cells, a, b, dir, body}
+	local function runs()
+		local out = {}
+		for i = 1, F.w * F.h do
+			T2048()
+			if F.water[i] == "deep" then
+				local x, y = xy(F, i)
+				for _, d in ipairs({{1, 0}, {0, 1}}) do
+					local bx, by = x - d[1], y - d[2]
+					if inside(F, bx, by) and isLand(idx(F, bx, by)) then
+						local cells, cx, cy = {}, x, y
+						while inside(F, cx, cy) and F.water[idx(F, cx, cy)] == "deep" and #cells <= W.maxRun do
+							cells[#cells + 1] = idx(F, cx, cy)
+							cx, cy = cx + d[1], cy + d[2]
+						end
+						if #cells <= W.maxRun and inside(F, cx, cy) and isLand(idx(F, cx, cy)) then
+							out[#out + 1] = {cells = cells, a = idx(F, bx, by), b = idx(F, cx, cy), dir = d,
+								body = F.waterBody[i]}
+						end
+					end
+				end
+			end
+		end
+		return out
+	end
+	local function build(run, kind)
+		local width = kind == "bridge" and W.bridge.width or W.ford.width
+		local o = run.dir[1] == 1 and {0, 1} or {1, 0}
+		local offs = {0, 1, -1}
+		for _, c in ipairs(run.cells) do
+			local x, y = xy(F, c)
+			for k = 1, width do
+				local nx, ny = x + o[1] * offs[k], y + o[2] * offs[k]
+				if inside(F, nx, ny) then
+					local j = idx(F, nx, ny)
+					if F.water[j] == "deep" then
+						F.water[j] = kind
+						F.walk[j], F.blocked[j] = true, nil
+						protect(j)
+					end
+				end
+			end
+		end
+		protect(run.a)
+		protect(run.b)
+		local body = bodies[run.body]
+		if kind == "bridge" then
+			body.bridges = body.bridges + 1
+			st.bridges = st.bridges + 1
+		else
+			st.fords = st.fords + 1
+		end
+		local mx, my = xy(F, run.cells[floor((#run.cells + 1) / 2)])
+		st.crossings[#st.crossings + 1] = {kind = kind, x = mx, y = my, length = #run.cells, width = width,
+			body = run.body, floor = F.k, dir = run.dir[1] == 1 and "we" or "ns"}
+	end
+	local function kindFor(run)
+		local body = bodies[run.body]
+		if body.kind == "river" and body.bridges == 0 then
+			return "bridge"
+		end
+		if st.fords < (wd.fords or 0) then
+			return "ford"
+		end
+		return "bridge"
+	end
+	-- the best run of a list: the shortest, a corridor end first, a tie by the seed
+	local function best(list)
+		local top, score = {}, nil
+		for _, run in ipairs(list) do
+			local s = #run.cells * 10
+			if not (F.corridor and (F.corridor[run.a] or F.corridor[run.b])) then
+				s = s + W.corridorBonus
+			end
+			if not score or s < score then
+				top, score = {run}, s
+			elseif s == score then
+				top[#top + 1] = run
+			end
+		end
+		return top[1] and top[r:int(1, #top)] or nil
+	end
+	-- the region of before of a region now (its crossing cells have none)
+	local function preOf(g)
+		if pre[g.first] then
+			return pre[g.first]
+		end
+		local p
+		for i in pairs(g.set) do
+			p = p or pre[i]
+		end
+		return p
+	end
+	-- join the cut-off pockets, one crossing at a time
+	for _ = 1, 200 do
+		local regs = regions(F, isLand)
+		local regOf, joined = {}, {}
+		for k, g in ipairs(regs) do
+			for i in pairs(g.set) do
+				regOf[i] = k
+			end
+		end
+		-- per region of before: its main piece (the entry's, else the largest)
+		local mainOf = {}
+		local entry = F.req and F.req[1] and idx(F, F.req[1].x, F.req[1].y)
+		if entry and regOf[entry] and pre[entry] then
+			mainOf[pre[entry]] = regOf[entry]
+		end
+		for k, g in ipairs(regs) do
+			local p = preOf(g)
+			if p and not mainOf[p] then
+				mainOf[p] = k
+			end
+		end
+		for _, k in pairs(mainOf) do
+			joined[k] = true
+		end
+		local need = {}
+		for k, g in ipairs(regs) do
+			if not joined[k] then
+				local anchored = false
+				for i in pairs(g.set) do
+					if anchors[i] then
+						anchored = true
+					end
+				end
+				if anchored or g.n >= W.minLand then
+					need[k] = true
+				end
+			end
+		end
+		local cand = {}
+		for _, run in ipairs(runs()) do
+			local ka, kb = regOf[run.a], regOf[run.b]
+			if ka and kb and ka ~= kb and pre[run.a] == pre[run.b]
+				and ((joined[ka] and need[kb]) or (joined[kb] and need[ka])) then
+				cand[#cand + 1] = run
+			end
+		end
+		local run = best(cand)
+		if not run then
+			-- nothing left to join: the small pockets beside the water drown
+			for k, g in ipairs(regs) do
+				if not joined[k] and not need[k] then
+					local body
+					for i in pairs(g.set) do
+						local x, y = xy(F, i)
+						for _, d in ipairs(D8) do
+							local nx, ny = x + d[1], y + d[2]
+							if inside(F, nx, ny) and F.waterBody[idx(F, nx, ny)] then
+								body = body or F.waterBody[idx(F, nx, ny)]
+							end
+						end
+					end
+					if body then
+						for i in pairs(g.set) do
+							F.water[i], F.waterBody[i] = "deep", body
+							blockCell(F, i)
+							st.drowned = st.drowned + 1
+						end
+					end
+				end
+			end
+			break
+		end
+		build(run, kindFor(run))
+	end
+	-- a river nobody had to cross gets its bridge; then fords up to def.water.fords, apart from the other crossings
+	local function farFromCrossings(run)
+		local x, y = xy(F, run.cells[floor((#run.cells + 1) / 2)])
+		for _, c in ipairs(st.crossings) do
+			if max(abs(c.x - x), abs(c.y - y)) < W.spacing then
+				return false
+			end
+		end
+		return true
+	end
+	local function extra(want)
+		local cand = {}
+		for _, run in ipairs(runs()) do
+			if want(run) and farFromCrossings(run) then
+				cand[#cand + 1] = run
+			end
+		end
+		return best(cand)
+	end
+	for b, body in ipairs(bodies) do
+		if body.kind == "river" and body.bridges == 0 then
+			local run = extra(function(q) return q.body == b end)
+			if run then
+				build(run, "bridge")
+			end
+		end
+	end
+	while st.fords < (wd.fords or 0) do
+		local run = extra(function() return true end)
+		if not run then
+			break
+		end
+		build(run, "ford")
+	end
+	for _, kind in pairs(F.water) do
+		if kind == "deep" then
+			st.water = st.water + 1
+		end
+	end
+	return st
+end
+
+-- the shore pieces on every water tile (deep or ford) next to land (a tile of any family that is no water)
+local function paintShores(cfg, F)
+	local W = cfg.water
+	local function land(x, y)
+		if not inside(F, x, y) then
+			return false
+		end
+		local i = idx(F, x, y)
+		return F.fam[i] ~= nil and not F.water[i]
+	end
+	for y = 1, F.h do
+		T()
+		for x = 1, F.w do
+			local i = idx(F, x, y)
+			local kind = F.water[i]
+			if kind and kind ~= "bridge" then
+				local pieces = A.shorePieces(land(x, y - 1), land(x + 1, y), land(x, y + 1), land(x - 1, y),
+					land(x + 1, y - 1), land(x - 1, y - 1), land(x + 1, y + 1), land(x - 1, y + 1))
+				local list = F.items[i]
+				for _, name in ipairs(pieces) do
+					list[#list + 1] = W.shore[name]
+				end
+			end
+		end
+	end
+end
+
 local generate
 
 -- def.fastPaths: one search for the paths kept free (big layouts); def.noExit: no exit portal (the rifts);
@@ -2438,10 +2878,17 @@ generate = function(cfg, def, opts)
 		for _, q in ipairs(F.rooms or {}) do
 			targets[#targets + 1] = idx(F, q.cx, q.cy)
 		end
+		if def.water then
+			-- rivers, lakes, bridges and fords (O739): before the paths, so they cross the water where it is crossed
+			F.waterStats = waterPass(cfg, def, F, A.rng(seed + k * 15485863), reserved, safe)
+		end
 		local from = idx(F, entry.x, entry.y)
 		markPaths(F, from, targets, def.fastPaths)
 		paintGrounds(cfg, def, theme, opts, fr, F, reserved)
 		paintBorders(cfg, def, theme, opts, F)
+		if F.water then
+			paintShores(cfg, F)
+		end
 		local stats = model.stats
 		if def.decorFit then
 			fitStart(cfg, def, opts, F)
@@ -2557,6 +3004,24 @@ generate = function(cfg, def, opts)
 			model.reach[f] = model.reach[f] + rs[f]
 		end
 	end
+	-- water (O739, def.water only): rivers, lakes, deep water tiles, bridges, fords, drowned pockets, the crossings
+	if def.water then
+		local ws = {rivers = 0, lakes = 0, water = 0, bridges = 0, fords = 0, drowned = 0, crossings = {}}
+		for _, F in ipairs(Fs) do
+			local s = F.waterStats
+			if s then
+				for _, f in ipairs({"rivers", "lakes", "water", "bridges", "fords", "drowned"}) do
+					ws[f] = ws[f] + s[f]
+				end
+				for _, c in ipairs(s.crossings) do
+					local pos = absPos(model, F, c.x, c.y)
+					ws.crossings[#ws.crossings + 1] = {kind = c.kind, x = pos.x, y = pos.y, z = pos.z, length = c.length,
+						width = c.width, dir = c.dir}
+				end
+			end
+		end
+		model.water = ws
+	end
 	-- the walkable cells per floor (absolute keys) for the validator and the tests
 	model.walk = {}
 	for k, F in ipairs(Fs) do
@@ -2633,6 +3098,15 @@ function A.allowedIds(cfg, def, opts)
 	addRows(theme.lights and theme.lights.items)
 	addRows(theme.props and theme.props.items)
 	ok[cfg.items.hole], ok[cfg.items.ladder], ok[cfg.items.portal] = true, true, true
+	if def.water then
+		local W = waterFamilies(cfg)
+		for _, kind in ipairs({"deep", "ford", "bridge"}) do
+			addRows(cfg.families[W.fams[kind]].grounds)
+		end
+		for _, id in pairs(W.shore) do
+			ok[id] = true
+		end
+	end
 	return ok
 end
 

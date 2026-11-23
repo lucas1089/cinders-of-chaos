@@ -754,6 +754,24 @@ for id in pairs(A.allowedIds(cfg, def, opts)) do
 end
 table.sort(allowed)
 local fams, borders, sets = materials(theme)
+if def.water then
+	-- rivers, lakes, bridges and fords (O739): the water families (no border rule of their own) and the shore set
+	for _, kind in ipairs({"deep", "ford", "bridge"}) do
+		local name = cfg.water.fams[kind]
+		local d = cfg.families[name]
+		local ids = {}
+		for _, row in ipairs(d.grounds) do
+			ids[#ids + 1] = idOf(row[1])
+		end
+		fams[name] = {z = d.z, walk = d.walk ~= false, grounds = ids}
+	end
+	local ids = {}
+	for _, id in pairs(cfg.water.shore) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	sets.water_shore = ids
+end
 -- a biome's thicket (area_plan_compile.py): grounds and blocking items that replace the rock and fill the frame
 local thicket
 if biomeDef.thicket then
@@ -775,7 +793,7 @@ local frameFam = def.kind == "dungeon" and "earth" or theme.rock
 local frameDef = frameFam and cfg.families[frameFam]
 local frame = frameDef and {family = frameFam, ground = idOf(frameDef.grounds[1][1]), walk = frameDef.walk ~= false} or nil
 put("J " .. json({allowed = allowed, families = fams, borders = borders, sets = sets, chest = riftCfg.chest.itemId,
-	reach = m.reach,
+	reach = m.reach, water = m.water,
 	portal = cfg.items.portal, hole = cfg.items.hole, ladder = cfg.items.ladder, exitAction = cfg.aid.exit,
 	kind = def.kind, theme = b.theme, frame = frame, thicket = thicket, walls = theme.wall and cfg.walls[theme.wall] and (function()
 		local w = {}

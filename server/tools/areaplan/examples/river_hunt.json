@@ -1,0 +1,154 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "reedwater_crossing",
+  "name": "Reedwater Crossing",
+  "biome": "forest",
+  "size": [
+    84,
+    60
+  ],
+  "floors": 1,
+  "level": [
+    50,
+    140
+  ],
+  "seed": 73939,
+  "repair_reach": true,
+  "water": {
+    "rivers": [
+      {
+        "course": "north-south",
+        "width": [
+          3,
+          5
+        ],
+        "at": 50
+      }
+    ],
+    "lakes": [
+      {
+        "zone": "mere",
+        "radius": [
+          3,
+          4
+        ]
+      }
+    ],
+    "fords": 1
+  },
+  "decoration": "normal",
+  "light": "bright",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "shape": "room",
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "glade",
+      "floor": 1,
+      "size": "large",
+      "place": "west"
+    },
+    {
+      "id": "hollow",
+      "floor": 1,
+      "size": "medium",
+      "place": "southwest"
+    },
+    {
+      "id": "thicket",
+      "floor": 1,
+      "size": "large",
+      "place": "northeast"
+    },
+    {
+      "id": "mere",
+      "floor": 1,
+      "size": "large",
+      "place": "southeast",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "glade",
+      "width": 3
+    },
+    {
+      "from": "glade",
+      "to": "hollow",
+      "width": 3
+    },
+    {
+      "from": "glade",
+      "to": "thicket",
+      "width": 4
+    },
+    {
+      "from": "hollow",
+      "to": "mere",
+      "width": 3
+    },
+    {
+      "from": "thicket",
+      "to": "mere",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "glade",
+      "monster": "Bog Raider",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "hollow",
+      "monster": "Rot Elemental",
+      "count": 4,
+      "respawn": 90
+    },
+    {
+      "zone": "thicket",
+      "monster": "Werecrocodile",
+      "count": 5,
+      "respawn": 120
+    },
+    {
+      "zone": "mere",
+      "monster": "Hydra",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "mere",
+      "monster": "Feral Werecrocodile",
+      "count": 2,
+      "respawn": 120
+    }
+  ],
+  "chests": [
+    {
+      "zone": "mere",
+      "quest": "reedwater_cache",
+      "reward": {
+        "gold": 15000,
+        "message": "A ferryman's strongbox, wedged under the reeds."
+      }
+    }
+  ],
+  "notes": "Example plan (O739): a one-floor forest hunt for levels 50-140 split by a river from north to south, with a lake in the treasure zone. The generator joins both banks with a bridge and a ford; QA lists each crossing as a chokepoint."
+}
