@@ -304,6 +304,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Crone) wear the original monsters made with PixelLab (O640; client pair 74, outfits 3531-3554, data/monster/
                monster_pixellab_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
                chaosClientPair >= 74, README "Client pair guard" and "PixelLab monsters (O640)"; after monstermalgrathlook
+  monsterdrivelooks tools/install_monster_drive_looks.py  11 hunt monsters (Paladin's Apparition, Guardian of Tales, ... Saltkin Pincher)
+               wear the outfits of our PixelLab redraws and two character packs (O726; client pair 81, outfits 3561-3571, data/monster/
+               monster_drive_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
+               chaosClientPair >= 81, README "Client pair guard" and "Drive characters as hunt monsters (O726)"; after monsterpixellablooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1379,6 +1383,15 @@ def step_monsterpixellablooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monstermalgrathlook') + 1, 'monsterpixellablooks')  # the PixelLab monsters (pair 74) go over every earlier look
+
+
+def step_monsterdrivelooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 81) is in the tool; its warning reaches the report
+    args = [tool('install_monster_drive_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_drive_looks.py'))
+
+
+STEPS.insert(STEPS.index('monsterpixellablooks') + 1, 'monsterdrivelooks')  # the Drive pack monsters (pair 81) go over every earlier look
 
 
 def step_monsterresists(server, data, ctx):

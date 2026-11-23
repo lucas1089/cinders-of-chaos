@@ -37146,6 +37146,40 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
 
 
+## Drive characters as hunt monsters (O726; `data/monster/monster_drive_looks.csv`, install step `monsterdrivelooks`, client pair 81)
+
+Owner 2026-11-23 (pt-BR): the new 8-direction characters of the Drive become hunt monsters; the nine man-shaped ones are drawn again by us in
+PixelLab, the wolf and the crab keep the pack art. The outfits 3561 to 3571 are made by `client/tools/sprites/gen_drive_monsters.py`
+(client/MANIFEST.md "Drive characters as hunt monsters (O726)"). Pair 81 is built in /dev/shm only, so nothing shows yet; `PAIR_ASSETS`
+stays 79.
+
+- **The picks** (`PICKS` of the tool): one hunt monster of the bounty pool for each look, by theme, taken from looks that two or more hunt monsters
+  wear today (crowded_looks_allow.csv, shared_looks_allow.csv). No boss, none in the map of an earlier pair.
+
+  | outfit | figure | art | monster | level | old look | why |
+  |---|---|---|---|---|---|---|
+  | 3561 | winged holy figure | redraw | Paladin's Apparition | 406 | 129 | a holy apparition; look 129 had five monsters |
+  | 3562 | robed relic bearer | redraw | Guardian of Tales | 230 | 989 | a keeper of old things; look 989 had five (the Books) |
+  | 3563 | floating eldritch thing | redraw | Terrordream | 123 | 593 | a nightmare that floats; 593 was shared with Feverdream |
+  | 3564 | void wolf | pack | Scourgejaw | 870 | 1493 | a jaw beast; look 1493 had three |
+  | 3565 | void caster | redraw | Dark Magician | 22 | 133 | a dark mage; look 133 had four |
+  | 3566 | plague healer | redraw | Mad Scientist | 23 | 133 | a healer of the plague for a mad scientist |
+  | 3567 | sea captain | redraw | Ironhook Corsair | 850 | 1492 | a corsair; look 1492 had three |
+  | 3568 | armoured zealot | redraw | Knight's Apparition | 406 | 131 | an armoured knight; look 131 had four |
+  | 3569 | lightning scholar | redraw | Dark Apprentice | 16 | 133 | an academy apprentice; look 133 keeps the Novice of the Cult alone |
+  | 3570 | robed void priest | redraw | Death Priest | 44 | 99 | a priest; 99 was shared with the Lich |
+  | 3571 | red crab | pack | Saltkin Pincher | 55 | 77 | a shore crab; 77 was shared with the Saltkin Pincher Scout |
+
+- **The step** (`tools/install_monster_drive_looks.py`, after `monsterpixellablooks`): at config.lua chaosClientPair >= 81 the monster files under
+  data/monster (our XML, a base XML or Lua) and the installed bounty pool get the new look; below it a WARNING line and nothing else. A monster on the
+  look of an earlier pair's step moves on from it. Idempotent, `--dry-run`. `gen_bounty_pool.py` turns a new look back to the committed one.
+- **The audits** read the map at pair 81 (`audit_shared_looks.load_drive`, `audit_idle_looks.donor_rows`): no shared look, none crowded, every
+  look moves while it stands (look_idle.csv: idle group of 8 phases). While the redraws had no frames they stood still with a row of
+  no_idle_allow.csv whose reason starts with TEMPORARY, naming the new look: `audit_idle_looks.load_allow` leaves those rows out (the old rows
+  of the same monsters stay for the pairs below 81), `load_temporary` reads them, `check_pool` lets a moved monster stand still only with one
+  and fails it as stale once the look moves, `check_content.py` asks one for every still look of the map and no other. None is left.
+- Tests: `client/tools/sprites/gen_drive_monsters_test.py`, `server/tools/install_monster_drive_looks_test.py`, `server/tools/audit_idle_looks_test.py`.
+
 ## Pinnacle bosses (O667: `pinnacle.lua`, `pinnacle_core.lua`, `pinnacle_config.lua`, `pinnacle_balance_config.lua`, `tools/pinnacle_model.py`, NPC Keeper of the Pinnacle)
 
 Owner 2026-11-19 ("do what you recommended"): the top of the game gets four **Ascended versions of existing key bosses**, shown at level

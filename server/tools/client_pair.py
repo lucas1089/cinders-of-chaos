@@ -76,6 +76,10 @@ PAIR_WINGS_REDRAWN = 79   # pair 78 with the 117 code-drawn wings looks redrawn 
                     # gen_drawn_wings.py apply --new --keep-painted). No new ids: no server gate. On windows-assets (c01d1eb, 2026-11-23,
                     # owner approved): PAIR_ASSETS 79
 
+PAIR_DRIVE_MONSTERS = 81   # pair 80 (O724 painted wings sides, O725b effect 3036 recentred; neither on windows-assets) plus ten hunt monster outfits
+                    # 3561-3570 from 8-direction character packs (O726, gen_drive_monsters.py; install_monster_drive_looks.py, step
+                    # `monsterdrivelooks`: ten hunt monsters wear them). Built in /dev/shm only, not on windows-assets: PAIR_ASSETS stays 79
+
 PAIR_ASSETS = 79
 PAIR_ASSETS_DAT_MD5 = 'abd11a96a31a55cb1dceabe9989e792f'
 

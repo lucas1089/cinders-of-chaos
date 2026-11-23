@@ -1,0 +1,12 @@
+key,src,art,new,tiles,scale,disp,float,idle,idle_ms,walk,walk_ms,walk_src,west,east,idle_frames,walk_frames,colours,pixels
+seraph,e86cc8933b0f,redraw,3561,3x3,1.00,-32:0,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,86,273115
+relicbearer,f838b8411d2d,redraw,3562,3x3,1.00,-32:0,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,84,157102
+aberration,19e703a3576d,redraw,3563,3x3,1.00,-32:0,1,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,89,189559
+wolf,a131cf8f2824,pack,3564,3x3,0.58,-32:-1,0,8,200,8,100,walk,own,own,20/20/20/20,15/16/14/16,231,182979
+voidmage,162d4e858320,redraw,3565,3x3,1.00,-32:-1,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,85,202945
+plaguemedic,435a175bc234,redraw,3566,3x3,1.00,-32:0,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,78,160444
+seacaptain,83e9ddc20794,redraw,3567,3x3,1.00,-32:0,0,8,200,8,100,walk,own,mirror,8/8/8/8,8/8/8/8,87,151257
+templar,35ecd304f399,redraw,3568,3x3,1.00,-32:0,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,91,247030
+stormmage,3973b8038abc,redraw,3569,3x3,1.00,-33:-2,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,90,223926
+voidpriest,8e37a4728f97,redraw,3570,3x3,1.00,-32:0,0,8,200,8,100,walk,own,own,8/8/8/8,8/8/8/8,119,211720
+crab,f49d946fb82c,pack,3571,3x3,1.00,-32:-1,0,8,200,8,100,walk,own,own,8/8/8/8,9/9/9/9,219,102544
