@@ -60,7 +60,9 @@ give the penalty reviews it. There is one appeal per penalty, and that answer is
 ## 6. What is not allowed
 
 - Using bots, macros, cheat programs, or modified or third-party clients. The official client's helper is allowed while
-  you play; leaving it running for hours with nobody at the keyboard counts as using a bot.
+  you play; leaving it running for hours with nobody at the keyboard counts as using a bot. Cavebots and any external
+  tool that plays for you are forbidden. To enforce this, the server and the official client monitor how characters
+  behave (see the [Privacy Policy](privacy.en.md), section 2). The staff review each case; no penalty is automatic.
 - Decompiling, decrypting, extracting or modifying the official client or its files (sprites, images, sounds, code and
   packs), or getting around its protections.
 - Using bugs or glitches for an advantage, or spreading them, instead of telling the staff. A bug you report yourself

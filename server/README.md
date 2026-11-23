@@ -28336,7 +28336,7 @@ careful bot with human-like random delays on every signal is not caught by this;
 
 ## Bot detection events and scores (O722) (`botdet.lua`, `botdet_core.lua`, `botdet_config.lua`, `sql/chaos_botdet.sql`, `data/lib/chaos_module_hashes.lua`, `src-patches/0093-bot-signals.patch`, client `game_chaosguard`, client base patch 0207)
 
-The owner's plan (2026-11-22, pt-BR: `docs/BOT_DETECTION.md`, with the policy questions that are the owner's) on top of what exists: `antibot.lua` (the presence check, a decaying score) and `botreview.lua` (a daily score per character, `/botreview`) stay as they are; this one keeps the raw events of the last 7 days for staff and scores the plan's six heuristics every hour with the numbers behind each. The three do not read each other's scores. **Detection and reports only: nothing bans, kicks, mutes, moves or punishes. Testers (tester bots, journey bots) and staff (group 4+) are never collected** (`Chaos.isTester`, `staffGroup`).
+The owner's plan (2026-11-22, pt-BR: `docs/BOT_DETECTION.md`, with the policy questions that are the owner's) on top of what exists: `antibot.lua` (the presence check, a decaying score) and `botreview.lua` (a daily score per character, `/botreview`) stay as they are; this one keeps the raw events of the last 7 days for staff and scores the plan's six heuristics every hour with the numbers behind each. The three do not read each other's scores. **Detection and reports only: nothing bans, kicks, mutes, moves or punishes. The player-facing notice (what is recorded, 7 and 90 days, staff only) is in `docs/legal/privacy.*.md` section 2 and 4, Terms section 6 and rule 2.2.1 of `website/setup/rules.bbcode` (O730; `website/tests/chaos_legal_pages_test.php` holds the retention numbers to `botdet_config.lua`). Testers (tester bots, journey bots) and staff (group 4+) are never collected** (`Chaos.isTester`, `staffGroup`).
 
 **Storage, opcode, tables.** No player storage (nothing taken in 7100000-7127999). Opcode **169** (`ChaosOpcodes.botdet`): free in the reference server's list, the base client's `ExtendedIds`, every `ChaosOpcodes` value and every client module (`tests/botdet_test.lua` checks the number, the duplicates and the constants file). Client -> server `integrity {i, n, b, m = [[module, digest], ...]}` and `tools {c = [codes]}`; server -> client `tools {t = [[code, hash], ...]}`. `tools/ci/unity_opcodes_allowlist.txt` has the line for 169. Tables `chaos_botdet_events` (7 days) and `chaos_botdet_scores` (90 days), `sql/chaos_botdet.sql` (also created at startup, wipe lines in `deploy/launch_wipe_tables.json`).
 
@@ -36513,8 +36513,8 @@ Tests: `tests/cosmetics_test.lua` (the O597 block: gate on and off, the payload 
 
 O605 gave nine 2x2 creature outfits to 11 monsters. Owner 2026-11-17 after the preview (translated): "Put the creatures back the way they were.
 Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
-Client pair 73 will hold 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles, made from three creature packs of one author
-(client/MANIFEST.md "Creature packs as boss outfits (O608)"). Pair 73 is not built.
+Client pair 73 holds 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles, made from three creature packs of one author
+(client/MANIFEST.md "Creature packs as boss outfits (O608)"). Pair 73 is on windows-assets (f2ac2676).
 
 - **Back to their old looks**: Ink Blob, Aberration of the Depths, Rimecairn, Ashmaw Warlord, Frost Maiden, Elite Ice Witch, Thalcyra, Vaelith,
   Sangrith and the two Ascended forms. Nothing of O605 had shipped, so no installed server changes. The humanoid outfits and the angel are not imported.
@@ -36591,7 +36591,7 @@ Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics 
 
 Owner 2026-11-18, option 1 for the new boss pack: "an arena boss that always faces the front". Malgrath, the Drowned Crown is a crowned drowned
 king for a party of five at level 800, with a lair of its own built like Talath's. Its outfit 3530 and its eight attack effects 5326 to 5333 are client
-pair 74 (client/MANIFEST.md "Malgrath, the Drowned Crown (O637)"). Pair 74 is not built for real, so nothing of it opens yet.
+pair 74 (client/MANIFEST.md "Malgrath, the Drowned Crown (O637)"). Pair 74 is on windows-assets (f24a858a); it opens when the owner writes `chaosClientPair` 74 or more.
 
 - **Numbers** (`malgrath_the_drowned_crown.xml`, `boss_length_model.py` `ARENA_BOSSES`): level band 700 to 900, the mechanics fair for level 800
   (`fair.refLevel`, the Nightrend Abyss hunt is 785 to 900), the portal lets level 700 in. Health 5,240,000, experience 5,240,000 (one per health, as
@@ -36762,7 +36762,7 @@ Looks only. No damage, no timing, no area changes.
   The world boss arrival and its adds keep `void_maw` and `teleport_in`. The Ascended and guild boss arrivals keep `shadow_eruption`.
 - **Tests.** `tests/gapfx_test.lua`: the gate off sends the old effect or nothing, the gate on the new id at its offset,
   the ids are one block, every effect has a key and a sender that asks for it. `tests/telegraph_test.lua`: the `art` argument.
-- **Not seen in a client.** Pair 73 is not built. Placement was set by numbers, not by eye.
+- **Not seen in a client.** Pair 73 is on windows-assets (f2ac2676). Placement was set by numbers, not by eye.
 
 | id | set no. | name | size, phases | sender and what it sent before |
 |---|---|---|---|---|
@@ -37080,7 +37080,7 @@ the rest walkable; none is moveable or pickupable; all carry the animated bit; t
 client pair.
 
 The step writes the items.otb nodes and an items.xml block (markers, rewritten when the manifest changes) like `templeart`, and
-waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` stays 73 because pair 74 is not built). Below it a WARNING
+waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` was 73 until pair 74 went to windows-assets, f24a858a; it is 81 now). Below it a WARNING
 line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
 `server/tools/install_decor_flames_test.py`.
 
@@ -37088,7 +37088,7 @@ line and nothing written. Nothing on the server places, sells or drops these ite
 
 Owner 2026-11-18: the 24 original monsters made with PixelLab (O629, O630) are approved; build them into pair 74 and give them to hunt monsters. The
 outfits 3531 to 3554 are made by `client/tools/sprites/gen_pixellab_monsters.py` (client/MANIFEST.md "PixelLab monsters (O640)"); this section is the
-server side: which hunt monster wears which one. Pair 74 is not built for real, so nothing of it shows yet.
+server side: which hunt monster wears which one. Pair 74 is on windows-assets (f24a858a); it shows once `chaosClientPair` is 74 or more.
 
 - **The picks.** One hunt monster of the bounty pool (at least 6 spawns on the map) for each look, 24 monsters, none in the map of an earlier pair
   (recolour, donor, purchased, creature, swap). By name and theme first (cinders, ash, ember, bone, shadow: a fire devil for the imp, a mummy for the
@@ -37140,7 +37140,7 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
   `check_content.py` also holds the map: the 24 outfits 3531 to 3554, one monster each, the old look the file or the committed pool has, the level
   band, not a player look, not worn by another monster. The `pixellab` rows of `client/tools/sprites/monster_looks/picks.csv` are the source
   (`gen_pixellab_monsters.py looks` writes the map).
-- **VPS.** Nothing to run now: the gate opens when the pair record is raised to 74, and pair 74 is not built. Admin app first: README "Client pair
+- **VPS.** Nothing to run now: the gate opens when the pair record is raised to 74, and pair 74 is on windows-assets (f24a858a), so the owner step is the client package and the pair record. Admin app first: README "Client pair
   guard". Fallback: `chaos-ctl.sh client-pair set 74`.
 - **Open.** Not seen in a client. The 14 bigger monsters are 3x3 (96 px), the first hunt monsters of the 3x3 class beyond the donor B ones; whether the
   bigger drawn monster hides a neighbour on a busy hunt is for the owner to see in the client. Test: `server/tools/install_monster_pixellab_looks_test.py`.
@@ -37892,7 +37892,7 @@ Owner 2026-11-22 ("Todas as 6"): the six code-drawn wings of O581 are wings play
 - **What.** Ember Pinions, Ossuary Wings, Void Orbit, Bladefan, Rimeshard, Grave Lanterns: wings.xml ids 122 to 127 on client looks 3555 to 3560 (the looks follow the last outfit of pair 77, 3554). The 121 old wings keep ids 1 to 121. `chaos_drawn_wings_ids.lua` is generated from `client/tools/sprites/drawn_wings/new_looks.csv` (`gen_drawn_wings.py new-table`, CI `--check`; `tests/drawn_wings_test.lua` reads the csv too).
 - **Gate.** Config.lua `chaosClientPair` 78 or more, read at load (`M.PAIR78`, the same reading as the fun costumes). A client on pair 77 or older has no outfits 3555 to 3560 and would draw nothing, so below 78 nothing changes: no store offers, no wings.xml lines. `install_outfits.py` (step `outfits`) writes the six `<wing>` lines into the Chaos wings block only from 78 (`client_pair.py` `PAIR_DRAWN_WINGS`; below it a WARNING line, and the lines go again when the record is lowered). `PAIR_ASSETS` stays 77 until pair 78 is built and pushed to windows-assets (owner approval); then, once the client update is published, set the record: admin app, tab Comandos > card Par do cliente > field 78 > button Gravar (fallback: `chaos-ctl.sh client-pair set 78`).
 - **Store.** `ChaosDrawnWings.addStore` (called by `shop_config.lua`) appends six offers to the end of Cosmetics > Wings: kind `wings`, 300 coins each, the sentences of the pair 33 wings ("Fire wings, animated. Wear them with any aura, head accessory or cape.", so pt-BR texts exist). The price is a placeholder for the owner to confirm: the pair 33 wings cost 250 at 3 x 3 and 300 above it, these are 3 x 3 but drawn in two layers round the body, so they take the upper price (docs/PRICES.md; `tools/store_model.lua --check` passes with the gate on, 853 offers). None is a boss drop, a reward or a Founder piece.
-- **Not built yet.** Pair 78 is not built here (`gen_drawn_wings.py build-new` on the real pair 77). The tables that hold the dat md5 and `check_content.py` `PAIR_OUTFITS` change at the pair 78 push, not before.
+- **Built since.** Pair 78 is on windows-assets (8433cf2c, 2026-11-22; `gen_drawn_wings.py build-new` on the real pair 77), inside pairs 79-81. The tables that hold the dat md5 and `check_content.py` `PAIR_OUTFITS` changed at the pair 78 push.
 - **Tests.** `tests/drawn_wings_test.lua` (ids and looks in order, the csv rows, no clash with the old wings, gate off changes nothing, gate on: six offers at the end of Wings, the store validates, pt-BR for every sentence), `tools/install_outfits_test.py` `test_pair78`, `tests/shop_tree_test.lua` (the six are known wings when on).
 
 ## Bot live map (O727) (`tools/bot_live.py`, `tools/gen_bot_map_tiles.py`, `chaos-ctl.sh botmap-build | botmap-status`, website `chaos_botmap.php`, admin app)

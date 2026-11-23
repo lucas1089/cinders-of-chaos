@@ -61,7 +61,10 @@ administrador que não aplicou a punição. Há um recurso por punição, e a re
 ## 6. O que é proibido
 
 - Usar bots, macros, programas de trapaça ou clientes modificados ou de terceiros. O helper do cliente oficial é
-  permitido enquanto você joga; deixá-lo rodando por horas sem ninguém no teclado conta como uso de bot.
+  permitido enquanto você joga; deixá-lo rodando por horas sem ninguém no teclado conta como uso de bot. Cavebots e
+  qualquer ferramenta externa que jogue por você são proibidos. Para isso, o servidor e o cliente oficial monitoram o
+  comportamento dos personagens (veja a [Política de Privacidade](privacy.pt-BR.md), seção 2). A equipe analisa cada
+  caso; nenhuma punição é automática.
 - Descompilar, decifrar, extrair ou modificar o cliente oficial ou os seus arquivos (sprites, imagens, sons, código e
   pacotes), ou contornar as proteções dele.
 - Usar bugs ou falhas para ganhar vantagem, ou divulgá-los, em vez de avisar a equipe. Um bug que você mesmo informa
