@@ -551,7 +551,7 @@ The top challenge, above the Omen Keys.
   a creeping edge and an enrage at 10 minutes. Shared lives; the fallen come back through the Ember Gate.
 - **Ysgrath the Cinderheart:** a relic from each Ascended guardian forges the Cinderheart Sigil. Four phases, an enrage
   at 15 minutes.
-- **Rewards:** four Ascended uniques, nine achievements with titles, the Cinderheart Crown kill effect, and weekly
+- **Rewards:** four Ascended uniques, nine achievements with titles, and weekly
   fastest-kill boards per party size with a tab for every class.
 
 ### Infinity Tower

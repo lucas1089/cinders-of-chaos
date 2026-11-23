@@ -230,7 +230,6 @@ return {
 		{key = "gmp", kind = "item", id = 7590, count = 50, cost = 80, name = "50 great mana potions"},
 		{key = "gsp", kind = "item", id = 8472, count = 50, cost = 80, name = "50 great spirit potions"},
 		{key = "uhp", kind = "item", id = 8473, count = 50, cost = 150, name = "50 ultimate health potions"},
-		{key = "c_kill", kind = "cosmetic", cosmetic = "kill_marchfire", cost = 4000, name = "Kill effect: Marchfire"},
 		{key = "c_loot", kind = "cosmetic", cosmetic = "loot_scorched", cost = 3000, name = "Loot labels: Scorched Earth"},
 		{key = "c_chat", kind = "cosmetic", cosmetic = "chat_marchember", cost = 3500, name = "Chat name: Marchember"}
 	},

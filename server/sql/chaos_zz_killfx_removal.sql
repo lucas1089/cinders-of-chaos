@@ -92,3 +92,22 @@ DROP TEMPORARY TABLE IF EXISTS `tmp_killfx_refund`;
 SET @q = IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'player_storage') = 1,
   'DELETE FROM `player_storage` WHERE `key` = 7100940 AND `value` IN (101, 102, 103, 104, 105)', 'DO 0');
 PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- O723 (owner, 2026-11-23, pt-BR: "Os efeitos de morte antigos pode remover completamente. Ninguem comprou isso ainda. O servidor
+-- ainda esta em beta."): the 17 earned kill effects of the old generation leave the game too. They were never sold, so nothing is
+-- paid back: the rows leave chaos_cosmetics and the chosen id leaves storage 7100940. cosmetics_config.lua `retired` rows with
+-- `earned = true`, held to this file by tests/cosmetics_removal_test.lua.
+--   106 kill_voidring, 107 kill_harbinger, 108 kill_cinderheart, 109 kill_sovereign, 111 kill_cinderthrone, 113 kill_vortex,
+--   114 kill_ascent, 115 kill_warsurge, 116 kill_thornbloom, 117 kill_titanpyre, 118 kill_riftsigil, 119 kill_starfall,
+--   120 kill_marchfire, 121 kill_summit, 131 kill_pact_venom, 132 kill_pact_frost, 140 kill_candleseal
+-- Idempotent: a second run finds no row. A no-op while the tables do not exist (a fresh install).
+SET @q = IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chaos_cosmetics') = 1,
+  'DELETE FROM `chaos_cosmetics` WHERE `cosmetic` IN (''kill_voidring'', ''kill_harbinger'', ''kill_cinderheart'', ''kill_sovereign'',
+  ''kill_cinderthrone'', ''kill_vortex'', ''kill_ascent'', ''kill_warsurge'', ''kill_thornbloom'', ''kill_titanpyre'', ''kill_riftsigil'',
+  ''kill_starfall'', ''kill_marchfire'', ''kill_summit'', ''kill_pact_venom'', ''kill_pact_frost'', ''kill_candleseal'')', 'DO 0');
+PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @q = IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'player_storage') = 1,
+  'DELETE FROM `player_storage` WHERE `key` = 7100940 AND `value` IN (106, 107, 108, 109, 111, 113, 114, 115, 116, 117, 118, 119,
+  120, 121, 131, 132, 140)', 'DO 0');
+PREPARE s FROM @q; EXECUTE s; DEALLOCATE PREPARE s;

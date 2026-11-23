@@ -151,7 +151,7 @@ for _, c in ipairs(cfg.cosmetics) do
 	end
 end
 eq(count.spellskin, 26, "26 spell skins (12 first, 14 for the spells of the starter builds, O563)")
-eq(count.killfx, 27, "27 kill effects (the five store ones of the first generation were removed, O715; the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 9 reward track, 3 Pact months, 1 Candlemarks, 7 dissolve effects of O563: 4 store, 3 achievements)")
+eq(count.killfx, 10, "10 kill effects (the five store ones of the first generation were removed, O715, and the 17 earned plain ones, O723: Honor Brand, Verdigris Splash, Pact Ember, 4 store dissolves, 3 achievement dissolves)")
 eq(count.lootbeam, 17, "17 label accents (three PvP, 4 reward track, 3 Pact months, 1 Candlemarks, the 7-day streak)")
 eq(count.chatcolor, 17, "17 chat colours (three PvP, 5 reward track, the Pact's, 1 Candlemarks, the collection reward)")
 -- the Chaos Pact (VIP) perks: never sold, every monthly key and the chat colour are pact cosmetics
@@ -167,7 +167,7 @@ for month, key in pairs(pactCfg.perks.monthly) do
 	eq(byKeyC[key] ~= nil and byKeyC[key].source, "pact", "monthly " .. month .. ": a pact cosmetic")
 	eq(byKeyC[key].price, nil, "monthly " .. month .. ": never sold")
 end
-eq(nMonthly, 6, "six months planned")
+eq(nMonthly, 4, "four months planned (January and March 2027 had a kill effect each, removed O723)")
 eq(K.how(byKeyC.kill_pact_ember), "Chaos Pact: Chaos Pact, November 2026", "the window's line")
 eq(store.spellskin, 250, "skins 250") eq(store.killfx, 200, "kill effects 200")
 eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colours 200")
@@ -198,6 +198,13 @@ local function broken(change)
 	local p = K.validate(copy, {catalog = catalog, achievements = achievements, shop = shop, spellVocations = spellVocations})
 	return table.concat(p, "\n")
 end
+local function kfx(l)
+	for _, c in ipairs(l) do
+		if c.key == "kill_emberfade" then
+			return c
+		end
+	end
+end
 eq(broken(function(l) l[1].vfx = {aura_burst_gold = "dome_blast_fire"} end):find("not a recolour", 1, true) ~= nil, true,
 	"another picture is refused")
 eq(broken(function(l) l[1].fx = {blood_rune = "no_such_rune"} end):find("not a recolour", 1, true) ~= nil, true,
@@ -205,12 +212,12 @@ eq(broken(function(l) l[1].fx = {blood_rune = "no_such_rune"} end):find("not a r
 eq(broken(function(l) l[1].damage = 10 end):find("not cosmetic", 1, true) ~= nil, true, "power is refused")
 eq(broken(function(l) l[1].spells = {200} end):find("not a spell of", 1, true) ~= nil, true, "a spell of another line")
 eq(broken(function(l) l[1].spells = {223, 222, 247, 220} end):find("1 to 3 spells", 1, true) ~= nil, true, "3 spells at most")
-eq(broken(function(l) l[13].vfx = "no_such_effect" end):find("not an effect", 1, true) ~= nil, true, "kill effect unknown")
+eq(broken(function(l) kfx(l).vfx = "no_such_effect" end):find("not an effect", 1, true) ~= nil, true, "kill effect unknown")
 eq(broken(function(l) l[15].accent = "#c0c0c0f0" end):find("unreadable", 1, true) ~= nil, true, "a light accent")
 eq(broken(function(l) l[15].accent = "#46180940" end):find("transparent", 1, true) ~= nil, true, "a see-through accent")
 eq(broken(function(l) l[20].color = "#303030" end):find("not readable", 1, true) ~= nil, true, "a dark chat colour")
 eq(broken(function(l) l[1].price = 999 end):find("store price", 1, true) ~= nil, true, "price mismatch with the store")
-eq(broken(function(l) l[13].achievement = "nope" end):find("does not exist", 1, true) ~= nil, true, "unknown achievement")
+eq(broken(function(l) kfx(l).achievement = "nope" end):find("does not exist", 1, true) ~= nil, true, "unknown achievement")
 eq(broken(function(l) l[2].id = 1 end):find("used twice", 1, true) ~= nil, true, "id twice")
 
 -- colours: contrast maths
@@ -234,7 +241,7 @@ for _, k in ipairs(cfg.kinds) do
 		eq(#o.description <= 140, true, "description fits the offer: " .. o.unlock)
 	end
 end
-eq(K.ofUnlock(cfg, "cosmetic_kill_voidring"), nil, "an achievement cosmetic is no store unlock")
+eq(K.ofUnlock(cfg, "cosmetic_kill_emberfade"), nil, "an achievement cosmetic is no store unlock")
 eq(K.ofUnlock(cfg, "transmog_falconer"), nil, "other unlocks are not ours")
 eq(cats["Name Plates"] ~= nil and #cats["Name Plates"].offers, 13, "13 frames in the store")
 -- the transmog store sets (follow-up): offers at the sets' prices
@@ -383,8 +390,8 @@ eq(K.choose(cfg, owned, "killfx", 124).key, "kill_ashfall", "owned: chosen")
 eq(K.choose(cfg, owned, "killfx", 0), false, "0 = the default")
 eq(K.choose(cfg, owned, "chatcolor", 124), nil, "an id of another kind")
 eq(K.choose(cfg, owned, "stats", 1), nil, "unknown kind")
-c, why = K.choose(cfg, owned, "killfx", 106)
-eq(why, "Void Ring is not unlocked yet.", "achievement cosmetic text")
+c, why = K.choose(cfg, owned, "killfx", 126)
+eq(why, "Emberfade is not unlocked yet.", "achievement cosmetic text")
 -- the achievement syncs
 local syncs = K.syncs(cfg, function(id) return id == "level_300" or id == "goblin_10" end, {loot_gilded = true})
 eq(#syncs, 1, "one to grant") eq(syncs[1], "chat_veteran", "Veteran's Gold")
@@ -416,8 +423,8 @@ end
 local trackProblems = K.validate(cfg, {achievements = achievements, categories = catSet, maxPoints = AK.maxPoints(aIndex)})
 eq(#trackProblems, 0, "the reward track validates: " .. table.concat(trackProblems, "; "))
 local steps = K.trackSteps(cfg)
-local milestones = {100, 250, 500, 750, 1000, 1750, 2000, 2500, 3500}
-eq(#steps, #milestones, "nine point milestones (750 Inkstep footprints, 2000 Chronicler's Halo outline)")
+local milestones = {100, 250, 500, 750, 1000, 2000, 2500}
+eq(#steps, #milestones, "seven point milestones (1750 Arcane Vortex and 3500 Gilded Ascent were removed, O723; 750 Inkstep footprints, 2000 Chronicler's Halo outline)")
 for i, p in ipairs(milestones) do
 	eq(steps[i].points, p, "milestone " .. i)
 	eq(steps[i].cosmetic.source, "achievement", "milestone " .. p .. " is an achievement cosmetic")
@@ -425,7 +432,10 @@ end
 eq(steps[#steps].points <= AK.maxPoints(aIndex), true, "the last milestone can be reached")
 for _, cat in ipairs(achievementsData.categories) do
 	local cc = K.categoryCosmetic(cfg, cat.key)
-	eq(cc ~= nil and cc.source == "achievement", true, "category " .. cat.key .. " gives a cosmetic")
+	-- O723: the kill effects of the track were removed, so combat, milestones, monsters, bosses, rifts and secrets give a title only
+	local titleOnly = {combat = true, milestones = true, monsters = true, bosses = true, rifts = true, secrets = true}
+	eq(cc == nil or cc.source == "achievement", true, "category " .. cat.key .. " gives an achievement cosmetic or none")
+	eq(cc == nil, titleOnly[cat.key] == true, "category " .. cat.key .. (titleOnly[cat.key] and " gives a title only" or " gives a cosmetic"))
 	eq(aIndex.categoryRewards[cat.key] ~= nil, true, "category " .. cat.key .. " gives a title")
 end
 -- never sold: no price, no store unlock, in no store category (shop_config.lua and cosmetics_store.lua)
@@ -451,11 +461,11 @@ for _, tc in ipairs(cfg.cosmetics) do
 		eq(offered[K.unlockName(tc)], nil, tc.key .. ": not in the store")
 	end
 end
-eq(trackCount, 20, "20 reward track cosmetics (9 milestones, 11 categories)")
--- the last category cosmetic of the list (Falling Stars)
+eq(trackCount, 12, "12 reward track cosmetics (7 milestones, 5 categories; the kill effects of the track were removed, O723)")
+-- the last category cosmetic of the list (Sepulchre Labels)
 local function starfall(l)
 	for _, c in ipairs(l) do
-		if c.key == "kill_starfall" then
+		if c.key == "loot_sepulchre" then
 			return c
 		end
 	end
@@ -485,7 +495,7 @@ eq(broken(function(l) byKeyIn(l, "kill_windswept").tint = 1.5 end):find("tint is
 	"a fractional tint is refused")
 eq(broken(function(l) byKeyIn(l, "loot_ember").dissolve = "sand" end):find("only for kill effects", 1, true) ~= nil, true,
 	"only a kill effect dissolves")
-eq(broken(function(l) byKeyIn(l, "kill_voidring").tint = 2 end):find("not a mode", 1, true) ~= nil, true,
+eq(broken(function(l) (function() local c = byKeyIn(l, "kill_windswept") c.dissolve = nil c.tint = 2 end)() end):find("not a mode", 1, true) ~= nil, true,
 	"a tint without a dissolve is refused")
 do
 	local dissolving = {}
@@ -513,7 +523,7 @@ do
 	end
 	local d, t = K.dissolveOf(K.byKey(cfg, "kill_gildeddust"))
 	eq(d, "gold", "dissolveOf mode") eq(t, 4, "dissolveOf tint")
-	eq(K.dissolveOf(K.byKey(cfg, "kill_voidring")), nil, "a plain kill effect has none")
+	eq(K.dissolveOf({kind = "killfx", vfx = "ember_crown"}), nil, "a plain kill effect has none")
 	eq(K.dissolveOf(K.byKey(cfg, "skin_mystic_ember")), nil, "a skin has none")
 	-- the window rows and the store offer carry it
 	local drows = K.rows(cfg, {}, {}, {})
@@ -521,7 +531,7 @@ do
 	for _, r in ipairs(drows) do byId[r.id] = r end
 	eq(byId[122].dissolve, "sand", "row: mode") eq(byId[122].tint, nil, "row: tint 0 is not sent")
 	eq(byId[128].dissolve, "gold", "row: mode") eq(byId[128].tint, 4, "row: tint")
-	eq(byId[106].dissolve, nil, "a plain kill effect row has none")
+	eq(byId[106], nil, "a removed plain kill effect has no row (O723)")
 	local look = K.offerLook(cfg, "cosmetic_kill_windswept", function() return {id = 1, dx = 0, dy = 0, ms = 100} end)
 	eq(look.kind, "effects", "offer look") eq(look.killfx, true, "on a dying monster") eq(look.dissolve, "sand", "offer: mode")
 	local tinted = {}
@@ -538,7 +548,7 @@ do
 	end
 	look = K.offerLook(tinted, "cosmetic_kill_windswept", function() return {id = 1, dx = 0, dy = 0, ms = 100} end)
 	eq(look.dissolve, "sand", "offer: sand") eq(look.tint, 4, "offer: tint")
-	eq(K.offerLook(cfg, "cosmetic_kill_voidring", function() return {id = 1, dx = 0, dy = 0, ms = 100} end), nil, "an earned effect is no store offer (the plain store ones were removed, O715)")
+	eq(K.offerLook(cfg, "cosmetic_kill_emberfade", function() return {id = 1, dx = 0, dy = 0, ms = 100} end), nil, "an earned effect is no store offer (the plain store ones were removed, O715)")
 end
 do
 	local out = {outfit = {lookType = 15, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 0}}
@@ -576,9 +586,9 @@ eq(broken(function(l) byKeyIn(l, "glow_cinder").boss = nil end):find("needs the 
 	"a boss cosmetic names its boss")
 eq(broken(function(l) byKeyIn(l, "glow_cinder").price = 300 end):find("a boss cosmetic has no price", 1, true) ~= nil, true,
 	"a boss cosmetic is never sold")
-eq(table.concat(K.validate(cfg, {maxPoints = 3000}), "\n"):find("above the 3000", 1, true) ~= nil, true,
+eq(table.concat(K.validate(cfg, {maxPoints = 2400}), "\n"):find("above the 2400", 1, true) ~= nil, true,
 	"an unreachable milestone is refused")
-eq(table.concat(K.validate(cfg, {categories = {combat = true}}), "\n"):find("category rifts does not exist", 1, true) ~= nil,
+eq(table.concat(K.validate(cfg, {categories = {combat = true}}), "\n"):find("category raids does not exist", 1, true) ~= nil,
 	true, "an unknown category is refused")
 -- thresholds: granted at the milestone, not before
 local function track(points, cats, have)
@@ -587,39 +597,43 @@ end
 eq(#track(0), 0, "0 points: nothing") eq(#track(99), 0, "99 points: nothing")
 eq(#track(100), 1, "100 points: one") eq(track(100)[1], "chat_ashen", "Ashen Name at 100")
 eq(#track(999), 4, "999 points: four") eq(#track(1000), 5, "1000 points: five")
-eq(#track(AK.maxPoints(aIndex)), 9, "every milestone at the maximum")
+eq(#track(AK.maxPoints(aIndex)), 7, "every milestone at the maximum")
 -- idempotent: what the account owns is not granted again; never taken back (fewer points grant nothing, revoke nothing)
 local have = {}
 for _, key in ipairs(track(1000)) do
 	have[key] = true
 end
 eq(#track(1000, nil, have), 0, "a second sync grants nothing")
-eq(#track(1750, nil, have), 1, "the next milestone only") eq(track(1750, nil, have)[1], "kill_vortex", "Arcane Vortex at 1750")
+eq(#track(2000, nil, have), 1, "the next milestone only") eq(track(2000, nil, have)[1], "glow_chronicle", "Chronicle Glow at 2000")
 eq(#track(0, nil, have), 0, "points went down: nothing to grant")
 eq(K.owns(have, K.byKey(cfg, "chat_ashen")), true, "and nothing taken back")
 -- category completion
-eq(#track(0, {rifts = true}), 1, "one completed category: one cosmetic")
-eq(track(0, {rifts = true})[1], "kill_riftsigil", "Rifts: Rift Sigil")
-eq(#track(0, catSet), 11, "every category: eleven (Level Milestones, O378)")
+eq(#track(0, {raids = true}), 1, "one completed category: one cosmetic")
+eq(track(0, {raids = true})[1], "loot_sepulchre", "Raids: Sepulchre Labels")
+eq(#track(0, {rifts = true}), 0, "Rifts: a title only (Rift Sigil removed, O723)")
+eq(#track(0, catSet), 5, "every category: five (the kill effects of the track were removed, O723)")
 eq(K.earned(K.byKey(cfg, "chat_veteran"), function(id) return id == "level_300" end), true, "an achievement cosmetic")
 eq(K.earned(K.byKey(cfg, "kill_windswept"), function() return true end, {points = 99999}), false, "a store one is never earned")
 eq(#K.syncs(cfg, function(id) return id == "level_300" end, {}), 1, "without track facts: the achievement cosmetics only")
 -- the window's view (one message: fits an extended opcode)
-local tv = K.trackView(cfg, 640, {chat_ashen = true, loot_chronicle = true, kill_riftsigil = true},
-	AK.categoryTrack(aIndex, {rift_t1 = true}))
-eq(tv.ap, 640, "account points") eq(#tv.steps, 9, "nine steps") eq(tv.steps[1].p, 100, "lowest first")
+local tv = K.trackView(cfg, 640, {chat_ashen = true, loot_chronicle = true, loot_sepulchre = true},
+	AK.categoryTrack(aIndex, {raid_first = true}))
+eq(tv.ap, 640, "account points") eq(#tv.steps, 7, "seven steps") eq(tv.steps[1].p, 100, "lowest first")
 eq(tv.steps[4].k, "footprint", "750: footprints") eq(tv.steps[4].c, "#5cc8c0", "with the swatch colour")
 eq(tv.steps[1].o, 1, "owned") eq(tv.steps[3].o, nil, "not owned") eq(tv.steps[1].c, "#cfc4b4", "the colour for the preview")
 eq(tv.steps[2].a, "#0b2626f0", "the accent for the preview") eq(tv.steps[3].k, "killfx", "the kind")
 eq(#tv.cats, #achievementsData.categories, "a row per category")
-local rifts
+local rifts, raids
 for _, e in ipairs(tv.cats) do
 	if e.key == "rifts" then
 		rifts = e
+	elseif e.key == "raids" then
+		raids = e
 	end
 end
-eq(rifts.dn, 1, "one rift achievement done") eq(rifts.ti, "Riftwarden", "the title") eq(rifts.n, "Rift Sigil", "the cosmetic")
-eq(rifts.x, nil, "not complete") eq(rifts.o, 1, "owned anyway (granted before)")
+eq(raids.dn, 1, "one raid achievement done") eq(raids.ti, "Sepulchre Lord", "the title") eq(raids.n, "Sepulchre Labels", "the cosmetic")
+eq(raids.x, nil, "not complete") eq(raids.o, 1, "owned anyway (granted before)")
+eq(rifts.ti, "Riftwarden", "a category without a cosmetic keeps its title") eq(rifts.n, nil, "and has no cosmetic row (O723)")
 local function jsonSize(v)
 	if type(v) == "table" then
 		local n = 2
@@ -679,7 +693,7 @@ eq(#kill, 1, "a kill effect: one step")
 eq(kill[1].a, nil, "a kill effect has no stock effect")
 eq(kill[1].b.id, 468, "kill effect id")
 eq(#K.playRows(K.byKey(cfg, "chat_rose"), fakeLookup), 0, "a colour plays nothing")
-eq(#K.playRows(K.byKey(cfg, "kill_voidring"), fakeLookup), 0, "an effect the server does not know is left out")
+eq(#K.playRows(K.byKey(cfg, "kill_emberfade"), fakeLookup), 0, "an effect the server does not know is left out")
 eq(K.offerPreview(K.byKey(cfg, "chat_rose")).color, "#ff8fb0", "colour preview in the store")
 eq(K.offerPreview(K.byKey(cfg, "loot_azure")).accent, "#0f2250f0", "accent preview in the store")
 eq(K.offerPreview(K.byKey(cfg, "kill_frostmelt")).effect, true, "effect preview button")
@@ -693,13 +707,13 @@ for _, r in ipairs(rows) do
 end
 eq(byKey.kill_ashfall.selected, true, "chosen kill effect") eq(byKey.skin_warrior_void.selected, true, "chosen skin")
 eq(byKey.skin_warrior_void.mine, true, "the character's line") eq(byKey.skin_monk_void.mine, nil, "another line")
-eq(byKey.kill_voidring.how, "Achievement: Legend's Bane", "how to get it")
+eq(byKey.kill_emberfade.how, "Achievement: Keeper of the Ashes", "how to get it")
 eq(byKey.kill_windswept.how, "Store: 200 Chaos Coins", "store price")
 eq(byKey.chat_ashen.how, "Achievements: 100 account points", "reward track: points")
-eq(byKey.kill_riftsigil.how, "Achievements: complete rifts", "reward track: category (no name known)")
-for _, r in ipairs(K.rows(cfg, owned, {}, {categoryName = function(key) return key == "rifts" and "Rifts" or nil end})) do
-	if r.key == "kill_riftsigil" then
-		eq(r.how, "Achievements: complete Rifts", "reward track: the category's name")
+eq(byKey.loot_sepulchre.how, "Achievements: complete raids", "reward track: category (no name known)")
+for _, r in ipairs(K.rows(cfg, owned, {}, {categoryName = function(key) return key == "raids" and "Raids" or nil end})) do
+	if r.key == "loot_sepulchre" then
+		eq(r.how, "Achievements: complete Raids", "reward track: the category's name")
 	end
 end
 eq(byKey.chat_frost.color, "#7fc8ff", "colour in the row")
@@ -843,7 +857,7 @@ eq(u.name, "Voidborn War Cries", "store unlock name")
 eq(u.owned(ann), false, "not owned yet")
 eq(u.grant(ann), true, "bought")
 eq(u.owned(ann), true, "owned now")
-eq(M.storeUnlock("cosmetic_kill_voidring"), nil, "achievement cosmetics are not sold")
+eq(M.storeUnlock("cosmetic_kill_emberfade"), nil, "achievement cosmetics are not sold")
 eq(M.storeUnlock("transmog_falconer"), nil, "not ours")
 local ok, err = u.grant(ann)
 eq(ok, false, "a second purchase is refused") eq(err:find("already", 1, true) ~= nil, true, "owned already")
@@ -969,13 +983,13 @@ do
 	eq(#sent, s4, "nobody told") eq(#effects, b4 + 1, "the plain effect plays")
 	os.time = realTime
 	Game.getSpectators = nil
-	-- a plain kill effect never sends a dissolve
-	M.grant(ann:getAccountId(), "kill_voidring", "achievement")
+	-- no plain kill effect is left (O723): a retired id (Void Ring, 106) is refused and nothing is sent
+	opcode(ann, "select", {kind = "killfx", id = 0})
 	opcode(ann, "select", {kind = "killfx", id = 106})
-	eq(M.active[ann:getId()].killdis, nil, "Void Ring has no dissolve")
+	eq(M.active[ann:getId()].killdis, nil, "a retired kill effect is not chosen (O723)")
 	s4 = #sent
 	registered.ChaosCosmeticsDeath.onDeath(dying(200, look), nil, ann, ann)
-	eq(#sent, s4, "a plain kill effect sends no message")
+	eq(#sent, s4, "a retired kill effect sends no message")
 	opcode(ann, "select", {kind = "killfx", id = 0})
 end
 
@@ -1053,7 +1067,7 @@ eq(lastTo("Bob", "colors") ~= nil, true, "Bob got colour updates")
 local vet = newPlayer(4, "Vet", 40, "Templar")
 registered.ChaosCosmeticsLogin.onLogin(vet)
 eq(M.owns(40, "chat_veteran"), true, "Veteran's Gold granted from the achievement")
-eq(M.owns(40, "kill_voidring"), false, "not the other ones")
+eq(M.owns(40, "kill_emberfade"), false, "not the other ones")
 
 -- the reward track at login and when the account's achievements change (achievements.lua calls ChaosCosmetics.sync)
 local accounts = {[50] = {ids = {}, points = 120}}
@@ -1076,23 +1090,23 @@ eq(toldHero, true, "told in chat")
 accounts[50].points = 260
 local riftIds = {}
 for _, def in ipairs(aIndex.list) do
-	if def.cat == "rifts" then
+	if def.cat == "raids" then
 		riftIds[def.id] = true
 	end
 end
 accounts[50].ids = riftIds
 local granted = M.sync(hero)
 eq(#granted, 2, "points and a category changed: two") eq(M.owns(50, "loot_chronicle"), true, "Chronicle Labels at 250")
-eq(M.owns(50, "kill_riftsigil"), true, "every rift achievement: Rift Sigil")
+eq(M.owns(50, "loot_sepulchre"), true, "every raid achievement: Sepulchre Labels")
 local inserts = #queries
 eq(#M.sync(hero), 0, "a second sync grants nothing") eq(#queries, inserts, "and writes nothing")
 accounts[50].points, accounts[50].ids = 0, {} -- a staff reset of the achievements
 eq(#M.sync(hero), 0, "fewer points: nothing") eq(M.owns(50, "loot_chronicle"), true, "never taken back")
 M.owned = {}
-eq(M.owns(50, "kill_riftsigil"), true, "kept in chaos_cosmetics")
-opcode(hero, "select", {kind = "killfx", id = 118})
-eq(lastTo("Hero", "result").ok, true, "a track kill effect can be chosen")
-eq(M.storeUnlock("cosmetic_kill_riftsigil"), nil, "a track cosmetic is no store unlock")
+eq(M.owns(50, "loot_sepulchre"), true, "kept in chaos_cosmetics")
+opcode(hero, "select", {kind = "lootbeam", id = 210})
+eq(lastTo("Hero", "result").ok, true, "a track label accent can be chosen")
+eq(M.storeUnlock("cosmetic_loot_sepulchre"), nil, "a track cosmetic is no store unlock")
 
 -- previews: to the asking player only, one after the other, rate limited
 effects = {}

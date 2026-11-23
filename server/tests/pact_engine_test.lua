@@ -232,7 +232,7 @@ request(A, "marksBuy", {key = "loot_ember"})
 check(lastMessage().error, "149 Marks do not buy a 150 Mark label") eq(DB.marks[10].balance, 149, "nothing taken")
 request(A, "marksBuy", {key = "premium:30"})
 check(lastMessage().error and lastMessage().text:find("shelf", 1, true), "a key off the shelf is refused")
-request(A, "marksBuy", {key = "kill_voidring"})
+request(A, "marksBuy", {key = "kill_emberfade"})
 check(lastMessage().error, "an achievement cosmetic is not on the shelf")
 DB.marks[10].balance = 400
 request(A, "marksBuy", {key = "loot_ember"})

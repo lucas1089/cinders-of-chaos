@@ -145,6 +145,8 @@ jobs:
           # area bursts, beams and markers of the pair 36 packs (O607, joins pair 73): table, sums, ids file, tags, the pair 51 lists (the art is never in git); the test pads a fake dat and cuts synthetic frames
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_area_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_area_fx_test.py
+          # an effect's art moved inside its canvas by whole pixels (O725b, pair 80): the gravity press 3036 on a synthetic pair, idempotent, nothing cut off, append only
+          /tmp/fxenv/bin/python -I client/tools/sprites/recentre_effects_test.py
           # the bolt from the sky, drawn by code (O614, joins pair 73): the script draws the committed table and sums, ids file, tags; the test holds the drawing to its bar (same bytes twice, alpha, palette, the strike reaches the target tile)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx_test.py

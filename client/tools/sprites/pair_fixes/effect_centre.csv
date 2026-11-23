@@ -1,0 +1,2 @@
+kind,id,shift,of,to,reason
+effect,3036,"-6,-6","6.33,6.33","0.33,0.33","O725b: mega_gravity_press (the slowed status) stands 6.33 px down and right of its canvas middle on pair 79; whole pixels up and left bring it to 0.33 px"

@@ -5434,7 +5434,7 @@ from the results), client `game_shop/shoptree_test.lua`.
 | Name plate frames (`nameplate.lua`) | 19 | violet, frost, ember, verdant, bone, ashen, sapphire, rose, jade, copper, obsidian, amber, storm | default (everyone), gold (staff titles), crimson (Siege Champions), laurel, sepulchre, infernal (exclusives) |
 | Footprints, outlines (`cosmetics.lua`) | 13 / 13 (+20 footprints from client pair 75) | 9 / 9 (+20 from pair 75) | an achievement, a reward track milestone and two boss drops each ("Footprints and outlines"); the 20 effect footprints are sold, see "Effect footprints (O649)" |
 | Exclusives (`exclusives.lua`) | 36 | none | never sold: 5 outfits, 2 addon sets, 6 mounts, 4 wings, 2 auras, 2 shaders, 3 frames and the boss drops of portal styles, transmog sets, pets, footprints and outlines ("Exclusives") |
-| Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 17 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
+| Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 12 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
 | Transmog appearance sets (`transmog.lua`) | 19 | Falconer's Regalia 300, Lionguard 350, Gravecloak 350, Soulforged 400, Soulstalker 350, Mothwing 350, Cobra Regalia 300, Lionguard Arms 300, Grand Sanguine 350 | achievement, season pass, exclusive and boss sets ("Transmog", "Exclusives") |
 | Pets (`pets.lua`) | 15 | Lantern Wisp, Hoarder Squirrel, Ember Parrot, Rime Penguin, Ashen Hare, Bog Frog, Dusk Moth, 400 each | drops, achievements and two boss drops ("Pets") |
 | Town Portal styles | see "Town Portal" | 6 (unchanged) | the achievement, season and boss styles |
@@ -6000,7 +6000,7 @@ sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); s
 | Kind | What | Store (coins) | Achievement |
 |---|---|---|---|
 | Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 26 skins, 250 each (14 added in O563 for the spells the starter builds use most: Mystic Emberwreath, Glacial Spikes, Umbral Covenant, Aether Storm, Gloomswarm; Templar Wildfire Pyre, Violet Verdict, Crimson Verdict; Warrior Gilded Verdict; Monk Azure Palms, Golden Lance, Bloodied Knuckles; Necromancer Gravefire, Wail of the Rift; the Necromancer line is slot 6): Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
-| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's); 10 of them dissolve the monster's own sprite instead (O563, "Dissolve kill effects") | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, and the dissolves Windswept, Unravelling, Ashfall, Frostmelt, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's); 10 of them dissolve the monster's own sprite instead (O563, "Dissolve kill effects") | the dissolves Windswept, Unravelling, Ashfall, Frostmelt, Meltdown, Swallowed, Bare Bones, Boil Off, Stonebreak, 200 each (the plain ones of the first generation were removed, O715 and O723) | the dissolves Emberfade (Keeper of the Ashes), Void Collapse, Gilded Dust (achievements) |
 | Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
 | Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
 
@@ -6028,8 +6028,8 @@ colour and three rarity labels on the accent.
 
 **Reward track** (cosmetics earned by playing, "Achievements" below). An achievement cosmetic is earned one of three
 ways: `achievement = <id>` (above), `points = N` (the account has N achievement points: each achievement once, whichever
-character earned it) or `category = <key>` (the account has every achievement of that category, hidden ones too). 17 of
-them, all palette variants of effects and colours that already exist (no new art):
+character earned it) or `category = <key>` (the account has every achievement of that category, hidden ones too). 12 of
+them (O723: 12 left, the kill effects of the track were removed), all palette variants of effects and colours that already exist (no new art):
 
 | Account points | Cosmetic | Kind |
 |---|---|---|
@@ -6037,14 +6037,11 @@ them, all palette variants of effects and colours that already exist (no new art
 | 250 | Chronicle Labels (deep teal) | label accent |
 | 500 | Verdigris Splash (`px448_green`, the green Honor Brand) | kill effect |
 | 1000 | Chronicler's Teal (#5cc8c0) | chat colour |
-| 1750 | Arcane Vortex (`px03_arcane`) | kill effect |
 | 2500 | Obsidian Labels | label accent |
-| 3500 | Gilded Ascent (`aura_burst_gold`, the gold Cinder Throne) | kill effect |
 
-Category completion: Combat & Leveling War Surge (`aura_burst_red`), Level Milestones Summit Seal (`infernal_seal`, O378), Monsters Thornbloom (`px286_green`), World Bosses
-Titan's Pyre (`dome_blast_holy`), Rifts Rift Sigil (`px674_arcane`), Raids Sepulchre Labels, Bounties Huntsman's Copper,
-Items & Crafting Tempered Labels, PvP Bloodsteel Name, Exploration & Social Lantern Name, Secrets Falling Stars
-(`starfall_crown`); the category's title is in "Achievements". `ChaosCosmetics.sync(player)` / `syncAccount(accountId,
+Category completion: Raids Sepulchre Labels, Bounties Huntsman's Copper,
+Items & Crafting Tempered Labels, PvP Bloodsteel Name, Exploration & Social Lantern Name (Combat & Leveling, Level Milestones,
+Monsters, World Bosses, Rifts and Secrets gave a kill effect each until O723 and now give the title only); the category's title is in "Achievements". `ChaosCosmetics.sync(player)` / `syncAccount(accountId,
 player)` grant what the account earned (`K.syncs` with the facts `{points, categories}` from `ChaosAchievements.accountOf`):
 at login, when the Cosmetics window opens and after every new achievement unlock (achievements.lua `syncTrack`). It only
 adds (`INSERT IGNORE`, the owned set is checked first): fewer points later (a staff reset) take nothing back. Staff:
@@ -6331,11 +6328,41 @@ the store (`cosmetics_store.lua` / `shop_config.lua`), `cosmetics_config.lua` (`
 ### Old kill effects removed (O715)
 Owner, 2026-11-22 (pt-BR, translated): "the on-death effects: the latest shown are good, the oldest ones, where the skull appears for example, are bad ... they can be deleted". The store sold 14 kill effects: five of the first generation (plain server effects: a skull, rings, a shatter, a blood burst) and nine dissolves (O563, O597), where the monster's own sprite comes apart.
 - **Removed (5, store, 200 coins each):** Soul Spark (101, the skull), Sun Ring (102), Frost Shatter (103), Blood Bloom (104), Radiant Ring (105). They are in `cosmetics_config.lua` `retired` (ids and keys never reused) and in no list, store or Pact shelf.
-- **Kept (the 9 dissolves of the store):** Windswept, Unravelling, Ashfall, Frostmelt, Meltdown, Swallowed, Bare Bones, Boil Off, Stonebreak; and every kill effect earned elsewhere (achievements, PvP vendors, Pact months, Candlemarks, raid and Cinderheart drops: 23, among them the dissolves Emberfade, Void Collapse, Gilded Dust, Honor Brand, Verdigris Splash, Pact Ember). 17 of those 23 are still plain server effects of the old generation (Void Ring, Harbinger's Toll, Cinderheart Crown, Sovereign's Pyre, Cinder Throne, Candle Seal, Marchfire, Arcane Vortex, Gilded Ascent, War Surge, Thornbloom, Titan's Pyre, Rift Sigil, Falling Stars, Summit Seal, Pact Venom, Pact Frost): they are rewards that pact, PvP, Candlemarks and achievement configs and tests name, so they stay until the owner says to retire them too (the same method: `retired` rows and one more refund file).
+- **Kept (the 9 dissolves of the store):** Windswept, Unravelling, Ashfall, Frostmelt, Meltdown, Swallowed, Bare Bones, Boil Off, Stonebreak; and every kill effect earned elsewhere (achievements, PvP vendors, Pact months, Candlemarks, raid and Cinderheart drops: 23, among them the dissolves Emberfade, Void Collapse, Gilded Dust, Honor Brand, Verdigris Splash, Pact Ember). 17 of those 23 were plain server effects of the old generation (Void Ring, Harbinger's Toll, Cinderheart Crown, Sovereign's Pyre, Cinder Throne, Candle Seal, Marchfire, Arcane Vortex, Gilded Ascent, War Surge, Thornbloom, Titan's Pyre, Rift Sigil, Falling Stars, Summit Seal, Pact Venom, Pact Frost): the owner had them removed too the next day, see "Earned kill effects removed (O723)" below.
 - **Players who owned one:** `server/sql/chaos_zz_killfx_removal.sql` (run by the install step `sql`, one transaction, a second run pays nothing): `store` rows get the coins back (last purchase price, else 200) with a refund row in the purchase log; `marks` rows (the Pact shelf sold Soul Spark, Frost Shatter and Blood Bloom for 200 Marks) get the Marks back; `mentor` rows (Soul Spark for 140 Mentor Marks) get Windswept instead; staff grants get nothing. Then the rows leave `chaos_cosmetics` and a chosen id 101-105 leaves storage 7100940 (the choice reads as none).
 - **Stand-ins in other configs:** the Pact shelf sells Windswept instead of Soul Spark, May Frostmelt instead of Frost Shatter, December Unravelling instead of Blood Bloom (200 Marks, as before); the mentor shop sells Windswept (140); the Harvest hollow charm pool has Ashfall and Unravelling.
 - **The preview** (client `game_lookpreview`): the dying monster is centred in the box. The stage centred the monster and its effect together, so an asymmetric effect pushed the monster off the middle; a kill scene now makes the extent symmetric about the monster's own centre (`P.killExtent`) and a dissolve ignores the plain effect it does not play.
 - Tests: `tests/cosmetics_removal_test.lua` (retired list against the SQL, nothing live), `cosmetics_test.lua`, `collection_test.lua`, `shop_looks_test.lua` (fixtures moved to kept effects; list positions after id 105 moved up by 5), client `lookpreview_core_test.lua`; `store_model.lua --check` passes (805 offers).
+
+### Earned kill effects removed (O723)
+Owner, 2026-11-23 (pt-BR, translated): "The old death effects can be removed completely. Nobody bought that yet. The server is still in beta." The 17 earned plain kill effects of the old generation that O715 left open are gone, the same way as the five store ones: `cosmetics_config.lua` `retired` rows (ids and keys never reused; `earned = true`, `price = 0` because they were never sold, so no refund exists) and no entry in the config, a reward table, a shop or the client.
+- **Retired (id, key):** 106 kill_voidring, 107 kill_harbinger, 108 kill_cinderheart, 109 kill_sovereign, 111 kill_cinderthrone, 113 kill_vortex, 114 kill_ascent, 115 kill_warsurge, 116 kill_thornbloom, 117 kill_titanpyre, 118 kill_riftsigil, 119 kill_starfall, 120 kill_marchfire, 121 kill_summit, 131 kill_pact_venom, 132 kill_pact_frost, 140 kill_candleseal.
+- **Rewards changed (nothing invented, nothing replaced):**
+
+  | System | Rung or achievement | Before | After |
+  |---|---|---|---|
+  | Achievements | Legend's Bane (`legendary_250`) | title Legendbane + Void Ring | title Legendbane |
+  | Achievements | Chaos Culler (`tiered_1000`) | title Culler + Harbinger's Toll | title Culler |
+  | Rifts | Cinderbreaker (`cinder_1`) | title, orbs + Cinderheart Crown | title, orbs |
+  | Raid | The Last Door (`raid_sovereign`) | title Sovereign's Bane, orbs + Sovereign's Pyre | title, orbs |
+  | Reward track, points | 1750 points | Arcane Vortex | rung dropped (7 milestones are left: 100, 250, 500, 750, 1000, 2000, 2500) |
+  | Reward track, points | 3500 points | Gilded Ascent | rung dropped |
+  | Reward track, category | Combat & Leveling | Warmaster + War Surge | Warmaster |
+  | Reward track, category | Level Milestones | Hundredfold + Summit Seal | Hundredfold |
+  | Reward track, category | Monsters | Beastwarden + Thornbloom | Beastwarden |
+  | Reward track, category | World Bosses | Titanfeller + Titan's Pyre | Titanfeller |
+  | Reward track, category | Rifts | Riftwarden + Rift Sigil | Riftwarden |
+  | Reward track, category | Secrets | Keeper of Secrets + Falling Stars | Keeper of Secrets |
+  | PvP season | Cinder Sovereign tier | Blazing labels, Infernal name, Cinder Throne | Blazing labels, Infernal name |
+  | Scorched Marches vendor | `c_kill` (4,000 embers) | Marchfire | offer dropped (labels and chat name stay) |
+  | Candlemarks | `cos_candleseal` (150) | Candle Seal | offer dropped (Candlelight Name, Tallow Labels stay) |
+  | Chaos Pact | January 2027 | Pact Venom | no cosmetic that month |
+  | Chaos Pact | March 2027 | Pact Frost | no cosmetic that month |
+
+  The reward track now has 12 cosmetics (7 points milestones, 5 categories: Raids, Bounties, Items & Crafting, PvP, Exploration & Social); the other six categories still give their title. 10 kill effects are left in the config (Honor Brand, Verdigris Splash, Pact Ember, the four store dissolves of the first pass and three achievement dissolves; the five of pair 73 are gated by the client pair) and every one of them is a dissolve.
+- **Characters that had one:** `server/sql/chaos_zz_killfx_removal.sql` (same file, a second block, idempotent, a no-op while the tables are missing) deletes the 17 keys from `chaos_cosmetics` and the chosen id (106-109, 111, 113-121, 131, 132, 140) from player storage 7100940. No refund: they were never sold and nobody owns one (beta).
+- **Texts:** the pt-BR strings of the Candle Seal offer left `i18n_strings.lua`; docs (CONTENT, GAME_GUIDE, OWNER_TODO) and the sections above no longer promise the effects.
+- Tests: `tests/cosmetics_removal_test.lua` (17 retired rows against the SQL, every reward table names live cosmetics only, no Pact cosmetic in January and March 2027), `cosmetics_test.lua` (10 kill effects, 12 track cosmetics, the track view and the sync moved to Raids), `battleground_test.lua`, `candlemarks_test.lua`, `milestones_test.lua`, `raid_test.lua`, `pvpzone_test.lua`, `pact_test.lua`, `pact_engine_test.lua`; the generated data (wiki, codex, guide, how it works, tester scenarios, Unity info) did not name the 17 and is unchanged.
 
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
@@ -7544,7 +7571,7 @@ and the store still sells it, since only 1 counts as owned there), so a Pact hol
 next login or minute check, a bought one stays; still sold in the store), and the Loot Bag never was one (a store item of
 its own); the chat colour **Pactbound Name** (cosmetic `chat_pactbound`, source
 "pact", taken back when the Pact ends) and the **cosmetic of the month** (`perks.monthly`: YYYYMM -> a pact cosmetic,
-November 2026 to April 2027 planned: kill effects and loot label accents), granted to accounts with an active Pact that
+November 2026 to April 2027 planned: kill effects and loot label accents; January and March 2027 had a kill effect each, removed in O723, those two months grant nothing), granted to accounts with an active Pact that
 month and kept for good. Applied at login, at once after a purchase (`ChaosPact.grantDays` is wrapped, no edit of
 `pact.lua`) and once a minute for the characters online. Still no premium days (`premiumDays = 0`). Remote stash deposit (deposit into the stash from anywhere, "Stash") is
 included while the Pact runs (limit `stashRemote`, 2026-10-15); the store offer and the window's perk line say so. No priority login:
@@ -19826,8 +19853,8 @@ a bracket are placement (the tier stays hidden). **Tiers:** Ashen (below 1400), 
 read and at the season's end). **Season end** (checked every minute and at startup, idempotent): the best placed
 bracket's tier decides the rewards: honor (200 / 400 / 700 / 1000 / 1500 / 2500), a name plate title "<Tier> (S<n>)" from
 Smouldering on (title source `pvpseason`, with the plate frame ember / crimson / gold / violet from Kindled on), cosmetics
-for the account (Blazing labels from Blazing, Infernal chat name from Infernal, the Cinder Throne kill effect for Cinder
-Sovereign), achievement stat `pvp_season_tier` (achievements Blazing Season, Cinder Sovereign). Then every rating
+for the account (Blazing labels from Blazing, Infernal chat name from Infernal, the Cinder Throne kill effect of Cinder
+Sovereign was removed, O723), achievement stat `pvp_season_tier` (achievements Blazing Season, Cinder Sovereign). Then every rating
 **soft-resets** when first read in the new season: 1500 + (rating - 1500) / 2, deviation at least 200, placement again.
 The arena keeps matching on its lifetime Elo; the battleground matches on its season rating.
 
@@ -19961,8 +19988,8 @@ contest | window <s> | hold <faction|> | embers <n> | testip on|off | nopz on|of
 only).
 
 **Rewards.** The vendor (banked embers): Orbs of Upheaval x3 (300, 5 a week), Awakening x2 (350, 5), Gilding x2 (350,
-5), Fate x1 (500, 3), 50 great health / mana / spirit potions (80), 50 ultimate health potions (150), and three cosmetics
-(source "pvp"): kill effect Marchfire (4,000), loot labels Scorched Earth (3,000), chat name Marchember (3,500). No gear,
+5), Fate x1 (500, 3), 50 great health / mana / spirit potions (80), 50 ultimate health potions (150), and two cosmetics
+(source "pvp"): loot labels Scorched Earth (3,000), chat name Marchember (3,500) (the kill effect Marchfire, 4,000, was removed, O723). No gear,
 nothing above PvE gear (tested). Weekly board "Scorched Marches" (embers banked, title Marchlord, the boards' orb
 rewards). Achievements: Ash in Hand, Ember Hoarder (10,000 banked), Heavy Pockets (1,000 at one exit), Blood on the Ash,
 Scourge of the Marches (100 counted defeats, title), Shrinebearer (in the circle at a capture).
@@ -23252,7 +23279,7 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
   `achievement:<id>`. Players pick one with the Achievements window or the window's title box (it says the Achievements window for them).
   Nothing happens while titles.lua is not loaded.
 - **Reward track** (cosmetics earned by playing, never sold). Account achievement points unlock a cosmetic at 100 / 250 /
-  500 / 1000 / 1750 / 2500 / 3500 points (3880 exist), and a category whose every achievement the account has (any of its
+  500 / 1000 / 2500 points (3880 exist; 1750 and 3500 gave kill effects and were removed, O723), and a category whose every achievement the account has (any of its
   characters, hidden ones too) gives a title and a cosmetic. The cosmetics are entries of `cosmetics_config.lua` (source
   `achievement` with `points` or `category`, table in "Cosmetics"); the titles are `categoryRewards` in
   `achievements_data.lua` (titles.lua source `achievement`, key `achievement_cat:<key>`, the frame while it is the active
@@ -23260,17 +23287,17 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
 
   | Category | Title (frame) | Cosmetic |
   |---|---|---|
-  | Combat & Leveling | Warmaster (ember) | War Surge, kill effect |
-  | Level Milestones (O378) | Hundredfold (amber) | Summit Seal, kill effect |
-  | Monsters | Beastwarden (verdant) | Thornbloom, kill effect |
-  | World Bosses | Titanfeller (bone) | Titan's Pyre, kill effect |
-  | Rifts | Riftwarden (violet) | Rift Sigil, kill effect |
+  | Combat & Leveling | Warmaster (ember) | none (the kill effect was removed, O723) |
+  | Level Milestones (O378) | Hundredfold (amber) | none (the kill effect was removed, O723) |
+  | Monsters | Beastwarden (verdant) | none (the kill effect was removed, O723) |
+  | World Bosses | Titanfeller (bone) | none (the kill effect was removed, O723) |
+  | Rifts | Riftwarden (violet) | none (the kill effect was removed, O723) |
   | Raids | Sepulchre Lord (bone) | Sepulchre Labels, label accent |
   | Bounties | the Relentless (ember) | Huntsman's Copper, chat colour |
   | Items & Crafting | Forgewright (frost) | Tempered Labels, label accent |
   | PvP | the Unconquered (violet) | Bloodsteel Name, chat colour |
   | Exploration & Social | Wayfarer (verdant) | Lantern Name, chat colour |
-  | Secrets | Keeper of Secrets (frost) | Falling Stars, kill effect |
+  | Secrets | Keeper of Secrets (frost) | none (the kill effect was removed, O723) |
 
   Grants go through cosmetics.lua (`ChaosCosmetics.sync`): at login, when the Cosmetics window opens and after every new
   unlock (`ChaosAchievements.syncTrack`, also after a staff `grant`); idempotent and never taken back. Staff re-sync:
@@ -28559,8 +28586,8 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
   Sangrith and the Cinderheart), Hollow Crown of Morvane (helmet; Morvane, Cinderheart), Eye of the Unbroken Storm
   (amulet; Thalcyra, Cinderheart), Cinderheart Signet (ring; the Cinderheart only); level 1000. **Achievements**
   (rifts category): Beyond the Omen, one per Ascended Omen, Three Relics (title "the Ascendant", orbs), Cinderbreaker
-  (title "Cinderbreaker" with the ember name plate frame, orbs; unlocks the kill effect **Cinderheart Crown**,
-  cosmetics id 108), Alone Against the Ember (solo, title "the Last Light"), Not One Spark Lost (no life lost), Keeper
+  (title "Cinderbreaker" with the ember name plate frame, orbs; its kill effect Cinderheart Crown,
+  cosmetics id 108, was removed, O723), Alone Against the Ember (solo, title "the Last Light"), Not One Spark Lost (no life lost), Keeper
   of the Ashes (10 kills, title "Ashkeeper"). A Cinderheart kill is broadcast.
 - **Party bonus** (`uber_config.lua` `party`, `U.party` / `U.reward` in `uber_core.lua`). Every finisher still gets the
   whole spoils and the relic. Gold, orbs (Exalted too) and gear rolls x (1 + 12.5% per extra player, at most +50% at 5
@@ -28954,8 +28981,8 @@ monster or chest drops them): Gravewarden's Verdict (club, Ulthar), Shroud of th
 Greaves (legs, the Colossus), Eye of the Hexmaw (ring, Vhoss), Crown of the Last Sovereign (helmet, Varkhul only); the
 final boss can give all five; level 800. A unique is broadcast. The corpse holds only coins.
 
-**The final boss** also gives: the achievement The Last Door (title Sovereign's Bane), which unlocks the kill effect
-**Sovereign's Pyre** (cosmetics id 109, `dome_blast_violet`); a guild trophy for the guild of every eligible raider, once
+**The final boss** also gives: the achievement The Last Door (title Sovereign's Bane), (its kill effect Sovereign's Pyre,
+cosmetics id 109, was removed, O723); a guild trophy for the guild of every eligible raider, once
 per guild and kill (`ChaosGuild.addStat(gid, "raidClears")`, shown on the trophy room's second statue, and 300 guild XP
 that also count for the weekly top guilds); a broadcast; and, when all five bosses fell in one sitting (a raid that was
 not continued), the weekly board **Sepulchre Clear** (`raid_clear`, mode `min`, m:ss; title Sepulchre Breaker) gets the
@@ -29865,8 +29892,8 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   Crates sharing one limit (a crate is four bundles of its tier for three bundles' price; tier IV at level 200: supreme
   health and ultimate mana potions; 2026-10-23), and offers for other systems' APIs that show only while the API exists (`kind = "call"`: a rested vial
   `ChaosRested.addVials`, bounty and kill task rerolls `ChaosBounty.addRerolls` / `ChaosBestiary.addRerolls`; none exist
-  yet), and three cosmetics of our own, once per account (`ChaosCosmetics.grant`, source `"candlemarks"` in
-  `cosmetics_config.lua`: never sold for Chaos Coins, no exclusive): Candle Seal (kill effect, 150), Candlelight Name
+  yet), and two cosmetics of our own, once per account (`ChaosCosmetics.grant`, source `"candlemarks"` in
+  `cosmetics_config.lua`: never sold for Chaos Coins, no exclusive; the kill effect Candle Seal was removed, O723): Candlelight Name
   (chat colour, 120), Tallow Labels (loot labels, 100). Every offer has a weekly limit per account (Monday 06:00, the
   bounty board's week) and a minimum level. Prices and limits decided by the owner on 2026-10-15.
 - **Buying only at Osric** (owner 2026-10-15, `npc.buyNearNpc = true`). The window, the counter and the catalogue work
@@ -31045,13 +31072,13 @@ Built on what exists; nothing is duplicated:
 | 1900 | Past the Last Light (25) | Lightless | 9 / 4 / 0 | Tower floor 85 | |
 | 2000 | Two Thousand Fires (50) | the Undimmed | 10 / 4 / 1 | 300 pocket bosses | level-up effect Undimmed Ascent |
 | 2100 | Where Stars Die (25) | Starless | 10 / 4 / 0 | Tower floor 95 | |
-| 2200 | The Summit of Ruin (50) | Apex of Chaos | 12 / 5 / 2 | Tower floor 100 | category: title Hundredfold, kill effect Summit Seal |
+| 2200 | The Summit of Ruin (50) | Apex of Chaos | 12 / 5 / 2 | Tower floor 100 | category: title Hundredfold |
 
 - **Title and points:** the level achievements `level_<L>` of `achievements_data.lua`, in a new category Level
   Milestones (Marcos de Nível; `level_1000` moved there from Combat & Leveling, its id and mount unchanged, so Combat is
   not harder to complete). The achievement system gives the points, the title (name plate, `!title`, the window), the
-  ACHIEVEMENT UNLOCKED toast and the reward track. Category completion (level 2200): title Hundredfold (frame amber) and
-  the kill effect Summit Seal.
+  ACHIEVEMENT UNLOCKED toast and the reward track. Category completion (level 2200): title Hundredfold (frame amber); the kill effect Summit Seal
+  (cosmetics id 121) was removed, O723.
 - **Cosmetics** (`cosmetics_config.lua`, ids 606-608 and 121, account wide, never sold): level-up effects at 1000
   (`storm_mantle`), 1500 (`shadow_shroud`) and 2000 (`arcane_orbit`), chosen in Character > Cosmetics; the effects of
   the client pair, no new art. Visual only.
@@ -36813,6 +36840,15 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
   The status layer (O597) would show its `root` status for a slowed creature on the same pair. The owner's word of O613 is the gravity press.
   So `root` yields: `ChaosStatusVfx.yield = {root = "slowed"}`. No mark from the state and no bit from the paralyse condition while the press is live.
   The three `st_root_*` effects 5158..5160 are in the pair with no sender then. An empty `yield` table gives root back to the layer.
+  O725 (owner 2026-11-22, "Juggernaut solta o efeito roxo desalinhado"): the Juggernaut slows more than any class (Iron Bellow, Earthbreaker, Anvil Fall,
+  Colossus Fall), so it puts the press on every monster it hits: a dark disc with a gold rim, a purple ring and three purple chevrons at its top
+  left. Measured on pair 79 (alpha centre over the 17 frames, sent at +1,+1 so the canvas middle is on the creature): the art stands 6.3 px down
+  and right of the tile middle (disc 7 px, chevrons 20 px up and left). No whole-tile send offset helps (+-1 tile is 26 px or 38 px off), so the fix is a
+  pair fix, done in pair 80 (O725b): `client/tools/sprites/recentre_effects.py build DAT SPR OUT` moves every phase of 3036 by -6, -6 px inside its canvas (table
+  `pair_fixes/effect_centre.csv`), centre 6.33, 6.33 -> 0.33, 0.33 px; `CENTRE_OFF` is empty now. No server change, the send offset stays (1, 1). Pair 80 is not on windows-assets yet (PAIR_ASSETS 79).
+  `gen_area_fx.py live` now prints the centre of every `status` row and fails over 4 px (`CENTRE_TOL`) unless the row is named in `CENTRE_OFF` with its reason.
+  The other effects a Juggernaut sends were measured the same way (all of its 20 spells, their Forms and the awakened casts at pair 79): the purple ones are 13 (Ironhold, a lilac
+  2x2 sent at the caster, centre 7 px up and left, as its pivot pull of 3 px allows), 414 (Bastion Cry, a plum shockwave, 4.6 px up and left) and the status above. The void eye 396 (centre 2 px off) and 388 (red) are not sent by any Juggernaut script.
 - **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
   It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
 

@@ -1841,14 +1841,16 @@ def new_rows():
     return [(int(r['look']), int(r['wings']), r['key'], new.patterns(r['key'])) for r in new.load()]
 
 
-def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=()):
+def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=(), sides=()):
     """pair in -> pair out in OUT_DIR (not there yet): every row's wings look keeps its id, its flags without the
     displacement, its frame groups and z patterns, and gets the drawn pictures. Outfits, items, effects and missiles
     that are not wings stay byte for byte, sprites are only appended. Verified before the rename. `extra`: more wings
     looks of the same shape as (look, wings id, key, pictures), for the six of O581 phase 2 that pair 78 already holds
     (`apply --new`, O714: they are drawn again in place, pair 77 -> 78 is gen_drawn_wings_new.py build-new).
     `keep`: wings ids whose looks stay exactly as the input pair has them, frame groups and sprite ids (`--keep-painted`,
-    O714b: the ten painted rows when the sheets are not at hand)."""
+    O714b: the ten painted rows when the sheets are not at hand).
+    `sides`: kept wings ids whose east and west views become the PixelLab side strips of gen_painted_sides.py
+    (`--painted-sides`, O724); north and south stay the pictures of the input pair."""
     import hashlib
     import shutil
     import struct
@@ -1877,6 +1879,17 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=())
     entries, expect = {}, {}
     keep = set(keep)
     jobs = [(sp.look, sp.wings, sp.key, None, sp) for sp in specs if sp.wings not in keep] + [(look, wings, key, pats, None) for look, wings, key, pats in extra]
+    sides = set(sides)
+    if sides - keep:
+        raise SystemExit('--painted-sides goes with --keep-painted: rows %s are not kept' % sorted(sides - keep))
+    if sides:
+        import gen_painted_sides as gps
+        for sp in specs:
+            if sp.wings in sides:
+                base = pair_patterns(od, ospr, sp.look)
+                if isinstance(base, str):
+                    raise SystemExit(base)
+                jobs.append((sp.look, sp.wings, sp.key, gps.side_patterns(base, sp.wings), None))
     for look, wings, key, pats, sp in jobs:
         t = od.outfit(look)
         if t is None:
@@ -1948,10 +1961,12 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=())
     return sorted(entries)
 
 
-def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), base=None):
+def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), base=None, sides=()):
     """a built pair holds the drawn wings: every row's look has the shape and the pictures of designs.sums.
     `keep`: wings ids of the rows kept as they were (`--keep-painted`): not held to designs.sums; with `base` = (dat, spr)
-    of the input pair their entry bytes and sprites must equal the base's, else they are only named as skipped."""
+    of the input pair their entry bytes and sprites must equal the base's, else they are only named as skipped.
+    `sides` (`--painted-sides`, O724): kept rows whose east and west are the side strips of gen_painted_sides.py and
+    whose north and south equal the base pair's pictures (with no base only the side views are held)."""
     from datspr import Dat, Spr
     specs = load() if specs is None else specs
     if sums is None:
@@ -1962,7 +1977,18 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), ba
     bad = []
     keep = set(keep)
     bdat, bspr = (Dat(base[0]), Spr(base[1])) if base and keep else (None, None)
+    sides = set(sides) & keep
     for sp in specs:
+        if sp.wings in sides:
+            import gen_painted_sides as gps
+            got = pair_patterns(dat, spr, sp.look)
+            if isinstance(got, str):
+                bad.append(got)
+                continue
+            want = gps.side_patterns(got if bdat is None else pair_patterns(bdat, bspr, sp.look), sp.wings)
+            if isinstance(want, str) or any(not np.array_equal(want[key], got[key]) for key in want):
+                bad.append('look %d (%s): painted side views or kept north / south differ' % (sp.look, sp.key))
+            continue
         if sp.wings in keep:
             if bdat is None:
                 log('look %d (%s): kept painted row, skipped (no --base)' % (sp.look, sp.key))
@@ -1986,7 +2012,8 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), ba
         log(line)
     n = len(specs) - len(keep & {sp.wings for sp in specs})
     log('%d of %d wings looks hold the drawn pictures%s' % (n - len([b for b in bad if 'kept' not in b]), n,
-        '' if not keep else '; %d kept painted rows %s' % (len(keep), 'equal to the base pair' if bdat else 'skipped')))
+        '' if not keep else '; %d kept painted rows %s%s' % (len(keep), 'equal to the base pair' if bdat else 'skipped',
+                                                             '' if not sides else ', %d with the PixelLab side views' % len(sides))))
     return bad
 
 
@@ -2493,6 +2520,12 @@ def main(argv):
     if with_new and cmd not in ('apply', 'live'):
         raise SystemExit('--new goes with apply and live')
     keep_painted = '--keep-painted' in args               # apply and live: the ten painted rows stay as the input pair has them (O714b)
+    painted_sides = '--painted-sides' in args             # with --keep-painted: their east and west from gen_painted_sides.py (O724)
+    sides_only = '--sides-only' in args                   # apply --keep-painted --painted-sides: only the ten painted looks change (O724)
+    if sides_only and not (painted_sides and cmd == 'apply'):
+        raise SystemExit('--sides-only goes with apply --keep-painted --painted-sides')
+    if painted_sides and not keep_painted:
+        raise SystemExit('--painted-sides goes with --keep-painted (apply and live)')
     if keep_painted and cmd not in ('apply', 'live'):
         raise SystemExit('--keep-painted goes with apply and live')
     base = None
@@ -2502,10 +2535,11 @@ def main(argv):
             raise SystemExit('--base DAT SPR goes with live --keep-painted')
         base = (args[i + 1], args[i + 2])
         del args[i:i + 3]
-    args = [a for a in args if a not in ('--check', '--new', '--keep-painted')]
+    args = [a for a in args if a not in ('--check', '--new', '--keep-painted', '--painted-sides', '--sides-only')]
     if keep_painted and '--src' in args:
         raise SystemExit('--keep-painted and --src exclude each other')
     keep = set(sheet_rows()) if keep_painted else set()
+    sides = set(keep) if painted_sides else set()
     if '--src' in args:                                   # the folder of the painted sheets (O594)
         i = args.index('--src')
         if cmd == 'table' or i + 1 >= len(args):
@@ -2551,10 +2585,11 @@ def main(argv):
         print(text, end='')
         return 0
     if cmd == 'apply':
-        apply(args[0], args[1], args[2], extra=new_rows() if with_new else (), keep=keep)
+        apply(args[0], args[1], args[2], specs=[sp for sp in load() if sp.wings in sides] if sides_only else None,
+              extra=new_rows() if with_new else (), keep=keep, sides=sides)
         return 0
     if cmd == 'live':
-        bad = check_pair(args[0], args[1], keep=keep, base=base)
+        bad = check_pair(args[0], args[1], keep=keep, base=base, sides=sides)
         if with_new:
             import gen_drawn_wings_new as new
             bad += new.live(args[0], args[1])

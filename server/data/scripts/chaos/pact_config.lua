@@ -79,9 +79,10 @@ return {
 		retired = {"rarityAutoloot"},
 		pactStorageValue = 2,
 		chatColor = "chat_pactbound",
+		-- (January and March 2027 had the kill effects Pact Venom and Pact Frost; removed O723, those months grant nothing)
 		monthly = {
-			[202611] = "kill_pact_ember", [202612] = "loot_pact_frost", [202701] = "kill_pact_venom",
-			[202702] = "loot_pact_rose", [202703] = "kill_pact_frost", [202704] = "loot_pact_gold"
+			[202611] = "kill_pact_ember", [202612] = "loot_pact_frost",
+			[202702] = "loot_pact_rose", [202704] = "loot_pact_gold"
 		}
 	},
 
@@ -100,6 +101,7 @@ return {
 		-- own, then the year starts again. Server time, deterministic, nothing stored. Same rules as the fixed shelf: store
 		-- cosmetics (no spell effects), a Mark is 1 to 1.5 coins (store_model.lua, pact_test.lua), none of them on the fixed shelf.
 		-- They are sold for coins in the store as well; the Marks are a second way to get one, for the month it is on the shelf.
+		-- (January and March 2027 had the kill effects Pact Venom and Pact Frost; removed O723, those months grant nothing)
 		monthly = {
 			{key = "foot_ember", marks = 200},    -- January
 			{key = "lvl_frost", marks = 200},     -- February

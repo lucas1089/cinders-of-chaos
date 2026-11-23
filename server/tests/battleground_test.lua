@@ -203,7 +203,7 @@ local rw = K.seasonReward(cfg, 6, 3)
 eq(rw.title, "Cinder Sovereign (S3)", "title with the season")
 check(#rw.title <= 24, "the title fits a name plate")
 eq(rw.frame, "violet", "plate frame")
-eq(#rw.cosmetics, 3, "three cosmetics at the top")
+eq(#rw.cosmetics, 2, "two cosmetics at the top (the kill effect Cinder Throne was removed, O723)")
 eq(K.seasonReward(cfg, 1, 3).title, nil, "no title for Ashen")
 eq(#K.rewardPreview(cfg), #S.tiers, "a preview row per tier")
 -- every reward cosmetic and vendor cosmetic exists in cosmetics_config.lua with source "pvp"

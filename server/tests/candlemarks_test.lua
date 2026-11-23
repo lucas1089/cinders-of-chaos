@@ -924,7 +924,7 @@ local cos = {}
 for _, o in ipairs(lastSent(a, "state").offers) do
 	cos[o.k] = o
 end
-check(cos.cos_tallow and cos.cos_candleseal and cos.cos_candlelight, "the three cosmetics are on sale with the API")
+check(cos.cos_tallow and cos.cos_candlelight and not cos.cos_candleseal, "the two cosmetics are on sale with the API (Candle Seal removed, O723)")
 op(a, "buy", {k = "cos_tallow"})
 check(lastSent(a, "result").ok, "a cosmetic bought")
 eq(grants[1][2], "loot_tallow", "granted to the account")

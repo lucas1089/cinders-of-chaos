@@ -69,6 +69,20 @@ KEEP = os.path.join(HERE, 'pair51_keep.csv')
 PAIR = 73
 FIRST = 5300                               # the new effects; ids below it are other steps' or padding
 MIN_EFFECTS, NEED_MISSILES = 4742, 253     # pair 72 at least; a later step's effects may already be there
+# O725: where the art of a status effect lands. The engine draws an effect with its bottom-right tile on the tile it is sent to
+# (the send tile is the target + the row's dx, dy, moved by the dat displacement), so the art's alpha centre, over every frame,
+# stands (art_centre) this many px from the middle of the target tile. A status effect sits on a creature, so it must be within
+# CENTRE_TOL px; a whole-tile send offset cannot fix more than that. A row that is off anyway is named here with its reason (the
+# list may only shrink: `live` fails when a row of it is inside the tolerance). Areas, markers and beams are not held (a clock,
+# a hand and a beam are not round).
+CENTRE_ROLES = ('status',)
+CENTRE_TOL = 4
+CENTRE_OFF = {}
+# O725b: the art of a row of pair_fixes/effect_centre.csv (recentre_effects.py) is moved inside its canvas from pair PAIR_RECENTRED
+# on (the pair 80 build; its centre is inside CENTRE_TOL then, so no row is named in CENTRE_OFF). `live` takes such a row in either
+# form, the pack's (the sums) or moved back by the table's shift, and only the moved one once client_pair.PAIR_ASSETS reaches it;
+# while the pair on windows-assets is older, a pack form row is "pair fix pending" (printed) and its centre is not held.
+PAIR_RECENTRED = 80
 BLANK = bytes([0xFF, 1, 1, 1, 1, 1, 1, 1]) + struct.pack('<I', 0)     # a blank effect, as pair 51 writes one
 DIRS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
 STEP = {'n': (0, -1), 'ne': (1, -1), 'e': (1, 0), 'se': (1, 1), 's': (0, 1), 'sw': (-1, 1), 'w': (-1, 0), 'nw': (-1, -1)}
@@ -718,6 +732,89 @@ def build(dat_path, spr_path, out, srcs, write):
     return live(os.path.join(out, 'Tibia.dat'), os.path.join(out, 'Tibia.spr'), only_long)
 
 
+def art_centre(frames, w, h, dx, dy, disp=(0, 0)):
+    """(x, y) px of the alpha centre of `frames` (h*32 x w*32 x 4 canvases, every frame counted by its alpha) from the middle of
+    the target tile, when the effect is sent at the target + (dx, dy): the canvas bottom-right tile stands on the send tile, moved
+    by the dat displacement. None for blank art."""
+    import numpy as np
+    sx = sy = tot = 0.0
+    for f in frames:
+        a = f[..., 3].astype(float)
+        ys, xs = np.nonzero(a)
+        if not len(xs):
+            continue
+        wt = a[ys, xs]
+        sx += float((xs + 0.5) @ wt)
+        sy += float((ys + 0.5) @ wt)
+        tot += float(wt.sum())
+    if not tot:
+        return None
+    left = dx * 32 + 32 - w * 32 - disp[0]       # the canvas' top left from the target tile's top left
+    top = dy * 32 + 32 - h * 32 - disp[1]
+    return left + sx / tot - 16, top + sy / tot - 16
+
+
+def centre_errors(rows, frames_of, disp_of=lambda r: (0, 0)):
+    """problems of where the held rows' art lands (CENTRE_ROLES, CENTRE_TOL, CENTRE_OFF) and their centres: -> (errors, {name: (x, y)})"""
+    errs, got = [], {}
+    for r in rows:
+        if r['role'] not in CENTRE_ROLES or r['kind'] == 'long':
+            continue
+        c = art_centre(frames_of(r), int(r['w']), int(r['h']), int(r['dx']), int(r['dy']), disp_of(r))
+        if c is None:
+            errs.append('%s: blank art' % r['name'])
+            continue
+        got[r['name']] = c
+        off = max(abs(c[0]), abs(c[1])) > CENTRE_TOL
+        if off and r['name'] not in CENTRE_OFF:
+            errs.append('%s: the art centre is %.1f, %.1f px from the middle of its tile, over %d px: change its send offset, or fix the '
+                        'art (a row of CENTRE_OFF names the reason)' % (r['name'], c[0], c[1], CENTRE_TOL))
+        if not off and r['name'] in CENTRE_OFF:
+            errs.append('%s: inside %d px now (%.1f, %.1f): remove it from CENTRE_OFF' % (r['name'], CENTRE_TOL, c[0], c[1]))
+    for name in sorted(set(CENTRE_OFF) - {r['name'] for r in rows}):
+        errs.append('CENTRE_OFF names %s, not a row of the table' % name)
+    return errs, got
+
+
+def recentre_table():
+    """{effect id: (dx, dy)} of pair_fixes/effect_centre.csv, the art moved inside its canvas (O725b)"""
+    sys.path.insert(0, HERE)
+    import recentre_effects
+    return {r['id']: (r['dx'], r['dy']) for r in recentre_effects.read_spec(recentre_effects.SPEC)}
+
+
+def pair_assets():
+    """PAIR_ASSETS of server/tools/client_pair.py, 0 when it cannot be read"""
+    sys.path.insert(0, os.path.join(ROOT, 'server', 'tools'))
+    try:
+        import client_pair
+        return int(client_pair.PAIR_ASSETS)
+    except (ImportError, AttributeError, ValueError):
+        return 0
+
+
+def strip_form(strip, r, sums, fixes, ph, w, h):
+    """'pack' when the strip is the pack's art (the sum), 'moved' when it is that art moved by the row's pair fix, else None.
+    The moved form is proved by moving it back: whole pixels, nothing was cut off, so the pack's strip comes out exactly."""
+    import numpy as np
+    want = sums.get(r['name'])
+    if digest(strip) == want:
+        return 'pack'
+    fx = fixes.get(int(r['id']))
+    if fx is None:
+        return None
+    import recentre_effects
+    back = []
+    for f in range(ph):
+        cv = recentre_effects.moved(np.ascontiguousarray(strip[:, f * w * 32:(f + 1) * w * 32]), -fx[0], -fx[1])
+        if cv is None:
+            return None
+        back.append(cv)
+    raw = np.concatenate(back, axis=1).copy()
+    raw[raw[..., 3] == 0] = 0
+    return 'moved' if digest(raw) == want else None
+
+
 def live(dat_path, spr_path, only_long=False):
     """the pair holds each row at its id: size, phases, durations and the pixels of the sums (only_long: the long beams
     alone, for a pair whose earlier rows this run did not write)"""
@@ -729,6 +826,9 @@ def live(dat_path, spr_path, only_long=False):
     rows = [r for r in read_spec() if r['kind'] == 'long' or not only_long]
     sums = read_sums()
     errs = []
+    fixes = recentre_table()
+    pending = set()                  # rows still in the pack form while the pair on windows-assets is older than PAIR_RECENTRED
+    assets = pair_assets()
     last = max(int(r['id']) for r in rows)
     if len(dat.effects) < last or len(dat.missiles) != NEED_MISSILES:
         errs.append('the pair has %d effects and %d missiles' % (len(dat.effects), len(dat.missiles)))
@@ -743,8 +843,29 @@ def live(dat_path, spr_path, only_long=False):
         back = render_back(t, spr, 1)
         strip = np.concatenate([back[(f, 0, 0, 0)] for f in range(ph)], axis=1).copy()
         strip[strip[..., 3] == 0] = 0
-        if digest(strip) != sums.get(r['name']):
+        form = strip_form(strip, r, sums, fixes, ph, w, h)
+        if form is None:
             errs.append('%s: pixels differ from the sum' % r['name'])
+        elif form == 'pack' and int(r['id']) in fixes:
+            if assets >= PAIR_RECENTRED:
+                errs.append('%s: the pack form of the art: the pair fix of recentre_effects.py is due since pair %d' % (r['name'], PAIR_RECENTRED))
+            else:
+                pending.add(r['name'])
+    if not errs and not only_long:
+        def frames_of(r):
+            t = dat.effects[int(r['id']) - 1]
+            back = render_back(t, spr, 1)
+            return [back[(f, 0, 0, 0)] for f in range(int(r['phases']))]
+
+        def disp_of(r):
+            return tuple(dat.effects[int(r['id']) - 1].flags.get('displacement', (0, 0)))
+
+        cerrs, centres = centre_errors([r for r in rows if r['name'] not in pending], frames_of, disp_of)
+        errs += cerrs
+        for name, c in sorted(centres.items()):
+            print('area fx centre: %s %.1f, %.1f px from its tile%s' % (name, c[0], c[1], ' (known: %s)' % CENTRE_OFF[name] if name in CENTRE_OFF else ''))
+        for name in sorted(pending):
+            print('area fx centre: %s pair fix pending (pack form; recentre_effects.py makes pair %d, windows-assets has pair %d)' % (name, PAIR_RECENTRED, assets))
     for e in errs:
         print(e)
     print('area fx live: %d effects (%d refilled in place, %d new at %d.., %d long beams up to %d), %s' % (

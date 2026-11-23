@@ -2952,8 +2952,6 @@ return {
 		["Draw one bounty contract again."] = "Sorteia de novo um contrato de bounty.",
 		["Kill Task Reroll"] = "Novo sorteio de Kill Task",
 		["Draw one kill task again."] = "Sorteia de novo uma kill task.",
-		["Candle Seal"] = "Selo de Vela",
-		["A kill effect: a seal of candlelight. For the account."] = "Um efeito de abate: um selo de luz de vela. Para a conta.",
 		["Candlelight Name"] = "Nome à Luz de Vela",
 		["Your name in chat in candlelight. For the account."] = "Seu nome no chat à luz de vela. Para a conta.",
 		["Tallow Labels"] = "Rótulos de Sebo",

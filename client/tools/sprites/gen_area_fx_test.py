@@ -345,9 +345,101 @@ def test_pair51():
         ok(not any(r['name'].startswith(G.RETIRED) for r in csv.DictReader(fh)), 'no dropped name on the keep list')
 
 
+def blob(w, h, cx, cy, r=10):
+    """a w x h tile canvas with a solid disc of radius r at (cx, cy) px"""
+    import numpy as np
+    a = np.zeros((h * 32, w * 32, 4), np.uint8)
+    yy, xx = np.mgrid[0:h * 32, 0:w * 32]
+    a[(xx + 0.5 - cx) ** 2 + (yy + 0.5 - cy) ** 2 <= r * r] = (200, 100, 255, 255)
+    return a
+
+
+def test_art_centre():
+    """O725: where the art lands: the bottom-right tile of the canvas on the send tile, the centre held within CENTRE_TOL"""
+    c = G.art_centre([blob(3, 3, 48, 48)], 3, 3, 1, 1)
+    ok(abs(c[0]) < 0.6 and abs(c[1]) < 0.6, 'a disc in the middle of a 3x3 canvas, sent at +1,+1: on the target tile (%s)' % (c,))
+    c = G.art_centre([blob(3, 3, 54, 54)], 3, 3, 1, 1)
+    ok(abs(c[0] - 6) < 0.6 and abs(c[1] - 6) < 0.6, 'a disc 6 px down and right of the middle: 6, 6 (%s)' % (c,))
+    c = G.art_centre([blob(3, 3, 48, 48)], 3, 3, 0, 0)
+    ok(abs(c[0] + 32) < 0.6 and abs(c[1] + 32) < 0.6, 'sent with no offset the same art is a tile up and left (%s)' % (c,))
+    c = G.art_centre([blob(3, 3, 48, 48)], 3, 3, 1, 1, (4, -2))
+    ok(abs(c[0] + 4) < 0.6 and abs(c[1] - 2) < 0.6, 'a dat displacement moves the art by itself (%s)' % (c,))
+    c = G.art_centre([blob(2, 2, 16, 16, 4), blob(2, 2, 48, 48, 4)], 2, 2, 0, 0)
+    ok(abs(c[0] + 16) < 0.6 and abs(c[1] + 16) < 0.6, 'frames count together: the middle of a 2x2 canvas is 16 px up and left of the send tile (%s)' % (c,))
+    ok(G.art_centre([blob(1, 1, 16, 16, 0)], 1, 1, 0, 0) is None, 'blank art has no centre')
+    # the rule of the live check (on its own list of known rows)
+    real_off = dict(G.CENTRE_OFF)
+    G.CENTRE_OFF.clear()
+    rows = [{'name': 'a_status', 'role': 'status', 'kind': 'refill', 'w': '3', 'h': '3', 'dx': '1', 'dy': '1'}]
+    errs, got = G.centre_errors(rows, lambda r: [blob(3, 3, 48, 48)])
+    ok(errs == [] and 'a_status' in got, 'a status inside the tolerance passes')
+    errs, _ = G.centre_errors(rows, lambda r: [blob(3, 3, 54, 54)])
+    ok(len(errs) == 1 and 'over 4 px' in errs[0], 'a status 6 px off fails and says how far: %s' % errs)
+    errs, _ = G.centre_errors(rows, lambda r: [blob(3, 3, 80, 48)])
+    ok(len(errs) == 1, 'a send offset of a tile less would be 26 px off: still a bug, not a fix')
+    rows[0]['role'] = 'area'
+    ok(G.centre_errors(rows, lambda r: [blob(3, 3, 54, 54)])[0] == [], 'an area, a marker or a beam is not held')
+    saved = real_off
+    try:
+        rows[0]['role'] = 'status'
+        G.CENTRE_OFF['a_status'] = 'test'
+        errs, _ = G.centre_errors(rows, lambda r: [blob(3, 3, 54, 54)])
+        ok([e for e in errs if e.startswith('a_status')] == [], 'a named row may be off')
+        errs, _ = G.centre_errors(rows, lambda r: [blob(3, 3, 48, 48)])
+        ok(any('remove it from CENTRE_OFF' in e for e in errs), 'a named row that is inside the tolerance must leave the list')
+    finally:
+        G.CENTRE_OFF.clear()
+        G.CENTRE_OFF.update(saved)
+    ok(G.CENTRE_OFF == {}, 'no row is known off any more: the gravity press is recentred by pair 80 (O725b)')
+    try:
+        G.CENTRE_OFF['mega_gravity_press'] = 'O725: test'
+        errs, _ = G.centre_errors([], lambda r: [])
+        ok(any('mega_gravity_press' in e for e in errs), 'a name that is no row of the table is refused')
+    finally:
+        G.CENTRE_OFF.clear()
+        G.CENTRE_OFF.update(saved)
+    spec = {r['name']: r for r in G.read_spec()}
+    ok(set(G.CENTRE_OFF) <= set(spec) and all(spec[n]['role'] in G.CENTRE_ROLES for n in G.CENTRE_OFF),
+       'the known off rows are status rows of the table')
+    ok(all(G.CENTRE_OFF[n].startswith('O725') for n in G.CENTRE_OFF), 'every known off row has its reason')
+    st = [r for r in spec.values() if r['role'] in G.CENTRE_ROLES]
+    ok([r['name'] for r in st] == ['mega_gravity_press'] and (st[0]['dx'], st[0]['dy'], st[0]['w'], st[0]['h']) == ('1', '1', '3', '3'),
+       'the one held row is the gravity press, a 3x3 canvas sent at +1,+1 (the canvas middle on the creature)')
+
+
+def test_recentred_strip():
+    import numpy as np
+    sums = {'mega_gravity_press': None}
+    ph, w, h = 3, 3, 3
+    rng = np.random.RandomState(5)
+    frames = []
+    for _ in range(ph):
+        f = np.zeros((96, 96, 4), np.uint8)
+        f[30:60, 40:70] = rng.randint(1, 255, (30, 30, 4))
+        f[..., 3] = np.where(f[..., 3] > 0, 255, 0)
+        frames.append(f)
+    raw = np.concatenate(frames, axis=1).copy()
+    sums['mega_gravity_press'] = G.digest(raw)
+    row = {'name': 'mega_gravity_press', 'id': '3036'}
+    fixes = {3036: (-6, -6)}
+    ok(G.strip_form(raw, row, sums, fixes, ph, w, h) == 'pack', 'the pack strip is the pack form')
+    import recentre_effects as RE
+    moved = np.concatenate([RE.moved(f, -6, -6) for f in frames], axis=1).copy()
+    ok(G.strip_form(moved, row, sums, fixes, ph, w, h) == 'moved', 'the strip moved by the table shift is the moved form')
+    ok(G.strip_form(moved, row, sums, {}, ph, w, h) is None, 'a row with no pair fix has only the pack form')
+    other = np.concatenate([RE.moved(f, -5, -6) for f in frames], axis=1).copy()
+    ok(G.strip_form(other, row, sums, fixes, ph, w, h) is None, 'another shift is neither form')
+    edit = moved.copy()
+    edit[10, 10] = (1, 2, 3, 255)
+    ok(G.strip_form(edit, row, sums, fixes, ph, w, h) is None, 'a changed pixel is neither form')
+    ok(set(G.recentre_table()) == {3036} and G.recentre_table()[3036] == (-6, -6), 'the table of the pair fix is read: 3036 by -6, -6')
+    ok(G.PAIR_RECENTRED == 80, 'the pair fix is due at pair 80')
+    ok(G.pair_assets() >= 79, 'PAIR_ASSETS is read from client_pair.py')
+
+
 def main():
-    for t in (test_table, test_refills_are_pair36, test_padding, test_fixed_canvas, test_reach, test_long_beam, test_long_rows,
-              test_server_files, test_pair51):
+    for t in (test_recentred_strip, test_table, test_refills_are_pair36, test_padding, test_fixed_canvas, test_reach, test_long_beam, test_long_rows,
+              test_server_files, test_pair51, test_art_centre):
         t()
     print('gen_area_fx_test: %d checks passed' % N[0])
 

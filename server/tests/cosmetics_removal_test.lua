@@ -25,7 +25,7 @@ local sql = read("sql/chaos_zz_emote_removal.sql")
 eq(sql ~= nil, true, "the refund file exists")
 
 -- the retired list: five emotes, ids 801-805, never reused, list prices 150-250
-eq(#cfg.retired, 10, "five retired emotes (O564) and five retired kill effects (O715)")
+eq(#cfg.retired, 27, "five retired emotes (O564), five retired store kill effects (O715), 17 earned kill effects (O723)")
 local live = {}
 for _, c in ipairs(cfg.cosmetics) do
 	live[c.key], live["id" .. c.id] = true, true
@@ -35,15 +35,17 @@ for _, k in ipairs(cfg.kinds) do
 	eq(k.key ~= "emote", true, "no emote kind")
 end
 eq(cfg.storage.emote, nil, "the emote storage is not read any more (7102004 stays reserved)")
-local emotes, kills = {}, {}
+local emotes, kills, earned = {}, {}, {}
 for _, r in ipairs(cfg.retired) do
-	if r.kind == "killfx" then
+	if r.kind == "killfx" and r.earned then
+		earned[#earned + 1] = r
+	elseif r.kind == "killfx" then
 		kills[#kills + 1] = r
 	else
 		emotes[#emotes + 1] = r
 	end
 end
-eq(#emotes, 5, "five emotes") eq(#kills, 5, "five kill effects")
+eq(#emotes, 5, "five emotes") eq(#kills, 5, "five kill effects") eq(#earned, 17, "17 earned kill effects")
 for _, r in ipairs(emotes) do
 	eq(r.kind, "emote", r.key .. " kind")
 	eq(live[r.key], nil, r.key .. " key not live") eq(live["id" .. r.id], nil, r.key .. " id not live")
@@ -69,7 +71,21 @@ for _, r in ipairs(kills) do
 	eq(select(2, ksql:gsub("''" .. r.key .. "''", "")) >= 2, true, r.key .. " is refunded and deleted")
 	eq(ksql:find("AND `value` IN (101, 102, 103, 104, 105)", 1, true) ~= nil and ksql:find(r.id .. ",", 1, true) ~= nil or r.id == 105, true, r.key .. " chosen id cleared")
 end
-eq(select(2, ksql:gsub("''kill_[a-z]+''", "")), 11, "the SQL names no other kill effect (5 + 5 + the Windswept stand-in)")
+eq(select(2, ksql:gsub("''kill_[a-z_]+''", "")), 11 + 17, "the SQL names no other kill effect (5 + 5 + the Windswept stand-in, 17 deleted by O723)")
+
+-- the 17 earned kill effects (O723): never sold, price 0, deleted without a refund, the chosen id cleared
+local earnedIds = {}
+for _, r in ipairs(earned) do
+	eq(r.price, 0, r.key .. " was never sold")
+	eq(live[r.key], nil, r.key .. " key not live") eq(live["id" .. r.id], nil, r.key .. " id not live")
+	eq(select(2, ksql:gsub("''" .. r.key .. "''", "")), 1, r.key .. " is deleted once and never refunded")
+	eq(ksql:find("%f[%d]" .. r.id .. "%f[%D]") ~= nil, true, r.key .. " chosen id cleared")
+	earnedIds[#earnedIds + 1] = r.id
+end
+table.sort(earnedIds)
+local listed = ksql:match("`value` IN %(106, ([%d, %s]+)%)'")
+eq(listed ~= nil, true, "the chosen-id list of the earned effects")
+eq(select(2, listed:gsub("%d+", "")) + 1, 17, "17 chosen ids in the list")
 eq(ksql:find("7100940", 1, true) ~= nil and cfg.storage.killfx, 7100940, "the chosen kill effect storage is cleared")
 eq(ksql:find("START TRANSACTION", 1, true) ~= nil and ksql:find("COMMIT;", 1, true) ~= nil, true, "one transaction")
 eq(live.kill_windswept, true, "the stand-in for Mentor Marks buyers is a live kill effect")
@@ -105,5 +121,39 @@ eq(shop:find("Victory Emotes", 1, true), nil, "the store config has no Victory E
 -- the client lists no emote tab
 local logic = read("../client/overlay/modules/game_cosmetics/cosmeticslogic.lua")
 eq(logic ~= nil and logic:find("key = 'emote'", 1, true) == nil, true, "the client has no emote tab")
+
+-- O723: every reward table names live cosmetics only (a retired key in a reward would be granted to nothing)
+do
+	local retiredKey = {}
+	for _, r in ipairs(cfg.retired) do
+		retiredKey[r.key] = true
+	end
+	local function liveKey(key, where)
+		eq(retiredKey[key], nil, where .. " " .. tostring(key) .. " is not retired")
+		eq(live[key] == true, true, where .. " " .. tostring(key) .. " is live")
+	end
+	for month, key in pairs(pact.perks.monthly) do
+		liveKey(key, "Pact month " .. month)
+	end
+	eq(pact.perks.monthly[202701], nil, "January 2027 grants nothing (Pact Venom removed)")
+	eq(pact.perks.monthly[202703], nil, "March 2027 grants nothing (Pact Frost removed)")
+	for _, t in ipairs(dofile("data/scripts/chaos/battleground_config.lua").season.tiers) do
+		for _, key in ipairs(t.cosmetics or {}) do
+			liveKey(key, "PvP season tier " .. t.key)
+		end
+	end
+	for _, file in ipairs({"battleground_config.lua", "pvpzone_config.lua"}) do
+		for _, v in ipairs(dofile("data/scripts/chaos/" .. file).vendor) do
+			if v.kind == "cosmetic" then
+				liveKey(v.cosmetic, file .. " vendor " .. v.key)
+			end
+		end
+	end
+	for _, o in ipairs(dofile("data/scripts/chaos/candlemarks_config.lua").offers or {}) do
+		if o.kind == "cosmetic" then
+			liveKey(o.cosmetic, "Candlemarks " .. o.key)
+		end
+	end
+end
 
 print(string.format("cosmetics_removal_test: %d checks OK", n))

@@ -509,7 +509,7 @@ for _, c in ipairs(cos.cosmetics) do
 		fx = c
 	end
 end
-check(fx and byId[fx.achievement] ~= nil and fx.kind == "killfx", "the final boss's cosmetic")
+check(fx == nil and byId["raid_sovereign"] ~= nil, "the final boss gives no kill effect any more (Sovereign's Pyre removed, O723)")
 local pf = dofile("data/scripts/chaos/party_finder_config.lua")
 local raidAct
 for _, a in ipairs(pf.activities) do
