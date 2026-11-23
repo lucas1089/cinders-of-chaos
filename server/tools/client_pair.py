@@ -78,10 +78,11 @@ PAIR_WINGS_REDRAWN = 79   # pair 78 with the 117 code-drawn wings looks redrawn 
 
 PAIR_DRIVE_MONSTERS = 81   # pair 80 (O724 painted wings sides, O725b effect 3036 recentred; neither on windows-assets) plus ten hunt monster outfits
                     # 3561-3570 from 8-direction character packs (O726, gen_drive_monsters.py; install_monster_drive_looks.py, step
-                    # `monsterdrivelooks`: ten hunt monsters wear them). Built in /dev/shm only, not on windows-assets: PAIR_ASSETS stays 79
+                    # `monsterdrivelooks`: ten hunt monsters wear them). Now 28 outfits 3561-3588 (O728, O729) on top of the 24 O640 looks
+                    # redrawn at the game's angle (O728 relook). On windows-assets (2026-11-23, owner approved "pode mandar tudo"): PAIR_ASSETS 81
 
-PAIR_ASSETS = 79
-PAIR_ASSETS_DAT_MD5 = 'abd11a96a31a55cb1dceabe9989e792f'
+PAIR_ASSETS = 81
+PAIR_ASSETS_DAT_MD5 = 'd5212cccfe422a2f2534a7eed447c7df'
 
 
 def parse(text):

@@ -36845,7 +36845,7 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
   left. Measured on pair 79 (alpha centre over the 17 frames, sent at +1,+1 so the canvas middle is on the creature): the art stands 6.3 px down
   and right of the tile middle (disc 7 px, chevrons 20 px up and left). No whole-tile send offset helps (+-1 tile is 26 px or 38 px off), so the fix is a
   pair fix, done in pair 80 (O725b): `client/tools/sprites/recentre_effects.py build DAT SPR OUT` moves every phase of 3036 by -6, -6 px inside its canvas (table
-  `pair_fixes/effect_centre.csv`), centre 6.33, 6.33 -> 0.33, 0.33 px; `CENTRE_OFF` is empty now. No server change, the send offset stays (1, 1). Pair 80 is not on windows-assets yet (PAIR_ASSETS 79).
+  `pair_fixes/effect_centre.csv`), centre 6.33, 6.33 -> 0.33, 0.33 px; `CENTRE_OFF` is empty now. No server change, the send offset stays (1, 1). Pair 80 is inside pair 81, on windows-assets since 2026-11-23 (PAIR_ASSETS 81).
   `gen_area_fx.py live` now prints the centre of every `status` row and fails over 4 px (`CENTRE_TOL`) unless the row is named in `CENTRE_OFF` with its reason.
   The other effects a Juggernaut sends were measured the same way (all of its 20 spells, their Forms and the awakened casts at pair 79): the purple ones are 13 (Ironhold, a lilac
   2x2 sent at the caster, centre 7 px up and left, as its pivot pull of 3 px allows), 414 (Bastion Cry, a plum shockwave, 4.6 px up and left) and the status above. The void eye 396 (centre 2 px off) and 388 (red) are not sent by any Juggernaut script.
@@ -37150,8 +37150,7 @@ server side: which hunt monster wears which one. Pair 74 is not built for real, 
 
 Owner 2026-11-23 (pt-BR): the new 8-direction characters of the Drive become hunt monsters; the nine man-shaped ones are drawn again by us in
 PixelLab, the wolf and the crab keep the pack art. The outfits 3561 to 3571 are made by `client/tools/sprites/gen_drive_monsters.py`
-(client/MANIFEST.md "Drive characters as hunt monsters (O726)"). Pair 81 is built in /dev/shm only, so nothing shows yet; `PAIR_ASSETS`
-stays 79.
+(client/MANIFEST.md "Drive characters as hunt monsters (O726)"). Pair 81 is on windows-assets since 2026-11-23 (`PAIR_ASSETS` 81, dat md5 d5212ccc...), so the step installs.
 
 - **The picks** (`PICKS` of the tool): one hunt monster of the bounty pool for each look, by theme, taken from looks that two or more hunt monsters
   wear today (crowded_looks_allow.csv, shared_looks_allow.csv). No boss, none in the map of an earlier pair.
