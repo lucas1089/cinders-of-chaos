@@ -205,6 +205,20 @@ there is no patch: `tools/merge_brushes.py DATA_DIR` merges our entries into tho
 - On a move of the pin: re-read `brushstore.cpp` (schema, slot order, `getBrushTo`) and `terrainborderalignment.h`; the test
   holds the rule as `editor_pieces`.
 
+## Brush from a painted sample (O741)
+
+A new tile pack gets its brush from a small map the owner paints, not from a hand list.
+
+- Paint the new ground on any other ground in a sample map: a plus or a notched blob (inner corners), a 1-wide corridor,
+  single tiles. Lay its border pieces by hand on the lower tiles around it. Save as OTBM.
+- `python3 -I server/tools/brush_from_sample.py SAMPLE.otbm --ground ID --key SHORT --z 3400` finds which item is
+  which of the 12 pieces. It reads all 256 neighbour patterns, by our rule (`ChaosAreaGenCore.borderPieces`) and the
+  editor's. It prints each piece with its votes, then gaps and conflicts with positions.
+- With no gap and no conflict it prints the brush JSON (format of `gen_editor_brushes.py`) and 13 `art_items.csv` rows.
+  `--json OUT` writes the JSON. `--write` appends the rows to `server/data/items/art_items.csv`; nothing else writes it.
+- Then add the ground's z order to `EDITOR_Z` of `gen_editor_brushes.py` and run it. The merge step stays the same.
+- Test: `server/tools/brush_from_sample_test.py` (synthetic samples). Not run on a real painted sample yet.
+
 ## Panel seams and minimap (O586)
 
 Owner 2026-11-16, two screenshots: vertical seams over the palette and the top bar, and a black Minimap window.

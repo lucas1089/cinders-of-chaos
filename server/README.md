@@ -36308,6 +36308,9 @@ Our map editor borders our 12 pack grounds by itself. Before, the owner placed a
   the palette `Cinders` (terrain), choose "cinders thick lush grass", paint a patch on stock grass or dirt; next to it paint
   "cinders loam" or "cinders fine sand". The border pieces must appear on the lower tiles by themselves (automagic on). If a
   corner looks wrong, say which ground and which corner: the mapping is one table (`PIECE_OF`) in the script.
+- **A new pack (O741).** `tools/brush_from_sample.py` reads a painted sample map and prints the brush and the
+  `art_items.csv` rows of a new ground, with gaps and conflicts (`mapeditor/README.md` "Brush from a painted sample (O741)";
+  test `tools/brush_from_sample_test.py`).
 
 ## Private repository (O530) (`server/deploy/chaos_github.sh`, `chaos-ctl.sh github-token-set`, `github-token-status`, `admin-desktop-releases`, `admin-desktop-asset-url`, `chaos_github_test.py`)
 

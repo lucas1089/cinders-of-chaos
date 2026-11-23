@@ -1026,7 +1026,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Lua 5.3 and LuaJIT
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+        # python3-numpy: brush_from_sample_test reads synthetic OTBM samples with tools/map/otbm.py (O741)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit python3-numpy
 
       - uses: actions/checkout@v4
 
@@ -1081,10 +1082,11 @@ jobs:
           python3 -I mapeditor/tools/upstream_test.py
           python3 -I mapeditor/tools/merge_brushes_test.py
 
-      - name: Map editor brushes of our grounds (O514; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
+      - name: Map editor brushes of our grounds (O514; brush from a painted sample O741; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
         run: |
           python3 -I server/tools/gen_editor_brushes.py --check
           python3 -I server/tools/gen_editor_brushes_test.py
+          python3 -I server/tools/brush_from_sample_test.py
           python3 -I tools/ci/check_editor_palette.py
           python3 -I tools/ci/check_editor_palette_test.py
 
