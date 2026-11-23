@@ -11,7 +11,7 @@
 # Not done on purpose: the check for other processes holding memory handles on the client (docs/BOT_DETECTION.md part 4, point 3: it
 # gives false positives for antivirus, screen recorders and overlays, and the plan said to skip it).
 # The Windows branch of the header (the process snapshot, the window enumeration) was never built or run: the base client tree is not in the
-# repository. The hunks use the context of 0035 (the include of chaosguard.h and the two g_game functions it binds); not applied to a tree.
+# repository. The hunks use the context of 0035 (the include of chaosguard.h and the two g_game functions it binds); applied to the real base tree with --fuzz=0 (O722b).
 diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
 --- a/src/client/luafunctions_client.cpp
 +++ b/src/client/luafunctions_client.cpp
@@ -23,8 +23,8 @@ diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.
  #include "gameconfig.h"
  #include "tile.h"
  #include "houses.h"
-@@ -252,6 +253,8 @@ void Client::registerLuaFunctions()
-         msg->addU32(chaosguard::clientId()); // Chaos (base patch 0035): the client guard's identifier, not the version
+@@ -294,6 +295,8 @@ void Client::registerLuaFunctions()
+     // Chaos (base patch 0035): the client guard's identifier and build (the account login packet is built in Lua)
      g_lua.bindClassStaticFunction("g_game", "getChaosClientId", std::function<uint32()>([]() { return chaosguard::clientId(); }));
      g_lua.bindClassStaticFunction("g_game", "getChaosClientBuild", std::function<int()>([]() { return static_cast<int>(chaosguard::build()); }));
 +    // Chaos (base patch 0207): the known-tool scan of the bot detection (Windows only; codes only, never a name or a title)
