@@ -7,6 +7,7 @@
   "floors": 1,
   "level": [1, 50],
   "seed": 51507,
+  "repair_reach": true,
   "decoration": "normal",
   "light": "bright",
   "zones": [

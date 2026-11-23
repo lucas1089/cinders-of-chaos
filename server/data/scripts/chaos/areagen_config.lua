@@ -22,6 +22,38 @@ return {
 	-- dynamic respawn's percent (respawn_core.lua, respawn_config.lua) applies to the hunters near the point
 	viewRange = {x = 9, y = 7},
 
+	-- reach repair (O738, a def with repairReach): a walkable pocket of minPocket+ tiles cut off from the main region
+	-- gets the shortest carved link (cells at least margin from the grid border) instead of rock
+	reachRepair = {minPocket = 4, margin = 3},
+
+	-- rivers, lakes, shores, bridges and fords (O739, a def with `water`; areagen_core.lua "water (O739)"). The
+	-- families join cfg.families only when a def uses water. Deep water: the pack's deep lake water (blocking); a ford:
+	-- the pack's shallow water over sand (walkable, speed 250); a bridge: the stock wooden floor of the tutorial
+	-- island's dock (newplayer_config.lua look.dock). z: over every walkable floor (their borders never draw on the
+	-- water), under the rock families (their edge pieces do). Shore: the pack's sand beach set (art_items.csv
+	-- shore_sand_beach_*), laid on the water tile, named after the land sides (docs/MAP_GUIDE.md "Pack art").
+	water = {
+		families = {
+			water_deep = {z = 9000, grounds = {{36456, 1}}, walk = false},
+			water_ford = {z = 8990, grounds = {{36457, 1}}},
+			water_bridge = {z = 9010, grounds = {{405, 1}}}
+		},
+		fams = {deep = "water_deep", ford = "water_ford", bridge = "water_bridge"}, -- the family of each water kind
+		shore = {n = 36495, e = 36483, s = 36498, w = 36501, ne = 36496, nw = 36497, se = 36499, sw = 36500,
+			in_ne = 36485, in_nw = 36491, in_se = 36492, in_sw = 36494, in_ns = 36487, in_ew = 36484,
+			in_nse = 36488, in_new = 36486, in_nsw = 36490, in_sew = 36493, in_nsew = 36489},
+		-- a river: width range (a plan may set its own), how far it wanders from its line, chances (%) per tile that
+		-- the drift turns, that it moves one tile and that the width changes; at most `straight` tiles without a step
+		river = {width = {3, 5}, amplitude = 5, turn = 20, step = 60, widthChange = 15, straight = 5},
+		lake = {radius = {3, 5}},
+		bridge = {width = 2}, ford = {width = 3},
+		maxRun = 12, -- the longest straight water run a crossing spans
+		minLand = 12, -- a cut-off land pocket smaller than this (and with no zone centre or required point) drowns
+		spacing = 10, -- an extra crossing stands at least this far (Chebyshev) from the others
+		dry = 2, -- no water within this many tiles of a zone centre, of a required point's ring and of reserved cells
+		corridorBonus = 25 -- score added to a run with no end on a plan path (lower wins; 10 per water tile)
+	},
+
 	items = {
 		hole = 8972, -- large hole (floor change down, an item over the ground)
 		ladder = 1386, -- ladder (stock "other/teleport.lua" action: up to the tile south of the hole)

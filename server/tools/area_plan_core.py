@@ -588,6 +588,18 @@ def validate(plan, cat=None, pair24=None):
             W(p + '.zone', 'NPC %s stands outside a protection zone' % n['name'], 'set "pz": true on %s' % z['id'])
     if plan.get('buildings'):
         issues.extend(validate_buildings(plan, zid, biome, nlist, ref, pair24))
+    wtr = plan.get('water') or {}
+    for i, q in enumerate(wtr.get('rivers', [])):
+        if q.get('floor', 1) > floors:
+            E('plan.water.rivers[%d].floor' % i, 'floor %d: the plan has %d' % (q['floor'], floors))
+        if 'width' in q and q['width'][0] > q['width'][1]:
+            E('plan.water.rivers[%d].width' % i, 'the lowest width comes first')
+    for i, q in enumerate(wtr.get('lakes', [])):
+        ref('plan.water.lakes[%d].zone' % i, q['zone'])
+        if 'radius' in q and q['radius'][0] > q['radius'][1]:
+            E('plan.water.lakes[%d].radius' % i, 'the lowest radius comes first')
+    if wtr and biome['kind'] == 'dungeon':
+        W('plan.water', 'water in a dungeon biome: the shores meet the walls; an open biome (waste, cave) reads better')
     rewards = reward_items()
     slots = {}
     for i, c in enumerate(plan.get('chests', [])):

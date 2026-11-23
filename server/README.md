@@ -280,6 +280,10 @@ server/
   src-patches/0092-rune-bag-in-purse.patch   engine: a player's search, count and removal by item type also look into the Rune Bag that lies in the
                                       purse (after slots 1-10); Game.setRuneBagContainer(itemId) from pouches.lua (see "Using a rune from the
                                       bag", O509; header src/chaosrunebag.h, tools/chaosrunebag_test.cpp, tools/rune_bag_purse_patch_test.py)
+  src-patches/0094-wide-missile-ids.patch   engine: missile ids are 16 bits; u16 in 0x85 to a client that asked at login (feature 77), one
+                                      byte to any other (an id above 255 as its Lua fallback or not at all); Game.setMissileFallback (see
+                                      "Missile ids above 255 (O737)"; header src/chaoswidemissile.h, tools/chaoswidemissile_test.cpp,
+                                      tools/wide_missile_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -298,6 +302,7 @@ server/
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
     clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     botdet.lua  botdet_core.lua  botdet_config.lua (bot detection events and hourly scores, /botcheck, opcode 169, O722; src-patch 0093)
+    wide_missiles.lua (startup: the missile fallbacks of data/lib/chaos_wide_missiles.lua to the engine, O737; src-patch 0094)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -25138,6 +25143,96 @@ the repo were compared before and after by hand.
   door tile, overlap, a building outside its zone, a roof tile missing, a wrong wall piece, an unreachable door, a blocking item on
   the door tile), the validator, and the checksums of five old plans. `area_planner_test.py` runs the example with the others.
 
+## Area planner candidates and reach repair (O738) (`tools/area_plan_rank.py`, `areagen_core.lua` `A.linkPath`)
+
+Two planner options. Both are off by default: every held plan compiles to the same bytes.
+
+**Candidates.** `area_planner.py compile|stats|render|approve PLAN --candidates N` compiles N seeds of one plan.
+Candidate 1 is the plan's own seed. Candidate k takes `seed + (k - 1) x 104729`.
+Each compile is scored with the scorers we have, as penalty points off 100:
+
+| part | points |
+|---|---|
+| qa | 30 per QA error, 3 per QA warning (outline lines left out) |
+| shape | `area_plan_shape.py` per floor: 10 per limit broken, 20 x the larger mirror overlap |
+| reach | 100 x (share cut off and closed with rock + share the entry cannot reach) |
+| deco | 100 x the share of tiles with 3+ decoration items; 5 when monsters per 100 tiles lie outside 1.5-5 |
+| look | 5 per `audit_plan_look.py` finding |
+
+The best score is kept; a tie goes to the lower candidate, so the plan's own seed wins a tie.
+A seed whose compile fails ranks last. The table of all candidates is printed.
+`compile` also writes `OUT_DIR/<id>-candidates.txt`. The plan file is not changed: copy the kept seed into `seed`.
+Measured: swamp_hunt 8 seeds 79.80-83.54 (own seed 80.90, sixth), crypt_boss 57.07-58.43 (own seed best),
+hollow_crypt 77.74-78.64 (own seed last). The outline part decides; no example had a QA error, a pocket or spam.
+
+**Reach repair.** Plan field `repair_reach` (boolean, default false; on in `examples/village_square.json`).
+The generator keeps the walkable region of the entry and every region holding a zone or a required point.
+Any other walkable pocket was closed with rock. With the field on, each pocket of 4+ tiles first gets the shortest
+link to the main region (`A.linkPath`: 4 neighbours, 3 cells from the grid border, never through a boss room or the
+cell around it). The design is classified again, so grounds, borders and rims follow the link.
+Pockets under 4 tiles, or with no link, are still closed. Config: `areagen_config.lua` `reachRepair` (minPocket,
+margin), absent means 4 and 3.
+`model.reach` (and `J` of `areaplan_build.lua`) counts per floor: walk, cut, pockets, repaired, carved, left.
+The compile turns it into `reach` (always in the result, in `manifest.stats.reach` only with the field on):
+pockets, repaired, carved, cut_share, left_share, and `share`: walkable tiles the entry cannot reach after
+decoration, teleports and links.
+Measured: no held plan and no example has a pocket at its seed, nor at 14 other seeds of 17 plans. The repair is a
+net. Tests add a cut-off path piece: Lua 34 of 536 tiles in 1 pocket, joined by 12 carved cells; swamp_hunt 3.8 %
+cut off, joined by 7 cells, then 0 out of reach.
+Tests: `tools/area_plan_rank_test.py`, `tests/areagen_reach_test.lua` (server loop).
+
+## Rivers, lakes, bridges and fords (O739) (`areagen_core.lua` "water (O739)", plan field `water`)
+
+An optional water pass of the area generator. Off by default: a plan or def without `water` compiles to the same
+bytes (no draw, no change to `cfg`). Plan field (schema `water`):
+
+```json
+"water": {"rivers": [{"course": "north-south", "width": [3, 5], "at": 50}],
+          "lakes": [{"zone": "mere", "radius": [3, 4]}], "fords": 1}
+```
+
+- **River.** A band of deep water from one edge of the floor to the other (`course` west-east or north-south, `floor`
+  default 1). Its line sits at `at` percent across (default a seeded 35-65). It wanders by a smoothed random walk:
+  the drift turns, is pulled back within `amplitude` of the line and steps at least every `straight` tiles, so no
+  bank runs straight past the outline rule. Width from the plan or `water.river.width`.
+- **Lake.** An irregular blob (the generator's `blob`: a disc and 1-3 lobes, rough rim) in a zone, a quarter of the
+  zone off its centre (`place`, default a seeded diagonal).
+- Water lies only on walkable floor, never within `dry` (2) of a zone centre, a required point's ring or a reserved
+  cell. A water cell with fewer than two water sides turns back to floor (no slivers).
+- **Crossings.** The water cuts the floor. Every cut-off land piece of `minLand` (12) tiles or more, or holding a zone
+  centre or required point, gets a crossing over the shortest straight water run (at most `maxRun` 12), a run with an
+  end on a plan path first, a tie by the seed. Only pieces of one region of before are joined, so zones a teleport
+  joins stay apart. A river's first crossing is a bridge (2 wide), then fords (3 wide) up to `fords`, then bridges.
+  Smaller pieces drown. A river nobody had to cross still gets a bridge. Fords are added up to `fords`, `spacing` (10)
+  from the others.
+- **Looks.** No new id. Deep water: the pack's deep lake water 36456 (blocking). Ford: the pack's shallow water over
+  sand 36457 (walkable, speed 250). Bridge: the stock wooden floor 405 (the tutorial island's dock). Shores: the pack's
+  sand beach set 36483-36501 (19 pieces), laid on the water tile, named after the land sides, `in_` pieces for two or
+  more sides, a corner piece for land on a diagonal whose sides are water (`A.shorePieces`). The pack has grass, sand,
+  rock, snow, stone rim and mud shore sets; the sand beach is the one used. The piece names are read from
+  `art_items.csv` and docs/MAP_GUIDE.md, not checked on a render (no client pair here). No plank or bridge piece exists
+  in the pack, so the planks are the stock wooden floor with no edge pieces.
+- z: water 9000, ford 8990, bridge 9010. Over every walkable floor, so no floor border draws on water; under the rock
+  families, whose edge pieces do. The families (`water.families`) join `cfg.families` only when a def uses water.
+- Crossing cells and the tiles around both ends are reserved and safe: no generator decoration, no spawn. The compile
+  adds every bridge or ford tile and its 8 neighbours to the tiles no spawn, chest or NPC takes, and the crossing
+  tiles to the decoration's protected set.
+- QA: one `INFO` line per crossing, `chokepoint: bridge at X,Y,Z, N tile(s) over the water, W wide (direction)`.
+  The rank (O738) counts INFO as 0. An ERROR when a spawn, chest, NPC or the boss stands on water or a crossing.
+  `manifest.stats.water`: rivers, lakes, deep, ford, bridge tiles, bridges, fords, drowned, crossings.
+  `model.water` (and `J` of `areaplan_build.lua`) carries the crossings with their positions.
+- A dungeon biome with water gets a WARN (the shores meet the walls).
+
+Example: `tools/areaplan/examples/river_hunt.json` (Reedwater Crossing, forest, 84 x 60, levels 50-140, seed 73939,
+`repair_reach` on). A north-south river at 50 % and a lake in the treasure zone. Measured: 158 deep water tiles, a
+bridge of 6 tiles (3 over the water) on the glade-thicket path, a ford of 13 tiles (5 over the water) on the
+hollow-mere path, 8 tiles of land drowned, 1080 walkable tiles, 20 monsters, nothing out of reach, no QA error or
+warning, look audit and map tile audit clean. Six other seeds of the plan were clean too.
+Tests: `tools/area_plan_water_test.py`, `tests/areagen_water_test.lua` (server loop: shore pieces by pattern, off
+leaves cfg and the model alone, a planned river cuts two zones apart and a bridge joins them, every walkable tile
+reached, shores only on water next to land, no spawn on water or a crossing, determinism, 12 cave runs with a river
+and a lake).
+
 ## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
 
 Areas the owner asks for in chat wait here as plans until they are approved (docs/MAP_GUIDE.md "Map inbox").
@@ -37934,3 +38029,19 @@ The art is in the sprite pair only: client/MANIFEST.md "More purchased effects (
 - **Data.** `chaos_wst_more_fx_ids.lua`: id, dx, dy (send offset), ms, el (element tag). The tags are in `data/spells/spell_fx_elements.csv`.
   `data/spells/more_pack_fx_catalog.csv` lists id, family, element, shape, size, frames, loop or once. All three are generated (`gen_wst_more_fx.py ids`).
 - **Test.** `tests/more_pack_fx_test.lua`: gate, send offset, dense ids, 8 headings a set.
+
+## Missile ids above 255 (O737) (`src-patches/0094-wide-missile-ids.patch`, `data/lib/chaos_wide_missiles.lua`, `data/scripts/chaos/wide_missiles.lua`, client base patch 0208, gate `chaosClientPair` 83)
+
+Owner 2026-11-23 (pt-BR): "Pode fazer o patch do motor". A missile (distance effect, packet 0x85) id was one byte in the engine and on the wire, and pair 81 uses all 253 missiles, so no new projectile could be imported. Magic effects went past 255 long ago: the base server writes them as u16 and our client enables `GameMagicEffectU16` for 10.98 always. Missiles follow the newer negotiated design of patches 0051 and 0079 instead, because other clients (an older build of ours, the load test, foreign clients) must keep working.
+
+**Capability.** The capability byte after "C" (0051) is full: our client sets bits 0-5 for its own base and 6, 7 for 0079 and 0051. So the client adds, inside the same 128-byte RSA block and only when the 4 bytes fit, the string "W" and a second capability byte; bit 0 asks for 16-bit missile ids (client base patch 0208; the Unity client `ClientIdentity.Capabilities2`). The server takes the end of the RSA block before `RSA_decrypt` and reads those bytes only inside it; only u16 length 1, the letter W and bit 0 together count as asking (`src/chaoswidemissile.h` `markerFits`, `markerAsks`). Our client pads the block with zeros and the Unity client with random bytes: neither asks by accident (100,000 random blocks in the C++ test). A long session key leaves no room: no ask, one-byte missiles as before.
+
+**Answer.** `sendFeatures` gives a client that asked the engine's own feature 77 (`GameDistanceEffectU16`); the client engine has read a u16 missile under it all along (`parseDistanceMissile`, `Missile::m_id` is uint16, the dat missile count is u16). Every 0x85 after the 0x43 list carries a u16 id. No config key. The client clears feature 77 before each 1098 login. The live cast hello frame gets flag 4 (`HELLO_WIDE_MISSILES`) and `tools/cast_relay.py` reads the spectator's 0x85 by it.
+
+**Old clients.** Any client without the feature gets one byte: an id up to 255 as it is; an id above 255 as its fallback from `Game.setMissileFallback(id, fallback)` (id 256-65535, fallback 1-255, 0 or nil removes, false out of range), or nothing at all. Never a broken packet (`decide`: WORD, BYTE or DROP).
+
+**Engine.** `ShootType_t` is uint16_t, so `CombatParams::distanceEffect`, `Game::addDistanceEffect`, `Combat::addDistanceEffect`, `Player` / `ProtocolGame::sendDistanceShoot`, `position:sendDistanceEffect`, `combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, id)`, the MonsterSpell shoot effect and `weapon:shootType` carry 16 bits. The overrides of 0045 (`Game.setMissileEffect`) are keyed by the 16-bit id on both sides (a one-byte key would have caught id 300 as 44). `getShootType` also takes a number, so `monsters.xml` `shootEffect` and `items.xml` `shootType` can name a missile with no name. Missile 254 stays `CONST_ANI_WEAPONTYPE` (resolved before anything is sent): new missiles start at 256.
+
+**Lua.** `data/lib/chaos_wide_missiles.lua`: `C.PAIR` 83 (`server/tools/client_pair.py` `PAIR_MISSILE_U16`; pair 82 keeps 253 missiles), `C.on()` (that pair recorded in config.lua and the engine method present), `C.id(id[, fallback])` (the missile a script sends: an id above 255 only while on, else the fallback or nil), `C.FALLBACK` (empty: no missile above 255 exists yet; the import tool that appends one adds its row), `C.check`, `C.apply` (run at startup by `data/scripts/chaos/wide_missiles.lua`). No new missile in this item.
+
+**Tests.** `tools/chaoswidemissile_test.cpp` (header cut out of the patch in CI, also under sanitizers), `tools/wide_missile_patch_test.py` (files, no one-byte type left in the written signatures, read order, feature only when asked, drop before write, symmetric hunks, applied to a tree rebuilt from its own context; `SRC_TREE=DIR` dry-runs a real tree), `tests/wide_missiles_test.lua` (server loop), `tools/cast_relay_test.py`, client `client/tools/wide_missile_patch_test.py`, Unity `Core.Tests` (markers, 0x85 under feature 77). Written on a source tree rebuilt from the base with 0001-0093: `patch -p1 --fuzz=0` applies 0094 there and every `src/*.cpp` passes `g++ -std=c++17 -fsyntax-only`; the client patch applies to the base client after 0001-0207 and `protocolgamesend.cpp` passes `-fsyntax-only`. **Not done yet:** a full build and link of either engine, and a login on a live server: check that our new client gets feature 77 (log of features in the Unity live check, or a missile on screen), that an older client still sees one-byte missiles, and that a session key near the block limit still logs in.

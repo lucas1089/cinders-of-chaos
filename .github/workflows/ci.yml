@@ -507,6 +507,16 @@ jobs:
           g++ -std=c++17 -fsanitize=address,undefined -I "$d" server/tools/chaosbotsignals_test.cpp -o "$d/chaosbotsignals_asan"
           "$d/chaosbotsignals_asan"
 
+      - name: "Missile ids above 255, pure parts (C++; header from server src-patch 0094, O737)"
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoswidemissile\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0094-wide-missile-ids.patch > "$d/chaoswidemissile.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoswidemissile_test.cpp -o "$d/chaoswidemissile_test"
+          "$d/chaoswidemissile_test"
+          g++ -std=c++17 -fsanitize=address,undefined -I "$d" server/tools/chaoswidemissile_test.cpp -o "$d/chaoswidemissile_asan"
+          "$d/chaoswidemissile_asan"
+
       - name: RmlUi layer input logic (C++; routing between OTUI and RmlUi, touch scroll, repaint signature; O334)
         run: |
           d=$(mktemp -d)
@@ -1502,6 +1512,8 @@ jobs:
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
           python3 -I server/tools/area_plan_buildings_test.py   # parametric buildings (O515): prefabs, layouts, door sides, the village example, QA
+          python3 -I server/tools/area_plan_water_test.py   # rivers, lakes, bridges and fords (O739): plan rules, the river example, chokepoints
+          python3 -I server/tools/area_plan_rank_test.py   # candidate ranking and reach numbers (O738)
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
           python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles
@@ -1608,6 +1620,11 @@ jobs:
 
       - name: Bot signals for the bot detection (src-patch 0093, O722)
         run: python3 -I server/tools/botsignals_patch_test.py
+
+      - name: Missile ids above 255 (src-patch 0094 and client base patch 0208, O737)
+        run: |
+          python3 -I server/tools/wide_missile_patch_test.py
+          python3 -I client/tools/wide_missile_patch_test.py
 
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py

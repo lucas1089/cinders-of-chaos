@@ -257,7 +257,7 @@ namespace Chaos.Core
                 case 0x82: W.WorldLight = r.U8(); W.WorldLightColor = r.U8(); break;
                 case 0x83: { var p = ReadPos(r); int id = r.U16(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Effect(p, id)); break; }
                 case 0x84: { var p = ReadPos(r); byte col = r.U8(); string t = r.Str(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.AnimText(p, col, t)); break; }
-                case 0x85: { var a = ReadPos(r); var b = ReadPos(r); int id = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Missile(a, b, id)); break; }
+                case 0x85: { var a = ReadPos(r); var b = ReadPos(r); int id = Features.Has(ClientFeatures.DistanceEffectU16) ? r.U16() : r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Missile(a, b, id)); break; }
                 case 0x86: { uint cid = r.U32(); byte col = r.U8(); if (W.Fx.Enabled) W.Fx.Push(FxEvent.Square(cid, col)); break; }
                 case 0x8C: { var c = Find(r.U32()); byte hp = r.U8(); if (c != null) c.HealthPercent = Math.Min(100, (int)hp); break; }
                 case 0x8D: { var c = Find(r.U32()); byte l = r.U8(), col = r.U8(); if (c != null) { c.LightLevel = l; c.LightColor = col; } break; }

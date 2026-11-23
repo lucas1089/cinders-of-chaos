@@ -78,11 +78,46 @@ def job_def(plan, cat, lay):
         per_floor[f] = dict(zones=zones, paths=paths, meander=not SH.is_legacy(plan['id']), spots=[list(s) for s in lay['spots'][f]],
                             anchor=list(lay['anchors'][f]))
     ax, ay = lay['arrival']
-    return dict(id=plan['id'], name=plan['name'], origin=dict(x=ox, y=oy, z=oz), size=[W, H], floors=plan['floors'],
+    out = dict(id=plan['id'], name=plan['name'], origin=dict(x=ox, y=oy, z=oz), size=[W, H], floors=plan['floors'],
                 seed=lay['seed'], arrival=[ax, ay], noExit=True,
                 links=[dict(floor=l['floor'], x=l['x'], y=l['y']) for l in lay['links']],
                 layout=dict(plan=per_floor),
                 spawns=dict(density=0, minDistance=4, safeRadius=4, level=[1, 1], monsters=[]))
+    if plan.get('repair_reach'):
+        out['repairReach'] = True      # O738: pockets joined by a carved link (absent when off: the job text stays the same)
+    if plan.get('water'):
+        out['water'] = water_def(plan, lay)    # O739: rivers, lakes, bridges and fords (absent when off)
+    return out
+
+
+LAKE_PLACE = {'north': (0, -1), 'south': (0, 1), 'east': (1, 0), 'west': (-1, 0), 'northeast': (1, -1),
+              'northwest': (-1, -1), 'southeast': (1, 1), 'southwest': (-1, 1), 'center': (0, 0)}
+
+
+def water_def(plan, lay):
+    """the generator's def.water of a plan's `water` (O739): a lake sits a quarter of its zone off the zone's centre
+    (`place`, default by the seed among the four diagonals: the centre itself stays dry for the zone's anchor)"""
+    w = plan['water']
+    zones = {z['id']: z for z in plan['zones']}
+    rivers = []
+    for q in w.get('rivers', []):
+        r = dict(course=q['course'], floor=q.get('floor', 1))
+        if 'width' in q:
+            r['width'] = list(q['width'])
+        if 'at' in q:
+            r['at'] = q['at']
+        rivers.append(r)
+    lakes = []
+    diag = ('northeast', 'northwest', 'southeast', 'southwest')
+    for k, q in enumerate(w.get('lakes', [])):
+        x1, y1, x2, y2 = lay['rects'][q['zone']][:4]
+        dx, dy = LAKE_PLACE[q.get('place') or diag[(lay['seed'] + k) % 4]]
+        lk = dict(floor=zones[q['zone']]['floor'], x=(x1 + x2) // 2 + dx * ((x2 - x1 + 1) // 4),
+                  y=(y1 + y2) // 2 + dy * ((y2 - y1 + 1) // 4))
+        if 'radius' in q:
+            lk['radius'] = list(q['radius'])
+        lakes.append(lk)
+    return dict(rivers=rivers, lakes=lakes, fords=w.get('fords', 0))
 
 
 def run_build(plan, cat, lay, pair24, dark):
@@ -356,6 +391,12 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     near_special = lambda t, d=1: any(max(abs(t[0] - s[0]), abs(t[1] - s[1])) <= d and t[2] == s[2] for s in special)
 
     bprot = set()        # the tiles of the plan's buildings, their doors' outsides and reach tiles (O515): no spawn, chest or NPC pick
+    water_g, crossing = (water_grounds(meta) if plan.get('water') else {}), set()
+    for k, t in tiles.items():
+        if water_g.get(t['ground']) in ('ford', 'bridge'):
+            crossing.add(k)
+    for t in crossing:      # O739: a bridge or a ford and the tiles around it are a chokepoint: no spawn, chest or NPC
+        bprot.update((t[0] + dx, t[1] + dy, t[2]) for dx, dy in C.D8 + ((0, 0),))
 
     def zone_cells(zid, avoid=1):
         x1, y1, x2, y2, z = zrect[zid]
@@ -582,7 +623,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     plain |= wall_ids | {meta['hole'], meta['ladder'], meta['portal'], meta['chest'], brush['stairs_up']}
     if bres:
         plain |= bres['wall_ids'] | bres['door_ids']
-    protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out} | bprot
+    protected = set(special) | {(s_['x'], s_['y'], s_['z']) for s_ in spawn_out} | bprot | crossing
     if boss_out:
         protected.add((boss_out['x'], boss_out['y'], boss_out['z']))
     for a, b in teleports:
@@ -846,6 +887,11 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                  transitions=transitions, unbordered=unbordered, unknown_ids=len(unknown),
                  decoration=deco_stats(tiles, walk, plain, dresser, oz, plan['floors']), roof_tiles=roofs,
                  checksum=area.get('checksum'), frame_tiles=len(frame))
+    reach = reach_stats(meta.get('reach'), len(unreached), len(walk))
+    if plan.get('water'):
+        stats['water'] = water_qa(meta.get('water'), tiles, spawn_out, boss_out, npc_out, chest_out, water_g, E, qa)
+    if plan.get('repair_reach'):
+        stats['reach'] = reach      # in the manifest only when asked: a held plan keeps its bytes
     if stats['decoration']['spam_share'] > 0.01:
         Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
            % (100 * stats['decoration']['spam_share']))
@@ -873,7 +919,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 stubs=stubs, dresser=dresser, buildings=(bres['records'] if bres else []),
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
-                stats=stats, plan_issues=issues)
+                stats=stats, plan_issues=issues, reach=reach)
 
 
 def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
@@ -894,6 +940,52 @@ def tile_rule_errors(back, walk, ground_ids, block_ids, portal):
         out.append('the teleport at %s %s' % (k, ('has the blocking item %d on its tile' % blocker) if blocker
                                               else 'is on a tile nobody can walk on'))
     return out
+
+
+def water_grounds(meta):
+    """{ground id: 'deep' | 'ford' | 'bridge'} of the generator's water families (O739; the J line names them)"""
+    out = {}
+    for kind in ('deep', 'ford', 'bridge'):
+        for g in meta['families'].get('water_' + kind, {}).get('grounds', []):
+            out[g] = kind
+    return out
+
+
+def water_qa(gen, tiles, spawns, boss, npcs, chests, water_g, E, qa):
+    """the water numbers of a compile (O739) and its QA: an INFO line per crossing (a bridge or a ford is a chokepoint:
+    every way across the water goes over it; no spawn, chest, NPC or decoration on it or next to it), an ERROR for a
+    spawn, the boss, an NPC or a chest on water or a crossing"""
+    g = gen or {}
+    for c in g.get('crossings', []):
+        qa.append(('INFO', 'chokepoint: %s at %d,%d,%d, %d tile(s) over the water, %d wide (%s); kept free of spawns '
+                   'and decoration' % (c['kind'], c['x'], c['y'], c['z'], c['length'], c['width'],
+                                       'north-south' if c.get('dir') == 'ns' else 'west-east')))
+    things = [('spawn', (s['x'], s['y'], s['z'])) for s in spawns] + [('NPC', (n['x'], n['y'], n['z'])) for n in npcs]
+    things += [('chest', tuple(c['at'])) for c in chests]
+    if boss:
+        things.append(('boss', (boss['x'], boss['y'], boss['z'])))
+    for what, t in things:
+        if t in tiles and tiles[t]['ground'] in water_g:
+            E('%s on %s at %s' % (what, water_g[tiles[t]['ground']], t))
+    kinds = {}
+    for t in tiles.values():
+        k = water_g.get(t['ground'])
+        if k:
+            kinds[k] = kinds.get(k, 0) + 1
+    return dict(rivers=g.get('rivers', 0), lakes=g.get('lakes', 0), deep=kinds.get('deep', 0), ford=kinds.get('ford', 0),
+                bridge=kinds.get('bridge', 0), bridges=g.get('bridges', 0), fords=g.get('fords', 0),
+                drowned=g.get('drowned', 0), crossings=len(g.get('crossings', [])))
+
+
+def reach_stats(gen, unreached, walkable):
+    """the reach numbers of a compile (O738): the generator's pockets (walkable design tiles cut off from the main
+    region; cut = before the repair, left = still cut off and closed with rock), the pockets joined by a carved link
+    and the carved cells, and `share` = walkable tiles the entry cannot reach after decoration, teleports and links"""
+    g = gen or {}
+    w = max(1, g.get('walk', 0))
+    return dict(pockets=g.get('pockets', 0), repaired=g.get('repaired', 0), carved=g.get('carved', 0),
+                cut_share=round(g.get('cut', 0) / float(w), 4), left_share=round(g.get('left', 0) / float(w), 4),
+                share=round(unreached / float(max(1, walkable)), 4))
 
 
 def qa_errors(result):
