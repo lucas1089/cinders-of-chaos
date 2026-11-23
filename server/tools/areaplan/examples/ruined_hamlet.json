@@ -1,0 +1,35 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ruined_hamlet",
+  "name": "Thornwick Ruins",
+  "biome": "forest",
+  "size": [104, 84],
+  "floors": 1,
+  "level": [20, 70],
+  "seed": 74011,
+  "repair_reach": true,
+  "ruin": 40,
+  "decoration": "normal",
+  "light": "normal",
+  "zones": [
+    {"id": "green", "floor": 1, "shape": "room", "size": [38, 30], "place": "center", "role": "camp", "pz": true, "ragged": true},
+    {"id": "clearing", "floor": 1, "size": [18, 14], "place": "northeast", "ragged": true},
+    {"id": "thicket", "floor": 1, "size": [20, 15], "place": "southwest", "ragged": true}
+  ],
+  "paths": [
+    {"from": "green", "to": "clearing", "width": 4, "style": "wild"},
+    {"from": "green", "to": "thicket", "width": 4, "style": "wild"}
+  ],
+  "entry": {"zone": "green"},
+  "exit": {"zone": "green"},
+  "buildings": [
+    {"id": "old_inn", "kind": "shop", "zone": "green", "floors_above": 2, "cellar": true, "ruin": 0, "size": [9, 8],
+     "npc": {"name": "Innkeeper Bram", "new": true, "lines": ["Mind the stairs, |PLAYERNAME|.", "cellar: The old wine cellar is down the hole."]}},
+    {"id": "watch_house", "kind": "house", "zone": "green", "floors_above": 1, "ruin": 0, "size": [7, 7]},
+    {"id": "burnt_house", "kind": "house", "zone": "green", "cellar": {"biome": "vault", "size": [9, 7]}},
+    {"id": "fallen_shop", "kind": "shop", "zone": "green", "ruin": 60, "wall": "ruin", "floor": "flagstone"},
+    {"id": "empty_house", "kind": "house", "zone": "green"},
+    {"id": "hunters_camp", "kind": "camp", "zone": "clearing"}
+  ],
+  "notes": "Example plan of buildings phase 2 (O740): a ruined hamlet. The old inn has two floors above and a wine cellar, the watch house one floor above, the burnt house a vault cellar; the plan's ruin share (40) breaks the walls and floors of the others (the fallen shop 60). A hunters' camp stands in the clearing. Every floor above, every cellar and every camp tile is reached from the entry."
+}

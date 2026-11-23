@@ -1026,7 +1026,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Lua 5.3 and LuaJIT
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+        # python3-numpy: brush_from_sample_test reads synthetic OTBM samples with tools/map/otbm.py (O741)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit python3-numpy
 
       - uses: actions/checkout@v4
 
@@ -1081,10 +1082,11 @@ jobs:
           python3 -I mapeditor/tools/upstream_test.py
           python3 -I mapeditor/tools/merge_brushes_test.py
 
-      - name: Map editor brushes of our grounds (O514; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
+      - name: Map editor brushes of our grounds (O514; brush from a painted sample O741; generated files up to date, the 12 piece mapping against the editor's rule and ChaosAreaGenCore.borderPieces, no dead id)
         run: |
           python3 -I server/tools/gen_editor_brushes.py --check
           python3 -I server/tools/gen_editor_brushes_test.py
+          python3 -I server/tools/brush_from_sample_test.py
           python3 -I tools/ci/check_editor_palette.py
           python3 -I tools/ci/check_editor_palette_test.py
 
@@ -1234,12 +1236,13 @@ jobs:
           python3 -I server/tools/patch_hunt_gates_test.py
       - name: "Hunt audit rules on synthetic data (audit_hunts.py, monsters, density, size of every hunt; the installed map is audited by hand, docs/HUNT_AUDIT.md; O337)"
         run: python3 -I server/tools/audit_hunts_test.py
-      - name: "Map tile audit and house audit on a synthetic map (audit_map_tiles.py, audit_houses.py, the shared tile rules against the Lua originals; every planned area passes the audit, audit_map_plans.py; the installed map is audited by hand; O511, O513)"
+      - name: "Map tile audit and house audit on a synthetic map (audit_map_tiles.py, audit_houses.py, the house fixer fix_houses.py, the shared tile rules against the Lua originals; every planned area passes the audit, audit_map_plans.py; the installed map is audited by hand; O511, O513, O742)"
         run: |
           # system numpy and luajit: the audits read maps with tools/map/otbm.py, the plans compile through the Lua generator
           sudo apt-get install -y -qq luajit python3-numpy
           python3 -I server/tools/audit_map_tiles_test.py
           python3 -I server/tools/audit_houses_test.py
+          python3 -I server/tools/fix_houses_test.py
           python3 -I server/tools/audit_map_plans.py --check --quiet
           python3 -I server/tools/audit_plan_look_test.py
           python3 -I server/tools/audit_plan_look.py --check
@@ -1513,6 +1516,7 @@ jobs:
           python3 -I server/tools/area_planner_test.py
           python3 -I server/tools/area_plan_buildings_test.py   # parametric buildings (O515): prefabs, layouts, door sides, the village example, QA
           python3 -I server/tools/area_plan_water_test.py   # rivers, lakes, bridges and fords (O739): plan rules, the river example, chokepoints
+          python3 -I server/tools/area_plan_buildings2_test.py   # buildings phase 2 (O740): floors above, ruins, camps, cellars, the ruined hamlet example
           python3 -I server/tools/area_plan_rank_test.py   # candidate ranking and reach numbers (O738)
           python3 -I server/tools/area_import_test.py   # imported hunts (O335): chunks, spawns, exit, boxes
           python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote

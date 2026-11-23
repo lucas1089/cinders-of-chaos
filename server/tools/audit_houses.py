@@ -5,8 +5,8 @@ usage: python3 -I server/tools/audit_houses.py SERVER_DIR [--houses FILE] [--kno
                                                [--limit N] [--max-floors N] [--quiet]
        python3 -I server/tools/audit_houses.py --map FILE.otbm --items ITEMS.otb [--xml ITEMS.xml] --houses FILE [same options]
 
-Read only, report only: there is no fixer (the live map's 1,057 houses are of mixed origin; docs/MAP_GUIDE.md "Map editing
-rules": a house is never added, removed, resized or moved by a tool). SERVER_DIR is an installed server folder (or its data
+Read only, report only (the live map's 1,057 houses are of mixed origin; docs/MAP_GUIDE.md "Map editing rules": a house
+is never added, removed, resized or moved by a tool). fix_houses.py (O742) fixes the tile flags of HOUSE_FLAGS only. SERVER_DIR is an installed server folder (or its data
 folder): the map and the items as in audit_map_tiles.py, the house file DATA/world/<mapName>-house.xml (how
 patch_base_houses.py finds it). The house tiles of the map are the tiles of OTBM house nodes (tools/map/otbm.py, `house`).
 Codes, per house id (one line each: CODE house=ID "name" tiles=N first=x,y,z: what)

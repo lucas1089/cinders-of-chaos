@@ -661,10 +661,10 @@ def validate_buildings(plan, zid, biome, nlist, ref, pair24=None):
                   % (b['kind'], wlo, whi, hlo, hhi, w, h), 'use a size inside those ranges or leave "size" out')
             else:
                 try:
-                    BLD.layout(pf, w, h, 's', b.get('slots', ()))
+                    BLD.make_layout(pf, w, h, 's', b.get('slots', ()))
                 except BLD.BuildingError as e:
                     E(p, 'a %d x %d %s: %s' % (w, h, b['kind'], e))
-        side = b.get('door') or pf['door_side']
+        side = 's' if pf.get('open') else (b.get('door') or pf['door_side'])
         if w is not None and z:
             dims = [(w, h)] if side in ('n', 's') else [(h, w)] if side in ('e', 'w') else [(w, h), (h, w)]
             zw, zh = zone_dims(z, biome)
@@ -678,14 +678,33 @@ def validate_buildings(plan, zid, biome, nlist, ref, pair24=None):
                     E(p + '.at', 'building %s at %d,%d (%d x %d) leaves the usable area %d..%d x %d..%d'
                       % (b['id'], x, y, fw, fh, MARGIN_LO - 1, W_ - MARGIN_HI - 1, MARGIN_LO - 1, H_ - MARGIN_HI - 1),
                       'move it inside or leave "at" out so the planner places it')
-        wall = b.get('wall') or pf['wall']
-        floor = b.get('floor') or pf['floor']
-        if wall not in mats['walls']:
+        if pf.get('open'):      # O740: an open kind (camp) keeps its ground and has no wall, door, floors above or cellar
+            for k_ in ('wall', 'floor', 'door', 'floors_above', 'cellar', 'roof'):
+                if b.get(k_):
+                    E(p + '.' + k_, 'a %s is open: it has no "%s"' % (b['kind'], k_), 'drop "%s"' % k_)
+        n_up = b.get('floors_above', 0)
+        if n_up and z and z['floor'] > 1:
+            E(p + '.floors_above', 'the floors above a building on floor %d would lie on the floors of the plan' % z['floor'],
+              'put the building on floor 1')
+        if n_up > 1 and b['kind'] == 'house':
+            W(p + '.floors_above', 'a house on %d floors: the house audit (O513) wants at most 2 (MULTI_FLOOR)' % (n_up + 1),
+              'use one floor above, or a shop or temple for a taller building')
+        if n_up and b.get('ruin', plan.get('ruin', 0)):
+            W(p + '.ruin', 'a building with floors above stays whole; its ruin share is not used')
+        if b.get('cellar') and z and plan['floors'] > z['floor']:
+            E(p + '.cellar', 'the cellar of a building on floor %d would lie on floor %d of the plan' % (z['floor'], z['floor'] + 1),
+              'put the building on the lowest floor or drop "cellar"')
+        if pf.get('open'):
+            wall = floor = None
+        else:
+            wall = b.get('wall') or pf['wall']
+            floor = b.get('floor') or pf['floor']
+        if wall is not None and wall not in mats['walls']:
             E(p + '.wall', 'no wall brush "%s"' % wall, 'use one of ' + ', '.join(sorted(mats['walls'])))
-        if floor not in mats['families'] or not mats['families'][floor]['walk']:
+        if floor is not None and (floor not in mats['families'] or not mats['families'][floor]['walk']):
             E(p + '.floor', 'no walkable ground family "%s"' % floor,
               'use one of ' + ', '.join(sorted(k for k, v in mats['families'].items() if v['walk'])))
-        if b.get('roof', pf['roof']) and plan['floors'] > 1 and z and z['floor'] > 1:
+        if b.get('roof', pf.get('roof')) and plan['floors'] > 1 and z and z['floor'] > 1:
             E(p + '.roof', 'the roof of a building on floor %d would lie on floor %d of the plan' % (z['floor'], z['floor'] - 1),
               'put the building on floor 1 or set "roof": false')
         npc = b.get('npc')

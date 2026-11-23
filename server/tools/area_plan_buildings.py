@@ -25,13 +25,17 @@ import map_tile_rules as MR
 
 PREFAB_DIR = os.path.join(C.PLANDIR, 'prefabs')
 FAMILIES_PATH = os.path.join(C.PLANDIR, 'building_families.json')
-KINDS = ('temple', 'depot', 'shop', 'house')
+KINDS = ('temple', 'depot', 'shop', 'house')      # the walled kinds
+OPEN_KINDS = ('camp',)                            # O740: an open kind, no walls, no door, no roof
+ALL_KINDS = KINDS + OPEN_KINDS
+MAX_UP = 2                                        # O740: floors above a building (z - 1, z - 2)
 SIDES = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
 DIR_OF = {v: k for k, v in SIDES.items()}
 FEATURES = ('altar', 'pillar_pair', 'bench_row', 'counter', 'shelf_row')
 ROLES = ('floor', 'hang')
 HANG_WALLS = ('back', 'front', 'left', 'right')
 GAP = 2                     # free tiles kept between two buildings
+OPEN_SHARE = 0.75           # O740: the walkable share of an open kind's patch (the rest keeps its trees and stones)
 SIZE_LIMITS = (5, 21)
 _cache = {}
 
@@ -60,17 +64,31 @@ def prefab_problems(pf, mats=None, fams=None, kit_groups=None):
     out = []
     fams = fams if fams is not None else families()
     kind = pf.get('kind')
-    for k in ('kind', 'width', 'height', 'door_side', 'door_width', 'wall', 'floor', 'roof', 'pz'):
+    is_open = bool(pf.get('open'))
+    need = ('kind', 'width', 'height', 'pz') if is_open else \
+        ('kind', 'width', 'height', 'door_side', 'door_width', 'wall', 'floor', 'roof', 'pz')
+    for k in need:
         if k not in pf:
             out.append('%s: missing "%s"' % (kind, k))
+    if is_open:
+        for k in ('wall', 'door_side', 'door_width', 'features', 'npc', 'upper'):
+            if pf.get(k):
+                out.append('%s: an open kind has no "%s"' % (kind, k))
+        if pf.get('roof'):
+            out.append('%s: an open kind has no roof' % kind)
     for k in ('width', 'height'):
         r = pf.get(k)
         if not (isinstance(r, list) and len(r) == 2 and all(isinstance(v, int) for v in r) and SIZE_LIMITS[0] <= r[0] <= r[1] <= SIZE_LIMITS[1]):
             out.append('%s: %s must be [lo, hi] inside %d-%d' % (kind, k, SIZE_LIMITS[0], SIZE_LIMITS[1]))
-    if pf.get('door_side') not in ('route', 'n', 'e', 's', 'w'):
+    if not is_open and pf.get('door_side') not in ('route', 'n', 'e', 's', 'w'):
         out.append('%s: door_side %r' % (kind, pf.get('door_side')))
-    if pf.get('door_width') not in (1, 2):
+    if not is_open and pf.get('door_width') not in (1, 2):
         out.append('%s: door_width must be 1 or 2' % kind)
+    for name in (pf.get('upper') or {}).get('pieces', []):
+        if name not in fams:
+            out.append('%s.upper: no family %r in building_families.json' % (kind, name))
+        elif fams[name].get('hang'):
+            out.append('%s.upper: %s is a hung piece; upper floors take floor pieces' % (kind, name))
 
     def coordinate_ok(v):
         return v == 'c' or (isinstance(v, int) and not isinstance(v, bool))
@@ -101,7 +119,7 @@ def prefab_problems(pf, mats=None, fams=None, kit_groups=None):
                 for a in ('dx', 'dy'):
                     if not coordinate_ok(e.get(a)):
                         out.append('%s: %s must be an integer or "c"' % (p, a))
-    if mats is not None:
+    if mats is not None and not is_open:
         if pf.get('wall') not in mats['walls']:
             out.append('%s: no wall family %r' % (kind, pf.get('wall')))
         if pf.get('floor') not in mats['families']:
@@ -259,6 +277,188 @@ def layout(pf, w, h, side, extra_slots=(), door_width=None):
     return out
 
 
+def open_layout(pf, w, h, extra_slots=()):
+    """an open kind (O740: camp): a w x h patch with no wall, no door and no roof, its pieces on floor slots (dx, dy
+    over the whole patch, "c" the middle). It does not turn: the same patch for every side. Pure; the shape of layout()"""
+    if w < 3 or h < 3:
+        raise BuildingError('a %d x %d patch is too small' % (w, h))
+    out = dict(W=w, H=h, iw=w, ih=h, side='s', dw=0, c0=(w - 1) // 2, door=[], outside=[], inside=[], walls={},
+               floor={(x, y) for x in range(w) for y in range(h)}, items=[], reach=[], npc=None, conflicts=[], dropped=[],
+               open=True)
+    claimed = {}
+    for i, s in enumerate(list(pf.get('slots', [])) + list(extra_slots)):
+        if w < s.get('min_iw', 0) or h < s.get('min_ih', 0):
+            continue
+        what = 'slot %d' % i
+        if s.get('role') != 'floor':
+            out['dropped'].append('%s: an open kind has no wall to hang a piece on' % what)
+            continue
+        t = (coord(s['dx'], w, what + ' dx'), coord(s['dy'], h, what + ' dy'))
+        if t in claimed:
+            out['conflicts'].append('%s at %s overlaps %s' % (what, t, claimed[t]))
+            continue
+        claimed[t] = what
+        out['items'].append(dict(tile=t, family=s['family'], role='floor', kind='slot', what=what,
+                                 facing=s.get('facing', 's'), axis=None, wall_dir=None))
+    return out
+
+
+def make_layout(pf, w, h, side, extra_slots=()):
+    """layout() for a walled kind, open_layout() for an open one"""
+    return open_layout(pf, w, h, extra_slots) if pf.get('open') else layout(pf, w, h, side, extra_slots)
+
+
+def family_blocks(name, fams, kit):
+    """does a family's piece block the tile (a hung piece never does)"""
+    spec = fams[name]
+    if spec.get('hang'):
+        return False
+    if 'group' in spec:
+        return bool(kit['groups'][spec['group']]['block'])
+    return bool(spec.get('block'))
+
+
+def _all_reached(free, start):
+    """every tile of `free` joined to start (8 neighbours)"""
+    if start not in free:
+        return False
+    seen, stack = {start}, [start]
+    while stack:
+        t = stack.pop()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                n = (t[0] + dx, t[1] + dy)
+                if n in free and n not in seen:
+                    seen.add(n)
+                    stack.append(n)
+    return seen == free
+
+
+def plan_levels(lay, n_up, cellar, blocks, upper_pieces=()):
+    """the floors above a walled building and the way down to its cellar (O740), in the layout's relative tiles. Pure.
+    The stairs are our stair brush: the stone stairs on the floor below lead up to the tile north of the stairs ground
+    on the floor above; stepping on the stairs ground goes down to the tile south of the stone stairs (the rule of the
+    plan's `stairs` connections). The cellar is reached by the large hole (down onto the ladder) and the ladder (up to
+    the tile south of the hole). A stair or hole tile changes the floor, so it counts as no way through: every free
+    interior tile of every floor stays joined to the way in without it. blocks(family) -> the piece blocks.
+    -> dict(levels=[{k, stairs, down, start, items}], hole, hole_up, dropped); raises BuildingError when no place fits"""
+    interior = set(lay['floor'])
+    claimed0 = {it['tile'] for it in lay['items'] if it['role'] == 'floor'}
+    blocked0 = {it['tile'] for it in lay['items'] if it['role'] == 'floor' and blocks(it['family'])}
+    keep0 = set(lay['reach']) | set(lay['inside']) | ({lay['npc']} if lay['npc'] else set())
+    start0 = lay['inside'][0]
+    s0 = lay['inside'][0]
+
+    def order(start):
+        return sorted(interior, key=lambda t: (-(abs(t[0] - start[0]) + abs(t[1] - start[1])), t[1], t[0]))
+
+    def stairs_all(level_claimed, level_blocked, level_keep, barriers, start):
+        for t in order(start):
+            south, north = (t[0], t[1] + 1), (t[0], t[1] - 1)
+            if t in level_claimed or t in level_keep or t in barriers or t == start:
+                continue
+            if south not in interior or south in level_claimed or south in barriers or north not in interior:
+                continue
+            if _all_reached(interior - level_blocked - barriers - {t}, start):
+                yield t
+
+    def stairs_on(*a):
+        return next(stairs_all(*a), None)
+
+    def hole_for(st):
+        """(hole, up) on the ground floor beside the stairs `st` (or None), or None"""
+        bars = {st} if st else set()
+        for t in order(s0):
+            up = (t[0], t[1] + 1)
+            if t in claimed0 or t in keep0 or t in bars or t == start0 or up not in interior or up in claimed0 or up in bars:
+                continue
+            if st and (up == (st[0], st[1] + 1) or t == (st[0], st[1] + 1)):
+                continue
+            if _all_reached(interior - blocked0 - bars - {t}, start0):
+                return t, up
+        return None
+    levels = [dict(k=0, stairs=None, down=None, start=start0, items=[])]
+    dropped = []
+    hole = hole_up = None
+    if n_up:
+        found = None
+        for t in stairs_all(claimed0, blocked0, keep0, set(), start0):     # the first stairs tile that leaves room for the hole
+            if not cellar:
+                found = (t, None)
+                break
+            hz = hole_for(t)
+            if hz:
+                found = (t, hz)
+                break
+        if found is None:
+            raise BuildingError('no tile inside takes the stairs up (a free tile with a free one south of it)'
+                                + (' beside the hole to the cellar' if cellar else ''))
+        levels[0]['stairs'] = found[0]
+        if found[1]:
+            hole, hole_up = found[1]
+    elif cellar:
+        hz = hole_for(None)
+        if hz is None:
+            raise BuildingError('no tile inside takes the hole to the cellar (a free tile with a free one south of it)')
+        hole, hole_up = hz
+    for k in range(1, n_up + 1):
+        down = levels[k - 1]['stairs']
+        start = (down[0], down[1] - 1)
+        lv = dict(k=k, stairs=None, down=down, start=start, items=[])
+        bars = {down}
+        if k < n_up:
+            t = stairs_on(set(), set(), {start}, bars, start)
+            if t is None:
+                raise BuildingError('no tile of floor %d takes the stairs up' % k)
+            lv['stairs'] = t
+            bars.add(t)
+        busy = bars | {start} | ({(lv['stairs'][0], lv['stairs'][1] + 1)} if lv['stairs'] else set())
+        xs, ys = [t[0] for t in interior], [t[1] for t in interior]
+        corners = [(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]
+        blk = set()
+        for name in upper_pieces:
+            put = None
+            for c in corners:
+                if c in busy or c not in interior:
+                    continue
+                if blocks(name) and not _all_reached(interior - bars - blk - {c}, start):
+                    continue
+                put = c
+                break
+            if put is None:
+                dropped.append('floor %d: no free corner for %s' % (k, name))
+                continue
+            busy.add(put)
+            if blocks(name):
+                blk.add(put)
+            lv['items'].append(dict(tile=put, family=name, facing='s' if put[1] == min(ys) else 'n'))
+        levels.append(lv)
+    return dict(levels=levels, hole=hole, hole_up=hole_up, dropped=dropped)
+
+
+def ruin_plan(lay, share, rng, hung=()):
+    """which wall tiles break and which floor tiles lose their floor in a ruin of `share` percent (O740). Pure.
+    The door, the two wall tiles on each side of it (a wall piece beside the door keeps a wall neighbour, so the map
+    tile audit, which does not count a door as wall, gives it the same piece) and a wall that carries a hung piece, with
+    its neighbours, stay. The gaps only open the walls, so no way gets longer and the door path stays as it was.
+    -> (gaps, patches): sets of relative tiles"""
+    if share <= 0:
+        return set(), set()
+    door = set(lay['door'])
+    near = {(t[0] + dx, t[1] + dy) for t in door for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (2, 0), (-2, 0), (0, 2), (0, -2))}
+    keep = {(t[0] + dx, t[1] + dy) for t in hung for dx in (-1, 0, 1) for dy in (-1, 0, 1)}    # a hung piece and its run
+    eligible = sorted(t for t in lay['walls'] if t not in door and t not in near and t not in keep)
+    n = int(round(len(eligible) * share / 100.0))
+    gaps = set(rng.sample(eligible, min(n, len(eligible))))
+    taken = {it['tile'] for it in lay['items'] if it['role'] == 'floor'} | set(lay['reach']) | set(lay['inside'])
+    if lay['npc']:
+        taken.add(lay['npc'])
+    free = sorted(t for t in lay['floor'] if t not in taken)
+    m = int(round(len(free) * share / 200.0))
+    patches = set(rng.sample(free, min(m, len(free))))
+    return gaps, patches
+
+
 # ================================================================================================= materials
 def resolve_item(f, fam, kit, rng, look, facing=None, axis=None, wall_dir=None):
     """(item id, blocks) of one placement of a family (a kit group, `dirs`, `h`/`v` or `ids`)"""
@@ -301,6 +501,25 @@ def site_ok(bx, by, lay, z, buildable, walk, zone_rect, blocked, reach0):
     """can the footprint go at (bx, by) (its top-left tile)? -> None, or the reason it cannot. buildable(tile): a built
     tile with ground that may carry a floor (walkable, or blocked only by a tree or a stone, which the stamp removes)"""
     x1, y1, x2, y2 = zone_rect
+    if lay.get('open'):
+        # O740: an open kind takes the walkable tiles of its patch and leaves a tree or a stone as it stands (cutting
+        # them would square off the edge of the floor, the outline rule of "Asymmetric areas"): every piece on a
+        # walkable tile the entry reaches, OPEN_SHARE of the patch walkable, no ring, no door
+        n_walk = 0
+        for t in _rect_tiles(bx, by, lay['W'], lay['H']):
+            a = (t[0], t[1], z)
+            if not (x1 <= t[0] <= x2 and y1 <= t[1] <= y2):
+                return 'leaves its zone'
+            if a in blocked:
+                return 'overlaps %s' % blocked[a]
+            n_walk += a in walk
+        for it in lay['items']:
+            a = (bx + it['tile'][0], by + it['tile'][1], z)
+            if a not in walk or (reach0 is not None and a not in reach0):
+                return 'puts %s on %s, which is not a walkable tile the entry reaches' % (it['family'], a)
+        if n_walk < OPEN_SHARE * lay['W'] * lay['H']:
+            return 'stands on too little open ground (%d of %d tiles walkable)' % (n_walk, lay['W'] * lay['H'])
+        return None
     for t in _rect_tiles(bx, by, lay['W'], lay['H']):
         if not (x1 <= t[0] <= x2 and y1 <= t[1] <= y2):
             return 'leaves its zone'
@@ -324,13 +543,18 @@ def cut_off(bx, by, lay, z, walk, reach0, reach_fn):
     """the number of tiles that the footprint would cut off from the entry (the tiles reached now that stay out of reach
     once its walls and the tiles under it are gone; the interior counts as reached through the door)"""
     foot = {(t[0], t[1], z) for t in _rect_tiles(bx, by, lay['W'], lay['H'])}
-    inner = {(bx + t[0], by + t[1], z) for t in lay['floor']} | {(bx + t[0], by + t[1], z) for t in lay['door']}
+    inner = {(bx + t[0], by + t[1], z) for t in lay['floor'] if t not in lay.get('block', ())} | \
+        {(bx + t[0], by + t[1], z) for t in lay['door']}
+    if lay.get('open'):         # O740: an open kind keeps what was not walkable as it was
+        inner = {a for a in inner if a in walk}
     after = reach_fn((walk - foot) | inner)
     return sum(1 for t in reach0 if t not in foot and t not in after)
 
 
 def route_cost(lay, bx, by, route_pts):
     """squared distance of the tile outside the door to the nearest route point"""
+    if not lay['outside']:
+        return 0
     o = lay['outside'][0]
     ox_, oy_ = bx + o[0], by + o[1]
     return min((ox_ - p[0]) ** 2 + (oy_ - p[1]) ** 2 for p in route_pts)
@@ -362,14 +586,20 @@ def find_site(lays, sides, z, buildable, walk, zone_rect, blocked, reach0, targe
     return found[0][2:]
 
 
-def place_all(plan, zrect, walk, tiles, special, corridor, arrival, origin, mats, kit, fams, seed, E, Wn, reach_fn):
+def place_all(plan, zrect, walk, tiles, special, corridor, arrival, origin, mats, kit, fams, seed, E, Wn, reach_fn,
+              cellar_fn=None, border_ids=frozenset()):
     """place and stamp every building of the plan on the generated tiles (before the teleports, chests, NPCs and
     decoration). Changes tiles and walk. zrect: {zone: (x1, y1, x2, y2, z)} absolute; special: tiles to keep clear (the
     arrival, the holes and ladders); corridor: the tiles of the plan's paths; reach_fn(walk) -> the tiles reached from the
-    entry. -> dict(records, prot, special, pz, wall_ids, floor_ids, door_ids, block_ids, item_ids, roof_ids, foot)"""
+    entry. O740: cellar_fn(building, spec, ladder tile) runs the generator for a cellar (area_plan_compile.py); border_ids:
+    the border pieces an open kind keeps on its tiles.
+    -> dict(records, prot, special, pz, wall_ids, floor_ids, door_ids, block_ids, item_ids, roof_ids, foot, edges (the floor
+    changes of stairs and cellars, (from, to)), extra (the tiles of the floors above and the cellars), cellars, skip_border,
+    extra_allowed, extra_ground, extra_block)"""
     ox, oy, _oz = origin
     res = dict(records=[], prot=set(), special=set(), pz=set(), wall_ids=set(), floor_ids=set(), door_ids=set(),
-               block_ids=set(), item_ids=set(), roof_ids=set(), foot=set())
+               block_ids=set(), item_ids=set(), roof_ids=set(), foot=set(), edges=[], extra=set(), cellars=[],
+               skip_border=set(), extra_allowed=set(), extra_ground=set(), extra_block=set())
     walkable_grounds = {g for d in mats['families'].values() if d['walk'] for g in d['grounds']}
     buildable = lambda t: t in walk or (t in tiles and tiles[t]['ground'] in walkable_grounds)
     blocked = {t: 'a route' for t in corridor}
@@ -391,15 +621,33 @@ def place_all(plan, zrect, walk, tiles, special, corridor, arrival, origin, mats
         (wlo, whi), (hlo, hhi) = size_range(pf)
         w, h = b['size'] if 'size' in b else (rng.randint(wlo, whi), rng.randint(hlo, hhi))
         try:
-            lays = {s: layout(pf, w, h, s, b.get('slots', ())) for s in 'nesw'}
+            if pf.get('open'):
+                lays = {'s': open_layout(pf, w, h, b.get('slots', ()))}
+                lays['s']['block'] = {it['tile'] for it in lays['s']['items'] if family_blocks(it['family'], fams, kit)}
+            else:
+                lays = {s: layout(pf, w, h, s, b.get('slots', ())) for s in 'nesw'}
         except BuildingError as e:
             E('building %s: %s' % (bid, e))
             continue
         if lays['s']['conflicts']:
             E('building %s: %s' % (bid, '; '.join(lays['s']['conflicts'])))
             continue
-        side_req = b.get('door') or pf['door_side']
+        side_req = 's' if pf.get('open') else (b.get('door') or pf['door_side'])
         sides = tuple('nesw') if side_req == 'route' else (side_req,)
+        n_up, cellar = int(b.get('floors_above', 0)), b.get('cellar')
+        levels = {}
+        if n_up or cellar:        # O740: the stairs and the cellar hole must fit on the side
+            why_lv = None
+            for s_ in sides:
+                try:
+                    levels[s_] = plan_levels(lays[s_], n_up, cellar, lambda f_: family_blocks(f_, fams, kit),
+                                             (pf.get('upper') or {}).get('pieces', ()))
+                except BuildingError as e:
+                    why_lv = str(e)
+            sides = tuple(s_ for s_ in sides if s_ in levels)
+            if not sides:
+                E('building %s: %s' % (bid, why_lv))
+                continue
         reach0 = set(reach_fn(walk))
         route_pts = [(arrival[0], arrival[1]), ((zx1 + zx2) / 2.0, (zy1 + zy2) / 2.0)]
         route_pts += [(t[0], t[1]) for k, t in enumerate(sorted(corridor)) if t[2] == zz and k % 3 == 0][:300]
@@ -425,18 +673,22 @@ def place_all(plan, zrect, walk, tiles, special, corridor, arrival, origin, mats
                 continue
         side, bx, by = site
         lay = lays[side]
-        rec = stamp(b, pf, lay, bx, by, zz, tiles, walk, mats, kit, fams, rng, b.get('wall') or pf['wall'],
-                    b.get('floor') or pf['floor'], res, E)
+        rec = stamp(b, pf, lay, bx, by, zz, tiles, walk, mats, kit, fams, rng, b.get('wall') or pf.get('wall'),
+                    b.get('floor') or pf.get('floor'), res, E, levels=levels.get(side),
+                    ruin=b.get('ruin', plan.get('ruin', 0)), cellar_fn=cellar_fn, border_ids=border_ids)
         for t in _rect_tiles(bx - GAP, by - GAP, lay['W'] + 2 * GAP, lay['H'] + 2 * GAP):
             blocked[(t[0], t[1], zz)] = 'building %s' % bid
         res['records'].append(rec)
     return res
 
 
-def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, floor_name, res, E):
-    """write one building's tiles; -> its record"""
-    brush = mats['walls'][wall_name]
-    floors = mats['families'][floor_name]['grounds']
+def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, floor_name, res, E, levels=None, ruin=0,
+          cellar_fn=None, border_ids=frozenset()):
+    """write one building's tiles; -> its record. O740: `levels` (plan_levels) adds the floors above and the cellar
+    hole, `ruin` (percent) breaks walls and floors of a building without floors above, an open kind keeps its ground"""
+    is_open = bool(lay.get('open'))
+    brush = mats['walls'][wall_name] if not is_open else {}
+    floors = mats['families'][floor_name]['grounds'] if floor_name else []
     door_pair = mats['doors'][pf.get('door_family', 'wood')]
     orient = 'h' if lay['side'] in ('n', 's') else 'v'
     door_closed = door_pair[orient]['closed']
@@ -446,12 +698,22 @@ def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, f
                size=[lay['W'], lay['H']], wall=wall_name, floor=floor_name, door=[A(t) for t in lay['door']],
                outside=[A(t) for t in lay['outside']], inside=[A(t) for t in lay['inside']], reach=[A(t) for t in lay['reach']],
                interior=sorted(A(t) for t in lay['floor']), walls={}, features=[], hang=[], blocked=[], roof=[], npc=None,
-               ids=set(), pz=bool(b.get('pz', pf.get('pz'))), dropped=list(lay['dropped']), prefab_roof=bool(b.get('roof', pf['roof'])),
-               floor_ids=set(floors), wall_ids=wall_ids_of(brush), door_ids={door_closed}, block_ids=set())
+               ids=set(), pz=bool(b.get('pz', pf.get('pz'))), dropped=list(lay['dropped']), prefab_roof=bool(b.get('roof', pf.get('roof'))),
+               floor_ids=set(floors), wall_ids=wall_ids_of(brush), door_ids={door_closed} if not is_open else set(),
+               block_ids=set())
     foot = [A(t) for t in list(lay['walls']) + list(lay['floor'])]
+    if is_open:     # O740: the walkable tiles of the patch; a tree or a stone in it stays
+        foot = [a for a in foot if a in walk]
+        rec['open'] = True
+        rec['interior'] = sorted(foot)
+        rec['patch'] = lay['W'] * lay['H']
     rec['foot'] = foot
+    under = {t: tiles[t]['ground'] for t in foot if t in tiles}       # the ground before the stamp (a ruin's patches)
     for t in foot:
-        tiles[t] = dict(ground=rng.choice(floors), items=[], flags=0)
+        if is_open:     # O740: the camp keeps its ground and its border pieces; the tile's decoration goes
+            tiles[t]['items'] = [it for it in tiles[t]['items'] if it[0] in border_ids]
+        else:
+            tiles[t] = dict(ground=rng.choice(floors), items=[], flags=0)
     for t, kind in sorted(lay['walls'].items()):
         a = A(t)
         if t in lay['door']:
@@ -464,7 +726,8 @@ def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, f
         rec['walls'][a] = kind
         rec['block_ids'].add(wid)
     for t in lay['floor']:
-        walk.add(A(t))
+        if not is_open:
+            walk.add(A(t))
     for it in lay['items']:
         a = A(it['tile'])
         iid, blk = resolve_item(it['family'], fams, kit, rng, look, it['facing'], it['axis'], it['wall_dir'])
@@ -480,12 +743,21 @@ def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, f
         rec['features'].append(dict(what=it['what'], family=it['family'], at=a, id=iid, block=blk))
     if lay['npc']:
         rec['npc'] = A(lay['npc'])
+    n_up = len(levels['levels']) - 1 if levels else 0
+    if ruin and not is_open and not n_up:
+        _ruin(rec, lay, A, tiles, walk, under, floors, brush, kit, fams, ruin, (bx, by, z))
+        rec['prefab_roof'] = False      # a ruin is open to the sky
+    if n_up:
+        _levels(rec, lay, levels, A, z, tiles, walk, floors, brush, kit, fams, rng, look, res, E)
+    if levels and levels['hole'] is not None:
+        _cellar(rec, b, levels, A, tiles, walk, cellar_fn, res, E)
     if rec['prefab_roof']:
         roof = kit['roof']['ground'][0]
+        rz = z - 1 - n_up
         for t in foot:
-            above = (t[0], t[1], t[2] - 1)
-            if t[2] - 1 < 0:
-                E('building %s: no floor above z %d for its roof' % (b['id'], t[2]))
+            above = (t[0], t[1], rz)
+            if rz < 0:
+                E('building %s: no floor above z %d for its roof' % (b['id'], rz + 1))
                 break
             if above in tiles:
                 E('building %s: the roof tile %s is taken by another floor of the area' % (b['id'], above))
@@ -499,6 +771,7 @@ def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, f
     res['block_ids'] |= rec['block_ids']
     res['item_ids'] |= rec['ids']
     res['foot'].update(foot)
+    res['skip_border'].update(foot)
     res['prot'].update(foot)
     res['prot'].update(rec['outside'])
     res['special'].update(rec['outside'] + rec['reach'])
@@ -510,6 +783,131 @@ def stamp(b, pf, lay, bx, by, z, tiles, walk, mats, kit, fams, rng, wall_name, f
         for t in lay['door']:
             res['pz'].add(A(t))
     return rec
+
+
+def _ruin(rec, lay, A, tiles, walk, under, floors, brush, kit, fams, share, where):
+    """break the walls and floors of a stamped building (O740, `ruin` percent). A gap takes the ground that lay there
+    before, the walls left get the piece their new neighbours want; a patch of the floor takes the old ground; loose
+    debris (no blocking piece) on half of the gaps and the patches. Nothing blocks, so no way gets longer."""
+    rr = random.Random(where[0] * 7919 + where[1] * 104729 + where[2] * 31 + int(share))
+    hung = [h for h, _i in rec['hang']]
+    gaps, patches = ruin_plan(lay, share, rr, [(h[0] - where[0], h[1] - where[1]) for h in hung])
+    wall_ids = rec['wall_ids']
+    for t in sorted(gaps):
+        a = A(t)
+        tiles[a]['items'] = [it for it in tiles[a]['items'] if it[0] not in wall_ids]
+        tiles[a]['ground'] = under.get(a, floors[0])
+        walk.add(a)
+        rec['walls'].pop(a, None)
+    door_set = set(rec['door'])
+    wall_set = set(rec['walls']) | door_set
+    for a in sorted(rec['walls']):
+        n_, e_, s_, w_ = ((a[0] + dx, a[1] + dy, a[2]) in wall_set for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)))
+        want = MR.wall_piece(n_, e_, s_, w_)
+        if want != rec['walls'][a]:
+            wid = rr.choice(brush[want])
+            tiles[a]['items'] = [it if it[0] not in wall_ids else (wid, {}) for it in tiles[a]['items']]
+            rec['walls'][a] = want
+            rec['block_ids'].add(wid)
+    for t in sorted(patches):
+        a = A(t)
+        tiles[a]['ground'] = under.get(a, tiles[a]['ground'])
+    debris = kit['groups'][fams['debris']['group']]['ids']
+    loose = sorted(gaps | patches)
+    rr.shuffle(loose)
+    for t in loose[:len(loose) // 2]:
+        iid = rr.choice(debris)
+        tiles[A(t)]['items'].append((iid, {}))
+        rec['ids'].add(iid)
+    rec['ruin'] = dict(share=share, gaps=sorted(A(t) for t in gaps), patches=len(patches), debris=len(loose) // 2)
+    rec['floor_ids'] |= {tiles[A(t)]['ground'] for t in gaps | patches}
+
+
+def _levels(rec, lay, levels, A, z, tiles, walk, floors, brush, kit, fams, rng, look, res, E):
+    """the floors above (O740): the same footprint at z - k with the full wall ring (the door becomes wall), the floor
+    family, the stairs (stone stairs below, the stairs ground above) and the pieces of the prefab's `upper`"""
+    stairs_up, stairs_ground = kit['brushes']['stairs_up'], kit['brushes']['stairs_down_ground']
+    rec['levels'] = []
+    for lv in levels['levels'][1:]:
+        zk = z - lv['k']
+        Ak = lambda t, zk=zk: (A(t)[0], A(t)[1], zk)
+        if zk < 0:
+            E('building %s: no floor %d above z %d' % (rec['id'], lv['k'], z))
+            break
+        taken = [Ak(t) for t in list(lay['walls']) + list(lay['floor']) if Ak(t) in tiles]
+        if taken:
+            E('building %s: floor %d at %s is taken by another floor of the area' % (rec['id'], lv['k'], taken[0]))
+            break
+        info = dict(k=lv['k'], z=zk, walls={}, interior=sorted(Ak(t) for t in lay['floor']), items=[],
+                    start=Ak(lv['start']), down=Ak(lv['down']), stairs=Ak(lv['stairs']) if lv['stairs'] else None)
+        for t in list(lay['walls']) + list(lay['floor']):
+            tiles[Ak(t)] = dict(ground=rng.choice(floors), items=[], flags=0)
+        for t, kind in sorted(lay['walls'].items()):
+            wid = rng.choice(brush[kind])
+            tiles[Ak(t)]['items'].append((wid, {}))
+            info['walls'][Ak(t)] = kind
+            rec['block_ids'].add(wid)
+        for t in lay['floor']:
+            walk.add(Ak(t))
+            res['extra'].add(Ak(t))
+        for it in lv['items']:
+            a = Ak(it['tile'])
+            iid, blk = resolve_item(it['family'], fams, kit, rng, look, it['facing'])
+            tiles[a]['items'].append((iid, {}))
+            rec['ids'].add(iid)
+            if blk:
+                walk.discard(a)
+                rec['block_ids'].add(iid)
+            info['items'].append(dict(family=it['family'], at=a, id=iid, block=blk))
+        # the stairs from the floor below: stone stairs there lead up north of the stairs ground here
+        below = (info['down'][0], info['down'][1], zk + 1)
+        tiles[below]['items'].append((stairs_up, {}))
+        tiles[info['down']]['ground'] = stairs_ground
+        res['edges'] += [(below, (info['down'][0], info['down'][1] - 1, zk)),
+                         (info['down'], (below[0], below[1] + 1, zk + 1))]
+        res['special'].update((below, info['down'], (below[0], below[1] + 1, zk + 1), (info['down'][0], info['down'][1] - 1, zk)))
+        res['extra_ground'].add(stairs_ground)
+        res['foot'].update(Ak(t) for t in list(lay['walls']) + list(lay['floor']))
+        res['prot'].update(Ak(t) for t in list(lay['walls']) + list(lay['floor']))
+        rec['floor_ids'] |= set(floors)
+        rec['levels'].append(info)
+    rec['dropped'] += levels['dropped']
+
+
+def _cellar(rec, b, levels, A, tiles, walk, cellar_fn, res, E):
+    """the cellar one floor down (O740): the generator builds a small dungeon whose arrival lies under the large hole;
+    the ladder there climbs to the tile south of the hole"""
+    hole, up = A(levels['hole']), A(levels['hole_up'])
+    ladder_at = (hole[0], hole[1], hole[2] + 1)
+    if cellar_fn is None:
+        E('building %s: a cellar needs the area generator' % rec['id'])
+        return
+    c = cellar_fn(b, b['cellar'], ladder_at)
+    for p in c['problems']:
+        E('building %s cellar: %s' % (rec['id'], p))
+    clash = sorted(k for k in c['tiles'] if k in tiles)
+    if clash:
+        E('building %s: its cellar overlaps another floor of the area at %s' % (rec['id'], clash[0]))
+        return
+    if ladder_at not in c['walk']:
+        E('building %s: the cellar has no walkable tile under the hole %s' % (rec['id'], hole))
+        return
+    for k, t in c['tiles'].items():
+        tiles[k] = t
+    walk.update(c['walk'])
+    tiles[ladder_at]['items'].append((c['ladder'], {}))
+    tiles[hole]['items'].append((c['hole'], {}))
+    res['edges'] += [(hole, ladder_at), (ladder_at, up)]
+    res['special'].update((hole, up, ladder_at))
+    res['extra'] |= set(c['walk'])
+    res['skip_border'] |= set(c['tiles'])
+    res['prot'] |= set(c['tiles'])
+    res['extra_allowed'] |= c['allowed'] | {c['hole'], c['ladder']}
+    res['extra_ground'] |= c['grounds']
+    res['extra_block'] |= c['block']
+    res['cellars'].append(dict(building=rec['id'], walk=set(c['walk']), frame=c['frame'], z=ladder_at[2]))
+    rec['cellar'] = dict(hole=hole, up=up, ladder=ladder_at, biome=c['biome'], walk=sorted(c['walk']),
+                         tiles=len(c['tiles']))
 
 
 # ================================================================================================= QA
@@ -524,7 +922,7 @@ def qa_all(records, tiles, walk, dist, mats, E, Wn, roof_ground):
                 E('%s overlaps building %s at %s' % (label, owner[t], t))
                 break
             owner[t] = bid
-        brush = mats['walls'][rec['wall']]
+        brush = mats['walls'][rec['wall']] if not rec.get('open') else {}
         door_set = set(rec['door'])
         wall_set = set(rec['walls']) | door_set
         ids_of = {}
@@ -564,9 +962,34 @@ def qa_all(records, tiles, walk, dist, mats, E, Wn, roof_ground):
             E('%s: the npc stands on a tile that is blocked' % label)
         pockets = [a for a in rec['interior'] if a in walk and a not in dist]
         if pockets:
-            Wn('%s: %d interior tile(s) cannot be reached (first %s)' % (label, len(pockets), pockets[0]))
+            (E if rec.get('open') else Wn)('%s: %d interior tile(s) cannot be reached (first %s)' % (label, len(pockets), pockets[0]))
+        n_up = len(rec.get('levels', ()))
+        for lv in rec.get('levels', ()):       # O740: the floors above
+            lw = set(lv['walls'])
+            for a, kind in sorted(lv['walls'].items()):
+                n_, e_, s_, w_ = ((a[0] + dx, a[1] + dy, a[2]) in lw for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)))
+                want = MR.wall_piece(n_, e_, s_, w_)
+                have = [i for i, _x in tiles[a]['items'] if i in ids_of]
+                if not have or want not in ids_of[have[0]]:
+                    E('%s: floor %d: the wall piece at %s is not the %s piece it needs' % (label, lv['k'], a, want))
+            if lv['start'] not in dist:
+                E('%s: floor %d cannot be reached by its stairs (%s)' % (label, lv['k'], lv['start']))
+            out = [a for a in lv['interior'] if a in walk and a not in dist]
+            if out:
+                E('%s: floor %d: %d tile(s) out of reach (first %s)' % (label, lv['k'], len(out), out[0]))
+        cel = rec.get('cellar')
+        if cel:                                 # O740: the cellar
+            for what, a in (('the hole', cel['hole']), ('the tile south of the hole', cel['up']), ('the ladder', cel['ladder'])):
+                if a not in dist:
+                    E('%s: %s at %s cannot be reached' % (label, what, a))
+            out = [a for a in cel['walk'] if a in walk and a not in dist]
+            if out:
+                E('%s: the cellar has %d tile(s) out of reach (first %s)' % (label, len(out), out[0]))
+        for a in (rec.get('ruin') or {}).get('gaps', ()):
+            if a not in walk:
+                E('%s: the ruin gap at %s is not walkable' % (label, a))
         if rec['prefab_roof']:
-            miss = [t for t in rec['foot'] if tiles.get((t[0], t[1], t[2] - 1), {}).get('ground') not in roof_ground]
+            miss = [t for t in rec['foot'] if tiles.get((t[0], t[1], t[2] - 1 - n_up), {}).get('ground') not in roof_ground]
             if miss:
                 E('%s: the roof misses %d footprint tile(s) (first %s)' % (label, len(miss), miss[0]))
         elif rec['roof']:
@@ -576,10 +999,28 @@ def qa_all(records, tiles, walk, dist, mats, E, Wn, roof_ground):
 def manifest_of(rec, dist=None):
     return dict(id=rec['id'], kind=rec['kind'], zone=rec['zone'], door_side=rec['side'], rect=list(rec['rect'][:4]), z=rec['rect'][4],
                 size=rec['size'], wall=rec['wall'], floor=rec['floor'], door=[list(t) for t in rec['door']],
-                outside=[list(t) for t in rec['outside']], route_steps=(dist.get(rec['outside'][0]) if dist else None),
+                outside=[list(t) for t in rec['outside']], route_steps=(dist.get(rec['outside'][0]) if dist and rec['outside'] else None),
                 roof_tiles=len(rec['roof']), features=[dict(f, at=list(f['at'])) for f in rec['features']],
                 hung=len(rec['hang']), dropped=rec['dropped'], pz=rec['pz'],
-                npc=list(rec['npc']) if rec['npc'] else None)
+                npc=list(rec['npc']) if rec['npc'] else None, **_manifest_o740(rec, dist))
+
+
+def _manifest_o740(rec, dist):
+    """the O740 parts of a building's manifest entry, only the ones it uses (an O515 building keeps its entry)"""
+    out = {}
+    if rec.get('open'):
+        out['open'] = True
+    if rec.get('levels'):
+        out['floors_above'] = [dict(z=lv['z'], stairs_from=list(lv['down']), walkable=len(lv['interior']),
+                                    pieces=[i['family'] for i in lv['items']]) for lv in rec['levels']]
+    if rec.get('cellar'):
+        c = rec['cellar']
+        out['cellar'] = dict(biome=c['biome'], hole=list(c['hole']), ladder=list(c['ladder']), walkable=len(c['walk']),
+                             tiles=c['tiles'], steps=dist.get(c['ladder']) if dist else None)
+    if rec.get('ruin'):
+        r = rec['ruin']
+        out['ruin'] = dict(share=r['share'], gaps=len(r['gaps']), patches=r['patches'], debris=r['debris'])
+    return out
 
 
 # ================================================================================================= check on the live data

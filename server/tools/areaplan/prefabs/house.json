@@ -9,6 +9,7 @@
   "wall": "st_stone",
   "floor": "tiles",
   "roof": true,
+  "upper": {"pieces": ["shelf", "table", "crates"], "note": "O740: the pieces of a floor above (floors_above), one per free interior corner, never on the stairs or their landing"},
   "pz": false,
   "features": [
     {"type": "shelf_row", "dx": 0, "dy": 0, "length": 2, "family": "locker"}

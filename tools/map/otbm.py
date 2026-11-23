@@ -95,7 +95,8 @@ def _u32(du, p):
 
 
 def load_otbm(path):
-    d = open(path, 'rb').read()
+    with open(path, 'rb') as f:
+        d = f.read()
     if d[:2] == b'\x1f\x8b':
         import gzip
         d = gzip.decompress(d)
