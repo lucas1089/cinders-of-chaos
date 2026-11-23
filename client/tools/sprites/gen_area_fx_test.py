@@ -390,8 +390,14 @@ def test_art_centre():
     finally:
         G.CENTRE_OFF.clear()
         G.CENTRE_OFF.update(saved)
-    errs, _ = G.centre_errors([], lambda r: [])
-    ok(any('mega_gravity_press' in e for e in errs), 'a name that is no row of the table is refused')
+    ok(G.CENTRE_OFF == {}, 'no row is known off any more: the gravity press is recentred by pair 80 (O725b)')
+    try:
+        G.CENTRE_OFF['mega_gravity_press'] = 'O725: test'
+        errs, _ = G.centre_errors([], lambda r: [])
+        ok(any('mega_gravity_press' in e for e in errs), 'a name that is no row of the table is refused')
+    finally:
+        G.CENTRE_OFF.clear()
+        G.CENTRE_OFF.update(saved)
     spec = {r['name']: r for r in G.read_spec()}
     ok(set(G.CENTRE_OFF) <= set(spec) and all(spec[n]['role'] in G.CENTRE_ROLES for n in G.CENTRE_OFF),
        'the known off rows are status rows of the table')
@@ -401,8 +407,38 @@ def test_art_centre():
        'the one held row is the gravity press, a 3x3 canvas sent at +1,+1 (the canvas middle on the creature)')
 
 
+def test_recentred_strip():
+    import numpy as np
+    sums = {'mega_gravity_press': None}
+    ph, w, h = 3, 3, 3
+    rng = np.random.RandomState(5)
+    frames = []
+    for _ in range(ph):
+        f = np.zeros((96, 96, 4), np.uint8)
+        f[30:60, 40:70] = rng.randint(1, 255, (30, 30, 4))
+        f[..., 3] = np.where(f[..., 3] > 0, 255, 0)
+        frames.append(f)
+    raw = np.concatenate(frames, axis=1).copy()
+    sums['mega_gravity_press'] = G.digest(raw)
+    row = {'name': 'mega_gravity_press', 'id': '3036'}
+    fixes = {3036: (-6, -6)}
+    ok(G.strip_form(raw, row, sums, fixes, ph, w, h) == 'pack', 'the pack strip is the pack form')
+    import recentre_effects as RE
+    moved = np.concatenate([RE.moved(f, -6, -6) for f in frames], axis=1).copy()
+    ok(G.strip_form(moved, row, sums, fixes, ph, w, h) == 'moved', 'the strip moved by the table shift is the moved form')
+    ok(G.strip_form(moved, row, sums, {}, ph, w, h) is None, 'a row with no pair fix has only the pack form')
+    other = np.concatenate([RE.moved(f, -5, -6) for f in frames], axis=1).copy()
+    ok(G.strip_form(other, row, sums, fixes, ph, w, h) is None, 'another shift is neither form')
+    edit = moved.copy()
+    edit[10, 10] = (1, 2, 3, 255)
+    ok(G.strip_form(edit, row, sums, fixes, ph, w, h) is None, 'a changed pixel is neither form')
+    ok(set(G.recentre_table()) == {3036} and G.recentre_table()[3036] == (-6, -6), 'the table of the pair fix is read: 3036 by -6, -6')
+    ok(G.PAIR_RECENTRED == 80, 'the pair fix is due at pair 80')
+    ok(G.pair_assets() >= 79, 'PAIR_ASSETS is read from client_pair.py')
+
+
 def main():
-    for t in (test_table, test_refills_are_pair36, test_padding, test_fixed_canvas, test_reach, test_long_beam, test_long_rows,
+    for t in (test_recentred_strip, test_table, test_refills_are_pair36, test_padding, test_fixed_canvas, test_reach, test_long_beam, test_long_rows,
               test_server_files, test_pair51, test_art_centre):
         t()
     print('gen_area_fx_test: %d checks passed' % N[0])
