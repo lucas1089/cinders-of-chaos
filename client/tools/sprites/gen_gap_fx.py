@@ -454,9 +454,15 @@ def live(dat_path, spr_path):
     n = len(rows)
     if len(dat.effects) < FIRST + n - 1 or len(dat.missiles) != NEED_MISSILES:
         errs.append('the pair has %d effects and %d missiles' % (len(dat.effects), len(dat.missiles)))
+    import fix_pack_fx             # O734: a piece in the fixed form of fix_pack_fx.py (pair 82) is held by its check
+    fixed = fix_pack_fx.fixed_ids(dat_path, spr_path)
+    nfixed = 0
     for r in rows if not errs else []:
         t = dat.effects[int(r['id']) - 1]
         ph, w, h = int(r['phases']), int(r['w']), int(r['h'])
+        if ('effect', int(r['id'])) in fixed:
+            nfixed += 1
+            continue
         if (t.w, t.h, t.phases) != (w, h, ph):
             errs.append('%s: size or phases differ at %s' % (r['name'], r['id']))
             continue
@@ -469,6 +475,8 @@ def live(dat_path, spr_path):
             errs.append('%s: pixels differ from the sum' % r['name'])
     for e in errs:
         print(e)
+    if nfixed:
+        print('gap fx live: %d pieces in the fixed form of fix_pack_fx.py (O734; its check holds them)' % nfixed)
     print('gap fx live: %d effects at %d..%d, %s' % (n, FIRST, FIRST + n - 1, 'OK' if not errs else '%d problem(s)' % len(errs)))
     return 1 if errs else 0
 

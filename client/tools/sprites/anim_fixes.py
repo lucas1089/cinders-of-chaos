@@ -25,6 +25,17 @@ per row (rows of one thing are applied in table order, each on the result of the
               must remove exactly `expect=n` pixels.
   clear_color remove the pixels of exactly one colour `rgb=R,G,B` in `frame=N` (optional `group=G`, `dir=D`);
               must remove `expect=n` pixels.
+  merge       (O734) runs of phases that are identical in every pattern and layer become one phase that lasts the run's total
+              time (min and max durations summed): the picture and the total time stay, only repeated data goes. Must give
+              `keep=i,j,...` (the first phase of each run) out of `of=N`.
+  clear_strays  (O734) remove, in every frame, the isolated opaque pixels (no opaque 8-neighbour) darker than `luma_max`
+              (luma 0.299 r + 0.587 g + 0.114 b): the dim dots a cut glow leaves; a brighter single pixel is a spark and stays.
+              Must remove exactly `expect=n` pixels (all frames together).
+  drop_faint  (O734) remove, in every frame, the pixels with alpha above 0 and under `below` (40: under 16 % opacity, a halo
+              nobody sees on the ground); the colours and the alpha of every other pixel stay. Must remove `expect=n` pixels.
+  demesh      (O734) remove, in every frame, the checker and lattice pixels of clean_pack_dither.mesh_mask (the pair 66 rule
+              for a glow cut by a Bayer dither: a pixel with no opaque 4-neighbour inside a checker or lattice of its colour).
+              Must remove `expect=n` pixels.
   pulse       a one-frame look gets an idle of `n` phases (`ms` each): a slow brightness pulse, never darker than the
               still (factor 1 + amp * (1 - cos) / 2); the animateAlways attribute is set.
   displacement  `x,y` sets dat attribute 25 (the sprites and groups are untouched).
@@ -369,6 +380,112 @@ def op_clear_px(store, ts, a):
     ts.log.append(('0', 'clear_px', 'frame %d' % ph, '%d pixels removed' % int(m.sum())))
 
 
+def luma(c):
+    """luma of RGB values (float)"""
+    c = np.asarray(c, np.float64)
+    return c[..., 0] * 0.299 + c[..., 1] * 0.587 + c[..., 2] * 0.114
+
+
+def phase_keys(g, p):
+    """the frame keys (x, y, z, layer, phase) of one phase"""
+    return [k for k in frames_of(g) if k[4] == p]
+
+
+def merge_runs(store, g):
+    """[first phase of each run of phases identical in every frame]"""
+    keep = [0]
+    for p in range(1, g['phases']):
+        same = all(np.array_equal(frame(store, g, *k), frame(store, g, *(k[:4] + (p - 1,)))) for k in phase_keys(g, p))
+        if not same:
+            keep.append(p)
+    return keep
+
+
+def op_merge(store, ts, a):
+    need(a, 'of', 'keep')
+    g = ts.groups[0]
+    if g['phases'] != int(a['of']):
+        raise SystemExit('%s%d: %d phases, the row wants %s' % (ts.cat, ts.id, g['phases'], a['of']))
+    keep = merge_runs(store, g)
+    if ','.join(map(str, keep)) != a['keep']:
+        raise SystemExit('%s%d: the merge rule keeps %s, the row says %s' % (ts.cat, ts.id, keep, a['keep']))
+    old = durations(g)
+    ends = keep[1:] + [g['phases']]
+    durs = [(sum(d[0] for d in old[s:e]), sum(d[1] for d in old[s:e])) for s, e in zip(keep, ends)]
+    set_phases(ts, g, keep, durs)
+    if sum(d[1] for d in durations(g)) != sum(d[1] for d in old):
+        raise SystemExit('%s%d: the merge changed the total time' % (ts.cat, ts.id))
+
+
+def map_frames(store, ts, fn):
+    """fn(canvas) -> (canvas, n) on every frame of group 0; returns the total n"""
+    g = ts.groups[0]
+    total = 0
+    for k in frames_of(g):
+        img = frame(store, g, *k)
+        new, n = fn(img)
+        if n:
+            put_frame(store, g, new, *k)
+            total += n
+    return total
+
+
+def strays_of(img, luma_max):
+    return isolated_px(img) & (luma(img[..., :3]) < luma_max)
+
+
+def op_clear_strays(store, ts, a):
+    need(a, 'luma_max', 'expect')
+    lm = float(a['luma_max'])
+    want = int(a['expect'])
+    got = sum(int(strays_of(frame(store, ts.groups[0], *k), lm).sum()) for k in frames_of(ts.groups[0]))
+    if got != want:
+        raise SystemExit('%s%d: %d isolated pixels under luma %s, the row says %d' % (ts.cat, ts.id, got, a['luma_max'], want))
+
+    def fn(img):
+        m = strays_of(img, lm)
+        img[m] = 0
+        return img, int(m.sum())
+    n = map_frames(store, ts, fn)
+    ts.log.append(('0', 'clear_strays', 'luma under %s' % a['luma_max'], '%d pixels removed' % n))
+
+
+def faint_of(img, below):
+    return (img[..., 3] > 0) & (img[..., 3] < below)
+
+
+def op_drop_faint(store, ts, a):
+    need(a, 'below', 'expect')
+    below = int(a['below'])
+    if not 1 <= below <= 128:
+        raise SystemExit('%s%d: below=%d is not 1..128' % (ts.cat, ts.id, below))
+    got = sum(int(faint_of(frame(store, ts.groups[0], *k), below).sum()) for k in frames_of(ts.groups[0]))
+    if got != int(a['expect']):
+        raise SystemExit('%s%d: %d pixels under alpha %d, the row says %s' % (ts.cat, ts.id, got, below, a['expect']))
+
+    def fn(img):
+        m = faint_of(img, below)
+        img[m] = 0
+        return img, int(m.sum())
+    n = map_frames(store, ts, fn)
+    ts.log.append(('0', 'drop_faint', 'alpha under %d' % below, '%d pixels removed' % n))
+
+
+def op_demesh(store, ts, a):
+    need(a, 'expect')
+    import clean_pack_dither as cpd
+    got = sum(int(cpd.mesh_mask(frame(store, ts.groups[0], *k)).sum()) for k in frames_of(ts.groups[0]))
+    if got != int(a['expect']):
+        raise SystemExit('%s%d: %d mesh pixels, the row says %s' % (ts.cat, ts.id, got, a['expect']))
+
+    def fn(img):
+        m = cpd.mesh_mask(img)
+        img[m] = 0
+        return img, int(m.sum())
+    n = map_frames(store, ts, fn)
+    ts.log.append(('0', 'demesh', 'mesh rule of clean_pack_dither.py', '%d pixels removed' % n))
+
+
 def op_clear_color(store, ts, a):
     need(a, 'frame', 'rgb', 'expect')
     g = ts.groups[int(a.get('group', 0))]
@@ -426,7 +543,8 @@ def set_displacement(ts, xy):
 
 
 OPS = {'trim': op_trim, 'dedupe': op_dedupe, 'lift': op_lift,
-       'clear_px': op_clear_px, 'clear_color': op_clear_color}
+       'clear_px': op_clear_px, 'clear_color': op_clear_color,
+       'merge': op_merge, 'clear_strays': op_clear_strays, 'drop_faint': op_drop_faint, 'demesh': op_demesh}
 EXTRA_OPS = {'pulse': op_pulse}
 
 
@@ -452,9 +570,9 @@ def md5(path):
     return h.hexdigest()
 
 
-def apply_rows(rows, things, store, log=print):
-    """apply the table to the parsed things; returns {(cat, id): TS}"""
-    edited = {}
+def apply_rows(rows, things, store, log=print, edited=None):
+    """apply the table to the parsed things; returns {(cat, id): TS} (`edited`: things already being edited, continued)"""
+    edited = {} if edited is None else edited
     for r in rows:
         key = (r['kind'], r['id'])
         if key not in edited:

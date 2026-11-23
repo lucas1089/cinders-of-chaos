@@ -138,9 +138,30 @@ def test_refusals(c):
 
 def test_committed_table(c):
     rows = RE.read_spec(RE.SPEC)
-    t.expect([r['id'] for r in rows] == [3036], 'the committed table names effect 3036')
-    t.expect(all(r['dx'] == -6 and r['dy'] == -6 for r in rows), 'the shift of 3036 is -6, -6')
-    t.expect(all(max(abs(r['to'][0]), abs(r['to'][1])) <= 4 for r in rows), 'the centre after is inside the 4 px of gen_area_fx.CENTRE_TOL')
+    old = [r for r in rows if r['pair'] == 80]
+    t.expect([r['id'] for r in old] == [3036], 'the pair 80 row is effect 3036')
+    t.expect(all(r['dx'] == -6 and r['dy'] == -6 for r in old), 'the shift of 3036 is -6, -6')
+    t.expect(all(max(abs(r['to'][0]), abs(r['to'][1])) <= 4 for r in old), 'the centre after is inside the 4 px of gen_area_fx.CENTRE_TOL')
+    new = [r for r in rows if r['pair'] == 82]
+    t.expect(len(new) == 25 and len({r['id'] for r in new}) == 25, 'O734: 25 rows of pair 82, one per effect')
+    t.expect(all(r['pair'] in (80, 82) for r in rows), 'rows of pair 80 and 82 only')
+
+
+def test_pending(c):
+    """a row of a later pair is pending while windows-assets is older; a row due fails until done"""
+    dat, spr = c.pair(*parts())
+    cx, cy = centre_of(dat, spr, 1)
+    p = os.path.join(c.dir, 'pend.csv')
+    with open(p, 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        w.writerow(['kind', 'id', 'shift', 'of', 'to', 'pair', 'reason'])
+        w.writerow(['effect', '1', '-8,-8', '%.2f,%.2f' % (cx, cy), '%.2f,%.2f' % (cx - 8, cy - 8), '82', 'test'])
+    q = lambda *_: None  # noqa: E731
+    t.expect(RE.check(dat, spr, p, log=q, assets=81, fixed=set()) == 0, 'pending while windows-assets has pair 81')
+    t.expect(RE.check(dat, spr, p, log=q, assets=82, fixed=set()) == 1, 'due at pair 82')
+    t.expect(RE.check(dat, spr, p, log=q, assets=82, fixed={('effect', 1)}) == 0, 'the fixed form of fix_pack_fx.py passes')
+    out, text = build(c, dat, spr, p, 'pend_out')
+    t.expect('built by fix_pack_fx.py' in text and not os.path.exists(out), 'build skips a row of a later pair')
 
 
 def main():

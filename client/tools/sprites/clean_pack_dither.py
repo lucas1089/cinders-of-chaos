@@ -4,6 +4,8 @@
 python3 -I clean_pack_dither.py build       DAT SPR --out-dir OUT [--dry-run] [--stats-out stats.csv]
 python3 -I clean_pack_dither.py stats       DAT SPR [--out stats.csv]
 python3 -I clean_pack_dither.py check-clean DAT SPR
+python3 -I clean_pack_dither.py build       DAT SPR --out-dir OUT --only [TABLE]   # only the effects of the table (O733)
+python3 -I clean_pack_dither.py check-clean DAT SPR --only [TABLE]
 
 Why. The pack effect imports (gen_pack27_fx.py, gen_pack36_fx.py, ...) cut the soft glow of a 64 px (or 32 px) pack frame to a
 0 / 255 alpha with a 4x4 Bayer threshold (`clean_alpha`). A glow of alpha 0.5 becomes every second pixel, a halo becomes a checker
@@ -28,6 +30,13 @@ Limits: the dots of a faint fringe (one pixel per 4x4 cell) stay as single dots;
 gen_pack27_fx.py: a deliberate Bayer fade of opaque art) lose their mesh too, so they fade faster.
 The loot beams (effects 4090-4101, O522, pair 65) are never touched (`SKIP`): full size art with soft alpha.
 check-clean: no effect or missile of the pair has MIN_REMOVED or more such pixels left.
+
+--only TABLE (O733; default pair_fixes/dissolve_mesh.csv): clean only the effects named in the table (kind, id, mesh, reason), on a
+pair made after pair 66. The pair 73 imports (gen_area_fx.py) end with the 3-frame Bayer dissolve of gen_pack27_fx.py, which the
+pair 66 run took out of every older pack effect; the table names the ones whose mesh sits in those last frames (95 % or more of it),
+measured on pair 81. Premise per row: the thing holds `mesh` mesh pixels (it is cleaned) or fewer than MIN_REMOVED (done, skipped);
+any other count stops the run (a table of another pair). An effect that is not in the table is never touched, and a sprite it shares
+with a listed one is left as it is (the listed effect is then left whole, as without --only). check-clean --only: every row is done.
 """
 import argparse
 import csv
@@ -49,6 +58,8 @@ CHECKER_DIAG = 3        # diagonal neighbours of a checker pixel, of its colour
 CHECKER_AXIS = 2        # and pixels two away along an axis, of its colour (the checker's own lattice; two lines crossing have none)
 LATTICE_NEAR = 5        # of the 8 pixels two away (axis and diagonal) of a lattice pixel, of its colour
 KINDS = ('effect', 'missile')
+ONLY = os.path.join(HERE, 'pair_fixes', 'dissolve_mesh.csv')
+CAT = {'effect': 'e', 'missile': 'm'}
 SKIP = {('e', i) for i in range(4090, 4102)}   # (t.cat of datspr: 'e' effect, 'm' missile, id)   # the loot beams (O522, pair 65): full size art with soft alpha, never touched here
 
 
@@ -154,23 +165,44 @@ def solid_after(cv, masks):
     return n
 
 
-def thing_masks(t, spr):
-    """-> (canvases, masks, removed, flagged): flagged when the thing is cleaned"""
+def read_only(path=ONLY):
+    """the --only table -> {(t.cat, id): mesh pixels the row expects}"""
+    out = {}
+    with open(path, newline='', encoding='utf-8') as f:
+        for r in csv.DictReader(f):
+            if r['kind'] not in CAT:
+                raise SystemExit('%s: kind %r is not effect or missile' % (path, r['kind']))
+            key = (CAT[r['kind']], int(r['id']))
+            if key in out:
+                raise SystemExit('%s: %s %s twice' % (path, r['kind'], r['id']))
+            if key in SKIP:
+                raise SystemExit('%s: %s %s is a skipped loot beam' % (path, r['kind'], r['id']))
+            out[key] = int(r['mesh'])
+    return out
+
+
+def thing_masks(t, spr, only=None):
+    """-> (canvases, masks, removed, flagged): flagged when the thing is cleaned (with `only`: and it is in the table)"""
     cv = canvases(t, spr)
     masks = [mesh_mask(img) for _k, img, _tl in cv]
     removed = sum(int(m.sum()) for m in masks)
     flagged = removed >= MIN_REMOVED and solid_after(cv, masks) >= MIN_SOLID and (t.cat, t.id) not in SKIP
+    if only is not None and (t.cat, t.id) not in only:
+        flagged = False
     return cv, masks, removed, flagged
 
 
-def count_mesh(t, spr):
-    cv, masks, removed, flagged = thing_masks(t, spr)
+def count_mesh(t, spr, only=None):
+    cv, masks, removed, flagged = thing_masks(t, spr, only)
     return removed if flagged else 0
 
 
 # ------------------------------------------------------------------------------------------------ plan
-def plan(dat, spr):
+def plan(dat, spr, only=None):
     """-> (changed {sid: tile}, stats {(cat, id): (removed, frames, opaque)}, left {(cat, id): why})
+
+    only: {(t.cat, id): mesh} of read_only, or None for every thing; a row whose count is neither its `mesh` nor under
+    MIN_REMOVED stops the run.
 
     A sprite used in several places (a tile that repeats in a frame group, a tile shared by two effects) is cut where EVERY use
     sees mesh: the pixels that all uses agree on. So a tile never loses a pixel that one of its uses keeps."""
@@ -188,11 +220,16 @@ def plan(dat, spr):
     stats, mine = {}, {}
     agree = {}                                    # sid -> mask of the pixels every use removes
     target = {}
+    seen = {}
     for cat, t in things(dat):
         if not t.sprites or not any(int(s) for s in t.sprites):
             continue
-        cv, masks, removed, flagged = thing_masks(t, spr)
+        if only is not None and (t.cat, t.id) not in only and not (set(int(x) for x in t.sprites) & only_sids(dat, only)):
+            continue                              # not listed and sharing nothing with a listed one: no use to look
+        cv, masks, removed, flagged = thing_masks(t, spr, only)
         key = (cat, t.id)
+        if only is not None and (t.cat, t.id) in only:
+            seen[(t.cat, t.id)] = removed
         if flagged:
             stats[key] = (removed, len(cv), sum(int((img[..., 3] > 0).sum()) for _k, img, _tl in cv))
             mine[key] = {int(s) for s in t.sprites if s}
@@ -203,6 +240,12 @@ def plan(dat, spr):
                 use = np.ascontiguousarray(m[sl]) if flagged else np.zeros((32, 32), bool)
                 agree[sid] = use if sid not in agree else (agree[sid] & use)
                 target.setdefault(sid, set()).add(key)
+    if only is not None:
+        for key, want in sorted(only.items()):
+            got = seen.get(key, 0)
+            if got != want and got >= MIN_REMOVED:
+                raise SystemExit('%s %d: %d mesh pixels, the table says %d (or under %d when done): not this pair' % (
+                    'effect' if key[0] == 'e' else 'missile', key[1], got, want, MIN_REMOVED))
     why, changed = {}, {}
     for sid, m in agree.items():
         if not m.any():
@@ -245,12 +288,34 @@ def plan(dat, spr):
     return changed, stats, left
 
 
+def only_sids(dat, only):
+    """the sprite ids of the listed things (cached per dat)"""
+    key = (id(dat), id(only))
+    if only_sids.cache.get('key') != key:
+        sids = set()
+        for t in dat.effects:
+            if ('e', t.id) in only:
+                sids |= {int(x) for x in t.sprites if x}
+        for t in dat.missiles:
+            if ('m', t.id) in only:
+                sids |= {int(x) for x in t.sprites if x}
+        only_sids.cache = {'key': key, 'sids': sids}
+    return only_sids.cache['sids']
+
+
+only_sids.cache = {}
+
+
 # ------------------------------------------------------------------------------------------------ build
 def build(a, log=print):
     dat, spr = Dat(a.dat), Spr(a.spr)
     if not (spr.u32count and spr.alpha):
         raise SystemExit('not an alpha u32 spr')
-    changed, stats, left = plan(dat, spr)
+    only = read_only(a.only) if getattr(a, 'only', None) else None
+    changed, stats, left = plan(dat, spr, only)
+    if only is not None and not changed:
+        log('--only: every row of the table is done already: nothing to write')
+        return changed, stats, left
     removed = sum(v[0] for v in stats.values())
     empty = sum(1 for t in changed.values() if not (t[..., 3] > 0).any())
     log('effects and missiles cleaned: %d (%d effects, %d missiles), left whole: %d' % (
@@ -314,19 +379,21 @@ def verify(dat, spr, changed, stats, spr_path, log):
         'changed pixel is a mesh pixel' % (spr.count - len(changed), len(changed)))
 
 
-def stats_rows(dat, spr):
+def stats_rows(dat, spr, only=None):
     rows = []
     for cat, t in things(dat):
         if not t.sprites or not any(int(s) for s in t.sprites):
             continue
-        n = count_mesh(t, spr)
+        if only is not None and (t.cat, t.id) not in only:
+            continue
+        n = count_mesh(t, spr, only)
         if n:
             rows.append({'kind': cat, 'id': t.id, 'mesh_pixels': n, 'cleaned': int(n > 0)})
     return rows
 
 
-def check_clean(dat, spr):
-    return ['%s %d: %d mesh pixels left' % (r['kind'], r['id'], r['mesh_pixels']) for r in stats_rows(dat, spr) if r['cleaned']]
+def check_clean(dat, spr, only=None):
+    return ['%s %d: %d mesh pixels left' % (r['kind'], r['id'], r['mesh_pixels']) for r in stats_rows(dat, spr, only) if r['cleaned']]
 
 
 def main(argv=None):
@@ -336,6 +403,8 @@ def main(argv=None):
         p = sub.add_parser(name)
         p.add_argument('dat')
         p.add_argument('spr')
+        p.add_argument('--only', nargs='?', const=ONLY, default=None,
+                       help='clean / check only the things of this table (default %s, O733)' % os.path.relpath(ONLY, HERE))
         if name == 'build':
             p.add_argument('--out-dir', required=True)
             p.add_argument('--dry-run', action='store_true')
@@ -347,8 +416,9 @@ def main(argv=None):
         build(a)
         return 0
     dat, spr = Dat(a.dat), Spr(a.spr)
+    only = read_only(a.only) if a.only else None
     if a.cmd == 'stats':
-        rows = stats_rows(dat, spr)
+        rows = stats_rows(dat, spr, only)
         if a.out:
             with open(a.out, 'w', newline='') as fh:
                 w = csv.DictWriter(fh, ['kind', 'id', 'mesh_pixels', 'cleaned'], lineterminator='\n')
@@ -356,7 +426,7 @@ def main(argv=None):
                 w.writerows(rows)
         print('%d things with mesh pixels, %d at or over %d' % (len(rows), sum(r['cleaned'] for r in rows), MIN_REMOVED))
         return 0
-    bad = check_clean(dat, spr)
+    bad = check_clean(dat, spr, only)
     for b in bad:
         print(b)
     if bad:

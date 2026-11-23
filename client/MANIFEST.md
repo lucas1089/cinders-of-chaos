@@ -7270,6 +7270,44 @@ Owner (pt-BR): "Pode redesenhar", to the offer to redraw from words the third-pa
 - **Audit** (`angle_audit.py` on the new pair, the pool at pair 81): the 17 monsters wear 3572-3588, all `ok`; no hunt monster wears an O729 old look at pair 81 (Grave Lantern's 3103 stays in the pair for the Flimsy Lost Soul).
 - **Preview** (never committed): /dev/shm/o729/redraws.mp4, the 17 new looks only, walk in four directions, names under each.
 
+## Dissolve mesh of the pair 73 effects (O733, `tools/sprites/clean_pack_dither.py --only`, `pair_fixes/dissolve_mesh.csv`; owner 2026-11-23)
+Owner (pt-BR): "reveja se todos os efeitos estão bons" (the effects of the purchased packs). The audit is numeric only: no pack picture viewed or sent.
+- **Finding**: the pair 73 imports of `gen_area_fx.py` end with the 3-frame Bayer dissolve of `gen_pack27_fx`. The pair 66 mesh clean ran before them, so 47 effects still show the mesh the older effects lost.
+- **Table**: `kind, id, mesh, reason`. 47 effect rows: 3036, 3404-3411, 3492-3499, 3508-3515, 4051, 4076, 5301-5320. Picked by: flagged by the mesh rule, 95% or more of the mesh in the last 3 frames, 40 px or more.
+- **Run**: `clean_pack_dither.py build DAT SPR --out-dir OUT --only` (also `stats --only`, `check-clean --only`). Only listed things are cleaned; a sprite they share with an unlisted thing is copied first. The premise per row: the mesh count is the table's (cleaned) or under MIN_REMOVED (done, skipped); any other count stops with "not this pair". Loot beams are refused.
+- **Dry run on pair 81**: 47 cleaned, 0 left whole, 606 sprites rewritten (21 empty after), 28,657 mesh pixels removed. No pair built.
+- **Open**: `gen_area_fx.py live` holds the strips to `area_fx.sums`; after the clean it needs a cleaned form of these rows (as O725b did for the centre). The other failing ids (off centre, clipped, faint halo, still frames) need a re-import or anim_fixes rows; the list is in the audit report, not in the repo.
+
+## Pack effect fixes (O734, `tools/sprites/fix_pack_fx.py`, `pair_fixes/pack_fx_fixes.csv`, `pair_fixes/pack_fx_fixed.sums`; owner 2026-11-23; joins pair 82)
+Owner (pt-BR): keep the purchased effects, adapted to our quality; "reveja se todos os efeitos estão bons". Follows the O733 audit. Numbers only: no pack picture viewed or sent.
+- **Scope**: the 203 failing effect ids that a server script or a stock effect sends. Fixes by rule, from the pair alone. Nothing drawn, no colour changed, ids and timing kept.
+- **One step**: `fix_pack_fx.py build DAT SPR OUT_DIR [--dry-run] [--write-sums]`, then `fix_pack_fx.py check DAT SPR`. Order, on one copy of the pair:
+  1. dissolve: the 47 rows of `pair_fixes/dissolve_mesh.csv` (O733), `clean_pack_dither.py` plan on the input pair.
+  2. centre: the 25 rows of `pair_fixes/effect_centre.csv` with `pair` 82, `recentre_effects.py` (whole pixels, nothing cut off).
+  3. frames: the 65 rows of `pair_fixes/pack_fx_fixes.csv`, `anim_fixes.py` ops.
+- **Rules**:
+  - off_centre: pack36 in-place effects by the pivot rule (pack pull + 32 x send offset, `art_import/pack36_replace_pivots.csv`, `chaos_fx_send_offsets.lua`). Other effects by the alpha centre. The shift steps back until no frame has a run of 8 px on the canvas border.
+  - dup_frames: `merge`. A run of identical phases becomes one phase of the run's total time. 16 rows.
+  - stray: `clear_strays`, only when the isolated pixels' median luma is under 3/4 of the art's. Isolated pixels under the art median go; brighter ones are sparks and stay. 10 rows.
+  - faint_halo: `drop_faint` below alpha 40. The soft glow above stays. A hard cut at 0.5 would take 30-90% of these: owner choice. 34 rows.
+  - dither_mesh, and a lattice left once the halo went: `demesh`, the pair 66 mesh rule on one thing. 5 rows.
+- **Sums**: `pack_fx_fixed.sums` holds per thing (130) the digest before (pair 81) and after. `build` refuses an output that differs. A second run on a built pair does nothing.
+- **Live checks**: `fix_pack_fx.py check` passes on the fixed form, and on the input form while `client_pair.PAIR_ASSETS` is under 82 ("pending"). `gen_area_fx.py live`, `gen_gap_fx.py live` and `recentre_effects.py check` take the fixed form of these ids as theirs (`fix_pack_fx.fixed_ids`).
+- **Dry run on pair 81** (/dev/shm only, deleted): 130 things changed, every other thing byte-identical. Re-measured with the audit's own rules:
+  - Failing used ids 203 -> 104 (all live ids 243 -> 136).
+  - Used ids per rule: dissolve_mesh 39 -> 0, faint_halo 34 -> 0, dup_frames 16 -> 0, dither_mesh 3 -> 0, off_centre 46 -> 24, stray 19 -> 9, clipped 29 -> 28, still 27 -> 25. The others did not move.
+  - One new finding: effect 205 is now off centre by 16.3 px (15.1 before). Its pivot is 1 px off; the pivot rule wins over the alpha centre.
+  - 399 and 417 still flag off centre: the pivot rule puts the pack pivot on the tile, the audit measures the alpha centre.
+  - 9 stray ids stay: their isolated pixels are bright sparks, not dim dots.
+- **Left as they are, with the reason**:
+  - clipped: the art is cut at the pack canvas. Needs a new import on a larger canvas.
+  - still: markers and missiles (the flight is the motion). A few want a new import with more frames.
+  - loop_jump: the pack27 / pack29 dissolve fade on a loop cut to one shot. Deliberate.
+  - dull, brightness, low_contrast: `lift` raises the dark shades, not the highlight. Wrong tool. Left.
+  - flat_palette, abrupt_end: need a new import.
+  - off_centre past what the canvas allows: needs a send offset per call (ids 3, 11, 19, 20, 22-25, 32, 33, 374, 405, 416, 481, 537-540, 700, 778, 3965).
+- **Not done**: no pair 82 built for publication. The next pair runs this step after the pair 81 steps.
+
 ## Creature packs as boss outfits (O608, after O605; `tools/sprites/gen_creature_outfits.py`, `art_import/creature_outfits.csv`; joins pair 73; owner 2026-11-17)
 O605 made nine 2x2 outfits for 11 monsters. The owner saw the preview and changed it (translated): "Put the creatures back the way they were.
 Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
