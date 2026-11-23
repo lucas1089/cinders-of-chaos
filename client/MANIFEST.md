@@ -7062,6 +7062,8 @@ The owner approved the review O604. Five of our area bursts are faint. The beam 
   Long `mega_blood_siphon_l5` 5323..5330. Our own bursts stay, so nothing sent the four pack bursts. Eclipse Edge lost its beam.
   The ten refill rows are back in `pair51_removed.csv`. `RETIRED` in the tool names them, and `check` fails when one comes back.
 - **Added.** Refill 3036 `mega_gravity_press`, role `status`: the slowed status effect. 3 x 3, offset (1, 1), 17 phases of 83 ms.
+  O725: its art stands 6.3 px down and right of the tile middle on pair 79 (no whole-tile offset fixes it; the fix is a pair fix). `live` prints the centre of the
+  `status` rows and fails over `CENTRE_TOL` = 4 px unless the row is in `CENTRE_OFF`; `gen_area_fx_test.py` holds the maths (`art_centre`, `centre_errors`).
   Pair 51 had blanked it. Its row moved to `pair51_keep.csv`.
 - **Ids.** 5300 `ab_arcane_clock`. 5301..5308 `mega_soul_chain_l6`. 5309..5312 `mega_sunbeam_lance_l3`, diagonals. 5313..5320 `mega_sunbeam_lance_l8`.
   The clock and the long beams are one block with no hole. Pair 73 is not shipped, so no id was in use.

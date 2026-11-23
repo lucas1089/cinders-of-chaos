@@ -36813,6 +36813,14 @@ The owner approved the review O604. Looks only: no damage, no timing, no area ch
   The status layer (O597) would show its `root` status for a slowed creature on the same pair. The owner's word of O613 is the gravity press.
   So `root` yields: `ChaosStatusVfx.yield = {root = "slowed"}`. No mark from the state and no bit from the paralyse condition while the press is live.
   The three `st_root_*` effects 5158..5160 are in the pair with no sender then. An empty `yield` table gives root back to the layer.
+  O725 (owner 2026-11-22, "Juggernaut solta o efeito roxo desalinhado"): the Juggernaut slows more than any class (Iron Bellow, Earthbreaker, Anvil Fall,
+  Colossus Fall), so it puts the press on every monster it hits: a dark disc with a gold rim, a purple ring and three purple chevrons at its top
+  left. Measured on pair 79 (alpha centre over the 17 frames, sent at +1,+1 so the canvas middle is on the creature): the art stands 6.3 px down
+  and right of the tile middle (disc 7 px, chevrons 20 px up and left). No whole-tile send offset helps (+-1 tile is 26 px or 38 px off), so the fix is a
+  pair fix (move the art 6 px up and left in the canvas, then drop the row from `CENTRE_OFF` in `gen_area_fx.py`), not done: it needs the sheet and a new pair.
+  `gen_area_fx.py live` now prints the centre of every `status` row and fails over 4 px (`CENTRE_TOL`) unless the row is named in `CENTRE_OFF` with its reason.
+  The other effects a Juggernaut sends were measured the same way (all of its 20 spells, their Forms and the awakened casts at pair 79): the purple ones are 13 (Ironhold, a lilac
+  2x2 sent at the caster, centre 7 px up and left, as its pivot pull of 3 px allows), 414 (Bastion Cry, a plum shockwave, 4.6 px up and left) and the status above. The void eye 396 (centre 2 px off) and 388 (red) are not sent by any Juggernaut script.
 - **Beams.** A line spell of the attack kit draws one pack beam from the caster's tile toward the target.
   It takes the place of the effect on every tile of the line. The tiles that are hit are the line's, untouched. The projectile and the hit effects stay.
 

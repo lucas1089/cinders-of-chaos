@@ -69,6 +69,18 @@ KEEP = os.path.join(HERE, 'pair51_keep.csv')
 PAIR = 73
 FIRST = 5300                               # the new effects; ids below it are other steps' or padding
 MIN_EFFECTS, NEED_MISSILES = 4742, 253     # pair 72 at least; a later step's effects may already be there
+# O725: where the art of a status effect lands. The engine draws an effect with its bottom-right tile on the tile it is sent to
+# (the send tile is the target + the row's dx, dy, moved by the dat displacement), so the art's alpha centre, over every frame,
+# stands (art_centre) this many px from the middle of the target tile. A status effect sits on a creature, so it must be within
+# CENTRE_TOL px; a whole-tile send offset cannot fix more than that. A row that is off anyway is named here with its reason (the
+# list may only shrink: `live` fails when a row of it is inside the tolerance). Areas, markers and beams are not held (a clock,
+# a hand and a beam are not round).
+CENTRE_ROLES = ('status',)
+CENTRE_TOL = 4
+CENTRE_OFF = {
+    'mega_gravity_press': 'O725: the pack art stands 6 px down and right of the canvas middle (a disc and its chevrons); no whole-tile '
+                          'send offset moves it less than 26 px, so it needs a pair fix (art_import/area_fx.csv)',
+}
 BLANK = bytes([0xFF, 1, 1, 1, 1, 1, 1, 1]) + struct.pack('<I', 0)     # a blank effect, as pair 51 writes one
 DIRS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
 STEP = {'n': (0, -1), 'ne': (1, -1), 'e': (1, 0), 'se': (1, 1), 's': (0, 1), 'sw': (-1, 1), 'w': (-1, 0), 'nw': (-1, -1)}
@@ -718,6 +730,50 @@ def build(dat_path, spr_path, out, srcs, write):
     return live(os.path.join(out, 'Tibia.dat'), os.path.join(out, 'Tibia.spr'), only_long)
 
 
+def art_centre(frames, w, h, dx, dy, disp=(0, 0)):
+    """(x, y) px of the alpha centre of `frames` (h*32 x w*32 x 4 canvases, every frame counted by its alpha) from the middle of
+    the target tile, when the effect is sent at the target + (dx, dy): the canvas bottom-right tile stands on the send tile, moved
+    by the dat displacement. None for blank art."""
+    import numpy as np
+    sx = sy = tot = 0.0
+    for f in frames:
+        a = f[..., 3].astype(float)
+        ys, xs = np.nonzero(a)
+        if not len(xs):
+            continue
+        wt = a[ys, xs]
+        sx += float((xs + 0.5) @ wt)
+        sy += float((ys + 0.5) @ wt)
+        tot += float(wt.sum())
+    if not tot:
+        return None
+    left = dx * 32 + 32 - w * 32 - disp[0]       # the canvas' top left from the target tile's top left
+    top = dy * 32 + 32 - h * 32 - disp[1]
+    return left + sx / tot - 16, top + sy / tot - 16
+
+
+def centre_errors(rows, frames_of, disp_of=lambda r: (0, 0)):
+    """problems of where the held rows' art lands (CENTRE_ROLES, CENTRE_TOL, CENTRE_OFF) and their centres: -> (errors, {name: (x, y)})"""
+    errs, got = [], {}
+    for r in rows:
+        if r['role'] not in CENTRE_ROLES or r['kind'] == 'long':
+            continue
+        c = art_centre(frames_of(r), int(r['w']), int(r['h']), int(r['dx']), int(r['dy']), disp_of(r))
+        if c is None:
+            errs.append('%s: blank art' % r['name'])
+            continue
+        got[r['name']] = c
+        off = max(abs(c[0]), abs(c[1])) > CENTRE_TOL
+        if off and r['name'] not in CENTRE_OFF:
+            errs.append('%s: the art centre is %.1f, %.1f px from the middle of its tile, over %d px: change its send offset, or fix the '
+                        'art (a row of CENTRE_OFF names the reason)' % (r['name'], c[0], c[1], CENTRE_TOL))
+        if not off and r['name'] in CENTRE_OFF:
+            errs.append('%s: inside %d px now (%.1f, %.1f): remove it from CENTRE_OFF' % (r['name'], CENTRE_TOL, c[0], c[1]))
+    for name in sorted(set(CENTRE_OFF) - {r['name'] for r in rows}):
+        errs.append('CENTRE_OFF names %s, not a row of the table' % name)
+    return errs, got
+
+
 def live(dat_path, spr_path, only_long=False):
     """the pair holds each row at its id: size, phases, durations and the pixels of the sums (only_long: the long beams
     alone, for a pair whose earlier rows this run did not write)"""
@@ -745,6 +801,19 @@ def live(dat_path, spr_path, only_long=False):
         strip[strip[..., 3] == 0] = 0
         if digest(strip) != sums.get(r['name']):
             errs.append('%s: pixels differ from the sum' % r['name'])
+    if not errs and not only_long:
+        def frames_of(r):
+            t = dat.effects[int(r['id']) - 1]
+            back = render_back(t, spr, 1)
+            return [back[(f, 0, 0, 0)] for f in range(int(r['phases']))]
+
+        def disp_of(r):
+            return tuple(dat.effects[int(r['id']) - 1].flags.get('displacement', (0, 0)))
+
+        cerrs, centres = centre_errors(rows, frames_of, disp_of)
+        errs += cerrs
+        for name, c in sorted(centres.items()):
+            print('area fx centre: %s %.1f, %.1f px from its tile%s' % (name, c[0], c[1], ' (known: %s)' % CENTRE_OFF[name] if name in CENTRE_OFF else ''))
     for e in errs:
         print(e)
     print('area fx live: %d effects (%d refilled in place, %d new at %d.., %d long beams up to %d), %s' % (
