@@ -29,10 +29,12 @@ def ok(cond, what):
 
 EX = os.path.join(HERE, 'areaplan', 'examples')
 examples = {f[:-5]: json.load(open(os.path.join(EX, f))) for f in sorted(os.listdir(EX)) if f.endswith('.json')}
-ok(sorted(examples) == ['crypt_boss', 'lava_cave', 'river_hunt', 'ruined_hamlet', 'swamp_hunt', 'temple_throne', 'village_square'],
-   'seven example plans: %s' % sorted(examples))
+ok(sorted(examples) == ['crypt_boss', 'highland_hunt', 'hollowgate_vault', 'lava_cave', 'river_hunt', 'ruined_hamlet',
+                         'swamp_hunt', 'temple_throne', 'village_square'],
+   'nine example plans: %s' % sorted(examples))
 NUMERIC = {'size', 'floors', 'level', 'seed', 'count', 'respawn', 'pack', 'width', 'at', 'x', 'y', 'z', 'gold',
-           'experience', 'chest_action', 'floor', 'dx', 'dy', 'radius', 'fords', 'ruin', 'floors_above'}
+           'experience', 'chest_action', 'floor', 'dx', 'dy', 'radius', 'fords', 'ruin', 'floors_above',
+           'height', 'ramps'}
 
 
 def numbers_outside(v, key=None):

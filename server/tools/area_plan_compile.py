@@ -19,6 +19,7 @@ sys.path.insert(0, HERE)
 import area_plan_core as C
 import area_plan_buildings as BLD   # parametric buildings (O515)
 import area_plan_decor as D
+import area_plan_plateau as PL  # plateaus and cliffs (O744)
 import area_plan_shape as SH
 import areagen_export as AX
 import map_tile_rules as MR      # the tile rules shared with the whole-map audit (audit_map_tiles.py)
@@ -120,10 +121,24 @@ def water_def(plan, lay):
     return dict(rivers=rivers, lakes=lakes, fords=w.get('fords', 0))
 
 
-def run_build(plan, cat, lay, pair24, dark):
+def style_of(plan, cat, pair24, dark):
+    """(profile, job.style) of a plan's `style` (O743, area_plan_style.py); (None, None) without one"""
+    if not plan.get('style'):
+        return None, None
+    import area_plan_style as ST
+    try:
+        prof = ST.load(plan['style'])
+    except ValueError as e:
+        raise CompileError(str(e))
+    return prof, ST.job_style(prof, C.biome_of(plan, cat)['kind'], C.materials(pair24, dark))
+
+
+def run_build(plan, cat, lay, pair24, dark, style=None):
     job = dict(def_=job_def(plan, cat, lay), biome=plan['biome'], decoration=plan.get('decoration', 'normal'))
     if plan.get('light'):
         job['light'] = plan['light']
+    if style:
+        job['style'] = style     # O743: the profile's floor, room floors, patches and wall (absent when off)
     text = 'return ' + lua_value(job).replace('def_ =', '["def"] =') + '\n'
     fd, path = tempfile.mkstemp(prefix='areaplan_', suffix='.lua')
     try:
@@ -321,7 +336,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         lay = C.layout(plan, cat)
     except C.LayoutError as e:
         raise CompileError(str(e))
-    area, meta = run_build(plan, cat, lay, pair24, dark)
+    style_prof, style_job = style_of(plan, cat, pair24, dark)
+    area, meta = run_build(plan, cat, lay, pair24, dark, style_job)
     biome = C.biome_of(plan, cat)
     ox, oy, oz = origin_of(plan, biome)
     seed = lay['seed']
@@ -398,10 +414,14 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     for t in crossing:      # O739: a bridge or a ford and the tiles around it are a chokepoint: no spawn, chest or NPC
         bprot.update((t[0] + dx, t[1] + dy, t[2]) for dx, dy in C.D8 + ((0, 0),))
 
-    def zone_cells(zid, avoid=1):
+    pres = None     # plateaus (O744), placed after the buildings
+
+    def zone_cells(zid, avoid=1, top=False):
         x1, y1, x2, y2, z = zrect[zid]
         out = [(x, y, z) for y in range(y1, y2 + 1) for x in range(x1, x2 + 1)
                if (x, y, z) in walk and not near_special((x, y, z), avoid) and (x, y, z) not in bprot]
+        if top and pres:    # O744: spawns and chests may stand on a plateau of the zone
+            out += [t for t in pres['top'].get(zid, ()) if t in walk and not near_special(t, avoid) and t not in bprot]
         return out
 
     def path_cells(ends):
@@ -467,6 +487,14 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         special.update(bres['special'])
         for rec in bres['records']:
             special.update(rec['door'])
+    if PL.spec(plan):   # O744: plateaus and cliffs with ramps, off the routes, buildings and water
+        mats = mats or C.materials(pair24, dark)
+        avoid = corridor_cells() | bprot | crossing | (bres['foot'] if bres else set())
+        pres = PL.place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit, seed, E, Wn,
+                            lambda w_, e_: C.tile_reach(w_, arrival, (), e_),
+                            [e for l in link_out for e in l['edges']] + (bres['edges'] if bres else []))
+        special.update(pres['special'])
+        bprot |= pres['prot']
     portal = meta['portal']
     teleports = []      # (from tile, to tile)
     tele_out = []
@@ -512,7 +540,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     chest_out = []
     chest_aid = C.chest_action(plan)
     for i, ch in enumerate(plan.get('chests', [])):
-        cells = [t for t in zone_cells(ch['zone'], 2) if _simple(walk, t)]
+        cells = [t for t in zone_cells(ch['zone'], 2, top=True) if _simple(walk, t)]
         # against a wall or rock edge first, then away from the zone's centre
         wall = lambda t: sum(1 for dx, dy in C.D8 if (t[0] + dx, t[1] + dy, t[2]) not in walk)
         c0 = zcenter(ch['zone'])
@@ -572,7 +600,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             cells = path_cells(s['path'])
         else:
             zid = s['zone']
-            cells = zone_cells(zid, 2)
+            cells = zone_cells(zid, 2, top=True)
         cells = [t for t in cells if t not in pz and
                  not (t[2] == arrival[2] and max(abs(t[0] - arrival[0]), abs(t[1] - arrival[1])) < 4)]
         cells.sort(key=lambda t: (t[1], t[0]))
@@ -614,6 +642,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     edges = [e for l in link_out for e in l['edges']] + list(teleports)
     if bres and bres['edges']:
         edges += bres['edges']      # O740: the stairs of the floors above and the cellars' holes and ladders
+    if pres:
+        edges += pres['edges']      # O744: the plateaus' ramps
     sets = meta['sets'] if isinstance(meta['sets'], dict) else {}
     meta['sets'] = sets
     plain = set(meta['allowed']) & set(i for s_ in sets.values() for i in s_)
@@ -651,7 +681,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     dresser = D.Dresser(tiles, walk, zone_list, meta['kind'], plan['biome'], protected, keep, corridor, plain, wall_kind,
                         random.Random(seed * 977 + 5), plan.get('decoration', 'normal'),
                         plan.get('light') or biome.get('light', 'normal'),
-                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None)
+                        boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None, style=style_prof)
     if dress:
         dresser.run(wall_ids)
         if chest_out:   # nothing else next to a quest chest (owner request 2026-10-27; area_plan_decor.Dresser.clear_around)
@@ -689,6 +719,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     fr = meta.get('frame')
     frame = {}
     extra = bres['extra'] if bres else set()     # O740: floors above (open to the floor below) and cellars (framed on their own)
+    if pres:
+        extra = extra | pres['extra']                # O744: the plateau tops look down on the floor below
     if not fr:
         E('the generator names no ground for the view frame')
     else:
@@ -715,7 +747,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             return dict(ground=trng.choice(th['grounds']), items=[(trng.choice(th['items']), {})], flags=0)
         for k in sorted(tiles):
             t = tiles[k]
-            if k in walk:
+            if k in walk or (pres and k in pres['prot']):
                 continue
             if t['ground'] in rgrounds:
                 tiles[k] = thick()
@@ -755,6 +787,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if bres:
         allowed |= bres['wall_ids'] | bres['floor_ids'] | bres['door_ids'] | bres['item_ids'] | bres['roof_ids']
         allowed |= bres['extra_allowed'] | bres['extra_ground'] | {c_['frame']['ground'] for c_ in bres['cellars']}
+    if pres:
+        allowed |= pres['ids']
     unknown = {}
     for k, t in back.items():
         if t['ground'] is None and not t['items']:
@@ -785,6 +819,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if bres:
         ground_ids |= bres['floor_ids'] | bres['extra_ground'] | {c_['frame']['ground'] for c_ in bres['cellars']}
         block_ids |= bres['block_ids'] | bres['extra_block']
+    if pres:
+        ground_ids |= pres['grounds']
     for msg in tile_rule_errors(back, walk, ground_ids, block_ids, meta['portal']):
         E(msg)
     # borders closed: every transition to a higher family with a border set carries one of its pieces; every
@@ -800,7 +836,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     open_edges, unbordered, transitions = 0, 0, 0
     for k, t in back.items():
         f = fam_of.get(t['ground'])
-        if f is None:
+        if f is None or (pres and k in pres['skip_border']):     # O744: the stone stairs of a ramp lie in the cliff
             continue
         zf = meta['families'][f]['z']
         ids = {i for i, _a in t['items']}
@@ -809,7 +845,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             nk = (k[0] + dx, k[1] + dy, k[2])
             nt = back.get(nk)
             if nt is None:
-                if k in walk:
+                if k in walk and not (pres and k in pres['open_ok']):   # O744: a ramp's stairs ground opens south
                     open_edges += 1
                 continue
             if bres and (k in bres['skip_border'] or nk in bres['skip_border']):
@@ -851,6 +887,10 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         E('the boss cannot be reached from the entry')
     if bres:
         BLD.qa_all(bres['records'], tiles, walk, dist, mats, E, Wn, set(kit['roof']['ground']))
+    if pres:
+        wet = {k for k, t in tiles.items() if (fam_of.get(t['ground']) or '').startswith('water')}
+        PL.qa(pres['records'], tiles, walk, dist, {'water': wet, 'a crossing': crossing, 'a building': bres['foot'] if bres else set()},
+              E, Wn, lambda m: qa.append(('INFO', m)), brush['stairs_up'], brush['stairs_down_ground'], pres['cliff']['ground'])
     for zid, z in zones.items():
         if z.get('role') == 'boss':
             x1, y1, x2, y2, zz = zrect[zid]
@@ -889,7 +929,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                            per_screen_max=mx, screens=nscr))
         if mons and not 1.0 <= 100.0 * mons / max(1, len(hunt)) <= 6.0:
             Wn('floor %d: %.2f monsters per 100 walkable tiles (the guide asks 1.5-5)' % (f, 100.0 * mons / max(1, len(hunt))))
-    footprint = walk | dresser.blocked | special | (bres['foot'] if bres else set())     # walkable before the trees and bushes took tiles: the outline
+    footprint = walk | dresser.blocked | special | (bres['foot'] if bres else set()) | (pres['foot'] if pres else set())     # walkable before the trees and bushes took tiles: the outline
     qa.extend(SH.check_floors(footprint, plan['id'], [oz + f for f in range(plan['floors'])]))
     stats = dict(tiles=len(tiles), walkable=len(walk), monsters=total_mon, spawn_points=len(spawn_out),
                  per100=round(100.0 * total_mon / max(1, len(walk - pz)), 2), floors=floors,
@@ -901,8 +941,13 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     reach = reach_stats(meta.get('reach'), len(unreached), len(walk))
     if plan.get('water'):
         stats['water'] = water_qa(meta.get('water'), tiles, spawn_out, boss_out, npc_out, chest_out, water_g, E, qa)
+    if pres:
+        stats['plateaus'] = [PL.manifest_of(r_, dist) for r_ in pres['records']]
     if plan.get('repair_reach'):
         stats['reach'] = reach      # in the manifest only when asked: a held plan keeps its bytes
+    if style_prof:
+        import area_plan_style as ST
+        stats['style'] = ST.manifest_entry(plan['style'], style_prof, style_job, dresser)    # O743: only with `style`
     if stats['decoration']['spam_share'] > 0.01:
         Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
            % (100 * stats['decoration']['spam_share']))
@@ -930,6 +975,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     manifest['stubs'] = sorted(stubs)
     return dict(otbm=data, frame_otbm=frame_data, frame=frame, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
                 stubs=stubs, dresser=dresser, buildings=(bres['records'] if bres else []),
+                plateaus=(pres['records'] if pres else []), plateau_edges=(pres['edges'] if pres else []),
                 walk=walk, footprint=footprint, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
                 stats=stats, plan_issues=issues, reach=reach)
