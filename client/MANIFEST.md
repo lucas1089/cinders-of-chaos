@@ -8145,6 +8145,7 @@ Owner (pt-BR), answering "may pair 83 be built and published?": "Aprovado. Pode 
 - **Held**: `check_pair.py` 0 errors, 5,320 warnings. `gen_cliff_art.py live` and `gen_wst_wear.py live` OK, `clean_wing_shadows.py check-clean` OK.
 - **Tables regenerated from it**: `outfit_anchors.lua`, `info_lifts.lua` (and `InfoLiftData.cs`), `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua`. `check_content.py` `PAIR_NAME` 'pair 83', `PAIR_OUTFITS` 3733.
 - **Owner step**: ship a client package with pair 83, then admin app Comandos > "Par do cliente" > Gravar 83 (`chaos-ctl.sh client-pair set 83`). Below 83 the O746 and O747 gates stay off.
+- **Quality bar run (2026-11-24)**: `sprite_quality.py check --kind outfit` on all 218 O747 looks of pair 83 (wings 2385.. and 3589, heads 3590-3655, capes 3656-3733): 0 pass. The outfit bar is the body bar (a 2x2 player outfit of 600-800 px with a walk cycle) and does not fit an accessory: every piece fails `outline_selout_share` and warns on `semi_share` / `alpha_levels` (the pack draws with a coloured outline and soft alpha), 216 fail `colours` (the floor scales with the body size), about half fail the motion rows (a cape or a head piece barely moves). No bar for accessories exists yet; the owner judged the pieces by eye from the previews ("As que estão entrando são melhores"). Not a release block.
 
 ## Side dock (O732)
 
