@@ -52,7 +52,7 @@ local floor, max = math.floor, math.max
 R.players = R.players or {} -- player id -> state (see R.load)
 R.tracked = R.tracked or {} -- monster id -> {max, last, dead, by = {player id -> record}, ignore}
 R.heals = R.heals or {} -- player id -> heal list
-R.catalog = R.catalog or {} -- spell id -> {id, name, heal, cooldownMs, weight, scale}
+R.catalog = R.catalog or {} -- spell id -> {id, name, heal, cooldownMs, weight, scale, level (O752)}
 R.flushSeconds = 30
 
 local function nowMs()
@@ -91,7 +91,7 @@ function R.loadCatalog(text)
 				and not excluded[e.id] and cfg.eligible.groups[e.group or ""] then
 			local heal = cfg.eligible.heal[e.group or ""] == true
 			local weight, scale = P.weight({heal = heal, cooldownMs = e.cooldown}, cfg)
-			out[e.id] = {id = e.id, name = e.name, heal = heal, cooldownMs = e.cooldown, weight = weight, scale = scale}
+			out[e.id] = {id = e.id, name = e.name, heal = heal, cooldownMs = e.cooldown, weight = weight, scale = scale, level = e.level}
 			if heal then
 				R.healIds[e.id] = true
 			end
@@ -420,7 +420,16 @@ function R.state(player)
 		end
 		table.sort(list, function(a, b) return a[1] < b[1] end)
 	end
-	return {on = cfg.enabled == true, v = cfg.version, s = list}
+	local out = {on = cfg.enabled == true, v = cfg.version, s = list}
+	-- O752: the spell path milestones (spell_milestones.lua): the gate rules and the next milestone of the character's class
+	local SM = rawget(_G, "ChaosSpellMilestones")
+	if SM and SM.wire then
+		local ok, ms = pcall(SM.wire, player)
+		if ok and ms then
+			out.ms = ms
+		end
+	end
+	return out
 end
 
 function R.receive(player, msg)

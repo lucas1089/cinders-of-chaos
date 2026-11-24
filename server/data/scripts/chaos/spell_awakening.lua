@@ -36,6 +36,10 @@ ChaosSpellAwakeningConfig = dofile("data/scripts/chaos/spell_awakening_config.lu
 dofile("data/lib/chaos_spell_ranks.lua")
 dofile("data/lib/chaos_spell_awakening.lua")
 pcall(dofile, "data/lib/chaos_spell_forms.lua")
+if not ChaosSpellMilestonesCore or not ChaosSpellMilestonesCore.awakenLevel then
+	dofile("data/scripts/chaos/spell_milestones_core.lua")
+end
+ChaosSpellMilestonesConfig = ChaosSpellMilestonesConfig or dofile("data/scripts/chaos/spell_milestones_config.lua")
 
 local AW = ChaosSpellAwakening
 local A = ChaosSpellAwakeningCore
@@ -227,7 +231,13 @@ function AW.awaken(player, spellId, slot)
 		rank, f1, f2, aw = packedOf(player, spellId)
 	end
 	local st = {on = true, entry = entry ~= nil and info ~= nil, known = knows(player, info), rank = rank, f1 = f1, f2 = f2, awakened = aw,
-		slots = AW.slots(player), seals = AW.seals(player)}
+		slots = AW.slots(player), seals = AW.seals(player), level = player:getLevel()}
+	-- O752: the level gates of the slots and of the spell (spell_milestones_config.lua)
+	local mc = ChaosSpellMilestonesConfig
+	if mc and mc.enabled == true then
+		st.slotLevels = mc.slots
+		st.gate = ChaosSpellMilestonesCore.awakenLevel(mc, info and info.level or 0)
+	end
 	local d = A.decide(cfg, rcfg.maxRank, st, slot)
 	d.spell = spellId
 	if not d.ok then

@@ -1423,6 +1423,10 @@ per ascension. Pinned by `server/tests/class_spell_progression_test.lua`.
 - Base server scripts that test vocation ids by number (e.g. the familiar system, `firstitems.lua`, NPCs with `isDruid`) were not
   reviewed (other work).
 
+### Spell path milestones (O752)
+
+No class waits more than 150 levels for something new between 190 and 2500. The spells keep their levels; Form tiers, awakening slots and the awakening of a spell open by level (docs/SPELL_UPGRADES.md 2.6). Per class: `cd server && luajit tools/progression_model.lua --spells --detail`.
+
 ### Spell Forms (O686 phase 4, switched off)
 
 Every attack and healing spell of every class has two Form I (rank 10) and two Form II (rank 20) in `server/data/spells/forms.csv`, once for a spell that classes share (149 spells, 596 rows; the Elementalist, Illusionist, Deadeye, Berserker, Ninja, Iron Sage and Lich tables of `docs/SPELL_UPGRADES.md` 2.5 are in it word for word, the other classes follow the same template). A Form changes how the spell plays, not how strong it is: each sits inside -5% to +8% on one enemy and -5% to +12% on five (`spell_upgrade_model.py --forms`). Rows per class (spells x 4): Warrior line 64, Ranger 64, Deadeye 64, Beastmaster 68, Mystic 64, Elementalist 60, Illusionist 72, Thief line 56, Necromancer line 64, Monk line 56, Templar and Inquisitor 56, Sentinel 60. Nothing is in play while the ranks are switched off (server/README.md "Spell Forms (O686 phase 4)").

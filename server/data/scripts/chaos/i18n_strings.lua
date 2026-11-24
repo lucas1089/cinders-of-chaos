@@ -6,6 +6,21 @@
 
 return {
 	["pt-BR"] = {
+		-- Spell path milestones (O752: spell_milestones.lua)
+		["New unlock"] =
+			"Novo desbloqueio",
+		["Awakening slot %d opens."] =
+			"O espaço de despertar %d foi liberado.",
+		["Form I opens for %s."] =
+			"Forma I liberada para %s.",
+		["Form II opens for %s."] =
+			"Forma II liberada para %s.",
+		["Awakening opens for %s."] =
+			"Despertar liberado para %s.",
+		["Next unlock: level %d."] =
+			"Próximo desbloqueio: nível %d.",
+		["and %d more"] =
+			"e mais %d",
 		-- Pinnacle bosses (O667: pinnacle.lua, pinnacle_core.lua, the Keeper of the Pinnacle)
 		["The anchors break: %s can be hurt again!"] =
 			"As âncoras se quebram: %s volta a sofrer dano!",

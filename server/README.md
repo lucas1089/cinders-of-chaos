@@ -38499,6 +38499,19 @@ Owner 2026-11-21 (pt-BR "Ligar agora"): the spell upgrades of O686 are on. Ranks
 
 **Rollback.** `enabled = false` in `spell_ranks_config.lua` and a restart: the state stays in storage and the table, nothing is felt, the opcode answers `on = false` and the client hides the tab. Do not turn `track` off alone while `enabled` is true.
 
+## Spell path milestones (O752) (`spell_milestones_config.lua`, `spell_milestones_core.lua`, `spell_milestones.lua`)
+
+Owner 2026-11-24 ("Buraco de magias"): fill the spell unlock gaps without new attack spells. Design and the gate table: docs/SPELL_UPGRADES.md 2.6.
+
+- **Config.** `enabled`, `limit` 150, `from` 190, `to` 2500. `formI.add` 300, `formII` and `awaken` bands by spell level, `slots` 1800 / 1950 / 2250. Off: no gate, no toast, no `ms` in the state.
+- **Core.** `ChaosSpellMilestonesCore`: the gate levels, `list` of one class (spells, Form tiers, awakening above slot 1, support sockets), `gaps`, `problems` over all classes, `nextAfter`, `reached` (what a level-up passed), `wire`.
+- **Gates.** `spell_forms_core.lua` `F.decide` refuses a first pick under the gate (`why = "level"`, `need`). `spell_awakening_core.lua` `A.decide` refuses a slot under its level (`why = "slotlevel"`) and a spell under its awakening level (`why = "level"`). Picks already made are never refused.
+- **Engine.** `spell_milestones.lua`: the class list from the Spellbook list (runes and conjures out), cached per book. Login and advance events. On a level-up that passes milestones: a status line and `ChaosNotify.send(..., "milestone")`, title "New unlock", at most 3 names then "and N more". Support sockets are counted, never toasted (they show in the supports window).
+- **Wire.** Opcode 168 `state` gains `ms`: `f1`, `f2` and `aw` rows `{below or 0, level}`, `sl`, `nx = {l, k, n, s, c}` (next milestone level, kind, spell name, slot, count at that level). No new opcode, no new storage.
+- **Rule.** `tools/progression_model.lua --check` holds every class at most 150 levels without a milestone in 190-2500 (`K.problems`); `--spells` prints count and longest stretch, `--spells --detail` the list.
+- **Bots.** `tester_checks.py` `level_gate_skip`: a Forms or awakening check refused under a gate is a SKIP that names the level.
+- **Tests.** `tests/spell_milestones_test.lua` (gates, the typical-character bounds, gaps, the 21 classes, limit 100 fails, gates off fails, wire, the engine on mocks), gate cases in `tests/spell_forms_test.lua` and `tests/spell_awakening_test.lua`; client `ranklogic_test.lua`, `awakelogic_test.lua`.
+
 ## Drawn wings (O581 phase 2; `data/lib/chaos_drawn_wings.lua`, `data/lib/chaos_drawn_wings_ids.lua`, install step `outfits`, gate `chaosClientPair` 78)
 Owner 2026-11-22 ("Todas as 6"): the six code-drawn wings of O581 are wings players can buy. Art: `client/tools/sprites/gen_drawn_wings.py` (ours, no art file); the pair: client/MANIFEST.md "Code-drawn wings as cosmetics (O581 phase 2)".
 - **What.** Ember Pinions, Ossuary Wings, Void Orbit, Bladefan, Rimeshard, Grave Lanterns: wings.xml ids 122 to 127 on client looks 3555 to 3560 (the looks follow the last outfit of pair 77, 3554). The 121 old wings keep ids 1 to 121. `chaos_drawn_wings_ids.lua` is generated from `client/tools/sprites/drawn_wings/new_looks.csv` (`gen_drawn_wings.py new-table`, CI `--check`; `tests/drawn_wings_test.lua` reads the csv too).

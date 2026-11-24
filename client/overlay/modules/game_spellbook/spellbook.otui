@@ -190,6 +190,18 @@ ChaosMainWindow
     anchors.verticalCenter: closeButton.verticalCenter
     text-align: left
 
+  // O752: the next spell path milestone of the class (game_spellranks nextMilestone), empty while the spell upgrades are off
+  ChaosLabelDim
+    id: milestoneLabel
+    anchors.left: countLabel.right
+    anchors.right: upgradesButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-left: 12
+    margin-right: 6
+    text-align: left
+    color: #e8b84a
+    phantom: false
+
   ChaosPanelDark
     id: listFrame
     anchors.top: filterCombo.bottom

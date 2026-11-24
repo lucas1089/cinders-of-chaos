@@ -6,6 +6,9 @@
 -- kills per hour (spawn_tuning.json model.paceKillsPerHour), the engine's experience formula, the hall's hunt bands
 -- (tools/hall_hunts.csv and tools/areaplan/plans/*.json), the newcomer bonus of low levels (catchup_config.lua newcomer,
 -- O370; --no-newcomer leaves it out) and progression_config.lua (the limits --check enforces).
+-- O752: --spells also counts the spell path milestones (spell_milestones_config.lua: new spells, support sockets, Form tiers,
+-- awakening gates and slots; --detail lists them per class) and --check fails when a class goes more than its `limit` levels
+-- without one between `from` and `to`.
 local M = {}
 
 local function readAll(path)
@@ -303,6 +306,68 @@ function M.unlockLevels()
 	return out
 end
 
+-- O752: the spells of every vocation with what can become a milestone (spell_milestones_core.lua M.list):
+-- {voc = {{id, name, level, forms, awaken, sockets}, ...}}. forms: a row of data/spells/forms.csv; awaken: a row of
+-- data/spells/awakened.csv; sockets: a spell id the supports give sockets (chaos_supports_config.lua `none` has none)
+function M.classSpells()
+	local function ids(path)
+		local set, first = {}, true
+		for line in io.lines(path) do
+			if first then first = false else
+				local id = tonumber(line:match("^(%d+),"))
+				if id then set[id] = true end
+			end
+		end
+		return set
+	end
+	local formed, awakened = ids("data/spells/forms.csv"), ids("data/spells/awakened.csv")
+	local scfg = dofile("data/lib/chaos_supports_config.lua")
+	local none = {}
+	for _, id in ipairs(scfg.none or {}) do none[id] = true end
+	local per = {}
+	local function add(voc, id, name, level)
+		per[voc] = per[voc] or {}
+		per[voc][name] = {id = id, name = name, level = level, forms = id and formed[id] or false,
+			awaken = id and awakened[id] or false, sockets = id ~= nil and not none[id]}
+	end
+	local xml = readAll("data/spells/chaos/spells_chaos.xml"):gsub("<!%-%-.-%-%->", "")
+	for block in xml:gmatch("<instant.-</instant>") do
+		local head = block:match("<instant([^>]*)>")
+		local name, level = head:match('name="([^"]+)"'), tonumber(head:match('level="(%d+)"'))
+		local id = tonumber(head:match('spellid="(%d+)"'))
+		for voc in block:gmatch('<vocation name="([^"]+)"') do add(voc, id, name, level) end
+	end
+	local first = true
+	for line in io.lines("data/spells/stock_spells.csv") do
+		if first then first = false else
+			local f = {}
+			for col in (line .. ","):gmatch("([^,]*),") do f[#f + 1] = col end
+			for voc in f[#f]:gmatch("[^;]+") do add(voc, tonumber(f[1]), f[2], tonumber(f[5])) end
+		end
+	end
+	local out = {}
+	for voc, byName in pairs(per) do
+		local list = {}
+		for _, s in pairs(byName) do list[#list + 1] = s end
+		table.sort(list, function(a, b) return a.level < b.level or (a.level == b.level and a.name < b.name) end)
+		out[voc] = list
+	end
+	return out, scfg
+end
+
+-- O752: the milestone lists of every vocation {voc = list} (spell_milestones_core.lua M.list) and the config
+function M.milestones()
+	ChaosSpellMilestonesCore = nil
+	local K = dofile("data/scripts/chaos/spell_milestones_core.lua") or ChaosSpellMilestonesCore
+	local cfg = dofile("data/scripts/chaos/spell_milestones_config.lua")
+	local spells, scfg = M.classSpells()
+	local out = {}
+	for voc, list in pairs(spells) do
+		out[voc] = K.list(cfg, list, scfg)
+	end
+	return out, cfg, K
+end
+
 -- the longest stretch below `upTo` without a new spell: {gap, from, to}
 function M.longestSpellGap(levels, upTo)
 	local best = {0, 0, 0}
@@ -392,7 +457,7 @@ end
 --                  same limits on that curve (it is slower, so the "minutes a level" ceilings may not hold: the report says which)
 local flags, args = {}, {}
 for _, a in ipairs(arg or {}) do
-	if a == "--no-newcomer" or a == "--upgrades" or a == "--no-upgrades" or a == "--today" then
+	if a == "--no-newcomer" or a == "--upgrades" or a == "--no-upgrades" or a == "--today" or a == "--detail" then
 		flags[a] = true
 	else
 		args[#args + 1] = a
@@ -420,14 +485,39 @@ if mode == "--spells" then
 	local lv = M.unlockLevels()
 	for voc in pairs(lv) do names[#names + 1] = voc end
 	table.sort(names)
-	print("| Class | Spells | Last unlock | Longest stretch without a new spell in levels 8-35 | Longest stretch without a new spell below level 300 | After the last unlock |")
-	print("|---|---|---|---|---|---|")
+	-- O752: the spell path milestones (spell_milestones_config.lua): new spells, support sockets, Form tiers, awakening gates and slots
+	local ms, mcfg, K = M.milestones()
+	print(string.format("| Class | Spells | Last spell | Longest stretch without a new spell in levels 8-35 | Longest stretch without a new spell below level 300 | After the last spell | Milestones %d-%d | Longest stretch without a milestone %d-%d (limit %d) |",
+		mcfg.from, mcfg.to, mcfg.from, mcfg.to, mcfg.limit))
+	print("|---|---|---|---|---|---|---|---|")
 	for _, voc in ipairs(names) do
 		local g = M.longestSpellGap(lv[voc], 300)
 		local last = lv[voc][#lv[voc]]
 		local e = M.earlyGap(lv[voc], 8, 35)
-		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to %d |", voc, #lv[voc], last,
-			e[1], e[2], e[3], g[1], g[2], g[3], env.cfg.limits.toLevel - last, env.cfg.limits.toLevel))
+		local _, best = K.gaps(ms[voc] or {}, mcfg.from, mcfg.to)
+		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to %d | %d | %d levels (%d to %d) |", voc, #lv[voc], last,
+			e[1], e[2], e[3], g[1], g[2], g[3], mcfg.to - last, mcfg.to, K.count(ms[voc] or {}, mcfg.from, mcfg.to), best.gap, best.from, best.to))
+	end
+	if flags["--detail"] then
+		-- every milestone level of every class from `from` (the kinds at that level)
+		for _, voc in ipairs(names) do
+			local parts, at, kinds = {}, nil, {}
+			local function flush()
+				if at then
+					local seen, ks = {}, {}
+					for _, k in ipairs(kinds) do if not seen[k] then seen[k] = true; ks[#ks + 1] = k end end
+					parts[#parts + 1] = at .. " " .. table.concat(ks, "+")
+				end
+			end
+			for _, m in ipairs(ms[voc] or {}) do
+				if m.level >= mcfg.from and m.level <= mcfg.to then
+					if m.level ~= at then flush(); at, kinds = m.level, {} end
+					kinds[#kinds + 1] = m.kind
+				end
+			end
+			flush()
+			print(voc .. ": " .. table.concat(parts, ", "))
+		end
 	end
 	return
 end
@@ -443,12 +533,21 @@ if mode == "--curve-json" then
 	return
 end
 if mode == "--check" then
+	-- O752: every class sees a spell path milestone at least every `limit` levels (spell_milestones_config.lua)
+	local ms, mcfg, K = M.milestones()
+	if mcfg.enabled then
+		for _, p in ipairs(K.problems(mcfg, ms)) do problems[#problems + 1] = p end
+	end
 	for _, p in ipairs(problems) do print("progression: " .. p) end
 	if #problems > 0 then
 		os.exit(1)
 	end
 	print(string.format("progression: smooth (%d stage rows, levels %d-%d, %d hall hunts, %d pool hunts)", #env.stages,
 		env.cfg.limits.fromLevel, env.cfg.limits.toLevel, #env.bands, #env.hunts))
+	if mcfg.enabled then
+		print(string.format("progression: spell milestones: every class sees one at least every %d levels from %d to %d", mcfg.limit,
+			mcfg.from, mcfg.to))
+	end
 	return
 end
 -- the table

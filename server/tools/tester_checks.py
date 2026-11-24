@@ -9926,6 +9926,16 @@ def form_expectations(level, bank_before=None, bank_after=None):
     return max(FORM_MIN_PRICE, FORM_PER_LEVEL * int(level))
 
 
+def level_gate_skip(steps, what):
+    """O752 (spell_milestones_config.lua): a step the server refused because the bot is under the level gate of a Form tier, an awakening slot
+    or the spell's awakening. The rules then cannot be walked at this level: (SKIP, text) or None"""
+    for label, want, got in steps or []:
+        if isinstance(got, dict) and not got.get('ok') and got.get('why') in ('level', 'slotlevel') and want.get('why') != got.get('why'):
+            need = got.get('need') or got.get('level') or '?'
+            return SKIP, '%s: %s waits for level %s (O752 spell path milestones), the bot is under it' % (what, label, need)
+    return None
+
+
 def spell_forms_verdict(t):
     """(status, text) from the trace of closed_spell_forms: {'level', 'spell': [id, name], 'kinds', 'steps': [(label, want, got)], 'bank': [before, after],
     'log': the `spellup log` row of the spell after the fight, 'picks': the Forms held at the end}. A step is expected to answer
@@ -9933,6 +9943,9 @@ def spell_forms_verdict(t):
     steps = t.get('steps') or []
     if not steps:
         return SKIP, 'no Form step ran'
+    gate = level_gate_skip(steps, 'Forms')
+    if gate:
+        return gate
     bad = []
     for label, want, got in steps:
         if not isinstance(got, dict):
@@ -10145,6 +10158,9 @@ def spell_awaken_verdict(t):
     steps = t.get('steps') or []
     if not steps:
         return SKIP, 'no awakening step ran'
+    gate = level_gate_skip(steps, 'awakening')
+    if gate:
+        return gate
     bad = []
     for label, want, got in steps:
         if not isinstance(got, dict):

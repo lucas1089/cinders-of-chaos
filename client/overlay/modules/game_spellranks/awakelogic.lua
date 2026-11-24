@@ -15,7 +15,7 @@ A.MAX_SLOTS = 3
 A.MAX_RANK = 20
 
 -- every reason the server answers (the UI has one tr() text for each, awakelogic_test.lua lists them)
-A.WHY_FAIL = { 'off', 'spell', 'unknown', 'rank', 'forms', 'already', 'slot', 'seals' }
+A.WHY_FAIL = { 'off', 'spell', 'unknown', 'rank', 'forms', 'already', 'slot', 'slotlevel', 'level', 'seals' }
 
 local function num(v, d)
   v = tonumber(v)
@@ -54,7 +54,7 @@ function A.cleanAnswer(data)
   return {
     ok = data.ok == true, why = type(data.why) == 'string' and data.why or '', spell = int(data.spell, 0), slot = int(data.slot, 0),
     name = type(data.name) == 'string' and data.name or '', namePt = type(data.namePt) == 'string' and data.namePt or '',
-    cost = triple(data.cost), need = triple(data.need), rank = int(data.rank, 0),
+    cost = triple(data.cost), need = triple(data.need), rank = int(data.rank, 0), level = math.max(0, int(data.level, 0)),
   }
 end
 
@@ -113,9 +113,11 @@ function A.shownName(data, state, id, pt)
 end
 
 -- ---------------------------------------------------------------- what an awakening needs (the server decides again)
--- rank, f1, f2: the spell's rank and Form picks the client knows. Returns {ok, why, slot, cost, need}
--- why: off | spell | rank | forms | already | slot | seals | ok (the server also refuses `unknown`: a spell the character no longer knows)
-function A.check(state, data, id, rank, f1, f2)
+-- rank, f1, f2: the spell's rank and Form picks the client knows. Returns {ok, why, slot, cost, need, level}
+-- why: off | spell | rank | forms | already | slot | slotlevel | level | seals | ok (the server also refuses `unknown`: a spell the
+-- character no longer knows). O752: gates = {level = the character's, slot = {levels of the slots}, spell = the spell's awakening level}
+-- (ranklogic.lua L.slotGate / L.awakenGate; nil: no gate known)
+function A.check(state, data, id, rank, f1, f2, gates)
   if not A.isOn(state) then return { ok = false, why = 'off' } end
   if not A.entry(data, id) then return { ok = false, why = 'spell' } end
   if int(rank, 0) < A.MAX_RANK then return { ok = false, why = 'rank', rank = A.MAX_RANK } end
@@ -123,6 +125,12 @@ function A.check(state, data, id, rank, f1, f2)
   if A.slotOf(state, id) then return { ok = false, why = 'already' } end
   local slot = A.lowestFree(state)
   if not slot then return { ok = false, why = 'slot' } end
+  if type(gates) == 'table' then
+    local level = int(gates.level, 0)
+    local need = type(gates.slot) == 'table' and int(gates.slot[slot], 0) or 0
+    if level < need then return { ok = false, why = 'slotlevel', slot = slot, level = need } end
+    if level < int(gates.spell, 0) then return { ok = false, why = 'level', slot = slot, level = int(gates.spell, 0) } end
+  end
   local cost = state.costs[slot]
   local need, short = { 0, 0, 0 }, false
   for i = 1, 3 do

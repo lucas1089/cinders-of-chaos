@@ -892,8 +892,16 @@ do
 	r = FE.pick(p, 200, 2, 1)
 	ok(not r.ok and r.why == "rank", "Form II needs rank 20")
 	setPacked(p, 200, 20, 1, 0)
+	-- O752: the first Form II of a spell learned before 500 waits for level 1050 (spell_milestones_config.lua)
+	eq(FE.gateLevel(200, 2), 1050, "O752: the Form II gate of an early spell")
+	r = FE.pick(p, 200, 2, 2)
+	ok(not r.ok and r.why == "level" and r.need == 1050, "O752: the first Form II under its level is refused")
+	p.level = 1050
 	r = FE.pick(p, 200, 2, 2)
 	ok(r.ok and r.why == "first", "the first Form II is free")
+	p.level = 1000
+	r = FE.pick(p, 200, 2, 1)
+	ok(r.ok and r.why == "window", "O752: a Form II already picked may be changed under the gate level")
 	-- the switch off: the pick is refused (nothing changes in play)
 	C.enabled = false
 	r = FE.pick(p, 200, 1, 2)

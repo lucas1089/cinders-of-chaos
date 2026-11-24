@@ -2,7 +2,9 @@
 -- Server: server/data/scripts/chaos/spell_ranks.lua and spell_forms.lua, extended opcode 168 (JSON {action, data}).
 --   client -> server  open {}                     (the state and the Form picks; rate limited by the server to one per 2 s)
 --                     pick {spell, tier, pick}    (tier 1 or 2, pick 1 or 2)
---   server -> client  state {on, v, s = [[spell id, rank, SP into the rank, SP the next rank costs (0 at the top)], ...]}
+--   server -> client  state {on, v, s = [[spell id, rank, SP into the rank, SP the next rank costs (0 at the top)], ...],
+--                            ms = {f1, f2, aw, sl, nx}}   (O752 spell path milestones, server spell_milestones_core.lua M.wire:
+--                            the level gates of the Form tiers, the awakening and its slots, and the next milestone of the class)
 --                     forms {v, f = [[spell id, Form I pick, Form II pick], ...]}   (picks 0 / 1 / 2, only spells with a pick)
 --                     pick {ok, why, price, spell, tier, pick, f1, f2}
 --                     rank {...}  one spell changed (same entry as a state row, or {s = [...]}); sent at a rank-up since phase 6
@@ -28,7 +30,7 @@ L.CD_RANKS = { 4, 8, 12, 16, 20 }
 L.DEFAULT_PICK = { rank1 = 10, rank2 = 20, minPrice = 10000, perLevel = 150, freeSeconds = 1800 }
 
 -- every answer of `pick` the client words (the UI has one tr() text for each, ranklogic_test.lua lists them)
-L.WHY_FAIL = { 'off', 'spell', 'rank', 'form1', 'gold', 'tier', 'pick' }
+L.WHY_FAIL = { 'off', 'spell', 'rank', 'form1', 'gold', 'tier', 'pick', 'level' }
 L.WHY_OK = { 'first', 'same', 'window', 'paid' }
 
 local function num(v, d)
@@ -47,7 +49,7 @@ end
 -- {on, ranks = {[spell id] = {rank, into, cost}}}; nil for junk
 function L.cleanState(data)
   if type(data) ~= 'table' then return nil end
-  local out = { on = data.on == true, ranks = {} }
+  local out = { on = data.on == true, ranks = {}, ms = L.cleanMilestones(data.ms) }
   if type(data.s) == 'table' then
     for _, row in ipairs(data.s) do
       local e = L.cleanRow(row)
@@ -55,6 +57,88 @@ function L.cleanState(data)
     end
   end
   return out
+end
+
+-- ---------------------------------------------------------------- spell path milestones (O752)
+-- the `ms` field of a state: {f1 = add, f2 = {{below, level}}, aw = {{below, level}}, sl = {levels}, nx = {level, kind, name, slot, count}}
+-- (a row with below 0 takes the rest); nil for junk or none
+local function cleanRows(rows)
+  local out = {}
+  if type(rows) ~= 'table' then return out end
+  for _, r in ipairs(rows) do
+    if type(r) == 'table' then
+      local below, level = int(r[1], 0), int(r[2], nil)
+      if level and level >= 0 then out[#out + 1] = { below = below > 0 and below or nil, level = level } end
+    end
+  end
+  return out
+end
+
+L.MILESTONE_KINDS = { 'spell', 'slot', 'awaken', 'form2', 'form1', 'socket3', 'socket2' }
+
+function L.cleanMilestones(ms)
+  if type(ms) ~= 'table' then return nil end
+  local out = { f1 = math.max(0, int(ms.f1, 0)), f2 = cleanRows(ms.f2), aw = cleanRows(ms.aw), sl = {} }
+  if type(ms.sl) == 'table' then
+    for i, v in ipairs(ms.sl) do out.sl[i] = math.max(0, int(v, 0)) end
+  end
+  if type(ms.nx) == 'table' then
+    local level = int(ms.nx.l, nil)
+    local kind = type(ms.nx.k) == 'string' and ms.nx.k or nil
+    local known = false
+    for _, k in ipairs(L.MILESTONE_KINDS) do if k == kind then known = true end end
+    if level and level > 0 and known then
+      out.nx = { level = level, kind = kind, name = type(ms.nx.n) == 'string' and ms.nx.n or nil, slot = int(ms.nx.s, nil),
+        count = math.max(1, int(ms.nx.c, 1)) }
+    end
+  end
+  return out
+end
+
+local function band(rows, learn)
+  for _, r in ipairs(rows or {}) do
+    if r.below == nil or learn < r.below then return r.level end
+  end
+  return 0
+end
+
+-- the level the Form tier (1 or 2) of a spell learned at `learn` opens (0 when there is no gate: no `ms`)
+function L.formGate(ms, tier, learn)
+  if type(ms) ~= 'table' then return 0 end
+  learn = math.max(0, int(learn, 0))
+  local one = learn + ms.f1
+  if tier == 1 then return one end
+  return math.max(one, band(ms.f2, learn))
+end
+
+-- the level a spell learned at `learn` may be awakened at (0: only the slot decides)
+function L.awakenGate(ms, learn)
+  if type(ms) ~= 'table' then return 0 end
+  return band(ms.aw, math.max(0, int(learn, 0)))
+end
+
+-- the level awakening slot n opens at (0: none)
+function L.slotGate(ms, slot)
+  if type(ms) ~= 'table' then return 0 end
+  return ms.sl[int(slot, 0)] or 0
+end
+
+-- the next milestone as two texts: short ("Next unlock: level N") and long (what opens), nil when none is known or the character is
+-- past it already (the server sends a new one with the next state). tr: the client's tr (a format with arguments)
+function L.milestoneText(ms, level, tr)
+  local nx = type(ms) == 'table' and ms.nx or nil
+  if not nx or int(level, 0) >= nx.level then return nil end
+  local name = nx.name or '?'
+  local what
+  if nx.kind == 'spell' then what = tr('New spell: %s', name)
+  elseif nx.kind == 'slot' then what = tr('Awakening slot %d opens', nx.slot or 0)
+  elseif nx.kind == 'awaken' then what = tr('%s can be awakened', name)
+  elseif nx.kind == 'form2' then what = tr('Form II of %s opens', name)
+  elseif nx.kind == 'form1' then what = tr('Form I of %s opens', name)
+  elseif nx.kind == 'socket3' then what = tr('Third support socket of %s', name)
+  else what = tr('Second support socket of %s', name) end
+  if (nx.count or 1) > 1 then what = what .. ' ' .. tr('and %d more', nx.count - 1) end
+  return tr('Next unlock: level %d', nx.level), tr('At level %d: %s.', nx.level, what)
 end
 
 -- one row [id, rank, into, cost] (or {id =, rank =, into =, cost =}) -> {id, rank, into, cost}
@@ -109,7 +193,7 @@ function L.cleanPick(data)
   return {
     ok = data.ok == true, why = type(data.why) == 'string' and data.why or '', price = math.max(0, int(data.price, 0)),
     spell = int(data.spell, 0), tier = int(data.tier, 0), pick = int(data.pick, 0),
-    f1 = int(data.f1, nil), f2 = int(data.f2, nil),
+    f1 = int(data.f1, nil), f2 = int(data.f2, nil), need = math.max(0, int(data.need, 0)),
   }
 end
 
@@ -236,12 +320,15 @@ function L.formsFor(data, id)
   return out
 end
 
--- what one tier of a spell is for the character: {rankNeeded, locked, needForm1, picked}
-function L.tierState(rules, rank, f1, f2, tier)
+-- what one tier of a spell is for the character: {rankNeeded, locked, needForm1, picked, levelNeeded, levelLocked}
+-- O752: gate = the level the tier opens (L.formGate), level = the character's; the gate holds only the first pick of the tier
+function L.tierState(rules, rank, f1, f2, tier, gate, level)
   local needed = tier == 1 and rules.rank1 or rules.rank2
   local picked = tier == 1 and (f1 or 0) or (f2 or 0)
   local locked = rank < needed
-  return { rankNeeded = needed, locked = locked, needForm1 = (not locked) and tier == 2 and (f1 or 0) == 0, picked = picked }
+  gate = math.max(0, int(gate, 0))
+  return { rankNeeded = needed, locked = locked, needForm1 = (not locked) and tier == 2 and (f1 or 0) == 0, picked = picked,
+    levelNeeded = gate, levelLocked = picked == 0 and int(level, 0) < gate }
 end
 
 -- gold of a paid change: max(minPrice, perLevel x level)
@@ -252,12 +339,14 @@ end
 -- A click on a pick button: what will happen, from what the client knows. `last` = {spell, tier, at} of the last pick
 -- made in this session (the server keeps the free window across logins; a window the client does not know shows as a
 -- paid change and the server's answer says what was charged), `now` os.time().
--- Returns {kind = 'locked' | 'form1' | 'same' | 'first' | 'window' | 'paid', price}
-function L.quote(rules, spellId, tier, pick, rank, f1, f2, level, last, now)
-  local st = L.tierState(rules, rank, f1, f2, tier)
+-- gate (O752): the level the tier opens for this spell (L.formGate; nil / 0: none).
+-- Returns {kind = 'locked' | 'form1' | 'same' | 'level' | 'first' | 'window' | 'paid', price, level}
+function L.quote(rules, spellId, tier, pick, rank, f1, f2, level, last, now, gate)
+  local st = L.tierState(rules, rank, f1, f2, tier, gate, level)
   if st.locked then return { kind = 'locked', price = 0 } end
   if st.needForm1 then return { kind = 'form1', price = 0 } end
   if st.picked == pick then return { kind = 'same', price = 0 } end
+  if st.levelLocked then return { kind = 'level', price = 0, level = st.levelNeeded } end
   if st.picked == 0 then return { kind = 'first', price = 0 } end
   if L.windowLeft(rules, spellId, tier, last, now) then return { kind = 'window', price = 0 } end
   return { kind = 'paid', price = L.price(rules, level) }
@@ -273,7 +362,8 @@ end
 
 -- the number the hub's Spellbook card shows: spells with a Form that can be picked now (Form I at rank 10 with no pick,
 -- or Form II at rank 20 with Form I picked and no Form II pick). 0 while the switch is off.
-function L.pickableCount(state, picks, data)
+-- O752: level = the character's, learnOf(id) = the spell's level (nil: no level gate known): a tier under its level gate is not counted
+function L.pickableCount(state, picks, data, level, learnOf)
   if not L.isOn(state) then return 0 end
   local rules = L.pickRules(data)
   local n = 0
@@ -281,8 +371,12 @@ function L.pickableCount(state, picks, data)
     if L.formsFor(data, id) then
       local p = type(picks) == 'table' and picks[id] or nil
       local f1, f2 = p and p.f1 or 0, p and p.f2 or 0
-      local a, b = L.tierState(rules, e.rank, f1, f2, 1), L.tierState(rules, e.rank, f1, f2, 2)
-      if (not a.locked and a.picked == 0) or (not b.locked and not b.needForm1 and b.picked == 0) then
+      local learn = type(learnOf) == 'function' and learnOf(id) or nil
+      local g1 = learn and L.formGate(state.ms, 1, learn) or 0
+      local g2 = learn and L.formGate(state.ms, 2, learn) or 0
+      local a, b = L.tierState(rules, e.rank, f1, f2, 1, g1, level), L.tierState(rules, e.rank, f1, f2, 2, g2, level)
+      if (not a.locked and a.picked == 0 and not a.levelLocked)
+          or (not b.locked and not b.needForm1 and b.picked == 0 and not b.levelLocked) then
         n = n + 1
       end
     end

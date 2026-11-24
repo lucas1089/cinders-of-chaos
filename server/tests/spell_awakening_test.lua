@@ -542,7 +542,7 @@ local function newPlayer(voc, over)
 	function p:isPlayer() return true end
 	function p:isMonster() return false end
 	function p:getVocation() return {getId = function() return voc or 2 end} end
-	function p:getLevel() return 2000 end
+	function p:getLevel() return self.level or 2500 end
 	function p:getStorageValue(k) return storage[k] or -1 end
 	function p:setStorageValue(k, v) storage[k] = v end
 	function p:getPosition() local pp = self.pos; pp.sendMagicEffect = function() end; return pp end
@@ -711,6 +711,34 @@ do
 	setSpell(96, 20, 1, 1, false)
 	seals(999, 999, 999)
 	eq(AW.awaken(p, 96, nil).why, "slot", "a fourth awakening: no slot")
+end
+-- O752: the level gates (spell_milestones_config.lua): a slot opens at a level, a late spell awakens at a level
+do
+	local MC = ChaosSpellMilestonesConfig
+	local saved = {}
+	for i = 1, 3 do saved[i] = storage[RC.storage.awakenedSlots + i - 1] end
+	for i = 1, 3 do storage[RC.storage.awakenedSlots + i - 1] = 0 end
+	setSpell(96, 20, 1, 1, false)
+	seals(999, 999, 999)
+	p.level = MC.slots[1] - 1
+	local r = AW.awaken(p, 96, nil)
+	eq(r.why, "slotlevel", "O752: slot 1 under its level is refused")
+	eq(r.level, MC.slots[1], "O752: the answer names the level slot 1 opens at")
+	eq(storage[RC.storage.sealWaystone], 999, "O752: a refusal takes no Seal")
+	-- a spell learned at 1200 (an ultimate) awakens at the cap
+	local savedLevel = R.catalog[96] and R.catalog[96].level
+	if R.catalog[96] then
+		R.catalog[96].level = 1200
+		p.level = 2400
+		r = AW.awaken(p, 96, nil)
+		eq(r.why, "level", "O752: an ultimate under its awakening level is refused")
+		eq(r.level, 2500, "O752: the answer names the level")
+		p.level = 2500
+		eq(AW.awaken(p, 96, nil).ok, true, "O752: at the level it awakens")
+		R.catalog[96].level = savedLevel
+	end
+	p.level = nil
+	for i = 1, 3 do storage[RC.storage.awakenedSlots + i - 1] = saved[i] end
 end
 -- the request on opcode 168
 do
@@ -1109,7 +1137,9 @@ do
 	seals(500, 500, 500)
 	eq(AW.awaken(p, 206, 1).why, "unknown", "a spell another class lists is unknown")
 	book[1].vocations, book[1].level = {2}, 2500
+	p.level = 2000
 	eq(AW.awaken(p, 206, 1).why, "unknown", "a spell above the level is unknown")
+	p.level = nil
 	book[1].level = 200
 	p.learned = {["Final Verdict"] = true}
 	setSpell(218, 20, 1, 1, false)
