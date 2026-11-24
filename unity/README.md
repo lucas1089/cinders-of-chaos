@@ -761,7 +761,7 @@ Not covered: a death inside a rift that costs the last life (the run collapses, 
 
 ### Live check in CI (2026-11-08)
 
-The workflow `.github/workflows/unity-live-check.yml` (manual, and on pull requests that touch `unity/Client/Assets/Chaos/Core/**`, `unity/Core.LiveCheck/**`, the script or the workflow) builds a server and lets both identities play on it, so a change to Core or to the server data that breaks one client shows up before a player does. It is a gate: a failed run or scenario fails the job, a skip does not. `tools/ci/unity_live_check.sh` does the work and runs the same way by hand:
+The workflow `.github/workflows/unity-live-check.yml` (manual only since 2026-11-24: the Unity client is on hold, pull requests no longer start it) builds a server and lets both identities play on it, so a change to Core or to the server data that breaks one client shows up before a player does. It is a gate: a failed run or scenario fails the job, a skip does not. `tools/ci/unity_live_check.sh` does the work and runs the same way by hand:
 
 ```
 UL_ASSETS=CHECKOUT_OF_windows-assets UL_WORK=EMPTY_DIR UL_OUT=REPORT_DIR bash tools/ci/unity_live_check.sh
