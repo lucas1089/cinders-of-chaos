@@ -1,0 +1,357 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ashfall_hamlet",
+  "name": "Ashfall Hamlet",
+  "biome": "waste",
+  "size": [
+    170,
+    132
+  ],
+  "floors": 1,
+  "level": [
+    2250,
+    2450
+  ],
+  "seed": 2379941,
+  "repair_reach": true,
+  "ruin": 40,
+  "origin": {
+    "x": 15824,
+    "y": 15904,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "cinder_square",
+      "floor": 1,
+      "size": [
+        40,
+        32
+      ],
+      "place": "center",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "pyre_lane",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "north"
+    },
+    {
+      "id": "hierarch_rest",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "gnarl_yards",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "east"
+    },
+    {
+      "id": "burnt_fields",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "wyrm_ditch",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "south"
+    },
+    {
+      "id": "ash_orchard",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "northwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "cinder_square",
+      "width": 4
+    },
+    {
+      "from": "camp",
+      "to": "ash_orchard",
+      "width": 3
+    },
+    {
+      "from": "ash_orchard",
+      "to": "pyre_lane",
+      "width": 3
+    },
+    {
+      "from": "pyre_lane",
+      "to": "hierarch_rest",
+      "width": 3
+    },
+    {
+      "from": "hierarch_rest",
+      "to": "gnarl_yards",
+      "width": 3
+    },
+    {
+      "from": "gnarl_yards",
+      "to": "burnt_fields",
+      "width": 3
+    },
+    {
+      "from": "burnt_fields",
+      "to": "wyrm_ditch",
+      "width": 3
+    },
+    {
+      "from": "wyrm_ditch",
+      "to": "cinder_square",
+      "width": 3
+    },
+    {
+      "from": "cinder_square",
+      "to": "gnarl_yards",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "cinder_square",
+      "monster": "Pyre Stork",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_square",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_lane",
+      "monster": "Pyre Stork",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_lane",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hierarch_rest",
+      "monster": "Ashveil Hierarch",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hierarch_rest",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_yards",
+      "monster": "Gnarlback",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_yards",
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_fields",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_fields",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_ditch",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_ditch",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_orchard",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_orchard",
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "ash_orchard",
+        "pyre_lane"
+      ],
+      "monster": "Gravecrown Oathbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "pyre_lane",
+        "hierarch_rest"
+      ],
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "hierarch_rest",
+        "gnarl_yards"
+      ],
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "gnarl_yards",
+        "burnt_fields"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "burnt_fields",
+        "wyrm_ditch"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "wyrm_ditch",
+        "cinder_square"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "cinder_square",
+        "gnarl_yards"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "buildings": [
+    {
+      "id": "ember_chapel",
+      "kind": "temple",
+      "zone": "cinder_square",
+      "ruin": 50
+    },
+    {
+      "id": "reeve_house",
+      "kind": "house",
+      "zone": "cinder_square",
+      "floors_above": 1,
+      "cellar": true,
+      "ruin": 0
+    },
+    {
+      "id": "burnt_shop",
+      "kind": "shop",
+      "zone": "cinder_square",
+      "ruin": 60,
+      "wall": "ruin"
+    },
+    {
+      "id": "ash_cottage",
+      "kind": "house",
+      "zone": "cinder_square"
+    },
+    {
+      "id": "raider_camp",
+      "kind": "camp",
+      "zone": "burnt_fields"
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): a burnt hamlet on the waste for levels 2250-2450 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"). 7 hunting zones, a ruined chapel, houses with a floor above and a cellar, a raider camp (O740); monsters Pyre Stork, Gnarlback, Mirecoil Wyrm, Gravecrown Oathbreaker, Ashveil Hierarch. Display monster: Ashveil Hierarch."
+}

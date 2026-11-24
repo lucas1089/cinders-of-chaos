@@ -393,6 +393,8 @@ pub static ACTIONS: &[Action] = &[
     act(Game, "Par do cliente", "Definir", "client-pair set {n}").p(PAIR_P).ask().live(Live::NextInstall).t(30),
     act(Game, "Mapa", "Publicar áreas da caixa de entrada", "areas-publish").t(120),
     act(Game, "Mapa", "Novo endereço das áreas", "areas-publish --rotate").ask().t(120),
+    act(Game, "Mapa", "Ver correções de casas", "house-fix").t(600).h("Só lê o mapa (O758): as correções de flags das casas que o corretor faria e o que fica para uma pessoa. O servidor continua ligado."),
+    act(Game, "Mapa", "Corrigir casas", "house-fix --write").ask().live(Live::Restarts).t(900).h("Para o servidor, guarda uma cópia datada do mapa, corrige as flags das casas (só os tiles planejados mudam) e liga o servidor de novo (O758)."),
     // ---- Painel do jogo
     // the card with the choice and the button is drawn by the window (reload-file ACTOR NAME)
     act(GamePanel, "Recarregar um arquivo", "Listar tabelas de configuração", "reload-files").t(30).h("Recarregar uma delas: Painel do jogo > Recarregar um arquivo."),
@@ -615,6 +617,7 @@ mod tests {
             "cleanup --yes",
             "testers stop",
             "vps reboot {mins}",
+            "house-fix --write",
         ] {
             let a = ACTIONS
                 .iter()

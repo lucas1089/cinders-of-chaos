@@ -240,6 +240,7 @@ final class CommandsTab {
         buildBotCheck();
         buildSiteClient();
         buildMapInbox();
+        buildHouseFix();
     }
 
     // XP rate: config.lua experienceStages = the release's stages x N (chaos-ctl.sh xp-rate)
@@ -1565,6 +1566,41 @@ final class CommandsTab {
                 + "(toque em copiar no resultado) e rode fetch-areas.bat no Windows. O endereço é secreto: quem o tem "
                 + "baixa as áreas, que não têm nada sigiloso."), ui.gap(8));
         quick.addView(c, ui.gap(12));
+    }
+
+    // the house fixer of the world map (O742 / O758, chaos-ctl.sh house-fix): the dry run reads the map, the fix stops the
+    // server, keeps a dated copy of the map, writes the planned tile flags (map_write_guard.py) and starts the server again
+    private void buildHouseFix() {
+        MaterialCardView c = ui.titledCard("Casas do mapa");
+        LinearLayout b = Ui.body(c);
+        MaterialButton dry = ui.secondary("Ver correções de casas", 0);
+        dry.setOnClickListener(v -> houseFix("Ver correções de casas", HouseFixInfo.DRY_RUN, 600));
+        MaterialButton fix = ui.primary("Corrigir casas", 0);
+        fix.setOnClickListener(v -> a.confirm("Corrigir as casas do mapa?", "O servidor para (os jogadores caem, tudo é "
+                + "salvo), o mapa ganha uma cópia datada ao lado, as flags de zona das casas são corrigidas (só os tiles "
+                + "planejados mudam; se algo mais mudasse, nada é gravado) e o servidor liga de novo. Leva alguns minutos. "
+                + "Veja antes em Ver correções de casas.", "Corrigir", true,
+                () -> houseFix("Corrigir casas", HouseFixInfo.WRITE, 900)));
+        b.addView(ui.evenRow(dry, fix));
+        b.addView(ui.hint("Ver correções de casas só lê o mapa: mostra quantos tiles de casa teriam a flag de zona corrigida "
+                + "e o que fica para uma pessoa (casa sem porta, tamanho, andares), que nenhum botão muda. Corrigir casas "
+                + "reinicia o servidor."), ui.gap(8));
+        quick.addView(c, ui.gap(12));
+    }
+
+    private void houseFix(String what, String args, int timeout) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, timeout, f -> {
+            HouseFixInfo.Result r = HouseFixInfo.parse(f.raw);
+            Friendly shown = r == null ? f
+                    : new Friendly(f.ok, f.ok ? what + ": feito" : what + ": não foi", HouseFixInfo.summary(r), f.raw);
+            result.show(what, shown);
+            a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
+        });
     }
 
     private void update(TextInputLayout tag, String mode) {

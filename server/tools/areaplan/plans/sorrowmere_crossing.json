@@ -1,0 +1,343 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sorrowmere_crossing",
+  "name": "Sorrowmere Crossing",
+  "biome": "forest",
+  "size": [
+    172,
+    134
+  ],
+  "floors": 1,
+  "level": [
+    2200,
+    2400
+  ],
+  "seed": 809005,
+  "repair_reach": true,
+  "water": {
+    "rivers": [
+      {
+        "course": "north-south",
+        "width": [
+          3,
+          5
+        ],
+        "at": 52
+      }
+    ],
+    "lakes": [
+      {
+        "zone": "sorrow_mere",
+        "radius": [
+          4,
+          5
+        ]
+      }
+    ],
+    "fords": 1
+  },
+  "origin": {
+    "x": 15620,
+    "y": 15904,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "willow_rot",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "west"
+    },
+    {
+      "id": "drowned_glade",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "stork_reeds",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "north"
+    },
+    {
+      "id": "wyrmwallow",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "sorrow_mere",
+      "floor": 1,
+      "size": [
+        36,
+        28
+      ],
+      "place": "east"
+    },
+    {
+      "id": "gallows_wood",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "blackroot",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "south"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "willow_rot",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "stork_reeds",
+      "width": 3
+    },
+    {
+      "from": "willow_rot",
+      "to": "drowned_glade",
+      "width": 3
+    },
+    {
+      "from": "drowned_glade",
+      "to": "blackroot",
+      "width": 3
+    },
+    {
+      "from": "stork_reeds",
+      "to": "wyrmwallow",
+      "width": 4
+    },
+    {
+      "from": "wyrmwallow",
+      "to": "sorrow_mere",
+      "width": 3
+    },
+    {
+      "from": "sorrow_mere",
+      "to": "gallows_wood",
+      "width": 3
+    },
+    {
+      "from": "gallows_wood",
+      "to": "blackroot",
+      "width": 4
+    },
+    {
+      "from": "willow_rot",
+      "to": "stork_reeds",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "willow_rot",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "willow_rot",
+      "monster": "Ironmask Warbreaker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_glade",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_glade",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_reeds",
+      "monster": "Pyre Stork",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_reeds",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrmwallow",
+      "monster": "Mirecoil Wyrm",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrmwallow",
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sorrow_mere",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sorrow_mere",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gallows_wood",
+      "monster": "Gnarlback",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gallows_wood",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blackroot",
+      "monster": "Ironmask Warbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blackroot",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "willow_rot",
+        "drowned_glade"
+      ],
+      "monster": "Gravecrown Oathbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "drowned_glade",
+        "blackroot"
+      ],
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "stork_reeds",
+        "wyrmwallow"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "wyrmwallow",
+        "sorrow_mere"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "sorrow_mere",
+        "gallows_wood"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "gallows_wood",
+        "blackroot"
+      ],
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "willow_rot",
+        "stork_reeds"
+      ],
+      "monster": "Gravecrown Oathbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): a forest split by a river with a lake (O739) for levels 2200-2400 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"). 7 hunting zones, a bridge and a ford join the banks; monsters Pyre Stork, Mirecoil Wyrm, Gnarlback, Gravecrown Oathbreaker, Ironmask Warbreaker. Display monster: Pyre Stork."
+}

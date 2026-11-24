@@ -586,6 +586,14 @@ def build():
             e['fixed'] = r['price']
             e['rule_price'] = True
         e['rule'] = r['note']
+    # O757 (owner 2026-11-24 "Runas do NPC base: baixa"): every NPC sells a rune at the rune supply's price
+    # (install_rune_supply.py), lowered under the base NPCs' prices by the hunt cap; the supply share of a rune's sell
+    # price reads that asking price when it is the lower, so install_item_prices.py raises no rune back to 2x its sell
+    for i, p, where in our_buy_prices():
+        e = table.get(i)
+        if where == 'rune supply' and e and e['cat'] == 'supply' and p > 0:
+            e['buy_med'] = min(e['buy_med'], p) if e['buy_med'] else p
+            e['buy_min'] = min(e['buy_min'], p) if e['buy_min'] else p
     # uniques (chaos_items.xml): copies of base items, never sold to an NPC (ChaosItemPrices reads chaos_unique)
     uq = [name for _, name, _ in uniques()]
 

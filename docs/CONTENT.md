@@ -153,11 +153,22 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | anvilmourn_wastes | 1500-1650 | waste | Redmane Anvilbreaker, Cinderskull Reaver, Ashveil Hierarch, Hollowhorn, Bloodantler Fiend | 7 | - |
 | oathgrave_ossuary | 1750-1900 | catacomb | Gravecrown Oathbreaker, Cinderhorn Juggernaut, Wraithbone Stalker, Ironmask Warbreaker, Gnarlback | 7 | - |
 | pyrecrown_caldera | 1900-2100 | lava | Pyre Stork, Mirecoil Wyrm, Wraithbone Stalker, Gnarlback, Gnawbone Swarm, Pyrewing Tyrant | 7 | - |
+| rimewrath_steppe | 2150-2350 | ice | Mirecoil Wyrm, Gnarlback, Gravecrown Oathbreaker, Wraithbone Stalker, Oathbroken Colossus | 7 | - |
+| sorrowmere_crossing | 2200-2400 | forest | Mirecoil Wyrm, Gnarlback, Pyre Stork, Ironmask Warbreaker, Gravecrown Oathbreaker | 7 | - |
+| ashfall_hamlet | 2250-2450 | waste | Pyre Stork, Mirecoil Wyrm, Gnarlback, Ashveil Hierarch, Gravecrown Oathbreaker | 7 | - |
+| cindervein_hollows | 2300-2500 | cave | Pyre Stork, Pyrewing Tyrant, Gnarlback, Mirecoil Wyrm | 7 | - |
+| gravelight_necropolis | 2350-2500 | crypt | Pyre Stork, Pyrewing Tyrant, Mirecoil Wyrm, Gnarlback, Gravecrown Oathbreaker | 7 | - |
+| umbral_maw | 2400-2500 | abyss | Pyre Stork, Pyrewing Tyrant, Gnarlback, Mirecoil Wyrm | 7 | - |
 
 **Hall coverage (O375, 2026-11-03).** The last nine rows: six small hunts of levels 6-62 for the ground floor of the hall
 (53-113 monsters, 1,300-2,750 walkable tiles, packs of 2 below level 35) and three late hunts of 1500-2100 for floor 5
 (150-259 monsters). With them every level 8-100 has 5 hall hunts within 0.7-1.3 x L (was 3) and every level 1300-2200
 has 5 within 0.8-1.1 x L (was 4 at 2126-2200). server/README.md "Hall coverage (O375)".
+
+**Hunts for 2282-2500 (O759, 2026-11-24).** The last six rows: late hunts of 2150-2500 for floor 5 (177-300 monsters,
+3,800-8,000 walkable tiles) with plateaus, a river, a ruined hamlet, a two-floor crypt and a black lake. Every level
+1300-2500 has 5 hall hunts within 0.8-1.1 x L (was 2 at 2407). Their monsters are our 1700-2000 set; none is above
+2000 yet. server/README.md "Hunts for 2282-2500 (O759)".
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.

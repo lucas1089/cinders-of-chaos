@@ -633,6 +633,9 @@ return {
 		-- 6, inside the limit of 15 minutes; the speed challenge 6 minutes (40%). The boss
 		-- is a monster file of its own (its look, its loot table). chest: the boss chest every finisher gets at the end
 		-- (areagen.lua AG.giveChest, numbers in dungeons_difficulty.lua D.chest: item level and rarity by difficulty).
+		-- O754: chest gold 150,000 / 200,000 / 250,000 / 300,000 -> 15,000 each (x1 to x5 by difficulty): the run's corpses
+		-- already pay about a hunt (difficulty 6: +400% coins), so the chest's gold stays a small extra and a difficulty 6 run
+		-- under 1.5x the one gold curve (tools/gold_faucets_model.lua). The chest pays gear.
 		{
 			id = "marrow", name = "The Marrow Crypts", kind = "dungeon", theme = "marrow", enabled = true, seed = 5005,
 			origin = {x = 24576, y = 24576, z = 9}, size = {104, 84}, floors = 1,
@@ -648,7 +651,7 @@ return {
 			dungeon = {id = 6, level = 1000, party = 1, time = 900, title = "The Marrow Crypts",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {94, 101, 108, 115, 122, 129},
 				loot = {{id = 2160, count = 15}},
-				chest = {gold = 150000},
+				chest = {gold = 15000},
 				challenges = {
 					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
 						maxMs = 6 * 60 * 1000},
@@ -669,7 +672,7 @@ return {
 			dungeon = {id = 7, level = 1300, party = 1, time = 900, title = "The Iron Crucible",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {55, 61, 66, 72, 77, 83},
 				loot = {{id = 2160, count = 20}},
-				chest = {gold = 200000},
+				chest = {gold = 15000},
 				challenges = {
 					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
 						maxMs = 6 * 60 * 1000},
@@ -691,7 +694,7 @@ return {
 			dungeon = {id = 8, level = 1600, party = 1, time = 900, title = "The Fallen Sanctum",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {46, 51, 56, 61, 66, 71},
 				loot = {{id = 2160, count = 25}},
-				chest = {gold = 250000},
+				chest = {gold = 15000},
 				challenges = {
 					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
 						maxMs = 6 * 60 * 1000},
@@ -714,7 +717,7 @@ return {
 			dungeon = {id = 9, level = 2000, party = 1, time = 900, title = "The Pyre Throne",
 				bossHealth = {100, 125, 150, 175, 200, 225}, trashHealth = {72, 78, 84, 89, 95, 101},
 				loot = {{id = 2160, count = 30}},
-				chest = {gold = 300000},
+				chest = {gold = 15000},
 				challenges = {
 					{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 6 minutes.",
 						maxMs = 6 * 60 * 1000},

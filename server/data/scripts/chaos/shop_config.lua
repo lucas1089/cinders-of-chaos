@@ -480,7 +480,7 @@ local cfg = {
 				-- scrolls bought earlier keep working (shop_services.lua)
 				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
 				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "loot", icon = 32081, cost = 250, name = "Loot Bag",
-					description = "Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set pieces, uniques and cards always fly to the ground."},
+					description = "Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set pieces, uniques and cards always fly to the ground. In an instance it takes them too."},
 				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "orbs", icon = 32082, cost = 200, name = "Orbs Pouch",
 					description = "100 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried (no gems with a Gem Pouch)."},
 				{kind = "service", service = "pouch", accountDiscount = 50, pouch = "keys", icon = 32083, cost = 150, name = "Rift Key Pouch",

@@ -140,12 +140,53 @@ do
 	for _, t in ipairs(R.startTowns) do
 		ok(townsOf[t], "a vendor in start town " .. t)
 	end
+	-- O757: the hunt cap replaced the floor at the old base price; no rune is sold below what an NPC pays for it
+	local sell = dofile("data/scripts/chaos/sell_prices.lua")
 	for _, r in ipairs(R.runes) do
-		ok(r.price >= 1 and r.price >= r.old, r.name .. ": a price, never below the old NPC price")
+		ok(r.price >= 1, r.name .. ": a price")
+		ok(r.price <= R.huntCap(r), r.name .. ": within the hunt cap")
+		ok(r.price > (sell[r.id] or 0), r.name .. ": dearer than an NPC pays for it (no gold loop)")
 		eq(R.price(r.id), r.price, r.name .. ": R.price")
 	end
 	eq(R.price(R.blankRune.id), 10, "the unscribed rune stays at 10")
 	eq(R.price(1), nil, "no price for other items")
+end
+
+-- O757 (owner 2026-11-24 "Runas do NPC base: baixa"): the typical hour of runes (300 attack, 30 support, the dearest of
+-- each a character may use) against the one gold curve
+do
+	eq(R.useKind(R.byId(2268)), "attack", "Reaper's Rune is an attack rune")
+	eq(R.useKind(R.byId(2278)), "support", "Shackle Rune is a support rune")
+	eq(R.huntGold(20), 36250, "hunting gold at 20 (hunt_gold_config.lua, linear)")
+	eq(R.huntGold(45), 73250, "hunting gold at 45")
+	local worst = 0
+	for level = 1, 2500 do
+		local row = R.sinkRow(level)
+		ok(row.share <= 0.30 + 1e-9, "level " .. level .. ": the runes of an hour cost at most 30% of the hunt")
+		if row.share > worst then
+			worst = row.share
+		end
+	end
+	ok(worst > 0.2, "the cap is near its limit somewhere (the runes stay a sink)")
+	local r45 = R.sinkRow(45)
+	eq(r45.attack.id, 2268, "the dearest attack rune at 45 is Reaper's Rune")
+	ok(r45.attackGold / r45.hunt <= 0.25, "at 45 the attack runes take at most 25% (was 90%)")
+	for _, level in ipairs({20, 100, 300}) do
+		ok(R.sinkRow(level).share <= 0.30, "level " .. level .. ": at most 30%")
+	end
+	-- a price over the cap is an error of R.check
+	local r = R.byId(2268)
+	local saved = r.price
+	r.price = 220
+	local found = false
+	for _, e in ipairs(R.check()) do
+		if e:find("Reaper's Rune: price 220 above the hunt cap", 1, true) then
+			found = true
+		end
+	end
+	ok(found, "R.check names a price above the hunt cap")
+	r.price = saved
+	eq(#R.check(), 0, "and none with the shipped prices")
 end
 
 -- ------------------------------------------------------------------ crafting: every rune has a recipe
@@ -260,6 +301,10 @@ reaper's rune,2268,108" />
 	</parameters>
 </npc>
 ]])
+	-- O757: a server installed before O757 (the old config prices: Reaper's 220, Shackle 890, Searing Orb 84), CRLF: lowered
+	writeFile(data .. "/npc/Oldmonger.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<npc name=\"Oldmonger\" script=\"x.lua\">\r\n" ..
+		"\t<parameters>\r\n\t\t<parameter key=\"shop_buyable\" value=\"reaper's rune,2268,220;\r\nshackle rune,2278,890;\r\n" ..
+		"searing orb rune,2304,84;health potion,7618,45\" />\r\n\t</parameters>\r\n</npc>\r\n")
 	writeFile(data .. "/npc/scripts/runes.lua", [[
 local shopModule = ShopModule:new()
 shopModule:addBuyableItem({'searing orb'}, 2304, 180, 4, 'searing orb rune')
@@ -337,6 +382,15 @@ local items = {{name = 'shackle rune', id = 2278, buy = 700}, {name = 'spellbook
 	ok(lua:find("addBuyableItem({'mana potion'}, 7620, 50, 1", 1, true), "Lua potion untouched")
 	ok(lua:find("id = 2278, buy = " .. R.price(2278) .. "}", 1, true), "Lua table price")
 	ok(lua:find("id = 2175, buy = 150}", 1, true), "Lua table other item")
+	-- O757: the prices of before O757 come down to the hunt cap; CRLF kept
+	local oldm = shop(data .. "/npc/Oldmonger.xml")
+	eq(oldm[2268].price, R.price(2268), "O757: Reaper's Rune lowered to the config")
+	ok(R.price(2268) < 220 and R.price(2278) < 890 and R.price(2304) < 84, "O757: the config is below the prices of before")
+	eq(oldm[2278].price, R.price(2278), "O757: Shackle Rune lowered")
+	eq(oldm[2304].price, R.price(2304), "O757: Searing Orb Rune lowered")
+	eq(oldm[7618].price, 45, "O757: the potion stays")
+	local oldText = readFile(data .. "/npc/Oldmonger.xml")
+	ok(not oldText:find("[^\r]\n"), "O757: CRLF kept")
 
 	-- crafting: the loader at the end of the category file (CRLF kept), loading it adds every recipe once
 	local craft = readFile(data .. "/scripts/customs/crafting/generalcrafting.lua")
@@ -362,7 +416,7 @@ local items = {{name = 'shackle rune', id = 2278, buy = 700}, {name = 'spellbook
 
 	-- a second run changes nothing
 	local before = {}
-	for _, f in ipairs({"spells/spells.xml", "npc/Raloth.xml", "npc/Isora.xml", "npc/Testmonger.xml", "npc/scripts/runes.lua",
+	for _, f in ipairs({"spells/spells.xml", "npc/Raloth.xml", "npc/Isora.xml", "npc/Testmonger.xml", "npc/Oldmonger.xml", "npc/scripts/runes.lua",
 			"scripts/customs/crafting/generalcrafting.lua"}) do
 		before[f] = readFile(data .. "/" .. f)
 	end

@@ -2,31 +2,44 @@
 -- panel and moves the windows; chaosdock_test.lua runs this file in the client loop (LuaJIT and Lua 5.3).
 -- A tab holds the windows of menu entries (the text ChaosTopBar.addEntry gives them). An entry of a tab opens the dock on
 -- that tab instead of a floating window; a tab with two or more windows shows one at a time, picked by a small tab row.
+-- O755 (owner 2026-11-24, "do tamanho de 1 coluna mesmo, como a bp fica hoje"; "quando ele estiver fechado, so apareca o
+-- mapa"): the dock is one right panel column wide, under the minimap, for every window. It never widens. A window keeps
+-- the column's width (its parts laid out again by chaosdockcolumn.lua) or opens on its own beside the dock (fit 'float').
+-- The right column shows only the minimap while the dock is closed.
 ChaosDockLogic = {}
 local L = ChaosDockLogic
 
-L.WIDTH = 330          -- the dock as drawn in the mockup
-L.MIN_GAME = 280       -- the game left of a dock that widens for a wide window (320 before: the 960 px Store and its
-                       -- scroll bar fit at 1280 now, owner 2026-11-24 "nothing overlaps the dock")
+L.WIDTH = 178          -- the column when the right panel cannot be measured: a side panel's width, the Inventory
+                       -- panel's width in the right column before O755 (game_interface GameSidePanel)
 L.SCROLL = 16          -- the scroll bar and its gap, right of a window taller than the dock (owner 2026-11-24)
 L.CHROME = 135         -- the dock's frame, title, tabs, sub tabs and rule above its content, when it cannot be measured
-L.PAD = 12             -- the dock frame around the hosted window, each side
+L.PAD = 4              -- the dock frame around the hosted window, each side (chaosdock.otui padding)
+L.TAB_GAP = 2          -- between two tabs and between two sub tabs (chaosdock.otui layout spacing)
+L.SUB_COLS = 2         -- sub tabs a row: a tab with three windows has two rows (one column is narrow)
+L.SUB_H = 20           -- a sub tab's height
+L.MAP_GAP = 2          -- between the minimap and the dock under it
 L.BAR_GAP = 6          -- between the dock's bottom and a hotbar it would cover
 L.ORB_SLACK = 40       -- the docked globes may grow out of the hotbar frame
+L.LOGIN_GRACE_MS = 5000 -- a bag the login opens is no click: the dock stays as it was saved
 L.SLIDE_STEPS = 6
 L.SETTING_ENABLED = 'chaosDockEnabled'
 L.SETTING_TAB = 'chaosDockTab'
 L.SETTING_SUBS = 'chaosDockSubs'
+L.SETTING_OPEN = 'chaosDockOpen'
 L.TOGGLE_KEY = 'Alt+D'
+L.MINIMAP = 'minimapWindow' -- the one window the right column keeps while the dock is enabled
 
 -- windows: entry = the menu entry text (also the tr() key of the sub tab), module / vars = where the module keeps the
 -- window when it does (else the dock takes the window that the entry opened), getter = a module function that gives it,
 -- shared = the module shows other pages in the same window (Character Info is one page of game_chaosinfo),
 -- docked = a module function called with true when the dock takes the window and false when it gives it back (the
--- Inventory panel hides its own title bar and tab row: the dock has both).
+-- Inventory panel hides its own title bar and tab row: the dock has both), hidden = the dock takes the window even while
+-- it is hidden (the Inventory panel has no window of its own any more, O755: its menu entry opens the stock one),
+-- fit = 'column' (default: the column's width; ChaosDockColumn.LAYOUTS[entry] lays its parts out again for it) or
+-- 'float' (too wide a grid for a column: it opens on its own, centred in the game left of the dock, which stays open).
 L.TABS = {
   { id = 'equip', name = 'Equip.', glyph = 'pack', key = 'Alt+I', windows = {
-    { entry = 'Inventory', module = 'game_bagpanel', getter = 'getWindow', docked = 'setDocked' },
+    { entry = 'Inventory', module = 'game_bagpanel', getter = 'getWindow', docked = 'setDocked', hidden = true },
   } },
   { id = 'quests', name = 'Quests', glyph = 'book', key = 'Alt+Q', windows = {
     { entry = 'Quest Log', module = 'game_questlog', vars = { 'questLogWindow', 'questlogWindow' } },
@@ -43,8 +56,8 @@ L.TABS = {
     { entry = 'Spell Supports', module = 'game_spellsupports' },
   } },
   { id = 'shop', name = 'Shop', glyph = 'scales', windows = {
-    { entry = 'Market', module = 'game_market' },
-    { entry = 'Store', module = 'game_shop' },
+    { entry = 'Market', module = 'game_market', fit = 'float' },
+    { entry = 'Store', module = 'game_shop', fit = 'float' },
   } },
 }
 
@@ -85,16 +98,34 @@ function L.formatSubs(subs)
   return table.concat(parts, ',')
 end
 
+-- the settings key of a character (O755: the open state, tab and windows are kept per character, as the pinned bags
+-- of game_bagpanel): "chaosDockTab_Name_Of_Char"; no name, the plain key
+function L.charKey(key, name)
+  name = tostring(name or ''):gsub('[^%w]', '_')
+  if name == '' then return key end
+  return key .. '_' .. name
+end
+
+local function truthy(v) return v == true or v == 'true' or v == 1 or v == '1' end
+
 -- the state from the settings: read(key) gives the stored value (nil when none). The dock is on unless turned off.
-function L.newState(read)
+-- name: the character (its own keys first, then the plain ones of before O755); wasOpen: the dock was open when this
+-- character left (it opens again at the next entry)
+function L.newState(read, name)
   read = read or function() return nil end
+  local function get(key)
+    local v = name and read(L.charKey(key, name)) or nil
+    if v == nil then v = read(key) end
+    return v
+  end
   local enabled = read(L.SETTING_ENABLED)
-  local tab = read(L.SETTING_TAB)
+  local tab = get(L.SETTING_TAB)
   return {
     enabled = not (enabled == false or enabled == 'false' or enabled == 0),
     tab = L.tab(tab) and tab or L.TABS[1].id,
-    subs = L.parseSubs(read(L.SETTING_SUBS)),
+    subs = L.parseSubs(get(L.SETTING_SUBS)),
     open = false,
+    wasOpen = name ~= nil and truthy(read(L.charKey(L.SETTING_OPEN, name))),
   }
 end
 
@@ -136,29 +167,81 @@ function L.pickSub(st, index)
   return { open = t.id, sub = index }
 end
 
--- applies an action to the state; returns the settings to write ({ [key] = value }) or nil
+-- applies an action to the state; returns the settings to write ({ [key] = value }, chaosdock.lua writes them under the
+-- character's keys) or nil
 function L.apply(st, action)
   if not action then return nil end
   if action.close then
     st.open = false
-    return nil
+    return { [L.SETTING_OPEN] = 'false' }
   end
   st.open = true
   st.tab = action.open
   st.subs[action.open] = action.sub
-  return { [L.SETTING_TAB] = st.tab, [L.SETTING_SUBS] = L.formatSubs(st.subs) }
+  return { [L.SETTING_TAB] = st.tab, [L.SETTING_SUBS] = L.formatSubs(st.subs), [L.SETTING_OPEN] = 'true' }
 end
 
--- the width of the dock for a window of natural width w (nil: no window yet), and whether the window floats beside the
--- dock instead (wider than the dock may grow). A phone gets the whole screen as a sheet.
-function L.width(natural, screenW, phone)
-  screenW = tonumber(screenW) or 0
-  if phone then return screenW, false end
-  local cap = math.max(L.WIDTH, screenW - L.MIN_GAME)
-  if not natural or natural + 2 * L.PAD <= L.WIDTH then return L.WIDTH, false end
-  local want = natural + 2 * L.PAD
-  if want > cap then return L.WIDTH, true end
-  return want, false
+-- how a window fits the column: 'column' or 'float'; a phone sheet hosts every window at its width ('sheet')
+function L.fitOf(spec, phone)
+  if phone then return 'sheet' end
+  return spec and spec.fit == 'float' and 'float' or 'column'
+end
+
+-- the dock's width: the right panel column (column = its rect, rootRight = the screen's right edge), from its left edge
+-- to the screen's right; L.WIDTH when there is no column to measure. A phone gets the whole screen as a sheet.
+function L.width(column, rootRight, phone, screenW)
+  if phone then return tonumber(screenW) or 0 end
+  rootRight = tonumber(rootRight) or 0
+  if column and (column.width or 0) >= 40 and column.x and column.x < rootRight then
+    return rootRight - column.x
+  end
+  return L.WIDTH
+end
+
+-- the height a hosted window has in the dock: its column layout's height, else its own
+function L.heightIn(layout, natural)
+  return layout and layout.height or natural
+end
+
+-- the dock's top margin under the minimap (O755: the dock takes the column under it): map = the minimap window's rect
+-- when it is shown in the right column, rootTop = y of the screen top
+function L.mapMargin(map, rootTop)
+  if not map or not rootTop then return 0 end
+  return math.max(0, map.y + map.height - rootTop + L.MAP_GAP)
+end
+
+-- the width of each of n tabs (or sub tabs) that share a row of `room` px with L.TAB_GAP between them
+function L.share(n, room)
+  n = math.max(1, n or 1)
+  return math.max(0, math.floor(((room or 0) - L.TAB_GAP * (n - 1)) / n))
+end
+
+-- the sub tab rows of a tab with n windows, and their height
+function L.subRows(n)
+  if not n or n < 2 then return 0 end
+  return math.ceil(n / L.SUB_COLS)
+end
+
+function L.subsHeight(n)
+  local rows = L.subRows(n)
+  if rows == 0 then return 0 end
+  return rows * L.SUB_H + (rows - 1) * L.TAB_GAP
+end
+
+-- a window of the right column that hides while the dock is enabled: every one but the minimap and the dock's own
+function L.hidesInColumn(id, heldIds)
+  id = tostring(id or '')
+  if id:find(L.MINIMAP, 1, true) then return false end
+  if heldIds and heldIds[id] then return false end
+  return true
+end
+
+-- a bag opened by a click (game_bagpanel): the dock shows the Inventory. Not while the login restores the bags, not a
+-- pinned bag's reopen, not in the first L.LOGIN_GRACE_MS of the game (the backpack the login opens)
+function L.bagOpensDock(st, restoring, quiet, sinceStart)
+  if not st or not st.enabled or restoring or quiet then return false end
+  if (sinceStart or 0) < L.LOGIN_GRACE_MS then return false end
+  return not (st.open and st.tab == 'equip')
 end
 
 -- whether a window scrolls in the dock: taller than the room under the dock's tabs (nothing is cut, owner 2026-11-24).
@@ -184,7 +267,7 @@ function L.bottomMargin(dockLeft, bar, rootBottom)
 end
 
 -- the dock's top margin: 0 (from the top of the screen) unless the hub menu bar (client_chaos_topbar, O550) reaches over the
--- dock's left edge (a dock widened for a wide window), then the dock starts below the bar: the two never cover each other.
+-- dock's left edge, then the dock starts below the bar: the two never cover each other.
 -- dockLeft: x of the dock's left edge; bar: the menu bar rect or nil; rootTop: y of the screen top.
 function L.topMargin(dockLeft, bar, rootTop)
   if not bar or not dockLeft or not rootTop then return 0 end
@@ -238,9 +321,11 @@ function L.releaseForOther(held, text)
   return false
 end
 
+L.FLOAT_NOTE = 'This window opens on its own, left of the panel.'
+
 -- the tr() keys of the dock: tab names (English text) and the window names (the menu entry texts)
 function L.texts()
-  local out = {}
+  local out = { L.FLOAT_NOTE }
   for _, t in ipairs(L.TABS) do
     out[#out + 1] = t.name
     for _, w in ipairs(t.windows) do out[#out + 1] = w.entry end

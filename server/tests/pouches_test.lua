@@ -476,6 +476,20 @@ do
 	eq(legend.parent, cFly, "O749: an item that must fly stays in the bag, the Loot Bag does not take it")
 	eq(basic.parent, lootPouch, "O749: the basics still go into the Loot Bag")
 	ok(asked >= 2, "the pouch step asks the explosion rule for every item")
+	-- O756 (owner 2026-11-24, "volta como antes"): in an instance the rule answers false (loot_explosion_test.lua holds the real
+	-- rule: nothing explodes there), so the Loot Bag takes the Legendary again as before O749
+	local inInstance = true
+	ChaosLootExplosion = {mustExplodeItem = function(it, c)
+		return c ~= nil and not inInstance and (it.custom and it.custom.o749fly) == 1
+	end}
+	local legend2 = item(2406, {cat = "equipment", rarity = 5, custom = {o749fly = 1}})
+	drop(nil, corpse(hero.id, {legend2}))
+	eq(legend2.parent, lootPouch, "O756: in an instance the Loot Bag takes a Legendary as before O749")
+	inInstance = false
+	local legend3 = item(2407, {cat = "equipment", rarity = 5, custom = {o749fly = 1}})
+	local cOut = corpse(hero.id, {legend3})
+	drop(nil, cOut)
+	eq(legend3.parent, cOut, "O756: outside an instance it still stays in the bag to fly")
 	eq(#(P.plan({id = 1, category = "equipment", rarity = 5, explode = true}, P.defaults(cfg), P.sets(cfg), cfg, {loot = true, orbs = true})),
 		0, "plan: an item that must fly gets no pouch")
 	eq(#(P.plan({id = 1, category = "equipment", rarity = 5}, P.defaults(cfg), P.sets(cfg), cfg, {loot = true, orbs = true})),

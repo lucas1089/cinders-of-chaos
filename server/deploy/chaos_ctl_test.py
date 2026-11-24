@@ -690,6 +690,7 @@ def main():
     test_server_user()
     test_timezone()
     test_launch_check()
+    test_house_fix()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -4155,6 +4156,168 @@ def test_launch_check():
         os.unlink(os.path.join(repo, 'server', 'deploy', 'launch_check.py'))
         r = run('launch-check')
         check(r.returncode != 0 and 'launch_check.py' in r.stderr, 'launch-check: a missing tool is named: ' + r.stderr)
+
+
+HOUSE_FIXER = r"""#!/usr/bin/env python3
+# stub of server/tools/fix_houses.py: records its arguments and whether the server was stopped, prints like the real one
+import os
+import sys
+stub = os.environ['STUB']
+calls = os.path.join(stub, 'calls')
+with open(calls, 'a') as f:
+    f.write('fix_houses ' + ' '.join(sys.argv[1:]) + '\n')
+mode = os.environ.get('STUB_HF', 'plan')
+if mode == 'refuse':
+    print('refused: map write guard: a far tile changed')
+    sys.exit(1)
+if mode == 'nothing':
+    print('0 tile(s) to rewrite; 0 finding(s) for a human; 0 known and left')
+    print('house fixer: nothing to fix')
+    sys.exit(0)
+print('PZ_ADD               2 tile(s) in 1 house(s)')
+print('PVP_CLEAR            3 tile(s) in 2 house(s)')
+print('5 tile(s) to rewrite; 1 finding(s) for a human; 1 known and left')
+print('HUMAN NO_DOOR house=7: no door')
+if '--write' in sys.argv:
+    world = os.path.join(sys.argv[1], 'data', 'world')
+    m = os.path.join(world, os.environ.get('STUB_MAP', 'chaos.otbm'))
+    with open(m + '.tmp', 'wb') as f:
+        f.write(b'OTBM-fixed')
+    os.replace(m + '.tmp', m)
+    print('house fixer: 5 tile(s) rewritten in ' + m)
+else:
+    print('house fixer: dry run, nothing written (--write applies the plan)')
+"""
+
+
+def test_house_fix():
+    """chaos-ctl.sh house-fix [--write] (O758): the house fixer of O742 as a button, with a stub fix_houses.py and systemctl.
+    The dry run: no stop, no write. --write: stop, a dated copy of the map, the fixer, start again (also after a refusal);
+    the refusals and a missing tool or map."""
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        server = os.path.join(tmp, 'server')
+        world = os.path.join(server, 'data', 'world')
+        tools = os.path.join(repo, 'server', 'tools')
+        for d in (stub, tools, world):
+            os.makedirs(d)
+        p = os.path.join(stub, 'systemctl')
+        with open(p, 'w') as f:
+            f.write(SYSTEMCTL.replace('exit 0\n', '[ -n "${STUB_STARTFAIL:-}" ] && [ "$1" = start ] && exit 1\nexit 0\n'))
+        os.chmod(p, 0o755)
+        tool = os.path.join(tools, 'fix_houses.py')
+        with open(tool, 'w') as f:
+            f.write(HOUSE_FIXER)
+        with open(os.path.join(server, 'config.lua'), 'w') as f:
+            f.write('serverName = "x"\nmapName = "chaos"\n')
+        mp = os.path.join(world, 'chaos.otbm')
+        with open(mp, 'wb') as f:
+            f.write(b'OTBM-original')
+        with open(os.path.join(world, 'other.otbm'), 'wb') as f:
+            f.write(b'OTBM-other')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_ENV=os.path.join(tmp, 'none.env'), CHAOS_REPO=repo,
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'STUB_HF', 'STUB_NOUNIT', 'STUB_STARTFAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            c = os.path.join(stub, 'calls')
+            return open(c).read() if os.path.exists(c) else ''
+
+        def reset():
+            c = os.path.join(stub, 'calls')
+            if os.path.exists(c):
+                os.unlink(c)
+
+        def kv(r):
+            return dict(line.split('=', 1) for line in r.stdout.splitlines() if '=' in line and ' ' not in line.split('=', 1)[0])
+
+        def backups():
+            return sorted(n for n in os.listdir(world) if '.house-fix-' in n)
+
+        # the dry run: the plan, nothing stopped or written
+        r = run('house-fix')
+        k = kv(r)
+        check(r.returncode == 0 and k.get('house_fix') == 'dry-run' and k.get('map') == mp
+              and '5 tile(s) to rewrite' in r.stdout and 'dry run, nothing written' in r.stdout,
+              'house-fix: the dry run prints the plan: ' + r.stdout + r.stderr)
+        c = calls()
+        check('fix_houses %s --dry-run' % server in c and 'stop' not in c and 'start' not in c,
+              'house-fix: the dry run runs the fixer with --dry-run and never stops the server: ' + c)
+        check(open(mp, 'rb').read() == b'OTBM-original' and backups() == [], 'house-fix: the dry run writes nothing')
+        reset()
+        r = run('house-fix', extra={'STUB_HF': 'nothing'})
+        check(r.returncode == 0 and kv(r).get('house_fix') == 'nothing', 'house-fix: nothing to fix: ' + r.stdout)
+        r = run('house-fix', extra={'STUB_HF': 'refuse'})
+        check(r.returncode == 1 and kv(r).get('house_fix') == 'refused' and 'refused:' in r.stdout,
+              'house-fix: a refusal of the fixer in the dry run, exit 1: ' + r.stdout)
+        reset()
+
+        # --write: stop, a dated copy, the fixer, start
+        r = run('house-fix', '--write')
+        k = kv(r)
+        c = calls()
+        lines = c.splitlines()
+        stop = next((i for i, x in enumerate(lines) if x.startswith('systemctl stop')), -1)
+        fix = next((i for i, x in enumerate(lines) if x.startswith('fix_houses')), -1)
+        start = next((i for i, x in enumerate(lines) if x.startswith('systemctl start')), -1)
+        check(r.returncode == 0 and k.get('house_fix') == 'written' and k.get('server') == 'started'
+              and '5 tile(s) rewritten' in r.stdout, 'house-fix --write: written, the server started: ' + r.stdout + r.stderr)
+        check(0 <= stop < fix < start and 'fix_houses %s --write' % server in c and 'systemctl stop chaos-server' in c,
+              'house-fix --write: stop, the fixer with --write, then start: ' + c)
+        b = backups()
+        check(len(b) == 1 and b[0].startswith('chaos.otbm.house-fix-') and k.get('backup') == os.path.join(world, b[0])
+              and open(os.path.join(world, b[0]), 'rb').read() == b'OTBM-original',
+              'house-fix --write: a dated copy of the map before the fix: %r %r' % (b, k))
+        check(open(mp, 'rb').read() == b'OTBM-fixed' and open(os.path.join(world, 'other.otbm'), 'rb').read() == b'OTBM-other',
+              'house-fix --write: the world map of config.lua is fixed, another map is not')
+        for n in b:
+            os.unlink(os.path.join(world, n))
+        reset()
+
+        # a refusal of the fixer: the map unchanged, the server started again, exit 1
+        r = run('house-fix', '--write', extra={'STUB_HF': 'refuse'})
+        k = kv(r)
+        check(r.returncode == 1 and k.get('house_fix') == 'refused' and k.get('server') == 'started'
+              and 'systemctl start' in calls() and open(mp, 'rb').read() == b'OTBM-fixed',
+              'house-fix --write: a refusal starts the server again, exit 1: ' + r.stdout)
+        for n in backups():
+            os.unlink(os.path.join(world, n))
+        reset()
+        r = run('house-fix', '--write', extra={'STUB_STARTFAIL': '1'})
+        check(r.returncode == 1 and kv(r).get('server') == 'start-failed', 'house-fix --write: a failed start is exit 1: ' + r.stdout)
+        for n in backups():
+            os.unlink(os.path.join(world, n))
+        reset()
+        r = run('house-fix', '--write', extra={'STUB_NOUNIT': '1'})
+        check(r.returncode == 5 and 'fix_houses' not in calls() and backups() == [],
+              'house-fix --write: no unit, nothing run: ' + r.stderr)
+        reset()
+
+        # refusals: bad arguments, no tool, no map
+        for bad in (('house-fix', 'x'), ('house-fix', '--write', '--yes'), ('house-fix', '--dry-run'), ('house-fix', '$(id)')):
+            check(run(*bad).returncode != 0, 'house-fix refuses %r' % (bad,))
+        check(calls() == '', 'house-fix: a refused call runs nothing')
+        os.unlink(os.path.join(world, 'other.otbm'))
+        with open(os.path.join(server, 'config.lua'), 'w') as f:
+            f.write('mapName = "missing"\n')
+        r = run('house-fix')
+        check(r.returncode == 0 and kv(r).get('map') == mp, 'house-fix: no map of that name: the one .otbm of the folder: ' + r.stdout)
+        with open(os.path.join(world, 'other.otbm'), 'wb') as f:
+            f.write(b'x')
+        reset()
+        r = run('house-fix')
+        check(r.returncode != 0 and 'no world map' in r.stderr and calls() == '', 'house-fix: two maps and no mapName: refused')
+        os.unlink(tool)
+        r = run('house-fix')
+        check(r.returncode != 0 and 'fix_houses.py' in r.stderr, 'house-fix: a missing tool is named: ' + r.stderr)
 
 
 if __name__ == '__main__':

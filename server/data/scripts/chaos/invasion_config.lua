@@ -84,7 +84,9 @@ return {
 	contribution = {damage = 1.0, healing = 0.6, kill = 0.25, presence = 0.05, activeSeconds = 60, presenceMargin = 10,
 		minPercent = 0.2},
 	rewards = {
-		goldBase = 200, goldPool = 8000, -- gold to the bank: area level x (goldBase + goldPool x share)
+		-- gold to the bank: area level x (goldBase + goldPool x share). O754: 200 / 8000 -> 60 / 200 (a lone defender at level
+		-- 1000 earned 8.2M in 20 minutes); a lone defender stays under 1.5x the one gold curve at every level
+		goldBase = 60, goldPool = 200,
 		base = {{id = 29856, count = 1}}, -- every rewarded player: 1 Orb of Upheaval
 		pool = {{id = 29856, count = 20}, {id = 29857, count = 6}}, -- split by share: Orbs of Upheaval, Orbs of Fate
 		top = { -- extras for the top 3

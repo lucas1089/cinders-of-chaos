@@ -868,8 +868,10 @@ Chaos.worldBoss = {
 	-- players offline at the kill get it at their next login (kept in memory until a restart).
 	reward = {
 		minScorePercent = 0.25,
-		bankGold = 500000, -- deposited into the bank for every eligible player
-		bankGoldPool = 10000000, -- split by share, deposited into the bank
+		-- O754: 500,000 / 10,000,000 -> 100,000 / 1,000,000: five players with equal shares at level 300 (the minimum) earn at
+		-- most 1.5x the one gold curve in the 20 minutes of the event (tools/gold_faucets_model.lua)
+		bankGold = 100000, -- deposited into the bank for every eligible player
+		bankGoldPool = 1000000, -- split by share, deposited into the bank
 		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Orbs of Upheaval, Orb of Fate for everyone
 		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by share (floor)
 		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)

@@ -93,6 +93,21 @@ local function state()
     local w = h.widget
     parts[#parts + 1] = ('holds %s %dx%d'):format(tostring(w:getId()), w:getWidth(), w:getHeight())
   end
+  local f = d and d.floating and d.floating()
+  if f and f:isVisible() then
+    parts[#parts + 1] = ('beside %s %dx%d at %d,%d'):format(tostring(f:getId()), f:getWidth(), f:getHeight(), f:getX(), f:getY())
+  end
+  -- the right column (O755): only the minimap while the dock is closed
+  local shown = {}
+  local gi = modules.game_interface
+  local root = gi and gi.getRootPanel and gi.getRootPanel()
+  local rp = root and root:getChildById('gameRightPanels')
+  for _, side in ipairs(rp and rp:getChildren() or {}) do
+    for _, w in ipairs(side:getChildren()) do
+      if w:isVisible() then shown[#shown + 1] = tostring(w:getId()) end
+    end
+  end
+  parts[#parts + 1] = 'column [' .. table.concat(shown, ' ') .. ']'
   return table.concat(parts, ', ')
 end
 

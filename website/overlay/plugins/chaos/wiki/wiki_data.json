@@ -40989,7 +40989,7 @@
 						{
 							"h": "Chest (per player)",
 							"p": [
-								"Gold: 5000 x tier squared to the bank.",
+								"Gold: 40 x tier squared to the bank.",
 								"Orb of Upheaval: 0.5 + 0.085 per tier; Orb of Fate: 0 + 0.06 per tier.",
 								"Item rolls: 2 + 0.5 per tier from the rift monsters' loot, gear with a rarity; one currency roll and one unique roll.",
 								"Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."
@@ -41025,7 +41025,7 @@
 						{
 							"h": "Reward (per finisher)",
 							"p": [
-								"3000 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."
+								"100 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."
 							]
 						}
 					],
@@ -41517,12 +41517,12 @@
 							"cols": ["Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"],
 							"w": [14, 18, 12, 20, 18, 18],
 							"rows": [
-								["1", "150,000", "1", "Magic", "+0", "1"],
-								["2", "262,500", "1", "Magic", "+1", "1"],
-								["3", "300,000", "2", "Rare", "+2", "1"],
-								["4", "450,000", "2", "Rare", "+3", "2"],
-								["5", "600,000", "3", "Legendary", "+4", "2"],
-								["6", "750,000", "3", "Legendary", "+5", "3"]
+								["1", "15,000", "1", "Magic", "+0", "1"],
+								["2", "26,250", "1", "Magic", "+1", "1"],
+								["3", "30,000", "2", "Rare", "+2", "1"],
+								["4", "45,000", "2", "Rare", "+3", "2"],
+								["5", "60,000", "3", "Legendary", "+4", "2"],
+								["6", "75,000", "3", "Legendary", "+5", "3"]
 							]
 						},
 						{
@@ -41576,12 +41576,12 @@
 							"cols": ["Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"],
 							"w": [14, 18, 12, 20, 18, 18],
 							"rows": [
-								["1", "200,000", "1", "Magic", "+0", "1"],
-								["2", "350,000", "1", "Magic", "+1", "1"],
-								["3", "400,000", "2", "Rare", "+2", "1"],
-								["4", "600,000", "2", "Rare", "+3", "2"],
-								["5", "800,000", "3", "Legendary", "+4", "2"],
-								["6", "1,000,000", "3", "Legendary", "+5", "3"]
+								["1", "15,000", "1", "Magic", "+0", "1"],
+								["2", "26,250", "1", "Magic", "+1", "1"],
+								["3", "30,000", "2", "Rare", "+2", "1"],
+								["4", "45,000", "2", "Rare", "+3", "2"],
+								["5", "60,000", "3", "Legendary", "+4", "2"],
+								["6", "75,000", "3", "Legendary", "+5", "3"]
 							]
 						},
 						{
@@ -41644,12 +41644,12 @@
 							"cols": ["Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"],
 							"w": [14, 18, 12, 20, 18, 18],
 							"rows": [
-								["1", "250,000", "1", "Magic", "+0", "1"],
-								["2", "437,500", "1", "Magic", "+1", "1"],
-								["3", "500,000", "2", "Rare", "+2", "1"],
-								["4", "750,000", "2", "Rare", "+3", "2"],
-								["5", "1,000,000", "3", "Legendary", "+4", "2"],
-								["6", "1,250,000", "3", "Legendary", "+5", "3"]
+								["1", "15,000", "1", "Magic", "+0", "1"],
+								["2", "26,250", "1", "Magic", "+1", "1"],
+								["3", "30,000", "2", "Rare", "+2", "1"],
+								["4", "45,000", "2", "Rare", "+3", "2"],
+								["5", "60,000", "3", "Legendary", "+4", "2"],
+								["6", "75,000", "3", "Legendary", "+5", "3"]
 							]
 						},
 						{
@@ -41709,12 +41709,12 @@
 							"cols": ["Difficulty", "Gold", "Gear", "Rarity", "Item level", "Orb rolls"],
 							"w": [14, 18, 12, 20, 18, 18],
 							"rows": [
-								["1", "300,000", "1", "Magic", "+0", "1"],
-								["2", "525,000", "1", "Magic", "+1", "1"],
-								["3", "600,000", "2", "Rare", "+2", "1"],
-								["4", "900,000", "2", "Rare", "+3", "2"],
-								["5", "1,200,000", "3", "Legendary", "+4", "2"],
-								["6", "1,500,000", "3", "Legendary", "+5", "3"]
+								["1", "15,000", "1", "Magic", "+0", "1"],
+								["2", "26,250", "1", "Magic", "+1", "1"],
+								["3", "30,000", "2", "Rare", "+2", "1"],
+								["4", "45,000", "2", "Rare", "+3", "2"],
+								["5", "60,000", "3", "Legendary", "+4", "2"],
+								["6", "75,000", "3", "Legendary", "+5", "3"]
 							]
 						},
 						{
@@ -41814,7 +41814,7 @@
 						{
 							"h": "Rewards",
 							"p": [
-								"Everyone with a score of at least 0.25% of the boss's health: 500,000 gold to the bank and a share of 10,000,000 by score; 3 Orb of Upheaval, 1 Orb of Fate, plus a share of 60 Orb of Upheaval, 25 Orb of Fate.",
+								"Everyone with a score of at least 0.25% of the boss's health: 100,000 gold to the bank and a share of 1,000,000 by score; 3 Orb of Upheaval, 1 Orb of Fate, plus a share of 60 Orb of Upheaval, 25 Orb of Fate.",
 								"A boss gear item: 15% + share x 30%; a boss-only unique: 0.5% + share x 3%.",
 								"The top 3 in Damage (title Bossbreaker), Healing (title Lifewarden) and Tanking (title Bulwark) get extra orbs, a better unique chance and a title for 7 days."
 							]
@@ -42395,8 +42395,8 @@
 							"cols": ["Fight", "Gold", "Orbs", "Unique rolls"],
 							"w": [25, 25, 30, 20],
 							"rows": [
-								["Ascended", "15,000,000", "20 Upheaval, 10 Fate, 1 Exalted", "2"],
-								["Cinderheart", "40,000,000", "40 Upheaval, 20 Fate, 3 Exalted", "3"]
+								["Ascended", "600,000", "20 Upheaval, 10 Fate, 1 Exalted", "2"],
+								["Cinderheart", "1,500,000", "40 Upheaval, 20 Fate, 3 Exalted", "3"]
 							]
 						}
 					],
@@ -42815,7 +42815,7 @@
 							"p": [
 								"Every Saturday at 20:00 (server time). Guilds with at least 3 members of level 100 or more sign up; 2 to 4 guilds per bracket fight for 25 minutes.",
 								"Points for holding the obelisk and for kills. Nobody really dies inside.",
-								"The winner: 500,000 gold to each member's bank and the title Siege Champions for 7 days; the others 150,000 gold."
+								"The winner: 120,000 gold to each member's bank and the title Siege Champions for 7 days; the others 40,000 gold."
 							]
 						}
 					],
@@ -49455,7 +49455,7 @@
 								["Blessings", "2", "60-300", "Boost, Service"],
 								["World Buffs", "4", "250-300", "Boost"],
 								["Potions", "18", "15-189", "Consumable item"],
-								["Runes", "29", "3-108", "Consumable item"],
+								["Runes", "29", "3-32", "Consumable item"],
 								["Training", "18", "25-450", "Consumable item"],
 								["Everfull Potions", "10", "20-70", "Service"],
 								["Convenience", "9", "50-400", "Convenience"],
@@ -50197,78 +50197,78 @@
 				{
 					"id": "store:14",
 					"name": "Runes",
-					"sub": "29 offers, 3-108 coins. Consumable item.",
+					"sub": "29 offers, 3-32 coins. Consumable item.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["29 offers, 3-108 Chaos Coins. Consumable item."]},
+						{"h": "Category", "p": ["29 offers, 3-32 Chaos Coins. Consumable item."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
 							"w": [24, 10, 16, 50],
 							"rows": [
-								["100 Searing Orb Runes", "9", "Consumable item", "Fire damage in an area."],
+								["100 Searing Orb Runes", "5", "Consumable item", "Fire damage in an area."],
 								[
 									"250 Searing Orb Runes",
-									"20",
+									"10",
 									"Consumable item",
 									"Fire damage in an area. 5% off the 100 pack."
 								],
 								[
 									"500 Searing Orb Runes",
-									"38",
+									"19",
 									"Consumable item",
 									"Fire damage in an area. 10% off the 100 pack."
 								],
-								["100 Rockfall Runes", "7", "Consumable item", "Earth damage in an area."],
+								["100 Rockfall Runes", "4", "Consumable item", "Earth damage in an area."],
 								[
 									"250 Rockfall Runes",
-									"17",
+									"10",
 									"Consumable item",
 									"Earth damage in an area. 5% off the 100 pack."
 								],
 								[
 									"500 Rockfall Runes",
-									"32",
+									"18",
 									"Consumable item",
 									"Earth damage in an area. 10% off the 100 pack."
 								],
-								["100 Stormcall Runes", "7", "Consumable item", "Energy damage in an area."],
+								["100 Stormcall Runes", "4", "Consumable item", "Energy damage in an area."],
 								[
 									"250 Stormcall Runes",
-									"17",
+									"10",
 									"Consumable item",
 									"Energy damage in an area. 5% off the 100 pack."
 								],
 								[
 									"500 Stormcall Runes",
-									"32",
+									"18",
 									"Consumable item",
 									"Energy damage in an area. 10% off the 100 pack."
 								],
-								["100 Frostfall Runes", "9", "Consumable item", "Ice damage in an area."],
+								["100 Frostfall Runes", "5", "Consumable item", "Ice damage in an area."],
 								[
 									"250 Frostfall Runes",
-									"20",
+									"10",
 									"Consumable item",
 									"Ice damage in an area. 5% off the 100 pack."
 								],
 								[
 									"500 Frostfall Runes",
-									"38",
+									"19",
 									"Consumable item",
 									"Ice damage in an area. 10% off the 100 pack."
 								],
-								["100 Reaper's Runes", "22", "Consumable item", "Death damage to a single target."],
+								["100 Reaper's Runes", "7", "Consumable item", "Death damage to a single target."],
 								[
 									"250 Reaper's Runes",
-									"53",
+									"15",
 									"Consumable item",
 									"Death damage to a single target. 5% off the 100 pack."
 								],
 								[
 									"500 Reaper's Runes",
-									"99",
+									"28",
 									"Consumable item",
 									"Death damage to a single target. 10% off the 100 pack."
 								],
@@ -50290,40 +50290,40 @@
 									"Consumable item",
 									"Energy damage to a single target. 10% off the 100 pack."
 								],
-								["100 Mending Runes", "10", "Consumable item", "Heals health."],
-								["250 Mending Runes", "23", "Consumable item", "Heals health. 5% off the 100 pack."],
+								["100 Mending Runes", "5", "Consumable item", "Heals health."],
+								["250 Mending Runes", "12", "Consumable item", "Heals health. 5% off the 100 pack."],
 								[
 									"500 Mending Runes",
-									"43",
+									"22",
 									"Consumable item",
 									"Heals health. 10% off the 100 pack."
 								],
 								[
 									"100 Grand Mending Runes",
-									"24",
+									"7",
 									"Consumable item",
 									"Heals a large amount of health."
 								],
 								[
 									"250 Grand Mending Runes",
-									"57",
+									"17",
 									"Consumable item",
 									"Heals a large amount of health. 5% off the 100 pack."
 								],
 								[
 									"500 Grand Mending Runes",
-									"108",
+									"32",
 									"Consumable item",
 									"Heals a large amount of health. 10% off the 100 pack."
 								],
-								["25 Shackle Runes", "23", "Consumable item", "Slows a target down a lot."],
+								["25 Shackle Runes", "4", "Consumable item", "Slows a target down a lot."],
 								[
 									"50 Shackle Runes",
-									"43",
+									"7",
 									"Consumable item",
 									"Slows a target down a lot. 5% off the 100 pack."
 								],
-								["100 Shackle Runes", "89", "Consumable item", "Slows a target down a lot."],
+								["100 Shackle Runes", "15", "Consumable item", "Slows a target down a lot."],
 								["100 Dispel Runes", "3", "Consumable item", "Removes a magic field."],
 								[
 									"250 Dispel Runes",
@@ -50620,7 +50620,7 @@
 									"Loot Bag",
 									"250",
 									"Convenience",
-									"Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set pieces, uniques and cards always fly to the ground."
+									"Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set pieces, uniques and cards always fly to the ground. In an instance it takes them too."
 								],
 								[
 									"Orbs Pouch",

@@ -29,6 +29,8 @@ return {
 
 	-- reward multiplier per contract type (gold and Orbs of Upheaval; Orbs of Fate are rounded up)
 	typeMult = {hunt = 1.0, elite = 1.5, boss = 1.5},
+	-- the hunting gold an hour by character level: the one curve (O751), read by B.bandGold (O754)
+	hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting,
 	-- experience (2026-10-22, "as bounties dão muito pouca xp": 3-4% of one level was 87 exp at level 8, less than one
 	-- kill gives with the stage). expShare percent of the base experience the contract's kills give the player: the
 	-- monster's experience x the engine's level factor (x0.03 L, level-scaled monsters) x its pace curve x the
@@ -47,20 +49,25 @@ return {
 	eliteSearch = {magic = 12, rare = 50},
 
 	-- level bands. pick = level window of the monsters the contracts use (bounty_pool.lua "level").
-	-- reward: gold goes to the bank, orbs to the backpack (inbox when it is full).
+	-- reward: gold goes to the bank, orbs to the backpack (inbox when it is full). Gold (O754): goldMinutes of the hunting
+	-- gold an hour (hunt_gold_config.lua) at the player's level held inside the band (bounty_core.lua B.bandGold), x the
+	-- contract type's multiplier. A contract is done on a hunt that pays its own kills, so the gold on top stays small:
+	-- tools/gold_faucets_model.lua holds a hunt contract with a bestiary task and an elite contract under 1.5x the curve.
+	-- Before O751 / O754: 10,000 / 50,000 / 150,000 / 400,000 / 1,000,000 / 2,000,000 a band, sized on the old "Respec"
+	-- table (2M was 13 minutes of its 9.5M an hour at level 1000, 1.3 hours of the curve now).
 	bands = {
 		{min = 8, max = 49, pick = {5, 49}, kills = {60, 120},
-			reward = {gold = 10000, chaos = 1, divine = 0}, weekly = {chaos = 5, divine = 1}},
+			reward = {goldMinutes = 1.4, chaos = 1, divine = 0}, weekly = {chaos = 5, divine = 1}},
 		{min = 50, max = 149, pick = {40, 149}, kills = {100, 180},
-			reward = {gold = 50000, chaos = 2, divine = 0}, weekly = {chaos = 6, divine = 1}},
+			reward = {goldMinutes = 1.4, chaos = 2, divine = 0}, weekly = {chaos = 6, divine = 1}},
 		{min = 150, max = 299, pick = {120, 299}, kills = {120, 200},
-			reward = {gold = 150000, chaos = 3, divine = 0}, weekly = {chaos = 8, divine = 2}},
+			reward = {goldMinutes = 1.4, chaos = 3, divine = 0}, weekly = {chaos = 8, divine = 2}},
 		{min = 300, max = 499, pick = {250, 499}, kills = {120, 200},
-			reward = {gold = 400000, chaos = 4, divine = 0}, weekly = {chaos = 10, divine = 2}},
+			reward = {goldMinutes = 1.4, chaos = 4, divine = 0}, weekly = {chaos = 10, divine = 2}},
 		{min = 500, max = 799, pick = {420, 799}, kills = {100, 180},
-			reward = {gold = 1000000, chaos = 5, divine = 1}, weekly = {chaos = 12, divine = 3}},
+			reward = {goldMinutes = 1.4, chaos = 5, divine = 1}, weekly = {chaos = 12, divine = 3}},
 		{min = 800, max = 999999, pick = {640, 1500}, kills = {80, 150},
-			reward = {gold = 2000000, chaos = 6, divine = 2}, weekly = {chaos = 15, divine = 4}}
+			reward = {goldMinutes = 1.4, chaos = 6, divine = 2}, weekly = {chaos = 15, divine = 4}}
 	},
 
 	-- weekly bonus: completing this many contracts in one bounty week (Monday rollHour to Monday rollHour) gives a

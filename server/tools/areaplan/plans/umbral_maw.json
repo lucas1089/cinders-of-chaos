@@ -1,0 +1,332 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "umbral_maw",
+  "name": "The Umbral Maw",
+  "biome": "abyss",
+  "size": [
+    164,
+    130
+  ],
+  "floors": 1,
+  "level": [
+    2400,
+    2500
+  ],
+  "seed": 75906,
+  "repair_reach": true,
+  "water": {
+    "lakes": [
+      {
+        "zone": "black_tarn",
+        "radius": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  "origin": {
+    "x": 16844,
+    "y": 15904,
+    "z": 11
+  },
+  "decoration": "dense",
+  "light": "dark",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "northwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "maw_throat",
+      "floor": 1,
+      "size": [
+        38,
+        30
+      ],
+      "place": "center"
+    },
+    {
+      "id": "black_tarn",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "north"
+    },
+    {
+      "id": "tyrant_eyrie",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "void_steps",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "east"
+    },
+    {
+      "id": "pyre_chasm",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "gnarl_deep",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "south"
+    },
+    {
+      "id": "umbral_rim",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "southwest"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "maw_throat",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "black_tarn",
+      "width": 3
+    },
+    {
+      "from": "black_tarn",
+      "to": "tyrant_eyrie",
+      "width": 3
+    },
+    {
+      "from": "tyrant_eyrie",
+      "to": "void_steps",
+      "width": 3
+    },
+    {
+      "from": "void_steps",
+      "to": "pyre_chasm",
+      "width": 3
+    },
+    {
+      "from": "pyre_chasm",
+      "to": "gnarl_deep",
+      "width": 3
+    },
+    {
+      "from": "gnarl_deep",
+      "to": "umbral_rim",
+      "width": 3
+    },
+    {
+      "from": "umbral_rim",
+      "to": "maw_throat",
+      "width": 3
+    },
+    {
+      "from": "maw_throat",
+      "to": "void_steps",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "maw_throat",
+      "monster": "Pyre Stork",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "maw_throat",
+      "monster": "Pyrewing Tyrant",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_tarn",
+      "monster": "Pyrewing Tyrant",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_tarn",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_eyrie",
+      "monster": "Pyrewing Tyrant",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_eyrie",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "void_steps",
+      "monster": "Pyre Stork",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "void_steps",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_chasm",
+      "monster": "Pyre Stork",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_chasm",
+      "monster": "Pyrewing Tyrant",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_deep",
+      "monster": "Gnarlback",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_deep",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_rim",
+      "monster": "Pyrewing Tyrant",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_rim",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "black_tarn",
+        "tyrant_eyrie"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "tyrant_eyrie",
+        "void_steps"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "void_steps",
+        "pyre_chasm"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "pyre_chasm",
+        "gnarl_deep"
+      ],
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "gnarl_deep",
+        "umbral_rim"
+      ],
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "umbral_rim",
+        "maw_throat"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "maw_throat",
+        "void_steps"
+      ],
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): an abyss round a black tarn (O739) for levels 2400-2500 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"). 7 hunting zones; monsters Pyre Stork, Pyrewing Tyrant, Gnarlback, Mirecoil Wyrm. Display monster: a stand-in (every monster of the plan shows in another cell)."
+}

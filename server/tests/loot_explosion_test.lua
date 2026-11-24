@@ -1609,6 +1609,15 @@ do
 	ok(not X.mustExplodeItem((T.one({id = 2148, count = 10, stackable = true}))), "gold never")
 	ok(not X.mustExplodeItem(T.legend, newItem(3058, 1, {container = true, owner = 1})),
 		"a corpse that is not a loot bag (a quest body): the auto steps as before")
+	-- O756: inside an instance nothing explodes, so the auto steps (the pouches first) take it as before O749
+	world.instance = true
+	ok(not X.mustExplodeItem(T.legend, T.b1), "in an instance a Legendary is no must-fly item: the pouches take it again")
+	ok(X.mustExplodeItem(T.legend), "without a corpse given the instance is not known: the rule")
+	Chaos.lootExplosionConfig.inInstances = true
+	ok(X.mustExplodeItem(T.legend, T.b1), "inInstances true: it explodes there, so the rule holds there too")
+	Chaos.lootExplosionConfig.inInstances = false
+	world.instance = nil
+	ok(X.mustExplodeItem(T.legend, T.b1), "outside an instance the O749 rule stays")
 	Chaos.lootExplosionConfig.enabled = false
 	ok(not X.mustExplodeItem(T.legend, T.b1), "the explosion switched off: the auto steps take everything again")
 	Chaos.lootExplosionConfig.enabled = true

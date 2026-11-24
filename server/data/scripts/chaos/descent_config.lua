@@ -194,7 +194,9 @@ return {
 	-- perDepth per room past it, + clear on a full clear, at most max). A full clear (the boss slain) multiplies gold and
 	-- orbs by clearMult. The player's curse rewards add percent to gold, orbs (rounded down) and the unique chance.
 	rewards = {
-		gold = {perDepth = 3000, square = 400, levelDiv = 400},
+		-- O754: perDepth 3000 -> 300, square 400 -> 40: a 20 minute full clear with every curse at level 100 paid 1.1M (7x the
+		-- one gold curve); now under 1.5x at every level (tools/gold_faucets_model.lua)
+		gold = {perDepth = 300, square = 40, levelDiv = 400},
 		orbs = {{id = 29856, every = 2}, {id = 29857, every = 4}, {id = 29858, every = 6}},
 		clearMult = 1.5,
 		unique = {from = 6, perDepth = 150, clear = 800, max = 2500},

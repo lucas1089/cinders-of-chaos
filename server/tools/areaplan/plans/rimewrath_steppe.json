@@ -1,0 +1,347 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "rimewrath_steppe",
+  "name": "Rimewrath Steppe",
+  "biome": "ice",
+  "size": [
+    168,
+    136
+  ],
+  "floors": 1,
+  "level": [
+    2150,
+    2350
+  ],
+  "seed": 180630,
+  "repair_reach": true,
+  "plateaus": {
+    "count": 3,
+    "size": [
+      17,
+      21
+    ],
+    "height": [
+      1,
+      2
+    ],
+    "ramps": [
+      1,
+      2
+    ],
+    "zones": [
+      "frostspire",
+      "colossus_tor",
+      "oath_ridge"
+    ]
+  },
+  "origin": {
+    "x": 17456,
+    "y": 15700,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "southwest",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "frostspire",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "northwest",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "drift_hollow",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "center"
+    },
+    {
+      "id": "colossus_tor",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "northeast",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "wyrm_fields",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "east"
+    },
+    {
+      "id": "oath_ridge",
+      "floor": 1,
+      "size": [
+        36,
+        30
+      ],
+      "place": "southeast",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "bone_flats",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "south"
+    },
+    {
+      "id": "rime_gully",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "north"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "drift_hollow",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "bone_flats",
+      "width": 3
+    },
+    {
+      "from": "drift_hollow",
+      "to": "frostspire",
+      "width": 3
+    },
+    {
+      "from": "frostspire",
+      "to": "rime_gully",
+      "width": 3
+    },
+    {
+      "from": "rime_gully",
+      "to": "colossus_tor",
+      "width": 3
+    },
+    {
+      "from": "colossus_tor",
+      "to": "wyrm_fields",
+      "width": 3
+    },
+    {
+      "from": "wyrm_fields",
+      "to": "oath_ridge",
+      "width": 3
+    },
+    {
+      "from": "oath_ridge",
+      "to": "bone_flats",
+      "width": 3
+    },
+    {
+      "from": "drift_hollow",
+      "to": "wyrm_fields",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "frostspire",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frostspire",
+      "monster": "Wraithbone Stalker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drift_hollow",
+      "monster": "Gnarlback",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drift_hollow",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "colossus_tor",
+      "monster": "Oathbroken Colossus",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "colossus_tor",
+      "monster": "Gnarlback",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_fields",
+      "monster": "Mirecoil Wyrm",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_fields",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "oath_ridge",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "oath_ridge",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_flats",
+      "monster": "Wraithbone Stalker",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_flats",
+      "monster": "Oathbroken Colossus",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rime_gully",
+      "monster": "Mirecoil Wyrm",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rime_gully",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "drift_hollow",
+        "frostspire"
+      ],
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "frostspire",
+        "rime_gully"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "rime_gully",
+        "colossus_tor"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "colossus_tor",
+        "wyrm_fields"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "wyrm_fields",
+        "oath_ridge"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "oath_ridge",
+        "bone_flats"
+      ],
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "drift_hollow",
+        "wyrm_fields"
+      ],
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): an ice steppe for levels 2150-2350 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"). 7 hunting zones, three plateaus (O744) one or two floors high with ramps; monsters Gravecrown Oathbreaker, Gnarlback, Mirecoil Wyrm, Wraithbone Stalker, Oathbroken Colossus. Display monster: Oathbroken Colossus."
+}

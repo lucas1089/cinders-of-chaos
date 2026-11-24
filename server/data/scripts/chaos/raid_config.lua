@@ -203,10 +203,12 @@ return {
 	-- (helping others). gold to the bank; orbs; gearRolls items of the boss's gear list at an item level of
 	-- gearLevel[1]..gearLevel[2] (chaos_item_mods.lua rules: the rarity from the boss tier, x rarityFind); a unique roll
 	-- with uniqueChance per 10000 over the raid uniques that name the boss; marks: the raid vendor's currency.
+	-- O754: gold 2,500,000 -> 350,000 a boss and 6,000,000 -> 700,000 the final one (2.1M a week, was 16M): about 75 minutes
+	-- of a raid pay at most 1.5x the one gold curve at level 800 (tools/gold_faucets_model.lua --check, server/README.md "Gold faucets against the curve (O754)").
 	loot = {
-		boss = {gold = 2500000, orbs = {{id = UPHEAVAL, count = 6}, {id = FATE, count = 2}}, gearRolls = 2, uniqueChance = 150,
+		boss = {gold = 350000, orbs = {{id = UPHEAVAL, count = 6}, {id = FATE, count = 2}}, gearRolls = 2, uniqueChance = 150,
 			marks = 20},
-		final = {gold = 6000000, orbs = {{id = UPHEAVAL, count = 12}, {id = FATE, count = 5}, {id = EXALTED, count = 1}},
+		final = {gold = 700000, orbs = {{id = UPHEAVAL, count = 12}, {id = FATE, count = 5}, {id = EXALTED, count = 1}},
 			gearRolls = 3, uniqueChance = 400, marks = 45},
 		gearLevel = {120, 130},
 		rarityFind = 1.5

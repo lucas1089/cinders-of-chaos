@@ -83,7 +83,8 @@ return {
 	-- sold by the Auto Seller (autosell.lua): it stays in the bag until this step and flies last, with its beam and sound
 	-- (ChaosLootExplosion.mustExplode, loot_explosion_core.lua). minRank: ChaosRarity.rank from which gear always flies (5 =
 	-- Legendary, so Divine too); sets, uniques, cards: those always fly, whatever their rarity. Main quest items keep their own
-	-- route (mainquest.lua). Inside an instance (inInstances below) nothing explodes: these items stay in the loot bag there.
+	-- route (mainquest.lua). Inside an instance (inInstances below) nothing explodes, so the rule does not hold there: the
+	-- pouches and the other auto steps take these items as before O749 (O756, owner 2026-11-24).
 	-- The rule holds only while the explosion runs (enabled, a valid config): with enabled = false the auto steps take all again.
 	alwaysExplode = {minRank = 5, sets = true, uniques = true, cards = true},
 

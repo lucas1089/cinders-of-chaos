@@ -328,6 +328,30 @@ local function drawArea(spell)
 end
 
 -- ---------------------------------------------------------------- details
+-- each stat row as tall as its value's wrapped lines, the stats block as tall as its rows (O760: in the side dock's column
+-- a value of two lines was cut at the edge); at the window's own width every value is one line, the block keeps its 166
+local STATS_HEIGHT = 166
+local fitEvent
+local function fitStats()
+  fitEvent = nil
+  if not window or not window:isVisible() then return end
+  local stats = window.details.stats
+  local total = 0
+  for _, row in ipairs(stats:getChildren()) do
+    local ok, size = pcall(function() return row.value:getTextSize() end)
+    local h = math.max(15, (ok and type(size) == 'table' and tonumber(size.height)) or 0)
+    row.value:setHeight(h)
+    row:setHeight(h)
+    total = total + h
+  end
+  stats:setHeight(math.max(STATS_HEIGHT, total))
+end
+
+local function fitStatsLater()
+  if fitEvent then removeEvent(fitEvent) end
+  fitEvent = scheduleEvent(fitStats, 50)
+end
+
 local function addStat(key, value, tooltip)
   if value == nil or value == '' then return end
   local row = g_ui.createWidget('SpellbookStat', window.details.stats)
@@ -437,6 +461,7 @@ local function showDetails(spell)
   end
   drawArea(spell)
   applyTab()
+  fitStatsLater()
 end
 
 -- ---------------------------------------------------------------- spell ranks (O686 phase 5, game_spellranks)
@@ -942,6 +967,7 @@ function init()
   window.searchEdit.onKeyPress = onKeyPress
   window.onKeyPress = onKeyPress
   window.spellList.onChildFocusChange = onListFocus
+  connect(window.details.stats, { onGeometryChange = fitStatsLater })
   showDetails(nil)
   window.countLabel:setText('')
 
@@ -965,6 +991,10 @@ function terminate()
   if prefetchEvent then
     removeEvent(prefetchEvent)
     prefetchEvent = nil
+  end
+  if fitEvent then
+    removeEvent(fitEvent)
+    fitEvent = nil
   end
   if window then
     window:destroy()

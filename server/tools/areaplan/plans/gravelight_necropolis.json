@@ -1,0 +1,321 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gravelight_necropolis",
+  "name": "Gravelight Necropolis",
+  "biome": "crypt",
+  "size": [
+    160,
+    128
+  ],
+  "floors": 2,
+  "level": [
+    2350,
+    2500
+  ],
+  "seed": 913737,
+  "repair_reach": true,
+  "style": "gravewatch_crypt",
+  "origin": {
+    "x": 16232,
+    "y": 15904,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "lantern_nave",
+      "floor": 1,
+      "size": [
+        40,
+        32
+      ],
+      "place": "center"
+    },
+    {
+      "id": "ash_cloister",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "north"
+    },
+    {
+      "id": "crown_vaults",
+      "floor": 1,
+      "size": [
+        34,
+        26
+      ],
+      "place": "east"
+    },
+    {
+      "id": "stairwell",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "landing",
+      "floor": 2,
+      "size": [
+        26,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "deep_ossuary",
+      "floor": 2,
+      "size": [
+        40,
+        32
+      ],
+      "place": "center"
+    },
+    {
+      "id": "pyre_tombs",
+      "floor": 2,
+      "size": [
+        34,
+        26
+      ],
+      "place": "east"
+    },
+    {
+      "id": "wyrm_catacomb",
+      "floor": 2,
+      "size": [
+        34,
+        26
+      ],
+      "place": "west"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "lantern_nave",
+      "width": 3
+    },
+    {
+      "from": "lantern_nave",
+      "to": "ash_cloister",
+      "width": 3
+    },
+    {
+      "from": "lantern_nave",
+      "to": "crown_vaults",
+      "width": 3
+    },
+    {
+      "from": "lantern_nave",
+      "to": "stairwell",
+      "width": 3
+    },
+    {
+      "from": "ash_cloister",
+      "to": "crown_vaults",
+      "width": 3
+    },
+    {
+      "from": "landing",
+      "to": "deep_ossuary",
+      "width": 3
+    },
+    {
+      "from": "deep_ossuary",
+      "to": "pyre_tombs",
+      "width": 3
+    },
+    {
+      "from": "deep_ossuary",
+      "to": "wyrm_catacomb",
+      "width": 3
+    },
+    {
+      "from": "pyre_tombs",
+      "to": "landing",
+      "width": 3
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "stairwell",
+      "to": "landing"
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "lantern_nave",
+      "monster": "Pyre Stork",
+      "count": 27,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lantern_nave",
+      "monster": "Gnarlback",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_cloister",
+      "monster": "Mirecoil Wyrm",
+      "count": 24,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ash_cloister",
+      "monster": "Gravecrown Oathbreaker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_vaults",
+      "monster": "Pyrewing Tyrant",
+      "count": 24,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crown_vaults",
+      "monster": "Pyre Stork",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stairwell",
+      "monster": "Gnarlback",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "lantern_nave",
+        "ash_cloister"
+      ],
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "lantern_nave",
+        "crown_vaults"
+      ],
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "ash_cloister",
+        "crown_vaults"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_ossuary",
+      "monster": "Pyre Stork",
+      "count": 27,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_ossuary",
+      "monster": "Pyrewing Tyrant",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_tombs",
+      "monster": "Pyrewing Tyrant",
+      "count": 24,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_tombs",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_catacomb",
+      "monster": "Mirecoil Wyrm",
+      "count": 24,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_catacomb",
+      "monster": "Pyre Stork",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "landing",
+        "deep_ossuary"
+      ],
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "deep_ossuary",
+        "pyre_tombs"
+      ],
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "deep_ossuary",
+        "wyrm_catacomb"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): a crypt of two floors joined by stairs for levels 2350-2500 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"), drawn with the learned style gravewatch_crypt (O743); monsters Pyre Stork, Pyrewing Tyrant, Mirecoil Wyrm, Gnarlback, Gravecrown Oathbreaker. Display monster: a stand-in (every monster of the plan shows in another cell)."
+}

@@ -127,12 +127,16 @@ SpellbookStat < UIWidget
     font: verdana-11px-antialised
     color: #8c8070
 
+  // wraps: in the side dock's column (O760) "magic level" and the vocations ran past the edge; spellbook.lua makes the
+  // row as tall as its lines
   UILabel
     id: value
     anchors.left: key.right
     anchors.right: parent.right
     anchors.top: parent.top
-    text-align: left
+    height: 15
+    text-align: topleft
+    text-wrap: true
     font: verdana-11px-antialised
     color: #d6c9ae
 

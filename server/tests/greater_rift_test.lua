@@ -122,7 +122,12 @@ do
 	eq(R.shownTier(cfg, {tier = 15, greater = 5000}), G.maxShownTier, "shown tier is capped")
 	eq(R.greaterOf(cfg, 15), 0, "g of tier 15"); eq(R.greaterOf(cfg, 16), 1, "g of tier 16"); eq(R.greaterOf(cfg, 40), 25, "g of tier 40")
 	local rr = R.greaterReward(cfg, {gold = 1000, chaos = 2, divine = 1}, 10, function(a, b) return a end)
-	eq(rr.gold, math.floor(1000 * R.greaterInfo(cfg, 10).reward), "the chest's gold x the factor")
+	-- O754: the gold rises by the factor up to rule.goldCap (the curve's level 2500 over tier 15's 1025), the orbs by the factor
+	eq(rr.gold, math.floor(1000 * math.min(R.greaterInfo(cfg, 10).reward, G.rule.goldCap)), "the chest's gold x the factor, capped")
+	eq(R.greaterReward(cfg, {gold = 1000, chaos = 0, divine = 0}, 3, function(a, b) return a end).gold,
+		math.floor(1000 * R.greaterInfo(cfg, 3).reward), "under the cap: the full factor")
+	local hc = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
+	ok(math.abs(G.rule.goldCap - hc[#hc][2] / 1561417) < 0.02, "goldCap: the curve at 2500 over the curve at 1025 (1.561M)")
 	eq(R.greaterReward(cfg, {gold = 1000}, nil, nil).gold, 1000, "a plain rift's chest is untouched")
 	eq(R.displayLevel(cfg, 15, true, false, 4), R.tierInfo(cfg, 15).minLevel + 4 * G.rule.levelStep, "the shown level of a Greater monster")
 	eq(R.displayLevel(cfg, 15, true, false, nil), R.tierInfo(cfg, 15).minLevel, "the shown level of a plain tier 15 monster")

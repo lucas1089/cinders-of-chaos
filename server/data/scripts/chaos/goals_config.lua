@@ -206,7 +206,14 @@ C.hunts = {
 	{id = "scalewatch_bastion", name = "Scalewatch Bastion", level = {50, 62}},
 	{id = "anvilmourn_wastes", name = "Anvilmourn Wastes", level = {1500, 1650}},
 	{id = "oathgrave_ossuary", name = "Oathgrave Ossuary", level = {1750, 1900}},
-	{id = "pyrecrown_caldera", name = "Pyrecrown Caldera", level = {1900, 2100}}
+	{id = "pyrecrown_caldera", name = "Pyrecrown Caldera", level = {1900, 2100}},
+	-- O759: hall hunts for levels 2282-2500 (floor 5)
+	{id = "rimewrath_steppe", name = "Rimewrath Steppe", level = {2150, 2350}},
+	{id = "sorrowmere_crossing", name = "Sorrowmere Crossing", level = {2200, 2400}},
+	{id = "ashfall_hamlet", name = "Ashfall Hamlet", level = {2250, 2450}},
+	{id = "cindervein_hollows", name = "Cindervein Hollows", level = {2300, 2500}},
+	{id = "gravelight_necropolis", name = "Gravelight Necropolis", level = {2350, 2500}},
+	{id = "umbral_maw", name = "The Umbral Maw", level = {2400, 2500}}
 }
 
 -- ------------------------------------------------------------------ bands

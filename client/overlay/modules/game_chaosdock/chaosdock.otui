@@ -1,9 +1,10 @@
-// game_chaosdock (O732): the side dock. The client_chaos_theme skin only: the window frame, the tab buttons, the close X,
+// game_chaosdock (O732): the side dock, one right panel column wide under the minimap (O755). The client_chaos_theme skin only: the window frame, the tab buttons, the close X,
 // the separator; the tab glyphs are the hub menu's (client_chaos_topbar/images/glyphs_bar, tinted in chaosdock.lua).
 
-// an icon tab: the glyph above its name (58 x 46; phone 54 high)
+// an icon tab: the glyph (its name in the tooltip; the five share the column's width, chaosdock.lua sizeTabs). A phone sheet
+// is wide: the name shows under the glyph there
 ChaosDockTab < ChaosTabButton
-  size: 58 46
+  size: 32 30
   padding: 0
   text: ''
 
@@ -12,11 +13,15 @@ ChaosDockTab < ChaosTabButton
 
   UIWidget
     id: glyph
-    size: 32 32
+    size: 24 24
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 1
+    margin-top: 3
     phantom: true
+
+    $mobile:
+      size: 32 32
+      margin-top: 1
 
   UILabel
     id: label
@@ -29,28 +34,31 @@ ChaosDockTab < ChaosTabButton
     margin-bottom: 3
     height: 11
     phantom: true
+    visible: false
 
     $mobile:
       font: verdana-11px-antialised
       height: 14
+      visible: true
 
-// one window of a tab that holds two or more
+// one window of a tab that holds two or more: two a row (chaosdock.lua sizeTabs sets the cell width)
 ChaosDockSub < ChaosTabButton
-  height: 22
-  padding: 2 6 2 6
-  text-auto-resize: true
+  size: 84 20
+  padding: 1 1 1 1
+  font: Verdana-8px-antialiased
 
-// the dock: right edge of the game screen, full height (it stops above the hotbar when the two would meet)
+// the dock: the right panel column under the minimap (chaosdock.lua relayout: its width and top margin), down to the
+// bottom (it stops above the hotbar when the two would meet)
 ChaosDockPanel < UIWidget
   id: chaosDock
-  width: 330
+  width: 178
   anchors.top: parent.top
   anchors.bottom: parent.bottom
   anchors.right: parent.right
   image-source: /images/chaos/window
   image-border: 18
   image-border-top: 34
-  padding: 8 10 10 10
+  padding: 6 4 4 4
   focusable: false
   phantom: false
   @onEscape: modules.game_chaosdock.closeDock()
@@ -83,12 +91,12 @@ ChaosDockPanel < UIWidget
     anchors.top: title.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 10
-    height: 46
+    margin-top: 6
+    height: 30
     focusable: false
     layout:
       type: horizontalBox
-      spacing: 4
+      spacing: 2
 
     $mobile:
       height: 54
@@ -98,12 +106,14 @@ ChaosDockPanel < UIWidget
     anchors.top: tabs.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 6
-    height: 24
+    margin-top: 4
+    height: 20
     focusable: false
     layout:
-      type: horizontalBox
-      spacing: 4
+      type: grid
+      cell-size: 84 20
+      cell-spacing: 2
+      flow: true
 
   ChaosSeparator
     id: rule
@@ -146,6 +156,8 @@ ChaosDockPanel < UIWidget
     anchors.left: content.left
     anchors.right: content.right
     margin-top: 16
+    margin-left: 6
+    margin-right: 6
     text-align: center
     text-wrap: true
     text-auto-resize: true

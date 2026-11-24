@@ -1066,13 +1066,23 @@ do
 end
 
 -- ------------------------------------------------------------------ the income model (server/README.md "Rifts", Income)
--- hunting at level 1000 ("Respec" table and the audit): 9.5M gold, 2.5 Orbs of Upheaval, 1.3 Orbs of Fate an hour.
--- O751: the one gold curve (hunt_gold_config.lua) gives 1.55M at 1000, so the rift gold below is ~10x hunting there.
--- The rift gold is not resized in O751 (a reward, not a price of the list); the bound stays on the number of then
--- until the owner decides (server/README.md "One gold curve (O751)", open points).
+-- hunting at level 1000: the gold of the one gold curve (hunt_gold_config.lua, O751: 1.55M an hour), the audit's 2.5 Orbs of
+-- Upheaval and 1.3 Orbs of Fate an hour. O754 (owner 2026-11-24 "Acertar o ouro"): the rift gold was sized on the old
+-- "Respec" table (9.5M at 1000; the chest held at 1.5-2x of it, ~10x the curve). Now the chest is a small extra on the kill
+-- loot of the run: tools/gold_faucets_model.lua holds every tier, the tier 15 loop with the Omen and Ascended kills and the
+-- Greater Rift under 1.5x the curve with the best key (+128% quantity), the atlas maxed and a party of 5. The orbs keep
+-- their bound (at most 15x hunting).
 -- Rifting: four tier 15 chests an hour at +128% quantity (the highest sum with tier V modifiers).
 do
-	local hunt = {gold = 9519711, chaos = 2.5, divine = 1.3}
+	local curve = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
+	local hunt = {gold = 1550000, chaos = 2.5, divine = 1.3}
+	local h1000
+	for _, p in ipairs(curve) do
+		if p[1] == 1000 then
+			h1000 = p[2]
+		end
+	end
+	eq(h1000, hunt.gold, "the curve at 1000")
 	local function hour(players, own, run)
 		local g, c, d, n = 0, 0, 0, 4000
 		local rand = rng(77)
@@ -1085,7 +1095,8 @@ do
 		return {gold = 4 * g / n, chaos = 4 * c / n, divine = 4 * d / n}
 	end
 	local solo, party = hour(1), hour(5)
-	ok(solo.gold >= 1.5 * hunt.gold and solo.gold <= 2 * hunt.gold, string.format("solo gold %.1fM: 1.5-2x hunting", solo.gold / 1e6))
+	ok(solo.gold >= 0.02 * hunt.gold and solo.gold <= 0.25 * hunt.gold,
+		string.format("solo chest gold %.0fk an hour: 2-25%% of the curve on top of the kills", solo.gold / 1e3))
 	ok(solo.chaos >= 5 * hunt.chaos and solo.chaos <= 15 * hunt.chaos, string.format("solo Upheaval %.1f: at most 15x hunting", solo.chaos))
 	ok(solo.divine >= 5 * hunt.divine and solo.divine <= 15 * hunt.divine, string.format("solo Fate %.1f: at most 15x hunting", solo.divine))
 	ok(party.chaos <= 15 * hunt.chaos and party.divine <= 15 * hunt.divine, "a full party's orbs per head: at most 15x hunting")
@@ -1109,7 +1120,7 @@ do
 	eq(R.omenReward(cfg, 1200).gold, o.reward.goldPerLevel * 1200, "Omen gold grows with the level")
 	eq(R.omenReward(cfg, 10).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold: at least the arena's level")
 	eq(R.omenReward(cfg).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold without a level")
-	ok(R.omenReward(cfg, 1000).gold < hunt.gold / 2, "an Omen kill pays less gold than half an hour of hunting")
+	ok(R.omenReward(cfg, 1000).gold < hunt.gold / 12, "an Omen kill pays less gold than 5 minutes of hunting (O754)")
 	ok(R.omenReward(cfg, 1000).chaos <= 6 and R.omenReward(cfg, 1000).divine <= 3, "Omen orbs cut to a third")
 end
 

@@ -48,10 +48,11 @@ ChaosPouchesConfig = {
 			name = "loot bag", plural = "loot bags", weightless = true,
 			-- O749 (owner 2026-11-24, "Híbrido"): only the basics; Legendary and up, sets, uniques and cards always fly
 			-- (loot_explosion_config.lua alwaysExplode)
+			-- O756: inside an instance nothing explodes, so the Loot Bag takes them there as before O749
 			collects = "the basics of your kills' loot, as its rules pick (Loot Filter > Loot Bag)",
 			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the basics of your kills' loot go " ..
 				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it. Legendary and " ..
-				"better, set pieces, uniques and cards always fly to the ground."},
+				"better, set pieces, uniques and cards always fly to the ground. In an instance it takes them too."},
 		orbs = {id = 32082, sourceId = 9775, clientId = 38609, oldClientId = 33651,
 			capacity = 100, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",

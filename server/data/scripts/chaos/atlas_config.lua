@@ -84,8 +84,9 @@ local cfg = {
 	startId = 1,
 
 	-- respec: refunding one node costs either gold (carried first, then the bank) or orbs; allocating is free.
-	-- A full reset costs the per-node price x the nodes held x resetShare. A sink, sized against the rift chest:
-	-- 250k gold is about a tier-7 chest (5000 x 7^2), one Orb of Upheaval is the chest's own orb.
+	-- A full reset costs the per-node price x the nodes held x resetShare. A sink: 250k gold is about 15 minutes of the one
+	-- gold curve at level 700-1000 (hunt_gold_config.lua; it was a tier-7 chest, 5000 x 7^2, before O754 cut the chest's
+	-- gold), one Orb of Upheaval is the chest's own orb.
 	respec = {gold = 250000, orbItem = 29856, orbCount = 1, orbName = "Orb of Upheaval", resetShare = 0.8},
 
 	-- the summed effects of every allocated node (all themes and the run's theme together) are capped here, so a full

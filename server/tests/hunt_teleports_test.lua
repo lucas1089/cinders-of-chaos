@@ -24,7 +24,7 @@ local cfg = dofile("data/scripts/chaos/hunt_teleports_config.lua")
 
 -- ------------------------------------------------------------------ the config
 eq(#H.validate(cfg, nil), 0, "the shipped config is valid")
-eq(#cfg.plans, 80, "eighty plans (76 generated, 4 imported from a free community map; O375: nine more)")
+eq(#cfg.plans, 86, "86 plans (82 generated, 4 imported from a free community map; O375: nine more; O759: six more)")
 local shown = {}
 for _, p in ipairs(cfg.plans) do
 	local k = p.monster:lower()

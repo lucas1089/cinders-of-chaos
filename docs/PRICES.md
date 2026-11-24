@@ -197,9 +197,57 @@ Experience Potion is now 0.04 hours of gold at level 500 and 0.025 at 2500.
 
 ### Open for the owner
 
-- Rift gold still sits on the old table: tier 15 pays 1.5-2x of 9.5M an hour, about 10x the new hunt at level 1000.
-- Base NPC runes are flat: 300 attack runes an hour cost 90% of the hunting gold at level 45 (62% before).
+- Rift gold sat on the old table. Done in O754 below.
+- Base NPC runes are flat: 300 attack runes an hour cost 90% of the hunting gold at level 45 (62% before). Done by O757 below.
 - Hall hunts thin out above level 2282 (fewer than 5 in 0.8-1.1x).
+
+## Gold faucets against the curve (O754, 2026-11-24)
+
+Content pays gold an hour against the one curve (`hunt_gold_config.lua` `hunting`) at its level. At most 1.5x the curve,
+party content per character. Under 0.8x only when it pays something else. `luajit tools/gold_faucets_model.lua --check`
+holds every faucet; no flag prints the table. Details: server/README.md "Gold faucets against the curve (O754)".
+
+| Reward | Where | Before | After |
+|---|---|---|---|
+| Rift chest gold per tier squared | `rift_config.lua` `reward.goldPerTier2` | 5,000 | 40 |
+| Rift coffer gold per tier squared | `rift_config.lua` `coffer.goldPerTier2` | 2,000 | 16 |
+| Omen guardian gold per level | `rift_config.lua` `omen.reward.goldPerLevel` | 3,000 | 100 |
+| Ascended Omens / Cinderheart | `uber_config.lua` | 15,000,000 / 40,000,000 | 600,000 / 1,500,000 |
+| Greater Rift reward factor for gold | `rift_config.lua` `greater.rule.goldCap` | uncapped | 1.25 |
+| Greater Rift best tier gold | `rift_config.lua` `greater.rewards.best.gold` | 150,000 + 25,000 a tier | 5,000 + 100 a tier |
+| Ember Descent gold | `descent_config.lua` perDepth / square | 3,000 / 400 | 300 / 40 |
+| Dungeon chests | `areagen_config.lua` | 150,000-300,000 | 15,000 |
+| Weekly raid boss / final gold | `raid_config.lua` | 2,500,000 / 6,000,000 | 350,000 / 700,000 |
+| World boss bank gold / pool | `chaos_constants.lua` `worldBoss` | 500,000 / 10,000,000 | 100,000 / 1,000,000 |
+| Invasion goldBase / goldPool | `invasion_config.lua` | 200 / 8,000 | 60 / 200 |
+| Bounty and bestiary gold | `bounty_config.lua` | 10k to 2M flat a band | 1.4 minutes of the curve at the player's level |
+| Trial repeat gold per level | `trials_config.lua` | 800 | 65 |
+| Guild siege winners / others | `siege_config.lua` | 500,000 / 150,000 | 120,000 / 40,000 |
+
+Ratio to the curve before and after: rift tier 15 solo 25.05 -> 0.99, tier 15 loop in a party 41.6 -> 1.36, Greater Rift
+30-35 -> under 1, Descent at 100 7.41 -> 1.48, dungeons at difficulty 6 up to 4.9 -> 1.48, raid 9.86 -> 1.47, world
+boss 12.1 -> 1.45, invasion 31.7 -> 1.49, bounties up to 23 -> 1.47, Trial repeats 18.27 -> 1.48, siege 6.10 -> 1.46.
+Kept: Infinity Tower 1.14, treasure goblins 1.06-1.12, waystones 0.85. One-off quest gold and the atlas respec price
+(250,000) are unchanged.
+
+## Base NPC runes lowered (O757, 2026-11-24)
+
+Owner 2026-11-24 (pt-BR): "Runas do NPC base: baixa". Every NPC sells a rune at `data/lib/chaos_rune_supply.lua`'s price
+(install step `runes`, `install_rune_supply.py`, up or down). Assumption, the typical hour: 300 attack runes and 30 support
+runes, all bought. At the rune's own level 300 x an attack price is at most 25% of the hunting gold (`hunt_gold_config.lua`)
+and 30 x a support price at most 5%, so the hour costs at most 30% at every level. `tests/rune_supply_test.lua` holds it.
+
+| Level | Hunting gold / h | Typical hour before | Typical hour now |
+|---|---|---|---|
+| 20 | 36,250 | Pebblestorm 3,300 + Beastbond 4,200: 21% | Pebblestorm 3,300 + Sparkmire 1,650: 14% |
+| 45 | 73,250 | Reaper's 66,000 + Storm Seed 9,000: 102% | Reaper's 18,300 + Stormwall 3,300: 29% |
+| 100 | 164,000 | Reaper's 66,000 + Shackle 26,700: 57% | 18,300 + 4,350: 14% |
+| 300 | 619,000 | 92,700: 15% | 22,650: 4% |
+
+Prices that moved (gold a rune): Reaper's 220 -> 61, Shackle 890 -> 145, Searing Orb and Frostfall 84 -> 42, Rockfall and
+Stormcall 70 -> 39, Mending 95 -> 48, Grand Mending 240 -> 70, Storm Seed 300 -> 100, 21 more (server/README.md "Rune supply",
+the table). Their NPC sell price follows at 20% (`gen_item_prices.py`), the store's rune packs at vendor gold x count / 1000:
+100 Searing Orb Runes 9 -> 5 coins, 100 Reaper's 22 -> 7, 25 Shackle 23 -> 4. `store_model.lua --check` passes.
 
 ## Stash room (O316, 2026-10-29)
 
