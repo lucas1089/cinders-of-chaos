@@ -18,9 +18,10 @@ local C = ChaosDockColumn
 C.EDGES = { 'top', 'bottom', 'left', 'right' }
 C.PROPS = { 'width', 'height', 'marginTop', 'marginLeft', 'marginRight', 'marginBottom', 'visible', 'wrap' }
 
--- the narrowest room a window has in the column: 170 px of content at 1280 x 720, 154 with the dock's scroll bar (O755).
+-- the narrowest room a window has in the column: 164 px of content at 1280 x 720, 148 with the dock's scroll bar (O755;
+-- 6 px less since the left padding moved off the frame's gold line, owner 2026-11-24).
 -- No part of a column window may be wider unless both its sides are anchored there (chaosdock_test.lua, O760).
-C.COLUMN = 154
+C.COLUMN = 148
 
 C.LAYOUTS = {
   -- base module (mods/game_questlog/questlog.otui): Quest Lines over the missions, the lists, the sort and the search at
@@ -62,7 +63,9 @@ C.LAYOUTS = {
   -- the search and the spell list over the details; in the details the numbers over the area of effect
   ['Spellbook'] = { otui = 'game_spellbook/spellbook.otui', height = 860, rules = {
     { id = 'searchEdit', col = { right = 'parent.right' }, home = { right = false } },
-    -- the two filters one over the other: side by side in 154 px the arrow covered "Learned" and "All types" (O760)
+    -- the area legend (150 wide, centred under the area box) fits the column at 148 (left padding off the gold line)
+    { id = 'legend', col = { width = 148 } },
+    -- the two filters one over the other: side by side in the column the arrow covered "Learned" and "All types" (O760)
     { id = 'filterCombo', col = { right = 'parent.right' }, home = { right = false } },
     { id = 'kindCombo', col = { top = 'filterCombo.bottom', left = 'parent.left', marginTop = 4, marginLeft = 0 },
       home = { top = 'filterCombo.top', left = 'filterCombo.right' } },
