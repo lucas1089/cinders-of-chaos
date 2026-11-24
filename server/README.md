@@ -25483,7 +25483,9 @@ and crypt_boss by checksum.
   would square off the edge of the floor, the outline rule of "Asymmetric areas"). At least 75 % of the patch walkable,
   every piece on a walkable tile the entry reaches. Pieces: the flame campfire 48561 (`data/items/decor_flames.csv`,
   O623, install step decorflames, pair 74), crates, barrels. No bedroll or sleeping mat art exists: the walkable dry
-  grass of the decor kits stands in as straw beds.
+  grass of the decor kits stands in as straw beds. Below pair 74 (chaosClientPair lower or missing) the base items.otb
+  has no 48561 and the engine refuses the whole map ("Failed to create item"), so the contentareas step lays the stock
+  campfire 1428 in its place (`install_content_areas.py` `PAIR_ITEMS`; the compile output and its cache keep 48561).
 - **Cellar.** Building field `cellar`: `true` or `{biome, size}` (crypt, vault, catacomb, catacomb_earth, hall or cave;
   default crypt 10 x 8). The area generator builds a small dungeon of one zone one floor down (`cellar_area` in
   `area_plan_compile.py`: a plan of 24 x 24 or more, its own seed), its arrival under the building's hole. The large
