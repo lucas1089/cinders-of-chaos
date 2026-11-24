@@ -17754,10 +17754,10 @@ CodexData = {
 							w = {25, 25, 25, 25},
 							rows = {
 								{"Common", "1", "8", "20"},
-								{"Fine", "20", "40", "80"},
-								{"Rare", "40", "100", "350"},
-								{"Grim", "60", "250", "800"},
-								{"Infernal", "80", "500", "4000"}
+								{"Fine", "20", "40", "75"},
+								{"Rare", "40", "100", "160"},
+								{"Grim", "60", "250", "540"},
+								{"Infernal", "80", "500", "870"}
 							}
 						},
 						{
@@ -17793,7 +17793,7 @@ CodexData = {
 					id = "mat:32352",
 					name = "Bloodiron ore",
 					color = "#7ec46a",
-					sub = "Delving, tier 2 (Fine), base price 80 gold",
+					sub = "Delving, tier 2 (Fine), base price 75 gold",
 					f = {group = "delving"},
 					sections = {
 						{
@@ -17807,7 +17807,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"75 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32352}
@@ -17816,7 +17816,7 @@ CodexData = {
 					id = "mat:32353",
 					name = "Duskglass shard",
 					color = "#6fa8ff",
-					sub = "Delving, tier 3 (Rare), base price 350 gold",
+					sub = "Delving, tier 3 (Rare), base price 160 gold",
 					f = {group = "delving"},
 					sections = {
 						{
@@ -17830,7 +17830,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"160 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32353}
@@ -17839,7 +17839,7 @@ CodexData = {
 					id = "mat:32354",
 					name = "Wraithsilver ore",
 					color = "#c07ae0",
-					sub = "Delving, tier 4 (Grim), base price 800 gold",
+					sub = "Delving, tier 4 (Grim), base price 540 gold",
 					f = {group = "delving"},
 					sections = {
 						{
@@ -17853,7 +17853,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"540 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32354}
@@ -17862,7 +17862,7 @@ CodexData = {
 					id = "mat:32355",
 					name = "Emberheart crystal",
 					color = "#ff8a3d",
-					sub = "Delving, tier 5 (Infernal), base price 4000 gold",
+					sub = "Delving, tier 5 (Infernal), base price 870 gold",
 					f = {group = "delving"},
 					sections = {
 						{
@@ -17876,7 +17876,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"870 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32355}
@@ -17908,7 +17908,7 @@ CodexData = {
 					id = "mat:32357",
 					name = "Bitterroot",
 					color = "#7ec46a",
-					sub = "Wortcunning, tier 2 (Fine), base price 80 gold",
+					sub = "Wortcunning, tier 2 (Fine), base price 75 gold",
 					f = {group = "wortcunning"},
 					sections = {
 						{
@@ -17922,7 +17922,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"75 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32357}
@@ -17931,7 +17931,7 @@ CodexData = {
 					id = "mat:32358",
 					name = "Nightshade bloom",
 					color = "#6fa8ff",
-					sub = "Wortcunning, tier 3 (Rare), base price 350 gold",
+					sub = "Wortcunning, tier 3 (Rare), base price 160 gold",
 					f = {group = "wortcunning"},
 					sections = {
 						{
@@ -17945,7 +17945,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"160 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32358}
@@ -17954,7 +17954,7 @@ CodexData = {
 					id = "mat:32359",
 					name = "Wraithcap",
 					color = "#c07ae0",
-					sub = "Wortcunning, tier 4 (Grim), base price 800 gold",
+					sub = "Wortcunning, tier 4 (Grim), base price 540 gold",
 					f = {group = "wortcunning"},
 					sections = {
 						{
@@ -17968,7 +17968,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"540 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32359}
@@ -17977,7 +17977,7 @@ CodexData = {
 					id = "mat:32360",
 					name = "Emberbloom",
 					color = "#ff8a3d",
-					sub = "Wortcunning, tier 5 (Infernal), base price 4000 gold",
+					sub = "Wortcunning, tier 5 (Infernal), base price 870 gold",
 					f = {group = "wortcunning"},
 					sections = {
 						{
@@ -17991,7 +17991,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"870 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32360}
@@ -18023,7 +18023,7 @@ CodexData = {
 					id = "mat:32362",
 					name = "Tough hide",
 					color = "#7ec46a",
-					sub = "Flaying, tier 2 (Fine), base price 80 gold",
+					sub = "Flaying, tier 2 (Fine), base price 75 gold",
 					f = {group = "flaying"},
 					sections = {
 						{
@@ -18037,7 +18037,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"75 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32362}
@@ -18046,7 +18046,7 @@ CodexData = {
 					id = "mat:32363",
 					name = "Scaled hide",
 					color = "#6fa8ff",
-					sub = "Flaying, tier 3 (Rare), base price 350 gold",
+					sub = "Flaying, tier 3 (Rare), base price 160 gold",
 					f = {group = "flaying"},
 					sections = {
 						{
@@ -18060,7 +18060,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"160 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32363}
@@ -18069,7 +18069,7 @@ CodexData = {
 					id = "mat:32364",
 					name = "Dire pelt",
 					color = "#c07ae0",
-					sub = "Flaying, tier 4 (Grim), base price 800 gold",
+					sub = "Flaying, tier 4 (Grim), base price 540 gold",
 					f = {group = "flaying"},
 					sections = {
 						{
@@ -18083,7 +18083,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"540 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32364}
@@ -18092,7 +18092,7 @@ CodexData = {
 					id = "mat:32365",
 					name = "Wyrmscale",
 					color = "#ff8a3d",
-					sub = "Flaying, tier 5 (Infernal), base price 4000 gold",
+					sub = "Flaying, tier 5 (Infernal), base price 870 gold",
 					f = {group = "flaying"},
 					sections = {
 						{
@@ -18106,7 +18106,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"870 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32365}
@@ -18138,7 +18138,7 @@ CodexData = {
 					id = "mat:32367",
 					name = "Gloomcarp",
 					color = "#7ec46a",
-					sub = "Angling, tier 2 (Fine), base price 80 gold",
+					sub = "Angling, tier 2 (Fine), base price 75 gold",
 					f = {group = "angling"},
 					sections = {
 						{
@@ -18152,7 +18152,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"80 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"75 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32367}
@@ -18161,7 +18161,7 @@ CodexData = {
 					id = "mat:32368",
 					name = "Bloodfin trout",
 					color = "#6fa8ff",
-					sub = "Angling, tier 3 (Rare), base price 350 gold",
+					sub = "Angling, tier 3 (Rare), base price 160 gold",
 					f = {group = "angling"},
 					sections = {
 						{
@@ -18175,7 +18175,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"350 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"160 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32368}
@@ -18184,7 +18184,7 @@ CodexData = {
 					id = "mat:32369",
 					name = "Dusk pike",
 					color = "#c07ae0",
-					sub = "Angling, tier 4 (Grim), base price 800 gold",
+					sub = "Angling, tier 4 (Grim), base price 540 gold",
 					f = {group = "angling"},
 					sections = {
 						{
@@ -18198,7 +18198,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"800 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"540 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32369}
@@ -18207,7 +18207,7 @@ CodexData = {
 					id = "mat:32370",
 					name = "Drowned pearl",
 					color = "#ff8a3d",
-					sub = "Angling, tier 5 (Infernal), base price 4000 gold",
+					sub = "Angling, tier 5 (Infernal), base price 870 gold",
 					f = {group = "angling"},
 					sections = {
 						{
@@ -18221,7 +18221,7 @@ CodexData = {
 						},
 						{
 							h = "Selling",
-							p = {"4000 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
+							p = {"870 gold at the Material Broker, x the week's demand (x1.5, x1.25, x1, x1, x0.75); the full price for 100 a day, then 50% up to 200 a day."}
 						}
 					},
 					items = {32370}

@@ -61,7 +61,7 @@ local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	return Chaos.pay(player, gold) and true or false
+	return Chaos.pay(player, gold, nil, "restock") and true or false
 end
 
 local function inPz(player)

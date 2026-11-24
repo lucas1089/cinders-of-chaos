@@ -906,6 +906,7 @@ function MK.list(player, d)
 	logRow("list", {offer = id, player = guid, item = itemId, count = count, name = name,
 		currency = (gold > 0 and "gold" or "") .. (coins > 0 and "coins" or ""), amount = gold > 0 and gold or coins, fee = fee,
 		text = string.format("gold %d coins %d days %d realm %d codec %s", gold, coins, days, realm, codec)})
+	Chaos.goldSink(player, "market_fee", fee) -- O751 gold sink metrics
 	send(player, "done", {what = "list", id = id, text = Chaos.t(player, "Listed %s%s for %s. Listing fee: %s gold.",
 		count > 1 and (count .. "x ") or "", name, MK.priceText(gold, coins, player), MC.money(fee))})
 	sendWallet(player)
@@ -1029,6 +1030,9 @@ function MK.buy(player, d)
 	if not sold then
 		sendWallet(player)
 		return refuse(player, MSG.notFound)
+	end
+	if cur == "gold" then
+		Chaos.goldSink(player, "market_tax", tax) -- O751: the sale tax leaves the economy (counted in the buyer's band)
 	end
 	logRow("buy", {offer = id, player = guid, other = o.seller_id, item = o.item_id, count = o.count, name = o.name, currency = cur,
 		amount = price, fee = tax, text = string.format("net %d to %s (account %d)", net, o.seller_name, o.seller_account)})
@@ -1246,6 +1250,7 @@ function MK.orderPost(player, d)
 		return refuse(player, MSG.busy)
 	end
 	player:setBankBalance(balance - goldTaken)
+	Chaos.goldSink(player, "market_fee", o.fee) -- O751 gold sink metrics
 	logRow("order", {offer = -id, player = guid, item = sid, count = o.quantity, name = name, currency = o.cur, amount = o.total, fee = o.fee,
 		text = string.format("buy order %d: %d x %d %s, days %d, realm %d, filter %s", id, o.quantity, o.price, o.cur, o.days, realm, filterText)})
 	send(player, "done", {what = "orderPost", id = id, text = Chaos.t(player, "Buy order posted: %dx %s at %s each. %s are held for it; listing fee: %s gold.",
@@ -1464,6 +1469,12 @@ function MK.completeFill(fillId)
 		return true
 	end)
 	if filled then
+		if o.currency == "gold" then
+			-- O751: the sale tax of a buy order fill; band of the seller when online, else "-"
+			local seller = Player and Player(f.seller_name)
+			local ftax = MC.tax(cfg, "gold", f.price_gold)
+			Chaos.goldSink(seller, "market_tax", ftax)
+		end
 		logRow("fill", {offer = f.id, player = f.seller_id, other = o.buyer_id, count = f.count, name = f.name, currency = o.currency,
 			amount = o.currency == "coins" and f.price_coins or f.price_gold, text = "buy order " .. o.id})
 		if ChaosMarketHistory then

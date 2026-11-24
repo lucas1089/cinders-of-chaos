@@ -22,6 +22,10 @@ text summary. The rows are aggregate counters; no name, account or IP is in them
   firstUse       (O258) per system (dungeon, rift, waystone, tower, ...): characters that used it, their share of all
                  characters (churn totals), the median played minutes at the first use and the most common level band
   stops          (O258) the 10 areas where the most gone characters were last seen (top level band of each)
+  goldSinks      (O751) per gold sink (Gambler, market tax and fee, blessings, restock, respec, other): gold paid,
+                 payments, gold given back, net gold and the level band that paid the most. A sink of fewer than 5
+                 payments shows "<5" and no gold (one character's spending is not shown). Band "-" is a market fill
+                 whose seller was offline.
 
 Small numbers: a count of 1 to 4 (a band, an area, a monster, a bucket, a milestone) is written "<5" in the text and as
 the string "<5" in the JSON, with its percentage, median and top band left out (null or empty). 0 stays 0.
@@ -243,6 +247,36 @@ def first_use(rows, population):
     return out
 
 
+def gold_sinks(rows):
+    """(O751) per sink: gold paid, payments, gold back, net, top band by gold; small sinks hidden. Sorted by net gold."""
+    by = {}
+    for k, k1, k2, n in rows:
+        if k not in ('sink_gold', 'sink_n', 'sink_back') or n <= 0:
+            continue
+        e = by.setdefault(k1, {'sink': k1, 'gold': 0, 'payments': 0, 'back': 0, 'bands': {}})
+        if k == 'sink_gold':
+            e['gold'] += n
+            e['bands'][k2] = e['bands'].get(k2, 0) + n
+        elif k == 'sink_n':
+            e['payments'] += n
+        else:
+            e['back'] += n
+    out = []
+    for e in by.values():
+        net = max(0, e['gold'] - e['back'])
+        band = ''
+        if e['bands']:
+            band = sorted(e['bands'].items(), key=lambda kv: (-kv[1], band_start(kv[0])))[0][0]
+        small = hide(e['payments']) == SMALL
+        out.append({'sink': e['sink'], 'payments': hide(e['payments']),
+                    'gold': None if small else e['gold'], 'back': None if small else e['back'],
+                    'net': None if small else net, 'topBand': '' if small else band, '_net': net})
+    out.sort(key=lambda e: (e['net'] is None, -(e['_net'] if e['net'] is not None else 0), e['sink']))
+    for e in out:
+        del e['_net']
+    return out
+
+
 def report(rows, limit=TOP, today=None):
     meta = {k1: n for k, k1, k2, n in rows if k == 'meta'}
     bands = {}
@@ -305,6 +339,7 @@ def report(rows, limit=TOP, today=None):
         'retentionSince': (EPOCH + datetime.timedelta(days=since_day)).isoformat() if since_day else None,
         'firstUse': first_use(rows, gone_raw + active_raw),
         'stops': top(rows, 'stop', limit, 'gone'),
+        'goldSinks': gold_sinks(rows),
         'empty': not rows,
     }
 
@@ -379,6 +414,14 @@ def text(rep):
     for e in rep['stops']:
         where = ' (most at level %s)' % e['topBand'] if e['topBand'] else ''
         out.append('  %6s  %s%s' % (e['gone'], e['name'], where))
+    out.append('Gold sinks (gold paid, payments, gold given back, net; since the counters began)')
+    for e in rep.get('goldSinks', []):
+        if e['net'] is None:
+            out.append('  %-11s %s payments' % (e['sink'], e['payments']))
+            continue
+        where = ', mostly level %s' % e['topBand'] if e['topBand'] else ''
+        out.append('  %-11s net %s gold (paid %s, back %s) in %s payments%s' % (
+            e['sink'], '{:,}'.format(e['net']), '{:,}'.format(e['gold']), '{:,}'.format(e['back']), e['payments'], where))
     return '\n'.join(out) + '\n'
 
 

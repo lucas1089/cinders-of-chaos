@@ -147,8 +147,10 @@ for _, name in ipairs({"Orb of Ruin", "Void Orb", "Crown Orb", "Ember Orb", "Orb
 end
 
 -- ------------------------------------------------------------------------------------------------ gold
-local hunting = dofile("data/scripts/chaos/gamble_config.lua").balance.hunting
-ok(#hunting == #cfg.gold.hunting, "the gold curve has the points of gamble_config.lua balance.hunting")
+-- O751: the one gold curve (hunt_gold_config.lua), the same table the Gambler reads
+local hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
+ok(#hunting == #cfg.gold.hunting, "the gold curve has the points of hunt_gold_config.lua")
+local hunt1000 = K.curve(hunting, 1000)
 for i, p in ipairs(hunting) do
 	ok(cfg.gold.hunting[i] and cfg.gold.hunting[i][1] == p[1] and cfg.gold.hunting[i][2] == p[2], "gold curve point " .. i)
 end
@@ -165,8 +167,8 @@ for _, level in ipairs({1, 8, 40, 100, 300, 500, 1000, 1500, 2000}) do
 	ok(total == g, "level " .. level .. ": the coin stacks add up")
 end
 ok(math.abs(K.goldFor(cfg, 5, 1000) - 5 * K.goldFor(cfg, 1, 1000)) <= 40000, "5 units pay 5 times one (whole crystal coins)")
-near(K.goldFor(cfg, 1, 1000) / 9519711, cfg.gold.perUnit, 0.001, "a unit is perUnit of an hour at level 1000")
-ok(K.goldFor(cfg, 1, 1500) == K.goldFor(cfg, 1, 5000), "flat beyond the last point")
+near(K.goldFor(cfg, 1, 1000) / hunt1000, cfg.gold.perUnit, 0.005, "a unit is perUnit of an hour at level 1000")
+ok(K.goldFor(cfg, 1, hunting[#hunting][1]) == K.goldFor(cfg, 1, 5000), "flat beyond the last point")
 
 -- ------------------------------------------------------------------------------------------------ the unique chest
 setmetatable(_G, {__index = function(_, k)
@@ -192,8 +194,8 @@ ok(allIn and #at1500 >= 5, "level 1500: " .. #at1500 .. " uniques of item level 
 
 -- ------------------------------------------------------------------------------------------------ expected value
 -- Orbs: kills of a level 100+ monster that the loot layer needs for the same orbs (normal-tier chance; the Orb of Ruin,
--- with none, by its magic chance / 3). Gold: kills of the level 1000 hunt that pay the same gold (9.5M an hour at 870
--- kills an hour: tools/spawn_tuning.json model.paceKillsPerHour, gamble_config.lua balance.hunting).
+-- with none, by its magic chance / 3). Gold: kills of the level 1000 hunt that pay the same gold (the gold an hour of
+-- hunt_gold_config.lua at 870 kills an hour: tools/spawn_tuning.json model.paceKillsPerHour).
 local OLD = {
 	{id = 27822, chance = 6800, kind = "badge"}, {id = 27808, chance = 6500, kind = "badge"},
 	{id = 27804, chance = 6100, kind = "badge"}, {id = 27812, chance = 5000, kind = "badge"},
@@ -220,7 +222,7 @@ local function summary(list)
 		elseif e.kind == "gold" then
 			local g = K.goldFor(cfg, e.count[1], 1000)
 			s.gold = s.gold + o[i] * g
-			s.goldKills = s.goldKills + o[i] * g / (9519711 / 870)
+			s.goldKills = s.goldKills + o[i] * g / (hunt1000 / 870)
 		end
 	end
 	return s

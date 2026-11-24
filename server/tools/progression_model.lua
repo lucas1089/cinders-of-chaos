@@ -1,4 +1,4 @@
--- Leveling journey model: minutes per level from level 1 to 2200, hunts per level, spikes and walls (computed from the
+-- Leveling journey model: minutes per level from level 1 to 2500 (the cap, O672; O751: was 2200), hunts per level, spikes and walls (computed from the
 -- repo's own data; not measured in game). server/README.md "Progression smoothness (O135)".
 --     cd server && luajit tools/progression_model.lua [--check]      (also lua5.3)
 -- Inputs: experienceStages (tools/late_game.py), the hunt pool (bounty_pool.lua, plus the monsters the plans spawn that
@@ -426,8 +426,8 @@ if mode == "--spells" then
 		local g = M.longestSpellGap(lv[voc], 300)
 		local last = lv[voc][#lv[voc]]
 		local e = M.earlyGap(lv[voc], 8, 35)
-		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to 2200 |", voc, #lv[voc], last,
-			e[1], e[2], e[3], g[1], g[2], g[3], 2200 - last))
+		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to %d |", voc, #lv[voc], last,
+			e[1], e[2], e[3], g[1], g[2], g[3], env.cfg.limits.toLevel - last, env.cfg.limits.toLevel))
 	end
 	return
 end
@@ -455,7 +455,7 @@ end
 local lim = env.cfg.limits
 print("| Levels | Stage | Minutes a level (start - end) | Hours | Pool hunts in reach | Hall hunts in reach |")
 print("|---|---|---|---|---|---|")
-local cuts = {8, 20, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 1000, 1300, 1600, 2000, 2200}
+local cuts = {8, 20, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 1000, 1300, 1600, 2000, 2200, 2500}
 for i = 1, #cuts - 1 do
 	local a, b = cuts[i], cuts[i + 1]
 	local hmin = math.huge
@@ -474,7 +474,7 @@ if flags["--no-upgrades"] then
 	env.minutesFactor = f
 	print("| Level | Hours, typical | Hours, no upgrades | More | Experience an hour |")
 	print("|---|---|---|---|---|")
-	for _, L in ipairs({100, 500, 1000, 1500, 2000, 2200}) do
+	for _, L in ipairs({100, 500, 1000, 1500, 2000, 2200, 2500}) do
 		local a, b = M.hours(base, lim.fromLevel, L), M.hours(curve, lim.fromLevel, L)
 		print(string.format("| %d | %.0f | %.0f | +%.0f%% | -%.0f%% |", L, a, b, (b / a - 1) * 100, (1 - 1 / env.minutesFactor(L)) * 100))
 	end

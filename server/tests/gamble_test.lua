@@ -88,14 +88,16 @@ end
 -- ---------------------------------------------------------------- prices
 eq(K.interp(cfg.price.curve, 1), 1500, "price at item level 1")
 -- O471 (2026-11-10): the points sit on the item levels of the flatter item level curve (33 where 36 was, 82 where 90 was)
-eq(K.interp(cfg.price.curve, 33), 56000, "price at 33")
-eq(K.interp(cfg.price.curve, 200), 1800000, "flat past the end")
-eq(K.price(cfg, 33, "armor"), 64400, "armour x1.15")
-eq(K.price(cfg, 33, "weapon"), 72800, "weapon x1.3")
-eq(K.price(cfg, 33, "boots"), 50400, "boots x0.9")
-eq(K.price(cfg, 82, "helmet"), 850000, "helmet at 82")
+eq(K.interp(cfg.price.curve, 33), 26000, "price at 33")
+eq(K.interp(cfg.price.curve, 200), 347400, "flat past the end")
+eq(K.price(cfg, 33, "armor"), 29900, "armour x1.15")
+eq(K.price(cfg, 33, "weapon"), 33800, "weapon x1.3")
+eq(K.price(cfg, 33, "boots"), 23400, "boots x0.9")
+eq(K.price(cfg, 82, "helmet"), 182200, "helmet at 82")
 -- the rule behind the move: the gold a piece costs at a MONSTER level is what it was before the curve changed (within the
--- whole item levels the price steps in): the old curves, inline
+-- whole item levels the price steps in): the old curves, inline. O751: the prices then moved with the hunting gold (the one
+-- curve, hunt_gold_config.lua), so the O471 price at a level x the new gold over the old "Respec" gold there is the
+-- reference (the share of an hour is checked below for every level)
 do
 	local function line(c, x)
 		if x <= c[1][1] then return c[1][2] end
@@ -109,11 +111,15 @@ do
 		{1100, 128}, {1500, 136}, {3000, 142}, {6000, 145}}
 	local oldPrice = {{1, 1500}, {4, 3000}, {5, 3600}, {12, 8300}, {18, 13000}, {22, 20000}, {36, 56000}, {54, 97000},
 		{67, 150000}, {74, 300000}, {90, 850000}, {106, 1100000}, {118, 1350000}, {123, 1500000}, {136, 1650000}, {150, 1800000}}
+	local oldHunt = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}}
 	for _, level in ipairs({30, 50, 100, 150, 200, 300, 400, 500, 700, 900, 1000, 1100, 1300, 1500}) do
 		local was = line(oldPrice, math.max(1, math.floor(line(oldItem, level)) - cfg.itemLevel.spread))
+			* K.huntIncome(cfg, level) / line(oldHunt, level)
 		local gate = ChaosItemMods.sourceLevel({monsterLevel = level, tier = cfg.itemLevel.tier})
 		local now = K.interp(cfg.price.curve, math.max(1, gate - cfg.itemLevel.spread))
-		check(math.abs(now / was - 1) < 0.15, string.format("the price at monster level %d: %.0f now, %.0f before", level, now, was))
+		-- O751: 45% (was 15%): the old "Respec" gold jumped x6.3 from 300 to 500, the new one x2, and the price points do not
+		-- sit at those levels (level 400 is the worst, +44%); the share of an hour below is the rule
+		check(math.abs(now / was - 1) < 0.45, string.format("the price at monster level %d: %.0f now, %.0f before", level, now, was))
 	end
 end
 for l = 2, 150 do
@@ -132,7 +138,7 @@ for level = 8, 1500 do
 end
 do
 	local share, g = K.shareAt(cfg, 1000, gate)
-	check(share > 0.15 and share < 0.25, string.format("level 1000 (gate %d): %.1f%% of 9.5M/h", g, share * 100))
+	check(share > 0.15 and share < 0.25, string.format("level 1000 (gate %d): %.1f%% of an hour", g, share * 100))
 	-- a whole stock of 14 at level 1000: about two to four hours of hunting
 	local whole = 14 * K.price(cfg, g, "armor") / K.huntIncome(cfg, 1000)
 	check(whole > 2 and whole < 4.5, string.format("a whole stock at 1000 costs %.1f hours of hunting", whole))

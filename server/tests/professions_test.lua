@@ -195,8 +195,11 @@ for _, m in ipairs(cfg.materials) do
 end
 
 -- ---------------------------------------------------------------- gold per hour against hunting
-eq(K.huntIncome(cfg, 100), 358839, "hunting at 100 (README Respec)")
-eq(K.huntIncome(cfg, 200), 358839 + (881866 - 358839) * 0.5, "linear between the points")
+-- O751: the one curve (hunt_gold_config.lua), its points at 100 and 300
+local HG = {}
+for _, p in ipairs(dofile("data/scripts/chaos/hunt_gold_config.lua").hunting) do HG[p[1]] = p[2] end
+eq(K.huntIncome(cfg, 100), HG[100], "hunting at 100 (hunt_gold_config.lua, O751)")
+eq(K.huntIncome(cfg, 200), HG[100] + (HG[300] - HG[100]) * 0.5, "linear between the points")
 eq(K.huntIncome(cfg, 1), 19000, "below the first point")
 local worst = 0
 for _, r in ipairs(K.balance(cfg)) do

@@ -138,7 +138,7 @@ local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	return Chaos.pay(player, gold) and true or false
+	return Chaos.pay(player, gold, nil, "blessing") and true or false
 end
 
 local function blessAll(player, list)

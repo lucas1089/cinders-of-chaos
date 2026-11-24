@@ -1967,7 +1967,10 @@ end
 -- Every price in gold is paid with Chaos.pay: carried coins first, then the bank, all or nothing (data/lib/chaos_pay.lua).
 --   Chaos.totalMoney(player)          carried + bank
 --   Chaos.canPay(player, amount)      true when carried + bank >= amount
---   Chaos.pay(player, amount[, quiet]) true, fromCoins, fromBank; false and nothing taken when short
+--   Chaos.pay(player, amount[, quiet[, sink]]) true, fromCoins, fromBank; false and nothing taken when short. A
+--                                     payment that went through is counted as a gold sink (O751, metrics.lua): `sink`
+--                                     names it (metrics_config.lua goldSinks), else "other"
+--   Chaos.goldSink(player, sink, gold[, back])  counts gold a system took another way, or gave back (back = true)
 function Chaos.totalMoney(player)
 	return (ChaosPay.total(player))
 end
@@ -1976,8 +1979,21 @@ function Chaos.canPay(player, amount)
 	return ChaosPay.canPay(player, amount)
 end
 
-function Chaos.pay(player, amount, quiet)
-	return ChaosPay.pay(player, amount, quiet)
+function Chaos.goldSink(player, sink, gold, back)
+	local X = ChaosMetrics
+	if not (X and X.goldSink) then
+		return false
+	end
+	local ok, res = pcall(X.goldSink, player, sink, gold, back)
+	return ok and res or false
+end
+
+function Chaos.pay(player, amount, quiet, sink)
+	local ok, fromCoins, fromBank = ChaosPay.pay(player, amount, quiet)
+	if ok then
+		Chaos.goldSink(player, sink, amount)
+	end
+	return ok, fromCoins, fromBank
 end
 
 -- ---------------------------------------------------------------------------

@@ -113,7 +113,7 @@ function R.pay(player, cost)
 	if R.testerWaived(player, cost) then
 		return true
 	end
-	return Chaos.pay(player, cost) and true or false
+	return Chaos.pay(player, cost, nil, "respec") and true or false
 end
 
 function R.info(player)

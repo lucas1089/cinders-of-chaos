@@ -9,6 +9,9 @@
 --   system (ChaosMetrics.firstUse, called by wrapped success paths), where the gone characters stood (area and band).
 -- O437 retention ("Retention by creation day (O437)" in server/README.md): per first-login day, the characters that logged
 --   in again on day 1, days 2 - 7, days 8 - 30 (and at least once in days 1 - 7 / 1 - 30), one count per character and window.
+-- O751 gold sinks ("Gold sinks in the metrics (O751)" in server/README.md): ChaosMetrics.goldSink(player, sink, gold,
+--   back), called by Chaos.pay for every payment that went through (chaos_constants.lua) and by the systems that take
+--   gold another way (market fee and tax) or give it back (a Gambler refund): gold, payments and gold back per sink and band.
 -- Counters live in memory and are added to chaos_progress_metrics every flushSeconds and at shutdown. A tester bot
 -- (Chaos.isTester) and a staff character (group id above cfg.maxGroupId) are never counted. No name, account id, IP
 -- or chat is read into a counter or stored.
@@ -260,6 +263,24 @@ function X.firstUse(player, key)
 	local minutes = X.sessionMinutes(s.base + (os.time() - s.at))
 	X.add(X.state, "first", key, X.bandOf(player:getLevel(), cfg.bands) .. "|" .. X.playedBucket(minutes, cfg), 1, cfg)
 	return true
+end
+
+-- ---------------------------------------------------------------- O751: gold sinks
+-- a payment (or, with back, gold given back) of a counted character; player nil (a market fill whose seller is offline)
+-- counts in band "-". A tester bot and staff are never counted (they have no session).
+function X.goldSink(player, sink, gold, back)
+	if not cfg.enabled then
+		return false
+	end
+	local band = "-"
+	if player then
+		local ok, id = pcall(function() return player:getId() end)
+		if not ok or not X.sessions[id] then
+			return false
+		end
+		band = X.bandOf(player:getLevel(), cfg.bands)
+	end
+	return X.addGoldSink(X.state, sink, band, gold, back, cfg)
 end
 
 -- party and guild have no success hook of their own: the open sessions are looked at every memberCheckSeconds

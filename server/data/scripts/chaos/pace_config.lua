@@ -69,7 +69,9 @@ return {
 		-- 535 / 62 / 11 at 200-300). Same bands: gold within 4% and items within 6% of the targets below.
 		-- O141 (2026-10-23): the first fit of the points 400-600 was to the smooth gold curve of `lootLevel.goldPerHour`
 		-- (the gold per hour at 400-600 had been under the level 300 band's: 469k at 300, 325-537k at 400-600, 1.8M at 650)
-		coins = {{35, 1}, {50, 0.275}, {100, 0.7459}, {150, 0.4764}, {200, 0.3336}, {250, 0.2688}, {300, 0.2697}, {350, 0.1832},
+		-- O751: the 300 point 0.2697 -> 0.30: the gear NPC prices fell with the Gambler's (the one gold curve), the band
+		-- 300 lost 5.1% of its gold per hour; it is -1.7% of `goldPerHour` now
+		coins = {{35, 1}, {50, 0.275}, {100, 0.7459}, {150, 0.4764}, {200, 0.3336}, {250, 0.2688}, {300, 0.30}, {350, 0.1832},
 			{400, 0.1174}, {450, 0.1221}, {500, 0.1195}, {550, 0.1064}, {600, 0.1129}, {650, 0.1144}},
 		junkKeep = {{50, 2}, {100, 1.049}, {150, 0.834}, {200, 0.7964}, {250, 0.8246}, {300, 0.8859}, {350, 0.9684}, {400, 1.042}, {450, 1.093},
 			{500, 1.16}, {550, 1.208}, {600, 1.243}, {650, 1.267}},

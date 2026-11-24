@@ -88,11 +88,14 @@ nd, nw = K.roll(st, wed + 6 * 86400, cfg)
 check(nw, "a new week"); eq(st.weekPoints, 0); eq(st.tiersGiven, 0)
 
 -- income and rewards (hours of hunting gold)
-eq(K.income(cfg.income, 100), 402000, "income at 100"); eq(K.income(cfg.income, 1), 21000, "flat before")
-eq(K.income(cfg.income, 200), 695000, "between 100 and 300"); eq(K.income(cfg.income, 5000), 10662000, "flat after")
+-- O751: the income is the one curve (hunt_gold_config.lua)
+local HG = {}
+for _, p in ipairs(dofile("data/scripts/chaos/hunt_gold_config.lua").hunting) do HG[p[1]] = p[2] end
+eq(K.income(cfg.income, 100), HG[100], "income at 100"); eq(K.income(cfg.income, 1), HG[8], "flat before")
+eq(K.income(cfg.income, 200), (HG[100] + HG[300]) / 2, "between 100 and 300"); eq(K.income(cfg.income, 5000), cfg.income[#cfg.income][2], "flat after")
 eq(K.income({}, 5), 0, "no table")
-eq(K.gold(cfg.daily.reward, 100, cfg.income), 60300, "Spark at 100: 0.15 h")
-eq(K.gold(cfg.tiers[3], 1000, cfg.income), 36250800, "milestone 3 at 1000: 3.4 h")
+eq(K.gold(cfg.daily.reward, 100, cfg.income), math.floor(0.15 * HG[100] + 0.5), "Spark at 100: 0.15 h")
+eq(K.gold(cfg.tiers[3], 1000, cfg.income), math.floor(3.4 * HG[1000] + 0.5), "milestone 3 at 1000: 3.4 h")
 eq(K.gold({goldPerLevel = 5}, 0), 5, "the old per-level form, level at least 1")
 eq(K.gold({hours = 1, goldMax = 10}, 100, cfg.income), 10, "cap")
 -- the Spark is 10-15 minutes, the milestones about 1 / 2 / 4 hours: the gold share plus the orbs (orbs found per hour

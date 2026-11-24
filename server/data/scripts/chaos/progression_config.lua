@@ -28,7 +28,7 @@ return {
 
 	limits = {
 		fromLevel = 8, -- characters start at level 8 (start_stats.lua)
-		toLevel = 2200, -- the last band of the weapons (weapon_coverage_config.lua)
+		toLevel = 2500, -- the last band of the weapons (weapon_coverage_config.lua)
 		-- the experience stage table (tools/late_game.py): the next row is at most this x (or 1/this x) the one before
 		stageStep = 1.08,
 		-- the mean minutes per level of consecutive blocks of `short` levels change by a ratio inside shortRatio, blocks

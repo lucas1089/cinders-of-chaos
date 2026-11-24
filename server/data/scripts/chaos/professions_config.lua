@@ -59,12 +59,15 @@ C.greyXp = {[0] = 1.0, [1] = 0.6, [2] = 0.25}
 --   price       the Material Broker's base price per unit, gold
 --   xp          profession experience per gather
 --   name        tier word in the window
+-- O751: the prices of tiers 3-5 x the new hunting gold over the old "Respec" gold at the tier's charLevel (the one
+-- curve, hunt_gold_config.lua: x0.47 / 0.67 / 0.22), so the share of an hour stays where it was. Before: 350, 800, 4000.
+-- Tier 2 80 -> 75 (flaying stays under maxShare of the hunting gold at 40); tier 1 kept.
 C.tiers = {
 	{profLevel = 1, charLevel = 8, price = 20, xp = 10, name = "Common", color = "#b8b0a0"},
-	{profLevel = 20, charLevel = 40, price = 80, xp = 18, name = "Fine", color = "#7ec46a"},
-	{profLevel = 40, charLevel = 100, price = 350, xp = 30, name = "Rare", color = "#6fa8ff"},
-	{profLevel = 60, charLevel = 250, price = 800, xp = 45, name = "Grim", color = "#c07ae0"},
-	{profLevel = 80, charLevel = 500, price = 4000, xp = 65, name = "Infernal", color = "#ff8a3d"}
+	{profLevel = 20, charLevel = 40, price = 75, xp = 18, name = "Fine", color = "#7ec46a"},
+	{profLevel = 40, charLevel = 100, price = 160, xp = 30, name = "Rare", color = "#6fa8ff"},
+	{profLevel = 60, charLevel = 250, price = 540, xp = 45, name = "Grim", color = "#c07ae0"},
+	{profLevel = 80, charLevel = 500, price = 870, xp = 65, name = "Infernal", color = "#ff8a3d"}
 }
 
 -- yield per gather: 1, +1 with chance min(extraMax, (profession level - the tier's profLevel) / extraPerLevel),
@@ -195,15 +198,15 @@ C.demand = {slots = {1.5, 1.25, 1.0, 1.0, 0.75}, seed = 7919}
 C.rollHour = 6
 
 -- ------------------------------------------------------------------ balance (checked by tests/professions_test.lua)
--- Hunting gold per hour at a character level (server/README.md "Respec": tools/respec_income.py from level 100; levels 8
--- and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts). Linear between.
+-- Hunting gold per hour at a character level: the one curve (hunt_gold_config.lua, O751; it was the "Respec" table of
+-- tools/respec_income.py). Linear between.
 -- The best gold per hour of a profession at its tier (profession 100, the best demand week, no daily cap) must stay
 -- below maxShare of the hunting income at the tier's charLevel. Model: gathers per hour = min(3600 / (channel + walkSec),
 -- nodes of the tier x 60 / respawnMin) for the node professions, 3600 / (channel + killSec) x flaying chance for
 -- flaying, 3600 / rollMs x angling chance for angling; x the best average yield; x price x the best demand.
 C.balance = {
 	maxShare = 0.4, walkSec = 12, killSec = 10,
-	hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}}
+	hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
 }
 
 -- ------------------------------------------------------------------ O395: feeding the base crafting
@@ -233,18 +236,18 @@ end
 C.refine = {
 	refine("delving", 1, "mining", 2, 26398, 1, 10, 100),
 	refine("delving", 2, "mining", 1, 26399, 1, 10, 50),
-	refine("delving", 3, "mining", 1, 26404, 2, 15, 50),
+	refine("delving", 3, "mining", 1, 26404, 2, 15, 80),
 	refine("delving", 4, "mining", 1, 26400, 3, 20, 50),
-	refine("delving", 5, "mining", 1, 5880, 2, 25, 50),
+	refine("delving", 5, "mining", 1, 5880, 2, 25, 130),
 	refine("wortcunning", 1, "herbalist", 2, 26729, 1, 10, 100),
 	refine("wortcunning", 2, "herbalist", 1, 26732, 1, 10, 50),
-	refine("wortcunning", 3, "herbalist", 1, 26726, 2, 15, 50),
+	refine("wortcunning", 3, "herbalist", 1, 26726, 2, 15, 80),
 	refine("wortcunning", 4, "herbalist", 1, 26727, 3, 20, 50),
 	refine("wortcunning", 5, "herbalist", 1, 26724, 4, 25, 50),
 	refine("flaying", 1, "armorsmith", 2, 12435, 1, 10, 50),
 	refine("flaying", 2, "armorsmith", 1, 5920, 1, 10, 50),
 	refine("flaying", 3, "armorsmith", 1, 5920, 2, 15, 50),
-	refine("flaying", 4, "armorsmith", 1, 5948, 3, 20, 50),
+	refine("flaying", 4, "armorsmith", 1, 5948, 3, 20, 60),
 	refine("flaying", 5, "armorsmith", 1, 5882, 4, 25, 50)
 }
 

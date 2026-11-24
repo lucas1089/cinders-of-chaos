@@ -19,10 +19,10 @@ end
 
 -- O177 (beta 2026-10-24: a pocket boss showed "Lv 10182"): the highest level a monster may SHOW from an estimate. The
 -- experience / health estimate of a world boss species is far above any level (it is only meant to rank monsters), so
--- an estimate is shown at most at the top hunting level (progression_config.lua limits.toLevel, 2200; the test keeps
+-- an estimate is shown at most at the top hunting level (progression_config.lua limits.toLevel, 2500 since O751; the test keeps
 -- them equal). A level a system passes itself (Chaos.spawnLevel: the Infinity Tower's floors may go higher) is not
 -- clamped. Display only: loot, damage and pace read their own levels.
-K.maxEstimate = 2200
+K.maxEstimate = 2500
 
 -- Owner 2026-10-27: a pool-derived estimate is the bounty pool's "fair hunt" level; the level players hunt the monster
 -- at (and the map marks, the Codex and the wiki print) is `mult` times it (pace_config.lua baseLevelMult, 1 since 2026-10-28, O285: the pool level; the x2 rule of O272 is retired). A level a

@@ -29,19 +29,24 @@
 --   M.stableId(id)                             the number stored for a hunt place (hash of its id string, 1 .. 1073741789)
 --   M.spotFor(pos, spots, cfg)                 the nearest hunt spot within cfg.areaRadius on the floor, or nil
 --   M.huntMark(session, pos, now, spots, cfg)  -> the new stored hunt id when a kill changed it (throttled), else nil
+-- O751 gold sinks (server/README.md "Gold sinks in the metrics (O751)"):
+--   M.sinkKey(sink, cfg)                       the sink's key when cfg.goldSinks lists it, else "other"
+--   M.addGoldSink(state, sink, band, gold, back, cfg)  sink_gold + sink_n (a payment) or sink_back (gold given back);
+--                                              false when the gold is not a positive number
 -- Table: kind, k1, k2, n. Kinds: death_area (k1 area, k2 band), death_monster (k1 monster, k2 band),
 -- session1 (k1 minute bucket), ttl (k1 milestone level, k2 minute bucket), churn (k1 band, k2 gone | active),
 -- meta (k1 name, n value: churn_at, churn_days), cohort (k1 YYYYMMDD of a first login), return (k1 d1 | d3 | d7,
 -- k2 YYYYMMDD of the cohort day), retain (O437: k1 d1 | d2_7 | d8_30 | in7 | in30, k2 YYYYMMDD of the cohort day),
 -- first (k1 system, k2 "band|played-minutes bucket"), stop (k1 area, k2 band: gone
--- characters, a snapshot).
+-- characters, a snapshot), sink_gold / sink_n / sink_back (O751: k1 sink, k2 band; gold paid, payments, gold given back).
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosMetrics = ChaosMetrics or {}
 local M = ChaosMetrics
 local floor = math.floor
 
-M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta", "cohort", "return", "retain", "first", "stop"}
+M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta", "cohort", "return", "retain", "first", "stop", "sink_gold",
+	"sink_n", "sink_back"}
 
 function M.createSql(t)
 	return "CREATE TABLE IF NOT EXISTS `" .. t .. "` (" ..
@@ -427,6 +432,32 @@ function M.retainSinceSql(t, today, key)
 	end
 	return string.format("INSERT IGNORE INTO `%s` (`kind`, `k1`, `k2`, `n`) VALUES ('meta', '%s', '', %d)",
 		t, (key:gsub("[^%w_]", "")), floor(today))
+end
+
+-- ---------------------------------------------------------------- O751: gold sinks
+function M.sinkKey(sink, cfg)
+	if type(sink) == "string" then
+		for _, k in ipairs(cfg and cfg.goldSinks or {}) do
+			if k == sink then
+				return k
+			end
+		end
+	end
+	return "other"
+end
+
+function M.addGoldSink(state, sink, band, gold, back, cfg)
+	gold = tonumber(gold)
+	if not gold or gold ~= gold or gold < 1 then
+		return false
+	end
+	gold = floor(math.min(gold, cfg and cfg.goldSinkMax or 2000000000))
+	local key, b = M.sinkKey(sink, cfg), tostring(band or "-")
+	if back then
+		return M.add(state, "sink_back", key, b, gold, cfg)
+	end
+	local ok = M.add(state, "sink_gold", key, b, gold, cfg)
+	return M.add(state, "sink_n", key, b, 1, cfg) and ok
 end
 
 -- ---------------------------------------------------------------- O258: first use of a system
