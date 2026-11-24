@@ -36,7 +36,7 @@ return {
 		items = 10, last = 7101139},
 	states = {fresh = -1, active = 0, done = 1, skipped = 2, quiet = 3},
 	flagBits = {talk = 1}, -- bit 1 of +3 is the talk flag; the keys of `flags` below take the next bits (29 in +3, then +4)
-	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door", "deck", "badge"},
+	flags = {"potion", "sell", "autoloot", "daily", "market", "loadout", "charms", "bank", "stash", "salvage", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "gambler", "nemesis", "portal", "chronicle", "weekly", "siege", "marches", "teleports", "seasonpass", "charinfo1", "charinfo2", "door", "deck", "badge", "helper"},
 	-- flags the client's Go button marks (a window to see, an info page to read): ChaosMainQuest.go; every other flag comes from a hook
 	acks = {"charms", "orbex", "pets", "spellbook", "death", "transmog", "hideout", "achievements", "mentor", "nemesis", "chronicle", "siege", "marches", "seasonpass", "charinfo1", "charinfo2", "deck", "badge"},
 	staffGroup = 4,
@@ -90,18 +90,21 @@ return {
 	},
 
 	steps = {
+		-- O761 (owner 2026-11-24): the quest starts with the Helper. This place held "Meet Warden Ysolde" and the next one "Cast a spell";
+		-- the two swapped and the cast became the Helper setup (the Auto setup button sends mqHelper on the goals channel). A character
+		-- that was on the old step 2 (Ysolde met) says "oath" to her once more
+		{key = "helper", ch = 1, level = 8, mins = 1, items = {},
+			conds = {{c = "flag", key = "helper"}},
+			title = T("Set up your Helper", "Configure o seu Helper"),
+			hint = T("Click this step: the Helper opens. Press Auto setup: it puts your spells and potions on hotkeys and casts them for you.", "Clique nesta etapa: o Helper abre. Clique em Auto setup. Ele coloca suas magias e poções nos atalhos e lança por você."),
+			done = T("Step done.", "Seu Helper está pronto. Ele luta ao seu lado. Agora vá conhecer quem guarda o Juramento."),
+			where = {k = "window", m = "game_helper", f = "toggle"}},
 		{key = "warden", ch = 1, level = 8, mins = 1, items = {},
 			conds = {{c = "talk"}},
 			title = T("Meet Warden Ysolde", "Conheça a Guardiã Ysolde"),
 			hint = T("Find Warden Ysolde in the market of the teleport room (marked on your map) and say \"oath\".", "Ysolde espera no mercado da sala de teleportes (marcada no mapa). Fale com ela e diga \"juramento\"."),
 			done = T("Step done.", "Mais uma que o templo devolveu. Ótimo. O Juramento não é grande coisa, mas é o que nos resta. Comece."),
 			where = {k = "npc", name = "Warden Ysolde"}},
-		{key = "spell", ch = 1, level = 8, mins = 1, items = {},
-			conds = {{c = "spell"}},
-			title = T("Cast a spell", "Lance uma magia"),
-			hint = T("Press Auto setup in the Helper: it puts your spells on hotkeys and casts them for you.", "Clique em Auto setup no Helper. Ele coloca suas magias nos atalhos e lança por você."),
-			done = T("Step done.", "Fogo na ponta dos dedos. Guarde essa sensação, ela vai salvar você mais de uma vez."),
-			where = {k = "window", m = "game_helper", f = "toggle"}},
 		{key = "trollground", ch = 1, level = 8, mins = 1, items = {},
 			conds = {{c = "visit", pos = {x = 32354, y = 32129, z = 8}, radius = 6, label = "the Troll ground"}},
 			title = T("Walk to the Troll ground", "Ande até o território dos Trolls"),

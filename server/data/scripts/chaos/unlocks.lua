@@ -104,6 +104,11 @@ function U.later(player)
 end
 
 function U.run(player)
+	-- O761: on a quiet first login the "New" callouts wait for their introduction (intros.lua); the menu state still goes
+	if ChaosIntros and ChaosIntros.allowed and not ChaosIntros.allowed(player, "unlocks") then
+		U.sendState(player)
+		return
+	end
 	local mask = U.getMask(player, "unlocked")
 	local perRun = M.pace()
 	local lang = U.langOf(player)

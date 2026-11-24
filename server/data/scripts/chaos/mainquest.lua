@@ -681,6 +681,9 @@ function W.advance(player)
 	else
 		announceStep(player, i + 1, lang)
 	end
+	if ChaosIntros and ChaosIntros.onQuestStep then -- O761: the introductions tied to quest steps (intros_config.lua)
+		pcall(ChaosIntros.onQuestStep, player, step.key)
+	end
 	return true
 end
 
@@ -755,6 +758,11 @@ function W.firstLook(player)
 		local lang = langOf(player)
 		tell(player, K.text(c.texts.start, lang))
 		announceStep(player, start, lang)
+		-- O761: a first login sees the quest as the one thing after the Daily Reward: one toast names its step (the tracker row
+		-- opens the Helper on Auto setup)
+		if ChaosIntros and ChaosIntros.firstSession and ChaosIntros.firstSession(player) and c.steps[start] then
+			toast(player, string.format("%s: %s", K.text(c.texts.title, lang), K.fill(K.text(c.steps[start].title, lang), vars(lang))))
+		end
 	elseif K.reopenFrom(c, state, get(player, "step"), get(player, "won") == 1) then
 		-- O750: steps were added after the end this character reached (Chapter 8), or a quiet veteran beat Vael: the quest runs again
 		-- from there, the steps it did long ago passed silently as at a first look
@@ -840,6 +848,9 @@ function W.skip(player, scope)
 	end
 	pcall(K.takeQuestItems, c, player) -- a quest item has no use outside the quest
 	W.refresh(player, true)
+	if ChaosIntros and ChaosIntros.onQuestStep then -- O761: a skipped quest no longer holds the introductions back
+		pcall(ChaosIntros.onQuestStep, player, nil)
+	end
 	return true
 end
 
@@ -932,6 +943,14 @@ function W.onAction(player, msg)
 		if type(d.step) == "string" then
 			pcall(W.go, player, d.step)
 		end
+	elseif a == "mqHelper" then
+		-- O761: the client pressed Auto setup in the Helper (the first step); a flag of a step not open yet waits in the storage
+		if Chaos.limited and Chaos.limited(player, "goals.mqHelper", 1000) then
+			return
+		end
+		if W.emit(player, "helper") then
+			W.check(player) -- the step moves at once, not at the next sweep
+		end
 	end
 end
 
@@ -973,15 +992,23 @@ if CreatureEvent then
 			return true
 		end
 		player:registerEvent("ChaosMainQuestLogout")
+		local function look(p)
+			local ok, err = pcall(W.firstLook, p)
+			if not ok then
+				log("first look: " .. tostring(err))
+			end
+		end
+		-- O761: a character's first login starts the quest when the Daily Reward window is closed (the login windows are done)
+		local I = ChaosIntros
+		local waitWindows = I and I.firstSession and I.afterLoginWindows and I.firstSession(player)
 		addEvent(function()
 			local p = Player(pid)
-			if p then
-				local ok, err = pcall(W.firstLook, p)
-				if not ok then
-					log("first look: " .. tostring(err))
-				end
+			if p and waitWindows then
+				I.afterLoginWindows(p, look)
+			elseif p then
+				look(p)
 			end
-		end, C().firstLookMs or 12000)
+		end, waitWindows and math.min(C().firstLookMs or 12000, I.cfg().questAfterMs or 4000) or C().firstLookMs or 12000)
 		return true
 	end
 	login:type("login")

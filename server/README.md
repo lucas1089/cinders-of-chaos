@@ -949,6 +949,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103110 | the damage over time tick flag (`dot_config.lua storage`, O474): the id of the creature a scripted tick hits, -1 outside a tick; written by the spells (`ChaosDot.run`), read by the damage events |
 | 7103120 - 7103129 | effect owner marks (`Chaos.storage.fxOwner`, `data/lib/chaos_fx_owner.lua`, O567): +0 is 1 while the player's client wants the marks of its own effects (set at the client's `hello`, -1 at login and logout); +1..+9 free |
 | 7103150 - 7103159 | Greater Rift (`rift_config.lua` `greater.key.boughtStorage`, O668): +0 Greater Rift Keys bound with omen fragments today, +1 the day (YYYYMMDD); +2..+9 free |
+| 7103160 - 7103169 | quiet first login and introductions (`intros_config.lua` `storage`, O761): +0 the state (-1 never seen, 0 open: a character from before O761, staff, testers; 1 quiet), +1 the introductions given (bits by index of `intros`); +2..+9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -31773,6 +31774,9 @@ resistances dropping at their levels; to level 500, a solo boss at the end; the 
 Next Goals tracker (same channel, same skip), imports its state, builds on the Tale of Cinderhold (lore, Archivist Maelis: untouched) and Next Goals (a list by band: untouched).
 The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated from the config (`cd server && luajit tools/gen_mainquest_script.lua`, `--check` in CI).
 
+- **First step: the Helper (O761).** Steps 1 and 2 swapped. Step 1 is "Set up your Helper": flag `helper`, appended to `flags`, set by the client action `mqHelper`
+  that Auto setup sends; `botPlan` action `helper`. Step 2 is "Meet Warden Ysolde". The old step 2 "Cast a spell" is gone. A character that stood on the old step 2
+  (Ysolde met) says "oath" to her once more. `skipDone` passes the Helper step for a character that played. See "Quiet first login (O761)" below.
 - **Frame.** Warden Ysolde of the Ashen Vigil (a stall of the hub market) swears the "cinder-born" (what the temple gives back) into the Oath, a vow at a time; the last
   page is a door and behind it the first Warden, Vael Ashmourn, who refused to swear. No new NPC.
 - **Steps** (122, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
@@ -31927,6 +31931,45 @@ and the same walking and fairness code (`G.makeFair`, `G.isFair`) as the world b
   attack, the resistance, a fallen or shielded character, Vael gone, the run over, an unfair plan not cast, no attack without a mark (or the sprite marks without the module);
   `tools/mainquest_boss_model_test.py`. Not run on a live server.
 - **Not done.** A line charge in which Vael moves (the lance is a beam); a cast bar over Vael (the `mech` action of the monster bar); Unity (the floor marks are the client's `game_telegraph`).
+
+## Quiet first login (O761, `intros.lua`, `intros_core.lua`, `intros_config.lua`)
+
+Owner 2026-11-24 (pt-BR): "tire tudo isso de janela abrindo quando um player entra pela primeira vez. só mostre o daily reward e encaminhe pra quest principal, que deve
+mostrar primeiro como funciona o helper. depois introduza as outras coisas."
+
+- **What a first login opened before.** Daily Reward window (`daily.lua` login queue), patch notes window (`patchnotes.lua`, same queue), the base outfit window
+  (`data/creaturescripts/scripts/login.lua` `sendOutfitWindow`, shown by `game_outfitextras` as Customise Character), the welcome toast with the Helper open on Auto setup
+  and its gold hint (`newplayer.lua` `NP.showWelcome`), the first-hour tips as NEW ADVENTURER toasts from 9 s (`firsthour.lua`), the "New" callouts of the top menu
+  (Bounty Board, Market) from 20 s (`unlocks.lua`), the Next Goals rows of the tracker (`goals.lua`), the main quest's first look at 12 s (`mainquest.lua`) and the
+  How it works card of the Daily Reward window (client `game_howitworks`).
+- **Now.** A character whose first login comes under O761 (`getLastLoginSaved` 0, not staff, not a tester) is *quiet*. Its first login opens the Daily Reward window
+  only (`intros_config.lua` `firstLoginWindows`; the client opens it without its How it works card). The welcome text stays in the chat, nothing else. When the login
+  window queue is done (the Daily Reward closed, at most `wait.maxWaitMs`), the main quest starts on its first step, "Set up your Helper": a toast, the chat lines,
+  the tracker row. A click on the row opens the Helper on Auto setup. Auto setup sends `mqHelper` on the goals channel (178, no new opcode) and the step is done.
+- **Introductions.** The rest comes later, one at a time, `pace.gapMs` (60 s) apart, each once per character, when its quest step is done or at its level,
+  whichever is first. With the quest skipped or done they come at once, still one per gap. Until its introduction a system keeps its own bits unset, so nothing is
+  lost: it then runs with its own pace and the player's own "don't show again" settings.
+
+| # | key | after the quest step | or at level | lets go |
+|---|---|---|---|---|
+| 1 | `outfit` | `warden` (Meet Warden Ysolde) | 10 | the Customise Character window, once, with a chat line |
+| 2 | `tips` | `trolls` (12 Trolls) | 10 | the first-hour tips and hunting marks (`firsthour.lua`) |
+| 3 | `unlocks` | `tusks_in` (Troll Tusks brought) | 11 | the "New" callouts of the top menu (`unlocks.lua`) |
+| 4 | `goals` | `gear` | 12 | the Next Goals rows of the tracker (`goals.lua`), with a chat line |
+
+- **Hooks.** `ChaosIntros.firstSession` (newplayer.lua, mainquest.lua), `loginWindowWanted` (daily.lua `LW.start`), `allowed` (firsthour.lua `F.run`, unlocks.lua `U.run`,
+  goals.lua `G.introRows`), `afterLoginWindows` (mainquest.lua login), `onQuestStep` (mainquest.lua advance and skip). Events `ChaosIntrosLogin` (a returning quiet
+  character: the due introductions after its login windows and `loginDelayMs`) and `ChaosIntrosAdvance`.
+- **Base outfit window.** `tools/patch_base_login_outfit.py` (install step `loginoutfit`, after `baseraids`) comments out `sendOutfitWindow()` and the "Please choose
+  your outfit" line of the first-login branch of the base `login.lua`, marker `Cinders of Chaos O761`. The outfit introduction sends it instead. Idempotent,
+  `--dry-run`; test `tools/patch_base_login_outfit_test.py`. A staff or tester character made after the install gets no outfit window at its first login.
+- **Returning characters.** State 0 (open) at first sight: every window and system as before. The base outfit window only ever showed at a first login.
+- **Storage.** 7103160 - 7103169 (table "Storage keys"). No table, no opcode.
+- **Tests.** `tests/intros_test.lua`: rules, the real config against the quest, the order Daily Reward > quest > introductions on a mocked engine, once each, the gap,
+  open, staff and tester characters, the hooks. `tests/mainquest_test.lua`: first step, `mqHelper`. Client `howitworks_test.lua`, `goalsview_test.lua`.
+  `tester_checks_test.py`: `mainquest_walk` presses Auto setup through `mqHelper`.
+- **Unity.** `Goals.HelperSetUp` (Core/Progression.cs) sends `mqHelper` from the Helper window's Auto setup. The live smoke's `newplayer` block still expects the
+  welcome toast with the Helper at a first login (`LiveSmoke.cs` `LiveNewPlayerResult`). Open: move it to the quest step on the next live run.
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 

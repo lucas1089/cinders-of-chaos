@@ -144,8 +144,13 @@ function LW.start(player)
 			return
 		end
 		local wanted = {}
+		local I = ChaosIntros
 		for _, e in ipairs(LW.entries) do
+			-- O761: a character's first login opens the Daily Reward window only (intros_config.lua firstLoginWindows)
 			local ok, w = pcall(e.wants, p)
+			if ok and w and I and I.loginWindowWanted and not I.loginWindowWanted(p, e.key) then
+				w = false
+			end
 			if ok and w then
 				wanted[e.key] = true
 			end

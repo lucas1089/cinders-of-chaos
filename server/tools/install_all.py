@@ -166,6 +166,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                off; the Chaos weather (weather.lua, client game_chaosweather) replaces it (README "Weather on the client (O208)")
   baseraids    tools/patch_base_raids.py         the Thais orc raid's three single spawns name monsters that do not exist ("Cant create
                monster Orc Armor"): they name the Orc Leader (README "Base raid fixes"; after monsternames)
+  loginoutfit  tools/patch_base_login_outfit.py  creaturescripts/scripts/login.lua: no outfit window at a character's first login; it comes
+               later, once, as an introduction (intros.lua; README "Quiet first login (O761)")
   widespellids tools/patch_wide_spell_ids.py     config.lua chaosWideSpellIds = false when the key is missing (the owner's value is kept): 16-bit spell
                ids on the wire for a client that asks, engine src-patch 0079 (README "Wide spell ids")
   shopprices   tools/patch_shop_prices.py        modules.lua ShopModule.requestTrade: the trade window gets 0, not -1 (sent as 4294967295), for "not sold" /
@@ -1148,6 +1150,14 @@ def step_baseraids(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('baserain') + 1, 'baseraids')  # raids that name a monster the server does not have
+
+
+def step_loginoutfit(server, data, ctx):
+    args = [tool('patch_base_login_outfit.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_login_outfit.py'))
+
+
+STEPS.insert(STEPS.index('baseraids') + 1, 'loginoutfit')  # login.lua: the first login opens no outfit window (O761)
 
 
 def step_shopprices(server, data, ctx):

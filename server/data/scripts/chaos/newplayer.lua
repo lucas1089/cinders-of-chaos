@@ -337,6 +337,11 @@ function NP.showWelcome(player, force)
 	else
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE or MESSAGE_INFO_DESCR, Chaos.t(player, w.title) .. "\n" .. text)
 	end
+	-- O761: a quiet first login shows the Daily Reward window only; the welcome text stays in the chat, the main quest's first
+	-- step leads to the Helper (intros.lua)
+	if ChaosIntros and ChaosIntros.firstSession and ChaosIntros.firstSession(player) then
+		return true
+	end
 	-- the first steps: the Helper opens on its Auto setup button (owner design 2026-10-16)
 	if w.helper and w.helper.open then
 		NP.toast(player, Chaos.t(player, w.firstToast or w.toast),

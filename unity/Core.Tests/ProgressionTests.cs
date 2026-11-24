@@ -335,6 +335,8 @@ namespace Chaos.Core.Tests
             g.Notice = t => notice = t;
             g.Open(); g.RequestTracker(); g.SkipWelcome(); g.Close();
             check(sent.Select(Text).SequenceEqual(new[] { "{\"action\":\"open\",\"data\":{}}", "{\"action\":\"tracker\",\"data\":{}}", "{\"action\":\"welcomeSkip\",\"data\":{}}", "{\"action\":\"close\",\"data\":{}}" }), "goals: open, tracker, welcomeSkip and close");
+            sent.Clear(); g.HelperSetUp();
+            check(sent.Select(Text).SequenceEqual(new[] { "{\"action\":\"mqHelper\",\"data\":{}}" }), "goals: Auto setup tells the main quest (O761)");
             Msg(ext, 178, "{\"action\":\"goals\",\"data\":{\"header\":{\"level\":310,\"done\":4,\"total\":9,\"season\":{},\"more\":2,\"next\":500,\"nextName\":\"Deep Rifts\"," +
                 "\"band\":{\"key\":\"b\",\"name\":\"World bosses\",\"text\":\"Hunt world bosses.\",\"from\":300,\"to\":499,\"index\":4,\"count\":13}}," +
                 "\"goals\":[{\"key\":\"a\",\"level\":300,\"state\":\"open\",\"title\":\"Slay a boss\",\"why\":\"w\",\"effort\":\"1h\",\"progress\":0,\"target\":1,\"reward\":\"Orb\",\"where\":{\"k\":\"info\",\"page\":\"rift\"}}," +

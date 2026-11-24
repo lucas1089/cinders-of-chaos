@@ -1667,6 +1667,9 @@ jobs:
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py
 
+      - name: No outfit window at the first login (patch_base_login_outfit.py, install_all step loginoutfit, O761)
+        run: python3 -I server/tools/patch_base_login_outfit_test.py
+
       - name: NPC shop prices of -1 sent as 0 (patch_shop_prices.py, install_all step shopprices)
         run: python3 -I server/tools/patch_shop_prices_test.py
 

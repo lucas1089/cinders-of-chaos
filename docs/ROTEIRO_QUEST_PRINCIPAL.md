@@ -23,17 +23,17 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 
 *Abertura:* As Brasas levaram os Guardiões um a um, e quem sai vivo do templo é chamado de nascido das brasas. A Guardiã Ysolde oferece o Juramento: uma caminhada pelo reino, um voto de cada vez.
 
-### 1.1 Conheça a Guardiã Ysolde (nível 8)
+### 1.1 Configure o seu Helper (nível 8)
+
+- Objetivo: Configure o seu Helper
+- Dica: Clique nesta etapa: o Helper abre. Clique em Auto setup. Ele coloca suas magias e poções nos atalhos e lança por você.
+- Conclusão (Ysolde): Seu Helper está pronto. Ele luta ao seu lado. Agora vá conhecer quem guarda o Juramento.
+
+### 1.2 Conheça a Guardiã Ysolde (nível 8)
 
 - Objetivo: Fale com a Guardiã Ysolde e diga "juramento".
 - Dica: Ysolde espera no mercado da sala de teleportes (marcada no mapa). Fale com ela e diga "juramento".
 - Conclusão (Ysolde): Mais uma que o templo devolveu. Ótimo. O Juramento não é grande coisa, mas é o que nos resta. Comece.
-
-### 1.2 Lance uma magia (nível 8)
-
-- Objetivo: Lance uma magia
-- Dica: Clique em Auto setup no Helper. Ele coloca suas magias nos atalhos e lança por você.
-- Conclusão (Ysolde): Fogo na ponta dos dedos. Guarde essa sensação, ela vai salvar você mais de uma vez.
 
 ### 1.3 Ande até o território dos Trolls (nível 8)
 

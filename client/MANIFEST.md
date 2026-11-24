@@ -5767,6 +5767,15 @@ hint above it; a click on it ends the blink and runs Auto setup as usual. Nothin
 helpers `O.plan` / `O.blinkFrames`, `onboarding_test.lua`. Server side: `newplayer.lua` `NP.showWelcome`,
 `newplayer_config.lua` `welcome.helper`.
 
+Quiet first login (O761, server/README.md "Quiet first login (O761)"): a character made after O761 gets no welcome toast
+and no Helper at its first login. Only the Daily Reward window opens. `game_daily` marks it `howQuiet` while the server
+opened it by itself (`Login == 1`), so `game_howitworks` brings no card for it; a later open by the player does. Then
+the main quest starts on "Set up your Helper". `game_goals` `runWhere`: a row whose place is the Helper window
+(`goalsview.lua` `V.isHelper`) opens it through `ChaosHelperOnboarding.open` with the Auto setup blink and the hint
+"Press Auto setup: ...". Auto setup (`autosetup_ui.lua` `apply`) calls `modules.game_goals.helperSetUp`, which sends
+`mqHelper` on the goals opcode (178) and the step is done. Unity: `Goals.HelperSetUp` from `HelperWindow.PressAutoSetup`.
+Tests: `goalsview_test.lua`, `howitworks_test.lua`.
+
 ### Helper spell lists (`game_helper/spellinfo_logic.lua`, O311)
 The helper's spell pickers (shooter slots, healing rows, mana training, haste) list a spell as `Name   120 mana | AOE circle 3 | 4 s`
 (mana or its share of the maximum, single target / AOE with the shape and size / self, cooldown) and show the whole data in a

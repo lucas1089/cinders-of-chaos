@@ -3872,6 +3872,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Auto-update"] = "Atualizar sozinho",
   ["Auto setup"] = "Configuração automática",
   ["Set up your helper in one click"] = "Configure seu helper com um clique",
+  ["Press Auto setup: your spells and potions go on hotkeys and the Helper casts them."] = "Use a Configuração automática: suas magias e poções vão para as hotkeys e o Helper as usa.",
   ["Auto setup done for %s, level %d."] = "Configuração automática feita para %s, nível %d.",
   ["Auto setup has no recommendations for this class."] = "A configuração automática não tem recomendações para esta classe.",
   ["Healing: %d spells, %d potions."] = "Cura: %d magias, %d poções.",

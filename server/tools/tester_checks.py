@@ -5919,7 +5919,7 @@ async def bounty_play(io, name, cls, level, key, kind):
 
 # ------------------------------------------------------------------------------------------------ the main quest, played (O599)
 # The first steps of "The Ember Oath" the way a new character plays them: the bot reads the open step (`!tester mainquest`: its condition, where to
-# go, what a bot can play: talk | visit | kill | skip), walks there on foot (`path npc NAME`, `path pos X Y Z`), talks to Warden Ysolde, stands on the
+# go, what a bot can play: helper | talk | visit | kill | skip; O761: the first step is the Helper's Auto setup, reported as the client does), walks there on foot (`path npc NAME`, `path pos X Y Z`), talks to Warden Ysolde, stands on the
 # place of a visit step, kills the named monsters of a kill step, and the quest must credit each step (the step number rises, or the kill counter).
 # A step the bots do not play (a spell, a window, a stat, a flag, the boss: Vael Ashmourn is the spell trial of the trials engine and no testers'
 # instance of it is built) ends the check, named. Rewards are the tester's own; nothing of the quest is on a public board.
@@ -6067,6 +6067,12 @@ async def check_mainquest_walk(io, name, cls, level):
                 after = await mq_wait_step(io, here, a.get('progress') or 0)
                 if mq_open(after, here, a.get('progress') or 0):
                     trace['faults'].append('step %s (%s): the Go button was pressed for %s and the quest did not move' % (here, a.get('key'), plan.get('flag')))
+                    break
+            elif action == 'helper':   # O761: the first step, the Helper's Auto setup: the client sends mqHelper on the goals channel
+                await io.request('goals', 'mqHelper', {}, ['welcome', 'mq'], ANSWER)
+                after = await mq_wait_step(io, here, a.get('progress') or 0)
+                if mq_open(after, here, a.get('progress') or 0):
+                    trace['faults'].append('step %s (%s): Auto setup was reported and the quest did not move' % (here, a.get('key')))
                     break
             elif action == 'daily':   # O650: the daily reward claimed in its window
                 outcome, text = await daily_claim_do(io)
