@@ -6098,6 +6098,14 @@ async def check_mainquest_walk(io, name, cls, level):
             elif action == 'vael':
                 trace['why'] = 'step %s: Vael Ashmourn has his own check (vael_walk)' % a.get('key')
                 break
+            elif action == 'elsewhere':   # O750: a Chapter 8 step names an endgame system; the check that plays it must exist
+                check = plan.get('check') or ''
+                if check not in KEYS + CLOSED_KEYS:
+                    trace['faults'].append('step %s (%s): the quest names the bot check %r, which does not exist' % (here, a.get('key'), check))
+                else:
+                    trace['why'] = 'step %s (Chapter 8): %s is played by its own check (%s), progress %s/%s' % (
+                        a.get('key'), plan.get('stat'), check, a.get('progress'), a.get('target'))
+                break
             else:
                 trace['why'] = 'step %s: %s' % (a.get('key'), plan.get('reason') or 'not played')
                 break
@@ -6920,6 +6928,57 @@ async def check_loot_explosion(io, name, cls, level):
     await io.sleep(1.0)
     end = await io.helper('explode state', 'explode', ANSWER)
     return Result(key, name, cls, *explode_verdict(run, mid, end, answer))
+
+
+TAKEN = ('pouch', 'backpack')
+
+
+def loot_pouch_verdict(pouch, rarity):
+    """(status, text) for O749 (owner 2026-11-24, "Híbrido"): the auto steps take only the basics, the best drops always fly. pouch / rarity = the answers of
+    `!tester explode pouch` (a real kill with a Loot Bag carried, default rules) and `!tester explode rarity` (the Rarity Autoloot on, a Legendary floor
+    asked): {leg, rare, com: 'ground' | 'pouch' | 'backpack' | 'bag' | 'ground_other' | None, pouch, pouchFree, bpFree, unlocked, lootFrom, err}.
+    FAIL: the Legendary was taken by an auto step (pouch or backpack), the Loot Bag left the Common to fly while it had room, the Rarity Autoloot kept a
+    floor above Rare or left the Rare while the backpack had room. SKIP: a helper or kill problem, the Legendary still in the bag (a cap)"""
+    parts = []
+    for label, a in (('pouch', pouch), ('rarity', rarity)):
+        if not isinstance(a, dict):
+            return SKIP, 'no answer to !tester explode %s (helper before v45)' % label
+        if a.get('err'):
+            return SKIP, '%s: %s' % (label, str(a['err'])[:100])
+        if a.get('leg') in TAKEN:
+            return FAIL, '%s: the Legendary went into the %s: an auto step took a drop that must fly (O749)' % (label, a['leg'])
+        if a.get('leg') != 'ground':
+            return SKIP, '%s: the Legendary did not fly (%s: a cap, an instance or no free tile kept it)' % (label, a.get('leg') or 'not found')
+    if not pouch.get('pouch'):
+        return SKIP, 'pouch: the bot carried no Loot Bag during the kill'
+    if pouch.get('com') not in TAKEN:
+        if int(pouch.get('pouchFree') or 0) > 0:
+            return FAIL, 'pouch: the Loot Bag (default rules, %s slots free) left the Common sword (%s)' % (pouch.get('pouchFree'), pouch.get('com') or 'not found')
+        return SKIP, 'pouch: the Loot Bag is full'
+    parts.append('Loot Bag carried: the Legendary flew, the Common went to the %s' % pouch['com'])
+    if rarity.get('lootFrom') is not None and int(rarity['lootFrom']) > 4:
+        return FAIL, 'rarity: a Legendary floor was kept (%s): the Rarity Autoloot goes up to Rare (4)' % rarity['lootFrom']
+    if not rarity.get('unlocked'):
+        return SKIP, 'rarity: the Rarity Autoloot was not on during the kill'
+    if rarity.get('rare') not in TAKEN:
+        if int(rarity.get('bpFree') or 0) > 0:
+            return FAIL, 'rarity: the Rarity Autoloot (floor %s) left the Rare sword (%s) with room in the backpack' % (rarity.get('lootFrom'), rarity.get('rare') or 'not found')
+        return SKIP, 'rarity: the backpack is full'
+    parts.append('Rarity Autoloot on (a Legendary floor read as %s): the Legendary flew, the Rare went to the %s' % (rarity.get('lootFrom'), rarity['rare']))
+    return PASS, '; '.join(parts)
+
+
+async def check_loot_explosion_pouch(io, name, cls, level):
+    """O749: a real kill with three marked swords (TEST ONLY helper): with the Loot Bag carried and with the Rarity Autoloot on, the Legendary flies with the
+    explosion and the basics go to the pouch or the backpack"""
+    key = 'loot_explosion_pouch'
+    await io.helper('bag wipe', 'bag', 8.0)   # room in the backpack for the Rarity Autoloot's Rare and the Loot Bag the helper makes
+    await io.go('hunt')                       # open ground: the explosion keeps loot out of a protection zone
+    await io.sleep(SETTLE)
+    pouch = await io.helper('explode pouch', 'explode', 15.0)   # the kill, then 3.5 s of flight: the answer comes 5-10 s later
+    await io.sleep(1.0)
+    rarity = await io.helper('explode rarity', 'explode', 15.0)
+    return Result(key, name, cls, *loot_pouch_verdict(pouch, rarity))
 
 
 LOOT_REFUSAL = 'belongs to someone else'   # the words of loot_explosion.lua `onMoveItem`: "That loot belongs to someone else for 42 more seconds."
@@ -11514,6 +11573,7 @@ CHECKS = [
     ('chore_pass', check_chore_pass, lambda c: True),   # O653: the season pass: claim what the tier holds (a tester is on no season board)
     ('loot_explosion', check_loot_explosion, lambda c: True),
     ('loot_stranger', check_loot_stranger, lambda c: True),   # O671: the loot of a kill dragged by a stranger (refused), the owner and a party member (taken): two bots   # O669: a loot bag of the bot's own explodes onto the ground, owned; Loot all picks it up
+    ('loot_explosion_pouch', check_loot_explosion_pouch, lambda c: True),   # O749: with the Loot Bag carried and the Rarity Autoloot on, the Legendary still flies, the basics go to the pouch / backpack
     ('loot_burst', check_loot_burst, lambda c: True),   # O678: the loot burst on the wire: explode message vs landings, stock effects for a stranger and with burst off, st rows
     ('chore_chests', check_chore_chests, lambda c: True),   # O653: the Weekly Chest gives a tester nothing; the Ember Cache answers
     ('chore_candlemarks', check_chore_candlemarks, lambda c: True),   # O653: Osric's shop: the cheapest offer the bot can pay

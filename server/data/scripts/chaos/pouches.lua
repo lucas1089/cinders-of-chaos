@@ -627,6 +627,9 @@ local function collect(monster, corpse)
 	Chaos.containerBurst(owner, function()
 		for _, item in ipairs(corpse:getItems() or {}) do
 			local info = infoOf(item, list)
+			-- O749: the best drops always fly (loot_explosion.lua at 98); the pouches take only the basics
+			info.explode = ChaosLootExplosion ~= nil and ChaosLootExplosion.mustExplodeItem ~= nil
+				and ChaosLootExplosion.mustExplodeItem(item, corpse) or nil
 			local kinds, spilled = P.plan(info, rules, s, c, pouches)
 			if #kinds > 0 then
 				-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)

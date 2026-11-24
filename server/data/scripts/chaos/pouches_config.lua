@@ -46,9 +46,12 @@ ChaosPouchesConfig = {
 		loot = {id = 32081, sourceId = 11242, clientId = 38608, oldClientId = 33653,
 			capacity = 500, weight = 100, title = "Loot Bag", article = "a",
 			name = "loot bag", plural = "loot bags", weightless = true,
-			collects = "all the loot of your kills, as its rules pick (Loot Filter > Loot Bag)",
-			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the loot of your kills goes " ..
-				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it."},
+			-- O749 (owner 2026-11-24, "Híbrido"): only the basics; Legendary and up, sets, uniques and cards always fly
+			-- (loot_explosion_config.lua alwaysExplode)
+			collects = "the basics of your kills' loot, as its rules pick (Loot Filter > Loot Bag)",
+			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the basics of your kills' loot go " ..
+				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it. Legendary and " ..
+				"better, set pieces, uniques and cards always fly to the ground."},
 		orbs = {id = 32082, sourceId = 9775, clientId = 38609, oldClientId = 33651,
 			capacity = 100, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",

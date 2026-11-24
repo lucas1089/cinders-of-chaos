@@ -461,6 +461,27 @@ local cAll = corpse(hero.id, {junk2, rare2, plain2})
 drop(nil, cAll)
 eq(junk2.parent, lootPouch, "defaults: other loot -> Loot Bag") eq(rare2.parent, lootPouch, "defaults: rare gear -> Loot Bag")
 eq(plain2.parent, lootPouch, "defaults: plain gear -> Loot Bag")
+-- O749 (owner 2026-11-24, "Híbrido"): the Loot Bag takes only the basics; an item the explosion rule names (Legendary and up, a set
+-- piece, a unique, a card: ChaosLootExplosion.mustExplodeItem) stays in the bag to fly, whatever the rules say
+do
+	local savedLX = ChaosLootExplosion
+	local asked = 0
+	ChaosLootExplosion = {mustExplodeItem = function(it, c)
+		asked = asked + 1
+		return c ~= nil and (it.custom and it.custom.o749fly) == 1
+	end}
+	local legend, basic = item(2404, {cat = "equipment", rarity = 5, custom = {o749fly = 1}}), item(2405, {cat = "equipment", rarity = 2})
+	local cFly = corpse(hero.id, {legend, basic})
+	drop(nil, cFly)
+	eq(legend.parent, cFly, "O749: an item that must fly stays in the bag, the Loot Bag does not take it")
+	eq(basic.parent, lootPouch, "O749: the basics still go into the Loot Bag")
+	ok(asked >= 2, "the pouch step asks the explosion rule for every item")
+	eq(#(P.plan({id = 1, category = "equipment", rarity = 5, explode = true}, P.defaults(cfg), P.sets(cfg), cfg, {loot = true, orbs = true})),
+		0, "plan: an item that must fly gets no pouch")
+	eq(#(P.plan({id = 1, category = "equipment", rarity = 5}, P.defaults(cfg), P.sets(cfg), cfg, {loot = true, orbs = true})),
+		1, "plan: the same item without the rule goes to the Loot Bag (the defaults)")
+	ChaosLootExplosion = savedLX
+end
 -- the Gem Pouch: gems go there, the Orbs Pouch keeps orbs and shards; without it the Orbs Pouch takes gems again
 do
 	local gemPouch = PO.create(hero, "gems")

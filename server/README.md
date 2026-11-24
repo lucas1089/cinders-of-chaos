@@ -6666,7 +6666,7 @@ autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
-| Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 500 (paged), weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
+| Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 500 (paged), weightless | 250 | all the basic loot of your kills by default (its rules, below, can narrow it); never Legendary and up, set pieces, uniques or cards: they fly (O749, "Hybrid loot (O749)"); the Auto Seller sells what is in it |
 | Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
 | Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 | Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
@@ -20469,10 +20469,11 @@ not changed.
 - *Rare-drop message*: every glowing item (not orbs) gives a coloured line `Rare drop: [Legendary] Dawnforged Helmet`
   (`Unique drop: [Unique] ...`) over the map. TFS text messages have no colour, so these go through the opcode.
 - *Rarity Autoloot* (store unlock, see below): *leave list gear below* Z keeps autoloot-list equipment of a lower rarity in
-  the corpse; *also pick up gear from* W autoloots equipment with rarity >= W, and uniques, even when they are not on the
-  autoloot list. Uniques, orbs and coins are never held back.
-- Presets: *Show all* (Magic+ glows, nothing dimmed), *Hunter* (Rare+ glows, Common and plain gear dimmed, picks up Rare+),
-  *Strict* (Legendary+ glows, gear below Rare dimmed, supplies and other dimmed, leaves list gear below Rare, picks up Legendary+).
+  the corpse; *also pick up gear from* W autoloots equipment with rarity >= W **up to Rare** (O749), even when it is not on the
+  autoloot list. Uniques, orbs and coins are never held back. Legendary and up, set pieces, uniques and cards are never taken:
+  they fly (see "Hybrid loot (O749)").
+- Presets: *Show all* (Magic+ glows, nothing dimmed), *Hunter* (Rare+ glows, Common and plain gear dimmed, picks up Rare),
+  *Strict* (Legendary+ glows, gear below Rare dimmed, supplies and other dimmed, leaves list gear below Rare, picks up Rare).
   Thresholds are stored as stored ids (1-5, 10); a saved old id is clamped on read.
   Presets keep the two display options (icons, rare-drop message).
 - Settings live in one storage value per character, `Chaos.storage.lootFilter` (7100500), packed by `F.pack`; the client
@@ -20577,7 +20578,9 @@ Store -> Convenience -> "Rarity Autoloot", 300 Chaos Coins, `kind = "unlock"`, `
 `Chaos.storage.shopRarityAutoloot` (7100106), handled by `S.unlocks` in `shop_services.lua`. Without it the two Rarity
 Autoloot selectors are greyed in the window with a store hint and the server ignores them (`F.autoloot` returns nil);
 glow, dim, rare-drop lines, rays and the loot channel are free. Checked in game: before buying, an Exotic sword off the list
-stayed in the corpse; after buying (Strict) it was picked up and a Common list sword stayed.
+stayed in the corpse; after buying (Strict) it was picked up and a Common list sword stayed. Since O749 the floor goes up to
+Rare (`F.LOOT_FROM_MAX` 4, client `L.LOOT_FROM_MAX`, the selector lists Common to Rare); a Legendary or Divine floor saved
+before reads as Rare, so such a player now also picks up Rares. Legendary and up fly to the ground.
 
 ### Loot beams
 - Owner request: the old rays (below) read as a red splash over the corpse that covered the next tiles and the
@@ -31498,9 +31501,9 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
 
 - **Frame.** Warden Ysolde of the Ashen Vigil (a stall of the hub market) swears the "cinder-born" (what the temple gives back) into the Oath, a vow at a time; the last
   page is a door and behind it the first Warden, Vael Ashmourn, who refused to swear. No new NPC.
-- **Steps** (103, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
+- **Steps** (122, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
   II The Oath of the Forge (15-29), III The Oath of the Many (30-99), IV The Oath of Ascension (100-199), V The Oath of the Deep (200-299), VI The Oath of Ruin (300-500),
-  VII The Unsworn Warden (500), VIII Beyond the Oath (epilogue cards of the later systems, never gating). A step is a list of conditions `conds`, all must hold:
+  VII The Unsworn Warden (500), VIII Beyond the Oath (17 steps 525-2000 since O750, below; then epilogue cards, never gating). A step is a list of conditions `conds`, all must hold:
   `count` (kill N monsters of the names `mons`; with `item` a quest drop that falls only while the step is open, a real item since O553 (below): the chance per kill makes
   the step take about its minutes, `drop.killsPerMinute` 6, a pity drop after 3 x the expected kills), `visit` (within
   `radius` of the hunting mark), `talk` (Ysolde heard "oath"/"juramento": her script, own Lua state, sets the talk flag; with `bring` = the key of a drop step she takes its
@@ -31587,6 +31590,29 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
   cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. O553 adds to the first one: marking, delivery (bag, backpack,
   inbox), counting, a plain or foreign copy, the bring step, a lost item and the way back, the migration (four cases), the Vigil taking the Stone Hearts, skip, `credited` and the party
   on the engine file, the spawn callback. Not run on a live server or in a client.
+- **Chapter 8 "Beyond the Oath" (O750).** Levels 501-2000, built from the endgame that exists. 17 steps after the boss, all `stat`, at most 100 levels
+  apart (the test holds gaps of 25-150): spell rank 7 (525), Descent depth 10 (625), a Form I (700), Tower floor 30 (800), 25 pocket boss kills (900), dungeon
+  difficulty 4 (1000), waystone tier 1 (1100), Greater Rift tier 16 (1200), spell rank 16 (1300), waystone tier 4 (1400), Tower floor 70 (1500), Greater
+  tier 35 (1600), waystone tier 6 (1700), a Form II (1775), one pinnacle fragment (1850), a full fragment set (1925), a pinnacle boss kill (2000, the end).
+  Levels from the models: tower reach 33 at 800 and 74 at 1500, Greater reach 36 at 1500, main spell rank 7.5 at 500 and 17 at 1300, waystone tier t at
+  1000 + 100 t (`waystone_tiers_config.lua`). Awakening stays an epilogue card (about 22 hours of Seals). Story: Vael's "others" are the Ascended; the Ember-Sworn keeps the watch. pt-BR in
+  the config, the script in `docs/ROTEIRO_QUEST_PRINCIPAL.md` ("Além do Juramento").
+  * *Sources.* Probes read existing storage, so past progress counts at once (`mainquest.lua` `probeOf`, pure parts `ChaosMainQuestCore.spellUpgrades`,
+    `pinnacleStats`, `dungeonTop`, `PROBE_STATS`): spell ranks from the packed rank storage (best rank, a Form I, a Form II on any spell), pinnacle fragment
+    kinds (a killed boss counts as its 4) and kills from `pinnacle_config.lua` storage, the best `dungeon_<id>_top` of the achievement counters. Descent depth,
+    tower floor and pocket kills were counters already. Two new Next Goals own stats (`goals_config.lua` `own`, mode max): `greater_tier` (a wrap of
+    `ChaosGreater.record`, every finisher) and `waystone_tier` (a waystone clear listener, `G.onWaystoneClear`).
+  * *Who plays it.* A done character opens Chapter 8 at its next first look (`reopenFrom`): the steps far below its level pass silently as at a first look,
+    the rest pay, the line `texts.reopened`. A quiet veteran (first seen above 500) opens it once it has beaten Vael. A skipped quest stays skipped. The Vael
+    door stays open past the boss step (`doorProblem` reads `stepIndex`). The last step says `texts.allDone`.
+  * *Rewards.* `tools/mainquest_model.lua --check` holds the Oath as before and Chapter 8 apart against the ideal hunt of 501-2000: 11.9M gold, 0.42% of 2.82B
+    (limit 7%), cheap orbs only (Fate, Upheaval, Sockets), no coin. No step is a kill or drop step.
+  * *Bots.* `botPlan` gives `elsewhere` for a Chapter 8 step: the endgame check that plays its system (`M.SYSTEM_CHECKS`: `tower_walk`, `descent_walk`,
+    `pocket_walk`, `dungeon_difficulty`, `wsmap_walk`, `greater_rift`, `pinnacle_walk`, `closed_spell_ranks`, `closed_spell_forms`). `mainquest_walk` skips
+    with that name and fails when the name is no check (`tester_checks_test.py` holds every name of the table).
+  * *Client.* `game_goals` lists the Chapter 8 steps, then the epilogue cards; the chapter line counts its steps.
+  * *Tests.* `tests/mainquest_test.lua` (structure, gaps, sources, probes, reopen, quiet veteran, the last line), `mainquest_boss_test.lua` (door past the boss),
+    `goals_test.lua` (the two hooks), client `goalsview_test.lua`. Not run on a live server.
 - **Not done.** The Unity client; own sprites for the quest items (they wear the look of their stock item: a tusk, a dust, a gear wheel); English versions of Ysolde's completion lines (the English text is "Step done."); a quest item in the depot or the stash (the stash and the guild stash refuse it).
 
 ## Vael's attacks (O554, `mainquest_boss_config.lua`, `mainquest_boss_attacks_core.lua`, `mainquest_boss.lua`)
@@ -32047,7 +32073,8 @@ instead of being looted into the backpack. No coin stacks to convert, no weight.
 bank." (pt-BR in `i18n_strings.lua`); the economy telemetry counts it as faucet `autoloot_gold`.
 
 Owner 2026-10-21 ("deixe todo o loot de coin ir direto pro banco por default"): every corpse the character owns pays its
-coins into the bank, with or without a coin on the list or a Loot Bag (`G.wanted` is always true). Coins inside a bag of
+coins into the bank, with or without a coin on the list or a Loot Bag (`G.wanted` is always true). Kept by O749 (gold is a
+basic): so no coin of a normal kill reaches the loot explosion (98), whose gold path only sees coins a death event adds later. Coins inside a bag of
 the corpse (two levels deep) are paid in as well. The Loot Bag's "gold" rule no longer gets coins from kills.
 
 ## Gnome city teleports open to everyone (`tools/patch_gnome_teleports.py`, install_all step `gnometeleports`)
@@ -34567,11 +34594,14 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   refused). Check `loot_explosion` (`tester_checks.py`, every class): the loot lands, none left in the bag, within 2 tiles, all the bot's, a stranger refused; then Loot all
   by opcode 230 and the ground holds nothing of the bot's. FAIL: stuck in the bag, past ring 2, another's owner, a stranger allowed, Loot all leaving loot behind; SKIP: no
   helper, the rule off, a full backpack. The bots' own looting (`do_loot`: the loot channel's `take`) works on the items on the ground (the proxy above).
+* **Gold.** Every coin of an owned kill goes to the bank at 2.6 (`autoloot.lua`, "Autoloot gold goes to the bank"), before this step. So the gold group of the plan
+  (one stack, first to leave) only ever sees coins a death event adds after the loot step; in a normal kill no gold flies. The code stays for those coins (O749).
 * **Storage, tables, opcodes.** None new: the state is in memory and on the items (custom attributes `chaos_loot`, `lf_loot`, and `chaos_exploded` on the bag); `lootall` is a new action of opcode 230 (no new opcode, no collision).
 * **Tests.** `tests/loot_explosion_test.lua` (the core: config, spread, order, stagger, cap, fallbacks, area and second caps, encode / decode, the ownership matrix; the glue
   on a mocked engine: a kill flies and lands, gold in one stack, the attributes, the season attributes, the switch, no owner, an instance, no free tile, no sight, the cap, the
   pull over the cap, the sweeper, `onMoveItem` for a stranger / the owner / the party / staff, a part of a stack, Loot all with a full backpack and the reach, the tester
   probes), `tools/patch_loot_explosion_test.py`, client `groundlabels_test.lua`, Unity `HelperTests`, `tester_checks_test.py` (`LootExplosion`), `tester_helper_test.lua`.
+* **Hybrid loot (O749).** See "Hybrid loot (O749)" below: the auto steps take only the basics, the best drops always reach this step.
 * **Verified live (O671, "The rest of the closed audit (O589)" step 25).** The `Player:onMoveItem` hook on a real server: a stranger's drag refused with the words above, the owner's and a
   party member's accepted (`loot_stranger`, two bots); `Item:moveTo(position)` onto a tile with a creature; the failed-move guard (and its same-id stack fault, fixed); the vanishing at 180 s;
   Loot all; a kill in a rift keeps the bag. **Not verified:** that the missiles, the burst and the sparkles read as an explosion in the client; the labels and beams over 14 scattered
@@ -34609,6 +34639,45 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   piece; the kill beam (opcode 238) listed only the unique, the set piece, Divine and Legendary of eight injected items. Check `loot_burst`, helper v29 `explode set | bag`. **Not run:** the
   client's drawing (no client in that run). One gold drop is one flight with the count of its first coin (50 of 100 + 50 gold; two stacks lie there): left as it is.
 
+
+## Hybrid loot (O749) (`loot_explosion_config.lua` `alwaysExplode`, `loot_explosion_core.lua` `X.mustExplode`, `loot_explosion.lua` `X.mustExplodeItem`)
+
+Owner 2026-11-24 chose "Híbrido" (pt-BR, summary): auto loot and the pouches take only the basics (gold, stackables, supplies, Common and plain gear, cheap
+orbs, runes, keys). Legendary, Divine, set items, uniques and cards ALWAYS explode on the ground with beam and sound, even with the Loot Bag carried or the
+Rarity Autoloot on. The store sells convenience for the basics only. Roadmap O749.
+
+* **The rule.** `loot_explosion_config.lua` `alwaysExplode = {minRank = 5, sets = true, uniques = true, cards = true}`. Pure `X.mustExplode(cfg, drop)`: gear of
+  `ChaosRarity.rank` 5 (Legendary) and up, a set piece (`chaos_set` or an open set's base id), a unique (`chaos_unique`), a card (`ChaosCardsCore.isCard`); never gold.
+  `validate` refuses a `minRank` below 5 (the owner's floor). Main quest items keep their own route (`mainquest.lua`, bag or backpack). Engine side
+  `X.mustExplodeItem(item, corpse)`: true only while the explosion runs (`enabled`, a valid config) and the corpse is a loot bag; `enabled = false` gives every
+  auto step everything again.
+* **Who asks.** The loot filter snapshot (2.5, `lootfilter.lua` `snapshot`) moves every item that must fly into hold bags on the death tile (a new bag when one
+  is full: a bag holds 8) for the pouches (2.7), the base autoloot list (3) and the Rarity Autoloot (3.5), and puts them back at 4.5 (`finish`). The steps also
+  ask the rule themselves: the pouch step (`pouches.lua` `collect`, `info.explode`, `pouches_core.lua` `P.plan` gives such an item no pouch), the Rarity Autoloot
+  (`pickup`, `F.autoloot` returns nil for `info.explode`), the Auto Seller's kill sale (`autosell.lua`, onDropLoot 2: never sold, its tier ticked or not). They then
+  fly last at 98 with their beam group (`X.beamGroup`: orange, divine, set, unique) and the loot filter's sound and rare-drop line. A click to loot from the loot
+  channel (`PO.stow`) and Loot all are by hand and still put such an item into a pouch.
+* **The cap.** The plan sorts by `X.flyRank`: an item that must fly ranks at least as Legendary (a card, a Magic set piece), so the per-kill cap of 14 never leaves it
+  in the bag before a plain item.
+* **Cards.** They had no route (the Loot Bag's "other" rule took them). Now they always fly: the epic missile, the orange beam (`X.beamGroup`); the loot filter marks
+  a card as a legendary power (`info.power`, `info.card`), so it glows, beams on the ground row and plays the power sound.
+* **Instances.** Nothing explodes inside an instance (`inInstances = false`: rift, dungeon, tower, arena, raid, boss rooms). The rule holds there too, so an item
+  that must fly stays **in the loot bag** on the death tile (with the corpse beam of the loot filter); the basics are taken as everywhere.
+* **Rarity Autoloot.** The floor goes up to Rare (`F.LOOT_FROM_MAX` 4; the presets Hunter and Strict pick up Rare); a floor saved above Rare reads as Rare. Client
+  `game_lootfilter`: the selector lists Common to Rare, the tooltip says Legendary and up fly (pt-BR in `pt_br.lua`). Unity `LootFilterRules.LootFromMax`.
+* **Gold.** Unchanged: every coin of an owned kill goes to the bank at 2.6. The explosion's gold path only sees late coins (see the explosion's "Gold").
+* **Store texts.** Loot Bag: "Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set
+  pieces, uniques and cards always fly to the ground." Rarity Autoloot: "Permanent: autoloot by rarity in the Loot Filter, up to Rare: take good gear, leave
+  junk. Legendary and better, ...". The pouch's own description and `collects` line say the same; pt-BR in `i18n_strings.lua`. docs/PRICES.md.
+* **Tests.** `tests/loot_explosion_test.lua` (the rule, `flyRank`, the card's group and beam, the validation, `mustExplodeItem` on the mocked engine with the
+  switch and a non-bag corpse, a kill whose basics were taken: four flights with their beams, a card over the cap flies; the files ask the rule),
+  `tests/pouches_test.lua` (the pouch step leaves a must-fly item in the bag, the basics go in, `P.plan`), `tests/lootfilter_test.lua` (the cap, the old floors,
+  `F.autoloot` and `explode`), `tests/autosell_test.lua` (the kill sale with every tier ticked sells only the basic copy), client `lootfilter_test.lua`.
+  Tester check `loot_explosion_pouch` (`tester_checks.py`, unit test `LootExplosionPouch`), helper v45 `!tester explode pouch | rarity` (TEST ONLY): a real Demon
+  kill by the bot with three marked swords put into its bag at index 1.5 (a Legendary, a Rare, a Common); `pouch` with a Loot Bag carried (made for the run if
+  the bot has none, default rules, Rarity Autoloot off for the kill), `rarity` with the Rarity Autoloot on and a Legendary floor asked; the answer says where
+  each sword is (ground, pouch, backpack, bag), then the swords are removed and the bot's unlock, rules and filter settings put back. PASS: the Legendary flew
+  both times, the Common went to the Loot Bag, the Rare to the backpack, the floor read 4. **Not run live yet.**
 ## Death and spawn effects (O456) (`deathfx_core.lua`, `deathfx_config.lua`, `deathfx.lua`, `tests/deathfx_test.lua`)
 
 Review of the animations 2026-11-10, owner approved: a monster died and appeared with no effect of its own (the loot bag of O435 replaced

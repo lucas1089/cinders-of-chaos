@@ -339,7 +339,8 @@ shows the progress. The card text says which set it counts for. Every class can 
 - **Every monster has loot.** Each monster's loot list was checked, and the ones that dropped nothing got tables of
   their own, modelled on monsters like them: coins, gems and a small chance at themed gear.
 - **Autoloot, Rarity Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking. Rarity Autoloot
-  (store unlock) picks up gear by rarity even when it is not on your autoloot list.
+  (store unlock) picks up gear by rarity, up to Rare, even when it is not on your autoloot list. Legendary and better,
+  set pieces, uniques and cards always fly to the ground for you to pick up.
 
 ### Item sets and charms
 

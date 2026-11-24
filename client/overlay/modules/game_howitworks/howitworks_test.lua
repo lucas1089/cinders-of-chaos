@@ -27,6 +27,14 @@ local function widget(style, parent)
   function w:destroy() self.destroyed = true end
   function w:destroyChildren() self.children = {} end
   function w:getChildById(id) return self.ids[id] end
+  function w:getParent() return self.parentWidget end
+  function w:getRect() return { x = self.x or 0, y = self.y or 0, width = self.width or 0, height = self.height or 0 } end
+  function w:getWidth() return self.width or 0 end
+  function w:setWidth(v) self.width = v end
+  function w:getHeight() return self.height or 0 end
+  function w:breakAnchors() self.anchorsBroken = true end
+  function w:setPosition(p) self.x, self.y = p.x, p.y end
+  function w:destroy() self.destroyed = true end
   if parent then parent.children[#parent.children + 1] = w end
   return w
 end
@@ -98,6 +106,38 @@ eq(hasGoal('rift6'), true, 'hasGoal rift6')
 eq(hasGoal('lvl300'), false, 'hasGoal level goal')
 eq(showForUnlock('rifts'), true, 'showForUnlock')
 eq(root.text, 'How it works: Rifts', 'rift card title')
+
+-- the card keeps left of the side dock (O732 follow-up): a 330 px dock leaves the centred card clear, a dock widened for
+-- Character Info (714 px) would be under it
+local screen = widget('Root')
+screen.width, screen.height = 1280, 720
+root.parentWidget, root.width, root.height = screen, 520, 440
+ChaosDock = { coverRight = function() return 330 end }
+show('arena')
+eq(root.x, 380, 'a narrow dock: centred is clear of it'); eq(root.y, 140, 'centred in height')
+ChaosDock = { coverRight = function() return 714 end }
+show('arena')
+eq(root.x, 1280 - 714 - 8 - 520, 'a wide dock: left of it, 8 px clear')
+ChaosDock = { coverRight = function() return 330 end }
+show('arena')
+eq(root.x, 380, 'narrow again')
+modules = { game_chaosdock = { ChaosDock = { coverRight = function() return 714 end } } }
+reposition()
+eq(root.x, 38, 'the dock widened after the card opened: the dock module (sandboxed) is read, the card moves')
+modules = { game_chaosdock = { ChaosDock = { coverRight = function() return 940 end } } }
+reposition()
+eq(root.x, 0, 'a Market dock: the card at the left edge'); eq(root.width, 332, 'narrowed to the room left of it')
+modules = { game_chaosdock = { ChaosDock = { coverRight = function() return 0 end } } }
+reposition()
+eq(root.width, 520, 'dock closed: its own width again'); eq(root.x, 380, 'centred')
+modules = nil
+ChaosDock = { coverRight = function() return 0 end }
+show('arena')
+eq(root.x, 380, 'dock closed: centred again')
+root.x = nil
+show('arena')
+eq(root.x, nil, 'never moved while no dock covers the screen')
+ChaosDock = nil
 eq(showForGoal('wb1'), true, 'showForGoal')
 eq(root.text, 'How it works: Boss Spawns', 'boss card title')
 local row = widget('GoalRow')
@@ -147,6 +187,19 @@ setAuto(true)
 attach(widget('TowerWindow'), 'tower')
 eq(root.visible, true, 'another character gets its own first time')
 hide()
+
+-- a window of many pages (game_chaosinfo, O732 follow-up): the card of the page shown, none on a page without one
+g_game = { getCharacterName = function() return 'Cy' end }
+local info = widget('InfoWindow')
+detach(info)
+eq(info.howButton, nil, 'detach on a bare window: nothing')
+attach(info, 'invasion')
+eq(root.text, 'How it works: Invasions', 'the Events page opens its card the first time')
+hide()
+detach(info)
+eq(info.howKey, nil, 'another page: no card key'); eq(info.howButton == nil, true, 'and no button')
+info:hide(); info:show(); handlers[info].onVisibilityChange(info, true)
+eq(root.visible, false, 'shown on a page with no card: no card')
 
 print(string.format('howitworks: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

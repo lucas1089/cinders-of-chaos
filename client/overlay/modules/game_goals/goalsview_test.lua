@@ -199,6 +199,15 @@ eq(#V.mqSteps(mqs.mq, 2), 2, 'two steps in chapter 2')
 eq(V.mqChapterLine(mqs.mq.chapters[1]), 'Cinder-Born  2/3', 'chapter line'); eq(V.mqChapterLine(mqs.mq.chapters[3]), 'Beyond the Oath', 'epilogue has no count')
 eq(V.mqStepLine(mqs.mq.steps[1]), '[x] Meet Ysolde', 'a done step'); eq(V.mqStepLine(mqs.mq.steps[3]), '[>] Slay 12 Trolls  (level 8)', 'the open step')
 eq(V.mqStepLine(mqs.mq.steps[5]), '[ ] Use an orb  (level 20)', 'a step to come')
+-- O750: Chapter 8 has steps: its line counts them and the window opens on it when its step is open
+eq(V.mqChapterLine({ n = 8, name = 'Beyond the Oath', done = 3, total = 17 }), 'Beyond the Oath  3/17', 'Chapter 8 with steps counts')
+local late = V.new()
+V.onMQ(late, { state = 0, step = 2, count = 2,
+  chapters = { { n = 7, name = 'The Unsworn Warden', done = 1, total = 1 }, { n = 8, name = 'Beyond the Oath', done = 0, total = 1 } },
+  steps = { { i = 1, key = 'boss', ch = 7, level = 500, title = 'Slay Vael', hint = 'h', state = 'done' },
+    { i = 2, key = 'b_rank', ch = 8, level = 525, title = 'Raise a spell to rank 7', hint = 'h', state = 'open' } },
+  epilogue = { { key = 'raid', level = 800, title = 'Raid', text = 't' } } })
+eq(V.mqChapter(late.mq), 8, 'the window opens on Chapter 8'); eq(#V.mqSteps(late.mq, 8), 1, 'its step is listed')
 -- the quest items of the open step (O553): the held count after the title
 V.onMQ(mqs, { state = 0, step = 1, count = 2, chapters = {}, epilogue = {},
   steps = { { i = 1, key = 'tusks', ch = 1, level = 8, title = 'Collect 6 Troll Tusks', hint = 'h', state = 'open',

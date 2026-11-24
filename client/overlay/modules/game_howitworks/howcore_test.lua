@@ -106,5 +106,17 @@ eq(mt == 7 and mr == 22, true, 'no padding: 7 and 22')
 mt, mr = H.buttonMargins(nil, 'x')
 eq(mt == 7 and mr == 22, true, 'unknown padding counts as none')
 
+-- the card left of the side dock (O732 follow-up)
+eq(H.cardX(0, 1280, 520, 0), 380, 'no dock: centred')
+eq(H.cardX(0, 1280, 520, 330), 380, 'a narrow dock: centred is clear')
+eq(H.cardX(0, 1280, 520, 714), 38, 'a wide dock: left of it, 8 px clear')
+eq(H.cardX(0, 1280, 520, 1000), 0, 'never left of the screen')
+local x, w = H.cardFit(0, 1280, 520, 940)
+eq(x == 0 and w == 332, true, 'Market dock (940): the card narrows to the room left of it')
+x, w = H.cardFit(0, 1280, 520, 1100)
+eq(x == 0 and w == H.MIN_CARD, true, 'no room: the narrowest card')
+x, w = H.cardFit(0, 1280, 520, 0)
+eq(x == 380 and w == 520, true, 'no dock: its own width, centred')
+
 print(string.format('howcore: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

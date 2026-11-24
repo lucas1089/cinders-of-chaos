@@ -26,7 +26,9 @@ return {
 	-- the death tile itself is a last resort: only when no other tile is free (its cost, above every ring tile's)
 	originPenalty = 6.0,
 
-	-- caps. A kill puts at most `maxItems` things on the ground (all its gold counts as one, in one stack per tile); the rest
+	-- caps. A kill puts at most `maxItems` things on the ground (all its gold counts as one, in one stack per tile; in practice no
+	-- coin is left by then: autoloot.lua banks every coin of an owned kill at 2.6, so the gold group only sees late coins a death
+	-- event adds, O749); the rest
 	-- stays in the small bag on the death tile (the lowest rarities stay, the rarest fly). A pull cannot flood a place: at most
 	-- `maxPerAreaSecond` items in one `areaSize` x `areaSize` square of tiles per second and `maxPerSecond` on the whole map;
 	-- a kill over a cap leaves everything in its bag, as before.
@@ -75,6 +77,15 @@ return {
 	-- attributes the loot layers write on the bag that the items must carry on the ground too (the season isolation and the
 	-- Self-Found owner: season_config.lua isolation.tagKey, modes.ownerKey)
 	inheritAttributes = {"chaos_realm", "chaos_owner"},
+
+	-- O749 (owner 2026-11-24, "Híbrido"): the auto steps take only the basics. An item this rule names is never taken by the Loot
+	-- Bag pouch (pouches.lua), the Rarity Autoloot and the base autoloot list (lootfilter.lua holds it back from 2.5 to 4.5) or
+	-- sold by the Auto Seller (autosell.lua): it stays in the bag until this step and flies last, with its beam and sound
+	-- (ChaosLootExplosion.mustExplode, loot_explosion_core.lua). minRank: ChaosRarity.rank from which gear always flies (5 =
+	-- Legendary, so Divine too); sets, uniques, cards: those always fly, whatever their rarity. Main quest items keep their own
+	-- route (mainquest.lua). Inside an instance (inInstances below) nothing explodes: these items stay in the loot bag there.
+	-- The rule holds only while the explosion runs (enabled, a valid config): with enabled = false the auto steps take all again.
+	alwaysExplode = {minRank = 5, sets = true, uniques = true, cards = true},
 
 	-- kills inside an instance (rift, dungeon, tower, arena, raid, boss rooms: Chaos.instanceAt) keep the bag: the instance
 	-- ends and clears its area, and what lay on the floor would go with it. true = explode there too.

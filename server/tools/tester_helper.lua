@@ -126,7 +126,7 @@ local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 -- chaos-ctl.sh reads this line: a server that still runs an older copy (no "v" or another number in its "running" line)
 -- counts as "helper not loaded", so `testers start` restarts it. Raise it with every change of the helper files.
-HELPER_VERSION = 44
+HELPER_VERSION = 45
 TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
 T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
@@ -2666,7 +2666,7 @@ function commands.goblin(player, arg)
 	end
 end
 
--- "!tester explode [state | run]" (O669, loot_explosion.lua testerRun / testerProbe): `run` puts a loot bag of the bot's own on its tile
+-- "!tester explode [state | run | pouch | rarity]" (O669, loot_explosion.lua testerRun / testerProbe; pouch / rarity: O749, T.o749Run below): `run` puts a loot bag of the bot's own on its tile
 -- with known loot and explodes it by the real rule (gold in one stack, the items on free tiles within 2, owned by the bot); `state` reads what lies
 -- within 4 tiles (the owner, the farthest ring, the tiles, what is left in a bag) and whether a stranger would be refused. The bot then asks Loot all
 -- by opcode 230 and reads `state` again. TEST ONLY, a tester only, as every command of this file.
@@ -2680,6 +2680,16 @@ function commands.explode(player, arg)
 	local LE = ChaosLootExplosion
 	if not (LE and LE.testerRun and LE.testerProbe and LE.testerJoin) then
 		tell(player, "explode", {err = "no loot explosion"})
+		return
+	end
+	if what == "pouch" or what == "rarity" then
+		local pid = player:getId()
+		T.o749Run(player, what, function(r)
+			local p = Player(pid)
+			if p then
+				tell(p, "explode", r)
+			end
+		end)
 		return
 	end
 	if what == "run" or what == "set" or what == "bag" then
@@ -5868,6 +5878,208 @@ function commands.spellup(player, arg)
 		SU.log[pid], SU.fires[pid], T.sig[pid], T.fstat[pid], SU.casts[pid] = {}, {}, {}, {}, {}
 		tell(player, "spellup", {cleared = true})
 	end
+end
+
+-- ---------------------------------------------------------------- O749 the best drops fly past the auto steps
+-- "!tester explode pouch | rarity" (owner 2026-11-24, "Híbrido"): a real kill (a Demon next to the bot, hit down by the bot on the engine's death path, so
+-- the whole onDropLoot chain runs: the auto seller, the pouches, the base autoloot, the Rarity Autoloot, the explosion) with three marked swords put
+-- into its loot bag at index 1.5 (after the loot layer, before every auto step): a Legendary, a Rare and a Common. `pouch`: the bot carries a Loot Bag
+-- with its default rules (everything), the Rarity Autoloot locked for the kill. `rarity`: the Rarity Autoloot unlocked with a Legendary floor asked
+-- (the server makes it Rare, O749). 4 s later the answer says where each sword is: ground (it flew, owned by the bot), pouch, backpack, bag (still in
+-- the loot bag) or gone; then the marked swords are removed and the bot's state is put back (the Loot Bag made for the run, the unlock, the rules,
+-- the loot filter settings). TEST ONLY, a tester only, as every command of this file.
+T.o749 = T.o749 or {} -- player id -> {done = bool}: the next kill of this bot gets the three swords
+T.O749_MARK = "tester_o749"
+T.O749_SWORDS = {{key = "leg", rarity = 5}, {key = "rare", rarity = 4}, {key = "com", rarity = 1}}
+if not T.o749Cb then
+	T.o749Cb = true
+	local o749cb = EventCallback
+	o749cb.onDropLoot = function(self, corpse)
+		local ok, err = pcall(function()
+			local owner = corpse and corpse.getCorpseOwner and Player(corpse:getCorpseOwner())
+			local want = owner and T.o749[owner:getId()]
+			if not want or want.done then
+				return
+			end
+			want.done = true
+			want.corpsePos = corpse:getPosition()
+			for _, sw in ipairs(T.O749_SWORDS) do
+				local it = corpse:addItem(2376, 1)
+				if it then
+					it:setCustomAttribute("rarity", sw.rarity)
+					it:setCustomAttribute(T.O749_MARK, sw.key)
+				end
+			end
+		end)
+		if not ok then
+			print("[tester-helper] O749 swords: " .. tostring(err))
+		end
+	end
+	o749cb:register(1.5)
+end
+
+-- where each marked sword is: {leg = "ground" | "pouch" | "backpack" | "bag" | nil, ...}; the marked swords are removed
+local function o749Find(player, at)
+	local where, found = {}, {}
+	local PO = ChaosPouches
+	local lootPouch = PO and PO.carried and PO.carried(player).loot or nil
+	local function mark(item)
+		local okM, v = pcall(function() return item:getCustomAttribute(T.O749_MARK) end)
+		return okM and v or nil
+	end
+	local function walk(container, place, depth)
+		local okI, items = pcall(function() return container:getItems() end)
+		for _, it in ipairs(okI and items or {}) do
+			local m = mark(it)
+			if m then
+				where[m] = place
+				found[#found + 1] = it
+			elseif it:isContainer() and depth < 4 then
+				walk(it, (lootPouch and it == lootPouch) and "pouch" or place, depth + 1)
+			end
+		end
+	end
+	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
+		local it = player:getSlotItem(slot)
+		if it and it:isContainer() then
+			walk(it, (lootPouch and it == lootPouch) and "pouch" or "backpack", 0)
+		end
+	end
+	local okP, purse = pcall(function() return player:getStoreInbox() end)
+	if okP and purse then
+		walk(purse, "backpack", 0)
+	end
+	if lootPouch then
+		walk(lootPouch, "pouch", 0)
+	end
+	if at then
+		for dx = -4, 4 do
+			for dy = -4, 4 do
+				local tile = Tile(Position(at.x + dx, at.y + dy, at.z))
+				for _, it in ipairs(tile and tile:getItems() or {}) do
+					local m = mark(it)
+					if m then
+						local info = ChaosLootExplosion and ChaosLootExplosion.infoOf and ChaosLootExplosion.infoOf(it)
+						where[m] = (info and info.owner == player:getId()) and "ground" or "ground_other"
+						found[#found + 1] = it
+					elseif it:isContainer() then
+						walk(it, "bag", 3)
+					end
+				end
+			end
+		end
+	end
+	for _, it in ipairs(found) do
+		pcall(function() it:remove() end)
+	end
+	return where
+end
+
+function T.o749Run(player, mode, done)
+	local ST = Chaos.storage
+	local pcfg = ChaosPouchesConfig
+	local PO = ChaosPouches
+	if not (ChaosLootExplosion and ChaosLootExplosion.mustExplodeItem and PO and PO.create and pcfg and ST and ST.shopRarityAutoloot) then
+		return done({err = "no loot explosion or pouches (an engine before O749)"})
+	end
+	local LF = ChaosLootFilter
+	local pid = player:getId()
+	local saved = {unlock = player:getStorageValue(ST.shopRarityAutoloot), filter = player:getStorageValue(ST.lootFilter),
+		rules = player:getStorageValue(pcfg.storage.lootRules)}
+	local made
+	if mode == "pouch" then
+		if not PO.carried(player).loot then
+			made = PO.create(player, "loot")
+			if not made or player:addItemEx(made) ~= (RETURNVALUE_NOERROR or 0) then
+				return done({err = "no room for a Loot Bag in the backpack"})
+			end
+		end
+		player:setStorageValue(pcfg.storage.lootRules, -1) -- the defaults: everything
+		player:setStorageValue(ST.shopRarityAutoloot, 0)
+	else
+		player:setStorageValue(ST.shopRarityAutoloot, 1)
+		if LF and LF.pack and LF.sanitize then
+			-- a Legendary floor asked, as a player who chose it before O749 had: the server makes it Rare (lootfilter_core.lua F.LOOT_FROM_MAX)
+			player:setStorageValue(ST.lootFilter, LF.pack(LF.sanitize({lootFrom = 5, lootMin = 0})))
+		end
+	end
+	local function restore()
+		local p = Player(pid)
+		if not p then
+			return
+		end
+		p:setStorageValue(ST.shopRarityAutoloot, saved.unlock)
+		p:setStorageValue(ST.lootFilter, saved.filter)
+		p:setStorageValue(pcfg.storage.lootRules, saved.rules)
+		if made then
+			pcall(function() made:remove() end)
+		end
+	end
+	local out = {mode = mode}
+	if LF and LF.unpack then
+		local okS, s = pcall(LF.unpack, player:getStorageValue(ST.lootFilter))
+		out.lootFrom = okS and s and s.lootFrom or nil
+	end
+	local tile = Tile(player:getPosition())
+	if tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		local street = outsidePz(player:getPosition(), KILL_STREET)
+		if street then
+			player:teleportTo(street)
+		end
+	end
+	local spot = freeNear(player:getPosition(), nil, 2)
+	if not spot then
+		restore()
+		return done({err = "no free tile next to the bot"})
+	end
+	local okM, m = pcall(Game.createMonster, KILL_MONSTER, spot, false, true)
+	if not okM or not m then
+		restore()
+		return done({err = "the monster could not be made"})
+	end
+	local mid = m:getId()
+	T.o749[pid] = {done = false}
+	hitDown(pid, mid, out)
+	local rounds = 0
+	local function read()
+		local p = Player(pid)
+		local left = Monster(mid)
+		if left and left:getHealth() > 0 and rounds < KILL_ROUNDS and p then
+			rounds = rounds + 1
+			hitDown(pid, mid, out)
+			return addEvent(read, KILL_READ_MS)
+		end
+		if left then
+			left:remove()
+		end
+		local want = T.o749[pid]
+		T.o749[pid] = nil
+		if not p then
+			return
+		end
+		if not want or not want.done then
+			restore()
+			return done({err = "the kill gave no loot bag of the bot's (the monster did not die, or another player owns it)", mode = mode})
+		end
+		-- the flight: the last item leaves after at most 14 x 80 ms and flies at most 1.5 s
+		addEvent(function()
+			local p2 = Player(pid)
+			if not p2 then
+				return
+			end
+			local w = o749Find(p2, want.corpsePos)
+			out.leg, out.rare, out.com = w.leg, w.rare, w.com
+			local pouch = PO.carried(p2).loot
+			out.pouch = pouch ~= nil
+			out.pouchFree = pouch and (pouch:getCapacity() - pouch:getSize()) or 0
+			local bp = p2:getSlotItem(CONST_SLOT_BACKPACK)
+			out.bpFree = bp and bp:isContainer() and (bp:getCapacity() - bp:getSize()) or 0
+			out.unlocked = p2:getStorageValue(ST.shopRarityAutoloot) > 0
+			restore()
+			done(out)
+		end, 3500)
+	end
+	addEvent(read, KILL_READ_MS)
 end
 
 T.FILE = "data/scripts/zz_tester_helper.lua"

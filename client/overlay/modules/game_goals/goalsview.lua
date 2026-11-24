@@ -118,7 +118,8 @@ function V.mqChapter(mq)
 end
 
 function V.mqChapterLine(c)
-  if num(c.n) >= 8 then return tostring(c.name or '') end
+  -- the epilogue chapter has no count while it holds no steps (O750: Chapter 8 has steps)
+  if num(c.n) >= 8 and num(c.total) == 0 then return tostring(c.name or '') end
   return tr('%s  %d/%d', tostring(c.name or ''), num(c.done), num(c.total))
 end
 

@@ -791,7 +791,7 @@ function M.hitAmount(base, share, resistPct, cap)
 	return max(1, floor(num(base, 0) * num(share, 0) * (1 - r / 100)))
 end
 
--- the door of the last page. ctx: {level, state, stepKey, sheetSafe = bool, cooldownLeft, won}. Returns nil (open) or a text key
+-- the door of the last page. ctx: {level, state, stepKey, stepIndex, sheetSafe = bool, cooldownLeft, won}. Returns nil (open) or a text key
 function M.doorProblem(cfg, ctx)
 	local b = cfg.boss
 	if num(ctx.level, 0) < b.minLevel then
@@ -800,8 +800,12 @@ function M.doorProblem(cfg, ctx)
 	if not ctx.sheetSafe then
 		return "door_closed"
 	end
+	-- while the quest runs the door waits for the boss step; a character past it (Chapter 8, O750) keeps the door
 	if ctx.state == cfg.states.active and ctx.stepKey ~= "boss" then
-		return "door_closed"
+		local bi = M.indexOf(cfg, "boss")
+		if not (bi and ctx.stepIndex and floor(num(ctx.stepIndex, 0)) > bi) then
+			return "door_closed"
+		end
 	end
 	if num(ctx.cooldownLeft, 0) > 0 then
 		return "door_cooldown"
@@ -895,6 +899,90 @@ function M.talk(cfg, get, set, items)
 	return "wait"
 end
 
+-- ------------------------------------------------------------------------------------------------- the late chapter (O750)
+-- Chapter 8 "Beyond the Oath" points at the endgame systems. Their facts are read from what the systems already keep, so a
+-- character that did the thing before O750 is credited at once (no hook can see the past):
+--   spell_rank / spell_forms / spell_form2   the packed state of every ranked spell (spell_ranks_config.lua storage.rankBase +
+--                                            spell id: rank + 32 x Form I + 128 x Form II + 512 x awakened, spell_ranks_core.lua
+--                                            P.pack): the best rank, the spells with a Form I, the spells with a Form II
+--   pinnacle_kinds / pinnacle_kills          the pinnacle block (pinnacle_config.lua storage): the most fragment kinds held for one
+--                                            boss (a character that killed a pinnacle boss spent a whole set: 4), the kills of all
+--   dungeon_difficulty                       the best difficulty of a won generated dungeon (achievement counters
+--                                            dungeon_<id>_top, areagen.lua onClear)
+-- greater_tier and waystone_tier are Next Goals own stats (goals.lua hooks ChaosGreater.record and the waystone clear listener).
+M.PROBE_STATS = {spell_rank = "spells", spell_forms = "spells", spell_form2 = "spells", pinnacle_kinds = "pinnacle",
+	pinnacle_kills = "pinnacle", dungeon_difficulty = "dungeons"}
+
+-- the spell numbers from a list of packed values (one per ranked spell)
+function M.spellUpgrades(packed)
+	local out = {spell_rank = 0, spell_forms = 0, spell_form2 = 0}
+	for _, v in ipairs(packed or {}) do
+		v = floor(num(v, 0))
+		if v > 0 then
+			local rank, f1, f2 = v % 32, floor(v / 32) % 4, floor(v / 128) % 4
+			out.spell_rank = max(out.spell_rank, rank)
+			if f1 > 0 then
+				out.spell_forms = out.spell_forms + 1
+			end
+			if f2 > 0 then
+				out.spell_form2 = out.spell_form2 + 1
+			end
+		end
+	end
+	return out
+end
+
+-- the pinnacle numbers: pcfg = pinnacle_config.lua, read(key) -> a storage value
+function M.pinnacleStats(pcfg, read)
+	local s = pcfg and pcfg.storage
+	local out = {pinnacle_kinds = 0, pinnacle_kills = 0}
+	if not s then
+		return out
+	end
+	for b = 1, #(pcfg.bosses or {}) do
+		local kinds = 0
+		for kind = 1, 4 do
+			if num(read(s.base + s.frag + (b - 1) * 4 + (kind - 1)), 0) > 0 then
+				kinds = kinds + 1
+			end
+		end
+		local kills = max(0, floor(num(read(s.base + s.kills + b - 1), 0)))
+		out.pinnacle_kills = out.pinnacle_kills + kills
+		out.pinnacle_kinds = max(out.pinnacle_kinds, kills > 0 and 4 or kinds)
+	end
+	return out
+end
+
+-- the best difficulty of a won generated dungeon from the achievement counters of a character
+function M.dungeonTop(stats)
+	local best = 0
+	for k, v in pairs(stats or {}) do
+		if type(k) == "string" and k:match("^dungeon_.+_top$") then
+			best = max(best, floor(num(v, 0)))
+		end
+	end
+	return best
+end
+
+-- a finished quest opens again when steps were added after the one it ended on (state done, the stored step a real step now)
+function M.reopens(cfg, state, step)
+	step = floor(num(step, 0))
+	return state == cfg.states.done and step >= 1 and step <= #cfg.steps
+end
+
+-- O750: the step a quest that ended or never ran opens again at, or nil. Done: from the stored step (M.reopens). Quiet (first seen above
+-- quietAbove) and Vael beaten (won): from the first step after the boss, so a veteran who took the door plays Chapter 8 too
+function M.reopenFrom(cfg, state, step, won)
+	if M.reopens(cfg, state, step) then
+		return floor(num(step, 0))
+	end
+	local bi = M.indexOf(cfg, "boss")
+	if state == cfg.states.quiet and won and bi and bi < #cfg.steps then
+		return bi + 1
+	end
+	return nil
+end
+
 -- ------------------------------------------------------------------------------------------------- the tester bots (O599, O650)
 -- What a bot can play of a step (the check mainquest_walk, tools/tester_checks.py), from the first condition of the step that does not hold yet
 -- (`facts` as W.facts gives them; without facts the first condition):
@@ -909,9 +997,14 @@ end
 --   "cast"   the spell step: the bot casts a spell of its own at a monster of its hunt (O650)
 --   "hunt"   a stat only hunting moves (`kills_magic`, `kills_rare`: a monster of a tier): the bot hunts at the place of the step (O650)
 --   "vael"   the boss step: Vael Ashmourn, the solo spell trial; the bots take it through the TEST ONLY door of `!tester vael` (O650)
+--   "elsewhere"  a Chapter 8 step (O750): the endgame system it names is played by the bot check `check` (M.SYSTEM_CHECKS)
 --   "skip"   everything else (a window of a system the bots play elsewhere, a gear piece, a resistance, a storage): `reason` says which
 -- -> {action, reason, label, monsters, target, radius, flag, stat, cond (the index of the condition planned)}
 M.HUNT_STATS = {kills_magic = true, kills_rare = true}
+-- O750: a Chapter 8 step names an endgame system the bots play in a check of its own (tools/tester_checks.py KEYS): "elsewhere" names it
+M.SYSTEM_CHECKS = {tower_floor = "tower_walk", descent_depth = "descent_walk", pocket_kills = "pocket_walk", dungeon_difficulty = "dungeon_difficulty",
+	waystone_tier = "wsmap_walk", greater_tier = "greater_rift", pinnacle_kinds = "pinnacle_walk", pinnacle_kills = "pinnacle_walk",
+	spell_rank = "closed_spell_ranks", spell_forms = "closed_spell_forms", spell_form2 = "closed_spell_forms"}
 
 function M.condDone(cond, facts, step)
 	local p, t = condProgress(cond, facts or {}, step)
@@ -973,6 +1066,10 @@ function M.botPlan(step, facts, cfg)
 	end
 	if c.c == "stat" and M.HUNT_STATS[c.stat] then
 		return plan({action = "hunt", stat = c.stat, target = c.target})
+	end
+	if c.c == "stat" and step.ch == 8 and M.SYSTEM_CHECKS[c.stat] then
+		return plan({action = "elsewhere", stat = c.stat, target = c.target, check = M.SYSTEM_CHECKS[c.stat],
+			reason = "a Chapter 8 step: the bots play " .. c.stat .. " in the check " .. M.SYSTEM_CHECKS[c.stat]})
 	end
 	return plan({action = "skip", reason = "the step asks for '" .. tostring(c.c == "stat" and c.stat or c.c) .. "' (the bots do not play it in this step)"})
 end

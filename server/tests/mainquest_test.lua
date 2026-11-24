@@ -32,7 +32,9 @@ end
 local PLAY_STATS = {kills_magic = true, kills_rare = true, kills_legendary = true, party_kills = true, bounty_done = true,
 	invasion_fought = true, arena1v1_wins = true, rift_runs = true, rift_tier = true, tower_floor = true, descent_runs = true,
 	descent_clears = true, trial_tier_1 = true, trial_tier_2 = true, trial_tier_3 = true, bg_matches = true, wb_kills = true,
-	pocket_kills = true, dungeon_clears = true, unique_found = true, bestiary_tasks = true, ascended = true}
+	pocket_kills = true, dungeon_clears = true, unique_found = true, bestiary_tasks = true, ascended = true,
+	-- O750 (Chapter 8): a sealed Greater Rift, a cleared waystone map, a room of the Descent, a dungeon won, fragments and a pinnacle kill
+	greater_tier = true, waystone_tier = true, descent_depth = true, dungeon_difficulty = true, pinnacle_kinds = true, pinnacle_kills = true}
 local S, play, total = {}, 0, #cfg.steps
 for i, s in ipairs(cfg.steps) do
 	S[s.key] = s
@@ -52,7 +54,39 @@ for i, s in ipairs(cfg.steps) do
 end
 check(play * 2 >= total, "half of the steps or more are kill / loot / explore / deliver steps: " .. play .. " of " .. total)
 check(total >= 80 and total <= 130, "a quest of this size: " .. total)
-eq(cfg.steps[total].key, "boss", "the last step is the boss")
+-- O750: Vael is the last page of the Oath (chapter 7); Chapter 8 "Beyond the Oath" follows, from 501 to 2000
+local bossAt = K.indexOf(cfg, "boss")
+check(bossAt ~= nil, "the boss step is there")
+for i, s in ipairs(cfg.steps) do
+	check((i <= bossAt) == (s.ch <= 7), "the chapters 1-7 end with the boss, the rest is Chapter 8: " .. s.key)
+end
+do
+	local ch8 = cfg.chapters[8]
+	local last, n = 500, 0
+	for i = bossAt + 1, total do
+		local s = cfg.steps[i]
+		n = n + 1
+		check(s.ch == 8, "after the boss only Chapter 8: " .. s.key)
+		check(s.level - last <= 150, "no long gap in Chapter 8 (" .. last .. " to " .. s.level .. "): " .. s.key)
+		check(s.level - last >= 25, "the Chapter 8 steps are spread: " .. s.key)
+		last = s.level
+		for _, c in ipairs(s.conds) do
+			check(c.c == "stat", "Chapter 8 points at systems through their counters: " .. s.key)
+		end
+	end
+	check(n >= 12, "Chapter 8 has its steps: " .. n)
+	eq(last, ch8.to, "Chapter 8 ends at its last level")
+	local lastStep = cfg.steps[total]
+	eq(lastStep.conds[1].stat, "pinnacle_kills", "Chapter 8 ends on a pinnacle boss")
+	local kinds = {}
+	for i = bossAt + 1, total do
+		kinds[cfg.steps[i].conds[1].stat] = true
+	end
+	for _, st in ipairs({"tower_floor", "greater_tier", "waystone_tier", "descent_depth", "pocket_kills", "dungeon_difficulty", "pinnacle_kinds",
+			"pinnacle_kills", "spell_rank", "spell_forms", "spell_form2"}) do
+		check(kinds[st], "Chapter 8 points at " .. st)
+	end
+end
 eq(cfg.steps[1].key, "warden", "the first step is Ysolde")
 for _, c in ipairs(cfg.chapters) do
 	check(c.intro.pt ~= "" and c.name.pt ~= "", "chapter texts " .. c.n)
@@ -227,9 +261,16 @@ end
 -- the reward: minutes of income, rounded; the whole quest stays under its share of the hunting gold
 local income = dofile("data/scripts/chaos/embercache_config.lua").income
 local gold, ideal = 0, 0
-for _, s in ipairs(cfg.steps) do gold = gold + K.gold(cfg, income, s) end
-local prog = io.open("data/scripts/chaos/progression_config.lua") and true or false
-check(gold > 1000000 and gold < 10000000, "total gold of the quest: " .. gold)
+local gold8 = 0
+for _, s in ipairs(cfg.steps) do
+	if s.ch <= 7 then
+		gold = gold + K.gold(cfg, income, s)
+	else
+		gold8 = gold8 + K.gold(cfg, income, s)
+	end
+end
+check(gold > 1000000 and gold < 10000000, "total gold of the Oath: " .. gold)
+check(gold8 > 1000000 and gold8 < 30000000, "total gold of Chapter 8: " .. gold8)
 eq(K.gold(cfg, income, {level = 8, mins = 60}), 21000, "an hour of hunting at level 8")
 eq(K.gold(cfg, income, {level = 8, mins = 1}), 400, "rounded to 100")
 eq(K.int(1234567), "1,234,567")
@@ -292,6 +333,11 @@ ctx.sheetSafe = true; ctx.level = 499
 eq(K.doorProblem(cfg, ctx), "door_closed", "level 500")
 ctx.level = 500; ctx.stepKey = "res2c"
 eq(K.doorProblem(cfg, ctx), "door_closed", "the quest is not at the boss yet")
+ctx.stepIndex = K.indexOf(cfg, "res2c")
+eq(K.doorProblem(cfg, ctx), "door_closed", "a step before the boss keeps it shut")
+ctx.stepKey, ctx.stepIndex = "b_rank", K.indexOf(cfg, "boss") + 1
+eq(K.doorProblem(cfg, ctx), nil, "O750: a character past the boss (Chapter 8) keeps the door")
+ctx.stepKey, ctx.stepIndex = "res2c", nil
 ctx.state = cfg.states.skipped; ctx.stepKey = nil
 eq(K.doorProblem(cfg, ctx), nil, "a skipped quest keeps the door")
 ctx.cooldownLeft = 30
@@ -996,5 +1042,120 @@ eq(sent[#sent].action, "chunk", "the window state goes chunked")
 -- the welcome path stays quiet while the main quest runs
 dofile("data/scripts/chaos/welcomepath.lua")
 check(ChaosWelcomePath.replaced(), "the welcome path is replaced")
+
+-- O750: Chapter 8 "Beyond the Oath". The facts read from the systems' own storages and counters (mainquest_core.lua M.PROBE_STATS)
+do
+	dofile("data/scripts/chaos/spell_ranks_core.lua")
+	local P = ChaosSpellRanksCore
+	local up = K.spellUpgrades({P.pack(7, 0, 0, false), P.pack(12, 2, 0, false), P.pack(20, 1, 3, true), -1, 0})
+	eq(up.spell_rank, 20, "the best rank"); eq(up.spell_forms, 2, "two spells with a Form I"); eq(up.spell_form2, 1, "one with a Form II")
+	local none = K.spellUpgrades({-1, -1})
+	eq(none.spell_rank + none.spell_forms + none.spell_form2, 0, "an empty block counts nothing")
+	-- the decode is the spell ranks' own
+	for _, t in ipairs({{0, 0, 0}, {31, 3, 3}, {5, 1, 0}, {19, 0, 2}}) do
+		local r, f1, f2 = P.unpack(P.pack(t[1], t[2], t[3], true))
+		local u = K.spellUpgrades({P.pack(t[1], t[2], t[3], true)})
+		eq(u.spell_rank, r, "rank as P.unpack"); eq(u.spell_forms, f1 > 0 and 1 or 0, "Form I as P.unpack"); eq(u.spell_form2, f2 > 0 and 1 or 0, "Form II as P.unpack")
+	end
+	dofile("data/scripts/chaos/pinnacle_core.lua")
+	local pc = dofile("data/scripts/chaos/pinnacle_config.lua")
+	local PK = ChaosPinnacleCore
+	local store = {}
+	local read = function(k) return store[k] or -1 end
+	local ps = K.pinnacleStats(pc, read)
+	eq(ps.pinnacle_kinds, 0); eq(ps.pinnacle_kills, 0)
+	store[PK.fragKey(pc, 2, 1)] = 2
+	store[PK.fragKey(pc, 2, 4)] = 1
+	store[PK.fragKey(pc, 1, 3)] = 1
+	eq(K.pinnacleStats(pc, read).pinnacle_kinds, 2, "the most kinds held for one boss (the keys of pinnacle_core.lua)")
+	for kind = 1, 4 do store[PK.fragKey(pc, 3, kind)] = 1 end
+	eq(K.pinnacleStats(pc, read).pinnacle_kinds, 4, "a whole set")
+	for kind = 1, 4 do store[PK.fragKey(pc, 3, kind)] = 0 end
+	store[pc.storage.base + pc.storage.kills + 0] = 2
+	store[pc.storage.base + pc.storage.kills + 3] = 1
+	ps = K.pinnacleStats(pc, read)
+	eq(ps.pinnacle_kills, 3, "the kills of every boss"); eq(ps.pinnacle_kinds, 4, "a boss killed: its set was whole once")
+	eq(K.pinnacleStats(nil, read).pinnacle_kills, 0, "no config: nothing")
+	eq(K.dungeonTop({dungeon_vault_top = 3, dungeon_marrow_top = 5, dungeon_marrow = 9, dungeon_throne_d6 = 1}), 5, "the best difficulty")
+	eq(K.dungeonTop(nil), 0)
+	-- every probe stat has a reader, every Chapter 8 stat is a probe, an own stat of Next Goals or an achievement counter
+	local goalsCfg = dofile("data/scripts/chaos/goals_config.lua")
+	local achStats = {}
+	for _, a in ipairs(dofile("data/scripts/chaos/achievements_data.lua").list or {}) do achStats[a.stat or ""] = true end
+	for i = K.indexOf(cfg, "boss") + 1, #cfg.steps do
+		local st = cfg.steps[i].conds[1].stat
+		check(K.PROBE_STATS[st] or goalsCfg.own[st] or achStats[st], "a Chapter 8 stat has a source: " .. st)
+	end
+	eq(goalsCfg.own.greater_tier, "max"); eq(goalsCfg.own.waystone_tier, "max")
+	-- a finished quest opens again on new steps
+	eq(K.reopens(cfg, cfg.states.done, K.indexOf(cfg, "boss") + 1), true, "done at the old end: Chapter 8 opens")
+	eq(K.reopens(cfg, cfg.states.done, #cfg.steps + 1), false, "done at the real end")
+	eq(K.reopens(cfg, cfg.states.skipped, 3), false, "a skipped quest stays skipped")
+	eq(K.reopens(cfg, cfg.states.quiet, 0), false, "a quiet one stays quiet")
+	local bi = K.indexOf(cfg, "boss")
+	eq(K.reopenFrom(cfg, cfg.states.done, bi + 1, true), bi + 1, "done: from the stored step")
+	eq(K.reopenFrom(cfg, cfg.states.quiet, 0, true), bi + 1, "quiet and Vael beaten: Chapter 8 from its first step")
+	eq(K.reopenFrom(cfg, cfg.states.quiet, 0, false), nil, "quiet, Vael not beaten: stays quiet")
+	eq(K.reopenFrom(cfg, cfg.states.skipped, 3, true), nil, "skipped stays skipped")
+end
+
+-- the engine: the probes through W.facts, and a character that finished the Oath before O750
+do
+	local bAt = K.indexOf(cfg, "boss")
+	local rc = dofile("data/scripts/chaos/spell_ranks_config.lua")
+	local ri = K.indexOf(cfg, "b_rank")
+	local sp = newPlayer(61, 600)
+	sp.store[rc.storage.rankBase + 23] = ChaosSpellRanksCore.pack(9, 1, 0, false)
+	eq(W.facts(sp, ri).stats.spell_rank, 9, "the rank from the packed storage")
+	eq(W.facts(sp, K.indexOf(cfg, "b_form")).stats.spell_forms, 1, "a Form I from the packed storage")
+	eq(W.facts(sp, K.indexOf(cfg, "b_form2")).stats.spell_form2, 0, "no Form II")
+	local pc = dofile("data/scripts/chaos/pinnacle_config.lua")
+	sp.store[pc.storage.base + pc.storage.kills + 1] = 1
+	eq(W.facts(sp, K.indexOf(cfg, "b_pinnacle")).stats.pinnacle_kills, 1, "a pinnacle kill from its storage")
+	ChaosAchievements.stats[sp:getGuid()] = {dungeon_vault_top = 4}
+	eq(W.facts(sp, K.indexOf(cfg, "b_dungeon")).stats.dungeon_difficulty, 4, "the dungeon difficulty from the counters")
+	-- finished at the old end (level 600): the quest runs again on Chapter 8; b_rank (525) passes silently, b_descent (625) is open
+	local old = newPlayer(62, 600)
+	players = {old}
+	old.store[key("state")] = cfg.states.done
+	old.store[key("step")] = bAt + 1
+	old.store[key("won")] = 1
+	W.firstLook(old)
+	eq(old.store[key("state")], cfg.states.active, "Chapter 8 opens for a character that finished the Oath")
+	eq(old.store[key("step")], K.indexOf(cfg, "b_descent"), "the steps far below its level pass silently")
+	check(said(old, "Chapter 8"), "it is told")
+	eq(old.bank, 0, "nothing paid for the silent steps")
+	-- a quiet veteran (first seen above 500) that beat Vael plays Chapter 8 too
+	local vet = newPlayer(65, 1050)
+	players = {vet}
+	vet.store[key("state")] = cfg.states.quiet
+	vet.store[key("step")] = 0
+	vet.store[key("won")] = 1
+	W.firstLook(vet)
+	eq(vet.store[key("state")], cfg.states.active, "a quiet veteran that beat Vael opens Chapter 8")
+	check(vet.store[key("step")] > bAt, "on a Chapter 8 step")
+	local still = newPlayer(66, 1050)
+	players = {still}
+	still.store[key("state")] = cfg.states.quiet
+	W.firstLook(still)
+	eq(still.store[key("state")], cfg.states.quiet, "a quiet one that has not beaten Vael stays quiet")
+	-- a character that finished everything stays done
+	local top = newPlayer(63, 2000)
+	players = {top}
+	top.store[key("state")] = cfg.states.done
+	top.store[key("step")] = #cfg.steps + 1
+	W.firstLook(top)
+	eq(top.store[key("state")], cfg.states.done, "done at the real end: stays done")
+	-- the last step of Chapter 8 ends the quest with its own line
+	local fin = newPlayer(64, 2000)
+	players = {fin}
+	fin.store[key("state")] = cfg.states.active
+	fin.store[key("step")] = #cfg.steps
+	fin.store[pc.storage.base + pc.storage.kills + 0] = 1
+	W.check(fin)
+	eq(fin.store[key("state")], cfg.states.done, "the pinnacle kill finishes Chapter 8")
+	check(said(fin, "Beyond the Oath: every page is done"), "the last line")
+	check(fin.bank > 0, "the step pays")
+end
 
 print(string.format("mainquest_test: %d checks ok", checks))

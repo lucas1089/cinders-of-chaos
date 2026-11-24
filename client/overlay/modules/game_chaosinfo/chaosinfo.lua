@@ -288,6 +288,11 @@ local function showPage(id)
   for pid, b in pairs(pageButtons) do b:setChecked(pid == id) end
   window.pageTitle:setText(tr(page.title))
   window.pageText:setText(tr(page.text or ''))
+  -- the How it works card of this page (game_howitworks; the window holds many pages: only Events has one)
+  pcall(function()
+    local how = modules.game_howitworks
+    if page.card then how.attach(window, page.card) else how.detach(window) end
+  end)
   setStoreMode(page.store == true)
   buildRows(page)
   if page.store then
@@ -428,7 +433,6 @@ end
 
 function init()
   window = g_ui.displayUI('chaosinfo')
-  pcall(function() modules.game_howitworks.attach(window, 'invasion') end) -- game_howitworks: the ? button
   window:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })

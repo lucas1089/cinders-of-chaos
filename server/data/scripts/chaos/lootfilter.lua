@@ -240,6 +240,12 @@ local function itemInfo(item)
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()
 		and (lname:find("%f[%a]orb$") or lname:find("^orb of ")) and true) or false
 	info.category = categoryOf(itemType, info)
+	-- O749: a card (cards_core.lua) always flies (loot_explosion_config.lua alwaysExplode); it glows, beams in the Legendary colour and
+	-- plays the power sound, as a legendary power does
+	if ChaosCardsCore and ChaosCardsCore.isCard and ChaosCardsCore.isCard(id) then
+		info.card = true
+		info.power = true
+	end
 	-- item level and every modifier with its tier ("Item Level 57; Sword +2 (T3); Fire +3% (T5)",
 	-- data/lib/chaos_crafting.lua), shown in the tooltip; the best tier feeds the filter's tier rule
 	if ChaosCrafting and info.category == "equipment" then
@@ -681,12 +687,16 @@ local function snapshot(monster, corpse)
 		return
 	end
 	local s, unlock = settingsOf(owner), unlocked(owner)
-	local list = unlock and s.lootMin > 0 and autolootSet(owner) or {}
+	local list = autolootSet(owner)
+	local LX = ChaosLootExplosion
 	local entries, keep = {}, {}
 	for _, item in ipairs(corpse:getItems()) do
 		local info = itemInfo(item)
 		entries[#entries + 1] = info
-		if F.autoloot(info, s, list[info.id], unlock) == "keep" then
+		-- O749: an item that must fly (Legendary and up, set, unique, card: loot_explosion_config.lua alwaysExplode) is held back
+		-- from every auto step of the chain (the pouches 2.7, the base autoloot list 3, the Rarity Autoloot 3.5) and flies at 98
+		local explode = LX ~= nil and LX.mustExplodeItem ~= nil and LX.mustExplodeItem(item, corpse)
+		if explode or F.autoloot(info, s, unlock and s.lootMin > 0 and list[info.id] or nil, unlock) == "keep" then
 			keep[#keep + 1] = item
 		end
 	end
@@ -696,12 +706,18 @@ local function snapshot(monster, corpse)
 	if #keep > 0 then
 		-- the bag lies on the corpse tile for the rest of this chain only; if a later callback raised an error the
 		-- items would stay in that bag on the ground instead of vanishing
-		local bag = Game.createItem(HOLD_BAG, 1, pos)
-		if bag then
-			for _, item in ipairs(keep) do
-				item:moveTo(bag)
+		-- one more bag when one is full (a bag holds 8 items; O749 holds every item that must fly here too)
+		current.bags = {}
+		local bag
+		for _, item in ipairs(keep) do
+			if not bag or bag:getSize() >= bag:getCapacity() then
+				bag = Game.createItem(HOLD_BAG, 1, pos)
+				if not bag then
+					break
+				end
+				current.bags[#current.bags + 1] = bag
 			end
-			current.bag = bag
+			item:moveTo(bag)
 		end
 	end
 end
@@ -716,8 +732,10 @@ local function pickup(monster, corpse)
 	end
 	local list = autolootSet(owner)
 	local taken, failed = {}, 0
+	local LX = ChaosLootExplosion
 	for _, item in ipairs(corpse:getItems()) do
 		local info = itemInfo(item)
+		info.explode = LX ~= nil and LX.mustExplodeItem ~= nil and LX.mustExplodeItem(item, corpse) or nil -- O749: it flies
 		if F.autoloot(info, current.s, list[info.id], true) == "take" then
 			local label = F.label(info)
 			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
@@ -745,11 +763,11 @@ local function finish(monster, corpse)
 	if not drop then
 		return
 	end
-	if drop.bag then
-		for _, item in ipairs(drop.bag:getItems()) do
+	for _, bag in ipairs(drop.bags or {}) do
+		for _, item in ipairs(bag:getItems()) do
 			item:moveTo(corpse)
 		end
-		drop.bag:remove()
+		bag:remove()
 	end
 	local owner = Player(drop.ownerId)
 	if not owner then

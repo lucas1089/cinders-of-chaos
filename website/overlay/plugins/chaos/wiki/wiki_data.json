@@ -50620,7 +50620,7 @@
 									"Loot Bag",
 									"250",
 									"Convenience",
-									"Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."
+									"Bottomless, store-bound: the basics of your loot go in, 255 slots, no weight. The Auto Seller sells it. Legendary and better, set pieces, uniques and cards always fly to the ground."
 								],
 								[
 									"Orbs Pouch",
@@ -50662,7 +50662,7 @@
 									"Rarity Autoloot",
 									"300",
 									"Convenience",
-									"Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."
+									"Permanent: autoloot by rarity in the Loot Filter, up to Rare: take good gear, leave junk. Legendary and better, set pieces, uniques and cards always fly to the ground."
 								],
 								[
 									"Backpack of Holding",

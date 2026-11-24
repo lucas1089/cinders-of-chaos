@@ -10,33 +10,48 @@ L.ENV_CHARACTER = 'CHAOS_LIVE_CHARACTER'
 
 L.GRACE_MS = 4000         -- the recording starts on the ready line and needs about a second; the dock is closed until then
 L.KEY_CHECK_MS = 1500     -- a key step looks this long after its line whether the key (sent by the recording script) worked
+L.CARD_SHOW_MS = 1500     -- a How it works card stays this long (its place beside the dock is filmed), then closes
 L.WINDOW = {width = 1280, height = 720}
 L.WATCHDOG_MS = 10 * 60000
 
 -- the steps: do = 'key' (the script presses `key`; the dock must then be `open`), 'tab' (a click on the tab button `tab`),
--- 'sub' (a click on the sub tab `sub` of the tab shown), 'still' (a picture is cut here: `name`), 'exit'. gap = ms after
+-- 'sub' (a click on the sub tab `sub` of the tab shown), 'scroll' (the dock's scroll bar to its end, a window taller
+-- than the dock: nothing cut, O732 follow-up), 'still' (a picture is cut here: `name`), 'exit'. gap = ms after
 -- the step before.
 L.STEPS = {
   {gap = 0, ['do'] = 'still', name = 'closed'},
   {gap = 0, ['do'] = 'key', key = 'Alt+D', open = true, tab = 'equip'},
-  {gap = 4000, ['do'] = 'still', name = 'equip'},
-  {gap = 1500, ['do'] = 'key', key = 'Alt+Q', open = true, tab = 'quests'},
-  {gap = 4000, ['do'] = 'still', name = 'quests'},
+  {gap = 3500, ['do'] = 'still', name = 'equip'},
+  {gap = 1000, ['do'] = 'key', key = 'Alt+Q', open = true, tab = 'quests'},
+  {gap = 3500, ['do'] = 'still', name = 'quests'},
+  {gap = 500, ['do'] = 'scroll'},
+  {gap = 2000, ['do'] = 'still', name = 'quests_bottom'},
   {gap = 500, ['do'] = 'sub', sub = 2},
-  {gap = 4000, ['do'] = 'sub', sub = 3},
-  {gap = 4000, ['do'] = 'key', key = 'Alt+A', open = true, tab = 'attributes'},
-  {gap = 4000, ['do'] = 'still', name = 'attributes'},
+  {gap = 3500, ['do'] = 'still', name = 'main_quest'},
+  {gap = 500, ['do'] = 'sub', sub = 3},
+  {gap = 3500, ['do'] = 'key', key = 'Alt+A', open = true, tab = 'attributes'},
+  {gap = 3500, ['do'] = 'still', name = 'attributes'},
   {gap = 500, ['do'] = 'sub', sub = 2},
-  {gap = 4500, ['do'] = 'tab', tab = 'spells'},
-  {gap = 4500, ['do'] = 'still', name = 'spells_wide'},
+  {gap = 3500, ['do'] = 'still', name = 'character_info'},
+  {gap = 500, ['do'] = 'scroll'},
+  {gap = 2000, ['do'] = 'still', name = 'character_info_bottom'},
+  {gap = 500, ['do'] = 'tab', tab = 'spells'},
+  {gap = 3500, ['do'] = 'still', name = 'spells_wide'},
   {gap = 500, ['do'] = 'sub', sub = 2},
-  {gap = 4500, ['do'] = 'tab', tab = 'shop'},
-  {gap = 5000, ['do'] = 'still', name = 'shop_market'},
+  {gap = 3500, ['do'] = 'still', name = 'spell_supports'},
+  {gap = 500, ['do'] = 'scroll'},
+  {gap = 2000, ['do'] = 'still', name = 'spell_supports_bottom'},
+  {gap = 500, ['do'] = 'tab', tab = 'shop'},
+  {gap = 4000, ['do'] = 'still', name = 'shop_market'},
+  {gap = 500, ['do'] = 'scroll'},
+  {gap = 2000, ['do'] = 'still', name = 'shop_market_bottom'},
   {gap = 500, ['do'] = 'sub', sub = 2},
-  {gap = 5000, ['do'] = 'still', name = 'shop_store'},
+  {gap = 4000, ['do'] = 'still', name = 'shop_store'},
+  {gap = 500, ['do'] = 'scroll'},
+  {gap = 2000, ['do'] = 'still', name = 'shop_store_bottom'},
   {gap = 500, ['do'] = 'tab', tab = 'equip'},
-  {gap = 4000, ['do'] = 'key', key = 'Alt+D', open = false},
-  {gap = 3500, ['do'] = 'still', name = 'closed_again'},
+  {gap = 3500, ['do'] = 'key', key = 'Alt+D', open = false},
+  {gap = 3000, ['do'] = 'still', name = 'closed_again'},
   {gap = 1500, ['do'] = 'exit'},
 }
 

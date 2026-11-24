@@ -109,6 +109,7 @@ function B.doorProblem(player)
 	local c = C()
 	local step = c.steps[get(player, "step")]
 	return K.doorProblem(c, {level = player:getLevel(), state = get(player, "state"), stepKey = step and step.key or nil,
+		stepIndex = get(player, "step"),
 		sheetSafe = B.sheetSafe(player), cooldownLeft = math.max(0, get(player, "cooldown") - os.time()),
 		won = get(player, "won") == 1})
 end

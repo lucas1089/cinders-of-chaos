@@ -21,6 +21,12 @@ eq(s.show.other, true, 'category on')
 eq(L.normalize({ highlight = 40 }).highlight, 10, 'clamped to Divine')
 eq(L.normalize({ highlight = 7 }).highlight, 5, 'a threshold saved with an old id is the rarity it became')
 eq(L.normalize(nil).highlight, 3, 'nil = defaults')
+-- O749: the Rarity Autoloot floor goes up to Rare; a Legendary floor saved before reads as Rare
+eq(L.LOOT_FROM_MAX, 4, 'the Rarity Autoloot cap is Rare')
+eq(L.normalize({ lootFrom = 5 }).lootFrom, 4, 'a Legendary floor is clamped to Rare')
+eq(L.normalize({ lootFrom = 10 }).lootFrom, 4, 'a Divine floor is clamped to Rare')
+eq(L.normalize({ lootFrom = 3 }).lootFrom, 3, 'a Magic floor stays')
+eq(L.normalize({ lootMin = 5 }).lootMin, 5, 'the list floor is not capped')
 
 eq(L.classify({ r = 4, g = 'equipment' }, s), 'highlight', 'Rare glows')
 eq(L.classify({ r = 3, g = 'equipment' }, s), 'normal', 'Magic plain')

@@ -7,8 +7,10 @@
 --  * The hub menu (client_chaos_topbar, O550): an entry of a tab (a card, the text menu, its hotkey) opens the dock on
 --    that tab (ChaosDock.route); every other entry opens its window as before.
 --  * A tab with two or more windows shows one at a time, picked by the row of small tabs under the icons.
---  * A window wider than the dock widens the dock while it is shown (at most the screen less 320 px of game); a window
---    wider than that stays a window of its own, placed left of the dock.
+--  * A window wider than the dock widens the dock while it is shown (at most the screen less 280 px of game); a window
+--    wider than that opens on its own, centred, and the dock gives way (slides out). A window taller than the room under
+--    the tabs keeps its height in a scroll area with the theme's scroll bar: nothing is cut (owner 2026-11-24).
+--  * A module may hide parts of its window while docked (spec.docked: the Inventory panel's title bar and tab row).
 --  * The hotbar and its globes (game_hotbar, game_shaderfx) stay at the bottom centre: the dock stops above the hotbar
 --    when the two would meet.
 --  * Keys: Alt+D shows or hides the dock, Alt+I / Alt+Q / Alt+A open Equip. / Quests / Attributes; Spells and Shop
@@ -33,7 +35,7 @@ local st
 local held = {}          -- records of the windows in the dock: widget, home, index, wasVisible, spec, size, pos, ...
 local known = {}         -- menu entry -> the widget it opened last (a module that keeps a local window)
 local tabButtons = {}
-local floated            -- a window too wide for the dock, opened beside it: { widget, opened = the dock opened it }
+local floated            -- a window too wide for the dock, opened on its own: { widget, opened = the dock opened it }
 local coverNotified = 0  -- the width last told to the toasts (game_chaosnotify)
 local slideEvent, tickEvent, pollEvent
 local boundKeys = {}
@@ -88,7 +90,15 @@ local function palette(name, fallback)
   return theme and theme.palette and theme.palette[name] or fallback
 end
 
-local function child(id) return panel and panel:recursiveGetChildById(id) or nil end
+-- a part of the dock: its own children and the content's (scroller, scrollBar). Never a recursive search: a hosted window
+-- has its own 'scrollBar', 'note' or 'title' deeper down (seen in a client: the Quest Log's bar was toggled instead)
+local function child(id)
+  if not panel then return nil end
+  local w = panel:getChildById(id)
+  if w then return w end
+  local content = panel:getChildById('content')
+  return content and content:getChildById(id) or nil
+end
 
 -- ---------------------------------------------------------------- finding a window
 -- the visible windows a menu entry may have opened: children of the root, of the game root and of the side panels
@@ -146,12 +156,45 @@ local function setChrome(w, rec, hide)
   end
 end
 
+-- the module's own hook for a docked window (spec.docked: the Inventory panel hides its title bar and tab row)
+local function dockedHook(rec, on)
+  local m = rec.spec and rec.spec.docked and rec.spec.module and modules[rec.spec.module]
+  local fn = type(m) == 'table' and rawget(m, rec.spec.docked) or nil
+  if type(fn) == 'function' then pcall(fn, on) end
+end
+
+-- the scroll area back to the top, its bar hidden (no window, or one that fits)
+local function resetScroll(scroll)
+  local scroller, bar = child('scroller'), child('scrollBar')
+  if bar then
+    pcall(bar.setValue, bar, 0)
+    bar:setVisible(scroll == true)
+  end
+  if scroller then scroller:setMarginRight(scroll and L.SCROLL or 0) end
+end
+
+-- a held window in the scroll area: one that fits fills the room (a miniwindow always does: it scrolls its own
+-- contents), one taller keeps its own height and the bar scrolls it (nothing is cut, owner 2026-11-24)
+local function fit(rec, scroll)
+  local w = rec.widget
+  if not alive(w) or (rec.fitted and rec.scroll == scroll) then return end
+  rec.fitted, rec.scroll = true, scroll
+  w:breakAnchors()
+  w:setMargin(0)
+  w:addAnchor(AnchorTop, 'parent', AnchorTop)
+  w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  w:addAnchor(AnchorRight, 'parent', AnchorRight)
+  if scroll then w:setHeight(rec.size.height) else w:addAnchor(AnchorBottom, 'parent', AnchorBottom) end
+  resetScroll(scroll)
+end
+
 local function release(rec)
   local w = rec.widget
   if not alive(w) then return end
   releasing = true
   pcall(function()
     if rec.onVisible then disconnect(w, { onVisibilityChange = rec.onVisible }) end
+    dockedHook(rec, false)
     setChrome(w, rec, false)
     if w.setDraggable and rec.draggable ~= nil then w:setDraggable(rec.draggable) end
     w.chaosRmlSkip = rec.rmlSkip
@@ -174,10 +217,11 @@ local function releaseAll()
   local list = held
   held = {}
   for i = #list, 1, -1 do release(list[i]) end
+  resetScroll(false)
 end
 
 local function hold(w, spec, wasVisible)
-  local content = child('content')
+  local content = child('scroller') or child('content')
   if not content then return end
   local home = w:getParent()
   local rec = {
@@ -191,12 +235,12 @@ local function hold(w, spec, wasVisible)
   if w.setDraggable then w:setDraggable(false) end
   w.chaosRmlSkip = true -- the RmlUi mirror (client_chaos_rmlmirror) leaves a docked window in OTUI
   w:setParent(content)
+  dockedHook(rec, true)
+  -- anchored by fit() from relayout(), which knows the room (adopt calls it right after)
   w:breakAnchors()
-  w:setMargin(0)
   w:addAnchor(AnchorTop, 'parent', AnchorTop)
   w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
   w:addAnchor(AnchorRight, 'parent', AnchorRight)
-  if rec.mini or rec.size.height <= content:getHeight() then w:addAnchor(AnchorBottom, 'parent', AnchorBottom) end
   w:show()
   -- the window's own close (Escape, a button of its own) closes the dock
   rec.onVisible = function(_, visible)
@@ -220,7 +264,8 @@ local function menuBarRect()
   return alive(bar) and bar:isVisible() and bar:getRect() or nil
 end
 
--- the toasts (game_chaosnotify) keep left of the dock: they are told when the width it covers changes
+-- the toasts (game_chaosnotify) and the How it works card (game_howitworks) keep left of the dock: they are told when the
+-- width it covers changes
 local function tellToasts()
   local cover = M.coverRight()
   if cover == coverNotified then return end
@@ -228,6 +273,10 @@ local function tellToasts()
   local n = modules.game_chaosnotify
   local fn = n and rawget(n, 'repositionNotifications')
   if type(fn) == 'function' then pcall(fn) end
+  -- and the How it works card (game_howitworks) keeps left of the dock
+  local h = modules.game_howitworks
+  local place = h and rawget(h, 'reposition')
+  if type(place) == 'function' then pcall(place) end
 end
 
 local function relayout()
@@ -236,26 +285,43 @@ local function relayout()
   if not root then return end
   local rr = root:getRect()
   local rec = held[1]
-  local width, float = L.width(rec and rec.size.width or nil, rr.width, isPhone())
-  panel:setWidth(width)
-  local bottom, top = 0, 0
-  if not isPhone() then
+  local natural = rec and rec.size.width or nil
+  local function margins(width)
+    if isPhone() then return 0, 0 end
     local left = rr.x + rr.width - width
-    bottom = L.bottomMargin(left, hotbarRect(), rr.y + rr.height)
-    top = L.topMargin(left, menuBarRect(), rr.y)
+    return L.bottomMargin(left, hotbarRect(), rr.y + rr.height), L.topMargin(left, menuBarRect(), rr.y)
   end
+  local width, float = L.width(natural, rr.width, isPhone())
+  local bottom, top = margins(width)
+  if rec then
+    -- a window taller than the room scrolls: the dock grows by the bar when the screen has the room
+    local content = child('content')
+    local chrome = content and (panel:getHeight() - content:getHeight()) or nil
+    local scroll = L.scrolls(rec.mini, rec.size.height, L.room(rr.height, top, bottom, chrome))
+    if scroll then
+      local wide, tooWide = L.width(natural + L.SCROLL, rr.width, isPhone())
+      if not tooWide then
+        width = wide
+        bottom, top = margins(width)
+      end
+    end
+    fit(rec, scroll)
+  end
+  panel:setWidth(width)
   panel:setMarginBottom(bottom)
   panel:setMarginTop(top)
   tellToasts()
   return float
 end
 
+-- a window wider than the dock may grow opens on its own, centred on the game screen: the dock gives way (slides out),
+-- so the two never overlap (owner 2026-11-24)
 local function placeFloat(w)
-  if not alive(w) or not alive(panel) then return end
+  if not alive(w) then return end
   local root = gameRoot()
   local rr = root and root:getRect()
   if not rr then return end
-  local x = math.max(rr.x, panel:getX() - w:getWidth() - 4)
+  local x = math.max(rr.x, rr.x + math.floor((rr.width - w:getWidth()) / 2))
   local y = math.max(rr.y, rr.y + math.floor((rr.height - w:getHeight()) / 2))
   w:breakAnchors()
   w:setPosition({ x = x, y = y })
@@ -314,7 +380,7 @@ local function stopPoll()
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
 end
 
--- a window that floated beside the dock goes when the dock moves on or closes, if the dock opened it
+-- a window that opened on its own (too wide) goes when the dock opens again, if the dock opened it
 local function dropFloat()
   local f = floated
   floated = nil
@@ -325,10 +391,9 @@ local function adopt(w, spec, wasVisible)
   local rr = gameRoot() and gameRoot():getRect()
   local _, float = L.width(w:getWidth(), rr and rr.width or 0, isPhone())
   if float then
-    floated = { widget = w, opened = not wasVisible }
     placeFloat(w)
-    setNote(tr('This window is too wide for the panel on this screen: it opened beside it.'))
-    relayout()
+    M.close()
+    floated = { widget = w, opened = not wasVisible }
     return
   end
   hold(w, spec, wasVisible)

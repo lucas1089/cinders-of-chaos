@@ -90,12 +90,14 @@ pcts.earth = 0
 Creature = function(name) return {getPosition = function() return {x = 102, y = 100, z = 7} end} end
 local p = newPlayer(2, 500)
 p.store[key("state")] = cfg.states.active
-p.store[key("step")] = #cfg.steps
+p.store[key("step")] = ChaosMainQuestCore.indexOf(cfg, "boss")
 eq(B.doorProblem(p), nil, "level 500, safe, on the boss step: open")
 p.level = 499; eq(B.doorProblem(p), "door_closed", "level 499")
 p.level = 500; pcts.fire = -5; eq(B.doorProblem(p), "door_closed", "an unsafe resistance keeps it shut (strict)")
 pcts.fire = 30
-p.store[key("step")] = #cfg.steps - 1; eq(B.doorProblem(p), "door_closed", "not on the boss step yet")
+p.store[key("step")] = ChaosMainQuestCore.indexOf(cfg, "boss") - 1; eq(B.doorProblem(p), "door_closed", "not on the boss step yet")
+p.store[key("step")] = ChaosMainQuestCore.indexOf(cfg, "boss") + 1; eq(B.doorProblem(p), nil, "O750: past the boss (Chapter 8) the door stays open")
+p.store[key("step")] = ChaosMainQuestCore.indexOf(cfg, "boss") - 1
 p.store[key("state")] = cfg.states.skipped; eq(B.doorProblem(p), nil, "a skipped quest keeps the door")
 p.store[key("cooldown")] = os.time() + 30; eq(B.doorProblem(p), "door_cooldown", "after a failed run")
 p.store[key("cooldown")] = nil

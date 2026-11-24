@@ -56,7 +56,8 @@ F.CATEGORIES = {"equipment", "currency", "supplies", "other"}
 -- highlight  equipment with rarity >= highlight gets a glow (0 = no rarity glow; uniques and orbs always glow)
 -- dim        equipment with rarity < dim is dimmed (0 = nothing dimmed by rarity; rarity 0 = no rarity at all)
 -- lootMin    store unlock: autoloot-list equipment with rarity < lootMin stays in the corpse (0 = off)
--- lootFrom   store unlock: equipment with rarity >= lootFrom (and uniques) is autolooted even when not on the list (0 = off)
+-- lootFrom   store unlock: equipment with rarity >= lootFrom, up to Rare, is autolooted even when not on the list (0 = off); O749:
+--            at most F.LOOT_FROM_MAX (Rare), Legendary and up, sets, uniques and cards always fly (loot_explosion_config.lua)
 -- show       per category; a category switched off is dimmed (equipment at or above `highlight` still glows)
 -- icons      the Loot console tab shows item icons (click to loot) instead of the text lines
 -- notify     the "Rare drop: [Legendary] ..." line for highlighted items
@@ -66,11 +67,12 @@ function F.defaults()
 		show = {equipment = true, currency = true, supplies = true, other = true}, icons = true, notify = true, tier = 0}
 end
 F.MAX_TIER = 8
+F.LOOT_FROM_MAX = 4 -- O749 (owner 2026-11-24, "Híbrido"): the Rarity Autoloot floor goes up to Rare (stored id 4) and takes up to Rare
 
 F.PRESETS = {
 	{key = "all", name = "Show all", desc = "Magic+ glows, nothing is dimmed, autoloot as on your list."},
-	{key = "hunter", name = "Hunter", desc = "Rare+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Rare+."},
-	{key = "strict", name = "Strict", desc = "Legendary+ glows, gear below Rare dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Rare, picks up Legendary+."}
+	{key = "hunter", name = "Hunter", desc = "Rare+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Rare."},
+	{key = "strict", name = "Strict", desc = "Legendary+ glows, gear below Rare dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Rare, picks up Rare."}
 }
 
 function F.applyPreset(name)
@@ -81,7 +83,7 @@ function F.applyPreset(name)
 		s.highlight, s.dim, s.lootMin, s.lootFrom = 4, 2, 0, 4
 		return s
 	elseif name == "strict" then
-		s.highlight, s.dim, s.lootMin, s.lootFrom = 5, 4, 4, 5
+		s.highlight, s.dim, s.lootMin, s.lootFrom = 5, 4, 4, 4
 		s.show.supplies, s.show.other = false, false
 		return s
 	end
@@ -120,7 +122,7 @@ function F.sanitize(t)
 		highlight = clampRarity(t.highlight, d.highlight),
 		dim = clampRarity(t.dim, d.dim),
 		lootMin = clampRarity(t.lootMin, d.lootMin),
-		lootFrom = clampRarity(t.lootFrom, d.lootFrom),
+		lootFrom = math.min(F.LOOT_FROM_MAX, clampRarity(t.lootFrom, d.lootFrom)), -- O749: a floor above Rare saved before is Rare
 		show = {},
 		icons = bool(t.icons, d.icons),
 		notify = bool(t.notify, d.notify),
@@ -220,6 +222,9 @@ function F.autoloot(info, s, onList, unlocked)
 	if not unlocked then
 		return nil
 	end
+	if info.explode then
+		return nil -- O749: an item that must fly (loot_explosion_config.lua alwaysExplode) is left for the explosion
+	end
 	local r = F.id(info.rarity)
 	local gear = info.category == "equipment" and not info.unique
 	if onList then
@@ -228,7 +233,8 @@ function F.autoloot(info, s, onList, unlocked)
 		end
 		return nil
 	end
-	if s.lootFrom > 0 and (info.unique or (gear and r > 0 and r >= s.lootFrom)) then
+	-- O749: the Rarity Autoloot takes gear up to Rare (F.LOOT_FROM_MAX); Legendary and up fly to the ground
+	if s.lootFrom > 0 and (info.unique or (gear and r > 0 and r >= s.lootFrom and r <= F.LOOT_FROM_MAX)) then
 		return "take"
 	end
 	return nil

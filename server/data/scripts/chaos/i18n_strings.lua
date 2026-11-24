@@ -1666,8 +1666,8 @@ return {
 		["Store"] = "Loja",
 		["The Bottomless Loot Pouch is retired, a free Loot Bag replaces it"] =
 			"O Bottomless Loot Pouch foi aposentado, uma Loot Bag grátis o substitui",
-		["all the loot of your kills, as its rules pick (Loot Filter > Loot Bag)"] =
-			"todo o loot das suas mortes, como as regras dela escolhem (Loot Filter > Loot Bag)",
+		["the basics of your kills' loot, as its rules pick (Loot Filter > Loot Bag)"] =
+			"o básico do loot das suas mortes, como as regras dela escolhem (Loot Filter > Loot Bag)",
 		["orbs, whetstones, rune shards and gems"] = "orbes, whetstones, fragmentos de runa e gemas",
 		["Rift Keys, Omen Keys and omen fragments"] = "Rift Keys, Omen Keys e fragmentos de omen",
 		["support runes and magic runes"] = "runas de suporte e runas mágicas",
@@ -6042,8 +6042,8 @@ return {
 		["a dungeon"] = "uma masmorra",
 		["Show all"] = "Mostrar tudo",
 		["Magic+ glows, nothing is dimmed, autoloot as on your list."] = "Mágico+ brilha, nada é escurecido, autoloot como na sua lista.",
-		["Rare+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Rare+."] = "Raro+ brilha, Comum e equipamento simples escurecidos; o Autoloot de Raridade pega Raro+.",
-		["Legendary+ glows, gear below Rare dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Rare, picks up Legendary+."] = "Lendário+ brilha, equipamento abaixo de Raro, suprimentos e o resto escurecidos; Autoloot de Raridade: nada abaixo de Raro, pega Lendário+.",
+		["Rare+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Rare."] = "Raro+ brilha, Comum e equipamento simples escurecidos; o Autoloot de Raridade pega Raro.",
+		["Legendary+ glows, gear below Rare dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Rare, picks up Rare."] = "Lendário+ brilha, equipamento abaixo de Raro, suprimentos e o resto escurecidos; Autoloot de Raridade: nada abaixo de Raro, pega Raro.",
 		["Unique drop: %s"] = "Drop único: %s",
 		["Rare drop: %s"] = "Drop raro: %s",
 		["Unique drop: "] = "Drop único: ",
@@ -8635,8 +8635,10 @@ return {
 			"Os dois addons do outfit Wizard, visual masculino e feminino",
 		["Both addons, male and female look"] =
 			"Os dois addons, visual masculino e feminino",
-		["Bottomless, store-bound: all your loot goes in, %d slots, no weight"] =
-			"Sem fundo, preso à loja: todo o seu loot entra, %d espaços, sem peso",
+		["Bottomless, store-bound: the basics of your loot go in, %d slots, no weight"] =
+			"Sem fundo, preso à loja: o básico do seu loot entra, %d espaços, sem peso",
+		["Legendary and better, set pieces, uniques and cards always fly to the ground"] =
+			"Lendário ou melhor, peças de set, únicos e cartas sempre voam para o chão",
 		["Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog"] =
 			"Outfit Brotherhood com addons, mount Cinderhoof, título Emberkin, transmog Arboreal",
 		["Call it in Character > Pets from level %d"] =
@@ -8820,8 +8822,8 @@ return {
 			"Permanente, para toda a conta: uma aba do stash para colecionáveis",
 		["Permanent, account-wide: one more saved passive tree build"] =
 			"Permanente, para toda a conta: mais uma build salva da árvore passiva",
-		["Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk"] =
-			"Permanente: autoloot por raridade no Loot Filter: pegue o equipamento bom, deixe o lixo",
+		["Permanent: autoloot by rarity in the Loot Filter, up to Rare: take good gear, leave junk"] =
+			"Permanente: autoloot por raridade no Loot Filter, até Raro: pegue o equipamento bom, deixe o lixo",
 		["Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank"] =
 			"Permanente: o loot da sua lista de venda automática (Economy > Auto Seller) é vendido pelo preço dos NPCs, com o ouro indo para o seu banco",
 		["Permanent: one more character on your account, created on the website"] =

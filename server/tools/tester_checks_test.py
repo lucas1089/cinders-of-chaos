@@ -4787,6 +4787,10 @@ class MainQuestWorld:
             return {'action': 'visit', 'label': 'the place', 'radius': 6}
         if kind == 'kill':
             return {'action': 'kill', 'label': 'Troll', 'monsters': ['Troll'], 'target': 12}
+        if kind == 'late':   # O750: a Chapter 8 step, played by the check of its system
+            return {'action': 'elsewhere', 'stat': 'tower_floor', 'target': 30, 'check': 'tower_walk'}
+        if kind == 'badlate':
+            return {'action': 'elsewhere', 'stat': 'tower_floor', 'target': 30, 'check': 'no_such_check'}
         return {'action': 'skip', 'reason': "the step asks for 'spell' (the bots do not play it)"}
 
     def facts(self):
@@ -4923,6 +4927,22 @@ class MainQuestWalk(unittest.TestCase):
         self.assertGreater(io.looted, 0)
         r, _ = self.play(start=4)
         self.assertEqual((r.status, "'spell'" in r.detail), (TX.SKIP, True))
+
+    def test_a_chapter_8_step_names_its_check(self):
+        r, _ = self.play(kinds=['late'])
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('played by its own check (tower_walk)', r.detail)
+        r, _ = self.play(kinds=['badlate'])
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('no_such_check', r.detail)
+        # every check the quest's Chapter 8 names (mainquest_core.lua M.SYSTEM_CHECKS) is a real one
+        core = open(os.path.join(os.path.dirname(os.path.abspath(TX.__file__)), '..', 'data', 'scripts', 'chaos', 'mainquest_core.lua'),
+                    encoding='utf-8').read()
+        block = core.split('M.SYSTEM_CHECKS = {', 1)[1].split('}', 1)[0]
+        names = re.findall(r'= "([a-z_0-9]+)"', block)
+        self.assertGreaterEqual(len(names), 8)
+        for n in names:
+            self.assertIn(n, TX.KEYS + TX.CLOSED_KEYS, n)
 
     def test_no_path_is_a_counted_fallback_for_an_npc(self):
         r, io = self.play(no_path=True, kinds=['talk', 'spell'])
@@ -6040,6 +6060,65 @@ class LootExplosion(unittest.TestCase):
         keys = TX.CheckRun('t', 'Ninja', 100).todo()
         self.assertIn('loot_explosion', keys)
         self.assertNotIn('loot_explosion', TX.CLOSED_KEYS)
+
+
+class LootExplosionPouch(unittest.TestCase):
+    """O749 (owner 2026-11-24, "Híbrido"): with the Loot Bag carried and with the Rarity Autoloot on, the Legendary flies, the basics are taken"""
+
+    POUCH = {'mode': 'pouch', 'leg': 'ground', 'rare': 'pouch', 'com': 'pouch', 'pouch': True, 'pouchFree': 400, 'bpFree': 10, 'unlocked': False}
+    RARITY = {'mode': 'rarity', 'leg': 'ground', 'rare': 'backpack', 'com': 'ground', 'pouch': False, 'pouchFree': 0, 'bpFree': 10,
+              'unlocked': True, 'lootFrom': 4}
+
+    def go(self, pouch=None, rarity=None):
+        io = FakeIO(answers={'explode pouch': dict(self.POUCH, **(pouch or {})), 'explode rarity': dict(self.RARITY, **(rarity or {}))})
+        r = run(TX.check_loot_explosion_pouch(io, 'Tester Own', 'Ninja', 300))
+        return r, io
+
+    def test_pass(self):
+        r, io = self.go()
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('the Legendary flew, the Common went to the pouch', r.detail)
+        self.assertIn('the Rare went to the backpack', r.detail)
+        self.assertIn('hunt', io.moves, 'the kill is made on open ground')
+
+    def test_a_taken_legendary_fails(self):
+        r, _ = self.go(pouch={'leg': 'pouch'})
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('must fly', r.detail)
+        r, _ = self.go(rarity={'leg': 'backpack'})
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+
+    def test_the_basics_must_be_taken(self):
+        r, _ = self.go(pouch={'com': 'ground'})
+        self.assertEqual(r.status, TX.FAIL, 'the Loot Bag had room and left the Common')
+        r, _ = self.go(pouch={'com': 'ground', 'pouchFree': 0})
+        self.assertEqual(r.status, TX.SKIP, 'a full Loot Bag is not the rule')
+        r, _ = self.go(rarity={'rare': 'ground'})
+        self.assertEqual(r.status, TX.FAIL, 'the Rarity Autoloot left the Rare with room')
+        r, _ = self.go(rarity={'rare': 'ground', 'bpFree': 0})
+        self.assertEqual(r.status, TX.SKIP)
+
+    def test_the_floor_is_capped(self):
+        r, _ = self.go(rarity={'lootFrom': 5})
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('up to Rare', r.detail)
+
+    def test_skips_say_why(self):
+        r, _ = self.go(pouch={'err': 'no loot explosion or pouches (an engine before O749)'})
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('pouch:', r.detail)
+        r, _ = self.go(pouch={'leg': 'bag'})
+        self.assertEqual(r.status, TX.SKIP, 'a cap kept it in the bag')
+        r, _ = self.go(pouch={'pouch': False})
+        self.assertEqual(r.status, TX.SKIP)
+        r, _ = self.go(rarity={'unlocked': False})
+        self.assertEqual(r.status, TX.SKIP)
+        io = FakeIO()
+        self.assertEqual(run(TX.check_loot_explosion_pouch(io, 'Tester Own', 'Ninja', 300)).status, TX.SKIP, 'old helper: no answer')
+
+    def test_the_check_is_in_the_run(self):
+        self.assertIn('loot_explosion_pouch', TX.CheckRun('t', 'Ninja', 100).todo())
+        self.assertNotIn('loot_explosion_pouch', TX.CLOSED_KEYS)
 
 
 class LootStranger(unittest.TestCase):

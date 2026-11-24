@@ -260,6 +260,43 @@ do
 	eq(rolled2.removed, false, "Magic not ticked: kept, whatever its price")
 	ChaosItemPrices = nil
 
+	-- O749 (owner 2026-11-24, "Híbrido"): the kill sale (onDropLoot 2) never sells an item that must fly (Legendary and up, a set
+	-- piece, a unique, a card: ChaosLootExplosion.mustExplodeItem), even with its tier ticked; the basics are still sold
+	do
+		local sellDrop = EventCallback.onDropLoot
+		check(type(sellDrop) == "function", "the kill sale is an onDropLoot callback")
+		pl.st[Chaos.storage.autosellBase + 1] = 2400
+		pl.st[Chaos.storage.autosellPaused] = nil
+		pl.st[Chaos.storage.autosellRarity] = K.packTiers({common = true, uncommon = true, magic = true, rare = true, legendary = true,
+			divine = true})
+		online[1] = pl
+		local function typed(it)
+			it.getType = function() return {isContainer = function() return false end, getName = function() return "dagger" end} end
+			return it
+		end
+		local legend, basic = typed(item(2400, {attrs = {rarity = 5, o749fly = 1}})), typed(item(2400, {attrs = {rarity = 1}}))
+		local corpseO749 = {getType = function() return {isContainer = function() return true end} end,
+			getCorpseOwner = function() return 1 end, getItems = function() return {legend, basic} end}
+		local askedO749 = 0
+		ChaosLootExplosion = {mustExplodeItem = function(it, c)
+			askedO749 = askedO749 + 1
+			return c == corpseO749 and it.attrs.o749fly == 1
+		end}
+		ChaosItemPrices = {sellPrice = function(_, c) return 50 * (c or 1) end}
+		local savedSS = ChaosShopServices
+		ChaosShopServices = {sellBlocked = function() return nil end} -- every tier ticked: nothing is kept for its rarity
+		local bankO749 = pl.bank
+		sellDrop(nil, corpseO749)
+		eq(legend.removed, false, "O749: a Legendary that must fly is not sold, Legendary ticked or not")
+		eq(basic.removed, true, "O749: the Common copy on the list is sold")
+		eq(pl.bank - bankO749, 50, "only the basic copy is paid")
+		ChaosItemPrices, ChaosShopServices = nil, savedSS
+		check(askedO749 >= 1, "the kill sale asks the explosion rule")
+		ChaosLootExplosion = nil
+		pl.st[Chaos.storage.autosellBase + 1] = nil
+		online[1] = nil
+	end
+
 	-- sell every X minutes (owner 2026-10-17)
 	eq(K.intervalOf(0), 0, "interval 0 = off") eq(K.intervalOf(15), 15, "15 is a choice") eq(K.intervalOf("30"), 30, "a numeric string")
 	eq(K.intervalOf(7), nil, "7 is not a choice") eq(K.intervalOf(-5), nil, "negative") eq(K.intervalOf(nil), nil, "nil")

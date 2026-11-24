@@ -2,7 +2,8 @@
 -- kill and drop steps against the minutes they pay for, the items, the boss reward against the Cruel Trial.
 --     cd server && luajit tools/mainquest_model.lua [--check|--table]      (also lua5.3)
 -- Inputs: mainquest_config.lua (steps, minutes, items, drop numbers), embercache_config.lua income (one source of the gold per hour),
--- progression_model.lua (minutes per level, level 8 to 500: the hunting an ideal player does), trials_config.lua (the Cruel Trial's
+-- progression_model.lua (minutes per level, level 8 to 500 and, for Chapter 8 "Beyond the Oath" (O750), 501 to 2000: the hunting an
+-- ideal player does), trials_config.lua (the Cruel Trial's
 -- first clear: 4,000 x level x tier gold, README "Vocation Trials"), store_balance_config.lua (no coin item).
 -- Limits are in mainquest_config.lua (`reward.maxShareOfHunting`) and below.
 ChaosProgressionLib = true
@@ -15,7 +16,8 @@ local cfg = K.cfg()
 local income = dofile(cfg.reward.incomeFrom).income
 
 local env = PM.load({})
-local curve = PM.curve(env, 500)
+local LATE_TO = 2000 -- Chapter 8 (O750) is held on its own: its gold against the ideal hunt from 501 to here
+local curve = PM.curve(env, LATE_TO)
 
 local LIMITS = {
 	paceMin = 0.5, paceMax = 2.2, -- the minutes a kill / drop step takes at killsPerMinute, over the minutes it pays for
@@ -31,11 +33,17 @@ local LIMITS = {
 local problems = {}
 local function bad(text) problems[#problems + 1] = text end
 
-local total, byChapter = 0, {}
+local total, byChapter, late = 0, {}, 0
+local oathEnd = K.indexOf(cfg, "boss")
 local partyLow = math.huge
 for i, s in ipairs(cfg.steps) do
 	local g = K.gold(cfg, income, s)
-	total = total + g
+	if i <= oathEnd then
+		total = total + g
+	else
+		late = late + g
+		if s.level > LATE_TO then bad("step " .. s.key .. ": above level " .. LATE_TO .. ", the model's end") end
+	end
 	byChapter[s.ch] = (byChapter[s.ch] or 0) + g
 	for _, c in ipairs(s.conds) do
 		if c.c == "count" then
@@ -70,6 +78,16 @@ local share = total / ideal
 if share > cfg.reward.maxShareOfHunting then
 	bad(string.format("the quest (steps and boss) pays %.1f%% of the ideal hunting gold (limit %.0f%%)", share * 100, cfg.reward.maxShareOfHunting * 100))
 end
+-- Chapter 8: the same share of the ideal hunt of its own levels (501 to LATE_TO)
+local idealLate = 0
+for L = 501, LATE_TO - 1 do
+	idealLate = idealLate + (curve[L].min / 60) * K.income(income, L)
+end
+local lateShare = idealLate > 0 and late / idealLate or math.huge
+if lateShare > cfg.reward.maxShareOfHunting then
+	bad(string.format("Chapter 8 pays %.2f%% of the ideal hunting gold from 501 to %d (limit %.0f%%)", lateShare * 100, LATE_TO,
+		cfg.reward.maxShareOfHunting * 100))
+end
 if cfg.boss.reward.gold > LIMITS.bossAtMostCruelFirstClear then
 	bad("the boss pays more than the Cruel Trial's first clear")
 end
@@ -96,6 +114,8 @@ if mode == "--table" or mode ~= "--check" then
 		LIMITS.partySize, LIMITS.partySize, partyLow * 100, LIMITS.partyMin * 100))
 	print(string.format("total with the boss reward %s gold = %.1f%% of the %s gold of an ideal hunt from level 8 to 500 (%.1f hours)", K.int(total), share * 100,
 		K.int(ideal), PM.hours(curve, 8, 500)))
+	print(string.format("Chapter 8 (O750): %s gold = %.2f%% of the %s gold of an ideal hunt from level 501 to %d (%.1f hours)", K.int(late),
+		lateShare * 100, K.int(idealLate), LATE_TO, PM.hours(curve, 501, LATE_TO)))
 end
 if #problems > 0 then
 	for _, p in ipairs(problems) do io.stderr:write("mainquest_model: " .. p .. "\n") end

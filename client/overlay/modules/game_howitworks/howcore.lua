@@ -66,6 +66,28 @@ function C.buttonMargins(padTop, padRight)
   return C.TITLE_TOP - (tonumber(padTop) or 0), C.TITLE_RIGHT - (tonumber(padRight) or 0)
 end
 
+-- The card's x and width on its parent (rect x, width): centred at its own width, or right of nothing the side dock
+-- covers (game_chaosdock, O732: `cover` px at the right, 0 when closed), 8 px clear of it. When the room left of the dock
+-- is narrower than the card, the card narrows to it (its rows wrap), down to C.MIN_CARD; never left of the parent.
+C.DOCK_GAP = 8
+C.MIN_CARD = 260
+function C.cardFit(px, pw, cardW, cover)
+  px, pw, cardW, cover = tonumber(px) or 0, tonumber(pw) or 0, tonumber(cardW) or 0, tonumber(cover) or 0
+  local width = cardW
+  if cover > 0 then
+    local room = pw - cover - C.DOCK_GAP
+    if room < width then width = math.max(C.MIN_CARD, room) end
+  end
+  width = math.min(width, cardW)
+  local x = px + math.floor((pw - width) / 2)
+  if cover > 0 then x = math.min(x, px + pw - cover - C.DOCK_GAP - width) end
+  return math.max(px, x), width
+end
+
+function C.cardX(px, pw, cardW, cover)
+  return (C.cardFit(px, pw, cardW, cover))
+end
+
 -- First open (owner request 2026-11-03): a feature window opens its card by itself the first time a character opens
 -- it. seen = {charKey = {cardKey = true}} (the client settings node); true, and marked, only the first time.
 function C.charKey(name)

@@ -168,12 +168,30 @@ local function dropOf(item)
 	local drop = {id = item:getId(), rank = rankOf(item), unique = customAttr(item, "chaos_unique") ~= nil, attrs = {}}
 	drop.gold = X.GOLD[drop.id] == true
 	drop.set = isSetPiece(item)
+	drop.card = ChaosCardsCore ~= nil and ChaosCardsCore.isCard ~= nil and ChaosCardsCore.isCard(drop.id) == true
 	for _, name in ipairs(cfg.strictAttributes or {}) do
 		if customAttr(item, name) ~= nil then
 			drop.attrs[name] = true
 		end
 	end
 	return drop
+end
+
+-- O749: true when no auto step may take this item of this corpse (the Loot Bag pouch, the Rarity Autoloot, the base autoloot list,
+-- the Auto Seller ask it): the explosion runs (switch on, valid config), the corpse is a loot bag (or none is given) and the item is
+-- one of cfg.alwaysExplode (X.mustExplode). Inside an instance nothing explodes, so such an item stays in the loot bag there.
+function X.mustExplodeItem(item, corpse)
+	if not item or not X.active(cfg, corpseCfg) then
+		return false
+	end
+	if corpse then
+		local okBag, bag = pcall(function() return ChaosCorpse.isBag(corpseCfg, corpse:getId()) end)
+		if not okBag or not bag then
+			return false
+		end
+	end
+	local ok, res = pcall(function() return X.mustExplode(cfg, dropOf(item)) end)
+	return ok and res == true
 end
 
 -- the seconds a loose item still lies (the client's despawn timer, groundloot.lua), nil for anything else
@@ -560,7 +578,7 @@ local function explode(monster, corpse)
 		local item = corpse:getItem(slot)
 		if item then
 			local drop = dropOf(item)
-			items[#items + 1] = {key = slot, rank = drop.rank, gold = drop.gold}
+			items[#items + 1] = {key = slot, rank = X.flyRank(cfg, drop), gold = drop.gold}
 			byKey[slot] = {item = item, drop = drop}
 		end
 	end
