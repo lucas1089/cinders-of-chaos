@@ -17,7 +17,27 @@ local function supported()
   return setOutfitBodyCentre ~= nil and setOutfitWingsCentre ~= nil
 end
 
+-- the rows belong to pair 83: an older pair has the drawn art on the replaced wings looks and no look from `first` on
+local function piecesSupported()
+  if setOutfitPackPiece == nil or setOutfitWingsLift == nil or type(ChaosWearPieces) ~= 'table' then return false end
+  if not g_things or not g_things.isValidDatId or not ThingCategoryCreature then return false end
+  local ok, valid = pcall(function() return g_things.isValidDatId(ChaosWearPieces.first, ThingCategoryCreature) end)
+  return ok and valid == true
+end
+
+-- anchor tile and lift; a client without the patch has none, and on an older pair the torso anchors of
+-- wing_anchors.lua keep the drawn art of the replaced looks in place
+function applyPieces()
+  if clearOutfitPackPieces then clearOutfitPackPieces() end
+  if not piecesSupported() then return end
+  WingFitCore.applyPieces(ChaosWearPieces, function(look, ax, ay) setOutfitPackPiece(look, ax, ay) end,
+    function(look, text) setOutfitWingsLift(look, text) end)
+end
+
 function init()
+  -- purchased pieces of pair 83 (base patch 0209): the dat is loaded at login, so they go in at each game start
+  connect(g_game, { onGameStart = applyPieces })
+  if g_game.isOnline() then applyPieces() end
   -- head accessories (base patch 0200): a client without it has none of these functions
   if headsSupported() then
     if clearOutfitHeadCentres then clearOutfitHeadCentres() end
@@ -39,9 +59,11 @@ function init()
 end
 
 function terminate()
+  disconnect(g_game, { onGameStart = applyPieces })
   if clearOutfitWingCentres then clearOutfitWingCentres() end
   if clearOutfitHeadCentres then clearOutfitHeadCentres() end
   if clearOutfitWingAnchors then clearOutfitWingAnchors() end
+  if clearOutfitPackPieces then clearOutfitPackPieces() end
 end
 
 -- the {x, y} shift of a head piece of an outfit table {type, aura, ...} facing south, in sprite pixels at 1x; {0, 0}

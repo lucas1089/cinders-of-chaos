@@ -170,15 +170,15 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **WsT Wings Pack**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: wings cosmetics (planned)
+  - Used for: wings cosmetics; since pair 83 (O747, not built yet, client/tools/sprites/gen_wst_wear.py) its oblique 32 px pieces: 73 of our code-drawn wings looks redrawn in place with the pack piece and one new wings look, the wearer lifted by the pack's levitation; the art is not in the repository, only in the sprite pair
 - **WsT Head Accessories Pack**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: head accessory cosmetics (planned)
+  - Used for: head accessory cosmetics; since pair 83 (O747, not built yet) 66 of its oblique 32 px pieces on a layer of their own round the body; the art is not in the repository, only in the sprite pair
 - **WsT Capes & Cloaks Pack**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: cape cosmetics (planned)
+  - Used for: cape cosmetics; since pair 83 (O747, not built yet) 78 of its oblique 32 px pieces on a layer of their own round the body; the art is not in the repository, only in the sprite pair
 - **WsT Hollow Harvest Kit**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data

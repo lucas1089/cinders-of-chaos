@@ -91,7 +91,7 @@ eq(tab[1].selected, true, 'no outline chosen') eq(CL.subText(tab[2]), 'Store: 25
 eq(CL.DRAWN.footprint and CL.DRAWN.outline, true, 'drawn kinds')
 local keys = {}
 for _, k in ipairs(CL.KINDS) do keys[#keys + 1] = k.key end
-eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,levelfx,rarefx,collection', 'tabs')
+eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,levelfx,rarefx,head,cape,collection', 'tabs')
 
 -- the Collection tab (server exclusives_core.lua rows): owned first, never usable here
 local col = { { key = 'mount_tuskhide', kind = 'mount', kindName = 'Mount', name = 'Tuskhide Boar',
@@ -147,4 +147,19 @@ eq(rows2[2].key, 'wings_cinderplumes', 'then the owned ones')
 eq(CL.collectionRows(col, 'owned', view)[1].id, 'x:score', 'also with a filter')
 eq(#CL.collectionRows(col, nil, nil), 3, 'no score: only the exclusives')
 
+
+-- head pieces and capes of client pair 83 (O747)
+eq(CL.tabShown({}, 'head'), false, 'no head tab without head rows (below pair 83)')
+eq(CL.tabShown({ { kind = 'cape', id = 1101 } }, 'cape'), true, 'a cape row shows the cape tab')
+eq(CL.tabShown({}, 'killfx'), true, 'the other tabs always show')
+local hrows = CL.tabRows({ { kind = 'head', id = 1001, look = 3590, name = 'Antelope Horns' } }, 'head')
+eq(#hrows, 2, 'the Default and the piece') eq(hrows[1].desc, 'You wear no head piece.', 'the Default text')
+local ch = CL.wearChanges({ names = { Bob = { h = 3590 }, Al = { c = 3656, f = 'ash' }, Cy = false, Dee = { o = 'gold' } } })
+eq(ch.clear, false, 'one change') eq(#ch.list, 4, 'every name')
+eq(ch.list[1][1] .. ch.list[1][2] .. ch.list[1][3], 'Al03656', 'a cape, in name order')
+eq(ch.list[2][2], 3590, 'a head') eq(ch.list[3][2] + ch.list[3][3], 0, 'false: nothing worn')
+eq(ch.list[4][2] + ch.list[4][3], 0, 'an outline only: nothing worn')
+ch = CL.wearChanges({ full = true, names = { Bob = { h = 3590 }, Cy = { o = 'gold' }, Ed = { h = -4, c = 1.5 } } })
+eq(ch.clear, true, 'a full list clears first') eq(#ch.list, 1, 'then only the characters that wear something')
+eq(#CL.wearChanges(nil).list, 0, 'junk') eq(#CL.wearChanges({ names = { [''] = { h = 1 } } }).list, 0, 'no name')
 print('cosmeticslogic_test: ' .. n .. ' checks OK')

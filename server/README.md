@@ -914,7 +914,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
-| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (removed, O564: reserved, never reused; `cosmetics_config.lua`, O318), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline, +2 level-up effect, +3 rare-loot effect, +4 victory emote (removed, O564: reserved, never reused; `cosmetics_config.lua`, O318), +5 head piece, +6 cape (O747), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
@@ -38315,3 +38315,34 @@ Owner 2026-11-23 (pt-BR): "Pode fazer o patch do motor". A missile (distance eff
 **Lua.** `data/lib/chaos_wide_missiles.lua`: `C.PAIR` 83 (`server/tools/client_pair.py` `PAIR_MISSILE_U16`; pair 82 keeps 253 missiles), `C.on()` (that pair recorded in config.lua and the engine method present), `C.id(id[, fallback])` (the missile a script sends: an id above 255 only while on, else the fallback or nil), `C.FALLBACK` (empty: no missile above 255 exists yet; the import tool that appends one adds its row), `C.check`, `C.apply` (run at startup by `data/scripts/chaos/wide_missiles.lua`). No new missile in this item.
 
 **Tests.** `tools/chaoswidemissile_test.cpp` (header cut out of the patch in CI, also under sanitizers), `tools/wide_missile_patch_test.py` (files, no one-byte type left in the written signatures, read order, feature only when asked, drop before write, symmetric hunks, applied to a tree rebuilt from its own context; `SRC_TREE=DIR` dry-runs a real tree), `tests/wide_missiles_test.lua` (server loop), `tools/cast_relay_test.py`, client `client/tools/wide_missile_patch_test.py`, Unity `Core.Tests` (markers, 0x85 under feature 77). Written on a source tree rebuilt from the base with 0001-0093: `patch -p1 --fuzz=0` applies 0094 there and every `src/*.cpp` passes `g++ -std=c++17 -fsyntax-only`; the client patch applies to the base client after 0001-0207 and `protocolgamesend.cpp` passes `-fsyntax-only`. **Not done yet:** a full build and link of either engine, and a login on a live server: check that our new client gets feature 77 (log of features in the Unity live check, or a missile on screen), that an older client still sees one-byte missiles, and that a session key near the block limit still logs in.
+
+## Purchased head pieces and capes (O747; `data/lib/chaos_wst_wear.lua`, `data/lib/chaos_wst_wear_ids.lua`, gate `chaosClientPair` 83)
+
+Owner 2026-11-24: "Pode importar, com levitação e camada nova. Remova as nossas artes já publicadas que estão com qualidade
+inferior a essas." Art: `client/tools/sprites/gen_wst_wear.py` (client/MANIFEST.md "Purchased wings, heads and capes (O747)").
+
+**Gate.** `data/lib/chaos_wst_wear.lua` `M.on`: `config.lua` `chaosClientPair` 83 or more (`client_pair.py` `PAIR_WST_WEAR`; read once at
+load; a test sets `ChaosWstWearOn`). Below it nothing changes: no kind, no cosmetic, no offer, no wings.xml line, no hidden aura.
+
+**Wings.** 73 code-drawn wings looks get the pack art in place on the client: same look and wings.xml id, no server change. Plasma
+Fly Wings: wings.xml id 128 on look 3589 (install step `outfits`, `install_outfits.py` `wst83_wings`), 300 coins at the end of
+Cosmetics > Wings. The pack wings lift their wearer (client base patch 0209); the server knows nothing of it.
+
+**Head pieces and capes.** Cosmetics of the kinds `head` and `cape` (`cosmetics_config.lua`, kinds with `pair = 83`; entries
+appended from `chaos_wst_wear.lua` `cosmetics()`): 66 heads ids 1001-1066, 78 capes ids 1101-1178 (row n of the generated list;
+the list only grows at its end, never reuse an id), field `look` = the client look (3590-3733). Bought in the store, account
+wide, chosen per character in Character > Cosmetics (storages 7102005 head, 7102006 cape of the wardrobe block). Every viewer's
+client draws them round the body (client base patch 0210). Store: Cosmetics > Head Pieces and Cosmetics > Cloaks and Capes
+(`cosmetics_store.lua`, added by `shop_config.lua` only while the gate is on; "Capes" stays the pair 33 aura category).
+Prices: the twin's price (heads 150 / 200, capes 200 / 250), else heads 150, capes 200 (placeholders, docs/PRICES.md).
+
+**Twins.** 64 heads and 73 capes are the same piece as a pair 33 aura (field `aura`, auras.xml id). From pair 83 the aura is out of
+the store (`chaos_pack33.lua` `storeOffers`, `M.wear().hidesAura`); a character that has the aura gets the new piece for its
+account at login and when the Cosmetics window opens (`cosmetics.lua` `grantTwins`, `Player:hasAura`). The aura stays.
+
+**Protocol.** No new opcode: cosmetics opcode 225. `looks` carries `h` / `c` (the client looks) next to `f`, `o`, `p`, `e`;
+`state` rows carry `look`; `tryfx {kind, look}` is the preview on the asking player; the store look is `{kind = "wear", slot, look}`.
+
+**Tests.** `tests/pack_wear_test.lua` (ids, twins, the gate off and on, the config and the store validate with the real cores,
+rows, store look, choose, refusals of a bad piece, pt-BR of every description sentence), `tests/cosmetics_test.lua`,
+`tools/install_outfits_test.py` (the wing line at 83 only). Not run in a game yet.

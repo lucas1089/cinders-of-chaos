@@ -98,6 +98,15 @@ local function describe(slug, p)
 	return el .. " " .. what .. ", animated. It takes the aura slot: one aura, head accessory or cape at a time."
 end
 
+-- the gate of the purchased pieces of pair 83 (O747), loaded once; a test sets M.wearLib by hand
+function M.wear()
+	if M.wearLib == nil then
+		local okWear, v = pcall(dofile, "data/lib/chaos_wst_wear.lua")
+		M.wearLib = okWear and type(v) == "table" and v or false
+	end
+	return M.wearLib or nil
+end
+
 -- the store offers of one list ("wings", "heads", "capes"), the exclusives left out; empty while the switch is off
 function M.storeOffers(slug)
 	local out = {}
@@ -105,8 +114,11 @@ function M.storeOffers(slug)
 		return out
 	end
 	local ex = exclusiveKeys()
+	-- O747: from client pair 83 a head / cape with a twin among the purchased pieces (data/lib/chaos_wst_wear.lua) is sold there
+	-- as a cosmetic of the new layer, not here as an aura any more; who owns the aura keeps it and gets the new piece free
+	local wear = slug ~= "wings" and M.wear() or nil
 	for _, p in ipairs(M.data[slug] or {}) do
-		if not ex[p.key] then
+		if not ex[p.key] and not (wear and wear.hidesAura(p.id)) then
 			out[#out + 1] = {kind = slug == "wings" and "wings" or "aura", id = p.id, cost = p.cost,
 				description = describe(slug, p)}
 		end

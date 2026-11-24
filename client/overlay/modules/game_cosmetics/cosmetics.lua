@@ -1,7 +1,7 @@
 -- Cosmetics (server: server/data/scripts/chaos/cosmetics.lua, extended opcode 225, JSON {action, data}).
 --   client -> server  open | select {kind, id, line} | preview {id} | hello (once in the game) | close
 --   server -> client  state {open, line, lineName, rows, collection, score}   style {accent}   colors {names, full}
---                     looks {names, full}   tryfx {kind, art, pulse}   result {ok, text}
+--                     looks {names, full}   tryfx {kind, art, pulse, look}   result {ok, text}
 -- The window (Character > Cosmetics): spell effect skins of the character's class line, kill effects, loot label
 -- accents, chat name colours, footprints and outlines; unlocks are account-wide, the choice per character. Preview
 -- plays the effects for this player only (the server sends them); colours show a sample here; footprints and outlines
@@ -13,6 +13,8 @@
 --     it and reads the parts it drew);
 --   * the loot label accent: handed to game_groundlabels (setAccent), which keeps the rarity colours.
 -- Footprints and outlines are drawn by game_cosmeticfx: "looks" and "tryfx" are handed to it (setLooks, showPreview).
+-- Head pieces and capes (O747, client pair 83): the h / c of "looks" go to the engine by name (setCreatureWear, base patch
+-- 0210); a tryfx with a look puts the piece on the player's own character for a few seconds. Their tabs show only with rows.
 -- The shared preview beside the detail (game_lookpreview) plays a row's effects in a loop (the row's `play`: spell
 -- skins and kill effects, the default effects too with "Compare with default"), walks the character over a
 -- footprint's prints and draws an outline on it. List icons: a generated picture of the row's main effect
@@ -253,7 +255,10 @@ end
 
 local function showList()
   if not window or not state then return end
-  for key, b in pairs(tabButtons) do b:setChecked(key == currentTab) end
+  for key, b in pairs(tabButtons) do
+    b:setChecked(key == currentTab)
+    b:setVisible(CL.tabShown(state.rows, key)) -- head pieces and capes: only from pair 83 (O747)
+  end
   window.list:destroyChildren()
   rowWidgets = {}
   local rows = tabRows()
@@ -507,6 +512,51 @@ local function unhookConsole()
   original.updateLabel = nil
 end
 
+-- ---------------------------------------------------------------- head pieces and capes (O747)
+-- the server's "looks" carry each online character's head piece and cape (h, c: client looks of pair 83); the engine
+-- draws them by name (base patch 0210: setCreatureWear). An engine without the patch has no such function.
+local worn = {} -- character name -> {head, cape}
+local tryEvent
+
+local function wearSupported()
+  return type(setCreatureWear) == 'function'
+end
+
+local function applyWear(data)
+  local ch = CL.wearChanges(data)
+  if ch.clear then
+    worn = {}
+    if type(clearCreatureWear) == 'function' then pcall(clearCreatureWear) end
+  end
+  for _, row in ipairs(ch.list) do
+    worn[row[1]] = (row[2] > 0 or row[3] > 0) and { row[2], row[3] } or nil
+    if wearSupported() then pcall(setCreatureWear, row[1], row[2], row[3]) end
+  end
+end
+
+-- the SHOW / Preview button: the piece on the player's own character for a few seconds, then what it really wears
+local function tryWear(kind, lookId)
+  local me = g_game.getLocalPlayer()
+  lookId = tonumber(lookId) or 0
+  if not me or not wearSupported() or lookId <= 0 then return end
+  local name = me:getName()
+  local now = worn[name] or { 0, 0 }
+  pcall(setCreatureWear, name, kind == 'head' and lookId or now[1], kind == 'cape' and lookId or now[2])
+  if tryEvent then removeEvent(tryEvent) end
+  tryEvent = scheduleEvent(function()
+    tryEvent = nil
+    local back = worn[name] or { 0, 0 }
+    if wearSupported() then pcall(setCreatureWear, name, back[1], back[2]) end
+  end, 6000)
+end
+
+local function clearWear()
+  worn = {}
+  if tryEvent then removeEvent(tryEvent) end
+  tryEvent = nil
+  if type(clearCreatureWear) == 'function' then pcall(clearCreatureWear) end
+end
+
 -- ---------------------------------------------------------------- protocol
 local function onMessage(protocol, opcode, msg)
   if type(msg) ~= 'table' then return end
@@ -524,9 +574,11 @@ local function onMessage(protocol, opcode, msg)
   elseif msg.action == 'looks' then
     local m = fx()
     if m then m.setLooks(data) end
+    applyWear(data)
   elseif msg.action == 'tryfx' then
     local m = fx()
     if m and (data.kind == 'footprint' or data.kind == 'outline') then m.showPreview(data.kind, data.art, data.p or data.pulse, data.e) end
+    if CL.WEAR[data.kind] then tryWear(data.kind, data.look) end
   elseif msg.action == 'kdis' then
     -- a dissolve kill effect near you (server cosmetics.lua, O563): game_killdissolve draws the monster's own sprite coming apart
     local m = modules.game_killdissolve
@@ -560,6 +612,7 @@ local function onGameEnd()
   state, selectedId, rowWidgets = nil, nil, {}
   names, accent = {}, nil
   pushAccent()
+  clearWear()
 end
 
 function init()
@@ -570,7 +623,7 @@ function init()
   for _, k in ipairs(CL.KINDS) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabs)
     b:setText(tr(k.name))
-    b:setWidth(90)
+    b:setWidth(82) -- 11 tabs (O747: head and cape) in the row beside the checkbox
     local key = k.key
     b.onClick = function() selectTab(key) end
     tabButtons[key] = b
@@ -586,6 +639,7 @@ function terminate()
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   unhookConsole()
   stopChatFx()
+  clearWear()
   accent = nil
   pushAccent()
   if preview then preview:destroy() end

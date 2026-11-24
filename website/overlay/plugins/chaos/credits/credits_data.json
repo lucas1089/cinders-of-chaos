@@ -205,19 +205,19 @@
      "name": "WsT Wings Pack",
      "author": "WsT",
      "licence": "purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data",
-     "use": "wings cosmetics (planned)"
+     "use": "wings cosmetics; since pair 83 (O747, not built yet, client/tools/sprites/gen_wst_wear.py) its oblique 32 px pieces: 73 of our code-drawn wings looks redrawn in place with the pack piece and one new wings look, the wearer lifted by the pack's levitation; the art is not in the repository, only in the sprite pair"
     },
     {
      "name": "WsT Head Accessories Pack",
      "author": "WsT",
      "licence": "purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data",
-     "use": "head accessory cosmetics (planned)"
+     "use": "head accessory cosmetics; since pair 83 (O747, not built yet) 66 of its oblique 32 px pieces on a layer of their own round the body; the art is not in the repository, only in the sprite pair"
     },
     {
      "name": "WsT Capes & Cloaks Pack",
      "author": "WsT",
      "licence": "purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data",
-     "use": "cape cosmetics (planned)"
+     "use": "cape cosmetics; since pair 83 (O747, not built yet) 78 of its oblique 32 px pieces on a layer of their own round the body; the art is not in the repository, only in the sprite pair"
     },
     {
      "name": "WsT Hollow Harvest Kit",

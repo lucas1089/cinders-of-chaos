@@ -101,6 +101,21 @@ eq(opt.kind, 'outfit', 'collection addons') eq(opt.addons, 3, 'all addons')
 opt = P.fromCosmeticRow({ collection = true, kind = 'shader', shader = 'ember_pixent' })
 eq(opt.shader, 'ember_pixent', 'collection shader')
 eq(P.fromCosmeticRow({ collection = true, kind = 'item', item = 3 }), nil, 'an item')
+-- a head piece / cape of client pair 83 (O747): a worn option, the figure keeps its outfit, the engine draws the piece
+opt = P.fromCosmeticRow({ kind = 'head', id = 1001, look = 3590 })
+eq(opt.kind .. ' ' .. opt.slot .. ' ' .. opt.look, 'wear head 3590', 'head row')
+eq(P.wearOf(opt).head .. ' ' .. P.wearOf(opt).cape, '3590 0', 'the head look, no cape')
+eq(P.wearOf(P.fromCosmeticRow({ kind = 'cape', id = 1101, look = 3656 })).cape, 3656, 'the cape look')
+eq(P.fromCosmeticRow({ kind = 'head', id = 0 }), nil, 'the Default row: nothing worn')
+eq(P.fromCosmeticRow({ kind = 'cape', id = 3 }), nil, 'no look: nothing')
+eq(P.wearOf({ kind = 'wear', slot = 'hat', look = 5 }), nil, 'an unknown slot')
+eq(P.wearOf({ kind = 'outline', art = 'x' }), nil, 'not a worn piece')
+eq(P.fromStoreLook({ kind = 'wear', slot = 'cape', look = 3700 }).look, 3700, 'the store look of a cape')
+eq(P.fromStoreLook({ kind = 'wear', slot = 'cape', look = -1 }), nil, 'a bad store look')
+do
+  local o, outline, note = P.composeRaw('own', { type = 128, wings = 0 }, { kind = 'wear', slot = 'head', look = 3590 })
+  eq(o.type == 128 and outline == nil and note == nil, true, 'the figure keeps its outfit, no note')
+end
 
 -- Outfit window buttons
 eq(P.fromOutfitButton('outfitCheck', { type = 130, addons = 2 }).look, 130, 'outfit button')

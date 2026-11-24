@@ -35,8 +35,11 @@
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
 --                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse, e = {id, dx, dy, ms}} | false}, full}  (footprints
 --                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx; e: an effect footprint
---                     of client pair 75 (O649), f is then its effect name and the client plays effect e[1] on the tile left)
---                     tryfx {kind, art, pulse, e}  (a preview the asking player's client draws on its own character)
+--                     of client pair 75 (O649), f is then its effect name and the client plays effect e[1] on the tile left;
+--                     h / c: the client look of the head piece / cape of client pair 83 (O747), game_cosmetics hands them to
+--                     the engine, setCreatureWear of client base patch 0210)
+--                     tryfx {kind, art, pulse, e, look}  (a preview the asking player's client draws on its own character; look:
+--                     a head piece / cape, O747)
 --                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded,
 --                     and score = the collection score (collection.lua K.view: score, groups, next, milestones), when loaded
 --                     kdis {i = creature id, x, y, z, m = dissolve mode, t = tint (absent 0), o = {l = look type, h, b, g, f = colours,
@@ -162,7 +165,7 @@ M.addOwnedShaders = addOwnedShaders
 local function chosenOf(player)
 	local st = cfg.storage
 	local chosen = {lines = {}}
-	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline", "levelfx", "rarefx"}) do
+	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline", "levelfx", "rarefx", "head", "cape"}) do
 		chosen[kind] = math.max(0, player:getStorageValue(st[kind]))
 	end
 	for _, l in ipairs(cfg.lines) do
@@ -202,23 +205,29 @@ local function footEffect(c)
 	end)
 end
 
--- {f, o, p, e} of the chosen footprint / outline (nil when the character shows neither)
+-- {f, o, p, e, h, c} of the chosen footprint / outline / head piece / cape (nil when the character shows none)
 local function lookOf(chosen, player)
 	local foot = chosen.footprint > 0 and owned(player, chosen.footprint)
 	local glow = chosen.outline > 0 and owned(player, chosen.outline)
 	foot = foot and foot.kind == "footprint" and foot or nil
 	glow = glow and glow.kind == "outline" and glow or nil
+	-- O747: the head piece and the cape of client pair 83 (only while the gate keeps them in the config)
+	local head = chosen.head > 0 and owned(player, chosen.head)
+	local cape = chosen.cape > 0 and owned(player, chosen.cape)
+	head = head and head.kind == "head" and head.look or nil
+	cape = cape and cape.kind == "cape" and cape.look or nil
 	if not foot and not glow then
-		return nil
+		return (head or cape) and {h = head, c = cape} or nil
 	end
 	local e = foot and footEffect(foot) or nil
 	if foot and foot.fx and not e then
 		foot = nil -- the effect is not known (the pair gate is off): no print rather than an empty name
 		if not glow then
-			return nil
+			return (head or cape) and {h = head, c = cape} or nil
 		end
 	end
-	return {f = foot and (foot.fx or foot.art) or nil, o = glow and glow.art or nil, p = glow and glow.pulse and 1 or nil, e = e}
+	return {f = foot and (foot.fx or foot.art) or nil, o = glow and glow.art or nil, p = glow and glow.pulse and 1 or nil, e = e,
+		h = head, c = cape}
 end
 
 local function sameLook(a, b)
@@ -226,7 +235,8 @@ local function sameLook(a, b)
 		return a == b
 	end
 	local ea, eb = a.e or {}, b.e or {}
-	return a.f == b.f and a.o == b.o and a.p == b.p and ea[1] == eb[1] and ea[2] == eb[2] and ea[3] == eb[3]
+	return a.f == b.f and a.o == b.o and a.p == b.p and ea[1] == eb[1] and ea[2] == eb[2] and ea[3] == eb[3] and a.h == b.h
+		and a.c == b.c
 end
 
 -- rebuild the cache of a character from its storages (a choice that is not owned any more is dropped)
@@ -344,8 +354,39 @@ local function syncAccount(accountId, player)
 end
 M.syncAccount = syncAccount
 
+-- O747: the head pieces and capes of client pair 83 that are the same piece as a pair 33 aura the character owns: the
+-- account gets them free (data/lib/chaos_wst_wear.lua twinGrants; nothing while its gate is off or the engine has no hasAura)
+local wear
+local function grantTwins(player)
+	if wear == nil then
+		local okWear, v = pcall(dofile, "data/lib/chaos_wst_wear.lua")
+		wear = okWear and type(v) == "table" and v or false
+	end
+	if not wear or not wear.on or not player.hasAura then
+		return {}
+	end
+	local accountId, names = player:getAccountId(), {}
+	for _, key in ipairs(wear.twinGrants(function(id) return player:hasAura(id) == true end)) do
+		local c = K.byKey(cfg, key)
+		if c and M.grant(accountId, key, "store") then
+			names[#names + 1] = c.name
+		end
+	end
+	if #names > 0 then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Cosmetic unlocked: %s. Choose it in Character > Cosmetics.",
+			table.concat(names, ", ")))
+	end
+	return names
+end
+M.grantTwins = grantTwins
+
 local function sync(player)
-	return syncAccount(player:getAccountId(), player)
+	local names = syncAccount(player:getAccountId(), player)
+	local okTwins, err = pcall(grantTwins, player)
+	if not okTwins then
+		print("[Chaos cosmetics] twin grants failed: " .. tostring(err))
+	end
+	return names
 end
 M.sync = sync -- achievements.lua calls it after new unlocks (the reward track)
 
@@ -470,7 +511,7 @@ end
 
 -- the preview of a cosmetic: its effects one after another, seen by the asking player only
 function M.preview(player, c)
-	if not c or (c.kind ~= "spellskin" and not K.VFX_KINDS[c.kind] and not K.DRAWN[c.kind]) then
+	if not c or (c.kind ~= "spellskin" and not K.VFX_KINDS[c.kind] and not K.DRAWN[c.kind] and not K.WEAR[c.kind]) then
 		return false
 	end
 	local pid, t = player:getId(), nowMs()
@@ -478,6 +519,11 @@ function M.preview(player, c)
 		return false
 	end
 	lastPreview[pid] = t
+	if K.WEAR[c.kind] then
+		-- a head piece / cape (O747): the asking client puts it on its own character for a few seconds
+		send(player, "tryfx", {kind = c.kind, look = c.look})
+		return true
+	end
 	if K.DRAWN[c.kind] then
 		-- footprints and outlines: the asking client draws it on its own character for a few seconds (game_cosmeticfx)
 		local e = footEffect(c)

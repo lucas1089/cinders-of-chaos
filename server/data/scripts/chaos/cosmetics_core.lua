@@ -1,5 +1,5 @@
 -- cosmetics_core.lua: the rules of cosmetics.lua without engine calls (server/tests/cosmetics_test.lua).
--- Spell effect skins, kill effects, loot label accents, chat name colours, footprints and outlines; data in
+-- Spell effect skins, kill effects, loot label accents, chat name colours, footprints, outlines, head pieces and capes; data in
 -- cosmetics_config.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -7,7 +7,11 @@ ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
 C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true,
-	levelfx = true, rarefx = true}
+	levelfx = true, rarefx = true, head = true, cape = true}
+-- the head piece and the cape of client pair 83 (O747): a creature look every viewer's client draws round the body
+-- (client base patch 0210; data/lib/chaos_wst_wear.lua); `look` is the client look id
+C.WEAR = {head = true, cape = true}
+C.WEAR_FIRST_LOOK = 3589 -- the first look of pair 83 (outfits up to 3588 are pair 82's)
 -- the kinds that are one chaos_vfx.lua effect (`vfx`) other players see: killfx on the killed monster, levelfx on the
 -- character at a level up, rarefx on the corpse of a rare drop (cosmetics.lua). The victory emote kind is gone (O564).
 C.VFX_KINDS = {killfx = true, levelfx = true, rarefx = true}
@@ -540,6 +544,9 @@ function C.rows(cfg, owned, chosen, opts)
 		elseif C.DRAWN[c.kind] then
 			-- footprints and outlines: the client draws the preview itself (game_cosmeticfx), no server effect
 			row.art, row.pulse, row.preview = c.art, c.pulse or nil, true
+		elseif C.WEAR[c.kind] then
+			-- head pieces and capes (O747): the client draws the piece on its preview figure itself
+			row.look, row.preview = c.look, true
 		end
 		rows[#rows + 1] = row
 	end
@@ -555,7 +562,7 @@ function C.offerPreview(c)
 		return {color = c.color}
 	elseif c.kind == "lootbeam" then
 		return {accent = c.accent}
-	elseif C.DRAWN[c.kind] then
+	elseif C.DRAWN[c.kind] or C.WEAR[c.kind] then
 		-- the SHOW button: the buyer's own client draws it on the buyer for a few seconds (cosmetics.lua "tryfx")
 		return {effect = true, color = c.color}
 	end
@@ -569,6 +576,7 @@ end
 --   spell skin / kill effect / rare-loot effect  {kind = "effects", play, killfx?, lootfx?}   (play: playRows, the effects)
 --   chat colour / loot label  {kind = "swatch", color, accent?}   (a sample of the colour; nothing to wear)
 --   outfit shader             {kind = "shader", shader}
+--   head piece / cape (O747)  {kind = "wear", slot = "head" | "cape", look}   (the figure wears the piece, client base patch 0210)
 -- nil for an unknown unlock. lookup(type, name) is the one of C.playRows.
 function C.offerLook(cfg, unlockName, lookup)
 	local c = C.ofUnlock(cfg, unlockName)
@@ -581,6 +589,8 @@ function C.offerLook(cfg, unlockName, lookup)
 			return #play > 0 and {kind = "effects", play = play, footfx = true} or nil
 		elseif c.kind == "footprint" then
 			return {kind = "footprint", art = c.art, color = c.color}
+		elseif C.WEAR[c.kind] then
+			return {kind = "wear", slot = c.kind, look = c.look}
 		elseif c.kind == "spellskin" or C.VFX_KINDS[c.kind] then
 			local play = lookup and C.playRows(c, lookup) or {}
 			if #play > 0 then
@@ -1038,6 +1048,23 @@ function C.validate(cfg, opts)
 			if c.pulse ~= nil and (c.kind ~= "outline" or type(c.pulse) ~= "boolean") then
 				bad("%s: pulse is true / false and only for outlines", w)
 			end
+		elseif C.WEAR[c.kind] then
+			-- head pieces and capes (O747): a look of client pair 83, used once, behind the pair gate; aura = an auras.xml id
+			if type(c.look) ~= "number" or c.look % 1 ~= 0 or c.look < C.WEAR_FIRST_LOOK or c.look > 0xffff then
+				bad("%s: look is a client look of pair 83 (%d or more)", w, C.WEAR_FIRST_LOOK)
+			elseif arts["look:" .. c.look] then
+				bad("%s: look %d used by %s too", w, c.look, arts["look:" .. c.look])
+			end
+			arts["look:" .. tostring(c.look)] = c.key
+			if type(c.pair) ~= "number" or c.pair < 83 then
+				bad("%s: a head piece or cape needs `pair` 83 or more (the client pair that has the look)", w)
+			end
+			if c.aura ~= nil and (type(c.aura) ~= "number" or c.aura < 1 or c.aura % 1 ~= 0) then
+				bad("%s: aura is an auras.xml id", w)
+			end
+		end
+		if c.look ~= nil and not C.WEAR[c.kind] then
+			bad("%s: look is only for head pieces and capes", w)
 		end
 	end
 	for _, p in ipairs(C.validateOutfitShaders(cfg, opts)) do
