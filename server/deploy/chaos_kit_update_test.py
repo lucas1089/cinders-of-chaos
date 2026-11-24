@@ -25,11 +25,13 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -46,11 +48,19 @@ sys.path.insert(0, os.path.join(REPO_ROOT, 'server', 'tools'))
 import late_game  # noqa: E402
 import map_master_test  # noqa: E402  (fake_map: a tiny synthetic OTBM)
 
+
+def cfg_host(cfg):
+    """The host of the url line of a curl config (exact match, not a substring)."""
+    m = re.search(r'^url = "([^"]+)"', cfg, re.M)
+    return urllib.parse.urlsplit(m.group(1)).hostname if m else None
+
+
 CURL = r'''#!/usr/bin/env python3
 # test stand-in (O530, a private repository): https only, the config on stdin (-K -). The releases API answers
 # $STUB/releases.json (or the code of $STUB/api.code), an asset address answers 302 with a signed address, the signed
 # address hands out $STUB/assets/NAME. Arguments and config lines are logged.
 import json, os, re, shutil, sys
+
 stub = os.environ['STUB']
 args = sys.argv[1:]
 cfg = sys.stdin.read() if '-K' in args else ''
@@ -657,11 +667,11 @@ def test_flow():
         # O530 over the whole flow: the API questions carried the token on curl's stdin, the signed addresses did not,
         # and the token was on no command line and in no output
         cfgs = [c for c in read(os.path.join(w.stub, 'cfg.log')).split('--\n') if c.strip()]
-        api = [c for c in cfgs if 'api.github.com' in c and w.token in c]
-        cdn = [c for c in cfgs if 'objects.example.org' in c]
+        api = [c for c in cfgs if cfg_host(c) == 'api.github.com' and w.token in c]
+        cdn = [c for c in cfgs if cfg_host(c) == 'objects.example.org']
         check(len(api) > 5 and cdn and all('Authorization' not in c for c in cdn),
               'the token goes to the API on stdin, never to the signed addresses (%d, %d)' % (len(api), len(cdn)))
-        check(len([c for c in cfgs if 'api.github.com' in c and 'Authorization' not in c]) >= 1,
+        check(len([c for c in cfgs if cfg_host(c) == 'api.github.com' and 'Authorization' not in c]) >= 1,
               'a run without a token sent no Authorization line')
         check(w.token not in ''.join(w.calls) and w.token not in w.out, 'the token is on no command line and in no output')
     finally:

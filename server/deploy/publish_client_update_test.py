@@ -29,11 +29,13 @@ import hashlib
 import http.server
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 import threading
 import zipfile
 
@@ -45,6 +47,12 @@ sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites'))
 import pack_client  # noqa: E402
 import spr_shards  # noqa: E402
 import update_crypt  # noqa: E402
+
+
+def cfg_host(cfg):
+    """The host of the url line of a curl config (exact match, not a substring)."""
+    m = re.search(r'^url = "([^"]+)"', cfg, re.M)
+    return urllib.parse.urlsplit(m.group(1)).hostname if m else None
 
 CLIENT_KEY = '7e' * 32   # throwaway client guard keys (never real ones)
 OLD_KEY = '19' * 32
@@ -346,8 +354,8 @@ sys.exit(22)
         r = run('winpkg-48', extra={'STUB_ZIP': good, 'CHAOS_GITHUB_TOKEN_FILE': tfile})
         check(r.returncode == 0, 'tag publishes with a token: ' + r.stdout + r.stderr)
         cfgs = [c for c in open(os.path.join(stub, 'cfg.log')).read().split('--\n') if c.strip()]
-        api_cfgs = [c for c in cfgs if 'api.github.com' in c]
-        cdn_cfgs = [c for c in cfgs if 'objects.example.org' in c]
+        api_cfgs = [c for c in cfgs if cfg_host(c) == 'api.github.com']
+        cdn_cfgs = [c for c in cfgs if cfg_host(c) == 'objects.example.org']
         check(len(api_cfgs) == 2 and all('Authorization: Bearer ' + token in c for c in api_cfgs),
               'the tag and asset questions carry the token')
         check(len(cdn_cfgs) == 1 and 'Authorization' not in cdn_cfgs[0], 'the signed address gets no token')
