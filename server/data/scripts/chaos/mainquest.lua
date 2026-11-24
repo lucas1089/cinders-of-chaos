@@ -945,7 +945,8 @@ function W.onAction(player, msg)
 		end
 	elseif a == "mqHelper" then
 		-- O761: the client pressed Auto setup in the Helper (the first step); a flag of a step not open yet waits in the storage
-		if Chaos.limited and Chaos.limited(player, "goals.mqHelper", 1000) then
+		-- its own key: goals.lua already passed this action through the limiter under "goals.mqHelper" an instant ago
+		if Chaos.limited and Chaos.limited(player, "mainquest.helper", 1000) then
 			return
 		end
 		if W.emit(player, "helper") then

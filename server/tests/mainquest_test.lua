@@ -580,7 +580,14 @@ end
 -- O761: the Helper step: Auto setup sends mqHelper on the goals channel
 sweep.onThink(1000)
 eq(p.store[key("step")], 1, "no Auto setup yet")
+-- goals.lua passes every action of its channel through the limiter ("goals." .. action) before it calls in here: the
+-- main quest must not ask the limiter again under that key (it would always be refused)
+local savedRL = ChaosRateLimit
+local seen = {}
+ChaosRateLimit = {allow = function(_, k) if seen[k] then return false end seen[k] = true return true end}
+check(not Chaos.limited(p, "goals.mqHelper", 300), "goals.lua's own pass of the limiter")
 W.onAction(p, {action = "mqHelper"})
+ChaosRateLimit = savedRL
 eq(p.store[key("step")], 2, "Auto setup is step 1")
 local bank1 = p.bank
 eq(bank1, K.gold(cfg, income, S.helper), "its gold")
