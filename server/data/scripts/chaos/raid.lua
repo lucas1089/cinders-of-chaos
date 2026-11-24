@@ -1393,6 +1393,9 @@ function X.deliver(player, b, idx)
 			if ChaosUniqueIntro then -- O467
 				pcall(ChaosUniqueIntro.found, player)
 			end
+			if ChaosCollectionLog then -- O753
+				pcall(ChaosCollectionLog.note, player, u.id, 1)
+			end
 			lines[#lines + 1] = "{" .. u.name .. "}"
 			if not Chaos.isTester(player) then -- a tester's find is never announced (O588)
 				Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s found %s in %s!", player:getName(), u.name, cfg.name)

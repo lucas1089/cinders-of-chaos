@@ -6660,7 +6660,7 @@ Add HD art for a monster (a creature look, one layer, 4 directions or 1):
 ## Menu hubs (O550, `client_chaos_topbar`, base patch 0199)
 
 The top menu is six hub badges on the bar (Hero, Hunt, Adventure, Trade, Social, System; 32 px, phone 44 px; System alone at the right end behind a divider, the player's pins between the other hubs and it; the Store is a card of the Trade hub, no default pin).
-A badge opens one window of 780 x 262 (phone 780 x 290) with tabs and cards: 6 hubs, 26 tabs, 105 cards, the same windows as the
+A badge opens one window of 780 x 262 (phone 780 x 290) with tabs and cards: 6 hubs, 26 tabs, 106 cards, the same windows as the
 text menu. Owner 2026-11-13: "mude o nosso menu do topo pra algo desse tipo. com ícones e sub ícones ... diminua ele", then
 "acho que tem que ficar ainda menor. deixe por exemplo abrir uma janela com abas". Roadmap id O550. Not run in a client.
 - **Data and logic (no engine):** `topbar_tree.lua` (hub -> tab -> card text, `CATEGORY_HUB`, `DROPPED`, `SHARED`, `TEXT_ONLY`),
@@ -8236,3 +8236,14 @@ only). `gen_wst_wear.py build` refuses a pair whose items do not end at 44605, w
 fail `gen_cliff_art.py live`. Not built here: the coordinator builds and publishes pair 83 with the owner's approval, then
 `PAIR_ASSETS` 83. Before that: `live-pair` checks that read the replaced wings looks (`clean_wing_shadows.py check-clean`,
 `gen_wing_centres.py --check`, `gen_drawn_wings.py live`) will see the pack art on 73 looks and need their tables refreshed on pair 83.
+
+## Collection log (O753, `game_collectionlog`)
+
+Hunt > Records > Collection Log. pt-BR strings in `client_chaos_locale/pt_br.lua`.
+Lists every unique, set piece, raid unique, card and pinnacle item by source group.
+Each row shows owned, seen or not yet, the count and the first drop date.
+A search box and a filter combo (all, owned, seen, not yet). A pity panel with one bar per chase source.
+Opcode 170, JSON. The window asks `{"action":"sync"}` when shown. Server: `collection_log.lua`, `chase_pity.lua`.
+`collectionlogic.lua` is pure: clean, filter, lines, texts, pity lines. Test: `collectionlogic_test.lua` in the client loop.
+`collectionlog.otui`: 760 x 500, `$mobile` 640 x 400, ChaosCloseX and a Close button.
+The hub menu now has 106 cards. Unity: on `tools/ci/unity_opcodes_allowlist.txt`.

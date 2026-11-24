@@ -44,6 +44,7 @@ K.WORDS = {
   ['DPS Meter'] = 'damage dps meter dano',
   ['Death Recap'] = 'died killed death cause morte resumo',
   ['Nemesis'] = 'rival killer revenge inimigo',
+  ['Collection Log'] = 'collection log uniques sets cards pity colecao registro unicos sorte',
   -- Hunt > Map
   ['Map Overlay'] = 'monsters map draw sobreposicao mapa',
   ['Map Overlay Settings'] = 'overlay options configuracao',

@@ -1246,6 +1246,8 @@ jobs:
 
       - name: Leveling uniques open by level, 1500-2500 kills per unique (unique_pace_model.lua; unique_pace_config.lua limits, O342)
         run: cd server && luajit tools/unique_pace_model.lua --check && lua5.3 tools/unique_pace_model.lua --check
+      - name: Chase pity, the mean chase moves at most 10% (chase_pity_model.lua; chase_pity_config.lua, O753)
+        run: cd server && luajit tools/chase_pity_model.lua --check && lua5.3 tools/chase_pity_model.lua --check
 
       - name: Rifts pay orbs and waystones pay gear, per hour above hunting but inside bounds (content_reward_model.lua; content_rewards_config.lua bounds)
         run: cd server && luajit tools/content_reward_model.lua --check && lua5.3 tools/content_reward_model.lua --check

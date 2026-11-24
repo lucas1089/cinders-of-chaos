@@ -817,6 +817,12 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 			ChaosConquest.pityRecord(owner, group, hit ~= false, hit or nil)
 		end
 	end
+	-- O753: the Collection log counts every unique that dropped for its owner (collection_log.lua)
+	if owner and #hits > 0 and ChaosCollectionLog and ChaosCollectionLog.note then
+		for _, e in ipairs(hits) do
+			pcall(ChaosCollectionLog.note, owner, e.id, 1)
+		end
+	end
 	return hits
 end
 

@@ -44,6 +44,7 @@ C.CARDS = {
   ['DPS Meter'] = { 'bars', 'Damage per second, live' },
   ['Death Recap'] = { 'scroll', 'What killed you' },
   ['Nemesis'] = { 'swords', 'The monster that killed you' },
+  ['Collection Log'] = { 'chest', 'Uniques, sets, cards and pity' },
   -- Hunt > Map
   ['Map Overlay'] = { 'map', 'Monsters drawn on the map' },
   ['Map Overlay Settings'] = { 'sliders', 'What the overlay shows' },

@@ -739,6 +739,7 @@ collision check") and be added here.
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
 | 190 | `clientGuardHello` | `clientguard.lua` | `game_chaosguard` | client -> server |
 | 169 | `botdet` | `botdet.lua` | `game_chaosguard` | client -> server `integrity` (module digests) and `tools` (codes of known tools, O722); server -> client `tools` (the list staff keep); see "Bot detection events and scores (O722)" |
+| 170 | `collectionLog` | `collection_log.lua` | `game_collectionlog` | client -> server `sync`; server -> client `state {rows, groups, pity, owned, seen, total}` (over 8192 bytes: `Chaos.send` splits it); see "Collection log (O753)" |
 | 191 | `levelWings` | `levelwings.lua` | `game_levelwings` | server -> client |
 | 192 | `hideout` | `hideout.lua` | `game_hideout` | |
 | 193 | `pvpZone` | `pvpzone.lua` | `game_pvpzone` | |
@@ -895,6 +896,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
 | 7106400 - 7106459 | pinnacle bosses (`pinnacle_config.lua` `storage`, O667): +0 .. +15 fragments held (boss index 0-3 x 4 + kind 0-3), +16 the focus (boss index + 1, 0 none), +20 .. +23 first kills (a bit per season, `season id % 30`), +24 .. +27 deathless (1 once), +28 .. +31 kills, +32 .. +35 kills since the last unique (the bad-luck count), +36 a run in progress (boss index + 1, given back at the next login after a crash), +37 when it opened, +38 the last opening; +39 .. +59 free |
+| 7106600 - 7106619 | chase pity (`chase_pity_config.lua` `storage`, `Chaos.storage.chasePity`, O753): +0 .. +4 the misses of rift, waystone, guardian, pocket, fragment; +5 .. +19 free |
 | 7107000 - 7108099 | spell ranks (`spell_ranks_config.lua` `storage`, `Chaos.storage.spellRanks`, O686): +0 .. +499 the packed state of the spell with that id (bits 0-4 rank, 5-6 Form I, 7-8 Form II, 9 awakened), +500 version of the block, +501 awakened spells held, +502 Form changes, +503 reserved (the launch grant was removed), +504 time of the last Form pick, +505 its spell id x 10 + tier (the free change window, phase 4), +510 .. +512 Seals (phase 7), +520 .. +529 awakened ids by slot, +600 .. +1099 SP in 1/10000 SP of the spell with that id |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
@@ -38595,3 +38597,53 @@ account at login and when the Cosmetics window opens (`cosmetics.lua` `grantTwin
 **Tests.** `tests/pack_wear_test.lua` (ids, twins, the gate off and on, the config and the store validate with the real cores,
 rows, store look, choose, refusals of a bad piece, pt-BR of every description sentence), `tests/cosmetics_test.lua`,
 `tools/install_outfits_test.py` (the wing line at 83 only). Not run in a game yet.
+
+## Chase pity (O753) (`chase_pity.lua`, `chase_pity_core.lua`, `chase_pity_config.lua`, `tools/chase_pity_model.lua`)
+
+Owner 2026-11-24 chose "Pity e coleção". Each long chase counts its misses per character.
+Each miss raises the chance. The N-th eligible event is a sure drop. A drop resets the count.
+
+Rule (`ChaosChasePityCore`): chance = p x (1 + ramp x k / n), k the misses, ramp 0.25.
+At k = n - 1 the roll is forced. The count stops at n - 1.
+The source's own roll goes first. A miss gets one top-up roll (`K.topUp`) with the extra chance.
+N is the smallest that moves the mean chase by at most 10% (`maxShift`, `deriveN`).
+p is the source's lowest chance, so a better roll moves the mean less.
+
+| Source | Event | p | N | Mean events before | after | Shift |
+|---|---|---|---|---|---|---|
+| `rift` | rift chest with a set chase open | 0.025 | 114 | 40.0 | 36.0 | 9.9% |
+| `waystone` | waystone boss kill | 0.2034 | 13 | 4.9 | 4.5 | 8.8% |
+| `guardian` | rift / Greater Rift guardian kill (tier 15, level 1000) | 0.1719 | 15 | 5.8 | 5.3 | 9.6% |
+| `pocket` | world pocket boss kill with a unique in its pool | 0.003 | 961 | 333 | 300 | 10.0% |
+| `fragment` | pinnacle fragment roll | 0.25 | 10 | 4.0 | 3.6 | 9.0% |
+| pinnacle unique | pinnacle boss kill (O667, shown only) | 0.22 | 8 | 4.5 | 3.9 | 13.7% |
+
+The pinnacle unique pity is the one of O667 and stays as it was. The Collection log only shows it.
+The Conquest soft pity (`conquest_config.lua`) still runs on top.
+
+Hooks:
+- `content_rewards.lua` `addUniques`: waystone boss and guardian. A forced roll gives one unique of the pool.
+- `itemsets.lua` `grantChase` with `ctx.pityKey = "rift"` from `rift.lua`. `ctx.force` makes `S.rollChase` sure.
+- `pocketboss.lua` `worldRewardOf`: a top-up after `K.worldReward`.
+- `pinnacle.lua` `grantClear`: the fragment roll.
+
+A forced drop sends "Your persistence pays off: %s." (pt-BR in `i18n_strings.lua`).
+Staff: `/chasepity Name` shows the counts, `/chasepity Name, reset` clears them.
+Model: `cd server && luajit tools/chase_pity_model.lua --check` (also lua5.3). It reads p from the configs.
+Tests: `tests/chase_pity_test.lua`. The pinnacle, greater rift, waystone endgame and unique pace models stay green.
+Note: the pinnacle model gives a fragment set in 2.77 hours (band 2.5-7). Fragment pity may cut it by up to 9%.
+
+## Collection log (O753) (`collection_log.lua`, `collection_log_core.lua`, `collection_log_config.lua`, `sql/chaos_collection_log.sql`, client `game_collectionlog`)
+
+One window lists every unique, set piece, raid unique, card and pinnacle item by source.
+Each row is owned, seen or not yet, with the count and the first drop date.
+The pity panel shows the count of every source above, the pinnacle bosses too.
+
+- Owned: a row of `chaos_collection_log`, a row of `chaos_conquest_seen`, or a Deck of Cards copy.
+- Seen: a bestiary kill of a monster that lists the item.
+- Drops are noted by `ChaosCollectionLog.note` in loot, item sets, pocket bosses, pinnacle and raid. Testers are skipped.
+- Opcode 170 (`ChaosOpcodes.collectionLog`), JSON. The client sends `{"action":"sync"}`, at most once in 1.5 s.
+- The answer goes through `Chaos.send`, chunked over 8192 bytes.
+- Table `chaos_collection_log` (player, item, count, first date). The launch wipe clears it.
+- Menu: Hunt > Records > Collection Log. Unity: on the opcode allowlist, not ported yet.
+- Tests: `tests/collection_log_test.lua`; client `game_collectionlog/collectionlogic_test.lua`.

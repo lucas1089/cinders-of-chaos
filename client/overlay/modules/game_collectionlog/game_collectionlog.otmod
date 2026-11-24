@@ -1,0 +1,13 @@
+Module
+  name: game_collectionlog
+  description: Collection log - every unique, set piece, raid unique and card by source, owned / seen / not yet, counts, first drop date and the chase pity counts (server collection_log.lua, chase_pity.lua, extended opcode 170); Hunt > Records > Collection Log
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ collectionlogic, collectionlog ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

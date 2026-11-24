@@ -231,6 +231,10 @@
    "action": "wipe",
    "reason": "account collection entries of the beta (account-wide unlocks)"
   },
+  "chaos_collection_log": {
+   "action": "wipe",
+   "reason": "Collection log drops of beta characters (O753)"
+  },
   "chaos_community_buffs": {
    "action": "wipe",
    "reason": "community goal and world buff state of the beta world"

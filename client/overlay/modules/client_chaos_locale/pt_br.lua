@@ -7688,5 +7688,32 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_hotbar/hotbar.otui (O732: the side dock in Layout options)
   ["Side panel"] = "Painel lateral",
   ["Windows in a side panel with tabs"] = "Janelas num painel lateral com abas",
+  -- game_collectionlog (O753: the Collection log and the chase pity). Run-time keys: the group labels of the server's
+  -- collection_log_config.lua and the pity labels of chase_pity_config.lua / chase_pity.lua
+  ["Collection Log"] = "Registro de Coleção",
+  ["Search by name"] = "Procurar pelo nome",
+  ["Owned, seen or not yet"] = "Obtidos, vistos ou ainda não",
+  ["Nothing matches the filter."] = "Nada corresponde ao filtro.",
+  ["Pity"] = "Sorte garantida",
+  ["Every try without the drop raises its chance. The last one is sure."] = "Cada tentativa sem o drop aumenta a chance. A última é garantida.",
+  ["x%d, first on %s"] = "x%d, o primeiro em %s",
+  ["x%d"] = "x%d",
+  ["Seen"] = "Visto",
+  ["Owned %d of %d, seen %d"] = "Obtidos %d de %d, vistos %d",
+  ["Uniques, sets, cards and pity"] = "Únicos, sets, cartas e sorte",
+  ["Pinnacle bosses"] = "Chefes do Pináculo",
+  ["Ascended bosses"] = "Chefes Ascended",
+  ["Raid: Ashen Sepulchre"] = "Raid: Ashen Sepulchre",
+  ["Boss uniques"] = "Únicos de chefes",
+  ["Endgame uniques"] = "Únicos de endgame",
+  ["Set: %s"] = "Set: %s",
+  ["Hunting uniques"] = "Únicos de caça",
+  ["Cards"] = "Cartas",
+  ["Rift chest: set piece"] = "Baú da rift: peça de set",
+  ["Waystone boss: unique"] = "Chefe de waystone: único",
+  ["Rift guardian: unique"] = "Guardião da rift: único",
+  ["Pocket boss: unique"] = "Chefe de pocket: único",
+  ["Pinnacle fragment"] = "Fragmento do Pináculo",
+  ["Pinnacle: %s unique"] = "Pináculo: único de %s",
 }
 return ChaosLocaleStrings['pt-BR']

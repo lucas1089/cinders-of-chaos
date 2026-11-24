@@ -21,6 +21,13 @@ return {
 			"Próximo desbloqueio: nível %d.",
 		["and %d more"] =
 			"e mais %d",
+		-- Chase pity (O753: chase_pity.lua, chase_pity_config.lua)
+		["Your persistence pays off: %s."] = "Sua persistência compensa: %s.",
+		["Rift chest: set piece"] = "Baú da rift: peça de set",
+		["Waystone boss: unique"] = "Chefe de waystone: único",
+		["Rift guardian: unique"] = "Guardião da rift: único",
+		["Pocket boss: unique"] = "Chefe de pocket: único",
+		["Pinnacle fragment"] = "Fragmento do Pináculo",
 		-- Pinnacle bosses (O667: pinnacle.lua, pinnacle_core.lua, the Keeper of the Pinnacle)
 		["The anchors break: %s can be hurt again!"] =
 			"As âncoras se quebram: %s volta a sofrer dano!",

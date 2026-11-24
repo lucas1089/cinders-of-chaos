@@ -82,18 +82,34 @@ local function addOrbs(L, corpse, orbs, bonus)
 	end
 end
 
-local function addUniques(L, corpse, owner, monster, rolls, find, level, bonus, ctx)
-	for _ = 1, rolls do
-		for _, e in ipairs(L.rollUniques("boss", monster:getName(), level,
-				(ctx.itemFind or 1) * find, nil, owner)) do
+-- O753: pityKey names the chase pity source (chase_pity.lua): its misses raise the item find of the rolls, the n-th boss
+-- without a unique gets one (a roll with the config's forceFind), and the count is kept for the owner
+local function addUniques(L, corpse, owner, monster, rolls, find, level, bonus, ctx, pityKey)
+	local CP = pityKey and owner and rolls > 0 and ChaosChasePity or nil
+	local pm = CP and CP.mult(owner, pityKey) or 1
+	local got = false
+	local function add(list)
+		for _, e in ipairs(list) do
 			local item = (L.addToCorpse(corpse, e.id, 1))
 			if item then
+				got = true
 				if ChaosMakeUnique then
 					ChaosMakeUnique(item)
 				end
 				bonus[#bonus + 1] = "{" .. e.name .. "}"
 			end
 		end
+	end
+	for _ = 1, rolls do
+		add(L.rollUniques("boss", monster:getName(), level, (ctx.itemFind or 1) * find * pm, nil, owner))
+	end
+	if CP then
+		local forced = false
+		if not got and CP.forced(owner, pityKey) then
+			forced = true
+			add(L.rollUniques("boss", monster:getName(), level, CP.config.forceFind or 1000000, nil, owner))
+		end
+		CP.record(owner, pityKey, got, forced)
 	end
 end
 
@@ -130,7 +146,7 @@ local function waystoneKill(monster, corpse, owner, ctx, L, bonus)
 			end
 		end
 		addOrbs(L, corpse, plan.orbs, bonus)
-		addUniques(L, corpse, owner, monster, plan.uniqueRolls, c.boss.uniqueFind, ctx.orbLevel or runLevel, bonus, ctx)
+		addUniques(L, corpse, owner, monster, plan.uniqueRolls, c.boss.uniqueFind, ctx.orbLevel or runLevel, bonus, ctx, "waystone")
 		if W.addWaystone then
 			for _ = 1, plan.waystones do
 				W.addWaystone(corpse, t, monster, true)
@@ -160,7 +176,7 @@ local function riftKill(monster, corpse, owner, ctx, L, bonus)
 	if info.guardian then
 		local plan = K.riftGuardian(cfg(), info.tier, info.quantity, rand)
 		addOrbs(L, corpse, plan.orbs, bonus)
-		addUniques(L, corpse, owner, monster, plan.uniqueRolls, cfg().rift.guardian.uniqueFind, ctx.orbLevel or 0, bonus, ctx)
+		addUniques(L, corpse, owner, monster, plan.uniqueRolls, cfg().rift.guardian.uniqueFind, ctx.orbLevel or 0, bonus, ctx, "guardian")
 		return true
 	end
 	local orb = K.riftKill(cfg(), info.tier, ctx.tier, info.quantity, rand)

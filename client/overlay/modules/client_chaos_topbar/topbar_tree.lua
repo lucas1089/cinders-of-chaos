@@ -17,7 +17,7 @@ T.HUBS = {
   { id = 'hunt', name = 'Hunt', glyph = 'claws', tabs = {
     { id = 'hunting', name = 'Hunting', cards = { 'Hunt Tracker', 'Battle List', 'Minimap', 'Bestiary', 'Helper', 'Party Finder' } },
     { id = 'loot', name = 'Loot', cards = { 'Auto Loot', 'Loot Filter', 'Loot Splitter', 'Auto Seller' } },
-    { id = 'records', name = 'Records', cards = { 'DPS Meter', 'Death Recap', 'Nemesis' } },
+    { id = 'records', name = 'Records', cards = { 'DPS Meter', 'Death Recap', 'Nemesis', 'Collection Log' } },
     { id = 'map', name = 'Map', cards = { 'Map Overlay', 'Map Overlay Settings', 'Map Markers' } },
     { id = 'group', name = 'Group', cards = { 'Party', 'Party Frames', 'Group Queue' } },
   } },

@@ -267,6 +267,13 @@ Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions
 ChaosOpcodes.botdet = 169
 Chaos.botdetTables = {events = "chaos_botdet_events", scores = "chaos_botdet_scores"}
 
+-- Collection log and chase pity (O753; collection_log.lua, chase_pity.lua, sql/chaos_collection_log.sql, client module
+-- game_collectionlog): every unique, set piece, raid unique and card by source, owned / seen / not yet, and the pity counts.
+-- 170 is free in the reference server's list, the base client's ExtendedIds, every other ChaosOpcodes value and every client
+-- module (tests/collection_log_test.lua checks all four). Chase pity storages 7106600 - 7106619 (chase_pity_config.lua).
+ChaosOpcodes.collectionLog = 170
+Chaos.storage.chasePity = 7106600
+
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
 -- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen

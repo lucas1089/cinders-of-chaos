@@ -11,3 +11,4 @@
 165 | status layer (O597, client game_statusfx): the effects are in the sprite pair of the main client (pair 73); the Unity client never sends the hello, so the server sends it nothing
 168 | spell ranks and Forms (O686 phases 2, 4, 5; main client module game_spellranks in the Spellbook): the Unity client never sends open or pick, so the server sends it nothing; Unity work is paused by the owner (2026-11)
 169 | bot detection (O722, main client module game_chaosguard): module digests and the Windows known-tool codes come from the main client (base patch 0207); the Unity client never sends them, so the server sends it nothing; Unity work is paused by the owner (2026-11)
+170 | not ported yet: Collection log and chase pity (O753, main client module game_collectionlog); the server answers only a client that sent `sync`, which the Unity client never does, so Unity players get nothing; Unity work is paused by the owner (2026-11)
