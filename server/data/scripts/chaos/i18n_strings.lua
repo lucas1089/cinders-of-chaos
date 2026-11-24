@@ -8904,8 +8904,8 @@ return {
 			"Sundering Palm, Pressure Points e Shadowfist Flurry atingem em dourado",
 		["The %s mount, yours for good"] =
 			"O mount %s, seu para sempre",
-		["The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura"] =
-			"O outfit Astral Electric com os dois addons, o mount Stormkeep, asas e a aura do manto de tempestade",
+		["The Astral Electric outfit with both addons, the Stormkeep mount and the storm mantle aura"] =
+			"O outfit Astral Electric com os dois addons, o mount Stormkeep e a aura do manto de tempestade",
 		["The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura"] =
 			"O outfit Astral Fire com os dois addons, o mount Crimson Fang, Vorondor Flames e a aura Ember Crown",
 		["The Astral Ice outfit with both addons, the Glacier Wyrm mount, Nimbus Wings and the Frost Bastion aura"] =

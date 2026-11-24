@@ -152,9 +152,19 @@ local sold = {}
 for _, o in ipairs(wingsCat.offers) do
 	sold[o.id] = o.cost
 end
-for _, w in ipairs(M.storeWings) do
-	eq(sold[w.id], w.cost, w.key .. ": sold in the Wings category when on")
+-- O748: five of the six left the store (shop_config.lua retired); owners keep them, wings.xml keeps the lines
+local retired = {}
+for _, k in ipairs(shop.retired or {}) do
+	retired[k] = true
 end
+for _, w in ipairs(M.storeWings) do
+	if retired["wings:" .. w.id] then
+		eq(sold[w.id], nil, w.key .. ": retired from sale (O748)")
+	else
+		eq(sold[w.id], w.cost, w.key .. ": sold in the Wings category when on")
+	end
+end
+eq(sold[21], 250, "Jadeleaf Pinions still sold")
 local found = {}
 for _, e in ipairs(excl.exclusives) do
 	if e.look and e.look >= 2213 then

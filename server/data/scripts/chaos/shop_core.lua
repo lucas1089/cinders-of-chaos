@@ -40,6 +40,9 @@
 --   C.cosmeticOffers(cats, parent)        every cosmetic the store sells, for the staff grant /storecosmetics: the
 --                                         offers of the subcategories of `parent` (Cosmetics) and the cosmetic parts of
 --                                         every bundle, once each (no bundle, item, service, premium or founder piece)
+--   C.retiredSet(cfg)                     {key = true} of cfg.retired: offers taken out of sale (O748); owners keep them
+--   C.retire(cfg)                         takes every retired offer out of cfg: category offers, bundle parts, the
+--                                         featured pool, sales and "New" lists; returns how many entries it took out
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
 
 ChaosShopCore = ChaosShopCore or {}
@@ -893,7 +896,96 @@ function C.validate(cfg, ex)
 			end
 		end
 	end
+	-- retired offers (O748): never sold again, in no category, bundle or featured pool
+	local retired = C.retiredSet(cfg)
+	for _, cat in ipairs(cfg.categories or {}) do
+		for _, o in ipairs(cat.offers or {}) do
+			if retired[C.offerKey(o)] then
+				bad("retired offer " .. C.offerKey(o) .. " still sold in " .. tostring(cat.name))
+			end
+			for _, p in ipairs(o.kind == "bundle" and o.parts or {}) do
+				local pk = type(p) == "string" and p or (type(p) == "table" and C.offerKey(p) or nil)
+				if pk and retired[pk] then
+					bad("bundle " .. C.offerKey(o) .. ": retired part " .. pk)
+				end
+			end
+		end
+	end
+	for _, k in ipairs((sf.featured or {}).pool or {}) do
+		if retired[k] then
+			bad("featured: retired offer " .. k)
+		end
+	end
 	return problems
+end
+
+-- ------------------------------------------------------------------ retired from sale (O748)
+-- cfg.retired: offer keys ("wings:11") the store no longer sells. Only the sale stops: a character that bought one keeps
+-- it (the engine's wings / aura list and the ownership storage are not touched) and still wears it.
+function C.retiredSet(cfg)
+	local set = {}
+	for _, k in ipairs(cfg and cfg.retired or {}) do
+		set[k] = true
+	end
+	return set
+end
+
+local function dropKeys(list, retired)
+	local out, n = {}, 0
+	for _, k in ipairs(list or {}) do
+		if retired[k] then
+			n = n + 1
+		else
+			out[#out + 1] = k
+		end
+	end
+	return out, n
+end
+
+function C.retire(cfg)
+	local retired, n = C.retiredSet(cfg), 0
+	if next(retired) == nil then
+		return 0
+	end
+	for _, cat in ipairs(cfg.categories or {}) do
+		local kept = {}
+		for _, o in ipairs(cat.offers or {}) do
+			if retired[C.offerKey(o)] then
+				n = n + 1
+			else
+				if o.kind == "bundle" and o.parts then
+					local parts = {}
+					for _, p in ipairs(o.parts) do
+						local pk = type(p) == "string" and p or (type(p) == "table" and C.offerKey(p) or nil)
+						if pk and retired[pk] then
+							n = n + 1
+						else
+							parts[#parts + 1] = p
+						end
+					end
+					o.parts = parts
+				end
+				kept[#kept + 1] = o
+			end
+		end
+		cat.offers = kept
+	end
+	local sf = cfg.storefront or {}
+	if sf.featured and sf.featured.pool then
+		local d
+		sf.featured.pool, d = dropKeys(sf.featured.pool, retired)
+		n = n + d
+	end
+	for _, list in ipairs({sf.sales or {}, sf.new or {}}) do
+		for _, e in ipairs(list) do
+			if e.offers then
+				local d
+				e.offers, d = dropKeys(e.offers, retired)
+				n = n + d
+			end
+		end
+	end
+	return n
 end
 
 -- the kinds a bundle part can be and still be a cosmetic (an unlock only when its category is a cosmetic one)

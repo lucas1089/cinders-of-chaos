@@ -5790,6 +5790,23 @@ title source), `tests/founder_test.lua`, the window and grant tests in `tests/sh
 - **Chargeback.** A reversed donation can take a pack back, see "Follow-ups of O317 and O322".
 - **Not live.** Done in code and tests, not run live. Needs the pair 33 art on the client and the Pact system.
 
+### Retired from sale (O748, owner 2026-11-24)
+Owner: "Os cortes das asas pode fazer sim". Eight wings left the store.
+- **Which.** Butterfly Wings (11), Enslaved Wings (13), Runic Wings (20): small behind the body.
+  Tidewing Plumes (22), Duskfeather (23), Emberplume (24), Wildgrove (25), Bloodfeather (26): one feather fan, other colours.
+- **How.** `shop_config.lua` `retired` lists offer keys. `ChaosShopCore.retire` runs last in that file.
+  It drops them from every category, bundle part, the weekly rotation pool, sales and "New" lists.
+  `C.validate` names a retired key still sold. `shop.lua` skips a retired key again when it builds the catalog.
+- **Owners keep them.** Only the sale stops. The engine's wings list and the ownership storage stay.
+  wings.xml keeps every line: 11 and 13 are base lines, 22-26 come from `chaos_owner_art.lua` `storeWings`.
+  Nothing is cut from the client pair.
+- **Not sale, kept.** Runic Wings was never sold: Kaelgor's boss exclusive, still dropped. Listed so it never is.
+  Butterfly and Enslaved Wings also left the premium roulette pool (owner 2026-11-24 "Pode tirar também"; `roulette_premium_config.lua`,
+  items 27980 / 27982; Orb of Excision 300 -> 290 so its share stays under `maxChaseShare` 0.01 with the smaller pool).
+- **Bundle.** Stormcaller Regalia lost Enslaved Wings. Now outfit, mount and aura at 25% off.
+  `/storecosmetics` no longer gives the eight (it gives what the store sells).
+- **Tests.** `tests/shop_retired_test.lua` (core, the eight not buyable, owners keep them), `tests/owner_art_test.lua`.
+
 ## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
 
 Five store categories sell services, unlocks and boosts besides the cosmetics. `shop_config.lua` has two new offer kinds,
@@ -15091,7 +15108,8 @@ Install with the switch on: `install_all.py SERVER_DIR --only files,outfits,owne
   beast for a walking ribcage); Azhkarrath gets smaller.
 - **Wings** (wings.xml ids 21-29): six sold in the store's Wings category (`M.storeWings`, PLACEHOLDER 250 each:
   Jadeleaf Pinions, Tidewing Plumes, Duskfeather Wings, Emberplume Wings, Wildgrove Wings, Bloodfeather Wings;
-  `shop_config.lua` appends `M.storeOffers()`), three boss-drop exclusives (`M.exclusives`, `exclusives_config.lua`
+  `shop_config.lua` appends `M.storeOffers()`; O748: all but Jadeleaf retired from sale, owners keep them, see
+  "Retired from sale (O748)"), three boss-drop exclusives (`M.exclusives`, `exclusives_config.lua`
   calls `M.addExclusives`): Gloomgild Wings (Nyxareth), Sunforged Wings (the Cinderheart), Starmoth Wings (the Ascended
   Omens). `tools/install_outfits.py` writes their wings.xml lines only while the switch is on (on).
 - **Decoration** (server ids 36940-36985 = client id + 3000, `data/items/owner_decor.csv`, written by the importer):

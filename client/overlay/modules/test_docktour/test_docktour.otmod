@@ -1,0 +1,12 @@
+Module
+  name: test_docktour
+  description: TEST ONLY (tools/ci/dock_video.sh, O732) - with the environment variable CHAOS_DOCKTOUR=1 it logs in with the account of CHAOS_LIVE_ACCOUNT / _PASSWORD, enters the game and walks the side dock (keys, every tab, the sub tabs, the wide windows) so the script can film it. Without the variable it does nothing, no window, no hotkey, not in the hub menu
+  author: Cinders of Chaos
+  sandboxed: false
+  scripts: [ docktourlogic, docktour ]
+  dependencies:
+    - client_entergame
+  autoload: true
+  autoload-priority: 1200
+  @onLoad: ChaosDockTour.init()
+  @onUnload: ChaosDockTour.terminate()

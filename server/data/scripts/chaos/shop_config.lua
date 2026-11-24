@@ -102,7 +102,7 @@ end
 -- the weekly rotation's pool ("This week"): cosmetics only, never power. The boss exclusives (exclusives_config.lua,
 -- chaos_theme_art.lua M.exclusives) and the prestige sets are never in it. Keys: ChaosShopCore.offerKey.
 local ROTATION = {
-	"wings:9", "wings:12", "wings:13", "wings:7", "wings:15", "aura:6", "aura:7", "aura:8", "aura:20", "aura:24",
+	"wings:9", "wings:12", "wings:7", "wings:15", "aura:6", "aura:7", "aura:8", "aura:20", "aura:24",
 	"mount:121", "mount:119", "mount:141", "mount:117", "mount:114", "mount:140",
 	"outfit:1237", "outfit:909", "outfit:1219", "outfit:1262", "outfit:1064", "shader:15", "frame:violet",
 	-- the six Chaos outfit shaders (cosmetics_config.lua outfitShaders)
@@ -242,6 +242,13 @@ local cfg = {
 			{offers = {"shader:2", "shader:4", "shader:5", "shader:7", "shader:12"}, ["until"] = "2026-11-10 06:00"}
 		}
 	},
+	-- retired from sale (O748, owner 2026-11-24): offer keys the store never lists again, in no category, bundle,
+	-- rotation or sale (ChaosShopCore.retire at the end of this file; C.validate refuses one that is still sold). Only the sale
+	-- stops: a character that owns one keeps it and still wears it (the engine's wings list and the ownership storage are not
+	-- touched, wings.xml keeps the lines). Butterfly, Enslaved and Runic Wings look small behind the body; Tidewing,
+	-- Duskfeather, Emberplume, Wildgrove and Bloodfeather are the same feather fan in other colours. Runic Wings (20) is a
+	-- boss drop (Kaelgor, chaos_theme_art.lua), never sold: listed so it never is.
+	retired = {"wings:11", "wings:13", "wings:20", "wings:22", "wings:23", "wings:24", "wings:25", "wings:26"},
 	purchaseEffect = CONST_ME_FIREWORK_YELLOW,
 	-- the parent categories, in no particular order (a parent stands where its first subcategory is); icon as a
 	-- category's. A parent sells nothing itself and is shown only while one of its subcategories has an offer.
@@ -303,8 +310,9 @@ local cfg = {
 					description = "The Astral Fire outfit with both addons, the Crimson Fang mount, Vorondor Flames and the Ember Crown aura.",
 					parts = {"outfit:1213", "mount:121", "wings:7", "aura:15"}},
 				{kind = "bundle", key = "bundle:storm", pct = 25, name = "Stormcaller Regalia", icon = 2189,
-					description = "The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura.",
-					parts = {"outfit:1217", "mount:140", "wings:13", "aura:22"}}
+					-- O748: Enslaved Wings (wings:13) retired from sale, so no longer a part
+					description = "The Astral Electric outfit with both addons, the Stormkeep mount and the storm mantle aura.",
+					parts = {"outfit:1217", "mount:140", "aura:22"}}
 			}
 		},
 		-- ================================================================== Premium & Services
@@ -778,6 +786,14 @@ if okWear and type(WEAR) == "table" and WEAR.on and WEAR.addStore then
 		end
 		after = cat.name
 	end
+end
+
+-- the offers retired from sale (cfg.retired, O748) leave every list, also the ones the blocks above appended
+local okCore, CORE = pcall(function()
+	return ChaosShopCore or dofile("data/scripts/chaos/shop_core.lua")
+end)
+if okCore and type(CORE) == "table" and CORE.retire then
+	CORE.retire(cfg)
 end
 
 return cfg

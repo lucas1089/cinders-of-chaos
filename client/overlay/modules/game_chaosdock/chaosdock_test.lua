@@ -110,6 +110,10 @@ eq(L.bottomMargin(950, nil, 720), 0, 'no hotbar')
 eq(L.bottomMargin(950, { x = 450, y = 660, width = 380, height = 60 }, 720), 0, 'hotbar left of the dock')
 eq(L.bottomMargin(950, { x = 540, y = 660, width = 380, height = 60 }, 720), 66, 'globes reach the dock')
 eq(L.bottomMargin(356, { x = 450, y = 660, width = 380, height = 60 }, 720), 66, 'wide dock over the hotbar')
+eq(L.topMargin(950, nil, 0), 0, 'no menu bar')
+eq(L.topMargin(950, { x = 458, y = 2, width = 364, height = 36 }, 0), 0, 'menu bar left of the dock')
+eq(L.topMargin(496, { x = 458, y = 2, width = 364, height = 36 }, 0), 44, 'wide dock: starts below the menu bar')
+eq(L.topMargin(822, { x = 458, y = 2, width = 364, height = 36 }, 0), 0, 'touching edges do not overlap')
 
 -- slide: from hidden to in place, eased
 local s = L.slide(330, 6)

@@ -33,7 +33,8 @@ local st
 local held = {}          -- records of the windows in the dock: widget, home, index, wasVisible, spec, size, pos, ...
 local known = {}         -- menu entry -> the widget it opened last (a module that keeps a local window)
 local tabButtons = {}
-local floated            -- a window too wide for the dock, opened beside it
+local floated            -- a window too wide for the dock, opened beside it: { widget, opened = the dock opened it }
+local coverNotified = 0  -- the width last told to the toasts (game_chaosnotify)
 local slideEvent, tickEvent, pollEvent
 local boundKeys = {}
 local releasing = false
@@ -212,6 +213,23 @@ local function hotbarRect()
   return ok and alive(w) and w:getRect() or nil
 end
 
+-- the hub menu bar (client_chaos_topbar, O550) when it is shown: a dock widened under it starts below it
+local function menuBarRect()
+  local root = gameRoot()
+  local bar = root and root:getChildById('chaosMenuBar')
+  return alive(bar) and bar:isVisible() and bar:getRect() or nil
+end
+
+-- the toasts (game_chaosnotify) keep left of the dock: they are told when the width it covers changes
+local function tellToasts()
+  local cover = M.coverRight()
+  if cover == coverNotified then return end
+  coverNotified = cover
+  local n = modules.game_chaosnotify
+  local fn = n and rawget(n, 'repositionNotifications')
+  if type(fn) == 'function' then pcall(fn) end
+end
+
 local function relayout()
   if not alive(panel) then return end
   local root = gameRoot()
@@ -220,9 +238,15 @@ local function relayout()
   local rec = held[1]
   local width, float = L.width(rec and rec.size.width or nil, rr.width, isPhone())
   panel:setWidth(width)
-  local margin = 0
-  if not isPhone() then margin = L.bottomMargin(rr.x + rr.width - width, hotbarRect(), rr.y + rr.height) end
-  panel:setMarginBottom(margin)
+  local bottom, top = 0, 0
+  if not isPhone() then
+    local left = rr.x + rr.width - width
+    bottom = L.bottomMargin(left, hotbarRect(), rr.y + rr.height)
+    top = L.topMargin(left, menuBarRect(), rr.y)
+  end
+  panel:setMarginBottom(bottom)
+  panel:setMarginTop(top)
+  tellToasts()
   return float
 end
 
@@ -290,11 +314,18 @@ local function stopPoll()
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
 end
 
+-- a window that floated beside the dock goes when the dock moves on or closes, if the dock opened it
+local function dropFloat()
+  local f = floated
+  floated = nil
+  if f and f.opened and alive(f.widget) and f.widget:isVisible() then pcall(f.widget.hide, f.widget) end
+end
+
 local function adopt(w, spec, wasVisible)
   local rr = gameRoot() and gameRoot():getRect()
   local _, float = L.width(w:getWidth(), rr and rr.width or 0, isPhone())
   if float then
-    floated = w
+    floated = { widget = w, opened = not wasVisible }
     placeFloat(w)
     setNote(tr('This window is too wide for the panel on this screen: it opened beside it.'))
     relayout()
@@ -308,7 +339,7 @@ end
 local function showCurrent()
   stopPoll()
   releaseAll()
-  floated = nil
+  dropFloat()
   local t = L.tab(st.tab)
   local spec = t and t.windows[L.subOf(st, t.id)]
   local title = child('title')
@@ -384,11 +415,16 @@ function M.close()
   stopPoll()
   if st then st.open = false end
   releaseAll()
-  floated = nil
+  dropFloat()
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   if alive(panel) and panel:isVisible() then
     drawTabs()
-    slide(true, function() if alive(panel) then panel:hide() end end)
+    slide(true, function()
+      if alive(panel) then panel:hide() end
+      tellToasts()
+    end)
+  else
+    tellToasts()
   end
 end
 
@@ -412,6 +448,12 @@ function M.toggle() return M.dispatch(st and L.toggle(st)) end
 function M.openTab(id) return M.dispatch(st and L.pickTab(st, id, false)) end
 function M.isEnabled() return st ~= nil and st.enabled end
 function M.isOpen() return st ~= nil and st.open end
+
+-- the width the dock covers at the right of the game screen (0 when closed), for the toasts of game_chaosnotify
+function M.coverRight()
+  if not st or not st.open or not alive(panel) or not panel:isVisible() or isPhone() then return 0 end
+  return panel:getWidth()
+end
 
 -- the windows the dock holds now, for game_chaoslayout (a miniwindow is saved in the side panel it came from)
 function M.held()
