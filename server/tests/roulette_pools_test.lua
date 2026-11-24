@@ -284,7 +284,7 @@ do
 			ok((e.id >= 26649 and e.id <= 26653) or (e.id >= 27975 and e.id <= 27984), "premium: " .. e.name .. " is an aura or wings")
 		end
 	end
-	ok(n == 14, "premium: the 14 auras and wings of the base pool: " .. n)
+	ok(n == 12, "premium: the 12 auras and wings of the base pool (Butterfly and Enslaved left with the store, O748): " .. n)
 	-- the chase orbs stay chase prizes, each between the config's bounds, and the rarest one is announced
 	local chase = {"Orb of Ruin", "Void Orb", "Crown Orb", "Ember Orb", "Orb of Binding", "Orb of Excision"}
 	local rarest = 1

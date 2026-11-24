@@ -30,7 +30,7 @@ return {
 	rareThreshold = 160,
 
 	pool = {
-		-- auras and wings: each unlocks once (the base use-scripts)
+		-- auras and wings: each unlocks once (the base use-scripts); Butterfly and Enslaved left the pool with the store (O748)
 		{id = 26649, name = "Bats Aura", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 26650, name = "Fire Essence", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 26651, name = "Star Shine Aura", count = {1, 1}, chance = 400, kind = "cosmetic"},
@@ -40,9 +40,7 @@ return {
 		{id = 27976, name = "Vorondor Flames", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 27977, name = "Mortis Mirage", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 27978, name = "Angelic Wings", count = {1, 1}, chance = 400, kind = "cosmetic"},
-		{id = 27980, name = "Butterfly Wings", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 27981, name = "Dreadbone Spectre", count = {1, 1}, chance = 400, kind = "cosmetic"},
-		{id = 27982, name = "Enslaved Wings", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 27983, name = "Bride Wings", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		{id = 27984, name = "Strength Wings", count = {1, 1}, chance = 400, kind = "cosmetic"},
 		-- crafting orbs and sockets the loot layer drops (loot_config.lua currency.entries), in stacks
@@ -56,7 +54,7 @@ return {
 		{id = 24688, name = "Orb of Erasure", count = {1, 3}, chance = 900, kind = "orb"},
 		{id = 29855, name = "Orb of Grafting", count = {1, 2}, chance = 500, kind = "orb"},
 		{id = 32254, name = "Orb of Reforging", count = {1, 2}, chance = 400, kind = "orb"},
-		{id = 32253, name = "Orb of Excision", count = {1, 1}, chance = 300, kind = "orb"},
+		{id = 32253, name = "Orb of Excision", count = {1, 1}, chance = 290, kind = "orb"},
 		{id = 32252, name = "Orb of Binding", count = {1, 1}, chance = 200, kind = "orb"},
 		{id = 32258, name = "Ember Orb", count = {1, 1}, chance = 250, kind = "orb"},
 		{id = 32259, name = "Crown Orb", count = {1, 1}, chance = 150, kind = "orb"},

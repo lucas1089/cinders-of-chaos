@@ -5801,8 +5801,8 @@ Owner: "Os cortes das asas pode fazer sim". Eight wings left the store.
   wings.xml keeps every line: 11 and 13 are base lines, 22-26 come from `chaos_owner_art.lua` `storeWings`.
   Nothing is cut from the client pair.
 - **Not sale, kept.** Runic Wings was never sold: Kaelgor's boss exclusive, still dropped. Listed so it never is.
-  Butterfly and Enslaved Wings are still prizes of the premium roulette (`roulette_premium_config.lua`, items 27980 / 27982).
-  Owner to decide if those go too.
+  Butterfly and Enslaved Wings also left the premium roulette pool (owner 2026-11-24 "Pode tirar também"; `roulette_premium_config.lua`,
+  items 27980 / 27982; Orb of Excision 300 -> 290 so its share stays under `maxChaseShare` 0.01 with the smaller pool).
 - **Bundle.** Stormcaller Regalia lost Enslaved Wings. Now outfit, mount and aura at 25% off.
   `/storecosmetics` no longer gives the eight (it gives what the store sells).
 - **Tests.** `tests/shop_retired_test.lua` (core, the eight not buyable, owners keep them), `tests/owner_art_test.lua`.
