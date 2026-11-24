@@ -31975,8 +31975,9 @@ mostrar primeiro como funciona o helper. depois introduza as outras coisas."
   `tester_checks_test.py`: `mainquest_walk` presses Auto setup through `mqHelper`.
 - **Unity.** `Goals.HelperSetUp` (Core/Progression.cs) sends `mqHelper` from the Helper window's Auto setup. A click on the quest's tracker row opens the Helper
   on Auto setup with the blink (`GoalTrackerWindow`, `ChaosApp.RunWhere`). The player live smoke's `newplayer` step checks this flow (O761b, unity/README.md "New player
-  first minute, quiet first login"): Daily Reward only, closed, quest step 1 toast and row, the Helper from the row, Auto setup, step 2. Not run live yet. Open: the
-  Core.LiveCheck scenario `newplayer` still asks for the first-hour hint and a toast in the first 45 s.
+  first minute, quiet first login"): Daily Reward only, closed, quest step 1 toast and row, the Helper from the row, Auto setup, step 2. The Core.LiveCheck scenario
+  `newplayer` checks it on the wire (O761c): Daily Reward (Login 1) only, no first-hint, outfit or modal window, `closed`, step 1 on 178 with its toast, `mqHelper`,
+  step 2. Neither has run live yet.
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 

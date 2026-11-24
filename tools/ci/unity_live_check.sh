@@ -612,7 +612,7 @@ run_group_once() {
     temple)  # stock item tooltip, a stair and the floor change, NPC trade, a party of two (both plain players)
       new_chars 0 0 "$TEMPLE_AT" "$(beside "$TEMPLE_AT")"
       live_run "$label" "$id" tooltip,stairs,floorchange,npc,party --npc "$NPC_NAME" --npc-at "$NPC_AT" --stairs-at "$STAIRS_AT" ;;
-    newplayer)  # a fresh character's first login (every packet and opcode of its first 45 s, the kit, the welcome, the outfit window), the base quest log (0xF0, 0xF1),
+    newplayer)  # a fresh character's first login (every packet and opcode of its first 45 s, the kit, the welcome, only the Daily Reward, then the main quest's Helper step, O761), the base quest log (0xF0, 0xF1),
                 # the first spell unlock by name (level 9) and its first kill with the first attack spell, the loot bag read and taken: no staff right, no local script.
                 # The stairs and the cave are the base map of windows-assets.
       new_newbie "$id"
