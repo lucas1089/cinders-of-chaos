@@ -7685,6 +7685,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Quest Log"] = "Quest Log",
   ["Quest Tracker"] = "Quest Tracker",
   ["This window is not available now."] = "Esta janela não está disponível agora.",
+  ["This window opens on its own, left of the panel."] = "Esta janela abre sozinha, à esquerda do painel.",
   -- game_hotbar/hotbar.otui (O732: the side dock in Layout options)
   ["Side panel"] = "Painel lateral",
   ["Windows in a side panel with tabs"] = "Janelas num painel lateral com abas",

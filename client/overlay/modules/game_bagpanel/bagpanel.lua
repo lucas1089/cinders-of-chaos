@@ -711,6 +711,20 @@ local function showAllHidden()
   hiddenWindows = {}
 end
 
+-- the side dock (game_chaosdock, O732) when it is on: the panel is its Equip. tab then and has no window of its own
+-- in the right column (O755, owner 2026-11-24: "esconda a janela inteira da bp, o dock vai ser o principal agora")
+local function dock()
+  local m = modules.game_chaosdock
+  local d = type(m) == 'table' and rawget(m, 'ChaosDock') or nil
+  return type(d) == 'table' and d or nil
+end
+
+local function dockOwns()
+  local d = dock()
+  local ok, on = pcall(function() return d and d.isEnabled and d.isEnabled() end)
+  return ok and on == true
+end
+
 -- ---------------------------------------------------------------- container signals
 local function onOpen(c, previous)
   if not c then return end
@@ -745,6 +759,9 @@ local function onOpen(c, previous)
   -- what the player opened is the page shown; the ones the login restore opens are not; the Loot Bag is no page
   selected = C.selectOnOpen(selected, kind, slot, restoring() or quiet, loot)
   M.refresh()
+  -- a bag the player opened shows the Inventory in the dock (O755: the panel has no window of its own)
+  local d = dock()
+  if d and d.bagOpened and not (alive(window) and window:isVisible()) then pcall(d.bagOpened, restoring(), quiet) end
 end
 
 local function onClose(c)
@@ -1103,6 +1120,8 @@ local function onGameStart()
   if not alive(window) then return end
   buildEquip()
   window:open()
+  -- with the side dock on, the panel is the dock's Equip. tab: no window in the right column (O755)
+  if dockOwns() then window:hide() end
   hideStockInventory()
   watchStock()
   moveControls()
@@ -1183,6 +1202,10 @@ function togglePin() M.togglePin() end
 function lootArrow(delta) M.lootArrow(delta) end
 -- the panel window, for the side dock (game_chaosdock, O732: its Equip. tab hosts it)
 function getWindow() return alive(window) and window or nil end
+-- the dock turned off (Layout options): the panel is a window of the right column again (O755)
+function showWindow()
+  if alive(window) and g_game.isOnline() then window:show() M.refresh() end
+end
 -- hosted in the dock (O732 follow-up, owner 2026-11-24): no title bar, no tab row of its own (the dock has both);
 -- given back, both return (BagPanelCore.dockChrome)
 local dockSaved = nil

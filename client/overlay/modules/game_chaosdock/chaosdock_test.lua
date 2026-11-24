@@ -1,8 +1,10 @@
 -- luajit chaosdock_test.lua (CI runs every client *_test.lua from the repo root, under LuaJIT and Lua 5.3)
 local here = (arg and arg[0] and arg[0]:match('^(.*[/\\])') or '')
 dofile(here .. 'chaosdocklogic.lua')
+dofile(here .. 'chaosdockcolumn.lua')
 dofile(here .. '../client_chaos_topbar/topbar_tree.lua')
 local L = ChaosDockLogic
+local COL = ChaosDockColumn
 local n = 0
 local function eq(a, b, m) n = n + 1 if a ~= b then error((m or '') .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b), 2) end end
 
@@ -56,12 +58,13 @@ eq(a.open, 'shop', 'market opens Shop'); eq(a.sub, 1, 'market window')
 local writes = L.apply(st, a)
 eq(st.open, true, 'open'); eq(st.tab, 'shop', 'tab shown')
 eq(writes[L.SETTING_TAB], 'shop', 'tab saved'); eq(writes[L.SETTING_SUBS], 'shop=1', 'window saved')
+eq(writes[L.SETTING_OPEN], 'true', 'open saved')
 eq(L.route(st, 'Market').close, true, 'same entry again closes')
 a = L.route(st, 'Store')
 eq(a.open, 'shop', 'other window of the tab'); eq(a.sub, 2, 'store window')
 L.apply(st, a)
 eq(L.route(st, 'Skills').open, 'attributes', 'another tab while open')
-eq(L.apply(st, { close = true }), nil, 'close writes nothing')
+eq(L.apply(st, { close = true })[L.SETTING_OPEN], 'false', 'close saves the closed state')
 eq(st.open, false, 'closed'); eq(st.tab, 'shop', 'tab kept after close'); eq(L.subOf(st, 'shop'), 2, 'window kept')
 eq(L.route(st, 'Store').open, 'shop', 'closed: the entry opens again')
 local off = L.newState(reader({ [L.SETTING_ENABLED] = 'false' }))
@@ -89,45 +92,88 @@ eq(L.pickSub(st, 4), nil, 'sub past the tab'); eq(L.pickSub(st, 0), nil, 'sub 0'
 L.apply(st, a)
 eq(L.pickTab(st, 'quests', false).sub, 2, 'tab remembers its window')
 
--- width: 330 for a narrow window, wider for a wide one, on its own past the screen less 280 px, phone sheet
-local w, float = L.width(nil, 1280, false)
-eq(w, 330, 'no window'); eq(float, false, 'no window float')
-eq((L.width(230, 1280, false)), 330, 'narrow window')
-eq((L.width(306, 1280, false)), 330, 'exactly fits')
-w, float = L.width(640, 1280, false)
-eq(w, 664, 'spellbook widens the dock'); eq(float, false, 'spellbook docked')
-w, float = L.width(900, 1280, false)
-eq(w, 924, 'market'); eq(float, false, 'market docked at 1280')
--- the Store (960) fits at 1280, with its scroll bar too: the game keeps 280 px (owner 2026-11-24: nothing overlaps)
-w, float = L.width(960, 1280, false)
-eq(w, 984, 'store docked at 1280'); eq(float, false, 'store does not float at 1280')
-w, float = L.width(960 + L.SCROLL, 1280, false)
-eq(w, 1000, 'store and its scroll bar'); eq(float, false, 'still docked'); eq(1280 - w, L.MIN_GAME, 'the game keeps its room')
-w, float = L.width(960, 1100, false)
-eq(w, 330, 'too wide: dock keeps its width'); eq(float, true, 'too wide floats')
+-- per character (O755): the character's keys first, the plain ones of before as the fallback, the open state
+eq(L.charKey(L.SETTING_TAB, 'Ash Walker'), 'chaosDockTab_Ash_Walker', 'key of a character')
+eq(L.charKey(L.SETTING_TAB, nil), 'chaosDockTab', 'no character: the plain key')
+local mine = L.newState(reader({ [L.SETTING_TAB] = 'shop', chaosDockTab_Ash = 'quests', chaosDockSubs_Ash = 'quests=2',
+  chaosDockOpen_Ash = 'true' }), 'Ash')
+eq(mine.tab, 'quests', 'the character\'s tab'); eq(L.subOf(mine, 'quests'), 2, 'the character\'s window')
+eq(mine.wasOpen, true, 'was open at the logout'); eq(mine.open, false, 'not open before the dock opens it')
+local other = L.newState(reader({ [L.SETTING_TAB] = 'shop', chaosDockOpen_Ash = 'true' }), 'Bryn')
+eq(other.tab, 'shop', 'another character: the plain key'); eq(other.wasOpen, false, 'another character: closed')
+eq(L.newState(reader({ chaosDockOpen_Ash = 'false' }), 'Ash').wasOpen, false, 'closed at the logout')
 
--- scrolling: a window taller than the room scrolls, a miniwindow never (it scrolls its own contents)
-eq(L.scrolls(false, 537, 410), true, 'quest log under the menu bar scrolls')
-eq(L.scrolls(false, 407, 410), false, 'fits: no scroll')
-eq(L.scrolls(true, 900, 410), false, 'miniwindow fills the room')
-eq(L.scrolls(false, nil, 410), false, 'no size: no scroll')
-eq(L.room(720, 44, 0, 120), 556, 'room: screen less margins and chrome')
-eq(L.room(720, 44, 132, 0), 720 - 44 - 132 - L.CHROME, 'chrome not laid out: the default')
-eq(L.room(720, 44, 132, 9000), 720 - 44 - 132 - L.CHROME, 'chrome wild: the default')
-eq(L.room(100, 44, 132, 120), 0, 'never below 0')
-w, float = L.width(960, 1920, false)
-eq(w, 984, 'wide screen'); eq(float, false, 'wide screen docked')
-w, float = L.width(900, 1170, true)
-eq(w, 1170, 'phone sheet'); eq(float, false, 'phone never floats')
+-- one column (O755): the dock is the right panel column wide whatever it holds, never wider
+eq(L.width({ x = 1102, y = 0, width = 178, height = 720 }, 1280, false, 1280), 178, 'the column')
+eq(L.width({ x = 1010, y = 0, width = 270, height = 720 }, 1280, false, 1280), 270, 'a wider column (a panel made wider)')
+eq(L.width(nil, 1280, false, 1280), L.WIDTH, 'no column: the Inventory panel\'s width')
+eq(L.width({ x = 1270, y = 0, width = 10, height = 720 }, 1280, false, 1280), L.WIDTH, 'a closed panel is no column')
+eq(L.width({ x = 1102, width = 178 }, 1280, true, 1170), 1170, 'phone sheet')
+eq(L.WIDTH, 178, 'the fallback is a side panel\'s width (the Inventory panel\'s before O755)')
+eq(L.mapMargin({ x = 1102, y = 0, width = 178, height = 180 }, 0), 182, 'under the minimap')
+eq(L.mapMargin(nil, 0), 0, 'no minimap: from the top')
+eq(L.share(5, 170), 32, 'five tabs in a column'); eq(L.share(L.SUB_COLS, 170), 84, 'two sub tabs a row')
+eq(L.share(1, 170), 170, 'one'); eq(L.share(5, 0), 0, 'no room')
+eq(L.subRows(3), 2, 'three windows: two rows'); eq(L.subRows(2), 1, 'two: one row'); eq(L.subRows(1), 0, 'one: none')
+eq(L.subsHeight(3), 2 * L.SUB_H + L.TAB_GAP, 'two rows high'); eq(L.subsHeight(1), 0, 'no row')
+eq(L.hidesInColumn('minimapWindow'), false, 'the minimap stays'); eq(L.hidesInColumn('bagPanelWindow'), true, 'the bag panel hides')
+eq(L.hidesInColumn('battleWindow'), true, 'any other window hides')
+eq(L.hidesInColumn('skillWindow', { skillWindow = true }), false, 'a window the dock holds stays')
+eq(L.fitOf(L.TABS[5].windows[1]), 'float', 'Market floats'); eq(L.fitOf(L.TABS[5].windows[2]), 'float', 'Store floats')
+eq(L.fitOf(L.TABS[2].windows[1]), 'column', 'Quest Log in the column'); eq(L.fitOf(L.TABS[5].windows[1], true), 'sheet', 'phone')
+eq(L.heightIn(COL.layout('Quest Log'), 537), 780, 'stacked Quest Log height'); eq(L.heightIn(nil, 487), 487, 'own height')
+eq(L.TABS[1].windows[1].hidden, true, 'the Inventory panel is taken while hidden')
+
+-- a bag click opens the Inventory tab: not while the login restores, not in its first seconds, not when shown already
+st = L.newState(reader({}))
+eq(L.bagOpensDock(st, false, false, 9000), true, 'a click opens it')
+eq(L.bagOpensDock(st, true, false, 9000), false, 'login restore')
+eq(L.bagOpensDock(st, false, true, 9000), false, 'pinned reopen')
+eq(L.bagOpensDock(st, false, false, 1000), false, 'login grace')
+L.apply(st, { open = 'equip', sub = 1 })
+eq(L.bagOpensDock(st, false, false, 9000), false, 'already shown')
+eq(L.bagOpensDock(off, false, false, 9000), false, 'dock off')
+
+-- every window of the column: a sound layout, its ids in its .otui, no float window has one
+local entries = {}
+for _, t in ipairs(L.TABS) do for _, w in ipairs(t.windows) do entries[w.entry] = w end end
+local layouts = 0
+for entry, layout in pairs(COL.LAYOUTS) do
+  layouts = layouts + 1
+  eq(entries[entry] ~= nil, true, 'layout of a dock window: ' .. entry)
+  eq(L.fitOf(entries[entry]), 'column', 'a float window has no column layout: ' .. entry)
+  eq(table.concat(COL.faults(layout), '; '), '', 'layout sound: ' .. entry)
+  if layout.otui then
+    local f = io.open(here .. '../' .. layout.otui)
+    eq(f ~= nil, true, 'otui of ' .. entry)
+    local text = f:read('*a')
+    f:close()
+    for _, rule in ipairs(layout.rules) do
+      eq(text:find('id: ' .. rule.id .. '\n', 1, true) ~= nil, true, entry .. ' has ' .. rule.id)
+      for _, edge in ipairs(COL.EDGES) do
+        for _, side in ipairs({ rule.col, rule.home or {} }) do
+          local id = COL.target(side[edge])
+          if id and id ~= 'parent' then eq(text:find('id: ' .. id .. '\n', 1, true) ~= nil, true, entry .. ' target ' .. id) end
+        end
+      end
+    end
+  end
+end
+eq(layouts, 5, 'five stacked windows')
+eq(#COL.faults({ rules = { { id = 'a', col = { right = 'parent.right' } } } }), 1, 'an anchor not put back is a fault')
+eq(#COL.faults({ rules = { { id = 'a', col = { wide = 1 } } } }), 1, 'an unknown key is a fault')
+eq(#COL.faults({ rules = { { id = 'a', col = { top = 'b.middle' }, home = { top = false } } } }), 1, 'a bad edge is a fault')
+eq(#COL.faults({ rules = { { id = 'a', col = { height = 4 }, home = { height = 2 } } } }), 1, 'home sets anchors only')
+eq(COL.target('parent.right'), 'parent', 'target id'); eq(select(2, COL.target('stats.bottom')), 'bottom', 'target edge')
 
 -- the dock stops above the hotbar only when the two meet
 eq(L.bottomMargin(950, nil, 720), 0, 'no hotbar')
 eq(L.bottomMargin(950, { x = 450, y = 660, width = 380, height = 60 }, 720), 0, 'hotbar left of the dock')
 eq(L.bottomMargin(950, { x = 540, y = 660, width = 380, height = 60 }, 720), 66, 'globes reach the dock')
-eq(L.bottomMargin(356, { x = 450, y = 660, width = 380, height = 60 }, 720), 66, 'wide dock over the hotbar')
+eq(L.bottomMargin(1102, { x = 900, y = 660, width = 380, height = 60 }, 720), 66, 'a hotbar under the column')
 eq(L.topMargin(950, nil, 0), 0, 'no menu bar')
 eq(L.topMargin(950, { x = 458, y = 2, width = 364, height = 36 }, 0), 0, 'menu bar left of the dock')
-eq(L.topMargin(496, { x = 458, y = 2, width = 364, height = 36 }, 0), 44, 'wide dock: starts below the menu bar')
+eq(L.topMargin(800, { x = 458, y = 2, width = 364, height = 36 }, 0), 44, 'under the menu bar: starts below it')
 eq(L.topMargin(822, { x = 458, y = 2, width = 364, height = 36 }, 0), 0, 'touching edges do not overlap')
 
 -- slide: from hidden to in place, eased

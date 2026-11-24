@@ -1,9 +1,9 @@
 Module
   name: game_chaosdock
-  description: Side dock (O732): a panel on the right of the game screen, full height, with icon tabs (Equip., Quests, Attributes, Spells, Shop) that host the existing windows; the hub menu entries of those windows open it on their tab; Alt+D and one key per tab; the last tab is kept; off in Layout options gives the floating windows back
+  description: Side dock (O732, one column O755): a panel in the right column under the minimap, with icon tabs (Equip., Quests, Attributes, Spells, Shop) that host the existing windows; the hub menu entries of those windows open it on their tab; Alt+D and one key per tab; the last tab is kept; off in Layout options gives the floating windows back
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ chaosdocklogic, chaosdock ]
+  scripts: [ chaosdocklogic, chaosdockcolumn, chaosdock ]
   dependencies:
     - client_chaos_theme
     - game_interface

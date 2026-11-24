@@ -5,12 +5,40 @@ local V = GoalsView
 local mqWindow
 local chosen -- the chapter shown
 
+-- the intro and each step's hint as tall as their wrapped lines: in the side dock's one column (O755) a hint of two lines at
+-- 760 px wraps to five and ran over the next row
+local fitEvent
+local function textHeight(label)
+  local ok, size = pcall(function() return label:getTextSize() end)
+  local h = ok and type(size) == 'table' and size.height
+  return type(h) == 'number' and h or 0
+end
+
+local function fitRows()
+  fitEvent = nil
+  if not mqWindow or not mqWindow:isVisible() then return end
+  local ih = textHeight(mqWindow.introLabel)
+  if ih > 0 then mqWindow.introLabel:setHeight(math.max(32, ih + 2)) end
+  for _, row in ipairs(mqWindow.stepList:getChildren()) do
+    local h = math.max(28, textHeight(row.hint))
+    row.hint:setHeight(h)
+    row:setHeight(math.max(52, h + 26))
+  end
+end
+
+local function fitLater()
+  if fitEvent then removeEvent(fitEvent) end
+  fitEvent = scheduleEvent(fitRows, 50)
+end
+
 function initMainQuest()
   mqWindow = g_ui.displayUI('mainquest')
   mqWindow:hide()
+  connect(mqWindow, { onGeometryChange = fitLater })
 end
 
 function terminateMainQuest()
+  if fitEvent then removeEvent(fitEvent) fitEvent = nil end
   if mqWindow then
     mqWindow:destroy()
     mqWindow = nil
@@ -64,6 +92,7 @@ function drawMainQuest()
   end
   mqWindow.goButton:setEnabled(data.state == 0)
   mqWindow.skipChapterButton:setEnabled(data.state == 0)
+  fitLater()
 end
 
 function showMainQuest()
