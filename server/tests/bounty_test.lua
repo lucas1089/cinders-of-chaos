@@ -213,10 +213,19 @@ local crossed, done = B.addKill(one, cfg.progressNotices)
 eq(#crossed, 0, "a single kill contract has no milestones"); eq(done, true)
 
 -- ---------------------------------------------------------------- rewards
+-- O754: the gold is goldMinutes of the one gold curve (hunt_gold_config.lua) at the level held inside the band
+local function curve(L) return B.huntGold(cfg, L) end
 local r = B.reward({band = 1, type = "hunt", count = 0}, cfg, 30)
-eq(r.gold, cfg.bands[1].reward.gold); eq(r.chaos, 1); eq(r.divine, 0)
+eq(r.gold, math.floor(curve(30) * cfg.bands[1].reward.goldMinutes / 60)); eq(r.chaos, 1); eq(r.divine, 0)
 r = B.reward({band = 6, type = "elite", count = 0}, cfg, 1000)
-eq(r.gold, math.floor(cfg.bands[6].reward.gold * cfg.typeMult.elite)); eq(r.chaos, 9); eq(r.divine, 3)
+eq(r.gold, math.floor(math.floor(curve(1000) * cfg.bands[6].reward.goldMinutes / 60) * cfg.typeMult.elite)); eq(r.chaos, 9); eq(r.divine, 3)
+eq(B.huntGold(cfg, 1000), 1550000, "the curve at 1000")
+eq(B.huntGold(cfg, 400), (619000 + 1197000) / 2, "linear between the points")
+eq(B.bandGold(cfg, 1, 5), math.floor(curve(cfg.bands[1].min) * cfg.bands[1].reward.goldMinutes / 60), "under the band: its min")
+eq(B.bandGold(cfg, 2, 400), math.floor(curve(cfg.bands[2].max) * cfg.bands[2].reward.goldMinutes / 60), "over the band: its max")
+eq(B.bandGold({bands = {{min = 1, max = 9, reward = {gold = 77}}}}, 1, 5), 77, "a flat gold of an older config")
+local hc = B.reward({band = 6, type = "hunt", count = 0}, cfg, 1000).gold
+assert(hc > 0 and hc < 1550000 / 30, "a hunt contract at 1000 pays under 2 minutes of the curve: " .. hc)
 r = B.reward({band = 5, type = "boss", count = 1}, cfg, 600)
 eq(r.divine, 2, "divine rounded up")
 eq(B.expForLevel(1), 100); eq(B.expForLevel(100), 495100); eq(B.expForLevel(8), 2900)
@@ -342,7 +351,7 @@ local w = B.weeklyReward(6, cfg)
 eq(w.chaos, cfg.bands[6].weekly.chaos); eq(w.divine, cfg.bands[6].weekly.divine)
 eq(B.weeklyReward(99, cfg).chaos, cfg.bands[6].weekly.chaos, "clamped")
 for i = 2, #cfg.bands do
-	assert(cfg.bands[i].reward.gold > cfg.bands[i - 1].reward.gold, "gold grows with the band")
+	assert(B.bandGold(cfg, i, cfg.bands[i].min) > B.bandGold(cfg, i - 1, cfg.bands[i - 1].min), "gold grows with the band")
 	assert(cfg.bands[i].reward.chaos >= cfg.bands[i - 1].reward.chaos, "orbs grow with the band")
 end
 

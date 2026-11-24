@@ -92,10 +92,12 @@ return {
 
 	-- rewards. First clear of a tier: unlocks its node pair for that vocation (once per vocation) and pays `first`.
 	-- A clear of a tier already cleared pays `repeatReward` (at most repeatsPerWeek per week) and always gives one token.
-	-- Gold goes to the bank: goldPerLevel x level x tier number. Orbs are the Chaos currency items.
+	-- Gold goes to the bank: goldPerLevel x level x tier number. Orbs are the Chaos currency items. O754: repeatReward
+	-- goldPerLevel 800 -> 65: a Merciless repeat at level 2500 paid 6M for 10 minutes (18x the one gold curve), now 1.5x.
+	-- The first clear (once per vocation and tier) keeps its 4000.
 	reward = {
 		first = {goldPerLevel = 4000, chaos = {2, 4, 8}, divine = {0, 1, 3}},
-		repeatReward = {goldPerLevel = 800, chaos = {1, 2, 3}, divine = {0, 0, 1}},
+		repeatReward = {goldPerLevel = 65, chaos = {1, 2, 3}, divine = {0, 0, 1}},
 		repeatsPerWeek = 5,
 		-- unused repeat rewards carry over: a week allows repeatsPerWeek + what earlier weeks left, at most
 		-- repeatBankWeeks weeks' worth (3: 15). 2026-10-15, respect the players' time.

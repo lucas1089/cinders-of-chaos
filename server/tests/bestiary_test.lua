@@ -349,17 +349,18 @@ eq(C.activeCount({tasks = {a = {status = 0}, b = {status = 1}}}), 1)
 
 -- ---------------------------------------------------------------- rewards
 local low = C.taskReward({kind = "hunt", level = 20}, 20, cfg, bountyCfg)
-eq(low.gold, 4000, "band 1 hunt: 40% of 10k")
+-- O754: the band's gold is minutes of the one gold curve at the level held inside the band (ChaosBounty.bandGold)
+eq(low.gold, math.floor(ChaosBounty.bandGold(bountyCfg, 1, 20) * 0.4), "band 1 hunt: 40% of the band's gold at level 20")
 eq(low.chaos, 0)
 eq(low.exp, math.floor(C.expForLevel(20) * 1.5 / 100))
 eq(low.points, cfg.reward.hunt.points * C.difficultyOf(20, false, cfg).points[1])
 local top = C.taskReward({kind = "family", level = 900}, 1000, cfg, bountyCfg)
-eq(top.gold, 1200000, "band 6 family: 60% of 2M")
+eq(top.gold, math.floor(ChaosBounty.bandGold(bountyCfg, 6, 1000) * 0.6), "band 6 family: 60% of the band's gold at 1000")
 eq(top.chaos, 4)
 eq(top.divine, 1)
 eq(top.exp, math.floor(C.expForLevel(1000) * 2 / 100))
 local capped = C.taskReward({kind = "hunt", level = 20}, 1000, cfg, bountyCfg)
-eq(capped.gold, 4000, "a low task pays the low band even for a high character")
+eq(capped.gold, math.floor(ChaosBounty.bandGold(bountyCfg, 1, 49) * 0.4), "a low task pays the low band (at its top) even for a high character")
 eq(capped.exp, math.floor(C.expForLevel(49) * 1.5 / 100), "experience capped at the band top")
 -- experience (2026-10-22): expShare percent of the task's kills at the character's stage, floor expPercent, cap expCap
 local hr = cfg.reward.hunt
@@ -393,7 +394,7 @@ assert(C.partyCountsTask({level = 100}, 400, cfg), "a strong member on a weak ta
 
 -- the most a day of tasks pays stays well below a day of bounty contracts at the same band
 local dayTasks = cfg.dailyLimit * top.gold
-local dayBounty = 12 * bountyCfg.bands[6].reward.gold
+local dayBounty = 12 * ChaosBounty.bandGold(bountyCfg, 6, 1000)
 assert(dayTasks < dayBounty / 3, "modest next to the bounty board")
 
 -- ---------------------------------------------------------------- views

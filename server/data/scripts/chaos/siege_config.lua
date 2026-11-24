@@ -47,8 +47,10 @@ return {
 	-- rewards; presence = seconds inside the arena or the base while the match ran
 	minPresenceSeconds = 300,
 	reward = {
-		winner = {bankGold = 500000, items = {{id = 29856, count = 5}, {id = 29857, count = 2}}}, -- Orbs of Upheaval and Fate
-		others = {bankGold = 150000, items = {{id = 29856, count = 2}}}
+		-- O754: 500,000 / 150,000 -> 120,000 / 40,000: the 30 minutes of a siege pay a winner of level 100 (the minimum) at
+		-- most 1.5x the one gold curve
+		winner = {bankGold = 120000, items = {{id = 29856, count = 5}, {id = 29857, count = 2}}}, -- Orbs of Upheaval and Fate
+		others = {bankGold = 40000, items = {{id = 29856, count = 2}}}
 	},
 	title = "Siege Champions", -- the winning guild's members, in the look text
 	titleDays = 7, -- title and buff last this long after the siege that won them

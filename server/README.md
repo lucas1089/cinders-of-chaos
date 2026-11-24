@@ -24489,8 +24489,8 @@ hours (8 to 1000 unchanged at 116.4). The display clamp of monster levels (`mons
 
 - Hall hunts thin out at the top. Levels 2282-2500 have fewer than 5 hall hunts in 0.8-1.1x, so the hall tight range of
   `progression_config.lua` stays 1300-2200. More content there would let it reach 2500.
-- Rift gold was sized on the old table. `tests/rift_test.lua` holds tier 15 solo gold to 1.5-2x of 9.5M an hour. On the new
-  curve that is about 10x hunting at level 1000. A reward, not on the price list: not moved.
+- Rift gold was sized on the old table: about 10x hunting at level 1000. Done in O754 ("Gold faucets against the curve
+  (O754)").
 - Base NPC rune prices are flat. 300 attack runes an hour at level 45 are now 90% of the hunting gold (62% before). They
   live in the base shop module ("Gold sink by level band" above).
 - Gold-to-coin comparisons of the store (`store_model.lua`) now see much less gold late. A Double Experience Potion is
@@ -24499,6 +24499,70 @@ hours (8 to 1000 unchanged at 116.4). The display clamp of monster levels (`mons
 Tests: `tests/gamble_test.lua`, `professions_test.lua`, `boss_roulette_test.lua`, `roulette_pools_test.lua`,
 `cursedchest_test.lua`, `embercache_test.lua`, `weeklychest_test.lua`, `respec_test.lua`, `prizes_test.lua`,
 `mainquest_test.lua`, `monster_levels_test.lua`; `tools/loot_bands_test.py` (the `--late` reader on a synthetic tree).
+
+## Gold faucets against the curve (O754) (`tools/gold_faucets_model.lua`, `gold_faucets_balance_config.lua`)
+
+Owner 2026-11-24 "Acertar o ouro", after O751. Computed, not measured in game.
+
+**The rule.** Content pays gold an hour against `hunt_gold_config.lua` `hunting` at the level it is played. Harder or
+riskier content may pay more: at most 1.5x the curve. Party content counts per character, five players. Content under
+0.8x the curve is fine only when it pays something else. The model names what.
+
+**The model.** `tools/gold_faucets_model.lua` reads the configs and the pure cores (rift, uber, bounty, descent, trials,
+dungeon difficulty, `Chaos.worldBoss`). A faucet's gold is its own gold plus its kills:
+
+- Own gold: chest, bank, bonus coins, an hour of the content.
+- Kills: the share of a hunt's kill loot an hour gives, times the curve. Rift 0.80, waystones 0.85 (the
+  `content_reward_model.lua` EFFICIENCY), Descent 0.7, Tower 1.0, raid 0.2, invasion 0.5, world boss, trials and siege 0.
+  Dungeons count 94 monsters a run against the hunt kills an hour, with the coin share and the difficulty bonuses.
+- Ratio = own / curve + kills.
+
+Checked at levels 100 to 2500 inside each faucet's range. Flat gold is worst at the bottom of a range, gold x level at
+the top. Rifts are checked at the quantity bonus +128, the atlas gold cap and the Lone Ember keystone, solo and in a
+party of 5. The tier 15 loop adds the Omen, Ascended and Cinderheart kills its fragments and shards open. Inputs and
+reasons: `data/scripts/chaos/gold_faucets_balance_config.lua`.
+
+No flag prints the table (235 rows). `--check` fails on a row above 1.5x. CI runs it in luajit and lua5.3.
+`tests/gold_faucets_test.lua` runs in the server loop.
+
+**What moved.** Before is the model on the old numbers.
+
+| Faucet | Config | Old | New | Ratio before | Ratio after |
+|---|---|---|---|---|---|
+| Rift chest gold | `rift_config.lua` `reward.goldPerTier2` | 5,000 | 40 | 25.05 (tier 15 solo) | 0.99 |
+| Rift coffer | `rift_config.lua` `coffer.goldPerTier2` | 2,000 | 16 | in the above | |
+| Omen guardian | `rift_config.lua` `omen.reward.goldPerLevel` | 3,000 | 100 | 41.6 (tier 15 loop, party) | 1.36 |
+| Ascended Omens | `uber_config.lua` gold | 15,000,000 | 600,000 | in the loop | |
+| Cinderheart | `uber_config.lua` gold | 40,000,000 | 1,500,000 | in the loop | |
+| Greater Rift reward | `rift_core.lua` `R.greaterReward`, rule `goldCap` 1.25 | full factor | factor capped at 1.25 for gold | 30-35 | 0.95-0.99 |
+| Greater Rift best tier | `rift_config.lua` `greater.rewards.best.gold` | 150,000 + 25,000 a tier | 5,000 + 100 a tier | | |
+| Ember Descent | `descent_config.lua` `rewards.gold` | perDepth 3,000, square 400 | 300, 40 | 7.41 at 100 | 1.48 |
+| Dungeon chests | `areagen_config.lua` four chests | 150,000-300,000 | 15,000 | 3.2-4.9 (difficulty 6) | 1.27-1.48 |
+| Weekly raid | `raid_config.lua` boss / final gold | 2,500,000 / 6,000,000 | 350,000 / 700,000 | 9.86 at 800 | 1.47 |
+| World boss | `chaos_constants.lua` `worldBoss` bank gold / pool | 500,000 / 10,000,000 | 100,000 / 1,000,000 | 12.1 at 300 | 1.45 |
+| Invasion | `invasion_config.lua` goldBase / goldPool | 200 / 8,000 | 60 / 200 | 31.7 at 2500 | 1.49 |
+| Bounty and bestiary gold | `bounty_config.lua` band `gold` | 10k to 2M flat | `goldMinutes` 1.4 of the curve | 8-23 (band 800+) | 1.11-1.32 |
+| Trial repeat clear | `trials_config.lua` `repeatReward.goldPerLevel` | 800 | 65 | 18.27 (Merciless, 2500) | 1.48 |
+| Guild siege | `siege_config.lua` winner / others | 500,000 / 150,000 | 120,000 / 40,000 | 6.10 at 100 | 1.46 |
+
+Bounty gold now reads the curve: `ChaosBounty.bandGold(cfg, band, level)` pays `goldMinutes` minutes of the hunt curve at
+the player's level, clamped to the band. `bestiary_core.lua` task rewards read the same. A flat `gold` in an older config
+still works.
+
+**Already inside the rule.** Infinity Tower 1.14 at floor 40, treasure goblins 1.06-1.12, waystone maps 0.85 (no gold of
+their own).
+
+**Under 0.8x, and what it pays besides.** Dungeon difficulty 1 (boss gear), the world boss above level 400 (orbs, gear,
+uniques, titles), invasions with 5 defenders (orbs, a unique chance), Trial repeats (a Trial Token, orbs), the siege above
+level 100 (orbs, the title and buff).
+
+**Left alone.** One-off gold: Trial first clears (4,000 a level), tales and spell quests (2,000 a level), the main quest
+(O751). The atlas respec price (250,000) is a sink.
+
+Tests that held the old numbers: `tests/rift_test.lua` (the income block: solo chest gold 2-25% of the curve at 1000,
+the Omen under a twelfth of an hour of hunting), `greater_rift_test.lua` (the gold cap), `descent_test.lua` (depth 5
+gold), `bounty_test.lua` and `bestiary_test.lua` (gold from the curve). The Codex, How it works, guide and wiki data were
+generated again.
 
 ## Spawn density and respawn (`tools/patch_base_spawns.py`, `tools/spawn_tuning.json`, `respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, engine patch 0022)
 

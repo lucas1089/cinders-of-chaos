@@ -491,12 +491,43 @@ function B.huntMean(c, cfg, playerLevel, stage, hunts, pool)
 		cfg, playerLevel)
 end
 
+-- the hunting gold an hour at a level (cfg.hunting: {level, gold} points, linear between, flat beyond)
+function B.huntGold(cfg, level)
+	local pts = cfg.hunting
+	if not pts or #pts == 0 then
+		return 0
+	end
+	level = tonumber(level) or 0
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
+-- a band's hunt-contract gold for a player of this level (O754): goldMinutes of the hunting gold an hour at the level held
+-- inside the band; a flat `gold` of an older config still works
+function B.bandGold(cfg, bandIndex, playerLevel)
+	local band = cfg.bands[math.max(1, math.min(#cfg.bands, bandIndex or 1))]
+	local r = band.reward or {}
+	if r.goldMinutes then
+		local level = math.max(band.min, math.min(band.max, tonumber(playerLevel) or band.min))
+		return math.floor(B.huntGold(cfg, level) * r.goldMinutes / 60)
+	end
+	return r.gold or 0
+end
+
 function B.reward(c, cfg, playerLevel, stage, huntMean)
 	local band = cfg.bands[c.band]
 	local mult = cfg.typeMult[c.type] or 1
 	local r = band.reward
 	return {
-		gold = math.floor((r.gold or 0) * mult),
+		gold = math.floor(B.bandGold(cfg, c.band, playerLevel) * mult),
 		chaos = math.floor((r.chaos or 0) * mult),
 		divine = (r.divine or 0) > 0 and math.ceil(r.divine * mult) or 0,
 		exp = B.expReward(c, cfg, playerLevel, stage, huntMean)

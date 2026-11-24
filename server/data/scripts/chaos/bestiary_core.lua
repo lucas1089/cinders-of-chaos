@@ -529,7 +529,7 @@ function C.taskReward(task, playerLevel, cfg, bountyCfg, stage, perKill)
 		exp = math.min(exp, lvlExp * r.expCap / 100)
 	end
 	return {
-		gold = math.floor((base.gold or 0) * r.goldMult),
+		gold = math.floor((B.bandGold and B.bandGold(bountyCfg, bandIndex, playerLevel) or base.gold or 0) * r.goldMult),
 		chaos = math.floor((base.chaos or 0) * r.chaosMult),
 		divine = math.floor(divine),
 		exp = math.floor(exp),

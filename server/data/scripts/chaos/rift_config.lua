@@ -362,9 +362,9 @@ return {
 	-- (wave.base + wave.perExtraPlayer x (players - 1), at least `waveTier`); once they are dead it opens with: gold
 	-- coins goldPerTier2 x tier^2, Orbs of Upheaval and Fate and item rolls (as the reward chest, base + perTier x tier), all x
 	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
-	-- sealed; a woken one opens then.
+	-- sealed; a woken one opens then. O754: goldPerTier2 2000 -> 16, the chest's 0.4 (the chest's gold was cut with it).
 	coffer = {itemId = 32312, fallbackId = 12664, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
-		goldPerTier2 = 2000, chaos = {base = 0.25, perTier = 0.05}, divine = {base = 0, perTier = 0.03},
+		goldPerTier2 = 16, chaos = {base = 0.25, perTier = 0.05}, divine = {base = 0, perTier = 0.03},
 		rolls = {base = 2, perTier = 0.25}},
 	-- Cinderdeath: delayMs after a (non-guardian) monster dies, every player within `radius` sqm of it takes fire damage:
 	-- value % of the monster's max health, at most capBase + capPerTier x tier
@@ -439,8 +439,9 @@ return {
 		-- the guardian's chest, per finisher: gold to the bank goldPerLevel x the finisher's level (at least minLevel), orbs,
 		-- item rolls from the guardian's loot table (gear at the "boss" loot tier, x rarityMult), the Chaos currency roll,
 		-- gems and supports of a tier `asTier` rift, and uniqueRolls unique rolls at the boss tier over every unique (no
-		-- monster list), x uniqueFind. Level 1000: 3M gold (hunting earns ~9.5M an hour there, server/README.md "Respec").
-		reward = {goldPerLevel = 3000, chaos = 4, divine = 2, rolls = 8, rarityMult = 1.5, uniqueRolls = 2, uniqueFind = 2,
+		-- monster list), x uniqueFind. O754: goldPerLevel 3000 -> 100 (100,000 gold at level 1000, about 4 minutes of the one
+		-- gold curve); 3000 was sized on the old "Respec" table (9.5M an hour at 1000) and paid ~2 hours of the curve a kill.
+		reward = {goldPerLevel = 100, chaos = 4, divine = 2, rolls = 8, rarityMult = 1.5, uniqueRolls = 2, uniqueFind = 2,
 			asTier = 15}
 	},
 
@@ -451,10 +452,14 @@ return {
 	-- rift tier, x the rarity bonus); then one currency roll (ChaosLoot.rollCurrency) and one unique roll at that tier.
 	-- Gold, orbs and the number of rolls are x (1 + quantity bonus). Tiers above 10: x (1 + beyond.reward x (t - 10)).
 	-- Then the finisher's atlas (atlas_config.lua) and the party bonus (`party`).
-	-- Sized against hunting at level 1000 (9.5M gold, 2.5 Upheaval, 1.3 Fate an hour; server/README.md "Rifts", Income):
-	-- four tier 15 chests an hour at +128% quantity pay ~15M gold, ~24 Upheaval, ~12 Fate solo.
+	-- Orbs sized against hunting at level 1000 (2.5 Upheaval, 1.3 Fate an hour; server/README.md "Rifts", Income): four tier
+	-- 15 chests an hour at +128% quantity pay ~24 Upheaval, ~12 Fate solo. Gold (O754, owner 2026-11-24 "Acertar o ouro"):
+	-- goldPerTier2 5000 -> 40. 5000 was sized on the old "Respec" table (9.5M an hour at 1000): four tier 15 chests paid ~15M,
+	-- ~10x the one gold curve (hunt_gold_config.lua, 1.55M). Now the chest is a small extra on the run's kill loot: every tier,
+	-- the tier 15 loop with its Omen and Ascended kills and the Greater Rift stay under 1.5x the curve with the best key,
+	-- the atlas maxed and a party of 5 (tools/gold_faucets_model.lua --check, server/README.md "Gold faucets against the curve (O754)"). Rifts pay orbs, keys, uniques.
 	reward = {
-		goldPerTier2 = 5000,
+		goldPerTier2 = 40,
 		chaos = {base = 0.5, perTier = 0.085},
 		divine = {base = 0, perTier = 0.06},
 		rolls = {base = 2, perTier = 0.5},
@@ -675,7 +680,9 @@ return {
 		healthLevel = 2000,
 		firstTier = 16,
 		maxShownTier = 999, -- the crash refund marker holds the shown tier and Omen markers start at 1000
-		rule = {levelStep = 25, health = 0.06, damage = 0.03, reward = 0.04, rewardCap = 3.0},
+		rule = {levelStep = 25, health = 0.06, damage = 0.03, reward = 0.04, rewardCap = 3.0, goldCap = 1.25},
+		-- goldCap (O754): the chest's gold rises with g at most to x1.25, the curve's gold at 2500 over that of tier 15's 1025
+		-- (hunt_gold_config.lua); the orbs keep the full factor
 		clock = {mult = 1.0, steps = {{fraction = 0.50, up = 3}, {fraction = 0.75, up = 2}, {fraction = 1.00, up = 1}}, failDrop = 1},
 		key = {nameFormat = "Greater Rift Key (Tier %d)", fragmentCost = 150, boughtPerDay = 3, boughtStorage = 7103150,
 			drop = {chance = 12, pity = 8}},
@@ -690,7 +697,7 @@ return {
 		rewards = {
 			maxPerRun = 3,
 			best = {orbFate = {id = 29857, base = 1, perTier = 0.25}, orbUpheaval = {id = 29856, base = 2, perTier = 0.5},
-				gold = {base = 150000, perTier = 25000}, fragments = {id = 32071, base = 10, perTier = 2}},
+				gold = {base = 5000, perTier = 100}, fragments = {id = 32071, base = 10, perTier = 2}},
 			brackets = {
 				{upTo = 1, name = "Greater Champion", fate = 40, upheaval = 80, fragments = 150},
 				{upTo = 3, name = "Greater Vanguard", fate = 25, upheaval = 50, fragments = 100},

@@ -109,11 +109,13 @@ return {
 	-- ------------------------------------------------------------------ rewards (per finisher, into the backpack / inbox)
 	-- gold to the bank, orbs, uniqueRolls rolls over the Ascended uniques of this boss (ChaosUniqueItems entries with
 	-- ascended = true that list the boss), x uniqueFind; gearRolls items of the boss's loot at the boss loot tier.
-	-- Gold, orbs and gearRolls x the party bonus (`party`), uniqueFind x its loot bonus.
+	-- Gold, orbs and gearRolls x the party bonus (`party`), uniqueFind x its loot bonus. O754: gold 15,000,000 -> 600,000 and
+	-- 40,000,000 -> 1,500,000 (sized on the old "Respec" table, 9.5M an hour at 1000); the tier 15 loop that earns the sigils
+	-- stays under 1.5x the one gold curve with them (tools/gold_faucets_model.lua --check, server/README.md "Gold faucets against the curve (O754)").
 	reward = {
-		ascended = {gold = 15000000, chaos = 20, divine = 10, exalted = 1, uniqueRolls = 2, uniqueFind = 6, gearRolls = 4,
+		ascended = {gold = 600000, chaos = 20, divine = 10, exalted = 1, uniqueRolls = 2, uniqueFind = 6, gearRolls = 4,
 			relic = true},
-		cinder = {gold = 40000000, chaos = 40, divine = 20, exalted = 3, uniqueRolls = 3, uniqueFind = 10, gearRolls = 6}
+		cinder = {gold = 1500000, chaos = 40, divine = 20, exalted = 3, uniqueRolls = 3, uniqueFind = 10, gearRolls = 6}
 	},
 	orbs = {chaos = 29856, divine = 29857, exalted = 29855},
 

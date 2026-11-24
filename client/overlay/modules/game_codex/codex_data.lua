@@ -16737,7 +16737,7 @@ CodexData = {
 						},
 						{
 							h = "Chest (per player)",
-							p = {"Gold: 5000 x tier squared to the bank.", "Orb of Upheaval: 0.5 + 0.085 per tier; Orb of Fate: 0 + 0.06 per tier.", "Item rolls: 2 + 0.5 per tier from the rift monsters' loot, gear with a rarity; one currency roll and one unique roll.", "Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."}
+							p = {"Gold: 40 x tier squared to the bank.", "Orb of Upheaval: 0.5 + 0.085 per tier; Orb of Fate: 0 + 0.06 per tier.", "Item rolls: 2 + 0.5 per tier from the rift monsters' loot, gear with a rarity; one currency roll and one unique roll.", "Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."}
 						}
 					}
 				},
@@ -16765,7 +16765,7 @@ CodexData = {
 						},
 						{
 							h = "Reward (per finisher)",
-							p = {"3000 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."}
+							p = {"100 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."}
 						}
 					}
 				}

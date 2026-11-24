@@ -1943,7 +1943,8 @@ function R.greaterReward(cfg, r, g, rand)
 		return r
 	end
 	local m = R.greaterInfo(cfg, g).reward
-	r.gold = floor((r.gold or 0) * m)
+	-- O754: the gold rises at most goldCap (the hunt gold of level 2500 over that of tier 15's 1025), the orbs by m
+	r.gold = floor((r.gold or 0) * math.min(m, cfg.greater.rule.goldCap or m))
 	r.chaos = R.roundChance((r.chaos or 0) * m, rand)
 	r.divine = R.roundChance((r.divine or 0) * m, rand)
 	r.greaterMult = m
