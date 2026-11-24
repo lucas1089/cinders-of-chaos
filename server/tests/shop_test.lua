@@ -704,7 +704,7 @@ for _, o in ipairs(runeCat.offers) do
 end
 for _, id in ipairs({2304, 2288, 2315, 2274, 2268, 2311, 2265, 2273}) do eq(sizes[id], 3, "100 / 250 / 500 of rune " .. id) end
 ok(sizes[2278] and sizes[2261], "Shackle and Dispel packs")
-eq(Shop.byKey["item:2304x100"].cost, math.ceil(84 * 100 / 1000), "100 Searing Orb Runes: 9 coins (the old Supplies offer, same key)")
+eq(Shop.byKey["item:2304x100"].cost, math.ceil(42 * 100 / 1000), "100 Searing Orb Runes: 5 coins at the O757 price of 42 gold (the old Supplies offer, same key)")
 ok(Shop.byKey["item:2304x500"].cost < 5 * Shop.byKey["item:2304x100"].cost, "the big pack is cheaper per rune")
 -- delivery (owner 2026-10-16: store items go to the purse): stacks of 100 into the purse
 local Rune = newPlayer("Runa", {level = 60})

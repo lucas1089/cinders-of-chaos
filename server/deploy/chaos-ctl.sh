@@ -187,6 +187,16 @@
 #                               and the UTC offset now must match too (server/tools/chaos_timezone.py)
 #   timezone set                timedatectl set-timezone to the expected zone (root), then the same lines, restart_needed=yes and
 #                               a note: the running game server keeps the old zone until it restarts. Never restarts by itself
+#   house-fix [--write]         the house fixer (O742, O758; server/README.md "House fixer (O742)") on the world map of the
+#                               server folder: server/tools/fix_houses.py of the repo. No flag: the dry run, the plan (the
+#                               tile flag fixes PZ_ADD / PVP_CLEAR, the findings for a human), nothing written, the server
+#                               keeps running. --write: stops the server (it saves), copies the map to
+#                               <map>.house-fix-YYYYmmdd-HHMMSS, runs fix_houses.py --write (through map_write_guard.py:
+#                               only the planned tiles may differ), gives the new map the old owner and mode, starts the
+#                               server again whatever the fixer said, and prints the result. key=value lines first:
+#                               house_fix=dry-run|written|nothing|refused, map=, backup= (--write), server=started|start-failed
+#                               (--write); then the fixer's own lines. Exit 1 when the fixer refused (the map is unchanged) or
+#                               the server did not start again
 #   launch-check [--json] [--max-players N] [--launch "YYYY-MM-DD HH:MM"]
 #                               the launch list against the INSTALLED server (O440, server/README.md "Launch check (O440)"),
 #                               read-only: one line per check, OK, WARN or FAIL, a name and one sentence, then a summary line;
@@ -2854,6 +2864,72 @@ PY
         ;;
       *) die "timezone [set]" ;;
     esac
+    ;;
+  house-fix)
+    # O758 (owner 2026-11-24 "Corretor de casas: pode fazer"): the house fixer of O742 as a button. The dry run reads the map
+    # only; --write needs the server stopped (the fixer replaces the map file), keeps a dated copy and starts the server again.
+    hwrite=0
+    for a in "$@"; do
+      case $a in
+        --write) hwrite=1 ;;
+        *) die "house-fix [--write]" ;;
+      esac
+    done
+    [ -d "$REPO" ] || die "no repo $REPO (CHAOS_REPO)"
+    htool="$REPO/server/tools/fix_houses.py"
+    [ -f "$htool" ] || die "no $htool (CHAOS_REPO): update the server's repo first (update-apply)"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    # the world map as fix_houses.py finds it (audit_map_tiles.py map_path): config.lua mapName, else the one .otbm of data/world
+    hmap=""
+    hname=$(sed -n -E 's/^[[:space:]]*mapName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$SERVER/config.lua" 2>/dev/null | head -n 1)
+    if [ -n "$hname" ] && [ -f "$SERVER/data/world/$hname.otbm" ]; then
+      hmap="$SERVER/data/world/$hname.otbm"
+    else
+      hmaps=$(find "$SERVER/data/world" -maxdepth 1 -name '*.otbm' 2>/dev/null)
+      [ -n "$hmaps" ] && [ "$(printf '%s\n' "$hmaps" | wc -l)" -eq 1 ] && hmap=$hmaps
+    fi
+    [ -n "$hmap" ] || die "house-fix: no world map in $SERVER/data/world (config.lua mapName)"
+    if [ "$hwrite" -eq 0 ]; then
+      hrc=0
+      hout=$(python3 -I "$htool" "$SERVER" --dry-run 2>&1) || hrc=$?
+      if [ "$hrc" -ne 0 ]; then
+        echo "house_fix=refused"
+      elif printf '%s\n' "$hout" | grep -q '^house fixer: nothing to fix'; then
+        echo "house_fix=nothing"
+      else
+        echo "house_fix=dry-run"
+      fi
+      echo "map=$hmap"
+      printf '%s\n' "$hout"
+      exit "$hrc"
+    fi
+    need_unit
+    systemctl stop "$UNIT" || die "house-fix: the server did not stop; nothing changed"
+    hbak="$hmap.house-fix-$(date +%Y%m%d-%H%M%S)"
+    if ! cp -p "$hmap" "$hbak"; then
+      systemctl start "$UNIT" || true
+      die "house-fix: cannot copy the map to $hbak; nothing changed, the server was started again"
+    fi
+    hrc=0
+    hout=$(python3 -I "$htool" "$SERVER" --write 2>&1) || hrc=$?
+    # the fixer writes the new map as this user (root): the engine's user keeps it
+    chown --reference="$hbak" "$hmap" 2>/dev/null || true
+    chmod --reference="$hbak" "$hmap" 2>/dev/null || true
+    hsrv=started
+    systemctl start "$UNIT" || hsrv=start-failed
+    if [ "$hrc" -ne 0 ]; then
+      echo "house_fix=refused"
+    elif printf '%s\n' "$hout" | grep -q '^house fixer: nothing to fix'; then
+      echo "house_fix=nothing"
+    else
+      echo "house_fix=written"
+    fi
+    echo "map=$hmap"
+    echo "backup=$hbak"
+    echo "server=$hsrv"
+    printf '%s\n' "$hout"
+    if [ "$hsrv" != started ] && [ "$hrc" -eq 0 ]; then hrc=1; fi
+    exit "$hrc"
     ;;
   launch-check)
     # read-only (O440): launch_check.py reads the installed server, the env file, the backup folder and the checkout. The counts

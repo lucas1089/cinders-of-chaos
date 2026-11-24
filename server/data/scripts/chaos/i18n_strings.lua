@@ -8661,6 +8661,8 @@ return {
 			"Sem fundo, preso à loja: o básico do seu loot entra, %d espaços, sem peso",
 		["Legendary and better, set pieces, uniques and cards always fly to the ground"] =
 			"Lendário ou melhor, peças de set, únicos e cartas sempre voam para o chão",
+		["In an instance it takes them too"] =
+			"Numa instância ela também os guarda",
 		["Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog"] =
 			"Outfit Brotherhood com addons, mount Cinderhoof, título Emberkin, transmog Arboreal",
 		["Call it in Character > Pets from level %d"] =

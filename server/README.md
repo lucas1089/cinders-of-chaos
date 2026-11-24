@@ -5347,12 +5347,13 @@ Owner 2026-11-12, translated: build our own versions of the map editor ideas, al
 
 ### House fixer (O742) (`tools/fix_houses.py`)
 
-Plans the fixes of the audit that need no judgement and lists the rest for a human. Built and tested only: the live run waits for the owner's go.
+Plans the fixes of the audit that need no judgement and lists the rest for a human. The owner gave the go on 2026-11-24 (O758): the run is a button of the admin app (below).
 
 - **Fix kinds.** Only `HOUSE_FLAGS` has a mechanical fix. `PZ_ADD`: the house tiles without the protection zone flag get it, when other tiles of the house have it (the engine makes every house tile a protection zone anyway). `PVP_CLEAR`: the PvP zone flag of a house tile is cleared, other flag bits kept. Only the tile flags attribute changes. The house id, items and other attributes stay byte for byte.
 - **For a human.** `MULTI_FLOOR`, `NO_DOOR`, `DOOR_UNREACHABLE`, `ENTRY_BLOCKED`, `SIZE`, `ROOF_SHARE` are listed, never touched. The audit has no code for a stray house tile outside the walls, a room tile without the house id, an overlap or a door outside the house. Each would change a house's shape, which no tool does (`docs/MAP_GUIDE.md` "Map editing rules"). A finding of `house_audit_known.csv` is left too.
 - **Write.** `--dry-run` is the default: the plan and the counts by kind, nothing written. `--write` writes `<map>.tmp`, proves it through `map_write_guard.py` (only the planned tiles differ, each exactly the bytes meant, every other tile and node identical), keeps `<map>.bak` when there is none, then replaces the map. A refusal leaves the map as it was and the `.tmp` for inspection. `--out FILE` writes elsewhere. Idempotent: a second run plans nothing.
-- **Run.** `python3 -I server/tools/fix_houses.py SERVER_DIR [--dry-run | --write] [--out FILE] [--known FILE] [--limit N]`, or `--map`, `--items`, `--xml` and `--houses`. On the VPS, with the server stopped and only after the owner's go: `python3 -I /opt/chaos/repo/server/tools/fix_houses.py /opt/chaos/server` first (dry run), then the same with `--write`. No admin app button: a one-off run on the map that needs the server stopped. A dry-run button could later sit next to an audit button, if the audits get one. None is added now.
+- **Run.** `python3 -I server/tools/fix_houses.py SERVER_DIR [--dry-run | --write] [--out FILE] [--known FILE] [--limit N]`, or `--map`, `--items`, `--xml` and `--houses`.
+- **Admin app button (O758, owner 2026-11-24 "Corretor de casas: pode fazer").** Android admin app: Comandos > Ações rápidas > card "Casas do mapa", buttons "Ver correções de casas" (the dry run) and "Corrigir casas" (the write, behind a confirm dialog). Desktop admin app: Ajustes do jogo > Mapa, the same two actions. Both run `chaos-ctl.sh house-fix [--write]`. No flag: `fix_houses.py SERVER_DIR --dry-run` of the server's repo (`CHAOS_REPO`) prints the plan, nothing is written and the server keeps running. `--write`: `systemctl stop` (the engine saves), a copy of the world map as `<map>.otbm.house-fix-YYYYmmdd-HHMMSS` (the map of `config.lua` `mapName`, else the one `.otbm` of `data/world`), `fix_houses.py --write` (through `map_write_guard.py`), the new map gets the owner and mode of the copy, `systemctl start` whatever the fixer said, then `house_fix=written|nothing|refused`, `map=`, `backup=`, `server=started|start-failed` and the fixer's lines. Refuses a missing repo or tool, a folder with no world map and any other argument; exit 1 on a refusal of the fixer (the map unchanged) or a failed start. Fallback over ssh: `chaos-ctl.sh house-fix`, then `chaos-ctl.sh house-fix --write`. Tests: `deploy/chaos_ctl_test.py` `test_house_fix` (a stub fixer and systemctl: no stop in the dry run, stop / copy / fixer / start in order, the copy holds the old map, a refusal and a failed start, the refusals), `android/.../HouseFixInfoTest.java` (the result in Portuguese; javac line in ci.yml). Not run on the live map yet.
 - **Tests.** `tools/fix_houses_test.py`: six synthetic houses (clean, `PZ_ADD`, `PVP_CLEAR` on a tile whose position byte needs escaping and on an inline ground tile, both, `NO_DOOR`, a known flag fault). Plan 5 tiles (2 `PZ_ADD`, 3 `PVP_CLEAR`), 1 for a human, 1 known left. Dry run writes nothing. A guard refusal when a far item changes, and one when a tile is not the bytes meant. `--out` and `--write` give the same bytes, the audit then has only the human and known findings, a second run plans nothing. In CI (`checks` job).
 
 ## Test kit (`admin/testkit.lua`)
@@ -14785,69 +14786,85 @@ stock spell conjured (36, and the unscribed rune) comes from NPC vendors or the 
   `player_spells` row with a stock or Chaos name of the 40 removed spells (the engine keeps learned names as text and never checks them,
   so a login never fails either way). A hotkey with the old words only says them now.
 
-**Prices** (gold a rune, at every NPC): conjure value = (mana x 0.5 + soul x 10 + blank rune 10) / runes conjured, the
-mana at what mana potions cost; x1.0 for rune levels 1-24, x1.1 for 25-34, x1.2 for 35+; never below the lowest price a
-base NPC asked; at least 2 for the 10-a-blank runes. Flagged for the owner (docs/OWNER_TODO.md).
+**Prices** (gold a rune, at every NPC): the lower of the conjure rule and the hunt cap (O757). Conjure rule: conjure value =
+(mana x 0.5 + soul x 10 + blank rune 10) / runes conjured, the mana at what mana potions cost; x1.0 for rune levels 1-24, x1.1
+for 25-34, x1.2 for 35+; at least 2 for the 10-a-blank runes; before O757 also never below the lowest price a base NPC asked.
 
-| Rune (stock) | Level | Old NPC price | New price | Recipe (skill, gold, makes) | Crafted, gold a rune |
-|---|---|---|---|---|---|
-| Faint Dart Rune | 1 | none | **2** | 10, 5 gold, 50 | 1.1 |
-| Faint Hexdart Rune | 1 | none | **2** | 10, 5 gold, 50 | 1.1 |
-| Pebblestorm Rune | 1 | none | **11** | 10, 71 gold, 20 | 6.0 |
-| Blightpatch Rune | 14 | 21 | **40** | 10, 280 gold, 15 | 22.0 |
-| Cinderpatch Rune | 15 | 28 | **47** | 12, 340 gold, 15 | 26.0 |
-| Hexdart Rune | 15 | 4 | **8** | 12, 170 gold, 50 | 4.4 |
-| Mending Rune | 15 | 95 | **95** | 12, 210 gold, 5 | 52.0 |
-| Purge Rune | 15 | 65 | **120** | 12, 280 gold, 5 | 66.0 |
-| Beastbond Rune | 16 | 80 | **140** | 12, 335 gold, 5 | 77.0 |
-| Dispel Rune | 17 | 15 | **30** | 12, 200 gold, 15 | 16.7 |
-| Sparkmire Rune | 18 | 38 | **63** | 12, 470 gold, 15 | 34.7 |
-| Unmaking Rune | 21 | 26 | **47** | 12, 340 gold, 15 | 26.0 |
-| Grand Mending Rune | 24 | 175 | **240** | 12, 610 gold, 5 | 132.0 |
-| Stonefang Rune | 24 | 12 | **20** | 12, 500 gold, 50 | 11.0 |
-| Blight Seed Rune | 25 | 85 | **160** | 18, 830 gold, 10 | 88.0 |
-| Greater Hexdart Rune | 25 | 12 | **23** | 18, 585 gold, 50 | 12.7 |
-| Cinder Orb Rune | 27 | 30 | **59** | 18, 760 gold, 25 | 32.4 |
-| Dawnshard Rune | 27 | 16 | **42** | 18, 530 gold, 25 | 23.2 |
-| Ember Seed Rune | 27 | 117 | **195** | 18, 1020 gold, 10 | 107.0 |
-| Gravecall Rune | 27 | 375 | **395** | 18, 1040 gold, 5 | 218.0 |
-| Mimic Rune | 27 | 210 | **365** | 18, 955 gold, 5 | 201.0 |
-| Soulpyre Rune | 27 | 46 | **92** | 18, 710 gold, 15 | 50.7 |
-| Thicket Rune | 27 | 160 | **200** | 18, 1050 gold, 10 | 110.0 |
-| Rimespike Rune | 28 | 30 | **59** | 18, 760 gold, 25 | 32.4 |
-| Rockfall Rune | 28 | 37 | **70** | 18, 720 gold, 20 | 38.5 |
-| Stormcall Rune | 28 | 37 | **70** | 18, 720 gold, 20 | 38.5 |
-| Blightwall Rune | 29 | 52 | **99** | 18, 1040 gold, 20 | 54.5 |
-| Frostfall Rune | 30 | 45 | **84** | 18, 875 gold, 20 | 46.3 |
-| Searing Orb Rune | 30 | 45 | **84** | 18, 875 gold, 20 | 46.3 |
-| Concussion Rune | 31 | 31 | **61** | 18, 955 gold, 30 | 33.5 |
-| Bastion Rune | 32 | 116 | **160** | 18, 1270 gold, 15 | 88.0 |
-| Pyrewall Rune | 33 | 61 | **120** | 18, 1270 gold, 20 | 66.0 |
-| Storm Seed Rune | 37 | 162 | **300** | 25, 1600 gold, 10 | 165.0 |
-| Stormwall Rune | 41 | 85 | **170** | 25, 1820 gold, 20 | 93.5 |
-| Reaper's Rune | 45 | 50 (108 most NPCs) | **220** | 25, 1770 gold, 15 | 121.3 |
-| Shackle Rune | 54 | 700 | **890** | 25, 2400 gold, 5 | 490.0 |
+**Rune prices against the hunt (O757).** Owner 2026-11-24 "Runas do NPC base: baixa". After O751 (`hunt_gold_config.lua`, the
+one gold curve) 300 Reaper's Runes an hour cost 90% of the hunting gold at level 45. The prices live in the base NPC shop
+module, so they move through the config and this step (`install_rune_supply.py` sets every NPC's rune price to the config,
+up or down; a server installed before O757 gets the lower prices on the next `install_all.py` or `--only runes`).
+- **Assumption, the typical hour.** A rune user fires 300 attack runes and 30 support runes an hour, all bought
+  (`R.huntUse` in `chaos_rune_supply.lua`). Attack: the 16 damage runes (`attackIds`); support: every other rune (heals, cures,
+  fields, bombs, walls, summons, utility). At the rune's own level, the poorest hour it is used in, 300 x an attack price is
+  at most 25% of the hunting gold and 30 x a support price at most 5%, rounded down (under 100 to 1, under 1000 to 5). The
+  dearest rune of each kind a character may use then costs at most 30% of the hour at every level (the curve only rises).
+- **Check.** `R.check()` names a price above the cap (`R.huntCap`); `tests/rune_supply_test.lua` (server loop) holds it, the
+  typical hour (`R.sinkRow`) at most 30% at every level 1-2500 and at 20 / 45 / 100 / 300, every rune dearer than an NPC pays
+  for it, and the tool lowering the prices of before O757 in a CRLF NPC file, idempotent.
+- **Sell prices.** `gen_item_prices.py` takes a rune's asking price from the rune supply when it is lower than the base
+  NPCs' median, so a rune sells for 20% of what it costs now (Shackle 140 -> 29, Reaper's 21 -> 12) and
+  `install_item_prices.py` raises no rune back to twice its sell price. `hunt_supplies.lua`, Veyra the Apothecary and the
+  store's rune packs (vendor gold x count / 1000) follow: 100 Searing Orb Runes 9 -> 5 coins, 100 Reaper's 22 -> 7.
 
-**Gold sink by level band** (hunting gold per hour from the one gold curve, `hunt_gold_config.lua` (O751; "Respec"
-before), linear in between; a caster firing 300 attack runes and 30 support runes an hour, all bought):
+| Rune (stock) | Level | Use | Old NPC price | Before O757 | Price | Recipe (skill, gold, makes) | Crafted, gold a rune |
+|---|---|---|---|---|---|---|---|
+| Faint Dart Rune | 1 | attack | none | 2 | **2** | 10, 5 gold, 50 | 1.1 |
+| Faint Hexdart Rune | 1 | attack | none | 2 | **2** | 10, 5 gold, 50 | 1.1 |
+| Pebblestorm Rune | 1 | attack | none | 11 | **11** | 10, 71 gold, 20 | 6.0 |
+| Blightpatch Rune | 14 | support | 21 | 40 | **40** | 10, 280 gold, 15 | 22.0 |
+| Cinderpatch Rune | 15 | support | 28 | 47 | **47** | 12, 340 gold, 15 | 26.0 |
+| Hexdart Rune | 15 | attack | 4 | 8 | **8** | 12, 170 gold, 50 | 4.4 |
+| Mending Rune | 15 | support | 95 | 95 | **48** | 12, 82 gold, 5 | 26.4 |
+| Purge Rune | 15 | support | 65 | 120 | **48** | 12, 82 gold, 5 | 26.4 |
+| Beastbond Rune | 16 | support | 80 | 140 | **50** | 12, 88 gold, 5 | 27.6 |
+| Dispel Rune | 17 | support | 15 | 30 | **30** | 12, 200 gold, 15 | 16.7 |
+| Sparkmire Rune | 18 | support | 38 | 63 | **55** | 12, 405 gold, 15 | 30.3 |
+| Unmaking Rune | 21 | support | 26 | 47 | **47** | 12, 340 gold, 15 | 26.0 |
+| Grand Mending Rune | 24 | support | 175 | 240 | **70** | 12, 145 gold, 5 | 39.0 |
+| Stonefang Rune | 24 | attack | 12 | 20 | **20** | 12, 500 gold, 50 | 11.0 |
+| Blight Seed Rune | 25 | support | 85 | 160 | **72** | 18, 345 gold, 10 | 39.5 |
+| Greater Hexdart Rune | 25 | attack | 12 | 23 | **23** | 18, 585 gold, 50 | 12.7 |
+| Cinder Orb Rune | 27 | attack | 30 | 59 | **38** | 18, 475 gold, 25 | 21.0 |
+| Dawnshard Rune | 27 | attack | 16 | 42 | **38** | 18, 475 gold, 25 | 21.0 |
+| Ember Seed Rune | 27 | support | 117 | 195 | **77** | 18, 375 gold, 10 | 42.5 |
+| Gravecall Rune | 27 | support | 375 | 395 | **77** | 18, 160 gold, 5 | 42.0 |
+| Mimic Rune | 27 | support | 210 | 365 | **77** | 18, 160 gold, 5 | 42.0 |
+| Soulpyre Rune | 27 | attack | 46 | 92 | **38** | 18, 265 gold, 15 | 21.0 |
+| Thicket Rune | 27 | support | 160 | 200 | **77** | 18, 375 gold, 10 | 42.5 |
+| Rimespike Rune | 28 | attack | 30 | 59 | **39** | 18, 485 gold, 25 | 21.4 |
+| Rockfall Rune | 28 | attack | 37 | 70 | **39** | 18, 380 gold, 20 | 21.5 |
+| Stormcall Rune | 28 | attack | 37 | 70 | **39** | 18, 380 gold, 20 | 21.5 |
+| Blightwall Rune | 29 | support | 52 | 99 | **81** | 18, 840 gold, 20 | 44.5 |
+| Frostfall Rune | 30 | attack | 45 | 84 | **42** | 18, 410 gold, 20 | 23.0 |
+| Searing Orb Rune | 30 | attack | 45 | 84 | **42** | 18, 410 gold, 20 | 23.0 |
+| Concussion Rune | 31 | attack | 31 | 61 | **43** | 18, 660 gold, 30 | 23.7 |
+| Bastion Rune | 32 | support | 116 | 160 | **89** | 18, 685 gold, 15 | 49.0 |
+| Pyrewall Rune | 33 | support | 61 | 120 | **91** | 18, 950 gold, 20 | 50.0 |
+| Storm Seed Rune | 37 | support | 162 | 300 | **100** | 25, 500 gold, 10 | 55.0 |
+| Stormwall Rune | 41 | support | 85 | 170 | **110** | 25, 1160 gold, 20 | 60.5 |
+| Reaper's Rune | 45 | attack | 50 | 220 | **61** | 25, 455 gold, 15 | 33.7 |
+| Shackle Rune | 54 | support | 700 | 890 | **145** | 25, 350 gold, 5 | 80.0 |
 
-| Level | Hunting gold / h | 300 attack runes | 30 support runes |
-|---|---|---|---|
-| 8 | 19,000 | Pebblestorm 3,300 (17%) | Blightpatch 1,200 (6%) |
-| 20 | 36,250 | Stonefang 6,000 (17%) | Grand Mending 7,200 (20%) |
-| 30 | 50,625 | Searing Orb 25,200 (50%) | Bastion 4,800 (9%) |
-| 45 | 73,250 | Reaper's 66,000 (90%) | Shackle 26,700 (36%) |
-| 100 | 164,000 | Reaper's 66,000 (40%) | Shackle 26,700 (16%) |
-| 300 | 619,000 | Reaper's 66,000 (11%) | Shackle 26,700 (4%) |
-| 500 | 1,197,000 | Reaper's 66,000 (6%) | Shackle 26,700 (2%) |
-| 1000+ | 1,550,000+ | Reaper's 66,000 (4%) | Shackle 26,700 (2%) |
+**Gold sink by level band** (hunting gold per hour from the one gold curve, `hunt_gold_config.lua`, linear in between; the
+dearest attack and support rune a character of the level may use, 300 and 30 an hour, all bought; O757 prices):
 
-O751: on the old table the runes were a token sink from 500. On the one curve they stay a real one up to about 300 and
-take most of the hour at 45 (owner, open).
+| Level | Hunting gold / h | 300 attack runes | 30 support runes | Share |
+|---|---|---|---|---|
+| 8 | 19,000 | Pebblestorm Rune 3,300 (17%) | - 0 (0%) | 17% |
+| 20 | 36,250 | Pebblestorm Rune 3,300 (9%) | Sparkmire Rune 1,650 (5%) | 14% |
+| 30 | 50,625 | Frostfall Rune 12,600 (25%) | Blightwall Rune 2,430 (5%) | 30% |
+| 45 | 73,250 | Reaper's Rune 18,300 (25%) | Stormwall Rune 3,300 (5%) | 29% |
+| 54 | 88,100 | Reaper's Rune 18,300 (21%) | Shackle Rune 4,350 (5%) | 26% |
+| 100 | 164,000 | Reaper's Rune 18,300 (11%) | Shackle Rune 4,350 (3%) | 14% |
+| 300 | 619,000 | Reaper's Rune 18,300 (3%) | Shackle Rune 4,350 (1%) | 4% |
+| 500 | 1,197,000 | Reaper's Rune 18,300 (2%) | Shackle Rune 4,350 (0%) | 2% |
+| 1000 | 1,550,000 | Reaper's Rune 18,300 (1%) | Shackle Rune 4,350 (0%) | 1% |
 
-A flat NPC price cannot follow the income curve: runes are a real sink from level 8 to about 300 (heaviest at 30-60,
-where the strong runes unlock) and a token one past 500. The prices are per item in the base NPC shop module, so a
-level-scaled price would need a scripted shop. Open for the owner.
+
+Before O757: 300 Reaper's Runes cost 66,000 an hour, 90% of the hunt at 45, 40% at 100, 11% at 300; 30 Shackle Runes 26,700.
+Now the runes stay a real sink up to about 100 (heaviest at 30-54, where the strong runes unlock) and a token one past 300.
+A flat NPC price cannot follow the income curve further: a level-scaled price would need a scripted shop.
 
 **Crafting** (general crafting tables, skill 7, action id 38823; the crafting hall, z 4). A recipe turns 5 unscribed
 runes into 5 x the rune's conjure count, with 2 herbs and 1 ore piece of the rune's level band (the base server's own
@@ -34876,8 +34893,12 @@ Rarity Autoloot on. The store sells convenience for the basics only. Roadmap O74
   in the bag before a plain item.
 * **Cards.** They had no route (the Loot Bag's "other" rule took them). Now they always fly: the epic missile, the orange beam (`X.beamGroup`); the loot filter marks
   a card as a legendary power (`info.power`, `info.card`), so it glows, beams on the ground row and plays the power sound.
-* **Instances.** Nothing explodes inside an instance (`inInstances = false`: rift, dungeon, tower, arena, raid, boss rooms). The rule holds there too, so an item
-  that must fly stays **in the loot bag** on the death tile (with the corpse beam of the loot filter); the basics are taken as everywhere.
+* **Instances (O756).** Nothing explodes inside an instance (`inInstances = false`: rift, dungeon, tower, arena, raid, boss rooms). Owner 2026-11-24 "Bolsas nas
+  instâncias: sim, volta como antes": the rule does not hold there. `X.mustExplodeItem(item, corpse)` answers false for a corpse on a tile of
+  `Chaos.instanceAt`, so inside an instance the pouches take Legendary and up, set pieces, uniques and cards again as before O749 (the Loot Bag by its rules,
+  the loot filter does not hold them back, the base autoloot list and the Auto Seller as before; the Rarity Autoloot floor stays at Rare). What no pouch takes
+  stays in the loot bag with the corpse beam. Outside an instance the O749 rule stays: they fly. With `inInstances = true` they would fly there too, and the
+  rule holds there again. Asked without a corpse the rule cannot see the place and holds.
 * **Rarity Autoloot.** The floor goes up to Rare (`F.LOOT_FROM_MAX` 4; the presets Hunter and Strict pick up Rare); a floor saved above Rare reads as Rare. Client
   `game_lootfilter`: the selector lists Common to Rare, the tooltip says Legendary and up fly (pt-BR in `pt_br.lua`). Unity `LootFilterRules.LootFromMax`.
 * **Gold.** Unchanged: every coin of an owned kill goes to the bank at 2.6. The explosion's gold path only sees late coins (see the explosion's "Gold").
@@ -34886,7 +34907,8 @@ Rarity Autoloot on. The store sells convenience for the basics only. Roadmap O74
   junk. Legendary and better, ...". The pouch's own description and `collects` line say the same; pt-BR in `i18n_strings.lua`. docs/PRICES.md.
 * **Tests.** `tests/loot_explosion_test.lua` (the rule, `flyRank`, the card's group and beam, the validation, `mustExplodeItem` on the mocked engine with the
   switch and a non-bag corpse, a kill whose basics were taken: four flights with their beams, a card over the cap flies; the files ask the rule),
-  `tests/pouches_test.lua` (the pouch step leaves a must-fly item in the bag, the basics go in, `P.plan`), `tests/lootfilter_test.lua` (the cap, the old floors,
+  the instance case of O756 (false in an instance, true outside, true with `inInstances`), `tests/pouches_test.lua` (the pouch step leaves a must-fly item in
+  the bag, the basics go in, `P.plan`; O756: in an instance the Loot Bag takes the Legendary), `tests/lootfilter_test.lua` (the cap, the old floors,
   `F.autoloot` and `explode`), `tests/autosell_test.lua` (the kill sale with every tier ticked sells only the basic copy), client `lootfilter_test.lua`.
   Tester check `loot_explosion_pouch` (`tester_checks.py`, unit test `LootExplosionPouch`), helper v45 `!tester explode pouch | rarity` (TEST ONLY): a real Demon
   kill by the bot with three marked swords put into its bag at index 1.5 (a Legendary, a Rare, a Common); `pouch` with a Loot Bag carried (made for the run if

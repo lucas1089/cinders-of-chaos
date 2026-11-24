@@ -39,10 +39,13 @@ R.vendors = {
 -- The runes, by required level. id: the rune item; name: its Chaos name (spell_names.csv); level: the rune's level; the
 -- stock conjure spell it replaces: script (data/spells/scripts/conjuring/), mana, soul, count (runes per blank rune);
 -- price: gold per rune at every NPC that sells it; old: the lowest base NPC price before (0: no NPC sold it).
--- price = the conjure cost in gold, x the level band factor, never below old (docs: server/README.md "Rune supply"):
---   conjure gold = (mana x 0.5 + soul x 10 + blank rune 10) / count; 0.5 gold a mana point is what mana potions cost.
---   band factor: rune level 1-24 x1.0, 25-34 x1.1, 35+ x1.2. Rounded: under 100 to 1, under 1000 to 5, else to 10.
---   At least 2 x (blank rune / count), so a craft is always cheaper than the vendor.
+-- price = the lower of two (docs: server/README.md "Rune supply", "Rune prices against the hunt (O757)"):
+--   the conjure rule: conjure gold = (mana x 0.5 + soul x 10 + blank rune 10) / count (0.5 gold a mana point is what mana
+--   potions cost), x the level band factor (rune level 1-24 x1.0, 25-34 x1.1, 35+ x1.2), rounded (under 100 to 1, under
+--   1000 to 5, else to 10), at least 2 x (blank rune / count) so a craft is always cheaper than the vendor; before O757
+--   never below old;
+--   the hunt cap (O757, owner 2026-11-24 "Runas do NPC base: baixa"): R.huntUse below, rounded down the same way. The
+--   cap may take a price below old: the base NPCs sell it cheaper now (install_rune_supply.py reprices them).
 R.runes = {
 	{id = 23723, name = "Faint Dart Rune", level = 1, script = "lightest_missile_rune.lua", mana = 6, soul = 0, count = 10, price = 2, old = 0},
 	{id = 19392, name = "Faint Hexdart Rune", level = 1, script = "practice_magic_missile_rune.lua", mana = 5, soul = 0, count = 10, price = 2, old = 0},
@@ -50,36 +53,50 @@ R.runes = {
 	{id = 2285, name = "Blightpatch Rune", level = 14, script = "poison_field_rune.lua", mana = 200, soul = 1, count = 3, price = 40, old = 21},
 	{id = 2301, name = "Cinderpatch Rune", level = 15, script = "fire_field_rune.lua", mana = 240, soul = 1, count = 3, price = 47, old = 28},
 	{id = 2287, name = "Hexdart Rune", level = 15, script = "light_magic_missile_rune.lua", mana = 120, soul = 1, count = 10, price = 8, old = 4},
-	{id = 2265, name = "Mending Rune", level = 15, script = "intense_healing_rune.lua", mana = 120, soul = 2, count = 1, price = 95, old = 95},
-	{id = 2266, name = "Purge Rune", level = 15, script = "cure_poison_rune.lua", mana = 200, soul = 1, count = 1, price = 120, old = 65},
-	{id = 2290, name = "Beastbond Rune", level = 16, script = "convince_creature_rune.lua", mana = 200, soul = 3, count = 1, price = 140, old = 80},
+	{id = 2265, name = "Mending Rune", level = 15, script = "intense_healing_rune.lua", mana = 120, soul = 2, count = 1, price = 48, old = 95},
+	{id = 2266, name = "Purge Rune", level = 15, script = "cure_poison_rune.lua", mana = 200, soul = 1, count = 1, price = 48, old = 65},
+	{id = 2290, name = "Beastbond Rune", level = 16, script = "convince_creature_rune.lua", mana = 200, soul = 3, count = 1, price = 50, old = 80},
 	{id = 2261, name = "Dispel Rune", level = 17, script = "destroy_field_rune.lua", mana = 120, soul = 2, count = 3, price = 30, old = 15},
-	{id = 2277, name = "Sparkmire Rune", level = 18, script = "energy_field_rune.lua", mana = 320, soul = 2, count = 3, price = 63, old = 38},
+	{id = 2277, name = "Sparkmire Rune", level = 18, script = "energy_field_rune.lua", mana = 320, soul = 2, count = 3, price = 55, old = 38},
 	{id = 2310, name = "Unmaking Rune", level = 21, script = "disintegrate_rune.lua", mana = 200, soul = 3, count = 3, price = 47, old = 26},
-	{id = 2273, name = "Grand Mending Rune", level = 24, script = "ultimate_healing_rune.lua", mana = 400, soul = 3, count = 1, price = 240, old = 175},
+	{id = 2273, name = "Grand Mending Rune", level = 24, script = "ultimate_healing_rune.lua", mana = 400, soul = 3, count = 1, price = 70, old = 175},
 	{id = 2292, name = "Stonefang Rune", level = 24, script = "stalagmite_rune.lua", mana = 350, soul = 2, count = 10, price = 20, old = 12},
-	{id = 2286, name = "Blight Seed Rune", level = 25, script = "poison_bomb_rune.lua", mana = 520, soul = 2, count = 2, price = 160, old = 85},
+	{id = 2286, name = "Blight Seed Rune", level = 25, script = "poison_bomb_rune.lua", mana = 520, soul = 2, count = 2, price = 72, old = 85},
 	{id = 2311, name = "Greater Hexdart Rune", level = 25, script = "heavy_magic_missile_rune.lua", mana = 350, soul = 2, count = 10, price = 23, old = 12},
-	{id = 2302, name = "Cinder Orb Rune", level = 27, script = "fireball_rune.lua", mana = 460, soul = 3, count = 5, price = 59, old = 30},
-	{id = 2295, name = "Dawnshard Rune", level = 27, script = "holy_missile_rune.lua", mana = 300, soul = 3, count = 5, price = 42, old = 16},
-	{id = 2305, name = "Ember Seed Rune", level = 27, script = "fire_bomb_rune.lua", mana = 600, soul = 4, count = 2, price = 195, old = 117},
-	{id = 2316, name = "Gravecall Rune", level = 27, script = "animate_dead_rune.lua", mana = 600, soul = 5, count = 1, price = 395, old = 375},
-	{id = 2291, name = "Mimic Rune", level = 27, script = "chameleon_rune.lua", mana = 600, soul = 2, count = 1, price = 365, old = 210},
-	{id = 2308, name = "Soulpyre Rune", level = 27, script = "soulfire_rune.lua", mana = 420, soul = 3, count = 3, price = 92, old = 46},
-	{id = 2269, name = "Thicket Rune", level = 27, script = "wild_growth_rune.lua", mana = 600, soul = 5, count = 2, price = 200, old = 160},
-	{id = 2271, name = "Rimespike Rune", level = 28, script = "icicle_rune.lua", mana = 460, soul = 3, count = 5, price = 59, old = 30},
-	{id = 2288, name = "Rockfall Rune", level = 28, script = "stone_shower_rune.lua", mana = 430, soul = 3, count = 4, price = 70, old = 37},
-	{id = 2315, name = "Stormcall Rune", level = 28, script = "thunderstorm_rune.lua", mana = 430, soul = 3, count = 4, price = 70, old = 37},
-	{id = 2289, name = "Blightwall Rune", level = 29, script = "poison_wall_rune.lua", mana = 640, soul = 3, count = 4, price = 99, old = 52},
-	{id = 2274, name = "Frostfall Rune", level = 30, script = "avalanche_rune.lua", mana = 530, soul = 3, count = 4, price = 84, old = 45},
-	{id = 2304, name = "Searing Orb Rune", level = 30, script = "great_fireball_rune.lua", mana = 530, soul = 3, count = 4, price = 84, old = 45},
-	{id = 2313, name = "Concussion Rune", level = 31, script = "explosion_rune.lua", mana = 570, soul = 4, count = 6, price = 61, old = 31},
-	{id = 2293, name = "Bastion Rune", level = 32, script = "magic_wall_rune.lua", mana = 750, soul = 5, count = 3, price = 160, old = 116},
-	{id = 2303, name = "Pyrewall Rune", level = 33, script = "fire_wall_rune.lua", mana = 780, soul = 4, count = 4, price = 120, old = 61},
-	{id = 2262, name = "Storm Seed Rune", level = 37, script = "energy_bomb_rune.lua", mana = 880, soul = 5, count = 2, price = 300, old = 162},
-	{id = 2279, name = "Stormwall Rune", level = 41, script = "energy_wall_rune.lua", mana = 1000, soul = 5, count = 4, price = 170, old = 85},
-	{id = 2268, name = "Reaper's Rune", level = 45, script = "sudden_death_rune.lua", mana = 985, soul = 5, count = 3, price = 220, old = 50},
-	{id = 2278, name = "Shackle Rune", level = 54, script = "paralyze_rune.lua", mana = 1400, soul = 3, count = 1, price = 890, old = 700},
+	{id = 2302, name = "Cinder Orb Rune", level = 27, script = "fireball_rune.lua", mana = 460, soul = 3, count = 5, price = 38, old = 30},
+	{id = 2295, name = "Dawnshard Rune", level = 27, script = "holy_missile_rune.lua", mana = 300, soul = 3, count = 5, price = 38, old = 16},
+	{id = 2305, name = "Ember Seed Rune", level = 27, script = "fire_bomb_rune.lua", mana = 600, soul = 4, count = 2, price = 77, old = 117},
+	{id = 2316, name = "Gravecall Rune", level = 27, script = "animate_dead_rune.lua", mana = 600, soul = 5, count = 1, price = 77, old = 375},
+	{id = 2291, name = "Mimic Rune", level = 27, script = "chameleon_rune.lua", mana = 600, soul = 2, count = 1, price = 77, old = 210},
+	{id = 2308, name = "Soulpyre Rune", level = 27, script = "soulfire_rune.lua", mana = 420, soul = 3, count = 3, price = 38, old = 46},
+	{id = 2269, name = "Thicket Rune", level = 27, script = "wild_growth_rune.lua", mana = 600, soul = 5, count = 2, price = 77, old = 160},
+	{id = 2271, name = "Rimespike Rune", level = 28, script = "icicle_rune.lua", mana = 460, soul = 3, count = 5, price = 39, old = 30},
+	{id = 2288, name = "Rockfall Rune", level = 28, script = "stone_shower_rune.lua", mana = 430, soul = 3, count = 4, price = 39, old = 37},
+	{id = 2315, name = "Stormcall Rune", level = 28, script = "thunderstorm_rune.lua", mana = 430, soul = 3, count = 4, price = 39, old = 37},
+	{id = 2289, name = "Blightwall Rune", level = 29, script = "poison_wall_rune.lua", mana = 640, soul = 3, count = 4, price = 81, old = 52},
+	{id = 2274, name = "Frostfall Rune", level = 30, script = "avalanche_rune.lua", mana = 530, soul = 3, count = 4, price = 42, old = 45},
+	{id = 2304, name = "Searing Orb Rune", level = 30, script = "great_fireball_rune.lua", mana = 530, soul = 3, count = 4, price = 42, old = 45},
+	{id = 2313, name = "Concussion Rune", level = 31, script = "explosion_rune.lua", mana = 570, soul = 4, count = 6, price = 43, old = 31},
+	{id = 2293, name = "Bastion Rune", level = 32, script = "magic_wall_rune.lua", mana = 750, soul = 5, count = 3, price = 89, old = 116},
+	{id = 2303, name = "Pyrewall Rune", level = 33, script = "fire_wall_rune.lua", mana = 780, soul = 4, count = 4, price = 91, old = 61},
+	{id = 2262, name = "Storm Seed Rune", level = 37, script = "energy_bomb_rune.lua", mana = 880, soul = 5, count = 2, price = 100, old = 162},
+	{id = 2279, name = "Stormwall Rune", level = 41, script = "energy_wall_rune.lua", mana = 1000, soul = 5, count = 4, price = 110, old = 85},
+	{id = 2268, name = "Reaper's Rune", level = 45, script = "sudden_death_rune.lua", mana = 985, soul = 5, count = 3, price = 61, old = 50},
+	{id = 2278, name = "Shackle Rune", level = 54, script = "paralyze_rune.lua", mana = 1400, soul = 3, count = 1, price = 145, old = 700},
+}
+
+-- O757 (owner 2026-11-24 "Runas do NPC base: baixa"): the typical rune use of an hour of hunting, against the one gold
+-- curve (hunt_gold_config.lua, O751). Assumption: a rune user fires `perHour` runes of one kind an hour, all bought: 300
+-- attack runes (the damage runes below) and 30 support runes (heals, cures, fields, bombs, walls, summons, utility). At
+-- the rune's own level (the poorest hour it is used in; the curve only rises) `perHour` x price is at most `share` of the
+-- hunting gold: 25% for the attack rune, 5% for the support rune, so the typical hour (one of each) costs at most 30%.
+-- R.check holds it; R.sinkRow prints the share at a level.
+R.huntUse = {
+	attack = {perHour = 300, share = 0.25},
+	support = {perHour = 30, share = 0.05},
+	-- the attack runes by id (every other rune of R.runes is a support rune)
+	attackIds = {23723, 19392, 23722, 2287, 2292, 2311, 2302, 2295, 2308, 2271, 2288, 2315, 2274, 2304, 2313, 2268},
+	huntGold = "data/scripts/chaos/hunt_gold_config.lua",
 }
 
 -- The recipes: the base crafting tables of this category (general crafting, skill 7, tables with action id 38823; the
@@ -184,6 +201,56 @@ function R.craftGoldPerRune(r)
 	return (craft.cost + R.crafting.blanks * R.blankRune.price) / craft.count
 end
 
+-- O757: the use kind of a rune ("attack" or "support", R.huntUse)
+function R.useKind(r)
+	for _, id in ipairs(R.huntUse.attackIds) do
+		if id == r.id then
+			return "attack"
+		end
+	end
+	return "support"
+end
+
+local huntCurve
+-- the hunting gold an hour at a level (hunt_gold_config.lua: linear between the points, flat beyond); read on first use
+function R.huntGold(level)
+	huntCurve = huntCurve or dofile(R.huntUse.huntGold).hunting
+	local h = huntCurve
+	if level <= h[1][1] then
+		return h[1][2]
+	end
+	for i = 2, #h do
+		if level <= h[i][1] then
+			local a, b = h[i - 1], h[i]
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return h[#h][2]
+end
+
+-- the highest price the hunt cap allows a rune (gold, not rounded)
+function R.huntCap(r)
+	local u = R.huntUse[R.useKind(r)]
+	return u.share * R.huntGold(r.level) / u.perHour
+end
+
+-- the typical hour at a level: the dearest attack rune and the dearest support rune a character of that level may use,
+-- each at its perHour; returns {level, hunt, attack = rune, attackGold, support = rune, supportGold, share (0..1)}
+function R.sinkRow(level)
+	local row = {level = level, hunt = R.huntGold(level), attackGold = 0, supportGold = 0}
+	for _, r in ipairs(R.runes) do
+		if r.level <= level then
+			local kind = R.useKind(r)
+			local gold = r.price * R.huntUse[kind].perHour
+			if gold > row[kind .. "Gold"] then
+				row[kind], row[kind .. "Gold"] = r, gold
+			end
+		end
+	end
+	row.share = (row.attackGold + row.supportGold) / row.hunt
+	return row
+end
+
 -- the rune conjure spell scripts that go (data/spells/scripts/conjuring/<name>)
 function R.conjureScripts()
 	local out = {R.blankRune.script}
@@ -216,7 +283,11 @@ function R.check()
 		if seenId[r.id] then err("rune %d twice", r.id) end
 		if seenScript[r.script] then err("script %s twice", r.script) end
 		seenId[r.id], seenScript[r.script] = true, true
-		if r.price < r.old then err("%s: price %d below the old %d", r.name, r.price, r.old) end
+		-- O757: no floor at the old base price any more; the hunt cap holds instead
+		if r.price > R.huntCap(r) then
+			err("%s: price %d above the hunt cap %.1f (%d %s runes an hour, %d%% of the hunting gold at level %d)", r.name,
+				r.price, R.huntCap(r), R.huntUse[R.useKind(r)].perHour, R.useKind(r), math.floor(R.huntUse[R.useKind(r)].share * 100 + 0.5), r.level)
+		end
 		if r.price < 1 or r.count < 1 then err("%s: price or count below 1", r.name) end
 		local per = R.craftGoldPerRune(r)
 		if per >= r.price then err("%s: crafting %.2f gold a rune, not below the vendor's %d", r.name, per, r.price) end

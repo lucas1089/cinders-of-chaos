@@ -13,7 +13,7 @@ the base crafting script loads at startup (install step "files" copies it to DAT
    called by then (rename_spells.py may have renamed it). The <rune> entries (using a rune) stay. The scripts stay on
    disk, unregistered. The ammunition conjure spells belong to patch_base_archery.py. An entry an earlier version
    commented out ("Chaos: no rune conjuring") stays as it is.
-2. NPC shops: every NPC that sells one of the runes or the unscribed rune sells it at the config's price
+2. NPC shops: every NPC that sells one of the runes or the unscribed rune sells it at the config's price, up or down (O757: the hunt cap lowers 26 runes below the base prices)
    (data/npc/**/*.xml shop_buyable "name,id,price[,subtype]"; data/npc/**/*.lua shopModule:addBuyableItem({...}, id,
    price, ...) and {..., id = n, ..., buy = price} tables). The vendors of the config (by their Chaos name, or before the
    npcnames step by the sha256 of the old name in data/npc/base_npc_names.csv) get every rune and the unscribed rune

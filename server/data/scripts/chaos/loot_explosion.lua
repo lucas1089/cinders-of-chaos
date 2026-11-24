@@ -179,7 +179,8 @@ end
 
 -- O749: true when no auto step may take this item of this corpse (the Loot Bag pouch, the Rarity Autoloot, the base autoloot list,
 -- the Auto Seller ask it): the explosion runs (switch on, valid config), the corpse is a loot bag (or none is given) and the item is
--- one of cfg.alwaysExplode (X.mustExplode). Inside an instance nothing explodes, so such an item stays in the loot bag there.
+-- one of cfg.alwaysExplode (X.mustExplode). O756 (owner 2026-11-24, "Bolsas nas instâncias: sim, volta como antes"): inside an
+-- instance nothing explodes (cfg.inInstances false), so the rule does not hold there and every auto step takes as before O749.
 function X.mustExplodeItem(item, corpse)
 	if not item or not X.active(cfg, corpseCfg) then
 		return false
@@ -188,6 +189,12 @@ function X.mustExplodeItem(item, corpse)
 		local okBag, bag = pcall(function() return ChaosCorpse.isBag(corpseCfg, corpse:getId()) end)
 		if not okBag or not bag then
 			return false
+		end
+		if not cfg.inInstances and Chaos.instanceAt then
+			local okPos, inside = pcall(function() return Chaos.instanceAt(corpse:getPosition()) end)
+			if okPos and inside then
+				return false -- O756: in an instance the pouches, the autoloot and the Auto Seller take it as before O749
+			end
 		end
 	end
 	local ok, res = pcall(function() return X.mustExplode(cfg, dropOf(item)) end)
