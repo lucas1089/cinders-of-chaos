@@ -1,0 +1,11 @@
+key,src,art,new,tiles,scale,lean,disp,float,idle,idle_ms,walk,walk_ms,walk_src,west,east,idle_frames,walk_frames,colours,pixels
+rimehide,4a031444ba4b,redraw,3734,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,43,32988
+sorrowweeper,19e903b91127,redraw,3735,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,13,31864
+rimelancer,758ed6574aab,redraw,3736,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,33,32276
+bogwake,5d64e708fc82,redraw,3737,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,31,30311
+penitent,35d9c8dda5b4,redraw,3738,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,23,33048
+hangman,0eafd5707fb6,redraw,3739,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,29,31648
+behemoth,bdb64db5c548,redraw,3740,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,31,39490
+warden,899e4376377d,redraw,3741,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,36,36995
+matriarch,68b2c49e5074,redraw,3742,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,16,34681
+devourer,8297e2e78a74,redraw,3743,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,24,30517

@@ -101,6 +101,10 @@ PAIR_WST_WEAR = 83  # the purchased wings, head pieces and capes (O747, client/t
                     # and 78 capes are looks 3590-3733 (cosmetics of the kinds head / cape, data/lib/chaos_wst_wear.lua M.on); client base
                     # patches 0209 (levitation) and 0210 (the head and cape layer). Rides with PAIR_CLIFF in pair 83, on windows-assets 4be8c608.
 
+PAIR_APEX_MONSTERS = 84   # the ten hunt monsters of levels 2100-2500 (O763, client/tools/sprites/gen_apex_monsters.py build on pair 83): outfits
+                    # 3734-3743, our own PixelLab drawings; the monsters spawn in the six O759 hall hunts only through install_apex_hunts.py
+                    # (step `apexhunts`, data/monster/apex_hunt_swaps.csv) from this pair. Not built yet: waits for the owner's approval.
+
 PAIR_ASSETS = 83
 PAIR_ASSETS_DAT_MD5 = '4169e2cf9b30499b79d3a3f8566f28a2'
 

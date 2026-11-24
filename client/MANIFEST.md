@@ -8314,3 +8314,12 @@ Opcode 170, JSON. The window asks `{"action":"sync"}` when shown. Server: `colle
 `collectionlogic.lua` is pure: clean, filter, lines, texts, pity lines. Test: `collectionlogic_test.lua` in the client loop.
 `collectionlog.otui`: 760 x 500, `$mobile` 640 x 400, ChaosCloseX and a Close button.
 The hub menu now has 106 cards. Unity: on `tools/ci/unity_opcodes_allowlist.txt`.
+
+## Hunt monsters above level 2000 (O763, `tools/sprites/gen_apex_monsters.py`, `art_import/apex_monsters.csv`; pair 84; owner 2026-11-24)
+Owner 2026-11-24: monsters above level 2000 for the six O759 hall hunts, art by PixelLab (allowed for this task).
+- **Words only.** Each look is drawn by PixelLab from a description of ours (name, element, hunt, ember dark fantasy). No purchased, donor or third-party picture was uploaded or named. `art_import/apex_monsters_words.csv` holds key, monster, PixelLab character id and the words (`words_problems`).
+- **Recipe** (O618 / O728 / O729): `create_character` standard, view oblique, 4 directions, size 56, high detail, detailed shading; `animate_character` v3 "walking forward at a calm steady pace", 8 frames, `walkv3`. Idle: the script breath of 4. Bogwake and Behemoth were drawn twice (the first read as a man in a shirt / too small). 52 plan generations in all, no USD credit.
+- **Outfits** 3734-3743, all 3x3, lean 0.00 (drawn at the angle, 11-23 px), idle 4 x 300 ms, walk 8 x 100 ms, the O585 / O640 standing point: rimehide, sorrowweeper, rimelancer, bogwake, penitent, hangman, behemoth, warden, matriarch, devourer. Pictures in `art_import/apex_monsters/<key>/` (layout of `drive_redraw`).
+- **Build order of pair 84**: pair 83 (windows-assets, dat md5 4169e2cf...) -> `gen_apex_monsters.py build P83/Tibia.dat P83/Tibia.spr OUT` (refuses another outfit count or dat md5) -> `gen_apex_monsters.py live OUT/Tibia.dat OUT/Tibia.spr`, then `check_pair` against pair 83, `quality`, `preview`. Then `PAIR_ASSETS` 84 and the live-pair job line. Not done: needs the owner.
+- **Quality**: `sprite_quality.py check --kind creature` on sheets of the placed frames fails on every look (palette size, outline hue, still frames of the breath idle, loop ratio), as the O726 / O729 looks do. The bar is not held for this art (O625).
+- **Server**: server/README.md "Hunt monsters above level 2000 (O763)".

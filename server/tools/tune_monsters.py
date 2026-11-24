@@ -211,6 +211,20 @@ for _f, _L, _dspeed in HIGH_BAND:
     _row['level'] = (_L - 20, _L + 20)
 
 
+# O763 (owner 2026-11-24): ten hunting monsters of levels 2100-2500, two per 100 levels, for the six O759 hall hunts of floor 5
+# (server/README.md "Hunt monsters above level 2000 (O763)"). The same late-game curves carried on from the 2000 set to the level
+# cap 2500; the speed step as HIGH_BAND (a fast hunter, a slow juggernaut). Their looks are outfits 3734-3743 of client pair 84
+# (client/tools/sprites/gen_apex_monsters.py); they spawn only through the install step `apexhunts` (pair 84).
+APEX_BAND = [('rimehide_mauler', 2100, 2), ('sorrowmere_weeper', 2100, 0), ('rimewrath_lancer', 2200, 3), ('bogwake_mourner', 2200, -3),
+             ('ashfall_penitent', 2300, 0), ('soot_hangman', 2300, 2), ('emberlode_behemoth', 2400, -4), ('gravelight_warden', 2400, 0),
+             ('ossuary_matriarch', 2500, -1), ('umbral_devourer', 2500, 3)]
+for _f, _L, _dspeed in APEX_BAND:
+    _row = TUNING.setdefault(_f + '.xml', {})
+    _row.update(late_targets(_L))
+    _row['speed'] += _dspeed
+    _row['level'] = (_L - 20, _L + 20)
+
+
 def pack30_targets(L):
     """a hunting monster under level 650 on the pack 30 template: the Cunning Hyaena (650: health 12,600, experience 4,300,
     strongest hit 820) scaled by L / 650 (health and hit x L/650, experience x (L/650)^2), as the ten pack 30 monsters above"""

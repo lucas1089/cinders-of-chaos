@@ -416,6 +416,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                ChaosHarvestArt.PAIR33 is on, tools/areaplan/events/ (the Haunted Harvest's two areas) at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
+  apexhunts    tools/install_apex_hunts.py       the ten hunt monsters of levels 2100-2500 (O763; client pair 84, outfits 3734-3743) take packs of the
+               lower monsters of the six O759 hall hunts by data/monster/apex_hunt_swaps.csv (the plans' spawn blocks, names only) and
+               get their rows and spawn counts in the installed bounty pool; waits for config.lua chaosClientPair >= 84, README
+               "Client pair guard" and "Hunt monsters above level 2000 (O763)"; right after contentareas
   mapfixes     tools/patch_map_fixes.py          the owner's map report of 2026-10-21 (README "Map fixes"): the broken
                teleports of tools/teleport_fixes.csv get their destination or go, the black void round the teleport
                hall becomes deep water with its shore borders and ground under its walls, and the portal gallery at
@@ -1710,6 +1714,18 @@ def step_mapfixes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('contentareas') + 1, 'mapfixes')  # after contentareas (the hall's map), before poi
+
+
+def step_apexhunts(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 84) is in the tool; its warning reaches the report. The dry copy has no
+    # spawn file: read the real one, write nothing
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        return tool_result_warn(run_tool([tool('install_apex_hunts.py'), real, '--dry-run'], 'install_apex_hunts.py'))
+    return tool_result_warn(run_tool([tool('install_apex_hunts.py'), data], 'install_apex_hunts.py'))
+
+
+STEPS.insert(STEPS.index('contentareas') + 1, 'apexhunts')  # right after contentareas wrote the plans' spawn blocks (O763, pair 84)
 
 
 def step_questshowcase(server, data, ctx):
