@@ -36,8 +36,8 @@ def otb(nodes):
 rows = T.rows_of()
 check(len(rows) == 42 and [r['client_id'] for r in rows] == list(range(44564, 44606)), 'table: client ids 44564..44605 in order')
 check([r['server_id'] for r in rows] == list(range(48564, 48606)), 'table: server ids 48564..48605 in order')
-check(C.PAIR_CLIFF == 83 and C.PAIR_MISSILE_U16 == 83 and C.PAIR_ASSETS < C.PAIR_CLIFF,
-      'the guard needs pair 83 (with the wide missiles), which windows-assets does not carry yet')
+check(C.PAIR_CLIFF == 83 and C.PAIR_MISSILE_U16 == 83 and C.PAIR_ASSETS >= C.PAIR_CLIFF,
+      'the guard needs pair 83 (with the wide missiles), on windows-assets since 2026-11-24')
 check(all(r['kind'] == 'border' and r['otb_flags_manifest'] == T.ONTOP and r['top_order'] == 1 for r in rows), 'border pieces: ONTOP, top order 1')
 check(not any(r['otb_flags'] & (1 | 32 | 64 | 128) for r in rows), 'not solid, pickupable, moveable or stackable')
 check(all(r['name'].startswith('cliff ') for r in rows) and len({r['name'] for r in rows}) == 42, 'names start with "cliff ", none twice')

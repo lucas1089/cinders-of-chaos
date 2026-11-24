@@ -35,6 +35,7 @@ gets no shift. Deterministic: the same pair writes the same file; --check exits 
 pair gives. Regenerate it with every new pair (the dat md5 is in the file).
 """
 import argparse
+import csv
 import hashlib
 import math
 import os
@@ -245,13 +246,28 @@ def wing_ids():
     return sorted(set(ids(BASE_WINGS)) | set(pack33_wings()))
 
 
+ART_BY_ROW = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'drawn_wings', 'art_by_row.csv')
+
+
+def pack_art_looks(path=ART_BY_ROW):
+    """wings looks redrawn with purchased pack art (O747): base patch 0209 places them by their anchor tile, so they
+    get no row here (the torso shift of 0193 and the look preview leave them alone)"""
+    if not os.path.exists(path):
+        return set()
+    with open(path, encoding='utf-8') as f:
+        return {int(r['look']) for r in csv.DictReader(f) if r.get('art') == 'pack'}
+
+
 def build(dat_path, spr_path):
     dat = Dat(dat_path)
     spr = Spr(spr_path)
     md5 = hashlib.md5(open(dat_path, 'rb').read()).hexdigest()
     wing_set = wing_ids()
     wing_rows, body_rows = [], []
+    pack_art = pack_art_looks()
     for i in wing_set:
+        if i in pack_art:
+            continue
         if 1 <= i <= len(dat.outfits):
             r = wings_row(dat.outfits[i - 1], spr)
             if r:

@@ -322,8 +322,8 @@ ok(any('cliff face' in m for m in qa_of(t5, walk)), 'QA: a cliff face that is no
 
 # ------------------------------------------------------------------------------------------------ O746: our cliff pieces
 import client_pair  # noqa: E402
-ok(client_pair.PAIR_CLIFF == 83 and client_pair.PAIR_MISSILE_U16 == 83 and client_pair.PAIR_ASSETS < 83,
-   'O746: the cliff pieces ride with pair 83 (with the wide missiles); PAIR_ASSETS not raised')
+ok(client_pair.PAIR_CLIFF == 83 and client_pair.PAIR_MISSILE_U16 == 83 and client_pair.PAIR_ASSETS >= 83,
+   'O746: the cliff pieces ride with pair 83 (with the wide missiles), on windows-assets since 2026-11-24')
 ok(not PL.art_on(PL.spec(hh)) and not PL.art_on(PL.spec(hh), 82) and PL.art_on(PL.spec(hh), 83) and PL.art_on({'pair': 83})
    and not PL.art_on({'pair': 83}, 82), 'O746: the art is on from pair 83, the compile option over the plan field')
 ART = {pal: PL.cliff_art(pal) for pal in ('stone', 'earth')}
