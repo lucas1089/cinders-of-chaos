@@ -58,7 +58,8 @@ ChaosDockPanel < UIWidget
   image-source: /images/chaos/window
   image-border: 18
   image-border-top: 34
-  padding: 6 4 4 4
+  // left 10: the frame's gold line ran under the first letter of every hosted window (owner 2026-11-24)
+  padding: 6 4 4 10
   focusable: false
   phantom: false
   @onEscape: modules.game_chaosdock.closeDock()
@@ -74,7 +75,7 @@ ChaosDockPanel < UIWidget
     anchors.left: parent.left
     anchors.right: closeX.left
     margin-top: 1
-    margin-left: 4
+    margin-left: 0
     margin-right: 6
     height: 20
 

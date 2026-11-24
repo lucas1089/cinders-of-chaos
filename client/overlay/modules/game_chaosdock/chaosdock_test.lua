@@ -168,7 +168,7 @@ eq(#COL.faults({ rules = { { id = 'a', col = { wrap = 1 } } } }), 1, 'wrap is a 
 eq(#COL.faults({ rules = { { id = 'a', col = { width = 9 }, autoResize = true } } }), 1, 'autoResize needs wrap')
 eq(#COL.faults({ rules = { { id = 'a', col = { wrap = true }, autoResize = true } } }), 0, 'a wrapped label')
 
--- no part of a column window is wider than the column (O760): a fixed width over 154 px needs both sides anchored in
+-- no part of a column window is wider than the column (O760): a fixed width over 148 px needs both sides anchored in
 -- the column (by its .otui or its layout), a narrower width or no show there
 local function readFile(path)
   local f = io.open(path)
@@ -197,7 +197,7 @@ local sample = table.concat({
   '    UIWidget', '      id: inner', '      anchors.fill: parent', '      width: 500',
   '  UILabel', '    id: hid', '    width: 300',
   '  UILabel', '    id: narrow', '    width: 300',
-  '  UILabel', '    id: small', '    width: 154',
+  '  UILabel', '    id: small', '    width: 148',
 }, '\n')
 local probe = { rules = {
   { id = 'frame', col = { right = 'parent.right' }, home = { right = false } },
@@ -208,7 +208,7 @@ eq(table.concat(COL.wideParts(sample, probe), '; '), '? (line 1): width 300; wid
   'a style and a widget wider than the column')
 eq(#COL.wideParts(sample, { rules = {} }), 5, 'without the layout: frame, hid and narrow too')
 eq(#COL.otuiWidgets(sample), 9, 'widgets of the sample')
-eq(COL.COLUMN, 154, 'the column with the scroll bar')
+eq(COL.COLUMN, 148, 'the column with the scroll bar')
 
 eq(COL.target('parent.right'), 'parent', 'target id'); eq(select(2, COL.target('stats.bottom')), 'bottom', 'target edge')
 
