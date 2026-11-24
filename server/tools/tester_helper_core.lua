@@ -1104,9 +1104,9 @@ function H.parseExplode(arg)
 	if who and who ~= "" then
 		return "join", who
 	end
-	local what = parseWords(arg, "explode", {"state", "run", "set", "bag"})
+	local what = parseWords(arg, "explode", {"state", "run", "set", "bag", "pouch", "rarity"})
 	if not what then
-		return nil, "usage: explode [state | run | set | bag | join NAME]"
+		return nil, "usage: explode [state | run | set | bag | pouch | rarity | join NAME]"
 	end
 	return what
 end

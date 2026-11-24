@@ -608,11 +608,12 @@ function getLastSound()
 end
 
 -- ---------------------------------------------------------------- window
-local function rarityCombo(combo, offText, value, suffix)
+local function rarityCombo(combo, offText, value, suffix, maxId)
   combo:clearOptions()
   combo:addOption(offText, 0)
   local at = 1
   for i, id in ipairs(L.RARITY_IDS) do
+    if maxId and id > maxId then break end -- O749: the Rarity Autoloot offers no floor above Rare
     combo:addOption(L.rarityName(id) .. (suffix or ''), id)
     if id == L.canon(value) then at = i + 1 end
   end
@@ -673,7 +674,7 @@ local function refreshWindow()
   rarityCombo(window.dimCombo, tr('Off'), settings.dim)
   if window.tierCombo then tierCombo(window.tierCombo, settings.tier) end
   rarityCombo(window.autolootPanel.lootMinCombo, tr('Off'), settings.lootMin)
-  rarityCombo(window.autolootPanel.lootFromCombo, tr('Off'), settings.lootFrom, '+')
+  rarityCombo(window.autolootPanel.lootFromCombo, tr('Off'), settings.lootFrom, nil, L.LOOT_FROM_MAX)
   for _, c in ipairs(L.CATEGORIES) do
     window['show_' .. c]:setChecked(settings.show[c])
   end

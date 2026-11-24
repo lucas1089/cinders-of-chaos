@@ -343,7 +343,7 @@ ChaosMainWindow
       anchors.verticalCenter: lootFromLabel.verticalCenter
       anchors.left: parent.left
       margin-left: 150
-      !tooltip: tr('Gear of this rarity or better (and uniques) is autolooted even when it is not on your autoloot list.')
+      !tooltip: tr('Gear of this rarity up to Rare is autolooted even when it is not on your autoloot list. Legendary and better, set pieces, uniques and cards always fly to the ground.')
 
     ChaosLabel
       id: lockLabel

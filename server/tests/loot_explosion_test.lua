@@ -104,6 +104,38 @@ local withIds = copy(cfg)
 withIds.strictIds = {7777}
 ok(X.isStrict(withIds, drop({id = 7777, attrs = {}})), "an id of strictIds keeps the owner rule")
 
+-- O749 (owner 2026-11-24, "Híbrido"): the auto steps take only the basics; these always fly
+do
+eq(cfg.alwaysExplode.minRank, 5, "from Legendary (rank 5) gear always flies")
+ok(cfg.alwaysExplode.sets and cfg.alwaysExplode.uniques and cfg.alwaysExplode.cards, "sets, uniques and cards always fly")
+ok(X.mustExplode(cfg, {rank = 5}), "Legendary must fly")
+ok(X.mustExplode(cfg, {rank = 6}), "Divine must fly")
+ok(not X.mustExplode(cfg, {rank = 4}), "Rare may be taken")
+ok(not X.mustExplode(cfg, {rank = 1}), "Common may be taken")
+ok(not X.mustExplode(cfg, {rank = 0}), "no rarity may be taken")
+ok(X.mustExplode(cfg, {rank = 100, unique = true}), "a unique must fly")
+ok(X.mustExplode(cfg, {rank = 2, set = true}), "a set piece must fly, whatever its rarity")
+ok(X.mustExplode(cfg, {rank = 0, card = true}), "a card must fly")
+ok(not X.mustExplode(cfg, {rank = 6, gold = true}), "gold never (it goes to the bank)")
+ok(not X.mustExplode(nil, {rank = 6}), "no config: nothing")
+local noRule = copy(cfg)
+noRule.alwaysExplode = nil
+ok(not X.mustExplode(noRule, {rank = 6, unique = true}), "no alwaysExplode: the rule is off (before O749)")
+eq(#X.validate(noRule, corpseCfg), 0, "no alwaysExplode is valid")
+local noCards = copy(cfg)
+noCards.alwaysExplode = {minRank = 5, sets = true, uniques = true, cards = false}
+ok(not X.mustExplode(noCards, {card = true}), "cards switched off")
+bad("alwaysExplode", "yes", "an alwaysExplode that is a text")
+bad("alwaysExplode", {minRank = 4}, "a rule that would make Rare fly (below the owner's Legendary)")
+bad("alwaysExplode", {minRank = 5, cards = 1}, "cards = 1")
+eq(X.flyRank(cfg, {rank = 0, card = true}), cfg.epicRank, "a card ranks as the epic group for the cap")
+eq(X.flyRank(cfg, {rank = 3, set = true}), cfg.epicRank, "a Magic set piece too")
+eq(X.flyRank(cfg, {rank = 2}), 2, "a plain item keeps its rank")
+eq(X.flyRank(cfg, {rank = 100, unique = true}), 100, "a unique keeps 100")
+eq(X.groupOf(cfg, {rank = 0, card = true}), "epic", "a card flies with the epic effects")
+eq(X.beamGroup(cfg, {rank = 0, card = true}), "orange", "a card beams in the Legendary colour")
+end
+
 -- tiles: the 24 ring 1 and 2 tiles and the death tile
 local function ring(n)
 	local out = {}
@@ -1365,6 +1397,18 @@ local lf = readFile("data/scripts/chaos/lootfilter.lua")
 ok(lf:find("function F.onExploded", 1, true) and lf:find("function F.killOf", 1, true) and lf:find("F.intoBags = intoBags", 1, true),
 	"the loot filter exports what the explosion needs")
 ok(lf:find("kill.exploded", 1, true), "an exploded kill draws no kill beam (the client beams the ground rows)")
+-- O749: every auto step asks the one rule (the glue of each is tested in its own file: pouches_test, autosell_test, lootfilter_test)
+do
+	local snap = lf:match("local function snapshot%(.-\nend\n")
+	ok(snap and snap:find("LX.mustExplodeItem(item, corpse)", 1, true) and snap:find("explode or F.autoloot", 1, true),
+		"the loot filter snapshot (2.5) holds every item that must fly back from the pouches, the base autoloot list and the Rarity Autoloot")
+	ok(snap and snap:find("bag:getSize() >= bag:getCapacity()", 1, true), "a full hold bag gets another one")
+	local pick = lf:match("local function pickup%(.-\nend\n")
+	ok(pick and pick:find("info.explode = LX", 1, true), "the Rarity Autoloot (3.5) asks the rule too")
+	ok(lf:find("ChaosCardsCore.isCard(id)", 1, true) and lf:find("info.power = true", 1, true), "a card glows and beams as a legendary power")
+	ok(readFile("data/scripts/chaos/pouches.lua"):find("ChaosLootExplosion.mustExplodeItem(item, corpse)", 1, true), "the pouch step asks it")
+	ok(readFile("data/scripts/chaos/autosell.lua"):find("ChaosLootExplosion.mustExplodeItem(item, corpse)", 1, true), "the kill sale asks it")
+end
 -- the ground labels
 local gl = readFile("data/scripts/chaos/groundloot.lua")
 ok(gl:find('msg.action == "lootall"', 1, true), "the ground labels' opcode answers lootall")
@@ -1537,6 +1581,82 @@ do
 		gs[f.g or "-"] = true
 	end
 	ok(gs.orange and gs.divine, "a Legendary and a Divine flight in the test bag")
+end
+
+-- 8. O749 (owner 2026-11-24, "Híbrido"): ChaosLootExplosion.mustExplodeItem, the one rule the Loot Bag pouch, the Rarity Autoloot,
+-- the base autoloot list (lootfilter.lua holds it back) and the Auto Seller ask; with a Legendary, a card, a set piece and a unique
+-- in the bag and the basics already taken, the rare ones fly last with their beam groups and nothing stays in the bag.
+-- (one table of locals: the main chunk is near the 200 locals limit)
+do
+	reset()
+	openGround(100, 100, 4)
+	load()
+	local T = {savedCards = ChaosCardsCore, killer = newPlayer(1, 100, 101)}
+	ChaosCardsCore = {isCard = function(id) return id == 27482 end}
+	function T.one(spec)
+		local b = makeBag(100, 100, 1, {spec})
+		return b:getItem(0), b
+	end
+	T.legend, T.b1 = T.one({id = 2401, attrs = {rarity = 5}})
+	ok(X.mustExplodeItem(T.legend, T.b1), "a Legendary in a loot bag must fly")
+	ok(X.mustExplodeItem(T.legend), "and without a corpse given")
+	ok(X.mustExplodeItem((T.one({id = 2402, attrs = {rarity = 10}}))), "a Divine must fly")
+	ok(not X.mustExplodeItem((T.one({id = 2403, attrs = {rarity = 4}}))), "a Rare may be taken by the auto steps")
+	ok(not X.mustExplodeItem((T.one({id = 2404, attrs = {rarity = 1}}))), "a Common may be taken")
+	ok(X.mustExplodeItem((T.one({id = 2405, attrs = {rarity = 2, chaos_set = "embers"}}))), "a set piece must fly")
+	ok(X.mustExplodeItem((T.one({id = 2406, attrs = {chaos_unique = "x", rarity = 4}}))), "a unique must fly")
+	ok(X.mustExplodeItem((T.one({id = 27482}))), "a card must fly")
+	ok(not X.mustExplodeItem((T.one({id = 2148, count = 10, stackable = true}))), "gold never")
+	ok(not X.mustExplodeItem(T.legend, newItem(3058, 1, {container = true, owner = 1})),
+		"a corpse that is not a loot bag (a quest body): the auto steps as before")
+	Chaos.lootExplosionConfig.enabled = false
+	ok(not X.mustExplodeItem(T.legend, T.b1), "the explosion switched off: the auto steps take everything again")
+	Chaos.lootExplosionConfig.enabled = true
+	-- the chain: the basics went to the pouch earlier (removed here), the rest flies with the beam groups, the card too
+	log.sent = {}
+	X.setAnim(T.killer, true)
+	T.bag = makeBag(100, 100, 1, {{id = 2400, attrs = {rarity = 1}}, {id = 2401, attrs = {rarity = 5}}, {id = 27482},
+		{id = 2405, attrs = {rarity = 2, chaos_set = "embers"}}, {id = 2406, attrs = {chaos_unique = "x", rarity = 4}}})
+	T.bag:setCustomAttribute("lf_kill", 91)
+	T.basics = {}
+	for slot = 0, T.bag:getSize() - 1 do
+		if not X.mustExplodeItem(T.bag:getItem(slot), T.bag) then
+			T.basics[#T.basics + 1] = T.bag:getItem(slot)
+		end
+	end
+	eq(#T.basics, 1, "only the Common item is a basic")
+	detach(T.basics[1]) -- the Loot Bag took it
+	runDrop(T.bag)
+	eq(#log.sent, 1, "the burst message")
+	T.gs, T.n = {}, 0
+	for _, f in ipairs(log.sent[1].data.f) do
+		T.gs[f.g or "-"] = (T.gs[f.g or "-"] or 0) + 1
+		T.n = T.n + 1
+	end
+	eq(T.n, 4, "four flights: the Legendary, the card, the set piece, the unique")
+	eq(T.gs.orange, 2, "the Legendary and the card beam orange")
+	eq(T.gs.set, 1, "the set piece beams as a set")
+	eq(T.gs.unique, 1, "the unique as a unique")
+	runEvents(clock.ms + 3000)
+	eq(T.bag:getSize(), 0, "nothing stays in the bag")
+	-- a card over the per-kill cap still flies before plain items (flyRank)
+	T.many = {{id = 27482}}
+	for i = 1, Chaos.lootExplosionConfig.maxItems + 3 do
+		T.many[#T.many + 1] = {id = 3000 + i, attrs = {rarity = 2}}
+	end
+	T.big = makeBag(100, 100, 1, T.many)
+	runDrop(T.big)
+	runEvents(clock.ms + 5000)
+	T.cardLeft = false
+	for slot = 0, T.big:getSize() - 1 do
+		if T.big:getItem(slot).id == 27482 then
+			T.cardLeft = true
+		end
+	end
+	ok(T.big:getSize() > 0, "the cap left plain items in the bag")
+	ok(not T.cardLeft, "but the card flew")
+	ChaosCardsCore = T.savedCards
+	X.setAnim(T.killer, false)
 end
 
 -- the files

@@ -42,6 +42,8 @@ L.RARITY = {
 }
 L.RARITY_IDS = { 1, 2, 3, 4, 5, 10 }
 L.MAX_RARITY = 10
+-- O749 (owner 2026-11-24, "Híbrido"): the Rarity Autoloot takes gear up to Rare; Legendary and up, sets, uniques and cards always fly
+L.LOOT_FROM_MAX = 4
 
 -- the id of today's rarity for any id (0 stays 0; an id above 15 is the highest)
 function L.canon(id)
@@ -78,6 +80,7 @@ function L.normalize(s)
     local v = tonumber(s[k])
     out[k] = v and L.canon(math.max(0, v)) or d[k] -- a threshold saved with an old id (6 .. 15) is the rarity it became
   end
+  out.lootFrom = math.min(L.LOOT_FROM_MAX, out.lootFrom) -- O749: a floor above Rare is Rare
   local show = type(s.show) == 'table' and s.show or {}
   for _, c in ipairs(L.CATEGORIES) do
     out.show[c] = show[c] ~= false

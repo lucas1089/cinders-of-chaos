@@ -21,7 +21,8 @@
 --   (t(pattern, ...): the player's language, e.g. Chaos.t bound to the owner; default English, P.english)
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
 --         gem = bool, rune = bool (a support rune or a magic rune), container = bool, pouch = bool (a pouch itself),
---         onList = bool (on the base autoloot list)}
+--         onList = bool (on the base autoloot list), explode = bool (O749: a kill's item that must fly, ChaosLootExplosion.mustExplodeItem;
+--         plan() gives it no pouch)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not ChaosRarity then
@@ -221,6 +222,9 @@ end
 --      to the backpack, then leaves it in the corpse. A full Gem Pouch does not pass gems to the Orbs Pouch.
 --   3. No specialist pouch carried for it: the Loot Bag rules decide as for any item (gems rule, autoloot list).
 function P.plan(info, rules, sets, cfg, carried)
+	if info.explode then
+		return {}, nil -- O749: Legendary and up, a set piece, a unique, a card: no pouch takes it, it flies (loot_explosion_config.lua alwaysExplode)
+	end
 	carried = carried or {}
 	rules = rules or P.defaults(cfg)
 	local out = {}

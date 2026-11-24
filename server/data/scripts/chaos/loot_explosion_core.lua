@@ -6,12 +6,15 @@
 --   X.ownerSeconds(cfg, corpseCfg), X.decaySeconds(cfg, corpseCfg)   the two times, in seconds
 --   X.groupOf(cfg, drop)               "gold" | "plain" | "rare" | "epic" | "unique": the effect group of an item
 --   X.groupOfRank(cfg, rank, gold)     the same from a rank (a unique counts 100)
---   X.beamGroup(cfg, drop)             "set" | "unique" | "divine" | "orange" | nil: the loot beam group the client draws a burst in (O677)
+--   X.beamGroup(cfg, drop)             "set" | "unique" | "divine" | "orange" | nil: the loot beam group the client draws a burst in (O677;
+--                                      a card: "orange", O749)
 --   X.flightMs(cfg, group, ring)       how long an item of that group flies to a tile of that ring
 --   X.explodePayload(cfg, origin, killId, flights)   the one opcode 230 `explode` message of a kill (O677)
 --   X.parseAnim(data)                  the client's `burst {on}` capability message -> true | false
 --   X.animViewers(cfg, cands, flagged, origin)       ids of the owner / party members who see the death tile and draw the burst
 --   X.isStrict(cfg, drop)              true: the owner rule holds for the item's whole life
+--   X.mustExplode(cfg, drop)           O749: true when no auto step may take the item (cfg.alwaysExplode): it always flies
+--   X.flyRank(cfg, drop)               the rank the plan sorts by: an item that must fly ranks at least as Legendary (a card too)
 --   X.pickTiles(cfg, facts, n, rng)    the tile (index into facts) of each of n drops: cheapest first, spread before piled
 --   X.plan(cfg, items, facts, rng)     the whole kill: which items fly where and when, which stay in the bag
 --   X.newGate() / X.gateTake(cfg, gate, areaKey, n, nowMs)   the caps per area and per second
@@ -126,6 +129,21 @@ function X.validate(cfg, corpseCfg)
 			out[#out + 1] = key .. " must be a list"
 		end
 	end
+	local ae = cfg.alwaysExplode
+	if ae ~= nil then
+		if type(ae) ~= "table" then
+			out[#out + 1] = "alwaysExplode must be a table or nil"
+		else
+			if ae.minRank ~= nil and (type(ae.minRank) ~= "number" or ae.minRank < 5 or ae.minRank > 7 or ae.minRank ~= floor(ae.minRank)) then
+				out[#out + 1] = "alwaysExplode.minRank must be a whole number 5-7 (the owner's rule: Legendary and up fly; 7 = no rarity)"
+			end
+			for _, k in ipairs({"sets", "uniques", "cards"}) do
+				if ae[k] ~= nil and type(ae[k]) ~= "boolean" then
+					out[#out + 1] = "alwaysExplode." .. k .. " must be true or false"
+				end
+			end
+		end
+	end
 	if type(cfg.missiles) ~= "table" or type(cfg.land) ~= "table" then
 		out[#out + 1] = "missiles and land must be tables"
 	end
@@ -161,6 +179,9 @@ function X.groupOf(cfg, drop)
 	end
 	if drop.unique then
 		return "unique"
+	end
+	if drop.card then
+		return "epic" -- O749: a card flies with the Legendary effects
 	end
 	local r = num(drop.rank, 0)
 	if r >= cfg.epicRank then
@@ -202,6 +223,9 @@ function X.beamGroup(cfg, drop)
 	if drop.unique then
 		return "unique"
 	end
+	if drop.card then
+		return "orange" -- O749: a card beams in the Legendary colour (it has no rarity)
+	end
 	local r = num(drop.rank, 0)
 	if r >= (cfg.divineRank or 6) then
 		return "divine"
@@ -233,6 +257,37 @@ function X.isStrict(cfg, drop)
 		end
 	end
 	return false
+end
+
+-- O749 (owner 2026-11-24, "Híbrido"): the auto steps (Loot Bag pouch, Rarity Autoloot, base autoloot list, Auto Seller) take only
+-- the basics; Legendary and Divine gear, set pieces, uniques and cards always fly. drop = {rank (ChaosRarity.rank 1..6, a unique
+-- 100), unique, set, card, gold}. No alwaysExplode table = the rule is off (everything may be taken, as before O749).
+function X.mustExplode(cfg, drop)
+	local ae = cfg and cfg.alwaysExplode
+	if type(ae) ~= "table" or type(drop) ~= "table" or drop.gold then
+		return false
+	end
+	if drop.unique and ae.uniques then
+		return true
+	end
+	if drop.set and ae.sets then
+		return true
+	end
+	if drop.card and ae.cards then
+		return true
+	end
+	local r = num(drop.rank, 0)
+	return ae.minRank ~= nil and r >= ae.minRank and r < 100
+end
+
+-- the rank the plan sorts by for the per-kill cap: an item that must fly ranks at least as the epic group (a card has no rarity,
+-- a set piece may be Rare), so the cap never leaves it in the bag before a plain item
+function X.flyRank(cfg, drop)
+	local r = num(drop and drop.rank, 0)
+	if X.mustExplode(cfg, drop) and r < (cfg.epicRank or 5) then
+		return cfg.epicRank or 5
+	end
+	return r
 end
 
 -- ---------------------------------------------------------------- tiles

@@ -109,6 +109,9 @@ namespace Chaos.Core
             return 0;
         }
 
+        // O749 (owner 2026-11-24): the Rarity Autoloot takes gear up to Rare; Legendary and up, sets, uniques and cards always fly
+        public const int LootFromMax = 4;
+
         public static LootFilterSettings Normalize(object s)
         {
             var o = new LootFilterSettings();
@@ -116,7 +119,7 @@ namespace Chaos.Core
             o.Highlight = Json.Get(s, "highlight") is double h ? Canon(Math.Max(0, h)) : o.Highlight;
             o.Dim = Json.Get(s, "dim") is double d ? Canon(Math.Max(0, d)) : o.Dim;
             o.LootMin = Json.Get(s, "lootMin") is double lm ? Canon(Math.Max(0, lm)) : o.LootMin;
-            o.LootFrom = Json.Get(s, "lootFrom") is double lf ? Canon(Math.Max(0, lf)) : o.LootFrom;
+            o.LootFrom = Json.Get(s, "lootFrom") is double lf ? Math.Min(LootFromMax, Canon(Math.Max(0, lf))) : o.LootFrom; // O749: up to Rare
             var show = Json.Get(s, "show");
             foreach (var c in Categories) o.Show[c] = Json.Truthy(show, c, true);
             o.Icons = Json.Truthy(s, "icons", true);

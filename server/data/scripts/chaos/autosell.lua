@@ -149,7 +149,10 @@ local function autoSell(monster, corpse)
 	for _, item in ipairs(corpse:getItems()) do
 		local id = item:getId()
 		local protected = ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id, item)
-		if set[id] and not protected and not item:getType():isContainer() and not storeBound(item) then
+		-- O749: Legendary and up, a set piece, a unique, a card always fly (loot_explosion_config.lua alwaysExplode): never sold here
+		local flies = set[id] and ChaosLootExplosion ~= nil and ChaosLootExplosion.mustExplodeItem ~= nil
+			and ChaosLootExplosion.mustExplodeItem(item, corpse)
+		if set[id] and not protected and not flies and not item:getType():isContainer() and not storeBound(item) then
 			local count = item:getCount()
 			-- a rolled copy's own price (rarity, item level: chaos_item_prices.lua), else the plain table
 			local gold = ChaosItemPrices and ChaosItemPrices.sellPrice(item, count) or services().sellPrice(id, count, PRICES)
