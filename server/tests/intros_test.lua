@@ -162,6 +162,12 @@ eq(I.firstSession(p), true, "the first session")
 eq(I.loginWindowWanted(p, "daily"), true, "the Daily Reward window")
 eq(I.loginWindowWanted(p, "patchnotes"), false, "no patch notes window")
 for _, k in ipairs({"tips", "unlocks", "goals", "outfit"}) do eq(I.allowed(p, k), false, k .. " waits") end
+-- the engine sets the last login time right after the login events: the checks made later (the login window queue after
+-- its start delay, the welcome) still see the first session
+p.last = 1700000000
+eq(I.firstSession(p), true, "the first session after the engine saved the login time")
+eq(I.loginWindowWanted(p, "patchnotes"), false, "no patch notes window after the engine saved the login time")
+p.last = 0
 
 -- the quest's first look waits for the login windows (the Daily Reward open)
 ChaosLoginWindows = {state = {[1] = {current = "daily"}}, starting = {}}
@@ -222,6 +228,7 @@ local r = newPlayer(2, 8, 0)
 events.ChaosIntrosLogin.onLogin(r)
 eq(I.state(r), cfg.states.quiet)
 r.last = os.time()
+events.ChaosIntrosLogin.onLogin(r) -- the character logs in again: the engine saved the time of the first login
 eq(I.firstSession(r), false, "a later login")
 eq(I.loginWindowWanted(r, "patchnotes"), true, "its windows as before")
 qset(r, "helper", q.states.skipped)

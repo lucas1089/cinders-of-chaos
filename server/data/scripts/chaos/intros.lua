@@ -70,9 +70,17 @@ function I.quiet(player)
 	return C() ~= nil and I.state(player) == C().states.quiet
 end
 
+-- whether this login is the character's first, read at login: the engine sets the last login time right after the login
+-- events, so a check made later (an addEvent: the login window queue, the welcome) would always see a returning character
+I.first = I.first or {} -- player id -> true / false, set by the login event below
+
 -- this login is the character's first, and quiet
 function I.firstSession(player)
-	return I.quiet(player) and player:getLastLoginSaved() <= 0
+	local first = I.first[player:getId()]
+	if first == nil then
+		first = player:getLastLoginSaved() <= 0
+	end
+	return I.quiet(player) and first
 end
 
 function I.loginWindowWanted(player, windowKey)
@@ -250,6 +258,7 @@ end
 if CreatureEvent then
 	local login = CreatureEvent("ChaosIntrosLogin")
 	function login.onLogin(player)
+		I.first[player:getId()] = player:getLastLoginSaved() <= 0
 		if not C() or not C().enabled then
 			return true
 		end
