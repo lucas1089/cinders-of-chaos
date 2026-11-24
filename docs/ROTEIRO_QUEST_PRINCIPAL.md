@@ -7,7 +7,9 @@ Trechos entre chaves, como {m1} ou {p1}, são preenchidos em tempo de execução
 
 As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.
 
-São 105 etapas em 7 capítulos, do nível 8 ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.
+São 105 etapas em 7 capítulos, do nível 8 ao 500. Metade ou mais delas é caçar, coletar, explorar ou entregar.
+
+Depois de Vael, o Capítulo 8 (Além do Juramento) tem 17 etapas do nível 501 ao 2000: cada uma aponta um sistema do fim de jogo que já existe (Infinity Tower, Greater Rift, mapas de waystone, Ember Descent, chefes de bolso, dificuldades de masmorra, magias com rank e Formas, fragmentos e chefes de pináculo), uma a cada 75 a 150 níveis. Termina com o epílogo.
 
 ## Itens de quest e grupo
 
@@ -677,33 +679,141 @@ Uma morte conta para quem deu o golpe final, para quem causou mais dano e para o
 
 ## Capítulo 8: Além do Juramento (níveis 501 a 2000)
 
-*Abertura:* O Juramento acaba, o reino não. Estas páginas só mostram o que vem depois.
+*Abertura:* O Juramento acaba, o reino não. Vael pediu a Ysolde que dissesse aos outros que ele cumpriu a promessa, e a cinza da Câmara do Juramento disse quem são: os Ascendidos, que aceitaram o fogo que Vael recusou. Quem é Ember-Sworn mantém a vigia: a Torre, as fendas, os mapas de waystone e, no topo, os próprios Ascendidos.
 
-### Quests de magia da linha (a partir do nível 500)
+### 8.1 Leve uma magia ao rank 7 (nível 525)
+
+- Objetivo: Leve uma magia ao rank 7
+- Dica: Vael lutava com magias afiadas por cem anos. As suas crescem enquanto você caça com elas: Spellbook > Upgrades mostra o rank de cada uma.
+- Conclusão (Ysolde): Sete. Vael riria, mas Vael está morto. Continue afiando.
+
+### 8.2 Chegue à sala 10 da Ember Descent (nível 625)
+
+- Objetivo: Chegue à sala 10 da Ember Descent
+- Dica: A Descent desce mais fundo do que os primeiros Guardiões ousaram. Pegue as bênçãos, recuse o que não puder carregar e chegue à décima sala.
+- Conclusão (Ysolde): Décima sala. O calor lá embaixo não é das Brasas. É mais antigo.
+
+### 8.3 Dê a primeira Forma a uma magia (nível 700)
+
+- Objetivo: Dê a primeira Forma a uma magia
+- Dica: No rank 10 uma magia aceita uma Forma I: a mesma magia, dobrada ao seu jeito. Spellbook > Upgrades, escolha uma das duas.
+- Conclusão (Ysolde): Agora a magia tem a sua cara. Era assim que os Guardiões lutavam.
+
+### 8.4 Vença 30 andares da Infinity Tower numa só corrida (nível 800)
+
+- Objetivo: Vença 30 andares da Infinity Tower numa só corrida
+- Dica: A Vigília Cinzenta mantinha uma vigia no topo da Torre. Ninguém viu o topo. Suba 30 andares sem sair.
+- Conclusão (Ysolde): Trinta andares. A Torre lembra de quem sobe. Ela vai cobrar mais na próxima.
+
+### 8.5 Derrote 25 Chefes de Bolso (nível 900)
+
+- Objetivo: Derrote 25 Chefes de Bolso
+- Dica: Vessa Hollowmark guarda as cópias dos chefes mundiais. Toda morte conta, inclusive as de antes desta etapa.
+- Conclusão (Ysolde): Vinte e cinco. Vessa diz que você está gastando os chefes dela. É elogio.
+
+### 8.6 Vença uma masmorra na dificuldade 4 (nível 1000)
+
+- Objetivo: Vença uma masmorra na dificuldade 4
+- Dica: As masmorras profundas guardam túmulos de Guardiões. Escolha a dificuldade 4 ou mais na entrada e vença a corrida.
+- Conclusão (Ysolde): Dificuldade quatro. Os túmulos estão em paz. Por enquanto.
+
+### 8.7 Limpe um mapa de waystone (nível 1100)
+
+- Objetivo: Limpe um mapa de waystone
+- Dica: O Waystone Atlas abre no nível 1100. Waystones caem dos monstros fortes: abra uma no Atlas e mate o chefe do mapa.
+- Conclusão (Ysolde): Um mapa que não está em nenhum mapa. Maelis quer ver as anotações.
+
+### 8.8 Sele uma Greater Rift (nível 1200)
+
+- Objetivo: Sele uma Greater Rift
+- Dica: Fendas de nível 15 soltam Greater Rift Keys. Uma Greater Rift sobe além do nível 15 contra o relógio: sele uma.
+- Conclusão (Ysolde): Selada. As fendas maiores sangram Brasa pura. Alguém está alimentando isso.
+
+### 8.9 Leve uma magia ao rank 16 (nível 1300)
+
+- Objetivo: Leve uma magia ao rank 16
+- Dica: O rank 20 abre a segunda Forma. Mantenha sua magia principal em toda luta.
+- Conclusão (Ysolde): Dezesseis. Vael não chegou tão longe com a dele.
+
+### 8.10 Limpe um mapa de waystone de nível 4 (nível 1400)
+
+- Objetivo: Limpe um mapa de waystone de nível 4
+- Dica: Mapas mais altos soltam waystones mais altas. Os pontos do Atlas que você gasta deixam os próximos mapas mais ricos.
+- Conclusão (Ysolde): Nível quatro. As waystones estão mais quentes. Isso não é bom sinal.
+
+### 8.11 Vença 70 andares da Infinity Tower numa só corrida (nível 1500)
+
+- Objetivo: Vença 70 andares da Infinity Tower numa só corrida
+- Dica: Depois do andar 60 os guardiões da Torre batem como chefes mundiais. Leve o equipamento, as Formas e a paciência.
+- Conclusão (Ysolde): Setenta. Lá de cima dá para ver a coroa afogada no mar. Ela está acordando.
+
+### 8.12 Sele uma Greater Rift de nível 35 (nível 1600)
+
+- Objetivo: Sele uma Greater Rift de nível 35
+- Dica: Cada nível soma vida, dano e recompensa. Uma corrida selada paga o seu melhor pessoal da temporada.
+- Conclusão (Ysolde): Trinta e cinco. Quem alimenta as fendas sabe seu nome agora.
+
+### 8.13 Limpe um mapa de waystone de nível 6 (nível 1700)
+
+- Objetivo: Limpe um mapa de waystone de nível 6
+- Dica: A partir do nível 12 os mapas de waystone soltam fragmentos de pináculo. O nível 6 é o caminho até lá.
+- Conclusão (Ysolde): Nível seis. O mar ao norte está mais alto do que ontem.
+
+### 8.14 Dê a segunda Forma a uma magia (nível 1775)
+
+- Objetivo: Dê a segunda Forma a uma magia
+- Dica: O rank 20 é o topo. A Forma II completa a magia: Spellbook > Upgrades.
+- Conclusão (Ysolde): Uma magia inteira. A última vez que vi uma assim foi na mão de Vael.
+
+### 8.15 Encontre um fragmento de pináculo (nível 1850)
+
+- Objetivo: Encontre um fragmento de pináculo
+- Dica: Malgrath, a Coroa Afogada, voltou como Ascendido. Os fragmentos dele caem de mapas de waystone de nível 12, fendas de nível 15, guardiões Omen e Greater Rifts. Escolha seu foco no Guardião do Pináculo.
+- Conclusão (Ysolde): Um caco da coroa. Ainda está molhado. Não deveria estar.
+
+### 8.16 Tenha um conjunto inteiro de fragmentos de pináculo (nível 1925)
+
+- Objetivo: Tenha um conjunto inteiro de fragmentos de pináculo
+- Dica: Um fragmento de cada um dos quatro tipos do mesmo chefe abre a arena dele. O Guardião mostra o que você tem.
+- Conclusão (Ysolde): Quatro peças, uma coroa. Leve uma equipe ou vá sozinho, mas não vá desatento.
+
+### 8.17 Derrote um chefe de pináculo (nível 2000)
+
+- Objetivo: Derrote um chefe de pináculo
+- Dica: Entregue o conjunto ao Guardião do Pináculo e enfrente o Ascendido, sozinho ou com até mais quatro. Vael recusou o fogo; eles aceitaram.
+- Conclusão (Ysolde): A coroa caiu. Vael pediu que eu dissesse aos outros que ele cumpriu a promessa. Agora digo de você também. Guardião, além do Juramento.
+
+### Epílogo
+
+#### Quests de magia da linha (a partir do nível 500)
 
 Nos níveis 500, 800 e 1200 a Arquivista Odrenna dá uma magia a cada linha de classe: uma caçada e depois uma prova.
 
-### A raide Ashen Sepulchre (a partir do nível 800)
+#### A raide Ashen Sepulchre (a partir do nível 800)
 
 No nível 800 o Sepulchre abre: cinco chefes para um time, com únicos de raide.
 
-### Omens e o Hollow Vault (a partir do nível 800)
+#### Omens e o Hollow Vault (a partir do nível 800)
 
 Os guardiões Omen e a masmorra Hollow Vault esperam no nível 800.
 
-### Os Ascended Omens (a partir do nível 900)
+#### Os Ascended Omens (a partir do nível 900)
 
 Únicos ascendidos só caem dos Ascended Omens e do Cinderheart.
 
-### O Cinderheart, Marrow Crypts e Paragon (a partir do nível 1000)
+#### O Cinderheart, Marrow Crypts e Paragon (a partir do nível 1000)
 
 No nível 1000: o Cinderheart, as Marrow Crypts, níveis Paragon e poderes lendários.
 
-### O Waystone Atlas (a partir do nível 1100)
+#### O Waystone Atlas (a partir do nível 1100)
 
 No nível 1100 as waystones abrem mapas com modificadores próprios.
 
-### O Iron Crucible, o Fallen Sanctum, o Trono (a partir do nível 1300)
+#### Despertar de magia (a partir do nível 2000)
+
+Uma magia no rank 20 com as duas Formas pode despertar: Selos de mapas de waystone profundos, Greater Rifts e chefes de pináculo compram o espaço.
+
+#### O Iron Crucible, o Fallen Sanctum, o Trono (a partir do nível 1300)
 
 As últimas masmorras esperam em 1300, 1600 e 2000. Adventure > Next Goals lista cada faixa.
 
@@ -737,3 +847,9 @@ As últimas masmorras esperam em 1300, 1600 e 2000. Adventure > Next Goals lista
 ## Fim do Juramento
 
 Juramento completo: você é Ember-Sworn. A Vigília se lembra.
+
+## Além do Juramento
+
+Quem terminou o Juramento antes do Capítulo 8 existir recebe as páginas novas no próximo login: A Guardiã Ysolde tem páginas novas para você: Capítulo 8, Além do Juramento. Aparece no rastreador. As etapas bem abaixo do nível do personagem passam em silêncio, sem recompensa.
+
+No fim do Capítulo 8: Além do Juramento: todas as páginas estão feitas. A Vigília guarda o seu nome junto ao de Vael.

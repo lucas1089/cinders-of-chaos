@@ -167,7 +167,45 @@ local function newGear(player)
 	return WP and WP.gearNew(worn, WP.kitSet(kitOf(player))) or false
 end
 
+-- the late chapter's facts (O750, mainquest_core.lua M.PROBE_STATS): read from the storages and counters the systems keep
+local function probeOf(player, stat)
+	local kind = K.PROBE_STATS[stat]
+	if kind == "spells" then
+		local rc = load("data/scripts/chaos/spell_ranks_config.lua")
+		local base = rc and rc.storage and rc.storage.rankBase
+		if not base then
+			return 0
+		end
+		local ids = {}
+		local cat = ChaosSpellRanks and ChaosSpellRanks.catalog
+		if type(cat) == "table" and next(cat) ~= nil then
+			for id in pairs(cat) do
+				ids[#ids + 1] = id
+			end
+		else
+			for id = 0, (rc.storage.maxSpellId or 499) do
+				ids[#ids + 1] = id
+			end
+		end
+		local packed = {}
+		for _, id in ipairs(ids) do
+			packed[#packed + 1] = player:getStorageValue(base + id)
+		end
+		return K.spellUpgrades(packed)[stat] or 0
+	elseif kind == "pinnacle" then
+		local pc = Chaos.pinnacleConfig or load("data/scripts/chaos/pinnacle_config.lua")
+		return K.pinnacleStats(pc, function(k) return player:getStorageValue(k) end)[stat] or 0
+	elseif kind == "dungeons" then
+		local A = ChaosAchievements
+		return K.dungeonTop(A and A.stats and A.stats[player:getGuid()])
+	end
+	return 0
+end
+
 local function statOf(player, stat)
+	if K.PROBE_STATS[stat] then
+		return probeOf(player, stat)
+	end
 	local guid = player:getGuid()
 	local best = 0
 	local G = ChaosGoals
@@ -639,7 +677,7 @@ function W.advance(player)
 	end
 	if i >= #c.steps then
 		set(player, "state", c.states.done)
-		tell(player, K.text(c.texts.finished, lang))
+		tell(player, K.text(c.texts.allDone or c.texts.finished, lang))
 	else
 		announceStep(player, i + 1, lang)
 	end
@@ -717,6 +755,19 @@ function W.firstLook(player)
 		local lang = langOf(player)
 		tell(player, K.text(c.texts.start, lang))
 		announceStep(player, start, lang)
+	elseif K.reopenFrom(c, state, get(player, "step"), get(player, "won") == 1) then
+		-- O750: steps were added after the end this character reached (Chapter 8), or a quiet veteran beat Vael: the quest runs again
+		-- from there, the steps it did long ago passed silently as at a first look
+		local from = K.reopenFrom(c, state, get(player, "step"), get(player, "won") == 1)
+		local start = K.skipDone(c, from, function(i) return W.facts(player, i) end, true)
+		setStep(player, start)
+		if start <= #c.steps then
+			set(player, "state", c.states.active)
+			clearStepState(player)
+			local lang = langOf(player)
+			tell(player, K.text(c.texts.reopened, lang))
+			announceStep(player, start, lang)
+		end
 	end
 	W.refresh(player, true)
 end

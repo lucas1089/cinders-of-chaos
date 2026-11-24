@@ -6098,6 +6098,14 @@ async def check_mainquest_walk(io, name, cls, level):
             elif action == 'vael':
                 trace['why'] = 'step %s: Vael Ashmourn has his own check (vael_walk)' % a.get('key')
                 break
+            elif action == 'elsewhere':   # O750: a Chapter 8 step names an endgame system; the check that plays it must exist
+                check = plan.get('check') or ''
+                if check not in KEYS + CLOSED_KEYS:
+                    trace['faults'].append('step %s (%s): the quest names the bot check %r, which does not exist' % (here, a.get('key'), check))
+                else:
+                    trace['why'] = 'step %s (Chapter 8): %s is played by its own check (%s), progress %s/%s' % (
+                        a.get('key'), plan.get('stat'), check, a.get('progress'), a.get('target'))
+                break
             else:
                 trace['why'] = 'step %s: %s' % (a.get('key'), plan.get('reason') or 'not played')
                 break

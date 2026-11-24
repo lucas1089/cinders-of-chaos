@@ -491,6 +491,28 @@ function G.installHooks()
 			G.record(who, stat, value, mode)
 		end
 	end)
+	-- O750 (the main quest's Chapter 8): the shown tier of a sealed Greater Rift, for every finisher online
+	wrap(ChaosGreater, "record", "greaterRecord", function(res, info)
+		if type(info) ~= "table" or type(info.finishers) ~= "table" then
+			return
+		end
+		for _, f in pairs(info.finishers) do
+			if type(f) == "table" and f.player then
+				G.record(f.player, "greater_tier", tonumber(info.tier) or 0, "max")
+			end
+		end
+	end)
+	-- O750: the tier of a cleared waystone map, for every player in it (the clear listeners of waystone_tiers.lua, added once)
+	local WT = ChaosWaystoneTiers
+	if WT and WT.addClearListener and type(WT.clearListeners) == "table" then
+		local there = false
+		for _, fn in ipairs(WT.clearListeners) do
+			there = there or fn == G.onWaystoneClear
+		end
+		if not there then
+			WT.addClearListener(G.onWaystoneClear)
+		end
+	end
 	-- the passive tree calls its listeners after every apply (login, save, reset): a spent point, live
 	local PT = ChaosPassiveTree
 	if PT and type(PT.listeners) == "table" and PT.hasAllocation then
@@ -501,6 +523,17 @@ function G.installHooks()
 		if not there then
 			PT.listeners[#PT.listeners + 1] = G.onPassiveApply
 		end
+	end
+end
+
+-- a cleared waystone map (waystone_endgame.lua fire: info = {map, tier, players = {player, ...}, ...})
+function G.onWaystoneClear(info)
+	if type(info) ~= "table" or type(info.players) ~= "table" then
+		return
+	end
+	local tier = tonumber(info.tier) or 0
+	for _, p in pairs(info.players) do
+		G.record(p, "waystone_tier", tier, "max")
 	end
 end
 

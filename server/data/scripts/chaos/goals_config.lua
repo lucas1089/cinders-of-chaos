@@ -107,9 +107,12 @@ C.table = "chaos_goals"
 --   tower_floor      ChaosTower.recordRun wrapped (floors cleared in one run)
 --   descent_*, dungeon_clears, atlas_points   ChaosSeasonJourney.emit wrapped (the lines descent.lua, dungeons.lua
 --                    and atlas.lua already call for every character)
+--   greater_tier     ChaosGreater.record wrapped (the shown tier of a sealed Greater Rift, every finisher online; O750)
+--   waystone_tier    ChaosWaystoneTiers.addClearListener (the tier of a cleared waystone map, every player in it; O750)
 C.own = {
 	passive_spent = "max", faction_rank = "max", pocket_kills = "add", conquest_earned = "add", tower_floor = "max",
-	descent_runs = "add", descent_depth = "max", descent_clears = "add", dungeon_clears = "add", atlas_points = "max"
+	descent_runs = "add", descent_depth = "max", descent_clears = "add", dungeon_clears = "add", atlas_points = "max",
+	greater_tier = "max", waystone_tier = "max"
 }
 
 -- the default reward of a goal: xpPct percent of the experience to the next level, gold = goldPerLevel x level

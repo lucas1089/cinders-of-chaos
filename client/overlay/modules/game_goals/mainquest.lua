@@ -48,18 +48,18 @@ function drawMainQuest()
     if tonumber(c.n) == chosen then intro = tostring(c.intro or '') end
   end
   mqWindow.introLabel:setText(intro)
+  -- Chapter 8 (O750): its steps, then the epilogue cards
+  for _, s in ipairs(V.mqSteps(data, chosen)) do
+    local row = g_ui.createWidget('MQStepRow', mqWindow.stepList)
+    row.title:setText(V.mqStepLine(s))
+    row.title:setColor(stepColor(s))
+    row.hint:setText(tostring(s.hint or ''))
+  end
   if chosen >= 8 then
     for _, e in ipairs(data.epilogue) do
       local row = g_ui.createWidget('MQStepRow', mqWindow.stepList)
       row.title:setText(tr('%s (from level %d)', tostring(e.title or ''), tonumber(e.level) or 0))
       row.hint:setText(tostring(e.text or ''))
-    end
-  else
-    for _, s in ipairs(V.mqSteps(data, chosen)) do
-      local row = g_ui.createWidget('MQStepRow', mqWindow.stepList)
-      row.title:setText(V.mqStepLine(s))
-      row.title:setColor(stepColor(s))
-      row.hint:setText(tostring(s.hint or ''))
     end
   end
   mqWindow.goButton:setEnabled(data.state == 0)

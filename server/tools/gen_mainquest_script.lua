@@ -53,7 +53,15 @@ w("## Premissa")
 w()
 w("As Brasas levaram os Guardiões da Vigília Cinzenta um a um. Quem sai vivo do templo de Cinderhold é chamado de nascido das brasas, e a Guardiã Ysolde, no mercado da sala de teleportes, oferece a esses sobreviventes o Juramento: uma caminhada pelo reino, um voto de cada vez. A última página do Juramento é uma porta, e atrás dela espera Vael Ashmourn, o primeiro Guardião, que se recusou a jurar.")
 w()
-w(string.format("São %d etapas em %d capítulos, do nível %d ao 500, mais um epílogo. Metade ou mais das etapas é caçar, coletar, explorar ou entregar.", #cfg.steps, #cfg.chapters - 1, cfg.startLevel))
+local oath = 0
+for _, st in ipairs(cfg.steps) do
+	if st.ch < 8 then
+		oath = oath + 1
+	end
+end
+w(string.format("São %d etapas em %d capítulos, do nível %d ao 500. Metade ou mais delas é caçar, coletar, explorar ou entregar.", oath, #cfg.chapters - 1, cfg.startLevel))
+w()
+w(string.format("Depois de Vael, o Capítulo 8 (Além do Juramento) tem %d etapas do nível %d ao %d: cada uma aponta um sistema do fim de jogo que já existe (Infinity Tower, Greater Rift, mapas de waystone, Ember Descent, chefes de bolso, dificuldades de masmorra, magias com rank e Formas, fragmentos e chefes de pináculo), uma a cada 75 a 150 níveis. Termina com o epílogo.", #cfg.steps - oath, cfg.chapters[8].from, cfg.chapters[8].to))
 w()
 w("## Itens de quest e grupo")
 w()
@@ -68,22 +76,23 @@ for _, ch in ipairs(cfg.chapters) do
 	w()
 	w("*Abertura:* " .. ch.intro.pt)
 	w()
-	if ch.n < 8 then
-		local n = 0
-		for _, s in ipairs(cfg.steps) do
-			if s.ch == ch.n then
-				n = n + 1
-				w(string.format("### %d.%d %s (nível %d)", ch.n, n, s.title.pt, s.level))
-				w()
-				w("- Objetivo: " .. objective(s))
-				w("- Dica: " .. s.hint.pt)
-				w("- Conclusão (Ysolde): " .. s.done.pt)
-				w()
-			end
+	local n = 0
+	for _, s in ipairs(cfg.steps) do
+		if s.ch == ch.n then
+			n = n + 1
+			w(string.format("### %d.%d %s (nível %d)", ch.n, n, s.title.pt, s.level))
+			w()
+			w("- Objetivo: " .. objective(s))
+			w("- Dica: " .. s.hint.pt)
+			w("- Conclusão (Ysolde): " .. s.done.pt)
+			w()
 		end
-	else
+	end
+	if ch.n >= 8 then
+		w("### Epílogo")
+		w()
 		for _, e in ipairs(cfg.epilogue) do
-			w(string.format("### %s (a partir do nível %d)", e.title.pt, e.level))
+			w(string.format("#### %s (a partir do nível %d)", e.title.pt, e.level))
 			w()
 			w(e.text.pt)
 			w()
@@ -115,6 +124,12 @@ w()
 w("## Fim do Juramento")
 w()
 w(cfg.texts.finished.pt)
+w()
+w("## Além do Juramento")
+w()
+w("Quem terminou o Juramento antes do Capítulo 8 existir recebe as páginas novas no próximo login: " .. cfg.texts.reopened.pt .. " As etapas bem abaixo do nível do personagem passam em silêncio, sem recompensa.")
+w()
+w("No fim do Capítulo 8: " .. cfg.texts.allDone.pt)
 local text = table.concat(o, "\n") .. "\n"
 
 if arg and arg[1] == "--check" then

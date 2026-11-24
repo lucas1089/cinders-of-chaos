@@ -31501,9 +31501,9 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
 
 - **Frame.** Warden Ysolde of the Ashen Vigil (a stall of the hub market) swears the "cinder-born" (what the temple gives back) into the Oath, a vow at a time; the last
   page is a door and behind it the first Warden, Vael Ashmourn, who refused to swear. No new NPC.
-- **Steps** (103, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
+- **Steps** (122, 8 chapters, `mainquest_config.lua`; the stored step is an index: new steps only at the end before the first live character). Chapters: I Cinder-Born (8-14),
   II The Oath of the Forge (15-29), III The Oath of the Many (30-99), IV The Oath of Ascension (100-199), V The Oath of the Deep (200-299), VI The Oath of Ruin (300-500),
-  VII The Unsworn Warden (500), VIII Beyond the Oath (epilogue cards of the later systems, never gating). A step is a list of conditions `conds`, all must hold:
+  VII The Unsworn Warden (500), VIII Beyond the Oath (17 steps 525-2000 since O750, below; then epilogue cards, never gating). A step is a list of conditions `conds`, all must hold:
   `count` (kill N monsters of the names `mons`; with `item` a quest drop that falls only while the step is open, a real item since O553 (below): the chance per kill makes
   the step take about its minutes, `drop.killsPerMinute` 6, a pity drop after 3 x the expected kills), `visit` (within
   `radius` of the hunting mark), `talk` (Ysolde heard "oath"/"juramento": her script, own Lua state, sets the talk flag; with `bring` = the key of a drop step she takes its
@@ -31590,6 +31590,29 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
   cooldown, lines, the resistance in the Trials' combat hook), client `game_goals/goalsview_test.lua`, the two models. O553 adds to the first one: marking, delivery (bag, backpack,
   inbox), counting, a plain or foreign copy, the bring step, a lost item and the way back, the migration (four cases), the Vigil taking the Stone Hearts, skip, `credited` and the party
   on the engine file, the spawn callback. Not run on a live server or in a client.
+- **Chapter 8 "Beyond the Oath" (O750).** Levels 501-2000, built from the endgame that exists. 17 steps after the boss, all `stat`, at most 100 levels
+  apart (the test holds gaps of 25-150): spell rank 7 (525), Descent depth 10 (625), a Form I (700), Tower floor 30 (800), 25 pocket boss kills (900), dungeon
+  difficulty 4 (1000), waystone tier 1 (1100), Greater Rift tier 16 (1200), spell rank 16 (1300), waystone tier 4 (1400), Tower floor 70 (1500), Greater
+  tier 35 (1600), waystone tier 6 (1700), a Form II (1775), one pinnacle fragment (1850), a full fragment set (1925), a pinnacle boss kill (2000, the end).
+  Levels from the models: tower reach 33 at 800 and 74 at 1500, Greater reach 36 at 1500, main spell rank 7.5 at 500 and 17 at 1300, waystone tier t at
+  1000 + 100 t (`waystone_tiers_config.lua`). Awakening stays an epilogue card (about 22 hours of Seals). Story: Vael's "others" are the Ascended; the Ember-Sworn keeps the watch. pt-BR in
+  the config, the script in `docs/ROTEIRO_QUEST_PRINCIPAL.md` ("Além do Juramento").
+  * *Sources.* Probes read existing storage, so past progress counts at once (`mainquest.lua` `probeOf`, pure parts `ChaosMainQuestCore.spellUpgrades`,
+    `pinnacleStats`, `dungeonTop`, `PROBE_STATS`): spell ranks from the packed rank storage (best rank, a Form I, a Form II on any spell), pinnacle fragment
+    kinds (a killed boss counts as its 4) and kills from `pinnacle_config.lua` storage, the best `dungeon_<id>_top` of the achievement counters. Descent depth,
+    tower floor and pocket kills were counters already. Two new Next Goals own stats (`goals_config.lua` `own`, mode max): `greater_tier` (a wrap of
+    `ChaosGreater.record`, every finisher) and `waystone_tier` (a waystone clear listener, `G.onWaystoneClear`).
+  * *Who plays it.* A done character opens Chapter 8 at its next first look (`reopenFrom`): the steps far below its level pass silently as at a first look,
+    the rest pay, the line `texts.reopened`. A quiet veteran (first seen above 500) opens it once it has beaten Vael. A skipped quest stays skipped. The Vael
+    door stays open past the boss step (`doorProblem` reads `stepIndex`). The last step says `texts.allDone`.
+  * *Rewards.* `tools/mainquest_model.lua --check` holds the Oath as before and Chapter 8 apart against the ideal hunt of 501-2000: 11.9M gold, 0.42% of 2.82B
+    (limit 7%), cheap orbs only (Fate, Upheaval, Sockets), no coin. No step is a kill or drop step.
+  * *Bots.* `botPlan` gives `elsewhere` for a Chapter 8 step: the endgame check that plays its system (`M.SYSTEM_CHECKS`: `tower_walk`, `descent_walk`,
+    `pocket_walk`, `dungeon_difficulty`, `wsmap_walk`, `greater_rift`, `pinnacle_walk`, `closed_spell_ranks`, `closed_spell_forms`). `mainquest_walk` skips
+    with that name and fails when the name is no check (`tester_checks_test.py` holds every name of the table).
+  * *Client.* `game_goals` lists the Chapter 8 steps, then the epilogue cards; the chapter line counts its steps.
+  * *Tests.* `tests/mainquest_test.lua` (structure, gaps, sources, probes, reopen, quiet veteran, the last line), `mainquest_boss_test.lua` (door past the boss),
+    `goals_test.lua` (the two hooks), client `goalsview_test.lua`. Not run on a live server.
 - **Not done.** The Unity client; own sprites for the quest items (they wear the look of their stock item: a tusk, a dust, a gear wheel); English versions of Ysolde's completion lines (the English text is "Step done."); a quest item in the depot or the stash (the stash and the guild stash refuse it).
 
 ## Vael's attacks (O554, `mainquest_boss_config.lua`, `mainquest_boss_attacks_core.lua`, `mainquest_boss.lua`)

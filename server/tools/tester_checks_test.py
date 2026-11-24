@@ -4787,6 +4787,10 @@ class MainQuestWorld:
             return {'action': 'visit', 'label': 'the place', 'radius': 6}
         if kind == 'kill':
             return {'action': 'kill', 'label': 'Troll', 'monsters': ['Troll'], 'target': 12}
+        if kind == 'late':   # O750: a Chapter 8 step, played by the check of its system
+            return {'action': 'elsewhere', 'stat': 'tower_floor', 'target': 30, 'check': 'tower_walk'}
+        if kind == 'badlate':
+            return {'action': 'elsewhere', 'stat': 'tower_floor', 'target': 30, 'check': 'no_such_check'}
         return {'action': 'skip', 'reason': "the step asks for 'spell' (the bots do not play it)"}
 
     def facts(self):
@@ -4923,6 +4927,22 @@ class MainQuestWalk(unittest.TestCase):
         self.assertGreater(io.looted, 0)
         r, _ = self.play(start=4)
         self.assertEqual((r.status, "'spell'" in r.detail), (TX.SKIP, True))
+
+    def test_a_chapter_8_step_names_its_check(self):
+        r, _ = self.play(kinds=['late'])
+        self.assertEqual(r.status, TX.SKIP, r.detail)
+        self.assertIn('played by its own check (tower_walk)', r.detail)
+        r, _ = self.play(kinds=['badlate'])
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('no_such_check', r.detail)
+        # every check the quest's Chapter 8 names (mainquest_core.lua M.SYSTEM_CHECKS) is a real one
+        core = open(os.path.join(os.path.dirname(os.path.abspath(TX.__file__)), '..', 'data', 'scripts', 'chaos', 'mainquest_core.lua'),
+                    encoding='utf-8').read()
+        block = core.split('M.SYSTEM_CHECKS = {', 1)[1].split('}', 1)[0]
+        names = re.findall(r'= "([a-z_0-9]+)"', block)
+        self.assertGreaterEqual(len(names), 8)
+        for n in names:
+            self.assertIn(n, TX.KEYS + TX.CLOSED_KEYS, n)
 
     def test_no_path_is_a_counted_fallback_for_an_npc(self):
         r, io = self.play(no_path=True, kinds=['talk', 'spell'])
